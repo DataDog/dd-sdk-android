@@ -1520,6 +1520,19 @@ public abstract interface class com/datadog/android/sessionreplay/recorder/resou
 	public abstract fun copy (Landroid/graphics/drawable/Drawable;Landroid/content/res/Resources;)Landroid/graphics/drawable/Drawable;
 }
 
+public final class com/datadog/android/sessionreplay/recorder/wrappers/BitmapWrapper {
+	public fun <init> ()V
+	public fun <init> (Lcom/datadog/android/api/InternalLogger;)V
+	public synthetic fun <init> (Lcom/datadog/android/api/InternalLogger;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun createBitmap (IILandroid/graphics/Bitmap$Config;Landroid/util/DisplayMetrics;)Landroid/graphics/Bitmap;
+	public static synthetic fun createBitmap$default (Lcom/datadog/android/sessionreplay/recorder/wrappers/BitmapWrapper;IILandroid/graphics/Bitmap$Config;Landroid/util/DisplayMetrics;ILjava/lang/Object;)Landroid/graphics/Bitmap;
+}
+
+public final class com/datadog/android/sessionreplay/recorder/wrappers/CanvasWrapper {
+	public fun <init> (Lcom/datadog/android/api/InternalLogger;)V
+	public final fun createCanvas (Landroid/graphics/Bitmap;)Landroid/graphics/Canvas;
+}
+
 public class com/datadog/android/sessionreplay/utils/AndroidMDrawableToColorMapper : com/datadog/android/sessionreplay/utils/LegacyDrawableToColorMapper {
 	public fun <init> ()V
 	public fun <init> (Ljava/util/List;)V

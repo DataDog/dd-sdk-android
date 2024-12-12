@@ -173,6 +173,15 @@ internal class DefaultImageWireframeHelperTest {
             )
         ).thenReturn(fakeGeneratedIdentifier)
 
+        whenever(
+            mockViewUtilsInternal.resolveCompoundDrawableBounds(
+                view = any(),
+                drawable = any(),
+                pixelsDensity = any(),
+                position = any()
+            )
+        ).thenReturn(fakeBounds)
+
         testedHelper = DefaultImageWireframeHelper(
             logger = mockLogger,
             resourceResolver = mockResourceResolver,
@@ -514,7 +523,7 @@ internal class DefaultImageWireframeHelperTest {
     }
 
     @Test
-    fun `M send telemetry W createImageWireframeByDrawable() { application context is null }`() {
+    fun `M send telemetry W createImageWireframeByDrawable { application context is null }`() {
         // Given
         whenever(mockView.context.applicationContext).thenReturn(null)
 
@@ -544,7 +553,7 @@ internal class DefaultImageWireframeHelperTest {
     }
 
     @Test
-    fun `M log error W createImageWireframeByDrawable() { resources is null }`() {
+    fun `M log error W createImageWireframeByDrawable { resources is null }`() {
         // Given
         whenever(mockView.resources).thenReturn(null)
 
@@ -574,7 +583,7 @@ internal class DefaultImageWireframeHelperTest {
     }
 
     @Test
-    fun `M return null W createImageWireframeByDrawable() { id is null }`() {
+    fun `M return null W createImageWireframeByDrawable { id is null }`() {
         // Given
         whenever(mockViewIdentifierResolver.resolveChildUniqueIdentifier(any(), any()))
             .thenReturn(null)
@@ -602,7 +611,7 @@ internal class DefaultImageWireframeHelperTest {
     }
 
     @Test
-    fun `M return null W createImageWireframeByDrawable() { drawable has no width }`() {
+    fun `M return null W createImageWireframeByDrawable { drawable has no width }`() {
         // When
         val wireframe = testedHelper.createImageWireframeByDrawable(
             view = mockView,
@@ -625,7 +634,7 @@ internal class DefaultImageWireframeHelperTest {
     }
 
     @Test
-    fun `M return null W createImageWireframeByDrawable() { drawable has no height }`() {
+    fun `M return null W createImageWireframeByDrawable { drawable has no height }`() {
         // When
         val wireframe = testedHelper.createImageWireframeByDrawable(
             view = mockView,
@@ -648,7 +657,7 @@ internal class DefaultImageWireframeHelperTest {
     }
 
     @Test
-    fun `M return wireframe W createImageWireframeByDrawable()`(
+    fun `M return wireframe W createImageWireframeByDrawable`(
         @Mock mockShapeStyle: MobileSegment.ShapeStyle,
         @Mock mockBorder: MobileSegment.ShapeBorder,
         @Mock stubWireframeClip: MobileSegment.WireframeClip
@@ -985,7 +994,7 @@ internal class DefaultImageWireframeHelperTest {
     }
 
     @Test
-    fun `M resolve view width and height W createImageWireframe() { RippleDrawable }`(
+    fun `M resolve view width and height W createImageWireframeByDrawable() { RippleDrawable }`(
         @Mock mockDrawable: RippleDrawable,
         @Mock mockInsetDrawable: InsetDrawable,
         @Mock mockGradientDrawable: GradientDrawable,
@@ -1033,7 +1042,7 @@ internal class DefaultImageWireframeHelperTest {
     }
 
     @Test
-    fun `M resolve drawable width and height W createImageWireframe() { TextView }`() {
+    fun `M resolve drawable width and height W createImageWireframeByDrawable { TextView }`() {
         // When
         testedHelper.createImageWireframeByDrawable(
             view = mockView,

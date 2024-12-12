@@ -19,7 +19,7 @@ import android.widget.ImageView
 object ImageViewUtils {
     /**
      * Resolves the absolute position on the screen of the given [View].
-     * @param view the [View].
+     * @param view: the [View].
      * @return the [Rect] representing the absolute position of the view.
      */
     fun resolveParentRectAbsPosition(view: View): Rect {
@@ -42,9 +42,9 @@ object ImageViewUtils {
     /**
      * Calculates the clipping [Rect] of the given child [Rect] using its parent [Rect] and
      * the screen density.
-     * @param parentRect the parent [Rect].
-     * @param childRect the child [Rect].
-     * @param density the screen density.
+     * @param parentRect: the parent [Rect].
+     * @param childRect: the child [Rect].
+     * @param density: the screen density.
      * @return the clipping [Rect].
      */
     fun calculateClipping(parentRect: Rect, childRect: Rect, density: Float): Rect {
@@ -78,9 +78,9 @@ object ImageViewUtils {
 
     /**
      * Resolves the [Drawable] content [Rect] using the given [ImageView] scale type.
-     * @param imageView the [ImageView].
-     * @param drawable the [Drawable].
-     * @param customScaleType optional custom [ImageView.ScaleType].
+     * @param imageView: the [ImageView].
+     * @param drawable: the [Drawable].
+     * @param customScaleType: optional custom [ImageView.ScaleType].
      * @return the resolved content [Rect].
      */
     fun resolveContentRectWithScaling(

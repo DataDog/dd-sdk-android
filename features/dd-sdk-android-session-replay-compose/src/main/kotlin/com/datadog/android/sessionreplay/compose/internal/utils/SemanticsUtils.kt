@@ -8,10 +8,12 @@ package com.datadog.android.sessionreplay.compose.internal.utils
 
 import android.graphics.Bitmap
 import android.view.View
+import androidx.compose.animation.core.AnimationState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.graphics.vector.VectorPainter
@@ -30,6 +32,8 @@ import com.datadog.android.sessionreplay.compose.TextInputSemanticsPropertyKey
 import com.datadog.android.sessionreplay.compose.TouchSemanticsPropertyKey
 import com.datadog.android.sessionreplay.compose.internal.data.BitmapInfo
 import com.datadog.android.sessionreplay.compose.internal.mappers.semantics.TextLayoutInfo
+import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection
+import com.datadog.android.sessionreplay.compose.internal.reflection.getSafe
 import com.datadog.android.sessionreplay.utils.GlobalBounds
 
 @Suppress("TooManyFunctions")
@@ -113,6 +117,31 @@ internal class SemanticsUtils(private val reflectionUtils: ReflectionUtils = Ref
         }?.modifier
         return backgroundModifier?.let { reflectionUtils.getShape(it) }
     }
+
+    internal fun resolveCheckPath(semanticsNode: SemanticsNode): Path? =
+        resolveOnDrawInstance(semanticsNode)?.let { onDraw ->
+            ComposeReflection.CheckCacheField?.getSafe(onDraw)?.let { checkCache ->
+                ComposeReflection.CheckPathField?.getSafe(checkCache) as? Path
+            }
+        }
+
+    internal fun resolveCheckboxFillColor(semanticsNode: SemanticsNode): Long? =
+        resolveReflectedProperty(
+            semanticsNode,
+            CheckmarkFieldType.FILL_COLOR
+        )
+
+    internal fun resolveCheckmarkColor(semanticsNode: SemanticsNode): Long? =
+        resolveReflectedProperty(
+            semanticsNode,
+            CheckmarkFieldType.CHECKMARK_COLOR
+        )
+
+    internal fun resolveBorderColor(semanticsNode: SemanticsNode): Long? =
+        resolveReflectedProperty(
+            semanticsNode,
+            CheckmarkFieldType.BORDER_COLOR
+        )
 
     private fun shrinkInnerBounds(
         modifier: Modifier,
@@ -276,5 +305,46 @@ internal class SemanticsUtils(private val reflectionUtils: ReflectionUtils = Ref
 
     internal fun getInteropView(semanticsNode: SemanticsNode): View? {
         return reflectionUtils.getInteropView(semanticsNode)
+    }
+
+    private fun resolveOnDrawInstance(semanticsNode: SemanticsNode): Any? {
+        val drawBehindElement =
+            semanticsNode.layoutInfo.getModifierInfo().firstOrNull { modifierInfo ->
+                ComposeReflection.DrawBehindElementClass?.isInstance(modifierInfo.modifier) == true
+            }?.modifier
+
+        return drawBehindElement?.let {
+            ComposeReflection.OnDrawField?.getSafe(drawBehindElement)
+        }
+    }
+
+    private fun resolveReflectedProperty(semanticsNode: SemanticsNode, fieldType: CheckmarkFieldType): Long? {
+        val onDrawInstance = resolveOnDrawInstance(semanticsNode)
+
+        val checkmarkColor: AnimationState<*, *>? = onDrawInstance?.let {
+            when (fieldType) {
+                CheckmarkFieldType.FILL_COLOR -> {
+                    ComposeReflection.BoxColorField?.getSafe(onDrawInstance) as? AnimationState<*, *>
+                }
+                CheckmarkFieldType.CHECKMARK_COLOR -> {
+                    ComposeReflection.CheckColorField?.getSafe(onDrawInstance) as? AnimationState<*, *>
+                }
+                CheckmarkFieldType.BORDER_COLOR -> {
+                    ComposeReflection.BorderColorField?.getSafe(onDrawInstance) as? AnimationState<*, *>
+                }
+            }
+        }
+
+        val result = (checkmarkColor?.value as? Color)?.value
+
+        return result?.toLong()
+    }
+
+    internal companion object {
+        internal enum class CheckmarkFieldType {
+            FILL_COLOR,
+            CHECKMARK_COLOR,
+            BORDER_COLOR
+        }
     }
 }

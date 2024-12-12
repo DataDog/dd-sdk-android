@@ -4,24 +4,39 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.sessionreplay.internal.recorder.wrappers
+package com.datadog.android.sessionreplay.recorder.wrappers
 
 import android.graphics.Bitmap
 import android.graphics.Bitmap.Config
 import android.util.DisplayMetrics
 import com.datadog.android.api.InternalLogger
 
-internal class BitmapWrapper(
+/**
+ * Wraps the Bitmap class to catch potential crashes.
+ */
+class BitmapWrapper(
     private val logger: InternalLogger = InternalLogger.UNBOUND
 ) {
-    internal fun createBitmap(
-        displayMetrics: DisplayMetrics,
+    /**
+     * Creates a bitmap with the given parameters.
+     * @param bitmapWidth the width of the bitmap.
+     * @param bitmapHeight the height of the bitmap.
+     * @param config the config of the bitmap.
+     * @param displayMetrics the optional display metrics to use.
+     * @return the created bitmap or null if it failed.
+     */
+    fun createBitmap(
         bitmapWidth: Int,
         bitmapHeight: Int,
-        config: Config
+        config: Config,
+        displayMetrics: DisplayMetrics? = null
     ): Bitmap? {
         return try {
-            Bitmap.createBitmap(displayMetrics, bitmapWidth, bitmapHeight, config)
+            if (displayMetrics != null) {
+                Bitmap.createBitmap(displayMetrics, bitmapWidth, bitmapHeight, config)
+            } else {
+                Bitmap.createBitmap(bitmapWidth, bitmapHeight, config)
+            }
         } catch (e: IllegalArgumentException) {
             // should never happen since config is given as valid type and width/height are
             // normalized to be at least 1

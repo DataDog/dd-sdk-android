@@ -102,6 +102,12 @@ class com.datadog.android.sessionreplay.recorder.resources.DefaultDrawableCopier
   override fun copy(android.graphics.drawable.Drawable, android.content.res.Resources): android.graphics.drawable.Drawable?
 interface com.datadog.android.sessionreplay.recorder.resources.DrawableCopier
   fun copy(android.graphics.drawable.Drawable, android.content.res.Resources): android.graphics.drawable.Drawable?
+class com.datadog.android.sessionreplay.recorder.wrappers.BitmapWrapper
+  constructor(com.datadog.android.api.InternalLogger = InternalLogger.UNBOUND)
+  fun createBitmap(Int, Int, android.graphics.Bitmap.Config, android.util.DisplayMetrics? = null): android.graphics.Bitmap?
+class com.datadog.android.sessionreplay.recorder.wrappers.CanvasWrapper
+  constructor(com.datadog.android.api.InternalLogger)
+  fun createCanvas(android.graphics.Bitmap): android.graphics.Canvas?
 open class com.datadog.android.sessionreplay.utils.AndroidMDrawableToColorMapper : LegacyDrawableToColorMapper
   constructor(List<DrawableToColorMapper> = emptyList())
   override fun resolveRippleDrawable(android.graphics.drawable.RippleDrawable, com.datadog.android.api.InternalLogger): Int?
