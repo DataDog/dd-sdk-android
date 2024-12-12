@@ -10,6 +10,7 @@ import android.graphics.Rect
 import android.graphics.drawable.Drawable
 import android.view.View
 import android.widget.ImageView
+import com.datadog.android.internal.utils.ImageViewUtils
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.utils.isCloseToOrGreaterThan
@@ -72,7 +73,7 @@ internal class ImageViewUtilsTest {
         )
 
         // Then
-        assertThat(result).isEqualTo(expectedClipping)
+        assertThat(result.toWireframeClip()).isEqualTo(expectedClipping)
     }
 
     @Test
@@ -104,7 +105,7 @@ internal class ImageViewUtilsTest {
         )
 
         // Then
-        assertThat(result).isEqualTo(expectedClipping)
+        assertThat(result.toWireframeClip()).isEqualTo(expectedClipping)
     }
 
     @Test
@@ -136,7 +137,7 @@ internal class ImageViewUtilsTest {
         )
 
         // Then
-        assertThat(result).isEqualTo(expectedClipping)
+        assertThat(result.toWireframeClip()).isEqualTo(expectedClipping)
     }
 
     @Test
@@ -168,7 +169,7 @@ internal class ImageViewUtilsTest {
         )
 
         // Then
-        assertThat(result).isEqualTo(expectedClipping)
+        assertThat(result.toWireframeClip()).isEqualTo(expectedClipping)
     }
 
     @Test
@@ -200,7 +201,7 @@ internal class ImageViewUtilsTest {
         )
 
         // Then
-        assertThat(result).isEqualTo(expectedClipping)
+        assertThat(result.toWireframeClip()).isEqualTo(expectedClipping)
     }
 
     // endregion
@@ -724,5 +725,52 @@ internal class ImageViewUtilsTest {
 
         // Then
         assertThat(result).isEqualTo(parentRect)
+    }
+
+    @Test
+    fun `M returns content rect W resolveContentRectWithScaling() { custom scale type }`(
+        @Mock mockDrawable: Drawable,
+        forge: Forge
+    ) {
+        // Given
+        val fakeGlobalX = forge.aPositiveInt()
+        val fakeGlobalY = forge.aPositiveInt()
+        val fakeWidth = forge.aPositiveInt()
+        val fakeHeight = forge.aPositiveInt()
+        val fakeDrawableWidth = forge.aPositiveInt()
+        val fakeDrawableHeight = forge.aPositiveInt()
+        val fakeScaleType = ImageView.ScaleType.FIT_END
+        whenever(mockDrawable.intrinsicWidth).thenReturn(fakeDrawableWidth)
+        whenever(mockDrawable.intrinsicHeight).thenReturn(fakeDrawableHeight)
+
+        val mockImageView: ImageView = mock {
+            whenever(it.getLocationOnScreen(any())).thenAnswer {
+                val coords = it.arguments[0] as IntArray
+                coords[0] = fakeGlobalX
+                coords[1] = fakeGlobalY
+                null
+            }
+            whenever(it.width).thenReturn(fakeWidth)
+            whenever(it.height).thenReturn(fakeHeight)
+            whenever(it.scaleType).thenReturn(fakeScaleType)
+        }
+
+        val parentRect = Rect(
+            fakeGlobalX,
+            fakeGlobalY,
+            fakeGlobalX + fakeWidth,
+            fakeGlobalY + fakeHeight
+        )
+
+        // When
+        val result = testedImageViewUtils.resolveContentRectWithScaling(
+            imageView = mockImageView,
+            drawable = mockDrawable,
+            customScaleType = ImageView.ScaleType.CENTER_CROP
+        )
+
+        // Then (expect CENTER_CROP behavior)
+        assertThat(result.width().isCloseToOrGreaterThan(parentRect.width())).isTrue
+        assertThat(result.height().isCloseToOrGreaterThan(parentRect.height())).isTrue
     }
 }

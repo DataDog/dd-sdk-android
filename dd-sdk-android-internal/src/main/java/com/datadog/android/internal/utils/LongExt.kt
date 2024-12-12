@@ -4,18 +4,18 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.sessionreplay.internal.recorder
+package com.datadog.android.internal.utils
 
 /**
- * Normalizes an Int value (font size, view dimension, view position, etc.) according with the
+ * Normalizes a Long value (font size, view dimension, view position, etc.) according with the
  * device pixels density.
  * Example: if a device has a DPI = 2, the normalized height of a view will be
  * view.height/2.
  * @param density
  */
-internal fun Int.densityNormalized(density: Float): Int {
+fun Long.densityNormalized(density: Float): Long {
     if (density == 0f) {
         return this
     }
-    return (this / density).toInt()
+    return (this / density).toLong()
 }

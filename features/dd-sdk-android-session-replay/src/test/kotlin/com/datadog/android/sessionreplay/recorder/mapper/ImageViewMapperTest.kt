@@ -16,12 +16,13 @@ import android.util.DisplayMetrics
 import android.view.View
 import android.widget.ImageView
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.internal.utils.ImageViewUtils
 import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
-import com.datadog.android.sessionreplay.internal.utils.ImageViewUtils
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.recorder.MappingContext
 import com.datadog.android.sessionreplay.recorder.SystemInformation
+import com.datadog.android.sessionreplay.recorder.resources.DrawableCopier
 import com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback
 import com.datadog.android.sessionreplay.utils.ColorStringFormatter
 import com.datadog.android.sessionreplay.utils.DrawableToColorMapper
@@ -101,6 +102,9 @@ internal class ImageViewMapperTest {
     lateinit var mockDrawableToColorMapper: DrawableToColorMapper
 
     @Mock
+    lateinit var mockDrawableCopier: DrawableCopier
+
+    @Mock
     lateinit var mockGlobalBounds: GlobalBounds
 
     @Mock
@@ -113,7 +117,7 @@ internal class ImageViewMapperTest {
     lateinit var mockBackgroundConstantState: ConstantState
 
     @Mock
-    lateinit var stubClipping: MobileSegment.WireframeClip
+    lateinit var stubClipping: Rect
 
     @Mock
     lateinit var stubParentRect: Rect
@@ -168,7 +172,8 @@ internal class ImageViewMapperTest {
         whenever(mockDrawableToColorMapper.mapDrawableToColor(any(), eq(mockInternalLogger))) doReturn null
 
         whenever(stubImageViewUtils.resolveParentRectAbsPosition(any())).thenReturn(stubParentRect)
-        whenever(stubImageViewUtils.resolveContentRectWithScaling(any(), any())).thenReturn(stubContentRect)
+        whenever(stubImageViewUtils.resolveContentRectWithScaling(any(), any(), anyOrNull()))
+            .thenReturn(stubContentRect)
         whenever(stubImageViewUtils.calculateClipping(any(), any(), any())).thenReturn(stubClipping)
         stubContentRect.left = forge.aPositiveInt()
         stubContentRect.top = forge.aPositiveInt()
@@ -197,7 +202,8 @@ internal class ImageViewMapperTest {
             colorStringFormatter = mockColorStringFormatter,
             viewBoundsResolver = mockViewBoundsResolver,
             drawableToColorMapper = mockDrawableToColorMapper,
-            imageViewUtils = stubImageViewUtils
+            imageViewUtils = stubImageViewUtils,
+            drawableCopier = mockDrawableCopier
         )
     }
 
@@ -298,7 +304,8 @@ internal class ImageViewMapperTest {
                 clipping = anyOrNull(),
                 shapeStyle = anyOrNull(),
                 border = anyOrNull(),
-                prefix = anyOrNull()
+                prefix = anyOrNull(),
+                customResourceIdCacheKey = anyOrNull()
             )
         ).thenReturn(expectedImageWireframe)
 
@@ -330,7 +337,8 @@ internal class ImageViewMapperTest {
                 clipping = anyOrNull(),
                 shapeStyle = anyOrNull(),
                 border = anyOrNull(),
-                prefix = anyOrNull()
+                prefix = anyOrNull(),
+                customResourceIdCacheKey = anyOrNull()
             )
     }
 
@@ -460,7 +468,8 @@ internal class ImageViewMapperTest {
                 clipping = anyOrNull(),
                 shapeStyle = anyOrNull(),
                 border = anyOrNull(),
-                prefix = eq(expectedPrefix)
+                prefix = eq(expectedPrefix),
+                customResourceIdCacheKey = anyOrNull()
             )
         )
             .thenReturn(returnedWireframe)

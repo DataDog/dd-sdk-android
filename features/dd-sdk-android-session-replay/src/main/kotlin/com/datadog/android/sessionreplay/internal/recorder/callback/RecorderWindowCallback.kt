@@ -12,13 +12,13 @@ import android.view.MotionEvent
 import android.view.Window
 import androidx.annotation.MainThread
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.internal.utils.densityNormalized
 import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.internal.TouchPrivacyManager
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueHandler
 import com.datadog.android.sessionreplay.internal.recorder.ViewOnDrawInterceptor
 import com.datadog.android.sessionreplay.internal.recorder.WindowInspector
-import com.datadog.android.sessionreplay.internal.recorder.densityNormalized
 import com.datadog.android.sessionreplay.internal.utils.TimeProvider
 import com.datadog.android.sessionreplay.model.MobileSegment
 import java.util.LinkedList
