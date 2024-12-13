@@ -1199,7 +1199,7 @@ internal class TelemetryEventHandlerTest {
     fun `M write correct effective rate W handleEvent() { api usage event }`(
         @Forgery fakeApiUsageEvent: InternalTelemetryEvent.ApiUsage,
         @Forgery fakeRumConfiguration: RumFeature.Configuration,
-        @FloatForgery(min = 0f, max = 100f) headSamplingRate: Float,
+        @FloatForgery(min = 0f, max = 100f) creationSamplingRate: Float,
         @FloatForgery(min = 0f, max = 100f) reportingSamplingRate: Float
     ) {
         val mockRumFeature = mock<RumFeature>()
@@ -1207,7 +1207,7 @@ internal class TelemetryEventHandlerTest {
         whenever(mockRumFeatureScope.unwrap<RumFeature>()) doReturn mockRumFeature
         fakeApiUsageEvent.additionalProperties.also { properties ->
             properties[InternalTelemetryEvent.REPORTING_SAMPLING_RATE_KEY] = reportingSamplingRate
-            properties[InternalTelemetryEvent.CREATION_SAMPLING_RATE_KEY] = headSamplingRate
+            properties[InternalTelemetryEvent.CREATION_SAMPLING_RATE_KEY] = creationSamplingRate
         }
 
         // When
@@ -1220,9 +1220,8 @@ internal class TelemetryEventHandlerTest {
             assertEffectiveSampleRate(
                 actualEvent.effectiveSampleRate,
                 reportingSamplingRate,
-                headSamplingRate,
-                fakeRumConfiguration.telemetrySampleRate,
-                fakeRumConfiguration.sampleRate
+                creationSamplingRate,
+                fakeRumConfiguration.telemetrySampleRate
 
             )
         }
@@ -1259,8 +1258,7 @@ internal class TelemetryEventHandlerTest {
                 actualEvent.effectiveSampleRate,
                 reportingSamplingRate,
                 creatingSamplingRate,
-                fakeRumConfiguration.telemetrySampleRate,
-                fakeRumConfiguration.sampleRate
+                fakeRumConfiguration.telemetrySampleRate
             )
         }
     }
@@ -1296,8 +1294,7 @@ internal class TelemetryEventHandlerTest {
                 actualEvent.effectiveSampleRate,
                 reportingSamplingRate,
                 creatingSamplingRate,
-                fakeRumConfiguration.telemetrySampleRate,
-                fakeRumConfiguration.sampleRate
+                fakeRumConfiguration.telemetrySampleRate
             )
         }
     }
@@ -1333,8 +1330,7 @@ internal class TelemetryEventHandlerTest {
                 actualEvent.effectiveSampleRate,
                 reportingSamplingRate,
                 creatingSamplingRate,
-                fakeRumConfiguration.telemetrySampleRate,
-                fakeRumConfiguration.sampleRate
+                fakeRumConfiguration.telemetrySampleRate
             )
         }
     }
@@ -1360,8 +1356,7 @@ internal class TelemetryEventHandlerTest {
                 actualEvent.effectiveSampleRate,
                 100f,
                 fakeRumConfiguration.telemetryConfigurationSampleRate,
-                fakeRumConfiguration.telemetrySampleRate,
-                fakeRumConfiguration.sampleRate
+                fakeRumConfiguration.telemetrySampleRate
 
             )
         }

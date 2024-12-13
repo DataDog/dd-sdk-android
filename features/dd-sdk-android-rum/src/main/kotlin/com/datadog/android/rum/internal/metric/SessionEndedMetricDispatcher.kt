@@ -40,8 +40,6 @@ internal class SessionEndedMetricDispatcher(private val internalLogger: Internal
                 messageBuilder = { SessionEndedMetric.RUM_SESSION_ENDED_METRIC_NAME },
                 additionalProperties = metric.toMetricAttributes(ntpOffsetAtEndMs),
                 samplingRate = MethodCallSamplingRate.ALL.rate
-                // we don't need to provide creationSampleRate here because it equals to sessionSampleRate
-                // which will be applied to all telemetry events just before sending
             )
         }
     }

@@ -108,9 +108,11 @@ interface InternalLogger {
      * @param messageBuilder the lambda building the metric message
      * @param additionalProperties additional properties to add to the metric
      * @param samplingRate value between 0-100 for sampling the event. Note that the sampling rate applied to this
-     * @param creationSampleRate value between 0-100 that was applied for long-lived metrics. This value will not be
-     * applied, use [samplingRate] for sampling
-     * metric will be applied in addition to the global telemetry sampling rate.
+     * @param creationSampleRate value between 0-100. Some of the metrics like [PerformanceMetric] being sampled on the
+     * metric creation place and then reported with 100% probability. In such cases we need to use *creationSampleRate*
+     * to compute effectiveSampleRate correctly. It's null by default means that metric sampled only when it
+     * reported which is applicable for most cases. creationSampleRate == null could
+     * be considered as creationSampleRate == 100%
      */
     @InternalApi
     fun logMetric(

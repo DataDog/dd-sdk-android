@@ -101,11 +101,23 @@ internal class SdkInternalLogger(
     ) {
         if (!sample(samplingRate)) return
         val rumFeature = sdkCore?.getFeature(Feature.RUM_FEATURE_NAME) ?: return
+        val additionalPropertiesMutable = additionalProperties.toMutableMap()
+
+        enrichWithNonNullValue(
+            additionalPropertiesMutable,
+            InternalTelemetryEvent.CREATION_SAMPLING_RATE_KEY,
+            creationSampleRate
+        )
+
+        enrichWithNonNullValue(
+            additionalPropertiesMutable,
+            InternalTelemetryEvent.REPORTING_SAMPLING_RATE_KEY,
+            samplingRate
+        )
+
         val metricEvent = InternalTelemetryEvent.Metric(
             message = messageBuilder(),
-            additionalProperties = additionalProperties
-                .putIfNotExistOrMapIsNull(InternalTelemetryEvent.CREATION_SAMPLING_RATE_KEY, creationSampleRate)
-                .putIfNotExistOrMapIsNull(InternalTelemetryEvent.REPORTING_SAMPLING_RATE_KEY, samplingRate)
+            additionalProperties = additionalPropertiesMutable
         )
         rumFeature.sendEvent(metricEvent)
     }
@@ -138,7 +150,9 @@ internal class SdkInternalLogger(
         val rumFeature = sdkCore?.getFeature(Feature.RUM_FEATURE_NAME) ?: return
 
         val event = apiUsageEventBuilder()
-        event.additionalProperties.putIfNotExist(
+
+        enrichWithNonNullValue(
+            event.additionalProperties,
             InternalTelemetryEvent.REPORTING_SAMPLING_RATE_KEY,
             samplingRate
         )
@@ -264,20 +278,16 @@ internal class SdkInternalLogger(
         }
     }
 
-    private fun Map<String, Any?>?.putIfNotExistOrMapIsNull(key: String, value: Float?): MutableMap<String, Any?> {
-        val mutableMap = this?.toMutableMap() ?: mutableMapOf()
-        return mutableMap.apply { putIfNotExist(key, value ?: return@apply) }
-    }
+    private fun enrichWithNonNullValue(
+        map: MutableMap<String, Any?>,
+        key: String,
+        value: Float?
+    ) {
+        if (value == null) return
 
-    // This method same as putIfAbsent but putIfAbsent requires SDK version >= 24
-    @Suppress("UnsafeThirdPartyFunctionCall")
-    private fun <K, V> MutableMap<K, V>.putIfNotExist(key: K, value: V): V? {
-        var v: V? = get(key)
-        if (v == null) {
-            v = put(key, value)
+        if (!map.containsKey(key)) {
+            map[key] = value
         }
-
-        return v
     }
 
     companion object {

@@ -482,10 +482,7 @@ internal class TelemetryEventHandler(
 
         val eventSamplingRate = eventSpecificSamplingRate?.percent() ?: 1.0
 
-        val sessionSampleRate = rumConfig?.sampleRate?.percent() ?: 1.0
-
-        val effectiveSampleRate =
-            telemetrySampleRate * creatingSamplingRate * reportingSamplingRate * eventSamplingRate * sessionSampleRate
+        val effectiveSampleRate = telemetrySampleRate * creatingSamplingRate * reportingSamplingRate * eventSamplingRate
 
         return (effectiveSampleRate * HUNDRED).toFloat()
     }
