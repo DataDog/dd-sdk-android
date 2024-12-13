@@ -39,7 +39,12 @@ class FakeInternalLogger : InternalLogger {
         // do nothing
     }
 
-    override fun logMetric(messageBuilder: () -> String, additionalProperties: Map<String, Any?>, samplingRate: Float) {
+    override fun logMetric(
+        messageBuilder: () -> String,
+        additionalProperties: Map<String, Any?>,
+        samplingRate: Float,
+        creationSampleRate: Float?
+    ) {
         lastMetric = Pair(messageBuilder(), additionalProperties)
     }
 
@@ -53,7 +58,10 @@ class FakeInternalLogger : InternalLogger {
         return null
     }
 
-    override fun logApiUsage(samplingRate: Float, apiUsageEventBuilder: () -> InternalTelemetryEvent.ApiUsage) {
+    override fun logApiUsage(
+        samplingRate: Float,
+        apiUsageEventBuilder: () -> InternalTelemetryEvent.ApiUsage
+    ) {
         // do nothing
     }
 }

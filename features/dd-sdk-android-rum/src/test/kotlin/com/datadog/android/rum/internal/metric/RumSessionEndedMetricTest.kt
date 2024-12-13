@@ -62,9 +62,7 @@ class RumSessionEndedMetricTest {
     @Test
     fun `M create attributes with session ended metric type W toMetricAttributes`() {
         // Given
-        val sessionEndedMetric =
-            SessionEndedMetric(fakeSessionId, fakeStartReason, fakeNtpOffsetAtStart, backgroundEventTracking)
-
+        val sessionEndedMetric = stubSessionEndedMetric()
         // When
         val attributes = sessionEndedMetric.toMetricAttributes(fakeNtpOffsetAtEnd)
 
@@ -75,8 +73,7 @@ class RumSessionEndedMetricTest {
     @Test
     fun `M create attributes with session ended process type W toMetricAttributes`() {
         // Given
-        val sessionEndedMetric =
-            SessionEndedMetric(fakeSessionId, fakeStartReason, fakeNtpOffsetAtStart, backgroundEventTracking)
+        val sessionEndedMetric = stubSessionEndedMetric()
 
         // When
         val attributes = sessionEndedMetric.toMetricAttributes(fakeNtpOffsetAtEnd)
@@ -90,9 +87,7 @@ class RumSessionEndedMetricTest {
     @Test
     fun `M create attributes with session ended precondition W toMetricAttributes`() {
         // Given
-        val sessionEndedMetric =
-            SessionEndedMetric(fakeSessionId, fakeStartReason, fakeNtpOffsetAtStart, backgroundEventTracking)
-
+        val sessionEndedMetric = stubSessionEndedMetric()
         // When
         val attributes = sessionEndedMetric.toMetricAttributes(fakeNtpOffsetAtEnd)
 
@@ -105,8 +100,7 @@ class RumSessionEndedMetricTest {
     @Test
     fun `M init attributes W toMetricAttributes { empty metric }`() {
         // Given
-        val sessionEndedMetric =
-            SessionEndedMetric(fakeSessionId, fakeStartReason, fakeNtpOffsetAtStart, backgroundEventTracking)
+        val sessionEndedMetric = stubSessionEndedMetric()
 
         // When
         val attributes = sessionEndedMetric.toMetricAttributes(fakeNtpOffsetAtEnd)
@@ -130,8 +124,7 @@ class RumSessionEndedMetricTest {
     @Test
     fun `M calculate wasStopped attribute W onSessionStopped`() {
         // Given
-        val sessionEndedMetric =
-            SessionEndedMetric(fakeSessionId, fakeStartReason, fakeNtpOffsetAtStart, backgroundEventTracking)
+        val sessionEndedMetric = stubSessionEndedMetric()
 
         // When
         sessionEndedMetric.onSessionStopped()
@@ -146,8 +139,7 @@ class RumSessionEndedMetricTest {
     @Test
     fun `M calculate duration W onViewTracked { track single view }`(@Forgery event: ViewEvent) {
         // Given
-        val sessionEndedMetric =
-            SessionEndedMetric(event.session.id, fakeStartReason, fakeNtpOffsetAtStart, backgroundEventTracking)
+        val sessionEndedMetric = stubSessionEndedMetric(sessionId = event.session.id)
 
         // When
         sessionEndedMetric.onViewTracked(event)
@@ -188,8 +180,7 @@ class RumSessionEndedMetricTest {
             date = date3,
             view = event3.view.copy(timeSpent = duration3)
         )
-        val sessionEndedMetric =
-            SessionEndedMetric(fakeSessionId, fakeStartReason, fakeNtpOffsetAtStart, backgroundEventTracking)
+        val sessionEndedMetric = stubSessionEndedMetric()
 
         // When
         sessionEndedMetric.onViewTracked(sessionEvent1)
@@ -224,8 +215,7 @@ class RumSessionEndedMetricTest {
             date = date2,
             view = event2.view.copy(timeSpent = duration2)
         )
-        val sessionEndedMetric =
-            SessionEndedMetric(fakeSessionId, fakeStartReason, fakeNtpOffsetAtStart, backgroundEventTracking)
+        val sessionEndedMetric = stubSessionEndedMetric()
 
         // When
         sessionEndedMetric.onViewTracked(currentSessionViewEvent)
@@ -241,8 +231,7 @@ class RumSessionEndedMetricTest {
     @Test
     fun `M calculate total view counts W onViewTracked`(@Forgery events: List<ViewEvent>) {
         // Given
-        val sessionEndedMetric =
-            SessionEndedMetric(fakeSessionId, fakeStartReason, fakeNtpOffsetAtStart, backgroundEventTracking)
+        val sessionEndedMetric = stubSessionEndedMetric()
 
         // When
         events.map {
@@ -261,8 +250,7 @@ class RumSessionEndedMetricTest {
     @Test
     fun `M calculate has replay count W onViewTracked()`(@Forgery events: List<ViewEvent>) {
         // Given
-        val sessionEndedMetric =
-            SessionEndedMetric(fakeSessionId, fakeStartReason, fakeNtpOffsetAtStart, backgroundEventTracking)
+        val sessionEndedMetric = stubSessionEndedMetric()
 
         // When
         events.map {
@@ -288,8 +276,7 @@ class RumSessionEndedMetricTest {
         forge: Forge
     ) {
         // Given
-        val sessionEndedMetric =
-            SessionEndedMetric(fakeSessionId, fakeStartReason, fakeNtpOffsetAtStart, backgroundEventTracking)
+        val sessionEndedMetric = stubSessionEndedMetric()
         val backgroundViewCount = forge.anInt(min = 1, max = events.size + 1)
 
         // When
@@ -320,8 +307,7 @@ class RumSessionEndedMetricTest {
         forge: Forge
     ) {
         // Given
-        val sessionEndedMetric =
-            SessionEndedMetric(fakeSessionId, fakeStartReason, fakeNtpOffsetAtStart, backgroundEventTracking)
+        val sessionEndedMetric = stubSessionEndedMetric()
         val appLaunchViewCount = forge.anInt(min = 1, max = events.size + 1)
 
         // When
@@ -349,8 +335,7 @@ class RumSessionEndedMetricTest {
     @Test
     fun `M error counts correct W track errors`(@StringForgery errorKinds: List<String>) {
         // Given
-        val sessionEndedMetric =
-            SessionEndedMetric(fakeSessionId, fakeStartReason, fakeNtpOffsetAtStart, backgroundEventTracking)
+        val sessionEndedMetric = stubSessionEndedMetric()
 
         // When
         errorKinds.forEach {
@@ -378,8 +363,7 @@ class RumSessionEndedMetricTest {
             "top8" to 3
         )
 
-        val sessionEndedMetric =
-            SessionEndedMetric(fakeSessionId, fakeStartReason, fakeNtpOffsetAtStart, backgroundEventTracking)
+        val sessionEndedMetric = stubSessionEndedMetric()
 
         // When
         errorKindsMap.forEach { errorKind ->
@@ -412,8 +396,7 @@ class RumSessionEndedMetricTest {
             "top_3_error" to 8,
             "top/4/error" to 7
         )
-        val sessionEndedMetric =
-            SessionEndedMetric(fakeSessionId, fakeStartReason, fakeNtpOffsetAtStart, backgroundEventTracking)
+        val sessionEndedMetric = stubSessionEndedMetric()
 
         // When
         errorKindsMap.forEach { errorKind ->
@@ -445,8 +428,9 @@ class RumSessionEndedMetricTest {
         @IntForgery(min = 0, max = 5) randomLongTaskCount: Int
     ) {
         // Given
-        val sessionEndedMetric =
-            SessionEndedMetric(fakeSessionId, fakeStartReason, fakeNtpOffsetAtStart, fakeBackgroundEventTracking)
+        val sessionEndedMetric = stubSessionEndedMetric(
+            hasTrackBackgroundEventsEnabled = fakeBackgroundEventTracking
+        )
 
         // When
         repeat(randomActionCount) {
@@ -478,8 +462,9 @@ class RumSessionEndedMetricTest {
         @BoolForgery fakeBackgroundEventTracking: Boolean
     ) {
         // Given
-        val sessionEndedMetric =
-            SessionEndedMetric(fakeSessionId, fakeStartReason, fakeNtpOffsetAtStart, fakeBackgroundEventTracking)
+        val sessionEndedMetric = stubSessionEndedMetric(
+            hasTrackBackgroundEventsEnabled = fakeBackgroundEventTracking
+        )
 
         // When
         val attributes = sessionEndedMetric.toMetricAttributes(fakeNtpOffsetAtEnd)
@@ -497,12 +482,7 @@ class RumSessionEndedMetricTest {
         @LongForgery ntpOffsetAtEnd: Long
     ) {
         // Given
-        val sessionEndedMetric = SessionEndedMetric(
-            fakeSessionId,
-            fakeStartReason,
-            ntpOffsetAtStart,
-            backgroundEventTracking
-        )
+        val sessionEndedMetric = stubSessionEndedMetric(ntpOffsetAtStartMs = ntpOffsetAtStart)
 
         // When
         val attributes = sessionEndedMetric.toMetricAttributes(ntpOffsetAtEnd)
@@ -519,12 +499,7 @@ class RumSessionEndedMetricTest {
         @IntForgery(min = 0, max = 100) count: Int
     ) {
         // Given
-        val sessionEndedMetric = SessionEndedMetric(
-            fakeSessionId,
-            fakeStartReason,
-            fakeNtpOffsetAtStart,
-            backgroundEventTracking
-        )
+        val sessionEndedMetric = stubSessionEndedMetric()
 
         // When
         repeat(count) {
@@ -541,8 +516,7 @@ class RumSessionEndedMetricTest {
     @Test
     fun `M encode type W creating metric`(@Forgery viewEvent: ViewEvent) {
         // Given
-        val sessionEndedMetric =
-            SessionEndedMetric(fakeSessionId, fakeStartReason, fakeNtpOffsetAtStart, backgroundEventTracking)
+        val sessionEndedMetric = stubSessionEndedMetric()
 
         // When
         viewEvent.copy(session = viewEvent.session.copy(id = fakeSessionId)).apply {
@@ -605,4 +579,16 @@ class RumSessionEndedMetricTest {
         assertThat(nptOffset.get(SessionEndedMetric.NTP_OFFSET_AT_START_KEY)).isInstanceOf(java.lang.Long::class.java)
         assertThat(nptOffset.get(SessionEndedMetric.NTP_OFFSET_AT_END_KEY)).isInstanceOf(java.lang.Long::class.java)
     }
+
+    private fun stubSessionEndedMetric(
+        sessionId: String = fakeSessionId,
+        startReason: RumSessionScope.StartReason = fakeStartReason,
+        ntpOffsetAtStartMs: Long = fakeNtpOffsetAtStart,
+        hasTrackBackgroundEventsEnabled: Boolean = backgroundEventTracking
+    ) = SessionEndedMetric(
+        sessionId,
+        startReason,
+        ntpOffsetAtStartMs,
+        hasTrackBackgroundEventsEnabled
+    )
 }

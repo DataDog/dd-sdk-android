@@ -64,7 +64,12 @@ internal class StubInternalLogger : InternalLogger {
         }
     }
 
-    override fun logMetric(messageBuilder: () -> String, additionalProperties: Map<String, Any?>, samplingRate: Float) {
+    override fun logMetric(
+        messageBuilder: () -> String,
+        additionalProperties: Map<String, Any?>,
+        samplingRate: Float,
+        creationSampleRate: Float?
+    ) {
         println("M [T]: ${messageBuilder()} | $samplingRate%")
         additionalProperties.log()
         val message = messageBuilder()
@@ -72,7 +77,8 @@ internal class StubInternalLogger : InternalLogger {
             type = StubTelemetryEvent.Type.METRIC,
             message = message,
             additionalProperties = additionalProperties,
-            samplingRate = samplingRate
+            samplingRate = samplingRate,
+            creationSampleRate = creationSampleRate
         )
         telemetryEventsWritten.add(telemetryEvent)
     }

@@ -285,6 +285,7 @@ internal class RumFeature(
             WEB_VIEW_INGESTED_NOTIFICATION_MESSAGE_TYPE -> {
                 (GlobalRumMonitor.get(sdkCore) as? AdvancedRumMonitor)?.sendWebViewEvent()
             }
+
             TELEMETRY_SESSION_REPLAY_SKIP_FRAME -> addSessionReplaySkippedFrame()
             FLUSH_AND_STOP_MONITOR_MESSAGE_TYPE -> {
                 (GlobalRumMonitor.get(sdkCore) as? DatadogRumMonitor)?.let {
