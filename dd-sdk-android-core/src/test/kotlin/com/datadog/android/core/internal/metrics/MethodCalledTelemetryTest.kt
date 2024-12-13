@@ -19,6 +19,7 @@ import com.datadog.android.core.internal.metrics.MethodCalledTelemetry.Companion
 import com.datadog.android.core.metrics.PerformanceMetric.Companion.METRIC_TYPE
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.FloatForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -81,8 +82,11 @@ internal class MethodCalledTelemetryTest {
     @StringForgery
     lateinit var fakeOperationName: String
 
+    @FloatForgery(min = 0.1f, max = 100f)
+    private var fakeCreationSampleRate: Float = 0.1f
+
     private var fakeStartTime: Long = 0
-    private var fakeCreationSampleRate: Float = 20f
+
     private var fakeStatus: Boolean = false
 
     private val lambdaCaptor = argumentCaptor<() -> String>()
