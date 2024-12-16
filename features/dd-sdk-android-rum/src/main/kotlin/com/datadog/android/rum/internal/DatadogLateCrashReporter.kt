@@ -9,6 +9,7 @@ package com.datadog.android.rum.internal
 import android.app.ApplicationExitInfo
 import android.os.Build
 import androidx.annotation.RequiresApi
+import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.Feature
@@ -97,6 +98,7 @@ internal class DatadogLateCrashReporter(
         }
     }
 
+    @WorkerThread
     @RequiresApi(Build.VERSION_CODES.R)
     override fun handleAnrCrash(
         anrExitInfo: ApplicationExitInfo,

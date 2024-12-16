@@ -7,6 +7,7 @@
 package com.datadog.android.rum.internal.anr
 
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.core.appendIfNotEmpty
 import com.datadog.android.core.feature.event.ThreadDump
 import java.io.IOException
 import java.io.InputStream
@@ -33,7 +34,7 @@ internal class AndroidTraceParser(
         val threadDumps = mutableListOf<ThreadDump>()
 
         var isInThreadStackBlock = false
-        val currentThreadStack = mutableListOf<String>()
+        val currentThreadStack = StringBuilder()
         var currentThreadName: String? = null
         var currentThreadState: String? = null
 
@@ -45,7 +46,7 @@ internal class AndroidTraceParser(
                     threadDumps += ThreadDump(
                         name = currentThreadName,
                         state = convertThreadState(currentThreadState.orEmpty()),
-                        stack = currentThreadStack.joinToString("\n"),
+                        stack = currentThreadStack.toString(),
                         crashed = currentThreadName == "main"
                     )
                 }
@@ -73,7 +74,7 @@ internal class AndroidTraceParser(
                 // - locked <0x0dd89f49> (a okhttp3.internal.concurrent.TaskRunner)
                 // we want to skip them for now
                 // also we want to skip any non-stack lines in the thread info block
-                currentThreadStack += line
+                currentThreadStack.appendIfNotEmpty('\n').append(line)
             }
         }
 
