@@ -123,7 +123,7 @@ private fun <R> setFieldValue(instance: Any?, field: Field, fieldValue: R): Bool
  * @param params the parameters to provide the constructor
  * @return the instance of the class
  */
-@Suppress("SpreadOperator")
+@Suppress("SpreadOperator", "UNCHECKED_CAST")
 fun <T : Any> createInstance(clazz: Class<T>, vararg params: Any?): T {
     val toTypedArray = params.map { it?.javaClass ?: Any::class.java }.toTypedArray()
     val constructor = clazz.declaredConstructors

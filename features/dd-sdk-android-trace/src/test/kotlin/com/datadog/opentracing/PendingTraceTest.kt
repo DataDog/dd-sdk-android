@@ -47,7 +47,7 @@ class PendingTraceTest {
             PendingTrace::class.java,
             mockTracer,
             fakeTraceId,
-            mockInternalLogger as InternalLogger
+            mockInternalLogger
         )
         val rootSpan =
             forge.fakeSpan(pendingTrace, mockTracer, fakeTraceId, BigInteger.ZERO, "rootSpan", mockInternalLogger)
