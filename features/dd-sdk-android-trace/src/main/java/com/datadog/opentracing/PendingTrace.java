@@ -6,10 +6,12 @@
 
 package com.datadog.opentracing;
 
+import com.datadog.android.api.InternalLogger;
 import com.datadog.exec.CommonTaskExecutor;
 import com.datadog.exec.CommonTaskExecutor.Task;
 import com.datadog.opentracing.scopemanager.ContinuableScope;
 import com.datadog.legacy.trace.common.util.Clock;
+
 import java.io.Closeable;
 import java.lang.ref.Reference;
 import java.lang.ref.ReferenceQueue;
@@ -58,9 +60,12 @@ public class PendingTrace extends LinkedList<DDSpan> {
   /** Ensure a trace is never written multiple times */
   private final AtomicBoolean isWritten = new AtomicBoolean(false);
 
-  PendingTrace(final DDTracer tracer, final BigInteger traceId) {
+  private final InternalLogger internalLogger;
+
+  PendingTrace(final DDTracer tracer, final BigInteger traceId, final InternalLogger internalLogger) {
     this.tracer = tracer;
     this.traceId = traceId;
+    this.internalLogger = internalLogger;
 
     startTimeNano = Clock.currentNanoTime();
     startNanoTicks = Clock.currentNanoTicks();
@@ -84,9 +89,27 @@ public class PendingTrace extends LinkedList<DDSpan> {
 
   public void registerSpan(final DDSpan span) {
     if (traceId == null || span.context() == null) {
+      internalLogger.log(
+        InternalLogger.Level.ERROR,
+        InternalLogger.Target.USER,
+        () -> "Span " + span.getOperationName() + " not registered because of null traceId or context; "+
+          "spanId:" + span.getSpanId() + " traceid:" + traceId,
+        null,
+        false,
+        new HashMap<>()
+      );
       return;
     }
     if (!traceId.equals(span.context().getTraceId())) {
+      internalLogger.log(
+        InternalLogger.Level.ERROR,
+        InternalLogger.Target.USER,
+        () -> "Span " + span.getOperationName() + " not registered because of traceId mismatch; " +
+            "spanId:" + span.getSpanId() + " traceid:" + traceId,
+        null,
+        false,
+        new HashMap<>()
+      );
       return;
     }
     rootSpan.compareAndSet(null, new WeakReference<>(span));
@@ -96,19 +119,55 @@ public class PendingTrace extends LinkedList<DDSpan> {
         weakReferences.add(span.ref);
         final int count = pendingReferenceCount.incrementAndGet();
       } else {
+        internalLogger.log(
+          InternalLogger.Level.ERROR,
+          InternalLogger.Target.USER,
+            () -> "Span " + span.getOperationName() + " not registered because it is already registered; " +
+                "spanId:" + span.getSpanId() + " traceid:" + traceId,
+          null,
+          false,
+          new HashMap<>()
+        );
       }
     }
   }
 
   private void expireSpan(final DDSpan span, final boolean write) {
     if (traceId == null || span.context() == null) {
+      internalLogger.log(
+          InternalLogger.Level.ERROR,
+          InternalLogger.Target.USER,
+          () -> "Span " + span.getOperationName() + " not expired because of null traceId or context; "+
+              "spanId:" + span.getSpanId() + " traceid:" + traceId,
+          null,
+          false,
+          new HashMap<>()
+      );
       return;
     }
     if (!traceId.equals(span.context().getTraceId())) {
+      internalLogger.log(
+          InternalLogger.Level.ERROR,
+          InternalLogger.Target.USER,
+          () -> "Span " + span.getOperationName() + " not expired because of traceId mismatch; " +
+              "spanId:" + span.getSpanId() + " traceid:" + traceId,
+          null,
+          false,
+          new HashMap<>()
+      );
       return;
     }
     synchronized (span) {
       if (span.ref == null) {
+        internalLogger.log(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.USER,
+            () -> "Span " + span.getOperationName() + " not expired because it's not registered; " +
+                "spanId:" + span.getSpanId() + " traceid:" + traceId,
+            null,
+            false,
+            new HashMap<>()
+        );
         return;
       }
       weakReferences.remove(span.ref);
@@ -127,20 +186,56 @@ public class PendingTrace extends LinkedList<DDSpan> {
   }
 
   public void addSpan(final DDSpan span) {
-    synchronized(this) {
+    synchronized (this) {
       if (span.getDurationNano() == 0) {
+        internalLogger.log(
+          InternalLogger.Level.ERROR,
+          InternalLogger.Target.USER,
+            () -> "Span " + span.getOperationName() + " not added because duration is zero; " +
+                "spanId:" + span.getSpanId() + " traceid:" + traceId,
+          null,
+          false,
+          new HashMap<>()
+        );
         return;
       }
       if (traceId == null || span.context() == null) {
+        internalLogger.log(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.USER,
+            () -> "Span " + span.getOperationName() + " not added because of null traceId or context; " +
+                "spanId:" + span.getSpanId() + " traceid:" + traceId,
+            null,
+            false,
+            new HashMap<>()
+        );
         return;
       }
       if (!traceId.equals(span.getTraceId())) {
+        internalLogger.log(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.USER,
+            () -> "Span " + span.getOperationName() + " not added because of traceId mismatch; " +
+                "spanId:" + span.getSpanId() + " traceid:" + traceId,
+            null,
+            false,
+            new HashMap<>()
+        );
         return;
       }
 
       if (!isWritten.get()) {
         addFirst(span);
       } else {
+        internalLogger.log(
+          InternalLogger.Level.ERROR,
+          InternalLogger.Target.USER,
+          () -> "Span " + span.getOperationName() + " not added because trace already written; " +
+              "spanId:" + span.getSpanId() + " traceid:" + traceId,
+          null,
+          false,
+          new HashMap<>()
+        );
       }
       expireSpan(span, true);
     }
@@ -211,6 +306,15 @@ public class PendingTrace extends LinkedList<DDSpan> {
       if (!isEmpty()) {
         tracer.write(this);
       }
+    } else {
+      internalLogger.log(
+          InternalLogger.Level.ERROR,
+          InternalLogger.Target.USER,
+          () -> "Trace " + traceId + " write ignored: isWritten already true",
+          null,
+          false,
+          new HashMap<>()
+      );
     }
   }
 

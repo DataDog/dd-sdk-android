@@ -46,6 +46,7 @@ internal class DDSpanContextForgeryFactory : ForgeryFactory<DDSpanContext> {
             emptyMap(),
             mock(),
             mock(),
+            mock(),
             mock()
         )
     }

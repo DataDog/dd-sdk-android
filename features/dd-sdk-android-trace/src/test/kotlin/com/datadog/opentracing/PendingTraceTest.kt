@@ -6,6 +6,7 @@
 
 package com.datadog.opentracing
 
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.legacy.trace.api.sampling.PrioritySampling
 import com.datadog.tools.unit.createInstance
@@ -39,16 +40,22 @@ class PendingTraceTest {
     fun `PendingTrace is thread safe`(forge: Forge) {
         // Given
         val mockTracer: DDTracer = mock()
+        val mockInternalLogger: InternalLogger = mock()
         whenever(mockTracer.partialFlushMinSpans) doReturn 1
         val fakeTraceId = BigInteger.valueOf(forge.aLong())
-        val pendingTrace =
-            createInstance(PendingTrace::class.java, mockTracer, fakeTraceId)
-        val rootSpan = forge.fakeSpan(pendingTrace, mockTracer, fakeTraceId, BigInteger.ZERO, "rootSpan")
+        val pendingTrace = createInstance(
+            PendingTrace::class.java,
+            mockTracer,
+            fakeTraceId,
+            mockInternalLogger as InternalLogger
+        )
+        val rootSpan =
+            forge.fakeSpan(pendingTrace, mockTracer, fakeTraceId, BigInteger.ZERO, "rootSpan", mockInternalLogger)
         val countDownLatch = CountDownLatch(CONCURRENT_THREAD)
 
         // When
         val runnables = Array(CONCURRENT_THREAD) {
-            StressTestRunnable(pendingTrace, mockTracer, rootSpan, forge, countDownLatch)
+            StressTestRunnable(pendingTrace, mockTracer, rootSpan, forge, countDownLatch, mockInternalLogger)
         }
         runnables.forEach { Thread(it).start() }
         countDownLatch.await(20, TimeUnit.SECONDS)
@@ -65,7 +72,8 @@ class PendingTraceTest {
         val tracer: DDTracer,
         val parentSpan: DDSpan,
         val forge: Forge,
-        val countDownLatch: CountDownLatch
+        val countDownLatch: CountDownLatch,
+        val internalLogger: InternalLogger
     ) : Runnable {
 
         var cme: ConcurrentModificationException? = null
@@ -78,7 +86,8 @@ class PendingTraceTest {
                         tracer,
                         parentSpan.traceId,
                         parentSpan.spanId,
-                        "childSpan_$i"
+                        "childSpan_$i",
+                        internalLogger
                     )
                     pendingTrace.registerSpan(span)
                     span.finish()
@@ -100,7 +109,8 @@ private fun Forge.fakeSpan(
     tracer: DDTracer,
     traceId: BigInteger,
     parentSpanId: BigInteger,
-    operationName: String
+    operationName: String,
+    internalLogger: InternalLogger
 ): DDSpan {
     val ddSpanContext = DDSpanContext(
         traceId,
@@ -117,7 +127,8 @@ private fun Forge.fakeSpan(
         emptyMap(), // tags
         pendingTrace,
         tracer,
-        emptyMap() // serviceNameMappings
+        emptyMap(), // serviceNameMappings
+        internalLogger
     )
 
     return DDSpan(aLong(), ddSpanContext)

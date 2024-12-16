@@ -126,7 +126,14 @@ private fun <R> setFieldValue(instance: Any?, field: Field, fieldValue: R): Bool
 @Suppress("SpreadOperator")
 fun <T : Any> createInstance(clazz: Class<T>, vararg params: Any?): T {
     val toTypedArray = params.map { it?.javaClass ?: Any::class.java }.toTypedArray()
-    val constructor = clazz.getDeclaredConstructor(*toTypedArray)
+    val constructor = clazz.declaredConstructors
+        .filter { it.parameterTypes.size == toTypedArray.size }
+        .first { constructor ->
+            constructor.parameterTypes
+                .mapIndexed { idx, clazz ->
+                    clazz.isAssignableFrom(toTypedArray[idx])
+                }.all { it }
+        }
     constructor.isAccessible = true
     return constructor.newInstance(*params) as T
 }

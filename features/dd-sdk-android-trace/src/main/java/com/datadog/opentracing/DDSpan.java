@@ -6,6 +6,7 @@
 
 package com.datadog.opentracing;
 
+import com.datadog.android.api.InternalLogger;
 import com.datadog.legacy.trace.api.DDTags;
 import com.datadog.legacy.trace.api.interceptor.MutableSpan;
 import com.datadog.legacy.trace.api.sampling.PrioritySampling;
@@ -57,6 +58,9 @@ public class DDSpan implements Span, MutableSpan {
   /** Implementation detail. Stores the weak reference to this span. Used by TraceCollection. */
   volatile WeakReference<DDSpan> ref;
 
+  /** The internal logger to report warnings/errors in the span lifecycle. */
+  private final InternalLogger internalLogger;
+
   /**
    * Spans should be constructed using the builder, not by calling the constructor directly.
    *
@@ -64,7 +68,7 @@ public class DDSpan implements Span, MutableSpan {
    * @param context the context used for the span
    */
   DDSpan(final long timestampMicro, final DDSpanContext context) {
-    this(timestampMicro, context, new DefaultLogHandler());
+    this(timestampMicro, context, new DefaultLogHandler(), InternalLogger.Companion.getUNBOUND());
   }
 
   /**
@@ -73,10 +77,17 @@ public class DDSpan implements Span, MutableSpan {
    * @param timestampMicro if greater than zero, use this time instead of the current time
    * @param context the context used for the span
    * @param logHandler as the handler where to delegate the log actions
+   * @param internalLogger as the internal logger to report mishaps in the span lifecycle
    */
-  DDSpan(final long timestampMicro, final DDSpanContext context, final LogHandler logHandler) {
+  DDSpan(
+    final long timestampMicro,
+    final DDSpanContext context,
+    final LogHandler logHandler,
+    final InternalLogger internalLogger
+  ) {
     this.context = context;
     this.logHandler = logHandler;
+    this.internalLogger = internalLogger;
 
     if (timestampMicro <= 0L) {
       // record the start time
@@ -100,6 +111,15 @@ public class DDSpan implements Span, MutableSpan {
     if (this.durationNano.compareAndSet(0, Math.max(1, durationNano))) {
       context.getTrace().addSpan(this);
     } else {
+      internalLogger.log(
+        InternalLogger.Level.WARN,
+        InternalLogger.Target.USER,
+        () -> "Span " + getOperationName() + " finished but duration already set; " +
+            "dropped spanId:" + getSpanId() + " traceid:" + getTraceId(),
+        null,
+        false,
+        new HashMap<>()
+      );
     }
   }
 
