@@ -20,7 +20,20 @@ object AndroidConfig {
     const val MIN_SDK_FOR_WEAR = 23
     const val BUILD_TOOLS_VERSION = "35.0.0"
 
-    val VERSION = Version(2, 17, 0, Version.Type.Snapshot)
+    private const val VERSION_MAJOR = 2
+
+    private const val VERSION_MINOR = 17
+
+    private const val VERSION_HOTFIX = 0
+
+    private val VERSION_TYPE = Version.Type.Snapshot
+
+    val VERSION = Version(
+        major = VERSION_MAJOR,
+        minor = VERSION_MINOR,
+        hotfix = VERSION_HOTFIX,
+        type = VERSION_TYPE
+    )
 }
 
 // TODO RUM-628 Switch to Java 17 bytecode
