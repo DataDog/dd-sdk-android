@@ -1,36 +1,39 @@
 package com.datadog.android.core
 
+import fr.xgouchet.elmyr.annotation.StringForgery
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 
 class StringBuilderExtKtTest {
 
     @Test
-    fun `M add char W addIfNotEmpty {buffer is not empty}`() {
+    fun `M add char W addIfNotEmpty {buffer is not empty}`(
+        @StringForgery(regex = ".+") initialContent: String
+    ) {
         // Given
-        val initialData = "something inside buffer already"
-        val buffer = StringBuilder(initialData)
+        val buffer = StringBuilder(initialContent)
 
         // When
         buffer.appendIfNotEmpty(' ')
 
         // Then
 
-        assertThat(buffer.toString()).isEqualTo("$initialData ")
+        assertThat(buffer.toString()).isEqualTo("$initialContent ")
     }
 
     @Test
-    fun `M add str W addIfNotEmpty {buffer is not empty}`() {
+    fun `M add str W addIfNotEmpty {buffer is not empty}`(
+        @StringForgery(regex = ".+") initialContent: String
+    ) {
         // Given
-        val initialData = "something inside buffer already"
-        val buffer = StringBuilder(initialData)
+        val buffer = StringBuilder(initialContent)
 
         // When
         buffer.appendIfNotEmpty(" ")
 
         // Then
 
-        assertThat(buffer.toString()).isEqualTo("$initialData ")
+        assertThat(buffer.toString()).isEqualTo("$initialContent ")
     }
 
     @Test
