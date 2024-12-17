@@ -1265,6 +1265,7 @@ datadog:
       - "kotlin.text.StringBuilder()"
       - "kotlin.text.buildString(kotlin.Function1)"
       - "kotlin.text.buildString(kotlin.Int, kotlin.Function1)"
+      - "java.lang.StringBuilder.clear()"
       # endregion
       # region Kotlin Misc
       - "kotlin.IllegalArgumentException(kotlin.String?)"
