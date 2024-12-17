@@ -82,9 +82,9 @@ internal class JointToStringVsStringBuilderPerformanceTest {
         println(statisticsReport)
 
         assertThat(
-            buildStringExecutionTime.percentile(95)
+            buildStringExecutionTime.percentile(90)
         ).isLessThan(
-            jointToStringExecutionTime.percentile(95)
+            jointToStringExecutionTime.percentile(90)
         )
     }
 

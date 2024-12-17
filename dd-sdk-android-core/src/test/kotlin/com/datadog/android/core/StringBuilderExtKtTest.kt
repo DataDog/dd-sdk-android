@@ -1,10 +1,16 @@
 package com.datadog.android.core
 
 import fr.xgouchet.elmyr.annotation.StringForgery
+import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
+import org.junit.jupiter.api.extension.Extensions
 
-class StringBuilderExtKtTest {
+@Extensions(
+    ExtendWith(ForgeExtension::class)
+)
+internal class StringBuilderExtKtTest {
 
     @Test
     fun `M add char W addIfNotEmpty {buffer is not empty}`(
