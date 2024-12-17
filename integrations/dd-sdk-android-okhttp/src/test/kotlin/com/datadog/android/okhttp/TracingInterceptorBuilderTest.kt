@@ -75,7 +75,7 @@ internal class TracingInterceptorBuilderTest {
 
         // Then
         assertThat(interceptor.tracedHosts).isEqualTo(fakeTracedHostsWithHeaderType)
-        assertThat(interceptor.traceContextInjection).isEqualTo(TraceContextInjection.All)
+        assertThat(interceptor.traceContextInjection).isEqualTo(TraceContextInjection.Sampled)
         assertThat(interceptor.sdkInstanceName).isNull()
         assertThat(interceptor.tracedRequestListener).isInstanceOf(NoOpTracedRequestListener::class.java)
         assertThat(interceptor.traceSampler).isInstanceOf(DeterministicTraceSampler::class.java)
@@ -97,7 +97,7 @@ internal class TracingInterceptorBuilderTest {
                 setOf(TracingHeaderType.DATADOG, TracingHeaderType.TRACECONTEXT)
             }
         )
-        assertThat(interceptor.traceContextInjection).isEqualTo(TraceContextInjection.All)
+        assertThat(interceptor.traceContextInjection).isEqualTo(TraceContextInjection.Sampled)
         assertThat(interceptor.sdkInstanceName).isNull()
         assertThat(interceptor.tracedRequestListener).isInstanceOf(NoOpTracedRequestListener::class.java)
         assertThat(interceptor.traceSampler).isInstanceOf(DeterministicTraceSampler::class.java)
@@ -114,7 +114,7 @@ internal class TracingInterceptorBuilderTest {
 
         // Then
         assertThat(interceptor.tracedHosts).isEqualTo(fakeTracedHostsWithHeaderType)
-        assertThat(interceptor.traceContextInjection).isEqualTo(TraceContextInjection.All)
+        assertThat(interceptor.traceContextInjection).isEqualTo(TraceContextInjection.Sampled)
         assertThat(interceptor.sdkInstanceName).isEqualTo(fakeSdkInstaceName)
         assertThat(interceptor.tracedRequestListener).isInstanceOf(NoOpTracedRequestListener::class.java)
         assertThat(interceptor.traceSampler).isInstanceOf(DeterministicTraceSampler::class.java)
@@ -148,7 +148,7 @@ internal class TracingInterceptorBuilderTest {
 
         // Then
         assertThat(interceptor.tracedHosts).isEqualTo(fakeTracedHostsWithHeaderType)
-        assertThat(interceptor.traceContextInjection).isEqualTo(TraceContextInjection.All)
+        assertThat(interceptor.traceContextInjection).isEqualTo(TraceContextInjection.Sampled)
         assertThat(interceptor.sdkInstanceName).isNull()
         assertThat(interceptor.tracedRequestListener).isInstanceOf(NoOpTracedRequestListener::class.java)
         assertThat(interceptor.traceSampler).isInstanceOf(DeterministicTraceSampler::class.java)
@@ -165,7 +165,7 @@ internal class TracingInterceptorBuilderTest {
 
         // Then
         assertThat(interceptor.tracedHosts).isEqualTo(fakeTracedHostsWithHeaderType)
-        assertThat(interceptor.traceContextInjection).isEqualTo(TraceContextInjection.All)
+        assertThat(interceptor.traceContextInjection).isEqualTo(TraceContextInjection.Sampled)
         assertThat(interceptor.sdkInstanceName).isNull()
         assertThat(interceptor.tracedRequestListener).isSameAs(mockTracedRequestListener)
         assertThat(interceptor.traceSampler).isInstanceOf(DeterministicTraceSampler::class.java)
@@ -182,7 +182,7 @@ internal class TracingInterceptorBuilderTest {
 
         // Then
         assertThat(interceptor.tracedHosts).isEqualTo(fakeTracedHostsWithHeaderType)
-        assertThat(interceptor.traceContextInjection).isEqualTo(TraceContextInjection.All)
+        assertThat(interceptor.traceContextInjection).isEqualTo(TraceContextInjection.Sampled)
         assertThat(interceptor.sdkInstanceName).isNull()
         assertThat(interceptor.tracedRequestListener).isInstanceOf(NoOpTracedRequestListener::class.java)
         assertThat(interceptor.traceSampler).isSameAs(mockSampler)

@@ -134,7 +134,7 @@ open class DatadogInterceptor internal constructor(
         tracedRequestListener = tracedRequestListener,
         rumResourceAttributesProvider = rumResourceAttributesProvider,
         traceSampler = traceSampler,
-        traceContextInjection = TraceContextInjection.All,
+        traceContextInjection = TraceContextInjection.Sampled,
         localTracerFactory = { sdkCore, tracingHeaderTypes ->
             AndroidTracer.Builder(sdkCore).setTracingHeaderTypes(tracingHeaderTypes).build()
         }
@@ -188,7 +188,7 @@ open class DatadogInterceptor internal constructor(
         tracedRequestListener = tracedRequestListener,
         rumResourceAttributesProvider = rumResourceAttributesProvider,
         traceSampler = traceSampler,
-        traceContextInjection = TraceContextInjection.All,
+        traceContextInjection = TraceContextInjection.Sampled,
         localTracerFactory = { sdkCore, tracingHeaderTypes ->
             AndroidTracer.Builder(sdkCore).setTracingHeaderTypes(tracingHeaderTypes).build()
         }
@@ -228,7 +228,7 @@ open class DatadogInterceptor internal constructor(
         tracedRequestListener = tracedRequestListener,
         rumResourceAttributesProvider = rumResourceAttributesProvider,
         traceSampler = traceSampler,
-        traceContextInjection = TraceContextInjection.All,
+        traceContextInjection = TraceContextInjection.Sampled,
         localTracerFactory = { sdkCore, tracingHeaderTypes ->
             AndroidTracer.Builder(sdkCore).setTracingHeaderTypes(tracingHeaderTypes).build()
         }

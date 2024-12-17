@@ -126,20 +126,20 @@ internal constructor(
         tracedRequestListener: TracedRequestListener = NoOpTracedRequestListener(),
         traceSampler: Sampler<Span> = DeterministicTraceSampler(DEFAULT_TRACE_SAMPLE_RATE)
     ) : this(
-        sdkInstanceName,
-        tracedHosts.associateWith {
+        sdkInstanceName = sdkInstanceName,
+        tracedHosts = tracedHosts.associateWith {
             setOf(
                 TracingHeaderType.DATADOG,
                 TracingHeaderType.TRACECONTEXT
             )
         },
-        tracedRequestListener,
-        null,
-        traceSampler,
+        tracedRequestListener = tracedRequestListener,
+        traceOrigin = null,
+        traceSampler = traceSampler,
         localTracerFactory = { sdkCore, tracingHeaderTypes ->
             AndroidTracer.Builder(sdkCore).setTracingHeaderTypes(tracingHeaderTypes).build()
         },
-        traceContextInjection = TraceContextInjection.All
+        traceContextInjection = TraceContextInjection.Sampled
     )
 
     /**
@@ -172,15 +172,15 @@ internal constructor(
         tracedRequestListener: TracedRequestListener = NoOpTracedRequestListener(),
         traceSampler: Sampler<Span> = DeterministicTraceSampler(DEFAULT_TRACE_SAMPLE_RATE)
     ) : this(
-        sdkInstanceName,
-        tracedHostsWithHeaderType,
-        tracedRequestListener,
-        null,
-        traceSampler,
+        sdkInstanceName = sdkInstanceName,
+        tracedHosts = tracedHostsWithHeaderType,
+        tracedRequestListener = tracedRequestListener,
+        traceOrigin = null,
+        traceSampler = traceSampler,
         localTracerFactory = { sdkCore, tracingHeaderTypes ->
             AndroidTracer.Builder(sdkCore).setTracingHeaderTypes(tracingHeaderTypes).build()
         },
-        traceContextInjection = TraceContextInjection.All
+        traceContextInjection = TraceContextInjection.Sampled
     )
 
     /**
@@ -214,7 +214,7 @@ internal constructor(
         localTracerFactory = { sdkCore, tracingHeaderTypes ->
             AndroidTracer.Builder(sdkCore).setTracingHeaderTypes(tracingHeaderTypes).build()
         },
-        traceContextInjection = TraceContextInjection.All
+        traceContextInjection = TraceContextInjection.Sampled
     )
 
     // region Interceptor
@@ -766,7 +766,7 @@ internal constructor(
             { sdkCore, tracingHeaderTypes ->
                 AndroidTracer.Builder(sdkCore).setTracingHeaderTypes(tracingHeaderTypes).build()
             }
-        internal var traceContextInjection = TraceContextInjection.All
+        internal var traceContextInjection = TraceContextInjection.Sampled
 
         /**
          * Set the SDK instance name to bind to, the default value is null.
@@ -810,11 +810,10 @@ internal constructor(
 
         /**
          * Set the trace context injection behavior for this interceptor in the intercepted requests.
-         * By default this is set to [TraceContextInjection.All] meaning that all the trace context
-         * will be propagated in the intercepted requests no matter if the span created around the request
-         * is sampled or not. In case of [TraceContextInjection.Sampled] only the sampled request will propagate
-         * the trace context.
-         * @param traceContextInjection the trace context injection option.
+         * When set to [TraceContextInjection.All], the sampling decision is propagated in the request.
+         * When set to [TraceContextInjection.Sampled], only sampled in requests will keep the header, allowing the
+         * backend agent to apply a different sampling rate for the rest of the request.
+         * @param traceContextInjection the trace context injection option (default = [TraceContextInjection.Sampled]).
          * @see TraceContextInjection.All
          * @see TraceContextInjection.Sampled
          */

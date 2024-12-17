@@ -77,7 +77,7 @@ internal class DatadogInterceptorBuilderTest {
 
         // Then
         assertThat(interceptor.tracedHosts).isEqualTo(fakeTracedHostsWithHeaderType)
-        assertThat(interceptor.traceContextInjection).isEqualTo(TraceContextInjection.All)
+        assertThat(interceptor.traceContextInjection).isEqualTo(TraceContextInjection.Sampled)
         assertThat(interceptor.sdkInstanceName).isNull()
         assertThat(
             interceptor.rumResourceAttributesProvider
@@ -102,7 +102,7 @@ internal class DatadogInterceptorBuilderTest {
                 setOf(TracingHeaderType.DATADOG, TracingHeaderType.TRACECONTEXT)
             }
         )
-        assertThat(interceptor.traceContextInjection).isEqualTo(TraceContextInjection.All)
+        assertThat(interceptor.traceContextInjection).isEqualTo(TraceContextInjection.Sampled)
         assertThat(interceptor.sdkInstanceName).isNull()
         assertThat(
             interceptor.rumResourceAttributesProvider
@@ -122,7 +122,7 @@ internal class DatadogInterceptorBuilderTest {
 
         // Then
         assertThat(interceptor.tracedHosts).isEqualTo(fakeTracedHostsWithHeaderType)
-        assertThat(interceptor.traceContextInjection).isEqualTo(TraceContextInjection.All)
+        assertThat(interceptor.traceContextInjection).isEqualTo(TraceContextInjection.Sampled)
         assertThat(interceptor.sdkInstanceName).isEqualTo(fakeSdkInstaceName)
         assertThat(
             interceptor.rumResourceAttributesProvider
@@ -162,7 +162,7 @@ internal class DatadogInterceptorBuilderTest {
 
         // Then
         assertThat(interceptor.tracedHosts).isEqualTo(fakeTracedHostsWithHeaderType)
-        assertThat(interceptor.traceContextInjection).isEqualTo(TraceContextInjection.All)
+        assertThat(interceptor.traceContextInjection).isEqualTo(TraceContextInjection.Sampled)
         assertThat(interceptor.sdkInstanceName).isNull()
         assertThat(
             interceptor.rumResourceAttributesProvider
@@ -182,7 +182,7 @@ internal class DatadogInterceptorBuilderTest {
 
         // Then
         assertThat(interceptor.tracedHosts).isEqualTo(fakeTracedHostsWithHeaderType)
-        assertThat(interceptor.traceContextInjection).isEqualTo(TraceContextInjection.All)
+        assertThat(interceptor.traceContextInjection).isEqualTo(TraceContextInjection.Sampled)
         assertThat(interceptor.sdkInstanceName).isNull()
         assertThat(interceptor.rumResourceAttributesProvider).isSameAs(mockRumResourceAttributesProvider)
         assertThat(interceptor.tracedRequestListener).isInstanceOf(NoOpTracedRequestListener::class.java)
@@ -202,7 +202,7 @@ internal class DatadogInterceptorBuilderTest {
 
         // Then
         assertThat(interceptor.tracedHosts).isEqualTo(fakeTracedHostsWithHeaderType)
-        assertThat(interceptor.traceContextInjection).isEqualTo(TraceContextInjection.All)
+        assertThat(interceptor.traceContextInjection).isEqualTo(TraceContextInjection.Sampled)
         assertThat(interceptor.sdkInstanceName).isNull()
         assertThat(
             interceptor.rumResourceAttributesProvider
@@ -223,7 +223,7 @@ internal class DatadogInterceptorBuilderTest {
 
         // Then
         assertThat(interceptor.tracedHosts).isEqualTo(fakeTracedHostsWithHeaderType)
-        assertThat(interceptor.traceContextInjection).isEqualTo(TraceContextInjection.All)
+        assertThat(interceptor.traceContextInjection).isEqualTo(TraceContextInjection.Sampled)
         assertThat(interceptor.sdkInstanceName).isNull()
         assertThat(
             interceptor.rumResourceAttributesProvider
