@@ -1,3 +1,8 @@
+# 2.16.1 / 2024-12-17
+
+* [IMPROVEMENT] Refactoring for React Native Session Replay support. 
+  See [#2448](https://github.com/DataDog/dd-sdk-android/pull/2448)
+
 # 2.16.0 / 2024-11-20
 
 * [FEATURE] Session Replay: Create Session Replay Compose module.
