@@ -160,7 +160,8 @@ internal class ResourceResolver(
 
         if (handledBitmap == null) {
             tryToDrawNewBitmap(
-                drawable = copiedDrawable,
+                originalDrawable = drawable,
+                copiedDrawable = copiedDrawable,
                 drawableWidth = drawableWidth,
                 drawableHeight = drawableHeight,
                 displayMetrics = displayMetrics,
@@ -244,12 +245,14 @@ internal class ResourceResolver(
         val key = customResourceIdCacheKey
             ?: bitmapCachesManager.generateResourceKeyFromDrawable(drawable)
             ?: return
+
         bitmapCachesManager.putInResourceCache(key, resourceId)
     }
 
     @WorkerThread
     private fun tryToDrawNewBitmap(
-        drawable: Drawable,
+        originalDrawable: Drawable,
+        copiedDrawable: Drawable,
         drawableWidth: Int,
         drawableHeight: Int,
         displayMetrics: DisplayMetrics,
@@ -257,7 +260,7 @@ internal class ResourceResolver(
         resolveResourceCallback: ResolveResourceCallback
     ) {
         drawableUtils.createBitmapOfApproxSizeFromDrawable(
-            drawable = drawable,
+            drawable = copiedDrawable,
             drawableWidth = drawableWidth,
             drawableHeight = drawableHeight,
             displayMetrics = displayMetrics,
@@ -273,7 +276,7 @@ internal class ResourceResolver(
                     }
 
                     resolveResourceHash(
-                        drawable = drawable,
+                        drawable = originalDrawable,
                         bitmap = bitmap,
                         compressedBitmapBytes = compressedBitmapBytes,
                         shouldCacheBitmap = true,
@@ -339,6 +342,7 @@ internal class ResourceResolver(
         val cacheKey = key
             ?: bitmapCachesManager.generateResourceKeyFromDrawable(drawable)
             ?: return null
+
         return bitmapCachesManager.getFromResourceCache(cacheKey)
     }
 

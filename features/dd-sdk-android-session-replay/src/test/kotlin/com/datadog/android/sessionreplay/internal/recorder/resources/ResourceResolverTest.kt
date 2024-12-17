@@ -1037,4 +1037,60 @@ internal class ResourceResolverTest {
         applicationId = fakeApplicationid.toString(),
         bitmapCachesManager = mockBitmapCachesManager
     )
+
+    @Test
+    fun `M use original drawable for cache write W resolveResourceId() { cache miss }`(
+        @Mock mockCopiedDrawable: Drawable
+    ) {
+        // Given
+        whenever(mockDrawableCopier.copy(mockDrawable, mockResources)).thenReturn(mockCopiedDrawable)
+
+        // When
+        testedResourceResolver.resolveResourceId(
+            resources = mockResources,
+            applicationContext = mockApplicationContext,
+            displayMetrics = mockDisplayMetrics,
+            originalDrawable = mockDrawable,
+            drawableCopier = mockDrawableCopier,
+            drawableWidth = mockDrawable.intrinsicWidth,
+            drawableHeight = mockDrawable.intrinsicHeight,
+            customResourceIdCacheKey = null,
+            resourceResolverCallback = mockSerializerCallback
+        )
+
+        // Then
+        verify(mockBitmapCachesManager, times(2)).generateResourceKeyFromDrawable(mockDrawable)
+    }
+
+    @Test
+    fun `M use copy of the drawable for creating the bitmap W resolveResourceId() { cache miss }`(
+        @Mock mockCopiedDrawable: Drawable
+    ) {
+        // Given
+        whenever(mockDrawableCopier.copy(mockDrawable, mockResources)).thenReturn(mockCopiedDrawable)
+
+        // When
+        testedResourceResolver.resolveResourceId(
+            resources = mockResources,
+            applicationContext = mockApplicationContext,
+            displayMetrics = mockDisplayMetrics,
+            originalDrawable = mockDrawable,
+            drawableCopier = mockDrawableCopier,
+            drawableWidth = mockDrawable.intrinsicWidth,
+            drawableHeight = mockDrawable.intrinsicHeight,
+            customResourceIdCacheKey = null,
+            resourceResolverCallback = mockSerializerCallback
+        )
+
+        // Then
+        verify(mockDrawableUtils).createBitmapOfApproxSizeFromDrawable(
+            drawable = eq(mockCopiedDrawable),
+            drawableWidth = any(),
+            drawableHeight = any(),
+            displayMetrics = any(),
+            requestedSizeInBytes = any(),
+            config = any(),
+            bitmapCreationCallback = any()
+        )
+    }
 }
