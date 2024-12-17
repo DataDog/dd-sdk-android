@@ -12,6 +12,7 @@ import android.view.View
 import android.view.ViewStub
 import androidx.appcompat.widget.ActionBarContextView
 import androidx.appcompat.widget.Toolbar
+import com.datadog.android.internal.utils.densityNormalized
 import com.datadog.android.sessionreplay.internal.recorder.resources.DefaultImageWireframeHelper
 import com.datadog.android.sessionreplay.utils.GlobalBounds
 

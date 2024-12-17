@@ -32,6 +32,12 @@ sealed class com.datadog.android.internal.telemetry.InternalTelemetryEvent
     const val CREATION_SAMPLING_RATE_KEY: String
     const val REPORTING_SAMPLING_RATE_KEY: String
 fun ByteArray.toHexString(): String
+object com.datadog.android.internal.utils.ImageViewUtils
+  fun resolveParentRectAbsPosition(android.view.View): android.graphics.Rect
+  fun calculateClipping(android.graphics.Rect, android.graphics.Rect, Float): android.graphics.Rect
+  fun resolveContentRectWithScaling(android.widget.ImageView, android.graphics.drawable.Drawable, android.widget.ImageView.ScaleType? = null): android.graphics.Rect
+fun Int.densityNormalized(Float): Int
+fun Long.densityNormalized(Float): Long
 fun Throwable.loggableStackTrace(): String
 annotation com.datadog.tools.annotation.NoOpImplementation
   constructor(Boolean = false)
