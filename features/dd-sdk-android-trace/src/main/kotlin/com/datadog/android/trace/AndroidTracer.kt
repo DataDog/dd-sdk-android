@@ -69,6 +69,7 @@ class AndroidTracer internal constructor(
     override fun buildSpan(operationName: String): DDSpanBuilder {
         return DDSpanBuilder(operationName, scopeManager())
             .withLogHandler(logsHandler)
+            .withInternalLogger(sdkCore.internalLogger)
             .withRumContext()
     }
 

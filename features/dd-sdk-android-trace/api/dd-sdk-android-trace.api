@@ -988,7 +988,7 @@ public class com/datadog/opentracing/DDSpanContext : io/opentracing/SpanContext 
 	public static final field ORIGIN_KEY Ljava/lang/String;
 	public static final field PRIORITY_SAMPLING_KEY Ljava/lang/String;
 	public static final field SAMPLE_RATE_KEY Ljava/lang/String;
-	public fun <init> (Ljava/math/BigInteger;Ljava/math/BigInteger;Ljava/math/BigInteger;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/String;Ljava/util/Map;ZLjava/lang/String;Ljava/util/Map;Lcom/datadog/opentracing/PendingTrace;Lcom/datadog/opentracing/DDTracer;Ljava/util/Map;)V
+	public fun <init> (Ljava/math/BigInteger;Ljava/math/BigInteger;Ljava/math/BigInteger;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/String;Ljava/util/Map;ZLjava/lang/String;Ljava/util/Map;Lcom/datadog/opentracing/PendingTrace;Lcom/datadog/opentracing/DDTracer;Ljava/util/Map;Lcom/datadog/android/api/InternalLogger;)V
 	public fun baggageItems ()Ljava/lang/Iterable;
 	public fun getBaggageItem (Ljava/lang/String;)Ljava/lang/String;
 	public fun getBaggageItems ()Ljava/util/Map;
@@ -1071,6 +1071,7 @@ public class com/datadog/opentracing/DDTracer$DDSpanBuilder : io/opentracing/Tra
 	public fun startActive (Z)Lio/opentracing/Scope;
 	public fun startManual ()Lio/opentracing/Span;
 	public fun withErrorFlag ()Lcom/datadog/opentracing/DDTracer$DDSpanBuilder;
+	public fun withInternalLogger (Lcom/datadog/android/api/InternalLogger;)Lcom/datadog/opentracing/DDTracer$DDSpanBuilder;
 	public fun withLogHandler (Lcom/datadog/opentracing/LogHandler;)Lcom/datadog/opentracing/DDTracer$DDSpanBuilder;
 	public fun withOrigin (Ljava/lang/String;)Lcom/datadog/opentracing/DDTracer$DDSpanBuilder;
 	public fun withResourceName (Ljava/lang/String;)Lcom/datadog/opentracing/DDTracer$DDSpanBuilder;

@@ -6,6 +6,7 @@
 
 package com.datadog.opentracing
 
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.legacy.trace.api.DDTags
 import com.datadog.legacy.trace.api.sampling.PrioritySampling
@@ -84,6 +85,9 @@ internal class DDSpanContextTest {
     @Mock
     lateinit var mockRootSpanContext: DDSpanContext
 
+    @Mock
+    lateinit var mockInternalLogger: InternalLogger
+
     lateinit var fakeBaggageItems: Map<String, String>
     lateinit var fakeTags: Map<String, Any>
     lateinit var fakeServiceNamesMapping: Map<String, String>
@@ -114,7 +118,8 @@ internal class DDSpanContextTest {
             fakeTags,
             mockedPendingTrace,
             mockedTracer,
-            fakeServiceNamesMapping
+            fakeServiceNamesMapping,
+            mockInternalLogger
         )
     }
 
@@ -171,7 +176,8 @@ internal class DDSpanContextTest {
             fakeTags,
             mockedPendingTrace,
             mockedTracer,
-            fakeServiceNamesMapping
+            fakeServiceNamesMapping,
+            mockInternalLogger
         )
 
         // THEN
@@ -196,7 +202,8 @@ internal class DDSpanContextTest {
             fakeTags,
             mockedPendingTrace,
             mockedTracer,
-            fakeServiceNamesMapping
+            fakeServiceNamesMapping,
+            mockInternalLogger
         )
 
         assertThat(testedContext).hasSamplingPriority(fakeSamplingPriority)
@@ -348,7 +355,8 @@ internal class DDSpanContextTest {
             fakeTags,
             mockedPendingTrace,
             mockedTracer,
-            fakeServiceNamesMapping
+            fakeServiceNamesMapping,
+            mockInternalLogger
         )
 
         // WHEN
@@ -396,7 +404,8 @@ internal class DDSpanContextTest {
             fakeTags,
             mockedPendingTrace,
             mockedTracer,
-            fakeServiceNamesMapping
+            fakeServiceNamesMapping,
+            mockInternalLogger
         )
         whenever(mockRootSpan.context()).thenReturn(fakeRootSpanContext)
         whenever(mockedPendingTrace.rootSpan).thenReturn(mockRootSpan)
@@ -423,7 +432,8 @@ internal class DDSpanContextTest {
             fakeTags,
             mockedPendingTrace,
             mockedTracer,
-            fakeServiceNamesMapping
+            fakeServiceNamesMapping,
+            mockInternalLogger
         )
 
         assertThat(testedContext.metrics).isEmpty()
@@ -595,7 +605,8 @@ internal class DDSpanContextTest {
             emptyMap(),
             mockedPendingTrace,
             mockedTracer,
-            fakeServiceNamesMapping
+            fakeServiceNamesMapping,
+            mockInternalLogger
         )
     }
 }

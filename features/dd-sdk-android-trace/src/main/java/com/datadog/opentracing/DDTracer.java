@@ -8,6 +8,7 @@ package com.datadog.opentracing;
 
 import android.os.StrictMode;
 
+import com.datadog.android.api.InternalLogger;
 import com.datadog.opentracing.decorators.AbstractDecorator;
 import com.datadog.opentracing.decorators.DDDecoratorsFactory;
 import com.datadog.opentracing.jfr.DDNoopScopeEventFactory;
@@ -452,6 +453,7 @@ public class DDTracer implements io.opentracing.Tracer, Closeable, Tracer {
         private String spanType;
         private boolean ignoreScope = false;
         private LogHandler logHandler = new DefaultLogHandler();
+        private InternalLogger internalLogger = InternalLogger.Companion.getUNBOUND();
 
         public DDSpanBuilder(final String operationName, final ScopeManager scopeManager) {
             this.operationName = operationName;
@@ -465,7 +467,7 @@ public class DDTracer implements io.opentracing.Tracer, Closeable, Tracer {
         }
 
         private Span startSpan() {
-            return new DDSpan(timestampMicro, buildSpanContext(), logHandler);
+            return new DDSpan(timestampMicro, buildSpanContext(), logHandler, internalLogger);
         }
 
         @Override
@@ -543,6 +545,13 @@ public class DDTracer implements io.opentracing.Tracer, Closeable, Tracer {
         public DDSpanBuilder withLogHandler(final LogHandler logHandler) {
             if (logHandler != null) {
                 this.logHandler = logHandler;
+            }
+            return this;
+        }
+
+        public DDSpanBuilder withInternalLogger(final InternalLogger internalLogger) {
+            if (internalLogger != null) {
+                this.internalLogger = internalLogger;
             }
             return this;
         }
@@ -679,7 +688,7 @@ public class DDTracer implements io.opentracing.Tracer, Closeable, Tracer {
 
                 tags.putAll(localRootSpanTags);
 
-                parentTrace = new PendingTrace(DDTracer.this, traceId);
+                parentTrace = new PendingTrace(DDTracer.this, traceId, internalLogger);
             }
 
             if (serviceName == null) {
@@ -705,7 +714,8 @@ public class DDTracer implements io.opentracing.Tracer, Closeable, Tracer {
                             tags,
                             parentTrace,
                             DDTracer.this,
-                            serviceNameMappings);
+                            serviceNameMappings,
+                            internalLogger);
 
             // Apply Decorators to handle any tags that may have been set via the builder.
             for (final Map.Entry<String, Object> tag : tags.entrySet()) {

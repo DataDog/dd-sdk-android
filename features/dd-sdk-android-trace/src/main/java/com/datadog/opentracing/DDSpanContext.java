@@ -6,11 +6,13 @@
 
 package com.datadog.opentracing;
 
+import com.datadog.android.api.InternalLogger;
 import com.datadog.opentracing.decorators.AbstractDecorator;
 import com.datadog.legacy.trace.api.DDTags;
 import com.datadog.legacy.trace.api.sampling.PrioritySampling;
 import java.math.BigInteger;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -78,6 +80,8 @@ public class DDSpanContext implements io.opentracing.SpanContext {
 
   private final Map<String, String> serviceNameMappings;
 
+  private final InternalLogger internalLogger;
+
   public DDSpanContext(
       final BigInteger traceId,
       final BigInteger spanId,
@@ -93,7 +97,9 @@ public class DDSpanContext implements io.opentracing.SpanContext {
       final Map<String, Object> tags,
       final PendingTrace trace,
       final DDTracer tracer,
-      final Map<String, String> serviceNameMappings) {
+      final Map<String, String> serviceNameMappings,
+      final InternalLogger internalLogger
+      ) {
 
     assert tracer != null;
     assert trace != null;
@@ -134,6 +140,7 @@ public class DDSpanContext implements io.opentracing.SpanContext {
     }
     this.tags.put(DDTags.THREAD_NAME, threadName);
     this.tags.put(DDTags.THREAD_ID, threadId);
+    this.internalLogger = internalLogger;
   }
 
   public BigInteger getTraceId() {
@@ -213,6 +220,14 @@ public class DDSpanContext implements io.opentracing.SpanContext {
   /** @return if sampling priority was set by this method invocation */
   public boolean setSamplingPriority(final int newPriority) {
     if (newPriority == PrioritySampling.UNSET) {
+      internalLogger.log(
+          InternalLogger.Level.WARN,
+          InternalLogger.Target.USER,
+          () -> "Can't set sampling priority to unset",
+          null,
+          false,
+          new HashMap<>()
+      );
       return false;
     }
 
@@ -263,6 +278,14 @@ public class DDSpanContext implements io.opentracing.SpanContext {
     // sync with setSamplingPriority
     synchronized (this) {
       if (getMetrics().get(PRIORITY_SAMPLING_KEY) == null) {
+        internalLogger.log(
+          InternalLogger.Level.INFO,
+          InternalLogger.Target.USER,
+          () -> "Sampling priority unset, can't lock it",
+          null,
+            false,
+            new HashMap<>()
+        );
       } else if (samplingPriorityLocked == false) {
         samplingPriorityLocked = true;
       }
