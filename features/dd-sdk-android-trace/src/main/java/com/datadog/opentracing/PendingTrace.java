@@ -32,9 +32,13 @@ public class PendingTrace extends LinkedList<DDSpan> {
 
   // TODO: consider moving these time fields into DDTracer to ensure that traces have precise
   // relative time
-  /** Trace start time in nano seconds measured up to a millisecond accuracy */
+  /**
+   * Trace start time in nano seconds measured up to a millisecond accuracy
+   */
   private final long startTimeNano;
-  /** Nano second ticks value at trace start */
+  /**
+   * Nano second ticks value at trace start
+   */
   private final long startNanoTicks;
 
   private final ReferenceQueue referenceQueue = new ReferenceQueue();
@@ -57,7 +61,9 @@ public class PendingTrace extends LinkedList<DDSpan> {
    */
   private final AtomicReference<WeakReference<DDSpan>> rootSpan = new AtomicReference<>();
 
-  /** Ensure a trace is never written multiple times */
+  /**
+   * Ensure a trace is never written multiple times
+   */
   private final AtomicBoolean isWritten = new AtomicBoolean(false);
 
   private final InternalLogger internalLogger;
@@ -90,25 +96,26 @@ public class PendingTrace extends LinkedList<DDSpan> {
   public void registerSpan(final DDSpan span) {
     if (traceId == null || span.context() == null) {
       internalLogger.log(
-        InternalLogger.Level.ERROR,
-        InternalLogger.Target.USER,
-        () -> "Span " + span.getOperationName() + " not registered because of null traceId or context; "+
-          "spanId:" + span.getSpanId() + " traceid:" + traceId,
-        null,
-        false,
-        new HashMap<>()
+          InternalLogger.Level.ERROR,
+          InternalLogger.Target.USER,
+          () -> "Span " + span.getOperationName() + " not registered because of null traceId or context; " +
+              "spanId:" + span.getSpanId() + " traceid:" + traceId,
+          null,
+          false,
+          new HashMap<>()
       );
       return;
     }
-    if (!traceId.equals(span.context().getTraceId())) {
+    BigInteger spanTraceId = span.context().getTraceId();
+    if (!traceId.equals(spanTraceId)) {
       internalLogger.log(
-        InternalLogger.Level.ERROR,
-        InternalLogger.Target.USER,
-        () -> "Span " + span.getOperationName() + " not registered because of traceId mismatch; " +
-            "spanId:" + span.getSpanId() + " traceid:" + traceId,
-        null,
-        false,
-        new HashMap<>()
+          InternalLogger.Level.ERROR,
+          InternalLogger.Target.USER,
+          () -> "Span " + span.getOperationName() + " not registered because of traceId mismatch; " +
+              "spanId:" + span.getSpanId() + " span.traceid:" + spanTraceId + " traceid:" + traceId,
+          null,
+          false,
+          new HashMap<>()
       );
       return;
     }
@@ -120,13 +127,13 @@ public class PendingTrace extends LinkedList<DDSpan> {
         final int count = pendingReferenceCount.incrementAndGet();
       } else {
         internalLogger.log(
-          InternalLogger.Level.ERROR,
-          InternalLogger.Target.USER,
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.USER,
             () -> "Span " + span.getOperationName() + " not registered because it is already registered; " +
                 "spanId:" + span.getSpanId() + " traceid:" + traceId,
-          null,
-          false,
-          new HashMap<>()
+            null,
+            false,
+            new HashMap<>()
         );
       }
     }
@@ -137,7 +144,7 @@ public class PendingTrace extends LinkedList<DDSpan> {
       internalLogger.log(
           InternalLogger.Level.ERROR,
           InternalLogger.Target.USER,
-          () -> "Span " + span.getOperationName() + " not expired because of null traceId or context; "+
+          () -> "Span " + span.getOperationName() + " not expired because of null traceId or context; " +
               "spanId:" + span.getSpanId() + " traceid:" + traceId,
           null,
           false,
@@ -145,12 +152,13 @@ public class PendingTrace extends LinkedList<DDSpan> {
       );
       return;
     }
-    if (!traceId.equals(span.context().getTraceId())) {
+    BigInteger spanTraceId = span.context().getTraceId();
+    if (!traceId.equals(spanTraceId)) {
       internalLogger.log(
           InternalLogger.Level.ERROR,
           InternalLogger.Target.USER,
           () -> "Span " + span.getOperationName() + " not expired because of traceId mismatch; " +
-              "spanId:" + span.getSpanId() + " traceid:" + traceId,
+              "spanId:" + span.getSpanId() + " span.traceid:" + spanTraceId + " traceid:" + traceId,
           null,
           false,
           new HashMap<>()
@@ -189,13 +197,13 @@ public class PendingTrace extends LinkedList<DDSpan> {
     synchronized (this) {
       if (span.getDurationNano() == 0) {
         internalLogger.log(
-          InternalLogger.Level.ERROR,
-          InternalLogger.Target.USER,
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.USER,
             () -> "Span " + span.getOperationName() + " not added because duration is zero; " +
                 "spanId:" + span.getSpanId() + " traceid:" + traceId,
-          null,
-          false,
-          new HashMap<>()
+            null,
+            false,
+            new HashMap<>()
         );
         return;
       }
@@ -228,13 +236,13 @@ public class PendingTrace extends LinkedList<DDSpan> {
         addFirst(span);
       } else {
         internalLogger.log(
-          InternalLogger.Level.ERROR,
-          InternalLogger.Target.USER,
-          () -> "Span " + span.getOperationName() + " not added because trace already written; " +
-              "spanId:" + span.getSpanId() + " traceid:" + traceId,
-          null,
-          false,
-          new HashMap<>()
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.USER,
+            () -> "Span " + span.getOperationName() + " not added because trace already written; " +
+                "spanId:" + span.getSpanId() + " traceid:" + traceId,
+            null,
+            false,
+            new HashMap<>()
         );
       }
       expireSpan(span, true);
