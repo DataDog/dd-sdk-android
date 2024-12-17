@@ -32,12 +32,12 @@ internal class JointToStringVsStringBuilderPerformanceTest {
     fun `M be faster than joinToString W buildString`(forge: Forge) {
         val itemsForJoin = forge.aList(ITEMS_TO_JOINT) { forge.aString() }
         val jointToStringExecutionTime = mutableListOf<Long>()
-        val builderResultsExecutionTime = mutableListOf<Long>()
+        val buildStringExecutionTime = mutableListOf<Long>()
 
         var jointToStringResult: String
         var builderResult: String
 
-        for (i in 0..REPETITION_COUNT) {
+        repeat(REPETITION_COUNT) {
             jointToStringExecutionTime.add(
                 measureNanoTime {
                     val jointToStringContainer = mutableListOf<String>()
@@ -48,7 +48,7 @@ internal class JointToStringVsStringBuilderPerformanceTest {
                 }
             )
 
-            builderResultsExecutionTime.add(
+            buildStringExecutionTime.add(
                 measureNanoTime {
                     builderResult = buildString {
                         itemsForJoin.forEach { item -> appendIfNotEmpty(' ').append(item) }
@@ -61,13 +61,13 @@ internal class JointToStringVsStringBuilderPerformanceTest {
 
         val statisticsReport = (
             "buildString:\n" +
-                " mean = ${builderResultsExecutionTime.mean}\n" +
-                " std = ${builderResultsExecutionTime.std}\n" +
-                " cv = ${"%.2f".format(builderResultsExecutionTime.cv)}%\n" +
-                " p50 = ${builderResultsExecutionTime.percentile(50)}\n" +
-                " p90 = ${builderResultsExecutionTime.percentile(90)}\n" +
-                " p95 = ${builderResultsExecutionTime.percentile(95)}\n" +
-                " p99 = ${builderResultsExecutionTime.percentile(99)}\n" +
+                " mean = ${buildStringExecutionTime.mean}\n" +
+                " std = ${buildStringExecutionTime.std}\n" +
+                " cv = ${"%.2f".format(buildStringExecutionTime.cv)}%\n" +
+                " p50 = ${buildStringExecutionTime.percentile(50)}\n" +
+                " p90 = ${buildStringExecutionTime.percentile(90)}\n" +
+                " p95 = ${buildStringExecutionTime.percentile(95)}\n" +
+                " p99 = ${buildStringExecutionTime.percentile(99)}\n" +
                 "\n" +
                 "joinToString:\n" +
                 " mean = ${jointToStringExecutionTime.mean}\n" +
@@ -82,7 +82,7 @@ internal class JointToStringVsStringBuilderPerformanceTest {
         println(statisticsReport)
 
         assertThat(
-            builderResultsExecutionTime.percentile(95)
+            buildStringExecutionTime.percentile(95)
         ).isLessThan(
             jointToStringExecutionTime.percentile(95)
         )
