@@ -15,8 +15,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.graphics.vector.VectorPainter
+import androidx.compose.ui.semantics.ProgressBarRangeInfo
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsNode
+import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.text.TextLayoutInput
 import androidx.compose.ui.text.TextLayoutResult
@@ -276,5 +278,9 @@ internal class SemanticsUtils(private val reflectionUtils: ReflectionUtils = Ref
 
     internal fun getInteropView(semanticsNode: SemanticsNode): View? {
         return reflectionUtils.getInteropView(semanticsNode)
+    }
+
+    internal fun getProgressBarRangeInfo(semanticsNode: SemanticsNode): ProgressBarRangeInfo? {
+        return semanticsNode.config.getOrNull(SemanticsProperties.ProgressBarRangeInfo)
     }
 }

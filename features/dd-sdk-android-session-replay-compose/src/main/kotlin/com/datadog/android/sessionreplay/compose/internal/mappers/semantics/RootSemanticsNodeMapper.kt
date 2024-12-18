@@ -47,6 +47,10 @@ internal class RootSemanticsNodeMapper(
     private val composeHiddenMapper: ComposeHiddenMapper = ComposeHiddenMapper(
         colorStringFormatter,
         semanticsUtils
+    ),
+    private val sliderSemanticsNodeMapper: SliderSemanticsNodeMapper = SliderSemanticsNodeMapper(
+        colorStringFormatter,
+        semanticsUtils
     )
 ) {
 
@@ -148,6 +152,8 @@ internal class RootSemanticsNodeMapper(
             textFieldSemanticsNodeMapper
         } else if (isTextNode(semanticsNode)) {
             textSemanticsNodeMapper
+        } else if (isSliderNode(semanticsNode)) {
+            sliderSemanticsNodeMapper
         } else {
             containerSemanticsNodeMapper
         }
@@ -160,6 +166,10 @@ internal class RootSemanticsNodeMapper(
 
     private fun isTextFieldNode(semanticsNode: SemanticsNode): Boolean {
         return semanticsNode.config.contains(SemanticsActions.SetText)
+    }
+
+    private fun isSliderNode(semanticsNode: SemanticsNode): Boolean {
+        return semanticsUtils.getProgressBarRangeInfo(semanticsNode) != null
     }
 
     @UiThread
