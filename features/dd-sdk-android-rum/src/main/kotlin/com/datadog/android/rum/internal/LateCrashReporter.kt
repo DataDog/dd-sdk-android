@@ -9,6 +9,7 @@ package com.datadog.android.rum.internal
 import android.app.ApplicationExitInfo
 import android.os.Build
 import androidx.annotation.RequiresApi
+import androidx.annotation.WorkerThread
 import com.datadog.android.api.storage.DataWriter
 import com.google.gson.JsonObject
 
@@ -16,6 +17,7 @@ internal interface LateCrashReporter {
 
     fun handleNdkCrashEvent(event: Map<*, *>, rumWriter: DataWriter<Any>)
 
+    @WorkerThread
     @RequiresApi(Build.VERSION_CODES.R)
     fun handleAnrCrash(
         anrExitInfo: ApplicationExitInfo,

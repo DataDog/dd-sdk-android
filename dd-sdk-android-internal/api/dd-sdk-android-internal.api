@@ -130,6 +130,11 @@ public final class com/datadog/android/internal/utils/LongExtKt {
 	public static final fun densityNormalized (JF)J
 }
 
+public final class com/datadog/android/internal/utils/StringBuilderExtKt {
+	public static final fun appendIfNotEmpty (Ljava/lang/StringBuilder;C)Ljava/lang/StringBuilder;
+	public static final fun appendIfNotEmpty (Ljava/lang/StringBuilder;Ljava/lang/String;)Ljava/lang/StringBuilder;
+}
+
 public final class com/datadog/android/internal/utils/ThrowableExtKt {
 	public static final fun loggableStackTrace (Ljava/lang/Throwable;)Ljava/lang/String;
 }

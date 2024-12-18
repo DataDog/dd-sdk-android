@@ -133,12 +133,11 @@ internal class DatadogExceptionHandler(
         ) + safeGetAllStacktraces()
             .filterKeys { it != crashedThread }
             .filterValues { it.isNotEmpty() }
-            .map {
-                val thread = it.key
+            .map { (thread, stackTrace) ->
                 ThreadDump(
                     name = thread.name,
                     state = thread.state.asString(),
-                    stack = it.value.loggableStackTrace(),
+                    stack = stackTrace.loggableStackTrace(),
                     crashed = false
                 )
             }

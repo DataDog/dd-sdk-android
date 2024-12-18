@@ -38,6 +38,8 @@ object com.datadog.android.internal.utils.ImageViewUtils
   fun resolveContentRectWithScaling(android.widget.ImageView, android.graphics.drawable.Drawable, android.widget.ImageView.ScaleType? = null): android.graphics.Rect
 fun Int.densityNormalized(Float): Int
 fun Long.densityNormalized(Float): Long
+fun StringBuilder.appendIfNotEmpty(String)
+fun StringBuilder.appendIfNotEmpty(Char)
 fun Throwable.loggableStackTrace(): String
 annotation com.datadog.tools.annotation.NoOpImplementation
   constructor(Boolean = false)
