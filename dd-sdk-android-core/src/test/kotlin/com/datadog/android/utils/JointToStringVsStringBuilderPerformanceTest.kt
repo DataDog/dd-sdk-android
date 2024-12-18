@@ -6,9 +6,7 @@
 package com.datadog.android.utils
 
 import com.datadog.android.internal.utils.appendIfNotEmpty
-import com.datadog.android.utils.forge.Configurator
 import fr.xgouchet.elmyr.Forge
-import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -22,7 +20,6 @@ import kotlin.system.measureNanoTime
 @Extensions(
     ExtendWith(ForgeExtension::class)
 )
-@ForgeConfiguration(value = Configurator::class, seed = 0x50c72968d123L)
 internal class JointToStringVsStringBuilderPerformanceTest {
 
     @Test
