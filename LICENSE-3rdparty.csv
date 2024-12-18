@@ -20,6 +20,7 @@ import,androidx.customview,Apache-2.0,Copyright 2018 The Android Open Source Pro
 import,androidx.documentfile,Apache-2.0,Copyright 2018 The Android Open Source Project
 import,androidx.drawerlayout,Apache-2.0,Copyright 2018 The Android Open Source Project
 import,androidx.fragment,Apache-2.0,Copyright 2018 The Android Open Source Project
+import,androidx.graphics,Apache-2.0,Copyright 2018 The Android Open Source Project
 import,androidx.interpolator,Apache-2.0,Copyright 2018 The Android Open Source Project
 import,androidx.leanback,Apache-2.0,Copyright 2018 The Android Open Source Project
 import,androidx.legacy,Apache-2.0,Copyright 2018 The Android Open Source Project
