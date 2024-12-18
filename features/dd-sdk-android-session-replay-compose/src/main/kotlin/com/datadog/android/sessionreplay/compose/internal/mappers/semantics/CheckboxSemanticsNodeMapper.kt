@@ -46,7 +46,7 @@ internal class CheckboxSemanticsNodeMapper(
                 )
             )
         } else {
-            createCheckboxWireframe(
+            createCheckboxWireframes(
                 parentContext = parentContext,
                 asyncJobStatusCallback = asyncJobStatusCallback,
                 semanticsNode = semanticsNode,
@@ -78,7 +78,7 @@ internal class CheckboxSemanticsNodeMapper(
         )
     }
 
-    private fun createCheckboxWireframe(
+    private fun createCheckboxWireframes(
         parentContext: UiContext,
         asyncJobStatusCallback: AsyncJobStatusCallback,
         semanticsNode: SemanticsNode,
@@ -140,7 +140,7 @@ internal class CheckboxSemanticsNodeMapper(
         }
 
         // if we failed to create a wireframe from the path
-        return createManualCheckedWireframe(
+        return createManualCheckedWireframes(
             semanticsNode = semanticsNode,
             globalBounds = globalBounds,
             backgroundColor = fillColorRgba,
@@ -162,7 +162,7 @@ internal class CheckboxSemanticsNodeMapper(
             } ?: DEFAULT_COLOR_BLACK
     }
 
-    private fun createManualCheckedWireframe(
+    private fun createManualCheckedWireframes(
         semanticsNode: SemanticsNode,
         globalBounds: GlobalBounds,
         backgroundColor: String,
@@ -170,7 +170,7 @@ internal class CheckboxSemanticsNodeMapper(
     ): List<MobileSegment.Wireframe> {
         val strokeColor = getFallbackCheckmarkColor(backgroundColor)
 
-        val wireframesList = mutableListOf<MobileSegment.Wireframe>()
+        val wireframes = mutableListOf<MobileSegment.Wireframe>()
 
         val background = createUncheckedState(
             semanticsNode = semanticsNode,
@@ -180,7 +180,7 @@ internal class CheckboxSemanticsNodeMapper(
             currentIndex = 0
         )
 
-        wireframesList.add(background)
+        wireframes.add(background)
 
         val checkmarkWidth = globalBounds.width * CHECKMARK_SIZE_FACTOR
         val checkmarkHeight = globalBounds.height * CHECKMARK_SIZE_FACTOR
@@ -203,8 +203,8 @@ internal class CheckboxSemanticsNodeMapper(
             )
         )
 
-        wireframesList.add(foreground)
-        return wireframesList
+        wireframes.add(foreground)
+        return wireframes
     }
 
     private fun createUncheckedState(
@@ -213,24 +213,22 @@ internal class CheckboxSemanticsNodeMapper(
         backgroundColor: String,
         borderColor: String,
         currentIndex: Int
-    ): MobileSegment.Wireframe {
-        return MobileSegment.Wireframe.ShapeWireframe(
-            id = resolveId(semanticsNode, currentIndex),
-            x = globalBounds.x,
-            y = globalBounds.y,
-            width = CHECKBOX_SIZE_DP.toLong(),
-            height = CHECKBOX_SIZE_DP.toLong(),
-            shapeStyle = MobileSegment.ShapeStyle(
-                backgroundColor = backgroundColor,
-                opacity = 1f,
-                cornerRadius = CHECKBOX_CORNER_RADIUS
-            ),
-            border = MobileSegment.ShapeBorder(
-                color = borderColor,
-                width = BOX_BORDER_WIDTH_DP
-            )
+    ) = MobileSegment.Wireframe.ShapeWireframe(
+        id = resolveId(semanticsNode, currentIndex),
+        x = globalBounds.x,
+        y = globalBounds.y,
+        width = CHECKBOX_SIZE_DP.toLong(),
+        height = CHECKBOX_SIZE_DP.toLong(),
+        shapeStyle = MobileSegment.ShapeStyle(
+            backgroundColor = backgroundColor,
+            opacity = 1f,
+            cornerRadius = CHECKBOX_CORNER_RADIUS
+        ),
+        border = MobileSegment.ShapeBorder(
+            color = borderColor,
+            width = BOX_BORDER_WIDTH_DP
         )
-    }
+    )
 
     private fun isCheckboxChecked(semanticsNode: SemanticsNode): Boolean =
         semanticsNode.config.getOrNull(SemanticsProperties.ToggleableState) == ToggleableState.On

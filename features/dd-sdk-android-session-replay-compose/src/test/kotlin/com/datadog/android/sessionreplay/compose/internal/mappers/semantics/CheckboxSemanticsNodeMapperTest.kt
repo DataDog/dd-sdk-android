@@ -161,7 +161,8 @@ internal class CheckboxSemanticsNodeMapperTest : AbstractSemanticsNodeMapperTest
             asyncJobStatusCallback = mockAsyncJobStatusCallback
         )
 
-        val actualWireframe = semanticsWireframe.wireframes[0] as? MobileSegment.Wireframe.ShapeWireframe
+        // Then
+        val actualWireframe = semanticsWireframe.wireframes[0] as MobileSegment.Wireframe.ShapeWireframe
 
         val expectedShapeBorder = MobileSegment.ShapeBorder(
             color = fakeBorderColorHexString,
@@ -174,9 +175,8 @@ internal class CheckboxSemanticsNodeMapperTest : AbstractSemanticsNodeMapperTest
             cornerRadius = CHECKBOX_CORNER_RADIUS
         )
 
-        // Then
-        assertThat(actualWireframe?.border).isEqualTo(expectedShapeBorder)
-        assertThat(actualWireframe?.shapeStyle).isEqualTo(expectedShapeStyle)
+        assertThat(actualWireframe.border).isEqualTo(expectedShapeBorder)
+        assertThat(actualWireframe.shapeStyle).isEqualTo(expectedShapeStyle)
     }
 
     @Test
@@ -195,7 +195,8 @@ internal class CheckboxSemanticsNodeMapperTest : AbstractSemanticsNodeMapperTest
             asyncJobStatusCallback = mockAsyncJobStatusCallback
         )
 
-        val actualWireframe = semanticsWireframe.wireframes[0] as? MobileSegment.Wireframe.ShapeWireframe
+        // Then
+        val actualWireframe = semanticsWireframe.wireframes[0] as MobileSegment.Wireframe.ShapeWireframe
 
         val expectedShapeBorder = MobileSegment.ShapeBorder(
             color = DEFAULT_COLOR_BLACK,
@@ -208,9 +209,8 @@ internal class CheckboxSemanticsNodeMapperTest : AbstractSemanticsNodeMapperTest
             cornerRadius = CHECKBOX_CORNER_RADIUS
         )
 
-        // Then
-        assertThat(actualWireframe?.border).isEqualTo(expectedShapeBorder)
-        assertThat(actualWireframe?.shapeStyle).isEqualTo(expectedShapeStyle)
+        assertThat(actualWireframe.border).isEqualTo(expectedShapeBorder)
+        assertThat(actualWireframe.shapeStyle).isEqualTo(expectedShapeStyle)
     }
 
     @Test
@@ -229,7 +229,8 @@ internal class CheckboxSemanticsNodeMapperTest : AbstractSemanticsNodeMapperTest
             asyncJobStatusCallback = mockAsyncJobStatusCallback
         )
 
-        val backgroundWireframe = semanticsWireframe.wireframes[0] as? MobileSegment.Wireframe.ShapeWireframe
+        // Then
+        val backgroundWireframe = semanticsWireframe.wireframes[0] as MobileSegment.Wireframe.ShapeWireframe
 
         val expectedBgShapeBorder = MobileSegment.ShapeBorder(
             color = fakeBorderColorHexString,
@@ -242,9 +243,8 @@ internal class CheckboxSemanticsNodeMapperTest : AbstractSemanticsNodeMapperTest
             cornerRadius = CHECKBOX_CORNER_RADIUS
         )
 
-        // Then
-        assertThat(backgroundWireframe?.border).isEqualTo(expectedBgShapeBorder)
-        assertThat(backgroundWireframe?.shapeStyle).isEqualTo(expectedBgShapeStyle)
+        assertThat(backgroundWireframe.border).isEqualTo(expectedBgShapeBorder)
+        assertThat(backgroundWireframe.shapeStyle).isEqualTo(expectedBgShapeStyle)
     }
 
     @Test
@@ -266,15 +266,15 @@ internal class CheckboxSemanticsNodeMapperTest : AbstractSemanticsNodeMapperTest
             asyncJobStatusCallback = mockAsyncJobStatusCallback
         )
 
-        val foregroundWireframe = semanticsWireframe.wireframes[1] as? MobileSegment.Wireframe.ShapeWireframe
+        // Then
+        val foregroundWireframe = semanticsWireframe.wireframes[1] as MobileSegment.Wireframe.ShapeWireframe
         val expectedShapeStyle = MobileSegment.ShapeStyle(
             backgroundColor = DEFAULT_COLOR_WHITE,
             opacity = 1f,
             cornerRadius = CHECKBOX_CORNER_RADIUS
         )
 
-        // Then
-        assertThat(foregroundWireframe?.shapeStyle).isEqualTo(expectedShapeStyle)
+        assertThat(foregroundWireframe.shapeStyle).isEqualTo(expectedShapeStyle)
     }
 
     @Test
@@ -295,17 +295,18 @@ internal class CheckboxSemanticsNodeMapperTest : AbstractSemanticsNodeMapperTest
             parentContext = mockUiContext,
             asyncJobStatusCallback = mockAsyncJobStatusCallback
         )
+
+        // Then
         assertThat(semanticsWireframe.wireframes).hasSize(2)
 
-        val foregroundWireframe = semanticsWireframe.wireframes[1] as? MobileSegment.Wireframe.ShapeWireframe
+        val foregroundWireframe = semanticsWireframe.wireframes[1] as MobileSegment.Wireframe.ShapeWireframe
         val expectedShapeStyle = MobileSegment.ShapeStyle(
             backgroundColor = DEFAULT_COLOR_BLACK,
             opacity = 1f,
             cornerRadius = CHECKBOX_CORNER_RADIUS
         )
 
-        // Then
-        assertThat(foregroundWireframe?.shapeStyle).isEqualTo(expectedShapeStyle)
+        assertThat(foregroundWireframe.shapeStyle).isEqualTo(expectedShapeStyle)
     }
 
     @Test
@@ -321,15 +322,15 @@ internal class CheckboxSemanticsNodeMapperTest : AbstractSemanticsNodeMapperTest
             asyncJobStatusCallback = mockAsyncJobStatusCallback
         )
 
-        val foregroundWireframe = semanticsWireframe.wireframes[1] as? MobileSegment.Wireframe.ShapeWireframe
+        // Then
+        val foregroundWireframe = semanticsWireframe.wireframes[1] as MobileSegment.Wireframe.ShapeWireframe
         val expectedShapeStyle = MobileSegment.ShapeStyle(
             backgroundColor = DEFAULT_COLOR_BLACK,
             opacity = 1f,
             cornerRadius = CHECKBOX_CORNER_RADIUS
         )
 
-        // Then
-        assertThat(foregroundWireframe?.shapeStyle).isEqualTo(expectedShapeStyle)
+        assertThat(foregroundWireframe.shapeStyle).isEqualTo(expectedShapeStyle)
     }
 
     @Test
@@ -345,15 +346,15 @@ internal class CheckboxSemanticsNodeMapperTest : AbstractSemanticsNodeMapperTest
             asyncJobStatusCallback = mockAsyncJobStatusCallback
         )
 
-        val foregroundWireframe = semanticsWireframe.wireframes[1] as? MobileSegment.Wireframe.ShapeWireframe
+        // Then
+        val foregroundWireframe = semanticsWireframe.wireframes[1] as MobileSegment.Wireframe.ShapeWireframe
         val expectedShapeStyle = MobileSegment.ShapeStyle(
             backgroundColor = DEFAULT_COLOR_BLACK,
             opacity = 1f,
             cornerRadius = CHECKBOX_CORNER_RADIUS
         )
 
-        // Then
-        assertThat(foregroundWireframe?.shapeStyle).isEqualTo(expectedShapeStyle)
+        assertThat(foregroundWireframe.shapeStyle).isEqualTo(expectedShapeStyle)
     }
 
     @Test
@@ -400,6 +401,7 @@ internal class CheckboxSemanticsNodeMapperTest : AbstractSemanticsNodeMapperTest
             asyncJobStatusCallback = mockAsyncJobStatusCallback
         )
 
+        // Then
         val expectedShapeStyle = MobileSegment.ShapeStyle(
             backgroundColor = fakeFillColorHexString,
             opacity = 1f,
@@ -411,7 +413,6 @@ internal class CheckboxSemanticsNodeMapperTest : AbstractSemanticsNodeMapperTest
             width = BOX_BORDER_WIDTH_DP
         )
 
-        // Then
         verify(mockUiContext.imageWireframeHelper).createImageWireframeByPath(
             id = any(),
             globalBounds = eq(fakeGlobalBounds),
@@ -487,16 +488,16 @@ internal class CheckboxSemanticsNodeMapperTest : AbstractSemanticsNodeMapperTest
             .thenReturn(TextAndInputPrivacy.MASK_ALL_INPUTS)
 
         // When
-        val wireframes = testedMapper.map(
+        val checkboxWireframe = testedMapper.map(
             semanticsNode = mockSemanticsNode,
             parentContext = mockUiContext,
             asyncJobStatusCallback = mockAsyncJobStatusCallback
         )
-        assertThat(wireframes.wireframes).hasSize(1)
-        val actualWireframe = wireframes.wireframes[0] as? MobileSegment.Wireframe.ShapeWireframe
-        assertThat(actualWireframe).isNotNull
 
         // Then
+        assertThat(checkboxWireframe.wireframes).hasSize(1)
+        val actualWireframe = checkboxWireframe.wireframes[0] as MobileSegment.Wireframe.ShapeWireframe
+
         verify(mockUiContext.imageWireframeHelper, never()).createImageWireframeByBitmap(
             id = any(),
             globalBounds = any(),
@@ -509,7 +510,7 @@ internal class CheckboxSemanticsNodeMapperTest : AbstractSemanticsNodeMapperTest
             shapeStyle = anyOrNull(),
             border = anyOrNull()
         )
-        assertThat(actualWireframe?.shapeStyle?.backgroundColor).isEqualTo(DEFAULT_COLOR_WHITE)
-        assertThat(actualWireframe?.border?.color).isEqualTo(DEFAULT_COLOR_BLACK)
+        assertThat(actualWireframe.shapeStyle?.backgroundColor).isEqualTo(DEFAULT_COLOR_WHITE)
+        assertThat(actualWireframe.border?.color).isEqualTo(DEFAULT_COLOR_BLACK)
     }
 }

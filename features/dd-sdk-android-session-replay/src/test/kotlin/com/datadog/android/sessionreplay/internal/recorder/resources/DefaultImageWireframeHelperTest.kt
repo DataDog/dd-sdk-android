@@ -1469,7 +1469,7 @@ internal class DefaultImageWireframeHelperTest {
                 resourceResolverCallback = any()
             )
         ).thenAnswer {
-            val callback = it.arguments[6] as ResourceResolverCallback
+            val callback = it.getArgument<ResourceResolverCallback>(6)
             callback.onSuccess(fakeResourceId)
         }
 
@@ -1529,7 +1529,7 @@ internal class DefaultImageWireframeHelperTest {
                 resourceResolverCallback = any()
             )
         ).thenAnswer {
-            val callback = it.arguments[6] as ResourceResolverCallback
+            val callback = it.getArgument<ResourceResolverCallback>(6)
             callback.onFailure()
         }
 

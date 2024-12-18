@@ -43,6 +43,8 @@ internal class ResourceResolver(
     )
 ) {
 
+    // region internal
+
     @MainThread
     internal fun resolveResourceIdFromBitmap(
         bitmap: Bitmap,

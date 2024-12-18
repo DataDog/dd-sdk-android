@@ -332,8 +332,7 @@ internal class SemanticsUtils(private val reflectionUtils: ReflectionUtils = Ref
             }
         }
 
-        val result = (color?.value as? Color)
-            ?.value
+        val result = (color?.value as? Color)?.value
 
         return result?.toLong()
     }

@@ -24,7 +24,7 @@ import com.datadog.android.sessionreplay.recorder.resources.DrawableCopier
 interface ImageWireframeHelper {
 
     /**
-     * Asks the helper to create an image wireframe based on a given path.
+     * Creates an image wireframe based on a given path.
      * @param id the unique id for the wireframe.
      * @param globalBounds the global bounds of the bitmap.
      * @param path the path to use to create the wireframe.
@@ -62,7 +62,7 @@ interface ImageWireframeHelper {
     ): MobileSegment.Wireframe?
 
     /**
-     * Asks the helper to create an image wireframe based on a given bitmap.
+     * Creates an image wireframe based on a given bitmap.
      * @param id the unique id for the wireframe.
      * @param globalBounds the global bounds of the bitmap.
      * @param bitmap the bitmap to capture.
@@ -88,7 +88,7 @@ interface ImageWireframeHelper {
     ): MobileSegment.Wireframe?
 
     /**
-     * Asks the helper to create an image wireframe, and process the provided drawable in the background.
+     * Creates an image wireframe, and process the provided drawable in the background.
      * @param view the view owning the drawable
      * @param imagePrivacy defines which images should be hidden
      * @param currentWireframeIndex the index of the wireframe in the list of wireframes for the view

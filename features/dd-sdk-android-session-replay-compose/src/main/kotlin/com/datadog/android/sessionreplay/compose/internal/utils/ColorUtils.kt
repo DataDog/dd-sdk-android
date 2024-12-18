@@ -28,22 +28,6 @@ internal class ColorUtils(
         }
     }
 
-    internal fun convertRgbaToArgb(rgbaString: String): String {
-        if (rgbaString.length < 2) return rgbaString
-
-        // for takeLast: n > 0
-        @Suppress("UnsafeThirdPartyFunctionCall")
-        val alphaValue = rgbaString.takeLast(2)
-
-        // for substring: length is necessarily > 1 at this point
-        // for dropLast: n > 0
-        @Suppress("UnsafeThirdPartyFunctionCall")
-        val rgbColor = rgbaString
-            .substring(1)
-            .dropLast(2)
-        return "#$alphaValue$rgbColor"
-    }
-
     internal companion object {
         internal const val COLOR_PARSE_ERROR = "Failed to parse color: %s"
     }
