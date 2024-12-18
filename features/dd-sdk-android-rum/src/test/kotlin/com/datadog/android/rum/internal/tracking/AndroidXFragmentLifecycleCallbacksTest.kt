@@ -281,23 +281,23 @@ internal class AndroidXFragmentLifecycleCallbacksTest {
     // endregion
 
     @Test
-    fun `when fragment activity created on DialogFragment, it will register a Window Callback`() {
+    fun `when fragment view created on DialogFragment, it will register a Window Callback`() {
         val mockDialogFragment: DialogFragment = mock()
         whenever(mockDialogFragment.context) doReturn mockContext
         whenever(mockDialogFragment.dialog) doReturn mockDialog
         whenever(mockDialog.window) doReturn mockWindow
         testedLifecycleCallbacks.register(mockFragmentActivity, mockSdkCore)
 
-        testedLifecycleCallbacks.onFragmentActivityCreated(mock(), mockDialogFragment, null)
+        testedLifecycleCallbacks.onFragmentViewCreated(mock(), mockDialogFragment, mock(), null)
 
         verify(mockGesturesTracker).startTracking(mockWindow, mockContext, mockSdkCore)
     }
 
     @Test
-    fun `when fragment activity created on Fragment, registers nothing`() {
+    fun `when fragment view created on Fragment, registers nothing`() {
         whenever(mockFragment.context) doReturn mockContext
 
-        testedLifecycleCallbacks.onFragmentActivityCreated(mock(), mockFragment, null)
+        testedLifecycleCallbacks.onFragmentViewCreated(mock(), mockFragment, mock(), null)
 
         verifyNoInteractions(mockGesturesTracker)
     }
