@@ -4,16 +4,14 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.sessionreplay.internal.recorder.resources
+package com.datadog.android.sessionreplay.recorder.resources
 
 import android.content.res.Resources
 import android.graphics.drawable.Drawable
-import com.datadog.android.lint.InternalApi
 
 /**
  * Interface of copying drawable to a new one.
  */
-@InternalApi
 fun interface DrawableCopier {
 
     /**
