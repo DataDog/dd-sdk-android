@@ -18,6 +18,7 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueHandler
 import com.datadog.android.sessionreplay.internal.utils.DrawableUtils
+import com.datadog.android.sessionreplay.internal.utils.PathUtils
 import com.datadog.android.sessionreplay.recorder.resources.DrawableCopier
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
@@ -106,6 +107,9 @@ internal class ResourceResolverTest {
     lateinit var mockBitmapDrawable: BitmapDrawable
 
     @Mock
+    lateinit var mockPathUtils: PathUtils
+
+    @Mock
     lateinit var mockResources: Resources
 
     private var fakeBitmapWidth: Int = 1
@@ -173,7 +177,7 @@ internal class ResourceResolverTest {
     }
 
     @Test
-    fun `M get data from cache W resolveResourceId() { cache hit with resourceId }`() {
+    fun `M get data from cache W resolveResourceIdFromDrawable() { cache hit with resourceId }`() {
         // Given
         whenever(mockBitmapCachesManager.getFromResourceCache(fakeResourceKey)).thenReturn(fakeResourceId)
 
@@ -181,7 +185,7 @@ internal class ResourceResolverTest {
             .thenReturn(fakeImageCompressionByteArray)
 
         // When
-        testedResourceResolver.resolveResourceId(
+        testedResourceResolver.resolveResourceIdFromDrawable(
             resources = mockResources,
             applicationContext = mockApplicationContext,
             displayMetrics = mockDisplayMetrics,
@@ -199,7 +203,7 @@ internal class ResourceResolverTest {
     }
 
     @Test
-    fun `M retry image creation only once W resolveResourceId() { image was recycled while working on it }`() {
+    fun `M retry image creation once W resolveResourceIdFromDrawable() { image recycled while working on it }`() {
         // Given
         whenever(mockDrawableUtils.createScaledBitmap(any(), anyOrNull()))
             .thenReturn(mockBitmap)
@@ -219,7 +223,7 @@ internal class ResourceResolverTest {
             .thenReturn(fakeImageCompressionByteArray)
 
         // When
-        testedResourceResolver.resolveResourceId(
+        testedResourceResolver.resolveResourceIdFromDrawable(
             resources = mockResources,
             applicationContext = mockApplicationContext,
             displayMetrics = mockDisplayMetrics,
@@ -244,7 +248,7 @@ internal class ResourceResolverTest {
     }
 
     @Test
-    fun `M send onReady W resolveResourceId(Drawable) { failed to get image data }`() {
+    fun `M send onReady W resolveResourceIdFromDrawable(Drawable) { failed to get image data }`() {
         // Given
         whenever(mockBitmap.isRecycled)
             .thenReturn(true)
@@ -256,7 +260,7 @@ internal class ResourceResolverTest {
             .thenReturn(emptyByteArray)
 
         // When
-        testedResourceResolver.resolveResourceId(
+        testedResourceResolver.resolveResourceIdFromDrawable(
             resources = mockResources,
             applicationContext = mockApplicationContext,
             displayMetrics = mockDisplayMetrics,
@@ -283,7 +287,7 @@ internal class ResourceResolverTest {
         ).doReturn(null)
 
         // When
-        testedResourceResolver.resolveResourceId(
+        testedResourceResolver.resolveResourceIdFromDrawable(
             resources = mockResources,
             applicationContext = mockApplicationContext,
             displayMetrics = mockDisplayMetrics,
@@ -300,7 +304,7 @@ internal class ResourceResolverTest {
     }
 
     @Test
-    fun `M send onReady W resolveResourceId(Bitmap) { failed to get image data }`() {
+    fun `M send onReady W resolveResourceIdFromDrawable(Bitmap) { failed to get image data }`() {
         // Given
         whenever(mockBitmap.isRecycled)
             .thenReturn(true)
@@ -312,7 +316,7 @@ internal class ResourceResolverTest {
             .thenReturn(emptyByteArray)
 
         // When
-        testedResourceResolver.resolveResourceId(
+        testedResourceResolver.resolveResourceIdFromBitmap(
             bitmap = mockBitmap,
             resourceResolverCallback = mockSerializerCallback
         )
@@ -322,12 +326,12 @@ internal class ResourceResolverTest {
     }
 
     @Test
-    fun `M calculate resourceId W resolveResourceId() { cache miss }`() {
+    fun `M calculate resourceId W resolveResourceIdFromDrawable() { cache miss }`() {
         // Given
         whenever(mockResourcesLRUCache.get(fakeResourceKey)).thenReturn(null)
 
         // When
-        testedResourceResolver.resolveResourceId(
+        testedResourceResolver.resolveResourceIdFromDrawable(
             resources = mockResources,
             applicationContext = mockApplicationContext,
             displayMetrics = mockDisplayMetrics,
@@ -352,7 +356,7 @@ internal class ResourceResolverTest {
     }
 
     @Test
-    fun `M return failure W resolveResourceId { createBitmapOfApproxSizeFromDrawable failed }`() {
+    fun `M return failure W resolveResourceIdFromDrawable { createBitmapOfApproxSizeFromDrawable failed }`() {
         // Given
         whenever(mockResourcesLRUCache.get(fakeResourceKey)).thenReturn(null)
         whenever(
@@ -370,7 +374,7 @@ internal class ResourceResolverTest {
         }
 
         // When
-        testedResourceResolver.resolveResourceId(
+        testedResourceResolver.resolveResourceIdFromDrawable(
             resources = mockResources,
             applicationContext = mockApplicationContext,
             displayMetrics = mockDisplayMetrics,
@@ -395,6 +399,7 @@ internal class ResourceResolverTest {
             webPImageCompression = mockWebPImageCompression,
             drawableUtils = mockDrawableUtils,
             logger = mockLogger,
+            pathUtils = mockPathUtils,
             md5HashGenerator = mockMD5HashGenerator,
             bitmapCachesManager = mockBitmapCachesManager
         )
@@ -404,6 +409,7 @@ internal class ResourceResolverTest {
             webPImageCompression = mockWebPImageCompression,
             drawableUtils = mockDrawableUtils,
             logger = mockLogger,
+            pathUtils = mockPathUtils,
             md5HashGenerator = mockMD5HashGenerator,
             bitmapCachesManager = mockBitmapCachesManager
         )
@@ -415,12 +421,12 @@ internal class ResourceResolverTest {
     }
 
     @Test
-    fun `M not try to cache resourceId W resolveResourceId() { and did not get resourceId }`() {
+    fun `M not try to cache resourceId W resolveResourceIdFromDrawable() { and did not get resourceId }`() {
         // Given
         whenever(mockMD5HashGenerator.generate(any())).thenReturn(null)
 
         // When
-        testedResourceResolver.resolveResourceId(
+        testedResourceResolver.resolveResourceIdFromDrawable(
             resources = mockResources,
             applicationContext = mockApplicationContext,
             displayMetrics = mockDisplayMetrics,
@@ -437,12 +443,12 @@ internal class ResourceResolverTest {
     }
 
     @Test
-    fun `M not use bitmap from bitmapDrawable W resolveResourceId() { no bitmap }`() {
+    fun `M not use bitmap from bitmapDrawable W resolveResourceIdFromDrawable() { no bitmap }`() {
         // Given
         whenever(mockBitmapDrawable.bitmap).thenReturn(null)
 
         // When
-        testedResourceResolver.resolveResourceId(
+        testedResourceResolver.resolveResourceIdFromDrawable(
             resources = mockResources,
             applicationContext = mockApplicationContext,
             displayMetrics = mockDisplayMetrics,
@@ -467,12 +473,12 @@ internal class ResourceResolverTest {
     }
 
     @Test
-    fun `M not use bitmap from bitmapDrawable W resolveResourceId() { bitmap was recycled }`() {
+    fun `M not use bitmap from bitmapDrawable W resolveResourceIdFromDrawable() { bitmap was recycled }`() {
         // Given
         whenever(mockBitmap.isRecycled).thenReturn(true)
 
         // When
-        testedResourceResolver.resolveResourceId(
+        testedResourceResolver.resolveResourceIdFromDrawable(
             resources = mockResources,
             applicationContext = mockApplicationContext,
             displayMetrics = mockDisplayMetrics,
@@ -497,9 +503,9 @@ internal class ResourceResolverTest {
     }
 
     @Test
-    fun `M use scaled bitmap from bitmapDrawable W resolveResourceId() { has bitmap }`() {
+    fun `M use scaled bitmap from bitmapDrawable W resolveResourceIdFromDrawable() { has bitmap }`() {
         // When
-        testedResourceResolver.resolveResourceId(
+        testedResourceResolver.resolveResourceIdFromDrawable(
             resources = mockResources,
             applicationContext = mockApplicationContext,
             displayMetrics = mockDisplayMetrics,
@@ -519,12 +525,12 @@ internal class ResourceResolverTest {
     }
 
     @Test
-    fun `M draw bitmap W resolveResourceId() { bitmapDrawable where bitmap has no width }`() {
+    fun `M draw bitmap W resolveResourceIdFromDrawable() { bitmapDrawable where bitmap has no width }`() {
         // Given
         whenever(mockBitmap.width).thenReturn(0)
 
         // When
-        testedResourceResolver.resolveResourceId(
+        testedResourceResolver.resolveResourceIdFromDrawable(
             resources = mockResources,
             applicationContext = mockApplicationContext,
             displayMetrics = mockDisplayMetrics,
@@ -553,12 +559,12 @@ internal class ResourceResolverTest {
     }
 
     @Test
-    fun `M draw bitmap W resolveResourceId() { bitmapDrawable where bitmap has no height }`() {
+    fun `M draw bitmap W resolveResourceIdFromDrawable() { bitmapDrawable where bitmap has no height }`() {
         // Given
         whenever(mockBitmap.height).thenReturn(0)
 
         // When
-        testedResourceResolver.resolveResourceId(
+        testedResourceResolver.resolveResourceIdFromDrawable(
             resources = mockResources,
             applicationContext = mockApplicationContext,
             displayMetrics = mockDisplayMetrics,
@@ -587,13 +593,13 @@ internal class ResourceResolverTest {
     }
 
     @Test
-    fun `M not cache bitmap W resolveResourceId() { BitmapDrawable with bitmap not resized }`() {
+    fun `M not cache bitmap W resolveResourceIdFromDrawable() { BitmapDrawable with bitmap not resized }`() {
         // Given
         whenever(mockDrawableUtils.createScaledBitmap(any(), anyOrNull()))
             .thenReturn(mockBitmap)
 
         // When
-        testedResourceResolver.resolveResourceId(
+        testedResourceResolver.resolveResourceIdFromDrawable(
             resources = mockResources,
             applicationContext = mockApplicationContext,
             displayMetrics = mockDisplayMetrics,
@@ -610,7 +616,7 @@ internal class ResourceResolverTest {
     }
 
     @Test
-    fun `M cache bitmap W resolveResourceId() { BitmapDrawable width was resized }`(
+    fun `M cache bitmap W resolveResourceIdFromDrawable() { BitmapDrawable width was resized }`(
         @Mock mockResizedBitmap: Bitmap,
         @StringForgery fakeString: String
     ) {
@@ -626,7 +632,7 @@ internal class ResourceResolverTest {
         whenever(mockDrawableUtils.createScaledBitmap(any(), anyOrNull())).thenReturn(mockResizedBitmap)
 
         // When
-        testedResourceResolver.resolveResourceId(
+        testedResourceResolver.resolveResourceIdFromDrawable(
             resources = mockResources,
             applicationContext = mockApplicationContext,
             displayMetrics = mockDisplayMetrics,
@@ -643,7 +649,7 @@ internal class ResourceResolverTest {
     }
 
     @Test
-    fun `M cache bitmap W resolveResourceId() { BitmapDrawable height was resized }`(
+    fun `M cache bitmap W resolveResourceIdFromDrawable() { BitmapDrawable height was resized }`(
         @Mock mockResizedBitmap: Bitmap,
         @StringForgery fakeString: String
     ) {
@@ -659,7 +665,7 @@ internal class ResourceResolverTest {
         whenever(mockDrawableUtils.createScaledBitmap(any(), anyOrNull())).thenReturn(mockResizedBitmap)
 
         // When
-        testedResourceResolver.resolveResourceId(
+        testedResourceResolver.resolveResourceIdFromDrawable(
             resources = mockResources,
             applicationContext = mockApplicationContext,
             displayMetrics = mockDisplayMetrics,
@@ -676,14 +682,14 @@ internal class ResourceResolverTest {
     }
 
     @Test
-    fun `M cache bitmap W resolveResourceId() { from BitmapDrawable with null bitmap }`() {
+    fun `M cache bitmap W resolveResourceIdFromDrawable() { from BitmapDrawable with null bitmap }`() {
         // Given
         whenever(mockBitmapCachesManager.getFromResourceCache(fakeResourceKey))
             .thenReturn(null)
         whenever(mockBitmapDrawable.bitmap).thenReturn(null)
 
         // When
-        testedResourceResolver.resolveResourceId(
+        testedResourceResolver.resolveResourceIdFromDrawable(
             resources = mockResources,
             applicationContext = mockApplicationContext,
             displayMetrics = mockDisplayMetrics,
@@ -700,12 +706,12 @@ internal class ResourceResolverTest {
     }
 
     @Test
-    fun `M cache bitmap W resolveResourceId() { not a BitmapDrawable }`() {
+    fun `M cache bitmap W resolveResourceIdFromDrawable() { not a BitmapDrawable }`() {
         // Given
         val mockLayerDrawable = mock<LayerDrawable>()
         whenever(mockDrawableCopier.copy(any(), any())).thenReturn(mockLayerDrawable)
         // When
-        testedResourceResolver.resolveResourceId(
+        testedResourceResolver.resolveResourceIdFromDrawable(
             resources = mockResources,
             applicationContext = mockApplicationContext,
             displayMetrics = mockDisplayMetrics,
@@ -722,7 +728,7 @@ internal class ResourceResolverTest {
     }
 
     @Test
-    fun `M return all callbacks W resolveResourceId(Drawable) { multiple threads, first takes longer }`(
+    fun `M return all callbacks W resolveResourceIdFromDrawable(Drawable) { multiple threads, first takes longer }`(
         @Mock mockFirstCallback: ResourceResolverCallback,
         @Mock mockSecondCallback: ResourceResolverCallback,
         @Mock mockFirstDrawable: Drawable,
@@ -742,7 +748,7 @@ internal class ResourceResolverTest {
 
         val countDownLatch = CountDownLatch(2)
         val thread1 = Thread {
-            testedResourceResolver.resolveResourceId(
+            testedResourceResolver.resolveResourceIdFromDrawable(
                 resources = mockResources,
                 applicationContext = mockApplicationContext,
                 displayMetrics = mockDisplayMetrics,
@@ -757,7 +763,7 @@ internal class ResourceResolverTest {
             countDownLatch.countDown()
         }
         val thread2 = Thread {
-            testedResourceResolver.resolveResourceId(
+            testedResourceResolver.resolveResourceIdFromDrawable(
                 resources = mockResources,
                 applicationContext = mockApplicationContext,
                 displayMetrics = mockDisplayMetrics,
@@ -783,7 +789,7 @@ internal class ResourceResolverTest {
     }
 
     @Test
-    fun `M return all callbacks W resolveResourceId(Bitmap) { multiple threads, first takes longer }`(
+    fun `M return all callbacks W resolveResourceIdFromDrawable(Bitmap) { multiple threads, first takes longer }`(
         @Mock mockFirstCallback: ResourceResolverCallback,
         @Mock mockSecondCallback: ResourceResolverCallback,
         @Mock mockFirstBitmap: Bitmap,
@@ -801,7 +807,7 @@ internal class ResourceResolverTest {
         whenever(mockMD5HashGenerator.generate(secondBitmapCompression)).thenReturn(fakeSecondResourceId)
         val countDownLatch = CountDownLatch(2)
         val thread1 = Thread {
-            testedResourceResolver.resolveResourceId(
+            testedResourceResolver.resolveResourceIdFromBitmap(
                 bitmap = mockFirstBitmap,
                 resourceResolverCallback = mockFirstCallback
             )
@@ -809,7 +815,7 @@ internal class ResourceResolverTest {
             countDownLatch.countDown()
         }
         val thread2 = Thread {
-            testedResourceResolver.resolveResourceId(
+            testedResourceResolver.resolveResourceIdFromBitmap(
                 bitmap = mockSecondBitmap,
                 resourceResolverCallback = mockSecondCallback
             )
@@ -828,7 +834,7 @@ internal class ResourceResolverTest {
     }
 
     @Test
-    fun `M failover to bitmap creation W resolveResourceId() { bitmapDrawable returned empty bytearray }`(
+    fun `M failover to bitmap creation W resolveResourceIdFromDrawable() { bitmapDrawable returned empty bytearray }`(
         @Mock mockCreatedBitmap: Bitmap
     ) {
         // Given
@@ -852,7 +858,7 @@ internal class ResourceResolverTest {
             .thenReturn(mockCreatedBitmap)
 
         // When
-        testedResourceResolver.resolveResourceId(
+        testedResourceResolver.resolveResourceIdFromDrawable(
             resources = mockResources,
             applicationContext = mockApplicationContext,
             displayMetrics = mockDisplayMetrics,
@@ -877,7 +883,7 @@ internal class ResourceResolverTest {
     }
 
     @Test
-    fun `M only send resource once W resolveResourceId() { call twice on the same image }`(
+    fun `M only send resource once W resolveResourceIdFromDrawable() { call twice on the same image }`(
         @Mock mockCreatedBitmap: Bitmap,
         @StringForgery fakeResourceId: String,
         @StringForgery fakeResource: String
@@ -904,7 +910,7 @@ internal class ResourceResolverTest {
             .thenReturn(mockCreatedBitmap)
 
         // When
-        testedResourceResolver.resolveResourceId(
+        testedResourceResolver.resolveResourceIdFromDrawable(
             resources = mockResources,
             applicationContext = mockApplicationContext,
             displayMetrics = mockDisplayMetrics,
@@ -919,7 +925,7 @@ internal class ResourceResolverTest {
         // Then
 
         // second time
-        testedResourceResolver.resolveResourceId(
+        testedResourceResolver.resolveResourceIdFromDrawable(
             resources = mockResources,
             applicationContext = mockApplicationContext,
             displayMetrics = mockDisplayMetrics,
@@ -938,7 +944,7 @@ internal class ResourceResolverTest {
         )
 
         // second time
-        testedResourceResolver.resolveResourceId(
+        testedResourceResolver.resolveResourceIdFromDrawable(
             resources = mockResources,
             applicationContext = mockApplicationContext,
             displayMetrics = mockDisplayMetrics,
@@ -963,7 +969,7 @@ internal class ResourceResolverTest {
         whenever(mockBitmapCachesManager.generateResourceKeyFromDrawable(mockDrawable)).thenReturn(null)
 
         // When
-        testedResourceResolver.resolveResourceId(
+        testedResourceResolver.resolveResourceIdFromDrawable(
             resources = mockResources,
             applicationContext = mockApplicationContext,
             displayMetrics = mockDisplayMetrics,
@@ -987,7 +993,7 @@ internal class ResourceResolverTest {
         whenever(mockBitmapCachesManager.getFromResourceCache(fakeCacheKey)).thenReturn(fakeResourceId)
 
         // When
-        testedResourceResolver.resolveResourceId(
+        testedResourceResolver.resolveResourceIdFromDrawable(
             resources = mockResources,
             applicationContext = mockApplicationContext,
             displayMetrics = mockDisplayMetrics,
@@ -1011,7 +1017,7 @@ internal class ResourceResolverTest {
         whenever(mockBitmapCachesManager.getFromResourceCache(fakeCacheKey)).thenReturn(null)
 
         // When
-        testedResourceResolver.resolveResourceId(
+        testedResourceResolver.resolveResourceIdFromDrawable(
             resources = mockResources,
             applicationContext = mockApplicationContext,
             displayMetrics = mockDisplayMetrics,
@@ -1029,6 +1035,7 @@ internal class ResourceResolverTest {
 
     private fun createResourceResolver(): ResourceResolver = ResourceResolver(
         logger = mockLogger,
+        pathUtils = mockPathUtils,
         threadPoolExecutor = mockExecutorService,
         drawableUtils = mockDrawableUtils,
         webPImageCompression = mockWebPImageCompression,
@@ -1046,7 +1053,7 @@ internal class ResourceResolverTest {
         whenever(mockDrawableCopier.copy(mockDrawable, mockResources)).thenReturn(mockCopiedDrawable)
 
         // When
-        testedResourceResolver.resolveResourceId(
+        testedResourceResolver.resolveResourceIdFromDrawable(
             resources = mockResources,
             applicationContext = mockApplicationContext,
             displayMetrics = mockDisplayMetrics,
@@ -1070,7 +1077,7 @@ internal class ResourceResolverTest {
         whenever(mockDrawableCopier.copy(mockDrawable, mockResources)).thenReturn(mockCopiedDrawable)
 
         // When
-        testedResourceResolver.resolveResourceId(
+        testedResourceResolver.resolveResourceIdFromDrawable(
             resources = mockResources,
             applicationContext = mockApplicationContext,
             displayMetrics = mockDisplayMetrics,

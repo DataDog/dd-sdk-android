@@ -12,6 +12,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.graphics.vector.VectorPainter
@@ -113,6 +114,31 @@ internal class SemanticsUtils(private val reflectionUtils: ReflectionUtils = Ref
         }?.modifier
         return backgroundModifier?.let { reflectionUtils.getShape(it) }
     }
+
+    internal fun resolveCheckPath(semanticsNode: SemanticsNode): Path? =
+        resolveOnDrawInstance(semanticsNode)?.let { onDraw ->
+            reflectionUtils.getCheckCache(onDraw)?.let { checkCache ->
+                reflectionUtils.getCheckPath(checkCache)
+            }
+        }
+
+    internal fun resolveCheckboxFillColor(semanticsNode: SemanticsNode): Long? =
+        resolveReflectedProperty(
+            semanticsNode,
+            CheckmarkFieldType.FILL_COLOR
+        )
+
+    internal fun resolveCheckmarkColor(semanticsNode: SemanticsNode): Long? =
+        resolveReflectedProperty(
+            semanticsNode,
+            CheckmarkFieldType.CHECKMARK_COLOR
+        )
+
+    internal fun resolveBorderColor(semanticsNode: SemanticsNode): Long? =
+        resolveReflectedProperty(
+            semanticsNode,
+            CheckmarkFieldType.BORDER_COLOR
+        )
 
     private fun shrinkInnerBounds(
         modifier: Modifier,
@@ -276,5 +302,46 @@ internal class SemanticsUtils(private val reflectionUtils: ReflectionUtils = Ref
 
     internal fun getInteropView(semanticsNode: SemanticsNode): View? {
         return reflectionUtils.getInteropView(semanticsNode)
+    }
+
+    private fun resolveOnDrawInstance(semanticsNode: SemanticsNode): Any? {
+        val drawBehindElement =
+            semanticsNode.layoutInfo.getModifierInfo().firstOrNull { modifierInfo ->
+                reflectionUtils.isDrawBehindElementClass(modifierInfo.modifier)
+            }?.modifier
+
+        return drawBehindElement?.let {
+            reflectionUtils.getOnDraw(it)
+        }
+    }
+
+    private fun resolveReflectedProperty(semanticsNode: SemanticsNode, fieldType: CheckmarkFieldType): Long? {
+        val onDrawInstance = resolveOnDrawInstance(semanticsNode)
+
+        val color = onDrawInstance?.let {
+            when (fieldType) {
+                CheckmarkFieldType.FILL_COLOR -> {
+                    reflectionUtils.getBoxColor(onDrawInstance)
+                }
+                CheckmarkFieldType.CHECKMARK_COLOR -> {
+                    reflectionUtils.getCheckColor(onDrawInstance)
+                }
+                CheckmarkFieldType.BORDER_COLOR -> {
+                    reflectionUtils.getBorderColor(onDrawInstance)
+                }
+            }
+        }
+
+        val result = (color?.value as? Color)?.value
+
+        return result?.toLong()
+    }
+
+    internal companion object {
+        internal enum class CheckmarkFieldType {
+            FILL_COLOR,
+            CHECKMARK_COLOR,
+            BORDER_COLOR
+        }
     }
 }

@@ -7,6 +7,7 @@
 package com.datadog.android.sessionreplay.internal.recorder.resources
 
 import android.graphics.Bitmap
+import android.graphics.Path
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.InsetDrawable
 import android.graphics.drawable.LayerDrawable
@@ -37,6 +38,93 @@ internal class DefaultImageWireframeHelper(
     private val viewUtilsInternal: ViewUtilsInternal,
     private val imageTypeResolver: ImageTypeResolver
 ) : ImageWireframeHelper {
+
+    @Suppress("ReturnCount")
+    @UiThread
+    override fun createImageWireframeByPath(
+        id: Long,
+        globalBounds: GlobalBounds,
+        path: Path,
+        strokeColor: Int,
+        strokeWidth: Int,
+        targetWidth: Int,
+        targetHeight: Int,
+        density: Float,
+        isContextualImage: Boolean,
+        imagePrivacy: ImagePrivacy,
+        asyncJobStatusCallback: AsyncJobStatusCallback,
+        clipping: MobileSegment.WireframeClip?,
+        shapeStyle: MobileSegment.ShapeStyle?,
+        border: MobileSegment.ShapeBorder?,
+        customResourceIdCacheKey: String?
+    ): MobileSegment.Wireframe {
+        if (imagePrivacy == ImagePrivacy.MASK_ALL) {
+            return createContentPlaceholderWireframe(
+                id = id,
+                x = globalBounds.x,
+                y = globalBounds.y,
+                width = targetWidth.toLong(),
+                height = targetHeight.toLong(),
+                label = MASK_ALL_CONTENT_LABEL,
+                clipping = clipping
+            )
+        }
+
+        // in case we suspect the image is PII, return a placeholder
+        if (shouldMaskContextualImage(
+                imagePrivacy = imagePrivacy,
+                usePIIPlaceholder = isContextualImage,
+                width = targetWidth.densityNormalized(density),
+                height = targetHeight.densityNormalized(density)
+            )
+        ) {
+            return createContentPlaceholderWireframe(
+                id = id,
+                x = globalBounds.x,
+                y = globalBounds.y,
+                width = targetWidth.toLong(),
+                height = targetHeight.toLong(),
+                label = MASK_CONTEXTUAL_CONTENT_LABEL,
+                clipping = clipping
+            )
+        }
+
+        val imageWireframe =
+            MobileSegment.Wireframe.ImageWireframe(
+                id = id,
+                x = globalBounds.x,
+                y = globalBounds.y,
+                width = targetWidth.toLong(),
+                height = targetHeight.toLong(),
+                shapeStyle = shapeStyle,
+                border = border,
+                clip = clipping,
+                isEmpty = true
+            )
+
+        asyncJobStatusCallback.jobStarted()
+
+        resourceResolver.resolveResourceIdFromPath(
+            path = path,
+            strokeColor = strokeColor,
+            strokeWidth = strokeWidth,
+            desiredWidth = targetWidth,
+            desiredHeight = targetHeight,
+            customResourceIdCacheKey = customResourceIdCacheKey,
+            resourceResolverCallback = object : ResourceResolverCallback {
+                override fun onSuccess(resourceId: String) {
+                    populateResourceIdInWireframe(resourceId, imageWireframe)
+                    asyncJobStatusCallback.jobFinished()
+                }
+
+                override fun onFailure() {
+                    asyncJobStatusCallback.jobFinished()
+                }
+            }
+        )
+
+        return imageWireframe
+    }
 
     @Suppress("ReturnCount", "LongMethod")
     @UiThread
@@ -83,7 +171,7 @@ internal class DefaultImageWireframeHelper(
 
         asyncJobStatusCallback.jobStarted()
 
-        resourceResolver.resolveResourceId(
+        resourceResolver.resolveResourceIdFromBitmap(
             bitmap = bitmap,
             resourceResolverCallback = object : ResourceResolverCallback {
                 override fun onSuccess(resourceId: String) {
@@ -200,7 +288,7 @@ internal class DefaultImageWireframeHelper(
 
         asyncJobStatusCallback.jobStarted()
 
-        resourceResolver.resolveResourceId(
+        resourceResolver.resolveResourceIdFromDrawable(
             resources = resources,
             applicationContext = applicationContext,
             displayMetrics = displayMetrics,
@@ -362,6 +450,16 @@ internal class DefaultImageWireframeHelper(
             else -> null
         }
     }
+
+    private fun shouldMaskContextualImage(
+        imagePrivacy: ImagePrivacy,
+        usePIIPlaceholder: Boolean,
+        width: Int,
+        height: Int
+    ): Boolean =
+        imagePrivacy == ImagePrivacy.MASK_LARGE_ONLY &&
+            usePIIPlaceholder &&
+            imageTypeResolver.isPIIByDimensions(width, height)
 
     private fun shouldMaskContextualImage(
         imagePrivacy: ImagePrivacy,

@@ -8,6 +8,7 @@ package com.datadog.android.sessionreplay.compose.internal.utils
 
 import android.graphics.Bitmap
 import android.view.View
+import androidx.compose.animation.core.AnimationState
 import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composition
@@ -16,6 +17,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.graphics.vector.VectorPainter
@@ -91,6 +93,12 @@ class SemanticsUtilsTest {
     private lateinit var mockModifierInfo: ModifierInfo
 
     @Mock
+    private lateinit var mockOnDraw: Any
+
+    @Mock
+    private lateinit var mockCheckCache: Any
+
+    @Mock
     private lateinit var mockModifier: Modifier
 
     private var fakeOffset: Offset = Offset(0f, 0f)
@@ -109,6 +117,9 @@ class SemanticsUtilsTest {
         whenever(mockModifierInfo.modifier) doReturn mockModifier
         whenever(mockLayoutInfo.density) doReturn Density(fakeDensity)
         whenever(mockSemanticsNode.config) doReturn mockConfig
+        whenever(mockReflectionUtils.isDrawBehindElementClass(mockModifier)) doReturn true
+        whenever(mockReflectionUtils.getOnDraw(mockModifier)) doReturn mockOnDraw
+        whenever(mockReflectionUtils.getCheckCache(mockOnDraw)) doReturn mockCheckCache
         fakeOffset = Offset(x = forge.aFloat(), y = forge.aFloat())
     }
 
@@ -144,6 +155,71 @@ class SemanticsUtilsTest {
 
         // Then
         assertThat(result).isEqualTo(mockShape)
+    }
+
+    @Test
+    fun `M return check path W resolveCheckPath`(
+        @Mock mockPath: Path
+    ) {
+        // Given
+        whenever(mockReflectionUtils.getCheckPath(mockCheckCache)) doReturn mockPath
+
+        // When
+        val result = testedSemanticsUtils.resolveCheckPath(mockSemanticsNode)
+
+        // Then
+        assertThat(result).isEqualTo(mockPath)
+    }
+
+    @Test
+    fun `M return checkbox fill color W resolveCheckboxFillColor`(
+        @IntForgery fakeColorValue: Int
+    ) {
+        // Given
+        val fakeColor = Color(fakeColorValue)
+        val mockAnimationState = mock<AnimationState<*, *>>()
+        whenever(mockReflectionUtils.getBoxColor(mockOnDraw)) doReturn mockAnimationState
+        whenever(mockAnimationState.value).thenReturn(fakeColor)
+
+        // When
+        val result = testedSemanticsUtils.resolveCheckboxFillColor(mockSemanticsNode)
+
+        // Then
+        assertThat(result).isEqualTo(fakeColor.value.toLong())
+    }
+
+    @Test
+    fun `M return checkmark color W resolveCheckmarkColor`(
+        @IntForgery fakeColorValue: Int
+    ) {
+        // Given
+        val fakeColor = Color(fakeColorValue)
+        val mockAnimationState = mock<AnimationState<*, *>>()
+        whenever(mockReflectionUtils.getCheckColor(mockOnDraw)) doReturn mockAnimationState
+        whenever(mockAnimationState.value).thenReturn(fakeColor)
+
+        // When
+        val result = testedSemanticsUtils.resolveCheckmarkColor(mockSemanticsNode)
+
+        // Then
+        assertThat(result).isEqualTo(fakeColor.value.toLong())
+    }
+
+    @Test
+    fun `M return border color W resolveBorderColor`(
+        @IntForgery fakeColorValue: Int
+    ) {
+        // Given
+        val fakeColor = Color(fakeColorValue)
+        val mockAnimationState = mock<AnimationState<*, *>>()
+        whenever(mockReflectionUtils.getBorderColor(mockOnDraw)) doReturn mockAnimationState
+        whenever(mockAnimationState.value).thenReturn(fakeColor)
+
+        // When
+        val result = testedSemanticsUtils.resolveBorderColor(mockSemanticsNode)
+
+        // Then
+        assertThat(result).isEqualTo(fakeColor.value.toLong())
     }
 
     @Test

@@ -40,6 +40,16 @@ internal object ComposeReflection {
     val ColorField = BackgroundElementClass?.getDeclaredFieldSafe("color")
     val ShapeField = BackgroundElementClass?.getDeclaredFieldSafe("shape")
 
+    val CheckDrawingCacheClass = getClassSafe("androidx.compose.material.CheckDrawingCache")
+    val CheckboxKtClass = getClassSafe("androidx.compose.material.CheckboxKt\$CheckboxImpl\$1\$1")
+    val DrawBehindElementClass = getClassSafe("androidx.compose.ui.draw.DrawBehindElement")
+    val BorderColorField = CheckboxKtClass?.getDeclaredFieldSafe("\$borderColor\$delegate")
+    val BoxColorField = CheckboxKtClass?.getDeclaredFieldSafe("\$boxColor\$delegate")
+    val CheckCacheField = CheckboxKtClass?.getDeclaredFieldSafe("\$checkCache")
+    val CheckColorField = CheckboxKtClass?.getDeclaredFieldSafe("\$checkColor\$delegate")
+    val CheckPathField = CheckDrawingCacheClass?.getDeclaredFieldSafe("checkPath")
+    val OnDrawField = DrawBehindElementClass?.getDeclaredFieldSafe("onDraw")
+
     val PaddingElementClass = getClassSafe("androidx.compose.foundation.layout.PaddingElement")
     val StartField = PaddingElementClass?.getDeclaredFieldSafe("start")
     val EndField = PaddingElementClass?.getDeclaredFieldSafe("end")

@@ -4,17 +4,26 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.sessionreplay.internal.recorder.wrappers
+package com.datadog.android.sessionreplay.recorder.wrappers
 
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.lint.InternalApi
 
-internal class CanvasWrapper(
-    private val logger: InternalLogger = InternalLogger.UNBOUND
+/**
+ * Wraps the Canvas class to catch potential crashes.
+ */
+@InternalApi
+class CanvasWrapper(
+    private val logger: InternalLogger
 ) {
-
-    internal fun createCanvas(bitmap: Bitmap): Canvas? {
+    /**
+     * Creates a canvas with the given bitmap.
+     * @param bitmap the bitmap to use.
+     * @return the created canvas or null if it failed.
+     */
+    fun createCanvas(bitmap: Bitmap): Canvas? {
         if (bitmap.isRecycled || !bitmap.isMutable) {
             logger.log(
                 level = InternalLogger.Level.ERROR,

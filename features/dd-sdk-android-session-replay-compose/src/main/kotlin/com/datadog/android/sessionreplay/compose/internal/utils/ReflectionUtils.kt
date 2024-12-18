@@ -9,10 +9,12 @@ package com.datadog.android.sessionreplay.compose.internal.utils
 import android.graphics.Bitmap
 import android.text.StaticLayout
 import android.view.View
+import androidx.compose.animation.core.AnimationState
 import androidx.compose.runtime.Composition
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorProducer
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.graphics.painter.Painter
@@ -68,6 +70,10 @@ internal class ReflectionUtils {
 
     fun isAsyncImagePainter(painter: Painter): Boolean {
         return ComposeReflection.AsyncImagePainterClass?.isInstance(painter) == true
+    }
+
+    fun isDrawBehindElementClass(modifier: Modifier): Boolean {
+        return ComposeReflection.DrawBehindElementClass?.isInstance(modifier) == true
     }
 
     fun getOwner(composition: Composition): Any? {
@@ -170,5 +176,29 @@ internal class ReflectionUtils {
 
     fun getInteropView(semanticsNode: SemanticsNode): View? {
         return GetInteropViewMethod?.invoke(semanticsNode.layoutInfo) as? View
+    }
+
+    fun getOnDraw(modifier: Modifier): Any? {
+        return ComposeReflection.OnDrawField?.getSafe(modifier)
+    }
+
+    fun getBoxColor(onDrawInstance: Any): AnimationState<*, *>? {
+        return ComposeReflection.BoxColorField?.getSafe(onDrawInstance) as? AnimationState<*, *>
+    }
+
+    fun getCheckColor(onDrawInstance: Any): AnimationState<*, *>? {
+        return ComposeReflection.CheckColorField?.getSafe(onDrawInstance) as? AnimationState<*, *>
+    }
+
+    fun getBorderColor(onDrawInstance: Any): AnimationState<*, *>? {
+        return ComposeReflection.BorderColorField?.getSafe(onDrawInstance) as? AnimationState<*, *>
+    }
+
+    fun getCheckCache(onDrawInstance: Any): Any? {
+        return ComposeReflection.CheckCacheField?.getSafe(onDrawInstance)
+    }
+
+    fun getCheckPath(checkCache: Any): Path? {
+        return ComposeReflection.CheckPathField?.getSafe(checkCache) as? Path
     }
 }
