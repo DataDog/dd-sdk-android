@@ -190,8 +190,6 @@ class com.datadog.android.core.SdkReference
   fun get(): com.datadog.android.api.SdkCore?
 fun <T> allowThreadDiskReads(() -> T): T
 fun <T> allowThreadDiskWrites(() -> T): T
-fun StringBuilder.appendIfNotEmpty(String)
-fun StringBuilder.appendIfNotEmpty(Char)
 enum com.datadog.android.core.configuration.BackPressureMitigation
   - DROP_OLDEST
   - IGNORE_NEWEST

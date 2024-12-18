@@ -5,7 +5,7 @@
  */
 package com.datadog.android.utils
 
-import com.datadog.android.core.appendIfNotEmpty
+import com.datadog.android.internal.utils.appendIfNotEmpty
 import com.datadog.android.utils.forge.Configurator
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -19,9 +19,6 @@ import kotlin.math.round
 import kotlin.math.sqrt
 import kotlin.system.measureNanoTime
 
-private const val ITEMS_TO_JOINT = 10_000
-private const val REPETITION_COUNT = 10_000
-
 @Extensions(
     ExtendWith(ForgeExtension::class)
 )
@@ -30,15 +27,15 @@ internal class JointToStringVsStringBuilderPerformanceTest {
 
     @Test
     fun `M be faster than joinToString W buildString`(forge: Forge) {
-        val itemsForJoin = forge.aList(ITEMS_TO_JOINT) { forge.aString() }
-        val jointToStringExecutionTime = mutableListOf<Long>()
+        val itemsForJoin = forge.aList(ITEMS_TO_JOIN) { forge.aString() }
+        val joinToStringExecutionTime = mutableListOf<Long>()
         val buildStringExecutionTime = mutableListOf<Long>()
 
         var jointToStringResult: String
         var builderResult: String
 
         repeat(REPETITION_COUNT) {
-            jointToStringExecutionTime.add(
+            joinToStringExecutionTime.add(
                 measureNanoTime {
                     val jointToStringContainer = mutableListOf<String>()
                     for (item in itemsForJoin) {
@@ -70,25 +67,28 @@ internal class JointToStringVsStringBuilderPerformanceTest {
                 " p99 = ${buildStringExecutionTime.percentile(99)}\n" +
                 "\n" +
                 "joinToString:\n" +
-                " mean = ${jointToStringExecutionTime.mean}\n" +
-                " std = ${jointToStringExecutionTime.std}\n" +
-                " cv = ${"%.2f".format(jointToStringExecutionTime.cv)}%\n" +
-                " p50 = ${jointToStringExecutionTime.percentile(50)},\n" +
-                " p90 = ${jointToStringExecutionTime.percentile(90)},\n" +
-                " p95 = ${jointToStringExecutionTime.percentile(95)},\n" +
-                " p99 = ${jointToStringExecutionTime.percentile(99)}\n"
+                " mean = ${joinToStringExecutionTime.mean}\n" +
+                " std = ${joinToStringExecutionTime.std}\n" +
+                " cv = ${"%.2f".format(joinToStringExecutionTime.cv)}%\n" +
+                " p50 = ${joinToStringExecutionTime.percentile(50)},\n" +
+                " p90 = ${joinToStringExecutionTime.percentile(90)},\n" +
+                " p95 = ${joinToStringExecutionTime.percentile(95)},\n" +
+                " p99 = ${joinToStringExecutionTime.percentile(99)}\n"
             )
-
-        println(statisticsReport)
 
         assertThat(
             buildStringExecutionTime.percentile(90)
+        ).withFailMessage(
+            statisticsReport
         ).isLessThan(
-            jointToStringExecutionTime.percentile(90)
+            joinToStringExecutionTime.percentile(90)
         )
     }
 
     companion object {
+        private const val ITEMS_TO_JOIN = 10_000
+        private const val REPETITION_COUNT = 10_000
+
         private val List<Long>.mean
             get() = (sum().toDouble() / size)
 

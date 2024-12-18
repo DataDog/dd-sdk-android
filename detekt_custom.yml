@@ -780,6 +780,7 @@ datadog:
       - "java.lang.StringBuilder.append(kotlin.Char)"
       - "java.lang.StringBuilder.append(kotlin.CharArray?)"
       - "java.lang.StringBuilder.append(kotlin.String?)"
+      - "java.lang.StringBuilder.clear()"
       - "java.lang.StringBuilder.constructor()"
       - "java.math.BigInteger.toHexString()"
       - "java.math.BigInteger.toLong()"
@@ -1265,7 +1266,6 @@ datadog:
       - "kotlin.text.StringBuilder()"
       - "kotlin.text.buildString(kotlin.Function1)"
       - "kotlin.text.buildString(kotlin.Int, kotlin.Function1)"
-      - "java.lang.StringBuilder.clear()"
       # endregion
       # region Kotlin Misc
       - "kotlin.IllegalArgumentException(kotlin.String?)"
