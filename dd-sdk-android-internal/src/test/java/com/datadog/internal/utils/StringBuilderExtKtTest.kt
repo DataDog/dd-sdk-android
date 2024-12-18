@@ -20,7 +20,7 @@ import org.junit.jupiter.api.extension.Extensions
 internal class StringBuilderExtKtTest {
 
     @Test
-    fun `M add char W addIfNotEmpty {buffer is not empty}`(
+    fun `M add char W appendIfNotEmpty {buffer is not empty}`(
         @StringForgery(regex = ".+") initialContent: String
     ) {
         // Given
@@ -30,12 +30,11 @@ internal class StringBuilderExtKtTest {
         buffer.appendIfNotEmpty(' ')
 
         // Then
-
         assertThat(buffer.toString()).isEqualTo("$initialContent ")
     }
 
     @Test
-    fun `M add str W addIfNotEmpty {buffer is not empty}`(
+    fun `M add str W appendIfNotEmpty {buffer is not empty}`(
         @StringForgery(regex = ".+") initialContent: String
     ) {
         // Given
@@ -49,7 +48,7 @@ internal class StringBuilderExtKtTest {
     }
 
     @Test
-    fun `M not add any char W addIfNotEmpty {buffer is empty}`() {
+    fun `M not add any char W appendIfNotEmpty {buffer is empty}`() {
         // Given
         val buffer = StringBuilder()
 
@@ -61,7 +60,7 @@ internal class StringBuilderExtKtTest {
     }
 
     @Test
-    fun `M not add any str W addIfNotEmpty {buffer is empty}`() {
+    fun `M not add any str W appendIfNotEmpty {buffer is empty}`() {
         // Given
         val buffer = StringBuilder()
 
