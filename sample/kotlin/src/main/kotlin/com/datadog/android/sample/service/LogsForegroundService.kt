@@ -105,17 +105,17 @@ class LogsForegroundService : Service() {
                 sendRumErrorPendingIntent
             )
             .addAction(
-                android.R.drawable.ic_menu_call,
+                R.drawable.ic_baseline_action_24,
                 "Send RUM Action",
                 sendRumActionPendingIntent
             )
             .addAction(
-                android.R.drawable.ic_media_play,
+                R.drawable.ic_baseline_start_res_24,
                 "Start RUM Resource",
                 startRumResourcePendingIntent
             )
             .addAction(
-                android.R.drawable.ic_media_pause,
+                R.drawable.ic_baseline_end_res_24,
                 "Stop RUM Resource",
                 stopRumResourcePendingIntent
             )
