@@ -87,6 +87,7 @@ internal open class RumViewScope(
 
     private val oldViewIds = mutableSetOf<String>()
     private val startedNanos: Long = eventTime.nanoTime
+    internal var stoppedNanos: Long = eventTime.nanoTime
     internal var viewLoadingTime: Long? = null
 
     internal val serverTimeOffsetInMs = sdkCore.time.serverTimeOffsetMs
@@ -833,6 +834,7 @@ internal open class RumViewScope(
             sideEffect()
 
             stopped = true
+            resolveViewDuration(event)
             sendViewUpdate(event, writer)
             delegateEventToChildren(event, writer)
             sendViewChanged()
@@ -872,7 +874,10 @@ internal open class RumViewScope(
         val eventJsRefreshRate = performanceMetrics[RumPerformanceMetric.JS_FRAME_TIME]
             ?.toInversePerformanceMetric()
 
-        val updatedDurationNs = resolveViewDuration(event)
+        if (!stopped) {
+            resolveViewDuration(event)
+        }
+        val durationNs = stoppedNanos - startedNanos
         val rumContext = getRumContext()
 
         val timings = resolveCustomTimings()
@@ -922,7 +927,7 @@ internal open class RumViewScope(
                     id = currentViewId,
                     name = rumContext.viewName,
                     url = rumContext.viewUrl.orEmpty(),
-                    timeSpent = updatedDurationNs,
+                    timeSpent = durationNs,
                     action = ViewEvent.Action(eventActionCount),
                     resource = ViewEvent.Resource(eventResourceCount),
                     error = ViewEvent.Error(eventErrorCount),
@@ -932,8 +937,8 @@ internal open class RumViewScope(
                     customTimings = timings,
                     isActive = !viewComplete,
                     cpuTicksCount = eventCpuTicks,
-                    cpuTicksPerSecond = if (updatedDurationNs >= ONE_SECOND_NS) {
-                        eventCpuTicks?.let { (it * ONE_SECOND_NS) / updatedDurationNs }
+                    cpuTicksPerSecond = if (durationNs >= ONE_SECOND_NS) {
+                        eventCpuTicks?.let { (it * ONE_SECOND_NS) / durationNs }
                     } else {
                         null
                     },
@@ -1012,9 +1017,10 @@ internal open class RumViewScope(
         return GlobalRumMonitor.get(sdkCore).getAttributes().toMap()
     }
 
-    private fun resolveViewDuration(event: RumRawEvent): Long {
-        val duration = event.eventTime.nanoTime - startedNanos
-        return if (duration == 0L) {
+    private fun resolveViewDuration(event: RumRawEvent) {
+        stoppedNanos = event.eventTime.nanoTime
+        val duration = stoppedNanos - startedNanos
+        if (duration == 0L) {
             if (type == RumViewType.BACKGROUND && event is RumRawEvent.AddError && event.isFatal) {
                 // This is a legitimate empty duration, no-op
             } else {
@@ -1030,7 +1036,7 @@ internal open class RumViewScope(
                     mapOf("view.name" to key.name)
                 )
             }
-            1
+            stoppedNanos = startedNanos + 1
         } else if (duration < 0) {
             sdkCore.internalLogger.log(
                 InternalLogger.Level.WARN,
@@ -1047,9 +1053,7 @@ internal open class RumViewScope(
                     "view.name" to key.name
                 )
             )
-            1
-        } else {
-            duration
+            stoppedNanos = startedNanos + 1
         }
     }
 

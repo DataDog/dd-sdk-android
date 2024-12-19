@@ -251,3 +251,37 @@ internal fun Forge.silentOrphanEvent(): RumRawEvent {
         )
     )
 }
+
+internal fun Forge.eventSent(
+    viewId: String,
+    eventTime: Time = Time()
+): RumRawEvent {
+    return this.anElementFrom(
+        listOf(
+            RumRawEvent.ActionSent(
+                viewId = viewId,
+                frustrationCount = aPositiveInt(),
+                type = aValueFrom(ActionEvent.ActionEventActionType::class.java),
+                eventEndTimestampInNanos = aPositiveLong(),
+                eventTime = eventTime
+            ),
+            RumRawEvent.ErrorSent(
+                viewId = viewId,
+                resourceId = aNullable { getForgery<UUID>().toString() },
+                resourceEndTimestampInNanos = aNullable { aLong() },
+                eventTime = eventTime
+            ),
+            RumRawEvent.LongTaskSent(
+                viewId = viewId,
+                isFrozenFrame = aBool(),
+                eventTime = eventTime
+            ),
+            RumRawEvent.ResourceSent(
+                viewId = viewId,
+                resourceId = getForgery<UUID>().toString(),
+                resourceEndTimestampInNanos = aPositiveLong(),
+                eventTime = eventTime
+            )
+        )
+    )
+}
