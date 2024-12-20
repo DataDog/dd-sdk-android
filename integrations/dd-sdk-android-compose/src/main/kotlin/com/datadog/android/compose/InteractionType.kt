@@ -7,10 +7,11 @@
 
 package com.datadog.android.compose
 
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.gestures.AnchoredDraggableState
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.ScrollableState
 import androidx.compose.material.ExperimentalMaterialApi
-import androidx.compose.material.SwipeableState
 import androidx.compose.ui.Modifier
 
 /**
@@ -22,7 +23,7 @@ sealed class InteractionType {
      * Swipe interaction type.
      *
      * @param T the type of the state
-     * @param swipeableState Instance of [SwipeableState] to query for the current values
+     * @param anchoredDraggableState Instance of [AnchoredDraggableState] to query for the current values
      * of interaction.
      * @param orientation The orientation in which the swipeable can be swiped.
      * @param reverseDirection Whether the direction of the swipe is reversed. Tracking
@@ -30,8 +31,10 @@ sealed class InteractionType {
      * result of the swipe is not natural for the current layout direction (element moves in
      * the opposite direction to the finger gesture).
      */
-    class Swipe<T : Any>(
-        internal val swipeableState: SwipeableState<T>,
+    class Swipe<T : Any>
+    @OptIn(ExperimentalFoundationApi::class)
+    constructor(
+        internal val anchoredDraggableState: AnchoredDraggableState<T>,
         internal val orientation: Orientation,
         internal val reverseDirection: Boolean = false
     ) : InteractionType()

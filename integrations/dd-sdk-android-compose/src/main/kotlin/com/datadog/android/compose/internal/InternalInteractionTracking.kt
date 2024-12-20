@@ -9,14 +9,15 @@
 package com.datadog.android.compose.internal
 
 import android.util.Log
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.ScrollState
+import androidx.compose.foundation.gestures.AnchoredDraggableState
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.ScrollableState
 import androidx.compose.foundation.interaction.DragInteraction
 import androidx.compose.foundation.interaction.InteractionSource
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.material.ExperimentalMaterialApi
-import androidx.compose.material.SwipeableState
 import com.datadog.android.compose.InteractionType
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumAttributes
@@ -24,6 +25,7 @@ import com.datadog.android.rum.RumMonitor
 import kotlin.coroutines.cancellation.CancellationException
 import kotlin.math.roundToInt
 
+@OptIn(ExperimentalFoundationApi::class)
 @Suppress("LongParameterList")
 internal suspend fun trackSwipe(
     rumMonitor: RumMonitor,
@@ -37,10 +39,10 @@ internal suspend fun trackSwipe(
         interactionSource,
         onStart = { interactions, start ->
             interactions[start] = SwipeStartProps(
-                interactionType.swipeableState.currentValue,
+                interactionType.anchoredDraggableState.currentValue,
                 // roundToInt can throw exception for Float.NaN, but we won't get such value
                 @Suppress("UnsafeThirdPartyFunctionCall")
-                interactionType.swipeableState.offset.value.roundToInt()
+                interactionType.anchoredDraggableState.requireOffset().roundToInt()
             )
             rumMonitor.startAction(RumActionType.SWIPE, targetName, emptyMap())
         },
@@ -164,9 +166,10 @@ private val ScrollableState.currentPosition: Int?
         }
     }
 
+@OptIn(ExperimentalFoundationApi::class)
 private fun resolveSwipeChangeAttributes(
     swipeStartProps: SwipeStartProps,
-    swipeableState: SwipeableState<*>,
+    swipeableState: AnchoredDraggableState<*>,
     orientation: Orientation,
     reverseDirection: Boolean,
     isRtl: Boolean
@@ -175,7 +178,7 @@ private fun resolveSwipeChangeAttributes(
     // same bug as described below
     // roundToInt can throw exception for Float.NaN, but we won't get such value
     @Suppress("UnsafeThirdPartyFunctionCall")
-    val directionSign = swipeableState.offset.value.roundToInt() - swipeStartProps.offset
+    val directionSign = swipeableState.requireOffset().roundToInt() - swipeStartProps.offset
     val direction = resolveDragDirection(
         if (reverseDirection) -directionSign else directionSign,
         orientation,
@@ -240,6 +243,7 @@ private fun resolveDragDirection(
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Suppress("LongParameterList")
 private fun reportSwipeInteraction(
     rumMonitor: RumMonitor,
@@ -257,7 +261,7 @@ private fun reportSwipeInteraction(
             putAll(
                 resolveSwipeChangeAttributes(
                     startProps,
-                    interaction.swipeableState,
+                    interaction.anchoredDraggableState,
                     interaction.orientation,
                     interaction.reverseDirection,
                     isRtl

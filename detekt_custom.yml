@@ -413,6 +413,8 @@ datadog:
       - "android.view.Choreographer.postFrameCallback(android.view.Choreographer.FrameCallback)"
       - "android.view.Display.getSize(android.graphics.Point?)"
       - "android.view.FrameMetrics.getMetric(kotlin.Int)"
+      - "android.view.GestureDetector.constructor(android.content.Context?, android.view.GestureDetector.OnGestureListener)"
+      - "android.view.GestureDetector.onTouchEvent(android.view.MotionEvent)"
       - "android.view.MotionEvent.PointerCoords.constructor()"
       - "android.view.MotionEvent.getPointerCoords(kotlin.Int, android.view.MotionEvent.PointerCoords)"
       - "android.view.MotionEvent.getPointerId(kotlin.Int)"
