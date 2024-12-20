@@ -59,7 +59,6 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
-import org.mockito.kotlin.verifyNoMoreInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.util.concurrent.TimeUnit
@@ -845,7 +844,7 @@ internal class RumViewManagerScopeTest {
     // region AddViewLoadingTime
 
     @Test
-    fun `M send a warning log and api usage telemetry W handleEvent { AddViewLoadingTime, no active view }`(
+    fun `M send a warning log and api usage telemetry W handleEvent { AddViewLoadingTime, no view }`(
         forge: Forge
     ) {
         // Given
@@ -856,11 +855,6 @@ internal class RumViewManagerScopeTest {
         testedScope.handleEvent(fakeEvent, mockWriter)
 
         // Then
-        mockInternalLogger.verifyLog(
-            InternalLogger.Level.WARN,
-            InternalLogger.Target.USER,
-            RumViewManagerScope.MESSAGE_MISSING_VIEW
-        )
         mockInternalLogger.verifyApiUsage(
             InternalTelemetryEvent.ApiUsage.AddViewLoadingTime(
                 overwrite = fakeEvent.overwrite,
@@ -869,8 +863,30 @@ internal class RumViewManagerScopeTest {
             ),
             15f
         )
-        verifyNoMoreInteractions(mockInternalLogger)
-        verifyNoInteractions(mockWriter)
+    }
+
+    @Test
+    fun `M send a warning log and api usage telemetry W handleEvent { AddViewLoadingTime, no active view }`(
+        forge: Forge
+    ) {
+        // Given
+        val fakeEvent = forge.addViewLoadingTimeEvent()
+        whenever(mockChildScope.isActive()) doReturn false
+        testedScope.applicationDisplayed = true
+        testedScope.childrenScopes.add(mockChildScope)
+
+        // When
+        testedScope.handleEvent(fakeEvent, mockWriter)
+
+        // Then
+        mockInternalLogger.verifyApiUsage(
+            InternalTelemetryEvent.ApiUsage.AddViewLoadingTime(
+                overwrite = fakeEvent.overwrite,
+                noView = false,
+                noActiveView = true
+            ),
+            15f
+        )
     }
 
     // endregion

@@ -135,10 +135,13 @@ internal class RumViewManagerScope(
         event: RumRawEvent,
         writer: DataWriter<Any>
     ) {
+        val hasNoView = childrenScopes.isEmpty()
         val iterator = childrenScopes.iterator()
+        var hasActiveView = false
         @Suppress("UnsafeThirdPartyFunctionCall") // next/remove can't fail: we checked hasNext
         while (iterator.hasNext()) {
             val childScope = iterator.next()
+            hasActiveView = hasActiveView or childScope.isActive()
             if (event is RumRawEvent.StopView) {
                 if (childScope.isActive() && (childScope as? RumViewScope)?.key?.id == event.key.id) {
                     lastStoppedViewTime = event.eventTime
@@ -147,6 +150,21 @@ internal class RumViewManagerScope(
             val result = childScope.handleEvent(event, writer)
             if (result == null) {
                 iterator.remove()
+            }
+        }
+
+        if (event is RumRawEvent.AddViewLoadingTime && !hasActiveView) {
+            sdkCore.internalLogger.log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.USER,
+                { NO_ACTIVE_VIEW_FOR_LOADING_TIME_WARNING_MESSAGE }
+            )
+            sdkCore.internalLogger.logApiUsage {
+                InternalTelemetryEvent.ApiUsage.AddViewLoadingTime(
+                    overwrite = event.overwrite,
+                    noView = hasNoView,
+                    noActiveView = !hasNoView
+                )
             }
         }
     }
@@ -158,19 +176,11 @@ internal class RumViewManagerScope(
         val isForegroundProcess = processFlag == importanceForeground
 
         if (event is RumRawEvent.AddViewLoadingTime) {
-            val internalLogger = sdkCore.internalLogger
-            internalLogger.log(
+            sdkCore.internalLogger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
                 { MESSAGE_MISSING_VIEW }
             )
-            internalLogger.logApiUsage {
-                InternalTelemetryEvent.ApiUsage.AddViewLoadingTime(
-                    overwrite = event.overwrite,
-                    noView = true,
-                    noActiveView = false
-                )
-            }
             // we should return here and not add the event to the session ended metric missed events as we already
             // send the API usage telemetry
             return
@@ -358,6 +368,9 @@ internal class RumViewManagerScope(
 
         internal const val MESSAGE_UNKNOWN_MISSED_TYPE = "An RUM event was detected, but no view is active, " +
             "its missed type is unknown"
+
+        internal const val NO_ACTIVE_VIEW_FOR_LOADING_TIME_WARNING_MESSAGE =
+            "No active view found to add the loading time."
 
         internal val THREE_SECONDS_GAP_NS = TimeUnit.SECONDS.toNanos(3)
     }
