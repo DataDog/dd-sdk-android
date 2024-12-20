@@ -9307,6 +9307,65 @@ internal class RumViewScopeTest {
     }
 
     @Test
+    fun `M update the view scope attributes W with global attributes`(
+        forge: Forge
+    ) {
+        // Given
+        val fakeStartEventAttributes = mapOf("key1" to "value")
+        val fakeStopEventAttributes = mapOf("key1" to "value")
+
+        val fakeGlobalAttributes = mapOf("key1" to "global value")
+        val fakeNewGlobalAttributes = mapOf("key1" to "new global value", "key2" to "new global value")
+
+        val expectedAttributes = mutableMapOf<String, Any?>()
+         expectedAttributes.putAll(fakeStopEventAttributes)
+        // expectedAttributes.putAll(fakeNewGlobalAttributes)
+        // expectedAttributes.putAll(fakeStopEventAttributes)
+
+        whenever(rumMonitor.mockInstance.getAttributes()) doReturnConsecutively listOf(
+            // one for initialization
+            fakeGlobalAttributes,
+            // second for event handling
+            // fakeNewGlobalAttributes
+        )
+
+        testedScope = RumViewScope(
+            mockParentScope,
+            rumMonitor.mockSdkCore,
+            mockSessionEndedMetricDispatcher,
+            fakeKey,
+            fakeEventTime,
+            fakeStartEventAttributes,
+            mockViewChangedListener,
+            mockResolver,
+            mockCpuVitalMonitor,
+            mockMemoryVitalMonitor,
+            mockFrameRateVitalMonitor,
+            featuresContextResolver = mockFeaturesContextResolver,
+            trackFrustrations = fakeTrackFrustrations,
+            sampleRate = fakeSampleRate,
+            interactionToNextViewMetricResolver = mockInteractionToNextViewMetricResolver,
+            networkSettledMetricResolver = mockNetworkSettledMetricResolver
+        )
+
+        // When
+
+        val stopResult = testedScope.handleEvent(
+            RumRawEvent.StopView(fakeKey, fakeStopEventAttributes),
+            mockWriter
+        )
+
+        // Then
+        argumentCaptor<ViewEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+
+            assertThat(lastValue).containsExactlyContextAttributes(expectedAttributes)
+        }
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(stopResult).isNull()
+    }
+
+    @Test
     fun `M not update the global attributes W handleEvent(StartView)`(
         forge: Forge
     ) {
