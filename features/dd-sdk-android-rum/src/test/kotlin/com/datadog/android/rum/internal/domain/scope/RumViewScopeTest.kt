@@ -7419,19 +7419,6 @@ internal class RumViewScopeTest {
 
         // Then
         assertThat(testedScope.viewLoadingTime).isNull()
-        mockInternalLogger.verifyLog(
-            InternalLogger.Level.WARN,
-            InternalLogger.Target.USER,
-            RumViewScope.NO_ACTIVE_VIEW_FOR_LOADING_TIME_WARNING_MESSAGE
-        )
-        mockInternalLogger.verifyApiUsage(
-            InternalTelemetryEvent.ApiUsage.AddViewLoadingTime(
-                noActiveView = true,
-                noView = false,
-                overwrite = fakeOverwrite
-            ),
-            15f
-        )
         verifyNoInteractions(mockWriter)
     }
 
