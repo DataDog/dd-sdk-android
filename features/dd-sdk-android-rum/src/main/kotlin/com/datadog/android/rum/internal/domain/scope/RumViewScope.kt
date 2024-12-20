@@ -1014,14 +1014,38 @@ internal open class RumViewScope(
 
     private fun resolveViewDuration(event: RumRawEvent): Long {
         val duration = event.eventTime.nanoTime - startedNanos
-        return if (duration <= 0) {
+        return if (duration == 0L) {
+            if (type == RumViewType.BACKGROUND && event is RumRawEvent.AddError && event.isFatal) {
+                // This is a legitimate empty duration, no-op
+            } else {
+                sdkCore.internalLogger.log(
+                    InternalLogger.Level.WARN,
+                    listOf(
+                        InternalLogger.Target.USER,
+                        InternalLogger.Target.TELEMETRY
+                    ),
+                    { ZERO_DURATION_WARNING_MESSAGE.format(Locale.US, key.name) },
+                    null,
+                    false,
+                    mapOf("view.name" to key.name)
+                )
+            }
+            1
+        } else if (duration < 0) {
             sdkCore.internalLogger.log(
                 InternalLogger.Level.WARN,
                 listOf(
                     InternalLogger.Target.USER,
                     InternalLogger.Target.TELEMETRY
                 ),
-                { NEGATIVE_DURATION_WARNING_MESSAGE.format(Locale.US, key.name) }
+                { NEGATIVE_DURATION_WARNING_MESSAGE.format(Locale.US, key.name) },
+                null,
+                false,
+                mapOf(
+                    "view.start_ns" to startedNanos,
+                    "view.end_ns" to event.eventTime.nanoTime,
+                    "view.name" to key.name
+                )
             )
             1
         } else {
@@ -1350,8 +1374,10 @@ internal open class RumViewScope(
 
         internal val FROZEN_FRAME_THRESHOLD_NS = TimeUnit.MILLISECONDS.toNanos(700)
         internal const val SLOW_RENDERED_THRESHOLD_FPS = 55
+        internal const val ZERO_DURATION_WARNING_MESSAGE = "The computed duration for the " +
+            "view: %s was 0. In order to keep the view we forced it to 1ns."
         internal const val NEGATIVE_DURATION_WARNING_MESSAGE = "The computed duration for the " +
-            "view: %s was 0 or negative. In order to keep the view we forced it to 1ns."
+            "view: %s was negative. In order to keep the view we forced it to 1ns."
         internal const val NO_ACTIVE_VIEW_FOR_LOADING_TIME_WARNING_MESSAGE =
             "No active view found to add the loading time."
         internal const val ADDING_VIEW_LOADING_TIME_DEBUG_MESSAGE_FORMAT =
