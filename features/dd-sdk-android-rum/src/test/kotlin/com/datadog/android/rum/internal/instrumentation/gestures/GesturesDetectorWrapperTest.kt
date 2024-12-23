@@ -6,8 +6,8 @@
 
 package com.datadog.android.rum.internal.instrumentation.gestures
 
+import android.view.GestureDetector
 import android.view.MotionEvent
-import androidx.core.view.GestureDetectorCompat
 import com.datadog.android.rum.utils.forge.Configurator
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -42,13 +42,13 @@ internal class GesturesDetectorWrapperTest {
     lateinit var mockGesturesDetectorListener: GesturesListener
 
     @Mock
-    lateinit var mockGesturesDetectorCompat: GestureDetectorCompat
+    lateinit var mockGesturesDetector: GestureDetector
 
     @BeforeEach
     fun `set up`() {
         testedWrapper = GesturesDetectorWrapper(
             mockGesturesDetectorListener,
-            mockGesturesDetectorCompat
+            mockGesturesDetector
         )
     }
 
@@ -56,7 +56,7 @@ internal class GesturesDetectorWrapperTest {
     fun `it will delegate the events to the bundled compat detector`() {
         val event: MotionEvent = mock()
         testedWrapper.onTouchEvent(event)
-        verify(mockGesturesDetectorCompat).onTouchEvent(event)
+        verify(mockGesturesDetector).onTouchEvent(event)
     }
 
     @Test
@@ -65,8 +65,8 @@ internal class GesturesDetectorWrapperTest {
             whenever(it.actionMasked).thenReturn(MotionEvent.ACTION_UP)
         }
         testedWrapper.onTouchEvent(event)
-        inOrder(mockGesturesDetectorCompat, mockGesturesDetectorListener) {
-            verify(mockGesturesDetectorCompat).onTouchEvent(event)
+        inOrder(mockGesturesDetector, mockGesturesDetectorListener) {
+            verify(mockGesturesDetector).onTouchEvent(event)
             verify(mockGesturesDetectorListener).onUp(event)
         }
     }
