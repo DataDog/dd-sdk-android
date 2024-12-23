@@ -30,7 +30,7 @@ sealed class InteractionType {
     ) : InteractionType() {
 
         /**
-         * Deprecated. Prefer using constructor with AnchoredDraggableState instance
+         * Deprecated. Prefer using constructor with [AnchoredDraggableState] instance
          *
          * Swipe interaction type.
          *

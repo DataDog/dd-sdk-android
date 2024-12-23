@@ -12,9 +12,9 @@ androidToolsPlugin = "8.6.1"
 androidXAnnotations = "1.8.2"
 androidXAppCompat = "1.6.1"
 androidXCollection = "1.4.3"
-androidXComposeBom = "2024.09.03"
+androidXComposeBom = "2023.10.01"
 androidXComposeCompilerExtension = "1.5.14"
-androidXComposeNavigation = "2.8.0"
+androidXComposeNavigation = "2.7.7"
 androidXComposeRuntime = "1.5.14"
 androidXConstraintLayout = "2.2.0"
 androidXCore = "1.15.0"
@@ -157,7 +157,6 @@ androidXComposeRuntime = { module = "androidx.compose.runtime:runtime" }
 androidXComposeUi = { module = "androidx.compose.ui:ui" }
 androidXComposeUiTooling = { module = "androidx.compose.ui:ui-tooling" }
 androidXComposeMaterial = { module = "androidx.compose.material:material" }
-androidXComposeMaterialIconsCore = { module = "androidx.compose.material:material-icons-core" }
 material3Android = { group = "androidx.compose.material3", name = "material3", version.ref = "material3Android" }
 
 # DD-TRACE-OT
