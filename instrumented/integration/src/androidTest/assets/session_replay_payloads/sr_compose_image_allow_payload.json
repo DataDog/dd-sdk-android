@@ -1,0 +1,82 @@
+[{
+  "type": 4,
+  "data": {
+    "width": 320,
+    "height": 640
+  }
+}, {
+  "type": 6,
+  "data": {
+    "has_focus": true
+  }
+}, {
+  "type": 10,
+  "data": {
+    "wireframes": [
+      {
+        "type": "shape"
+      },
+      {
+        "type": "image",
+        "isEmpty": false
+      },
+      {
+        "type": "text",
+        "text": "Image",
+        "textStyle": {
+          "family": "Roboto, sans-serif",
+          "size": 20,
+          "color": "#000000ff"
+        },
+        "textPosition": {
+          "alignment": {
+            "horizontal": "left"
+          }
+        }
+      },
+      {
+        "type": "shape"
+      },
+      {
+        "type": "shape"
+      },
+      {
+        "type": "text",
+        "text": "Icon",
+        "textStyle": {
+          "family": "Roboto, sans-serif",
+          "size": 20,
+          "color": "#000000ff"
+        },
+        "textPosition": {
+          "alignment": {
+            "horizontal": "left"
+          }
+        }
+      },
+      {
+        "clip": {
+          "top": 0,
+          "bottom": 16,
+          "left": 0,
+          "right": 0
+        },
+        "type": "shape"
+      },
+      {
+        "type": "text",
+        "text": "Icon Button",
+        "textStyle": {
+          "family": "Roboto, sans-serif",
+          "size": 20,
+          "color": "#000000ff"
+        },
+        "textPosition": {
+          "alignment": {
+            "horizontal": "left"
+          }
+        }
+      }
+    ]
+  }
+}]
