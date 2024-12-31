@@ -4,16 +4,12 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
+@file:OptIn(ExperimentalMaterialApi::class)
+
 package com.datadog.android.sample.compose
 
-import androidx.compose.animation.core.spring
-import androidx.compose.animation.rememberSplineBasedDecay
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.AnchoredDraggableState
-import androidx.compose.foundation.gestures.DraggableAnchors
 import androidx.compose.foundation.gestures.Orientation
-import androidx.compose.foundation.gestures.anchoredDraggable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -23,7 +19,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material.ExperimentalMaterialApi
+import androidx.compose.material.FractionalThreshold
 import androidx.compose.material.Text
+import androidx.compose.material.rememberSwipeableState
+import androidx.compose.material.swipeable
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
@@ -63,44 +63,48 @@ internal fun InteractionSampleView() {
 }
 
 @Suppress("MagicNumber")
-@OptIn(ExperimentalTrackingApi::class, ExperimentalFoundationApi::class)
+@OptIn(ExperimentalTrackingApi::class)
 @Composable
 internal fun ItemRow(index: Int, onDismissed: () -> Unit) {
-    val anchoredDraggableState = rememberAnchoredDraggableState()
+    val swipeableState = rememberSwipeableState(DragStates.VISIBLE)
 
-    if (anchoredDraggableState.currentValue == DragStates.DISMISSED) {
+    val startState = DragStates.VISIBLE
+    val terminalState = DragStates.DISMISSED
+
+    if (swipeableState.currentValue == terminalState) {
         onDismissed.invoke()
     } else {
+        val screenSize = LocalConfiguration.current.screenWidthDp.dp
+        val swipeAnchors = mapOf(
+            0f to startState,
+            with(LocalDensity.current) { screenSize.toPx() } to terminalState
+        )
         val swipeOrientation = Orientation.Horizontal
-        val interactionSource = remember { MutableInteractionSource() }
-            .apply {
-                TrackInteractionEffect(
-                    targetName = "Item row",
-                    interactionSource = this,
-                    interactionType = InteractionType.Swipe(
-                        anchoredDraggableState,
-                        orientation = swipeOrientation
-                    ),
-                    attributes = mapOf("item" to index)
-                )
-            }
+
+        val interactionSource = remember {
+            MutableInteractionSource()
+        }.apply {
+            TrackInteractionEffect(
+                targetName = "Item row",
+                interactionSource = this,
+                interactionType = InteractionType.Swipe(
+                    swipeableState,
+                    orientation = swipeOrientation
+                ),
+                attributes = mapOf("item" to index)
+            )
+        }
 
         Box(
             modifier = Modifier
-                .anchoredDraggable(
+                .swipeable(
                     interactionSource = interactionSource,
-                    state = anchoredDraggableState,
+                    state = swipeableState,
                     orientation = swipeOrientation,
-                    startDragImmediately = false
+                    anchors = swipeAnchors,
+                    thresholds = { _, _ -> FractionalThreshold(0.5f) }
                 )
-                .offset {
-                    IntOffset(
-                        x = anchoredDraggableState
-                            .requireOffset()
-                            .roundToInt(),
-                        y = 0
-                    )
-                }
+                .offset { IntOffset(swipeableState.offset.value.roundToInt(), 0) }
         ) {
             Text(
                 text = "Item: $index",
@@ -111,27 +115,6 @@ internal fun ItemRow(index: Int, onDismissed: () -> Unit) {
                     .padding(vertical = 8.dp)
             )
         }
-    }
-}
-
-@Composable
-@OptIn(ExperimentalFoundationApi::class)
-private fun rememberAnchoredDraggableState(): AnchoredDraggableState<DragStates> {
-    val density = LocalDensity.current
-    val screenSize = LocalConfiguration.current.screenWidthDp.dp
-    val decayAnimationSpec = rememberSplineBasedDecay<Float>()
-    return remember {
-        AnchoredDraggableState(
-            initialValue = DragStates.VISIBLE,
-            anchors = DraggableAnchors {
-                DragStates.VISIBLE at 0f
-                DragStates.DISMISSED at with(density) { screenSize.toPx() }
-            },
-            positionalThreshold = { distance: Float -> distance * 0.5f },
-            velocityThreshold = { with(density) { 500.dp.toPx() } },
-            snapAnimationSpec = spring(),
-            decayAnimationSpec = decayAnimationSpec
-        )
     }
 }
 

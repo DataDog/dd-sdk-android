@@ -6,7 +6,7 @@ io.reactivex.rxjava3:rxjava:3.0.0                               :    2 Mb
 org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.9.10                  :  959 b 
 org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.10                  :  965 b 
 org.jetbrains.kotlin:kotlin-stdlib:1.9.24                       : 1678 Kb
-org.jetbrains:annotations:23.0.0                                :   28 Kb
+org.jetbrains:annotations:13.0                                  :   17 Kb
 org.reactivestreams:reactive-streams:1.0.3                      :   11 Kb
 
 Total transitive dependencies size                              :    5 Mb

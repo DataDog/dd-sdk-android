@@ -7,12 +7,12 @@
 package com.datadog.android.rum.internal.instrumentation.gestures
 
 import android.content.Context
-import android.view.GestureDetector
 import android.view.MotionEvent
+import androidx.core.view.GestureDetectorCompat
 
 internal class GesturesDetectorWrapper(
     private val gestureListener: GesturesListener,
-    private val defaultGesturesDetector: GestureDetector
+    private val defaultGesturesDetector: GestureDetectorCompat
 ) {
 
     constructor(
@@ -20,7 +20,7 @@ internal class GesturesDetectorWrapper(
         gestureListener: GesturesListener
     ) : this(
         gestureListener,
-        GestureDetector(context, gestureListener)
+        GestureDetectorCompat(context, gestureListener)
     )
 
     fun onTouchEvent(event: MotionEvent) {

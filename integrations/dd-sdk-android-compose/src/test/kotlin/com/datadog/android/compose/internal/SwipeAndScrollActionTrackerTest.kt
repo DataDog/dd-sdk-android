@@ -3,8 +3,6 @@
  * This product includes software developed at Datadog (https://www.datadoghq.com/).
  * Copyright 2016-Present Datadog, Inc.
  */
-// suppressing deprecation for backward compatibility with SwipeableState
-@file:Suppress("DEPRECATION")
 
 package com.datadog.android.compose.internal
 
