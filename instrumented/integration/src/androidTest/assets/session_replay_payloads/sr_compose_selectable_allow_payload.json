@@ -1,0 +1,54 @@
+[{
+  "type": 4,
+  "data": {
+    "width": 320,
+    "height": 640
+  }
+}, {
+  "type": 6,
+  "data": {
+    "has_focus": true
+  }
+}, {
+  "type": 10,
+  "data": {
+    "wireframes": [
+      {
+        "type": "shape"
+      },
+      {
+        "border": {
+          "color": "#03dac6ff",
+          "width": 2
+        },
+        "type": "image",
+        "isEmpty": false
+      },
+      {
+        "border": {
+          "color": "#00000099",
+          "width": 2
+        },
+        "type": "image",
+        "isEmpty": false
+      },
+      {
+        "border": {
+          "color": "#000000FF",
+          "width": 1
+        },
+        "type": "shape"
+      },
+      {
+        "type": "shape"
+      },
+      {
+        "border": {
+          "color": "#000000FF",
+          "width": 1
+        },
+        "type": "shape"
+      }
+    ]
+  }
+}]

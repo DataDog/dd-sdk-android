@@ -15,6 +15,8 @@ import com.datadog.android.log.Logger
 import com.datadog.android.log.LogsConfiguration
 import com.datadog.android.rum.RumConfiguration
 import com.datadog.android.sessionreplay.SessionReplayConfiguration
+import com.datadog.android.sessionreplay.compose.ComposeExtensionSupport
+import com.datadog.android.sessionreplay.compose.ExperimentalSessionReplayApi
 import com.datadog.android.trace.AndroidTracer
 import com.datadog.android.trace.TraceConfiguration
 import java.util.UUID
@@ -73,8 +75,10 @@ internal object RuntimeConfig {
             .useCustomEndpoint(rumEndpointUrl)
     }
 
+    @OptIn(ExperimentalSessionReplayApi::class)
     fun sessionReplayConfigBuilder(sampleRate: Float): SessionReplayConfiguration.Builder {
         return SessionReplayConfiguration.Builder(sampleRate)
+            .addExtensionSupport(ComposeExtensionSupport())
             .useCustomEndpoint(sessionReplayEndpointUrl)
     }
 

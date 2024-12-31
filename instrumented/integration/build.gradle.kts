@@ -27,6 +27,11 @@ android {
 
         buildFeatures {
             buildConfig = true
+            compose = true
+        }
+
+        composeOptions {
+            kotlinCompilerExtensionVersion = libs.versions.androidXComposeRuntime.get()
         }
 
         multiDexEnabled = true
@@ -91,6 +96,7 @@ dependencies {
         coreLibraryDesugaring(libs.androidDesugaringSdk)
     }
     implementation(project(":features:dd-sdk-android-session-replay"))
+    implementation(project(":features:dd-sdk-android-session-replay-compose"))
     implementation(project(":features:dd-sdk-android-logs"))
     implementation(project(":features:dd-sdk-android-trace"))
     implementation(project(":features:dd-sdk-android-rum"))
@@ -101,6 +107,8 @@ dependencies {
     implementation(libs.bundles.androidXSupportBase)
     implementation(libs.androidXMultidex)
     implementation(libs.elmyr)
+    implementation(platform(libs.androidXComposeBom))
+    implementation(libs.bundles.androidXCompose)
 
     androidTestImplementation(project(":tools:unit")) {
         attributes {
