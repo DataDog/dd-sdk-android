@@ -32,7 +32,8 @@ internal class RootSemanticsNodeMapper(
         Role.Tab to TabSemanticsNodeMapper(colorStringFormatter, semanticsUtils),
         Role.Button to ButtonSemanticsNodeMapper(colorStringFormatter, semanticsUtils),
         Role.Image to ImageSemanticsNodeMapper(colorStringFormatter, semanticsUtils),
-        Role.Checkbox to CheckboxSemanticsNodeMapper(colorStringFormatter, semanticsUtils)
+        Role.Checkbox to CheckboxSemanticsNodeMapper(colorStringFormatter, semanticsUtils),
+        Role.Switch to SwitchSemanticsNodeMapper(colorStringFormatter, semanticsUtils)
     ),
     // Text doesn't have a role in semantics, so it should be a fallback mapper.
     private val textSemanticsNodeMapper: TextSemanticsNodeMapper = TextSemanticsNodeMapper(
