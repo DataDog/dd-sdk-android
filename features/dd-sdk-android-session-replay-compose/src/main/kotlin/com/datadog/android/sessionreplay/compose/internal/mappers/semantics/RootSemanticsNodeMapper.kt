@@ -27,12 +27,12 @@ internal class RootSemanticsNodeMapper(
     private val colorStringFormatter: ColorStringFormatter,
     private val semanticsUtils: SemanticsUtils = SemanticsUtils(),
     private val semanticsNodeMapper: Map<Role, SemanticsNodeMapper> = mapOf(
-        // TODO RUM-6189 Add Mappers for each Semantics Role
         Role.RadioButton to RadioButtonSemanticsNodeMapper(colorStringFormatter, semanticsUtils),
         Role.Tab to TabSemanticsNodeMapper(colorStringFormatter, semanticsUtils),
         Role.Button to ButtonSemanticsNodeMapper(colorStringFormatter, semanticsUtils),
         Role.Image to ImageSemanticsNodeMapper(colorStringFormatter, semanticsUtils),
-        Role.Checkbox to CheckboxSemanticsNodeMapper(colorStringFormatter, semanticsUtils)
+        Role.Checkbox to CheckboxSemanticsNodeMapper(colorStringFormatter, semanticsUtils),
+        Role.Switch to SwitchSemanticsNodeMapper(colorStringFormatter, semanticsUtils)
     ),
     // Text doesn't have a role in semantics, so it should be a fallback mapper.
     private val textSemanticsNodeMapper: TextSemanticsNodeMapper = TextSemanticsNodeMapper(
