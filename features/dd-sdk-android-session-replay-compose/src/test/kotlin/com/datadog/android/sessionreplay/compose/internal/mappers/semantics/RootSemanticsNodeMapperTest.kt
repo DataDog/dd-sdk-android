@@ -76,6 +76,9 @@ class RootSemanticsNodeMapperTest {
     private lateinit var mockCheckboxSemanticsNodeMapper: CheckboxSemanticsNodeMapper
 
     @Mock
+    private lateinit var mockSwitchSemanticsNodeMapper: SwitchSemanticsNodeMapper
+
+    @Mock
     private lateinit var mockComposeHiddenMapper: ComposeHiddenMapper
 
     @Mock
@@ -99,7 +102,8 @@ class RootSemanticsNodeMapperTest {
                 Role.Tab to mockTabSemanticsNodeMapper,
                 Role.Button to mockButtonSemanticsNodeMapper,
                 Role.Image to mockImageSemanticsNodeMapper,
-                Role.Checkbox to mockCheckboxSemanticsNodeMapper
+                Role.Checkbox to mockCheckboxSemanticsNodeMapper,
+                Role.Switch to mockSwitchSemanticsNodeMapper
             ),
             textSemanticsNodeMapper = mockTextSemanticsNodeMapper,
             containerSemanticsNodeMapper = mockContainerSemanticsNodeMapper,
