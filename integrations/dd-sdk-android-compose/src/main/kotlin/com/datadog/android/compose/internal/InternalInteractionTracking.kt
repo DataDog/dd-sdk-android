@@ -4,19 +4,16 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-@file:OptIn(ExperimentalMaterialApi::class)
-
 package com.datadog.android.compose.internal
 
 import android.util.Log
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.ScrollableState
 import androidx.compose.foundation.interaction.DragInteraction
 import androidx.compose.foundation.interaction.InteractionSource
 import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.material.ExperimentalMaterialApi
-import androidx.compose.material.SwipeableState
 import com.datadog.android.compose.InteractionType
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumAttributes
@@ -37,10 +34,10 @@ internal suspend fun trackSwipe(
         interactionSource,
         onStart = { interactions, start ->
             interactions[start] = SwipeStartProps(
-                interactionType.swipeableState.currentValue,
+                interactionType.currentValue,
                 // roundToInt can throw exception for Float.NaN, but we won't get such value
                 @Suppress("UnsafeThirdPartyFunctionCall")
-                interactionType.swipeableState.offset.value.roundToInt()
+                interactionType.offset.roundToInt()
             )
             rumMonitor.startAction(RumActionType.SWIPE, targetName, emptyMap())
         },
@@ -66,7 +63,7 @@ internal suspend fun trackScroll(
     isRtl: Boolean,
     attributes: Map<String, Any?>
 ) {
-    trackDragInteraction<ScrollStartProps>(
+    trackDragInteraction(
         interactionSource,
         onStart = { interactions, start ->
             interactions[start] =
@@ -166,19 +163,17 @@ private val ScrollableState.currentPosition: Int?
 
 private fun resolveSwipeChangeAttributes(
     swipeStartProps: SwipeStartProps,
-    swipeableState: SwipeableState<*>,
-    orientation: Orientation,
-    reverseDirection: Boolean,
+    interaction: InteractionType.Swipe<*>,
     isRtl: Boolean
 ): Map<String, Any?> {
     // normally should use .direction property of SwipeableState, but it is affected by the
     // same bug as described below
     // roundToInt can throw exception for Float.NaN, but we won't get such value
     @Suppress("UnsafeThirdPartyFunctionCall")
-    val directionSign = swipeableState.offset.value.roundToInt() - swipeStartProps.offset
+    val directionSign = interaction.offset.roundToInt() - swipeStartProps.offset
     val direction = resolveDragDirection(
-        if (reverseDirection) -directionSign else directionSign,
-        orientation,
+        if (interaction.reverseDirection) -directionSign else directionSign,
+        interaction.orientation,
         isRtl
     )
 
@@ -188,7 +183,7 @@ private fun resolveSwipeChangeAttributes(
         // There is a Compose bug: if drag stopped (pointer up) and threshold for the next value is
         // not yet reached, but there is enough velocity to continue the fling, this will
         // still report current value, this affects reporting direction as well
-        RumAttributes.ACTION_GESTURE_TO_STATE to swipeableState.targetValue,
+        RumAttributes.ACTION_GESTURE_TO_STATE to interaction.targetValue,
         RumAttributes.ACTION_GESTURE_DIRECTION to direction
     )
 }
@@ -240,6 +235,7 @@ private fun resolveDragDirection(
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Suppress("LongParameterList")
 private fun reportSwipeInteraction(
     rumMonitor: RumMonitor,
@@ -257,9 +253,7 @@ private fun reportSwipeInteraction(
             putAll(
                 resolveSwipeChangeAttributes(
                     startProps,
-                    interaction.swipeableState,
-                    interaction.orientation,
-                    interaction.reverseDirection,
+                    interaction,
                     isRtl
                 )
             )

@@ -1,12 +1,12 @@
 Dependencies List
 
-androidx.activity:activity-compose:1.7.0                        : 1082 Kb
-androidx.activity:activity-ktx:1.7.0                            :   25 Kb
-androidx.activity:activity:1.7.0                                :  139 Kb
+androidx.activity:activity-compose:1.7.2                        : 1082 Kb
+androidx.activity:activity-ktx:1.7.2                            :   25 Kb
+androidx.activity:activity:1.7.2                                :  139 Kb
 androidx.annotation:annotation-experimental:1.3.0               :   35 Kb
-androidx.annotation:annotation-jvm:1.6.0                        :   53 Kb
+androidx.annotation:annotation-jvm:1.9.1                        :   59 Kb
 androidx.arch.core:core-common:2.2.0                            :   11 Kb
-androidx.collection:collection:1.1.0                            :   41 Kb
+androidx.collection:collection-jvm:1.4.5                        :  770 Kb
 androidx.compose.animation:animation-android:1.5.4              : 1309 Kb
 androidx.compose.animation:animation-core-android:1.5.4         : 1338 Kb
 androidx.compose.foundation:foundation-android:1.5.4            :    3 Mb
@@ -23,20 +23,20 @@ androidx.compose.ui:ui-text-android:1.5.4                       :  770 Kb
 androidx.compose.ui:ui-unit-android:1.5.4                       :   64 Kb
 androidx.core:core-ktx:1.10.0                                   :  178 Kb
 androidx.core:core:1.10.0                                       : 1219 Kb
-androidx.lifecycle:lifecycle-common-java8:2.6.1                 :  261 b 
-androidx.lifecycle:lifecycle-common:2.6.1                       :   51 Kb
-androidx.lifecycle:lifecycle-livedata-core:2.6.1                :   11 Kb
-androidx.lifecycle:lifecycle-runtime-ktx:2.6.1                  :   60 Kb
-androidx.lifecycle:lifecycle-runtime:2.6.1                      :   21 Kb
-androidx.lifecycle:lifecycle-viewmodel-compose:2.6.1            :   21 Kb
-androidx.lifecycle:lifecycle-viewmodel-ktx:2.6.1                :    4 Kb
-androidx.lifecycle:lifecycle-viewmodel-savedstate:2.6.1         :   38 Kb
-androidx.lifecycle:lifecycle-viewmodel:2.6.1                    :   38 Kb
-androidx.navigation:navigation-common-ktx:2.6.0                 :    2 Kb
-androidx.navigation:navigation-common:2.6.0                     :  178 Kb
-androidx.navigation:navigation-compose:2.6.0                    : 1110 Kb
-androidx.navigation:navigation-runtime-ktx:2.6.0                :    2 Kb
-androidx.navigation:navigation-runtime:2.6.0                    :  125 Kb
+androidx.lifecycle:lifecycle-common-java8:2.6.2                 :  261 b 
+androidx.lifecycle:lifecycle-common:2.6.2                       :   51 Kb
+androidx.lifecycle:lifecycle-livedata-core:2.6.2                :   11 Kb
+androidx.lifecycle:lifecycle-runtime-ktx:2.6.2                  :   60 Kb
+androidx.lifecycle:lifecycle-runtime:2.6.2                      :   21 Kb
+androidx.lifecycle:lifecycle-viewmodel-compose:2.6.2            :   21 Kb
+androidx.lifecycle:lifecycle-viewmodel-ktx:2.6.2                :    4 Kb
+androidx.lifecycle:lifecycle-viewmodel-savedstate:2.6.2         :   38 Kb
+androidx.lifecycle:lifecycle-viewmodel:2.6.2                    :   38 Kb
+androidx.navigation:navigation-common-ktx:2.7.7                 :    2 Kb
+androidx.navigation:navigation-common:2.7.7                     :  180 Kb
+androidx.navigation:navigation-compose:2.7.7                    : 1139 Kb
+androidx.navigation:navigation-runtime-ktx:2.7.7                :    2 Kb
+androidx.navigation:navigation-runtime:2.7.7                    :  126 Kb
 androidx.savedstate:savedstate-ktx:1.2.1                        :    3 Kb
 androidx.savedstate:savedstate:1.2.1                            :   19 Kb
 androidx.versionedparcelable:versionedparcelable:1.1.1          :   30 Kb
@@ -47,5 +47,5 @@ org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.4          :   19 Kb
 org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.6.4         : 1442 Kb
 org.jetbrains:annotations:13.0                                  :   17 Kb
 
-Total transitive dependencies size                              :   27 Mb
+Total transitive dependencies size                              :   28 Mb
 

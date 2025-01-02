@@ -7,6 +7,7 @@
 package com.datadog.android.rum.internal.tracking
 
 import android.os.Bundle
+import android.view.View
 import androidx.annotation.MainThread
 import androidx.fragment.app.DialogFragment
 import androidx.fragment.app.Fragment
@@ -57,23 +58,17 @@ internal open class AndroidXFragmentLifecycleCallbacks(
     }
 
     // endregion
+    override fun onFragmentViewCreated(fm: FragmentManager, f: Fragment, v: View, savedInstanceState: Bundle?) {
+        super.onFragmentViewCreated(fm, f, v, savedInstanceState)
+        startGesturesTracking(f)
+    }
 
-    // TODO RUM-3793 Update Androidx packages and handle deprecated APIs
-    @MainThread
-    override fun onFragmentActivityCreated(
-        fm: FragmentManager,
-        f: Fragment,
-        savedInstanceState: Bundle?
-    ) {
-        super.onFragmentActivityCreated(fm, f, savedInstanceState)
+    private fun startGesturesTracking(f: Fragment) {
+        val context = f.context ?: return
+        if (f !is DialogFragment || !this::sdkCore.isInitialized) return
 
-        val context = f.context
-
-        if (f is DialogFragment && context != null && this::sdkCore.isInitialized) {
-            val window = f.dialog?.window
-            val gesturesTracker = rumFeature.actionTrackingStrategy.getGesturesTracker()
-            gesturesTracker.startTracking(window, context, sdkCore)
-        }
+        rumFeature.actionTrackingStrategy.getGesturesTracker()
+            .startTracking(f.dialog?.window, context, sdkCore)
     }
 
     @MainThread
