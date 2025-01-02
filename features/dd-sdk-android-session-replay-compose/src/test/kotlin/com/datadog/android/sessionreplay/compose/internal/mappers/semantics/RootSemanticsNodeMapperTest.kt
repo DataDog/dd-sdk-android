@@ -7,6 +7,7 @@
 package com.datadog.android.sessionreplay.compose.internal.mappers.semantics
 
 import android.view.View
+import androidx.compose.ui.semantics.ProgressBarRangeInfo
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.SemanticsConfiguration
 import androidx.compose.ui.semantics.SemanticsNode
@@ -78,6 +79,9 @@ class RootSemanticsNodeMapperTest {
     private lateinit var mockComposeHiddenMapper: ComposeHiddenMapper
 
     @Mock
+    private lateinit var mockSliderSemanticsNodeMapper: SliderSemanticsNodeMapper
+
+    @Mock
     private lateinit var mockSemanticsConfiguration: SemanticsConfiguration
 
     @Forgery
@@ -99,7 +103,8 @@ class RootSemanticsNodeMapperTest {
             ),
             textSemanticsNodeMapper = mockTextSemanticsNodeMapper,
             containerSemanticsNodeMapper = mockContainerSemanticsNodeMapper,
-            composeHiddenMapper = mockComposeHiddenMapper
+            composeHiddenMapper = mockComposeHiddenMapper,
+            sliderSemanticsNodeMapper = mockSliderSemanticsNodeMapper
         )
     }
 
@@ -223,6 +228,29 @@ class RootSemanticsNodeMapperTest {
 
         // Then
         verify(mockCheckboxSemanticsNodeMapper).map(
+            eq(mockSemanticsNode),
+            any(),
+            eq(mockAsyncJobStatusCallback)
+        )
+    }
+
+    @Test
+    fun `M use SliderSemanticsNodeMapper W map createComposeWireframes { isSliderNode }`() {
+        // Given
+        val mockSemanticsNode = mockSemanticsNode(null)
+        val mockProgressBarRangeInfo = mock<ProgressBarRangeInfo>()
+        whenever(mockSemanticsUtils.getProgressBarRangeInfo(mockSemanticsNode)) doReturn mockProgressBarRangeInfo
+
+        // When
+        testedRootSemanticsNodeMapper.createComposeWireframes(
+            mockSemanticsNode,
+            fakeMappingContext.systemInformation.screenDensity,
+            fakeMappingContext,
+            mockAsyncJobStatusCallback
+        )
+
+        // Then
+        verify(mockSliderSemanticsNodeMapper).map(
             eq(mockSemanticsNode),
             any(),
             eq(mockAsyncJobStatusCallback)

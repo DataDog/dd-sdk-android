@@ -2940,9 +2940,12 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `M send event W handleEvent(ErrorSent) on stopped view`() {
+    fun `M send event W handleEvent(ErrorSent) on stopped view`(
+        @LongForgery(1L, 500_000_000L) durationNs: Long
+    ) {
         // Given
         testedScope.stopped = true
+        testedScope.stoppedNanos = fakeEventTime.nanoTime + durationNs
         testedScope.pendingErrorCount = 1
         fakeEvent = RumRawEvent.ErrorSent(testedScope.viewId)
 
@@ -2957,7 +2960,7 @@ internal class RumViewScopeTest {
                     hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
                     hasName(fakeKey.name)
                     hasUrl(fakeUrl)
-                    hasDurationGreaterThan(1)
+                    hasDuration(durationNs)
                     hasVersion(2)
                     hasErrorCount(1)
                     hasCrashCount(0)
@@ -3030,10 +3033,12 @@ internal class RumViewScopeTest {
 
     @Test
     fun `M send event W handleEvent(ResourceSent) on stopped view`(
-        forge: Forge
+        forge: Forge,
+        @LongForgery(0L, 500_000_000L) durationNs: Long
     ) {
         // Given
         testedScope.stopped = true
+        testedScope.stoppedNanos = fakeEventTime.nanoTime + durationNs
         testedScope.pendingResourceCount = 1
         val fakeResourceSent = forge.getForgery<RumRawEvent.ResourceSent>().copy(viewId = testedScope.viewId)
 
@@ -3048,7 +3053,7 @@ internal class RumViewScopeTest {
                     hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
                     hasName(fakeKey.name)
                     hasUrl(fakeUrl)
-                    hasDurationGreaterThan(1)
+                    hasDuration(durationNs)
                     hasVersion(2)
                     hasErrorCount(0)
                     hasCrashCount(0)
@@ -3131,10 +3136,12 @@ internal class RumViewScopeTest {
     fun `M send event W handleEvent(ActionSent) on stopped view`(
         @IntForgery(0) frustrationCount: Int,
         @Forgery actionType: ActionEvent.ActionEventActionType,
-        @LongForgery(0) actionEventTimestamp: Long
+        @LongForgery(0L) actionEventTimestamp: Long,
+        @LongForgery(0L, 500_000_000L) durationNs: Long
     ) {
         // Given
         testedScope.stopped = true
+        testedScope.stoppedNanos = fakeEventTime.nanoTime + durationNs
         testedScope.pendingActionCount = 1
         fakeEvent = RumRawEvent.ActionSent(testedScope.viewId, frustrationCount, actionType, actionEventTimestamp)
 
@@ -3224,9 +3231,12 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `M send event W handleEvent(LongTaskSent) on stopped view`() {
+    fun `M send event W handleEvent(LongTaskSent) on stopped view`(
+        @LongForgery(0L, 500_000_000L) durationNs: Long
+    ) {
         // Given
         testedScope.stopped = true
+        testedScope.stoppedNanos = fakeEventTime.nanoTime + durationNs
         testedScope.pendingLongTaskCount = 1
         fakeEvent = RumRawEvent.LongTaskSent(testedScope.viewId)
 
@@ -7409,19 +7419,6 @@ internal class RumViewScopeTest {
 
         // Then
         assertThat(testedScope.viewLoadingTime).isNull()
-        mockInternalLogger.verifyLog(
-            InternalLogger.Level.WARN,
-            InternalLogger.Target.USER,
-            RumViewScope.NO_ACTIVE_VIEW_FOR_LOADING_TIME_WARNING_MESSAGE
-        )
-        mockInternalLogger.verifyApiUsage(
-            InternalTelemetryEvent.ApiUsage.AddViewLoadingTime(
-                noActiveView = true,
-                noView = false,
-                overwrite = fakeOverwrite
-            ),
-            15f
-        )
         verifyNoInteractions(mockWriter)
     }
 
@@ -7536,7 +7533,7 @@ internal class RumViewScopeTest {
 
 // endregion
 
-// region InteractionToNextViewTime
+    // region InteractionToNextViewTime
 
     @Test
     fun `M notify the interactionToNextViewMetricResolver W view was created`() {
@@ -7584,9 +7581,9 @@ internal class RumViewScopeTest {
         verify(mockInteractionToNextViewMetricResolver, never()).onActionSent(any())
     }
 
-// endregion
+    // endregion
 
-// region Vitals
+    // region Vitals
 
     @Test
     fun `M send View update W onVitalUpdate()+handleEvent(KeepAlive) {CPU}`(
@@ -8200,9 +8197,9 @@ internal class RumViewScopeTest {
         verify(mockFrameRateVitalMonitor).unregister(testedScope.frameRateVitalListener)
     }
 
-// endregion
+    // endregion
 
-// region Cross-platform performance metrics
+    // region Cross-platform performance metrics
 
     @Test
     fun `M send update W handleEvent(UpdatePerformanceMetric+KeepAlive) { FlutterBuildTime }`(
@@ -8387,9 +8384,9 @@ internal class RumViewScopeTest {
         assertThat(result).isSameAs(testedScope)
     }
 
-// endregion
+    // endregion
 
-// region Feature Flags
+    // region Feature Flags
 
     @Test
     fun `M send event W handleEvent(AddFeatureFlagEvaluation) on active view`(
@@ -8529,9 +8526,9 @@ internal class RumViewScopeTest {
         }
     }
 
-// endregion
+    // endregion
 
-// region Feature Flags Batch
+    // region Feature Flags Batch
 
     @Test
     fun `M send event W handleEvent(AddFeatureFlagEvaluations) on active view`(
@@ -8688,9 +8685,9 @@ internal class RumViewScopeTest {
         }
     }
 
-// endregion
+    // endregion
 
-// region Stopping Sessions
+    // region Stopping Sessions
 
     @Test
     fun `M set view to inactive and send update W handleEvent { StopSession }`() {
@@ -8716,9 +8713,9 @@ internal class RumViewScopeTest {
         }
     }
 
-// endregion
+    // endregion
 
-// region write notification
+    // region write notification
 
     @Test
     fun `M notify about success W handleEvent(AddError+non-fatal) { write succeeded }`(
@@ -9088,13 +9085,59 @@ internal class RumViewScopeTest {
             .eventDropped(testedScope.viewId, StorageEvent.FrozenFrame)
     }
 
-// endregion
+    // endregion
 
-// region Misc
+    // region Misc
 
     @ParameterizedTest
     @MethodSource("brokenTimeRawEventData")
-    fun `M update the duration to 1ns W handleEvent { computed duration less or equal to 0 }`(
+    fun `M update the duration to 1ns W handleEvent { computed duration equal to 0 }`(
+        rawEventData: RumRawEventData
+    ) {
+        // Given
+        testedScope = RumViewScope(
+            mockParentScope,
+            rumMonitor.mockSdkCore,
+            mockSessionEndedMetricDispatcher,
+            rawEventData.viewKey,
+            rawEventData.event.eventTime,
+            fakeAttributes,
+            mockViewChangedListener,
+            mockResolver,
+            mockCpuVitalMonitor,
+            mockMemoryVitalMonitor,
+            mockFrameRateVitalMonitor,
+            mockFeaturesContextResolver,
+            trackFrustrations = fakeTrackFrustrations,
+            sampleRate = fakeSampleRate,
+            interactionToNextViewMetricResolver = mockInteractionToNextViewMetricResolver,
+            networkSettledMetricResolver = mockNetworkSettledMetricResolver
+        )
+
+        // When
+        testedScope.handleEvent(rawEventData.event, mockWriter)
+
+        // Then
+        argumentCaptor<ViewEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            assertThat(firstValue)
+                .apply {
+                    hasDuration(1)
+                }
+        }
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.WARN,
+            listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
+            RumViewScope.ZERO_DURATION_WARNING_MESSAGE.format(Locale.US, testedScope.key.name),
+            additionalProperties = mapOf(
+                "view.name" to rawEventData.viewKey.name
+            )
+        )
+    }
+
+    @ParameterizedTest
+    @MethodSource("brokenTimeRawEventData")
+    fun `M update the duration to 1ns W handleEvent { computed duration less than 0 }`(
         rawEventData: RumRawEventData
     ) {
         // Given
@@ -9131,13 +9174,64 @@ internal class RumViewScopeTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
             listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
-            RumViewScope.NEGATIVE_DURATION_WARNING_MESSAGE.format(Locale.US, testedScope.key.name)
+            RumViewScope.NEGATIVE_DURATION_WARNING_MESSAGE.format(Locale.US, testedScope.key.name),
+            additionalProperties = mapOf(
+                "view.start_ns" to fakeEventTime.nanoTime,
+                "view.end_ns" to rawEventData.event.eventTime.nanoTime,
+                "view.name" to rawEventData.viewKey.name
+            )
         )
     }
 
-// endregion
+    @Test
+    fun `M not update the duration W handleEvent { after view stop }`(
+        @LongForgery(10L, 10_000_000_000L) durationNs: Long,
+        @LongForgery(10L, 10_000_000_000L) additionalDurationNs: Long,
+        forge: Forge
+    ) {
+        // Given
+        testedScope = RumViewScope(
+            mockParentScope,
+            rumMonitor.mockSdkCore,
+            mockSessionEndedMetricDispatcher,
+            fakeKey,
+            fakeEventTime,
+            fakeAttributes,
+            mockViewChangedListener,
+            mockResolver,
+            mockCpuVitalMonitor,
+            mockMemoryVitalMonitor,
+            mockFrameRateVitalMonitor,
+            mockFeaturesContextResolver,
+            trackFrustrations = fakeTrackFrustrations,
+            sampleRate = fakeSampleRate,
+            interactionToNextViewMetricResolver = mockInteractionToNextViewMetricResolver,
+            networkSettledMetricResolver = mockNetworkSettledMetricResolver
+        )
+        testedScope.pendingErrorCount = 1
+        testedScope.pendingActionCount = 1
+        testedScope.pendingResourceCount = 1
+        testedScope.pendingLongTaskCount = 1
+        val stopEvent = RumRawEvent.StopView(fakeKey, emptyMap(), fakeEventTime + durationNs)
+        val otherEvent = forge.eventSent(testedScope.viewId, fakeEventTime + (durationNs + additionalDurationNs))
 
-// region Global Attributes
+        // When
+        testedScope.handleEvent(stopEvent, mockWriter)
+        testedScope.handleEvent(otherEvent, mockWriter)
+
+        // Then
+        argumentCaptor<ViewEvent> {
+            verify(mockWriter, times(2)).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            assertThat(lastValue)
+                .apply {
+                    hasDuration(durationNs)
+                }
+        }
+    }
+
+    // endregion
+
+    // region Global Attributes
 
     @Test
     fun `M update the global attributes W handleEvent(StopView)`(
@@ -9602,7 +9696,7 @@ internal class RumViewScopeTest {
         assertThat(result).isNull()
     }
 
-// endregion
+    // endregion
 
     @Test
     fun `M produce event safe for serialization W handleEvent()`(
@@ -9680,7 +9774,7 @@ internal class RumViewScopeTest {
         }
     }
 
-// region Internal
+    // region Internal
 
     private fun mockEvent(): RumRawEvent {
         val event: RumRawEvent = mock()
@@ -9717,7 +9811,7 @@ internal class RumViewScopeTest {
         ).thenReturn(fakeReplayRecordsCount)
     }
 
-// endregion
+    // endregion
 
     data class RumRawEventData(val event: RumRawEvent, val viewKey: RumScopeKey)
 
@@ -9747,16 +9841,23 @@ internal class RumViewScopeTest {
                 ),
                 RumRawEventData(
                     RumRawEvent.AddCustomTiming(
-                        fakeName,
+                        name = fakeName,
                         eventTime = eventTime
                     ),
                     fakeKey
                 ),
-                RumRawEventData(RumRawEvent.StopView(fakeKey, emptyMap(), eventTime), fakeKey),
+                RumRawEventData(
+                    RumRawEvent.StopView(
+                        key = fakeKey,
+                        attributes = emptyMap(),
+                        eventTime = eventTime
+                    ),
+                    fakeKey
+                ),
                 RumRawEventData(
                     RumRawEvent.StartView(
-                        fakeKey,
-                        emptyMap(),
+                        key = fakeKey,
+                        attributes = emptyMap(),
                         eventTime = eventTime
                     ),
                     fakeKey
@@ -9764,4 +9865,11 @@ internal class RumViewScopeTest {
             )
         }
     }
+}
+
+private operator fun Time.plus(durationNs: Long): Time {
+    return Time(
+        timestamp = timestamp + TimeUnit.NANOSECONDS.toMillis(durationNs),
+        nanoTime = nanoTime + durationNs
+    )
 }
