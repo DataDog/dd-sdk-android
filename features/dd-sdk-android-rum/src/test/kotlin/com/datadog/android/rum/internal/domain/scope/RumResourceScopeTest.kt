@@ -15,7 +15,6 @@ import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.api.storage.EventBatchWriter
 import com.datadog.android.api.storage.EventType
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
-import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.internal.utils.loggableStackTrace
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
@@ -27,6 +26,8 @@ import com.datadog.android.rum.internal.FeaturesContextResolver
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
+import com.datadog.android.rum.internal.metric.networksettled.InternalResourceContext
+import com.datadog.android.rum.internal.metric.networksettled.NetworkSettledMetricResolver
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.internal.monitor.StorageEvent
 import com.datadog.android.rum.model.ErrorEvent
@@ -141,6 +142,9 @@ internal class RumResourceScopeTest {
     @Mock
     lateinit var mockFeaturesContextResolver: FeaturesContextResolver
 
+    @Mock
+    lateinit var mockNetworkSettledMetricResolver: NetworkSettledMetricResolver
+
     @BeforeEach
     fun `set up`(forge: Forge) {
         val isValidSource = forge.aBool()
@@ -208,7 +212,16 @@ internal class RumResourceScopeTest {
             fakeServerOffset,
             mockResolver,
             mockFeaturesContextResolver,
-            fakeSampleRate
+            fakeSampleRate,
+            mockNetworkSettledMetricResolver
+        )
+    }
+
+    @Test
+    fun `M notify the NetworkSettledMetricsResolver W initialized()`() {
+        // Then
+        verify(mockNetworkSettledMetricResolver).resourceWasStarted(
+            InternalResourceContext(testedScope.resourceId, fakeEventTime.nanoTime)
         )
     }
 
@@ -394,7 +407,8 @@ internal class RumResourceScopeTest {
             fakeServerOffset,
             mockResolver,
             mockFeaturesContextResolver,
-            fakeSampleRate
+            fakeSampleRate,
+            mockNetworkSettledMetricResolver
         )
         doAnswer { true }.whenever(mockResolver).isFirstPartyUrl(brokenUrl)
         val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
@@ -633,7 +647,8 @@ internal class RumResourceScopeTest {
             fakeServerOffset,
             mockResolver,
             mockFeaturesContextResolver,
-            fakeSampleRate
+            fakeSampleRate,
+            mockNetworkSettledMetricResolver
         )
 
         // When
@@ -871,7 +886,8 @@ internal class RumResourceScopeTest {
             fakeServerOffset,
             mockResolver,
             mockFeaturesContextResolver,
-            fakeSampleRate
+            fakeSampleRate,
+            mockNetworkSettledMetricResolver
         )
         whenever(rumMonitor.mockInstance.getAttributes()) doReturn emptyMap()
 
@@ -1414,7 +1430,8 @@ internal class RumResourceScopeTest {
             fakeServerOffset,
             mockResolver,
             mockFeaturesContextResolver,
-            fakeSampleRate
+            fakeSampleRate,
+            mockNetworkSettledMetricResolver
         )
 
         // When
@@ -1510,7 +1527,8 @@ internal class RumResourceScopeTest {
             fakeServerOffset,
             mockResolver,
             mockFeaturesContextResolver,
-            fakeSampleRate
+            fakeSampleRate,
+            mockNetworkSettledMetricResolver
         )
 
         // When
@@ -1585,7 +1603,8 @@ internal class RumResourceScopeTest {
             fakeServerOffset,
             mockResolver,
             mockFeaturesContextResolver,
-            fakeSampleRate
+            fakeSampleRate,
+            mockNetworkSettledMetricResolver
         )
         doAnswer { true }.whenever(mockResolver).isFirstPartyUrl(brokenUrl)
         val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
@@ -1678,7 +1697,8 @@ internal class RumResourceScopeTest {
             fakeServerOffset,
             mockResolver,
             mockFeaturesContextResolver,
-            fakeSampleRate
+            fakeSampleRate,
+            mockNetworkSettledMetricResolver
         )
         doAnswer { true }.whenever(mockResolver).isFirstPartyUrl(brokenUrl)
         val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
@@ -2251,6 +2271,9 @@ internal class RumResourceScopeTest {
 
         verify(mockParentScope, atMost(1)).getRumContext()
         verifyNoMoreInteractions(mockWriter, mockParentScope)
+        verify(mockNetworkSettledMetricResolver, never()).resourceWasStopped(
+            InternalResourceContext(testedScope.resourceId, mockEvent.eventTime.nanoTime)
+        )
         assertThat(result).isSameAs(testedScope)
     }
 
@@ -2275,6 +2298,9 @@ internal class RumResourceScopeTest {
 
         verify(mockParentScope, atMost(1)).getRumContext()
         verifyNoMoreInteractions(mockWriter, mockParentScope)
+        verify(mockNetworkSettledMetricResolver, never()).resourceWasStopped(
+            InternalResourceContext(testedScope.resourceId, mockEvent.eventTime.nanoTime)
+        )
         assertThat(result).isSameAs(testedScope)
     }
 
@@ -2302,6 +2328,9 @@ internal class RumResourceScopeTest {
 
         verify(mockParentScope, atMost(1)).getRumContext()
         verifyNoMoreInteractions(mockWriter, mockParentScope)
+        verify(mockNetworkSettledMetricResolver, never()).resourceWasStopped(
+            InternalResourceContext(testedScope.resourceId, mockEvent.eventTime.nanoTime)
+        )
         assertThat(result).isSameAs(testedScope)
     }
 
@@ -2326,6 +2355,9 @@ internal class RumResourceScopeTest {
         verify(mockParentScope, atMost(1)).getRumContext()
         verifyNoMoreInteractions(mockWriter, mockParentScope)
         assertThat(resultWaitForTiming).isEqualTo(testedScope)
+        verify(mockNetworkSettledMetricResolver, never()).resourceWasStopped(
+            InternalResourceContext(testedScope.resourceId, mockEvent.eventTime.nanoTime)
+        )
         assertThat(resultStop).isSameAs(testedScope)
     }
 
@@ -2768,7 +2800,10 @@ internal class RumResourceScopeTest {
 
         // Then
         verify(rumMonitor.mockInstance as AdvancedRumMonitor)
-            .eventSent(fakeParentContext.viewId.orEmpty(), StorageEvent.Resource)
+            .eventSent(
+                fakeParentContext.viewId.orEmpty(),
+                StorageEvent.Resource(testedScope.resourceId, mockEvent.eventTime.nanoTime)
+            )
     }
 
     @Test
@@ -2789,7 +2824,10 @@ internal class RumResourceScopeTest {
 
         // Then
         verify(rumMonitor.mockInstance as AdvancedRumMonitor)
-            .eventDropped(fakeParentContext.viewId.orEmpty(), StorageEvent.Resource)
+            .eventDropped(
+                fakeParentContext.viewId.orEmpty(),
+                StorageEvent.Resource(testedScope.resourceId, mockEvent.eventTime.nanoTime)
+            )
     }
 
     @Test
@@ -2812,7 +2850,10 @@ internal class RumResourceScopeTest {
 
         // Then
         verify(rumMonitor.mockInstance as AdvancedRumMonitor)
-            .eventDropped(fakeParentContext.viewId.orEmpty(), StorageEvent.Resource)
+            .eventDropped(
+                fakeParentContext.viewId.orEmpty(),
+                StorageEvent.Resource(testedScope.resourceId, mockEvent.eventTime.nanoTime)
+            )
     }
 
     @Test
@@ -2840,7 +2881,10 @@ internal class RumResourceScopeTest {
 
         // Then
         verify(rumMonitor.mockInstance as AdvancedRumMonitor)
-            .eventSent(fakeParentContext.viewId.orEmpty(), StorageEvent.Error)
+            .eventSent(
+                fakeParentContext.viewId.orEmpty(),
+                StorageEvent.Error(testedScope.resourceId, mockEvent.eventTime.nanoTime)
+            )
     }
 
     @Test
@@ -2869,7 +2913,10 @@ internal class RumResourceScopeTest {
 
         // Then
         verify(rumMonitor.mockInstance as AdvancedRumMonitor)
-            .eventDropped(fakeParentContext.viewId.orEmpty(), StorageEvent.Error)
+            .eventDropped(
+                fakeParentContext.viewId.orEmpty(),
+                StorageEvent.Error(testedScope.resourceId, mockEvent.eventTime.nanoTime)
+            )
     }
 
     @Test
@@ -2900,7 +2947,10 @@ internal class RumResourceScopeTest {
 
         // Then
         verify(rumMonitor.mockInstance as AdvancedRumMonitor)
-            .eventDropped(fakeParentContext.viewId.orEmpty(), StorageEvent.Error)
+            .eventDropped(
+                fakeParentContext.viewId.orEmpty(),
+                StorageEvent.Error(testedScope.resourceId, mockEvent.eventTime.nanoTime)
+            )
     }
 
     // endregion

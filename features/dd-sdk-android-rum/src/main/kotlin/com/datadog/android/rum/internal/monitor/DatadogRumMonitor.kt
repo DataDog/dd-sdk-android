@@ -44,6 +44,8 @@ import com.datadog.android.rum.internal.domain.scope.RumViewManagerScope
 import com.datadog.android.rum.internal.domain.scope.RumViewScope
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
 import com.datadog.android.rum.internal.vitals.VitalMonitor
+import com.datadog.android.rum.metric.interactiontonextview.LastInteractionIdentifier
+import com.datadog.android.rum.metric.networksettled.InitialResourceIdentifier
 import com.datadog.android.rum.resource.ResourceId
 import com.datadog.android.telemetry.internal.TelemetryEventHandler
 import java.util.Locale
@@ -70,7 +72,9 @@ internal class DatadogRumMonitor(
     memoryVitalMonitor: VitalMonitor,
     frameRateVitalMonitor: VitalMonitor,
     sessionListener: RumSessionListener,
-    internal val executorService: ExecutorService
+    internal val executorService: ExecutorService,
+    initialResourceIdentifier: InitialResourceIdentifier,
+    lastInteractionIdentifier: LastInteractionIdentifier
 ) : RumMonitor, AdvancedRumMonitor {
 
     internal var rootScope: RumScope = RumApplicationScope(
@@ -84,7 +88,9 @@ internal class DatadogRumMonitor(
         memoryVitalMonitor,
         frameRateVitalMonitor,
         sessionEndedMetricDispatcher = sessionEndedMetricDispatcher,
-        CombinedRumSessionListener(sessionListener, telemetryEventHandler)
+        CombinedRumSessionListener(sessionListener, telemetryEventHandler),
+        initialResourceIdentifier,
+        lastInteractionIdentifier
     )
 
     internal val keepAliveRunnable = Runnable {
@@ -554,12 +560,28 @@ internal class DatadogRumMonitor(
             is StorageEvent.Action -> handleEvent(
                 RumRawEvent.ActionSent(
                     viewId,
-                    event.frustrationCount
+                    event.frustrationCount,
+                    event.type,
+                    event.eventEndTimestampInNanos
                 )
             )
 
-            is StorageEvent.Resource -> handleEvent(RumRawEvent.ResourceSent(viewId))
-            is StorageEvent.Error -> handleEvent(RumRawEvent.ErrorSent(viewId))
+            is StorageEvent.Resource -> handleEvent(
+                RumRawEvent.ResourceSent(
+                    viewId,
+                    event.resourceId,
+                    event.resourceStopTimestampInNanos
+                )
+            )
+
+            is StorageEvent.Error -> handleEvent(
+                RumRawEvent.ErrorSent(
+                    viewId,
+                    event.resourceId,
+                    event.resourceStopTimestampInNanos
+                )
+            )
+
             is StorageEvent.LongTask -> handleEvent(RumRawEvent.LongTaskSent(viewId, false))
             is StorageEvent.FrozenFrame -> handleEvent(RumRawEvent.LongTaskSent(viewId, true))
             is StorageEvent.View -> {
@@ -571,8 +593,8 @@ internal class DatadogRumMonitor(
     override fun eventDropped(viewId: String, event: StorageEvent) {
         when (event) {
             is StorageEvent.Action -> handleEvent(RumRawEvent.ActionDropped(viewId))
-            is StorageEvent.Resource -> handleEvent(RumRawEvent.ResourceDropped(viewId))
-            is StorageEvent.Error -> handleEvent(RumRawEvent.ErrorDropped(viewId))
+            is StorageEvent.Resource -> handleEvent(RumRawEvent.ResourceDropped(viewId, event.resourceId))
+            is StorageEvent.Error -> handleEvent(RumRawEvent.ErrorDropped(viewId, event.resourceId))
             is StorageEvent.LongTask -> handleEvent(RumRawEvent.LongTaskDropped(viewId, false))
             is StorageEvent.FrozenFrame -> handleEvent(RumRawEvent.LongTaskDropped(viewId, true))
             is StorageEvent.View -> {

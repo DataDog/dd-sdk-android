@@ -19,7 +19,6 @@ import com.datadog.legacy.trace.api.Config
 import com.datadog.legacy.trace.common.writer.Writer
 import com.datadog.opentracing.DDSpan
 import com.datadog.opentracing.LogHandler
-import com.datadog.opentracing.scopemanager.ScopeTestHelper
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.DoubleForgery
 import fr.xgouchet.elmyr.annotation.Forgery
@@ -134,8 +133,6 @@ internal class AndroidTracerTest {
         val activeScope = tracer?.scopeManager()?.active()
         activeSpan?.finish()
         activeScope?.close()
-
-        ScopeTestHelper.removeThreadLocalScope()
     }
 
     // region Tracer

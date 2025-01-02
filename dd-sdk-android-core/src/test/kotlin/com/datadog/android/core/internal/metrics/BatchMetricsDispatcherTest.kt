@@ -102,7 +102,8 @@ internal class BatchMetricsDispatcherTest {
             verify(mockInternalLogger).logMetric(
                 argThat { this.invoke() == BatchMetricsDispatcher.BATCH_DELETED_MESSAGE },
                 capture(),
-                eq(0.1f)
+                eq(0.1f),
+                eq(null)
             )
             assertThat(firstValue).containsExactlyInAnyOrderEntriesOf(expectedAdditionalProperties)
         }
@@ -142,7 +143,8 @@ internal class BatchMetricsDispatcherTest {
             verify(mockInternalLogger).logMetric(
                 argThat { this.invoke() == BatchMetricsDispatcher.BATCH_DELETED_MESSAGE },
                 capture(),
-                eq(0.1f)
+                eq(0.1f),
+                eq(null)
             )
             assertThat(firstValue).containsExactlyInAnyOrderEntriesOf(expectedAdditionalProperties)
         }
@@ -167,7 +169,8 @@ internal class BatchMetricsDispatcherTest {
             verify(mockInternalLogger).logMetric(
                 argThat { this.invoke() == BatchMetricsDispatcher.BATCH_DELETED_MESSAGE },
                 capture(),
-                eq(0.1f)
+                eq(0.1f),
+                eq(null)
             )
             assertThat(firstValue).containsExactlyInAnyOrderEntriesOf(expectedAdditionalProperties)
         }
@@ -194,7 +197,8 @@ internal class BatchMetricsDispatcherTest {
             verify(mockInternalLogger).logMetric(
                 argThat { this.invoke() == BatchMetricsDispatcher.BATCH_DELETED_MESSAGE },
                 capture(),
-                eq(0.1f)
+                eq(0.1f),
+                eq(null)
             )
             assertThat(firstValue).containsExactlyInAnyOrderEntriesOf(expectedAdditionalProperties)
         }
@@ -220,7 +224,8 @@ internal class BatchMetricsDispatcherTest {
             verify(mockInternalLogger).logMetric(
                 argThat { this.invoke() == BatchMetricsDispatcher.BATCH_DELETED_MESSAGE },
                 capture(),
-                eq(0.1f)
+                eq(0.1f),
+                eq(null)
             )
             assertThat(firstValue).containsExactlyInAnyOrderEntriesOf(expectedAdditionalProperties)
         }
@@ -246,7 +251,8 @@ internal class BatchMetricsDispatcherTest {
             verify(mockInternalLogger).logMetric(
                 argThat { this.invoke() == BatchMetricsDispatcher.BATCH_DELETED_MESSAGE },
                 capture(),
-                eq(0.1f)
+                eq(0.1f),
+                eq(null)
             )
             assertThat(firstValue).containsExactlyInAnyOrderEntriesOf(expectedAdditionalProperties)
         }
@@ -320,7 +326,8 @@ internal class BatchMetricsDispatcherTest {
             verify(mockInternalLogger).logMetric(
                 argThat { this.invoke() == BatchMetricsDispatcher.BATCH_CLOSED_MESSAGE },
                 capture(),
-                eq(0.1f)
+                eq(0.1f),
+                eq(null)
             )
             assertThat(firstValue).containsExactlyInAnyOrderEntriesOf(expectedAdditionalProperties)
         }
@@ -366,7 +373,8 @@ internal class BatchMetricsDispatcherTest {
             verify(mockInternalLogger).logMetric(
                 argThat { this.invoke() == BatchMetricsDispatcher.BATCH_CLOSED_MESSAGE },
                 capture(),
-                eq(0.1f)
+                eq(0.1f),
+                eq(null)
             )
             assertThat(firstValue).containsExactlyInAnyOrderEntriesOf(expectedAdditionalProperties)
         }
@@ -397,7 +405,8 @@ internal class BatchMetricsDispatcherTest {
             verify(mockInternalLogger).logMetric(
                 argThat { this.invoke() == BatchMetricsDispatcher.BATCH_CLOSED_MESSAGE },
                 capture(),
-                eq(0.1f)
+                eq(0.1f),
+                eq(null)
             )
             assertThat(firstValue).containsExactlyInAnyOrderEntriesOf(expectedAdditionalProperties)
         }
@@ -428,7 +437,8 @@ internal class BatchMetricsDispatcherTest {
             verify(mockInternalLogger).logMetric(
                 argThat { this.invoke() == BatchMetricsDispatcher.BATCH_CLOSED_MESSAGE },
                 capture(),
-                eq(0.1f)
+                eq(0.1f),
+                eq(null)
             )
             assertThat(firstValue).containsExactlyInAnyOrderEntriesOf(expectedAdditionalProperties)
         }
@@ -459,7 +469,8 @@ internal class BatchMetricsDispatcherTest {
             verify(mockInternalLogger).logMetric(
                 argThat { this.invoke() == BatchMetricsDispatcher.BATCH_CLOSED_MESSAGE },
                 capture(),
-                eq(0.1f)
+                eq(0.1f),
+                eq(null)
             )
             assertThat(firstValue).containsExactlyInAnyOrderEntriesOf(expectedAdditionalProperties)
         }
@@ -577,7 +588,7 @@ internal class BatchMetricsDispatcherTest {
         val fileNameAsLong = currentTimeInMillis - aLong(min = 1000, max = 100000)
         val fileLength = aPositiveLong()
         val dirName = forgeAGrantedDirName()
-        val parentDirectory: File = mock() {
+        val parentDirectory: File = mock {
             whenever(it.isDirectory).thenReturn(true)
             whenever(it.name).thenReturn(dirName)
         }

@@ -77,8 +77,8 @@ public abstract interface class com/datadog/android/api/InternalLogger {
 	public static final field Companion Lcom/datadog/android/api/InternalLogger$Companion;
 	public abstract fun log (Lcom/datadog/android/api/InternalLogger$Level;Lcom/datadog/android/api/InternalLogger$Target;Lkotlin/jvm/functions/Function0;Ljava/lang/Throwable;ZLjava/util/Map;)V
 	public abstract fun log (Lcom/datadog/android/api/InternalLogger$Level;Ljava/util/List;Lkotlin/jvm/functions/Function0;Ljava/lang/Throwable;ZLjava/util/Map;)V
-	public abstract fun logApiUsage (Lcom/datadog/android/internal/telemetry/InternalTelemetryEvent$ApiUsage;F)V
-	public abstract fun logMetric (Lkotlin/jvm/functions/Function0;Ljava/util/Map;F)V
+	public abstract fun logApiUsage (FLkotlin/jvm/functions/Function0;)V
+	public abstract fun logMetric (Lkotlin/jvm/functions/Function0;Ljava/util/Map;FLjava/lang/Float;)V
 	public abstract fun startPerformanceMeasure (Ljava/lang/String;Lcom/datadog/android/core/metrics/TelemetryMetricType;FLjava/lang/String;)Lcom/datadog/android/core/metrics/PerformanceMetric;
 }
 
@@ -89,7 +89,8 @@ public final class com/datadog/android/api/InternalLogger$Companion {
 public final class com/datadog/android/api/InternalLogger$DefaultImpls {
 	public static synthetic fun log$default (Lcom/datadog/android/api/InternalLogger;Lcom/datadog/android/api/InternalLogger$Level;Lcom/datadog/android/api/InternalLogger$Target;Lkotlin/jvm/functions/Function0;Ljava/lang/Throwable;ZLjava/util/Map;ILjava/lang/Object;)V
 	public static synthetic fun log$default (Lcom/datadog/android/api/InternalLogger;Lcom/datadog/android/api/InternalLogger$Level;Ljava/util/List;Lkotlin/jvm/functions/Function0;Ljava/lang/Throwable;ZLjava/util/Map;ILjava/lang/Object;)V
-	public static synthetic fun logApiUsage$default (Lcom/datadog/android/api/InternalLogger;Lcom/datadog/android/internal/telemetry/InternalTelemetryEvent$ApiUsage;FILjava/lang/Object;)V
+	public static synthetic fun logApiUsage$default (Lcom/datadog/android/api/InternalLogger;FLkotlin/jvm/functions/Function0;ILjava/lang/Object;)V
+	public static synthetic fun logMetric$default (Lcom/datadog/android/api/InternalLogger;Lkotlin/jvm/functions/Function0;Ljava/util/Map;FLjava/lang/Float;ILjava/lang/Object;)V
 }
 
 public final class com/datadog/android/api/InternalLogger$Level : java/lang/Enum {

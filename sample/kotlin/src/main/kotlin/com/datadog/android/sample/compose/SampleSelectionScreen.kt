@@ -10,6 +10,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.Button
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
@@ -27,12 +29,15 @@ internal fun SampleSelectionScreen(
     onTypographyClicked: () -> Unit,
     onLegacyClicked: () -> Unit,
     onImageClicked: () -> Unit,
+    onInputClicked: () -> Unit,
     onToggleClicked: () -> Unit,
     onSelectorsClicked: () -> Unit,
-    onTabsClicked: () -> Unit
+    onFgmClicked: () -> Unit,
+    onTabsClicked: () -> Unit,
+    onInteropViewClicked: () -> Unit
 ) {
     Column(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
@@ -49,6 +54,10 @@ internal fun SampleSelectionScreen(
             onClick = onImageClicked
         )
         StyledButton(
+            text = "Input Sample",
+            onClick = onInputClicked
+        )
+        StyledButton(
             text = "Toggle Buttons Sample",
             onClick = onToggleClicked
         )
@@ -61,8 +70,16 @@ internal fun SampleSelectionScreen(
             onClick = onSelectorsClicked
         )
         StyledButton(
+            text = "Fine Grained Masking Privacy Sample",
+            onClick = onFgmClicked
+        )
+        StyledButton(
             text = "Legacy Sample",
             onClick = onLegacyClicked
+        )
+        StyledButton(
+            text = "InteropView",
+            onClick = onInteropViewClicked
         )
     }
 }
@@ -82,6 +99,7 @@ private fun StyledButton(
     )
 }
 
+@Suppress("LongMethod")
 internal fun NavGraphBuilder.selectionNavigation(navController: NavHostController) {
     composable(SampleScreen.Root.navigationRoute) {
         SampleSelectionScreen(
@@ -90,6 +108,9 @@ internal fun NavGraphBuilder.selectionNavigation(navController: NavHostControlle
             },
             onImageClicked = {
                 navController.navigate(SampleScreen.Image.navigationRoute)
+            },
+            onInputClicked = {
+                navController.navigate(SampleScreen.Input.navigationRoute)
             },
             onToggleClicked = {
                 navController.navigate(SampleScreen.Toggle.navigationRoute)
@@ -100,8 +121,14 @@ internal fun NavGraphBuilder.selectionNavigation(navController: NavHostControlle
             onSelectorsClicked = {
                 navController.navigate(SampleScreen.Selectors.navigationRoute)
             },
+            onFgmClicked = {
+                navController.navigate(SampleScreen.FGM.navigationRoute)
+            },
             onLegacyClicked = {
                 navController.navigate(SampleScreen.Legacy.navigationRoute)
+            },
+            onInteropViewClicked = {
+                navController.navigate(SampleScreen.InteropView.navigationRoute)
             }
         )
     }
@@ -114,6 +141,10 @@ internal fun NavGraphBuilder.selectionNavigation(navController: NavHostControlle
         ImageSample()
     }
 
+    composable(SampleScreen.Input.navigationRoute) {
+        InputSample()
+    }
+
     composable(SampleScreen.Toggle.navigationRoute) {
         ToggleSample()
     }
@@ -122,8 +153,16 @@ internal fun NavGraphBuilder.selectionNavigation(navController: NavHostControlle
         SelectorSample()
     }
 
+    composable(SampleScreen.FGM.navigationRoute) {
+        FineGrainedMaskingSample()
+    }
+
     composable(SampleScreen.Tabs.navigationRoute) {
         TabsSample()
+    }
+
+    composable(SampleScreen.InteropView.navigationRoute) {
+        InteropViewSample()
     }
 
     activity(SampleScreen.Legacy.navigationRoute) {
@@ -138,10 +177,13 @@ internal sealed class SampleScreen(
     object Root : SampleScreen(COMPOSE_ROOT)
     object Typography : SampleScreen("$COMPOSE_ROOT/typography")
     object Image : SampleScreen("$COMPOSE_ROOT/image")
+    object Input : SampleScreen("$COMPOSE_ROOT/input")
     object Toggle : SampleScreen("$COMPOSE_ROOT/toggle")
     object Tabs : SampleScreen("$COMPOSE_ROOT/tabs")
     object Selectors : SampleScreen("$COMPOSE_ROOT/selectors")
+    object FGM : SampleScreen("$COMPOSE_ROOT/fgm")
     object Legacy : SampleScreen("$COMPOSE_ROOT/legacy")
+    object InteropView : SampleScreen("$COMPOSE_ROOT/interop_view")
 
     companion object {
         private const val COMPOSE_ROOT = "compose"
@@ -157,13 +199,19 @@ private fun PreviewSampleSelectionScreen() {
         },
         onImageClicked = {
         },
+        onInputClicked = {
+        },
         onToggleClicked = {
         },
         onTypographyClicked = {
         },
         onSelectorsClicked = {
         },
+        onFgmClicked = {
+        },
         onTabsClicked = {
+        },
+        onInteropViewClicked = {
         }
     )
 }

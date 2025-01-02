@@ -67,25 +67,21 @@ internal class CurlInterceptor(
                 printBody = printBody
             )
 
-        fun toCommand(): String {
-            val parts = mutableListOf<String>()
-            parts.add("curl")
-            parts.add(FORMAT_METHOD.format(Locale.US, method.uppercase(Locale.US)))
-
+        fun toCommand(): String = buildString {
+            append("curl").append(' ')
+            append(FORMAT_METHOD.format(Locale.US, method.uppercase(Locale.US))).append(' ')
             headers.forEach { (key, values) ->
                 values.forEach { value ->
-                    parts.add(FORMAT_HEADER.format(Locale.US, key, value))
+                    append(FORMAT_HEADER.format(Locale.US, key, value)).append(' ')
                 }
             }
 
             if (contentType != null && !headers.containsKey(CONTENT_TYPE)) {
-                parts.add(FORMAT_HEADER.format(Locale.US, CONTENT_TYPE, contentType))
+                append(FORMAT_HEADER.format(Locale.US, CONTENT_TYPE, contentType)).append(' ')
             }
 
-            requestBody?.let { parts.addAll(it.toParts()) }
-            parts.add(FORMAT_URL.format(Locale.US, url))
-
-            return parts.joinToString(" ")
+            requestBody?.toParts()?.forEach { append(it).append(' ') }
+            append(FORMAT_URL.format(Locale.US, url))
         }
 
         private fun RequestBody.toParts(): List<String> {

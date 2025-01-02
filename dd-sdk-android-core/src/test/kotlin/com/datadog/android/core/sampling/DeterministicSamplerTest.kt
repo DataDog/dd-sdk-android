@@ -2,8 +2,8 @@ package com.datadog.android.core.sampling
 
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.trace.sampling.JavaDeterministicSampler
+import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.FloatForgery
-import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -36,11 +36,15 @@ internal class DeterministicSamplerTest {
 
     private var stubIdConverter: (ULong) -> ULong = { it }
 
+    private lateinit var fakeTraceIds: List<Long>
+
     @Mock
     lateinit var mockSampleRateProvider: () -> Float
 
     @BeforeEach
-    fun `set up`() {
+    fun `set up`(forge: Forge) {
+        val listSize = forge.anInt(256, 1024)
+        fakeTraceIds = forge.aList(listSize) { aLong() }
         testedSampler = DeterministicSampler(
             stubIdConverter,
             mockSampleRateProvider
@@ -65,7 +69,6 @@ internal class DeterministicSamplerTest {
 
     @RepeatedTest(128)
     fun `M return consistent results W sample() {java implementation}`(
-        @LongForgery traceIds: List<Long>,
         @FloatForgery(min = 0f, max = 100f) fakeSampleRate: Float
     ) {
         // Given
@@ -73,7 +76,7 @@ internal class DeterministicSamplerTest {
         val javaSampler = JavaDeterministicSampler(fakeSampleRate / 100f)
 
         // When
-        traceIds.forEach {
+        fakeTraceIds.forEach {
             val result = testedSampler.sample(it.toULong())
             val expectedResult = javaSampler.sample(it)
 
@@ -83,7 +86,6 @@ internal class DeterministicSamplerTest {
 
     @RepeatedTest(128)
     fun `the sampler will sample the values based on the fixed sample rate`(
-        @LongForgery traceIds: List<Long>,
         @FloatForgery(min = 0f, max = 100f) fakeSampleRate: Float
     ) {
         // Given
@@ -91,26 +93,25 @@ internal class DeterministicSamplerTest {
         var sampledIn = 0
 
         // When
-        traceIds.forEach {
+        fakeTraceIds.forEach {
             if (testedSampler.sample(it.toULong())) {
                 sampledIn++
             }
         }
 
         // Then
-        assertThat(sampledIn.toFloat()).isCloseTo(traceIds.size * fakeSampleRate / 100f, Offset.offset(7.5f))
+        val offset = 2.5f * fakeTraceIds.size
+        assertThat(sampledIn.toFloat()).isCloseTo(fakeTraceIds.size * fakeSampleRate / 100f, Offset.offset(offset))
     }
 
     @Test
-    fun `when sample rate is 0 all values will be dropped`(
-        @LongForgery traceIds: List<Long>
-    ) {
+    fun `when sample rate is 0 all values will be dropped`() {
         // Given
         whenever(mockSampleRateProvider.invoke()) doReturn 0f
         var sampledIn = 0
 
         // When
-        traceIds.forEach {
+        fakeTraceIds.forEach {
             if (testedSampler.sample(it.toULong())) {
                 sampledIn++
             }
@@ -121,22 +122,20 @@ internal class DeterministicSamplerTest {
     }
 
     @Test
-    fun `when sample rate is 100 all values will pass`(
-        @LongForgery traceIds: List<Long>
-    ) {
+    fun `when sample rate is 100 all values will pass`() {
         // Given
         whenever(mockSampleRateProvider.invoke()) doReturn 100f
         var sampledIn = 0
 
         // When
-        traceIds.forEach {
+        fakeTraceIds.forEach {
             if (testedSampler.sample(it.toULong())) {
                 sampledIn++
             }
         }
 
         // Then
-        assertThat(sampledIn).isEqualTo(traceIds.size)
+        assertThat(sampledIn).isEqualTo(fakeTraceIds.size)
     }
 
     @Test

@@ -7,21 +7,19 @@
 package com.datadog.android.sessionreplay.compose.internal.mappers.semantics
 
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.semantics.AccessibilityAction
-import androidx.compose.ui.semantics.SemanticsActions
-import androidx.compose.ui.semantics.SemanticsConfiguration
-import androidx.compose.ui.semantics.SemanticsPropertyKey
-import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.text.TextLayoutInput
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.sp
+import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.compose.internal.data.UiContext
+import com.datadog.android.sessionreplay.compose.internal.utils.SemanticsUtils
 import com.datadog.android.sessionreplay.compose.test.elmyr.SessionReplayComposeForgeConfigurator
+import com.datadog.android.sessionreplay.internal.recorder.obfuscator.StringObfuscator
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback
+import com.datadog.android.sessionreplay.utils.ColorStringFormatter
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
@@ -47,12 +45,9 @@ import org.mockito.quality.Strictness
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(SessionReplayComposeForgeConfigurator::class)
-internal class TextSemanticsNodeMapperTest : AbstractCompositionGroupMapperTest() {
+internal class TextSemanticsNodeMapperTest : AbstractSemanticsNodeMapperTest() {
 
-    private lateinit var testedTextSemanticsNodeMapper: TextSemanticsNodeMapper
-
-    @Mock
-    private lateinit var mockSemanticsConfiguration: SemanticsConfiguration
+    private lateinit var testedTextSemanticsNodeMapper: StubTextSemanticsNodeMapper
 
     @Mock
     private lateinit var mockTextLayoutInput: TextLayoutInput
@@ -66,21 +61,14 @@ internal class TextSemanticsNodeMapperTest : AbstractCompositionGroupMapperTest(
     @StringForgery(regex = "#[0-9A-F]{8}")
     lateinit var fakeTextColorHexString: String
 
-    private var stubTextLayoutResultAction: ((MutableList<TextLayoutResult>) -> Boolean) = { list ->
-        list.add(mockTextLayoutResult)
-        true
-    }
-
-    var fakeTextAlign: TextAlign = TextAlign.Left
-
     @LongForgery(min = 0xffffffff)
     var fakeTextColor: Long = 0x12346778L
 
     @Forgery
     lateinit var fakeUiContext: UiContext
 
-    @StringForgery
-    lateinit var fakeText: String
+    @Forgery
+    lateinit var fakeTextLayoutInfo: TextLayoutInfo
 
     @IntForgery(min = 0, max = 100)
     private var fakeFontSize = 0
@@ -88,17 +76,15 @@ internal class TextSemanticsNodeMapperTest : AbstractCompositionGroupMapperTest(
     @BeforeEach
     override fun `set up`(forge: Forge) {
         super.`set up`(forge)
-        fakeTextAlign = generateFakeTextAlign(forge = forge)
         mockColorStringFormatter(fakeTextColor, fakeTextColorHexString)
 
         whenever(mockTextLayoutInput.style) doReturn TextStyle(
             color = Color(fakeTextColor shr 32),
             fontFamily = FontFamily.Default,
-            fontSize = fakeFontSize.sp,
-            textAlign = fakeTextAlign
+            fontSize = fakeFontSize.sp
         )
         whenever(mockTextLayoutResult.layoutInput) doReturn mockTextLayoutInput
-        testedTextSemanticsNodeMapper = TextSemanticsNodeMapper(
+        testedTextSemanticsNodeMapper = StubTextSemanticsNodeMapper(
             colorStringFormatter = mockColorStringFormatter,
             semanticsUtils = mockSemanticsUtils
         )
@@ -107,13 +93,9 @@ internal class TextSemanticsNodeMapperTest : AbstractCompositionGroupMapperTest(
     @Test
     fun `M return the correct wireframe W map`() {
         // Given
-        val map: Map<SemanticsPropertyKey<*>, Any?> = mapOf(SemanticsPropertyKey<String>(name = "Text") to fakeText)
-        val mockNode = mockSemanticsNodeWithBound {
-            whenever(mockSemanticsConfiguration.iterator()) doReturn map.iterator()
-            whenever(mockSemanticsConfiguration.getOrNull(SemanticsActions.GetTextLayoutResult)) doReturn
-                AccessibilityAction("", stubTextLayoutResultAction)
-            whenever(config) doReturn mockSemanticsConfiguration
-        }
+        val mockNode = mockSemanticsNodeWithBound {}
+
+        whenever(mockSemanticsUtils.resolveTextLayoutInfo(mockNode)) doReturn fakeTextLayoutInfo
         whenever(mockSemanticsUtils.resolveInnerBounds(mockNode)) doReturn rectToBounds(
             fakeBounds,
             fakeDensity
@@ -123,51 +105,95 @@ internal class TextSemanticsNodeMapperTest : AbstractCompositionGroupMapperTest(
             fakeUiContext,
             mockAsyncJobStatusCallback
         )
-
+        val expectedText = if (fakeUiContext.textAndInputPrivacy == TextAndInputPrivacy.MASK_ALL) {
+            StringObfuscator.getStringObfuscator().obfuscate(fakeTextLayoutInfo.text)
+        } else {
+            fakeTextLayoutInfo.text
+        }
         val expected = MobileSegment.Wireframe.TextWireframe(
             id = fakeSemanticsId.toLong(),
             x = (fakeBounds.left / fakeDensity).toLong(),
             y = (fakeBounds.top / fakeDensity).toLong(),
             width = (fakeBounds.size.width / fakeDensity).toLong(),
             height = (fakeBounds.size.height / fakeDensity).toLong(),
-            text = fakeText,
-            textStyle = MobileSegment.TextStyle(
-                family = DEFAULT_FONT_FAMILY,
-                size = fakeFontSize.toLong(),
-                color = fakeTextColorHexString
+            text = expectedText,
+            textStyle = testedTextSemanticsNodeMapper.stubResolveTextStyle(
+                fakeUiContext,
+                fakeTextLayoutInfo
             ),
-            textPosition = MobileSegment.TextPosition(
-                alignment = resolveTextAlign(fakeTextAlign)
-            )
+            textPosition = testedTextSemanticsNodeMapper.stubResolveTextAlign(fakeTextLayoutInfo)
         )
 
         assertThat(actual.wireframes).contains(expected)
     }
 
-    private fun resolveTextAlign(textAlign: TextAlign): MobileSegment.Alignment {
-        val align = when (textAlign) {
-            TextAlign.Start,
-            TextAlign.Left -> MobileSegment.Horizontal.LEFT
-
-            TextAlign.End,
-            TextAlign.Right -> MobileSegment.Horizontal.RIGHT
-
-            TextAlign.Justify,
-            TextAlign.Center -> MobileSegment.Horizontal.CENTER
-
-            else -> MobileSegment.Horizontal.CENTER
-        }
-        return MobileSegment.Alignment(
-            horizontal = align
+    @Test
+    fun `M return the mask wireframe wireframe W map {textInputPrivacy is MASK_ALL}`() {
+        // Given
+        val mockNode = mockSemanticsNodeWithBound {}
+        whenever(mockSemanticsUtils.getTextAndInputPrivacyOverride(mockNode)) doReturn TextAndInputPrivacy.MASK_ALL
+        whenever(mockSemanticsUtils.resolveTextLayoutInfo(mockNode)) doReturn fakeTextLayoutInfo
+        whenever(mockSemanticsUtils.resolveInnerBounds(mockNode)) doReturn rectToBounds(
+            fakeBounds,
+            fakeDensity
         )
+        val actual = testedTextSemanticsNodeMapper.map(
+            mockNode,
+            fakeUiContext,
+            mockAsyncJobStatusCallback
+        )
+        val expectedText = StringObfuscator.getStringObfuscator().obfuscate(fakeTextLayoutInfo.text)
+        val expected = MobileSegment.Wireframe.TextWireframe(
+            id = fakeSemanticsId.toLong(),
+            x = (fakeBounds.left / fakeDensity).toLong(),
+            y = (fakeBounds.top / fakeDensity).toLong(),
+            width = (fakeBounds.size.width / fakeDensity).toLong(),
+            height = (fakeBounds.size.height / fakeDensity).toLong(),
+            text = expectedText,
+            textStyle = testedTextSemanticsNodeMapper.stubResolveTextStyle(
+                fakeUiContext,
+                fakeTextLayoutInfo
+            ),
+            textPosition = testedTextSemanticsNodeMapper.stubResolveTextAlign(fakeTextLayoutInfo)
+        )
+
+        assertThat(actual.wireframes).contains(expected)
     }
 
-    private fun generateFakeTextAlign(forge: Forge): TextAlign {
-        val index = forge.anInt(0, TextAlign.values().size)
-        return TextAlign.values()[index]
+    @Test
+    fun `M pass down the override privacy W privacy is override`(forge: Forge) {
+        val mockSemanticsNode = mockSemanticsNodeWithBound {}
+
+        // Given
+        val fakeTextInputPrivacy = forge.aValueFrom(TextAndInputPrivacy::class.java)
+
+        whenever(mockSemanticsUtils.getTextAndInputPrivacyOverride(mockSemanticsNode)) doReturn fakeTextInputPrivacy
+
+        // When
+        val result = testedTextSemanticsNodeMapper.map(
+            mockSemanticsNode,
+            fakeUiContext,
+            mockAsyncJobStatusCallback
+        )
+
+        // Then
+        assertThat(result.uiContext?.textAndInputPrivacy).isEqualTo(fakeTextInputPrivacy)
     }
 
-    companion object {
-        private const val DEFAULT_FONT_FAMILY = "Roboto, sans-serif"
+    class StubTextSemanticsNodeMapper(
+        colorStringFormatter: ColorStringFormatter,
+        semanticsUtils: SemanticsUtils = SemanticsUtils()
+    ) : TextSemanticsNodeMapper(colorStringFormatter, semanticsUtils) {
+
+        fun stubResolveTextAlign(textLayoutInfo: TextLayoutInfo): MobileSegment.TextPosition {
+            return super.resolveTextAlign(textLayoutInfo = textLayoutInfo)
+        }
+
+        fun stubResolveTextStyle(
+            parentContext: UiContext,
+            textLayoutInfo: TextLayoutInfo?
+        ): MobileSegment.TextStyle {
+            return super.resolveTextStyle(parentContext, textLayoutInfo)
+        }
     }
 }

@@ -24,9 +24,9 @@ fun InternalLogger.verifyApiUsage(
     apiUsage: InternalTelemetryEvent.ApiUsage,
     samplingRate: Float
 ) {
-    argumentCaptor<InternalTelemetryEvent.ApiUsage> {
-        verify(this@verifyApiUsage).logApiUsage(capture(), eq(samplingRate))
-        val event = firstValue
+    argumentCaptor<() -> InternalTelemetryEvent.ApiUsage> {
+        verify(this@verifyApiUsage).logApiUsage(eq(samplingRate), capture())
+        val event = firstValue()
         InternalApiUsageEventAssert.assertThat(event).isEqualTo(apiUsage)
     }
 }

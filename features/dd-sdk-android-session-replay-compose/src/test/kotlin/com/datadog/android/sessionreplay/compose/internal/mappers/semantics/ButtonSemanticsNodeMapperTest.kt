@@ -37,7 +37,7 @@ import org.mockito.quality.Strictness
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(SessionReplayComposeForgeConfigurator::class)
-internal class ButtonSemanticsNodeMapperTest : AbstractCompositionGroupMapperTest() {
+internal class ButtonSemanticsNodeMapperTest : AbstractSemanticsNodeMapperTest() {
 
     private lateinit var testedButtonSemanticsNodeMapper: ButtonSemanticsNodeMapper
 

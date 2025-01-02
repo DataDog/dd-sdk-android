@@ -35,7 +35,7 @@ import org.mockito.quality.Strictness
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(SessionReplayComposeForgeConfigurator::class)
-internal class TabSemanticsNodeMapperTest : AbstractCompositionGroupMapperTest() {
+internal class TabSemanticsNodeMapperTest : AbstractSemanticsNodeMapperTest() {
 
     private lateinit var testedTabSemanticsNodeMapper: TabSemanticsNodeMapper
 

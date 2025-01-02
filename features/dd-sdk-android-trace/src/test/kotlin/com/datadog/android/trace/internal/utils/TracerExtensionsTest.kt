@@ -10,7 +10,6 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.trace.AndroidTracer
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.opentracing.DDSpan
-import com.datadog.opentracing.scopemanager.ScopeTestHelper
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -58,8 +57,6 @@ internal class TracerExtensionsTest {
         val activeScope = tracer.scopeManager().active()
         activeSpan?.finish()
         activeScope?.close()
-
-        ScopeTestHelper.removeThreadLocalScope()
     }
 
     @Test

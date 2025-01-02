@@ -18,8 +18,8 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.internal.utils.submitSafe
 import com.datadog.android.sessionreplay.internal.recorder.resources.BitmapCachesManager
 import com.datadog.android.sessionreplay.internal.recorder.resources.ResourceResolver
-import com.datadog.android.sessionreplay.internal.recorder.wrappers.BitmapWrapper
-import com.datadog.android.sessionreplay.internal.recorder.wrappers.CanvasWrapper
+import com.datadog.android.sessionreplay.recorder.wrappers.BitmapWrapper
+import com.datadog.android.sessionreplay.recorder.wrappers.CanvasWrapper
 import java.util.concurrent.ExecutorService
 import kotlin.math.sqrt
 
@@ -177,7 +177,12 @@ internal class DrawableUtils(
         config: Config
     ): Bitmap? =
         bitmapCachesManager.getBitmapByProperties(width, height, config)
-            ?: bitmapWrapper.createBitmap(displayMetrics, width, height, config)
+            ?: bitmapWrapper.createBitmap(
+                bitmapWidth = width,
+                bitmapHeight = height,
+                config = config,
+                displayMetrics = displayMetrics
+            )
 
     internal companion object {
         @VisibleForTesting

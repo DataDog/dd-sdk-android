@@ -108,24 +108,20 @@ internal class RumRequestFactory(
         env: String,
         variant: String,
         executionContext: RequestExecutionContext
-    ): String {
-        val elements = mutableListOf(
-            "${RumAttributes.SERVICE_NAME}:$serviceName",
-            "${RumAttributes.APPLICATION_VERSION}:$version",
-            "${RumAttributes.SDK_VERSION}:$sdkVersion",
-            "${RumAttributes.ENV}:$env"
-        )
+    ) = buildString {
+        append("${RumAttributes.SERVICE_NAME}:$serviceName").append(",")
+            .append("${RumAttributes.APPLICATION_VERSION}:$version").append(",")
+            .append("${RumAttributes.SDK_VERSION}:$sdkVersion").append(",")
+            .append("${RumAttributes.ENV}:$env")
 
         if (variant.isNotEmpty()) {
-            elements.add("${RumAttributes.VARIANT}:$variant")
+            append(",").append("${RumAttributes.VARIANT}:$variant")
         }
         if (executionContext.previousResponseCode != null) {
             // we had a previous failure
-            elements.add("${RETRY_COUNT_KEY}:${executionContext.attemptNumber}")
-            elements.add("${LAST_FAILURE_STATUS_KEY}:${executionContext.previousResponseCode}")
+            append(",").append("${RETRY_COUNT_KEY}:${executionContext.attemptNumber}")
+            append(",").append("${LAST_FAILURE_STATUS_KEY}:${executionContext.previousResponseCode}")
         }
-
-        return elements.joinToString(",")
     }
 
     @Suppress("TooGenericExceptionCaught")

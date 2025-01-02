@@ -16,8 +16,8 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.recorder.resources.BitmapCachesManager
 import com.datadog.android.sessionreplay.internal.recorder.resources.ResourceResolver
-import com.datadog.android.sessionreplay.internal.recorder.wrappers.BitmapWrapper
-import com.datadog.android.sessionreplay.internal.recorder.wrappers.CanvasWrapper
+import com.datadog.android.sessionreplay.recorder.wrappers.BitmapWrapper
+import com.datadog.android.sessionreplay.recorder.wrappers.CanvasWrapper
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -30,6 +30,7 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.mock
@@ -103,7 +104,7 @@ internal class DrawableUtilsTest {
         whenever(mockDrawable.constantState).thenReturn(mockConstantState)
         whenever(mockCurrentDrawable.constantState).thenReturn(mockConstantState)
         whenever(mockDrawable.current).thenReturn(mockCurrentDrawable)
-        whenever(mockBitmapWrapper.createBitmap(any(), any(), any(), any()))
+        whenever(mockBitmapWrapper.createBitmap(any(), any(), any(), anyOrNull()))
             .thenReturn(mockBitmap)
         whenever(mockCanvasWrapper.createCanvas(any()))
             .thenReturn(mockCanvas)
@@ -151,10 +152,10 @@ internal class DrawableUtilsTest {
 
         // Then
         verify(mockBitmapWrapper).createBitmap(
-            displayMetrics = displayMetricsCaptor.capture(),
             bitmapWidth = argumentCaptor.capture(),
             bitmapHeight = argumentCaptor.capture(),
-            config = any()
+            config = any(),
+            displayMetrics = displayMetricsCaptor.capture()
         )
 
         val width = argumentCaptor.firstValue
@@ -186,10 +187,10 @@ internal class DrawableUtilsTest {
 
         // Then
         verify(mockBitmapWrapper).createBitmap(
-            displayMetrics = displayMetricsCaptor.capture(),
             bitmapWidth = argumentCaptor.capture(),
             bitmapHeight = argumentCaptor.capture(),
-            config = any()
+            config = any(),
+            displayMetrics = displayMetricsCaptor.capture()
         )
 
         val width = argumentCaptor.firstValue
@@ -221,10 +222,10 @@ internal class DrawableUtilsTest {
 
         // Then
         verify(mockBitmapWrapper).createBitmap(
-            displayMetrics = displayMetricsCaptor.capture(),
             bitmapWidth = argumentCaptor.capture(),
             bitmapHeight = argumentCaptor.capture(),
-            config = any()
+            config = any(),
+            displayMetrics = displayMetricsCaptor.capture()
         )
 
         val width = argumentCaptor.firstValue
@@ -269,7 +270,7 @@ internal class DrawableUtilsTest {
         whenever(mockDrawable.intrinsicHeight).thenReturn(1)
         whenever(mockBitmapCachesManager.getBitmapByProperties(any(), any(), any()))
             .thenReturn(null)
-        whenever(mockBitmapWrapper.createBitmap(any(), any(), any(), any()))
+        whenever(mockBitmapWrapper.createBitmap(any(), any(), any(), anyOrNull()))
             .thenReturn(null)
 
         // When
@@ -358,10 +359,10 @@ internal class DrawableUtilsTest {
 
         // Then
         verify(mockBitmapWrapper).createBitmap(
-            displayMetrics = displayMetricsCaptor.capture(),
             bitmapWidth = argumentCaptor.capture(),
             bitmapHeight = argumentCaptor.capture(),
-            config = any()
+            config = any(),
+            displayMetrics = displayMetricsCaptor.capture()
         )
 
         val width = argumentCaptor.firstValue

@@ -96,13 +96,28 @@ internal class SdkInternalLogger(
     override fun logMetric(
         messageBuilder: () -> String,
         additionalProperties: Map<String, Any?>,
-        samplingRate: Float
+        samplingRate: Float,
+        creationSampleRate: Float?
     ) {
         if (!sample(samplingRate)) return
         val rumFeature = sdkCore?.getFeature(Feature.RUM_FEATURE_NAME) ?: return
+        val additionalPropertiesMutable = additionalProperties.toMutableMap()
+
+        enrichWithNonNullValue(
+            additionalPropertiesMutable,
+            InternalTelemetryEvent.CREATION_SAMPLING_RATE_KEY,
+            creationSampleRate
+        )
+
+        enrichWithNonNullValue(
+            additionalPropertiesMutable,
+            InternalTelemetryEvent.REPORTING_SAMPLING_RATE_KEY,
+            samplingRate
+        )
+
         val metricEvent = InternalTelemetryEvent.Metric(
             message = messageBuilder(),
-            additionalProperties = additionalProperties
+            additionalProperties = additionalPropertiesMutable
         )
         rumFeature.sendEvent(metricEvent)
     }
@@ -120,19 +135,29 @@ internal class SdkInternalLogger(
                 MethodCalledTelemetry(
                     internalLogger = this,
                     operationName = operationName,
-                    callerClass = callerClass
+                    callerClass = callerClass,
+                    creationSampleRate = samplingRate
                 )
             }
         }
     }
 
     override fun logApiUsage(
-        apiUsageEvent: InternalTelemetryEvent.ApiUsage,
-        samplingRate: Float
+        samplingRate: Float,
+        apiUsageEventBuilder: () -> InternalTelemetryEvent.ApiUsage
     ) {
         if (!sample(samplingRate)) return
         val rumFeature = sdkCore?.getFeature(Feature.RUM_FEATURE_NAME) ?: return
-        rumFeature.sendEvent(apiUsageEvent)
+
+        val event = apiUsageEventBuilder()
+
+        enrichWithNonNullValue(
+            event.additionalProperties,
+            InternalTelemetryEvent.REPORTING_SAMPLING_RATE_KEY,
+            samplingRate
+        )
+
+        rumFeature.sendEvent(event)
     }
 
     // endregion
@@ -250,6 +275,18 @@ internal class SdkInternalLogger(
             "[$instanceName]: $this"
         } else {
             this
+        }
+    }
+
+    private fun enrichWithNonNullValue(
+        map: MutableMap<String, Any?>,
+        key: String,
+        value: Float?
+    ) {
+        if (value == null) return
+
+        if (!map.containsKey(key)) {
+            map[key] = value
         }
     }
 

@@ -33,6 +33,8 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
@@ -59,6 +61,9 @@ internal class SdkInternalLoggerTest {
     lateinit var mockMaintainerLogHandler: LogcatLogHandler
 
     @Mock
+    lateinit var mockRumFeatureScope: FeatureScope
+
+    @Mock
     lateinit var mockSdkCore: FeatureSdkCore
 
     @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL)
@@ -75,6 +80,8 @@ internal class SdkInternalLoggerTest {
             userLogHandlerFactory = { mockUserLogHandler },
             maintainerLogHandlerFactory = { mockMaintainerLogHandler }
         )
+
+        whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumFeatureScope
     }
 
     fun callWithLambda(i: Int, lambda: () -> String) {
@@ -271,8 +278,6 @@ internal class SdkInternalLoggerTest {
         val mockLambda: () -> String = mock()
         whenever(mockLambda.invoke()) doReturn fakeMessage
         val fakeLevel = forge.anElementFrom(InternalLogger.Level.INFO, InternalLogger.Level.DEBUG)
-        val mockRumFeatureScope = mock<FeatureScope>()
-        whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumFeatureScope
 
         // When
         testedInternalLogger.log(
@@ -283,7 +288,7 @@ internal class SdkInternalLoggerTest {
         )
 
         // Then
-        argumentCaptor<InternalTelemetryEvent>() {
+        argumentCaptor<InternalTelemetryEvent> {
             verify(mockRumFeatureScope).sendEvent(capture())
             val logEvent = firstValue as InternalTelemetryEvent.Log.Debug
             assertThat(logEvent.message).isEqualTo(fakeMessage)
@@ -303,8 +308,6 @@ internal class SdkInternalLoggerTest {
         val mockLambda: () -> String = mock()
         whenever(mockLambda.invoke()) doReturn fakeMessage
         val fakeLevel = forge.anElementFrom(InternalLogger.Level.INFO, InternalLogger.Level.DEBUG)
-        val mockRumFeatureScope = mock<FeatureScope>()
-        whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumFeatureScope
 
         // When
         testedInternalLogger.log(
@@ -316,7 +319,7 @@ internal class SdkInternalLoggerTest {
         )
 
         // Then
-        argumentCaptor<InternalTelemetryEvent>() {
+        argumentCaptor<InternalTelemetryEvent> {
             verify(mockRumFeatureScope).sendEvent(capture())
             val logEvent = firstValue as InternalTelemetryEvent.Log.Debug
             assertThat(logEvent.message).isEqualTo(fakeMessage)
@@ -333,8 +336,6 @@ internal class SdkInternalLoggerTest {
         val mockLambda: () -> String = mock()
         whenever(mockLambda.invoke()) doReturn fakeMessage
         val fakeLevel = forge.anElementFrom(InternalLogger.Level.INFO, InternalLogger.Level.DEBUG)
-        val mockRumFeatureScope = mock<FeatureScope>()
-        whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumFeatureScope
 
         // When
         testedInternalLogger.log(
@@ -346,7 +347,7 @@ internal class SdkInternalLoggerTest {
         )
 
         // Then
-        argumentCaptor<InternalTelemetryEvent>() {
+        argumentCaptor<InternalTelemetryEvent> {
             verify(mockRumFeatureScope).sendEvent(capture())
             val logEvent = firstValue as InternalTelemetryEvent.Log.Debug
             assertThat(logEvent.message).isEqualTo(fakeMessage)
@@ -364,8 +365,6 @@ internal class SdkInternalLoggerTest {
         val mockLambda: () -> String = mock()
         whenever(mockLambda.invoke()) doReturn fakeMessage
         val fakeLevel = forge.anElementFrom(InternalLogger.Level.WARN, InternalLogger.Level.ERROR)
-        val mockRumFeatureScope = mock<FeatureScope>()
-        whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumFeatureScope
 
         // When
         testedInternalLogger.log(
@@ -377,7 +376,7 @@ internal class SdkInternalLoggerTest {
         )
 
         // Then
-        argumentCaptor<InternalTelemetryEvent>() {
+        argumentCaptor<InternalTelemetryEvent> {
             verify(mockRumFeatureScope).sendEvent(capture())
             val logEvent = firstValue as InternalTelemetryEvent.Log.Error
             assertThat(logEvent.message).isEqualTo(fakeMessage)
@@ -396,8 +395,6 @@ internal class SdkInternalLoggerTest {
         whenever(mockLambda.invoke()) doReturn fakeMessage
         val fakeLevel = forge.aValueFrom(InternalLogger.Level::class.java)
         val fakeThrowable = forge.aThrowable()
-        val mockRumFeatureScope = mock<FeatureScope>()
-        whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumFeatureScope
 
         // When
         testedInternalLogger.log(
@@ -409,7 +406,7 @@ internal class SdkInternalLoggerTest {
         )
 
         // Then
-        argumentCaptor<InternalTelemetryEvent>() {
+        argumentCaptor<InternalTelemetryEvent> {
             verify(mockRumFeatureScope).sendEvent(capture())
             val logEvent = firstValue as InternalTelemetryEvent.Log.Error
             assertThat(logEvent.message).isEqualTo(fakeMessage)
@@ -427,8 +424,6 @@ internal class SdkInternalLoggerTest {
         val mockLambda: () -> String = mock()
         whenever(mockLambda.invoke()) doReturn fakeMessage
         val fakeLevel = forge.anElementFrom(InternalLogger.Level.INFO, InternalLogger.Level.DEBUG)
-        val mockRumFeatureScope = mock<FeatureScope>()
-        whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumFeatureScope
 
         // When
         repeat(10) {
@@ -442,7 +437,7 @@ internal class SdkInternalLoggerTest {
         }
 
         // Then
-        argumentCaptor<InternalTelemetryEvent>() {
+        argumentCaptor<InternalTelemetryEvent> {
             verify(mockRumFeatureScope).sendEvent(capture())
             val logEvent = firstValue as InternalTelemetryEvent.Log.Debug
             assertThat(logEvent.message).isEqualTo(fakeMessage)
@@ -455,9 +450,10 @@ internal class SdkInternalLoggerTest {
         forge: Forge
     ) {
         // Given
-        val mockRumFeatureScope = mock<FeatureScope>()
-        whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumFeatureScope
-        val fakeAdditionalProperties = forge.exhaustiveAttributes()
+        val samplingRate = 100.0f
+        val fakeAdditionalProperties = forge.exhaustiveAttributes().also {
+            it[InternalTelemetryEvent.REPORTING_SAMPLING_RATE_KEY] = samplingRate
+        }
         val mockLambda: () -> String = mock()
         whenever(mockLambda.invoke()) doReturn fakeMessage
 
@@ -465,15 +461,168 @@ internal class SdkInternalLoggerTest {
         testedInternalLogger.logMetric(
             mockLambda,
             fakeAdditionalProperties,
-            100.0f
+            samplingRate
         )
 
         // Then
-        argumentCaptor<InternalTelemetryEvent>() {
+        argumentCaptor<InternalTelemetryEvent> {
             verify(mockRumFeatureScope).sendEvent(capture())
             val metricEvent = firstValue as InternalTelemetryEvent.Metric
             assertThat(metricEvent.message).isEqualTo(fakeMessage)
             assertThat(metricEvent.additionalProperties).isEqualTo(fakeAdditionalProperties)
+        }
+    }
+
+    @ParameterizedTest
+    @ValueSource(floats = [0.0f, 0.3f])
+    fun `M creationSampleRate is sent if present W logMetric() {sampling 100 percent}`(
+        creationSampleRate: Float,
+        forge: Forge
+    ) {
+        // Given
+        val mockLambda: () -> String = mock {
+            on { invoke() } doReturn forge.aString()
+        }
+        whenever(mockLambda.invoke()) doReturn forge.aString()
+
+        // When
+        val samplingRate = 100.0f
+        val expectedCreationSampleRate = creationSampleRate.takeIf {
+            it > 0.0f // ValueSource doesn't allows to use null values
+        }
+
+        testedInternalLogger.logMetric(
+            mockLambda,
+            emptyMap(),
+            samplingRate,
+            expectedCreationSampleRate
+        )
+
+        // Then
+        argumentCaptor<InternalTelemetryEvent> {
+            verify(mockRumFeatureScope).sendEvent(capture())
+            val metricEvent = firstValue as InternalTelemetryEvent.Metric
+
+            assertThat(
+                metricEvent.additionalProperties?.get(InternalTelemetryEvent.CREATION_SAMPLING_RATE_KEY)
+            ).isEqualTo(
+                expectedCreationSampleRate
+            )
+
+            assertThat(
+                metricEvent.additionalProperties?.get(InternalTelemetryEvent.REPORTING_SAMPLING_RATE_KEY)
+            ).isEqualTo(
+                samplingRate
+            )
+        }
+    }
+
+    @Test
+    fun `M creationSampleRate is sent if present W logApiUsage() {sampling 100 percent}`(
+        forge: Forge
+    ) {
+        // Given
+        val mockLambda: () -> InternalTelemetryEvent.ApiUsage = mock {
+            on { invoke() } doReturn forge.getForgery<InternalTelemetryEvent.ApiUsage>()
+        }
+
+        // When
+        val samplingRate = 100f
+
+        testedInternalLogger.logApiUsage(
+            samplingRate,
+            mockLambda
+        )
+
+        // Then
+        argumentCaptor<InternalTelemetryEvent> {
+            verify(mockRumFeatureScope).sendEvent(capture())
+
+            val apiUsageEvent = firstValue as InternalTelemetryEvent.ApiUsage
+
+            assertThat(
+                apiUsageEvent.additionalProperties
+            ).doesNotContainKeys(
+                InternalTelemetryEvent.CREATION_SAMPLING_RATE_KEY
+            )
+
+            assertThat(
+                apiUsageEvent.additionalProperties[InternalTelemetryEvent.REPORTING_SAMPLING_RATE_KEY]
+            ).isEqualTo(
+                samplingRate
+            )
+        }
+    }
+
+    @Test
+    fun `M creationSampleRate is sent if present W log() {debug event}`(
+        forge: Forge
+    ) {
+        // When
+        val samplingRate = forge.aFloat(min = .1f, max = 100f)
+
+        testedInternalLogger.log(
+            level = forge.aValueFrom(
+                InternalLogger.Level::class.java,
+                exclude = listOf(InternalLogger.Level.WARN, InternalLogger.Level.ERROR)
+            ),
+            target = InternalLogger.Target.TELEMETRY,
+            messageBuilder = { forge.aString() },
+            additionalProperties = mapOf(InternalTelemetryEvent.REPORTING_SAMPLING_RATE_KEY to samplingRate)
+        )
+
+        // Then
+        argumentCaptor<InternalTelemetryEvent> {
+            verify(mockRumFeatureScope).sendEvent(capture())
+
+            val debugEvent = firstValue as InternalTelemetryEvent.Log.Debug
+
+            assertThat(
+                debugEvent.additionalProperties
+            ).doesNotContainKeys(
+                InternalTelemetryEvent.CREATION_SAMPLING_RATE_KEY
+            )
+
+            assertThat(
+                debugEvent.additionalProperties?.get(InternalTelemetryEvent.REPORTING_SAMPLING_RATE_KEY)
+            ).isEqualTo(
+                samplingRate
+            )
+        }
+    }
+
+    @Test
+    fun `M creationSampleRate is sent if present W log() {error event}`(
+        forge: Forge
+    ) {
+        // When
+        val samplingRate = forge.aFloat(min = .1f, max = 100f)
+
+        testedInternalLogger.log(
+            level = forge.anElementFrom(InternalLogger.Level.WARN, InternalLogger.Level.ERROR),
+            target = InternalLogger.Target.TELEMETRY,
+            throwable = forge.aThrowable(),
+            messageBuilder = { forge.aString() },
+            additionalProperties = mapOf(InternalTelemetryEvent.REPORTING_SAMPLING_RATE_KEY to samplingRate)
+        )
+
+        // Then
+        argumentCaptor<InternalTelemetryEvent> {
+            verify(mockRumFeatureScope).sendEvent(capture())
+
+            val debugEvent = firstValue as InternalTelemetryEvent.Log.Error
+
+            assertThat(
+                debugEvent.additionalProperties
+            ).doesNotContainKeys(
+                InternalTelemetryEvent.CREATION_SAMPLING_RATE_KEY
+            )
+
+            assertThat(
+                debugEvent.additionalProperties?.get(InternalTelemetryEvent.REPORTING_SAMPLING_RATE_KEY)
+            ).isEqualTo(
+                samplingRate
+            )
         }
     }
 
@@ -484,8 +633,6 @@ internal class SdkInternalLoggerTest {
         forge: Forge
     ) {
         // Given
-        val mockRumFeatureScope = mock<FeatureScope>()
-        whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumFeatureScope
         val fakeAdditionalProperties = forge.exhaustiveAttributes()
         val mockLambda: () -> String = mock()
         whenever(mockLambda.invoke()) doReturn fakeMessage
@@ -513,8 +660,6 @@ internal class SdkInternalLoggerTest {
         forge: Forge
     ) {
         // Given
-        val mockRumFeatureScope = mock<FeatureScope>()
-        whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumFeatureScope
         val fakeAdditionalProperties = forge.exhaustiveAttributes()
         val mockLambda: () -> String = mock()
         whenever(mockLambda.invoke()) doReturn fakeMessage
@@ -556,15 +701,11 @@ internal class SdkInternalLoggerTest {
     fun `M send api usage telemetry W logApiUsage() { sampling rate 100 percent }`(
         @Forgery fakeApiUsageInternalTelemetryEvent: InternalTelemetryEvent.ApiUsage
     ) {
-        // Given
-        val mockRumFeatureScope = mock<FeatureScope>()
-        whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumFeatureScope
-
         // When
-        testedInternalLogger.logApiUsage(fakeApiUsageInternalTelemetryEvent, 100.0f)
+        testedInternalLogger.logApiUsage(100.0f) { fakeApiUsageInternalTelemetryEvent }
 
         // Then
-        argumentCaptor<InternalTelemetryEvent>() {
+        argumentCaptor<InternalTelemetryEvent> {
             verify(mockRumFeatureScope).sendEvent(capture())
             val apiUsageEvent = firstValue as InternalTelemetryEvent.ApiUsage
             assertThat(apiUsageEvent).isEqualTo(fakeApiUsageInternalTelemetryEvent)
@@ -577,18 +718,13 @@ internal class SdkInternalLoggerTest {
         @Forgery fakeApiUsageInternalTelemetryEvent: InternalTelemetryEvent.ApiUsage
     ) {
         // Given
-        val mockRumFeatureScope = mock<FeatureScope>()
-        whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumFeatureScope
         val repeatCount = 100
         val expectedCallCount = (repeatCount * fakeSampleRate / 100f).toInt()
         val marginOfError = (repeatCount * 0.25f).toInt()
 
         // When
         repeat(100) {
-            testedInternalLogger.logApiUsage(
-                fakeApiUsageInternalTelemetryEvent,
-                fakeSampleRate
-            )
+            testedInternalLogger.logApiUsage(fakeSampleRate) { fakeApiUsageInternalTelemetryEvent }
         }
 
         // Then
@@ -600,15 +736,8 @@ internal class SdkInternalLoggerTest {
     fun `M not send any api usage telemetry W logApiUsage() {sampling 0 percent}`(
         @Forgery fakeApiUsageInternalTelemetryEvent: InternalTelemetryEvent.ApiUsage
     ) {
-        // Given
-        val mockRumFeatureScope = mock<FeatureScope>()
-        whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumFeatureScope
-
         // When
-        testedInternalLogger.logApiUsage(
-            fakeApiUsageInternalTelemetryEvent,
-            0.0f
-        )
+        testedInternalLogger.logApiUsage(0.0f) { fakeApiUsageInternalTelemetryEvent }
 
         // Then
         verify(mockRumFeatureScope, never()).sendEvent(any())
@@ -624,10 +753,9 @@ internal class SdkInternalLoggerTest {
 
         // When
         assertDoesNotThrow {
-            testedInternalLogger.logApiUsage(
-                fakeApiUsageInternalTelemetryEvent,
-                fakeSampleRate
-            )
+            testedInternalLogger.logApiUsage(fakeSampleRate) {
+                fakeApiUsageInternalTelemetryEvent
+            }
         }
     }
 

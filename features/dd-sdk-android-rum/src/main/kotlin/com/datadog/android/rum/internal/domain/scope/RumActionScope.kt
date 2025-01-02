@@ -46,7 +46,8 @@ internal class RumActionScope(
     internal val actionId: String = UUID.randomUUID().toString()
     internal var type: RumActionType = initialType
     internal var name: String = initialName
-    private val startedNanos: Long = eventTime.nanoTime
+    internal val startedNanos: Long = eventTime.nanoTime
+    internal var stoppedNanos: Long = startedNanos
     private var lastInteractionNanos: Long = startedNanos
     private val networkInfo = sdkCore.networkInfo
 
@@ -142,6 +143,7 @@ internal class RumActionScope(
         event.name?.let { name = it }
         attributes.putAll(event.attributes)
         stopped = true
+        stoppedNanos = now
         lastInteractionNanos = now
     }
 
@@ -215,6 +217,7 @@ internal class RumActionScope(
         val eventCrashCount = crashCount
         val eventLongTaskCount = longTaskCount
         val eventResourceCount = resourceCount
+        val loadingTime = max(endNanos - startedNanos, 1L)
 
         val syntheticsAttribute = if (
             rumContext.syntheticsTestId.isNullOrBlank() ||
@@ -254,7 +257,7 @@ internal class RumActionScope(
                     crash = ActionEvent.Crash(eventCrashCount),
                     longTask = ActionEvent.LongTask(eventLongTaskCount),
                     resource = ActionEvent.Resource(eventResourceCount),
-                    loadingTime = max(endNanos - startedNanos, 1L),
+                    loadingTime = loadingTime,
                     frustration = if (frustrations.isNotEmpty()) {
                         ActionEvent.Frustration(frustrations)
                     } else {
@@ -312,7 +315,8 @@ internal class RumActionScope(
             )
         }
             .apply {
-                val storageEvent = StorageEvent.Action(frustrations.size)
+                val storageEvent =
+                    StorageEvent.Action(frustrations.size, actualType.toSchemaType(), stoppedNanos)
                 onError {
                     it.eventDropped(rumContext.viewId.orEmpty(), storageEvent)
                 }

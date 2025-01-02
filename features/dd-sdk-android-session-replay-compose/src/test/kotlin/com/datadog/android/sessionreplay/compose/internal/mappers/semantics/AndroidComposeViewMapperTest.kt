@@ -16,7 +16,6 @@ import androidx.compose.ui.semantics.SemanticsOwner
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import com.datadog.android.sessionreplay.compose.test.elmyr.SessionReplayComposeForgeConfigurator
 import com.datadog.android.sessionreplay.recorder.MappingContext
 import com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback
@@ -114,7 +113,6 @@ class AndroidComposeViewMapperTest {
             mockSemanticsNode,
             fakeMappingContext.systemInformation.screenDensity,
             fakeMappingContext,
-            SessionReplayPrivacy.ALLOW,
             mockAsyncJobStatusCallback
         )
     }

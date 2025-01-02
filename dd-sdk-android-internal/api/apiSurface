@@ -28,6 +28,9 @@ sealed class com.datadog.android.internal.telemetry.InternalTelemetryEvent
     class AddViewLoadingTime : ApiUsage
       constructor(Boolean, Boolean, Boolean, MutableMap<String, Any?> = mutableMapOf())
   object InterceptorInstantiated : InternalTelemetryEvent
+  companion object 
+    const val CREATION_SAMPLING_RATE_KEY: String
+    const val REPORTING_SAMPLING_RATE_KEY: String
 fun ByteArray.toHexString(): String
 object com.datadog.android.internal.utils.ImageViewUtils
   fun resolveParentRectAbsPosition(android.view.View): android.graphics.Rect
@@ -35,6 +38,8 @@ object com.datadog.android.internal.utils.ImageViewUtils
   fun resolveContentRectWithScaling(android.widget.ImageView, android.graphics.drawable.Drawable, android.widget.ImageView.ScaleType? = null): android.graphics.Rect
 fun Int.densityNormalized(Float): Int
 fun Long.densityNormalized(Float): Long
+fun StringBuilder.appendIfNotEmpty(String)
+fun StringBuilder.appendIfNotEmpty(Char)
 fun Throwable.loggableStackTrace(): String
 annotation com.datadog.tools.annotation.NoOpImplementation
   constructor(Boolean = false)

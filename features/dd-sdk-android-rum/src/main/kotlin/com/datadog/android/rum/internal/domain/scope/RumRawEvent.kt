@@ -16,6 +16,7 @@ import com.datadog.android.rum.RumResourceMethod
 import com.datadog.android.rum.internal.RumErrorSourceType
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
+import com.datadog.android.rum.model.ActionEvent
 
 internal sealed class RumRawEvent {
 
@@ -113,17 +114,23 @@ internal sealed class RumRawEvent {
 
     internal data class ResourceSent(
         val viewId: String,
+        val resourceId: String,
+        val resourceEndTimestampInNanos: Long,
         override val eventTime: Time = Time()
     ) : RumRawEvent()
 
     internal data class ActionSent(
         val viewId: String,
         val frustrationCount: Int,
+        val type: ActionEvent.ActionEventActionType,
+        val eventEndTimestampInNanos: Long,
         override val eventTime: Time = Time()
     ) : RumRawEvent()
 
     internal data class ErrorSent(
         val viewId: String,
+        val resourceId: String? = null,
+        val resourceEndTimestampInNanos: Long? = null,
         override val eventTime: Time = Time()
     ) : RumRawEvent()
 
@@ -135,6 +142,7 @@ internal sealed class RumRawEvent {
 
     internal data class ResourceDropped(
         val viewId: String,
+        val resourceId: String,
         override val eventTime: Time = Time()
     ) : RumRawEvent()
 
@@ -145,6 +153,7 @@ internal sealed class RumRawEvent {
 
     internal data class ErrorDropped(
         val viewId: String,
+        val resourceId: String? = null,
         override val eventTime: Time = Time()
     ) : RumRawEvent()
 

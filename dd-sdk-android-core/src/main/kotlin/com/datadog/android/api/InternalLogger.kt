@@ -6,6 +6,7 @@
 
 package com.datadog.android.api
 
+import androidx.annotation.FloatRange
 import com.datadog.android.core.internal.logger.SdkInternalLogger
 import com.datadog.android.core.metrics.PerformanceMetric
 import com.datadog.android.core.metrics.TelemetryMetricType
@@ -107,13 +108,18 @@ interface InternalLogger {
      * @param messageBuilder the lambda building the metric message
      * @param additionalProperties additional properties to add to the metric
      * @param samplingRate value between 0-100 for sampling the event. Note that the sampling rate applied to this
-     * metric will be applied in addition to the global telemetry sampling rate.
+     * @param creationSampleRate value between 0-100. Some of the metrics like [PerformanceMetric] being sampled on the
+     * metric creation place and then reported with 100% probability. In such cases we need to use *creationSampleRate*
+     * to compute effectiveSampleRate correctly. It's null by default means that metric sampled only when it
+     * reported which is applicable for most cases. creationSampleRate == null could
+     * be considered as creationSampleRate == 100%
      */
     @InternalApi
     fun logMetric(
         messageBuilder: () -> String,
         additionalProperties: Map<String, Any?>,
-        samplingRate: Float
+        @FloatRange(from = 0.0, to = 100.0) samplingRate: Float,
+        @FloatRange(from = 0.0, to = 100.0) creationSampleRate: Float? = null
     )
 
     /**
@@ -129,20 +135,20 @@ interface InternalLogger {
     fun startPerformanceMeasure(
         callerClass: String,
         metric: TelemetryMetricType,
-        samplingRate: Float,
+        @FloatRange(from = 0.0, to = 100.0) samplingRate: Float,
         operationName: String
     ): PerformanceMetric?
 
     /**
      * Logs an API usage from the internal implementation.
-     * @param apiUsageEvent the API event being tracked
      * @param samplingRate value between 0-100 for sampling the event. Note that the sampling rate applied to this
      * event will be applied in addition to the global telemetry sampling rate. By default, the sampling rate is 15%.
+     * @param apiUsageEventBuilder the lambda building the API event being tracked
      */
     @InternalApi
     fun logApiUsage(
-        apiUsageEvent: InternalTelemetryEvent.ApiUsage,
-        samplingRate: Float = DEFAULT_API_USAGE_TELEMETRY_SAMPLING_RATE
+        @FloatRange(from = 0.0, to = 100.0) samplingRate: Float = DEFAULT_API_USAGE_TELEMETRY_SAMPLING_RATE,
+        apiUsageEventBuilder: () -> InternalTelemetryEvent.ApiUsage
     )
 
     companion object {

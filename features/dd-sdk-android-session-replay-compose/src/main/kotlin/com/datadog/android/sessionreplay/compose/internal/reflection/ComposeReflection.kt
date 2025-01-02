@@ -6,12 +6,14 @@
 
 package com.datadog.android.sessionreplay.compose.internal.reflection
 
+import androidx.compose.ui.text.MultiParagraph
 import com.datadog.android.Datadog
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.FeatureSdkCore
 import java.lang.reflect.Field
 import java.lang.reflect.Method
 
+@Suppress("StringLiteralDuplication")
 internal object ComposeReflection {
     val WrappedCompositionClass = getClassSafe("androidx.compose.ui.platform.WrappedComposition")
 
@@ -21,6 +23,7 @@ internal object ComposeReflection {
     val OwnerField = WrappedCompositionClass?.getDeclaredFieldSafe("owner")
 
     val LayoutNodeClass = getClassSafe("androidx.compose.ui.node.LayoutNode")
+    val GetInteropViewMethod = LayoutNodeClass?.getDeclaredMethodSafe("getInteropView")
 
     val SemanticsNodeClass = getClassSafe("androidx.compose.ui.semantics.SemanticsNode")
     val LayoutNodeField = SemanticsNodeClass?.getDeclaredFieldSafe("layoutNode")
@@ -35,6 +38,17 @@ internal object ComposeReflection {
 
     val BackgroundElementClass = getClassSafe("androidx.compose.foundation.BackgroundElement")
     val ColorField = BackgroundElementClass?.getDeclaredFieldSafe("color")
+    val ShapeField = BackgroundElementClass?.getDeclaredFieldSafe("shape")
+
+    val CheckDrawingCacheClass = getClassSafe("androidx.compose.material.CheckDrawingCache")
+    val CheckboxKtClass = getClassSafe("androidx.compose.material.CheckboxKt\$CheckboxImpl\$1\$1")
+    val DrawBehindElementClass = getClassSafe("androidx.compose.ui.draw.DrawBehindElement")
+    val BorderColorField = CheckboxKtClass?.getDeclaredFieldSafe("\$borderColor\$delegate")
+    val BoxColorField = CheckboxKtClass?.getDeclaredFieldSafe("\$boxColor\$delegate")
+    val CheckCacheField = CheckboxKtClass?.getDeclaredFieldSafe("\$checkCache")
+    val CheckColorField = CheckboxKtClass?.getDeclaredFieldSafe("\$checkColor\$delegate")
+    val CheckPathField = CheckDrawingCacheClass?.getDeclaredFieldSafe("checkPath")
+    val OnDrawField = DrawBehindElementClass?.getDeclaredFieldSafe("onDraw")
 
     val PaddingElementClass = getClassSafe("androidx.compose.foundation.layout.PaddingElement")
     val StartField = PaddingElementClass?.getDeclaredFieldSafe("start")
@@ -64,10 +78,25 @@ internal object ComposeReflection {
     val BitmapField = AndroidImageBitmapClass?.getDeclaredFieldSafe("bitmap")
 
     val ContentPainterModifierClass = getClassSafe("coil.compose.ContentPainterModifier")
-    val PainterFieldOfContentPainter = ContentPainterModifierClass?.getDeclaredFieldSafe("painter")
+    val PainterFieldOfContentPainterModifier =
+        ContentPainterModifierClass?.getDeclaredFieldSafe("painter")
+
+    val ContentPainterElementClass = getClassSafe("coil.compose.ContentPainterElement")
+    val PainterFieldOfContentPainterElement =
+        ContentPainterElementClass?.getDeclaredFieldSafe("painter")
 
     val AsyncImagePainterClass = getClassSafe("coil.compose.AsyncImagePainter")
     val PainterFieldOfAsyncImagePainter = AsyncImagePainterClass?.getDeclaredFieldSafe("_painter")
+
+    // Region of MultiParagraph text
+    val ParagraphInfoListField =
+        MultiParagraph::class.java.getDeclaredFieldSafe("paragraphInfoList")
+    val ParagraphInfoClass = getClassSafe("androidx.compose.ui.text.ParagraphInfo")
+    val ParagraphField = ParagraphInfoClass?.getDeclaredFieldSafe("paragraph")
+    val AndroidParagraphClass = getClassSafe("androidx.compose.ui.text.AndroidParagraph")
+    val LayoutField = AndroidParagraphClass?.getDeclaredFieldSafe("layout")
+    val TextLayoutClass = getClassSafe("androidx.compose.ui.text.android.TextLayout")
+    val StaticLayoutField = TextLayoutClass?.getDeclaredFieldSafe("layout")
 }
 
 internal fun Field.accessible(): Field {
@@ -85,31 +114,16 @@ internal fun Field.getSafe(target: Any?): Any? {
     return try {
         get(target)
     } catch (e: IllegalAccessException) {
-        (Datadog.getInstance() as? FeatureSdkCore)?.internalLogger?.log(
-            InternalLogger.Level.ERROR,
-            InternalLogger.Target.MAINTAINER,
-            { "Unable to get field $name on $target through reflection, field is not accessible" },
-            e
-        )
+        logReflectionException(name, LOG_TYPE_FIELD, LOG_REASON_FIELD_NO_ACCESSIBLE, e)
         null
     } catch (e: IllegalArgumentException) {
-        (Datadog.getInstance() as? FeatureSdkCore)?.internalLogger?.log(
-            InternalLogger.Level.ERROR,
-            InternalLogger.Target.MAINTAINER,
-            { "Unable to get field $name on $target through reflection, target has incompatible type" },
-            e
-        )
+        logReflectionException(name, LOG_TYPE_FIELD, LOG_REASON_INCOMPATIBLE_TYPE, e)
         null
     } catch (e: NullPointerException) {
         logNullPointerException(name, LOG_TYPE_FIELD, e)
         null
     } catch (e: ExceptionInInitializerError) {
-        (Datadog.getInstance() as? FeatureSdkCore)?.internalLogger?.log(
-            InternalLogger.Level.ERROR,
-            InternalLogger.Target.MAINTAINER,
-            { "Unable to get field $name on $target through reflection, initialization error" },
-            e
-        )
+        logReflectionException(name, LOG_TYPE_FIELD, LOG_REASON_INITIALIZATION_ERROR, e)
         null
     }
 }
@@ -118,20 +132,10 @@ internal fun getClassSafe(className: String): Class<*>? {
     return try {
         Class.forName(className)
     } catch (e: LinkageError) {
-        (Datadog.getInstance() as? FeatureSdkCore)?.internalLogger?.log(
-            InternalLogger.Level.ERROR,
-            InternalLogger.Target.MAINTAINER,
-            { "Unable to get class $className through reflection" },
-            e
-        )
+        logReflectionException(className, LOG_TYPE_CLASS, LOG_REASON_LINKAGE_ERROR, e)
         null
     } catch (e: ExceptionInInitializerError) {
-        (Datadog.getInstance() as? FeatureSdkCore)?.internalLogger?.log(
-            InternalLogger.Level.ERROR,
-            InternalLogger.Target.MAINTAINER,
-            { "Unable to get class $className through reflection, error in Class initialization" },
-            e
-        )
+        logReflectionException(className, LOG_TYPE_CLASS, LOG_REASON_INITIALIZATION_ERROR, e)
         null
     } catch (e: ClassNotFoundException) {
         logNoSuchException(className, LOG_TYPE_CLASS, e)
@@ -172,39 +176,38 @@ internal fun Class<*>.getDeclaredMethodSafe(methodName: String): Method? {
 }
 
 private fun logSecurityException(name: String, type: String, e: SecurityException) {
-    (Datadog.getInstance() as? FeatureSdkCore)?.internalLogger?.log(
-        InternalLogger.Level.ERROR,
-        InternalLogger.Target.MAINTAINER,
-        {
-            "Unable to get $type $name through reflection"
-        },
-        e
-    )
+    logReflectionException(name = name, type = type, reason = LOG_REASON_SECURITY, e = e)
 }
 
 private fun logNullPointerException(name: String, type: String, e: NullPointerException) {
-    (Datadog.getInstance() as? FeatureSdkCore)?.internalLogger?.log(
-        InternalLogger.Level.ERROR,
-        InternalLogger.Target.MAINTAINER,
-        {
-            "Unable to get $type $name through reflection, name is null"
-        },
-        e
-    )
+    logReflectionException(name = name, type = type, reason = "$name is null", e = e)
 }
 
 private fun logNoSuchException(name: String, type: String, e: ReflectiveOperationException) {
+    logReflectionException(name = name, type = type, reason = LOG_REASON_DEFAULT, e = e)
+}
+
+private fun logReflectionException(name: String, type: String, reason: String, e: Throwable) {
     (Datadog.getInstance() as? FeatureSdkCore)?.internalLogger?.log(
-        InternalLogger.Level.ERROR,
-        InternalLogger.Target.MAINTAINER,
-        {
-            "Unable to get $type $name through reflection, " +
-                "either because of obfuscation or dependency version mismatch"
-        },
-        e
+        level = InternalLogger.Level.ERROR,
+        targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+        messageBuilder = { "Unable to get $type [$name] through reflection: $reason" },
+        throwable = e,
+        onlyOnce = true,
+        additionalProperties = mapOf(
+            "reflection.type" to type,
+            "reflection.name" to name
+        )
     )
 }
 
-private const val LOG_TYPE_METHOD = "method"
-private const val LOG_TYPE_FIELD = "field"
-private const val LOG_TYPE_CLASS = "field"
+private const val LOG_TYPE_METHOD = "Method"
+private const val LOG_TYPE_FIELD = "Field"
+private const val LOG_TYPE_CLASS = "Class"
+private const val LOG_REASON_FIELD_NO_ACCESSIBLE = "Field is not accessible"
+private const val LOG_REASON_INCOMPATIBLE_TYPE = "Target has incompatible type"
+private const val LOG_REASON_DEFAULT =
+    "Either because of obfuscation or dependency version mismatch"
+private const val LOG_REASON_SECURITY = "Security exception"
+private const val LOG_REASON_LINKAGE_ERROR = "Linkage error"
+private const val LOG_REASON_INITIALIZATION_ERROR = "Error in initialization"

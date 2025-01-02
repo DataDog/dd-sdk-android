@@ -108,6 +108,12 @@ internal class RumTest {
             }
             assertThat((lastValue.requestFactory as RumRequestFactory).customEndpointUrl)
                 .isEqualTo(fakeRumConfiguration.featureConfiguration.customEndpointUrl)
+            assertThat(lastValue.initialResourceIdentifier).isSameAs(
+                fakeRumConfiguration.featureConfiguration.initialResourceIdentifier
+            )
+            assertThat(lastValue.lastInteractionIdentifier).isSameAs(
+                fakeRumConfiguration.featureConfiguration.lastInteractionIdentifier
+            )
         }
     }
 
@@ -152,6 +158,11 @@ internal class RumTest {
 
         assertThat(telemetrySampler.getSampleRate())
             .isEqualTo(fakeRumConfiguration.featureConfiguration.telemetrySampleRate)
+        val rumApplicationScope = monitor.rootScope as RumApplicationScope
+        assertThat(rumApplicationScope.initialResourceIdentifier)
+            .isSameAs(fakeRumConfiguration.featureConfiguration.initialResourceIdentifier)
+        assertThat(rumApplicationScope.lastInteractionIdentifier)
+            .isSameAs(fakeRumConfiguration.featureConfiguration.lastInteractionIdentifier)
     }
 
     @Test

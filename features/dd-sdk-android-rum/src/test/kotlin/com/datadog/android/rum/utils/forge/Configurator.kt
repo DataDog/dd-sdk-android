@@ -45,6 +45,10 @@ internal class Configurator : BaseConfigurator() {
         forge.addFactory(ViewEventMetaForgeryFactory())
         forge.addFactory(RumScopeKeyForgeryFactory())
         forge.addFactory(ResourceIdForgeryFactory())
+        forge.addFactory(InternalResourceContextFactory())
+        forge.addFactory(NetworkSettledResourceContextFactory())
+        forge.addFactory(InternalInteractionContextFactory())
+        forge.addFactory(PreviousViewLastActionContextFactory())
 
         // Telemetry schema models
         forge.addFactory(TelemetryDebugEventForgeryFactory())
@@ -59,5 +63,10 @@ internal class Configurator : BaseConfigurator() {
         forge.addFactory(InternalTelemetryErrorLogForgeryFactory())
         forge.addFactory(InternalTelemetryConfigurationForgeryFactory())
         forge.addFactory(InternalTelemetryApiUsageForgeryFactory())
+
+        // RumRawEvent
+        forge.addFactory(ActionSentForgeryFactory())
+        forge.addFactory(ResourceSentForgeryFactory())
+        forge.addFactory(ResourceDroppedForgeryFactory())
     }
 }

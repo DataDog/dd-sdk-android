@@ -13,7 +13,9 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.R
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
+import com.datadog.android.sessionreplay.internal.TouchPrivacyManager
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueRefs
+import com.datadog.android.sessionreplay.internal.recorder.callback.DefaultInteropViewCallback
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.recorder.MappingContext
 import com.datadog.android.sessionreplay.recorder.OptionSelectorDetector
@@ -25,6 +27,7 @@ internal class SnapshotProducer(
     private val imageWireframeHelper: ImageWireframeHelper,
     private val treeViewTraversal: TreeViewTraversal,
     private val optionSelectorDetector: OptionSelectorDetector,
+    private val touchPrivacyManager: TouchPrivacyManager,
     private val internalLogger: InternalLogger
 ) {
 
@@ -42,7 +45,12 @@ internal class SnapshotProducer(
                 systemInformation = systemInformation,
                 imageWireframeHelper = imageWireframeHelper,
                 textAndInputPrivacy = textAndInputPrivacy,
-                imagePrivacy = imagePrivacy
+                imagePrivacy = imagePrivacy,
+                touchPrivacyManager = touchPrivacyManager,
+                interopViewCallback = DefaultInteropViewCallback(
+                    treeViewTraversal,
+                    recordedDataQueueRefs
+                )
             ),
             LinkedList(),
             recordedDataQueueRefs

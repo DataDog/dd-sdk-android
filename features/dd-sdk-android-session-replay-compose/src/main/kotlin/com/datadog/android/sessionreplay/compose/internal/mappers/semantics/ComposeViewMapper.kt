@@ -6,9 +6,9 @@
 
 package com.datadog.android.sessionreplay.compose.internal.mappers.semantics
 
+import androidx.annotation.UiThread
 import androidx.compose.ui.platform.ComposeView
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import com.datadog.android.sessionreplay.compose.internal.utils.SemanticsUtils
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.recorder.MappingContext
@@ -32,6 +32,7 @@ internal class ComposeViewMapper(
     viewBoundsResolver,
     drawableToColorMapper
 ) {
+    @UiThread
     override fun map(
         view: ComposeView,
         mappingContext: MappingContext,
@@ -40,14 +41,11 @@ internal class ComposeViewMapper(
     ): List<MobileSegment.Wireframe> {
         val density =
             mappingContext.systemInformation.screenDensity.let { if (it == 0.0f) 1.0f else it }
-        // TODO RUM-6192: Apply FGM for compose
-        val privacy = SessionReplayPrivacy.ALLOW
         return semanticsUtils.findRootSemanticsNode(view)?.let { node ->
             rootSemanticsNodeMapper.createComposeWireframes(
                 node,
                 density,
                 mappingContext,
-                privacy,
                 asyncJobStatusCallback
             )
         } ?: emptyList()

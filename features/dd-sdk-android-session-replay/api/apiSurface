@@ -55,12 +55,17 @@ enum com.datadog.android.sessionreplay.TextAndInputPrivacy : PrivacyLevel
 enum com.datadog.android.sessionreplay.TouchPrivacy : PrivacyLevel
   - SHOW
   - HIDE
+class com.datadog.android.sessionreplay.internal.TouchPrivacyManager
+  constructor(com.datadog.android.sessionreplay.TouchPrivacy)
+  fun addTouchOverrideArea(android.graphics.Rect, com.datadog.android.sessionreplay.TouchPrivacy)
 interface com.datadog.android.sessionreplay.internal.recorder.obfuscator.StringObfuscator
   fun obfuscate(String): String
   companion object 
     fun getStringObfuscator(): StringObfuscator
+interface com.datadog.android.sessionreplay.recorder.InteropViewCallback
+  fun map(android.view.View, MappingContext): List<com.datadog.android.sessionreplay.model.MobileSegment.Wireframe>
 data class com.datadog.android.sessionreplay.recorder.MappingContext
-  constructor(SystemInformation, com.datadog.android.sessionreplay.utils.ImageWireframeHelper, com.datadog.android.sessionreplay.TextAndInputPrivacy, com.datadog.android.sessionreplay.ImagePrivacy, Boolean = false)
+  constructor(SystemInformation, com.datadog.android.sessionreplay.utils.ImageWireframeHelper, com.datadog.android.sessionreplay.TextAndInputPrivacy, com.datadog.android.sessionreplay.ImagePrivacy, com.datadog.android.sessionreplay.internal.TouchPrivacyManager, Boolean = false, InteropViewCallback)
 interface com.datadog.android.sessionreplay.recorder.OptionSelectorDetector
   fun isOptionSelector(android.view.ViewGroup): Boolean
 data class com.datadog.android.sessionreplay.recorder.SystemInformation
@@ -97,6 +102,12 @@ class com.datadog.android.sessionreplay.recorder.resources.DefaultDrawableCopier
   override fun copy(android.graphics.drawable.Drawable, android.content.res.Resources): android.graphics.drawable.Drawable?
 interface com.datadog.android.sessionreplay.recorder.resources.DrawableCopier
   fun copy(android.graphics.drawable.Drawable, android.content.res.Resources): android.graphics.drawable.Drawable?
+class com.datadog.android.sessionreplay.recorder.wrappers.BitmapWrapper
+  constructor(com.datadog.android.api.InternalLogger = InternalLogger.UNBOUND)
+  fun createBitmap(Int, Int, android.graphics.Bitmap.Config, android.util.DisplayMetrics? = null): android.graphics.Bitmap?
+class com.datadog.android.sessionreplay.recorder.wrappers.CanvasWrapper
+  constructor(com.datadog.android.api.InternalLogger)
+  fun createCanvas(android.graphics.Bitmap): android.graphics.Canvas?
 open class com.datadog.android.sessionreplay.utils.AndroidMDrawableToColorMapper : LegacyDrawableToColorMapper
   constructor(List<DrawableToColorMapper> = emptyList())
   override fun resolveRippleDrawable(android.graphics.drawable.RippleDrawable, com.datadog.android.api.InternalLogger): Int?
@@ -129,6 +140,7 @@ interface com.datadog.android.sessionreplay.utils.DrawableToColorMapper
 data class com.datadog.android.sessionreplay.utils.GlobalBounds
   constructor(Long, Long, Long, Long)
 interface com.datadog.android.sessionreplay.utils.ImageWireframeHelper
+  fun createImageWireframeByPath(Long, GlobalBounds, android.graphics.Path, Int, Int, Int, Int, Float, Boolean, com.datadog.android.sessionreplay.ImagePrivacy, AsyncJobStatusCallback, com.datadog.android.sessionreplay.model.MobileSegment.WireframeClip? = null, com.datadog.android.sessionreplay.model.MobileSegment.ShapeStyle? = null, com.datadog.android.sessionreplay.model.MobileSegment.ShapeBorder? = null, String?): com.datadog.android.sessionreplay.model.MobileSegment.Wireframe?
   fun createImageWireframeByBitmap(Long, GlobalBounds, android.graphics.Bitmap, Float, Boolean, com.datadog.android.sessionreplay.ImagePrivacy, AsyncJobStatusCallback, com.datadog.android.sessionreplay.model.MobileSegment.WireframeClip? = null, com.datadog.android.sessionreplay.model.MobileSegment.ShapeStyle? = null, com.datadog.android.sessionreplay.model.MobileSegment.ShapeBorder? = null): com.datadog.android.sessionreplay.model.MobileSegment.Wireframe?
   fun createImageWireframeByDrawable(android.view.View, com.datadog.android.sessionreplay.ImagePrivacy, Int, Long, Long, Int, Int, Boolean, android.graphics.drawable.Drawable, com.datadog.android.sessionreplay.recorder.resources.DrawableCopier = DefaultDrawableCopier(), AsyncJobStatusCallback, com.datadog.android.sessionreplay.model.MobileSegment.WireframeClip? = null, com.datadog.android.sessionreplay.model.MobileSegment.ShapeStyle? = null, com.datadog.android.sessionreplay.model.MobileSegment.ShapeBorder? = null, String? = DRAWABLE_CHILD_NAME, String?): com.datadog.android.sessionreplay.model.MobileSegment.Wireframe?
   fun createCompoundDrawableWireframes(android.widget.TextView, com.datadog.android.sessionreplay.recorder.MappingContext, Int, String?, AsyncJobStatusCallback): MutableList<com.datadog.android.sessionreplay.model.MobileSegment.Wireframe>

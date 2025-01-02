@@ -97,7 +97,8 @@ internal class TelemetryConfigurationEventForgeryFactory :
                     batchUploadFrequency = forge.aNullable { aLong() },
                     reactVersion = forge.aNullable { aString() },
                     reactNativeVersion = forge.aNullable { aString() },
-                    dartVersion = forge.aNullable { aString() }
+                    dartVersion = forge.aNullable { aString() },
+                    isMainProcess = forge.aBool()
                 )
             )
         )

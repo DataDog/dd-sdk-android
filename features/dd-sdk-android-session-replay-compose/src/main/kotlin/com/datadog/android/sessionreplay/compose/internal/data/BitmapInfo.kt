@@ -4,11 +4,11 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.opentracing.scopemanager
+package com.datadog.android.sessionreplay.compose.internal.data
 
-object ScopeTestHelper {
+import android.graphics.Bitmap
 
-    fun removeThreadLocalScope() {
-        ContextualScopeManager.tlsScope.remove()
-    }
-}
+internal data class BitmapInfo(
+    val bitmap: Bitmap,
+    val isContextualImage: Boolean
+)

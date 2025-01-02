@@ -11,7 +11,6 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
-import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.internal.utils.loggableStackTrace
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumAttributes
@@ -22,6 +21,8 @@ import com.datadog.android.rum.internal.FeaturesContextResolver
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
+import com.datadog.android.rum.internal.metric.networksettled.InternalResourceContext
+import com.datadog.android.rum.internal.metric.networksettled.NetworkSettledMetricResolver
 import com.datadog.android.rum.internal.monitor.StorageEvent
 import com.datadog.android.rum.internal.utils.hasUserData
 import com.datadog.android.rum.internal.utils.newRumEventWriteOperation
@@ -44,7 +45,8 @@ internal class RumResourceScope(
     serverTimeOffsetInMs: Long,
     internal val firstPartyHostHeaderTypeResolver: FirstPartyHostHeaderTypeResolver,
     private val featuresContextResolver: FeaturesContextResolver,
-    internal val sampleRate: Float
+    internal val sampleRate: Float,
+    internal val networkSettledMetricResolver: NetworkSettledMetricResolver
 ) : RumScope {
 
     internal val resourceId: String = UUID.randomUUID().toString()
@@ -64,6 +66,12 @@ internal class RumResourceScope(
     private var kind: RumResourceKind = RumResourceKind.UNKNOWN
     private var statusCode: Long? = null
     private var size: Long? = null
+
+    init {
+        networkSettledMetricResolver.resourceWasStarted(
+            InternalResourceContext(resourceId, eventTime.nanoTime)
+        )
+    }
 
     // region RumScope
 
@@ -101,7 +109,6 @@ internal class RumResourceScope(
         writer: DataWriter<Any>
     ) {
         if (key != event.key) return
-
         stopped = true
         attributes.putAll(event.attributes)
         kind = event.kind
@@ -119,7 +126,6 @@ internal class RumResourceScope(
         writer: DataWriter<Any>
     ) {
         if (key != event.key) return
-
         timing = event.timing
         if (stopped && !sent) {
             sendResource(kind, statusCode, size, event.eventTime, writer)
@@ -132,9 +138,7 @@ internal class RumResourceScope(
         writer: DataWriter<Any>
     ) {
         if (key != event.key) return
-
         attributes.putAll(event.attributes)
-
         sendError(
             event.message,
             event.source,
@@ -142,7 +146,8 @@ internal class RumResourceScope(
             event.throwable.loggableStackTrace(),
             event.throwable.javaClass.canonicalName,
             ErrorEvent.Category.EXCEPTION,
-            writer
+            writer,
+            event.eventTime.nanoTime
         )
     }
 
@@ -152,7 +157,6 @@ internal class RumResourceScope(
         writer: DataWriter<Any>
     ) {
         if (key != event.key) return
-
         attributes.putAll(event.attributes)
 
         val errorCategory =
@@ -165,7 +169,8 @@ internal class RumResourceScope(
             event.stackTrace,
             event.errorType,
             errorCategory,
-            writer
+            writer,
+            event.eventTime.nanoTime
         )
     }
 
@@ -291,10 +296,10 @@ internal class RumResourceScope(
             )
         }
             .onError {
-                it.eventDropped(rumContext.viewId.orEmpty(), StorageEvent.Resource)
+                it.eventDropped(rumContext.viewId.orEmpty(), StorageEvent.Resource(resourceId, eventTime.nanoTime))
             }
             .onSuccess {
-                it.eventSent(rumContext.viewId.orEmpty(), StorageEvent.Resource)
+                it.eventSent(rumContext.viewId.orEmpty(), StorageEvent.Resource(resourceId, eventTime.nanoTime))
             }
             .submit()
 
@@ -334,7 +339,8 @@ internal class RumResourceScope(
         stackTrace: String?,
         errorType: String?,
         errorCategory: ErrorEvent.Category?,
-        writer: DataWriter<Any>
+        writer: DataWriter<Any>,
+        resourceStopTimestampInNanos: Long
     ) {
         attributes.putAll(GlobalRumMonitor.get(sdkCore).getAttributes())
         val errorFingerprint = attributes.remove(RumAttributes.ERROR_FINGERPRINT) as? String
@@ -435,10 +441,13 @@ internal class RumResourceScope(
             )
         }
             .onError {
-                it.eventDropped(rumContext.viewId.orEmpty(), StorageEvent.Error)
+                it.eventDropped(
+                    rumContext.viewId.orEmpty(),
+                    StorageEvent.Error(resourceId, resourceStopTimestampInNanos)
+                )
             }
             .onSuccess {
-                it.eventSent(rumContext.viewId.orEmpty(), StorageEvent.Error)
+                it.eventSent(rumContext.viewId.orEmpty(), StorageEvent.Error(resourceId, resourceStopTimestampInNanos))
             }
             .submit()
 
@@ -498,7 +507,8 @@ internal class RumResourceScope(
             firstPartyHostHeaderTypeResolver: FirstPartyHostHeaderTypeResolver,
             timestampOffset: Long,
             featuresContextResolver: FeaturesContextResolver,
-            sampleRate: Float
+            sampleRate: Float,
+            networkSettledMetricResolver: NetworkSettledMetricResolver
         ): RumScope {
             return RumResourceScope(
                 parentScope = parentScope,
@@ -511,7 +521,8 @@ internal class RumResourceScope(
                 serverTimeOffsetInMs = timestampOffset,
                 firstPartyHostHeaderTypeResolver = firstPartyHostHeaderTypeResolver,
                 featuresContextResolver = featuresContextResolver,
-                sampleRate = sampleRate
+                sampleRate = sampleRate,
+                networkSettledMetricResolver = networkSettledMetricResolver
             )
         }
     }

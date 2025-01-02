@@ -17,6 +17,7 @@ import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.CodeBlock
 import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.KModifier
+import com.squareup.kotlinpoet.MAP
 import com.squareup.kotlinpoet.MUTABLE_MAP
 import com.squareup.kotlinpoet.ParameterSpec
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
@@ -100,10 +101,10 @@ class ClassGenerator(
 
         if (
             definition.additionalProperties != null &&
-            definition.additionalProperties.description.isNotBlank()
+            definition.additionalProperties.type.description.isNotBlank()
         ) {
             docBuilder.add(
-                "@param ${Identifier.PARAM_ADDITIONAL_PROPS} ${definition.additionalProperties.description}\n"
+                "@param ${Identifier.PARAM_ADDITIONAL_PROPS} ${definition.additionalProperties.type.description}\n"
             )
         }
         return docBuilder.build()
@@ -259,7 +260,7 @@ class ClassGenerator(
 
     @Suppress("FunctionMaxLength")
     private fun FunSpec.Builder.appendAdditionalPropertiesSerialization(
-        additionalProperties: TypeDefinition,
+        additionalProperties: TypeProperty,
         hasKnownProperties: Boolean
     ) {
         beginControlFlow("%L.forEach { (k, v) ->", Identifier.PARAM_ADDITIONAL_PROPS)
@@ -268,7 +269,7 @@ class ClassGenerator(
             beginControlFlow("if (k !in %L)", Identifier.PARAM_RESERVED_PROPS)
         }
 
-        when (additionalProperties) {
+        when (additionalProperties.type) {
             is TypeDefinition.Primitive -> addStatement("json.addProperty(k, v)")
             is TypeDefinition.Class -> addStatement(
                 "json.add(k, %T.%L(v))",
@@ -319,10 +320,13 @@ class ClassGenerator(
         }
 
         if (definition.additionalProperties != null) {
-            val mapType = definition.additionalProperties.additionalPropertyType(rootTypeName)
+            val mapType = definition.additionalProperties.type.asAdditionalPropertiesType(
+                rootTypeName,
+                definition.additionalProperties.readOnly
+            )
             constructorBuilder.addParameter(
                 ParameterSpec.builder(Identifier.PARAM_ADDITIONAL_PROPS, mapType)
-                    .defaultValue("mutableMapOf()")
+                    .defaultValue(if (definition.additionalProperties.readOnly) "mapOf()" else "mutableMapOf()")
                     .build()
             )
         }
@@ -350,10 +354,10 @@ class ClassGenerator(
     }
 
     private fun generateAdditionalProperties(
-        additionalPropertyType: TypeDefinition,
+        additionalPropertyType: TypeProperty,
         rootTypeName: String
     ): PropertySpec {
-        val type = additionalPropertyType.additionalPropertyType(rootTypeName)
+        val type = additionalPropertyType.type.asAdditionalPropertiesType(rootTypeName, additionalPropertyType.readOnly)
 
         return PropertySpec.builder(Identifier.PARAM_ADDITIONAL_PROPS, type)
             .mutable(false)
@@ -458,13 +462,17 @@ class ClassGenerator(
         return this
     }
 
-    private fun TypeDefinition.additionalPropertyType(rootTypeName: String): TypeName {
+    private fun TypeDefinition.asAdditionalPropertiesType(rootTypeName: String, readOnly: Boolean): TypeName {
         val valueType = if (this is TypeDefinition.Primitive) {
             this.asKotlinTypeName(rootTypeName)
         } else {
             ANY.copy(nullable = true)
         }
-        return MUTABLE_MAP.parameterizedBy(STRING, valueType)
+        return if (readOnly) {
+            MAP.parameterizedBy(STRING, valueType)
+        } else {
+            MUTABLE_MAP.parameterizedBy(STRING, valueType)
+        }
     }
 
     // endregion

@@ -6,17 +6,18 @@
 
 package com.datadog.android.sessionreplay.compose.internal.mappers.semantics
 
+import android.view.View
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.SemanticsConfiguration
 import androidx.compose.ui.semantics.SemanticsNode
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
-import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import com.datadog.android.sessionreplay.compose.internal.utils.SemanticsUtils
 import com.datadog.android.sessionreplay.compose.test.elmyr.SessionReplayComposeForgeConfigurator
 import com.datadog.android.sessionreplay.recorder.MappingContext
 import com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback
 import com.datadog.android.sessionreplay.utils.ColorStringFormatter
+import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -71,13 +72,16 @@ class RootSemanticsNodeMapperTest {
     private lateinit var mockImageSemanticsNodeMapper: ImageSemanticsNodeMapper
 
     @Mock
+    private lateinit var mockCheckboxSemanticsNodeMapper: CheckboxSemanticsNodeMapper
+
+    @Mock
+    private lateinit var mockComposeHiddenMapper: ComposeHiddenMapper
+
+    @Mock
     private lateinit var mockSemanticsConfiguration: SemanticsConfiguration
 
     @Forgery
     private lateinit var fakeMappingContext: MappingContext
-
-    @Forgery
-    private lateinit var fakePrivacy: SessionReplayPrivacy
 
     private lateinit var testedRootSemanticsNodeMapper: RootSemanticsNodeMapper
 
@@ -90,15 +94,17 @@ class RootSemanticsNodeMapperTest {
                 Role.RadioButton to mockRadioButtonSemanticsNodeMapper,
                 Role.Tab to mockTabSemanticsNodeMapper,
                 Role.Button to mockButtonSemanticsNodeMapper,
-                Role.Image to mockImageSemanticsNodeMapper
+                Role.Image to mockImageSemanticsNodeMapper,
+                Role.Checkbox to mockCheckboxSemanticsNodeMapper
             ),
             textSemanticsNodeMapper = mockTextSemanticsNodeMapper,
-            containerSemanticsNodeMapper = mockContainerSemanticsNodeMapper
+            containerSemanticsNodeMapper = mockContainerSemanticsNodeMapper,
+            composeHiddenMapper = mockComposeHiddenMapper
         )
     }
 
     @Test
-    fun `M use ContainerSemanticsNodeMapper W map { role is missing }`() {
+    fun `M use ContainerSemanticsNodeMapper W createComposeWireframes { role is missing }`() {
         // Given
         val mockSemanticsNode = mockSemanticsNode(null)
 
@@ -107,7 +113,6 @@ class RootSemanticsNodeMapperTest {
             mockSemanticsNode,
             fakeMappingContext.systemInformation.screenDensity,
             fakeMappingContext,
-            fakePrivacy,
             mockAsyncJobStatusCallback
         )
 
@@ -120,7 +125,7 @@ class RootSemanticsNodeMapperTest {
     }
 
     @Test
-    fun `M use ButtonSemanticsNodeMapper W map { role is Button }`() {
+    fun `M use ButtonSemanticsNodeMapper W createComposeWireframes { role is Button }`() {
         // Given
         val mockSemanticsNode = mockSemanticsNode(Role.Button)
 
@@ -129,7 +134,6 @@ class RootSemanticsNodeMapperTest {
             mockSemanticsNode,
             fakeMappingContext.systemInformation.screenDensity,
             fakeMappingContext,
-            fakePrivacy,
             mockAsyncJobStatusCallback
         )
 
@@ -142,7 +146,7 @@ class RootSemanticsNodeMapperTest {
     }
 
     @Test
-    fun `M use RadioButtonSemanticsNodeMapper W map { role is RadioButton }`() {
+    fun `M use RadioButtonSemanticsNodeMapper W createComposeWireframes { role is RadioButton }`() {
         // Given
         val mockSemanticsNode = mockSemanticsNode(Role.RadioButton)
 
@@ -151,7 +155,6 @@ class RootSemanticsNodeMapperTest {
             mockSemanticsNode,
             fakeMappingContext.systemInformation.screenDensity,
             fakeMappingContext,
-            fakePrivacy,
             mockAsyncJobStatusCallback
         )
 
@@ -164,7 +167,7 @@ class RootSemanticsNodeMapperTest {
     }
 
     @Test
-    fun `M use TabSemanticsNodeMapper W map { role is Tab }`() {
+    fun `M use TabSemanticsNodeMapper W createComposeWireframes { role is Tab }`() {
         // Given
         val mockSemanticsNode = mockSemanticsNode(Role.Tab)
 
@@ -173,7 +176,6 @@ class RootSemanticsNodeMapperTest {
             mockSemanticsNode,
             fakeMappingContext.systemInformation.screenDensity,
             fakeMappingContext,
-            fakePrivacy,
             mockAsyncJobStatusCallback
         )
 
@@ -186,7 +188,7 @@ class RootSemanticsNodeMapperTest {
     }
 
     @Test
-    fun `M use ImageSemanticsNodeMapper W map { role is Image }`() {
+    fun `M use ImageSemanticsNodeMapper W createComposeWireframes { role is Image }`() {
         // Given
         val mockSemanticsNode = mockSemanticsNode(Role.Image)
 
@@ -195,7 +197,6 @@ class RootSemanticsNodeMapperTest {
             mockSemanticsNode,
             fakeMappingContext.systemInformation.screenDensity,
             fakeMappingContext,
-            fakePrivacy,
             mockAsyncJobStatusCallback
         )
 
@@ -204,6 +205,81 @@ class RootSemanticsNodeMapperTest {
             eq(mockSemanticsNode),
             any(),
             eq(mockAsyncJobStatusCallback)
+        )
+    }
+
+    @Test
+    fun `M use CheckboxSemanticsNodeMapper W createComposeWireframes { role is Checkbox }`() {
+        // Given
+        val mockSemanticsNode = mockSemanticsNode(Role.Checkbox)
+
+        // When
+        testedRootSemanticsNodeMapper.createComposeWireframes(
+            mockSemanticsNode,
+            fakeMappingContext.systemInformation.screenDensity,
+            fakeMappingContext,
+            mockAsyncJobStatusCallback
+        )
+
+        // Then
+        verify(mockCheckboxSemanticsNodeMapper).map(
+            eq(mockSemanticsNode),
+            any(),
+            eq(mockAsyncJobStatusCallback)
+        )
+    }
+
+    @Test
+    fun `M use ComposeHideMapper W node is hidden`(forge: Forge) {
+        // Given
+        val fakeRole = forge.anElementFrom(
+            listOf(
+                Role.Image,
+                Role.Tab,
+                Role.Button,
+                Role.Switch,
+                Role.RadioButton,
+                Role.DropdownList,
+                null
+            )
+        )
+        val mockSemanticsNode = mockSemanticsNode(fakeRole)
+        whenever(mockSemanticsUtils.isNodeHidden(mockSemanticsNode)) doReturn true
+
+        // When
+        testedRootSemanticsNodeMapper.createComposeWireframes(
+            mockSemanticsNode,
+            fakeMappingContext.systemInformation.screenDensity,
+            fakeMappingContext,
+            mockAsyncJobStatusCallback
+        )
+
+        // Then
+        verify(mockComposeHiddenMapper).map(
+            eq(mockSemanticsNode),
+            any(),
+            eq(mockAsyncJobStatusCallback)
+        )
+    }
+
+    @Test
+    fun `M call interop callback W semantics node has interop view`() {
+        val mockSemanticsNode = mockSemanticsNode(null)
+        val mockView = mock<View>()
+        whenever(mockSemanticsUtils.getInteropView(mockSemanticsNode)) doReturn mockView
+
+        // When
+        testedRootSemanticsNodeMapper.createComposeWireframes(
+            mockSemanticsNode,
+            fakeMappingContext.systemInformation.screenDensity,
+            fakeMappingContext,
+            mockAsyncJobStatusCallback
+        )
+
+        // Then
+        verify(fakeMappingContext.interopViewCallback).map(
+            eq(mockView),
+            eq(fakeMappingContext)
         )
     }
 

@@ -19,6 +19,7 @@ import com.datadog.android.core.internal.metrics.MethodCalledTelemetry.Companion
 import com.datadog.android.core.metrics.PerformanceMetric.Companion.METRIC_TYPE
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.FloatForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -81,7 +82,11 @@ internal class MethodCalledTelemetryTest {
     @StringForgery
     lateinit var fakeOperationName: String
 
+    @FloatForgery(min = 0.1f, max = 100f)
+    private var fakeCreationSampleRate: Float = 0.1f
+
     private var fakeStartTime: Long = 0
+
     private var fakeStatus: Boolean = false
 
     private val lambdaCaptor = argumentCaptor<() -> String>()
@@ -105,7 +110,8 @@ internal class MethodCalledTelemetryTest {
             internalLogger = mockInternalLogger,
             operationName = fakeOperationName,
             callerClass = fakeCallerClass,
-            startTime = fakeStartTime
+            startTime = fakeStartTime,
+            creationSampleRate = fakeCreationSampleRate
         )
     }
 
@@ -115,7 +121,7 @@ internal class MethodCalledTelemetryTest {
         testedMethodCalledTelemetry.stopAndSend(false)
 
         // Then
-        verify(mockInternalLogger).logMetric(lambdaCaptor.capture(), any(), eq(100.0f))
+        verify(mockInternalLogger).logMetric(lambdaCaptor.capture(), any(), eq(100.0f), eq(fakeCreationSampleRate))
         lambdaCaptor.firstValue.run {
             val title = this()
             assertThat(title).isEqualTo(METHOD_CALLED_METRIC_NAME)
@@ -128,7 +134,7 @@ internal class MethodCalledTelemetryTest {
         testedMethodCalledTelemetry.stopAndSend(false)
 
         // Then
-        verify(mockInternalLogger).logMetric(any(), mapCaptor.capture(), eq(100.0f))
+        verify(mockInternalLogger).logMetric(any(), mapCaptor.capture(), eq(100.0f), eq(fakeCreationSampleRate))
         val executionTime = mapCaptor.firstValue[EXECUTION_TIME] as Long
 
         assertThat(executionTime).isLessThan(System.nanoTime() - fakeStartTime)
@@ -140,7 +146,7 @@ internal class MethodCalledTelemetryTest {
         testedMethodCalledTelemetry.stopAndSend(false)
 
         // Then
-        verify(mockInternalLogger).logMetric(any(), mapCaptor.capture(), eq(100.0f))
+        verify(mockInternalLogger).logMetric(any(), mapCaptor.capture(), eq(100.0f), eq(fakeCreationSampleRate))
         val operationName = mapCaptor.firstValue[OPERATION_NAME] as String
 
         assertThat(operationName).isEqualTo(fakeOperationName)
@@ -152,7 +158,7 @@ internal class MethodCalledTelemetryTest {
         testedMethodCalledTelemetry.stopAndSend(false)
 
         // Then
-        verify(mockInternalLogger).logMetric(any(), mapCaptor.capture(), eq(100.0f))
+        verify(mockInternalLogger).logMetric(any(), mapCaptor.capture(), eq(100.0f), eq(fakeCreationSampleRate))
         val callerClass = mapCaptor.firstValue[CALLER_CLASS] as String
 
         assertThat(callerClass).isEqualTo(fakeCallerClass)
@@ -164,7 +170,7 @@ internal class MethodCalledTelemetryTest {
         testedMethodCalledTelemetry.stopAndSend(fakeStatus)
 
         // Then
-        verify(mockInternalLogger).logMetric(any(), mapCaptor.capture(), eq(100.0f))
+        verify(mockInternalLogger).logMetric(any(), mapCaptor.capture(), eq(100.0f), eq(fakeCreationSampleRate))
         val isSuccessful = mapCaptor.firstValue[IS_SUCCESSFUL] as Boolean
 
         assertThat(isSuccessful).isEqualTo(fakeStatus)
@@ -176,7 +182,7 @@ internal class MethodCalledTelemetryTest {
         testedMethodCalledTelemetry.stopAndSend(fakeStatus)
 
         // Then
-        verify(mockInternalLogger).logMetric(any(), mapCaptor.capture(), eq(100.0f))
+        verify(mockInternalLogger).logMetric(any(), mapCaptor.capture(), eq(100.0f), eq(fakeCreationSampleRate))
         val metricTypeValue = mapCaptor.firstValue[METRIC_TYPE] as String
 
         assertThat(metricTypeValue).isEqualTo(METRIC_TYPE_VALUE)

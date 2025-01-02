@@ -16,6 +16,10 @@ import com.datadog.android.rum.internal.NoOpRumSessionListener
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.instrumentation.MainLooperLongTaskStrategy
 import com.datadog.android.rum.internal.tracking.NoOpInteractionPredicate
+import com.datadog.android.rum.metric.interactiontonextview.LastInteractionIdentifier
+import com.datadog.android.rum.metric.interactiontonextview.TimeBasedInteractionIdentifier
+import com.datadog.android.rum.metric.networksettled.InitialResourceIdentifier
+import com.datadog.android.rum.metric.networksettled.TimeBasedInitialResourceIdentifier
 import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
@@ -99,7 +103,9 @@ internal class RumConfigurationBuilderTest {
                 trackNonFatalAnrs = true,
                 vitalsMonitorUpdateFrequency = VitalsUpdateFrequency.AVERAGE,
                 sessionListener = NoOpRumSessionListener(),
-                additionalConfig = emptyMap()
+                additionalConfig = emptyMap(),
+                initialResourceIdentifier = TimeBasedInitialResourceIdentifier(),
+                lastInteractionIdentifier = TimeBasedInteractionIdentifier()
             )
         )
     }
@@ -523,5 +529,35 @@ internal class RumConfigurationBuilderTest {
         // Then
         assertThat(rumConfiguration.featureConfiguration.sessionListener)
             .isSameAs(mockSessionListener)
+    }
+
+    @Test
+    fun `M use a custom initialResourceIdentifier W setInitialResourceIdentifierStrategy()`() {
+        // Given
+        val customInitialResourceIdentifier = mock<InitialResourceIdentifier>()
+
+        // When
+        val rumConfiguration = testedBuilder
+            .setInitialResourceIdentifier(customInitialResourceIdentifier)
+            .build()
+
+        // Then
+        assertThat(rumConfiguration.featureConfiguration.initialResourceIdentifier)
+            .isSameAs(customInitialResourceIdentifier)
+    }
+
+    @Test
+    fun `M use a custom lastInteractionIdentifier W setLastInteractionIdentifier()`() {
+        // Given
+        val customLastInteractionIdentifier = mock<LastInteractionIdentifier>()
+
+        // When
+        val rumConfiguration = testedBuilder
+            .setLastInteractionIdentifier(customLastInteractionIdentifier)
+            .build()
+
+        // Then
+        assertThat(rumConfiguration.featureConfiguration.lastInteractionIdentifier)
+            .isSameAs(customLastInteractionIdentifier)
     }
 }

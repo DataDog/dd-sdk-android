@@ -14,6 +14,15 @@
 -keepclassmembers class androidx.compose.foundation.text.modifiers.TextStringSimpleElement {
      <fields>;
 }
+-keepclassmembers class androidx.compose.material.CheckDrawingCache {
+     <fields>;
+}
+-keepclassmembers class androidx.compose.material.CheckboxKt {
+     <fields>;
+}
+-keepclassmembers class androidx.compose.ui.draw.DrawBehindElement {
+     <fields>;
+}
 -keepclassmembers class androidx.compose.foundation.BackgroundElement {
      <fields>;
 }
@@ -41,6 +50,9 @@
 -keep class androidx.compose.ui.graphics.AndroidImageBitmap {
      <fields>;
 }
+-keep class coil.compose.ContentPainterElement {
+     <fields>;
+}
 -keep class coil.compose.ContentPainterModifier {
      <fields>;
 }
@@ -53,4 +65,12 @@
 -keep class androidx.compose.ui.graphics.GraphicsLayerElement{
     <fields>;
 }
-
+-keep class androidx.compose.ui.text.ParagraphInfo{
+    <fields>;
+}
+-keep class androidx.compose.ui.text.AndroidParagraph{
+    <fields>;
+}
+-keep class androidx.compose.ui.text.android.TextLayout{
+    <fields>;
+}

@@ -6,16 +6,22 @@
 
 package com.datadog.android.sample.compose
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 
+@Suppress("LongMethod")
 @Composable
 internal fun TypographySample() {
     Column {
@@ -56,12 +62,58 @@ internal fun TypographySample() {
             ),
             modifier = Modifier.padding(16.dp)
         )
+        Text(
+            text = FAKE_LONG_TEXT,
+            style = MaterialTheme.typography.caption.copy(
+                color = Color.Black
+            ),
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier
+                .height(60.dp)
+                .fillMaxWidth()
+                .background(color = Color.Yellow)
+                .padding(16.dp)
+        )
+        Row {
+            Text(
+                text = FAKE_LONG_TEXT,
+                style = MaterialTheme.typography.caption.copy(
+                    color = Color.Black
+                ),
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier
+                    .weight(1f)
+                    .background(Color.Red)
+                    .padding(16.dp),
+                maxLines = 1
+            )
+            Text(
+                text = FAKE_LONG_TEXT,
+                style = MaterialTheme.typography.caption.copy(
+                    color = Color.Black
+                ),
+                overflow = TextOverflow.Clip,
+                modifier = Modifier
+                    .weight(1f)
+                    .background(Color.Green)
+                    .padding(16.dp),
+                maxLines = 1
+            )
+        }
     }
 }
 
-@Preview
+@Preview(showBackground = true)
 @Composable
 @Suppress("UnusedPrivateMember")
 private fun PreviewTypographySample() {
     TypographySample()
 }
+
+private const val FAKE_LONG_TEXT =
+    "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Quisque posuere arcu eget est " +
+        "interdum, ac eleifend ex laoreet. Integer fringilla eros sed velit dapibus, sit" +
+        " amet egestas urna faucibus. Suspendisse potenti. Nulla facilisi. Proin sagittis " +
+        "eros eu nulla fringilla, quis consequat sapien tempus. Sed vel feugiat leo. Etiam " +
+        "id ultricies odio. Donec luctus sem vel magna consequat auctor. Fusce bibendum mi" +
+        " sed sapien faucibus, id scelerisque ligula hendrerit."

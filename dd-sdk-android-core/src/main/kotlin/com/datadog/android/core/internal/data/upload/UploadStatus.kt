@@ -117,6 +117,8 @@ internal sealed class UploadStatus(
 
             if (throwable != null) {
                 append(" (")
+                append(throwable.javaClass.name)
+                append(": ")
                 append(throwable.message)
                 append(")")
             }

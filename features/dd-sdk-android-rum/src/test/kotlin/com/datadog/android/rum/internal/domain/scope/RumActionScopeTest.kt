@@ -63,6 +63,7 @@ import org.mockito.kotlin.verifyNoMoreInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.util.concurrent.TimeUnit
+import kotlin.math.max
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -139,8 +140,8 @@ internal class RumActionScopeTest {
         fakeParentContext = fakeParentContext.copy(syntheticsTestId = null, syntheticsResultId = null)
 
         fakeEventTime = Time()
-        val maxLimit = Long.MAX_VALUE - fakeEventTime.timestamp
-        val minLimit = -fakeEventTime.timestamp
+        val maxLimit = 1000L
+        val minLimit = -1000L
         fakeServerOffset =
             forge.aLong(min = minLimit, max = maxLimit)
         fakeType = forge.aValueFrom(
@@ -2796,43 +2797,58 @@ internal class RumActionScopeTest {
 
     @Test
     fun `M notify about success W handleEvent() { write succeeded }`() {
+        // Given
+        val event = RumRawEvent.SendCustomActionNow()
+
         // When
         testedScope.type = RumActionType.CUSTOM
-        val event = RumRawEvent.SendCustomActionNow()
         testedScope.handleEvent(event, mockWriter)
 
         // Then
         verify(rumMonitor.mockInstance as AdvancedRumMonitor)
-            .eventSent(fakeParentContext.viewId.orEmpty(), StorageEvent.Action(0))
+            .eventSent(
+                fakeParentContext.viewId.orEmpty(),
+                StorageEvent.Action(0, ActionEvent.ActionEventActionType.CUSTOM, testedScope.startedNanos)
+            )
     }
 
     @Test
     fun `M notify about error W handleEvent() { write failed }`() {
+        // Given
+        val event = RumRawEvent.SendCustomActionNow()
+
         // When
         testedScope.type = RumActionType.CUSTOM
-        val event = RumRawEvent.SendCustomActionNow()
         whenever(mockWriter.write(eq(mockEventBatchWriter), isA<ActionEvent>(), eq(EventType.DEFAULT))) doReturn false
         testedScope.handleEvent(event, mockWriter)
 
         // Then
         verify(rumMonitor.mockInstance as AdvancedRumMonitor)
-            .eventDropped(fakeParentContext.viewId.orEmpty(), StorageEvent.Action(0))
+            .eventDropped(
+                fakeParentContext.viewId.orEmpty(),
+                StorageEvent.Action(0, ActionEvent.ActionEventActionType.CUSTOM, testedScope.startedNanos)
+            )
     }
 
     @Test
     fun `M notify about error W handleEvent() { write throws }`(
         forge: Forge
     ) {
+        // Given
+        val event = RumRawEvent.SendCustomActionNow()
+
         // When
         testedScope.type = RumActionType.CUSTOM
-        val event = RumRawEvent.SendCustomActionNow()
         whenever(mockWriter.write(eq(mockEventBatchWriter), isA<ActionEvent>(), eq(EventType.DEFAULT)))
             .doThrow(forge.anException())
         testedScope.handleEvent(event, mockWriter)
 
         // Then
         verify(rumMonitor.mockInstance as AdvancedRumMonitor)
-            .eventDropped(fakeParentContext.viewId.orEmpty(), StorageEvent.Action(0))
+            .eventDropped(
+                fakeParentContext.viewId.orEmpty(),
+                StorageEvent.Action(0, ActionEvent.ActionEventActionType.CUSTOM, testedScope.startedNanos)
+            )
     }
 
     // region Internal
