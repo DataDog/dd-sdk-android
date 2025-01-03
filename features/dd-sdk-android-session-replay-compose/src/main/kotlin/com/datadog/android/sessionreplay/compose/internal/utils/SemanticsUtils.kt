@@ -15,6 +15,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.painter.BitmapPainter
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.vector.VectorPainter
 import androidx.compose.ui.semantics.ProgressBarRangeInfo
 import androidx.compose.ui.semantics.SemanticsActions
@@ -24,6 +25,9 @@ import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.text.TextLayoutInput
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.unit.Density
+import com.datadog.android.Datadog
+import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.TouchPrivacy
@@ -250,6 +254,7 @@ internal class SemanticsUtils(private val reflectionUtils: ReflectionUtils = Ref
             is BitmapPainter -> reflectionUtils.getBitmapInBitmapPainter(painter)
             is VectorPainter -> reflectionUtils.getBitmapInVectorPainter(painter)
             else -> {
+                logUnsupportedPainter(painter)
                 null
             }
         }
@@ -261,6 +266,22 @@ internal class SemanticsUtils(private val reflectionUtils: ReflectionUtils = Ref
         return newBitmap?.let {
             BitmapInfo(it, isContextualImage)
         }
+    }
+
+    private fun logUnsupportedPainter(painter: Painter?) {
+        val painterType = painter?.javaClass?.simpleName ?: "null"
+        (Datadog.getInstance() as? FeatureSdkCore)?.internalLogger?.log(
+            level = InternalLogger.Level.ERROR,
+            targets = listOf(
+                InternalLogger.Target.MAINTAINER,
+                InternalLogger.Target.TELEMETRY
+            ),
+            messageBuilder = { "Unsupported painter type in Compose: $painterType" },
+            onlyOnce = true,
+            additionalProperties = mapOf(
+                "painter.type" to painterType
+            )
+        )
     }
 
     private fun resolveModifierColor(semanticsNode: SemanticsNode): Color? {
