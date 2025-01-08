@@ -171,7 +171,9 @@ internal class ImageViewMapperTest {
         whenever(mockBackgroundDrawable.current).thenReturn(mockBackgroundDrawable)
         whenever(mockDrawableToColorMapper.mapDrawableToColor(any(), eq(mockInternalLogger))) doReturn null
 
-        whenever(stubImageViewUtils.resolveParentRectAbsPosition(any())).thenReturn(stubParentRect)
+        whenever(stubImageViewUtils.resolveParentRectAbsPosition(any(), any())).thenReturn(
+            stubParentRect
+        )
         whenever(stubImageViewUtils.resolveContentRectWithScaling(any(), any(), anyOrNull()))
             .thenReturn(stubContentRect)
         whenever(stubImageViewUtils.calculateClipping(any(), any(), any())).thenReturn(stubClipping)
