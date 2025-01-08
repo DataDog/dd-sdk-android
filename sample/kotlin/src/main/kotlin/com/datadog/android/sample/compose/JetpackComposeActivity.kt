@@ -9,10 +9,14 @@ package com.datadog.android.sample.compose
 import android.os.Bundle
 import androidx.activity.compose.setContent
 import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Scaffold
 import androidx.compose.material.Text
 import androidx.compose.material.TopAppBar
+import androidx.compose.material.darkColors
+import androidx.compose.material.lightColors
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.navigation.compose.NavHost
@@ -20,7 +24,6 @@ import androidx.navigation.compose.rememberNavController
 import com.datadog.android.compose.ExperimentalTrackingApi
 import com.datadog.android.compose.NavigationViewTrackingEffect
 import com.datadog.android.rum.tracking.AcceptAllNavDestinations
-import com.google.accompanist.appcompattheme.AppCompatTheme
 
 /**
  * An activity to showcase Jetpack Compose instrumentation.
@@ -30,7 +33,13 @@ class JetpackComposeActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            AppCompatTheme {
+            MaterialTheme(
+                colors = if (isSystemInDarkTheme()) {
+                    darkColors()
+                } else {
+                    lightColors()
+                }
+            ) {
                 AppScaffold()
             }
         }

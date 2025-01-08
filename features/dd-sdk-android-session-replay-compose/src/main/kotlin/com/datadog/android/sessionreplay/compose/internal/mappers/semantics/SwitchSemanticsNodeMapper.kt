@@ -13,6 +13,7 @@ import androidx.compose.ui.state.ToggleableState
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.compose.internal.data.SemanticsWireframe
 import com.datadog.android.sessionreplay.compose.internal.data.UiContext
+import com.datadog.android.sessionreplay.compose.internal.utils.ColorUtils
 import com.datadog.android.sessionreplay.compose.internal.utils.SemanticsUtils
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback
@@ -21,7 +22,8 @@ import com.datadog.android.sessionreplay.utils.GlobalBounds
 
 internal class SwitchSemanticsNodeMapper(
     colorStringFormatter: ColorStringFormatter,
-    semanticsUtils: SemanticsUtils = SemanticsUtils()
+    semanticsUtils: SemanticsUtils = SemanticsUtils(),
+    private val colorUtils: ColorUtils = ColorUtils()
 ) : AbstractSemanticsNodeMapper(colorStringFormatter, semanticsUtils) {
     override fun map(
         semanticsNode: SemanticsNode,
@@ -30,13 +32,15 @@ internal class SwitchSemanticsNodeMapper(
     ): SemanticsWireframe {
         val isSwitchOn = isSwitchOn(semanticsNode)
         val globalBounds = resolveBounds(semanticsNode)
-
+        val isDarkBackground =
+            parentContext.parentContentColor?.let { colorUtils.isDarkColor(it) } ?: false
         val switchWireframes = if (isSwitchMasked(parentContext)) {
             listOf(
                 resolveMaskedWireframes(
                     semanticsNode = semanticsNode,
                     globalBounds = globalBounds,
-                    wireframeIndex = 0
+                    wireframeIndex = 0,
+                    isDarkBackground = isDarkBackground
                 )
             )
         } else {
@@ -44,14 +48,16 @@ internal class SwitchSemanticsNodeMapper(
                 semanticsNode = semanticsNode,
                 globalBounds = globalBounds,
                 wireframeIndex = 0,
-                isSwitchOn = isSwitchOn
+                isSwitchOn = isSwitchOn,
+                isDarkBackground = isDarkBackground
             )
 
             val thumbWireframe = createThumbWireframe(
                 semanticsNode = semanticsNode,
                 globalBounds = globalBounds,
                 wireframeIndex = 1,
-                isSwitchOn = isSwitchOn
+                isSwitchOn = isSwitchOn,
+                isDarkBackground = isDarkBackground
             )
 
             listOfNotNull(trackWireframe, thumbWireframe)
@@ -67,9 +73,10 @@ internal class SwitchSemanticsNodeMapper(
         semanticsNode: SemanticsNode,
         globalBounds: GlobalBounds,
         wireframeIndex: Int,
-        isSwitchOn: Boolean
+        isSwitchOn: Boolean,
+        isDarkBackground: Boolean
     ): MobileSegment.Wireframe {
-        val trackColor = if (isSwitchOn) {
+        val trackColor = if (isSwitchOn != isDarkBackground) {
             DEFAULT_COLOR_BLACK
         } else {
             DEFAULT_COLOR_WHITE
@@ -87,7 +94,7 @@ internal class SwitchSemanticsNodeMapper(
                 backgroundColor = trackColor
             ),
             border = MobileSegment.ShapeBorder(
-                color = DEFAULT_COLOR_BLACK,
+                color = getContentColor(isDarkBackground),
                 width = BORDER_WIDTH_DP
             )
         )
@@ -97,7 +104,8 @@ internal class SwitchSemanticsNodeMapper(
         semanticsNode: SemanticsNode,
         globalBounds: GlobalBounds,
         wireframeIndex: Int,
-        isSwitchOn: Boolean
+        isSwitchOn: Boolean,
+        isDarkBackground: Boolean
     ): MobileSegment.Wireframe {
         val xPosition = if (!isSwitchOn) {
             globalBounds.x
@@ -108,10 +116,10 @@ internal class SwitchSemanticsNodeMapper(
         @Suppress("MagicNumber")
         val yPosition = globalBounds.y + (globalBounds.height / 4) - (THUMB_DIAMETER_DP / 4)
 
-        val thumbColor = if (!isSwitchOn) {
-            DEFAULT_COLOR_WHITE
-        } else {
+        val thumbColor = if (isSwitchOn != isDarkBackground) {
             DEFAULT_COLOR_BLACK
+        } else {
+            DEFAULT_COLOR_WHITE
         }
 
         return MobileSegment.Wireframe.ShapeWireframe(
@@ -125,7 +133,7 @@ internal class SwitchSemanticsNodeMapper(
                 backgroundColor = thumbColor
             ),
             border = MobileSegment.ShapeBorder(
-                color = DEFAULT_COLOR_BLACK,
+                color = getContentColor(isDarkBackground),
                 width = BORDER_WIDTH_DP
             )
         )
@@ -140,15 +148,25 @@ internal class SwitchSemanticsNodeMapper(
     private fun resolveMaskedWireframes(
         semanticsNode: SemanticsNode,
         globalBounds: GlobalBounds,
-        wireframeIndex: Int
+        wireframeIndex: Int,
+        isDarkBackground: Boolean
     ): MobileSegment.Wireframe {
         // TODO RUM-5118: Decide how to display masked, currently use empty track,
         return createTrackWireframe(
             semanticsNode = semanticsNode,
             globalBounds = globalBounds,
             wireframeIndex = wireframeIndex,
-            isSwitchOn = false
+            isSwitchOn = false,
+            isDarkBackground
         )
+    }
+
+    private fun getContentColor(isDarkBackground: Boolean): String {
+        return if (isDarkBackground) {
+            DEFAULT_COLOR_WHITE
+        } else {
+            DEFAULT_COLOR_BLACK
+        }
     }
 
     internal companion object {
@@ -156,7 +174,7 @@ internal class SwitchSemanticsNodeMapper(
         const val CORNER_RADIUS_DP = 20
         const val THUMB_DIAMETER_DP = 20
         const val BORDER_WIDTH_DP = 1L
-        const val DEFAULT_COLOR_BLACK = "#000000"
-        const val DEFAULT_COLOR_WHITE = "#FFFFFF"
+        const val DEFAULT_COLOR_BLACK = "#000000FF"
+        const val DEFAULT_COLOR_WHITE = "#FFFFFFFF"
     }
 }

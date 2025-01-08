@@ -26,6 +26,7 @@ plugins {
     id("com.github.ben-manes.versions")
 
     // Tests
+    id("de.mobilej.unmock")
     id("org.jetbrains.kotlinx.kover")
 
     // Internal Generation
@@ -75,6 +76,11 @@ dependencies {
     testImplementation(testFixtures(project(":dd-sdk-android-core")))
     testImplementation(libs.bundles.jUnit5)
     testImplementation(libs.bundles.testTools)
+    unmock(libs.robolectric)
+}
+
+unMock {
+    keep("android.graphics.Color")
 }
 
 kotlinConfig(jvmBytecodeTarget = JvmTarget.JVM_11)

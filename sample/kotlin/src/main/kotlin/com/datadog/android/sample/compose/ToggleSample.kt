@@ -6,13 +6,14 @@
 
 package com.datadog.android.sample.compose
 
-import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.Checkbox
+import androidx.compose.material.MaterialTheme
 import androidx.compose.material.RadioButton
 import androidx.compose.material.Switch
 import androidx.compose.material.Text
@@ -90,13 +91,16 @@ private fun SampleButtonContainer(
             .fillMaxWidth()
             .padding(4.dp)
             .clip(RoundedCornerShape(4.dp))
-            .background(color = Color.Gray),
+            .border(
+                width = 1.dp,
+                color = Color.Gray
+            ),
         verticalAlignment = Alignment.CenterVertically
     ) {
         content.invoke()
         Text(
             title,
-            color = Color.Black,
+            color = MaterialTheme.colors.onBackground,
             modifier = Modifier.padding(8.dp)
         )
     }
