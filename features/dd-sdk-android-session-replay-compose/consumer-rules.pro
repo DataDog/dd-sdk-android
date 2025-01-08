@@ -20,6 +20,9 @@
 -keep class androidx.compose.material.CheckboxKt$CheckboxImpl$1$1 {
      <fields>;
 }
+-keep class androidx.compose.material.RadioButtonKt$RadioButton$2$1 {
+     <fields>;
+}
 -keep class androidx.compose.ui.draw.DrawBehindElement {
      <fields>;
 }

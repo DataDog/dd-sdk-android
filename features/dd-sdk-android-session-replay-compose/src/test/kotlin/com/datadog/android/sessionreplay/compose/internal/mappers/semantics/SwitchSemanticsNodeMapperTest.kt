@@ -15,11 +15,11 @@ import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.compose.internal.data.UiContext
 import com.datadog.android.sessionreplay.compose.internal.mappers.semantics.SwitchSemanticsNodeMapper.Companion.BORDER_WIDTH_DP
 import com.datadog.android.sessionreplay.compose.internal.mappers.semantics.SwitchSemanticsNodeMapper.Companion.CORNER_RADIUS_DP
-import com.datadog.android.sessionreplay.compose.internal.mappers.semantics.SwitchSemanticsNodeMapper.Companion.DEFAULT_COLOR_BLACK
-import com.datadog.android.sessionreplay.compose.internal.mappers.semantics.SwitchSemanticsNodeMapper.Companion.DEFAULT_COLOR_WHITE
 import com.datadog.android.sessionreplay.compose.internal.mappers.semantics.SwitchSemanticsNodeMapper.Companion.THUMB_DIAMETER_DP
 import com.datadog.android.sessionreplay.compose.internal.mappers.semantics.SwitchSemanticsNodeMapper.Companion.TRACK_WIDTH_DP
 import com.datadog.android.sessionreplay.compose.internal.utils.SemanticsUtils
+import com.datadog.android.sessionreplay.compose.internal.utils.SemanticsUtils.Companion.DEFAULT_COLOR_BLACK
+import com.datadog.android.sessionreplay.compose.internal.utils.SemanticsUtils.Companion.DEFAULT_COLOR_WHITE
 import com.datadog.android.sessionreplay.compose.test.elmyr.SessionReplayComposeForgeConfigurator
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback

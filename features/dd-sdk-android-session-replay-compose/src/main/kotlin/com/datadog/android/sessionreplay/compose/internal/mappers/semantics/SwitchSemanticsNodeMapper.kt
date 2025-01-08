@@ -15,6 +15,8 @@ import com.datadog.android.sessionreplay.compose.internal.data.SemanticsWirefram
 import com.datadog.android.sessionreplay.compose.internal.data.UiContext
 import com.datadog.android.sessionreplay.compose.internal.utils.ColorUtils
 import com.datadog.android.sessionreplay.compose.internal.utils.SemanticsUtils
+import com.datadog.android.sessionreplay.compose.internal.utils.SemanticsUtils.Companion.DEFAULT_COLOR_BLACK
+import com.datadog.android.sessionreplay.compose.internal.utils.SemanticsUtils.Companion.DEFAULT_COLOR_WHITE
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback
 import com.datadog.android.sessionreplay.utils.ColorStringFormatter
@@ -174,7 +176,5 @@ internal class SwitchSemanticsNodeMapper(
         const val CORNER_RADIUS_DP = 20
         const val THUMB_DIAMETER_DP = 20
         const val BORDER_WIDTH_DP = 1L
-        const val DEFAULT_COLOR_BLACK = "#000000FF"
-        const val DEFAULT_COLOR_WHITE = "#FFFFFFFF"
     }
 }

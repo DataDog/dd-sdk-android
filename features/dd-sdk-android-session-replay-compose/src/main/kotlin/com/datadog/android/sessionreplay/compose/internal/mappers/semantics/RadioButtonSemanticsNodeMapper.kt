@@ -6,20 +6,24 @@
 
 package com.datadog.android.sessionreplay.compose.internal.mappers.semantics
 
+import androidx.annotation.VisibleForTesting
 import androidx.compose.ui.semantics.SemanticsNode
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
+import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.compose.internal.data.SemanticsWireframe
 import com.datadog.android.sessionreplay.compose.internal.data.UiContext
 import com.datadog.android.sessionreplay.compose.internal.utils.ColorUtils
 import com.datadog.android.sessionreplay.compose.internal.utils.SemanticsUtils
+import com.datadog.android.sessionreplay.compose.internal.utils.SemanticsUtils.Companion.DEFAULT_COLOR_BLACK
+import com.datadog.android.sessionreplay.compose.internal.utils.SemanticsUtils.Companion.DEFAULT_COLOR_WHITE
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback
 import com.datadog.android.sessionreplay.utils.ColorStringFormatter
 
 internal class RadioButtonSemanticsNodeMapper(
     colorStringFormatter: ColorStringFormatter,
-    semanticsUtils: SemanticsUtils = SemanticsUtils(),
+    val semanticsUtils: SemanticsUtils = SemanticsUtils(),
     private val colorUtils: ColorUtils = ColorUtils()
 ) : AbstractSemanticsNodeMapper(
     colorStringFormatter,
@@ -30,14 +34,39 @@ internal class RadioButtonSemanticsNodeMapper(
         parentContext: UiContext,
         asyncJobStatusCallback: AsyncJobStatusCallback
     ): SemanticsWireframe {
-        val color = parentContext.parentContentColor?.takeIf { colorUtils.isDarkColor(it) }?.let {
+        val wireframes = mutableListOf<MobileSegment.Wireframe>()
+
+        val fallbackColor = parentContext.parentContentColor?.takeIf { colorUtils.isDarkColor(it) }?.let {
             DEFAULT_COLOR_WHITE
         } ?: DEFAULT_COLOR_BLACK
-        val boxWireframe = resolveBoxWireframe(semanticsNode, 0, color)
-        val dotWireframe = resolveDotWireframe(semanticsNode, 1, color)
+
+        val radioButtonColor = if (isMasked(parentContext)) {
+            DEFAULT_COLOR_GRAY
+        } else {
+            val rawRadioButtonColor = semanticsUtils.resolveRadioButtonColor(semanticsNode)
+            rawRadioButtonColor?.let { convertColor(it) }
+                ?: fallbackColor
+        }
+
+        resolveBoxWireframe(
+            semanticsNode = semanticsNode,
+            color = radioButtonColor,
+            wireframeIndex = 0
+        )
+            .let { wireframes.add(it) }
+
+        if (!isMasked(parentContext)) {
+            resolveDotWireframe(
+                semanticsNode = semanticsNode,
+                color = radioButtonColor,
+                wireframeIndex = 1
+            )
+                ?.let { wireframes.add(it) }
+        }
+
         return SemanticsWireframe(
             uiContext = null,
-            wireframes = listOfNotNull(boxWireframe, dotWireframe)
+            wireframes = wireframes
         )
     }
 
@@ -47,6 +76,7 @@ internal class RadioButtonSemanticsNodeMapper(
         color: String
     ): MobileSegment.Wireframe {
         val globalBounds = resolveBounds(semanticsNode)
+
         return MobileSegment.Wireframe.ShapeWireframe(
             id = resolveId(semanticsNode, wireframeIndex),
             x = globalBounds.x,
@@ -87,10 +117,14 @@ internal class RadioButtonSemanticsNodeMapper(
         }
     }
 
-    companion object {
+    private fun isMasked(uiContext: UiContext): Boolean {
+        return uiContext.textAndInputPrivacy != TextAndInputPrivacy.MASK_SENSITIVE_INPUTS
+    }
+
+    internal companion object {
         private const val DOT_PADDING_DP = 4
-        private const val DEFAULT_COLOR_BLACK = "#000000FF"
-        private const val DEFAULT_COLOR_WHITE = "#FFFFFFFF"
+
+        @VisibleForTesting internal const val DEFAULT_COLOR_GRAY = "#8E8F94"
         private const val BOX_BORDER_WIDTH = 1L
     }
 }
