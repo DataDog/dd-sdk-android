@@ -317,9 +317,9 @@ interface RumMonitor {
 
     /**
      * Stops the current session.
-     * A new session will start in response to a call to `startView`, `addAction`, or
-     * `startAction`. If the session is started because of a call to `addAction`,
-     * or `startAction`, the last know view is restarted in the new session.
+     * A new session will start in response to a call to [startView], [addAction], or
+     * [startAction]. If the session is started because of a call to [addAction],
+     * or [startAction], the last know view is restarted in the new session.
      */
     fun stopSession()
 
