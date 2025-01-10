@@ -167,3 +167,123 @@ by removing the older files.
 [2]: https://developer.android.com/studio/profile/jank-detection
 [3]: https://developer.android.com/studio/profile/energy-profiler
 [4]: https://developer.android.com/topic/performance/vitals/launch-time#time-initial
+
+## Session Relay Performance Measurement
+
+The Session Replay feature is expected to have a larger impact on both CPU and memory usage
+within the application.
+
+This section provides detailed performance measurements across different scenarios.
+
+### Methodology
+
+To simulate the typical usage of the Datadog SDK with Session Replay enabled, measurements were
+performed using two applications:
+
+Application used: [Docile-Alligator/Infinity-For-Reddit][1] (
+revision [cfe1781](https://github.com/Docile-Alligator/Infinity-For-Reddit/tree/cfe1781)) for
+Android View
+[NowInAndroid](https://github.com/android/nowinandroid) (revision [
+904e6fccee809556b242898fb624f5f38200298c)) for Jetpack Compose
+
+Device used: Samsung Galaxy S23
+Android OS: Android 14 (Build Number UP1A.231005.007)
+Datadog SDK: revision [2.17.0](https://github.com/DataDog/dd-sdk-android/tree/2.17.0)
+
+CPU, Memory profiling was done using Android Studio Ladybug | 2024.2.1 Patch 2.
+Device had 3.7 GB memory free on average (out of 8 GB), 110 apps installed and 41.7 GB of storage
+was free.
+Device was connected to WiFi interface.
+
+CPU and Memory profiling was done for the debug build type. CPU profiling was done using the System
+Traces option.
+
+Each measurement lasted for 1 minute, during which typical user behavior was simulated (scrolling
+the feed, browsing content).
+
+### Scenario configuration
+
+In the following measurements, "Baseline" refers to the scenario where the application integrates
+the Datadog SDK without enabling the Session Replay feature.
+
+The table below outlines the detailed masking configurations used in each measurement scenario:
+
+| Measurement       | Touch Privacy | Text & Input          | Image     |
+|-------------------|---------------|-----------------------|-----------|
+| Minimum recording | HIDE          | MASK_ALL              | MASK_ALL  |
+| Touch  Only       | SHOW          | MASK_ALL              | MASK_ALL  | 
+| Text & Input Only | HIDE          | MASK_SENSITIVE_INPUTS | MASK_ALL  | 
+| Image Only        | HIDE          | MASK_ALL              | MASK_NONE | 
+| All               | SHOW          | MASK_SENSITIVE_INPUTS | MASK_NONE |
+
+### CPU Peak
+
+#### Android View
+
+| Measurement | Baseline         | Minimum recording | Touch  Only      | Text & Input Only | Image Only       | All              |
+|-------------|------------------|-------------------|------------------|-------------------|------------------|------------------|
+| #1          | 27.9%            | 26%               | 25.5%            | 25.4%             | 32.3%            | 23.8%            |
+| #2          | 21.7%            | 24.2%             | 30.3%            | 32.9%             | 29.2%            | 34.6%            |
+| #3          | 27.8%            | 27.3%             | 22.7%            | 28.8%             | 36.1%            | 28.6%            |
+| #4          | 30.8%            | 21.4%             | 29.4%            | 23.2%             | 29.4%            | 25.8%            |
+| #5          | 24.2%            | 29.7%             | 24.4%            | 26.2%             | 41%              | 32.3%            |
+| Average     | 26.48%<(σ=3.18%) | 25.72% (σ=2.81%)  | 26.46% (σ=2.92%) | 27.30% (σ=3.32%)  | 33.60% (σ=4.47%) | 29.02% (σ=3.99%) |
+
+#### Jetpack Compose
+
+| Measurement | Baseline         | Minimum recording | Touch  Only      | Text & Input Only | Image Only       | All              |
+|-------------|------------------|-------------------|------------------|-------------------|------------------|------------------|
+| #1          | 30.1%            | 29.6%             | 36.7%            | 34%               | 40.4%            | 42.2%            |
+| #2          | 32%              | 29.8%             | 30.9%            | 27.5%             | 44.9%            | 31.7%            |
+| #3          | 30%              | 38.2%             | 31.8%            | 35%               | 43.7%            | 42.1%            |
+| #4          | 37.1%            | 31.4%             | 34.8%            | 39.4%             | 40.1%            | 45.4%            |
+| #5          | 26.3%            | 42.2%             | 33.6%            | 33.4%             | 44.9%            | 43.8%            |
+| Average     | 31.10% (σ=3.52%) | 34.24% (σ=5.07%)  | 33.56% (σ=2.08%) | 33.86% (σ=3.81%)  | 42.80% (σ=2.13%) | 41.04% (σ=4.82%) |
+
+### Memory Peak
+
+#### Android View
+
+| Measurement | Baseline            | Minimum recording   | Touch  Only         | Text & Input Only   | Image Only          | All               |
+|-------------|---------------------|---------------------|---------------------|---------------------|---------------------|-------------------|
+| #1          | 265MB               | 265MB               | 291MB               | 261MB               | 317MB               | 334MB             |
+| #2          | 248MB               | 248MB               | 319MB               | 284MB               | 287MB               | 285MB             |
+| #3          | 250MB               | 250MB               | 156MB               | 259MB               | 311MB               | 284MB             |
+| #4          | 221MB               | 221MB               | 318MB               | 195MB               | 341MB               | 315MB             |
+| #5          | 275MB               | 275MB               | 301MB               | 252MB               | 274MB               | 317MB             |
+| Average     | 251.8MB (σ=18.32MB) | 251.8MB (σ=18.32MB) | 277.0MB (σ=61.41MB) | 250.2MB (σ=29.62MB) | 306.0MB (σ=23.48MB) | 307MB (σ=19.52MB) |
+
+#### Jetpack Compose
+
+| Measurement | Baseline            | Minimum recording   | Touch  Only         | Text & Input Only   | Image Only          | All                 |
+|-------------|---------------------|---------------------|---------------------|---------------------|---------------------|---------------------|
+| #1          | 265MB               | 202MB               | 291MB               | 261MB               | 317MB               | 334MB               |
+| #2          | 248MB               | 417MB               | 319MB               | 284MB               | 287MB               | 285MB               |
+| #3          | 250MB               | 271MB               | 156MB               | 259MB               | 311MB               | 284MB               |
+| #4          | 221MB               | 313MB               | 318MB               | 195MB               | 341MB               | 315MB               |
+| #5          | 275MB               | 301MB               | 301MB               | 252MB               | 274MB               | 317MB               |
+| Average     | 251.8MB (σ=18.32MB) | 300.8MB (σ=69.71MB) | 277.0MB (σ=61.41MB) | 250.2MB (σ=29.62MB) | 306.0MB (σ=23.48MB) | 307.0MB (σ=19.52MB) |
+
+### Janky Frames
+
+#### Android View
+
+| Measurement | Baseline        | Minimum recording | Touch  Only     | Text & Input Only | Image Only      | All             |
+|-------------|-----------------|-------------------|-----------------|-------------------|-----------------|-----------------|
+| #1          | 139/3558        | 189/4139          | 298/5070        | 209/4381          | 161/3829        | 201/3079        |
+| #2          | 156/5031        | 192/4963          | 225/4776        | 209/3524          | 209/3073        | 240/4235        |
+| #3          | 69/2485         | 128/3173          | 259/4651        | 228/4281          | 240/3547        | 171/4008        |
+| #4          | 114/4057        | 118/3569          | 122/4331        | 126/3423          | 194/4268        | 228/3886        |
+| #5          | 132/4112        | 159/4369          | 201/4094        | 225/4430          | 167/3268        | 259/4491        |
+| Average     | 3.16% (σ=0.41%) | 3.88% (σ=0.42%)   | 4.78% (σ=1.07%) | 4.96% (σ=0.74%)   | 5.49% (σ=1.10%) | 5.62% (σ=0.74%) |
+
+#### Jetpack Compose
+
+| Measurement | Baseline        | Minimum recording | Touch  Only     | Text & Input Only | Image Only      | All             |
+|-------------|-----------------|-------------------|-----------------|-------------------|-----------------|-----------------|
+| #1          | 157/5919        | 380/5191          | 368/5581        | 348/5227          | 393/5868        | 247/3644        |
+| #2          | 120/4788        | 331/5115          | 427/4758        | 316/5393          | 410/5313        | 267/3514        |
+| #3          | 131/4280        | 287/4572          | 345/5306        | 458/6743          | 336/5257        | 271/4392        |
+| #4          | 198/6188        | 298/5057          | 354/5859        | 323/5054          | 323/5042        | 284/4678        |
+| #5          | 159/4825        | 319/5051          | 346/5281        | 359/6693          | 411/5673        | 256/4096        |
+| Average     | 2.94% (σ=0.31%) | 6.46% (σ=0.47%)   | 6.93% (σ=1.04%) | 6.21% (σ=0.53%)   | 6.89% (σ=0.52%) | 6.57% (σ=0.57%) |
