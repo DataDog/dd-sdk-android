@@ -18,6 +18,8 @@ import com.datadog.android.sessionreplay.compose.internal.data.UiContext
 import com.datadog.android.sessionreplay.compose.internal.utils.ColorUtils
 import com.datadog.android.sessionreplay.compose.internal.utils.PathUtils
 import com.datadog.android.sessionreplay.compose.internal.utils.SemanticsUtils
+import com.datadog.android.sessionreplay.compose.internal.utils.SemanticsUtils.Companion.DEFAULT_COLOR_BLACK
+import com.datadog.android.sessionreplay.compose.internal.utils.SemanticsUtils.Companion.DEFAULT_COLOR_WHITE
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback
 import com.datadog.android.sessionreplay.utils.ColorStringFormatter
@@ -78,6 +80,7 @@ internal class CheckboxSemanticsNodeMapper(
         )
     }
 
+    @Suppress("LongMethod")
     private fun createCheckboxWireframes(
         parentContext: UiContext,
         asyncJobStatusCallback: AsyncJobStatusCallback,
@@ -89,8 +92,11 @@ internal class CheckboxSemanticsNodeMapper(
         val rawFillColor = semanticsUtils.resolveCheckboxFillColor(semanticsNode)
         val rawCheckmarkColor = semanticsUtils.resolveCheckmarkColor(semanticsNode)
         val fillColorRgba = rawFillColor?.let { convertColor(it) } ?: DEFAULT_COLOR_WHITE
+        val fallbackColor = parentContext.parentContentColor?.takeIf { colorUtils.isDarkColor(it) }?.let {
+            DEFAULT_COLOR_WHITE
+        } ?: DEFAULT_COLOR_BLACK
         val checkmarkColorRgba = rawCheckmarkColor?.let { convertColor(it) }
-            ?: getFallbackCheckmarkColor(DEFAULT_COLOR_WHITE)
+            ?: fallbackColor
         val parsedFillColor = colorUtils.parseColorSafe(fillColorRgba)
         val isChecked = isCheckboxChecked(semanticsNode)
         val checkmarkColor = resolveCheckmarkColor(isChecked, checkmarkColorRgba, parsedFillColor)
@@ -141,6 +147,7 @@ internal class CheckboxSemanticsNodeMapper(
 
         // if we failed to create a wireframe from the path
         return createManualCheckedWireframes(
+            parentContext = parentContext,
             semanticsNode = semanticsNode,
             globalBounds = globalBounds,
             backgroundColor = fillColorRgba,
@@ -163,12 +170,15 @@ internal class CheckboxSemanticsNodeMapper(
     }
 
     private fun createManualCheckedWireframes(
+        parentContext: UiContext,
         semanticsNode: SemanticsNode,
         globalBounds: GlobalBounds,
         backgroundColor: String,
         borderColor: String
     ): List<MobileSegment.Wireframe> {
-        val strokeColor = getFallbackCheckmarkColor(backgroundColor)
+        val strokeColor = parentContext.parentContentColor?.takeIf { colorUtils.isDarkColor(it) }?.let {
+            DEFAULT_COLOR_WHITE
+        } ?: DEFAULT_COLOR_BLACK
 
         val wireframes = mutableListOf<MobileSegment.Wireframe>()
 
@@ -233,17 +243,7 @@ internal class CheckboxSemanticsNodeMapper(
     private fun isCheckboxChecked(semanticsNode: SemanticsNode): Boolean =
         semanticsNode.config.getOrNull(SemanticsProperties.ToggleableState) == ToggleableState.On
 
-    private fun getFallbackCheckmarkColor(backgroundColor: String?) =
-        if (backgroundColor == DEFAULT_COLOR_WHITE) {
-            DEFAULT_COLOR_BLACK
-        } else {
-            DEFAULT_COLOR_WHITE
-        }
-
     internal companion object {
-        internal const val DEFAULT_COLOR_BLACK = "#000000FF"
-        internal const val DEFAULT_COLOR_WHITE = "#FFFFFFFF"
-
         // when we create the checkmark manually, what % of the checkbox size should it be
         internal const val CHECKMARK_SIZE_FACTOR = 0.5
 

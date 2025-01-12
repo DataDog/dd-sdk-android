@@ -10,12 +10,13 @@ import androidx.compose.ui.semantics.SemanticsConfiguration
 import androidx.compose.ui.semantics.SemanticsNode
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
+import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.compose.internal.data.UiContext
+import com.datadog.android.sessionreplay.compose.internal.mappers.semantics.RadioButtonSemanticsNodeMapper.Companion.DEFAULT_COLOR_GRAY
 import com.datadog.android.sessionreplay.compose.test.elmyr.SessionReplayComposeForgeConfigurator
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback
 import fr.xgouchet.elmyr.Forge
-import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -41,6 +42,7 @@ import org.mockito.quality.Strictness
 internal class RadioButtonSemanticsNodeMapperTest : AbstractSemanticsNodeMapperTest() {
 
     private lateinit var testedRadioButtonSemanticsNodeMapper: RadioButtonSemanticsNodeMapper
+    private lateinit var mockSemanticsNode: SemanticsNode
 
     @Mock
     private lateinit var mockSemanticsConfig: SemanticsConfiguration
@@ -54,13 +56,23 @@ internal class RadioButtonSemanticsNodeMapperTest : AbstractSemanticsNodeMapperT
     @StringForgery(regex = "#[0-9A-F]{8}")
     lateinit var fakeBackgroundColorHexString: String
 
-    @Forgery
-    lateinit var fakeUiContext: UiContext
+    @Mock
+    lateinit var mockUiContext: UiContext
 
     @BeforeEach
     override fun `set up`(forge: Forge) {
         super.`set up`(forge)
+        mockSemanticsNode = mockSemanticsNode()
+
+        whenever(mockUiContext.textAndInputPrivacy) doReturn TextAndInputPrivacy.MASK_SENSITIVE_INPUTS
         mockColorStringFormatter(fakeBackgroundColor, fakeBackgroundColorHexString)
+        whenever(mockSemanticsUtils.resolveRadioButtonColor(mockSemanticsNode))
+            .doReturn(fakeBackgroundColor)
+
+        whenever(mockSemanticsUtils.resolveInnerBounds(mockSemanticsNode)) doReturn rectToBounds(
+            fakeBounds,
+            fakeDensity
+        )
 
         testedRadioButtonSemanticsNodeMapper = RadioButtonSemanticsNodeMapper(
             colorStringFormatter = mockColorStringFormatter,
@@ -71,17 +83,13 @@ internal class RadioButtonSemanticsNodeMapperTest : AbstractSemanticsNodeMapperT
     @Test
     fun `M return the box wireframe W map {selected = false}`() {
         // Given
-        val mockSemanticsNode = mockSemanticsNode()
         whenever(mockSemanticsNode.config) doReturn mockSemanticsConfig
         whenever(mockSemanticsConfig.getOrNull(SemanticsProperties.Selected)) doReturn false
-        whenever(mockSemanticsUtils.resolveInnerBounds(mockSemanticsNode)) doReturn rectToBounds(
-            fakeBounds,
-            fakeDensity
-        )
+
         // When
         val actual = testedRadioButtonSemanticsNodeMapper.map(
             mockSemanticsNode,
-            fakeUiContext,
+            mockUiContext,
             mockAsyncJobStatusCallback
         )
 
@@ -96,7 +104,7 @@ internal class RadioButtonSemanticsNodeMapperTest : AbstractSemanticsNodeMapperT
                 cornerRadius = (fakeBounds.size.width / fakeDensity).toLong() / 2
             ),
             border = MobileSegment.ShapeBorder(
-                color = DEFAULT_COLOR_BLACK,
+                color = fakeBackgroundColorHexString,
                 width = BOX_BORDER_WIDTH
             )
         )
@@ -106,18 +114,13 @@ internal class RadioButtonSemanticsNodeMapperTest : AbstractSemanticsNodeMapperT
     @Test
     fun `M return the box wireframe W map {selected = true}`() {
         // Given
-        val mockSemanticsNode = mockSemanticsNode()
         whenever(mockSemanticsNode.config) doReturn mockSemanticsConfig
         whenever(mockSemanticsConfig.getOrNull(SemanticsProperties.Selected)) doReturn true
-        whenever(mockSemanticsUtils.resolveInnerBounds(mockSemanticsNode)) doReturn rectToBounds(
-            fakeBounds,
-            fakeDensity
-        )
 
         // When
         val actual = testedRadioButtonSemanticsNodeMapper.map(
             mockSemanticsNode,
-            fakeUiContext,
+            mockUiContext,
             mockAsyncJobStatusCallback
         )
 
@@ -132,7 +135,7 @@ internal class RadioButtonSemanticsNodeMapperTest : AbstractSemanticsNodeMapperT
                 cornerRadius = (fakeBounds.size.width / fakeDensity).toLong() / 2
             ),
             border = MobileSegment.ShapeBorder(
-                color = DEFAULT_COLOR_BLACK,
+                color = fakeBackgroundColorHexString,
                 width = BOX_BORDER_WIDTH
             )
         )
@@ -144,11 +147,41 @@ internal class RadioButtonSemanticsNodeMapperTest : AbstractSemanticsNodeMapperT
             width = (fakeBounds.size.width / fakeDensity).toLong() - 2 * DOT_PADDING_DP,
             height = (fakeBounds.size.height / fakeDensity).toLong() - 2 * DOT_PADDING_DP,
             shapeStyle = MobileSegment.ShapeStyle(
-                backgroundColor = DEFAULT_COLOR_BLACK,
+                backgroundColor = fakeBackgroundColorHexString,
                 cornerRadius = ((fakeBounds.size.width / fakeDensity).toLong() - 2 * DOT_PADDING_DP) / 2
             )
         )
         assertThat(actual.wireframes).containsAll(listOf(boxFrame, dotFrame))
+    }
+
+    @Test
+    fun `M return the box wireframe W map { masked }`() {
+        // Given
+        whenever(mockUiContext.textAndInputPrivacy) doReturn TextAndInputPrivacy.MASK_ALL_INPUTS
+
+        // When
+        val actual = testedRadioButtonSemanticsNodeMapper.map(
+            mockSemanticsNode,
+            mockUiContext,
+            mockAsyncJobStatusCallback
+        )
+
+        // Then
+        val expected = MobileSegment.Wireframe.ShapeWireframe(
+            id = (fakeSemanticsId.toLong() shl 32),
+            x = (fakeBounds.left / fakeDensity).toLong(),
+            y = (fakeBounds.top / fakeDensity).toLong(),
+            width = (fakeBounds.size.width / fakeDensity).toLong(),
+            height = (fakeBounds.size.height / fakeDensity).toLong(),
+            shapeStyle = MobileSegment.ShapeStyle(
+                cornerRadius = (fakeBounds.size.width / fakeDensity).toLong() / 2
+            ),
+            border = MobileSegment.ShapeBorder(
+                color = DEFAULT_COLOR_GRAY,
+                width = BOX_BORDER_WIDTH
+            )
+        )
+        assertThat(actual.wireframes).containsExactly(expected)
     }
 
     private fun mockSemanticsNode(): SemanticsNode {
@@ -157,7 +190,6 @@ internal class RadioButtonSemanticsNodeMapperTest : AbstractSemanticsNodeMapperT
 
     companion object {
         private const val DOT_PADDING_DP = 4
-        private const val DEFAULT_COLOR_BLACK = "#000000FF"
         private const val BOX_BORDER_WIDTH = 1L
     }
 }

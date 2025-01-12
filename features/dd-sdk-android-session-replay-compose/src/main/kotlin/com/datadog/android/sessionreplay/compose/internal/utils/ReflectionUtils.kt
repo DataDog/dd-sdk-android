@@ -186,6 +186,10 @@ internal class ReflectionUtils {
         return ComposeReflection.BoxColorField?.getSafe(onDrawInstance) as? AnimationState<*, *>
     }
 
+    fun getRadioColor(onDrawInstance: Any): AnimationState<*, *>? {
+        return ComposeReflection.RadioColorField?.getSafe(onDrawInstance) as? AnimationState<*, *>
+    }
+
     fun getCheckColor(onDrawInstance: Any): AnimationState<*, *>? {
         return ComposeReflection.CheckColorField?.getSafe(onDrawInstance) as? AnimationState<*, *>
     }
