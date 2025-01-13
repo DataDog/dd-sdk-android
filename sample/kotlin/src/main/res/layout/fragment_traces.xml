@@ -145,7 +145,7 @@
         android:visibility="invisible"
         android:layout_margin="8dp"
         app:layout_constraintStart_toEndOf="@id/spinner_request"
-        app:layout_constraintTop_toBottomOf="@id/start_404_request"
+        app:layout_constraintTop_toBottomOf="@id/start_sse_request"
         app:layout_constraintEnd_toEndOf="parent"
         tools:src="@drawable/ic_check_circle_green_24dp"
     />

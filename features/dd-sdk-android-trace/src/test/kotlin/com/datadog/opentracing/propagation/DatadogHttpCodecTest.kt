@@ -8,6 +8,7 @@ package com.datadog.opentracing.propagation
 
 import com.datadog.android.trace.internal.domain.event.BigIntegerUtils
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.legacy.trace.api.sampling.PrioritySampling
 import com.datadog.opentracing.DDSpanContext
 import com.datadog.tools.unit.setFieldValue
 import fr.xgouchet.elmyr.Forge
@@ -89,7 +90,14 @@ internal class DatadogHttpCodecTest {
             headers[DatadogHttpCodec.LEAST_SIGNIFICANT_TRACE_ID_KEY]
         ).isEqualTo(fakeLeastSignificant64BitsTraceId)
         assertThat(headers[DatadogHttpCodec.DATADOG_TAGS_KEY]).isEqualTo(expectedInjectedTags())
-        assertThat(headers[DatadogHttpCodec.SAMPLING_PRIORITY_KEY]).isEqualTo("1")
+        assertThat(headers[DatadogHttpCodec.SAMPLING_PRIORITY_KEY])
+            .let {
+                if (fakeDDSpanContext.samplingPriority != PrioritySampling.UNSET) {
+                    it.isEqualTo(fakeDDSpanContext.samplingPriority.toString())
+                } else {
+                    it.isNull()
+                }
+            }
         assertThat(headers[DatadogHttpCodec.SPAN_ID_KEY])
             .isEqualTo(fakeDDSpanContext.spanId.toString())
         fakeDDSpanContext.baggageItems.forEach { (key, value) ->

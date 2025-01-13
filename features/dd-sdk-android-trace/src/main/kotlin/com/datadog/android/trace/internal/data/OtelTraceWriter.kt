@@ -19,6 +19,7 @@ import com.datadog.android.event.NoOpEventMapper
 import com.datadog.android.trace.internal.domain.event.ContextAwareMapper
 import com.datadog.android.trace.internal.storage.ContextAwareSerializer
 import com.datadog.android.trace.model.SpanEvent
+import com.datadog.legacy.trace.api.sampling.PrioritySampling
 import com.datadog.trace.common.writer.Writer
 import com.datadog.trace.core.DDSpan
 import java.util.Locale
@@ -41,10 +42,14 @@ internal class OtelTraceWriter(
         sdkCore.getFeature(Feature.TRACING_FEATURE_NAME)
             ?.withWriteContext { datadogContext, eventBatchWriter ->
                 // TODO RUM-4092 Add the capability in the serializer to handle multiple spans in one payload
-                trace.forEach { span ->
-                    @Suppress("ThreadSafety") // called in the worker context
-                    writeSpan(datadogContext, eventBatchWriter, span)
-                }
+                trace
+                    .filter {
+                        it.samplingPriority() !in DROP_SAMPLING_PRIORITIES
+                    }
+                    .forEach { span ->
+                        @Suppress("ThreadSafety") // called in the worker context
+                        writeSpan(datadogContext, eventBatchWriter, span)
+                    }
             }
     }
 
@@ -90,5 +95,6 @@ internal class OtelTraceWriter(
 
     companion object {
         internal const val ERROR_SERIALIZING = "Error serializing %s model"
+        internal val DROP_SAMPLING_PRIORITIES = setOf(PrioritySampling.SAMPLER_DROP, PrioritySampling.USER_DROP)
     }
 }

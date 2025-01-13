@@ -7,6 +7,7 @@
 package com.datadog.android.utils.forge
 
 import com.datadog.legacy.trace.api.Config
+import com.datadog.legacy.trace.api.sampling.PrioritySampling
 import com.datadog.opentracing.DDSpan
 import com.datadog.opentracing.DDTracer
 import com.datadog.opentracing.DDTracer.DDSpanBuilder
@@ -34,6 +35,15 @@ internal class SpanForgeryFactory : ForgeryFactory<DDSpan> {
             isWithErrorFlag,
             tags
         ).start() as DDSpan
+        if (forge.aBool()) {
+            span.samplingPriority = forge.anElementFrom(
+                PrioritySampling.UNSET,
+                PrioritySampling.SAMPLER_DROP,
+                PrioritySampling.USER_DROP,
+                PrioritySampling.SAMPLER_KEEP,
+                PrioritySampling.USER_KEEP
+            )
+        }
         metrics.forEach {
             span.context().setMetric(it.key, it.value)
         }

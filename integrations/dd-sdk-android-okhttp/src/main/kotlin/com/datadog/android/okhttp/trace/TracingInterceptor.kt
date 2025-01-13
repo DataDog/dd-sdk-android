@@ -27,7 +27,10 @@ import com.datadog.android.trace.TracingHeaderType
 import com.datadog.legacy.trace.api.DDTags
 import com.datadog.legacy.trace.api.interceptor.MutableSpan
 import com.datadog.legacy.trace.api.sampling.PrioritySampling
+import com.datadog.opentracing.DDSpan
+import com.datadog.opentracing.DDSpanContext
 import com.datadog.opentracing.DDTracer
+import com.datadog.opentracing.propagation.ExtractedContext
 import io.opentracing.Span
 import io.opentracing.SpanContext
 import io.opentracing.Tracer
@@ -112,7 +115,8 @@ internal constructor(
      * auto-instrumented requests. By default it is [DeterministicTraceSampler], which either can accept
      * fixed sample rate or can get it dynamically from the provider. Value between `0.0` and
      * `100.0`. A value of `0.0` means no trace will be kept, `100.0` means all traces will
-     * be kept (default value is `20.0`).
+     * be kept (default value is `20.0`). If there is a parent trace attached to the network span created, then its
+     * sampling decision will be used instead.
      */
     @JvmOverloads
     @Deprecated(
@@ -136,9 +140,7 @@ internal constructor(
         tracedRequestListener,
         null,
         traceSampler,
-        localTracerFactory = { sdkCore, tracingHeaderTypes ->
-            AndroidTracer.Builder(sdkCore).setTracingHeaderTypes(tracingHeaderTypes).build()
-        },
+        localTracerFactory = DEFAULT_LOCAL_TRACER_FACTORY,
         traceContextInjection = TraceContextInjection.All
     )
 
@@ -158,13 +160,14 @@ internal constructor(
      * auto-instrumented requests. By default it is [DeterministicTraceSampler], which either can accept
      * fixed sample rate or can get it dynamically from the provider. Value between `0.0` and
      * `100.0`. A value of `0.0` means no trace will be kept, `100.0` means all traces will
-     * be kept (default value is `20.0`).
+     * be kept (default value is `20.0`). If there is a parent trace attached to the network span created, then its
+     * sampling decision will be used instead.
      */
     @JvmOverloads
     @Deprecated(
         message = "This constructor is not going to be accessible anymore in future versions. " +
             "Please use the Builder instead.",
-        replaceWith = ReplaceWith("TracingInterceptor.Builder(tracedHosts).build()")
+        replaceWith = ReplaceWith("TracingInterceptor.Builder(tracedHostsWithHeaderType).build()")
     )
     constructor(
         sdkInstanceName: String? = null,
@@ -177,9 +180,7 @@ internal constructor(
         tracedRequestListener,
         null,
         traceSampler,
-        localTracerFactory = { sdkCore, tracingHeaderTypes ->
-            AndroidTracer.Builder(sdkCore).setTracingHeaderTypes(tracingHeaderTypes).build()
-        },
+        localTracerFactory = DEFAULT_LOCAL_TRACER_FACTORY,
         traceContextInjection = TraceContextInjection.All
     )
 
@@ -193,7 +194,8 @@ internal constructor(
      * auto-instrumented requests. By default it is [DeterministicTraceSampler], which either can accept
      * fixed sample rate or can get it dynamically from the provider. Value between `0.0` and
      * `100.0`. A value of `0.0` means no trace will be kept, `100.0` means all traces will
-     * be kept (default value is `20.0`).
+     * be kept (default value is `20.0`). If there is a parent trace attached to the network span created, then its
+     * sampling decision will be used instead.
      */
     @JvmOverloads
     @Deprecated(
@@ -211,9 +213,7 @@ internal constructor(
         tracedRequestListener,
         null,
         traceSampler,
-        localTracerFactory = { sdkCore, tracingHeaderTypes ->
-            AndroidTracer.Builder(sdkCore).setTracingHeaderTypes(tracingHeaderTypes).build()
-        },
+        localTracerFactory = DEFAULT_LOCAL_TRACER_FACTORY,
         traceContextInjection = TraceContextInjection.All
     )
 
@@ -315,7 +315,18 @@ internal constructor(
         tracer: Tracer
     ): Response {
         val span = buildSpan(tracer, request)
-        val isSampled = extractSamplingDecision(request) ?: traceSampler.sample(span)
+        val isSampled = span.sample(tracer, request)
+
+        if (span is DDSpan && span.isRootSpan) {
+            val samplingPriority = if (isSampled) PrioritySampling.SAMPLER_KEEP else PrioritySampling.SAMPLER_DROP
+            val spanContext = span.context()
+            if (spanContext.setSamplingPriority(samplingPriority)) {
+                spanContext.setMetric(
+                    AGENT_PSR_ATTRIBUTE,
+                    (traceSampler.getSampleRate() ?: ZERO_SAMPLE_RATE) / ALL_IN_SAMPLE_RATE
+                )
+            }
+        }
 
         val updatedRequest = try {
             updateRequest(sdkCore, request, tracer, span, isSampled).build()
@@ -412,7 +423,35 @@ internal constructor(
     }
 
     @Suppress("ReturnCount")
-    private fun extractSamplingDecision(request: Request): Boolean? {
+    private fun extractSamplingDecision(tracer: Tracer, request: Request): Boolean? {
+        val headerSamplingPriority = extractSamplingDecisionFromHeader(request)
+        if (headerSamplingPriority != null) return headerSamplingPriority
+
+        // if parent context is propagated via headers, sampling decision will be there (see DDTracer#inject), but if
+        // it is tagged span, we need to trigger sampling decision manually, it is not yet made probably.
+        val openTracingSpan = request.tag(Span::class.java)
+        if (openTracingSpan != null && openTracingSpan.context() is DDSpanContext) {
+            // very hacky, this is to trigger sampling decision and avoid
+            // making DDTracer#setSamplingPriorityIfNecessary public
+            tracer.inject(openTracingSpan.context(), Format.Builtin.TEXT_MAP_INJECT, TextMapInject { _, _ -> })
+            return (openTracingSpan.context() as? DDSpanContext)
+                ?.let { if (it.samplingPriority == PrioritySampling.UNSET) null else it.samplingPriority > 0 }
+        }
+
+        val openTelemetrySpan = request.tag(TraceContext::class.java)
+        if (openTelemetrySpan != null) {
+            return if (openTelemetrySpan.samplingPriority == PrioritySampling.UNSET) {
+                null
+            } else {
+                openTelemetrySpan.samplingPriority > 0
+            }
+        }
+
+        return null
+    }
+
+    @Suppress("ReturnCount")
+    private fun extractSamplingDecisionFromHeader(request: Request): Boolean? {
         val datadogSamplingPriority =
             request.header(DATADOG_SAMPLING_PRIORITY_HEADER)?.toIntOrNull()
         if (datadogSamplingPriority != null) {
@@ -462,6 +501,9 @@ internal constructor(
     private fun extractParentContext(tracer: Tracer, request: Request): SpanContext? {
         val tagContext = request.tag(Span::class.java)?.context()
             ?: request.tag(TraceContext::class.java)?.toOpenTracingContext()
+        // need this, because TagContext#toSpanId returns empty string even if there is non-empty context
+        val hasTag = request.tag(Span::class.java)
+            ?: request.tag(TraceContext::class.java) != null
 
         val headerContext = tracer.extract(
             Format.Builtin.TEXT_MAP_EXTRACT,
@@ -472,7 +514,15 @@ internal constructor(
             )
         )
 
-        return headerContext ?: tagContext
+        // Tracer.extract will return empty object, not null, if nothing was extracted. ExtractedContext will be
+        // returned only if there is real tracing info.
+        return if (headerContext is ExtractedContext) {
+            headerContext
+        } else if (hasTag) {
+            tagContext
+        } else {
+            null
+        }
     }
 
     private fun setSampledOutHeaders(
@@ -515,7 +565,7 @@ internal constructor(
                     requestBuilder.removeHeader(key)
                     when (key) {
                         DATADOG_LEAST_SIGNIFICANT_64_BITS_TRACE_ID_HEADER,
-                        DATADOG_TAGS,
+                        DATADOG_TAGS_HEADER,
                         DATADOG_SPAN_ID_HEADER,
                         DATADOG_ORIGIN_HEADER -> requestBuilder.addHeader(key, value)
                     }
@@ -582,7 +632,7 @@ internal constructor(
         listOf(
             DATADOG_SAMPLING_PRIORITY_HEADER,
             DATADOG_LEAST_SIGNIFICANT_64_BITS_TRACE_ID_HEADER,
-            DATADOG_TAGS,
+            DATADOG_TAGS_HEADER,
             DATADOG_SPAN_ID_HEADER,
             DATADOG_ORIGIN_HEADER
         ).forEach {
@@ -617,7 +667,7 @@ internal constructor(
                     when (key) {
                         DATADOG_SAMPLING_PRIORITY_HEADER,
                         DATADOG_LEAST_SIGNIFICANT_64_BITS_TRACE_ID_HEADER,
-                        DATADOG_TAGS,
+                        DATADOG_TAGS_HEADER,
                         DATADOG_SPAN_ID_HEADER,
                         DATADOG_ORIGIN_HEADER -> if (tracingHeaderTypes.contains(TracingHeaderType.DATADOG)) {
                             tracedRequestBuilder.addHeader(key, value)
@@ -654,10 +704,10 @@ internal constructor(
         sdkCore: FeatureSdkCore,
         request: Request,
         response: Response,
-        span: Span?,
+        span: Span,
         isSampled: Boolean
     ) {
-        if (!isSampled || span == null) {
+        if (!isSampled) {
             onRequestIntercepted(sdkCore, request, null, response, null)
         } else {
             val statusCode = response.code
@@ -669,22 +719,18 @@ internal constructor(
                 (span as? MutableSpan)?.resourceName = RESOURCE_NAME_404
             }
             onRequestIntercepted(sdkCore, request, span, response, null)
-            if (canSendSpan()) {
-                span.finish()
-            } else {
-                (span as? MutableSpan)?.drop()
-            }
         }
+        span.finishRumAware(isSampled)
     }
 
     private fun handleThrowable(
         sdkCore: FeatureSdkCore,
         request: Request,
         throwable: Throwable,
-        span: Span?,
+        span: Span,
         isSampled: Boolean
     ) {
-        if (!isSampled || span == null) {
+        if (!isSampled) {
             onRequestIntercepted(sdkCore, request, null, null, throwable)
         } else {
             (span as? MutableSpan)?.isError = true
@@ -692,11 +738,25 @@ internal constructor(
             span.setTag(DDTags.ERROR_TYPE, throwable.javaClass.name)
             span.setTag(DDTags.ERROR_STACK, throwable.loggableStackTrace())
             onRequestIntercepted(sdkCore, request, span, null, throwable)
-            if (canSendSpan()) {
-                span.finish()
-            } else {
-                (span as? MutableSpan)?.drop()
-            }
+        }
+        span.finishRumAware(isSampled)
+    }
+
+    private fun Span.finishRumAware(isSampled: Boolean) {
+        if (canSendSpan()) {
+            if (isSampled) finish() else drop()
+        } else {
+            drop()
+        }
+    }
+
+    private fun Span.drop() = (this as? MutableSpan)?.drop()
+
+    private fun Span.sample(tracer: Tracer, request: Request): Boolean {
+        return if (this is DDSpan && samplingPriority != null) {
+            samplingPriority > 0
+        } else {
+            extractSamplingDecision(tracer, request) ?: traceSampler.sample(this)
         }
     }
 
@@ -762,10 +822,7 @@ internal constructor(
         internal var tracedRequestListener: TracedRequestListener = NoOpTracedRequestListener()
         internal var traceOrigin: String? = null
         internal var traceSampler: Sampler<Span> = DeterministicTraceSampler(DEFAULT_TRACE_SAMPLE_RATE)
-        internal var localTracerFactory: (SdkCore, Set<TracingHeaderType>) -> Tracer =
-            { sdkCore, tracingHeaderTypes ->
-                AndroidTracer.Builder(sdkCore).setTracingHeaderTypes(tracingHeaderTypes).build()
-            }
+        internal var localTracerFactory = DEFAULT_LOCAL_TRACER_FACTORY
         internal var traceContextInjection = TraceContextInjection.All
 
         /**
@@ -789,7 +846,8 @@ internal constructor(
 
         /**
          * Set the trace sample rate controlling the sampling of APM traces created for
-         * auto-instrumented requests.
+         * auto-instrumented requests. If there is a parent trace attached to the network span created, then its
+         * sampling decision will be used instead.
          * @param sampleRate the sample rate to use (percentage between 0f and 100f, default is 20f).
          */
         fun setTraceSampleRate(@FloatRange(from = 0.0, to = 100.0) sampleRate: Float): R {
@@ -799,7 +857,8 @@ internal constructor(
 
         /**
          * Set the trace sampler controlling the sampling of APM traces created for
-         * auto-instrumented requests.
+         * auto-instrumented requests. If there is a parent trace attached to the network span created, then its
+         * sampling decision will be used instead.
          * @param traceSampler the trace sampler controlling the sampling of APM traces.
          * By default it is a sampler accepting 20% of the traces.
          */
@@ -862,11 +921,13 @@ internal constructor(
                 "We automatically created a local tracer for you."
 
         internal const val NETWORK_REQUESTS_TRACKING_FEATURE_NAME = "Network Requests"
+        internal const val ALL_IN_SAMPLE_RATE: Double = 100.0
+        internal const val ZERO_SAMPLE_RATE: Float = 0f
         internal const val DEFAULT_TRACE_SAMPLE_RATE: Float = 20f
 
         // taken from DatadogHttpCodec
         internal const val DATADOG_LEAST_SIGNIFICANT_64_BITS_TRACE_ID_HEADER = "x-datadog-trace-id"
-        internal const val DATADOG_TAGS = "x-datadog-tags"
+        internal const val DATADOG_TAGS_HEADER = "x-datadog-tags"
         internal const val DATADOG_SPAN_ID_HEADER = "x-datadog-parent-id"
         internal const val DATADOG_SAMPLING_PRIORITY_HEADER = "x-datadog-sampling-priority"
         internal const val DATADOG_DROP_SAMPLING_DECISION = "0"
@@ -893,5 +954,15 @@ internal constructor(
         internal const val W3C_SAMPLING_DECISION_INDEX = 3
         internal const val W3C_TRACE_ID_LENGTH = 32
         internal const val W3C_PARENT_ID_LENGTH = 16
+
+        private const val AGENT_PSR_ATTRIBUTE = "_dd.agent_psr"
+        private val DEFAULT_LOCAL_TRACER_FACTORY: (SdkCore, Set<TracingHeaderType>) -> Tracer =
+            { sdkCore, tracingHeaderTypes ->
+                AndroidTracer.Builder(sdkCore)
+                    // set sample rate to 100 to avoid sampling in the tracer, we are going to sample in the interceptor
+                    .setSampleRate(ALL_IN_SAMPLE_RATE)
+                    .setTracingHeaderTypes(tracingHeaderTypes)
+                    .build()
+            }
     }
 }
