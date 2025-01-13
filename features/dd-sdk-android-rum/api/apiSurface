@@ -92,6 +92,8 @@ enum com.datadog.android.rum.RumErrorSource
   - LOGGER
   - AGENT
   - WEBVIEW
+  - CUSTOM
+  - REPORT
 interface com.datadog.android.rum.RumMonitor
   fun getCurrentSessionId((String?) -> Unit)
   fun startView(Any, String, Map<String, Any?> = emptyMap())

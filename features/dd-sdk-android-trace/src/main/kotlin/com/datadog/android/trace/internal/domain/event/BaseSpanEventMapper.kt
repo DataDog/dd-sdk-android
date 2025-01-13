@@ -68,7 +68,9 @@ internal abstract class BaseSpanEventMapper<T> : ContextAwareMapper<T, SpanEvent
             DeviceType.TABLET -> SpanEvent.Type.TABLET
             DeviceType.TV -> SpanEvent.Type.TV
             DeviceType.DESKTOP -> SpanEvent.Type.DESKTOP
-            else -> SpanEvent.Type.OTHER
+            DeviceType.GAMING_CONSOLE -> SpanEvent.Type.GAMING_CONSOLE
+            DeviceType.BOT -> SpanEvent.Type.BOT
+            DeviceType.OTHER -> SpanEvent.Type.OTHER
         }
     }
 }

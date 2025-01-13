@@ -93,6 +93,8 @@ internal fun RumErrorSource.toSchemaSource(): ErrorEvent.ErrorSource {
         RumErrorSource.LOGGER -> ErrorEvent.ErrorSource.LOGGER
         RumErrorSource.AGENT -> ErrorEvent.ErrorSource.AGENT
         RumErrorSource.WEBVIEW -> ErrorEvent.ErrorSource.WEBVIEW
+        RumErrorSource.CUSTOM -> ErrorEvent.ErrorSource.CUSTOM
+        RumErrorSource.REPORT -> ErrorEvent.ErrorSource.REPORT
     }
 }
 
