@@ -195,7 +195,9 @@ public final class com/datadog/android/api/context/DeviceInfo {
 }
 
 public final class com/datadog/android/api/context/DeviceType : java/lang/Enum {
+	public static final field BOT Lcom/datadog/android/api/context/DeviceType;
 	public static final field DESKTOP Lcom/datadog/android/api/context/DeviceType;
+	public static final field GAMING_CONSOLE Lcom/datadog/android/api/context/DeviceType;
 	public static final field MOBILE Lcom/datadog/android/api/context/DeviceType;
 	public static final field OTHER Lcom/datadog/android/api/context/DeviceType;
 	public static final field TABLET Lcom/datadog/android/api/context/DeviceType;

@@ -129,8 +129,10 @@ public final class com/datadog/android/rum/RumConfiguration$Builder {
 public final class com/datadog/android/rum/RumErrorSource : java/lang/Enum {
 	public static final field AGENT Lcom/datadog/android/rum/RumErrorSource;
 	public static final field CONSOLE Lcom/datadog/android/rum/RumErrorSource;
+	public static final field CUSTOM Lcom/datadog/android/rum/RumErrorSource;
 	public static final field LOGGER Lcom/datadog/android/rum/RumErrorSource;
 	public static final field NETWORK Lcom/datadog/android/rum/RumErrorSource;
+	public static final field REPORT Lcom/datadog/android/rum/RumErrorSource;
 	public static final field SOURCE Lcom/datadog/android/rum/RumErrorSource;
 	public static final field WEBVIEW Lcom/datadog/android/rum/RumErrorSource;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/RumErrorSource;

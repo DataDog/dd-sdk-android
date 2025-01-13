@@ -14,5 +14,7 @@ enum class DeviceType {
     TABLET,
     TV,
     DESKTOP,
+    GAMING_CONSOLE,
+    BOT,
     OTHER
 }
