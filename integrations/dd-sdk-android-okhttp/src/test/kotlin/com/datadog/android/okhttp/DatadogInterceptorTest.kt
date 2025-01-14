@@ -77,7 +77,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
     @Mock
     lateinit var mockRumAttributesProvider: RumResourceAttributesProvider
 
-    @FloatForgery(0f, 1f)
+    @FloatForgery(0f, 100f)
     var fakeTracingSampleRate: Float = 0f
 
     private lateinit var fakeAttributes: Map<String, Any?>
@@ -188,7 +188,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
         val expectedStopAttrs = mapOf(
             RumAttributes.TRACE_ID to fakeTraceIdAsString,
             RumAttributes.SPAN_ID to fakeSpanId,
-            RumAttributes.RULE_PSR to fakeTracingSampleRate
+            RumAttributes.RULE_PSR to fakeTracingSampleRate / 100
         ) + fakeAttributes
         val mimeType = fakeMediaType?.type
         val kind = when {
@@ -233,7 +233,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
         val expectedStopAttrs = mapOf(
             RumAttributes.TRACE_ID to fakeTraceIdAsString,
             RumAttributes.SPAN_ID to fakeSpanId,
-            RumAttributes.RULE_PSR to fakeTracingSampleRate
+            RumAttributes.RULE_PSR to fakeTracingSampleRate / 100
         ) + fakeAttributes
         val kind = RumResourceKind.NATIVE
 
@@ -274,7 +274,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
         val expectedStopAttrs = mapOf(
             RumAttributes.TRACE_ID to fakeTraceIdAsString,
             RumAttributes.SPAN_ID to fakeSpanId,
-            RumAttributes.RULE_PSR to fakeTracingSampleRate
+            RumAttributes.RULE_PSR to fakeTracingSampleRate / 100
         ) + fakeAttributes
         val mimeType = fakeMediaType?.type
         val kind = when {
@@ -321,7 +321,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
         val expectedStopAttrs = mapOf(
             RumAttributes.TRACE_ID to fakeTraceIdAsString,
             RumAttributes.SPAN_ID to fakeSpanId,
-            RumAttributes.RULE_PSR to fakeTracingSampleRate
+            RumAttributes.RULE_PSR to fakeTracingSampleRate / 100
         ) + fakeAttributes
         val mimeType = fakeMediaType?.type
         val kind = when {
@@ -417,7 +417,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
         val expectedStopAttrs = mapOf(
             RumAttributes.TRACE_ID to fakeTraceIdAsString,
             RumAttributes.SPAN_ID to fakeSpanId,
-            RumAttributes.RULE_PSR to fakeTracingSampleRate
+            RumAttributes.RULE_PSR to fakeTracingSampleRate / 100
         ) + fakeAttributes
         val mimeType = fakeMediaType?.type
         val kind = when {
@@ -466,7 +466,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
         val expectedStopAttrs = mapOf(
             RumAttributes.TRACE_ID to fakeTraceIdAsString,
             RumAttributes.SPAN_ID to fakeSpanId,
-            RumAttributes.RULE_PSR to fakeTracingSampleRate
+            RumAttributes.RULE_PSR to fakeTracingSampleRate / 100
         ) + fakeAttributes
         val mimeType = fakeMediaType?.type
         val kind = when {
@@ -624,7 +624,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
         val expectedStopAttrs = mapOf(
             RumAttributes.TRACE_ID to fakeTraceIdAsString,
             RumAttributes.SPAN_ID to fakeSpanId,
-            RumAttributes.RULE_PSR to fakeTracingSampleRate
+            RumAttributes.RULE_PSR to fakeTracingSampleRate / 100
         ) + fakeAttributes
         val mimeType = fakeMediaType?.type
         val kind = when {
@@ -727,7 +727,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
         val expectedStopAttrs = mapOf(
             RumAttributes.TRACE_ID to fakeTraceIdAsString,
             RumAttributes.SPAN_ID to fakeSpanId,
-            RumAttributes.RULE_PSR to fakeTracingSampleRate
+            RumAttributes.RULE_PSR to fakeTracingSampleRate / 100
         ) + fakeAttributes
         val mimeType = fakeMediaType?.type
         val kind = when {

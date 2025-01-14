@@ -324,7 +324,7 @@ open class DatadogInterceptor internal constructor(
             mapOf(
                 RumAttributes.TRACE_ID to span.context().traceIdAsHexString(),
                 RumAttributes.SPAN_ID to span.context().toSpanId(),
-                RumAttributes.RULE_PSR to traceSampler.getSampleRate()
+                RumAttributes.RULE_PSR to (traceSampler.getSampleRate() ?: ZERO_SAMPLE_RATE) / ALL_IN_SAMPLE_RATE
             )
         }
         (GlobalRumMonitor.get(sdkCore) as? AdvancedNetworkRumMonitor)?.stopResource(
@@ -516,5 +516,8 @@ open class DatadogInterceptor internal constructor(
 
         // We need to limit this value as the body will be loaded in memory
         private const val MAX_BODY_PEEK: Long = 32 * 1024L * 1024L
+
+        private const val ALL_IN_SAMPLE_RATE: Float = 100f
+        private const val ZERO_SAMPLE_RATE: Float = 0f
     }
 }
