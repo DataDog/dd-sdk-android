@@ -41,6 +41,7 @@ include(":reliability:stub-feature")
 include(":reliability:single-fit:logs")
 include(":reliability:single-fit:rum")
 include(":reliability:single-fit:trace")
+include(":reliability:single-fit:okhttp")
 
 // CORE INTEGRATION TESTS
 include(":reliability:core-it")

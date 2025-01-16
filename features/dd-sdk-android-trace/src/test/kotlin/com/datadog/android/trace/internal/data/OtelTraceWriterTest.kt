@@ -106,7 +106,9 @@ internal class OtelTraceWriterTest {
     @Test
     fun `M write spans W write()`(forge: Forge) {
         // GIVEN
-        val ddSpans = forge.aList { getForgery<DDSpan>() }.toMutableList()
+        val ddSpans = forge.aList { getForgery<DDSpan>() }
+            .filter { it.samplingPriority() !in OtelTraceWriter.DROP_SAMPLING_PRIORITIES }
+            .toMutableList()
         val spanEvents = ddSpans.map { forge.getForgery<SpanEvent>() }
         val serializedSpans = ddSpans.map { forge.aString() }
 
@@ -132,9 +134,29 @@ internal class OtelTraceWriterTest {
     }
 
     @Test
+    fun `M not write spans with drop sampling priority W write()`(forge: Forge) {
+        // GIVEN
+        val ddSpans = forge.aList { getForgery<DDSpan>() }
+            .filter { it.samplingPriority() in OtelTraceWriter.DROP_SAMPLING_PRIORITIES }
+            .toMutableList()
+
+        // WHEN
+        testedWriter.write(ddSpans)
+
+        // THEN
+        verifyNoInteractions(mockEventBatchWriter)
+
+        ddSpans.forEach {
+            it.finish()
+        }
+    }
+
+    @Test
     fun `M not write non-mapped spans W write()`(forge: Forge) {
         // GIVEN
-        val ddSpans = forge.aList { getForgery<DDSpan>() }.toMutableList()
+        val ddSpans = forge.aList { getForgery<DDSpan>() }
+            .filter { it.samplingPriority() !in OtelTraceWriter.DROP_SAMPLING_PRIORITIES }
+            .toMutableList()
         val spanEvents = ddSpans.map { forge.getForgery<SpanEvent>() }
         val mappedEvents = spanEvents.map { forge.aNullable { it } }
 
@@ -168,7 +190,9 @@ internal class OtelTraceWriterTest {
     @Test
     fun `M not write non-serialized spans W write()`(forge: Forge) {
         // GIVEN
-        val ddSpans = forge.aList { getForgery<DDSpan>() }.toMutableList()
+        val ddSpans = forge.aList { getForgery<DDSpan>() }
+            .filter { it.samplingPriority() !in OtelTraceWriter.DROP_SAMPLING_PRIORITIES }
+            .toMutableList()
         val spanEvents = ddSpans.map { forge.getForgery<SpanEvent>() }
 
         val serializedSpans = spanEvents.map { forge.aNullable { aString() } }
@@ -213,7 +237,9 @@ internal class OtelTraceWriterTest {
     @Test
     fun `M log error and proceed W write() { serialization failed }`(forge: Forge) {
         // GIVEN
-        val ddSpans = forge.aList { getForgery<DDSpan>() }.toMutableList()
+        val ddSpans = forge.aList { getForgery<DDSpan>() }
+            .filter { it.samplingPriority() !in OtelTraceWriter.DROP_SAMPLING_PRIORITIES }
+            .toMutableList()
         val spanEvents = ddSpans.map { forge.getForgery<SpanEvent>() }
         val serializedSpans = ddSpans.map { forge.aString() }
 
@@ -261,7 +287,9 @@ internal class OtelTraceWriterTest {
     @Test
     fun `M request event write context once W write()`(forge: Forge) {
         // GIVEN
-        val ddSpans = forge.aList { getForgery<DDSpan>() }.toMutableList()
+        val ddSpans = forge.aList { getForgery<DDSpan>() }
+            .filter { it.samplingPriority() !in OtelTraceWriter.DROP_SAMPLING_PRIORITIES }
+            .toMutableList()
 
         // WHEN
         testedWriter.write(ddSpans)

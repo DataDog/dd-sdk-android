@@ -146,6 +146,7 @@ internal class DatadogInterceptorWithoutTracesTest {
         whenever(mockSpanBuilder.withOrigin(DatadogInterceptor.ORIGIN_RUM)) doReturn mockSpanBuilder
         whenever(mockSpanBuilder.asChildOf(null as SpanContext?)) doReturn mockSpanBuilder
         whenever(mockSpanBuilder.start()) doReturn mockSpan
+        whenever(mockSpan.samplingPriority) doReturn null
         whenever(mockSpan.context()) doReturn mockSpanContext
         whenever(mockSpanContext.toSpanId()) doReturn fakeSpanId
         whenever(mockSpanContext.toTraceId()) doReturn fakeTraceId

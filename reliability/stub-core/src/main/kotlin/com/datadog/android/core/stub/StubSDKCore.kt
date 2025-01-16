@@ -22,6 +22,7 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.whenever
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.ScheduledExecutorService
+import org.mockito.kotlin.mock as kmock
 
 /**
  * A stub implementation of [InternalSdkCore].
@@ -33,7 +34,7 @@ import java.util.concurrent.ScheduledExecutorService
 class StubSDKCore(
     private val forge: Forge,
     private val mockContext: Application = mock(),
-    private val mockSdkCore: InternalSdkCore = mock()
+    private val mockSdkCore: InternalSdkCore = kmock { on { name } doReturn toString() }
 ) : InternalSdkCore by mockSdkCore {
 
     private val featureScopes = mutableMapOf<String, StubFeatureScope>()
