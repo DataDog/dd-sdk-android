@@ -49,6 +49,7 @@ dependencies {
     implementation(libs.kotlin)
     implementation(libs.okHttp)
     implementation(libs.androidXAnnotation)
+    api(libs.openTracingApi)
 
     // Generate NoOp implementations
     ksp(project(":tools:noopfactory"))
