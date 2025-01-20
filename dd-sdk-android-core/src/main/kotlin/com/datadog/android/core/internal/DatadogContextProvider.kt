@@ -76,6 +76,6 @@ internal class DatadogContextProvider(val coreFeature: CoreFeature) : ContextPro
     }
 
     override fun getFeatureContext(feature: String): Map<String, Any?> {
-        return coreFeature.featuresContext[feature]?.toMap() ?: emptyMap()
+        return coreFeature.featuresContext[feature] ?: emptyMap()
     }
 }

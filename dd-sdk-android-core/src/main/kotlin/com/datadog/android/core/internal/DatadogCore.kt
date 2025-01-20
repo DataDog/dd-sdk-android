@@ -193,17 +193,19 @@ internal class DatadogCore(
         updateCallback: (context: MutableMap<String, Any?>) -> Unit
     ) {
         val feature = features[featureName] ?: return
-        contextProvider?.let {
+        contextProvider?.let { currentContext ->
             synchronized(feature) {
-                val featureContext = it.getFeatureContext(featureName)
-                val mutableContext = featureContext.toMutableMap()
+                // Use HashMap instead of .toMutableMap() for faster init
+                @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
+                val mutableContext = HashMap(currentContext.getFeatureContext(featureName))
                 updateCallback(mutableContext)
-                it.setFeatureContext(featureName, mutableContext)
+                currentContext.setFeatureContext(featureName, mutableContext)
                 // notify all the other features
-                features.filter { it.key != featureName }
-                    .forEach { (_, feature) ->
-                        feature.notifyContextUpdated(featureName, mutableContext.toMap())
+                features.forEach { (key, feature) ->
+                    if (key != featureName) {
+                        feature.notifyContextUpdated(featureName, mutableContext)
                     }
+                }
             }
         }
     }
