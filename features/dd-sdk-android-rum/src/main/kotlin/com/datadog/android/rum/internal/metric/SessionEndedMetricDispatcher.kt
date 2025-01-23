@@ -7,7 +7,6 @@
 package com.datadog.android.rum.internal.metric
 
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.core.metrics.MethodCallSamplingRate
 import com.datadog.android.rum.internal.domain.scope.RumSessionScope
 import com.datadog.android.rum.internal.domain.scope.RumViewManagerScope
 import com.datadog.android.rum.model.ViewEvent
@@ -39,7 +38,7 @@ internal class SessionEndedMetricDispatcher(private val internalLogger: Internal
             internalLogger.logMetric(
                 messageBuilder = { SessionEndedMetric.RUM_SESSION_ENDED_METRIC_NAME },
                 additionalProperties = metric.toMetricAttributes(ntpOffsetAtEndMs),
-                samplingRate = MethodCallSamplingRate.ALL.rate
+                samplingRate = 15.0f
             )
         }
     }
