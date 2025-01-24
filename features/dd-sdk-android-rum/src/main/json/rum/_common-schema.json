@@ -123,6 +123,30 @@
           "type": "string",
           "description": "Email of the user",
           "readOnly": true
+        },
+        "anonymous_id": {
+          "type": "string",
+          "description": "Identifier of the user across sessions",
+          "readOnly": true
+        }
+      },
+      "readOnly": true
+    },
+    "account": {
+      "type": "object",
+      "description": "Account properties",
+      "additionalProperties": true,
+      "required": ["id"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Identifier of the account",
+          "readOnly": true
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the account",
+          "readOnly": true
         }
       },
       "readOnly": true

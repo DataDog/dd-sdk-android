@@ -136,7 +136,12 @@
                 },
                 "allow_fallback_to_local_storage": {
                   "type": "boolean",
-                  "description": "Whether it is allowed to use LocalStorage when cookies are not available"
+                  "description": "Whether it is allowed to use LocalStorage when cookies are not available (deprecated in favor of session_persistence)"
+                },
+                "session_persistence": {
+                  "type": "string",
+                  "enum": ["local-storage", "cookie"],
+                  "description": "Configure the storage strategy for persisting sessions"
                 },
                 "store_contexts_across_pages": {
                   "type": "boolean",
@@ -409,13 +414,19 @@
                   "type": "boolean",
                   "description": "Whether the SDK is initialised on the application's main or a secondary process"
                 },
-                "collect_feature_flags_on": {
+                "track_feature_flags_for_events": {
                   "type": "array",
                   "items": {
                     "type": "string",
-                    "enum": ["view", "error", "vital"]
+                    "enum": ["vital", "resource", "action", "long_task"]
                   },
-                  "description": "The list of events that include feature flags collection"
+                  "description": "The list of events that include feature flags collection. The tracking is always enabled for views and errors."
+                },
+                "track_anonymous_user": {
+                  "type": "boolean",
+                  "description": "Whether the anonymous users are tracked",
+                  "readOnly": false,
+                  "default": true
                 }
               }
             }
