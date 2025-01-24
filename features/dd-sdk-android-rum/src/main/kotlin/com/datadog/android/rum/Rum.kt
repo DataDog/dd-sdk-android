@@ -73,6 +73,14 @@ object Rum {
 
         sdkCore.registerFeature(rumFeature)
 
+        sdkCore.getFeature(rumFeature.name)?.dataStore?.let {
+            AnonymousIdentifierManager.manageAnonymousId(
+                rumConfiguration.featureConfiguration.trackAnonymousUser,
+                it,
+                sdkCore
+            )
+        }
+
         val rumMonitor = createMonitor(sdkCore, rumFeature)
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {

@@ -44,6 +44,7 @@ import com.datadog.android.privacy.TrackingConsent
 import com.google.gson.JsonObject
 import java.io.File
 import java.util.Locale
+import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.ScheduledExecutorService
@@ -266,6 +267,10 @@ internal class DatadogCore(
     /** @inheritDoc */
     override fun createScheduledExecutorService(executorContext: String): ScheduledExecutorService {
         return coreFeature.createScheduledExecutorService(executorContext)
+    }
+
+    override fun setAnonymousId(anonymousId: UUID?) {
+        coreFeature.userInfoProvider.setAnonymousId(anonymousId.toString())
     }
 
     override fun isCoreActive(): Boolean = isActive

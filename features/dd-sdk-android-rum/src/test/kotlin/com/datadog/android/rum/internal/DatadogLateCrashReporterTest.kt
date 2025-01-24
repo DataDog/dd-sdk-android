@@ -140,6 +140,7 @@ internal class DatadogLateCrashReporterTest {
                 id = fakeUserInfo.id,
                 name = fakeUserInfo.name,
                 email = fakeUserInfo.email,
+                anonymousId = fakeUserInfo.anonymousId,
                 additionalProperties = fakeUserInfo.additionalProperties.toMutableMap()
             )
         )
@@ -239,6 +240,7 @@ internal class DatadogLateCrashReporterTest {
                 id = fakeUserInfo.id,
                 name = fakeUserInfo.name,
                 email = fakeUserInfo.email,
+                anonymousId = fakeUserInfo.anonymousId,
                 additionalProperties = fakeUserInfo.additionalProperties.toMutableMap()
             )
         )
@@ -339,6 +341,7 @@ internal class DatadogLateCrashReporterTest {
                 id = fakeUserInfo.id,
                 name = fakeUserInfo.name,
                 email = fakeUserInfo.email,
+                anonymousId = fakeUserInfo.anonymousId,
                 additionalProperties = fakeUserInfo.additionalProperties.toMutableMap()
             )
         )
@@ -481,6 +484,7 @@ internal class DatadogLateCrashReporterTest {
                 id = fakeUserInfo.id,
                 name = fakeUserInfo.name,
                 email = fakeUserInfo.email,
+                anonymousId = fakeUserInfo.anonymousId,
                 additionalProperties = fakeUserInfo.additionalProperties.toMutableMap()
             )
         )
@@ -685,6 +689,7 @@ internal class DatadogLateCrashReporterTest {
                 id = fakeUserInfo.id,
                 name = fakeUserInfo.name,
                 email = fakeUserInfo.email,
+                anonymousId = fakeUserInfo.anonymousId,
                 additionalProperties = fakeUserInfo.additionalProperties.toMutableMap()
             )
         )
@@ -861,6 +866,7 @@ internal class DatadogLateCrashReporterTest {
                 id = fakeUserInfo.id,
                 name = fakeUserInfo.name,
                 email = fakeUserInfo.email,
+                anonymousId = fakeUserInfo.anonymousId,
                 additionalProperties = fakeUserInfo.additionalProperties.toMutableMap()
             )
         )

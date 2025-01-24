@@ -285,6 +285,7 @@ internal class RumActionScope(
                         id = user.id,
                         name = user.name,
                         email = user.email,
+                        anonymousId = user.anonymousId,
                         additionalProperties = user.additionalProperties.toMutableMap()
                     )
                 } else {
