@@ -9,13 +9,17 @@ package com.datadog.gradle.plugin.apisurface
 import com.datadog.gradle.utils.execShell
 import org.gradle.api.DefaultTask
 import org.gradle.api.tasks.InputFile
+import org.gradle.api.tasks.InputFiles
 import org.gradle.api.tasks.TaskAction
 import java.io.File
 
 open class CheckApiSurfaceTask : DefaultTask() {
 
     @InputFile
-    lateinit var surfaceFile: File
+    lateinit var kotlinSurfaceFile: File
+
+    @InputFiles
+    lateinit var javaSurfaceFile: File
 
     init {
         group = "datadog"
@@ -26,6 +30,13 @@ open class CheckApiSurfaceTask : DefaultTask() {
 
     @TaskAction
     fun applyTask() {
+        verifySurfaceFile(kotlinSurfaceFile)
+        if (javaSurfaceFile.exists()) {
+            verifySurfaceFile(javaSurfaceFile)
+        }
+    }
+
+    private fun verifySurfaceFile(surfaceFile: File) {
         val lines = project.execShell(
             "git",
             "diff",
@@ -50,7 +61,7 @@ open class CheckApiSurfaceTask : DefaultTask() {
     }
 
     @InputFile
-    fun getInputFile() = surfaceFile
+    fun getInputFile() = kotlinSurfaceFile
 
     // endregion
 }
