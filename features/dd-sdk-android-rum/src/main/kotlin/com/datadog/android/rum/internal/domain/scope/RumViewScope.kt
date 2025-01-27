@@ -25,6 +25,8 @@ import com.datadog.android.rum.internal.anr.ANRException
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
+import com.datadog.android.rum.internal.metric.ViewEndedMetricDispatcher
+import com.datadog.android.rum.internal.metric.ViewMetricDispatcher
 import com.datadog.android.rum.internal.metric.interactiontonextview.InteractionToNextViewMetricResolver
 import com.datadog.android.rum.internal.metric.interactiontonextview.InternalInteractionContext
 import com.datadog.android.rum.internal.metric.networksettled.InternalResourceContext
@@ -64,7 +66,8 @@ internal open class RumViewScope(
     private val trackFrustrations: Boolean,
     internal val sampleRate: Float,
     private val interactionToNextViewMetricResolver: InteractionToNextViewMetricResolver,
-    private val networkSettledMetricResolver: NetworkSettledMetricResolver
+    private val networkSettledMetricResolver: NetworkSettledMetricResolver,
+    private val viewEndedMetricDispatcher: ViewMetricDispatcher
 ) : RumScope {
 
     internal val url = key.url.replace('.', '/')
@@ -301,6 +304,7 @@ internal open class RumViewScope(
             }
         }
         viewLoadingTime = newLoadingTime
+        viewEndedMetricDispatcher.onViewLoadingTimeResolved(newLoadingTime)
         sendViewUpdate(event, writer)
     }
 
@@ -828,6 +832,11 @@ internal open class RumViewScope(
             memoryVitalMonitor.unregister(memoryVitalListener)
             frameRateVitalMonitor.unregister(frameRateVitalListener)
             networkSettledMetricResolver.viewWasStopped()
+
+            viewEndedMetricDispatcher.sendViewEnded(
+                interactionToNextViewMetricResolver.getState(viewId),
+                networkSettledMetricResolver.getState()
+            )
         }
     }
 
@@ -1005,6 +1014,7 @@ internal open class RumViewScope(
     private fun resolveViewDuration(event: RumRawEvent) {
         stoppedNanos = event.eventTime.nanoTime
         val duration = stoppedNanos - startedNanos
+        viewEndedMetricDispatcher.onDurationResolved(duration)
         if (duration == 0L) {
             if (type == RumViewType.BACKGROUND && event is RumRawEvent.AddError && event.isFatal) {
                 // This is a legitimate empty duration, no-op
@@ -1313,9 +1323,9 @@ internal open class RumViewScope(
 
     private fun isViewComplete(): Boolean {
         val pending = pendingActionCount +
-            pendingResourceCount +
-            pendingErrorCount +
-            pendingLongTaskCount
+                pendingResourceCount +
+                pendingErrorCount +
+                pendingLongTaskCount
         // we use <= 0 for pending counter as a safety measure to make sure this ViewScope will
         // be closed.
         return stopped && activeResourceScopes.isEmpty() && (pending <= 0L)
@@ -1345,33 +1355,32 @@ internal open class RumViewScope(
             }
         }
     }
-
     // endregion
 
     companion object {
         internal val ONE_SECOND_NS = TimeUnit.SECONDS.toNanos(1)
 
         internal const val ACTION_DROPPED_WARNING = "RUM Action (%s on %s) was dropped, because" +
-            " another action is still active for the same view"
+                " another action is still active for the same view"
 
         internal const val RUM_CONTEXT_UPDATE_IGNORED_AT_STOP_VIEW_MESSAGE =
             "Trying to update global RUM context when StopView event arrived, but the context" +
-                " doesn't reference this view."
+                    " doesn't reference this view."
         internal const val RUM_CONTEXT_UPDATE_IGNORED_AT_ACTION_UPDATE_MESSAGE =
             "Trying to update active action in the global RUM context, but the context" +
-                " doesn't reference this view."
+                    " doesn't reference this view."
 
         internal val FROZEN_FRAME_THRESHOLD_NS = TimeUnit.MILLISECONDS.toNanos(700)
         internal const val SLOW_RENDERED_THRESHOLD_FPS = 55
         internal const val ZERO_DURATION_WARNING_MESSAGE = "The computed duration for the " +
-            "view: %s was 0. In order to keep the view we forced it to 1ns."
+                "view: %s was 0. In order to keep the view we forced it to 1ns."
         internal const val NEGATIVE_DURATION_WARNING_MESSAGE = "The computed duration for the " +
-            "view: %s was negative. In order to keep the view we forced it to 1ns."
+                "view: %s was negative. In order to keep the view we forced it to 1ns."
         internal const val ADDING_VIEW_LOADING_TIME_DEBUG_MESSAGE_FORMAT =
             "View loading time %dns added to the view %s"
         internal const val OVERWRITING_VIEW_LOADING_TIME_WARNING_MESSAGE_FORMAT =
             "View loading time already exists for the view %s. Replacing the existing %d ns " +
-                "view loading time with the new %d ns loading time."
+                    "view loading time with the new %d ns loading time."
 
         internal fun fromEvent(
             parentScope: RumScope,
@@ -1388,6 +1397,16 @@ internal open class RumViewScope(
             interactionToNextViewMetricResolver: InteractionToNextViewMetricResolver,
             networkSettledResourceIdentifier: InitialResourceIdentifier
         ): RumViewScope {
+            val networkSettledMetricResolver = NetworkSettledMetricResolver(
+                networkSettledResourceIdentifier,
+                sdkCore.internalLogger
+            )
+
+            val viewEndedMetricDispatcher = ViewEndedMetricDispatcher(
+                viewType = ViewMetricDispatcher.ViewType.CUSTOM,
+                internalLogger = sdkCore.internalLogger
+            )
+
             return RumViewScope(
                 parentScope,
                 sdkCore,
@@ -1403,10 +1422,8 @@ internal open class RumViewScope(
                 trackFrustrations = trackFrustrations,
                 sampleRate = sampleRate,
                 interactionToNextViewMetricResolver = interactionToNextViewMetricResolver,
-                networkSettledMetricResolver = NetworkSettledMetricResolver(
-                    networkSettledResourceIdentifier,
-                    sdkCore.internalLogger
-                )
+                networkSettledMetricResolver = networkSettledMetricResolver,
+                viewEndedMetricDispatcher = viewEndedMetricDispatcher
             )
         }
 
@@ -1440,5 +1457,8 @@ internal open class RumViewScope(
         private fun invertValue(value: Double): Double {
             return if (value == 0.0) 0.0 else 1.0 / value
         }
+
     }
 }
+
+

@@ -26,6 +26,8 @@ class TimeBasedInteractionIdentifier(
         } ?: false
     }
 
+    fun isDefault(): Boolean = DEFAULT_TIME_THRESHOLD_MS == TimeUnit.NANOSECONDS.toMillis(timeThresholdInNanoSeconds)
+
     // region Object
 
     override fun equals(other: Any?): Boolean {
