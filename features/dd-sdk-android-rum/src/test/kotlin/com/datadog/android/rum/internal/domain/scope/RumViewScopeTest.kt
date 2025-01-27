@@ -235,7 +235,7 @@ internal class RumViewScopeTest {
         whenever(mockNetworkSettledMetricResolver.getState()) doReturn fakeTNSState
         whenever(mockInteractionToNextViewMetricResolver.getState(any())) doReturn fakeINVState
         whenever(mockInteractionToNextViewMetricResolver.resolveMetric(any())) doReturn
-                fakeInteractionToNextViewMetricValue
+            fakeInteractionToNextViewMetricValue
         val isValidSource = forge.aBool()
 
         val fakeSource = if (isValidSource) {
@@ -9450,6 +9450,75 @@ internal class RumViewScopeTest {
             it.get()
         }
     }
+
+    // region Global Attributes
+
+    @Test
+    fun `M sendViewEnded W handleEvent(StopView)`(forge: Forge) {
+        // Given
+        testedScope = newRumViewScope()
+
+        // When
+        testedScope.handleEvent(forge.stopViewEvent(), mockWriter)
+
+        // Then
+        mockViewEndedMetricDispatcher.sendViewEnded(fakeINVState, fakeTNSState)
+    }
+
+    @Test
+    fun `M sendViewEnded W handleEvent(StartView)`(forge: Forge) {
+        // Given
+        testedScope = newRumViewScope()
+
+        // When
+        testedScope.handleEvent(forge.startViewEvent(), mockWriter)
+
+        // Then
+        mockViewEndedMetricDispatcher.sendViewEnded(fakeINVState, fakeTNSState)
+    }
+
+    @Test
+    fun `M sendViewEnded W handleEvent(StopSession)`() {
+        // Given
+        testedScope = newRumViewScope()
+
+        // When
+        testedScope.handleEvent(RumRawEvent.StopSession(), mockWriter)
+
+        // Then
+        mockViewEndedMetricDispatcher.sendViewEnded(fakeINVState, fakeTNSState)
+    }
+
+    @Test
+    fun `M onDurationResolved W closing scope(StopSession)`(@LongForgery(min = 1) expectedDuration: Long) {
+        // Given
+        val stopEvent = RumRawEvent.StopSession(eventTime = Time(nanoTime = fakeEventTime.nanoTime + expectedDuration))
+        testedScope = newRumViewScope()
+
+        // When
+        testedScope.handleEvent(stopEvent, mockWriter)
+
+        // Then
+        mockViewEndedMetricDispatcher.onDurationResolved(expectedDuration)
+    }
+
+    @Test
+    fun `M onViewLoadingTimeResolved W handleEvent(AddViewLoadingTime)`(@LongForgery(min = 1) expectedDuration: Long) {
+        // Given
+        val stopEvent = RumRawEvent.AddViewLoadingTime(
+            overwrite = false,
+            eventTime = Time(nanoTime = fakeEventTime.nanoTime + expectedDuration)
+        )
+        testedScope = newRumViewScope()
+
+        // When
+        testedScope.handleEvent(stopEvent, mockWriter)
+
+        // Then
+        mockViewEndedMetricDispatcher.onViewLoadingTimeResolved(expectedDuration)
+    }
+
+    // endregion
 
     // region Internal
 
