@@ -212,10 +212,10 @@ internal class RumViewScopeTest {
     private lateinit var mockViewEndedMetricDispatcher: ViewEndedMetricDispatcher
 
     @Forgery
-    private lateinit var fakeTNSState: ViewInitializationMetricsState
+    private lateinit var fakeTnsState: ViewInitializationMetricsState
 
     @Forgery
-    private lateinit var fakeINVState: ViewInitializationMetricsState
+    private lateinit var fakeInvState: ViewInitializationMetricsState
 
     private var fakeNetworkSettledMetricValue: Long? = null
     private var fakeInteractionToNextViewMetricValue: Long? = null
@@ -232,8 +232,8 @@ internal class RumViewScopeTest {
         fakeNetworkSettledMetricValue = forge.aNullable { aPositiveLong() }
         fakeInteractionToNextViewMetricValue = forge.aNullable { aPositiveLong() }
         whenever(mockNetworkSettledMetricResolver.resolveMetric()) doReturn fakeNetworkSettledMetricValue
-        whenever(mockNetworkSettledMetricResolver.getState()) doReturn fakeTNSState
-        whenever(mockInteractionToNextViewMetricResolver.getState(any())) doReturn fakeINVState
+        whenever(mockNetworkSettledMetricResolver.getState()) doReturn fakeTnsState
+        whenever(mockInteractionToNextViewMetricResolver.getState(any())) doReturn fakeInvState
         whenever(mockInteractionToNextViewMetricResolver.resolveMetric(any())) doReturn
             fakeInteractionToNextViewMetricValue
         val isValidSource = forge.aBool()
@@ -9462,7 +9462,7 @@ internal class RumViewScopeTest {
         testedScope.handleEvent(forge.stopViewEvent(), mockWriter)
 
         // Then
-        mockViewEndedMetricDispatcher.sendViewEnded(fakeINVState, fakeTNSState)
+        mockViewEndedMetricDispatcher.sendViewEnded(fakeInvState, fakeTnsState)
     }
 
     @Test
@@ -9474,7 +9474,7 @@ internal class RumViewScopeTest {
         testedScope.handleEvent(forge.startViewEvent(), mockWriter)
 
         // Then
-        mockViewEndedMetricDispatcher.sendViewEnded(fakeINVState, fakeTNSState)
+        mockViewEndedMetricDispatcher.sendViewEnded(fakeInvState, fakeTnsState)
     }
 
     @Test
@@ -9486,7 +9486,7 @@ internal class RumViewScopeTest {
         testedScope.handleEvent(RumRawEvent.StopSession(), mockWriter)
 
         // Then
-        mockViewEndedMetricDispatcher.sendViewEnded(fakeINVState, fakeTNSState)
+        mockViewEndedMetricDispatcher.sendViewEnded(fakeInvState, fakeTnsState)
     }
 
     @Test

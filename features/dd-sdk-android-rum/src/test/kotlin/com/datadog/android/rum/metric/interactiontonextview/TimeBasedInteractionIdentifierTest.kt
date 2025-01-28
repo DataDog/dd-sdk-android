@@ -117,5 +117,30 @@ internal class TimeBasedInteractionIdentifierTest : ObjectTest<TimeBasedInteract
         assertThat(result).isFalse()
     }
 
+    @Test
+    fun `M return true W isDefault{default delay used}`() {
+        // Given
+        val testedValidator = TimeBasedInteractionIdentifier()
+
+        // When
+        val result = testedValidator.isDefault()
+
+        // Then
+        assertThat(result).isTrue()
+    }
+
+    @Test
+    fun `M return true W isDefault{custom delay used}`(forge: Forge) {
+        // Given
+        val testedValidator = TimeBasedInteractionIdentifier(
+            TimeBasedInteractionIdentifier.DEFAULT_TIME_THRESHOLD_MS + forge.aLong(min = 0, max = 100)
+        )
+        // When
+        val result = testedValidator.isDefault()
+
+        // Then
+        assertThat(result).isFalse()
+    }
+
     // endregion
 }

@@ -21,44 +21,28 @@ internal class InteractionToNextViewMetricResolver(
     private val lastInteractionIdentifier: LastInteractionIdentifier = TimeBasedInteractionIdentifier()
 ) {
     private val lastInteractions = LinkedHashMap<String, InternalInteractionContext>()
-    private val lastViewCreatedDiagnostics = LinkedHashMap<String, DiagnosticInfo>()
+    private val lastViewCreatedTimestamps = LinkedHashMap<String, Long>()
 
     fun onViewCreated(viewId: String, timestamp: Long) {
-        lastViewCreatedDiagnostics[viewId] = DiagnosticInfo(timestamp)
+        lastViewCreatedTimestamps[viewId] = timestamp
         purgeOldEntries()
     }
 
     fun onActionSent(context: InternalInteractionContext) {
         if (ingestionValidator.validate(context)) {
             lastInteractions[context.viewId] = context
-            lastViewCreatedDiagnostics[context.viewId]?.let { diagnostic ->
-                diagnostic.actionsCount++
-
-                resolveCurrentViewCreationTimestamp(context.viewId)?.let { currentViewCreationTimestamp ->
-                    val previousViewLastInteractionContext = context.toPreviousViewLastInteractionContext(
-                        currentViewCreationTimestamp
-                    )
-
-                    if (lastInteractionIdentifier.validate(previousViewLastInteractionContext)) {
-                        diagnostic.actionsEligibleCount++
-                    }
-                }
-            }
         }
         purgeOldEntries()
     }
-
-    fun getState(viewId: String) = ViewInitializationMetricsState(
-        config = lastInteractionIdentifier.toConfig(),
-        initializationTime = resolveMetric(viewId),
-        noValueReason = resolveNoValueReason(viewId)
-    )
 
     @Suppress("ReturnCount")
     fun resolveMetric(viewId: String): Long? {
         purgeOldEntries()
         val currentViewCreatedTimestamp = resolveCurrentViewCreationTimestamp(viewId) ?: return null
-        val lastPrevViewInteraction = resolveLastInteraction(viewId, currentViewCreatedTimestamp)
+        val previousViewId = resolvePreviousViewId(viewId)
+        val lastPrevViewInteraction = previousViewId?.let {
+            resolveLastInteraction(it, currentViewCreatedTimestamp)
+        }
         if (lastPrevViewInteraction != null) {
             val difference = currentViewCreatedTimestamp - lastPrevViewInteraction.eventCreatedAtNanos
             if (difference > 0) {
@@ -69,7 +53,7 @@ internal class InteractionToNextViewMetricResolver(
                     InternalLogger.Target.MAINTAINER,
                     {
                         "[ViewNetworkSettledMetric] The difference between the last interaction " +
-                            "and the current view is negative for viewId:$viewId"
+                                "and the current view is negative for viewId:$viewId"
                     }
                 )
                 return null
@@ -77,7 +61,7 @@ internal class InteractionToNextViewMetricResolver(
         }
         // in case there are no previous interactions for this view and there's only one view created
         // we are probably in the first view of the app (AppLaunch) and we can't calculate the metric
-        if (lastViewCreatedDiagnostics.size > 1) {
+        if (lastViewCreatedTimestamps.size > 1) {
             internalLogger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.MAINTAINER,
@@ -87,8 +71,52 @@ internal class InteractionToNextViewMetricResolver(
         return null
     }
 
+    fun getState(viewId: String) = resolveMetric(viewId).let { metricValue ->
+        ViewInitializationMetricsState(
+            initializationTime = metricValue,
+            config = lastInteractionIdentifier.toConfig(),
+            noValueReason = if (metricValue == null) resolveNoValueReason(viewId) else null
+        )
+    }
+
+    private fun resolveNoValueReason(viewId: String): NoValueReason.InteractionToNextView {
+        // First of all, if there is no timestamp for the current view, all other metrics are meaningless.
+        val currentViewCreatedTimestamp = resolveCurrentViewCreationTimestamp(viewId)
+            ?: return NoValueReason.InteractionToNextView.UNKNOWN
+
+        // Second, if there is no previous view information, we are either on the very first screen of the app or
+        // lost the previous view information for some reason
+        val previousViewId = resolvePreviousViewId(viewId)
+            ?: return NoValueReason.InteractionToNextView.NO_PREVIOUS_VIEW
+
+        // Third - the case where there is no interaction from the previous view.
+        if (lastInteractions[previousViewId] == null) {
+            return NoValueReason.InteractionToNextView.NO_ACTION
+        }
+
+        // Finally - checking that the previous view interaction is eligible
+        resolveLastInteraction(previousViewId, currentViewCreatedTimestamp)
+            ?: return NoValueReason.InteractionToNextView.NO_ELIGIBLE_ACTION
+
+        // Last resort - usually reproducible if metric actually exists
+        return NoValueReason.InteractionToNextView.UNKNOWN
+    }
+
+    private fun purgeOldEntries() {
+        while (lastInteractions.entries.size > MAX_ENTRIES) {
+            @Suppress("UnsafeThirdPartyFunctionCall")
+            // we make sure the collection is never empty
+            lastInteractions.entries.remove(lastInteractions.entries.first())
+        }
+        while (lastViewCreatedTimestamps.entries.size > MAX_ENTRIES) {
+            @Suppress("UnsafeThirdPartyFunctionCall")
+            // we make sure the collection is never empty
+            lastViewCreatedTimestamps.remove(lastViewCreatedTimestamps.keys.first())
+        }
+    }
+
     private fun resolveCurrentViewCreationTimestamp(viewId: String): Long? {
-        val currentViewCreationTimestamp = lastViewCreatedDiagnostics[viewId]?.createdTimestamp
+        val currentViewCreationTimestamp = lastViewCreatedTimestamps[viewId]
         if (currentViewCreationTimestamp == null) {
             internalLogger.log(
                 InternalLogger.Level.WARN,
@@ -99,35 +127,23 @@ internal class InteractionToNextViewMetricResolver(
         return currentViewCreationTimestamp
     }
 
-    private fun resolveLastInteraction(viewId: String, currentViewCreatedTimestamp: Long): InternalInteractionContext? {
-        val previousViewId = resolvePreviousViewId(viewId)
-        if (previousViewId != null) {
-            lastInteractions[previousViewId]?.let {
-                val context = it.toPreviousViewLastInteractionContext(currentViewCreatedTimestamp)
-                if (lastInteractionIdentifier.validate(context)) {
-                    return it
-                }
+    private fun resolveLastInteraction(
+        previousViewId: String,
+        currentViewCreatedTimestamp: Long
+    ): InternalInteractionContext? {
+        lastInteractions[previousViewId]?.let {
+            val context = it.toPreviousViewLastInteractionContext(currentViewCreatedTimestamp)
+            if (lastInteractionIdentifier.validate(context)) {
+                return it
             }
         }
+
         return null
     }
 
     private fun resolvePreviousViewId(viewId: String): String? {
-        val currentViewIdIndex = lastViewCreatedDiagnostics.keys.indexOf(viewId)
-        return lastViewCreatedDiagnostics.keys.elementAtOrNull(currentViewIdIndex - 1)
-    }
-
-    private fun purgeOldEntries() {
-        while (lastInteractions.entries.size > MAX_ENTRIES) {
-            @Suppress("UnsafeThirdPartyFunctionCall")
-            // we make sure the collection is never empty
-            lastInteractions.entries.remove(lastInteractions.entries.first())
-        }
-        while (lastViewCreatedDiagnostics.entries.size > MAX_ENTRIES) {
-            @Suppress("UnsafeThirdPartyFunctionCall")
-            // we make sure the collection is never empty
-            lastViewCreatedDiagnostics.remove(lastViewCreatedDiagnostics.keys.first())
-        }
+        val currentViewIdIndex = lastViewCreatedTimestamps.keys.indexOf(viewId)
+        return lastViewCreatedTimestamps.keys.elementAtOrNull(currentViewIdIndex - 1)
     }
 
     @VisibleForTesting
@@ -137,25 +153,7 @@ internal class InteractionToNextViewMetricResolver(
 
     @VisibleForTesting
     internal fun lastViewCreatedTimestamps(): Map<String, Long> {
-        return lastViewCreatedDiagnostics.mapValues { it.value.createdTimestamp }
-    }
-
-    private fun resolveNoValueReason(viewId: String): NoValueReason.InteractionToNextView {
-        val previousViewId = resolvePreviousViewId(viewId)
-            ?: return NoValueReason.InteractionToNextView.NO_PREVIOUS_VIEW
-
-        val diagnostic = lastViewCreatedDiagnostics[previousViewId]
-            ?: return NoValueReason.InteractionToNextView.UNKNOWN
-
-        if (diagnostic.actionsCount == 0) {
-            return NoValueReason.InteractionToNextView.NO_ACTION
-        }
-
-        if (diagnostic.actionsEligibleCount == 0) {
-            return NoValueReason.InteractionToNextView.NO_ELIGIBLE_ACTION
-        }
-
-        return NoValueReason.InteractionToNextView.UNKNOWN
+        return lastViewCreatedTimestamps
     }
 
     companion object {
@@ -179,12 +177,6 @@ internal class InteractionToNextViewMetricResolver(
             actionType,
             eventCreatedAtNanos,
             currentViewCreatedTimestamp
-        )
-
-        private class DiagnosticInfo(
-            val createdTimestamp: Long,
-            var actionsCount: Int = 0,
-            var actionsEligibleCount: Int = 0
         )
     }
 }

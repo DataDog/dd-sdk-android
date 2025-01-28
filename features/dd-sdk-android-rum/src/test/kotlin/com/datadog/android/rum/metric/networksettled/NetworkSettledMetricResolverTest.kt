@@ -7,6 +7,8 @@
 package com.datadog.android.rum.metric.networksettled
 
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.rum.internal.metric.NoValueReason
+import com.datadog.android.rum.internal.metric.ViewInitializationMetricsConfig
 import com.datadog.android.rum.internal.metric.networksettled.InternalResourceContext
 import com.datadog.android.rum.internal.metric.networksettled.NetworkSettledMetricResolver
 import com.datadog.android.rum.utils.forge.Configurator
@@ -112,6 +114,85 @@ internal class NetworkSettledMetricResolverTest {
     }
 
     @Test
+    fun `M return valid config value W getState()`() {
+        // Given
+        val custom = NetworkSettledMetricResolver(mockInitialResourceIdentifier, mockInternalLogger)
+        val timeBasedDefault = NetworkSettledMetricResolver(internalLogger = mockInternalLogger)
+        val timeBasedCustom = NetworkSettledMetricResolver(
+            TimeBasedInitialResourceIdentifier(TimeBasedInitialResourceIdentifier.DEFAULT_TIME_THRESHOLD_MS + 1),
+            mockInternalLogger
+        )
+
+        // Then
+        assertThat(custom.getState().config).isEqualTo(ViewInitializationMetricsConfig.CUSTOM)
+        assertThat(timeBasedCustom.getState().config).isEqualTo(ViewInitializationMetricsConfig.TIME_BASED_CUSTOM)
+        assertThat(timeBasedDefault.getState().config).isEqualTo(ViewInitializationMetricsConfig.TIME_BASED_DEFAULT)
+    }
+
+    @Test
+    fun `M return NO_RESOURCES W getState(){ no resources registered }`() {
+        // When
+        val state = testedMetric.getState()
+
+        // Then
+        assertThat(state.initializationTime).isNull()
+        assertThat(state.noValueReason).isEqualTo(NoValueReason.TimeToNetworkSettle.NO_RESOURCES)
+    }
+
+    @Test
+    fun `M return NOT_SETTLED_YET W getState(){ not all resources settled }`(forge: Forge) {
+        // Given
+        val startTimestamps = forge.forgeStartTimestamps(size = forge.anInt(min = 4, max = 10))
+        val stopTimestamps = startTimestamps.mapToStopTimestamps(forge)
+        val fakeResourcesIds = forge.aList(size = startTimestamps.size) {
+            forge.getForgery<UUID>().toString()
+        }
+        fakeResourcesIds.forEachIndexed { index, id ->
+            testedMetric.resourceWasStarted(
+                InternalResourceContext(id, startTimestamps[index])
+            )
+        }
+        fakeResourcesIds.take(forge.anInt(min = 1, max = fakeResourcesIds.size / 2))
+            .forEachIndexed { index, fakeResourceContext ->
+                testedMetric.resourceWasStopped(
+                    InternalResourceContext(fakeResourceContext, stopTimestamps[index])
+                )
+            }
+
+        // When
+        val state = testedMetric.getState()
+
+        // Then
+        assertThat(state.initializationTime).isNull()
+        assertThat(state.noValueReason).isEqualTo(NoValueReason.TimeToNetworkSettle.NOT_SETTLED_YET)
+    }
+
+    @Test
+    fun `M return NO_INITIAL_RESOURCES W getState(){ no resource was validated }`(forge: Forge) {
+        // Given
+        val startTimestamps = forge.forgeStartTimestamps()
+        whenever(mockInitialResourceIdentifier.validate(any())).thenReturn(false)
+        val stopTimestamps = startTimestamps.mapToStopTimestamps(forge)
+        val fakeResourcesIds = forge.aList(size = startTimestamps.size) {
+            forge.getForgery<UUID>().toString()
+        }
+        fakeResourcesIds.forEachIndexed { index, id ->
+            testedMetric.resourceWasStarted(
+                InternalResourceContext(id, startTimestamps[index])
+            )
+            testedMetric.resourceWasStopped(
+                InternalResourceContext(id, stopTimestamps[index])
+            )
+        }
+        // When
+        val state = testedMetric.getState()
+
+        // Then
+        assertThat(state.initializationTime).isNull()
+        assertThat(state.noValueReason).isEqualTo(NoValueReason.TimeToNetworkSettle.NO_INITIAL_RESOURCES)
+    }
+
+    @Test
     fun `M return null W resolveMetric(){ view not created }`(forge: Forge) {
         // Given
         testedMetric = NetworkSettledMetricResolver(mockInitialResourceIdentifier, mockInternalLogger)
@@ -131,6 +212,33 @@ internal class NetworkSettledMetricResolverTest {
             InternalLogger.Target.MAINTAINER,
             "[ViewNetworkSettledMetric] There was no view created yet for this resource"
         )
+    }
+
+    @Test
+    fun `M return the correct state W getState(){ resources stopped in random order }`(forge: Forge) {
+        // Given
+        val startTimestamps = forge.forgeStartTimestamps()
+        val stopTimestamps = startTimestamps.mapToStopTimestamps(forge)
+        val settledIntervals = stopTimestamps.mapToSettledIntervals()
+        val expectedMetricValue = settledIntervals.max()
+        val fakeResourcesIds = forge.aList(size = startTimestamps.size) {
+            forge.getForgery<UUID>().toString()
+        }
+        fakeResourcesIds.forEachIndexed { index, id ->
+            testedMetric.resourceWasStarted(
+                InternalResourceContext(id, startTimestamps[index])
+            )
+            testedMetric.resourceWasStopped(
+                InternalResourceContext(id, stopTimestamps[index])
+            )
+        }
+
+        // When
+        val state = testedMetric.getState()
+
+        // Then
+        assertThat(state.initializationTime).isEqualTo(expectedMetricValue)
+        assertThat(state.noValueReason).isNull()
     }
 
     @Test

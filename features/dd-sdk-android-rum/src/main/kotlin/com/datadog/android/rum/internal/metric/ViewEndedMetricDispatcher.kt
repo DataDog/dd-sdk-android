@@ -5,6 +5,7 @@
  */
 package com.datadog.android.rum.internal.metric
 
+import androidx.annotation.VisibleForTesting
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.InternalLogger.Target
 
@@ -58,16 +59,16 @@ internal class ViewEndedMetricDispatcher(
     ): Map<String, Any?> = buildMap {
         put(KEY_DURATION, duration)
         put(KEY_LOADING_TIME, buildMap { put(KEY_VALUE, loadingTime) })
-        put(KEY_VIEW_TYPE, viewType.toAttributeValue())
+        put(KEY_VIEW_TYPE, toAttributeValue(viewType))
         put(
             KEY_TIME_TO_NETWORK_SETTLED,
             buildMap {
                 put(KEY_VALUE, tnsState.initializationTime)
-                put(KEY_CONFIG, tnsState.config.toAttributeValue())
+                put(KEY_CONFIG, toAttributeValue(tnsState.config))
                 if (null == tnsState.initializationTime) {
                     put(
                         KEY_NO_VALUE_REASON,
-                        tnsState.noValueReason.toAttributeValue()
+                        toAttributeValue(tnsState.noValueReason)
                     )
                 }
             }
@@ -76,11 +77,11 @@ internal class ViewEndedMetricDispatcher(
             KEY_INTERACTION_TO_NEXT_VIEW,
             buildMap {
                 put(KEY_VALUE, invState.initializationTime)
-                put(KEY_CONFIG, invState.config.toAttributeValue())
+                put(KEY_CONFIG, toAttributeValue(invState.config))
                 if (null == invState.initializationTime) {
                     put(
                         KEY_NO_VALUE_REASON,
-                        invState.noValueReason.toAttributeValue()
+                        toAttributeValue(invState.noValueReason)
                     )
                 }
             }
@@ -94,7 +95,7 @@ internal class ViewEndedMetricDispatcher(
 
         internal const val KEY_METRIC_TYPE = "metric_type"
 
-        internal const val VALUE_METRIC_TYPE = "rum view ended"
+        private const val VALUE_METRIC_TYPE = "rum view ended"
 
         internal const val KEY_RVE = "rve"
         internal const val KEY_DURATION = "duration"
@@ -107,44 +108,50 @@ internal class ViewEndedMetricDispatcher(
         private const val VALUE_TIME_BASED_CUSTOM = "time_based_custom"
 
         internal const val KEY_NO_VALUE_REASON = "no_value_reason"
-        internal const val VALUE_NO_RESOURCES = "no_resources"
-        internal const val VALUE_NO_INITIAL_RESOURCES = "no_initial_resources"
-        internal const val VALUE_NOT_SETTLED_YET = "not_settled_yet"
-        internal const val VALUE_UNKNOWN = "unknown"
+        private const val VALUE_NO_RESOURCES = "no_resources"
+        private const val VALUE_NO_INITIAL_RESOURCES = "no_initial_resources"
+        private const val VALUE_NOT_SETTLED_YET = "not_settled_yet"
+        private const val VALUE_UNKNOWN = "unknown"
 
         internal const val KEY_INTERACTION_TO_NEXT_VIEW = "inv"
-        internal const val VALUE_NO_ACTION = "no_action"
-        internal const val VALUE_NO_ELIGIBLE_ACTION = "no_eligible_action"
-        internal const val VALUE_NO_PREVIOUS_VIEW = "no_previous_view"
+        private const val VALUE_NO_ACTION = "no_action"
+        private const val VALUE_NO_ELIGIBLE_ACTION = "no_eligible_action"
+        private const val VALUE_NO_PREVIOUS_VIEW = "no_previous_view"
 
         internal const val KEY_VIEW_TYPE = "view_type"
-        internal const val VALUE_APPLICATION_LAUNCH = "application_launch"
-        internal const val VALUE_BACKGROUND = "background"
-        internal const val VALUE_CUSTOM = "custom"
+        private const val VALUE_APPLICATION_LAUNCH = "application_launch"
+        private const val VALUE_BACKGROUND = "background"
+        private const val VALUE_CUSTOM = "custom"
 
-        private fun ViewMetricDispatcher.ViewType.toAttributeValue() = when (this) {
+        @JvmStatic
+        @VisibleForTesting
+        internal fun toAttributeValue(viewType: ViewMetricDispatcher.ViewType) = when (viewType) {
             ViewMetricDispatcher.ViewType.CUSTOM -> VALUE_CUSTOM
             ViewMetricDispatcher.ViewType.BACKGROUND -> VALUE_BACKGROUND
             ViewMetricDispatcher.ViewType.APPLICATION -> VALUE_APPLICATION_LAUNCH
         }
 
-        private fun ViewInitializationMetricsConfig.toAttributeValue(): String = when (this) {
+        @JvmStatic
+        @VisibleForTesting
+        internal fun toAttributeValue(config: ViewInitializationMetricsConfig): String = when (config) {
             ViewInitializationMetricsConfig.CUSTOM -> VALUE_CUSTOM
             ViewInitializationMetricsConfig.TIME_BASED_DEFAULT -> VALUE_TIME_BASED_DEFAULT
             ViewInitializationMetricsConfig.TIME_BASED_CUSTOM -> VALUE_TIME_BASED_CUSTOM
         }
 
-        private fun NoValueReason?.toAttributeValue(): String = when (this) {
+        @JvmStatic
+        @VisibleForTesting
+        internal fun toAttributeValue(reason: NoValueReason?): String = when (reason) {
             null -> VALUE_UNKNOWN
 
-            is NoValueReason.InteractionToNextView -> when (this) {
+            is NoValueReason.InteractionToNextView -> when (reason) {
                 NoValueReason.InteractionToNextView.UNKNOWN -> VALUE_UNKNOWN
                 NoValueReason.InteractionToNextView.NO_PREVIOUS_VIEW -> VALUE_NO_PREVIOUS_VIEW
                 NoValueReason.InteractionToNextView.NO_ACTION -> VALUE_NO_ACTION
                 NoValueReason.InteractionToNextView.NO_ELIGIBLE_ACTION -> VALUE_NO_ELIGIBLE_ACTION
             }
 
-            is NoValueReason.TimeToNetworkSettle -> when (this) {
+            is NoValueReason.TimeToNetworkSettle -> when (reason) {
                 NoValueReason.TimeToNetworkSettle.UNKNOWN -> VALUE_UNKNOWN
                 NoValueReason.TimeToNetworkSettle.NOT_SETTLED_YET -> VALUE_NOT_SETTLED_YET
                 NoValueReason.TimeToNetworkSettle.NO_RESOURCES -> VALUE_NO_RESOURCES

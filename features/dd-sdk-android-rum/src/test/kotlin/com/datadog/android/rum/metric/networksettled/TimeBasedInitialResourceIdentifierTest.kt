@@ -79,6 +79,31 @@ internal class TimeBasedInitialResourceIdentifierTest : ObjectTest<TimeBasedInit
     }
 
     @Test
+    fun `M return true W isDefault{default delay used}`() {
+        // Given
+        val testedValidator = TimeBasedInitialResourceIdentifier()
+
+        // When
+        val result = testedValidator.isDefault()
+
+        // Then
+        assertThat(result).isTrue()
+    }
+
+    @Test
+    fun `M return true W isDefault{custom delay used}`(forge: Forge) {
+        // Given
+        val testedValidator = TimeBasedInitialResourceIdentifier(
+            TimeBasedInitialResourceIdentifier.DEFAULT_TIME_THRESHOLD_MS + forge.aTinyPositiveLong()
+        )
+        // When
+        val result = testedValidator.isDefault()
+
+        // Then
+        assertThat(result).isFalse()
+    }
+
+    @Test
     fun `M return false W resource started after the threshold`(forge: Forge) {
         // Given
         fakeNetworkSettledResourceContext =

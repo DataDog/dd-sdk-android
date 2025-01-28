@@ -14,13 +14,14 @@ import fr.xgouchet.elmyr.ForgeryFactory
 
 internal class TelemetryViewInitializationMetricsStateForgeryFactory : ForgeryFactory<ViewInitializationMetricsState> {
     override fun getForgery(forge: Forge): ViewInitializationMetricsState {
+        val initializationTime = forge.aNullable { forge.aLong(min = 0L) }
         return ViewInitializationMetricsState(
-            initializationTime = forge.aLong(min = 0L),
+            initializationTime = initializationTime,
             config = forge.aValueFrom(ViewInitializationMetricsConfig::class.java),
             noValueReason = forge.anElementFrom(
                 forge.aValueFrom(NoValueReason.TimeToNetworkSettle::class.java),
                 forge.aValueFrom(NoValueReason.InteractionToNextView::class.java)
-            )
+            ).takeIf { initializationTime == null }
         )
     }
 }

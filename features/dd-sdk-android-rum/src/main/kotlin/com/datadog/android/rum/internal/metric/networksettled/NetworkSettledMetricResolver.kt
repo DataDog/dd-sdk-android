@@ -93,11 +93,13 @@ internal class NetworkSettledMetricResolver(
         return lastComputedMetric
     }
 
-    fun getState(): ViewInitializationMetricsState = ViewInitializationMetricsState(
-        initializationTime = lastComputedMetric,
-        config = initialResourceIdentifier.toConfig(),
-        noValueReason = currentViewDiagnostic.resolveNoValueReason()
-    )
+    fun getState(): ViewInitializationMetricsState = resolveMetric().let { value ->
+        ViewInitializationMetricsState(
+            initializationTime = value,
+            config = initialResourceIdentifier.toConfig(),
+            noValueReason = if (value == null) currentViewDiagnostic.resolveNoValueReason() else null
+        )
+    }
 
     fun getResourceStartedCacheSize(): Int {
         return resourceStartedTimestamps.size

@@ -7,8 +7,13 @@
 package com.datadog.android.rum.internal.metric.interactiontonextview
 
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.rum.internal.metric.NoValueReason
+import com.datadog.android.rum.internal.metric.ViewInitializationMetricsConfig
+import com.datadog.android.rum.internal.metric.networksettled.NetworkSettledMetricResolver
 import com.datadog.android.rum.metric.interactiontonextview.LastInteractionIdentifier
 import com.datadog.android.rum.metric.interactiontonextview.PreviousViewLastInteractionContext
+import com.datadog.android.rum.metric.interactiontonextview.TimeBasedInteractionIdentifier
+import com.datadog.android.rum.metric.networksettled.TimeBasedInitialResourceIdentifier
 import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.android.rum.utils.verifyLog
 import fr.xgouchet.elmyr.Forge
@@ -50,20 +55,20 @@ internal class InteractionToNextViewMetricResolverTest {
     private lateinit var fakeViewId: String
 
     private lateinit var fakeFirstViewId: String
-    private val fakeFirstViewTimestamp: Long = System.nanoTime()
+    private val fakeFirstViewTimestampNs: Long = System.nanoTime()
 
     // region setup
 
     @BeforeEach
     fun `set up`(forge: Forge) {
-        fakeViewId = forge.generateViewId()
-        fakeFirstViewId = forge.generateViewId()
+        fakeViewId = "current" // forge.generateViewId()
+        fakeFirstViewId = "previous" // forge.generateViewId()
         testedMetric = InteractionToNextViewMetricResolver(
             mockInternalLogger,
             mockInteractionValidator,
             mockLastInteractionIdentifier
         )
-        testedMetric.onViewCreated(fakeFirstViewId, fakeFirstViewTimestamp)
+        testedMetric.onViewCreated(fakeFirstViewId, fakeFirstViewTimestampNs)
     }
 
     // endregion
@@ -111,6 +116,103 @@ internal class InteractionToNextViewMetricResolverTest {
     }
 
     @Test
+    fun `M return initializationTime=null and noValueReason=NO_PREVIOUS_VIEW W getState { no previous view was registered }`(
+        forge: Forge
+    ) {
+        // Given
+        val testedMetric = InteractionToNextViewMetricResolver(
+            mockInternalLogger,
+            mockInteractionValidator,
+            mockLastInteractionIdentifier
+        )
+
+        testedMetric.onViewCreated(fakeViewId, fakeFirstViewTimestampNs)
+
+        // When
+        val result = testedMetric.getState(fakeViewId)
+
+        // Then
+        assertThat(result.initializationTime).isNull()
+        assertThat(result.noValueReason).isEqualTo(NoValueReason.InteractionToNextView.NO_PREVIOUS_VIEW)
+    }
+
+    @Test
+    fun `M return NO_ACTION W getState { no action was registered on previous view }`() {
+        // When
+        testedMetric.onViewCreated(fakeViewId, System.nanoTime())
+        val result = testedMetric.getState(fakeViewId)
+
+        // Then
+        assertThat(result.initializationTime).isNull()
+        assertThat(result.noValueReason).isEqualTo(NoValueReason.InteractionToNextView.NO_ACTION)
+    }
+
+    @Test
+    fun `M return NO_ELIGIBLE_ACTION W getState { all actions was filtered out by LastInteractionIdentifier }`(
+        forge: Forge
+    ) {
+        // Given
+        val fakePreviousActions = forge.generateFakeActions(1, 10, fakeFirstViewId)
+        val fakeViewCreatedTimestamp = System.nanoTime()
+        whenever(mockInteractionValidator.validate(any())).thenReturn(true)
+        whenever(mockLastInteractionIdentifier.validate(any())).thenReturn(false)
+        fakePreviousActions.forEach { testedMetric.onActionSent(it) }
+        testedMetric.onViewCreated(fakeViewId, fakeViewCreatedTimestamp)
+
+        // When
+        val result = testedMetric.getState(fakeViewId)
+
+        // Then
+        assertThat(result.initializationTime).isNull()
+        assertThat(result.noValueReason).isEqualTo(NoValueReason.InteractionToNextView.NO_ELIGIBLE_ACTION)
+    }
+
+    @Test
+    fun `M return the right initializationTime and null noValueReason W getState`(forge: Forge) {
+        // Given
+        val fakePreviousActions = forge.generateFakeActions(1, 2, fakeFirstViewId)
+        val fakeCurrentViewCreatedTimestamp = System.nanoTime()
+        fakePreviousActions.mockValidators(fakeCurrentViewCreatedTimestamp)
+        fakePreviousActions.forEach { testedMetric.onActionSent(it) }
+        val expectedMetricValue = fakeCurrentViewCreatedTimestamp - fakePreviousActions.last().eventCreatedAtNanos
+        testedMetric.onViewCreated(fakeViewId, fakeCurrentViewCreatedTimestamp)
+
+        // When
+        val result = testedMetric.getState(fakeViewId)
+
+        // Then
+        assertThat(result.initializationTime).isEqualTo(expectedMetricValue)
+        assertThat(result.noValueReason).isNull()
+    }
+
+
+    @Test
+    fun `M return valid config value W getState()`() {
+        // Given
+        val custom = InteractionToNextViewMetricResolver(
+            mockInternalLogger,
+            mockInteractionValidator,
+            mockLastInteractionIdentifier
+        )
+        val timeBasedDefault = InteractionToNextViewMetricResolver(
+            mockInternalLogger,
+            mockInteractionValidator,
+            TimeBasedInteractionIdentifier()
+        )
+
+        val timeBasedCustom = InteractionToNextViewMetricResolver(
+            mockInternalLogger,
+            mockInteractionValidator,
+            TimeBasedInteractionIdentifier(TimeBasedInteractionIdentifier.DEFAULT_TIME_THRESHOLD_MS + 1)
+        )
+
+        // Then
+        assertThat(custom.getState(fakeViewId).config).isEqualTo(ViewInitializationMetricsConfig.CUSTOM)
+        assertThat(timeBasedCustom.getState(fakeViewId).config).isEqualTo(ViewInitializationMetricsConfig.TIME_BASED_CUSTOM)
+        assertThat(timeBasedDefault.getState(fakeViewId).config).isEqualTo(ViewInitializationMetricsConfig.TIME_BASED_DEFAULT)
+    }
+
+    @Test
     fun `M return the right metric W resolveMetric`(forge: Forge) {
         // Given
         val fakePreviousActions = forge.generateFakeActions(1, 10, fakeFirstViewId)
@@ -151,7 +253,7 @@ internal class InteractionToNextViewMetricResolverTest {
             InternalLogger.Level.WARN,
             InternalLogger.Target.MAINTAINER,
             "[ViewNetworkSettledMetric] The difference between the last interaction " +
-                "and the current view is negative for viewId:$fakeViewId"
+                    "and the current view is negative for viewId:$fakeViewId"
         )
     }
 
@@ -468,13 +570,15 @@ internal class InteractionToNextViewMetricResolverTest {
     private fun List<InternalInteractionContext>.mockValidators(viewCreatedTimestamp: Long) {
         forEach {
             whenever(mockInteractionValidator.validate(it)).thenReturn(true)
+            val context = PreviousViewLastInteractionContext(
+                it.actionType,
+                it.eventCreatedAtNanos,
+                viewCreatedTimestamp
+            )
+            println("EXPECT ${it.viewId} -> $context")
             whenever(
                 mockLastInteractionIdentifier.validate(
-                    PreviousViewLastInteractionContext(
-                        it.actionType,
-                        it.eventCreatedAtNanos,
-                        viewCreatedTimestamp
-                    )
+                    context
                 )
             ).thenReturn(true)
         }
