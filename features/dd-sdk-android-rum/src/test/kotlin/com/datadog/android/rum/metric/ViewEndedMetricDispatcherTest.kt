@@ -112,7 +112,7 @@ internal class ViewEndedMetricDispatcherTest {
     }
 
     @Test
-    fun `M logMetric with expected arguments W sendViewEnded`(forge: Forge) {
+    fun `M logMetric with expected arguments W sendViewEnded`() {
         // Given
         dispatcherUnderTest.onDurationResolved(fakeDuration)
         dispatcherUnderTest.onViewLoadingTimeResolved(fakeLoadingTime)
@@ -256,7 +256,7 @@ internal class ViewEndedMetricDispatcherTest {
         ): Map<Any, Any?> = buildMap {
             put(KEY_VALUE, tnsValue)
             put(KEY_CONFIG, tnsConfig)
-            if (null == tnsValue) {
+            if (tnsNoValueReason != null && tnsValue == null) {
                 put(KEY_NO_VALUE_REASON, tnsNoValueReason)
             }
         }

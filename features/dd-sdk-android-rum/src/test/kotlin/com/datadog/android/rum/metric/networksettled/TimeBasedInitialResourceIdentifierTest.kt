@@ -60,7 +60,7 @@ internal class TimeBasedInitialResourceIdentifierTest : ObjectTest<TimeBasedInit
     override fun createUnequalInstance(
         source: TimeBasedInitialResourceIdentifier,
         forge: Forge
-    ): TimeBasedInitialResourceIdentifier? {
+    ): TimeBasedInitialResourceIdentifier {
         return TimeBasedInitialResourceIdentifier(fakeIntervalThresholdInMs + forge.aTinyPositiveLong())
     }
 
@@ -79,25 +79,25 @@ internal class TimeBasedInitialResourceIdentifierTest : ObjectTest<TimeBasedInit
     }
 
     @Test
-    fun `M return true W isDefault{default delay used}`() {
+    fun `M return true W defaultThresholdUsed{default delay used}`() {
         // Given
         val testedValidator = TimeBasedInitialResourceIdentifier()
 
         // When
-        val result = testedValidator.isDefault()
+        val result = testedValidator.defaultThresholdUsed()
 
         // Then
         assertThat(result).isTrue()
     }
 
     @Test
-    fun `M return true W isDefault{custom delay used}`(forge: Forge) {
+    fun `M return true W defaultThresholdUsed{custom delay used}`(forge: Forge) {
         // Given
         val testedValidator = TimeBasedInitialResourceIdentifier(
             TimeBasedInitialResourceIdentifier.DEFAULT_TIME_THRESHOLD_MS + forge.aTinyPositiveLong()
         )
         // When
-        val result = testedValidator.isDefault()
+        val result = testedValidator.defaultThresholdUsed()
 
         // Then
         assertThat(result).isFalse()

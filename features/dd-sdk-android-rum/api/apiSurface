@@ -185,6 +185,7 @@ data class com.datadog.android.rum.metric.interactiontonextview.PreviousViewLast
 class com.datadog.android.rum.metric.interactiontonextview.TimeBasedInteractionIdentifier : LastInteractionIdentifier
   constructor(Long = DEFAULT_TIME_THRESHOLD_MS)
   override fun validate(PreviousViewLastInteractionContext): Boolean
+  fun isDefault(): Boolean
   override fun equals(Any?): Boolean
   override fun hashCode(): Int
   companion object 

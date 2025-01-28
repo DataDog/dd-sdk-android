@@ -9,11 +9,9 @@ package com.datadog.android.rum.internal.metric.interactiontonextview
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.rum.internal.metric.NoValueReason
 import com.datadog.android.rum.internal.metric.ViewInitializationMetricsConfig
-import com.datadog.android.rum.internal.metric.networksettled.NetworkSettledMetricResolver
 import com.datadog.android.rum.metric.interactiontonextview.LastInteractionIdentifier
 import com.datadog.android.rum.metric.interactiontonextview.PreviousViewLastInteractionContext
 import com.datadog.android.rum.metric.interactiontonextview.TimeBasedInteractionIdentifier
-import com.datadog.android.rum.metric.networksettled.TimeBasedInitialResourceIdentifier
 import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.android.rum.utils.verifyLog
 import fr.xgouchet.elmyr.Forge
@@ -60,7 +58,7 @@ internal class InteractionToNextViewMetricResolverTest {
     // region setup
 
     @BeforeEach
-    fun `set up`(forge: Forge) {
+    fun `set up`() {
         fakeViewId = "current" // forge.generateViewId()
         fakeFirstViewId = "previous" // forge.generateViewId()
         testedMetric = InteractionToNextViewMetricResolver(
@@ -116,9 +114,7 @@ internal class InteractionToNextViewMetricResolverTest {
     }
 
     @Test
-    fun `M return initializationTime=null and noValueReason=NO_PREVIOUS_VIEW W getState { no previous view was registered }`(
-        forge: Forge
-    ) {
+    fun `M return NO_PREVIOUS_VIEW W getState { no previous view was registered }`() {
         // Given
         val testedMetric = InteractionToNextViewMetricResolver(
             mockInternalLogger,
@@ -185,7 +181,6 @@ internal class InteractionToNextViewMetricResolverTest {
         assertThat(result.noValueReason).isNull()
     }
 
-
     @Test
     fun `M return valid config value W getState()`() {
         // Given
@@ -208,8 +203,12 @@ internal class InteractionToNextViewMetricResolverTest {
 
         // Then
         assertThat(custom.getState(fakeViewId).config).isEqualTo(ViewInitializationMetricsConfig.CUSTOM)
-        assertThat(timeBasedCustom.getState(fakeViewId).config).isEqualTo(ViewInitializationMetricsConfig.TIME_BASED_CUSTOM)
-        assertThat(timeBasedDefault.getState(fakeViewId).config).isEqualTo(ViewInitializationMetricsConfig.TIME_BASED_DEFAULT)
+        assertThat(
+            timeBasedCustom.getState(fakeViewId).config
+        ).isEqualTo(ViewInitializationMetricsConfig.TIME_BASED_CUSTOM)
+        assertThat(
+            timeBasedDefault.getState(fakeViewId).config
+        ).isEqualTo(ViewInitializationMetricsConfig.TIME_BASED_DEFAULT)
     }
 
     @Test
@@ -253,7 +252,7 @@ internal class InteractionToNextViewMetricResolverTest {
             InternalLogger.Level.WARN,
             InternalLogger.Target.MAINTAINER,
             "[ViewNetworkSettledMetric] The difference between the last interaction " +
-                    "and the current view is negative for viewId:$fakeViewId"
+                "and the current view is negative for viewId:$fakeViewId"
         )
     }
 

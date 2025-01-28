@@ -15,6 +15,7 @@ import com.datadog.android.rum.metric.interactiontonextview.LastInteractionIdent
 import com.datadog.android.rum.metric.interactiontonextview.PreviousViewLastInteractionContext
 import com.datadog.android.rum.metric.interactiontonextview.TimeBasedInteractionIdentifier
 
+@Suppress("TooManyFunctions")
 internal class InteractionToNextViewMetricResolver(
     private val internalLogger: InternalLogger,
     private val ingestionValidator: InteractionIngestionValidator = ActionTypeInteractionValidator(),
@@ -53,7 +54,7 @@ internal class InteractionToNextViewMetricResolver(
                     InternalLogger.Target.MAINTAINER,
                     {
                         "[ViewNetworkSettledMetric] The difference between the last interaction " +
-                                "and the current view is negative for viewId:$viewId"
+                            "and the current view is negative for viewId:$viewId"
                     }
                 )
                 return null
@@ -79,6 +80,7 @@ internal class InteractionToNextViewMetricResolver(
         )
     }
 
+    @Suppress("ReturnCount")
     private fun resolveNoValueReason(viewId: String): NoValueReason.InteractionToNextView {
         // First of all, if there is no timestamp for the current view, all other metrics are meaningless.
         val currentViewCreatedTimestamp = resolveCurrentViewCreationTimestamp(viewId)
@@ -164,7 +166,7 @@ internal class InteractionToNextViewMetricResolver(
         private fun LastInteractionIdentifier.toConfig(): ViewInitializationMetricsConfig {
             if (this !is TimeBasedInteractionIdentifier) return ViewInitializationMetricsConfig.CUSTOM
 
-            return if (isDefault()) {
+            return if (defaultThresholdUsed()) {
                 ViewInitializationMetricsConfig.TIME_BASED_DEFAULT
             } else {
                 ViewInitializationMetricsConfig.TIME_BASED_CUSTOM

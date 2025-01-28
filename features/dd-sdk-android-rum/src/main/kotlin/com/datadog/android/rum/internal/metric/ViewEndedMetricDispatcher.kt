@@ -12,7 +12,7 @@ import com.datadog.android.api.InternalLogger.Target
 internal class ViewEndedMetricDispatcher(
     private val viewType: ViewMetricDispatcher.ViewType,
     private val internalLogger: InternalLogger,
-    private val samplingRate: Float = DEFAULT_SAMPLE_RATE,
+    private val samplingRate: Float = DEFAULT_SAMPLE_RATE
 ) : ViewMetricDispatcher {
 
     private var duration: Long? = null
@@ -56,8 +56,8 @@ internal class ViewEndedMetricDispatcher(
     private fun buildAttributesMap(
         invState: ViewInitializationMetricsState,
         tnsState: ViewInitializationMetricsState
-    ): Map<String, Any?> = buildMap {
-        put(KEY_DURATION, duration)
+    ): Map<String, Any> = buildMap {
+        putNonNull(KEY_DURATION, duration)
         put(KEY_LOADING_TIME, buildMap { put(KEY_VALUE, loadingTime) })
         put(KEY_VIEW_TYPE, toAttributeValue(viewType))
         put(
@@ -65,11 +65,8 @@ internal class ViewEndedMetricDispatcher(
             buildMap {
                 put(KEY_VALUE, tnsState.initializationTime)
                 put(KEY_CONFIG, toAttributeValue(tnsState.config))
-                if (null == tnsState.initializationTime) {
-                    put(
-                        KEY_NO_VALUE_REASON,
-                        toAttributeValue(tnsState.noValueReason)
-                    )
+                if (tnsState.initializationTime == null) {
+                    putNonNull(KEY_NO_VALUE_REASON, toAttributeValue(tnsState.noValueReason))
                 }
             }
         )
@@ -78,11 +75,8 @@ internal class ViewEndedMetricDispatcher(
             buildMap {
                 put(KEY_VALUE, invState.initializationTime)
                 put(KEY_CONFIG, toAttributeValue(invState.config))
-                if (null == invState.initializationTime) {
-                    put(
-                        KEY_NO_VALUE_REASON,
-                        toAttributeValue(invState.noValueReason)
-                    )
+                if (invState.initializationTime == null) {
+                    putNonNull(KEY_NO_VALUE_REASON, toAttributeValue(invState.noValueReason))
                 }
             }
         )
@@ -123,6 +117,10 @@ internal class ViewEndedMetricDispatcher(
         private const val VALUE_BACKGROUND = "background"
         private const val VALUE_CUSTOM = "custom"
 
+        private fun <K, V> MutableMap<K, V>.putNonNull(key: K, value: V?) {
+            if (value != null) put(key, value)
+        }
+
         @JvmStatic
         @VisibleForTesting
         internal fun toAttributeValue(viewType: ViewMetricDispatcher.ViewType) = when (viewType) {
@@ -141,21 +139,23 @@ internal class ViewEndedMetricDispatcher(
 
         @JvmStatic
         @VisibleForTesting
-        internal fun toAttributeValue(reason: NoValueReason?): String = when (reason) {
-            null -> VALUE_UNKNOWN
+        internal fun toAttributeValue(reason: NoValueReason?): String {
+            return when (reason) {
+                null -> VALUE_UNKNOWN
 
-            is NoValueReason.InteractionToNextView -> when (reason) {
-                NoValueReason.InteractionToNextView.UNKNOWN -> VALUE_UNKNOWN
-                NoValueReason.InteractionToNextView.NO_PREVIOUS_VIEW -> VALUE_NO_PREVIOUS_VIEW
-                NoValueReason.InteractionToNextView.NO_ACTION -> VALUE_NO_ACTION
-                NoValueReason.InteractionToNextView.NO_ELIGIBLE_ACTION -> VALUE_NO_ELIGIBLE_ACTION
-            }
+                is NoValueReason.InteractionToNextView -> when (reason) {
+                    NoValueReason.InteractionToNextView.UNKNOWN -> VALUE_UNKNOWN
+                    NoValueReason.InteractionToNextView.NO_PREVIOUS_VIEW -> VALUE_NO_PREVIOUS_VIEW
+                    NoValueReason.InteractionToNextView.NO_ACTION -> VALUE_NO_ACTION
+                    NoValueReason.InteractionToNextView.NO_ELIGIBLE_ACTION -> VALUE_NO_ELIGIBLE_ACTION
+                }
 
-            is NoValueReason.TimeToNetworkSettle -> when (reason) {
-                NoValueReason.TimeToNetworkSettle.UNKNOWN -> VALUE_UNKNOWN
-                NoValueReason.TimeToNetworkSettle.NOT_SETTLED_YET -> VALUE_NOT_SETTLED_YET
-                NoValueReason.TimeToNetworkSettle.NO_RESOURCES -> VALUE_NO_RESOURCES
-                NoValueReason.TimeToNetworkSettle.NO_INITIAL_RESOURCES -> VALUE_NO_INITIAL_RESOURCES
+                is NoValueReason.TimeToNetworkSettle -> when (reason) {
+                    NoValueReason.TimeToNetworkSettle.UNKNOWN -> VALUE_UNKNOWN
+                    NoValueReason.TimeToNetworkSettle.NOT_SETTLED_YET -> VALUE_NOT_SETTLED_YET
+                    NoValueReason.TimeToNetworkSettle.NO_RESOURCES -> VALUE_NO_RESOURCES
+                    NoValueReason.TimeToNetworkSettle.NO_INITIAL_RESOURCES -> VALUE_NO_INITIAL_RESOURCES
+                }
             }
         }
     }

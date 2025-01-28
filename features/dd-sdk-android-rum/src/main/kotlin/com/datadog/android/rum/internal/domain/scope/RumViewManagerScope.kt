@@ -379,13 +379,13 @@ internal class RumViewManagerScope(
 
         internal const val MESSAGE_MISSING_VIEW =
             "A RUM event was detected, but no view is active. " +
-                    "To track views automatically, try calling the " +
-                    "RumConfiguration.Builder.useViewTrackingStrategy() method.\n" +
-                    "You can also track views manually using the RumMonitor.startView() and " +
-                    "RumMonitor.stopView() methods."
+                "To track views automatically, try calling the " +
+                "RumConfiguration.Builder.useViewTrackingStrategy() method.\n" +
+                "You can also track views manually using the RumMonitor.startView() and " +
+                "RumMonitor.stopView() methods."
 
         internal const val MESSAGE_UNKNOWN_MISSED_TYPE = "An RUM event was detected, but no view is active, " +
-                "its missed type is unknown"
+            "its missed type is unknown"
 
         internal const val NO_ACTIVE_VIEW_FOR_LOADING_TIME_WARNING_MESSAGE =
             "No active view found to add the loading time."

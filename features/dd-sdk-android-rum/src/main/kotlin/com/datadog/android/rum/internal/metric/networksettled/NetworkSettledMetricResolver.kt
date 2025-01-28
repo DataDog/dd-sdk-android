@@ -132,7 +132,7 @@ internal class NetworkSettledMetricResolver(
         private fun InitialResourceIdentifier.toConfig(): ViewInitializationMetricsConfig {
             if (this !is TimeBasedInitialResourceIdentifier) return ViewInitializationMetricsConfig.CUSTOM
 
-            return if (isDefault()) {
+            return if (defaultThresholdUsed()) {
                 ViewInitializationMetricsConfig.TIME_BASED_DEFAULT
             } else {
                 ViewInitializationMetricsConfig.TIME_BASED_CUSTOM
