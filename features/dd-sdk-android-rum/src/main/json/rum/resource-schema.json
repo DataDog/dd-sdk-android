@@ -238,6 +238,12 @@
               "description": "Network protocol used to fetch the resource (e.g., 'http/1.1', 'h2')",
               "readOnly": true
             },
+            "delivery_type": {
+              "type": "string",
+              "description": "Delivery type of the resource",
+              "enum": ["cache", "navigational-prefetch", "other"],
+              "readOnly": true
+            },
             "provider": {
               "type": "object",
               "description": "The provider for this resource",

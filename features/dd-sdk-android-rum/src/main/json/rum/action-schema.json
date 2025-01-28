@@ -191,6 +191,19 @@
                       "readOnly": true
                     }
                   }
+                },
+                "name_source": {
+                  "type": "string",
+                  "description": "The strategy of how the auto click action name is computed",
+                  "enum": [
+                    "custom_attribute",
+                    "mask_placeholder",
+                    "standard_attribute",
+                    "text_content",
+                    "mask_disallowed",
+                    "blank"
+                  ],
+                  "readOnly": false
                 }
               },
               "readOnly": true
