@@ -98,7 +98,7 @@ class RumSessionEndedIntegrationTelemetryTest {
         rumMonitor.stopSession()
 
         // Then
-        assertThat(stubSdkCore.lastMetric())
+        assertThat(stubSdkCore.lastMetricWithMessage(RUM_SESSION_ENDED_METRIC_NAME))
             .hasWasStopped(true)
     }
 
@@ -145,7 +145,7 @@ class RumSessionEndedIntegrationTelemetryTest {
         rumMonitor.stopSession()
 
         // Then
-        assertThat(stubSdkCore.lastMetric())
+        assertThat(stubSdkCore.lastMetricWithMessage(RUM_SESSION_ENDED_METRIC_NAME))
             .hasBackgroundEventsTrackingEnable(trackBackgroundEvents)
     }
 
@@ -169,7 +169,7 @@ class RumSessionEndedIntegrationTelemetryTest {
         rumMonitor.stopSession()
 
         // Then
-        assertThat(stubSdkCore.lastMetric())
+        assertThat(stubSdkCore.lastMetricWithMessage(RUM_SESSION_ENDED_METRIC_NAME))
             .hasNtpOffsetAtStart(ntpOffsetAtStart)
             .hasNtpOffsetAtEnd(ntpOffsetAtEnd)
     }
@@ -224,7 +224,16 @@ class RumSessionEndedIntegrationTelemetryTest {
         return telemetryEventsWritten().lastOrNull { it.type == StubTelemetryEvent.Type.METRIC }
     }
 
+    private fun StubSDKCore.lastMetricWithMessage(msg: String): StubTelemetryEvent? {
+        return telemetryEventsWritten().lastOrNull {
+            it.type == StubTelemetryEvent.Type.METRIC &&
+                it.message == msg
+        }
+    }
+
     companion object {
+
+        private const val RUM_SESSION_ENDED_METRIC_NAME: String = "[Mobile Metric] RUM Session Ended"
 
         private val mainLooper = MainLooperTestConfiguration()
 

@@ -60,7 +60,9 @@ internal class ViewEndedMetricDispatcher(
         tnsState: ViewInitializationMetricsState
     ): Map<String, Any> = buildMap {
         putNonNull(KEY_DURATION, duration)
-        put(KEY_LOADING_TIME, buildMap { put(KEY_VALUE, loadingTime) })
+        if (loadingTime != null) {
+            put(KEY_LOADING_TIME, buildMap { put(KEY_VALUE, loadingTime) })
+        }
         put(KEY_VIEW_TYPE, toAttributeValue(viewType))
         put(
             KEY_TIME_TO_NETWORK_SETTLED,

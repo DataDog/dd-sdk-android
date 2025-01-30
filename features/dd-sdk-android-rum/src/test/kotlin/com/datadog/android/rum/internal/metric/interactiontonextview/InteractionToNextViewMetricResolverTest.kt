@@ -59,7 +59,7 @@ internal class InteractionToNextViewMetricResolverTest {
 
     @BeforeEach
     fun `set up`(forge: Forge) {
-        fakeViewId =  forge.generateViewId()
+        fakeViewId = forge.generateViewId()
         fakeFirstViewId = forge.generateViewId()
         testedMetric = InteractionToNextViewMetricResolver(
             mockInternalLogger,

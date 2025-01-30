@@ -24,7 +24,6 @@ import com.datadog.android.rum.internal.metric.ViewEndedMetricDispatcher.Compani
 import com.datadog.android.rum.internal.metric.ViewEndedMetricDispatcher.Companion.toAttributeValue
 import com.datadog.android.rum.internal.metric.ViewInitializationMetricsConfig
 import com.datadog.android.rum.internal.metric.ViewInitializationMetricsState
-
 import com.datadog.android.rum.utils.forge.Configurator
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.FloatForgery

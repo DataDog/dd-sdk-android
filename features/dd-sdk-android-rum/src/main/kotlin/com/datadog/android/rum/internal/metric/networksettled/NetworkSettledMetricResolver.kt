@@ -151,15 +151,15 @@ internal class NetworkSettledMetricResolver(
             var dropped: AtomicInteger = AtomicInteger(0)
         ) {
             fun resolveNoValueReason(): NoValueReason.TimeToNetworkSettle {
-                val startedRequests = started.get()
-                val initialRequests = initial.get()
-                val droppedRequests = dropped.get()
-                val stoppedRequests = stopped.get()
+                val started = started.get()
+                val initial = initial.get()
+                val dropped = dropped.get()
+                val stopped = stopped.get()
 
                 return when {
-                    startedRequests == 0 -> NoValueReason.TimeToNetworkSettle.NO_RESOURCES
-                    initialRequests == 0 -> NoValueReason.TimeToNetworkSettle.NO_INITIAL_RESOURCES
-                    initialRequests > droppedRequests + stoppedRequests -> NoValueReason.TimeToNetworkSettle.NOT_SETTLED_YET
+                    started == 0 -> NoValueReason.TimeToNetworkSettle.NO_RESOURCES
+                    initial == 0 -> NoValueReason.TimeToNetworkSettle.NO_INITIAL_RESOURCES
+                    initial > dropped + stopped -> NoValueReason.TimeToNetworkSettle.NOT_SETTLED_YET
                     else -> NoValueReason.TimeToNetworkSettle.UNKNOWN
                 }
             }
