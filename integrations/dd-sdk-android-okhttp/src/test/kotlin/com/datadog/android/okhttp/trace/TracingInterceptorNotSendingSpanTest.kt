@@ -30,6 +30,7 @@ import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.datadog.tools.unit.forge.BaseConfigurator
 import com.datadog.tools.unit.setStaticValue
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -158,6 +159,9 @@ internal open class TracingInterceptorNotSendingSpanTest {
 
     lateinit var fakeLocalHosts: Map<String, Set<TracingHeaderType>>
 
+    @BoolForgery
+    var fakeRedacted404Resources: Boolean = true
+
     // endregion
 
     @BeforeEach
@@ -213,6 +217,7 @@ internal open class TracingInterceptorNotSendingSpanTest {
                 traceOrigin = fakeOrigin,
                 traceSampler = mockTraceSampler,
                 localTracerFactory = factory,
+                redacted404ResourceName = fakeRedacted404Resources,
                 traceContextInjection = TraceContextInjection.All
             ) {
             override fun canSendSpan(): Boolean {
@@ -1005,7 +1010,11 @@ internal open class TracingInterceptorNotSendingSpanTest {
         verify(mockSpan).setTag("http.status_code", 404)
         verify(mockSpan).setTag(Tags.SPAN_KIND, Tags.SPAN_KIND_CLIENT)
         verify(mockSpan as MutableSpan).setError(true)
-        verify(mockSpan as MutableSpan).setResourceName(TracingInterceptor.RESOURCE_NAME_404)
+        if (fakeRedacted404Resources) {
+            verify(mockSpan as MutableSpan).setResourceName(TracingInterceptor.RESOURCE_NAME_404)
+        } else {
+            verify(mockSpan as MutableSpan, never()).setResourceName(TracingInterceptor.RESOURCE_NAME_404)
+        }
         verify(mockSpan, never()).finish()
         verify(mockSpan as MutableSpan).drop()
         assertThat(response).isSameAs(fakeResponse)

@@ -84,6 +84,7 @@ internal constructor(
     internal val traceOrigin: String?,
     internal val traceSampler: Sampler<Span>,
     internal val traceContextInjection: TraceContextInjection,
+    internal val redacted404ResourceName: Boolean,
     internal val localTracerFactory: (SdkCore, Set<TracingHeaderType>) -> Tracer
 ) : Interceptor {
 
@@ -130,18 +131,19 @@ internal constructor(
         tracedRequestListener: TracedRequestListener = NoOpTracedRequestListener(),
         traceSampler: Sampler<Span> = DeterministicTraceSampler(DEFAULT_TRACE_SAMPLE_RATE)
     ) : this(
-        sdkInstanceName,
-        tracedHosts.associateWith {
+        sdkInstanceName = sdkInstanceName,
+        tracedHosts = tracedHosts.associateWith {
             setOf(
                 TracingHeaderType.DATADOG,
                 TracingHeaderType.TRACECONTEXT
             )
         },
-        tracedRequestListener,
-        null,
-        traceSampler,
-        localTracerFactory = DEFAULT_LOCAL_TRACER_FACTORY,
-        traceContextInjection = TraceContextInjection.All
+        tracedRequestListener = tracedRequestListener,
+        traceOrigin = null,
+        traceSampler = traceSampler,
+        traceContextInjection = TraceContextInjection.All,
+        redacted404ResourceName = true,
+        localTracerFactory = DEFAULT_LOCAL_TRACER_FACTORY
     )
 
     /**
@@ -175,13 +177,14 @@ internal constructor(
         tracedRequestListener: TracedRequestListener = NoOpTracedRequestListener(),
         traceSampler: Sampler<Span> = DeterministicTraceSampler(DEFAULT_TRACE_SAMPLE_RATE)
     ) : this(
-        sdkInstanceName,
-        tracedHostsWithHeaderType,
-        tracedRequestListener,
-        null,
-        traceSampler,
-        localTracerFactory = DEFAULT_LOCAL_TRACER_FACTORY,
-        traceContextInjection = TraceContextInjection.All
+        sdkInstanceName = sdkInstanceName,
+        tracedHosts = tracedHostsWithHeaderType,
+        tracedRequestListener = tracedRequestListener,
+        traceOrigin = null,
+        traceSampler = traceSampler,
+        traceContextInjection = TraceContextInjection.All,
+        redacted404ResourceName = true,
+        localTracerFactory = DEFAULT_LOCAL_TRACER_FACTORY
     )
 
     /**
@@ -208,13 +211,14 @@ internal constructor(
         tracedRequestListener: TracedRequestListener = NoOpTracedRequestListener(),
         traceSampler: Sampler<Span> = DeterministicTraceSampler(DEFAULT_TRACE_SAMPLE_RATE)
     ) : this(
-        sdkInstanceName,
-        emptyMap(),
-        tracedRequestListener,
-        null,
-        traceSampler,
-        localTracerFactory = DEFAULT_LOCAL_TRACER_FACTORY,
-        traceContextInjection = TraceContextInjection.All
+        sdkInstanceName = sdkInstanceName,
+        tracedHosts = emptyMap(),
+        tracedRequestListener = tracedRequestListener,
+        traceOrigin = null,
+        traceSampler = traceSampler,
+        traceContextInjection = TraceContextInjection.All,
+        redacted404ResourceName = true,
+        localTracerFactory = DEFAULT_LOCAL_TRACER_FACTORY
     )
 
     // region Interceptor
@@ -715,7 +719,7 @@ internal constructor(
             if (statusCode in HttpURLConnection.HTTP_BAD_REQUEST until HttpURLConnection.HTTP_INTERNAL_ERROR) {
                 (span as? MutableSpan)?.isError = true
             }
-            if (statusCode == HttpURLConnection.HTTP_NOT_FOUND) {
+            if (statusCode == HttpURLConnection.HTTP_NOT_FOUND && redacted404ResourceName) {
                 (span as? MutableSpan)?.resourceName = RESOURCE_NAME_404
             }
             onRequestIntercepted(sdkCore, request, span, response, null)
@@ -807,6 +811,7 @@ internal constructor(
                 traceOrigin,
                 traceSampler,
                 traceContextInjection,
+                redacted404ResourceName,
                 localTracerFactory
             )
         }
@@ -824,6 +829,8 @@ internal constructor(
         internal var traceSampler: Sampler<Span> = DeterministicTraceSampler(DEFAULT_TRACE_SAMPLE_RATE)
         internal var localTracerFactory = DEFAULT_LOCAL_TRACER_FACTORY
         internal var traceContextInjection = TraceContextInjection.All
+
+        internal var redacted404ResourceName = true
 
         /**
          * Set the SDK instance name to bind to, the default value is null.
@@ -879,6 +886,18 @@ internal constructor(
          */
         fun setTraceContextInjection(traceContextInjection: TraceContextInjection): R {
             this.traceContextInjection = traceContextInjection
+            return getThis()
+        }
+
+        /**
+         * Set whether network requests returning a 404 status code should have their resource name redacted.
+         * In order to reduce the cardinality of resource names in APM, 404 URLs are automatically redacted to
+         * "404".
+         * @param redacted if true, all 404 requests will have a resource name set to "404", else the resource name
+         * will be the URL
+         */
+        fun set404ResourcesRedacted(redacted: Boolean): R {
+            redacted404ResourceName = redacted
             return getThis()
         }
 

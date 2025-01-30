@@ -58,4 +58,5 @@ open class com.datadog.android.okhttp.trace.TracingInterceptor : okhttp3.Interce
     fun setTraceSampleRate(Float): R
     fun setTraceSampler(com.datadog.android.core.sampling.Sampler<io.opentracing.Span>): R
     fun setTraceContextInjection(com.datadog.android.okhttp.TraceContextInjection): R
+    fun set404ResourcesRedacted(Boolean): R
     abstract fun build(): T

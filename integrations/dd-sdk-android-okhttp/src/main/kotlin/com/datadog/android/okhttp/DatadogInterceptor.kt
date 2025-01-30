@@ -79,6 +79,7 @@ open class DatadogInterceptor internal constructor(
     internal val rumResourceAttributesProvider: RumResourceAttributesProvider,
     traceSampler: Sampler<Span>,
     traceContextInjection: TraceContextInjection,
+    redacted404ResourceName: Boolean,
     localTracerFactory: (SdkCore, Set<TracingHeaderType>) -> Tracer
 ) : TracingInterceptor(
     sdkInstanceName,
@@ -87,6 +88,7 @@ open class DatadogInterceptor internal constructor(
     ORIGIN_RUM,
     traceSampler,
     traceContextInjection,
+    redacted404ResourceName,
     localTracerFactory
 ) {
 
@@ -135,6 +137,7 @@ open class DatadogInterceptor internal constructor(
         rumResourceAttributesProvider = rumResourceAttributesProvider,
         traceSampler = traceSampler,
         traceContextInjection = TraceContextInjection.All,
+        redacted404ResourceName = true,
         localTracerFactory = { sdkCore, tracingHeaderTypes ->
             AndroidTracer.Builder(sdkCore).setTracingHeaderTypes(tracingHeaderTypes).build()
         }
@@ -189,6 +192,7 @@ open class DatadogInterceptor internal constructor(
         rumResourceAttributesProvider = rumResourceAttributesProvider,
         traceSampler = traceSampler,
         traceContextInjection = TraceContextInjection.All,
+        redacted404ResourceName = true,
         localTracerFactory = { sdkCore, tracingHeaderTypes ->
             AndroidTracer.Builder(sdkCore).setTracingHeaderTypes(tracingHeaderTypes).build()
         }
@@ -229,6 +233,7 @@ open class DatadogInterceptor internal constructor(
         rumResourceAttributesProvider = rumResourceAttributesProvider,
         traceSampler = traceSampler,
         traceContextInjection = TraceContextInjection.All,
+        redacted404ResourceName = true,
         localTracerFactory = { sdkCore, tracingHeaderTypes ->
             AndroidTracer.Builder(sdkCore).setTracingHeaderTypes(tracingHeaderTypes).build()
         }
@@ -469,6 +474,7 @@ open class DatadogInterceptor internal constructor(
                 rumResourceAttributesProvider,
                 traceSampler,
                 traceContextInjection,
+                redacted404ResourceName,
                 localTracerFactory
             )
         }
