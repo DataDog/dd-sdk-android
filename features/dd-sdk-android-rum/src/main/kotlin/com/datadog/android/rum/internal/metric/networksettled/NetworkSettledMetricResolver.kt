@@ -13,6 +13,7 @@ import com.datadog.android.rum.internal.metric.ViewInitializationMetricsState
 import com.datadog.android.rum.metric.networksettled.InitialResourceIdentifier
 import com.datadog.android.rum.metric.networksettled.NetworkSettledResourceContext
 import com.datadog.android.rum.metric.networksettled.TimeBasedInitialResourceIdentifier
+import java.util.concurrent.atomic.AtomicInteger
 
 internal class NetworkSettledMetricResolver(
     private val initialResourceIdentifier: InitialResourceIdentifier = TimeBasedInitialResourceIdentifier(),
@@ -33,6 +34,10 @@ internal class NetworkSettledMetricResolver(
     @Volatile
     private var viewWasStopped: Boolean = false
 
+    // Although AtomicInteger's is being used for counters, we still need @Volatile here because we will re-create
+    // the Diagnostic instance when a new view is created.
+    // At that point, we need to be sure that every background thread sees the changes.
+    @Volatile
     private var currentViewDiagnostic = Diagnostic()
 
     fun viewWasCreated(eventTimestampInNanos: Long) {
@@ -42,7 +47,7 @@ internal class NetworkSettledMetricResolver(
 
     fun resourceWasStarted(context: InternalResourceContext) {
         if (viewWasStopped) return
-        currentViewDiagnostic.started += 1
+        currentViewDiagnostic.started.incrementAndGet()
         // check if the resource was is a network settled valid resource
         if (initialResourceIdentifier.validate(
                 NetworkSettledResourceContext(
@@ -53,7 +58,7 @@ internal class NetworkSettledMetricResolver(
             )
         ) {
             // check if we have a view created entry for this resource
-            currentViewDiagnostic.initial += 1
+            currentViewDiagnostic.initial.incrementAndGet()
             resourceStartedTimestamps.add(context.resourceId)
         }
     }
@@ -65,7 +70,7 @@ internal class NetworkSettledMetricResolver(
         val resourceStartedTimestamp = resourceStartedTimestamps.remove(context.resourceId)
         // check if we have a start timestamp for this resource
         if (currentViewCreatedTimestamp != null && resourceStartedTimestamp) {
-            currentViewDiagnostic.stopped += 1
+            currentViewDiagnostic.stopped.incrementAndGet()
             val networkToSettledDuration = context.eventCreatedAtNanos - currentViewCreatedTimestamp
             if (networkToSettledDuration > currentNetworkSettleMaxValue) {
                 networkSettleMaxValue = networkToSettledDuration
@@ -75,7 +80,7 @@ internal class NetworkSettledMetricResolver(
 
     fun resourceWasDropped(resourceId: String) {
         if (viewWasStopped) return
-        currentViewDiagnostic.dropped += 1
+        currentViewDiagnostic.dropped.incrementAndGet()
         resourceStartedTimestamps.remove(resourceId)
     }
 
@@ -140,16 +145,23 @@ internal class NetworkSettledMetricResolver(
         }
 
         private class Diagnostic(
-            var started: Int = 0,
-            var initial: Int = 0,
-            var stopped: Int = 0,
-            var dropped: Int = 0
+            var started: AtomicInteger = AtomicInteger(0),
+            var initial: AtomicInteger = AtomicInteger(0),
+            var stopped: AtomicInteger = AtomicInteger(0),
+            var dropped: AtomicInteger = AtomicInteger(0)
         ) {
-            fun resolveNoValueReason() = when {
-                started == 0 -> NoValueReason.TimeToNetworkSettle.NO_RESOURCES
-                initial == 0 -> NoValueReason.TimeToNetworkSettle.NO_INITIAL_RESOURCES
-                initial > dropped + stopped -> NoValueReason.TimeToNetworkSettle.NOT_SETTLED_YET
-                else -> NoValueReason.TimeToNetworkSettle.UNKNOWN
+            fun resolveNoValueReason(): NoValueReason.TimeToNetworkSettle {
+                val startedRequests = started.get()
+                val initialRequests = initial.get()
+                val droppedRequests = dropped.get()
+                val stoppedRequests = stopped.get()
+
+                return when {
+                    startedRequests == 0 -> NoValueReason.TimeToNetworkSettle.NO_RESOURCES
+                    initialRequests == 0 -> NoValueReason.TimeToNetworkSettle.NO_INITIAL_RESOURCES
+                    initialRequests > droppedRequests + stoppedRequests -> NoValueReason.TimeToNetworkSettle.NOT_SETTLED_YET
+                    else -> NoValueReason.TimeToNetworkSettle.UNKNOWN
+                }
             }
         }
     }

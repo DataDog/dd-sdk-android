@@ -9,13 +9,11 @@ import com.datadog.tools.annotation.NoOpImplementation
 
 @NoOpImplementation
 internal interface ViewMetricDispatcher {
-    fun sendViewEnded(invState: ViewInitializationMetricsState, tnsState: ViewInitializationMetricsState)
+    fun sendViewEnded(
+        invState: ViewInitializationMetricsState,
+        tnsState: ViewInitializationMetricsState
+    )
+
     fun onDurationResolved(newDuration: Long)
     fun onViewLoadingTimeResolved(newLoadingTime: Long)
-
-    enum class ViewType {
-        APPLICATION,
-        BACKGROUND,
-        CUSTOM
-    }
 }

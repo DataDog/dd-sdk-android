@@ -130,7 +130,7 @@ internal class TimeBasedInteractionIdentifierTest : ObjectTest<TimeBasedInteract
     }
 
     @Test
-    fun `M return true W defaultThresholdUsed{custom delay used}`(forge: Forge) {
+    fun `M return false W defaultThresholdUsed{custom delay used}`(forge: Forge) {
         // Given
         val testedValidator = TimeBasedInteractionIdentifier(
             TimeBasedInteractionIdentifier.DEFAULT_TIME_THRESHOLD_MS + forge.aLong(min = 0, max = 100)

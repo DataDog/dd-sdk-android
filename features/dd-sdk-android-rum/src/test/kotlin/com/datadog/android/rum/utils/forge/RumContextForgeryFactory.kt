@@ -8,7 +8,7 @@ package com.datadog.android.rum.utils.forge
 
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.scope.RumSessionScope
-import com.datadog.android.rum.internal.domain.scope.RumViewScope
+import com.datadog.android.rum.internal.domain.scope.RumViewType
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
 import java.util.UUID
@@ -25,7 +25,7 @@ internal class RumContextForgeryFactory : ForgeryFactory<RumContext> {
             actionId = forge.aNullable { getForgery<UUID>().toString() },
             sessionState = forge.aValueFrom(RumSessionScope.State::class.java),
             sessionStartReason = forge.aValueFrom(RumSessionScope.StartReason::class.java),
-            viewType = forge.aValueFrom(RumViewScope.RumViewType::class.java),
+            viewType = forge.aValueFrom(RumViewType::class.java),
             syntheticsTestId = forge.aNullable { forge.anAlphaNumericalString() },
             syntheticsResultId = forge.aNullable { forge.anAlphaNumericalString() }
         )

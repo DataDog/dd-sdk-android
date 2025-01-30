@@ -832,11 +832,6 @@ internal open class RumViewScope(
             memoryVitalMonitor.unregister(memoryVitalListener)
             frameRateVitalMonitor.unregister(frameRateVitalListener)
             networkSettledMetricResolver.viewWasStopped()
-
-            viewEndedMetricDispatcher.sendViewEnded(
-                interactionToNextViewMetricResolver.getState(viewId),
-                networkSettledMetricResolver.getState()
-            )
         }
     }
 
@@ -882,6 +877,12 @@ internal open class RumViewScope(
         val eventFeatureFlags = featureFlags.toMutableMap()
         val eventAdditionalAttributes = (eventAttributes + globalAttributes).toMutableMap()
 
+        if (isViewComplete() && getRumContext().sessionState != RumSessionScope.State.NOT_TRACKED) {
+            viewEndedMetricDispatcher.sendViewEnded(
+                interactionToNextViewMetricResolver.getState(viewId),
+                networkSettledMetricResolver.getState()
+            )
+        }
         sdkCore.newRumEventWriteOperation(writer, eventType) { datadogContext ->
             val currentViewId = rumContext.viewId.orEmpty()
             val user = datadogContext.userInfo
@@ -1343,18 +1344,6 @@ internal open class RumViewScope(
         }
     }
 
-    enum class RumViewType(val asString: String) {
-        NONE("NONE"),
-        FOREGROUND("FOREGROUND"),
-        BACKGROUND("BACKGROUND"),
-        APPLICATION_LAUNCH("APPLICATION_LAUNCH");
-
-        companion object {
-            fun fromString(string: String?): RumViewType? {
-                return values().firstOrNull { it.asString == string }
-            }
-        }
-    }
     // endregion
 
     companion object {
@@ -1403,7 +1392,7 @@ internal open class RumViewScope(
             )
 
             val viewEndedMetricDispatcher = ViewEndedMetricDispatcher(
-                viewType = ViewMetricDispatcher.ViewType.CUSTOM,
+                viewType = RumViewType.FOREGROUND,
                 internalLogger = sdkCore.internalLogger
             )
 

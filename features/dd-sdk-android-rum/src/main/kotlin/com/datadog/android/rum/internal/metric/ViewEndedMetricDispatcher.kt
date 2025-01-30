@@ -8,9 +8,10 @@ package com.datadog.android.rum.internal.metric
 import androidx.annotation.VisibleForTesting
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.InternalLogger.Target
+import com.datadog.android.rum.internal.domain.scope.RumViewType
 
 internal class ViewEndedMetricDispatcher(
-    private val viewType: ViewMetricDispatcher.ViewType,
+    private val viewType: RumViewType,
     private val internalLogger: InternalLogger,
     private val samplingRate: Float = DEFAULT_SAMPLE_RATE
 ) : ViewMetricDispatcher {
@@ -21,11 +22,12 @@ internal class ViewEndedMetricDispatcher(
 
     override fun sendViewEnded(invState: ViewInitializationMetricsState, tnsState: ViewInitializationMetricsState) {
         if (metricSent) {
-            return internalLogger.log(
+            internalLogger.log(
                 InternalLogger.Level.WARN,
                 target = Target.TELEMETRY,
                 messageBuilder = { "Trying to send 'view ended' more than once" }
             )
+            return
         }
 
         internalLogger.logMetric(
@@ -83,7 +85,7 @@ internal class ViewEndedMetricDispatcher(
     }
 
     companion object {
-        const val DEFAULT_SAMPLE_RATE: Float = 0.75f
+        const val DEFAULT_SAMPLE_RATE: Float = 75f
 
         internal const val VIEW_ENDED_MESSAGE = "[Mobile Metric] RUM View Ended"
 
@@ -93,7 +95,7 @@ internal class ViewEndedMetricDispatcher(
 
         internal const val KEY_RVE = "rve"
         internal const val KEY_DURATION = "duration"
-        internal const val KEY_LOADING_TIME = "loading_time_value"
+        internal const val KEY_LOADING_TIME = "loading_time"
 
         internal const val KEY_TIME_TO_NETWORK_SETTLED = "tns"
         internal const val KEY_VALUE = "value"
@@ -121,15 +123,14 @@ internal class ViewEndedMetricDispatcher(
             if (value != null) put(key, value)
         }
 
-        @JvmStatic
         @VisibleForTesting
-        internal fun toAttributeValue(viewType: ViewMetricDispatcher.ViewType) = when (viewType) {
-            ViewMetricDispatcher.ViewType.CUSTOM -> VALUE_CUSTOM
-            ViewMetricDispatcher.ViewType.BACKGROUND -> VALUE_BACKGROUND
-            ViewMetricDispatcher.ViewType.APPLICATION -> VALUE_APPLICATION_LAUNCH
+        internal fun toAttributeValue(viewType: RumViewType) = when (viewType) {
+            RumViewType.NONE,
+            RumViewType.FOREGROUND -> VALUE_CUSTOM
+            RumViewType.BACKGROUND -> VALUE_BACKGROUND
+            RumViewType.APPLICATION_LAUNCH -> VALUE_APPLICATION_LAUNCH
         }
 
-        @JvmStatic
         @VisibleForTesting
         internal fun toAttributeValue(config: ViewInitializationMetricsConfig): String = when (config) {
             ViewInitializationMetricsConfig.CUSTOM -> VALUE_CUSTOM
@@ -137,7 +138,6 @@ internal class ViewEndedMetricDispatcher(
             ViewInitializationMetricsConfig.TIME_BASED_CUSTOM -> VALUE_TIME_BASED_CUSTOM
         }
 
-        @JvmStatic
         @VisibleForTesting
         internal fun toAttributeValue(reason: NoValueReason?): String {
             return when (reason) {

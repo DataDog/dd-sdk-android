@@ -7,6 +7,7 @@ package com.datadog.android.rum.metric
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.InternalLogger.Target
+import com.datadog.android.rum.internal.domain.scope.RumViewType
 import com.datadog.android.rum.internal.metric.NoValueReason
 import com.datadog.android.rum.internal.metric.ViewEndedMetricDispatcher
 import com.datadog.android.rum.internal.metric.ViewEndedMetricDispatcher.Companion.KEY_CONFIG
@@ -23,7 +24,7 @@ import com.datadog.android.rum.internal.metric.ViewEndedMetricDispatcher.Compani
 import com.datadog.android.rum.internal.metric.ViewEndedMetricDispatcher.Companion.toAttributeValue
 import com.datadog.android.rum.internal.metric.ViewInitializationMetricsConfig
 import com.datadog.android.rum.internal.metric.ViewInitializationMetricsState
-import com.datadog.android.rum.internal.metric.ViewMetricDispatcher.ViewType
+
 import com.datadog.android.rum.utils.forge.Configurator
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.FloatForgery
@@ -65,7 +66,7 @@ internal class ViewEndedMetricDispatcherTest {
     @LongForgery(min = 0)
     private var fakeLoadingTime: Long = 0
 
-    private lateinit var fakeViewType: ViewType
+    private lateinit var fakeViewType: RumViewType
     private lateinit var fakeInvState: ViewInitializationMetricsState
     private lateinit var fakeTnsState: ViewInitializationMetricsState
 
@@ -73,7 +74,7 @@ internal class ViewEndedMetricDispatcherTest {
 
     @BeforeEach
     fun `set up`(forge: Forge) {
-        fakeViewType = forge.aValueFrom(ViewType::class.java)
+        fakeViewType = forge.aValueFrom(RumViewType::class.java)
         fakeTnsState = forge.aViewInitializationMetricsState(NoValueReason.TimeToNetworkSettle::class.java)
         fakeInvState = forge.aViewInitializationMetricsState(NoValueReason.InteractionToNextView::class.java)
 
@@ -184,11 +185,12 @@ internal class ViewEndedMetricDispatcherTest {
 
     @Test
     fun `M return valid string W toAttributeValue(ViewType)`() {
-        toExhaustiveMap(ViewType::class.java) {
+        toExhaustiveMap(RumViewType::class.java) {
             when (it) {
-                ViewType.CUSTOM -> "custom"
-                ViewType.BACKGROUND -> "background"
-                ViewType.APPLICATION -> "application_launch"
+                RumViewType.NONE,
+                RumViewType.FOREGROUND -> "custom"
+                RumViewType.BACKGROUND -> "background"
+                RumViewType.APPLICATION_LAUNCH -> "application_launch"
             }
         }.forEach { (viewType, expectedValue) ->
             // When
@@ -202,7 +204,7 @@ internal class ViewEndedMetricDispatcherTest {
     private fun expectedAttributes(
         duration: Long? = fakeDuration,
         loadingTime: Long? = fakeLoadingTime,
-        viewType: ViewType = fakeViewType,
+        viewType: RumViewType = fakeViewType,
         invState: ViewInitializationMetricsState = fakeInvState,
         tnsState: ViewInitializationMetricsState = fakeTnsState
     ) = buildAttributesMap(

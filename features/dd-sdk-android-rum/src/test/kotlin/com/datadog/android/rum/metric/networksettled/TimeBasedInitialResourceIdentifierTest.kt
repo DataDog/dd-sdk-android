@@ -91,7 +91,7 @@ internal class TimeBasedInitialResourceIdentifierTest : ObjectTest<TimeBasedInit
     }
 
     @Test
-    fun `M return true W defaultThresholdUsed{custom delay used}`(forge: Forge) {
+    fun `M return false W defaultThresholdUsed{custom delay used}`(forge: Forge) {
         // Given
         val testedValidator = TimeBasedInitialResourceIdentifier(
             TimeBasedInitialResourceIdentifier.DEFAULT_TIME_THRESHOLD_MS + forge.aTinyPositiveLong()

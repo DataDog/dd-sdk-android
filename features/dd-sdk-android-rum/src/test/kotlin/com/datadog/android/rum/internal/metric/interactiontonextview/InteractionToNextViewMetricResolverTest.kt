@@ -58,9 +58,9 @@ internal class InteractionToNextViewMetricResolverTest {
     // region setup
 
     @BeforeEach
-    fun `set up`() {
-        fakeViewId = "current" // forge.generateViewId()
-        fakeFirstViewId = "previous" // forge.generateViewId()
+    fun `set up`(forge: Forge) {
+        fakeViewId =  forge.generateViewId()
+        fakeFirstViewId = forge.generateViewId()
         testedMetric = InteractionToNextViewMetricResolver(
             mockInternalLogger,
             mockInteractionValidator,

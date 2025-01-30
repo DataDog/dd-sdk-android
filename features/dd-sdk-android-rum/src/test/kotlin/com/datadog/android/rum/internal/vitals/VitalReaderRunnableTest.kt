@@ -10,7 +10,7 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.rum.internal.domain.RumContext
-import com.datadog.android.rum.internal.domain.scope.RumViewScope
+import com.datadog.android.rum.internal.domain.scope.RumViewType
 import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.android.rum.utils.verifyLog
 import fr.xgouchet.elmyr.Forge
@@ -71,7 +71,7 @@ internal class VitalReaderRunnableTest {
     @BeforeEach
     fun `set up`(forge: Forge) {
         val rumContext = forge.getForgery<RumContext>()
-            .copy(viewType = RumViewScope.RumViewType.FOREGROUND).toMap()
+            .copy(viewType = RumViewType.FOREGROUND).toMap()
         whenever(mockSdkCore.getFeatureContext(Feature.RUM_FEATURE_NAME)) doReturn rumContext
         whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
         testedRunnable = VitalReaderRunnable(
@@ -100,12 +100,12 @@ internal class VitalReaderRunnableTest {
 
     @ParameterizedTest
     @EnumSource(
-        value = RumViewScope.RumViewType::class,
+        value = RumViewType::class,
         names = ["FOREGROUND"],
         mode = EnumSource.Mode.EXCLUDE
     )
     fun `M not read data, not notify observer but schedule W run { viewType != FOREGROUND }()`(
-        viewType: RumViewScope.RumViewType,
+        viewType: RumViewType,
         forge: Forge
     ) {
         // Given

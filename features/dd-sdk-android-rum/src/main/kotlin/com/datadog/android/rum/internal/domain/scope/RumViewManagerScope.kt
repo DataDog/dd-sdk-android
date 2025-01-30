@@ -268,13 +268,14 @@ internal class RumViewManagerScope(
     }
 
     private fun createBackgroundViewScope(event: RumRawEvent): RumViewScope {
+        val viewType = RumViewType.BACKGROUND
         val networkSettledMetricResolver = NetworkSettledMetricResolver(
             initialResourceIdentifier,
             sdkCore.internalLogger
         )
 
         val viewEndedMetricDispatcher = ViewEndedMetricDispatcher(
-            viewType = ViewMetricDispatcher.ViewType.BACKGROUND,
+            viewType = viewType,
             internalLogger = sdkCore.internalLogger
         )
 
@@ -294,7 +295,7 @@ internal class RumViewManagerScope(
             NoOpVitalMonitor(),
             NoOpVitalMonitor(),
             NoOpVitalMonitor(),
-            type = RumViewScope.RumViewType.BACKGROUND,
+            type = viewType,
             trackFrustrations = trackFrustrations,
             sampleRate = sampleRate,
             interactionToNextViewMetricResolver = interactionToNextViewMetricResolver,
@@ -304,13 +305,14 @@ internal class RumViewManagerScope(
     }
 
     private fun createAppLaunchViewScope(time: Time): RumViewScope {
+        val viewType = RumViewType.APPLICATION_LAUNCH
         val networkSettledMetricResolver = NetworkSettledMetricResolver(
             initialResourceIdentifier,
             sdkCore.internalLogger
         )
 
         val viewEndedMetricDispatcher = ViewEndedMetricDispatcher(
-            viewType = ViewMetricDispatcher.ViewType.APPLICATION,
+            viewType = viewType,
             internalLogger = sdkCore.internalLogger
         )
 
@@ -330,7 +332,7 @@ internal class RumViewManagerScope(
             NoOpVitalMonitor(),
             NoOpVitalMonitor(),
             NoOpVitalMonitor(),
-            type = RumViewScope.RumViewType.APPLICATION_LAUNCH,
+            type = viewType,
             trackFrustrations = trackFrustrations,
             sampleRate = sampleRate,
             interactionToNextViewMetricResolver = interactionToNextViewMetricResolver,
