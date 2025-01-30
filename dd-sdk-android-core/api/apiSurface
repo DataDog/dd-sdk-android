@@ -89,7 +89,7 @@ data class com.datadog.android.api.context.ProcessInfo
 data class com.datadog.android.api.context.TimeInfo
   constructor(Long, Long, Long, Long)
 data class com.datadog.android.api.context.UserInfo
-  constructor(kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, Map<kotlin.String, kotlin.Any?> = emptyMap())
+  constructor(kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, Map<kotlin.String, kotlin.Any?> = emptyMap())
 interface com.datadog.android.api.feature.Feature
   val name: String
   fun onInitialize(android.content.Context)
@@ -123,6 +123,7 @@ interface com.datadog.android.api.feature.FeatureSdkCore : com.datadog.android.a
   fun removeEventReceiver(String)
   fun createSingleThreadExecutorService(String): java.util.concurrent.ExecutorService
   fun createScheduledExecutorService(String): java.util.concurrent.ScheduledExecutorService
+  fun setAnonymousId(java.util.UUID?)
 interface com.datadog.android.api.feature.StorageBackedFeature : Feature
   val requestFactory: com.datadog.android.api.net.RequestFactory
   val storageConfiguration: com.datadog.android.api.storage.FeatureStorageConfiguration
