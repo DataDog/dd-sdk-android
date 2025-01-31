@@ -74,7 +74,7 @@ object Rum {
         sdkCore.registerFeature(rumFeature)
 
         sdkCore.getFeature(rumFeature.name)?.dataStore?.let {
-            AnonymousIdentifierManager.manageAnonymousId(
+            RumAnonymousIdentifierManager.manageAnonymousId(
                 rumConfiguration.featureConfiguration.trackAnonymousUser,
                 it,
                 sdkCore

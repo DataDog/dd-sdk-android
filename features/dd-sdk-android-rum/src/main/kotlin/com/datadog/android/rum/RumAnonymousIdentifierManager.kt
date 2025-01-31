@@ -14,35 +14,34 @@ import com.datadog.android.core.persistence.Serializer
 import com.datadog.android.core.persistence.datastore.DataStoreContent
 import java.util.UUID
 
-internal class AnonymousIdentifierManager {
-    companion object {
-        fun manageAnonymousId(shouldTrack: Boolean, dataStore: DataStoreHandler, core: FeatureSdkCore) {
-            val anonymousIdKey = "anonymous"
-            if (shouldTrack) {
-                dataStore.value(
-                    anonymousIdKey,
-                    null,
-                    AnonymousIdentifierReadCallback { anonymousId ->
-                        if (anonymousId == null) {
-                            val newAnonymousId = UUID.randomUUID()
-                            dataStore.setValue(
-                                anonymousIdKey,
-                                newAnonymousId,
-                                0,
-                                null,
-                                AnonymousIdentifierSerializer()
-                            )
-                            core.setAnonymousId(newAnonymousId)
-                        } else {
-                            core.setAnonymousId(anonymousId)
-                        }
-                    },
-                    AnonymousIdentifierDeserializer()
-                )
-            } else {
-                dataStore.removeValue(anonymousIdKey)
-                core.setAnonymousId(null)
-            }
+object RumAnonymousIdentifierManager {
+    @JvmStatic
+    fun manageAnonymousId(shouldTrack: Boolean, dataStore: DataStoreHandler, core: FeatureSdkCore) {
+        val anonymousIdKey = "anonymous_id_key"
+        if (shouldTrack) {
+            dataStore.value(
+                anonymousIdKey,
+                null,
+                AnonymousIdentifierReadCallback { anonymousId ->
+                    if (anonymousId == null) {
+                        val newAnonymousId = UUID.randomUUID()
+                        dataStore.setValue(
+                            anonymousIdKey,
+                            newAnonymousId,
+                            0,
+                            null,
+                            AnonymousIdentifierSerializer()
+                        )
+                        core.setAnonymousId(newAnonymousId)
+                    } else {
+                        core.setAnonymousId(anonymousId)
+                    }
+                },
+                AnonymousIdentifierDeserializer()
+            )
+        } else {
+            dataStore.removeValue(anonymousIdKey)
+            core.setAnonymousId(null)
         }
     }
 }

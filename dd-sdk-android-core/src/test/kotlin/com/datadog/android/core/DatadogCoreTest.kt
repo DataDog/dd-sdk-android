@@ -77,6 +77,7 @@ import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.util.Collections
 import java.util.Locale
+import java.util.UUID
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Future
 import java.util.concurrent.TimeUnit
@@ -226,6 +227,22 @@ internal class DatadogCoreTest {
 
         // Then
         verify(mockUserInfoProvider).setUserInfo(id, name, email, fakeUserProperties)
+    }
+
+    @Test
+    fun `M update anonymousId W setAnonymousId()`(
+        forge: Forge
+    ) {
+        // Given
+        val uuid = forge.getForgery<UUID>()
+        val mockUserInfoProvider = mock<MutableUserInfoProvider>()
+        testedCore.coreFeature.userInfoProvider = mockUserInfoProvider
+
+        // When
+        testedCore.setAnonymousId(uuid)
+
+        // Then
+        verify(mockUserInfoProvider).setAnonymousId(uuid.toString())
     }
 
     @Test

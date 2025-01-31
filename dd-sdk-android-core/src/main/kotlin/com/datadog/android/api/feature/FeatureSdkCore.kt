@@ -17,6 +17,7 @@ import java.util.concurrent.ScheduledExecutorService
  *
  * SDK core is always guaranteed to implement this interface.
  */
+@Suppress("TooManyFunctions")
 interface FeatureSdkCore : SdkCore {
 
     /**

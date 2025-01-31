@@ -49,7 +49,8 @@ internal class ConfigurationRumForgeryFactory :
             sessionListener = mock(),
             additionalConfig = forge.aMap { aString() to aString() },
             initialResourceIdentifier = mock(),
-            lastInteractionIdentifier = mock()
+            lastInteractionIdentifier = mock(),
+            trackAnonymousUser = forge.aBool()
         )
     }
 }

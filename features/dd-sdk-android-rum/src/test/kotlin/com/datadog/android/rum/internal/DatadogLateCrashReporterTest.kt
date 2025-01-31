@@ -182,6 +182,7 @@ internal class DatadogLateCrashReporterTest {
                 .hasTimestamp(fakeTimestamp + fakeServerOffset)
                 .hasUserInfo(
                     UserInfo(
+                        fakeViewEvent.usr?.anonymousId,
                         fakeViewEvent.usr?.id,
                         fakeViewEvent.usr?.name,
                         fakeViewEvent.usr?.email,
@@ -283,6 +284,7 @@ internal class DatadogLateCrashReporterTest {
                 .hasTimestamp(fakeTimestamp + fakeServerOffset)
                 .hasUserInfo(
                     UserInfo(
+                        fakeViewEvent.usr?.anonymousId,
                         fakeViewEvent.usr?.id,
                         fakeViewEvent.usr?.name,
                         fakeViewEvent.usr?.email,
@@ -531,6 +533,7 @@ internal class DatadogLateCrashReporterTest {
                 .hasTimestamp(fakeTimestamp + fakeServerOffset)
                 .hasUserInfo(
                     UserInfo(
+                        fakeViewEvent.usr?.anonymousId,
                         fakeViewEvent.usr?.id,
                         fakeViewEvent.usr?.name,
                         fakeViewEvent.usr?.email,
@@ -728,6 +731,7 @@ internal class DatadogLateCrashReporterTest {
                 .hasTimestamp(fakeTimestamp + fakeServerOffset)
                 .hasUserInfo(
                     UserInfo(
+                        fakeViewEvent.usr?.anonymousId,
                         fakeViewEvent.usr?.id,
                         fakeViewEvent.usr?.name,
                         fakeViewEvent.usr?.email,
@@ -905,6 +909,7 @@ internal class DatadogLateCrashReporterTest {
                 .hasTimestamp(fakeTimestamp + fakeServerOffset)
                 .hasUserInfo(
                     UserInfo(
+                        fakeViewEvent.usr?.anonymousId,
                         fakeViewEvent.usr?.id,
                         fakeViewEvent.usr?.name,
                         fakeViewEvent.usr?.email,
