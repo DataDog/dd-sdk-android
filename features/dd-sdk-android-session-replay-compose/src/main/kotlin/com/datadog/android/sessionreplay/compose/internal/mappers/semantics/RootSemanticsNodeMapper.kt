@@ -27,12 +27,12 @@ internal class RootSemanticsNodeMapper(
     private val colorStringFormatter: ColorStringFormatter,
     private val semanticsUtils: SemanticsUtils = SemanticsUtils(),
     private val semanticsNodeMapper: Map<Role, SemanticsNodeMapper> = mapOf(
-        // TODO RUM-6189 Add Mappers for each Semantics Role
         Role.RadioButton to RadioButtonSemanticsNodeMapper(colorStringFormatter, semanticsUtils),
         Role.Tab to TabSemanticsNodeMapper(colorStringFormatter, semanticsUtils),
         Role.Button to ButtonSemanticsNodeMapper(colorStringFormatter, semanticsUtils),
         Role.Image to ImageSemanticsNodeMapper(colorStringFormatter, semanticsUtils),
-        Role.Checkbox to CheckboxSemanticsNodeMapper(colorStringFormatter, semanticsUtils)
+        Role.Checkbox to CheckboxSemanticsNodeMapper(colorStringFormatter, semanticsUtils),
+        Role.Switch to SwitchSemanticsNodeMapper(colorStringFormatter, semanticsUtils)
     ),
     // Text doesn't have a role in semantics, so it should be a fallback mapper.
     private val textSemanticsNodeMapper: TextSemanticsNodeMapper = TextSemanticsNodeMapper(
@@ -46,6 +46,10 @@ internal class RootSemanticsNodeMapper(
         semanticsUtils
     ),
     private val composeHiddenMapper: ComposeHiddenMapper = ComposeHiddenMapper(
+        colorStringFormatter,
+        semanticsUtils
+    ),
+    private val sliderSemanticsNodeMapper: SliderSemanticsNodeMapper = SliderSemanticsNodeMapper(
         colorStringFormatter,
         semanticsUtils
     )
@@ -145,12 +149,11 @@ internal class RootSemanticsNodeMapper(
         semanticsNode: SemanticsNode
     ): SemanticsNodeMapper {
         val role = semanticsNode.config.getOrNull(SemanticsProperties.Role)
-        return semanticsNodeMapper[role] ?: if (isTextFieldNode(semanticsNode)) {
-            textFieldSemanticsNodeMapper
-        } else if (isTextNode(semanticsNode)) {
-            textSemanticsNodeMapper
-        } else {
-            containerSemanticsNodeMapper
+        return semanticsNodeMapper[role] ?: when {
+            isTextFieldNode(semanticsNode) -> textFieldSemanticsNodeMapper
+            isTextNode(semanticsNode) -> textSemanticsNodeMapper
+            isSliderNode(semanticsNode) -> sliderSemanticsNodeMapper
+            else -> containerSemanticsNodeMapper
         }
     }
 
@@ -161,6 +164,10 @@ internal class RootSemanticsNodeMapper(
 
     private fun isTextFieldNode(semanticsNode: SemanticsNode): Boolean {
         return semanticsNode.config.contains(SemanticsActions.SetText)
+    }
+
+    private fun isSliderNode(semanticsNode: SemanticsNode): Boolean {
+        return semanticsUtils.getProgressBarRangeInfo(semanticsNode) != null
     }
 
     @UiThread

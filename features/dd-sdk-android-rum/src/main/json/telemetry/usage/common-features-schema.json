@@ -89,6 +89,17 @@
     },
     {
       "required": ["feature"],
+      "title": "SetAccount",
+      "properties": {
+        "feature": {
+          "type": "string",
+          "description": "setAccount, setAccountProperty APIs",
+          "const": "set-account"
+        }
+      }
+    },
+    {
+      "required": ["feature"],
       "title": "AddFeatureFlagEvaluation",
       "properties": {
         "feature": {

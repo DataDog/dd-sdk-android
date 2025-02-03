@@ -40,15 +40,18 @@ internal object ComposeReflection {
     val ColorField = BackgroundElementClass?.getDeclaredFieldSafe("color")
     val ShapeField = BackgroundElementClass?.getDeclaredFieldSafe("shape")
 
-    val CheckDrawingCacheClass = getClassSafe("androidx.compose.material.CheckDrawingCache")
-    val CheckboxKtClass = getClassSafe("androidx.compose.material.CheckboxKt\$CheckboxImpl\$1\$1")
     val DrawBehindElementClass = getClassSafe("androidx.compose.ui.draw.DrawBehindElement")
+    val CheckboxKtClass = getClassSafe("androidx.compose.material.CheckboxKt\$CheckboxImpl\$1\$1")
+    val RadioButtonKtClass = getClassSafe("androidx.compose.material.RadioButtonKt\$RadioButton\$2\$1")
+    val CheckDrawingCacheClass = getClassSafe("androidx.compose.material.CheckDrawingCache")
+
     val BorderColorField = CheckboxKtClass?.getDeclaredFieldSafe("\$borderColor\$delegate")
     val BoxColorField = CheckboxKtClass?.getDeclaredFieldSafe("\$boxColor\$delegate")
     val CheckCacheField = CheckboxKtClass?.getDeclaredFieldSafe("\$checkCache")
     val CheckColorField = CheckboxKtClass?.getDeclaredFieldSafe("\$checkColor\$delegate")
     val CheckPathField = CheckDrawingCacheClass?.getDeclaredFieldSafe("checkPath")
     val OnDrawField = DrawBehindElementClass?.getDeclaredFieldSafe("onDraw")
+    val RadioColorField = RadioButtonKtClass?.getDeclaredFieldSafe("\$radioColor")
 
     val PaddingElementClass = getClassSafe("androidx.compose.foundation.layout.PaddingElement")
     val StartField = PaddingElementClass?.getDeclaredFieldSafe("start")
@@ -81,22 +84,39 @@ internal object ComposeReflection {
     val PainterFieldOfContentPainterModifier =
         ContentPainterModifierClass?.getDeclaredFieldSafe("painter")
 
-    val ContentPainterElementClass = getClassSafe("coil.compose.ContentPainterElement")
+    val ContentPainterElementClass = getClassSafe(
+        "coil.compose.ContentPainterElement",
+        isCritical = false
+    )
     val PainterFieldOfContentPainterElement =
         ContentPainterElementClass?.getDeclaredFieldSafe("painter")
 
-    val AsyncImagePainterClass = getClassSafe("coil.compose.AsyncImagePainter")
+    val AsyncImagePainterClass = getClassSafe(
+        "coil.compose.AsyncImagePainter",
+        isCritical = false
+    )
     val PainterFieldOfAsyncImagePainter = AsyncImagePainterClass?.getDeclaredFieldSafe("_painter")
 
     // Region of MultiParagraph text
-    val ParagraphInfoListField =
-        MultiParagraph::class.java.getDeclaredFieldSafe("paragraphInfoList")
+    val ParagraphInfoListField = MultiParagraph::class.java.getDeclaredFieldSafe(
+        "paragraphInfoList",
+        isCritical = false
+    )
     val ParagraphInfoClass = getClassSafe("androidx.compose.ui.text.ParagraphInfo")
-    val ParagraphField = ParagraphInfoClass?.getDeclaredFieldSafe("paragraph")
+    val ParagraphField = ParagraphInfoClass?.getDeclaredFieldSafe(
+        "paragraph",
+        isCritical = false
+    )
     val AndroidParagraphClass = getClassSafe("androidx.compose.ui.text.AndroidParagraph")
-    val LayoutField = AndroidParagraphClass?.getDeclaredFieldSafe("layout")
+    val LayoutField = AndroidParagraphClass?.getDeclaredFieldSafe(
+        "layout",
+        isCritical = false
+    )
     val TextLayoutClass = getClassSafe("androidx.compose.ui.text.android.TextLayout")
-    val StaticLayoutField = TextLayoutClass?.getDeclaredFieldSafe("layout")
+    val StaticLayoutField = TextLayoutClass?.getDeclaredFieldSafe(
+        "layout",
+        isCritical = false
+    )
 }
 
 internal fun Field.accessible(): Field {
@@ -128,49 +148,70 @@ internal fun Field.getSafe(target: Any?): Any? {
     }
 }
 
-internal fun getClassSafe(className: String): Class<*>? {
+internal fun getClassSafe(className: String, isCritical: Boolean = true): Class<*>? {
     return try {
         Class.forName(className)
     } catch (e: LinkageError) {
-        logReflectionException(className, LOG_TYPE_CLASS, LOG_REASON_LINKAGE_ERROR, e)
+        if (isCritical) {
+            logReflectionException(className, LOG_TYPE_CLASS, LOG_REASON_LINKAGE_ERROR, e)
+        }
         null
     } catch (e: ExceptionInInitializerError) {
-        logReflectionException(className, LOG_TYPE_CLASS, LOG_REASON_INITIALIZATION_ERROR, e)
+        if (isCritical) {
+            logReflectionException(className, LOG_TYPE_CLASS, LOG_REASON_INITIALIZATION_ERROR, e)
+        }
         null
     } catch (e: ClassNotFoundException) {
-        logNoSuchException(className, LOG_TYPE_CLASS, e)
+        if (isCritical) {
+            logNoSuchException(className, LOG_TYPE_CLASS, e)
+        }
         null
     }
 }
 
 @Suppress("TooGenericExceptionCaught")
-internal fun Class<*>.getDeclaredFieldSafe(fieldName: String): Field? {
+internal fun Class<*>.getDeclaredFieldSafe(fieldName: String, isCritical: Boolean = true): Field? {
     return try {
         getDeclaredField(fieldName).accessible()
     } catch (e: SecurityException) {
-        logSecurityException(fieldName, LOG_TYPE_FIELD, e)
+        if (isCritical) {
+            logSecurityException(fieldName, LOG_TYPE_FIELD, e)
+        }
         null
     } catch (e: NullPointerException) {
-        logNullPointerException(fieldName, LOG_TYPE_FIELD, e)
+        if (isCritical) {
+            logNullPointerException(fieldName, LOG_TYPE_FIELD, e)
+        }
         null
     } catch (e: NoSuchFieldException) {
-        logNoSuchException(fieldName, LOG_TYPE_FIELD, e)
+        if (isCritical) {
+            logNoSuchException(fieldName, LOG_TYPE_FIELD, e)
+        }
         null
     }
 }
 
 @Suppress("TooGenericExceptionCaught")
-internal fun Class<*>.getDeclaredMethodSafe(methodName: String): Method? {
+internal fun Class<*>.getDeclaredMethodSafe(
+    methodName: String,
+    isCritical: Boolean = true
+): Method? {
     return try {
         getDeclaredMethod(methodName).accessible()
     } catch (e: SecurityException) {
-        logSecurityException(methodName, LOG_TYPE_METHOD, e)
+        if (isCritical) {
+            logSecurityException(methodName, LOG_TYPE_METHOD, e)
+        }
         null
     } catch (e: NullPointerException) {
-        logNullPointerException(methodName, LOG_TYPE_METHOD, e)
+        if (isCritical) {
+            logNullPointerException(methodName, LOG_TYPE_METHOD, e)
+        }
         null
     } catch (e: NoSuchMethodException) {
-        logNoSuchException(methodName, LOG_TYPE_METHOD, e)
+        if (isCritical) {
+            logNoSuchException(methodName, LOG_TYPE_METHOD, e)
+        }
         null
     }
 }

@@ -59,7 +59,7 @@ public class RateByServiceSampler implements Sampler, PrioritySampler {
     final boolean priorityWasSet;
 
     if (sampler.sample(span)) {
-      priorityWasSet = span.context().setSamplingPriority(com.datadog.legacy.trace.api.sampling.PrioritySampling.SAMPLER_KEEP);
+      priorityWasSet = span.context().setSamplingPriority(PrioritySampling.SAMPLER_KEEP);
     } else {
       priorityWasSet = span.context().setSamplingPriority(PrioritySampling.SAMPLER_DROP);
     }

@@ -10,7 +10,6 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.SdkCore
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.core.internal.net.DefaultFirstPartyHostHeaderTypeResolver
-import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.internal.utils.loggableStackTrace
 import com.datadog.android.okhttp.TraceContext
@@ -31,6 +30,7 @@ import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.datadog.tools.unit.setStaticValue
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -155,6 +155,9 @@ internal open class TracingInterceptorTest {
 
     lateinit var fakeLocalHosts: Map<String, Set<TracingHeaderType>>
 
+    @BoolForgery
+    var fakeRedacted404Resources: Boolean = true
+
     // endregion
 
     @BeforeEach
@@ -200,6 +203,7 @@ internal open class TracingInterceptorTest {
             traceOrigin = fakeOrigin,
             traceSampler = mockTraceSampler,
             localTracerFactory = factory,
+            redacted404ResourceName = fakeRedacted404Resources,
             traceContextInjection = TraceContextInjection.All
         )
     }
@@ -392,18 +396,17 @@ internal open class TracingInterceptorTest {
         forge: Forge
     ) {
         // Given
-        val datadogContextKey = forge.anElementFrom(
-            TracingInterceptor.DATADOG_TAGS,
+        val datadogContext = listOf(
             TracingInterceptor.DATADOG_SPAN_ID_HEADER,
             TracingInterceptor.DATADOG_LEAST_SIGNIFICANT_64_BITS_TRACE_ID_HEADER,
-            TracingInterceptor.DATADOG_ORIGIN_HEADER
-        )
-        val datadogContextKeyValue = forge.anAlphabeticalString()
+            TracingInterceptor.DATADOG_ORIGIN_HEADER,
+            TracingInterceptor.DATADOG_TAGS_HEADER
+        ).associateWith { forge.anAlphabeticalString() }
         val nonDatadogContextKey = forge.anAlphabeticalString()
         val nonDatadogContextKeyValue = forge.anAlphabeticalString()
         doAnswer { invocation ->
             val carrier = invocation.arguments[2] as TextMapInject
-            carrier.put(datadogContextKey, datadogContextKeyValue)
+            datadogContext.forEach { carrier.put(it.key, it.value) }
             carrier.put(nonDatadogContextKey, nonDatadogContextKeyValue)
         }.whenever(mockTracer).inject<TextMapInject>(any(), any(), any())
         whenever(mockTraceSampler.sample(mockSpan)).thenReturn(false)
@@ -427,7 +430,9 @@ internal open class TracingInterceptorTest {
             verify(mockChain).proceed(capture())
             assertThat(lastValue.header(TracingInterceptor.DATADOG_SAMPLING_PRIORITY_HEADER))
                 .isEqualTo("0")
-            assertThat(lastValue.header(datadogContextKey)).isEqualTo(datadogContextKeyValue)
+            datadogContext.forEach {
+                assertThat(lastValue.header(it.key)).isEqualTo(it.value)
+            }
             assertThat(lastValue.header(nonDatadogContextKey)).isNull()
             assertThat(lastValue.header(TracingInterceptor.B3M_SAMPLING_PRIORITY_KEY))
                 .isEqualTo("0")
@@ -480,18 +485,17 @@ internal open class TracingInterceptorTest {
         forge: Forge
     ) {
         // Given
-        val datadogContextKey = forge.anElementFrom(
-            TracingInterceptor.DATADOG_TAGS,
+        val datadogContext = listOf(
+            TracingInterceptor.DATADOG_TAGS_HEADER,
             TracingInterceptor.DATADOG_SPAN_ID_HEADER,
             TracingInterceptor.DATADOG_LEAST_SIGNIFICANT_64_BITS_TRACE_ID_HEADER,
             TracingInterceptor.DATADOG_ORIGIN_HEADER
-        )
-        val datadogContextKeyValue = forge.anAlphabeticalString()
+        ).associateWith { forge.anAlphabeticalString() }
         val nonDatadogContextKey = forge.anAlphabeticalString()
         val nonDatadogContextKeyValue = forge.anAlphabeticalString()
         doAnswer { invocation ->
             val carrier = invocation.arguments[2] as TextMapInject
-            carrier.put(datadogContextKey, datadogContextKeyValue)
+            datadogContext.forEach { carrier.put(it.key, it.value) }
             carrier.put(nonDatadogContextKey, nonDatadogContextKeyValue)
         }.whenever(mockTracer).inject<TextMapInject>(any(), any(), any())
         whenever(mockTraceSampler.sample(mockSpan)).thenReturn(false)
@@ -509,7 +513,9 @@ internal open class TracingInterceptorTest {
             verify(mockChain).proceed(capture())
             assertThat(lastValue.header(TracingInterceptor.DATADOG_SAMPLING_PRIORITY_HEADER))
                 .isEqualTo("0")
-            assertThat(lastValue.header(datadogContextKey)).isEqualTo(datadogContextKeyValue)
+            datadogContext.forEach {
+                assertThat(lastValue.header(it.key)).isEqualTo(it.value)
+            }
             assertThat(lastValue.header(nonDatadogContextKey)).isNull()
         }
     }
@@ -643,7 +649,7 @@ internal open class TracingInterceptorTest {
                 .isEqualTo("0")
             assertThat(lastValue.header(TracingInterceptor.DATADOG_LEAST_SIGNIFICANT_64_BITS_TRACE_ID_HEADER)).isNull()
             assertThat(lastValue.header(TracingInterceptor.DATADOG_ORIGIN_HEADER)).isNull()
-            assertThat(lastValue.header(TracingInterceptor.DATADOG_TAGS)).isNull()
+            assertThat(lastValue.header(TracingInterceptor.DATADOG_TAGS_HEADER)).isNull()
             assertThat(lastValue.header(TracingInterceptor.DATADOG_SPAN_ID_HEADER)).isNull()
             assertThat(lastValue.header(TracingInterceptor.B3M_SAMPLING_PRIORITY_KEY))
                 .isEqualTo("0")
@@ -672,8 +678,8 @@ internal open class TracingInterceptorTest {
         @IntForgery(min = 200, max = 300) statusCode: Int,
         forge: Forge
     ) {
-        val parentSpan: Span = mock()
-        val parentSpanContext: SpanContext = mock()
+        val parentSpan = mock<Span>()
+        val parentSpanContext = mock<ExtractedContext>()
         whenever(parentSpan.context()) doReturn parentSpanContext
         whenever(mockSpanBuilder.asChildOf(parentSpanContext)) doReturn mockSpanBuilder
         fakeRequest = forgeRequest(forge) { it.tag(Span::class.java, parentSpan) }
@@ -722,7 +728,11 @@ internal open class TracingInterceptorTest {
         assertThat(response).isSameAs(fakeResponse)
         argumentCaptor<Request> {
             verify(mockChain).proceed(capture())
-            assertThat(firstValue.headers(key)).containsOnly(value)
+            if (fakeTraceContext.samplingPriority > 0) {
+                assertThat(firstValue.headers(key)).containsOnly(value)
+            } else {
+                assertThat(firstValue.headers(key)).isEmpty()
+            }
         }
         argumentCaptor<SpanContext>() {
             verify(mockSpanBuilder).asChildOf(capture())
@@ -811,7 +821,7 @@ internal open class TracingInterceptorTest {
         @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL) value: String,
         @IntForgery(min = 200, max = 300) statusCode: Int
     ) {
-        val parentSpanContext: SpanContext = mock()
+        val parentSpanContext: ExtractedContext = mock()
         whenever(mockTracer.extract<TextMapExtract>(any(), any())) doReturn parentSpanContext
         whenever(mockSpanBuilder.asChildOf(any<SpanContext>())) doReturn mockSpanBuilder
         whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(true)
@@ -1004,7 +1014,8 @@ internal open class TracingInterceptorTest {
                 .isEqualTo("0")
             assertThat(lastValue.header(TracingInterceptor.DATADOG_LEAST_SIGNIFICANT_64_BITS_TRACE_ID_HEADER)).isNull()
             assertThat(lastValue.header(TracingInterceptor.DATADOG_SPAN_ID_HEADER)).isNull()
-            assertThat(lastValue.header(TracingInterceptor.DATADOG_TAGS)).isNull()
+            assertThat(lastValue.header(TracingInterceptor.DATADOG_TAGS_HEADER)).isNull()
+            assertThat(lastValue.header(TracingInterceptor.DATADOG_ORIGIN_HEADER)).isNull()
         }
     }
 
@@ -1217,7 +1228,11 @@ internal open class TracingInterceptorTest {
         verify(mockSpan).setTag("http.status_code", 404)
         verify(mockSpan).setTag(Tags.SPAN_KIND, Tags.SPAN_KIND_CLIENT)
         verify(mockSpan as MutableSpan).setError(true)
-        verify(mockSpan as MutableSpan).setResourceName(TracingInterceptor.RESOURCE_NAME_404)
+        if (fakeRedacted404Resources) {
+            verify(mockSpan as MutableSpan).setResourceName(TracingInterceptor.RESOURCE_NAME_404)
+        } else {
+            verify(mockSpan as MutableSpan, never()).setResourceName(TracingInterceptor.RESOURCE_NAME_404)
+        }
         verify(mockSpan).finish()
         assertThat(response).isSameAs(fakeResponse)
     }

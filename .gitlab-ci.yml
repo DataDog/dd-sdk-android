@@ -318,6 +318,27 @@ test-pyramid:single-fit-trace:
     reports:
       junit: "**/build/test-results/testReleaseUnitTest/*.xml"
 
+test-pyramid:single-fit-okhttp:
+  tags: [ "arch:amd64" ]
+  image: $CI_IMAGE_DOCKER
+  stage: test-pyramid
+  timeout: 1h
+  cache:
+    key: $CI_COMMIT_REF_SLUG
+    paths:
+      - cache/caches/
+      - cache/notifications/
+    policy: pull
+  script:
+    - rm -rf ~/.gradle/daemon/
+    - export DD_AGENT_HOST="$BUILDENV_HOST_IP"
+    - GRADLE_OPTS="-Xmx3072m" DD_TAGS="test.configuration.variant:release" ./gradlew :reliability:single-fit:okhttp:testReleaseUnitTest --stacktrace --no-daemon --build-cache --gradle-user-home cache/ -Dorg.gradle.jvmargs=-javaagent:$DD_TRACER_FOLDER/dd-java-agent.jar=$DD_COMMON_AGENT_CONFIG
+  artifacts:
+    when: always
+    expire_in: 1 week
+    reports:
+      junit: "**/build/test-results/testReleaseUnitTest/*.xml"
+
 # RUN INSTRUMENTED TESTS ON MIN API (21), LATEST API (34) and MEDIAN API (28)
 
 test-pyramid:legacy-integration-instrumented-min-api:

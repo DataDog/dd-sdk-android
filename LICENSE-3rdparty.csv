@@ -32,6 +32,7 @@ import,androidx.multidex,Apache-2.0,Copyright 2018 The Android Open Source Proje
 import,androidx.navigation,Apache-2.0,Copyright 2018 The Android Open Source Project
 import,androidx.print,Apache-2.0,Copyright 2018 The Android Open Source Project
 import,androidx.recyclerview,Apache-2.0,Copyright 2018 The Android Open Source Project
+import,androidx.resourceinspection,Apache-2.0,Copyright 2018 The Android Open Source Project
 import,androidx.room,Apache-2.0,Copyright 2018 The Android Open Source Project
 import,androidx.savedstate,Apache-2.0,Copyright 2018 The Android Open Source Project
 import,androidx.slidingpanelayout,Apache-2.0,Copyright 2018 The Android Open Source Project
@@ -158,4 +159,5 @@ build,org.ec4j.core,Apache-2.0,"Copyright (c) 2017 Angelo Zerr and other contrib
 build,org.freemarker,Apache-2.0,"Copyright 2015-2018 The Apache Software Foundation"
 build,org.jetbrains.dokka,Apache-2.0,"Copyright 2014-2019 JetBrains s.r.o. and Dokka project contributors."
 build,org.jetbrains.intellij.deps,LGPL-2.1-only,"Copyright (c) 2001-2002, Eric D. Friedman, Jason Baldridge, Copyright (c) 1999 CERN - European Organization for Nuclear Research"
+build,org.ow2.asm,BSD-3-Clause,"Copyright (c) 2000-2011 INRIA, France Telecom"
 build,org.slf4j,MIT,"Copyright (c) 2004-2022 QOS.ch Sarl (Switzerland)"

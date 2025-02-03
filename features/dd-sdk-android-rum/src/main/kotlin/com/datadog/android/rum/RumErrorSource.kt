@@ -27,5 +27,11 @@ enum class RumErrorSource {
     AGENT,
 
     /** Error originated in a WebView. */
-    WEBVIEW
+    WEBVIEW,
+
+    /** Custom error source. */
+    CUSTOM,
+
+    /** Error originated in a System report. */
+    REPORT
 }

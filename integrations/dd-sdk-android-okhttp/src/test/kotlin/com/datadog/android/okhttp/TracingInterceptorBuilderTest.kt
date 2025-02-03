@@ -15,6 +15,7 @@ import com.datadog.android.trace.TracingHeaderType
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.forge.BaseConfigurator
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -81,6 +82,7 @@ internal class TracingInterceptorBuilderTest {
         assertThat(interceptor.traceSampler).isInstanceOf(DeterministicTraceSampler::class.java)
         assertThat(interceptor.traceOrigin).isNull()
         assertThat(interceptor.localTracerFactory).isNotNull()
+        assertThat(interceptor.redacted404ResourceName).isTrue()
     }
 
     @Test
@@ -103,6 +105,7 @@ internal class TracingInterceptorBuilderTest {
         assertThat(interceptor.traceSampler).isInstanceOf(DeterministicTraceSampler::class.java)
         assertThat(interceptor.traceOrigin).isNull()
         assertThat(interceptor.localTracerFactory).isNotNull()
+        assertThat(interceptor.redacted404ResourceName).isTrue()
     }
 
     @Test
@@ -120,6 +123,7 @@ internal class TracingInterceptorBuilderTest {
         assertThat(interceptor.traceSampler).isInstanceOf(DeterministicTraceSampler::class.java)
         assertThat(interceptor.traceOrigin).isNull()
         assertThat(interceptor.localTracerFactory).isNotNull()
+        assertThat(interceptor.redacted404ResourceName).isTrue()
     }
 
     @Test
@@ -137,6 +141,7 @@ internal class TracingInterceptorBuilderTest {
         assertThat(interceptor.traceSampler).isInstanceOf(DeterministicTraceSampler::class.java)
         assertThat(interceptor.traceOrigin).isNull()
         assertThat(interceptor.localTracerFactory).isNotNull()
+        assertThat(interceptor.redacted404ResourceName).isTrue()
     }
 
     @Test
@@ -154,6 +159,7 @@ internal class TracingInterceptorBuilderTest {
         assertThat(interceptor.traceSampler).isInstanceOf(DeterministicTraceSampler::class.java)
         assertThat(interceptor.traceOrigin).isEqualTo(fakeOrigin)
         assertThat(interceptor.localTracerFactory).isNotNull()
+        assertThat(interceptor.redacted404ResourceName).isTrue()
     }
 
     @Test
@@ -171,6 +177,7 @@ internal class TracingInterceptorBuilderTest {
         assertThat(interceptor.traceSampler).isInstanceOf(DeterministicTraceSampler::class.java)
         assertThat(interceptor.traceOrigin).isNull()
         assertThat(interceptor.localTracerFactory).isNotNull()
+        assertThat(interceptor.redacted404ResourceName).isTrue()
     }
 
     @Test
@@ -188,5 +195,26 @@ internal class TracingInterceptorBuilderTest {
         assertThat(interceptor.traceSampler).isSameAs(mockSampler)
         assertThat(interceptor.traceOrigin).isNull()
         assertThat(interceptor.localTracerFactory).isNotNull()
+        assertThat(interceptor.redacted404ResourceName).isTrue()
+    }
+
+    @Test
+    fun `M set redacted404Resources W build { setTraceSampler }`(
+        @BoolForgery redacted: Boolean
+    ) {
+        // When
+        val interceptor = TracingInterceptor.Builder(fakeTracedHostsWithHeaderType)
+            .set404ResourcesRedacted(redacted)
+            .build()
+
+        // Then
+        assertThat(interceptor.tracedHosts).isEqualTo(fakeTracedHostsWithHeaderType)
+        assertThat(interceptor.traceContextInjection).isEqualTo(TraceContextInjection.All)
+        assertThat(interceptor.sdkInstanceName).isNull()
+        assertThat(interceptor.tracedRequestListener).isInstanceOf(NoOpTracedRequestListener::class.java)
+        assertThat(interceptor.traceSampler).isInstanceOf(DeterministicTraceSampler::class.java)
+        assertThat(interceptor.traceOrigin).isNull()
+        assertThat(interceptor.localTracerFactory).isNotNull()
+        assertThat(interceptor.redacted404ResourceName).isEqualTo(redacted)
     }
 }

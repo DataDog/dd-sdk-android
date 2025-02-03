@@ -15,13 +15,19 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.painter.BitmapPainter
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.vector.VectorPainter
+import androidx.compose.ui.semantics.ProgressBarRangeInfo
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsNode
+import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.text.TextLayoutInput
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.unit.Density
+import com.datadog.android.Datadog
+import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.TouchPrivacy
@@ -123,21 +129,27 @@ internal class SemanticsUtils(private val reflectionUtils: ReflectionUtils = Ref
         }
 
     internal fun resolveCheckboxFillColor(semanticsNode: SemanticsNode): Long? =
-        resolveReflectedProperty(
+        resolveOnDrawProperty(
             semanticsNode,
-            CheckmarkFieldType.FILL_COLOR
+            OnDrawFieldType.FILL_COLOR
         )
 
     internal fun resolveCheckmarkColor(semanticsNode: SemanticsNode): Long? =
-        resolveReflectedProperty(
+        resolveOnDrawProperty(
             semanticsNode,
-            CheckmarkFieldType.CHECKMARK_COLOR
+            OnDrawFieldType.CHECKMARK_COLOR
+        )
+
+    internal fun resolveRadioButtonColor(semanticsNode: SemanticsNode): Long? =
+        resolveOnDrawProperty(
+            semanticsNode,
+            OnDrawFieldType.RADIO_BUTTON_COLOR
         )
 
     internal fun resolveBorderColor(semanticsNode: SemanticsNode): Long? =
-        resolveReflectedProperty(
+        resolveOnDrawProperty(
             semanticsNode,
-            CheckmarkFieldType.BORDER_COLOR
+            OnDrawFieldType.BORDER_COLOR
         )
 
     private fun shrinkInnerBounds(
@@ -248,6 +260,7 @@ internal class SemanticsUtils(private val reflectionUtils: ReflectionUtils = Ref
             is BitmapPainter -> reflectionUtils.getBitmapInBitmapPainter(painter)
             is VectorPainter -> reflectionUtils.getBitmapInVectorPainter(painter)
             else -> {
+                logUnsupportedPainter(painter)
                 null
             }
         }
@@ -259,6 +272,22 @@ internal class SemanticsUtils(private val reflectionUtils: ReflectionUtils = Ref
         return newBitmap?.let {
             BitmapInfo(it, isContextualImage)
         }
+    }
+
+    private fun logUnsupportedPainter(painter: Painter?) {
+        val painterType = painter?.javaClass?.simpleName ?: "null"
+        (Datadog.getInstance() as? FeatureSdkCore)?.internalLogger?.log(
+            level = InternalLogger.Level.ERROR,
+            targets = listOf(
+                InternalLogger.Target.MAINTAINER,
+                InternalLogger.Target.TELEMETRY
+            ),
+            messageBuilder = { "Unsupported painter type in Compose: $painterType" },
+            onlyOnce = true,
+            additionalProperties = mapOf(
+                "painter.type" to painterType
+            )
+        )
     }
 
     private fun resolveModifierColor(semanticsNode: SemanticsNode): Color? {
@@ -315,19 +344,22 @@ internal class SemanticsUtils(private val reflectionUtils: ReflectionUtils = Ref
         }
     }
 
-    private fun resolveReflectedProperty(semanticsNode: SemanticsNode, fieldType: CheckmarkFieldType): Long? {
+    private fun resolveOnDrawProperty(semanticsNode: SemanticsNode, fieldType: OnDrawFieldType): Long? {
         val onDrawInstance = resolveOnDrawInstance(semanticsNode)
 
         val color = onDrawInstance?.let {
             when (fieldType) {
-                CheckmarkFieldType.FILL_COLOR -> {
+                OnDrawFieldType.FILL_COLOR -> {
                     reflectionUtils.getBoxColor(onDrawInstance)
                 }
-                CheckmarkFieldType.CHECKMARK_COLOR -> {
+                OnDrawFieldType.CHECKMARK_COLOR -> {
                     reflectionUtils.getCheckColor(onDrawInstance)
                 }
-                CheckmarkFieldType.BORDER_COLOR -> {
+                OnDrawFieldType.BORDER_COLOR -> {
                     reflectionUtils.getBorderColor(onDrawInstance)
+                }
+                OnDrawFieldType.RADIO_BUTTON_COLOR -> {
+                    reflectionUtils.getRadioColor(onDrawInstance)
                 }
             }
         }
@@ -338,10 +370,17 @@ internal class SemanticsUtils(private val reflectionUtils: ReflectionUtils = Ref
     }
 
     internal companion object {
-        internal enum class CheckmarkFieldType {
+        internal enum class OnDrawFieldType {
             FILL_COLOR,
             CHECKMARK_COLOR,
-            BORDER_COLOR
+            BORDER_COLOR,
+            RADIO_BUTTON_COLOR
         }
+        internal const val DEFAULT_COLOR_BLACK = "#000000FF"
+        internal const val DEFAULT_COLOR_WHITE = "#FFFFFFFF"
+    }
+
+    internal fun getProgressBarRangeInfo(semanticsNode: SemanticsNode): ProgressBarRangeInfo? {
+        return semanticsNode.config.getOrNull(SemanticsProperties.ProgressBarRangeInfo)
     }
 }

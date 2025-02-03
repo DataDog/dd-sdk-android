@@ -94,6 +94,8 @@ internal fun RumErrorSource.toSchemaSource(): ErrorEvent.ErrorSource {
         RumErrorSource.LOGGER -> ErrorEvent.ErrorSource.LOGGER
         RumErrorSource.AGENT -> ErrorEvent.ErrorSource.AGENT
         RumErrorSource.WEBVIEW -> ErrorEvent.ErrorSource.WEBVIEW
+        RumErrorSource.CUSTOM -> ErrorEvent.ErrorSource.CUSTOM
+        RumErrorSource.REPORT -> ErrorEvent.ErrorSource.REPORT
     }
 }
 
@@ -178,6 +180,7 @@ internal fun NetworkInfo.toResourceConnectivity(): ResourceEvent.Connectivity {
         NetworkInfo.Connectivity.NETWORK_5G,
         NetworkInfo.Connectivity.NETWORK_MOBILE_OTHER,
         NetworkInfo.Connectivity.NETWORK_CELLULAR -> listOf(ResourceEvent.Interface.CELLULAR)
+
         NetworkInfo.Connectivity.NETWORK_OTHER -> listOf(ResourceEvent.Interface.OTHER)
         NetworkInfo.Connectivity.NETWORK_NOT_CONNECTED -> emptyList()
     }
@@ -214,6 +217,7 @@ internal fun NetworkInfo.toErrorConnectivity(): ErrorEvent.Connectivity {
         NetworkInfo.Connectivity.NETWORK_5G,
         NetworkInfo.Connectivity.NETWORK_MOBILE_OTHER,
         NetworkInfo.Connectivity.NETWORK_CELLULAR -> listOf(ErrorEvent.Interface.CELLULAR)
+
         NetworkInfo.Connectivity.NETWORK_OTHER -> listOf(ErrorEvent.Interface.OTHER)
         NetworkInfo.Connectivity.NETWORK_NOT_CONNECTED -> emptyList()
     }
@@ -250,6 +254,7 @@ internal fun NetworkInfo.toLongTaskConnectivity(): LongTaskEvent.Connectivity {
         NetworkInfo.Connectivity.NETWORK_5G,
         NetworkInfo.Connectivity.NETWORK_MOBILE_OTHER,
         NetworkInfo.Connectivity.NETWORK_CELLULAR -> listOf(LongTaskEvent.Interface.CELLULAR)
+
         NetworkInfo.Connectivity.NETWORK_OTHER -> listOf(LongTaskEvent.Interface.OTHER)
         NetworkInfo.Connectivity.NETWORK_NOT_CONNECTED -> emptyList()
     }
@@ -286,6 +291,7 @@ internal fun NetworkInfo.toViewConnectivity(): ViewEvent.Connectivity {
         NetworkInfo.Connectivity.NETWORK_5G,
         NetworkInfo.Connectivity.NETWORK_MOBILE_OTHER,
         NetworkInfo.Connectivity.NETWORK_CELLULAR -> listOf(ViewEvent.Interface.CELLULAR)
+
         NetworkInfo.Connectivity.NETWORK_OTHER -> listOf(ViewEvent.Interface.OTHER)
         NetworkInfo.Connectivity.NETWORK_NOT_CONNECTED -> emptyList()
     }
@@ -322,6 +328,7 @@ internal fun NetworkInfo.toActionConnectivity(): ActionEvent.Connectivity {
         NetworkInfo.Connectivity.NETWORK_5G,
         NetworkInfo.Connectivity.NETWORK_MOBILE_OTHER,
         NetworkInfo.Connectivity.NETWORK_CELLULAR -> listOf(ActionEvent.Interface.CELLULAR)
+
         NetworkInfo.Connectivity.NETWORK_OTHER -> listOf(ActionEvent.Interface.OTHER)
         NetworkInfo.Connectivity.NETWORK_NOT_CONNECTED -> emptyList()
     }
@@ -355,7 +362,9 @@ internal fun DeviceType.toViewSchemaType(): ViewEvent.DeviceType {
         DeviceType.TABLET -> ViewEvent.DeviceType.TABLET
         DeviceType.TV -> ViewEvent.DeviceType.TV
         DeviceType.DESKTOP -> ViewEvent.DeviceType.DESKTOP
-        else -> ViewEvent.DeviceType.OTHER
+        DeviceType.GAMING_CONSOLE -> ViewEvent.DeviceType.GAMING_CONSOLE
+        DeviceType.BOT -> ViewEvent.DeviceType.BOT
+        DeviceType.OTHER -> ViewEvent.DeviceType.OTHER
     }
 }
 
@@ -365,7 +374,9 @@ internal fun DeviceType.toActionSchemaType(): ActionEvent.DeviceType {
         DeviceType.TABLET -> ActionEvent.DeviceType.TABLET
         DeviceType.TV -> ActionEvent.DeviceType.TV
         DeviceType.DESKTOP -> ActionEvent.DeviceType.DESKTOP
-        else -> ActionEvent.DeviceType.OTHER
+        DeviceType.GAMING_CONSOLE -> ActionEvent.DeviceType.GAMING_CONSOLE
+        DeviceType.BOT -> ActionEvent.DeviceType.BOT
+        DeviceType.OTHER -> ActionEvent.DeviceType.OTHER
     }
 }
 
@@ -375,7 +386,9 @@ internal fun DeviceType.toLongTaskSchemaType(): LongTaskEvent.DeviceType {
         DeviceType.TABLET -> LongTaskEvent.DeviceType.TABLET
         DeviceType.TV -> LongTaskEvent.DeviceType.TV
         DeviceType.DESKTOP -> LongTaskEvent.DeviceType.DESKTOP
-        else -> LongTaskEvent.DeviceType.OTHER
+        DeviceType.GAMING_CONSOLE -> LongTaskEvent.DeviceType.GAMING_CONSOLE
+        DeviceType.BOT -> LongTaskEvent.DeviceType.BOT
+        DeviceType.OTHER -> LongTaskEvent.DeviceType.OTHER
     }
 }
 
@@ -385,7 +398,9 @@ internal fun DeviceType.toResourceSchemaType(): ResourceEvent.DeviceType {
         DeviceType.TABLET -> ResourceEvent.DeviceType.TABLET
         DeviceType.TV -> ResourceEvent.DeviceType.TV
         DeviceType.DESKTOP -> ResourceEvent.DeviceType.DESKTOP
-        else -> ResourceEvent.DeviceType.OTHER
+        DeviceType.GAMING_CONSOLE -> ResourceEvent.DeviceType.GAMING_CONSOLE
+        DeviceType.BOT -> ResourceEvent.DeviceType.BOT
+        DeviceType.OTHER -> ResourceEvent.DeviceType.OTHER
     }
 }
 
@@ -395,7 +410,9 @@ internal fun DeviceType.toErrorSchemaType(): ErrorEvent.DeviceType {
         DeviceType.TABLET -> ErrorEvent.DeviceType.TABLET
         DeviceType.TV -> ErrorEvent.DeviceType.TV
         DeviceType.DESKTOP -> ErrorEvent.DeviceType.DESKTOP
-        else -> ErrorEvent.DeviceType.OTHER
+        DeviceType.GAMING_CONSOLE -> ErrorEvent.DeviceType.GAMING_CONSOLE
+        DeviceType.BOT -> ErrorEvent.DeviceType.BOT
+        DeviceType.OTHER -> ErrorEvent.DeviceType.OTHER
     }
 }
 

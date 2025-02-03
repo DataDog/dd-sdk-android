@@ -79,6 +79,7 @@ open class DatadogInterceptor internal constructor(
     internal val rumResourceAttributesProvider: RumResourceAttributesProvider,
     traceSampler: Sampler<Span>,
     traceContextInjection: TraceContextInjection,
+    redacted404ResourceName: Boolean,
     localTracerFactory: (SdkCore, Set<TracingHeaderType>) -> Tracer
 ) : TracingInterceptor(
     sdkInstanceName,
@@ -87,6 +88,7 @@ open class DatadogInterceptor internal constructor(
     ORIGIN_RUM,
     traceSampler,
     traceContextInjection,
+    redacted404ResourceName,
     localTracerFactory
 ) {
 
@@ -135,6 +137,7 @@ open class DatadogInterceptor internal constructor(
         rumResourceAttributesProvider = rumResourceAttributesProvider,
         traceSampler = traceSampler,
         traceContextInjection = TraceContextInjection.All,
+        redacted404ResourceName = true,
         localTracerFactory = { sdkCore, tracingHeaderTypes ->
             AndroidTracer.Builder(sdkCore).setTracingHeaderTypes(tracingHeaderTypes).build()
         }
@@ -189,6 +192,7 @@ open class DatadogInterceptor internal constructor(
         rumResourceAttributesProvider = rumResourceAttributesProvider,
         traceSampler = traceSampler,
         traceContextInjection = TraceContextInjection.All,
+        redacted404ResourceName = true,
         localTracerFactory = { sdkCore, tracingHeaderTypes ->
             AndroidTracer.Builder(sdkCore).setTracingHeaderTypes(tracingHeaderTypes).build()
         }
@@ -229,6 +233,7 @@ open class DatadogInterceptor internal constructor(
         rumResourceAttributesProvider = rumResourceAttributesProvider,
         traceSampler = traceSampler,
         traceContextInjection = TraceContextInjection.All,
+        redacted404ResourceName = true,
         localTracerFactory = { sdkCore, tracingHeaderTypes ->
             AndroidTracer.Builder(sdkCore).setTracingHeaderTypes(tracingHeaderTypes).build()
         }
@@ -324,7 +329,7 @@ open class DatadogInterceptor internal constructor(
             mapOf(
                 RumAttributes.TRACE_ID to span.context().traceIdAsHexString(),
                 RumAttributes.SPAN_ID to span.context().toSpanId(),
-                RumAttributes.RULE_PSR to traceSampler.getSampleRate()
+                RumAttributes.RULE_PSR to (traceSampler.getSampleRate() ?: ZERO_SAMPLE_RATE) / ALL_IN_SAMPLE_RATE
             )
         }
         (GlobalRumMonitor.get(sdkCore) as? AdvancedNetworkRumMonitor)?.stopResource(
@@ -469,6 +474,7 @@ open class DatadogInterceptor internal constructor(
                 rumResourceAttributesProvider,
                 traceSampler,
                 traceContextInjection,
+                redacted404ResourceName,
                 localTracerFactory
             )
         }
@@ -516,5 +522,8 @@ open class DatadogInterceptor internal constructor(
 
         // We need to limit this value as the body will be loaded in memory
         private const val MAX_BODY_PEEK: Long = 32 * 1024L * 1024L
+
+        private const val ALL_IN_SAMPLE_RATE: Float = 100f
+        private const val ZERO_SAMPLE_RATE: Float = 0f
     }
 }

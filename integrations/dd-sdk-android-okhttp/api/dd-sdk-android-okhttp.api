@@ -112,6 +112,7 @@ public class com/datadog/android/okhttp/trace/TracingInterceptor : okhttp3/Inter
 public abstract class com/datadog/android/okhttp/trace/TracingInterceptor$BaseBuilder {
 	public fun <init> (Ljava/util/Map;)V
 	public abstract fun build ()Lcom/datadog/android/okhttp/trace/TracingInterceptor;
+	public final fun set404ResourcesRedacted (Z)Lcom/datadog/android/okhttp/trace/TracingInterceptor$BaseBuilder;
 	public final fun setSdkInstanceName (Ljava/lang/String;)Lcom/datadog/android/okhttp/trace/TracingInterceptor$BaseBuilder;
 	public final fun setTraceContextInjection (Lcom/datadog/android/okhttp/TraceContextInjection;)Lcom/datadog/android/okhttp/trace/TracingInterceptor$BaseBuilder;
 	public final fun setTraceSampleRate (F)Lcom/datadog/android/okhttp/trace/TracingInterceptor$BaseBuilder;

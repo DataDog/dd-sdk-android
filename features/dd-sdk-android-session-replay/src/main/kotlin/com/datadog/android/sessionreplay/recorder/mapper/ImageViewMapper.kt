@@ -76,17 +76,14 @@ open class ImageViewMapper : BaseAsyncBackgroundWireframeMapper<ImageView> {
 
         val drawable = view.drawable?.current ?: return wireframes
 
-        val parentRect = imageViewUtils.resolveParentRectAbsPosition(view)
+        val parentRect = imageViewUtils.resolveParentRectAbsPosition(view, view.cropToPadding)
         val contentRect = imageViewUtils.resolveContentRectWithScaling(view, drawable)
 
         val resources = view.resources
         val density = resources.displayMetrics.density
 
-        val clipping = if (view.cropToPadding) {
+        val clipping =
             imageViewUtils.calculateClipping(parentRect, contentRect, density).toWireframeClip()
-        } else {
-            null
-        }
 
         val contentXPosInDp = contentRect.left.densityNormalized(density).toLong()
         val contentYPosInDp = contentRect.top.densityNormalized(density).toLong()

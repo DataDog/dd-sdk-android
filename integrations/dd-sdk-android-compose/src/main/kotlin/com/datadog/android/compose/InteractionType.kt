@@ -34,7 +34,17 @@ sealed class InteractionType {
         internal val swipeableState: SwipeableState<T>,
         internal val orientation: Orientation,
         internal val reverseDirection: Boolean = false
-    ) : InteractionType()
+    ) : InteractionType() {
+
+        internal val currentValue: T
+            get() = swipeableState.currentValue
+
+        internal val targetValue: T
+            get() = swipeableState.targetValue
+
+        internal val offset: Float
+            get() = swipeableState.offset.value
+    }
 
     /**
      * Scroll interaction type.

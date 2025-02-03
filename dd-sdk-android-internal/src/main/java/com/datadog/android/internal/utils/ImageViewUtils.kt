@@ -20,17 +20,18 @@ object ImageViewUtils {
     /**
      * Resolves the absolute position on the screen of the given [View].
      * @param view the [View].
+     * @param cropToPadding if the view has cropToPadding as true.
      * @return the [Rect] representing the absolute position of the view.
      */
-    fun resolveParentRectAbsPosition(view: View): Rect {
+    fun resolveParentRectAbsPosition(view: View, cropToPadding: Boolean = true): Rect {
         val coords = IntArray(2)
         // this will always have size >= 2
         @Suppress("UnsafeThirdPartyFunctionCall")
         view.getLocationOnScreen(coords)
-        val leftPadding = view.paddingLeft
-        val rightPadding = view.paddingRight
-        val topPadding = view.paddingTop
-        val bottomPadding = view.paddingBottom
+        val leftPadding = if (cropToPadding) view.paddingLeft else 0
+        val rightPadding = if (cropToPadding) view.paddingRight else 0
+        val topPadding = if (cropToPadding) view.paddingTop else 0
+        val bottomPadding = if (cropToPadding) view.paddingBottom else 0
         return Rect(
             coords[0] + leftPadding,
             coords[1] + topPadding,

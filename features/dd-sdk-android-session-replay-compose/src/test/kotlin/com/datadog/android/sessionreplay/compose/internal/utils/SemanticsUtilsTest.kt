@@ -189,6 +189,23 @@ class SemanticsUtilsTest {
     }
 
     @Test
+    fun `M return radio button fill color W resolveRadioButtonColor`(
+        @IntForgery fakeColorValue: Int
+    ) {
+        // Given
+        val fakeColor = Color(fakeColorValue)
+        val mockAnimationState = mock<AnimationState<*, *>>()
+        whenever(mockReflectionUtils.getRadioColor(mockOnDraw)) doReturn mockAnimationState
+        whenever(mockAnimationState.value).thenReturn(fakeColor)
+
+        // When
+        val result = testedSemanticsUtils.resolveRadioButtonColor(mockSemanticsNode)
+
+        // Then
+        assertThat(result).isEqualTo(fakeColor.value.toLong())
+    }
+
+    @Test
     fun `M return checkmark color W resolveCheckmarkColor`(
         @IntForgery fakeColorValue: Int
     ) {

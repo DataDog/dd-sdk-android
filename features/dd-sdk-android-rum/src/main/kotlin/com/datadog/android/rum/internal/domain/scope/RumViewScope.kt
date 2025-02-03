@@ -87,6 +87,7 @@ internal open class RumViewScope(
 
     private val oldViewIds = mutableSetOf<String>()
     private val startedNanos: Long = eventTime.nanoTime
+    internal var stoppedNanos: Long = eventTime.nanoTime
     internal var viewLoadingTime: Long? = null
 
     internal val serverTimeOffsetInMs = sdkCore.time.serverTimeOffsetMs
@@ -250,33 +251,18 @@ internal open class RumViewScope(
 
     @WorkerThread
     private fun onAddViewLoadingTime(event: RumRawEvent.AddViewLoadingTime, writer: DataWriter<Any>) {
-        val internalLogger = sdkCore.internalLogger
         val canUpdateViewLoadingTime = !stopped && (viewLoadingTime == null || event.overwrite)
-        if (stopped) {
-            internalLogger.log(
-                InternalLogger.Level.WARN,
-                InternalLogger.Target.USER,
-                { NO_ACTIVE_VIEW_FOR_LOADING_TIME_WARNING_MESSAGE }
-            )
-            internalLogger.logApiUsage {
-                InternalTelemetryEvent.ApiUsage.AddViewLoadingTime(
-                    overwrite = event.overwrite,
-                    noView = false,
-                    noActiveView = true
-                )
-            }
-        }
 
         if (canUpdateViewLoadingTime) {
-            updateViewLoadingTime(event, internalLogger, writer)
+            updateViewLoadingTime(event, writer)
         }
     }
 
     private fun updateViewLoadingTime(
         event: RumRawEvent.AddViewLoadingTime,
-        internalLogger: InternalLogger,
         writer: DataWriter<Any>
     ) {
+        val internalLogger = sdkCore.internalLogger
         val viewName = key.name
         val previousViewLoadingTime = viewLoadingTime
         val newLoadingTime = event.eventTime.nanoTime - startedNanos
@@ -833,6 +819,7 @@ internal open class RumViewScope(
             sideEffect()
 
             stopped = true
+            resolveViewDuration(event)
             sendViewUpdate(event, writer)
             delegateEventToChildren(event, writer)
             sendViewChanged()
@@ -872,7 +859,10 @@ internal open class RumViewScope(
         val eventJsRefreshRate = performanceMetrics[RumPerformanceMetric.JS_FRAME_TIME]
             ?.toInversePerformanceMetric()
 
-        val updatedDurationNs = resolveViewDuration(event)
+        if (!stopped) {
+            resolveViewDuration(event)
+        }
+        val durationNs = stoppedNanos - startedNanos
         val rumContext = getRumContext()
 
         val timings = resolveCustomTimings()
@@ -922,7 +912,7 @@ internal open class RumViewScope(
                     id = currentViewId,
                     name = rumContext.viewName,
                     url = rumContext.viewUrl.orEmpty(),
-                    timeSpent = updatedDurationNs,
+                    timeSpent = durationNs,
                     action = ViewEvent.Action(eventActionCount),
                     resource = ViewEvent.Resource(eventResourceCount),
                     error = ViewEvent.Error(eventErrorCount),
@@ -932,8 +922,8 @@ internal open class RumViewScope(
                     customTimings = timings,
                     isActive = !viewComplete,
                     cpuTicksCount = eventCpuTicks,
-                    cpuTicksPerSecond = if (updatedDurationNs >= ONE_SECOND_NS) {
-                        eventCpuTicks?.let { (it * ONE_SECOND_NS) / updatedDurationNs }
+                    cpuTicksPerSecond = if (durationNs >= ONE_SECOND_NS) {
+                        eventCpuTicks?.let { (it * ONE_SECOND_NS) / durationNs }
                     } else {
                         null
                     },
@@ -1012,20 +1002,43 @@ internal open class RumViewScope(
         return GlobalRumMonitor.get(sdkCore).getAttributes().toMap()
     }
 
-    private fun resolveViewDuration(event: RumRawEvent): Long {
-        val duration = event.eventTime.nanoTime - startedNanos
-        return if (duration <= 0) {
+    private fun resolveViewDuration(event: RumRawEvent) {
+        stoppedNanos = event.eventTime.nanoTime
+        val duration = stoppedNanos - startedNanos
+        if (duration == 0L) {
+            if (type == RumViewType.BACKGROUND && event is RumRawEvent.AddError && event.isFatal) {
+                // This is a legitimate empty duration, no-op
+            } else {
+                sdkCore.internalLogger.log(
+                    InternalLogger.Level.WARN,
+                    listOf(
+                        InternalLogger.Target.USER,
+                        InternalLogger.Target.TELEMETRY
+                    ),
+                    { ZERO_DURATION_WARNING_MESSAGE.format(Locale.US, key.name) },
+                    null,
+                    false,
+                    mapOf("view.name" to key.name)
+                )
+            }
+            stoppedNanos = startedNanos + 1
+        } else if (duration < 0) {
             sdkCore.internalLogger.log(
                 InternalLogger.Level.WARN,
                 listOf(
                     InternalLogger.Target.USER,
                     InternalLogger.Target.TELEMETRY
                 ),
-                { NEGATIVE_DURATION_WARNING_MESSAGE.format(Locale.US, key.name) }
+                { NEGATIVE_DURATION_WARNING_MESSAGE.format(Locale.US, key.name) },
+                null,
+                false,
+                mapOf(
+                    "view.start_ns" to startedNanos,
+                    "view.end_ns" to event.eventTime.nanoTime,
+                    "view.name" to key.name
+                )
             )
-            1
-        } else {
-            duration
+            stoppedNanos = startedNanos + 1
         }
     }
 
@@ -1350,10 +1363,10 @@ internal open class RumViewScope(
 
         internal val FROZEN_FRAME_THRESHOLD_NS = TimeUnit.MILLISECONDS.toNanos(700)
         internal const val SLOW_RENDERED_THRESHOLD_FPS = 55
+        internal const val ZERO_DURATION_WARNING_MESSAGE = "The computed duration for the " +
+            "view: %s was 0. In order to keep the view we forced it to 1ns."
         internal const val NEGATIVE_DURATION_WARNING_MESSAGE = "The computed duration for the " +
-            "view: %s was 0 or negative. In order to keep the view we forced it to 1ns."
-        internal const val NO_ACTIVE_VIEW_FOR_LOADING_TIME_WARNING_MESSAGE =
-            "No active view found to add the loading time."
+            "view: %s was negative. In order to keep the view we forced it to 1ns."
         internal const val ADDING_VIEW_LOADING_TIME_DEBUG_MESSAGE_FORMAT =
             "View loading time %dns added to the view %s"
         internal const val OVERWRITING_VIEW_LOADING_TIME_WARNING_MESSAGE_FORMAT =

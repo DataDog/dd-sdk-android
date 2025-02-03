@@ -106,7 +106,9 @@ internal class TraceWriterTest {
     @Test
     fun `M write spans W write()`(forge: Forge) {
         // GIVEN
-        val ddSpans = forge.aList { getForgery<DDSpan>() }.toMutableList()
+        val ddSpans = forge.aList { getForgery<DDSpan>() }
+            .filter { it.samplingPriority !in TraceWriter.DROP_SAMPLING_PRIORITIES }
+            .toMutableList()
         val spanEvents = ddSpans.map { forge.getForgery<SpanEvent>() }
         val serializedSpans = ddSpans.map { forge.aString() }
 
@@ -139,10 +141,31 @@ internal class TraceWriterTest {
     }
 
     @Test
+    fun `M not write spans with drop sampling priority W write() { drop sampling decision }`(forge: Forge) {
+        // GIVEN
+        val ddSpans = forge.aList { getForgery<DDSpan>() }
+            .filter { it.samplingPriority in TraceWriter.DROP_SAMPLING_PRIORITIES }
+            .toMutableList()
+
+        // WHEN
+        testedWriter.write(ddSpans)
+
+        // THEN
+        verifyNoInteractions(mockEventBatchWriter)
+
+        ddSpans.forEach {
+            it.finish()
+        }
+    }
+
+    @Test
     fun `M not write non-mapped spans W write()`(forge: Forge) {
         // GIVEN
-        val ddSpans = forge.aList { getForgery<DDSpan>() }.toMutableList()
-        val spanEvents = ddSpans.map { forge.getForgery<SpanEvent>() }
+        val ddSpans = forge.aList { getForgery<DDSpan>() }
+            .filter { it.samplingPriority !in TraceWriter.DROP_SAMPLING_PRIORITIES }
+            .toMutableList()
+        val spanEvents = ddSpans
+            .map { forge.getForgery<SpanEvent>() }
         val mappedEvents = spanEvents.map { forge.aNullable { it } }
 
         val serializedSpans = mappedEvents.filterNotNull().map { forge.aString() }
@@ -182,7 +205,9 @@ internal class TraceWriterTest {
     @Test
     fun `M not write non-serialized spans W write()`(forge: Forge) {
         // GIVEN
-        val ddSpans = forge.aList { getForgery<DDSpan>() }.toMutableList()
+        val ddSpans = forge.aList { getForgery<DDSpan>() }
+            .filter { it.samplingPriority !in TraceWriter.DROP_SAMPLING_PRIORITIES }
+            .toMutableList()
         val spanEvents = ddSpans.map { forge.getForgery<SpanEvent>() }
 
         val serializedSpans = spanEvents.map { forge.aNullable { aString() } }
@@ -234,7 +259,9 @@ internal class TraceWriterTest {
     @Test
     fun `M log error and proceed W write() { serialization failed }`(forge: Forge) {
         // GIVEN
-        val ddSpans = forge.aList { getForgery<DDSpan>() }.toMutableList()
+        val ddSpans = forge.aList { getForgery<DDSpan>() }
+            .filter { it.samplingPriority !in TraceWriter.DROP_SAMPLING_PRIORITIES }
+            .toMutableList()
         val spanEvents = ddSpans.map { forge.getForgery<SpanEvent>() }
         val serializedSpans = ddSpans.map { forge.aString() }
 
