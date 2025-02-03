@@ -7,7 +7,7 @@
 package com.datadog.android.rum.internal.domain
 
 import com.datadog.android.rum.internal.domain.scope.RumSessionScope
-import com.datadog.android.rum.internal.domain.scope.RumViewScope
+import com.datadog.android.rum.internal.domain.scope.RumViewType
 import java.util.UUID
 
 internal data class RumContext(
@@ -20,7 +20,7 @@ internal data class RumContext(
     val actionId: String? = null,
     val sessionState: RumSessionScope.State = RumSessionScope.State.NOT_TRACKED,
     val sessionStartReason: RumSessionScope.StartReason = RumSessionScope.StartReason.USER_APP_LAUNCH,
-    val viewType: RumViewScope.RumViewType = RumViewScope.RumViewType.NONE,
+    val viewType: RumViewType = RumViewType.NONE,
     val syntheticsTestId: String? = null,
     val syntheticsResultId: String? = null,
     val viewTimestamp: Long = 0L,
@@ -82,7 +82,7 @@ internal data class RumContext(
             val viewId = featureContext[VIEW_ID] as? String
             val viewName = featureContext[VIEW_NAME] as? String
             val viewUrl = featureContext[VIEW_URL] as? String
-            val viewType = RumViewScope.RumViewType.fromString(featureContext[VIEW_TYPE] as? String)
+            val viewType = RumViewType.fromString(featureContext[VIEW_TYPE] as? String)
             val actionId = featureContext[ACTION_ID] as? String
             val syntheticsTestId = featureContext[SYNTHETICS_TEST_ID] as? String
             val syntheticsResultId = featureContext[SYNTHETICS_RESULT_ID] as? String
@@ -99,7 +99,7 @@ internal data class RumContext(
                 viewId = viewId,
                 viewName = viewName,
                 viewUrl = viewUrl,
-                viewType = viewType ?: RumViewScope.RumViewType.NONE,
+                viewType = viewType ?: RumViewType.NONE,
                 actionId = actionId,
                 syntheticsTestId = syntheticsTestId,
                 syntheticsResultId = syntheticsResultId,

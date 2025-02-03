@@ -57,7 +57,7 @@ internal class TimeBasedInteractionIdentifierTest : ObjectTest<TimeBasedInteract
     override fun createUnequalInstance(
         source: TimeBasedInteractionIdentifier,
         forge: Forge
-    ): TimeBasedInteractionIdentifier? {
+    ): TimeBasedInteractionIdentifier {
         return TimeBasedInteractionIdentifier(
             fakeTimestampThresholdInMs + forge.aLong(min = 1, max = 1000)
         )
@@ -112,6 +112,31 @@ internal class TimeBasedInteractionIdentifierTest : ObjectTest<TimeBasedInteract
 
         // When
         val result = testedIdentifier.validate(fakeValidContext)
+
+        // Then
+        assertThat(result).isFalse()
+    }
+
+    @Test
+    fun `M return true W defaultThresholdUsed{default delay used}`() {
+        // Given
+        val testedValidator = TimeBasedInteractionIdentifier()
+
+        // When
+        val result = testedValidator.defaultThresholdUsed()
+
+        // Then
+        assertThat(result).isTrue()
+    }
+
+    @Test
+    fun `M return false W defaultThresholdUsed{custom delay used}`(forge: Forge) {
+        // Given
+        val testedValidator = TimeBasedInteractionIdentifier(
+            TimeBasedInteractionIdentifier.DEFAULT_TIME_THRESHOLD_MS + forge.aLong(min = 0, max = 100)
+        )
+        // When
+        val result = testedValidator.defaultThresholdUsed()
 
         // Then
         assertThat(result).isFalse()

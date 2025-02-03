@@ -25,6 +25,8 @@ import com.datadog.android.rum.internal.anr.ANRException
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
+import com.datadog.android.rum.internal.metric.ViewEndedMetricDispatcher
+import com.datadog.android.rum.internal.metric.ViewMetricDispatcher
 import com.datadog.android.rum.internal.metric.interactiontonextview.InteractionToNextViewMetricResolver
 import com.datadog.android.rum.internal.metric.interactiontonextview.InternalInteractionContext
 import com.datadog.android.rum.internal.metric.networksettled.InternalResourceContext
@@ -64,7 +66,8 @@ internal open class RumViewScope(
     private val trackFrustrations: Boolean,
     internal val sampleRate: Float,
     private val interactionToNextViewMetricResolver: InteractionToNextViewMetricResolver,
-    private val networkSettledMetricResolver: NetworkSettledMetricResolver
+    private val networkSettledMetricResolver: NetworkSettledMetricResolver,
+    private val viewEndedMetricDispatcher: ViewMetricDispatcher
 ) : RumScope {
 
     internal val url = key.url.replace('.', '/')
@@ -301,6 +304,7 @@ internal open class RumViewScope(
             }
         }
         viewLoadingTime = newLoadingTime
+        viewEndedMetricDispatcher.onViewLoadingTimeResolved(newLoadingTime)
         sendViewUpdate(event, writer)
     }
 
@@ -873,6 +877,12 @@ internal open class RumViewScope(
         val eventFeatureFlags = featureFlags.toMutableMap()
         val eventAdditionalAttributes = (eventAttributes + globalAttributes).toMutableMap()
 
+        if (isViewComplete() && getRumContext().sessionState != RumSessionScope.State.NOT_TRACKED) {
+            viewEndedMetricDispatcher.sendViewEnded(
+                interactionToNextViewMetricResolver.getState(viewId),
+                networkSettledMetricResolver.getState()
+            )
+        }
         sdkCore.newRumEventWriteOperation(writer, eventType) { datadogContext ->
             val currentViewId = rumContext.viewId.orEmpty()
             val user = datadogContext.userInfo
@@ -1005,6 +1015,7 @@ internal open class RumViewScope(
     private fun resolveViewDuration(event: RumRawEvent) {
         stoppedNanos = event.eventTime.nanoTime
         val duration = stoppedNanos - startedNanos
+        viewEndedMetricDispatcher.onDurationResolved(duration)
         if (duration == 0L) {
             if (type == RumViewType.BACKGROUND && event is RumRawEvent.AddError && event.isFatal) {
                 // This is a legitimate empty duration, no-op
@@ -1333,19 +1344,6 @@ internal open class RumViewScope(
         }
     }
 
-    enum class RumViewType(val asString: String) {
-        NONE("NONE"),
-        FOREGROUND("FOREGROUND"),
-        BACKGROUND("BACKGROUND"),
-        APPLICATION_LAUNCH("APPLICATION_LAUNCH");
-
-        companion object {
-            fun fromString(string: String?): RumViewType? {
-                return values().firstOrNull { it.asString == string }
-            }
-        }
-    }
-
     // endregion
 
     companion object {
@@ -1388,6 +1386,16 @@ internal open class RumViewScope(
             interactionToNextViewMetricResolver: InteractionToNextViewMetricResolver,
             networkSettledResourceIdentifier: InitialResourceIdentifier
         ): RumViewScope {
+            val networkSettledMetricResolver = NetworkSettledMetricResolver(
+                networkSettledResourceIdentifier,
+                sdkCore.internalLogger
+            )
+
+            val viewEndedMetricDispatcher = ViewEndedMetricDispatcher(
+                viewType = RumViewType.FOREGROUND,
+                internalLogger = sdkCore.internalLogger
+            )
+
             return RumViewScope(
                 parentScope,
                 sdkCore,
@@ -1403,10 +1411,8 @@ internal open class RumViewScope(
                 trackFrustrations = trackFrustrations,
                 sampleRate = sampleRate,
                 interactionToNextViewMetricResolver = interactionToNextViewMetricResolver,
-                networkSettledMetricResolver = NetworkSettledMetricResolver(
-                    networkSettledResourceIdentifier,
-                    sdkCore.internalLogger
-                )
+                networkSettledMetricResolver = networkSettledMetricResolver,
+                viewEndedMetricDispatcher = viewEndedMetricDispatcher
             )
         }
 
