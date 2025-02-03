@@ -1,3 +1,31 @@
+# 2.18.0 / 2025-02-03
+
+* [FEATURE] Allow disabling 404 span redaction. See [#2496](https://github.com/DataDog/dd-sdk-android/pull/2496)
+* [IMPROVEMENT] Improve telemetry on invalid view duration. See [#2466](https://github.com/DataDog/dd-sdk-android/pull/2466)
+* [IMPROVEMENT] Improve the view duration accuracy. See [#2467](https://github.com/DataDog/dd-sdk-android/pull/2467)
+* [IMPROVEMENT] Fix internal telemetry on invalid loading time usage. See [#2468](https://github.com/DataDog/dd-sdk-android/pull/2468)
+* [IMPROVEMENT] Add `Slider` semantics node mapper. See [#2459](https://github.com/DataDog/dd-sdk-android/pull/2459)
+* [IMPROVEMENT] Fix ProGuard rules for Compose `Checkbox`. See [#2470](https://github.com/DataDog/dd-sdk-android/pull/2470)
+* [IMPROVEMENT] Remove non-critical Compose reflection error from telemetry. See [#2476](https://github.com/DataDog/dd-sdk-android/pull/2476)
+* [IMPROVEMENT] Add Semantics mapper for `Switch`. See [#2471](https://github.com/DataDog/dd-sdk-android/pull/2471)
+* [IMPROVEMENT] Apply contrasting color to `Semantics` component. See [#2477](https://github.com/DataDog/dd-sdk-android/pull/2477)
+* [IMPROVEMENT] Fix center crop image is not cropped in wireframe. See [#2479](https://github.com/DataDog/dd-sdk-android/pull/2479)
+* [IMPROVEMENT] Add `RadioButton` color. See [#2478](https://github.com/DataDog/dd-sdk-android/pull/2478)
+* [IMPROVEMENT] Update enums to match RUM event schema. See [#2482](https://github.com/DataDog/dd-sdk-android/pull/2482)
+* [IMPROVEMENT] Fix `_dd.rule_psr` attribute calculation for RUM. See [#2485](https://github.com/DataDog/dd-sdk-android/pull/2485)
+* [IMPROVEMENT] Implement Head-based sampling for network instrumentation. See [#2483](https://github.com/DataDog/dd-sdk-android/pull/2483)
+* [IMPROVEMENT] Add OpenTracing API as exported dependency to OkHttp instrumentation. See [#2488](https://github.com/DataDog/dd-sdk-android/pull/2488)
+* [IMPROVEMENT] Improve `updateFeatureContext` performances. See [#2489](https://github.com/DataDog/dd-sdk-android/pull/2489)
+* [IMPROVEMENT] Adjust telemetry metrics sampling rates. See [#2490](https://github.com/DataDog/dd-sdk-android/pull/2490)
+* [MAINTENANCE] Bump develop version to 2.18.0 snapshot. See [#2465](https://github.com/DataDog/dd-sdk-android/pull/2465)
+* [MAINTENANCE] Update dependencies, adjusting detekt rules, fix tests. See [#2463](https://github.com/DataDog/dd-sdk-android/pull/2463)
+* [MAINTENANCE] Merge release/2.17.0 into develop. See [#2473](https://github.com/DataDog/dd-sdk-android/pull/2473)
+* [MAINTENANCE] Update AGP to version 8.7.3. See [#2484](https://github.com/DataDog/dd-sdk-android/pull/2484)
+* [MAINTENANCE] Include Java API surface file in the API changes check. See [#2493](https://github.com/DataDog/dd-sdk-android/pull/2493)
+* [MAINTENANCE] Update RUM Schema. See [#2492](https://github.com/DataDog/dd-sdk-android/pull/2492)
+* [MAINTENANCE] Pin github actions to exact commit hash. See [#2494](https://github.com/DataDog/dd-sdk-android/pull/2494)
+* [DOCS] Fix KDoc for `RumMonitor#stopSession`. See [#2480](https://github.com/DataDog/dd-sdk-android/pull/2480)
+
 # 2.17.0 / 2025-01-02
 
 * [FEATURE] Implement the basic logic for `time-to-network-settle` view metric. See [#2397](https://github.com/DataDog/dd-sdk-android/pull/2392)
