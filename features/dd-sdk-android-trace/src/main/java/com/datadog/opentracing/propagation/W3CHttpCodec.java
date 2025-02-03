@@ -47,6 +47,7 @@ class W3CHttpCodec {
   private static final String SAMPLING_PRIORITY_TRACESTATE_TAG_VALUE = "s";
   private static final String PARENT_SPAN_ID_TRACESTATE_TAG_VALUE = "p";
   private static final String DATADOG_VENDOR_TRACESTATE_PREFIX = "dd=";
+  private static final String RUM_SESSION_ID_TAG_VALUE = "t.rsid";
 
   private W3CHttpCodec() {
     // This class should not be created. This also makes code coverage checks happy.
@@ -61,13 +62,14 @@ class W3CHttpCodec {
         String spanId = context.getSpanId().toString(HEX_RADIX).toLowerCase(Locale.US);
         String samplingPriority = convertSamplingPriority(context.getSamplingPriority());
         String origin = context.getOrigin();
+        String sessionId = (String) context.getTags().get(DatadogHttpCodec.RUM_SESSION_ID_KEY);
 
         carrier.put(TRACEPARENT_KEY, String.format(TRACEPARENT_VALUE,
                   StringsKt.padStart(traceId, TRACECONTEXT_TRACE_ID_LENGTH, '0'),
                   StringsKt.padStart(spanId, TRACECONTEXT_PARENT_ID_LENGTH, '0'),
                   samplingPriority));
         // TODO RUM-2121 3rd party vendor information will be erased
-        carrier.put(TRACESTATE_KEY, createTraceStateHeader(samplingPriority, origin, spanId));
+        carrier.put(TRACESTATE_KEY, createTraceStateHeader(samplingPriority, origin, spanId, sessionId));
 
       } catch (final NumberFormatException e) {
       }
@@ -80,22 +82,30 @@ class W3CHttpCodec {
     private String createTraceStateHeader(
             String samplingPriority,
             String origin,
-            String parentSpanId
+            String parentSpanId,
+            String sessionId
     ) {
       StringBuilder sb = new StringBuilder(DATADOG_VENDOR_TRACESTATE_PREFIX)
               .append(SAMPLING_PRIORITY_TRACESTATE_TAG_VALUE)
-              .append(":")
+              .append(':')
               .append(samplingPriority)
-              .append(";")
+              .append(';')
               .append(PARENT_SPAN_ID_TRACESTATE_TAG_VALUE)
-              .append(":")
+              .append(':')
               .append(parentSpanId);
 
       if (origin != null) {
-        sb.append(";")
+        sb.append(';')
                 .append(ORIGIN_TRACESTATE_TAG_VALUE)
-                .append(":")
+                .append(':')
                 .append(origin.toLowerCase(Locale.US));
+      }
+
+      if (sessionId != null) {
+        sb.append(';')
+            .append(RUM_SESSION_ID_TAG_VALUE)
+            .append(':')
+            .append(sessionId);
       }
 
       return sb.toString();
