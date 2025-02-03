@@ -17,6 +17,7 @@ import org.gradle.api.tasks.PathSensitive
 import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.TaskAction
 import java.io.File
+import java.nio.file.Paths
 
 // TODO test all from https://github.com/json-schema-org/JSON-Schema-Test-Suite/tree/master/tests/draft2019-09
 
@@ -123,8 +124,10 @@ open class GenerateJsonSchemaTask : DefaultTask() {
     }
 
     private fun getOutputDir(): File {
-        val genDir = File(project.buildDir, "generated")
-        val json2kotlinDir = File(genDir, "json2kotlin")
+        val json2kotlinDir = project.layout.buildDirectory
+            .dir(Paths.get("generated", "json2kotlin").toString())
+            .get()
+            .asFile
         val mainDir = File(json2kotlinDir, "main")
         val file = File(mainDir, "kotlin")
         if (!file.exists()) file.mkdirs()

@@ -18,6 +18,7 @@ import com.datadog.android.event.EventMapper
 import com.datadog.android.trace.internal.domain.event.ContextAwareMapper
 import com.datadog.android.trace.internal.storage.ContextAwareSerializer
 import com.datadog.android.trace.model.SpanEvent
+import com.datadog.legacy.trace.api.sampling.PrioritySampling
 import com.datadog.legacy.trace.common.writer.Writer
 import com.datadog.opentracing.DDSpan
 import java.util.Locale
@@ -39,9 +40,13 @@ internal class TraceWriter(
         if (trace == null) return
         sdkCore.getFeature(Feature.TRACING_FEATURE_NAME)
             ?.withWriteContext { datadogContext, eventBatchWriter ->
-                trace.forEach { span ->
-                    writeSpan(datadogContext, eventBatchWriter, span)
-                }
+                trace
+                    .filter {
+                        it.samplingPriority == null || it.samplingPriority !in DROP_SAMPLING_PRIORITIES
+                    }
+                    .forEach { span ->
+                        writeSpan(datadogContext, eventBatchWriter, span)
+                    }
             }
     }
 
@@ -86,5 +91,6 @@ internal class TraceWriter(
 
     companion object {
         internal const val ERROR_SERIALIZING = "Error serializing %s model"
+        internal val DROP_SAMPLING_PRIORITIES = setOf(PrioritySampling.SAMPLER_DROP, PrioritySampling.USER_DROP)
     }
 }

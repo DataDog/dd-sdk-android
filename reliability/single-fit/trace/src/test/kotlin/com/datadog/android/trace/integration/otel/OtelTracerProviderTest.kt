@@ -749,7 +749,7 @@ internal class OtelTracerProviderTest {
     }
 
     @RepeatedTest(10)
-    fun `M use user-drop priority W buildSpan { tracer uses drop sample rate }`(
+    fun `M not write spans W buildSpan { tracer uses drop sample rate }`(
         @StringForgery fakeInstrumentationName: String,
         @StringForgery fakeOperationName: String
     ) {
@@ -763,33 +763,12 @@ internal class OtelTracerProviderTest {
             .spanBuilder(fakeOperationName)
             .startSpan()
         Thread.sleep(OP_DURATION_MS)
-        val leastSignificantTraceId = span.leastSignificant64BitsTraceIdAsHex()
-        val mostSignificantTraceId = span.mostSignificant64BitsTraceIdAsHex()
-        val spanId = span.spanIdAsHex()
         span.end()
 
         // Then
         blockingWriterWrapper.waitForTracesMax(1)
         val eventsWritten = stubSdkCore.eventsWritten(Feature.TRACING_FEATURE_NAME)
-        assertThat(eventsWritten).hasSize(1)
-        val payload0 = JsonParser.parseString(eventsWritten[0].eventData) as JsonObject
-        SpansPayloadAssert.assertThat(payload0)
-            .hasEnv(stubSdkCore.getDatadogContext().env)
-            .hasSpanAtIndexWith(0) {
-                hasLeastSignificant64BitsTraceId(leastSignificantTraceId)
-                hasMostSignificant64BitsTraceId(mostSignificantTraceId)
-                hasValidMostSignificant64BitsTraceId()
-                hasValidLeastSignificant64BitsTraceId()
-                hasSpanId(spanId)
-                hasService(stubSdkCore.getDatadogContext().service)
-                hasVersion(stubSdkCore.getDatadogContext().version)
-                hasSource(stubSdkCore.getDatadogContext().source)
-                hasTracerVersion(stubSdkCore.getDatadogContext().sdkVersion)
-                hasError(0)
-                hasResource(fakeOperationName)
-                hasSamplingPriority(PrioritySampling.USER_DROP.toInt())
-                hasName(DEFAULT_SPAN_NAME)
-            }
+        assertThat(eventsWritten).isEmpty()
     }
 
     @RepeatedTest(10)
@@ -849,7 +828,6 @@ internal class OtelTracerProviderTest {
         val numberOfSpans = 300
         val normalizedSampleRate = sampleRate / 100.0
         val expectedKeptSpans = (numberOfSpans * normalizedSampleRate).toInt()
-        val expectedDroppedSpans = numberOfSpans - expectedKeptSpans
 
         // When
         repeat(numberOfSpans) {
@@ -876,8 +854,7 @@ internal class OtelTracerProviderTest {
         // Because of the way sampling works the deviation can be quite high so we will have to use an offset of 15%
         // here to make sure this test will never be flaky
         val offset = numberOfSpans * 15 / 100
-        assertThat(droppedSpans.size + keptSpans.size).isEqualTo(numberOfSpans)
-        assertThat(droppedSpans.size).isCloseTo(expectedDroppedSpans, Offset.offset(offset))
+        assertThat(droppedSpans).isEmpty()
         assertThat(keptSpans.size).isCloseTo(expectedKeptSpans, Offset.offset(offset))
     }
 
@@ -1051,11 +1028,11 @@ internal class OtelTracerProviderTest {
         val samplerKeptSpans = spansWritten.filter {
             it.getInt(SAMPLING_PRIORITY_KEY) == PrioritySampling.SAMPLER_KEEP.toInt()
         }
-        assertThat(userDroppedSpans.size + userKeptSpans.size).isEqualTo(numberOfSpans)
-        assertThat(samplerDroppedSpans.size).isEqualTo(0)
+
+        assertThat(samplerDroppedSpans).isEmpty()
         assertThat(userKeptSpans.size).isEqualTo(1)
-        assertThat(samplerKeptSpans.size).isEqualTo(0)
-        assertThat(userDroppedSpans.size).isEqualTo(numberOfSpans - 1)
+        assertThat(samplerKeptSpans).isEmpty()
+        assertThat(userDroppedSpans).isEmpty()
     }
 
     // endregion

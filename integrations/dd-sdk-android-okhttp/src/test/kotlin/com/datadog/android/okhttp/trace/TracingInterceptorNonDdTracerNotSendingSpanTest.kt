@@ -22,12 +22,14 @@ import com.datadog.legacy.trace.api.interceptor.MutableSpan
 import com.datadog.legacy.trace.api.sampling.PrioritySampling
 import com.datadog.opentracing.DDSpanContext
 import com.datadog.opentracing.DDTracer
+import com.datadog.opentracing.propagation.ExtractedContext
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.datadog.tools.unit.forge.BaseConfigurator
 import com.datadog.tools.unit.setStaticValue
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -160,6 +162,9 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
 
     lateinit var fakeLocalHosts: Map<String, Set<TracingHeaderType>>
 
+    @BoolForgery
+    var fakeRedacted404Resources: Boolean = true
+
     // endregion
 
     @BeforeEach
@@ -215,6 +220,7 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
                 traceOrigin = fakeOrigin,
                 traceSampler = mockTraceSampler,
                 traceContextInjection = TraceContextInjection.All,
+                redacted404ResourceName = fakeRedacted404Resources,
                 localTracerFactory = factory
             ) {
             override fun canSendSpan(): Boolean {
@@ -270,6 +276,8 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
                 .isEqualTo("0")
             assertThat(lastValue.header(TracingInterceptor.DATADOG_LEAST_SIGNIFICANT_64_BITS_TRACE_ID_HEADER)).isNull()
             assertThat(lastValue.header(TracingInterceptor.DATADOG_SPAN_ID_HEADER)).isNull()
+            assertThat(lastValue.header(TracingInterceptor.DATADOG_TAGS_HEADER)).isNull()
+            assertThat(lastValue.header(TracingInterceptor.DATADOG_ORIGIN_HEADER)).isNull()
         }
     }
 
@@ -410,6 +418,8 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
                 .isEqualTo("0")
             assertThat(lastValue.header(TracingInterceptor.DATADOG_LEAST_SIGNIFICANT_64_BITS_TRACE_ID_HEADER)).isNull()
             assertThat(lastValue.header(TracingInterceptor.DATADOG_SPAN_ID_HEADER)).isNull()
+            assertThat(lastValue.header(TracingInterceptor.DATADOG_TAGS_HEADER)).isNull()
+            assertThat(lastValue.header(TracingInterceptor.DATADOG_ORIGIN_HEADER)).isNull()
         }
     }
 
@@ -551,7 +561,7 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
         @IntForgery(min = 200, max = 300) statusCode: Int,
         forge: Forge
     ) {
-        val parentSpanContext: SpanContext = mock()
+        val parentSpanContext: ExtractedContext = mock()
         whenever(mockTracer.extract<TextMapExtract>(any(), any())) doReturn parentSpanContext
         whenever(mockSpanBuilder.asChildOf(any<SpanContext>())) doReturn mockSpanBuilder
         whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(true)
@@ -744,6 +754,8 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
                 .isEqualTo("0")
             assertThat(lastValue.header(TracingInterceptor.DATADOG_LEAST_SIGNIFICANT_64_BITS_TRACE_ID_HEADER)).isNull()
             assertThat(lastValue.header(TracingInterceptor.DATADOG_SPAN_ID_HEADER)).isNull()
+            assertThat(lastValue.header(TracingInterceptor.DATADOG_TAGS_HEADER)).isNull()
+            assertThat(lastValue.header(TracingInterceptor.DATADOG_ORIGIN_HEADER)).isNull()
         }
     }
 

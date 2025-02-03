@@ -66,70 +66,82 @@
             },
             "first_contentful_paint": {
               "type": "integer",
-              "description": "Duration in ns to the first rendering",
+              "description": "Duration in ns to the first rendering (deprecated in favor of `view.performance.fcp.timestamp`)",
+              "deprecated": true,
               "minimum": 0,
               "readOnly": true
             },
             "largest_contentful_paint": {
               "type": "integer",
-              "description": "Duration in ns to the largest contentful paint",
+              "description": "Duration in ns to the largest contentful paint (deprecated in favor of `view.performance.lcp.timestamp`)",
+              "deprecated": true,
               "minimum": 0,
               "readOnly": true
             },
             "largest_contentful_paint_target_selector": {
               "type": "string",
-              "description": "CSS selector path of the largest contentful paint element",
+              "description": "CSS selector path of the largest contentful paint element (deprecated in favor of `view.performance.lcp.target_selector`)",
+              "deprecated": true,
               "readOnly": true
             },
             "first_input_delay": {
               "type": "integer",
-              "description": "Duration in ns of the first input event delay",
+              "description": "Duration in ns of the first input event delay (deprecated in favor of `view.performance.fid.duration`)",
+              "deprecated": true,
               "minimum": 0,
               "readOnly": true
             },
             "first_input_time": {
               "type": "integer",
-              "description": "Duration in ns to the first input",
+              "description": "Duration in ns to the first input (deprecated in favor of `view.performance.fid.timestamp`)",
+              "deprecated": true,
               "minimum": 0,
               "readOnly": true
             },
             "first_input_target_selector": {
               "type": "string",
-              "description": "CSS selector path of the first input target element",
+              "description": "CSS selector path of the first input target element (deprecated in favor of `view.performance.fid.target_selector`)",
+              "deprecated": true,
               "readOnly": true
             },
             "interaction_to_next_paint": {
               "type": "integer",
-              "description": "Longest duration in ns between an interaction and the next paint",
+              "description": "Longest duration in ns between an interaction and the next paint (deprecated in favor of `view.performance.inp.duration`)",
+              "deprecated": true,
               "minimum": 0,
               "readOnly": true
             },
             "interaction_to_next_paint_time": {
               "type": "integer",
-              "description": "Duration in ns between start of the view and start of the INP",
+              "description": "Duration in ns between start of the view and start of the INP (deprecated in favor of `view.performance.inp.timestamp`)",
+              "deprecated": true,
               "minimum": 0,
               "readOnly": true
             },
             "interaction_to_next_paint_target_selector": {
               "type": "string",
-              "description": "CSS selector path of the interacted element corresponding to INP",
+              "description": "CSS selector path of the interacted element corresponding to INP (deprecated in favor of `view.performance.inp.target_selector`)",
+              "deprecated": true,
               "readOnly": true
             },
             "cumulative_layout_shift": {
               "type": "number",
-              "description": "Total layout shift score that occurred on the view",
+              "description": "Total layout shift score that occurred on the view (deprecated in favor of `view.performance.cls.score`)",
+              "deprecated": true,
               "minimum": 0,
               "readOnly": true
             },
             "cumulative_layout_shift_time": {
               "type": "integer",
-              "description": "Duration in ns between start of the view and start of the largest layout shift contributing to CLS",
+              "description": "Duration in ns between start of the view and start of the largest layout shift contributing to CLS (deprecated in favor of `view.performance.cls.timestamp`)",
+              "deprecated": true,
               "minimum": 0,
               "readOnly": true
             },
             "cumulative_layout_shift_target_selector": {
               "type": "string",
-              "description": "CSS selector path of the first element (in document order) of the largest layout shift contributing to CLS",
+              "description": "CSS selector path of the first element (in document order) of the largest layout shift contributing to CLS (deprecated in favor of `view.performance.cls.target_selector`)",
+              "deprecated": true,
               "readOnly": true
             },
             "dom_complete": {

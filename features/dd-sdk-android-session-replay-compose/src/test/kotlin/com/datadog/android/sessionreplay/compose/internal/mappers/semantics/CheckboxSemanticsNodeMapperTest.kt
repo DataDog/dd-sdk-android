@@ -18,11 +18,11 @@ import com.datadog.android.sessionreplay.compose.internal.data.UiContext
 import com.datadog.android.sessionreplay.compose.internal.mappers.semantics.CheckboxSemanticsNodeMapper.Companion.BOX_BORDER_WIDTH_DP
 import com.datadog.android.sessionreplay.compose.internal.mappers.semantics.CheckboxSemanticsNodeMapper.Companion.CHECKBOX_CORNER_RADIUS
 import com.datadog.android.sessionreplay.compose.internal.mappers.semantics.CheckboxSemanticsNodeMapper.Companion.CHECKBOX_SIZE_DP
-import com.datadog.android.sessionreplay.compose.internal.mappers.semantics.CheckboxSemanticsNodeMapper.Companion.DEFAULT_COLOR_BLACK
-import com.datadog.android.sessionreplay.compose.internal.mappers.semantics.CheckboxSemanticsNodeMapper.Companion.DEFAULT_COLOR_WHITE
 import com.datadog.android.sessionreplay.compose.internal.mappers.semantics.CheckboxSemanticsNodeMapper.Companion.STROKE_WIDTH_DP
 import com.datadog.android.sessionreplay.compose.internal.utils.ColorUtils
 import com.datadog.android.sessionreplay.compose.internal.utils.PathUtils
+import com.datadog.android.sessionreplay.compose.internal.utils.SemanticsUtils.Companion.DEFAULT_COLOR_BLACK
+import com.datadog.android.sessionreplay.compose.internal.utils.SemanticsUtils.Companion.DEFAULT_COLOR_WHITE
 import com.datadog.android.sessionreplay.compose.test.elmyr.SessionReplayComposeForgeConfigurator
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback
@@ -269,7 +269,7 @@ internal class CheckboxSemanticsNodeMapperTest : AbstractSemanticsNodeMapperTest
         // Then
         val foregroundWireframe = semanticsWireframe.wireframes[1] as MobileSegment.Wireframe.ShapeWireframe
         val expectedShapeStyle = MobileSegment.ShapeStyle(
-            backgroundColor = DEFAULT_COLOR_WHITE,
+            backgroundColor = DEFAULT_COLOR_BLACK,
             opacity = 1f,
             cornerRadius = CHECKBOX_CORNER_RADIUS
         )

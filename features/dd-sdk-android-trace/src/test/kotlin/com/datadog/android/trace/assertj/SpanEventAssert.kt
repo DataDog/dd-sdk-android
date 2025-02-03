@@ -334,6 +334,8 @@ internal class SpanEventAssert(actual: SpanEvent) :
             DeviceType.DESKTOP -> SpanEvent.Type.DESKTOP
             DeviceType.TV -> SpanEvent.Type.TV
             DeviceType.OTHER -> SpanEvent.Type.OTHER
+            DeviceType.GAMING_CONSOLE -> SpanEvent.Type.GAMING_CONSOLE
+            DeviceType.BOT -> SpanEvent.Type.BOT
         }
         assertThat(actual.meta.device.type)
             .overridingErrorMessage(

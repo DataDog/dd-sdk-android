@@ -7,6 +7,7 @@
 package com.datadog.android.sessionreplay.compose.internal.mappers.semantics
 
 import android.view.View
+import androidx.compose.ui.semantics.ProgressBarRangeInfo
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.SemanticsConfiguration
 import androidx.compose.ui.semantics.SemanticsNode
@@ -75,7 +76,13 @@ class RootSemanticsNodeMapperTest {
     private lateinit var mockCheckboxSemanticsNodeMapper: CheckboxSemanticsNodeMapper
 
     @Mock
+    private lateinit var mockSwitchSemanticsNodeMapper: SwitchSemanticsNodeMapper
+
+    @Mock
     private lateinit var mockComposeHiddenMapper: ComposeHiddenMapper
+
+    @Mock
+    private lateinit var mockSliderSemanticsNodeMapper: SliderSemanticsNodeMapper
 
     @Mock
     private lateinit var mockSemanticsConfiguration: SemanticsConfiguration
@@ -95,11 +102,13 @@ class RootSemanticsNodeMapperTest {
                 Role.Tab to mockTabSemanticsNodeMapper,
                 Role.Button to mockButtonSemanticsNodeMapper,
                 Role.Image to mockImageSemanticsNodeMapper,
-                Role.Checkbox to mockCheckboxSemanticsNodeMapper
+                Role.Checkbox to mockCheckboxSemanticsNodeMapper,
+                Role.Switch to mockSwitchSemanticsNodeMapper
             ),
             textSemanticsNodeMapper = mockTextSemanticsNodeMapper,
             containerSemanticsNodeMapper = mockContainerSemanticsNodeMapper,
-            composeHiddenMapper = mockComposeHiddenMapper
+            composeHiddenMapper = mockComposeHiddenMapper,
+            sliderSemanticsNodeMapper = mockSliderSemanticsNodeMapper
         )
     }
 
@@ -167,6 +176,27 @@ class RootSemanticsNodeMapperTest {
     }
 
     @Test
+    fun `M use SwitchSemanticsNodeMapper W createComposeWireframes { role is Switch }`() {
+        // Given
+        val mockSemanticsNode = mockSemanticsNode(Role.Switch)
+
+        // When
+        testedRootSemanticsNodeMapper.createComposeWireframes(
+            mockSemanticsNode,
+            fakeMappingContext.systemInformation.screenDensity,
+            fakeMappingContext,
+            mockAsyncJobStatusCallback
+        )
+
+        // Then
+        verify(mockSwitchSemanticsNodeMapper).map(
+            eq(mockSemanticsNode),
+            any(),
+            eq(mockAsyncJobStatusCallback)
+        )
+    }
+
+    @Test
     fun `M use TabSemanticsNodeMapper W createComposeWireframes { role is Tab }`() {
         // Given
         val mockSemanticsNode = mockSemanticsNode(Role.Tab)
@@ -223,6 +253,29 @@ class RootSemanticsNodeMapperTest {
 
         // Then
         verify(mockCheckboxSemanticsNodeMapper).map(
+            eq(mockSemanticsNode),
+            any(),
+            eq(mockAsyncJobStatusCallback)
+        )
+    }
+
+    @Test
+    fun `M use SliderSemanticsNodeMapper W map createComposeWireframes { isSliderNode }`() {
+        // Given
+        val mockSemanticsNode = mockSemanticsNode(null)
+        val mockProgressBarRangeInfo = mock<ProgressBarRangeInfo>()
+        whenever(mockSemanticsUtils.getProgressBarRangeInfo(mockSemanticsNode)) doReturn mockProgressBarRangeInfo
+
+        // When
+        testedRootSemanticsNodeMapper.createComposeWireframes(
+            mockSemanticsNode,
+            fakeMappingContext.systemInformation.screenDensity,
+            fakeMappingContext,
+            mockAsyncJobStatusCallback
+        )
+
+        // Then
+        verify(mockSliderSemanticsNodeMapper).map(
             eq(mockSemanticsNode),
             any(),
             eq(mockAsyncJobStatusCallback)

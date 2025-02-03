@@ -71,9 +71,9 @@ class DatadogHttpCodec {
             // adding the tags
             carrier.put(DATADOG_TAGS_KEY, MOST_SIGNIFICANT_TRACE_ID_KEY + "=" + mostSignificantTraceId);
 
-
-            // always use max sampling priority for Android traces
-            carrier.put(SAMPLING_PRIORITY_KEY, "1");
+            if (context.lockSamplingPriority()) {
+                carrier.put(SAMPLING_PRIORITY_KEY, String.valueOf(context.getSamplingPriority()));
+            }
         }
     }
 

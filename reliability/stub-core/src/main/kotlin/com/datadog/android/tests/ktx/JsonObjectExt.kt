@@ -86,7 +86,22 @@ fun JsonObject.getDouble(path: String): Double? {
     return getAtPath(path)?.asJsonPrimitive?.asDouble
 }
 
-internal fun JsonObject.getAtPath(path: String): JsonElement? {
+/**
+ * A utility method to retrieve a nested attribute using the dotted notation.
+ * E.g.: assuming the `this` JsonObject represents the json below, calling
+ * `getString("foo.bar[0].spam")` will return the value `3.14` as [JsonElement].
+ *
+ * {
+ *   "foo": {
+ *     "bar" : [
+ *       {
+ *         "spam": 3.14
+ *       }
+ *     ]
+ *   }
+ * }
+ */
+fun JsonObject.getAtPath(path: String): JsonElement? {
     val matchResult = Regex("""(\w+)\[(\d+)]""").matchEntire(path)
     return if (matchResult != null) {
         val arrayName = matchResult.groupValues[1]

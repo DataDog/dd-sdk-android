@@ -6,6 +6,7 @@
 
 package com.datadog.android.utils.forge
 
+import com.datadog.legacy.trace.api.sampling.PrioritySampling
 import com.datadog.opentracing.DDSpanContext
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
@@ -26,7 +27,13 @@ internal class DDSpanContextForgeryFactory : ForgeryFactory<DDSpanContext> {
         val serviceName = forge.anAlphabeticalString()
         val spanType = forge.anAlphabeticalString()
         val origin = forge.anAlphabeticalString()
-        val samplingPriority = forge.anInt()
+        val samplingPriority = forge.anElementFrom(
+            PrioritySampling.UNSET,
+            PrioritySampling.SAMPLER_DROP,
+            PrioritySampling.USER_DROP,
+            PrioritySampling.SAMPLER_KEEP,
+            PrioritySampling.USER_KEEP
+        )
         val baggageItems = forge.aMap(size = forge.anInt(min = 0, max = 10)) {
             anAlphabeticalString() to anAlphabeticalString()
         }
