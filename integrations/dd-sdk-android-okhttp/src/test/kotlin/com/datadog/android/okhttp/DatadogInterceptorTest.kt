@@ -95,6 +95,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
             rumResourceAttributesProvider = mockRumAttributesProvider,
             traceSampler = mockTraceSampler,
             traceContextInjection = TraceContextInjection.All,
+            redacted404ResourceName = fakeRedacted404Resources,
             localTracerFactory = factory
         )
     }

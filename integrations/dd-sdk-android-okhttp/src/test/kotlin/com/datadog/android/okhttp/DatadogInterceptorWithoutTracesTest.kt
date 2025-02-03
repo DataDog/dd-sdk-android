@@ -31,6 +31,7 @@ import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.datadog.tools.unit.forge.BaseConfigurator
 import com.datadog.tools.unit.forge.exhaustiveAttributes
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -138,6 +139,8 @@ internal class DatadogInterceptorWithoutTracesTest {
     @StringForgery(type = StringForgeryType.HEXADECIMAL)
     lateinit var fakeTraceId: String
 
+    @BoolForgery
+    var fakeRedacted404Resources: Boolean = true
     // endregion
 
     @BeforeEach
@@ -162,6 +165,7 @@ internal class DatadogInterceptorWithoutTracesTest {
             tracedRequestListener = mockRequestListener,
             rumResourceAttributesProvider = mockRumAttributesProvider,
             traceSampler = mockTraceSampler,
+            redacted404ResourceName = fakeRedacted404Resources,
             traceContextInjection = TraceContextInjection.All
         ) { _, _ -> mockLocalTracer }
         whenever(rumMonitor.mockSdkCore.getFeature(Feature.TRACING_FEATURE_NAME)) doReturn mock()
