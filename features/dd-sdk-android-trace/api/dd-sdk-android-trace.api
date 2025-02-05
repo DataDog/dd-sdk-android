@@ -4481,10 +4481,12 @@ public abstract class com/datadog/trace/core/propagation/PropagationTags {
 	public static fun factory (Lcom/datadog/trace/api/Config;)Lcom/datadog/trace/core/propagation/PropagationTags$Factory;
 	public abstract fun fillTagMap (Ljava/util/Map;)V
 	public abstract fun getOrigin ()Ljava/lang/CharSequence;
+	public abstract fun getRumSessionId ()Ljava/lang/String;
 	public abstract fun getSamplingPriority ()I
 	public abstract fun getTraceIdHighOrderBits ()J
 	public abstract fun getW3CTracestate ()Ljava/lang/String;
 	public abstract fun headerValue (Lcom/datadog/trace/core/propagation/PropagationTags$HeaderType;)Ljava/lang/String;
+	public abstract fun updateRumSessionId (Ljava/lang/String;)V
 	public abstract fun updateTraceIdHighOrderBits (J)V
 	public abstract fun updateTraceOrigin (Ljava/lang/CharSequence;)V
 	public abstract fun updateTraceSamplingPriority (II)V
@@ -4520,6 +4522,7 @@ public class com/datadog/trace/core/propagation/ptags/W3CPTagsCodec {
 	protected static final field DECISION_MAKER_TAG Lcom/datadog/trace/core/propagation/ptags/TagKey;
 	protected static final field PROPAGATION_ERROR_INCONSISTENT_TID Ljava/lang/String;
 	protected static final field PROPAGATION_ERROR_MALFORMED_TID Ljava/lang/String;
+	protected static final field RUM_SESSION_ID_TAG Lcom/datadog/trace/core/propagation/ptags/TagKey;
 	protected static final field TRACE_ID_TAG Lcom/datadog/trace/core/propagation/ptags/TagKey;
 	protected static final field UPSTREAM_SERVICES_DEPRECATED_TAG Lcom/datadog/trace/core/propagation/ptags/TagKey;
 	public fun <init> ()V
