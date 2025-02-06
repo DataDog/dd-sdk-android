@@ -8,15 +8,18 @@ package com.datadog.android.rum.internal.metric
 import androidx.annotation.VisibleForTesting
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.InternalLogger.Target
+import com.datadog.android.core.internal.attributes.ViewScopeInstrumentationType
 import com.datadog.android.rum.internal.domain.scope.RumViewType
 
 internal class ViewEndedMetricDispatcher(
     private val viewType: RumViewType,
     private val internalLogger: InternalLogger,
+    private val instrumentationType: ViewScopeInstrumentationType? = null,
     private val samplingRate: Float = DEFAULT_SAMPLE_RATE
 ) : ViewMetricDispatcher {
 
     private var duration: Long? = null
+
     private var loadingTime: Long? = null
     private var metricSent: Boolean = false
 
@@ -84,15 +87,15 @@ internal class ViewEndedMetricDispatcher(
                 }
             }
         )
+        putNonNull(KEY_INSTRUMENTATION_TYPE, toAttributeValue(instrumentationType))
     }
 
     companion object {
-        const val DEFAULT_SAMPLE_RATE: Float = 0.75f
+        private const val DEFAULT_SAMPLE_RATE: Float = 0.75f
 
         internal const val VIEW_ENDED_MESSAGE = "[Mobile Metric] RUM View Ended"
 
         internal const val KEY_METRIC_TYPE = "metric_type"
-
         private const val VALUE_METRIC_TYPE = "rum view ended"
 
         internal const val KEY_RUM_VIEW_ENDED = "rve"
@@ -121,6 +124,12 @@ internal class ViewEndedMetricDispatcher(
         private const val VALUE_BACKGROUND = "background"
         private const val VALUE_CUSTOM = "custom"
 
+        internal const val KEY_INSTRUMENTATION_TYPE = "instrumentation_type"
+        private const val VALUE_INSTRUMENTATION_TYPE_COMPOSE = "compose"
+        private const val VALUE_INSTRUMENTATION_TYPE_MANUAL = "manual"
+        private const val VALUE_INSTRUMENTATION_TYPE_ACTIVITY = "activity"
+        private const val VALUE_INSTRUMENTATION_TYPE_FRAGMENT = "fragment"
+
         private fun <K, V> MutableMap<K, V>.putNonNull(key: K, value: V?) {
             if (value != null) put(key, value)
         }
@@ -129,6 +138,7 @@ internal class ViewEndedMetricDispatcher(
         internal fun toAttributeValue(viewType: RumViewType) = when (viewType) {
             RumViewType.NONE,
             RumViewType.FOREGROUND -> VALUE_CUSTOM
+
             RumViewType.BACKGROUND -> VALUE_BACKGROUND
             RumViewType.APPLICATION_LAUNCH -> VALUE_APPLICATION_LAUNCH
         }
@@ -141,23 +151,32 @@ internal class ViewEndedMetricDispatcher(
         }
 
         @VisibleForTesting
-        internal fun toAttributeValue(reason: NoValueReason?): String {
-            return when (reason) {
-                null -> VALUE_UNKNOWN
+        private fun toAttributeValue(
+            instrumentationType: ViewScopeInstrumentationType?
+        ) = when (instrumentationType) {
+            null -> null
+            ViewScopeInstrumentationType.COMPOSE -> VALUE_INSTRUMENTATION_TYPE_COMPOSE
+            ViewScopeInstrumentationType.MANUAL -> VALUE_INSTRUMENTATION_TYPE_MANUAL
+            ViewScopeInstrumentationType.ACTIVITY -> VALUE_INSTRUMENTATION_TYPE_ACTIVITY
+            ViewScopeInstrumentationType.FRAGMENT -> VALUE_INSTRUMENTATION_TYPE_FRAGMENT
+        }
 
-                is NoValueReason.InteractionToNextView -> when (reason) {
-                    NoValueReason.InteractionToNextView.UNKNOWN -> VALUE_UNKNOWN
-                    NoValueReason.InteractionToNextView.NO_PREVIOUS_VIEW -> VALUE_NO_PREVIOUS_VIEW
-                    NoValueReason.InteractionToNextView.NO_ACTION -> VALUE_NO_ACTION
-                    NoValueReason.InteractionToNextView.NO_ELIGIBLE_ACTION -> VALUE_NO_ELIGIBLE_ACTION
-                }
+        @VisibleForTesting
+        internal fun toAttributeValue(reason: NoValueReason?) = when (reason) {
+            null -> VALUE_UNKNOWN
 
-                is NoValueReason.TimeToNetworkSettle -> when (reason) {
-                    NoValueReason.TimeToNetworkSettle.UNKNOWN -> VALUE_UNKNOWN
-                    NoValueReason.TimeToNetworkSettle.NOT_SETTLED_YET -> VALUE_NOT_SETTLED_YET
-                    NoValueReason.TimeToNetworkSettle.NO_RESOURCES -> VALUE_NO_RESOURCES
-                    NoValueReason.TimeToNetworkSettle.NO_INITIAL_RESOURCES -> VALUE_NO_INITIAL_RESOURCES
-                }
+            is NoValueReason.InteractionToNextView -> when (reason) {
+                NoValueReason.InteractionToNextView.UNKNOWN -> VALUE_UNKNOWN
+                NoValueReason.InteractionToNextView.NO_PREVIOUS_VIEW -> VALUE_NO_PREVIOUS_VIEW
+                NoValueReason.InteractionToNextView.NO_ACTION -> VALUE_NO_ACTION
+                NoValueReason.InteractionToNextView.NO_ELIGIBLE_ACTION -> VALUE_NO_ELIGIBLE_ACTION
+            }
+
+            is NoValueReason.TimeToNetworkSettle -> when (reason) {
+                NoValueReason.TimeToNetworkSettle.UNKNOWN -> VALUE_UNKNOWN
+                NoValueReason.TimeToNetworkSettle.NOT_SETTLED_YET -> VALUE_NOT_SETTLED_YET
+                NoValueReason.TimeToNetworkSettle.NO_RESOURCES -> VALUE_NO_RESOURCES
+                NoValueReason.TimeToNetworkSettle.NO_INITIAL_RESOURCES -> VALUE_NO_INITIAL_RESOURCES
             }
         }
     }

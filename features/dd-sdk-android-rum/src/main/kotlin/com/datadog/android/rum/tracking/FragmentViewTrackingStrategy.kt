@@ -13,6 +13,8 @@ import androidx.annotation.MainThread
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
 import com.datadog.android.api.feature.Feature
+import com.datadog.android.core.internal.attributes.ViewScopeInstrumentationType
+import com.datadog.android.core.internal.attributes.enrichWithConstantAttribute
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.internal.RumFeature
@@ -65,48 +67,56 @@ internal constructor(
     )
 
     private val androidXLifecycleCallbacks: FragmentLifecycleCallbacks<FragmentActivity>
-        by lazy {
-            val rumFeature = withSdkCore {
-                it.getFeature(Feature.RUM_FEATURE_NAME)?.unwrap<RumFeature>()
+            by lazy {
+                val rumFeature = withSdkCore {
+                    it.getFeature(Feature.RUM_FEATURE_NAME)?.unwrap<RumFeature>()
+                }
+                val rumMonitor = withSdkCore { GlobalRumMonitor.get(it) }
+                if (rumFeature != null && rumMonitor != null) {
+                    AndroidXFragmentLifecycleCallbacks(
+                        argumentsProvider = {
+                            if (trackArguments) {
+                                it.arguments.convertToRumViewAttributes()
+                            } else {
+                                mutableMapOf()
+                            }.enrichWithConstantAttribute(ViewScopeInstrumentationType.FRAGMENT)
+                        },
+                        componentPredicate = supportFragmentComponentPredicate,
+                        rumMonitor = rumMonitor,
+                        rumFeature = rumFeature
+                    )
+                } else {
+                    NoOpFragmentLifecycleCallbacks()
+                }
             }
-            val rumMonitor = withSdkCore { GlobalRumMonitor.get(it) }
-            if (rumFeature != null && rumMonitor != null) {
-                AndroidXFragmentLifecycleCallbacks(
-                    argumentsProvider = {
-                        if (trackArguments) it.arguments.convertToRumViewAttributes() else emptyMap()
-                    },
-                    componentPredicate = supportFragmentComponentPredicate,
-                    rumMonitor = rumMonitor,
-                    rumFeature = rumFeature
-                )
-            } else {
-                NoOpFragmentLifecycleCallbacks()
-            }
-        }
 
     private val oreoLifecycleCallbacks: FragmentLifecycleCallbacks<Activity>
-        by lazy {
-            val rumFeature = withSdkCore {
-                it.getFeature(Feature.RUM_FEATURE_NAME)?.unwrap<RumFeature>()
+            by lazy {
+                val rumFeature = withSdkCore {
+                    it.getFeature(Feature.RUM_FEATURE_NAME)?.unwrap<RumFeature>()
+                }
+                val rumMonitor = withSdkCore { GlobalRumMonitor.get(it) }
+                if (
+                    buildSdkVersionProvider.version >= Build.VERSION_CODES.O &&
+                    rumFeature != null && rumMonitor != null
+                ) {
+                    OreoFragmentLifecycleCallbacks(
+                        argumentsProvider = {
+                            if (trackArguments) {
+                                it.arguments.convertToRumViewAttributes()
+                            } else {
+                                mutableMapOf()
+                            }.enrichWithConstantAttribute(ViewScopeInstrumentationType.FRAGMENT)
+                        },
+                        componentPredicate = defaultFragmentComponentPredicate,
+                        rumMonitor = rumMonitor,
+                        rumFeature = rumFeature,
+                        buildSdkVersionProvider = buildSdkVersionProvider
+                    )
+                } else {
+                    NoOpFragmentLifecycleCallbacks()
+                }
             }
-            val rumMonitor = withSdkCore { GlobalRumMonitor.get(it) }
-            if (
-                buildSdkVersionProvider.version >= Build.VERSION_CODES.O &&
-                rumFeature != null && rumMonitor != null
-            ) {
-                OreoFragmentLifecycleCallbacks(
-                    argumentsProvider = {
-                        if (trackArguments) it.arguments.convertToRumViewAttributes() else emptyMap()
-                    },
-                    componentPredicate = defaultFragmentComponentPredicate,
-                    rumMonitor = rumMonitor,
-                    rumFeature = rumFeature,
-                    buildSdkVersionProvider = buildSdkVersionProvider
-                )
-            } else {
-                NoOpFragmentLifecycleCallbacks()
-            }
-        }
 
     // region ActivityLifecycleTrackingStrategy
 

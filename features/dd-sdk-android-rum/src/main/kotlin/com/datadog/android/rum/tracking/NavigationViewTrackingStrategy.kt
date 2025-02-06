@@ -17,6 +17,8 @@ import androidx.navigation.NavDestination
 import androidx.navigation.Navigation
 import androidx.navigation.fragment.NavHostFragment
 import com.datadog.android.api.feature.Feature
+import com.datadog.android.core.internal.attributes.ViewScopeInstrumentationType
+import com.datadog.android.core.internal.attributes.enrichWithConstantAttribute
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.NoOpRumMonitor
 import com.datadog.android.rum.internal.RumFeature
@@ -94,7 +96,14 @@ class NavigationViewTrackingStrategy(
     ) {
         val rumMonitor = withSdkCore { GlobalRumMonitor.get(it) }
         componentPredicate.runIfValid(destination, internalLogger) {
-            val attributes = if (trackArguments) arguments.convertToRumViewAttributes() else emptyMap()
+            val attributes = if (trackArguments) {
+                arguments.convertToRumViewAttributes()
+            } else {
+                mutableMapOf()
+            }
+
+            attributes.enrichWithConstantAttribute(ViewScopeInstrumentationType.FRAGMENT)
+
             val viewName = componentPredicate.resolveViewName(destination)
             rumMonitor?.startView(destination, viewName, attributes)
         }

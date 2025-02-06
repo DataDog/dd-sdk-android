@@ -17,6 +17,7 @@ import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.rum.RumSessionListener
+import com.datadog.android.core.internal.attributes.LocalAttribute
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.RumFeature.Configuration
 import com.datadog.android.rum.internal.domain.RumContext
@@ -286,7 +287,7 @@ internal class TelemetryEventHandler(
         val sessionReplayFeatureContext =
             sdkCore.getFeatureContext(Feature.SESSION_REPLAY_FEATURE_NAME)
         val sessionReplaySampleRate = sessionReplayFeatureContext[SESSION_REPLAY_SAMPLE_RATE_KEY]
-            as? Long
+                as? Long
         val startRecordingImmediately =
             sessionReplayFeatureContext[SESSION_REPLAY_START_IMMEDIATE_RECORDING_KEY] as? Boolean
         val sessionReplayImagePrivacy =
@@ -428,7 +429,7 @@ internal class TelemetryEventHandler(
                     InternalLogger.Target.TELEMETRY,
                     {
                         "GlobalTracer class exists in the runtime classpath, " +
-                            "but there is an error invoking isRegistered method"
+                                "but there is an error invoking isRegistered method"
                     },
                     t
                 )
@@ -473,11 +474,11 @@ internal class TelemetryEventHandler(
         val telemetrySampleRate = rumConfig?.telemetrySampleRate?.percent() ?: return 0f
 
         val creatingSamplingRate = properties
-            ?.getFloat(InternalTelemetryEvent.CREATION_SAMPLING_RATE_KEY)
+            ?.getFloat(LocalAttribute.Key.CREATION_SAMPLING_RATE)
             ?.percent() ?: 1.0
 
         val reportingSamplingRate = properties
-            ?.getFloat(InternalTelemetryEvent.REPORTING_SAMPLING_RATE_KEY)
+            ?.getFloat(LocalAttribute.Key.REPORTING_SAMPLING_RATE)
             ?.percent() ?: 1.0
 
         val eventSamplingRate = eventSpecificSamplingRate?.percent() ?: 1.0
@@ -487,11 +488,10 @@ internal class TelemetryEventHandler(
         return (effectiveSampleRate * HUNDRED).toFloat()
     }
 
-    private fun Map<String, Any?>.getFloat(key: String) = get(key) as? Float
+    private fun Map<String, Any?>.getFloat(key: LocalAttribute.Key) = get(key.string) as? Float
 
     private fun Map<String, Any?>.cleanUpInternalAttributes() = toMutableMap().apply {
-        remove(InternalTelemetryEvent.REPORTING_SAMPLING_RATE_KEY)
-        remove(InternalTelemetryEvent.CREATION_SAMPLING_RATE_KEY)
+        LocalAttribute.Key.values().forEach { key -> remove(key.string) }
     }
 
     // endregion

@@ -11,6 +11,8 @@ import android.content.Intent
 import android.os.Bundle
 import androidx.annotation.MainThread
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.core.internal.attributes.ViewScopeInstrumentationType
+import com.datadog.android.core.internal.attributes.enrichWithConstantAttribute
 import com.datadog.android.core.internal.utils.scheduleSafe
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumMonitor
@@ -108,8 +110,8 @@ constructor(
      * Maps the Bundle key - value properties into compatible attributes for the Rum Events.
      * @param intent the [Intent] we need to transform. Returns an empty Map if this is null.
      */
-    private fun convertToRumAttributes(intent: Intent?): Map<String, Any?> {
-        if (intent == null) return emptyMap()
+    private fun convertToRumAttributes(intent: Intent?): MutableMap<String, Any?> {
+        if (intent == null) return mutableMapOf()
 
         val attributes = mutableMapOf<String, Any?>()
 
@@ -121,6 +123,7 @@ constructor(
         }
 
         attributes.putAll(intent.safeExtras.convertToRumViewAttributes())
+        attributes.enrichWithConstantAttribute(ViewScopeInstrumentationType.ACTIVITY)
 
         return attributes
     }
