@@ -9574,7 +9574,8 @@ internal class RumViewScopeTest {
         type: RumViewType = RumViewType.FOREGROUND,
         trackFrustrations: Boolean = fakeTrackFrustrations,
         sampleRate: Float = fakeSampleRate,
-        interactionNextViewMetricResolver: InteractionToNextViewMetricResolver = mockInteractionToNextViewMetricResolver,
+        interactionNextViewMetricResolver: InteractionToNextViewMetricResolver =
+            mockInteractionToNextViewMetricResolver,
         networkSettledMetricResolver: NetworkSettledMetricResolver = mockNetworkSettledMetricResolver,
         viewEndedMetricDispatcher: ViewMetricDispatcher = mockViewEndedMetricDispatcher
     ) = RumViewScope(
