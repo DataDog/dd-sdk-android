@@ -84,6 +84,10 @@ public class PTagsFactory implements PropagationTags.Factory {
     private volatile String[] headerCache = null;
     /** The high-order 64 bits of the trace id. */
     private volatile long traceIdHighOrderBits;
+
+    private volatile String rumSessionId;
+    private volatile TagValue rumSessionIdTagValue ;
+
     /**
      * The zero-padded lower-case 16 character hexadecimal representation of the high-order 64 bits
      * of the trace id, wrapped into a {@link TagValue}, <code>null</code> if not set.
@@ -203,6 +207,7 @@ public class PTagsFactory implements PropagationTags.Factory {
       return traceIdHighOrderBits;
     }
 
+    @Override
     public void updateTraceIdHighOrderBits(long highOrderBits) {
       if (traceIdHighOrderBits != highOrderBits) {
         traceIdHighOrderBits = highOrderBits;
@@ -211,6 +216,21 @@ public class PTagsFactory implements PropagationTags.Factory {
                 ? null
                 : TagValue.from(LongStringUtils.toHexStringPadded(highOrderBits, 16));
         clearCachedHeader(DATADOG);
+      }
+    }
+
+    @Override
+    public String getRumSessionId() {
+      return rumSessionId;
+    }
+
+    @Override
+    public void updateRumSessionId(String sessionId) {
+      if (!Objects.equals(rumSessionId, sessionId)) {
+        rumSessionId = sessionId;
+        rumSessionIdTagValue = TagValue.from(rumSessionId);
+        clearCachedHeader(DATADOG);
+        clearCachedHeader(W3C);
       }
     }
 
@@ -294,6 +314,10 @@ public class PTagsFactory implements PropagationTags.Factory {
 
     TagValue getTraceIdHighOrderBitsHexTagValue() {
       return traceIdHighOrderBitsHexTagValue;
+    }
+
+    TagValue getRumSessionIdTagValue() {
+      return rumSessionIdTagValue;
     }
 
     TagValue getDecisionMakerTagValue() {
