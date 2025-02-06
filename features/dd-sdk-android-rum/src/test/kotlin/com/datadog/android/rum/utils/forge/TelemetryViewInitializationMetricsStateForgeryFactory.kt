@@ -14,7 +14,7 @@ import fr.xgouchet.elmyr.ForgeryFactory
 
 internal class TelemetryViewInitializationMetricsStateForgeryFactory : ForgeryFactory<ViewInitializationMetricsState> {
     override fun getForgery(forge: Forge): ViewInitializationMetricsState {
-        val initializationTime = forge.aNullable { forge.aLong(min = 0L) }
+        val initializationTime = forge.aNullable { aLong(min = 0L) }
         return ViewInitializationMetricsState(
             initializationTime = initializationTime,
             config = forge.aValueFrom(ViewInitializationMetricsConfig::class.java),

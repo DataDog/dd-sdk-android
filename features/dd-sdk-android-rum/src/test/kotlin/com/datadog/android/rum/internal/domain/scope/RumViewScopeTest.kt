@@ -205,7 +205,7 @@ internal class RumViewScopeTest {
     private lateinit var mockNetworkSettledMetricResolver: NetworkSettledMetricResolver
 
     @Mock
-    private lateinit var mockInteractionNextViewMetricResolver: InteractionToNextViewMetricResolver
+    private lateinit var mockInteractionToNextViewMetricResolver: InteractionToNextViewMetricResolver
 
     @Mock
     private lateinit var mockViewEndedMetricDispatcher: ViewEndedMetricDispatcher
@@ -232,8 +232,8 @@ internal class RumViewScopeTest {
         fakeInteractionToNextViewMetricValue = forge.aNullable { aPositiveLong() }
         whenever(mockNetworkSettledMetricResolver.resolveMetric()) doReturn fakeNetworkSettledMetricValue
         whenever(mockNetworkSettledMetricResolver.getState()) doReturn fakeTnsState
-        whenever(mockInteractionNextViewMetricResolver.getState(any())) doReturn fakeInvState
-        whenever(mockInteractionNextViewMetricResolver.resolveMetric(any())) doReturn
+        whenever(mockInteractionToNextViewMetricResolver.getState(any())) doReturn fakeInvState
+        whenever(mockInteractionToNextViewMetricResolver.resolveMetric(any())) doReturn
             fakeInteractionToNextViewMetricValue
         val isValidSource = forge.aBool()
 
@@ -7396,7 +7396,7 @@ internal class RumViewScopeTest {
     @Test
     fun `M notify the interactionToNextViewMetricResolver W view was created`() {
         // Then
-        verify(mockInteractionNextViewMetricResolver).onViewCreated(
+        verify(mockInteractionToNextViewMetricResolver).onViewCreated(
             testedScope.viewId,
             fakeEventTime.nanoTime
         )
@@ -7416,7 +7416,7 @@ internal class RumViewScopeTest {
         )
 
         // Then
-        verify(mockInteractionNextViewMetricResolver).onActionSent(
+        verify(mockInteractionToNextViewMetricResolver).onActionSent(
             InternalInteractionContext(
                 validActionSent.viewId,
                 validActionSent.type,
@@ -7436,7 +7436,7 @@ internal class RumViewScopeTest {
         )
 
         // Then
-        verify(mockInteractionNextViewMetricResolver, never()).onActionSent(any())
+        verify(mockInteractionToNextViewMetricResolver, never()).onActionSent(any())
     }
 
     // endregion
@@ -9574,7 +9574,7 @@ internal class RumViewScopeTest {
         type: RumViewType = RumViewType.FOREGROUND,
         trackFrustrations: Boolean = fakeTrackFrustrations,
         sampleRate: Float = fakeSampleRate,
-        interactionNextViewMetricResolver: InteractionToNextViewMetricResolver = mockInteractionNextViewMetricResolver,
+        interactionNextViewMetricResolver: InteractionToNextViewMetricResolver = mockInteractionToNextViewMetricResolver,
         networkSettledMetricResolver: NetworkSettledMetricResolver = mockNetworkSettledMetricResolver,
         viewEndedMetricDispatcher: ViewMetricDispatcher = mockViewEndedMetricDispatcher
     ) = RumViewScope(
