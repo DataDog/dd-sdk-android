@@ -112,6 +112,22 @@ internal class ViewEndedMetricDispatcherTest {
     }
 
     @Test
+    fun `M samplingRate = 0,75 W sendViewEnded { default sampling rate }`() {
+        // Given
+        val dispatcherUnderTest = ViewEndedMetricDispatcher(fakeViewType, mockInternalLogger)
+        // When
+        dispatcherUnderTest.sendViewEnded(fakeInvState, fakeTnsState)
+
+        // Then
+        verify(mockInternalLogger).logMetric(
+            messageBuilder = any(),
+            additionalProperties = any(),
+            samplingRate = eq(0.75f),
+            creationSampleRate = eq(null)
+        )
+    }
+
+    @Test
     fun `M logMetric with expected arguments W sendViewEnded`() {
         // Given
         dispatcherUnderTest.onDurationResolved(fakeDuration)
@@ -188,6 +204,7 @@ internal class ViewEndedMetricDispatcherTest {
             when (it) {
                 RumViewType.NONE,
                 RumViewType.FOREGROUND -> "custom"
+
                 RumViewType.BACKGROUND -> "background"
                 RumViewType.APPLICATION_LAUNCH -> "application_launch"
             }

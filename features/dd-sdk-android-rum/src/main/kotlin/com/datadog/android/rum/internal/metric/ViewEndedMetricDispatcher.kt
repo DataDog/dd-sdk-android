@@ -87,7 +87,7 @@ internal class ViewEndedMetricDispatcher(
     }
 
     companion object {
-        const val DEFAULT_SAMPLE_RATE: Float = 75f
+        const val DEFAULT_SAMPLE_RATE: Float = 0.75f
 
         internal const val VIEW_ENDED_MESSAGE = "[Mobile Metric] RUM View Ended"
 
