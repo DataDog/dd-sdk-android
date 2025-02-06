@@ -9,6 +9,7 @@ package com.datadog.android.rum.metric.interactiontonextview
 import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.tools.unit.ObjectTest
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -130,10 +131,12 @@ internal class TimeBasedInteractionIdentifierTest : ObjectTest<TimeBasedInteract
     }
 
     @Test
-    fun `M return false W defaultThresholdUsed{custom delay used}`(forge: Forge) {
+    fun `M return false W defaultThresholdUsed{custom delay used}`(
+        @LongForgery(min = 0, max = 100) timeThresholdMs: Long
+    ) {
         // Given
         val testedValidator = TimeBasedInteractionIdentifier(
-            TimeBasedInteractionIdentifier.DEFAULT_TIME_THRESHOLD_MS + forge.aLong(min = 0, max = 100)
+            TimeBasedInteractionIdentifier.DEFAULT_TIME_THRESHOLD_MS + timeThresholdMs
         )
         // When
         val result = testedValidator.defaultThresholdUsed()

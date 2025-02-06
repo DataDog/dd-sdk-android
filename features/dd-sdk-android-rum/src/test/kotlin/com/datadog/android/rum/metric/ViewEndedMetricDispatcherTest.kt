@@ -16,7 +16,7 @@ import com.datadog.android.rum.internal.metric.ViewEndedMetricDispatcher.Compani
 import com.datadog.android.rum.internal.metric.ViewEndedMetricDispatcher.Companion.KEY_LOADING_TIME
 import com.datadog.android.rum.internal.metric.ViewEndedMetricDispatcher.Companion.KEY_METRIC_TYPE
 import com.datadog.android.rum.internal.metric.ViewEndedMetricDispatcher.Companion.KEY_NO_VALUE_REASON
-import com.datadog.android.rum.internal.metric.ViewEndedMetricDispatcher.Companion.KEY_RVE
+import com.datadog.android.rum.internal.metric.ViewEndedMetricDispatcher.Companion.KEY_RUM_VIEW_ENDED
 import com.datadog.android.rum.internal.metric.ViewEndedMetricDispatcher.Companion.KEY_TIME_TO_NETWORK_SETTLED
 import com.datadog.android.rum.internal.metric.ViewEndedMetricDispatcher.Companion.KEY_VALUE
 import com.datadog.android.rum.internal.metric.ViewEndedMetricDispatcher.Companion.KEY_VIEW_TYPE
@@ -88,6 +88,8 @@ internal class ViewEndedMetricDispatcherTest {
     fun `M sendMetric only once W sendViewEnded`() {
         // When
         dispatcherUnderTest.sendViewEnded(fakeInvState, fakeTnsState)
+        dispatcherUnderTest.sendViewEnded(fakeInvState, fakeTnsState)
+
         // Then
         verify(mockInternalLogger).logMetric(
             messageBuilder = any(),
@@ -96,10 +98,6 @@ internal class ViewEndedMetricDispatcherTest {
             creationSampleRate = eq(null)
         )
 
-        // When
-        dispatcherUnderTest.sendViewEnded(fakeInvState, fakeTnsState)
-
-        // Then
         verify(mockInternalLogger).log(
             eq(InternalLogger.Level.WARN),
             target = eq(Target.TELEMETRY),
@@ -109,6 +107,22 @@ internal class ViewEndedMetricDispatcherTest {
             additionalProperties = eq(null)
         )
         verifyNoMoreInteractions(mockInternalLogger)
+    }
+
+    @Test
+    fun `M samplingRate = 0,75 W sendViewEnded { default sampling rate }`() {
+        // Given
+        val dispatcherUnderTest = ViewEndedMetricDispatcher(fakeViewType, mockInternalLogger)
+        // When
+        dispatcherUnderTest.sendViewEnded(fakeInvState, fakeTnsState)
+
+        // Then
+        verify(mockInternalLogger).logMetric(
+            messageBuilder = any(),
+            additionalProperties = any(),
+            samplingRate = eq(0.75f),
+            creationSampleRate = eq(null)
+        )
     }
 
     @Test
@@ -188,6 +202,7 @@ internal class ViewEndedMetricDispatcherTest {
             when (it) {
                 RumViewType.NONE,
                 RumViewType.FOREGROUND -> "custom"
+
                 RumViewType.BACKGROUND -> "background"
                 RumViewType.APPLICATION_LAUNCH -> "application_launch"
             }
@@ -233,7 +248,7 @@ internal class ViewEndedMetricDispatcherTest {
             tnsNoValueReason: String?
         ): Map<String, Any?> = mapOf(
             KEY_METRIC_TYPE to "rum view ended",
-            KEY_RVE to mapOf(
+            KEY_RUM_VIEW_ENDED to mapOf(
                 KEY_DURATION to duration,
                 KEY_LOADING_TIME to buildMap { put(KEY_VALUE, loadingTime) },
                 KEY_VIEW_TYPE to viewType,

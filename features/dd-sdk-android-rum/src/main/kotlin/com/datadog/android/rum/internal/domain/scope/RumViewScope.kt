@@ -1391,8 +1391,9 @@ internal open class RumViewScope(
                 sdkCore.internalLogger
             )
 
+            val viewType = RumViewType.FOREGROUND
             val viewEndedMetricDispatcher = ViewEndedMetricDispatcher(
-                viewType = RumViewType.FOREGROUND,
+                viewType = viewType,
                 internalLogger = sdkCore.internalLogger
             )
 
@@ -1408,6 +1409,7 @@ internal open class RumViewScope(
                 cpuVitalMonitor,
                 memoryVitalMonitor,
                 frameRateVitalMonitor,
+                type = viewType,
                 trackFrustrations = trackFrustrations,
                 sampleRate = sampleRate,
                 interactionToNextViewMetricResolver = interactionToNextViewMetricResolver,

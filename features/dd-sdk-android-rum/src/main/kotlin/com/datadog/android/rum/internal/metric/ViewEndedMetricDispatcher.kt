@@ -52,7 +52,7 @@ internal class ViewEndedMetricDispatcher(
         tnsState: ViewInitializationMetricsState
     ): Map<String, Any?> = buildMap {
         put(KEY_METRIC_TYPE, VALUE_METRIC_TYPE)
-        put(KEY_RVE, buildAttributesMap(invState, tnsState))
+        put(KEY_RUM_VIEW_ENDED, buildAttributesMap(invState, tnsState))
     }
 
     private fun buildAttributesMap(
@@ -87,7 +87,7 @@ internal class ViewEndedMetricDispatcher(
     }
 
     companion object {
-        const val DEFAULT_SAMPLE_RATE: Float = 75f
+        const val DEFAULT_SAMPLE_RATE: Float = 0.75f
 
         internal const val VIEW_ENDED_MESSAGE = "[Mobile Metric] RUM View Ended"
 
@@ -95,7 +95,7 @@ internal class ViewEndedMetricDispatcher(
 
         private const val VALUE_METRIC_TYPE = "rum view ended"
 
-        internal const val KEY_RVE = "rve"
+        internal const val KEY_RUM_VIEW_ENDED = "rve"
         internal const val KEY_DURATION = "duration"
         internal const val KEY_LOADING_TIME = "loading_time"
 
