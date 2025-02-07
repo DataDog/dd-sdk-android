@@ -13,23 +13,31 @@ import com.datadog.android.rum.internal.AnonymousIdentifierReadCallback
 import com.datadog.android.rum.internal.RumAnonymousIdentifierManager
 import org.junit.Before
 import org.junit.Test
-import org.mockito.Mockito.mock
+import org.junit.runner.RunWith
+import org.mockito.Mock
 import org.mockito.Mockito.never
 import org.mockito.Mockito.verify
+import org.mockito.junit.MockitoJUnitRunner
 import org.mockito.kotlin.any
 import org.mockito.kotlin.eq
+import org.mockito.kotlin.isNull
 import org.mockito.kotlin.whenever
 import java.util.UUID
 
+@RunWith(MockitoJUnitRunner::class)
 class RumAnonymousIdentifierManagerTest {
 
+    @Mock
     private lateinit var dataStore: DataStoreHandler
+
+    @Mock
     private lateinit var core: FeatureSdkCore
+
+    private lateinit var rumAnonymousIdentifierManager: RumAnonymousIdentifierManager
 
     @Before
     fun setUp() {
-        dataStore = mock()
-        core = mock()
+        rumAnonymousIdentifierManager = RumAnonymousIdentifierManager(dataStore, core)
     }
 
     @Test
@@ -38,7 +46,7 @@ class RumAnonymousIdentifierManagerTest {
         whenever(
             dataStore.value(
                 eq("anonymous_id_key"),
-                eq(null),
+                isNull(),
                 any<AnonymousIdentifierReadCallback>(),
                 any()
             )
@@ -48,10 +56,10 @@ class RumAnonymousIdentifierManagerTest {
         }
 
         // When
-        RumAnonymousIdentifierManager.manageAnonymousId(true, dataStore, core)
+        rumAnonymousIdentifierManager.manageAnonymousId(true)
 
         // Then
-        verify(dataStore).setValue(eq("anonymous_id_key"), any(), eq(0), eq(null), any())
+        verify(dataStore).setValue(eq("anonymous_id_key"), any(), eq(0), isNull(), any())
         verify(core).setAnonymousId(any())
     }
 
@@ -61,7 +69,7 @@ class RumAnonymousIdentifierManagerTest {
         whenever(
             dataStore.value(
                 eq("anonymous_id_key"),
-                eq(null),
+                isNull(),
                 any<AnonymousIdentifierReadCallback>(),
                 any()
             )
@@ -71,11 +79,11 @@ class RumAnonymousIdentifierManagerTest {
         }
 
         // When
-        RumAnonymousIdentifierManager.manageAnonymousId(true, dataStore, core)
+        rumAnonymousIdentifierManager.manageAnonymousId(true)
 
         // Then
-        verify(dataStore, never()).setValue(eq("anonymous_id_key"), any(), eq(0), eq(null), any())
-        verify(dataStore, never()).removeValue(eq("anonymous_id_key"), eq(null))
+        verify(dataStore, never()).setValue(eq("anonymous_id_key"), any(), eq(0), isNull(), any())
+        verify(dataStore, never()).removeValue(eq("anonymous_id_key"), isNull())
         verify(core).setAnonymousId(any())
     }
 
@@ -85,10 +93,10 @@ class RumAnonymousIdentifierManagerTest {
         val shouldTrack = false
 
         // When
-        RumAnonymousIdentifierManager.manageAnonymousId(shouldTrack, dataStore, core)
+        rumAnonymousIdentifierManager.manageAnonymousId(shouldTrack)
 
         // Then
-        verify(dataStore).removeValue(eq("anonymous_id_key"), eq(null))
-        verify(core).setAnonymousId(eq(null))
+        verify(dataStore).removeValue(eq("anonymous_id_key"), isNull())
+        verify(core).setAnonymousId(isNull())
     }
 }
