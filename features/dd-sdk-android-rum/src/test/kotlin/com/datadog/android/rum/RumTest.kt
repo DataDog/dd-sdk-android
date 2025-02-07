@@ -9,7 +9,6 @@ package com.datadog.android.rum
 import android.os.Looper
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.Feature
-import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.sampling.RateBasedSampler
@@ -35,9 +34,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
-import org.mockito.ArgumentMatchers.eq
 import org.mockito.Mock
-import org.mockito.Mockito.mockStatic
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
@@ -234,32 +231,6 @@ internal class RumTest {
             Rum.RUM_FEATURE_ALREADY_ENABLED
         )
         verify(mockSdkCore, never()).registerFeature(any())
-    }
-
-    @Test
-    fun `M manages anonymousId W build()`(
-        @Forgery fakeRumConfiguration: RumConfiguration
-    ) {
-        // Given
-        val feature: FeatureScope = mock()
-        val anonymousIdentifierManagerStatic = mockStatic(RumAnonymousIdentifierManager::class.java)
-        whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME))
-            .thenReturn(null)
-            .thenReturn(feature)
-        whenever(feature.dataStore).thenReturn(mock())
-
-        // When
-        Rum.enable(fakeRumConfiguration, mockSdkCore)
-
-        // Then
-        anonymousIdentifierManagerStatic.verify {
-            RumAnonymousIdentifierManager.manageAnonymousId(
-                eq(fakeRumConfiguration.featureConfiguration.trackAnonymousUser),
-                any(),
-                any()
-            )
-        }
-        anonymousIdentifierManagerStatic.close()
     }
 
     companion object {

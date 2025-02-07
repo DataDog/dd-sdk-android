@@ -14,44 +14,69 @@ import com.datadog.android.core.persistence.Serializer
 import com.datadog.android.core.persistence.datastore.DataStoreContent
 import java.util.UUID
 
-object RumAnonymousIdentifierManager {
-    @JvmStatic
-    fun manageAnonymousId(shouldTrack: Boolean, dataStore: DataStoreHandler, core: FeatureSdkCore) {
-        val anonymousIdKey = "anonymous_id_key"
+internal class RumAnonymousIdentifierManager(
+    private val dataStore: DataStoreHandler,
+    private val core: FeatureSdkCore
+) {
+    fun manageAnonymousId(shouldTrack: Boolean) {
         if (shouldTrack) {
-            dataStore.value(
-                anonymousIdKey,
-                null,
-                AnonymousIdentifierReadCallback { anonymousId ->
-                    if (anonymousId == null) {
-                        val newAnonymousId = UUID.randomUUID()
-                        dataStore.setValue(
-                            anonymousIdKey,
-                            newAnonymousId,
-                            0,
-                            null,
-                            AnonymousIdentifierSerializer()
-                        )
-                        core.setAnonymousId(newAnonymousId)
-                    } else {
-                        core.setAnonymousId(anonymousId)
-                    }
-                },
-                AnonymousIdentifierDeserializer()
-            )
+            handleAnonymousIdTracking(dataStore, core)
         } else {
-            dataStore.removeValue(anonymousIdKey)
-            core.setAnonymousId(null)
+            clearAnonymousId(dataStore, core)
+        }
+    }
+
+    private fun handleAnonymousIdTracking(dataStore: DataStoreHandler, core: FeatureSdkCore) {
+        dataStore.value(
+            ANONYMOUS_ID_KEY,
+            null,
+            AnonymousIdentifierReadCallback { anonymousId ->
+                if (anonymousId == null) {
+                    createAndStoreAnonymousId(dataStore, core)
+                } else {
+                    core.setAnonymousId(anonymousId)
+                }
+            },
+            AnonymousIdentifierDeserializer()
+        )
+    }
+
+    private fun createAndStoreAnonymousId(dataStore: DataStoreHandler, core: FeatureSdkCore) {
+        val newAnonymousId = UUID.randomUUID()
+        dataStore.setValue(
+            ANONYMOUS_ID_KEY,
+            newAnonymousId,
+            0,
+            null,
+            AnonymousIdentifierSerializer()
+        )
+        core.setAnonymousId(newAnonymousId)
+    }
+
+    private fun clearAnonymousId(dataStore: DataStoreHandler, core: FeatureSdkCore) {
+        dataStore.removeValue(ANONYMOUS_ID_KEY)
+        core.setAnonymousId(null)
+    }
+
+    companion object {
+        private val ANONYMOUS_ID_KEY = "anonymous_id_key"
+    }
+}
+
+
+@Suppress("SwallowedException")
+internal class AnonymousIdentifierDeserializer : Deserializer<String, UUID> {
+    override fun deserialize(model: String): UUID? {
+        return try {
+            UUID.fromString(model)
+        } catch (e: IllegalArgumentException) {
+            null
         }
     }
 }
 
-internal class AnonymousIdentifierDeserializer : Deserializer<String, UUID> {
-    override fun deserialize(model: String): UUID? = UUID.fromString(model)
-}
-
 internal class AnonymousIdentifierSerializer : Serializer<UUID> {
-    override fun serialize(model: UUID): String? = model.toString()
+    override fun serialize(model: UUID): String = model.toString()
 }
 
 internal class AnonymousIdentifierReadCallback(

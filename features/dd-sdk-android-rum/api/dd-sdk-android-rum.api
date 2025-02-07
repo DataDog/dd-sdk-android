@@ -44,11 +44,6 @@ public final class com/datadog/android/rum/RumActionType : java/lang/Enum {
 	public static fun values ()[Lcom/datadog/android/rum/RumActionType;
 }
 
-public final class com/datadog/android/rum/RumAnonymousIdentifierManager {
-	public static final field INSTANCE Lcom/datadog/android/rum/RumAnonymousIdentifierManager;
-	public static final fun manageAnonymousId (ZLcom/datadog/android/api/storage/datastore/DataStoreHandler;Lcom/datadog/android/api/feature/FeatureSdkCore;)V
-}
-
 public final class com/datadog/android/rum/RumAttributes {
 	public static final field ACTION_GESTURE_DIRECTION Ljava/lang/String;
 	public static final field ACTION_GESTURE_FROM_STATE Ljava/lang/String;
