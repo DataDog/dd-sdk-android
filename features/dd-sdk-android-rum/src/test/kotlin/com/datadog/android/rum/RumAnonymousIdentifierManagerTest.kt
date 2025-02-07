@@ -9,6 +9,8 @@ package com.datadog.android.rum
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.storage.datastore.DataStoreHandler
 import com.datadog.android.core.persistence.datastore.DataStoreContent
+import com.datadog.android.rum.internal.AnonymousIdentifierReadCallback
+import com.datadog.android.rum.internal.RumAnonymousIdentifierManager
 import org.junit.Before
 import org.junit.Test
 import org.mockito.Mockito.mock

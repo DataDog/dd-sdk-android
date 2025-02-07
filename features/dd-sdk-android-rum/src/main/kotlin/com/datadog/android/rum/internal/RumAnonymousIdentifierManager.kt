@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.rum
+package com.datadog.android.rum.internal
 
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.storage.datastore.DataStoreHandler
@@ -59,7 +59,7 @@ internal class RumAnonymousIdentifierManager(
     }
 
     companion object {
-        private val ANONYMOUS_ID_KEY = "anonymous_id_key"
+        private const val ANONYMOUS_ID_KEY = "anonymous_id_key"
     }
 }
 
