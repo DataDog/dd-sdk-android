@@ -1609,5 +1609,3 @@ internal class TelemetryEventHandlerTest {
         private const val MAX_EVENTS_PER_SESSION_TEST = 10
     }
 }
-
-

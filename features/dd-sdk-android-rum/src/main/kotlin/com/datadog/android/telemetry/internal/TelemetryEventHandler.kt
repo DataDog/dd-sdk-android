@@ -289,7 +289,7 @@ internal class TelemetryEventHandler(
         val sessionReplayFeatureContext =
             sdkCore.getFeatureContext(Feature.SESSION_REPLAY_FEATURE_NAME)
         val sessionReplaySampleRate = sessionReplayFeatureContext[SESSION_REPLAY_SAMPLE_RATE_KEY]
-                as? Long
+            as? Long
         val startRecordingImmediately =
             sessionReplayFeatureContext[SESSION_REPLAY_START_IMMEDIATE_RECORDING_KEY] as? Boolean
         val sessionReplayImagePrivacy =
@@ -439,7 +439,7 @@ internal class TelemetryEventHandler(
                     InternalLogger.Target.TELEMETRY,
                     {
                         "GlobalTracer class exists in the runtime classpath, " +
-                                "but there is an error invoking isRegistered method"
+                            "but there is an error invoking isRegistered method"
                     },
                     t
                 )
