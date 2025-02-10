@@ -104,7 +104,7 @@ internal class TelemetryConfigurationEventAssert(actual: TelemetryConfigurationE
         assertThat(actual.telemetry.configuration.sessionSampleRate)
             .overridingErrorMessage(
                 "Expected event data to have telemetry.configuration.sessionSampleRate $expected " +
-                    "but was ${actual.telemetry.configuration.sessionSampleRate}"
+                        "but was ${actual.telemetry.configuration.sessionSampleRate}"
             )
             .isEqualTo(expected)
         return this
@@ -114,7 +114,7 @@ internal class TelemetryConfigurationEventAssert(actual: TelemetryConfigurationE
         assertThat(actual.telemetry.configuration.telemetrySampleRate)
             .overridingErrorMessage(
                 "Expected event data to have telemetry.configuration.telemetrySampleRate $expected " +
-                    "but was ${actual.telemetry.configuration.telemetrySampleRate}"
+                        "but was ${actual.telemetry.configuration.telemetrySampleRate}"
             )
             .isEqualTo(expected)
         return this
@@ -124,7 +124,7 @@ internal class TelemetryConfigurationEventAssert(actual: TelemetryConfigurationE
         assertThat(actual.telemetry.configuration.useProxy)
             .overridingErrorMessage(
                 "Expected event data to have telemetry.configuration.useProxy $expected " +
-                    "but was ${actual.telemetry.configuration.useProxy}"
+                        "but was ${actual.telemetry.configuration.useProxy}"
             )
             .isEqualTo(expected)
         return this
@@ -134,7 +134,7 @@ internal class TelemetryConfigurationEventAssert(actual: TelemetryConfigurationE
         assertThat(actual.telemetry.configuration.trackFrustrations)
             .overridingErrorMessage(
                 "Expected event data to have telemetry.configuration.trackFrustrations $expected " +
-                    "but was ${actual.telemetry.configuration.trackFrustrations}"
+                        "but was ${actual.telemetry.configuration.trackFrustrations}"
             )
             .isEqualTo(expected)
         return this
@@ -144,7 +144,7 @@ internal class TelemetryConfigurationEventAssert(actual: TelemetryConfigurationE
         assertThat(actual.telemetry.configuration.useLocalEncryption)
             .overridingErrorMessage(
                 "Expected event data to have telemetry.configuration.useLocalEncryption $expected " +
-                    "but was ${actual.telemetry.configuration.useLocalEncryption}"
+                        "but was ${actual.telemetry.configuration.useLocalEncryption}"
             )
             .isEqualTo(expected)
         return this
@@ -154,7 +154,7 @@ internal class TelemetryConfigurationEventAssert(actual: TelemetryConfigurationE
         assertThat(actual.telemetry.configuration.viewTrackingStrategy)
             .overridingErrorMessage(
                 "Expected event data to have telemetry.configuration.viewTrackingStrategy $expected " +
-                    "but was ${actual.telemetry.configuration.viewTrackingStrategy}"
+                        "but was ${actual.telemetry.configuration.viewTrackingStrategy}"
             )
             .isEqualTo(expected)
         return this
@@ -164,7 +164,7 @@ internal class TelemetryConfigurationEventAssert(actual: TelemetryConfigurationE
         assertThat(actual.telemetry.configuration.trackBackgroundEvents)
             .overridingErrorMessage(
                 "Expected event data to have telemetry.configuration.trackBackgroundEvents $expected " +
-                    "but was ${actual.telemetry.configuration.trackBackgroundEvents}"
+                        "but was ${actual.telemetry.configuration.trackBackgroundEvents}"
             )
             .isEqualTo(expected)
         return this
@@ -174,7 +174,7 @@ internal class TelemetryConfigurationEventAssert(actual: TelemetryConfigurationE
         assertThat(actual.telemetry.configuration.mobileVitalsUpdatePeriod)
             .overridingErrorMessage(
                 "Expected event data to have telemetry.configuration.mobileVitalsUpdatePeriod $expected " +
-                    "but was ${actual.telemetry.configuration.mobileVitalsUpdatePeriod}"
+                        "but was ${actual.telemetry.configuration.mobileVitalsUpdatePeriod}"
             )
             .isEqualTo(expected)
         return this
@@ -184,7 +184,7 @@ internal class TelemetryConfigurationEventAssert(actual: TelemetryConfigurationE
         assertThat(actual.telemetry.configuration.trackInteractions)
             .overridingErrorMessage(
                 "Expected event data to have telemetry.configuration.trackActions $expected " +
-                    "but was ${actual.telemetry.configuration.trackInteractions}"
+                        "but was ${actual.telemetry.configuration.trackInteractions}"
             )
             .isEqualTo(expected)
         return this
@@ -194,7 +194,7 @@ internal class TelemetryConfigurationEventAssert(actual: TelemetryConfigurationE
         assertThat(actual.telemetry.configuration.trackErrors)
             .overridingErrorMessage(
                 "Expected event data to have telemetry.configuration.trackErrors $expected " +
-                    "but was ${actual.telemetry.configuration.trackErrors}"
+                        "but was ${actual.telemetry.configuration.trackErrors}"
             )
             .isEqualTo(expected)
         return this
@@ -204,7 +204,7 @@ internal class TelemetryConfigurationEventAssert(actual: TelemetryConfigurationE
         assertThat(actual.telemetry.configuration.trackNetworkRequests)
             .overridingErrorMessage(
                 "Expected event data to have telemetry.configuration.trackNetworkRequests $expected " +
-                    "but was ${actual.telemetry.configuration.trackNetworkRequests}"
+                        "but was ${actual.telemetry.configuration.trackNetworkRequests}"
             )
             .isEqualTo(expected)
         return this
@@ -214,7 +214,7 @@ internal class TelemetryConfigurationEventAssert(actual: TelemetryConfigurationE
         assertThat(actual.telemetry.configuration.trackNativeLongTasks)
             .overridingErrorMessage(
                 "Expected event data to have telemetry.configuration.trackNativeLongTasks $expected " +
-                    "but was ${actual.telemetry.configuration.trackNativeLongTasks}"
+                        "but was ${actual.telemetry.configuration.trackNativeLongTasks}"
             )
             .isEqualTo(expected)
         return this
@@ -224,7 +224,7 @@ internal class TelemetryConfigurationEventAssert(actual: TelemetryConfigurationE
         assertThat(actual.telemetry.configuration.useTracing)
             .overridingErrorMessage(
                 "Expected event data to have telemetry.configuration.useTracing $expected " +
-                    "but was ${actual.telemetry.configuration.useTracing}"
+                        "but was ${actual.telemetry.configuration.useTracing}"
             )
             .isEqualTo(expected)
         return this
@@ -234,7 +234,7 @@ internal class TelemetryConfigurationEventAssert(actual: TelemetryConfigurationE
         assertThat(actual.telemetry.configuration.tracerApi)
             .overridingErrorMessage(
                 "Expected event data to have telemetry.configuration.tracerApi $tracerApi " +
-                    "but was ${actual.telemetry.configuration.tracerApi}"
+                        "but was ${actual.telemetry.configuration.tracerApi}"
             )
             .isEqualTo(tracerApi)
         return this
@@ -244,7 +244,7 @@ internal class TelemetryConfigurationEventAssert(actual: TelemetryConfigurationE
         assertThat(actual.telemetry.configuration.tracerApiVersion)
             .overridingErrorMessage(
                 "Expected event data to have telemetry.configuration.tracerApiVersion $tracerApiVersion " +
-                    "but was ${actual.telemetry.configuration.tracerApiVersion}"
+                        "but was ${actual.telemetry.configuration.tracerApiVersion}"
             )
             .isEqualTo(tracerApiVersion)
         return this
@@ -254,7 +254,7 @@ internal class TelemetryConfigurationEventAssert(actual: TelemetryConfigurationE
         assertThat(actual.telemetry.configuration.batchSize)
             .overridingErrorMessage(
                 "Expected event data to have telemetry.configuration.batchSize $expected " +
-                    "but was ${actual.telemetry.configuration.batchSize}"
+                        "but was ${actual.telemetry.configuration.batchSize}"
             )
             .isEqualTo(expected)
         return this
@@ -264,7 +264,7 @@ internal class TelemetryConfigurationEventAssert(actual: TelemetryConfigurationE
         assertThat(actual.telemetry.configuration.batchUploadFrequency)
             .overridingErrorMessage(
                 "Expected event data to have telemetry.configuration.batchUploadFrequency $expected " +
-                    "but was ${actual.telemetry.configuration.batchUploadFrequency}"
+                        "but was ${actual.telemetry.configuration.batchUploadFrequency}"
             )
             .isEqualTo(expected)
         return this
@@ -274,7 +274,7 @@ internal class TelemetryConfigurationEventAssert(actual: TelemetryConfigurationE
         assertThat(actual.telemetry.configuration.batchProcessingLevel)
             .overridingErrorMessage(
                 "Expected event data to have telemetry.configuration.batchProcessingLevel $expected " +
-                    "but was ${actual.telemetry.configuration.batchProcessingLevel}"
+                        "but was ${actual.telemetry.configuration.batchProcessingLevel}"
             )
             .isEqualTo(expected?.toLong())
         return this
@@ -284,7 +284,27 @@ internal class TelemetryConfigurationEventAssert(actual: TelemetryConfigurationE
         assertThat(actual.telemetry.configuration.isMainProcess)
             .overridingErrorMessage(
                 "Expected event data to have telemetry.configuration.isMainProcess $expected " +
-                    "but was ${actual.telemetry.configuration.isMainProcess}"
+                        "but was ${actual.telemetry.configuration.isMainProcess}"
+            )
+            .isEqualTo(expected)
+        return this
+    }
+
+    fun hasTnsTimeBasedThreshold(expected: Long?): TelemetryConfigurationEventAssert {
+        assertThat(actual.telemetry.configuration.tnsTimeThresholdMs)
+            .overridingErrorMessage(
+                "Expected event data to have telemetry.configuration.tnsTimeThresholdMs $expected " +
+                        "but was ${actual.telemetry.configuration.tnsTimeThresholdMs}"
+            )
+            .isEqualTo(expected)
+        return this
+    }
+
+    fun hasInvTimeBasedThreshold(expected: Long?): TelemetryConfigurationEventAssert {
+        assertThat(actual.telemetry.configuration.invTimeThresholdMs)
+            .overridingErrorMessage(
+                "Expected event data to have telemetry.configuration.invTimeThresholdMs $expected " +
+                        "but was ${actual.telemetry.configuration.invTimeThresholdMs}"
             )
             .isEqualTo(expected)
         return this
@@ -298,7 +318,7 @@ internal class TelemetryConfigurationEventAssert(actual: TelemetryConfigurationE
         assertThat(actual.telemetry.configuration.trackNativeViews)
             .overridingErrorMessage(
                 "Expected event data to have telemetry.configuration.trackNativeViews $expected " +
-                    "but was ${actual.telemetry.configuration.trackNativeViews}"
+                        "but was ${actual.telemetry.configuration.trackNativeViews}"
             )
             .isEqualTo(expected)
         return this
@@ -308,7 +328,7 @@ internal class TelemetryConfigurationEventAssert(actual: TelemetryConfigurationE
         assertThat(actual.telemetry.configuration.trackNativeErrors)
             .overridingErrorMessage(
                 "Expected event data to have telemetry.configuration.trackNativeErrors $expected " +
-                    "but was ${actual.telemetry.configuration.trackNativeErrors}"
+                        "but was ${actual.telemetry.configuration.trackNativeErrors}"
             )
             .isEqualTo(expected)
         return this
@@ -318,7 +338,7 @@ internal class TelemetryConfigurationEventAssert(actual: TelemetryConfigurationE
         assertThat(actual.telemetry.configuration.useFirstPartyHosts)
             .overridingErrorMessage(
                 "Expected event data to have telemetry.configuration.useFirstPartyHosts $expected " +
-                    "but was ${actual.telemetry.configuration.useFirstPartyHosts}"
+                        "but was ${actual.telemetry.configuration.useFirstPartyHosts}"
             )
             .isEqualTo(expected)
         return this
@@ -328,7 +348,7 @@ internal class TelemetryConfigurationEventAssert(actual: TelemetryConfigurationE
         assertThat(actual.telemetry.configuration.trackFlutterPerformance)
             .overridingErrorMessage(
                 "Expected event data to have telemetry.configuration.trackFlutterPerformance $expected " +
-                    "but was ${actual.telemetry.configuration.trackFlutterPerformance}"
+                        "but was ${actual.telemetry.configuration.trackFlutterPerformance}"
             )
             .isEqualTo(expected)
         return this
@@ -338,7 +358,7 @@ internal class TelemetryConfigurationEventAssert(actual: TelemetryConfigurationE
         assertThat(actual.telemetry.configuration.initializationType)
             .overridingErrorMessage(
                 "Expected event data to have telemetry.configuration.initializationType $expected " +
-                    "but was ${actual.telemetry.configuration.initializationType}"
+                        "but was ${actual.telemetry.configuration.initializationType}"
             )
             .isEqualTo(expected)
         return this
@@ -352,8 +372,8 @@ internal class TelemetryConfigurationEventAssert(actual: TelemetryConfigurationE
         assertThat(actual.telemetry.configuration.sessionReplaySampleRate)
             .overridingErrorMessage(
                 "Expected event data to have telemetry.configuration.sessionReplaySampleRate" +
-                    " $expected " +
-                    "but was ${actual.telemetry.configuration.sessionReplaySampleRate}"
+                        " $expected " +
+                        "but was ${actual.telemetry.configuration.sessionReplaySampleRate}"
             )
             .isEqualTo(expected)
         return this
@@ -363,8 +383,8 @@ internal class TelemetryConfigurationEventAssert(actual: TelemetryConfigurationE
         assertThat(actual.telemetry.configuration.imagePrivacyLevel)
             .overridingErrorMessage(
                 "Expected event data to have telemetry.configuration.imagePrivacyLevel" +
-                    " $expected " +
-                    "but was ${actual.telemetry.configuration.imagePrivacyLevel}"
+                        " $expected " +
+                        "but was ${actual.telemetry.configuration.imagePrivacyLevel}"
             )
             .isEqualTo(expected)
         return this
@@ -374,8 +394,8 @@ internal class TelemetryConfigurationEventAssert(actual: TelemetryConfigurationE
         assertThat(actual.telemetry.configuration.touchPrivacyLevel)
             .overridingErrorMessage(
                 "Expected event data to have telemetry.configuration.touchPrivacyLevel" +
-                    " $expected " +
-                    "but was ${actual.telemetry.configuration.touchPrivacyLevel}"
+                        " $expected " +
+                        "but was ${actual.telemetry.configuration.touchPrivacyLevel}"
             )
             .isEqualTo(expected)
         return this
@@ -385,8 +405,8 @@ internal class TelemetryConfigurationEventAssert(actual: TelemetryConfigurationE
         assertThat(actual.telemetry.configuration.textAndInputPrivacyLevel)
             .overridingErrorMessage(
                 "Expected event data to have telemetry.configuration.textAndInputPrivacyLevel" +
-                    " $expected " +
-                    "but was ${actual.telemetry.configuration.textAndInputPrivacyLevel}"
+                        " $expected " +
+                        "but was ${actual.telemetry.configuration.textAndInputPrivacyLevel}"
             )
             .isEqualTo(expected)
         return this
@@ -394,9 +414,9 @@ internal class TelemetryConfigurationEventAssert(actual: TelemetryConfigurationE
 
     fun hasStartRecordingImmediately(expected: Boolean?): TelemetryConfigurationEventAssert {
         val assertErrorMessage = "Expected event data to have" +
-            " telemetry.configuration.startRecordingImmediately" +
-            " $expected " +
-            "but was ${actual.telemetry.configuration.startRecordingImmediately}"
+                " telemetry.configuration.startRecordingImmediately" +
+                " $expected " +
+                "but was ${actual.telemetry.configuration.startRecordingImmediately}"
         assertThat(actual.telemetry.configuration.startRecordingImmediately)
             .overridingErrorMessage(assertErrorMessage)
             .isEqualTo(expected)

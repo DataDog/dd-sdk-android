@@ -367,7 +367,9 @@ internal class TelemetryEventHandler(
                     textAndInputPrivacyLevel = sessionReplayTextAndInputPrivacy,
                     startRecordingImmediately = startRecordingImmediately,
                     batchProcessingLevel = event.batchProcessingLevel.toLong(),
-                    isMainProcess = datadogContext.processInfo.isMainProcess
+                    isMainProcess = datadogContext.processInfo.isMainProcess,
+                    invTimeThresholdMs = invTimeBasedThreshold,
+                    tnsTimeThresholdMs = tnsTimeBasedThreshold
                 )
             )
         )

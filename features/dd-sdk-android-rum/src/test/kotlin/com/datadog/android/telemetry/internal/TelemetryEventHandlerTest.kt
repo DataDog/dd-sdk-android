@@ -23,6 +23,10 @@ import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.scope.RumRawEvent
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
+import com.datadog.android.rum.metric.interactiontonextview.LastInteractionIdentifier
+import com.datadog.android.rum.metric.interactiontonextview.TimeBasedInteractionIdentifier
+import com.datadog.android.rum.metric.networksettled.InitialResourceIdentifier
+import com.datadog.android.rum.metric.networksettled.TimeBasedInitialResourceIdentifier
 import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
 import com.datadog.android.rum.tracking.FragmentViewTrackingStrategy
 import com.datadog.android.rum.tracking.MixedViewTrackingStrategy
@@ -575,6 +579,8 @@ internal class TelemetryEventHandlerTest {
                 .hasMobileVitalsUpdatePeriod(
                     fakeRumConfiguration.vitalsMonitorUpdateFrequency.periodInMs
                 )
+                .hasTnsTimeBasedThreshold(fakeRumConfiguration.initialResourceIdentifier.resolveThreshold())
+                .hasInvTimeBasedThreshold(fakeRumConfiguration.lastInteractionIdentifier.resolveThreshold())
         }
     }
 
@@ -1580,6 +1586,14 @@ internal class TelemetryEventHandlerTest {
             Configurator().configure(this)
         }
 
+        private fun InitialResourceIdentifier.resolveThreshold(): Long? {
+            return (this as? TimeBasedInitialResourceIdentifier)?.timeThresholdInMilliseconds
+        }
+
+        private fun LastInteractionIdentifier.resolveThreshold(): Long? {
+            return (this as? TimeBasedInteractionIdentifier)?.timeThresholdInMilliseconds
+        }
+
         @JvmStatic
         fun tracingConfigurationParameters() = listOf(
             // hasTracer, tracerApiName, tracerApiVersion
@@ -1595,3 +1609,5 @@ internal class TelemetryEventHandlerTest {
         private const val MAX_EVENTS_PER_SESSION_TEST = 10
     }
 }
+
+
