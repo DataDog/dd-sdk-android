@@ -270,7 +270,7 @@ internal class DatadogCore(
     }
 
     override fun setAnonymousId(anonymousId: UUID?) {
-        coreFeature.userInfoProvider.setAnonymousId(anonymousId.toString())
+        coreFeature.userInfoProvider.setAnonymousId(anonymousId?.toString())
     }
 
     override fun isCoreActive(): Boolean = isActive

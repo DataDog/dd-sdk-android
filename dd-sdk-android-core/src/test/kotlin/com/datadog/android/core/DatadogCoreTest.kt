@@ -246,6 +246,19 @@ internal class DatadogCoreTest {
     }
 
     @Test
+    fun `M clears anonymousId W setAnonymousId(null)`() {
+        // Given
+        val mockUserInfoProvider = mock<MutableUserInfoProvider>()
+        testedCore.coreFeature.userInfoProvider = mockUserInfoProvider
+
+        // When
+        testedCore.setAnonymousId(null)
+
+        // Then
+        verify(mockUserInfoProvider).setAnonymousId(null)
+    }
+
+    @Test
     fun `M set additional user info W addUserProperties() is called`(
         @StringForgery(type = StringForgeryType.HEXADECIMAL) id: String,
         @StringForgery name: String,
