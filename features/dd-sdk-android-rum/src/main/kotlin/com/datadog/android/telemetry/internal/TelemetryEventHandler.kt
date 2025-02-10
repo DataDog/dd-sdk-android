@@ -25,6 +25,8 @@ import com.datadog.android.rum.internal.domain.scope.RumRawEvent
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
 import com.datadog.android.rum.internal.utils.HUNDRED
 import com.datadog.android.rum.internal.utils.percent
+import com.datadog.android.rum.metric.interactiontonextview.TimeBasedInteractionIdentifier
+import com.datadog.android.rum.metric.networksettled.TimeBasedInitialResourceIdentifier
 import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
 import com.datadog.android.rum.tracking.FragmentViewTrackingStrategy
 import com.datadog.android.rum.tracking.MixedViewTrackingStrategy
@@ -287,7 +289,7 @@ internal class TelemetryEventHandler(
         val sessionReplayFeatureContext =
             sdkCore.getFeatureContext(Feature.SESSION_REPLAY_FEATURE_NAME)
         val sessionReplaySampleRate = sessionReplayFeatureContext[SESSION_REPLAY_SAMPLE_RATE_KEY]
-            as? Long
+                as? Long
         val startRecordingImmediately =
             sessionReplayFeatureContext[SESSION_REPLAY_START_IMMEDIATE_RECORDING_KEY] as? Boolean
         val sessionReplayImagePrivacy =
@@ -309,6 +311,12 @@ internal class TelemetryEventHandler(
         val tracerApi = resolveTracerApi(traceContext)
         val openTelemetryApiVersion = resolveOpenTelemetryApiVersion(tracerApi, traceContext)
         val useTracing = (traceFeature != null && tracerApi != null)
+
+        val invTimeBasedThreshold = (rumConfig?.lastInteractionIdentifier as? TimeBasedInteractionIdentifier)
+            ?.timeThresholdInMilliseconds
+        val tnsTimeBasedThreshold = (rumConfig?.initialResourceIdentifier as? TimeBasedInitialResourceIdentifier)
+            ?.timeThresholdInMilliseconds
+
         return TelemetryConfigurationEvent(
             dd = TelemetryConfigurationEvent.Dd(),
             date = timestamp,
@@ -429,7 +437,7 @@ internal class TelemetryEventHandler(
                     InternalLogger.Target.TELEMETRY,
                     {
                         "GlobalTracer class exists in the runtime classpath, " +
-                            "but there is an error invoking isRegistered method"
+                                "but there is an error invoking isRegistered method"
                     },
                     t
                 )
