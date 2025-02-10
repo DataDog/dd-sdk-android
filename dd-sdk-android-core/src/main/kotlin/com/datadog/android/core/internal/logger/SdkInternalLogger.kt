@@ -274,18 +274,6 @@ internal class SdkInternalLogger(
         }
     }
 
-    private fun enrichWithNonNullValue(
-        map: MutableMap<String, Any?>,
-        key: String,
-        value: Float?
-    ) {
-        if (value == null) return
-
-        if (!map.containsKey(key)) {
-            map[key] = value
-        }
-    }
-
     companion object {
         internal const val SDK_LOG_TAG = "DD_LOG"
         internal const val DEV_LOG_TAG = "Datadog"

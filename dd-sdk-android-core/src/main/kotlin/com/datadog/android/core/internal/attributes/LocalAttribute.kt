@@ -13,7 +13,16 @@ import com.datadog.android.lint.InternalApi
  */
 interface LocalAttribute {
 
-    enum class Key(val string: String) {
+    /**
+     * Enumeration of all local attributes keys used in the application.
+     * Made via **enum** to make sure that all such attributes will be removed before sending the event to the backend.
+     *
+     * @property string - Unique string value for a local attribute key.
+     */
+    @InternalApi
+    enum class Key(
+        val string: String
+    ) {
         /* Some of the metrics like [PerformanceMetric] being sampled on the
          * metric creation place and then reported with 100% probability.
          * In such cases we need to use *creationSampleRate* to compute effectiveSampleRate correctlyThe sampling
@@ -21,19 +30,17 @@ interface LocalAttribute {
          * Creation(head) sampling rate exist only for long-lived metrics like method performance.
          * Created metric still could not be sent it depends on [REPORTING_SAMPLING_RATE_KEY] sampling rate
          */
-        @InternalApi
         CREATION_SAMPLING_RATE("_dd.local.head_sampling_rate_key"),
 
         /* Sampling rate that is used to decide to send or not to send the metric.
          * Each metric should have reporting(tail) sampling rate.
          * It's possible that metric has only reporting(tail) sampling rate.
          */
-        @InternalApi
         REPORTING_SAMPLING_RATE("_dd.local.tail_sampling_rate_key"),
 
         /*
          * Indicates which instrumentation was used to track the view scope.
-         * See [ViewScopeInstrumentationType] for possible values
+         * See [ViewScopeInstrumentationType] for possible values.
          */
         VIEW_SCOPE_INSTRUMENTATION_TYPE("_dd.local.view_instrumentation_type_key")
     }
@@ -44,12 +51,27 @@ interface LocalAttribute {
      * an attribute and reduces the possibility of inconsistent use of api (when an unsupported value is passed
      * for a particular attribute key).
      */
+    @InternalApi
     interface Constant {
+        /**
+         * Constant attribute key. For enum constants will be same for all values.
+         */
         val key: Key
-        val value: String
+
+        /**
+         * Constant attribute value. One item from set of possible finite values for a given constant attribute.
+         */
+        val value: Any
     }
 }
 
+/**
+ * Adds local attribute to the mutable map.
+ *
+ * @param attribute - Constant attribute value that should be added.
+ * Key for the attribute will be resolved automatically.
+ */
+@InternalApi
 fun MutableMap<String, Any?>.enrichWithConstantAttribute(
     attribute: LocalAttribute.Constant
 ) = enrichWithLocalAttribute(
@@ -57,11 +79,25 @@ fun MutableMap<String, Any?>.enrichWithConstantAttribute(
     attribute.value
 )
 
+/**
+ * Adds value to the map for specified key if value is not null.
+ *
+ * @param key - local attribute key.
+ * @param value - attribute value.
+ */
+@InternalApi
 fun MutableMap<String, Any?>.enrichWithNonNullAttribute(
     key: LocalAttribute.Key,
     value: Any?
 ) = value?.let { enrichWithLocalAttribute(key, it) } ?: this
 
+/**
+ * Adds value to the map for specified key.
+ *
+ * @param key - local attribute key.
+ * @param value - attribute value.
+ */
+@InternalApi
 fun MutableMap<String, Any?>.enrichWithLocalAttribute(
     key: LocalAttribute.Key,
     value: Any?
@@ -69,12 +105,36 @@ fun MutableMap<String, Any?>.enrichWithLocalAttribute(
     this[key.string] = value
 }
 
+/**
+ * A set of constants describing the instrumentation that were used to define the view scope.
+ *
+ * @property value - String value of the constant
+ * @property key - Key that is being used for this attribute.
+ * Equals to [LocalAttribute.Key.VIEW_SCOPE_INSTRUMENTATION_TYPE] for every value.
+ */
+@Suppress("KDocUnresolvedReference")
+@InternalApi
 enum class ViewScopeInstrumentationType(
     override val value: String
 ) : LocalAttribute.Constant {
+    /**
+     * Tracked manually through the RUMMonitor API.
+     */
     MANUAL("manual"),
+
+    /**
+     * Tracked through [ComposeNavigationObserver] instrumentation
+     */
     COMPOSE("compose"),
+
+    /**
+     * Tracked through [ActivityViewTrackingStrategy] instrumentation
+     */
     ACTIVITY("activity"),
+
+    /**
+     * Tracked through [FragmentViewTrackingStrategy] instrumentation
+     */
     FRAGMENT("fragment");
 
     override val key: LocalAttribute.Key = LocalAttribute.Key.VIEW_SCOPE_INSTRUMENTATION_TYPE
