@@ -12,6 +12,7 @@ import com.datadog.android.rum.internal.metric.NoValueReason
 import com.datadog.android.rum.internal.metric.ViewEndedMetricDispatcher
 import com.datadog.android.rum.internal.metric.ViewEndedMetricDispatcher.Companion.KEY_CONFIG
 import com.datadog.android.rum.internal.metric.ViewEndedMetricDispatcher.Companion.KEY_DURATION
+import com.datadog.android.rum.internal.metric.ViewEndedMetricDispatcher.Companion.KEY_INSTRUMENTATION_TYPE
 import com.datadog.android.rum.internal.metric.ViewEndedMetricDispatcher.Companion.KEY_INTERACTION_TO_NEXT_VIEW
 import com.datadog.android.rum.internal.metric.ViewEndedMetricDispatcher.Companion.KEY_LOADING_TIME
 import com.datadog.android.rum.internal.metric.ViewEndedMetricDispatcher.Companion.KEY_METRIC_TYPE
@@ -68,12 +69,14 @@ internal class ViewEndedMetricDispatcherTest {
     private lateinit var fakeViewType: RumViewType
     private lateinit var fakeInvState: ViewInitializationMetricsState
     private lateinit var fakeTnsState: ViewInitializationMetricsState
+    private var fakeInstrumentationType: String? = null
 
     private lateinit var dispatcherUnderTest: ViewEndedMetricDispatcher
 
     @BeforeEach
     fun `set up`(forge: Forge) {
         fakeViewType = forge.aValueFrom(RumViewType::class.java)
+        fakeInstrumentationType = forge.aNullable { anElementFrom("compose", "manual", "activity", "fragment") }
         fakeTnsState = forge.aViewInitializationMetricsState(NoValueReason.TimeToNetworkSettle::class.java)
         fakeInvState = forge.aViewInitializationMetricsState(NoValueReason.InteractionToNextView::class.java)
 
@@ -220,7 +223,8 @@ internal class ViewEndedMetricDispatcherTest {
         loadingTime: Long? = fakeLoadingTime,
         viewType: RumViewType = fakeViewType,
         invState: ViewInitializationMetricsState = fakeInvState,
-        tnsState: ViewInitializationMetricsState = fakeTnsState
+        tnsState: ViewInitializationMetricsState = fakeTnsState,
+        instrumentationType: String? = fakeInstrumentationType
     ) = buildAttributesMap(
         duration = duration,
         loadingTime = loadingTime,
@@ -232,7 +236,8 @@ internal class ViewEndedMetricDispatcherTest {
 
         tnsValue = tnsState.initializationTime,
         tnsConfig = toAttributeValue(tnsState.config),
-        tnsNoValueReason = toAttributeValue(tnsState.noValueReason)
+        tnsNoValueReason = toAttributeValue(tnsState.noValueReason),
+        instrumentationType = instrumentationType
     )
 
     companion object {
@@ -245,7 +250,8 @@ internal class ViewEndedMetricDispatcherTest {
             invNoValueReason: String?,
             tnsValue: Long?,
             tnsConfig: String,
-            tnsNoValueReason: String?
+            tnsNoValueReason: String?,
+            instrumentationType: String?
         ): Map<String, Any?> = mapOf(
             KEY_METRIC_TYPE to "rum view ended",
             KEY_RUM_VIEW_ENDED to mapOf(
@@ -261,7 +267,8 @@ internal class ViewEndedMetricDispatcherTest {
                     invValue,
                     invConfig,
                     invNoValueReason
-                )
+                ),
+                KEY_INSTRUMENTATION_TYPE to (instrumentationType ?: "manual")
             )
         )
 

@@ -255,6 +255,25 @@ sealed class com.datadog.android.core.feature.event.JvmCrash
     constructor(Throwable, String, List<ThreadDump>)
 data class com.datadog.android.core.feature.event.ThreadDump
   constructor(String, String, String, Boolean)
+interface com.datadog.android.core.internal.attributes.LocalAttribute
+  enum Key
+    constructor(String)
+    - CREATION_SAMPLING_RATE
+    - REPORTING_SAMPLING_RATE
+    - VIEW_SCOPE_INSTRUMENTATION_TYPE
+  interface Constant
+    val key: Key
+    val value: Any
+fun MutableMap<String, Any?>.enrichWithConstantAttribute(LocalAttribute.Constant)
+fun MutableMap<String, Any?>.enrichWithNonNullAttribute(LocalAttribute.Key, Any?)
+fun MutableMap<String, Any?>.enrichWithLocalAttribute(LocalAttribute.Key, Any?)
+enum com.datadog.android.core.internal.attributes.ViewScopeInstrumentationType : LocalAttribute.Constant
+  constructor(String)
+  - MANUAL
+  - COMPOSE
+  - ACTIVITY
+  - FRAGMENT
+  override val key: LocalAttribute.Key
 class com.datadog.android.core.internal.net.DefaultFirstPartyHostHeaderTypeResolver : FirstPartyHostHeaderTypeResolver
   constructor(Map<String, Set<com.datadog.android.trace.TracingHeaderType>>)
   override fun isFirstPartyUrl(okhttp3.HttpUrl): Boolean

@@ -153,12 +153,12 @@ internal class ViewEndedMetricDispatcher(
         @VisibleForTesting
         private fun toAttributeValue(
             instrumentationType: ViewScopeInstrumentationType?
-        ) = when (instrumentationType) {
+        ): String = when (instrumentationType) {
             ViewScopeInstrumentationType.COMPOSE -> VALUE_INSTRUMENTATION_TYPE_COMPOSE
             ViewScopeInstrumentationType.MANUAL -> VALUE_INSTRUMENTATION_TYPE_MANUAL
             ViewScopeInstrumentationType.ACTIVITY -> VALUE_INSTRUMENTATION_TYPE_ACTIVITY
             ViewScopeInstrumentationType.FRAGMENT -> VALUE_INSTRUMENTATION_TYPE_FRAGMENT
-            null -> ViewScopeInstrumentationType.MANUAL
+            null -> VALUE_INSTRUMENTATION_TYPE_MANUAL
         }
 
         @VisibleForTesting

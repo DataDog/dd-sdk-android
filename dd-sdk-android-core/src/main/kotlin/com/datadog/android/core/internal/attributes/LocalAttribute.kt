@@ -11,6 +11,7 @@ import com.datadog.android.lint.InternalApi
  * Local attributes are used to pass additional metadata along with the event
  * and are never sent to the backend directly.
  */
+@InternalApi
 interface LocalAttribute {
 
     /**
@@ -53,14 +54,10 @@ interface LocalAttribute {
      */
     @InternalApi
     interface Constant {
-        /**
-         * Constant attribute key. For enum constants will be same for all values.
-         */
+        /** Constant attribute key. For enum constants will be same for all values. */
         val key: Key
 
-        /**
-         * Constant attribute value. One item from set of possible finite values for a given constant attribute.
-         */
+        /** Constant attribute value. One item from set of possible finite values for a given constant attribute.*/
         val value: Any
     }
 }
@@ -103,39 +100,4 @@ fun MutableMap<String, Any?>.enrichWithLocalAttribute(
     value: Any?
 ) = apply {
     this[key.string] = value
-}
-
-/**
- * A set of constants describing the instrumentation that were used to define the view scope.
- *
- * @property value - String value of the constant
- * @property key - Key that is being used for this attribute.
- * Equals to [LocalAttribute.Key.VIEW_SCOPE_INSTRUMENTATION_TYPE] for every value.
- */
-@Suppress("KDocUnresolvedReference")
-@InternalApi
-enum class ViewScopeInstrumentationType(
-    override val value: String
-) : LocalAttribute.Constant {
-    /**
-     * Tracked manually through the RUMMonitor API.
-     */
-    MANUAL("manual"),
-
-    /**
-     * Tracked through [ComposeNavigationObserver] instrumentation
-     */
-    COMPOSE("compose"),
-
-    /**
-     * Tracked through [ActivityViewTrackingStrategy] instrumentation
-     */
-    ACTIVITY("activity"),
-
-    /**
-     * Tracked through [FragmentViewTrackingStrategy] instrumentation
-     */
-    FRAGMENT("fragment");
-
-    override val key: LocalAttribute.Key = LocalAttribute.Key.VIEW_SCOPE_INSTRUMENTATION_TYPE
 }

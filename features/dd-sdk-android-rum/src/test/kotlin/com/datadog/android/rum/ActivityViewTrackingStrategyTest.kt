@@ -8,6 +8,8 @@ package com.datadog.android.rum
 
 import android.app.Activity
 import android.os.Bundle
+import com.datadog.android.core.internal.attributes.ViewScopeInstrumentationType
+import com.datadog.android.core.internal.attributes.enrichWithConstantAttribute
 import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
 import com.datadog.android.rum.tracking.ComponentPredicate
 import com.datadog.android.rum.tracking.StubComponentPredicate
@@ -105,7 +107,7 @@ internal class ActivityViewTrackingStrategyTest :
         verify(rumMonitor.mockInstance).startView(
             mockActivity,
             mockActivity.resolveViewName(),
-            emptyMap()
+            mapOf(ViewScopeInstrumentationType.ACTIVITY.key.string to ViewScopeInstrumentationType.ACTIVITY.value)
         )
     }
 
@@ -128,7 +130,8 @@ internal class ActivityViewTrackingStrategyTest :
         whenever(mockActivity.intent).thenReturn(mockIntent)
         whenever(mockPredicate.accept(mockActivity)) doReturn true
         val expectedAttributes = extras.map { (k, v) -> "view.arguments.$k" to v }
-            .toMutableMap()
+            .toMutableMap<String, Any?>()
+            .enrichWithConstantAttribute(ViewScopeInstrumentationType.ACTIVITY)
         expectedAttributes["view.intent.action"] = action
         expectedAttributes["view.intent.uri"] = uri
         testedStrategy.register(rumMonitor.mockSdkCore, mockActivity)
@@ -157,7 +160,12 @@ internal class ActivityViewTrackingStrategyTest :
         whenever(mockIntent.dataString).thenReturn(uri)
         whenever(mockActivity.intent).thenReturn(mockIntent)
         whenever(mockPredicate.accept(mockActivity)) doReturn true
-        val expectedAttributes = mapOf("view.intent.action" to action, "view.intent.uri" to uri)
+        val expectedAttributes = mapOf<String, Any?>(
+            "view.intent.action" to action,
+            "view.intent.uri" to uri,
+            ViewScopeInstrumentationType.ACTIVITY.key.string to ViewScopeInstrumentationType.ACTIVITY.value
+        )
+
         testedStrategy.register(rumMonitor.mockSdkCore, mockActivity)
 
         // When
@@ -215,7 +223,7 @@ internal class ActivityViewTrackingStrategyTest :
         verify(rumMonitor.mockInstance).startView(
             mockActivity,
             fakeName,
-            emptyMap()
+            mapOf(ViewScopeInstrumentationType.ACTIVITY.key.string to ViewScopeInstrumentationType.ACTIVITY.value)
         )
     }
 
@@ -236,7 +244,7 @@ internal class ActivityViewTrackingStrategyTest :
         verify(rumMonitor.mockInstance).startView(
             mockActivity,
             mockActivity.resolveViewName(),
-            emptyMap()
+            mapOf(ViewScopeInstrumentationType.ACTIVITY.key.string to ViewScopeInstrumentationType.ACTIVITY.value)
         )
     }
 

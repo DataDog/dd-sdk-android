@@ -254,7 +254,7 @@ class com.datadog.android.rum.tracking.ActivityViewTrackingStrategy : ActivityLi
   override fun onActivityStopped(android.app.Activity)
   override fun equals(Any?): Boolean
   override fun hashCode(): Int
-fun android.os.Bundle?.convertToRumViewAttributes(): Map<String, Any?>
+fun android.os.Bundle?.convertToRumViewAttributes(): MutableMap<String, Any?>
 interface com.datadog.android.rum.tracking.ComponentPredicate<T>
   fun accept(T): Boolean
   fun getViewName(T): String?
