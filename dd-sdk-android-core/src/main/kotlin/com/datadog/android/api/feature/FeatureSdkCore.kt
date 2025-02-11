@@ -110,7 +110,7 @@ interface FeatureSdkCore : SdkCore {
     /**
      * Allows the given feature to set the anonymous ID for the SDK.
      *
-     * @param anonymousId Anonymous ID to set.
+     * @param anonymousId Anonymous ID to set. Can be null if feature is disabled.
      */
     fun setAnonymousId(anonymousId: UUID?)
 }

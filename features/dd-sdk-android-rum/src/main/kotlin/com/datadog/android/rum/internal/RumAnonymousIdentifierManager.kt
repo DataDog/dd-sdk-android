@@ -63,9 +63,9 @@ internal class RumAnonymousIdentifierManager(
     }
 }
 
-@Suppress("SwallowedException", "UnsafeThirdPartyFunctionCall")
 internal class AnonymousIdentifierDeserializer : Deserializer<String, UUID> {
     override fun deserialize(model: String): UUID? {
+        @Suppress("SwallowedException")
         return try {
             UUID.fromString(model)
         } catch (e: IllegalArgumentException) {
