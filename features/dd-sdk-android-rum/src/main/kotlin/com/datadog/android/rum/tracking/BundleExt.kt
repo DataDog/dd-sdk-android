@@ -13,8 +13,8 @@ internal const val ARGUMENT_TAG = "view.arguments"
 /**
  * Converts this bundle into a Map of attributes to be included in a RUM View event.
  */
-fun Bundle?.convertToRumViewAttributes(): MutableMap<String, Any?> {
-    if (this == null) return mutableMapOf()
+fun Bundle?.convertToRumViewAttributes(): Map<String, Any?> {
+    if (this == null) return emptyMap()
 
     val attributes = mutableMapOf<String, Any?>()
 

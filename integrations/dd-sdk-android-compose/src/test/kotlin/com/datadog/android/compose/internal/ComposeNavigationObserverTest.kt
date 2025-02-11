@@ -10,6 +10,8 @@ import android.os.Bundle
 import androidx.lifecycle.Lifecycle
 import androidx.navigation.NavController
 import androidx.navigation.NavDestination
+import com.datadog.android.core.internal.attributes.LocalAttribute
+import com.datadog.android.core.internal.attributes.ViewScopeInstrumentationType
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.tracking.ComponentPredicate
 import com.datadog.tools.unit.forge.BaseConfigurator
@@ -76,7 +78,9 @@ internal class ComposeNavigationObserverTest {
     ) {
         // Given
         val arguments = Bundle()
-        val expectedAttrs = mutableMapOf<String, Any?>()
+        val expectedAttrs = mutableMapOf<String, Any?>(
+            LocalAttribute.Key.VIEW_SCOPE_INSTRUMENTATION_TYPE.string to ViewScopeInstrumentationType.COMPOSE
+        )
         repeat(10) {
             val key = forge.anAlphabeticalString()
             val value = forge.anAsciiString()
@@ -108,7 +112,9 @@ internal class ComposeNavigationObserverTest {
         whenever(mockPredicate.getViewName(any())) doReturn fakeViewName
 
         val arguments = Bundle()
-        val expectedAttrs = mutableMapOf<String, Any?>()
+        val expectedAttrs = mutableMapOf<String, Any?>(
+            LocalAttribute.Key.VIEW_SCOPE_INSTRUMENTATION_TYPE.string to ViewScopeInstrumentationType.COMPOSE
+        )
         repeat(10) {
             val key = forge.anAlphabeticalString()
             val value = forge.anAsciiString()
@@ -158,7 +164,7 @@ internal class ComposeNavigationObserverTest {
         verify(mockRumMonitor).startView(
             mockNavDestination.route!!,
             mockNavDestination.route!!,
-            emptyMap()
+            mapOf(LocalAttribute.Key.VIEW_SCOPE_INSTRUMENTATION_TYPE.string to ViewScopeInstrumentationType.COMPOSE)
         )
         verifyNoMoreInteractions(mockRumMonitor)
     }

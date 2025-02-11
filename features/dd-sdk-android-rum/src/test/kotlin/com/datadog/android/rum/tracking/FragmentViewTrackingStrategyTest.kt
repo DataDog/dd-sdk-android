@@ -261,7 +261,7 @@ internal class FragmentViewTrackingStrategyTest : ObjectTest<FragmentViewTrackin
         testedStrategy.register(rumMonitor.mockSdkCore, mockAppContext)
         val mockFragment: Fragment = mockFragmentWithArguments(forge)
         val expectedAttrs = mapOf(
-            ViewScopeInstrumentationType.FRAGMENT.key.string to ViewScopeInstrumentationType.FRAGMENT.value
+            ViewScopeInstrumentationType.FRAGMENT.key.string to ViewScopeInstrumentationType.FRAGMENT
         )
         val argumentCaptor = argumentCaptor<FragmentManager.FragmentLifecycleCallbacks>()
 
@@ -478,7 +478,7 @@ internal class FragmentViewTrackingStrategyTest : ObjectTest<FragmentViewTrackin
         )
         testedStrategy.register(rumMonitor.mockSdkCore, mockAppContext)
         val expectedAttrs = mapOf(
-            ViewScopeInstrumentationType.FRAGMENT.key.string to ViewScopeInstrumentationType.FRAGMENT.value
+            ViewScopeInstrumentationType.FRAGMENT.key.string to ViewScopeInstrumentationType.FRAGMENT
         )
         val mockFragment: android.app.Fragment = mockDeprecatedFragmentWithArguments(forge)
         val argumentCaptor =

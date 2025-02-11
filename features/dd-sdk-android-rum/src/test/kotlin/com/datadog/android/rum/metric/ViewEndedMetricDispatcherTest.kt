@@ -7,6 +7,7 @@ package com.datadog.android.rum.metric
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.InternalLogger.Target
+import com.datadog.android.core.internal.attributes.ViewScopeInstrumentationType
 import com.datadog.android.rum.internal.domain.scope.RumViewType
 import com.datadog.android.rum.internal.metric.NoValueReason
 import com.datadog.android.rum.internal.metric.ViewEndedMetricDispatcher
@@ -76,14 +77,24 @@ internal class ViewEndedMetricDispatcherTest {
     @BeforeEach
     fun `set up`(forge: Forge) {
         fakeViewType = forge.aValueFrom(RumViewType::class.java)
-        fakeInstrumentationType = forge.aNullable { anElementFrom("compose", "manual", "activity", "fragment") }
         fakeTnsState = forge.aViewInitializationMetricsState(NoValueReason.TimeToNetworkSettle::class.java)
         fakeInvState = forge.aViewInitializationMetricsState(NoValueReason.InteractionToNextView::class.java)
+        val instrumentationType = forge.aNullable {
+            anElementFrom(
+                ViewScopeInstrumentationType.COMPOSE,
+                ViewScopeInstrumentationType.MANUAL,
+                ViewScopeInstrumentationType.ACTIVITY,
+                ViewScopeInstrumentationType.FRAGMENT
+            )
+        }
+
+        fakeInstrumentationType = instrumentationType?.value
 
         dispatcherUnderTest = ViewEndedMetricDispatcher(
             viewType = fakeViewType,
             internalLogger = mockInternalLogger,
-            samplingRate = fakeSampleRate
+            samplingRate = fakeSampleRate,
+            instrumentationType = instrumentationType
         )
     }
 

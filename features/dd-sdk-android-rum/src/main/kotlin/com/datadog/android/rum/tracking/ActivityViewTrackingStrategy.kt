@@ -110,7 +110,7 @@ constructor(
      * Maps the Bundle key - value properties into compatible attributes for the Rum Events.
      * @param intent the [Intent] we need to transform. Returns an empty Map if this is null.
      */
-    private fun convertToRumAttributes(intent: Intent?): MutableMap<String, Any?> {
+    private fun convertToRumAttributes(intent: Intent?): Map<String, Any?> {
         if (intent == null) return mutableMapOf()
 
         val attributes = mutableMapOf<String, Any?>()

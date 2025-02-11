@@ -76,7 +76,7 @@ internal constructor(
                 AndroidXFragmentLifecycleCallbacks(
                     argumentsProvider = {
                         if (trackArguments) {
-                            it.arguments.convertToRumViewAttributes()
+                            it.arguments.convertToRumViewAttributes().toMutableMap()
                         } else {
                             mutableMapOf()
                         }.enrichWithConstantAttribute(ViewScopeInstrumentationType.FRAGMENT)
@@ -103,7 +103,7 @@ internal constructor(
                 OreoFragmentLifecycleCallbacks(
                     argumentsProvider = {
                         if (trackArguments) {
-                            it.arguments.convertToRumViewAttributes()
+                            it.arguments.convertToRumViewAttributes().toMutableMap()
                         } else {
                             mutableMapOf()
                         }.enrichWithConstantAttribute(ViewScopeInstrumentationType.FRAGMENT)

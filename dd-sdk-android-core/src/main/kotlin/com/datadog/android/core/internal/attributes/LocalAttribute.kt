@@ -73,7 +73,7 @@ fun MutableMap<String, Any?>.enrichWithConstantAttribute(
     attribute: LocalAttribute.Constant
 ) = enrichWithLocalAttribute(
     attribute.key,
-    attribute.value
+    attribute
 )
 
 /**

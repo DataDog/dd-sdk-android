@@ -64,7 +64,7 @@ internal class ComposeNavigationObserver(
     ) {
         val viewName = destinationPredicate.getViewName(navDestination) ?: route
         val attributes = if (trackArguments) {
-            arguments.convertToRumViewAttributes()
+            arguments.convertToRumViewAttributes().toMutableMap()
         } else {
             mutableMapOf()
         }.enrichWithConstantAttribute(ViewScopeInstrumentationType.COMPOSE)
