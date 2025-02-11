@@ -12,6 +12,7 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.core.internal.attributes.LocalAttribute
 import com.datadog.android.core.internal.metrics.MethodCalledTelemetry
 import com.datadog.android.core.metrics.TelemetryMetricType
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
@@ -452,7 +453,7 @@ internal class SdkInternalLoggerTest {
         // Given
         val samplingRate = 100.0f
         val fakeAdditionalProperties = forge.exhaustiveAttributes().also {
-            it[InternalTelemetryEvent.REPORTING_SAMPLING_RATE_KEY] = samplingRate
+            it[LocalAttribute.Key.REPORTING_SAMPLING_RATE.string] = samplingRate
         }
         val mockLambda: () -> String = mock()
         whenever(mockLambda.invoke()) doReturn fakeMessage
@@ -504,13 +505,13 @@ internal class SdkInternalLoggerTest {
             val metricEvent = firstValue as InternalTelemetryEvent.Metric
 
             assertThat(
-                metricEvent.additionalProperties?.get(InternalTelemetryEvent.CREATION_SAMPLING_RATE_KEY)
+                metricEvent.additionalProperties?.get(LocalAttribute.Key.CREATION_SAMPLING_RATE.string)
             ).isEqualTo(
                 expectedCreationSampleRate
             )
 
             assertThat(
-                metricEvent.additionalProperties?.get(InternalTelemetryEvent.REPORTING_SAMPLING_RATE_KEY)
+                metricEvent.additionalProperties?.get(LocalAttribute.Key.REPORTING_SAMPLING_RATE.string)
             ).isEqualTo(
                 samplingRate
             )
@@ -543,11 +544,11 @@ internal class SdkInternalLoggerTest {
             assertThat(
                 apiUsageEvent.additionalProperties
             ).doesNotContainKeys(
-                InternalTelemetryEvent.CREATION_SAMPLING_RATE_KEY
+                LocalAttribute.Key.CREATION_SAMPLING_RATE.string
             )
 
             assertThat(
-                apiUsageEvent.additionalProperties[InternalTelemetryEvent.REPORTING_SAMPLING_RATE_KEY]
+                apiUsageEvent.additionalProperties[LocalAttribute.Key.REPORTING_SAMPLING_RATE.string]
             ).isEqualTo(
                 samplingRate
             )
@@ -568,7 +569,7 @@ internal class SdkInternalLoggerTest {
             ),
             target = InternalLogger.Target.TELEMETRY,
             messageBuilder = { forge.aString() },
-            additionalProperties = mapOf(InternalTelemetryEvent.REPORTING_SAMPLING_RATE_KEY to samplingRate)
+            additionalProperties = mapOf(LocalAttribute.Key.REPORTING_SAMPLING_RATE.string to samplingRate)
         )
 
         // Then
@@ -580,11 +581,11 @@ internal class SdkInternalLoggerTest {
             assertThat(
                 debugEvent.additionalProperties
             ).doesNotContainKeys(
-                InternalTelemetryEvent.CREATION_SAMPLING_RATE_KEY
+                LocalAttribute.Key.CREATION_SAMPLING_RATE.string
             )
 
             assertThat(
-                debugEvent.additionalProperties?.get(InternalTelemetryEvent.REPORTING_SAMPLING_RATE_KEY)
+                debugEvent.additionalProperties?.get(LocalAttribute.Key.REPORTING_SAMPLING_RATE.string)
             ).isEqualTo(
                 samplingRate
             )
@@ -603,7 +604,7 @@ internal class SdkInternalLoggerTest {
             target = InternalLogger.Target.TELEMETRY,
             throwable = forge.aThrowable(),
             messageBuilder = { forge.aString() },
-            additionalProperties = mapOf(InternalTelemetryEvent.REPORTING_SAMPLING_RATE_KEY to samplingRate)
+            additionalProperties = mapOf(LocalAttribute.Key.REPORTING_SAMPLING_RATE.string to samplingRate)
         )
 
         // Then
@@ -615,11 +616,11 @@ internal class SdkInternalLoggerTest {
             assertThat(
                 debugEvent.additionalProperties
             ).doesNotContainKeys(
-                InternalTelemetryEvent.CREATION_SAMPLING_RATE_KEY
+                LocalAttribute.Key.CREATION_SAMPLING_RATE.string
             )
 
             assertThat(
-                debugEvent.additionalProperties?.get(InternalTelemetryEvent.REPORTING_SAMPLING_RATE_KEY)
+                debugEvent.additionalProperties?.get(LocalAttribute.Key.REPORTING_SAMPLING_RATE.string)
             ).isEqualTo(
                 samplingRate
             )

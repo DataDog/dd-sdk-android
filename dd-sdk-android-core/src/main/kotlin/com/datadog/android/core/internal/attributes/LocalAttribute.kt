@@ -29,7 +29,7 @@ interface LocalAttribute {
          * In such cases we need to use *creationSampleRate* to compute effectiveSampleRate correctlyThe sampling
          * rate is used when creating metrics.
          * Creation(head) sampling rate exist only for long-lived metrics like method performance.
-         * Created metric still could not be sent it depends on [REPORTING_SAMPLING_RATE_KEY] sampling rate
+         * Created metric still could not be sent it depends on [REPORTING_SAMPLING_RATE] sampling rate
          */
         CREATION_SAMPLING_RATE("_dd.local.head_sampling_rate_key"),
 
