@@ -8,6 +8,7 @@ package com.datadog.android.api.feature
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.SdkCore
+import java.util.UUID
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.ScheduledExecutorService
 
@@ -16,6 +17,7 @@ import java.util.concurrent.ScheduledExecutorService
  *
  * SDK core is always guaranteed to implement this interface.
  */
+@Suppress("TooManyFunctions")
 interface FeatureSdkCore : SdkCore {
 
     /**
@@ -104,4 +106,11 @@ interface FeatureSdkCore : SdkCore {
      * @param executorContext Context to be used for logging and naming threads running on this executor.
      */
     fun createScheduledExecutorService(executorContext: String): ScheduledExecutorService
+
+    /**
+     * Allows the given feature to set the anonymous ID for the SDK.
+     *
+     * @param anonymousId Anonymous ID to set. Can be null if feature is disabled.
+     */
+    fun setAnonymousId(anonymousId: UUID?)
 }

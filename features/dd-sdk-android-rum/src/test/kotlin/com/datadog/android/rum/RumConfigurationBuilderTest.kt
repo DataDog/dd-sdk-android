@@ -105,7 +105,8 @@ internal class RumConfigurationBuilderTest {
                 sessionListener = NoOpRumSessionListener(),
                 additionalConfig = emptyMap(),
                 initialResourceIdentifier = TimeBasedInitialResourceIdentifier(),
-                lastInteractionIdentifier = TimeBasedInteractionIdentifier()
+                lastInteractionIdentifier = TimeBasedInteractionIdentifier(),
+                trackAnonymousUser = true
             )
         )
     }

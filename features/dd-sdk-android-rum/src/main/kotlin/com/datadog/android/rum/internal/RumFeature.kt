@@ -542,7 +542,8 @@ internal class RumFeature(
         val sessionListener: RumSessionListener,
         val initialResourceIdentifier: InitialResourceIdentifier,
         val lastInteractionIdentifier: LastInteractionIdentifier,
-        val additionalConfig: Map<String, Any>
+        val additionalConfig: Map<String, Any>,
+        val trackAnonymousUser: Boolean
     )
 
     internal companion object {
@@ -587,7 +588,8 @@ internal class RumFeature(
             sessionListener = NoOpRumSessionListener(),
             initialResourceIdentifier = TimeBasedInitialResourceIdentifier(),
             lastInteractionIdentifier = TimeBasedInteractionIdentifier(),
-            additionalConfig = emptyMap()
+            additionalConfig = emptyMap(),
+            trackAnonymousUser = true
         )
 
         internal const val EVENT_MESSAGE_PROPERTY = "message"

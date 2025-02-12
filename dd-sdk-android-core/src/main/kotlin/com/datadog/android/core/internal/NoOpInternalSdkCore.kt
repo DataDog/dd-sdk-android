@@ -22,6 +22,7 @@ import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.privacy.TrackingConsent
 import com.google.gson.JsonObject
 import java.io.File
+import java.util.UUID
 import java.util.concurrent.Callable
 import java.util.concurrent.Delayed
 import java.util.concurrent.ExecutionException
@@ -127,6 +128,8 @@ internal object NoOpInternalSdkCore : InternalSdkCore {
     override fun createScheduledExecutorService(executorContext: String): ScheduledExecutorService {
         return NoOpScheduledExecutorService()
     }
+
+    override fun setAnonymousId(anonymousId: UUID?) = Unit
 
     // endregion
 

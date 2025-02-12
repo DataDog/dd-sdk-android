@@ -18,5 +18,7 @@ internal interface MutableUserInfoProvider : UserInfoProvider {
         extraInfo: Map<String, Any?>
     )
 
+    fun setAnonymousId(id: String?)
+
     fun addUserProperties(properties: Map<String, Any?>)
 }

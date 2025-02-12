@@ -252,6 +252,7 @@ internal class RumResourceScope(
                         id = user.id,
                         name = user.name,
                         email = user.email,
+                        anonymousId = user.anonymousId,
                         additionalProperties = user.additionalProperties.toMutableMap()
                     )
                 } else {
@@ -400,6 +401,7 @@ internal class RumResourceScope(
                         id = user.id,
                         name = user.name,
                         email = user.email,
+                        anonymousId = user.anonymousId,
                         additionalProperties = user.additionalProperties.toMutableMap()
                     )
                 } else {

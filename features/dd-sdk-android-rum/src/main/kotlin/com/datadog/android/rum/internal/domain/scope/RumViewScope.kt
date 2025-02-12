@@ -521,6 +521,7 @@ internal open class RumViewScope(
                         id = user.id,
                         name = user.name,
                         email = user.email,
+                        anonymousId = user.anonymousId,
                         additionalProperties = user.additionalProperties.toMutableMap()
                     )
                 } else {
@@ -955,6 +956,7 @@ internal open class RumViewScope(
                         id = user.id,
                         name = user.name,
                         email = user.email,
+                        anonymousId = user.anonymousId,
                         additionalProperties = user.additionalProperties.toMutableMap()
                     )
                 } else {
@@ -1121,6 +1123,7 @@ internal open class RumViewScope(
                         id = user.id,
                         name = user.name,
                         email = user.email,
+                        anonymousId = user.anonymousId,
                         additionalProperties = user.additionalProperties.toMutableMap()
                     )
                 } else {
@@ -1227,6 +1230,7 @@ internal open class RumViewScope(
                         id = user.id,
                         name = user.name,
                         email = user.email,
+                        anonymousId = user.anonymousId,
                         additionalProperties = user.additionalProperties.toMutableMap()
                     )
                 } else {

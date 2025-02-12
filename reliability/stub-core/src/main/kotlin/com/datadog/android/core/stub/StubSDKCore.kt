@@ -182,7 +182,7 @@ class StubSDKCore(
         email: String?,
         extraInfo: Map<String, Any?>
     ) {
-        stubUserInfo(UserInfo(id, name, email, extraInfo))
+        stubUserInfo(UserInfo(null, id, name, email, extraInfo))
     }
 
     // endregion
