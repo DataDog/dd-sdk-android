@@ -67,6 +67,7 @@ internal class AnonymousIdentifierDeserializer : Deserializer<String, UUID> {
     override fun deserialize(model: String): UUID? {
         @Suppress("SwallowedException")
         return try {
+            @Suppress("UnsafeThirdPartyFunctionCall")
             UUID.fromString(model)
         } catch (e: IllegalArgumentException) {
             null
