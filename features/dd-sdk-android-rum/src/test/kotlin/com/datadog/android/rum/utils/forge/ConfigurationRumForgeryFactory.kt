@@ -8,6 +8,10 @@ package com.datadog.android.rum.utils.forge
 
 import com.datadog.android.rum.configuration.VitalsUpdateFrequency
 import com.datadog.android.rum.internal.RumFeature
+import com.datadog.android.rum.metric.interactiontonextview.NoOpLastInteractionIdentifier
+import com.datadog.android.rum.metric.interactiontonextview.TimeBasedInteractionIdentifier
+import com.datadog.android.rum.metric.networksettled.NoOpInitialResourceIdentifier
+import com.datadog.android.rum.metric.networksettled.TimeBasedInitialResourceIdentifier
 import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
 import com.datadog.android.rum.tracking.FragmentViewTrackingStrategy
 import com.datadog.android.rum.tracking.MixedViewTrackingStrategy
@@ -48,8 +52,18 @@ internal class ConfigurationRumForgeryFactory :
             vitalsMonitorUpdateFrequency = forge.aValueFrom(VitalsUpdateFrequency::class.java),
             sessionListener = mock(),
             additionalConfig = forge.aMap { aString() to aString() },
-            initialResourceIdentifier = mock(),
-            lastInteractionIdentifier = mock(),
+            initialResourceIdentifier = forge.anElementFrom(
+                NoOpInitialResourceIdentifier(),
+                TimeBasedInitialResourceIdentifier(
+                    timeThresholdInMilliseconds = forge.aLong(min = 1)
+                )
+            ),
+            lastInteractionIdentifier = forge.anElementFrom(
+                NoOpLastInteractionIdentifier(),
+                TimeBasedInteractionIdentifier(
+                    timeThresholdInMilliseconds = forge.aLong(min = 1)
+                )
+            ),
             trackAnonymousUser = forge.aBool()
         )
     }

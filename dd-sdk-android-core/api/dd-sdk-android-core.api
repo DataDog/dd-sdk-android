@@ -721,14 +721,13 @@ public abstract interface class com/datadog/android/core/internal/attributes/Loc
 
 public abstract interface class com/datadog/android/core/internal/attributes/LocalAttribute$Constant {
 	public abstract fun getKey ()Lcom/datadog/android/core/internal/attributes/LocalAttribute$Key;
-	public abstract fun getValue ()Ljava/lang/Object;
 }
 
 public final class com/datadog/android/core/internal/attributes/LocalAttribute$Key : java/lang/Enum {
 	public static final field CREATION_SAMPLING_RATE Lcom/datadog/android/core/internal/attributes/LocalAttribute$Key;
 	public static final field REPORTING_SAMPLING_RATE Lcom/datadog/android/core/internal/attributes/LocalAttribute$Key;
 	public static final field VIEW_SCOPE_INSTRUMENTATION_TYPE Lcom/datadog/android/core/internal/attributes/LocalAttribute$Key;
-	public final fun getString ()Ljava/lang/String;
+	public fun toString ()Ljava/lang/String;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/core/internal/attributes/LocalAttribute$Key;
 	public static fun values ()[Lcom/datadog/android/core/internal/attributes/LocalAttribute$Key;
 }
@@ -745,8 +744,6 @@ public final class com/datadog/android/core/internal/attributes/ViewScopeInstrum
 	public static final field FRAGMENT Lcom/datadog/android/core/internal/attributes/ViewScopeInstrumentationType;
 	public static final field MANUAL Lcom/datadog/android/core/internal/attributes/ViewScopeInstrumentationType;
 	public fun getKey ()Lcom/datadog/android/core/internal/attributes/LocalAttribute$Key;
-	public synthetic fun getValue ()Ljava/lang/Object;
-	public fun getValue ()Ljava/lang/String;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/core/internal/attributes/ViewScopeInstrumentationType;
 	public static fun values ()[Lcom/datadog/android/core/internal/attributes/ViewScopeInstrumentationType;
 }

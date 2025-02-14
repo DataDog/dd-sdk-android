@@ -1434,7 +1434,7 @@ internal open class RumViewScope(
         }
 
         private fun RumRawEvent.StartView.tryResolveInstrumentationType() =
-            attributes[LocalAttribute.Key.VIEW_SCOPE_INSTRUMENTATION_TYPE.string] as? ViewScopeInstrumentationType
+            attributes[LocalAttribute.Key.VIEW_SCOPE_INSTRUMENTATION_TYPE.toString()] as? ViewScopeInstrumentationType
 
         @Suppress("CommentOverPrivateFunction")
         /**

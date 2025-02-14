@@ -88,7 +88,7 @@ internal class ViewEndedMetricDispatcherTest {
             )
         }
 
-        fakeInstrumentationType = instrumentationType?.value
+        fakeInstrumentationType = instrumentationType?.name?.lowercase()
 
         dispatcherUnderTest = ViewEndedMetricDispatcher(
             viewType = fakeViewType,

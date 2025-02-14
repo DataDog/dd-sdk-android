@@ -23,6 +23,10 @@ import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.scope.RumRawEvent
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
+import com.datadog.android.rum.metric.interactiontonextview.LastInteractionIdentifier
+import com.datadog.android.rum.metric.interactiontonextview.TimeBasedInteractionIdentifier
+import com.datadog.android.rum.metric.networksettled.InitialResourceIdentifier
+import com.datadog.android.rum.metric.networksettled.TimeBasedInitialResourceIdentifier
 import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
 import com.datadog.android.rum.tracking.FragmentViewTrackingStrategy
 import com.datadog.android.rum.tracking.MixedViewTrackingStrategy
@@ -575,6 +579,8 @@ internal class TelemetryEventHandlerTest {
                 .hasMobileVitalsUpdatePeriod(
                     fakeRumConfiguration.vitalsMonitorUpdateFrequency.periodInMs
                 )
+                .hasTnsTimeBasedThreshold(fakeRumConfiguration.initialResourceIdentifier.resolveThreshold())
+                .hasInvTimeBasedThreshold(fakeRumConfiguration.lastInteractionIdentifier.resolveThreshold())
         }
     }
 
@@ -1096,8 +1102,8 @@ internal class TelemetryEventHandlerTest {
         @Forgery fakeApiUsageEvent: InternalTelemetryEvent.ApiUsage
     ) {
         fakeApiUsageEvent.additionalProperties.also { properties ->
-            properties[LocalAttribute.Key.REPORTING_SAMPLING_RATE.string] = "value that should not exist"
-            properties[LocalAttribute.Key.CREATION_SAMPLING_RATE.string] = "value that should not exist"
+            properties[LocalAttribute.Key.REPORTING_SAMPLING_RATE.toString()] = "value that should not exist"
+            properties[LocalAttribute.Key.CREATION_SAMPLING_RATE.toString()] = "value that should not exist"
             properties[fakeAdditionalPropertyKey] = fakeAdditionalPropertyValue
         }
 
@@ -1122,8 +1128,8 @@ internal class TelemetryEventHandlerTest {
         val fakeMetricEvent = InternalTelemetryEvent.Metric(
             message = forge.aString(),
             additionalProperties = mapOf(
-                LocalAttribute.Key.REPORTING_SAMPLING_RATE.string to "value that should not exist",
-                LocalAttribute.Key.CREATION_SAMPLING_RATE.string to "value that should not exist",
+                LocalAttribute.Key.REPORTING_SAMPLING_RATE.toString() to "value that should not exist",
+                LocalAttribute.Key.CREATION_SAMPLING_RATE.toString() to "value that should not exist",
                 fakeAdditionalPropertyKey to fakeAdditionalPropertyValue
             )
         )
@@ -1149,8 +1155,8 @@ internal class TelemetryEventHandlerTest {
         val fakeLogDebugEvent = InternalTelemetryEvent.Log.Debug(
             message = forge.aString(),
             additionalProperties = mapOf(
-                LocalAttribute.Key.REPORTING_SAMPLING_RATE.string to "value that should not exist",
-                LocalAttribute.Key.CREATION_SAMPLING_RATE.string to "value that should not exist",
+                LocalAttribute.Key.REPORTING_SAMPLING_RATE.toString() to "value that should not exist",
+                LocalAttribute.Key.CREATION_SAMPLING_RATE.toString() to "value that should not exist",
                 fakeAdditionalPropertyKey to fakeAdditionalPropertyValue
             )
         )
@@ -1176,8 +1182,8 @@ internal class TelemetryEventHandlerTest {
         val fakeLogDebugEvent = InternalTelemetryEvent.Log.Error(
             message = forge.aString(),
             additionalProperties = mapOf(
-                LocalAttribute.Key.REPORTING_SAMPLING_RATE.string to "value that should not exist",
-                LocalAttribute.Key.CREATION_SAMPLING_RATE.string to "value that should not exist",
+                LocalAttribute.Key.REPORTING_SAMPLING_RATE.toString() to "value that should not exist",
+                LocalAttribute.Key.CREATION_SAMPLING_RATE.toString() to "value that should not exist",
                 fakeAdditionalPropertyKey to fakeAdditionalPropertyValue
             )
         )
@@ -1207,8 +1213,8 @@ internal class TelemetryEventHandlerTest {
         whenever(mockRumFeature.configuration) doReturn fakeRumConfiguration
         whenever(mockRumFeatureScope.unwrap<RumFeature>()) doReturn mockRumFeature
         fakeApiUsageEvent.additionalProperties.also { properties ->
-            properties[LocalAttribute.Key.REPORTING_SAMPLING_RATE.string] = reportingSamplingRate
-            properties[LocalAttribute.Key.CREATION_SAMPLING_RATE.string] = creationSamplingRate
+            properties[LocalAttribute.Key.REPORTING_SAMPLING_RATE.toString()] = reportingSamplingRate
+            properties[LocalAttribute.Key.CREATION_SAMPLING_RATE.toString()] = creationSamplingRate
         }
 
         // When
@@ -1242,8 +1248,8 @@ internal class TelemetryEventHandlerTest {
         val fakeMetricEvent = InternalTelemetryEvent.Metric(
             message = forge.aString(),
             additionalProperties = mapOf(
-                LocalAttribute.Key.REPORTING_SAMPLING_RATE.string to creatingSamplingRate,
-                LocalAttribute.Key.CREATION_SAMPLING_RATE.string to reportingSamplingRate,
+                LocalAttribute.Key.REPORTING_SAMPLING_RATE.toString() to creatingSamplingRate,
+                LocalAttribute.Key.CREATION_SAMPLING_RATE.toString() to reportingSamplingRate,
                 fakeAdditionalPropertyKey to fakeAdditionalPropertyValue
             )
         )
@@ -1278,8 +1284,8 @@ internal class TelemetryEventHandlerTest {
         val fakeDebugEvent = InternalTelemetryEvent.Log.Debug(
             message = forge.aString(),
             additionalProperties = mapOf(
-                LocalAttribute.Key.REPORTING_SAMPLING_RATE.string to creatingSamplingRate,
-                LocalAttribute.Key.CREATION_SAMPLING_RATE.string to reportingSamplingRate,
+                LocalAttribute.Key.REPORTING_SAMPLING_RATE.toString() to creatingSamplingRate,
+                LocalAttribute.Key.CREATION_SAMPLING_RATE.toString() to reportingSamplingRate,
                 fakeAdditionalPropertyKey to fakeAdditionalPropertyValue
             )
         )
@@ -1314,8 +1320,8 @@ internal class TelemetryEventHandlerTest {
         val fakeErrorEvent = InternalTelemetryEvent.Log.Error(
             message = forge.aString(),
             additionalProperties = mapOf(
-                LocalAttribute.Key.REPORTING_SAMPLING_RATE.string to creatingSamplingRate,
-                LocalAttribute.Key.CREATION_SAMPLING_RATE.string to reportingSamplingRate,
+                LocalAttribute.Key.REPORTING_SAMPLING_RATE.toString() to creatingSamplingRate,
+                LocalAttribute.Key.CREATION_SAMPLING_RATE.toString() to reportingSamplingRate,
                 fakeAdditionalPropertyKey to fakeAdditionalPropertyValue
             )
         )
@@ -1388,8 +1394,8 @@ internal class TelemetryEventHandlerTest {
     ) {
         assertThat(additionalProperties)
             .doesNotContainKeys(
-                LocalAttribute.Key.CREATION_SAMPLING_RATE.string,
-                LocalAttribute.Key.REPORTING_SAMPLING_RATE.string
+                LocalAttribute.Key.CREATION_SAMPLING_RATE.toString(),
+                LocalAttribute.Key.REPORTING_SAMPLING_RATE.toString()
             )
 
         expectedEntries.forEach { (expectedKey, expectedValue) ->
@@ -1578,6 +1584,14 @@ internal class TelemetryEventHandlerTest {
 
         private val forge = Forge().apply {
             Configurator().configure(this)
+        }
+
+        private fun InitialResourceIdentifier.resolveThreshold(): Long? {
+            return (this as? TimeBasedInitialResourceIdentifier)?.timeThresholdInMilliseconds
+        }
+
+        private fun LastInteractionIdentifier.resolveThreshold(): Long? {
+            return (this as? TimeBasedInteractionIdentifier)?.timeThresholdInMilliseconds
         }
 
         @JvmStatic
