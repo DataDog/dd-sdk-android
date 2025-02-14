@@ -453,7 +453,7 @@ internal class SdkInternalLoggerTest {
         // Given
         val samplingRate = 100.0f
         val fakeAdditionalProperties = forge.exhaustiveAttributes().also {
-            it[LocalAttribute.Key.REPORTING_SAMPLING_RATE.string] = samplingRate
+            it[LocalAttribute.Key.REPORTING_SAMPLING_RATE.toString()] = samplingRate
         }
         val mockLambda: () -> String = mock()
         whenever(mockLambda.invoke()) doReturn fakeMessage
@@ -505,13 +505,13 @@ internal class SdkInternalLoggerTest {
             val metricEvent = firstValue as InternalTelemetryEvent.Metric
 
             assertThat(
-                metricEvent.additionalProperties?.get(LocalAttribute.Key.CREATION_SAMPLING_RATE.string)
+                metricEvent.additionalProperties?.get(LocalAttribute.Key.CREATION_SAMPLING_RATE.toString())
             ).isEqualTo(
                 expectedCreationSampleRate
             )
 
             assertThat(
-                metricEvent.additionalProperties?.get(LocalAttribute.Key.REPORTING_SAMPLING_RATE.string)
+                metricEvent.additionalProperties?.get(LocalAttribute.Key.REPORTING_SAMPLING_RATE.toString())
             ).isEqualTo(
                 samplingRate
             )
@@ -544,11 +544,11 @@ internal class SdkInternalLoggerTest {
             assertThat(
                 apiUsageEvent.additionalProperties
             ).doesNotContainKeys(
-                LocalAttribute.Key.CREATION_SAMPLING_RATE.string
+                LocalAttribute.Key.CREATION_SAMPLING_RATE.toString()
             )
 
             assertThat(
-                apiUsageEvent.additionalProperties[LocalAttribute.Key.REPORTING_SAMPLING_RATE.string]
+                apiUsageEvent.additionalProperties[LocalAttribute.Key.REPORTING_SAMPLING_RATE.toString()]
             ).isEqualTo(
                 samplingRate
             )
@@ -569,7 +569,7 @@ internal class SdkInternalLoggerTest {
             ),
             target = InternalLogger.Target.TELEMETRY,
             messageBuilder = { forge.aString() },
-            additionalProperties = mapOf(LocalAttribute.Key.REPORTING_SAMPLING_RATE.string to samplingRate)
+            additionalProperties = mapOf(LocalAttribute.Key.REPORTING_SAMPLING_RATE.toString() to samplingRate)
         )
 
         // Then
@@ -581,11 +581,11 @@ internal class SdkInternalLoggerTest {
             assertThat(
                 debugEvent.additionalProperties
             ).doesNotContainKeys(
-                LocalAttribute.Key.CREATION_SAMPLING_RATE.string
+                LocalAttribute.Key.CREATION_SAMPLING_RATE.toString()
             )
 
             assertThat(
-                debugEvent.additionalProperties?.get(LocalAttribute.Key.REPORTING_SAMPLING_RATE.string)
+                debugEvent.additionalProperties?.get(LocalAttribute.Key.REPORTING_SAMPLING_RATE.toString())
             ).isEqualTo(
                 samplingRate
             )
@@ -604,7 +604,7 @@ internal class SdkInternalLoggerTest {
             target = InternalLogger.Target.TELEMETRY,
             throwable = forge.aThrowable(),
             messageBuilder = { forge.aString() },
-            additionalProperties = mapOf(LocalAttribute.Key.REPORTING_SAMPLING_RATE.string to samplingRate)
+            additionalProperties = mapOf(LocalAttribute.Key.REPORTING_SAMPLING_RATE.toString() to samplingRate)
         )
 
         // Then
@@ -616,11 +616,11 @@ internal class SdkInternalLoggerTest {
             assertThat(
                 debugEvent.additionalProperties
             ).doesNotContainKeys(
-                LocalAttribute.Key.CREATION_SAMPLING_RATE.string
+                LocalAttribute.Key.CREATION_SAMPLING_RATE.toString()
             )
 
             assertThat(
-                debugEvent.additionalProperties?.get(LocalAttribute.Key.REPORTING_SAMPLING_RATE.string)
+                debugEvent.additionalProperties?.get(LocalAttribute.Key.REPORTING_SAMPLING_RATE.toString())
             ).isEqualTo(
                 samplingRate
             )

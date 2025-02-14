@@ -107,7 +107,7 @@ internal class ActivityViewTrackingStrategyTest :
         verify(rumMonitor.mockInstance).startView(
             mockActivity,
             mockActivity.resolveViewName(),
-            mapOf(ViewScopeInstrumentationType.ACTIVITY.key.string to ViewScopeInstrumentationType.ACTIVITY)
+            mapOf(ViewScopeInstrumentationType.ACTIVITY.key.toString() to ViewScopeInstrumentationType.ACTIVITY)
         )
     }
 
@@ -163,7 +163,7 @@ internal class ActivityViewTrackingStrategyTest :
         val expectedAttributes = mapOf<String, Any?>(
             "view.intent.action" to action,
             "view.intent.uri" to uri,
-            ViewScopeInstrumentationType.ACTIVITY.key.string to ViewScopeInstrumentationType.ACTIVITY
+            ViewScopeInstrumentationType.ACTIVITY.key.toString() to ViewScopeInstrumentationType.ACTIVITY
         )
 
         testedStrategy.register(rumMonitor.mockSdkCore, mockActivity)
@@ -223,7 +223,7 @@ internal class ActivityViewTrackingStrategyTest :
         verify(rumMonitor.mockInstance).startView(
             mockActivity,
             fakeName,
-            mapOf(ViewScopeInstrumentationType.ACTIVITY.key.string to ViewScopeInstrumentationType.ACTIVITY)
+            mapOf(ViewScopeInstrumentationType.ACTIVITY.key.toString() to ViewScopeInstrumentationType.ACTIVITY)
         )
     }
 
@@ -244,7 +244,7 @@ internal class ActivityViewTrackingStrategyTest :
         verify(rumMonitor.mockInstance).startView(
             mockActivity,
             mockActivity.resolveViewName(),
-            mapOf(ViewScopeInstrumentationType.ACTIVITY.key.string to ViewScopeInstrumentationType.ACTIVITY)
+            mapOf(ViewScopeInstrumentationType.ACTIVITY.key.toString() to ViewScopeInstrumentationType.ACTIVITY)
         )
     }
 

@@ -498,10 +498,10 @@ internal class TelemetryEventHandler(
         return (effectiveSampleRate * HUNDRED).toFloat()
     }
 
-    private fun Map<String, Any?>.getFloat(key: LocalAttribute.Key) = get(key.string) as? Float
+    private fun Map<String, Any?>.getFloat(key: LocalAttribute.Key) = get(key.toString()) as? Float
 
     private fun Map<String, Any?>.cleanUpInternalAttributes() = toMutableMap().apply {
-        LocalAttribute.Key.values().forEach { key -> remove(key.string) }
+        LocalAttribute.Key.values().forEach { key -> remove(key.toString()) }
     }
 
     // endregion

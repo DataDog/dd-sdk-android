@@ -11,20 +11,18 @@ import com.datadog.android.lint.InternalApi
  * A set of constants describing the instrumentation that were used to define the view scope.
  */
 @InternalApi
-enum class ViewScopeInstrumentationType(
-    override val value: String
-) : LocalAttribute.Constant {
+enum class ViewScopeInstrumentationType : LocalAttribute.Constant {
     /** Tracked manually through the RUMMonitor API. */
-    MANUAL("manual"),
+    MANUAL,
 
     /** Tracked through ComposeNavigationObserver instrumentation. */
-    COMPOSE("compose"),
+    COMPOSE,
 
     /** Tracked through ActivityViewTrackingStrategy instrumentation. */
-    ACTIVITY("activity"),
+    ACTIVITY,
 
     /** Tracked through FragmentViewTrackingStrategy instrumentation. */
-    FRAGMENT("fragment");
+    FRAGMENT;
 
     /** @inheritdoc */
     override val key: LocalAttribute.Key = LocalAttribute.Key.VIEW_SCOPE_INSTRUMENTATION_TYPE

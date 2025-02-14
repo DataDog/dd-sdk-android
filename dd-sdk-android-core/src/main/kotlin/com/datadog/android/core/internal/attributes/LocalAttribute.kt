@@ -18,22 +18,23 @@ interface LocalAttribute {
      * Enumeration of all local attributes keys used in the application.
      * Made via **enum** to make sure that all such attributes will be removed before sending the event to the backend.
      *
-     * @property string - Unique string value for a local attribute key.
+     * @param string - Unique string value for a local attribute key.
      */
     @InternalApi
     enum class Key(
-        val string: String
+        private val string: String
     ) {
-        /* Some of the metrics like [PerformanceMetric] being sampled on the
-         * metric creation place and then reported with 100% probability.
-         * In such cases we need to use *creationSampleRate* to compute effectiveSampleRate correctlyThe sampling
-         * rate is used when creating metrics.
-         * Creation(head) sampling rate exist only for long-lived metrics like method performance.
-         * Created metric still could not be sent it depends on [REPORTING_SAMPLING_RATE] sampling rate
+        /*
+         * Some of the metrics such as [PerformanceMetric] are sampled at the point of
+         * metric creation and then reported with 100% probability.
+         * In such cases we need to use *creationSampleRate* to correctly calculate effectiveSampleRate.
+         * The creation(head) sample rate only exists for long-lived metrics such as method performance.
+         * Created metric still could not be sent, it depends on the [REPORTING_SAMPLING_RATE] sample rate.
          */
         CREATION_SAMPLING_RATE("_dd.local.head_sampling_rate_key"),
 
-        /* Sampling rate that is used to decide to send or not to send the metric.
+        /*
+         * Sampling rate that is used to decide to send or not to send the metric.
          * Each metric should have reporting(tail) sampling rate.
          * It's possible that metric has only reporting(tail) sampling rate.
          */
@@ -43,7 +44,11 @@ interface LocalAttribute {
          * Indicates which instrumentation was used to track the view scope.
          * See [ViewScopeInstrumentationType] for possible values.
          */
-        VIEW_SCOPE_INSTRUMENTATION_TYPE("_dd.local.view_instrumentation_type_key")
+        VIEW_SCOPE_INSTRUMENTATION_TYPE("_dd.local.view_instrumentation_type_key");
+
+        override fun toString(): String {
+            return string
+        }
     }
 
     /**
@@ -56,9 +61,6 @@ interface LocalAttribute {
     interface Constant {
         /** Constant attribute key. For enum constants will be same for all values. */
         val key: Key
-
-        /** Constant attribute value. One item from set of possible finite values for a given constant attribute.*/
-        val value: Any
     }
 }
 
@@ -99,5 +101,5 @@ fun MutableMap<String, Any?>.enrichWithLocalAttribute(
     key: LocalAttribute.Key,
     value: Any?
 ) = apply {
-    this[key.string] = value
+    this[key.toString()] = value
 }

@@ -728,7 +728,7 @@ public final class com/datadog/android/core/internal/attributes/LocalAttribute$K
 	public static final field CREATION_SAMPLING_RATE Lcom/datadog/android/core/internal/attributes/LocalAttribute$Key;
 	public static final field REPORTING_SAMPLING_RATE Lcom/datadog/android/core/internal/attributes/LocalAttribute$Key;
 	public static final field VIEW_SCOPE_INSTRUMENTATION_TYPE Lcom/datadog/android/core/internal/attributes/LocalAttribute$Key;
-	public final fun getString ()Ljava/lang/String;
+	public fun toString ()Ljava/lang/String;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/core/internal/attributes/LocalAttribute$Key;
 	public static fun values ()[Lcom/datadog/android/core/internal/attributes/LocalAttribute$Key;
 }
