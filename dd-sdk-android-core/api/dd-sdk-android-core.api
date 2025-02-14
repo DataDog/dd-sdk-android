@@ -721,7 +721,6 @@ public abstract interface class com/datadog/android/core/internal/attributes/Loc
 
 public abstract interface class com/datadog/android/core/internal/attributes/LocalAttribute$Constant {
 	public abstract fun getKey ()Lcom/datadog/android/core/internal/attributes/LocalAttribute$Key;
-	public abstract fun getValue ()Ljava/lang/Object;
 }
 
 public final class com/datadog/android/core/internal/attributes/LocalAttribute$Key : java/lang/Enum {
@@ -745,8 +744,6 @@ public final class com/datadog/android/core/internal/attributes/ViewScopeInstrum
 	public static final field FRAGMENT Lcom/datadog/android/core/internal/attributes/ViewScopeInstrumentationType;
 	public static final field MANUAL Lcom/datadog/android/core/internal/attributes/ViewScopeInstrumentationType;
 	public fun getKey ()Lcom/datadog/android/core/internal/attributes/LocalAttribute$Key;
-	public synthetic fun getValue ()Ljava/lang/Object;
-	public fun getValue ()Ljava/lang/String;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/core/internal/attributes/ViewScopeInstrumentationType;
 	public static fun values ()[Lcom/datadog/android/core/internal/attributes/ViewScopeInstrumentationType;
 }

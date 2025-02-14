@@ -261,14 +261,13 @@ interface com.datadog.android.core.internal.attributes.LocalAttribute
     - CREATION_SAMPLING_RATE
     - REPORTING_SAMPLING_RATE
     - VIEW_SCOPE_INSTRUMENTATION_TYPE
+    override fun toString(): String
   interface Constant
     val key: Key
-    val value: Any
 fun MutableMap<String, Any?>.enrichWithConstantAttribute(LocalAttribute.Constant)
 fun MutableMap<String, Any?>.enrichWithNonNullAttribute(LocalAttribute.Key, Any?)
 fun MutableMap<String, Any?>.enrichWithLocalAttribute(LocalAttribute.Key, Any?)
 enum com.datadog.android.core.internal.attributes.ViewScopeInstrumentationType : LocalAttribute.Constant
-  constructor(String)
   - MANUAL
   - COMPOSE
   - ACTIVITY
