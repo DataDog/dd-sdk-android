@@ -13,6 +13,7 @@ import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.api.storage.EventType
 import com.datadog.android.core.InternalSdkCore
+import com.datadog.android.core.internal.attributes.LocalAttribute
 import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
@@ -473,11 +474,11 @@ internal class TelemetryEventHandler(
         val telemetrySampleRate = rumConfig?.telemetrySampleRate?.percent() ?: return 0f
 
         val creatingSamplingRate = properties
-            ?.getFloat(InternalTelemetryEvent.CREATION_SAMPLING_RATE_KEY)
+            ?.getFloat(LocalAttribute.Key.CREATION_SAMPLING_RATE)
             ?.percent() ?: 1.0
 
         val reportingSamplingRate = properties
-            ?.getFloat(InternalTelemetryEvent.REPORTING_SAMPLING_RATE_KEY)
+            ?.getFloat(LocalAttribute.Key.REPORTING_SAMPLING_RATE)
             ?.percent() ?: 1.0
 
         val eventSamplingRate = eventSpecificSamplingRate?.percent() ?: 1.0
@@ -487,11 +488,10 @@ internal class TelemetryEventHandler(
         return (effectiveSampleRate * HUNDRED).toFloat()
     }
 
-    private fun Map<String, Any?>.getFloat(key: String) = get(key) as? Float
+    private fun Map<String, Any?>.getFloat(key: LocalAttribute.Key) = get(key.string) as? Float
 
     private fun Map<String, Any?>.cleanUpInternalAttributes() = toMutableMap().apply {
-        remove(InternalTelemetryEvent.REPORTING_SAMPLING_RATE_KEY)
-        remove(InternalTelemetryEvent.CREATION_SAMPLING_RATE_KEY)
+        LocalAttribute.Key.values().forEach { key -> remove(key.string) }
     }
 
     // endregion

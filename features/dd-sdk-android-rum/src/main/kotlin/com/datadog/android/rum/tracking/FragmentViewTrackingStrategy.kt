@@ -13,6 +13,8 @@ import androidx.annotation.MainThread
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
 import com.datadog.android.api.feature.Feature
+import com.datadog.android.core.internal.attributes.ViewScopeInstrumentationType
+import com.datadog.android.core.internal.attributes.enrichWithConstantAttribute
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.internal.RumFeature
@@ -73,7 +75,11 @@ internal constructor(
             if (rumFeature != null && rumMonitor != null) {
                 AndroidXFragmentLifecycleCallbacks(
                     argumentsProvider = {
-                        if (trackArguments) it.arguments.convertToRumViewAttributes() else emptyMap()
+                        if (trackArguments) {
+                            it.arguments.convertToRumViewAttributes().toMutableMap()
+                        } else {
+                            mutableMapOf()
+                        }.enrichWithConstantAttribute(ViewScopeInstrumentationType.FRAGMENT)
                     },
                     componentPredicate = supportFragmentComponentPredicate,
                     rumMonitor = rumMonitor,
@@ -96,7 +102,11 @@ internal constructor(
             ) {
                 OreoFragmentLifecycleCallbacks(
                     argumentsProvider = {
-                        if (trackArguments) it.arguments.convertToRumViewAttributes() else emptyMap()
+                        if (trackArguments) {
+                            it.arguments.convertToRumViewAttributes().toMutableMap()
+                        } else {
+                            mutableMapOf()
+                        }.enrichWithConstantAttribute(ViewScopeInstrumentationType.FRAGMENT)
                     },
                     componentPredicate = defaultFragmentComponentPredicate,
                     rumMonitor = rumMonitor,

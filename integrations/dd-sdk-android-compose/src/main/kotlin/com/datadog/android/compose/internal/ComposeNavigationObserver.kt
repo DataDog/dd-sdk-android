@@ -12,6 +12,8 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.navigation.NavController
 import androidx.navigation.NavDestination
+import com.datadog.android.core.internal.attributes.ViewScopeInstrumentationType
+import com.datadog.android.core.internal.attributes.enrichWithConstantAttribute
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.tracking.AcceptAllNavDestinations
 import com.datadog.android.rum.tracking.ComponentPredicate
@@ -61,14 +63,12 @@ internal class ComposeNavigationObserver(
         arguments: Bundle?
     ) {
         val viewName = destinationPredicate.getViewName(navDestination) ?: route
-        rumMonitor.startView(
-            key = route,
-            name = viewName,
-            attributes = if (trackArguments) {
-                arguments.convertToRumViewAttributes()
-            } else {
-                emptyMap()
-            }
-        )
+        val attributes = if (trackArguments) {
+            arguments.convertToRumViewAttributes().toMutableMap()
+        } else {
+            mutableMapOf()
+        }.enrichWithConstantAttribute(ViewScopeInstrumentationType.COMPOSE)
+
+        rumMonitor.startView(key = route, name = viewName, attributes = attributes)
     }
 }

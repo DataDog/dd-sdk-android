@@ -24,6 +24,7 @@ import androidx.navigation.fragment.NavHostFragment
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureScope
+import com.datadog.android.core.internal.attributes.ViewScopeInstrumentationType
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.rum.utils.forge.Configurator
@@ -313,7 +314,7 @@ internal class NavigationViewTrackingStrategyTest {
         verify(rumMonitor.mockInstance).startView(
             mockNavDestination,
             fakeDestinationName,
-            emptyMap()
+            mapOf(ViewScopeInstrumentationType.FRAGMENT.key.string to ViewScopeInstrumentationType.FRAGMENT)
         )
     }
 
@@ -337,7 +338,11 @@ internal class NavigationViewTrackingStrategyTest {
 
         testedStrategy.onDestinationChanged(mockNavController, mockNavDestination, null)
 
-        verify(rumMonitor.mockInstance).startView(mockNavDestination, customName, emptyMap())
+        verify(rumMonitor.mockInstance).startView(
+            mockNavDestination,
+            customName,
+            mapOf(ViewScopeInstrumentationType.FRAGMENT.key.string to ViewScopeInstrumentationType.FRAGMENT)
+        )
     }
 
     @Test
@@ -346,7 +351,9 @@ internal class NavigationViewTrackingStrategyTest {
     ) {
         whenever(mockPredicate.accept(mockNavDestination)) doReturn true
         val arguments = Bundle()
-        val expectedAttrs = mutableMapOf<String, Any?>()
+        val expectedAttrs = mutableMapOf<String, Any?>(
+            ViewScopeInstrumentationType.FRAGMENT.key.string to ViewScopeInstrumentationType.FRAGMENT
+        )
         repeat(10) {
             val key = forge.anAlphabeticalString()
             val value = forge.anAsciiString()
@@ -384,7 +391,7 @@ internal class NavigationViewTrackingStrategyTest {
         verify(rumMonitor.mockInstance).startView(
             mockNavDestination,
             fakeDestinationName,
-            emptyMap()
+            mapOf(ViewScopeInstrumentationType.FRAGMENT.key.string to ViewScopeInstrumentationType.FRAGMENT)
         )
     }
 
@@ -406,12 +413,12 @@ internal class NavigationViewTrackingStrategyTest {
             verify(rumMonitor.mockInstance).startView(
                 mockNavDestination,
                 fakeDestinationName,
-                emptyMap()
+                mapOf(ViewScopeInstrumentationType.FRAGMENT.key.string to ViewScopeInstrumentationType.FRAGMENT)
             )
             verify(rumMonitor.mockInstance).startView(
                 newDestination,
                 newDestinationName,
-                emptyMap()
+                mapOf(ViewScopeInstrumentationType.FRAGMENT.key.string to ViewScopeInstrumentationType.FRAGMENT)
             )
         }
     }

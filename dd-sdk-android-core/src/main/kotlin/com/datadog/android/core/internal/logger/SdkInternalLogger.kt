@@ -12,6 +12,8 @@ import com.datadog.android.Datadog
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.core.internal.attributes.LocalAttribute
+import com.datadog.android.core.internal.attributes.enrichWithNonNullAttribute
 import com.datadog.android.core.internal.metrics.MethodCalledTelemetry
 import com.datadog.android.core.metrics.PerformanceMetric
 import com.datadog.android.core.metrics.TelemetryMetricType
@@ -102,18 +104,14 @@ internal class SdkInternalLogger(
         if (!sample(samplingRate)) return
         val rumFeature = sdkCore?.getFeature(Feature.RUM_FEATURE_NAME) ?: return
         val additionalPropertiesMutable = additionalProperties.toMutableMap()
-
-        enrichWithNonNullValue(
-            additionalPropertiesMutable,
-            InternalTelemetryEvent.CREATION_SAMPLING_RATE_KEY,
-            creationSampleRate
-        )
-
-        enrichWithNonNullValue(
-            additionalPropertiesMutable,
-            InternalTelemetryEvent.REPORTING_SAMPLING_RATE_KEY,
-            samplingRate
-        )
+            .enrichWithNonNullAttribute(
+                LocalAttribute.Key.CREATION_SAMPLING_RATE,
+                creationSampleRate
+            )
+            .enrichWithNonNullAttribute(
+                LocalAttribute.Key.REPORTING_SAMPLING_RATE,
+                samplingRate
+            )
 
         val metricEvent = InternalTelemetryEvent.Metric(
             message = messageBuilder(),
@@ -150,10 +148,8 @@ internal class SdkInternalLogger(
         val rumFeature = sdkCore?.getFeature(Feature.RUM_FEATURE_NAME) ?: return
 
         val event = apiUsageEventBuilder()
-
-        enrichWithNonNullValue(
-            event.additionalProperties,
-            InternalTelemetryEvent.REPORTING_SAMPLING_RATE_KEY,
+        event.additionalProperties.enrichWithNonNullAttribute(
+            LocalAttribute.Key.REPORTING_SAMPLING_RATE,
             samplingRate
         )
 
@@ -275,18 +271,6 @@ internal class SdkInternalLogger(
             "[$instanceName]: $this"
         } else {
             this
-        }
-    }
-
-    private fun enrichWithNonNullValue(
-        map: MutableMap<String, Any?>,
-        key: String,
-        value: Float?
-    ) {
-        if (value == null) return
-
-        if (!map.containsKey(key)) {
-            map[key] = value
         }
     }
 

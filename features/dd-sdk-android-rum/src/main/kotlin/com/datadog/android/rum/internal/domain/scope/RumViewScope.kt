@@ -13,6 +13,8 @@ import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.api.storage.EventType
 import com.datadog.android.core.InternalSdkCore
+import com.datadog.android.core.internal.attributes.LocalAttribute
+import com.datadog.android.core.internal.attributes.ViewScopeInstrumentationType
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.internal.utils.loggableStackTrace
@@ -1398,7 +1400,8 @@ internal open class RumViewScope(
             val viewType = RumViewType.FOREGROUND
             val viewEndedMetricDispatcher = ViewEndedMetricDispatcher(
                 viewType = viewType,
-                internalLogger = sdkCore.internalLogger
+                internalLogger = sdkCore.internalLogger,
+                instrumentationType = event.tryResolveInstrumentationType()
             )
 
             return RumViewScope(
@@ -1429,6 +1432,9 @@ internal open class RumViewScope(
                 average = meanValue
             )
         }
+
+        private fun RumRawEvent.StartView.tryResolveInstrumentationType() =
+            attributes[LocalAttribute.Key.VIEW_SCOPE_INSTRUMENTATION_TYPE.string] as? ViewScopeInstrumentationType
 
         @Suppress("CommentOverPrivateFunction")
         /**

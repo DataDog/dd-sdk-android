@@ -17,6 +17,8 @@ import androidx.fragment.app.FragmentManager
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureScope
+import com.datadog.android.core.internal.attributes.ViewScopeInstrumentationType
+import com.datadog.android.core.internal.attributes.enrichWithConstantAttribute
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.tracking.AndroidXFragmentLifecycleCallbacks
@@ -175,7 +177,9 @@ internal class FragmentViewTrackingStrategyTest : ObjectTest<FragmentViewTrackin
         // Given
         testedStrategy.register(rumMonitor.mockSdkCore, mockAppContext)
         val mockFragment: Fragment = mockFragmentWithArguments(forge)
-        val expectedAttrs = mockFragment.arguments!!.toRumAttributes()
+        val expectedAttrs = mockFragment.arguments!!
+            .toRumAttributes()
+            .enrichWithConstantAttribute(ViewScopeInstrumentationType.FRAGMENT)
         val argumentCaptor = argumentCaptor<FragmentManager.FragmentLifecycleCallbacks>()
 
         // When
@@ -256,7 +260,9 @@ internal class FragmentViewTrackingStrategyTest : ObjectTest<FragmentViewTrackin
         testedStrategy = FragmentViewTrackingStrategy(false)
         testedStrategy.register(rumMonitor.mockSdkCore, mockAppContext)
         val mockFragment: Fragment = mockFragmentWithArguments(forge)
-        val expectedAttrs = emptyMap<String, Any?>()
+        val expectedAttrs = mapOf(
+            ViewScopeInstrumentationType.FRAGMENT.key.string to ViewScopeInstrumentationType.FRAGMENT
+        )
         val argumentCaptor = argumentCaptor<FragmentManager.FragmentLifecycleCallbacks>()
 
         // When
@@ -376,7 +382,9 @@ internal class FragmentViewTrackingStrategyTest : ObjectTest<FragmentViewTrackin
         whenever(mockBuildSdkVersionProvider.version) doReturn fakeApiVersion
         testedStrategy.register(rumMonitor.mockSdkCore, mockAppContext)
         val mockFragment: android.app.Fragment = mockDeprecatedFragmentWithArguments(forge)
-        val expectedAttrs = mockFragment.arguments.toRumAttributes()
+        val expectedAttrs = mockFragment.arguments
+            .toRumAttributes()
+            .enrichWithConstantAttribute(ViewScopeInstrumentationType.FRAGMENT)
         val argumentCaptor =
             argumentCaptor<android.app.FragmentManager.FragmentLifecycleCallbacks>()
 
@@ -469,7 +477,9 @@ internal class FragmentViewTrackingStrategyTest : ObjectTest<FragmentViewTrackin
             buildSdkVersionProvider = mockBuildSdkVersionProvider
         )
         testedStrategy.register(rumMonitor.mockSdkCore, mockAppContext)
-        val expectedAttrs = emptyMap<String, Any?>()
+        val expectedAttrs = mapOf(
+            ViewScopeInstrumentationType.FRAGMENT.key.string to ViewScopeInstrumentationType.FRAGMENT
+        )
         val mockFragment: android.app.Fragment = mockDeprecatedFragmentWithArguments(forge)
         val argumentCaptor =
             argumentCaptor<android.app.FragmentManager.FragmentLifecycleCallbacks>()
@@ -663,7 +673,7 @@ internal class FragmentViewTrackingStrategyTest : ObjectTest<FragmentViewTrackin
         return arguments
     }
 
-    private fun Bundle.toRumAttributes(): Map<String, Any?> {
+    private fun Bundle.toRumAttributes(): MutableMap<String, Any?> {
         val attributes = mutableMapOf<String, Any?>()
         keySet().forEach {
             attributes["view.arguments.$it"] = get(it)
