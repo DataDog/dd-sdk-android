@@ -125,6 +125,7 @@ analysis:detekt-custom:
     - ./gradlew :features:dd-sdk-android-rum:customDetektRules
     - ./gradlew :features:dd-sdk-android-session-replay:customDetektRules
     - ./gradlew :features:dd-sdk-android-session-replay-material:customDetektRules
+    - ./gradlew :features:dd-sdk-android-session-replay-compose:customDetektRules
     - ./gradlew :features:dd-sdk-android-trace:customDetektRules
     - ./gradlew :features:dd-sdk-android-trace-otel:customDetektRules
     - ./gradlew :features:dd-sdk-android-webview:customDetektRules
