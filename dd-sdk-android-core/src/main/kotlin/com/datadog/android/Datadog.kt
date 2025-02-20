@@ -239,7 +239,7 @@ object Datadog {
     /**
      * Sets the user information.
      *
-     * @param id (nullable) a unique user identifier (relevant to your business domain)
+     * @param id a unique user identifier (relevant to your business domain)
      * @param name (nullable) the user name or alias
      * @param email (nullable) the user email
      * @param extraInfo additional information. An extra information can be
@@ -249,6 +249,22 @@ object Datadog {
      */
     @JvmStatic
     @JvmOverloads
+    fun setUserInfo(
+        id: String,
+        name: String? = null,
+        email: String? = null,
+        extraInfo: Map<String, Any?> = emptyMap(),
+        sdkCore: SdkCore = getInstance()
+    ) {
+        sdkCore.setUserInfo(id, name, email, extraInfo)
+    }
+
+    @JvmStatic
+    @JvmOverloads
+    @Deprecated(
+        "UserInfo id property is now mandatory.",
+        ReplaceWith("setUserInfo(id!!, name, email, extraInfo, sdkCore)")
+    )
     fun setUserInfo(
         id: String? = null,
         name: String? = null,
