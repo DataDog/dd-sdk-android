@@ -276,6 +276,7 @@ object Datadog {
         "UserInfo id property is now mandatory.",
         ReplaceWith("setUserInfo(id!!, name, email, extraInfo, sdkCore)")
     )
+    @JvmName("setUserInfoDeprecated")
     fun setUserInfo(
         id: String? = null,
         name: String? = null,
