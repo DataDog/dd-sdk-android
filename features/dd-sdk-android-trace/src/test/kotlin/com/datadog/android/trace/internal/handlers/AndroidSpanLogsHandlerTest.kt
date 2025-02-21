@@ -11,12 +11,14 @@ import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.core.internal.utils.loggableStackTrace
+import com.datadog.android.core.internal.utils.toHexString
 import com.datadog.android.internal.utils.loggableStackTrace
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.trace.utils.verifyLog
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.legacy.trace.api.DDTags
 import com.datadog.opentracing.DDSpan
+import com.datadog.opentracing.DDSpanContext
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.LongForgery
@@ -62,7 +64,10 @@ internal class AndroidSpanLogsHandlerTest {
     @Mock
     lateinit var mockSpan: DDSpan
 
-    @LongForgery
+    @Mock
+    lateinit var mockSpanContext: DDSpanContext
+
+    @LongForgery(min = 1)
     var fakeTraceId: Long = 0L
 
     @LongForgery
@@ -70,8 +75,11 @@ internal class AndroidSpanLogsHandlerTest {
 
     @BeforeEach
     fun `set up`() {
+        whenever(mockSpan.context()) doReturn mockSpanContext
         whenever(mockSpan.traceId) doReturn BigInteger.valueOf(fakeTraceId)
         whenever(mockSpan.spanId) doReturn BigInteger.valueOf(fakeSpanId)
+        whenever(mockSpanContext.traceId) doReturn BigInteger.valueOf(fakeTraceId)
+        whenever(mockSpanContext.toSpanId()) doReturn fakeSpanId.toString()
 
         whenever(
             mockSdkCore.getFeature(Feature.LOGS_FEATURE_NAME)
@@ -103,7 +111,7 @@ internal class AndroidSpanLogsHandlerTest {
                     "message" to AndroidSpanLogsHandler.DEFAULT_EVENT_MESSAGE,
                     "attributes" to mapOf(
                         Fields.EVENT to event,
-                        LogAttributes.DD_TRACE_ID to fakeTraceId.toString(),
+                        LogAttributes.DD_TRACE_ID to fakeTraceId.toHexString().padStart(32, '0'),
                         LogAttributes.DD_SPAN_ID to fakeSpanId.toString()
                     )
                 )
@@ -131,7 +139,7 @@ internal class AndroidSpanLogsHandlerTest {
                     "message" to AndroidSpanLogsHandler.DEFAULT_EVENT_MESSAGE,
                     "attributes" to mapOf(
                         Fields.EVENT to event,
-                        LogAttributes.DD_TRACE_ID to fakeTraceId.toString(),
+                        LogAttributes.DD_TRACE_ID to fakeTraceId.toHexString().padStart(32, '0'),
                         LogAttributes.DD_SPAN_ID to fakeSpanId.toString()
                     ),
                     "timestamp" to TimeUnit.MICROSECONDS.toMillis(timestampMicros)
@@ -147,7 +155,7 @@ internal class AndroidSpanLogsHandlerTest {
         val fields = forge.aMap { anAlphabeticalString() to anAsciiString() }
         val logAttributes = fields.toMutableMap()
             .apply {
-                put(LogAttributes.DD_TRACE_ID, fakeTraceId.toString())
+                put(LogAttributes.DD_TRACE_ID, fakeTraceId.toHexString().padStart(32, '0'))
                 put(LogAttributes.DD_SPAN_ID, fakeSpanId.toString())
             }
 
@@ -184,7 +192,7 @@ internal class AndroidSpanLogsHandlerTest {
         val fields = forge.aMap { anAlphabeticalString() to anAsciiString() }
         val logAttributes = fields.toMutableMap()
             .apply {
-                put(LogAttributes.DD_TRACE_ID, fakeTraceId.toString())
+                put(LogAttributes.DD_TRACE_ID, fakeTraceId.toHexString().padStart(32, '0'))
                 put(LogAttributes.DD_SPAN_ID, fakeSpanId.toString())
             }
 
@@ -216,7 +224,7 @@ internal class AndroidSpanLogsHandlerTest {
 
         val logAttributes = fields.toMutableMap()
             .apply {
-                put(LogAttributes.DD_TRACE_ID, fakeTraceId.toString())
+                put(LogAttributes.DD_TRACE_ID, fakeTraceId.toHexString().padStart(32, '0'))
                 put(LogAttributes.DD_SPAN_ID, fakeSpanId.toString())
             }
 
@@ -262,7 +270,7 @@ internal class AndroidSpanLogsHandlerTest {
 
         val logAttributes = fields.toMutableMap()
             .apply {
-                put(LogAttributes.DD_TRACE_ID, fakeTraceId.toString())
+                put(LogAttributes.DD_TRACE_ID, fakeTraceId.toHexString().padStart(32, '0'))
                 put(LogAttributes.DD_SPAN_ID, fakeSpanId.toString())
             }
 
@@ -304,7 +312,7 @@ internal class AndroidSpanLogsHandlerTest {
 
         val logAttributes = fields.toMutableMap()
             .apply {
-                put(LogAttributes.DD_TRACE_ID, fakeTraceId.toString())
+                put(LogAttributes.DD_TRACE_ID, fakeTraceId.toHexString().padStart(32, '0'))
                 put(LogAttributes.DD_SPAN_ID, fakeSpanId.toString())
             }
 
@@ -353,7 +361,7 @@ internal class AndroidSpanLogsHandlerTest {
 
         val logAttributes = fields.toMutableMap()
             .apply {
-                put(LogAttributes.DD_TRACE_ID, fakeTraceId.toString())
+                put(LogAttributes.DD_TRACE_ID, fakeTraceId.toHexString().padStart(32, '0'))
                 put(LogAttributes.DD_SPAN_ID, fakeSpanId.toString())
             }
 
@@ -404,7 +412,7 @@ internal class AndroidSpanLogsHandlerTest {
 
         val logAttributes = fields.toMutableMap()
             .apply {
-                put(LogAttributes.DD_TRACE_ID, fakeTraceId.toString())
+                put(LogAttributes.DD_TRACE_ID, fakeTraceId.toHexString().padStart(32, '0'))
                 put(LogAttributes.DD_SPAN_ID, fakeSpanId.toString())
             }
 

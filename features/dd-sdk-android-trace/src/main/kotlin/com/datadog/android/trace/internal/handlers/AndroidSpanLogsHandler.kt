@@ -12,6 +12,7 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.internal.utils.loggableStackTrace
 import com.datadog.android.log.LogAttributes
+import com.datadog.android.trace.internal.utils.traceIdAsHexString
 import com.datadog.legacy.trace.api.DDTags
 import com.datadog.opentracing.DDSpan
 import com.datadog.opentracing.LogHandler
@@ -68,8 +69,8 @@ internal class AndroidSpanLogsHandler(
         val logsFeature = sdkCore.getFeature(Feature.LOGS_FEATURE_NAME)
         if (logsFeature != null && fields.isNotEmpty()) {
             val message = fields.remove(Fields.MESSAGE)?.toString() ?: DEFAULT_EVENT_MESSAGE
-            fields[LogAttributes.DD_TRACE_ID] = span.traceId.toString()
-            fields[LogAttributes.DD_SPAN_ID] = span.spanId.toString()
+            fields[LogAttributes.DD_TRACE_ID] = span.context().traceIdAsHexString()
+            fields[LogAttributes.DD_SPAN_ID] = span.context().toSpanId()
             val timestamp = toMilliseconds(timestampMicroseconds) ?: System.currentTimeMillis()
             logsFeature.sendEvent(
                 mapOf(
