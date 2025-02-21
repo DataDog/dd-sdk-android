@@ -14,7 +14,7 @@ import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequest
 import androidx.work.WorkManager
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.core.internal.data.upload.UploadWorker
+import com.datadog.android.core.UploadWorker
 import java.util.concurrent.TimeUnit
 
 internal const val CANCEL_ERROR_MESSAGE = "Error cancelling the UploadWorker"

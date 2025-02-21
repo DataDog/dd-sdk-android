@@ -193,6 +193,10 @@ class com.datadog.android.core.SdkReference
   fun get(): com.datadog.android.api.SdkCore?
 fun <T> allowThreadDiskReads(() -> T): T
 fun <T> allowThreadDiskWrites(() -> T): T
+class com.datadog.android.core.UploadWorker : androidx.work.Worker
+  constructor(android.content.Context, androidx.work.WorkerParameters)
+  override fun doWork(): Result
+  companion object 
 enum com.datadog.android.core.configuration.BackPressureMitigation
   - DROP_OLDEST
   - IGNORE_NEWEST

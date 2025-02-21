@@ -15,13 +15,12 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.core.InternalSdkCore
+import com.datadog.android.core.UploadWorker
 import com.datadog.android.core.feature.event.JvmCrash
 import com.datadog.android.core.internal.CoreFeature
-import com.datadog.android.core.internal.data.upload.UploadWorker
 import com.datadog.android.core.internal.thread.waitToIdle
 import com.datadog.android.core.internal.utils.TAG_DATADOG_UPLOAD
 import com.datadog.android.core.internal.utils.UPLOAD_WORKER_NAME
-import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.internal.utils.loggableStackTrace
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.utils.forge.Configurator
