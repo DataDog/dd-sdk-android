@@ -548,6 +548,15 @@ public final class com/datadog/android/core/StrictModeExtKt {
 	public static final fun allowThreadDiskWrites (Lkotlin/jvm/functions/Function0;)Ljava/lang/Object;
 }
 
+public final class com/datadog/android/core/UploadWorker : androidx/work/Worker {
+	public static final field Companion Lcom/datadog/android/core/UploadWorker$Companion;
+	public fun <init> (Landroid/content/Context;Landroidx/work/WorkerParameters;)V
+	public fun doWork ()Landroidx/work/ListenableWorker$Result;
+}
+
+public final class com/datadog/android/core/UploadWorker$Companion {
+}
+
 public final class com/datadog/android/core/configuration/BackPressureMitigation : java/lang/Enum {
 	public static final field DROP_OLDEST Lcom/datadog/android/core/configuration/BackPressureMitigation;
 	public static final field IGNORE_NEWEST Lcom/datadog/android/core/configuration/BackPressureMitigation;
