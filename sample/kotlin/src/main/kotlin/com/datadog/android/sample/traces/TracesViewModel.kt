@@ -368,14 +368,20 @@ internal class TracesViewModel(
             withinSpan("AsyncOperation", activeSpanInMainThread) {
                 logger.v("Starting Async Operation...")
 
-                for (i in 0..100) {
+                val count = (Random().nextInt() % 50) + 50
+                log("Async op loops $count times")
+                var actualCount = 0
+
+                for (i in 0 until count) {
                     if (isCancelled) {
+                        log("Async operation cancelled")
                         break
                     }
                     onProgress(i)
                     Thread.sleep(((i * i).toDouble() / 100.0).toLong())
+                    actualCount++
                 }
-
+                log(mapOf("wanted_count" to count, "actual_count" to actualCount))
                 logger.v("Finishing Async Operation...")
             }
         }
