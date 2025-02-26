@@ -60,6 +60,7 @@ import com.datadog.android.rum.internal.tracking.NoOpUserActionTrackingStrategy
 import com.datadog.android.rum.internal.tracking.UserActionTrackingStrategy
 import com.datadog.android.rum.internal.vitals.AggregatingVitalMonitor
 import com.datadog.android.rum.internal.vitals.CPUVitalReader
+import com.datadog.android.rum.internal.vitals.FPSVitalListener
 import com.datadog.android.rum.internal.vitals.JankStatsActivityLifecycleListener
 import com.datadog.android.rum.internal.vitals.MemoryVitalReader
 import com.datadog.android.rum.internal.vitals.NoOpVitalMonitor
@@ -416,7 +417,10 @@ internal class RumFeature(
         )
 
         jankStatsActivityLifecycleListener = JankStatsActivityLifecycleListener(
-            frameRateVitalMonitor,
+            @Suppress("UnsafeThirdPartyFunctionCall") // it's safe to call listOf here
+            listOf(
+                FPSVitalListener(frameRateVitalMonitor)
+            ),
             sdkCore.internalLogger
         )
         (appContext as? Application)?.registerActivityLifecycleCallbacks(
