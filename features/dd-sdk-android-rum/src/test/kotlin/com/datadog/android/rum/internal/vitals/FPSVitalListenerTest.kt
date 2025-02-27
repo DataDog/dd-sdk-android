@@ -57,11 +57,11 @@ internal class FPSVitalListenerTest {
         on { version } doReturn Build.VERSION_CODES.VANILLA_ICE_CREAM
     }
 
-    private lateinit var listenerUnderTest: FPSVitalListener
+    private lateinit var testedListener: FPSVitalListener
 
     @BeforeEach
     fun `set up`() {
-        listenerUnderTest = FPSVitalListener(mockObserver, mockBuildSdkVersionProvider)
+        testedListener = FPSVitalListener(mockObserver, mockBuildSdkVersionProvider)
     }
 
     @Test
@@ -75,7 +75,7 @@ internal class FPSVitalListenerTest {
         val frameData = FrameData(timestampNs, frameDurationNs, isJank, emptyList())
 
         // When
-        listenerUnderTest.onFrame(frameData)
+        testedListener.onFrame(frameData)
 
         // Then
         verify(mockObserver).onNewSample(eq(expectedFrameRate, 0.0001))
@@ -89,7 +89,7 @@ internal class FPSVitalListenerTest {
         val frameData = FrameData(timestampNs, 0L, isJank, emptyList())
 
         // When
-        listenerUnderTest.onFrame(frameData)
+        testedListener.onFrame(frameData)
 
         // Then
         verify(mockObserver, never()).onNewSample(any())
@@ -110,14 +110,14 @@ internal class FPSVitalListenerTest {
 
         whenever(mockBuildSdkVersionProvider.version) doReturn Build.VERSION_CODES.S
 
-        listenerUnderTest.onFrameMetricsData(
+        testedListener.onFrameMetricsData(
             FrameMetricsData(
                 deadline = (ONE_SECOND_NS / displayRefreshRate).toLong()
             )
         )
 
         // When
-        listenerUnderTest.onFrame(frameData)
+        testedListener.onFrame(frameData)
 
         // Then
         if (expectedFrameRate * refreshRateMultiplier > MIN_FPS) {
@@ -142,14 +142,14 @@ internal class FPSVitalListenerTest {
 
         whenever(mockBuildSdkVersionProvider.version) doReturn Build.VERSION_CODES.R
 
-        listenerUnderTest.onFrameMetricsData(
+        testedListener.onFrameMetricsData(
             FrameMetricsData(
                 displayRefreshRate = displayRefreshRate
             )
         )
 
         // When
-        listenerUnderTest.onFrame(frameData)
+        testedListener.onFrame(frameData)
 
         // Then
         if (expectedFrameRate * refreshRateMultiplier > MIN_FPS) {

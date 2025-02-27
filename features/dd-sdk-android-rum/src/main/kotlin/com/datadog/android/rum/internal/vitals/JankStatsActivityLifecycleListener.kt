@@ -143,7 +143,7 @@ internal class JankStatsActivityLifecycleListener(
         if (activeActivities[activity.window].isNullOrEmpty()) {
             activeWindowsListener.remove(activity.window)
             activeActivities.remove(activity.window)
-            if (buildSdkVersionProvider.version >= Build.VERSION_CODES.S) {
+            if (buildSdkVersionProvider.version >= Build.VERSION_CODES.N) {
                 unregisterMetricListener(activity.window)
             }
         }
@@ -199,7 +199,7 @@ internal class JankStatsActivityLifecycleListener(
     @SuppressLint("NewApi")
     @MainThread
     private fun trackWindowMetrics(isKnownWindow: Boolean, window: Window, activity: Activity) {
-        if (buildSdkVersionProvider.version >= Build.VERSION_CODES.S && !isKnownWindow) {
+        if (buildSdkVersionProvider.version >= Build.VERSION_CODES.N && !isKnownWindow) {
             registerMetricListener(window)
         } else if (display == null && buildSdkVersionProvider.version == Build.VERSION_CODES.R) {
             // Fallback - Android 30 allows apps to not run at a fixed 60hz, but didn't yet have
@@ -209,29 +209,54 @@ internal class JankStatsActivityLifecycleListener(
         }
     }
 
-    @RequiresApi(Build.VERSION_CODES.S)
+    @RequiresApi(Build.VERSION_CODES.N)
     private fun registerMetricListener(window: Window) {
         if (frameMetricsListener == null) {
             frameMetricsListener = DDFrameMetricsListener()
         }
+        // todo RUM-8799: handler thread can be used instead
         val handler = Handler(Looper.getMainLooper())
-        // Only hardware accelerated views can be tracked with metrics listener
-        frameMetricsListener?.let { listener ->
-            try {
-                @Suppress("UnsafeThirdPartyFunctionCall") // Listener can't be null here
-                window.addOnFrameMetricsAvailableListener(listener, handler)
-            } catch (e: IllegalStateException) {
+        val decorView = window.peekDecorView()
+
+        if (decorView == null) {
+            internalLogger.log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.MAINTAINER,
+                { "Unable to attach JankStatsListener to window, decorView is null" }
+            )
+            return
+        }
+
+        // We need to postpone this operation because isHardwareAccelerated will return
+        // false until the view is attached to the window. Note that in this case main looper should be used
+        decorView.post {
+            // Only hardware accelerated views can be tracked with metrics listener
+            if (!decorView.isHardwareAccelerated) {
                 internalLogger.log(
-                    InternalLogger.Level.ERROR,
+                    InternalLogger.Level.WARN,
                     InternalLogger.Target.MAINTAINER,
-                    { "Unable to attach JankStatsListener to window" },
-                    e
+                    { "Unable to attach JankStatsListener to window, decorView is not hardware accelerated" }
                 )
+                return@post
+            }
+
+            frameMetricsListener?.let { listener ->
+                try {
+                    @Suppress("UnsafeThirdPartyFunctionCall") // Listener can't be null here
+                    window.addOnFrameMetricsAvailableListener(listener, handler)
+                } catch (e: IllegalStateException) {
+                    internalLogger.log(
+                        InternalLogger.Level.ERROR,
+                        InternalLogger.Target.MAINTAINER,
+                        { "Unable to attach JankStatsListener to window" },
+                        e
+                    )
+                }
             }
         }
     }
 
-    @RequiresApi(Build.VERSION_CODES.S)
+    @RequiresApi(Build.VERSION_CODES.N)
     private fun unregisterMetricListener(window: Window) {
         try {
             window.removeOnFrameMetricsAvailableListener(frameMetricsListener)
@@ -248,7 +273,7 @@ internal class JankStatsActivityLifecycleListener(
     @RequiresApi(Build.VERSION_CODES.N)
     inner class DDFrameMetricsListener : Window.OnFrameMetricsAvailableListener {
 
-        @RequiresApi(Build.VERSION_CODES.S)
+        @RequiresApi(Build.VERSION_CODES.N)
         override fun onFrameMetricsAvailable(
             window: Window,
             frameMetrics: FrameMetrics,
@@ -271,7 +296,7 @@ internal class JankStatsActivityLifecycleListener(
             commandIssueDuration = frameMetrics.getMetric(FrameMetrics.COMMAND_ISSUE_DURATION)
             swapBuffersDuration = frameMetrics.getMetric(FrameMetrics.SWAP_BUFFERS_DURATION)
             totalDuration = frameMetrics.getMetric(FrameMetrics.TOTAL_DURATION)
-            firstDrawFrame = frameMetrics.getMetric(FrameMetrics.FIRST_DRAW_FRAME) == 1L
+            firstDrawFrame = frameMetrics.getMetric(FrameMetrics.FIRST_DRAW_FRAME) == TRUE
         }
         @SuppressLint("InlinedApi")
         if (buildSdkVersionProvider.version >= Build.VERSION_CODES.O) {
@@ -295,5 +320,6 @@ internal class JankStatsActivityLifecycleListener(
         internal const val JANK_STATS_TRACKING_DISABLE_ERROR =
             "Failed to disable JankStats tracking"
         private const val SIXTY_FPS: Double = 60.0
+        private const val TRUE = 1L
     }
 }

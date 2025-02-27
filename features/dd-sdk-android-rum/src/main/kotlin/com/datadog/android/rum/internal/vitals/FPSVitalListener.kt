@@ -16,7 +16,7 @@ internal class FPSVitalListener(
     private val buildSdkVersionProvider: BuildSdkVersionProvider = BuildSdkVersionProvider.DEFAULT,
     private var screenRefreshRate: Double = 60.0
 ) : FrameStateListener {
-    private var frameDeadline = SIXTEEN_MS_NS
+    private var frameDeadline = EXPECTED_60_FPS_FRAME_DURATION_NS
     private var displayRefreshRate: Double = SIXTY_FPS
 
     override fun onFrame(volatileFrameData: FrameData) {
@@ -48,7 +48,7 @@ internal class FPSVitalListener(
     }
 
     companion object {
-        private const val SIXTEEN_MS_NS: Long = 16666666
+        private const val EXPECTED_60_FPS_FRAME_DURATION_NS: Long = 16_666_666L
         private val ONE_SECOND_NS: Double = TimeUnit.SECONDS.toNanos(1).toDouble()
 
         private const val MIN_FPS: Double = 1.0

@@ -417,7 +417,6 @@ internal class RumFeature(
         )
 
         jankStatsActivityLifecycleListener = JankStatsActivityLifecycleListener(
-            @Suppress("UnsafeThirdPartyFunctionCall") // it's safe to call listOf here
             listOf(
                 FPSVitalListener(frameRateVitalMonitor)
             ),

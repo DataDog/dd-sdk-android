@@ -30,6 +30,7 @@ import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
@@ -289,6 +290,10 @@ internal class JankStatsActivityLifecycleListenerTest {
         testedJankListener.onActivityStarted(mockActivity)
         testedJankListener.onActivityStopped(mockActivity)
         testedJankListener.onActivityStarted(mockActivity)
+        argumentCaptor<Runnable> {
+            verify(mockDecorView).post(capture())
+            lastValue.run()
+        }
 
         // Then
         verify(mockWindow).addOnFrameMetricsAvailableListener(any(), any()) // should be called only once
@@ -351,10 +356,9 @@ internal class JankStatsActivityLifecycleListenerTest {
         whenever(mockWindow.addOnFrameMetricsAvailableListener(any(), any())) doThrow IllegalStateException()
 
         // When
-        testedJankListener.onActivityStarted(mockActivity)
-
-        // Then
-        // no-crash
+        assertDoesNotThrow {
+            testedJankListener.onActivityStarted(mockActivity)
+        }
     }
 
     @Test
@@ -363,11 +367,10 @@ internal class JankStatsActivityLifecycleListenerTest {
         whenever(mockWindow.removeOnFrameMetricsAvailableListener(any())) doThrow IllegalArgumentException()
 
         // When
-        testedJankListener.onActivityStarted(mockActivity)
-        testedJankListener.onActivityDestroyed(mockActivity)
-
-        // Then
-        // no-crash
+        assertDoesNotThrow {
+            testedJankListener.onActivityStarted(mockActivity)
+            testedJankListener.onActivityDestroyed(mockActivity)
+        }
     }
 
     @Test
@@ -384,7 +387,6 @@ internal class JankStatsActivityLifecycleListenerTest {
         // Given
         val dropCountSinceLastInvocation = forge.aSmallInt()
         val frameMetricsData = forge.getForgery<FrameMetricsData>()
-
         val frameMetrics = mock<FrameMetrics> {
             on { getMetric(FrameMetrics.UNKNOWN_DELAY_DURATION) } doReturn frameMetricsData.unknownDelayDuration
             on { getMetric(FrameMetrics.INPUT_HANDLING_DURATION) } doReturn frameMetricsData.inputHandlingDuration
@@ -401,8 +403,13 @@ internal class JankStatsActivityLifecycleListenerTest {
             on { getMetric(FrameMetrics.GPU_DURATION) } doReturn frameMetricsData.gpuDuration
             on { getMetric(FrameMetrics.DEADLINE) } doReturn frameMetricsData.deadline
         }
+        whenever(mockDecorView.isHardwareAccelerated) doReturn true
 
         testedJankListener.onActivityStarted(mockActivity)
+        argumentCaptor<Runnable> {
+            verify(mockDecorView).post(capture())
+            firstValue.run()
+        }
 
         argumentCaptor<Window.OnFrameMetricsAvailableListener> {
             verify(mockWindow).addOnFrameMetricsAvailableListener(capture(), any())

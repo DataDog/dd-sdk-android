@@ -23,5 +23,9 @@ internal data class FrameMetricsData(
     @RequiresApi(Build.VERSION_CODES.O) var vsyncTimestamp: Long = 0L,
     @RequiresApi(Build.VERSION_CODES.S) var gpuDuration: Long = 0L,
     @RequiresApi(Build.VERSION_CODES.S) var deadline: Long = 0L,
-    var displayRefreshRate: Double = 1.0
-)
+    var displayRefreshRate: Double = SIXTY_FPS
+) {
+    companion object {
+        private const val SIXTY_FPS: Double = 60.0
+    }
+}
