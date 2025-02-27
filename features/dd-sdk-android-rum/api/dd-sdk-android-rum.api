@@ -289,6 +289,41 @@ public final class com/datadog/android/rum/internal/domain/event/ResourceTiming 
 	public fun toString ()Ljava/lang/String;
 }
 
+public final class com/datadog/android/rum/internal/domain/state/SlowFrameRecord {
+	public fun <init> (JJ)V
+	public final fun component1 ()J
+	public final fun component2 ()J
+	public final fun copy (JJ)Lcom/datadog/android/rum/internal/domain/state/SlowFrameRecord;
+	public static synthetic fun copy$default (Lcom/datadog/android/rum/internal/domain/state/SlowFrameRecord;JJILjava/lang/Object;)Lcom/datadog/android/rum/internal/domain/state/SlowFrameRecord;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getDurationNs ()J
+	public final fun getStartTimestampNs ()J
+	public fun hashCode ()I
+	public final fun setDurationNs (J)V
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/rum/internal/domain/state/ViewUIPerformanceData {
+	public fun <init> ()V
+	public fun <init> (JJLjava/util/List;)V
+	public synthetic fun <init> (JJLjava/util/List;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()J
+	public final fun component2 ()J
+	public final fun component3 ()Ljava/util/List;
+	public final fun copy (JJLjava/util/List;)Lcom/datadog/android/rum/internal/domain/state/ViewUIPerformanceData;
+	public static synthetic fun copy$default (Lcom/datadog/android/rum/internal/domain/state/ViewUIPerformanceData;JJLjava/util/List;ILjava/lang/Object;)Lcom/datadog/android/rum/internal/domain/state/ViewUIPerformanceData;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getSlowFramesDurationNs ()J
+	public final fun getSlowFramesRate ()D
+	public final fun getSlowFramesRecords ()Ljava/util/List;
+	public final fun getTotalFramesDurationNs ()J
+	public fun hashCode ()I
+	public final fun setSlowFramesDurationNs (J)V
+	public final fun setSlowFramesRecords (Ljava/util/List;)V
+	public final fun setTotalFramesDurationNs (J)V
+	public fun toString ()Ljava/lang/String;
+}
+
 public abstract class com/datadog/android/rum/internal/instrumentation/gestures/GestureListenerCompat : android/view/GestureDetector$OnGestureListener {
 	public fun <init> ()V
 	public fun onFling (Landroid/view/MotionEvent;Landroid/view/MotionEvent;FF)Z

@@ -44,6 +44,7 @@ import com.datadog.android.rum.internal.metric.interactiontonextview.Interaction
 import com.datadog.android.rum.internal.metric.interactiontonextview.InternalInteractionContext
 import com.datadog.android.rum.internal.metric.networksettled.InternalResourceContext
 import com.datadog.android.rum.internal.metric.networksettled.NetworkSettledMetricResolver
+import com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.internal.monitor.StorageEvent
 import com.datadog.android.rum.internal.vitals.VitalInfo
@@ -212,6 +213,9 @@ internal class RumViewScopeTest {
     @Mock
     private lateinit var mockViewEndedMetricDispatcher: ViewEndedMetricDispatcher
 
+    @Mock
+    lateinit var mockSlowFramesListener: SlowFramesListener
+
     @Forgery
     private lateinit var fakeTnsState: ViewInitializationMetricsState
 
@@ -236,7 +240,7 @@ internal class RumViewScopeTest {
         whenever(mockNetworkSettledMetricResolver.getState()) doReturn fakeTnsState
         whenever(mockInteractionToNextViewMetricResolver.getState(any())) doReturn fakeInvState
         whenever(mockInteractionToNextViewMetricResolver.resolveMetric(any())) doReturn
-            fakeInteractionToNextViewMetricValue
+                fakeInteractionToNextViewMetricValue
         val isValidSource = forge.aBool()
 
         val fakeSource = if (isValidSource) {
@@ -9463,6 +9467,15 @@ internal class RumViewScopeTest {
 
     // endregion
 
+    // region Slow frames
+
+    @Test
+    fun `M call onViewCreated on slowFramesListener W init`() {
+        verify(mockSlowFramesListener).onViewCreated(testedScope.viewId, fakeEventTime.nanoTime)
+    }
+
+    // endregion
+
     @Test
     fun `M produce event safe for serialization W handleEvent()`(
         forge: Forge
@@ -9649,7 +9662,8 @@ internal class RumViewScopeTest {
         interactionNextViewMetricResolver: InteractionToNextViewMetricResolver =
             mockInteractionToNextViewMetricResolver,
         networkSettledMetricResolver: NetworkSettledMetricResolver = mockNetworkSettledMetricResolver,
-        viewEndedMetricDispatcher: ViewMetricDispatcher = mockViewEndedMetricDispatcher
+        viewEndedMetricDispatcher: ViewMetricDispatcher = mockViewEndedMetricDispatcher,
+        slowFramesMetricListener: SlowFramesListener = mockSlowFramesListener
     ) = RumViewScope(
         parentScope,
         sdkCore,
@@ -9668,6 +9682,7 @@ internal class RumViewScopeTest {
         sampleRate,
         interactionNextViewMetricResolver,
         networkSettledMetricResolver,
+        slowFramesMetricListener,
         viewEndedMetricDispatcher
     )
 
