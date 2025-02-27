@@ -71,6 +71,7 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
     private val viewOnDrawInterceptor: ViewOnDrawInterceptor
     private val internalLogger: InternalLogger
     private val resourceDataStoreManager: ResourceDataStoreManager
+    private val customCallbacks: SessionReplayCustomCallbacks
 
     private val uiHandler: Handler
     private var shouldRecord = false
@@ -91,8 +92,9 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
         windowInspector: WindowInspector = WindowInspector,
         sdkCore: FeatureSdkCore,
         resourceDataStoreManager: ResourceDataStoreManager,
-        dynamicOptimizationEnabled: Boolean
-    ) {
+        dynamicOptimizationEnabled: Boolean,
+        customCallbacks: SessionReplayCustomCallbacks
+        ) {
         val internalLogger = sdkCore.internalLogger
         val rumContextDataHandler = RumContextDataHandler(
             rumContextProvider,
@@ -129,6 +131,7 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
             recordedDataQueue = ConcurrentLinkedQueue()
         )
         this.resourceDataStoreManager = resourceDataStoreManager
+        this.customCallbacks = customCallbacks
 
         val viewIdentifierResolver: ViewIdentifierResolver = DefaultViewIdentifierResolver
         val colorStringFormatter: ColorStringFormatter = DefaultColorStringFormatter
@@ -168,9 +171,7 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
             internalLogger = internalLogger,
             onDrawListenerProducer = DefaultOnDrawListenerProducer(
                 snapshotProducer = SnapshotProducer(
-                    DefaultImageWireframeHelper(
-                        logger = internalLogger,
-                        resourceResolver = resourceResolver,
+                    DefaultImageWireframeHelper( logger = internalLogger, resourceResolver = resourceResolver,
                         viewIdentifierResolver = viewIdentifierResolver,
                         viewUtilsInternal = ViewUtilsInternal(),
                         imageTypeResolver = ImageTypeResolver()
@@ -231,7 +232,8 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
         recordedDataQueueHandler: RecordedDataQueueHandler,
         resourceDataStoreManager: ResourceDataStoreManager,
         uiHandler: Handler,
-        internalLogger: InternalLogger
+        internalLogger: InternalLogger,
+        customCallbacks: SessionReplayCustomCallbacks
     ) {
         this.appContext = appContext
         this.rumContextProvider = rumContextProvider
@@ -250,6 +252,7 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
         this.uiHandler = uiHandler
         this.internalLogger = internalLogger
         this.resourceDataStoreManager = resourceDataStoreManager
+        this.customCallbacks = customCallbacks
     }
 
     override fun stopProcessingRecords() {
@@ -267,7 +270,7 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
     override fun resumeRecorders() {
         uiHandler.post {
             shouldRecord = true
-            val windows = sessionReplayLifecycleCallback.getCurrentWindows()
+            val windows =  this.customCallbacks.getCurrentWindows?.let { it() } ?: sessionReplayLifecycleCallback.getCurrentWindows()
             val decorViews = windowInspector.getGlobalWindowViews(internalLogger)
             windowCallbackInterceptor.intercept(windows, appContext)
             viewOnDrawInterceptor.intercept(decorViews, textAndInputPrivacy, imagePrivacy)

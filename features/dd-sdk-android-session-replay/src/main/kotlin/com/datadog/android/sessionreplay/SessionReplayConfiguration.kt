@@ -6,8 +6,10 @@
 
 package com.datadog.android.sessionreplay
 
+import android.view.Window
 import androidx.annotation.FloatRange
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.sessionreplay.internal.recorder.SessionReplayCustomCallbacks
 import com.datadog.android.sessionreplay.recorder.OptionSelectorDetector
 import com.datadog.android.sessionreplay.utils.DrawableToColorMapper
 import java.util.Locale
@@ -27,7 +29,8 @@ data class SessionReplayConfiguration internal constructor(
     internal val touchPrivacy: TouchPrivacy,
     internal val textAndInputPrivacy: TextAndInputPrivacy,
     internal val dynamicOptimizationEnabled: Boolean,
-    internal val systemRequirementsConfiguration: SystemRequirementsConfiguration
+    internal val systemRequirementsConfiguration: SystemRequirementsConfiguration,
+    internal val customCallbacks: SessionReplayCustomCallbacks
 ) {
 
     /**
@@ -73,6 +76,7 @@ data class SessionReplayConfiguration internal constructor(
         private var extensionSupportSet: MutableSet<ExtensionSupport> = mutableSetOf()
         private var dynamicOptimizationEnabled = true
         private var systemRequirementsConfiguration = SystemRequirementsConfiguration.NONE
+        private var customCallbacks: SessionReplayCustomCallbacks = SessionReplayCustomCallbacks()
 
         /**
          * Adds an extension support implementation. This is mostly used when you want to provide
@@ -93,6 +97,8 @@ data class SessionReplayConfiguration internal constructor(
 
             return this
         }
+
+
 
         /**
          * Let the Session Replay target a custom server.
@@ -211,6 +217,15 @@ data class SessionReplayConfiguration internal constructor(
         }
 
         /**
+         * Specifies callbacks functions to override standard behaviours in Session Replay
+         * that need to behave differently depending on the platform.
+         */
+        fun setCustomCallbacks(customCallbacks: SessionReplayCustomCallbacks): Builder {
+            this.customCallbacks = customCallbacks
+            return this
+        }
+
+        /**
          * Builds a [SessionReplayConfiguration] based on the current state of this Builder.
          */
         fun build(): SessionReplayConfiguration {
@@ -226,7 +241,8 @@ data class SessionReplayConfiguration internal constructor(
                 sampleRate = sampleRate,
                 startRecordingImmediately = startRecordingImmediately,
                 dynamicOptimizationEnabled = dynamicOptimizationEnabled,
-                systemRequirementsConfiguration = systemRequirementsConfiguration
+                systemRequirementsConfiguration = systemRequirementsConfiguration,
+                customCallbacks = customCallbacks,
             )
         }
 

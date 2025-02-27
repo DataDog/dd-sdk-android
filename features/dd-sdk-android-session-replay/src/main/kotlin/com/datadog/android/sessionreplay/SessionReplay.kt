@@ -59,7 +59,8 @@ object SessionReplay {
                     customDrawableMappers = sessionReplayConfiguration.customDrawableMappers,
                     sampleRate = sessionReplayConfiguration.sampleRate,
                     startRecordingImmediately = sessionReplayConfiguration.startRecordingImmediately,
-                    dynamicOptimizationEnabled = sessionReplayConfiguration.dynamicOptimizationEnabled
+                    dynamicOptimizationEnabled = sessionReplayConfiguration.dynamicOptimizationEnabled,
+                    customCallbacks = sessionReplayConfiguration.customCallbacks,
                 )
 
                 if (isAlreadyRegistered()) {

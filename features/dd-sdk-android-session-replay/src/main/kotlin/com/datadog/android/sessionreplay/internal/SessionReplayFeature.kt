@@ -8,6 +8,7 @@ package com.datadog.android.sessionreplay.internal
 
 import android.app.Application
 import android.content.Context
+import android.view.Window
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.SdkCore
 import com.datadog.android.api.feature.Feature
@@ -20,6 +21,7 @@ import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.MapperTypeWrapper
+import com.datadog.android.sessionreplay.PrivacyLevel
 import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.TouchPrivacy
@@ -27,6 +29,7 @@ import com.datadog.android.sessionreplay.internal.net.BatchesToSegmentsMapper
 import com.datadog.android.sessionreplay.internal.net.SegmentRequestFactory
 import com.datadog.android.sessionreplay.internal.recorder.NoOpRecorder
 import com.datadog.android.sessionreplay.internal.recorder.Recorder
+import com.datadog.android.sessionreplay.internal.recorder.SessionReplayCustomCallbacks
 import com.datadog.android.sessionreplay.internal.resources.ResourceDataStoreManager
 import com.datadog.android.sessionreplay.internal.resources.ResourceHashesEntryDeserializer
 import com.datadog.android.sessionreplay.internal.resources.ResourceHashesEntrySerializer
@@ -52,7 +55,7 @@ internal class SessionReplayFeature(
     internal val imagePrivacy: ImagePrivacy,
     private val rateBasedSampler: Sampler<Unit>,
     private val startRecordingImmediately: Boolean,
-    private val recorderProvider: RecorderProvider
+    private val recorderProvider: RecorderProvider,
 ) : StorageBackedFeature, FeatureEventReceiver {
 
     private val currentRumSessionId = AtomicReference<String>()
@@ -71,7 +74,8 @@ internal class SessionReplayFeature(
         customDrawableMappers: List<DrawableToColorMapper>,
         sampleRate: Float,
         startRecordingImmediately: Boolean,
-        dynamicOptimizationEnabled: Boolean
+        dynamicOptimizationEnabled: Boolean,
+        customCallbacks: SessionReplayCustomCallbacks
     ) : this(
         sdkCore,
         customEndpointUrl,
@@ -89,8 +93,9 @@ internal class SessionReplayFeature(
             customMappers,
             customOptionSelectorDetectors,
             customDrawableMappers,
-            dynamicOptimizationEnabled
-        )
+            dynamicOptimizationEnabled,
+            customCallbacks,
+        ),
     )
 
     private lateinit var appContext: Context
@@ -150,6 +155,7 @@ internal class SessionReplayFeature(
             it[SESSION_REPLAY_IMAGE_PRIVACY_KEY] = imagePrivacy.toString().lowercase(Locale.US)
             it[SESSION_REPLAY_TEXT_AND_INPUT_PRIVACY_KEY] = textAndInputPrivacy.toString().lowercase(Locale.US)
         }
+
     }
 
     override val requestFactory: RequestFactory =
