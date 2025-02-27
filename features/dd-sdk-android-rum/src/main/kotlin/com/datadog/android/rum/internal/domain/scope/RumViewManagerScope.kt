@@ -21,6 +21,7 @@ import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.metric.SessionEndedMetric
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
 import com.datadog.android.rum.internal.metric.ViewEndedMetricDispatcher
+import com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener
 import com.datadog.android.rum.internal.metric.interactiontonextview.InteractionToNextViewMetricResolver
 import com.datadog.android.rum.internal.metric.networksettled.NetworkSettledMetricResolver
 import com.datadog.android.rum.internal.vitals.NoOpVitalMonitor
@@ -45,6 +46,7 @@ internal class RumViewManagerScope(
     internal var applicationDisplayed: Boolean,
     internal val sampleRate: Float,
     internal val initialResourceIdentifier: InitialResourceIdentifier,
+    private val slowFramesListener: SlowFramesListener,
     lastInteractionIdentifier: LastInteractionIdentifier?
 ) : RumScope {
 
@@ -223,7 +225,8 @@ internal class RumViewManagerScope(
             trackFrustrations,
             sampleRate,
             interactionToNextViewMetricResolver,
-            initialResourceIdentifier
+            initialResourceIdentifier,
+            slowFramesListener
         )
         applicationDisplayed = true
         childrenScopes.add(viewScope)
@@ -299,7 +302,8 @@ internal class RumViewManagerScope(
             sampleRate = sampleRate,
             interactionToNextViewMetricResolver = interactionToNextViewMetricResolver,
             networkSettledMetricResolver = networkSettledMetricResolver,
-            viewEndedMetricDispatcher = viewEndedMetricDispatcher
+            viewEndedMetricDispatcher = viewEndedMetricDispatcher,
+            slowFramesListener = slowFramesListener
         )
     }
 
@@ -336,7 +340,8 @@ internal class RumViewManagerScope(
             sampleRate = sampleRate,
             interactionToNextViewMetricResolver = interactionToNextViewMetricResolver,
             networkSettledMetricResolver = networkSettledMetricResolver,
-            viewEndedMetricDispatcher = viewEndedMetricDispatcher
+            viewEndedMetricDispatcher = viewEndedMetricDispatcher,
+            slowFramesListener = slowFramesListener
         )
     }
 
