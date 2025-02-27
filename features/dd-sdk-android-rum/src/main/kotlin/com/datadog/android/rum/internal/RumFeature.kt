@@ -50,6 +50,9 @@ import com.datadog.android.rum.internal.instrumentation.MainLooperLongTaskStrate
 import com.datadog.android.rum.internal.instrumentation.UserActionTrackingStrategyApi29
 import com.datadog.android.rum.internal.instrumentation.UserActionTrackingStrategyLegacy
 import com.datadog.android.rum.internal.instrumentation.gestures.DatadogGesturesTracker
+import com.datadog.android.rum.internal.metric.slowframes.DataDogSlowFramesListener
+import com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener
+import com.datadog.android.rum.internal.metric.slowframes.NoOpSlowFramesListener
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.internal.monitor.DatadogRumMonitor
 import com.datadog.android.rum.internal.net.RumRequestFactory
@@ -136,6 +139,7 @@ internal class RumFeature(
     internal lateinit var appContext: Context
     internal var initialResourceIdentifier: InitialResourceIdentifier = NoOpInitialResourceIdentifier()
     internal var lastInteractionIdentifier: LastInteractionIdentifier = NoOpLastInteractionIdentifier()
+    internal var slowFramesListener: SlowFramesListener = NoOpSlowFramesListener()
 
     private val lateCrashEventHandler by lazy { lateCrashReporterFactory(sdkCore as InternalSdkCore) }
 
@@ -147,6 +151,7 @@ internal class RumFeature(
         this.appContext = appContext
         initialResourceIdentifier = configuration.initialResourceIdentifier
         lastInteractionIdentifier = configuration.lastInteractionIdentifier
+        slowFramesListener = DataDogSlowFramesListener()
         dataWriter = createDataWriter(
             configuration,
             sdkCore as InternalSdkCore
@@ -418,7 +423,8 @@ internal class RumFeature(
 
         jankStatsActivityLifecycleListener = JankStatsActivityLifecycleListener(
             listOf(
-                FPSVitalListener(frameRateVitalMonitor)
+                FPSVitalListener(frameRateVitalMonitor),
+                slowFramesListener
             ),
             sdkCore.internalLogger
         )

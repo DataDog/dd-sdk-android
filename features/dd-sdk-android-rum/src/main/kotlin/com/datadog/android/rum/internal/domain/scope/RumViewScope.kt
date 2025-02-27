@@ -29,6 +29,7 @@ import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
 import com.datadog.android.rum.internal.metric.ViewEndedMetricDispatcher
 import com.datadog.android.rum.internal.metric.ViewMetricDispatcher
+import com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener
 import com.datadog.android.rum.internal.metric.interactiontonextview.InteractionToNextViewMetricResolver
 import com.datadog.android.rum.internal.metric.interactiontonextview.InternalInteractionContext
 import com.datadog.android.rum.internal.metric.networksettled.InternalResourceContext
@@ -69,6 +70,7 @@ internal open class RumViewScope(
     internal val sampleRate: Float,
     private val interactionToNextViewMetricResolver: InteractionToNextViewMetricResolver,
     private val networkSettledMetricResolver: NetworkSettledMetricResolver,
+    private val slowFramesListener: SlowFramesListener,
     private val viewEndedMetricDispatcher: ViewMetricDispatcher
 ) : RumScope {
 
@@ -173,6 +175,7 @@ internal open class RumViewScope(
         }
         networkSettledMetricResolver.viewWasCreated(eventTime.nanoTime)
         interactionToNextViewMetricResolver.onViewCreated(viewId, eventTime.nanoTime)
+        slowFramesListener.onViewCreated(viewId)
     }
 
     // region RumScope
@@ -1192,6 +1195,7 @@ internal open class RumViewScope(
         )
         val timestamp = event.eventTime.timestamp + serverTimeOffsetInMs
         val isFrozenFrame = event.durationNs > FROZEN_FRAME_THRESHOLD_NS
+        Log.i("<<>>", "LongTask. isFrozenFrame:$isFrozenFrame")
         sdkCore.newRumEventWriteOperation(writer) { datadogContext ->
 
             val user = datadogContext.userInfo
@@ -1330,9 +1334,9 @@ internal open class RumViewScope(
 
     private fun isViewComplete(): Boolean {
         val pending = pendingActionCount +
-            pendingResourceCount +
-            pendingErrorCount +
-            pendingLongTaskCount
+                pendingResourceCount +
+                pendingErrorCount +
+                pendingLongTaskCount
         // we use <= 0 for pending counter as a safety measure to make sure this ViewScope will
         // be closed.
         return stopped && activeResourceScopes.isEmpty() && (pending <= 0L)
@@ -1390,7 +1394,8 @@ internal open class RumViewScope(
             trackFrustrations: Boolean,
             sampleRate: Float,
             interactionToNextViewMetricResolver: InteractionToNextViewMetricResolver,
-            networkSettledResourceIdentifier: InitialResourceIdentifier
+            networkSettledResourceIdentifier: InitialResourceIdentifier,
+            slowFramesListener: SlowFramesListener
         ): RumViewScope {
             val networkSettledMetricResolver = NetworkSettledMetricResolver(
                 networkSettledResourceIdentifier,
@@ -1421,7 +1426,8 @@ internal open class RumViewScope(
                 sampleRate = sampleRate,
                 interactionToNextViewMetricResolver = interactionToNextViewMetricResolver,
                 networkSettledMetricResolver = networkSettledMetricResolver,
-                viewEndedMetricDispatcher = viewEndedMetricDispatcher
+                viewEndedMetricDispatcher = viewEndedMetricDispatcher,
+                slowFramesListener = slowFramesListener
             )
         }
 

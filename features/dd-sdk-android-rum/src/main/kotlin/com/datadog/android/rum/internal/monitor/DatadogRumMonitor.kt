@@ -43,6 +43,7 @@ import com.datadog.android.rum.internal.domain.scope.RumSessionScope
 import com.datadog.android.rum.internal.domain.scope.RumViewManagerScope
 import com.datadog.android.rum.internal.domain.scope.RumViewScope
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
+import com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.rum.metric.interactiontonextview.LastInteractionIdentifier
 import com.datadog.android.rum.metric.networksettled.InitialResourceIdentifier
@@ -74,7 +75,8 @@ internal class DatadogRumMonitor(
     sessionListener: RumSessionListener,
     internal val executorService: ExecutorService,
     initialResourceIdentifier: InitialResourceIdentifier,
-    lastInteractionIdentifier: LastInteractionIdentifier
+    lastInteractionIdentifier: LastInteractionIdentifier,
+    slowFramesListener: SlowFramesListener
 ) : RumMonitor, AdvancedRumMonitor {
 
     internal var rootScope: RumScope = RumApplicationScope(
@@ -90,7 +92,8 @@ internal class DatadogRumMonitor(
         sessionEndedMetricDispatcher = sessionEndedMetricDispatcher,
         CombinedRumSessionListener(sessionListener, telemetryEventHandler),
         initialResourceIdentifier,
-        lastInteractionIdentifier
+        lastInteractionIdentifier,
+        slowFramesListener
     )
 
     internal val keepAliveRunnable = Runnable {
