@@ -8,6 +8,7 @@ package com.datadog.android.sessionreplay.internal
 
 import android.app.Application
 import android.os.Build
+import android.view.Window
 import android.webkit.WebView
 import android.widget.Button
 import android.widget.CheckBox
@@ -27,6 +28,7 @@ import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.MapperTypeWrapper
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.internal.recorder.Recorder
+import com.datadog.android.sessionreplay.internal.recorder.SessionReplayCustomCallbacks
 import com.datadog.android.sessionreplay.internal.recorder.SessionReplayRecorder
 import com.datadog.android.sessionreplay.internal.recorder.mapper.ActionBarContainerMapper
 import com.datadog.android.sessionreplay.internal.recorder.mapper.ButtonMapper
@@ -64,7 +66,8 @@ internal class DefaultRecorderProvider(
     private val customMappers: List<MapperTypeWrapper<*>>,
     private val customOptionSelectorDetectors: List<OptionSelectorDetector>,
     private val customDrawableMappers: List<DrawableToColorMapper>,
-    private val dynamicOptimizationEnabled: Boolean
+    private val dynamicOptimizationEnabled: Boolean,
+    private val customCallbacks: SessionReplayCustomCallbacks
 ) : RecorderProvider {
 
     override fun provideSessionReplayRecorder(
@@ -87,7 +90,8 @@ internal class DefaultRecorderProvider(
             customOptionSelectorDetectors = customOptionSelectorDetectors,
             customDrawableMappers = customDrawableMappers,
             sdkCore = sdkCore,
-            dynamicOptimizationEnabled = dynamicOptimizationEnabled
+            dynamicOptimizationEnabled = dynamicOptimizationEnabled,
+            customCallbacks = customCallbacks,
         )
     }
 
