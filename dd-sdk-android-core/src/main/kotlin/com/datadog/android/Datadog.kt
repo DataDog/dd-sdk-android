@@ -272,10 +272,7 @@ object Datadog {
      */
     @JvmStatic
     @JvmOverloads
-    @Deprecated(
-        "UserInfo id property is now mandatory.",
-        ReplaceWith("setUserInfo(id!!, name, email, extraInfo, sdkCore)")
-    )
+    @Deprecated("UserInfo id property is now mandatory.")
     @JvmName("setUserInfoDeprecated")
     fun setUserInfo(
         id: String? = null,
