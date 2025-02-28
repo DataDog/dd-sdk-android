@@ -29,8 +29,8 @@ import org.mockito.quality.Strictness
     ExtendWith(TestConfigurationExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
-@ForgeConfiguration(value = Configurator::class, seed = 0xe7bbb28646f1L)
-internal class DataDogSlowFramesListenerTest {
+@ForgeConfiguration(value = Configurator::class)
+internal class DefaultSlowFramesListenerTest {
 
     @StringForgery
     lateinit var viewId: String
@@ -38,11 +38,11 @@ internal class DataDogSlowFramesListenerTest {
     @LongForgery(min = 1L, Long.MAX_VALUE / 3)
     var viewCreatedTimestampNs: Long = 0L
 
-    private lateinit var testedListener: DataDogSlowFramesListener
+    private lateinit var testedListener: DefaultSlowFramesListener
 
     @BeforeEach
     fun `set up`() {
-        testedListener = DataDogSlowFramesListener(
+        testedListener = DefaultSlowFramesListener(
             frozenFrameThresholdNs = Long.MAX_VALUE
         )
     }
@@ -51,7 +51,7 @@ internal class DataDogSlowFramesListenerTest {
     fun `M return non empty report W resolveReport { jank frame occurred }`(forge: Forge) {
         // Given
         testedListener.onViewCreated(viewId, viewCreatedTimestampNs)
-        val jankFrameData = forge.stubJankFrameData()
+        val jankFrameData = forge.aFrameData()
         testedListener.onFrame(jankFrameData)
 
         // When
@@ -71,7 +71,7 @@ internal class DataDogSlowFramesListenerTest {
     fun `M return report only once W resolveReport`(forge: Forge) {
         // Given
         testedListener.onViewCreated(viewId, viewCreatedTimestampNs)
-        val jankFrameData = forge.stubJankFrameData()
+        val jankFrameData = forge.aFrameData()
         testedListener.onFrame(jankFrameData)
 
         // When
@@ -87,7 +87,7 @@ internal class DataDogSlowFramesListenerTest {
     fun `M return empty report W resolveReport { no jank frame occurred }`(forge: Forge) {
         // Given
         testedListener.onViewCreated(viewId, viewCreatedTimestampNs)
-        val jankFrameData = forge.stubJankFrameData(isJank = false)
+        val jankFrameData = forge.aFrameData(isJank = false)
         testedListener.onFrame(jankFrameData)
 
         // When
@@ -101,7 +101,7 @@ internal class DataDogSlowFramesListenerTest {
     fun `M return report W resolveReport { view changed }`(forge: Forge) {
         // Given
         testedListener.onViewCreated(viewId, viewCreatedTimestampNs)
-        testedListener.onFrame(forge.stubJankFrameData())
+        testedListener.onFrame(forge.aFrameData())
 
         // When
         testedListener.onViewCreated(viewId + forge.aString(), viewCreatedTimestampNs)
@@ -114,7 +114,7 @@ internal class DataDogSlowFramesListenerTest {
     @Test
     fun `M return empty report W resolveReport { view is not created }`(forge: Forge) {
         // Given
-        testedListener.onFrame(forge.stubJankFrameData())
+        testedListener.onFrame(forge.aFrameData())
 
         // When
         testedListener.onViewCreated(viewId, viewCreatedTimestampNs)
@@ -130,17 +130,17 @@ internal class DataDogSlowFramesListenerTest {
         forge: Forge
     ) {
         // Given
-        val jank1 = forge.stubJankFrameData(
+        val jank1 = forge.aFrameData(
             frameStartNanos = viewCreatedTimestampNs,
             frameDurationUiNanos = forge.aLong(min = 1, max = continuousSlowFrameThresholdNs / 2)
         )
 
-        val jank2 = forge.stubJankFrameData(
+        val jank2 = forge.aFrameData(
             frameStartNanos = viewCreatedTimestampNs + continuousSlowFrameThresholdNs - 1,
             frameDurationUiNanos = forge.aLong(min = 1, max = continuousSlowFrameThresholdNs / 2)
         )
 
-        val testedListener = DataDogSlowFramesListener(
+        val testedListener = DefaultSlowFramesListener(
             frozenFrameThresholdNs = Long.MAX_VALUE,
             continuousSlowFrameThresholdNs = continuousSlowFrameThresholdNs
         )
@@ -167,19 +167,19 @@ internal class DataDogSlowFramesListenerTest {
         @LongForgery(min = 16, max = 1000) continuousSlowFrameThresholdNs: Long
     ) {
         // Given
-        val jank1 = forge.stubJankFrameData(
+        val jank1 = forge.aFrameData(
             frameStartNanos = viewCreatedTimestampNs,
             frameDurationUiNanos = forge.aLong(
                 min = continuousSlowFrameThresholdNs,
                 max = 2 * continuousSlowFrameThresholdNs
             )
         )
-        val jank2 = forge.stubJankFrameData(
+        val jank2 = forge.aFrameData(
             frameStartNanos = jank1.frameStartNanos + continuousSlowFrameThresholdNs + 1,
             frameDurationUiNanos = forge.aLong(min = 1, max = 100)
         )
 
-        val testedListener = DataDogSlowFramesListener(
+        val testedListener = DefaultSlowFramesListener(
             frozenFrameThresholdNs = Long.MAX_VALUE,
             continuousSlowFrameThresholdNs = 16
         )
@@ -209,12 +209,12 @@ internal class DataDogSlowFramesListenerTest {
     @Test
     fun `M return empty report W resolveReport { frozen frame should be ignored }`(forge: Forge) {
         // Given
-        val jank = forge.stubJankFrameData(
+        val jank = forge.aFrameData(
             frameStartNanos = viewCreatedTimestampNs + 1,
             frameDurationUiNanos = 800
         )
 
-        val testedListener = DataDogSlowFramesListener(
+        val testedListener = DefaultSlowFramesListener(
             frozenFrameThresholdNs = 700,
             continuousSlowFrameThresholdNs = 16
         )
@@ -235,16 +235,16 @@ internal class DataDogSlowFramesListenerTest {
     ) {
         // Given
         val jankDuration = frozenFrameThresholdNs - 1
-        val jank1 = forge.stubJankFrameData(
+        val jank1 = forge.aFrameData(
             frameStartNanos = viewCreatedTimestampNs,
             frameDurationUiNanos = jankDuration
         )
-        val jank2 = forge.stubJankFrameData(
+        val jank2 = forge.aFrameData(
             frameStartNanos = viewCreatedTimestampNs + jankDuration,
             frameDurationUiNanos = jankDuration
         )
 
-        val testedListener = DataDogSlowFramesListener(
+        val testedListener = DefaultSlowFramesListener(
             frozenFrameThresholdNs = frozenFrameThresholdNs,
             continuousSlowFrameThresholdNs = Long.MAX_VALUE
         )
@@ -272,7 +272,7 @@ internal class DataDogSlowFramesListenerTest {
         // Given
         var item = 0
         val frameData = forge.aList(size = 100) {
-            stubJankFrameData(isJank = ++item % 2 == 0)
+            aFrameData(isJank = ++item % 2 == 0)
         }
         val expectedSlowFramesDuration = frameData.filter { it.isJank }.sumOf { it.frameDurationUiNanos }
         val expectedTotalFrameDuration = frameData.sumOf { it.frameDurationUiNanos }
@@ -297,7 +297,7 @@ internal class DataDogSlowFramesListenerTest {
     @Test
     fun `M be expected constant values for thresholds`() {
         // When
-        val listener = DataDogSlowFramesListener()
+        val listener = DefaultSlowFramesListener()
 
         // Then
         assertThat(listener.maxSlowFramesAmount).isEqualTo(512)
@@ -305,7 +305,7 @@ internal class DataDogSlowFramesListenerTest {
         assertThat(listener.continuousSlowFrameThresholdNs).isEqualTo(16_666_666L)
     }
 
-    private fun Forge.stubJankFrameData(
+    private fun Forge.aFrameData(
         frameStartNanos: Long = aLong(min = 1, max = 100) + viewCreatedTimestampNs,
         frameDurationUiNanos: Long = aLong(min = 1, max = 100),
         isJank: Boolean = true

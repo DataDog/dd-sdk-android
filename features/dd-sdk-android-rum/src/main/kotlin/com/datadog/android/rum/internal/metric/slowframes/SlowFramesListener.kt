@@ -5,89 +5,109 @@
  */
 package com.datadog.android.rum.internal.metric.slowframes
 
-import androidx.annotation.VisibleForTesting
+import androidx.annotation.MainThread
+import androidx.annotation.WorkerThread
 import androidx.metrics.performance.FrameData
 import com.datadog.android.rum.internal.domain.FrameMetricsData
 import com.datadog.android.rum.internal.domain.state.SlowFrameRecord
-import com.datadog.android.rum.internal.domain.state.ViewUIPerformanceData
+import com.datadog.android.rum.internal.domain.state.ViewUIPerformanceReport
 import com.datadog.android.rum.internal.vitals.FrameStateListener
 import com.datadog.tools.annotation.NoOpImplementation
+import java.util.concurrent.ConcurrentHashMap
 import kotlin.math.min
 
 @NoOpImplementation
 internal interface SlowFramesListener : FrameStateListener {
     fun onViewCreated(viewId: String, startedTimestampNs: Long)
-    fun resolveReport(viewId: String): ViewUIPerformanceData
+    fun resolveReport(viewId: String): ViewUIPerformanceReport
 }
 
-internal class DataDogSlowFramesListener(
-    @get:VisibleForTesting internal val maxSlowFramesAmount: Int = DEFAULT_SLOW_FRAME_RECORDS_MAX_AMOUNT,
-    @get:VisibleForTesting internal val frozenFrameThresholdNs: Long = DEFAULT_FROZEN_FRAME_THRESHOLD,
-    @get:VisibleForTesting internal val continuousSlowFrameThresholdNs: Long = DEFAULT_CONTINUOUS_SLOW_FRAME_THRESHOLD
+internal class DefaultSlowFramesListener(
+    internal val maxSlowFramesAmount: Int = DEFAULT_SLOW_FRAME_RECORDS_MAX_AMOUNT,
+    internal val frozenFrameThresholdNs: Long = DEFAULT_FROZEN_FRAME_THRESHOLD_NS,
+    internal val continuousSlowFrameThresholdNs: Long = DEFAULT_CONTINUOUS_SLOW_FRAME_THRESHOLD_NS
 ) : SlowFramesListener {
 
+    @Volatile
     private var currentViewId: String? = null
-    private var currentViewStartedTimeStampNs: Long = System.nanoTime()
-    private val slowFramesRecords = mutableMapOf<String, ViewUIPerformanceData>()
 
+    @Volatile
+    private var currentViewStartedTimeStampNs: Long = System.nanoTime()
+
+    private val slowFramesRecords = ConcurrentHashMap<String, ViewUIPerformanceReport>()
+
+    @MainThread
     override fun onViewCreated(viewId: String, startedTimestampNs: Long) {
         currentViewId = viewId
         currentViewStartedTimeStampNs = startedTimestampNs
     }
 
-    override fun resolveReport(viewId: String): ViewUIPerformanceData {
-        return slowFramesRecords.remove(viewId) ?: ViewUIPerformanceData(
+    @MainThread
+    override fun resolveReport(viewId: String): ViewUIPerformanceReport {
+        val report = slowFramesRecords.remove(viewId) ?: ViewUIPerformanceReport(
             System.nanoTime(),
             maxSlowFramesAmount
         )
+
+        // making sure that report is not partially updated
+        return synchronized(report) { report.copy() }
     }
 
+    @WorkerThread
     override fun onFrame(volatileFrameData: FrameData) {
         val viewId = currentViewId ?: return
         val frameDurationNs = volatileFrameData.frameDurationUiNanos
         val frameStartedTimestampNs = volatileFrameData.frameStartNanos
-        val uiPerformanceData = slowFramesRecords.getOrPut(viewId) {
-            ViewUIPerformanceData(currentViewStartedTimeStampNs, maxSlowFramesAmount)
+        val report = slowFramesRecords.getOrPut(viewId) {
+            ViewUIPerformanceReport(currentViewStartedTimeStampNs, maxSlowFramesAmount)
         }
 
-        // Updating frames statistics
-        uiPerformanceData.totalFramesDurationNs += frameDurationNs
+        // We have to synchronize here because it's the only way to update
+        // all fields of ViewUIPerformanceReport atomically. onFrame is a "hot" method
+        // so we can't make ViewUIPerformanceReport immutable because that will force us to
+        // create tons of copies on each call which will lead to a lot of gc calls
+        synchronized(Any()) {
+            // Updating frames statistics
+            report.totalFramesDurationNs += frameDurationNs
 
-        if (frameDurationNs > frozenFrameThresholdNs || !volatileFrameData.isJank) {
-            // Frame duration is too big to be considered as a slow frame or not jank
-            return
-        }
+            if (frameDurationNs > frozenFrameThresholdNs || !volatileFrameData.isJank) {
+                // Frame duration is too big to be considered as a slow frame or not jank
+                return
+            }
 
-        uiPerformanceData.slowFramesDurationNs += frameDurationNs
-        val previousSlowFrameRecord = uiPerformanceData.lastSlowFrameRecord
-        val delaySinceLastUpdate = frameStartedTimestampNs -
-            (previousSlowFrameRecord?.startTimestampNs ?: frameStartedTimestampNs)
+            report.slowFramesDurationNs += frameDurationNs
+            val previousSlowFrameRecord = report.lastSlowFrameRecord
+            val delaySinceLastUpdate = frameStartedTimestampNs -
+                (previousSlowFrameRecord?.startTimestampNs ?: frameStartedTimestampNs)
 
-        if (previousSlowFrameRecord == null || delaySinceLastUpdate > continuousSlowFrameThresholdNs) {
-            // No previous slow frame record or amount of time since the last update
-            // is significant enough to consider it idle - adding a new slow frame record.
-            if (frameDurationNs > 0) {
-                uiPerformanceData.slowFramesRecords += SlowFrameRecord(
-                    frameStartedTimestampNs,
-                    frameDurationNs
+            if (previousSlowFrameRecord == null || delaySinceLastUpdate > continuousSlowFrameThresholdNs) {
+                // No previous slow frame record or amount of time since the last update
+                // is significant enough to consider it idle - adding a new slow frame record.
+                if (frameDurationNs > 0) {
+                    report.slowFramesRecords += SlowFrameRecord(
+                        frameStartedTimestampNs,
+                        frameDurationNs
+                    )
+                }
+            } else {
+                // It's a continuous slow frame – increasing duration
+                previousSlowFrameRecord.durationNs = min(
+                    previousSlowFrameRecord.durationNs + frameDurationNs,
+                    frozenFrameThresholdNs - 1
                 )
             }
-        } else {
-            // It's a continuous slow frame – increasing duration
-            previousSlowFrameRecord.durationNs = min(
-                previousSlowFrameRecord.durationNs + frameDurationNs,
-                frozenFrameThresholdNs - 1
-            )
         }
     }
 
+    @MainThread
     override fun onFrameMetricsData(data: FrameMetricsData) {
+        // do nothing
     }
 
     companion object {
-        private const val DEFAULT_CONTINUOUS_SLOW_FRAME_THRESHOLD: Long =
+        private const val DEFAULT_CONTINUOUS_SLOW_FRAME_THRESHOLD_NS: Long =
             16_666_666L // 1/60 fps in nanoseconds
-        private const val DEFAULT_FROZEN_FRAME_THRESHOLD: Long = 700_000_000 // 700ms
+        private const val DEFAULT_FROZEN_FRAME_THRESHOLD_NS: Long = 700_000_000 // 700ms
         private const val DEFAULT_SLOW_FRAME_RECORDS_MAX_AMOUNT: Int = 512
     }
 }
