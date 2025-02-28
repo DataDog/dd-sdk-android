@@ -82,6 +82,7 @@ internal class DataDogSlowFramesListener(
     }
 
     override fun onFrameMetricsData(data: FrameMetricsData) {
+        // do nothing
     }
 
     companion object {
