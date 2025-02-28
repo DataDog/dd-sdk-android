@@ -5,7 +5,9 @@
  */
 package com.datadog.android.rum.internal.vitals
 
+import android.annotation.SuppressLint
 import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.metrics.performance.FrameData
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import com.datadog.android.rum.internal.domain.FrameMetricsData
@@ -16,6 +18,7 @@ internal class FPSVitalListener(
     private val buildSdkVersionProvider: BuildSdkVersionProvider = BuildSdkVersionProvider.DEFAULT,
     private var screenRefreshRate: Double = 60.0
 ) : FrameStateListener {
+    @RequiresApi(Build.VERSION_CODES.S)
     private var frameDeadline = EXPECTED_60_FPS_FRAME_DURATION_NS
     private var displayRefreshRate: Double = SIXTY_FPS
 
@@ -24,6 +27,7 @@ internal class FPSVitalListener(
         if (durationNs > 0.0) {
             var frameRate = (ONE_SECOND_NS / durationNs)
 
+            @SuppressLint("NewApi")
             if (buildSdkVersionProvider.version >= Build.VERSION_CODES.S) {
                 screenRefreshRate = ONE_SECOND_NS / frameDeadline
             } else if (buildSdkVersionProvider.version == Build.VERSION_CODES.R) {
@@ -42,6 +46,7 @@ internal class FPSVitalListener(
 
     override fun onFrameMetricsData(data: FrameMetricsData) {
         displayRefreshRate = data.displayRefreshRate
+        @SuppressLint("NewApi")
         if (buildSdkVersionProvider.version >= Build.VERSION_CODES.S) {
             frameDeadline = data.deadline
         }

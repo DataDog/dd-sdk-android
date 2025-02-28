@@ -214,7 +214,7 @@ internal class JankStatsActivityLifecycleListener(
         if (frameMetricsListener == null) {
             frameMetricsListener = DDFrameMetricsListener()
         }
-        // todo RUM-8799: handler thread can be used instead
+        // TODO RUM-8799: handler thread can be used instead
         val handler = Handler(Looper.getMainLooper())
         val decorView = window.peekDecorView()
 
@@ -296,7 +296,7 @@ internal class JankStatsActivityLifecycleListener(
             commandIssueDuration = frameMetrics.getMetric(FrameMetrics.COMMAND_ISSUE_DURATION)
             swapBuffersDuration = frameMetrics.getMetric(FrameMetrics.SWAP_BUFFERS_DURATION)
             totalDuration = frameMetrics.getMetric(FrameMetrics.TOTAL_DURATION)
-            firstDrawFrame = frameMetrics.getMetric(FrameMetrics.FIRST_DRAW_FRAME) == TRUE
+            firstDrawFrame = frameMetrics.getMetric(FrameMetrics.FIRST_DRAW_FRAME) == IS_FIRST_DRAW_FRAME
         }
         @SuppressLint("InlinedApi")
         if (buildSdkVersionProvider.version >= Build.VERSION_CODES.O) {
@@ -320,6 +320,6 @@ internal class JankStatsActivityLifecycleListener(
         internal const val JANK_STATS_TRACKING_DISABLE_ERROR =
             "Failed to disable JankStats tracking"
         private const val SIXTY_FPS: Double = 60.0
-        private const val TRUE = 1L
+        private const val IS_FIRST_DRAW_FRAME = 1L
     }
 }
