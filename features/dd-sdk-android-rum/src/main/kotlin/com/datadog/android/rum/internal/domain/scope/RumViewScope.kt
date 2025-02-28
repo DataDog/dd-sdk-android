@@ -33,6 +33,7 @@ import com.datadog.android.rum.internal.metric.interactiontonextview.Interaction
 import com.datadog.android.rum.internal.metric.interactiontonextview.InternalInteractionContext
 import com.datadog.android.rum.internal.metric.networksettled.InternalResourceContext
 import com.datadog.android.rum.internal.metric.networksettled.NetworkSettledMetricResolver
+import com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener
 import com.datadog.android.rum.internal.monitor.StorageEvent
 import com.datadog.android.rum.internal.utils.hasUserData
 import com.datadog.android.rum.internal.utils.newRumEventWriteOperation
@@ -69,6 +70,7 @@ internal open class RumViewScope(
     internal val sampleRate: Float,
     private val interactionToNextViewMetricResolver: InteractionToNextViewMetricResolver,
     private val networkSettledMetricResolver: NetworkSettledMetricResolver,
+    private val slowFramesListener: SlowFramesListener,
     private val viewEndedMetricDispatcher: ViewMetricDispatcher
 ) : RumScope {
 
@@ -173,6 +175,7 @@ internal open class RumViewScope(
         }
         networkSettledMetricResolver.viewWasCreated(eventTime.nanoTime)
         interactionToNextViewMetricResolver.onViewCreated(viewId, eventTime.nanoTime)
+        slowFramesListener.onViewCreated(viewId, startedNanos)
     }
 
     // region RumScope
@@ -1390,7 +1393,8 @@ internal open class RumViewScope(
             trackFrustrations: Boolean,
             sampleRate: Float,
             interactionToNextViewMetricResolver: InteractionToNextViewMetricResolver,
-            networkSettledResourceIdentifier: InitialResourceIdentifier
+            networkSettledResourceIdentifier: InitialResourceIdentifier,
+            slowFramesListener: SlowFramesListener
         ): RumViewScope {
             val networkSettledMetricResolver = NetworkSettledMetricResolver(
                 networkSettledResourceIdentifier,
@@ -1421,7 +1425,8 @@ internal open class RumViewScope(
                 sampleRate = sampleRate,
                 interactionToNextViewMetricResolver = interactionToNextViewMetricResolver,
                 networkSettledMetricResolver = networkSettledMetricResolver,
-                viewEndedMetricDispatcher = viewEndedMetricDispatcher
+                viewEndedMetricDispatcher = viewEndedMetricDispatcher,
+                slowFramesListener = slowFramesListener
             )
         }
 

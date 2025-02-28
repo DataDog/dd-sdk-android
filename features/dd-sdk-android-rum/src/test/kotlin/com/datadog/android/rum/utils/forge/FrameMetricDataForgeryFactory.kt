@@ -26,7 +26,8 @@ internal class FrameMetricDataForgeryFactory : ForgeryFactory<FrameMetricsData> 
             vsyncTimestamp = forge.aLong(min = 0),
             gpuDuration = forge.aLong(min = 1),
             deadline = forge.aLong(min = 1),
-            displayRefreshRate = forge.aDouble(min = 1.0, max = 200.0)
+            displayRefreshRate = forge.aDouble(min = 1.0, max = 200.0),
+            droppedFrames = forge.anInt(min = 0, max = 100)
         )
     }
 }

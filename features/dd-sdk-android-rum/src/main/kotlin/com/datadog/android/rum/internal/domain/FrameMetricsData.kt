@@ -9,6 +9,7 @@ import android.os.Build
 import androidx.annotation.RequiresApi
 
 internal data class FrameMetricsData(
+    @RequiresApi(Build.VERSION_CODES.N) var droppedFrames: Int = 0,
     @RequiresApi(Build.VERSION_CODES.N) var unknownDelayDuration: Long = 0L,
     @RequiresApi(Build.VERSION_CODES.N) var inputHandlingDuration: Long = 0L,
     @RequiresApi(Build.VERSION_CODES.N) var animationDuration: Long = 0L,

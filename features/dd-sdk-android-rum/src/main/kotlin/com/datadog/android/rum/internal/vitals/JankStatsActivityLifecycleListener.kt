@@ -282,15 +282,16 @@ internal class JankStatsActivityLifecycleListener(
             dropCountSinceLastInvocation: Int
         ) {
             for (i in delegates.indices) {
-                delegates[i].onFrameMetricsData(frameMetricsData.update(frameMetrics))
+                delegates[i].onFrameMetricsData(frameMetricsData.update(frameMetrics, dropCountSinceLastInvocation))
             }
         }
     }
 
     @RequiresApi(Build.VERSION_CODES.N)
-    private fun FrameMetricsData.update(frameMetrics: FrameMetrics) = apply {
+    private fun FrameMetricsData.update(frameMetrics: FrameMetrics, dropCountSinceLastInvocation: Int) = apply {
         displayRefreshRate = display?.refreshRate?.toDouble() ?: SIXTY_FPS
         if (buildSdkVersionProvider.version >= Build.VERSION_CODES.N) {
+            droppedFrames = dropCountSinceLastInvocation
             unknownDelayDuration = frameMetrics.getMetric(FrameMetrics.UNKNOWN_DELAY_DURATION)
             inputHandlingDuration = frameMetrics.getMetric(FrameMetrics.INPUT_HANDLING_DURATION)
             animationDuration = frameMetrics.getMetric(FrameMetrics.ANIMATION_DURATION)
