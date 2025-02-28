@@ -10,7 +10,7 @@ import java.util.Queue
 
 internal data class ViewUIPerformanceData(
     val viewStartedTimeStamp: Long = 0L,
-    var slowFramesRecords: Queue<SlowFrameRecord> = EvictingQueue(1),
+    var slowFramesRecords: Queue<SlowFrameRecord> = EvictingQueue(),
     var totalFramesDurationNs: Long = 0L,
     var slowFramesDurationNs: Long = 0L
 ) {
@@ -27,7 +27,6 @@ internal data class ViewUIPerformanceData(
             (totalFramesDurationNs + 1) // avoiding division by zero
 
     fun isEmpty() = slowFramesRecords.isEmpty()
-    fun isValid() = !isEmpty() && totalFramesDurationNs > 0 && slowFramesDurationNs > 0
     val size: Int
         get() = slowFramesRecords.size
 }
