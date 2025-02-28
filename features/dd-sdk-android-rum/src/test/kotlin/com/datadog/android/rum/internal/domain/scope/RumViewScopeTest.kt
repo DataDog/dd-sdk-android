@@ -238,7 +238,7 @@ internal class RumViewScopeTest {
         whenever(mockNetworkSettledMetricResolver.getState()) doReturn fakeTnsState
         whenever(mockInteractionToNextViewMetricResolver.getState(any())) doReturn fakeInvState
         whenever(mockInteractionToNextViewMetricResolver.resolveMetric(any())) doReturn
-                fakeInteractionToNextViewMetricValue
+            fakeInteractionToNextViewMetricValue
         val isValidSource = forge.aBool()
 
         val fakeSource = if (isValidSource) {

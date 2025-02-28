@@ -36,7 +36,10 @@ internal class DataDogSlowFramesListener(
     }
 
     override fun resolveReport(viewId: String): ViewUIPerformanceData {
-        return slowFramesRecords.remove(viewId) ?: ViewUIPerformanceData(System.nanoTime(), maxSlowFramesAmount)
+        return slowFramesRecords.remove(viewId) ?: ViewUIPerformanceData(
+            System.nanoTime(),
+            maxSlowFramesAmount
+        )
     }
 
     override fun onFrame(volatileFrameData: FrameData) {
@@ -50,20 +53,15 @@ internal class DataDogSlowFramesListener(
         // Updating frames statistics
         uiPerformanceData.totalFramesDurationNs += frameDurationNs
 
-        if (frameDurationNs > frozenFrameThresholdNs) {
-            // Frame duration is too big to be considered as a slow frame
-            return
-        }
-
-        if (!volatileFrameData.isJank) {
-            // No reason for the future computation because frame is not jank
+        if (frameDurationNs > frozenFrameThresholdNs || !volatileFrameData.isJank) {
+            // Frame duration is too big to be considered as a slow frame or not jank
             return
         }
 
         uiPerformanceData.slowFramesDurationNs += frameDurationNs
         val previousSlowFrameRecord = uiPerformanceData.lastSlowFrameRecord
-        val delaySinceLastUpdate =
-            frameStartedTimestampNs - (previousSlowFrameRecord?.startTimestampNs ?: frameStartedTimestampNs)
+        val delaySinceLastUpdate = frameStartedTimestampNs -
+            (previousSlowFrameRecord?.startTimestampNs ?: frameStartedTimestampNs)
 
         if (previousSlowFrameRecord == null || delaySinceLastUpdate > continuousSlowFrameThresholdNs) {
             // No previous slow frame record or amount of time since the last update
@@ -74,21 +72,21 @@ internal class DataDogSlowFramesListener(
                     frameDurationNs
                 )
             }
-            return
+        } else {
+            // It's a continuous slow frame – increasing duration
+            previousSlowFrameRecord.durationNs = min(
+                previousSlowFrameRecord.durationNs + frameDurationNs,
+                frozenFrameThresholdNs - 1
+            )
         }
-
-        // It's a continuous slow frame – increasing duration
-        previousSlowFrameRecord.durationNs = min(
-            previousSlowFrameRecord.durationNs + frameDurationNs,
-            frozenFrameThresholdNs - 1
-        )
     }
 
     override fun onFrameMetricsData(data: FrameMetricsData) {
     }
 
     companion object {
-        private const val DEFAULT_CONTINUOUS_SLOW_FRAME_THRESHOLD: Long = 16_666_666L // 1/60 fps in nanoseconds
+        private const val DEFAULT_CONTINUOUS_SLOW_FRAME_THRESHOLD: Long =
+            16_666_666L // 1/60 fps in nanoseconds
         private const val DEFAULT_FROZEN_FRAME_THRESHOLD: Long = 700_000_000 // 700ms
         private const val DEFAULT_SLOW_FRAME_RECORDS_MAX_AMOUNT: Int = 512
     }

@@ -5,11 +5,15 @@
  */
 package com.datadog.android.rum.internal.domain.state
 
-data class SlowFrameRecord(
+internal data class SlowFrameRecord(
     val startTimestampNs: Long,
     var durationNs: Long
 ) {
     override fun toString(): String {
-        return "${durationNs / 1_000_000.0}ms"
+        return "${durationNs / NS_IN_MS}ms"
+    }
+
+    companion object {
+        private const val NS_IN_MS = 1_000_000.0
     }
 }
