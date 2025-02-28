@@ -154,7 +154,9 @@ internal class JankStatsActivityLifecycleListener(
     // region JankStats.OnFrameListener
 
     override fun onFrame(volatileFrameData: FrameData) {
-        delegates.forEach { it.onFrame(volatileFrameData) }
+        for (i in delegates.indices) {
+            delegates[i].onFrame(volatileFrameData)
+        }
     }
 
     // endregion
@@ -279,7 +281,9 @@ internal class JankStatsActivityLifecycleListener(
             frameMetrics: FrameMetrics,
             dropCountSinceLastInvocation: Int
         ) {
-            delegates.forEach { it.onFrameMetricsData(frameMetricsData.update(frameMetrics)) }
+            for (i in delegates.indices) {
+                delegates[i].onFrameMetricsData(frameMetricsData.update(frameMetrics))
+            }
         }
     }
 
