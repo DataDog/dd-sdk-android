@@ -3,9 +3,11 @@
  * This product includes software developed at Datadog (https://www.datadoghq.com/).
  * Copyright 2016-Present Datadog, Inc.
  */
-package com.datadog.android.core.collections
+package com.datadog.android.internal.collections
 
 import java.util.LinkedList
+import java.util.Queue
+import kotlin.math.max
 
 /**
  * A bounded queue that automatically evicts the oldest elements when new elements are added beyond its maximum capacity.
@@ -19,11 +21,41 @@ import java.util.LinkedList
  *
  * @throws IllegalArgumentException if [maxSize] is less than or equal to 0.
  */
-class EvictingQueue<T>(private val maxSize: Int = Int.MAX_VALUE) : LinkedList<T>() {
+class EvictingQueue<T>(
+    maxSize: Int = Int.MAX_VALUE,
+    private val delegate: Queue<T> = LinkedList()
+) : Queue<T> by delegate {
 
-    init {
-        @Suppress("UnsafeThirdPartyFunctionCall") // this line should throw an exception
-        require(maxSize > 0) { "maxSize should be > 0" }
+    override val size: Int
+        get() = delegate.size
+    private val maxSize: Int = max(0, maxSize)
+
+    /**
+     * Adds the specified [element] to the end of this queue.
+     *
+     * If the queue has reached its maximum capacity, the first (oldest) element is evicted (removed)
+     * before the new element is added.
+     *
+     * This queue should never throw [IllegalStateException] due to capacity restriction of the [delegate] because it
+     * uses [java.util.Queue.offer] to insert elements.
+     *
+     * @param element the element to be added.
+     * @throws ClassCastException if the class of the specified element
+     *         prevents it from being added to this queue
+     * @throws NullPointerException if the specified element is null and
+     *         this queue does not permit null elements
+     * @throws IllegalArgumentException if some property of this element
+     *         prevents it from being added to this queue
+     *
+     * @return `true` if this collection changed as a result of the call (as specified by [java.util.Collection.add])
+     *
+     */
+    override fun add(element: T): Boolean {
+        if (maxSize == 0) return false
+        if (size >= maxSize) {
+            delegate.poll()
+        }
+        return delegate.offer(element)
     }
 
     /**
@@ -33,13 +65,19 @@ class EvictingQueue<T>(private val maxSize: Int = Int.MAX_VALUE) : LinkedList<T>
      * before the new element is added.
      *
      * @param element the element to be added.
+     *
+     * @throws [ClassCastException] – if the class of the specified element prevents it from being added to this queue
+     * @throws [NullPointerException] – if the specified element is null and this queue does not permit null elements
+     * @throws [IllegalArgumentException] – if some property of this element prevents it from being added to this queue
+     *
      * @return `true` if this collection changed as a result of the call
      */
-    override fun add(element: T): Boolean {
+    override fun offer(element: T): Boolean {
+        if (maxSize == 0) return false
         if (size >= maxSize) {
-            removeFirst()
+            delegate.poll()
         }
-        return super.add(element)
+        return delegate.offer(element)
     }
 
     /**
@@ -55,50 +93,21 @@ class EvictingQueue<T>(private val maxSize: Int = Int.MAX_VALUE) : LinkedList<T>
      * @return `true` if the queue changed as a result of the call.
      */
     override fun addAll(elements: Collection<T>): Boolean {
+        if (maxSize == 0) return false
         if (elements.size >= maxSize) {
             clear()
             for ((index, element) in elements.withIndex()) {
                 if (index < elements.size - maxSize) continue
-                super.add(element)
+                delegate.add(element)
             }
             return true
         }
 
         val spaceLeft = maxSize - size
         for (index in 0 until elements.size - spaceLeft) {
-            removeFirst()
+            delegate.poll()
         }
 
-        return super.addAll(elements)
-    }
-
-    /**
-     * This operation is not supported.
-     *
-     * Insertion at an arbitrary [index] is not allowed in [EvictingQueue] because it would break the
-     * FIFO (first-in, first-out) eviction policy.
-     *
-     * @param index the index at which the element is to be inserted.
-     * @param element the element to be inserted.
-     * @throws UnsupportedOperationException always.
-     */
-    override fun add(index: Int, element: T) {
-        throw UnsupportedOperationException("Insertion by index is not supported in EvictingQueue")
-    }
-
-    /**
-     * This operation is not supported.
-     *
-     * Insertion of a collection at an arbitrary [index] is not allowed in [EvictingQueue].
-     * The only allowed insertion is at the end of the queue (i.e., when [index] equals the current size).
-     *
-     * @param index the index at which to insert the first element from [elements].
-     * @param elements the collection of elements to be added.
-     * @return nothing; this method always throws an exception if [index] is not at the end.
-     * @throws UnsupportedOperationException if [index] is not equal to the current size of the queue.
-     */
-    override fun addAll(index: Int, elements: Collection<T>): Boolean {
-        if (index == size) return super.addAll(index, elements)
-        throw UnsupportedOperationException("Insertion by index is not supported in EvictingQueue")
+        return delegate.addAll(elements)
     }
 }

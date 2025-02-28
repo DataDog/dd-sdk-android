@@ -8,7 +8,7 @@ package com.datadog.android.rum.internal.domain.state
 import com.datadog.android.core.collections.EvictingQueue
 import java.util.Queue
 
-internal data class ViewUIPerformanceData(
+internal data class ViewUIPerformanceReport(
     val viewStartedTimeStamp: Long = 0L,
     var slowFramesRecords: Queue<SlowFrameRecord> = EvictingQueue(),
     var totalFramesDurationNs: Long = 0L,
