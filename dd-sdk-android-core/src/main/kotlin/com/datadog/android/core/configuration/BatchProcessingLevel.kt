@@ -23,9 +23,9 @@ enum class BatchProcessingLevel(val maxBatchesPerUploadJob: Int) {
     LOW(maxBatchesPerUploadJob = 1),
 
     /**
-     * 10 batches will be sent in a single upload cycle.
+     * 20 batches will be sent in a single upload cycle.
      */
-    MEDIUM(maxBatchesPerUploadJob = 10),
+    MEDIUM(maxBatchesPerUploadJob = 20),
 
     /**
      * 100 batches will be sent in a single upload cycle.
