@@ -552,6 +552,45 @@ internal class InteractionToNextViewMetricResolverTest {
 
     // endregion
 
+    // region disabled metric computation
+
+    @Test
+    fun `M return null W resolveMetric { null lastInteractionResolver }`() {
+        // Given
+        val testedMetric = InteractionToNextViewMetricResolver(
+            mockInternalLogger,
+            mockInteractionValidator,
+            null,
+        )
+        testedMetric.onViewCreated(fakeViewId, fakeFirstViewTimestampNs)
+
+        // When
+        val result = testedMetric.resolveMetric(fakeViewId)
+
+        // Then
+        assertThat(result).isNull()
+    }
+
+    @Test
+    fun `M return disabled W resolveMetric { null lastInteractionResolver }`() {
+        // Given
+        val testedMetric = InteractionToNextViewMetricResolver(
+            mockInternalLogger,
+            mockInteractionValidator,
+            null
+        )
+
+        testedMetric.onViewCreated(fakeViewId, fakeFirstViewTimestampNs)
+
+        // When
+        val result = testedMetric.getState(fakeViewId)
+
+        // Then
+        assertThat(result.noValueReason).isEqualTo(NoValueReason.InteractionToNextView.DISABLED)
+    }
+
+    // endregion
+
     // region internal
 
     private fun Forge.generateFakeActions(

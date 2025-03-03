@@ -19,17 +19,25 @@ import com.datadog.android.rum.metric.interactiontonextview.TimeBasedInteraction
 internal class InteractionToNextViewMetricResolver(
     private val internalLogger: InternalLogger,
     private val ingestionValidator: InteractionIngestionValidator = ActionTypeInteractionValidator(),
-    private val lastInteractionIdentifier: LastInteractionIdentifier = TimeBasedInteractionIdentifier()
+    private val lastInteractionIdentifier: LastInteractionIdentifier? = TimeBasedInteractionIdentifier()
 ) {
     private val lastInteractions = LinkedHashMap<String, InternalInteractionContext>()
     private val lastViewCreatedTimestamps = LinkedHashMap<String, Long>()
 
     fun onViewCreated(viewId: String, timestamp: Long) {
+        if(lastInteractionIdentifier == null) {
+            return  // don't bother if INV is disabled
+        }
+
         lastViewCreatedTimestamps[viewId] = timestamp
         purgeOldEntries()
     }
 
     fun onActionSent(context: InternalInteractionContext) {
+        if(lastInteractionIdentifier == null) {
+            return  // don't bother if INV is disabled
+        }
+
         if (ingestionValidator.validate(context)) {
             lastInteractions[context.viewId] = context
         }
@@ -75,13 +83,17 @@ internal class InteractionToNextViewMetricResolver(
     fun getState(viewId: String) = resolveMetric(viewId).let { metricValue ->
         ViewInitializationMetricsState(
             initializationTime = metricValue,
-            config = lastInteractionIdentifier.toConfig(),
+            config = lastInteractionIdentifier?.toConfig() ?: ViewInitializationMetricsConfig.DISABLED,
             noValueReason = if (metricValue == null) resolveNoValueReason(viewId) else null
         )
     }
 
     @Suppress("ReturnCount")
     private fun resolveNoValueReason(viewId: String): NoValueReason.InteractionToNextView {
+        if (lastInteractionIdentifier == null) {
+            return NoValueReason.InteractionToNextView.DISABLED
+        }
+
         // First of all, if there is no timestamp for the current view, all other metrics are meaningless.
         val currentViewCreatedTimestamp = resolveCurrentViewCreationTimestamp(viewId)
             ?: return NoValueReason.InteractionToNextView.UNKNOWN
@@ -133,10 +145,12 @@ internal class InteractionToNextViewMetricResolver(
         previousViewId: String,
         currentViewCreatedTimestamp: Long
     ): InternalInteractionContext? {
-        lastInteractions[previousViewId]?.let {
-            val context = it.toPreviousViewLastInteractionContext(currentViewCreatedTimestamp)
-            if (lastInteractionIdentifier.validate(context)) {
-                return it
+        lastInteractionIdentifier?.let { lastInteractionIdentifier ->
+            lastInteractions[previousViewId]?.let {
+                val context = it.toPreviousViewLastInteractionContext(currentViewCreatedTimestamp)
+                if (lastInteractionIdentifier.validate(context)) {
+                    return it
+                }
             }
         }
 

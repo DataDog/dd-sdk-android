@@ -580,7 +580,7 @@ internal class TelemetryEventHandlerTest {
                     fakeRumConfiguration.vitalsMonitorUpdateFrequency.periodInMs
                 )
                 .hasTnsTimeBasedThreshold(fakeRumConfiguration.initialResourceIdentifier.resolveThreshold())
-                .hasInvTimeBasedThreshold(fakeRumConfiguration.lastInteractionIdentifier.resolveThreshold())
+                .hasInvTimeBasedThreshold(fakeRumConfiguration.lastInteractionIdentifier!!.resolveThreshold())
         }
     }
 

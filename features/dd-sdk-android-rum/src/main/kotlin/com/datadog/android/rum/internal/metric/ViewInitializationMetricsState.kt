@@ -12,6 +12,9 @@ internal data class ViewInitializationMetricsState(
 )
 
 internal enum class ViewInitializationMetricsConfig {
+    // Interaction to next view is disabled
+    DISABLED,
+
     // The default time-based strategy is used.
     TIME_BASED_DEFAULT,
 
@@ -39,6 +42,10 @@ internal sealed interface NoValueReason {
     }
 
     enum class InteractionToNextView : NoValueReason {
+        // Interaction to next view is disabled, usually by a cross platform framework that wants
+        // to handle this metric itself.
+        DISABLED,
+
         // When the value is missing, because no action was tracked in previous view
         NO_ACTION,
 

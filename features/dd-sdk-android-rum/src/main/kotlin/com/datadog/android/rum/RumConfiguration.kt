@@ -277,7 +277,7 @@ data class RumConfiguration internal constructor(
          * By default, the SDK uses a [TimeBasedInteractionIdentifier] with a threshold of 3000ms.
          * @param lastInteractionIdentifier the [LastInteractionIdentifier] to use.
          */
-        fun setLastInteractionIdentifier(lastInteractionIdentifier: LastInteractionIdentifier): Builder {
+        fun setLastInteractionIdentifier(lastInteractionIdentifier: LastInteractionIdentifier?): Builder {
             rumConfig = rumConfig.copy(lastInteractionIdentifier = lastInteractionIdentifier)
             return this
         }

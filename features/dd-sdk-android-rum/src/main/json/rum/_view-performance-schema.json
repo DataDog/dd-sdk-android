@@ -19,7 +19,7 @@
         },
         "timestamp": {
           "type": "integer",
-          "description": "Timestamp in ns of the largest layout shift contributing to CLS",
+          "description": "The time of the largest layout shift contributing to CLS, in ns since view start.",
           "$comment": "Replaces the deprecated `view.cumulative_layout_shift_time`",
           "minimum": 0,
           "readOnly": true
@@ -48,7 +48,7 @@
       "properties": {
         "timestamp": {
           "type": "integer",
-          "description": "Timestamp in ns of the first rendering",
+          "description": "The time of the first rendering, in ns since view start.",
           "$comment": "Replaces the deprecated `view.first_contentful_paint`",
           "minimum": 0,
           "readOnly": true
@@ -70,7 +70,7 @@
         },
         "timestamp": {
           "type": "integer",
-          "description": "Timestamp in ns of the first input event",
+          "description": "Time of the first input event, in ns since view start.",
           "$comment": "Replaces the deprecated `view.first_input_time`",
           "minimum": 0,
           "readOnly": true
@@ -98,7 +98,7 @@
         },
         "timestamp": {
           "type": "integer",
-          "description": "Timestamp in ns of the start of the INP interaction",
+          "description": "Time of the start of the INP interaction, in ns since view start.",
           "$comment": "Replaces the deprecated `view.interaction_to_next_paint_time`",
           "minimum": 0,
           "readOnly": true
@@ -119,7 +119,7 @@
       "properties": {
         "timestamp": {
           "type": "integer",
-          "description": "Timestamp in ns of the largest contentful paint",
+          "description": "Time of the largest contentful paint, in ns since view start.",
           "$comment": "Replaces the deprecated `view.largest_contentful_paint`",
           "minimum": 0,
           "readOnly": true
@@ -133,6 +133,21 @@
         "resource_url": {
           "type": "string",
           "description": "URL of the largest contentful paint element",
+          "readOnly": false
+        }
+      },
+      "readOnly": true
+    },
+    "fbc": {
+      "type": "object",
+      "description": "First Build Complete (Flutter)",
+      "required": ["timestamp"],
+      "properties": {
+        "timestamp": {
+          "type": "integer",
+          "description": "Time of all completed `build` methods after a route change, in ns since view start.",
+          "$comment": "Calculated from the timing of a `postFrameCallback` after a route change.",
+          "minimum": 0,
           "readOnly": true
         }
       },

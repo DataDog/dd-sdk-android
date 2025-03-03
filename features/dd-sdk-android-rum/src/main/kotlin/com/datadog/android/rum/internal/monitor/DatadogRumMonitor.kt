@@ -74,7 +74,7 @@ internal class DatadogRumMonitor(
     sessionListener: RumSessionListener,
     internal val executorService: ExecutorService,
     initialResourceIdentifier: InitialResourceIdentifier,
-    lastInteractionIdentifier: LastInteractionIdentifier
+    lastInteractionIdentifier: LastInteractionIdentifier?
 ) : RumMonitor, AdvancedRumMonitor {
 
     internal var rootScope: RumScope = RumApplicationScope(
@@ -623,6 +623,10 @@ internal class DatadogRumMonitor(
 
     override fun updatePerformanceMetric(metric: RumPerformanceMetric, value: Double) {
         handleEvent(RumRawEvent.UpdatePerformanceMetric(metric, value))
+    }
+
+    override fun setInternalViewAttribute(key: String, value: Any?) {
+        handleEvent(RumRawEvent.SetInternalViewAttribute(key, value))
     }
 
     override fun setSyntheticsAttribute(
