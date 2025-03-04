@@ -302,4 +302,6 @@ object RumAttributes {
      * on the next view.
      */
     const val CUSTOM_INV_VALUE = "_dd.view.custom_inv_value"
+
+    // endregion
 }
