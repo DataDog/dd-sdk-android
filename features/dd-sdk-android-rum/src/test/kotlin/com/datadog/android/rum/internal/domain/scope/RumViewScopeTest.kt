@@ -8295,7 +8295,7 @@ internal class RumViewScopeTest {
         testedScope.handleEvent(
             RumRawEvent.SetInternalViewAttribute(
                 key = RumAttributes.CUSTOM_INV_VALUE,
-                value = custom_inv
+                value = customInv
             ),
             mockWriter
         )
@@ -8308,7 +8308,7 @@ internal class RumViewScopeTest {
         argumentCaptor<ViewEvent> {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(lastValue)
-                .hasInteractionToNextViewTime(custom_inv)
+                .hasInteractionToNextViewTime(customInv)
         }
         verifyNoMoreInteractions(mockWriter)
         assertThat(result).isSameAs(testedScope)

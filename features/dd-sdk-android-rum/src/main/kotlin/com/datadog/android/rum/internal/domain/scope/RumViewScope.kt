@@ -202,7 +202,7 @@ internal open class RumViewScope(
             is RumRawEvent.StartResource -> onStartResource(event, writer)
             is RumRawEvent.AddError -> onAddError(event, writer)
             is RumRawEvent.AddLongTask -> onAddLongTask(event, writer)
-            is RumRawEvent.SetInternalViewAttribute -> onSetInternalViewAttribute(event, writer)
+            is RumRawEvent.SetInternalViewAttribute -> onSetInternalViewAttribute(event)
 
             is RumRawEvent.AddFeatureFlagEvaluation -> onAddFeatureFlagEvaluation(event, writer)
             is RumRawEvent.AddFeatureFlagEvaluations -> onAddFeatureFlagEvaluations(event, writer)
@@ -621,7 +621,7 @@ internal open class RumViewScope(
     }
 
     @WorkerThread
-    private fun onSetInternalViewAttribute(event: RumRawEvent.SetInternalViewAttribute, writer: DataWriter<Any>) {
+    private fun onSetInternalViewAttribute(event: RumRawEvent.SetInternalViewAttribute) {
         if (stopped) return
 
         internalAttributes[event.key] = event.value
