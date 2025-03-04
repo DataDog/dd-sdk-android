@@ -560,7 +560,7 @@ internal class InteractionToNextViewMetricResolverTest {
         val testedMetric = InteractionToNextViewMetricResolver(
             mockInternalLogger,
             mockInteractionValidator,
-            null,
+            null
         )
         testedMetric.onViewCreated(fakeViewId, fakeFirstViewTimestampNs)
 

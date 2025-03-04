@@ -25,8 +25,8 @@ internal class InteractionToNextViewMetricResolver(
     private val lastViewCreatedTimestamps = LinkedHashMap<String, Long>()
 
     fun onViewCreated(viewId: String, timestamp: Long) {
-        if(lastInteractionIdentifier == null) {
-            return  // don't bother if INV is disabled
+        if (lastInteractionIdentifier == null) {
+            return // don't bother if INV is disabled
         }
 
         lastViewCreatedTimestamps[viewId] = timestamp
@@ -34,8 +34,8 @@ internal class InteractionToNextViewMetricResolver(
     }
 
     fun onActionSent(context: InternalInteractionContext) {
-        if(lastInteractionIdentifier == null) {
-            return  // don't bother if INV is disabled
+        if (lastInteractionIdentifier == null) {
+            return // don't bother if INV is disabled
         }
 
         if (ingestionValidator.validate(context)) {

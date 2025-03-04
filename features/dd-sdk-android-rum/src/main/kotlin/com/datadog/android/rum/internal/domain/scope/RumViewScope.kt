@@ -853,8 +853,10 @@ internal open class RumViewScope(
         val viewComplete = isViewComplete()
         val timeToSettled = networkSettledMetricResolver.resolveMetric()
         var interactionToNextViewTime = interactionToNextViewMetricResolver.resolveMetric(viewId)
+        val invMetricResolverState = interactionToNextViewMetricResolver.getState(viewId)
         if (interactionToNextViewTime == null &&
-            interactionToNextViewMetricResolver.getState(viewId).noValueReason == NoValueReason.InteractionToNextView.DISABLED) {
+            invMetricResolverState.noValueReason == NoValueReason.InteractionToNextView.DISABLED
+        ) {
             interactionToNextViewTime = (internalAttributes[RumAttributes.CUSTOM_INV_VALUE] as? Long)
         }
         version++

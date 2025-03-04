@@ -8287,7 +8287,7 @@ internal class RumViewScopeTest {
         whenever(mockInteractionToNextViewMetricResolver.getState(any())) doReturn ViewInitializationMetricsState(
             null,
             ViewInitializationMetricsConfig.DISABLED,
-            NoValueReason.InteractionToNextView.DISABLED,
+            NoValueReason.InteractionToNextView.DISABLED
         )
         val customInv = forge.aPositiveLong()
 
