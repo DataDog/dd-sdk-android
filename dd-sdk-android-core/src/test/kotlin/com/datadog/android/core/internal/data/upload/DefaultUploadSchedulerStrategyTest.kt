@@ -26,7 +26,7 @@ import java.io.IOException
 @ForgeConfiguration(Configurator::class)
 internal class DefaultUploadSchedulerStrategyTest {
 
-    lateinit var testedStrategy: UploadSchedulerStrategy
+    private lateinit var testedStrategy: UploadSchedulerStrategy
 
     @Forgery
     lateinit var fakeConfiguration: DataUploadConfiguration
@@ -34,7 +34,7 @@ internal class DefaultUploadSchedulerStrategyTest {
     @StringForgery
     lateinit var fakeFeatureName: String
 
-    var initialDelay = 0L
+    private var initialDelay = 0L
 
     @BeforeEach
     fun `set up`() {
@@ -43,7 +43,7 @@ internal class DefaultUploadSchedulerStrategyTest {
     }
 
     @Test
-    fun `M decrease delay W getMsDelayUntilNextUpload() {successful attempt}`(
+    fun `M decrease delay to minimum W getMsDelayUntilNextUpload() {successful attempt}`(
         @IntForgery(1, 128) repeats: Int,
         @IntForgery(1, 64) attempts: Int
     ) {
@@ -54,8 +54,7 @@ internal class DefaultUploadSchedulerStrategyTest {
         repeat(repeats) { delay = testedStrategy.getMsDelayUntilNextUpload(fakeFeatureName, attempts, 202, null) }
 
         // Then
-        assertThat(delay).isLessThan(initialDelay)
-        assertThat(delay).isGreaterThanOrEqualTo(fakeConfiguration.minDelayMs)
+        assertThat(delay).isEqualTo(fakeConfiguration.minDelayMs)
     }
 
     @Test

@@ -278,7 +278,7 @@ internal open class RumViewScope(
             internalLogger.log(
                 InternalLogger.Level.DEBUG,
                 InternalLogger.Target.USER,
-                { ADDING_VIEW_LOADING_TIME_DEBUG_MESSAGE_FORMAT.format(Locale.US, viewLoadingTime, viewName) }
+                { ADDING_VIEW_LOADING_TIME_DEBUG_MESSAGE_FORMAT.format(Locale.US, newLoadingTime, viewName) }
             )
             internalLogger.logApiUsage {
                 InternalTelemetryEvent.ApiUsage.AddViewLoadingTime(

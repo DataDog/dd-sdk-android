@@ -12,7 +12,6 @@ import com.datadog.android.core.internal.data.upload.DataOkHttpUploader.Companio
 import java.io.IOException
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
-import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.roundToLong
 
@@ -32,7 +31,7 @@ internal class DefaultUploadSchedulerStrategy(
     ): Long {
         val previousDelay = currentDelays.getOrPut(featureName) { uploadConfiguration.defaultDelayMs }
         val updatedDelay = if (uploadAttempts > 0 && throwable == null && lastStatusCode == HTTP_ACCEPTED) {
-            decreaseInterval(previousDelay)
+            uploadConfiguration.minDelayMs
         } else {
             increaseInterval(previousDelay, throwable)
         }
@@ -43,12 +42,6 @@ internal class DefaultUploadSchedulerStrategy(
     // endregion
 
     // region Internal
-
-    private fun decreaseInterval(previousDelay: Long): Long {
-        @Suppress("UnsafeThirdPartyFunctionCall") // not a NaN
-        val newDelayMs = (previousDelay * DECREASE_PERCENT).roundToLong()
-        return max(uploadConfiguration.minDelayMs, newDelayMs)
-    }
 
     private fun increaseInterval(previousDelay: Long, throwable: Throwable?): Long {
         @Suppress("UnsafeThirdPartyFunctionCall") // not a NaN
@@ -67,7 +60,6 @@ internal class DefaultUploadSchedulerStrategy(
     // endregion
 
     companion object {
-        internal const val DECREASE_PERCENT = 0.90
         internal const val INCREASE_PERCENT = 1.10
         internal val NETWORK_ERROR_DELAY_MS = TimeUnit.MINUTES.toMillis(1) // 1 minute delay
     }
