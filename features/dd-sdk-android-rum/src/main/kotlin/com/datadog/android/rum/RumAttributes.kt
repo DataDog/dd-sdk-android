@@ -292,7 +292,7 @@ object RumAttributes {
 
     /**
      * Custom Flutter vital - First Build Complete. The amount of time between a route change (the start of a view)
-     * and when the first `build` method is complete. In nanoseconds since view start
+     * and when the first `build` method is complete. In nanoseconds since view start.
      */
     const val FLUTTER_FIRST_BUILD_COMPLETE = "_dd.performance.first_build_complete"
 

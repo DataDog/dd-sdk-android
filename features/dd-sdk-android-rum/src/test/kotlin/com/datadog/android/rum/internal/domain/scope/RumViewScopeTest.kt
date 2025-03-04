@@ -8272,9 +8272,7 @@ internal class RumViewScopeTest {
         argumentCaptor<ViewEvent> {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(lastValue)
-                .apply {
-                    hasFBCTime(fbc)
-                }
+                .hasFBCTime(fbc)
         }
         verifyNoMoreInteractions(mockWriter)
         assertThat(result).isSameAs(testedScope)
@@ -8291,7 +8289,7 @@ internal class RumViewScopeTest {
             ViewInitializationMetricsConfig.DISABLED,
             NoValueReason.InteractionToNextView.DISABLED,
         )
-        val custom_inv = forge.aPositiveLong()
+        val customInv = forge.aPositiveLong()
 
         // WHEN
         testedScope.handleEvent(
@@ -8310,9 +8308,7 @@ internal class RumViewScopeTest {
         argumentCaptor<ViewEvent> {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(lastValue)
-                .apply {
-                    hasInteractionToNextViewTime(custom_inv)
-                }
+                .hasInteractionToNextViewTime(custom_inv)
         }
         verifyNoMoreInteractions(mockWriter)
         assertThat(result).isSameAs(testedScope)

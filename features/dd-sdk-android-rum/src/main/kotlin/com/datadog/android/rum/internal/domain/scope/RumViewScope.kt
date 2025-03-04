@@ -901,9 +901,8 @@ internal open class RumViewScope(
             )
         }
 
-        var performance: ViewEvent.Performance? = null
-        (internalAttributes[RumAttributes.FLUTTER_FIRST_BUILD_COMPLETE] as? Long)?.let {
-            performance = ViewEvent.Performance(
+        val performance = (internalAttributes[RumAttributes.FLUTTER_FIRST_BUILD_COMPLETE] as? Long)?.let {
+            ViewEvent.Performance(
                 fbc = ViewEvent.Fbc(
                     timestamp = it
                 )
