@@ -34,8 +34,10 @@ import com.datadog.android.rum.internal.RumErrorSourceType
 import com.datadog.android.rum.internal.anr.ANRException
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
+import com.datadog.android.rum.internal.metric.NoValueReason
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
 import com.datadog.android.rum.internal.metric.ViewEndedMetricDispatcher
+import com.datadog.android.rum.internal.metric.ViewInitializationMetricsConfig
 import com.datadog.android.rum.internal.metric.ViewInitializationMetricsState
 import com.datadog.android.rum.internal.metric.ViewMetricDispatcher
 import com.datadog.android.rum.internal.metric.interactiontonextview.InteractionToNextViewMetricResolver
@@ -8237,6 +8239,76 @@ internal class RumViewScopeTest {
                         )
                     )
                 }
+        }
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isSameAs(testedScope)
+    }
+
+    // endregion
+
+    // region Internal attributes
+
+    @Test
+    fun `M send View update with fbc metric W handleEvent(SetInternalViewAttribute+KeepAlive)`(
+        forge: Forge
+    ) {
+        // GIVEN
+        val fbc = forge.aPositiveLong()
+
+        // WHEN
+        testedScope.handleEvent(
+            RumRawEvent.SetInternalViewAttribute(
+                key = RumAttributes.FLUTTER_FIRST_BUILD_COMPLETE,
+                value = fbc
+            ),
+            mockWriter
+        )
+        val result = testedScope.handleEvent(
+            RumRawEvent.KeepAlive(),
+            mockWriter
+        )
+
+        // THEN
+        argumentCaptor<ViewEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            assertThat(lastValue)
+                .hasFBCTime(fbc)
+        }
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isSameAs(testedScope)
+    }
+
+    @Test
+    fun `M send View update with custom inv metric W handleEvent(inv disabled+SetInternalViewAttribute+KeepAlive)`(
+        forge: Forge
+    ) {
+        // GIVEN
+        whenever(mockInteractionToNextViewMetricResolver.resolveMetric(any())) doReturn null
+        whenever(mockInteractionToNextViewMetricResolver.getState(any())) doReturn ViewInitializationMetricsState(
+            null,
+            ViewInitializationMetricsConfig.DISABLED,
+            NoValueReason.InteractionToNextView.DISABLED
+        )
+        val customInv = forge.aPositiveLong()
+
+        // WHEN
+        testedScope.handleEvent(
+            RumRawEvent.SetInternalViewAttribute(
+                key = RumAttributes.CUSTOM_INV_VALUE,
+                value = customInv
+            ),
+            mockWriter
+        )
+        val result = testedScope.handleEvent(
+            RumRawEvent.KeepAlive(),
+            mockWriter
+        )
+
+        // THEN
+        argumentCaptor<ViewEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            assertThat(lastValue)
+                .hasInteractionToNextViewTime(customInv)
         }
         verifyNoMoreInteractions(mockWriter)
         assertThat(result).isSameAs(testedScope)

@@ -123,6 +123,7 @@ internal class ViewEndedMetricDispatcher(
         private const val VALUE_APPLICATION_LAUNCH = "application_launch"
         private const val VALUE_BACKGROUND = "background"
         private const val VALUE_CUSTOM = "custom"
+        private const val VALUE_DISABLED = "disabled"
 
         internal const val KEY_INSTRUMENTATION_TYPE = "instrumentation_type"
         private const val VALUE_INSTRUMENTATION_TYPE_COMPOSE = "compose"
@@ -145,6 +146,7 @@ internal class ViewEndedMetricDispatcher(
 
         @VisibleForTesting
         internal fun toAttributeValue(config: ViewInitializationMetricsConfig): String = when (config) {
+            ViewInitializationMetricsConfig.DISABLED -> VALUE_DISABLED
             ViewInitializationMetricsConfig.CUSTOM -> VALUE_CUSTOM
             ViewInitializationMetricsConfig.TIME_BASED_DEFAULT -> VALUE_TIME_BASED_DEFAULT
             ViewInitializationMetricsConfig.TIME_BASED_CUSTOM -> VALUE_TIME_BASED_CUSTOM
@@ -170,6 +172,7 @@ internal class ViewEndedMetricDispatcher(
                 NoValueReason.InteractionToNextView.NO_PREVIOUS_VIEW -> VALUE_NO_PREVIOUS_VIEW
                 NoValueReason.InteractionToNextView.NO_ACTION -> VALUE_NO_ACTION
                 NoValueReason.InteractionToNextView.NO_ELIGIBLE_ACTION -> VALUE_NO_ELIGIBLE_ACTION
+                NoValueReason.InteractionToNextView.DISABLED -> VALUE_DISABLED
             }
 
             is NoValueReason.TimeToNetworkSettle -> when (reason) {

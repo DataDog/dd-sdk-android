@@ -275,9 +275,10 @@ data class RumConfiguration internal constructor(
          * Sets a custom identifier for the last interaction in the previous view used to compute the time from
          * the last interaction to the next view metric.
          * By default, the SDK uses a [TimeBasedInteractionIdentifier] with a threshold of 3000ms.
-         * @param lastInteractionIdentifier the [LastInteractionIdentifier] to use.
+         * @param lastInteractionIdentifier the [LastInteractionIdentifier] to use. Setting this property to
+         * null will disable the Interaction to Next View metric.
          */
-        fun setLastInteractionIdentifier(lastInteractionIdentifier: LastInteractionIdentifier): Builder {
+        fun setLastInteractionIdentifier(lastInteractionIdentifier: LastInteractionIdentifier?): Builder {
             rumConfig = rumConfig.copy(lastInteractionIdentifier = lastInteractionIdentifier)
             return this
         }

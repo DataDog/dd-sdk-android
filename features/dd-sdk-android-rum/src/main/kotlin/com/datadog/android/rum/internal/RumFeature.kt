@@ -135,7 +135,7 @@ internal class RumFeature(
     internal var anrDetectorRunnable: ANRDetectorRunnable? = null
     internal lateinit var appContext: Context
     internal var initialResourceIdentifier: InitialResourceIdentifier = NoOpInitialResourceIdentifier()
-    internal var lastInteractionIdentifier: LastInteractionIdentifier = NoOpLastInteractionIdentifier()
+    internal var lastInteractionIdentifier: LastInteractionIdentifier? = NoOpLastInteractionIdentifier()
 
     private val lateCrashEventHandler by lazy { lateCrashReporterFactory(sdkCore as InternalSdkCore) }
 
@@ -544,7 +544,7 @@ internal class RumFeature(
         val vitalsMonitorUpdateFrequency: VitalsUpdateFrequency,
         val sessionListener: RumSessionListener,
         val initialResourceIdentifier: InitialResourceIdentifier,
-        val lastInteractionIdentifier: LastInteractionIdentifier,
+        val lastInteractionIdentifier: LastInteractionIdentifier?,
         val additionalConfig: Map<String, Any>,
         val trackAnonymousUser: Boolean
     )

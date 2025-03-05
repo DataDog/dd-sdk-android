@@ -42,6 +42,10 @@ class _RumInternalProxy internal constructor(private val rumMonitor: AdvancedRum
         rumMonitor.updatePerformanceMetric(metric, value)
     }
 
+    fun setInternalViewAttribute(key: String, value: Any?) {
+        rumMonitor.setInternalViewAttribute(key, value)
+    }
+
     @Suppress("MemberVisibilityCanBePrivate")
     fun setSyntheticsAttribute(testId: String?, resultId: String?) {
         if (this.handledSyntheticsAttribute) {

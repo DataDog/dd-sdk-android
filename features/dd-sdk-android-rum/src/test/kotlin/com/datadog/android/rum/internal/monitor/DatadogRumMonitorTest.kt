@@ -1974,6 +1974,29 @@ internal class DatadogRumMonitorTest {
     }
 
     @Test
+    fun `M delegate internal view attributes W setInternalViewAttribute()`(
+        forge: Forge
+    ) {
+        // Given
+        val key = forge.aString()
+        val value = forge.anInt()
+
+        // When
+        testedMonitor.setInternalViewAttribute(key, value)
+        Thread.sleep(PROCESSING_DELAY)
+
+        // Then
+        argumentCaptor<RumRawEvent.SetInternalViewAttribute> {
+            verify(mockScope).handleEvent(
+                capture(),
+                eq(mockWriter)
+            )
+            assertThat(lastValue.key).isEqualTo(key)
+            assertThat(lastValue.value).isEqualTo(value)
+        }
+    }
+
+    @Test
     fun `M handle synthetics test attributes W setSyntheticsTestAttribute()`(
         @StringForgery fakeTestId: String,
         @StringForgery fakeResultId: String

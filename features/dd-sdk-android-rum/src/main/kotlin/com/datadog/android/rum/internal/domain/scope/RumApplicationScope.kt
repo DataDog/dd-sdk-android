@@ -37,7 +37,7 @@ internal class RumApplicationScope(
     private val sessionEndedMetricDispatcher: SessionMetricDispatcher,
     private val sessionListener: RumSessionListener?,
     internal val initialResourceIdentifier: InitialResourceIdentifier,
-    internal val lastInteractionIdentifier: LastInteractionIdentifier
+    internal val lastInteractionIdentifier: LastInteractionIdentifier?
 ) : RumScope, RumViewChangedListener {
 
     private var rumContext = RumContext(applicationId = applicationId)

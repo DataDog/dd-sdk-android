@@ -161,6 +161,7 @@ internal class ViewEndedMetricDispatcherTest {
     fun `M return valid string W toAttributeValue(ViewInitializationMetricsConfig)`() {
         toExhaustiveMap(ViewInitializationMetricsConfig::class.java) {
             when (it) {
+                ViewInitializationMetricsConfig.DISABLED -> "disabled"
                 ViewInitializationMetricsConfig.CUSTOM -> "custom"
                 ViewInitializationMetricsConfig.TIME_BASED_CUSTOM -> "time_based_custom"
                 ViewInitializationMetricsConfig.TIME_BASED_DEFAULT -> "time_based_default"
@@ -182,6 +183,7 @@ internal class ViewEndedMetricDispatcherTest {
                 NoValueReason.InteractionToNextView.NO_ACTION -> "no_action"
                 NoValueReason.InteractionToNextView.NO_PREVIOUS_VIEW -> "no_previous_view"
                 NoValueReason.InteractionToNextView.NO_ELIGIBLE_ACTION -> "no_eligible_action"
+                NoValueReason.InteractionToNextView.DISABLED -> "disabled"
             }
         }.forEach { (noValueReason, expectedValue) ->
             // When

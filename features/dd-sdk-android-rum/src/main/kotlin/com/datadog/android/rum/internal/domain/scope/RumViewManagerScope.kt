@@ -45,7 +45,7 @@ internal class RumViewManagerScope(
     internal var applicationDisplayed: Boolean,
     internal val sampleRate: Float,
     internal val initialResourceIdentifier: InitialResourceIdentifier,
-    lastInteractionIdentifier: LastInteractionIdentifier
+    lastInteractionIdentifier: LastInteractionIdentifier?
 ) : RumScope {
 
     private val interactionToNextViewMetricResolver: InteractionToNextViewMetricResolver =

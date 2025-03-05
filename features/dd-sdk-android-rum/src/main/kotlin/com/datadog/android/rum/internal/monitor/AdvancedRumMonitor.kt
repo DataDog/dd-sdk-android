@@ -48,5 +48,7 @@ internal interface AdvancedRumMonitor : RumMonitor, AdvancedNetworkRumMonitor {
 
     fun updatePerformanceMetric(metric: RumPerformanceMetric, value: Double)
 
+    fun setInternalViewAttribute(key: String, value: Any?)
+
     fun setSyntheticsAttribute(testId: String, resultId: String)
 }

@@ -26,6 +26,7 @@ import com.datadog.android.rum.internal.FeaturesContextResolver
 import com.datadog.android.rum.internal.anr.ANRException
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
+import com.datadog.android.rum.internal.metric.NoValueReason
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
 import com.datadog.android.rum.internal.metric.ViewEndedMetricDispatcher
 import com.datadog.android.rum.internal.metric.ViewMetricDispatcher
@@ -76,6 +77,7 @@ internal open class RumViewScope(
 
     internal val eventAttributes: MutableMap<String, Any?> = initialAttributes.toMutableMap()
     private var globalAttributes: Map<String, Any?> = resolveGlobalAttributes(sdkCore)
+    private val internalAttributes: MutableMap<String, Any?> = mutableMapOf()
 
     private var sessionId: String = parentScope.getRumContext().sessionId
     internal var viewId: String = UUID.randomUUID().toString()
@@ -200,6 +202,7 @@ internal open class RumViewScope(
             is RumRawEvent.StartResource -> onStartResource(event, writer)
             is RumRawEvent.AddError -> onAddError(event, writer)
             is RumRawEvent.AddLongTask -> onAddLongTask(event, writer)
+            is RumRawEvent.SetInternalViewAttribute -> onSetInternalViewAttribute(event)
 
             is RumRawEvent.AddFeatureFlagEvaluation -> onAddFeatureFlagEvaluation(event, writer)
             is RumRawEvent.AddFeatureFlagEvaluations -> onAddFeatureFlagEvaluations(event, writer)
@@ -618,6 +621,13 @@ internal open class RumViewScope(
     }
 
     @WorkerThread
+    private fun onSetInternalViewAttribute(event: RumRawEvent.SetInternalViewAttribute) {
+        if (stopped) return
+
+        internalAttributes[event.key] = event.value
+    }
+
+    @WorkerThread
     private fun onStopSession(event: RumRawEvent.StopSession, writer: DataWriter<Any>) {
         stopScope(event, writer)
     }
@@ -842,7 +852,13 @@ internal open class RumViewScope(
     private fun sendViewUpdate(event: RumRawEvent, writer: DataWriter<Any>, eventType: EventType = EventType.DEFAULT) {
         val viewComplete = isViewComplete()
         val timeToSettled = networkSettledMetricResolver.resolveMetric()
-        val interactionToNextViewTime = interactionToNextViewMetricResolver.resolveMetric(viewId)
+        var interactionToNextViewTime = interactionToNextViewMetricResolver.resolveMetric(viewId)
+        val invMetricResolverState = interactionToNextViewMetricResolver.getState(viewId)
+        if (interactionToNextViewTime == null &&
+            invMetricResolverState.noValueReason == NoValueReason.InteractionToNextView.DISABLED
+        ) {
+            interactionToNextViewTime = (internalAttributes[RumAttributes.CUSTOM_INV_VALUE] as? Long)
+        }
         version++
 
         // make a local copy, so that closure captures the state as of now
@@ -886,6 +902,15 @@ internal open class RumViewScope(
                 networkSettledMetricResolver.getState()
             )
         }
+
+        val performance = (internalAttributes[RumAttributes.FLUTTER_FIRST_BUILD_COMPLETE] as? Long)?.let {
+            ViewEvent.Performance(
+                fbc = ViewEvent.Fbc(
+                    timestamp = it
+                )
+            )
+        }
+
         sdkCore.newRumEventWriteOperation(writer, eventType) { datadogContext ->
             val currentViewId = rumContext.viewId.orEmpty()
             val user = datadogContext.userInfo
@@ -949,6 +974,7 @@ internal open class RumViewScope(
                     flutterBuildTime = eventFlutterBuildTime,
                     flutterRasterTime = eventFlutterRasterTime,
                     jsRefreshRate = eventJsRefreshRate,
+                    performance = performance,
                     networkSettledTime = timeToSettled,
                     interactionToNextViewTime = interactionToNextViewTime,
                     loadingTime = viewLoadingTime
