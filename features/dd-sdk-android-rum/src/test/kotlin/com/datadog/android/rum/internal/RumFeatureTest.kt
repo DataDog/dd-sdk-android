@@ -545,13 +545,14 @@ internal class RumFeatureTest {
             fakeConfiguration,
             lateCrashReporterFactory = { mockLateCrashReporter }
         )
-        testedFeature.jankStatsActivityLifecycleListener = mock()
+        val mockJankStatsActivityLifecycleListener = mock<JankStatsActivityLifecycleListener>()
+        testedFeature.jankStatsActivityLifecycleListener = mockJankStatsActivityLifecycleListener
 
         // When
         testedFeature.enableJankStatsTracking(activity)
 
         // Then
-        verify(testedFeature.jankStatsActivityLifecycleListener)!!.onActivityStarted(activity)
+        verify(mockJankStatsActivityLifecycleListener).onActivityStarted(activity)
     }
 
     @Test

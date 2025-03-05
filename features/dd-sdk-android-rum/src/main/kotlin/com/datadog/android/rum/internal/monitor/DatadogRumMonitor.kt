@@ -646,13 +646,9 @@ internal class DatadogRumMonitor(
     }
 
     override fun enableJankStatsTracking(activity: Activity) {
-        val rumFeatureScope = sdkCore.getFeature(Feature.RUM_FEATURE_NAME)
+        sdkCore.getFeature(Feature.RUM_FEATURE_NAME)
             ?.unwrap<RumFeature>()
-        if (rumFeatureScope == null) {
-            return
-        }
-
-        rumFeatureScope.enableJankStatsTracking(activity)
+            ?.enableJankStatsTracking(activity)
     }
 
     // endregion

@@ -134,7 +134,7 @@ internal class JankStatsActivityLifecycleListenerTest {
         testedJankListener.onActivityStarted(mockActivity)
 
         // Then
-        assertThat(testedJankListener.activeActivities[mockWindow]?.size).isEqualTo(1)
+        assertThat(testedJankListener.activeActivities[mockWindow]).hasSize(1)
     }
 
     @Test

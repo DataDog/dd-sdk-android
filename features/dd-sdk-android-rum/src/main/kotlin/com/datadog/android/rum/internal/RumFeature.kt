@@ -387,6 +387,7 @@ internal class RumFeature(
      */
     internal fun enableJankStatsTracking(activity: Activity) {
         try {
+            @Suppress("UnsafeThirdPartyFunctionCall")
             jankStatsActivityLifecycleListener?.onActivityStarted(activity)
         } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
             sdkCore.internalLogger.log(
