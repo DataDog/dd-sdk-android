@@ -128,6 +128,16 @@ internal class JankStatsActivityLifecycleListenerTest {
     }
 
     @Test
+    fun `M not track same activity twice W onActivityStarted {}`() {
+        // When
+        testedJankListener.onActivityStarted(mockActivity)
+        testedJankListener.onActivityStarted(mockActivity)
+
+        // Then
+        assertThat(testedJankListener.activeActivities[mockWindow]?.size).isEqualTo(1)
+    }
+
+    @Test
     fun `M register jankStats once W onActivityStarted() { multiple activities, same window}`() {
         // Given
         val mockActivity2 = mock<Activity>()

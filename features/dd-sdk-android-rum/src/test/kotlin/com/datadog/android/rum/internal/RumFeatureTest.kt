@@ -6,6 +6,7 @@
 
 package com.datadog.android.rum.internal
 
+import android.app.Activity
 import android.app.ActivityManager
 import android.app.Application
 import android.app.ApplicationExitInfo
@@ -532,6 +533,25 @@ internal class RumFeatureTest {
             .isInstanceOf(NoOpScheduledExecutorService::class.java)
         assertThat(testedFeature.jankStatsActivityLifecycleListener)
             .isNull()
+    }
+
+    @Test
+    fun `M call onActivityStarted W enableJankStatsTracking()`() {
+        // Given
+        val activity: Activity = mock()
+        testedFeature = RumFeature(
+            mockSdkCore,
+            fakeApplicationId.toString(),
+            fakeConfiguration,
+            lateCrashReporterFactory = { mockLateCrashReporter }
+        )
+        testedFeature.jankStatsActivityLifecycleListener = mock()
+
+        // When
+        testedFeature.enableJankStatsTracking(activity)
+
+        // Then
+        verify(testedFeature.jankStatsActivityLifecycleListener)!!.onActivityStarted(activity)
     }
 
     @Test
