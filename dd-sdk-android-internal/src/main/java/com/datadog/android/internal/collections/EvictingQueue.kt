@@ -81,6 +81,23 @@ class EvictingQueue<T>(
     }
 
     /**
+     * Adds the specified [element] to the end of this queue.
+     *
+     * If the queue has reached its maximum capacity, the first (oldest) element is evicted (removed)
+     * before the new element is added.
+     *
+     * @param element the element to be added.
+     * @return `true` if this collection changed as a result of the call
+     */
+    override fun offer(element: T): Boolean {
+        if (maxSize == 0) return false
+        if (size >= maxSize) {
+            delegate.poll()
+        }
+        return delegate.offer(element)
+    }
+
+    /**
      * Adds all of the elements in the specified [elements] collection to the end of this queue.
      *
      * If the number of elements in [elements] is greater than or equal to [maxSize], the queue is cleared first,
