@@ -66,10 +66,13 @@ object Rum {
             return
         }
 
+        val sessionEndedMetricDispatcher = SessionEndedMetricDispatcher(internalLogger = sdkCore.internalLogger)
+
         val rumFeature = RumFeature(
             sdkCore = sdkCore,
             applicationId = rumConfiguration.applicationId,
-            configuration = rumConfiguration.featureConfiguration
+            configuration = rumConfiguration.featureConfiguration,
+            sessionEndedMetricDispatcher = sessionEndedMetricDispatcher
         )
 
         sdkCore.registerFeature(rumFeature)
@@ -80,7 +83,7 @@ object Rum {
             )
         }
 
-        val rumMonitor = createMonitor(sdkCore, rumFeature)
+        val rumMonitor = createMonitor(sdkCore, rumFeature, sessionEndedMetricDispatcher)
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             // small hack: we need to read last RUM view event file, but we don't want to do on the
@@ -107,9 +110,9 @@ object Rum {
 
     private fun createMonitor(
         sdkCore: InternalSdkCore,
-        rumFeature: RumFeature
+        rumFeature: RumFeature,
+        sessionEndedMetricDispatcher: SessionEndedMetricDispatcher
     ): DatadogRumMonitor {
-        val sessionEndedMetricDispatcher = SessionEndedMetricDispatcher(internalLogger = sdkCore.internalLogger)
         return DatadogRumMonitor(
             applicationId = rumFeature.applicationId,
             sdkCore = sdkCore,

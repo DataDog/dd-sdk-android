@@ -6,6 +6,7 @@
 
 package com.datadog.android.core.internal.data.upload
 
+import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.core.configuration.UploadSchedulerStrategy
 import com.datadog.android.core.internal.configuration.DataUploadConfiguration
 import com.datadog.android.utils.forge.Configurator
@@ -41,6 +42,9 @@ internal class DataUploadSchedulerTest {
     @Mock
     lateinit var mockExecutor: ScheduledThreadPoolExecutor
 
+    @Mock
+    lateinit var mockFeatureSdkCore: FeatureSdkCore
+
     @Forgery
     lateinit var fakeUploadConfiguration: DataUploadConfiguration
 
@@ -56,6 +60,7 @@ internal class DataUploadSchedulerTest {
     @BeforeEach
     fun `set up`() {
         testedScheduler = DataUploadScheduler(
+            featureSdkCore = mockFeatureSdkCore,
             featureName = fakeFeatureName,
             storage = mock(),
             dataUploader = mock(),

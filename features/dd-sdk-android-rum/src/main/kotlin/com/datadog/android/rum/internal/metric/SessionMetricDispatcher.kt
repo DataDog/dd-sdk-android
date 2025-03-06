@@ -6,6 +6,7 @@
 
 package com.datadog.android.rum.internal.metric
 
+import com.datadog.android.internal.telemetry.UploadQualityEvent
 import com.datadog.android.rum.internal.domain.scope.RumSessionScope
 import com.datadog.android.rum.model.ViewEvent
 import com.datadog.tools.annotation.NoOpImplementation
@@ -55,4 +56,9 @@ internal interface SessionMetricDispatcher {
      * Called when skipped frame is tracked by this session metric.
      */
     fun onSessionReplaySkippedFrameTracked(sessionId: String)
+
+    /**
+     * Called when an upload quality metric is received.
+     */
+    fun onUploadQualityEventReceived(sessionId: String, event: UploadQualityEvent)
 }

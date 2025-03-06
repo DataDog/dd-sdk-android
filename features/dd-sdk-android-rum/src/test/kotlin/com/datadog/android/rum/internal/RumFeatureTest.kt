@@ -27,6 +27,7 @@ import com.datadog.android.rum.assertj.RumFeatureAssert
 import com.datadog.android.rum.configuration.VitalsUpdateFrequency
 import com.datadog.android.rum.internal.domain.RumDataWriter
 import com.datadog.android.rum.internal.domain.event.RumEventMapper
+import com.datadog.android.rum.internal.metric.SessionEndedMetricDispatcher
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.internal.monitor.NoOpAdvancedRumMonitor
 import com.datadog.android.rum.internal.thread.NoOpScheduledExecutorService
@@ -123,6 +124,9 @@ internal class RumFeatureTest {
     lateinit var mockInternalLogger: InternalLogger
 
     @Mock
+    lateinit var mockSessionEndedMetricDispatcher: SessionEndedMetricDispatcher
+
+    @Mock
     lateinit var mockLateCrashReporter: LateCrashReporter
 
     @Mock
@@ -134,9 +138,10 @@ internal class RumFeatureTest {
         whenever(mockSdkCore.createScheduledExecutorService(any())) doReturn mockScheduledExecutorService
 
         testedFeature = RumFeature(
-            mockSdkCore,
-            fakeApplicationId.toString(),
-            fakeConfiguration,
+            sdkCore = mockSdkCore,
+            applicationId = fakeApplicationId.toString(),
+            configuration = fakeConfiguration,
+            sessionEndedMetricDispatcher = mockSessionEndedMetricDispatcher,
             lateCrashReporterFactory = { mockLateCrashReporter }
         )
         GlobalRumMonitor.registerIfAbsent(mockRumMonitor, mockSdkCore)
@@ -212,9 +217,10 @@ internal class RumFeatureTest {
         fakeConfiguration =
             fakeConfiguration.copy(viewTrackingStrategy = mockViewTrackingStrategy)
         testedFeature = RumFeature(
-            mockSdkCore,
-            fakeApplicationId.toString(),
-            fakeConfiguration,
+            sdkCore = mockSdkCore,
+            applicationId = fakeApplicationId.toString(),
+            configuration = fakeConfiguration,
+            sessionEndedMetricDispatcher = mockSessionEndedMetricDispatcher,
             lateCrashReporterFactory = { mockLateCrashReporter }
         )
 
@@ -232,9 +238,10 @@ internal class RumFeatureTest {
         fakeConfiguration =
             fakeConfiguration.copy(userActionTracking = false)
         testedFeature = RumFeature(
-            mockSdkCore,
-            fakeApplicationId.toString(),
-            fakeConfiguration,
+            sdkCore = mockSdkCore,
+            applicationId = fakeApplicationId.toString(),
+            configuration = fakeConfiguration,
+            sessionEndedMetricDispatcher = mockSessionEndedMetricDispatcher,
             lateCrashReporterFactory = { mockLateCrashReporter }
         )
 
@@ -259,9 +266,10 @@ internal class RumFeatureTest {
             touchTargetExtraAttributesProviders = mockProviders.toList()
         )
         testedFeature = RumFeature(
-            mockSdkCore,
-            fakeApplicationId.toString(),
-            fakeConfiguration,
+            sdkCore = mockSdkCore,
+            applicationId = fakeApplicationId.toString(),
+            configuration = fakeConfiguration,
+            sessionEndedMetricDispatcher = mockSessionEndedMetricDispatcher,
             lateCrashReporterFactory = { mockLateCrashReporter }
         )
 
@@ -281,9 +289,10 @@ internal class RumFeatureTest {
             userActionTracking = true
         )
         testedFeature = RumFeature(
-            mockSdkCore,
-            fakeApplicationId.toString(),
-            fakeConfiguration,
+            sdkCore = mockSdkCore,
+            applicationId = fakeApplicationId.toString(),
+            configuration = fakeConfiguration,
+            sessionEndedMetricDispatcher = mockSessionEndedMetricDispatcher,
             lateCrashReporterFactory = { mockLateCrashReporter }
         )
 
@@ -305,9 +314,10 @@ internal class RumFeatureTest {
             interactionPredicate = mockInteractionPredicate
         )
         testedFeature = RumFeature(
-            mockSdkCore,
-            fakeApplicationId.toString(),
-            fakeConfiguration,
+            sdkCore = mockSdkCore,
+            applicationId = fakeApplicationId.toString(),
+            configuration = fakeConfiguration,
+            sessionEndedMetricDispatcher = mockSessionEndedMetricDispatcher,
             lateCrashReporterFactory = { mockLateCrashReporter }
         )
 
@@ -328,9 +338,10 @@ internal class RumFeatureTest {
             interactionPredicate = NoOpInteractionPredicate()
         )
         testedFeature = RumFeature(
-            mockSdkCore,
-            fakeApplicationId.toString(),
-            fakeConfiguration,
+            sdkCore = mockSdkCore,
+            applicationId = fakeApplicationId.toString(),
+            configuration = fakeConfiguration,
+            sessionEndedMetricDispatcher = mockSessionEndedMetricDispatcher,
             lateCrashReporterFactory = { mockLateCrashReporter }
         )
 
@@ -357,9 +368,10 @@ internal class RumFeatureTest {
             touchTargetExtraAttributesProviders = mockProviders.toList()
         )
         testedFeature = RumFeature(
-            mockSdkCore,
-            fakeApplicationId.toString(),
-            fakeConfiguration,
+            sdkCore = mockSdkCore,
+            applicationId = fakeApplicationId.toString(),
+            configuration = fakeConfiguration,
+            sessionEndedMetricDispatcher = mockSessionEndedMetricDispatcher,
             lateCrashReporterFactory = { mockLateCrashReporter }
         )
 
@@ -388,9 +400,10 @@ internal class RumFeatureTest {
     fun `M use noop viewTrackingStrategy W initialize()`() {
         // Given
         testedFeature = RumFeature(
-            mockSdkCore,
-            fakeApplicationId.toString(),
-            fakeConfiguration.copy(viewTrackingStrategy = null),
+            sdkCore = mockSdkCore,
+            applicationId = fakeApplicationId.toString(),
+            configuration = fakeConfiguration.copy(viewTrackingStrategy = null),
+            sessionEndedMetricDispatcher = mockSessionEndedMetricDispatcher,
             lateCrashReporterFactory = { mockLateCrashReporter }
         )
 
@@ -407,9 +420,10 @@ internal class RumFeatureTest {
         // Given
         fakeConfiguration = fakeConfiguration.copy(userActionTracking = false)
         testedFeature = RumFeature(
-            mockSdkCore,
-            fakeApplicationId.toString(),
-            fakeConfiguration,
+            sdkCore = mockSdkCore,
+            applicationId = fakeApplicationId.toString(),
+            configuration = fakeConfiguration,
+            sessionEndedMetricDispatcher = mockSessionEndedMetricDispatcher,
             lateCrashReporterFactory = { mockLateCrashReporter }
         )
 
@@ -426,9 +440,10 @@ internal class RumFeatureTest {
         // Given
         fakeConfiguration = fakeConfiguration.copy(longTaskTrackingStrategy = null)
         testedFeature = RumFeature(
-            mockSdkCore,
-            fakeApplicationId.toString(),
-            fakeConfiguration,
+            sdkCore = mockSdkCore,
+            applicationId = fakeApplicationId.toString(),
+            configuration = fakeConfiguration,
+            sessionEndedMetricDispatcher = mockSessionEndedMetricDispatcher,
             lateCrashReporterFactory = { mockLateCrashReporter }
         )
 
@@ -444,9 +459,10 @@ internal class RumFeatureTest {
     fun `M store eventMapper W initialize()`() {
         // Given
         testedFeature = RumFeature(
-            mockSdkCore,
-            fakeApplicationId.toString(),
-            fakeConfiguration,
+            sdkCore = mockSdkCore,
+            applicationId = fakeApplicationId.toString(),
+            configuration = fakeConfiguration,
+            sessionEndedMetricDispatcher = mockSessionEndedMetricDispatcher,
             lateCrashReporterFactory = { mockLateCrashReporter }
         )
 
@@ -483,9 +499,10 @@ internal class RumFeatureTest {
         // Given
         fakeConfiguration = fakeConfiguration.copy(vitalsMonitorUpdateFrequency = fakeFrequency)
         testedFeature = RumFeature(
-            mockSdkCore,
-            fakeApplicationId.toString(),
-            fakeConfiguration,
+            sdkCore = mockSdkCore,
+            applicationId = fakeApplicationId.toString(),
+            configuration = fakeConfiguration,
+            sessionEndedMetricDispatcher = mockSessionEndedMetricDispatcher,
             lateCrashReporterFactory = { mockLateCrashReporter }
         )
 
@@ -513,9 +530,10 @@ internal class RumFeatureTest {
             vitalsMonitorUpdateFrequency = VitalsUpdateFrequency.NEVER
         )
         testedFeature = RumFeature(
-            mockSdkCore,
-            fakeApplicationId.toString(),
-            fakeConfiguration,
+            sdkCore = mockSdkCore,
+            applicationId = fakeApplicationId.toString(),
+            configuration = fakeConfiguration,
+            sessionEndedMetricDispatcher = mockSessionEndedMetricDispatcher,
             lateCrashReporterFactory = { mockLateCrashReporter }
         )
 
@@ -637,9 +655,10 @@ internal class RumFeatureTest {
             vitalsMonitorUpdateFrequency = fakeFrequency
         )
         testedFeature = RumFeature(
-            mockSdkCore,
-            fakeApplicationId.toString(),
-            fakeConfiguration,
+            sdkCore = mockSdkCore,
+            applicationId = fakeApplicationId.toString(),
+            configuration = fakeConfiguration,
+            sessionEndedMetricDispatcher = mockSessionEndedMetricDispatcher,
             lateCrashReporterFactory = { mockLateCrashReporter }
         )
 
@@ -666,9 +685,10 @@ internal class RumFeatureTest {
             vitalsMonitorUpdateFrequency = VitalsUpdateFrequency.NEVER
         )
         testedFeature = RumFeature(
-            mockSdkCore,
-            fakeApplicationId.toString(),
-            fakeConfiguration,
+            sdkCore = mockSdkCore,
+            applicationId = fakeApplicationId.toString(),
+            configuration = fakeConfiguration,
+            sessionEndedMetricDispatcher = mockSessionEndedMetricDispatcher,
             lateCrashReporterFactory = { mockLateCrashReporter }
         )
 
@@ -687,9 +707,10 @@ internal class RumFeatureTest {
             trackNonFatalAnrs = true
         )
         testedFeature = RumFeature(
-            mockSdkCore,
-            fakeApplicationId.toString(),
-            fakeConfiguration,
+            sdkCore = mockSdkCore,
+            applicationId = fakeApplicationId.toString(),
+            configuration = fakeConfiguration,
+            sessionEndedMetricDispatcher = mockSessionEndedMetricDispatcher,
             lateCrashReporterFactory = { mockLateCrashReporter }
         )
 
@@ -708,9 +729,10 @@ internal class RumFeatureTest {
             trackNonFatalAnrs = false
         )
         testedFeature = RumFeature(
-            mockSdkCore,
-            fakeApplicationId.toString(),
-            fakeConfiguration,
+            sdkCore = mockSdkCore,
+            applicationId = fakeApplicationId.toString(),
+            configuration = fakeConfiguration,
+            sessionEndedMetricDispatcher = mockSessionEndedMetricDispatcher,
             lateCrashReporterFactory = { mockLateCrashReporter }
         )
 

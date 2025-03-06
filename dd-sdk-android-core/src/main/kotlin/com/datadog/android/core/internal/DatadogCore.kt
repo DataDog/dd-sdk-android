@@ -128,9 +128,10 @@ internal class DatadogCore(
     /** @inheritDoc */
     override fun registerFeature(feature: Feature) {
         val sdkFeature = SdkFeature(
-            coreFeature,
-            feature,
-            internalLogger
+            featureSdkCore = this,
+            coreFeature = coreFeature,
+            wrappedFeature = feature,
+            internalLogger = internalLogger
         )
         features[feature.name] = sdkFeature
         sdkFeature.initialize(context, instanceId)

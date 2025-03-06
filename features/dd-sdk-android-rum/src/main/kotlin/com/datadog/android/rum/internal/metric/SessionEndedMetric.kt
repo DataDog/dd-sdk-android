@@ -7,6 +7,8 @@
 package com.datadog.android.rum.internal.metric
 
 import com.datadog.android.core.metrics.PerformanceMetric
+import com.datadog.android.internal.telemetry.UploadQualityCategories
+import com.datadog.android.internal.telemetry.UploadQualityEvent
 import com.datadog.android.rum.internal.domain.scope.RumRawEvent
 import com.datadog.android.rum.internal.domain.scope.RumSessionScope
 import com.datadog.android.rum.internal.domain.scope.RumViewManagerScope
@@ -36,6 +38,8 @@ internal class SessionEndedMetric(
     private var firstTrackedView: TrackedView? = null
     private var lastTrackedView: TrackedView? = null
     private var wasStopped: Boolean = false
+
+    private var uploadQuality: MutableMap<String, MutableMap<UploadQualityMetric, Any?>> = mutableMapOf()
 
     /**
      * Called on view tracked event, return true if the view is recorded by the metric, false otherwise.
@@ -72,6 +76,43 @@ internal class SessionEndedMetric(
         missedEventCountByType[missedEventType] = (missedEventCountByType[missedEventType] ?: 0) + 1
     }
 
+    fun onUploadQualityTracked(event: UploadQualityEvent) {
+        val track = uploadQuality.getOrPut(event.track) {
+            mutableMapOf<UploadQualityMetric, Any?>().apply {
+                put(UploadQualityMetric.CYCLE_COUNT_KEY, 0)
+                put(UploadQualityMetric.FAILURE_COUNT_KEY, mutableMapOf<String, Int>())
+                put(UploadQualityMetric.BLOCKERS_COUNT_KEY, mutableMapOf<String, Int>())
+            }
+        }
+
+        @Suppress("UNCHECKED_CAST")
+        val failures = track[UploadQualityMetric.FAILURE_COUNT_KEY] as MutableMap<String, Int>
+
+        @Suppress("UNCHECKED_CAST")
+        val blockers = track[UploadQualityMetric.BLOCKERS_COUNT_KEY] as MutableMap<String, Int>
+
+        when (event.category) {
+            UploadQualityCategories.FAILURE -> {
+                event.specificType?.let { type ->
+                    failures[type] = (failures[type] ?: 0) + 1
+                }
+            }
+            UploadQualityCategories.BLOCKER -> {
+                event.specificType?.let { type ->
+                    blockers[type] = (blockers[type] ?: 0) + 1
+                    failures[UploadQualityMetric.BLOCKER_KEY.key] =
+                        (failures[UploadQualityMetric.BLOCKER_KEY.key] ?: 0) + 1
+                }
+            }
+            UploadQualityCategories.COUNT -> {
+                val cycleCount = (track[UploadQualityMetric.CYCLE_COUNT_KEY] as? Int ?: 0) + 1
+                track[UploadQualityMetric.CYCLE_COUNT_KEY] = cycleCount
+            }
+        }
+
+        uploadQuality[event.track] = track
+    }
+
     fun onSessionReplaySkippedFrameTracked() {
         sessionReplaySkippedFramesCount.incrementAndGet()
     }
@@ -102,8 +143,15 @@ internal class SessionEndedMetric(
             NO_VIEW_EVENTS_COUNT_KEY to resolveNoViewCountsAttributes(),
             HAS_BACKGROUND_EVENTS_TRACKING_ENABLED_KEY to hasTrackBackgroundEventsEnabled,
             NTP_OFFSET_KEY to resolveNtpOffsetAttributes(ntpOffsetAtEnd),
-            SESSION_REPLAY_SKIPPED_FRAMES_COUNT to sessionReplaySkippedFramesCount.get()
+            SESSION_REPLAY_SKIPPED_FRAMES_COUNT to sessionReplaySkippedFramesCount.get(),
+            UploadQualityMetric.UPLOAD_METRIC_KEY.key to resolveUploadQualityMetrics()
         )
+    }
+
+    private fun resolveUploadQualityMetrics(): Map<String, Any> {
+        return uploadQuality.mapValues { (_, subMap) ->
+            subMap.mapKeys { (rawMetric, _) -> rawMetric.key }
+        }
     }
 
     private fun resolveNoViewCountsAttributes(): Map<String, Int> {
