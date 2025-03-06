@@ -8,6 +8,7 @@ ANALYSIS=0
 COMPILE=0
 TEST=0
 UPDATE_SESSION_REPLAY_PAYLOAD=0
+KTLINT_VERSION=0.50.0
 
 export CI=true
 
@@ -56,17 +57,34 @@ if [[ $SETUP == 1 ]]; then
   echo "-- SETUP"
 
   echo "---- Install KtLint"
+  INSTALL_KTLINT=false
   if [[ -x "$(command -v ktlint)" ]]; then
-      echo "  KtLint already installed; version $(ktlint --version)"
-  else
-    curl -SLO https://github.com/pinterest/ktlint/releases/download/0.50.0/ktlint && chmod a+x ktlint
+      INSTALLED_KTLINT=`ktlint --version`
+      echo "  KtLint already installed; version $INSTALLED_KTLINT"
+      if [[ $INSTALLED_KTLINT != $KTLINT_VERSION ]]; then
+        echo "  Upgrading to version $KTLINT_VERSION"
+        INSTALL_KTLINT=true
+      fi
+  fi
+
+  if [[ $INSTALL_KTLINT = true ]]; then
+    curl -SLO https://github.com/pinterest/ktlint/releases/download/$KTLINT_VERSION/ktlint && chmod a+x ktlint
     sudo mv ktlint /usr/local/bin/
     echo "  KtLint installed; version $(ktlint --version)"
   fi
 
+
+
   echo "---- Install Detekt"
   if [[ -x "$(command -v detekt)" ]]; then
       echo "  Detekt already installed; version $(detekt --version)"
+      read -p "  Would you like to update Detekt? " -n 1 -r
+      echo
+      if [[ $REPLY =~ ^[Yy]$ ]]
+      then
+        brew upgrade detekt
+        echo "  Detekt upgraded; version $(detekt --version)"
+      fi
   else
     brew install detekt
     echo "  Detekt installed; version $(detekt --version)"
