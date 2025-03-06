@@ -16,6 +16,7 @@ import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureContextUpdateReceiver
 import com.datadog.android.api.feature.FeatureEventReceiver
 import com.datadog.android.api.feature.FeatureScope
+import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.feature.StorageBackedFeature
 import com.datadog.android.api.net.RequestFactory
 import com.datadog.android.api.storage.EventBatchWriter
@@ -63,6 +64,7 @@ import java.util.concurrent.atomic.AtomicReference
 
 @Suppress("TooManyFunctions")
 internal class SdkFeature(
+    private val featureSdkCore: FeatureSdkCore,
     internal val coreFeature: CoreFeature,
     internal val wrappedFeature: Feature,
     internal val internalLogger: InternalLogger
@@ -261,6 +263,7 @@ internal class SdkFeature(
         uploadScheduler = if (coreFeature.isMainProcess) {
             uploader = createUploader(feature.requestFactory)
             DataUploadScheduler(
+                featureSdkCore,
                 feature.name,
                 storage,
                 uploader,

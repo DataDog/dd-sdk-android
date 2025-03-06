@@ -7,6 +7,7 @@
 package com.datadog.android.rum.internal.metric
 
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.internal.telemetry.UploadQualityEvent
 import com.datadog.android.rum.internal.domain.scope.RumSessionScope
 import com.datadog.android.rum.internal.domain.scope.RumViewManagerScope
 import com.datadog.android.rum.model.ViewEvent
@@ -72,6 +73,10 @@ internal class SessionEndedMetricDispatcher(private val internalLogger: Internal
 
     override fun onSessionReplaySkippedFrameTracked(sessionId: String) {
         metricsBySessionId[sessionId]?.onSessionReplaySkippedFrameTracked()
+    }
+
+    override fun onUploadQualityEventReceived(sessionId: String, event: UploadQualityEvent) {
+        metricsBySessionId[sessionId]?.onUploadQualityTracked(event)
     }
 
     private fun buildSdkErrorTrackError(sessionId: String, errorKind: String?): String {
