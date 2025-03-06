@@ -3,12 +3,12 @@
  * This product includes software developed at Datadog (https://www.datadoghq.com/).
  * Copyright 2016-Present Datadog, Inc.
  */
-package com.datadog.android.core.collections
+package com.datadog.internal.collections
 
+import com.datadog.android.internal.collections.EvictingQueue
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
-import org.junit.jupiter.api.assertThrows
 
 internal class EvictingQueueTest {
 
@@ -21,7 +21,19 @@ internal class EvictingQueueTest {
         repeat(5) { queue.add(it) }
 
         // Then
-        assertThat(queue).isEqualTo(listOf(2, 3, 4))
+        assertThat(queue.toList()).isEqualTo(listOf(2, 3, 4))
+    }
+
+    @Test
+    fun `M shrink items W offer {more than max}`() {
+        // Given
+        val queue = EvictingQueue<Int>(3)
+
+        // When
+        repeat(5) { queue.offer(it) }
+
+        // Then
+        assertThat(queue.toList()).isEqualTo(listOf(2, 3, 4))
     }
 
     @Test
@@ -33,7 +45,19 @@ internal class EvictingQueueTest {
         repeat(2) { queue.add(it) }
 
         // Then
-        assertThat(queue).isEqualTo(listOf(0, 1))
+        assertThat(queue.toList()).isEqualTo(listOf(0, 1))
+    }
+
+    @Test
+    fun `M not shrink items W offer {less than max}`() {
+        // Given
+        val queue = EvictingQueue<Int>(3)
+
+        // When
+        repeat(2) { queue.offer(it) }
+
+        // Then
+        assertThat(queue.toList()).isEqualTo(listOf(0, 1))
     }
 
     @Test
@@ -45,7 +69,7 @@ internal class EvictingQueueTest {
         queue.addAll(listOf(1, 2))
 
         // Then
-        assertThat(queue).isEqualTo(listOf(1, 2))
+        assertThat(queue.toList()).isEqualTo(listOf(1, 2))
     }
 
     @Test
@@ -57,7 +81,7 @@ internal class EvictingQueueTest {
         queue.addAll(listOf(1, 2))
 
         // Then
-        assertThat(queue).isEqualTo(listOf(1, 2))
+        assertThat(queue.toList()).isEqualTo(listOf(1, 2))
     }
 
     @Test
@@ -69,7 +93,7 @@ internal class EvictingQueueTest {
         queue.addAll(listOf(1, 2, 3, 4))
 
         // Then
-        assertThat(queue).isEqualTo(listOf(2, 3, 4))
+        assertThat(queue.toList()).isEqualTo(listOf(2, 3, 4))
     }
 
     @Test
@@ -82,7 +106,7 @@ internal class EvictingQueueTest {
         queue.addAll(listOf(5, 6))
 
         // Then
-        assertThat(queue).isEqualTo(listOf(4, 5, 6))
+        assertThat(queue.toList()).isEqualTo(listOf(4, 5, 6))
     }
 
     @Test
@@ -95,7 +119,7 @@ internal class EvictingQueueTest {
         queue.addAll(listOf(5, 6, 7, 8))
 
         // Then
-        assertThat(queue).isEqualTo(listOf(6, 7, 8))
+        assertThat(queue.toList()).isEqualTo(listOf(6, 7, 8))
     }
 
     @Test
@@ -108,40 +132,39 @@ internal class EvictingQueueTest {
         queue.addAll(listOf(4, 5, 6))
 
         // Then
-        assertThat(queue).isEqualTo(listOf(4, 5, 6))
+        assertThat(queue.toList()).isEqualTo(listOf(4, 5, 6))
     }
 
     @Test
-    fun `M throw UnsupportedOperationException items W add by index`() {
-        // Given
-        val queue = EvictingQueue<Int>(3)
-
+    fun `M create empty queue W maxSize le 0`() {
         // When
-        assertThrows<UnsupportedOperationException> {
-            queue.add(0, 1)
-        }
+        val queue = EvictingQueue<Int>(-1)
+
+        // Then
+        assertThat(queue.size).isEqualTo(0)
     }
 
     @Test
-    fun `M throw UnsupportedOperationException items W addAll by index`() {
+    fun `M not change 0-sized queue W add`() {
         // Given
-        val queue = EvictingQueue<Int>(3)
-        queue.add(1)
+        val queue = EvictingQueue<Int>(0)
 
         // When
-        assertThrows<UnsupportedOperationException> {
-            queue.addAll(0, listOf(2))
-        }
+        assertDoesNotThrow { queue.add(1) }
+
+        // Then
+        assertThat(queue.size).isEqualTo(0)
     }
 
     @Test
-    fun `M not throw UnsupportedOperationException items W addAll by index at the end`() {
+    fun `M not change 0-sized queue W offer`() {
         // Given
-        val queue = EvictingQueue<Int>(3)
+        val queue = EvictingQueue<Int>(0)
 
         // When
-        assertDoesNotThrow {
-            queue.addAll(queue.size, listOf(2))
-        }
+        assertDoesNotThrow { queue.offer(1) }
+
+        // Then
+        assertThat(queue.size).isEqualTo(0)
     }
 }
