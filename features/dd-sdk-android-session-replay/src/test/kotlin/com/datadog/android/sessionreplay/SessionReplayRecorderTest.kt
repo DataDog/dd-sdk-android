@@ -125,7 +125,8 @@ internal class SessionReplayRecorderTest {
             recordedDataQueueHandler = mockRecordedDataQueueHandler,
             uiHandler = mockUiHandler,
             internalLogger = mockInternalLogger,
-            resourceDataStoreManager = mockDataStoreManager
+            resourceDataStoreManager = mockDataStoreManager,
+            internalCallback = NoOpSessionReplayInternalCallback()
         )
     }
 

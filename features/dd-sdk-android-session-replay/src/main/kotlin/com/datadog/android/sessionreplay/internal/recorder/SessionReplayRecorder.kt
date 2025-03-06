@@ -16,6 +16,7 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.MapperTypeWrapper
+import com.datadog.android.sessionreplay.SessionReplayInternalCallback
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.internal.LifecycleCallback
 import com.datadog.android.sessionreplay.internal.SessionReplayLifecycleCallback
@@ -71,7 +72,7 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
     private val viewOnDrawInterceptor: ViewOnDrawInterceptor
     private val internalLogger: InternalLogger
     private val resourceDataStoreManager: ResourceDataStoreManager
-
+    private val internalCallback: SessionReplayInternalCallback
     private val uiHandler: Handler
     private var shouldRecord = false
 
@@ -91,7 +92,8 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
         windowInspector: WindowInspector = WindowInspector,
         sdkCore: FeatureSdkCore,
         resourceDataStoreManager: ResourceDataStoreManager,
-        dynamicOptimizationEnabled: Boolean
+        dynamicOptimizationEnabled: Boolean,
+        internalCallback: SessionReplayInternalCallback
     ) {
         val internalLogger = sdkCore.internalLogger
         val rumContextDataHandler = RumContextDataHandler(
@@ -129,6 +131,7 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
             recordedDataQueue = ConcurrentLinkedQueue()
         )
         this.resourceDataStoreManager = resourceDataStoreManager
+        this.internalCallback = internalCallback
 
         val viewIdentifierResolver: ViewIdentifierResolver = DefaultViewIdentifierResolver
         val colorStringFormatter: ColorStringFormatter = DefaultColorStringFormatter
@@ -208,6 +211,13 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
             touchPrivacyManager
         )
         this.sessionReplayLifecycleCallback = SessionReplayLifecycleCallback(this)
+
+        // Register fragment lifecycle callbacks for clients initialized after the Application.onCreate phase
+        internalCallback.getCurrentActivity()?.let {
+            sessionReplayLifecycleCallback.setCurrentWindow(it)
+            sessionReplayLifecycleCallback.registerFragmentLifecycleCallbacks(it)
+        }
+
         this.uiHandler = Handler(Looper.getMainLooper())
         this.internalLogger = internalLogger
     }
@@ -231,7 +241,8 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
         recordedDataQueueHandler: RecordedDataQueueHandler,
         resourceDataStoreManager: ResourceDataStoreManager,
         uiHandler: Handler,
-        internalLogger: InternalLogger
+        internalLogger: InternalLogger,
+        internalCallback: SessionReplayInternalCallback
     ) {
         this.appContext = appContext
         this.rumContextProvider = rumContextProvider
@@ -250,6 +261,7 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
         this.uiHandler = uiHandler
         this.internalLogger = internalLogger
         this.resourceDataStoreManager = resourceDataStoreManager
+        this.internalCallback = internalCallback
     }
 
     override fun stopProcessingRecords() {
