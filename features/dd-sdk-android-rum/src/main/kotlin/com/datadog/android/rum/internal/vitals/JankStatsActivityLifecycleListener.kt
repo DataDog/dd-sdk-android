@@ -165,6 +165,9 @@ internal class JankStatsActivityLifecycleListener(
 
     private fun trackActivity(window: Window, activity: Activity) {
         val list = activeActivities[window] ?: mutableListOf()
+        if (list.find { it.get() == activity } != null) {
+            return
+        }
         list.add(WeakReference(activity))
         activeActivities[window] = list
     }

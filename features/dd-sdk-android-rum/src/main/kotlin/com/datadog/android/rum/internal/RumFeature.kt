@@ -6,6 +6,7 @@
 
 package com.datadog.android.rum.internal
 
+import android.app.Activity
 import android.app.ActivityManager
 import android.app.Application
 import android.app.ApplicationExitInfo
@@ -379,6 +380,25 @@ internal class RumFeature(
         }
     }
 
+    /**
+     * Enables the tracking of JankStats for the given activity. This should only be necessary for the
+     * initial activity of an application if Datadog is initialized after that activity is created.
+     * @param activity the activity to track
+     */
+    internal fun enableJankStatsTracking(activity: Activity) {
+        try {
+            @Suppress("UnsafeThirdPartyFunctionCall")
+            jankStatsActivityLifecycleListener?.onActivityStarted(activity)
+        } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+            sdkCore.internalLogger.log(
+                InternalLogger.Level.ERROR,
+                InternalLogger.Target.TELEMETRY,
+                { FAILED_TO_ENABLE_JANK_STATS_TRACKING_MANUALLY },
+                e
+            )
+        }
+    }
+
     private fun registerTrackingStrategies(appContext: Context) {
         actionTrackingStrategy.register(sdkCore, appContext)
         viewTrackingStrategy.register(sdkCore, appContext)
@@ -619,6 +639,8 @@ internal class RumFeature(
         internal const val RUM_FEATURE_NOT_YET_INITIALIZED =
             "RUM feature is not initialized yet, you need to register it with a" +
                 " SDK instance by calling SdkCore#registerFeature method."
+        internal const val FAILED_TO_ENABLE_JANK_STATS_TRACKING_MANUALLY =
+            "Manually enabling JankStats tracking threw an exception."
 
         private fun provideUserTrackingStrategy(
             touchTargetExtraAttributesProviders: Array<ViewAttributesProvider>,

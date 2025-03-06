@@ -6,6 +6,7 @@
 
 package com.datadog.android.rum.internal.monitor
 
+import android.app.Activity
 import android.app.ActivityManager
 import android.os.Handler
 import com.datadog.android.api.InternalLogger
@@ -1909,6 +1910,22 @@ internal class DatadogRumMonitorTest {
             )
             assertThat(lastValue.event).isEqualTo(fakeInternalTelemetryEvent)
         }
+    }
+
+    @Test
+    fun `M call enableJankStatsTracking on RUM feature W enableJankStatsTracking`() {
+        // Given
+        val mockActivity = mock<Activity>()
+        val mockRumScope = mock<FeatureScope>()
+        whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumScope
+        val mockRumFeature = mock<RumFeature>()
+        whenever(mockRumScope.unwrap<RumFeature>()) doReturn mockRumFeature
+
+        // When
+        testedMonitor.enableJankStatsTracking(mockActivity)
+
+        // Then
+        verify(mockRumFeature).enableJankStatsTracking(mockActivity)
     }
 
     @Test
