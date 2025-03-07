@@ -10,6 +10,7 @@ import android.app.Application
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.core.sampling.Sampler
+import com.datadog.android.sessionreplay.NoOpSessionReplayInternalCallback
 import com.datadog.android.sessionreplay.SessionReplayConfiguration
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.net.SegmentRequestFactory
@@ -142,7 +143,8 @@ internal class SessionReplayFeatureTest {
             customDrawableMappers = emptyList(),
             startRecordingImmediately = true,
             sampleRate = fakeConfiguration.sampleRate,
-            dynamicOptimizationEnabled = fakeConfiguration.dynamicOptimizationEnabled
+            dynamicOptimizationEnabled = fakeConfiguration.dynamicOptimizationEnabled,
+            internalCallback = NoOpSessionReplayInternalCallback()
         )
 
         // When
@@ -169,7 +171,8 @@ internal class SessionReplayFeatureTest {
             customDrawableMappers = emptyList(),
             sampleRate = fakeConfiguration.sampleRate,
             startRecordingImmediately = true,
-            dynamicOptimizationEnabled = fakeConfiguration.dynamicOptimizationEnabled
+            dynamicOptimizationEnabled = fakeConfiguration.dynamicOptimizationEnabled,
+            internalCallback = NoOpSessionReplayInternalCallback()
         )
 
         // When
