@@ -195,7 +195,7 @@ open class LegacyDrawableToColorMapperTest {
 
     @Test
     fun `M map StateListDrawable to the color of its current Drawable W mapDrawableToColor()`(
-        @IntForgery drawableColor: Int,
+        @IntForgery drawableColor: Int
     ) {
         // Given
         val currentStateDrawable = mock<ColorDrawable>().apply {

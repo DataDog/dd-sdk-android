@@ -17,7 +17,6 @@ import android.widget.ImageView
 import android.widget.TextView
 import androidx.annotation.DrawableRes
 import androidx.annotation.IdRes
-import androidx.annotation.LayoutRes
 import androidx.appcompat.widget.AppCompatImageButton
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
@@ -56,13 +55,13 @@ internal class ImageComponentsFragment : Fragment() {
         setupStateListButton(
             rootView = rootView,
             buttonId = R.id.button_statelist_shapes,
-            backgroundId = R.drawable.selector_statelist_shapes,
+            backgroundId = R.drawable.selector_statelist_shapes
         )
 
         setupStateListButton(
             rootView = rootView,
             buttonId = R.id.button_statelist_images,
-            backgroundId = R.drawable.selector_statelist_images,
+            backgroundId = R.drawable.selector_statelist_images
         )
 
         return rootView
@@ -146,7 +145,7 @@ internal class ImageComponentsFragment : Fragment() {
     private fun setupStateListButton(
         rootView: View,
         @IdRes buttonId: Int,
-        @DrawableRes backgroundId: Int,
+        @DrawableRes backgroundId: Int
     ) {
         val button: Button = rootView.findViewById(buttonId)
         val background = ContextCompat.getDrawable(rootView.context, backgroundId)
