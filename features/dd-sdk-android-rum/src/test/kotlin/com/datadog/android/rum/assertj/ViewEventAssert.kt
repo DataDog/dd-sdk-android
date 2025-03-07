@@ -587,6 +587,16 @@ internal class ViewEventAssert(actual: ViewEvent) :
         return this
     }
 
+    fun hasSlownessInfo(
+        slowFrames: List<ViewEvent.SlowFrame>,
+        slowFrameRate: Double,
+        freezeRate: Double
+    ): ViewEventAssert = apply {
+        assertThat(actual.view.slowFrames).isEqualTo(slowFrames)
+        assertThat(actual.view.slowFramesRate).isEqualTo(slowFrameRate)
+        assertThat(actual.view.freezeRate).isEqualTo(freezeRate)
+    }
+
     fun hasOsInfo(
         name: String,
         version: String,
@@ -619,6 +629,7 @@ internal class ViewEventAssert(actual: ViewEvent) :
             )
             .isEqualTo(hasReplay)
     }
+
     fun hasReplayStats(replayStats: ViewEvent.ReplayStats) {
         assertThat(actual.dd.replayStats)
             .overridingErrorMessage(

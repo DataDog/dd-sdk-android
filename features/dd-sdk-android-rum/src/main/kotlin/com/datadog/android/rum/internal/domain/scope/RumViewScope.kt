@@ -914,6 +914,16 @@ internal open class RumViewScope(
             )
         }
 
+        val uiSlownessReport = slowFramesListener.resolveReport(viewId)
+        val freezeRate = uiSlownessReport.anrDurationRate(stoppedNanos)
+        val slowFramesRate = uiSlownessReport.slowFramesRate(stoppedNanos)
+        val slowFrames = uiSlownessReport.slowFramesRecords.map {
+            ViewEvent.SlowFrame(
+                start = it.startTimestampNs - startedNanos,
+                duration = it.durationNs
+            )
+        }
+
         sdkCore.newRumEventWriteOperation(writer, eventType) { datadogContext ->
             val currentViewId = rumContext.viewId.orEmpty()
             val user = datadogContext.userInfo
@@ -980,7 +990,10 @@ internal open class RumViewScope(
                     performance = performance,
                     networkSettledTime = timeToSettled,
                     interactionToNextViewTime = interactionToNextViewTime,
-                    loadingTime = viewLoadingTime
+                    loadingTime = viewLoadingTime,
+                    slowFrames = slowFrames,
+                    slowFramesRate = slowFramesRate,
+                    freezeRate = freezeRate
                 ),
                 usr = if (user.hasUserData()) {
                     ViewEvent.Usr(
