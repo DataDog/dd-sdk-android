@@ -67,7 +67,7 @@ internal class DefaultSlowFramesListener(
         // all fields of ViewUIPerformanceReport atomically. onFrame is a "hot" method
         // so we can't make ViewUIPerformanceReport immutable because that will force us to
         // create tons of copies on each call which will lead to a lot of gc calls
-        synchronized(Any()) {
+        synchronized(report) {
             // Updating frames statistics
             report.totalFramesDurationNs += frameDurationNs
 
