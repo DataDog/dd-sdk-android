@@ -18,6 +18,7 @@ import com.datadog.android.rum.DdRumContentProvider
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.internal.domain.RumContext
+import com.datadog.android.rum.internal.domain.state.ViewUIPerformanceReport
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
 import com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener
 import com.datadog.android.rum.internal.vitals.VitalMonitor
@@ -119,6 +120,9 @@ internal class RumApplicationScopeTest {
     @Mock
     lateinit var mockLastInteractionIdentifier: LastInteractionIdentifier
 
+    @Forgery
+    lateinit var viewUIPerformanceReport: ViewUIPerformanceReport
+
     @Mock
     lateinit var mockSlowFramesListener: SlowFramesListener
 
@@ -127,6 +131,7 @@ internal class RumApplicationScopeTest {
         whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumFeatureScope
         whenever(mockSdkCore.time) doReturn fakeTimeInfoAtScopeStart
         whenever(mockSdkCore.internalLogger) doReturn mock()
+        whenever(mockSlowFramesListener.resolveReport(any())) doReturn viewUIPerformanceReport
 
         testedScope = RumApplicationScope(
             fakeApplicationId,
