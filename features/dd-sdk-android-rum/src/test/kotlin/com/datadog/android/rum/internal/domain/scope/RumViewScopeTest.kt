@@ -6102,6 +6102,19 @@ internal class RumViewScopeTest {
     // region Long Task
 
     @Test
+    fun `M call onAddLongTask of slowFramesListener W handleEvent(AddLongTask)`(
+        @LongForgery(0L, 700_000_000L) durationNs: Long,
+        @StringForgery target: String
+    ) {
+        testedScope.activeActionScope = null
+        fakeEvent = RumRawEvent.AddLongTask(durationNs, target)
+
+        testedScope.handleEvent(fakeEvent, mockWriter)
+
+        verify(mockSlowFramesListener).onAddLongTask(durationNs)
+    }
+
+    @Test
     fun `M send event W handleEvent(AddLongTask) on active view {not frozen}`(
         @LongForgery(0L, 700_000_000L) durationNs: Long,
         @StringForgery target: String
