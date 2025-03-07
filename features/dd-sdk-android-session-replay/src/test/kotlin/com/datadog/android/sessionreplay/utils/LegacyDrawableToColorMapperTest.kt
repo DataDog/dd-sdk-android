@@ -13,6 +13,7 @@ import android.graphics.drawable.Drawable
 import android.graphics.drawable.GradientDrawable
 import android.graphics.drawable.LayerDrawable
 import android.graphics.drawable.RippleDrawable
+import android.graphics.drawable.StateListDrawable
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import fr.xgouchet.elmyr.annotation.IntForgery
@@ -190,5 +191,25 @@ open class LegacyDrawableToColorMapperTest {
 
         // Then
         assertThat(result).isNull()
+    }
+
+    @Test
+    fun `M map StateListDrawable to the color of its current Drawable W mapDrawableToColor()`(
+        @IntForgery drawableColor: Int,
+    ) {
+        // Given
+        val currentStateDrawable = mock<ColorDrawable>().apply {
+            whenever(this.color) doReturn drawableColor
+        }
+
+        val stateListDrawable = mock<StateListDrawable>().apply {
+            whenever(this.current) doReturn currentStateDrawable
+        }
+
+        // When
+        val result = testedMapper.mapDrawableToColor(stateListDrawable, mockInternalLogger)
+
+        // Then
+        assertThat(result).isEqualTo(drawableColor)
     }
 }
