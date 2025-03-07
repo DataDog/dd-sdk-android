@@ -294,6 +294,7 @@
 * [FEATURE] Trace: Add OpenTelemetry use case into the `vendor-lib` sample. See [#2069](https://github.com/DataDog/dd-sdk-android/pull/2069)
 * [FEATURE] Trace: Add the OkHttp Otel extensions module. See [#2073](https://github.com/DataDog/dd-sdk-android/pull/2073)
 * [FEATURE] Trace: `OtelTraceProvider.Builder`: introduce the trace rate limit property. See [#2086](https://github.com/DataDog/dd-sdk-android/pull/2086)
+* **WARNING**: Existing `com.datadog.trace` package renamed to `com.datadog.legacy.trace`. `com.datadog.trace` package will contain new members, so update your imports accordingly.
 * [BUGFIX] Session Replay: Fix time drift in `RecordedDataQueueHandler`. See [#2075](https://github.com/DataDog/dd-sdk-android/pull/2075)
 * [IMPROVEMENT] Trace: Remove some unused IAST/CI Visibility classes. See [#2000](https://github.com/DataDog/dd-sdk-android/pull/2000)
 * [IMPROVEMENT] Trace: Remove `moshi` dependency from trace module. See [#2003](https://github.com/DataDog/dd-sdk-android/pull/2003)
