@@ -1221,6 +1221,7 @@ internal open class RumViewScope(
         )
         val timestamp = event.eventTime.timestamp + serverTimeOffsetInMs
         val isFrozenFrame = event.durationNs > FROZEN_FRAME_THRESHOLD_NS
+        slowFramesListener.onAddLongTask(event.durationNs)
         sdkCore.newRumEventWriteOperation(writer) { datadogContext ->
 
             val user = datadogContext.userInfo
