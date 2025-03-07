@@ -17,6 +17,7 @@ import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.mockito.junit.jupiter.MockitoExtension
@@ -44,7 +45,8 @@ internal class DefaultSlowFramesListenerTest {
     @BeforeEach
     fun `set up`() {
         testedListener = DefaultSlowFramesListener(
-            frozenFrameThresholdNs = Long.MAX_VALUE
+            frozenFrameThresholdNs = Long.MAX_VALUE,
+            minViewLifetimeThresholdNs = 0
         )
     }
 
@@ -268,6 +270,7 @@ internal class DefaultSlowFramesListenerTest {
 
     @Test
     fun `M compute only jank frames for slow frames duration W onFrame`(
+        @LongForgery(min = 1, max = MAX_DURATION_NS) viewDurationNs: Long,
         forge: Forge
     ) {
         // Given
@@ -275,7 +278,8 @@ internal class DefaultSlowFramesListenerTest {
         val frameData = forge.aList(size = 100) {
             aFrameData(isJank = ++item % 2 == 0)
         }
-        val expectedSlowFramesDuration = frameData.filter { it.isJank }.sumOf { it.frameDurationUiNanos }
+        val expectedSlowFramesDuration =
+            frameData.filter { it.isJank }.sumOf { it.frameDurationUiNanos }
         val expectedTotalFrameDuration = frameData.sumOf { it.frameDurationUiNanos }
 
         testedListener.onViewCreated(viewId, viewCreatedTimestampNs)
@@ -291,19 +295,96 @@ internal class DefaultSlowFramesListenerTest {
         assertThat(report.totalFramesDurationNs)
             .isEqualTo(expectedTotalFrameDuration)
 
-        assertThat(report.slowFramesRate)
-            .isEqualTo(expectedSlowFramesDuration.toDouble() / (expectedTotalFrameDuration + 1))
+        assertThat(report.slowFramesRate(viewCreatedTimestampNs + viewDurationNs))
+            .isEqualTo(expectedSlowFramesDuration.toDouble() / expectedTotalFrameDuration)
+    }
+
+    @Test
+    fun `M return 0 W slowFramesRate { totalFramesDurationNs = 0 }`(
+        @LongForgery(min = 1, max = MAX_DURATION_NS) viewDurationNs: Long
+    ) {
+        // Given
+        testedListener.onViewCreated(viewId, viewCreatedTimestampNs)
+
+        // When
+        val report = testedListener.resolveReport(viewId)
+
+        // Then
+        assertDoesNotThrow { // No ArithmeticException
+            assertThat(report.slowFramesDurationNs)
+                .isZero()
+
+            assertThat(report.totalFramesDurationNs)
+                .isZero()
+
+            assertThat(report.slowFramesRate(viewCreatedTimestampNs + viewDurationNs)).isZero()
+        }
     }
 
     @Test
     fun `M be expected constant values for thresholds`() {
         // When
-        val listener = DefaultSlowFramesListener()
+        val testedListener = DefaultSlowFramesListener()
 
         // Then
-        assertThat(listener.maxSlowFramesAmount).isEqualTo(512)
-        assertThat(listener.frozenFrameThresholdNs).isEqualTo(700_000_000)
-        assertThat(listener.continuousSlowFrameThresholdNs).isEqualTo(16_666_666L)
+        assertThat(testedListener.maxSlowFramesAmount).isEqualTo(512)
+        assertThat(testedListener.frozenFrameThresholdNs).isEqualTo(700_000_000)
+        assertThat(testedListener.continuousSlowFrameThresholdNs).isEqualTo(16_666_666L)
+    }
+
+    @Test
+    fun `M compute expected ANR rate W onAddLongTask`(
+        @StringForgery viewId: String,
+        // max here to avoid Long overflow
+        @LongForgery(min = 1L, max = MAX_DURATION_NS) viewDurationNs: Long,
+        @LongForgery(min = 1L, max = MAX_DURATION_NS) anrDurationThresholdNs: Long
+    ) {
+        // Given
+        val viewStartedAtTimestampNs = 0L
+        val longTaskDuration = anrDurationThresholdNs + 1
+        val viewEndedTimestampNs = viewStartedAtTimestampNs + viewDurationNs
+        val expectedAnrRatio = longTaskDuration.toDouble() / viewDurationNs
+        val testedListener = DefaultSlowFramesListener(
+            anrDuration = anrDurationThresholdNs
+        ).apply {
+            onViewCreated(viewId, viewStartedAtTimestampNs)
+        }
+
+        // When
+        testedListener.onAddLongTask(longTaskDuration)
+
+        // Then
+        val report = testedListener.resolveReport(viewId)
+        assertThat(
+            report.anrDurationRatio(viewEndedTimestampNs)
+        ).isEqualTo(
+            expectedAnrRatio
+        )
+    }
+
+    @Test
+    fun `M return 0 W anrDurationRatio { view lived less than minViewLifetimeThresholdNs }`(
+        @StringForgery viewId: String,
+        @LongForgery(min = 1L, max = MAX_DURATION_NS) longTaskDuration: Long,
+        @LongForgery(min = 100L, max = MAX_DURATION_NS) minViewLifetimeThresholdNs: Long
+    ) {
+        // Given
+        val viewStartedAtTimestampNs = 0L
+        val testedListener = DefaultSlowFramesListener(
+            anrDuration = 0L, // every long task is ANR now
+            minViewLifetimeThresholdNs = minViewLifetimeThresholdNs
+        ).apply {
+            onViewCreated(viewId, viewStartedAtTimestampNs)
+        }
+
+        // When
+        testedListener.onAddLongTask(longTaskDuration)
+
+        // Then
+        assertDoesNotThrow { // No ArithmeticException
+            val report = testedListener.resolveReport(viewId)
+            assertThat(report.anrDurationRatio(minViewLifetimeThresholdNs - 1)).isZero()
+        }
     }
 
     private fun Forge.aFrameData(
@@ -316,4 +397,9 @@ internal class DefaultSlowFramesListenerTest {
         isJank = isJank,
         states = emptyList()
     )
+
+    companion object {
+        // clip max values to avoid Long overflow
+        const val MAX_DURATION_NS = 1_000_000_000_000
+    }
 }

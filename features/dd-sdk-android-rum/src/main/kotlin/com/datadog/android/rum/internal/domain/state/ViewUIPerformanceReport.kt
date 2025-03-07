@@ -7,26 +7,45 @@ package com.datadog.android.rum.internal.domain.state
 
 import com.datadog.android.internal.collections.EvictingQueue
 import java.util.Queue
+import kotlin.math.max
 
 internal data class ViewUIPerformanceReport(
     val viewStartedTimeStamp: Long = 0L,
     var slowFramesRecords: Queue<SlowFrameRecord> = EvictingQueue(),
     var totalFramesDurationNs: Long = 0L,
-    var slowFramesDurationNs: Long = 0L
+    var slowFramesDurationNs: Long = 0L,
+    var anrDurationNs: Long = 0,
+    val minViewLifetimeThresholdNs: Long = 0
 ) {
-    constructor(viewStartedTimeStamp: Long, maxSize: Int) : this(
+    constructor(
+        viewStartedTimeStamp: Long,
+        maxSize: Int,
+        minimumViewLifetimeThresholdNs: Long
+    ) : this(
         viewStartedTimeStamp = viewStartedTimeStamp,
-        slowFramesRecords = EvictingQueue(maxSize)
+        slowFramesRecords = EvictingQueue(maxSize),
+        minViewLifetimeThresholdNs = minimumViewLifetimeThresholdNs
     )
 
-    internal val lastSlowFrameRecord: SlowFrameRecord?
+    val lastSlowFrameRecord: SlowFrameRecord?
         get() = slowFramesRecords.lastOrNull()
 
-    val slowFramesRate: Double
-        get() = slowFramesDurationNs.toDouble() /
-            (totalFramesDurationNs + 1) // avoiding division by zero
-
-    fun isEmpty() = slowFramesRecords.isEmpty()
     val size: Int
         get() = slowFramesRecords.size
+
+    fun isEmpty() = slowFramesRecords.isEmpty()
+
+    fun slowFramesRate(viewEndedTimeStamp: Long): Double = when {
+        viewEndedTimeStamp - viewStartedTimeStamp <= minViewLifetimeThresholdNs -> 0.0
+        totalFramesDurationNs > 0.0 -> slowFramesDurationNs.toDouble() / totalFramesDurationNs
+        else -> 0.0
+    }
+
+    fun anrDurationRatio(viewEndedTimeStamp: Long): Double = when {
+        viewEndedTimeStamp - viewStartedTimeStamp <= minViewLifetimeThresholdNs -> 0.0
+        else -> max(
+            0.0,
+            anrDurationNs.toDouble() / (viewEndedTimeStamp - viewStartedTimeStamp)
+        )
+    }
 }

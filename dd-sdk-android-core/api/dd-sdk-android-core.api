@@ -563,6 +563,20 @@ public final class com/datadog/android/core/UploadWorker : androidx/work/Worker 
 public final class com/datadog/android/core/UploadWorker$Companion {
 }
 
+public final class com/datadog/android/core/collections/EvictingQueue : java/util/LinkedList {
+	public fun <init> ()V
+	public fun <init> (I)V
+	public synthetic fun <init> (IILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun add (ILjava/lang/Object;)V
+	public fun add (Ljava/lang/Object;)Z
+	public fun addAll (ILjava/util/Collection;)Z
+	public fun addAll (Ljava/util/Collection;)Z
+	public fun getSize ()I
+	public final fun remove (I)Ljava/lang/Object;
+	public fun removeAt (I)Ljava/lang/Object;
+	public final fun size ()I
+}
+
 public final class com/datadog/android/core/configuration/BackPressureMitigation : java/lang/Enum {
 	public static final field DROP_OLDEST Lcom/datadog/android/core/configuration/BackPressureMitigation;
 	public static final field IGNORE_NEWEST Lcom/datadog/android/core/configuration/BackPressureMitigation;
