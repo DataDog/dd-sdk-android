@@ -327,7 +327,7 @@ internal class DefaultSlowFramesListenerTest {
         val testedListener = DefaultSlowFramesListener()
 
         // Then
-        assertThat(testedListener.maxSlowFramesAmount).isEqualTo(512)
+        assertThat(testedListener.maxSlowFramesAmount).isEqualTo(1000)
         assertThat(testedListener.frozenFrameThresholdNs).isEqualTo(700_000_000)
         assertThat(testedListener.continuousSlowFrameThresholdNs).isEqualTo(16_666_666L)
     }
@@ -356,7 +356,7 @@ internal class DefaultSlowFramesListenerTest {
         // Then
         val report = testedListener.resolveReport(viewId)
         assertThat(
-            report.anrDurationRatio(viewEndedTimestampNs)
+            report.anrDurationRate(viewEndedTimestampNs)
         ).isEqualTo(
             expectedAnrRatio
         )
@@ -383,7 +383,7 @@ internal class DefaultSlowFramesListenerTest {
         // Then
         assertDoesNotThrow { // No ArithmeticException
             val report = testedListener.resolveReport(viewId)
-            assertThat(report.anrDurationRatio(minViewLifetimeThresholdNs - 1)).isZero()
+            assertThat(report.anrDurationRate(minViewLifetimeThresholdNs - 1)).isZero()
         }
     }
 

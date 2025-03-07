@@ -659,6 +659,7 @@ datadog:
       - "java.util.LinkedHashMap.remove(kotlin.String)"
       - "java.util.Queue.clear()"
       - "java.util.Queue.lastOrNull()"
+      - "java.util.Queue.map(kotlin.Function1)"
       - "java.util.Stack.constructor()"
       - "java.util.Stack.isNotEmpty()"
       - "java.util.Stack.pop()"
