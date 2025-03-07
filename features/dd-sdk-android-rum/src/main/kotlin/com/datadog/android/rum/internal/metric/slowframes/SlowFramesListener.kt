@@ -44,6 +44,7 @@ internal class DefaultSlowFramesListener(
 
     @MainThread
     override fun resolveReport(viewId: String): ViewUIPerformanceReport {
+        @Suppress("UnsafeThirdPartyFunctionCall") // can't have NPE here
         val report = slowFramesRecords.remove(viewId) ?: ViewUIPerformanceReport(
             System.nanoTime(),
             maxSlowFramesAmount

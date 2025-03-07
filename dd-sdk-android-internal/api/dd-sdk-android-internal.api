@@ -1,8 +1,6 @@
 public final class com/datadog/android/internal/collections/EvictingQueue : java/util/Queue {
-	public static final field Companion Lcom/datadog/android/internal/collections/EvictingQueue$Companion;
-	public fun <init> ()V
-	public fun <init> (ILjava/util/Queue;)V
-	public synthetic fun <init> (ILjava/util/Queue;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (I)V
+	public synthetic fun <init> (IILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public fun add (Ljava/lang/Object;)Z
 	public fun addAll (Ljava/util/Collection;)Z
 	public fun clear ()V
@@ -22,9 +20,6 @@ public final class com/datadog/android/internal/collections/EvictingQueue : java
 	public final fun size ()I
 	public fun toArray ()[Ljava/lang/Object;
 	public fun toArray ([Ljava/lang/Object;)[Ljava/lang/Object;
-}
-
-public final class com/datadog/android/internal/collections/EvictingQueue$Companion {
 }
 
 public abstract interface class com/datadog/android/internal/profiler/BenchmarkProfiler {
