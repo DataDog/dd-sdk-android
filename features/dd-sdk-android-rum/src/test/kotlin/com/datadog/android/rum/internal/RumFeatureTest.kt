@@ -25,6 +25,7 @@ import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.assertj.RumFeatureAssert
 import com.datadog.android.rum.configuration.VitalsUpdateFrequency
+import com.datadog.android.rum.internal.RumFeature.Companion.SLOW_FRAME_MONITORING_ENABLED_MESSAGE
 import com.datadog.android.rum.internal.domain.RumDataWriter
 import com.datadog.android.rum.internal.domain.event.RumEventMapper
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
@@ -77,6 +78,7 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.atLeastOnce
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
@@ -179,7 +181,8 @@ internal class RumFeatureTest {
         mockSdkCore.internalLogger.verifyLog(
             InternalLogger.Level.INFO,
             InternalLogger.Target.USER,
-            RumFeature.DEVELOPER_MODE_SAMPLE_RATE_CHANGED_MESSAGE
+            RumFeature.DEVELOPER_MODE_SAMPLE_RATE_CHANGED_MESSAGE,
+            mode = atLeastOnce()
         )
     }
 
@@ -891,7 +894,7 @@ internal class RumFeatureTest {
             fakeThrowable,
             fakeThreads
         )
-        verifyNoInteractions(mockInternalLogger)
+        verifySlowFramesListenerLogMessage()
     }
 
     // endregion
@@ -924,11 +927,8 @@ internal class RumFeatureTest {
                 event,
                 testedFeature.dataWriter
             )
-
-        verifyNoInteractions(
-            mockRumMonitor,
-            mockInternalLogger
-        )
+        verifySlowFramesListenerLogMessage()
+        verifyNoInteractions(mockRumMonitor)
     }
 
     @Test
@@ -988,7 +988,8 @@ internal class RumFeatureTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.INFO,
             InternalLogger.Target.USER,
-            RumFeature.NO_LAST_RUM_VIEW_EVENT_AVAILABLE
+            RumFeature.NO_LAST_RUM_VIEW_EVENT_AVAILABLE,
+            mode = atLeastOnce()
         )
     }
 
@@ -1016,7 +1017,8 @@ internal class RumFeatureTest {
         testedFeature.consumeLastFatalAnr(mockExecutor)
 
         // Then
-        verifyNoInteractions(mockLateCrashReporter, mockInternalLogger)
+        verifySlowFramesListenerLogMessage()
+        verifyNoInteractions(mockLateCrashReporter)
     }
 
     @Test
@@ -1107,7 +1109,7 @@ internal class RumFeatureTest {
             fakeAttributes?.toMap() ?: emptyMap()
         )
 
-        verifyNoInteractions(mockInternalLogger)
+        verifySlowFramesListenerLogMessage()
     }
 
     @Test
@@ -1163,7 +1165,7 @@ internal class RumFeatureTest {
             fakeAttributes?.toMap() ?: emptyMap()
         )
 
-        verifyNoInteractions(mockInternalLogger)
+        verifySlowFramesListenerLogMessage()
     }
 
     @Test
@@ -1210,7 +1212,7 @@ internal class RumFeatureTest {
 
         // Then
         verify(mockRumMonitor).sendWebViewEvent()
-        verifyNoInteractions(mockInternalLogger)
+        verifySlowFramesListenerLogMessage()
     }
 
     // endregion
@@ -1230,10 +1232,18 @@ internal class RumFeatureTest {
         // Then
         verify(mockRumMonitor).sendTelemetryEvent(fakeInternalTelemetryEvent)
         verifyNoMoreInteractions(mockRumMonitor)
-        verifyNoInteractions(mockInternalLogger)
+        verifySlowFramesListenerLogMessage()
     }
 
     // endregion
+
+    private fun verifySlowFramesListenerLogMessage(message: String = SLOW_FRAME_MONITORING_ENABLED_MESSAGE) {
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.INFO,
+            InternalLogger.Target.USER,
+            message
+        )
+    }
 
     private fun Forge.anApplicationExitInfoList(
         mustInclude: Int? = null
