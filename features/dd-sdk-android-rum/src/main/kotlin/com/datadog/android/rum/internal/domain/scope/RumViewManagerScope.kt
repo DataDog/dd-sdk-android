@@ -20,6 +20,7 @@ import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.metric.SessionEndedMetric
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
+import com.datadog.android.rum.internal.metric.ViewEndedMetricDispatcher
 import com.datadog.android.rum.internal.metric.interactiontonextview.InteractionToNextViewMetricResolver
 import com.datadog.android.rum.internal.metric.networksettled.NetworkSettledMetricResolver
 import com.datadog.android.rum.internal.vitals.NoOpVitalMonitor
@@ -44,7 +45,7 @@ internal class RumViewManagerScope(
     internal var applicationDisplayed: Boolean,
     internal val sampleRate: Float,
     internal val initialResourceIdentifier: InitialResourceIdentifier,
-    lastInteractionIdentifier: LastInteractionIdentifier
+    lastInteractionIdentifier: LastInteractionIdentifier?
 ) : RumScope {
 
     private val interactionToNextViewMetricResolver: InteractionToNextViewMetricResolver =
@@ -266,6 +267,17 @@ internal class RumViewManagerScope(
     }
 
     private fun createBackgroundViewScope(event: RumRawEvent): RumViewScope {
+        val viewType = RumViewType.BACKGROUND
+        val networkSettledMetricResolver = NetworkSettledMetricResolver(
+            initialResourceIdentifier,
+            sdkCore.internalLogger
+        )
+
+        val viewEndedMetricDispatcher = ViewEndedMetricDispatcher(
+            viewType = viewType,
+            internalLogger = sdkCore.internalLogger
+        )
+
         return RumViewScope(
             this,
             sdkCore,
@@ -282,18 +294,27 @@ internal class RumViewManagerScope(
             NoOpVitalMonitor(),
             NoOpVitalMonitor(),
             NoOpVitalMonitor(),
-            type = RumViewScope.RumViewType.BACKGROUND,
+            type = viewType,
             trackFrustrations = trackFrustrations,
             sampleRate = sampleRate,
             interactionToNextViewMetricResolver = interactionToNextViewMetricResolver,
-            networkSettledMetricResolver = NetworkSettledMetricResolver(
-                initialResourceIdentifier,
-                sdkCore.internalLogger
-            )
+            networkSettledMetricResolver = networkSettledMetricResolver,
+            viewEndedMetricDispatcher = viewEndedMetricDispatcher
         )
     }
 
     private fun createAppLaunchViewScope(time: Time): RumViewScope {
+        val viewType = RumViewType.APPLICATION_LAUNCH
+        val networkSettledMetricResolver = NetworkSettledMetricResolver(
+            initialResourceIdentifier,
+            sdkCore.internalLogger
+        )
+
+        val viewEndedMetricDispatcher = ViewEndedMetricDispatcher(
+            viewType = viewType,
+            internalLogger = sdkCore.internalLogger
+        )
+
         return RumViewScope(
             this,
             sdkCore,
@@ -310,14 +331,12 @@ internal class RumViewManagerScope(
             NoOpVitalMonitor(),
             NoOpVitalMonitor(),
             NoOpVitalMonitor(),
-            type = RumViewScope.RumViewType.APPLICATION_LAUNCH,
+            type = viewType,
             trackFrustrations = trackFrustrations,
             sampleRate = sampleRate,
             interactionToNextViewMetricResolver = interactionToNextViewMetricResolver,
-            networkSettledMetricResolver = NetworkSettledMetricResolver(
-                initialResourceIdentifier,
-                sdkCore.internalLogger
-            )
+            networkSettledMetricResolver = networkSettledMetricResolver,
+            viewEndedMetricDispatcher = viewEndedMetricDispatcher
         )
     }
 

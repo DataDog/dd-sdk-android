@@ -10,34 +10,34 @@ import android.app.Activity
 import android.os.Build
 import android.os.Bundle
 import android.view.Display
+import android.view.FrameMetrics
 import android.view.View
 import android.view.Window
 import androidx.metrics.performance.FrameData
 import androidx.metrics.performance.JankStats
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
+import com.datadog.android.rum.internal.domain.FrameMetricsData
 import com.datadog.android.rum.utils.config.MainLooperTestConfiguration
 import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.android.rum.utils.verifyLog
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
-import fr.xgouchet.elmyr.annotation.BoolForgery
-import fr.xgouchet.elmyr.annotation.DoubleForgery
-import fr.xgouchet.elmyr.annotation.LongForgery
+import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
-import org.mockito.AdditionalMatchers.eq
 import org.mockito.Mock
-import org.mockito.Mockito.never
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
+import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.inOrder
@@ -47,7 +47,6 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
-import kotlin.math.min
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -58,16 +57,16 @@ import kotlin.math.min
 @ForgeConfiguration(Configurator::class)
 internal class JankStatsActivityLifecycleListenerTest {
 
-    lateinit var testedJankListener: JankStatsActivityLifecycleListener
-
-    @Mock
-    lateinit var mockObserver: VitalObserver
+    private lateinit var testedJankListener: JankStatsActivityLifecycleListener
 
     @Mock
     lateinit var mockInternalLogger: InternalLogger
 
     @Mock
     lateinit var mockActivity: Activity
+
+    @Mock
+    lateinit var mockFPSVitalListener: FPSVitalListener
 
     @Mock
     lateinit var mockDisplay: Display
@@ -84,6 +83,10 @@ internal class JankStatsActivityLifecycleListenerTest {
     @Mock
     lateinit var mockJankStats: JankStats
 
+    private val mockBuildSdkVersionProvider: BuildSdkVersionProvider = mock {
+        on { version } doReturn Build.VERSION_CODES.VANILLA_ICE_CREAM
+    }
+
     @BeforeEach
     fun `set up`() {
         whenever(mockWindow.decorView) doReturn mockDecorView
@@ -94,9 +97,10 @@ internal class JankStatsActivityLifecycleListenerTest {
         whenever(mockJankStats.isTrackingEnabled) doReturn true
 
         testedJankListener = JankStatsActivityLifecycleListener(
-            mockObserver,
+            listOf(mockFPSVitalListener),
             mockInternalLogger,
-            mockJankStatsProvider
+            mockJankStatsProvider,
+            mockBuildSdkVersionProvider
         )
     }
 
@@ -124,13 +128,23 @@ internal class JankStatsActivityLifecycleListenerTest {
     }
 
     @Test
+    fun `M not track same activity twice W onActivityStarted {}`() {
+        // When
+        testedJankListener.onActivityStarted(mockActivity)
+        testedJankListener.onActivityStarted(mockActivity)
+
+        // Then
+        assertThat(testedJankListener.activeActivities[mockWindow]).hasSize(1)
+    }
+
+    @Test
     fun `M register jankStats once W onActivityStarted() { multiple activities, same window}`() {
         // Given
         val mockActivity2 = mock<Activity>()
         whenever(mockActivity2.window) doReturn mockWindow
         whenever(mockActivity2.display) doReturn mockDisplay
         testedJankListener = JankStatsActivityLifecycleListener(
-            mockObserver,
+            listOf(mockFPSVitalListener),
             mockInternalLogger,
             mockJankStatsProvider
         )
@@ -280,20 +294,16 @@ internal class JankStatsActivityLifecycleListenerTest {
     fun `M add listener to window only once W onActivityStarted()`() {
         // Given
         whenever(mockDecorView.isHardwareAccelerated) doReturn true
-        val mockBuildSdkVersionProvider: BuildSdkVersionProvider = mock()
         whenever(mockBuildSdkVersionProvider.version) doReturn Build.VERSION_CODES.S
-        testedJankListener = JankStatsActivityLifecycleListener(
-            mockObserver,
-            mockInternalLogger,
-            mockJankStatsProvider,
-            60.0,
-            mockBuildSdkVersionProvider
-        )
 
         // When
         testedJankListener.onActivityStarted(mockActivity)
         testedJankListener.onActivityStopped(mockActivity)
         testedJankListener.onActivityStarted(mockActivity)
+        argumentCaptor<Runnable> {
+            verify(mockDecorView).post(capture())
+            lastValue.run()
+        }
 
         // Then
         verify(mockWindow).addOnFrameMetricsAvailableListener(any(), any()) // should be called only once
@@ -350,123 +360,15 @@ internal class JankStatsActivityLifecycleListenerTest {
         verifyNoInteractions(mockJankStatsProvider, mockJankStats, mockBundle)
     }
 
-    fun `M do nothing W onFrame() {zero ns duration}`(
-        @LongForgery timestampNs: Long,
-        @BoolForgery isJank: Boolean
-    ) {
-        // Given
-        val frameData = FrameData(timestampNs, 0L, isJank, emptyList())
-
-        // When
-        testedJankListener.onFrame(frameData)
-
-        // Then
-        verify(mockObserver, never()).onNewSample(any())
-    }
-
-    @Test
-    fun `M forward frame rate to observer W doFrame() {acceptable frame rate}`(
-        @LongForgery timestampNs: Long,
-        @LongForgery(ONE_MILLISECOND_NS, ONE_SECOND_NS) frameDurationNs: Long,
-        @BoolForgery isJank: Boolean
-    ) {
-        // Given
-        val expectedFrameRate = (ONE_SECOND_NS.toDouble() / frameDurationNs.toDouble()).coerceAtMost(MAX_FPS)
-        val frameData = FrameData(timestampNs, frameDurationNs, isJank, emptyList())
-
-        // When
-        testedJankListener.onFrame(frameData)
-
-        // Then
-        verify(mockObserver).onNewSample(eq(expectedFrameRate, 0.0001))
-    }
-
-    @Test
-    fun `M adjust sample value to refresh rate W doFrame() {S, refresh rate over 60hz}`(
-        @LongForgery timestampNs: Long,
-        @LongForgery(ONE_MILLISECOND_NS, ONE_SECOND_NS) frameDurationNs: Long,
-        @BoolForgery isJank: Boolean,
-        @DoubleForgery(60.0, 120.0) displayRefreshRate: Double
-    ) {
-        // Given
-        val expectedFrameRate = ONE_SECOND_NS.toDouble() / frameDurationNs.toDouble()
-        val refreshRateMultiplier = 60.0 / displayRefreshRate
-
-        val frameData = FrameData(timestampNs, frameDurationNs, isJank, emptyList())
-
-        val mockBuildSdkVersionProvider: BuildSdkVersionProvider = mock()
-        whenever(mockBuildSdkVersionProvider.version) doReturn Build.VERSION_CODES.S
-
-        val variableRefreshRateListener = JankStatsActivityLifecycleListener(
-            mockObserver,
-            mockInternalLogger,
-            mockJankStatsProvider,
-            displayRefreshRate,
-            mockBuildSdkVersionProvider
-        )
-        variableRefreshRateListener.frameDeadline = (ONE_SECOND_NS / displayRefreshRate).toLong()
-
-        // When
-        variableRefreshRateListener.onFrame(frameData)
-
-        // Then
-        if (expectedFrameRate * refreshRateMultiplier > MIN_FPS) {
-            verify(mockObserver).onNewSample(eq(min(expectedFrameRate * refreshRateMultiplier, MAX_FPS), 0.0001))
-        } else {
-            verify(mockObserver, never()).onNewSample(any())
-        }
-    }
-
-    @Test
-    fun `M adjust sample value to refresh rate W doFrame() {R, refresh rate over 60hz}`(
-        @LongForgery timestampNs: Long,
-        @LongForgery(ONE_MILLISECOND_NS, ONE_SECOND_NS) frameDurationNs: Long,
-        @BoolForgery isJank: Boolean,
-        @DoubleForgery(60.0, 120.0) displayRefreshRate: Double
-    ) {
-        // Given
-        val expectedFrameRate = ONE_SECOND_NS.toDouble() / frameDurationNs.toDouble()
-        val refreshRateMultiplier = 60.0 / displayRefreshRate
-
-        val frameData = FrameData(timestampNs, frameDurationNs, isJank, emptyList())
-
-        val mockBuildSdkVersionProvider: BuildSdkVersionProvider = mock()
-        whenever(mockBuildSdkVersionProvider.version) doReturn Build.VERSION_CODES.R
-
-        val mockDisplay: Display = mock()
-        whenever(mockDisplay.refreshRate) doReturn displayRefreshRate.toFloat()
-
-        val variableRefreshRateListener = JankStatsActivityLifecycleListener(
-            mockObserver,
-            mockInternalLogger,
-            mockJankStatsProvider,
-            displayRefreshRate,
-            mockBuildSdkVersionProvider
-        )
-
-        variableRefreshRateListener.display = mockDisplay
-
-        // When
-        variableRefreshRateListener.onFrame(frameData)
-
-        // Then
-        if (expectedFrameRate * refreshRateMultiplier > MIN_FPS) {
-            verify(mockObserver).onNewSample(eq(min(expectedFrameRate * refreshRateMultiplier, MAX_FPS), 0.0001))
-        } else {
-            verify(mockObserver, never()).onNewSample(any())
-        }
-    }
-
     @Test
     fun `M do nothing W onActivityStarted() {android framework throws an exception}`() {
         // Given
         whenever(mockWindow.addOnFrameMetricsAvailableListener(any(), any())) doThrow IllegalStateException()
 
         // When
-        testedJankListener.onActivityStarted(mockActivity)
-
-        // Then
-        // no-crash
+        assertDoesNotThrow {
+            testedJankListener.onActivityStarted(mockActivity)
+        }
     }
 
     @Test
@@ -475,18 +377,63 @@ internal class JankStatsActivityLifecycleListenerTest {
         whenever(mockWindow.removeOnFrameMetricsAvailableListener(any())) doThrow IllegalArgumentException()
 
         // When
+        assertDoesNotThrow {
+            testedJankListener.onActivityStarted(mockActivity)
+            testedJankListener.onActivityDestroyed(mockActivity)
+        }
+    }
+
+    @Test
+    fun `M forward FrameData W onFrame`(forge: Forge) {
+        val frameData = forge.getForgery<FrameData>()
+
+        testedJankListener.onFrame(frameData)
+
+        verify(mockFPSVitalListener).onFrame(frameData)
+    }
+
+    @Test
+    fun `M forward onFrameMetricsAvailable W onFrame`(forge: Forge) {
+        // Given
+        val dropCountSinceLastInvocation = forge.aSmallInt()
+        val frameMetricsData = forge.getForgery<FrameMetricsData>()
+        val frameMetrics = mock<FrameMetrics> {
+            on { getMetric(FrameMetrics.UNKNOWN_DELAY_DURATION) } doReturn frameMetricsData.unknownDelayDuration
+            on { getMetric(FrameMetrics.INPUT_HANDLING_DURATION) } doReturn frameMetricsData.inputHandlingDuration
+            on { getMetric(FrameMetrics.ANIMATION_DURATION) } doReturn frameMetricsData.animationDuration
+            on { getMetric(FrameMetrics.LAYOUT_MEASURE_DURATION) } doReturn frameMetricsData.layoutMeasureDuration
+            on { getMetric(FrameMetrics.DRAW_DURATION) } doReturn frameMetricsData.drawDuration
+            on { getMetric(FrameMetrics.SYNC_DURATION) } doReturn frameMetricsData.syncDuration
+            on { getMetric(FrameMetrics.COMMAND_ISSUE_DURATION) } doReturn frameMetricsData.commandIssueDuration
+            on { getMetric(FrameMetrics.SWAP_BUFFERS_DURATION) } doReturn frameMetricsData.swapBuffersDuration
+            on { getMetric(FrameMetrics.TOTAL_DURATION) } doReturn frameMetricsData.totalDuration
+            on { getMetric(FrameMetrics.FIRST_DRAW_FRAME) } doReturn if (frameMetricsData.firstDrawFrame) 1 else 0
+            on { getMetric(FrameMetrics.INTENDED_VSYNC_TIMESTAMP) } doReturn frameMetricsData.intendedVsyncTimestamp
+            on { getMetric(FrameMetrics.VSYNC_TIMESTAMP) } doReturn frameMetricsData.vsyncTimestamp
+            on { getMetric(FrameMetrics.GPU_DURATION) } doReturn frameMetricsData.gpuDuration
+            on { getMetric(FrameMetrics.DEADLINE) } doReturn frameMetricsData.deadline
+        }
+        whenever(mockDecorView.isHardwareAccelerated) doReturn true
+
         testedJankListener.onActivityStarted(mockActivity)
-        testedJankListener.onActivityDestroyed(mockActivity)
+        argumentCaptor<Runnable> {
+            verify(mockDecorView).post(capture())
+            firstValue.run()
+        }
+
+        argumentCaptor<Window.OnFrameMetricsAvailableListener> {
+            verify(mockWindow).addOnFrameMetricsAvailableListener(capture(), any())
+            // When
+            firstValue.onFrameMetricsAvailable(mock(), frameMetrics, dropCountSinceLastInvocation)
+        }
 
         // Then
-        // no-crash
+        verify(mockFPSVitalListener).onFrameMetricsData(frameMetricsData.copy(displayRefreshRate = 60.0))
     }
 
     companion object {
         const val ONE_MILLISECOND_NS: Long = 1000L * 1000L
         const val ONE_SECOND_NS: Long = 1000L * 1000L * 1000L
-        const val TEN_SECOND_NS: Long = 10L * ONE_SECOND_NS
-        const val ONE_MINUTE_NS: Long = 60L * ONE_SECOND_NS
         const val MIN_FPS: Double = 1.0
         const val MAX_FPS: Double = 60.0
 

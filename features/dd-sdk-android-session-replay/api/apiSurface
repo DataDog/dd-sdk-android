@@ -36,6 +36,8 @@ data class com.datadog.android.sessionreplay.SessionReplayConfiguration
     fun setDynamicOptimizationEnabled(Boolean): Builder
     fun setSystemRequirements(SystemRequirementsConfiguration): Builder
     fun build(): SessionReplayConfiguration
+interface com.datadog.android.sessionreplay.SessionReplayInternalCallback
+  fun getCurrentActivity(): android.app.Activity?
 enum com.datadog.android.sessionreplay.SessionReplayPrivacy
   - ALLOW
   - MASK
@@ -55,6 +57,9 @@ enum com.datadog.android.sessionreplay.TextAndInputPrivacy : PrivacyLevel
 enum com.datadog.android.sessionreplay.TouchPrivacy : PrivacyLevel
   - SHOW
   - HIDE
+class com.datadog.android.sessionreplay._SessionReplayInternalProxy
+  constructor(SessionReplayConfiguration.Builder)
+  fun setInternalCallback(SessionReplayInternalCallback): SessionReplayConfiguration.Builder
 class com.datadog.android.sessionreplay.internal.TouchPrivacyManager
   constructor(com.datadog.android.sessionreplay.TouchPrivacy)
   fun addTouchOverrideArea(android.graphics.Rect, com.datadog.android.sessionreplay.TouchPrivacy)

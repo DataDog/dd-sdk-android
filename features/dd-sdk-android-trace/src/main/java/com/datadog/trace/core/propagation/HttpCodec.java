@@ -48,6 +48,8 @@ public class HttpCodec {
   static final String CF_CONNECTING_IP_KEY = "cf-connecting-ip";
   static final String CF_CONNECTING_IP_V6_KEY = "cf-connecting-ipv6";
 
+  static final String RUM_SESSION_ID_KEY = "session_id";
+
   public interface Injector {
     <C> void inject(
         final DDSpanContext context, final C carrier, final AgentPropagation.Setter<C> setter);
@@ -184,6 +186,12 @@ public class HttpCodec {
     public <C> void inject(
         final DDSpanContext context, final C carrier, final AgentPropagation.Setter<C> setter) {
       log.debug("Inject context {}", context);
+      // Update session ide before injecting propagation tags
+      final String sessionId = (String) context.getTags().get(RUM_SESSION_ID_KEY);
+      if (sessionId != null) {
+        context.getPropagationTags().updateRumSessionId(sessionId);
+      }
+
       for (final Injector injector : injectors) {
         injector.inject(context, carrier, setter);
       }

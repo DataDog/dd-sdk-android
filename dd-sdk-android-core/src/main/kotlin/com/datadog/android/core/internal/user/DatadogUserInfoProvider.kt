@@ -29,6 +29,12 @@ internal class DatadogUserInfoProvider(
         )
     }
 
+    override fun setAnonymousId(id: String?) {
+        internalUserInfo = internalUserInfo.copy(
+            anonymousId = id
+        )
+    }
+
     override fun addUserProperties(properties: Map<String, Any?>) {
         internalUserInfo = internalUserInfo.copy(
             additionalProperties = internalUserInfo.additionalProperties + properties

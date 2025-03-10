@@ -22,12 +22,14 @@ import kotlin.jvm.Throws
 
 /**
  * Holds information about the current User.
+ * @property anonymousId a unique anonymous identifier for the device, or null
  * @property id a unique identifier for the user, or null
  * @property name the name of the user, or null
  * @property email the email address of the user, or null
  * @property additionalProperties a dictionary of custom properties attached to the current user
  */
 data class UserInfo(
+    val anonymousId: String? = null,
     val id: String? = null,
     val name: String? = null,
     val email: String? = null,
@@ -37,6 +39,9 @@ data class UserInfo(
     @Suppress("StringLiteralDuplication")
     internal fun toJson(): JsonElement {
         val json = JsonObject()
+        anonymousId?.let { idNonNull ->
+            json.addProperty("anonymous_id", idNonNull)
+        }
         id?.let { idNonNull ->
             json.addProperty("id", idNonNull)
         }
@@ -79,6 +84,7 @@ data class UserInfo(
         @Suppress("StringLiteralDuplication", "ThrowsCount")
         fun fromJsonObject(jsonObject: JsonObject): UserInfo {
             try {
+                val anonymousId = jsonObject.get("anonymous_id")?.asString
                 val id = jsonObject.get("id")?.asString
                 val name = jsonObject.get("name")?.asString
                 val email = jsonObject.get("email")?.asString
@@ -88,7 +94,7 @@ data class UserInfo(
                         additionalProperties[entry.key] = entry.value
                     }
                 }
-                return UserInfo(id, name, email, additionalProperties)
+                return UserInfo(anonymousId, id, name, email, additionalProperties)
             } catch (e: IllegalStateException) {
                 throw JsonParseException(
                     "Unable to parse json into type UserInfo",

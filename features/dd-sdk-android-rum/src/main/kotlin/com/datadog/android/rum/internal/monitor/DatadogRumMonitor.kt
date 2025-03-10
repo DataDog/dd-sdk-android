@@ -6,6 +6,7 @@
 
 package com.datadog.android.rum.internal.monitor
 
+import android.app.Activity
 import android.app.ActivityManager
 import android.os.Handler
 import com.datadog.android.api.InternalLogger
@@ -74,7 +75,7 @@ internal class DatadogRumMonitor(
     sessionListener: RumSessionListener,
     internal val executorService: ExecutorService,
     initialResourceIdentifier: InitialResourceIdentifier,
-    lastInteractionIdentifier: LastInteractionIdentifier
+    lastInteractionIdentifier: LastInteractionIdentifier?
 ) : RumMonitor, AdvancedRumMonitor {
 
     internal var rootScope: RumScope = RumApplicationScope(
@@ -625,6 +626,10 @@ internal class DatadogRumMonitor(
         handleEvent(RumRawEvent.UpdatePerformanceMetric(metric, value))
     }
 
+    override fun setInternalViewAttribute(key: String, value: Any?) {
+        handleEvent(RumRawEvent.SetInternalViewAttribute(key, value))
+    }
+
     override fun setSyntheticsAttribute(
         testId: String,
         resultId: String
@@ -638,6 +643,12 @@ internal class DatadogRumMonitor(
 
     override fun sendTelemetryEvent(telemetryEvent: InternalTelemetryEvent) {
         handleEvent(RumRawEvent.TelemetryEventWrapper(telemetryEvent))
+    }
+
+    override fun enableJankStatsTracking(activity: Activity) {
+        sdkCore.getFeature(Feature.RUM_FEATURE_NAME)
+            ?.unwrap<RumFeature>()
+            ?.enableJankStatsTracking(activity)
     }
 
     // endregion

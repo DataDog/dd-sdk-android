@@ -20,6 +20,7 @@ import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.MapperTypeWrapper
+import com.datadog.android.sessionreplay.SessionReplayInternalCallback
 import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.TouchPrivacy
@@ -71,7 +72,8 @@ internal class SessionReplayFeature(
         customDrawableMappers: List<DrawableToColorMapper>,
         sampleRate: Float,
         startRecordingImmediately: Boolean,
-        dynamicOptimizationEnabled: Boolean
+        dynamicOptimizationEnabled: Boolean,
+        internalCallback: SessionReplayInternalCallback
     ) : this(
         sdkCore,
         customEndpointUrl,
@@ -89,7 +91,8 @@ internal class SessionReplayFeature(
             customMappers,
             customOptionSelectorDetectors,
             customDrawableMappers,
-            dynamicOptimizationEnabled
+            dynamicOptimizationEnabled,
+            internalCallback
         )
     )
 

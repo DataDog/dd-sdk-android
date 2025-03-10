@@ -30,9 +30,6 @@ public final class com/datadog/android/internal/profiler/GlobalBenchmark {
 }
 
 public abstract class com/datadog/android/internal/telemetry/InternalTelemetryEvent {
-	public static final field CREATION_SAMPLING_RATE_KEY Ljava/lang/String;
-	public static final field Companion Lcom/datadog/android/internal/telemetry/InternalTelemetryEvent$Companion;
-	public static final field REPORTING_SAMPLING_RATE_KEY Ljava/lang/String;
 }
 
 public abstract class com/datadog/android/internal/telemetry/InternalTelemetryEvent$ApiUsage : com/datadog/android/internal/telemetry/InternalTelemetryEvent {
@@ -47,9 +44,6 @@ public final class com/datadog/android/internal/telemetry/InternalTelemetryEvent
 	public final fun getNoActiveView ()Z
 	public final fun getNoView ()Z
 	public final fun getOverwrite ()Z
-}
-
-public final class com/datadog/android/internal/telemetry/InternalTelemetryEvent$Companion {
 }
 
 public final class com/datadog/android/internal/telemetry/InternalTelemetryEvent$Configuration : com/datadog/android/internal/telemetry/InternalTelemetryEvent {

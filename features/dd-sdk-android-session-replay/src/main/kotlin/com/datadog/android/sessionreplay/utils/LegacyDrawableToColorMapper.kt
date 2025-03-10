@@ -18,6 +18,7 @@ import android.graphics.drawable.InsetDrawable
 import android.graphics.drawable.LayerDrawable
 import android.graphics.drawable.RippleDrawable
 import android.graphics.drawable.ShapeDrawable
+import android.graphics.drawable.StateListDrawable
 import android.graphics.drawable.VectorDrawable
 import com.datadog.android.api.InternalLogger
 
@@ -44,6 +45,7 @@ open class LegacyDrawableToColorMapper(
             is InsetDrawable -> resolveInsetDrawable(drawable, internalLogger)
             is GradientDrawable -> resolveGradientDrawable(drawable, internalLogger)
             is ShapeDrawable -> resolveShapeDrawable(drawable, internalLogger)
+            is StateListDrawable -> resolveStateListDrawable(drawable, internalLogger)
             is BitmapDrawable,
             is VectorDrawable -> null // return null without reporting them by telemetry.
             else -> {
@@ -189,6 +191,16 @@ open class LegacyDrawableToColorMapper(
      */
     protected fun mergeColorAndAlpha(color: Int, alpha: Int): Int {
         return ((color.toLong() and MASK_COLOR) or (alpha.toLong() shl ALPHA_SHIFT_ANDROID)).toInt()
+    }
+
+    /**
+     * Resolves the color from an [StateListDrawable].
+     * @param drawable the color drawable
+     * @param internalLogger the internalLogger to report warnings
+     * @return the color to map to or null if not applicable
+     */
+    private fun resolveStateListDrawable(drawable: StateListDrawable, internalLogger: InternalLogger): Int? {
+        return mapDrawableToColor(drawable = drawable.current, internalLogger = internalLogger)
     }
 
     companion object {

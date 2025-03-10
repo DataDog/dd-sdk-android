@@ -7,7 +7,8 @@ object com.datadog.android.Datadog
   fun setVerbosity(Int)
   fun getVerbosity(): Int
   fun setTrackingConsent(com.datadog.android.privacy.TrackingConsent, com.datadog.android.api.SdkCore = getInstance())
-  fun setUserInfo(String? = null, String? = null, String? = null, Map<String, Any?> = emptyMap(), com.datadog.android.api.SdkCore = getInstance())
+  fun setUserInfo(String, String? = null, String? = null, Map<String, Any?> = emptyMap(), com.datadog.android.api.SdkCore = getInstance())
+  DEPRECATED fun setUserInfo(String? = null, String? = null, String? = null, Map<String, Any?> = emptyMap(), com.datadog.android.api.SdkCore = getInstance())
   fun addUserProperties(Map<String, Any?>, com.datadog.android.api.SdkCore = getInstance())
   fun clearAllData(com.datadog.android.api.SdkCore = getInstance())
   fun _internalProxy(String? = null): _InternalProxy
@@ -89,7 +90,7 @@ data class com.datadog.android.api.context.ProcessInfo
 data class com.datadog.android.api.context.TimeInfo
   constructor(Long, Long, Long, Long)
 data class com.datadog.android.api.context.UserInfo
-  constructor(kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, Map<kotlin.String, kotlin.Any?> = emptyMap())
+  constructor(kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, Map<kotlin.String, kotlin.Any?> = emptyMap())
 interface com.datadog.android.api.feature.Feature
   val name: String
   fun onInitialize(android.content.Context)
@@ -123,6 +124,7 @@ interface com.datadog.android.api.feature.FeatureSdkCore : com.datadog.android.a
   fun removeEventReceiver(String)
   fun createSingleThreadExecutorService(String): java.util.concurrent.ExecutorService
   fun createScheduledExecutorService(String): java.util.concurrent.ScheduledExecutorService
+  fun setAnonymousId(java.util.UUID?)
 interface com.datadog.android.api.feature.StorageBackedFeature : Feature
   val requestFactory: com.datadog.android.api.net.RequestFactory
   val storageConfiguration: com.datadog.android.api.storage.FeatureStorageConfiguration
@@ -192,6 +194,10 @@ class com.datadog.android.core.SdkReference
   fun get(): com.datadog.android.api.SdkCore?
 fun <T> allowThreadDiskReads(() -> T): T
 fun <T> allowThreadDiskWrites(() -> T): T
+class com.datadog.android.core.UploadWorker : androidx.work.Worker
+  constructor(android.content.Context, androidx.work.WorkerParameters)
+  override fun doWork(): Result
+  companion object 
 enum com.datadog.android.core.configuration.BackPressureMitigation
   - DROP_OLDEST
   - IGNORE_NEWEST
@@ -254,6 +260,24 @@ sealed class com.datadog.android.core.feature.event.JvmCrash
     constructor(Throwable, String, List<ThreadDump>)
 data class com.datadog.android.core.feature.event.ThreadDump
   constructor(String, String, String, Boolean)
+interface com.datadog.android.core.internal.attributes.LocalAttribute
+  enum Key
+    constructor(String)
+    - CREATION_SAMPLING_RATE
+    - REPORTING_SAMPLING_RATE
+    - VIEW_SCOPE_INSTRUMENTATION_TYPE
+    override fun toString(): String
+  interface Constant
+    val key: Key
+fun MutableMap<String, Any?>.enrichWithConstantAttribute(LocalAttribute.Constant)
+fun MutableMap<String, Any?>.enrichWithNonNullAttribute(LocalAttribute.Key, Any?)
+fun MutableMap<String, Any?>.enrichWithLocalAttribute(LocalAttribute.Key, Any?)
+enum com.datadog.android.core.internal.attributes.ViewScopeInstrumentationType : LocalAttribute.Constant
+  - MANUAL
+  - COMPOSE
+  - ACTIVITY
+  - FRAGMENT
+  override val key: LocalAttribute.Key
 class com.datadog.android.core.internal.net.DefaultFirstPartyHostHeaderTypeResolver : FirstPartyHostHeaderTypeResolver
   constructor(Map<String, Set<com.datadog.android.trace.TracingHeaderType>>)
   override fun isFirstPartyUrl(okhttp3.HttpUrl): Boolean

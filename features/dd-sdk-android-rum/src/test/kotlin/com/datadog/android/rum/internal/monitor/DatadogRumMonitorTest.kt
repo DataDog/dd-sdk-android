@@ -6,6 +6,7 @@
 
 package com.datadog.android.rum.internal.monitor
 
+import android.app.Activity
 import android.app.ActivityManager
 import android.os.Handler
 import com.datadog.android.api.InternalLogger
@@ -1912,6 +1913,22 @@ internal class DatadogRumMonitorTest {
     }
 
     @Test
+    fun `M call enableJankStatsTracking on RUM feature W enableJankStatsTracking`() {
+        // Given
+        val mockActivity = mock<Activity>()
+        val mockRumScope = mock<FeatureScope>()
+        whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumScope
+        val mockRumFeature = mock<RumFeature>()
+        whenever(mockRumScope.unwrap<RumFeature>()) doReturn mockRumFeature
+
+        // When
+        testedMonitor.enableJankStatsTracking(mockActivity)
+
+        // Then
+        verify(mockRumFeature).enableJankStatsTracking(mockActivity)
+    }
+
+    @Test
     fun `M call sessionEndedMetricDispatcher W addSkippedFrame`(
         @IntForgery(min = 0, max = 100) count: Int,
         @StringForgery(type = StringForgeryType.ASCII) key: String,
@@ -1969,6 +1986,29 @@ internal class DatadogRumMonitorTest {
                 eq(mockWriter)
             )
             assertThat(lastValue.metric).isEqualTo(metric)
+            assertThat(lastValue.value).isEqualTo(value)
+        }
+    }
+
+    @Test
+    fun `M delegate internal view attributes W setInternalViewAttribute()`(
+        forge: Forge
+    ) {
+        // Given
+        val key = forge.aString()
+        val value = forge.anInt()
+
+        // When
+        testedMonitor.setInternalViewAttribute(key, value)
+        Thread.sleep(PROCESSING_DELAY)
+
+        // Then
+        argumentCaptor<RumRawEvent.SetInternalViewAttribute> {
+            verify(mockScope).handleEvent(
+                capture(),
+                eq(mockWriter)
+            )
+            assertThat(lastValue.key).isEqualTo(key)
             assertThat(lastValue.value).isEqualTo(value)
         }
     }

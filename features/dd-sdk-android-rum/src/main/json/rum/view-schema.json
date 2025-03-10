@@ -358,6 +358,10 @@
             "js_refresh_rate": {
               "description": "The JavaScript refresh rate for React Native",
               "allOf": [{ "$ref": "_perf-metric-schema.json" }]
+            },
+            "performance": {
+              "description": "Performance data. (Web Vitals, etc.)",
+              "allOf": [{ "$ref": "_view-performance-schema.json" }]
             }
           },
           "readOnly": true

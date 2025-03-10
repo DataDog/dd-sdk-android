@@ -25,6 +25,7 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.internal.utils.ImageViewUtils
 import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.MapperTypeWrapper
+import com.datadog.android.sessionreplay.SessionReplayInternalCallback
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.internal.recorder.Recorder
 import com.datadog.android.sessionreplay.internal.recorder.SessionReplayRecorder
@@ -64,7 +65,8 @@ internal class DefaultRecorderProvider(
     private val customMappers: List<MapperTypeWrapper<*>>,
     private val customOptionSelectorDetectors: List<OptionSelectorDetector>,
     private val customDrawableMappers: List<DrawableToColorMapper>,
-    private val dynamicOptimizationEnabled: Boolean
+    private val dynamicOptimizationEnabled: Boolean,
+    private val internalCallback: SessionReplayInternalCallback
 ) : RecorderProvider {
 
     override fun provideSessionReplayRecorder(
@@ -87,7 +89,8 @@ internal class DefaultRecorderProvider(
             customOptionSelectorDetectors = customOptionSelectorDetectors,
             customDrawableMappers = customDrawableMappers,
             sdkCore = sdkCore,
-            dynamicOptimizationEnabled = dynamicOptimizationEnabled
+            dynamicOptimizationEnabled = dynamicOptimizationEnabled,
+            internalCallback = internalCallback
         )
     }
 

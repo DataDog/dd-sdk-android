@@ -29,6 +29,7 @@ import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.math.BigInteger
+import java.util.UUID
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -53,6 +54,9 @@ internal class DatadogHttpCodecTest {
 
     @StringForgery(regex = "[0-9a-f]{16}")
     lateinit var fakeMostSignificant64BitsTraceId: String
+
+    @Forgery
+    lateinit var fakeSessionId: UUID
 
     private lateinit var fakeTaggedHeaders: Map<String, String>
 
@@ -90,6 +94,38 @@ internal class DatadogHttpCodecTest {
             headers[DatadogHttpCodec.LEAST_SIGNIFICANT_TRACE_ID_KEY]
         ).isEqualTo(fakeLeastSignificant64BitsTraceId)
         assertThat(headers[DatadogHttpCodec.DATADOG_TAGS_KEY]).isEqualTo(expectedInjectedTags())
+        assertThat(headers[DatadogHttpCodec.SAMPLING_PRIORITY_KEY])
+            .let {
+                if (fakeDDSpanContext.samplingPriority != PrioritySampling.UNSET) {
+                    it.isEqualTo(fakeDDSpanContext.samplingPriority.toString())
+                } else {
+                    it.isNull()
+                }
+            }
+        assertThat(headers[DatadogHttpCodec.SPAN_ID_KEY])
+            .isEqualTo(fakeDDSpanContext.spanId.toString())
+        fakeDDSpanContext.baggageItems.forEach { (key, value) ->
+            assertThat(headers[DatadogHttpCodec.OT_BAGGAGE_PREFIX + key]).isEqualTo(HttpCodec.encode(value))
+        }
+    }
+
+    @Test
+    fun `M inject the required headers W inject {with sessionId}`() {
+        // Given
+        val headers = mutableMapOf<String, String>()
+        fakeDDSpanContext.setTag("session_id", fakeSessionId.toString())
+
+        // When
+        testedInjector.inject(fakeDDSpanContext) { key, value ->
+            headers[key] = value
+        }
+
+        // Then
+        assertThat(headers[DatadogHttpCodec.ORIGIN_KEY]).isEqualTo(fakeDDSpanContext.origin)
+        assertThat(
+            headers[DatadogHttpCodec.LEAST_SIGNIFICANT_TRACE_ID_KEY]
+        ).isEqualTo(fakeLeastSignificant64BitsTraceId)
+        assertThat(headers[DatadogHttpCodec.DATADOG_TAGS_KEY]).isEqualTo(expectedInjectedTags(fakeSessionId))
         assertThat(headers[DatadogHttpCodec.SAMPLING_PRIORITY_KEY])
             .let {
                 if (fakeDDSpanContext.samplingPriority != PrioritySampling.UNSET) {
@@ -166,7 +202,7 @@ internal class DatadogHttpCodecTest {
         // Given
         val headers = resolveExtractedHeadersFromSpanContext(fakeDDSpanContext, forge).apply {
             remove(DatadogHttpCodec.DATADOG_TAGS_KEY)
-            set(DatadogHttpCodec.DATADOG_TAGS_KEY, DatadogHttpCodec.MOST_SIGNIFICANT_TRACE_ID_KEY + "=broken")
+            set(DatadogHttpCodec.DATADOG_TAGS_KEY, DatadogHttpCodec.MOST_SIGNIFICANT_TRACE_ID_TAG_KEY + "=broken")
         }
 
         // When
@@ -183,7 +219,7 @@ internal class DatadogHttpCodecTest {
         // Given
         val headers = resolveExtractedHeadersFromSpanContext(fakeDDSpanContext, forge).apply {
             remove(DatadogHttpCodec.DATADOG_TAGS_KEY)
-            set(DatadogHttpCodec.DATADOG_TAGS_KEY, DatadogHttpCodec.MOST_SIGNIFICANT_TRACE_ID_KEY)
+            set(DatadogHttpCodec.DATADOG_TAGS_KEY, DatadogHttpCodec.MOST_SIGNIFICANT_TRACE_ID_TAG_KEY)
         }
 
         // When
@@ -281,6 +317,10 @@ internal class DatadogHttpCodecTest {
 
     private fun expectedInjectedTags(): String {
         return "_dd.p.tid=$fakeMostSignificant64BitsTraceId"
+    }
+
+    private fun expectedInjectedTags(sessionId: UUID): String {
+        return "_dd.p.tid=$fakeMostSignificant64BitsTraceId,_dd.p.rsid=$sessionId"
     }
 
     private fun traceIdTagsAndNoise(traceId: String, forge: Forge): String {

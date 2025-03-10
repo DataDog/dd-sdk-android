@@ -120,8 +120,7 @@
                   },
                   "source_url": {
                     "type": "string",
-                    "description": "The script resource name where available (or empty if not found)",
-                    "readOnly": true
+                    "description": "The script resource name where available (or empty if not found)"
                   },
                   "source_function_name": {
                     "type": "string",
@@ -135,8 +134,7 @@
                   },
                   "invoker": {
                     "type": "string",
-                    "description": "Information about the invoker of the script",
-                    "readOnly": true
+                    "description": "Information about the invoker of the script"
                   },
                   "invoker_type": {
                     "type": "string",

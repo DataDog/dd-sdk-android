@@ -686,6 +686,15 @@ internal class ViewEventAssert(actual: ViewEvent) :
         }
     }
 
+    fun hasFBCTime(fbc: Long): ViewEventAssert {
+        assertThat(actual.view.performance?.fbc?.timestamp)
+            .overridingErrorMessage(
+                "Expected event to have view.fbc $fbc but was ${actual.view.performance?.fbc}"
+            )
+            .isEqualTo(fbc)
+        return this
+    }
+
     fun hasServiceName(serviceName: String?): ViewEventAssert {
         assertThat(actual.service)
             .overridingErrorMessage(

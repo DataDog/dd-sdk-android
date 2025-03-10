@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.core.internal.data.upload
+package com.datadog.android.core
 
 import android.content.Context
 import androidx.annotation.WorkerThread
@@ -14,16 +14,28 @@ import com.datadog.android.Datadog
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.storage.RawBatchEvent
-import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.NoOpInternalSdkCore
 import com.datadog.android.core.internal.SdkFeature
+import com.datadog.android.core.internal.data.upload.DataUploader
+import com.datadog.android.core.internal.data.upload.UploadStatus
 import com.datadog.android.core.internal.metrics.RemovalReason
 import com.datadog.android.core.internal.persistence.BatchId
 import com.datadog.android.core.internal.utils.unboundInternalLogger
 import java.util.LinkedList
 import java.util.Queue
 
-internal class UploadWorker(
+/**
+ * `UploadWorker` is responsible for handling background upload tasks using WorkManager. This
+ * worker is designed to process Datadog upload jobs asynchronously.
+ *
+ * ## Important:
+ * **This worker must be used only when a custom WorkFactory is implemented.**
+ *
+ * @constructor Creates an instance of `UploadWorker`.
+ * @param appContext The application context.
+ * @param workerParams Parameters required for the worker execution.
+ */
+class UploadWorker(
     appContext: Context,
     workerParams: WorkerParameters
 ) : Worker(appContext, workerParams) {
@@ -70,7 +82,7 @@ internal class UploadWorker(
 
     // region Internal
 
-    class UploadNextBatchTask(
+    internal class UploadNextBatchTask(
         private val taskQueue: Queue<UploadNextBatchTask>,
         private val sdkCore: InternalSdkCore,
         private val feature: SdkFeature
@@ -121,8 +133,8 @@ internal class UploadWorker(
 
     companion object {
 
-        const val MESSAGE_NOT_INITIALIZED = "Datadog has not been initialized."
+        internal const val MESSAGE_NOT_INITIALIZED = "Datadog has not been initialized."
 
-        const val DATADOG_INSTANCE_NAME = "_dd.sdk.instanceName"
+        internal const val DATADOG_INSTANCE_NAME = "_dd.sdk.instanceName"
     }
 }

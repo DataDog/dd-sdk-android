@@ -290,6 +290,26 @@ internal class TelemetryConfigurationEventAssert(actual: TelemetryConfigurationE
         return this
     }
 
+    fun hasTnsTimeBasedThreshold(expected: Long?): TelemetryConfigurationEventAssert {
+        assertThat(actual.telemetry.configuration.tnsTimeThresholdMs)
+            .overridingErrorMessage(
+                "Expected event data to have telemetry.configuration.tnsTimeThresholdMs $expected " +
+                    "but was ${actual.telemetry.configuration.tnsTimeThresholdMs}"
+            )
+            .isEqualTo(expected)
+        return this
+    }
+
+    fun hasInvTimeBasedThreshold(expected: Long?): TelemetryConfigurationEventAssert {
+        assertThat(actual.telemetry.configuration.invTimeThresholdMs)
+            .overridingErrorMessage(
+                "Expected event data to have telemetry.configuration.invTimeThresholdMs $expected " +
+                    "but was ${actual.telemetry.configuration.invTimeThresholdMs}"
+            )
+            .isEqualTo(expected)
+        return this
+    }
+
     // endregion
 
     // region CrossPlatform Configuration

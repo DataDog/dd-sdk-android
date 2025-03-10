@@ -140,6 +140,7 @@ internal class DatadogLateCrashReporterTest {
                 id = fakeUserInfo.id,
                 name = fakeUserInfo.name,
                 email = fakeUserInfo.email,
+                anonymousId = fakeUserInfo.anonymousId,
                 additionalProperties = fakeUserInfo.additionalProperties.toMutableMap()
             )
         )
@@ -181,6 +182,7 @@ internal class DatadogLateCrashReporterTest {
                 .hasTimestamp(fakeTimestamp + fakeServerOffset)
                 .hasUserInfo(
                     UserInfo(
+                        fakeViewEvent.usr?.anonymousId,
                         fakeViewEvent.usr?.id,
                         fakeViewEvent.usr?.name,
                         fakeViewEvent.usr?.email,
@@ -239,6 +241,7 @@ internal class DatadogLateCrashReporterTest {
                 id = fakeUserInfo.id,
                 name = fakeUserInfo.name,
                 email = fakeUserInfo.email,
+                anonymousId = fakeUserInfo.anonymousId,
                 additionalProperties = fakeUserInfo.additionalProperties.toMutableMap()
             )
         )
@@ -281,6 +284,7 @@ internal class DatadogLateCrashReporterTest {
                 .hasTimestamp(fakeTimestamp + fakeServerOffset)
                 .hasUserInfo(
                     UserInfo(
+                        fakeViewEvent.usr?.anonymousId,
                         fakeViewEvent.usr?.id,
                         fakeViewEvent.usr?.name,
                         fakeViewEvent.usr?.email,
@@ -339,6 +343,7 @@ internal class DatadogLateCrashReporterTest {
                 id = fakeUserInfo.id,
                 name = fakeUserInfo.name,
                 email = fakeUserInfo.email,
+                anonymousId = fakeUserInfo.anonymousId,
                 additionalProperties = fakeUserInfo.additionalProperties.toMutableMap()
             )
         )
@@ -481,6 +486,7 @@ internal class DatadogLateCrashReporterTest {
                 id = fakeUserInfo.id,
                 name = fakeUserInfo.name,
                 email = fakeUserInfo.email,
+                anonymousId = fakeUserInfo.anonymousId,
                 additionalProperties = fakeUserInfo.additionalProperties.toMutableMap()
             )
         )
@@ -527,6 +533,7 @@ internal class DatadogLateCrashReporterTest {
                 .hasTimestamp(fakeTimestamp + fakeServerOffset)
                 .hasUserInfo(
                     UserInfo(
+                        fakeViewEvent.usr?.anonymousId,
                         fakeViewEvent.usr?.id,
                         fakeViewEvent.usr?.name,
                         fakeViewEvent.usr?.email,
@@ -685,6 +692,7 @@ internal class DatadogLateCrashReporterTest {
                 id = fakeUserInfo.id,
                 name = fakeUserInfo.name,
                 email = fakeUserInfo.email,
+                anonymousId = fakeUserInfo.anonymousId,
                 additionalProperties = fakeUserInfo.additionalProperties.toMutableMap()
             )
         )
@@ -723,6 +731,7 @@ internal class DatadogLateCrashReporterTest {
                 .hasTimestamp(fakeTimestamp + fakeServerOffset)
                 .hasUserInfo(
                     UserInfo(
+                        fakeViewEvent.usr?.anonymousId,
                         fakeViewEvent.usr?.id,
                         fakeViewEvent.usr?.name,
                         fakeViewEvent.usr?.email,
@@ -861,6 +870,7 @@ internal class DatadogLateCrashReporterTest {
                 id = fakeUserInfo.id,
                 name = fakeUserInfo.name,
                 email = fakeUserInfo.email,
+                anonymousId = fakeUserInfo.anonymousId,
                 additionalProperties = fakeUserInfo.additionalProperties.toMutableMap()
             )
         )
@@ -899,6 +909,7 @@ internal class DatadogLateCrashReporterTest {
                 .hasTimestamp(fakeTimestamp + fakeServerOffset)
                 .hasUserInfo(
                     UserInfo(
+                        fakeViewEvent.usr?.anonymousId,
                         fakeViewEvent.usr?.id,
                         fakeViewEvent.usr?.name,
                         fakeViewEvent.usr?.email,

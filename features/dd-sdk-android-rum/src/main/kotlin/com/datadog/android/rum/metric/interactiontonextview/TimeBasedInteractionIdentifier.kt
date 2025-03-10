@@ -15,7 +15,7 @@ import java.util.concurrent.TimeUnit
  * @param timeThresholdInMilliseconds The time threshold in milliseconds. Default is 3000ms.
  */
 class TimeBasedInteractionIdentifier(
-    timeThresholdInMilliseconds: Long = DEFAULT_TIME_THRESHOLD_MS
+    internal val timeThresholdInMilliseconds: Long = DEFAULT_TIME_THRESHOLD_MS
 ) : LastInteractionIdentifier {
 
     private val timeThresholdInNanoSeconds: Long = TimeUnit.MILLISECONDS.toNanos(timeThresholdInMilliseconds)
@@ -24,6 +24,10 @@ class TimeBasedInteractionIdentifier(
         return context.currentViewCreationTimestamp?.let { viewCreatedTime ->
             viewCreatedTime - context.eventCreatedAtNanos < timeThresholdInNanoSeconds
         } ?: false
+    }
+
+    internal fun defaultThresholdUsed(): Boolean {
+        return DEFAULT_TIME_THRESHOLD_MS == timeThresholdInMilliseconds
     }
 
     // region Object

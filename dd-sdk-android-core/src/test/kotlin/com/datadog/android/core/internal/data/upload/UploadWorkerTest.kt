@@ -15,6 +15,7 @@ import com.datadog.android.Datadog
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.core.InternalSdkCore
+import com.datadog.android.core.UploadWorker
 import com.datadog.android.core.internal.NoOpInternalSdkCore
 import com.datadog.android.core.internal.SdkFeature
 import com.datadog.android.core.internal.data.upload.UploadStatus.Companion.UNKNOWN_RESPONSE_CODE
