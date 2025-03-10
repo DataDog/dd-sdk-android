@@ -38,6 +38,7 @@ import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumSessionListener
+import com.datadog.android.rum.configuration.SlowFrameListenerConfiguration
 import com.datadog.android.rum.configuration.VitalsUpdateFrequency
 import com.datadog.android.rum.internal.anr.ANRDetectorRunnable
 import com.datadog.android.rum.internal.debug.UiRumDebugListener
@@ -152,7 +153,9 @@ internal class RumFeature(
         this.appContext = appContext
         initialResourceIdentifier = configuration.initialResourceIdentifier
         lastInteractionIdentifier = configuration.lastInteractionIdentifier
-        slowFramesListener = DefaultSlowFramesListener()
+        slowFramesListener = configuration.slowFrameListenerConfiguration
+            ?.let(::DefaultSlowFramesListener)
+            ?: NoOpSlowFramesListener()
         dataWriter = createDataWriter(
             configuration,
             sdkCore as InternalSdkCore
@@ -571,6 +574,7 @@ internal class RumFeature(
         val sessionListener: RumSessionListener,
         val initialResourceIdentifier: InitialResourceIdentifier,
         val lastInteractionIdentifier: LastInteractionIdentifier?,
+        val slowFrameListenerConfiguration: SlowFrameListenerConfiguration?,
         val additionalConfig: Map<String, Any>,
         val trackAnonymousUser: Boolean
     )
@@ -618,7 +622,8 @@ internal class RumFeature(
             initialResourceIdentifier = TimeBasedInitialResourceIdentifier(),
             lastInteractionIdentifier = TimeBasedInteractionIdentifier(),
             additionalConfig = emptyMap(),
-            trackAnonymousUser = true
+            trackAnonymousUser = true,
+            slowFrameListenerConfiguration = null
         )
 
         internal const val EVENT_MESSAGE_PROPERTY = "message"

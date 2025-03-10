@@ -10,6 +10,7 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.event.EventMapper
 import com.datadog.android.event.NoOpEventMapper
 import com.datadog.android.rum.assertj.ConfigurationRumAssert
+import com.datadog.android.rum.configuration.SlowFrameListenerConfiguration
 import com.datadog.android.rum.configuration.VitalsUpdateFrequency
 import com.datadog.android.rum.event.ViewEventMapper
 import com.datadog.android.rum.internal.NoOpRumSessionListener
@@ -106,7 +107,8 @@ internal class RumConfigurationBuilderTest {
                 additionalConfig = emptyMap(),
                 initialResourceIdentifier = TimeBasedInitialResourceIdentifier(),
                 lastInteractionIdentifier = TimeBasedInteractionIdentifier(),
-                trackAnonymousUser = true
+                trackAnonymousUser = true,
+                slowFrameListenerConfiguration = null
             )
         )
     }
@@ -559,6 +561,21 @@ internal class RumConfigurationBuilderTest {
 
         // Then
         assertThat(rumConfiguration.featureConfiguration.lastInteractionIdentifier)
+            .isSameAs(customLastInteractionIdentifier)
+    }
+
+    @Test
+    fun `M use a custom slowFramesListenerConfiguration W setSlowFrameListenerConfiguration()`() {
+        // Given
+        val customLastInteractionIdentifier = mock<SlowFrameListenerConfiguration>()
+
+        // When
+        val rumConfiguration = testedBuilder
+            .setSlowFrameListenerConfiguration(customLastInteractionIdentifier)
+            .build()
+
+        // Then
+        assertThat(rumConfiguration.featureConfiguration.slowFrameListenerConfiguration)
             .isSameAs(customLastInteractionIdentifier)
     }
 }

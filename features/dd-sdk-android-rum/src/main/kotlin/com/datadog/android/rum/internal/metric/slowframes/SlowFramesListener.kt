@@ -8,6 +8,7 @@ package com.datadog.android.rum.internal.metric.slowframes
 import androidx.annotation.MainThread
 import androidx.annotation.WorkerThread
 import androidx.metrics.performance.FrameData
+import com.datadog.android.rum.configuration.SlowFrameListenerConfiguration
 import com.datadog.android.rum.internal.domain.FrameMetricsData
 import com.datadog.android.rum.internal.domain.state.SlowFrameRecord
 import com.datadog.android.rum.internal.domain.state.ViewUIPerformanceReport
@@ -24,11 +25,7 @@ internal interface SlowFramesListener : FrameStateListener {
 }
 
 internal class DefaultSlowFramesListener(
-    internal val maxSlowFramesAmount: Int = DEFAULT_SLOW_FRAME_RECORDS_MAX_AMOUNT,
-    internal val frozenFrameThresholdNs: Long = DEFAULT_FROZEN_FRAME_THRESHOLD_NS,
-    internal val continuousSlowFrameThresholdNs: Long = DEFAULT_CONTINUOUS_SLOW_FRAME_THRESHOLD_NS,
-    internal val anrDuration: Long = DEFAULT_ANR_DURATION_NS,
-    internal val minViewLifetimeThresholdNs: Long = DEFAULT_VIEW_LIFETIME_THRESHOLD_NS
+    internal val configuration: SlowFrameListenerConfiguration
 ) : SlowFramesListener {
 
     @Volatile
@@ -50,8 +47,8 @@ internal class DefaultSlowFramesListener(
         @Suppress("UnsafeThirdPartyFunctionCall") // can't have NPE here
         val report = slowFramesRecords.remove(viewId) ?: ViewUIPerformanceReport(
             System.nanoTime(),
-            maxSlowFramesAmount,
-            minViewLifetimeThresholdNs
+            configuration.maxSlowFramesAmount,
+            configuration.minViewLifetimeThresholdNs
         )
 
         // making sure that report is not partially updated
@@ -73,7 +70,7 @@ internal class DefaultSlowFramesListener(
             // Updating frames statistics
             report.totalFramesDurationNs += frameDurationNs
 
-            if (frameDurationNs > frozenFrameThresholdNs || !volatileFrameData.isJank) {
+            if (frameDurationNs > configuration.frozenFrameThresholdNs || !volatileFrameData.isJank) {
                 // Frame duration is too big to be considered as a slow frame or not jank
                 return
             }
@@ -83,7 +80,7 @@ internal class DefaultSlowFramesListener(
             val delaySinceLastUpdate = frameStartedTimestampNs -
                 (previousSlowFrameRecord?.startTimestampNs ?: frameStartedTimestampNs)
 
-            if (previousSlowFrameRecord == null || delaySinceLastUpdate > continuousSlowFrameThresholdNs) {
+            if (previousSlowFrameRecord == null || delaySinceLastUpdate > configuration.continuousSlowFrameThresholdNs) {
                 // No previous slow frame record or amount of time since the last update
                 // is significant enough to consider it idle - adding a new slow frame record.
                 if (frameDurationNs > 0) {
@@ -96,7 +93,7 @@ internal class DefaultSlowFramesListener(
                 // It's a continuous slow frame – increasing duration
                 previousSlowFrameRecord.durationNs = min(
                     previousSlowFrameRecord.durationNs + frameDurationNs,
-                    frozenFrameThresholdNs - 1
+                    configuration.frozenFrameThresholdNs - 1
                 )
             }
         }
@@ -105,7 +102,7 @@ internal class DefaultSlowFramesListener(
     @WorkerThread
     override fun onAddLongTask(durationNs: Long) {
         val view = currentViewId
-        if (durationNs >= anrDuration && view != null) {
+        if (durationNs >= configuration.anrDuration && view != null) {
             val report = getViewPerformanceReport(view)
             synchronized(report) { report.anrDurationNs += durationNs }
         }
@@ -119,17 +116,8 @@ internal class DefaultSlowFramesListener(
     private fun getViewPerformanceReport(viewId: String) = slowFramesRecords.getOrPut(viewId) {
         ViewUIPerformanceReport(
             currentViewStartedTimeStampNs,
-            maxSlowFramesAmount,
-            minimumViewLifetimeThresholdNs = minViewLifetimeThresholdNs
+            configuration.maxSlowFramesAmount,
+            minimumViewLifetimeThresholdNs = configuration.minViewLifetimeThresholdNs
         )
-    }
-
-    companion object {
-        // Taking into account each Hitch takes 64B in the payload, we can have 64KB max per view event
-        private const val DEFAULT_SLOW_FRAME_RECORDS_MAX_AMOUNT: Int = 1000
-        private const val DEFAULT_CONTINUOUS_SLOW_FRAME_THRESHOLD_NS: Long = 16_666_666L // 1/60 fps in nanoseconds
-        private const val DEFAULT_FROZEN_FRAME_THRESHOLD_NS: Long = 700_000_000 // 700ms
-        private const val DEFAULT_ANR_DURATION_NS: Long = 5_000_000_000L // 5s
-        private const val DEFAULT_VIEW_LIFETIME_THRESHOLD_NS: Long = 100_000_000L // 100ms
     }
 }
