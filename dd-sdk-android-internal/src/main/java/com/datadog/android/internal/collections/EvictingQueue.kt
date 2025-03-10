@@ -50,12 +50,7 @@ class EvictingQueue<T> private constructor(
      * @return `true` if this collection changed as a result of the call (as specified by [java.util.Collection.add])
      */
     override fun add(element: T): Boolean {
-        if (maxSize == 0) return false
-        if (size >= maxSize) {
-            delegate.poll()
-        }
-        @Suppress("UnsafeThirdPartyFunctionCall") // can't have NPE here
-        return delegate.offer(element)
+        return this.offer(element)
     }
 
     /**
