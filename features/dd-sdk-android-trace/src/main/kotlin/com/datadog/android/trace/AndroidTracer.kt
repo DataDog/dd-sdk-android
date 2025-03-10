@@ -126,7 +126,6 @@ class AndroidTracer internal constructor(
         fun build(): AndroidTracer {
             val tracingFeature = sdkCore.getFeature(Feature.TRACING_FEATURE_NAME)
                 ?.unwrap<TracingFeature>()
-            val rumFeature = sdkCore.getFeature(Feature.RUM_FEATURE_NAME)
 
             if (tracingFeature == null) {
                 sdkCore.internalLogger.log(
@@ -136,14 +135,6 @@ class AndroidTracer internal constructor(
                 )
             }
 
-            if (bundleWithRumEnabled && rumFeature == null) {
-                sdkCore.internalLogger.log(
-                    InternalLogger.Level.WARN,
-                    InternalLogger.Target.USER,
-                    { RUM_NOT_ENABLED_ERROR_MESSAGE }
-                )
-                bundleWithRumEnabled = false
-            }
             return AndroidTracer(
                 sdkCore,
                 config(),
@@ -296,10 +287,6 @@ class AndroidTracer internal constructor(
             "You're trying to create an AndroidTracer instance, " +
                 "but either the SDK was not initialized or the Tracing feature was " +
                 "not registered/initialized. No tracing data will be sent."
-        internal const val RUM_NOT_ENABLED_ERROR_MESSAGE =
-            "You're trying to bundle the traces with a RUM context, " +
-                "but the RUM feature was not registered/initialized. " +
-                "No RUM context will be attached to your traces in this case."
         internal const val DEFAULT_SERVICE_NAME_IS_MISSING_ERROR_MESSAGE =
             "Default service name is missing during" +
                 " AndroidTracer.Builder creation, did you initialize SDK?"
