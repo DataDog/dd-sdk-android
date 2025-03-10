@@ -24,6 +24,7 @@ import com.datadog.android.rum.internal.anr.ANRDetectorRunnable
 import com.datadog.android.rum.internal.anr.ANRException
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
+import com.datadog.android.rum.internal.domain.state.ViewUIPerformanceReport
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
 import com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener
 import com.datadog.android.rum.internal.vitals.NoOpVitalMonitor
@@ -114,6 +115,9 @@ internal class RumViewManagerScopeTest {
     lateinit var fakeDatadogContext: DatadogContext
 
     @Forgery
+    lateinit var fakeViewUIPerformanceReport: ViewUIPerformanceReport
+
+    @Forgery
     lateinit var fakeTime: TimeInfo
 
     @Mock
@@ -140,6 +144,7 @@ internal class RumViewManagerScopeTest {
         whenever(mockChildScope.handleEvent(any(), any())) doReturn mockChildScope
         whenever(mockChildScope.isActive()) doReturn true
         whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
+        whenever(mockSlowFramesListener.resolveReport(any())) doReturn fakeViewUIPerformanceReport
 
         testedScope = RumViewManagerScope(
             mockParentScope,

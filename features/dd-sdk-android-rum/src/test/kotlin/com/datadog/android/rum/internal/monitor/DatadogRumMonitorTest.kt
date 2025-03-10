@@ -41,6 +41,7 @@ import com.datadog.android.rum.internal.domain.scope.RumScopeKey
 import com.datadog.android.rum.internal.domain.scope.RumSessionScope
 import com.datadog.android.rum.internal.domain.scope.RumViewManagerScope
 import com.datadog.android.rum.internal.domain.scope.RumViewScope
+import com.datadog.android.rum.internal.domain.state.ViewUIPerformanceReport
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
 import com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener
 import com.datadog.android.rum.internal.vitals.VitalMonitor
@@ -168,6 +169,9 @@ internal class DatadogRumMonitorTest {
     @Forgery
     lateinit var fakeTimeInfo: TimeInfo
 
+    @Forgery
+    lateinit var fakeViewUIPerformanceReport: ViewUIPerformanceReport
+
     @Mock
     lateinit var mockNetworkSettledResourceIdentifier: InitialResourceIdentifier
 
@@ -186,6 +190,7 @@ internal class DatadogRumMonitorTest {
 
         whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
         whenever(mockSdkCore.time) doReturn fakeTimeInfo
+        whenever(mockSlowFramesListener.resolveReport(any())) doReturn fakeViewUIPerformanceReport
 
         fakeAttributes = forge.exhaustiveAttributes()
         testedMonitor = DatadogRumMonitor(

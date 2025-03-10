@@ -1779,7 +1779,7 @@ data class com.datadog.android.rum.model.ViewEvent
       fun fromJson(kotlin.String): ViewEventSession
       fun fromJsonObject(com.google.gson.JsonObject): ViewEventSession
   data class ViewEventView
-    constructor(kotlin.String, kotlin.String? = null, kotlin.String, kotlin.String? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, LoadingType? = null, kotlin.Long, kotlin.Long? = null, kotlin.Long? = null, kotlin.String? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.String? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.String? = null, kotlin.Number? = null, kotlin.Long? = null, kotlin.String? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, CustomTimings? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, Action, Error, Crash? = null, LongTask? = null, FrozenFrame? = null, Resource, Frustration? = null, kotlin.collections.List<InForegroundPeriod>? = null, kotlin.Number? = null, kotlin.Number? = null, kotlin.Number? = null, kotlin.Number? = null, kotlin.Number? = null, kotlin.Number? = null, FlutterBuildTime? = null, FlutterBuildTime? = null, FlutterBuildTime? = null, Performance? = null)
+    constructor(kotlin.String, kotlin.String? = null, kotlin.String, kotlin.String? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, LoadingType? = null, kotlin.Long, kotlin.Long? = null, kotlin.Long? = null, kotlin.String? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.String? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.String? = null, kotlin.Number? = null, kotlin.Long? = null, kotlin.String? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, CustomTimings? = null, kotlin.Boolean? = null, kotlin.Boolean? = null, Action, Error, Crash? = null, LongTask? = null, FrozenFrame? = null, kotlin.collections.List<SlowFrame>? = null, Resource, Frustration? = null, kotlin.collections.List<InForegroundPeriod>? = null, kotlin.Number? = null, kotlin.Number? = null, kotlin.Number? = null, kotlin.Number? = null, kotlin.Number? = null, kotlin.Number? = null, kotlin.Number? = null, kotlin.Number? = null, FlutterBuildTime? = null, FlutterBuildTime? = null, FlutterBuildTime? = null, Performance? = null)
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): ViewEventView
@@ -1833,7 +1833,7 @@ data class com.datadog.android.rum.model.ViewEvent
       fun fromJson(kotlin.String): Device
       fun fromJsonObject(com.google.gson.JsonObject): Device
   data class Dd
-    constructor(DdSession? = null, Configuration? = null, kotlin.String? = null, kotlin.Long, kotlin.collections.List<PageState>? = null, ReplayStats? = null)
+    constructor(DdSession? = null, Configuration? = null, kotlin.String? = null, kotlin.Long, kotlin.collections.List<PageState>? = null, ReplayStats? = null, DdCls? = null)
     val formatVersion: kotlin.Long
     fun toJson(): com.google.gson.JsonElement
     companion object 
@@ -1893,6 +1893,12 @@ data class com.datadog.android.rum.model.ViewEvent
     companion object 
       fun fromJson(kotlin.String): FrozenFrame
       fun fromJsonObject(com.google.gson.JsonObject): FrozenFrame
+  data class SlowFrame
+    constructor(kotlin.Long, kotlin.Long)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): SlowFrame
+      fun fromJsonObject(com.google.gson.JsonObject): SlowFrame
   data class Resource
     constructor(kotlin.Long)
     fun toJson(): com.google.gson.JsonElement
@@ -1918,7 +1924,7 @@ data class com.datadog.android.rum.model.ViewEvent
       fun fromJson(kotlin.String): FlutterBuildTime
       fun fromJsonObject(com.google.gson.JsonObject): FlutterBuildTime
   data class Performance
-    constructor(Cls? = null, Fcp? = null, Fid? = null, Inp? = null, Lcp? = null, Fbc? = null)
+    constructor(PerformanceCls? = null, Fcp? = null, Fid? = null, Inp? = null, Lcp? = null, Fbc? = null)
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Performance
@@ -1965,18 +1971,24 @@ data class com.datadog.android.rum.model.ViewEvent
     companion object 
       fun fromJson(kotlin.String): ReplayStats
       fun fromJsonObject(com.google.gson.JsonObject): ReplayStats
+  data class DdCls
+    constructor(kotlin.Number? = null)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): DdCls
+      fun fromJsonObject(com.google.gson.JsonObject): DdCls
   data class ContainerView
     constructor(kotlin.String)
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): ContainerView
       fun fromJsonObject(com.google.gson.JsonObject): ContainerView
-  data class Cls
+  data class PerformanceCls
     constructor(kotlin.Number, kotlin.Long? = null, kotlin.String? = null, PreviousRect? = null, PreviousRect? = null)
     fun toJson(): com.google.gson.JsonElement
     companion object 
-      fun fromJson(kotlin.String): Cls
-      fun fromJsonObject(com.google.gson.JsonObject): Cls
+      fun fromJson(kotlin.String): PerformanceCls
+      fun fromJsonObject(com.google.gson.JsonObject): PerformanceCls
   data class Fcp
     constructor(kotlin.Long)
     fun toJson(): com.google.gson.JsonElement
