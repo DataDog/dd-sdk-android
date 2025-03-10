@@ -218,7 +218,7 @@ internal class DatadogLateCrashReporter(
                     user?.id,
                     user?.name,
                     user?.email,
-                    null,
+                    user?.anonymousId,
                     additionalUserProperties
                 )
             },

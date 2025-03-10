@@ -13,6 +13,8 @@ import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.api.storage.EventType
 import com.datadog.android.core.InternalSdkCore
+import com.datadog.android.core.internal.attributes.LocalAttribute
+import com.datadog.android.core.internal.attributes.ViewScopeInstrumentationType
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.internal.utils.loggableStackTrace
@@ -24,7 +26,10 @@ import com.datadog.android.rum.internal.FeaturesContextResolver
 import com.datadog.android.rum.internal.anr.ANRException
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
+import com.datadog.android.rum.internal.metric.NoValueReason
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
+import com.datadog.android.rum.internal.metric.ViewEndedMetricDispatcher
+import com.datadog.android.rum.internal.metric.ViewMetricDispatcher
 import com.datadog.android.rum.internal.metric.interactiontonextview.InteractionToNextViewMetricResolver
 import com.datadog.android.rum.internal.metric.interactiontonextview.InternalInteractionContext
 import com.datadog.android.rum.internal.metric.networksettled.InternalResourceContext
@@ -64,13 +69,15 @@ internal open class RumViewScope(
     private val trackFrustrations: Boolean,
     internal val sampleRate: Float,
     private val interactionToNextViewMetricResolver: InteractionToNextViewMetricResolver,
-    private val networkSettledMetricResolver: NetworkSettledMetricResolver
+    private val networkSettledMetricResolver: NetworkSettledMetricResolver,
+    private val viewEndedMetricDispatcher: ViewMetricDispatcher
 ) : RumScope {
 
     internal val url = key.url.replace('.', '/')
 
     internal val eventAttributes: MutableMap<String, Any?> = initialAttributes.toMutableMap()
     private var globalAttributes: Map<String, Any?> = resolveGlobalAttributes(sdkCore)
+    private val internalAttributes: MutableMap<String, Any?> = mutableMapOf()
 
     private var sessionId: String = parentScope.getRumContext().sessionId
     internal var viewId: String = UUID.randomUUID().toString()
@@ -195,6 +202,7 @@ internal open class RumViewScope(
             is RumRawEvent.StartResource -> onStartResource(event, writer)
             is RumRawEvent.AddError -> onAddError(event, writer)
             is RumRawEvent.AddLongTask -> onAddLongTask(event, writer)
+            is RumRawEvent.SetInternalViewAttribute -> onSetInternalViewAttribute(event)
 
             is RumRawEvent.AddFeatureFlagEvaluation -> onAddFeatureFlagEvaluation(event, writer)
             is RumRawEvent.AddFeatureFlagEvaluations -> onAddFeatureFlagEvaluations(event, writer)
@@ -270,7 +278,7 @@ internal open class RumViewScope(
             internalLogger.log(
                 InternalLogger.Level.DEBUG,
                 InternalLogger.Target.USER,
-                { ADDING_VIEW_LOADING_TIME_DEBUG_MESSAGE_FORMAT.format(Locale.US, viewLoadingTime, viewName) }
+                { ADDING_VIEW_LOADING_TIME_DEBUG_MESSAGE_FORMAT.format(Locale.US, newLoadingTime, viewName) }
             )
             internalLogger.logApiUsage {
                 InternalTelemetryEvent.ApiUsage.AddViewLoadingTime(
@@ -301,6 +309,7 @@ internal open class RumViewScope(
             }
         }
         viewLoadingTime = newLoadingTime
+        viewEndedMetricDispatcher.onViewLoadingTimeResolved(newLoadingTime)
         sendViewUpdate(event, writer)
     }
 
@@ -517,6 +526,7 @@ internal open class RumViewScope(
                         id = user.id,
                         name = user.name,
                         email = user.email,
+                        anonymousId = user.anonymousId,
                         additionalProperties = user.additionalProperties.toMutableMap()
                     )
                 } else {
@@ -608,6 +618,13 @@ internal open class RumViewScope(
             max(value, vitalInfo.maxValue),
             meanValue
         )
+    }
+
+    @WorkerThread
+    private fun onSetInternalViewAttribute(event: RumRawEvent.SetInternalViewAttribute) {
+        if (stopped) return
+
+        internalAttributes[event.key] = event.value
     }
 
     @WorkerThread
@@ -835,7 +852,13 @@ internal open class RumViewScope(
     private fun sendViewUpdate(event: RumRawEvent, writer: DataWriter<Any>, eventType: EventType = EventType.DEFAULT) {
         val viewComplete = isViewComplete()
         val timeToSettled = networkSettledMetricResolver.resolveMetric()
-        val interactionToNextViewTime = interactionToNextViewMetricResolver.resolveMetric(viewId)
+        var interactionToNextViewTime = interactionToNextViewMetricResolver.resolveMetric(viewId)
+        val invMetricResolverState = interactionToNextViewMetricResolver.getState(viewId)
+        if (interactionToNextViewTime == null &&
+            invMetricResolverState.noValueReason == NoValueReason.InteractionToNextView.DISABLED
+        ) {
+            interactionToNextViewTime = (internalAttributes[RumAttributes.CUSTOM_INV_VALUE] as? Long)
+        }
         version++
 
         // make a local copy, so that closure captures the state as of now
@@ -872,6 +895,21 @@ internal open class RumViewScope(
         // make a copy - by the time we iterate over it on another thread, it may already be changed
         val eventFeatureFlags = featureFlags.toMutableMap()
         val eventAdditionalAttributes = (eventAttributes + globalAttributes).toMutableMap()
+
+        if (isViewComplete() && getRumContext().sessionState != RumSessionScope.State.NOT_TRACKED) {
+            viewEndedMetricDispatcher.sendViewEnded(
+                interactionToNextViewMetricResolver.getState(viewId),
+                networkSettledMetricResolver.getState()
+            )
+        }
+
+        val performance = (internalAttributes[RumAttributes.FLUTTER_FIRST_BUILD_COMPLETE] as? Number)?.let {
+            ViewEvent.Performance(
+                fbc = ViewEvent.Fbc(
+                    timestamp = it.toLong()
+                )
+            )
+        }
 
         sdkCore.newRumEventWriteOperation(writer, eventType) { datadogContext ->
             val currentViewId = rumContext.viewId.orEmpty()
@@ -936,6 +974,7 @@ internal open class RumViewScope(
                     flutterBuildTime = eventFlutterBuildTime,
                     flutterRasterTime = eventFlutterRasterTime,
                     jsRefreshRate = eventJsRefreshRate,
+                    performance = performance,
                     networkSettledTime = timeToSettled,
                     interactionToNextViewTime = interactionToNextViewTime,
                     loadingTime = viewLoadingTime
@@ -945,6 +984,7 @@ internal open class RumViewScope(
                         id = user.id,
                         name = user.name,
                         email = user.email,
+                        anonymousId = user.anonymousId,
                         additionalProperties = user.additionalProperties.toMutableMap()
                     )
                 } else {
@@ -1005,6 +1045,7 @@ internal open class RumViewScope(
     private fun resolveViewDuration(event: RumRawEvent) {
         stoppedNanos = event.eventTime.nanoTime
         val duration = stoppedNanos - startedNanos
+        viewEndedMetricDispatcher.onDurationResolved(duration)
         if (duration == 0L) {
             if (type == RumViewType.BACKGROUND && event is RumRawEvent.AddError && event.isFatal) {
                 // This is a legitimate empty duration, no-op
@@ -1110,6 +1151,7 @@ internal open class RumViewScope(
                         id = user.id,
                         name = user.name,
                         email = user.email,
+                        anonymousId = user.anonymousId,
                         additionalProperties = user.additionalProperties.toMutableMap()
                     )
                 } else {
@@ -1216,6 +1258,7 @@ internal open class RumViewScope(
                         id = user.id,
                         name = user.name,
                         email = user.email,
+                        anonymousId = user.anonymousId,
                         additionalProperties = user.additionalProperties.toMutableMap()
                     )
                 } else {
@@ -1333,19 +1376,6 @@ internal open class RumViewScope(
         }
     }
 
-    enum class RumViewType(val asString: String) {
-        NONE("NONE"),
-        FOREGROUND("FOREGROUND"),
-        BACKGROUND("BACKGROUND"),
-        APPLICATION_LAUNCH("APPLICATION_LAUNCH");
-
-        companion object {
-            fun fromString(string: String?): RumViewType? {
-                return values().firstOrNull { it.asString == string }
-            }
-        }
-    }
-
     // endregion
 
     companion object {
@@ -1388,6 +1418,18 @@ internal open class RumViewScope(
             interactionToNextViewMetricResolver: InteractionToNextViewMetricResolver,
             networkSettledResourceIdentifier: InitialResourceIdentifier
         ): RumViewScope {
+            val networkSettledMetricResolver = NetworkSettledMetricResolver(
+                networkSettledResourceIdentifier,
+                sdkCore.internalLogger
+            )
+
+            val viewType = RumViewType.FOREGROUND
+            val viewEndedMetricDispatcher = ViewEndedMetricDispatcher(
+                viewType = viewType,
+                internalLogger = sdkCore.internalLogger,
+                instrumentationType = event.tryResolveInstrumentationType()
+            )
+
             return RumViewScope(
                 parentScope,
                 sdkCore,
@@ -1400,13 +1442,12 @@ internal open class RumViewScope(
                 cpuVitalMonitor,
                 memoryVitalMonitor,
                 frameRateVitalMonitor,
+                type = viewType,
                 trackFrustrations = trackFrustrations,
                 sampleRate = sampleRate,
                 interactionToNextViewMetricResolver = interactionToNextViewMetricResolver,
-                networkSettledMetricResolver = NetworkSettledMetricResolver(
-                    networkSettledResourceIdentifier,
-                    sdkCore.internalLogger
-                )
+                networkSettledMetricResolver = networkSettledMetricResolver,
+                viewEndedMetricDispatcher = viewEndedMetricDispatcher
             )
         }
 
@@ -1417,6 +1458,9 @@ internal open class RumViewScope(
                 average = meanValue
             )
         }
+
+        private fun RumRawEvent.StartView.tryResolveInstrumentationType() =
+            attributes[LocalAttribute.Key.VIEW_SCOPE_INSTRUMENTATION_TYPE.toString()] as? ViewScopeInstrumentationType
 
         @Suppress("CommentOverPrivateFunction")
         /**

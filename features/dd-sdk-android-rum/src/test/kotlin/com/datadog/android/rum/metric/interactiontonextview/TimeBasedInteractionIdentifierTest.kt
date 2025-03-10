@@ -9,6 +9,7 @@ package com.datadog.android.rum.metric.interactiontonextview
 import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.tools.unit.ObjectTest
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -57,7 +58,7 @@ internal class TimeBasedInteractionIdentifierTest : ObjectTest<TimeBasedInteract
     override fun createUnequalInstance(
         source: TimeBasedInteractionIdentifier,
         forge: Forge
-    ): TimeBasedInteractionIdentifier? {
+    ): TimeBasedInteractionIdentifier {
         return TimeBasedInteractionIdentifier(
             fakeTimestampThresholdInMs + forge.aLong(min = 1, max = 1000)
         )
@@ -112,6 +113,33 @@ internal class TimeBasedInteractionIdentifierTest : ObjectTest<TimeBasedInteract
 
         // When
         val result = testedIdentifier.validate(fakeValidContext)
+
+        // Then
+        assertThat(result).isFalse()
+    }
+
+    @Test
+    fun `M return true W defaultThresholdUsed{default delay used}`() {
+        // Given
+        val testedValidator = TimeBasedInteractionIdentifier()
+
+        // When
+        val result = testedValidator.defaultThresholdUsed()
+
+        // Then
+        assertThat(result).isTrue()
+    }
+
+    @Test
+    fun `M return false W defaultThresholdUsed{custom delay used}`(
+        @LongForgery(min = 1, max = 100) timeThresholdMs: Long
+    ) {
+        // Given
+        val testedValidator = TimeBasedInteractionIdentifier(
+            TimeBasedInteractionIdentifier.DEFAULT_TIME_THRESHOLD_MS + timeThresholdMs
+        )
+        // When
+        val result = testedValidator.defaultThresholdUsed()
 
         // Then
         assertThat(result).isFalse()

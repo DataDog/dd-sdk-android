@@ -67,6 +67,10 @@ public abstract class PropagationTags {
 
   public abstract void updateTraceIdHighOrderBits(long highOrderBits);
 
+  public abstract String getRumSessionId();
+
+  public abstract void updateRumSessionId(String sessionId);
+
   /**
    * Gets the original <a href="https://www.w3.org/TR/trace-context/#tracestate-header">W3C
    * tracestate header</a> value.

@@ -470,7 +470,8 @@ class HeadBasedSamplingTest {
                 )
                 hasMostSignificant64BitsTraceId(mostSignificantTraceId)
                 hasSpanId(spanId.toLong().toHexString())
-                hasParentId(localSpanId)
+                // OpenTelemetry Span IDs are always padded with 0
+                hasParentId(localSpanId.dropWhile { it == '0' })
                 hasVersion(stubSdkCore.getDatadogContext().version)
                 hasSource(stubSdkCore.getDatadogContext().source)
                 hasTracerVersion(stubSdkCore.getDatadogContext().sdkVersion)

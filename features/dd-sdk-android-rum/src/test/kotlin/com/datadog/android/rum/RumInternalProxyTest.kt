@@ -6,6 +6,7 @@
 
 package com.datadog.android.rum
 
+import android.app.Activity
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.utils.forge.Configurator
 import fr.xgouchet.elmyr.Forge
@@ -61,5 +62,19 @@ internal class RumInternalProxyTest {
 
         // Then
         verify(mockRumMonitor).updatePerformanceMetric(metric, value)
+    }
+
+    @Test
+    fun `M proxy enableJankStatsTracking to RumMonitor W enableJankStatsTracking()`() {
+        // Given
+        val mockRumMonitor = mock(AdvancedRumMonitor::class.java)
+        val proxy = _RumInternalProxy(mockRumMonitor)
+        val activity: Activity = mock()
+
+        // When
+        proxy.enableJankStatsTracking(activity)
+
+        // Then
+        verify(mockRumMonitor).enableJankStatsTracking(activity)
     }
 }

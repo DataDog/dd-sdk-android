@@ -49,6 +49,9 @@ internal class Configurator : BaseConfigurator() {
         forge.addFactory(NetworkSettledResourceContextFactory())
         forge.addFactory(InternalInteractionContextFactory())
         forge.addFactory(PreviousViewLastActionContextFactory())
+        forge.addFactory(TelemetryViewInitializationMetricsStateForgeryFactory())
+        forge.addFactory(FrameDataForgeryFactory())
+        forge.addFactory(FrameMetricDataForgeryFactory())
 
         // Telemetry schema models
         forge.addFactory(TelemetryDebugEventForgeryFactory())

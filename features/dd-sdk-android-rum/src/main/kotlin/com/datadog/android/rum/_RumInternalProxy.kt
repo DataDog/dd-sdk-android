@@ -6,6 +6,7 @@
 
 package com.datadog.android.rum
 
+import android.app.Activity
 import android.content.Intent
 import com.datadog.android.event.EventMapper
 import com.datadog.android.lint.InternalApi
@@ -42,6 +43,10 @@ class _RumInternalProxy internal constructor(private val rumMonitor: AdvancedRum
         rumMonitor.updatePerformanceMetric(metric, value)
     }
 
+    fun setInternalViewAttribute(key: String, value: Any?) {
+        rumMonitor.setInternalViewAttribute(key, value)
+    }
+
     @Suppress("MemberVisibilityCanBePrivate")
     fun setSyntheticsAttribute(testId: String?, resultId: String?) {
         if (this.handledSyntheticsAttribute) {
@@ -54,6 +59,15 @@ class _RumInternalProxy internal constructor(private val rumMonitor: AdvancedRum
         }
 
         rumMonitor.setSyntheticsAttribute(testId, resultId)
+    }
+
+    /**
+     * Enables the tracking of JankStats for the given activity. This should only be necessary for the
+     * initial activity of an application if Datadog is initialized after that activity is created.
+     * @param activity the activity to track
+     */
+    fun enableJankStatsTracking(activity: Activity) {
+        rumMonitor.enableJankStatsTracking(activity)
     }
 
     internal fun setSyntheticsAttributeFromIntent(intent: Intent) {

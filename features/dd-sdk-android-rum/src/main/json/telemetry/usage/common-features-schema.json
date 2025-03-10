@@ -45,6 +45,50 @@
     },
     {
       "required": ["feature"],
+      "title": "SetViewContext",
+      "properties": {
+        "feature": {
+          "type": "string",
+          "description": "setViewContext API",
+          "const": "set-view-context"
+        }
+      }
+    },
+    {
+      "required": ["feature"],
+      "title": "SetViewContextProperty",
+      "properties": {
+        "feature": {
+          "type": "string",
+          "description": "setViewContextProperty API",
+          "const": "set-view-context-property"
+        }
+      }
+    },
+    {
+      "required": ["feature"],
+      "title": "SetViewName",
+      "properties": {
+        "feature": {
+          "type": "string",
+          "description": "setViewName API",
+          "const": "set-view-name"
+        }
+      }
+    },
+    {
+      "required": ["feature"],
+      "title": "GetViewContext",
+      "properties": {
+        "feature": {
+          "type": "string",
+          "description": "getViewContext API",
+          "const": "get-view-context"
+        }
+      }
+    },
+    {
+      "required": ["feature"],
       "title": "AddAction",
       "properties": {
         "feature": {

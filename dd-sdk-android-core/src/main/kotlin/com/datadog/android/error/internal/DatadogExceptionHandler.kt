@@ -146,12 +146,13 @@ internal class DatadogExceptionHandler(
     private fun safeGetAllStacktraces(): Map<Thread, Array<StackTraceElement>> {
         return try {
             Thread.getAllStackTraces()
-        } catch (e: SecurityException) {
+        } catch (@Suppress("TooGenericExceptionCaught") t: Throwable) {
+            // coroutines machinery can throw errors here
             sdkCore.internalLogger.log(
                 InternalLogger.Level.ERROR,
                 InternalLogger.Target.MAINTAINER,
                 { "Failed to get all threads dump" },
-                e
+                t
             )
             emptyMap()
         }

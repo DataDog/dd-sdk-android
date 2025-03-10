@@ -15,7 +15,10 @@ import android.widget.Button
 import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.TextView
+import androidx.annotation.DrawableRes
+import androidx.annotation.IdRes
 import androidx.appcompat.widget.AppCompatImageButton
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import com.datadog.android.rum.ExperimentalRumApi
@@ -48,6 +51,19 @@ internal class ImageComponentsFragment : Fragment() {
         imageViewRemote = rootView.findViewById(R.id.imageView_remote)
         imageButtonRemote = rootView.findViewById(R.id.imageButtonRemote)
         appCompatButtonRemote = rootView.findViewById(R.id.appCompatImageButtonRemote)
+
+        setupStateListButton(
+            rootView = rootView,
+            buttonId = R.id.button_statelist_shapes,
+            backgroundId = R.drawable.selector_statelist_shapes
+        )
+
+        setupStateListButton(
+            rootView = rootView,
+            buttonId = R.id.button_statelist_images,
+            backgroundId = R.drawable.selector_statelist_images
+        )
+
         return rootView
     }
 
@@ -124,6 +140,18 @@ internal class ImageComponentsFragment : Fragment() {
         if (--imageLoadedCounter == 0) {
             GlobalRumMonitor.get().addViewLoadingTime(overwrite = false)
         }
+    }
+
+    private fun setupStateListButton(
+        rootView: View,
+        @IdRes buttonId: Int,
+        @DrawableRes backgroundId: Int
+    ) {
+        val button: Button = rootView.findViewById(buttonId)
+        val background = ContextCompat.getDrawable(rootView.context, backgroundId)
+
+        button.background = background
+        button.backgroundTintList = null
     }
 
     // endregion

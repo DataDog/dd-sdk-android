@@ -224,6 +224,92 @@ internal class DatadogUserInfoProviderTest {
     }
 
     @Test
+    fun `M enriches empty user info with anonymousId W setAnonymousId`(
+        @StringForgery(type = StringForgeryType.HEXADECIMAL) anonymousId: String
+    ) {
+        // When
+        testedProvider.setAnonymousId(anonymousId)
+
+        // Then
+        testedProvider.getUserInfo().let {
+            assertThat(it.anonymousId).isEqualTo(anonymousId)
+            assertThat(it.id).isNull()
+            assertThat(it.name).isNull()
+            assertThat(it.email).isNull()
+            assertThat(it.additionalProperties).isEmpty()
+        }
+    }
+
+    @Test
+    fun `M enriches existing user info with anonymousId W setAnonymousId`(
+        @StringForgery(type = StringForgeryType.HEXADECIMAL) anonymousId: String,
+        @StringForgery(type = StringForgeryType.HEXADECIMAL) id: String,
+        @StringForgery name: String,
+        @StringForgery(regex = "\\w+@\\w+") email: String,
+        @MapForgery(
+            key = AdvancedForgery(string = [StringForgery(StringForgeryType.ALPHA_NUMERICAL)]),
+            value = AdvancedForgery(string = [StringForgery(StringForgeryType.ALPHA_NUMERICAL)])
+        ) fakeUserProperties: Map<String, String>
+    ) {
+        // Given
+        testedProvider.setUserInfo(id, name, email, fakeUserProperties)
+
+        // When
+        testedProvider.setAnonymousId(anonymousId)
+
+        // Then
+        testedProvider.getUserInfo().let {
+            assertThat(it.anonymousId).isEqualTo(anonymousId)
+            assertThat(it.id).isEqualTo(id)
+            assertThat(it.name).isEqualTo(name)
+            assertThat(it.email).isEqualTo(email)
+            assertThat(it.additionalProperties).isEqualTo(fakeUserProperties)
+        }
+    }
+
+    @Test
+    fun `M clears the anonymousId W setAnonymousId { null }`(
+        @StringForgery(type = StringForgeryType.HEXADECIMAL) anonymousId: String
+    ) {
+        // Given
+        testedProvider.setAnonymousId(anonymousId)
+
+        // When
+        testedProvider.setAnonymousId(null)
+
+        // Then
+        assertThat(testedProvider.getUserInfo().anonymousId).isNull()
+    }
+
+    @Test
+    fun `M clears the anonymousId and keeps existing user info W setAnonymousId { null }`(
+        @StringForgery(type = StringForgeryType.HEXADECIMAL) anonymousId: String,
+        @StringForgery(type = StringForgeryType.HEXADECIMAL) id: String,
+        @StringForgery name: String,
+        @StringForgery(regex = "\\w+@\\w+") email: String,
+        @MapForgery(
+            key = AdvancedForgery(string = [StringForgery(StringForgeryType.ALPHA_NUMERICAL)]),
+            value = AdvancedForgery(string = [StringForgery(StringForgeryType.ALPHA_NUMERICAL)])
+        ) fakeUserProperties: Map<String, String>
+    ) {
+        // Given
+        testedProvider.setUserInfo(id, name, email, fakeUserProperties)
+        testedProvider.setAnonymousId(anonymousId)
+
+        // When
+        testedProvider.setAnonymousId(null)
+
+        // Then
+        testedProvider.getUserInfo().let {
+            assertThat(it.anonymousId).isNull()
+            assertThat(it.id).isEqualTo(id)
+            assertThat(it.name).isEqualTo(name)
+            assertThat(it.email).isEqualTo(email)
+            assertThat(it.additionalProperties).isEqualTo(fakeUserProperties)
+        }
+    }
+
+    @Test
     fun `M use immutable values W setUserInfo { removing properties }()`(
         forge: Forge,
         @StringForgery(type = StringForgeryType.HEXADECIMAL) id: String,

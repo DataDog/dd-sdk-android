@@ -15,6 +15,7 @@ import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.api.storage.EventBatchWriter
 import com.datadog.android.api.storage.EventType
+import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.feature.event.ThreadDump
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
@@ -33,7 +34,12 @@ import com.datadog.android.rum.internal.RumErrorSourceType
 import com.datadog.android.rum.internal.anr.ANRException
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
+import com.datadog.android.rum.internal.metric.NoValueReason
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
+import com.datadog.android.rum.internal.metric.ViewEndedMetricDispatcher
+import com.datadog.android.rum.internal.metric.ViewInitializationMetricsConfig
+import com.datadog.android.rum.internal.metric.ViewInitializationMetricsState
+import com.datadog.android.rum.internal.metric.ViewMetricDispatcher
 import com.datadog.android.rum.internal.metric.interactiontonextview.InteractionToNextViewMetricResolver
 import com.datadog.android.rum.internal.metric.interactiontonextview.InternalInteractionContext
 import com.datadog.android.rum.internal.metric.networksettled.InternalResourceContext
@@ -203,6 +209,15 @@ internal class RumViewScopeTest {
     @Mock
     private lateinit var mockInteractionToNextViewMetricResolver: InteractionToNextViewMetricResolver
 
+    @Mock
+    private lateinit var mockViewEndedMetricDispatcher: ViewEndedMetricDispatcher
+
+    @Forgery
+    private lateinit var fakeTnsState: ViewInitializationMetricsState
+
+    @Forgery
+    private lateinit var fakeInvState: ViewInitializationMetricsState
+
     private var fakeNetworkSettledMetricValue: Long? = null
     private var fakeInteractionToNextViewMetricValue: Long? = null
 
@@ -218,6 +233,8 @@ internal class RumViewScopeTest {
         fakeNetworkSettledMetricValue = forge.aNullable { aPositiveLong() }
         fakeInteractionToNextViewMetricValue = forge.aNullable { aPositiveLong() }
         whenever(mockNetworkSettledMetricResolver.resolveMetric()) doReturn fakeNetworkSettledMetricValue
+        whenever(mockNetworkSettledMetricResolver.getState()) doReturn fakeTnsState
+        whenever(mockInteractionToNextViewMetricResolver.getState(any())) doReturn fakeInvState
         whenever(mockInteractionToNextViewMetricResolver.resolveMetric(any())) doReturn
             fakeInteractionToNextViewMetricValue
         val isValidSource = forge.aBool()
@@ -289,24 +306,7 @@ internal class RumViewScopeTest {
         }
         whenever(mockWriter.write(eq(mockEventBatchWriter), any(), eq(EventType.DEFAULT))) doReturn true
         fakeReplayStats = ViewEvent.ReplayStats(recordsCount = fakeReplayRecordsCount)
-        testedScope = RumViewScope(
-            mockParentScope,
-            rumMonitor.mockSdkCore,
-            mockSessionEndedMetricDispatcher,
-            fakeKey,
-            fakeEventTime,
-            fakeAttributes,
-            mockViewChangedListener,
-            mockResolver,
-            mockCpuVitalMonitor,
-            mockMemoryVitalMonitor,
-            mockFrameRateVitalMonitor,
-            mockFeaturesContextResolver,
-            trackFrustrations = true,
-            sampleRate = fakeSampleRate,
-            networkSettledMetricResolver = mockNetworkSettledMetricResolver,
-            interactionToNextViewMetricResolver = mockInteractionToNextViewMetricResolver
-        )
+        testedScope = newRumViewScope(trackFrustrations = true)
         mockSessionReplayContext(testedScope)
     }
 
@@ -389,28 +389,10 @@ internal class RumViewScopeTest {
     @Test
     fun `M update the context with the viewType W initializing`(forge: Forge) {
         // Given
-        val fakeViewEventType = forge.aValueFrom(RumViewScope.RumViewType::class.java)
+        val fakeViewEventType = forge.aValueFrom(RumViewType::class.java)
 
         // When
-        testedScope = RumViewScope(
-            mockParentScope,
-            rumMonitor.mockSdkCore,
-            mockSessionEndedMetricDispatcher,
-            fakeKey,
-            fakeEventTime,
-            fakeAttributes,
-            mockViewChangedListener,
-            mockResolver,
-            mockCpuVitalMonitor,
-            mockMemoryVitalMonitor,
-            mockFrameRateVitalMonitor,
-            mockFeaturesContextResolver,
-            type = fakeViewEventType,
-            trackFrustrations = fakeTrackFrustrations,
-            sampleRate = fakeSampleRate,
-            networkSettledMetricResolver = mockNetworkSettledMetricResolver,
-            interactionToNextViewMetricResolver = mockInteractionToNextViewMetricResolver
-        )
+        testedScope = newRumViewScope(type = fakeViewEventType)
 
         // Then
         argumentCaptor<(MutableMap<String, Any?>) -> Unit> {
@@ -497,7 +479,7 @@ internal class RumViewScopeTest {
                 function.invoke(acc)
                 acc
             }
-            assertThat(rumContext["view_type"]).isEqualTo(RumViewScope.RumViewType.NONE.asString)
+            assertThat(rumContext["view_type"]).isEqualTo(RumViewType.NONE.asString)
         }
     }
 
@@ -581,7 +563,7 @@ internal class RumViewScopeTest {
             )
             val rumContext = mutableMapOf<String, Any?>()
             lastValue.invoke(rumContext)
-            assertThat(rumContext["view_type"]).isEqualTo(RumViewScope.RumViewType.FOREGROUND.asString)
+            assertThat(rumContext["view_type"]).isEqualTo(RumViewType.FOREGROUND.asString)
         }
     }
 
@@ -590,28 +572,10 @@ internal class RumViewScopeTest {
         forge: Forge
     ) {
         // Given
-        val expectedViewType = forge.aValueFrom(RumViewScope.RumViewType::class.java)
+        val expectedViewType = forge.aValueFrom(RumViewType::class.java)
 
         // need to create this one, because RUM context is updated in the constructor
-        val anotherScope = RumViewScope(
-            mockParentScope,
-            rumMonitor.mockSdkCore,
-            mockSessionEndedMetricDispatcher,
-            fakeKey,
-            fakeEventTime,
-            fakeAttributes,
-            mockViewChangedListener,
-            mockResolver,
-            mockCpuVitalMonitor,
-            mockMemoryVitalMonitor,
-            mockFrameRateVitalMonitor,
-            mockFeaturesContextResolver,
-            type = expectedViewType,
-            trackFrustrations = fakeTrackFrustrations,
-            sampleRate = fakeSampleRate,
-            networkSettledMetricResolver = mockNetworkSettledMetricResolver,
-            interactionToNextViewMetricResolver = mockInteractionToNextViewMetricResolver
-        )
+        val anotherScope = newRumViewScope(type = expectedViewType)
 
         // When
         testedScope.handleEvent(
@@ -678,7 +642,7 @@ internal class RumViewScopeTest {
                 acc
             }
 
-            assertThat(rumContext["view_type"]).isEqualTo(RumViewScope.RumViewType.NONE.asString)
+            assertThat(rumContext["view_type"]).isEqualTo(RumViewType.NONE.asString)
             assertThat(rumContext["view_name"]).isNull()
             assertThat(rumContext["view_id"]).isNull()
             assertThat(rumContext["view_url"]).isNull()
@@ -720,7 +684,7 @@ internal class RumViewScopeTest {
                 acc
             }
 
-            assertThat(rumContext["view_type"]).isEqualTo(RumViewScope.RumViewType.NONE.asString)
+            assertThat(rumContext["view_type"]).isEqualTo(RumViewType.NONE.asString)
             assertThat(rumContext["view_name"]).isNull()
             assertThat(rumContext["view_id"]).isNull()
             assertThat(rumContext["view_url"]).isNull()
@@ -768,12 +732,12 @@ internal class RumViewScopeTest {
 
     @ParameterizedTest
     @EnumSource(
-        value = RumViewScope.RumViewType::class,
+        value = RumViewType::class,
         names = ["NONE"],
         mode = EnumSource.Mode.EXCLUDE
     )
     fun `M not update the viewType to NONE W handleEvent(StartView) { on active view }`(
-        viewType: RumViewScope.RumViewType,
+        viewType: RumViewType,
         @Forgery key: RumScopeKey
     ) {
         // Given
@@ -781,25 +745,7 @@ internal class RumViewScopeTest {
             RumRawEvent.StopView(fakeKey, emptyMap()),
             mockWriter
         )
-        RumViewScope(
-            mockParentScope,
-            rumMonitor.mockSdkCore,
-            mockSessionEndedMetricDispatcher,
-            key,
-            fakeEventTime,
-            fakeAttributes,
-            mockViewChangedListener,
-            mockResolver,
-            mockCpuVitalMonitor,
-            mockMemoryVitalMonitor,
-            mockFrameRateVitalMonitor,
-            mockFeaturesContextResolver,
-            type = viewType,
-            trackFrustrations = fakeTrackFrustrations,
-            sampleRate = fakeSampleRate,
-            networkSettledMetricResolver = mockNetworkSettledMetricResolver,
-            interactionToNextViewMetricResolver = mockInteractionToNextViewMetricResolver
-        )
+        newRumViewScope(type = viewType)
 
         // When
         testedScope.handleEvent(
@@ -825,12 +771,12 @@ internal class RumViewScopeTest {
 
     @ParameterizedTest
     @EnumSource(
-        value = RumViewScope.RumViewType::class,
+        value = RumViewType::class,
         names = ["NONE"],
         mode = EnumSource.Mode.EXCLUDE
     )
     fun `M not update the viewType to NONE W handleEvent(StopView) {already stopped, active view}`(
-        viewType: RumViewScope.RumViewType,
+        viewType: RumViewType,
         @Forgery key: RumScopeKey
     ) {
         // Given
@@ -838,25 +784,7 @@ internal class RumViewScopeTest {
             RumRawEvent.StopView(fakeKey, emptyMap()),
             mockWriter
         )
-        RumViewScope(
-            mockParentScope,
-            rumMonitor.mockSdkCore,
-            mockSessionEndedMetricDispatcher,
-            key,
-            fakeEventTime,
-            fakeAttributes,
-            mockViewChangedListener,
-            mockResolver,
-            mockCpuVitalMonitor,
-            mockMemoryVitalMonitor,
-            mockFrameRateVitalMonitor,
-            mockFeaturesContextResolver,
-            type = viewType,
-            trackFrustrations = fakeTrackFrustrations,
-            sampleRate = fakeSampleRate,
-            networkSettledMetricResolver = mockNetworkSettledMetricResolver,
-            interactionToNextViewMetricResolver = mockInteractionToNextViewMetricResolver
-        )
+        newRumViewScope(key = key, type = viewType)
 
         // When
         testedScope.handleEvent(
@@ -1421,24 +1349,7 @@ internal class RumViewScopeTest {
         expectedAttributes.putAll(emptyMap())
         whenever(rumMonitor.mockInstance.getAttributes()) doReturn fakeGlobalAttributes
 
-        testedScope = RumViewScope(
-            mockParentScope,
-            rumMonitor.mockSdkCore,
-            mockSessionEndedMetricDispatcher,
-            fakeKey,
-            fakeEventTime,
-            fakeAttributes,
-            mockViewChangedListener,
-            mockResolver,
-            mockCpuVitalMonitor,
-            mockMemoryVitalMonitor,
-            mockFrameRateVitalMonitor,
-            featuresContextResolver = mockFeaturesContextResolver,
-            trackFrustrations = fakeTrackFrustrations,
-            sampleRate = fakeSampleRate,
-            networkSettledMetricResolver = mockNetworkSettledMetricResolver,
-            interactionToNextViewMetricResolver = mockInteractionToNextViewMetricResolver
-        )
+        testedScope = newRumViewScope()
         mockSessionReplayContext(testedScope)
         whenever(rumMonitor.mockInstance.getAttributes()) doReturn emptyMap()
 
@@ -1517,24 +1428,7 @@ internal class RumViewScopeTest {
         expectedAttributes.putAll(fakeAttributes)
         expectedAttributes.putAll(fakeGlobalAttributes)
         whenever(rumMonitor.mockInstance.getAttributes()) doReturn fakeGlobalAttributes
-        testedScope = RumViewScope(
-            mockParentScope,
-            rumMonitor.mockSdkCore,
-            mockSessionEndedMetricDispatcher,
-            fakeKey,
-            fakeEventTime,
-            fakeAttributes,
-            mockViewChangedListener,
-            mockResolver,
-            mockCpuVitalMonitor,
-            mockMemoryVitalMonitor,
-            mockFrameRateVitalMonitor,
-            featuresContextResolver = mockFeaturesContextResolver,
-            trackFrustrations = fakeTrackFrustrations,
-            sampleRate = fakeSampleRate,
-            networkSettledMetricResolver = mockNetworkSettledMetricResolver,
-            interactionToNextViewMetricResolver = mockInteractionToNextViewMetricResolver
-        )
+        testedScope = newRumViewScope()
         mockSessionReplayContext(testedScope)
 
         // When
@@ -1610,24 +1504,7 @@ internal class RumViewScopeTest {
         whenever(rumMonitor.mockInstance.getAttributes())
             .doReturn(mapOf(fakeGlobalAttributeKey to fakeGlobalAttributeValue))
 
-        testedScope = RumViewScope(
-            mockParentScope,
-            rumMonitor.mockSdkCore,
-            mockSessionEndedMetricDispatcher,
-            fakeKey,
-            fakeEventTime,
-            fakeAttributes,
-            mockViewChangedListener,
-            mockResolver,
-            mockCpuVitalMonitor,
-            mockMemoryVitalMonitor,
-            mockFrameRateVitalMonitor,
-            featuresContextResolver = mockFeaturesContextResolver,
-            trackFrustrations = fakeTrackFrustrations,
-            sampleRate = fakeSampleRate,
-            networkSettledMetricResolver = mockNetworkSettledMetricResolver,
-            interactionToNextViewMetricResolver = mockInteractionToNextViewMetricResolver
-        )
+        testedScope = newRumViewScope()
         mockSessionReplayContext(testedScope)
         val expectedAttributes = mutableMapOf<String, Any?>()
         expectedAttributes.putAll(fakeAttributes)
@@ -1709,24 +1586,7 @@ internal class RumViewScopeTest {
         whenever(rumMonitor.mockInstance.getAttributes())
             .doReturn(mapOf(fakeGlobalAttributeKey to fakeGlobalAttributeValue))
 
-        testedScope = RumViewScope(
-            mockParentScope,
-            rumMonitor.mockSdkCore,
-            mockSessionEndedMetricDispatcher,
-            fakeKey,
-            fakeEventTime,
-            fakeAttributes,
-            mockViewChangedListener,
-            mockResolver,
-            mockCpuVitalMonitor,
-            mockMemoryVitalMonitor,
-            mockFrameRateVitalMonitor,
-            featuresContextResolver = mockFeaturesContextResolver,
-            trackFrustrations = fakeTrackFrustrations,
-            sampleRate = fakeSampleRate,
-            networkSettledMetricResolver = mockNetworkSettledMetricResolver,
-            interactionToNextViewMetricResolver = mockInteractionToNextViewMetricResolver
-        )
+        testedScope = newRumViewScope()
         mockSessionReplayContext(testedScope)
         val expectedAttributes = mutableMapOf<String, Any?>()
         expectedAttributes.putAll(fakeAttributes)
@@ -8386,6 +8246,76 @@ internal class RumViewScopeTest {
 
     // endregion
 
+    // region Internal attributes
+
+    @Test
+    fun `M send View update with fbc metric W handleEvent(SetInternalViewAttribute+KeepAlive)`(
+        forge: Forge
+    ) {
+        // GIVEN
+        val fbc = forge.aPositiveLong()
+
+        // WHEN
+        testedScope.handleEvent(
+            RumRawEvent.SetInternalViewAttribute(
+                key = RumAttributes.FLUTTER_FIRST_BUILD_COMPLETE,
+                value = fbc
+            ),
+            mockWriter
+        )
+        val result = testedScope.handleEvent(
+            RumRawEvent.KeepAlive(),
+            mockWriter
+        )
+
+        // THEN
+        argumentCaptor<ViewEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            assertThat(lastValue)
+                .hasFBCTime(fbc)
+        }
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isSameAs(testedScope)
+    }
+
+    @Test
+    fun `M send View update with custom inv metric W handleEvent(inv disabled+SetInternalViewAttribute+KeepAlive)`(
+        forge: Forge
+    ) {
+        // GIVEN
+        whenever(mockInteractionToNextViewMetricResolver.resolveMetric(any())) doReturn null
+        whenever(mockInteractionToNextViewMetricResolver.getState(any())) doReturn ViewInitializationMetricsState(
+            null,
+            ViewInitializationMetricsConfig.DISABLED,
+            NoValueReason.InteractionToNextView.DISABLED
+        )
+        val customInv = forge.aPositiveLong()
+
+        // WHEN
+        testedScope.handleEvent(
+            RumRawEvent.SetInternalViewAttribute(
+                key = RumAttributes.CUSTOM_INV_VALUE,
+                value = customInv
+            ),
+            mockWriter
+        )
+        val result = testedScope.handleEvent(
+            RumRawEvent.KeepAlive(),
+            mockWriter
+        )
+
+        // THEN
+        argumentCaptor<ViewEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            assertThat(lastValue)
+                .hasInteractionToNextViewTime(customInv)
+        }
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isSameAs(testedScope)
+    }
+
+    // endregion
+
     // region Feature Flags
 
     @Test
@@ -9095,23 +9025,9 @@ internal class RumViewScopeTest {
         rawEventData: RumRawEventData
     ) {
         // Given
-        testedScope = RumViewScope(
-            mockParentScope,
-            rumMonitor.mockSdkCore,
-            mockSessionEndedMetricDispatcher,
-            rawEventData.viewKey,
-            rawEventData.event.eventTime,
-            fakeAttributes,
-            mockViewChangedListener,
-            mockResolver,
-            mockCpuVitalMonitor,
-            mockMemoryVitalMonitor,
-            mockFrameRateVitalMonitor,
-            mockFeaturesContextResolver,
-            trackFrustrations = fakeTrackFrustrations,
-            sampleRate = fakeSampleRate,
-            interactionToNextViewMetricResolver = mockInteractionToNextViewMetricResolver,
-            networkSettledMetricResolver = mockNetworkSettledMetricResolver
+        testedScope = newRumViewScope(
+            key = rawEventData.viewKey,
+            eventTime = rawEventData.event.eventTime
         )
 
         // When
@@ -9141,24 +9057,7 @@ internal class RumViewScopeTest {
         rawEventData: RumRawEventData
     ) {
         // Given
-        testedScope = RumViewScope(
-            mockParentScope,
-            rumMonitor.mockSdkCore,
-            mockSessionEndedMetricDispatcher,
-            rawEventData.viewKey,
-            fakeEventTime,
-            fakeAttributes,
-            mockViewChangedListener,
-            mockResolver,
-            mockCpuVitalMonitor,
-            mockMemoryVitalMonitor,
-            mockFrameRateVitalMonitor,
-            mockFeaturesContextResolver,
-            trackFrustrations = fakeTrackFrustrations,
-            sampleRate = fakeSampleRate,
-            interactionToNextViewMetricResolver = mockInteractionToNextViewMetricResolver,
-            networkSettledMetricResolver = mockNetworkSettledMetricResolver
-        )
+        testedScope = newRumViewScope(key = rawEventData.viewKey)
 
         // When
         testedScope.handleEvent(rawEventData.event, mockWriter)
@@ -9190,24 +9089,7 @@ internal class RumViewScopeTest {
         forge: Forge
     ) {
         // Given
-        testedScope = RumViewScope(
-            mockParentScope,
-            rumMonitor.mockSdkCore,
-            mockSessionEndedMetricDispatcher,
-            fakeKey,
-            fakeEventTime,
-            fakeAttributes,
-            mockViewChangedListener,
-            mockResolver,
-            mockCpuVitalMonitor,
-            mockMemoryVitalMonitor,
-            mockFrameRateVitalMonitor,
-            mockFeaturesContextResolver,
-            trackFrustrations = fakeTrackFrustrations,
-            sampleRate = fakeSampleRate,
-            interactionToNextViewMetricResolver = mockInteractionToNextViewMetricResolver,
-            networkSettledMetricResolver = mockNetworkSettledMetricResolver
-        )
+        testedScope = newRumViewScope()
         testedScope.pendingErrorCount = 1
         testedScope.pendingActionCount = 1
         testedScope.pendingResourceCount = 1
@@ -9259,24 +9141,7 @@ internal class RumViewScopeTest {
             fakeNewGlobalAttributes
         )
 
-        testedScope = RumViewScope(
-            mockParentScope,
-            rumMonitor.mockSdkCore,
-            mockSessionEndedMetricDispatcher,
-            fakeKey,
-            fakeEventTime,
-            fakeAttributes,
-            mockViewChangedListener,
-            mockResolver,
-            mockCpuVitalMonitor,
-            mockMemoryVitalMonitor,
-            mockFrameRateVitalMonitor,
-            featuresContextResolver = mockFeaturesContextResolver,
-            trackFrustrations = fakeTrackFrustrations,
-            sampleRate = fakeSampleRate,
-            interactionToNextViewMetricResolver = mockInteractionToNextViewMetricResolver,
-            networkSettledMetricResolver = mockNetworkSettledMetricResolver
-        )
+        testedScope = newRumViewScope()
 
         // When
         val result = testedScope.handleEvent(
@@ -9314,24 +9179,7 @@ internal class RumViewScopeTest {
             fakeNewGlobalAttributes
         )
 
-        testedScope = RumViewScope(
-            mockParentScope,
-            rumMonitor.mockSdkCore,
-            mockSessionEndedMetricDispatcher,
-            fakeKey,
-            fakeEventTime,
-            fakeAttributes,
-            mockViewChangedListener,
-            mockResolver,
-            mockCpuVitalMonitor,
-            mockMemoryVitalMonitor,
-            mockFrameRateVitalMonitor,
-            featuresContextResolver = mockFeaturesContextResolver,
-            trackFrustrations = fakeTrackFrustrations,
-            sampleRate = fakeSampleRate,
-            interactionToNextViewMetricResolver = mockInteractionToNextViewMetricResolver,
-            networkSettledMetricResolver = mockNetworkSettledMetricResolver
-        )
+        testedScope = newRumViewScope()
 
         // When
         val result = testedScope.handleEvent(
@@ -9377,24 +9225,7 @@ internal class RumViewScopeTest {
             fakeNewGlobalAttributes
         )
 
-        testedScope = RumViewScope(
-            mockParentScope,
-            rumMonitor.mockSdkCore,
-            mockSessionEndedMetricDispatcher,
-            fakeKey,
-            fakeEventTime,
-            fakeAttributes,
-            mockViewChangedListener,
-            mockResolver,
-            mockCpuVitalMonitor,
-            mockMemoryVitalMonitor,
-            mockFrameRateVitalMonitor,
-            featuresContextResolver = mockFeaturesContextResolver,
-            trackFrustrations = fakeTrackFrustrations,
-            sampleRate = fakeSampleRate,
-            interactionToNextViewMetricResolver = mockInteractionToNextViewMetricResolver,
-            networkSettledMetricResolver = mockNetworkSettledMetricResolver
-        )
+        testedScope = newRumViewScope()
         testedScope.handleEvent(
             RumRawEvent.StartResource(key, url, method, emptyMap()),
             mockWriter
@@ -9445,24 +9276,8 @@ internal class RumViewScopeTest {
             fakeNewGlobalAttributes
         )
 
-        testedScope = RumViewScope(
-            mockParentScope,
-            rumMonitor.mockSdkCore,
-            mockSessionEndedMetricDispatcher,
-            fakeKey,
-            fakeEventTime,
-            fakeAttributes,
-            mockViewChangedListener,
-            mockResolver,
-            mockCpuVitalMonitor,
-            mockMemoryVitalMonitor,
-            mockFrameRateVitalMonitor,
-            featuresContextResolver = mockFeaturesContextResolver,
-            trackFrustrations = fakeTrackFrustrations,
-            sampleRate = fakeSampleRate,
-            interactionToNextViewMetricResolver = mockInteractionToNextViewMetricResolver,
-            networkSettledMetricResolver = mockNetworkSettledMetricResolver
-        )
+        testedScope = newRumViewScope()
+
         testedScope.handleEvent(
             RumRawEvent.StartAction(type, name, forge.aBool(), emptyMap()),
             mockWriter
@@ -9524,24 +9339,7 @@ internal class RumViewScopeTest {
             fakeResourceStoppedGlobalProperties
         )
 
-        testedScope = RumViewScope(
-            mockParentScope,
-            rumMonitor.mockSdkCore,
-            mockSessionEndedMetricDispatcher,
-            fakeKey,
-            fakeEventTime,
-            fakeAttributes,
-            mockViewChangedListener,
-            mockResolver,
-            mockCpuVitalMonitor,
-            mockMemoryVitalMonitor,
-            mockFrameRateVitalMonitor,
-            featuresContextResolver = mockFeaturesContextResolver,
-            trackFrustrations = fakeTrackFrustrations,
-            sampleRate = fakeSampleRate,
-            interactionToNextViewMetricResolver = mockInteractionToNextViewMetricResolver,
-            networkSettledMetricResolver = mockNetworkSettledMetricResolver
-        )
+        testedScope = newRumViewScope()
         testedScope.handleEvent(
             RumRawEvent.StartResource(key, url, method, emptyMap()),
             mockWriter
@@ -9602,24 +9400,8 @@ internal class RumViewScopeTest {
             // last one when the action was sent
             fakeActionSentGlobalProperties
         )
-        testedScope = RumViewScope(
-            mockParentScope,
-            rumMonitor.mockSdkCore,
-            mockSessionEndedMetricDispatcher,
-            fakeKey,
-            fakeEventTime,
-            fakeAttributes,
-            mockViewChangedListener,
-            mockResolver,
-            mockCpuVitalMonitor,
-            mockMemoryVitalMonitor,
-            mockFrameRateVitalMonitor,
-            featuresContextResolver = mockFeaturesContextResolver,
-            trackFrustrations = fakeTrackFrustrations,
-            sampleRate = fakeSampleRate,
-            interactionToNextViewMetricResolver = mockInteractionToNextViewMetricResolver,
-            networkSettledMetricResolver = mockNetworkSettledMetricResolver
-        )
+        testedScope = newRumViewScope()
+
         testedScope.handleEvent(
             RumRawEvent.StartAction(type, name, forge.aBool(), emptyMap()),
             mockWriter
@@ -9660,24 +9442,7 @@ internal class RumViewScopeTest {
         expectedAttributes.putAll(fakeStopEventAttributes)
         whenever(rumMonitor.mockInstance.getAttributes()) doReturn fakeGlobalAttributes
 
-        testedScope = RumViewScope(
-            mockParentScope,
-            rumMonitor.mockSdkCore,
-            mockSessionEndedMetricDispatcher,
-            fakeKey,
-            fakeEventTime,
-            fakeAttributes,
-            mockViewChangedListener,
-            mockResolver,
-            mockCpuVitalMonitor,
-            mockMemoryVitalMonitor,
-            mockFrameRateVitalMonitor,
-            featuresContextResolver = mockFeaturesContextResolver,
-            trackFrustrations = fakeTrackFrustrations,
-            sampleRate = fakeSampleRate,
-            interactionToNextViewMetricResolver = mockInteractionToNextViewMetricResolver,
-            networkSettledMetricResolver = mockNetworkSettledMetricResolver
-        )
+        testedScope = newRumViewScope()
 
         // When
         val result = testedScope.handleEvent(
@@ -9724,24 +9489,7 @@ internal class RumViewScopeTest {
         }
         whenever(rumMonitor.mockInstance.getAttributes()) doReturn forge.exhaustiveAttributes()
 
-        testedScope = RumViewScope(
-            mockParentScope,
-            rumMonitor.mockSdkCore,
-            mockSessionEndedMetricDispatcher,
-            fakeKey,
-            fakeEventTime,
-            fakeAttributes,
-            mockViewChangedListener,
-            mockResolver,
-            mockCpuVitalMonitor,
-            mockMemoryVitalMonitor,
-            mockFrameRateVitalMonitor,
-            featuresContextResolver = mockFeaturesContextResolver,
-            trackFrustrations = fakeTrackFrustrations,
-            sampleRate = fakeSampleRate,
-            interactionToNextViewMetricResolver = mockInteractionToNextViewMetricResolver,
-            networkSettledMetricResolver = mockNetworkSettledMetricResolver
-        )
+        testedScope = newRumViewScope()
 
         // When
         repeat(1000) {
@@ -9773,6 +9521,75 @@ internal class RumViewScopeTest {
             it.get()
         }
     }
+
+    // region Global Attributes
+
+    @Test
+    fun `M sendViewEnded W handleEvent(StopView)`(forge: Forge) {
+        // Given
+        testedScope = newRumViewScope()
+
+        // When
+        testedScope.handleEvent(forge.stopViewEvent(), mockWriter)
+
+        // Then
+        mockViewEndedMetricDispatcher.sendViewEnded(fakeInvState, fakeTnsState)
+    }
+
+    @Test
+    fun `M sendViewEnded W handleEvent(StartView)`(forge: Forge) {
+        // Given
+        testedScope = newRumViewScope()
+
+        // When
+        testedScope.handleEvent(forge.startViewEvent(), mockWriter)
+
+        // Then
+        mockViewEndedMetricDispatcher.sendViewEnded(fakeInvState, fakeTnsState)
+    }
+
+    @Test
+    fun `M sendViewEnded W handleEvent(StopSession)`() {
+        // Given
+        testedScope = newRumViewScope()
+
+        // When
+        testedScope.handleEvent(RumRawEvent.StopSession(), mockWriter)
+
+        // Then
+        mockViewEndedMetricDispatcher.sendViewEnded(fakeInvState, fakeTnsState)
+    }
+
+    @Test
+    fun `M onDurationResolved W closing scope(StopSession)`(@LongForgery(min = 1) expectedDuration: Long) {
+        // Given
+        val stopEvent = RumRawEvent.StopSession(eventTime = Time(nanoTime = fakeEventTime.nanoTime + expectedDuration))
+        testedScope = newRumViewScope()
+
+        // When
+        testedScope.handleEvent(stopEvent, mockWriter)
+
+        // Then
+        mockViewEndedMetricDispatcher.onDurationResolved(expectedDuration)
+    }
+
+    @Test
+    fun `M onViewLoadingTimeResolved W handleEvent(AddViewLoadingTime)`(@LongForgery(min = 1) expectedDuration: Long) {
+        // Given
+        val stopEvent = RumRawEvent.AddViewLoadingTime(
+            overwrite = false,
+            eventTime = Time(nanoTime = fakeEventTime.nanoTime + expectedDuration)
+        )
+        testedScope = newRumViewScope()
+
+        // When
+        testedScope.handleEvent(stopEvent, mockWriter)
+
+        // Then
+        mockViewEndedMetricDispatcher.onViewLoadingTimeResolved(expectedDuration)
+    }
+
+    // endregion
 
     // region Internal
 
@@ -9812,6 +9629,47 @@ internal class RumViewScopeTest {
     }
 
     // endregion
+
+    private fun newRumViewScope(
+        parentScope: RumScope = mockParentScope,
+        sdkCore: InternalSdkCore = rumMonitor.mockSdkCore,
+        sessionEndedMetricDispatcher: SessionMetricDispatcher = mockSessionEndedMetricDispatcher,
+        key: RumScopeKey = fakeKey,
+        eventTime: Time = fakeEventTime,
+        initialAttributes: Map<String, Any?> = fakeAttributes,
+        viewChangedListener: RumViewChangedListener? = mockViewChangedListener,
+        firstPartyHostHeaderTypeResolver: FirstPartyHostHeaderTypeResolver = mockResolver,
+        cpuVitalMonitor: VitalMonitor = mockCpuVitalMonitor,
+        memoryVitalMonitor: VitalMonitor = mockMemoryVitalMonitor,
+        frameRateVitalMonitor: VitalMonitor = mockFrameRateVitalMonitor,
+        featuresContextResolver: FeaturesContextResolver = mockFeaturesContextResolver,
+        type: RumViewType = RumViewType.FOREGROUND,
+        trackFrustrations: Boolean = fakeTrackFrustrations,
+        sampleRate: Float = fakeSampleRate,
+        interactionNextViewMetricResolver: InteractionToNextViewMetricResolver =
+            mockInteractionToNextViewMetricResolver,
+        networkSettledMetricResolver: NetworkSettledMetricResolver = mockNetworkSettledMetricResolver,
+        viewEndedMetricDispatcher: ViewMetricDispatcher = mockViewEndedMetricDispatcher
+    ) = RumViewScope(
+        parentScope,
+        sdkCore,
+        sessionEndedMetricDispatcher,
+        key,
+        eventTime,
+        initialAttributes,
+        viewChangedListener,
+        firstPartyHostHeaderTypeResolver,
+        cpuVitalMonitor,
+        memoryVitalMonitor,
+        frameRateVitalMonitor,
+        featuresContextResolver,
+        type,
+        trackFrustrations,
+        sampleRate,
+        interactionNextViewMetricResolver,
+        networkSettledMetricResolver,
+        viewEndedMetricDispatcher
+    )
 
     data class RumRawEventData(val event: RumRawEvent, val viewKey: RumScopeKey)
 

@@ -31,7 +31,9 @@ class DatadogHttpCodec {
 
     public static final String OT_BAGGAGE_PREFIX = "ot-baggage-";
     public static final String LEAST_SIGNIFICANT_TRACE_ID_KEY = "x-datadog-trace-id";
-    public static final String MOST_SIGNIFICANT_TRACE_ID_KEY = "_dd.p.tid";
+    public static final String MOST_SIGNIFICANT_TRACE_ID_TAG_KEY = "_dd.p.tid";
+    public static final String RUM_SESSION_ID_TAG_KEY = "_dd.p.rsid";
+    public static final String RUM_SESSION_ID_KEY = "session_id";
     public static final String DATADOG_TAGS_KEY = "x-datadog-tags";
     public static final String SPAN_ID_KEY = "x-datadog-parent-id";
     public static final String SAMPLING_PRIORITY_KEY = "x-datadog-sampling-priority";
@@ -58,6 +60,7 @@ class DatadogHttpCodec {
             final BigInteger traceId = context.getTraceId();
             final String leastSignificantTraceId = bigIntegerUtils.leastSignificant64BitsAsDecimal(traceId);
             final String mostSignificantTraceId = bigIntegerUtils.mostSignificant64BitsAsHex(traceId);
+            final String sessionId = (String) context.getTags().get(RUM_SESSION_ID_KEY);
             carrier.put(LEAST_SIGNIFICANT_TRACE_ID_KEY, leastSignificantTraceId);
             carrier.put(SPAN_ID_KEY, context.getSpanId().toString());
             final String origin = context.getOrigin();
@@ -69,7 +72,18 @@ class DatadogHttpCodec {
                 carrier.put(OT_BAGGAGE_PREFIX + entry.getKey(), HttpCodec.encode(entry.getValue()));
             }
             // adding the tags
-            carrier.put(DATADOG_TAGS_KEY, MOST_SIGNIFICANT_TRACE_ID_KEY + "=" + mostSignificantTraceId);
+
+            StringBuilder tags = new StringBuilder();
+            tags.append(MOST_SIGNIFICANT_TRACE_ID_TAG_KEY);
+            tags.append('=');
+            tags.append(mostSignificantTraceId);
+            if(sessionId != null) {
+                tags.append(',');
+                tags.append(RUM_SESSION_ID_TAG_KEY);
+                tags.append('=');
+                tags.append(sessionId);
+            }
+            carrier.put(DATADOG_TAGS_KEY, tags.toString());
 
             if (context.lockSamplingPriority()) {
                 carrier.put(SAMPLING_PRIORITY_KEY, String.valueOf(context.getSamplingPriority()));
@@ -162,7 +176,7 @@ class DatadogHttpCodec {
             final String[] tagArray = tags.split(",");
             for (String tag : tagArray) {
                 final String[] tagKeyValue = tag.split("=");
-                if (tagKeyValue.length >= 2 && MOST_SIGNIFICANT_TRACE_ID_KEY.equals(tagKeyValue[0])) {
+                if (tagKeyValue.length >= 2 && MOST_SIGNIFICANT_TRACE_ID_TAG_KEY.equals(tagKeyValue[0])) {
                     return tagKeyValue[1];
                 }
             }

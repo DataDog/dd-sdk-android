@@ -13,6 +13,7 @@ import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.api.storage.EventType
 import com.datadog.android.core.InternalSdkCore
+import com.datadog.android.core.internal.attributes.LocalAttribute
 import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
@@ -24,6 +25,8 @@ import com.datadog.android.rum.internal.domain.scope.RumRawEvent
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
 import com.datadog.android.rum.internal.utils.HUNDRED
 import com.datadog.android.rum.internal.utils.percent
+import com.datadog.android.rum.metric.interactiontonextview.TimeBasedInteractionIdentifier
+import com.datadog.android.rum.metric.networksettled.TimeBasedInitialResourceIdentifier
 import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
 import com.datadog.android.rum.tracking.FragmentViewTrackingStrategy
 import com.datadog.android.rum.tracking.MixedViewTrackingStrategy
@@ -308,6 +311,12 @@ internal class TelemetryEventHandler(
         val tracerApi = resolveTracerApi(traceContext)
         val openTelemetryApiVersion = resolveOpenTelemetryApiVersion(tracerApi, traceContext)
         val useTracing = (traceFeature != null && tracerApi != null)
+
+        val invTimeBasedThreshold = (rumConfig?.lastInteractionIdentifier as? TimeBasedInteractionIdentifier)
+            ?.timeThresholdInMilliseconds
+        val tnsTimeBasedThreshold = (rumConfig?.initialResourceIdentifier as? TimeBasedInitialResourceIdentifier)
+            ?.timeThresholdInMilliseconds
+
         return TelemetryConfigurationEvent(
             dd = TelemetryConfigurationEvent.Dd(),
             date = timestamp,
@@ -358,7 +367,9 @@ internal class TelemetryEventHandler(
                     textAndInputPrivacyLevel = sessionReplayTextAndInputPrivacy,
                     startRecordingImmediately = startRecordingImmediately,
                     batchProcessingLevel = event.batchProcessingLevel.toLong(),
-                    isMainProcess = datadogContext.processInfo.isMainProcess
+                    isMainProcess = datadogContext.processInfo.isMainProcess,
+                    invTimeThresholdMs = invTimeBasedThreshold,
+                    tnsTimeThresholdMs = tnsTimeBasedThreshold
                 )
             )
         )
@@ -473,11 +484,11 @@ internal class TelemetryEventHandler(
         val telemetrySampleRate = rumConfig?.telemetrySampleRate?.percent() ?: return 0f
 
         val creatingSamplingRate = properties
-            ?.getFloat(InternalTelemetryEvent.CREATION_SAMPLING_RATE_KEY)
+            ?.getFloat(LocalAttribute.Key.CREATION_SAMPLING_RATE)
             ?.percent() ?: 1.0
 
         val reportingSamplingRate = properties
-            ?.getFloat(InternalTelemetryEvent.REPORTING_SAMPLING_RATE_KEY)
+            ?.getFloat(LocalAttribute.Key.REPORTING_SAMPLING_RATE)
             ?.percent() ?: 1.0
 
         val eventSamplingRate = eventSpecificSamplingRate?.percent() ?: 1.0
@@ -487,11 +498,10 @@ internal class TelemetryEventHandler(
         return (effectiveSampleRate * HUNDRED).toFloat()
     }
 
-    private fun Map<String, Any?>.getFloat(key: String) = get(key) as? Float
+    private fun Map<String, Any?>.getFloat(key: LocalAttribute.Key) = get(key.toString()) as? Float
 
     private fun Map<String, Any?>.cleanUpInternalAttributes() = toMutableMap().apply {
-        remove(InternalTelemetryEvent.REPORTING_SAMPLING_RATE_KEY)
-        remove(InternalTelemetryEvent.CREATION_SAMPLING_RATE_KEY)
+        LocalAttribute.Key.values().forEach { key -> remove(key.toString()) }
     }
 
     // endregion

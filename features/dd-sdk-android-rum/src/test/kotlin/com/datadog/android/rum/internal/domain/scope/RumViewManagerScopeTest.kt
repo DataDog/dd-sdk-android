@@ -233,7 +233,7 @@ internal class RumViewManagerScopeTest {
                 assertThat(it.eventTimestamp)
                     .isEqualTo(resolveExpectedTimestamp(fakeEvent.eventTime.timestamp))
                 assertThat(it.key).isEqualTo(fakeEvent.key)
-                assertThat(it.type).isEqualTo(RumViewScope.RumViewType.FOREGROUND)
+                assertThat(it.type).isEqualTo(RumViewType.FOREGROUND)
                 assertThat(it.eventAttributes).containsAllEntriesOf(fakeEvent.attributes)
                 assertThat(it.firstPartyHostHeaderTypeResolver).isSameAs(mockResolver)
                 assertThat(it.version).isEqualTo(2)
@@ -260,7 +260,7 @@ internal class RumViewManagerScopeTest {
                 assertThat(it.eventTimestamp)
                     .isEqualTo(resolveExpectedTimestamp(fakeEvent.eventTime.timestamp))
                 assertThat(it.key).isEqualTo(fakeEvent.key)
-                assertThat(it.type).isEqualTo(RumViewScope.RumViewType.FOREGROUND)
+                assertThat(it.type).isEqualTo(RumViewType.FOREGROUND)
                 assertThat(it.eventAttributes).containsAllEntriesOf(fakeEvent.attributes)
                 assertThat(it.firstPartyHostHeaderTypeResolver).isSameAs(mockResolver)
                 assertThat(it.version).isEqualTo(2)
@@ -414,7 +414,7 @@ internal class RumViewManagerScopeTest {
                 assertThat(it.cpuVitalMonitor).isInstanceOf(NoOpVitalMonitor::class.java)
                 assertThat(it.memoryVitalMonitor).isInstanceOf(NoOpVitalMonitor::class.java)
                 assertThat(it.frameRateVitalMonitor).isInstanceOf(NoOpVitalMonitor::class.java)
-                assertThat(it.type).isEqualTo(RumViewScope.RumViewType.BACKGROUND)
+                assertThat(it.type).isEqualTo(RumViewType.BACKGROUND)
                 assertThat(it.sampleRate).isCloseTo(fakeSampleRate, Assertions.offset(0.001f))
             }
     }
@@ -456,7 +456,7 @@ internal class RumViewManagerScopeTest {
                 assertThat(it.cpuVitalMonitor).isInstanceOf(NoOpVitalMonitor::class.java)
                 assertThat(it.memoryVitalMonitor).isInstanceOf(NoOpVitalMonitor::class.java)
                 assertThat(it.frameRateVitalMonitor).isInstanceOf(NoOpVitalMonitor::class.java)
-                assertThat(it.type).isEqualTo(RumViewScope.RumViewType.BACKGROUND)
+                assertThat(it.type).isEqualTo(RumViewType.BACKGROUND)
                 assertThat(it.sampleRate).isCloseTo(fakeSampleRate, Assertions.offset(0.001f))
             }
     }
@@ -625,7 +625,7 @@ internal class RumViewManagerScopeTest {
                 assertThat(it.cpuVitalMonitor).isInstanceOf(NoOpVitalMonitor::class.java)
                 assertThat(it.memoryVitalMonitor).isInstanceOf(NoOpVitalMonitor::class.java)
                 assertThat(it.frameRateVitalMonitor).isInstanceOf(NoOpVitalMonitor::class.java)
-                assertThat(it.type).isEqualTo(RumViewScope.RumViewType.APPLICATION_LAUNCH)
+                assertThat(it.type).isEqualTo(RumViewType.APPLICATION_LAUNCH)
             }
     }
 

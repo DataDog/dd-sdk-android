@@ -16,6 +16,7 @@ import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.sampling.RateBasedSampler
+import com.datadog.android.rum.internal.RumAnonymousIdentifierManager
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.metric.SessionEndedMetricDispatcher
 import com.datadog.android.rum.internal.monitor.DatadogRumMonitor
@@ -72,6 +73,12 @@ object Rum {
         )
 
         sdkCore.registerFeature(rumFeature)
+
+        sdkCore.getFeature(rumFeature.name)?.dataStore?.let {
+            RumAnonymousIdentifierManager(it, sdkCore).manageAnonymousId(
+                rumConfiguration.featureConfiguration.trackAnonymousUser
+            )
+        }
 
         val rumMonitor = createMonitor(sdkCore, rumFeature)
 

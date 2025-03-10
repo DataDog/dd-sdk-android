@@ -6,6 +6,7 @@
 
 package com.datadog.android.rum.internal.monitor
 
+import android.app.Activity
 import com.datadog.android.core.feature.event.ThreadDump
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.rum.RumErrorSource
@@ -48,5 +49,9 @@ internal interface AdvancedRumMonitor : RumMonitor, AdvancedNetworkRumMonitor {
 
     fun updatePerformanceMetric(metric: RumPerformanceMetric, value: Double)
 
+    fun setInternalViewAttribute(key: String, value: Any?)
+
     fun setSyntheticsAttribute(testId: String, resultId: String)
+
+    fun enableJankStatsTracking(activity: Activity)
 }

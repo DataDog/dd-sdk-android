@@ -15,7 +15,7 @@ import java.util.concurrent.TimeUnit
  * @param timeThresholdInMilliseconds The threshold in milliseconds.
  */
 class TimeBasedInitialResourceIdentifier(
-    timeThresholdInMilliseconds: Long = DEFAULT_TIME_THRESHOLD_MS
+    internal val timeThresholdInMilliseconds: Long = DEFAULT_TIME_THRESHOLD_MS
 ) : InitialResourceIdentifier {
     private val timeThresholdInNanoSeconds: Long = TimeUnit.MILLISECONDS.toNanos(timeThresholdInMilliseconds)
 
@@ -27,6 +27,9 @@ class TimeBasedInitialResourceIdentifier(
         } ?: false
     }
 
+    internal fun defaultThresholdUsed(): Boolean {
+        return DEFAULT_TIME_THRESHOLD_MS == timeThresholdInMilliseconds
+    }
     // region Object
 
     override fun equals(other: Any?): Boolean {

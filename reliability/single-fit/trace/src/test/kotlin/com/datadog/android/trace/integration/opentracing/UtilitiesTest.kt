@@ -131,7 +131,7 @@ class UtilitiesTest {
             val span = testedTracer.buildSpan(fakeOperation).start()
             leastSignificantTraceId = span.leastSignificant64BitsTraceId()
             mostSignificantTraceId = span.mostSignificant64BitsTraceId()
-            traceId = (span as? DDSpan)?.traceId?.toString() ?: ""
+            traceId = (span as? DDSpan)?.traceId?.toString(16) ?: ""
             spanId = span.spanIdAsLong()
             Thread.sleep(OP_DURATION_MS)
             span.setError(fakeErrorMessage)
@@ -232,7 +232,7 @@ class UtilitiesTest {
             val span = testedTracer.buildSpan(fakeOperation).start()
             leastSignificantTraceId = span.leastSignificant64BitsTraceId()
             mostSignificantTraceId = span.mostSignificant64BitsTraceId()
-            traceId = (span as? DDSpan)?.traceId?.toString() ?: ""
+            traceId = (span as? DDSpan)?.traceId?.toString(16) ?: ""
             spanId = span.spanIdAsLong()
             Thread.sleep(OP_DURATION_MS)
             AndroidTracer.Companion.logErrorMessage(span, fakeErrorMessage)

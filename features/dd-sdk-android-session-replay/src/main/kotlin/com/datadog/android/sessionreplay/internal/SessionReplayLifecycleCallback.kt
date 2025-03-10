@@ -21,6 +21,24 @@ internal class SessionReplayLifecycleCallback(
 
     private val currentActiveWindows = WeakHashMap<Window, Any?>()
 
+    fun setCurrentWindow(activity: Activity) {
+        activity.window?.let {
+            currentActiveWindows[it] = null
+        }
+    }
+
+    fun registerFragmentLifecycleCallbacks(activity: Activity) {
+        if (activity is FragmentActivity) {
+            // we need to register before the activity resumes to catch all the fragments
+            // added even before the activity resumes
+            val lifecycleCallback = RecorderFragmentLifecycleCallback(this)
+            activity.supportFragmentManager.registerFragmentLifecycleCallbacks(
+                lifecycleCallback,
+                true
+            )
+        }
+    }
+
     override fun onWindowsAdded(windows: List<Window>) {
         windows.forEach {
             currentActiveWindows[it] = null
@@ -41,15 +59,7 @@ internal class SessionReplayLifecycleCallback(
 
     @MainThread
     override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {
-        if (activity is FragmentActivity) {
-            // we need to register before the activity resumes to catch all the fragments
-            // added even before the activity resumes
-            val lifecycleCallback = RecorderFragmentLifecycleCallback(this)
-            activity.supportFragmentManager.registerFragmentLifecycleCallbacks(
-                lifecycleCallback,
-                true
-            )
-        }
+        registerFragmentLifecycleCallbacks(activity)
     }
 
     @MainThread

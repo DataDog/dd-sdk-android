@@ -1,3 +1,30 @@
+# 2.19.0 / 2025-03-10
+
+* [FEATURE] Core: Introduce anonymous RUM Identifier. See [#2487](https://github.com/DataDog/dd-sdk-android/pull/2487)
+* [BUGFIX] Fixing telemetry sampling rate reporting. See [#2503](https://github.com/DataDog/dd-sdk-android/pull/2503)
+* [BUGFIX] Allow first build complete to be any number format. See [#2527](https://github.com/DataDog/dd-sdk-android/pull/2527)
+* [IMPROVEMENT] RUM View Ended Telemetry now includes TNS and INV. See [#2495](https://github.com/DataDog/dd-sdk-android/pull/2495)
+* [IMPROVEMENT] Trace: Forward RUM Session ID in trace headers. See [#2502](https://github.com/DataDog/dd-sdk-android/pull/2502)
+* [IMPROVEMENT] View ended instrumentation type attribute support. See [#2504](https://github.com/DataDog/dd-sdk-android/pull/2504)
+* [IMPROVEMENT] Support for configuration schema updates for time based strategy of TNS and INV metrics. See [#2505](https://github.com/DataDog/dd-sdk-android/pull/2505)
+* [IMPROVEMENT] Core: Change `UploadWorker` visibility from `internal` to `public`. See [#2511](https://github.com/DataDog/dd-sdk-android/pull/2511)
+* [IMPROVEMENT] Ensure span logs use 128 bits trace id as hex string. See [#2512](https://github.com/DataDog/dd-sdk-android/pull/2512)
+* [IMPROVEMENT] RUM: Refactor `JankStatsActivityLifecycleListener`. See [#2513](https://github.com/DataDog/dd-sdk-android/pull/2513)
+* [IMPROVEMENT] Core: Update `UserInfo` API to make id mandatory. See [#2509](https://github.com/DataDog/dd-sdk-android/pull/2509)
+* [IMPROVEMENT] Improvements to the upload mechanism. See [#2514](https://github.com/DataDog/dd-sdk-android/pull/2514)
+* [IMPROVEMENT] Catch Coroutines errors while getting all threads stacktraces. See [#2522](https://github.com/DataDog/dd-sdk-android/pull/2522)
+* [IMPROVEMENT] Support Flutter's FBC and custom INV values. See [#2520](https://github.com/DataDog/dd-sdk-android/pull/2520)
+* [IMPROVEMENT] RUM: Add ability to manually add an activity to `JankStats`. See [#2524](https://github.com/DataDog/dd-sdk-android/pull/2524)
+* [IMPROVEMENT] Session Replay: Allow definition of custom implementations of specific Session Replay methods. See [#2516](https://github.com/DataDog/dd-sdk-android/pull/2516)
+* [IMPROVEMENT] Session Replay: Improve `StateListDrawable` support in session replay. See [#2531](https://github.com/DataDog/dd-sdk-android/pull/2531)
+* [MAINTENANCE] Next dev iteration `2.19.0`. See [#2498](https://github.com/DataDog/dd-sdk-android/pull/2498)
+* [MAINTENANCE] Fix flaky test in Head-based sampling test suite. See [#2499](https://github.com/DataDog/dd-sdk-android/pull/2499)
+* [MAINTENANCE] Session Replay: Add support for Detekt checks for Session Replay Compose module. See [#2507](https://github.com/DataDog/dd-sdk-android/pull/2507)
+* [MAINTENANCE] Update AGP version to `8.8.2`. See [#2515](https://github.com/DataDog/dd-sdk-android/pull/2515)
+* [MAINTENANCE] RUM: Avoid logging initial `null` `viewLoadingTime` on first call to `addViewLoadingTime`. See [#2517](https://github.com/DataDog/dd-sdk-android/pull/2517)
+* [MAINTENANCE] Upgrade github action to use `ubuntu-latest`. See [#2523](https://github.com/DataDog/dd-sdk-android/pull/2523)
+* [DOCS] Update SDK performance doc with Session Replay measurements. See [#2481](https://github.com/DataDog/dd-sdk-android/pull/2481)
+
 # 2.18.0 / 2025-02-03
 
 * [FEATURE] Allow disabling 404 span redaction. See [#2496](https://github.com/DataDog/dd-sdk-android/pull/2496)
@@ -294,6 +321,7 @@
 * [FEATURE] Trace: Add OpenTelemetry use case into the `vendor-lib` sample. See [#2069](https://github.com/DataDog/dd-sdk-android/pull/2069)
 * [FEATURE] Trace: Add the OkHttp Otel extensions module. See [#2073](https://github.com/DataDog/dd-sdk-android/pull/2073)
 * [FEATURE] Trace: `OtelTraceProvider.Builder`: introduce the trace rate limit property. See [#2086](https://github.com/DataDog/dd-sdk-android/pull/2086)
+* **WARNING**: Existing `com.datadog.trace` package renamed to `com.datadog.legacy.trace`. `com.datadog.trace` package will contain new members, so update your imports accordingly.
 * [BUGFIX] Session Replay: Fix time drift in `RecordedDataQueueHandler`. See [#2075](https://github.com/DataDog/dd-sdk-android/pull/2075)
 * [IMPROVEMENT] Trace: Remove some unused IAST/CI Visibility classes. See [#2000](https://github.com/DataDog/dd-sdk-android/pull/2000)
 * [IMPROVEMENT] Trace: Remove `moshi` dependency from trace module. See [#2003](https://github.com/DataDog/dd-sdk-android/pull/2003)

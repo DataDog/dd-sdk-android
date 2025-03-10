@@ -42,9 +42,9 @@
               "description": "Name of the vital, as it is also used as facet path for its value, it must contain only letters, digits, or the characters - _ . @ $",
               "readOnly": true
             },
-            "details": {
+            "description": {
               "type": "string",
-              "description": "Details of the vital. It can be used as a secondary identifier (URL, React component name...)",
+              "description": "Description of the vital. It can be used as a secondary identifier (URL, React component name...)",
               "readOnly": true
             },
             "duration": {
