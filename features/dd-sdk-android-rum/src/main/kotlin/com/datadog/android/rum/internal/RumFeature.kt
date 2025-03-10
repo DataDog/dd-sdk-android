@@ -153,9 +153,7 @@ internal class RumFeature(
         this.appContext = appContext
         initialResourceIdentifier = configuration.initialResourceIdentifier
         lastInteractionIdentifier = configuration.lastInteractionIdentifier
-        slowFramesListener = configuration.slowFrameListenerConfiguration
-            ?.let(::DefaultSlowFramesListener)
-            ?: NoOpSlowFramesListener()
+
         dataWriter = createDataWriter(
             configuration,
             sdkCore as InternalSdkCore
@@ -194,6 +192,8 @@ internal class RumFeature(
             initializeANRDetector()
         }
 
+        initializeSlowFrameListener()
+
         registerTrackingStrategies(appContext)
 
         sessionListener = configuration.sessionListener
@@ -201,6 +201,25 @@ internal class RumFeature(
         sdkCore.setEventReceiver(name, this)
 
         initialized.set(true)
+    }
+
+    private fun initializeSlowFrameListener() {
+        val slowFrameListenerConfiguration = configuration.slowFrameListenerConfiguration
+        slowFramesListener = if (slowFrameListenerConfiguration != null) {
+            sdkCore.internalLogger.log(
+                InternalLogger.Level.INFO,
+                InternalLogger.Target.USER,
+                { SLOW_FRAME_MONITORING_ENABLED_MESSAGE }
+            )
+            DefaultSlowFramesListener(slowFrameListenerConfiguration)
+        } else {
+            sdkCore.internalLogger.log(
+                InternalLogger.Level.INFO,
+                InternalLogger.Target.USER,
+                { SLOW_FRAME_MONITORING_DISABLED_MESSAGE }
+            )
+            NoOpSlowFramesListener()
+        }
     }
 
     override val requestFactory: RequestFactory by lazy {
@@ -647,6 +666,10 @@ internal class RumFeature(
                 " where mandatory message field is either missing or has a wrong type."
         internal const val DEVELOPER_MODE_SAMPLE_RATE_CHANGED_MESSAGE =
             "Developer mode enabled, setting RUM sample rate to 100%."
+        internal const val SLOW_FRAME_MONITORING_ENABLED_MESSAGE =
+            "Slow frames monitoring enabled."
+        internal const val SLOW_FRAME_MONITORING_DISABLED_MESSAGE =
+            "Slow frames monitoring disabled."
         internal const val RUM_FEATURE_NOT_YET_INITIALIZED =
             "RUM feature is not initialized yet, you need to register it with a" +
                 " SDK instance by calling SdkCore#registerFeature method."

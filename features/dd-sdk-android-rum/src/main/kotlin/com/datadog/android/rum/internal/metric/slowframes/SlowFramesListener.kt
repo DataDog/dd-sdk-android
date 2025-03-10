@@ -80,7 +80,9 @@ internal class DefaultSlowFramesListener(
             val delaySinceLastUpdate = frameStartedTimestampNs -
                 (previousSlowFrameRecord?.startTimestampNs ?: frameStartedTimestampNs)
 
-            if (previousSlowFrameRecord == null || delaySinceLastUpdate > configuration.continuousSlowFrameThresholdNs) {
+            if (previousSlowFrameRecord == null ||
+                delaySinceLastUpdate > configuration.continuousSlowFrameThresholdNs
+            ) {
                 // No previous slow frame record or amount of time since the last update
                 // is significant enough to consider it idle - adding a new slow frame record.
                 if (frameDurationNs > 0) {
