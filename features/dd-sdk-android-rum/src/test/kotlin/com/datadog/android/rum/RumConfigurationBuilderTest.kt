@@ -561,4 +561,18 @@ internal class RumConfigurationBuilderTest {
         assertThat(rumConfiguration.featureConfiguration.lastInteractionIdentifier)
             .isSameAs(customLastInteractionIdentifier)
     }
+
+    @Test
+    fun `M changes default trackAnonymousUser W setTrackAnonymousUser()`(
+        @BoolForgery trackAnonymousUser: Boolean
+    ) {
+        // When
+        val rumConfiguration = testedBuilder
+            .trackAnonymousUser(trackAnonymousUser)
+            .build()
+
+        // Then
+        assertThat(rumConfiguration.featureConfiguration.trackAnonymousUser)
+            .isEqualTo(trackAnonymousUser)
+    }
 }

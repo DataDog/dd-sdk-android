@@ -114,6 +114,7 @@ public final class com/datadog/android/rum/RumConfiguration$Builder {
 	public final fun setTelemetrySampleRate (F)Lcom/datadog/android/rum/RumConfiguration$Builder;
 	public final fun setViewEventMapper (Lcom/datadog/android/rum/event/ViewEventMapper;)Lcom/datadog/android/rum/RumConfiguration$Builder;
 	public final fun setVitalsUpdateFrequency (Lcom/datadog/android/rum/configuration/VitalsUpdateFrequency;)Lcom/datadog/android/rum/RumConfiguration$Builder;
+	public final fun trackAnonymousUser (Z)Lcom/datadog/android/rum/RumConfiguration$Builder;
 	public final fun trackBackgroundEvents (Z)Lcom/datadog/android/rum/RumConfiguration$Builder;
 	public final fun trackFrustrations (Z)Lcom/datadog/android/rum/RumConfiguration$Builder;
 	public final fun trackLongTasks ()Lcom/datadog/android/rum/RumConfiguration$Builder;
