@@ -564,6 +564,7 @@ internal class RumConfigurationBuilderTest {
             .isSameAs(customLastInteractionIdentifier)
     }
 
+    @OptIn(ExperimentalRumApi::class)
     @Test
     fun `M use a custom slowFramesListenerConfiguration W setSlowFrameListenerConfiguration()`() {
         // Given
