@@ -35,7 +35,8 @@ internal class DefaultSlowFramesListenerTest {
     @StringForgery
     lateinit var viewId: String
 
-    @LongForgery(min = 1L, Long.MAX_VALUE / 3)
+    // max here to prevent Long overflow and avoid negative values
+    @LongForgery(min = 1L, max = 10_000_000_000L)
     var viewCreatedTimestampNs: Long = 0L
 
     private lateinit var testedListener: DefaultSlowFramesListener
@@ -58,7 +59,7 @@ internal class DefaultSlowFramesListenerTest {
         val report = testedListener.resolveReport(viewId)
 
         // Then
-        assertThat(report.slowFramesRecords.size).isEqualTo(1)
+        assertThat(report.slowFramesRecords).hasSize(1)
         assertThat(report.slowFramesRecords.first()).isEqualTo(
             SlowFrameRecord(
                 startTimestampNs = jankFrameData.frameStartNanos,
