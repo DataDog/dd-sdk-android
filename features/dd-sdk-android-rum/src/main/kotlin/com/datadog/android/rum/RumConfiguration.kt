@@ -9,6 +9,7 @@ package com.datadog.android.rum
 import android.os.Looper
 import androidx.annotation.FloatRange
 import com.datadog.android.event.EventMapper
+import com.datadog.android.rum.configuration.SlowFrameListenerConfiguration
 import com.datadog.android.rum.configuration.VitalsUpdateFrequency
 import com.datadog.android.rum.event.ViewEventMapper
 import com.datadog.android.rum.internal.RumFeature
@@ -280,6 +281,20 @@ data class RumConfiguration internal constructor(
          */
         fun setLastInteractionIdentifier(lastInteractionIdentifier: LastInteractionIdentifier?): Builder {
             rumConfig = rumConfig.copy(lastInteractionIdentifier = lastInteractionIdentifier)
+            return this
+        }
+
+        /**
+         * Sets the configuration for the slow frames listener, which is used to compute the slow frames array,
+         * slow frames ratio, and freeze ratio.
+         *
+         * Setting this property to null will disable the slow frames listener and stop the corresponding ratio computation.
+         *
+         * @param slowFrameListenerConfiguration The configuration to be used with the slow frames listener.
+         */
+        @ExperimentalRumApi
+        fun setSlowFrameListenerConfiguration(slowFrameListenerConfiguration: SlowFrameListenerConfiguration): Builder {
+            rumConfig = rumConfig.copy(slowFrameListenerConfiguration = slowFrameListenerConfiguration)
             return this
         }
 

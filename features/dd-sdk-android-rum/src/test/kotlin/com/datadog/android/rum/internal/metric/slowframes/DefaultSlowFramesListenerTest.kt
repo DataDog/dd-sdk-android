@@ -6,6 +6,7 @@
 package com.datadog.android.rum.internal.metric.slowframes
 
 import androidx.metrics.performance.FrameData
+import com.datadog.android.rum.configuration.SlowFrameListenerConfiguration
 import com.datadog.android.rum.internal.domain.state.SlowFrameRecord
 import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
@@ -45,8 +46,10 @@ internal class DefaultSlowFramesListenerTest {
     @BeforeEach
     fun `set up`() {
         testedListener = DefaultSlowFramesListener(
-            frozenFrameThresholdNs = Long.MAX_VALUE,
-            minViewLifetimeThresholdNs = 0
+            SlowFrameListenerConfiguration(
+                frozenFrameThresholdNs = Long.MAX_VALUE,
+                minViewLifetimeThresholdNs = 0
+            )
         )
     }
 
@@ -144,8 +147,10 @@ internal class DefaultSlowFramesListenerTest {
         )
 
         val testedListener = DefaultSlowFramesListener(
-            frozenFrameThresholdNs = Long.MAX_VALUE,
-            continuousSlowFrameThresholdNs = continuousSlowFrameThresholdNs
+            SlowFrameListenerConfiguration(
+                frozenFrameThresholdNs = Long.MAX_VALUE,
+                continuousSlowFrameThresholdNs = continuousSlowFrameThresholdNs
+            )
         )
         testedListener.onViewCreated(viewId, viewCreatedTimestampNs)
         testedListener.onFrame(jank1)
@@ -183,8 +188,10 @@ internal class DefaultSlowFramesListenerTest {
         )
 
         val testedListener = DefaultSlowFramesListener(
-            frozenFrameThresholdNs = Long.MAX_VALUE,
-            continuousSlowFrameThresholdNs = 16
+            SlowFrameListenerConfiguration(
+                frozenFrameThresholdNs = Long.MAX_VALUE,
+                continuousSlowFrameThresholdNs = 16
+            )
         )
         testedListener.onViewCreated(viewId, viewCreatedTimestampNs)
         testedListener.onFrame(jank1)
@@ -218,8 +225,10 @@ internal class DefaultSlowFramesListenerTest {
         )
 
         val testedListener = DefaultSlowFramesListener(
-            frozenFrameThresholdNs = 700,
-            continuousSlowFrameThresholdNs = 16
+            SlowFrameListenerConfiguration(
+                frozenFrameThresholdNs = 700,
+                continuousSlowFrameThresholdNs = 16
+            )
         )
         testedListener.onViewCreated(viewId, viewCreatedTimestampNs)
         testedListener.onFrame(jank)
@@ -248,8 +257,10 @@ internal class DefaultSlowFramesListenerTest {
         )
 
         val testedListener = DefaultSlowFramesListener(
-            frozenFrameThresholdNs = frozenFrameThresholdNs,
-            continuousSlowFrameThresholdNs = Long.MAX_VALUE
+            SlowFrameListenerConfiguration(
+                frozenFrameThresholdNs = frozenFrameThresholdNs,
+                continuousSlowFrameThresholdNs = Long.MAX_VALUE
+            )
         )
         testedListener.onViewCreated(viewId, viewCreatedTimestampNs)
         testedListener.onFrame(jank1)
@@ -324,12 +335,12 @@ internal class DefaultSlowFramesListenerTest {
     @Test
     fun `M be expected constant values for thresholds`() {
         // When
-        val testedListener = DefaultSlowFramesListener()
+        val defaultConfiguration = SlowFrameListenerConfiguration()
 
         // Then
-        assertThat(testedListener.maxSlowFramesAmount).isEqualTo(1000)
-        assertThat(testedListener.frozenFrameThresholdNs).isEqualTo(700_000_000)
-        assertThat(testedListener.continuousSlowFrameThresholdNs).isEqualTo(16_666_666L)
+        assertThat(defaultConfiguration.maxSlowFramesAmount).isEqualTo(1000)
+        assertThat(defaultConfiguration.frozenFrameThresholdNs).isEqualTo(700_000_000)
+        assertThat(defaultConfiguration.continuousSlowFrameThresholdNs).isEqualTo(16_666_666L)
     }
 
     @Test
@@ -345,7 +356,9 @@ internal class DefaultSlowFramesListenerTest {
         val viewEndedTimestampNs = viewStartedAtTimestampNs + viewDurationNs
         val expectedAnrRatio = longTaskDuration.toDouble() / viewDurationNs
         val testedListener = DefaultSlowFramesListener(
-            anrDuration = anrDurationThresholdNs
+            SlowFrameListenerConfiguration(
+                anrDuration = anrDurationThresholdNs
+            )
         ).apply {
             onViewCreated(viewId, viewStartedAtTimestampNs)
         }
@@ -371,8 +384,10 @@ internal class DefaultSlowFramesListenerTest {
         // Given
         val viewStartedAtTimestampNs = 0L
         val testedListener = DefaultSlowFramesListener(
-            anrDuration = 0L, // every long task is ANR now
-            minViewLifetimeThresholdNs = minViewLifetimeThresholdNs
+            SlowFrameListenerConfiguration(
+                anrDuration = 0L, // every long task is ANR now
+                minViewLifetimeThresholdNs = minViewLifetimeThresholdNs
+            )
         ).apply {
             onViewCreated(viewId, viewStartedAtTimestampNs)
         }
