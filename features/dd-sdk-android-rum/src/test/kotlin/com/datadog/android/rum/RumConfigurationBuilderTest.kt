@@ -563,7 +563,7 @@ internal class RumConfigurationBuilderTest {
     }
 
     @Test
-    fun `M changes default trackAnonymousUser W setTrackAnonymousUser()`(
+    fun `M changes default trackAnonymousUser W trackAnonymousUser()`(
         @BoolForgery trackAnonymousUser: Boolean
     ) {
         // When
