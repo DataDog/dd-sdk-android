@@ -18,6 +18,9 @@ import com.datadog.android.core.internal.persistence.BatchId
 import com.datadog.android.core.internal.persistence.Storage
 import com.datadog.android.core.internal.system.SystemInfo
 import com.datadog.android.core.internal.system.SystemInfoProvider
+import com.datadog.android.internal.telemetry.UploadQualityBlockers
+import com.datadog.android.internal.telemetry.UploadQualityCategories
+import com.datadog.android.internal.telemetry.UploadQualityEvent
 import com.datadog.android.utils.forge.Configurator
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
@@ -26,6 +29,7 @@ import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -38,6 +42,7 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
+import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
@@ -83,6 +88,9 @@ internal class DataUploadRunnableTest {
     lateinit var mockInternalLogger: InternalLogger
 
     @Mock
+    lateinit var mockUploadQualityListener: UploadQualityListener
+
+    @Mock
     lateinit var mockUploadSchedulerStrategy: UploadSchedulerStrategy
 
     @Forgery
@@ -121,16 +129,17 @@ internal class DataUploadRunnableTest {
         whenever(mockContextProvider.context) doReturn fakeContext
 
         testedRunnable = DataUploadRunnable(
-            fakeFeatureName,
-            mockThreadPoolExecutor,
-            mockStorage,
-            mockDataUploader,
-            mockContextProvider,
-            mockNetworkInfoProvider,
-            mockSystemInfoProvider,
-            mockUploadSchedulerStrategy,
-            fakeMaxBatchesPerJob,
-            mockInternalLogger
+            featureName = fakeFeatureName,
+            threadPoolExecutor = mockThreadPoolExecutor,
+            storage = mockStorage,
+            dataUploader = mockDataUploader,
+            contextProvider = mockContextProvider,
+            networkInfoProvider = mockNetworkInfoProvider,
+            systemInfoProvider = mockSystemInfoProvider,
+            uploadSchedulerStrategy = mockUploadSchedulerStrategy,
+            maxBatchesPerJob = fakeMaxBatchesPerJob,
+            internalLogger = mockInternalLogger,
+            uploadQualityListener = mockUploadQualityListener
         )
     }
 
@@ -562,16 +571,17 @@ internal class DataUploadRunnableTest {
     ) {
         // Given
         testedRunnable = DataUploadRunnable(
-            fakeFeatureName,
-            mockThreadPoolExecutor,
-            mockStorage,
-            mockDataUploader,
-            mockContextProvider,
-            mockNetworkInfoProvider,
-            mockSystemInfoProvider,
-            mockUploadSchedulerStrategy,
-            fakeMaxBatchesPerJob,
-            mockInternalLogger
+            featureName = fakeFeatureName,
+            threadPoolExecutor = mockThreadPoolExecutor,
+            storage = mockStorage,
+            dataUploader = mockDataUploader,
+            contextProvider = mockContextProvider,
+            networkInfoProvider = mockNetworkInfoProvider,
+            systemInfoProvider = mockSystemInfoProvider,
+            uploadSchedulerStrategy = mockUploadSchedulerStrategy,
+            maxBatchesPerJob = fakeMaxBatchesPerJob,
+            internalLogger = mockInternalLogger,
+            uploadQualityListener = mockUploadQualityListener
         )
         val batches = forge.aList(
             size = forge.anInt(
@@ -618,16 +628,17 @@ internal class DataUploadRunnableTest {
     ) {
         // Given
         testedRunnable = DataUploadRunnable(
-            fakeFeatureName,
-            mockThreadPoolExecutor,
-            mockStorage,
-            mockDataUploader,
-            mockContextProvider,
-            mockNetworkInfoProvider,
-            mockSystemInfoProvider,
-            mockUploadSchedulerStrategy,
-            fakeMaxBatchesPerJob,
-            mockInternalLogger
+            featureName = fakeFeatureName,
+            threadPoolExecutor = mockThreadPoolExecutor,
+            storage = mockStorage,
+            dataUploader = mockDataUploader,
+            contextProvider = mockContextProvider,
+            networkInfoProvider = mockNetworkInfoProvider,
+            systemInfoProvider = mockSystemInfoProvider,
+            uploadSchedulerStrategy = mockUploadSchedulerStrategy,
+            maxBatchesPerJob = fakeMaxBatchesPerJob,
+            internalLogger = mockInternalLogger,
+            uploadQualityListener = mockUploadQualityListener
         )
         val fakeBatchesCount = forge.anInt(
             min = 1,
@@ -666,6 +677,8 @@ internal class DataUploadRunnableTest {
         verify(mockThreadPoolExecutor).schedule(testedRunnable, fakeDelayUntilNextUploadMs, TimeUnit.MILLISECONDS)
     }
 
+    // endregion
+
     // region Internal
 
     private fun stubStorage(
@@ -691,6 +704,307 @@ internal class DataUploadRunnableTest {
     }
 
     // endregion
+
+    // region upload quality
+
+    @Test
+    fun `M send network failure upload quality event W run { response not 202 }`(forge: Forge) {
+        // Given
+        testedRunnable = DataUploadRunnable(
+            featureName = fakeFeatureName,
+            threadPoolExecutor = mockThreadPoolExecutor,
+            storage = mockStorage,
+            dataUploader = mockDataUploader,
+            contextProvider = mockContextProvider,
+            networkInfoProvider = mockNetworkInfoProvider,
+            systemInfoProvider = mockSystemInfoProvider,
+            uploadSchedulerStrategy = mockUploadSchedulerStrategy,
+            maxBatchesPerJob = fakeMaxBatchesPerJob,
+            internalLogger = mockInternalLogger,
+            uploadQualityListener = mockUploadQualityListener
+        )
+        val batches = forge.aList(size = 1) { aList { getForgery<RawBatchEvent>() } }
+        val batchIds: List<BatchId> = batches.map { mock() }
+        val batchMetadata = forge.aList(size = batches.size) { aNullable { aString().toByteArray() } }
+        stubStorage(batchIds, batches, batchMetadata)
+        val mockUploadStatus: UploadStatus = mock()
+        whenever(mockUploadStatus.code).thenReturn(500)
+
+        batches.forEachIndexed { index, batch ->
+            whenever(
+                mockDataUploader.upload(
+                    fakeContext,
+                    batch,
+                    batchMetadata[index],
+                    batchIds[index]
+                )
+            ) doReturn mockUploadStatus
+        }
+
+        // When
+        testedRunnable.run()
+
+        // Then
+        argumentCaptor<UploadQualityEvent> {
+            verify(mockUploadQualityListener, times(2)).onUploadQualityEvent(
+                event = capture()
+            )
+            val firstEvent = firstValue as? UploadQualityEvent
+            val secondEvent = secondValue as? UploadQualityEvent
+
+            assertThat(firstEvent?.track).isEqualTo(fakeFeatureName)
+            assertThat(firstEvent?.category).isEqualTo(UploadQualityCategories.FAILURE)
+            assertThat(firstEvent?.specificType).isEqualTo(mockUploadStatus.code.toString())
+
+            assertThat(secondEvent?.track).isEqualTo(fakeFeatureName)
+            assertThat(secondEvent?.category).isEqualTo(UploadQualityCategories.COUNT)
+            assertThat(secondEvent?.specificType).isNull()
+        }
+    }
+
+    @Test
+    fun `M not send network failure upload quality event W run { response 202 }`(forge: Forge) {
+        // Given
+        testedRunnable = DataUploadRunnable(
+            featureName = fakeFeatureName,
+            threadPoolExecutor = mockThreadPoolExecutor,
+            storage = mockStorage,
+            dataUploader = mockDataUploader,
+            contextProvider = mockContextProvider,
+            networkInfoProvider = mockNetworkInfoProvider,
+            systemInfoProvider = mockSystemInfoProvider,
+            uploadSchedulerStrategy = mockUploadSchedulerStrategy,
+            maxBatchesPerJob = fakeMaxBatchesPerJob,
+            internalLogger = mockInternalLogger,
+            uploadQualityListener = mockUploadQualityListener
+        )
+        val batches = forge.aList(size = 1) { aList { getForgery<RawBatchEvent>() } }
+        val batchIds: List<BatchId> = batches.map { mock() }
+        val batchMetadata = forge.aList(size = batches.size) { aNullable { aString().toByteArray() } }
+        stubStorage(batchIds, batches, batchMetadata)
+        val mockUploadStatus: UploadStatus = mock()
+        whenever(mockUploadStatus.code).thenReturn(202)
+
+        batches.forEachIndexed { index, batch ->
+            whenever(
+                mockDataUploader.upload(
+                    fakeContext,
+                    batch,
+                    batchMetadata[index],
+                    batchIds[index]
+                )
+            ) doReturn mockUploadStatus
+        }
+
+        // When
+        testedRunnable.run()
+
+        // Then
+        argumentCaptor<UploadQualityEvent> {
+            verify(mockUploadQualityListener, times(1)).onUploadQualityEvent(event = capture())
+            val firstEvent = firstValue as? UploadQualityEvent
+            assertThat(firstEvent?.track).isEqualTo(fakeFeatureName)
+            assertThat(firstEvent?.category).isEqualTo(UploadQualityCategories.COUNT)
+            assertThat(firstEvent?.specificType).isNull()
+        }
+    }
+
+    @Test
+    fun `M send offline blocker upload quality event W run { is offline }`(forge: Forge) {
+        // Given
+        val mockNetworkInfo: NetworkInfo = mock()
+        whenever(mockNetworkInfo.connectivity).thenReturn(NetworkInfo.Connectivity.NETWORK_NOT_CONNECTED)
+        whenever(mockNetworkInfoProvider.getLatestNetworkInfo()).thenReturn(mockNetworkInfo)
+        testedRunnable = DataUploadRunnable(
+            featureName = fakeFeatureName,
+            threadPoolExecutor = mockThreadPoolExecutor,
+            storage = mockStorage,
+            dataUploader = mockDataUploader,
+            contextProvider = mockContextProvider,
+            networkInfoProvider = mockNetworkInfoProvider,
+            systemInfoProvider = mockSystemInfoProvider,
+            uploadSchedulerStrategy = mockUploadSchedulerStrategy,
+            maxBatchesPerJob = fakeMaxBatchesPerJob,
+            internalLogger = mockInternalLogger,
+            uploadQualityListener = mockUploadQualityListener
+        )
+        val batches = forge.aList(size = 1) { aList { getForgery<RawBatchEvent>() } }
+        val batchIds: List<BatchId> = batches.map { mock() }
+        val batchMetadata = forge.aList(size = batches.size) { aNullable { aString().toByteArray() } }
+        stubStorage(batchIds, batches, batchMetadata)
+        val mockUploadStatus: UploadStatus = mock()
+        whenever(mockUploadStatus.code).thenReturn(202)
+
+        batches.forEachIndexed { index, batch ->
+            whenever(
+                mockDataUploader.upload(
+                    fakeContext,
+                    batch,
+                    batchMetadata[index],
+                    batchIds[index]
+                )
+            ) doReturn mockUploadStatus
+        }
+
+        // When
+        testedRunnable.run()
+
+        // Then
+        val captor = argumentCaptor<UploadQualityEvent> {
+            verify(mockUploadQualityListener, times(2)).onUploadQualityEvent(
+                event = capture()
+            )
+        }
+
+        val allValues = captor.allValues
+        assertThat(allValues).hasSize(2)
+        val expectedCount = UploadQualityEvent(
+            track = fakeFeatureName,
+            category = UploadQualityCategories.COUNT,
+            specificType = null
+        )
+        val expectedBlocker = UploadQualityEvent(
+            track = fakeFeatureName,
+            category = UploadQualityCategories.BLOCKER,
+            specificType = UploadQualityBlockers.OFFLINE.key
+        )
+        val fakeExpected = listOf(expectedCount, expectedBlocker)
+        assertThat(allValues.containsAll(fakeExpected)).isTrue()
+    }
+
+    @Test
+    fun `M send low power blocker upload quality event W run { is low power mode }`(forge: Forge) {
+        // Given
+        val mockSystemInfo: SystemInfo = mock()
+        whenever(mockSystemInfo.batteryLevel).thenReturn(1)
+        whenever(mockSystemInfoProvider.getLatestSystemInfo()).thenReturn(mockSystemInfo)
+        testedRunnable = DataUploadRunnable(
+            featureName = fakeFeatureName,
+            threadPoolExecutor = mockThreadPoolExecutor,
+            storage = mockStorage,
+            dataUploader = mockDataUploader,
+            contextProvider = mockContextProvider,
+            networkInfoProvider = mockNetworkInfoProvider,
+            systemInfoProvider = mockSystemInfoProvider,
+            uploadSchedulerStrategy = mockUploadSchedulerStrategy,
+            maxBatchesPerJob = fakeMaxBatchesPerJob,
+            internalLogger = mockInternalLogger,
+            uploadQualityListener = mockUploadQualityListener
+        )
+        val batches = forge.aList(size = 1) { aList { getForgery<RawBatchEvent>() } }
+        val batchIds: List<BatchId> = batches.map { mock() }
+        val batchMetadata = forge.aList(size = batches.size) { aNullable { aString().toByteArray() } }
+        stubStorage(batchIds, batches, batchMetadata)
+        val mockUploadStatus: UploadStatus = mock()
+        whenever(mockUploadStatus.code).thenReturn(202)
+
+        batches.forEachIndexed { index, batch ->
+            whenever(
+                mockDataUploader.upload(
+                    fakeContext,
+                    batch,
+                    batchMetadata[index],
+                    batchIds[index]
+                )
+            ) doReturn mockUploadStatus
+        }
+
+        // When
+        testedRunnable.run()
+
+        // Then
+        val captor = argumentCaptor<UploadQualityEvent> {
+            verify(mockUploadQualityListener, times(2)).onUploadQualityEvent(
+                event = capture()
+            )
+        }
+        val allValues = captor.allValues
+        assertThat(allValues).hasSize(2)
+        val expectedCount = UploadQualityEvent(
+            track = fakeFeatureName,
+            category = UploadQualityCategories.COUNT,
+            specificType = null
+        )
+        val expectedBlocker = UploadQualityEvent(
+            track = fakeFeatureName,
+            category = UploadQualityCategories.BLOCKER,
+            specificType = UploadQualityBlockers.LOW_BATTERY.key
+        )
+        val fakeExpected = listOf(expectedCount, expectedBlocker)
+        assertThat(allValues.containsAll(fakeExpected)).isTrue()
+    }
+
+    @Test
+    fun `M send correct blockers upload quality event W run { low battery and power save mode }`(forge: Forge) {
+        // Given
+        val mockSystemInfo: SystemInfo = mock()
+        whenever(mockSystemInfo.batteryLevel).thenReturn(1)
+        whenever(mockSystemInfo.powerSaveMode).thenReturn(true)
+        whenever(mockSystemInfoProvider.getLatestSystemInfo()).thenReturn(mockSystemInfo)
+        testedRunnable = DataUploadRunnable(
+            featureName = fakeFeatureName,
+            threadPoolExecutor = mockThreadPoolExecutor,
+            storage = mockStorage,
+            dataUploader = mockDataUploader,
+            contextProvider = mockContextProvider,
+            networkInfoProvider = mockNetworkInfoProvider,
+            systemInfoProvider = mockSystemInfoProvider,
+            uploadSchedulerStrategy = mockUploadSchedulerStrategy,
+            maxBatchesPerJob = fakeMaxBatchesPerJob,
+            internalLogger = mockInternalLogger,
+            uploadQualityListener = mockUploadQualityListener
+        )
+        val batches = forge.aList(size = 1) { aList { getForgery<RawBatchEvent>() } }
+        val batchIds: List<BatchId> = batches.map { mock() }
+        val batchMetadata = forge.aList(size = batches.size) { aNullable { aString().toByteArray() } }
+        stubStorage(batchIds, batches, batchMetadata)
+        val mockUploadStatus: UploadStatus = mock()
+        whenever(mockUploadStatus.code).thenReturn(202)
+
+        batches.forEachIndexed { index, batch ->
+            whenever(
+                mockDataUploader.upload(
+                    fakeContext,
+                    batch,
+                    batchMetadata[index],
+                    batchIds[index]
+                )
+            ) doReturn mockUploadStatus
+        }
+
+        // When
+        testedRunnable.run()
+
+        // Then
+        val captor = argumentCaptor<UploadQualityEvent> {
+            verify(mockUploadQualityListener, times(3)).onUploadQualityEvent(
+                event = capture()
+            )
+        }
+
+        val allValues = captor.allValues
+        assertThat(allValues).hasSize(3)
+
+        val expectedCount = UploadQualityEvent(
+            track = fakeFeatureName,
+            category = UploadQualityCategories.COUNT,
+            specificType = null
+        )
+        val expectedBlocker = UploadQualityEvent(
+            track = fakeFeatureName,
+            category = UploadQualityCategories.BLOCKER,
+            specificType = UploadQualityBlockers.LOW_BATTERY.key
+        )
+        val expectedBlocker2 = UploadQualityEvent(
+            track = fakeFeatureName,
+            category = UploadQualityCategories.BLOCKER,
+            specificType = UploadQualityBlockers.LOW_POWER_MODE.key
+        )
+        val fakeExpected = listOf(expectedCount, expectedBlocker, expectedBlocker2)
+        assertThat(allValues.containsAll(fakeExpected)).isTrue()
+    }
+
+// endregion
 
     companion object {
 

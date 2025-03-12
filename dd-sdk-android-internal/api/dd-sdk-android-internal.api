@@ -104,6 +104,38 @@ public final class com/datadog/android/internal/telemetry/InternalTelemetryEvent
 	public fun toString ()Ljava/lang/String;
 }
 
+public final class com/datadog/android/internal/telemetry/UploadQualityBlockers : java/lang/Enum {
+	public static final field LOW_BATTERY Lcom/datadog/android/internal/telemetry/UploadQualityBlockers;
+	public static final field LOW_POWER_MODE Lcom/datadog/android/internal/telemetry/UploadQualityBlockers;
+	public static final field OFFLINE Lcom/datadog/android/internal/telemetry/UploadQualityBlockers;
+	public final fun getKey ()Ljava/lang/String;
+	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/internal/telemetry/UploadQualityBlockers;
+	public static fun values ()[Lcom/datadog/android/internal/telemetry/UploadQualityBlockers;
+}
+
+public final class com/datadog/android/internal/telemetry/UploadQualityCategories : java/lang/Enum {
+	public static final field BLOCKER Lcom/datadog/android/internal/telemetry/UploadQualityCategories;
+	public static final field COUNT Lcom/datadog/android/internal/telemetry/UploadQualityCategories;
+	public static final field FAILURE Lcom/datadog/android/internal/telemetry/UploadQualityCategories;
+	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/internal/telemetry/UploadQualityCategories;
+	public static fun values ()[Lcom/datadog/android/internal/telemetry/UploadQualityCategories;
+}
+
+public final class com/datadog/android/internal/telemetry/UploadQualityEvent {
+	public fun <init> (Ljava/lang/String;Lcom/datadog/android/internal/telemetry/UploadQualityCategories;Ljava/lang/String;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Lcom/datadog/android/internal/telemetry/UploadQualityCategories;
+	public final fun component3 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;Lcom/datadog/android/internal/telemetry/UploadQualityCategories;Ljava/lang/String;)Lcom/datadog/android/internal/telemetry/UploadQualityEvent;
+	public static synthetic fun copy$default (Lcom/datadog/android/internal/telemetry/UploadQualityEvent;Ljava/lang/String;Lcom/datadog/android/internal/telemetry/UploadQualityCategories;Ljava/lang/String;ILjava/lang/Object;)Lcom/datadog/android/internal/telemetry/UploadQualityEvent;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getCategory ()Lcom/datadog/android/internal/telemetry/UploadQualityCategories;
+	public final fun getSpecificType ()Ljava/lang/String;
+	public final fun getTrack ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
 public final class com/datadog/android/internal/utils/ByteArrayExtKt {
 	public static final fun toHexString ([B)Ljava/lang/String;
 }
