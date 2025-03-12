@@ -10,7 +10,6 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.SdkCore
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.core.internal.net.DefaultFirstPartyHostHeaderTypeResolver
-import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.internal.utils.loggableStackTrace
 import com.datadog.android.okhttp.TraceContextInjection
@@ -219,7 +218,7 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
                 tracedRequestListener = mockRequestListener,
                 traceOrigin = fakeOrigin,
                 traceSampler = mockTraceSampler,
-                traceContextInjection = TraceContextInjection.All,
+                traceContextInjection = TraceContextInjection.ALL,
                 redacted404ResourceName = fakeRedacted404Resources,
                 localTracerFactory = factory
             ) {

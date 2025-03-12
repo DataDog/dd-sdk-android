@@ -218,7 +218,7 @@ internal open class TracingInterceptorNotSendingSpanTest {
                 traceSampler = mockTraceSampler,
                 localTracerFactory = factory,
                 redacted404ResourceName = fakeRedacted404Resources,
-                traceContextInjection = TraceContextInjection.All
+                traceContextInjection = TraceContextInjection.ALL
             ) {
             override fun canSendSpan(): Boolean {
                 return false

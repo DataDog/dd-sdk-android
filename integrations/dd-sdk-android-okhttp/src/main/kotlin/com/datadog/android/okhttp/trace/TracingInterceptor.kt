@@ -116,7 +116,7 @@ internal constructor(
      * auto-instrumented requests. By default it is [DeterministicTraceSampler], which either can accept
      * fixed sample rate or can get it dynamically from the provider. Value between `0.0` and
      * `100.0`. A value of `0.0` means no trace will be kept, `100.0` means all traces will
-     * be kept (default value is `20.0`). If there is a parent trace attached to the network span created, then its
+     * be kept (default value is `100.0`). If there is a parent trace attached to the network span created, then its
      * sampling decision will be used instead.
      */
     @JvmOverloads
@@ -141,7 +141,7 @@ internal constructor(
         tracedRequestListener = tracedRequestListener,
         traceOrigin = null,
         traceSampler = traceSampler,
-        traceContextInjection = TraceContextInjection.All,
+        traceContextInjection = TraceContextInjection.SAMPLED,
         redacted404ResourceName = true,
         localTracerFactory = DEFAULT_LOCAL_TRACER_FACTORY
     )
@@ -162,7 +162,7 @@ internal constructor(
      * auto-instrumented requests. By default it is [DeterministicTraceSampler], which either can accept
      * fixed sample rate or can get it dynamically from the provider. Value between `0.0` and
      * `100.0`. A value of `0.0` means no trace will be kept, `100.0` means all traces will
-     * be kept (default value is `20.0`). If there is a parent trace attached to the network span created, then its
+     * be kept (default value is `100.0`). If there is a parent trace attached to the network span created, then its
      * sampling decision will be used instead.
      */
     @JvmOverloads
@@ -182,7 +182,7 @@ internal constructor(
         tracedRequestListener = tracedRequestListener,
         traceOrigin = null,
         traceSampler = traceSampler,
-        traceContextInjection = TraceContextInjection.All,
+        traceContextInjection = TraceContextInjection.SAMPLED,
         redacted404ResourceName = true,
         localTracerFactory = DEFAULT_LOCAL_TRACER_FACTORY
     )
@@ -197,7 +197,7 @@ internal constructor(
      * auto-instrumented requests. By default it is [DeterministicTraceSampler], which either can accept
      * fixed sample rate or can get it dynamically from the provider. Value between `0.0` and
      * `100.0`. A value of `0.0` means no trace will be kept, `100.0` means all traces will
-     * be kept (default value is `20.0`). If there is a parent trace attached to the network span created, then its
+     * be kept (default value is `100.0`). If there is a parent trace attached to the network span created, then its
      * sampling decision will be used instead.
      */
     @JvmOverloads
@@ -216,7 +216,7 @@ internal constructor(
         tracedRequestListener = tracedRequestListener,
         traceOrigin = null,
         traceSampler = traceSampler,
-        traceContextInjection = TraceContextInjection.All,
+        traceContextInjection = TraceContextInjection.SAMPLED,
         redacted404ResourceName = true,
         localTracerFactory = DEFAULT_LOCAL_TRACER_FACTORY
     )
@@ -561,7 +561,7 @@ internal constructor(
     }
 
     private fun handleDatadogSampledOutHeaders(requestBuilder: Request.Builder, span: Span, tracer: Tracer) {
-        if (traceContextInjection == TraceContextInjection.All) {
+        if (traceContextInjection == TraceContextInjection.ALL) {
             tracer.inject(
                 span.context(),
                 Format.Builtin.TEXT_MAP_INJECT,
@@ -583,19 +583,19 @@ internal constructor(
     }
 
     private fun handleB3SampledOutHeaders(requestBuilder: Request.Builder) {
-        if (traceContextInjection == TraceContextInjection.All) {
+        if (traceContextInjection == TraceContextInjection.ALL) {
             requestBuilder.addHeader(B3_HEADER_KEY, B3_DROP_SAMPLING_DECISION)
         }
     }
 
     private fun handleB3MultiNotSampledHeaders(requestBuilder: Request.Builder) {
-        if (traceContextInjection == TraceContextInjection.All) {
+        if (traceContextInjection == TraceContextInjection.ALL) {
             requestBuilder.addHeader(B3M_SAMPLING_PRIORITY_KEY, B3M_DROP_SAMPLING_DECISION)
         }
     }
 
     private fun handleW3CNotSampledHeaders(span: Span, requestBuilder: Request.Builder) {
-        if (traceContextInjection == TraceContextInjection.All) {
+        if (traceContextInjection == TraceContextInjection.ALL) {
             val traceId = span.context().traceIdAsHexString()
             val spanId = span.context().toSpanId()
             requestBuilder.addHeader(
@@ -828,7 +828,7 @@ internal constructor(
         internal var traceOrigin: String? = null
         internal var traceSampler: Sampler<Span> = DeterministicTraceSampler(DEFAULT_TRACE_SAMPLE_RATE)
         internal var localTracerFactory = DEFAULT_LOCAL_TRACER_FACTORY
-        internal var traceContextInjection = TraceContextInjection.All
+        internal var traceContextInjection = TraceContextInjection.SAMPLED
 
         internal var redacted404ResourceName = true
 
@@ -855,7 +855,7 @@ internal constructor(
          * Set the trace sample rate controlling the sampling of APM traces created for
          * auto-instrumented requests. If there is a parent trace attached to the network span created, then its
          * sampling decision will be used instead.
-         * @param sampleRate the sample rate to use (percentage between 0f and 100f, default is 20f).
+         * @param sampleRate the sample rate to use (percentage between 0f and 100f, default is 100f).
          */
         fun setTraceSampleRate(@FloatRange(from = 0.0, to = 100.0) sampleRate: Float): R {
             this.traceSampler = DeterministicTraceSampler(sampleRate)
@@ -867,7 +867,7 @@ internal constructor(
          * auto-instrumented requests. If there is a parent trace attached to the network span created, then its
          * sampling decision will be used instead.
          * @param traceSampler the trace sampler controlling the sampling of APM traces.
-         * By default it is a sampler accepting 20% of the traces.
+         * By default it is a sampler accepting 100% of the traces.
          */
         fun setTraceSampler(traceSampler: Sampler<Span>): R {
             this.traceSampler = traceSampler
@@ -876,13 +876,13 @@ internal constructor(
 
         /**
          * Set the trace context injection behavior for this interceptor in the intercepted requests.
-         * By default this is set to [TraceContextInjection.All] meaning that all the trace context
+         * By default this is set to [TraceContextInjection.SAMPLED], meaning that only the sampled request will
+         * propagate the trace context. In case of [TraceContextInjection.ALL] all the trace context
          * will be propagated in the intercepted requests no matter if the span created around the request
-         * is sampled or not. In case of [TraceContextInjection.Sampled] only the sampled request will propagate
-         * the trace context.
+         * is sampled or not.
          * @param traceContextInjection the trace context injection option.
-         * @see TraceContextInjection.All
-         * @see TraceContextInjection.Sampled
+         * @see TraceContextInjection.ALL
+         * @see TraceContextInjection.SAMPLED
          */
         fun setTraceContextInjection(traceContextInjection: TraceContextInjection): R {
             this.traceContextInjection = traceContextInjection
@@ -942,7 +942,7 @@ internal constructor(
         internal const val NETWORK_REQUESTS_TRACKING_FEATURE_NAME = "Network Requests"
         internal const val ALL_IN_SAMPLE_RATE: Double = 100.0
         internal const val ZERO_SAMPLE_RATE: Float = 0f
-        internal const val DEFAULT_TRACE_SAMPLE_RATE: Float = 20f
+        internal const val DEFAULT_TRACE_SAMPLE_RATE: Float = 100f
 
         // taken from DatadogHttpCodec
         internal const val DATADOG_LEAST_SIGNIFICANT_64_BITS_TRACE_ID_HEADER = "x-datadog-trace-id"

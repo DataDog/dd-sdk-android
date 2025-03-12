@@ -69,8 +69,8 @@ public final class com/datadog/android/okhttp/TraceContext {
 }
 
 public final class com/datadog/android/okhttp/TraceContextInjection : java/lang/Enum {
-	public static final field All Lcom/datadog/android/okhttp/TraceContextInjection;
-	public static final field Sampled Lcom/datadog/android/okhttp/TraceContextInjection;
+	public static final field ALL Lcom/datadog/android/okhttp/TraceContextInjection;
+	public static final field SAMPLED Lcom/datadog/android/okhttp/TraceContextInjection;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/okhttp/TraceContextInjection;
 	public static fun values ()[Lcom/datadog/android/okhttp/TraceContextInjection;
 }

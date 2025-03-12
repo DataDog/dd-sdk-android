@@ -166,7 +166,7 @@ internal class DatadogInterceptorWithoutTracesTest {
             rumResourceAttributesProvider = mockRumAttributesProvider,
             traceSampler = mockTraceSampler,
             redacted404ResourceName = fakeRedacted404Resources,
-            traceContextInjection = TraceContextInjection.All
+            traceContextInjection = TraceContextInjection.ALL
         ) { _, _ -> mockLocalTracer }
         whenever(rumMonitor.mockSdkCore.getFeature(Feature.TRACING_FEATURE_NAME)) doReturn mock()
         whenever(rumMonitor.mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mock()
