@@ -568,15 +568,15 @@ internal class RumConfigurationBuilderTest {
     @Test
     fun `M use a custom slowFramesListenerConfiguration W setSlowFrameListenerConfiguration()`() {
         // Given
-        val customLastInteractionIdentifier = mock<SlowFrameListenerConfiguration>()
+        val slowFrameListenerConfiguration = mock<SlowFrameListenerConfiguration>()
 
         // When
         val rumConfiguration = testedBuilder
-            .setSlowFrameListenerConfiguration(customLastInteractionIdentifier)
+            .setSlowFrameListenerConfiguration(slowFrameListenerConfiguration)
             .build()
 
         // Then
         assertThat(rumConfiguration.featureConfiguration.slowFrameListenerConfiguration)
-            .isSameAs(customLastInteractionIdentifier)
+            .isSameAs(slowFrameListenerConfiguration)
     }
 }

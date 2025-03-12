@@ -68,9 +68,9 @@ internal class ConfigurationRumForgeryFactory :
             trackAnonymousUser = forge.aBool(),
             slowFrameListenerConfiguration = SlowFrameListenerConfiguration(
                 maxSlowFramesAmount = forge.anInt(min = 1),
-                frozenFrameThresholdNs = forge.aLong(min = 1),
+                maxSlowFrameThresholdNs = forge.aLong(min = 1),
                 continuousSlowFrameThresholdNs = forge.aLong(min = 1),
-                anrDuration = forge.aLong(min = 1),
+                freezeDurationThreshold = forge.aLong(min = 1),
                 minViewLifetimeThresholdNs = forge.aLong(min = 1)
             )
         )

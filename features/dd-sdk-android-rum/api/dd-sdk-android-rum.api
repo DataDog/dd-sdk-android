@@ -259,6 +259,7 @@ public final class com/datadog/android/rum/configuration/SlowFrameListenerConfig
 }
 
 public final class com/datadog/android/rum/configuration/SlowFrameListenerConfiguration$Companion {
+	public final fun getDEFAULT ()Lcom/datadog/android/rum/configuration/SlowFrameListenerConfiguration;
 }
 
 public final class com/datadog/android/rum/configuration/VitalsUpdateFrequency : java/lang/Enum {
