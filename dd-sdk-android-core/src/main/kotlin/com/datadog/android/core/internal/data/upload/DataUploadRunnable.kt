@@ -10,8 +10,6 @@ import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.context.NetworkInfo
-import com.datadog.android.api.feature.Feature
-import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.core.configuration.UploadSchedulerStrategy
 import com.datadog.android.core.internal.ContextProvider
@@ -28,7 +26,6 @@ import java.util.concurrent.ScheduledThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 
 internal class DataUploadRunnable(
-    featureSdkCore: FeatureSdkCore,
     private val featureName: String,
     private val threadPoolExecutor: ScheduledThreadPoolExecutor,
     private val storage: Storage,
@@ -38,10 +35,9 @@ internal class DataUploadRunnable(
     private val systemInfoProvider: SystemInfoProvider,
     internal val uploadSchedulerStrategy: UploadSchedulerStrategy,
     internal val maxBatchesPerJob: Int,
-    private val internalLogger: InternalLogger
+    private val internalLogger: InternalLogger,
+    private val uploadQualityListener: UploadQualityListener
 ) : UploadRunnable {
-
-    private val rumFeature = featureSdkCore.getFeature(Feature.RUM_FEATURE_NAME)
 
     //  region Runnable
 
@@ -96,26 +92,41 @@ internal class DataUploadRunnable(
     }
 
     private fun logUploadQualityEvents() {
-        sendUploadQualityEvent(category = UploadQualityCategories.COUNT)
+        uploadQualityListener.onUploadQualityEvent(
+            UploadQualityEvent(
+                track = featureName,
+                category = UploadQualityCategories.COUNT,
+                specificType = null
+            )
+        )
 
         if (!isNetworkAvailable()) {
-            sendUploadQualityEvent(
-                category = UploadQualityCategories.BLOCKER,
-                specificType = UploadQualityBlockers.OFFLINE.key
+            uploadQualityListener.onUploadQualityEvent(
+                UploadQualityEvent(
+                    track = featureName,
+                    category = UploadQualityCategories.BLOCKER,
+                    specificType = UploadQualityBlockers.OFFLINE.key
+                )
             )
         }
 
         if (isLowPower()) {
-            sendUploadQualityEvent(
-                category = UploadQualityCategories.BLOCKER,
-                specificType = UploadQualityBlockers.LOW_BATTERY.key
+            uploadQualityListener.onUploadQualityEvent(
+                UploadQualityEvent(
+                    track = featureName,
+                    category = UploadQualityCategories.BLOCKER,
+                    specificType = UploadQualityBlockers.LOW_BATTERY.key
+                )
             )
         }
 
         if (isPowerSaveMode()) {
-            sendUploadQualityEvent(
-                category = UploadQualityCategories.BLOCKER,
-                specificType = UploadQualityBlockers.LOW_POWER_MODE.key
+            uploadQualityListener.onUploadQualityEvent(
+                UploadQualityEvent(
+                    track = featureName,
+                    category = UploadQualityCategories.BLOCKER,
+                    specificType = UploadQualityBlockers.LOW_POWER_MODE.key
+                )
             )
         }
     }
@@ -163,9 +174,12 @@ internal class DataUploadRunnable(
     ): UploadStatus {
         val status = dataUploader.upload(context, batch, batchMeta, batchId)
         if (status.code != HTTP_SUCCESS_CODE) {
-            sendUploadQualityEvent(
-                category = UploadQualityCategories.FAILURE,
-                specificType = status.code.toString()
+            uploadQualityListener.onUploadQualityEvent(
+                UploadQualityEvent(
+                    track = featureName,
+                    category = UploadQualityCategories.FAILURE,
+                    specificType = status.code.toString()
+                )
             )
         }
         val removalReason = if (status is UploadStatus.RequestCreationError) {
@@ -175,16 +189,6 @@ internal class DataUploadRunnable(
         }
         storage.confirmBatchRead(batchId, removalReason, deleteBatch = !status.shouldRetry)
         return status
-    }
-
-    private fun sendUploadQualityEvent(category: UploadQualityCategories, specificType: String? = null) {
-        rumFeature?.sendEvent(
-            UploadQualityEvent(
-                track = featureName,
-                category = category,
-                specificType = specificType
-            )
-        )
     }
 
     // endregion
