@@ -96,7 +96,7 @@ class HeadBasedSamplingTest {
                 TracingInterceptor.Builder(
                     tracedHostsWithHeaderType = mapOf(mockServer.hostName to setOf(TracingHeaderType.DATADOG))
                 )
-                    .setTraceContextInjection(TraceContextInjection.All)
+                    .setTraceContextInjection(TraceContextInjection.ALL)
                     .setSdkInstanceName(stubSdkCore.name)
                     .setTraceSampleRate(100f)
                     .build()
@@ -166,7 +166,7 @@ class HeadBasedSamplingTest {
                 TracingInterceptor.Builder(
                     tracedHostsWithHeaderType = mapOf(mockServer.hostName to setOf(TracingHeaderType.DATADOG))
                 )
-                    .setTraceContextInjection(TraceContextInjection.All)
+                    .setTraceContextInjection(TraceContextInjection.ALL)
                     .setSdkInstanceName(stubSdkCore.name)
                     .setTraceSampleRate(50f)
                     .build()
@@ -210,7 +210,7 @@ class HeadBasedSamplingTest {
                 TracingInterceptor.Builder(
                     tracedHostsWithHeaderType = mapOf(mockServer.hostName to setOf(TracingHeaderType.DATADOG))
                 )
-                    .setTraceContextInjection(TraceContextInjection.All)
+                    .setTraceContextInjection(TraceContextInjection.ALL)
                     .setSdkInstanceName(stubSdkCore.name)
                     .setTraceSampleRate(100f)
                     .build()
@@ -259,7 +259,7 @@ class HeadBasedSamplingTest {
                 TracingInterceptor.Builder(
                     tracedHostsWithHeaderType = mapOf(mockServer.hostName to setOf(TracingHeaderType.DATADOG))
                 )
-                    .setTraceContextInjection(TraceContextInjection.All)
+                    .setTraceContextInjection(TraceContextInjection.ALL)
                     .setSdkInstanceName(stubSdkCore.name)
                     .setTraceSampleRate(100f)
                     .build()
@@ -304,7 +304,7 @@ class HeadBasedSamplingTest {
                 TracingInterceptor.Builder(
                     tracedHostsWithHeaderType = mapOf(mockServer.hostName to setOf(TracingHeaderType.DATADOG))
                 )
-                    .setTraceContextInjection(TraceContextInjection.All)
+                    .setTraceContextInjection(TraceContextInjection.ALL)
                     .setSdkInstanceName(stubSdkCore.name)
                     .setTraceSampleRate(0f)
                     .build()
@@ -404,7 +404,7 @@ class HeadBasedSamplingTest {
                 TracingInterceptor.Builder(
                     tracedHostsWithHeaderType = mapOf(mockServer.hostName to setOf(TracingHeaderType.DATADOG))
                 )
-                    .setTraceContextInjection(TraceContextInjection.All)
+                    .setTraceContextInjection(TraceContextInjection.ALL)
                     .setSdkInstanceName(stubSdkCore.name)
                     .setTraceSampleRate(0f)
                     .build()
@@ -502,7 +502,7 @@ class HeadBasedSamplingTest {
                 TracingInterceptor.Builder(
                     tracedHostsWithHeaderType = mapOf(mockServer.hostName to setOf(TracingHeaderType.DATADOG))
                 )
-                    .setTraceContextInjection(TraceContextInjection.All)
+                    .setTraceContextInjection(TraceContextInjection.ALL)
                     .setSdkInstanceName(stubSdkCore.name)
                     .setTraceSampleRate(100f)
                     .build()
@@ -553,7 +553,7 @@ class HeadBasedSamplingTest {
                 TracingInterceptor.Builder(
                     tracedHostsWithHeaderType = mapOf(mockServer.hostName to setOf(TracingHeaderType.DATADOG))
                 )
-                    .setTraceContextInjection(TraceContextInjection.All)
+                    .setTraceContextInjection(TraceContextInjection.ALL)
                     .setSdkInstanceName(stubSdkCore.name)
                     .setTraceSampleRate(100f)
                     .build()

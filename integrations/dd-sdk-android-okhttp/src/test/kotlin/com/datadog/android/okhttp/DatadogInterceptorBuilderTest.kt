@@ -77,13 +77,14 @@ internal class DatadogInterceptorBuilderTest {
 
         // Then
         assertThat(interceptor.tracedHosts).isEqualTo(fakeTracedHostsWithHeaderType)
-        assertThat(interceptor.traceContextInjection).isEqualTo(TraceContextInjection.All)
+        assertThat(interceptor.traceContextInjection).isEqualTo(TraceContextInjection.SAMPLED)
         assertThat(interceptor.sdkInstanceName).isNull()
         assertThat(
             interceptor.rumResourceAttributesProvider
         ).isInstanceOf(NoOpRumResourceAttributesProvider::class.java)
         assertThat(interceptor.tracedRequestListener).isInstanceOf(NoOpTracedRequestListener::class.java)
         assertThat(interceptor.traceSampler).isInstanceOf(DeterministicTraceSampler::class.java)
+        assertThat(interceptor.traceSampler.getSampleRate()).isEqualTo(100f)
         assertThat(interceptor.traceOrigin).isEqualTo(DatadogInterceptor.ORIGIN_RUM)
         assertThat(interceptor.localTracerFactory).isNotNull()
     }
@@ -102,13 +103,14 @@ internal class DatadogInterceptorBuilderTest {
                 setOf(TracingHeaderType.DATADOG, TracingHeaderType.TRACECONTEXT)
             }
         )
-        assertThat(interceptor.traceContextInjection).isEqualTo(TraceContextInjection.All)
+        assertThat(interceptor.traceContextInjection).isEqualTo(TraceContextInjection.SAMPLED)
         assertThat(interceptor.sdkInstanceName).isNull()
         assertThat(
             interceptor.rumResourceAttributesProvider
         ).isInstanceOf(NoOpRumResourceAttributesProvider::class.java)
         assertThat(interceptor.tracedRequestListener).isInstanceOf(NoOpTracedRequestListener::class.java)
         assertThat(interceptor.traceSampler).isInstanceOf(DeterministicTraceSampler::class.java)
+        assertThat(interceptor.traceSampler.getSampleRate()).isEqualTo(100f)
         assertThat(interceptor.traceOrigin).isEqualTo(DatadogInterceptor.ORIGIN_RUM)
         assertThat(interceptor.localTracerFactory).isNotNull()
     }
@@ -122,13 +124,14 @@ internal class DatadogInterceptorBuilderTest {
 
         // Then
         assertThat(interceptor.tracedHosts).isEqualTo(fakeTracedHostsWithHeaderType)
-        assertThat(interceptor.traceContextInjection).isEqualTo(TraceContextInjection.All)
+        assertThat(interceptor.traceContextInjection).isEqualTo(TraceContextInjection.SAMPLED)
         assertThat(interceptor.sdkInstanceName).isEqualTo(fakeSdkInstaceName)
         assertThat(
             interceptor.rumResourceAttributesProvider
         ).isInstanceOf(NoOpRumResourceAttributesProvider::class.java)
         assertThat(interceptor.tracedRequestListener).isInstanceOf(NoOpTracedRequestListener::class.java)
         assertThat(interceptor.traceSampler).isInstanceOf(DeterministicTraceSampler::class.java)
+        assertThat(interceptor.traceSampler.getSampleRate()).isEqualTo(100f)
         assertThat(interceptor.traceOrigin).isEqualTo(DatadogInterceptor.ORIGIN_RUM)
         assertThat(interceptor.localTracerFactory).isNotNull()
     }
@@ -149,6 +152,7 @@ internal class DatadogInterceptorBuilderTest {
         ).isInstanceOf(NoOpRumResourceAttributesProvider::class.java)
         assertThat(interceptor.tracedRequestListener).isInstanceOf(NoOpTracedRequestListener::class.java)
         assertThat(interceptor.traceSampler).isInstanceOf(DeterministicTraceSampler::class.java)
+        assertThat(interceptor.traceSampler.getSampleRate()).isEqualTo(100f)
         assertThat(interceptor.traceOrigin).isEqualTo(DatadogInterceptor.ORIGIN_RUM)
         assertThat(interceptor.localTracerFactory).isNotNull()
     }
@@ -162,13 +166,14 @@ internal class DatadogInterceptorBuilderTest {
 
         // Then
         assertThat(interceptor.tracedHosts).isEqualTo(fakeTracedHostsWithHeaderType)
-        assertThat(interceptor.traceContextInjection).isEqualTo(TraceContextInjection.All)
+        assertThat(interceptor.traceContextInjection).isEqualTo(TraceContextInjection.SAMPLED)
         assertThat(interceptor.sdkInstanceName).isNull()
         assertThat(
             interceptor.rumResourceAttributesProvider
         ).isInstanceOf(NoOpRumResourceAttributesProvider::class.java)
         assertThat(interceptor.tracedRequestListener).isSameAs(mockTracedRequestListener)
         assertThat(interceptor.traceSampler).isInstanceOf(DeterministicTraceSampler::class.java)
+        assertThat(interceptor.traceSampler.getSampleRate()).isEqualTo(100f)
         assertThat(interceptor.traceOrigin).isEqualTo(DatadogInterceptor.ORIGIN_RUM)
         assertThat(interceptor.localTracerFactory).isNotNull()
     }
@@ -182,11 +187,12 @@ internal class DatadogInterceptorBuilderTest {
 
         // Then
         assertThat(interceptor.tracedHosts).isEqualTo(fakeTracedHostsWithHeaderType)
-        assertThat(interceptor.traceContextInjection).isEqualTo(TraceContextInjection.All)
+        assertThat(interceptor.traceContextInjection).isEqualTo(TraceContextInjection.SAMPLED)
         assertThat(interceptor.sdkInstanceName).isNull()
         assertThat(interceptor.rumResourceAttributesProvider).isSameAs(mockRumResourceAttributesProvider)
         assertThat(interceptor.tracedRequestListener).isInstanceOf(NoOpTracedRequestListener::class.java)
         assertThat(interceptor.traceSampler).isInstanceOf(DeterministicTraceSampler::class.java)
+        assertThat(interceptor.traceSampler.getSampleRate()).isEqualTo(100f)
         assertThat(interceptor.traceOrigin).isEqualTo(DatadogInterceptor.ORIGIN_RUM)
         assertThat(interceptor.localTracerFactory).isNotNull()
     }
@@ -202,7 +208,7 @@ internal class DatadogInterceptorBuilderTest {
 
         // Then
         assertThat(interceptor.tracedHosts).isEqualTo(fakeTracedHostsWithHeaderType)
-        assertThat(interceptor.traceContextInjection).isEqualTo(TraceContextInjection.All)
+        assertThat(interceptor.traceContextInjection).isEqualTo(TraceContextInjection.SAMPLED)
         assertThat(interceptor.sdkInstanceName).isNull()
         assertThat(
             interceptor.rumResourceAttributesProvider
@@ -223,7 +229,7 @@ internal class DatadogInterceptorBuilderTest {
 
         // Then
         assertThat(interceptor.tracedHosts).isEqualTo(fakeTracedHostsWithHeaderType)
-        assertThat(interceptor.traceContextInjection).isEqualTo(TraceContextInjection.All)
+        assertThat(interceptor.traceContextInjection).isEqualTo(TraceContextInjection.SAMPLED)
         assertThat(interceptor.sdkInstanceName).isNull()
         assertThat(
             interceptor.rumResourceAttributesProvider

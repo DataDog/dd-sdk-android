@@ -115,7 +115,7 @@ open class DatadogInterceptor internal constructor(
      * auto-instrumented requests. By default it is [DeterministicTraceSampler], which either can accept
      * fixed sample rate or can get it dynamically from the provider. Value between `0.0` and
      * `100.0`. A value of `0.0` means no trace will be kept, `100.0` means all traces will
-     * be kept (default value is `20.0`).
+     * be kept (default value is `100.0`).
      */
     @JvmOverloads
     @Deprecated(
@@ -136,7 +136,7 @@ open class DatadogInterceptor internal constructor(
         tracedRequestListener = tracedRequestListener,
         rumResourceAttributesProvider = rumResourceAttributesProvider,
         traceSampler = traceSampler,
-        traceContextInjection = TraceContextInjection.All,
+        traceContextInjection = TraceContextInjection.SAMPLED,
         redacted404ResourceName = true,
         localTracerFactory = { sdkCore, tracingHeaderTypes ->
             AndroidTracer.Builder(sdkCore).setTracingHeaderTypes(tracingHeaderTypes).build()
@@ -165,7 +165,7 @@ open class DatadogInterceptor internal constructor(
      * auto-instrumented requests. By default it is [DeterministicTraceSampler], which either can accept
      * fixed sample rate or can get it dynamically from the provider. Value between `0.0` and
      * `100.0`. A value of `0.0` means no trace will be kept, `100.0` means all traces will
-     * be kept (default value is `20.0`).
+     * be kept (default value is `100.0`).
      */
     @JvmOverloads
     @Deprecated(
@@ -191,7 +191,7 @@ open class DatadogInterceptor internal constructor(
         tracedRequestListener = tracedRequestListener,
         rumResourceAttributesProvider = rumResourceAttributesProvider,
         traceSampler = traceSampler,
-        traceContextInjection = TraceContextInjection.All,
+        traceContextInjection = TraceContextInjection.SAMPLED,
         redacted404ResourceName = true,
         localTracerFactory = { sdkCore, tracingHeaderTypes ->
             AndroidTracer.Builder(sdkCore).setTracingHeaderTypes(tracingHeaderTypes).build()
@@ -212,7 +212,7 @@ open class DatadogInterceptor internal constructor(
      * auto-instrumented requests. By default it is [DeterministicTraceSampler], which either can accept
      * fixed sample rate or can get it dynamically from the provider. Value between `0.0` and
      * `100.0`. A value of `0.0` means no trace will be kept, `100.0` means all traces will
-     * be kept (default value is `20.0`).
+     * be kept (default value is `100.0`).
      */
     @JvmOverloads
     @Deprecated(
@@ -232,7 +232,7 @@ open class DatadogInterceptor internal constructor(
         tracedRequestListener = tracedRequestListener,
         rumResourceAttributesProvider = rumResourceAttributesProvider,
         traceSampler = traceSampler,
-        traceContextInjection = TraceContextInjection.All,
+        traceContextInjection = TraceContextInjection.SAMPLED,
         redacted404ResourceName = true,
         localTracerFactory = { sdkCore, tracingHeaderTypes ->
             AndroidTracer.Builder(sdkCore).setTracingHeaderTypes(tracingHeaderTypes).build()

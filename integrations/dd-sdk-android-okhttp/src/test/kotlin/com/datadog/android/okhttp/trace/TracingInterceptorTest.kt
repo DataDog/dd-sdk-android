@@ -204,7 +204,7 @@ internal open class TracingInterceptorTest {
             traceSampler = mockTraceSampler,
             localTracerFactory = factory,
             redacted404ResourceName = fakeRedacted404Resources,
-            traceContextInjection = TraceContextInjection.All
+            traceContextInjection = TraceContextInjection.ALL
         )
     }
 

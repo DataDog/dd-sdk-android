@@ -202,7 +202,7 @@ internal class TracingInterceptorContextInjectionSampledTest {
             .setTracedRequestListener(mockRequestListener)
             .setTraceOrigin(fakeOrigin)
             .setTraceSampler(mockTraceSampler)
-            .setTraceContextInjection(TraceContextInjection.Sampled)
+            .setTraceContextInjection(TraceContextInjection.SAMPLED)
             .setLocalTracerFactory(factory)
             .set404ResourcesRedacted(fakeRedacted404Resources)
             .build()

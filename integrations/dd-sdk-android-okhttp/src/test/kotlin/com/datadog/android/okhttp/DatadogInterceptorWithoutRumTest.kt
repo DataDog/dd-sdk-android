@@ -59,7 +59,7 @@ internal class DatadogInterceptorWithoutRumTest : TracingInterceptorTest() {
             tracedRequestListener = mockRequestListener,
             rumResourceAttributesProvider = mockRumAttributesProvider,
             traceSampler = mockTraceSampler,
-            traceContextInjection = TraceContextInjection.All,
+            traceContextInjection = TraceContextInjection.ALL,
             redacted404ResourceName = fakeRedacted404Resources,
             localTracerFactory = factory
         )

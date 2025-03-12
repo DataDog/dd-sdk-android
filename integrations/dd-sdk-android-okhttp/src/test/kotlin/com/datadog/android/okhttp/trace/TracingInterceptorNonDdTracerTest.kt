@@ -203,7 +203,7 @@ internal open class TracingInterceptorNonDdTracerTest {
             tracedRequestListener = mockRequestListener,
             traceOrigin = fakeOrigin,
             traceSampler = mockTraceSampler,
-            traceContextInjection = TraceContextInjection.All,
+            traceContextInjection = TraceContextInjection.ALL,
             redacted404ResourceName = fakeRedacted404Resources,
             localTracerFactory = factory
         )

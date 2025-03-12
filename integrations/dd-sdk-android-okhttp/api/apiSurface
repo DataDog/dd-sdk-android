@@ -31,8 +31,8 @@ open class com.datadog.android.okhttp.DatadogInterceptor : com.datadog.android.o
 data class com.datadog.android.okhttp.TraceContext
   constructor(String, String, Int)
 enum com.datadog.android.okhttp.TraceContextInjection
-  - All
-  - Sampled
+  - ALL
+  - SAMPLED
 open class com.datadog.android.okhttp.trace.DeterministicTraceSampler : com.datadog.android.core.sampling.DeterministicSampler<io.opentracing.Span>
   constructor(() -> Float)
   constructor(Float)
