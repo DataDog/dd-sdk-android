@@ -915,7 +915,7 @@ internal open class RumViewScope(
         }
 
         val uiSlownessReport = slowFramesListener.resolveReport(viewId)
-        val freezeRate = uiSlownessReport.anrDurationRate(stoppedNanos)
+        val freezeRate = uiSlownessReport.freezeFramesRate(stoppedNanos)
         val slowFramesRate = uiSlownessReport.slowFramesRate(stoppedNanos)
         val slowFrames = uiSlownessReport.slowFramesRecords.map {
             ViewEvent.SlowFrame(

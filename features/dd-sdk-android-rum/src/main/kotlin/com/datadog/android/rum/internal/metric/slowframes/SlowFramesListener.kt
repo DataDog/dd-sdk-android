@@ -70,7 +70,7 @@ internal class DefaultSlowFramesListener(
             // Updating frames statistics
             report.totalFramesDurationNs += frameDurationNs
 
-            if (frameDurationNs > configuration.frozenFrameThresholdNs || !volatileFrameData.isJank) {
+            if (frameDurationNs > configuration.maxSlowFrameThresholdNs || !volatileFrameData.isJank) {
                 // Frame duration is too big to be considered as a slow frame or not jank
                 return
             }
@@ -95,7 +95,7 @@ internal class DefaultSlowFramesListener(
                 // It's a continuous slow frame – increasing duration
                 previousSlowFrameRecord.durationNs = min(
                     previousSlowFrameRecord.durationNs + frameDurationNs,
-                    configuration.frozenFrameThresholdNs - 1
+                    configuration.maxSlowFrameThresholdNs - 1
                 )
             }
         }
@@ -104,7 +104,7 @@ internal class DefaultSlowFramesListener(
     @WorkerThread
     override fun onAddLongTask(durationNs: Long) {
         val view = currentViewId
-        if (durationNs >= configuration.anrDuration && view != null) {
+        if (durationNs >= configuration.freezeDurationThreshold && view != null) {
             val report = getViewPerformanceReport(view)
             synchronized(report) { report.anrDurationNs += durationNs }
         }

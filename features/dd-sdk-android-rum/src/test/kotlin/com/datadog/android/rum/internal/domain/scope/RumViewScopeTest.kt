@@ -315,7 +315,7 @@ internal class RumViewScopeTest {
                 duration = aLong(min = 0, max = MAX_DURATION_VALUE_NS)
             )
         }
-        whenever(mockViewUIPerformanceReport.anrDurationRate(any())) doReturn fakeFreezeRate
+        whenever(mockViewUIPerformanceReport.freezeFramesRate(any())) doReturn fakeFreezeRate
         whenever(mockViewUIPerformanceReport.slowFramesRate(any())) doReturn fakeSlownessRate
         whenever(mockViewUIPerformanceReport.slowFramesRecords) doReturn fakeSlowRecords
             .map {
