@@ -49,6 +49,7 @@ fun InternalLogger.verifyLog(
             eq(onlyOnce),
             eq(additionalProperties)
         )
+        assertThat(allValues).isNotEmpty()
         assertThat(allValues.any { it() == message })
             .overridingErrorMessage { "Expected at least one log message=\"$message\"" }
             .isTrue()

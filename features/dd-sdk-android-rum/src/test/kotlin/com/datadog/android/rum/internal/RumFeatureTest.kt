@@ -25,6 +25,7 @@ import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.assertj.RumFeatureAssert
 import com.datadog.android.rum.configuration.VitalsUpdateFrequency
+import com.datadog.android.rum.internal.RumFeature.Companion.SLOW_FRAME_MONITORING_DISABLED_MESSAGE
 import com.datadog.android.rum.internal.RumFeature.Companion.SLOW_FRAME_MONITORING_ENABLED_MESSAGE
 import com.datadog.android.rum.internal.domain.RumDataWriter
 import com.datadog.android.rum.internal.domain.event.RumEventMapper
@@ -166,6 +167,27 @@ internal class RumFeatureTest {
 
         // Then
         assertThat(testedFeature.sampleRate).isEqualTo(fakeConfiguration.sampleRate)
+    }
+
+    @Test
+    fun `M log slow frames disabled message W initialize() {slowFrameListenerConfiguration is null}`() {
+        // Given
+        val configurationWithSlowFramesDisabled = fakeConfiguration.copy(
+            slowFrameListenerConfiguration = null
+        )
+
+        testedFeature = RumFeature(
+            mockSdkCore,
+            fakeApplicationId.toString(),
+            configurationWithSlowFramesDisabled,
+            lateCrashReporterFactory = { mockLateCrashReporter }
+        )
+
+        // When
+        testedFeature.onInitialize(appContext.mockInstance)
+
+        // Then
+        verifySlowFramesListenerLogMessage(SLOW_FRAME_MONITORING_DISABLED_MESSAGE)
     }
 
     @Test

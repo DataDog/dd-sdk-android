@@ -285,15 +285,28 @@ data class RumConfiguration internal constructor(
         }
 
         /**
-         * Sets the configuration for the slow frames listener, which is used to compute the slow frames array,
-         * slow frames ratio, and freeze ratio.
+         * The [SlowFramesListener] provides statistical data to help identify performance issues related to UI rendering:
          *
-         * Setting this property to null will disable the slow frames listener and stop the corresponding ratio computation.
+         * - slowFrames: A list of records containing the timestamp and duration of frames where users experience
+         *   jank frames within the given view.
          *
-         * @param slowFrameListenerConfiguration The configuration to be used with the slow frames listener.
+         * - slowFrameRate: The rate of slow frames encountered during the view's lifetime.
+         *
+         * - freezeRate: The rate of freeze occurrences during the view's lifetime.
+         *
+         *
+         * This configuration sets the parameters for the [SlowFramesListener], which are used to calculate the slow frames array,
+         * slow frame ratio, and freeze ratio. For additional details, refer to [SlowFrameListenerConfiguration].
+         *
+         * Assigning a null value to this property will disable the [SlowFramesListener] and stop the computation of the
+         * associated rates.
+         *
+         * @param slowFrameListenerConfiguration The configuration to be applied to the [SlowFramesListener].
          */
         @ExperimentalRumApi
-        fun setSlowFrameListenerConfiguration(slowFrameListenerConfiguration: SlowFrameListenerConfiguration): Builder {
+        fun setSlowFrameListenerConfiguration(
+            slowFrameListenerConfiguration: SlowFrameListenerConfiguration?
+        ): Builder {
             rumConfig = rumConfig.copy(slowFrameListenerConfiguration = slowFrameListenerConfiguration)
             return this
         }

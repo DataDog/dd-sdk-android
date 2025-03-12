@@ -41,7 +41,7 @@ internal data class ViewUIPerformanceReport(
         else -> 0.0
     }
 
-    fun anrDurationRate(viewEndedTimeStamp: Long): Double = when {
+    fun freezeFramesRate(viewEndedTimeStamp: Long): Double = when {
         viewEndedTimeStamp - viewStartedTimeStamp <= minViewLifetimeThresholdNs -> 0.0
         else -> max(
             0.0,
