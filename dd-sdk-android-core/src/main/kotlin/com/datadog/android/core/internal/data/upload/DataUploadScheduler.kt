@@ -7,7 +7,6 @@
 package com.datadog.android.core.internal.data.upload
 
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.core.configuration.UploadSchedulerStrategy
 import com.datadog.android.core.internal.ContextProvider
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
@@ -17,7 +16,6 @@ import com.datadog.android.core.internal.utils.executeSafe
 import java.util.concurrent.ScheduledThreadPoolExecutor
 
 internal class DataUploadScheduler(
-    featureSdkCore: FeatureSdkCore,
     private val featureName: String,
     storage: Storage,
     dataUploader: DataUploader,
@@ -27,11 +25,11 @@ internal class DataUploadScheduler(
     uploadSchedulerStrategy: UploadSchedulerStrategy,
     maxBatchesPerJob: Int,
     private val scheduledThreadPoolExecutor: ScheduledThreadPoolExecutor,
-    private val internalLogger: InternalLogger
+    private val internalLogger: InternalLogger,
+    private val uploadQualityListener: UploadQualityListener
 ) : UploadScheduler {
 
     internal val runnable = DataUploadRunnable(
-        featureSdkCore = featureSdkCore,
         featureName = featureName,
         threadPoolExecutor = scheduledThreadPoolExecutor,
         storage = storage,
@@ -41,7 +39,8 @@ internal class DataUploadScheduler(
         systemInfoProvider = systemInfoProvider,
         uploadSchedulerStrategy = uploadSchedulerStrategy,
         maxBatchesPerJob = maxBatchesPerJob,
-        internalLogger = internalLogger
+        internalLogger = internalLogger,
+        uploadQualityListener = uploadQualityListener
     )
 
     override fun startScheduling() {

@@ -31,6 +31,7 @@ import com.datadog.android.core.internal.data.upload.DataUploader
 import com.datadog.android.core.internal.data.upload.DefaultUploadSchedulerStrategy
 import com.datadog.android.core.internal.data.upload.NoOpDataUploader
 import com.datadog.android.core.internal.data.upload.NoOpUploadScheduler
+import com.datadog.android.core.internal.data.upload.UploadQualityListener
 import com.datadog.android.core.internal.data.upload.UploadScheduler
 import com.datadog.android.core.internal.lifecycle.ProcessLifecycleMonitor
 import com.datadog.android.core.internal.metrics.BatchMetricsDispatcher
@@ -54,6 +55,7 @@ import com.datadog.android.core.internal.persistence.file.advanced.FeatureFileOr
 import com.datadog.android.core.internal.persistence.file.batch.BatchFileReaderWriter
 import com.datadog.android.core.internal.persistence.tlvformat.TLVBlockFileReader
 import com.datadog.android.core.persistence.PersistenceStrategy
+import com.datadog.android.internal.telemetry.UploadQualityEvent
 import com.datadog.android.privacy.TrackingConsentProviderCallback
 import com.datadog.android.security.Encryption
 import java.util.Collections
@@ -68,7 +70,7 @@ internal class SdkFeature(
     internal val coreFeature: CoreFeature,
     internal val wrappedFeature: Feature,
     internal val internalLogger: InternalLogger
-) : FeatureScope {
+) : FeatureScope, UploadQualityListener {
 
     override var dataStore: DataStoreHandler = NoOpDataStoreHandler()
 
@@ -197,6 +199,11 @@ internal class SdkFeature(
     @Suppress("UNCHECKED_CAST")
     override fun <T : Feature> unwrap(): T = wrappedFeature as T
 
+    override fun onUploadQualityEvent(event: UploadQualityEvent) {
+        // will only send if the rum feature is registered, otherwise noop
+        featureSdkCore.getFeature(Feature.RUM_FEATURE_NAME)?.sendEvent(event)
+    }
+
     // endregion
 
     // region Context Update Listener
@@ -263,17 +270,17 @@ internal class SdkFeature(
         uploadScheduler = if (coreFeature.isMainProcess) {
             uploader = createUploader(feature.requestFactory)
             DataUploadScheduler(
-                featureSdkCore,
-                feature.name,
-                storage,
-                uploader,
-                coreFeature.contextProvider,
-                coreFeature.networkInfoProvider,
-                coreFeature.systemInfoProvider,
-                uploadSchedulerStrategy,
-                maxBatchesPerJob,
-                coreFeature.uploadExecutorService,
-                internalLogger
+                featureName = feature.name,
+                storage = storage,
+                dataUploader = uploader,
+                contextProvider = coreFeature.contextProvider,
+                networkInfoProvider = coreFeature.networkInfoProvider,
+                systemInfoProvider = coreFeature.systemInfoProvider,
+                uploadSchedulerStrategy = uploadSchedulerStrategy,
+                maxBatchesPerJob = maxBatchesPerJob,
+                scheduledThreadPoolExecutor = coreFeature.uploadExecutorService,
+                internalLogger = internalLogger,
+                uploadQualityListener = this
             )
         } else {
             NoOpUploadScheduler()
