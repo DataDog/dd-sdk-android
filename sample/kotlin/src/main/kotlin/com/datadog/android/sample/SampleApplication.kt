@@ -18,7 +18,6 @@ import com.datadog.android.core.configuration.BackPressureStrategy
 import com.datadog.android.core.configuration.BatchSize
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.UploadFrequency
-import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.log.Logger
 import com.datadog.android.log.Logs
 import com.datadog.android.log.LogsConfiguration
@@ -83,12 +82,10 @@ class SampleApplication : Application() {
     private val okHttpClient = OkHttpClient.Builder()
         .addInterceptor(
             DatadogInterceptor.Builder(tracedHosts)
-                .setTraceSampler(RateBasedSampler(100f))
                 .build()
         )
         .addNetworkInterceptor(
             TracingInterceptor.Builder(tracedHosts)
-                .setTraceSampler(RateBasedSampler(100f))
                 .build()
         )
         .eventListenerFactory(DatadogEventListener.Factory())
