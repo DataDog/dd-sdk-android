@@ -317,6 +317,7 @@ class SampleApplication : Application() {
                 event
             }
             .trackBackgroundEvents(true)
+            .trackAnonymousUser(true)
             .build()
     }
 
