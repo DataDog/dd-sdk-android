@@ -38,6 +38,7 @@ import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumSessionListener
+import com.datadog.android.rum.configuration.SlowFrameListenerConfiguration
 import com.datadog.android.rum.configuration.VitalsUpdateFrequency
 import com.datadog.android.rum.internal.anr.ANRDetectorRunnable
 import com.datadog.android.rum.internal.debug.UiRumDebugListener
@@ -51,6 +52,9 @@ import com.datadog.android.rum.internal.instrumentation.MainLooperLongTaskStrate
 import com.datadog.android.rum.internal.instrumentation.UserActionTrackingStrategyApi29
 import com.datadog.android.rum.internal.instrumentation.UserActionTrackingStrategyLegacy
 import com.datadog.android.rum.internal.instrumentation.gestures.DatadogGesturesTracker
+import com.datadog.android.rum.internal.metric.slowframes.DefaultSlowFramesListener
+import com.datadog.android.rum.internal.metric.slowframes.NoOpSlowFramesListener
+import com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.internal.monitor.DatadogRumMonitor
 import com.datadog.android.rum.internal.net.RumRequestFactory
@@ -137,6 +141,7 @@ internal class RumFeature(
     internal lateinit var appContext: Context
     internal var initialResourceIdentifier: InitialResourceIdentifier = NoOpInitialResourceIdentifier()
     internal var lastInteractionIdentifier: LastInteractionIdentifier? = NoOpLastInteractionIdentifier()
+    internal var slowFramesListener: SlowFramesListener = NoOpSlowFramesListener()
 
     private val lateCrashEventHandler by lazy { lateCrashReporterFactory(sdkCore as InternalSdkCore) }
 
@@ -148,6 +153,7 @@ internal class RumFeature(
         this.appContext = appContext
         initialResourceIdentifier = configuration.initialResourceIdentifier
         lastInteractionIdentifier = configuration.lastInteractionIdentifier
+
         dataWriter = createDataWriter(
             configuration,
             sdkCore as InternalSdkCore
@@ -186,6 +192,8 @@ internal class RumFeature(
             initializeANRDetector()
         }
 
+        initializeSlowFrameListener()
+
         registerTrackingStrategies(appContext)
 
         sessionListener = configuration.sessionListener
@@ -193,6 +201,25 @@ internal class RumFeature(
         sdkCore.setEventReceiver(name, this)
 
         initialized.set(true)
+    }
+
+    private fun initializeSlowFrameListener() {
+        val slowFrameListenerConfiguration = configuration.slowFrameListenerConfiguration
+        slowFramesListener = if (slowFrameListenerConfiguration != null) {
+            sdkCore.internalLogger.log(
+                InternalLogger.Level.INFO,
+                InternalLogger.Target.USER,
+                { SLOW_FRAME_MONITORING_ENABLED_MESSAGE }
+            )
+            DefaultSlowFramesListener(slowFrameListenerConfiguration)
+        } else {
+            sdkCore.internalLogger.log(
+                InternalLogger.Level.INFO,
+                InternalLogger.Target.USER,
+                { SLOW_FRAME_MONITORING_DISABLED_MESSAGE }
+            )
+            NoOpSlowFramesListener()
+        }
     }
 
     override val requestFactory: RequestFactory by lazy {
@@ -438,7 +465,8 @@ internal class RumFeature(
 
         jankStatsActivityLifecycleListener = JankStatsActivityLifecycleListener(
             listOf(
-                FPSVitalListener(frameRateVitalMonitor)
+                FPSVitalListener(frameRateVitalMonitor),
+                slowFramesListener
             ),
             sdkCore.internalLogger
         )
@@ -565,6 +593,7 @@ internal class RumFeature(
         val sessionListener: RumSessionListener,
         val initialResourceIdentifier: InitialResourceIdentifier,
         val lastInteractionIdentifier: LastInteractionIdentifier?,
+        val slowFrameListenerConfiguration: SlowFrameListenerConfiguration?,
         val additionalConfig: Map<String, Any>,
         val trackAnonymousUser: Boolean
     )
@@ -612,7 +641,8 @@ internal class RumFeature(
             initialResourceIdentifier = TimeBasedInitialResourceIdentifier(),
             lastInteractionIdentifier = TimeBasedInteractionIdentifier(),
             additionalConfig = emptyMap(),
-            trackAnonymousUser = true
+            trackAnonymousUser = true,
+            slowFrameListenerConfiguration = null
         )
 
         internal const val EVENT_MESSAGE_PROPERTY = "message"
@@ -636,6 +666,10 @@ internal class RumFeature(
                 " where mandatory message field is either missing or has a wrong type."
         internal const val DEVELOPER_MODE_SAMPLE_RATE_CHANGED_MESSAGE =
             "Developer mode enabled, setting RUM sample rate to 100%."
+        internal const val SLOW_FRAME_MONITORING_ENABLED_MESSAGE =
+            "Slow frames monitoring enabled."
+        internal const val SLOW_FRAME_MONITORING_DISABLED_MESSAGE =
+            "Slow frames monitoring disabled."
         internal const val RUM_FEATURE_NOT_YET_INITIALIZED =
             "RUM feature is not initialized yet, you need to register it with a" +
                 " SDK instance by calling SdkCore#registerFeature method."

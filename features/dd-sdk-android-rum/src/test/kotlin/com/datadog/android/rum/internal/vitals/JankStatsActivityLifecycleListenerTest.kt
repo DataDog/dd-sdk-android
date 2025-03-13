@@ -395,7 +395,6 @@ internal class JankStatsActivityLifecycleListenerTest {
     @Test
     fun `M forward onFrameMetricsAvailable W onFrame`(forge: Forge) {
         // Given
-        val dropCountSinceLastInvocation = forge.aSmallInt()
         val frameMetricsData = forge.getForgery<FrameMetricsData>()
         val frameMetrics = mock<FrameMetrics> {
             on { getMetric(FrameMetrics.UNKNOWN_DELAY_DURATION) } doReturn frameMetricsData.unknownDelayDuration
@@ -424,7 +423,7 @@ internal class JankStatsActivityLifecycleListenerTest {
         argumentCaptor<Window.OnFrameMetricsAvailableListener> {
             verify(mockWindow).addOnFrameMetricsAvailableListener(capture(), any())
             // When
-            firstValue.onFrameMetricsAvailable(mock(), frameMetrics, dropCountSinceLastInvocation)
+            firstValue.onFrameMetricsAvailable(mock(), frameMetrics, frameMetricsData.droppedFrames)
         }
 
         // Then
