@@ -64,6 +64,12 @@ internal class ImageComponentsFragment : Fragment() {
             backgroundId = R.drawable.selector_statelist_images
         )
 
+        setupStateListButton(
+            rootView = rootView,
+            buttonId = R.id.button_statelist_images_no_default,
+            backgroundId = R.drawable.selector_statelist_images_no_default
+        )
+
         return rootView
     }
 
