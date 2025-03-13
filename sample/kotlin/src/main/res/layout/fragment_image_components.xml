@@ -382,6 +382,17 @@
                     android:contentDescription="@null"
                     />
 
+                <Button
+                    android:id="@+id/button_statelist_images_no_default"
+                    style="?android:attr/buttonBarButtonStyle"
+                    android:layout_marginStart="48dp"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:contentDescription="@null"
+                    />
+
             </LinearLayout>
 
         </LinearLayout>
