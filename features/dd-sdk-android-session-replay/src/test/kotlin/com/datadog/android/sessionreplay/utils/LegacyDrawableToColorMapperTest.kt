@@ -212,4 +212,17 @@ open class LegacyDrawableToColorMapperTest {
         // Then
         assertThat(result).isEqualTo(drawableColor)
     }
+
+    @Test
+    fun `M map StateListDrawable to null W mapDrawableToColor() { Drawable getCurrent returns null }`() {
+        val stateListDrawable = mock<StateListDrawable>().apply {
+            whenever<Drawable?>(this.current) doReturn null
+        }
+
+        // When
+        val result = testedMapper.mapDrawableToColor(stateListDrawable, mockInternalLogger)
+
+        // Then
+        assertThat(result).isNull()
+    }
 }

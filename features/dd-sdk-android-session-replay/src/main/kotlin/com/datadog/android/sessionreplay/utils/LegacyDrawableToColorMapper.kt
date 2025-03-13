@@ -200,7 +200,9 @@ open class LegacyDrawableToColorMapper(
      * @return the color to map to or null if not applicable
      */
     private fun resolveStateListDrawable(drawable: StateListDrawable, internalLogger: InternalLogger): Int? {
-        return mapDrawableToColor(drawable = drawable.current, internalLogger = internalLogger)
+        // Drawable.getCurrent() can return null in case <selector> doesn't have an item for the default case.
+        @Suppress("UNNECESSARY_SAFE_CALL")
+        return drawable.current?.let { mapDrawableToColor(drawable = it, internalLogger = internalLogger) }
     }
 
     companion object {
