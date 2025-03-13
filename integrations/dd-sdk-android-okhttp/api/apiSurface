@@ -38,6 +38,8 @@ open class com.datadog.android.okhttp.trace.DeterministicTraceSampler : com.data
   constructor(Float)
   constructor(Double)
 fun okhttp3.Request.Builder.parentSpan(io.opentracing.Span): okhttp3.Request.Builder
+object com.datadog.android.okhttp.trace.SpanSamplingIdProvider
+  fun provideId(io.opentracing.Span): ULong
 interface com.datadog.android.okhttp.trace.TracedRequestListener
   fun onRequestIntercepted(okhttp3.Request, io.opentracing.Span, okhttp3.Response?, Throwable?)
 open class com.datadog.android.okhttp.trace.TracingInterceptor : okhttp3.Interceptor
