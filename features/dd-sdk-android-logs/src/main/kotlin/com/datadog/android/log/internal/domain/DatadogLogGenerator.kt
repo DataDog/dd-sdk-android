@@ -305,7 +305,7 @@ internal class DatadogLogGenerator(
             android.util.Log.WARN -> LogEvent.Status.WARN
             android.util.Log.INFO -> LogEvent.Status.INFO
             android.util.Log.DEBUG -> LogEvent.Status.DEBUG
-            android.util.Log.VERBOSE -> LogEvent.Status.TRACE
+            android.util.Log.VERBOSE -> LogEvent.Status.TRACE // What?
             DatadogLogGenerator.CRASH -> LogEvent.Status.EMERGENCY
             else -> LogEvent.Status.DEBUG
         }

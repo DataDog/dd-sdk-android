@@ -318,7 +318,7 @@ class AndroidTracer internal constructor(
          */
         @JvmStatic
         fun logErrorMessage(span: Span, message: String) {
-            val fieldsMap = mapOf(Fields.MESSAGE to message)
+            val fieldsMap = mapOf(Fields.MESSAGE to message, Fields.ERROR_KIND to "error_message")
             span.log(fieldsMap)
         }
     }

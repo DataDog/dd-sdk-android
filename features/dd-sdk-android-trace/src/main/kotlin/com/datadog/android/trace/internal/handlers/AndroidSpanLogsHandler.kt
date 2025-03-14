@@ -6,10 +6,10 @@
 
 package com.datadog.android.trace.internal.handlers
 
+import android.util.Log
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
-import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.internal.utils.loggableStackTrace
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.trace.internal.utils.traceIdAsHexString
@@ -27,30 +27,43 @@ internal class AndroidSpanLogsHandler(
 
     override fun log(event: String, span: DDSpan) {
         logFields(
-            span,
-            mutableMapOf(Fields.EVENT to event),
-            null
+            span = span,
+            fields =  mutableMapOf(Fields.EVENT to event),
+            timestampMicroseconds = null,
+            hasError = false,
         )
     }
 
     override fun log(timestampMicroseconds: Long, event: String, span: DDSpan) {
         logFields(
-            span,
-            mutableMapOf(Fields.EVENT to event),
-            timestampMicroseconds
+            span = span,
+            fields = mutableMapOf(Fields.EVENT to event),
+            timestampMicroseconds = timestampMicroseconds,
+            hasError = false,
         )
     }
 
     override fun log(fields: Map<String, *>, span: DDSpan) {
         val mutableMap = fields.toMutableMap()
-        extractError(mutableMap, span)
-        logFields(span, mutableMap)
+        val hasError = extractError(mutableMap, span)
+        logFields(
+            span = span,
+            fields = mutableMap,
+            timestampMicroseconds = null,
+            hasError = hasError
+        )
     }
 
     override fun log(timestampMicroseconds: Long, fields: Map<String, *>, span: DDSpan) {
         val mutableMap = fields.toMutableMap()
-        extractError(mutableMap, span)
-        logFields(span, mutableMap, timestampMicroseconds)
+        val hasError = extractError(mutableMap, span)
+
+        logFields(
+            span = span,
+            fields = mutableMap,
+            timestampMicroseconds = timestampMicroseconds,
+            hasError = hasError
+        )
     }
 
     // endregion
@@ -64,7 +77,8 @@ internal class AndroidSpanLogsHandler(
     private fun logFields(
         span: DDSpan,
         fields: MutableMap<String, Any?>,
-        timestampMicroseconds: Long? = null
+        timestampMicroseconds: Long? = null,
+        hasError: Boolean
     ) {
         val logsFeature = sdkCore.getFeature(Feature.LOGS_FEATURE_NAME)
         if (logsFeature != null && fields.isNotEmpty()) {
@@ -78,7 +92,8 @@ internal class AndroidSpanLogsHandler(
                     "loggerName" to TRACE_LOGGER_NAME,
                     "message" to message,
                     "attributes" to fields,
-                    "timestamp" to timestamp
+                    "timestamp" to timestamp,
+                    "logLevel" to if (hasError) Log.ERROR else Log.VERBOSE
                 )
             )
         } else if (logsFeature == null) {
@@ -93,7 +108,7 @@ internal class AndroidSpanLogsHandler(
     private fun extractError(
         map: MutableMap<String, *>,
         span: DDSpan
-    ) {
+    ): Boolean {
         val throwable = map.remove(Fields.ERROR_OBJECT) as? Throwable
         val kind = map.remove(Fields.ERROR_KIND)
         val errorType = kind?.toString() ?: throwable?.javaClass?.name
@@ -109,6 +124,8 @@ internal class AndroidSpanLogsHandler(
             span.setTag(DDTags.ERROR_MSG, message)
             span.setTag(DDTags.ERROR_STACK, stack)
         }
+
+        return errorType != null
     }
 
     // endregion

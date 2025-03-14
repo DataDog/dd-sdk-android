@@ -18,6 +18,7 @@ import com.datadog.android.trace.coroutines.asyncTraced
 import com.datadog.android.trace.coroutines.awaitTraced
 import com.datadog.android.trace.coroutines.launchTraced
 import com.datadog.android.trace.coroutines.withContextTraced
+import com.datadog.android.trace.setError
 import com.datadog.android.trace.withinSpan
 import com.datadog.android.vendor.sample.LocalServer
 import com.launchdarkly.eventsource.EventHandler
@@ -366,6 +367,7 @@ internal class TracesViewModel(
         @Deprecated("Deprecated in Java")
         override fun doInBackground(vararg params: Unit?) {
             withinSpan("AsyncOperation", activeSpanInMainThread) {
+                setError("MEGA ERROR")
                 logger.v("Starting Async Operation...")
 
                 val count = (Random().nextInt() % 50) + 50
