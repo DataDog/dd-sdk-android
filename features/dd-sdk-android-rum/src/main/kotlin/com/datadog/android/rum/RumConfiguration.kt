@@ -9,7 +9,7 @@ package com.datadog.android.rum
 import android.os.Looper
 import androidx.annotation.FloatRange
 import com.datadog.android.event.EventMapper
-import com.datadog.android.rum.configuration.SlowFrameListenerConfiguration
+import com.datadog.android.rum.configuration.SlowFramesConfiguration
 import com.datadog.android.rum.configuration.VitalsUpdateFrequency
 import com.datadog.android.rum.event.ViewEventMapper
 import com.datadog.android.rum.internal.RumFeature
@@ -296,18 +296,18 @@ data class RumConfiguration internal constructor(
          *
          *
          * This configuration sets the parameters for the [SlowFramesListener], which are used to calculate the slow frames array,
-         * slow frame ratio, and freeze ratio. For additional details, refer to [SlowFrameListenerConfiguration].
+         * slow frame ratio, and freeze ratio. For additional details, refer to [SlowFramesConfiguration].
          *
          * Assigning a null value to this property will disable the [SlowFramesListener] and stop the computation of the
          * associated rates.
          *
-         * @param slowFrameListenerConfiguration The configuration to be applied to the [SlowFramesListener].
+         * @param slowFramesConfiguration The configuration to be applied to the [SlowFramesListener].
          */
         @ExperimentalRumApi
         fun setSlowFrameListenerConfiguration(
-            slowFrameListenerConfiguration: SlowFrameListenerConfiguration?
+            slowFramesConfiguration: SlowFramesConfiguration?
         ): Builder {
-            rumConfig = rumConfig.copy(slowFrameListenerConfiguration = slowFrameListenerConfiguration)
+            rumConfig = rumConfig.copy(slowFramesConfiguration = slowFramesConfiguration)
             return this
         }
 

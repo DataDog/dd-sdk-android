@@ -31,13 +31,13 @@ import java.util.WeakHashMap
 /**
  * Utility class listening to frame rate information.
  */
-internal class JankStatsActivityLifecycleListener(
-    private val delegates: List<FrameStateListener>,
+internal class FrameStatesAggregator(
     private val internalLogger: InternalLogger,
     private val jankStatsProvider: JankStatsProvider = JankStatsProvider.DEFAULT,
     private var buildSdkVersionProvider: BuildSdkVersionProvider = BuildSdkVersionProvider.DEFAULT
 ) : ActivityLifecycleCallbacks, JankStats.OnFrameListener {
 
+    internal val frameStateListeners = mutableListOf<FrameStateListener>()
     internal val activeWindowsListener = WeakHashMap<Window, JankStats>()
 
     internal val activeActivities = WeakHashMap<Window, MutableList<WeakReference<Activity>>>()
@@ -154,14 +154,19 @@ internal class JankStatsActivityLifecycleListener(
     // region JankStats.OnFrameListener
 
     override fun onFrame(volatileFrameData: FrameData) {
-        for (i in delegates.indices) {
-            delegates[i].onFrame(volatileFrameData)
+        for (i in frameStateListeners.indices) {
+            frameStateListeners[i].onFrame(volatileFrameData)
         }
     }
 
     // endregion
 
     // region Internal
+    fun addListener(listener: FrameStateListener?) {
+        if (listener != null) {
+            frameStateListeners.add(listener)
+        }
+    }
 
     private fun trackActivity(window: Window, activity: Activity) {
         val list = activeActivities[window] ?: mutableListOf()
@@ -284,8 +289,13 @@ internal class JankStatsActivityLifecycleListener(
             frameMetrics: FrameMetrics,
             dropCountSinceLastInvocation: Int
         ) {
-            for (i in delegates.indices) {
-                delegates[i].onFrameMetricsData(frameMetricsData.update(frameMetrics, dropCountSinceLastInvocation))
+            for (i in frameStateListeners.indices) {
+                frameStateListeners[i].onFrameMetricsData(
+                    frameMetricsData.update(
+                        frameMetrics,
+                        dropCountSinceLastInvocation
+                    )
+                )
             }
         }
     }

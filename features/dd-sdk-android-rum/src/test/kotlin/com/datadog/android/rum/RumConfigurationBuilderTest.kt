@@ -10,7 +10,7 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.event.EventMapper
 import com.datadog.android.event.NoOpEventMapper
 import com.datadog.android.rum.assertj.ConfigurationRumAssert
-import com.datadog.android.rum.configuration.SlowFrameListenerConfiguration
+import com.datadog.android.rum.configuration.SlowFramesConfiguration
 import com.datadog.android.rum.configuration.VitalsUpdateFrequency
 import com.datadog.android.rum.event.ViewEventMapper
 import com.datadog.android.rum.internal.NoOpRumSessionListener
@@ -108,7 +108,7 @@ internal class RumConfigurationBuilderTest {
                 initialResourceIdentifier = TimeBasedInitialResourceIdentifier(),
                 lastInteractionIdentifier = TimeBasedInteractionIdentifier(),
                 trackAnonymousUser = true,
-                slowFrameListenerConfiguration = null
+                slowFramesConfiguration = null
             )
         )
     }
@@ -583,15 +583,15 @@ internal class RumConfigurationBuilderTest {
     @Test
     fun `M use a custom slowFramesListenerConfiguration W setSlowFrameListenerConfiguration()`() {
         // Given
-        val slowFrameListenerConfiguration = mock<SlowFrameListenerConfiguration>()
+        val slowFramesConfiguration = mock<SlowFramesConfiguration>()
 
         // When
         val rumConfiguration = testedBuilder
-            .setSlowFrameListenerConfiguration(slowFrameListenerConfiguration)
+            .setSlowFrameListenerConfiguration(slowFramesConfiguration)
             .build()
 
         // Then
-        assertThat(rumConfiguration.featureConfiguration.slowFrameListenerConfiguration)
-            .isSameAs(slowFrameListenerConfiguration)
+        assertThat(rumConfiguration.featureConfiguration.slowFramesConfiguration)
+            .isSameAs(slowFramesConfiguration)
     }
 }

@@ -14,7 +14,7 @@ internal data class ViewUIPerformanceReport(
     var slowFramesRecords: Queue<SlowFrameRecord> = EvictingQueue(),
     var totalFramesDurationNs: Long = 0L,
     var slowFramesDurationNs: Long = 0L,
-    var anrDurationNs: Long = 0,
+    var freezeFramesDuration: Long = 0,
     val minViewLifetimeThresholdNs: Long = 0
 ) {
     constructor(
@@ -37,7 +37,7 @@ internal data class ViewUIPerformanceReport(
 
     fun slowFramesRate(viewEndedTimeStamp: Long): Double = when {
         viewEndedTimeStamp - viewStartedTimeStamp <= minViewLifetimeThresholdNs -> 0.0
-        totalFramesDurationNs > 0.0 -> slowFramesDurationNs.toDouble() / totalFramesDurationNs
+        totalFramesDurationNs > 0.0 -> slowFramesDurationNs.toDouble() / totalFramesDurationNs * MILLISECONDS_IN_SECOND
         else -> 0.0
     }
 
@@ -45,7 +45,12 @@ internal data class ViewUIPerformanceReport(
         viewEndedTimeStamp - viewStartedTimeStamp <= minViewLifetimeThresholdNs -> 0.0
         else -> max(
             0.0,
-            anrDurationNs.toDouble() / (viewEndedTimeStamp - viewStartedTimeStamp)
+            freezeFramesDuration.toDouble() / (viewEndedTimeStamp - viewStartedTimeStamp) * SECONDS_IN_HOUR
         )
+    }
+
+    companion object {
+        private const val MILLISECONDS_IN_SECOND = 1000
+        private const val SECONDS_IN_HOUR = 3600
     }
 }

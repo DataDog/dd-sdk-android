@@ -6,7 +6,6 @@
 
 package com.datadog.android.rum.utils.forge
 
-import com.datadog.android.rum.configuration.SlowFrameListenerConfiguration
 import com.datadog.android.rum.configuration.VitalsUpdateFrequency
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.metric.interactiontonextview.NoOpLastInteractionIdentifier
@@ -66,13 +65,7 @@ internal class ConfigurationRumForgeryFactory :
                 )
             ),
             trackAnonymousUser = forge.aBool(),
-            slowFrameListenerConfiguration = SlowFrameListenerConfiguration(
-                maxSlowFramesAmount = forge.anInt(min = 1),
-                maxSlowFrameThresholdNs = forge.aLong(min = 1),
-                continuousSlowFrameThresholdNs = forge.aLong(min = 1),
-                freezeDurationThreshold = forge.aLong(min = 1),
-                minViewLifetimeThresholdNs = forge.aLong(min = 1)
-            )
+            slowFramesConfiguration = forge.getForgery()
         )
     }
 }

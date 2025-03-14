@@ -36,10 +36,10 @@ package com.datadog.android.rum.configuration
  * The default value is 5,000,000,000 ns (5 seconds).
  *
  * @param minViewLifetimeThresholdNs The minimum lifetime (in nanoseconds) a view must have before it is considered
- * for monitoring. The default value is 100,000,000 ns (100 ms).
+ * for monitoring. The default value is 100,000,000 ns (1 s).
  */
 
-data class SlowFrameListenerConfiguration(
+data class SlowFramesConfiguration(
     internal val maxSlowFramesAmount: Int = DEFAULT_SLOW_FRAME_RECORDS_MAX_AMOUNT,
     internal val maxSlowFrameThresholdNs: Long = DEFAULT_FROZEN_FRAME_THRESHOLD_NS,
     internal val continuousSlowFrameThresholdNs: Long = DEFAULT_CONTINUOUS_SLOW_FRAME_THRESHOLD_NS,
@@ -49,15 +49,15 @@ data class SlowFrameListenerConfiguration(
 
     companion object {
         /**
-         * A default configuration of the [SlowFrameListenerConfiguration] class with all parameters set to their default values.
+         * A default configuration of the [SlowFramesConfiguration] class with all parameters set to their default values.
          */
-        val DEFAULT: SlowFrameListenerConfiguration = SlowFrameListenerConfiguration()
+        val DEFAULT: SlowFramesConfiguration = SlowFramesConfiguration()
 
         // Taking into account each Hitch takes 64B in the payload, we can have 64KB max per view event
         private const val DEFAULT_SLOW_FRAME_RECORDS_MAX_AMOUNT: Int = 1000
         private const val DEFAULT_CONTINUOUS_SLOW_FRAME_THRESHOLD_NS: Long = 16_666_666L // 1/60 fps in nanoseconds
         private const val DEFAULT_FROZEN_FRAME_THRESHOLD_NS: Long = 700_000_000 // 700ms
         private const val DEFAULT_FREEZE_DURATION_NS: Long = 5_000_000_000L // 5s
-        private const val DEFAULT_VIEW_LIFETIME_THRESHOLD_NS: Long = 100_000_000L // 100ms
+        private const val DEFAULT_VIEW_LIFETIME_THRESHOLD_NS: Long = 1_000_000_000L // 1s
     }
 }

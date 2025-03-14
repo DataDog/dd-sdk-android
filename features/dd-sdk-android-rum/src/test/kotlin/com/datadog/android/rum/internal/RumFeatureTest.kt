@@ -25,10 +25,11 @@ import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.assertj.RumFeatureAssert
 import com.datadog.android.rum.configuration.VitalsUpdateFrequency
-import com.datadog.android.rum.internal.RumFeature.Companion.SLOW_FRAME_MONITORING_DISABLED_MESSAGE
-import com.datadog.android.rum.internal.RumFeature.Companion.SLOW_FRAME_MONITORING_ENABLED_MESSAGE
+import com.datadog.android.rum.internal.RumFeature.Companion.SLOW_FRAMES_MONITORING_DISABLED_MESSAGE
+import com.datadog.android.rum.internal.RumFeature.Companion.SLOW_FRAMES_MONITORING_ENABLED_MESSAGE
 import com.datadog.android.rum.internal.domain.RumDataWriter
 import com.datadog.android.rum.internal.domain.event.RumEventMapper
+import com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.internal.monitor.NoOpAdvancedRumMonitor
 import com.datadog.android.rum.internal.thread.NoOpScheduledExecutorService
@@ -36,7 +37,9 @@ import com.datadog.android.rum.internal.tracking.NoOpInteractionPredicate
 import com.datadog.android.rum.internal.tracking.NoOpUserActionTrackingStrategy
 import com.datadog.android.rum.internal.tracking.UserActionTrackingStrategy
 import com.datadog.android.rum.internal.vitals.AggregatingVitalMonitor
-import com.datadog.android.rum.internal.vitals.JankStatsActivityLifecycleListener
+import com.datadog.android.rum.internal.vitals.FPSVitalListener
+import com.datadog.android.rum.internal.vitals.FrameStateListener
+import com.datadog.android.rum.internal.vitals.FrameStatesAggregator
 import com.datadog.android.rum.internal.vitals.NoOpVitalMonitor
 import com.datadog.android.rum.internal.vitals.VitalReaderRunnable
 import com.datadog.android.rum.tracking.InteractionPredicate
@@ -97,6 +100,7 @@ import java.util.concurrent.ExecutorService
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.ScheduledThreadPoolExecutor
 import java.util.concurrent.TimeUnit
+import java.util.function.Predicate
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -169,11 +173,16 @@ internal class RumFeatureTest {
         assertThat(testedFeature.sampleRate).isEqualTo(fakeConfiguration.sampleRate)
     }
 
-    @Test
-    fun `M log slow frames disabled message W initialize() {slowFrameListenerConfiguration is null}`() {
+    @ParameterizedTest
+    @EnumSource(VitalsUpdateFrequency::class, names = ["NEVER"], mode = EnumSource.Mode.EXCLUDE)
+    fun `M log slow frames disabled message W initialize() {slowFramesConfiguration is null}`(
+        fakeFrequency: VitalsUpdateFrequency
+    ) {
         // Given
         val configurationWithSlowFramesDisabled = fakeConfiguration.copy(
-            slowFrameListenerConfiguration = null
+            vitalsMonitorUpdateFrequency = fakeFrequency,
+            slowFramesConfiguration = null
+
         )
 
         testedFeature = RumFeature(
@@ -187,7 +196,104 @@ internal class RumFeatureTest {
         testedFeature.onInitialize(appContext.mockInstance)
 
         // Then
-        verifySlowFramesListenerLogMessage(SLOW_FRAME_MONITORING_DISABLED_MESSAGE)
+        verifySlowFramesListenerLogMessage(SLOW_FRAMES_MONITORING_DISABLED_MESSAGE)
+    }
+
+    @ParameterizedTest
+    @EnumSource(VitalsUpdateFrequency::class)
+    fun `M have SlowFramesListener W initialize() {slowFramesConfiguration is not null}`(
+        fakeFrequency: VitalsUpdateFrequency
+    ) {
+        // Given
+        fakeConfiguration = fakeConfiguration.copy(
+            vitalsMonitorUpdateFrequency = fakeFrequency
+        )
+        testedFeature = RumFeature(
+            mockSdkCore,
+            fakeApplicationId.toString(),
+            fakeConfiguration,
+            lateCrashReporterFactory = { mockLateCrashReporter }
+        )
+
+        // When
+        testedFeature.onInitialize(appContext.mockInstance)
+
+        // Then
+        verifyFrameStateAggregatorInitialized(anyMatchPredicate = { it is SlowFramesListener })
+    }
+
+    @ParameterizedTest
+    @EnumSource(VitalsUpdateFrequency::class, names = ["NEVER"], mode = EnumSource.Mode.EXCLUDE)
+    fun `M not have SlowFramesListener W initialize() {frequency != NEVER slowFrameConfiguration = null}`(
+        fakeFrequency: VitalsUpdateFrequency
+    ) {
+        // Given
+        fakeConfiguration = fakeConfiguration.copy(
+            vitalsMonitorUpdateFrequency = fakeFrequency,
+            slowFramesConfiguration = null
+        )
+
+        testedFeature = RumFeature(
+            mockSdkCore,
+            fakeApplicationId.toString(),
+            fakeConfiguration,
+            lateCrashReporterFactory = { mockLateCrashReporter }
+        )
+
+        // When
+        testedFeature.onInitialize(appContext.mockInstance)
+
+        // Then
+        verifyFrameStateAggregatorInitialized(noneMatchPredicate = { it is SlowFramesListener })
+    }
+
+    @ParameterizedTest
+    @EnumSource(VitalsUpdateFrequency::class, names = ["NEVER"], mode = EnumSource.Mode.EXCLUDE)
+    fun `M have FPSVitalListener W initialize { frequency != NEVER, slowFrameConfiguration = null }`(
+        fakeFrequency: VitalsUpdateFrequency
+    ) {
+        // Given
+        fakeConfiguration = fakeConfiguration.copy(
+            vitalsMonitorUpdateFrequency = fakeFrequency,
+            slowFramesConfiguration = null
+        )
+        testedFeature = RumFeature(
+            mockSdkCore,
+            fakeApplicationId.toString(),
+            fakeConfiguration,
+            lateCrashReporterFactory = { mockLateCrashReporter }
+        )
+
+        // When
+        testedFeature.onInitialize(appContext.mockInstance)
+
+        // Then
+        assertThat(testedFeature.configuration.slowFramesConfiguration).isNull()
+        assertThat(testedFeature.configuration.vitalsMonitorUpdateFrequency).isNotEqualTo(VitalsUpdateFrequency.NEVER)
+        verifyFrameStateAggregatorInitialized(
+            anyMatchPredicate = { it is FPSVitalListener }
+        )
+    }
+
+    @Test
+    fun `M frameStatesAggregator = null W initialize { frequency = NEVER, slowFrameConfiguration = null }`() {
+        // Given
+        fakeConfiguration = fakeConfiguration.copy(
+            vitalsMonitorUpdateFrequency = VitalsUpdateFrequency.NEVER,
+            slowFramesConfiguration = null
+        )
+        testedFeature = RumFeature(
+            mockSdkCore,
+            fakeApplicationId.toString(),
+            fakeConfiguration,
+            lateCrashReporterFactory = { mockLateCrashReporter }
+        )
+
+        // When
+        testedFeature.onInitialize(appContext.mockInstance)
+
+        // Then
+        assertThat(testedFeature.frameStatesAggregator).isNull()
     }
 
     @Test
@@ -503,10 +609,15 @@ internal class RumFeatureTest {
     @ParameterizedTest
     @EnumSource(VitalsUpdateFrequency::class, names = ["NEVER"], mode = EnumSource.Mode.EXCLUDE)
     fun `M setup vital monitors W initialize { frequency != NEVER }`(
-        fakeFrequency: VitalsUpdateFrequency
+        fakeFrequency: VitalsUpdateFrequency,
+        forge: Forge
     ) {
         // Given
-        fakeConfiguration = fakeConfiguration.copy(vitalsMonitorUpdateFrequency = fakeFrequency)
+        fakeConfiguration = fakeConfiguration.copy(
+            vitalsMonitorUpdateFrequency = fakeFrequency,
+            slowFramesConfiguration = forge.aNullable { getForgery() }
+        )
+
         testedFeature = RumFeature(
             mockSdkCore,
             fakeApplicationId.toString(),
@@ -524,10 +635,10 @@ internal class RumFeatureTest {
             .isInstanceOf(AggregatingVitalMonitor::class.java)
         assertThat(testedFeature.frameRateVitalMonitor)
             .isInstanceOf(AggregatingVitalMonitor::class.java)
-        assertThat(testedFeature.jankStatsActivityLifecycleListener)
-            .isInstanceOf(JankStatsActivityLifecycleListener::class.java)
-        verify(appContext.mockInstance).registerActivityLifecycleCallbacks(
-            testedFeature.jankStatsActivityLifecycleListener
+        assertThat(testedFeature.frameStatesAggregator)
+            .isInstanceOf(FrameStatesAggregator::class.java)
+        verifyFrameStateAggregatorInitialized(
+            anyMatchPredicate = { it is FPSVitalListener }
         )
     }
 
@@ -556,8 +667,6 @@ internal class RumFeatureTest {
             .isInstanceOf(NoOpVitalMonitor::class.java)
         assertThat(testedFeature.vitalExecutorService)
             .isInstanceOf(NoOpScheduledExecutorService::class.java)
-        assertThat(testedFeature.jankStatsActivityLifecycleListener)
-            .isNull()
     }
 
     @Test
@@ -570,14 +679,14 @@ internal class RumFeatureTest {
             fakeConfiguration,
             lateCrashReporterFactory = { mockLateCrashReporter }
         )
-        val mockJankStatsActivityLifecycleListener = mock<JankStatsActivityLifecycleListener>()
-        testedFeature.jankStatsActivityLifecycleListener = mockJankStatsActivityLifecycleListener
+        val mockFrameStatesAggregator = mock<FrameStatesAggregator>()
+        testedFeature.frameStatesAggregator = mockFrameStatesAggregator
 
         // When
         testedFeature.enableJankStatsTracking(activity)
 
         // Then
-        verify(mockJankStatsActivityLifecycleListener).onActivityStarted(activity)
+        verify(mockFrameStatesAggregator).onActivityStarted(activity)
     }
 
     @Test
@@ -1259,7 +1368,18 @@ internal class RumFeatureTest {
 
     // endregion
 
-    private fun verifySlowFramesListenerLogMessage(message: String = SLOW_FRAME_MONITORING_ENABLED_MESSAGE) {
+    private fun verifyFrameStateAggregatorInitialized(
+        anyMatchPredicate: Predicate<FrameStateListener> = Predicate { true },
+        noneMatchPredicate: Predicate<FrameStateListener> = Predicate { false }
+    ) {
+        assertThat(testedFeature.frameStatesAggregator).isNotNull
+        val frameStatesAggregator = testedFeature.frameStatesAggregator as FrameStatesAggregator
+        verify(appContext.mockInstance).registerActivityLifecycleCallbacks(frameStatesAggregator)
+        assertThat(frameStatesAggregator.frameStateListeners).anyMatch(anyMatchPredicate)
+        assertThat(frameStatesAggregator.frameStateListeners).noneMatch(noneMatchPredicate)
+    }
+
+    private fun verifySlowFramesListenerLogMessage(message: String = SLOW_FRAMES_MONITORING_ENABLED_MESSAGE) {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.INFO,
             InternalLogger.Target.USER,

@@ -77,7 +77,7 @@ internal class DatadogRumMonitor(
     internal val executorService: ExecutorService,
     initialResourceIdentifier: InitialResourceIdentifier,
     lastInteractionIdentifier: LastInteractionIdentifier?,
-    slowFramesListener: SlowFramesListener
+    slowFramesListener: SlowFramesListener?
 ) : RumMonitor, AdvancedRumMonitor {
 
     internal var rootScope: RumScope = RumApplicationScope(

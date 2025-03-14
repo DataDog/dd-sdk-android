@@ -589,8 +589,8 @@ internal class ViewEventAssert(actual: ViewEvent) :
 
     fun hasSlownessInfo(
         slowFrames: List<ViewEvent.SlowFrame>,
-        slowFramesRate: Double,
-        freezeRate: Double
+        slowFramesRate: Double? = null,
+        freezeRate: Double? = null
     ): ViewEventAssert = apply {
         assertThat(actual.view.slowFrames)
             .overridingErrorMessage(

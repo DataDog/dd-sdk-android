@@ -55,9 +55,9 @@ import org.mockito.quality.Strictness
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
-internal class JankStatsActivityLifecycleListenerTest {
+internal class FrameStatesAggregatorTest {
 
-    private lateinit var testedJankListener: JankStatsActivityLifecycleListener
+    private lateinit var testedJankListener: FrameStatesAggregator
 
     @Mock
     lateinit var mockInternalLogger: InternalLogger
@@ -96,12 +96,7 @@ internal class JankStatsActivityLifecycleListenerTest {
         whenever(mockJankStatsProvider.createJankStatsAndTrack(any(), any(), any())) doReturn mockJankStats
         whenever(mockJankStats.isTrackingEnabled) doReturn true
 
-        testedJankListener = JankStatsActivityLifecycleListener(
-            listOf(mockFPSVitalListener),
-            mockInternalLogger,
-            mockJankStatsProvider,
-            mockBuildSdkVersionProvider
-        )
+        testedJankListener = stubJankStatsActivityLifecycleListener()
     }
 
     @Test
@@ -143,7 +138,7 @@ internal class JankStatsActivityLifecycleListenerTest {
         val mockActivity2 = mock<Activity>()
         whenever(mockActivity2.window) doReturn mockWindow
         whenever(mockActivity2.display) doReturn mockDisplay
-        testedJankListener = JankStatsActivityLifecycleListener(
+        testedJankListener = stubJankStatsActivityLifecycleListener(
             listOf(mockFPSVitalListener),
             mockInternalLogger,
             mockJankStatsProvider
@@ -187,7 +182,7 @@ internal class JankStatsActivityLifecycleListenerTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             InternalLogger.Target.TELEMETRY,
-            JankStatsActivityLifecycleListener.JANK_STATS_TRACKING_ALREADY_DISABLED_ERROR
+            FrameStatesAggregator.JANK_STATS_TRACKING_ALREADY_DISABLED_ERROR
         )
     }
 
@@ -205,7 +200,7 @@ internal class JankStatsActivityLifecycleListenerTest {
         mockInternalLogger.verifyLog(
             level = InternalLogger.Level.ERROR,
             target = InternalLogger.Target.TELEMETRY,
-            message = JankStatsActivityLifecycleListener.JANK_STATS_TRACKING_DISABLE_ERROR,
+            message = FrameStatesAggregator.JANK_STATS_TRACKING_DISABLE_ERROR,
             throwable = exception
         )
     }
@@ -224,7 +219,7 @@ internal class JankStatsActivityLifecycleListenerTest {
         mockInternalLogger.verifyLog(
             level = InternalLogger.Level.ERROR,
             target = InternalLogger.Target.TELEMETRY,
-            message = JankStatsActivityLifecycleListener.JANK_STATS_TRACKING_DISABLE_ERROR,
+            message = FrameStatesAggregator.JANK_STATS_TRACKING_DISABLE_ERROR,
             throwable = exception
         )
     }
@@ -428,6 +423,21 @@ internal class JankStatsActivityLifecycleListenerTest {
 
         // Then
         verify(mockFPSVitalListener).onFrameMetricsData(frameMetricsData.copy(displayRefreshRate = 60.0))
+    }
+
+    private fun stubJankStatsActivityLifecycleListener(
+        delegates: List<FrameStateListener> = listOf(mockFPSVitalListener),
+        internalLogger: InternalLogger = mockInternalLogger,
+        jankStatsProvider: JankStatsProvider = mockJankStatsProvider,
+        buildSdkVersionProvider: BuildSdkVersionProvider = mockBuildSdkVersionProvider
+    ): FrameStatesAggregator {
+        return FrameStatesAggregator(
+            internalLogger,
+            jankStatsProvider,
+            buildSdkVersionProvider
+        ).also {
+            delegates.forEach { delegate -> it.addListener(delegate) }
+        }
     }
 
     companion object {

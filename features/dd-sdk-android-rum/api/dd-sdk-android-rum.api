@@ -111,7 +111,7 @@ public final class com/datadog/android/rum/RumConfiguration$Builder {
 	public final fun setResourceEventMapper (Lcom/datadog/android/event/EventMapper;)Lcom/datadog/android/rum/RumConfiguration$Builder;
 	public final fun setSessionListener (Lcom/datadog/android/rum/RumSessionListener;)Lcom/datadog/android/rum/RumConfiguration$Builder;
 	public final fun setSessionSampleRate (F)Lcom/datadog/android/rum/RumConfiguration$Builder;
-	public final fun setSlowFrameListenerConfiguration (Lcom/datadog/android/rum/configuration/SlowFrameListenerConfiguration;)Lcom/datadog/android/rum/RumConfiguration$Builder;
+	public final fun setSlowFrameListenerConfiguration (Lcom/datadog/android/rum/configuration/SlowFramesConfiguration;)Lcom/datadog/android/rum/RumConfiguration$Builder;
 	public final fun setTelemetrySampleRate (F)Lcom/datadog/android/rum/RumConfiguration$Builder;
 	public final fun setViewEventMapper (Lcom/datadog/android/rum/event/ViewEventMapper;)Lcom/datadog/android/rum/RumConfiguration$Builder;
 	public final fun setVitalsUpdateFrequency (Lcom/datadog/android/rum/configuration/VitalsUpdateFrequency;)Lcom/datadog/android/rum/RumConfiguration$Builder;
@@ -247,20 +247,20 @@ public final class com/datadog/android/rum/_RumInternalProxy$Companion {
 	public final fun setTelemetryConfigurationEventMapper (Lcom/datadog/android/rum/RumConfiguration$Builder;Lcom/datadog/android/event/EventMapper;)Lcom/datadog/android/rum/RumConfiguration$Builder;
 }
 
-public final class com/datadog/android/rum/configuration/SlowFrameListenerConfiguration {
-	public static final field Companion Lcom/datadog/android/rum/configuration/SlowFrameListenerConfiguration$Companion;
+public final class com/datadog/android/rum/configuration/SlowFramesConfiguration {
+	public static final field Companion Lcom/datadog/android/rum/configuration/SlowFramesConfiguration$Companion;
 	public fun <init> ()V
 	public fun <init> (IJJJJ)V
 	public synthetic fun <init> (IJJJJILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun copy (IJJJJ)Lcom/datadog/android/rum/configuration/SlowFrameListenerConfiguration;
-	public static synthetic fun copy$default (Lcom/datadog/android/rum/configuration/SlowFrameListenerConfiguration;IJJJJILjava/lang/Object;)Lcom/datadog/android/rum/configuration/SlowFrameListenerConfiguration;
+	public final fun copy (IJJJJ)Lcom/datadog/android/rum/configuration/SlowFramesConfiguration;
+	public static synthetic fun copy$default (Lcom/datadog/android/rum/configuration/SlowFramesConfiguration;IJJJJILjava/lang/Object;)Lcom/datadog/android/rum/configuration/SlowFramesConfiguration;
 	public fun equals (Ljava/lang/Object;)Z
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
 }
 
-public final class com/datadog/android/rum/configuration/SlowFrameListenerConfiguration$Companion {
-	public final fun getDEFAULT ()Lcom/datadog/android/rum/configuration/SlowFrameListenerConfiguration;
+public final class com/datadog/android/rum/configuration/SlowFramesConfiguration$Companion {
+	public final fun getDEFAULT ()Lcom/datadog/android/rum/configuration/SlowFramesConfiguration;
 }
 
 public final class com/datadog/android/rum/configuration/VitalsUpdateFrequency : java/lang/Enum {
