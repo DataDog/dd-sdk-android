@@ -25,7 +25,7 @@ internal class ViewUIPerformanceReportForgeryFactory : ForgeryFactory<ViewUIPerf
             }.toEvictingQueue(),
             totalFramesDurationNs = forge.aLong(min = 1),
             slowFramesDurationNs = forge.aLong(min = 0),
-            anrDurationNs = forge.aLong(min = 0),
+            freezeFramesDuration = forge.aLong(min = 0),
             minViewLifetimeThresholdNs = 0
         )
     }

@@ -42,7 +42,7 @@ internal class RumSessionScope(
     applicationDisplayed: Boolean,
     networkSettledResourceIdentifier: InitialResourceIdentifier,
     lastInteractionIdentifier: LastInteractionIdentifier?,
-    slowFramesListener: SlowFramesListener,
+    slowFramesListener: SlowFramesListener?,
     private val sessionInactivityNanos: Long = DEFAULT_SESSION_INACTIVITY_NS,
     private val sessionMaxDurationNanos: Long = DEFAULT_SESSION_MAX_DURATION_NS
 ) : RumScope {

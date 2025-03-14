@@ -71,7 +71,7 @@ internal open class RumViewScope(
     internal val sampleRate: Float,
     private val interactionToNextViewMetricResolver: InteractionToNextViewMetricResolver,
     private val networkSettledMetricResolver: NetworkSettledMetricResolver,
-    private val slowFramesListener: SlowFramesListener,
+    private val slowFramesListener: SlowFramesListener?,
     private val viewEndedMetricDispatcher: ViewMetricDispatcher
 ) : RumScope {
 
@@ -177,7 +177,7 @@ internal open class RumViewScope(
         }
         networkSettledMetricResolver.viewWasCreated(eventTime.nanoTime)
         interactionToNextViewMetricResolver.onViewCreated(viewId, eventTime.nanoTime)
-        slowFramesListener.onViewCreated(viewId, startedNanos)
+        slowFramesListener?.onViewCreated(viewId, startedNanos)
     }
 
     // region RumScope
@@ -898,8 +898,20 @@ internal open class RumViewScope(
         // make a copy - by the time we iterate over it on another thread, it may already be changed
         val eventFeatureFlags = featureFlags.toMutableMap()
         val eventAdditionalAttributes = (eventAttributes + globalAttributes).toMutableMap()
+        val uiSlownessReport = slowFramesListener?.resolveReport(viewId)
+        val slowFrames = uiSlownessReport?.slowFramesRecords?.map {
+            ViewEvent.SlowFrame(
+                start = it.startTimestampNs - startedNanos,
+                duration = it.durationNs
+            )
+        }
 
-        if (isViewComplete() && getRumContext().sessionState != RumSessionScope.State.NOT_TRACKED) {
+        // freezeRate and slowFramesRate should be sent only with StopView event
+        val viewCompletedWithStopEvent = viewComplete && event is RumRawEvent.StopView
+        val freezeRate = if (viewCompletedWithStopEvent) uiSlownessReport?.freezeFramesRate(stoppedNanos) else null
+        val slowFramesRate = if (viewCompletedWithStopEvent) uiSlownessReport?.slowFramesRate(stoppedNanos) else null
+
+        if (viewComplete && getRumContext().sessionState != RumSessionScope.State.NOT_TRACKED) {
             viewEndedMetricDispatcher.sendViewEnded(
                 interactionToNextViewMetricResolver.getState(viewId),
                 networkSettledMetricResolver.getState()
@@ -911,16 +923,6 @@ internal open class RumViewScope(
                 fbc = ViewEvent.Fbc(
                     timestamp = it.toLong()
                 )
-            )
-        }
-
-        val uiSlownessReport = slowFramesListener.resolveReport(viewId)
-        val freezeRate = uiSlownessReport.freezeFramesRate(stoppedNanos)
-        val slowFramesRate = uiSlownessReport.slowFramesRate(stoppedNanos)
-        val slowFrames = uiSlownessReport.slowFramesRecords.map {
-            ViewEvent.SlowFrame(
-                start = it.startTimestampNs - startedNanos,
-                duration = it.durationNs
             )
         }
 
@@ -1234,7 +1236,7 @@ internal open class RumViewScope(
         )
         val timestamp = event.eventTime.timestamp + serverTimeOffsetInMs
         val isFrozenFrame = event.durationNs > FROZEN_FRAME_THRESHOLD_NS
-        slowFramesListener.onAddLongTask(event.durationNs)
+        slowFramesListener?.onAddLongTask(event.durationNs)
         sdkCore.newRumEventWriteOperation(writer) { datadogContext ->
 
             val user = datadogContext.userInfo
@@ -1434,7 +1436,7 @@ internal open class RumViewScope(
             sampleRate: Float,
             interactionToNextViewMetricResolver: InteractionToNextViewMetricResolver,
             networkSettledResourceIdentifier: InitialResourceIdentifier,
-            slowFramesListener: SlowFramesListener
+            slowFramesListener: SlowFramesListener?
         ): RumViewScope {
             val networkSettledMetricResolver = NetworkSettledMetricResolver(
                 networkSettledResourceIdentifier,

@@ -39,7 +39,7 @@ internal class RumApplicationScope(
     private val sessionListener: RumSessionListener?,
     internal val initialResourceIdentifier: InitialResourceIdentifier,
     internal val lastInteractionIdentifier: LastInteractionIdentifier?,
-    private val slowFramesListener: SlowFramesListener
+    private val slowFramesListener: SlowFramesListener?
 ) : RumScope, RumViewChangedListener {
 
     private var rumContext = RumContext(applicationId = applicationId)

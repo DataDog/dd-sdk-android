@@ -8,24 +8,22 @@ package com.datadog.android.rum.internal.metric.slowframes
 import androidx.annotation.MainThread
 import androidx.annotation.WorkerThread
 import androidx.metrics.performance.FrameData
-import com.datadog.android.rum.configuration.SlowFrameListenerConfiguration
+import com.datadog.android.rum.configuration.SlowFramesConfiguration
 import com.datadog.android.rum.internal.domain.FrameMetricsData
 import com.datadog.android.rum.internal.domain.state.SlowFrameRecord
 import com.datadog.android.rum.internal.domain.state.ViewUIPerformanceReport
 import com.datadog.android.rum.internal.vitals.FrameStateListener
-import com.datadog.tools.annotation.NoOpImplementation
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.math.min
 
-@NoOpImplementation
 internal interface SlowFramesListener : FrameStateListener {
     fun onViewCreated(viewId: String, startedTimestampNs: Long)
-    fun resolveReport(viewId: String): ViewUIPerformanceReport
+    fun resolveReport(viewId: String): ViewUIPerformanceReport?
     fun onAddLongTask(durationNs: Long)
 }
 
 internal class DefaultSlowFramesListener(
-    internal val configuration: SlowFrameListenerConfiguration
+    internal val configuration: SlowFramesConfiguration
 ) : SlowFramesListener {
 
     @Volatile
@@ -43,13 +41,9 @@ internal class DefaultSlowFramesListener(
     }
 
     @MainThread
-    override fun resolveReport(viewId: String): ViewUIPerformanceReport {
+    override fun resolveReport(viewId: String): ViewUIPerformanceReport? {
         @Suppress("UnsafeThirdPartyFunctionCall") // can't have NPE here
-        val report = slowFramesRecords.remove(viewId) ?: ViewUIPerformanceReport(
-            System.nanoTime(),
-            configuration.maxSlowFramesAmount,
-            configuration.minViewLifetimeThresholdNs
-        )
+        val report = slowFramesRecords.remove(viewId) ?: return null
 
         // making sure that report is not partially updated
         return synchronized(report) { report.copy() }
@@ -103,10 +97,10 @@ internal class DefaultSlowFramesListener(
 
     @WorkerThread
     override fun onAddLongTask(durationNs: Long) {
-        val view = currentViewId
-        if (durationNs >= configuration.freezeDurationThreshold && view != null) {
-            val report = getViewPerformanceReport(view)
-            synchronized(report) { report.anrDurationNs += durationNs }
+        val viewId = currentViewId
+        if (durationNs >= configuration.freezeDurationThreshold && viewId != null) {
+            val report = getViewPerformanceReport(viewId)
+            synchronized(report) { report.freezeFramesDuration += durationNs }
         }
     }
 

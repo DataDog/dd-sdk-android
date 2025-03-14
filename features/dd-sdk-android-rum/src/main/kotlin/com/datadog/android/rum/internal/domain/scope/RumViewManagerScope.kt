@@ -46,7 +46,7 @@ internal class RumViewManagerScope(
     internal var applicationDisplayed: Boolean,
     internal val sampleRate: Float,
     internal val initialResourceIdentifier: InitialResourceIdentifier,
-    private val slowFramesListener: SlowFramesListener,
+    private val slowFramesListener: SlowFramesListener?,
     lastInteractionIdentifier: LastInteractionIdentifier?
 ) : RumScope {
 
