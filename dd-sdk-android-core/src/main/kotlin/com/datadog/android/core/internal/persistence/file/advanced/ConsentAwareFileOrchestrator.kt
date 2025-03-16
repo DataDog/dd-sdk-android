@@ -72,6 +72,10 @@ internal open class ConsentAwareFileOrchestrator(
         return delegateOrchestrator.getMetadataFile(file)
     }
 
+    override fun decrementAndGetPendingFilesCount(): Int {
+        return delegateOrchestrator.decrementAndGetPendingFilesCount()
+    }
+
     // endregion
 
     // region TrackingConsentProviderCallback

@@ -120,6 +120,9 @@ internal class ConsentAwareStorageTest {
     @StringForgery
     lateinit var fakeFeatureName: String
 
+    @IntForgery(min = 0, max = 100)
+    var fakePendingBatches: Int = 0
+
     @BeforeEach
     fun `set up`(forge: Forge) {
         whenever(mockConsentProvider.getConsent()) doReturn forge.aValueFrom(TrackingConsent::class.java)
@@ -127,6 +130,10 @@ internal class ConsentAwareStorageTest {
         whenever(mockGrantedOrchestrator.getRootDir()) doReturn File(mockGrantedRootParentFile, fakeRootDirName)
         whenever(mockPendingOrchestrator.getRootDirName()) doReturn fakeRootDirName
         whenever(mockGrantedOrchestrator.getRootDirName()) doReturn fakeRootDirName
+        whenever((mockGrantedOrchestrator).decrementAndGetPendingFilesCount())
+            .thenReturn(fakePendingBatches - 1)
+        whenever((mockPendingOrchestrator).decrementAndGetPendingFilesCount())
+            .thenReturn(fakePendingBatches - 1)
 
         whenever(
             mockInternalLogger.startPerformanceMeasure(
@@ -575,7 +582,11 @@ internal class ConsentAwareStorageTest {
         // Then
         verify(mockFileMover).delete(file)
         verify(mockFileMover).delete(mockMetaFile)
-        verify(mockMetricsDispatcher).sendBatchDeletedMetric(eq(file), eq(reason))
+        verify(mockMetricsDispatcher).sendBatchDeletedMetric(
+            eq(file),
+            eq(reason),
+            eq(fakePendingBatches - 1)
+        )
     }
 
     @Test
@@ -653,7 +664,11 @@ internal class ConsentAwareStorageTest {
             ConsentAwareStorage.WARNING_DELETE_FAILED.format(Locale.US, mockMetaFile.path)
         )
         verifyNoMoreInteractions(mockInternalLogger)
-        verify(mockMetricsDispatcher).sendBatchDeletedMetric(eq(file), eq(reason))
+        verify(mockMetricsDispatcher).sendBatchDeletedMetric(
+            eq(file),
+            eq(reason),
+            eq(fakePendingBatches - 1)
+        )
     }
 
     // endregion
@@ -709,13 +724,15 @@ internal class ConsentAwareStorageTest {
             eq(grantedFile),
             argThat {
                 this is RemovalReason.Flushed
-            }
+            },
+            eq(fakePendingBatches - 1)
         )
         verify(mockMetricsDispatcher).sendBatchDeletedMetric(
             eq(pendingFile),
             argThat {
                 this is RemovalReason.Flushed
-            }
+            },
+            eq(fakePendingBatches - 1)
         )
     }
 
@@ -770,7 +787,8 @@ internal class ConsentAwareStorageTest {
                 eq(file),
                 argThat {
                     this is RemovalReason.Flushed
-                }
+                },
+                eq(fakePendingBatches - 1)
             )
         }
     }

@@ -182,7 +182,8 @@ internal class ConsentAwareStorage(
     private fun deleteBatchFile(batchFile: File, reason: RemovalReason) {
         val result = fileMover.delete(batchFile)
         if (result) {
-            metricsDispatcher.sendBatchDeletedMetric(batchFile, reason)
+            val numPendingFiles = grantedOrchestrator.decrementAndGetPendingFilesCount()
+            metricsDispatcher.sendBatchDeletedMetric(batchFile, reason, numPendingFiles)
         } else {
             internalLogger.log(
                 InternalLogger.Level.WARN,

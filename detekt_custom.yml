@@ -716,6 +716,7 @@ datadog:
       - "java.util.concurrent.atomic.AtomicInteger.get()"
       - "java.util.concurrent.atomic.AtomicInteger.getAndIncrement()"
       - "java.util.concurrent.atomic.AtomicInteger.incrementAndGet()"
+      - "java.util.concurrent.atomic.AtomicInteger.set(kotlin.Int)"
       - "java.util.concurrent.atomic.AtomicLong.constructor(kotlin.Long)"
       - "java.util.concurrent.atomic.AtomicLong.get()"
       - "java.util.concurrent.atomic.AtomicLong.set(kotlin.Long)"
