@@ -33,3 +33,12 @@ internal fun Forge.aRumEvent(): Any {
         this.getForgery<LongTaskEvent>()
     )
 }
+
+internal fun Forge.aTrack(): String {
+    return this.anElementFrom(
+        "rum",
+        "logs",
+        "traces",
+        "session-replay"
+    )
+}

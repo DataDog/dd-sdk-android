@@ -7,7 +7,6 @@
 package com.datadog.android.rum.internal.metric
 
 import com.datadog.android.core.metrics.PerformanceMetric
-import com.datadog.android.internal.telemetry.UploadQualityCategory
 import com.datadog.android.internal.telemetry.UploadQualityEvent
 import com.datadog.android.rum.internal.domain.scope.RumRawEvent
 import com.datadog.android.rum.internal.domain.scope.RumSessionScope
@@ -77,7 +76,7 @@ internal class SessionEndedMetric(
     }
 
     fun onUploadCycleIncrement(event: UploadQualityEvent) {
-        if (event.category == UploadQualityCategory.COUNT) {
+        if (event is UploadQualityEvent.UploadQualityCountEvent) {
             uploadCycles[event.track] = (uploadCycles[event.track] ?: 0) + 1
         }
     }

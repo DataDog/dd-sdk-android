@@ -37,15 +37,36 @@ enum class UploadQualityBlocker(val key: String) {
  * Class to hold the data of an upload quality event.
  * This information is later sent as part of RUM SessionEnded telemetry.
  * @param track The track of the event (e.g. rum, logs, traces).
- * @param category The category of the event (e.g. count, blocker, failure).
- * @param uploadDelay The current backoff delay in milliseconds between the last upload attempt and this one.
- * @param blockers A list of upload blockers, if any, such as low battery, low power mode, or offline.
- * @param failure The failure code, if any, that prevented the upload.
+ * @param uploadDelay The current backoff delay in milliseconds between
+ * the last upload attempt and this one.
  */
-data class UploadQualityEvent(
+sealed class UploadQualityEvent(
     val track: String,
-    val category: UploadQualityCategory,
-    val uploadDelay: Int,
-    val failure: String? = null,
-    val blockers: List<String> = emptyList()
-)
+    val uploadDelay: Int
+) {
+    class UploadQualityCountEvent(
+        track: String,
+        uploadDelay: Int
+    ) : UploadQualityEvent(
+        track = track,
+        uploadDelay = uploadDelay
+    )
+
+    class UploadQualityBlockerEvent(
+        track: String,
+        uploadDelay: Int,
+        val blockers: List<String>
+    ) : UploadQualityEvent(
+        track = track,
+        uploadDelay = uploadDelay
+    )
+
+    class UploadQualityFailureEvent(
+        track: String,
+        uploadDelay: Int,
+        val failure: String
+    ) : UploadQualityEvent(
+        track = track,
+        uploadDelay = uploadDelay
+    )
+}

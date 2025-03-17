@@ -20,7 +20,6 @@ import com.datadog.android.core.internal.persistence.Storage
 import com.datadog.android.core.internal.system.SystemInfoProvider
 import com.datadog.android.core.internal.utils.scheduleSafe
 import com.datadog.android.internal.telemetry.UploadQualityBlocker
-import com.datadog.android.internal.telemetry.UploadQualityCategory
 import com.datadog.android.internal.telemetry.UploadQualityEvent
 import java.util.concurrent.ScheduledThreadPoolExecutor
 import java.util.concurrent.TimeUnit
@@ -95,9 +94,8 @@ internal class DataUploadRunnable(
 
     private fun logUploadCycleForTelemetry() {
         uploadQualityListener.onUploadQualityEvent(
-            UploadQualityEvent(
+            UploadQualityEvent.UploadQualityCountEvent(
                 track = featureName,
-                category = UploadQualityCategory.COUNT,
                 uploadDelay = delayMs.toInt()
             )
         )
@@ -118,9 +116,8 @@ internal class DataUploadRunnable(
 
         if (blockersList.isNotEmpty()) {
             uploadQualityListener.onUploadQualityEvent(
-                UploadQualityEvent(
+                UploadQualityEvent.UploadQualityBlockerEvent(
                     track = featureName,
-                    category = UploadQualityCategory.BLOCKER,
                     uploadDelay = delayMs.toInt(),
                     blockers = blockersList
                 )
@@ -172,9 +169,8 @@ internal class DataUploadRunnable(
         val status = dataUploader.upload(context, batch, batchMeta, batchId)
         if (status.code != HTTP_ACCEPTED) {
             uploadQualityListener.onUploadQualityEvent(
-                UploadQualityEvent(
+                UploadQualityEvent.UploadQualityFailureEvent(
                     track = featureName,
-                    category = UploadQualityCategory.FAILURE,
                     uploadDelay = delayMs.toInt(),
                     failure = status.code.toString()
                 )

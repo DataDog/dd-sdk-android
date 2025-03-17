@@ -35,7 +35,6 @@ import com.datadog.android.event.EventMapper
 import com.datadog.android.event.MapperSerializer
 import com.datadog.android.event.NoOpEventMapper
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
-import com.datadog.android.internal.telemetry.UploadQualityCategory
 import com.datadog.android.internal.telemetry.UploadQualityEvent
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumErrorSource
@@ -319,8 +318,8 @@ internal class RumFeature(
     }
 
     private fun handleUploadQualityEvent(event: UploadQualityEvent) {
-        when (event.category) {
-            UploadQualityCategory.COUNT -> {
+        when (event) {
+            is UploadQualityEvent.UploadQualityCountEvent -> {
                 GlobalRumMonitor.get(sdkCore).getCurrentSessionId { sessionId ->
                     sessionId?.let {
                         sessionEndedMetricDispatcher.onUploadQualityEventReceived(it, event)
@@ -433,9 +432,9 @@ internal class RumFeature(
             UploadBlockerMetric.UPLOAD_DELAY_KEY.key to event.uploadDelay
         )
 
-        if (event.category == UploadQualityCategory.BLOCKER) {
+        if (event is UploadQualityEvent.UploadQualityBlockerEvent) {
             properties[UploadBlockerMetric.BLOCKERS_KEY.key] = event.blockers
-        } else if (event.category == UploadQualityCategory.FAILURE) {
+        } else if (event is UploadQualityEvent.UploadQualityFailureEvent) {
             properties[UploadBlockerMetric.FAILURE_KEY.key] = event.failure
         }
 

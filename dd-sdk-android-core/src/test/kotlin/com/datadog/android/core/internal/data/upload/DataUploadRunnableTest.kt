@@ -19,7 +19,6 @@ import com.datadog.android.core.internal.persistence.Storage
 import com.datadog.android.core.internal.system.SystemInfo
 import com.datadog.android.core.internal.system.SystemInfoProvider
 import com.datadog.android.internal.telemetry.UploadQualityBlocker
-import com.datadog.android.internal.telemetry.UploadQualityCategory
 import com.datadog.android.internal.telemetry.UploadQualityEvent
 import com.datadog.android.utils.forge.Configurator
 import fr.xgouchet.elmyr.Forge
@@ -708,7 +707,9 @@ internal class DataUploadRunnableTest {
     // region upload quality
 
     @Test
-    fun `M send network failure upload quality event W run { response not 202 }`(forge: Forge) {
+    fun `M send network failure upload quality event W run { response not 202 }`(
+        forge: Forge
+    ) {
         // Given
         testedRunnable = DataUploadRunnable(
             featureName = fakeFeatureName,
@@ -749,14 +750,12 @@ internal class DataUploadRunnableTest {
             verify(mockUploadQualityListener, times(2)).onUploadQualityEvent(
                 event = capture()
             )
-            val firstEvent = firstValue as? UploadQualityEvent
-            val secondEvent = secondValue as? UploadQualityEvent
+            val firstEvent = firstValue as? UploadQualityEvent.UploadQualityCountEvent
+            val secondEvent = secondValue as? UploadQualityEvent.UploadQualityFailureEvent
 
             assertThat(firstEvent?.track).isEqualTo(fakeFeatureName)
-            assertThat(firstEvent?.category).isEqualTo(UploadQualityCategory.COUNT)
 
             assertThat(secondEvent?.track).isEqualTo(fakeFeatureName)
-            assertThat(secondEvent?.category).isEqualTo(UploadQualityCategory.FAILURE)
             assertThat(secondEvent?.failure).isEqualTo(mockUploadStatus.code.toString())
         }
     }
@@ -803,7 +802,6 @@ internal class DataUploadRunnableTest {
             verify(mockUploadQualityListener, times(1)).onUploadQualityEvent(event = capture())
             val firstEvent = firstValue as? UploadQualityEvent
             assertThat(firstEvent?.track).isEqualTo(fakeFeatureName)
-            assertThat(firstEvent?.category).isEqualTo(UploadQualityCategory.COUNT)
         }
     }
 
@@ -856,19 +854,22 @@ internal class DataUploadRunnableTest {
 
         val allValues = captor.allValues
         assertThat(allValues).hasSize(2)
-        val expectedCount = UploadQualityEvent(
+        val expectedCount = UploadQualityEvent.UploadQualityCountEvent(
             track = fakeFeatureName,
-            category = UploadQualityCategory.COUNT,
             uploadDelay = 0
         )
-        val expectedBlocker = UploadQualityEvent(
+        val expectedBlocker = UploadQualityEvent.UploadQualityBlockerEvent(
             track = fakeFeatureName,
-            category = UploadQualityCategory.BLOCKER,
             uploadDelay = 0,
             blockers = listOf(UploadQualityBlocker.OFFLINE.key)
         )
-        val fakeExpected = listOf(expectedCount, expectedBlocker)
-        assertThat(allValues.containsAll(fakeExpected)).isTrue()
+
+        val firstEvent = captor.firstValue as UploadQualityEvent.UploadQualityCountEvent
+        val secondEvent = captor.secondValue as UploadQualityEvent.UploadQualityBlockerEvent
+
+        assertThat(firstEvent.track).isEqualTo(expectedCount.track)
+        assertThat(secondEvent.track).isEqualTo(expectedBlocker.track)
+        assertThat(secondEvent.blockers).isEqualTo(expectedBlocker.blockers)
     }
 
     @Test
@@ -919,19 +920,22 @@ internal class DataUploadRunnableTest {
         }
         val allValues = captor.allValues
         assertThat(allValues).hasSize(2)
-        val expectedCount = UploadQualityEvent(
+        val expectedCount = UploadQualityEvent.UploadQualityCountEvent(
             track = fakeFeatureName,
-            category = UploadQualityCategory.COUNT,
             uploadDelay = 0
         )
-        val expectedBlocker = UploadQualityEvent(
+        val expectedBlocker = UploadQualityEvent.UploadQualityBlockerEvent(
             track = fakeFeatureName,
-            category = UploadQualityCategory.BLOCKER,
             uploadDelay = 0,
             blockers = listOf(UploadQualityBlocker.LOW_BATTERY.key)
         )
-        val fakeExpected = listOf(expectedCount, expectedBlocker)
-        assertThat(allValues.containsAll(fakeExpected)).isTrue()
+
+        val firstEvent = captor.firstValue as UploadQualityEvent.UploadQualityCountEvent
+        val secondEvent = captor.secondValue as UploadQualityEvent.UploadQualityBlockerEvent
+
+        assertThat(firstEvent.track).isEqualTo(expectedCount.track)
+        assertThat(secondEvent.track).isEqualTo(expectedBlocker.track)
+        assertThat(secondEvent.blockers).isEqualTo(expectedBlocker.blockers)
     }
 
     @Test
@@ -985,19 +989,25 @@ internal class DataUploadRunnableTest {
         val allValues = captor.allValues
         assertThat(allValues).hasSize(2)
 
-        val expectedCount = UploadQualityEvent(
+        val expectedCount = UploadQualityEvent.UploadQualityCountEvent(
             track = fakeFeatureName,
-            category = UploadQualityCategory.COUNT,
             uploadDelay = 0
         )
-        val expectedBlockers = UploadQualityEvent(
+        val expectedBlockers = UploadQualityEvent.UploadQualityBlockerEvent(
             track = fakeFeatureName,
-            category = UploadQualityCategory.BLOCKER,
             uploadDelay = 0,
-            blockers = listOf(UploadQualityBlocker.LOW_BATTERY.key, UploadQualityBlocker.LOW_POWER_MODE.key)
+            blockers = listOf(
+                UploadQualityBlocker.LOW_BATTERY.key,
+                UploadQualityBlocker.LOW_POWER_MODE.key
+            )
         )
-        val fakeExpected = listOf(expectedCount, expectedBlockers)
-        assertThat(allValues.containsAll(fakeExpected)).isTrue()
+
+        val firstEvent = captor.firstValue as UploadQualityEvent.UploadQualityCountEvent
+        val secondEvent = captor.secondValue as UploadQualityEvent.UploadQualityBlockerEvent
+
+        assertThat(firstEvent.track).isEqualTo(expectedCount.track)
+        assertThat(secondEvent.track).isEqualTo(expectedBlockers.track)
+        assertThat(secondEvent.blockers).isEqualTo(expectedBlockers.blockers)
     }
 
 // endregion

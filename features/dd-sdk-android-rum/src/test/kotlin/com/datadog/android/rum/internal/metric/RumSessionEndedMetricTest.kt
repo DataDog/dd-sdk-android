@@ -7,7 +7,6 @@
 package com.datadog.android.rum.internal.metric
 
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.internal.telemetry.UploadQualityCategory
 import com.datadog.android.internal.telemetry.UploadQualityEvent
 import com.datadog.android.rum.internal.domain.scope.RumSessionScope
 import com.datadog.android.rum.internal.domain.scope.RumViewManagerScope
@@ -335,54 +334,29 @@ class RumSessionEndedMetricTest {
     }
 
     @Test
-    fun `M add count correctly W onUploadQualityTracked`(forge: Forge) {
+    fun `M add count correctly W onUploadQualityTracked`(
+        @Forgery fakeUploadQualityCountEvent: UploadQualityEvent.UploadQualityCountEvent
+    ) {
         // Given
         val sessionEndedMetric = stubSessionEndedMetric()
-        val fakeTrack = forge.anElementFrom(
-            "rum",
-            "logs",
-            "tracing",
-            "session-replay",
-            "session-replay-resources"
-        )
-        val fakeUploadDelay = forge.anInt()
-        val fakeFirstEvent = UploadQualityEvent(
-            track = fakeTrack,
-            category = UploadQualityCategory.COUNT,
-            uploadDelay = fakeUploadDelay
-        )
 
         // When
-        sessionEndedMetric.onUploadCycleIncrement(fakeFirstEvent)
+        sessionEndedMetric.onUploadCycleIncrement(fakeUploadQualityCountEvent)
 
         // Then
         val attributes = sessionEndedMetric.toMetricAttributes(fakeNtpOffsetAtEnd)
         val rse = attributes[SessionEndedMetric.RSE_KEY] as Map<*, *>
         val uploadCycles = rse[UploadCycleMetric.NAME_KEY.key] as Map<*, *>
-        assertThat(uploadCycles[fakeTrack]).isEqualTo(1)
+        assertThat(uploadCycles[fakeUploadQualityCountEvent.track]).isEqualTo(1)
     }
 
     @Test
-    fun `M aggregate upload quality correctly W onUploadQualityTracked`(forge: Forge) {
+    fun `M aggregate upload quality correctly W onUploadQualityTracked`(
+        @Forgery fakeFirstEvent: UploadQualityEvent.UploadQualityCountEvent,
+        @Forgery fakeSecondEvent: UploadQualityEvent.UploadQualityCountEvent
+    ) {
         // Given
         val sessionEndedMetric = stubSessionEndedMetric()
-        val fakeTrack = forge.anElementFrom(
-            "rum",
-            "logs",
-            "tracing",
-            "session-replay",
-            "session-replay-resources"
-        )
-        val fakeFirstEvent = UploadQualityEvent(
-            track = fakeTrack,
-            category = UploadQualityCategory.COUNT,
-            uploadDelay = forge.anInt()
-        )
-        val fakeSecondEvent = UploadQualityEvent(
-            track = fakeTrack,
-            category = UploadQualityCategory.COUNT,
-            uploadDelay = forge.anInt()
-        )
 
         // When
         sessionEndedMetric.onUploadCycleIncrement(fakeFirstEvent)
@@ -392,7 +366,13 @@ class RumSessionEndedMetricTest {
         val attributes = sessionEndedMetric.toMetricAttributes(fakeNtpOffsetAtEnd)
         val rse = attributes[SessionEndedMetric.RSE_KEY] as Map<*, *>
         val uploadCycles = rse[UploadCycleMetric.NAME_KEY.key] as Map<*, *>
-        assertThat(uploadCycles[fakeTrack]).isEqualTo(2)
+
+        if (fakeFirstEvent.track == fakeSecondEvent.track) {
+            assertThat(uploadCycles[fakeFirstEvent.track]).isEqualTo(2)
+        } else {
+            assertThat(uploadCycles[fakeFirstEvent.track]).isEqualTo(1)
+            assertThat(uploadCycles[fakeSecondEvent.track]).isEqualTo(1)
+        }
     }
 
     @Test
