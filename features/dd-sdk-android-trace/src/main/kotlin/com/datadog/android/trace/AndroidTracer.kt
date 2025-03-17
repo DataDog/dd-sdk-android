@@ -6,6 +6,7 @@
 
 package com.datadog.android.trace
 
+import android.util.Log
 import androidx.annotation.FloatRange
 import com.datadog.android.Datadog
 import com.datadog.android.api.InternalLogger
@@ -318,7 +319,7 @@ class AndroidTracer internal constructor(
          */
         @JvmStatic
         fun logErrorMessage(span: Span, message: String) {
-            val fieldsMap = mapOf(Fields.MESSAGE to message)
+            val fieldsMap = mapOf(Fields.MESSAGE to message, "severity" to Log.ERROR)
             span.log(fieldsMap)
         }
     }

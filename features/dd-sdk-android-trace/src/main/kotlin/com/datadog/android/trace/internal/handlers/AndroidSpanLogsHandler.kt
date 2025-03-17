@@ -6,10 +6,10 @@
 
 package com.datadog.android.trace.internal.handlers
 
+import android.util.Log
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
-import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.internal.utils.loggableStackTrace
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.trace.internal.utils.traceIdAsHexString
@@ -67,6 +67,8 @@ internal class AndroidSpanLogsHandler(
         timestampMicroseconds: Long? = null
     ) {
         val logsFeature = sdkCore.getFeature(Feature.LOGS_FEATURE_NAME)
+        val spanLogSeverity = fields["severity"] as? Int
+
         if (logsFeature != null && fields.isNotEmpty()) {
             val message = fields.remove(Fields.MESSAGE)?.toString() ?: DEFAULT_EVENT_MESSAGE
             fields[LogAttributes.DD_TRACE_ID] = span.context().traceIdAsHexString()
@@ -78,7 +80,8 @@ internal class AndroidSpanLogsHandler(
                     "loggerName" to TRACE_LOGGER_NAME,
                     "message" to message,
                     "attributes" to fields,
-                    "timestamp" to timestamp
+                    "timestamp" to timestamp,
+                    "logLevel" to (spanLogSeverity ?: Log.VERBOSE)
                 )
             )
         } else if (logsFeature == null) {
