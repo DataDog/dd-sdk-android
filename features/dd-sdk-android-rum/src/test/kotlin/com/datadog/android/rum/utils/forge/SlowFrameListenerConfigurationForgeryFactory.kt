@@ -16,6 +16,6 @@ internal class SlowFrameListenerConfigurationForgeryFactory : ForgeryFactory<Slo
         maxSlowFrameThresholdNs = forge.aLong(min = 0),
         continuousSlowFrameThresholdNs = forge.aLong(min = 0),
         freezeDurationThreshold = forge.aLong(min = 0),
-        minViewLifetimeThresholdNs = forge.aLong(min = 0),
+        minViewLifetimeThresholdNs = forge.aLong(min = 0)
     )
 }
