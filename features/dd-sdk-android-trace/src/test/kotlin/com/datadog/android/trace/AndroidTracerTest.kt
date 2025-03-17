@@ -650,7 +650,7 @@ internal class AndroidTracerTest {
             verify(mockSpan).log(capture())
             assertThat(firstValue)
                 .containsEntry(Fields.MESSAGE, anErrorMessage)
-                .containsOnlyKeys(Fields.MESSAGE)
+                .containsOnlyKeys(Fields.MESSAGE, "severity")
         }
     }
 

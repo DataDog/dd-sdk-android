@@ -105,7 +105,7 @@ class SpanExtTest {
             verify(mockSpan).log(capture())
             assertThat(firstValue)
                 .containsEntry(Fields.MESSAGE, message)
-                .containsOnlyKeys(Fields.MESSAGE)
+                .containsOnlyKeys(Fields.MESSAGE, "severity")
         }
     }
 
