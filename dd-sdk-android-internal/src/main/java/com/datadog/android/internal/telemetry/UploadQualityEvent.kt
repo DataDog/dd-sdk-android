@@ -12,7 +12,7 @@ package com.datadog.android.internal.telemetry
  * - BLOCKER: The count of different blockers that prevented an upload.
  * - FAILURE: The count of different failure codes.
  */
-enum class UploadQualityCategories {
+enum class UploadQualityCategory {
     COUNT,
     BLOCKER,
     FAILURE
@@ -27,7 +27,7 @@ enum class UploadQualityCategories {
  * - LOW_POWER_MODE: The device is in power save mode.
  * - OFFLINE: The device is offline.
  */
-enum class UploadQualityBlockers(val key: String) {
+enum class UploadQualityBlocker(val key: String) {
     LOW_BATTERY("low_battery"),
     LOW_POWER_MODE("lpm"),
     OFFLINE("offline")
@@ -38,10 +38,14 @@ enum class UploadQualityBlockers(val key: String) {
  * This information is later sent as part of RUM SessionEnded telemetry.
  * @param track The track of the event (e.g. rum, logs, traces).
  * @param category The category of the event (e.g. count, blocker, failure).
- * @param specificType The specific type of the event (e.g. low power, power save, offline).
+ * @param uploadDelay The current backoff delay in milliseconds between the last upload attempt and this one.
+ * @param blockers A list of upload blockers, if any, such as low battery, low power mode, or offline.
+ * @param failure The failure code, if any, that prevented the upload.
  */
 data class UploadQualityEvent(
     val track: String,
-    val category: UploadQualityCategories,
-    val specificType: String?
+    val category: UploadQualityCategory,
+    val uploadDelay: Int,
+    val failure: String? = null,
+    val blockers: List<String> = emptyList()
 )

@@ -76,7 +76,7 @@ internal class SessionEndedMetricDispatcher(private val internalLogger: Internal
     }
 
     override fun onUploadQualityEventReceived(sessionId: String, event: UploadQualityEvent) {
-        metricsBySessionId[sessionId]?.onUploadQualityTracked(event)
+        metricsBySessionId[sessionId]?.onUploadCycleIncrement(event)
     }
 
     private fun buildSdkErrorTrackError(sessionId: String, errorKind: String?): String {

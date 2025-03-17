@@ -7,8 +7,7 @@
 package com.datadog.android.rum.internal.metric
 
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.internal.telemetry.UploadQualityBlockers
-import com.datadog.android.internal.telemetry.UploadQualityCategories
+import com.datadog.android.internal.telemetry.UploadQualityCategory
 import com.datadog.android.internal.telemetry.UploadQualityEvent
 import com.datadog.android.rum.internal.domain.scope.RumSessionScope
 import com.datadog.android.rum.internal.domain.scope.RumViewManagerScope
@@ -23,7 +22,7 @@ import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
-import org.assertj.core.api.AssertionsForClassTypes.assertThat
+import org.assertj.core.api.Assertions.assertThat
 import org.json.JSONObject
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -340,105 +339,27 @@ class RumSessionEndedMetricTest {
         // Given
         val sessionEndedMetric = stubSessionEndedMetric()
         val fakeTrack = forge.anElementFrom(
-            listOf(
-                "rum",
-                "logs",
-                "tracing",
-                "session-replay",
-                "session-replay-resources"
-            )
+            "rum",
+            "logs",
+            "tracing",
+            "session-replay",
+            "session-replay-resources"
         )
+        val fakeUploadDelay = forge.anInt()
         val fakeFirstEvent = UploadQualityEvent(
             track = fakeTrack,
-            category = UploadQualityCategories.COUNT,
-            specificType = null
+            category = UploadQualityCategory.COUNT,
+            uploadDelay = fakeUploadDelay
         )
 
         // When
-        sessionEndedMetric.onUploadQualityTracked(fakeFirstEvent)
+        sessionEndedMetric.onUploadCycleIncrement(fakeFirstEvent)
 
         // Then
         val attributes = sessionEndedMetric.toMetricAttributes(fakeNtpOffsetAtEnd)
         val rse = attributes[SessionEndedMetric.RSE_KEY] as Map<*, *>
-        val uploadQuality = rse[UploadQualityMetric.UPLOAD_METRIC_KEY.key] as Map<*, *>
-        val eventTrack = uploadQuality[fakeTrack] as Map<*, *>
-        val cycleCount = eventTrack[UploadQualityMetric.CYCLE_COUNT_KEY.key] as Int
-        assertThat(cycleCount).isEqualTo(1)
-        val failures = eventTrack[UploadQualityMetric.FAILURE_COUNT_KEY.key] as Map<*, *>
-        assertThat(failures).isEqualTo(emptyMap<String, Any>())
-        val blockers = eventTrack[UploadQualityMetric.BLOCKERS_COUNT_KEY.key] as Map<*, *>
-        assertThat(blockers).isEqualTo(emptyMap<String, Any>())
-    }
-
-    @Test
-    fun `M add blocker correctly W onUploadQualityTracked`(forge: Forge) {
-        // Given
-        val sessionEndedMetric = stubSessionEndedMetric()
-        val fakeTrack = forge.anElementFrom(
-            listOf(
-                "rum",
-                "logs",
-                "tracing",
-                "session-replay",
-                "session-replay-resources"
-            )
-        )
-        val fakeBlocker = forge.anElementFrom(UploadQualityBlockers::class.java).toString()
-        val fakeFirstEvent = UploadQualityEvent(
-            track = fakeTrack,
-            category = UploadQualityCategories.BLOCKER,
-            specificType = fakeBlocker
-        )
-
-        // When
-        sessionEndedMetric.onUploadQualityTracked(fakeFirstEvent)
-
-        // Then
-        val attributes = sessionEndedMetric.toMetricAttributes(fakeNtpOffsetAtEnd)
-        val rse = attributes[SessionEndedMetric.RSE_KEY] as Map<*, *>
-        val uploadQuality = rse[UploadQualityMetric.UPLOAD_METRIC_KEY.key] as Map<*, *>
-        val eventTrack = uploadQuality[fakeTrack] as Map<*, *>
-        val blockers = eventTrack[UploadQualityMetric.BLOCKERS_COUNT_KEY.key] as Map<*, *>
-        val offlineCount = blockers[fakeBlocker]
-        assertThat(offlineCount).isEqualTo(1)
-        val failures = eventTrack[UploadQualityMetric.FAILURE_COUNT_KEY.key] as Map<*, *>
-        val blockersTotalCount = failures[UploadQualityMetric.BLOCKER_KEY.key]
-        assertThat(blockersTotalCount).isEqualTo(1)
-    }
-
-    @Test
-    fun `M add failure correctly W onUploadQualityTracked`(forge: Forge) {
-        // Given
-        val sessionEndedMetric = stubSessionEndedMetric()
-        val fakeTrack = forge.anElementFrom(
-            listOf(
-                "rum",
-                "logs",
-                "tracing",
-                "session-replay",
-                "session-replay-resources"
-            )
-        )
-        val fakeStatusCode = forge.anInt(min = 0, max = 999).toString()
-        val fakeFirstEvent = UploadQualityEvent(
-            track = fakeTrack,
-            category = UploadQualityCategories.FAILURE,
-            specificType = fakeStatusCode
-        )
-
-        // When
-        sessionEndedMetric.onUploadQualityTracked(fakeFirstEvent)
-
-        // Then
-        val attributes = sessionEndedMetric.toMetricAttributes(fakeNtpOffsetAtEnd)
-        val rse = attributes[SessionEndedMetric.RSE_KEY] as Map<*, *>
-        val uploadQuality = rse[UploadQualityMetric.UPLOAD_METRIC_KEY.key] as Map<*, *>
-        val eventTrack = uploadQuality[fakeTrack] as Map<*, *>
-        val failures = eventTrack[UploadQualityMetric.FAILURE_COUNT_KEY.key] as Map<*, *>
-        val failureCount = failures[fakeStatusCode] as Int
-        assertThat(failureCount).isEqualTo(1)
-        val blockers = eventTrack[UploadQualityMetric.BLOCKERS_COUNT_KEY.key] as Map<*, *>
-        assertThat(blockers).isEqualTo(emptyMap<String, Any>())
+        val uploadCycles = rse[UploadCycleMetric.NAME_KEY.key] as Map<*, *>
+        assertThat(uploadCycles[fakeTrack]).isEqualTo(1)
     }
 
     @Test
@@ -446,45 +367,32 @@ class RumSessionEndedMetricTest {
         // Given
         val sessionEndedMetric = stubSessionEndedMetric()
         val fakeTrack = forge.anElementFrom(
-            listOf(
-                "rum",
-                "logs",
-                "tracing",
-                "session-replay",
-                "session-replay-resources"
-            )
+            "rum",
+            "logs",
+            "tracing",
+            "session-replay",
+            "session-replay-resources"
         )
         val fakeFirstEvent = UploadQualityEvent(
             track = fakeTrack,
-            category = UploadQualityCategories.COUNT,
-            specificType = null
+            category = UploadQualityCategory.COUNT,
+            uploadDelay = forge.anInt()
         )
         val fakeSecondEvent = UploadQualityEvent(
             track = fakeTrack,
-            category = UploadQualityCategories.BLOCKER,
-            specificType = UploadQualityBlockers.OFFLINE.toString()
-        )
-        val fakeThirdEvent = UploadQualityEvent(
-            track = fakeTrack,
-            category = UploadQualityCategories.COUNT,
-            specificType = null
+            category = UploadQualityCategory.COUNT,
+            uploadDelay = forge.anInt()
         )
 
         // When
-        sessionEndedMetric.onUploadQualityTracked(fakeFirstEvent)
-        sessionEndedMetric.onUploadQualityTracked(fakeSecondEvent)
-        sessionEndedMetric.onUploadQualityTracked(fakeThirdEvent)
+        sessionEndedMetric.onUploadCycleIncrement(fakeFirstEvent)
+        sessionEndedMetric.onUploadCycleIncrement(fakeSecondEvent)
 
         // Then
         val attributes = sessionEndedMetric.toMetricAttributes(fakeNtpOffsetAtEnd)
         val rse = attributes[SessionEndedMetric.RSE_KEY] as Map<*, *>
-        val uploadQuality = rse[UploadQualityMetric.UPLOAD_METRIC_KEY.key] as Map<*, *>
-        val eventTrack = uploadQuality[fakeTrack] as Map<*, *>
-        val blockers = eventTrack[UploadQualityMetric.BLOCKERS_COUNT_KEY.key] as Map<*, *>
-        val offlineCount = blockers[UploadQualityBlockers.OFFLINE.toString()] as Int
-        val cycleCount = eventTrack[UploadQualityMetric.CYCLE_COUNT_KEY.key] as Int
-        assertThat(offlineCount).isEqualTo(1)
-        assertThat(cycleCount).isEqualTo(2)
+        val uploadCycles = rse[UploadCycleMetric.NAME_KEY.key] as Map<*, *>
+        assertThat(uploadCycles[fakeTrack]).isEqualTo(2)
     }
 
     @Test

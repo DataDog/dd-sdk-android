@@ -19,8 +19,8 @@ import com.datadog.android.core.internal.persistence.BatchId
 import com.datadog.android.core.internal.persistence.Storage
 import com.datadog.android.core.internal.system.SystemInfoProvider
 import com.datadog.android.core.internal.utils.scheduleSafe
-import com.datadog.android.internal.telemetry.UploadQualityBlockers
-import com.datadog.android.internal.telemetry.UploadQualityCategories
+import com.datadog.android.internal.telemetry.UploadQualityBlocker
+import com.datadog.android.internal.telemetry.UploadQualityCategory
 import com.datadog.android.internal.telemetry.UploadQualityEvent
 import java.util.concurrent.ScheduledThreadPoolExecutor
 import java.util.concurrent.TimeUnit
@@ -39,12 +39,16 @@ internal class DataUploadRunnable(
     private val uploadQualityListener: UploadQualityListener
 ) : UploadRunnable {
 
+    private var delayMs: Long = 0
+
     //  region Runnable
 
     @WorkerThread
     override fun run() {
         var uploadAttempts = 0
         var lastBatchUploadStatus: UploadStatus? = null
+
+        logUploadCycleForTelemetry()
 
         if (isNetworkAvailable() && isSystemReady()) {
             val context = contextProvider.context
@@ -60,9 +64,7 @@ internal class DataUploadRunnable(
             )
         }
 
-        logUploadQualityEvents()
-
-        val delayMs = uploadSchedulerStrategy.getMsDelayUntilNextUpload(
+        delayMs = uploadSchedulerStrategy.getMsDelayUntilNextUpload(
             featureName,
             uploadAttempts,
             lastBatchUploadStatus?.code,
@@ -91,41 +93,36 @@ internal class DataUploadRunnable(
         return uploadStatus
     }
 
-    private fun logUploadQualityEvents() {
+    private fun logUploadCycleForTelemetry() {
         uploadQualityListener.onUploadQualityEvent(
             UploadQualityEvent(
                 track = featureName,
-                category = UploadQualityCategories.COUNT,
-                specificType = null
+                category = UploadQualityCategory.COUNT,
+                uploadDelay = delayMs.toInt()
             )
         )
 
+        val blockersList = mutableListOf<String>()
+
         if (!isNetworkAvailable()) {
-            uploadQualityListener.onUploadQualityEvent(
-                UploadQualityEvent(
-                    track = featureName,
-                    category = UploadQualityCategories.BLOCKER,
-                    specificType = UploadQualityBlockers.OFFLINE.key
-                )
-            )
+            blockersList.add(UploadQualityBlocker.OFFLINE.key)
         }
 
         if (isLowPower()) {
-            uploadQualityListener.onUploadQualityEvent(
-                UploadQualityEvent(
-                    track = featureName,
-                    category = UploadQualityCategories.BLOCKER,
-                    specificType = UploadQualityBlockers.LOW_BATTERY.key
-                )
-            )
+            blockersList.add(UploadQualityBlocker.LOW_BATTERY.key)
         }
 
         if (isPowerSaveMode()) {
+            blockersList.add(UploadQualityBlocker.LOW_POWER_MODE.key)
+        }
+
+        if (blockersList.isNotEmpty()) {
             uploadQualityListener.onUploadQualityEvent(
                 UploadQualityEvent(
                     track = featureName,
-                    category = UploadQualityCategories.BLOCKER,
-                    specificType = UploadQualityBlockers.LOW_POWER_MODE.key
+                    category = UploadQualityCategory.BLOCKER,
+                    uploadDelay = delayMs.toInt(),
+                    blockers = blockersList
                 )
             )
         }
@@ -173,12 +170,13 @@ internal class DataUploadRunnable(
         batchMeta: ByteArray?
     ): UploadStatus {
         val status = dataUploader.upload(context, batch, batchMeta, batchId)
-        if (status.code != HTTP_SUCCESS_CODE) {
+        if (status.code != HTTP_ACCEPTED) {
             uploadQualityListener.onUploadQualityEvent(
                 UploadQualityEvent(
                     track = featureName,
-                    category = UploadQualityCategories.FAILURE,
-                    specificType = status.code.toString()
+                    category = UploadQualityCategory.FAILURE,
+                    uploadDelay = delayMs.toInt(),
+                    failure = status.code.toString()
                 )
             )
         }
@@ -195,6 +193,6 @@ internal class DataUploadRunnable(
 
     companion object {
         internal const val LOW_BATTERY_THRESHOLD = 10
-        private const val HTTP_SUCCESS_CODE = 202
+        private const val HTTP_ACCEPTED = 202
     }
 }

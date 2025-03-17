@@ -21,13 +21,19 @@ import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import com.datadog.android.event.EventMapper
 import com.datadog.android.event.MapperSerializer
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
+import com.datadog.android.internal.telemetry.UploadQualityBlocker
+import com.datadog.android.internal.telemetry.UploadQualityCategory
+import com.datadog.android.internal.telemetry.UploadQualityEvent
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.assertj.RumFeatureAssert
 import com.datadog.android.rum.configuration.VitalsUpdateFrequency
+import com.datadog.android.rum.internal.RumFeature.Companion.UPLOAD_QUALITY_SAMPLING_RATE
 import com.datadog.android.rum.internal.domain.RumDataWriter
 import com.datadog.android.rum.internal.domain.event.RumEventMapper
 import com.datadog.android.rum.internal.metric.SessionEndedMetricDispatcher
+import com.datadog.android.rum.internal.metric.UploadBlockerMetric
+import com.datadog.android.rum.internal.metric.ViewEndedMetricDispatcher.Companion.KEY_METRIC_TYPE
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.internal.monitor.NoOpAdvancedRumMonitor
 import com.datadog.android.rum.internal.thread.NoOpScheduledExecutorService
@@ -77,6 +83,8 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
+import org.mockito.kotlin.argThat
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
@@ -1253,6 +1261,183 @@ internal class RumFeatureTest {
         verify(mockRumMonitor).sendTelemetryEvent(fakeInternalTelemetryEvent)
         verifyNoMoreInteractions(mockRumMonitor)
         verifyNoInteractions(mockInternalLogger)
+    }
+
+    // endregion
+
+    // region upload quality metrics
+
+    @Test
+    fun `M call metrics dispatcher W onReceive { UploadQualityEvent Count }`(
+        forge: Forge
+    ) {
+        // Given
+        testedFeature.onInitialize(appContext.mockInstance)
+        val fakeSessionId = forge.anAlphabeticalString()
+        val fakeTrack = forge.anElementFrom(
+            "rum",
+            "logs",
+            "tracing",
+            "session-replay",
+            "session-replay-resources"
+        )
+
+        doAnswer { invocation ->
+            val callback = invocation.arguments[0] as (String) -> Unit
+            callback(fakeSessionId)
+        }.whenever(mockRumMonitor).getCurrentSessionId(any())
+
+        val fakeUploadQualityEvent = UploadQualityEvent(
+            track = fakeTrack,
+            category = UploadQualityCategory.COUNT,
+            uploadDelay = 0
+        )
+
+        // When
+        testedFeature.onReceive(fakeUploadQualityEvent)
+
+        // Then
+        verify(mockSessionEndedMetricDispatcher).onUploadQualityEventReceived(
+            sessionId = fakeSessionId,
+            event = fakeUploadQualityEvent
+        )
+    }
+
+    @Test
+    fun `M not call metrics dispatcher W onReceive { UploadQualityEvent Count, no sessionId }`(
+        forge: Forge
+    ) {
+        // Given
+        testedFeature.onInitialize(appContext.mockInstance)
+
+        val fakeTrack = forge.anElementFrom(
+            "rum",
+            "logs",
+            "tracing",
+            "session-replay",
+            "session-replay-resources"
+        )
+
+        doAnswer { invocation ->
+            val callback = invocation.arguments[0] as (String?) -> Unit
+            callback(null)
+        }.whenever(mockRumMonitor).getCurrentSessionId(any())
+
+        val fakeUploadQualityEvent = UploadQualityEvent(
+            track = fakeTrack,
+            category = UploadQualityCategory.COUNT,
+            uploadDelay = 0
+        )
+
+        // When
+        testedFeature.onReceive(fakeUploadQualityEvent)
+
+        // Then
+        verifyNoInteractions(mockSessionEndedMetricDispatcher)
+    }
+
+    @Test
+    fun `M send mobile metrics telemetry W onReceive { UploadQualityEvent Blocker }`(
+        forge: Forge
+    ) {
+        // Given
+        testedFeature.onInitialize(appContext.mockInstance)
+
+        val fakeSessionId = forge.anAlphabeticalString()
+
+        val fakeTrack = forge.anElementFrom(
+            "rum",
+            "logs",
+            "tracing",
+            "session-replay",
+            "session-replay-resources"
+        )
+
+        val fakeUploadQualityEvent = UploadQualityEvent(
+            track = fakeTrack,
+            category = UploadQualityCategory.BLOCKER,
+            uploadDelay = 0,
+            blockers = listOf(UploadQualityBlocker.OFFLINE.key)
+        )
+
+        doAnswer { invocation ->
+            val callback = invocation.arguments[0] as (String) -> Unit
+            callback(fakeSessionId)
+        }.whenever(mockRumMonitor).getCurrentSessionId(any())
+
+        // When
+        testedFeature.onReceive(fakeUploadQualityEvent)
+
+        // Then
+        val expectedAdditionalProperties = mapOf(
+            KEY_METRIC_TYPE to UploadBlockerMetric.BATCH_BLOCKED_KEY.key,
+            "track" to fakeTrack,
+            "upload_delay" to 0,
+            UploadBlockerMetric.BLOCKERS_KEY.key to listOf(UploadQualityBlocker.OFFLINE.key)
+        )
+
+        val additionalPropertiesCaptor = argumentCaptor<Map<String, Any?>>()
+        verify(mockInternalLogger).logMetric(
+            messageBuilder = argThat { invoke() == UploadBlockerMetric.METRICS_KEY.key },
+            additionalProperties = additionalPropertiesCaptor.capture(),
+            samplingRate = eq(UPLOAD_QUALITY_SAMPLING_RATE),
+            creationSampleRate = anyOrNull()
+        )
+
+        assertThat(additionalPropertiesCaptor.firstValue)
+            .containsExactlyInAnyOrderEntriesOf(expectedAdditionalProperties)
+    }
+
+    @Test
+    fun `M send mobile metrics telemetry W onReceive { UploadQualityEvent Failure }`(
+        forge: Forge
+    ) {
+        // Given
+        testedFeature.onInitialize(appContext.mockInstance)
+
+        val fakeErrorCode = forge.aNumericalString(3)
+        val fakeSessionId = forge.anAlphabeticalString()
+        val fakeTrack = forge.anElementFrom(
+            "rum",
+            "logs",
+            "tracing",
+            "session-replay",
+            "session-replay-resources"
+        )
+
+        val fakeUploadQualityEvent = UploadQualityEvent(
+            track = fakeTrack,
+            category = UploadQualityCategory.FAILURE,
+            uploadDelay = 0,
+            failure = fakeErrorCode
+        )
+
+        doAnswer { invocation ->
+            val callback = invocation.arguments[0] as (String) -> Unit
+            callback(fakeSessionId)
+        }.whenever(mockRumMonitor).getCurrentSessionId(any())
+
+        // When
+        testedFeature.onReceive(fakeUploadQualityEvent)
+
+        // Then
+        val expectedAdditionalProperties = mapOf(
+            KEY_METRIC_TYPE to UploadBlockerMetric.BATCH_BLOCKED_KEY.key,
+            "track" to fakeTrack,
+            "upload_delay" to 0,
+            UploadBlockerMetric.FAILURE_KEY.key to fakeErrorCode
+        )
+
+        val additionalPropertiesCaptor = argumentCaptor<Map<String, Any?>>()
+        verify(mockInternalLogger).logMetric(
+            messageBuilder = argThat { invoke() == UploadBlockerMetric.METRICS_KEY.key },
+            additionalProperties = additionalPropertiesCaptor.capture(),
+            samplingRate = eq(UPLOAD_QUALITY_SAMPLING_RATE),
+            creationSampleRate = anyOrNull()
+        )
+
+        assertThat(additionalPropertiesCaptor.firstValue)
+            .containsExactlyInAnyOrderEntriesOf(expectedAdditionalProperties)
     }
 
     // endregion

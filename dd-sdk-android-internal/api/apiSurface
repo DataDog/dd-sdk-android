@@ -28,17 +28,17 @@ sealed class com.datadog.android.internal.telemetry.InternalTelemetryEvent
     class AddViewLoadingTime : ApiUsage
       constructor(Boolean, Boolean, Boolean, MutableMap<String, Any?> = mutableMapOf())
   object InterceptorInstantiated : InternalTelemetryEvent
-enum com.datadog.android.internal.telemetry.UploadQualityCategories
+enum com.datadog.android.internal.telemetry.UploadQualityCategory
   - COUNT
   - BLOCKER
   - FAILURE
-enum com.datadog.android.internal.telemetry.UploadQualityBlockers
+enum com.datadog.android.internal.telemetry.UploadQualityBlocker
   constructor(String)
   - LOW_BATTERY
   - LOW_POWER_MODE
   - OFFLINE
 data class com.datadog.android.internal.telemetry.UploadQualityEvent
-  constructor(String, UploadQualityCategories, String?)
+  constructor(String, UploadQualityCategory, Int, String? = null, List<String> = emptyList())
 fun ByteArray.toHexString(): String
 object com.datadog.android.internal.utils.ImageViewUtils
   fun resolveParentRectAbsPosition(android.view.View, Boolean = true): android.graphics.Rect

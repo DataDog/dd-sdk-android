@@ -6,10 +6,6 @@
 
 package com.datadog.android.rum.internal.metric
 
-internal enum class UploadQualityMetric(val key: String) {
-    UPLOAD_METRIC_KEY("upload_quality"),
-    FAILURE_COUNT_KEY("failure_count"),
-    BLOCKERS_COUNT_KEY("blockers_count"),
-    BLOCKER_KEY("blocker"),
-    CYCLE_COUNT_KEY("cycle_count")
+internal enum class UploadCycleMetric(val key: String) {
+    NAME_KEY("upload_cycle")
 }

@@ -35,6 +35,7 @@ import com.datadog.android.event.EventMapper
 import com.datadog.android.event.MapperSerializer
 import com.datadog.android.event.NoOpEventMapper
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
+import com.datadog.android.internal.telemetry.UploadQualityCategory
 import com.datadog.android.internal.telemetry.UploadQualityEvent
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumErrorSource
@@ -53,6 +54,8 @@ import com.datadog.android.rum.internal.instrumentation.UserActionTrackingStrate
 import com.datadog.android.rum.internal.instrumentation.UserActionTrackingStrategyLegacy
 import com.datadog.android.rum.internal.instrumentation.gestures.DatadogGesturesTracker
 import com.datadog.android.rum.internal.metric.SessionEndedMetricDispatcher
+import com.datadog.android.rum.internal.metric.UploadBlockerMetric
+import com.datadog.android.rum.internal.metric.ViewEndedMetricDispatcher.Companion.KEY_METRIC_TYPE
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.internal.monitor.DatadogRumMonitor
 import com.datadog.android.rum.internal.net.RumRequestFactory
@@ -316,9 +319,21 @@ internal class RumFeature(
     }
 
     private fun handleUploadQualityEvent(event: UploadQualityEvent) {
-        GlobalRumMonitor.get(sdkCore).getCurrentSessionId { sessionId ->
-            sessionId?.let {
-                sessionEndedMetricDispatcher.onUploadQualityEventReceived(it, event)
+        when (event.category) {
+            UploadQualityCategory.COUNT -> {
+                GlobalRumMonitor.get(sdkCore).getCurrentSessionId { sessionId ->
+                    sessionId?.let {
+                        sessionEndedMetricDispatcher.onUploadQualityEventReceived(it, event)
+                    }
+                }
+            }
+            else -> {
+                val uploadQualityMap = resolveUploadBlockerProperties(event)
+                sdkCore.internalLogger.logMetric(
+                    messageBuilder = { UploadBlockerMetric.METRICS_KEY.key },
+                    additionalProperties = uploadQualityMap,
+                    samplingRate = UPLOAD_QUALITY_SAMPLING_RATE
+                )
             }
         }
     }
@@ -409,6 +424,22 @@ internal class RumFeature(
                 e
             )
         }
+    }
+
+    private fun resolveUploadBlockerProperties(event: UploadQualityEvent): Map<String, Any?> {
+        val properties = mutableMapOf<String, Any?> (
+            KEY_METRIC_TYPE to UploadBlockerMetric.BATCH_BLOCKED_KEY.key,
+            UploadBlockerMetric.TRACK_KEY.key to event.track,
+            UploadBlockerMetric.UPLOAD_DELAY_KEY.key to event.uploadDelay
+        )
+
+        if (event.category == UploadQualityCategory.BLOCKER) {
+            properties[UploadBlockerMetric.BLOCKERS_KEY.key] = event.blockers
+        } else if (event.category == UploadQualityCategory.FAILURE) {
+            properties[UploadBlockerMetric.FAILURE_KEY.key] = event.failure
+        }
+
+        return properties.toMap()
     }
 
     private fun registerTrackingStrategies(appContext: Context) {
@@ -653,6 +684,8 @@ internal class RumFeature(
                 " SDK instance by calling SdkCore#registerFeature method."
         internal const val FAILED_TO_ENABLE_JANK_STATS_TRACKING_MANUALLY =
             "Manually enabling JankStats tracking threw an exception."
+
+        internal const val UPLOAD_QUALITY_SAMPLING_RATE = 1.5f
 
         private fun provideUserTrackingStrategy(
             touchTargetExtraAttributesProviders: Array<ViewAttributesProvider>,

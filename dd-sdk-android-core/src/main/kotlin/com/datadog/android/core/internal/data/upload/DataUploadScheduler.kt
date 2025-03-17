@@ -26,7 +26,7 @@ internal class DataUploadScheduler(
     maxBatchesPerJob: Int,
     private val scheduledThreadPoolExecutor: ScheduledThreadPoolExecutor,
     private val internalLogger: InternalLogger,
-    private val uploadQualityListener: UploadQualityListener
+    uploadQualityListener: UploadQualityListener
 ) : UploadScheduler {
 
     internal val runnable = DataUploadRunnable(
