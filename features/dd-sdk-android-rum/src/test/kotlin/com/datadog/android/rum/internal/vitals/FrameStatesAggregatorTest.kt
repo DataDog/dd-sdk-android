@@ -430,15 +430,12 @@ internal class FrameStatesAggregatorTest {
         internalLogger: InternalLogger = mockInternalLogger,
         jankStatsProvider: JankStatsProvider = mockJankStatsProvider,
         buildSdkVersionProvider: BuildSdkVersionProvider = mockBuildSdkVersionProvider
-    ): FrameStatesAggregator {
-        return FrameStatesAggregator(
-            internalLogger,
-            jankStatsProvider,
-            buildSdkVersionProvider
-        ).also {
-            delegates.forEach { delegate -> it.addListener(delegate) }
-        }
-    }
+    ) = FrameStatesAggregator(
+        delegates,
+        internalLogger,
+        jankStatsProvider,
+        buildSdkVersionProvider
+    )
 
     companion object {
         const val ONE_MILLISECOND_NS: Long = 1000L * 1000L

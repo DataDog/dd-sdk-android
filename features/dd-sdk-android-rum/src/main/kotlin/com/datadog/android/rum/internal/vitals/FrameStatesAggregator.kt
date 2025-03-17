@@ -32,12 +32,12 @@ import java.util.WeakHashMap
  * Utility class listening to frame rate information.
  */
 internal class FrameStatesAggregator(
+    internal val frameStateListeners: List<FrameStateListener>,
     private val internalLogger: InternalLogger,
     private val jankStatsProvider: JankStatsProvider = JankStatsProvider.DEFAULT,
     private var buildSdkVersionProvider: BuildSdkVersionProvider = BuildSdkVersionProvider.DEFAULT
 ) : ActivityLifecycleCallbacks, JankStats.OnFrameListener {
 
-    internal val frameStateListeners = mutableListOf<FrameStateListener>()
     internal val activeWindowsListener = WeakHashMap<Window, JankStats>()
 
     internal val activeActivities = WeakHashMap<Window, MutableList<WeakReference<Activity>>>()
@@ -154,6 +154,8 @@ internal class FrameStatesAggregator(
     // region JankStats.OnFrameListener
 
     override fun onFrame(volatileFrameData: FrameData) {
+        // This method is called pretty often and forEach{} gonna create iterator instance each time.
+        // To reduce gc pressure we use for-loop iteration here:
         for (i in frameStateListeners.indices) {
             frameStateListeners[i].onFrame(volatileFrameData)
         }
@@ -162,12 +164,6 @@ internal class FrameStatesAggregator(
     // endregion
 
     // region Internal
-    fun addListener(listener: FrameStateListener?) {
-        if (listener != null) {
-            frameStateListeners.add(listener)
-        }
-    }
-
     private fun trackActivity(window: Window, activity: Activity) {
         val list = activeActivities[window] ?: mutableListOf()
         if (list.find { it.get() == activity } != null) {
@@ -289,6 +285,8 @@ internal class FrameStatesAggregator(
             frameMetrics: FrameMetrics,
             dropCountSinceLastInvocation: Int
         ) {
+            // This method is called pretty often and forEach{} gonna create iterator instance each time.
+            // To reduce gc pressure we use for-loop iteration here:
             for (i in frameStateListeners.indices) {
                 frameStateListeners[i].onFrameMetricsData(
                     frameMetricsData.update(

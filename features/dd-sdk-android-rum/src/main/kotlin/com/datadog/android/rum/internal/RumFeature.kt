@@ -65,6 +65,7 @@ import com.datadog.android.rum.internal.tracking.UserActionTrackingStrategy
 import com.datadog.android.rum.internal.vitals.AggregatingVitalMonitor
 import com.datadog.android.rum.internal.vitals.CPUVitalReader
 import com.datadog.android.rum.internal.vitals.FPSVitalListener
+import com.datadog.android.rum.internal.vitals.FrameStateListener
 import com.datadog.android.rum.internal.vitals.FrameStatesAggregator
 import com.datadog.android.rum.internal.vitals.MemoryVitalReader
 import com.datadog.android.rum.internal.vitals.NoOpVitalMonitor
@@ -188,11 +189,13 @@ internal class RumFeature(
         val frequency = configuration.vitalsMonitorUpdateFrequency
         val slowFrameListenerConfiguration = configuration.slowFramesConfiguration
         if (frequency != VitalsUpdateFrequency.NEVER || slowFrameListenerConfiguration != null) {
-            frameStatesAggregator = initializeFrameStatesAggregator(appContext as? Application)
-                .also { frameStatesAggregator ->
-                    initializeSlowFrameListener(slowFrameListenerConfiguration, frameStatesAggregator)
-                    initializeVitalMonitors(frequency, frameStatesAggregator)
-                }
+            initializeFrameStatesAggregator(
+                application = appContext as? Application,
+                listeners = listOfNotNull(
+                    initializeSlowFrameListener(slowFrameListenerConfiguration),
+                    initializeVitalMonitors(frequency)
+                )
+            )
         }
 
         if (configuration.trackNonFatalAnrs) {
@@ -208,16 +211,17 @@ internal class RumFeature(
         initialized.set(true)
     }
 
-    private fun initializeFrameStatesAggregator(application: Application?): FrameStatesAggregator {
-        val frameStatesAggregator = FrameStatesAggregator(sdkCore.internalLogger)
+    private fun initializeFrameStatesAggregator(
+        application: Application?,
+        listeners: List<FrameStateListener>
+    ) {
+        frameStatesAggregator = FrameStatesAggregator(listeners, sdkCore.internalLogger)
         application?.registerActivityLifecycleCallbacks(frameStatesAggregator)
-        return frameStatesAggregator
     }
 
     private fun initializeSlowFrameListener(
-        slowFramesConfiguration: SlowFramesConfiguration?,
-        frameStatesAggregator: FrameStatesAggregator
-    ) {
+        slowFramesConfiguration: SlowFramesConfiguration?
+    ): FrameStateListener? {
         slowFramesListener = if (slowFramesConfiguration != null) {
             sdkCore.internalLogger.log(
                 InternalLogger.Level.INFO,
@@ -234,7 +238,7 @@ internal class RumFeature(
             null
         }
 
-        frameStatesAggregator.addListener(slowFramesListener)
+        return slowFramesListener
     }
 
     override val requestFactory: RequestFactory by lazy {
@@ -454,22 +458,18 @@ internal class RumFeature(
     }
 
     private fun initializeVitalMonitors(
-        frequency: VitalsUpdateFrequency,
-        frameStatesAggregator: FrameStatesAggregator
-    ) {
+        frequency: VitalsUpdateFrequency
+    ): FrameStateListener? {
         if (frequency == VitalsUpdateFrequency.NEVER) {
-            return
+            return null
         }
         cpuVitalMonitor = AggregatingVitalMonitor()
         memoryVitalMonitor = AggregatingVitalMonitor()
         frameRateVitalMonitor = AggregatingVitalMonitor()
-        initializeVitalReaders(frequency.periodInMs, frameStatesAggregator)
+        return initializeVitalReaders(frequency.periodInMs)
     }
 
-    private fun initializeVitalReaders(
-        periodInMs: Long,
-        frameStatesAggregator: FrameStatesAggregator
-    ) {
+    private fun initializeVitalReaders(periodInMs: Long): FrameStateListener {
         @Suppress("UnsafeThirdPartyFunctionCall") // pool size can't be <= 0
         vitalExecutorService = sdkCore.createScheduledExecutorService("rum-vital")
 
@@ -483,7 +483,7 @@ internal class RumFeature(
             memoryVitalMonitor,
             periodInMs
         )
-        frameStatesAggregator.addListener(FPSVitalListener(frameRateVitalMonitor))
+        return FPSVitalListener(frameRateVitalMonitor)
     }
 
     private fun initializeVitalMonitor(
