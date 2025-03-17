@@ -39,6 +39,7 @@ internal class DataUploadRunnable(
 ) : UploadRunnable {
 
     private var delayMs: Long = 0
+    private var batchConsumerAvailableAttempts: Int = 0
 
     //  region Runnable
 
@@ -51,7 +52,7 @@ internal class DataUploadRunnable(
 
         if (isNetworkAvailable() && isSystemReady()) {
             val context = contextProvider.context
-            var batchConsumerAvailableAttempts = maxBatchesPerJob
+            batchConsumerAvailableAttempts = maxBatchesPerJob
             do {
                 batchConsumerAvailableAttempts--
                 lastBatchUploadStatus = handleNextBatch(context)
@@ -119,6 +120,7 @@ internal class DataUploadRunnable(
                 UploadQualityEvent.UploadQualityBlockerEvent(
                     track = featureName,
                     uploadDelay = delayMs.toInt(),
+                    batchCount = batchConsumerAvailableAttempts,
                     blockers = blockersList
                 )
             )
@@ -172,6 +174,7 @@ internal class DataUploadRunnable(
                 UploadQualityEvent.UploadQualityFailureEvent(
                     track = featureName,
                     uploadDelay = delayMs.toInt(),
+                    batchCount = batchConsumerAvailableAttempts,
                     failure = status.code.toString()
                 )
             )

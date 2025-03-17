@@ -104,6 +104,9 @@ internal class DataUploadRunnableTest {
     @StringForgery
     lateinit var fakeFeatureName: String
 
+    @IntForgery
+    var fakeBatchCount: Int = 0
+
     private lateinit var testedRunnable: DataUploadRunnable
 
     @BeforeEach
@@ -750,13 +753,13 @@ internal class DataUploadRunnableTest {
             verify(mockUploadQualityListener, times(2)).onUploadQualityEvent(
                 event = capture()
             )
-            val firstEvent = firstValue as? UploadQualityEvent.UploadQualityCountEvent
-            val secondEvent = secondValue as? UploadQualityEvent.UploadQualityFailureEvent
+            val firstEvent = firstValue as UploadQualityEvent.UploadQualityCountEvent
+            val secondEvent = secondValue as UploadQualityEvent.UploadQualityFailureEvent
 
-            assertThat(firstEvent?.track).isEqualTo(fakeFeatureName)
+            assertThat(firstEvent.track).isEqualTo(fakeFeatureName)
 
-            assertThat(secondEvent?.track).isEqualTo(fakeFeatureName)
-            assertThat(secondEvent?.failure).isEqualTo(mockUploadStatus.code.toString())
+            assertThat(secondEvent.track).isEqualTo(fakeFeatureName)
+            assertThat(secondEvent.failure).isEqualTo(mockUploadStatus.code.toString())
         }
     }
 
@@ -800,8 +803,8 @@ internal class DataUploadRunnableTest {
         // Then
         argumentCaptor<UploadQualityEvent> {
             verify(mockUploadQualityListener, times(1)).onUploadQualityEvent(event = capture())
-            val firstEvent = firstValue as? UploadQualityEvent
-            assertThat(firstEvent?.track).isEqualTo(fakeFeatureName)
+            val firstEvent = firstValue as UploadQualityEvent.UploadQualityCountEvent
+            assertThat(firstEvent.track).isEqualTo(fakeFeatureName)
         }
     }
 
@@ -861,6 +864,7 @@ internal class DataUploadRunnableTest {
         val expectedBlocker = UploadQualityEvent.UploadQualityBlockerEvent(
             track = fakeFeatureName,
             uploadDelay = 0,
+            batchCount = fakeBatchCount,
             blockers = listOf(UploadQualityBlocker.OFFLINE.key)
         )
 
@@ -927,6 +931,7 @@ internal class DataUploadRunnableTest {
         val expectedBlocker = UploadQualityEvent.UploadQualityBlockerEvent(
             track = fakeFeatureName,
             uploadDelay = 0,
+            batchCount = fakeBatchCount,
             blockers = listOf(UploadQualityBlocker.LOW_BATTERY.key)
         )
 
@@ -996,6 +1001,7 @@ internal class DataUploadRunnableTest {
         val expectedBlockers = UploadQualityEvent.UploadQualityBlockerEvent(
             track = fakeFeatureName,
             uploadDelay = 0,
+            batchCount = fakeBatchCount,
             blockers = listOf(
                 UploadQualityBlocker.LOW_BATTERY.key,
                 UploadQualityBlocker.LOW_POWER_MODE.key
@@ -1010,7 +1016,7 @@ internal class DataUploadRunnableTest {
         assertThat(secondEvent.blockers).isEqualTo(expectedBlockers.blockers)
     }
 
-// endregion
+    // endregion
 
     companion object {
 

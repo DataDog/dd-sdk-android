@@ -7,25 +7,9 @@
 package com.datadog.android.internal.telemetry
 
 /**
- * The different categories of upload quality events.
- * - COUNT: The number of uploads.
- * - BLOCKER: The count of different blockers that prevented an upload.
- * - FAILURE: The count of different failure codes.
- */
-enum class UploadQualityCategory {
-    COUNT,
-    BLOCKER,
-    FAILURE
-}
-
-/**
  * The different types of blockers that can prevent an upload.
  *
  * @param key The key to be used for the blocker when we send telemetry.
- *
- * - LOW_BATTERY: The device has low battery.
- * - LOW_POWER_MODE: The device is in power save mode.
- * - OFFLINE: The device is offline.
  */
 enum class UploadQualityBlocker(val key: String) {
     LOW_BATTERY("low_battery"),
@@ -44,6 +28,11 @@ sealed class UploadQualityEvent(
     val track: String,
     val uploadDelay: Int
 ) {
+    /**
+     * Event to report the count of the uploads that are being sent.
+     * @param track The track of the event (e.g. rum, logs, traces).
+     * @param uploadDelay The current backoff delay in milliseconds between
+     */
     class UploadQualityCountEvent(
         track: String,
         uploadDelay: Int
@@ -52,18 +41,35 @@ sealed class UploadQualityEvent(
         uploadDelay = uploadDelay
     )
 
+    /**
+     * Event to report the blockers that are preventing an upload.
+     * @param track The track of the event (e.g. rum, logs, traces).
+     * @param uploadDelay The current backoff delay in milliseconds between
+     * @param batchCount The number of batches that are being blocked.
+     * @param blockers The list of blockers that are preventing the upload
+     * The possible blockers are - low power mode, low battery, offline.
+     */
     class UploadQualityBlockerEvent(
         track: String,
         uploadDelay: Int,
+        val batchCount: Int,
         val blockers: List<String>
     ) : UploadQualityEvent(
         track = track,
         uploadDelay = uploadDelay
     )
 
+    /**
+     * Event to report the failure of an upload.
+     * @param track The track of the event (e.g. rum, logs, traces).
+     * @param uploadDelay The current backoff delay in milliseconds between
+     * @param batchCount The number of batches that blocked by the failure.
+     * @param failure The status code for the failure.
+     */
     class UploadQualityFailureEvent(
         track: String,
         uploadDelay: Int,
+        val batchCount: Int,
         val failure: String
     ) : UploadQualityEvent(
         track = track,

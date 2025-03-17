@@ -12,5 +12,6 @@ internal enum class UploadBlockerMetric(val key: String) {
     BATCH_BLOCKED_KEY("batch blocked"),
     FAILURE_KEY("failure"),
     BLOCKERS_KEY("blockers"),
-    UPLOAD_DELAY_KEY("upload_delay")
+    UPLOAD_DELAY_KEY("upload_delay.current"),
+    BATCH_COUNT_KEY("batch_count") // Key for number of batches that were blocked
 }

@@ -433,8 +433,10 @@ internal class RumFeature(
         )
 
         if (event is UploadQualityEvent.UploadQualityBlockerEvent) {
+            properties[UploadBlockerMetric.BATCH_COUNT_KEY.key] = event.batchCount
             properties[UploadBlockerMetric.BLOCKERS_KEY.key] = event.blockers
         } else if (event is UploadQualityEvent.UploadQualityFailureEvent) {
+            properties[UploadBlockerMetric.BATCH_COUNT_KEY.key] = event.batchCount
             properties[UploadBlockerMetric.FAILURE_KEY.key] = event.failure
         }
 

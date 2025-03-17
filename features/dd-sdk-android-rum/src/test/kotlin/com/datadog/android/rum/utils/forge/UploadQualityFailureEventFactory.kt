@@ -15,6 +15,7 @@ class UploadQualityFailureEventFactory : ForgeryFactory<UploadQualityEvent.Uploa
         return UploadQualityEvent.UploadQualityFailureEvent(
             track = forge.aTrack(),
             uploadDelay = forge.anInt(min = 0),
+            batchCount = forge.anInt(min = 0),
             failure = forge.aNumericalString(size = 3)
         )
     }

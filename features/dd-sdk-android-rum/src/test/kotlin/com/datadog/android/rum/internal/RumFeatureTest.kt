@@ -147,6 +147,7 @@ internal class RumFeatureTest {
         whenever(mockSdkCore.createScheduledExecutorService(any())) doReturn mockScheduledExecutorService
 
         doAnswer { invocation ->
+            @Suppress("UNCHECKED_CAST")
             val callback = invocation.arguments[0] as (String?) -> Unit
             callback(fakeSessionId)
         }.whenever(mockRumMonitor).getCurrentSessionId(any())
@@ -572,9 +573,10 @@ internal class RumFeatureTest {
         // Given
         val activity: Activity = mock()
         testedFeature = RumFeature(
-            mockSdkCore,
-            fakeApplicationId.toString(),
-            fakeConfiguration,
+            sdkCore = mockSdkCore,
+            applicationId = fakeApplicationId.toString(),
+            configuration = fakeConfiguration,
+            sessionEndedMetricDispatcher = mockSessionEndedMetricDispatcher,
             lateCrashReporterFactory = { mockLateCrashReporter }
         )
         val mockJankStatsActivityLifecycleListener = mock<JankStatsActivityLifecycleListener>()
@@ -1298,6 +1300,7 @@ internal class RumFeatureTest {
         testedFeature.onInitialize(appContext.mockInstance)
 
         doAnswer { invocation ->
+            @Suppress("UNCHECKED_CAST")
             val callback = invocation.arguments[0] as (String?) -> Unit
             callback(null)
         }.whenever(mockRumMonitor).getCurrentSessionId(any())
@@ -1322,8 +1325,9 @@ internal class RumFeatureTest {
         // Then
         val expectedAdditionalProperties = mapOf(
             KEY_METRIC_TYPE to UploadBlockerMetric.BATCH_BLOCKED_KEY.key,
-            "track" to fakeUploadQualityBlockerEvent.track,
-            "upload_delay" to fakeUploadQualityBlockerEvent.uploadDelay,
+            UploadBlockerMetric.TRACK_KEY.key to fakeUploadQualityBlockerEvent.track,
+            UploadBlockerMetric.UPLOAD_DELAY_KEY.key to fakeUploadQualityBlockerEvent.uploadDelay,
+            UploadBlockerMetric.BATCH_COUNT_KEY.key to fakeUploadQualityBlockerEvent.batchCount,
             UploadBlockerMetric.BLOCKERS_KEY.key to fakeUploadQualityBlockerEvent.blockers
         )
 
@@ -1352,8 +1356,9 @@ internal class RumFeatureTest {
         // Then
         val expectedAdditionalProperties = mapOf(
             KEY_METRIC_TYPE to UploadBlockerMetric.BATCH_BLOCKED_KEY.key,
-            "track" to fakeUploadQualityFailureEvent.track,
-            "upload_delay" to fakeUploadQualityFailureEvent.uploadDelay,
+            UploadBlockerMetric.TRACK_KEY.key to fakeUploadQualityFailureEvent.track,
+            UploadBlockerMetric.UPLOAD_DELAY_KEY.key to fakeUploadQualityFailureEvent.uploadDelay,
+            UploadBlockerMetric.BATCH_COUNT_KEY.key to fakeUploadQualityFailureEvent.batchCount,
             UploadBlockerMetric.FAILURE_KEY.key to fakeUploadQualityFailureEvent.failure
         )
 
