@@ -36,6 +36,9 @@ class ApiSurfacePlugin : Plugin<Project> {
                 this.kotlinSurfaceFile = kotlinSurfaceFile
                 this.javaSurfaceFile = javaSurfaceFile
                 dependsOn(TASK_GEN_KOTLIN_API_SURFACE)
+                if (target.plugins.hasPlugin(GEN_JAVA_API_LAYOUT_PLUGIN)) {
+                    dependsOn(TASK_GEN_JAVA_API_SURFACE)
+                }
             }
 
         target.taskConfig<KotlinCompile> {

@@ -51,12 +51,7 @@ internal class RumRequestFactory(
                 idempotencyKey,
                 context
             ),
-            body = viewEventFilter.filterOutRedundantViewEvents(batchData)
-                .map { it.data }
-                .join(
-                    separator = PAYLOAD_SEPARATOR,
-                    internalLogger = internalLogger
-                ),
+            body = body,
             contentType = RequestFactory.CONTENT_TYPE_TEXT_UTF8
         )
     }

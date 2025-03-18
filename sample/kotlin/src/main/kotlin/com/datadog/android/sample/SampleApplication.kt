@@ -153,9 +153,6 @@ class SampleApplication : Application() {
             preferences.getTrackingConsent()
         )
 
-        val rumConfig = createRumConfiguration()
-        Rum.enable(rumConfig)
-
         initializeSessionReplay()
         initializeLogs()
         initializeTraces()
@@ -169,6 +166,10 @@ class SampleApplication : Application() {
                 .setService(BuildConfig.APPLICATION_ID)
                 .build()
         )
+
+        val rumConfig = createRumConfiguration()
+        Rum.enable(rumConfig)
+
         GlobalOpenTelemetry.set(object : OpenTelemetry {
             private val tracerProvider = OtelTracerProvider.Builder()
                 .setService(BuildConfig.APPLICATION_ID)
@@ -316,6 +317,7 @@ class SampleApplication : Application() {
                 event
             }
             .trackBackgroundEvents(true)
+            .trackAnonymousUser(true)
             .build()
     }
 
