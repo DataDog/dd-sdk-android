@@ -21,12 +21,17 @@ import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import com.datadog.android.event.EventMapper
 import com.datadog.android.event.MapperSerializer
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
+import com.datadog.android.internal.telemetry.UploadQualityEvent
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.assertj.RumFeatureAssert
 import com.datadog.android.rum.configuration.VitalsUpdateFrequency
+import com.datadog.android.rum.internal.RumFeature.Companion.UPLOAD_QUALITY_SAMPLING_RATE
 import com.datadog.android.rum.internal.domain.RumDataWriter
 import com.datadog.android.rum.internal.domain.event.RumEventMapper
+import com.datadog.android.rum.internal.metric.SessionEndedMetricDispatcher
+import com.datadog.android.rum.internal.metric.UploadBlockerMetric
+import com.datadog.android.rum.internal.metric.ViewEndedMetricDispatcher.Companion.KEY_METRIC_TYPE
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.internal.monitor.NoOpAdvancedRumMonitor
 import com.datadog.android.rum.internal.thread.NoOpScheduledExecutorService
@@ -76,6 +81,8 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
+import org.mockito.kotlin.argThat
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
@@ -113,6 +120,9 @@ internal class RumFeatureTest {
     @Forgery
     lateinit var fakeConfiguration: RumFeature.Configuration
 
+    @StringForgery
+    lateinit var fakeSessionId: String
+
     @Mock
     lateinit var mockSdkCore: InternalSdkCore
 
@@ -121,6 +131,9 @@ internal class RumFeatureTest {
 
     @Mock
     lateinit var mockInternalLogger: InternalLogger
+
+    @Mock
+    lateinit var mockSessionEndedMetricDispatcher: SessionEndedMetricDispatcher
 
     @Mock
     lateinit var mockLateCrashReporter: LateCrashReporter
@@ -133,10 +146,17 @@ internal class RumFeatureTest {
         whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
         whenever(mockSdkCore.createScheduledExecutorService(any())) doReturn mockScheduledExecutorService
 
+        doAnswer { invocation ->
+            @Suppress("UNCHECKED_CAST")
+            val callback = invocation.arguments[0] as (String?) -> Unit
+            callback(fakeSessionId)
+        }.whenever(mockRumMonitor).getCurrentSessionId(any())
+
         testedFeature = RumFeature(
-            mockSdkCore,
-            fakeApplicationId.toString(),
-            fakeConfiguration,
+            sdkCore = mockSdkCore,
+            applicationId = fakeApplicationId.toString(),
+            configuration = fakeConfiguration,
+            sessionEndedMetricDispatcher = mockSessionEndedMetricDispatcher,
             lateCrashReporterFactory = { mockLateCrashReporter }
         )
         GlobalRumMonitor.registerIfAbsent(mockRumMonitor, mockSdkCore)
@@ -212,9 +232,10 @@ internal class RumFeatureTest {
         fakeConfiguration =
             fakeConfiguration.copy(viewTrackingStrategy = mockViewTrackingStrategy)
         testedFeature = RumFeature(
-            mockSdkCore,
-            fakeApplicationId.toString(),
-            fakeConfiguration,
+            sdkCore = mockSdkCore,
+            applicationId = fakeApplicationId.toString(),
+            configuration = fakeConfiguration,
+            sessionEndedMetricDispatcher = mockSessionEndedMetricDispatcher,
             lateCrashReporterFactory = { mockLateCrashReporter }
         )
 
@@ -232,9 +253,10 @@ internal class RumFeatureTest {
         fakeConfiguration =
             fakeConfiguration.copy(userActionTracking = false)
         testedFeature = RumFeature(
-            mockSdkCore,
-            fakeApplicationId.toString(),
-            fakeConfiguration,
+            sdkCore = mockSdkCore,
+            applicationId = fakeApplicationId.toString(),
+            configuration = fakeConfiguration,
+            sessionEndedMetricDispatcher = mockSessionEndedMetricDispatcher,
             lateCrashReporterFactory = { mockLateCrashReporter }
         )
 
@@ -259,9 +281,10 @@ internal class RumFeatureTest {
             touchTargetExtraAttributesProviders = mockProviders.toList()
         )
         testedFeature = RumFeature(
-            mockSdkCore,
-            fakeApplicationId.toString(),
-            fakeConfiguration,
+            sdkCore = mockSdkCore,
+            applicationId = fakeApplicationId.toString(),
+            configuration = fakeConfiguration,
+            sessionEndedMetricDispatcher = mockSessionEndedMetricDispatcher,
             lateCrashReporterFactory = { mockLateCrashReporter }
         )
 
@@ -281,9 +304,10 @@ internal class RumFeatureTest {
             userActionTracking = true
         )
         testedFeature = RumFeature(
-            mockSdkCore,
-            fakeApplicationId.toString(),
-            fakeConfiguration,
+            sdkCore = mockSdkCore,
+            applicationId = fakeApplicationId.toString(),
+            configuration = fakeConfiguration,
+            sessionEndedMetricDispatcher = mockSessionEndedMetricDispatcher,
             lateCrashReporterFactory = { mockLateCrashReporter }
         )
 
@@ -305,9 +329,10 @@ internal class RumFeatureTest {
             interactionPredicate = mockInteractionPredicate
         )
         testedFeature = RumFeature(
-            mockSdkCore,
-            fakeApplicationId.toString(),
-            fakeConfiguration,
+            sdkCore = mockSdkCore,
+            applicationId = fakeApplicationId.toString(),
+            configuration = fakeConfiguration,
+            sessionEndedMetricDispatcher = mockSessionEndedMetricDispatcher,
             lateCrashReporterFactory = { mockLateCrashReporter }
         )
 
@@ -328,9 +353,10 @@ internal class RumFeatureTest {
             interactionPredicate = NoOpInteractionPredicate()
         )
         testedFeature = RumFeature(
-            mockSdkCore,
-            fakeApplicationId.toString(),
-            fakeConfiguration,
+            sdkCore = mockSdkCore,
+            applicationId = fakeApplicationId.toString(),
+            configuration = fakeConfiguration,
+            sessionEndedMetricDispatcher = mockSessionEndedMetricDispatcher,
             lateCrashReporterFactory = { mockLateCrashReporter }
         )
 
@@ -357,9 +383,10 @@ internal class RumFeatureTest {
             touchTargetExtraAttributesProviders = mockProviders.toList()
         )
         testedFeature = RumFeature(
-            mockSdkCore,
-            fakeApplicationId.toString(),
-            fakeConfiguration,
+            sdkCore = mockSdkCore,
+            applicationId = fakeApplicationId.toString(),
+            configuration = fakeConfiguration,
+            sessionEndedMetricDispatcher = mockSessionEndedMetricDispatcher,
             lateCrashReporterFactory = { mockLateCrashReporter }
         )
 
@@ -388,9 +415,10 @@ internal class RumFeatureTest {
     fun `M use noop viewTrackingStrategy W initialize()`() {
         // Given
         testedFeature = RumFeature(
-            mockSdkCore,
-            fakeApplicationId.toString(),
-            fakeConfiguration.copy(viewTrackingStrategy = null),
+            sdkCore = mockSdkCore,
+            applicationId = fakeApplicationId.toString(),
+            configuration = fakeConfiguration.copy(viewTrackingStrategy = null),
+            sessionEndedMetricDispatcher = mockSessionEndedMetricDispatcher,
             lateCrashReporterFactory = { mockLateCrashReporter }
         )
 
@@ -407,9 +435,10 @@ internal class RumFeatureTest {
         // Given
         fakeConfiguration = fakeConfiguration.copy(userActionTracking = false)
         testedFeature = RumFeature(
-            mockSdkCore,
-            fakeApplicationId.toString(),
-            fakeConfiguration,
+            sdkCore = mockSdkCore,
+            applicationId = fakeApplicationId.toString(),
+            configuration = fakeConfiguration,
+            sessionEndedMetricDispatcher = mockSessionEndedMetricDispatcher,
             lateCrashReporterFactory = { mockLateCrashReporter }
         )
 
@@ -426,9 +455,10 @@ internal class RumFeatureTest {
         // Given
         fakeConfiguration = fakeConfiguration.copy(longTaskTrackingStrategy = null)
         testedFeature = RumFeature(
-            mockSdkCore,
-            fakeApplicationId.toString(),
-            fakeConfiguration,
+            sdkCore = mockSdkCore,
+            applicationId = fakeApplicationId.toString(),
+            configuration = fakeConfiguration,
+            sessionEndedMetricDispatcher = mockSessionEndedMetricDispatcher,
             lateCrashReporterFactory = { mockLateCrashReporter }
         )
 
@@ -444,9 +474,10 @@ internal class RumFeatureTest {
     fun `M store eventMapper W initialize()`() {
         // Given
         testedFeature = RumFeature(
-            mockSdkCore,
-            fakeApplicationId.toString(),
-            fakeConfiguration,
+            sdkCore = mockSdkCore,
+            applicationId = fakeApplicationId.toString(),
+            configuration = fakeConfiguration,
+            sessionEndedMetricDispatcher = mockSessionEndedMetricDispatcher,
             lateCrashReporterFactory = { mockLateCrashReporter }
         )
 
@@ -483,9 +514,10 @@ internal class RumFeatureTest {
         // Given
         fakeConfiguration = fakeConfiguration.copy(vitalsMonitorUpdateFrequency = fakeFrequency)
         testedFeature = RumFeature(
-            mockSdkCore,
-            fakeApplicationId.toString(),
-            fakeConfiguration,
+            sdkCore = mockSdkCore,
+            applicationId = fakeApplicationId.toString(),
+            configuration = fakeConfiguration,
+            sessionEndedMetricDispatcher = mockSessionEndedMetricDispatcher,
             lateCrashReporterFactory = { mockLateCrashReporter }
         )
 
@@ -513,9 +545,10 @@ internal class RumFeatureTest {
             vitalsMonitorUpdateFrequency = VitalsUpdateFrequency.NEVER
         )
         testedFeature = RumFeature(
-            mockSdkCore,
-            fakeApplicationId.toString(),
-            fakeConfiguration,
+            sdkCore = mockSdkCore,
+            applicationId = fakeApplicationId.toString(),
+            configuration = fakeConfiguration,
+            sessionEndedMetricDispatcher = mockSessionEndedMetricDispatcher,
             lateCrashReporterFactory = { mockLateCrashReporter }
         )
 
@@ -540,9 +573,10 @@ internal class RumFeatureTest {
         // Given
         val activity: Activity = mock()
         testedFeature = RumFeature(
-            mockSdkCore,
-            fakeApplicationId.toString(),
-            fakeConfiguration,
+            sdkCore = mockSdkCore,
+            applicationId = fakeApplicationId.toString(),
+            configuration = fakeConfiguration,
+            sessionEndedMetricDispatcher = mockSessionEndedMetricDispatcher,
             lateCrashReporterFactory = { mockLateCrashReporter }
         )
         val mockJankStatsActivityLifecycleListener = mock<JankStatsActivityLifecycleListener>()
@@ -637,9 +671,10 @@ internal class RumFeatureTest {
             vitalsMonitorUpdateFrequency = fakeFrequency
         )
         testedFeature = RumFeature(
-            mockSdkCore,
-            fakeApplicationId.toString(),
-            fakeConfiguration,
+            sdkCore = mockSdkCore,
+            applicationId = fakeApplicationId.toString(),
+            configuration = fakeConfiguration,
+            sessionEndedMetricDispatcher = mockSessionEndedMetricDispatcher,
             lateCrashReporterFactory = { mockLateCrashReporter }
         )
 
@@ -666,9 +701,10 @@ internal class RumFeatureTest {
             vitalsMonitorUpdateFrequency = VitalsUpdateFrequency.NEVER
         )
         testedFeature = RumFeature(
-            mockSdkCore,
-            fakeApplicationId.toString(),
-            fakeConfiguration,
+            sdkCore = mockSdkCore,
+            applicationId = fakeApplicationId.toString(),
+            configuration = fakeConfiguration,
+            sessionEndedMetricDispatcher = mockSessionEndedMetricDispatcher,
             lateCrashReporterFactory = { mockLateCrashReporter }
         )
 
@@ -687,9 +723,10 @@ internal class RumFeatureTest {
             trackNonFatalAnrs = true
         )
         testedFeature = RumFeature(
-            mockSdkCore,
-            fakeApplicationId.toString(),
-            fakeConfiguration,
+            sdkCore = mockSdkCore,
+            applicationId = fakeApplicationId.toString(),
+            configuration = fakeConfiguration,
+            sessionEndedMetricDispatcher = mockSessionEndedMetricDispatcher,
             lateCrashReporterFactory = { mockLateCrashReporter }
         )
 
@@ -708,9 +745,10 @@ internal class RumFeatureTest {
             trackNonFatalAnrs = false
         )
         testedFeature = RumFeature(
-            mockSdkCore,
-            fakeApplicationId.toString(),
-            fakeConfiguration,
+            sdkCore = mockSdkCore,
+            applicationId = fakeApplicationId.toString(),
+            configuration = fakeConfiguration,
+            sessionEndedMetricDispatcher = mockSessionEndedMetricDispatcher,
             lateCrashReporterFactory = { mockLateCrashReporter }
         )
 
@@ -1231,6 +1269,109 @@ internal class RumFeatureTest {
         verify(mockRumMonitor).sendTelemetryEvent(fakeInternalTelemetryEvent)
         verifyNoMoreInteractions(mockRumMonitor)
         verifyNoInteractions(mockInternalLogger)
+    }
+
+    // endregion
+
+    // region upload quality metrics
+
+    @Test
+    fun `M call metrics dispatcher W onReceive { UploadQualityEvent Count }`(
+        @Forgery fakeUploadQualityCountEvent: UploadQualityEvent.UploadQualityCountEvent
+    ) {
+        // Given
+        testedFeature.onInitialize(appContext.mockInstance)
+
+        // When
+        testedFeature.onReceive(fakeUploadQualityCountEvent)
+
+        // Then
+        verify(mockSessionEndedMetricDispatcher).onUploadQualityEventReceived(
+            sessionId = fakeSessionId,
+            event = fakeUploadQualityCountEvent
+        )
+    }
+
+    @Test
+    fun `M not call metrics dispatcher W onReceive { UploadQualityEvent Count, no sessionId }`(
+        @Forgery fakeUploadQualityCountEvent: UploadQualityEvent.UploadQualityCountEvent
+    ) {
+        // Given
+        testedFeature.onInitialize(appContext.mockInstance)
+
+        doAnswer { invocation ->
+            @Suppress("UNCHECKED_CAST")
+            val callback = invocation.arguments[0] as (String?) -> Unit
+            callback(null)
+        }.whenever(mockRumMonitor).getCurrentSessionId(any())
+
+        // When
+        testedFeature.onReceive(fakeUploadQualityCountEvent)
+
+        // Then
+        verifyNoInteractions(mockSessionEndedMetricDispatcher)
+    }
+
+    @Test
+    fun `M send mobile metrics telemetry W onReceive { UploadQualityEvent Blocker }`(
+        @Forgery fakeUploadQualityBlockerEvent: UploadQualityEvent.UploadQualityBlockerEvent
+    ) {
+        // Given
+        testedFeature.onInitialize(appContext.mockInstance)
+
+        // When
+        testedFeature.onReceive(fakeUploadQualityBlockerEvent)
+
+        // Then
+        val expectedAdditionalProperties = mapOf(
+            KEY_METRIC_TYPE to UploadBlockerMetric.BATCH_BLOCKED_KEY.key,
+            UploadBlockerMetric.TRACK_KEY.key to fakeUploadQualityBlockerEvent.track,
+            UploadBlockerMetric.UPLOAD_DELAY_KEY.key to fakeUploadQualityBlockerEvent.uploadDelay,
+            UploadBlockerMetric.BATCH_COUNT_KEY.key to fakeUploadQualityBlockerEvent.batchCount,
+            UploadBlockerMetric.BLOCKERS_KEY.key to fakeUploadQualityBlockerEvent.blockers
+        )
+
+        val additionalPropertiesCaptor = argumentCaptor<Map<String, Any?>>()
+        verify(mockInternalLogger).logMetric(
+            messageBuilder = argThat { invoke() == UploadBlockerMetric.METRICS_KEY.key },
+            additionalProperties = additionalPropertiesCaptor.capture(),
+            samplingRate = eq(UPLOAD_QUALITY_SAMPLING_RATE),
+            creationSampleRate = anyOrNull()
+        )
+
+        assertThat(additionalPropertiesCaptor.firstValue)
+            .containsExactlyInAnyOrderEntriesOf(expectedAdditionalProperties)
+    }
+
+    @Test
+    fun `M send mobile metrics telemetry W onReceive { UploadQualityEvent Failure }`(
+        @Forgery fakeUploadQualityFailureEvent: UploadQualityEvent.UploadQualityFailureEvent
+    ) {
+        // Given
+        testedFeature.onInitialize(appContext.mockInstance)
+
+        // When
+        testedFeature.onReceive(fakeUploadQualityFailureEvent)
+
+        // Then
+        val expectedAdditionalProperties = mapOf(
+            KEY_METRIC_TYPE to UploadBlockerMetric.BATCH_BLOCKED_KEY.key,
+            UploadBlockerMetric.TRACK_KEY.key to fakeUploadQualityFailureEvent.track,
+            UploadBlockerMetric.UPLOAD_DELAY_KEY.key to fakeUploadQualityFailureEvent.uploadDelay,
+            UploadBlockerMetric.BATCH_COUNT_KEY.key to fakeUploadQualityFailureEvent.batchCount,
+            UploadBlockerMetric.FAILURE_KEY.key to fakeUploadQualityFailureEvent.failure
+        )
+
+        val additionalPropertiesCaptor = argumentCaptor<Map<String, Any?>>()
+        verify(mockInternalLogger).logMetric(
+            messageBuilder = argThat { invoke() == UploadBlockerMetric.METRICS_KEY.key },
+            additionalProperties = additionalPropertiesCaptor.capture(),
+            samplingRate = eq(UPLOAD_QUALITY_SAMPLING_RATE),
+            creationSampleRate = anyOrNull()
+        )
+
+        assertThat(additionalPropertiesCaptor.firstValue)
+            .containsExactlyInAnyOrderEntriesOf(expectedAdditionalProperties)
     }
 
     // endregion

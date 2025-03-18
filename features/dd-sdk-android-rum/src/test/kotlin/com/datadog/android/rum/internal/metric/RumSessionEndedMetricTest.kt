@@ -7,6 +7,7 @@
 package com.datadog.android.rum.internal.metric
 
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.internal.telemetry.UploadQualityEvent
 import com.datadog.android.rum.internal.domain.scope.RumSessionScope
 import com.datadog.android.rum.internal.domain.scope.RumViewManagerScope
 import com.datadog.android.rum.model.ViewEvent
@@ -20,7 +21,7 @@ import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
-import org.assertj.core.api.AssertionsForClassTypes.assertThat
+import org.assertj.core.api.Assertions.assertThat
 import org.json.JSONObject
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -330,6 +331,48 @@ class RumSessionEndedMetricTest {
         val rse = attributes[SessionEndedMetric.RSE_KEY] as Map<*, *>
         val viewCounts = rse[SessionEndedMetric.VIEW_COUNTS_KEY] as Map<*, *>
         assertThat(viewCounts[SessionEndedMetric.VIEW_COUNTS_APP_LAUNCH_KEY]).isEqualTo(appLaunchViewCount)
+    }
+
+    @Test
+    fun `M add count correctly W onUploadQualityTracked`(
+        @Forgery fakeUploadQualityCountEvent: UploadQualityEvent.UploadQualityCountEvent
+    ) {
+        // Given
+        val sessionEndedMetric = stubSessionEndedMetric()
+
+        // When
+        sessionEndedMetric.onUploadCycleIncrement(fakeUploadQualityCountEvent)
+
+        // Then
+        val attributes = sessionEndedMetric.toMetricAttributes(fakeNtpOffsetAtEnd)
+        val rse = attributes[SessionEndedMetric.RSE_KEY] as Map<*, *>
+        val uploadCycles = rse[UploadCycleMetric.NAME_KEY.key] as Map<*, *>
+        assertThat(uploadCycles[fakeUploadQualityCountEvent.track]).isEqualTo(1)
+    }
+
+    @Test
+    fun `M aggregate upload quality correctly W onUploadQualityTracked`(
+        @Forgery fakeFirstEvent: UploadQualityEvent.UploadQualityCountEvent,
+        @Forgery fakeSecondEvent: UploadQualityEvent.UploadQualityCountEvent
+    ) {
+        // Given
+        val sessionEndedMetric = stubSessionEndedMetric()
+
+        // When
+        sessionEndedMetric.onUploadCycleIncrement(fakeFirstEvent)
+        sessionEndedMetric.onUploadCycleIncrement(fakeSecondEvent)
+
+        // Then
+        val attributes = sessionEndedMetric.toMetricAttributes(fakeNtpOffsetAtEnd)
+        val rse = attributes[SessionEndedMetric.RSE_KEY] as Map<*, *>
+        val uploadCycles = rse[UploadCycleMetric.NAME_KEY.key] as Map<*, *>
+
+        if (fakeFirstEvent.track == fakeSecondEvent.track) {
+            assertThat(uploadCycles[fakeFirstEvent.track]).isEqualTo(2)
+        } else {
+            assertThat(uploadCycles[fakeFirstEvent.track]).isEqualTo(1)
+            assertThat(uploadCycles[fakeSecondEvent.track]).isEqualTo(1)
+        }
     }
 
     @Test

@@ -52,6 +52,9 @@ internal class Configurator : BaseConfigurator() {
         forge.addFactory(TelemetryViewInitializationMetricsStateForgeryFactory())
         forge.addFactory(FrameDataForgeryFactory())
         forge.addFactory(FrameMetricDataForgeryFactory())
+        forge.addFactory(UploadQualityCountEventFactory())
+        forge.addFactory(UploadQualityBlockerEventFactory())
+        forge.addFactory(UploadQualityFailureEventFactory())
 
         // Telemetry schema models
         forge.addFactory(TelemetryDebugEventForgeryFactory())

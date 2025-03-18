@@ -7,6 +7,7 @@
 package com.datadog.android.rum.internal.metric
 
 import com.datadog.android.core.metrics.PerformanceMetric
+import com.datadog.android.internal.telemetry.UploadQualityEvent
 import com.datadog.android.rum.internal.domain.scope.RumRawEvent
 import com.datadog.android.rum.internal.domain.scope.RumSessionScope
 import com.datadog.android.rum.internal.domain.scope.RumViewManagerScope
@@ -36,6 +37,8 @@ internal class SessionEndedMetric(
     private var firstTrackedView: TrackedView? = null
     private var lastTrackedView: TrackedView? = null
     private var wasStopped: Boolean = false
+
+    private val uploadCycles = mutableMapOf<String, Int>()
 
     /**
      * Called on view tracked event, return true if the view is recorded by the metric, false otherwise.
@@ -72,6 +75,12 @@ internal class SessionEndedMetric(
         missedEventCountByType[missedEventType] = (missedEventCountByType[missedEventType] ?: 0) + 1
     }
 
+    fun onUploadCycleIncrement(event: UploadQualityEvent) {
+        if (event is UploadQualityEvent.UploadQualityCountEvent) {
+            uploadCycles[event.track] = (uploadCycles[event.track] ?: 0) + 1
+        }
+    }
+
     fun onSessionReplaySkippedFrameTracked() {
         sessionReplaySkippedFramesCount.incrementAndGet()
     }
@@ -102,8 +111,15 @@ internal class SessionEndedMetric(
             NO_VIEW_EVENTS_COUNT_KEY to resolveNoViewCountsAttributes(),
             HAS_BACKGROUND_EVENTS_TRACKING_ENABLED_KEY to hasTrackBackgroundEventsEnabled,
             NTP_OFFSET_KEY to resolveNtpOffsetAttributes(ntpOffsetAtEnd),
-            SESSION_REPLAY_SKIPPED_FRAMES_COUNT to sessionReplaySkippedFramesCount.get()
+            SESSION_REPLAY_SKIPPED_FRAMES_COUNT to sessionReplaySkippedFramesCount.get(),
+            UploadCycleMetric.NAME_KEY.key to resolveUploadCycles()
         )
+    }
+
+    private fun resolveUploadCycles(): Map<String, Int> {
+        val uploadCyclesMap = uploadCycles.toMap()
+        uploadCycles.clear()
+        return uploadCyclesMap
     }
 
     private fun resolveNoViewCountsAttributes(): Map<String, Int> {

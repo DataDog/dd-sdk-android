@@ -19,6 +19,8 @@ import com.datadog.android.core.internal.persistence.BatchId
 import com.datadog.android.core.internal.persistence.Storage
 import com.datadog.android.core.internal.system.SystemInfoProvider
 import com.datadog.android.core.internal.utils.scheduleSafe
+import com.datadog.android.internal.telemetry.UploadQualityBlocker
+import com.datadog.android.internal.telemetry.UploadQualityEvent
 import java.util.concurrent.ScheduledThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 
@@ -32,8 +34,12 @@ internal class DataUploadRunnable(
     private val systemInfoProvider: SystemInfoProvider,
     internal val uploadSchedulerStrategy: UploadSchedulerStrategy,
     internal val maxBatchesPerJob: Int,
-    private val internalLogger: InternalLogger
+    private val internalLogger: InternalLogger,
+    private val uploadQualityListener: UploadQualityListener
 ) : UploadRunnable {
+
+    private var delayMs: Long = 0
+    private var batchConsumerAvailableAttempts: Int = 0
 
     //  region Runnable
 
@@ -41,9 +47,12 @@ internal class DataUploadRunnable(
     override fun run() {
         var uploadAttempts = 0
         var lastBatchUploadStatus: UploadStatus? = null
+
+        logUploadCycleForTelemetry()
+
         if (isNetworkAvailable() && isSystemReady()) {
             val context = contextProvider.context
-            var batchConsumerAvailableAttempts = maxBatchesPerJob
+            batchConsumerAvailableAttempts = maxBatchesPerJob
             do {
                 batchConsumerAvailableAttempts--
                 lastBatchUploadStatus = handleNextBatch(context)
@@ -55,7 +64,7 @@ internal class DataUploadRunnable(
             )
         }
 
-        val delayMs = uploadSchedulerStrategy.getMsDelayUntilNextUpload(
+        delayMs = uploadSchedulerStrategy.getMsDelayUntilNextUpload(
             featureName,
             uploadAttempts,
             lastBatchUploadStatus?.code,
@@ -84,9 +93,53 @@ internal class DataUploadRunnable(
         return uploadStatus
     }
 
+    private fun logUploadCycleForTelemetry() {
+        uploadQualityListener.onUploadQualityEvent(
+            UploadQualityEvent.UploadQualityCountEvent(
+                track = featureName,
+                uploadDelay = delayMs.toInt()
+            )
+        )
+
+        val blockersList = mutableListOf<String>()
+
+        if (!isNetworkAvailable()) {
+            blockersList.add(UploadQualityBlocker.OFFLINE.key)
+        }
+
+        if (isLowPower()) {
+            blockersList.add(UploadQualityBlocker.LOW_BATTERY.key)
+        }
+
+        if (isPowerSaveMode()) {
+            blockersList.add(UploadQualityBlocker.LOW_POWER_MODE.key)
+        }
+
+        if (blockersList.isNotEmpty()) {
+            uploadQualityListener.onUploadQualityEvent(
+                UploadQualityEvent.UploadQualityBlockerEvent(
+                    track = featureName,
+                    uploadDelay = delayMs.toInt(),
+                    batchCount = batchConsumerAvailableAttempts,
+                    blockers = blockersList
+                )
+            )
+        }
+    }
+
     private fun isNetworkAvailable(): Boolean {
         val networkInfo = networkInfoProvider.getLatestNetworkInfo()
         return networkInfo.connectivity != NetworkInfo.Connectivity.NETWORK_NOT_CONNECTED
+    }
+
+    private fun isPowerSaveMode(): Boolean {
+        val systemInfo = systemInfoProvider.getLatestSystemInfo()
+        return systemInfo.powerSaveMode
+    }
+
+    private fun isLowPower(): Boolean {
+        val systemInfo = systemInfoProvider.getLatestSystemInfo()
+        return systemInfo.batteryLevel <= LOW_BATTERY_THRESHOLD
     }
 
     private fun isSystemReady(): Boolean {
@@ -116,6 +169,16 @@ internal class DataUploadRunnable(
         batchMeta: ByteArray?
     ): UploadStatus {
         val status = dataUploader.upload(context, batch, batchMeta, batchId)
+        if (status.code != HTTP_ACCEPTED) {
+            uploadQualityListener.onUploadQualityEvent(
+                UploadQualityEvent.UploadQualityFailureEvent(
+                    track = featureName,
+                    uploadDelay = delayMs.toInt(),
+                    batchCount = batchConsumerAvailableAttempts,
+                    failure = status.code.toString()
+                )
+            )
+        }
         val removalReason = if (status is UploadStatus.RequestCreationError) {
             RemovalReason.Invalid
         } else {
@@ -129,5 +192,6 @@ internal class DataUploadRunnable(
 
     companion object {
         internal const val LOW_BATTERY_THRESHOLD = 10
+        private const val HTTP_ACCEPTED = 202
     }
 }

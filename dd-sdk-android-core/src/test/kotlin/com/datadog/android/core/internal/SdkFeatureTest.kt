@@ -13,6 +13,7 @@ import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureContextUpdateReceiver
 import com.datadog.android.api.feature.FeatureEventReceiver
+import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.feature.StorageBackedFeature
 import com.datadog.android.api.storage.EventBatchWriter
 import com.datadog.android.api.storage.FeatureStorageConfiguration
@@ -101,6 +102,9 @@ internal class SdkFeatureTest {
     @Mock
     lateinit var mockInternalLogger: InternalLogger
 
+    @Mock
+    lateinit var mockFeatureSdkCore: FeatureSdkCore
+
     @Forgery
     lateinit var fakeConsent: TrackingConsent
 
@@ -133,6 +137,7 @@ internal class SdkFeatureTest {
         whenever(mockWrappedFeature.requestFactory) doReturn mock()
         whenever(mockWrappedFeature.storageConfiguration) doReturn fakeStorageConfiguration
         testedFeature = SdkFeature(
+            featureSdkCore = mockFeatureSdkCore,
             coreFeature = coreFeature.mockInstance,
             wrappedFeature = mockWrappedFeature,
             internalLogger = mockInternalLogger
@@ -248,8 +253,9 @@ internal class SdkFeatureTest {
         val mockFeature = mock<TrackingConsentFeature>()
         whenever(mockFeature.name).thenReturn(fakeFeatureName)
         testedFeature = SdkFeature(
-            coreFeature.mockInstance,
-            mockFeature,
+            featureSdkCore = mockFeatureSdkCore,
+            coreFeature = coreFeature.mockInstance,
+            wrappedFeature = mockFeature,
             internalLogger = mockInternalLogger
         )
 
@@ -268,6 +274,7 @@ internal class SdkFeatureTest {
             whenever(name) doReturn fakeFeatureName
         }
         testedFeature = SdkFeature(
+            featureSdkCore = mockFeatureSdkCore,
             coreFeature = coreFeature.mockInstance,
             wrappedFeature = mockSimpleFeature,
             internalLogger = mockInternalLogger
@@ -369,6 +376,7 @@ internal class SdkFeatureTest {
             whenever(name) doReturn fakeFeatureName
         }
         testedFeature = SdkFeature(
+            featureSdkCore = mockFeatureSdkCore,
             coreFeature = coreFeature.mockInstance,
             wrappedFeature = mockFeature,
             internalLogger = mockInternalLogger
@@ -552,6 +560,7 @@ internal class SdkFeatureTest {
         val fakeFeature = FakeFeature(fakeFeatureName)
 
         testedFeature = SdkFeature(
+            featureSdkCore = mockFeatureSdkCore,
             coreFeature = coreFeature.mockInstance,
             wrappedFeature = fakeFeature,
             internalLogger = mockInternalLogger
@@ -572,6 +581,7 @@ internal class SdkFeatureTest {
         val fakeFeature = FakeFeature(fakeFeatureName)
 
         testedFeature = SdkFeature(
+            featureSdkCore = mockFeatureSdkCore,
             coreFeature = coreFeature.mockInstance,
             wrappedFeature = fakeFeature,
             internalLogger = mockInternalLogger

@@ -35,6 +35,7 @@ import com.datadog.android.event.EventMapper
 import com.datadog.android.event.MapperSerializer
 import com.datadog.android.event.NoOpEventMapper
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
+import com.datadog.android.internal.telemetry.UploadQualityEvent
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumSessionListener
@@ -51,6 +52,9 @@ import com.datadog.android.rum.internal.instrumentation.MainLooperLongTaskStrate
 import com.datadog.android.rum.internal.instrumentation.UserActionTrackingStrategyApi29
 import com.datadog.android.rum.internal.instrumentation.UserActionTrackingStrategyLegacy
 import com.datadog.android.rum.internal.instrumentation.gestures.DatadogGesturesTracker
+import com.datadog.android.rum.internal.metric.SessionEndedMetricDispatcher
+import com.datadog.android.rum.internal.metric.UploadBlockerMetric
+import com.datadog.android.rum.internal.metric.ViewEndedMetricDispatcher.Companion.KEY_METRIC_TYPE
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.internal.monitor.DatadogRumMonitor
 import com.datadog.android.rum.internal.net.RumRequestFactory
@@ -103,6 +107,7 @@ internal class RumFeature(
     private val sdkCore: FeatureSdkCore,
     internal val applicationId: String,
     internal val configuration: Configuration,
+    private val sessionEndedMetricDispatcher: SessionEndedMetricDispatcher,
     private val lateCrashReporterFactory: (InternalSdkCore) -> LateCrashReporter = {
         DatadogLateCrashReporter(it)
     }
@@ -263,6 +268,7 @@ internal class RumFeature(
             is Map<*, *> -> handleMapLikeEvent(event)
             is JvmCrash.Rum -> addJvmCrash(event)
             is InternalTelemetryEvent -> handleTelemetryEvent(event)
+            is UploadQualityEvent -> handleUploadQualityEvent(event)
             else -> {
                 sdkCore.internalLogger.log(
                     InternalLogger.Level.WARN,
@@ -309,6 +315,26 @@ internal class RumFeature(
     private fun handleTelemetryEvent(event: InternalTelemetryEvent) {
         val advancedRumMonitor = GlobalRumMonitor.get(sdkCore) as? AdvancedRumMonitor ?: return
         advancedRumMonitor.sendTelemetryEvent(event)
+    }
+
+    private fun handleUploadQualityEvent(event: UploadQualityEvent) {
+        when (event) {
+            is UploadQualityEvent.UploadQualityCountEvent -> {
+                GlobalRumMonitor.get(sdkCore).getCurrentSessionId { sessionId ->
+                    sessionId?.let {
+                        sessionEndedMetricDispatcher.onUploadQualityEventReceived(it, event)
+                    }
+                }
+            }
+            else -> {
+                val uploadQualityMap = resolveUploadBlockerProperties(event)
+                sdkCore.internalLogger.logMetric(
+                    messageBuilder = { UploadBlockerMetric.METRICS_KEY.key },
+                    additionalProperties = uploadQualityMap,
+                    samplingRate = UPLOAD_QUALITY_SAMPLING_RATE
+                )
+            }
+        }
     }
 
     @AnyThread
@@ -397,6 +423,24 @@ internal class RumFeature(
                 e
             )
         }
+    }
+
+    private fun resolveUploadBlockerProperties(event: UploadQualityEvent): Map<String, Any?> {
+        val properties = mutableMapOf<String, Any?> (
+            KEY_METRIC_TYPE to UploadBlockerMetric.BATCH_BLOCKED_KEY.key,
+            UploadBlockerMetric.TRACK_KEY.key to event.track,
+            UploadBlockerMetric.UPLOAD_DELAY_KEY.key to event.uploadDelay
+        )
+
+        if (event is UploadQualityEvent.UploadQualityBlockerEvent) {
+            properties[UploadBlockerMetric.BATCH_COUNT_KEY.key] = event.batchCount
+            properties[UploadBlockerMetric.BLOCKERS_KEY.key] = event.blockers
+        } else if (event is UploadQualityEvent.UploadQualityFailureEvent) {
+            properties[UploadBlockerMetric.BATCH_COUNT_KEY.key] = event.batchCount
+            properties[UploadBlockerMetric.FAILURE_KEY.key] = event.failure
+        }
+
+        return properties.toMap()
     }
 
     private fun registerTrackingStrategies(appContext: Context) {
@@ -641,6 +685,8 @@ internal class RumFeature(
                 " SDK instance by calling SdkCore#registerFeature method."
         internal const val FAILED_TO_ENABLE_JANK_STATS_TRACKING_MANUALLY =
             "Manually enabling JankStats tracking threw an exception."
+
+        internal const val UPLOAD_QUALITY_SAMPLING_RATE = 1.5f
 
         private fun provideUserTrackingStrategy(
             touchTargetExtraAttributesProviders: Array<ViewAttributesProvider>,

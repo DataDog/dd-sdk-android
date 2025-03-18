@@ -25,7 +25,8 @@ internal class DataUploadScheduler(
     uploadSchedulerStrategy: UploadSchedulerStrategy,
     maxBatchesPerJob: Int,
     private val scheduledThreadPoolExecutor: ScheduledThreadPoolExecutor,
-    private val internalLogger: InternalLogger
+    private val internalLogger: InternalLogger,
+    uploadQualityListener: UploadQualityListener
 ) : UploadScheduler {
 
     internal val runnable = DataUploadRunnable(
@@ -38,7 +39,8 @@ internal class DataUploadScheduler(
         systemInfoProvider = systemInfoProvider,
         uploadSchedulerStrategy = uploadSchedulerStrategy,
         maxBatchesPerJob = maxBatchesPerJob,
-        internalLogger = internalLogger
+        internalLogger = internalLogger,
+        uploadQualityListener = uploadQualityListener
     )
 
     override fun startScheduling() {
