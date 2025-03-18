@@ -86,7 +86,7 @@ data class com.datadog.android.rum.RumConfiguration
     fun setSessionListener(RumSessionListener): Builder
     fun setInitialResourceIdentifier(com.datadog.android.rum.metric.networksettled.InitialResourceIdentifier): Builder
     fun setLastInteractionIdentifier(com.datadog.android.rum.metric.interactiontonextview.LastInteractionIdentifier?): Builder
-    fun setSlowFrameListenerConfiguration(com.datadog.android.rum.configuration.SlowFramesConfiguration?): Builder
+    fun setSlowFramesConfiguration(com.datadog.android.rum.configuration.SlowFramesConfiguration?): Builder
     fun trackAnonymousUser(Boolean): Builder
     fun build(): RumConfiguration
 enum com.datadog.android.rum.RumErrorSource

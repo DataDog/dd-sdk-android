@@ -36,7 +36,7 @@ package com.datadog.android.rum.configuration
  * The default value is 5,000,000,000 ns (5 seconds).
  *
  * @param minViewLifetimeThresholdNs The minimum lifetime (in nanoseconds) a view must have before it is considered
- * for monitoring. The default value is 100,000,000 ns (1 s).
+ * for monitoring. The default value is 1,000,000,000 ns (1 s).
  */
 
 data class SlowFramesConfiguration(
