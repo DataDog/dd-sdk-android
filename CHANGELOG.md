@@ -1,3 +1,7 @@
+# 2.19.1 / 2025-03-17
+
+* [BUGFIX] Fix NPE when `Drawable.getCurrent` returns null. See[#2545](https://github.com/DataDog/dd-sdk-android/pull/2545)
+
 # 2.19.0 / 2025-03-10
 
 * [FEATURE] Core: Introduce anonymous RUM Identifier. See [#2487](https://github.com/DataDog/dd-sdk-android/pull/2487)
