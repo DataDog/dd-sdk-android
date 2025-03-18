@@ -11,6 +11,7 @@ import android.graphics.Bitmap.Config
 import android.graphics.Color
 import android.graphics.PorterDuff
 import android.graphics.drawable.Drawable
+import android.util.AndroidRuntimeException
 import android.util.DisplayMetrics
 import androidx.annotation.VisibleForTesting
 import androidx.annotation.WorkerThread
@@ -114,7 +115,20 @@ internal class DrawableUtils(
             canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.MULTIPLY)
 
             drawable.setBounds(0, 0, canvas.width, canvas.height)
-            drawable.draw(canvas)
+
+            try {
+                drawable.draw(canvas)
+            } catch (exception: AndroidRuntimeException) {
+                internalLogger.log(
+                    InternalLogger.Level.ERROR,
+                    InternalLogger.Target.TELEMETRY,
+                    { "$DRAWABLE_DRAW_FINISHED_WITH_ANDROID_RUNTIME_EXCEPTION ${drawable.resolveClassName()}" },
+                    exception
+                )
+                bitmapCreationCallback.onFailure()
+                return
+            }
+
             bitmapCreationCallback.onReady(bitmap)
         }
     }
@@ -190,5 +204,7 @@ internal class DrawableUtils(
         private const val ARGB_8888_PIXEL_SIZE_BYTES = 4
         internal const val FAILED_TO_CREATE_SCALED_BITMAP_ERROR =
             "Failed to create a scaled bitmap from the drawable"
+        internal const val DRAWABLE_DRAW_FINISHED_WITH_ANDROID_RUNTIME_EXCEPTION =
+            "Drawable.draw call finished with an exception. Drawable type is"
     }
 }
