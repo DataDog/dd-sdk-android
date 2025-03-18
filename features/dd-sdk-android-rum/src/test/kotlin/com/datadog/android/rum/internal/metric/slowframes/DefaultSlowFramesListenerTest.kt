@@ -8,7 +8,6 @@ package com.datadog.android.rum.internal.metric.slowframes
 import androidx.metrics.performance.FrameData
 import com.datadog.android.rum.configuration.SlowFramesConfiguration
 import com.datadog.android.rum.internal.domain.state.SlowFrameRecord
-import com.datadog.android.rum.internal.domain.state.ViewUIPerformanceReport
 import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import fr.xgouchet.elmyr.Forge
@@ -62,7 +61,7 @@ internal class DefaultSlowFramesListenerTest {
         testedListener.onFrame(jankFrameData)
 
         // When
-        val report = testedListener.assertResolveNonNullReport(viewId)
+        val report = checkNotNull(testedListener.resolveReport(viewId))
 
         // Then
         assertThat(report.slowFramesRecords).hasSize(1)
@@ -82,7 +81,7 @@ internal class DefaultSlowFramesListenerTest {
         testedListener.onFrame(jankFrameData)
 
         // When
-        val report1 = testedListener.assertResolveNonNullReport(viewId)
+        val report1 = checkNotNull(testedListener.resolveReport(viewId))
         val report2 = testedListener.resolveReport(viewId)
 
         // Then
@@ -98,7 +97,7 @@ internal class DefaultSlowFramesListenerTest {
         testedListener.onFrame(jankFrameData)
 
         // When
-        val report = testedListener.assertResolveNonNullReport(viewId)
+        val report = checkNotNull(testedListener.resolveReport(viewId))
 
         // Then
         assertThat(report.isEmpty()).isTrue()
@@ -112,7 +111,7 @@ internal class DefaultSlowFramesListenerTest {
 
         // When
         testedListener.onViewCreated(viewId + forge.aString(), viewCreatedTimestampNs)
-        val report = testedListener.assertResolveNonNullReport(viewId)
+        val report = checkNotNull(testedListener.resolveReport(viewId))
 
         // Then
         assertThat(report.slowFramesRecords).isNotEmpty()
@@ -158,7 +157,7 @@ internal class DefaultSlowFramesListenerTest {
         testedListener.onFrame(jank2)
 
         // When
-        val report = testedListener.assertResolveNonNullReport(viewId)
+        val report = checkNotNull(testedListener.resolveReport(viewId))
 
         // Then
         assertThat(report.size).isEqualTo(1)
@@ -199,7 +198,7 @@ internal class DefaultSlowFramesListenerTest {
         testedListener.onFrame(jank2)
 
         // When
-        val report = testedListener.assertResolveNonNullReport(viewId)
+        val report = checkNotNull(testedListener.resolveReport(viewId))
 
         // Then
         assertThat(report.size).isEqualTo(2)
@@ -235,7 +234,7 @@ internal class DefaultSlowFramesListenerTest {
         testedListener.onFrame(jank)
 
         // When
-        val report = testedListener.assertResolveNonNullReport(viewId)
+        val report = checkNotNull(testedListener.resolveReport(viewId))
 
         // Then
         assertThat(report.size).isEqualTo(0)
@@ -268,7 +267,7 @@ internal class DefaultSlowFramesListenerTest {
         testedListener.onFrame(jank2)
 
         // When
-        val report = testedListener.assertResolveNonNullReport(viewId)
+        val report = checkNotNull(testedListener.resolveReport(viewId))
 
         // Then
         assertThat(report.size).isEqualTo(1)
@@ -299,7 +298,7 @@ internal class DefaultSlowFramesListenerTest {
         val expectedSlowFrameRate = expectedSlowFramesDuration.toDouble() / expectedTotalFrameDuration * 1000
 
         // When
-        val report = testedListener.assertResolveNonNullReport(viewId)
+        val report = checkNotNull(testedListener.resolveReport(viewId))
 
         // Then
         assertThat(report.slowFramesDurationNs)
@@ -325,8 +324,7 @@ internal class DefaultSlowFramesListenerTest {
         val report = testedListener.resolveReport(viewId)
 
         // Then
-        assertThat(report).isNotNull
-        assertThat(report!!.slowFramesRate(viewDurationNs)).isZero()
+        assertThat(checkNotNull(report).freezeFramesRate(viewDurationNs)).isZero()
     }
 
     @Test
@@ -342,8 +340,7 @@ internal class DefaultSlowFramesListenerTest {
         val report = testedListener.resolveReport(viewId)
 
         // Then
-        assertThat(report).isNotNull
-        assertThat(report!!.freezeFramesRate(viewDurationNs)).isZero()
+        assertThat(checkNotNull(report).freezeFramesRate(viewDurationNs)).isZero()
     }
 
     @Test
@@ -360,7 +357,7 @@ internal class DefaultSlowFramesListenerTest {
     }
 
     @Test
-    fun `M compute expected expectedFreezeFramesRate W onAddLongTask`(
+    fun `M compute expected freezeFramesRate W onAddLongTask`(
         @StringForgery viewId: String,
         // max here to avoid Long overflow
         @LongForgery(min = 1L, max = MAX_DURATION_NS) viewDurationNs: Long,
@@ -383,7 +380,7 @@ internal class DefaultSlowFramesListenerTest {
         testedListener.onAddLongTask(longTaskDuration)
 
         // Then
-        val report = testedListener.assertResolveNonNullReport(viewId)
+        val report = checkNotNull(testedListener.resolveReport(viewId))
         assertThat(
             report.freezeFramesRate(viewEndedTimestampNs)
         ).isEqualTo(
@@ -392,7 +389,7 @@ internal class DefaultSlowFramesListenerTest {
     }
 
     @Test
-    fun `M return 0 W freezeFramesRate { view lived less than minViewLifetimeThresholdNs }`(
+    fun `M return 0 freezeFramesRate W onAddLongTask { view lived less than minViewLifetimeThresholdNs }`(
         @StringForgery viewId: String,
         @LongForgery(min = 1L, max = MAX_DURATION_NS) longTaskDuration: Long,
         @LongForgery(min = 100L, max = MAX_DURATION_NS) minViewLifetimeThresholdNs: Long
@@ -413,7 +410,7 @@ internal class DefaultSlowFramesListenerTest {
 
         // Then
         assertDoesNotThrow { // No ArithmeticException
-            val report = testedListener.assertResolveNonNullReport(viewId)
+            val report = checkNotNull(testedListener.resolveReport(viewId))
             assertThat(report.freezeFramesRate(minViewLifetimeThresholdNs - 1)).isZero()
         }
     }
@@ -430,13 +427,6 @@ internal class DefaultSlowFramesListenerTest {
     )
 
     companion object {
-
-        fun DefaultSlowFramesListener.assertResolveNonNullReport(viewId: String): ViewUIPerformanceReport {
-            val report = resolveReport(viewId)
-            assertThat(report).isNotNull
-            return report!!
-        }
-
         // clip max values to avoid Long overflow
         const val MAX_DURATION_NS = 1_000_000_000_000
     }

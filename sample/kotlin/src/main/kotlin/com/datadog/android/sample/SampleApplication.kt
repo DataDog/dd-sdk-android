@@ -299,7 +299,7 @@ class SampleApplication : Application() {
             .trackUserInteractions()
             .trackLongTasks(250L)
             .trackNonFatalAnrs(true)
-            .setSlowFrameListenerConfiguration(SlowFramesConfiguration.DEFAULT)
+            .setSlowFramesConfiguration(SlowFramesConfiguration.DEFAULT)
             .setViewEventMapper { event ->
                 event.context?.additionalProperties?.put(ATTR_IS_MAPPED, true)
                 event

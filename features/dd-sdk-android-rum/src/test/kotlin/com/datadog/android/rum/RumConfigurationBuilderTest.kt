@@ -581,13 +581,13 @@ internal class RumConfigurationBuilderTest {
 
     @OptIn(ExperimentalRumApi::class)
     @Test
-    fun `M use a custom slowFramesListenerConfiguration W setSlowFrameListenerConfiguration()`() {
+    fun `M use a custom slowFramesConfiguration W setSlowFramesConfiguration()`() {
         // Given
         val slowFramesConfiguration = mock<SlowFramesConfiguration>()
 
         // When
         val rumConfiguration = testedBuilder
-            .setSlowFrameListenerConfiguration(slowFramesConfiguration)
+            .setSlowFramesConfiguration(slowFramesConfiguration)
             .build()
 
         // Then

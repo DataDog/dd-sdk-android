@@ -189,11 +189,14 @@ internal class RumFeature(
         val frequency = configuration.vitalsMonitorUpdateFrequency
         val slowFrameListenerConfiguration = configuration.slowFramesConfiguration
         if (frequency != VitalsUpdateFrequency.NEVER || slowFrameListenerConfiguration != null) {
+            initializeVitalExecutorService(frequency)
+            initializeCpuVitalMonitor(frequency)
+            initializeMemoryVitalMonitor(frequency)
             initializeFrameStatesAggregator(
                 application = appContext as? Application,
                 listeners = listOfNotNull(
                     initializeSlowFrameListener(slowFrameListenerConfiguration),
-                    initializeVitalMonitors(frequency)
+                    initializeFPSVitalMonitor(frequency)
                 )
             )
         }
@@ -457,32 +460,40 @@ internal class RumFeature(
         longTaskTrackingStrategy.unregister(appContext)
     }
 
-    private fun initializeVitalMonitors(
-        frequency: VitalsUpdateFrequency
-    ): FrameStateListener? {
+    private fun initializeVitalExecutorService(frequency: VitalsUpdateFrequency) {
         if (frequency == VitalsUpdateFrequency.NEVER) {
-            return null
+            return
         }
-        cpuVitalMonitor = AggregatingVitalMonitor()
-        memoryVitalMonitor = AggregatingVitalMonitor()
-        frameRateVitalMonitor = AggregatingVitalMonitor()
-        return initializeVitalReaders(frequency.periodInMs)
-    }
-
-    private fun initializeVitalReaders(periodInMs: Long): FrameStateListener {
         @Suppress("UnsafeThirdPartyFunctionCall") // pool size can't be <= 0
         vitalExecutorService = sdkCore.createScheduledExecutorService("rum-vital")
+    }
 
+    private fun initializeCpuVitalMonitor(frequency: VitalsUpdateFrequency) {
+        if (frequency == VitalsUpdateFrequency.NEVER) return
+
+        cpuVitalMonitor = AggregatingVitalMonitor()
         initializeVitalMonitor(
             CPUVitalReader(internalLogger = sdkCore.internalLogger),
             cpuVitalMonitor,
-            periodInMs
+            frequency.periodInMs
         )
+    }
+
+    private fun initializeMemoryVitalMonitor(frequency: VitalsUpdateFrequency) {
+        if (frequency == VitalsUpdateFrequency.NEVER) return
+
+        memoryVitalMonitor = AggregatingVitalMonitor()
         initializeVitalMonitor(
             MemoryVitalReader(internalLogger = sdkCore.internalLogger),
             memoryVitalMonitor,
-            periodInMs
+            frequency.periodInMs
         )
+    }
+
+    private fun initializeFPSVitalMonitor(frequency: VitalsUpdateFrequency): FPSVitalListener? {
+        if (frequency == VitalsUpdateFrequency.NEVER) return null
+
+        frameRateVitalMonitor = AggregatingVitalMonitor()
         return FPSVitalListener(frameRateVitalMonitor)
     }
 

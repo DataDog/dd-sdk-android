@@ -304,7 +304,7 @@ data class RumConfiguration internal constructor(
          * @param slowFramesConfiguration The configuration to be applied to the [SlowFramesListener].
          */
         @ExperimentalRumApi
-        fun setSlowFrameListenerConfiguration(
+        fun setSlowFramesConfiguration(
             slowFramesConfiguration: SlowFramesConfiguration?
         ): Builder {
             rumConfig = rumConfig.copy(slowFramesConfiguration = slowFramesConfiguration)
