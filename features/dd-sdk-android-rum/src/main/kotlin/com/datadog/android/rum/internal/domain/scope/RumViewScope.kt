@@ -906,10 +906,10 @@ internal open class RumViewScope(
             )
         }
 
-        // freezeRate and slowFramesRate should be sent only with StopView event
-        val viewCompletedWithStopEvent = viewComplete && event is RumRawEvent.StopView
-        val freezeRate = if (viewCompletedWithStopEvent) uiSlownessReport?.freezeFramesRate(stoppedNanos) else null
-        val slowFramesRate = if (viewCompletedWithStopEvent) uiSlownessReport?.slowFramesRate(stoppedNanos) else null
+        // freezeRate and slowFramesRate should be sent with last view update for this view scope,
+        // that will happen when isViewComplete == true
+        val freezeRate = if (viewComplete) uiSlownessReport?.freezeFramesRate(stoppedNanos) else null
+        val slowFramesRate = if (viewComplete) uiSlownessReport?.slowFramesRate(stoppedNanos) else null
 
         if (viewComplete && getRumContext().sessionState != RumSessionScope.State.NOT_TRACKED) {
             viewEndedMetricDispatcher.sendViewEnded(

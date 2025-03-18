@@ -916,7 +916,11 @@ internal class RumViewScopeTest {
                     fakeDatadogContext.deviceInfo.osVersion,
                     fakeDatadogContext.deviceInfo.osMajorVersion
                 )
-                hasSlownessInfo(fakeSlowRecords)
+                hasSlownessInfo(
+                    fakeSlowRecords,
+                    fakeSlownessRate,
+                    fakeFreezeRate
+                )
                 hasConnectivityInfo(fakeDatadogContext.networkInfo)
                 hasServiceName(fakeDatadogContext.service)
                 hasVersion(fakeDatadogContext.version)
@@ -989,7 +993,11 @@ internal class RumViewScopeTest {
                         fakeDatadogContext.deviceInfo.osVersion,
                         fakeDatadogContext.deviceInfo.osMajorVersion
                     )
-                    hasSlownessInfo(fakeSlowRecords)
+                    hasSlownessInfo(
+                        fakeSlowRecords,
+                        fakeSlownessRate,
+                        fakeFreezeRate
+                    )
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
@@ -2948,7 +2956,11 @@ internal class RumViewScopeTest {
                         fakeDatadogContext.deviceInfo.osVersion,
                         fakeDatadogContext.deviceInfo.osMajorVersion
                     )
-                    hasSlownessInfo(fakeSlowRecords)
+                    hasSlownessInfo(
+                        fakeSlowRecords,
+                        fakeSlownessRate,
+                        fakeFreezeRate
+                    )
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
@@ -3042,7 +3054,11 @@ internal class RumViewScopeTest {
                         fakeDatadogContext.deviceInfo.osVersion,
                         fakeDatadogContext.deviceInfo.osMajorVersion
                     )
-                    hasSlownessInfo(fakeSlowRecords)
+                    hasSlownessInfo(
+                        fakeSlowRecords,
+                        fakeSlownessRate,
+                        fakeFreezeRate
+                    )
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
@@ -3146,7 +3162,11 @@ internal class RumViewScopeTest {
                         fakeDatadogContext.deviceInfo.osVersion,
                         fakeDatadogContext.deviceInfo.osMajorVersion
                     )
-                    hasSlownessInfo(fakeSlowRecords)
+                    hasSlownessInfo(
+                        fakeSlowRecords,
+                        fakeSlownessRate,
+                        fakeFreezeRate
+                    )
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
@@ -3242,7 +3262,11 @@ internal class RumViewScopeTest {
                         fakeDatadogContext.deviceInfo.osVersion,
                         fakeDatadogContext.deviceInfo.osMajorVersion
                     )
-                    hasSlownessInfo(fakeSlowRecords)
+                    hasSlownessInfo(
+                        fakeSlowRecords,
+                        fakeSlownessRate,
+                        fakeFreezeRate
+                    )
                     hasConnectivityInfo(fakeDatadogContext.networkInfo)
                     hasServiceName(fakeDatadogContext.service)
                     hasVersion(fakeDatadogContext.version)
