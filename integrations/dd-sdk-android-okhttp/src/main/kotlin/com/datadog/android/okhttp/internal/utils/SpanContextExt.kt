@@ -10,7 +10,7 @@ import com.datadog.opentracing.DDSpanContext
 import io.opentracing.SpanContext
 
 private const val TRACE_ID_REQUIRED_LENGTH = 32
-private const val HEX_RADIX = 16
+internal const val HEX_RADIX = 16
 
 internal fun SpanContext.traceIdAsHexString(): String {
     return (this as? DDSpanContext)?.traceId?.toString(HEX_RADIX)?.padStart(TRACE_ID_REQUIRED_LENGTH, '0') ?: ""
