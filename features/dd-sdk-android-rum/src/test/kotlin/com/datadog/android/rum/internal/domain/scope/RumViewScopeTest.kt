@@ -326,7 +326,7 @@ internal class RumViewScopeTest {
             }
             .toEvictingQueue()
 
-        whenever(mockSlowFramesListener.resolveReport(any())) doReturn mockViewUIPerformanceReport
+        whenever(mockSlowFramesListener.resolveReport(any(), any())) doReturn mockViewUIPerformanceReport
         whenever(mockParentScope.getRumContext()) doReturn fakeParentContext
         whenever(mockChildScope.handleEvent(any(), any())) doReturn mockChildScope
         whenever(mockActionScope.handleEvent(any(), any())) doReturn mockActionScope
@@ -9611,12 +9611,71 @@ internal class RumViewScopeTest {
         @LongForgery(0L, 700_000_000L) durationNs: Long,
         @StringForgery target: String
     ) {
-        testedScope.activeActionScope = null
+        // Given
         fakeEvent = RumRawEvent.AddLongTask(durationNs, target)
 
+        // When
         testedScope.handleEvent(fakeEvent, mockWriter)
 
+        // Then
         verify(mockSlowFramesListener).onAddLongTask(durationNs)
+    }
+
+    @Test
+    fun `M call resolveReport(viewId, true) of slowFramesListener W handleEvent(StopView)`(
+        forge: Forge
+    ) {
+        // Given
+        fakeEvent = RumRawEvent.StopView(key = testedScope.key, forge.exhaustiveAttributes())
+
+        // When
+        testedScope.handleEvent(fakeEvent, mockWriter)
+
+        // Then
+        verify(mockSlowFramesListener).resolveReport(testedScope.viewId, true)
+    }
+
+    @Test
+    fun `M call resolveReport(viewId, true) of slowFramesListener W handleEvent(StartView)`(
+        forge: Forge
+    ) {
+        // When
+        testedScope.handleEvent(forge.startViewEvent(), mockWriter)
+
+        // Then
+        verify(mockSlowFramesListener).resolveReport(testedScope.viewId, true)
+    }
+
+    @Test
+    fun `M call resolveReport(viewId, true) of slowFramesListener W handleEvent(StopSession)`() {
+        // When
+        testedScope.handleEvent(RumRawEvent.StopSession(), mockWriter)
+
+        // Then
+        verify(mockSlowFramesListener).resolveReport(testedScope.viewId, true)
+    }
+
+    @Test
+    fun `M call resolveReport(viewId, false) of slowFramesListener W handleEvent()`(forge: Forge) {
+        // Given
+        val nonTerminalViewUpdateEvents = listOf(
+            forge.getForgery<RumRawEvent.KeepAlive>(),
+            forge.getForgery<RumRawEvent.AddCustomTiming>(),
+            forge.getForgery<RumRawEvent.AddFeatureFlagEvaluation>(),
+            forge.getForgery<RumRawEvent.AddFeatureFlagEvaluations>(),
+            forge.getForgery<RumRawEvent.AddError>().copy(isFatal = true),
+            forge.getForgery<RumRawEvent.ActionSent>().copy(viewId = testedScope.viewId),
+            forge.getForgery<RumRawEvent.ErrorSent>().copy(viewId = testedScope.viewId),
+            forge.getForgery<RumRawEvent.ResourceSent>().copy(viewId = testedScope.viewId),
+            forge.getForgery<RumRawEvent.LongTaskSent>().copy(viewId = testedScope.viewId)
+        )
+        val event = forge.anElementFrom(nonTerminalViewUpdateEvents)
+
+        // When
+        testedScope.handleEvent(event, mockWriter)
+
+        // Then
+        verify(mockSlowFramesListener).resolveReport(testedScope.viewId, false)
     }
 
     // endregion

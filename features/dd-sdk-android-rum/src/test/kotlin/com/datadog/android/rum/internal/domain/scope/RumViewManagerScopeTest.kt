@@ -144,7 +144,7 @@ internal class RumViewManagerScopeTest {
         whenever(mockChildScope.handleEvent(any(), any())) doReturn mockChildScope
         whenever(mockChildScope.isActive()) doReturn true
         whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
-        whenever(mockSlowFramesListener.resolveReport(any())) doReturn fakeViewUIPerformanceReport
+        whenever(mockSlowFramesListener.resolveReport(any(), any())) doReturn fakeViewUIPerformanceReport
 
         testedScope = RumViewManagerScope(
             mockParentScope,

@@ -53,7 +53,7 @@ internal class Configurator : BaseConfigurator() {
         forge.addFactory(FrameDataForgeryFactory())
         forge.addFactory(FrameMetricDataForgeryFactory())
         forge.addFactory(ViewUIPerformanceReportForgeryFactory())
-        forge.addFactory(SlowFramesListenerConfigurationForgeryFactory())
+        forge.addFactory(SlowFramesConfigurationForgeryFactory())
 
         // Telemetry schema models
         forge.addFactory(TelemetryDebugEventForgeryFactory())
@@ -73,5 +73,12 @@ internal class Configurator : BaseConfigurator() {
         forge.addFactory(ActionSentForgeryFactory())
         forge.addFactory(ResourceSentForgeryFactory())
         forge.addFactory(ResourceDroppedForgeryFactory())
+        forge.addFactory(AddCustomTimingEventForgeryFactory())
+        forge.addFactory(AddErrorEventForgeryFactory())
+        forge.addFactory(AddFeatureFlagEvaluationForgeryFactory())
+        forge.addFactory(AddFeatureFlagEvaluationsForgeryFactory())
+        forge.addFactory(ErrorSentForgeryFactory())
+        forge.addFactory(KeepAliveForgeryFactory())
+        forge.addFactory(LongTaskSentForgeryFactory())
     }
 }

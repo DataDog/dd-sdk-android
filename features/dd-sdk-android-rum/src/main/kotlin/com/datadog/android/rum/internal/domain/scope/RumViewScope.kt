@@ -898,7 +898,7 @@ internal open class RumViewScope(
         // make a copy - by the time we iterate over it on another thread, it may already be changed
         val eventFeatureFlags = featureFlags.toMutableMap()
         val eventAdditionalAttributes = (eventAttributes + globalAttributes).toMutableMap()
-        val uiSlownessReport = slowFramesListener?.resolveReport(viewId)
+        val uiSlownessReport = slowFramesListener?.resolveReport(viewId, viewComplete)
         val slowFrames = uiSlownessReport?.slowFramesRecords?.map {
             ViewEvent.SlowFrame(
                 start = it.startTimestampNs - startedNanos,
