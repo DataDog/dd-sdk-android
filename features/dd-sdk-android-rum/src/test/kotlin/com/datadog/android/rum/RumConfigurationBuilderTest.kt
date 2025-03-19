@@ -10,6 +10,7 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.event.EventMapper
 import com.datadog.android.event.NoOpEventMapper
 import com.datadog.android.rum.assertj.ConfigurationRumAssert
+import com.datadog.android.rum.configuration.SlowFramesConfiguration
 import com.datadog.android.rum.configuration.VitalsUpdateFrequency
 import com.datadog.android.rum.event.ViewEventMapper
 import com.datadog.android.rum.internal.NoOpRumSessionListener
@@ -106,7 +107,8 @@ internal class RumConfigurationBuilderTest {
                 additionalConfig = emptyMap(),
                 initialResourceIdentifier = TimeBasedInitialResourceIdentifier(),
                 lastInteractionIdentifier = TimeBasedInteractionIdentifier(),
-                trackAnonymousUser = true
+                trackAnonymousUser = true,
+                slowFramesConfiguration = null
             )
         )
     }
@@ -562,6 +564,7 @@ internal class RumConfigurationBuilderTest {
             .isSameAs(customLastInteractionIdentifier)
     }
 
+    @OptIn(ExperimentalRumApi::class)
     @Test
     fun `M changes default trackAnonymousUser W trackAnonymousUser()`(
         @BoolForgery trackAnonymousUser: Boolean
@@ -574,5 +577,21 @@ internal class RumConfigurationBuilderTest {
         // Then
         assertThat(rumConfiguration.featureConfiguration.trackAnonymousUser)
             .isEqualTo(trackAnonymousUser)
+    }
+
+    @OptIn(ExperimentalRumApi::class)
+    @Test
+    fun `M use a custom slowFramesConfiguration W setSlowFramesConfiguration()`() {
+        // Given
+        val slowFramesConfiguration = mock<SlowFramesConfiguration>()
+
+        // When
+        val rumConfiguration = testedBuilder
+            .setSlowFramesConfiguration(slowFramesConfiguration)
+            .build()
+
+        // Then
+        assertThat(rumConfiguration.featureConfiguration.slowFramesConfiguration)
+            .isSameAs(slowFramesConfiguration)
     }
 }
