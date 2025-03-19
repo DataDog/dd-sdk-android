@@ -27,6 +27,7 @@ import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.RepeatedTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
@@ -256,12 +257,16 @@ internal class TraceWriterTest {
         )
     }
 
-    @Test
+//    @Test
+    @RepeatedTest(128)
     fun `M log error and proceed W write() { serialization failed }`(forge: Forge) {
         // GIVEN
-        val ddSpans = forge.aList { getForgery<DDSpan>() }
-            .filter { it.samplingPriority !in TraceWriter.DROP_SAMPLING_PRIORITIES }
-            .toMutableList()
+        val ddSpans: List<DDSpan> = forge.aList {
+            val span = getForgery<DDSpan>()
+            span.samplingPriority = forge.anElementFrom(TraceWriter.KEEP_SAMPLING_PRIORITIES)
+            span
+        }
+
         val spanEvents = ddSpans.map { forge.getForgery<SpanEvent>() }
         val serializedSpans = ddSpans.map { forge.aString() }
 

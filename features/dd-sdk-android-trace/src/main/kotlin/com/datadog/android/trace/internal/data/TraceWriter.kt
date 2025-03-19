@@ -36,7 +36,7 @@ internal class TraceWriter(
         // NO - OP
     }
 
-    override fun write(trace: MutableList<DDSpan>?) {
+    override fun write(trace: List<DDSpan>?) {
         if (trace == null) return
         sdkCore.getFeature(Feature.TRACING_FEATURE_NAME)
             ?.withWriteContext { datadogContext, eventBatchWriter ->
@@ -92,5 +92,6 @@ internal class TraceWriter(
     companion object {
         internal const val ERROR_SERIALIZING = "Error serializing %s model"
         internal val DROP_SAMPLING_PRIORITIES = setOf(PrioritySampling.SAMPLER_DROP, PrioritySampling.USER_DROP)
+        internal val KEEP_SAMPLING_PRIORITIES = setOf(PrioritySampling.SAMPLER_KEEP, PrioritySampling.USER_KEEP)
     }
 }
