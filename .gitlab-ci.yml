@@ -533,27 +533,23 @@ publish:release-internal:
 
 publish:release-coil:
   tags: [ "arch:amd64" ]
-  only:
-    - tags
-    - develop
+  when: manual
   image: $CI_IMAGE_DOCKER
   stage: publish
   timeout: 30m
   script:
     - !reference [.snippets, set-publishing-credentials]
-    - ./gradlew :integrations:dd-sdk-android-coil:publishToSonatype --stacktrace --no-daemon
+    - ./gradlew :integrations:dd-sdk-android-coil:publishToSonatype --stacktrace --info --no-daemon
 
 publish:release-compose:
   tags: [ "arch:amd64" ]
-  only:
-    - tags
-    - develop
+  when: manual
   image: $CI_IMAGE_DOCKER
   stage: publish
   timeout: 30m
   script:
     - !reference [.snippets, set-publishing-credentials]
-    - ./gradlew :integrations:dd-sdk-android-compose:publishToSonatype --stacktrace --no-daemon
+    - ./gradlew :integrations:dd-sdk-android-compose:publishToSonatype --stacktrace -info --no-daemon
 
 publish:release-fresco:
   tags: [ "arch:amd64" ]
