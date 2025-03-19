@@ -13,6 +13,7 @@ import android.util.Log
 import androidx.lifecycle.ViewModelProvider
 import com.datadog.android.Datadog
 import com.datadog.android.DatadogSite
+import com.datadog.android._InternalProxy
 import com.datadog.android.core.configuration.BackPressureMitigation
 import com.datadog.android.core.configuration.BackPressureStrategy
 import com.datadog.android.core.configuration.BatchSize
@@ -337,7 +338,6 @@ class SampleApplication : Application() {
         } catch (e: IllegalArgumentException) {
             Timber.e("Error setting site to ${BuildConfig.DD_SITE_NAME}")
         }
-
         configBuilder.setBackpressureStrategy(
             BackPressureStrategy(
                 32,
@@ -346,8 +346,22 @@ class SampleApplication : Application() {
                 BackPressureMitigation.IGNORE_NEWEST
             )
         )
-
+        if(hasHttpCustomEndpoint()){
+            configBuilder.apply {
+                _InternalProxy.allowClearTextHttp(this)
+            }
+        }
         return configBuilder.build()
+    }
+
+    private fun hasHttpCustomEndpoint(): Boolean {
+        val urls = setOf(
+            BuildConfig.DD_OVERRIDE_LOGS_URL,
+            BuildConfig.DD_OVERRIDE_TRACES_URL,
+            BuildConfig.DD_OVERRIDE_SESSION_REPLAY_URL,
+            BuildConfig.DD_OVERRIDE_RUM_URL
+        )
+        return urls.any { it.isNotBlank() && it.startsWith("http") }
     }
 
     @Suppress("TooGenericExceptionCaught", "CheckInternal")

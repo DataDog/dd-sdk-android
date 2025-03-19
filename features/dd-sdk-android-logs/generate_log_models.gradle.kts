@@ -15,6 +15,8 @@ tasks.register(
 ) {
     inputDirPath = "src/main/json/log"
     targetPackageName = "com.datadog.android.log.model"
+    ignoredFiles = arrayOf("logs-collection-schema.json")
+
 }
 
 afterEvaluate {

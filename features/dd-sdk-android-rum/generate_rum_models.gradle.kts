@@ -19,7 +19,9 @@ tasks.register(
         "_common-schema.json",
         "_action-child-schema.json",
         "_perf-metric-schema.json",
-        "_view-container-schema.json"
+        "_view-container-schema.json",
+        "any-rum-schema.json",
+        "rum-collection-schema.json"
     )
     inputNameMapping = mapOf(
         "action-schema.json" to "ActionEvent",
