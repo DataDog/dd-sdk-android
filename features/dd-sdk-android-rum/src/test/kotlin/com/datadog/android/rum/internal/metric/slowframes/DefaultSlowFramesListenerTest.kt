@@ -329,7 +329,7 @@ internal class DefaultSlowFramesListenerTest {
     }
 
     @Test
-    fun `M return W slowFramesRate { totalFramesDurationNs = 0 }`(
+    fun `M return 0 slowFramesRate W resolveReport { totalFramesDurationNs = 0 }`(
         @LongForgery(min = 1, max = MAX_DURATION_NS) viewDurationNs: Long,
         forge: Forge
     ) {
@@ -345,7 +345,7 @@ internal class DefaultSlowFramesListenerTest {
     }
 
     @Test
-    fun `M return 0 W freezeFramesRate { totalFramesDurationNs = 0 }`(
+    fun `M return 0 freezeFramesRate W resolveReport { totalFramesDurationNs = 0 }`(
         @LongForgery(min = 1, max = MAX_DURATION_NS) viewDurationNs: Long,
         forge: Forge
     ) {
@@ -406,7 +406,7 @@ internal class DefaultSlowFramesListenerTest {
     }
 
     @Test
-    fun `M return 0 W freezeFramesRate { view lived less than minViewLifetimeThresholdNs }`(
+    fun `M return 0 freezeFramesRate W resolveReport { view lived less than minViewLifetimeThresholdNs }`(
         @StringForgery viewId: String,
         @LongForgery(min = 1L, max = MAX_DURATION_NS) longTaskDuration: Long,
         @LongForgery(min = 100L, max = MAX_DURATION_NS) minViewLifetimeThresholdNs: Long
