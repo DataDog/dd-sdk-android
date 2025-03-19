@@ -10,7 +10,7 @@ import com.datadog.android.rum.configuration.SlowFramesConfiguration
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
 
-internal class SlowFramesListenerConfigurationForgeryFactory : ForgeryFactory<SlowFramesConfiguration> {
+internal class SlowFramesConfigurationForgeryFactory : ForgeryFactory<SlowFramesConfiguration> {
     override fun getForgery(forge: Forge) = SlowFramesConfiguration(
         maxSlowFramesAmount = forge.anInt(min = 0),
         maxSlowFrameThresholdNs = forge.aLong(min = 0),

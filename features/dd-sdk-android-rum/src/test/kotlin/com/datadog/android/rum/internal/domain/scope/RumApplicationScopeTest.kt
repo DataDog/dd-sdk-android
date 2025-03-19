@@ -131,7 +131,7 @@ internal class RumApplicationScopeTest {
         whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumFeatureScope
         whenever(mockSdkCore.time) doReturn fakeTimeInfoAtScopeStart
         whenever(mockSdkCore.internalLogger) doReturn mock()
-        whenever(mockSlowFramesListener.resolveReport(any())) doReturn viewUIPerformanceReport
+        whenever(mockSlowFramesListener.resolveReport(any(), any())) doReturn viewUIPerformanceReport
 
         testedScope = RumApplicationScope(
             fakeApplicationId,
