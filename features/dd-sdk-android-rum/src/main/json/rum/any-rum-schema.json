@@ -1,0 +1,20 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "$id": "any-rum-schema.json",
+  "type": "object",
+  "title": "RumEvent",
+  "oneOf": [
+    {
+      "$ref": "view-schema.json"
+    },
+    {
+      "$ref": "error-schema.json"
+    },
+    {
+      "$ref": "resource-schema.json"
+    },
+    {
+      "$ref": "action-schema.json"
+    }
+  ]
+}

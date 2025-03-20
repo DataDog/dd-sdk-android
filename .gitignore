@@ -29,3 +29,9 @@ config/*
 gh_token
 sdk_classpath
 detekt_classpath
+
+# MockWebServer buckets
+buckets/
+
+# ValidPyaloads folder
+valid_payloads/

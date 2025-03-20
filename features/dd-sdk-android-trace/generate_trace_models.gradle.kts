@@ -15,6 +15,7 @@ tasks.register(
 ) {
     inputDirPath = "src/main/json/trace"
     targetPackageName = "com.datadog.android.trace.model"
+    ignoredFiles = arrayOf("spans-collection-schema.json")
 }
 
 afterEvaluate {

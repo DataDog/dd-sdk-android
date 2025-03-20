@@ -1,0 +1,9 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "$id": "logs-collection-schema.json",
+  "title": "LogsCollection",
+  "type": "array",
+  "items": {
+    "$ref": "log-schema.json"
+  }
+}
