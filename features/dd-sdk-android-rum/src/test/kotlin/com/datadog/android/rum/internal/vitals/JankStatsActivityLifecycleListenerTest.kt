@@ -7,6 +7,8 @@
 package com.datadog.android.rum.internal.vitals
 
 import android.app.Activity
+import android.content.Context
+import android.hardware.display.DisplayManager
 import android.os.Build
 import android.os.Bundle
 import android.view.Display
@@ -25,6 +27,7 @@ import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -43,6 +46,7 @@ import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.inOrder
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.reset
+import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
@@ -78,6 +82,9 @@ internal class JankStatsActivityLifecycleListenerTest {
     lateinit var mockDecorView: View
 
     @Mock
+    lateinit var mockDisplayManager: DisplayManager
+
+    @Mock
     lateinit var mockJankStatsProvider: JankStatsProvider
 
     @Mock
@@ -93,6 +100,8 @@ internal class JankStatsActivityLifecycleListenerTest {
         whenever(mockWindow.peekDecorView()) doReturn mockDecorView
         whenever(mockActivity.window) doReturn mockWindow
         whenever(mockActivity.display) doReturn mockDisplay
+        whenever(mockDisplayManager.getDisplay(Display.DEFAULT_DISPLAY)) doReturn mockDisplay
+        whenever(mockActivity.getSystemService(Context.DISPLAY_SERVICE)) doReturn mockDisplayManager
         whenever(mockJankStatsProvider.createJankStatsAndTrack(any(), any(), any())) doReturn mockJankStats
         whenever(mockJankStats.isTrackingEnabled) doReturn true
 
@@ -381,6 +390,91 @@ internal class JankStatsActivityLifecycleListenerTest {
             testedJankListener.onActivityStarted(mockActivity)
             testedJankListener.onActivityDestroyed(mockActivity)
         }
+    }
+
+    @Test
+    fun `M not call addOnFrameMetricsAvailableListener() W onActivityStarted { ANDROID_SDK less than S } `(
+        @IntForgery(min = Build.VERSION_CODES.LOLLIPOP, max = Build.VERSION_CODES.S) apiVersion: Int
+    ) {
+        // There is a bug in AndroidFramework that could throw NPE, so we subscribing to the FrameMetrics only since S
+        // https://github.com/DataDog/dd-sdk-android/issues/2556
+
+        // Given
+        whenever(mockDecorView.isHardwareAccelerated) doReturn true
+        whenever(mockBuildSdkVersionProvider.version) doReturn apiVersion
+
+        // When
+        testedJankListener.onActivityStarted(mockActivity)
+
+        // Then
+        verify(mockDecorView, times(0)).post(any())
+        verify(mockWindow, times(0)).addOnFrameMetricsAvailableListener(any(), any())
+    }
+
+    @Test
+    fun `M not call addOnFrameMetricsAvailableListener() W onActivityStarted { ANDROID_SDK grater or equal S } `(
+        @IntForgery(min = Build.VERSION_CODES.S) apiVersion: Int
+    ) {
+        // There is a bug in AndroidFramework that could throw NPE, so we subscribing to the FrameMetrics only since S
+        // https://github.com/DataDog/dd-sdk-android/issues/2556
+
+        // Given
+        whenever(mockDecorView.isHardwareAccelerated) doReturn true
+        whenever(mockBuildSdkVersionProvider.version) doReturn apiVersion
+        // When
+        testedJankListener.onActivityStarted(mockActivity)
+        argumentCaptor<Runnable> {
+            verify(mockDecorView).post(capture())
+            firstValue.run()
+        }
+
+        // Then
+        verify(mockWindow).addOnFrameMetricsAvailableListener(any(), any())
+    }
+
+    @Test
+    fun `M not call addOnFrameMetricsAvailableListener() W onActivityDestroyed { ANDROID_SDK less than S } `(
+        @IntForgery(min = Build.VERSION_CODES.LOLLIPOP, max = Build.VERSION_CODES.S) apiVersion: Int
+    ) {
+        // There is a bug in AndroidFramework that could throw NPE, so we subscribing to the FrameMetrics only since S
+        // https://github.com/DataDog/dd-sdk-android/issues/2556
+
+        // Given
+        whenever(mockDecorView.isHardwareAccelerated) doReturn true
+        whenever(mockBuildSdkVersionProvider.version) doReturn apiVersion
+        testedJankListener.onActivityStarted(mockActivity)
+        testedJankListener.activeActivities.clear()
+
+        // When
+        testedJankListener.onActivityDestroyed(mockActivity)
+
+        // Then
+        verify(mockDecorView, times(0)).post(any())
+        verify(mockWindow, times(0)).removeOnFrameMetricsAvailableListener(any())
+    }
+
+    @Test
+    fun `M not call addOnFrameMetricsAvailableListener() W onActivityDestroyed { ANDROID_SDK grater or equal S } `(
+        @IntForgery(min = Build.VERSION_CODES.S) apiVersion: Int
+    ) {
+        // There is a bug in AndroidFramework that could throw NPE, so we subscribing to the FrameMetrics only since S
+        // https://github.com/DataDog/dd-sdk-android/issues/2556
+
+        // Given
+        whenever(mockDecorView.isHardwareAccelerated) doReturn true
+        whenever(mockBuildSdkVersionProvider.version) doReturn apiVersion
+        testedJankListener.onActivityStarted(mockActivity)
+        argumentCaptor<Runnable> {
+            verify(mockDecorView).post(capture())
+            firstValue.run()
+        }
+        testedJankListener.activeActivities.clear()
+
+        // When
+        testedJankListener.onActivityDestroyed(mockActivity)
+
+        // Then
+        verify(mockWindow).removeOnFrameMetricsAvailableListener(any())
     }
 
     @Test
