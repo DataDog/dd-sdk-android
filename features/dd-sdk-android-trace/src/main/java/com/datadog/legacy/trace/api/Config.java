@@ -883,17 +883,7 @@ public class Config {
             return value;
         }
 
-        // If value not provided from system properties, looking at env variables
-        value = System.getenv(propertyNameToEnvironmentVariableName(name));
-        if (null != value) {
-            return value;
-        }
-
-        // If value is not defined yet, we look at properties optionally defined in a properties file
-        value = propertiesFromConfigFile.getProperty(systemPropertyName);
-        if (null != value) {
-            return value;
-        }
+        // getting setting from env or from config file is not supported on Android
 
         return defaultValue;
     }
