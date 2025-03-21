@@ -82,34 +82,28 @@ class SampleApplication : Application() {
         "127.0.0.1"
     )
 
-    private val okHttpClient by lazy {
-        OkHttpClient.Builder()
-            .addInterceptor(
-                DatadogInterceptor.Builder(tracedHosts)
-                    .setTraceSampler(RateBasedSampler(100f))
-                    .build()
-            )
-            .addNetworkInterceptor(
-                TracingInterceptor.Builder(tracedHosts)
-                    .setTraceSampler(RateBasedSampler(100f))
-                    .build()
-            )
-            .eventListenerFactory(DatadogEventListener.Factory())
-            .build()
-    }
+    private val okHttpClient = OkHttpClient.Builder()
+        .addInterceptor(
+            DatadogInterceptor.Builder(tracedHosts)
+                .setTraceSampler(RateBasedSampler(100f))
+                .build()
+        )
+        .addNetworkInterceptor(
+            TracingInterceptor.Builder(tracedHosts)
+                .setTraceSampler(RateBasedSampler(100f))
+                .build()
+        )
+        .eventListenerFactory(DatadogEventListener.Factory())
+        .build()
 
-    private val retrofitClient by lazy {
-        Retrofit.Builder()
-            .baseUrl("https://api.datadoghq.com/api/v2/")
-            .addConverterFactory(GsonConverterFactory.create(GsonBuilder().setLenient().create()))
-            .addCallAdapterFactory(RxJava3CallAdapterFactory.createSynchronous())
-            .client(okHttpClient)
-            .build()
-    }
+    private val retrofitClient = Retrofit.Builder()
+        .baseUrl("https://api.datadoghq.com/api/v2/")
+        .addConverterFactory(GsonConverterFactory.create(GsonBuilder().setLenient().create()))
+        .addCallAdapterFactory(RxJava3CallAdapterFactory.createSynchronous())
+        .client(okHttpClient)
+        .build()
 
-    private val retrofitBaseDataSource by lazy {
-        retrofitClient.create(RemoteDataSource::class.java)
-    }
+    private val retrofitBaseDataSource = retrofitClient.create(RemoteDataSource::class.java)
 
     private val localServer = LocalServer()
 
