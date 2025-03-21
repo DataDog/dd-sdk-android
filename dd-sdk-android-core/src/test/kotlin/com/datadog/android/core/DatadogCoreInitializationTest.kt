@@ -17,6 +17,7 @@ import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.UploadFrequency
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.DatadogCore
+import com.datadog.android.core.internal.DatadogCore.Companion.OKHTTP_INTERCEPTOR_SAMPLE_RATE
 import com.datadog.android.core.internal.SdkFeature
 import com.datadog.android.core.thread.FlushableExecutorService
 import com.datadog.android.error.internal.CrashReportsFeature
@@ -366,6 +367,14 @@ internal class DatadogCoreInitializationTest {
         val mockRumFeature = mock<SdkFeature>()
         testedCore.features += Feature.RUM_FEATURE_NAME to mockRumFeature
 
+        val mockTracingFeature = mock<SdkFeature>()
+        testedCore.features += Feature.TRACING_FEATURE_NAME to mockTracingFeature
+
+        val traceSampleRate = 42f
+        testedCore.updateFeatureContext(Feature.TRACING_FEATURE_NAME) {
+            it[OKHTTP_INTERCEPTOR_SAMPLE_RATE] = traceSampleRate
+        }
+
         testedCore.coreFeature.uploadExecutorService.queue
             .toTypedArray()
             .forEach {
@@ -388,6 +397,8 @@ internal class DatadogCoreInitializationTest {
                 .isEqualTo(configuration.coreConfig.batchProcessingLevel.maxBatchesPerUploadJob)
             assertThat(telemetryConfigurationEvent.useProxy)
                 .isEqualTo(configuration.coreConfig.proxy != null)
+            assertThat(telemetryConfigurationEvent.okhttpInterceptorSamplingRate)
+                .isEqualTo(traceSampleRate)
         }
     }
 
