@@ -46,7 +46,8 @@ stages:
     - exit_code=0
     - $ANDROID_HOME/emulator/emulator -avd "$EMULATOR_NAME" -grpc-use-jwt -no-snapstorage -no-audio -no-window -no-boot-anim -verbose -qemu -machine virt &
     - GRADLE_OPTS="-Xmx3072m" ./gradlew :instrumented:integration:connectedDebugAndroidTest --stacktrace --no-daemon $( (( $ANDROID_API <= 23 )) && echo "-Puse-api21-java-backport -Puse-desugaring" ) || exit_code=$?
-    - $ANDROID_HOME/platform-tools/adb emu kill
+    - ANDROID_EMULATOR_WAIT_TIME_BEFORE_KILL=0 && $ANDROID_HOME/platform-tools/adb emu kill
+    - sleep 20
     - if [[ "$exit_code" -ne 0 ]]; then exit 1; fi
     - exit 0
   run-core-it-instrumented:
@@ -54,7 +55,8 @@ stages:
     - exit_code=0
     - $ANDROID_HOME/emulator/emulator -avd "$EMULATOR_NAME" -grpc-use-jwt -no-snapstorage -no-audio -no-window -no-boot-anim -verbose -qemu -machine virt &
     - GRADLE_OPTS="-Xmx3072m" ./gradlew :reliability:core-it:connectedDebugAndroidTest --stacktrace --no-daemon $( (( $ANDROID_API <= 23 )) && echo "-Puse-api21-java-backport -Puse-desugaring" ) || exit_code=$?
-    - $ANDROID_HOME/platform-tools/adb emu kill
+    - ANDROID_EMULATOR_WAIT_TIME_BEFORE_KILL=0 && $ANDROID_HOME/platform-tools/adb emu kill
+    - sleep 20
     - if [[ "$exit_code" -ne 0 ]]; then exit 1; fi
     - exit 0
   set-publishing-credentials:
