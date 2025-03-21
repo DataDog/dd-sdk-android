@@ -1,3 +1,7 @@
+# 2.19.2 / 2025-03-20
+
+* [BUGFIX] Fix NPE with Metrics listener on older APIs. See[#2558](https://github.com/DataDog/dd-sdk-android/pull/2558)
+
 # 2.19.1 / 2025-03-17
 
 * [BUGFIX] Fix NPE when `Drawable.getCurrent` returns null. See[#2545](https://github.com/DataDog/dd-sdk-android/pull/2545)

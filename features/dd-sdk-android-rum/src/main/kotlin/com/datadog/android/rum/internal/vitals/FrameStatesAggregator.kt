@@ -143,7 +143,7 @@ internal class FrameStatesAggregator(
         if (activeActivities[activity.window].isNullOrEmpty()) {
             activeWindowsListener.remove(activity.window)
             activeActivities.remove(activity.window)
-            if (buildSdkVersionProvider.version >= Build.VERSION_CODES.N) {
+            if (buildSdkVersionProvider.version >= Build.VERSION_CODES.S) {
                 unregisterMetricListener(activity.window)
             }
         }
@@ -205,7 +205,7 @@ internal class FrameStatesAggregator(
     @SuppressLint("NewApi")
     @MainThread
     private fun trackWindowMetrics(isKnownWindow: Boolean, window: Window, activity: Activity) {
-        if (buildSdkVersionProvider.version >= Build.VERSION_CODES.N && !isKnownWindow) {
+        if (buildSdkVersionProvider.version >= Build.VERSION_CODES.S && !isKnownWindow) {
             registerMetricListener(window)
         } else if (display == null && buildSdkVersionProvider.version == Build.VERSION_CODES.R) {
             // Fallback - Android 30 allows apps to not run at a fixed 60hz, but didn't yet have
@@ -215,7 +215,9 @@ internal class FrameStatesAggregator(
         }
     }
 
-    @RequiresApi(Build.VERSION_CODES.N)
+    // There is a bug in AndroidFramework that could throw NPE, so we subscribing to the FrameMetrics only since S
+    // https://github.com/DataDog/dd-sdk-android/issues/2556
+    @RequiresApi(Build.VERSION_CODES.S)
     private fun registerMetricListener(window: Window) {
         if (frameMetricsListener == null) {
             frameMetricsListener = DDFrameMetricsListener()
@@ -262,7 +264,9 @@ internal class FrameStatesAggregator(
         }
     }
 
-    @RequiresApi(Build.VERSION_CODES.N)
+    // There is a bug in AndroidFramework that could throw NPE, so we subscribing to the FrameMetrics only since S
+    // https://github.com/DataDog/dd-sdk-android/issues/2556
+    @RequiresApi(Build.VERSION_CODES.S)
     private fun unregisterMetricListener(window: Window) {
         try {
             window.removeOnFrameMetricsAvailableListener(frameMetricsListener)
