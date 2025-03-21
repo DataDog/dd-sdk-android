@@ -221,6 +221,15 @@ internal constructor(
         localTracerFactory = DEFAULT_LOCAL_TRACER_FACTORY
     )
 
+    init {
+        val sdkCore: FeatureSdkCore? = sdkCoreReference.get() as? FeatureSdkCore
+
+        sdkCore?.updateFeatureContext(Feature.TRACING_FEATURE_NAME) {
+            val samplingRate = traceSampler.getSampleRate()
+            it[OKHTTP_INTERCEPTOR_SAMPLE_RATE] = samplingRate
+        }
+    }
+
     // region Interceptor
 
     /** @inheritdoc */
@@ -983,5 +992,7 @@ internal constructor(
                     .setTracingHeaderTypes(tracingHeaderTypes)
                     .build()
             }
+
+        private const val OKHTTP_INTERCEPTOR_SAMPLE_RATE = "okhttp_interceptor_sampling_rate"
     }
 }
