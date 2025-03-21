@@ -1548,7 +1548,7 @@ internal class TelemetryEventHandlerTest {
             .hasUseProxy(internalConfigurationEvent.useProxy)
             .hasUseLocalEncryption(internalConfigurationEvent.useLocalEncryption)
             .hasIsMainProcess(fakeDatadogContext.processInfo.isMainProcess)
-            .hasOkhttpInterceptorSamplingRate(internalConfigurationEvent.okhttpInterceptorSamplingRate)
+            .hasOkhttpInterceptorSamplingRate(internalConfigurationEvent.okhttpInterceptorSamplingRate?.toLong())
     }
 
     private fun assertConfigEventMatchesInternalEvent(
@@ -1568,7 +1568,7 @@ internal class TelemetryEventHandlerTest {
             .hasUseProxy(internalConfigurationEvent.useProxy)
             .hasUseLocalEncryption(internalConfigurationEvent.useLocalEncryption)
             .hasIsMainProcess(fakeDatadogContext.processInfo.isMainProcess)
-            .hasOkhttpInterceptorSamplingRate(internalConfigurationEvent.okhttpInterceptorSamplingRate)
+            .hasOkhttpInterceptorSamplingRate(internalConfigurationEvent.okhttpInterceptorSamplingRate?.toLong())
     }
 
     private fun Forge.forgeWritableInternalTelemetryEvent(): InternalTelemetryEvent {
