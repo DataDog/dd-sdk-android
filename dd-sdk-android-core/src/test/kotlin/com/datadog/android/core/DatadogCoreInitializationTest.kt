@@ -370,7 +370,7 @@ internal class DatadogCoreInitializationTest {
         val mockTracingFeature = mock<SdkFeature>()
         testedCore.features += Feature.TRACING_FEATURE_NAME to mockTracingFeature
 
-        val traceSampleRate = 42f
+        val traceSampleRate = forge.aFloat(min = 0f, max = 100f)
         testedCore.updateFeatureContext(Feature.TRACING_FEATURE_NAME) {
             it[OKHTTP_INTERCEPTOR_SAMPLE_RATE] = traceSampleRate
         }
