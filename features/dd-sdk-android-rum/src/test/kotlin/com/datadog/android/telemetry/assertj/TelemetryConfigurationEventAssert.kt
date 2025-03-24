@@ -290,6 +290,16 @@ internal class TelemetryConfigurationEventAssert(actual: TelemetryConfigurationE
         return this
     }
 
+    fun hasTraceSampleRate(expected: Long?): TelemetryConfigurationEventAssert {
+        assertThat(actual.telemetry.configuration.traceSampleRate)
+            .overridingErrorMessage(
+                "Expected event data to have telemetry.configuration.traceSampleRate" +
+                    " $expected but was ${actual.telemetry.configuration.traceSampleRate}"
+            )
+            .isEqualTo(expected)
+        return this
+    }
+
     fun hasTnsTimeBasedThreshold(expected: Long?): TelemetryConfigurationEventAssert {
         assertThat(actual.telemetry.configuration.tnsTimeThresholdMs)
             .overridingErrorMessage(

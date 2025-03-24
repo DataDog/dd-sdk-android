@@ -512,13 +512,18 @@ internal class DatadogCore(
     private fun sendCoreConfigurationTelemetryEvent(configuration: Configuration) {
         val runnable = Runnable {
             val rumFeature = getFeature(Feature.RUM_FEATURE_NAME) ?: return@Runnable
+
+            val tracingFeatureContext = getFeatureContext(Feature.TRACING_FEATURE_NAME)
+            val okhttpInterceptorSampleRate = tracingFeatureContext[OKHTTP_INTERCEPTOR_SAMPLE_RATE] as? Float?
+
             val event = InternalTelemetryEvent.Configuration(
                 trackErrors = configuration.crashReportsEnabled,
                 batchSize = configuration.coreConfig.batchSize.windowDurationMs,
                 useProxy = configuration.coreConfig.proxy != null,
                 useLocalEncryption = configuration.coreConfig.encryption != null,
                 batchUploadFrequency = configuration.coreConfig.uploadFrequency.baseStepMs,
-                batchProcessingLevel = configuration.coreConfig.batchProcessingLevel.maxBatchesPerUploadJob
+                batchProcessingLevel = configuration.coreConfig.batchProcessingLevel.maxBatchesPerUploadJob,
+                okhttpInterceptorSampleRate = okhttpInterceptorSampleRate
             )
             rumFeature.sendEvent(event)
         }
@@ -591,5 +596,7 @@ internal class DatadogCore(
 
         // fallback for APIs below Android N, see [DefaultAppStartTimeProvider].
         internal val startupTimeNs: Long = System.nanoTime()
+
+        internal const val OKHTTP_INTERCEPTOR_SAMPLE_RATE = "okhttp_interceptor_sample_rate"
     }
 }

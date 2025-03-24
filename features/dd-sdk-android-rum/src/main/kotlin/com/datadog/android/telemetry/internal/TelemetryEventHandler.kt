@@ -369,7 +369,8 @@ internal class TelemetryEventHandler(
                     batchProcessingLevel = event.batchProcessingLevel.toLong(),
                     isMainProcess = datadogContext.processInfo.isMainProcess,
                     invTimeThresholdMs = invTimeBasedThreshold,
-                    tnsTimeThresholdMs = tnsTimeBasedThreshold
+                    tnsTimeThresholdMs = tnsTimeBasedThreshold,
+                    traceSampleRate = event.okhttpInterceptorSampleRate?.toLong()
                 )
             )
         )
