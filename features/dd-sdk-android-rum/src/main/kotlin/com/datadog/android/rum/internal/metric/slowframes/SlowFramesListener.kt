@@ -23,7 +23,8 @@ internal interface SlowFramesListener : FrameStateListener {
 }
 
 internal class DefaultSlowFramesListener(
-    internal val configuration: SlowFramesConfiguration
+    internal val configuration: SlowFramesConfiguration,
+    internal val metricDispatcher: UISlownessMetricDispatcher
 ) : SlowFramesListener {
 
     @Volatile
@@ -38,6 +39,7 @@ internal class DefaultSlowFramesListener(
     override fun onViewCreated(viewId: String, startedTimestampNs: Long) {
         currentViewId = viewId
         currentViewStartedTimeStampNs = startedTimestampNs
+        metricDispatcher.onViewCreated(viewId)
     }
 
     @MainThread
@@ -48,7 +50,10 @@ internal class DefaultSlowFramesListener(
         if (report == null) return null
 
         // making sure that report is not partially updated
-        return synchronized(report) { report.copy() }
+        return synchronized(report) {
+            if (isViewCompleted) metricDispatcher.sendMetric(viewId)
+            report.copy()
+        }
     }
 
     @WorkerThread
@@ -68,10 +73,12 @@ internal class DefaultSlowFramesListener(
 
             if (frameDurationNs > configuration.maxSlowFrameThresholdNs || !volatileFrameData.isJank) {
                 // Frame duration is too big to be considered as a slow frame or not jank
+                metricDispatcher.incIgnoredFrame(viewId)
                 return
             }
 
             report.slowFramesDurationNs += frameDurationNs
+            metricDispatcher.incSlowFrame(viewId)
             val previousSlowFrameRecord = report.lastSlowFrameRecord
             val delaySinceLastUpdate = frameStartedTimestampNs -
                 (previousSlowFrameRecord?.startTimestampNs ?: frameStartedTimestampNs)
@@ -100,9 +107,12 @@ internal class DefaultSlowFramesListener(
     @WorkerThread
     override fun onAddLongTask(durationNs: Long) {
         val viewId = currentViewId
-        if (durationNs >= configuration.freezeDurationThreshold && viewId != null) {
+        if (durationNs >= configuration.freezeDurationThresholdNs && viewId != null) {
             val report = getViewPerformanceReport(viewId)
-            synchronized(report) { report.freezeFramesDuration += durationNs }
+            synchronized(report) {
+                metricDispatcher.incFreezeFrame(viewId)
+                report.freezeFramesDuration += durationNs
+            }
         }
     }
 
