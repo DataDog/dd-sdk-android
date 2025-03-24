@@ -36,7 +36,7 @@ internal class TraceWriter(
         // NO - OP
     }
 
-    override fun write(trace: MutableList<DDSpan>?) {
+    override fun write(trace: List<DDSpan>?) {
         if (trace == null) return
         sdkCore.getFeature(Feature.TRACING_FEATURE_NAME)
             ?.withWriteContext { datadogContext, eventBatchWriter ->
