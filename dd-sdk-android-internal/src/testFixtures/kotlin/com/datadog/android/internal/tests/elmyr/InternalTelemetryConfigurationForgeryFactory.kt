@@ -20,7 +20,7 @@ class InternalTelemetryConfigurationForgeryFactory : ForgeryFactory<InternalTele
             batchUploadFrequency = forge.aLong(),
             useProxy = forge.aBool(),
             useLocalEncryption = forge.aBool(),
-            okhttpInterceptorSamplingRate = forge.aFloat(min = 0f, max = 100f)
+            okhttpInterceptorSampleRate = forge.aFloat(min = 0f, max = 100f)
         )
     }
 }

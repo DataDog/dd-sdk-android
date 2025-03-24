@@ -370,7 +370,7 @@ internal class TelemetryEventHandler(
                     isMainProcess = datadogContext.processInfo.isMainProcess,
                     invTimeThresholdMs = invTimeBasedThreshold,
                     tnsTimeThresholdMs = tnsTimeBasedThreshold,
-                    traceSampleRate = event.okhttpInterceptorSamplingRate?.toLong()
+                    traceSampleRate = event.okhttpInterceptorSampleRate?.toLong()
                 )
             )
         )

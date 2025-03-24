@@ -85,7 +85,7 @@ public final class com/datadog/android/internal/telemetry/InternalTelemetryEvent
 	public final fun getBatchProcessingLevel ()I
 	public final fun getBatchSize ()J
 	public final fun getBatchUploadFrequency ()J
-	public final fun getOkhttpInterceptorSamplingRate ()Ljava/lang/Float;
+	public final fun getOkhttpInterceptorSampleRate ()Ljava/lang/Float;
 	public final fun getTrackErrors ()Z
 	public final fun getUseLocalEncryption ()Z
 	public final fun getUseProxy ()Z

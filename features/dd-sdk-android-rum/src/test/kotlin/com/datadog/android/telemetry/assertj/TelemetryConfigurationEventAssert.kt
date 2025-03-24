@@ -290,7 +290,7 @@ internal class TelemetryConfigurationEventAssert(actual: TelemetryConfigurationE
         return this
     }
 
-    fun hasOkhttpInterceptorSamplingRate(expected: Long?): TelemetryConfigurationEventAssert {
+    fun hasTraceSampleRate(expected: Long?): TelemetryConfigurationEventAssert {
         assertThat(actual.telemetry.configuration.traceSampleRate)
             .overridingErrorMessage(
                 "Expected event data to have telemetry.configuration.traceSampleRate" +

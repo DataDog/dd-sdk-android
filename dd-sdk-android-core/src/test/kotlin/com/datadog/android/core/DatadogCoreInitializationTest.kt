@@ -397,7 +397,7 @@ internal class DatadogCoreInitializationTest {
                 .isEqualTo(configuration.coreConfig.batchProcessingLevel.maxBatchesPerUploadJob)
             assertThat(telemetryConfigurationEvent.useProxy)
                 .isEqualTo(configuration.coreConfig.proxy != null)
-            assertThat(telemetryConfigurationEvent.okhttpInterceptorSamplingRate)
+            assertThat(telemetryConfigurationEvent.okhttpInterceptorSampleRate)
                 .isEqualTo(traceSampleRate)
         }
     }

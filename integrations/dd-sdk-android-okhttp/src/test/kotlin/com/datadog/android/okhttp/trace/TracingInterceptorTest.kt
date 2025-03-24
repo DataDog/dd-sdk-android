@@ -1572,7 +1572,7 @@ internal open class TracingInterceptorTest {
     }
 
     @Test
-    fun `M add traceSample rate to tracing feature context W constructor called`(
+    fun `M add trace sample rate to tracing feature context W constructor called`(
         @FloatForgery(min = 0f, max = 100f) sampleRate: Float
     ) {
         // GIVEN

@@ -222,11 +222,11 @@ internal constructor(
     )
 
     init {
-        val sdkCore: FeatureSdkCore? = sdkCoreReference.get() as? FeatureSdkCore
+        val sdkCore = sdkCoreReference.get() as? FeatureSdkCore
 
         sdkCore?.updateFeatureContext(Feature.TRACING_FEATURE_NAME) {
-            val samplingRate = traceSampler.getSampleRate()
-            it[OKHTTP_INTERCEPTOR_SAMPLE_RATE] = samplingRate
+            val sampleRate = traceSampler.getSampleRate()
+            it[OKHTTP_INTERCEPTOR_SAMPLE_RATE] = sampleRate
         }
     }
 
@@ -983,7 +983,7 @@ internal constructor(
         internal const val W3C_TRACE_ID_LENGTH = 32
         internal const val W3C_PARENT_ID_LENGTH = 16
 
-        internal const val OKHTTP_INTERCEPTOR_SAMPLE_RATE = "okhttp_interceptor_sampling_rate"
+        internal const val OKHTTP_INTERCEPTOR_SAMPLE_RATE = "okhttp_interceptor_sample_rate"
 
         private const val AGENT_PSR_ATTRIBUTE = "_dd.agent_psr"
         private val DEFAULT_LOCAL_TRACER_FACTORY: (SdkCore, Set<TracingHeaderType>) -> Tracer =
