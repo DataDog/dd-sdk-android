@@ -983,6 +983,8 @@ internal constructor(
         internal const val W3C_TRACE_ID_LENGTH = 32
         internal const val W3C_PARENT_ID_LENGTH = 16
 
+        internal const val OKHTTP_INTERCEPTOR_SAMPLE_RATE = "okhttp_interceptor_sampling_rate"
+
         private const val AGENT_PSR_ATTRIBUTE = "_dd.agent_psr"
         private val DEFAULT_LOCAL_TRACER_FACTORY: (SdkCore, Set<TracingHeaderType>) -> Tracer =
             { sdkCore, tracingHeaderTypes ->
@@ -992,7 +994,5 @@ internal constructor(
                     .setTracingHeaderTypes(tracingHeaderTypes)
                     .build()
             }
-
-        private const val OKHTTP_INTERCEPTOR_SAMPLE_RATE = "okhttp_interceptor_sampling_rate"
     }
 }

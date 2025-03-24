@@ -15,6 +15,7 @@ import com.datadog.android.internal.utils.loggableStackTrace
 import com.datadog.android.okhttp.TraceContext
 import com.datadog.android.okhttp.TraceContextInjection
 import com.datadog.android.okhttp.internal.utils.forge.OkHttpConfigurator
+import com.datadog.android.okhttp.trace.TracingInterceptor.Companion.OKHTTP_INTERCEPTOR_SAMPLE_RATE
 import com.datadog.android.okhttp.utils.assertj.HeadersAssert.Companion.assertThat
 import com.datadog.android.okhttp.utils.config.DatadogSingletonTestConfiguration
 import com.datadog.android.okhttp.utils.config.GlobalRumMonitorTestConfiguration
@@ -31,6 +32,7 @@ import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.datadog.tools.unit.setStaticValue
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.BoolForgery
+import fr.xgouchet.elmyr.annotation.FloatForgery
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -70,11 +72,13 @@ import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
+import org.mockito.kotlin.verifyNoMoreInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.math.BigInteger
@@ -1565,6 +1569,27 @@ internal open class TracingInterceptorTest {
         countDownLatch.await(5, TimeUnit.SECONDS)
         verify(mockLocalTracer, times(2)).buildSpan(TracingInterceptor.SPAN_NAME)
         assertThat(called).isEqualTo(1)
+    }
+
+    @Test
+    fun `M add traceSample rate to tracing feature context W constructor called`(
+        @FloatForgery(min = 0f, max = 100f) sampleRate: Float
+    ) {
+        // GIVEN
+        whenever(mockTraceSampler.getSampleRate()) doReturn sampleRate
+
+        val contextMock = mock<MutableMap<String, Any?>>()
+        whenever(rumMonitor.mockSdkCore.updateFeatureContext(eq(Feature.TRACING_FEATURE_NAME), any())) doAnswer {
+            val updater = it.getArgument<(MutableMap<String, Any?>) -> Unit>(1)
+            updater(contextMock)
+        }
+
+        // WHEN
+        testedInterceptor = instantiateTestedInterceptor { _, _ -> mockLocalTracer }
+
+        // THEN
+        verify(contextMock).put(OKHTTP_INTERCEPTOR_SAMPLE_RATE, sampleRate)
+        verifyNoMoreInteractions(contextMock)
     }
 
     // region Internal
