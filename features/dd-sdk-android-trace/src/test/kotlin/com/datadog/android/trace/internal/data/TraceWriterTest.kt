@@ -108,7 +108,6 @@ internal class TraceWriterTest {
         // GIVEN
         val ddSpans = forge.aList { getForgery<DDSpan>() }
             .filter { it.samplingPriority !in TraceWriter.DROP_SAMPLING_PRIORITIES }
-            .toMutableList()
         val spanEvents = ddSpans.map { forge.getForgery<SpanEvent>() }
         val serializedSpans = ddSpans.map { forge.aString() }
 
@@ -145,7 +144,6 @@ internal class TraceWriterTest {
         // GIVEN
         val ddSpans = forge.aList { getForgery<DDSpan>() }
             .filter { it.samplingPriority in TraceWriter.DROP_SAMPLING_PRIORITIES }
-            .toMutableList()
 
         // WHEN
         testedWriter.write(ddSpans)
@@ -163,7 +161,6 @@ internal class TraceWriterTest {
         // GIVEN
         val ddSpans = forge.aList { getForgery<DDSpan>() }
             .filter { it.samplingPriority !in TraceWriter.DROP_SAMPLING_PRIORITIES }
-            .toMutableList()
         val spanEvents = ddSpans
             .map { forge.getForgery<SpanEvent>() }
         val mappedEvents = spanEvents.map { forge.aNullable { it } }
@@ -207,7 +204,6 @@ internal class TraceWriterTest {
         // GIVEN
         val ddSpans = forge.aList { getForgery<DDSpan>() }
             .filter { it.samplingPriority !in TraceWriter.DROP_SAMPLING_PRIORITIES }
-            .toMutableList()
         val spanEvents = ddSpans.map { forge.getForgery<SpanEvent>() }
 
         val serializedSpans = spanEvents.map { forge.aNullable { aString() } }
@@ -261,7 +257,6 @@ internal class TraceWriterTest {
         // GIVEN
         val ddSpans = forge.aList { getForgery<DDSpan>() }
             .filter { it.samplingPriority !in TraceWriter.DROP_SAMPLING_PRIORITIES }
-            .toMutableList()
         val spanEvents = ddSpans.map { forge.getForgery<SpanEvent>() }
         val serializedSpans = ddSpans.map { forge.aString() }
 
@@ -316,7 +311,7 @@ internal class TraceWriterTest {
     @Test
     fun `M request event write context once W write()`(forge: Forge) {
         // GIVEN
-        val ddSpans = forge.aList { getForgery<DDSpan>() }.toMutableList()
+        val ddSpans = forge.aList { getForgery<DDSpan>() }
 
         // WHEN
         testedWriter.write(ddSpans)
