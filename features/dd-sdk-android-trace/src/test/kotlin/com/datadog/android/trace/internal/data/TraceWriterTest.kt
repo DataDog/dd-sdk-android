@@ -20,6 +20,7 @@ import com.datadog.android.trace.internal.storage.ContextAwareSerializer
 import com.datadog.android.trace.model.SpanEvent
 import com.datadog.android.trace.utils.verifyLog
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.android.utils.forge.SpanForgeryFactory
 import com.datadog.opentracing.DDSpan
 import com.datadog.tools.unit.forge.aThrowable
 import fr.xgouchet.elmyr.Forge
@@ -106,8 +107,8 @@ internal class TraceWriterTest {
     @Test
     fun `M write spans W write()`(forge: Forge) {
         // GIVEN
-        val ddSpans = forge.aList { getForgery<DDSpan>() }
-            .filter { it.samplingPriority !in TraceWriter.DROP_SAMPLING_PRIORITIES }
+        val ddSpans = generateSpanListWithPriorities(forge, TraceWriter.KEEP_AND_UNSET_SAMPLING_PRIORITIES)
+
         val spanEvents = ddSpans.map { forge.getForgery<SpanEvent>() }
         val serializedSpans = ddSpans.map { forge.aString() }
 
@@ -142,8 +143,7 @@ internal class TraceWriterTest {
     @Test
     fun `M not write spans with drop sampling priority W write() { drop sampling decision }`(forge: Forge) {
         // GIVEN
-        val ddSpans = forge.aList { getForgery<DDSpan>() }
-            .filter { it.samplingPriority in TraceWriter.DROP_SAMPLING_PRIORITIES }
+        val ddSpans = generateSpanListWithPriorities(forge, TraceWriter.DROP_SAMPLING_PRIORITIES)
 
         // WHEN
         testedWriter.write(ddSpans)
@@ -159,8 +159,8 @@ internal class TraceWriterTest {
     @Test
     fun `M not write non-mapped spans W write()`(forge: Forge) {
         // GIVEN
-        val ddSpans = forge.aList { getForgery<DDSpan>() }
-            .filter { it.samplingPriority !in TraceWriter.DROP_SAMPLING_PRIORITIES }
+        val ddSpans = generateSpanListWithPriorities(forge, TraceWriter.KEEP_AND_UNSET_SAMPLING_PRIORITIES)
+
         val spanEvents = ddSpans
             .map { forge.getForgery<SpanEvent>() }
         val mappedEvents = spanEvents.map { forge.aNullable { it } }
@@ -202,8 +202,8 @@ internal class TraceWriterTest {
     @Test
     fun `M not write non-serialized spans W write()`(forge: Forge) {
         // GIVEN
-        val ddSpans = forge.aList { getForgery<DDSpan>() }
-            .filter { it.samplingPriority !in TraceWriter.DROP_SAMPLING_PRIORITIES }
+        val ddSpans = generateSpanListWithPriorities(forge, TraceWriter.KEEP_AND_UNSET_SAMPLING_PRIORITIES)
+
         val spanEvents = ddSpans.map { forge.getForgery<SpanEvent>() }
 
         val serializedSpans = spanEvents.map { forge.aNullable { aString() } }
@@ -255,8 +255,8 @@ internal class TraceWriterTest {
     @Test
     fun `M log error and proceed W write() { serialization failed }`(forge: Forge) {
         // GIVEN
-        val ddSpans = forge.aList { getForgery<DDSpan>() }
-            .filter { it.samplingPriority !in TraceWriter.DROP_SAMPLING_PRIORITIES }
+        val ddSpans = generateSpanListWithPriorities(forge, TraceWriter.KEEP_AND_UNSET_SAMPLING_PRIORITIES)
+
         val spanEvents = ddSpans.map { forge.getForgery<SpanEvent>() }
         val serializedSpans = ddSpans.map { forge.aString() }
 
@@ -328,4 +328,12 @@ internal class TraceWriterTest {
     }
 
     // endregion
+
+    private fun generateSpanListWithPriorities(forge: Forge, priorities: Set<Int>): List<DDSpan> {
+        return forge.aList {
+            SpanForgeryFactory { frg, span ->
+                span.samplingPriority = frg.anElementFrom(priorities)
+            }.getForgery(forge)
+        }
+    }
 }

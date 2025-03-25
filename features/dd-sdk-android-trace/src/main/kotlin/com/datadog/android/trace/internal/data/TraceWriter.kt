@@ -92,5 +92,7 @@ internal class TraceWriter(
     companion object {
         internal const val ERROR_SERIALIZING = "Error serializing %s model"
         internal val DROP_SAMPLING_PRIORITIES = setOf(PrioritySampling.SAMPLER_DROP, PrioritySampling.USER_DROP)
+        private val KEEP_SAMPLING_PRIORITIES = setOf(PrioritySampling.SAMPLER_KEEP, PrioritySampling.USER_KEEP)
+        internal val KEEP_AND_UNSET_SAMPLING_PRIORITIES = KEEP_SAMPLING_PRIORITIES + PrioritySampling.UNSET
     }
 }
