@@ -5,8 +5,6 @@
  */
 package com.datadog.android.rum.internal.metric.slowframes
 
-import androidx.annotation.MainThread
-import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.InternalLogger.Target
 import com.datadog.android.rum.configuration.SlowFramesConfiguration
@@ -19,11 +17,11 @@ internal interface UISlownessMetricDispatcher {
 
     fun onViewCreated(viewId: String)
 
-    fun incSlowFrame(viewId: String)
+    fun incrementSlowFrameCount(viewId: String)
 
-    fun incIgnoredFrame(viewId: String)
+    fun incrementIgnoredFrameCount(viewId: String)
 
-    fun incFreezeFrame(viewId: String)
+    fun incrementFreezeFrameCount(viewId: String)
 
     fun sendMetric(viewId: String)
 }
@@ -31,38 +29,38 @@ internal interface UISlownessMetricDispatcher {
 internal class DefaultUISlownessMetricDispatcher(
     private val config: SlowFramesConfiguration,
     private val internalLogger: InternalLogger,
-    private val samplingRate: Float = DEFAULT_SAMPLE_RATE
+    private val samplingRate: Float = DEFAULT_SAMPLING_RATE
 ) : UISlownessMetricDispatcher {
 
     internal data class SlowFramesTelemetry(
         var slowFramesCount: AtomicInteger = AtomicInteger(0),
         var ignoredFramesCount: AtomicInteger = AtomicInteger(0),
-        var freezeFramesCount: AtomicInteger = AtomicInteger(0)
+        var frozenFramesCount: AtomicInteger = AtomicInteger(0)
     )
 
     private val viewTelemetry = ConcurrentHashMap<String, SlowFramesTelemetry>()
 
-    @MainThread
+    // Called from the main thread
     override fun onViewCreated(viewId: String) {
         viewTelemetry.putIfAbsent(viewId, SlowFramesTelemetry())
     }
 
-    @WorkerThread
-    override fun incSlowFrame(viewId: String) {
+    // Called from the background thread
+    override fun incrementSlowFrameCount(viewId: String) {
         viewTelemetry[viewId]?.slowFramesCount?.incrementAndGet()
     }
 
-    @WorkerThread
-    override fun incIgnoredFrame(viewId: String) {
+    // Called from the background thread
+    override fun incrementIgnoredFrameCount(viewId: String) {
         viewTelemetry[viewId]?.ignoredFramesCount?.incrementAndGet()
     }
 
-    @WorkerThread
-    override fun incFreezeFrame(viewId: String) {
-        viewTelemetry[viewId]?.freezeFramesCount?.incrementAndGet()
+    // Called from the background thread
+    override fun incrementFreezeFrameCount(viewId: String) {
+        viewTelemetry[viewId]?.frozenFramesCount?.incrementAndGet()
     }
 
-    @MainThread
+    // Called from the main thread
     override fun sendMetric(viewId: String) {
         val telemetry = viewTelemetry.remove(viewId)
         if (telemetry == null) {
@@ -80,7 +78,7 @@ internal class DefaultUISlownessMetricDispatcher(
             additionalProperties = buildMetricAttributesMap(
                 slowFramesCount = telemetry.slowFramesCount.get(),
                 ignoredFramesCount = telemetry.ignoredFramesCount.get(),
-                freezeFramesCount = telemetry.freezeFramesCount.get()
+                freezeFramesCount = telemetry.frozenFramesCount.get()
             )
         )
     }
@@ -111,7 +109,7 @@ internal class DefaultUISlownessMetricDispatcher(
                     }
                 )
                 put(
-                    KEY_FREEZED_FRAMES,
+                    KEY_FROZEN_FRAMES,
                     buildMap {
                         put(KEY_COUNT, freezeFramesCount)
                         put(
@@ -127,7 +125,7 @@ internal class DefaultUISlownessMetricDispatcher(
     }
 
     companion object {
-        private const val DEFAULT_SAMPLE_RATE: Float = 0.75f
+        private const val DEFAULT_SAMPLING_RATE: Float = 0.75f
 
         internal const val UI_SLOWNESS_MESSAGE = "[Mobile Metric] RUM UI Slowness"
 
@@ -145,7 +143,7 @@ internal class DefaultUISlownessMetricDispatcher(
         internal const val KEY_MAX_DURATION = "max_duration"
         internal const val KEY_VIEW_MIN_DURATION = "view_min_duration"
 
-        internal const val KEY_FREEZED_FRAMES = "freezed_frames"
+        internal const val KEY_FROZEN_FRAMES = "frozen_frames"
         internal const val KEY_MIN_DURATION = "min_duration"
     }
 }

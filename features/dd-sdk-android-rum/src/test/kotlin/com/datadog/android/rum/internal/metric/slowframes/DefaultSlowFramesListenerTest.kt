@@ -24,7 +24,7 @@ import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
-import org.mockito.kotlin.times
+import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.quality.Strictness
 
@@ -461,7 +461,7 @@ internal class DefaultSlowFramesListenerTest {
     }
 
     @Test
-    fun `M incSlowFrame W onFrame { isJank = true }`(
+    fun `M incrementSlowFrameCount W onFrame { isJank = true }`(
         forge: Forge
     ) {
         // Given
@@ -471,12 +471,12 @@ internal class DefaultSlowFramesListenerTest {
         testedListener.onFrame(forge.aFrameData(isJank = true))
 
         // Then
-        verify(mockMetricDispatcher).incSlowFrame(viewId)
-        verify(mockMetricDispatcher, times(0)).incIgnoredFrame(viewId)
+        verify(mockMetricDispatcher).incrementSlowFrameCount(viewId)
+        verify(mockMetricDispatcher, never()).incrementIgnoredFrameCount(viewId)
     }
 
     @Test
-    fun `M incIgnoredFrame W onFrame { isJank = false }`(
+    fun `M incrementIgnoredFrameCount W onFrame { isJank = false }`(
         forge: Forge
     ) {
         // Given
@@ -486,12 +486,12 @@ internal class DefaultSlowFramesListenerTest {
         testedListener.onFrame(forge.aFrameData(isJank = false))
 
         // Then
-        verify(mockMetricDispatcher).incIgnoredFrame(viewId)
-        verify(mockMetricDispatcher, times(0)).incSlowFrame(viewId)
+        verify(mockMetricDispatcher).incrementIgnoredFrameCount(viewId)
+        verify(mockMetricDispatcher, never()).incrementSlowFrameCount(viewId)
     }
 
     @Test
-    fun `M incIgnoredFrame W onFrame { isJank = true, frameDurationUiNanos gt maxSlowFrameThresholdNs }`(
+    fun `M incrementIgnoredFrameCount W onFrame { isJank = true, frameDurationUiNanos gt maxSlowFrameThresholdNs }`(
         @LongForgery(min = 0, max = Long.MAX_VALUE) maxSlowFrameThresholdNs: Long,
         forge: Forge
     ) {
@@ -512,12 +512,12 @@ internal class DefaultSlowFramesListenerTest {
         )
 
         // Then
-        verify(mockMetricDispatcher).incIgnoredFrame(viewId)
-        verify(mockMetricDispatcher, times(0)).incSlowFrame(viewId)
+        verify(mockMetricDispatcher).incrementIgnoredFrameCount(viewId)
+        verify(mockMetricDispatcher, never()).incrementSlowFrameCount(viewId)
     }
 
     @Test
-    fun `M incFreezeFrame W onAddLongTask {durationNs gt freezeDurationThresholdNs}`(
+    fun `M incrementFreezeFrameCount W onAddLongTask {durationNs gt freezeDurationThresholdNs}`(
         @LongForgery(min = 0, max = Long.MAX_VALUE - 1) freezeDurationThreshold: Long,
         @LongForgery(min = 0) startedTimestampNs: Long
     ) {
@@ -533,11 +533,11 @@ internal class DefaultSlowFramesListenerTest {
         testedListener.onAddLongTask(freezeDurationThreshold + 1)
 
         // Then
-        verify(mockMetricDispatcher).incFreezeFrame(viewId)
+        verify(mockMetricDispatcher).incrementFreezeFrameCount(viewId)
     }
 
     @Test
-    fun `M not incFreezeFrame W onAddLongTask {durationNs le freezeDurationThresholdNs}`(
+    fun `M not incrementFreezeFrameCount W onAddLongTask {durationNs le freezeDurationThresholdNs}`(
         @LongForgery(min = 1, max = Long.MAX_VALUE) freezeDurationThreshold: Long,
         @LongForgery(min = 0) startedTimestampNs: Long
     ) {
@@ -553,11 +553,11 @@ internal class DefaultSlowFramesListenerTest {
         testedListener.onAddLongTask(freezeDurationThreshold - 1)
 
         // Then
-        verify(mockMetricDispatcher, times(0)).incFreezeFrame(viewId)
+        verify(mockMetricDispatcher, never()).incrementFreezeFrameCount(viewId)
     }
 
     @Test
-    fun `M not incFreezeFrame W onAddLongTask { view not started }`(
+    fun `M not incrementFreezeFrameCount W onAddLongTask { view not started }`(
         @LongForgery(min = 0, max = Long.MAX_VALUE - 1) freezeDurationThreshold: Long
     ) {
         // Given
@@ -571,7 +571,7 @@ internal class DefaultSlowFramesListenerTest {
         testedListener.onAddLongTask(freezeDurationThreshold + 1)
 
         // Then
-        verify(mockMetricDispatcher, times(0)).incFreezeFrame(viewId)
+        verify(mockMetricDispatcher, never()).incrementFreezeFrameCount(viewId)
     }
 
     @Test
@@ -601,7 +601,7 @@ internal class DefaultSlowFramesListenerTest {
         testedListener.resolveReport(viewId, isViewCompleted = false)
 
         // Then
-        verify(mockMetricDispatcher, times(0)).sendMetric(viewId)
+        verify(mockMetricDispatcher, never()).sendMetric(viewId)
     }
 
     private fun Forge.aFrameData(

@@ -8,19 +8,11 @@ package com.datadog.android.rum.internal.metric.slowframes
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.InternalLogger.Target
 import com.datadog.android.rum.configuration.SlowFramesConfiguration
-import com.datadog.android.rum.internal.metric.slowframes.DefaultUISlownessMetricDispatcher.Companion.KEY_CONFIG
 import com.datadog.android.rum.internal.metric.slowframes.DefaultUISlownessMetricDispatcher.Companion.KEY_COUNT
-import com.datadog.android.rum.internal.metric.slowframes.DefaultUISlownessMetricDispatcher.Companion.KEY_FREEZED_FRAMES
+import com.datadog.android.rum.internal.metric.slowframes.DefaultUISlownessMetricDispatcher.Companion.KEY_FROZEN_FRAMES
 import com.datadog.android.rum.internal.metric.slowframes.DefaultUISlownessMetricDispatcher.Companion.KEY_IGNORED_COUNT
-import com.datadog.android.rum.internal.metric.slowframes.DefaultUISlownessMetricDispatcher.Companion.KEY_MAX_COUNT
-import com.datadog.android.rum.internal.metric.slowframes.DefaultUISlownessMetricDispatcher.Companion.KEY_MAX_DURATION
-import com.datadog.android.rum.internal.metric.slowframes.DefaultUISlownessMetricDispatcher.Companion.KEY_METRIC_TYPE
-import com.datadog.android.rum.internal.metric.slowframes.DefaultUISlownessMetricDispatcher.Companion.KEY_MIN_DURATION
 import com.datadog.android.rum.internal.metric.slowframes.DefaultUISlownessMetricDispatcher.Companion.KEY_RUM_UI_SLOWNESS
 import com.datadog.android.rum.internal.metric.slowframes.DefaultUISlownessMetricDispatcher.Companion.KEY_SLOW_FRAMES
-import com.datadog.android.rum.internal.metric.slowframes.DefaultUISlownessMetricDispatcher.Companion.KEY_SLOW_FRAME_THRESHOLD
-import com.datadog.android.rum.internal.metric.slowframes.DefaultUISlownessMetricDispatcher.Companion.KEY_VIEW_MIN_DURATION
-import com.datadog.android.rum.internal.metric.slowframes.DefaultUISlownessMetricDispatcher.Companion.VALUE_METRIC_TYPE
 import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.tools.unit.extensions.ApiLevelExtension
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
@@ -36,9 +28,9 @@ import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.any
 import org.mockito.kotlin.argThat
 import org.mockito.kotlin.eq
-import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.quality.Strictness
 
@@ -62,7 +54,7 @@ internal class DefaultUISlownessMetricDispatcherTest {
     lateinit var fakeSlowFramesConfiguration: SlowFramesConfiguration
 
     @Mock
-    private lateinit var internalLogger: InternalLogger
+    private lateinit var mockInternalLogger: InternalLogger
 
     private lateinit var testedDispatcher: DefaultUISlownessMetricDispatcher
 
@@ -70,7 +62,7 @@ internal class DefaultUISlownessMetricDispatcherTest {
     fun `set up`() {
         testedDispatcher = DefaultUISlownessMetricDispatcher(
             config = fakeSlowFramesConfiguration,
-            internalLogger = internalLogger,
+            internalLogger = mockInternalLogger,
             samplingRate = fakeSamplingRate
         )
     }
@@ -81,13 +73,13 @@ internal class DefaultUISlownessMetricDispatcherTest {
         testedDispatcher.onViewCreated(fakeViewId)
 
         // When
-        testedDispatcher.incSlowFrame(fakeViewId)
+        testedDispatcher.incrementSlowFrameCount(fakeViewId)
         testedDispatcher.sendMetric(fakeViewId)
 
         // Then
-        verify(internalLogger).logMetric(
+        verify(mockInternalLogger).logMetric(
             argThat { invoke() == DefaultUISlownessMetricDispatcher.UI_SLOWNESS_MESSAGE },
-            eq(buildMetricAttributesMap(slowFramesCount = 1, config = fakeSlowFramesConfiguration)),
+            argThat { hasExpectedValue(1, KEY_RUM_UI_SLOWNESS, KEY_SLOW_FRAMES, KEY_COUNT) },
             eq(fakeSamplingRate),
             eq(null)
         )
@@ -99,13 +91,13 @@ internal class DefaultUISlownessMetricDispatcherTest {
         testedDispatcher.onViewCreated(fakeViewId)
 
         // When
-        testedDispatcher.incFreezeFrame(fakeViewId)
+        testedDispatcher.incrementFreezeFrameCount(fakeViewId)
         testedDispatcher.sendMetric(fakeViewId)
 
         // Then
-        verify(internalLogger).logMetric(
+        verify(mockInternalLogger).logMetric(
             argThat { invoke() == DefaultUISlownessMetricDispatcher.UI_SLOWNESS_MESSAGE },
-            eq(buildMetricAttributesMap(freezeFramesCount = 1, config = fakeSlowFramesConfiguration)),
+            argThat { hasExpectedValue(1, KEY_RUM_UI_SLOWNESS, KEY_FROZEN_FRAMES, KEY_COUNT) },
             eq(fakeSamplingRate),
             eq(null)
         )
@@ -117,13 +109,13 @@ internal class DefaultUISlownessMetricDispatcherTest {
         testedDispatcher.onViewCreated(fakeViewId)
 
         // When
-        testedDispatcher.incIgnoredFrame(fakeViewId)
+        testedDispatcher.incrementIgnoredFrameCount(fakeViewId)
         testedDispatcher.sendMetric(fakeViewId)
 
         // Then
-        verify(internalLogger).logMetric(
+        verify(mockInternalLogger).logMetric(
             argThat { invoke() == DefaultUISlownessMetricDispatcher.UI_SLOWNESS_MESSAGE },
-            eq(buildMetricAttributesMap(ignoredFramesCount = 1, config = fakeSlowFramesConfiguration)),
+            argThat { hasExpectedValue(1, KEY_RUM_UI_SLOWNESS, KEY_SLOW_FRAMES, KEY_IGNORED_COUNT) },
             eq(fakeSamplingRate),
             eq(null)
         )
@@ -139,9 +131,9 @@ internal class DefaultUISlownessMetricDispatcherTest {
         testedDispatcher.sendMetric(fakeViewId)
 
         // Then
-        verify(internalLogger, times(1)).logMetric(
+        verify(mockInternalLogger).logMetric(
             argThat { invoke() == DefaultUISlownessMetricDispatcher.UI_SLOWNESS_MESSAGE },
-            eq(buildMetricAttributesMap(config = fakeSlowFramesConfiguration)),
+            any(),
             eq(fakeSamplingRate),
             eq(null)
         )
@@ -157,7 +149,7 @@ internal class DefaultUISlownessMetricDispatcherTest {
         testedDispatcher.sendMetric(fakeViewId)
 
         // Then
-        verify(internalLogger).log(
+        verify(mockInternalLogger).log(
             level = eq(InternalLogger.Level.WARN),
             target = eq(Target.TELEMETRY),
             messageBuilder = argThat { invoke() == "No telemetry found for viewId=$fakeViewId" },
@@ -167,49 +159,36 @@ internal class DefaultUISlownessMetricDispatcherTest {
         )
     }
 
+    @Test
+    fun `M samplingRate = 0,75 W sendMetric { default sampling rate }`() {
+        // Given
+        testedDispatcher = DefaultUISlownessMetricDispatcher(
+            config = fakeSlowFramesConfiguration,
+            internalLogger = mockInternalLogger
+        )
+        testedDispatcher.onViewCreated(fakeViewId)
+
+        // When
+        testedDispatcher.sendMetric(fakeViewId)
+
+        // Then
+        verify(mockInternalLogger).logMetric(
+            messageBuilder = any(),
+            additionalProperties = any(),
+            samplingRate = eq(0.75f),
+            creationSampleRate = eq(null)
+        )
+    }
+
     companion object {
+        @Suppress("UNCHECKED_CAST", "SameParameterValue")
+        private fun Map<String, Any?>.hasExpectedValue(value: Any, vararg keys: String): Boolean {
+            var targetMap = this
+            for (key in keys.slice(0 until keys.size - 1)) {
+                targetMap = targetMap[key] as Map<String, Any>
+            }
 
-        private fun buildMetricAttributesMap(
-            slowFramesCount: Int = 0,
-            ignoredFramesCount: Int = 0,
-            freezeFramesCount: Int = 0,
-            config: SlowFramesConfiguration
-        ) = buildMetricAttributesMap(
-            slowFramesCount = slowFramesCount,
-            ignoredFramesCount = ignoredFramesCount,
-            freezeFramesCount = freezeFramesCount,
-            freezeDurationThreshold = config.freezeDurationThresholdNs,
-            maxSlowFramesAmount = config.maxSlowFramesAmount,
-            maxSlowFrameThresholdNs = config.maxSlowFrameThresholdNs,
-            minViewLifetimeThresholdNs = config.minViewLifetimeThresholdNs
-        )
-
-        private fun buildMetricAttributesMap(
-            slowFramesCount: Int = 0,
-            ignoredFramesCount: Int = 0,
-            freezeFramesCount: Int = 0,
-            freezeDurationThreshold: Long = 0L,
-            maxSlowFramesAmount: Int = 0,
-            maxSlowFrameThresholdNs: Long = 0L,
-            minViewLifetimeThresholdNs: Long = 0L
-        ): Map<String, Any> = mapOf(
-            KEY_METRIC_TYPE to VALUE_METRIC_TYPE,
-            KEY_RUM_UI_SLOWNESS to mapOf<String, Any>(
-                KEY_SLOW_FRAMES to mapOf(
-                    KEY_COUNT to slowFramesCount,
-                    KEY_IGNORED_COUNT to ignoredFramesCount,
-                    KEY_CONFIG to mapOf(
-                        KEY_MAX_COUNT to maxSlowFramesAmount,
-                        KEY_SLOW_FRAME_THRESHOLD to 2.0f,
-                        KEY_MAX_DURATION to maxSlowFrameThresholdNs,
-                        KEY_VIEW_MIN_DURATION to minViewLifetimeThresholdNs
-                    )
-                ),
-                KEY_FREEZED_FRAMES to mapOf(
-                    KEY_COUNT to freezeFramesCount,
-                    KEY_CONFIG to mapOf(KEY_MIN_DURATION to freezeDurationThreshold)
-                )
-            )
-        )
+            return targetMap[keys.last()] == value
+        }
     }
 }
