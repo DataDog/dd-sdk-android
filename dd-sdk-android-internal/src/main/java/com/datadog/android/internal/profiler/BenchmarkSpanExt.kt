@@ -20,7 +20,7 @@ inline fun <T : Any?> withinBenchmarkSpan(
     additionalProperties: Map<String, String> = emptyMap(),
     block: BenchmarkSpan.() -> T
 ): T {
-    val tracer = GlobalBenchmark.get().getTracer("dd-sdk-android")
+    val tracer = GlobalBenchmark.getProfiler().getTracer("dd-sdk-android")
 
     val spanBuilder = tracer.spanBuilder(
         operationName,

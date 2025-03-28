@@ -11,6 +11,7 @@ import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.storage.EventBatchWriter
+import com.datadog.android.core.internal.data.upload.DataOkHttpUploader.Companion.HTTP_ACCEPTED
 import com.datadog.android.core.internal.metrics.MetricsDispatcher
 import com.datadog.android.core.internal.metrics.RemovalReason
 import com.datadog.android.core.internal.persistence.file.FileMover
@@ -19,10 +20,13 @@ import com.datadog.android.core.internal.persistence.file.FilePersistenceConfig
 import com.datadog.android.core.internal.persistence.file.FileReaderWriter
 import com.datadog.android.core.internal.persistence.file.batch.BatchFileReaderWriter
 import com.datadog.android.core.internal.persistence.file.existsSafe
+import com.datadog.android.core.internal.persistence.file.lengthSafe
 import com.datadog.android.core.internal.privacy.ConsentProvider
 import com.datadog.android.core.internal.utils.submitSafe
 import com.datadog.android.core.metrics.MethodCallSamplingRate
 import com.datadog.android.core.metrics.TelemetryMetricType
+import com.datadog.android.internal.profiler.BenchmarkSdkPerformance
+import com.datadog.android.internal.profiler.GlobalBenchmark
 import com.datadog.android.privacy.TrackingConsent
 import java.io.File
 import java.util.Locale
@@ -39,8 +43,9 @@ internal class ConsentAwareStorage(
     internal val filePersistenceConfig: FilePersistenceConfig,
     private val metricsDispatcher: MetricsDispatcher,
     private val consentProvider: ConsentProvider,
-    private val featureName: String
-) : Storage {
+    private val featureName: String,
+    private val benchmarkSdkPerformance: BenchmarkSdkPerformance = GlobalBenchmark.getSdkPerformance()
+) : Storage, BatchWriteEventListener {
 
     /**
      * Keeps track of files currently being read.
@@ -85,6 +90,7 @@ internal class ConsentAwareStorage(
                         eventsWriter = batchEventsReaderWriter,
                         metadataReaderWriter = batchMetadataReaderWriter,
                         filePersistenceConfig = filePersistenceConfig,
+                        batchWriteEventListener = this,
                         internalLogger = internalLogger
                     )
                 }
@@ -155,6 +161,24 @@ internal class ConsentAwareStorage(
         }
     }
 
+    override fun onWriteEvent(bytes: Long) {
+        sendBenchmarkTelemetry(
+            bytes,
+            BENCHMARK_BYTES_WRITTEN
+        )
+    }
+
+    private fun sendBenchmarkTelemetry(value: Long, metricName: String) {
+        val tags = mapOf(
+            TRACK_NAME to featureName
+        )
+
+        benchmarkSdkPerformance
+            .getMeter(METER_NAME)
+            .getCounter(metricName)
+            .add(value, tags)
+    }
+
     @WorkerThread
     private fun resolveOrchestrator(): FileOrchestrator? {
         val consent = consentProvider.getConsent()
@@ -180,10 +204,20 @@ internal class ConsentAwareStorage(
 
     @WorkerThread
     private fun deleteBatchFile(batchFile: File, reason: RemovalReason) {
+        val fileSizeBeforeDeletion = batchFile.lengthSafe(internalLogger)
+
         val result = fileMover.delete(batchFile)
         if (result) {
+
             val numPendingFiles = grantedOrchestrator.decrementAndGetPendingFilesCount()
             metricsDispatcher.sendBatchDeletedMetric(batchFile, reason, numPendingFiles)
+
+            if (reason == RemovalReason.IntakeCode(HTTP_ACCEPTED) && fileSizeBeforeDeletion > 0) {
+                sendBenchmarkTelemetry(
+                    fileSizeBeforeDeletion,
+                    BENCHMARK_BYTES_DELETED
+                )
+            }
         } else {
             internalLogger.log(
                 InternalLogger.Level.WARN,
@@ -209,5 +243,9 @@ internal class ConsentAwareStorage(
 
     companion object {
         internal const val WARNING_DELETE_FAILED = "Unable to delete file: %s"
+        internal const val METER_NAME = "dd-sdk-android"
+        internal const val TRACK_NAME = "track"
+        internal const val BENCHMARK_BYTES_WRITTEN = "android.benchmark.bytes_written"
+        internal const val BENCHMARK_BYTES_DELETED = "android.benchmark.bytes_deleted"
     }
 }

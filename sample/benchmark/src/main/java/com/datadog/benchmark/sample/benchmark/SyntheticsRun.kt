@@ -10,7 +10,9 @@ internal enum class SyntheticsRun(val value: String) {
 
     Baseline("baseline"),
 
-    Instrumented("instrumented");
+    Instrumented("instrumented"),
+
+    Benchmark("benchmark");
 
     companion object {
         fun from(value: String): SyntheticsRun? {

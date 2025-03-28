@@ -12,8 +12,10 @@ import com.datadog.android.sessionreplay.SessionReplayConfiguration
 import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import com.datadog.android.sessionreplay.compose.ComposeExtensionSupport
 import com.datadog.android.sessionreplay.material.MaterialExtensionSupport
+import com.datadog.benchmark.DatadogBaseMeter
 import com.datadog.benchmark.DatadogExporterConfiguration
-import com.datadog.benchmark.DatadogMeter
+import com.datadog.benchmark.DatadogSdkMeter
+import com.datadog.benchmark.DatadogVitalsMeter
 import com.datadog.benchmark.sample.benchmark.DatadogBenchmark.Config
 import com.datadog.sample.benchmark.BuildConfig
 
@@ -23,8 +25,15 @@ import com.datadog.sample.benchmark.BuildConfig
  */
 internal class DatadogBenchmark(config: Config) {
 
-    private var meter: DatadogMeter = DatadogMeter.create(
-        DatadogExporterConfiguration.Builder(BuildConfig.BENCHMARK_API_KEY)
+    private var run: SyntheticsRun? = null
+    private var meter: DatadogBaseMeter
+
+    val isComposeEnabled = config.scenario == SyntheticsScenario.SessionReplayCompose
+
+    init {
+        run = config.run
+
+        val exporterConfig = DatadogExporterConfiguration.Builder(BuildConfig.BENCHMARK_API_KEY)
             .setApplicationId(BuildConfig.APPLICATION_ID)
             .setApplicationName(BENCHMARK_APPLICATION_NAME)
             .setRun(config.getRun())
@@ -32,12 +41,14 @@ internal class DatadogBenchmark(config: Config) {
             .setApplicationVersion(BuildConfig.VERSION_NAME)
             .setIntervalInSeconds(METER_INTERVAL_IN_SECONDS)
             .build()
-    )
 
-    val isComposeEnabled = config.scenario == SyntheticsScenario.SessionReplayCompose
+        meter = if (run == SyntheticsRun.Benchmark) {
+            DatadogSdkMeter.create(exporterConfig)
+        } else {
+            DatadogVitalsMeter.create(exporterConfig)
+        }
 
-    init {
-        if (config.run == SyntheticsRun.Instrumented) {
+        if (run == SyntheticsRun.Instrumented || run == SyntheticsRun.Benchmark) {
             when (config.scenario) {
                 SyntheticsScenario.SessionReplayCompose,
                 SyntheticsScenario.SessionReplay -> enableSessionReplay()
@@ -47,11 +58,11 @@ internal class DatadogBenchmark(config: Config) {
     }
 
     fun start() {
-        meter.startGauges()
+        meter.startMeasuring()
     }
 
     fun stop() {
-        meter.stopGauges()
+        meter.stopMeasuring()
     }
 
     @Suppress("DEPRECATION")

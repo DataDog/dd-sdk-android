@@ -11,8 +11,12 @@ import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.storage.EventBatchWriter
 import com.datadog.android.api.storage.EventType
 import com.datadog.android.api.storage.RawBatchEvent
+import com.datadog.android.core.internal.data.upload.DataOkHttpUploader.Companion.HTTP_ACCEPTED
+import com.datadog.android.core.internal.data.upload.DataUploadRunnable.Companion.METER_NAME
+import com.datadog.android.core.internal.metrics.BatchMetricsDispatcher.Companion.TRACK_KEY
 import com.datadog.android.core.internal.metrics.MetricsDispatcher
 import com.datadog.android.core.internal.metrics.RemovalReason
+import com.datadog.android.core.internal.persistence.ConsentAwareStorage.Companion.BENCHMARK_BYTES_DELETED
 import com.datadog.android.core.internal.persistence.file.FileMover
 import com.datadog.android.core.internal.persistence.file.FileOrchestrator
 import com.datadog.android.core.internal.persistence.file.FilePersistenceConfig
@@ -21,6 +25,9 @@ import com.datadog.android.core.internal.persistence.file.batch.BatchFileReaderW
 import com.datadog.android.core.internal.privacy.ConsentProvider
 import com.datadog.android.core.metrics.PerformanceMetric
 import com.datadog.android.core.metrics.TelemetryMetricType
+import com.datadog.android.internal.profiler.BenchmarkCounter
+import com.datadog.android.internal.profiler.BenchmarkMeter
+import com.datadog.android.internal.profiler.BenchmarkSdkPerformance
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.verifyLog
@@ -28,6 +35,7 @@ import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
+import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -91,6 +99,9 @@ internal class ConsentAwareStorageTest {
     lateinit var mockInternalLogger: InternalLogger
 
     @Mock
+    lateinit var mockBenchmarkSdkPerformance: BenchmarkSdkPerformance
+
+    @Mock
     lateinit var mockFilePersistenceConfig: FilePersistenceConfig
 
     @Mock
@@ -147,16 +158,16 @@ internal class ConsentAwareStorageTest {
         testedStorage = ConsentAwareStorage(
             // same thread executor
             executorService = FakeSameThreadExecutorService(),
-            mockGrantedOrchestrator,
-            mockPendingOrchestrator,
-            mockBatchReaderWriter,
-            mockMetaReaderWriter,
-            mockFileMover,
-            mockInternalLogger,
-            mockFilePersistenceConfig,
-            mockMetricsDispatcher,
-            mockConsentProvider,
-            fakeFeatureName
+            grantedOrchestrator = mockGrantedOrchestrator,
+            pendingOrchestrator = mockPendingOrchestrator,
+            batchEventsReaderWriter = mockBatchReaderWriter,
+            batchMetadataReaderWriter = mockMetaReaderWriter,
+            fileMover = mockFileMover,
+            internalLogger = mockInternalLogger,
+            filePersistenceConfig = mockFilePersistenceConfig,
+            metricsDispatcher = mockMetricsDispatcher,
+            consentProvider = mockConsentProvider,
+            featureName = fakeFeatureName
         )
     }
 
@@ -329,17 +340,17 @@ internal class ConsentAwareStorageTest {
         whenever(mockExecutor.submit(any())) doThrow RejectedExecutionException()
         testedStorage = ConsentAwareStorage(
             // same thread executor
-            mockExecutor,
-            mockGrantedOrchestrator,
-            mockPendingOrchestrator,
-            mockBatchReaderWriter,
-            mockMetaReaderWriter,
-            mockFileMover,
-            mockInternalLogger,
-            mockFilePersistenceConfig,
-            mockMetricsDispatcher,
-            mockConsentProvider,
-            fakeFeatureName
+            executorService = mockExecutor,
+            grantedOrchestrator = mockGrantedOrchestrator,
+            pendingOrchestrator = mockPendingOrchestrator,
+            batchEventsReaderWriter = mockBatchReaderWriter,
+            batchMetadataReaderWriter = mockMetaReaderWriter,
+            fileMover = mockFileMover,
+            internalLogger = mockInternalLogger,
+            filePersistenceConfig = mockFilePersistenceConfig,
+            metricsDispatcher = mockMetricsDispatcher,
+            consentProvider = mockConsentProvider,
+            featureName = fakeFeatureName
         )
 
         // When
@@ -374,17 +385,17 @@ internal class ConsentAwareStorageTest {
         // Given
         val executor = Executors.newFixedThreadPool(threadsCount)
         testedStorage = ConsentAwareStorage(
-            executor,
-            mockGrantedOrchestrator,
-            mockPendingOrchestrator,
-            mockBatchReaderWriter,
-            mockMetaReaderWriter,
-            mockFileMover,
-            mockInternalLogger,
-            mockFilePersistenceConfig,
-            mockMetricsDispatcher,
-            mockConsentProvider,
-            fakeFeatureName
+            executorService = executor,
+            grantedOrchestrator = mockGrantedOrchestrator,
+            pendingOrchestrator = mockPendingOrchestrator,
+            batchEventsReaderWriter = mockBatchReaderWriter,
+            batchMetadataReaderWriter = mockMetaReaderWriter,
+            fileMover = mockFileMover,
+            internalLogger = mockInternalLogger,
+            filePersistenceConfig = mockFilePersistenceConfig,
+            metricsDispatcher = mockMetricsDispatcher,
+            consentProvider = mockConsentProvider,
+            featureName = fakeFeatureName
         )
         var accumulator: Byte = 0
         val event = forge.aString().toByteArray()
@@ -554,16 +565,16 @@ internal class ConsentAwareStorageTest {
         // Given
         testedStorage = ConsentAwareStorage(
             executorService = FakeSameThreadExecutorService(),
-            mockGrantedOrchestrator,
-            mockPendingOrchestrator,
-            mockBatchReaderWriter,
-            mockMetaReaderWriter,
-            mockFileMover,
-            mockInternalLogger,
-            mockFilePersistenceConfig,
-            mockMetricsDispatcher,
-            mockConsentProvider,
-            fakeFeatureName
+            grantedOrchestrator = mockGrantedOrchestrator,
+            pendingOrchestrator = mockPendingOrchestrator,
+            batchEventsReaderWriter = mockBatchReaderWriter,
+            batchMetadataReaderWriter = mockMetaReaderWriter,
+            fileMover = mockFileMover,
+            internalLogger = mockInternalLogger,
+            filePersistenceConfig = mockFilePersistenceConfig,
+            metricsDispatcher = mockMetricsDispatcher,
+            consentProvider = mockConsentProvider,
+            featureName = fakeFeatureName
         )
 
         whenever(mockGrantedOrchestrator.getReadableFile(emptySet())) doReturn file
@@ -685,16 +696,16 @@ internal class ConsentAwareStorageTest {
         // Given
         testedStorage = ConsentAwareStorage(
             executorService = FakeSameThreadExecutorService(),
-            mockGrantedOrchestrator,
-            mockPendingOrchestrator,
-            mockBatchReaderWriter,
-            mockMetaReaderWriter,
-            mockFileMover,
-            mockInternalLogger,
-            mockFilePersistenceConfig,
-            mockMetricsDispatcher,
-            mockConsentProvider,
-            fakeFeatureName
+            grantedOrchestrator = mockGrantedOrchestrator,
+            pendingOrchestrator = mockPendingOrchestrator,
+            batchEventsReaderWriter = mockBatchReaderWriter,
+            batchMetadataReaderWriter = mockMetaReaderWriter,
+            fileMover = mockFileMover,
+            internalLogger = mockInternalLogger,
+            filePersistenceConfig = mockFilePersistenceConfig,
+            metricsDispatcher = mockMetricsDispatcher,
+            consentProvider = mockConsentProvider,
+            featureName = fakeFeatureName
         )
 
         whenever(mockGrantedOrchestrator.getAllFiles()) doReturn listOf(grantedFile)
@@ -744,16 +755,16 @@ internal class ConsentAwareStorageTest {
         // Given
         testedStorage = ConsentAwareStorage(
             executorService = FakeSameThreadExecutorService(),
-            mockGrantedOrchestrator,
-            mockPendingOrchestrator,
-            mockBatchReaderWriter,
-            mockMetaReaderWriter,
-            mockFileMover,
-            mockInternalLogger,
-            mockFilePersistenceConfig,
-            mockMetricsDispatcher,
-            mockConsentProvider,
-            fakeFeatureName
+            grantedOrchestrator = mockGrantedOrchestrator,
+            pendingOrchestrator = mockPendingOrchestrator,
+            batchEventsReaderWriter = mockBatchReaderWriter,
+            batchMetadataReaderWriter = mockMetaReaderWriter,
+            fileMover = mockFileMover,
+            internalLogger = mockInternalLogger,
+            filePersistenceConfig = mockFilePersistenceConfig,
+            metricsDispatcher = mockMetricsDispatcher,
+            consentProvider = mockConsentProvider,
+            featureName = fakeFeatureName
         )
 
         whenever(mockGrantedOrchestrator.getReadableFile(any())) doReturnConsecutively files
@@ -791,6 +802,123 @@ internal class ConsentAwareStorageTest {
                 eq(fakePendingBatches - 1)
             )
         }
+    }
+
+    // endregion
+
+    // region benchmarking
+
+    @Test
+    fun `M onCounterMetricReceived bytesDeleted W confirmBatchRead { HTTP_ACCEPTED }`(
+        @LongForgery(1, 1000) fakeFileSize: Long,
+        @StringForgery fakePath: String,
+        @Mock mockFile: File
+    ) {
+        // Given
+        testedStorage = ConsentAwareStorage(
+            // same thread executor
+            executorService = FakeSameThreadExecutorService(),
+            grantedOrchestrator = mockGrantedOrchestrator,
+            pendingOrchestrator = mockPendingOrchestrator,
+            batchEventsReaderWriter = mockBatchReaderWriter,
+            batchMetadataReaderWriter = mockMetaReaderWriter,
+            fileMover = mockFileMover,
+            internalLogger = mockInternalLogger,
+            filePersistenceConfig = mockFilePersistenceConfig,
+            metricsDispatcher = mockMetricsDispatcher,
+            consentProvider = mockConsentProvider,
+            featureName = fakeFeatureName,
+            benchmarkSdkPerformance = mockBenchmarkSdkPerformance
+        )
+
+        whenever(mockFileMover.delete(mockFile)).thenReturn(true)
+        whenever(mockFile.absolutePath) doReturn fakePath
+        whenever(mockGrantedOrchestrator.getReadableFile(emptySet())) doReturn mockFile
+        val mockMetaFile: File = mock()
+        whenever(mockMetaFile.exists()) doReturn true
+        whenever(mockGrantedOrchestrator.getMetadataFile(mockFile)) doReturn mockMetaFile
+        whenever(mockGrantedOrchestrator.getReadableFile(setOf(mockFile))) doReturn null
+        val batchData1 = testedStorage.readNextBatch()
+        whenever(mockFile.length()).thenReturn(fakeFileSize)
+
+        val mockMeter: BenchmarkMeter = mock()
+        val mockBenchmarkUploadCounter: BenchmarkCounter = mock()
+        whenever(mockBenchmarkSdkPerformance.getMeter(METER_NAME))
+            .thenReturn(mockMeter)
+        whenever(mockMeter.getCounter(BENCHMARK_BYTES_DELETED))
+            .thenReturn(mockBenchmarkUploadCounter)
+
+        // When
+        testedStorage.confirmBatchRead(
+            batchId = batchData1!!.id,
+            removalReason = RemovalReason.IntakeCode(HTTP_ACCEPTED),
+            deleteBatch = true
+        )
+
+        // Then
+        verify(
+            mockBenchmarkSdkPerformance
+                .getMeter(METER_NAME)
+                .getCounter(BENCHMARK_BYTES_DELETED)
+        )
+            .add(fakeFileSize, mapOf(TRACK_KEY to fakeFeatureName))
+    }
+
+    @Test
+    fun `M not onCounterMetricReceived bytesDeleted W confirmBatchRead { OBSOLETE }`(
+        @LongForgery(1, 1000) fakeFileSize: Long,
+        @StringForgery fakePath: String,
+        @Mock mockFile: File
+    ) {
+        // Given
+        testedStorage = ConsentAwareStorage(
+            // same thread executor
+            executorService = FakeSameThreadExecutorService(),
+            grantedOrchestrator = mockGrantedOrchestrator,
+            pendingOrchestrator = mockPendingOrchestrator,
+            batchEventsReaderWriter = mockBatchReaderWriter,
+            batchMetadataReaderWriter = mockMetaReaderWriter,
+            fileMover = mockFileMover,
+            internalLogger = mockInternalLogger,
+            filePersistenceConfig = mockFilePersistenceConfig,
+            metricsDispatcher = mockMetricsDispatcher,
+            consentProvider = mockConsentProvider,
+            featureName = fakeFeatureName,
+            benchmarkSdkPerformance = mockBenchmarkSdkPerformance
+        )
+
+        whenever(mockFileMover.delete(mockFile)).thenReturn(true)
+        whenever(mockFile.absolutePath) doReturn fakePath
+        whenever(mockGrantedOrchestrator.getReadableFile(emptySet())) doReturn mockFile
+        val mockMetaFile: File = mock()
+        whenever(mockMetaFile.exists()) doReturn true
+        whenever(mockGrantedOrchestrator.getMetadataFile(mockFile)) doReturn mockMetaFile
+        whenever(mockGrantedOrchestrator.getReadableFile(setOf(mockFile))) doReturn null
+        val batchData1 = testedStorage.readNextBatch()
+        whenever(mockFile.length()).thenReturn(fakeFileSize)
+
+        val mockMeter: BenchmarkMeter = mock()
+        val mockBenchmarkUploadCounter: BenchmarkCounter = mock()
+        whenever(mockBenchmarkSdkPerformance.getMeter(METER_NAME))
+            .thenReturn(mockMeter)
+        whenever(mockMeter.getCounter(BENCHMARK_BYTES_DELETED))
+            .thenReturn(mockBenchmarkUploadCounter)
+
+        // When
+        testedStorage.confirmBatchRead(
+            batchId = batchData1!!.id,
+            removalReason = RemovalReason.Obsolete,
+            deleteBatch = true
+        )
+
+        // Then
+        verify(
+            mockBenchmarkSdkPerformance
+                .getMeter(METER_NAME)
+                .getCounter(BENCHMARK_BYTES_DELETED),
+            never()
+        )
+            .add(any(), any())
     }
 
     // endregion

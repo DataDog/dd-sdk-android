@@ -19,6 +19,8 @@ import com.datadog.android.core.internal.persistence.BatchId
 import com.datadog.android.core.internal.persistence.Storage
 import com.datadog.android.core.internal.system.SystemInfoProvider
 import com.datadog.android.core.internal.utils.scheduleSafe
+import com.datadog.android.internal.profiler.BenchmarkSdkPerformance
+import com.datadog.android.internal.profiler.GlobalBenchmark
 import java.util.concurrent.ScheduledThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 
@@ -32,7 +34,8 @@ internal class DataUploadRunnable(
     private val systemInfoProvider: SystemInfoProvider,
     internal val uploadSchedulerStrategy: UploadSchedulerStrategy,
     internal val maxBatchesPerJob: Int,
-    private val internalLogger: InternalLogger
+    private val internalLogger: InternalLogger,
+    private val benchmarkSdkPerformance: BenchmarkSdkPerformance = GlobalBenchmark.getSdkPerformance()
 ) : UploadRunnable {
 
     //  region Runnable
@@ -45,6 +48,7 @@ internal class DataUploadRunnable(
             val context = contextProvider.context
             var batchConsumerAvailableAttempts = maxBatchesPerJob
             do {
+                sendUploadBenchmark(value = 1, metricName = BENCHMARK_UPLOAD_COUNT)
                 batchConsumerAvailableAttempts--
                 lastBatchUploadStatus = handleNextBatch(context)
                 if (lastBatchUploadStatus != null) {
@@ -67,6 +71,17 @@ internal class DataUploadRunnable(
     // endregion
 
     // region Internal
+
+    private fun sendUploadBenchmark(value: Long, metricName: String) {
+        val tags = mapOf(
+            TRACK_NAME to featureName
+        )
+
+        benchmarkSdkPerformance
+            .getMeter(METER_NAME)
+            .getCounter(metricName)
+            .add(value, tags)
+    }
 
     @WorkerThread
     @Suppress("UnsafeThirdPartyFunctionCall") // called inside a dedicated executor
@@ -116,6 +131,11 @@ internal class DataUploadRunnable(
         batchMeta: ByteArray?
     ): UploadStatus {
         val status = dataUploader.upload(context, batch, batchMeta, batchId)
+
+        if (status is UploadStatus.Success) {
+            sendUploadBenchmark(value = batch.size.toLong(), metricName = BENCHMARK_BYTES_UPLOADED)
+        }
+
         val removalReason = if (status is UploadStatus.RequestCreationError) {
             RemovalReason.Invalid
         } else {
@@ -129,5 +149,9 @@ internal class DataUploadRunnable(
 
     companion object {
         internal const val LOW_BATTERY_THRESHOLD = 10
+        internal const val TRACK_NAME = "track"
+        internal const val METER_NAME = "dd-sdk-android"
+        internal const val BENCHMARK_UPLOAD_COUNT = "android.benchmark.upload_count"
+        internal const val BENCHMARK_BYTES_UPLOADED = "android.benchmark.bytes_uploaded"
     }
 }

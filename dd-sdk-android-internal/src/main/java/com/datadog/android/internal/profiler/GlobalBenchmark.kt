@@ -7,12 +7,15 @@
 package com.datadog.android.internal.profiler
 
 /**
- * A global holder of [BenchmarkProfiler], allowing to register and retrieve [BenchmarkProfiler] implementation.
+ * A global holder of [BenchmarkProfiler]
+ * allowing registration and retrieval of [BenchmarkProfiler] and [BenchmarkMeter] implementations.
  * This should only used by internal benchmarking.
  */
 object GlobalBenchmark {
 
     private var benchmarkProfiler: BenchmarkProfiler = NoOpBenchmarkProfiler()
+    private var benchmarkSdkPerformance: BenchmarkSdkPerformance =
+        NoOpBenchmarkSdkPerformance()
 
     /**
      * Registers the implementation of [BenchmarkProfiler].
@@ -22,9 +25,23 @@ object GlobalBenchmark {
     }
 
     /**
+     * Registers the implementation of [BenchmarkSdkPerformance].
+     */
+    fun register(benchmarkSdkPerformance: BenchmarkSdkPerformance) {
+        GlobalBenchmark.benchmarkSdkPerformance = benchmarkSdkPerformance
+    }
+
+    /**
      * Returns the [BenchmarkProfiler] registered.
      */
-    fun get(): BenchmarkProfiler {
+    fun getProfiler(): BenchmarkProfiler {
         return benchmarkProfiler
+    }
+
+    /**
+     * Returns the [BenchmarkSdkPerformance] registered.
+     */
+    fun getSdkPerformance(): BenchmarkSdkPerformance {
+        return benchmarkSdkPerformance
     }
 }

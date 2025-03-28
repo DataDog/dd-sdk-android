@@ -12,12 +12,19 @@ import com.datadog.android.api.context.NetworkInfo
 import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.core.configuration.UploadSchedulerStrategy
 import com.datadog.android.core.internal.ContextProvider
+import com.datadog.android.core.internal.data.upload.DataUploadRunnable.Companion.BENCHMARK_BYTES_UPLOADED
+import com.datadog.android.core.internal.data.upload.DataUploadRunnable.Companion.BENCHMARK_UPLOAD_COUNT
+import com.datadog.android.core.internal.data.upload.DataUploadRunnable.Companion.METER_NAME
+import com.datadog.android.core.internal.metrics.BatchMetricsDispatcher.Companion.TRACK_KEY
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.persistence.BatchData
 import com.datadog.android.core.internal.persistence.BatchId
 import com.datadog.android.core.internal.persistence.Storage
 import com.datadog.android.core.internal.system.SystemInfo
 import com.datadog.android.core.internal.system.SystemInfoProvider
+import com.datadog.android.internal.profiler.BenchmarkCounter
+import com.datadog.android.internal.profiler.BenchmarkMeter
+import com.datadog.android.internal.profiler.BenchmarkSdkPerformance
 import com.datadog.android.utils.forge.Configurator
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
@@ -42,6 +49,7 @@ import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
 import org.mockito.kotlin.reset
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
@@ -75,6 +83,9 @@ internal class DataUploadRunnableTest {
 
     @Mock
     lateinit var mockSystemInfoProvider: SystemInfoProvider
+
+    @Mock
+    lateinit var mockBenchmarkSdkPerformance: BenchmarkSdkPerformance
 
     @Mock
     lateinit var mockContextProvider: ContextProvider
@@ -121,16 +132,16 @@ internal class DataUploadRunnableTest {
         whenever(mockContextProvider.context) doReturn fakeContext
 
         testedRunnable = DataUploadRunnable(
-            fakeFeatureName,
-            mockThreadPoolExecutor,
-            mockStorage,
-            mockDataUploader,
-            mockContextProvider,
-            mockNetworkInfoProvider,
-            mockSystemInfoProvider,
-            mockUploadSchedulerStrategy,
-            fakeMaxBatchesPerJob,
-            mockInternalLogger
+            featureName = fakeFeatureName,
+            threadPoolExecutor = mockThreadPoolExecutor,
+            storage = mockStorage,
+            dataUploader = mockDataUploader,
+            contextProvider = mockContextProvider,
+            networkInfoProvider = mockNetworkInfoProvider,
+            systemInfoProvider = mockSystemInfoProvider,
+            uploadSchedulerStrategy = mockUploadSchedulerStrategy,
+            maxBatchesPerJob = fakeMaxBatchesPerJob,
+            internalLogger = mockInternalLogger
         )
     }
 
@@ -562,16 +573,16 @@ internal class DataUploadRunnableTest {
     ) {
         // Given
         testedRunnable = DataUploadRunnable(
-            fakeFeatureName,
-            mockThreadPoolExecutor,
-            mockStorage,
-            mockDataUploader,
-            mockContextProvider,
-            mockNetworkInfoProvider,
-            mockSystemInfoProvider,
-            mockUploadSchedulerStrategy,
-            fakeMaxBatchesPerJob,
-            mockInternalLogger
+            featureName = fakeFeatureName,
+            threadPoolExecutor = mockThreadPoolExecutor,
+            storage = mockStorage,
+            dataUploader = mockDataUploader,
+            contextProvider = mockContextProvider,
+            networkInfoProvider = mockNetworkInfoProvider,
+            systemInfoProvider = mockSystemInfoProvider,
+            uploadSchedulerStrategy = mockUploadSchedulerStrategy,
+            maxBatchesPerJob = fakeMaxBatchesPerJob,
+            internalLogger = mockInternalLogger
         )
         val batches = forge.aList(
             size = forge.anInt(
@@ -618,16 +629,16 @@ internal class DataUploadRunnableTest {
     ) {
         // Given
         testedRunnable = DataUploadRunnable(
-            fakeFeatureName,
-            mockThreadPoolExecutor,
-            mockStorage,
-            mockDataUploader,
-            mockContextProvider,
-            mockNetworkInfoProvider,
-            mockSystemInfoProvider,
-            mockUploadSchedulerStrategy,
-            fakeMaxBatchesPerJob,
-            mockInternalLogger
+            featureName = fakeFeatureName,
+            threadPoolExecutor = mockThreadPoolExecutor,
+            storage = mockStorage,
+            dataUploader = mockDataUploader,
+            contextProvider = mockContextProvider,
+            networkInfoProvider = mockNetworkInfoProvider,
+            systemInfoProvider = mockSystemInfoProvider,
+            uploadSchedulerStrategy = mockUploadSchedulerStrategy,
+            maxBatchesPerJob = fakeMaxBatchesPerJob,
+            internalLogger = mockInternalLogger
         )
         val fakeBatchesCount = forge.anInt(
             min = 1,
@@ -688,6 +699,206 @@ internal class DataUploadRunnableTest {
                 return data
             }
         }
+    }
+
+    // endregion
+
+    // region sdkBenchmarks
+
+    @Test
+    fun `M send upload benchmark telemetry W run { online }`() {
+        // Given
+        testedRunnable = DataUploadRunnable(
+            featureName = fakeFeatureName,
+            threadPoolExecutor = mockThreadPoolExecutor,
+            storage = mockStorage,
+            dataUploader = mockDataUploader,
+            contextProvider = mockContextProvider,
+            networkInfoProvider = mockNetworkInfoProvider,
+            systemInfoProvider = mockSystemInfoProvider,
+            uploadSchedulerStrategy = mockUploadSchedulerStrategy,
+            maxBatchesPerJob = fakeMaxBatchesPerJob,
+            internalLogger = mockInternalLogger,
+            benchmarkSdkPerformance = mockBenchmarkSdkPerformance
+        )
+
+        val mockMeter: BenchmarkMeter = mock()
+        val mockCounter: BenchmarkCounter = mock()
+        whenever(mockBenchmarkSdkPerformance.getMeter(METER_NAME))
+            .thenReturn(mockMeter)
+        whenever(mockMeter.getCounter(BENCHMARK_UPLOAD_COUNT))
+            .thenReturn(mockCounter)
+
+        // When
+        testedRunnable.run()
+
+        // Then
+        verify(
+            mockBenchmarkSdkPerformance
+                .getMeter(METER_NAME)
+                .getCounter(BENCHMARK_UPLOAD_COUNT)
+        )
+            .add(1, mapOf(TRACK_KEY to fakeFeatureName))
+    }
+
+    @Test
+    fun `M not send upload benchmark telemetry W run { offline }`(
+        @Mock mockNetworkInfo: NetworkInfo
+    ) {
+        // Given
+        testedRunnable = DataUploadRunnable(
+            featureName = fakeFeatureName,
+            threadPoolExecutor = mockThreadPoolExecutor,
+            storage = mockStorage,
+            dataUploader = mockDataUploader,
+            contextProvider = mockContextProvider,
+            networkInfoProvider = mockNetworkInfoProvider,
+            systemInfoProvider = mockSystemInfoProvider,
+            uploadSchedulerStrategy = mockUploadSchedulerStrategy,
+            maxBatchesPerJob = fakeMaxBatchesPerJob,
+            internalLogger = mockInternalLogger,
+            benchmarkSdkPerformance = mockBenchmarkSdkPerformance
+        )
+
+        val mockMeter: BenchmarkMeter = mock()
+        val mockBenchmarkUploadCounter: BenchmarkCounter = mock()
+        whenever(mockBenchmarkSdkPerformance.getMeter(METER_NAME))
+            .thenReturn(mockMeter)
+        whenever(mockMeter.getCounter(BENCHMARK_UPLOAD_COUNT))
+            .thenReturn(mockBenchmarkUploadCounter)
+
+        whenever(mockNetworkInfoProvider.getLatestNetworkInfo())
+            .thenReturn(mockNetworkInfo)
+
+        whenever(mockNetworkInfo.connectivity)
+            .thenReturn(NetworkInfo.Connectivity.NETWORK_NOT_CONNECTED)
+
+        // When
+        testedRunnable.run()
+
+        // Then
+        verify(
+            mockBenchmarkSdkPerformance
+                .getMeter(METER_NAME)
+                .getCounter(BENCHMARK_UPLOAD_COUNT),
+            never()
+        )
+            .add(any(), any())
+    }
+
+    @Test
+    fun `M send batch size benchmark telemetry W run { successful upload }`(
+        forge: Forge
+    ) {
+        // Given
+        testedRunnable = DataUploadRunnable(
+            featureName = fakeFeatureName,
+            threadPoolExecutor = mockThreadPoolExecutor,
+            storage = mockStorage,
+            dataUploader = mockDataUploader,
+            contextProvider = mockContextProvider,
+            networkInfoProvider = mockNetworkInfoProvider,
+            systemInfoProvider = mockSystemInfoProvider,
+            uploadSchedulerStrategy = mockUploadSchedulerStrategy,
+            maxBatchesPerJob = fakeMaxBatchesPerJob,
+            internalLogger = mockInternalLogger,
+            benchmarkSdkPerformance = mockBenchmarkSdkPerformance
+        )
+
+        val mockMeter: BenchmarkMeter = mock()
+        val mockBenchmarkUploadCounter: BenchmarkCounter = mock()
+        val mockBytesUploadCounter: BenchmarkCounter = mock()
+        whenever(mockBenchmarkSdkPerformance.getMeter(METER_NAME))
+            .thenReturn(mockMeter)
+        whenever(mockMeter.getCounter(BENCHMARK_UPLOAD_COUNT))
+            .thenReturn(mockBenchmarkUploadCounter)
+        whenever(mockMeter.getCounter(BENCHMARK_BYTES_UPLOADED))
+            .thenReturn(mockBytesUploadCounter)
+
+        val batch = forge.aList { getForgery<RawBatchEvent>() }
+        val batchMeta = forge.anAsciiString()
+        val batchId = mock<BatchId>()
+        val batchData = BatchData(batchId, batch, batchMeta.toByteArray())
+        whenever(mockStorage.readNextBatch())
+            .thenReturn(batchData)
+            .thenReturn(null)
+        whenever(
+            mockDataUploader.upload(
+                fakeContext,
+                batch,
+                batchMeta.toByteArray(),
+                batchId
+            )
+        ).thenReturn(UploadStatus.Success(202))
+
+        // When
+        testedRunnable.run()
+
+        // Then
+        verify(
+            mockBenchmarkSdkPerformance
+                .getMeter(METER_NAME)
+                .getCounter(BENCHMARK_BYTES_UPLOADED)
+        )
+            .add(batch.size.toLong(), mapOf(TRACK_KEY to fakeFeatureName))
+    }
+
+    @Test
+    fun `M send batch size benchmark telemetry W run { failed upload }`(
+        forge: Forge
+    ) {
+        // Given
+        testedRunnable = DataUploadRunnable(
+            featureName = fakeFeatureName,
+            threadPoolExecutor = mockThreadPoolExecutor,
+            storage = mockStorage,
+            dataUploader = mockDataUploader,
+            contextProvider = mockContextProvider,
+            networkInfoProvider = mockNetworkInfoProvider,
+            systemInfoProvider = mockSystemInfoProvider,
+            uploadSchedulerStrategy = mockUploadSchedulerStrategy,
+            maxBatchesPerJob = fakeMaxBatchesPerJob,
+            internalLogger = mockInternalLogger,
+            benchmarkSdkPerformance = mockBenchmarkSdkPerformance
+        )
+
+        val mockMeter: BenchmarkMeter = mock()
+        val mockBenchmarkUploadCounter: BenchmarkCounter = mock()
+        val mockBytesUploadCounter: BenchmarkCounter = mock()
+        whenever(mockBenchmarkSdkPerformance.getMeter(METER_NAME))
+            .thenReturn(mockMeter)
+        whenever(mockMeter.getCounter(BENCHMARK_UPLOAD_COUNT))
+            .thenReturn(mockBenchmarkUploadCounter)
+        whenever(mockMeter.getCounter(BENCHMARK_BYTES_UPLOADED))
+            .thenReturn(mockBytesUploadCounter)
+
+        val batch = forge.aList { getForgery<RawBatchEvent>() }
+        val batchMeta = forge.anAsciiString()
+        val batchId = mock<BatchId>()
+        val batchData = BatchData(batchId, batch, batchMeta.toByteArray())
+        whenever(mockStorage.readNextBatch())
+            .thenReturn(batchData)
+            .thenReturn(null)
+        whenever(
+            mockDataUploader.upload(
+                fakeContext,
+                batch,
+                batchMeta.toByteArray(),
+                batchId
+            )
+        ).thenReturn(UploadStatus.RequestCreationError(mock()))
+
+        // When
+        testedRunnable.run()
+
+        // Then
+        verify(
+            mockBenchmarkSdkPerformance
+                .getMeter(METER_NAME)
+                .getCounter(BENCHMARK_BYTES_UPLOADED),
+            never()
+        )
+            .add(any(), any())
     }
 
     // endregion

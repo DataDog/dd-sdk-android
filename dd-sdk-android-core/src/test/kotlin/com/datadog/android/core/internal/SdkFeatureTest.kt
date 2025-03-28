@@ -20,6 +20,8 @@ import com.datadog.android.api.storage.datastore.DataStoreHandler
 import com.datadog.android.core.configuration.BatchProcessingLevel
 import com.datadog.android.core.configuration.BatchSize
 import com.datadog.android.core.configuration.UploadFrequency
+import com.datadog.android.core.internal.SdkFeature.Companion.BATCH_COUNT_METRIC_NAME
+import com.datadog.android.core.internal.SdkFeature.Companion.METER_NAME
 import com.datadog.android.core.internal.configuration.DataUploadConfiguration
 import com.datadog.android.core.internal.data.upload.DataOkHttpUploader
 import com.datadog.android.core.internal.data.upload.DataUploadRunnable
@@ -30,6 +32,7 @@ import com.datadog.android.core.internal.data.upload.NoOpUploadScheduler
 import com.datadog.android.core.internal.data.upload.UploadScheduler
 import com.datadog.android.core.internal.lifecycle.ProcessLifecycleMonitor
 import com.datadog.android.core.internal.metrics.BatchMetricsDispatcher
+import com.datadog.android.core.internal.metrics.BatchMetricsDispatcher.Companion.TRACK_KEY
 import com.datadog.android.core.internal.metrics.NoOpMetricsDispatcher
 import com.datadog.android.core.internal.persistence.AbstractStorage
 import com.datadog.android.core.internal.persistence.ConsentAwareStorage
@@ -40,6 +43,8 @@ import com.datadog.android.core.internal.persistence.file.FilePersistenceConfig
 import com.datadog.android.core.internal.persistence.file.NoOpFileOrchestrator
 import com.datadog.android.core.internal.persistence.file.batch.BatchFileOrchestrator
 import com.datadog.android.core.persistence.PersistenceStrategy
+import com.datadog.android.internal.profiler.BenchmarkMeter
+import com.datadog.android.internal.profiler.BenchmarkSdkPerformance
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.privacy.TrackingConsentProviderCallback
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
@@ -100,6 +105,9 @@ internal class SdkFeatureTest {
 
     @Mock
     lateinit var mockInternalLogger: InternalLogger
+
+    @Mock
+    lateinit var mockBenchmarkSdkPerformance: BenchmarkSdkPerformance
 
     @Forgery
     lateinit var fakeConsent: TrackingConsent
@@ -746,6 +754,42 @@ internal class SdkFeatureTest {
         ) {
             // no-op
         }
+    }
+
+    // endregion
+
+    // region Batch Count Benchmark
+
+    @Test
+    fun `M send batch count benchmark metrics W initialize`(
+        @Mock mockContext: Context,
+        @Mock mockFileOrchestrator: BatchFileOrchestrator
+    ) {
+        // Given
+        val mockMeter: BenchmarkMeter = mock()
+        whenever(mockBenchmarkSdkPerformance.getMeter(METER_NAME))
+            .thenReturn(mockMeter)
+
+        testedFeature = SdkFeature(
+            coreFeature = coreFeature.mockInstance,
+            wrappedFeature = mockWrappedFeature,
+            internalLogger = mockInternalLogger,
+            benchmarkSdkPerformance = mockBenchmarkSdkPerformance
+        )
+
+        // When
+        testedFeature.initialize(mockContext, fakeInstanceId)
+
+        // Then
+        verify(
+            mockBenchmarkSdkPerformance
+                .getMeter(METER_NAME)
+        )
+            .createObservableGauge(
+                metricName = eq(BATCH_COUNT_METRIC_NAME),
+                tags = eq(mapOf(TRACK_KEY to fakeFeatureName)),
+                callback = any()
+            )
     }
 
     // endregion
