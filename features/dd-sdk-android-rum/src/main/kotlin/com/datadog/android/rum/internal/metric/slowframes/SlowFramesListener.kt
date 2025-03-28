@@ -108,7 +108,6 @@ internal class DefaultSlowFramesListener(
         if (durationNs >= configuration.freezeDurationThresholdNs && viewId != null) {
             val report = getViewPerformanceReport(viewId)
             synchronized(report) {
-                metricDispatcher.incrementFreezeFrameCount(viewId)
                 report.freezeFramesDuration += durationNs
             }
         }

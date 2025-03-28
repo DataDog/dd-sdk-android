@@ -21,8 +21,6 @@ internal interface UISlownessMetricDispatcher {
 
     fun incrementIgnoredFrameCount(viewId: String)
 
-    fun incrementFreezeFrameCount(viewId: String)
-
     fun sendMetric(viewId: String)
 }
 
@@ -33,9 +31,8 @@ internal class DefaultUISlownessMetricDispatcher(
 ) : UISlownessMetricDispatcher {
 
     internal data class SlowFramesTelemetry(
-        var slowFramesCount: AtomicInteger = AtomicInteger(0),
-        var ignoredFramesCount: AtomicInteger = AtomicInteger(0),
-        var frozenFramesCount: AtomicInteger = AtomicInteger(0)
+        val slowFramesCount: AtomicInteger = AtomicInteger(0),
+        val ignoredFramesCount: AtomicInteger = AtomicInteger(0)
     )
 
     private val viewTelemetry = ConcurrentHashMap<String, SlowFramesTelemetry>()
@@ -55,11 +52,6 @@ internal class DefaultUISlownessMetricDispatcher(
         viewTelemetry[viewId]?.ignoredFramesCount?.incrementAndGet()
     }
 
-    // Called from the background thread
-    override fun incrementFreezeFrameCount(viewId: String) {
-        viewTelemetry[viewId]?.frozenFramesCount?.incrementAndGet()
-    }
-
     // Called from the main thread
     override fun sendMetric(viewId: String) {
         val telemetry = viewTelemetry.remove(viewId)
@@ -77,16 +69,14 @@ internal class DefaultUISlownessMetricDispatcher(
             messageBuilder = { UI_SLOWNESS_MESSAGE },
             additionalProperties = buildMetricAttributesMap(
                 slowFramesCount = telemetry.slowFramesCount.get(),
-                ignoredFramesCount = telemetry.ignoredFramesCount.get(),
-                freezeFramesCount = telemetry.frozenFramesCount.get()
+                ignoredFramesCount = telemetry.ignoredFramesCount.get()
             )
         )
     }
 
     private fun buildMetricAttributesMap(
         slowFramesCount: Int,
-        ignoredFramesCount: Int,
-        freezeFramesCount: Int
+        ignoredFramesCount: Int
     ): Map<String, Any> = buildMap {
         put(KEY_METRIC_TYPE, VALUE_METRIC_TYPE)
         put(
@@ -104,18 +94,6 @@ internal class DefaultUISlownessMetricDispatcher(
                                 put(KEY_SLOW_FRAME_THRESHOLD, 2.0f) // no option this value to be changed for now
                                 put(KEY_MAX_DURATION, config.maxSlowFrameThresholdNs)
                                 put(KEY_VIEW_MIN_DURATION, config.minViewLifetimeThresholdNs)
-                            }
-                        )
-                    }
-                )
-                put(
-                    KEY_FROZEN_FRAMES,
-                    buildMap {
-                        put(KEY_COUNT, freezeFramesCount)
-                        put(
-                            KEY_CONFIG,
-                            buildMap {
-                                put(KEY_MIN_DURATION, config.freezeDurationThresholdNs)
                             }
                         )
                     }
@@ -142,8 +120,5 @@ internal class DefaultUISlownessMetricDispatcher(
         internal const val KEY_SLOW_FRAME_THRESHOLD = "slow_frame_threshold"
         internal const val KEY_MAX_DURATION = "max_duration"
         internal const val KEY_VIEW_MIN_DURATION = "view_min_duration"
-
-        internal const val KEY_FROZEN_FRAMES = "frozen_frames"
-        internal const val KEY_MIN_DURATION = "min_duration"
     }
 }

@@ -9,7 +9,6 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.InternalLogger.Target
 import com.datadog.android.rum.configuration.SlowFramesConfiguration
 import com.datadog.android.rum.internal.metric.slowframes.DefaultUISlownessMetricDispatcher.Companion.KEY_COUNT
-import com.datadog.android.rum.internal.metric.slowframes.DefaultUISlownessMetricDispatcher.Companion.KEY_FROZEN_FRAMES
 import com.datadog.android.rum.internal.metric.slowframes.DefaultUISlownessMetricDispatcher.Companion.KEY_IGNORED_COUNT
 import com.datadog.android.rum.internal.metric.slowframes.DefaultUISlownessMetricDispatcher.Companion.KEY_RUM_UI_SLOWNESS
 import com.datadog.android.rum.internal.metric.slowframes.DefaultUISlownessMetricDispatcher.Companion.KEY_SLOW_FRAMES
@@ -68,7 +67,7 @@ internal class DefaultUISlownessMetricDispatcherTest {
     }
 
     @Test
-    fun `M increment slowFramesCount W incSlowFrame`() {
+    fun `M increment slowFramesCount W incrementSlowFrameCount`() {
         // Given
         testedDispatcher.onViewCreated(fakeViewId)
 
@@ -86,25 +85,7 @@ internal class DefaultUISlownessMetricDispatcherTest {
     }
 
     @Test
-    fun `M increment freezeFramesCount W incFreezeFrame`() {
-        // Given
-        testedDispatcher.onViewCreated(fakeViewId)
-
-        // When
-        testedDispatcher.incrementFreezeFrameCount(fakeViewId)
-        testedDispatcher.sendMetric(fakeViewId)
-
-        // Then
-        verify(mockInternalLogger).logMetric(
-            argThat { invoke() == DefaultUISlownessMetricDispatcher.UI_SLOWNESS_MESSAGE },
-            argThat { hasExpectedValue(1, KEY_RUM_UI_SLOWNESS, KEY_FROZEN_FRAMES, KEY_COUNT) },
-            eq(fakeSamplingRate),
-            eq(null)
-        )
-    }
-
-    @Test
-    fun `M increment ignoredFramesCount W incFreezeFrame`() {
+    fun `M increment ignoredFramesCount W incrementIgnoredFrameCount`() {
         // Given
         testedDispatcher.onViewCreated(fakeViewId)
 
@@ -122,7 +103,7 @@ internal class DefaultUISlownessMetricDispatcherTest {
     }
 
     @Test
-    fun `M send telemetry only once W sendSlowFramesTelemetry`() {
+    fun `M send telemetry only once W sendMetric`() {
         // Given
         testedDispatcher.onViewCreated(fakeViewId)
 
@@ -140,7 +121,7 @@ internal class DefaultUISlownessMetricDispatcherTest {
     }
 
     @Test
-    fun `M log warning W sendSlowFramesTelemetry twice`() {
+    fun `M log warning W sendMetric twice`() {
         // Given
         testedDispatcher.onViewCreated(fakeViewId)
 

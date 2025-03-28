@@ -517,64 +517,6 @@ internal class DefaultSlowFramesListenerTest {
     }
 
     @Test
-    fun `M incrementFreezeFrameCount W onAddLongTask {durationNs gt freezeDurationThresholdNs}`(
-        @LongForgery(min = 0, max = Long.MAX_VALUE - 1) freezeDurationThreshold: Long,
-        @LongForgery(min = 0) startedTimestampNs: Long
-    ) {
-        // Given
-        val testedListener = stubSlowFramesListener(
-            SlowFramesConfiguration(
-                freezeDurationThresholdNs = freezeDurationThreshold
-            )
-        )
-        testedListener.onViewCreated(viewId, startedTimestampNs)
-
-        // When
-        testedListener.onAddLongTask(freezeDurationThreshold + 1)
-
-        // Then
-        verify(mockMetricDispatcher).incrementFreezeFrameCount(viewId)
-    }
-
-    @Test
-    fun `M not incrementFreezeFrameCount W onAddLongTask {durationNs le freezeDurationThresholdNs}`(
-        @LongForgery(min = 1, max = Long.MAX_VALUE) freezeDurationThreshold: Long,
-        @LongForgery(min = 0) startedTimestampNs: Long
-    ) {
-        // Given
-        val testedListener = stubSlowFramesListener(
-            SlowFramesConfiguration(
-                freezeDurationThresholdNs = freezeDurationThreshold
-            )
-        )
-        testedListener.onViewCreated(viewId, startedTimestampNs)
-
-        // When
-        testedListener.onAddLongTask(freezeDurationThreshold - 1)
-
-        // Then
-        verify(mockMetricDispatcher, never()).incrementFreezeFrameCount(viewId)
-    }
-
-    @Test
-    fun `M not incrementFreezeFrameCount W onAddLongTask { view not started }`(
-        @LongForgery(min = 0, max = Long.MAX_VALUE - 1) freezeDurationThreshold: Long
-    ) {
-        // Given
-        val testedListener = stubSlowFramesListener(
-            SlowFramesConfiguration(
-                freezeDurationThresholdNs = freezeDurationThreshold
-            )
-        )
-
-        // When
-        testedListener.onAddLongTask(freezeDurationThreshold + 1)
-
-        // Then
-        verify(mockMetricDispatcher, never()).incrementFreezeFrameCount(viewId)
-    }
-
-    @Test
     fun `M sendSlowFramesTelemetry W resolveReport { isViewCompleted = true }`(
         forge: Forge
     ) {
