@@ -5,8 +5,6 @@
  */
 package com.datadog.android.rum.internal.metric.slowframes
 
-import androidx.annotation.MainThread
-import androidx.annotation.WorkerThread
 import androidx.metrics.performance.FrameData
 import com.datadog.android.rum.configuration.SlowFramesConfiguration
 import com.datadog.android.rum.internal.domain.FrameMetricsData
@@ -23,7 +21,8 @@ internal interface SlowFramesListener : FrameStateListener {
 }
 
 internal class DefaultSlowFramesListener(
-    internal val configuration: SlowFramesConfiguration
+    internal val configuration: SlowFramesConfiguration,
+    internal val metricDispatcher: UISlownessMetricDispatcher
 ) : SlowFramesListener {
 
     @Volatile
@@ -34,13 +33,14 @@ internal class DefaultSlowFramesListener(
 
     private val slowFramesRecords = ConcurrentHashMap<String, ViewUIPerformanceReport>()
 
-    @MainThread
+    // Called from the main thread
     override fun onViewCreated(viewId: String, startedTimestampNs: Long) {
         currentViewId = viewId
         currentViewStartedTimeStampNs = startedTimestampNs
+        metricDispatcher.onViewCreated(viewId)
     }
 
-    @MainThread
+    // Called from the main thread
     override fun resolveReport(viewId: String, isViewCompleted: Boolean): ViewUIPerformanceReport? {
         @Suppress("UnsafeThirdPartyFunctionCall") // can't have NPE here
         val report = if (isViewCompleted) slowFramesRecords.remove(viewId) else slowFramesRecords[viewId]
@@ -48,10 +48,13 @@ internal class DefaultSlowFramesListener(
         if (report == null) return null
 
         // making sure that report is not partially updated
-        return synchronized(report) { report.copy() }
+        return synchronized(report) {
+            if (isViewCompleted) metricDispatcher.sendMetric(viewId)
+            report.copy()
+        }
     }
 
-    @WorkerThread
+    // Called from the background thread
     override fun onFrame(volatileFrameData: FrameData) {
         val viewId = currentViewId ?: return
         val frameDurationNs = volatileFrameData.frameDurationUiNanos
@@ -68,10 +71,12 @@ internal class DefaultSlowFramesListener(
 
             if (frameDurationNs > configuration.maxSlowFrameThresholdNs || !volatileFrameData.isJank) {
                 // Frame duration is too big to be considered as a slow frame or not jank
+                metricDispatcher.incrementIgnoredFrameCount(viewId)
                 return
             }
 
             report.slowFramesDurationNs += frameDurationNs
+            metricDispatcher.incrementSlowFrameCount(viewId)
             val previousSlowFrameRecord = report.lastSlowFrameRecord
             val delaySinceLastUpdate = frameStartedTimestampNs -
                 (previousSlowFrameRecord?.startTimestampNs ?: frameStartedTimestampNs)
@@ -97,16 +102,18 @@ internal class DefaultSlowFramesListener(
         }
     }
 
-    @WorkerThread
+    // Called from the background thread
     override fun onAddLongTask(durationNs: Long) {
         val viewId = currentViewId
-        if (durationNs >= configuration.freezeDurationThreshold && viewId != null) {
+        if (durationNs >= configuration.freezeDurationThresholdNs && viewId != null) {
             val report = getViewPerformanceReport(viewId)
-            synchronized(report) { report.freezeFramesDuration += durationNs }
+            synchronized(report) {
+                report.freezeFramesDuration += durationNs
+            }
         }
     }
 
-    @MainThread
+    // Called from the main thread
     override fun onFrameMetricsData(data: FrameMetricsData) {
         // do nothing
     }

@@ -30,7 +30,7 @@ package com.datadog.android.rum.configuration
  * record will be updated rather than adding a new one.
  * The default value is 16,666,666 ns (approximately 1/60 fps).
  *
- * @param freezeDurationThreshold The duration (in nanoseconds) used to classify a frame as a freeze frame.
+ * @param freezeDurationThresholdNs The duration (in nanoseconds) used to classify a frame as a freeze frame.
  * The cumulative duration of such freezes contributes to the calculation of the
  * [com.datadog.android.rum.model.ViewEvent.ViewEventView.freezeRate].
  * The default value is 5,000,000,000 ns (5 seconds).
@@ -43,7 +43,7 @@ data class SlowFramesConfiguration(
     internal val maxSlowFramesAmount: Int = DEFAULT_SLOW_FRAME_RECORDS_MAX_AMOUNT,
     internal val maxSlowFrameThresholdNs: Long = DEFAULT_FROZEN_FRAME_THRESHOLD_NS,
     internal val continuousSlowFrameThresholdNs: Long = DEFAULT_CONTINUOUS_SLOW_FRAME_THRESHOLD_NS,
-    internal val freezeDurationThreshold: Long = DEFAULT_FREEZE_DURATION_NS,
+    internal val freezeDurationThresholdNs: Long = DEFAULT_FREEZE_DURATION_NS,
     internal val minViewLifetimeThresholdNs: Long = DEFAULT_VIEW_LIFETIME_THRESHOLD_NS
 ) {
 

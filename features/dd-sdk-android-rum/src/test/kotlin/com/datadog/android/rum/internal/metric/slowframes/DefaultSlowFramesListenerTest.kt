@@ -21,8 +21,11 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.never
+import org.mockito.kotlin.verify
 import org.mockito.quality.Strictness
 
 @Extensions(
@@ -41,12 +44,15 @@ internal class DefaultSlowFramesListenerTest {
     @LongForgery(min = 1L, max = 10_000_000_000L)
     var viewCreatedTimestampNs: Long = 0L
 
+    @Mock
+    lateinit var mockMetricDispatcher: UISlownessMetricDispatcher
+
     private lateinit var testedListener: DefaultSlowFramesListener
 
     @BeforeEach
     fun `set up`() {
-        testedListener = DefaultSlowFramesListener(
-            SlowFramesConfiguration(
+        testedListener = stubSlowFramesListener(
+            configuration = SlowFramesConfiguration(
                 maxSlowFrameThresholdNs = Long.MAX_VALUE,
                 minViewLifetimeThresholdNs = 0
             )
@@ -163,7 +169,7 @@ internal class DefaultSlowFramesListenerTest {
             frameDurationUiNanos = forge.aLong(min = 1, max = continuousSlowFrameThresholdNs / 2)
         )
 
-        val testedListener = DefaultSlowFramesListener(
+        val testedListener = stubSlowFramesListener(
             SlowFramesConfiguration(
                 maxSlowFrameThresholdNs = Long.MAX_VALUE,
                 continuousSlowFrameThresholdNs = continuousSlowFrameThresholdNs
@@ -204,7 +210,7 @@ internal class DefaultSlowFramesListenerTest {
             frameDurationUiNanos = forge.aLong(min = 1, max = 100)
         )
 
-        val testedListener = DefaultSlowFramesListener(
+        val testedListener = stubSlowFramesListener(
             SlowFramesConfiguration(
                 maxSlowFrameThresholdNs = Long.MAX_VALUE,
                 continuousSlowFrameThresholdNs = 16
@@ -233,6 +239,16 @@ internal class DefaultSlowFramesListenerTest {
         )
     }
 
+    private fun stubSlowFramesListener(
+        configuration: SlowFramesConfiguration = SlowFramesConfiguration(
+            maxSlowFrameThresholdNs = Long.MAX_VALUE,
+            minViewLifetimeThresholdNs = 0
+        ),
+        metricDispatcher: UISlownessMetricDispatcher = mockMetricDispatcher
+    ): DefaultSlowFramesListener {
+        return DefaultSlowFramesListener(configuration, metricDispatcher)
+    }
+
     @Test
     fun `M return empty report W resolveReport { frozen frame should be ignored }`(forge: Forge) {
         // Given
@@ -241,7 +257,7 @@ internal class DefaultSlowFramesListenerTest {
             frameDurationUiNanos = 800
         )
 
-        val testedListener = DefaultSlowFramesListener(
+        val testedListener = stubSlowFramesListener(
             SlowFramesConfiguration(
                 maxSlowFrameThresholdNs = 700,
                 continuousSlowFrameThresholdNs = 16
@@ -273,7 +289,7 @@ internal class DefaultSlowFramesListenerTest {
             frameDurationUiNanos = jankDuration
         )
 
-        val testedListener = DefaultSlowFramesListener(
+        val testedListener = stubSlowFramesListener(
             SlowFramesConfiguration(
                 maxSlowFrameThresholdNs = frozenFrameThresholdNs,
                 continuousSlowFrameThresholdNs = Long.MAX_VALUE
@@ -369,7 +385,7 @@ internal class DefaultSlowFramesListenerTest {
         assertThat(defaultConfiguration.maxSlowFramesAmount).isEqualTo(1000)
         assertThat(defaultConfiguration.maxSlowFrameThresholdNs).isEqualTo(700_000_000)
         assertThat(defaultConfiguration.continuousSlowFrameThresholdNs).isEqualTo(16_666_666L)
-        assertThat(defaultConfiguration.freezeDurationThreshold).isEqualTo(5_000_000_000L)
+        assertThat(defaultConfiguration.freezeDurationThresholdNs).isEqualTo(5_000_000_000L)
         assertThat(defaultConfiguration.minViewLifetimeThresholdNs).isEqualTo(1_000_000_000L)
     }
 
@@ -385,9 +401,9 @@ internal class DefaultSlowFramesListenerTest {
         val longTaskDuration = freezeDurationThresholdNs + 1
         val viewEndedTimestampNs = viewStartedAtTimestampNs + viewDurationNs
         val expectedFreezeFramesRate = longTaskDuration.toDouble() / viewDurationNs * 3600
-        val testedListener = DefaultSlowFramesListener(
+        val testedListener = stubSlowFramesListener(
             SlowFramesConfiguration(
-                freezeDurationThreshold = freezeDurationThresholdNs
+                freezeDurationThresholdNs = freezeDurationThresholdNs
             )
         ).apply {
             onViewCreated(viewId, viewStartedAtTimestampNs)
@@ -413,9 +429,9 @@ internal class DefaultSlowFramesListenerTest {
     ) {
         // Given
         val viewStartedAtTimestampNs = 0L
-        val testedListener = DefaultSlowFramesListener(
+        val testedListener = stubSlowFramesListener(
             SlowFramesConfiguration(
-                freezeDurationThreshold = 0L, // every long task considered as freeze now
+                freezeDurationThresholdNs = 0L, // every long task considered as freeze now
                 minViewLifetimeThresholdNs = minViewLifetimeThresholdNs
             )
         ).apply {
@@ -430,6 +446,104 @@ internal class DefaultSlowFramesListenerTest {
             val report = checkNotNull(testedListener.resolveReport(viewId, false))
             assertThat(report.freezeFramesRate(minViewLifetimeThresholdNs - 1)).isZero()
         }
+    }
+
+    @Test
+    fun `M proxy to metricDispatcher W onViewCreated`(
+        @StringForgery viewId: String,
+        @LongForgery(min = 0) startedTimestampNs: Long
+    ) {
+        // When
+        testedListener.onViewCreated(viewId, startedTimestampNs)
+
+        // Then
+        verify(mockMetricDispatcher).onViewCreated(viewId)
+    }
+
+    @Test
+    fun `M incrementSlowFrameCount W onFrame { isJank = true }`(
+        forge: Forge
+    ) {
+        // Given
+        testedListener.onViewCreated(viewId, forge.aLong(min = 0))
+
+        // When
+        testedListener.onFrame(forge.aFrameData(isJank = true))
+
+        // Then
+        verify(mockMetricDispatcher).incrementSlowFrameCount(viewId)
+        verify(mockMetricDispatcher, never()).incrementIgnoredFrameCount(viewId)
+    }
+
+    @Test
+    fun `M incrementIgnoredFrameCount W onFrame { isJank = false }`(
+        forge: Forge
+    ) {
+        // Given
+        testedListener.onViewCreated(viewId, forge.aLong(min = 0))
+
+        // When
+        testedListener.onFrame(forge.aFrameData(isJank = false))
+
+        // Then
+        verify(mockMetricDispatcher).incrementIgnoredFrameCount(viewId)
+        verify(mockMetricDispatcher, never()).incrementSlowFrameCount(viewId)
+    }
+
+    @Test
+    fun `M incrementIgnoredFrameCount W onFrame { isJank = true, frameDurationUiNanos gt maxSlowFrameThresholdNs }`(
+        @LongForgery(min = 0, max = Long.MAX_VALUE) maxSlowFrameThresholdNs: Long,
+        forge: Forge
+    ) {
+        // Given
+        val testedListener = stubSlowFramesListener(
+            SlowFramesConfiguration(
+                maxSlowFrameThresholdNs = maxSlowFrameThresholdNs
+            )
+        )
+        testedListener.onViewCreated(viewId, forge.aLong(min = 0))
+
+        // When
+        testedListener.onFrame(
+            forge.aFrameData(
+                isJank = true,
+                frameDurationUiNanos = maxSlowFrameThresholdNs + 1
+            )
+        )
+
+        // Then
+        verify(mockMetricDispatcher).incrementIgnoredFrameCount(viewId)
+        verify(mockMetricDispatcher, never()).incrementSlowFrameCount(viewId)
+    }
+
+    @Test
+    fun `M sendSlowFramesTelemetry W resolveReport { isViewCompleted = true }`(
+        forge: Forge
+    ) {
+        // Given
+        testedListener.onViewCreated(viewId, forge.aLong(min = 0))
+        testedListener.onFrame(forge.aFrameData())
+
+        // When
+        testedListener.resolveReport(viewId, isViewCompleted = true)
+
+        // Then
+        verify(mockMetricDispatcher).sendMetric(viewId)
+    }
+
+    @Test
+    fun `M not sendSlowFramesTelemetry W resolveReport { isViewCompleted = false }`(
+        forge: Forge
+    ) {
+        // Given
+        testedListener.onViewCreated(viewId, forge.aLong(min = 0))
+        testedListener.onFrame(forge.aFrameData())
+
+        // When
+        testedListener.resolveReport(viewId, isViewCompleted = false)
+
+        // Then
+        verify(mockMetricDispatcher, never()).sendMetric(viewId)
     }
 
     private fun Forge.aFrameData(

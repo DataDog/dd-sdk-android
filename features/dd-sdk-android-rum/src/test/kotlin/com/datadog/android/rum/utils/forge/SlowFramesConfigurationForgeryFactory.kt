@@ -15,7 +15,7 @@ internal class SlowFramesConfigurationForgeryFactory : ForgeryFactory<SlowFrames
         maxSlowFramesAmount = forge.anInt(min = 0),
         maxSlowFrameThresholdNs = forge.aLong(min = 0),
         continuousSlowFrameThresholdNs = forge.aLong(min = 0),
-        freezeDurationThreshold = forge.aLong(min = 0),
+        freezeDurationThresholdNs = forge.aLong(min = 0),
         minViewLifetimeThresholdNs = forge.aLong(min = 0)
     )
 }

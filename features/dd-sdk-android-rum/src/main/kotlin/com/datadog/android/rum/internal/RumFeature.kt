@@ -53,6 +53,7 @@ import com.datadog.android.rum.internal.instrumentation.UserActionTrackingStrate
 import com.datadog.android.rum.internal.instrumentation.UserActionTrackingStrategyLegacy
 import com.datadog.android.rum.internal.instrumentation.gestures.DatadogGesturesTracker
 import com.datadog.android.rum.internal.metric.slowframes.DefaultSlowFramesListener
+import com.datadog.android.rum.internal.metric.slowframes.DefaultUISlownessMetricDispatcher
 import com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.internal.monitor.DatadogRumMonitor
@@ -231,7 +232,13 @@ internal class RumFeature(
                 InternalLogger.Target.USER,
                 { SLOW_FRAMES_MONITORING_ENABLED_MESSAGE }
             )
-            DefaultSlowFramesListener(slowFramesConfiguration)
+            DefaultSlowFramesListener(
+                configuration = slowFramesConfiguration,
+                metricDispatcher = DefaultUISlownessMetricDispatcher(
+                    slowFramesConfiguration,
+                    sdkCore.internalLogger
+                )
+            )
         } else {
             sdkCore.internalLogger.log(
                 InternalLogger.Level.INFO,
