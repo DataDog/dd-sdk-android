@@ -11,8 +11,10 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.content.res.Configuration
 import android.content.res.Resources
+import android.hardware.display.DisplayManager
 import android.os.Build
 import android.telephony.TelephonyManager
+import android.view.Display
 import com.datadog.android.api.context.DeviceType
 import com.datadog.android.utils.forge.Configurator
 import fr.xgouchet.elmyr.Forge
@@ -399,6 +401,68 @@ internal class DefaultAndroidInfoProviderTest {
     }
 
     data class PhoneType(val name: String, val value: Int)
+
+    // endregion
+
+    // region number of displays
+
+    @Test
+    fun `M return number of displays W numberOfDisplays { 1 }`(
+        forge: Forge
+    ) {
+        // Given
+        val listOfStates = listOf(
+            Display.STATE_OFF,
+            Display.STATE_VR,
+            Display.STATE_ON,
+            Display.STATE_ON_SUSPEND,
+            Display.STATE_DOZE,
+            Display.STATE_DOZE_SUSPEND,
+            Display.STATE_UNKNOWN
+        )
+
+        val mockDisplays = mutableListOf<Display>()
+        for (i in 0 until forge.anInt(min = 1, max = 20)) {
+            val mockDisplay = mock<Display>()
+            whenever(mockDisplay.state) doReturn forge.anElementFrom(listOfStates)
+            whenever(mockDisplay.displayId) doReturn i
+            mockDisplays.add(mockDisplay)
+        }
+
+        val mockDisplayManager = mock<DisplayManager>()
+        whenever(mockContext.getSystemService(Context.DISPLAY_SERVICE))
+            .thenReturn(mockDisplayManager)
+        whenever(mockDisplayManager.displays) doReturn mockDisplays.toTypedArray()
+        val expectedDisplays = mockDisplays.filter {
+            it.state != Display.STATE_OFF &&
+                it.state != Display.STATE_UNKNOWN
+        }
+
+        testedProvider = createProvider()
+
+        // When
+        val numberOfDisplays = testedProvider.numberOfDisplays
+
+        // Then
+        assertThat(numberOfDisplays).isEqualTo(
+            expectedDisplays.size
+        )
+    }
+
+    @Test
+    fun `M return null W numberOfDisplays { could not get display manager }`() {
+        // Given
+        whenever(mockContext.getSystemService(Context.DISPLAY_SERVICE))
+            .thenReturn(null)
+
+        testedProvider = createProvider()
+
+        // When
+        val numberOfDisplays = testedProvider.numberOfDisplays
+
+        // Then
+        assertThat(numberOfDisplays).isNull()
+    }
 
     // endregion
 }
