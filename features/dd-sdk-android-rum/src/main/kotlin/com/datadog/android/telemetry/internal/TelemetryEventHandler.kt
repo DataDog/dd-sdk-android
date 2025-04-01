@@ -371,7 +371,8 @@ internal class TelemetryEventHandler(
                     invTimeThresholdMs = invTimeBasedThreshold,
                     tnsTimeThresholdMs = tnsTimeBasedThreshold,
                     numberOfDisplays = datadogContext.deviceInfo.numberOfDisplays?.toLong(),
-                    traceSampleRate = event.okhttpInterceptorSampleRate?.toLong()
+                    traceSampleRate = event.okhttpInterceptorSampleRate?.toLong(),
+                    selectedTracingPropagators = event.tracingHeaderTypes?.toSelectedTracingPropagators()
                 )
             )
         )

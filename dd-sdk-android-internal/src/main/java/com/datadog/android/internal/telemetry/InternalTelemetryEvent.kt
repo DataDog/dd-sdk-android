@@ -41,7 +41,8 @@ sealed class InternalTelemetryEvent {
         val useProxy: Boolean,
         val useLocalEncryption: Boolean,
         val batchProcessingLevel: Int,
-        val okhttpInterceptorSampleRate: Float?
+        val okhttpInterceptorSampleRate: Float?,
+        val tracingHeaderTypes: TracingHeaderTypesSet?
     ) : InternalTelemetryEvent()
 
     data class Metric(

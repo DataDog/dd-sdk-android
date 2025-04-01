@@ -17,11 +17,13 @@ import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.UploadFrequency
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.DatadogCore
+import com.datadog.android.core.internal.DatadogCore.Companion.OKHTTP_INTERCEPTOR_HEADER_TYPES
 import com.datadog.android.core.internal.DatadogCore.Companion.OKHTTP_INTERCEPTOR_SAMPLE_RATE
 import com.datadog.android.core.internal.SdkFeature
 import com.datadog.android.core.thread.FlushableExecutorService
 import com.datadog.android.error.internal.CrashReportsFeature
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
+import com.datadog.android.internal.telemetry.TracingHeaderTypesSet
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.security.Encryption
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
@@ -371,8 +373,13 @@ internal class DatadogCoreInitializationTest {
         testedCore.features += Feature.TRACING_FEATURE_NAME to mockTracingFeature
 
         val traceSampleRate = forge.aFloat(min = 0f, max = 100f)
+        val tracingHeaderTypes = forge.aNullable<TracingHeaderTypesSet>()
+
         testedCore.updateFeatureContext(Feature.TRACING_FEATURE_NAME) {
             it[OKHTTP_INTERCEPTOR_SAMPLE_RATE] = traceSampleRate
+            if (tracingHeaderTypes != null) {
+                it[OKHTTP_INTERCEPTOR_HEADER_TYPES] = tracingHeaderTypes
+            }
         }
 
         testedCore.coreFeature.uploadExecutorService.queue
@@ -399,6 +406,8 @@ internal class DatadogCoreInitializationTest {
                 .isEqualTo(configuration.coreConfig.proxy != null)
             assertThat(telemetryConfigurationEvent.okhttpInterceptorSampleRate)
                 .isEqualTo(traceSampleRate)
+            assertThat(telemetryConfigurationEvent.tracingHeaderTypes)
+                .isEqualTo(tracingHeaderTypes)
         }
     }
 
