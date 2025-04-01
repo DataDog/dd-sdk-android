@@ -21,6 +21,7 @@ import com.datadog.android.internal.utils.loggableStackTrace
 import com.datadog.android.okhttp.TraceContext
 import com.datadog.android.okhttp.TraceContextInjection
 import com.datadog.android.okhttp.internal.otel.toOpenTracingContext
+import com.datadog.android.okhttp.internal.trace.mapHostsWithHeaderTypes
 import com.datadog.android.okhttp.internal.utils.traceIdAsHexString
 import com.datadog.android.trace.AndroidTracer
 import com.datadog.android.trace.TracingHeaderType
@@ -227,6 +228,7 @@ internal constructor(
         sdkCore?.updateFeatureContext(Feature.TRACING_FEATURE_NAME) {
             val sampleRate = traceSampler.getSampleRate()
             it[OKHTTP_INTERCEPTOR_SAMPLE_RATE] = sampleRate
+            it[OKHTTP_INTERCEPTOR_HEADER_TYPES] = mapHostsWithHeaderTypes(tracedHosts)
         }
     }
 
@@ -984,6 +986,7 @@ internal constructor(
         internal const val W3C_PARENT_ID_LENGTH = 16
 
         internal const val OKHTTP_INTERCEPTOR_SAMPLE_RATE = "okhttp_interceptor_sample_rate"
+        internal const val OKHTTP_INTERCEPTOR_HEADER_TYPES = "okhttp_interceptor_header_types"
 
         private const val AGENT_PSR_ATTRIBUTE = "_dd.agent_psr"
         private val DEFAULT_LOCAL_TRACER_FACTORY: (SdkCore, Set<TracingHeaderType>) -> Tracer =

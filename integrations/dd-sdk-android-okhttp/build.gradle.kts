@@ -4,6 +4,8 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
+@file:Suppress("StringLiteralDuplication")
+
 import com.datadog.gradle.config.androidLibraryConfig
 import com.datadog.gradle.config.dependencyUpdateConfig
 import com.datadog.gradle.config.detektCustomConfig
@@ -63,6 +65,7 @@ dependencies {
         }
     }
     testImplementation(testFixtures(project(":dd-sdk-android-core")))
+    testImplementation(testFixtures(project(":dd-sdk-android-internal")))
     testImplementation(libs.bundles.jUnit5)
     testImplementation(libs.bundles.testTools)
     testImplementation(libs.okHttpMock)

@@ -14,7 +14,9 @@ import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.internal.utils.loggableStackTrace
 import com.datadog.android.okhttp.TraceContext
 import com.datadog.android.okhttp.TraceContextInjection
+import com.datadog.android.okhttp.internal.trace.mapHostsWithHeaderTypes
 import com.datadog.android.okhttp.internal.utils.forge.OkHttpConfigurator
+import com.datadog.android.okhttp.trace.TracingInterceptor.Companion.OKHTTP_INTERCEPTOR_HEADER_TYPES
 import com.datadog.android.okhttp.trace.TracingInterceptor.Companion.OKHTTP_INTERCEPTOR_SAMPLE_RATE
 import com.datadog.android.okhttp.utils.assertj.HeadersAssert.Companion.assertThat
 import com.datadog.android.okhttp.utils.config.DatadogSingletonTestConfiguration
@@ -1572,7 +1574,7 @@ internal open class TracingInterceptorTest {
     }
 
     @Test
-    fun `M add trace sample rate to tracing feature context W constructor called`(
+    fun `M add trace sample rate and header types to tracing feature context W constructor called`(
         @FloatForgery(min = 0f, max = 100f) sampleRate: Float
     ) {
         // GIVEN
@@ -1585,10 +1587,13 @@ internal open class TracingInterceptorTest {
         }
 
         // WHEN
-        testedInterceptor = instantiateTestedInterceptor { _, _ -> mockLocalTracer }
+        testedInterceptor = instantiateTestedInterceptor(fakeLocalHosts) { _, _ -> mockLocalTracer }
 
         // THEN
         verify(contextMock).put(OKHTTP_INTERCEPTOR_SAMPLE_RATE, sampleRate)
+        verify(
+            contextMock
+        ).put(OKHTTP_INTERCEPTOR_HEADER_TYPES, mapHostsWithHeaderTypes(fakeLocalHosts))
         verifyNoMoreInteractions(contextMock)
     }
 

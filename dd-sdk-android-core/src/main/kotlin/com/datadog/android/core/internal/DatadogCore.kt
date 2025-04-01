@@ -39,6 +39,7 @@ import com.datadog.android.core.internal.utils.submitSafe
 import com.datadog.android.core.thread.FlushableExecutorService
 import com.datadog.android.error.internal.CrashReportsFeature
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
+import com.datadog.android.internal.telemetry.TracingHeaderTypesSet
 import com.datadog.android.ndk.internal.NdkCrashHandler
 import com.datadog.android.privacy.TrackingConsent
 import com.google.gson.JsonObject
@@ -515,6 +516,8 @@ internal class DatadogCore(
 
             val tracingFeatureContext = getFeatureContext(Feature.TRACING_FEATURE_NAME)
             val okhttpInterceptorSampleRate = tracingFeatureContext[OKHTTP_INTERCEPTOR_SAMPLE_RATE] as? Float?
+            val tracingHeaderTypes =
+                tracingFeatureContext[OKHTTP_INTERCEPTOR_HEADER_TYPES] as? TracingHeaderTypesSet
 
             val event = InternalTelemetryEvent.Configuration(
                 trackErrors = configuration.crashReportsEnabled,
@@ -523,7 +526,8 @@ internal class DatadogCore(
                 useLocalEncryption = configuration.coreConfig.encryption != null,
                 batchUploadFrequency = configuration.coreConfig.uploadFrequency.baseStepMs,
                 batchProcessingLevel = configuration.coreConfig.batchProcessingLevel.maxBatchesPerUploadJob,
-                okhttpInterceptorSampleRate = okhttpInterceptorSampleRate
+                okhttpInterceptorSampleRate = okhttpInterceptorSampleRate,
+                tracingHeaderTypes = tracingHeaderTypes
             )
             rumFeature.sendEvent(event)
         }
@@ -598,5 +602,6 @@ internal class DatadogCore(
         internal val startupTimeNs: Long = System.nanoTime()
 
         internal const val OKHTTP_INTERCEPTOR_SAMPLE_RATE = "okhttp_interceptor_sample_rate"
+        internal const val OKHTTP_INTERCEPTOR_HEADER_TYPES = "okhttp_interceptor_header_types"
     }
 }

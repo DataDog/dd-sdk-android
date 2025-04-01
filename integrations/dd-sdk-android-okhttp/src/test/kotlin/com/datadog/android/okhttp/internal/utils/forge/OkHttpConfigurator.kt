@@ -6,6 +6,7 @@
 
 package com.datadog.android.okhttp.internal.utils.forge
 
+import com.datadog.android.internal.tests.elmyr.TracingHeaderTypesSetForgeryFactory
 import com.datadog.tools.unit.forge.BaseConfigurator
 import fr.xgouchet.elmyr.Forge
 
@@ -16,5 +17,6 @@ internal class OkHttpConfigurator : BaseConfigurator() {
 
         // custom factories
         forge.addFactory(TraceContextFactory())
+        forge.addFactory(TracingHeaderTypesSetForgeryFactory())
     }
 }
