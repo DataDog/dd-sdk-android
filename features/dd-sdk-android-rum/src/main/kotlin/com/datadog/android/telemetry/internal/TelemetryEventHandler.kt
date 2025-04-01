@@ -370,6 +370,7 @@ internal class TelemetryEventHandler(
                     isMainProcess = datadogContext.processInfo.isMainProcess,
                     invTimeThresholdMs = invTimeBasedThreshold,
                     tnsTimeThresholdMs = tnsTimeBasedThreshold,
+                    numberOfDisplays = datadogContext.deviceInfo.numberOfDisplays?.toLong(),
                     traceSampleRate = event.okhttpInterceptorSampleRate?.toLong()
                 )
             )

@@ -849,6 +849,7 @@ datadog:
       - "kotlin.Array.constructor(kotlin.Int, kotlin.Function1)"
       - "kotlin.Array.contentEquals(kotlin.Array?)"
       - "kotlin.Array.contentHashCode()"
+      - "kotlin.Array.count(kotlin.Function1)"
       - "kotlin.Array.filter(kotlin.Function1)"
       - "kotlin.Array.filterNotNull(kotlin.Function1)"
       - "kotlin.Array.first(kotlin.Function1)"
