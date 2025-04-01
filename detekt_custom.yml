@@ -425,6 +425,7 @@ datadog:
       - "android.view.View.getTag(kotlin.Int)"
       - "android.view.View.hashCode()"
       - "android.view.View.post(java.lang.Runnable?)"
+      - "android.view.View.takeIf(kotlin.Function1)"
       - "android.view.View.setTag(kotlin.Int, kotlin.Any?)"
       - "android.view.ViewGroup.findViewById(kotlin.Int)"
       - "android.view.ViewGroup.getChildAt(kotlin.Int)"

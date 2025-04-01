@@ -9,22 +9,18 @@ package com.datadog.android.rum.internal.instrumentation.gestures
 import android.content.Context
 import android.view.MotionEvent
 import android.view.View
-import android.view.ViewGroup
 import android.view.Window
-import android.widget.AbsListView
-import android.widget.ScrollView
-import androidx.core.view.ScrollingView
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.SdkCore
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.internal.tracking.NoOpInteractionPredicate
+import com.datadog.android.rum.tracking.ActionTrackingStrategy
 import com.datadog.android.rum.tracking.InteractionPredicate
 import com.datadog.android.rum.tracking.ViewAttributesProvider
 import java.lang.ref.Reference
 import java.lang.ref.WeakReference
-import java.util.LinkedList
 import kotlin.math.abs
 
 @Suppress("TooManyFunctions")
@@ -37,12 +33,13 @@ internal class GesturesListener(
     private val internalLogger: InternalLogger
 ) : GestureListenerCompat() {
 
-    private val coordinatesContainer = IntArray(2)
     private var scrollEventType: RumActionType? = null
     private var gestureDirection = ""
     private var scrollTargetReference: WeakReference<View?> = WeakReference(null)
     private var onTouchDownXPos = 0f
     private var onTouchDownYPos = 0f
+    private val androidActionTrackingStrategy: ActionTrackingStrategy =
+        AndroidActionTrackingStrategy(internalLogger)
 
     // region GesturesListener
 
@@ -92,22 +89,22 @@ internal class GesturesListener(
         // we only start the user action once
         if (scrollEventType == null) {
             // check if we find a valid target
-            val scrollTarget = startDownEvent?.let { findTargetForScroll(decorView, it.x, startDownEvent.y) }
-            if (scrollTarget != null) {
-                scrollTargetReference = WeakReference(scrollTarget)
-                val targetId: String = contextRef.get().resourceIdName(scrollTarget.id)
-                val attributes = resolveAttributes(scrollTarget, targetId, null)
+            val scrollTarget = startDownEvent?.let {
+                androidActionTrackingStrategy.findTargetForScroll(decorView, it.x, startDownEvent.y)
+            }
+            scrollTarget?.view?.let { target ->
+                scrollTargetReference = WeakReference(target)
+                val targetId: String = contextRef.get().resourceIdName(target.id)
+                val attributes = resolveAttributes(target, targetId, null)
                 // although we report scroll here, while it can be swipe in the end, it is fine,
                 // because the final type is taken from stopAction call anyway
                 rumMonitor.startAction(
                     RumActionType.SCROLL,
-                    resolveTargetName(interactionPredicate, scrollTarget),
+                    resolveTargetName(interactionPredicate, target),
                     attributes
                 )
                 scrollEventType = RumActionType.SCROLL
-            } else {
-                return false
-            }
+            } ?: return false
         }
         return false
     }
@@ -131,11 +128,18 @@ internal class GesturesListener(
 
     private fun closeScrollAsTap(decorView: View?, onUpEvent: MotionEvent) {
         if (decorView != null) {
-            val downTarget = findTargetForTap(decorView, onTouchDownXPos, onTouchDownYPos)
-            val upTarget = findTargetForTap(decorView, onUpEvent.x, onUpEvent.y)
-
-            if (downTarget === upTarget && downTarget != null) {
-                sendTapEventWithTarget(downTarget)
+            val downTarget = androidActionTrackingStrategy.findTargetForTap(
+                decorView,
+                onTouchDownXPos,
+                onTouchDownYPos
+            )
+            val upTarget = androidActionTrackingStrategy.findTargetForTap(
+                decorView,
+                onUpEvent.x,
+                onUpEvent.y
+            )
+            downTarget?.view?.takeIf { it == upTarget?.view }?.let { target ->
+                sendTapEventWithTarget(target)
             }
         }
     }
@@ -186,7 +190,11 @@ internal class GesturesListener(
 
     private fun handleTapUp(decorView: View?, e: MotionEvent) {
         if (decorView != null) {
-            findTargetForTap(decorView, e.x, e.y)?.let { target ->
+            androidActionTrackingStrategy.findTargetForTap(
+                decorView,
+                e.x,
+                e.y
+            )?.view?.let { target ->
                 sendTapEventWithTarget(target)
             }
         }
@@ -208,120 +216,6 @@ internal class GesturesListener(
         )
     }
 
-    private fun findTargetForTap(decorView: View, x: Float, y: Float): View? {
-        val queue = LinkedList<View>()
-        queue.addFirst(decorView)
-        var target: View? = null
-        var notifyMissingTarget = true
-
-        while (queue.isNotEmpty()) {
-            // removeFirst can't fail because we checked isNotEmpty
-            @Suppress("UnsafeThirdPartyFunctionCall")
-            val view = queue.removeFirst()
-            if (queue.isEmpty() && isJetpackComposeView(view)) {
-                notifyMissingTarget = false
-            }
-
-            if (isValidTapTarget(view)) {
-                target = view
-            }
-
-            if (view is ViewGroup) {
-                handleViewGroup(view, x, y, queue, coordinatesContainer)
-            }
-        }
-
-        if (target == null && notifyMissingTarget) {
-            internalLogger.log(
-                InternalLogger.Level.INFO,
-                InternalLogger.Target.USER,
-                { MSG_NO_TARGET_TAP }
-            )
-        }
-        return target
-    }
-
-    private fun findTargetForScroll(decorView: View, x: Float, y: Float): View? {
-        val queue = LinkedList<View>()
-        queue.add(decorView)
-
-        var notifyMissingTarget = true
-        while (queue.isNotEmpty()) {
-            // removeFirst can't fail because we checked isNotEmpty
-            @Suppress("UnsafeThirdPartyFunctionCall")
-            val view = queue.removeFirst()
-            if (queue.isEmpty() && isJetpackComposeView(view)) {
-                notifyMissingTarget = false
-            }
-
-            if (isValidScrollableTarget(view)) {
-                return view
-            }
-
-            if (view is ViewGroup) {
-                handleViewGroup(view, x, y, queue, coordinatesContainer)
-            }
-        }
-
-        if (notifyMissingTarget) {
-            internalLogger.log(
-                InternalLogger.Level.INFO,
-                InternalLogger.Target.USER,
-                { MSG_NO_TARGET_SCROLL_SWIPE }
-            )
-        }
-
-        return null
-    }
-
-    private fun handleViewGroup(
-        view: ViewGroup,
-        x: Float,
-        y: Float,
-        stack: LinkedList<View>,
-        coordinatesContainer: IntArray
-    ) {
-        if (!view.isVisible) return
-
-        for (i in 0 until view.childCount) {
-            val child = view.getChildAt(i)
-            if (hitTest(child, x, y, coordinatesContainer)) {
-                stack.add(child)
-            }
-        }
-    }
-
-    private fun isValidTapTarget(view: View): Boolean {
-        return view.isClickable && view.isVisible
-    }
-
-    private fun isValidScrollableTarget(view: View): Boolean {
-        return view.isVisible && isScrollableView(view)
-    }
-
-    @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
-    private fun isScrollableView(view: View): Boolean {
-        return ScrollingView::class.java.isAssignableFrom(view.javaClass) ||
-            AbsListView::class.java.isAssignableFrom(view.javaClass) ||
-            ScrollView::class.java.isAssignableFrom(view.javaClass)
-    }
-
-    private fun hitTest(
-        view: View,
-        x: Float,
-        y: Float,
-        container: IntArray
-    ): Boolean {
-        @Suppress("UnsafeThirdPartyFunctionCall") // container always have the correct size
-        view.getLocationInWindow(container)
-        val vx = container[0]
-        val vy = container[1]
-        val w = view.width
-        val h = view.height
-
-        return !(x < vx || x > vx + w || y < vy || y > vy + h)
-    }
-
     private fun resolveGestureDirection(endEvent: MotionEvent): String {
         val diffX = endEvent.x - onTouchDownXPos
         val diffY = endEvent.y - onTouchDownYPos
@@ -339,16 +233,6 @@ internal class GesturesListener(
             }
         }
     }
-
-    private fun isJetpackComposeView(view: View): Boolean {
-        // startsWith here is to make testing easier: mocks don't have name exactly
-        // like this, and writing manual stub is not possible, because some necessary
-        // methods are final.
-        return view::class.java.name.startsWith("androidx.compose.ui.platform.ComposeView")
-    }
-
-    private val View.isVisible: Boolean
-        get() = visibility == View.VISIBLE
 
     // endregion
 
