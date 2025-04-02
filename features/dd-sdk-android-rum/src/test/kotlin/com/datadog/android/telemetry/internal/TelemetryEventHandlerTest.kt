@@ -599,11 +599,14 @@ internal class TelemetryEventHandlerTest {
             if (tracerApi == TelemetryEventHandler.TracerApi.OpenTracing) {
                 GlobalTracer.registerIfAbsent(mock<Tracer>())
             } else if (tracerApi == TelemetryEventHandler.TracerApi.OpenTelemetry) {
-                whenever(mockSdkCore.getFeatureContext(Feature.TRACING_FEATURE_NAME)) doReturn
-                    mapOf(
-                        TelemetryEventHandler.IS_OPENTELEMETRY_ENABLED_CONTEXT_KEY to true,
-                        TelemetryEventHandler.OPENTELEMETRY_API_VERSION_CONTEXT_KEY to tracerApiVersion
-                    )
+                fakeDatadogContext = fakeDatadogContext.copy(
+                    featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
+                        this[Feature.TRACING_FEATURE_NAME] = mapOf(
+                            TelemetryEventHandler.IS_OPENTELEMETRY_ENABLED_CONTEXT_KEY to true,
+                            TelemetryEventHandler.OPENTELEMETRY_API_VERSION_CONTEXT_KEY to tracerApiVersion
+                        )
+                    }
+                )
             }
         }
 
@@ -691,16 +694,19 @@ internal class TelemetryEventHandlerTest {
         val fakeSessionReplayTouchPrivacy = forge.aString()
         val fakeSessionReplayTextAndInputPrivacy = forge.aString()
         val fakeSessionReplayIsStartImmediately = forge.aBool()
-        val fakeSessionReplayContext = mutableMapOf<String, Any?>(
-            TelemetryEventHandler.SESSION_REPLAY_START_IMMEDIATE_RECORDING_KEY to
-                fakeSessionReplayIsStartImmediately,
-            TelemetryEventHandler.SESSION_REPLAY_SAMPLE_RATE_KEY to fakeSampleRate,
-            TelemetryEventHandler.SESSION_REPLAY_IMAGE_PRIVACY_KEY to fakeSessionReplayImagePrivacy,
-            TelemetryEventHandler.SESSION_REPLAY_TOUCH_PRIVACY_KEY to fakeSessionReplayTouchPrivacy,
-            TelemetryEventHandler.SESSION_REPLAY_TEXT_AND_INPUT_PRIVACY_KEY to fakeSessionReplayTextAndInputPrivacy
+        fakeDatadogContext = fakeDatadogContext.copy(
+            featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
+                this[Feature.SESSION_REPLAY_FEATURE_NAME] = mapOf(
+                    TelemetryEventHandler.SESSION_REPLAY_START_IMMEDIATE_RECORDING_KEY to
+                        fakeSessionReplayIsStartImmediately,
+                    TelemetryEventHandler.SESSION_REPLAY_SAMPLE_RATE_KEY to fakeSampleRate,
+                    TelemetryEventHandler.SESSION_REPLAY_IMAGE_PRIVACY_KEY to fakeSessionReplayImagePrivacy,
+                    TelemetryEventHandler.SESSION_REPLAY_TOUCH_PRIVACY_KEY to fakeSessionReplayTouchPrivacy,
+                    TelemetryEventHandler.SESSION_REPLAY_TEXT_AND_INPUT_PRIVACY_KEY to
+                        fakeSessionReplayTextAndInputPrivacy
+                )
+            }
         )
-        whenever(mockSdkCore.getFeatureContext(Feature.SESSION_REPLAY_FEATURE_NAME)) doReturn
-            fakeSessionReplayContext
         val configRawEvent = RumRawEvent.TelemetryEventWrapper(fakeConfiguration)
 
         // When
