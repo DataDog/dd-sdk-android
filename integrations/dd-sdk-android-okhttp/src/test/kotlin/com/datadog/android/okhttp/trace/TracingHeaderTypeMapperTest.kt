@@ -6,11 +6,10 @@
 
 package com.datadog.android.okhttp.trace
 
-import com.datadog.android.okhttp.internal.trace.mapHostsWithHeaderTypes
 import com.datadog.android.okhttp.internal.trace.toInternalTracingHeaderType
 import com.datadog.android.okhttp.internal.utils.forge.OkHttpConfigurator
 import com.datadog.android.trace.TracingHeaderType
-import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -30,31 +29,14 @@ import org.mockito.quality.Strictness
 internal class TracingHeaderTypeMapperTest {
 
     @Test
-    fun `M map to List of SelectedTracingPropagator W mapToSelectedTracingPropagators`(
-        forge: Forge
+    fun `M map TracingHeaderType W toInternalTracingHeaderType`(
+        @Forgery fakeTrackingHeaderType: TracingHeaderType
     ) {
-        // Given
-        val host1 = forge.aString()
-        val host2 = forge.aString()
-        val host3 = forge.aString()
-
-        val headerType1 = forge.aValueFrom(TracingHeaderType::class.java)
-        val headerType2 = forge.aValueFrom(TracingHeaderType::class.java, exclude = listOf(headerType1))
-
-        val mappedHeaderType1 = headerType1.toInternalTracingHeaderType()
-        val mappedHeaderType2 = headerType2.toInternalTracingHeaderType()
-
-        val tracingHeaderTypes = mapOf(
-            host1 to setOf(headerType1),
-            host2 to setOf(headerType2, headerType1),
-            host3 to emptySet()
-        )
-
         // When
-        val result = mapHostsWithHeaderTypes(tracingHeaderTypes)
+        val result = fakeTrackingHeaderType.toInternalTracingHeaderType()
 
         // Then
-        assertThat(result.types)
-            .isEqualTo(setOf(mappedHeaderType1, mappedHeaderType2))
+        assertThat(result.name)
+            .isEqualTo(fakeTrackingHeaderType.name)
     }
 }

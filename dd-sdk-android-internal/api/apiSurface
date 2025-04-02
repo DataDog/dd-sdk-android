@@ -26,7 +26,7 @@ sealed class com.datadog.android.internal.telemetry.InternalTelemetryEvent
       fun resolveKind(): String?
       fun resolveStacktrace(): String?
   data class Configuration : InternalTelemetryEvent
-    constructor(Boolean, Long, Long, Boolean, Boolean, Int, Float?, TracingHeaderTypesSet?)
+    constructor(Boolean, Long, Long, Boolean, Boolean, Int)
   data class Metric : InternalTelemetryEvent
     constructor(String, Map<String, Any?>?)
   sealed class ApiUsage : InternalTelemetryEvent
