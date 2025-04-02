@@ -53,7 +53,7 @@ internal class GesturesListener(
     override fun onSingleTapUp(e: MotionEvent): Boolean {
         val decorView = windowReference.get()?.decorView
         handleTapUp(decorView, e)
-        return false
+        return true
     }
 
     override fun onDown(e: MotionEvent): Boolean {

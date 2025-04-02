@@ -24,6 +24,7 @@ import com.datadog.android.rum.utils.verifyLog
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
@@ -46,6 +47,24 @@ import java.lang.ref.WeakReference
 @ForgeConfiguration(Configurator::class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
+
+    @Test
+    fun `M return true W call onSingleTap()`(forge: Forge) {
+        // Given
+        val mockEvent: MotionEvent = forge.getForgery()
+        testedListener = GesturesListener(
+            rumMonitor.mockSdkCore,
+            WeakReference(mockWindow),
+            contextRef = WeakReference(mockAppContext),
+            internalLogger = mockInternalLogger
+        )
+
+        // When
+        val result = testedListener.onSingleTapUp(mockEvent)
+
+        // Then
+        assertThat(result).isTrue()
+    }
 
     @Test
     fun `onTap sends the right target when the ViewGroup and its child are both clickable`(
