@@ -307,7 +307,7 @@ internal class OtelTraceWriterTest {
         verifyNoMoreInteractions(mockSdkCore, mockTracingFeatureScope)
     }
 
-    private fun createNonEmptyDdSpans(forge: Forge, includeDropSamplingPriority: Boolean): MutableList<DDSpan> {
+    private fun createNonEmptyDdSpans(forge: Forge, includeDropSamplingPriority: Boolean): List<DDSpan> {
         val predicate: (DDSpan) -> Boolean = if (includeDropSamplingPriority) {
             { it.samplingPriority() in OtelTraceWriter.DROP_SAMPLING_PRIORITIES }
         } else {
@@ -320,7 +320,7 @@ internal class OtelTraceWriterTest {
                 .filter(predicate)
         }
 
-        return spans.toMutableList()
+        return spans
     }
 
     // endregion
