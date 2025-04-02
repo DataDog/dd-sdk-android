@@ -8,7 +8,6 @@ package com.datadog.android.sample.data.db
 
 import android.content.Context
 import com.datadog.android.sample.Preferences
-import com.datadog.android.sample.data.db.realm.RealmDataSource
 import com.datadog.android.sample.data.db.room.RoomDataSource
 import com.datadog.android.sample.data.db.sqldelight.SqlDelightDataSource
 import com.datadog.android.sample.data.db.sqlite.SQLiteDataSource
@@ -25,7 +24,7 @@ internal class LocalDataSource(
             .getLocalDataSource()
 
         when (type) {
-            DataSourceType.REALM -> RealmDataSource(context)
+            DataSourceType.REALM,
             DataSourceType.ROOM -> RoomDataSource(context)
             DataSourceType.SQLDELIGHT -> SqlDelightDataSource(context)
             DataSourceType.SQLITE -> SQLiteDataSource(context)

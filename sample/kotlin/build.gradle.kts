@@ -20,9 +20,10 @@ plugins {
     kotlin("kapt")
     id("com.github.ben-manes.versions")
     id("org.jetbrains.dokka")
-    id("io.realm.kotlin")
+//    id("io.realm.kotlin")
     id("com.squareup.sqldelight")
     id("com.google.devtools.ksp")
+    id("com.datadoghq.dd-sdk-android-gradle-plugin") version "1.15.0"
 }
 
 sqldelight {
@@ -206,7 +207,7 @@ dependencies {
 
     // Local Storage
     implementation(libs.sqlDelight)
-    implementation(libs.realm)
+//    implementation(libs.realm)
     implementation(libs.room)
     ksp(libs.roomCompiler)
 
@@ -237,3 +238,7 @@ taskConfig<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
 junitConfig()
 javadocConfig()
 dependencyUpdateConfig()
+
+datadog {
+    site = "US1" // Optional, can be "US1", "EU1" or "US1_FED", etc. (check `DatadogSite` documentation for the full list). Default is "US1"
+}
