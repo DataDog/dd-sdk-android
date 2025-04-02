@@ -286,8 +286,7 @@ internal class TelemetryEventHandler(
         effectiveSampleRate: Float
     ): TelemetryConfigurationEvent {
         val traceFeature = sdkCore.getFeature(Feature.TRACING_FEATURE_NAME)
-        val sessionReplayFeatureContext =
-            sdkCore.getFeatureContext(Feature.SESSION_REPLAY_FEATURE_NAME)
+        val sessionReplayFeatureContext = datadogContext.featuresContext[Feature.SESSION_REPLAY_FEATURE_NAME].orEmpty()
         val sessionReplaySampleRate = sessionReplayFeatureContext[SESSION_REPLAY_SAMPLE_RATE_KEY]
             as? Long
         val startRecordingImmediately =
@@ -307,7 +306,7 @@ internal class TelemetryEventHandler(
         }
 
         val rumContext = datadogContext.rumContext()
-        val traceContext = sdkCore.getFeatureContext(Feature.TRACING_FEATURE_NAME)
+        val traceContext = datadogContext.featuresContext[Feature.TRACING_FEATURE_NAME].orEmpty()
         val tracerApi = resolveTracerApi(traceContext)
         val openTelemetryApiVersion = resolveOpenTelemetryApiVersion(tracerApi, traceContext)
         val useTracing = (traceFeature != null && tracerApi != null)
