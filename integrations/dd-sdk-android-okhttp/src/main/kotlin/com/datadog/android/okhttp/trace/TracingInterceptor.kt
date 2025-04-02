@@ -17,11 +17,12 @@ import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.HostsSanitizer
 import com.datadog.android.core.internal.net.DefaultFirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.sampling.Sampler
+import com.datadog.android.internal.telemetry.TracingHeaderTypesSet
 import com.datadog.android.internal.utils.loggableStackTrace
 import com.datadog.android.okhttp.TraceContext
 import com.datadog.android.okhttp.TraceContextInjection
 import com.datadog.android.okhttp.internal.otel.toOpenTracingContext
-import com.datadog.android.okhttp.internal.trace.mapHostsWithHeaderTypes
+import com.datadog.android.okhttp.internal.trace.toInternalTracingHeaderType
 import com.datadog.android.okhttp.internal.utils.traceIdAsHexString
 import com.datadog.android.trace.AndroidTracer
 import com.datadog.android.trace.TracingHeaderType
@@ -226,9 +227,9 @@ internal constructor(
         val sdkCore = sdkCoreReference.get() as? FeatureSdkCore
 
         sdkCore?.updateFeatureContext(Feature.TRACING_FEATURE_NAME) {
-            val sampleRate = traceSampler.getSampleRate()
-            it[OKHTTP_INTERCEPTOR_SAMPLE_RATE] = sampleRate
-            it[OKHTTP_INTERCEPTOR_HEADER_TYPES] = mapHostsWithHeaderTypes(tracedHosts)
+            it[OKHTTP_INTERCEPTOR_SAMPLE_RATE] = traceSampler.getSampleRate()
+            it[OKHTTP_INTERCEPTOR_HEADER_TYPES] =
+                TracingHeaderTypesSet(tracedHosts.values.flatten().map { it.toInternalTracingHeaderType() }.toSet())
         }
     }
 

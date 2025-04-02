@@ -6,20 +6,9 @@
 
 package com.datadog.android.okhttp.internal.trace
 
-import com.datadog.android.internal.telemetry.TracingHeaderTypesSet
 import com.datadog.android.trace.TracingHeaderType
 
 private typealias InternalTracingHeaderType = com.datadog.android.internal.telemetry.TracingHeaderType
-
-internal fun mapHostsWithHeaderTypes(
-    tracedHosts: Map<String, Set<TracingHeaderType>>
-): TracingHeaderTypesSet {
-    return TracingHeaderTypesSet(
-        types = tracedHosts.values.fold(mutableSetOf()) { acc, headerTypes ->
-            acc.apply { this += headerTypes.map(TracingHeaderType::toInternalTracingHeaderType) }
-        }
-    )
-}
 
 internal fun TracingHeaderType.toInternalTracingHeaderType(): InternalTracingHeaderType {
     return when (this) {

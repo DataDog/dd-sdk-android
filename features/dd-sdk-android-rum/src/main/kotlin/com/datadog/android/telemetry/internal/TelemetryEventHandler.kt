@@ -17,6 +17,7 @@ import com.datadog.android.core.internal.attributes.LocalAttribute
 import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
+import com.datadog.android.internal.telemetry.TracingHeaderTypesSet
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.RumFeature.Configuration
@@ -311,6 +312,10 @@ internal class TelemetryEventHandler(
         val openTelemetryApiVersion = resolveOpenTelemetryApiVersion(tracerApi, traceContext)
         val useTracing = (traceFeature != null && tracerApi != null)
 
+        val okhttpInterceptorSampleRate = traceContext[OKHTTP_INTERCEPTOR_SAMPLE_RATE] as? Float?
+        val tracingHeaderTypes =
+            traceContext[OKHTTP_INTERCEPTOR_HEADER_TYPES] as? TracingHeaderTypesSet
+
         val invTimeBasedThreshold = (rumConfig?.lastInteractionIdentifier as? TimeBasedInteractionIdentifier)
             ?.timeThresholdInMilliseconds
         val tnsTimeBasedThreshold = (rumConfig?.initialResourceIdentifier as? TimeBasedInitialResourceIdentifier)
@@ -370,8 +375,8 @@ internal class TelemetryEventHandler(
                     invTimeThresholdMs = invTimeBasedThreshold,
                     tnsTimeThresholdMs = tnsTimeBasedThreshold,
                     numberOfDisplays = datadogContext.deviceInfo.numberOfDisplays?.toLong(),
-                    traceSampleRate = event.okhttpInterceptorSampleRate?.toLong(),
-                    selectedTracingPropagators = event.tracingHeaderTypes?.toSelectedTracingPropagators()
+                    traceSampleRate = okhttpInterceptorSampleRate?.toLong(),
+                    selectedTracingPropagators = tracingHeaderTypes?.toSelectedTracingPropagators()
                 )
             )
         )
@@ -529,5 +534,8 @@ internal class TelemetryEventHandler(
         internal const val SESSION_REPLAY_TOUCH_PRIVACY_KEY = "session_replay_touch_privacy"
         internal const val SESSION_REPLAY_START_IMMEDIATE_RECORDING_KEY =
             "session_replay_start_immediate_recording"
+
+        internal const val OKHTTP_INTERCEPTOR_SAMPLE_RATE = "okhttp_interceptor_sample_rate"
+        internal const val OKHTTP_INTERCEPTOR_HEADER_TYPES = "okhttp_interceptor_header_types"
     }
 }

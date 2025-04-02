@@ -39,7 +39,6 @@ import com.datadog.android.core.internal.utils.submitSafe
 import com.datadog.android.core.thread.FlushableExecutorService
 import com.datadog.android.error.internal.CrashReportsFeature
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
-import com.datadog.android.internal.telemetry.TracingHeaderTypesSet
 import com.datadog.android.ndk.internal.NdkCrashHandler
 import com.datadog.android.privacy.TrackingConsent
 import com.google.gson.JsonObject
@@ -514,20 +513,13 @@ internal class DatadogCore(
         val runnable = Runnable {
             val rumFeature = getFeature(Feature.RUM_FEATURE_NAME) ?: return@Runnable
 
-            val tracingFeatureContext = getFeatureContext(Feature.TRACING_FEATURE_NAME)
-            val okhttpInterceptorSampleRate = tracingFeatureContext[OKHTTP_INTERCEPTOR_SAMPLE_RATE] as? Float?
-            val tracingHeaderTypes =
-                tracingFeatureContext[OKHTTP_INTERCEPTOR_HEADER_TYPES] as? TracingHeaderTypesSet
-
             val event = InternalTelemetryEvent.Configuration(
                 trackErrors = configuration.crashReportsEnabled,
                 batchSize = configuration.coreConfig.batchSize.windowDurationMs,
                 useProxy = configuration.coreConfig.proxy != null,
                 useLocalEncryption = configuration.coreConfig.encryption != null,
                 batchUploadFrequency = configuration.coreConfig.uploadFrequency.baseStepMs,
-                batchProcessingLevel = configuration.coreConfig.batchProcessingLevel.maxBatchesPerUploadJob,
-                okhttpInterceptorSampleRate = okhttpInterceptorSampleRate,
-                tracingHeaderTypes = tracingHeaderTypes
+                batchProcessingLevel = configuration.coreConfig.batchProcessingLevel.maxBatchesPerUploadJob
             )
             rumFeature.sendEvent(event)
         }
@@ -600,8 +592,5 @@ internal class DatadogCore(
 
         // fallback for APIs below Android N, see [DefaultAppStartTimeProvider].
         internal val startupTimeNs: Long = System.nanoTime()
-
-        internal const val OKHTTP_INTERCEPTOR_SAMPLE_RATE = "okhttp_interceptor_sample_rate"
-        internal const val OKHTTP_INTERCEPTOR_HEADER_TYPES = "okhttp_interceptor_header_types"
     }
 }

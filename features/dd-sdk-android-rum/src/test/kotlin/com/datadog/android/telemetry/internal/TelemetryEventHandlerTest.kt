@@ -18,6 +18,7 @@ import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.attributes.LocalAttribute
 import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
+import com.datadog.android.internal.telemetry.TracingHeaderTypesSet
 import com.datadog.android.internal.utils.loggableStackTrace
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.RumContext
@@ -37,6 +38,8 @@ import com.datadog.android.telemetry.assertj.TelemetryConfigurationEventAssert.C
 import com.datadog.android.telemetry.assertj.TelemetryDebugEventAssert.Companion.assertThat
 import com.datadog.android.telemetry.assertj.TelemetryErrorEventAssert.Companion.assertThat
 import com.datadog.android.telemetry.assertj.TelemetryUsageEventAssert.Companion.assertThat
+import com.datadog.android.telemetry.internal.TelemetryEventHandler.Companion.OKHTTP_INTERCEPTOR_HEADER_TYPES
+import com.datadog.android.telemetry.internal.TelemetryEventHandler.Companion.OKHTTP_INTERCEPTOR_SAMPLE_RATE
 import com.datadog.android.telemetry.model.TelemetryConfigurationEvent
 import com.datadog.android.telemetry.model.TelemetryDebugEvent
 import com.datadog.android.telemetry.model.TelemetryErrorEvent
@@ -1538,6 +1541,7 @@ internal class TelemetryEventHandlerTest {
         rumContext: RumContext,
         time: Long
     ) {
+        val traceContext = fakeDatadogContext.featuresContext[Feature.TRACING_FEATURE_NAME].orEmpty()
         assertThat(actual)
             .hasDate(time + fakeServerOffset)
             .hasSource(TelemetryConfigurationEvent.Source.ANDROID)
@@ -1554,9 +1558,12 @@ internal class TelemetryEventHandlerTest {
             .hasUseProxy(internalConfigurationEvent.useProxy)
             .hasUseLocalEncryption(internalConfigurationEvent.useLocalEncryption)
             .hasIsMainProcess(fakeDatadogContext.processInfo.isMainProcess)
-            .hasTraceSampleRate(internalConfigurationEvent.okhttpInterceptorSampleRate?.toLong())
+            .hasTraceSampleRate(
+                traceContext[OKHTTP_INTERCEPTOR_SAMPLE_RATE] as? Long
+            )
             .hasSelectedTracingPropagators(
-                internalConfigurationEvent.tracingHeaderTypes?.toSelectedTracingPropagators()
+                (traceContext[OKHTTP_INTERCEPTOR_HEADER_TYPES] as? TracingHeaderTypesSet)
+                    ?.toSelectedTracingPropagators()
             )
     }
 
@@ -1565,6 +1572,7 @@ internal class TelemetryEventHandlerTest {
         internalConfigurationEvent: InternalTelemetryEvent.Configuration,
         time: Long
     ) {
+        val traceContext = fakeDatadogContext.featuresContext[Feature.TRACING_FEATURE_NAME].orEmpty()
         assertThat(actual)
             .hasDate(time + fakeServerOffset)
             .hasSource(TelemetryConfigurationEvent.Source.ANDROID)
@@ -1577,9 +1585,12 @@ internal class TelemetryEventHandlerTest {
             .hasUseProxy(internalConfigurationEvent.useProxy)
             .hasUseLocalEncryption(internalConfigurationEvent.useLocalEncryption)
             .hasIsMainProcess(fakeDatadogContext.processInfo.isMainProcess)
-            .hasTraceSampleRate(internalConfigurationEvent.okhttpInterceptorSampleRate?.toLong())
+            .hasTraceSampleRate(
+                traceContext[OKHTTP_INTERCEPTOR_SAMPLE_RATE] as? Long
+            )
             .hasSelectedTracingPropagators(
-                internalConfigurationEvent.tracingHeaderTypes?.toSelectedTracingPropagators()
+                (traceContext[OKHTTP_INTERCEPTOR_HEADER_TYPES] as? TracingHeaderTypesSet)
+                    ?.toSelectedTracingPropagators()
             )
     }
 
