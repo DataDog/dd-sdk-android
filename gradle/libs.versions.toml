@@ -77,7 +77,6 @@ binaryCompatibility = "0.17.0"
 dependencyLicense = "0.3"
 
 # Integrations
-realm = "1.11.0"
 sqlDelight = "1.5.5"
 coil = "1.0.0"
 coilCompose = "2.1.0"
@@ -111,7 +110,6 @@ kotlinGradlePlugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", ver
 kotlinSPGradlePlugin = { module = "com.google.devtools.ksp:com.google.devtools.ksp.gradle.plugin", version.ref = "kotlinSP" }
 dokkaGradlePlugin = { module = "org.jetbrains.dokka:dokka-gradle-plugin", version.ref = "dokka" }
 unmockGradlePlugin = { module = "com.github.bjoernq:unmockplugin", version.ref = "unmock" }
-realmGradlePlugin = { module = "io.realm.kotlin:gradle-plugin", version.ref = "realm" }
 sqlDelightGradlePlugin = { module = "com.squareup.sqldelight:gradle-plugin", version.ref = "sqlDelight" }
 binaryCompatibilityGradlePlugin = { module = "org.jetbrains.kotlinx:binary-compatibility-validator", version.ref = "binaryCompatibility" }
 dependencyLicenseGradlePlugin = { module = "com.datadoghq:dependency-license", version.ref = "dependencyLicense" }
@@ -231,7 +229,6 @@ glideOkHttp3 = { module = "com.github.bumptech.glide:okhttp3-integration", versi
 
 picasso = { module = "com.squareup.picasso:picasso", version.ref = "picasso" }
 
-realm = { module = "io.realm.kotlin:library-base", version.ref = "realm" }
 room = { module = "androidx.room:room-runtime", version.ref = "room" }
 rxJava3 = { module = "io.reactivex.rxjava3:rxjava", version.ref = "rxJava3" }
 rxJava3Android = { module = "io.reactivex.rxjava3:rxandroid", version.ref = "rxJava3" }

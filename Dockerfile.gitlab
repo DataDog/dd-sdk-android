@@ -29,7 +29,7 @@ ENV GRADLE_VERSION 8.10.2
 ENV ANDROID_COMPILE_SDK 35
 ENV ANDROID_BUILD_TOOLS 35.0.0
 ENV ANDROID_SDK_TOOLS 11076708
-ENV NDK_VERSION 25.1.8937393
+ENV NDK_VERSION 28.0.13004108
 ENV CMAKE_VERSION 3.22.1
 ENV DD_TRACER_VERSION 1.41.0
 # requires build with BuildKit to be available https://docs.docker.com/build/building/variables/#multi-platform-build-arguments

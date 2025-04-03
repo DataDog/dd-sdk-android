@@ -12,11 +12,6 @@
     >
         <menu>
             <item
-                android:title="@string/choice_realm"
-                android:id="@+id/data_source_realm"
-            />
-
-            <item
                 android:title="@string/choice_room"
                 android:id="@+id/data_source_room"
             />
