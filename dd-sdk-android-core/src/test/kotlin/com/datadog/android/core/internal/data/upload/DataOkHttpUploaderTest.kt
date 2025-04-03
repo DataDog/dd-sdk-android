@@ -922,8 +922,8 @@ internal class DataOkHttpUploaderTest {
             // nothing
         }
 
-        override fun <T> measure(lambda: () -> T): T {
-            return lambda()
+        override fun <T> measure(action: () -> T): T {
+            return action()
         }
     }
 }

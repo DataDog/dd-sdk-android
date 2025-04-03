@@ -8,7 +8,17 @@ package com.datadog.android.internal.profiler
 
 import com.datadog.tools.annotation.NoOpImplementation
 
+/**
+ * Interface of benchmark sdk performance to be implemented. This should only be used by internal
+ * benchmarking.
+ */
 @NoOpImplementation
 interface BenchmarkSdkPerformance {
+
+    /**
+     * Get a [BenchmarkMeter] for the given operation.
+     * @param operation The operation name.
+     * @return The [BenchmarkMeter] for the given operation.
+     */
     fun getMeter(operation: String): BenchmarkMeter
 }

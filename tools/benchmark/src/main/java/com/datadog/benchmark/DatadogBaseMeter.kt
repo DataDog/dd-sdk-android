@@ -6,7 +6,18 @@
 
 package com.datadog.benchmark
 
+/**
+ * Interface to be used for Datadog SDK meters.
+ */
 interface DatadogBaseMeter {
+
+    /**
+     * Starts the Datadog SDK meter.
+     */
     fun startMeasuring()
+
+    /**
+     * Stops the Datadog SDK meter.
+     */
     fun stopMeasuring()
 }

@@ -13,6 +13,10 @@ import io.opentelemetry.api.metrics.Meter
 import io.opentelemetry.api.metrics.ObservableDoubleMeasurement
 import java.util.function.Consumer
 
+/**
+ * Implementation of [BenchmarkMeter] for internal benchmarking.
+ * @param meter The OpenTelemetry [Meter] instance to be used for recording metrics.
+ */
 class DDBenchmarkMeter(private val meter: Meter) : BenchmarkMeter {
 
     override fun getCounter(operation: String): BenchmarkCounter {

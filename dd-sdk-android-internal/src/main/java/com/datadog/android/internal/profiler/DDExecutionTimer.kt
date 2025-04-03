@@ -15,14 +15,14 @@ internal class DDExecutionTimer(
         this.track = track
     }
 
-    override fun <T> measure(lambda: () -> T): T {
+    override fun <T> measure(action: () -> T): T {
         if (track.isEmpty()) {
-            return lambda()
+            return action()
         }
 
         val responseLatencyReport = createResponseLatencyCallback(track)
         val requestStartTime = System.nanoTime()
-        val result = lambda()
+        val result = action()
         val latencyInSeconds = (System.nanoTime() - requestStartTime) / NANOSECONDS_IN_A_SECOND
         responseLatencyReport(latencyInSeconds)
         return result

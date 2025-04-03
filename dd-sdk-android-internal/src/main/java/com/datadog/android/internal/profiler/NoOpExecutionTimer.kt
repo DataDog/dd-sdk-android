@@ -11,7 +11,7 @@ internal class NoOpExecutionTimer : ExecutionTimer {
         // noop
     }
 
-    override fun <T> measure(lambda: () -> T): T {
-        return lambda()
+    override fun <T> measure(action: () -> T): T {
+        return action()
     }
 }

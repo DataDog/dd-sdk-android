@@ -13,6 +13,12 @@ import com.datadog.tools.annotation.NoOpImplementation
  */
 @NoOpImplementation
 interface BenchmarkCounter {
+
+    /**
+     * Adds a value to the benchmark counter.
+     * @param value The value to be added.
+     * @param attributes The attributes to be associated with the value.
+     */
     fun add(
         value: Long,
         attributes: Map<String, String>

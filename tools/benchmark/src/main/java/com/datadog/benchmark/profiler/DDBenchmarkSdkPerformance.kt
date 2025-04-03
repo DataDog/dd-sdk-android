@@ -10,6 +10,9 @@ import com.datadog.android.internal.profiler.BenchmarkMeter
 import com.datadog.android.internal.profiler.BenchmarkSdkPerformance
 import io.opentelemetry.api.GlobalOpenTelemetry
 
+/**
+ * Implementation of [BenchmarkSdkPerformance] for internal benchmarking.
+ */
 class DDBenchmarkSdkPerformance : BenchmarkSdkPerformance {
     override fun getMeter(operation: String): BenchmarkMeter {
         return DDBenchmarkMeter(GlobalOpenTelemetry.get().getMeter(operation))

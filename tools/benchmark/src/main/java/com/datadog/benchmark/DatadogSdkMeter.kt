@@ -12,7 +12,6 @@ import com.datadog.benchmark.exporter.DatadogSpanExporter
 import com.datadog.benchmark.profiler.DDBenchmarkSdkPerformance
 import io.opentelemetry.api.GlobalOpenTelemetry
 import io.opentelemetry.api.OpenTelemetry
-import io.opentelemetry.api.metrics.Meter
 import io.opentelemetry.sdk.OpenTelemetrySdk
 import io.opentelemetry.sdk.metrics.SdkMeterProvider
 import io.opentelemetry.sdk.metrics.export.PeriodicMetricReader
@@ -25,14 +24,14 @@ import java.util.concurrent.TimeUnit
  * for example, bytes written and bytes deleted.
  * This data will be uploaded to Datadog metric API.
  */
-class DatadogSdkMeter private constructor(private val meter: Meter) : DatadogBaseMeter {
+class DatadogSdkMeter private constructor() : DatadogBaseMeter {
 
     override fun startMeasuring() {
-        // for this class this is a noop
+        // for this class this is a noop since we use only PeriodicMetricReader.
     }
 
     override fun stopMeasuring() {
-        // for this class this is a noop
+        // for this class this is a noop since we use only PeriodicMetricReader.
     }
 
     companion object {
@@ -58,10 +57,7 @@ class DatadogSdkMeter private constructor(private val meter: Meter) : DatadogBas
                 .build()
             GlobalOpenTelemetry.set(openTelemetry)
             GlobalBenchmark.register(DDBenchmarkSdkPerformance())
-            val meter = openTelemetry.getMeter(METER_INSTRUMENTATION_SCOPE_NAME)
-            return DatadogSdkMeter(meter)
+            return DatadogSdkMeter()
         }
-
-        private const val METER_INSTRUMENTATION_SCOPE_NAME = "datadog.open-telemetry"
     }
 }

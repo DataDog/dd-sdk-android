@@ -10,6 +10,10 @@ import com.datadog.android.internal.profiler.BenchmarkCounter
 import io.opentelemetry.api.common.Attributes
 import io.opentelemetry.api.metrics.LongCounter
 
+/**
+ * Implementation of [BenchmarkCounter] for internal benchmarking.
+ * @param counter The OpenTelemetry [LongCounter] instance to be used for recording values.
+ */
 class DDBenchmarkCounter(
     private val counter: LongCounter
 ) : BenchmarkCounter {
