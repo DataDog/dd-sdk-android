@@ -762,8 +762,7 @@ internal class SdkFeatureTest {
 
     @Test
     fun `M send batch count benchmark metrics W initialize`(
-        @Mock mockContext: Context,
-        @Mock mockFileOrchestrator: BatchFileOrchestrator
+        @Mock mockContext: Context
     ) {
         // Given
         val mockMeter: BenchmarkMeter = mock()

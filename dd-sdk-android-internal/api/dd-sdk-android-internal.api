@@ -22,8 +22,21 @@ public final class com/datadog/android/internal/collections/EvictingQueue : java
 	public fun toArray ([Ljava/lang/Object;)[Ljava/lang/Object;
 }
 
+public abstract interface class com/datadog/android/internal/profiler/BenchmarkCounter {
+	public abstract fun add (JLjava/util/Map;)V
+}
+
+public abstract interface class com/datadog/android/internal/profiler/BenchmarkMeter {
+	public abstract fun createObservableGauge (Ljava/lang/String;Ljava/util/Map;Lkotlin/jvm/functions/Function0;)V
+	public abstract fun getCounter (Ljava/lang/String;)Lcom/datadog/android/internal/profiler/BenchmarkCounter;
+}
+
 public abstract interface class com/datadog/android/internal/profiler/BenchmarkProfiler {
 	public abstract fun getTracer (Ljava/lang/String;)Lcom/datadog/android/internal/profiler/BenchmarkTracer;
+}
+
+public abstract interface class com/datadog/android/internal/profiler/BenchmarkSdkPerformance {
+	public abstract fun getMeter (Ljava/lang/String;)Lcom/datadog/android/internal/profiler/BenchmarkMeter;
 }
 
 public abstract interface class com/datadog/android/internal/profiler/BenchmarkSpan {
@@ -47,10 +60,18 @@ public final class com/datadog/android/internal/profiler/BenchmarkTracer$Default
 	public static synthetic fun spanBuilder$default (Lcom/datadog/android/internal/profiler/BenchmarkTracer;Ljava/lang/String;Ljava/util/Map;ILjava/lang/Object;)Lcom/datadog/android/internal/profiler/BenchmarkSpanBuilder;
 }
 
+public abstract interface class com/datadog/android/internal/profiler/ExecutionTimer {
+	public abstract fun measure (Lkotlin/jvm/functions/Function0;)Ljava/lang/Object;
+	public abstract fun setTrackName (Ljava/lang/String;)V
+}
+
 public final class com/datadog/android/internal/profiler/GlobalBenchmark {
 	public static final field INSTANCE Lcom/datadog/android/internal/profiler/GlobalBenchmark;
-	public final fun get ()Lcom/datadog/android/internal/profiler/BenchmarkProfiler;
+	public final fun createExecutionTimer ()Lcom/datadog/android/internal/profiler/ExecutionTimer;
+	public final fun getProfiler ()Lcom/datadog/android/internal/profiler/BenchmarkProfiler;
+	public final fun getSdkPerformance ()Lcom/datadog/android/internal/profiler/BenchmarkSdkPerformance;
 	public final fun register (Lcom/datadog/android/internal/profiler/BenchmarkProfiler;)V
+	public final fun register (Lcom/datadog/android/internal/profiler/BenchmarkSdkPerformance;)V
 }
 
 public abstract class com/datadog/android/internal/telemetry/InternalTelemetryEvent {

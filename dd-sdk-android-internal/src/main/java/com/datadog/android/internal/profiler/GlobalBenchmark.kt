@@ -21,14 +21,14 @@ object GlobalBenchmark {
      * Registers the implementation of [BenchmarkProfiler].
      */
     fun register(benchmarkProfiler: BenchmarkProfiler) {
-        GlobalBenchmark.benchmarkProfiler = benchmarkProfiler
+        this.benchmarkProfiler = benchmarkProfiler
     }
 
     /**
      * Registers the implementation of [BenchmarkSdkPerformance].
      */
     fun register(benchmarkSdkPerformance: BenchmarkSdkPerformance) {
-        GlobalBenchmark.benchmarkSdkPerformance = benchmarkSdkPerformance
+        this.benchmarkSdkPerformance = benchmarkSdkPerformance
     }
 
     /**
@@ -43,5 +43,16 @@ object GlobalBenchmark {
      */
     fun getSdkPerformance(): BenchmarkSdkPerformance {
         return benchmarkSdkPerformance
+    }
+
+    /**
+     * Creates the appropriate [ExecutionTimer].
+     */
+    fun createExecutionTimer(): ExecutionTimer {
+        if (benchmarkSdkPerformance is NoOpBenchmarkSdkPerformance) {
+            return NoOpExecutionTimer()
+        }
+
+        return DDExecutionTimer(benchmarkSdkPerformance)
     }
 }

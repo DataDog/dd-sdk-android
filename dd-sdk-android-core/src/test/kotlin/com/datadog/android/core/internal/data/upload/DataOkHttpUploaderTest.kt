@@ -13,6 +13,7 @@ import com.datadog.android.api.net.RequestFactory
 import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.core.internal.persistence.BatchId
 import com.datadog.android.core.internal.system.AndroidInfoProvider
+import com.datadog.android.internal.profiler.ExecutionTimer
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.verifyLog
 import fr.xgouchet.elmyr.Forge
@@ -39,6 +40,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
+import org.mockito.Spy
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
@@ -122,15 +124,18 @@ internal class DataOkHttpUploaderTest {
     @StringForgery
     lateinit var fakeRequestBody: String
 
-    lateinit var fakeResponse: Response
+    private lateinit var fakeResponse: Response
 
-    lateinit var fakeDatadogRequest: DatadogRequest
+    private lateinit var fakeDatadogRequest: DatadogRequest
 
     private lateinit var fakeSystemUserAgent: String
 
     private lateinit var fakeSdkUserAgent: String
 
     private var fakeBatchId: BatchId? = null
+
+    @Spy
+    private val mockExecutionTimer: ExecutionTimer = MockExecutionTimer()
 
     @BeforeEach
     fun `set up`(forge: Forge) {
@@ -175,11 +180,12 @@ internal class DataOkHttpUploaderTest {
             "$fakeDeviceModel Build/$fakeDeviceBuildId)"
 
         testedUploader = DataOkHttpUploader(
-            mockRequestFactory,
-            mockLogger,
-            mockCallFactory,
-            fakeSdkVersion,
-            mockAndroidInfoProvider
+            requestFactory = mockRequestFactory,
+            internalLogger = mockLogger,
+            callFactory = mockCallFactory,
+            sdkVersion = fakeSdkVersion,
+            androidInfoProvider = mockAndroidInfoProvider,
+            executionTimer = mockExecutionTimer
         )
     }
 
@@ -652,10 +658,10 @@ internal class DataOkHttpUploaderTest {
         }
 
         // Then
-        argumentCaptor<RequestExecutionContext>() {
+        argumentCaptor<RequestExecutionContext> {
             verify(mockRequestFactory, times(retries))
                 .create(eq(fakeContext), capture(), eq(batch), eq(batchMeta.toByteArray()))
-            allValues.forEachIndexed() { index, value ->
+            allValues.forEachIndexed { index, value ->
                 assertThat(value.attemptNumber).isEqualTo(index + 1)
                 if (index == 0) {
                     assertThat(value.previousResponseCode).isNull()
@@ -691,10 +697,10 @@ internal class DataOkHttpUploaderTest {
         }
 
         // Then
-        argumentCaptor<RequestExecutionContext>() {
+        argumentCaptor<RequestExecutionContext> {
             verify(mockRequestFactory, times(retries))
                 .create(eq(fakeContext), capture(), eq(batch), eq(batchMeta.toByteArray()))
-            allValues.forEachIndexed() { index, value ->
+            allValues.forEachIndexed { index, value ->
                 assertThat(value.attemptNumber).isEqualTo(index + 1)
                 if (index == 0) {
                     assertThat(value.previousResponseCode).isNull()
@@ -723,7 +729,7 @@ internal class DataOkHttpUploaderTest {
         }
 
         // Then
-        argumentCaptor<RequestExecutionContext>() {
+        argumentCaptor<RequestExecutionContext> {
             verify(mockRequestFactory, times(retries))
                 .create(eq(fakeContext), capture(), eq(batch), eq(batchMeta.toByteArray()))
             allValues.forEach { value ->
@@ -751,7 +757,7 @@ internal class DataOkHttpUploaderTest {
         }
 
         // Then
-        argumentCaptor<RequestExecutionContext>() {
+        argumentCaptor<RequestExecutionContext> {
             verify(mockRequestFactory, times(batchIds.size))
                 .create(eq(fakeContext), capture(), eq(batch), eq(batchMeta.toByteArray()))
             allValues.forEach { value ->
@@ -880,7 +886,7 @@ internal class DataOkHttpUploaderTest {
         )
             .isEqualTo(expectedHeaders.mapKeys { it.key.lowercase(Locale.US) })
 
-        assertThat(headers.get("User-Agent")).isEqualTo(expectedUserAgentHeader)
+        assertThat(headers["User-Agent"]).isEqualTo(expectedUserAgentHeader)
     }
 
     private fun verifyResponseIsClosed() {
@@ -888,4 +894,36 @@ internal class DataOkHttpUploaderTest {
     }
 
     // endregion
+
+    // region benchmark
+
+    @Test
+    fun `M call latency callback W upload`(
+        @Forgery batch: List<RawBatchEvent>,
+        @StringForgery batchMeta: String,
+        @StringForgery message: String
+    ) {
+        // Given
+        val batchMetadata = batchMeta.toByteArray()
+        val mockSuccess = mockResponse(202, message)
+        whenever(mockCall.execute()) doReturn mockSuccess
+
+        // When
+        testedUploader.upload(fakeContext, batch, batchMetadata, fakeBatchId)
+
+        // Then
+        verify(mockExecutionTimer).measure(any<() -> UploadStatus>())
+    }
+
+    // endregion
+
+    class MockExecutionTimer : ExecutionTimer {
+        override fun setTrackName(track: String) {
+            // nothing
+        }
+
+        override fun <T> measure(lambda: () -> T): T {
+            return lambda()
+        }
+    }
 }
