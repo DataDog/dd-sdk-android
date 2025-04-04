@@ -13,11 +13,13 @@ import com.datadog.android.rum.internal.metric.slowframes.DefaultUISlownessMetri
 import com.datadog.android.rum.internal.metric.slowframes.DefaultUISlownessMetricDispatcher.Companion.KEY_MISSED_COUNT
 import com.datadog.android.rum.internal.metric.slowframes.DefaultUISlownessMetricDispatcher.Companion.KEY_RUM_UI_SLOWNESS
 import com.datadog.android.rum.internal.metric.slowframes.DefaultUISlownessMetricDispatcher.Companion.KEY_SLOW_FRAMES
+import com.datadog.android.rum.internal.metric.slowframes.DefaultUISlownessMetricDispatcher.Companion.KEY_VIEW_DURATION
 import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.tools.unit.extensions.ApiLevelExtension
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import fr.xgouchet.elmyr.annotation.FloatForgery
 import fr.xgouchet.elmyr.annotation.Forgery
+import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -50,6 +52,9 @@ internal class DefaultUISlownessMetricDispatcherTest {
     @FloatForgery(min = 0f, max = 100f)
     var fakeSamplingRate: Float = 0f
 
+    @LongForgery(min = 1, max = 100)
+    var fakeViewDuration: Long = 0
+
     @Forgery
     lateinit var fakeSlowFramesConfiguration: SlowFramesConfiguration
 
@@ -74,7 +79,7 @@ internal class DefaultUISlownessMetricDispatcherTest {
 
         // When
         testedDispatcher.incrementSlowFrameCount(fakeViewId)
-        testedDispatcher.sendMetric(fakeViewId)
+        testedDispatcher.sendMetric(fakeViewId, fakeViewDuration)
 
         // Then
         verify(mockInternalLogger).logMetric(
@@ -92,7 +97,7 @@ internal class DefaultUISlownessMetricDispatcherTest {
 
         // When
         testedDispatcher.incrementIgnoredFrameCount(fakeViewId)
-        testedDispatcher.sendMetric(fakeViewId)
+        testedDispatcher.sendMetric(fakeViewId, fakeViewDuration)
 
         // Then
         verify(mockInternalLogger).logMetric(
@@ -110,7 +115,7 @@ internal class DefaultUISlownessMetricDispatcherTest {
 
         // When
         testedDispatcher.incrementMissedFrameCount(fakeViewId)
-        testedDispatcher.sendMetric(fakeViewId)
+        testedDispatcher.sendMetric(fakeViewId, fakeViewDuration)
 
         // Then
         verify(mockInternalLogger).logMetric(
@@ -122,13 +127,31 @@ internal class DefaultUISlownessMetricDispatcherTest {
     }
 
     @Test
+    fun `M send view duration W sendMetric`() {
+        // Given
+        testedDispatcher.onViewCreated(fakeViewId)
+
+        // When
+        testedDispatcher.incrementMissedFrameCount(fakeViewId)
+        testedDispatcher.sendMetric(fakeViewId, fakeViewDuration)
+
+        // Then
+        verify(mockInternalLogger).logMetric(
+            argThat { invoke() == DefaultUISlownessMetricDispatcher.UI_SLOWNESS_MESSAGE },
+            argThat { hasExpectedValue(fakeViewDuration, KEY_RUM_UI_SLOWNESS, KEY_VIEW_DURATION) },
+            eq(fakeSamplingRate),
+            eq(null)
+        )
+    }
+
+    @Test
     fun `M send telemetry only once W sendMetric`() {
         // Given
         testedDispatcher.onViewCreated(fakeViewId)
 
         // When
-        testedDispatcher.sendMetric(fakeViewId)
-        testedDispatcher.sendMetric(fakeViewId)
+        testedDispatcher.sendMetric(fakeViewId, fakeViewDuration)
+        testedDispatcher.sendMetric(fakeViewId, fakeViewDuration)
 
         // Then
         verify(mockInternalLogger).logMetric(
@@ -145,8 +168,8 @@ internal class DefaultUISlownessMetricDispatcherTest {
         testedDispatcher.onViewCreated(fakeViewId)
 
         // When
-        testedDispatcher.sendMetric(fakeViewId)
-        testedDispatcher.sendMetric(fakeViewId)
+        testedDispatcher.sendMetric(fakeViewId, fakeViewDuration)
+        testedDispatcher.sendMetric(fakeViewId, fakeViewDuration)
 
         // Then
         verify(mockInternalLogger).log(
@@ -169,7 +192,7 @@ internal class DefaultUISlownessMetricDispatcherTest {
         testedDispatcher.onViewCreated(fakeViewId)
 
         // When
-        testedDispatcher.sendMetric(fakeViewId)
+        testedDispatcher.sendMetric(fakeViewId, fakeViewDuration)
 
         // Then
         verify(mockInternalLogger).logMetric(

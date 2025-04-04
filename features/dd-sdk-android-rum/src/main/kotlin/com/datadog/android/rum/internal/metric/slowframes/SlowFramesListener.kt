@@ -16,7 +16,7 @@ import kotlin.math.min
 
 internal interface SlowFramesListener : FrameStateListener {
     fun onViewCreated(viewId: String, startedTimestampNs: Long)
-    fun resolveReport(viewId: String, isViewCompleted: Boolean): ViewUIPerformanceReport?
+    fun resolveReport(viewId: String, isViewCompleted: Boolean, viewDuration: Long): ViewUIPerformanceReport?
     fun onAddLongTask(durationNs: Long)
 }
 
@@ -41,7 +41,7 @@ internal class DefaultSlowFramesListener(
     }
 
     // Called from the main thread
-    override fun resolveReport(viewId: String, isViewCompleted: Boolean): ViewUIPerformanceReport? {
+    override fun resolveReport(viewId: String, isViewCompleted: Boolean, viewDuration: Long): ViewUIPerformanceReport? {
         @Suppress("UnsafeThirdPartyFunctionCall") // can't have NPE here
         val report = if (isViewCompleted) slowFramesRecords.remove(viewId) else slowFramesRecords[viewId]
 
@@ -49,7 +49,7 @@ internal class DefaultSlowFramesListener(
 
         // making sure that report is not partially updated
         return synchronized(report) {
-            if (isViewCompleted) metricDispatcher.sendMetric(viewId)
+            if (isViewCompleted) metricDispatcher.sendMetric(viewId, viewDuration)
             report.copy()
         }
     }

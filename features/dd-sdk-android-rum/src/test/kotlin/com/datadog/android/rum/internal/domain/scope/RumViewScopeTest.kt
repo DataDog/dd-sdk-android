@@ -234,6 +234,9 @@ internal class RumViewScopeTest {
     @BoolForgery
     var fakeTrackFrustrations: Boolean = true
 
+    @LongForgery(min = 1L)
+    var fakeViewDuration: Long = 0
+
     lateinit var fakeReplayStats: ViewEvent.ReplayStats
 
     private var fakeSampleRate: Float = 0.0f
@@ -326,7 +329,7 @@ internal class RumViewScopeTest {
             }
             .toEvictingQueue()
 
-        whenever(mockSlowFramesListener.resolveReport(any(), any())) doReturn mockViewUIPerformanceReport
+        whenever(mockSlowFramesListener.resolveReport(any(), any(), any())) doReturn mockViewUIPerformanceReport
         whenever(mockParentScope.getRumContext()) doReturn fakeParentContext
         whenever(mockChildScope.handleEvent(any(), any())) doReturn mockChildScope
         whenever(mockActionScope.handleEvent(any(), any())) doReturn mockActionScope
@@ -9626,13 +9629,17 @@ internal class RumViewScopeTest {
         forge: Forge
     ) {
         // Given
-        fakeEvent = RumRawEvent.StopView(key = testedScope.key, forge.exhaustiveAttributes())
+        fakeEvent = RumRawEvent.StopView(
+            key = testedScope.key,
+            attributes = forge.exhaustiveAttributes(),
+            eventTime = Time(nanoTime = fakeEventTime.nanoTime + fakeViewDuration)
+        )
 
         // When
         testedScope.handleEvent(fakeEvent, mockWriter)
 
         // Then
-        verify(mockSlowFramesListener).resolveReport(testedScope.viewId, true)
+        verify(mockSlowFramesListener).resolveReport(testedScope.viewId, true, fakeViewDuration)
     }
 
     @Test
@@ -9640,19 +9647,25 @@ internal class RumViewScopeTest {
         forge: Forge
     ) {
         // When
-        testedScope.handleEvent(forge.startViewEvent(), mockWriter)
+        testedScope.handleEvent(
+            forge.startViewEvent(eventTime = Time(nanoTime = fakeEventTime.nanoTime + fakeViewDuration)),
+            mockWriter
+        )
 
         // Then
-        verify(mockSlowFramesListener).resolveReport(testedScope.viewId, true)
+        verify(mockSlowFramesListener).resolveReport(testedScope.viewId, true, fakeViewDuration)
     }
 
     @Test
-    fun `M call resolveReport(viewId, true) of slowFramesListener W handleEvent(StopSession)`() {
+    fun `M call resolveReport(viewId, true, Long) of slowFramesListener W handleEvent(StopSession)`() {
         // When
-        testedScope.handleEvent(RumRawEvent.StopSession(), mockWriter)
+        testedScope.handleEvent(
+            RumRawEvent.StopSession(eventTime = Time(nanoTime = fakeEventTime.nanoTime + fakeViewDuration)),
+            mockWriter
+        )
 
         // Then
-        verify(mockSlowFramesListener).resolveReport(testedScope.viewId, true)
+        verify(mockSlowFramesListener).resolveReport(testedScope.viewId, true, fakeViewDuration)
     }
 
     @Test
@@ -9675,7 +9688,7 @@ internal class RumViewScopeTest {
         testedScope.handleEvent(event, mockWriter)
 
         // Then
-        verify(mockSlowFramesListener).resolveReport(testedScope.viewId, false)
+        verify(mockSlowFramesListener).resolveReport(eq(testedScope.viewId), eq(false), any())
     }
 
     // endregion
