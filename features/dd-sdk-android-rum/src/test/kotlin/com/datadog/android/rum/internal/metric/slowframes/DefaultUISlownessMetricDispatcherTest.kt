@@ -53,7 +53,7 @@ internal class DefaultUISlownessMetricDispatcherTest {
     var fakeSamplingRate: Float = 0f
 
     @LongForgery(min = 1, max = 100)
-    var fakeViewDuration: Long = 0
+    var fakeViewDurationNs: Long = 0
 
     @Forgery
     lateinit var fakeSlowFramesConfiguration: SlowFramesConfiguration
@@ -79,7 +79,7 @@ internal class DefaultUISlownessMetricDispatcherTest {
 
         // When
         testedDispatcher.incrementSlowFrameCount(fakeViewId)
-        testedDispatcher.sendMetric(fakeViewId, fakeViewDuration)
+        testedDispatcher.sendMetric(fakeViewId, fakeViewDurationNs)
 
         // Then
         verify(mockInternalLogger).logMetric(
@@ -97,7 +97,7 @@ internal class DefaultUISlownessMetricDispatcherTest {
 
         // When
         testedDispatcher.incrementIgnoredFrameCount(fakeViewId)
-        testedDispatcher.sendMetric(fakeViewId, fakeViewDuration)
+        testedDispatcher.sendMetric(fakeViewId, fakeViewDurationNs)
 
         // Then
         verify(mockInternalLogger).logMetric(
@@ -115,7 +115,7 @@ internal class DefaultUISlownessMetricDispatcherTest {
 
         // When
         testedDispatcher.incrementMissedFrameCount(fakeViewId)
-        testedDispatcher.sendMetric(fakeViewId, fakeViewDuration)
+        testedDispatcher.sendMetric(fakeViewId, fakeViewDurationNs)
 
         // Then
         verify(mockInternalLogger).logMetric(
@@ -133,12 +133,12 @@ internal class DefaultUISlownessMetricDispatcherTest {
 
         // When
         testedDispatcher.incrementMissedFrameCount(fakeViewId)
-        testedDispatcher.sendMetric(fakeViewId, fakeViewDuration)
+        testedDispatcher.sendMetric(fakeViewId, fakeViewDurationNs)
 
         // Then
         verify(mockInternalLogger).logMetric(
             argThat { invoke() == DefaultUISlownessMetricDispatcher.UI_SLOWNESS_MESSAGE },
-            argThat { hasExpectedValue(fakeViewDuration, KEY_RUM_UI_SLOWNESS, KEY_VIEW_DURATION) },
+            argThat { hasExpectedValue(fakeViewDurationNs, KEY_RUM_UI_SLOWNESS, KEY_VIEW_DURATION) },
             eq(fakeSamplingRate),
             eq(null)
         )
@@ -150,8 +150,8 @@ internal class DefaultUISlownessMetricDispatcherTest {
         testedDispatcher.onViewCreated(fakeViewId)
 
         // When
-        testedDispatcher.sendMetric(fakeViewId, fakeViewDuration)
-        testedDispatcher.sendMetric(fakeViewId, fakeViewDuration)
+        testedDispatcher.sendMetric(fakeViewId, fakeViewDurationNs)
+        testedDispatcher.sendMetric(fakeViewId, fakeViewDurationNs)
 
         // Then
         verify(mockInternalLogger).logMetric(
@@ -168,8 +168,8 @@ internal class DefaultUISlownessMetricDispatcherTest {
         testedDispatcher.onViewCreated(fakeViewId)
 
         // When
-        testedDispatcher.sendMetric(fakeViewId, fakeViewDuration)
-        testedDispatcher.sendMetric(fakeViewId, fakeViewDuration)
+        testedDispatcher.sendMetric(fakeViewId, fakeViewDurationNs)
+        testedDispatcher.sendMetric(fakeViewId, fakeViewDurationNs)
 
         // Then
         verify(mockInternalLogger).log(
@@ -192,7 +192,7 @@ internal class DefaultUISlownessMetricDispatcherTest {
         testedDispatcher.onViewCreated(fakeViewId)
 
         // When
-        testedDispatcher.sendMetric(fakeViewId, fakeViewDuration)
+        testedDispatcher.sendMetric(fakeViewId, fakeViewDurationNs)
 
         // Then
         verify(mockInternalLogger).logMetric(

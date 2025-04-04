@@ -23,7 +23,7 @@ internal interface UISlownessMetricDispatcher {
 
     fun incrementMissedFrameCount(viewId: String)
 
-    fun sendMetric(viewId: String, viewDuration: Long)
+    fun sendMetric(viewId: String, viewDurationNs: Long)
 }
 
 internal class DefaultUISlownessMetricDispatcher(
@@ -61,7 +61,7 @@ internal class DefaultUISlownessMetricDispatcher(
     }
 
     // Called from the main thread
-    override fun sendMetric(viewId: String, viewDuration: Long) {
+    override fun sendMetric(viewId: String, viewDurationNs: Long) {
         val telemetry = viewTelemetry.remove(viewId)
         if (telemetry == null) {
             internalLogger.log(
@@ -79,7 +79,7 @@ internal class DefaultUISlownessMetricDispatcher(
                 slowFramesCount = telemetry.slowFramesCount.get(),
                 ignoredFramesCount = telemetry.ignoredFramesCount.get(),
                 missedFramesCount = telemetry.missedFrameCount.get(),
-                viewDuration = viewDuration
+                viewDurationNs = viewDurationNs
             )
         )
     }
@@ -88,13 +88,13 @@ internal class DefaultUISlownessMetricDispatcher(
         slowFramesCount: Int,
         ignoredFramesCount: Int,
         missedFramesCount: Int,
-        viewDuration: Long
+        viewDurationNs: Long
     ): Map<String, Any> = buildMap {
         put(KEY_METRIC_TYPE, VALUE_METRIC_TYPE)
         put(
             KEY_RUM_UI_SLOWNESS,
             buildMap {
-                put(KEY_VIEW_DURATION, viewDuration)
+                put(KEY_VIEW_DURATION, viewDurationNs)
                 put(
                     KEY_SLOW_FRAMES,
                     buildMap {

@@ -235,7 +235,7 @@ internal class RumViewScopeTest {
     var fakeTrackFrustrations: Boolean = true
 
     @LongForgery(min = 1L)
-    var fakeViewDuration: Long = 0
+    var fakeViewDurationNs: Long = 0
 
     lateinit var fakeReplayStats: ViewEvent.ReplayStats
 
@@ -9632,14 +9632,14 @@ internal class RumViewScopeTest {
         fakeEvent = RumRawEvent.StopView(
             key = testedScope.key,
             attributes = forge.exhaustiveAttributes(),
-            eventTime = Time(nanoTime = fakeEventTime.nanoTime + fakeViewDuration)
+            eventTime = Time(nanoTime = fakeEventTime.nanoTime + fakeViewDurationNs)
         )
 
         // When
         testedScope.handleEvent(fakeEvent, mockWriter)
 
         // Then
-        verify(mockSlowFramesListener).resolveReport(testedScope.viewId, true, fakeViewDuration)
+        verify(mockSlowFramesListener).resolveReport(testedScope.viewId, true, fakeViewDurationNs)
     }
 
     @Test
@@ -9648,24 +9648,24 @@ internal class RumViewScopeTest {
     ) {
         // When
         testedScope.handleEvent(
-            forge.startViewEvent(eventTime = Time(nanoTime = fakeEventTime.nanoTime + fakeViewDuration)),
+            forge.startViewEvent(eventTime = Time(nanoTime = fakeEventTime.nanoTime + fakeViewDurationNs)),
             mockWriter
         )
 
         // Then
-        verify(mockSlowFramesListener).resolveReport(testedScope.viewId, true, fakeViewDuration)
+        verify(mockSlowFramesListener).resolveReport(testedScope.viewId, true, fakeViewDurationNs)
     }
 
     @Test
     fun `M call resolveReport(viewId, true, Long) of slowFramesListener W handleEvent(StopSession)`() {
         // When
         testedScope.handleEvent(
-            RumRawEvent.StopSession(eventTime = Time(nanoTime = fakeEventTime.nanoTime + fakeViewDuration)),
+            RumRawEvent.StopSession(eventTime = Time(nanoTime = fakeEventTime.nanoTime + fakeViewDurationNs)),
             mockWriter
         )
 
         // Then
-        verify(mockSlowFramesListener).resolveReport(testedScope.viewId, true, fakeViewDuration)
+        verify(mockSlowFramesListener).resolveReport(testedScope.viewId, true, fakeViewDurationNs)
     }
 
     @Test
