@@ -16,7 +16,7 @@ import kotlin.math.min
 
 internal interface SlowFramesListener : FrameStateListener {
     fun onViewCreated(viewId: String, startedTimestampNs: Long)
-    fun resolveReport(viewId: String, isViewCompleted: Boolean): ViewUIPerformanceReport?
+    fun resolveReport(viewId: String, isViewCompleted: Boolean, viewDurationNs: Long): ViewUIPerformanceReport?
     fun onAddLongTask(durationNs: Long)
 }
 
@@ -41,7 +41,11 @@ internal class DefaultSlowFramesListener(
     }
 
     // Called from the main thread
-    override fun resolveReport(viewId: String, isViewCompleted: Boolean): ViewUIPerformanceReport? {
+    override fun resolveReport(
+        viewId: String,
+        isViewCompleted: Boolean,
+        viewDurationNs: Long
+    ): ViewUIPerformanceReport? {
         @Suppress("UnsafeThirdPartyFunctionCall") // can't have NPE here
         val report = if (isViewCompleted) slowFramesRecords.remove(viewId) else slowFramesRecords[viewId]
 
@@ -49,14 +53,25 @@ internal class DefaultSlowFramesListener(
 
         // making sure that report is not partially updated
         return synchronized(report) {
-            if (isViewCompleted) metricDispatcher.sendMetric(viewId)
+            if (isViewCompleted) metricDispatcher.sendMetric(viewId, viewDurationNs)
             report.copy()
         }
     }
 
     // Called from the background thread
     override fun onFrame(volatileFrameData: FrameData) {
-        val viewId = currentViewId ?: return
+        val viewId = currentViewId
+        if (viewId == null || volatileFrameData.frameStartNanos < currentViewStartedTimeStampNs) {
+            if (viewId != null) {
+                metricDispatcher.incrementMissedFrameCount(viewId)
+            }
+            // Due to the asynchronous nature of collecting jank frames data, there is a possible situation where
+            // androidx.performance.metrics started detecting jank frames on a previous view, but reported them after the new view
+            // was started. In this case, we don't save this data, because the previous view has already
+            // sent its report, so there is no way to add more data to it, adding a slow frame to the
+            // current view, would be also wrong, so we just drop such frame data.
+            return
+        }
         val frameDurationNs = volatileFrameData.frameDurationUiNanos
         val frameStartedTimestampNs = volatileFrameData.frameStartNanos
         val report = getViewPerformanceReport(viewId)

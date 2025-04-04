@@ -21,7 +21,9 @@ internal interface UISlownessMetricDispatcher {
 
     fun incrementIgnoredFrameCount(viewId: String)
 
-    fun sendMetric(viewId: String)
+    fun incrementMissedFrameCount(viewId: String)
+
+    fun sendMetric(viewId: String, viewDurationNs: Long)
 }
 
 internal class DefaultUISlownessMetricDispatcher(
@@ -32,7 +34,8 @@ internal class DefaultUISlownessMetricDispatcher(
 
     internal data class SlowFramesTelemetry(
         val slowFramesCount: AtomicInteger = AtomicInteger(0),
-        val ignoredFramesCount: AtomicInteger = AtomicInteger(0)
+        val ignoredFramesCount: AtomicInteger = AtomicInteger(0),
+        val missedFrameCount: AtomicInteger = AtomicInteger(0)
     )
 
     private val viewTelemetry = ConcurrentHashMap<String, SlowFramesTelemetry>()
@@ -52,8 +55,13 @@ internal class DefaultUISlownessMetricDispatcher(
         viewTelemetry[viewId]?.ignoredFramesCount?.incrementAndGet()
     }
 
+    // Called from the background thread
+    override fun incrementMissedFrameCount(viewId: String) {
+        viewTelemetry[viewId]?.missedFrameCount?.incrementAndGet()
+    }
+
     // Called from the main thread
-    override fun sendMetric(viewId: String) {
+    override fun sendMetric(viewId: String, viewDurationNs: Long) {
         val telemetry = viewTelemetry.remove(viewId)
         if (telemetry == null) {
             internalLogger.log(
@@ -69,24 +77,30 @@ internal class DefaultUISlownessMetricDispatcher(
             messageBuilder = { UI_SLOWNESS_MESSAGE },
             additionalProperties = buildMetricAttributesMap(
                 slowFramesCount = telemetry.slowFramesCount.get(),
-                ignoredFramesCount = telemetry.ignoredFramesCount.get()
+                ignoredFramesCount = telemetry.ignoredFramesCount.get(),
+                missedFramesCount = telemetry.missedFrameCount.get(),
+                viewDurationNs = viewDurationNs
             )
         )
     }
 
     private fun buildMetricAttributesMap(
         slowFramesCount: Int,
-        ignoredFramesCount: Int
+        ignoredFramesCount: Int,
+        missedFramesCount: Int,
+        viewDurationNs: Long
     ): Map<String, Any> = buildMap {
         put(KEY_METRIC_TYPE, VALUE_METRIC_TYPE)
         put(
             KEY_RUM_UI_SLOWNESS,
             buildMap {
+                put(KEY_VIEW_DURATION, viewDurationNs)
                 put(
                     KEY_SLOW_FRAMES,
                     buildMap {
                         put(KEY_COUNT, slowFramesCount)
                         put(KEY_IGNORED_COUNT, ignoredFramesCount)
+                        put(KEY_MISSED_COUNT, missedFramesCount)
                         put(
                             KEY_CONFIG,
                             buildMap {
@@ -114,7 +128,9 @@ internal class DefaultUISlownessMetricDispatcher(
 
         internal const val KEY_SLOW_FRAMES = "slow_frames"
         internal const val KEY_COUNT = "count"
+        internal const val KEY_VIEW_DURATION = "view_duration"
         internal const val KEY_IGNORED_COUNT = "ignored_count"
+        internal const val KEY_MISSED_COUNT = "missed_count"
         internal const val KEY_CONFIG = "config"
         internal const val KEY_MAX_COUNT = "max_count"
         internal const val KEY_SLOW_FRAME_THRESHOLD = "slow_frame_threshold"

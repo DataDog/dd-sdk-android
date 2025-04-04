@@ -44,6 +44,9 @@ internal class DefaultSlowFramesListenerTest {
     @LongForgery(min = 1L, max = 10_000_000_000L)
     var viewCreatedTimestampNs: Long = 0L
 
+    @LongForgery(min = 1L, max = 10_000_000_000L)
+    var fakeViewDurationNs: Long = 0L
+
     @Mock
     lateinit var mockMetricDispatcher: UISlownessMetricDispatcher
 
@@ -67,16 +70,11 @@ internal class DefaultSlowFramesListenerTest {
         testedListener.onFrame(jankFrameData)
 
         // When
-        val report = checkNotNull(testedListener.resolveReport(viewId, false))
+        val report = checkNotNull(testedListener.resolveReport(viewId, false, fakeViewDurationNs))
 
         // Then
         assertThat(report.slowFramesRecords).hasSize(1)
-        assertThat(report.slowFramesRecords.first()).isEqualTo(
-            SlowFrameRecord(
-                startTimestampNs = jankFrameData.frameStartNanos,
-                durationNs = jankFrameData.frameDurationUiNanos
-            )
-        )
+        assertThat(report.slowFramesRecords.first()).isEqualTo(jankFrameData.toSlowFrame())
     }
 
     @Test
@@ -87,8 +85,8 @@ internal class DefaultSlowFramesListenerTest {
         testedListener.onFrame(jankFrameData)
 
         // When
-        val report1 = checkNotNull(testedListener.resolveReport(viewId, true))
-        val report2 = testedListener.resolveReport(viewId, false)
+        val report1 = checkNotNull(testedListener.resolveReport(viewId, true, fakeViewDurationNs))
+        val report2 = testedListener.resolveReport(viewId, false, fakeViewDurationNs)
 
         // Then
         assertThat(report1.isEmpty()).isFalse()
@@ -103,8 +101,8 @@ internal class DefaultSlowFramesListenerTest {
         testedListener.onFrame(jankFrameData)
 
         // When
-        val report1 = checkNotNull(testedListener.resolveReport(viewId, false))
-        val report2 = checkNotNull(testedListener.resolveReport(viewId, false))
+        val report1 = checkNotNull(testedListener.resolveReport(viewId, false, fakeViewDurationNs))
+        val report2 = checkNotNull(testedListener.resolveReport(viewId, false, fakeViewDurationNs))
 
         // Then
         assertThat(report1).isEqualTo(report2)
@@ -120,7 +118,7 @@ internal class DefaultSlowFramesListenerTest {
         testedListener.onFrame(jankFrameData)
 
         // When
-        val report = checkNotNull(testedListener.resolveReport(viewId, false))
+        val report = checkNotNull(testedListener.resolveReport(viewId, false, fakeViewDurationNs))
 
         // Then
         assertThat(report.isEmpty()).isTrue()
@@ -134,7 +132,7 @@ internal class DefaultSlowFramesListenerTest {
 
         // When
         testedListener.onViewCreated(viewId + forge.aString(), viewCreatedTimestampNs)
-        val report = checkNotNull(testedListener.resolveReport(viewId, false))
+        val report = checkNotNull(testedListener.resolveReport(viewId, false, fakeViewDurationNs))
 
         // Then
         assertThat(report.slowFramesRecords).isNotEmpty()
@@ -147,7 +145,7 @@ internal class DefaultSlowFramesListenerTest {
 
         // When
         testedListener.onViewCreated(viewId, viewCreatedTimestampNs)
-        val report = testedListener.resolveReport(viewId, false)
+        val report = testedListener.resolveReport(viewId, false, fakeViewDurationNs)
 
         // Then
         assertThat(report).isNull()
@@ -180,13 +178,12 @@ internal class DefaultSlowFramesListenerTest {
         testedListener.onFrame(jank2)
 
         // When
-        val report = checkNotNull(testedListener.resolveReport(viewId, false))
+        val report = checkNotNull(testedListener.resolveReport(viewId, false, fakeViewDurationNs))
 
         // Then
         assertThat(report.size).isEqualTo(1)
         assertThat(report.slowFramesRecords.first()).isEqualTo(
-            SlowFrameRecord(
-                startTimestampNs = jank1.frameStartNanos,
+            jank1.toSlowFrame(
                 durationNs = jank1.frameDurationUiNanos + jank2.frameDurationUiNanos
             )
         )
@@ -221,22 +218,12 @@ internal class DefaultSlowFramesListenerTest {
         testedListener.onFrame(jank2)
 
         // When
-        val report = checkNotNull(testedListener.resolveReport(viewId, false))
+        val report = checkNotNull(testedListener.resolveReport(viewId, false, fakeViewDurationNs))
 
         // Then
         assertThat(report.size).isEqualTo(2)
-        assertThat(report.slowFramesRecords.first()).isEqualTo(
-            SlowFrameRecord(
-                startTimestampNs = jank1.frameStartNanos,
-                durationNs = jank1.frameDurationUiNanos
-            )
-        )
-        assertThat(report.slowFramesRecords.last()).isEqualTo(
-            SlowFrameRecord(
-                startTimestampNs = jank2.frameStartNanos,
-                durationNs = jank2.frameDurationUiNanos
-            )
-        )
+        assertThat(report.slowFramesRecords.first()).isEqualTo(jank1.toSlowFrame())
+        assertThat(report.slowFramesRecords.last()).isEqualTo(jank2.toSlowFrame())
     }
 
     private fun stubSlowFramesListener(
@@ -267,7 +254,7 @@ internal class DefaultSlowFramesListenerTest {
         testedListener.onFrame(jank)
 
         // When
-        val report = checkNotNull(testedListener.resolveReport(viewId, false))
+        val report = checkNotNull(testedListener.resolveReport(viewId, false, fakeViewDurationNs))
 
         // Then
         assertThat(report.size).isEqualTo(0)
@@ -300,15 +287,12 @@ internal class DefaultSlowFramesListenerTest {
         testedListener.onFrame(jank2)
 
         // When
-        val report = checkNotNull(testedListener.resolveReport(viewId, false))
+        val report = checkNotNull(testedListener.resolveReport(viewId, false, fakeViewDurationNs))
 
         // Then
         assertThat(report.size).isEqualTo(1)
         assertThat(report.slowFramesRecords.first()).isEqualTo(
-            SlowFrameRecord(
-                jank1.frameStartNanos,
-                durationNs = frozenFrameThresholdNs - 1
-            )
+            jank1.toSlowFrame(durationNs = frozenFrameThresholdNs - 1)
         )
     }
 
@@ -331,7 +315,7 @@ internal class DefaultSlowFramesListenerTest {
         val expectedSlowFrameRate = expectedSlowFramesDuration.toDouble() / expectedTotalFrameDuration * 1000
 
         // When
-        val report = checkNotNull(testedListener.resolveReport(viewId, false))
+        val report = checkNotNull(testedListener.resolveReport(viewId, false, fakeViewDurationNs))
 
         // Then
         assertThat(report.slowFramesDurationNs)
@@ -354,7 +338,7 @@ internal class DefaultSlowFramesListenerTest {
         testedListener.onFrame(forge.aFrameData(frameDurationUiNanos = 0))
 
         // When
-        val report = testedListener.resolveReport(viewId, false)
+        val report = testedListener.resolveReport(viewId, false, fakeViewDurationNs)
 
         // Then
         assertThat(checkNotNull(report).slowFramesRate(viewDurationNs)).isZero()
@@ -370,7 +354,7 @@ internal class DefaultSlowFramesListenerTest {
         testedListener.onFrame(forge.aFrameData(frameDurationUiNanos = 0))
 
         // When
-        val report = testedListener.resolveReport(viewId, false)
+        val report = testedListener.resolveReport(viewId, false, fakeViewDurationNs)
 
         // Then
         assertThat(checkNotNull(report).freezeFramesRate(viewDurationNs)).isZero()
@@ -413,7 +397,7 @@ internal class DefaultSlowFramesListenerTest {
         testedListener.onAddLongTask(longTaskDuration)
 
         // Then
-        val report = checkNotNull(testedListener.resolveReport(viewId, false))
+        val report = checkNotNull(testedListener.resolveReport(viewId, false, fakeViewDurationNs))
         assertThat(
             report.freezeFramesRate(viewEndedTimestampNs)
         ).isEqualTo(
@@ -443,7 +427,7 @@ internal class DefaultSlowFramesListenerTest {
 
         // Then
         assertDoesNotThrow { // No ArithmeticException
-            val report = checkNotNull(testedListener.resolveReport(viewId, false))
+            val report = checkNotNull(testedListener.resolveReport(viewId, false, fakeViewDurationNs))
             assertThat(report.freezeFramesRate(minViewLifetimeThresholdNs - 1)).isZero()
         }
     }
@@ -465,7 +449,7 @@ internal class DefaultSlowFramesListenerTest {
         forge: Forge
     ) {
         // Given
-        testedListener.onViewCreated(viewId, forge.aLong(min = 0))
+        testedListener.onViewCreated(viewId, viewCreatedTimestampNs)
 
         // When
         testedListener.onFrame(forge.aFrameData(isJank = true))
@@ -480,7 +464,7 @@ internal class DefaultSlowFramesListenerTest {
         forge: Forge
     ) {
         // Given
-        testedListener.onViewCreated(viewId, forge.aLong(min = 0))
+        testedListener.onViewCreated(viewId, viewCreatedTimestampNs)
 
         // When
         testedListener.onFrame(forge.aFrameData(isJank = false))
@@ -501,7 +485,7 @@ internal class DefaultSlowFramesListenerTest {
                 maxSlowFrameThresholdNs = maxSlowFrameThresholdNs
             )
         )
-        testedListener.onViewCreated(viewId, forge.aLong(min = 0))
+        testedListener.onViewCreated(viewId, viewCreatedTimestampNs)
 
         // When
         testedListener.onFrame(
@@ -521,14 +505,14 @@ internal class DefaultSlowFramesListenerTest {
         forge: Forge
     ) {
         // Given
-        testedListener.onViewCreated(viewId, forge.aLong(min = 0))
+        testedListener.onViewCreated(viewId, viewCreatedTimestampNs)
         testedListener.onFrame(forge.aFrameData())
 
         // When
-        testedListener.resolveReport(viewId, isViewCompleted = true)
+        testedListener.resolveReport(viewId, isViewCompleted = true, fakeViewDurationNs)
 
         // Then
-        verify(mockMetricDispatcher).sendMetric(viewId)
+        verify(mockMetricDispatcher).sendMetric(viewId, fakeViewDurationNs)
     }
 
     @Test
@@ -540,11 +524,56 @@ internal class DefaultSlowFramesListenerTest {
         testedListener.onFrame(forge.aFrameData())
 
         // When
-        testedListener.resolveReport(viewId, isViewCompleted = false)
+        testedListener.resolveReport(viewId, isViewCompleted = false, fakeViewDurationNs)
 
         // Then
-        verify(mockMetricDispatcher, never()).sendMetric(viewId)
+        verify(mockMetricDispatcher, never()).sendMetric(viewId, fakeViewDurationNs)
     }
+
+    @Test
+    fun `M drop frame data if it started before view W onFrame { missed frame }`(
+        forge: Forge
+    ) {
+        // Given
+        val expiredFrameData = forge.aFrameData(frameStartNanos = viewCreatedTimestampNs - 1)
+        val validFrameData = forge.aFrameData(frameStartNanos = viewCreatedTimestampNs + 1)
+        testedListener.onViewCreated(viewId, viewCreatedTimestampNs)
+
+        // When
+        testedListener.onFrame(expiredFrameData)
+        testedListener.onFrame(validFrameData)
+
+        // Then
+        val report = testedListener.resolveReport(viewId, true, fakeViewDurationNs)
+        val slowFrameRecords = report?.slowFramesRecords?.toList()
+
+        assertThat(report).isNotNull
+        assertThat(report?.size).isOne()
+        assertThat(slowFrameRecords).hasSize(1)
+        assertThat(slowFrameRecords?.first()).isEqualTo(validFrameData.toSlowFrame())
+    }
+
+    @Test
+    fun `M incrementMissedFrameCount W onFrame { missed frame }`(
+        forge: Forge
+    ) {
+        // Given
+        val expiredFrameData = forge.aFrameData(frameStartNanos = viewCreatedTimestampNs - 1)
+        val validFrameData = forge.aFrameData(frameStartNanos = viewCreatedTimestampNs + 1)
+        testedListener.onViewCreated(viewId, viewCreatedTimestampNs)
+
+        // When
+        testedListener.onFrame(expiredFrameData)
+        testedListener.onFrame(validFrameData)
+
+        // Then
+        verify(mockMetricDispatcher).incrementMissedFrameCount(viewId)
+    }
+
+    private fun FrameData.toSlowFrame(
+        startTimestampNs: Long = frameStartNanos,
+        durationNs: Long = frameDurationUiNanos
+    ) = SlowFrameRecord(startTimestampNs, durationNs)
 
     private fun Forge.aFrameData(
         frameStartNanos: Long = aLong(min = 1, max = 100) + viewCreatedTimestampNs,
