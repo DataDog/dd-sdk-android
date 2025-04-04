@@ -17,6 +17,7 @@ import androidx.core.view.ScrollingView
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumAttributes
+import com.datadog.android.rum.tracking.ActionTrackingStrategy
 import com.datadog.android.rum.tracking.InteractionPredicate
 import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.android.rum.utils.verifyLog
@@ -944,6 +945,64 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
         testedListener.onDown(endUpEvent)
 
         verifyNoInteractions(rumMonitor.mockInstance)
+    }
+
+    @Test
+    fun `M find target with both strategies W scroll`(forge: Forge) {
+        val startDownEvent: MotionEvent = forge.getForgery()
+        val scrollEvent: MotionEvent = forge.getForgery()
+        val distancesX = forge.aFloat()
+        val distancesY = forge.aFloat()
+        val targetId = forge.anInt()
+        val endUpEvent: MotionEvent = forge.getForgery()
+        val scrollingTarget: ScrollableListView = mockView(
+            id = targetId,
+            forEvent = startDownEvent,
+            hitTest = true,
+            forge = forge
+        )
+        val mockInteractionPredicate: InteractionPredicate = mock {
+            whenever(it.getTargetName(scrollingTarget)).thenReturn(null)
+        }
+        mockDecorView = mockDecorView<ViewGroup>(
+            id = forge.anInt(),
+            forEvent = startDownEvent,
+            hitTest = true,
+            forge = forge
+        ) {
+            whenever(it.childCount).thenReturn(1)
+            whenever(it.getChildAt(0)).thenReturn(scrollingTarget)
+        }
+        val expectedResourceName = forge.anAlphabeticalString()
+        mockResourcesForTarget(scrollingTarget, expectedResourceName)
+        val mockAndroidActionTrackingStrategy = mock<AndroidActionTrackingStrategy>()
+        val mockComposeActionTrackingStrategy = mock<ActionTrackingStrategy>()
+        testedListener = GesturesListener(
+            rumMonitor.mockSdkCore,
+            WeakReference(mockWindow),
+            interactionPredicate = mockInteractionPredicate,
+            contextRef = WeakReference(mockAppContext),
+            androidActionTrackingStrategy = mockAndroidActionTrackingStrategy,
+            composeActionTrackingStrategy = mockComposeActionTrackingStrategy,
+            internalLogger = mockInternalLogger
+        )
+
+        // When
+        testedListener.onDown(startDownEvent)
+        testedListener.onScroll(startDownEvent, scrollEvent, distancesX, distancesY)
+        testedListener.onUp(endUpEvent)
+
+        // Then
+        verify(mockAndroidActionTrackingStrategy).findTargetForScroll(
+            mockDecorView,
+            startDownEvent.x,
+            startDownEvent.y
+        )
+        verify(mockComposeActionTrackingStrategy).findTargetForScroll(
+            mockDecorView,
+            startDownEvent.x,
+            startDownEvent.y
+        )
     }
 
     // endregion

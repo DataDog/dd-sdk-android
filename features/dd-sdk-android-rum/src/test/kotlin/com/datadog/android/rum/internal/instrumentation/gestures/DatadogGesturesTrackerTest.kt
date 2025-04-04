@@ -12,7 +12,9 @@ import android.view.Window
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.rum.internal.tracking.NoOpInteractionPredicate
+import com.datadog.android.rum.tracking.ActionTrackingStrategy
 import com.datadog.android.rum.tracking.InteractionPredicate
+import com.datadog.android.rum.tracking.NoOpActionTrackingStrategy
 import com.datadog.android.rum.tracking.ViewAttributesProvider
 import com.datadog.tools.unit.ObjectTest
 import fr.xgouchet.elmyr.Forge
@@ -58,12 +60,20 @@ internal class DatadogGesturesTrackerTest : ObjectTest<DatadogGesturesTracker>()
     lateinit var mockGestureDetector: GesturesDetectorWrapper
 
     @Mock
+    lateinit var mockActionTrackingStrategy: ActionTrackingStrategy
+
+    @Mock
     lateinit var mockSdkCore: FeatureSdkCore
 
     @BeforeEach
     fun `set up`() {
         testedTracker =
-            DatadogGesturesTracker(emptyArray(), mockInteractionPredicate, mockInternalLogger)
+            DatadogGesturesTracker(
+                emptyArray(),
+                mockInteractionPredicate,
+                mockActionTrackingStrategy,
+                mockInternalLogger
+            )
         whenever(mockActivity.window).thenReturn(mockWindow)
         whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
     }
@@ -72,6 +82,7 @@ internal class DatadogGesturesTrackerTest : ObjectTest<DatadogGesturesTracker>()
         return DatadogGesturesTracker(
             forge.aList { StubViewAttributesProvider(anAlphabeticalString()) }.toTypedArray(),
             NoOpInteractionPredicate(),
+            NoOpActionTrackingStrategy(),
             mockInternalLogger
         )
     }
@@ -86,6 +97,7 @@ internal class DatadogGesturesTrackerTest : ObjectTest<DatadogGesturesTracker>()
                 StubViewAttributesProvider(it.name)
             }.toTypedArray(),
             NoOpInteractionPredicate(),
+            NoOpActionTrackingStrategy(),
             mockInternalLogger
         )
     }
@@ -100,6 +112,7 @@ internal class DatadogGesturesTrackerTest : ObjectTest<DatadogGesturesTracker>()
                 StubViewAttributesProvider(it.name + forge.aNumericalString())
             }.toTypedArray(),
             StubInteractionPredicate(),
+            mockActionTrackingStrategy,
             mockInternalLogger
         )
     }

@@ -23,6 +23,7 @@ import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.model.ViewEvent
+import com.datadog.android.rum.tracking.ActionTrackingStrategy
 import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
 import com.datadog.android.rum.tracking.InteractionPredicate
 import com.datadog.android.rum.tracking.ViewAttributesProvider
@@ -365,6 +366,18 @@ data class RumConfiguration internal constructor(
             return this
         }
 
+        /**
+         * Set custom [ActionTrackingStrategy] RUM actions tracking.
+         *
+         * @param composeActionTrackingStrategy custom actions tracking strategy.
+         */
+        internal fun setComposeActionTrackingStrategy(
+            composeActionTrackingStrategy: ActionTrackingStrategy
+        ): Builder {
+            rumConfig =
+                rumConfig.copy(composeActionTrackingStrategy = composeActionTrackingStrategy)
+            return this
+        }
         // endregion
     }
 }

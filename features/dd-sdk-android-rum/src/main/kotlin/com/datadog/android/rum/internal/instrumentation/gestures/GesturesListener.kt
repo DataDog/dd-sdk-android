@@ -18,7 +18,9 @@ import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.internal.tracking.NoOpInteractionPredicate
 import com.datadog.android.rum.tracking.ActionTrackingStrategy
 import com.datadog.android.rum.tracking.InteractionPredicate
+import com.datadog.android.rum.tracking.NoOpActionTrackingStrategy
 import com.datadog.android.rum.tracking.ViewAttributesProvider
+import com.datadog.android.rum.tracking.ViewTarget
 import java.lang.ref.Reference
 import java.lang.ref.WeakReference
 import kotlin.math.abs
@@ -30,7 +32,11 @@ internal class GesturesListener(
     private val attributesProviders: Array<ViewAttributesProvider> = emptyArray(),
     private val interactionPredicate: InteractionPredicate = NoOpInteractionPredicate(),
     private val contextRef: Reference<Context>,
-    private val internalLogger: InternalLogger
+    private val internalLogger: InternalLogger,
+    private val composeActionTrackingStrategy: ActionTrackingStrategy = NoOpActionTrackingStrategy(),
+    private val androidActionTrackingStrategy: ActionTrackingStrategy = AndroidActionTrackingStrategy(
+        internalLogger
+    )
 ) : GestureListenerCompat() {
 
     private var scrollEventType: RumActionType? = null
@@ -38,8 +44,6 @@ internal class GesturesListener(
     private var scrollTargetReference: WeakReference<View?> = WeakReference(null)
     private var onTouchDownXPos = 0f
     private var onTouchDownYPos = 0f
-    private val androidActionTrackingStrategy: ActionTrackingStrategy =
-        AndroidActionTrackingStrategy(internalLogger)
 
     // region GesturesListener
 
@@ -90,7 +94,7 @@ internal class GesturesListener(
         if (scrollEventType == null) {
             // check if we find a valid target
             val scrollTarget = startDownEvent?.let {
-                androidActionTrackingStrategy.findTargetForScroll(decorView, it.x, startDownEvent.y)
+                findTargetForScroll(decorView, it.x, startDownEvent.y)
             }
             scrollTarget?.view?.let { target ->
                 scrollTargetReference = WeakReference(target)
@@ -117,6 +121,16 @@ internal class GesturesListener(
 
     // region Internal
 
+    private fun findTargetForScroll(decorView: View, x: Float, y: Float): ViewTarget? {
+        return androidActionTrackingStrategy.findTargetForScroll(decorView, x, y)
+            ?: composeActionTrackingStrategy.findTargetForScroll(decorView, x, y)
+    }
+
+    private fun findTargetForTap(decorView: View, x: Float, y: Float): ViewTarget? {
+        return androidActionTrackingStrategy.findTargetForTap(decorView, x, y)
+            ?: composeActionTrackingStrategy.findTargetForTap(decorView, x, y)
+    }
+
     private fun closeScrollOrSwipeEventIfAny(decorView: View?, onUpEvent: MotionEvent) {
         val type = scrollEventType
         if (type == null) {
@@ -128,12 +142,12 @@ internal class GesturesListener(
 
     private fun closeScrollAsTap(decorView: View?, onUpEvent: MotionEvent) {
         if (decorView != null) {
-            val downTarget = androidActionTrackingStrategy.findTargetForTap(
+            val downTarget = findTargetForTap(
                 decorView,
                 onTouchDownXPos,
                 onTouchDownYPos
             )
-            val upTarget = androidActionTrackingStrategy.findTargetForTap(
+            val upTarget = findTargetForTap(
                 decorView,
                 onUpEvent.x,
                 onUpEvent.y
@@ -190,11 +204,7 @@ internal class GesturesListener(
 
     private fun handleTapUp(decorView: View?, e: MotionEvent) {
         if (decorView != null) {
-            androidActionTrackingStrategy.findTargetForTap(
-                decorView,
-                e.x,
-                e.y
-            )?.view?.let { target ->
+            findTargetForTap(decorView, e.x, e.y)?.view?.let { target ->
                 sendTapEventWithTarget(target)
             }
         }
