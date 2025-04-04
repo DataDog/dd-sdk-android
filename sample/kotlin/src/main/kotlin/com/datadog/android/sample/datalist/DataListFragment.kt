@@ -85,7 +85,6 @@ internal class DataListFragment : Fragment() {
         val currentType = viewModel.getDataSource()
         inflater.inflate(R.menu.data_list, menu)
         val disabled = when (currentType) {
-            DataSourceType.REALM -> R.id.data_source_realm
             DataSourceType.ROOM -> R.id.data_source_room
             DataSourceType.SQLITE -> R.id.data_source_sqlite
             DataSourceType.SQLDELIGHT -> R.id.data_source_sqldelight
@@ -95,7 +94,6 @@ internal class DataListFragment : Fragment() {
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         val type = when (item.itemId) {
-            R.id.data_source_realm -> DataSourceType.REALM
             R.id.data_source_room -> DataSourceType.ROOM
             R.id.data_source_sqlite -> DataSourceType.SQLITE
             R.id.data_source_sqldelight -> DataSourceType.SQLDELIGHT

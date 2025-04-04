@@ -20,7 +20,6 @@ plugins {
     kotlin("kapt")
     id("com.github.ben-manes.versions")
     id("org.jetbrains.dokka")
-    id("io.realm.kotlin")
     id("com.squareup.sqldelight")
     id("com.google.devtools.ksp")
 }
@@ -206,7 +205,6 @@ dependencies {
 
     // Local Storage
     implementation(libs.sqlDelight)
-    implementation(libs.realm)
     implementation(libs.room)
     ksp(libs.roomCompiler)
 
