@@ -528,7 +528,7 @@ internal class DefaultSlowFramesListenerTest {
     }
 
     @Test
-    fun `M drop frame data if it started before view`(
+    fun `M drop frame data if it started before view W onFrame { missed frame }`(
         forge: Forge
     ) {
         // Given
@@ -548,6 +548,23 @@ internal class DefaultSlowFramesListenerTest {
         assertThat(report?.size).isOne()
         assertThat(slowFrameRecords).hasSize(1)
         assertThat(slowFrameRecords?.first()).isEqualTo(validFrameData.toSlowFrame())
+    }
+
+    @Test
+    fun `M incrementMissedFrameCount W onFrame { missed frame }`(
+        forge: Forge
+    ) {
+        // Given
+        val expiredFrameData = forge.aFrameData(frameStartNanos = viewCreatedTimestampNs - 1)
+        val validFrameData = forge.aFrameData(frameStartNanos = viewCreatedTimestampNs + 1)
+        testedListener.onViewCreated(viewId, viewCreatedTimestampNs)
+
+        // When
+        testedListener.onFrame(expiredFrameData)
+        testedListener.onFrame(validFrameData)
+
+        // Then
+        verify(mockMetricDispatcher).incrementMissedFrameCount(viewId)
     }
 
     private fun FrameData.toSlowFrame(

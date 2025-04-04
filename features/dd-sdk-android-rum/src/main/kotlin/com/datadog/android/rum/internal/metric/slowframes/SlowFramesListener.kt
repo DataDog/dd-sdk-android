@@ -58,6 +58,9 @@ internal class DefaultSlowFramesListener(
     override fun onFrame(volatileFrameData: FrameData) {
         val viewId = currentViewId
         if (viewId == null || volatileFrameData.frameStartNanos < currentViewStartedTimeStampNs) {
+            if (viewId != null) {
+                metricDispatcher.incrementMissedFrameCount(viewId)
+            }
             // Due to the asynchronous nature of collecting jank frames data, there is a possible situation where
             // androidx.performance.metrics started detecting jank frames on a previous view, but reported them after the new view
             // was started. In this case, we don't save this data, because the previous view has already

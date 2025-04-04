@@ -10,6 +10,7 @@ import com.datadog.android.api.InternalLogger.Target
 import com.datadog.android.rum.configuration.SlowFramesConfiguration
 import com.datadog.android.rum.internal.metric.slowframes.DefaultUISlownessMetricDispatcher.Companion.KEY_COUNT
 import com.datadog.android.rum.internal.metric.slowframes.DefaultUISlownessMetricDispatcher.Companion.KEY_IGNORED_COUNT
+import com.datadog.android.rum.internal.metric.slowframes.DefaultUISlownessMetricDispatcher.Companion.KEY_MISSED_COUNT
 import com.datadog.android.rum.internal.metric.slowframes.DefaultUISlownessMetricDispatcher.Companion.KEY_RUM_UI_SLOWNESS
 import com.datadog.android.rum.internal.metric.slowframes.DefaultUISlownessMetricDispatcher.Companion.KEY_SLOW_FRAMES
 import com.datadog.android.rum.utils.forge.Configurator
@@ -97,6 +98,24 @@ internal class DefaultUISlownessMetricDispatcherTest {
         verify(mockInternalLogger).logMetric(
             argThat { invoke() == DefaultUISlownessMetricDispatcher.UI_SLOWNESS_MESSAGE },
             argThat { hasExpectedValue(1, KEY_RUM_UI_SLOWNESS, KEY_SLOW_FRAMES, KEY_IGNORED_COUNT) },
+            eq(fakeSamplingRate),
+            eq(null)
+        )
+    }
+
+    @Test
+    fun `M increment missedFramesCount W incrementMissedFrameCount`() {
+        // Given
+        testedDispatcher.onViewCreated(fakeViewId)
+
+        // When
+        testedDispatcher.incrementMissedFrameCount(fakeViewId)
+        testedDispatcher.sendMetric(fakeViewId)
+
+        // Then
+        verify(mockInternalLogger).logMetric(
+            argThat { invoke() == DefaultUISlownessMetricDispatcher.UI_SLOWNESS_MESSAGE },
+            argThat { hasExpectedValue(1, KEY_RUM_UI_SLOWNESS, KEY_SLOW_FRAMES, KEY_MISSED_COUNT) },
             eq(fakeSamplingRate),
             eq(null)
         )
