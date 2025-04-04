@@ -56,7 +56,15 @@ internal class DefaultSlowFramesListener(
 
     // Called from the background thread
     override fun onFrame(volatileFrameData: FrameData) {
-        val viewId = currentViewId ?: return
+        val viewId = currentViewId
+        if (viewId == null || volatileFrameData.frameStartNanos < currentViewStartedTimeStampNs) {
+            // Due to the asynchronous nature of collecting jank frames data, there is a possible situation where
+            // androidx.performance.metrics started detecting jank frames on a previous view, but reported them after the new view
+            // was started. In this case, we don't save this data, because the previous view has already
+            // sent its report, so there is no way to add more data to it, adding a slow frame to the
+            // current view, would be also wrong, so we just drop such frame data.
+            return
+        }
         val frameDurationNs = volatileFrameData.frameDurationUiNanos
         val frameStartedTimestampNs = volatileFrameData.frameStartNanos
         val report = getViewPerformanceReport(viewId)
