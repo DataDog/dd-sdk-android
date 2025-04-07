@@ -1,0 +1,24 @@
+public final class com/datadog/instant/insights/DragTouchListener : android/view/View$OnTouchListener {
+	public fun <init> ()V
+	public fun onTouch (Landroid/view/View;Landroid/view/MotionEvent;)Z
+}
+
+public final class com/datadog/instant/insights/LocalInsightOverlay {
+	public fun <init> ()V
+	public final fun attach (Landroid/app/Activity;)V
+	public final fun detach (Landroid/app/Activity;)V
+}
+
+public final class com/datadog/instant/insights/collector/DefaultInsightsCollector : com/datadog/android/rum/internal/instrumentation/insights/InsightsCollector {
+	public static final field Companion Lcom/datadog/instant/insights/collector/DefaultInsightsCollector$Companion;
+	public fun <init> ()V
+	public fun onAction ()V
+	public fun onLongTask (JJ)V
+	public fun onNetworkRequest (JJ)V
+	public fun onSlowFrame (JJ)V
+}
+
+public final class com/datadog/instant/insights/collector/DefaultInsightsCollector$Companion {
+	public final fun getDEFAULT ()Lcom/datadog/instant/insights/collector/DefaultInsightsCollector;
+}
+
