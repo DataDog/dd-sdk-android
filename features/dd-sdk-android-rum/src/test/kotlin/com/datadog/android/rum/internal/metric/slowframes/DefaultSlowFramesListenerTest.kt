@@ -233,7 +233,7 @@ internal class DefaultSlowFramesListenerTest {
         ),
         metricDispatcher: UISlownessMetricDispatcher = mockMetricDispatcher
     ): DefaultSlowFramesListener {
-        return DefaultSlowFramesListener(configuration, metricDispatcher)
+        return DefaultSlowFramesListener(configuration, metricDispatcher, insightsCollector)
     }
 
     @Test

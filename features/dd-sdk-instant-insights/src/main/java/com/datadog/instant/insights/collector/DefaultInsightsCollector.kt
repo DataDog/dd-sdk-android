@@ -7,17 +7,25 @@ package com.datadog.instant.insights.collector
 
 import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector
 
-internal class DefaultInsightsCollector : InsightsCollector {
+class DefaultInsightsCollector : InsightsCollector {
+
+    override fun onSlowFrame(startedTimestamp: Long, durationNs: Long) {
+        TODO("Not yet implemented")
+    }
 
     override fun onAction() {
+        TODO("Not yet implemented")
     }
 
-    override fun onLongTask(duration: Long) {
+    override fun onLongTask(startedTimestamp: Long, durationNs: Long) {
+        TODO("Not yet implemented")
     }
 
-    override fun onSlowFrame(duration: Long) {
+    override fun onNetworkRequest(startedTimestamp: Long, durationNs: Long) {
+        TODO("Not yet implemented")
     }
 
-    override fun onNetworkRequest(uri: String) {
+    companion object {
+        val DEFAULT = DefaultInsightsCollector()
     }
 }

@@ -14,6 +14,7 @@ import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.internal.domain.RumContext
+import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
 import com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener
 import com.datadog.android.rum.internal.utils.percent
@@ -43,6 +44,7 @@ internal class RumSessionScope(
     networkSettledResourceIdentifier: InitialResourceIdentifier,
     lastInteractionIdentifier: LastInteractionIdentifier?,
     slowFramesListener: SlowFramesListener?,
+    insightsCollector: InsightsCollector,
     private val sessionInactivityNanos: Long = DEFAULT_SESSION_INACTIVITY_NS,
     private val sessionMaxDurationNanos: Long = DEFAULT_SESSION_MAX_DURATION_NS
 ) : RumScope {
@@ -75,7 +77,8 @@ internal class RumSessionScope(
         sampleRate,
         networkSettledResourceIdentifier,
         slowFramesListener,
-        lastInteractionIdentifier
+        lastInteractionIdentifier,
+        insightsCollector
     )
 
     init {

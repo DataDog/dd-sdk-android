@@ -17,6 +17,7 @@ import com.datadog.android.rum.DdRumContentProvider
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
+import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
 import com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener
 import com.datadog.android.rum.internal.vitals.VitalMonitor
@@ -39,7 +40,8 @@ internal class RumApplicationScope(
     private val sessionListener: RumSessionListener?,
     internal val initialResourceIdentifier: InitialResourceIdentifier,
     internal val lastInteractionIdentifier: LastInteractionIdentifier?,
-    private val slowFramesListener: SlowFramesListener?
+    private val slowFramesListener: SlowFramesListener?,
+    private val insightsCollector: InsightsCollector
 ) : RumScope, RumViewChangedListener {
 
     private var rumContext = RumContext(applicationId = applicationId)
@@ -61,7 +63,8 @@ internal class RumApplicationScope(
             false,
             initialResourceIdentifier,
             lastInteractionIdentifier,
-            slowFramesListener
+            slowFramesListener,
+            insightsCollector
         )
     )
 
@@ -156,7 +159,8 @@ internal class RumApplicationScope(
             true,
             initialResourceIdentifier,
             lastInteractionIdentifier,
-            slowFramesListener
+            slowFramesListener,
+            insightsCollector
         )
         childScopes.add(newSession)
         if (event !is RumRawEvent.StartView) {

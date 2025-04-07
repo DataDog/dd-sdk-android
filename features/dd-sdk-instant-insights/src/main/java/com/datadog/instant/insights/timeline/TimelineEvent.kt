@@ -5,9 +5,12 @@
  */
 package com.datadog.instant.insights.timeline
 
-internal sealed interface TimelineEvent {
-    object Action : TimelineEvent
-    data class SlowFrame(val duration: Long) : TimelineEvent
-    data class ResourceRequest(val uri: String) : TimelineEvent
-    data class LongTask(val duration: Long) : TimelineEvent
+internal sealed class TimelineEvent(
+    val durationNs: Long
+) {
+    object Action : TimelineEvent(0L)
+    object Tick : TimelineEvent(0L)
+    class SlowFrame(durationNs: Long) : TimelineEvent(durationNs)
+    class Resource(durationNs: Long) : TimelineEvent(durationNs)
+    class LongTask(durationNs: Long) : TimelineEvent(durationNs)
 }

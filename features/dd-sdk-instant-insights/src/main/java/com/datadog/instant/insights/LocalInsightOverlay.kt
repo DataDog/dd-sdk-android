@@ -28,4 +28,8 @@ class LocalInsightOverlay {
             }
         }
     }
+
+    fun detach(activity: Activity) {
+
+    }
 }

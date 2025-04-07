@@ -18,6 +18,7 @@ import com.datadog.android.rum.DdRumContentProvider
 import com.datadog.android.rum.internal.anr.ANRException
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
+import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector
 import com.datadog.android.rum.internal.metric.SessionEndedMetric
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
 import com.datadog.android.rum.internal.metric.ViewEndedMetricDispatcher
@@ -47,7 +48,8 @@ internal class RumViewManagerScope(
     internal val sampleRate: Float,
     internal val initialResourceIdentifier: InitialResourceIdentifier,
     private val slowFramesListener: SlowFramesListener?,
-    lastInteractionIdentifier: LastInteractionIdentifier?
+    lastInteractionIdentifier: LastInteractionIdentifier?,
+    private val insightsCollector: InsightsCollector
 ) : RumScope {
 
     private val interactionToNextViewMetricResolver: InteractionToNextViewMetricResolver =
@@ -226,7 +228,8 @@ internal class RumViewManagerScope(
             sampleRate,
             interactionToNextViewMetricResolver,
             initialResourceIdentifier,
-            slowFramesListener
+            slowFramesListener,
+            insightsCollector
         )
         applicationDisplayed = true
         childrenScopes.add(viewScope)
@@ -303,7 +306,8 @@ internal class RumViewManagerScope(
             interactionToNextViewMetricResolver = interactionToNextViewMetricResolver,
             networkSettledMetricResolver = networkSettledMetricResolver,
             viewEndedMetricDispatcher = viewEndedMetricDispatcher,
-            slowFramesListener = slowFramesListener
+            slowFramesListener = slowFramesListener,
+            insightsCollector = insightsCollector
         )
     }
 
@@ -341,7 +345,8 @@ internal class RumViewManagerScope(
             interactionToNextViewMetricResolver = interactionToNextViewMetricResolver,
             networkSettledMetricResolver = networkSettledMetricResolver,
             viewEndedMetricDispatcher = viewEndedMetricDispatcher,
-            slowFramesListener = slowFramesListener
+            slowFramesListener = slowFramesListener,
+            insightsCollector = insightsCollector
         )
     }
 

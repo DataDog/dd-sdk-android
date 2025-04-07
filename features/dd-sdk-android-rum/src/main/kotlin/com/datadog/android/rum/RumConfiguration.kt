@@ -14,6 +14,7 @@ import com.datadog.android.rum.configuration.VitalsUpdateFrequency
 import com.datadog.android.rum.event.ViewEventMapper
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.instrumentation.MainLooperLongTaskStrategy
+import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector
 import com.datadog.android.rum.internal.tracking.NoOpInteractionPredicate
 import com.datadog.android.rum.metric.interactiontonextview.LastInteractionIdentifier
 import com.datadog.android.rum.metric.networksettled.InitialResourceIdentifier
@@ -308,6 +309,14 @@ data class RumConfiguration internal constructor(
             slowFramesConfiguration: SlowFramesConfiguration?
         ): Builder {
             rumConfig = rumConfig.copy(slowFramesConfiguration = slowFramesConfiguration)
+            return this
+        }
+
+        @ExperimentalRumApi
+        fun setInsightsCollectionEnabled(
+            enabled: Boolean
+        ): Builder {
+            rumConfig = rumConfig.copy(insightsCollectionEnabled = enabled)
             return this
         }
 

@@ -14,6 +14,7 @@ import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.internal.FeaturesContextResolver
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
+import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector
 import com.datadog.android.rum.internal.monitor.StorageEvent
 import com.datadog.android.rum.internal.utils.hasUserData
 import com.datadog.android.rum.internal.utils.newRumEventWriteOperation
@@ -36,7 +37,8 @@ internal class RumActionScope(
     maxDurationMs: Long = ACTION_MAX_DURATION_MS,
     private val featuresContextResolver: FeaturesContextResolver = FeaturesContextResolver(),
     private val trackFrustrations: Boolean,
-    internal val sampleRate: Float
+    internal val sampleRate: Float,
+    private val insightsCollector: InsightsCollector
 ) : RumScope {
 
     private val inactivityThresholdNs = TimeUnit.MILLISECONDS.toNanos(inactivityThresholdMs)
@@ -247,6 +249,7 @@ internal class RumActionScope(
                 rumContext.viewId.orEmpty()
             )
 
+            insightsCollector.onAction()
             ActionEvent(
                 date = eventTimestamp,
                 action = ActionEvent.ActionEventAction(
@@ -344,7 +347,8 @@ internal class RumActionScope(
             timestampOffset: Long,
             featuresContextResolver: FeaturesContextResolver,
             trackFrustrations: Boolean,
-            sampleRate: Float
+            sampleRate: Float,
+            insightsCollector: InsightsCollector
         ): RumScope {
             return RumActionScope(
                 parentScope,
@@ -357,7 +361,8 @@ internal class RumActionScope(
                 timestampOffset,
                 featuresContextResolver = featuresContextResolver,
                 trackFrustrations = trackFrustrations,
-                sampleRate = sampleRate
+                sampleRate = sampleRate,
+                insightsCollector = insightsCollector
             )
         }
     }

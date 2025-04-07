@@ -52,6 +52,9 @@ import com.datadog.android.rum.internal.instrumentation.MainLooperLongTaskStrate
 import com.datadog.android.rum.internal.instrumentation.UserActionTrackingStrategyApi29
 import com.datadog.android.rum.internal.instrumentation.UserActionTrackingStrategyLegacy
 import com.datadog.android.rum.internal.instrumentation.gestures.DatadogGesturesTracker
+import com.datadog.android.rum.internal.instrumentation.insights.DefaultInsightsCollector
+import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector
+import com.datadog.android.rum.internal.instrumentation.insights.NoOpInsightsCollector
 import com.datadog.android.rum.internal.metric.slowframes.DefaultSlowFramesListener
 import com.datadog.android.rum.internal.metric.slowframes.DefaultUISlownessMetricDispatcher
 import com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener
@@ -143,6 +146,7 @@ internal class RumFeature(
     internal var initialResourceIdentifier: InitialResourceIdentifier = NoOpInitialResourceIdentifier()
     internal var lastInteractionIdentifier: LastInteractionIdentifier? = NoOpLastInteractionIdentifier()
     internal var slowFramesListener: SlowFramesListener? = null
+    internal var insightsCollector: InsightsCollector = NoOpInsightsCollector()
 
     private val lateCrashEventHandler by lazy { lateCrashReporterFactory(sdkCore as InternalSdkCore) }
 
@@ -154,6 +158,11 @@ internal class RumFeature(
         this.appContext = appContext
         initialResourceIdentifier = configuration.initialResourceIdentifier
         lastInteractionIdentifier = configuration.lastInteractionIdentifier
+        insightsCollector = if (configuration.insightsCollectionEnabled) {
+            DefaultInsightsCollector()
+        } else {
+            NoOpInsightsCollector()
+        }
 
         dataWriter = createDataWriter(
             configuration,
@@ -237,7 +246,8 @@ internal class RumFeature(
                 metricDispatcher = DefaultUISlownessMetricDispatcher(
                     slowFramesConfiguration,
                     sdkCore.internalLogger
-                )
+                ),
+                insightsCollector=insightsCollector
             )
         } else {
             sdkCore.internalLogger.log(
@@ -624,7 +634,8 @@ internal class RumFeature(
         val lastInteractionIdentifier: LastInteractionIdentifier?,
         val slowFramesConfiguration: SlowFramesConfiguration?,
         val additionalConfig: Map<String, Any>,
-        val trackAnonymousUser: Boolean
+        val trackAnonymousUser: Boolean,
+        val insightsCollectionEnabled: Boolean
     )
 
     internal companion object {
@@ -671,7 +682,8 @@ internal class RumFeature(
             lastInteractionIdentifier = TimeBasedInteractionIdentifier(),
             additionalConfig = emptyMap(),
             trackAnonymousUser = true,
-            slowFramesConfiguration = null
+            slowFramesConfiguration = null,
+            insightsCollectionEnabled = false
         )
 
         internal const val EVENT_MESSAGE_PROPERTY = "message"

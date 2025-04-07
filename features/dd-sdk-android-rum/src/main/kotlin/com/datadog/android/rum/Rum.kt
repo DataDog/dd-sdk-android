@@ -135,7 +135,8 @@ object Rum {
             executorService = sdkCore.createSingleThreadExecutorService("rum-pipeline"),
             initialResourceIdentifier = rumFeature.initialResourceIdentifier,
             lastInteractionIdentifier = rumFeature.lastInteractionIdentifier,
-            slowFramesListener = rumFeature.slowFramesListener
+            slowFramesListener = rumFeature.slowFramesListener,
+            insightsCollector = rumFeature.insightsCollector
         )
     }
 

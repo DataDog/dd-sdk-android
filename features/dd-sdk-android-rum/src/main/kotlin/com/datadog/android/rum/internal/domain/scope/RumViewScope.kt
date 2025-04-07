@@ -26,6 +26,7 @@ import com.datadog.android.rum.internal.FeaturesContextResolver
 import com.datadog.android.rum.internal.anr.ANRException
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
+import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector
 import com.datadog.android.rum.internal.metric.NoValueReason
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
 import com.datadog.android.rum.internal.metric.ViewEndedMetricDispatcher
@@ -72,7 +73,8 @@ internal open class RumViewScope(
     private val interactionToNextViewMetricResolver: InteractionToNextViewMetricResolver,
     private val networkSettledMetricResolver: NetworkSettledMetricResolver,
     private val slowFramesListener: SlowFramesListener?,
-    private val viewEndedMetricDispatcher: ViewMetricDispatcher
+    private val viewEndedMetricDispatcher: ViewMetricDispatcher,
+    private val insightsCollector: InsightsCollector
 ) : RumScope {
 
     internal val url = key.url.replace('.', '/')
@@ -390,7 +392,8 @@ internal open class RumViewScope(
                     serverTimeOffsetInMs,
                     featuresContextResolver,
                     trackFrustrations,
-                    sampleRate
+                    sampleRate,
+                    insightsCollector
                 )
                 pendingActionCount++
                 customActionScope.handleEvent(RumRawEvent.SendCustomActionNow(), writer)
@@ -413,7 +416,8 @@ internal open class RumViewScope(
                 serverTimeOffsetInMs,
                 featuresContextResolver,
                 trackFrustrations,
-                sampleRate
+                sampleRate,
+                insightsCollector
             )
         )
         pendingActionCount++
@@ -438,7 +442,8 @@ internal open class RumViewScope(
             serverTimeOffsetInMs,
             featuresContextResolver,
             sampleRate,
-            networkSettledMetricResolver
+            networkSettledMetricResolver,
+            insightsCollector
         )
         pendingResourceCount++
     }
@@ -1229,7 +1234,7 @@ internal open class RumViewScope(
     private fun onAddLongTask(event: RumRawEvent.AddLongTask, writer: DataWriter<Any>) {
         delegateEventToChildren(event, writer)
         if (stopped) return
-
+        insightsCollector.onLongTask(event.eventTime.nanoTime, event.durationNs)
         val rumContext = getRumContext()
         val updatedAttributes = addExtraAttributes(
             mapOf(RumAttributes.LONG_TASK_TARGET to event.target)
@@ -1436,7 +1441,8 @@ internal open class RumViewScope(
             sampleRate: Float,
             interactionToNextViewMetricResolver: InteractionToNextViewMetricResolver,
             networkSettledResourceIdentifier: InitialResourceIdentifier,
-            slowFramesListener: SlowFramesListener?
+            slowFramesListener: SlowFramesListener?,
+            insightsCollector: InsightsCollector
         ): RumViewScope {
             val networkSettledMetricResolver = NetworkSettledMetricResolver(
                 networkSettledResourceIdentifier,
@@ -1468,7 +1474,8 @@ internal open class RumViewScope(
                 interactionToNextViewMetricResolver = interactionToNextViewMetricResolver,
                 networkSettledMetricResolver = networkSettledMetricResolver,
                 viewEndedMetricDispatcher = viewEndedMetricDispatcher,
-                slowFramesListener = slowFramesListener
+                slowFramesListener = slowFramesListener,
+                insightsCollector = insightsCollector
             )
         }
 

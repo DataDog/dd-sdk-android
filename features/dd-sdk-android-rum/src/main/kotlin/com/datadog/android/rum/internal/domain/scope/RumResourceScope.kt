@@ -21,6 +21,7 @@ import com.datadog.android.rum.internal.FeaturesContextResolver
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
+import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector
 import com.datadog.android.rum.internal.metric.networksettled.InternalResourceContext
 import com.datadog.android.rum.internal.metric.networksettled.NetworkSettledMetricResolver
 import com.datadog.android.rum.internal.monitor.StorageEvent
@@ -46,7 +47,8 @@ internal class RumResourceScope(
     internal val firstPartyHostHeaderTypeResolver: FirstPartyHostHeaderTypeResolver,
     private val featuresContextResolver: FeaturesContextResolver,
     internal val sampleRate: Float,
-    internal val networkSettledMetricResolver: NetworkSettledMetricResolver
+    internal val networkSettledMetricResolver: NetworkSettledMetricResolver,
+    internal val insightsCollector: InsightsCollector
 ) : RumScope {
 
     internal val resourceId: String = UUID.randomUUID().toString()
@@ -223,6 +225,7 @@ internal class RumResourceScope(
                 rumContext.viewId.orEmpty()
             )
             val duration = resolveResourceDuration(eventTime)
+            insightsCollector.onNetworkRequest(eventTimestamp, duration)
             ResourceEvent(
                 date = eventTimestamp,
                 resource = ResourceEvent.Resource(
@@ -510,7 +513,8 @@ internal class RumResourceScope(
             timestampOffset: Long,
             featuresContextResolver: FeaturesContextResolver,
             sampleRate: Float,
-            networkSettledMetricResolver: NetworkSettledMetricResolver
+            networkSettledMetricResolver: NetworkSettledMetricResolver,
+            insightsCollector: InsightsCollector
         ): RumScope {
             return RumResourceScope(
                 parentScope = parentScope,
@@ -524,7 +528,8 @@ internal class RumResourceScope(
                 firstPartyHostHeaderTypeResolver = firstPartyHostHeaderTypeResolver,
                 featuresContextResolver = featuresContextResolver,
                 sampleRate = sampleRate,
-                networkSettledMetricResolver = networkSettledMetricResolver
+                networkSettledMetricResolver = networkSettledMetricResolver,
+                insightsCollector = insightsCollector
             )
         }
     }

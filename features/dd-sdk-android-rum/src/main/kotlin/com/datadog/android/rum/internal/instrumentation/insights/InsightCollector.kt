@@ -11,9 +11,28 @@ import com.datadog.tools.annotation.NoOpImplementation
 @InternalApi
 @NoOpImplementation
 interface InsightsCollector {
-    fun onSlowFrame(duration: Long)
+    fun onSlowFrame(startedTimestamp: Long, durationNs: Long)
     fun onAction()
-    fun onLongTask(duration: Long)
-    fun onNetworkRequest(uri: String)
+    fun onLongTask(startedTimestamp: Long, durationNs: Long)
+    fun onNetworkRequest(startedTimestamp: Long, durationNs: Long)
+}
+
+class DefaultInsightsCollector : InsightsCollector {
+
+    override fun onAction() {
+    }
+
+    override fun onLongTask(startedTimestamp: Long, durationNs: Long) {
+    }
+
+    override fun onSlowFrame(startedTimestamp: Long, durationNs: Long) {
+    }
+
+    override fun onNetworkRequest(startedTimestamp: Long, durationNs: Long) {
+    }
+
+    companion object{
+        val DEFAULT = DefaultInsightsCollector()
+    }
 }
 

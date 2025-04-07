@@ -106,6 +106,7 @@ public final class com/datadog/android/rum/RumConfiguration$Builder {
 	public final fun setActionEventMapper (Lcom/datadog/android/event/EventMapper;)Lcom/datadog/android/rum/RumConfiguration$Builder;
 	public final fun setErrorEventMapper (Lcom/datadog/android/event/EventMapper;)Lcom/datadog/android/rum/RumConfiguration$Builder;
 	public final fun setInitialResourceIdentifier (Lcom/datadog/android/rum/metric/networksettled/InitialResourceIdentifier;)Lcom/datadog/android/rum/RumConfiguration$Builder;
+	public final fun setInsightsCollectionEnabled (Z)Lcom/datadog/android/rum/RumConfiguration$Builder;
 	public final fun setLastInteractionIdentifier (Lcom/datadog/android/rum/metric/interactiontonextview/LastInteractionIdentifier;)Lcom/datadog/android/rum/RumConfiguration$Builder;
 	public final fun setLongTaskEventMapper (Lcom/datadog/android/event/EventMapper;)Lcom/datadog/android/rum/RumConfiguration$Builder;
 	public final fun setResourceEventMapper (Lcom/datadog/android/event/EventMapper;)Lcom/datadog/android/rum/RumConfiguration$Builder;
@@ -311,6 +312,26 @@ public abstract class com/datadog/android/rum/internal/instrumentation/gestures/
 	public fun <init> ()V
 	public fun onFling (Landroid/view/MotionEvent;Landroid/view/MotionEvent;FF)Z
 	public fun onScroll (Landroid/view/MotionEvent;Landroid/view/MotionEvent;FF)Z
+}
+
+public final class com/datadog/android/rum/internal/instrumentation/insights/DefaultInsightsCollector : com/datadog/android/rum/internal/instrumentation/insights/InsightsCollector {
+	public static final field Companion Lcom/datadog/android/rum/internal/instrumentation/insights/DefaultInsightsCollector$Companion;
+	public fun <init> ()V
+	public fun onAction ()V
+	public fun onLongTask (JJ)V
+	public fun onNetworkRequest (JJ)V
+	public fun onSlowFrame (JJ)V
+}
+
+public final class com/datadog/android/rum/internal/instrumentation/insights/DefaultInsightsCollector$Companion {
+	public final fun getDEFAULT ()Lcom/datadog/android/rum/internal/instrumentation/insights/DefaultInsightsCollector;
+}
+
+public abstract interface class com/datadog/android/rum/internal/instrumentation/insights/InsightsCollector {
+	public abstract fun onAction ()V
+	public abstract fun onLongTask (JJ)V
+	public abstract fun onNetworkRequest (JJ)V
+	public abstract fun onSlowFrame (JJ)V
 }
 
 public abstract interface class com/datadog/android/rum/internal/monitor/AdvancedNetworkRumMonitor : com/datadog/android/rum/RumMonitor {
