@@ -6,6 +6,7 @@
 
 package com.datadog.android.compose
 
+import com.datadog.android.compose.internal.ComposeActionTrackingStrategy
 import com.datadog.android.rum.RumConfiguration
 import com.datadog.android.rum._RumInternalProxy
 

@@ -6778,7 +6778,7 @@ public class com/datadog/android/rum/tracking/AcceptAllSupportFragments : com/da
 	public fun hashCode ()I
 }
 
-public abstract interface class com/datadog/android/rum/tracking/ActionTrackingStrategy {
+public abstract interface class com/datadog/android/rum/tracking/ActionTrackingStrategy : com/datadog/android/rum/tracking/TrackingStrategy {
 	public abstract fun findTargetForScroll (Landroid/view/View;FF)Lcom/datadog/android/rum/tracking/ViewTarget;
 	public abstract fun findTargetForTap (Landroid/view/View;FF)Lcom/datadog/android/rum/tracking/ViewTarget;
 }
