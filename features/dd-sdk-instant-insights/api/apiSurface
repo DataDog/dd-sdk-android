@@ -1,4 +1,0 @@
-class com.datadog.instant.insights.DDLocalInsightOverlay
-  fun attach(android.app.Activity)
-class com.datadog.instant.insights.DragTouchListener : android.view.View.OnTouchListener
-  override fun onTouch(android.view.View, android.view.MotionEvent): Boolean

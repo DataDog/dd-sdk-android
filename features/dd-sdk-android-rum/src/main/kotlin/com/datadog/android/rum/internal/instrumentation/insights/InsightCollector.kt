@@ -15,24 +15,10 @@ interface InsightsCollector {
     fun onAction()
     fun onLongTask(startedTimestamp: Long, durationNs: Long)
     fun onNetworkRequest(startedTimestamp: Long, durationNs: Long)
+    fun addUpdateListener(listener: InsightsUpdatesListener)
+    fun removeUpdateListener(listener: InsightsUpdatesListener)
 }
 
-class DefaultInsightsCollector : InsightsCollector {
-
-    override fun onAction() {
-    }
-
-    override fun onLongTask(startedTimestamp: Long, durationNs: Long) {
-    }
-
-    override fun onSlowFrame(startedTimestamp: Long, durationNs: Long) {
-    }
-
-    override fun onNetworkRequest(startedTimestamp: Long, durationNs: Long) {
-    }
-
-    companion object{
-        val DEFAULT = DefaultInsightsCollector()
-    }
+interface InsightsUpdatesListener {
+    fun onUpdate()
 }
-

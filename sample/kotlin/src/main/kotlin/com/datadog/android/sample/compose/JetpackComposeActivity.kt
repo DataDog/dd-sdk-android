@@ -24,6 +24,7 @@ import androidx.navigation.compose.rememberNavController
 import com.datadog.android.compose.ExperimentalTrackingApi
 import com.datadog.android.compose.NavigationViewTrackingEffect
 import com.datadog.android.rum.tracking.AcceptAllNavDestinations
+import com.datadog.android.insights.LocalInsightOverlay
 
 /**
  * An activity to showcase Jetpack Compose instrumentation.
@@ -43,6 +44,7 @@ class JetpackComposeActivity : AppCompatActivity() {
                 AppScaffold()
             }
         }
+        LocalInsightOverlay().attach(this)
     }
 
     @Composable
