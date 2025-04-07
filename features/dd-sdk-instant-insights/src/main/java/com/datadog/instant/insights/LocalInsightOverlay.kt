@@ -12,7 +12,7 @@ import android.view.ViewGroup
 import android.widget.Toast
 import com.datadog.android.instant.insights.R
 
-class DDLocalInsightOverlay {
+class LocalInsightOverlay {
 
     fun attach(activity: Activity) {
         val container = activity.window.decorView as ViewGroup

@@ -61,6 +61,7 @@ dependencies {
     implementation(libs.bundles.androidXNavigation)
     implementation(libs.androidXRecyclerView)
     implementation(libs.androidXFragment)
+    implementation(project(":features:dd-sdk-android-rum"))
 
     // Generate NoOp implementations
     ksp(project(":tools:noopfactory"))
