@@ -11,13 +11,16 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.Drawable.ConstantState
+import android.util.AndroidRuntimeException
 import android.util.DisplayMetrics
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.recorder.resources.BitmapCachesManager
 import com.datadog.android.sessionreplay.internal.recorder.resources.ResourceResolver
+import com.datadog.android.sessionreplay.internal.utils.DrawableUtils.Companion.DRAWABLE_DRAW_FINISHED_WITH_ANDROID_RUNTIME_EXCEPTION
 import com.datadog.android.sessionreplay.recorder.wrappers.BitmapWrapper
 import com.datadog.android.sessionreplay.recorder.wrappers.CanvasWrapper
+import com.datadog.android.utils.verifyLog
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -391,5 +394,35 @@ internal class DrawableUtilsTest {
 
         // Then
         assertThat(actualBitmap).isEqualTo(mockScaledBitmap)
+    }
+
+    @Test
+    fun `M call onFailure W createBitmapOfApproxSizeFromDrawable { drawable draw throws AndroidRuntimeException }`() {
+        val exception = AndroidRuntimeException()
+
+        // Given
+        whenever(mockDrawable.intrinsicWidth).thenReturn(1)
+        whenever(mockDrawable.intrinsicHeight).thenReturn(1)
+        whenever(mockDrawable.draw(any())).thenThrow(exception)
+
+        // When
+        testedDrawableUtils.createBitmapOfApproxSizeFromDrawable(
+            drawable = mockDrawable,
+            drawableWidth = mockDrawable.intrinsicWidth,
+            drawableHeight = mockDrawable.intrinsicHeight,
+            displayMetrics = mockDisplayMetrics,
+            config = mockConfig,
+            bitmapCreationCallback = mockBitmapCreationCallback
+        )
+
+        // Then
+        verify(mockBitmapCreationCallback).onFailure()
+
+        mockLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.TELEMETRY,
+            { it == "$DRAWABLE_DRAW_FINISHED_WITH_ANDROID_RUNTIME_EXCEPTION ${mockDrawable.javaClass.canonicalName}" },
+            exception
+        )
     }
 }

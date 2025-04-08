@@ -10,8 +10,10 @@ import android.app.UiModeManager
 import android.content.Context
 import android.content.pm.PackageManager
 import android.content.res.Configuration
+import android.hardware.display.DisplayManager
 import android.os.Build
 import android.telephony.TelephonyManager
+import android.view.Display
 import com.datadog.android.api.context.DeviceType
 import java.util.Locale
 
@@ -70,6 +72,18 @@ internal class DefaultAndroidInfoProvider(
 
     override val architecture: String by lazy(LazyThreadSafetyMode.PUBLICATION) {
         System.getProperty("os.arch") ?: "unknown"
+    }
+
+    override val numberOfDisplays: Int? by lazy(LazyThreadSafetyMode.PUBLICATION) {
+        val displayManager = appContext.getSystemService(Context.DISPLAY_SERVICE)
+            as? DisplayManager ?: return@lazy null
+
+        displayManager.displays.count {
+            it.state !in setOf(
+                Display.STATE_OFF,
+                Display.STATE_UNKNOWN
+            )
+        }
     }
 
     companion object {

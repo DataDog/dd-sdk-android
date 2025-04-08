@@ -47,6 +47,7 @@ import java.io.File
 import java.util.Locale
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicInteger
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -72,15 +73,24 @@ internal class BatchFileOrchestratorTest {
     @Mock
     lateinit var mockMetricsDispatcher: MetricsDispatcher
 
+    @IntForgery(min = 0, max = 100)
+    var fakePendingBatches: Int = 0
+
+    @Mock
+    lateinit var mockPendingFiles: AtomicInteger
+
     @BeforeEach
     fun `set up`() {
+        whenever(mockPendingFiles.decrementAndGet()).thenReturn(fakePendingBatches)
+        whenever(mockPendingFiles.incrementAndGet()).thenReturn(fakePendingBatches)
         fakeRootDir = File(tempDir, fakeRootDirName)
         fakeRootDir.mkdirs()
         testedOrchestrator = BatchFileOrchestrator(
-            fakeRootDir,
-            TEST_PERSISTENCE_CONFIG,
-            mockLogger,
-            mockMetricsDispatcher
+            rootDir = fakeRootDir,
+            config = TEST_PERSISTENCE_CONFIG,
+            internalLogger = mockLogger,
+            metricsDispatcher = mockMetricsDispatcher,
+            pendingFiles = mockPendingFiles
         )
     }
 
@@ -304,7 +314,8 @@ internal class BatchFileOrchestratorTest {
         assertThat(youngFile).exists()
         verify(mockMetricsDispatcher).sendBatchDeletedMetric(
             eq(oldFile),
-            argThat { this is RemovalReason.Obsolete }
+            argThat { this is RemovalReason.Obsolete },
+            eq(fakePendingBatches)
         )
         verifyNoMoreInteractions(mockMetricsDispatcher)
     }
@@ -349,7 +360,8 @@ internal class BatchFileOrchestratorTest {
         assertThat(evenOlderFile).exists()
         verify(mockMetricsDispatcher).sendBatchDeletedMetric(
             eq(oldFile),
-            argThat { this is RemovalReason.Obsolete }
+            argThat { this is RemovalReason.Obsolete },
+            eq(fakePendingBatches)
         )
     }
 
@@ -388,11 +400,13 @@ internal class BatchFileOrchestratorTest {
         assertThat(evenOlderFile).doesNotExist()
         verify(mockMetricsDispatcher).sendBatchDeletedMetric(
             eq(evenOlderFile),
-            argThat { this is RemovalReason.Obsolete }
+            argThat { this is RemovalReason.Obsolete },
+            eq(fakePendingBatches)
         )
         verify(mockMetricsDispatcher).sendBatchDeletedMetric(
             eq(oldFile),
-            argThat { this is RemovalReason.Obsolete }
+            argThat { this is RemovalReason.Obsolete },
+            eq(fakePendingBatches)
         )
         argumentCaptor<BatchClosedMetadata>() {
             verify(mockMetricsDispatcher).sendBatchClosedMetric(

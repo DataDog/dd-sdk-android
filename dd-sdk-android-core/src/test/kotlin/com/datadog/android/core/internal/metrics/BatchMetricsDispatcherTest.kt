@@ -14,6 +14,7 @@ import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.utils.forge.Configurator
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
+import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -46,7 +47,7 @@ import kotlin.math.max
 @ForgeConfiguration(Configurator::class)
 internal class BatchMetricsDispatcherTest {
 
-    lateinit var testedBatchMetricsDispatcher: BatchMetricsDispatcher
+    private lateinit var testedBatchMetricsDispatcher: BatchMetricsDispatcher
 
     lateinit var fakeFeatureName: String
 
@@ -60,6 +61,9 @@ internal class BatchMetricsDispatcherTest {
 
     @Mock
     lateinit var mockInternalLogger: InternalLogger
+
+    @IntForgery(min = 0, max = 100)
+    var fakePendingBatches: Int = 0
 
     @Forgery
     lateinit var fakeFilePersistenceConfig: FilePersistenceConfig
@@ -95,7 +99,7 @@ internal class BatchMetricsDispatcherTest {
         }
 
         // When
-        testedBatchMetricsDispatcher.sendBatchDeletedMetric(fakeFile, fakeReason)
+        testedBatchMetricsDispatcher.sendBatchDeletedMetric(fakeFile, fakeReason, fakePendingBatches)
 
         // Then
         argumentCaptor<Map<String, Any?>> {
@@ -118,7 +122,7 @@ internal class BatchMetricsDispatcherTest {
         whenever(fakeFile.name).thenReturn(newFileName)
 
         // When
-        testedBatchMetricsDispatcher.sendBatchDeletedMetric(fakeFile, fakeReason)
+        testedBatchMetricsDispatcher.sendBatchDeletedMetric(fakeFile, fakeReason, fakePendingBatches)
 
         // Then
         verifyNoInteractions(mockInternalLogger)
@@ -136,7 +140,7 @@ internal class BatchMetricsDispatcherTest {
         testedBatchMetricsDispatcher.onPaused()
 
         // When
-        testedBatchMetricsDispatcher.sendBatchDeletedMetric(fakeFile, fakeReason)
+        testedBatchMetricsDispatcher.sendBatchDeletedMetric(fakeFile, fakeReason, fakePendingBatches)
 
         // Then
         argumentCaptor<Map<String, Any?>> {
@@ -162,7 +166,7 @@ internal class BatchMetricsDispatcherTest {
         }
         // When
         testedBatchMetricsDispatcher.onResumed()
-        testedBatchMetricsDispatcher.sendBatchDeletedMetric(fakeFile, fakeReason)
+        testedBatchMetricsDispatcher.sendBatchDeletedMetric(fakeFile, fakeReason, fakePendingBatches)
 
         // Then
         argumentCaptor<Map<String, Any?>> {
@@ -190,7 +194,7 @@ internal class BatchMetricsDispatcherTest {
             put(BatchMetricsDispatcher.TRACKING_CONSENT_KEY, "pending")
         }
         // When
-        testedBatchMetricsDispatcher.sendBatchDeletedMetric(fakeFile, fakeReason)
+        testedBatchMetricsDispatcher.sendBatchDeletedMetric(fakeFile, fakeReason, fakePendingBatches)
 
         // Then
         argumentCaptor<Map<String, Any?>> {
@@ -217,7 +221,7 @@ internal class BatchMetricsDispatcherTest {
             put(BatchMetricsDispatcher.TRACKING_CONSENT_KEY, null)
         }
         // When
-        testedBatchMetricsDispatcher.sendBatchDeletedMetric(fakeFile, fakeReason)
+        testedBatchMetricsDispatcher.sendBatchDeletedMetric(fakeFile, fakeReason, fakePendingBatches)
 
         // Then
         argumentCaptor<Map<String, Any?>> {
@@ -244,7 +248,7 @@ internal class BatchMetricsDispatcherTest {
             put(BatchMetricsDispatcher.TRACKING_CONSENT_KEY, null)
         }
         // When
-        testedBatchMetricsDispatcher.sendBatchDeletedMetric(fakeFile, fakeReason)
+        testedBatchMetricsDispatcher.sendBatchDeletedMetric(fakeFile, fakeReason, fakePendingBatches)
 
         // Then
         argumentCaptor<Map<String, Any?>> {
@@ -267,7 +271,7 @@ internal class BatchMetricsDispatcherTest {
         }
 
         // When
-        testedBatchMetricsDispatcher.sendBatchDeletedMetric(fakeFile, fakeReason)
+        testedBatchMetricsDispatcher.sendBatchDeletedMetric(fakeFile, fakeReason, fakePendingBatches)
 
         // Then
         verify(mockInternalLogger).log(
@@ -300,7 +304,7 @@ internal class BatchMetricsDispatcherTest {
         val fakeFile: File = forge.forgeValidFile()
 
         // When
-        testedBatchMetricsDispatcher.sendBatchDeletedMetric(fakeFile, fakeReason)
+        testedBatchMetricsDispatcher.sendBatchDeletedMetric(fakeFile, fakeReason, fakePendingBatches)
 
         // Then
         verifyNoInteractions(mockInternalLogger)
@@ -561,6 +565,7 @@ internal class BatchMetricsDispatcherTest {
             BatchMetricsDispatcher.FILE_NAME to file.name,
             BatchMetricsDispatcher.THREAD_NAME to Thread.currentThread().name,
             BatchMetricsDispatcher.TRACKING_CONSENT_KEY to "granted",
+            BatchMetricsDispatcher.PENDING_BATCHES to fakePendingBatches,
             BatchMetricsDispatcher.IN_BACKGROUND_KEY to true
         )
     }

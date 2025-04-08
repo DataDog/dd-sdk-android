@@ -7,6 +7,7 @@
 package com.datadog.android.sessionreplay.internal.recorder
 
 import android.graphics.drawable.Drawable
+import android.view.Display
 import android.view.View
 import android.view.ViewStub
 import android.widget.TextView
@@ -327,4 +328,39 @@ internal class ViewUtilsInternalTest {
         assertThat(actualBounds.x).isEqualTo(viewWidth / 2 - drawableWidth / 2)
         assertThat(actualBounds.y).isEqualTo(viewHeight - (drawableHeight + viewPadding))
     }
+
+    // region secondary display
+
+    @Test
+    fun `M return true W isOnSecondaryDisplay { view on secondary display }`(
+        @Mock mockView: View,
+        @IntForgery(min = Display.DEFAULT_DISPLAY + 1) fakeDisplayId: Int
+    ) {
+        // Given
+        whenever(mockView.display).thenReturn(mock())
+        whenever(mockView.display?.displayId).thenReturn(fakeDisplayId)
+
+        // When
+        val isOnSecondaryDisplay = testViewUtilsInternal.isOnSecondaryDisplay(mockView)
+
+        // Then
+        assertThat(isOnSecondaryDisplay).isTrue
+    }
+
+    @Test
+    fun `M return false W isOnSecondaryDisplay { view on primary display }`(
+        @Mock mockView: View
+    ) {
+        // Given
+        whenever(mockView.display).thenReturn(mock())
+        whenever(mockView.display?.displayId).thenReturn(Display.DEFAULT_DISPLAY)
+
+        // When
+        val isOnSecondaryDisplay = testViewUtilsInternal.isOnSecondaryDisplay(mockView)
+
+        // Then
+        assertThat(isOnSecondaryDisplay).isFalse
+    }
+
+    // endregion
 }

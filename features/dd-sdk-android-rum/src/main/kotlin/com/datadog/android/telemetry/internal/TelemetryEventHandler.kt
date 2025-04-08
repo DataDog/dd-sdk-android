@@ -17,6 +17,7 @@ import com.datadog.android.core.internal.attributes.LocalAttribute
 import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
+import com.datadog.android.internal.telemetry.TracingHeaderTypesSet
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.RumFeature.Configuration
@@ -286,8 +287,7 @@ internal class TelemetryEventHandler(
         effectiveSampleRate: Float
     ): TelemetryConfigurationEvent {
         val traceFeature = sdkCore.getFeature(Feature.TRACING_FEATURE_NAME)
-        val sessionReplayFeatureContext =
-            sdkCore.getFeatureContext(Feature.SESSION_REPLAY_FEATURE_NAME)
+        val sessionReplayFeatureContext = datadogContext.featuresContext[Feature.SESSION_REPLAY_FEATURE_NAME].orEmpty()
         val sessionReplaySampleRate = sessionReplayFeatureContext[SESSION_REPLAY_SAMPLE_RATE_KEY]
             as? Long
         val startRecordingImmediately =
@@ -307,10 +307,14 @@ internal class TelemetryEventHandler(
         }
 
         val rumContext = datadogContext.rumContext()
-        val traceContext = sdkCore.getFeatureContext(Feature.TRACING_FEATURE_NAME)
+        val traceContext = datadogContext.featuresContext[Feature.TRACING_FEATURE_NAME].orEmpty()
         val tracerApi = resolveTracerApi(traceContext)
         val openTelemetryApiVersion = resolveOpenTelemetryApiVersion(tracerApi, traceContext)
         val useTracing = (traceFeature != null && tracerApi != null)
+
+        val okhttpInterceptorSampleRate = traceContext[OKHTTP_INTERCEPTOR_SAMPLE_RATE] as? Float?
+        val tracingHeaderTypes =
+            traceContext[OKHTTP_INTERCEPTOR_HEADER_TYPES] as? TracingHeaderTypesSet
 
         val invTimeBasedThreshold = (rumConfig?.lastInteractionIdentifier as? TimeBasedInteractionIdentifier)
             ?.timeThresholdInMilliseconds
@@ -369,7 +373,10 @@ internal class TelemetryEventHandler(
                     batchProcessingLevel = event.batchProcessingLevel.toLong(),
                     isMainProcess = datadogContext.processInfo.isMainProcess,
                     invTimeThresholdMs = invTimeBasedThreshold,
-                    tnsTimeThresholdMs = tnsTimeBasedThreshold
+                    tnsTimeThresholdMs = tnsTimeBasedThreshold,
+                    numberOfDisplays = datadogContext.deviceInfo.numberOfDisplays?.toLong(),
+                    traceSampleRate = okhttpInterceptorSampleRate?.toLong(),
+                    selectedTracingPropagators = tracingHeaderTypes?.toSelectedTracingPropagators()
                 )
             )
         )
@@ -527,5 +534,8 @@ internal class TelemetryEventHandler(
         internal const val SESSION_REPLAY_TOUCH_PRIVACY_KEY = "session_replay_touch_privacy"
         internal const val SESSION_REPLAY_START_IMMEDIATE_RECORDING_KEY =
             "session_replay_start_immediate_recording"
+
+        internal const val OKHTTP_INTERCEPTOR_SAMPLE_RATE = "okhttp_interceptor_sample_rate"
+        internal const val OKHTTP_INTERCEPTOR_HEADER_TYPES = "okhttp_interceptor_header_types"
     }
 }

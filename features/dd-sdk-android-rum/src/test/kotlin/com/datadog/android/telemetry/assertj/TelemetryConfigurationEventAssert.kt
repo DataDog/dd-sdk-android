@@ -290,6 +290,28 @@ internal class TelemetryConfigurationEventAssert(actual: TelemetryConfigurationE
         return this
     }
 
+    fun hasTraceSampleRate(expected: Long?): TelemetryConfigurationEventAssert {
+        assertThat(actual.telemetry.configuration.traceSampleRate)
+            .overridingErrorMessage(
+                "Expected event data to have telemetry.configuration.traceSampleRate" +
+                    " $expected but was ${actual.telemetry.configuration.traceSampleRate}"
+            )
+            .isEqualTo(expected)
+        return this
+    }
+
+    fun hasSelectedTracingPropagators(
+        expected: List<TelemetryConfigurationEvent.SelectedTracingPropagator>?
+    ): TelemetryConfigurationEventAssert {
+        assertThat(actual.telemetry.configuration.selectedTracingPropagators)
+            .overridingErrorMessage(
+                "Expected event data to have telemetry.configuration.selectedTracingPropagators" +
+                    " $expected but was ${actual.telemetry.configuration.selectedTracingPropagators}"
+            )
+            .isEqualTo(expected)
+        return this
+    }
+
     fun hasTnsTimeBasedThreshold(expected: Long?): TelemetryConfigurationEventAssert {
         assertThat(actual.telemetry.configuration.tnsTimeThresholdMs)
             .overridingErrorMessage(

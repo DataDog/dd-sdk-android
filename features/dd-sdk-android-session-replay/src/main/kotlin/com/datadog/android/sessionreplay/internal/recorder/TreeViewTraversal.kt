@@ -45,7 +45,8 @@ internal class TreeViewTraversal(
         recordedDataQueueRefs: RecordedDataQueueRefs
     ): TraversedTreeView {
         if (viewUtilsInternal.isNotVisible(view) ||
-            viewUtilsInternal.isSystemNoise(view)
+            viewUtilsInternal.isSystemNoise(view) ||
+            viewUtilsInternal.isOnSecondaryDisplay(view)
         ) {
             return TraversedTreeView(emptyList(), TraversalStrategy.STOP_AND_DROP_NODE)
         }

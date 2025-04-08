@@ -512,6 +512,7 @@ internal class DatadogCore(
     private fun sendCoreConfigurationTelemetryEvent(configuration: Configuration) {
         val runnable = Runnable {
             val rumFeature = getFeature(Feature.RUM_FEATURE_NAME) ?: return@Runnable
+
             val event = InternalTelemetryEvent.Configuration(
                 trackErrors = configuration.crashReportsEnabled,
                 batchSize = configuration.coreConfig.batchSize.windowDurationMs,

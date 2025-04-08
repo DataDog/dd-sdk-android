@@ -51,7 +51,8 @@ internal class DatadogContextProvider(val coreFeature: CoreFeature) : ContextPro
                         osName = osName,
                         osVersion = osVersion,
                         osMajorVersion = osMajorVersion,
-                        architecture = architecture
+                        architecture = architecture,
+                        numberOfDisplays = numberOfDisplays
                     )
                 },
                 userInfo = coreFeature.userInfoProvider.getUserInfo(),

@@ -22,7 +22,8 @@ class DeviceInfoForgeryFactory : ForgeryFactory<DeviceInfo> {
             osName = forge.aString(),
             osVersion = forge.aString(),
             osMajorVersion = forge.aString(),
-            architecture = forge.aString()
+            architecture = forge.aString(),
+            numberOfDisplays = forge.aNullable { forge.anInt() }
         )
     }
 }

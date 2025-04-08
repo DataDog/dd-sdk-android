@@ -27,4 +27,6 @@ internal interface AndroidInfoProvider {
     val osVersion: String
 
     val architecture: String
+
+    val numberOfDisplays: Int?
 }

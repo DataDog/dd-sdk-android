@@ -64,5 +64,10 @@ internal class SingleFileOrchestrator(
         return file.parentFile?.nameWithoutExtension
     }
 
+    // single file orchestrator has a single file, so this is essentially a noop implementation
+    override fun decrementAndGetPendingFilesCount(): Int {
+        return 0
+    }
+
     // endregion
 }

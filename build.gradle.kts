@@ -32,7 +32,6 @@ buildscript {
         classpath(libs.kotlinSPGradlePlugin)
         classpath(libs.dokkaGradlePlugin)
         classpath(libs.unmockGradlePlugin)
-        classpath(libs.realmGradlePlugin)
         classpath(libs.sqlDelightGradlePlugin)
         classpath(libs.binaryCompatibilityGradlePlugin)
     }

@@ -154,22 +154,6 @@ internal class AndroidTracerTest {
     }
 
     @Test
-    fun `M log a developer error W buildTracer { RumFeature not enabled, bundleWithRum true }`() {
-        // GIVEN
-        whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn null
-
-        // WHEN
-        testedTracerBuilder.build()
-
-        // THEN
-        mockInternalLogger.verifyLog(
-            InternalLogger.Level.WARN,
-            InternalLogger.Target.USER,
-            AndroidTracer.RUM_NOT_ENABLED_ERROR_MESSAGE
-        )
-    }
-
-    @Test
     fun `M log a developer error W buildTracer { default service name not available }`() {
         // GIVEN
         whenever(mockSdkCore.service) doReturn ""
@@ -415,6 +399,8 @@ internal class AndroidTracerTest {
     ) {
         // GIVEN
         whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn null
+        whenever(mockSdkCore.getFeatureContext(Feature.RUM_FEATURE_NAME)) doReturn emptyMap()
+
         val tracer = AndroidTracer.Builder(mockSdkCore)
             .build()
 
@@ -427,6 +413,37 @@ internal class AndroidTracerTest {
             .isNull()
         assertThat(meta[LogAttributes.RUM_SESSION_ID])
             .isNull()
+    }
+
+    @Test
+    fun `M inject RumContext W buildSpan { RumFeature is initialized after AndroidTracer is built }`(
+        @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL) operationName: String
+    ) {
+        // GIVEN
+        whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn null
+        whenever(mockSdkCore.getFeatureContext(Feature.RUM_FEATURE_NAME)) doReturn emptyMap()
+
+        val tracer = AndroidTracer.Builder(mockSdkCore)
+            .build()
+
+        whenever(mockSdkCore.getFeatureContext(Feature.RUM_FEATURE_NAME)) doReturn mapOf(
+            "application_id" to fakeRumApplicationId,
+            "session_id" to fakeRumSessionId,
+            "view_id" to fakeRumViewId,
+            "action_id" to fakeRumActionId
+        )
+
+        whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mock()
+
+        // WHEN
+        val span = tracer.buildSpan(operationName).start() as DDSpan
+
+        // THEN
+        val meta = span.meta
+        assertThat(meta[LogAttributes.RUM_APPLICATION_ID])
+            .isEqualTo(fakeRumApplicationId)
+        assertThat(meta[LogAttributes.RUM_SESSION_ID])
+            .isEqualTo(fakeRumSessionId)
     }
 
     @Test

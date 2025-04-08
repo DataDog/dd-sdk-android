@@ -1,3 +1,9 @@
+class com.datadog.android.internal.collections.EvictingQueue<T> : java.util.Queue<T>
+  constructor(Int = Int.MAX_VALUE)
+  override val size: Int
+  override fun add(T): Boolean
+  override fun offer(T): Boolean
+  override fun addAll(Collection<T>): Boolean
 interface com.datadog.android.internal.profiler.BenchmarkProfiler
   fun getTracer(String): BenchmarkTracer
 interface com.datadog.android.internal.profiler.BenchmarkSpan
@@ -28,6 +34,13 @@ sealed class com.datadog.android.internal.telemetry.InternalTelemetryEvent
     class AddViewLoadingTime : ApiUsage
       constructor(Boolean, Boolean, Boolean, MutableMap<String, Any?> = mutableMapOf())
   object InterceptorInstantiated : InternalTelemetryEvent
+enum com.datadog.android.internal.telemetry.TracingHeaderType
+  - DATADOG
+  - B3
+  - B3MULTI
+  - TRACECONTEXT
+data class com.datadog.android.internal.telemetry.TracingHeaderTypesSet
+  constructor(Set<TracingHeaderType>)
 fun ByteArray.toHexString(): String
 object com.datadog.android.internal.utils.ImageViewUtils
   fun resolveParentRectAbsPosition(android.view.View, Boolean = true): android.graphics.Rect

@@ -232,6 +232,10 @@
                   "type": "boolean",
                   "description": "Whether console.error logs, uncaught exceptions and network errors are tracked"
                 },
+                "number_of_displays": {
+                  "type": "integer",
+                  "description": "The number of displays available to the device"
+                },
                 "forward_console_logs": {
                   "anyOf": [
                     {

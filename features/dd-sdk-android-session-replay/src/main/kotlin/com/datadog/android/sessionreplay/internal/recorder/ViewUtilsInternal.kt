@@ -8,6 +8,7 @@ package com.datadog.android.sessionreplay.internal.recorder
 
 import android.annotation.SuppressLint
 import android.graphics.drawable.Drawable
+import android.view.Display
 import android.view.View
 import android.view.ViewStub
 import androidx.appcompat.widget.ActionBarContextView
@@ -30,6 +31,9 @@ internal class ViewUtilsInternal {
     internal fun isSystemNoise(view: View): Boolean {
         return view.id in systemViewIds || view is ViewStub || view is ActionBarContextView
     }
+
+    internal fun isOnSecondaryDisplay(view: View): Boolean =
+        view.display.displayId != Display.DEFAULT_DISPLAY
 
     @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
     internal fun isToolbar(view: View): Boolean {
