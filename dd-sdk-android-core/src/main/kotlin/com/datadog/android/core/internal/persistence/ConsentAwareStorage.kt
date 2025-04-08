@@ -14,6 +14,7 @@ import com.datadog.android.api.storage.EventBatchWriter
 import com.datadog.android.core.internal.data.upload.DataOkHttpUploader.Companion.HTTP_ACCEPTED
 import com.datadog.android.core.internal.metrics.MetricsDispatcher
 import com.datadog.android.core.internal.metrics.RemovalReason
+import com.datadog.android.core.internal.metrics.sendBenchmarkTelemetry
 import com.datadog.android.core.internal.persistence.file.FileMover
 import com.datadog.android.core.internal.persistence.file.FileOrchestrator
 import com.datadog.android.core.internal.persistence.file.FilePersistenceConfig
@@ -163,20 +164,11 @@ internal class ConsentAwareStorage(
 
     override fun onWriteEvent(bytes: Long) {
         sendBenchmarkTelemetry(
-            bytes,
-            BENCHMARK_BYTES_WRITTEN
+            benchmarkSdkPerformance = benchmarkSdkPerformance,
+            featureName = featureName,
+            metricName = BENCHMARK_BYTES_WRITTEN,
+            value = bytes
         )
-    }
-
-    private fun sendBenchmarkTelemetry(value: Long, metricName: String) {
-        val tags = mapOf(
-            TRACK_NAME to featureName
-        )
-
-        benchmarkSdkPerformance
-            .getMeter(METER_NAME)
-            .getCounter(metricName)
-            .add(value, tags)
     }
 
     @WorkerThread
@@ -213,8 +205,10 @@ internal class ConsentAwareStorage(
 
             if (reason == RemovalReason.IntakeCode(HTTP_ACCEPTED) && fileSizeBeforeDeletion > 0) {
                 sendBenchmarkTelemetry(
-                    fileSizeBeforeDeletion,
-                    BENCHMARK_BYTES_DELETED
+                    benchmarkSdkPerformance = benchmarkSdkPerformance,
+                    featureName = featureName,
+                    metricName = BENCHMARK_BYTES_DELETED,
+                    value = fileSizeBeforeDeletion
                 )
             }
         } else {
@@ -242,8 +236,6 @@ internal class ConsentAwareStorage(
 
     companion object {
         internal const val WARNING_DELETE_FAILED = "Unable to delete file: %s"
-        internal const val METER_NAME = "dd-sdk-android"
-        internal const val TRACK_NAME = "track"
         internal const val BENCHMARK_BYTES_WRITTEN = "android.benchmark.bytes_written"
         internal const val BENCHMARK_BYTES_DELETED = "android.benchmark.bytes_deleted"
     }

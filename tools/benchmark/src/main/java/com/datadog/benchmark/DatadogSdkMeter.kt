@@ -8,15 +8,12 @@ package com.datadog.benchmark
 
 import com.datadog.android.internal.profiler.GlobalBenchmark
 import com.datadog.benchmark.exporter.DatadogMetricExporter
-import com.datadog.benchmark.exporter.DatadogSpanExporter
 import com.datadog.benchmark.profiler.DDBenchmarkSdkPerformance
 import io.opentelemetry.api.GlobalOpenTelemetry
 import io.opentelemetry.api.OpenTelemetry
 import io.opentelemetry.sdk.OpenTelemetrySdk
 import io.opentelemetry.sdk.metrics.SdkMeterProvider
 import io.opentelemetry.sdk.metrics.export.PeriodicMetricReader
-import io.opentelemetry.sdk.trace.SdkTracerProvider
-import io.opentelemetry.sdk.trace.export.BatchSpanProcessor
 import java.util.concurrent.TimeUnit
 
 /**
@@ -48,11 +45,7 @@ class DatadogSdkMeter private constructor() : DatadogBaseMeter {
                         .build()
                 )
                 .build()
-            val traceProvider = SdkTracerProvider.builder()
-                .addSpanProcessor(BatchSpanProcessor.builder(DatadogSpanExporter(datadogExporterConfiguration)).build())
-                .build()
             val openTelemetry: OpenTelemetry = OpenTelemetrySdk.builder()
-                .setTracerProvider(traceProvider)
                 .setMeterProvider(sdkMeterProvider)
                 .build()
             GlobalOpenTelemetry.set(openTelemetry)

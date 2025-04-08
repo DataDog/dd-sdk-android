@@ -20,26 +20,23 @@ internal class DDExecutionTimer(
             return action()
         }
 
-        val responseLatencyReport = createResponseLatencyCallback(track)
         val requestStartTime = System.nanoTime()
         val result = action()
         val latencyInSeconds = (System.nanoTime() - requestStartTime) / NANOSECONDS_IN_A_SECOND
-        responseLatencyReport(latencyInSeconds)
+        responseLatencyReport(latencyInSeconds, track)
         return result
     }
 
-    private fun createResponseLatencyCallback(track: String): (latencySeconds: Double) -> Unit {
-        return { latencySeconds ->
-            val tags = mapOf(
-                TRACK_NAME to track
-            )
+    private fun responseLatencyReport(latencySeconds: Double, track: String) {
+        val tags = mapOf(
+            TRACK_NAME to track
+        )
 
-            benchmarkSdkPerformance
-                .getMeter(METER_NAME)
-                .createObservableGauge(BENCHMARK_RESPONSE_LATENCY, tags) {
-                    latencySeconds
-                }
-        }
+        benchmarkSdkPerformance
+            .getMeter(METER_NAME)
+            .createObservableGauge(BENCHMARK_RESPONSE_LATENCY, tags) {
+                latencySeconds
+            }
     }
 
     private companion object {

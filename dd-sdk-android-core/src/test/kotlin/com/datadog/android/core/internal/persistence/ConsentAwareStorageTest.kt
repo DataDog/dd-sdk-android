@@ -809,7 +809,7 @@ internal class ConsentAwareStorageTest {
     // region benchmarking
 
     @Test
-    fun `M onCounterMetricReceived bytesDeleted W confirmBatchRead { HTTP_ACCEPTED }`(
+    fun `M send benchmark for bytes deleted W confirmBatchRead { HTTP_ACCEPTED }`(
         @LongForgery(1, 1000) fakeFileSize: Long,
         @StringForgery fakePath: String,
         @Mock mockFile: File
@@ -865,7 +865,7 @@ internal class ConsentAwareStorageTest {
     }
 
     @Test
-    fun `M not onCounterMetricReceived bytesDeleted W confirmBatchRead { OBSOLETE }`(
+    fun `M not send benchmark for bytes deleted bytesDeleted W confirmBatchRead { OBSOLETE }`(
         @LongForgery(1, 1000) fakeFileSize: Long,
         @StringForgery fakePath: String,
         @Mock mockFile: File
