@@ -23,6 +23,7 @@ import com.datadog.android.log.Logger
 import com.datadog.android.log.Logs
 import com.datadog.android.log.LogsConfiguration
 import com.datadog.android.ndk.NdkCrashReports
+import com.datadog.android.ndk.tracer.NdkTracer
 import com.datadog.android.okhttp.DatadogEventListener
 import com.datadog.android.okhttp.DatadogInterceptor
 import com.datadog.android.okhttp.trace.TracingInterceptor
@@ -54,6 +55,7 @@ import com.datadog.android.trace.Trace
 import com.datadog.android.trace.TraceConfiguration
 import com.datadog.android.trace.opentelemetry.OtelTracerProvider
 import com.datadog.android.vendor.sample.LocalServer
+import com.datadog.trace.api.profiling.Timer
 import com.facebook.stetho.Stetho
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonArray
@@ -106,6 +108,8 @@ class SampleApplication : Application() {
     private val retrofitBaseDataSource = retrofitClient.create(RemoteDataSource::class.java)
 
     private val localServer = LocalServer()
+
+    private val ndkTracer = NdkTracer()
 
     override fun onCreate() {
         super.onCreate()

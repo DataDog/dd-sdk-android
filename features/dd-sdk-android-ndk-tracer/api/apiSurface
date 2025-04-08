@@ -1,0 +1,2 @@
+class com.datadog.android.ndk.tracer.NdkTracer
+  fun createTracer(): Long

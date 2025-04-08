@@ -12,7 +12,7 @@ object Dependencies {
 
         // NDK
         const val Ndk = "28.0.13004108"
-        const val CMake = "3.22.1"
+        const val CMake = "3.31.6"
     }
 
     object Repositories {

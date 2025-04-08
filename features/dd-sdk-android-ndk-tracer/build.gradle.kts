@@ -50,8 +50,10 @@ android {
         }
     }
 
-    testOptions {
-        targetSdk = AndroidConfig.TARGET_SDK
+    sourceSets{
+        getByName("main") {
+            jniLibs.srcDir("src/main/jniLibs")
+        }
     }
 
     namespace = "com.datadog.android.ndk.tracer"
