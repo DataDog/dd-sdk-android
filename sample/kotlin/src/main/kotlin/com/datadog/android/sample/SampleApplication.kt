@@ -114,7 +114,9 @@ class SampleApplication : Application() {
     override fun onCreate() {
         super.onCreate()
         Stetho.initializeWithDefaults(this)
+        val ndkSpan = ndkTracer.startSpan("initialisingDatadog")
         initializeDatadog()
+        ndkSpan?.finish()
 
         initializeTimber()
 

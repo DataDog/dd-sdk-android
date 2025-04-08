@@ -20,6 +20,34 @@ class NdkTracer {
         tracerPointer = createTracer()
     }
 
+    fun startSpan(spanName: String, parentId: String? = null): NdkSpan? {
+        if (tracerPointer == null) {
+            Log.v("NdkTracer", "Tracer instance is null")
+            return null
+        }
+        val spanId: String
+        measureNanoTime {
+            spanId = nativeStartSpan(tracerPointer, spanName, parentId)
+        }.let {
+            Log.v("NdkTracer", "Span was started in ${it.toMilliseconds()} ms")
+        }
+        return NdkSpan(tracerPointer, this, spanId, parentId)
+    }
+
+    fun finishSpan(span: NdkSpan): Boolean {
+        if (tracerPointer == null) {
+            Log.v("NdkTracer", "Tracer instance is null")
+            return false
+        }
+        val toReturn: Boolean
+        measureNanoTime {
+            toReturn = nativeFinishSpan(tracerPointer, span.spanId)
+        }.let {
+            Log.v("NdkTracer", "Span was finished in ${it.toMilliseconds()} ms")
+        }
+        return toReturn
+    }
+
     private fun loadNdkLibraries() {
         var exception: Throwable? = null
         try {
@@ -38,7 +66,7 @@ class NdkTracer {
         }
     }
 
-    fun createTracer(): Long? {
+    private fun createTracer(): Long? {
         if (!librariesLoaded) {
             Log.v("NdkTracer", "Native libraries not loaded")
             return null
@@ -52,11 +80,23 @@ class NdkTracer {
         return tracerPointer
     }
 
+
     private fun Long.toMilliseconds(): Double {
         return this / 1_000_000.0
     }
 
     // region Native methods
     private external fun nativeCreateTracer(): Long
+
+    private external fun nativeStartSpan(
+        tracerPointer: Long,
+        operationName: String,
+        parentId: String?
+    ): String
+
+    private external fun nativeFinishSpan(
+        tracerPointer: Long,
+        spanId: String
+    ): Boolean
 
 }
