@@ -24,7 +24,9 @@ internal class GesturesDetectorWrapper(
     )
 
     fun onTouchEvent(event: MotionEvent) {
-        defaultGesturesDetector.onTouchEvent(event)
+        if (defaultGesturesDetector.onTouchEvent(event)) {
+            return
+        }
         val action = event.actionMasked
         if (action == MotionEvent.ACTION_UP) {
             gestureListener.onUp(event)
