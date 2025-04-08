@@ -1,3 +1,28 @@
+# 2.20.0 / 2025-04-07
+
+* [FEATURE] Slow frames collection support. See [#2518](https://github.com/DataDog/dd-sdk-android/pull/2518)
+* [FEATURE] Introduce `UISlownessMetricDispatcher`. See [#2567](https://github.com/DataDog/dd-sdk-android/pull/2567)
+* [BUGFIX] Remove double computation of the `RUM` payload. See [#2528](https://github.com/DataDog/dd-sdk-android/pull/2528)
+* [BUGFIX] Add try-catch in `drawOnCanvas` in order to catch exceptions from `draw(canvas)` method. See [#2549](https://github.com/DataDog/dd-sdk-android/pull/2549)
+* [BUGFIX] Fix issue with missing freeze rate and slow frames rate. See [#2557](https://github.com/DataDog/dd-sdk-android/pull/2557)
+* [BUGFIX] Ignore secondary displays in `Session Replay`. See [#2574](https://github.com/DataDog/dd-sdk-android/pull/2574)
+* [IMPROVEMENT] Set the `local-ci` script to check for specific version of KtLint. See [#2526](https://github.com/DataDog/dd-sdk-android/pull/2526)
+* [IMPROVEMENT] Add missing builder function for anonymous user tracking. See [#2540](https://github.com/DataDog/dd-sdk-android/pull/2540)
+* [IMPROVEMENT] Add telemetry for pending batch files. See [#2548](https://github.com/DataDog/dd-sdk-android/pull/2548)
+* [IMPROVEMENT] Remove the possibility to read the `Tracer` config from `env` and from the config file. See [#2564](https://github.com/DataDog/dd-sdk-android/pull/2564)
+* [IMPROVEMENT] Add `traceSampleRate` to the telemetry `Configuration` events. See [#2563](https://github.com/DataDog/dd-sdk-android/pull/2563)
+* [IMPROVEMENT] Report configured distributed tracing headers as part of `Configuration` telemetry. See [#2572](https://github.com/DataDog/dd-sdk-android/pull/2572)
+* [IMPROVEMENT] Optimize features context reads in `TelemetryEventHandler`. See [#2576](https://github.com/DataDog/dd-sdk-android/pull/2576)
+* [IMPROVEMENT] Optimize `OkHttp` configuration telemetry. See [#2578](https://github.com/DataDog/dd-sdk-android/pull/2578)
+* [IMPROVEMENT] Make SDK support 16Kb page sizes. See [#2580](https://github.com/DataDog/dd-sdk-android/pull/2580)
+* [MAINTENANCE] Update AndroidX `Metrics` library to 1.0.0-beta02. See [#2546](https://github.com/DataDog/dd-sdk-android/pull/2546) 
+* [MAINTENANCE] Remove `RUM` feature check in `AndroidTracer` builder. [#2539](https://github.com/DataDog/dd-sdk-android/pull/2539)
+* [MAINTENANCE] Change `TraceWriter#write` type from `MutableList` to `List`. See [#2568](https://github.com/DataDog/dd-sdk-android/pull/2568)
+* [MAINTENANCE] Fix flaky `TraceWriterTest` M log error and proceed W write() { serialization failed }. See [#2565](https://github.com/DataDog/dd-sdk-android/pull/2565)
+* [MAINTENANCE] Fix flaky tests in `OtelTraceWriter`. See [#2571](https://github.com/DataDog/dd-sdk-android/pull/2571)
+* [MAINTENANCE] Change `OtelTraceWriter#write type` from `MutableList` to `List`. See [#2577](https://github.com/DataDog/dd-sdk-android/pull/2577)
+* [MAINTENANCE] Fix negative values in slow frames, adjusting telemetry. See [#2582](https://github.com/DataDog/dd-sdk-android/pull/2582)
+
 # 2.19.2 / 2025-03-20
 
 * [BUGFIX] Fix NPE with Metrics listener on older APIs. See[#2558](https://github.com/DataDog/dd-sdk-android/pull/2558)
