@@ -1,3 +1,28 @@
+public final class com/datadog/android/insights/DragTouchListener : android/view/View$OnTouchListener {
+	public fun <init> ()V
+	public fun <init> (Lkotlin/jvm/functions/Function1;)V
+	public synthetic fun <init> (Lkotlin/jvm/functions/Function1;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun onTouch (Landroid/view/View;Landroid/view/MotionEvent;)Z
+}
+
+public final class com/datadog/android/insights/LocalInsightOverlay : com/datadog/android/rum/internal/instrumentation/insights/InsightsUpdatesListener {
+	public fun <init> ()V
+	public final fun attach (Landroid/app/Activity;)V
+	public final fun detach (Landroid/app/Activity;)V
+	public fun onDataUpdated ()V
+}
+
+public final class com/datadog/android/insights/collector/DefaultInsightsCollector : com/datadog/android/rum/internal/instrumentation/insights/InsightsCollector {
+	public fun <init> ()V
+	public fun addUpdateListener (Lcom/datadog/android/rum/internal/instrumentation/insights/InsightsUpdatesListener;)V
+	public fun onAction ()V
+	public fun onLongTask (JJ)V
+	public fun onNetworkRequest (JJ)V
+	public fun onNewView (Ljava/lang/String;)V
+	public fun onSlowFrame (JJ)V
+	public fun removeUpdateListener (Lcom/datadog/android/rum/internal/instrumentation/insights/InsightsUpdatesListener;)V
+}
+
 public final class com/datadog/android/rum/CloseableExtKt {
 	public static final fun useMonitored (Ljava/io/Closeable;Lcom/datadog/android/api/SdkCore;Lkotlin/jvm/functions/Function1;)Ljava/lang/Object;
 	public static synthetic fun useMonitored$default (Ljava/io/Closeable;Lcom/datadog/android/api/SdkCore;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Ljava/lang/Object;
@@ -314,24 +339,18 @@ public abstract class com/datadog/android/rum/internal/instrumentation/gestures/
 	public fun onScroll (Landroid/view/MotionEvent;Landroid/view/MotionEvent;FF)Z
 }
 
-public final class com/datadog/android/rum/internal/instrumentation/insights/DefaultInsightsCollector : com/datadog/android/rum/internal/instrumentation/insights/InsightsCollector {
-	public static final field Companion Lcom/datadog/android/rum/internal/instrumentation/insights/DefaultInsightsCollector$Companion;
-	public fun <init> ()V
-	public fun onAction ()V
-	public fun onLongTask (JJ)V
-	public fun onNetworkRequest (JJ)V
-	public fun onSlowFrame (JJ)V
-}
-
-public final class com/datadog/android/rum/internal/instrumentation/insights/DefaultInsightsCollector$Companion {
-	public final fun getDEFAULT ()Lcom/datadog/android/rum/internal/instrumentation/insights/DefaultInsightsCollector;
-}
-
 public abstract interface class com/datadog/android/rum/internal/instrumentation/insights/InsightsCollector {
+	public abstract fun addUpdateListener (Lcom/datadog/android/rum/internal/instrumentation/insights/InsightsUpdatesListener;)V
 	public abstract fun onAction ()V
 	public abstract fun onLongTask (JJ)V
 	public abstract fun onNetworkRequest (JJ)V
+	public abstract fun onNewView (Ljava/lang/String;)V
 	public abstract fun onSlowFrame (JJ)V
+	public abstract fun removeUpdateListener (Lcom/datadog/android/rum/internal/instrumentation/insights/InsightsUpdatesListener;)V
+}
+
+public abstract interface class com/datadog/android/rum/internal/instrumentation/insights/InsightsUpdatesListener {
+	public abstract fun onDataUpdated ()V
 }
 
 public abstract interface class com/datadog/android/rum/internal/monitor/AdvancedNetworkRumMonitor : com/datadog/android/rum/RumMonitor {

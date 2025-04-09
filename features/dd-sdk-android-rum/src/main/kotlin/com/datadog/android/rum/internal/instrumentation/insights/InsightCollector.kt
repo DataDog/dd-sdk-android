@@ -11,14 +11,15 @@ import com.datadog.tools.annotation.NoOpImplementation
 @InternalApi
 @NoOpImplementation
 interface InsightsCollector {
-    fun onSlowFrame(startedTimestamp: Long, durationNs: Long)
     fun onAction()
+    fun onNewView(viewId: String)
     fun onLongTask(startedTimestamp: Long, durationNs: Long)
-    fun onNetworkRequest(startedTimestamp: Long, durationNs: Long)
     fun addUpdateListener(listener: InsightsUpdatesListener)
+    fun onSlowFrame(startedTimestamp: Long, durationNs: Long)
     fun removeUpdateListener(listener: InsightsUpdatesListener)
+    fun onNetworkRequest(startedTimestamp: Long, durationNs: Long)
 }
 
 interface InsightsUpdatesListener {
-    fun onUpdate()
+    fun onDataUpdated()
 }

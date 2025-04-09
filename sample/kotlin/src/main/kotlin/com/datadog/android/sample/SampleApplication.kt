@@ -54,7 +54,6 @@ import com.datadog.android.trace.Trace
 import com.datadog.android.trace.TraceConfiguration
 import com.datadog.android.trace.opentelemetry.OtelTracerProvider
 import com.datadog.android.vendor.sample.LocalServer
-import com.datadog.instant.insights.collector.DefaultInsightsCollector
 import com.facebook.stetho.Stetho
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonArray
@@ -301,6 +300,7 @@ class SampleApplication : Application() {
             .trackLongTasks(250L)
             .trackNonFatalAnrs(true)
             .setSlowFramesConfiguration(SlowFramesConfiguration.DEFAULT)
+            .setInsightsCollectionEnabled(true)
             .setViewEventMapper { event ->
                 event.context?.additionalProperties?.put(ATTR_IS_MAPPED, true)
                 event

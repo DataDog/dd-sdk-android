@@ -5,6 +5,12 @@
     android:alpha="0.8"
     android:background="@android:color/transparent">
 
+
+    <com.datadog.android.insights.TimelineView
+        android:id="@+id/timeline"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+
     <ImageView
         android:id="@+id/fab"
         android:layout_width="wrap_content"

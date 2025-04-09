@@ -3,7 +3,7 @@
  * This product includes software developed at Datadog (https://www.datadoghq.com/).
  * Copyright 2016-Present Datadog, Inc.
  */
-package com.datadog.instant.insights
+package com.datadog.android.insights.widgets
 
 import android.content.Context
 import android.graphics.Canvas
@@ -11,8 +11,7 @@ import android.graphics.Color
 import android.graphics.Paint
 import android.util.AttributeSet
 import android.view.View
-import com.datadog.instant.insights.timeline.TimelineEvent
-import kotlin.math.max
+import com.datadog.android.insights.timeline.TimelineEvent
 import kotlin.math.roundToInt
 
 internal class TimelineView @JvmOverloads constructor(
@@ -22,26 +21,28 @@ internal class TimelineView @JvmOverloads constructor(
 ) : View(context, attrs, defaultStyle) {
 
     private var data: Collection<TimelineEvent> = emptyList()
-    private var tickDurationNS = 1L
 
-    private val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+    private val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.FILL }
+    private val textPaint = Paint().apply {
         style = Paint.Style.FILL
+        color = BLACK
+        textSize = 12.px.toFloat()
     }
-
-    private val slowFramesPaint: Paint
-        get() = paint.apply { color = YELLOW }
 
     private val longTaskPaint: Paint
         get() = paint.apply { color = RED }
-
-    private val tickPaint: Paint
-        get() = paint.apply { color = GRAYS.random() }
 
     private val actionsFramesPaint: Paint
         get() = paint.apply { color = PINK }
 
     private val resourceFramesPaint: Paint
         get() = paint.apply { color = GREEN }
+
+    private val slowFramesPaint: Paint
+        get() = paint.apply { color = YELLOW }
+
+    private val tickPaint: Paint
+        get() = paint.apply { color = GRAYS.random() }
 
     private val barSize: Float
         get() = width.toFloat() / (100)
@@ -60,21 +61,23 @@ internal class TimelineView @JvmOverloads constructor(
         var xOffset = 0f
         for (item in data) {
             val paint = when (item) {
-                is TimelineEvent.Action -> actionsFramesPaint
-                is TimelineEvent.Resource -> resourceFramesPaint
-                is TimelineEvent.SlowFrame -> slowFramesPaint
                 is TimelineEvent.Tick -> tickPaint
                 is TimelineEvent.LongTask -> longTaskPaint
+                is TimelineEvent.Action -> actionsFramesPaint
+                is TimelineEvent.SlowFrame -> slowFramesPaint
+                is TimelineEvent.Resource -> resourceFramesPaint
             }
-            val barSize = barSize * max(1, item.durationNs / (tickDurationNS))
+
             canvas.drawRect(xOffset, 0f, xOffset + barSize, height.toFloat(), paint)
+            canvas.rotate(90f)
+            canvas.drawText(item.durationNs.toString(), 0f, 0f, textPaint)
+            canvas.rotate(-90f)
             xOffset += barSize
         }
     }
 
-    fun update(data: Collection<TimelineEvent>, tickDuration: Long) {
+    fun update(data: Collection<TimelineEvent>) {
         this.data = data
-        this.tickDurationNS = tickDuration * 1000_000
         invalidate()
     }
 
@@ -85,13 +88,15 @@ internal class TimelineView @JvmOverloads constructor(
 
     companion object {
         private const val ALPHA = "FF"
+
+        val BLACK = Color.parseColor("#00000000")
         val PINK = Color.parseColor("#${ALPHA}FFC0CB")
         val YELLOW = Color.parseColor("#${ALPHA}FFFF00")
         val GREEN = Color.parseColor("#${ALPHA}00FF00")
         val GRAYS = listOf(
             Color.parseColor("#${ALPHA}888888"),
-            Color.parseColor("#${ALPHA}999999"),
-            Color.parseColor("#${ALPHA}AAAAAA")
+//            Color.parseColor("#${ALPHA}999999"),
+//            Color.parseColor("#${ALPHA}AAAAAA")
 
         )
         val RED = Color.parseColor("#${ALPHA}FF0000")

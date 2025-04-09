@@ -18,17 +18,22 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.navigation.NavController
 import androidx.navigation.findNavController
 import com.datadog.android.Datadog
+import com.datadog.android.insights.LocalInsightOverlay
 import com.datadog.android.privacy.TrackingConsent
+import com.datadog.android.rum.ExperimentalRumApi
 import com.datadog.android.sample.service.LogsForegroundService
 import com.google.android.material.snackbar.Snackbar
 import timber.log.Timber
 
+@OptIn(ExperimentalRumApi::class)
 @Suppress("UndocumentedPublicProperty", "UndocumentedPublicClass")
 class NavActivity : AppCompatActivity(), TrackingConsentChangeListener {
 
     lateinit var navController: NavController
     lateinit var rootView: View
     lateinit var appInfoView: TextView
+
+    private val localInsights = LocalInsightOverlay()
 
     // region Activity
 
@@ -41,6 +46,7 @@ class NavActivity : AppCompatActivity(), TrackingConsentChangeListener {
         setContentView(R.layout.activity_nav)
         rootView = findViewById(R.id.frame_container)
         appInfoView = findViewById(R.id.app_info)
+        localInsights.attach(this)
     }
 
     override fun onStart() {
@@ -75,6 +81,7 @@ class NavActivity : AppCompatActivity(), TrackingConsentChangeListener {
 
     override fun onDestroy() {
         super.onDestroy()
+        localInsights.detach(this)
         Timber.d("onDestroy")
     }
 

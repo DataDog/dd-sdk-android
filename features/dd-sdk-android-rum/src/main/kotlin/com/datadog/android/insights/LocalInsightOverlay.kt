@@ -10,36 +10,55 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
+import androidx.core.view.isVisible
 import com.datadog.android.Datadog
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.core.InternalSdkCore
+import com.datadog.android.insights.extensions.animateRotateBy
+import com.datadog.android.insights.extensions.animateVisibility
+import com.datadog.android.insights.extensions.multiLet
+import com.datadog.android.insights.widgets.DragTouchListener
+import com.datadog.android.insights.widgets.TimelineView
+import com.datadog.android.rum.ExperimentalRumApi
 import com.datadog.android.rum.R
 import com.datadog.android.rum.internal.RumFeature
-import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector
 import com.datadog.android.rum.internal.instrumentation.insights.InsightsUpdatesListener
-import com.datadog.instant.insights.DragTouchListener
 
+@ExperimentalRumApi
 class LocalInsightOverlay : InsightsUpdatesListener {
-    private val insightsCollector: InsightsCollector?
-        get() {
-            val sdkCore = Datadog.getInstance() as InternalSdkCore
-            val rumFeature = sdkCore.getFeature(Feature.RUM_FEATURE_NAME)?.unwrap<RumFeature>()
-            return rumFeature?.insightsCollector
-        }
+
+    private var timelineView: TimelineView? = null
+
+    private val insightsCollector: DefaultInsightsCollector?
+        get() = (Datadog.getInstance() as? InternalSdkCore)
+            ?.getFeature(Feature.RUM_FEATURE_NAME)
+            ?.unwrap<RumFeature>()
+            ?.insightsCollector as? DefaultInsightsCollector
 
     fun attach(activity: Activity) {
-        val container = activity.window.decorView as ViewGroup
-        val overlay = LayoutInflater.from(activity).inflate(
+        val overlayView = LayoutInflater.from(activity).inflate(
             R.layout.layout_dd_instant_insights_overlay,
-            container,
+            activity.window.decorView as ViewGroup,
             true
         )
-        overlay.findViewById<View>(R.id.fab).apply {
-            setOnTouchListener(DragTouchListener())
-            setOnClickListener {
-                Toast.makeText(activity, "Click", Toast.LENGTH_SHORT).show()
+
+        timelineView = overlayView.findViewById<TimelineView>(R.id.timeline)
+            .apply { setOnTouchListener(DragTouchListener()) }
+
+        overlayView.findViewById<View>(R.id.fab)
+            .apply {
+                setOnTouchListener(
+                    DragTouchListener(
+                        onUp = { animateRotateBy(360 - (rotation % 360)) }
+                    )
+                )
+                setOnClickListener {
+                    timelineView?.let {
+                        it.animateVisibility(!it.isVisible)
+                    }
+                    Toast.makeText(activity, "Click", Toast.LENGTH_SHORT).show()
+                }
             }
-        }
 
         insightsCollector?.addUpdateListener(this)
     }
@@ -48,6 +67,9 @@ class LocalInsightOverlay : InsightsUpdatesListener {
         insightsCollector?.removeUpdateListener(this)
     }
 
-    override fun onUpdate() {
+    override fun onDataUpdated() {
+        multiLet(insightsCollector, timelineView) { collector, timeline ->
+            timeline.update(collector.state)
+        }
     }
 }
