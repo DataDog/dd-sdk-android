@@ -1,0 +1,29 @@
+name: Publish Changelog to Confluence
+on:
+    pull_request:
+        branches:
+            - develop
+        paths:
+            - 'CHANGELOG.md'
+jobs:
+    publish:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v2
+
+            - name: Prepare Only Changelog
+              run: |
+                  mkdir -p publish_folder
+                  cp CHANGELOG.md publish_folder/
+                  echo "Publishing only CHANGELOG.md"
+
+            - name: Publish Markdown to Confluence
+              uses: markdown-confluence/publish-action@v5
+              with:
+                  confluenceBaseUrl: ${{ secrets.CONFLUENCE_BASE_URL }}
+                  confluenceParentId: ${{ secrets.CONFLUENCE_PARENT_ID }}
+                  atlassianUserName: ${{ secrets.ATLASSIAN_USERNAME }}
+                  atlassianApiToken: ${{ secrets.ATLASSIAN_API_TOKEN }}
+                  contentRoot: '.'
+                  folderToPublish: 'publish_folder'
