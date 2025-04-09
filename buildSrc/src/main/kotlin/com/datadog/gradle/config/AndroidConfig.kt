@@ -70,11 +70,6 @@ fun Project.androidLibraryConfig() {
             checkReleaseBuilds = false
             checkGeneratedSources = true
             ignoreTestSources = true
-            disable.addAll(
-                listOf(
-                    "UseKtx" // https://googlesamples.github.io/android-custom-lint-rules/checks/UseKtx.md.html
-                )
-            )
         }
 
         packaging {
