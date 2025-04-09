@@ -11,7 +11,7 @@ import android.graphics.Color
 import android.graphics.Paint
 import android.util.AttributeSet
 import android.view.View
-import com.datadog.android.insights.timeline.TimelineEvent
+import com.datadog.android.insights.domain.TimelineEvent
 import kotlin.math.roundToInt
 
 internal class TimelineView @JvmOverloads constructor(
@@ -21,12 +21,14 @@ internal class TimelineView @JvmOverloads constructor(
 ) : View(context, attrs, defaultStyle) {
 
     private var data: Collection<TimelineEvent> = emptyList()
+    private var maxSize: Int = 100
 
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.FILL }
     private val textPaint = Paint().apply {
         style = Paint.Style.FILL
         color = BLACK
-        textSize = 12.px.toFloat()
+        letterSpacing = 0.1f
+        textSize = 8.px.toFloat()
     }
 
     private val longTaskPaint: Paint
@@ -45,7 +47,7 @@ internal class TimelineView @JvmOverloads constructor(
         get() = paint.apply { color = GRAYS.random() }
 
     private val barSize: Float
-        get() = width.toFloat() / (100)
+        get() = width.toFloat() / (maxSize)
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
         val minW = 100 + paddingLeft + paddingRight
@@ -69,15 +71,22 @@ internal class TimelineView @JvmOverloads constructor(
             }
 
             canvas.drawRect(xOffset, 0f, xOffset + barSize, height.toFloat(), paint)
-            canvas.rotate(90f)
-            canvas.drawText(item.durationNs.toString(), 0f, 0f, textPaint)
-            canvas.rotate(-90f)
+//            if (item.durationNs.ms > 0) {
+                canvas.save()
+                canvas.rotate(90f, xOffset, 0f)
+                val text = item.durationNs.ms.toString()
+                val textWidth = textPaint.measureText(text)
+                canvas.drawText(text, xOffset + height.toFloat() - textWidth, 0f, textPaint)
+                canvas.restore()
+//            }
             xOffset += barSize
         }
     }
 
-    fun update(data: Collection<TimelineEvent>) {
+    fun update(data: Collection<TimelineEvent>, maxSize: Int) {
         this.data = data
+        this.maxSize = maxSize
+        this.textPaint.textSize = 1.5f * barSize
         invalidate()
     }
 
@@ -86,10 +95,13 @@ internal class TimelineView @JvmOverloads constructor(
             return (this * context.resources.displayMetrics.density).roundToInt()
         }
 
+    private val Long.ms: Long
+        get() = this / 1_000_000L
+
     companion object {
         private const val ALPHA = "FF"
 
-        val BLACK = Color.parseColor("#00000000")
+        val BLACK = Color.parseColor("#${ALPHA}000000")
         val PINK = Color.parseColor("#${ALPHA}FFC0CB")
         val YELLOW = Color.parseColor("#${ALPHA}FFFF00")
         val GREEN = Color.parseColor("#${ALPHA}00FF00")

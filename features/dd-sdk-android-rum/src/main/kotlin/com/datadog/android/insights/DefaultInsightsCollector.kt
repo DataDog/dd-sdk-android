@@ -7,7 +7,7 @@ package com.datadog.android.insights
 
 import android.os.Handler
 import android.os.Looper
-import com.datadog.android.insights.timeline.TimelineEvent
+import com.datadog.android.insights.domain.TimelineEvent
 import com.datadog.android.internal.collections.EvictingQueue
 import com.datadog.android.lint.InternalApi
 import com.datadog.android.rum.ExperimentalRumApi
@@ -16,10 +16,12 @@ import com.datadog.android.rum.internal.instrumentation.insights.InsightsUpdates
 
 @InternalApi
 @ExperimentalRumApi
-class DefaultInsightsCollector : InsightsCollector {
+class DefaultInsightsCollector(
+    internal val maxSize: Int = 75
+) : InsightsCollector {
 
     internal val state: List<TimelineEvent> get() = events.toList()
-    private val events = EvictingQueue<TimelineEvent>(maxSize = 100)
+    private val events = EvictingQueue<TimelineEvent>(maxSize)
     private val updatesListeners = mutableSetOf<InsightsUpdatesListener>()
     private val handler = Handler(Looper.getMainLooper())
     private val ticksProducer = Runnable {

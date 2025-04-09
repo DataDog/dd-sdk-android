@@ -18,19 +18,19 @@ internal fun View.animateVisibility(newVisibilityState: Boolean) {
     alpha = if (newVisibilityState) 0f else 1f
     isVisible = true
 
-    newSingleAnimation()
+    newOnlyAnimation()
         .alpha(1f - alpha)
         .setDuration(ANIMATION_DURATION)
         .withEndAction { isVisible = newVisibilityState }
         .start()
 }
 
-internal fun View.animateRotateBy(value: Float) = newSingleAnimation()
+internal fun View.animateRotateBy(value: Float) = newOnlyAnimation()
     .rotationBy(value)
     .setDuration(ANIMATION_DURATION)
     .start()
 
-internal fun View.animateDragTo(x: Float, y: Float) = newSingleAnimation()
+internal fun View.animateDragTo(x: Float, y: Float) = newOnlyAnimation()
     .x(
         x.clip(
             width,
@@ -48,4 +48,4 @@ internal fun View.animateDragTo(x: Float, y: Float) = newSingleAnimation()
     .setDuration(0)
     .start()
 
-internal fun View.newSingleAnimation() = animate().apply { cancel() }
+internal fun View.newOnlyAnimation() = animate().apply { cancel() }

@@ -69,7 +69,7 @@ class LocalInsightOverlay : InsightsUpdatesListener {
 
     override fun onDataUpdated() {
         multiLet(insightsCollector, timelineView) { collector, timeline ->
-            timeline.update(collector.state)
+            timeline.update(collector.state, collector.maxSize)
         }
     }
 }
