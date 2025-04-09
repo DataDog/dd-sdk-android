@@ -6,6 +6,7 @@
 
 package com.datadog.trace.core
 
+import com.datadog.android.internal.utils.safeGetThreadId
 import com.datadog.tools.unit.getFieldValue
 import com.datadog.trace.api.Config
 import com.datadog.trace.api.DDSpanId
@@ -331,7 +332,7 @@ internal class CoreSpanBuilderTest : DDCoreSpecification() {
         extractedContext.tags.filterKeys { it != DDTags.ORIGIN_KEY }.forEach { (key, value) ->
             assertThat(span.context().tags[key]).isEqualTo(value)
         }
-        assertThat(span.getTag(DDTags.THREAD_ID)).isEqualTo(thread.id)
+        assertThat(span.getTag(DDTags.THREAD_ID)).isEqualTo(thread.safeGetThreadId())
         assertThat(span.getTag(DDTags.THREAD_NAME)).isEqualTo(thread.name)
         assertThat(span.context().propagationTags.headerValue(PropagationTags.HeaderType.DATADOG)).isEqualTo(
             extractedContext.propagationTags.headerValue(PropagationTags.HeaderType.DATADOG)
@@ -358,7 +359,7 @@ internal class CoreSpanBuilderTest : DDCoreSpecification() {
                     DDTags.RUNTIME_ID_TAG to Config.get().getRuntimeId(),
                     DDTags.LANGUAGE_TAG_KEY to DDTags.LANGUAGE_TAG_VALUE,
                     DDTags.THREAD_NAME to thread.name,
-                    DDTags.THREAD_ID to thread.id,
+                    DDTags.THREAD_ID to thread.safeGetThreadId(),
                     DDTags.PID_TAG to Config.get().processId,
                     DDTags.SCHEMA_VERSION_TAG_KEY to SpanNaming.instance().version(),
                     DDTags.PROFILING_ENABLED to if (Config.get().isProfilingEnabled()) 1 else 0
@@ -380,7 +381,7 @@ internal class CoreSpanBuilderTest : DDCoreSpecification() {
             tags +
                 mapOf(
                     DDTags.THREAD_NAME to Thread.currentThread().name,
-                    DDTags.THREAD_ID to Thread.currentThread().id,
+                    DDTags.THREAD_ID to Thread.currentThread().safeGetThreadId(),
                     DDTags.RUNTIME_ID_TAG to Config.get().getRuntimeId(),
                     DDTags.LANGUAGE_TAG_KEY to DDTags.LANGUAGE_TAG_VALUE,
                     DDTags.PID_TAG to Config.get().getProcessId(),

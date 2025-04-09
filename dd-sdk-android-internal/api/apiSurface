@@ -50,6 +50,7 @@ fun Int.densityNormalized(Float): Int
 fun Long.densityNormalized(Float): Long
 fun StringBuilder.appendIfNotEmpty(String)
 fun StringBuilder.appendIfNotEmpty(Char)
+fun Thread.safeGetThreadId(): Long
 fun Throwable.loggableStackTrace(): String
 annotation com.datadog.tools.annotation.NoOpImplementation
   constructor(Boolean = false)
