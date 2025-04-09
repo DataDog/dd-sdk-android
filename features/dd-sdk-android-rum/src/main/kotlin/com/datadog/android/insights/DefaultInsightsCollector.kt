@@ -21,23 +21,25 @@ class DefaultInsightsCollector(
     updateIntervalMs: Long = 100L,
 ) : InsightsCollector {
 
+    private val handler = Handler(Looper.getMainLooper())
     private var events = EvictingQueue<TimelineEvent>(maxSize)
     private val updatesListeners = mutableSetOf<InsightsUpdatesListener>()
-    private val handler = Handler(Looper.getMainLooper())
     private val ticksProducer = Runnable {
         registerEvent(TimelineEvent.Tick)
         postTickProducer()
     }
 
-    internal val state: List<TimelineEvent> get() = events.toList()
+    internal val eventsState: List<TimelineEvent> get() = events.toList()
+    internal var viewName: String = ""
+        private set
 
-    override var maxSize = maxSize
+    override var maxSize: Int = maxSize
         set(value) {
             field = value
             events = EvictingQueue(value)
         }
 
-    override var updateIntervalMs = updateIntervalMs
+    override var updateIntervalMs: Long = updateIntervalMs
         set(value) {
             field = value
             handler.removeCallbacksAndMessages(null)
@@ -52,7 +54,8 @@ class DefaultInsightsCollector(
         TimelineEvent.Action
     )
 
-    override fun onNewView(viewId: String) {
+    override fun onNewView(viewId: String, viewName: String) {
+        this.viewName = viewName
         clear()
     }
 
@@ -78,11 +81,15 @@ class DefaultInsightsCollector(
 
     private fun registerEvent(event: TimelineEvent) {
         events += event
-        updatesListeners.forEach(InsightsUpdatesListener::onDataUpdated)
+        notifyListeners()
     }
 
     private fun clear() {
         events.clear()
+        notifyListeners()
+    }
+
+    private fun notifyListeners() = handler.post {
         updatesListeners.forEach(InsightsUpdatesListener::onDataUpdated)
     }
 

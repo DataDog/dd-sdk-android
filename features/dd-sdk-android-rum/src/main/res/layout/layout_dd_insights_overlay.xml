@@ -2,13 +2,16 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:alpha="0.8"
     android:background="@android:color/transparent">
 
 
-    <com.datadog.android.insights.widgets.TimelineView
-        android:id="@+id/timeline"
+    <include
+        android:id="@+id/insights_widget"
+        layout="@layout/layout_dd_insights_widget"
         android:layout_width="match_parent"
+        android:layout_marginStart="8dp"
+        android:layout_gravity="bottom"
+        android:layout_marginEnd="8dp"
         android:layout_height="wrap_content" />
 
     <ImageView

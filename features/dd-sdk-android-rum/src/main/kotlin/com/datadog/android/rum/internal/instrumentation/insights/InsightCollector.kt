@@ -14,7 +14,7 @@ interface InsightsCollector {
     var maxSize: Int
     var updateIntervalMs: Long
     fun onAction()
-    fun onNewView(viewId: String)
+    fun onNewView(viewId: String, viewName : String)
     fun onLongTask(startedTimestamp: Long, durationNs: Long)
     fun addUpdateListener(listener: InsightsUpdatesListener)
     fun onSlowFrame(startedTimestamp: Long, durationNs: Long)

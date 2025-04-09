@@ -1,5 +1,7 @@
 class com.datadog.android.insights.DefaultInsightsCollector : com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector
-  constructor(Int = 75)
+  constructor(Int = 50, Long = 100L)
+  override var maxSize: Int
+  override var updateIntervalMs: Long
   override fun onAction()
   override fun onNewView(String)
   override fun onSlowFrame(Long, Long)
@@ -195,6 +197,8 @@ interface com.datadog.android.rum.event.ViewEventMapper : com.datadog.android.ev
 data class com.datadog.android.rum.internal.domain.event.ResourceTiming
   constructor(Long = 0L, Long = 0L, Long = 0L, Long = 0L, Long = 0L, Long = 0L, Long = 0L, Long = 0L, Long = 0L, Long = 0L)
 interface com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector
+  var maxSize: Int
+  var updateIntervalMs: Long
   fun onAction()
   fun onNewView(String)
   fun onLongTask(Long, Long)

@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
+  ~ This product includes software developed at Datadog (https://www.datadoghq.com/).
+  ~ Copyright 2016-Present Datadog, Inc.
+  -->
+
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/rounded_white_background"
+    android:elevation="4dp"
+    android:orientation="vertical"
+    android:padding="8dp">
+
+    <ImageView
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:importantForAccessibility="no"
+        android:src="@drawable/dd_round" />
+
+    <!--
+    layout_marginTop = (40 - 14) / 2 = 13: ImageView center
+    layout_marginStart = 40 + 8 = 48:  ImageView + Margin
+    -->
+    <TextView
+        android:id="@+id/view_name"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="48dp"
+        android:layout_marginTop="13dp"
+        android:ellipsize="start"
+        android:singleLine="true"
+        android:includeFontPadding="false"
+        android:textColor="@android:color/black"
+        android:textSize="14sp" />
+
+    <com.datadog.android.insights.widgets.TimelineView
+        android:id="@+id/timeline"
+        android:layout_width="match_parent"
+        android:layout_height="40dp"
+        android:layout_marginTop="56dp" />
+
+</FrameLayout>

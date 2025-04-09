@@ -8,9 +8,11 @@ package com.datadog.android.insights.widgets
 import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Color
+import android.graphics.Outline
 import android.graphics.Paint
 import android.util.AttributeSet
 import android.view.View
+import android.view.ViewOutlineProvider
 import com.datadog.android.insights.domain.TimelineEvent
 import kotlin.math.roundToInt
 
@@ -50,12 +52,20 @@ internal class TimelineView @JvmOverloads constructor(
     private val barSize: Float
         get() = width.toFloat() / (maxSize)
 
+    init {
+        outlineProvider = object : ViewOutlineProvider() {
+            override fun getOutline(view: View, outline: Outline) {
+                outline.setRoundRect(0, 0, view.width, view.height, 12.px.toFloat())
+            }
+        }
+        clipToOutline = true
+    }
+
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
         val minW = 100 + paddingLeft + paddingRight
-        val minH = 100 + paddingTop + paddingBottom
 
         val w = resolveSize(minW, widthMeasureSpec)
-        val h = 80.px
+        val h = getDefaultSize(suggestedMinimumHeight, heightMeasureSpec)
 
         setMeasuredDimension(w, h)
     }

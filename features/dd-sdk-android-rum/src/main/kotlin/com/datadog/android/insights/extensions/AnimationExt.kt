@@ -12,13 +12,17 @@ import androidx.core.view.marginEnd
 import androidx.core.view.marginStart
 import androidx.core.view.marginTop
 
-private const val ANIMATION_DURATION = 500L
+private const val ANIMATION_DURATION = 300L
 
 internal fun View.animateVisibility(newVisibilityState: Boolean) {
-    alpha = if (newVisibilityState) 0f else 1f
+    scaleX = if (!isVisible) 0f else 1f
+    scaleY = if (!isVisible) 0f else 1f
+    alpha = if (!isVisible) 0f else 1f
     isVisible = true
 
     newOnlyAnimation()
+        .scaleX(1f - scaleX)
+        .scaleY(1f - scaleY)
         .alpha(1f - alpha)
         .setDuration(ANIMATION_DURATION)
         .withEndAction { isVisible = newVisibilityState }

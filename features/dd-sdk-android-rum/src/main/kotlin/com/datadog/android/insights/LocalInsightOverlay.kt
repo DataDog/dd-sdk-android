@@ -9,7 +9,7 @@ import android.app.Activity
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Toast
+import android.widget.TextView
 import androidx.core.view.isVisible
 import com.datadog.android.Datadog
 import com.datadog.android.api.feature.Feature
@@ -27,6 +27,7 @@ import com.datadog.android.rum.internal.instrumentation.insights.InsightsUpdates
 @ExperimentalRumApi
 class LocalInsightOverlay : InsightsUpdatesListener {
 
+    private var viewName: TextView? = null
     private var timelineView: TimelineView? = null
 
     private val insightsCollector: DefaultInsightsCollector?
@@ -37,13 +38,16 @@ class LocalInsightOverlay : InsightsUpdatesListener {
 
     fun attach(activity: Activity) {
         val overlayView = LayoutInflater.from(activity).inflate(
-            R.layout.layout_dd_instant_insights_overlay,
+            R.layout.layout_dd_insights_overlay,
             activity.window.decorView as ViewGroup,
             true
         )
+        val widgetView = overlayView.findViewById<View>(R.id.insights_widget)
 
-        timelineView = overlayView.findViewById<TimelineView>(R.id.timeline)
-            .apply { setOnTouchListener(DragTouchListener()) }
+        overlayView.findViewById<View>(R.id.insights_widget).setOnTouchListener(DragTouchListener())
+
+        timelineView = overlayView.findViewById(R.id.timeline)
+        viewName = overlayView.findViewById(R.id.view_name)
 
         overlayView.findViewById<View>(R.id.fab)
             .apply {
@@ -53,10 +57,7 @@ class LocalInsightOverlay : InsightsUpdatesListener {
                     )
                 )
                 setOnClickListener {
-                    timelineView?.let {
-                        it.animateVisibility(!it.isVisible)
-                    }
-                    Toast.makeText(activity, "Click", Toast.LENGTH_SHORT).show()
+                    widgetView?.animateVisibility(!widgetView.isVisible)
                 }
             }
 
@@ -69,7 +70,8 @@ class LocalInsightOverlay : InsightsUpdatesListener {
 
     override fun onDataUpdated() {
         multiLet(insightsCollector, timelineView) { collector, timeline ->
-            timeline.update(collector.state, collector.maxSize)
+            timeline.update(collector.eventsState, collector.maxSize)
+            viewName?.text = collector.viewName
         }
     }
 }

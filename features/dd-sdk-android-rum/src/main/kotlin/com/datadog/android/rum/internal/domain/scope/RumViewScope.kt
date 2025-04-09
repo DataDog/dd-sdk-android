@@ -180,7 +180,7 @@ internal open class RumViewScope(
         networkSettledMetricResolver.viewWasCreated(eventTime.nanoTime)
         interactionToNextViewMetricResolver.onViewCreated(viewId, eventTime.nanoTime)
         slowFramesListener?.onViewCreated(viewId, startedNanos)
-        insightsCollector.onNewView(viewId)
+        insightsCollector.onNewView(viewId, key.url)
     }
 
     // region RumScope

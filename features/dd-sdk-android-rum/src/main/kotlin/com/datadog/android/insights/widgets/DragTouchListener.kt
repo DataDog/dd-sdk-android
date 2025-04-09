@@ -33,8 +33,8 @@ internal class DragTouchListener(
             }
 
             MotionEvent.ACTION_UP -> {
-                view.onUp()
                 if (!isMovementDetected) {
+                    view.onUp()
                     view.performClick()
                 }
             }
