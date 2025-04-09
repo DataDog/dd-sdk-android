@@ -33,16 +33,16 @@ internal fun View.animateRotateBy(value: Float) = newOnlyAnimation()
 internal fun View.animateDragTo(x: Float, y: Float) = newOnlyAnimation()
     .x(
         x.clip(
-            width,
-            marginStart,
-            resources.displayMetrics.widthPixels - marginEnd
+            size = width,
+            min = marginStart,
+            max = resources.displayMetrics.widthPixels - marginEnd
         )
     )
     .y(
         y.clip(
-            height,
-            marginTop,
-            resources.displayMetrics.heightPixels - marginBottom
+            size = height,
+            min = marginTop,
+            max = resources.displayMetrics.heightPixels - marginBottom
         )
     )
     .setDuration(0)

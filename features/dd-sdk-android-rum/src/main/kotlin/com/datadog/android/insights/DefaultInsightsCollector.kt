@@ -17,17 +17,32 @@ import com.datadog.android.rum.internal.instrumentation.insights.InsightsUpdates
 @InternalApi
 @ExperimentalRumApi
 class DefaultInsightsCollector(
-    internal val maxSize: Int = 75
+    maxSize: Int = 50,
+    updateIntervalMs: Long = 100L,
 ) : InsightsCollector {
 
-    internal val state: List<TimelineEvent> get() = events.toList()
-    private val events = EvictingQueue<TimelineEvent>(maxSize)
+    private var events = EvictingQueue<TimelineEvent>(maxSize)
     private val updatesListeners = mutableSetOf<InsightsUpdatesListener>()
     private val handler = Handler(Looper.getMainLooper())
     private val ticksProducer = Runnable {
         registerEvent(TimelineEvent.Tick)
         postTickProducer()
     }
+
+    internal val state: List<TimelineEvent> get() = events.toList()
+
+    override var maxSize = maxSize
+        set(value) {
+            field = value
+            events = EvictingQueue(value)
+        }
+
+    override var updateIntervalMs = updateIntervalMs
+        set(value) {
+            field = value
+            handler.removeCallbacksAndMessages(null)
+            postTickProducer()
+        }
 
     init {
         postTickProducer()
@@ -72,6 +87,8 @@ class DefaultInsightsCollector(
     }
 
     private fun postTickProducer() {
-        handler.postDelayed(ticksProducer, 100)
+        if (updateIntervalMs > 0) {
+            handler.postDelayed(ticksProducer, updateIntervalMs)
+        }
     }
 }

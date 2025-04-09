@@ -11,6 +11,8 @@ import com.datadog.tools.annotation.NoOpImplementation
 @InternalApi
 @NoOpImplementation
 interface InsightsCollector {
+    var maxSize: Int
+    var updateIntervalMs: Long
     fun onAction()
     fun onNewView(viewId: String)
     fun onLongTask(startedTimestamp: Long, durationNs: Long)

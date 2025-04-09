@@ -24,11 +24,12 @@ internal class TimelineView @JvmOverloads constructor(
     private var maxSize: Int = 100
 
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.FILL }
-    private val textPaint = Paint().apply {
-        style = Paint.Style.FILL
+    private val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        style = Paint.Style.FILL_AND_STROKE
         color = BLACK
-        letterSpacing = 0.1f
+        letterSpacing = 0.2f
         textSize = 8.px.toFloat()
+        strokeWidth = 1f
     }
 
     private val longTaskPaint: Paint
@@ -71,14 +72,14 @@ internal class TimelineView @JvmOverloads constructor(
             }
 
             canvas.drawRect(xOffset, 0f, xOffset + barSize, height.toFloat(), paint)
-//            if (item.durationNs.ms > 0) {
+            if (item.durationNs.ms > 0 || (item !is TimelineEvent.Tick && item !is TimelineEvent.Action)) {
                 canvas.save()
                 canvas.rotate(90f, xOffset, 0f)
                 val text = item.durationNs.ms.toString()
                 val textWidth = textPaint.measureText(text)
                 canvas.drawText(text, xOffset + height.toFloat() - textWidth, 0f, textPaint)
                 canvas.restore()
-//            }
+            }
             xOffset += barSize
         }
     }
@@ -86,7 +87,7 @@ internal class TimelineView @JvmOverloads constructor(
     fun update(data: Collection<TimelineEvent>, maxSize: Int) {
         this.data = data
         this.maxSize = maxSize
-        this.textPaint.textSize = 1.5f * barSize
+        this.textPaint.textSize = 1.4f * barSize
         invalidate()
     }
 
