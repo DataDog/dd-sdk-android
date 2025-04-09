@@ -13,7 +13,7 @@ import com.datadog.tools.annotation.NoOpImplementation
  * benchmarking.
  */
 @NoOpImplementation
-interface BenchmarkSdkPerformance {
+interface BenchmarkSdkUploads {
 
     /**
      * Get a [BenchmarkMeter] for the given operation.

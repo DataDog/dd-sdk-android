@@ -12,11 +12,9 @@ import com.datadog.android.api.storage.EventBatchWriter
 import com.datadog.android.api.storage.EventType
 import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.core.internal.data.upload.DataOkHttpUploader.Companion.HTTP_ACCEPTED
-import com.datadog.android.core.internal.data.upload.DataUploadRunnable.Companion.METER_NAME
-import com.datadog.android.core.internal.metrics.BatchMetricsDispatcher.Companion.TRACK_KEY
+import com.datadog.android.core.internal.metrics.BenchmarkUploads
 import com.datadog.android.core.internal.metrics.MetricsDispatcher
 import com.datadog.android.core.internal.metrics.RemovalReason
-import com.datadog.android.core.internal.persistence.ConsentAwareStorage.Companion.BENCHMARK_BYTES_DELETED
 import com.datadog.android.core.internal.persistence.file.FileMover
 import com.datadog.android.core.internal.persistence.file.FileOrchestrator
 import com.datadog.android.core.internal.persistence.file.FilePersistenceConfig
@@ -25,9 +23,6 @@ import com.datadog.android.core.internal.persistence.file.batch.BatchFileReaderW
 import com.datadog.android.core.internal.privacy.ConsentProvider
 import com.datadog.android.core.metrics.PerformanceMetric
 import com.datadog.android.core.metrics.TelemetryMetricType
-import com.datadog.android.internal.profiler.BenchmarkCounter
-import com.datadog.android.internal.profiler.BenchmarkMeter
-import com.datadog.android.internal.profiler.BenchmarkSdkPerformance
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.verifyLog
@@ -99,7 +94,7 @@ internal class ConsentAwareStorageTest {
     lateinit var mockInternalLogger: InternalLogger
 
     @Mock
-    lateinit var mockBenchmarkSdkPerformance: BenchmarkSdkPerformance
+    lateinit var mockBenchmarkUploads: BenchmarkUploads
 
     @Mock
     lateinit var mockFilePersistenceConfig: FilePersistenceConfig
@@ -828,7 +823,7 @@ internal class ConsentAwareStorageTest {
             metricsDispatcher = mockMetricsDispatcher,
             consentProvider = mockConsentProvider,
             featureName = fakeFeatureName,
-            benchmarkSdkPerformance = mockBenchmarkSdkPerformance
+            benchmarkUploads = mockBenchmarkUploads
         )
 
         whenever(mockFileMover.delete(mockFile)).thenReturn(true)
@@ -841,13 +836,6 @@ internal class ConsentAwareStorageTest {
         val batchData1 = testedStorage.readNextBatch()
         whenever(mockFile.length()).thenReturn(fakeFileSize)
 
-        val mockMeter: BenchmarkMeter = mock()
-        val mockBenchmarkUploadCounter: BenchmarkCounter = mock()
-        whenever(mockBenchmarkSdkPerformance.getMeter(METER_NAME))
-            .thenReturn(mockMeter)
-        whenever(mockMeter.getCounter(BENCHMARK_BYTES_DELETED))
-            .thenReturn(mockBenchmarkUploadCounter)
-
         // When
         testedStorage.confirmBatchRead(
             batchId = batchData1!!.id,
@@ -856,12 +844,7 @@ internal class ConsentAwareStorageTest {
         )
 
         // Then
-        verify(
-            mockBenchmarkSdkPerformance
-                .getMeter(METER_NAME)
-                .getCounter(BENCHMARK_BYTES_DELETED)
-        )
-            .add(fakeFileSize, mapOf(TRACK_KEY to fakeFeatureName))
+        verify(mockBenchmarkUploads).sendBenchmarkBytesDeleted(any(), any())
     }
 
     @Test
@@ -884,7 +867,7 @@ internal class ConsentAwareStorageTest {
             metricsDispatcher = mockMetricsDispatcher,
             consentProvider = mockConsentProvider,
             featureName = fakeFeatureName,
-            benchmarkSdkPerformance = mockBenchmarkSdkPerformance
+            benchmarkUploads = mockBenchmarkUploads
         )
 
         whenever(mockFileMover.delete(mockFile)).thenReturn(true)
@@ -897,13 +880,6 @@ internal class ConsentAwareStorageTest {
         val batchData1 = testedStorage.readNextBatch()
         whenever(mockFile.length()).thenReturn(fakeFileSize)
 
-        val mockMeter: BenchmarkMeter = mock()
-        val mockBenchmarkUploadCounter: BenchmarkCounter = mock()
-        whenever(mockBenchmarkSdkPerformance.getMeter(METER_NAME))
-            .thenReturn(mockMeter)
-        whenever(mockMeter.getCounter(BENCHMARK_BYTES_DELETED))
-            .thenReturn(mockBenchmarkUploadCounter)
-
         // When
         testedStorage.confirmBatchRead(
             batchId = batchData1!!.id,
@@ -912,13 +888,7 @@ internal class ConsentAwareStorageTest {
         )
 
         // Then
-        verify(
-            mockBenchmarkSdkPerformance
-                .getMeter(METER_NAME)
-                .getCounter(BENCHMARK_BYTES_DELETED),
-            never()
-        )
-            .add(any(), any())
+        verify(mockBenchmarkUploads, never()).sendBenchmarkBytesDeleted(any(), any())
     }
 
     // endregion

@@ -12,19 +12,13 @@ import com.datadog.android.api.context.NetworkInfo
 import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.core.configuration.UploadSchedulerStrategy
 import com.datadog.android.core.internal.ContextProvider
-import com.datadog.android.core.internal.data.upload.DataUploadRunnable.Companion.BENCHMARK_BYTES_UPLOADED
-import com.datadog.android.core.internal.data.upload.DataUploadRunnable.Companion.BENCHMARK_UPLOAD_COUNT
-import com.datadog.android.core.internal.data.upload.DataUploadRunnable.Companion.METER_NAME
-import com.datadog.android.core.internal.metrics.BatchMetricsDispatcher.Companion.TRACK_KEY
+import com.datadog.android.core.internal.metrics.BenchmarkUploads
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.persistence.BatchData
 import com.datadog.android.core.internal.persistence.BatchId
 import com.datadog.android.core.internal.persistence.Storage
 import com.datadog.android.core.internal.system.SystemInfo
 import com.datadog.android.core.internal.system.SystemInfoProvider
-import com.datadog.android.internal.profiler.BenchmarkCounter
-import com.datadog.android.internal.profiler.BenchmarkMeter
-import com.datadog.android.internal.profiler.BenchmarkSdkPerformance
 import com.datadog.android.utils.forge.Configurator
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
@@ -85,7 +79,7 @@ internal class DataUploadRunnableTest {
     lateinit var mockSystemInfoProvider: SystemInfoProvider
 
     @Mock
-    lateinit var mockBenchmarkSdkPerformance: BenchmarkSdkPerformance
+    lateinit var mockBenchmarkUploads: BenchmarkUploads
 
     @Mock
     lateinit var mockContextProvider: ContextProvider
@@ -719,26 +713,14 @@ internal class DataUploadRunnableTest {
             uploadSchedulerStrategy = mockUploadSchedulerStrategy,
             maxBatchesPerJob = fakeMaxBatchesPerJob,
             internalLogger = mockInternalLogger,
-            benchmarkSdkPerformance = mockBenchmarkSdkPerformance
+            benchmarkUploads = mockBenchmarkUploads
         )
-
-        val mockMeter: BenchmarkMeter = mock()
-        val mockCounter: BenchmarkCounter = mock()
-        whenever(mockBenchmarkSdkPerformance.getMeter(METER_NAME))
-            .thenReturn(mockMeter)
-        whenever(mockMeter.getCounter(BENCHMARK_UPLOAD_COUNT))
-            .thenReturn(mockCounter)
 
         // When
         testedRunnable.run()
 
         // Then
-        verify(
-            mockBenchmarkSdkPerformance
-                .getMeter(METER_NAME)
-                .getCounter(BENCHMARK_UPLOAD_COUNT)
-        )
-            .add(1, mapOf(TRACK_KEY to fakeFeatureName))
+        verify(mockBenchmarkUploads).incrementBenchmarkUploadsCount(any())
     }
 
     @Test
@@ -757,15 +739,8 @@ internal class DataUploadRunnableTest {
             uploadSchedulerStrategy = mockUploadSchedulerStrategy,
             maxBatchesPerJob = fakeMaxBatchesPerJob,
             internalLogger = mockInternalLogger,
-            benchmarkSdkPerformance = mockBenchmarkSdkPerformance
+            benchmarkUploads = mockBenchmarkUploads
         )
-
-        val mockMeter: BenchmarkMeter = mock()
-        val mockBenchmarkUploadCounter: BenchmarkCounter = mock()
-        whenever(mockBenchmarkSdkPerformance.getMeter(METER_NAME))
-            .thenReturn(mockMeter)
-        whenever(mockMeter.getCounter(BENCHMARK_UPLOAD_COUNT))
-            .thenReturn(mockBenchmarkUploadCounter)
 
         whenever(mockNetworkInfoProvider.getLatestNetworkInfo())
             .thenReturn(mockNetworkInfo)
@@ -777,17 +752,11 @@ internal class DataUploadRunnableTest {
         testedRunnable.run()
 
         // Then
-        verify(
-            mockBenchmarkSdkPerformance
-                .getMeter(METER_NAME)
-                .getCounter(BENCHMARK_UPLOAD_COUNT),
-            never()
-        )
-            .add(any(), any())
+        verify(mockBenchmarkUploads, never()).incrementBenchmarkUploadsCount(any())
     }
 
     @Test
-    fun `M send batch size benchmark telemetry W run { successful upload }`(
+    fun `M send bytes uploaded benchmark telemetry W run { successful upload }`(
         forge: Forge
     ) {
         // Given
@@ -802,18 +771,8 @@ internal class DataUploadRunnableTest {
             uploadSchedulerStrategy = mockUploadSchedulerStrategy,
             maxBatchesPerJob = fakeMaxBatchesPerJob,
             internalLogger = mockInternalLogger,
-            benchmarkSdkPerformance = mockBenchmarkSdkPerformance
+            benchmarkUploads = mockBenchmarkUploads
         )
-
-        val mockMeter: BenchmarkMeter = mock()
-        val mockBenchmarkUploadCounter: BenchmarkCounter = mock()
-        val mockBytesUploadCounter: BenchmarkCounter = mock()
-        whenever(mockBenchmarkSdkPerformance.getMeter(METER_NAME))
-            .thenReturn(mockMeter)
-        whenever(mockMeter.getCounter(BENCHMARK_UPLOAD_COUNT))
-            .thenReturn(mockBenchmarkUploadCounter)
-        whenever(mockMeter.getCounter(BENCHMARK_BYTES_UPLOADED))
-            .thenReturn(mockBytesUploadCounter)
 
         val batch = forge.aList { getForgery<RawBatchEvent>() }
         val batchMeta = forge.anAsciiString()
@@ -835,16 +794,11 @@ internal class DataUploadRunnableTest {
         testedRunnable.run()
 
         // Then
-        verify(
-            mockBenchmarkSdkPerformance
-                .getMeter(METER_NAME)
-                .getCounter(BENCHMARK_BYTES_UPLOADED)
-        )
-            .add(batch.size.toLong(), mapOf(TRACK_KEY to fakeFeatureName))
+        verify(mockBenchmarkUploads).sendBenchmarkBytesUploaded(any(), any())
     }
 
     @Test
-    fun `M send batch size benchmark telemetry W run { failed upload }`(
+    fun `M not send bytes uploaded benchmark telemetry W run { failed upload }`(
         forge: Forge
     ) {
         // Given
@@ -859,18 +813,8 @@ internal class DataUploadRunnableTest {
             uploadSchedulerStrategy = mockUploadSchedulerStrategy,
             maxBatchesPerJob = fakeMaxBatchesPerJob,
             internalLogger = mockInternalLogger,
-            benchmarkSdkPerformance = mockBenchmarkSdkPerformance
+            benchmarkUploads = mockBenchmarkUploads
         )
-
-        val mockMeter: BenchmarkMeter = mock()
-        val mockBenchmarkUploadCounter: BenchmarkCounter = mock()
-        val mockBytesUploadCounter: BenchmarkCounter = mock()
-        whenever(mockBenchmarkSdkPerformance.getMeter(METER_NAME))
-            .thenReturn(mockMeter)
-        whenever(mockMeter.getCounter(BENCHMARK_UPLOAD_COUNT))
-            .thenReturn(mockBenchmarkUploadCounter)
-        whenever(mockMeter.getCounter(BENCHMARK_BYTES_UPLOADED))
-            .thenReturn(mockBytesUploadCounter)
 
         val batch = forge.aList { getForgery<RawBatchEvent>() }
         val batchMeta = forge.anAsciiString()
@@ -892,13 +836,7 @@ internal class DataUploadRunnableTest {
         testedRunnable.run()
 
         // Then
-        verify(
-            mockBenchmarkSdkPerformance
-                .getMeter(METER_NAME)
-                .getCounter(BENCHMARK_BYTES_UPLOADED),
-            never()
-        )
-            .add(any(), any())
+        verify(mockBenchmarkUploads, never()).sendBenchmarkBytesUploaded(any(), any())
     }
 
     // endregion

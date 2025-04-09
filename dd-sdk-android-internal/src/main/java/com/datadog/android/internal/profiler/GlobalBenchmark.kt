@@ -14,8 +14,8 @@ package com.datadog.android.internal.profiler
 object GlobalBenchmark {
 
     private var benchmarkProfiler: BenchmarkProfiler = NoOpBenchmarkProfiler()
-    private var benchmarkSdkPerformance: BenchmarkSdkPerformance =
-        NoOpBenchmarkSdkPerformance()
+    private var benchmarkSdkUploads: BenchmarkSdkUploads =
+        NoOpBenchmarkSdkUploads()
 
     /**
      * Registers the implementation of [BenchmarkProfiler].
@@ -25,10 +25,10 @@ object GlobalBenchmark {
     }
 
     /**
-     * Registers the implementation of [BenchmarkSdkPerformance].
+     * Registers the implementation of [BenchmarkSdkUploads].
      */
-    fun register(benchmarkSdkPerformance: BenchmarkSdkPerformance) {
-        this.benchmarkSdkPerformance = benchmarkSdkPerformance
+    fun register(benchmarkSdkUploads: BenchmarkSdkUploads) {
+        this.benchmarkSdkUploads = benchmarkSdkUploads
     }
 
     /**
@@ -39,20 +39,20 @@ object GlobalBenchmark {
     }
 
     /**
-     * Returns the [BenchmarkSdkPerformance] registered.
+     * Returns the [BenchmarkSdkUploads] registered.
      */
-    fun getSdkPerformance(): BenchmarkSdkPerformance {
-        return benchmarkSdkPerformance
+    fun getBenchmarkSdkUploads(): BenchmarkSdkUploads {
+        return benchmarkSdkUploads
     }
 
     /**
      * Creates the appropriate [ExecutionTimer].
      */
     fun createExecutionTimer(): ExecutionTimer {
-        if (benchmarkSdkPerformance is NoOpBenchmarkSdkPerformance) {
+        if (benchmarkSdkUploads is NoOpBenchmarkSdkUploads) {
             return NoOpExecutionTimer()
         }
 
-        return DDExecutionTimer(benchmarkSdkPerformance)
+        return DDExecutionTimer(benchmarkSdkUploads)
     }
 }

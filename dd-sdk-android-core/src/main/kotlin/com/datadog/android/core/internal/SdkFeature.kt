@@ -53,7 +53,7 @@ import com.datadog.android.core.internal.persistence.file.advanced.FeatureFileOr
 import com.datadog.android.core.internal.persistence.file.batch.BatchFileReaderWriter
 import com.datadog.android.core.internal.persistence.tlvformat.TLVBlockFileReader
 import com.datadog.android.core.persistence.PersistenceStrategy
-import com.datadog.android.internal.profiler.BenchmarkSdkPerformance
+import com.datadog.android.internal.profiler.BenchmarkSdkUploads
 import com.datadog.android.internal.profiler.ExecutionTimer
 import com.datadog.android.internal.profiler.GlobalBenchmark
 import com.datadog.android.privacy.TrackingConsentProviderCallback
@@ -69,7 +69,7 @@ internal class SdkFeature(
     internal val coreFeature: CoreFeature,
     internal val wrappedFeature: Feature,
     internal val internalLogger: InternalLogger,
-    private val benchmarkSdkPerformance: BenchmarkSdkPerformance = GlobalBenchmark.getSdkPerformance()
+    private val benchmarkSdkUploads: BenchmarkSdkUploads = GlobalBenchmark.getBenchmarkSdkUploads()
 ) : FeatureScope {
 
     override var dataStore: DataStoreHandler = NoOpDataStoreHandler()
@@ -244,7 +244,7 @@ internal class SdkFeature(
         )
 
         @Suppress("ThreadSafety") // called in worker thread context
-        benchmarkSdkPerformance
+        benchmarkSdkUploads
             .getMeter(METER_NAME)
             .createObservableGauge(
                 metricName = BATCH_COUNT_METRIC_NAME,

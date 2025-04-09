@@ -8,7 +8,7 @@ package com.datadog.benchmark
 
 import com.datadog.android.internal.profiler.GlobalBenchmark
 import com.datadog.benchmark.exporter.DatadogMetricExporter
-import com.datadog.benchmark.profiler.DDBenchmarkSdkPerformance
+import com.datadog.benchmark.profiler.DDBenchmarkSdkUploads
 import io.opentelemetry.api.GlobalOpenTelemetry
 import io.opentelemetry.api.OpenTelemetry
 import io.opentelemetry.sdk.OpenTelemetrySdk
@@ -49,7 +49,7 @@ class DatadogSdkMeter private constructor() : DatadogBaseMeter {
                 .setMeterProvider(sdkMeterProvider)
                 .build()
             GlobalOpenTelemetry.set(openTelemetry)
-            GlobalBenchmark.register(DDBenchmarkSdkPerformance())
+            GlobalBenchmark.register(DDBenchmarkSdkUploads())
             return DatadogSdkMeter()
         }
     }

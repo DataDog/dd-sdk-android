@@ -7,7 +7,7 @@
 package com.datadog.android.internal.profiler
 
 internal class DDExecutionTimer(
-    private val benchmarkSdkPerformance: BenchmarkSdkPerformance = GlobalBenchmark.getSdkPerformance()
+    private val benchmarkSdkUploads: BenchmarkSdkUploads = GlobalBenchmark.getBenchmarkSdkUploads()
 ) : ExecutionTimer {
     private var track: String = ""
 
@@ -32,7 +32,7 @@ internal class DDExecutionTimer(
             TRACK_NAME to track
         )
 
-        benchmarkSdkPerformance
+        benchmarkSdkUploads
             .getMeter(METER_NAME)
             .createObservableGauge(BENCHMARK_RESPONSE_LATENCY, tags) {
                 latencySeconds

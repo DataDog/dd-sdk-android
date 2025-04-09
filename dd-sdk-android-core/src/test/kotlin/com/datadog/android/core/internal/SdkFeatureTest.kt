@@ -44,7 +44,7 @@ import com.datadog.android.core.internal.persistence.file.NoOpFileOrchestrator
 import com.datadog.android.core.internal.persistence.file.batch.BatchFileOrchestrator
 import com.datadog.android.core.persistence.PersistenceStrategy
 import com.datadog.android.internal.profiler.BenchmarkMeter
-import com.datadog.android.internal.profiler.BenchmarkSdkPerformance
+import com.datadog.android.internal.profiler.BenchmarkSdkUploads
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.privacy.TrackingConsentProviderCallback
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
@@ -107,7 +107,7 @@ internal class SdkFeatureTest {
     lateinit var mockInternalLogger: InternalLogger
 
     @Mock
-    lateinit var mockBenchmarkSdkPerformance: BenchmarkSdkPerformance
+    lateinit var mockBenchmarkSdkUploads: BenchmarkSdkUploads
 
     @Forgery
     lateinit var fakeConsent: TrackingConsent
@@ -766,14 +766,14 @@ internal class SdkFeatureTest {
     ) {
         // Given
         val mockMeter: BenchmarkMeter = mock()
-        whenever(mockBenchmarkSdkPerformance.getMeter(METER_NAME))
+        whenever(mockBenchmarkSdkUploads.getMeter(METER_NAME))
             .thenReturn(mockMeter)
 
         testedFeature = SdkFeature(
             coreFeature = coreFeature.mockInstance,
             wrappedFeature = mockWrappedFeature,
             internalLogger = mockInternalLogger,
-            benchmarkSdkPerformance = mockBenchmarkSdkPerformance
+            benchmarkSdkUploads = mockBenchmarkSdkUploads
         )
 
         // When
@@ -781,7 +781,7 @@ internal class SdkFeatureTest {
 
         // Then
         verify(
-            mockBenchmarkSdkPerformance
+            mockBenchmarkSdkUploads
                 .getMeter(METER_NAME)
         )
             .createObservableGauge(

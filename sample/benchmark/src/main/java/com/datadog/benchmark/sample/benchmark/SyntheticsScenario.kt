@@ -16,7 +16,9 @@ internal enum class SyntheticsScenario(val value: String) {
 
     Trace("trace"),
 
-    Logs("logs");
+    Logs("logs"),
+
+    Upload("upload");
 
     companion object {
         fun from(value: String): SyntheticsScenario? {

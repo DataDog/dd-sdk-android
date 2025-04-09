@@ -35,7 +35,7 @@ public abstract interface class com/datadog/android/internal/profiler/BenchmarkP
 	public abstract fun getTracer (Ljava/lang/String;)Lcom/datadog/android/internal/profiler/BenchmarkTracer;
 }
 
-public abstract interface class com/datadog/android/internal/profiler/BenchmarkSdkPerformance {
+public abstract interface class com/datadog/android/internal/profiler/BenchmarkSdkUploads {
 	public abstract fun getMeter (Ljava/lang/String;)Lcom/datadog/android/internal/profiler/BenchmarkMeter;
 }
 
@@ -68,10 +68,10 @@ public abstract interface class com/datadog/android/internal/profiler/ExecutionT
 public final class com/datadog/android/internal/profiler/GlobalBenchmark {
 	public static final field INSTANCE Lcom/datadog/android/internal/profiler/GlobalBenchmark;
 	public final fun createExecutionTimer ()Lcom/datadog/android/internal/profiler/ExecutionTimer;
+	public final fun getBenchmarkSdkUploads ()Lcom/datadog/android/internal/profiler/BenchmarkSdkUploads;
 	public final fun getProfiler ()Lcom/datadog/android/internal/profiler/BenchmarkProfiler;
-	public final fun getSdkPerformance ()Lcom/datadog/android/internal/profiler/BenchmarkSdkPerformance;
 	public final fun register (Lcom/datadog/android/internal/profiler/BenchmarkProfiler;)V
-	public final fun register (Lcom/datadog/android/internal/profiler/BenchmarkSdkPerformance;)V
+	public final fun register (Lcom/datadog/android/internal/profiler/BenchmarkSdkUploads;)V
 }
 
 public abstract class com/datadog/android/internal/telemetry/InternalTelemetryEvent {

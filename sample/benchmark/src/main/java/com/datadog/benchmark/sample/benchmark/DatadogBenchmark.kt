@@ -24,15 +24,11 @@ import com.datadog.sample.benchmark.BuildConfig
  * from Synthetics variables in order to decide which scenario it should run for the benchmark test.
  */
 internal class DatadogBenchmark(config: Config) {
-
-    private var run: SyntheticsRun? = null
     private var meter: DatadogBaseMeter
 
     val isComposeEnabled = config.scenario == SyntheticsScenario.SessionReplayCompose
 
     init {
-        run = config.run
-
         val exporterConfig = DatadogExporterConfiguration.Builder(BuildConfig.BENCHMARK_API_KEY)
             .setApplicationId(BuildConfig.APPLICATION_ID)
             .setApplicationName(BENCHMARK_APPLICATION_NAME)
@@ -42,15 +38,16 @@ internal class DatadogBenchmark(config: Config) {
             .setIntervalInSeconds(METER_INTERVAL_IN_SECONDS)
             .build()
 
-        meter = if (run == SyntheticsRun.Benchmark) {
+        meter = if (config.scenario == SyntheticsScenario.Upload) {
             DatadogSdkMeter.create(exporterConfig)
         } else {
             DatadogVitalsMeter.create(exporterConfig)
         }
 
-        if (run == SyntheticsRun.Instrumented || run == SyntheticsRun.Benchmark) {
+        if (config.run == SyntheticsRun.Instrumented) {
             when (config.scenario) {
                 SyntheticsScenario.SessionReplayCompose,
+                SyntheticsScenario.Upload,
                 SyntheticsScenario.SessionReplay -> enableSessionReplay()
                 else -> {} // do nothing for now
             }
