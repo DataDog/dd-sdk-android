@@ -48,6 +48,10 @@ class NdkTracer {
         return toReturn
     }
 
+    fun consumeSpan(span: String) {
+        Log.v("NdkTracer", "Span consumed: $span")
+    }
+
     private fun loadNdkLibraries() {
         var exception: Throwable? = null
         try {
