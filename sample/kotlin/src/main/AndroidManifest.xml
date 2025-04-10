@@ -14,6 +14,10 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE"/>
 
+    <uses-feature
+        android:name="android.hardware.type.automotive"
+        android:required="false" />
+
     <application
         android:name=".SampleApplication"
         android:allowBackup="false"
@@ -23,6 +27,11 @@
         android:supportsRtl="true"
         android:theme="@style/Sample.Theme"
         tools:ignore="GoogleAppIndexingWarning">
+
+        <meta-data
+            android:name="com.google.android.gms.car.application"
+            android:resource="@xml/automotive_app_desc" />
+
         <receiver
             android:name=".widget.DatadogWidgetsProvider"
             android:exported="true">
@@ -65,6 +74,15 @@
             android:authorities="com.datadog.android.provider"
             android:name=".data.db.sqlite.DatadogContentProvider"
             android:exported="false"/>
+
+        <service android:name=".auto.AutoMediaBrowserService"
+            android:exported="true"
+            tools:ignore="ExportedService">
+            <intent-filter>
+                <action android:name="android.media.browse.MediaBrowserService"/>
+            </intent-filter>
+        </service>
+
     </application>
 
 </manifest>
