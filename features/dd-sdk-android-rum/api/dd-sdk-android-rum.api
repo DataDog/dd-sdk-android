@@ -13,6 +13,7 @@ public final class com/datadog/android/insights/DefaultInsightsCollector : com/d
 	public fun onNetworkRequest (JJ)V
 	public fun onNewView (Ljava/lang/String;Ljava/lang/String;)V
 	public fun onSlowFrame (JJ)V
+	public fun onSlowFrameRate (Ljava/lang/Double;)V
 	public fun removeUpdateListener (Lcom/datadog/android/rum/internal/instrumentation/insights/InsightsUpdatesListener;)V
 	public fun setMaxSize (I)V
 	public fun setUpdateIntervalMs (J)V
@@ -355,6 +356,7 @@ public abstract interface class com/datadog/android/rum/internal/instrumentation
 	public abstract fun onNetworkRequest (JJ)V
 	public abstract fun onNewView (Ljava/lang/String;Ljava/lang/String;)V
 	public abstract fun onSlowFrame (JJ)V
+	public abstract fun onSlowFrameRate (Ljava/lang/Double;)V
 	public abstract fun removeUpdateListener (Lcom/datadog/android/rum/internal/instrumentation/insights/InsightsUpdatesListener;)V
 	public abstract fun setMaxSize (I)V
 	public abstract fun setUpdateIntervalMs (J)V

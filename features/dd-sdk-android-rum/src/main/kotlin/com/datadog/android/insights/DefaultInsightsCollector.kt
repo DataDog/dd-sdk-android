@@ -39,11 +39,12 @@ class DefaultInsightsCollector(
     internal var viewName: String = ""
         private set
 
-    internal var gcCallsPerSecond: Double = 0.0
     internal var threadsCount: Int = 0
-    internal var cpuTicksPerSecond: Double = Double.NaN
+    internal var gcCallsPerSecond: Double = 0.0
     internal var vmRssMb: Double = Double.NaN
     internal var nativeHeapMb: Double = Double.NaN
+    internal var slowFramesRate: Double = Double.NaN
+    internal var cpuTicksPerSecond: Double = Double.NaN
     internal val eventsState: List<TimelineEvent> get() = events.toList()
 
     override var maxSize: Int = maxSize
@@ -94,12 +95,16 @@ class DefaultInsightsCollector(
         updatesListeners -= listener
     }
 
-    override fun onMemoryVitalResolved(memoryValue: Double?) = withListenersUpdate {
-        vmRssMb = memoryValue?.Mb.round(2)
+    override fun onMemoryVital(memoryValue: Double?) = withListenersUpdate {
+        vmRssMb = memoryValue?.Mb.round(PRECISION)
     }
 
-    override fun onCpuVitalResolved(cpuTicks: Double?) = withListenersUpdate {
-        cpuTicksPerSecond = cpuTicks?.perSecond().round(2)
+    override fun onCpuVital(cpuTicks: Double?) = withListenersUpdate {
+        cpuTicksPerSecond = cpuTicks?.perSecond().round(PRECISION)
+    }
+
+    override fun onSlowFrameRate(rate: Double?) = withListenersUpdate {
+        slowFramesRate = rate.round(PRECISION)
     }
 
     private fun clear() = withListenersUpdate {
@@ -123,9 +128,9 @@ class DefaultInsightsCollector(
             gcCallsPerSecond = Debug.getRuntimeStat(GC_COUNT)
                 .toDoubleOrNull()
                 .perSecond()
-                .round(2)
+                .round(PRECISION)
         }
-        nativeHeapMb = Debug.getNativeHeapAllocatedSize().toDouble().Mb.round(2)
+        nativeHeapMb = Debug.getNativeHeapAllocatedSize().toDouble().Mb.round(PRECISION)
         threadsCount = Thread.activeCount()
     }
 
@@ -140,10 +145,11 @@ class DefaultInsightsCollector(
             return Double.NaN
         }
 
-        return this * ONE_SECOND_NS / viewDurationNs
+        return times(ONE_SECOND_NS) / viewDurationNs
     }
 
     companion object {
+        private const val PRECISION = 2
         private const val GC_COUNT = "art.gc.gc-count"
         private val ONE_SECOND_NS = TimeUnit.SECONDS.toNanos(1)
     }

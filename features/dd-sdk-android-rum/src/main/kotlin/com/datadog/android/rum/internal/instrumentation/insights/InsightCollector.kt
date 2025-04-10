@@ -13,15 +13,17 @@ import com.datadog.tools.annotation.NoOpImplementation
 interface InsightsCollector {
     var maxSize: Int
     var updateIntervalMs: Long
-    fun onAction()
-    fun onNewView(viewId: String, name: String)
-    fun onLongTask(startedTimestamp: Long, durationNs: Long)
     fun addUpdateListener(listener: InsightsUpdatesListener)
-    fun onSlowFrame(startedTimestamp: Long, durationNs: Long)
     fun removeUpdateListener(listener: InsightsUpdatesListener)
+
+    fun onNewView(viewId: String, name: String)
+    fun onAction()
+    fun onLongTask(startedTimestamp: Long, durationNs: Long)
+    fun onSlowFrame(startedTimestamp: Long, durationNs: Long)
     fun onNetworkRequest(startedTimestamp: Long, durationNs: Long)
-    fun onCpuVitalResolved(cpuTicks: Double?)
-    fun onMemoryVitalResolved(memoryValue: Double?)
+    fun onCpuVital(cpuTicks: Double?)
+    fun onMemoryVital(memoryValue: Double?)
+    fun onSlowFrameRate(rate: Double?)
 }
 
 interface InsightsUpdatesListener {

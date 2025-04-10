@@ -39,6 +39,7 @@ class LocalInsightOverlay : InsightsUpdatesListener {
     private var nativeMemoryValue: TextView? = null
     private var threadsValue: TextView? = null
     private var gcValue: TextView? = null
+    private var slowFrameRate: TextView? = null
 
     private val insightsCollector: DefaultInsightsCollector?
         get() = (Datadog.getInstance() as? InternalSdkCore)
@@ -89,6 +90,7 @@ class LocalInsightOverlay : InsightsUpdatesListener {
         nativeMemoryValue = overlayView.findKeyValue(R.id.vital_native, "Native (mb)")
         threadsValue = overlayView.findKeyValue(R.id.vital_threads, "Threads")
         gcValue = overlayView.findKeyValue(R.id.vital_gc, "GC (calls/s)")
+        slowFrameRate = overlayView.findKeyValue(R.id.vital_slow_frame_rate, "SFR (ms/s)")
 
         insightsCollector?.addUpdateListener(this)
     }
@@ -108,6 +110,7 @@ class LocalInsightOverlay : InsightsUpdatesListener {
             vmMemoryValue?.text = collector.vmRssMb.toString()
             nativeMemoryValue?.text = collector.nativeHeapMb.toString()
             threadsValue?.text = collector.threadsCount.toString()
+            slowFrameRate?.text = collector.slowFramesRate.toString()
         }
     }
 

@@ -140,7 +140,7 @@ internal open class RumViewScope(
                 initialTickCount = info.maxValue
             } else {
                 cpuTicks = info.maxValue - initialTickCount
-                insightsCollector.onCpuVitalResolved(cpuTicks)
+                insightsCollector.onCpuVital(cpuTicks)
             }
         }
     }
@@ -149,7 +149,7 @@ internal open class RumViewScope(
     internal var memoryVitalListener: VitalListener = object : VitalListener {
         override fun onVitalUpdate(info: VitalInfo) {
             lastMemoryInfo = info
-            insightsCollector.onMemoryVitalResolved(lastMemoryInfo?.meanValue)
+            insightsCollector.onMemoryVital(lastMemoryInfo?.meanValue)
         }
     }
 
@@ -918,6 +918,7 @@ internal open class RumViewScope(
         // that will happen when isViewComplete == true
         val freezeRate = if (viewComplete) uiSlownessReport?.freezeFramesRate(stoppedNanos) else null
         val slowFramesRate = if (viewComplete) uiSlownessReport?.slowFramesRate(stoppedNanos) else null
+        insightsCollector.onSlowFrameRate(uiSlownessReport?.slowFramesRate(stoppedNanos))
 
         if (viewComplete && getRumContext().sessionState != RumSessionScope.State.NOT_TRACKED) {
             viewEndedMetricDispatcher.sendViewEnded(

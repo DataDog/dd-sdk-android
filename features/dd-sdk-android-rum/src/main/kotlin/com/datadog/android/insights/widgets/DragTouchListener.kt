@@ -8,9 +8,11 @@ package com.datadog.android.insights.widgets
 import android.view.MotionEvent
 import android.view.View
 import com.datadog.android.insights.extensions.animateDragTo
+import kotlin.math.abs
 
 internal class DragTouchListener(
-    private val onUp: View.() -> Unit = {}
+    private val onUp: View.() -> Unit = {},
+    private val moveThreshold: Float = 5f
 ) : View.OnTouchListener {
     private var xDelta = 0f
     private var yDelta = 0f
@@ -25,11 +27,16 @@ internal class DragTouchListener(
             }
 
             MotionEvent.ACTION_MOVE -> {
-                isMovementDetected = true
-                view.animateDragTo(
-                    x = event.rawX - xDelta,
-                    y = event.rawY - yDelta
-                )
+                val dx = event.rawX - (xDelta + view.x)
+                val dy = event.rawY - (yDelta + view.y)
+
+                if (abs(dx) > moveThreshold || abs(dy) > moveThreshold) {
+                    isMovementDetected = true
+                    view.animateDragTo(
+                        x = event.rawX - xDelta,
+                        y = event.rawY - yDelta
+                    )
+                }
             }
 
             MotionEvent.ACTION_UP -> {
