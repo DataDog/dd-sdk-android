@@ -1,3 +1,4 @@
+annotation com.datadog.android.compose.ComposeInstrumentation
 fun androidx.compose.ui.Modifier.datadog(String, Boolean = false): androidx.compose.ui.Modifier
 annotation com.datadog.android.compose.ExperimentalTrackingApi
 fun trackClick(String, Map<String, Any?> = remember { emptyMap() }, com.datadog.android.api.SdkCore = Datadog.getInstance(), () -> Unit): () -> Unit
@@ -8,6 +9,4 @@ sealed class com.datadog.android.compose.InteractionType
   class Scroll : InteractionType
     constructor(androidx.compose.foundation.gestures.ScrollableState, androidx.compose.foundation.gestures.Orientation, Boolean = false)
 fun NavigationViewTrackingEffect(androidx.navigation.NavController, Boolean = true, com.datadog.android.rum.tracking.ComponentPredicate<androidx.navigation.NavDestination> = AcceptAllNavDestinations(), com.datadog.android.api.SdkCore = Datadog.getInstance())
-annotation com.datadog.android.compose.RecordImages
 fun com.datadog.android.rum.RumConfiguration.Builder.enableComposeActionTracking(): com.datadog.android.rum.RumConfiguration.Builder
-annotation com.datadog.android.compose.TrackViews
