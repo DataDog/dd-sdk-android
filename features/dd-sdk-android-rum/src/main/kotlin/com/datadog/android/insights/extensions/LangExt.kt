@@ -7,6 +7,20 @@ package com.datadog.android.insights.extensions
 
 import kotlin.math.max
 import kotlin.math.min
+import kotlin.math.pow
+import kotlin.math.roundToInt
+
+internal val Long.ms: Long
+    get() = this / 1_000_000L
+
+internal val Double.Mb: Double
+    get() = this / (1024.0 * 1024.0)
+
+internal fun Double?.round(digits: Int): Double {
+    if (this == null) return Double.NaN
+    val multiplier = 10.0.pow(digits)
+    return (this * multiplier).roundToInt() / multiplier
+}
 
 internal fun Float.clip(size: Int, min: Int, max: Int): Float {
     return max(min(this, (max - size).toFloat()), min.toFloat())

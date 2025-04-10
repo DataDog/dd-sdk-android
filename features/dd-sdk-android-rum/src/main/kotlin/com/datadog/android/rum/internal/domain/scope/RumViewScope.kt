@@ -140,6 +140,7 @@ internal open class RumViewScope(
                 initialTickCount = info.maxValue
             } else {
                 cpuTicks = info.maxValue - initialTickCount
+                insightsCollector.onCpuVitalResolved(cpuTicks)
             }
         }
     }
@@ -148,6 +149,7 @@ internal open class RumViewScope(
     internal var memoryVitalListener: VitalListener = object : VitalListener {
         override fun onVitalUpdate(info: VitalInfo) {
             lastMemoryInfo = info
+            insightsCollector.onMemoryVitalResolved(lastMemoryInfo?.meanValue)
         }
     }
 

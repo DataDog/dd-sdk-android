@@ -5,6 +5,7 @@
  */
 package com.datadog.android.insights
 
+import android.annotation.SuppressLint
 import android.app.Activity
 import android.view.LayoutInflater
 import android.view.View
@@ -30,12 +31,17 @@ class LocalInsightOverlay : InsightsUpdatesListener {
     private var viewName: TextView? = null
     private var timelineView: TimelineView? = null
 
+    private var cpuValue: TextView? = null
+    private var memoryValue: TextView? = null
+    private var threadsValue: TextView? = null
+
     private val insightsCollector: DefaultInsightsCollector?
         get() = (Datadog.getInstance() as? InternalSdkCore)
             ?.getFeature(Feature.RUM_FEATURE_NAME)
             ?.unwrap<RumFeature>()
             ?.insightsCollector as? DefaultInsightsCollector
 
+    @SuppressLint("SetTextI18n")
     fun attach(activity: Activity) {
         val overlayView = LayoutInflater.from(activity).inflate(
             R.layout.layout_dd_insights_overlay,
@@ -61,6 +67,21 @@ class LocalInsightOverlay : InsightsUpdatesListener {
                 }
             }
 
+        overlayView.findViewById<ViewGroup>(R.id.vital_cpu).also { cpuVital ->
+            cpuVital.findViewById<TextView>(R.id.label).text = "CPU (TPS)"
+            cpuValue = cpuVital.findViewById(R.id.value)
+        }
+
+        overlayView.findViewById<ViewGroup>(R.id.vital_mem).also { memVital ->
+            memVital.findViewById<TextView>(R.id.label).text = "MEM (mb)"
+            memoryValue = memVital.findViewById(R.id.value)
+        }
+
+        overlayView.findViewById<ViewGroup>(R.id.vital_threads).also { memVital ->
+            memVital.findViewById<TextView>(R.id.label).text = "Threads"
+            threadsValue = memVital.findViewById(R.id.value)
+        }
+
         insightsCollector?.addUpdateListener(this)
     }
 
@@ -68,10 +89,14 @@ class LocalInsightOverlay : InsightsUpdatesListener {
         insightsCollector?.removeUpdateListener(this)
     }
 
+    @SuppressLint("SetTextI18n")
     override fun onDataUpdated() {
         multiLet(insightsCollector, timelineView) { collector, timeline ->
             timeline.update(collector.eventsState, collector.maxSize)
             viewName?.text = collector.viewName
+            cpuValue?.text = collector.cpuTicksPerSecond.toString()
+            memoryValue?.text = collector.vmRssMb.toString()
+            threadsValue?.text = collector.threadsCount.toString()
         }
     }
 }

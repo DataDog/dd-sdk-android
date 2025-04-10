@@ -14,6 +14,7 @@ import android.util.AttributeSet
 import android.view.View
 import android.view.ViewOutlineProvider
 import com.datadog.android.insights.domain.TimelineEvent
+import com.datadog.android.insights.extensions.ms
 import kotlin.math.roundToInt
 
 internal class TimelineView @JvmOverloads constructor(
@@ -105,9 +106,6 @@ internal class TimelineView @JvmOverloads constructor(
         get() {
             return (this * context.resources.displayMetrics.density).roundToInt()
         }
-
-    private val Long.ms: Long
-        get() = this / 1_000_000L
 
     companion object {
         private const val ALPHA = "FF"

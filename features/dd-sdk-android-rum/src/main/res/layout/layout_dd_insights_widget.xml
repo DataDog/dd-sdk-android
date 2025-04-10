@@ -19,8 +19,8 @@
         android:src="@drawable/dd_round" />
 
     <!--
-    layout_marginTop = (40 - 14) / 2 = 13: ImageView center
-    layout_marginStart = 40 + 8 = 48:  ImageView + Margin
+        layout_marginTop = (40 - 14) / 2 = 13: icon center
+        layout_marginStart = 40 + 8 = 48:  icon + Margin
     -->
     <TextView
         android:id="@+id/view_name"
@@ -34,10 +34,50 @@
         android:textColor="@android:color/black"
         android:textSize="14sp" />
 
+    <!--
+        layout_marginTop = (40 + 8) = 48: icon + offset
+    -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="44dp"
+        android:layout_marginTop="48dp"
+        android:orientation="horizontal">
+
+        <include
+            android:id="@+id/vital_cpu"
+            layout="@layout/layout_key_value"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_marginEnd="8dp"
+            android:layout_weight="1"
+            android:gravity="center" />
+
+        <include
+            android:id="@+id/vital_mem"
+            layout="@layout/layout_key_value"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_marginEnd="8dp"
+            android:layout_weight="1"
+            android:gravity="center" />
+
+        <include
+            android:id="@+id/vital_threads"
+            layout="@layout/layout_key_value"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:gravity="center" />
+
+    </LinearLayout>
+
+    <!--
+        layout_marginTop = (40 + 8 + 44 + 8) = 100: icon + offset + metrics + offset
+    -->
     <com.datadog.android.insights.widgets.TimelineView
         android:id="@+id/timeline"
         android:layout_width="match_parent"
         android:layout_height="40dp"
-        android:layout_marginTop="56dp" />
+        android:layout_marginTop="100dp" />
 
 </FrameLayout>

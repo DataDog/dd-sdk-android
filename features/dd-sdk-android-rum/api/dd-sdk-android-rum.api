@@ -6,7 +6,9 @@ public final class com/datadog/android/insights/DefaultInsightsCollector : com/d
 	public fun getMaxSize ()I
 	public fun getUpdateIntervalMs ()J
 	public fun onAction ()V
+	public fun onCpuVitalResolved (Ljava/lang/Double;)V
 	public fun onLongTask (JJ)V
+	public fun onMemoryVitalResolved (Ljava/lang/Double;)V
 	public fun onNetworkRequest (JJ)V
 	public fun onNewView (Ljava/lang/String;Ljava/lang/String;)V
 	public fun onSlowFrame (JJ)V
@@ -343,7 +345,9 @@ public abstract interface class com/datadog/android/rum/internal/instrumentation
 	public abstract fun getMaxSize ()I
 	public abstract fun getUpdateIntervalMs ()J
 	public abstract fun onAction ()V
+	public abstract fun onCpuVitalResolved (Ljava/lang/Double;)V
 	public abstract fun onLongTask (JJ)V
+	public abstract fun onMemoryVitalResolved (Ljava/lang/Double;)V
 	public abstract fun onNetworkRequest (JJ)V
 	public abstract fun onNewView (Ljava/lang/String;Ljava/lang/String;)V
 	public abstract fun onSlowFrame (JJ)V
