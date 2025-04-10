@@ -76,15 +76,15 @@ class DefaultInsightsCollector(
     }
 
     override fun onSlowFrame(startedTimestamp: Long, durationNs: Long) = registerEvent(
-        TimelineEvent.SlowFrame(startedTimestamp, durationNs)
+        TimelineEvent.SlowFrame(durationNs)
     )
 
     override fun onLongTask(startedTimestamp: Long, durationNs: Long) = registerEvent(
-        TimelineEvent.LongTask(startedTimestamp, durationNs)
+        TimelineEvent.LongTask(durationNs)
     )
 
     override fun onNetworkRequest(startedTimestamp: Long, durationNs: Long) = registerEvent(
-        TimelineEvent.Resource(startedTimestamp, durationNs)
+        TimelineEvent.Resource(durationNs)
     )
 
     override fun addUpdateListener(listener: InsightsUpdatesListener) {
