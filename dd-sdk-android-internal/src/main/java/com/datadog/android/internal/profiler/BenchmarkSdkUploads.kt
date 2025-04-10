@@ -9,7 +9,7 @@ package com.datadog.android.internal.profiler
 import com.datadog.tools.annotation.NoOpImplementation
 
 /**
- * Interface of benchmark sdk performance to be implemented. This should only be used by internal
+ * Interface of benchmark SDK performance to be implemented. This should only be used by internal
  * benchmarking.
  */
 @NoOpImplementation

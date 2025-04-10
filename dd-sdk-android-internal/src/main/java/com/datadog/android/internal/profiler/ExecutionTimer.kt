@@ -13,12 +13,6 @@ package com.datadog.android.internal.profiler
 interface ExecutionTimer {
 
     /**
-     * Sets the name of the track to be used for the timer.
-     * @param track The name of the track.
-     */
-    fun setTrackName(track: String)
-
-    /**
      * Wraps the action to measure the time it took to execute.
      * @param T The type of the result.
      * @param action The action to measure.

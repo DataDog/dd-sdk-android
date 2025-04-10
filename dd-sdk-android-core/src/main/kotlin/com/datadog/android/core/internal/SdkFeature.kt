@@ -54,7 +54,6 @@ import com.datadog.android.core.internal.persistence.file.batch.BatchFileReaderW
 import com.datadog.android.core.internal.persistence.tlvformat.TLVBlockFileReader
 import com.datadog.android.core.persistence.PersistenceStrategy
 import com.datadog.android.internal.profiler.BenchmarkSdkUploads
-import com.datadog.android.internal.profiler.ExecutionTimer
 import com.datadog.android.internal.profiler.GlobalBenchmark
 import com.datadog.android.privacy.TrackingConsentProviderCallback
 import com.datadog.android.security.Encryption
@@ -385,14 +384,10 @@ internal class SdkFeature(
             callFactory = coreFeature.okHttpClient,
             sdkVersion = coreFeature.sdkVersion,
             androidInfoProvider = coreFeature.androidInfoProvider,
-            executionTimer = createExecutionTimer()
+            executionTimer = GlobalBenchmark.createExecutionTimer(
+                track = wrappedFeature.name
+            )
         )
-    }
-
-    private fun createExecutionTimer(): ExecutionTimer {
-        val executionTimer = GlobalBenchmark.createExecutionTimer()
-        executionTimer.setTrackName(wrappedFeature.name)
-        return executionTimer
     }
 
     private fun prepareDataStoreHandler(

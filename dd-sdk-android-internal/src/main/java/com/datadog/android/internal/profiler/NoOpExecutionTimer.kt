@@ -7,10 +7,6 @@
 package com.datadog.android.internal.profiler
 
 internal class NoOpExecutionTimer : ExecutionTimer {
-    override fun setTrackName(track: String) {
-        // noop
-    }
-
     override fun <T> measure(action: () -> T): T {
         return action()
     }

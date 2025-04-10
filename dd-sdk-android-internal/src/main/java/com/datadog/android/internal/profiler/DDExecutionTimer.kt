@@ -7,14 +7,9 @@
 package com.datadog.android.internal.profiler
 
 internal class DDExecutionTimer(
+    private val track: String,
     private val benchmarkSdkUploads: BenchmarkSdkUploads = GlobalBenchmark.getBenchmarkSdkUploads()
 ) : ExecutionTimer {
-    private var track: String = ""
-
-    override fun setTrackName(track: String) {
-        this.track = track
-    }
-
     override fun <T> measure(action: () -> T): T {
         if (track.isEmpty()) {
             return action()

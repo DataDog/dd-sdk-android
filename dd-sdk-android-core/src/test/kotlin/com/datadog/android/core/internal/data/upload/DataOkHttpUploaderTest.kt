@@ -898,7 +898,7 @@ internal class DataOkHttpUploaderTest {
     // region benchmark
 
     @Test
-    fun `M call latency callback W upload`(
+    fun `M measure response latency W upload`(
         @Forgery batch: List<RawBatchEvent>,
         @StringForgery batchMeta: String,
         @StringForgery message: String
@@ -918,10 +918,6 @@ internal class DataOkHttpUploaderTest {
     // endregion
 
     class MockExecutionTimer : ExecutionTimer {
-        override fun setTrackName(track: String) {
-            // nothing
-        }
-
         override fun <T> measure(action: () -> T): T {
             return action()
         }

@@ -123,9 +123,10 @@ internal class DataUploadRunnable(
         val status = dataUploader.upload(context, batch, batchMeta, batchId)
 
         if (status is UploadStatus.Success) {
+            val uploadedBytes = batch.sumOf { it.data.size }
             benchmarkUploads.sendBenchmarkBytesUploaded(
                 featureName = featureName,
-                value = batch.size.toLong()
+                value = uploadedBytes.toLong()
             )
         }
 

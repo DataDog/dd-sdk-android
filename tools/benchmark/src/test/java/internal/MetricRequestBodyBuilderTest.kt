@@ -84,7 +84,7 @@ class MetricRequestBodyBuilderTest {
             }
     }
 
-    // region sdk benchmark
+    // region SDK benchmark
 
     @Test
     fun `M resolve track tag W build { has track data }`(

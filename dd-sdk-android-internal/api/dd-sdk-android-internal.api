@@ -62,12 +62,11 @@ public final class com/datadog/android/internal/profiler/BenchmarkTracer$Default
 
 public abstract interface class com/datadog/android/internal/profiler/ExecutionTimer {
 	public abstract fun measure (Lkotlin/jvm/functions/Function0;)Ljava/lang/Object;
-	public abstract fun setTrackName (Ljava/lang/String;)V
 }
 
 public final class com/datadog/android/internal/profiler/GlobalBenchmark {
 	public static final field INSTANCE Lcom/datadog/android/internal/profiler/GlobalBenchmark;
-	public final fun createExecutionTimer ()Lcom/datadog/android/internal/profiler/ExecutionTimer;
+	public final fun createExecutionTimer (Ljava/lang/String;)Lcom/datadog/android/internal/profiler/ExecutionTimer;
 	public final fun getBenchmarkSdkUploads ()Lcom/datadog/android/internal/profiler/BenchmarkSdkUploads;
 	public final fun getProfiler ()Lcom/datadog/android/internal/profiler/BenchmarkProfiler;
 	public final fun register (Lcom/datadog/android/internal/profiler/BenchmarkProfiler;)V

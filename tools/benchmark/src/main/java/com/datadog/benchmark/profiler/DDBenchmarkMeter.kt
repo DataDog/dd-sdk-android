@@ -25,10 +25,7 @@ class DDBenchmarkMeter(private val meter: Meter) : BenchmarkMeter {
 
     override fun createObservableGauge(
         metricName: String,
-        tags: Map<
-            String,
-            String
-            >,
+        tags: Map<String, String>,
         callback: () -> Double
     ) {
         val attributesMap = Attributes.empty().toBuilder()

@@ -48,11 +48,13 @@ object GlobalBenchmark {
     /**
      * Creates the appropriate [ExecutionTimer].
      */
-    fun createExecutionTimer(): ExecutionTimer {
+    fun createExecutionTimer(track: String): ExecutionTimer {
         if (benchmarkSdkUploads is NoOpBenchmarkSdkUploads) {
             return NoOpExecutionTimer()
         }
 
-        return DDExecutionTimer(benchmarkSdkUploads)
+        return DDExecutionTimer(
+            track = track
+        )
     }
 }
