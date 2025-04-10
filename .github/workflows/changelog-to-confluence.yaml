@@ -10,7 +10,7 @@ jobs:
         runs-on: ubuntu-latest
         steps:
             - name: Checkout code
-              uses: actions/checkout@v2
+              uses: actions/checkout@ee0669bd1cc54295c223e0bb666b733df41de1c5 # v2.7.0
 
             - name: Prepare Only Changelog
               run: |
@@ -19,7 +19,7 @@ jobs:
                   echo "Publishing only CHANGELOG.md"
 
             - name: Publish Markdown to Confluence
-              uses: markdown-confluence/publish-action@v5
+              uses: markdown-confluence/publish-action@7767a0a7f438bb1497ee7ffd7d3d685b81dfe700 # v5
               with:
                   confluenceBaseUrl: ${{ secrets.CONFLUENCE_BASE_URL }}
                   confluenceParentId: ${{ secrets.CONFLUENCE_PARENT_ID }}
