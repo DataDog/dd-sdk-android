@@ -1,9 +1,74 @@
 #include <jni.h>
 #include "tracer_lib.h"
+#include "android/log.h"
+#include <chrono>
+
 
 // All JNI functions need C linkage
 extern "C" {
 
+
+// Global JavaVM pointer
+static JavaVM *gJvm = nullptr;
+static jobject gInstance = nullptr;
+static jmethodID gMethodId = nullptr;
+
+
+JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM *vm, void *reserved) {
+    gJvm = vm;
+    return JNI_VERSION_1_6;  // Use the appropriate JNI version
+}
+
+// Function to retrieve a valid JNIEnv pointer
+JNIEnv *getJNIEnv() {
+    JNIEnv *env = nullptr;
+    int status = gJvm->GetEnv(reinterpret_cast<void **>(&env), JNI_VERSION_1_6);
+
+    if (status == JNI_EDETACHED) {
+        // Thread is not attached, attach it
+        if (gJvm->AttachCurrentThread(&env, nullptr) != JNI_OK) {
+            __android_log_print(ANDROID_LOG_ERROR, "TracerNative", "Failed to attach thread");
+            return nullptr;
+        }
+    } else if (status != JNI_OK) {
+        __android_log_print(ANDROID_LOG_ERROR, "TracerNative", "Failed to get JNI environment");
+        return nullptr;
+    }
+
+    return env;
+}
+
+
+void consume_span(const char *span) {
+    // Measure execution time
+    auto start = std::chrono::high_resolution_clock::now();
+
+    // Convert the C string to a Java string
+    __android_log_print(ANDROID_LOG_DEBUG, "TracerNative", "Callback called with: %s", span);
+
+    if (gJvm == nullptr || gInstance == nullptr || gMethodId == nullptr) {
+        __android_log_print(ANDROID_LOG_ERROR, "TracerNative", "Callback data is not initialized with:");
+        return;
+    }
+    // try to get the JNIEnv and attach the current calling thread to the JVM environment if not attached
+    JNIEnv *env = getJNIEnv();
+
+    if (env == nullptr) {
+        __android_log_print(ANDROID_LOG_ERROR, "TracerNative", "Failed to get JNI environment");
+        return;
+    }
+    // Create a new Java string from the C string
+    jstring spanAsJString = env->NewStringUTF(span);
+    env->CallVoidMethod(gInstance, gMethodId, spanAsJString);
+    // Clean up local references
+    env->DeleteLocalRef(spanAsJString);
+
+    // Calculate and log execution time
+    auto end = std::chrono::high_resolution_clock::now();
+    double duration = (double)std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
+    double durationMs = duration / 1000000.0;
+    __android_log_print(ANDROID_LOG_DEBUG, "TracerNative", "Span consumed in %.3f ms", durationMs);
+}
 /*
  * Class:     com_example_tracer_TracerNative
  * Method:    createTracer
@@ -11,11 +76,34 @@ extern "C" {
  *
  * Creates a new tracer instance and returns its pointer as a jlong.
  */
+#pragma clang diagnostic push
+#pragma ide diagnostic ignored "LocalValueEscapesScope"
 JNIEXPORT jlong JNICALL
 Java_com_datadog_android_ndk_tracer_NdkTracer_nativeCreateTracer(JNIEnv *env, jobject instance) {
-    Tracer *tracer = tracer_new();
+    if (gInstance == nullptr || gMethodId == nullptr) {
+        // Get the class from the object
+        jclass cls = env->GetObjectClass(instance);
+        if (cls == nullptr) {
+            // Handle error: class not found.
+            __android_log_print(ANDROID_LOG_ERROR, "TracerNative", "Class not found");
+            return reinterpret_cast<jlong>(nullptr);
+        }
+
+        // Get the method ID for the instance method "javaMethod" that takes a String and returns void.
+        gMethodId = env->GetMethodID(cls, "consumeSpan", "(Ljava/lang/String;)V");
+        if (gMethodId == nullptr) {
+            // Handle error: method not found.
+            __android_log_print(ANDROID_LOG_ERROR, "TracerNative", "Method not found");
+            return reinterpret_cast<jlong>(nullptr);
+        }
+        __android_log_print(ANDROID_LOG_DEBUG, "TracerNative", "Callback data initialized");
+        gInstance = env->NewGlobalRef(instance);
+    }
+
+    Tracer *tracer = tracer_new(consume_span);
     return reinterpret_cast<jlong>(tracer);
 }
+
 
 /*
  * Class:     com_example_tracer_TracerNative
@@ -52,7 +140,7 @@ JNIEXPORT jstring JNICALL Java_com_datadog_android_ndk_tracer_NdkTracer_nativeSt
     const char *spanId = tracer_start_span(reinterpret_cast<Tracer *>(tracerHandle), nativeName, parentSpanIdAsStr);
     // Release the Java string.
     env->ReleaseStringUTFChars(name, nativeName);
-    if(parentSpanId != nullptr) {
+    if (parentSpanId != nullptr) {
         env->ReleaseStringUTFChars(parentSpanId, parentSpanIdAsStr);
     }
     // Convert the C string to a Java string and return it.

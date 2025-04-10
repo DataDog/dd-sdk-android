@@ -10,9 +10,12 @@
 extern "C" {
 #endif
 
+// Define the callback function type for span consumption
+typedef void (*span_consumer_t)(const char* json);
+
 typedef struct Tracer Tracer;
 
-struct Tracer *tracer_new(void);
+struct Tracer* tracer_new(span_consumer_t consumer);
 
 void tracer_free(struct Tracer *tracer);
 
