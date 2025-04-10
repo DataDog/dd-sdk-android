@@ -11,7 +11,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
-import androidx.core.view.isVisible
+import androidx.annotation.IdRes
 import com.datadog.android.Datadog
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.core.InternalSdkCore
@@ -31,9 +31,14 @@ class LocalInsightOverlay : InsightsUpdatesListener {
     private var viewName: TextView? = null
     private var timelineView: TimelineView? = null
 
+    private var fab: View? = null
+    private var icon: View? = null
+
     private var cpuValue: TextView? = null
-    private var memoryValue: TextView? = null
+    private var vmMemoryValue: TextView? = null
+    private var nativeMemoryValue: TextView? = null
     private var threadsValue: TextView? = null
+    private var gcValue: TextView? = null
 
     private val insightsCollector: DefaultInsightsCollector?
         get() = (Datadog.getInstance() as? InternalSdkCore)
@@ -55,32 +60,30 @@ class LocalInsightOverlay : InsightsUpdatesListener {
         timelineView = overlayView.findViewById(R.id.timeline)
         viewName = overlayView.findViewById(R.id.view_name)
 
-        overlayView.findViewById<View>(R.id.fab)
-            .apply {
-                setOnTouchListener(
+        icon = overlayView.findViewById<View>(R.id.icon).also {
+            it.setOnClickListener {
+                fab?.animateVisibility(true)
+                widgetView?.animateVisibility(false)
+            }
+        }
+        fab = overlayView.findViewById<View>(R.id.fab)
+            .also {
+                it.setOnTouchListener(
                     DragTouchListener(
                         onUp = { animateRotateBy(360 - (rotation % 360)) }
                     )
                 )
-                setOnClickListener {
-                    widgetView?.animateVisibility(!widgetView.isVisible)
+                it.setOnClickListener {
+                    fab?.animateVisibility(false)
+                    widgetView?.animateVisibility(true)
                 }
             }
 
-        overlayView.findViewById<ViewGroup>(R.id.vital_cpu).also { cpuVital ->
-            cpuVital.findViewById<TextView>(R.id.label).text = "CPU (TPS)"
-            cpuValue = cpuVital.findViewById(R.id.value)
-        }
-
-        overlayView.findViewById<ViewGroup>(R.id.vital_mem).also { memVital ->
-            memVital.findViewById<TextView>(R.id.label).text = "MEM (mb)"
-            memoryValue = memVital.findViewById(R.id.value)
-        }
-
-        overlayView.findViewById<ViewGroup>(R.id.vital_threads).also { memVital ->
-            memVital.findViewById<TextView>(R.id.label).text = "Threads"
-            threadsValue = memVital.findViewById(R.id.value)
-        }
+        cpuValue = overlayView.findKeyValue(R.id.vital_cpu, "CPU (tics/s)")
+        vmMemoryValue = overlayView.findKeyValue(R.id.vital_mem, "MEM (mb)")
+        nativeMemoryValue = overlayView.findKeyValue(R.id.vital_native, "Native (mb)")
+        threadsValue = overlayView.findKeyValue(R.id.vital_threads, "Threads")
+        gcValue = overlayView.findKeyValue(R.id.vital_gc, "GC (calls/s)")
 
         insightsCollector?.addUpdateListener(this)
     }
@@ -95,8 +98,20 @@ class LocalInsightOverlay : InsightsUpdatesListener {
             timeline.update(collector.eventsState, collector.maxSize)
             viewName?.text = collector.viewName
             cpuValue?.text = collector.cpuTicksPerSecond.toString()
-            memoryValue?.text = collector.vmRssMb.toString()
+            gcValue?.text = collector.gcCallsPerSecond.toString()
+            vmMemoryValue?.text = collector.vmRssMb.toString()
+            nativeMemoryValue?.text = collector.nativeHeapMb.toString()
             threadsValue?.text = collector.threadsCount.toString()
+        }
+    }
+
+    private fun View.findKeyValue(
+        @IdRes id: Int,
+        labelText: String
+    ): TextView {
+        findViewById<ViewGroup>(id).also { keyValue ->
+            keyValue.findViewById<TextView>(R.id.label).text = labelText
+            return keyValue.findViewById(R.id.value)
         }
     }
 }

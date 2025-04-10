@@ -48,7 +48,7 @@ internal class TimelineView @JvmOverloads constructor(
         get() = paint.apply { color = YELLOW }
 
     private val tickPaint: Paint
-        get() = paint.apply { color = GRAYS.random() }
+        get() = paint.apply { color = GRAY1 }
 
     private val barSize: Float
         get() = width.toFloat() / (maxSize)
@@ -114,12 +114,8 @@ internal class TimelineView @JvmOverloads constructor(
         val PINK = Color.parseColor("#${ALPHA}FFC0CB")
         val YELLOW = Color.parseColor("#${ALPHA}FFFF00")
         val GREEN = Color.parseColor("#${ALPHA}00FF00")
-        val GRAYS = listOf(
-            Color.parseColor("#${ALPHA}888888"),
-//            Color.parseColor("#${ALPHA}999999"),
-//            Color.parseColor("#${ALPHA}AAAAAA")
-
-        )
+        val GRAY1 = Color.parseColor("#${ALPHA}999999")
+        val GRAY2 = Color.parseColor("#${ALPHA}888888")
         val RED = Color.parseColor("#${ALPHA}FF0000")
     }
 }

@@ -17,7 +17,7 @@ internal val Double.Mb: Double
     get() = this / (1024.0 * 1024.0)
 
 internal fun Double?.round(digits: Int): Double {
-    if (this == null) return Double.NaN
+    if (this == null || isNaN()) return Double.NaN
     val multiplier = 10.0.pow(digits)
     return (this * multiplier).roundToInt() / multiplier
 }

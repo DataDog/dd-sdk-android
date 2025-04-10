@@ -22,6 +22,7 @@
         android:layout_marginEnd="16dp"
         android:layout_marginTop="48dp"
         android:layout_marginBottom="48dp"
+        android:visibility="gone"
         android:src="@drawable/dd_round"
         android:layout_gravity="bottom|end"
         tools:ignore="ContentDescription" />

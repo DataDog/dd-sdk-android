@@ -23,7 +23,7 @@ import java.util.concurrent.TimeUnit
 @ExperimentalRumApi
 class DefaultInsightsCollector(
     maxSize: Int = 50,
-    updateIntervalMs: Long = 0L,
+    updateIntervalMs: Long = 100L,
 ) : InsightsCollector {
 
     private val handler = Handler(Looper.getMainLooper())
