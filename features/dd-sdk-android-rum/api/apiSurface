@@ -247,7 +247,7 @@ open class com.datadog.android.rum.tracking.AcceptAllSupportFragments : Componen
   override fun getViewName(androidx.fragment.app.Fragment): String?
   override fun equals(Any?): Boolean
   override fun hashCode(): Int
-interface com.datadog.android.rum.tracking.ActionTrackingStrategy
+interface com.datadog.android.rum.tracking.ActionTrackingStrategy : TrackingStrategy
   fun findTargetForTap(android.view.View, Float, Float): ViewTarget?
   fun findTargetForScroll(android.view.View, Float, Float): ViewTarget?
 abstract class com.datadog.android.rum.tracking.ActivityLifecycleTrackingStrategy : android.app.Application.ActivityLifecycleCallbacks, TrackingStrategy

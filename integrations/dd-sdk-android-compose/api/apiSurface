@@ -1,6 +1,3 @@
-class com.datadog.android.compose.ComposeActionTrackingStrategy : com.datadog.android.rum.tracking.ActionTrackingStrategy
-  override fun findTargetForTap(android.view.View, Float, Float): com.datadog.android.rum.tracking.ViewTarget?
-  override fun findTargetForScroll(android.view.View, Float, Float): com.datadog.android.rum.tracking.ViewTarget?
 fun androidx.compose.ui.Modifier.datadog(String, Boolean = false): androidx.compose.ui.Modifier
 annotation com.datadog.android.compose.ExperimentalTrackingApi
 fun trackClick(String, Map<String, Any?> = remember { emptyMap() }, com.datadog.android.api.SdkCore = Datadog.getInstance(), () -> Unit): () -> Unit

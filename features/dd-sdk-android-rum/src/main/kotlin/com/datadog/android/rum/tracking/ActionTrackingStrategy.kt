@@ -14,27 +14,27 @@ import com.datadog.tools.annotation.NoOpImplementation
  * such as taps and scrolls.
  */
 @NoOpImplementation
-interface ActionTrackingStrategy {
+interface ActionTrackingStrategy : TrackingStrategy {
 
     /**
      * Finds the target element at the given screen coordinates in response to a tap action.
      *
-     * @param decorView The root [View] of the current window hierarchy.
+     * @param view The root [View] to start search from, top-down.
      * @param x The X coordinate of the tap, in screen coordinates.
      * @param y The Y coordinate of the tap, in screen coordinates.
      * @return A [ViewTarget] representing the UI element found at the given location,
      *         or `null` if no target was found.
      */
-    fun findTargetForTap(decorView: View, x: Float, y: Float): ViewTarget?
+    fun findTargetForTap(view: View, x: Float, y: Float): ViewTarget?
 
     /**
      * Finds the target element at the given screen coordinates in response to a scroll action.
      *
-     * @param decorView The root [View] of the current window hierarchy.
+     * @param view The root [View] to start search from, top-down.
      * @param x The X coordinate of the scroll event, in screen coordinates.
      * @param y The Y coordinate of the scroll event, in screen coordinates.
      * @return A [ViewTarget] representing the UI element found at the given location,
      *         or `null` if no target was found.
      */
-    fun findTargetForScroll(decorView: View, x: Float, y: Float): ViewTarget?
+    fun findTargetForScroll(view: View, x: Float, y: Float): ViewTarget?
 }

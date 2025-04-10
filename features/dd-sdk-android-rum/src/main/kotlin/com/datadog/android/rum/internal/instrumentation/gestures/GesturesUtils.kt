@@ -11,6 +11,16 @@ import android.content.res.Resources
 import android.view.View
 import com.datadog.android.core.internal.utils.toHexString
 import com.datadog.android.rum.tracking.InteractionPredicate
+import com.datadog.android.rum.tracking.ViewTarget
+
+internal fun resolveViewTargetName(
+    interactionPredicate: InteractionPredicate,
+    target: ViewTarget
+): String {
+    return target.view?.let { view ->
+        resolveTargetName(interactionPredicate, view)
+    } ?: target.tag ?: ""
+}
 
 internal fun resolveTargetName(
     interactionPredicate: InteractionPredicate,
