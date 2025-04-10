@@ -15,10 +15,10 @@ import org.gradle.api.Project
 
 object AndroidConfig {
 
-    const val TARGET_SDK = 35
+    const val TARGET_SDK = 36
     const val MIN_SDK = 21
     const val MIN_SDK_FOR_WEAR = 23
-    const val BUILD_TOOLS_VERSION = "35.0.0"
+    const val BUILD_TOOLS_VERSION = "36.0.0"
 
     val VERSION = Version(2, 21, 0, Version.Type.Snapshot)
 }
@@ -70,6 +70,11 @@ fun Project.androidLibraryConfig() {
             checkReleaseBuilds = false
             checkGeneratedSources = true
             ignoreTestSources = true
+            disable.addAll(
+                listOf(
+                    "UseKtx" // https://googlesamples.github.io/android-custom-lint-rules/checks/UseKtx.md.html
+                )
+            )
         }
 
         packaging {

@@ -8,7 +8,7 @@ kronosNTP = "0.0.1-alpha11"
 
 # Android
 androidDesugaringSdk = "2.0.4"
-androidToolsPlugin = "8.8.2"
+androidToolsPlugin = "8.9.1"
 androidXAnnotations = "1.9.1"
 androidXAppCompat = "1.4.2" # Next version will bring coroutines
 androidXCollection = "1.4.5"

@@ -14,6 +14,7 @@ import com.datadog.android.api.net.RequestFactory
 import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.core.internal.persistence.BatchId
 import com.datadog.android.core.internal.system.AndroidInfoProvider
+import com.datadog.android.internal.utils.safeGetThreadId
 import okhttp3.Call
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.Request
@@ -148,7 +149,7 @@ internal class DataOkHttpUploader(
         }
 
         val okHttpRequest = buildOkHttpRequest(request)
-        TrafficStats.setThreadStatsTag(Thread.currentThread().id.toInt())
+        TrafficStats.setThreadStatsTag(Thread.currentThread().safeGetThreadId().toInt())
         val call = callFactory.newCall(okHttpRequest)
         val response = call.execute()
         response.close()
