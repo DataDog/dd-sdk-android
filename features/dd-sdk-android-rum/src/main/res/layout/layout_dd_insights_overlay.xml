@@ -4,7 +4,6 @@
     android:layout_height="match_parent"
     android:background="@android:color/transparent">
 
-
     <include
         android:id="@+id/insights_widget"
         layout="@layout/layout_dd_insights_widget"
@@ -12,6 +11,7 @@
         android:layout_marginStart="8dp"
         android:layout_gravity="bottom"
         android:layout_marginEnd="8dp"
+        android:visibility="gone"
         android:layout_height="wrap_content" />
 
     <ImageView
@@ -22,7 +22,6 @@
         android:layout_marginEnd="16dp"
         android:layout_marginTop="48dp"
         android:layout_marginBottom="48dp"
-        android:visibility="gone"
         android:src="@drawable/dd_round"
         android:layout_gravity="bottom|end"
         tools:ignore="ContentDescription" />
