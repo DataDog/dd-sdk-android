@@ -11,6 +11,8 @@ import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.storage.EventBatchWriter
+import com.datadog.android.core.internal.data.upload.DataOkHttpUploader.Companion.HTTP_ACCEPTED
+import com.datadog.android.core.internal.metrics.BenchmarkUploads
 import com.datadog.android.core.internal.metrics.MetricsDispatcher
 import com.datadog.android.core.internal.metrics.RemovalReason
 import com.datadog.android.core.internal.persistence.file.FileMover
@@ -19,6 +21,7 @@ import com.datadog.android.core.internal.persistence.file.FilePersistenceConfig
 import com.datadog.android.core.internal.persistence.file.FileReaderWriter
 import com.datadog.android.core.internal.persistence.file.batch.BatchFileReaderWriter
 import com.datadog.android.core.internal.persistence.file.existsSafe
+import com.datadog.android.core.internal.persistence.file.lengthSafe
 import com.datadog.android.core.internal.privacy.ConsentProvider
 import com.datadog.android.core.internal.utils.submitSafe
 import com.datadog.android.core.metrics.MethodCallSamplingRate
@@ -39,8 +42,9 @@ internal class ConsentAwareStorage(
     internal val filePersistenceConfig: FilePersistenceConfig,
     private val metricsDispatcher: MetricsDispatcher,
     private val consentProvider: ConsentProvider,
-    private val featureName: String
-) : Storage {
+    private val featureName: String,
+    private val benchmarkUploads: BenchmarkUploads = BenchmarkUploads()
+) : Storage, BatchWriteEventListener {
 
     /**
      * Keeps track of files currently being read.
@@ -85,6 +89,7 @@ internal class ConsentAwareStorage(
                         eventsWriter = batchEventsReaderWriter,
                         metadataReaderWriter = batchMetadataReaderWriter,
                         filePersistenceConfig = filePersistenceConfig,
+                        batchWriteEventListener = this,
                         internalLogger = internalLogger
                     )
                 }
@@ -155,6 +160,13 @@ internal class ConsentAwareStorage(
         }
     }
 
+    override fun onWriteEvent(bytes: Long) {
+        benchmarkUploads.sendBenchmarkBytesWritten(
+            featureName = featureName,
+            value = bytes
+        )
+    }
+
     @WorkerThread
     private fun resolveOrchestrator(): FileOrchestrator? {
         val consent = consentProvider.getConsent()
@@ -180,10 +192,19 @@ internal class ConsentAwareStorage(
 
     @WorkerThread
     private fun deleteBatchFile(batchFile: File, reason: RemovalReason) {
+        val fileSizeBeforeDeletion = batchFile.lengthSafe(internalLogger)
+
         val result = fileMover.delete(batchFile)
         if (result) {
             val numPendingFiles = grantedOrchestrator.decrementAndGetPendingFilesCount()
             metricsDispatcher.sendBatchDeletedMetric(batchFile, reason, numPendingFiles)
+
+            if (reason == RemovalReason.IntakeCode(HTTP_ACCEPTED) && fileSizeBeforeDeletion > 0) {
+                benchmarkUploads.sendBenchmarkBytesDeleted(
+                    featureName = featureName,
+                    value = fileSizeBeforeDeletion
+                )
+            }
         } else {
             internalLogger.log(
                 InternalLogger.Level.WARN,

@@ -7,24 +7,54 @@
 package com.datadog.android.internal.profiler
 
 /**
- * A global holder of [BenchmarkProfiler], allowing to register and retrieve [BenchmarkProfiler] implementation.
+ * A global holder of [BenchmarkProfiler]
+ * allowing registration and retrieval of [BenchmarkProfiler] and [BenchmarkMeter] implementations.
  * This should only used by internal benchmarking.
  */
 object GlobalBenchmark {
 
     private var benchmarkProfiler: BenchmarkProfiler = NoOpBenchmarkProfiler()
+    private var benchmarkSdkUploads: BenchmarkSdkUploads =
+        NoOpBenchmarkSdkUploads()
 
     /**
      * Registers the implementation of [BenchmarkProfiler].
      */
     fun register(benchmarkProfiler: BenchmarkProfiler) {
-        GlobalBenchmark.benchmarkProfiler = benchmarkProfiler
+        this.benchmarkProfiler = benchmarkProfiler
+    }
+
+    /**
+     * Registers the implementation of [BenchmarkSdkUploads].
+     */
+    fun register(benchmarkSdkUploads: BenchmarkSdkUploads) {
+        this.benchmarkSdkUploads = benchmarkSdkUploads
     }
 
     /**
      * Returns the [BenchmarkProfiler] registered.
      */
-    fun get(): BenchmarkProfiler {
+    fun getProfiler(): BenchmarkProfiler {
         return benchmarkProfiler
+    }
+
+    /**
+     * Returns the [BenchmarkSdkUploads] registered.
+     */
+    fun getBenchmarkSdkUploads(): BenchmarkSdkUploads {
+        return benchmarkSdkUploads
+    }
+
+    /**
+     * Creates the appropriate [ExecutionTimer].
+     */
+    fun createExecutionTimer(track: String): ExecutionTimer {
+        if (benchmarkSdkUploads is NoOpBenchmarkSdkUploads) {
+            return NoOpExecutionTimer()
+        }
+
+        return DDExecutionTimer(
+            track = track
+        )
     }
 }
