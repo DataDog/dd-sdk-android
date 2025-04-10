@@ -6,8 +6,10 @@
 
 package com.datadog.android.sample
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import com.datadog.android.ndk.tracer.NdkTracer
 import com.datadog.android.sample.data.DataRepository
 import com.datadog.android.sample.data.db.LocalDataSource
 import com.datadog.android.sample.data.remote.RemoteDataSource
@@ -19,6 +21,7 @@ import com.datadog.android.vendor.sample.LocalServer
 import okhttp3.OkHttpClient
 
 internal class ViewModelFactory(
+    private val context: Context,
     private val okHttpClient: OkHttpClient,
     private val remoteDataSource: RemoteDataSource,
     private val localDataSource: LocalDataSource,
@@ -41,7 +44,7 @@ internal class ViewModelFactory(
                 WebViewModel(localServer) as T
             }
             OtelTracesViewModel::class.java -> {
-                OtelTracesViewModel(okHttpClient, localServer) as T
+                OtelTracesViewModel(okHttpClient, localServer, NdkTracer(context.filesDir)) as T
             }
             else -> {
                 modelClass.newInstance()

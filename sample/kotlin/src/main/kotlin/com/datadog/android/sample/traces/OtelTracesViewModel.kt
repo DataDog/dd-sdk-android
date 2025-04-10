@@ -7,8 +7,11 @@
 package com.datadog.android.sample.traces
 
 import android.os.AsyncTask
+import android.os.Handler
+import android.os.Looper
 import androidx.lifecycle.ViewModel
 import com.datadog.android.log.Logger
+import com.datadog.android.ndk.tracer.NdkTracer
 import com.datadog.android.okhttp.otel.addParentSpan
 import com.datadog.android.sample.BuildConfig
 import com.datadog.android.vendor.sample.LocalServer
@@ -25,7 +28,8 @@ import okhttp3.Request
 @Suppress("DEPRECATION")
 internal class OtelTracesViewModel(
     private val okHttpClient: OkHttpClient,
-    private val localServer: LocalServer
+    private val localServer: LocalServer,
+    private val ndkTracer: NdkTracer
 
 ) : ViewModel() {
 
@@ -67,6 +71,27 @@ internal class OtelTracesViewModel(
         asyncOperationTask?.cancel(true)
         chainedContextsTask?.cancel(true)
         linkedSpansTask?.cancel(true)
+    }
+
+    fun startRustTracerStressTest(onDone: () -> Unit = {}){
+        spawnNdkTracerStressTest(onDone)
+    }
+
+    private fun spawnNdkTracerStressTest(onDone: () -> Unit){
+        Thread {
+            for (i in 0..1000) {
+                val span = ndkTracer.startSpan("stressTestSpan_$i")
+                Thread.sleep(100)
+                span?.finish()
+            }
+            ndkTracer.dumpMetrics()
+            Handler(Looper.getMainLooper()).post {
+                onDone()
+            }
+        }.apply {
+            start()
+            join()
+        }
     }
 
     // region AsyncOperationTask

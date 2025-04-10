@@ -107,5 +107,5 @@ junitConfig()
 javadocConfig()
 dependencyUpdateConfig()
 publishingConfig(
-    "An NDK integration to use with the Datadog monitoring library for Android applications."
+    "A NDK Tracer integration to use with the Datadog monitoring library for Android applications."
 )

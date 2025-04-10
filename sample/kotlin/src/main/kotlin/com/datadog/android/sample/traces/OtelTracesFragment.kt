@@ -33,6 +33,7 @@ internal class OtelTracesFragment : Fragment(), View.OnClickListener {
         rootView.findViewById<Button>(R.id.start_async_operation).setOnClickListener(this)
         rootView.findViewById<Button>(R.id.start_chained_contexts_test).setOnClickListener(this)
         rootView.findViewById<Button>(R.id.start_linked_spans_test).setOnClickListener(this)
+        rootView.findViewById<Button>(R.id.start_rust_tracer_stress_test).setOnClickListener(this)
         progressBarAsync = rootView.findViewById(R.id.spinner_async)
         return rootView
     }
@@ -88,6 +89,14 @@ internal class OtelTracesFragment : Fragment(), View.OnClickListener {
             R.id.start_linked_spans_test -> {
                 progressBarAsync.visibility = View.VISIBLE
                 viewModel.startLinkedSpans(
+                    onDone = {
+                        progressBarAsync.visibility = View.INVISIBLE
+                    }
+                )
+            }
+            R.id.start_rust_tracer_stress_test ->{
+                progressBarAsync.visibility = View.VISIBLE
+                viewModel.startRustTracerStressTest(
                     onDone = {
                         progressBarAsync.visibility = View.INVISIBLE
                     }

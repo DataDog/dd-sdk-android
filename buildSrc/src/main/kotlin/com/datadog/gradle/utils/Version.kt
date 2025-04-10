@@ -42,6 +42,9 @@ data class Version(
         object Snapshot : Type() {
             override val suffix: String = "-SNAPSHOT"
         }
+        object NDKSnapshot : Type() {
+            override val suffix: String = "-ndk-SNAPSHOT"
+        }
     }
 
     // endregion

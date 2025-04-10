@@ -7,17 +7,22 @@
 package com.datadog.android.ndk.tracer
 
 import android.util.Log
-import java.lang.NullPointerException
+import java.io.File
 import kotlin.system.measureNanoTime
 
-class NdkTracer {
+class NdkTracer(private val metricsCollectorDirectory:File? = null) {
 
     private val tracerPointer: Long?
-    private var librariesLoaded = false
+    private val startSpanMetricsCollector = MetricsCollector("startSpan", metricsCollectorDirectory)
+    private val finishSpanMetricsCollector = MetricsCollector("finishSpan", metricsCollectorDirectory)
 
     init {
-        loadNdkLibraries()
         tracerPointer = createTracer()
+    }
+
+    fun dumpMetrics() {
+        startSpanMetricsCollector.dumpMetrics()
+        finishSpanMetricsCollector.dumpMetrics()
     }
 
     fun startSpan(spanName: String, parentId: String? = null): NdkSpan? {
@@ -25,13 +30,17 @@ class NdkTracer {
             Log.v("NdkTracer", "Tracer instance is null")
             return null
         }
-        val spanId: String
-        measureNanoTime {
+        var spanId: String? = null
+        startSpanMetricsCollector.measureMethodDuration {
             spanId = nativeStartSpan(tracerPointer, spanName, parentId)
-        }.let {
-            Log.v("NdkTracer", "Span was started in ${it.toMilliseconds()} ms")
         }
-        return NdkSpan(tracerPointer, this, spanId, parentId)
+        startSpanMetricsCollector.printMean()
+        return spanId?.let {
+            NdkSpan(tracerPointer, this, it, parentId)
+        } ?: run {
+            Log.v("NdkTracer", "Failed to start span")
+            null
+        }
     }
 
     fun finishSpan(span: NdkSpan): Boolean {
@@ -39,12 +48,11 @@ class NdkTracer {
             Log.v("NdkTracer", "Tracer instance is null")
             return false
         }
-        val toReturn: Boolean
-        measureNanoTime {
+        var toReturn: Boolean = false
+        finishSpanMetricsCollector.measureMethodDuration {
             toReturn = nativeFinishSpan(tracerPointer, span.spanId)
-        }.let {
-            Log.v("NdkTracer", "Span was finished in ${it.toMilliseconds()} ms")
         }
+        finishSpanMetricsCollector.printMean()
         return toReturn
     }
 
@@ -52,26 +60,9 @@ class NdkTracer {
         Log.v("NdkTracer", "Span consumed: $span")
     }
 
-    private fun loadNdkLibraries() {
-        var exception: Throwable? = null
-        try {
-            System.loadLibrary("tracer_lib")
-            System.loadLibrary("datadog-tracer-native-lib")
-            librariesLoaded = true
-        } catch (e: SecurityException) {
-            exception = e
-        } catch (@SuppressWarnings("TooGenericExceptionCaught") e: NullPointerException) {
-            exception = e
-        } catch (e: UnsatisfiedLinkError) {
-            exception = e
-        }
-        exception?.let {
-            Log.v("NdkTracer", "Failed to load native library", it)
-        }
-    }
 
     private fun createTracer(): Long? {
-        if (!librariesLoaded) {
+        if (!NdkTracerBootstrap.librariesLoaded) {
             Log.v("NdkTracer", "Native libraries not loaded")
             return null
         }

@@ -403,6 +403,7 @@ class SampleApplication : Application() {
 
         internal fun getViewModelFactory(context: Context): ViewModelProvider.Factory {
             return ViewModelFactory(
+                context,
                 getOkHttpClient(context),
                 getRemoteDataSource(context),
                 LocalDataSource(context),
