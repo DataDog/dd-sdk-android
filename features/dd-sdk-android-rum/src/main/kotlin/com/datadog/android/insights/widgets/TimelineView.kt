@@ -23,16 +23,17 @@ internal class TimelineView @JvmOverloads constructor(
     defaultStyle: Int = 0
 ) : View(context, attrs, defaultStyle) {
 
-    private var data: Collection<TimelineEvent> = emptyList()
+    private var data: List<TimelineEvent> = emptyList()
     private var maxSize: Int = 100
 
+    private var logoText: String = ACTIVE
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.FILL }
     private val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.FILL_AND_STROKE
         color = BLACK
         letterSpacing = 0.2f
         textSize = 8.px.toFloat()
-        strokeWidth = 1f
+        strokeWidth = 0.9f
     }
 
     private val longTaskPaint: Paint
@@ -60,6 +61,7 @@ internal class TimelineView @JvmOverloads constructor(
             }
         }
         clipToOutline = true
+        logoText = ACTIVE
     }
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
@@ -72,8 +74,9 @@ internal class TimelineView @JvmOverloads constructor(
     }
 
     override fun onDraw(canvas: Canvas) {
-        var xOffset = 0f
-        for (item in data) {
+        var xOffset = width.toFloat() - barSize
+        for (i in data.size - 1 downTo 0) {
+            val item = data[i]
             val paint = when (item) {
                 is TimelineEvent.Tick -> tickPaint
                 is TimelineEvent.LongTask -> longTaskPaint
@@ -81,7 +84,6 @@ internal class TimelineView @JvmOverloads constructor(
                 is TimelineEvent.SlowFrame -> slowFramesPaint
                 is TimelineEvent.Resource -> resourceFramesPaint
             }
-
             canvas.drawRect(xOffset, 0f, xOffset + barSize, height.toFloat(), paint)
             if (item.durationNs.ms > 0 || (item !is TimelineEvent.Tick && item !is TimelineEvent.Action)) {
                 canvas.save()
@@ -91,11 +93,23 @@ internal class TimelineView @JvmOverloads constructor(
                 canvas.drawText(text, xOffset + height.toFloat() - textWidth, 0f, textPaint)
                 canvas.restore()
             }
-            xOffset += barSize
+
+            canvas.drawText(
+                logoText,
+                width / 2 - textPaint.measureText(logoText) / 2,
+                height / 2f + textPaint.textSize / 2,
+                textPaint
+            )
+            xOffset -= barSize
         }
     }
 
-    fun update(data: Collection<TimelineEvent>, maxSize: Int) {
+    fun setPaused(isPaused: Boolean) {
+        logoText = if (isPaused) PAUSED else ACTIVE
+        invalidate()
+    }
+
+    fun update(data: List<TimelineEvent>, maxSize: Int) {
         this.data = data
         this.maxSize = maxSize
         this.textPaint.textSize = 1.4f * barSize
@@ -103,19 +117,17 @@ internal class TimelineView @JvmOverloads constructor(
     }
 
     private val Int.px: Int
-        get() {
-            return (this * context.resources.displayMetrics.density).roundToInt()
-        }
+        get() = times(context.resources.displayMetrics.density).roundToInt()
 
     companion object {
-        private const val ALPHA = "FF"
+        val BLACK = Color.parseColor("#000000")
+        val PINK = Color.parseColor("#FFC0CB")
+        val YELLOW = Color.parseColor("#FFFF00")
+        val GREEN = Color.parseColor("#00FF00")
+        val GRAY1 = Color.parseColor("#B5B5B5")
+        val RED = Color.parseColor("#FF0000")
 
-        val BLACK = Color.parseColor("#${ALPHA}000000")
-        val PINK = Color.parseColor("#${ALPHA}FFC0CB")
-        val YELLOW = Color.parseColor("#${ALPHA}FFFF00")
-        val GREEN = Color.parseColor("#${ALPHA}00FF00")
-        val GRAY1 = Color.parseColor("#${ALPHA}999999")
-        val GRAY2 = Color.parseColor("#${ALPHA}888888")
-        val RED = Color.parseColor("#${ALPHA}FF0000")
+        private const val ACTIVE = "\uD83D\uDFE2 Events"
+        private const val PAUSED = "\uD83D\uDD34 Events"
     }
 }

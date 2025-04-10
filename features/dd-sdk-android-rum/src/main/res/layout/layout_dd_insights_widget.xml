@@ -121,7 +121,7 @@
         android:id="@+id/timeline"
         android:layout_width="match_parent"
         android:layout_height="40dp"
-        android:background="#92929292"
+        android:background="#B5B5B5"
         android:layout_marginTop="152dp" />
 
 </FrameLayout>

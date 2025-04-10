@@ -46,6 +46,8 @@ class LocalInsightOverlay : InsightsUpdatesListener {
             ?.unwrap<RumFeature>()
             ?.insightsCollector as? DefaultInsightsCollector
 
+    private var isPaused: Boolean = false
+
     @SuppressLint("SetTextI18n")
     fun attach(activity: Activity) {
         val overlayView = LayoutInflater.from(activity).inflate(
@@ -57,9 +59,13 @@ class LocalInsightOverlay : InsightsUpdatesListener {
 
         overlayView.findViewById<View>(R.id.insights_widget).setOnTouchListener(DragTouchListener())
 
-        timelineView = overlayView.findViewById(R.id.timeline)
         viewName = overlayView.findViewById(R.id.view_name)
-
+        timelineView = overlayView.findViewById<TimelineView?>(R.id.timeline).also {
+            it.setOnClickListener {
+                isPaused = !isPaused
+                timelineView?.setPaused(isPaused)
+            }
+        }
         icon = overlayView.findViewById<View>(R.id.icon).also {
             it.setOnClickListener {
                 fab?.animateVisibility(true)
@@ -78,7 +84,6 @@ class LocalInsightOverlay : InsightsUpdatesListener {
                     widgetView?.animateVisibility(true)
                 }
             }
-
         cpuValue = overlayView.findKeyValue(R.id.vital_cpu, "CPU (tics/s)")
         vmMemoryValue = overlayView.findKeyValue(R.id.vital_mem, "MEM (mb)")
         nativeMemoryValue = overlayView.findKeyValue(R.id.vital_native, "Native (mb)")
@@ -94,6 +99,7 @@ class LocalInsightOverlay : InsightsUpdatesListener {
 
     @SuppressLint("SetTextI18n")
     override fun onDataUpdated() {
+        if (isPaused) return
         multiLet(insightsCollector, timelineView) { collector, timeline ->
             timeline.update(collector.eventsState, collector.maxSize)
             viewName?.text = collector.viewName
