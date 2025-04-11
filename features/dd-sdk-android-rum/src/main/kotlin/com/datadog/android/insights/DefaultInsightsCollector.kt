@@ -130,7 +130,7 @@ class DefaultInsightsCollector(
                 .perSecond()
                 .round(PRECISION)
         }
-        nativeHeapMb = Debug.getNativeHeapAllocatedSize().toDouble().Mb.round(PRECISION)
+        nativeHeapMb = Debug.getNativeHeapAllocatedSize().toDouble().Mb.round(0)
         threadsCount = Thread.activeCount()
     }
 

@@ -16,6 +16,7 @@ import android.view.ViewOutlineProvider
 import com.datadog.android.insights.domain.TimelineEvent
 import com.datadog.android.insights.extensions.ms
 import kotlin.math.roundToInt
+import androidx.core.graphics.withRotation
 
 internal class TimelineView @JvmOverloads constructor(
     context: Context,
@@ -86,12 +87,11 @@ internal class TimelineView @JvmOverloads constructor(
             }
             canvas.drawRect(xOffset, 0f, xOffset + barSize, height.toFloat(), paint)
             if (item.durationNs.ms > 0 || (item !is TimelineEvent.Tick && item !is TimelineEvent.Action)) {
-                canvas.save()
-                canvas.rotate(90f, xOffset, 0f)
-                val text = item.durationNs.ms.toString()
-                val textWidth = textPaint.measureText(text)
-                canvas.drawText(text, xOffset + height.toFloat() - textWidth, 0f, textPaint)
-                canvas.restore()
+                canvas.withRotation(90f, xOffset, 0f) {
+                    val text = item.durationNs.ms.toString()
+                    val textWidth = textPaint.measureText(text)
+                    drawText(text, xOffset + height.toFloat() - textWidth, 0f, textPaint)
+                }
             }
 
             canvas.drawText(

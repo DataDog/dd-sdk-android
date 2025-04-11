@@ -32,7 +32,7 @@
         android:ellipsize="start"
         android:singleLine="true"
         android:includeFontPadding="false"
-        android:textColor="@android:color/black"
+        android:textColor="@android:color/white"
         android:textSize="14sp" />
 
     <!--
