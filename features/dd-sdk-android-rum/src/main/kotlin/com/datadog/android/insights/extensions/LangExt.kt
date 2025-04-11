@@ -5,6 +5,14 @@
  */
 package com.datadog.android.insights.extensions
 
+import android.text.SpannableStringBuilder
+import android.text.Spanned
+import android.text.style.ForegroundColorSpan
+import android.view.View
+import android.view.ViewGroup
+import android.widget.TextView
+import androidx.annotation.IdRes
+import com.datadog.android.rum.R
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.pow
@@ -28,4 +36,19 @@ internal fun Float.clip(size: Int, min: Int, max: Int): Float {
 
 internal fun <F, S> multiLet(first: F?, second: S?, block: (F, S) -> Unit) {
     if (first != null && second != null) block(first, second)
+}
+
+internal fun SpannableStringBuilder.appendColored(text: String, color: Int): SpannableStringBuilder = apply {
+    val offset = length
+    append(text).setSpan(ForegroundColorSpan(color), offset, offset + text.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+}
+
+internal fun View.findKeyValueView(
+    @IdRes id: Int,
+    labelText: String
+): TextView {
+    findViewById<ViewGroup>(id).also { keyValue ->
+        keyValue.findViewById<TextView>(R.id.label).text = labelText
+        return keyValue.findViewById(R.id.value)
+    }
 }

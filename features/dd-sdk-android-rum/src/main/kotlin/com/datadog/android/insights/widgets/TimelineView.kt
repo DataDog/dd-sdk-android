@@ -13,10 +13,10 @@ import android.graphics.Paint
 import android.util.AttributeSet
 import android.view.View
 import android.view.ViewOutlineProvider
+import androidx.core.graphics.withRotation
 import com.datadog.android.insights.domain.TimelineEvent
 import com.datadog.android.insights.extensions.ms
 import kotlin.math.roundToInt
-import androidx.core.graphics.withRotation
 
 internal class TimelineView @JvmOverloads constructor(
     context: Context,

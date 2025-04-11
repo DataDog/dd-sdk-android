@@ -133,4 +133,27 @@
         android:background="#B5B5B5"
         android:layout_marginTop="152dp" />
 
+    <!--
+    layout_marginTop = (40 + 8 + 44 + 8 + 44 + 8 + 40 + 8) = 200
+    icon
+    offset
+    row
+    offset
+    row
+    offset
+    timeline
+    offset
+    legend
+-->
+    <TextView
+        android:id="@+id/legend"
+        android:layout_marginTop="200dp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textColor="@android:color/white"
+        android:gravity="center_horizontal"
+        android:textSize="11sp"
+
+        />
+
 </FrameLayout>

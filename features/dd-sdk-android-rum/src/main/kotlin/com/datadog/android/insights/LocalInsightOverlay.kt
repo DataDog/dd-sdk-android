@@ -7,16 +7,18 @@ package com.datadog.android.insights
 
 import android.annotation.SuppressLint
 import android.app.Activity
+import android.text.SpannableStringBuilder
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
-import androidx.annotation.IdRes
 import com.datadog.android.Datadog
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.insights.extensions.animateRotateBy
 import com.datadog.android.insights.extensions.animateVisibility
+import com.datadog.android.insights.extensions.appendColored
+import com.datadog.android.insights.extensions.findKeyValueView
 import com.datadog.android.insights.extensions.multiLet
 import com.datadog.android.insights.widgets.DragTouchListener
 import com.datadog.android.insights.widgets.TimelineView
@@ -40,6 +42,7 @@ class LocalInsightOverlay : InsightsUpdatesListener {
     private var threadsValue: TextView? = null
     private var gcValue: TextView? = null
     private var slowFrameRate: TextView? = null
+    private var legend: TextView? = null
 
     private val insightsCollector: DefaultInsightsCollector?
         get() = (Datadog.getInstance() as? InternalSdkCore)
@@ -67,6 +70,14 @@ class LocalInsightOverlay : InsightsUpdatesListener {
                 timelineView?.setPaused(isPaused)
             }
         }
+        legend = overlayView.findViewById<TextView?>(R.id.legend).also {
+            it.text = SpannableStringBuilder()
+                .append(SEP)
+                .appendColored(ACTION, TimelineView.PINK).append(SEP)
+                .appendColored(RESOURCE, TimelineView.GREEN).append(SEP)
+                .appendColored(SLOWFRAME, TimelineView.YELLOW).append(SEP)
+                .appendColored(FROZENFRAME, TimelineView.RED).append(SEP)
+        }
         icon = overlayView.findViewById<View>(R.id.icon).also {
             it.setOnClickListener {
                 fab?.animateVisibility(true)
@@ -85,12 +96,12 @@ class LocalInsightOverlay : InsightsUpdatesListener {
                     widgetView?.animateVisibility(true)
                 }
             }
-        cpuValue = overlayView.findKeyValue(R.id.vital_cpu, "CPU (tics/s)")
-        vmMemoryValue = overlayView.findKeyValue(R.id.vital_mem, "MEM (mb)")
-        nativeMemoryValue = overlayView.findKeyValue(R.id.vital_native, "Native (mb)")
-        threadsValue = overlayView.findKeyValue(R.id.vital_threads, "Threads")
-        gcValue = overlayView.findKeyValue(R.id.vital_gc, "GC (calls/s)")
-        slowFrameRate = overlayView.findKeyValue(R.id.vital_slow_frame_rate, "SFR (ms/s)")
+        cpuValue = overlayView.findKeyValueView(R.id.vital_cpu, "CPU (tics/s)")
+        vmMemoryValue = overlayView.findKeyValueView(R.id.vital_mem, "MEM (mb)")
+        nativeMemoryValue = overlayView.findKeyValueView(R.id.vital_native, "Native (mb)")
+        threadsValue = overlayView.findKeyValueView(R.id.vital_threads, "Threads")
+        gcValue = overlayView.findKeyValueView(R.id.vital_gc, "GC (calls/s)")
+        slowFrameRate = overlayView.findKeyValueView(R.id.vital_slow_frame_rate, "SFR (ms/s)")
 
         insightsCollector?.addUpdateListener(this)
     }
@@ -114,13 +125,11 @@ class LocalInsightOverlay : InsightsUpdatesListener {
         }
     }
 
-    private fun View.findKeyValue(
-        @IdRes id: Int,
-        labelText: String
-    ): TextView {
-        findViewById<ViewGroup>(id).also { keyValue ->
-            keyValue.findViewById<TextView>(R.id.label).text = labelText
-            return keyValue.findViewById(R.id.value)
-        }
+    companion object {
+        private const val SEP = " | "
+        private const val ACTION = "Action"
+        private const val RESOURCE = "Resource"
+        private const val SLOWFRAME = "Slow"
+        private const val FROZENFRAME = "Frozen"
     }
 }
