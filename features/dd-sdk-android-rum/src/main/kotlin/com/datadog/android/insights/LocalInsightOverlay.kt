@@ -12,10 +12,11 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
+import androidx.core.view.isVisible
 import com.datadog.android.Datadog
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.core.InternalSdkCore
-import com.datadog.android.insights.extensions.animateRotateBy
+import com.datadog.android.insights.extensions.animateDragTo
 import com.datadog.android.insights.extensions.animateVisibility
 import com.datadog.android.insights.extensions.appendColored
 import com.datadog.android.insights.extensions.findKeyValueView
@@ -32,17 +33,14 @@ class LocalInsightOverlay : InsightsUpdatesListener {
 
     private var viewName: TextView? = null
     private var timelineView: TimelineView? = null
-
     private var fab: View? = null
-    private var icon: View? = null
-
     private var cpuValue: TextView? = null
     private var vmMemoryValue: TextView? = null
     private var nativeMemoryValue: TextView? = null
     private var threadsValue: TextView? = null
     private var gcValue: TextView? = null
     private var slowFrameRate: TextView? = null
-    private var legend: TextView? = null
+    private var timelineLegend: TextView? = null
 
     private val insightsCollector: DefaultInsightsCollector?
         get() = (Datadog.getInstance() as? InternalSdkCore)
@@ -54,48 +52,50 @@ class LocalInsightOverlay : InsightsUpdatesListener {
 
     @SuppressLint("SetTextI18n")
     fun attach(activity: Activity) {
+        if (insightsCollector == null) return
+        val storage = InsightStateStorage(activity)
+
         val overlayView = LayoutInflater.from(activity).inflate(
             R.layout.layout_dd_insights_overlay,
             activity.window.decorView as ViewGroup,
             true
         )
-        val widgetView = overlayView.findViewById<View>(R.id.insights_widget)
-
-        overlayView.findViewById<View>(R.id.insights_widget).setOnTouchListener(DragTouchListener())
+        val widgetView = overlayView.findViewById<View>(R.id.insights_widget).apply {
+            setOnClickListener {
+                storage.widgetDisplayed = false
+                it.animateVisibility(false)
+                fab?.animateVisibility(true)
+            }
+            setOnTouchListener(DragTouchListener(onUp = { storage.widgetPosition = x to y }))
+            restoreCoordinates(storage.widgetPosition)
+            restoreVisibility(storage.widgetDisplayed)
+        }
 
         viewName = overlayView.findViewById(R.id.view_name)
-        timelineView = overlayView.findViewById<TimelineView?>(R.id.timeline).also {
-            it.setOnClickListener {
+        timelineView = overlayView.findViewById<TimelineView?>(R.id.timeline).apply {
+            setOnClickListener {
                 isPaused = !isPaused
                 timelineView?.setPaused(isPaused)
             }
         }
-        legend = overlayView.findViewById<TextView?>(R.id.legend).also {
-            it.text = SpannableStringBuilder()
+        timelineLegend = overlayView.findViewById<TextView?>(R.id.timeline_legend).apply {
+            text = SpannableStringBuilder()
                 .append(SEP)
                 .appendColored(ACTION, TimelineView.PINK).append(SEP)
                 .appendColored(RESOURCE, TimelineView.GREEN).append(SEP)
-                .appendColored(SLOWFRAME, TimelineView.YELLOW).append(SEP)
-                .appendColored(FROZENFRAME, TimelineView.RED).append(SEP)
+                .appendColored(SLOW_FRAME, TimelineView.YELLOW).append(SEP)
+                .appendColored(FROZEN_FRAME, TimelineView.RED).append(SEP)
         }
-        icon = overlayView.findViewById<View>(R.id.icon).also {
-            it.setOnClickListener {
-                fab?.animateVisibility(true)
-                widgetView?.animateVisibility(false)
+        fab = overlayView.findViewById<View>(R.id.fab).apply {
+            setOnClickListener {
+                storage.widgetDisplayed = true
+                it.animateVisibility(false)
+                widgetView?.animateVisibility(true)
             }
+            setOnTouchListener(DragTouchListener(onUp = { storage.fabPosition = x to y }))
+            restoreCoordinates(storage.fabPosition)
+            restoreVisibility(!storage.widgetDisplayed)
         }
-        fab = overlayView.findViewById<View>(R.id.fab)
-            .also {
-                it.setOnTouchListener(
-                    DragTouchListener(
-                        onUp = { animateRotateBy(360 - (rotation % 360)) }
-                    )
-                )
-                it.setOnClickListener {
-                    fab?.animateVisibility(false)
-                    widgetView?.animateVisibility(true)
-                }
-            }
         cpuValue = overlayView.findKeyValueView(R.id.vital_cpu, "CPU (tics/s)")
         vmMemoryValue = overlayView.findKeyValueView(R.id.vital_mem, "MEM (mb)")
         nativeMemoryValue = overlayView.findKeyValueView(R.id.vital_native, "Native (mb)")
@@ -108,6 +108,19 @@ class LocalInsightOverlay : InsightsUpdatesListener {
 
     fun detach(activity: Activity) {
         insightsCollector?.removeUpdateListener(this)
+    }
+
+    private fun View.restoreCoordinates(coordinates: Pair<Float, Float>) {
+        if (InsightStateStorage.isValidPosition(coordinates)) {
+            animateDragTo(coordinates.first, coordinates.second)
+        }
+    }
+
+    private fun View.restoreVisibility(shouldBeVisible: Boolean) {
+        isVisible = shouldBeVisible
+        scaleX = 1f
+        scaleY = 1f
+        alpha = 1f
     }
 
     @SuppressLint("SetTextI18n")
@@ -129,7 +142,7 @@ class LocalInsightOverlay : InsightsUpdatesListener {
         private const val SEP = " | "
         private const val ACTION = "Action"
         private const val RESOURCE = "Resource"
-        private const val SLOWFRAME = "Slow"
-        private const val FROZENFRAME = "Frozen"
+        private const val SLOW_FRAME = "Slow"
+        private const val FROZEN_FRAME = "Frozen"
     }
 }

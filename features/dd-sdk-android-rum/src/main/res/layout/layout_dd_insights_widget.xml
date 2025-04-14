@@ -123,8 +123,8 @@
         offset
         row
         offset
-        row
-        offset
+        row˚
+        offsetk
     -->
     <com.datadog.android.insights.widgets.TimelineView
         android:id="@+id/timeline"
@@ -146,7 +146,7 @@
     legend
 -->
     <TextView
-        android:id="@+id/legend"
+        android:id="@+id/timeline_legend"
         android:layout_marginTop="200dp"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
