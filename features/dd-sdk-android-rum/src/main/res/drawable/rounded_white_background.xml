@@ -5,6 +5,6 @@
   -->
 
 <shape xmlns:android="http://schemas.android.com/apk/res/android">
-    <solid android:color="#CC000000" />
+    <solid android:color="@color/widget_bg" />
     <corners android:radius="16dp" />
 </shape>

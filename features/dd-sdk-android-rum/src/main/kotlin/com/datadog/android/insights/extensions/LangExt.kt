@@ -9,10 +9,10 @@ import android.text.SpannableStringBuilder
 import android.text.Spanned
 import android.text.style.ForegroundColorSpan
 import android.view.View
-import android.view.ViewGroup
-import android.widget.TextView
+import androidx.annotation.ColorRes
 import androidx.annotation.IdRes
-import com.datadog.android.rum.R
+import androidx.core.content.ContextCompat
+import com.datadog.android.insights.widgets.ChartView
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.pow
@@ -43,12 +43,18 @@ internal fun SpannableStringBuilder.appendColored(text: String, color: Int): Spa
     append(text).setSpan(ForegroundColorSpan(color), offset, offset + text.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
 }
 
-internal fun View.findKeyValueView(
+internal fun View.setupChartView(
     @IdRes id: Int,
-    labelText: String
-): TextView {
-    findViewById<ViewGroup>(id).also { keyValue ->
-        keyValue.findViewById<TextView>(R.id.label).text = labelText
-        return keyValue.findViewById(R.id.value)
-    }
+    labelText: String,
+    enableChart: Boolean = true
+): ChartView {
+    return findViewById<ChartView>(id)
+        .also { chart ->
+            chart.label = labelText
+            chart.chartEnabled = enableChart
+        }
 }
+
+internal fun View.px(dp: Int): Float = (dp * context.resources.displayMetrics.density)
+
+internal fun View.color(@ColorRes id: Int) = ContextCompat.getColor(context, id)

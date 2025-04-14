@@ -19,8 +19,10 @@ import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.insights.extensions.animateDragTo
 import com.datadog.android.insights.extensions.animateVisibility
 import com.datadog.android.insights.extensions.appendColored
-import com.datadog.android.insights.extensions.findKeyValueView
+import com.datadog.android.insights.extensions.color
 import com.datadog.android.insights.extensions.multiLet
+import com.datadog.android.insights.extensions.setupChartView
+import com.datadog.android.insights.widgets.ChartView
 import com.datadog.android.insights.widgets.DragTouchListener
 import com.datadog.android.insights.widgets.TimelineView
 import com.datadog.android.rum.ExperimentalRumApi
@@ -34,12 +36,12 @@ class LocalInsightOverlay : InsightsUpdatesListener {
     private var viewName: TextView? = null
     private var timelineView: TimelineView? = null
     private var fab: View? = null
-    private var cpuValue: TextView? = null
-    private var vmMemoryValue: TextView? = null
-    private var nativeMemoryValue: TextView? = null
-    private var threadsValue: TextView? = null
-    private var gcValue: TextView? = null
-    private var slowFrameRate: TextView? = null
+    private var cpuValue: ChartView? = null
+    private var vmMemoryValue: ChartView? = null
+    private var nativeMemoryValue: ChartView? = null
+    private var threadsValue: ChartView? = null
+    private var gcValue: ChartView? = null
+    private var slowFrameRate: ChartView? = null
     private var timelineLegend: TextView? = null
 
     private val insightsCollector: DefaultInsightsCollector?
@@ -67,7 +69,7 @@ class LocalInsightOverlay : InsightsUpdatesListener {
                 fab?.animateVisibility(true)
             }
             setOnTouchListener(DragTouchListener(onUp = { storage.widgetPosition = x to y }))
-            restoreCoordinates(storage.widgetPosition)
+//            restoreCoordinates(storage.widgetPosition)
             restoreVisibility(storage.widgetDisplayed)
         }
 
@@ -81,10 +83,10 @@ class LocalInsightOverlay : InsightsUpdatesListener {
         timelineLegend = overlayView.findViewById<TextView?>(R.id.timeline_legend).apply {
             text = SpannableStringBuilder()
                 .append(SEP)
-                .appendColored(ACTION, TimelineView.PINK).append(SEP)
-                .appendColored(RESOURCE, TimelineView.GREEN).append(SEP)
-                .appendColored(SLOW_FRAME, TimelineView.YELLOW).append(SEP)
-                .appendColored(FROZEN_FRAME, TimelineView.RED).append(SEP)
+                .appendColored(ACTION, color(R.color.timeline_action)).append(SEP)
+                .appendColored(RESOURCE, color(R.color.timeline_resource)).append(SEP)
+                .appendColored(SLOW_FRAME, color(R.color.timeline_slow_frame)).append(SEP)
+                .appendColored(FROZEN_FRAME, color(R.color.timeline_freeze_frame)).append(SEP)
         }
         fab = overlayView.findViewById<View>(R.id.fab).apply {
             setOnClickListener {
@@ -93,15 +95,27 @@ class LocalInsightOverlay : InsightsUpdatesListener {
                 widgetView?.animateVisibility(true)
             }
             setOnTouchListener(DragTouchListener(onUp = { storage.fabPosition = x to y }))
-            restoreCoordinates(storage.fabPosition)
+//            restoreCoordinates(storage.fabPosition)
             restoreVisibility(!storage.widgetDisplayed)
         }
-        cpuValue = overlayView.findKeyValueView(R.id.vital_cpu, "CPU (tics/s)")
-        vmMemoryValue = overlayView.findKeyValueView(R.id.vital_mem, "MEM (mb)")
-        nativeMemoryValue = overlayView.findKeyValueView(R.id.vital_native, "Native (mb)")
-        threadsValue = overlayView.findKeyValueView(R.id.vital_threads, "Threads")
-        gcValue = overlayView.findKeyValueView(R.id.vital_gc, "GC (calls/s)")
-        slowFrameRate = overlayView.findKeyValueView(R.id.vital_slow_frame_rate, "SFR (ms/s)")
+        cpuValue = overlayView.setupChartView(R.id.vital_cpu, "CPU (tics/s)")
+        vmMemoryValue = overlayView.setupChartView(R.id.vital_mem, "MEM (mb)")
+        nativeMemoryValue = overlayView.setupChartView(R.id.vital_native, "Native (mb)")
+        threadsValue = overlayView.setupChartView(
+            id = R.id.vital_threads,
+            labelText = "Threads",
+            enableChart = false
+        )
+        gcValue = overlayView.setupChartView(
+            id = R.id.vital_gc,
+            labelText = "GC (calls/s)",
+            enableChart = false
+        )
+        slowFrameRate = overlayView.setupChartView(
+            id = R.id.vital_slow_frame_rate,
+            labelText = "SFR (ms/s)",
+            enableChart = false
+        )
 
         insightsCollector?.addUpdateListener(this)
     }
@@ -129,12 +143,12 @@ class LocalInsightOverlay : InsightsUpdatesListener {
         multiLet(insightsCollector, timelineView) { collector, timeline ->
             timeline.update(collector.eventsState, collector.maxSize)
             viewName?.text = collector.viewName
-            cpuValue?.text = collector.cpuTicksPerSecond.toString()
-            gcValue?.text = collector.gcCallsPerSecond.toString()
-            vmMemoryValue?.text = collector.vmRssMb.toString()
-            nativeMemoryValue?.text = collector.nativeHeapMb.toString()
-            threadsValue?.text = collector.threadsCount.toString()
-            slowFrameRate?.text = collector.slowFramesRate.toString()
+            cpuValue?.update(collector.cpuTicksPerSecond)
+            gcValue?.update(collector.gcCallsPerSecond)
+            vmMemoryValue?.update(collector.vmRssMb)
+            nativeMemoryValue?.update(collector.nativeHeapMb)
+            threadsValue?.update(collector.threadsCount.toDouble())
+            slowFrameRate?.update(collector.slowFramesRate)
         }
     }
 

@@ -7,7 +7,6 @@ package com.datadog.android.insights.widgets
 
 import android.content.Context
 import android.graphics.Canvas
-import android.graphics.Color
 import android.graphics.Outline
 import android.graphics.Paint
 import android.util.AttributeSet
@@ -15,8 +14,10 @@ import android.view.View
 import android.view.ViewOutlineProvider
 import androidx.core.graphics.withRotation
 import com.datadog.android.insights.domain.TimelineEvent
+import com.datadog.android.insights.extensions.color
 import com.datadog.android.insights.extensions.ms
-import kotlin.math.roundToInt
+import com.datadog.android.insights.extensions.px
+import com.datadog.android.rum.R
 
 internal class TimelineView @JvmOverloads constructor(
     context: Context,
@@ -31,26 +32,26 @@ internal class TimelineView @JvmOverloads constructor(
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.FILL }
     private val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.FILL_AND_STROKE
-        color = BLACK
+        color = color(R.color.widget_text)
         letterSpacing = 0.2f
-        textSize = 8.px.toFloat()
+        textSize = px(8)
         strokeWidth = 0.9f
     }
 
     private val longTaskPaint: Paint
-        get() = paint.apply { color = RED }
+        get() = paint.apply { color = color(R.color.timeline_freeze_frame) }
 
     private val actionsFramesPaint: Paint
-        get() = paint.apply { color = PINK }
+        get() = paint.apply { color = color(R.color.timeline_action) }
 
     private val resourceFramesPaint: Paint
-        get() = paint.apply { color = GREEN }
+        get() = paint.apply { color = color(R.color.timeline_resource) }
 
     private val slowFramesPaint: Paint
-        get() = paint.apply { color = YELLOW }
+        get() = paint.apply { color = color(R.color.timeline_slow_frame) }
 
     private val tickPaint: Paint
-        get() = paint.apply { color = GRAY1 }
+        get() = paint.apply { color = color(R.color.vital_bg) }
 
     private val barSize: Float
         get() = width.toFloat() / (maxSize)
@@ -58,7 +59,7 @@ internal class TimelineView @JvmOverloads constructor(
     init {
         outlineProvider = object : ViewOutlineProvider() {
             override fun getOutline(view: View, outline: Outline) {
-                outline.setRoundRect(0, 0, view.width, view.height, 12.px.toFloat())
+                outline.setRoundRect(0, 0, view.width, view.height, px(12))
             }
         }
         clipToOutline = true
@@ -116,16 +117,8 @@ internal class TimelineView @JvmOverloads constructor(
         invalidate()
     }
 
-    private val Int.px: Int
-        get() = times(context.resources.displayMetrics.density).roundToInt()
-
     companion object {
-        val BLACK = Color.parseColor("#000000")
-        val PINK = Color.parseColor("#FFC0CB")
-        val YELLOW = Color.parseColor("#FFFF00")
-        val GREEN = Color.parseColor("#00FF00")
-        val GRAY1 = Color.parseColor("#B5B5B5")
-        val RED = Color.parseColor("#FF0000")
+
 
         private const val ACTIVE = "\uD83D\uDFE2 Events"
         private const val PAUSED = "\uD83D\uDD34 Events"
