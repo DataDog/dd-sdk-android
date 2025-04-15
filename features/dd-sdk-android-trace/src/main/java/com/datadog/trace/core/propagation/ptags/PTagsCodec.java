@@ -16,7 +16,6 @@ abstract class PTagsCodec {
 
   protected static final TagKey DECISION_MAKER_TAG = TagKey.from("dm");
   protected static final TagKey TRACE_ID_TAG = TagKey.from("tid");
-  protected static final TagKey RUM_SESSION_ID_TAG = TagKey.from("rsid");
   protected static final String PROPAGATION_ERROR_MALFORMED_TID = "malformed_tid ";
   protected static final String PROPAGATION_ERROR_INCONSISTENT_TID = "inconsistent_tid ";
   protected static final TagKey UPSTREAM_SERVICES_DEPRECATED_TAG = TagKey.from("upstream_services");
@@ -36,9 +35,6 @@ abstract class PTagsCodec {
       }
       if (ptags.getTraceIdHighOrderBitsHexTagValue() != null) {
         size = codec.appendTag(sb, TRACE_ID_TAG, ptags.getTraceIdHighOrderBitsHexTagValue(), size);
-      }
-      if (ptags.getRumSessionId() != null) {
-        size = codec.appendTag(sb, RUM_SESSION_ID_TAG, ptags.getRumSessionIdTagValue(), size);
       }
       Iterator<TagElement> it = ptags.getTagPairs().iterator();
       while (it.hasNext() && !codec.isTooLarge(sb, size)) {
