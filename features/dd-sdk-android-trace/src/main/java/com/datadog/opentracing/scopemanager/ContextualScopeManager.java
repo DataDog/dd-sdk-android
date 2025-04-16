@@ -19,7 +19,7 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 public class ContextualScopeManager implements ScopeManager {
-  final ThreadLocal<DDScope> tlsScope = new ThreadLocal<>();
+  static final ThreadLocal<DDScope> tlsScope = new ThreadLocal<>();
   final Deque<ScopeContext> scopeContexts = new LinkedList<>();
   final List<ScopeListener> scopeListeners = new CopyOnWriteArrayList<>();
 
