@@ -17,7 +17,7 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.recorder.resources.BitmapCachesManager
 import com.datadog.android.sessionreplay.internal.recorder.resources.ResourceResolver
-import com.datadog.android.sessionreplay.internal.utils.DrawableUtils.Companion.DRAWABLE_DRAW_FINISHED_WITH_ANDROID_RUNTIME_EXCEPTION
+import com.datadog.android.sessionreplay.internal.utils.DrawableUtils.Companion.DRAWABLE_DRAW_FINISHED_WITH_RUNTIME_EXCEPTION
 import com.datadog.android.sessionreplay.recorder.wrappers.BitmapWrapper
 import com.datadog.android.sessionreplay.recorder.wrappers.CanvasWrapper
 import com.datadog.android.utils.verifyLog
@@ -397,8 +397,13 @@ internal class DrawableUtilsTest {
     }
 
     @Test
-    fun `M call onFailure W createBitmapOfApproxSizeFromDrawable { drawable draw throws AndroidRuntimeException }`() {
-        val exception = AndroidRuntimeException()
+    fun `M call onFailure W createBitmapOfApproxSizeFromDrawable { drawable draw throws runtime exception }`() {
+        val exceptionTypes: List<() -> RuntimeException> = listOf(
+            ::AndroidRuntimeException,
+            ::IndexOutOfBoundsException
+        )
+
+        val exception = exceptionTypes.random()()
 
         // Given
         whenever(mockDrawable.intrinsicWidth).thenReturn(1)
@@ -421,7 +426,7 @@ internal class DrawableUtilsTest {
         mockLogger.verifyLog(
             InternalLogger.Level.ERROR,
             InternalLogger.Target.TELEMETRY,
-            { it == "$DRAWABLE_DRAW_FINISHED_WITH_ANDROID_RUNTIME_EXCEPTION ${mockDrawable.javaClass.canonicalName}" },
+            { it == "$DRAWABLE_DRAW_FINISHED_WITH_RUNTIME_EXCEPTION ${mockDrawable.javaClass.canonicalName}" },
             exception
         )
     }
