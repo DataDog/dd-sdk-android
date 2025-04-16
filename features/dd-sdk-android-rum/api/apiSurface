@@ -164,8 +164,9 @@ class com.datadog.android.rum._RumInternalProxy
   fun setSyntheticsAttribute(String?, String?)
   fun enableJankStatsTracking(android.app.Activity)
   companion object 
-    fun setTelemetryConfigurationEventMapper(RumConfiguration.Builder, com.datadog.android.event.EventMapper<com.datadog.android.telemetry.model.TelemetryConfigurationEvent>): RumConfiguration.Builder
-    fun setAdditionalConfiguration(RumConfiguration.Builder, Map<String, Any>): RumConfiguration.Builder
+    fun setTelemetryConfigurationEventMapper(com.datadog.android.rum.RumConfiguration.Builder, com.datadog.android.event.EventMapper<com.datadog.android.telemetry.model.TelemetryConfigurationEvent>): com.datadog.android.rum.RumConfiguration.Builder
+    fun setAdditionalConfiguration(com.datadog.android.rum.RumConfiguration.Builder, Map<String, Any>): com.datadog.android.rum.RumConfiguration.Builder
+    fun setComposeActionTrackingStrategy(com.datadog.android.rum.RumConfiguration.Builder, com.datadog.android.rum.tracking.ActionTrackingStrategy): com.datadog.android.rum.RumConfiguration.Builder
 data class com.datadog.android.rum.configuration.SlowFramesConfiguration
   constructor(Int = DEFAULT_SLOW_FRAME_RECORDS_MAX_AMOUNT, Long = DEFAULT_FROZEN_FRAME_THRESHOLD_NS, Long = DEFAULT_CONTINUOUS_SLOW_FRAME_THRESHOLD_NS, Long = DEFAULT_FREEZE_DURATION_NS, Long = DEFAULT_VIEW_LIFETIME_THRESHOLD_NS)
   companion object 
@@ -246,6 +247,9 @@ open class com.datadog.android.rum.tracking.AcceptAllSupportFragments : Componen
   override fun getViewName(androidx.fragment.app.Fragment): String?
   override fun equals(Any?): Boolean
   override fun hashCode(): Int
+interface com.datadog.android.rum.tracking.ActionTrackingStrategy : TrackingStrategy
+  fun findTargetForTap(android.view.View, Float, Float): ViewTarget?
+  fun findTargetForScroll(android.view.View, Float, Float): ViewTarget?
 abstract class com.datadog.android.rum.tracking.ActivityLifecycleTrackingStrategy : android.app.Application.ActivityLifecycleCallbacks, TrackingStrategy
   protected var sdkCore: com.datadog.android.api.feature.FeatureSdkCore
   override fun register(com.datadog.android.api.SdkCore, android.content.Context)
@@ -295,6 +299,8 @@ interface com.datadog.android.rum.tracking.TrackingStrategy
   fun unregister(android.content.Context?)
 interface com.datadog.android.rum.tracking.ViewAttributesProvider
   fun extractAttributes(android.view.View, MutableMap<String, Any?>)
+data class com.datadog.android.rum.tracking.ViewTarget
+  constructor(android.view.View? = null, String? = null)
 interface com.datadog.android.rum.tracking.ViewTrackingStrategy : TrackingStrategy
 class com.datadog.android.sqlite.DatadogDatabaseErrorHandler : android.database.DatabaseErrorHandler
   constructor(String? = null, android.database.DatabaseErrorHandler = DefaultDatabaseErrorHandler())

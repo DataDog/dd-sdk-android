@@ -17,7 +17,9 @@ import androidx.core.view.ScrollingView
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumAttributes
+import com.datadog.android.rum.tracking.ActionTrackingStrategy
 import com.datadog.android.rum.tracking.InteractionPredicate
+import com.datadog.android.rum.tracking.ViewTarget
 import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.android.rum.utils.verifyLog
 import fr.xgouchet.elmyr.Forge
@@ -444,8 +446,19 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
         verifyNoInteractions(rumMonitor.mockInstance)
     }
 
-    @Test
-    fun `will do nothing and not log warning if target is in Jetpack Compose view `(forge: Forge) {
+    @ParameterizedTest
+    @ValueSource(
+        strings = [
+            GesturesListener.SCROLL_DIRECTION_DOWN,
+            GesturesListener.SCROLL_DIRECTION_UP,
+            GesturesListener.SCROLL_DIRECTION_LEFT,
+            GesturesListener.SCROLL_DIRECTION_RIGHT
+        ]
+    )
+    fun `M add and stop scroll action W scroll on Compose View`(
+        expectedDirection: String,
+        forge: Forge
+    ) {
         val startDownEvent: MotionEvent = forge.getForgery()
         val listSize = forge.anInt(1, 20)
         val intermediaryEvents =
@@ -453,8 +466,8 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
         val distancesX = forge.aList(listSize) { forge.aFloat() }
         val distancesY = forge.aList(listSize) { forge.aFloat() }
         val targetId = forge.anInt()
-        // ensure the last event is within the bounds of the target
-        val endUpEvent = startDownEvent
+        val endUpEvent = intermediaryEvents[intermediaryEvents.size - 1]
+        stubStopMotionEvent(endUpEvent, startDownEvent, expectedDirection)
         val composeView: ComposeView = mockView(
             id = targetId,
             forEvent = startDownEvent,
@@ -470,11 +483,19 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
             whenever(it.childCount).thenReturn(1)
             whenever(it.getChildAt(0)).thenReturn(composeView)
         }
+        val targetName = forge.anAlphabeticalString()
+        val x = startDownEvent.x
+        val y = startDownEvent.y
+        val mockComposeActionTrackingStrategy: ActionTrackingStrategy = mock {
+            whenever(it.findTargetForScroll(composeView, x, y))
+                .thenReturn(ViewTarget(null, targetName))
+        }
         testedListener = GesturesListener(
             rumMonitor.mockSdkCore,
             WeakReference(mockWindow),
             contextRef = WeakReference(mockAppContext),
-            internalLogger = mockInternalLogger
+            internalLogger = mockInternalLogger,
+            composeActionTrackingStrategy = mockComposeActionTrackingStrategy
         )
 
         // When
@@ -483,10 +504,21 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
             testedListener.onScroll(startDownEvent, event, distancesX[index], distancesY[index])
         }
         testedListener.onUp(endUpEvent)
-
+        val expectedStartAttributes = mutableMapOf<String, Any>()
+        val expectedStopAttributes = expectedStartAttributes +
+            (RumAttributes.ACTION_GESTURE_DIRECTION to expectedDirection)
         // Then
         verifyNoInteractions(mockInternalLogger)
-        verifyNoInteractions(rumMonitor.mockInstance)
+        verify(rumMonitor.mockInstance).startAction(
+            eq(RumActionType.SCROLL),
+            eq(targetName),
+            eq(expectedStartAttributes)
+        )
+        verify(rumMonitor.mockInstance).stopAction(
+            eq(RumActionType.SCROLL),
+            eq(targetName),
+            eq(expectedStopAttributes)
+        )
     }
 
     @ParameterizedTest
@@ -944,6 +976,64 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
         testedListener.onDown(endUpEvent)
 
         verifyNoInteractions(rumMonitor.mockInstance)
+    }
+
+    @Test
+    fun `M find target with both strategies W scroll`(forge: Forge) {
+        val startDownEvent: MotionEvent = forge.getForgery()
+        val scrollEvent: MotionEvent = forge.getForgery()
+        val distancesX = forge.aFloat()
+        val distancesY = forge.aFloat()
+        val targetId = forge.anInt()
+        val endUpEvent: MotionEvent = forge.getForgery()
+        val scrollingTarget: ScrollableListView = mockView(
+            id = targetId,
+            forEvent = startDownEvent,
+            hitTest = true,
+            forge = forge
+        )
+        val mockInteractionPredicate: InteractionPredicate = mock {
+            whenever(it.getTargetName(scrollingTarget)).thenReturn(null)
+        }
+        mockDecorView = mockDecorView<ViewGroup>(
+            id = forge.anInt(),
+            forEvent = startDownEvent,
+            hitTest = true,
+            forge = forge
+        ) {
+            whenever(it.childCount).thenReturn(1)
+            whenever(it.getChildAt(0)).thenReturn(scrollingTarget)
+        }
+        val expectedResourceName = forge.anAlphabeticalString()
+        mockResourcesForTarget(scrollingTarget, expectedResourceName)
+        val mockAndroidActionTrackingStrategy = mock<AndroidActionTrackingStrategy>()
+        val mockComposeActionTrackingStrategy = mock<ActionTrackingStrategy>()
+        testedListener = GesturesListener(
+            rumMonitor.mockSdkCore,
+            WeakReference(mockWindow),
+            interactionPredicate = mockInteractionPredicate,
+            contextRef = WeakReference(mockAppContext),
+            androidActionTrackingStrategy = mockAndroidActionTrackingStrategy,
+            composeActionTrackingStrategy = mockComposeActionTrackingStrategy,
+            internalLogger = mockInternalLogger
+        )
+
+        // When
+        testedListener.onDown(startDownEvent)
+        testedListener.onScroll(startDownEvent, scrollEvent, distancesX, distancesY)
+        testedListener.onUp(endUpEvent)
+
+        // Then
+        verify(mockAndroidActionTrackingStrategy).findTargetForScroll(
+            mockDecorView,
+            startDownEvent.x,
+            startDownEvent.y
+        )
+        verify(mockComposeActionTrackingStrategy).findTargetForScroll(
+            mockDecorView,
+            startDownEvent.x,
+            startDownEvent.y
+        )
     }
 
     // endregion
