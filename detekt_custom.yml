@@ -522,6 +522,7 @@ datadog:
       - "androidx.compose.runtime.Composition.takeIf(kotlin.Function1)"
       - "androidx.compose.runtime.DisposableEffect(kotlin.Any?, kotlin.Any?, kotlin.Function1)"
       - "androidx.compose.runtime.DisposableEffectScope.onDispose(kotlin.Function0)"
+      - "androidx.compose.runtime.LaunchedEffect(kotlin.Any?, kotlin.coroutines.SuspendFunction1)"
       - "androidx.compose.runtime.LaunchedEffect(kotlin.Any?, kotlin.Any?, kotlin.Any?, kotlin.coroutines.SuspendFunction1)"
       - "androidx.compose.runtime.remember(kotlin.Any?, kotlin.Any?, kotlin.Function0)"
       - "androidx.compose.runtime.remember(kotlin.Function0)"
