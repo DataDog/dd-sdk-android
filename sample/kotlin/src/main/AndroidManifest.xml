@@ -18,6 +18,10 @@
         android:name="android.hardware.type.automotive"
         android:required="false" />
 
+    <uses-feature
+        android:name="android.software.xr.immersive"
+        android:required="false" />
+
     <application
         android:name=".SampleApplication"
         android:allowBackup="false"
@@ -31,6 +35,10 @@
         <meta-data
             android:name="com.google.android.gms.car.application"
             android:resource="@xml/automotive_app_desc" />
+
+        <property
+            android:name="android.window.PROPERTY_XR_ACTIVITY_START_MODE"
+            android:value="XR_ACTIVITY_START_MODE_HOME_SPACE" />
 
         <receiver
             android:name=".widget.DatadogWidgetsProvider"
