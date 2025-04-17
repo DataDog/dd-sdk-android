@@ -42,7 +42,7 @@ internal class GesturesListener(
 
     private var scrollEventType: RumActionType? = null
     private var gestureDirection = ""
-    private var scrollTargetReference: WeakReference<ViewTarget?> = WeakReference(null)
+    private var scrollTargetReference: ViewTarget? = null
     private var onTouchDownXPos = 0f
     private var onTouchDownYPos = 0f
 
@@ -105,7 +105,7 @@ internal class GesturesListener(
                 findTarget(decorView, it.x, startDownEvent.y, isScroll = true)
             }
             scrollTarget?.let { target ->
-                scrollTargetReference = WeakReference(target)
+                scrollTargetReference = target
                 val attributes = resolveAttributes(target, null)
                 // although we report scroll here, while it can be swipe in the end, it is fine,
                 // because the final type is taken from stopAction call anyway
@@ -221,7 +221,7 @@ internal class GesturesListener(
 
     private fun closeScrollOrSwipeEvent(type: RumActionType, decorView: View?, onUpEvent: MotionEvent) {
         val registeredRumMonitor = GlobalRumMonitor.get(sdkCore)
-        val scrollTarget = scrollTargetReference.get()
+        val scrollTarget = scrollTargetReference
         if (decorView == null || scrollTarget == null) {
             return
         }
@@ -235,7 +235,7 @@ internal class GesturesListener(
     }
 
     private fun resetScrollEventParameters() {
-        scrollTargetReference.clear()
+        scrollTargetReference = null
         scrollEventType = null
         gestureDirection = ""
         onTouchDownYPos = 0f
@@ -252,17 +252,17 @@ internal class GesturesListener(
 
     private fun sendTapEventWithTarget(target: ViewTarget) {
         val attributes = mutableMapOf<String, Any?>()
-        target.view?.let { view ->
+        target.viewRef.get()?.let { view ->
             val targetId: String = contextRef.get().resourceIdName(view.id)
             attributes[RumAttributes.ACTION_TARGET_CLASS_NAME] = view.targetClassName()
             attributes[RumAttributes.ACTION_TARGET_RESOURCE_ID] = targetId
             attributesProviders.forEach {
                 it.extractAttributes(view, attributes)
             }
-        } ?: run {
+        }
+        target.tag?.let {
             // TODO RUM-9345: Enrich Compose action target attributes.
         }
-
         GlobalRumMonitor.get(sdkCore).addAction(
             RumActionType.TAP,
             resolveViewTargetName(interactionPredicate, target),
@@ -275,14 +275,15 @@ internal class GesturesListener(
         onUpEvent: MotionEvent?
     ): MutableMap<String, Any?> {
         val attributes = mutableMapOf<String, Any?>()
-        scrollTarget.view?.let { view ->
+        scrollTarget.viewRef.get()?.let { view ->
             val targetId: String = contextRef.get().resourceIdName(view.id)
             attributes[RumAttributes.ACTION_TARGET_CLASS_NAME] = view.targetClassName()
             attributes[RumAttributes.ACTION_TARGET_RESOURCE_ID] = targetId
             attributesProviders.forEach {
                 it.extractAttributes(view, attributes)
             }
-        } ?: run {
+        }
+        scrollTarget.tag?.let {
             // TODO RUM-9345: Enrich Compose action target attributes.
         }
         if (onUpEvent != null) {

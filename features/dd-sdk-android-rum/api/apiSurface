@@ -299,8 +299,10 @@ interface com.datadog.android.rum.tracking.TrackingStrategy
   fun unregister(android.content.Context?)
 interface com.datadog.android.rum.tracking.ViewAttributesProvider
   fun extractAttributes(android.view.View, MutableMap<String, Any?>)
-data class com.datadog.android.rum.tracking.ViewTarget
-  constructor(android.view.View? = null, String? = null)
+class com.datadog.android.rum.tracking.ViewTarget
+  constructor(java.lang.ref.WeakReference<android.view.View?> = WeakReference(null), String? = null)
+  override fun equals(Any?): Boolean
+  override fun hashCode(): Int
 interface com.datadog.android.rum.tracking.ViewTrackingStrategy : TrackingStrategy
 class com.datadog.android.sqlite.DatadogDatabaseErrorHandler : android.database.DatabaseErrorHandler
   constructor(String? = null, android.database.DatabaseErrorHandler = DefaultDatabaseErrorHandler())
