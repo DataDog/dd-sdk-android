@@ -6,11 +6,11 @@
 
 package com.datadog.android.trace.internal.handlers
 
+import android.util.Log
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.feature.FeatureSdkCore
-import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.core.internal.utils.toHexString
 import com.datadog.android.internal.utils.loggableStackTrace
 import com.datadog.android.log.LogAttributes
@@ -113,7 +113,8 @@ internal class AndroidSpanLogsHandlerTest {
                         Fields.EVENT to event,
                         LogAttributes.DD_TRACE_ID to fakeTraceId.toHexString().padStart(32, '0'),
                         LogAttributes.DD_SPAN_ID to fakeSpanId.toString()
-                    )
+                    ),
+                    "logStatus" to Log.VERBOSE
                 )
             )
 
@@ -142,7 +143,8 @@ internal class AndroidSpanLogsHandlerTest {
                         LogAttributes.DD_TRACE_ID to fakeTraceId.toHexString().padStart(32, '0'),
                         LogAttributes.DD_SPAN_ID to fakeSpanId.toString()
                     ),
-                    "timestamp" to TimeUnit.MICROSECONDS.toMillis(timestampMicros)
+                    "timestamp" to TimeUnit.MICROSECONDS.toMillis(timestampMicros),
+                    "logStatus" to Log.VERBOSE
                 )
             )
     }
@@ -174,7 +176,8 @@ internal class AndroidSpanLogsHandlerTest {
                     "type" to "span_log",
                     "loggerName" to AndroidSpanLogsHandler.TRACE_LOGGER_NAME,
                     "message" to AndroidSpanLogsHandler.DEFAULT_EVENT_MESSAGE,
-                    "attributes" to logAttributes
+                    "attributes" to logAttributes,
+                    "logStatus" to Log.VERBOSE
                 )
             )
 
@@ -207,7 +210,8 @@ internal class AndroidSpanLogsHandlerTest {
                     "loggerName" to AndroidSpanLogsHandler.TRACE_LOGGER_NAME,
                     "message" to AndroidSpanLogsHandler.DEFAULT_EVENT_MESSAGE,
                     "attributes" to logAttributes,
-                    "timestamp" to TimeUnit.MICROSECONDS.toMillis(timestampMicros)
+                    "timestamp" to TimeUnit.MICROSECONDS.toMillis(timestampMicros),
+                    "logStatus" to Log.VERBOSE
                 )
             )
     }
@@ -248,7 +252,8 @@ internal class AndroidSpanLogsHandlerTest {
                     "type" to "span_log",
                     "loggerName" to AndroidSpanLogsHandler.TRACE_LOGGER_NAME,
                     "message" to AndroidSpanLogsHandler.DEFAULT_EVENT_MESSAGE,
-                    "attributes" to logAttributes
+                    "attributes" to logAttributes,
+                    "logStatus" to Log.VERBOSE
                 )
             )
 
@@ -289,7 +294,8 @@ internal class AndroidSpanLogsHandlerTest {
                     "loggerName" to AndroidSpanLogsHandler.TRACE_LOGGER_NAME,
                     "message" to AndroidSpanLogsHandler.DEFAULT_EVENT_MESSAGE,
                     "attributes" to logAttributes,
-                    "timestamp" to TimeUnit.MICROSECONDS.toMillis(timestampMicros)
+                    "timestamp" to TimeUnit.MICROSECONDS.toMillis(timestampMicros),
+                    "logStatus" to Log.VERBOSE
                 )
             )
     }
@@ -336,7 +342,8 @@ internal class AndroidSpanLogsHandlerTest {
                     "type" to "span_log",
                     "loggerName" to AndroidSpanLogsHandler.TRACE_LOGGER_NAME,
                     "message" to message,
-                    "attributes" to logAttributes
+                    "attributes" to logAttributes,
+                    "logStatus" to Log.VERBOSE
                 )
             )
 
@@ -385,7 +392,8 @@ internal class AndroidSpanLogsHandlerTest {
                     "type" to "span_log",
                     "loggerName" to AndroidSpanLogsHandler.TRACE_LOGGER_NAME,
                     "message" to AndroidSpanLogsHandler.DEFAULT_EVENT_MESSAGE,
-                    "attributes" to logAttributes
+                    "attributes" to logAttributes,
+                    "logStatus" to Log.VERBOSE
                 )
             )
 
@@ -436,7 +444,8 @@ internal class AndroidSpanLogsHandlerTest {
                     "type" to "span_log",
                     "loggerName" to AndroidSpanLogsHandler.TRACE_LOGGER_NAME,
                     "message" to message,
-                    "attributes" to logAttributes
+                    "attributes" to logAttributes,
+                    "logStatus" to Log.VERBOSE
                 )
             )
 

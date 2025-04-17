@@ -6,6 +6,7 @@
 
 package com.datadog.android.trace
 
+import android.util.Log
 import com.datadog.tools.unit.forge.BaseConfigurator
 import com.datadog.tools.unit.setStaticValue
 import fr.xgouchet.elmyr.annotation.Forgery
@@ -105,7 +106,8 @@ class SpanExtTest {
             verify(mockSpan).log(capture())
             assertThat(firstValue)
                 .containsEntry(Fields.MESSAGE, message)
-                .containsOnlyKeys(Fields.MESSAGE)
+                .containsEntry(AndroidTracer.LOG_STATUS, Log.ERROR)
+                .containsOnlyKeys(Fields.MESSAGE, AndroidTracer.LOG_STATUS)
         }
     }
 
