@@ -99,6 +99,7 @@ internal class DrawableUtils(
         fun onFailure()
     }
 
+    @Suppress("TooGenericExceptionCaught")
     @WorkerThread
     private fun drawOnCanvas(
         bitmap: Bitmap,
@@ -118,19 +119,30 @@ internal class DrawableUtils(
 
             try {
                 drawable.draw(canvas)
-            } catch (exception: AndroidRuntimeException) {
-                internalLogger.log(
-                    InternalLogger.Level.ERROR,
-                    InternalLogger.Target.TELEMETRY,
-                    { "$DRAWABLE_DRAW_FINISHED_WITH_ANDROID_RUNTIME_EXCEPTION ${drawable.resolveClassName()}" },
-                    exception
-                )
+            } catch (e: IndexOutOfBoundsException) {
+                logDrawableDrawException(drawable, e)
+                bitmapCreationCallback.onFailure()
+                return
+            } catch (e: AndroidRuntimeException) {
+                logDrawableDrawException(drawable, e)
                 bitmapCreationCallback.onFailure()
                 return
             }
 
             bitmapCreationCallback.onReady(bitmap)
         }
+    }
+
+    private fun logDrawableDrawException(
+        drawable: Drawable,
+        runtimeException: RuntimeException
+    ) {
+        internalLogger.log(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.TELEMETRY,
+            { "$DRAWABLE_DRAW_FINISHED_WITH_RUNTIME_EXCEPTION ${drawable.resolveClassName()}" },
+            runtimeException
+        )
     }
 
     @WorkerThread
@@ -204,7 +216,7 @@ internal class DrawableUtils(
         private const val ARGB_8888_PIXEL_SIZE_BYTES = 4
         internal const val FAILED_TO_CREATE_SCALED_BITMAP_ERROR =
             "Failed to create a scaled bitmap from the drawable"
-        internal const val DRAWABLE_DRAW_FINISHED_WITH_ANDROID_RUNTIME_EXCEPTION =
+        internal const val DRAWABLE_DRAW_FINISHED_WITH_RUNTIME_EXCEPTION =
             "Drawable.draw call finished with an exception. Drawable type is"
     }
 }

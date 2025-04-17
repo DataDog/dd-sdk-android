@@ -17,7 +17,7 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.recorder.resources.BitmapCachesManager
 import com.datadog.android.sessionreplay.internal.recorder.resources.ResourceResolver
-import com.datadog.android.sessionreplay.internal.utils.DrawableUtils.Companion.DRAWABLE_DRAW_FINISHED_WITH_ANDROID_RUNTIME_EXCEPTION
+import com.datadog.android.sessionreplay.internal.utils.DrawableUtils.Companion.DRAWABLE_DRAW_FINISHED_WITH_RUNTIME_EXCEPTION
 import com.datadog.android.sessionreplay.recorder.wrappers.BitmapWrapper
 import com.datadog.android.sessionreplay.recorder.wrappers.CanvasWrapper
 import com.datadog.android.utils.verifyLog
@@ -29,6 +29,8 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.MethodSource
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
@@ -42,6 +44,7 @@ import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Future
+import java.util.stream.Stream
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -396,14 +399,15 @@ internal class DrawableUtilsTest {
         assertThat(actualBitmap).isEqualTo(mockScaledBitmap)
     }
 
-    @Test
-    fun `M call onFailure W createBitmapOfApproxSizeFromDrawable { drawable draw throws AndroidRuntimeException }`() {
-        val exception = AndroidRuntimeException()
-
+    @ParameterizedTest
+    @MethodSource("exceptionTypes")
+    fun `M call onFailure W createBitmapOfApproxSizeFromDrawable { drawable draw throws runtime exception }`(
+        exceptionType: RuntimeException
+    ) {
         // Given
         whenever(mockDrawable.intrinsicWidth).thenReturn(1)
         whenever(mockDrawable.intrinsicHeight).thenReturn(1)
-        whenever(mockDrawable.draw(any())).thenThrow(exception)
+        whenever(mockDrawable.draw(any())).thenThrow(exceptionType)
 
         // When
         testedDrawableUtils.createBitmapOfApproxSizeFromDrawable(
@@ -421,8 +425,18 @@ internal class DrawableUtilsTest {
         mockLogger.verifyLog(
             InternalLogger.Level.ERROR,
             InternalLogger.Target.TELEMETRY,
-            { it == "$DRAWABLE_DRAW_FINISHED_WITH_ANDROID_RUNTIME_EXCEPTION ${mockDrawable.javaClass.canonicalName}" },
-            exception
+            { it == "$DRAWABLE_DRAW_FINISHED_WITH_RUNTIME_EXCEPTION ${mockDrawable.javaClass.canonicalName}" },
+            exceptionType
         )
+    }
+
+    companion object {
+        @JvmStatic
+        fun exceptionTypes(): Stream<RuntimeException> {
+            return Stream.of(
+                AndroidRuntimeException(),
+                IndexOutOfBoundsException()
+            )
+        }
     }
 }
