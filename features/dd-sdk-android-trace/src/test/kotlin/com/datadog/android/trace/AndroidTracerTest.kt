@@ -6,6 +6,7 @@
 
 package com.datadog.android.trace
 
+import android.util.Log
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureScope
@@ -653,7 +654,8 @@ internal class AndroidTracerTest {
             verify(mockSpan).log(capture())
             assertThat(firstValue)
                 .containsEntry(Fields.MESSAGE, anErrorMessage)
-                .containsOnlyKeys(Fields.MESSAGE)
+                .containsEntry(AndroidTracer.LOG_STATUS, Log.ERROR)
+                .containsOnlyKeys(Fields.MESSAGE, AndroidTracer.LOG_STATUS)
         }
     }
 
