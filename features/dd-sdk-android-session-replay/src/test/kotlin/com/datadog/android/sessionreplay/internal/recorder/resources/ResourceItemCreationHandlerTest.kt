@@ -35,15 +35,11 @@ internal class ResourceItemCreationHandlerTest {
     lateinit var mockDataQueueHandler: DataQueueHandler
 
     @StringForgery
-    lateinit var fakeApplicationId: String
-
-    @StringForgery
     lateinit var fakeResourceId: String
 
     @BeforeEach
     fun `set up`() {
         testedHandler = ResourceItemCreationHandler(
-            applicationId = fakeApplicationId,
             recordedDataQueueHandler = mockDataQueueHandler
         )
     }
@@ -59,8 +55,7 @@ internal class ResourceItemCreationHandlerTest {
         // Then
         verify(mockDataQueueHandler).addResourceItem(
             identifier = fakeResourceId,
-            resourceData = fakeByteArray,
-            applicationId = fakeApplicationId
+            resourceData = fakeByteArray
         )
     }
 
@@ -76,8 +71,7 @@ internal class ResourceItemCreationHandlerTest {
         // Then
         verify(mockDataQueueHandler).addResourceItem(
             identifier = fakeResourceId,
-            resourceData = fakeByteArray,
-            applicationId = fakeApplicationId
+            resourceData = fakeByteArray
         )
     }
 

@@ -47,7 +47,7 @@ internal class RumActionScope(
     internal var type: RumActionType = initialType
     internal var name: String = initialName
     internal val startedNanos: Long = eventTime.nanoTime
-    internal var stoppedNanos: Long = startedNanos
+    private var stoppedNanos: Long = startedNanos
     private var lastInteractionNanos: Long = startedNanos
     private val networkInfo = sdkCore.networkInfo
 

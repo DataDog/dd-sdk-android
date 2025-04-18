@@ -11,7 +11,6 @@ import com.datadog.android.sessionreplay.internal.processor.RecordedQueuedItemCo
 internal class ResourceRecordedDataQueueItem(
     recordedQueuedItemContext: RecordedQueuedItemContext,
     val identifier: String,
-    val applicationId: String,
     val resourceData: ByteArray
 ) : RecordedDataQueueItem(recordedQueuedItemContext) {
 

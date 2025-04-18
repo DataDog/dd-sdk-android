@@ -36,10 +36,8 @@ internal class ResourceResolver(
     private val logger: InternalLogger,
     private val md5HashGenerator: MD5HashGenerator,
     private val recordedDataQueueHandler: DataQueueHandler,
-    private val applicationId: String,
     private val resourceItemCreationHandler: ResourceItemCreationHandler = ResourceItemCreationHandler(
-        recordedDataQueueHandler = recordedDataQueueHandler,
-        applicationId = applicationId
+        recordedDataQueueHandler = recordedDataQueueHandler
     )
 ) {
 

@@ -45,7 +45,7 @@ internal class RecorderWindowCallback(
     private val windowInspector: WindowInspector = WindowInspector
 ) : Window.Callback by wrappedCallback {
     private val pixelsDensity = appContext.resources.displayMetrics.density
-    internal var pointerInteractions: MutableList<MobileSegment.MobileRecord> = LinkedList()
+    internal val pointerInteractions: MutableList<MobileSegment.MobileRecord> = LinkedList()
     private var lastOnMoveUpdateTimeInNs: Long = 0L
     private var lastPerformedFlushTimeInNs: Long = System.nanoTime()
     private var shouldRecordMotion: Boolean = false

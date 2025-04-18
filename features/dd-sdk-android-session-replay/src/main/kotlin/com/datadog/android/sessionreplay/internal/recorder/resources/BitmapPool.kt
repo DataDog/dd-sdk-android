@@ -22,7 +22,7 @@ internal class BitmapPool(
     private val cacheUtils: CacheUtils<String, Bitmap> = CacheUtils(),
     @get:VisibleForTesting internal val bitmapsBySize: HashMap<String, HashSet<Bitmap>> = HashMap(),
     @get:VisibleForTesting internal val usedBitmaps: HashSet<Bitmap> = HashSet(),
-    private var cache: LruCache<String, Bitmap> = object :
+    private val cache: LruCache<String, Bitmap> = object :
         LruCache<String, Bitmap>(MAX_CACHE_MEMORY_SIZE_BYTES) {
         override fun sizeOf(key: String, value: Bitmap): Int {
             return value.allocationByteCount
@@ -57,7 +57,7 @@ internal class BitmapPool(
         }
     }
 ) : Cache<String, Bitmap>, ComponentCallbacks2 {
-    private var bitmapIndex = AtomicInteger(0)
+    private val bitmapIndex = AtomicInteger(0)
 
     @Synchronized
     override fun put(value: Bitmap) {
