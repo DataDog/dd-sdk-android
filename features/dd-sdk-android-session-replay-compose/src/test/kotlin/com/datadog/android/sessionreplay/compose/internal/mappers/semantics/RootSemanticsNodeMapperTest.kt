@@ -34,6 +34,7 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 
@@ -92,19 +93,24 @@ class RootSemanticsNodeMapperTest {
 
     private lateinit var testedRootSemanticsNodeMapper: RootSemanticsNodeMapper
 
+    private lateinit var rolesToMappers: Map<Role, SemanticsNodeMapper>
+
     @BeforeEach
     fun `set up`() {
+        rolesToMappers = mapOf(
+            Role.RadioButton to mockRadioButtonSemanticsNodeMapper,
+            Role.Tab to mockTabSemanticsNodeMapper,
+            Role.Button to mockButtonSemanticsNodeMapper,
+            Role.Image to mockImageSemanticsNodeMapper,
+            Role.Checkbox to mockCheckboxSemanticsNodeMapper,
+            Role.Switch to mockSwitchSemanticsNodeMapper,
+            Role.DropdownList to mockContainerSemanticsNodeMapper
+        )
+
         testedRootSemanticsNodeMapper = RootSemanticsNodeMapper(
             colorStringFormatter = mockColorStringFormatter,
             semanticsUtils = mockSemanticsUtils,
-            semanticsNodeMapper = mapOf(
-                Role.RadioButton to mockRadioButtonSemanticsNodeMapper,
-                Role.Tab to mockTabSemanticsNodeMapper,
-                Role.Button to mockButtonSemanticsNodeMapper,
-                Role.Image to mockImageSemanticsNodeMapper,
-                Role.Checkbox to mockCheckboxSemanticsNodeMapper,
-                Role.Switch to mockSwitchSemanticsNodeMapper
-            ),
+            semanticsNodeMapper = rolesToMappers,
             textSemanticsNodeMapper = mockTextSemanticsNodeMapper,
             containerSemanticsNodeMapper = mockContainerSemanticsNodeMapper,
             composeHiddenMapper = mockComposeHiddenMapper,
@@ -286,15 +292,7 @@ class RootSemanticsNodeMapperTest {
     fun `M use ComposeHideMapper W node is hidden`(forge: Forge) {
         // Given
         val fakeRole = forge.anElementFrom(
-            listOf(
-                Role.Image,
-                Role.Tab,
-                Role.Button,
-                Role.Switch,
-                Role.RadioButton,
-                Role.DropdownList,
-                null
-            )
+            rolesToMappers.keys + null
         )
         val mockSemanticsNode = mockSemanticsNode(fakeRole)
         whenever(mockSemanticsUtils.isNodeHidden(mockSemanticsNode)) doReturn true
@@ -313,6 +311,27 @@ class RootSemanticsNodeMapperTest {
             any(),
             eq(mockAsyncJobStatusCallback)
         )
+    }
+
+    @Test
+    fun `M skip semanticsNode W position unavailable`() {
+        // Given
+        rolesToMappers.forEach { (role, mapper) ->
+            val node = mockSemanticsNode(role)
+
+            whenever(mockSemanticsUtils.isNodePositionUnavailable(node)).thenReturn(true)
+
+            // When
+            testedRootSemanticsNodeMapper.createComposeWireframes(
+                node,
+                fakeMappingContext.systemInformation.screenDensity,
+                fakeMappingContext,
+                mockAsyncJobStatusCallback
+            )
+
+            // Then
+            verifyNoInteractions(mapper)
+        }
     }
 
     @Test

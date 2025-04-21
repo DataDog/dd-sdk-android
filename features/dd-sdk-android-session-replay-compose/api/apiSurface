@@ -8,3 +8,5 @@ fun androidx.compose.ui.Modifier.sessionReplayHide(Boolean): androidx.compose.ui
 fun androidx.compose.ui.Modifier.sessionReplayImagePrivacy(com.datadog.android.sessionreplay.ImagePrivacy): androidx.compose.ui.Modifier
 fun androidx.compose.ui.Modifier.sessionReplayTextAndInputPrivacy(com.datadog.android.sessionreplay.TextAndInputPrivacy): androidx.compose.ui.Modifier
 fun androidx.compose.ui.Modifier.sessionReplayTouchPrivacy(com.datadog.android.sessionreplay.TouchPrivacy): androidx.compose.ui.Modifier
+fun androidx.compose.ui.semantics.SemanticsNode.isLeafNode(): Boolean
+fun androidx.compose.ui.semantics.SemanticsNode.isPositionedAtOrigin(): Boolean

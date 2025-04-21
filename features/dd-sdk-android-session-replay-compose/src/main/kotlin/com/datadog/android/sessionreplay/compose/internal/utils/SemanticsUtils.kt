@@ -37,6 +37,8 @@ import com.datadog.android.sessionreplay.compose.TextInputSemanticsPropertyKey
 import com.datadog.android.sessionreplay.compose.TouchSemanticsPropertyKey
 import com.datadog.android.sessionreplay.compose.internal.data.BitmapInfo
 import com.datadog.android.sessionreplay.compose.internal.mappers.semantics.TextLayoutInfo
+import com.datadog.android.sessionreplay.compose.isLeafNode
+import com.datadog.android.sessionreplay.compose.isPositionedAtOrigin
 import com.datadog.android.sessionreplay.utils.GlobalBounds
 
 @Suppress("TooManyFunctions")
@@ -327,6 +329,10 @@ internal class SemanticsUtils(private val reflectionUtils: ReflectionUtils = Ref
 
     internal fun isNodeHidden(semanticsNode: SemanticsNode): Boolean {
         return semanticsNode.config.getOrNull(SessionReplayHidePropertyKey) ?: false
+    }
+
+    internal fun isNodePositionUnavailable(semanticsNode: SemanticsNode): Boolean {
+        return semanticsNode.isLeafNode() && semanticsNode.isPositionedAtOrigin()
     }
 
     internal fun getInteropView(semanticsNode: SemanticsNode): View? {
