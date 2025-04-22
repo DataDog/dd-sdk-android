@@ -20,7 +20,6 @@ import com.datadog.android.sessionreplay.internal.recorder.WindowCallbackInterce
 import com.datadog.android.sessionreplay.internal.recorder.WindowInspector
 import com.datadog.android.sessionreplay.internal.resources.ResourceDataStoreManager
 import com.datadog.android.sessionreplay.internal.storage.RecordWriter
-import com.datadog.android.sessionreplay.internal.utils.RumContextProvider
 import com.datadog.android.sessionreplay.internal.utils.TimeProvider
 import com.datadog.android.sessionreplay.utils.config.ApplicationContextTestConfiguration
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
@@ -53,9 +52,6 @@ internal class SessionReplayRecorderTest {
 
     @Mock
     private lateinit var mockViewOnDrawInterceptor: ViewOnDrawInterceptor
-
-    @Mock
-    private lateinit var mockRumContextProvider: RumContextProvider
 
     @Mock
     private lateinit var mockRecordWriter: RecordWriter
@@ -110,7 +106,6 @@ internal class SessionReplayRecorderTest {
         }
         testedSessionReplayRecorder = SessionReplayRecorder(
             appContext = appContext.mockInstance,
-            rumContextProvider = mockRumContextProvider,
             textAndInputPrivacy = fakeTextAndInputPrivacy,
             imagePrivacy = fakeImagePrivacy,
             touchPrivacyManager = mockTouchPrivacyManager,

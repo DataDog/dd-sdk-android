@@ -33,7 +33,7 @@ internal class BatchFileOrchestrator(
     internal val config: FilePersistenceConfig,
     private val internalLogger: InternalLogger,
     private val metricsDispatcher: MetricsDispatcher,
-    private var pendingFiles: AtomicInteger = AtomicInteger(0)
+    private val pendingFiles: AtomicInteger = AtomicInteger(0)
 ) : FileOrchestrator {
 
     private val fileFilter = BatchFileFilter()

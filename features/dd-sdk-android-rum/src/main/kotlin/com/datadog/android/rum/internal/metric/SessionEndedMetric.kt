@@ -31,7 +31,7 @@ internal class SessionEndedMetric(
 
     private val missedEventCountByType = mutableMapOf<MissedEventType, Int>()
 
-    private var sessionReplaySkippedFramesCount: AtomicInteger = AtomicInteger(0)
+    private val sessionReplaySkippedFramesCount: AtomicInteger = AtomicInteger(0)
 
     private var firstTrackedView: TrackedView? = null
     private var lastTrackedView: TrackedView? = null

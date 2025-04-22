@@ -89,9 +89,6 @@ internal class RecordedDataQueueHandlerTest {
     lateinit var fakeRecordedQueuedItemContext: RecordedQueuedItemContext
 
     @Forgery
-    lateinit var fakeApplicationId: UUID
-
-    @Forgery
     lateinit var fakeIdentifier: UUID
 
     @Forgery
@@ -473,13 +470,11 @@ internal class RecordedDataQueueHandlerTest {
     @Test
     fun `M call processor W tryToConsumeItems() { valid Resource Event item }`(
         @StringForgery fakeIdentifier: String,
-        @StringForgery fakeApplicationId: String,
         @StringForgery fakePayload: String
     ) {
         // Given
         val item = testedHandler.addResourceItem(
             fakeIdentifier,
-            fakeApplicationId,
             fakePayload.toByteArray()
         ) ?: fail("item is null")
 
@@ -494,7 +489,6 @@ internal class RecordedDataQueueHandlerTest {
         assertThat(resourceEventItemCaptor.firstValue.recordedQueuedItemContext)
             .isEqualTo(item.recordedQueuedItemContext)
         assertThat(resourceEventItemCaptor.firstValue.identifier).isEqualTo(fakeIdentifier)
-        assertThat(resourceEventItemCaptor.firstValue.applicationId).isEqualTo(fakeApplicationId)
         assertThat(resourceEventItemCaptor.firstValue.resourceData).isEqualTo(fakePayload.toByteArray())
     }
 
@@ -651,7 +645,6 @@ internal class RecordedDataQueueHandlerTest {
         // When
         val result = testedHandler.addResourceItem(
             fakeIdentifier.toString(),
-            fakeApplicationId.toString(),
             ByteArray(0)
         )
 
@@ -668,7 +661,6 @@ internal class RecordedDataQueueHandlerTest {
         // When
         val result = testedHandler.addResourceItem(
             fakeIdentifier.toString(),
-            fakeApplicationId.toString(),
             fakeResourceData
         ) as ResourceRecordedDataQueueItem
 
@@ -676,8 +668,6 @@ internal class RecordedDataQueueHandlerTest {
         assertThat(fakeRecordedDataQueue.size).isEqualTo(1)
         assertThat(result.recordedQueuedItemContext)
             .isEqualTo(fakeRecordedQueuedItemContext)
-        assertThat(result.applicationId)
-            .isEqualTo(fakeApplicationId.toString())
         assertThat(result.identifier)
             .isEqualTo(fakeIdentifier.toString())
         assertThat(result.resourceData)

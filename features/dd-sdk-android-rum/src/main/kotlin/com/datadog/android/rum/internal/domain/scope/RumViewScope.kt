@@ -99,7 +99,7 @@ internal open class RumViewScope(
     internal var stoppedNanos: Long = eventTime.nanoTime
     internal var viewLoadingTime: Long? = null
 
-    internal val serverTimeOffsetInMs = sdkCore.time.serverTimeOffsetMs
+    private val serverTimeOffsetInMs = sdkCore.time.serverTimeOffsetMs
     internal val eventTimestamp = eventTime.timestamp + serverTimeOffsetInMs
 
     internal var activeActionScope: RumScope? = null
@@ -156,7 +156,7 @@ internal open class RumViewScope(
         }
     }
 
-    private var performanceMetrics: MutableMap<RumPerformanceMetric, VitalInfo> = mutableMapOf()
+    private val performanceMetrics: MutableMap<RumPerformanceMetric, VitalInfo> = mutableMapOf()
 
     // endregion
 
@@ -345,13 +345,13 @@ internal open class RumViewScope(
                 )
                 sdkCore.updateFeatureContext(Feature.RUM_FEATURE_NAME) { currentRumContext ->
                     val canUpdate = when {
-                        currentRumContext["session_id"] != this.sessionId -> {
+                        currentRumContext[RumContext.SESSION_ID] != this.sessionId -> {
                             // we have a new session, so whatever is in the Global context is
                             // not valid anyway
                             true
                         }
 
-                        currentRumContext["view_id"] == this.viewId -> true
+                        currentRumContext[RumContext.VIEW_ID] == this.viewId -> true
                         else -> false
                     }
                     if (canUpdate) {
@@ -676,8 +676,8 @@ internal open class RumViewScope(
 
         sdkCore.updateFeatureContext(Feature.RUM_FEATURE_NAME) { currentRumContext ->
             val canUpdate = when {
-                currentRumContext["session_id"] != sessionId -> true
-                currentRumContext["view_id"] == viewId -> true
+                currentRumContext[RumContext.SESSION_ID] != sessionId -> true
+                currentRumContext[RumContext.VIEW_ID] == viewId -> true
                 else -> false
             }
             if (canUpdate) {

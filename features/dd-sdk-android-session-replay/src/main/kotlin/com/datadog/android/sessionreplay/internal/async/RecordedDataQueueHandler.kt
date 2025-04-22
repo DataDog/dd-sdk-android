@@ -26,8 +26,8 @@ import java.util.concurrent.ExecutorService
  * The items are added to the queue from the main thread and processed on a background thread.
  */
 internal class RecordedDataQueueHandler(
-    private var processor: RecordedDataProcessor,
-    private var rumContextDataHandler: RumContextDataHandler,
+    private val processor: RecordedDataProcessor,
+    private val rumContextDataHandler: RumContextDataHandler,
     private val internalLogger: InternalLogger,
     private val executorService: ExecutorService,
     internal val recordedDataQueue: Queue<RecordedDataQueueItem>,
@@ -44,7 +44,6 @@ internal class RecordedDataQueueHandler(
     @MainThread
     override fun addResourceItem(
         identifier: String,
-        applicationId: String,
         resourceData: ByteArray
     ): ResourceRecordedDataQueueItem? {
         val rumContextData = rumContextDataHandler.createRumContextData()
@@ -53,7 +52,6 @@ internal class RecordedDataQueueHandler(
         val item = ResourceRecordedDataQueueItem(
             recordedQueuedItemContext = rumContextData,
             identifier = identifier,
-            applicationId = applicationId,
             resourceData = resourceData
         )
 

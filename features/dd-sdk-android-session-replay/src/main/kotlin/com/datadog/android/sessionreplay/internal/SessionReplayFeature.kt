@@ -100,16 +100,16 @@ internal class SessionReplayFeature(
 
     // should we record the session - a combination of rum sampling, sr sampling
     // and sr stop/start state
-    private var shouldRecord = AtomicBoolean(startRecordingImmediately)
+    private val shouldRecord = AtomicBoolean(startRecordingImmediately)
 
     // used to monitor changes to an active session due to manual stop/start
-    private var recordingStateChanged = AtomicBoolean(false)
+    private val recordingStateChanged = AtomicBoolean(false)
 
     // are we recording at the moment
-    private var isRecording = AtomicBoolean(false)
+    private val isRecording = AtomicBoolean(false)
 
     // is the current session sampled in
-    private var isSessionSampledIn = AtomicBoolean(false)
+    private val isSessionSampledIn = AtomicBoolean(false)
 
     internal var sessionReplayRecorder: Recorder = NoOpRecorder()
     internal var dataWriter: RecordWriter = NoOpRecordWriter()
