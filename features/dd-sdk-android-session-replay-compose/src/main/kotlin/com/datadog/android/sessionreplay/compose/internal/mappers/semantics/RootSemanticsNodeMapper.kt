@@ -82,6 +82,7 @@ internal class RootSemanticsNodeMapper(
         return wireframes
     }
 
+    @Suppress("ReturnCount")
     @UiThread
     private fun createComposerWireframes(
         semanticsNode: SemanticsNode,
@@ -91,6 +92,12 @@ internal class RootSemanticsNodeMapper(
         asyncJobStatusCallback: AsyncJobStatusCallback,
         mappingContext: MappingContext
     ) {
+        if (semanticsUtils.isNodePositionUnavailable(semanticsNode)) {
+            // If we cant get the real position, we skip the node.
+            // This is to prevent visual artifacts of leaf nodes at 0,0 in the replays.
+            return
+        }
+
         // If Hidden node is detected, add placeholder wireframe and return
         if (semanticsUtils.isNodeHidden(semanticsNode)) {
             composeHiddenMapper.map(
