@@ -17,8 +17,3 @@ public final class com/datadog/android/sessionreplay/compose/ModifierExtKt {
 	public static final fun sessionReplayTouchPrivacy (Landroidx/compose/ui/Modifier;Lcom/datadog/android/sessionreplay/TouchPrivacy;)Landroidx/compose/ui/Modifier;
 }
 
-public final class com/datadog/android/sessionreplay/compose/SemanticsNodeExtKt {
-	public static final fun isLeafNode (Landroidx/compose/ui/semantics/SemanticsNode;)Z
-	public static final fun isPositionedAtOrigin (Landroidx/compose/ui/semantics/SemanticsNode;)Z
-}
-

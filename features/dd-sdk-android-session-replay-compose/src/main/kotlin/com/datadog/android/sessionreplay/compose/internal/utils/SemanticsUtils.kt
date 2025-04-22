@@ -36,9 +36,9 @@ import com.datadog.android.sessionreplay.compose.SessionReplayHidePropertyKey
 import com.datadog.android.sessionreplay.compose.TextInputSemanticsPropertyKey
 import com.datadog.android.sessionreplay.compose.TouchSemanticsPropertyKey
 import com.datadog.android.sessionreplay.compose.internal.data.BitmapInfo
+import com.datadog.android.sessionreplay.compose.internal.isLeafNode
+import com.datadog.android.sessionreplay.compose.internal.isPositionedAtOrigin
 import com.datadog.android.sessionreplay.compose.internal.mappers.semantics.TextLayoutInfo
-import com.datadog.android.sessionreplay.compose.isLeafNode
-import com.datadog.android.sessionreplay.compose.isPositionedAtOrigin
 import com.datadog.android.sessionreplay.utils.GlobalBounds
 
 @Suppress("TooManyFunctions")

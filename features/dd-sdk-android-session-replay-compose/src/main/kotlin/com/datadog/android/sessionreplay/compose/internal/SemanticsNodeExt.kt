@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.sessionreplay.compose
+package com.datadog.android.sessionreplay.compose.internal
 
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.semantics.SemanticsNode
@@ -12,13 +12,13 @@ import androidx.compose.ui.semantics.SemanticsNode
 /**
  * Checks if the [SemanticsNode] is a leaf node, meaning it has no children.
  */
-fun SemanticsNode.isLeafNode(): Boolean {
+internal fun SemanticsNode.isLeafNode(): Boolean {
     return this.children.isEmpty()
 }
 
 /**
  * Checks if the [SemanticsNode] is positioned at the origin (0, 0) in the root coordinate space.
  */
-fun SemanticsNode.isPositionedAtOrigin(): Boolean {
+internal fun SemanticsNode.isPositionedAtOrigin(): Boolean {
     return this.positionInRoot == Offset.Zero
 }
