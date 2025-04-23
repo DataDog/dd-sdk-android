@@ -14,6 +14,7 @@ import androidx.core.view.ScrollingView
 import com.datadog.android.api.SdkCore
 import com.datadog.android.rum.tracking.ActionTrackingStrategy
 import com.datadog.android.rum.tracking.ViewTarget
+import java.lang.ref.WeakReference
 
 /**
  * Implementation of [ActionTrackingStrategy] for Android View, used to locate the target view
@@ -34,7 +35,7 @@ internal class AndroidActionTrackingStrategy : ActionTrackingStrategy {
 
     override fun findTargetForTap(view: View, x: Float, y: Float): ViewTarget? {
         return if (hitTest(view, x, y, coordinatesContainer) && isValidTapTarget(view)) {
-            ViewTarget(view)
+            ViewTarget(viewRef = WeakReference(view))
         } else {
             null
         }
@@ -42,7 +43,7 @@ internal class AndroidActionTrackingStrategy : ActionTrackingStrategy {
 
     override fun findTargetForScroll(view: View, x: Float, y: Float): ViewTarget? {
         return if (hitTest(view, x, y, coordinatesContainer) && isValidScrollableTarget(view)) {
-            ViewTarget(view)
+            ViewTarget(viewRef = WeakReference(view))
         } else {
             null
         }

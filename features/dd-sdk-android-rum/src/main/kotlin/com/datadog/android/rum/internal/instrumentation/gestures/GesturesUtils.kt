@@ -17,7 +17,7 @@ internal fun resolveViewTargetName(
     interactionPredicate: InteractionPredicate,
     target: ViewTarget
 ): String {
-    return target.view?.let { view ->
+    return target.viewRef.get()?.let { view ->
         resolveTargetName(interactionPredicate, view)
     } ?: target.tag ?: ""
 }

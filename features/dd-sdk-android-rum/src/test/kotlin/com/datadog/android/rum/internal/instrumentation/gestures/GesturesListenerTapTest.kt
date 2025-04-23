@@ -364,7 +364,7 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
         val y = mockEvent.y
         val mockComposeActionTrackingStrategy: ActionTrackingStrategy = mock {
             whenever(it.findTargetForTap(composeView, x, y))
-                .thenReturn(ViewTarget(null, targetName))
+                .thenReturn(ViewTarget(WeakReference(null), targetName))
         }
         testedListener = GesturesListener(
             rumMonitor.mockSdkCore,

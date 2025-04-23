@@ -7,18 +7,39 @@
 package com.datadog.android.rum.tracking
 
 import android.view.View
+import java.lang.ref.WeakReference
 
 /**
  * Represents the result of locating a target view in response to a user interaction,
  * such as a tap or scroll event in [GesturesListener].
  *
- * @property view The Android [View] that was found. If non-null, indicates a classic View was located.
+ * @property viewRef The Weak Reference of Android [View] that was found.
+ *                     If non-null, indicates a classic View was located.
  * @property tag The semantics tag associated with a Jetpack Compose component. If non-null, indicates
  *               that a Compose node with the given semantics tag was found.
  *
- * Only one of [view] or [tag] is expected to be non-null, depending on the UI framework used.
+ * Only one of [viewRef] or [tag] is expected to be non-null, depending on the UI framework used.
  */
-data class ViewTarget(
-    val view: View? = null,
+class ViewTarget(
+    val viewRef: WeakReference<View?> = WeakReference(null),
     val tag: String? = null
-)
+) {
+
+    override fun equals(other: Any?): Boolean {
+        // Overriding hashcode & equals because we should compare the referent
+        // instead of the reference.
+        if (this === other) return true
+        if (other !is ViewTarget) return false
+
+        if (viewRef.get() != other.viewRef.get()) return false
+        if (tag != other.tag) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = viewRef.get().hashCode()
+        result = 31 * result + tag.hashCode()
+        return result
+    }
+}

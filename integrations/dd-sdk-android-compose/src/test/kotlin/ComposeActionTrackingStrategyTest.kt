@@ -112,7 +112,7 @@ class ComposeActionTrackingStrategyTest {
             testedComposeActionTrackingStrategy.findTargetForTap(mockAndroidComposeView, x, y)
 
         // Then
-        assertThat(result).isEqualTo(ViewTarget(view = null, tag = "node3"))
+        assertThat(result).isEqualTo(ViewTarget(tag = "node3"))
     }
 
     /**
@@ -140,7 +140,7 @@ class ComposeActionTrackingStrategyTest {
             testedComposeActionTrackingStrategy.findTargetForScroll(mockAndroidComposeView, x, y)
 
         // Then
-        assertThat(result).isEqualTo(ViewTarget(view = null, tag = "node3"))
+        assertThat(result).isEqualTo(ViewTarget(tag = "node3"))
     }
 
     /**
@@ -169,7 +169,7 @@ class ComposeActionTrackingStrategyTest {
             testedComposeActionTrackingStrategy.findTargetForTap(mockAndroidComposeView, x, y)
 
         // Then
-        assertThat(result).isEqualTo(ViewTarget(view = null, tag = "node3"))
+        assertThat(result).isEqualTo(ViewTarget(tag = "node3"))
     }
 
     /**
@@ -201,7 +201,7 @@ class ComposeActionTrackingStrategyTest {
             testedComposeActionTrackingStrategy.findTargetForScroll(mockAndroidComposeView, x, y)
 
         // Then
-        assertThat(result).isEqualTo(ViewTarget(view = null, tag = "node3"))
+        assertThat(result).isEqualTo(ViewTarget(tag = "node3"))
     }
 
     /**
@@ -229,7 +229,7 @@ class ComposeActionTrackingStrategyTest {
             testedComposeActionTrackingStrategy.findTargetForTap(mockAndroidComposeView, x, y)
 
         // Then
-        assertThat(result).isEqualTo(ViewTarget(view = null, tag = "node4"))
+        assertThat(result).isEqualTo(ViewTarget(tag = "node4"))
     }
 
     /**
@@ -257,7 +257,7 @@ class ComposeActionTrackingStrategyTest {
             testedComposeActionTrackingStrategy.findTargetForScroll(mockAndroidComposeView, x, y)
 
         // Then
-        assertThat(result).isEqualTo(ViewTarget(view = null, tag = "node4"))
+        assertThat(result).isEqualTo(ViewTarget(tag = "node4"))
     }
 
     /**
