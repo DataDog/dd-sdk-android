@@ -444,7 +444,7 @@ internal class SessionReplayFeatureTest {
         // Then
         mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
-            InternalLogger.Target.USER,
+            InternalLogger.Target.MAINTAINER,
             SessionReplayFeature.REQUIRES_APPLICATION_CONTEXT_WARN_MESSAGE
         )
         verifyNoInteractions(mockRecorder)
@@ -519,7 +519,7 @@ internal class SessionReplayFeatureTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.INFO,
             InternalLogger.Target.USER,
-            SessionReplayFeature.SESSION_SAMPLED_OUT_MESSAGE
+            SessionReplayFeature.SESSION_NOT_KEPT_MESSAGE
         )
     }
 
@@ -621,7 +621,7 @@ internal class SessionReplayFeatureTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.INFO,
             InternalLogger.Target.USER,
-            SessionReplayFeature.SESSION_SAMPLED_OUT_MESSAGE
+            SessionReplayFeature.SESSION_NOT_KEPT_MESSAGE
         )
     }
 
@@ -701,7 +701,7 @@ internal class SessionReplayFeatureTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.INFO,
             InternalLogger.Target.USER,
-            SessionReplayFeature.SESSION_SAMPLED_OUT_MESSAGE
+            SessionReplayFeature.SESSION_NOT_KEPT_MESSAGE
         )
     }
 
@@ -802,6 +802,126 @@ internal class SessionReplayFeatureTest {
     }
 
     @Test
+    fun `M not resume recording in new session W user call stopRecording {startRecordingImmediately = true}`(
+        @Forgery fakeUUID2: UUID
+    ) {
+        // Given
+        val fakeSessionId2 = fakeUUID2.toString()
+        whenever(mockSampler.sample(any())).thenReturn(true)
+        testedFeature = SessionReplayFeature(
+            sdkCore = mockSdkCore,
+            customEndpointUrl = fakeConfiguration.customEndpointUrl,
+            privacy = fakeConfiguration.privacy,
+            textAndInputPrivacy = fakeConfiguration.textAndInputPrivacy,
+            imagePrivacy = fakeConfiguration.imagePrivacy,
+            touchPrivacy = fakeConfiguration.touchPrivacy,
+            startRecordingImmediately = true,
+            rateBasedSampler = mockSampler
+        ) { _, _, _, _ -> mockRecorder }
+        testedFeature.onInitialize(appContext.mockInstance)
+        val rumSessionUpdateBusMessage1 = mapOf(
+            SessionReplayFeature.SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY to
+                SessionReplayFeature.RUM_SESSION_RENEWED_BUS_MESSAGE,
+            SessionReplayFeature.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to
+                true,
+            SessionReplayFeature.RUM_SESSION_ID_BUS_MESSAGE_KEY to
+                fakeSessionId
+        )
+        val rumSessionUpdateBusMessage2 = mapOf(
+            SessionReplayFeature.SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY to
+                SessionReplayFeature.RUM_SESSION_RENEWED_BUS_MESSAGE,
+            SessionReplayFeature.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to
+                true,
+            SessionReplayFeature.RUM_SESSION_ID_BUS_MESSAGE_KEY to
+                fakeSessionId2
+        )
+
+        // When
+        testedFeature.onReceive(rumSessionUpdateBusMessage1)
+        testedFeature.manuallyStopRecording()
+        testedFeature.onReceive(rumSessionUpdateBusMessage2)
+
+        // Then
+        inOrder(mockRecorder) {
+            verify(mockRecorder).registerCallbacks()
+            verify(mockRecorder).resumeRecorders()
+            verify(mockRecorder).stopRecorders()
+        }
+        verifyNoMoreInteractions(mockRecorder)
+    }
+
+    @Test
+    fun `M resume recording in new session W user call startRecording {startRecordingImmediately = false}`(
+        @Forgery fakeUUID3: UUID,
+        @Forgery fakeUUID4: UUID
+    ) {
+        // Given
+        val fakeSessionId3 = fakeUUID3.toString()
+        val fakeSessionId4 = fakeUUID4.toString()
+        whenever(mockSampler.sample(any())).thenReturn(true)
+        testedFeature = SessionReplayFeature(
+            sdkCore = mockSdkCore,
+            customEndpointUrl = fakeConfiguration.customEndpointUrl,
+            privacy = fakeConfiguration.privacy,
+            textAndInputPrivacy = fakeConfiguration.textAndInputPrivacy,
+            imagePrivacy = fakeConfiguration.imagePrivacy,
+            touchPrivacy = fakeConfiguration.touchPrivacy,
+            startRecordingImmediately = false,
+            rateBasedSampler = mockSampler
+        ) { _, _, _, _ -> mockRecorder }
+        testedFeature.onInitialize(appContext.mockInstance)
+        val rumSessionUpdateBusMessage1 = mapOf(
+            SessionReplayFeature.SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY to
+                SessionReplayFeature.RUM_SESSION_RENEWED_BUS_MESSAGE,
+            SessionReplayFeature.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to
+                true,
+            SessionReplayFeature.RUM_SESSION_ID_BUS_MESSAGE_KEY to
+                fakeSessionId
+        )
+        val rumSessionUpdateBusMessage2 = mapOf(
+            SessionReplayFeature.SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY to
+                SessionReplayFeature.RUM_SESSION_RENEWED_BUS_MESSAGE,
+            SessionReplayFeature.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to
+                true,
+            SessionReplayFeature.RUM_SESSION_ID_BUS_MESSAGE_KEY to
+                fakeSessionId
+        )
+        val rumSessionUpdateBusMessage3 = mapOf(
+            SessionReplayFeature.SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY to
+                SessionReplayFeature.RUM_SESSION_RENEWED_BUS_MESSAGE,
+            SessionReplayFeature.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to
+                false,
+            SessionReplayFeature.RUM_SESSION_ID_BUS_MESSAGE_KEY to
+                fakeSessionId3
+        )
+        val rumSessionUpdateBusMessage4 = mapOf(
+            SessionReplayFeature.SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY to
+                SessionReplayFeature.RUM_SESSION_RENEWED_BUS_MESSAGE,
+            SessionReplayFeature.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to
+                true,
+            SessionReplayFeature.RUM_SESSION_ID_BUS_MESSAGE_KEY to
+                fakeSessionId4
+        )
+
+        // When
+        testedFeature.onReceive(rumSessionUpdateBusMessage1)
+        testedFeature.manuallyStartRecording()
+        // send an event with same session id to process manual start recording.
+        testedFeature.onReceive(rumSessionUpdateBusMessage2)
+        testedFeature.onReceive(rumSessionUpdateBusMessage3)
+        testedFeature.onReceive(rumSessionUpdateBusMessage4)
+
+        // Then
+        inOrder(mockRecorder) {
+            verify(mockRecorder).registerCallbacks()
+            verify(mockRecorder).resumeRecorders()
+            verify(mockRecorder).stopRecorders()
+            verify(mockRecorder).resumeRecorders()
+        }
+        verifyNoMoreInteractions(mockRecorder)
+    }
+
+    @Test
     fun `M start recording W rum session is initialized after first message`() {
         // Given
         whenever(mockSampler.sample(any())).thenReturn(true)
@@ -895,7 +1015,7 @@ internal class SessionReplayFeatureTest {
         // Then
         mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
-            InternalLogger.Target.USER,
+            InternalLogger.Target.MAINTAINER,
             SessionReplayFeature.EVENT_MISSING_MANDATORY_FIELDS
         )
 
@@ -903,7 +1023,7 @@ internal class SessionReplayFeatureTest {
     }
 
     @Test
-    fun `M log warning and do nothing W onReceive() { missing keep  state field }`(
+    fun `M log warning and do nothing W onReceive() { missing keep state field }`(
         @Mock fakeContext: Application
     ) {
         // Given
@@ -920,7 +1040,7 @@ internal class SessionReplayFeatureTest {
         // Then
         mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
-            InternalLogger.Target.USER,
+            InternalLogger.Target.MAINTAINER,
             SessionReplayFeature.EVENT_MISSING_MANDATORY_FIELDS
         )
 
@@ -946,7 +1066,7 @@ internal class SessionReplayFeatureTest {
         // Then
         mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
-            InternalLogger.Target.USER,
+            InternalLogger.Target.MAINTAINER,
             SessionReplayFeature.EVENT_MISSING_MANDATORY_FIELDS
         )
 
@@ -975,7 +1095,7 @@ internal class SessionReplayFeatureTest {
         // Then
         mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
-            InternalLogger.Target.USER,
+            InternalLogger.Target.MAINTAINER,
             SessionReplayFeature.EVENT_MISSING_MANDATORY_FIELDS
         )
 
@@ -1144,6 +1264,63 @@ internal class SessionReplayFeatureTest {
 
         // Then
         verify(mockRecorder).stopRecorders()
+    }
+
+    @Test
+    fun `M resume recordings W keepSession changes from false to true`(
+        @Mock fakeContext: Application,
+        @Forgery fakeUUID1: UUID,
+        @Forgery fakeUUID2: UUID,
+        @Forgery fakeUUID3: UUID
+    ) {
+        // Given
+        val event1 = mapOf(
+            SessionReplayFeature.SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY to
+                SessionReplayFeature.RUM_SESSION_RENEWED_BUS_MESSAGE,
+            SessionReplayFeature.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to true,
+            SessionReplayFeature.RUM_SESSION_ID_BUS_MESSAGE_KEY to fakeUUID1.toString()
+        )
+
+        whenever(mockSampler.sample(any())).thenReturn(true)
+
+        // When
+        testedFeature = SessionReplayFeature(
+            sdkCore = mockSdkCore,
+            customEndpointUrl = fakeConfiguration.customEndpointUrl,
+            privacy = fakeConfiguration.privacy,
+            textAndInputPrivacy = fakeConfiguration.textAndInputPrivacy,
+            imagePrivacy = fakeConfiguration.imagePrivacy,
+            touchPrivacy = fakeConfiguration.touchPrivacy,
+            startRecordingImmediately = true,
+            rateBasedSampler = mockSampler
+        ) { _, _, _, _ -> mockRecorder }
+        testedFeature.onInitialize(fakeContext)
+        testedFeature.onReceive(event1)
+
+        // When
+        val event2 = mapOf(
+            SessionReplayFeature.SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY to
+                SessionReplayFeature.RUM_SESSION_RENEWED_BUS_MESSAGE,
+            SessionReplayFeature.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to false,
+            SessionReplayFeature.RUM_SESSION_ID_BUS_MESSAGE_KEY to fakeUUID2.toString()
+        )
+        testedFeature.onReceive(event2)
+
+        // When
+        val event3 = mapOf(
+            SessionReplayFeature.SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY to
+                SessionReplayFeature.RUM_SESSION_RENEWED_BUS_MESSAGE,
+            SessionReplayFeature.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to true,
+            SessionReplayFeature.RUM_SESSION_ID_BUS_MESSAGE_KEY to fakeUUID3.toString()
+        )
+        testedFeature.onReceive(event3)
+
+        // Then
+        inOrder(mockRecorder) {
+            verify(mockRecorder).resumeRecorders()
+            verify(mockRecorder).stopRecorders()
+            verify(mockRecorder).resumeRecorders()
+        }
     }
 
     // endregion
