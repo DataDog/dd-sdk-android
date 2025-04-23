@@ -1,0 +1,6 @@
+rulesets:
+  - kotlin-best-practices:
+    rules:
+      function-naming:
+        excludes: ['**/test/**', '**/*Test/**', '**/testFixtures/**']
+        ignoreAnnotated: [ 'Composable' ]
