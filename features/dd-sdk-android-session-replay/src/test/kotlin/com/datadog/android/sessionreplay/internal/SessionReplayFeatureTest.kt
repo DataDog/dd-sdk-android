@@ -1146,6 +1146,63 @@ internal class SessionReplayFeatureTest {
         verify(mockRecorder).stopRecorders()
     }
 
+    @Test
+    fun `M resume recordings W keepSession changes from false to true`(
+        @Mock fakeContext: Application,
+        @StringForgery fakeSessionId1: String,
+        @StringForgery fakeSessionId2: String,
+        @StringForgery fakeSessionId3: String
+    ) {
+        // Given
+        val event1 = mapOf(
+            SessionReplayFeature.SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY to
+                SessionReplayFeature.RUM_SESSION_RENEWED_BUS_MESSAGE,
+            SessionReplayFeature.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to true,
+            SessionReplayFeature.RUM_SESSION_ID_BUS_MESSAGE_KEY to fakeSessionId1
+        )
+
+        whenever(mockSampler.sample(any())).thenReturn(true)
+
+        // When
+        testedFeature = SessionReplayFeature(
+            sdkCore = mockSdkCore,
+            customEndpointUrl = fakeConfiguration.customEndpointUrl,
+            privacy = fakeConfiguration.privacy,
+            textAndInputPrivacy = fakeConfiguration.textAndInputPrivacy,
+            imagePrivacy = fakeConfiguration.imagePrivacy,
+            touchPrivacy = fakeConfiguration.touchPrivacy,
+            startRecordingImmediately = true,
+            rateBasedSampler = mockSampler
+        ) { _, _, _, _ -> mockRecorder }
+        testedFeature.onInitialize(fakeContext)
+        testedFeature.onReceive(event1)
+
+        // When
+        val event2 = mapOf(
+            SessionReplayFeature.SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY to
+                SessionReplayFeature.RUM_SESSION_RENEWED_BUS_MESSAGE,
+            SessionReplayFeature.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to false,
+            SessionReplayFeature.RUM_SESSION_ID_BUS_MESSAGE_KEY to fakeSessionId2
+        )
+        testedFeature.onReceive(event2)
+
+        // When
+        val event3 = mapOf(
+            SessionReplayFeature.SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY to
+                SessionReplayFeature.RUM_SESSION_RENEWED_BUS_MESSAGE,
+            SessionReplayFeature.RUM_KEEP_SESSION_BUS_MESSAGE_KEY to true,
+            SessionReplayFeature.RUM_SESSION_ID_BUS_MESSAGE_KEY to fakeSessionId3
+        )
+        testedFeature.onReceive(event3)
+
+        // Then
+        inOrder(mockRecorder) {
+            verify(mockRecorder).resumeRecorders()
+            verify(mockRecorder).stopRecorders()
+            verify(mockRecorder).resumeRecorders()
+        }
+    }
+
     // endregion
 
     internal data class SessionRecordingScenario(

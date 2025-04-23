@@ -270,9 +270,16 @@ internal class SessionReplayFeature(
 
     private fun modifyShouldRecordState(sessionData: SessionData) {
         val isSampledIn = sessionData.keepSession && isSessionSampledIn.get()
-        if (!isSampledIn) {
-            if (shouldRecord.compareAndSet(true, false)) {
-                logSampledOutMessage()
+        if (isSampledIn) {
+            shouldRecord.compareAndSet(false, true)
+        } else {
+            val shouldNotRecord = shouldRecord.compareAndSet(true, false)
+            if (shouldNotRecord) {
+                if (!sessionData.keepSession) {
+                    logNotKeptMessage()
+                } else {
+                    logSampledOutMessage()
+                }
             }
         }
     }
@@ -280,7 +287,7 @@ internal class SessionReplayFeature(
     private fun logMissingApplicationContextError() {
         sdkCore.internalLogger.log(
             InternalLogger.Level.WARN,
-            InternalLogger.Target.USER,
+            InternalLogger.Target.MAINTAINER,
             { REQUIRES_APPLICATION_CONTEXT_WARN_MESSAGE }
         )
     }
@@ -288,8 +295,16 @@ internal class SessionReplayFeature(
     private fun logEventMissingMandatoryFieldsError() {
         sdkCore.internalLogger.log(
             InternalLogger.Level.WARN,
-            InternalLogger.Target.USER,
+            InternalLogger.Target.MAINTAINER,
             { EVENT_MISSING_MANDATORY_FIELDS }
+        )
+    }
+
+    private fun logNotKeptMessage() {
+        sdkCore.internalLogger.log(
+            InternalLogger.Level.INFO,
+            InternalLogger.Target.USER,
+            { SESSION_NOT_KEPT_MESSAGE }
         )
     }
 
@@ -393,6 +408,8 @@ internal class SessionReplayFeature(
             "be initialized without the Application context."
         internal const val SESSION_SAMPLED_OUT_MESSAGE = "This session was sampled out from" +
             " recording. No replay will be provided for it."
+        internal const val SESSION_NOT_KEPT_MESSAGE =
+            "This session was not kept. No replay will be provided for it."
         internal const val UNSUPPORTED_EVENT_TYPE =
             "Session Replay feature receive an event of unsupported type=%s."
         internal const val UNKNOWN_EVENT_TYPE_PROPERTY_VALUE =
