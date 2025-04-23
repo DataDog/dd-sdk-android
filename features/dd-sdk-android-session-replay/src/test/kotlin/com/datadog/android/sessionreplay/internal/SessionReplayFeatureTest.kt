@@ -437,7 +437,7 @@ internal class SessionReplayFeatureTest {
     }
 
     @Test
-    fun `M log warning and do nothing W onInitialize() { context is not Application }`() {
+    fun `M log warning and do nothing W onInitialize() test { context is not Application }`() {
         // When
         testedFeature.onInitialize(mock())
 
