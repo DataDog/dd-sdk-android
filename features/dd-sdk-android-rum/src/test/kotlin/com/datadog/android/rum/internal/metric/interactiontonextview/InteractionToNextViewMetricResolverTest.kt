@@ -283,11 +283,6 @@ internal class InteractionToNextViewMetricResolverTest {
 
         // Then
         assertThat(result).isNull()
-        mockInternalLogger.verifyLog(
-            InternalLogger.Level.WARN,
-            InternalLogger.Target.MAINTAINER,
-            "[ViewNetworkSettledMetric] No previous interaction found for this viewId:$fakeViewId"
-        )
     }
 
     @Test
@@ -317,11 +312,6 @@ internal class InteractionToNextViewMetricResolverTest {
 
         // Then
         assertThat(result).isNull()
-        mockInternalLogger.verifyLog(
-            InternalLogger.Level.WARN,
-            InternalLogger.Target.MAINTAINER,
-            "[ViewNetworkSettledMetric] No previous interaction found for this viewId:$fakeViewId"
-        )
     }
 
     @Test
@@ -339,11 +329,6 @@ internal class InteractionToNextViewMetricResolverTest {
 
         // Then
         assertThat(result).isNull()
-        mockInternalLogger.verifyLog(
-            InternalLogger.Level.WARN,
-            InternalLogger.Target.MAINTAINER,
-            "[ViewNetworkSettledMetric] No previous interaction found for this viewId:$fakeViewId"
-        )
     }
 
     @Test
