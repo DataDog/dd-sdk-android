@@ -96,7 +96,7 @@ internal class ConsentAwareFileOrchestratorTest {
 
         // Then
         argumentCaptor<Runnable> {
-            verify(mockExecutorService).submit(capture())
+            verify(mockExecutorService).execute(capture())
             firstValue.run()
             verify(mockDataMigrator).migrateData(
                 null,
@@ -114,7 +114,7 @@ internal class ConsentAwareFileOrchestratorTest {
 
         // Then
         argumentCaptor<Runnable> {
-            verify(mockExecutorService).submit(capture())
+            verify(mockExecutorService).execute(capture())
             firstValue.run()
             verify(mockDataMigrator).migrateData(
                 null,
@@ -132,7 +132,7 @@ internal class ConsentAwareFileOrchestratorTest {
 
         // Then
         argumentCaptor<Runnable> {
-            verify(mockExecutorService).submit(capture())
+            verify(mockExecutorService).execute(capture())
             firstValue.run()
             verify(mockDataMigrator).migrateData(
                 null,
@@ -678,7 +678,7 @@ internal class ConsentAwareFileOrchestratorTest {
 
         // Then
         argumentCaptor<Runnable> {
-            verify(mockExecutorService).submit(capture())
+            verify(mockExecutorService).execute(capture())
             firstValue.run()
             verify(mockDataMigrator).migrateData(
                 TrackingConsent.GRANTED,
@@ -696,7 +696,7 @@ internal class ConsentAwareFileOrchestratorTest {
 
         // Then
         argumentCaptor<Runnable> {
-            verify(mockExecutorService).submit(capture())
+            verify(mockExecutorService).execute(capture())
             firstValue.run()
             verify(mockDataMigrator).migrateData(
                 TrackingConsent.GRANTED,
@@ -714,7 +714,7 @@ internal class ConsentAwareFileOrchestratorTest {
 
         // Then
         argumentCaptor<Runnable> {
-            verify(mockExecutorService).submit(capture())
+            verify(mockExecutorService).execute(capture())
             firstValue.run()
             verify(mockDataMigrator).migrateData(
                 TrackingConsent.GRANTED,
@@ -732,7 +732,7 @@ internal class ConsentAwareFileOrchestratorTest {
 
         // Then
         argumentCaptor<Runnable> {
-            verify(mockExecutorService).submit(capture())
+            verify(mockExecutorService).execute(capture())
             firstValue.run()
             verify(mockDataMigrator).migrateData(
                 TrackingConsent.PENDING,
@@ -750,7 +750,7 @@ internal class ConsentAwareFileOrchestratorTest {
 
         // Then
         argumentCaptor<Runnable> {
-            verify(mockExecutorService).submit(capture())
+            verify(mockExecutorService).execute(capture())
             firstValue.run()
             verify(mockDataMigrator).migrateData(
                 TrackingConsent.PENDING,
@@ -768,7 +768,7 @@ internal class ConsentAwareFileOrchestratorTest {
 
         // Then
         argumentCaptor<Runnable> {
-            verify(mockExecutorService).submit(capture())
+            verify(mockExecutorService).execute(capture())
             firstValue.run()
             verify(mockDataMigrator).migrateData(
                 TrackingConsent.PENDING,
@@ -786,7 +786,7 @@ internal class ConsentAwareFileOrchestratorTest {
 
         // Then
         argumentCaptor<Runnable> {
-            verify(mockExecutorService).submit(capture())
+            verify(mockExecutorService).execute(capture())
             firstValue.run()
             verify(mockDataMigrator).migrateData(
                 TrackingConsent.NOT_GRANTED,
@@ -804,7 +804,7 @@ internal class ConsentAwareFileOrchestratorTest {
 
         // Then
         argumentCaptor<Runnable> {
-            verify(mockExecutorService).submit(capture())
+            verify(mockExecutorService).execute(capture())
             firstValue.run()
             verify(mockDataMigrator).migrateData(
                 TrackingConsent.NOT_GRANTED,
@@ -825,7 +825,7 @@ internal class ConsentAwareFileOrchestratorTest {
 
         // Then
         argumentCaptor<Runnable> {
-            verify(mockExecutorService).submit(capture())
+            verify(mockExecutorService).execute(capture())
             firstValue.run()
             verify(mockDataMigrator).migrateData(
                 TrackingConsent.NOT_GRANTED,
@@ -844,7 +844,7 @@ internal class ConsentAwareFileOrchestratorTest {
     ) {
         // Given
         val exception = RejectedExecutionException(errorMessage)
-        whenever(mockExecutorService.submit(any())) doThrow exception
+        whenever(mockExecutorService.execute(any())) doThrow exception
 
         // When
         testedOrchestrator.onConsentUpdated(previousConsent, newConsent)
@@ -874,7 +874,7 @@ internal class ConsentAwareFileOrchestratorTest {
 
     private fun runPendingRunnable() {
         argumentCaptor<Runnable> {
-            verify(mockExecutorService, atLeast(0)).submit(capture())
+            verify(mockExecutorService, atLeast(0)).execute(capture())
             allValues.forEach { it.run() }
         }
     }

@@ -23,7 +23,7 @@ import com.datadog.android.core.internal.persistence.file.batch.BatchFileReaderW
 import com.datadog.android.core.internal.persistence.file.existsSafe
 import com.datadog.android.core.internal.persistence.file.lengthSafe
 import com.datadog.android.core.internal.privacy.ConsentProvider
-import com.datadog.android.core.internal.utils.submitSafe
+import com.datadog.android.core.internal.utils.executeSafe
 import com.datadog.android.core.metrics.MethodCallSamplingRate
 import com.datadog.android.core.metrics.TelemetryMetricType
 import com.datadog.android.privacy.TrackingConsent
@@ -66,12 +66,12 @@ internal class ConsentAwareStorage(
             samplingRate = MethodCallSamplingRate.RARE.rate,
             operationName = "writeCurrentBatch[$featureName]"
         )
-        executorService.submitSafe("Data write", internalLogger) {
+        executorService.executeSafe("Data write", internalLogger) {
             val orchestrator = resolveOrchestrator()
             if (orchestrator == null) {
                 callback.invoke(NoOpEventBatchWriter())
                 metric?.stopAndSend(false)
-                return@submitSafe
+                return@executeSafe
             }
             synchronized(writeLock) {
                 val batchFile = orchestrator.getWritableFile(forceNewBatch)
@@ -144,7 +144,7 @@ internal class ConsentAwareStorage(
     /** @inheritdoc */
     @AnyThread
     override fun dropAll() {
-        executorService.submitSafe("ConsentAwareStorage.dropAll", internalLogger) {
+        executorService.executeSafe("ConsentAwareStorage.dropAll", internalLogger) {
             synchronized(lockedBatches) {
                 lockedBatches.forEach {
                     deleteBatch(it, RemovalReason.Flushed)

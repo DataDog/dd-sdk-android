@@ -43,7 +43,6 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.util.concurrent.ExecutorService
-import java.util.concurrent.Future
 import java.util.stream.Stream
 
 @Extensions(
@@ -101,9 +100,6 @@ internal class DrawableUtilsTest {
     @Mock
     private lateinit var mockLogger: InternalLogger
 
-    @Mock
-    private lateinit var mockFuture: Future<Unit>
-
     @BeforeEach
     fun setup() {
         whenever(mockConstantState.newDrawable(mockResources)).thenReturn(mockSecondDrawable)
@@ -117,10 +113,9 @@ internal class DrawableUtilsTest {
         whenever(mockBitmap.config).thenReturn(mockConfig)
         whenever(mockBitmapCachesManager.getBitmapByProperties(any(), any(), any())).thenReturn(null)
 
-        whenever(mockExecutorService.submit(any())) doAnswer {
+        whenever(mockExecutorService.execute(any())) doAnswer {
             val runnable = it.getArgument<Runnable>(0)
             runnable.run()
-            mockFuture
         }
 
         testedDrawableUtils = DrawableUtils(

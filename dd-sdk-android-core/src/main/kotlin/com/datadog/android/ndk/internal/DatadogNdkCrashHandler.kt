@@ -17,7 +17,7 @@ import com.datadog.android.core.internal.persistence.file.FileReader
 import com.datadog.android.core.internal.persistence.file.existsSafe
 import com.datadog.android.core.internal.persistence.file.listFilesSafe
 import com.datadog.android.core.internal.persistence.file.readTextSafe
-import com.datadog.android.core.internal.utils.submitSafe
+import com.datadog.android.core.internal.utils.executeSafe
 import com.datadog.android.log.LogAttributes
 import com.google.gson.JsonObject
 import java.io.File
@@ -50,7 +50,7 @@ internal class DatadogNdkCrashHandler(
     // region NdkCrashHandler
 
     override fun prepareData() {
-        dataPersistenceExecutorService.submitSafe("NDK crash check", internalLogger) {
+        dataPersistenceExecutorService.executeSafe("NDK crash check", internalLogger) {
             readCrashData()
         }
     }
@@ -59,7 +59,7 @@ internal class DatadogNdkCrashHandler(
         sdkCore: FeatureSdkCore,
         reportTarget: NdkCrashHandler.ReportTarget
     ) {
-        dataPersistenceExecutorService.submitSafe("NDK crash report ", internalLogger) {
+        dataPersistenceExecutorService.executeSafe("NDK crash report ", internalLogger) {
             checkAndHandleNdkCrashReport(sdkCore, reportTarget)
         }
     }
