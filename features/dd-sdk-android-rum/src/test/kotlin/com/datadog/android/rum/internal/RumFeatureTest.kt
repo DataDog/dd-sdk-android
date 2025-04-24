@@ -1428,9 +1428,8 @@ internal class RumFeatureTest {
 
     private fun mockSameThreadExecutorService(): ExecutorService {
         return mock<ExecutorService>().apply {
-            whenever(submit(any())) doAnswer {
+            whenever(execute(any())) doAnswer {
                 it.getArgument<Runnable>(0).run()
-                mock()
             }
         }
     }

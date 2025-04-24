@@ -71,7 +71,7 @@ internal class ScheduledWriterTest {
         // Then
         verifyNoInteractions(mockDelegateWriter)
         argumentCaptor<Runnable> {
-            verify(mockExecutorService).submit(capture())
+            verify(mockExecutorService).execute(capture())
             firstValue.run()
             verify(mockDelegateWriter).write(data)
         }
@@ -86,7 +86,7 @@ internal class ScheduledWriterTest {
     ) {
         // Given
         val exception = RejectedExecutionException(errorMessage)
-        whenever(mockExecutorService.submit(any())) doThrow exception
+        whenever(mockExecutorService.execute(any())) doThrow exception
 
         // When
         testedWriter.write(data)
@@ -113,7 +113,7 @@ internal class ScheduledWriterTest {
         // Then
         verifyNoInteractions(mockDelegateWriter)
         argumentCaptor<Runnable> {
-            verify(mockExecutorService).submit(capture())
+            verify(mockExecutorService).execute(capture())
             firstValue.run()
             verify(mockDelegateWriter).write(data)
         }
@@ -128,7 +128,7 @@ internal class ScheduledWriterTest {
     ) {
         // Given
         val exception = RejectedExecutionException(errorMessage)
-        whenever(mockExecutorService.submit(any())) doThrow exception
+        whenever(mockExecutorService.execute(any())) doThrow exception
 
         // When
         testedWriter.write(data)

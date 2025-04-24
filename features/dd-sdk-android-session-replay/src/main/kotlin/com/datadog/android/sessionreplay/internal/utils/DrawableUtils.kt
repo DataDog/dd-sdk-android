@@ -16,7 +16,7 @@ import android.util.DisplayMetrics
 import androidx.annotation.VisibleForTesting
 import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.core.internal.utils.submitSafe
+import com.datadog.android.core.internal.utils.executeSafe
 import com.datadog.android.sessionreplay.internal.recorder.resources.BitmapCachesManager
 import com.datadog.android.sessionreplay.internal.recorder.resources.ResourceResolver
 import com.datadog.android.sessionreplay.recorder.wrappers.BitmapWrapper
@@ -56,7 +56,7 @@ internal class DrawableUtils(
             resizeBitmapCallback = object : ResizeBitmapCallback {
                 @WorkerThread
                 override fun onSuccess(bitmap: Bitmap) {
-                    executorService.submitSafe("drawOnCanvas", internalLogger) {
+                    executorService.executeSafe("drawOnCanvas", internalLogger) {
                         drawOnCanvas(
                             bitmap,
                             drawable,

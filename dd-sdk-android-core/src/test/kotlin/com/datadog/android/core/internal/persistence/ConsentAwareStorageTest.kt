@@ -332,7 +332,7 @@ internal class ConsentAwareStorageTest {
     ) {
         // Given
         val mockExecutor = mock<ExecutorService>()
-        whenever(mockExecutor.submit(any())) doThrow RejectedExecutionException()
+        whenever(mockExecutor.execute(any())) doThrow RejectedExecutionException()
         testedStorage = ConsentAwareStorage(
             // same thread executor
             executorService = mockExecutor,

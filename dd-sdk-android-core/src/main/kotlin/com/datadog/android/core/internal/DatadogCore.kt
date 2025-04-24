@@ -34,8 +34,8 @@ import com.datadog.android.core.internal.logger.SdkInternalLogger
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import com.datadog.android.core.internal.time.DefaultAppStartTimeProvider
+import com.datadog.android.core.internal.utils.executeSafe
 import com.datadog.android.core.internal.utils.scheduleSafe
-import com.datadog.android.core.internal.utils.submitSafe
 import com.datadog.android.core.thread.FlushableExecutorService
 import com.datadog.android.error.internal.CrashReportsFeature
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
@@ -182,7 +182,7 @@ internal class DatadogCore(
         features.values.forEach {
             it.clearAllData()
         }
-        getPersistenceExecutorService().submitSafe("Clear all data", internalLogger) {
+        getPersistenceExecutorService().executeSafe("Clear all data", internalLogger) {
             coreFeature.deleteLastViewEvent()
             coreFeature.deleteLastFatalAnrSent()
         }

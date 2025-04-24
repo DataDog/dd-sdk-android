@@ -71,7 +71,7 @@ import com.datadog.android.core.internal.user.DatadogUserInfoProvider
 import com.datadog.android.core.internal.user.MutableUserInfoProvider
 import com.datadog.android.core.internal.user.NoOpMutableUserInfoProvider
 import com.datadog.android.core.internal.user.UserInfoDeserializer
-import com.datadog.android.core.internal.utils.submitSafe
+import com.datadog.android.core.internal.utils.executeSafe
 import com.datadog.android.core.internal.utils.unboundInternalLogger
 import com.datadog.android.core.persistence.PersistenceStrategy
 import com.datadog.android.core.thread.FlushableExecutorService
@@ -201,7 +201,7 @@ internal class CoreFeature(
         readApplicationInformation(appContext, configuration)
         resolveProcessInfo(appContext)
         setupExecutors()
-        persistenceExecutorService.submitSafe("NTP Sync initialization", unboundInternalLogger) {
+        persistenceExecutorService.executeSafe("NTP Sync initialization", unboundInternalLogger) {
             // Kronos performs I/O operation on startup, it needs to run in background
             initializeClockSync(appContext)
         }

@@ -149,7 +149,7 @@ internal class DatadogNdkCrashHandlerTest {
 
         // Then
         assertThat(testedHandler.lastNdkCrashLog).isNull()
-        verify(mockExecutorService).submit(captureRunnable.capture())
+        verify(mockExecutorService).execute(captureRunnable.capture())
         captureRunnable.firstValue.run()
         assertThat(testedHandler.lastNdkCrashLog)
             .isEqualTo(fakeCrashData)
@@ -169,7 +169,7 @@ internal class DatadogNdkCrashHandlerTest {
 
         // Then
         assertThat(testedHandler.lastRumViewEvent).isNull()
-        verify(mockExecutorService).submit(captureRunnable.capture())
+        verify(mockExecutorService).execute(captureRunnable.capture())
         captureRunnable.firstValue.run()
         assertThat(testedHandler.lastRumViewEvent)
             .isEqualTo(fakeViewEvent.toJson())
@@ -191,7 +191,7 @@ internal class DatadogNdkCrashHandlerTest {
 
         // Then
         assertThat(testedHandler.lastNetworkInfo).isNull()
-        verify(mockExecutorService).submit(captureRunnable.capture())
+        verify(mockExecutorService).execute(captureRunnable.capture())
         captureRunnable.firstValue.run()
         assertThat(testedHandler.lastNetworkInfo)
             .isEqualTo(fakeNetworkInfo)
@@ -212,7 +212,7 @@ internal class DatadogNdkCrashHandlerTest {
 
         // Then
         assertThat(testedHandler.lastUserInfo).isNull()
-        verify(mockExecutorService).submit(captureRunnable.capture())
+        verify(mockExecutorService).execute(captureRunnable.capture())
         captureRunnable.firstValue.run()
         assertThat(testedHandler.lastUserInfo)
             .isEqualTo(fakeUserInfo)
@@ -227,7 +227,7 @@ internal class DatadogNdkCrashHandlerTest {
         whenever(mockNetworkInfoDeserializer.deserialize(any())) doReturn mock()
 
         // Then
-        verify(mockExecutorService).submit(captureRunnable.capture())
+        verify(mockExecutorService).execute(captureRunnable.capture())
         captureRunnable.firstValue.run()
         assertThat(testedHandler.lastRumViewEvent).isNull()
         assertThat(testedHandler.lastNdkCrashLog).isNull()
@@ -253,7 +253,7 @@ internal class DatadogNdkCrashHandlerTest {
         testedHandler.prepareData()
 
         // Then
-        verify(mockExecutorService).submit(captureRunnable.capture())
+        verify(mockExecutorService).execute(captureRunnable.capture())
         captureRunnable.firstValue.run()
         assertThat(fakeNdkCacheDir).isEmptyDirectory
     }
@@ -271,7 +271,7 @@ internal class DatadogNdkCrashHandlerTest {
         testedHandler.handleNdkCrash(mockSdkCore, reportTarget)
 
         // Then
-        verify(mockExecutorService).submit(captureRunnable.capture())
+        verify(mockExecutorService).execute(captureRunnable.capture())
         captureRunnable.firstValue.run()
         verifyNoInteractions(mockSdkCore)
     }
@@ -288,7 +288,7 @@ internal class DatadogNdkCrashHandlerTest {
         testedHandler.handleNdkCrash(mockSdkCore, NdkCrashHandler.ReportTarget.LOGS)
 
         // Then
-        verify(mockExecutorService).submit(captureRunnable.capture())
+        verify(mockExecutorService).execute(captureRunnable.capture())
         verifyNoInteractions(mockSdkCore)
         captureRunnable.firstValue.run()
 
@@ -314,7 +314,7 @@ internal class DatadogNdkCrashHandlerTest {
         testedHandler.handleNdkCrash(mockSdkCore, NdkCrashHandler.ReportTarget.LOGS)
 
         // Then
-        verify(mockExecutorService).submit(captureRunnable.capture())
+        verify(mockExecutorService).execute(captureRunnable.capture())
         verifyNoInteractions(mockSdkCore)
         captureRunnable.firstValue.run()
         verify(mockLogsFeatureScope).sendEvent(expectedLogEvent)
@@ -337,7 +337,7 @@ internal class DatadogNdkCrashHandlerTest {
         testedHandler.handleNdkCrash(mockSdkCore, NdkCrashHandler.ReportTarget.LOGS)
 
         // Then
-        verify(mockExecutorService).submit(captureRunnable.capture())
+        verify(mockExecutorService).execute(captureRunnable.capture())
         verifyNoInteractions(mockSdkCore)
         captureRunnable.firstValue.run()
         verify(mockLogsFeatureScope).sendEvent(expectedLogEvent)
@@ -359,7 +359,7 @@ internal class DatadogNdkCrashHandlerTest {
         testedHandler.handleNdkCrash(mockSdkCore, NdkCrashHandler.ReportTarget.LOGS)
 
         // Then
-        verify(mockExecutorService).submit(captureRunnable.capture())
+        verify(mockExecutorService).execute(captureRunnable.capture())
         verifyNoInteractions(mockSdkCore)
         captureRunnable.firstValue.run()
         verify(mockLogsFeatureScope).sendEvent(expectedLogEvent)
@@ -392,7 +392,7 @@ internal class DatadogNdkCrashHandlerTest {
         handler.handleNdkCrash(mockSdkCore, NdkCrashHandler.ReportTarget.LOGS)
 
         // Then
-        verify(mockExecutorService).submit(captureRunnable.capture())
+        verify(mockExecutorService).execute(captureRunnable.capture())
         verifyNoInteractions(mockSdkCore)
         captureRunnable.firstValue.run()
         verify(mockLogsFeatureScope).sendEvent(expectedLogEvent)
@@ -451,7 +451,7 @@ internal class DatadogNdkCrashHandlerTest {
         testedHandler.handleNdkCrash(mockSdkCore, NdkCrashHandler.ReportTarget.LOGS)
 
         // Then
-        verify(mockExecutorService).submit(captureRunnable.capture())
+        verify(mockExecutorService).execute(captureRunnable.capture())
         verifyNoInteractions(mockSdkCore)
         captureRunnable.firstValue.run()
         verify(mockLogsFeatureScope).sendEvent(expectedLogEvent)
@@ -478,7 +478,7 @@ internal class DatadogNdkCrashHandlerTest {
         testedHandler.handleNdkCrash(mockSdkCore, NdkCrashHandler.ReportTarget.RUM)
 
         // Then
-        verify(mockExecutorService).submit(captureRunnable.capture())
+        verify(mockExecutorService).execute(captureRunnable.capture())
         verifyNoInteractions(mockSdkCore)
         captureRunnable.firstValue.run()
         mockInternalLogger.verifyLog(
@@ -499,7 +499,7 @@ internal class DatadogNdkCrashHandlerTest {
         testedHandler.handleNdkCrash(mockSdkCore, NdkCrashHandler.ReportTarget.RUM)
 
         // Then
-        verify(mockExecutorService).submit(captureRunnable.capture())
+        verify(mockExecutorService).execute(captureRunnable.capture())
         verifyNoInteractions(mockSdkCore)
         captureRunnable.firstValue.run()
         verifyNoInteractions(mockInternalLogger, mockRumFeatureScope)
@@ -519,7 +519,7 @@ internal class DatadogNdkCrashHandlerTest {
         testedHandler.handleNdkCrash(mockSdkCore, NdkCrashHandler.ReportTarget.RUM)
 
         // Then
-        verify(mockExecutorService).submit(captureRunnable.capture())
+        verify(mockExecutorService).execute(captureRunnable.capture())
         verifyNoInteractions(mockSdkCore)
         captureRunnable.firstValue.run()
         verify(mockRumFeatureScope).sendEvent(
@@ -563,7 +563,7 @@ internal class DatadogNdkCrashHandlerTest {
         handler.handleNdkCrash(mockSdkCore, NdkCrashHandler.ReportTarget.RUM)
 
         // Then
-        verify(mockExecutorService).submit(captureRunnable.capture())
+        verify(mockExecutorService).execute(captureRunnable.capture())
         verifyNoInteractions(mockSdkCore)
         captureRunnable.firstValue.run()
         verify(mockRumFeatureScope).sendEvent(
@@ -606,7 +606,7 @@ internal class DatadogNdkCrashHandlerTest {
             }
 
         // Then
-        verify(mockExecutorService, times(2)).submit(captureRunnable.capture())
+        verify(mockExecutorService, times(2)).execute(captureRunnable.capture())
         verifyNoInteractions(mockSdkCore)
         captureRunnable.allValues.forEach { it.run() }
 

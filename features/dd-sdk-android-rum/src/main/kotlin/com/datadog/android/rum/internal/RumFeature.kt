@@ -30,7 +30,6 @@ import com.datadog.android.core.feature.event.JvmCrash
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import com.datadog.android.core.internal.utils.executeSafe
 import com.datadog.android.core.internal.utils.scheduleSafe
-import com.datadog.android.core.internal.utils.submitSafe
 import com.datadog.android.event.EventMapper
 import com.datadog.android.event.MapperSerializer
 import com.datadog.android.event.NoOpEventMapper
@@ -421,7 +420,7 @@ internal class RumFeature(
             null
         } ?: return
 
-        rumEventsExecutorService.submitSafe("Send fatal ANR", sdkCore.internalLogger) {
+        rumEventsExecutorService.executeSafe("Send fatal ANR", sdkCore.internalLogger) {
             val lastRumViewEvent = (sdkCore as InternalSdkCore).lastViewEvent
             if (lastRumViewEvent != null) {
                 lateCrashEventHandler.handleAnrCrash(
