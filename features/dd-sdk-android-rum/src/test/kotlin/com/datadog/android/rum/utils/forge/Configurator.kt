@@ -13,6 +13,7 @@ import com.datadog.android.internal.tests.elmyr.InternalTelemetryErrorLogForgery
 import com.datadog.android.internal.tests.elmyr.InternalTelemetryEventForgeryFactory
 import com.datadog.android.internal.tests.elmyr.InternalTelemetryMetricForgeryFactory
 import com.datadog.android.internal.tests.elmyr.TracingHeaderTypesSetForgeryFactory
+import com.datadog.android.rum.tests.elmyr.ProfileForgeryFactory
 import com.datadog.android.rum.tests.elmyr.ResourceIdForgeryFactory
 import com.datadog.android.rum.tests.elmyr.RumScopeKeyForgeryFactory
 import com.datadog.android.tests.elmyr.useCoreFactories
@@ -55,6 +56,7 @@ internal class Configurator : BaseConfigurator() {
         forge.addFactory(FrameMetricDataForgeryFactory())
         forge.addFactory(ViewUIPerformanceReportForgeryFactory())
         forge.addFactory(SlowFramesConfigurationForgeryFactory())
+        forge.addFactory(ProfileForgeryFactory())
 
         // Telemetry schema models
         forge.addFactory(TelemetryDebugEventForgeryFactory())

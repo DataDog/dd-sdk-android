@@ -99,6 +99,8 @@ openTelemetry = "1.4.0"
 openTelemetryBenchmark = "1.40.0"
 re2j = "1.7"
 material3Android = "1.1.2"
+protobufVersion = "4.26.1"
+protobufGradlePlugin = "0.9.3"
 
 
 [libraries]
@@ -113,6 +115,7 @@ unmockGradlePlugin = { module = "com.github.bjoernq:unmockplugin", version.ref =
 sqlDelightGradlePlugin = { module = "com.squareup.sqldelight:gradle-plugin", version.ref = "sqlDelight" }
 binaryCompatibilityGradlePlugin = { module = "org.jetbrains.kotlinx:binary-compatibility-validator", version.ref = "binaryCompatibility" }
 dependencyLicenseGradlePlugin = { module = "com.datadoghq:dependency-license", version.ref = "dependencyLicense" }
+protobufGradlePlugin = { module = "com.google.protobuf:protobuf-gradle-plugin", version.ref = "protobufGradlePlugin" }
 
 versionsGradlePlugin = { module = "com.github.ben-manes:gradle-versions-plugin", version.ref = "versionsGradlePlugin" }
 
@@ -128,6 +131,8 @@ okHttp = { module = "com.squareup.okhttp3:okhttp", version.ref = "okHttp" }
 gson = { module = "com.google.code.gson:gson", version.ref = "gson" }
 kronosNTP = { module = "com.lyft.kronos:kronos-android", version.ref = "kronosNTP" }
 assertJ = { module = "org.assertj:assertj-core", version.ref = "assertJ" }
+
+protobuf = { module = "com.google.protobuf:protobuf-javalite", version.ref = "protobufVersion" }
 
 # Android libs
 androidDesugaringSdk = { module = "com.android.tools:desugar_jdk_libs", version.ref = "androidDesugaringSdk" }

@@ -21,7 +21,7 @@ import kotlin.jvm.Throws
 /**
  * This interceptor logs the request as a valid CURL command line.
  */
-internal class CurlInterceptor(
+class CurlInterceptor(
     private val printBody: Boolean = false,
     private val output: (String) -> Unit = { Log.i("Curl", it) }
 ) : Interceptor {

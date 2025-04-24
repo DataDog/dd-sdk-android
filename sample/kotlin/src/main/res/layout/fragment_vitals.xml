@@ -107,4 +107,24 @@
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toBottomOf="@id/vital_memory"/>
 
+    <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/start_tracing"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Start Tracing"
+            android:layout_margin="16dp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/vital_stress_test"/>
+
+    <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/stop_tracing"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Stop Tracing"
+            android:layout_margin="16dp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/start_tracing"/>
+
 </androidx.constraintlayout.widget.ConstraintLayout>

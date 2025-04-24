@@ -1,0 +1,168 @@
+/*
+ * Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
+ * This product includes software developed at Datadog (https://www.datadoghq.com/).
+ * Copyright 2016-Present Datadog, Inc.
+ */
+
+package com.datadog.android.rum.profiling
+
+import com.datadog.android.api.InternalLogger
+import com.datadog.android.core.internal.data.upload.CurlInterceptor
+import com.google.gson.JsonArray
+import com.google.gson.JsonObject
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.MultipartBody
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.RequestBody.Companion.asRequestBody
+import okhttp3.RequestBody.Companion.toRequestBody
+import java.io.File
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import java.util.TimeZone
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
+
+internal class MergedTracesUploader(
+    private val siteName: String,
+    private val tracesDirectoryPath: String,
+    private val apiKey: String,
+    private val internalLogger: InternalLogger,
+    private val version: String,
+    private val service: String,
+    private val sdkVersion: String
+) {
+
+    private val okHttpClient = OkHttpClient.Builder()
+        .addNetworkInterceptor(CurlInterceptor(true))
+        .build()
+    private val scheduledExecutorService = Executors.newSingleThreadScheduledExecutor()
+
+    fun startUploadingTraces(
+        uploadPeriod: Long
+    ) {
+        scheduledExecutorService.scheduleWithFixedDelay(
+            UploadTracesRunnable(
+                okHttpClient = okHttpClient,
+                tracesDirectoryPath = tracesDirectoryPath,
+                apiKey = apiKey,
+                version = version,
+                siteName = siteName,
+                service = service,
+                sdkVersion = sdkVersion,
+                internalLogger = internalLogger
+            ),
+            10,
+            uploadPeriod,
+            TimeUnit.SECONDS
+        )
+    }
+
+    private class UploadTracesRunnable(
+        val okHttpClient: OkHttpClient,
+        val tracesDirectoryPath: String,
+        val apiKey: String,
+        val version: String,
+        val siteName: String,
+        val service: String,
+        val sdkVersion: String,
+        val internalLogger: InternalLogger
+    ) :
+        Runnable {
+
+        private val origin = "dd-sdk-android"
+        override fun run() {
+            // read the all the .trace files not more recent than 1 minute
+            val tracesDirectory = File(tracesDirectoryPath)
+            tracesDirectory.listFiles { file ->
+                file.name.startsWith("merged") && file.extension == "pprof" &&
+                    System.currentTimeMillis() - file.lastModified() > TimeUnit.SECONDS.toSeconds(
+                        10
+                    )
+            }?.take(10)?.forEach {
+                uploadFiles(it)
+            }
+        }
+
+        private fun uploadFiles(file: File) {
+            val startTime = file.nameWithoutExtension.split("_")[1].toLong()
+            val end = file.nameWithoutExtension.split("_")[2].toLong()
+
+            val formattedStartTime = formatIsoUtc(startTime)
+            val formattedEndTime = formatIsoUtc(end)
+
+            // let's create a json object here instead of a string
+            val payload = JsonObject().apply {
+                val attachments = JsonArray().apply {
+                    add("cpu.pprof")
+                }
+                add("attachments", attachments)
+                addProperty("tags_profiler", "service:$service,version:$version")
+                addProperty("start", formattedStartTime)
+                addProperty("end", formattedEndTime)
+                addProperty("family", "go")
+                addProperty("version", "4")
+            }
+
+            // Create multipart request
+            val requestBody = MultipartBody.Builder()
+                .setType(MultipartBody.FORM)
+                .addFormDataPart(
+                    "cpu.pprof",
+                    file.name,
+                    file.asRequestBody(CONTENT_TYPE_BINARY_TYPE)
+                )
+                .addFormDataPart(
+                    "event",
+                    "event.json",
+                    payload.toString().toRequestBody(CONTENT_TYPE_JSON_TYPE)
+                )
+                .build()
+
+            val request = Request.Builder()
+                .url("$siteName/api/v2/profile")
+                .addHeader("DD-API-KEY", apiKey)
+                .addHeader("DD-EVP-ORIGIN", origin)
+                .addHeader("DD-EVP-ORIGIN-VERSION", sdkVersion)
+                .post(requestBody)
+                .build()
+
+            try {
+                val response = okHttpClient.newCall(request).execute()
+                if (!response.isSuccessful) {
+                    val errorMessage = response.body?.string()
+                    internalLogger.log(
+                        InternalLogger.Level.ERROR,
+                        InternalLogger.Target.MAINTAINER,
+                        { "TracesUploader: Failed to upload traces: $errorMessage" }
+                    )
+                } else {
+                    internalLogger.log(
+                        InternalLogger.Level.INFO,
+                        InternalLogger.Target.MAINTAINER,
+                        { "TracesUploader: Successfully uploaded traces ${file.name}" }
+                    )
+                }
+            } catch (e: Exception) {
+                internalLogger.log(
+                    InternalLogger.Level.ERROR,
+                    InternalLogger.Target.MAINTAINER,
+                    { "TracesUploader: Exception while uploading traces: ${e.message}" }
+                )
+            } finally {
+                // Clean up files after successful upload
+                file.delete()
+            }
+        }
+
+        fun formatIsoUtc(epochMillis: Long): String {
+            val sdf = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.US)
+            sdf.timeZone = TimeZone.getTimeZone("UTC")
+            return sdf.format(Date(epochMillis))
+        }
+
+        internal val CONTENT_TYPE_BINARY_TYPE = "application/octet-stream".toMediaTypeOrNull()
+        internal val CONTENT_TYPE_JSON_TYPE = "application/json".toMediaTypeOrNull()
+    }
+}

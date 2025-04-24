@@ -85,6 +85,8 @@ import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.model.ViewEvent
+import com.datadog.android.rum.profiling.MergeTraceDumper
+import com.datadog.android.rum.profiling.MergedTracesUploader
 import com.datadog.android.rum.tracking.ActionTrackingStrategy
 import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
 import com.datadog.android.rum.tracking.InteractionPredicate
@@ -148,18 +150,33 @@ internal class RumFeature(
 
     private val lateCrashEventHandler by lazy { lateCrashReporterFactory(sdkCore as InternalSdkCore) }
 
+    private lateinit var traceDumper: MergeTraceDumper
+    private lateinit var tracesUploader: MergedTracesUploader
+
     // region Feature
 
     override val name: String = Feature.RUM_FEATURE_NAME
 
     override fun onInitialize(appContext: Context) {
         this.appContext = appContext
+        val storageDirectory = appContext.getExternalFilesDir(null) ?: appContext.filesDir
+        traceDumper = MergeTraceDumper(storageDirectory.absolutePath, sdkCore.internalLogger)
+        val datadogContext = (sdkCore as InternalSdkCore).getDatadogContext()!!
+        tracesUploader = MergedTracesUploader(
+            datadogContext.site.intakeEndpoint,
+            storageDirectory.absolutePath,
+            internalLogger = sdkCore.internalLogger,
+            version = datadogContext.version,
+            sdkVersion = datadogContext.sdkVersion,
+            service = datadogContext.service,
+            apiKey = "<YOUR_API_KEY_HERE"
+        )
         initialResourceIdentifier = configuration.initialResourceIdentifier
         lastInteractionIdentifier = configuration.lastInteractionIdentifier
 
         dataWriter = createDataWriter(
             configuration,
-            sdkCore as InternalSdkCore
+            sdkCore
         )
 
         sampleRate = if (sdkCore.isDeveloperModeEnabled) {
@@ -216,6 +233,15 @@ internal class RumFeature(
         sdkCore.setEventReceiver(name, this)
 
         initialized.set(true)
+    }
+
+    public fun startProfiling() {
+        traceDumper.startDumpingTrace()
+        tracesUploader.startUploadingTraces(10)
+    }
+
+    public fun stopProfiling() {
+        traceDumper.stopDumpingTrace()
     }
 
     private fun initializeFrameStatesAggregator(

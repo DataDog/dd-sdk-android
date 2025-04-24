@@ -765,6 +765,30 @@ public final class com/datadog/android/core/internal/attributes/ViewScopeInstrum
 	public static fun values ()[Lcom/datadog/android/core/internal/attributes/ViewScopeInstrumentationType;
 }
 
+public final class com/datadog/android/core/internal/data/upload/CurlInterceptor : okhttp3/Interceptor {
+	public static final field Companion Lcom/datadog/android/core/internal/data/upload/CurlInterceptor$Companion;
+	public fun <init> ()V
+	public fun <init> (ZLkotlin/jvm/functions/Function1;)V
+	public synthetic fun <init> (ZLkotlin/jvm/functions/Function1;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun intercept (Lokhttp3/Interceptor$Chain;)Lokhttp3/Response;
+}
+
+public final class com/datadog/android/core/internal/data/upload/CurlInterceptor$Companion {
+}
+
+public final class com/datadog/android/core/internal/data/upload/CurlInterceptor$CurlBuilder {
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lokhttp3/RequestBody;Ljava/util/Map;Z)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lokhttp3/RequestBody;Ljava/util/Map;ZILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Lokhttp3/Request;Z)V
+	public final fun getContentType ()Ljava/lang/String;
+	public final fun getHeaders ()Ljava/util/Map;
+	public final fun getMethod ()Ljava/lang/String;
+	public final fun getPrintBody ()Z
+	public final fun getRequestBody ()Lokhttp3/RequestBody;
+	public final fun getUrl ()Ljava/lang/String;
+	public final fun toCommand ()Ljava/lang/String;
+}
+
 public final class com/datadog/android/core/internal/net/DefaultFirstPartyHostHeaderTypeResolver : com/datadog/android/core/internal/net/FirstPartyHostHeaderTypeResolver {
 	public fun <init> (Ljava/util/Map;)V
 	public fun getAllHeaderTypes ()Ljava/util/Set;

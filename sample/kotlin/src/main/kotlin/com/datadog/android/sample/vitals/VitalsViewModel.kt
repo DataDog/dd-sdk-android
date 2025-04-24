@@ -89,7 +89,7 @@ internal class VitalsViewModel : ViewModel() {
         }
     }
 
-    private fun startCpuThread() {
+    fun startCpuThread() {
         Thread {
             while (isResumed && isCpuUsageEnabled) {
                 val n = rng.nextInt(4096) + 1024
@@ -119,7 +119,7 @@ internal class VitalsViewModel : ViewModel() {
         }.start()
     }
 
-    private fun stressTestRumEvents() {
+    fun stressTestRumEvents() {
         val fflags = (0..128).associate {
             "ff.flag_$it" to rng.nextInt(4096)
         }

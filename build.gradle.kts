@@ -34,6 +34,7 @@ buildscript {
         classpath(libs.unmockGradlePlugin)
         classpath(libs.sqlDelightGradlePlugin)
         classpath(libs.binaryCompatibilityGradlePlugin)
+        classpath(libs.protobufGradlePlugin)
     }
 }
 
