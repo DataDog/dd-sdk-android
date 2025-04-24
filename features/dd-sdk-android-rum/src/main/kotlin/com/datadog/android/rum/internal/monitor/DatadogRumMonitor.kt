@@ -654,6 +654,18 @@ internal class DatadogRumMonitor(
             ?.enableJankStatsTracking(activity)
     }
 
+    override fun startProfiling() {
+        sdkCore.getFeature(Feature.RUM_FEATURE_NAME)
+            ?.unwrap<RumFeature>()
+            ?.startProfiling()
+    }
+
+    override fun stopProfiling() {
+        sdkCore.getFeature(Feature.RUM_FEATURE_NAME)
+            ?.unwrap<RumFeature>()
+            ?.stopProfiling()
+    }
+
     // endregion
 
     // region Internal

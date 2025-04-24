@@ -160,10 +160,12 @@ public abstract interface class com/datadog/android/rum/RumMonitor {
 	public abstract fun removeAttribute (Ljava/lang/String;)V
 	public abstract fun setDebug (Z)V
 	public abstract fun startAction (Lcom/datadog/android/rum/RumActionType;Ljava/lang/String;Ljava/util/Map;)V
+	public abstract fun startProfiling ()V
 	public abstract fun startResource (Ljava/lang/String;Lcom/datadog/android/rum/RumResourceMethod;Ljava/lang/String;Ljava/util/Map;)V
 	public abstract fun startResource (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;)V
 	public abstract fun startView (Ljava/lang/Object;Ljava/lang/String;Ljava/util/Map;)V
 	public abstract fun stopAction (Lcom/datadog/android/rum/RumActionType;Ljava/lang/String;Ljava/util/Map;)V
+	public abstract fun stopProfiling ()V
 	public abstract fun stopResource (Ljava/lang/String;Ljava/lang/Integer;Ljava/lang/Long;Lcom/datadog/android/rum/RumResourceKind;Ljava/util/Map;)V
 	public abstract fun stopResourceWithError (Ljava/lang/String;Ljava/lang/Integer;Ljava/lang/String;Lcom/datadog/android/rum/RumErrorSource;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;)V
 	public abstract fun stopResourceWithError (Ljava/lang/String;Ljava/lang/Integer;Ljava/lang/String;Lcom/datadog/android/rum/RumErrorSource;Ljava/lang/Throwable;Ljava/util/Map;)V
@@ -8497,5 +8499,637 @@ public final class com/datadog/android/telemetry/model/TelemetryUsageEvent$View 
 public final class com/datadog/android/telemetry/model/TelemetryUsageEvent$View$Companion {
 	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$View;
 	public final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/telemetry/model/TelemetryUsageEvent$View;
+}
+
+public final class com/google/perftools/profiles/ProfileProto {
+	public static fun registerAllExtensions (Lcom/google/protobuf/ExtensionRegistryLite;)V
+}
+
+public final class com/google/perftools/profiles/ProfileProto$Function : com/google/protobuf/GeneratedMessageLite, com/google/perftools/profiles/ProfileProto$FunctionOrBuilder {
+	public static final field FILENAME_FIELD_NUMBER I
+	public static final field ID_FIELD_NUMBER I
+	public static final field NAME_FIELD_NUMBER I
+	public static final field START_LINE_FIELD_NUMBER I
+	public static final field SYSTEM_NAME_FIELD_NUMBER I
+	public static fun getDefaultInstance ()Lcom/google/perftools/profiles/ProfileProto$Function;
+	public fun getFilename ()J
+	public fun getId ()J
+	public fun getName ()J
+	public fun getStartLine ()J
+	public fun getSystemName ()J
+	public static fun newBuilder ()Lcom/google/perftools/profiles/ProfileProto$Function$Builder;
+	public static fun newBuilder (Lcom/google/perftools/profiles/ProfileProto$Function;)Lcom/google/perftools/profiles/ProfileProto$Function$Builder;
+	public static fun parseDelimitedFrom (Ljava/io/InputStream;)Lcom/google/perftools/profiles/ProfileProto$Function;
+	public static fun parseDelimitedFrom (Ljava/io/InputStream;Lcom/google/protobuf/ExtensionRegistryLite;)Lcom/google/perftools/profiles/ProfileProto$Function;
+	public static fun parseFrom (Lcom/google/protobuf/ByteString;)Lcom/google/perftools/profiles/ProfileProto$Function;
+	public static fun parseFrom (Lcom/google/protobuf/ByteString;Lcom/google/protobuf/ExtensionRegistryLite;)Lcom/google/perftools/profiles/ProfileProto$Function;
+	public static fun parseFrom (Lcom/google/protobuf/CodedInputStream;)Lcom/google/perftools/profiles/ProfileProto$Function;
+	public static fun parseFrom (Lcom/google/protobuf/CodedInputStream;Lcom/google/protobuf/ExtensionRegistryLite;)Lcom/google/perftools/profiles/ProfileProto$Function;
+	public static fun parseFrom (Ljava/io/InputStream;)Lcom/google/perftools/profiles/ProfileProto$Function;
+	public static fun parseFrom (Ljava/io/InputStream;Lcom/google/protobuf/ExtensionRegistryLite;)Lcom/google/perftools/profiles/ProfileProto$Function;
+	public static fun parseFrom (Ljava/nio/ByteBuffer;)Lcom/google/perftools/profiles/ProfileProto$Function;
+	public static fun parseFrom (Ljava/nio/ByteBuffer;Lcom/google/protobuf/ExtensionRegistryLite;)Lcom/google/perftools/profiles/ProfileProto$Function;
+	public static fun parseFrom ([B)Lcom/google/perftools/profiles/ProfileProto$Function;
+	public static fun parseFrom ([BLcom/google/protobuf/ExtensionRegistryLite;)Lcom/google/perftools/profiles/ProfileProto$Function;
+	public static fun parser ()Lcom/google/protobuf/Parser;
+}
+
+public final class com/google/perftools/profiles/ProfileProto$Function$Builder : com/google/protobuf/GeneratedMessageLite$Builder, com/google/perftools/profiles/ProfileProto$FunctionOrBuilder {
+	public fun clearFilename ()Lcom/google/perftools/profiles/ProfileProto$Function$Builder;
+	public fun clearId ()Lcom/google/perftools/profiles/ProfileProto$Function$Builder;
+	public fun clearName ()Lcom/google/perftools/profiles/ProfileProto$Function$Builder;
+	public fun clearStartLine ()Lcom/google/perftools/profiles/ProfileProto$Function$Builder;
+	public fun clearSystemName ()Lcom/google/perftools/profiles/ProfileProto$Function$Builder;
+	public fun getFilename ()J
+	public fun getId ()J
+	public fun getName ()J
+	public fun getStartLine ()J
+	public fun getSystemName ()J
+	public fun setFilename (J)Lcom/google/perftools/profiles/ProfileProto$Function$Builder;
+	public fun setId (J)Lcom/google/perftools/profiles/ProfileProto$Function$Builder;
+	public fun setName (J)Lcom/google/perftools/profiles/ProfileProto$Function$Builder;
+	public fun setStartLine (J)Lcom/google/perftools/profiles/ProfileProto$Function$Builder;
+	public fun setSystemName (J)Lcom/google/perftools/profiles/ProfileProto$Function$Builder;
+}
+
+public abstract interface class com/google/perftools/profiles/ProfileProto$FunctionOrBuilder : com/google/protobuf/MessageLiteOrBuilder {
+	public abstract fun getFilename ()J
+	public abstract fun getId ()J
+	public abstract fun getName ()J
+	public abstract fun getStartLine ()J
+	public abstract fun getSystemName ()J
+}
+
+public final class com/google/perftools/profiles/ProfileProto$Label : com/google/protobuf/GeneratedMessageLite, com/google/perftools/profiles/ProfileProto$LabelOrBuilder {
+	public static final field KEY_FIELD_NUMBER I
+	public static final field NUM_FIELD_NUMBER I
+	public static final field NUM_UNIT_FIELD_NUMBER I
+	public static final field STR_FIELD_NUMBER I
+	public static fun getDefaultInstance ()Lcom/google/perftools/profiles/ProfileProto$Label;
+	public fun getKey ()J
+	public fun getNum ()J
+	public fun getNumUnit ()J
+	public fun getStr ()J
+	public static fun newBuilder ()Lcom/google/perftools/profiles/ProfileProto$Label$Builder;
+	public static fun newBuilder (Lcom/google/perftools/profiles/ProfileProto$Label;)Lcom/google/perftools/profiles/ProfileProto$Label$Builder;
+	public static fun parseDelimitedFrom (Ljava/io/InputStream;)Lcom/google/perftools/profiles/ProfileProto$Label;
+	public static fun parseDelimitedFrom (Ljava/io/InputStream;Lcom/google/protobuf/ExtensionRegistryLite;)Lcom/google/perftools/profiles/ProfileProto$Label;
+	public static fun parseFrom (Lcom/google/protobuf/ByteString;)Lcom/google/perftools/profiles/ProfileProto$Label;
+	public static fun parseFrom (Lcom/google/protobuf/ByteString;Lcom/google/protobuf/ExtensionRegistryLite;)Lcom/google/perftools/profiles/ProfileProto$Label;
+	public static fun parseFrom (Lcom/google/protobuf/CodedInputStream;)Lcom/google/perftools/profiles/ProfileProto$Label;
+	public static fun parseFrom (Lcom/google/protobuf/CodedInputStream;Lcom/google/protobuf/ExtensionRegistryLite;)Lcom/google/perftools/profiles/ProfileProto$Label;
+	public static fun parseFrom (Ljava/io/InputStream;)Lcom/google/perftools/profiles/ProfileProto$Label;
+	public static fun parseFrom (Ljava/io/InputStream;Lcom/google/protobuf/ExtensionRegistryLite;)Lcom/google/perftools/profiles/ProfileProto$Label;
+	public static fun parseFrom (Ljava/nio/ByteBuffer;)Lcom/google/perftools/profiles/ProfileProto$Label;
+	public static fun parseFrom (Ljava/nio/ByteBuffer;Lcom/google/protobuf/ExtensionRegistryLite;)Lcom/google/perftools/profiles/ProfileProto$Label;
+	public static fun parseFrom ([B)Lcom/google/perftools/profiles/ProfileProto$Label;
+	public static fun parseFrom ([BLcom/google/protobuf/ExtensionRegistryLite;)Lcom/google/perftools/profiles/ProfileProto$Label;
+	public static fun parser ()Lcom/google/protobuf/Parser;
+}
+
+public final class com/google/perftools/profiles/ProfileProto$Label$Builder : com/google/protobuf/GeneratedMessageLite$Builder, com/google/perftools/profiles/ProfileProto$LabelOrBuilder {
+	public fun clearKey ()Lcom/google/perftools/profiles/ProfileProto$Label$Builder;
+	public fun clearNum ()Lcom/google/perftools/profiles/ProfileProto$Label$Builder;
+	public fun clearNumUnit ()Lcom/google/perftools/profiles/ProfileProto$Label$Builder;
+	public fun clearStr ()Lcom/google/perftools/profiles/ProfileProto$Label$Builder;
+	public fun getKey ()J
+	public fun getNum ()J
+	public fun getNumUnit ()J
+	public fun getStr ()J
+	public fun setKey (J)Lcom/google/perftools/profiles/ProfileProto$Label$Builder;
+	public fun setNum (J)Lcom/google/perftools/profiles/ProfileProto$Label$Builder;
+	public fun setNumUnit (J)Lcom/google/perftools/profiles/ProfileProto$Label$Builder;
+	public fun setStr (J)Lcom/google/perftools/profiles/ProfileProto$Label$Builder;
+}
+
+public abstract interface class com/google/perftools/profiles/ProfileProto$LabelOrBuilder : com/google/protobuf/MessageLiteOrBuilder {
+	public abstract fun getKey ()J
+	public abstract fun getNum ()J
+	public abstract fun getNumUnit ()J
+	public abstract fun getStr ()J
+}
+
+public final class com/google/perftools/profiles/ProfileProto$Line : com/google/protobuf/GeneratedMessageLite, com/google/perftools/profiles/ProfileProto$LineOrBuilder {
+	public static final field COLUMN_FIELD_NUMBER I
+	public static final field FUNCTION_ID_FIELD_NUMBER I
+	public static final field LINE_FIELD_NUMBER I
+	public fun getColumn ()J
+	public static fun getDefaultInstance ()Lcom/google/perftools/profiles/ProfileProto$Line;
+	public fun getFunctionId ()J
+	public fun getLine ()J
+	public static fun newBuilder ()Lcom/google/perftools/profiles/ProfileProto$Line$Builder;
+	public static fun newBuilder (Lcom/google/perftools/profiles/ProfileProto$Line;)Lcom/google/perftools/profiles/ProfileProto$Line$Builder;
+	public static fun parseDelimitedFrom (Ljava/io/InputStream;)Lcom/google/perftools/profiles/ProfileProto$Line;
+	public static fun parseDelimitedFrom (Ljava/io/InputStream;Lcom/google/protobuf/ExtensionRegistryLite;)Lcom/google/perftools/profiles/ProfileProto$Line;
+	public static fun parseFrom (Lcom/google/protobuf/ByteString;)Lcom/google/perftools/profiles/ProfileProto$Line;
+	public static fun parseFrom (Lcom/google/protobuf/ByteString;Lcom/google/protobuf/ExtensionRegistryLite;)Lcom/google/perftools/profiles/ProfileProto$Line;
+	public static fun parseFrom (Lcom/google/protobuf/CodedInputStream;)Lcom/google/perftools/profiles/ProfileProto$Line;
+	public static fun parseFrom (Lcom/google/protobuf/CodedInputStream;Lcom/google/protobuf/ExtensionRegistryLite;)Lcom/google/perftools/profiles/ProfileProto$Line;
+	public static fun parseFrom (Ljava/io/InputStream;)Lcom/google/perftools/profiles/ProfileProto$Line;
+	public static fun parseFrom (Ljava/io/InputStream;Lcom/google/protobuf/ExtensionRegistryLite;)Lcom/google/perftools/profiles/ProfileProto$Line;
+	public static fun parseFrom (Ljava/nio/ByteBuffer;)Lcom/google/perftools/profiles/ProfileProto$Line;
+	public static fun parseFrom (Ljava/nio/ByteBuffer;Lcom/google/protobuf/ExtensionRegistryLite;)Lcom/google/perftools/profiles/ProfileProto$Line;
+	public static fun parseFrom ([B)Lcom/google/perftools/profiles/ProfileProto$Line;
+	public static fun parseFrom ([BLcom/google/protobuf/ExtensionRegistryLite;)Lcom/google/perftools/profiles/ProfileProto$Line;
+	public static fun parser ()Lcom/google/protobuf/Parser;
+}
+
+public final class com/google/perftools/profiles/ProfileProto$Line$Builder : com/google/protobuf/GeneratedMessageLite$Builder, com/google/perftools/profiles/ProfileProto$LineOrBuilder {
+	public fun clearColumn ()Lcom/google/perftools/profiles/ProfileProto$Line$Builder;
+	public fun clearFunctionId ()Lcom/google/perftools/profiles/ProfileProto$Line$Builder;
+	public fun clearLine ()Lcom/google/perftools/profiles/ProfileProto$Line$Builder;
+	public fun getColumn ()J
+	public fun getFunctionId ()J
+	public fun getLine ()J
+	public fun setColumn (J)Lcom/google/perftools/profiles/ProfileProto$Line$Builder;
+	public fun setFunctionId (J)Lcom/google/perftools/profiles/ProfileProto$Line$Builder;
+	public fun setLine (J)Lcom/google/perftools/profiles/ProfileProto$Line$Builder;
+}
+
+public abstract interface class com/google/perftools/profiles/ProfileProto$LineOrBuilder : com/google/protobuf/MessageLiteOrBuilder {
+	public abstract fun getColumn ()J
+	public abstract fun getFunctionId ()J
+	public abstract fun getLine ()J
+}
+
+public final class com/google/perftools/profiles/ProfileProto$Location : com/google/protobuf/GeneratedMessageLite, com/google/perftools/profiles/ProfileProto$LocationOrBuilder {
+	public static final field ADDRESS_FIELD_NUMBER I
+	public static final field ID_FIELD_NUMBER I
+	public static final field IS_FOLDED_FIELD_NUMBER I
+	public static final field LINE_FIELD_NUMBER I
+	public static final field MAPPING_ID_FIELD_NUMBER I
+	public fun getAddress ()J
+	public static fun getDefaultInstance ()Lcom/google/perftools/profiles/ProfileProto$Location;
+	public fun getId ()J
+	public fun getIsFolded ()Z
+	public fun getLine (I)Lcom/google/perftools/profiles/ProfileProto$Line;
+	public fun getLineCount ()I
+	public fun getLineList ()Ljava/util/List;
+	public fun getLineOrBuilder (I)Lcom/google/perftools/profiles/ProfileProto$LineOrBuilder;
+	public fun getLineOrBuilderList ()Ljava/util/List;
+	public fun getMappingId ()J
+	public static fun newBuilder ()Lcom/google/perftools/profiles/ProfileProto$Location$Builder;
+	public static fun newBuilder (Lcom/google/perftools/profiles/ProfileProto$Location;)Lcom/google/perftools/profiles/ProfileProto$Location$Builder;
+	public static fun parseDelimitedFrom (Ljava/io/InputStream;)Lcom/google/perftools/profiles/ProfileProto$Location;
+	public static fun parseDelimitedFrom (Ljava/io/InputStream;Lcom/google/protobuf/ExtensionRegistryLite;)Lcom/google/perftools/profiles/ProfileProto$Location;
+	public static fun parseFrom (Lcom/google/protobuf/ByteString;)Lcom/google/perftools/profiles/ProfileProto$Location;
+	public static fun parseFrom (Lcom/google/protobuf/ByteString;Lcom/google/protobuf/ExtensionRegistryLite;)Lcom/google/perftools/profiles/ProfileProto$Location;
+	public static fun parseFrom (Lcom/google/protobuf/CodedInputStream;)Lcom/google/perftools/profiles/ProfileProto$Location;
+	public static fun parseFrom (Lcom/google/protobuf/CodedInputStream;Lcom/google/protobuf/ExtensionRegistryLite;)Lcom/google/perftools/profiles/ProfileProto$Location;
+	public static fun parseFrom (Ljava/io/InputStream;)Lcom/google/perftools/profiles/ProfileProto$Location;
+	public static fun parseFrom (Ljava/io/InputStream;Lcom/google/protobuf/ExtensionRegistryLite;)Lcom/google/perftools/profiles/ProfileProto$Location;
+	public static fun parseFrom (Ljava/nio/ByteBuffer;)Lcom/google/perftools/profiles/ProfileProto$Location;
+	public static fun parseFrom (Ljava/nio/ByteBuffer;Lcom/google/protobuf/ExtensionRegistryLite;)Lcom/google/perftools/profiles/ProfileProto$Location;
+	public static fun parseFrom ([B)Lcom/google/perftools/profiles/ProfileProto$Location;
+	public static fun parseFrom ([BLcom/google/protobuf/ExtensionRegistryLite;)Lcom/google/perftools/profiles/ProfileProto$Location;
+	public static fun parser ()Lcom/google/protobuf/Parser;
+}
+
+public final class com/google/perftools/profiles/ProfileProto$Location$Builder : com/google/protobuf/GeneratedMessageLite$Builder, com/google/perftools/profiles/ProfileProto$LocationOrBuilder {
+	public fun addAllLine (Ljava/lang/Iterable;)Lcom/google/perftools/profiles/ProfileProto$Location$Builder;
+	public fun addLine (ILcom/google/perftools/profiles/ProfileProto$Line$Builder;)Lcom/google/perftools/profiles/ProfileProto$Location$Builder;
+	public fun addLine (ILcom/google/perftools/profiles/ProfileProto$Line;)Lcom/google/perftools/profiles/ProfileProto$Location$Builder;
+	public fun addLine (Lcom/google/perftools/profiles/ProfileProto$Line$Builder;)Lcom/google/perftools/profiles/ProfileProto$Location$Builder;
+	public fun addLine (Lcom/google/perftools/profiles/ProfileProto$Line;)Lcom/google/perftools/profiles/ProfileProto$Location$Builder;
+	public fun clearAddress ()Lcom/google/perftools/profiles/ProfileProto$Location$Builder;
+	public fun clearId ()Lcom/google/perftools/profiles/ProfileProto$Location$Builder;
+	public fun clearIsFolded ()Lcom/google/perftools/profiles/ProfileProto$Location$Builder;
+	public fun clearLine ()Lcom/google/perftools/profiles/ProfileProto$Location$Builder;
+	public fun clearMappingId ()Lcom/google/perftools/profiles/ProfileProto$Location$Builder;
+	public fun getAddress ()J
+	public fun getId ()J
+	public fun getIsFolded ()Z
+	public fun getLine (I)Lcom/google/perftools/profiles/ProfileProto$Line;
+	public fun getLineCount ()I
+	public fun getLineList ()Ljava/util/List;
+	public fun getMappingId ()J
+	public fun removeLine (I)Lcom/google/perftools/profiles/ProfileProto$Location$Builder;
+	public fun setAddress (J)Lcom/google/perftools/profiles/ProfileProto$Location$Builder;
+	public fun setId (J)Lcom/google/perftools/profiles/ProfileProto$Location$Builder;
+	public fun setIsFolded (Z)Lcom/google/perftools/profiles/ProfileProto$Location$Builder;
+	public fun setLine (ILcom/google/perftools/profiles/ProfileProto$Line$Builder;)Lcom/google/perftools/profiles/ProfileProto$Location$Builder;
+	public fun setLine (ILcom/google/perftools/profiles/ProfileProto$Line;)Lcom/google/perftools/profiles/ProfileProto$Location$Builder;
+	public fun setMappingId (J)Lcom/google/perftools/profiles/ProfileProto$Location$Builder;
+}
+
+public abstract interface class com/google/perftools/profiles/ProfileProto$LocationOrBuilder : com/google/protobuf/MessageLiteOrBuilder {
+	public abstract fun getAddress ()J
+	public abstract fun getId ()J
+	public abstract fun getIsFolded ()Z
+	public abstract fun getLine (I)Lcom/google/perftools/profiles/ProfileProto$Line;
+	public abstract fun getLineCount ()I
+	public abstract fun getLineList ()Ljava/util/List;
+	public abstract fun getMappingId ()J
+}
+
+public final class com/google/perftools/profiles/ProfileProto$Mapping : com/google/protobuf/GeneratedMessageLite, com/google/perftools/profiles/ProfileProto$MappingOrBuilder {
+	public static final field BUILD_ID_FIELD_NUMBER I
+	public static final field FILENAME_FIELD_NUMBER I
+	public static final field FILE_OFFSET_FIELD_NUMBER I
+	public static final field HAS_FILENAMES_FIELD_NUMBER I
+	public static final field HAS_FUNCTIONS_FIELD_NUMBER I
+	public static final field HAS_INLINE_FRAMES_FIELD_NUMBER I
+	public static final field HAS_LINE_NUMBERS_FIELD_NUMBER I
+	public static final field ID_FIELD_NUMBER I
+	public static final field MEMORY_LIMIT_FIELD_NUMBER I
+	public static final field MEMORY_START_FIELD_NUMBER I
+	public fun getBuildId ()J
+	public static fun getDefaultInstance ()Lcom/google/perftools/profiles/ProfileProto$Mapping;
+	public fun getFileOffset ()J
+	public fun getFilename ()J
+	public fun getHasFilenames ()Z
+	public fun getHasFunctions ()Z
+	public fun getHasInlineFrames ()Z
+	public fun getHasLineNumbers ()Z
+	public fun getId ()J
+	public fun getMemoryLimit ()J
+	public fun getMemoryStart ()J
+	public static fun newBuilder ()Lcom/google/perftools/profiles/ProfileProto$Mapping$Builder;
+	public static fun newBuilder (Lcom/google/perftools/profiles/ProfileProto$Mapping;)Lcom/google/perftools/profiles/ProfileProto$Mapping$Builder;
+	public static fun parseDelimitedFrom (Ljava/io/InputStream;)Lcom/google/perftools/profiles/ProfileProto$Mapping;
+	public static fun parseDelimitedFrom (Ljava/io/InputStream;Lcom/google/protobuf/ExtensionRegistryLite;)Lcom/google/perftools/profiles/ProfileProto$Mapping;
+	public static fun parseFrom (Lcom/google/protobuf/ByteString;)Lcom/google/perftools/profiles/ProfileProto$Mapping;
+	public static fun parseFrom (Lcom/google/protobuf/ByteString;Lcom/google/protobuf/ExtensionRegistryLite;)Lcom/google/perftools/profiles/ProfileProto$Mapping;
+	public static fun parseFrom (Lcom/google/protobuf/CodedInputStream;)Lcom/google/perftools/profiles/ProfileProto$Mapping;
+	public static fun parseFrom (Lcom/google/protobuf/CodedInputStream;Lcom/google/protobuf/ExtensionRegistryLite;)Lcom/google/perftools/profiles/ProfileProto$Mapping;
+	public static fun parseFrom (Ljava/io/InputStream;)Lcom/google/perftools/profiles/ProfileProto$Mapping;
+	public static fun parseFrom (Ljava/io/InputStream;Lcom/google/protobuf/ExtensionRegistryLite;)Lcom/google/perftools/profiles/ProfileProto$Mapping;
+	public static fun parseFrom (Ljava/nio/ByteBuffer;)Lcom/google/perftools/profiles/ProfileProto$Mapping;
+	public static fun parseFrom (Ljava/nio/ByteBuffer;Lcom/google/protobuf/ExtensionRegistryLite;)Lcom/google/perftools/profiles/ProfileProto$Mapping;
+	public static fun parseFrom ([B)Lcom/google/perftools/profiles/ProfileProto$Mapping;
+	public static fun parseFrom ([BLcom/google/protobuf/ExtensionRegistryLite;)Lcom/google/perftools/profiles/ProfileProto$Mapping;
+	public static fun parser ()Lcom/google/protobuf/Parser;
+}
+
+public final class com/google/perftools/profiles/ProfileProto$Mapping$Builder : com/google/protobuf/GeneratedMessageLite$Builder, com/google/perftools/profiles/ProfileProto$MappingOrBuilder {
+	public fun clearBuildId ()Lcom/google/perftools/profiles/ProfileProto$Mapping$Builder;
+	public fun clearFileOffset ()Lcom/google/perftools/profiles/ProfileProto$Mapping$Builder;
+	public fun clearFilename ()Lcom/google/perftools/profiles/ProfileProto$Mapping$Builder;
+	public fun clearHasFilenames ()Lcom/google/perftools/profiles/ProfileProto$Mapping$Builder;
+	public fun clearHasFunctions ()Lcom/google/perftools/profiles/ProfileProto$Mapping$Builder;
+	public fun clearHasInlineFrames ()Lcom/google/perftools/profiles/ProfileProto$Mapping$Builder;
+	public fun clearHasLineNumbers ()Lcom/google/perftools/profiles/ProfileProto$Mapping$Builder;
+	public fun clearId ()Lcom/google/perftools/profiles/ProfileProto$Mapping$Builder;
+	public fun clearMemoryLimit ()Lcom/google/perftools/profiles/ProfileProto$Mapping$Builder;
+	public fun clearMemoryStart ()Lcom/google/perftools/profiles/ProfileProto$Mapping$Builder;
+	public fun getBuildId ()J
+	public fun getFileOffset ()J
+	public fun getFilename ()J
+	public fun getHasFilenames ()Z
+	public fun getHasFunctions ()Z
+	public fun getHasInlineFrames ()Z
+	public fun getHasLineNumbers ()Z
+	public fun getId ()J
+	public fun getMemoryLimit ()J
+	public fun getMemoryStart ()J
+	public fun setBuildId (J)Lcom/google/perftools/profiles/ProfileProto$Mapping$Builder;
+	public fun setFileOffset (J)Lcom/google/perftools/profiles/ProfileProto$Mapping$Builder;
+	public fun setFilename (J)Lcom/google/perftools/profiles/ProfileProto$Mapping$Builder;
+	public fun setHasFilenames (Z)Lcom/google/perftools/profiles/ProfileProto$Mapping$Builder;
+	public fun setHasFunctions (Z)Lcom/google/perftools/profiles/ProfileProto$Mapping$Builder;
+	public fun setHasInlineFrames (Z)Lcom/google/perftools/profiles/ProfileProto$Mapping$Builder;
+	public fun setHasLineNumbers (Z)Lcom/google/perftools/profiles/ProfileProto$Mapping$Builder;
+	public fun setId (J)Lcom/google/perftools/profiles/ProfileProto$Mapping$Builder;
+	public fun setMemoryLimit (J)Lcom/google/perftools/profiles/ProfileProto$Mapping$Builder;
+	public fun setMemoryStart (J)Lcom/google/perftools/profiles/ProfileProto$Mapping$Builder;
+}
+
+public abstract interface class com/google/perftools/profiles/ProfileProto$MappingOrBuilder : com/google/protobuf/MessageLiteOrBuilder {
+	public abstract fun getBuildId ()J
+	public abstract fun getFileOffset ()J
+	public abstract fun getFilename ()J
+	public abstract fun getHasFilenames ()Z
+	public abstract fun getHasFunctions ()Z
+	public abstract fun getHasInlineFrames ()Z
+	public abstract fun getHasLineNumbers ()Z
+	public abstract fun getId ()J
+	public abstract fun getMemoryLimit ()J
+	public abstract fun getMemoryStart ()J
+}
+
+public final class com/google/perftools/profiles/ProfileProto$Profile : com/google/protobuf/GeneratedMessageLite, com/google/perftools/profiles/ProfileProto$ProfileOrBuilder {
+	public static final field COMMENT_FIELD_NUMBER I
+	public static final field DEFAULT_SAMPLE_TYPE_FIELD_NUMBER I
+	public static final field DOC_URL_FIELD_NUMBER I
+	public static final field DROP_FRAMES_FIELD_NUMBER I
+	public static final field DURATION_NANOS_FIELD_NUMBER I
+	public static final field FUNCTION_FIELD_NUMBER I
+	public static final field KEEP_FRAMES_FIELD_NUMBER I
+	public static final field LOCATION_FIELD_NUMBER I
+	public static final field MAPPING_FIELD_NUMBER I
+	public static final field PERIOD_FIELD_NUMBER I
+	public static final field PERIOD_TYPE_FIELD_NUMBER I
+	public static final field SAMPLE_FIELD_NUMBER I
+	public static final field SAMPLE_TYPE_FIELD_NUMBER I
+	public static final field STRING_TABLE_FIELD_NUMBER I
+	public static final field TIME_NANOS_FIELD_NUMBER I
+	public fun getComment (I)J
+	public fun getCommentCount ()I
+	public fun getCommentList ()Ljava/util/List;
+	public static fun getDefaultInstance ()Lcom/google/perftools/profiles/ProfileProto$Profile;
+	public fun getDefaultSampleType ()J
+	public fun getDocUrl ()J
+	public fun getDropFrames ()J
+	public fun getDurationNanos ()J
+	public fun getFunction (I)Lcom/google/perftools/profiles/ProfileProto$Function;
+	public fun getFunctionCount ()I
+	public fun getFunctionList ()Ljava/util/List;
+	public fun getFunctionOrBuilder (I)Lcom/google/perftools/profiles/ProfileProto$FunctionOrBuilder;
+	public fun getFunctionOrBuilderList ()Ljava/util/List;
+	public fun getKeepFrames ()J
+	public fun getLocation (I)Lcom/google/perftools/profiles/ProfileProto$Location;
+	public fun getLocationCount ()I
+	public fun getLocationList ()Ljava/util/List;
+	public fun getLocationOrBuilder (I)Lcom/google/perftools/profiles/ProfileProto$LocationOrBuilder;
+	public fun getLocationOrBuilderList ()Ljava/util/List;
+	public fun getMapping (I)Lcom/google/perftools/profiles/ProfileProto$Mapping;
+	public fun getMappingCount ()I
+	public fun getMappingList ()Ljava/util/List;
+	public fun getMappingOrBuilder (I)Lcom/google/perftools/profiles/ProfileProto$MappingOrBuilder;
+	public fun getMappingOrBuilderList ()Ljava/util/List;
+	public fun getPeriod ()J
+	public fun getPeriodType ()Lcom/google/perftools/profiles/ProfileProto$ValueType;
+	public fun getSample (I)Lcom/google/perftools/profiles/ProfileProto$Sample;
+	public fun getSampleCount ()I
+	public fun getSampleList ()Ljava/util/List;
+	public fun getSampleOrBuilder (I)Lcom/google/perftools/profiles/ProfileProto$SampleOrBuilder;
+	public fun getSampleOrBuilderList ()Ljava/util/List;
+	public fun getSampleType (I)Lcom/google/perftools/profiles/ProfileProto$ValueType;
+	public fun getSampleTypeCount ()I
+	public fun getSampleTypeList ()Ljava/util/List;
+	public fun getSampleTypeOrBuilder (I)Lcom/google/perftools/profiles/ProfileProto$ValueTypeOrBuilder;
+	public fun getSampleTypeOrBuilderList ()Ljava/util/List;
+	public fun getStringTable (I)Ljava/lang/String;
+	public fun getStringTableBytes (I)Lcom/google/protobuf/ByteString;
+	public fun getStringTableCount ()I
+	public fun getStringTableList ()Ljava/util/List;
+	public fun getTimeNanos ()J
+	public fun hasPeriodType ()Z
+	public static fun newBuilder ()Lcom/google/perftools/profiles/ProfileProto$Profile$Builder;
+	public static fun newBuilder (Lcom/google/perftools/profiles/ProfileProto$Profile;)Lcom/google/perftools/profiles/ProfileProto$Profile$Builder;
+	public static fun parseDelimitedFrom (Ljava/io/InputStream;)Lcom/google/perftools/profiles/ProfileProto$Profile;
+	public static fun parseDelimitedFrom (Ljava/io/InputStream;Lcom/google/protobuf/ExtensionRegistryLite;)Lcom/google/perftools/profiles/ProfileProto$Profile;
+	public static fun parseFrom (Lcom/google/protobuf/ByteString;)Lcom/google/perftools/profiles/ProfileProto$Profile;
+	public static fun parseFrom (Lcom/google/protobuf/ByteString;Lcom/google/protobuf/ExtensionRegistryLite;)Lcom/google/perftools/profiles/ProfileProto$Profile;
+	public static fun parseFrom (Lcom/google/protobuf/CodedInputStream;)Lcom/google/perftools/profiles/ProfileProto$Profile;
+	public static fun parseFrom (Lcom/google/protobuf/CodedInputStream;Lcom/google/protobuf/ExtensionRegistryLite;)Lcom/google/perftools/profiles/ProfileProto$Profile;
+	public static fun parseFrom (Ljava/io/InputStream;)Lcom/google/perftools/profiles/ProfileProto$Profile;
+	public static fun parseFrom (Ljava/io/InputStream;Lcom/google/protobuf/ExtensionRegistryLite;)Lcom/google/perftools/profiles/ProfileProto$Profile;
+	public static fun parseFrom (Ljava/nio/ByteBuffer;)Lcom/google/perftools/profiles/ProfileProto$Profile;
+	public static fun parseFrom (Ljava/nio/ByteBuffer;Lcom/google/protobuf/ExtensionRegistryLite;)Lcom/google/perftools/profiles/ProfileProto$Profile;
+	public static fun parseFrom ([B)Lcom/google/perftools/profiles/ProfileProto$Profile;
+	public static fun parseFrom ([BLcom/google/protobuf/ExtensionRegistryLite;)Lcom/google/perftools/profiles/ProfileProto$Profile;
+	public static fun parser ()Lcom/google/protobuf/Parser;
+}
+
+public final class com/google/perftools/profiles/ProfileProto$Profile$Builder : com/google/protobuf/GeneratedMessageLite$Builder, com/google/perftools/profiles/ProfileProto$ProfileOrBuilder {
+	public fun addAllComment (Ljava/lang/Iterable;)Lcom/google/perftools/profiles/ProfileProto$Profile$Builder;
+	public fun addAllFunction (Ljava/lang/Iterable;)Lcom/google/perftools/profiles/ProfileProto$Profile$Builder;
+	public fun addAllLocation (Ljava/lang/Iterable;)Lcom/google/perftools/profiles/ProfileProto$Profile$Builder;
+	public fun addAllMapping (Ljava/lang/Iterable;)Lcom/google/perftools/profiles/ProfileProto$Profile$Builder;
+	public fun addAllSample (Ljava/lang/Iterable;)Lcom/google/perftools/profiles/ProfileProto$Profile$Builder;
+	public fun addAllSampleType (Ljava/lang/Iterable;)Lcom/google/perftools/profiles/ProfileProto$Profile$Builder;
+	public fun addAllStringTable (Ljava/lang/Iterable;)Lcom/google/perftools/profiles/ProfileProto$Profile$Builder;
+	public fun addComment (J)Lcom/google/perftools/profiles/ProfileProto$Profile$Builder;
+	public fun addFunction (ILcom/google/perftools/profiles/ProfileProto$Function$Builder;)Lcom/google/perftools/profiles/ProfileProto$Profile$Builder;
+	public fun addFunction (ILcom/google/perftools/profiles/ProfileProto$Function;)Lcom/google/perftools/profiles/ProfileProto$Profile$Builder;
+	public fun addFunction (Lcom/google/perftools/profiles/ProfileProto$Function$Builder;)Lcom/google/perftools/profiles/ProfileProto$Profile$Builder;
+	public fun addFunction (Lcom/google/perftools/profiles/ProfileProto$Function;)Lcom/google/perftools/profiles/ProfileProto$Profile$Builder;
+	public fun addLocation (ILcom/google/perftools/profiles/ProfileProto$Location$Builder;)Lcom/google/perftools/profiles/ProfileProto$Profile$Builder;
+	public fun addLocation (ILcom/google/perftools/profiles/ProfileProto$Location;)Lcom/google/perftools/profiles/ProfileProto$Profile$Builder;
+	public fun addLocation (Lcom/google/perftools/profiles/ProfileProto$Location$Builder;)Lcom/google/perftools/profiles/ProfileProto$Profile$Builder;
+	public fun addLocation (Lcom/google/perftools/profiles/ProfileProto$Location;)Lcom/google/perftools/profiles/ProfileProto$Profile$Builder;
+	public fun addMapping (ILcom/google/perftools/profiles/ProfileProto$Mapping$Builder;)Lcom/google/perftools/profiles/ProfileProto$Profile$Builder;
+	public fun addMapping (ILcom/google/perftools/profiles/ProfileProto$Mapping;)Lcom/google/perftools/profiles/ProfileProto$Profile$Builder;
+	public fun addMapping (Lcom/google/perftools/profiles/ProfileProto$Mapping$Builder;)Lcom/google/perftools/profiles/ProfileProto$Profile$Builder;
+	public fun addMapping (Lcom/google/perftools/profiles/ProfileProto$Mapping;)Lcom/google/perftools/profiles/ProfileProto$Profile$Builder;
+	public fun addSample (ILcom/google/perftools/profiles/ProfileProto$Sample$Builder;)Lcom/google/perftools/profiles/ProfileProto$Profile$Builder;
+	public fun addSample (ILcom/google/perftools/profiles/ProfileProto$Sample;)Lcom/google/perftools/profiles/ProfileProto$Profile$Builder;
+	public fun addSample (Lcom/google/perftools/profiles/ProfileProto$Sample$Builder;)Lcom/google/perftools/profiles/ProfileProto$Profile$Builder;
+	public fun addSample (Lcom/google/perftools/profiles/ProfileProto$Sample;)Lcom/google/perftools/profiles/ProfileProto$Profile$Builder;
+	public fun addSampleType (ILcom/google/perftools/profiles/ProfileProto$ValueType$Builder;)Lcom/google/perftools/profiles/ProfileProto$Profile$Builder;
+	public fun addSampleType (ILcom/google/perftools/profiles/ProfileProto$ValueType;)Lcom/google/perftools/profiles/ProfileProto$Profile$Builder;
+	public fun addSampleType (Lcom/google/perftools/profiles/ProfileProto$ValueType$Builder;)Lcom/google/perftools/profiles/ProfileProto$Profile$Builder;
+	public fun addSampleType (Lcom/google/perftools/profiles/ProfileProto$ValueType;)Lcom/google/perftools/profiles/ProfileProto$Profile$Builder;
+	public fun addStringTable (Ljava/lang/String;)Lcom/google/perftools/profiles/ProfileProto$Profile$Builder;
+	public fun addStringTableBytes (Lcom/google/protobuf/ByteString;)Lcom/google/perftools/profiles/ProfileProto$Profile$Builder;
+	public fun clearComment ()Lcom/google/perftools/profiles/ProfileProto$Profile$Builder;
+	public fun clearDefaultSampleType ()Lcom/google/perftools/profiles/ProfileProto$Profile$Builder;
+	public fun clearDocUrl ()Lcom/google/perftools/profiles/ProfileProto$Profile$Builder;
+	public fun clearDropFrames ()Lcom/google/perftools/profiles/ProfileProto$Profile$Builder;
+	public fun clearDurationNanos ()Lcom/google/perftools/profiles/ProfileProto$Profile$Builder;
+	public fun clearFunction ()Lcom/google/perftools/profiles/ProfileProto$Profile$Builder;
+	public fun clearKeepFrames ()Lcom/google/perftools/profiles/ProfileProto$Profile$Builder;
+	public fun clearLocation ()Lcom/google/perftools/profiles/ProfileProto$Profile$Builder;
+	public fun clearMapping ()Lcom/google/perftools/profiles/ProfileProto$Profile$Builder;
+	public fun clearPeriod ()Lcom/google/perftools/profiles/ProfileProto$Profile$Builder;
+	public fun clearPeriodType ()Lcom/google/perftools/profiles/ProfileProto$Profile$Builder;
+	public fun clearSample ()Lcom/google/perftools/profiles/ProfileProto$Profile$Builder;
+	public fun clearSampleType ()Lcom/google/perftools/profiles/ProfileProto$Profile$Builder;
+	public fun clearStringTable ()Lcom/google/perftools/profiles/ProfileProto$Profile$Builder;
+	public fun clearTimeNanos ()Lcom/google/perftools/profiles/ProfileProto$Profile$Builder;
+	public fun getComment (I)J
+	public fun getCommentCount ()I
+	public fun getCommentList ()Ljava/util/List;
+	public fun getDefaultSampleType ()J
+	public fun getDocUrl ()J
+	public fun getDropFrames ()J
+	public fun getDurationNanos ()J
+	public fun getFunction (I)Lcom/google/perftools/profiles/ProfileProto$Function;
+	public fun getFunctionCount ()I
+	public fun getFunctionList ()Ljava/util/List;
+	public fun getKeepFrames ()J
+	public fun getLocation (I)Lcom/google/perftools/profiles/ProfileProto$Location;
+	public fun getLocationCount ()I
+	public fun getLocationList ()Ljava/util/List;
+	public fun getMapping (I)Lcom/google/perftools/profiles/ProfileProto$Mapping;
+	public fun getMappingCount ()I
+	public fun getMappingList ()Ljava/util/List;
+	public fun getPeriod ()J
+	public fun getPeriodType ()Lcom/google/perftools/profiles/ProfileProto$ValueType;
+	public fun getSample (I)Lcom/google/perftools/profiles/ProfileProto$Sample;
+	public fun getSampleCount ()I
+	public fun getSampleList ()Ljava/util/List;
+	public fun getSampleType (I)Lcom/google/perftools/profiles/ProfileProto$ValueType;
+	public fun getSampleTypeCount ()I
+	public fun getSampleTypeList ()Ljava/util/List;
+	public fun getStringTable (I)Ljava/lang/String;
+	public fun getStringTableBytes (I)Lcom/google/protobuf/ByteString;
+	public fun getStringTableCount ()I
+	public fun getStringTableList ()Ljava/util/List;
+	public fun getTimeNanos ()J
+	public fun hasPeriodType ()Z
+	public fun mergePeriodType (Lcom/google/perftools/profiles/ProfileProto$ValueType;)Lcom/google/perftools/profiles/ProfileProto$Profile$Builder;
+	public fun removeFunction (I)Lcom/google/perftools/profiles/ProfileProto$Profile$Builder;
+	public fun removeLocation (I)Lcom/google/perftools/profiles/ProfileProto$Profile$Builder;
+	public fun removeMapping (I)Lcom/google/perftools/profiles/ProfileProto$Profile$Builder;
+	public fun removeSample (I)Lcom/google/perftools/profiles/ProfileProto$Profile$Builder;
+	public fun removeSampleType (I)Lcom/google/perftools/profiles/ProfileProto$Profile$Builder;
+	public fun setComment (IJ)Lcom/google/perftools/profiles/ProfileProto$Profile$Builder;
+	public fun setDefaultSampleType (J)Lcom/google/perftools/profiles/ProfileProto$Profile$Builder;
+	public fun setDocUrl (J)Lcom/google/perftools/profiles/ProfileProto$Profile$Builder;
+	public fun setDropFrames (J)Lcom/google/perftools/profiles/ProfileProto$Profile$Builder;
+	public fun setDurationNanos (J)Lcom/google/perftools/profiles/ProfileProto$Profile$Builder;
+	public fun setFunction (ILcom/google/perftools/profiles/ProfileProto$Function$Builder;)Lcom/google/perftools/profiles/ProfileProto$Profile$Builder;
+	public fun setFunction (ILcom/google/perftools/profiles/ProfileProto$Function;)Lcom/google/perftools/profiles/ProfileProto$Profile$Builder;
+	public fun setKeepFrames (J)Lcom/google/perftools/profiles/ProfileProto$Profile$Builder;
+	public fun setLocation (ILcom/google/perftools/profiles/ProfileProto$Location$Builder;)Lcom/google/perftools/profiles/ProfileProto$Profile$Builder;
+	public fun setLocation (ILcom/google/perftools/profiles/ProfileProto$Location;)Lcom/google/perftools/profiles/ProfileProto$Profile$Builder;
+	public fun setMapping (ILcom/google/perftools/profiles/ProfileProto$Mapping$Builder;)Lcom/google/perftools/profiles/ProfileProto$Profile$Builder;
+	public fun setMapping (ILcom/google/perftools/profiles/ProfileProto$Mapping;)Lcom/google/perftools/profiles/ProfileProto$Profile$Builder;
+	public fun setPeriod (J)Lcom/google/perftools/profiles/ProfileProto$Profile$Builder;
+	public fun setPeriodType (Lcom/google/perftools/profiles/ProfileProto$ValueType$Builder;)Lcom/google/perftools/profiles/ProfileProto$Profile$Builder;
+	public fun setPeriodType (Lcom/google/perftools/profiles/ProfileProto$ValueType;)Lcom/google/perftools/profiles/ProfileProto$Profile$Builder;
+	public fun setSample (ILcom/google/perftools/profiles/ProfileProto$Sample$Builder;)Lcom/google/perftools/profiles/ProfileProto$Profile$Builder;
+	public fun setSample (ILcom/google/perftools/profiles/ProfileProto$Sample;)Lcom/google/perftools/profiles/ProfileProto$Profile$Builder;
+	public fun setSampleType (ILcom/google/perftools/profiles/ProfileProto$ValueType$Builder;)Lcom/google/perftools/profiles/ProfileProto$Profile$Builder;
+	public fun setSampleType (ILcom/google/perftools/profiles/ProfileProto$ValueType;)Lcom/google/perftools/profiles/ProfileProto$Profile$Builder;
+	public fun setStringTable (ILjava/lang/String;)Lcom/google/perftools/profiles/ProfileProto$Profile$Builder;
+	public fun setTimeNanos (J)Lcom/google/perftools/profiles/ProfileProto$Profile$Builder;
+}
+
+public abstract interface class com/google/perftools/profiles/ProfileProto$ProfileOrBuilder : com/google/protobuf/MessageLiteOrBuilder {
+	public abstract fun getComment (I)J
+	public abstract fun getCommentCount ()I
+	public abstract fun getCommentList ()Ljava/util/List;
+	public abstract fun getDefaultSampleType ()J
+	public abstract fun getDocUrl ()J
+	public abstract fun getDropFrames ()J
+	public abstract fun getDurationNanos ()J
+	public abstract fun getFunction (I)Lcom/google/perftools/profiles/ProfileProto$Function;
+	public abstract fun getFunctionCount ()I
+	public abstract fun getFunctionList ()Ljava/util/List;
+	public abstract fun getKeepFrames ()J
+	public abstract fun getLocation (I)Lcom/google/perftools/profiles/ProfileProto$Location;
+	public abstract fun getLocationCount ()I
+	public abstract fun getLocationList ()Ljava/util/List;
+	public abstract fun getMapping (I)Lcom/google/perftools/profiles/ProfileProto$Mapping;
+	public abstract fun getMappingCount ()I
+	public abstract fun getMappingList ()Ljava/util/List;
+	public abstract fun getPeriod ()J
+	public abstract fun getPeriodType ()Lcom/google/perftools/profiles/ProfileProto$ValueType;
+	public abstract fun getSample (I)Lcom/google/perftools/profiles/ProfileProto$Sample;
+	public abstract fun getSampleCount ()I
+	public abstract fun getSampleList ()Ljava/util/List;
+	public abstract fun getSampleType (I)Lcom/google/perftools/profiles/ProfileProto$ValueType;
+	public abstract fun getSampleTypeCount ()I
+	public abstract fun getSampleTypeList ()Ljava/util/List;
+	public abstract fun getStringTable (I)Ljava/lang/String;
+	public abstract fun getStringTableBytes (I)Lcom/google/protobuf/ByteString;
+	public abstract fun getStringTableCount ()I
+	public abstract fun getStringTableList ()Ljava/util/List;
+	public abstract fun getTimeNanos ()J
+	public abstract fun hasPeriodType ()Z
+}
+
+public final class com/google/perftools/profiles/ProfileProto$Sample : com/google/protobuf/GeneratedMessageLite, com/google/perftools/profiles/ProfileProto$SampleOrBuilder {
+	public static final field LABEL_FIELD_NUMBER I
+	public static final field LOCATION_ID_FIELD_NUMBER I
+	public static final field VALUE_FIELD_NUMBER I
+	public static fun getDefaultInstance ()Lcom/google/perftools/profiles/ProfileProto$Sample;
+	public fun getLabel (I)Lcom/google/perftools/profiles/ProfileProto$Label;
+	public fun getLabelCount ()I
+	public fun getLabelList ()Ljava/util/List;
+	public fun getLabelOrBuilder (I)Lcom/google/perftools/profiles/ProfileProto$LabelOrBuilder;
+	public fun getLabelOrBuilderList ()Ljava/util/List;
+	public fun getLocationId (I)J
+	public fun getLocationIdCount ()I
+	public fun getLocationIdList ()Ljava/util/List;
+	public fun getValue (I)J
+	public fun getValueCount ()I
+	public fun getValueList ()Ljava/util/List;
+	public static fun newBuilder ()Lcom/google/perftools/profiles/ProfileProto$Sample$Builder;
+	public static fun newBuilder (Lcom/google/perftools/profiles/ProfileProto$Sample;)Lcom/google/perftools/profiles/ProfileProto$Sample$Builder;
+	public static fun parseDelimitedFrom (Ljava/io/InputStream;)Lcom/google/perftools/profiles/ProfileProto$Sample;
+	public static fun parseDelimitedFrom (Ljava/io/InputStream;Lcom/google/protobuf/ExtensionRegistryLite;)Lcom/google/perftools/profiles/ProfileProto$Sample;
+	public static fun parseFrom (Lcom/google/protobuf/ByteString;)Lcom/google/perftools/profiles/ProfileProto$Sample;
+	public static fun parseFrom (Lcom/google/protobuf/ByteString;Lcom/google/protobuf/ExtensionRegistryLite;)Lcom/google/perftools/profiles/ProfileProto$Sample;
+	public static fun parseFrom (Lcom/google/protobuf/CodedInputStream;)Lcom/google/perftools/profiles/ProfileProto$Sample;
+	public static fun parseFrom (Lcom/google/protobuf/CodedInputStream;Lcom/google/protobuf/ExtensionRegistryLite;)Lcom/google/perftools/profiles/ProfileProto$Sample;
+	public static fun parseFrom (Ljava/io/InputStream;)Lcom/google/perftools/profiles/ProfileProto$Sample;
+	public static fun parseFrom (Ljava/io/InputStream;Lcom/google/protobuf/ExtensionRegistryLite;)Lcom/google/perftools/profiles/ProfileProto$Sample;
+	public static fun parseFrom (Ljava/nio/ByteBuffer;)Lcom/google/perftools/profiles/ProfileProto$Sample;
+	public static fun parseFrom (Ljava/nio/ByteBuffer;Lcom/google/protobuf/ExtensionRegistryLite;)Lcom/google/perftools/profiles/ProfileProto$Sample;
+	public static fun parseFrom ([B)Lcom/google/perftools/profiles/ProfileProto$Sample;
+	public static fun parseFrom ([BLcom/google/protobuf/ExtensionRegistryLite;)Lcom/google/perftools/profiles/ProfileProto$Sample;
+	public static fun parser ()Lcom/google/protobuf/Parser;
+}
+
+public final class com/google/perftools/profiles/ProfileProto$Sample$Builder : com/google/protobuf/GeneratedMessageLite$Builder, com/google/perftools/profiles/ProfileProto$SampleOrBuilder {
+	public fun addAllLabel (Ljava/lang/Iterable;)Lcom/google/perftools/profiles/ProfileProto$Sample$Builder;
+	public fun addAllLocationId (Ljava/lang/Iterable;)Lcom/google/perftools/profiles/ProfileProto$Sample$Builder;
+	public fun addAllValue (Ljava/lang/Iterable;)Lcom/google/perftools/profiles/ProfileProto$Sample$Builder;
+	public fun addLabel (ILcom/google/perftools/profiles/ProfileProto$Label$Builder;)Lcom/google/perftools/profiles/ProfileProto$Sample$Builder;
+	public fun addLabel (ILcom/google/perftools/profiles/ProfileProto$Label;)Lcom/google/perftools/profiles/ProfileProto$Sample$Builder;
+	public fun addLabel (Lcom/google/perftools/profiles/ProfileProto$Label$Builder;)Lcom/google/perftools/profiles/ProfileProto$Sample$Builder;
+	public fun addLabel (Lcom/google/perftools/profiles/ProfileProto$Label;)Lcom/google/perftools/profiles/ProfileProto$Sample$Builder;
+	public fun addLocationId (J)Lcom/google/perftools/profiles/ProfileProto$Sample$Builder;
+	public fun addValue (J)Lcom/google/perftools/profiles/ProfileProto$Sample$Builder;
+	public fun clearLabel ()Lcom/google/perftools/profiles/ProfileProto$Sample$Builder;
+	public fun clearLocationId ()Lcom/google/perftools/profiles/ProfileProto$Sample$Builder;
+	public fun clearValue ()Lcom/google/perftools/profiles/ProfileProto$Sample$Builder;
+	public fun getLabel (I)Lcom/google/perftools/profiles/ProfileProto$Label;
+	public fun getLabelCount ()I
+	public fun getLabelList ()Ljava/util/List;
+	public fun getLocationId (I)J
+	public fun getLocationIdCount ()I
+	public fun getLocationIdList ()Ljava/util/List;
+	public fun getValue (I)J
+	public fun getValueCount ()I
+	public fun getValueList ()Ljava/util/List;
+	public fun removeLabel (I)Lcom/google/perftools/profiles/ProfileProto$Sample$Builder;
+	public fun setLabel (ILcom/google/perftools/profiles/ProfileProto$Label$Builder;)Lcom/google/perftools/profiles/ProfileProto$Sample$Builder;
+	public fun setLabel (ILcom/google/perftools/profiles/ProfileProto$Label;)Lcom/google/perftools/profiles/ProfileProto$Sample$Builder;
+	public fun setLocationId (IJ)Lcom/google/perftools/profiles/ProfileProto$Sample$Builder;
+	public fun setValue (IJ)Lcom/google/perftools/profiles/ProfileProto$Sample$Builder;
+}
+
+public abstract interface class com/google/perftools/profiles/ProfileProto$SampleOrBuilder : com/google/protobuf/MessageLiteOrBuilder {
+	public abstract fun getLabel (I)Lcom/google/perftools/profiles/ProfileProto$Label;
+	public abstract fun getLabelCount ()I
+	public abstract fun getLabelList ()Ljava/util/List;
+	public abstract fun getLocationId (I)J
+	public abstract fun getLocationIdCount ()I
+	public abstract fun getLocationIdList ()Ljava/util/List;
+	public abstract fun getValue (I)J
+	public abstract fun getValueCount ()I
+	public abstract fun getValueList ()Ljava/util/List;
+}
+
+public final class com/google/perftools/profiles/ProfileProto$ValueType : com/google/protobuf/GeneratedMessageLite, com/google/perftools/profiles/ProfileProto$ValueTypeOrBuilder {
+	public static final field TYPE_FIELD_NUMBER I
+	public static final field UNIT_FIELD_NUMBER I
+	public static fun getDefaultInstance ()Lcom/google/perftools/profiles/ProfileProto$ValueType;
+	public fun getType ()J
+	public fun getUnit ()J
+	public static fun newBuilder ()Lcom/google/perftools/profiles/ProfileProto$ValueType$Builder;
+	public static fun newBuilder (Lcom/google/perftools/profiles/ProfileProto$ValueType;)Lcom/google/perftools/profiles/ProfileProto$ValueType$Builder;
+	public static fun parseDelimitedFrom (Ljava/io/InputStream;)Lcom/google/perftools/profiles/ProfileProto$ValueType;
+	public static fun parseDelimitedFrom (Ljava/io/InputStream;Lcom/google/protobuf/ExtensionRegistryLite;)Lcom/google/perftools/profiles/ProfileProto$ValueType;
+	public static fun parseFrom (Lcom/google/protobuf/ByteString;)Lcom/google/perftools/profiles/ProfileProto$ValueType;
+	public static fun parseFrom (Lcom/google/protobuf/ByteString;Lcom/google/protobuf/ExtensionRegistryLite;)Lcom/google/perftools/profiles/ProfileProto$ValueType;
+	public static fun parseFrom (Lcom/google/protobuf/CodedInputStream;)Lcom/google/perftools/profiles/ProfileProto$ValueType;
+	public static fun parseFrom (Lcom/google/protobuf/CodedInputStream;Lcom/google/protobuf/ExtensionRegistryLite;)Lcom/google/perftools/profiles/ProfileProto$ValueType;
+	public static fun parseFrom (Ljava/io/InputStream;)Lcom/google/perftools/profiles/ProfileProto$ValueType;
+	public static fun parseFrom (Ljava/io/InputStream;Lcom/google/protobuf/ExtensionRegistryLite;)Lcom/google/perftools/profiles/ProfileProto$ValueType;
+	public static fun parseFrom (Ljava/nio/ByteBuffer;)Lcom/google/perftools/profiles/ProfileProto$ValueType;
+	public static fun parseFrom (Ljava/nio/ByteBuffer;Lcom/google/protobuf/ExtensionRegistryLite;)Lcom/google/perftools/profiles/ProfileProto$ValueType;
+	public static fun parseFrom ([B)Lcom/google/perftools/profiles/ProfileProto$ValueType;
+	public static fun parseFrom ([BLcom/google/protobuf/ExtensionRegistryLite;)Lcom/google/perftools/profiles/ProfileProto$ValueType;
+	public static fun parser ()Lcom/google/protobuf/Parser;
+}
+
+public final class com/google/perftools/profiles/ProfileProto$ValueType$Builder : com/google/protobuf/GeneratedMessageLite$Builder, com/google/perftools/profiles/ProfileProto$ValueTypeOrBuilder {
+	public fun clearType ()Lcom/google/perftools/profiles/ProfileProto$ValueType$Builder;
+	public fun clearUnit ()Lcom/google/perftools/profiles/ProfileProto$ValueType$Builder;
+	public fun getType ()J
+	public fun getUnit ()J
+	public fun setType (J)Lcom/google/perftools/profiles/ProfileProto$ValueType$Builder;
+	public fun setUnit (J)Lcom/google/perftools/profiles/ProfileProto$ValueType$Builder;
+}
+
+public abstract interface class com/google/perftools/profiles/ProfileProto$ValueTypeOrBuilder : com/google/protobuf/MessageLiteOrBuilder {
+	public abstract fun getType ()J
+	public abstract fun getUnit ()J
 }
 

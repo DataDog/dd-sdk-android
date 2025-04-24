@@ -352,4 +352,8 @@ interface RumMonitor {
     @Suppress("FunctionName")
     @JvmSynthetic
     fun _getInternal(): _RumInternalProxy?
+
+    fun startProfiling()
+
+    fun stopProfiling()
 }

@@ -9,11 +9,13 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Button
 import android.widget.CheckBox
 import android.widget.CompoundButton
 import android.widget.ProgressBar
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProviders
+import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.sample.R
 
 internal class VitalsFragment :
@@ -40,6 +42,12 @@ internal class VitalsFragment :
         rootView.findViewById<CheckBox>(R.id.vital_slow_frame_rate).setOnCheckedChangeListener(this)
         rootView.findViewById<CheckBox>(R.id.vital_memory).setOnCheckedChangeListener(this)
         rootView.findViewById<CheckBox>(R.id.vital_stress_test).setOnCheckedChangeListener(this)
+        rootView.findViewById<Button>(R.id.start_tracing).setOnClickListener {
+            GlobalRumMonitor.get().startProfiling()
+        }
+        rootView.findViewById<Button>(R.id.stop_tracing).setOnClickListener {
+            GlobalRumMonitor.get().stopProfiling()
+        }
         badView = rootView.findViewById(R.id.vital_slow_view)
         progressView = rootView.findViewById(R.id.progress)
         return rootView

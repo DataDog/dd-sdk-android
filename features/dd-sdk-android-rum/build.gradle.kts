@@ -12,6 +12,7 @@ import com.datadog.gradle.config.javadocConfig
 import com.datadog.gradle.config.junitConfig
 import com.datadog.gradle.config.kotlinConfig
 import com.datadog.gradle.config.publishingConfig
+import com.google.protobuf.gradle.proto
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import java.nio.file.Paths
 
@@ -38,11 +39,22 @@ plugins {
     id("apiSurface")
     id("transitiveDependencies")
     id("binary-compatibility-validator")
+    id("com.google.protobuf")
 }
 
 android {
     defaultConfig {
         consumerProguardFiles(Paths.get(rootDir.path, "consumer-rules.pro").toString())
+    }
+    sourceSets {
+        getByName("main") {
+            proto {
+                srcDir("src/main/proto")
+            }
+            java {
+                srcDir("build/generated/source/proto/main/java")
+            }
+        }
     }
 
     namespace = "com.datadog.android.rum"
@@ -61,6 +73,7 @@ dependencies {
     implementation(libs.bundles.androidXNavigation)
     implementation(libs.androidXRecyclerView)
     implementation(libs.androidXFragment)
+    implementation(libs.protobuf)
 
     // Generate NoOp implementations
     ksp(project(":tools:noopfactory"))
@@ -81,6 +94,21 @@ dependencies {
     testImplementation(libs.okHttpMock)
     testImplementation(libs.bundles.openTracing)
     unmock(libs.robolectric)
+}
+
+protobuf {
+    protoc {
+        artifact = "com.google.protobuf:protoc:3.19.4"
+    }
+    generateProtoTasks {
+        all().forEach { task ->
+            task.builtins {
+                create("java") {
+                    option("lite")
+                }
+            }
+        }
+    }
 }
 
 unMock {
@@ -119,3 +147,6 @@ publishingConfig(
         "library for Android applications."
 )
 detektCustomConfig(":dd-sdk-android-core", ":dd-sdk-android-internal")
+tasks.withType(ProcessResources::class.java) {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
