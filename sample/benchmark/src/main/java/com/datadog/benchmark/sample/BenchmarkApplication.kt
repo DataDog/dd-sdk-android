@@ -10,6 +10,7 @@ import android.annotation.SuppressLint
 import android.app.Application
 import android.util.Log
 import com.datadog.android.Datadog
+import com.datadog.android.compose.enableComposeActionTracking
 import com.datadog.android.core.configuration.BackPressureMitigation
 import com.datadog.android.core.configuration.BackPressureStrategy
 import com.datadog.android.core.configuration.BatchSize
@@ -72,6 +73,7 @@ internal class BenchmarkApplication : Application() {
                 event.context?.additionalProperties?.put(ATTR_IS_MAPPED, true)
                 event
             }
+            .enableComposeActionTracking()
             .build()
     }
 
