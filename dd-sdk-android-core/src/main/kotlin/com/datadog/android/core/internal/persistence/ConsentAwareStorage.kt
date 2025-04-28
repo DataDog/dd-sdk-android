@@ -24,8 +24,6 @@ import com.datadog.android.core.internal.persistence.file.existsSafe
 import com.datadog.android.core.internal.persistence.file.lengthSafe
 import com.datadog.android.core.internal.privacy.ConsentProvider
 import com.datadog.android.core.internal.utils.executeSafe
-import com.datadog.android.core.metrics.MethodCallSamplingRate
-import com.datadog.android.core.metrics.TelemetryMetricType
 import com.datadog.android.privacy.TrackingConsent
 import java.io.File
 import java.util.Locale
@@ -60,41 +58,24 @@ internal class ConsentAwareStorage(
         forceNewBatch: Boolean,
         callback: (EventBatchWriter) -> Unit
     ) {
-        val metric = internalLogger.startPerformanceMeasure(
-            callerClass = ConsentAwareStorage::class.java.name,
-            metric = TelemetryMetricType.MethodCalled,
-            samplingRate = MethodCallSamplingRate.RARE.rate,
-            operationName = "writeCurrentBatch[$featureName]"
-        )
         executorService.executeSafe("Data write", internalLogger) {
             val orchestrator = resolveOrchestrator()
+            // TODO RUM-9712 Put performance metric for event processing + event write measurement
             if (orchestrator == null) {
                 callback.invoke(NoOpEventBatchWriter())
-                metric?.stopAndSend(false)
                 return@executeSafe
             }
             synchronized(writeLock) {
-                val batchFile = orchestrator.getWritableFile(forceNewBatch)
-                val metadataFile = if (batchFile != null) {
-                    orchestrator.getMetadataFile(batchFile)
-                } else {
-                    null
-                }
-                val writer = if (batchFile == null) {
-                    NoOpEventBatchWriter()
-                } else {
-                    FileEventBatchWriter(
-                        batchFile = batchFile,
-                        metadataFile = metadataFile,
-                        eventsWriter = batchEventsReaderWriter,
-                        metadataReaderWriter = batchMetadataReaderWriter,
-                        filePersistenceConfig = filePersistenceConfig,
-                        batchWriteEventListener = this,
-                        internalLogger = internalLogger
-                    )
-                }
+                val writer = FileEventBatchWriter(
+                    fileOrchestrator = orchestrator,
+                    forceNewBatch = forceNewBatch,
+                    eventsWriter = batchEventsReaderWriter,
+                    metadataReaderWriter = batchMetadataReaderWriter,
+                    filePersistenceConfig = filePersistenceConfig,
+                    batchWriteEventListener = this,
+                    internalLogger = internalLogger
+                )
                 callback.invoke(writer)
-                metric?.stopAndSend(writer !is NoOpEventBatchWriter)
             }
         }
     }
