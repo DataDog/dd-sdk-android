@@ -11,7 +11,6 @@ import android.graphics.Bitmap.Config
 import android.graphics.Color
 import android.graphics.PorterDuff
 import android.graphics.drawable.Drawable
-import android.util.AndroidRuntimeException
 import android.util.DisplayMetrics
 import androidx.annotation.VisibleForTesting
 import androidx.annotation.WorkerThread
@@ -119,11 +118,7 @@ internal class DrawableUtils(
 
             try {
                 drawable.draw(canvas)
-            } catch (e: IndexOutOfBoundsException) {
-                logDrawableDrawException(drawable, e)
-                bitmapCreationCallback.onFailure()
-                return
-            } catch (e: AndroidRuntimeException) {
+            } catch (e: RuntimeException) {
                 logDrawableDrawException(drawable, e)
                 bitmapCreationCallback.onFailure()
                 return
