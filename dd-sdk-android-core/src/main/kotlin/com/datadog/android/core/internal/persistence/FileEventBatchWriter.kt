@@ -21,7 +21,6 @@ import java.util.Locale
 
 internal class FileEventBatchWriter(
     private val fileOrchestrator: FileOrchestrator,
-    private val forceNewBatch: Boolean,
     private val eventsWriter: FileWriter<RawBatchEvent>,
     private val metadataReaderWriter: FileReaderWriter,
     private val filePersistenceConfig: FilePersistenceConfig,
@@ -32,7 +31,7 @@ internal class FileEventBatchWriter(
     @get:WorkerThread
     private val batchFile: File? by lazy {
         @Suppress("ThreadSafety") // called in the worker context
-        fileOrchestrator.getWritableFile(forceNewFile = forceNewBatch)
+        fileOrchestrator.getWritableFile()
     }
 
     @get:WorkerThread

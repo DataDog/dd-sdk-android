@@ -338,8 +338,8 @@ internal class RumViewScopeTest {
         whenever(rumMonitor.mockSdkCore.time) doReturn fakeTimeInfoAtScopeStart
         whenever(rumMonitor.mockSdkCore.networkInfo) doReturn fakeNetworkInfoAtScopeStart
         whenever(rumMonitor.mockSdkCore.internalLogger) doReturn mockInternalLogger
-        whenever(mockRumFeatureScope.withWriteContext(any(), any())) doAnswer {
-            val callback = it.getArgument<(DatadogContext, EventBatchWriter) -> Unit>(1)
+        whenever(mockRumFeatureScope.withWriteContext(any())) doAnswer {
+            val callback = it.getArgument<(DatadogContext, EventBatchWriter) -> Unit>(0)
             callback.invoke(fakeDatadogContext, mockEventBatchWriter)
         }
         whenever(mockWriter.write(eq(mockEventBatchWriter), any(), eq(EventType.DEFAULT))) doReturn true
@@ -9700,8 +9700,8 @@ internal class RumViewScopeTest {
         // Given
         val writeWorker = Executors.newCachedThreadPool()
         val tasks = mutableListOf<Future<*>>()
-        whenever(mockRumFeatureScope.withWriteContext(any(), any())) doAnswer {
-            val callback = it.getArgument<(DatadogContext, EventBatchWriter) -> Unit>(1)
+        whenever(mockRumFeatureScope.withWriteContext(any())) doAnswer {
+            val callback = it.getArgument<(DatadogContext, EventBatchWriter) -> Unit>(0)
             tasks += writeWorker.submit {
                 callback.invoke(fakeDatadogContext, mockEventBatchWriter)
             }

@@ -55,7 +55,6 @@ internal class ConsentAwareStorage(
     @WorkerThread
     override fun writeCurrentBatch(
         datadogContext: DatadogContext,
-        forceNewBatch: Boolean,
         callback: (EventBatchWriter) -> Unit
     ) {
         executorService.executeSafe("Data write", internalLogger) {
@@ -68,7 +67,6 @@ internal class ConsentAwareStorage(
             synchronized(writeLock) {
                 val writer = FileEventBatchWriter(
                     fileOrchestrator = orchestrator,
-                    forceNewBatch = forceNewBatch,
                     eventsWriter = batchEventsReaderWriter,
                     metadataReaderWriter = batchMetadataReaderWriter,
                     filePersistenceConfig = filePersistenceConfig,

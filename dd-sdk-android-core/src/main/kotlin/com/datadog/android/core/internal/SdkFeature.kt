@@ -169,7 +169,6 @@ internal class SdkFeature(
     // region FeatureScope
 
     override fun withWriteContext(
-        forceNewBatch: Boolean,
         callback: (DatadogContext, EventBatchWriter) -> Unit
     ) {
         // TODO RUM-1462 thread safety. Thread switch happens in Storage right now. Open questions:
@@ -179,7 +178,7 @@ internal class SdkFeature(
         val contextProvider = coreFeature.contextProvider
         if (contextProvider is NoOpContextProvider) return
         val context = contextProvider.context
-        storage.writeCurrentBatch(context, forceNewBatch) { callback(context, it) }
+        storage.writeCurrentBatch(context) { callback(context, it) }
     }
 
     override fun sendEvent(event: Any) {

@@ -113,8 +113,8 @@ internal class WebViewReplayEventConsumerTest {
         whenever(
             mockSdkCore.getFeature(WebViewReplayFeature.WEB_REPLAY_FEATURE_NAME)
         ) doReturn mockSessionReplayFeatureScope
-        whenever(mockSessionReplayFeatureScope.withWriteContext(any(), any())) doAnswer {
-            val callback = it.getArgument<(DatadogContext, EventBatchWriter) -> Unit>(1)
+        whenever(mockSessionReplayFeatureScope.withWriteContext(any())) doAnswer {
+            val callback = it.getArgument<(DatadogContext, EventBatchWriter) -> Unit>(0)
             callback.invoke(fakeDatadogContext, mockEventBatchWriter)
         }
         whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger

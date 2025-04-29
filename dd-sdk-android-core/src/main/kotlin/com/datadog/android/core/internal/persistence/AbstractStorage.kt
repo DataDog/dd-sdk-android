@@ -61,7 +61,6 @@ internal class AbstractStorage(
     @AnyThread
     override fun writeCurrentBatch(
         datadogContext: DatadogContext,
-        forceNewBatch: Boolean,
         callback: (EventBatchWriter) -> Unit
     ) {
         executorService.executeSafe("Data write", internalLogger) {

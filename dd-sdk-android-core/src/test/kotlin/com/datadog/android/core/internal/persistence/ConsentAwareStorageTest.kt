@@ -25,7 +25,6 @@ import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.verifyLog
 import fr.xgouchet.elmyr.Forge
-import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.LongForgery
@@ -155,15 +154,13 @@ internal class ConsentAwareStorageTest {
     // region writeCurrentBatch
 
     @Test
-    fun `M provide writer W writeCurrentBatch() {consent=granted}`(
-        @BoolForgery forceNewBatch: Boolean
-    ) {
+    fun `M provide writer W writeCurrentBatch() {consent=granted}`() {
         // Given
         val mockCallback = mock<(EventBatchWriter) -> Unit>()
         whenever(mockConsentProvider.getConsent()) doReturn TrackingConsent.GRANTED
 
         // When
-        testedStorage.writeCurrentBatch(fakeDatadogContext, forceNewBatch, callback = mockCallback)
+        testedStorage.writeCurrentBatch(fakeDatadogContext, callback = mockCallback)
 
         // Then
         argumentCaptor<EventBatchWriter> {
@@ -179,15 +176,13 @@ internal class ConsentAwareStorageTest {
     }
 
     @Test
-    fun `M provide writer W writeCurrentBatch() {consent=pending}`(
-        @BoolForgery forceNewBatch: Boolean
-    ) {
+    fun `M provide writer W writeCurrentBatch() {consent=pending}`() {
         // Given
         val mockCallback = mock<(EventBatchWriter) -> Unit>()
         whenever(mockConsentProvider.getConsent()) doReturn TrackingConsent.PENDING
 
         // When
-        testedStorage.writeCurrentBatch(fakeDatadogContext, forceNewBatch, callback = mockCallback)
+        testedStorage.writeCurrentBatch(fakeDatadogContext, callback = mockCallback)
 
         // Then
         argumentCaptor<EventBatchWriter> {
@@ -203,15 +198,13 @@ internal class ConsentAwareStorageTest {
     }
 
     @Test
-    fun `M provide no-op writer W writeCurrentBatch() {not_granted}`(
-        @BoolForgery forceNewBatch: Boolean
-    ) {
+    fun `M provide no-op writer W writeCurrentBatch() {not_granted}`() {
         // Given
         val mockCallback = mock<(EventBatchWriter) -> Unit>()
         whenever(mockConsentProvider.getConsent()) doReturn TrackingConsent.NOT_GRANTED
 
         // When
-        testedStorage.writeCurrentBatch(fakeDatadogContext, forceNewBatch, callback = mockCallback)
+        testedStorage.writeCurrentBatch(fakeDatadogContext, callback = mockCallback)
 
         // Then
         argumentCaptor<EventBatchWriter> {
@@ -229,9 +222,7 @@ internal class ConsentAwareStorageTest {
     // endregion
 
     @Test
-    fun `M log error W writeCurrentBatch() { task was rejected }`(
-        @BoolForgery forceNewBatch: Boolean
-    ) {
+    fun `M log error W writeCurrentBatch() { task was rejected }`() {
         // Given
         val mockExecutor = mock<ExecutorService>()
         whenever(mockExecutor.execute(any())) doThrow RejectedExecutionException()
@@ -251,7 +242,7 @@ internal class ConsentAwareStorageTest {
         )
 
         // When
-        testedStorage.writeCurrentBatch(fakeDatadogContext, forceNewBatch) {
+        testedStorage.writeCurrentBatch(fakeDatadogContext) {
             // no-op
         }
 
@@ -274,7 +265,6 @@ internal class ConsentAwareStorageTest {
     @Test
     fun `M do sequential metadata write W writeCurrentBatch() { multithreaded }`(
         @IntForgery(min = 2, max = 10) threadsCount: Int,
-        @BoolForgery forceNewBatch: Boolean,
         @Forgery file: File,
         forge: Forge
     ) {
@@ -309,7 +299,7 @@ internal class ConsentAwareStorageTest {
             )
         }
         whenever(mockConsentProvider.getConsent()) doReturn TrackingConsent.GRANTED
-        whenever(mockGrantedOrchestrator.getWritableFile(forceNewBatch)) doReturn file
+        whenever(mockGrantedOrchestrator.getWritableFile()) doReturn file
         val mockMetaFile = mock<File>().apply { whenever(exists()) doReturn true }
         whenever(mockMetaReaderWriter.readData(mockMetaFile)) doAnswer {
             byteArrayOf(accumulator)
@@ -329,7 +319,7 @@ internal class ConsentAwareStorageTest {
 
         // When
         repeat(threadsCount) {
-            testedStorage.writeCurrentBatch(fakeDatadogContext, forceNewBatch, callback = callback)
+            testedStorage.writeCurrentBatch(fakeDatadogContext, callback = callback)
         }
         executor.shutdown()
         executor.awaitTermination(1, TimeUnit.SECONDS)

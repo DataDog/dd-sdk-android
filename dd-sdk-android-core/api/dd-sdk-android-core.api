@@ -344,11 +344,7 @@ public abstract interface class com/datadog/android/api/feature/FeatureScope {
 	public abstract fun getDataStore ()Lcom/datadog/android/api/storage/datastore/DataStoreHandler;
 	public abstract fun sendEvent (Ljava/lang/Object;)V
 	public abstract fun unwrap ()Lcom/datadog/android/api/feature/Feature;
-	public abstract fun withWriteContext (ZLkotlin/jvm/functions/Function2;)V
-}
-
-public final class com/datadog/android/api/feature/FeatureScope$DefaultImpls {
-	public static synthetic fun withWriteContext$default (Lcom/datadog/android/api/feature/FeatureScope;ZLkotlin/jvm/functions/Function2;ILjava/lang/Object;)V
+	public abstract fun withWriteContext (Lkotlin/jvm/functions/Function2;)V
 }
 
 public final class com/datadog/android/api/feature/FeatureScopeExtKt {

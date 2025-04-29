@@ -30,7 +30,6 @@ import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.doAnswer
-import org.mockito.kotlin.eq
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoMoreInteractions
 import org.mockito.kotlin.whenever
@@ -76,8 +75,8 @@ internal class SessionReplayRecordWriterTest {
     fun `M write the record in a batch W write`(forge: Forge) {
         // Given
         val fakeRecord = forge.forgeEnrichedRecord()
-        whenever(mockSessionReplayFeature.withWriteContext(eq(false), any())) doAnswer {
-            val callback = it.getArgument<(DatadogContext, EventBatchWriter) -> Unit>(1)
+        whenever(mockSessionReplayFeature.withWriteContext(any())) doAnswer {
+            val callback = it.getArgument<(DatadogContext, EventBatchWriter) -> Unit>(0)
             callback.invoke(fakeDatadogContext, mockEventBatchWriter)
         }
 
@@ -118,8 +117,8 @@ internal class SessionReplayRecordWriterTest {
             .thenReturn(false)
 
         val fakeRecord = forge.forgeEnrichedRecord()
-        whenever(mockSessionReplayFeature.withWriteContext(eq(false), any())) doAnswer {
-            val callback = it.getArgument<(DatadogContext, EventBatchWriter) -> Unit>(1)
+        whenever(mockSessionReplayFeature.withWriteContext(any())) doAnswer {
+            val callback = it.getArgument<(DatadogContext, EventBatchWriter) -> Unit>(0)
             callback.invoke(fakeDatadogContext, mockEventBatchWriter)
         }
 

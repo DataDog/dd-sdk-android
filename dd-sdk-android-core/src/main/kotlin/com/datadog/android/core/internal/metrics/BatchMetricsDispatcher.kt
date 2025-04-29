@@ -136,7 +136,6 @@ internal class BatchMetricsDispatcher(
             // be sent as a batch_delete telemetry later
             BATCH_SIZE_KEY to file.lengthSafe(internalLogger),
             BATCH_EVENTS_COUNT_KEY to batchMetadata.eventsCount,
-            FORCE_NEW_KEY to batchMetadata.forcedNew,
             TRACKING_CONSENT_KEY to file.resolveFileOriginAsConsent(),
             FILE_NAME to file.name,
             THREAD_NAME to Thread.currentThread().name
@@ -245,9 +244,6 @@ internal class BatchMetricsDispatcher(
 
         /* The duration from batch creation to batch closing (in ms).*/
         internal const val BATCH_DURATION_KEY = "batch_duration"
-
-        /* If the batch was closed by core or after new batch was forced by the feature.*/
-        internal const val FORCE_NEW_KEY = "forced_new"
 
         internal const val BATCH_CLOSED_MESSAGE = "[Mobile Metric] Batch Closed"
 

@@ -143,8 +143,8 @@ internal class WebViewRumEventConsumerTest {
             mockSdkCore.getFeature(WebViewRumFeature.WEB_RUM_FEATURE_NAME)
         ) doReturn mockWebViewRumFeatureScope
 
-        whenever(mockWebViewRumFeatureScope.withWriteContext(any(), any())) doAnswer {
-            val callback = it.getArgument<(DatadogContext, EventBatchWriter) -> Unit>(1)
+        whenever(mockWebViewRumFeatureScope.withWriteContext(any())) doAnswer {
+            val callback = it.getArgument<(DatadogContext, EventBatchWriter) -> Unit>(0)
             callback.invoke(fakeDatadogContext, mockEventBatchWriter)
         }
         whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
