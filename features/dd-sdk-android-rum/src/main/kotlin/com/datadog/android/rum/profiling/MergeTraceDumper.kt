@@ -6,7 +6,8 @@
 
 package com.datadog.android.rum.profiling
 
-import com.datadog.android.api.InternalLogger
+import android.content.Context
+import android.util.Log
 import com.google.perftools.profiles.ProfileProto.Profile
 import java.io.File
 import java.io.FileOutputStream
@@ -17,37 +18,39 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicLong
 
-internal class MergeTraceDumper(
-    private val tracesDirectoryPath: String,
-    private val internalLogger: InternalLogger
+internal class MergeTraceDumper private constructor(
+    private val tracesDirectoryPath: String
 ) {
     private var executor: ScheduledExecutorService = Executors.newSingleThreadScheduledExecutor()
     private val snapshotCounter = AtomicLong(0)
     private val tempSnapshots = ConcurrentHashMap<Long, Profile>()
-    private val isStopped: AtomicBoolean = AtomicBoolean(true)
+    private val isStarted: AtomicBoolean = AtomicBoolean(false)
 
-    fun startDumpingTrace() {
-        if (!isStopped.getAndSet(false)) {
+    private val snapshotIntervalInMilliseconds = AtomicLong()
+
+    fun startDumpingTrace(intervalInMillis: Long) {
+        if (isStarted.getAndSet(true)) {
             return
         }
         // Clean up previous snapshots
         tempSnapshots.clear()
         snapshotCounter.set(0)
 
+        snapshotIntervalInMilliseconds.set(intervalInMillis)
         if (executor.isShutdown) {
             executor = Executors.newSingleThreadScheduledExecutor()
         }
         // Schedule snapshot collection every 10ms
         executor.scheduleWithFixedDelay(
-            { collectSnapshot() },
-            100,
-            10,
+            { collectSnapshot(intervalInMillis) },
+            0,
+            intervalInMillis,
             TimeUnit.MILLISECONDS
         )
 
         // Schedule merging every minute
         executor.scheduleWithFixedDelay(
-            { mergeAndSaveSnapshots() },
+            { mergeAndSaveSnapshots(intervalInMillis) },
             1,
             1,
             TimeUnit.MINUTES
@@ -55,14 +58,16 @@ internal class MergeTraceDumper(
     }
 
     fun stopDumpingTrace() {
-        if (isStopped.getAndSet(true)) {
+        // take the current value of snapshotIntervalInMillis before stopping
+        val intervalInMillis = snapshotIntervalInMilliseconds.get()
+        if (!isStarted.getAndSet(false)) {
             return
         }
 
         // Schedule the final merge in the worker thread
         executor.execute {
             try {
-                mergeAndSaveSnapshots()
+                mergeAndSaveSnapshots(intervalInMillis)
             } finally {
                 // Shutdown the executor after the merge is complete
                 executor.shutdown()
@@ -78,34 +83,34 @@ internal class MergeTraceDumper(
         }
     }
 
-    private fun collectSnapshot() {
-        if (isStopped.get()) {
+    private fun collectSnapshot(intervalInMillis: Long) {
+        if (!isStarted.get()) {
             return
         }
         try {
-            val pprof = ProfileUtils.createProfile()
+            val intervalInNanos = TimeUnit.MILLISECONDS.toNanos(intervalInMillis)
+            val pprof = ProfileUtils.createProfile(intervalInNanos)
             val snapshotId = snapshotCounter.incrementAndGet()
             tempSnapshots[snapshotId] = pprof
 
-            internalLogger.log(
-                InternalLogger.Level.DEBUG,
-                InternalLogger.Target.MAINTAINER,
-                { "Collected snapshot $snapshotId" }
+            Log.d(
+                "MergeTraceDumper",
+                "Collected snapshot $snapshotId"
             )
         } catch (e: Exception) {
-            internalLogger.log(
-                InternalLogger.Level.ERROR,
-                InternalLogger.Target.MAINTAINER,
-                { "Failed to collect snapshot" },
+            Log.e(
+                "MergeTraceDumper",
+                "Failed to collect snapshot",
                 e
             )
         }
     }
 
-    private fun mergeAndSaveSnapshots() {
+    private fun mergeAndSaveSnapshots(intervalInMillis: Long) {
         try {
+            val intervalInNanos = TimeUnit.MILLISECONDS.toNanos(intervalInMillis)
             val profiles = tempSnapshots.values
-            val mergedProfile = ProfileUtils.merge(tempSnapshots.values.toList())
+            val mergedProfile = ProfileUtils.merge(tempSnapshots.values.toList(), intervalInNanos)
             var firstProfileStartTime: Long = Long.MAX_VALUE
             var lastProfileStartTime: Long = Long.MIN_VALUE
 
@@ -119,23 +124,46 @@ internal class MergeTraceDumper(
             FileOutputStream(mergedFile).use { out ->
                 mergedProfile.writeTo(out)
             }
-            internalLogger.log(
-                InternalLogger.Level.INFO,
-                InternalLogger.Target.MAINTAINER,
-                { "Successfully merged and saved profiles" }
+            Log.i(
+                "MergeTraceDumper",
+                "Successfully merged and saved profiles"
             )
         } catch (e: Exception) {
-            internalLogger.log(
-                InternalLogger.Level.ERROR,
-                InternalLogger.Target.MAINTAINER,
-                { "Failed to merge and save profiles" },
+            Log.e(
+                "MergeTraceDumper",
+                "Failed to merge and save profiles",
                 e
             )
-        }finally {
-
+        } finally {
             // Clear the temporary snapshots after merging
             tempSnapshots.clear()
             snapshotCounter.set(0)
+        }
+    }
+
+    companion object {
+        // make it a singleton
+        @Volatile
+        private var INSTANCE: MergeTraceDumper? = null
+
+        fun getInstance(context: Context): MergeTraceDumper {
+            if (INSTANCE != null) {
+                return INSTANCE!!
+            } else {
+                synchronized(this) {
+                    if (INSTANCE != null) {
+                        return INSTANCE!!
+                    } else {
+                        val storageDirectory = context.getExternalFilesDir(null) ?: context.filesDir
+                        INSTANCE = MergeTraceDumper(storageDirectory.absolutePath)
+                        return INSTANCE!!
+                    }
+                }
+            }
+        }
+
+        fun getInstance(): MergeTraceDumper {
+            return INSTANCE ?: throw IllegalStateException("MergeTraceDumper not initialized")
         }
     }
 }

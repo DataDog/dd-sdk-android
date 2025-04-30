@@ -12,13 +12,18 @@ import java.util.concurrent.TimeUnit
 
 internal object ProfileUtils {
 
-    fun createProfile(): Profile {
-        return createProfile(Thread.getAllStackTraces())
+    fun createProfile(snapshotIntervalInNanos: Long = TimeUnit.MILLISECONDS.toNanos(2)): Profile {
+        return createProfile(
+            Thread.getAllStackTraces(),
+            currentTimeInNanos = TimeUnit.MILLISECONDS.toNanos(System.currentTimeMillis()),
+            snapshotIntervalInNanos = snapshotIntervalInNanos
+        )
     }
 
     fun createProfile(
         threadStackTraces: Map<Thread, Array<StackTraceElement>>,
-        currentTimeInNanos: Long = TimeUnit.MILLISECONDS.toNanos(System.currentTimeMillis())
+        currentTimeInNanos: Long,
+        snapshotIntervalInNanos: Long
     ): Profile {
         val stringIndexUtils = StringIndexUtils()
         val profileBuilder = Profile.newBuilder()
@@ -30,7 +35,7 @@ internal object ProfileUtils {
 
         profileBuilder
             .setPeriodType(cpuType)
-            .setPeriod(TimeUnit.MILLISECONDS.toNanos(10))
+            .setPeriod(snapshotIntervalInNanos)
 
         val functionBuilders = mutableMapOf<Long, ProfileProto.Function.Builder>()
         val locationIdSet = mutableSetOf<Long>()
@@ -60,7 +65,7 @@ internal object ProfileUtils {
                 val funId = frame.functionId()
                 val locId = frame.locationId()
 
-                if(!functionIdsSet.contains(funId)){
+                if (!functionIdsSet.contains(funId)) {
                     val nameIndex = stringIndexUtils.getStringIndex(methodName)
                     val fullNameIndex = stringIndexUtils.getStringIndex(fullFuncName)
                     val fileNameIndex = stringIndexUtils.getStringIndex(fileName)
@@ -120,7 +125,8 @@ internal object ProfileUtils {
     }
 
     fun merge(
-        profiles: List<Profile>
+        profiles: List<Profile>,
+        snapshotIntervalInNanos: Long = TimeUnit.MILLISECONDS.toNanos(2)
     ): Profile {
         val merged = Profile.newBuilder()
 
@@ -129,10 +135,9 @@ internal object ProfileUtils {
             .setType(stringIndexUtils.getStringIndex("cpu").toLong())
             .setUnit(stringIndexUtils.getStringIndex("nanoseconds").toLong())
         merged.addSampleType(cpuType)
-        val tenMillisAsNanos = TimeUnit.MILLISECONDS.toNanos(10)
         merged
             .setPeriodType(cpuType)
-            .setPeriod(tenMillisAsNanos)
+            .setPeriod(snapshotIntervalInNanos)
 
         var firstProfileStartTime: Long = Long.MAX_VALUE
         var lastProfileStartTime: Long = Long.MIN_VALUE
@@ -141,7 +146,6 @@ internal object ProfileUtils {
             firstProfileStartTime = minOf(firstProfileStartTime, profile.timeNanos)
             lastProfileStartTime = maxOf(lastProfileStartTime, profile.timeNanos)
         }
-
 
         val functionIdMap = mutableMapOf<Long, Long>()
         val locationIdMap = mutableMapOf<Long, Long>()
@@ -175,7 +179,7 @@ internal object ProfileUtils {
 
             // Process samples with updated location IDs and aggregate them
             profile.sampleList.forEach { sample ->
-                val labels= sample.labelList.map { label ->
+                val labels = sample.labelList.map { label ->
                     val key = profile.stringTableList[label.key.toInt()]
                     val strValue = profile.stringTableList[label.str.toInt()]
                     ProfileProto.Label.newBuilder()
@@ -185,10 +189,12 @@ internal object ProfileUtils {
                         .build()
                 }
                 val newSample = ProfileProto.Sample.newBuilder()
-                    .addAllLocationId(sample.locationIdList.map { locationId ->
-                        locationIdMap[locationId] ?: locationId
-                    })
-                    .addValue(tenMillisAsNanos) // Keep value as 1
+                    .addAllLocationId(
+                        sample.locationIdList.map { locationId ->
+                            locationIdMap[locationId] ?: locationId
+                        }
+                    )
+                    .addValue(snapshotIntervalInNanos) // Keep value as 1
                     .addAllLabel(labels)
                     .build()
                 merged.addSample(newSample)
@@ -200,14 +206,14 @@ internal object ProfileUtils {
         merged.setTimeNanos(firstProfileStartTime)
         val durationNanos = lastProfileStartTime - firstProfileStartTime
         merged.setDurationNanos(durationNanos)
-        merged.setPeriod(profiles.first().period)
         return merged.build()
     }
 
     internal fun StackTraceElement.locationId(): Long {
         return this.hashCode().toLong()
     }
+
     internal fun StackTraceElement.functionId(): Long {
-        return  "${this.className}.${this.methodName}.${this.fileName}".hashCode().toLong()
+        return "${this.className}.${this.methodName}.${this.fileName}".hashCode().toLong()
     }
-} 
+}

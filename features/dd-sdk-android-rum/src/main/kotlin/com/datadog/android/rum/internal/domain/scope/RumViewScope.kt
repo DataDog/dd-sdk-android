@@ -53,7 +53,7 @@ import kotlin.math.max
 import kotlin.math.min
 
 @Suppress("TooManyFunctions", "LargeClass", "LongParameterList")
-internal open class RumViewScope(
+internal class RumViewScope(
     private val parentScope: RumScope,
     private val sdkCore: InternalSdkCore,
     private val sessionEndedMetricDispatcher: SessionMetricDispatcher,
@@ -168,6 +168,15 @@ internal open class RumViewScope(
         cpuVitalMonitor.register(cpuVitalListener)
         memoryVitalMonitor.register(memoryVitalListener)
         frameRateVitalMonitor.register(frameRateVitalListener)
+
+        if (key.id == RumViewManagerScope.RUM_APP_LAUNCH_VIEW_ID) {
+            sdkCore.getFeature(Feature.RUM_FEATURE_NAME)?.sendEvent(
+                mapOf(
+                    "type" to "rum_app_launch",
+                    "context" to getRumContext()
+                )
+            )
+        }
 
         val rumContext = parentScope.getRumContext()
         if (rumContext.syntheticsTestId != null) {

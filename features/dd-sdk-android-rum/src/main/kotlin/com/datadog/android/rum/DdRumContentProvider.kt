@@ -14,6 +14,7 @@ import android.database.Cursor
 import android.net.Uri
 import android.os.Process
 import android.util.Log
+import com.datadog.android.rum.profiling.MergeTraceDumper
 
 /**
  * A Content provider used to monitor the Application startup time efficiently.
@@ -21,6 +22,9 @@ import android.util.Log
 class DdRumContentProvider : ContentProvider() {
 
     override fun onCreate(): Boolean {
+        context?.let {
+            MergeTraceDumper.getInstance(it).startDumpingTrace(2)
+        }
         if (processImportance == 0) {
             val manager = context?.getSystemService(Context.ACTIVITY_SERVICE) as? ActivityManager
             val currentProcessId = Process.myPid()
@@ -30,6 +34,7 @@ class DdRumContentProvider : ContentProvider() {
             processImportance = currentProcess?.importance ?: DEFAULT_IMPORTANCE
             Log.w("DdRumContentProvider", "processImportance:$processImportance")
         }
+
         return true
     }
 

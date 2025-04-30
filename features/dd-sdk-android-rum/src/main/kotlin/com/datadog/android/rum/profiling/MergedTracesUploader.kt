@@ -7,7 +7,9 @@
 package com.datadog.android.rum.profiling
 
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.feature.FeatureEventReceiver
 import com.datadog.android.core.internal.data.upload.CurlInterceptor
+import com.datadog.android.rum.internal.domain.RumContext
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
@@ -23,6 +25,7 @@ import java.util.Locale
 import java.util.TimeZone
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicReference
 
 internal class MergedTracesUploader(
     private val siteName: String,
@@ -32,12 +35,14 @@ internal class MergedTracesUploader(
     private val version: String,
     private val service: String,
     private val sdkVersion: String
-) {
+) : FeatureEventReceiver {
 
     private val okHttpClient = OkHttpClient.Builder()
         .addNetworkInterceptor(CurlInterceptor(true))
         .build()
     private val scheduledExecutorService = Executors.newSingleThreadScheduledExecutor()
+
+    private var appLaunchContextHolder: AtomicReference<RumContext> = AtomicReference()
 
     fun startUploadingTraces(
         uploadPeriod: Long
@@ -51,12 +56,21 @@ internal class MergedTracesUploader(
                 siteName = siteName,
                 service = service,
                 sdkVersion = sdkVersion,
-                internalLogger = internalLogger
+                internalLogger = internalLogger,
+                appLaunchContext = appLaunchContextHolder
             ),
             10,
             uploadPeriod,
             TimeUnit.SECONDS
         )
+    }
+
+    override fun onReceive(event: Any) {
+        if (event is Map<*, *>) {
+            if (event.get("type") == "rum_app_launch") {
+                appLaunchContextHolder.compareAndSet(null, event["context"] as RumContext)
+            }
+        }
     }
 
     private class UploadTracesRunnable(
@@ -67,12 +81,21 @@ internal class MergedTracesUploader(
         val siteName: String,
         val service: String,
         val sdkVersion: String,
-        val internalLogger: InternalLogger
+        val internalLogger: InternalLogger,
+        val appLaunchContext: AtomicReference<RumContext>
     ) :
         Runnable {
 
         private val origin = "dd-sdk-android"
         override fun run() {
+            if (appLaunchContext == null) {
+                internalLogger.log(
+                    InternalLogger.Level.INFO,
+                    InternalLogger.Target.MAINTAINER,
+                    { "TracesUploader: App launch context is null, skipping upload." }
+                )
+                return
+            }
             // read the all the .trace files not more recent than 1 minute
             val tracesDirectory = File(tracesDirectoryPath)
             tracesDirectory.listFiles { file ->
@@ -91,13 +114,28 @@ internal class MergedTracesUploader(
 
             val formattedStartTime = formatIsoUtc(startTime)
             val formattedEndTime = formatIsoUtc(end)
-
+            val context = appLaunchContext.get()
+            val applicationId = JsonObject().apply {
+                addProperty("id", context?.applicationId as String)
+            }
+            val sessionId = JsonObject().apply {
+                addProperty("id", context?.sessionId as String)
+            }
+            val viewId = JsonObject().apply {
+                val ids = JsonArray().apply {
+                    add(context?.viewId as String)
+                }
+                add("id", ids)
+            }
             // let's create a json object here instead of a string
             val payload = JsonObject().apply {
                 val attachments = JsonArray().apply {
                     add("cpu.pprof")
                 }
                 add("attachments", attachments)
+                add("application", applicationId)
+                add("session", sessionId)
+                add("view", viewId)
                 addProperty("tags_profiler", "service:$service,version:$version")
                 addProperty("start", formattedStartTime)
                 addProperty("end", formattedEndTime)

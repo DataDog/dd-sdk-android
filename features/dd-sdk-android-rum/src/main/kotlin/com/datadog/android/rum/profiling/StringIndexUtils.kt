@@ -29,4 +29,3 @@ internal class StringIndexUtils {
         return stringTable
     }
 }
-

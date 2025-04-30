@@ -85,7 +85,6 @@ import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.model.ViewEvent
-import com.datadog.android.rum.profiling.MergeTraceDumper
 import com.datadog.android.rum.profiling.MergedTracesUploader
 import com.datadog.android.rum.tracking.ActionTrackingStrategy
 import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
@@ -150,7 +149,6 @@ internal class RumFeature(
 
     private val lateCrashEventHandler by lazy { lateCrashReporterFactory(sdkCore as InternalSdkCore) }
 
-    private lateinit var traceDumper: MergeTraceDumper
     private lateinit var tracesUploader: MergedTracesUploader
 
     // region Feature
@@ -160,7 +158,6 @@ internal class RumFeature(
     override fun onInitialize(appContext: Context) {
         this.appContext = appContext
         val storageDirectory = appContext.getExternalFilesDir(null) ?: appContext.filesDir
-        traceDumper = MergeTraceDumper(storageDirectory.absolutePath, sdkCore.internalLogger)
         val datadogContext = (sdkCore as InternalSdkCore).getDatadogContext()!!
         tracesUploader = MergedTracesUploader(
             datadogContext.site.intakeEndpoint,
@@ -231,17 +228,15 @@ internal class RumFeature(
         sessionListener = configuration.sessionListener
 
         sdkCore.setEventReceiver(name, this)
-
+        sdkCore.setEventReceiver(name, tracesUploader)
+        tracesUploader.startUploadingTraces(20)
         initialized.set(true)
     }
 
     public fun startProfiling() {
-        traceDumper.startDumpingTrace()
-        tracesUploader.startUploadingTraces(10)
     }
 
     public fun stopProfiling() {
-        traceDumper.stopDumpingTrace()
     }
 
     private fun initializeFrameStatesAggregator(

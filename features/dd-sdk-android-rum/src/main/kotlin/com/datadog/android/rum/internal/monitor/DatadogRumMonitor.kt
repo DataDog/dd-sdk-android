@@ -48,6 +48,7 @@ import com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.rum.metric.interactiontonextview.LastInteractionIdentifier
 import com.datadog.android.rum.metric.networksettled.InitialResourceIdentifier
+import com.datadog.android.rum.profiling.MergeTraceDumper
 import com.datadog.android.rum.resource.ResourceId
 import com.datadog.android.telemetry.internal.TelemetryEventHandler
 import java.util.Locale
@@ -79,6 +80,8 @@ internal class DatadogRumMonitor(
     lastInteractionIdentifier: LastInteractionIdentifier?,
     slowFramesListener: SlowFramesListener?
 ) : RumMonitor, AdvancedRumMonitor {
+
+    private val appWasStarted = AtomicBoolean(false)
 
     internal var rootScope: RumScope = RumApplicationScope(
         applicationId,
@@ -163,6 +166,9 @@ internal class DatadogRumMonitor(
         }
 
     override fun startView(key: Any, name: String, attributes: Map<String, Any?>) {
+        if (appWasStarted.compareAndSet(false, true)) {
+            MergeTraceDumper.getInstance().stopDumpingTrace()
+        }
         val eventTime = getEventTime(attributes)
         handleEvent(
             RumRawEvent.StartView(RumScopeKey.from(key, name), attributes.toMap(), eventTime)
