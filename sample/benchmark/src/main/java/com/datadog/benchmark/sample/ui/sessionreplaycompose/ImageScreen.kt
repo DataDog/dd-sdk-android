@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.benchmark.sample.compose
+package com.datadog.benchmark.sample.ui.sessionreplaycompose
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background

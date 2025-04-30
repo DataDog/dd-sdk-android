@@ -27,6 +27,7 @@ androidXRecyclerView = "1.3.2"
 androidXWorkManager = "2.8.1" # Next version will bring coroutines
 googleAccompanist = "0.20.2"
 googleMaterial = "1.3.0"
+dagger = "2.56.2"
 
 # DD-TRACE-OT
 openTracing = "0.32.0"
@@ -144,6 +145,8 @@ androidXNavigationFragment = { module = "androidx.navigation:navigation-fragment
 androidXNavigationRuntime = { module = "androidx.navigation:navigation-runtime", version.ref = "androidXNavigation" }
 androidXRecyclerView = { module = "androidx.recyclerview:recyclerview", version.ref = "androidXRecyclerView" }
 androidXWorkManager = { module = "androidx.work:work-runtime", version.ref = "androidXWorkManager" }
+daggerLib = { module = "com.google.dagger:dagger", version.ref = "dagger" }
+daggerCompiler = { module = "com.google.dagger:dagger-compiler", version.ref = "dagger" }
 googleAccompanistAppCompatTheme = { module = "com.google.accompanist:accompanist-appcompat-theme", version.ref = "googleAccompanist" }
 googleAccompanistPager = { module = "com.google.accompanist:accompanist-pager", version.ref = "googleAccompanist" }
 googleAccompanistPagerIndicators = { module = "com.google.accompanist:accompanist-pager-indicators", version.ref = "googleAccompanist" }
