@@ -57,7 +57,6 @@ internal class StubFeatureScope(
     // region FeatureScope
 
     override fun withWriteContext(
-        forceNewBatch: Boolean,
         callback: (DatadogContext, EventBatchWriter) -> Unit
     ) {
         callback(datadogContextProvider(), eventBatchWriter)

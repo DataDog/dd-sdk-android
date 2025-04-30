@@ -100,8 +100,8 @@ internal class WebViewLogEventConsumerTest {
         ) doReturn mockWebViewLogsFeatureScope
         whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
 
-        whenever(mockWebViewLogsFeatureScope.withWriteContext(any(), any())) doAnswer {
-            val callback = it.getArgument<(DatadogContext, EventBatchWriter) -> Unit>(1)
+        whenever(mockWebViewLogsFeatureScope.withWriteContext(any())) doAnswer {
+            val callback = it.getArgument<(DatadogContext, EventBatchWriter) -> Unit>(0)
             callback.invoke(fakeDatadogContext, mockEventBatchWriter)
         }
 
@@ -170,7 +170,7 @@ internal class WebViewLogEventConsumerTest {
         )
 
         // Then
-        verify(mockWebViewLogsFeatureScope, never()).withWriteContext(any(), any())
+        verify(mockWebViewLogsFeatureScope, never()).withWriteContext(any())
     }
 
     @Test

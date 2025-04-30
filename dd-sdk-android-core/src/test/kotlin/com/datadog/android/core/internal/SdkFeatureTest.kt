@@ -55,7 +55,6 @@ import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
 import fr.xgouchet.elmyr.Forge
-import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -474,7 +473,6 @@ internal class SdkFeatureTest {
 
     @Test
     fun `M provide write context W withWriteContext(callback)`(
-        @BoolForgery forceNewBatch: Boolean,
         @Forgery fakeContext: DatadogContext,
         @Mock mockBatchWriter: EventBatchWriter
     ) {
@@ -486,16 +484,15 @@ internal class SdkFeatureTest {
         whenever(
             mockStorage.writeCurrentBatch(
                 eq(fakeContext),
-                eq(forceNewBatch),
                 any()
             )
         ) doAnswer {
-            val storageCallback = it.getArgument<(EventBatchWriter) -> Unit>(2)
+            val storageCallback = it.getArgument<(EventBatchWriter) -> Unit>(1)
             storageCallback.invoke(mockBatchWriter)
         }
 
         // When
-        testedFeature.withWriteContext(forceNewBatch, callback = callback)
+        testedFeature.withWriteContext(callback = callback)
 
         // Then
         verify(callback).invoke(
@@ -505,9 +502,7 @@ internal class SdkFeatureTest {
     }
 
     @Test
-    fun `M do nothing W withWriteContext(callback) { no Datadog context }`(
-        @BoolForgery forceNewBatch: Boolean
-    ) {
+    fun `M do nothing W withWriteContext(callback) { no Datadog context }`() {
         // Given
         testedFeature.storage = mockStorage
         val callback = mock<(DatadogContext, EventBatchWriter) -> Unit>()
@@ -515,7 +510,7 @@ internal class SdkFeatureTest {
         whenever(coreFeature.mockInstance.contextProvider) doReturn NoOpContextProvider()
 
         // When
-        testedFeature.withWriteContext(forceNewBatch, callback = callback)
+        testedFeature.withWriteContext(callback = callback)
 
         // Then
         verifyNoInteractions(mockStorage)

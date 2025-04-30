@@ -142,8 +142,8 @@ internal class LogsFeatureTest {
             mockSdkCore.getFeature(Feature.LOGS_FEATURE_NAME)
         ) doReturn mockLogsFeatureScope
 
-        whenever(mockLogsFeatureScope.withWriteContext(any(), any())) doAnswer {
-            val callback = it.getArgument<(DatadogContext, EventBatchWriter) -> Unit>(1)
+        whenever(mockLogsFeatureScope.withWriteContext(any())) doAnswer {
+            val callback = it.getArgument<(DatadogContext, EventBatchWriter) -> Unit>(0)
             callback.invoke(fakeDatadogContext, mockEventBatchWriter)
         }
 
@@ -479,8 +479,8 @@ internal class LogsFeatureTest {
         forge: Forge
     ) {
         // Given
-        whenever(mockLogsFeatureScope.withWriteContext(any(), any())) doAnswer {
-            val callback = it.getArgument<(DatadogContext, EventBatchWriter) -> Unit>(1)
+        whenever(mockLogsFeatureScope.withWriteContext(any())) doAnswer {
+            val callback = it.getArgument<(DatadogContext, EventBatchWriter) -> Unit>(0)
             val executor = Executors.newSingleThreadExecutor()
             executor.execute {
                 Thread.sleep(300)
@@ -561,8 +561,8 @@ internal class LogsFeatureTest {
         forge: Forge
     ) {
         // Given
-        whenever(mockLogsFeatureScope.withWriteContext(any(), any())) doAnswer {
-            val callback = it.getArgument<(DatadogContext, EventBatchWriter) -> Unit>(1)
+        whenever(mockLogsFeatureScope.withWriteContext(any())) doAnswer {
+            val callback = it.getArgument<(DatadogContext, EventBatchWriter) -> Unit>(0)
             val executor = Executors.newSingleThreadExecutor()
             executor.execute {
                 Thread.sleep(LogsFeature.MAX_WRITE_WAIT_TIMEOUT_MS + 200)
@@ -584,7 +584,7 @@ internal class LogsFeatureTest {
         testedFeature.onReceive(event)
 
         // Then
-        verify(mockLogsFeatureScope).withWriteContext(any(), any())
+        verify(mockLogsFeatureScope).withWriteContext(any())
         verifyNoInteractions(mockDataWriter)
     }
 

@@ -78,8 +78,8 @@ internal class SessionReplayResourcesWriterTest {
     @Test
     fun `M write the resource W write()`() {
         // Given
-        whenever(mockResourcesFeature.withWriteContext(anyOrNull(), anyOrNull())) doAnswer {
-            val callback = it.getArgument<(DatadogContext, EventBatchWriter) -> Unit>(1)
+        whenever(mockResourcesFeature.withWriteContext(any())) doAnswer {
+            val callback = it.getArgument<(DatadogContext, EventBatchWriter) -> Unit>(0)
             callback.invoke(fakeDatadogContext, mockEventBatchWriter)
         }
         fakeDatadogContext = fakeDatadogContext.copy(
