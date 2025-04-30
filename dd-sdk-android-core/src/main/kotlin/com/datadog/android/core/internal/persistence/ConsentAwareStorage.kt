@@ -22,7 +22,6 @@ import com.datadog.android.core.internal.persistence.file.FileReaderWriter
 import com.datadog.android.core.internal.persistence.file.batch.BatchFileReaderWriter
 import com.datadog.android.core.internal.persistence.file.existsSafe
 import com.datadog.android.core.internal.persistence.file.lengthSafe
-import com.datadog.android.core.internal.privacy.ConsentProvider
 import com.datadog.android.core.internal.utils.executeSafe
 import com.datadog.android.privacy.TrackingConsent
 import java.io.File
@@ -39,7 +38,6 @@ internal class ConsentAwareStorage(
     private val internalLogger: InternalLogger,
     internal val filePersistenceConfig: FilePersistenceConfig,
     private val metricsDispatcher: MetricsDispatcher,
-    private val consentProvider: ConsentProvider,
     private val featureName: String,
     private val benchmarkUploads: BenchmarkUploads = BenchmarkUploads()
 ) : Storage, BatchWriteEventListener {
@@ -58,7 +56,7 @@ internal class ConsentAwareStorage(
         callback: (EventBatchWriter) -> Unit
     ) {
         executorService.executeSafe("Data write", internalLogger) {
-            val orchestrator = resolveOrchestrator()
+            val orchestrator = resolveOrchestrator(datadogContext)
             // TODO RUM-9712 Put performance metric for event processing + event write measurement
             if (orchestrator == null) {
                 callback.invoke(NoOpEventBatchWriter())
@@ -147,9 +145,8 @@ internal class ConsentAwareStorage(
     }
 
     @WorkerThread
-    private fun resolveOrchestrator(): FileOrchestrator? {
-        val consent = consentProvider.getConsent()
-        return when (consent) {
+    private fun resolveOrchestrator(datadogContext: DatadogContext): FileOrchestrator? {
+        return when (datadogContext.trackingConsent) {
             TrackingConsent.GRANTED -> grantedOrchestrator
             TrackingConsent.PENDING -> pendingOrchestrator
             TrackingConsent.NOT_GRANTED -> null
