@@ -371,7 +371,6 @@ internal class SdkFeature(
             internalLogger = internalLogger,
             filePersistenceConfig = filePersistenceConfig,
             metricsDispatcher = metricsDispatcher,
-            coreFeature.trackingConsentProvider,
             featureName
         )
     }

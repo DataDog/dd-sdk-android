@@ -20,7 +20,6 @@ import com.datadog.android.core.internal.persistence.file.FileOrchestrator
 import com.datadog.android.core.internal.persistence.file.FilePersistenceConfig
 import com.datadog.android.core.internal.persistence.file.FileReaderWriter
 import com.datadog.android.core.internal.persistence.file.batch.BatchFileReaderWriter
-import com.datadog.android.core.internal.privacy.ConsentProvider
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.verifyLog
@@ -114,9 +113,6 @@ internal class ConsentAwareStorageTest {
     @Forgery
     lateinit var mockGrantedRootParentFile: File
 
-    @Mock
-    lateinit var mockConsentProvider: ConsentProvider
-
     @StringForgery
     lateinit var fakeFeatureName: String
 
@@ -124,8 +120,7 @@ internal class ConsentAwareStorageTest {
     var fakePendingBatches: Int = 0
 
     @BeforeEach
-    fun `set up`(forge: Forge) {
-        whenever(mockConsentProvider.getConsent()) doReturn forge.aValueFrom(TrackingConsent::class.java)
+    fun `set up`() {
         whenever(mockPendingOrchestrator.getRootDir()) doReturn File(mockPendingRootParentFile, fakeRootDirName)
         whenever(mockGrantedOrchestrator.getRootDir()) doReturn File(mockGrantedRootParentFile, fakeRootDirName)
         whenever(mockPendingOrchestrator.getRootDirName()) doReturn fakeRootDirName
@@ -146,7 +141,6 @@ internal class ConsentAwareStorageTest {
             internalLogger = mockInternalLogger,
             filePersistenceConfig = mockFilePersistenceConfig,
             metricsDispatcher = mockMetricsDispatcher,
-            consentProvider = mockConsentProvider,
             featureName = fakeFeatureName
         )
     }
@@ -157,7 +151,7 @@ internal class ConsentAwareStorageTest {
     fun `M provide writer W writeCurrentBatch() {consent=granted}`() {
         // Given
         val mockCallback = mock<(EventBatchWriter) -> Unit>()
-        whenever(mockConsentProvider.getConsent()) doReturn TrackingConsent.GRANTED
+        fakeDatadogContext = fakeDatadogContext.copy(trackingConsent = TrackingConsent.GRANTED)
 
         // When
         testedStorage.writeCurrentBatch(fakeDatadogContext, callback = mockCallback)
@@ -179,7 +173,7 @@ internal class ConsentAwareStorageTest {
     fun `M provide writer W writeCurrentBatch() {consent=pending}`() {
         // Given
         val mockCallback = mock<(EventBatchWriter) -> Unit>()
-        whenever(mockConsentProvider.getConsent()) doReturn TrackingConsent.PENDING
+        fakeDatadogContext = fakeDatadogContext.copy(trackingConsent = TrackingConsent.PENDING)
 
         // When
         testedStorage.writeCurrentBatch(fakeDatadogContext, callback = mockCallback)
@@ -201,7 +195,7 @@ internal class ConsentAwareStorageTest {
     fun `M provide no-op writer W writeCurrentBatch() {not_granted}`() {
         // Given
         val mockCallback = mock<(EventBatchWriter) -> Unit>()
-        whenever(mockConsentProvider.getConsent()) doReturn TrackingConsent.NOT_GRANTED
+        fakeDatadogContext = fakeDatadogContext.copy(trackingConsent = TrackingConsent.NOT_GRANTED)
 
         // When
         testedStorage.writeCurrentBatch(fakeDatadogContext, callback = mockCallback)
@@ -237,7 +231,6 @@ internal class ConsentAwareStorageTest {
             internalLogger = mockInternalLogger,
             filePersistenceConfig = mockFilePersistenceConfig,
             metricsDispatcher = mockMetricsDispatcher,
-            consentProvider = mockConsentProvider,
             featureName = fakeFeatureName
         )
 
@@ -280,7 +273,6 @@ internal class ConsentAwareStorageTest {
             internalLogger = mockInternalLogger,
             filePersistenceConfig = mockFilePersistenceConfig,
             metricsDispatcher = mockMetricsDispatcher,
-            consentProvider = mockConsentProvider,
             featureName = fakeFeatureName
         )
         var accumulator: Byte = 0
@@ -298,7 +290,7 @@ internal class ConsentAwareStorageTest {
                 eventType = fakeEventType
             )
         }
-        whenever(mockConsentProvider.getConsent()) doReturn TrackingConsent.GRANTED
+        fakeDatadogContext = fakeDatadogContext.copy(trackingConsent = TrackingConsent.GRANTED)
         whenever(mockGrantedOrchestrator.getWritableFile()) doReturn file
         val mockMetaFile = mock<File>().apply { whenever(exists()) doReturn true }
         whenever(mockMetaReaderWriter.readData(mockMetaFile)) doAnswer {
@@ -459,7 +451,6 @@ internal class ConsentAwareStorageTest {
             internalLogger = mockInternalLogger,
             filePersistenceConfig = mockFilePersistenceConfig,
             metricsDispatcher = mockMetricsDispatcher,
-            consentProvider = mockConsentProvider,
             featureName = fakeFeatureName
         )
 
@@ -590,7 +581,6 @@ internal class ConsentAwareStorageTest {
             internalLogger = mockInternalLogger,
             filePersistenceConfig = mockFilePersistenceConfig,
             metricsDispatcher = mockMetricsDispatcher,
-            consentProvider = mockConsentProvider,
             featureName = fakeFeatureName
         )
 
@@ -649,7 +639,6 @@ internal class ConsentAwareStorageTest {
             internalLogger = mockInternalLogger,
             filePersistenceConfig = mockFilePersistenceConfig,
             metricsDispatcher = mockMetricsDispatcher,
-            consentProvider = mockConsentProvider,
             featureName = fakeFeatureName
         )
 
@@ -712,7 +701,6 @@ internal class ConsentAwareStorageTest {
             internalLogger = mockInternalLogger,
             filePersistenceConfig = mockFilePersistenceConfig,
             metricsDispatcher = mockMetricsDispatcher,
-            consentProvider = mockConsentProvider,
             featureName = fakeFeatureName,
             benchmarkUploads = mockBenchmarkUploads
         )
@@ -756,7 +744,6 @@ internal class ConsentAwareStorageTest {
             internalLogger = mockInternalLogger,
             filePersistenceConfig = mockFilePersistenceConfig,
             metricsDispatcher = mockMetricsDispatcher,
-            consentProvider = mockConsentProvider,
             featureName = fakeFeatureName,
             benchmarkUploads = mockBenchmarkUploads
         )
