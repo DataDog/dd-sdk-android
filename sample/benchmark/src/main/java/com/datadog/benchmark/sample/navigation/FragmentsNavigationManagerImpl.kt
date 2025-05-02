@@ -47,25 +47,24 @@ private fun NavController.createNavGraph(scenario: SyntheticsScenario?): NavGrap
 
 private fun createStartDestination(scenario: SyntheticsScenario?): String {
     return when (scenario) {
-        SyntheticsScenario.SessionReplay -> SESSION_REPLAY_METERIAL_FRAGMENT_KEY
-        SyntheticsScenario.SessionReplayCompose -> TODO()
-        SyntheticsScenario.Rum -> TODO()
-        SyntheticsScenario.Trace -> TODO()
+        SyntheticsScenario.SessionReplay, SyntheticsScenario.Upload -> SESSION_REPLAY_METERIAL_FRAGMENT_KEY
+        SyntheticsScenario.SessionReplayCompose -> error("Using fragments for SessionReplayCompose scenario")
+        SyntheticsScenario.Rum -> TODO("RUM-9510")
+        SyntheticsScenario.Trace -> TODO("RUM-9509")
         null, SyntheticsScenario.LogsCustom -> LOGS_FRAGMENT_KEY
-        SyntheticsScenario.Upload -> TODO()
-        SyntheticsScenario.LogsHeavyTraffic -> TODO()
+        SyntheticsScenario.LogsHeavyTraffic -> TODO("RUM-9508")
     }
 }
 
 private fun NavGraphBuilder.navGraph(scenario: SyntheticsScenario?) {
     return when (scenario) {
-        SyntheticsScenario.SessionReplay -> navGraphSessionReplay()
+        SyntheticsScenario.SessionReplay,
+        SyntheticsScenario.Upload -> navGraphSessionReplay()
         SyntheticsScenario.SessionReplayCompose -> error("Using fragments for SessionReplayCompose scenario")
-        SyntheticsScenario.Rum -> TODO()
-        SyntheticsScenario.Trace -> TODO()
+        SyntheticsScenario.Rum -> TODO("RUM-9510")
+        SyntheticsScenario.Trace -> TODO("RUM-9509")
         null, SyntheticsScenario.LogsCustom -> navGraphLogs()
-        SyntheticsScenario.Upload -> TODO()
-        SyntheticsScenario.LogsHeavyTraffic -> TODO()
+        SyntheticsScenario.LogsHeavyTraffic -> TODO("RUM-9508")
     }
 }
 

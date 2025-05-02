@@ -19,49 +19,49 @@ internal fun LogPayloadSize.createLogAttributes(): Map<String, Any?> {
 }
 
 private val MEDIUM_ATTRIBUTES_PAYLOAD = mapOf(
-    "user" to mapOf(
+    "benchmark_user" to mapOf(
         "id" to UUID.randomUUID().toString(),
         "name" to "John Doe",
         "email" to "johndoe@example.com"
     ),
-    "device" to mapOf(
-        "type" to "iPhone",
-        "os" to "iOS 17.0"
+    "benchmark_device" to mapOf(
+        "type" to "Android Phone",
+        "os" to "Android 15"
     ),
-    "log_type" to "user_event"
+    "benchmark_log_type" to "user_event"
 )
 
 private val LARGE_ATTRIBUTES_PAYLOAD = mapOf(
-    "log_type" to "user_event",
-    "session" to mapOf(
+    "benchmark_log_type" to "user_event",
+    "benchmark_session" to mapOf(
         "id" to UUID.randomUUID().toString(),
         "startTime" to "2024-02-27T12:00:00Z",
         "duration" to "2450"
     ),
-    "user" to mapOf(
+    "benchmark_user" to mapOf(
         "id" to "a1b2c3d4-e5f6-7g8h-9i0j-k1l2m3n4o5p6",
         "name" to "John Doe",
         "email" to "johndoe@example.com"
     ),
-    "location" to mapOf(
+    "benchmark_location" to mapOf(
         "city" to "San Francisco",
         "country" to "USA"
     ),
-    "device" to mapOf(
-        "model" to "iPhone 15 Pro",
-        "os" to "iOS 17.2",
+    "benchmark_device" to mapOf(
+        "model" to "Google Pixel 8",
+        "os" to "Android 15",
         "battery" to "80%"
     ),
-    "network" to mapOf(
+    "benchmark_network" to mapOf(
         "type" to "WiFi",
         "carrier" to "Verizon"
     ),
-    "errorStack" to mapOf(
+    "benchmark_errorStack" to mapOf(
         "stackTrace" to "Error at module XYZ -> function ABC",
         "crashType" to "NullPointerException"
     )
 )
 
 private val SMALL_ATTRIBUTES_PAYLOAD = mapOf(
-    "log_type" to "simple"
+    "benchmark_log_type" to "simple"
 )

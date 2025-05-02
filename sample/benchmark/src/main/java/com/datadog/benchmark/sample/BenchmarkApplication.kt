@@ -28,3 +28,6 @@ internal class BenchmarkApplication : Application() {
         benchmarkAppComponent.inject(this)
     }
 }
+
+internal val Application.benchmarkAppComponent: BenchmarkAppComponent
+    get() = (this as BenchmarkApplication).benchmarkAppComponent

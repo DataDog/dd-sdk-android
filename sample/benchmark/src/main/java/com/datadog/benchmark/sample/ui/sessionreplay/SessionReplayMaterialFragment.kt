@@ -23,7 +23,7 @@ import androidx.fragment.app.Fragment
 import com.bumptech.glide.Glide
 import com.bumptech.glide.request.target.CustomTarget
 import com.bumptech.glide.request.transition.Transition
-import com.datadog.benchmark.sample.MainActivity
+import com.datadog.benchmark.sample.benchmarkActivityComponent
 import com.datadog.benchmark.sample.navigation.FragmentsNavigationManager
 import com.datadog.sample.benchmark.R
 import com.google.android.material.datepicker.MaterialDatePicker
@@ -40,7 +40,7 @@ internal class SessionReplayMaterialFragment : Fragment() {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-        (requireActivity() as MainActivity).benchmarkActivityComponent.inject(this)
+        requireActivity().benchmarkActivityComponent.inject(this)
 
         return inflater.inflate(R.layout.fragment_session_replay_material, container, false).apply {
             findViewById<CheckedTextView>(R.id.checked_text_view).apply {

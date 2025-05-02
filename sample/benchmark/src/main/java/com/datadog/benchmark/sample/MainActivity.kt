@@ -6,6 +6,7 @@
 
 package com.datadog.benchmark.sample
 
+import android.app.Activity
 import android.os.Bundle
 import androidx.activity.compose.setContent
 import androidx.appcompat.app.AppCompatActivity
@@ -43,7 +44,7 @@ class MainActivity : AppCompatActivity() {
         config = BenchmarkConfig.resolveSyntheticsBundle(intent.extras)
 
         benchmarkActivityComponent = DaggerBenchmarkActivityComponent.factory().create(
-            deps = (application as BenchmarkApplication).benchmarkAppComponent,
+            deps = application.benchmarkAppComponent,
             config = config,
             mainActivity = this
         )
@@ -59,7 +60,7 @@ class MainActivity : AppCompatActivity() {
             setContentView(R.layout.activity_main)
         }
 
-        datadogFeaturesInitializer.initialize()
+        datadogFeaturesInitializer.initialize(config)
     }
 
     override fun onStart() {
@@ -79,3 +80,6 @@ class MainActivity : AppCompatActivity() {
         }
     }
 }
+
+internal val Activity.benchmarkActivityComponent: BenchmarkActivityComponent
+    get() = (this as MainActivity).benchmarkActivityComponent

@@ -101,9 +101,8 @@ class DatadogFeaturesInitializerTest {
                 Mockito.mockStatic(Logs::class.java).use { logsStatic ->
                     // When
                     DatadogFeaturesInitializer(
-                        sdkCore = mockSdkCore,
-                        config = config
-                    ).initialize()
+                        sdkCore = mockSdkCore
+                    ).initialize(config)
 
                     // Then
                     thenBlock(MockedStatics(sessionReplayStatic, rumStatic, logsStatic))

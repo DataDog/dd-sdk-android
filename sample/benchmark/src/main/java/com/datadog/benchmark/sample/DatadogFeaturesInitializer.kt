@@ -21,34 +21,44 @@ import com.datadog.android.sessionreplay.material.MaterialExtensionSupport
 import com.datadog.benchmark.sample.config.BenchmarkConfig
 import com.datadog.benchmark.sample.config.SyntheticsRun
 import com.datadog.benchmark.sample.config.SyntheticsScenario
-import com.datadog.benchmark.sample.di.activity.BenchmarkActivityScope
 import com.datadog.benchmark.sample.navigation.BenchmarkNavigationPredicate
 import com.datadog.sample.benchmark.BuildConfig
 import com.datadog.sample.benchmark.R
 import javax.inject.Inject
+import javax.inject.Singleton
 
-@BenchmarkActivityScope
+/**
+ * The general recommendation is to initialize all the components at the Application.onCreate
+ * to have all the observability as early as possible. However in the Benchmark app we know what features
+ * we need only in [MainActivity.onCreate], it depends on the [SyntheticsScenario] which is derived from intent extras.
+ */
+@Singleton
 @Suppress("TooManyFunctions")
 internal class DatadogFeaturesInitializer @Inject constructor(
-    private val sdkCore: SdkCore,
-    private val config: BenchmarkConfig
+    private val sdkCore: SdkCore
 ) {
-    fun initialize() {
-        if (needToEnableRum()) {
+    private var isInitialized = false
+    fun initialize(config: BenchmarkConfig) {
+        if (isInitialized) {
+            return
+        }
+        isInitialized = true
+
+        if (needToEnableRum(config)) {
             enableRum()
         }
 
-        if (needToEnableLogs()) {
+        if (needToEnableLogs(config)) {
             enableLogs()
         }
 
-        if (needToEnableSessionReplay()) {
+        if (needToEnableSessionReplay(config)) {
             enableSessionReplay()
         }
     }
 
-    private fun needToEnableSessionReplay(): Boolean {
-        return isInstrumentedRun() && isSessionReplayScenario()
+    private fun needToEnableSessionReplay(config: BenchmarkConfig): Boolean {
+        return isInstrumentedRun(config) && isSessionReplayScenario(config)
     }
 
     @Suppress("DEPRECATION")
@@ -63,8 +73,8 @@ internal class DatadogFeaturesInitializer @Inject constructor(
         SessionReplay.enable(sessionReplayConfig, sdkCore)
     }
 
-    private fun needToEnableLogs(): Boolean {
-        return isInstrumentedRun() && isLogsScenario()
+    private fun needToEnableLogs(config: BenchmarkConfig): Boolean {
+        return isInstrumentedRun(config) && isLogsScenario(config)
     }
 
     private fun enableLogs() {
@@ -72,10 +82,10 @@ internal class DatadogFeaturesInitializer @Inject constructor(
         Logs.enable(logsConfig, sdkCore)
     }
 
-    private fun needToEnableRum(): Boolean {
-        return when (isInstrumentedRun()) {
-            true -> isSessionReplayScenario() || isRumScenario()
-            false -> isSessionReplayScenario()
+    private fun needToEnableRum(config: BenchmarkConfig): Boolean {
+        return when (isInstrumentedRun(config)) {
+            true -> isSessionReplayScenario(config) || isRumScenario(config)
+            false -> isSessionReplayScenario(config)
         }
     }
 
@@ -121,24 +131,40 @@ internal class DatadogFeaturesInitializer @Inject constructor(
         Rum.enable(rumConfig, sdkCore = sdkCore)
     }
 
-    private fun isSessionReplayScenario() = when (config.scenario) {
+    private fun isSessionReplayScenario(config: BenchmarkConfig) = when (config.scenario) {
         SyntheticsScenario.SessionReplayCompose,
+        SyntheticsScenario.Upload,
         SyntheticsScenario.SessionReplay -> true
-        else -> false
+        SyntheticsScenario.Rum,
+        SyntheticsScenario.Trace,
+        SyntheticsScenario.LogsCustom,
+        SyntheticsScenario.LogsHeavyTraffic,
+        null -> false
     }
 
-    private fun isRumScenario() = when (config.scenario) {
+    private fun isRumScenario(config: BenchmarkConfig) = when (config.scenario) {
         SyntheticsScenario.Rum -> true
-        else -> false
+        SyntheticsScenario.SessionReplay,
+        SyntheticsScenario.SessionReplayCompose,
+        SyntheticsScenario.Trace,
+        SyntheticsScenario.LogsCustom,
+        SyntheticsScenario.LogsHeavyTraffic,
+        SyntheticsScenario.Upload,
+        null -> false
     }
 
-    private fun isLogsScenario() = when (config.scenario) {
+    private fun isLogsScenario(config: BenchmarkConfig) = when (config.scenario) {
         SyntheticsScenario.LogsCustom,
         SyntheticsScenario.LogsHeavyTraffic -> true
-        else -> false
+        SyntheticsScenario.SessionReplay,
+        SyntheticsScenario.SessionReplayCompose,
+        SyntheticsScenario.Rum,
+        SyntheticsScenario.Trace,
+        SyntheticsScenario.Upload,
+        null -> false
     }
 
-    private fun isInstrumentedRun() = config.run == SyntheticsRun.Instrumented
+    private fun isInstrumentedRun(config: BenchmarkConfig) = config.run == SyntheticsRun.Instrumented
 
     companion object {
         private const val SAMPLE_IN_ALL_SESSIONS = 100f
