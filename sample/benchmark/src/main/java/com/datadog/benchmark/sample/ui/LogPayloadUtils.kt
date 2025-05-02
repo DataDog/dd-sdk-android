@@ -6,9 +6,15 @@
 
 @file:Suppress("StringLiteralDuplication")
 
-package com.datadog.benchmark.sample.ui.logscustom
+package com.datadog.benchmark.sample.ui
 
 import java.util.UUID
+
+internal enum class LogPayloadSize {
+    Small,
+    Medium,
+    Large
+}
 
 internal fun LogPayloadSize.createLogAttributes(): Map<String, Any?> {
     return when (this) {

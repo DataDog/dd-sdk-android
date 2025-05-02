@@ -10,9 +10,12 @@ import android.app.Activity
 import android.os.Bundle
 import androidx.activity.compose.setContent
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.findNavController
 import com.datadog.benchmark.DatadogBaseMeter
 import com.datadog.benchmark.sample.config.BenchmarkConfig
+import com.datadog.benchmark.sample.config.SyntheticsRun
+import com.datadog.benchmark.sample.config.SyntheticsScenario
 import com.datadog.benchmark.sample.di.activity.BenchmarkActivityComponent
 import com.datadog.benchmark.sample.di.activity.DaggerBenchmarkActivityComponent
 import com.datadog.benchmark.sample.navigation.FragmentsNavigationManager
@@ -41,7 +44,7 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        config = BenchmarkConfig.resolveSyntheticsBundle(intent.extras)
+        config = BenchmarkConfig(run = SyntheticsRun.Instrumented, scenario = SyntheticsScenario.LogsHeavyTraffic)
 
         benchmarkActivityComponent = DaggerBenchmarkActivityComponent.factory().create(
             deps = application.benchmarkAppComponent,

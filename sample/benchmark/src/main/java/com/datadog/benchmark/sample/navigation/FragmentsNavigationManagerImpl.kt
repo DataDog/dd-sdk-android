@@ -14,6 +14,7 @@ import androidx.navigation.fragment.fragment
 import com.datadog.benchmark.sample.config.BenchmarkConfig
 import com.datadog.benchmark.sample.config.SyntheticsScenario
 import com.datadog.benchmark.sample.ui.logscustom.LogsFragment
+import com.datadog.benchmark.sample.ui.logsheavytraffic.LogsHeavyTrafficFragment
 import com.datadog.benchmark.sample.ui.sessionreplay.SessionReplayAppcompatFragment
 import com.datadog.benchmark.sample.ui.sessionreplay.SessionReplayMaterialFragment
 import javax.inject.Inject
@@ -53,8 +54,8 @@ private fun createStartDestination(scenario: SyntheticsScenario?): String {
         SyntheticsScenario.SessionReplayCompose -> error("Using fragments for SessionReplayCompose scenario")
         SyntheticsScenario.LogsCustom -> LOGS_FRAGMENT_KEY
         SyntheticsScenario.Rum, // TODO RUM-9510
-        SyntheticsScenario.Trace, // TODO RUM-9509
-        SyntheticsScenario.LogsHeavyTraffic -> SESSION_REPLAY_METERIAL_FRAGMENT_KEY // TODO RUM-9508
+        SyntheticsScenario.Trace -> SESSION_REPLAY_METERIAL_FRAGMENT_KEY // TODO RUM-9509
+        SyntheticsScenario.LogsHeavyTraffic -> LOGS_HEAVY_TRAFFIC_FRAGMENT_KEY // TODO RUM-9508
     }
 }
 
@@ -66,8 +67,14 @@ private fun NavGraphBuilder.navGraph(scenario: SyntheticsScenario?) {
         SyntheticsScenario.SessionReplayCompose -> error("Using fragments for SessionReplayCompose scenario")
         SyntheticsScenario.LogsCustom -> navGraphLogs()
         SyntheticsScenario.Rum, // TODO RUM-9510
-        SyntheticsScenario.Trace, // TODO RUM-9509
-        SyntheticsScenario.LogsHeavyTraffic -> navGraphSessionReplay() // TODO RUM-9508
+        SyntheticsScenario.Trace -> navGraphSessionReplay()// TODO RUM-9509
+        SyntheticsScenario.LogsHeavyTraffic -> navGraphLogsHeavyTraffic() // TODO RUM-9508
+    }
+}
+
+private fun NavGraphBuilder.navGraphLogsHeavyTraffic() {
+    fragment<LogsHeavyTrafficFragment>(route = LOGS_HEAVY_TRAFFIC_FRAGMENT_KEY) {
+        label = "logs heavy traffic fragment"
     }
 }
 
@@ -88,5 +95,6 @@ private fun NavGraphBuilder.navGraphSessionReplay() {
 }
 
 private const val LOGS_FRAGMENT_KEY = "logs_fragment"
+private const val LOGS_HEAVY_TRAFFIC_FRAGMENT_KEY = "logs_heavy_traffic_fragment"
 private const val SESSION_REPLAY_METERIAL_FRAGMENT_KEY = "fragment_session_replay_material"
 private const val SESSION_REPLAY_APPCOMPAT_FRAGMENT_KEY = "fragment_session_replay_appcompat"

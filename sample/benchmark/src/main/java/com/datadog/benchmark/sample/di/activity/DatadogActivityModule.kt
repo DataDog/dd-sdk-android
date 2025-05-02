@@ -6,6 +6,8 @@
 
 package com.datadog.benchmark.sample.di.activity
 
+import com.datadog.android.api.SdkCore
+import com.datadog.android.log.Logger
 import com.datadog.benchmark.DatadogBaseMeter
 import com.datadog.benchmark.DatadogExporterConfiguration
 import com.datadog.benchmark.DatadogSdkMeter
@@ -36,6 +38,15 @@ internal interface DatadogActivityModule {
             } else {
                 DatadogVitalsMeter.create(exporterConfig)
             }
+        }
+
+        @Provides
+        @BenchmarkActivityScope
+        fun provideLogger(sdkCore: SdkCore): Logger {
+            return Logger.Builder(sdkCore)
+                .setName("benchmarkLogger")
+                .setLogcatLogsEnabled(true)
+                .build()
         }
     }
 }
