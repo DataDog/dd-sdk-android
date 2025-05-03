@@ -20,6 +20,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.fragment.NavHostFragment
 import com.datadog.benchmark.sample.MainActivity
 import com.datadog.benchmark.sample.di.activity.ViewModel
+import com.datadog.sample.benchmark.R
 import javax.inject.Inject
 
 internal class LogsHeavyTrafficFragment: NavHostFragment() {
@@ -29,10 +30,12 @@ internal class LogsHeavyTrafficFragment: NavHostFragment() {
 
     val viewModel by viewModels<LogsHeavyTrafficViewModel> { viewModelFactory }
 
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         (requireActivity() as MainActivity).benchmarkActivityComponent.inject(this)
 
-        return ComposeView(requireActivity()).apply {
+        val view = inflater.inflate(R.layout.fragment_logs_heavy_traffic, container, false)
+
+        view.findViewById<ComposeView>(R.id.compose_view).apply {
             setContent {
                 val state by viewModel.states().collectAsState()
 
@@ -43,5 +46,7 @@ internal class LogsHeavyTrafficFragment: NavHostFragment() {
                 )
             }
         }
+
+        return view
     }
 }
