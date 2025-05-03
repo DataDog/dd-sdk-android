@@ -39,18 +39,5 @@ internal interface ViewModelsModule {
                 )
             }
         }
-
-        @Provides
-        @ViewModel(LogsHeavyTrafficViewModel::class)
-        fun provideLogsHeavyTrafficViewModelFactory(
-            logger: Logger
-        ) = viewModelFactory {
-            initializer {
-                LogsHeavyTrafficViewModel(
-                    logger = logger,
-                    defaultDispatcher = Dispatchers.Default
-                )
-            }
-        }
     }
 }

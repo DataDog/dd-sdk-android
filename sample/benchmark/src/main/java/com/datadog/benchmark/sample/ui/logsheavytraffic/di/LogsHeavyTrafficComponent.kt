@@ -6,8 +6,10 @@
 
 package com.datadog.benchmark.sample.ui.logsheavytraffic.di
 
+import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.NavController
 import com.datadog.android.log.Logger
+import dagger.BindsInstance
 import dagger.Component
 
 internal interface LogsHeavyTrafficComponentDependencies {
@@ -15,14 +17,17 @@ internal interface LogsHeavyTrafficComponentDependencies {
 }
 
 @Component(
-    dependencies = [LogsHeavyTrafficComponentDependencies::class]
+    dependencies = [LogsHeavyTrafficComponentDependencies::class],
+    modules = [LogsHeavyTrafficModule::class]
 )
 internal interface LogsHeavyTrafficComponent {
-//    @Component.Factory
-//    interface Factory {
-//        fun create(
-//            deps: LogsHeavyTrafficComponentDependencies,
-//            navController: NavController,
-//        ): LogsHeavyTrafficComponent
-//    }
+    @Component.Factory
+    interface Factory {
+        fun create(
+            deps: LogsHeavyTrafficComponentDependencies,
+            @BindsInstance navController: NavController
+        ): LogsHeavyTrafficComponent
+    }
+
+    val viewModelFactory: ViewModelProvider.Factory
 }

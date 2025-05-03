@@ -7,28 +7,35 @@
 package com.datadog.benchmark.sample.ui.logsheavytraffic
 
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.ComposeView
+import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
-import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.fragment.NavHostFragment
 import com.datadog.benchmark.sample.MainActivity
-import com.datadog.benchmark.sample.di.activity.ViewModel
+import com.datadog.benchmark.sample.ui.logsheavytraffic.di.DaggerLogsHeavyTrafficComponent
 import com.datadog.sample.benchmark.R
-import javax.inject.Inject
 
-internal class LogsHeavyTrafficFragment: NavHostFragment() {
-    @Inject
-    @ViewModel(LogsHeavyTrafficViewModel::class)
-    internal lateinit var viewModelFactory: ViewModelProvider.Factory
+internal class LogsHeavyTrafficFragment: Fragment() {
 
-    val viewModel by viewModels<LogsHeavyTrafficViewModel> { viewModelFactory }
+    val viewModel by viewModels<LogsHeavyTrafficViewModel> {
+        val navHostFragment =
+            childFragmentManager.findFragmentById(R.id.child_nav_host_fragment) as NavHostFragment
+
+        val navController = navHostFragment.navController
+
+        DaggerLogsHeavyTrafficComponent.factory().create(
+            deps = (requireActivity() as MainActivity).benchmarkActivityComponent,
+            navController = navController
+        ).viewModelFactory
+    }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         (requireActivity() as MainActivity).benchmarkActivityComponent.inject(this)
@@ -37,7 +44,7 @@ internal class LogsHeavyTrafficFragment: NavHostFragment() {
 
         view.findViewById<ComposeView>(R.id.compose_view).apply {
             setContent {
-                val state by viewModel.states().collectAsState()
+                val state by viewModel.states().collectAsStateWithLifecycle()
 
                 LogsHeavyTrafficScreen(
                     modifier = Modifier.fillMaxSize(),

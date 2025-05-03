@@ -10,6 +10,6 @@ import androidx.navigation.NavController
 import javax.inject.Inject
 
 internal class LogsHeavyTrafficNavigationManager @Inject constructor(
-    private val navController: NavController,
+    val navController: NavController,
 ) {
 }

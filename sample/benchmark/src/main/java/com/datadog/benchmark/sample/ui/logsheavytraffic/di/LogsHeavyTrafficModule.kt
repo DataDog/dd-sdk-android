@@ -9,7 +9,7 @@ package com.datadog.benchmark.sample.ui.logsheavytraffic.di
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.datadog.android.log.Logger
-import com.datadog.benchmark.sample.di.activity.ViewModel
+import com.datadog.benchmark.sample.ui.logsheavytraffic.LogsHeavyTrafficNavigationManager
 import com.datadog.benchmark.sample.ui.logsheavytraffic.LogsHeavyTrafficViewModel
 import dagger.Module
 import dagger.Provides
@@ -17,18 +17,19 @@ import kotlinx.coroutines.Dispatchers
 
 @Module
 internal interface LogsHeavyTrafficModule {
-//    companion object {
-//        @Provides
-//        @ViewModel(LogsHeavyTrafficViewModel::class)
-//        fun provideLogsHeavyTrafficViewModelFactory(
-//            logger: Logger
-//        ) = viewModelFactory {
-//            initializer {
-//                LogsHeavyTrafficViewModel(
-//                    logger = logger,
-//                    defaultDispatcher = Dispatchers.Default
-//                )
-//            }
-//        }
-//    }
+    companion object {
+        @Provides
+        fun provideLogsHeavyTrafficViewModelFactory(
+            logger: Logger,
+            navigationManager: LogsHeavyTrafficNavigationManager,
+        ) = viewModelFactory {
+            initializer {
+                LogsHeavyTrafficViewModel(
+                    logger = logger,
+                    defaultDispatcher = Dispatchers.Default,
+                    navigationManager = navigationManager,
+                )
+            }
+        }
+    }
 }
