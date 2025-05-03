@@ -87,6 +87,7 @@ dependencies {
     implementation(libs.bundles.androidXNavigation)
     implementation(libs.androidXAppCompat)
     implementation(libs.androidXConstraintLayout)
+    implementation(libs.androidXLifecycleCompose)
     implementation(libs.googleMaterial)
     implementation(libs.glideCore)
     implementation(libs.material3Android)

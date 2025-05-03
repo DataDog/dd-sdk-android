@@ -84,18 +84,16 @@ internal class LogsScreenViewModel(
 
     private val actions: Channel<LogsScreenAction> = Channel(capacity = UNLIMITED)
 
-    private val statesPipeline: StateFlow<LogsScreenState> = actions
+    private val _logsScreenState: StateFlow<LogsScreenState> = actions
         .receiveAsFlow()
         .scan(LogsScreenState.INITIAL, ::processAction)
         .flowOn(defaultDispatcher)
         .stateIn(scope = viewModelScope, started = SharingStarted.Lazily, initialValue = LogsScreenState.INITIAL)
 
+    val logsScreenState: StateFlow<LogsScreenState> = _logsScreenState
+
     fun dispatch(action: LogsScreenAction) {
         actions.trySend(action)
-    }
-
-    fun states(): StateFlow<LogsScreenState> {
-        return statesPipeline
     }
 
     private fun processAction(prev: LogsScreenState, action: LogsScreenAction): LogsScreenState {

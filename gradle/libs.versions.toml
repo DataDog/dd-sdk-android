@@ -20,6 +20,7 @@ androidXConstraintLayout = "2.0.4"
 androidXCore = "1.3.1"
 androidXFragment = "1.2.4"
 androidXLeanback = "1.0.0"
+androidXLifecycleRuntimeCompose = "2.8.7"
 androidXMetrics = "1.0.0-beta02"
 androidXMultidex = "2.0.1"
 androidXNavigation = "2.7.7"
@@ -145,6 +146,7 @@ androidXNavigationFragment = { module = "androidx.navigation:navigation-fragment
 androidXNavigationRuntime = { module = "androidx.navigation:navigation-runtime", version.ref = "androidXNavigation" }
 androidXRecyclerView = { module = "androidx.recyclerview:recyclerview", version.ref = "androidXRecyclerView" }
 androidXWorkManager = { module = "androidx.work:work-runtime", version.ref = "androidXWorkManager" }
+androidXLifecycleCompose = { module = "androidx.lifecycle:lifecycle-runtime-compose", version.ref = "androidXLifecycleRuntimeCompose" }
 daggerLib = { module = "com.google.dagger:dagger", version.ref = "dagger" }
 daggerCompiler = { module = "com.google.dagger:dagger-compiler", version.ref = "dagger" }
 googleAccompanistAppCompatTheme = { module = "com.google.accompanist:accompanist-appcompat-theme", version.ref = "googleAccompanist" }

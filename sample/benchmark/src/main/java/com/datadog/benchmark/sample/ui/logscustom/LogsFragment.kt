@@ -11,13 +11,13 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.ComposeView
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.datadog.benchmark.sample.benchmarkActivityComponent
 import com.datadog.benchmark.sample.di.activity.ViewModel
 import javax.inject.Inject
@@ -35,7 +35,7 @@ internal class LogsFragment : Fragment() {
 
         return ComposeView(requireContext()).apply {
             setContent {
-                val states by viewModel.states().collectAsState()
+                val states by viewModel.logsScreenState.collectAsStateWithLifecycle()
 
                 LogsScreen(
                     modifier = Modifier.fillMaxSize(),
