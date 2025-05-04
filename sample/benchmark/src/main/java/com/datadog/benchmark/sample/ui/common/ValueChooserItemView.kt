@@ -6,41 +6,43 @@
 
 package com.datadog.benchmark.sample.ui.common
 
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Button
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 
-
 @Composable
-internal fun <T> ExpandedItemView(
+internal fun ValueChooserItemView(
     titleText: String,
-    items: List<T>,
-    headerText: String,
-    itemTextFactory: (T) -> String,
-    onClick: (T) -> Unit
+    currentValue: String,
+    increaseClick: () -> Unit,
+    decreaseClick: () -> Unit
 ) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically
+    ) {
         Text(text = titleText, modifier = Modifier.weight(1f))
 
-        DropDownMenuView(
-            headerText = headerText,
-            items = items,
-            textFactory = { Text(text = itemTextFactory(it)) },
-            onClickAction = { onClick(it) }
-        )
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(text = currentValue)
+
+            Spacer(modifier = Modifier.width(32.dp))
+
+            Button(
+                onClick = decreaseClick
+            ) {
+                Text(text = "-")
+            }
+            Button(
+                onClick = increaseClick
+            ) {
+                Text(text = "+")
+            }
+        }
     }
 }
-

@@ -115,7 +115,7 @@ internal class LogsHeavyTrafficViewModel(
             is LogsHeavyTrafficScreenAction.VisibleItemsChanged -> {
                 val newItems = action.items - prev.items
                 if (newItems.isNotEmpty()) {
-                    newItems.forEach {
+                    repeat(newItems.size) {
                         logger.logConfig(prev.loggingConfig)
                     }
                 }
