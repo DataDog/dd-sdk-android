@@ -6,10 +6,15 @@
 
 package com.datadog.benchmark.sample.ui.logsheavytraffic
 
+import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 
 @Composable
-internal fun LogsHeavyTrafficSettingsScreen() {
-    Text(text = "LogsHeavyTrafficSettingsScreen")
+internal fun LogsHeavyTrafficSettingsScreen(
+    dispatch: (LogsHeavyTrafficScreenAction) -> Unit
+) {
+    Button(onClick = { dispatch(LogsHeavyTrafficScreenAction.CloseSettings) }) {
+        Text(text = "Close")
+    }
 }

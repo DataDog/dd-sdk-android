@@ -7,9 +7,13 @@
 package com.datadog.benchmark.sample.ui.logsheavytraffic
 
 import androidx.navigation.NavController
+import androidx.navigation.createGraph
 import javax.inject.Inject
 
 internal class LogsHeavyTrafficNavigationManager @Inject constructor(
     val navController: NavController,
 ) {
+    init {
+//        navController.createGraph()
+    }
 }

@@ -8,12 +8,15 @@ package com.datadog.benchmark.sample.ui.logsheavytraffic
 
 import android.util.Log
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material3.Button
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.snapshotFlow
@@ -49,14 +52,20 @@ internal fun LogsHeavyTrafficScreen(
             .collect { dispatch(LogsHeavyTrafficScreenAction.VisibleItemsChanged(it)) }
     }
 
-    LazyColumn(modifier = modifier, state = lazyListState, horizontalAlignment = Alignment.CenterHorizontally) {
-        items(state.imageUrls, key = { it }) { item ->
-            AsyncImage(
-                model = item,
-                contentDescription = "imageUrl $item"
-            )
+    Column {
+        Button(onClick = { dispatch(LogsHeavyTrafficScreenAction.OpenSettings) }) {
+            Text(text = "Open settings")
+        }
 
-            Spacer(modifier = Modifier.height(8.dp))
+        LazyColumn(modifier = modifier, state = lazyListState, horizontalAlignment = Alignment.CenterHorizontally) {
+            items(state.imageUrls, key = { it }) { item ->
+                AsyncImage(
+                    model = item,
+                    contentDescription = "imageUrl $item"
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+            }
         }
     }
 }

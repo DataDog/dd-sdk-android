@@ -15,10 +15,11 @@ import androidx.fragment.app.Fragment
 
 internal class LogsHeavyTrafficSettingsFragment: Fragment() {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
+        val viewModel = (parentFragment as LogsHeavyTrafficFragment).viewModel
 
         return ComposeView(requireActivity()).apply {
             setContent {
-                LogsHeavyTrafficSettingsScreen()
+                LogsHeavyTrafficSettingsScreen(viewModel::dispatch)
             }
         }
     }

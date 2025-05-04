@@ -26,6 +26,7 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.scan
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 
 internal sealed interface LogsHeavyTrafficScreenAction{
     data class VisibleItemsChanged(val items: Set<String>): LogsHeavyTrafficScreenAction
@@ -34,6 +35,8 @@ internal sealed interface LogsHeavyTrafficScreenAction{
     data class SelectPayloadSize(val payloadSize: LogPayloadSize) : LogsHeavyTrafficScreenAction
     object IncreaseLogsPerImage : LogsHeavyTrafficScreenAction
     object DecreaseLogsPerImage : LogsHeavyTrafficScreenAction
+    object OpenSettings: LogsHeavyTrafficScreenAction
+    object CloseSettings: LogsHeavyTrafficScreenAction
 }
 
 internal data class LogsHeavyTrafficScreenState(
@@ -133,6 +136,9 @@ internal class LogsHeavyTrafficViewModel(
             is LogsHeavyTrafficScreenAction.VisibleItemsChanged -> {
                 prev
             }
+
+            LogsHeavyTrafficScreenAction.CloseSettings -> TODO()
+            LogsHeavyTrafficScreenAction.OpenSettings -> TODO()
         }
     }
 }
