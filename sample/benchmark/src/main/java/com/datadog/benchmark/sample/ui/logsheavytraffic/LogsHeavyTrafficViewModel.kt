@@ -86,20 +86,20 @@ internal class LogsHeavyTrafficViewModel(
         )
 
     init {
-        Log.w("WAHAHA", navigationManager.navController.toString())
-        actions
-            .receiveAsFlow()
-            .filterIsInstance<LogsHeavyTrafficScreenAction.VisibleItemsChanged>()
-            .zipWithNext()
-            .onEach { (prev, cur) ->
-                val prevSet: Set<String> = prev?.items ?: emptySet()
-                val newItems = cur.items - prevSet
-                if (newItems.isNotEmpty()) {
-                    logger.logConfig(statesPipeline.value.loggingConfig)
-                }
-            }
-            .flowOn(defaultDispatcher)
-            .launchIn(viewModelScope)
+//        Log.w("WAHAHA", navigationManager.navController.toString())
+//        actions
+//            .receiveAsFlow()
+//            .filterIsInstance<LogsHeavyTrafficScreenAction.VisibleItemsChanged>()
+//            .zipWithNext()
+//            .onEach { (prev, cur) ->
+//                val prevSet: Set<String> = prev?.items ?: emptySet()
+//                val newItems = cur.items - prevSet
+//                if (newItems.isNotEmpty()) {
+//                    logger.logConfig(statesPipeline.value.loggingConfig)
+//                }
+//            }
+//            .flowOn(defaultDispatcher)
+//            .launchIn(viewModelScope)
     }
 
     fun states(): StateFlow<LogsHeavyTrafficScreenState> {
@@ -137,8 +137,14 @@ internal class LogsHeavyTrafficViewModel(
                 prev
             }
 
-            LogsHeavyTrafficScreenAction.CloseSettings -> TODO()
-            LogsHeavyTrafficScreenAction.OpenSettings -> TODO()
+            LogsHeavyTrafficScreenAction.CloseSettings -> {
+                viewModelScope.launch { navigationManager.closeSettings() }
+                prev
+            }
+            LogsHeavyTrafficScreenAction.OpenSettings -> {
+                viewModelScope.launch { navigationManager.openSettings() }
+                prev
+            }
         }
     }
 }

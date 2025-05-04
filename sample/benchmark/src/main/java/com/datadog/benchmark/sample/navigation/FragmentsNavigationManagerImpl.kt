@@ -15,6 +15,7 @@ import com.datadog.benchmark.sample.config.BenchmarkConfig
 import com.datadog.benchmark.sample.config.SyntheticsScenario
 import com.datadog.benchmark.sample.ui.logscustom.LogsFragment
 import com.datadog.benchmark.sample.ui.logsheavytraffic.LogsHeavyTrafficFragment
+import com.datadog.benchmark.sample.ui.logsheavytraffic.LogsHeavyTrafficHostFragment
 import com.datadog.benchmark.sample.ui.sessionreplay.SessionReplayAppcompatFragment
 import com.datadog.benchmark.sample.ui.sessionreplay.SessionReplayMaterialFragment
 import javax.inject.Inject
@@ -73,7 +74,7 @@ private fun NavGraphBuilder.navGraph(scenario: SyntheticsScenario?) {
 }
 
 private fun NavGraphBuilder.navGraphLogsHeavyTraffic() {
-    fragment<LogsHeavyTrafficFragment>(route = LOGS_HEAVY_TRAFFIC_FRAGMENT_KEY) {
+    fragment<LogsHeavyTrafficHostFragment>(route = LOGS_HEAVY_TRAFFIC_FRAGMENT_KEY) {
         label = "logs heavy traffic fragment"
     }
 }
