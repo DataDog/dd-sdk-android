@@ -37,20 +37,17 @@ class MainActivity : AppCompatActivity() {
     @Inject
     internal lateinit var datadogFeaturesInitializer: DatadogFeaturesInitializer
 
-    private lateinit var config: BenchmarkConfig
+    @Inject
+    internal lateinit var config: BenchmarkConfig
 
-    internal lateinit var benchmarkActivityComponent: BenchmarkActivityComponent
+    internal lateinit var viewModel: MainActivityViewModel
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        config = BenchmarkConfig(run = SyntheticsRun.Instrumented, scenario = SyntheticsScenario.LogsHeavyTraffic)
+        val factory = MainActivityViewModelFactory(application, this)
 
-        benchmarkActivityComponent = DaggerBenchmarkActivityComponent.factory().create(
-            deps = application.benchmarkAppComponent,
-            config = config,
-            mainActivity = this
-        )
+        viewModel = ViewModelProvider(this, factory)[MainActivityViewModel::class]
 
         benchmarkActivityComponent.inject(this)
 
@@ -85,4 +82,4 @@ class MainActivity : AppCompatActivity() {
 }
 
 internal val Activity.benchmarkActivityComponent: BenchmarkActivityComponent
-    get() = (this as MainActivity).benchmarkActivityComponent
+    get() = (this as MainActivity).viewModel.component

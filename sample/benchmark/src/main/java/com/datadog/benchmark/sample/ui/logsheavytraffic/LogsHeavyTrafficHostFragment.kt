@@ -15,14 +15,14 @@ import androidx.navigation.NavController
 import androidx.navigation.createGraph
 import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.fragment.fragment
-import com.datadog.benchmark.sample.MainActivity
+import com.datadog.benchmark.sample.benchmarkActivityComponent
 import com.datadog.benchmark.sample.ui.logsheavytraffic.di.DaggerLogsHeavyTrafficComponent
 import com.datadog.sample.benchmark.R
 
 internal class LogsHeavyTrafficHostFragment: NavHostFragment() {
     val viewModel by viewModels<LogsHeavyTrafficViewModel> {
         DaggerLogsHeavyTrafficComponent.factory().create(
-            deps = (requireActivity() as MainActivity).benchmarkActivityComponent,
+            deps = requireActivity().benchmarkActivityComponent,
             navController = findChildNavController()
         ).viewModelFactory
     }
