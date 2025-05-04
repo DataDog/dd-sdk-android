@@ -11,9 +11,13 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.ComposeView
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 internal class LogsHeavyTrafficSettingsFragment: Fragment() {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
@@ -21,9 +25,14 @@ internal class LogsHeavyTrafficSettingsFragment: Fragment() {
 
         return ComposeView(requireActivity()).apply {
             setContent {
+                val state by viewModel.states().collectAsStateWithLifecycle()
+
+                val config by remember { derivedStateOf { state.loggingConfig } }
+
                 LogsHeavyTrafficSettingsScreen(
                     modifier = Modifier.fillMaxSize(),
-                    dispatch = viewModel::dispatch
+                    dispatch = viewModel::dispatch,
+                    config = config,
                 )
             }
         }
