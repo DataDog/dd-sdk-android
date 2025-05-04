@@ -7,15 +7,18 @@
 package com.datadog.benchmark.sample.ui.logsheavytraffic.di
 
 import androidx.lifecycle.ViewModelProvider
-import androidx.navigation.NavController
 import com.datadog.android.log.Logger
-import dagger.BindsInstance
 import dagger.Component
+import javax.inject.Scope
 
 internal interface LogsHeavyTrafficComponentDependencies {
     val logger: Logger
 }
 
+@Scope
+internal annotation class LogsHeavyTrafficScope
+
+@LogsHeavyTrafficScope
 @Component(
     dependencies = [LogsHeavyTrafficComponentDependencies::class],
     modules = [LogsHeavyTrafficModule::class]
@@ -24,8 +27,7 @@ internal interface LogsHeavyTrafficComponent {
     @Component.Factory
     interface Factory {
         fun create(
-            deps: LogsHeavyTrafficComponentDependencies,
-            @BindsInstance navController: NavController
+            deps: LogsHeavyTrafficComponentDependencies
         ): LogsHeavyTrafficComponent
     }
 

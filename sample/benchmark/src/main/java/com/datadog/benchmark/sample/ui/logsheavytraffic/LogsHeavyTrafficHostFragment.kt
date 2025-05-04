@@ -12,9 +12,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.viewModels
 import androidx.navigation.NavController
-import androidx.navigation.createGraph
 import androidx.navigation.fragment.NavHostFragment
-import androidx.navigation.fragment.fragment
 import com.datadog.benchmark.sample.benchmarkActivityComponent
 import com.datadog.benchmark.sample.ui.logsheavytraffic.di.DaggerLogsHeavyTrafficComponent
 import com.datadog.sample.benchmark.R
@@ -23,7 +21,6 @@ internal class LogsHeavyTrafficHostFragment: NavHostFragment() {
     val viewModel by viewModels<LogsHeavyTrafficViewModel> {
         DaggerLogsHeavyTrafficComponent.factory().create(
             deps = requireActivity().benchmarkActivityComponent,
-            navController = findChildNavController()
         ).viewModelFactory
     }
 
@@ -35,11 +32,6 @@ internal class LogsHeavyTrafficHostFragment: NavHostFragment() {
         super.onViewCreated(view, savedInstanceState)
 
         viewModel.navigationManager.setNavController(findChildNavController())
-
-        findChildNavController().graph = navController.createGraph(startDestination = "logs_heavy_traffic") {
-            fragment<LogsHeavyTrafficFragment>("logs_heavy_traffic")
-            fragment<LogsHeavyTrafficSettingsFragment>("logs_heavy_traffic_settings")
-        }
     }
 
     private fun findChildNavController(): NavController {

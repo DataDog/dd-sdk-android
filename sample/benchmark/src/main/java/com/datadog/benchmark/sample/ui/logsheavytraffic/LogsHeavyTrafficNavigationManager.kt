@@ -7,13 +7,22 @@
 package com.datadog.benchmark.sample.ui.logsheavytraffic
 
 import androidx.navigation.NavController
+import androidx.navigation.createGraph
+import androidx.navigation.fragment.fragment
+import com.datadog.benchmark.sample.ui.logsheavytraffic.di.LogsHeavyTrafficScope
 import javax.inject.Inject
 
+@LogsHeavyTrafficScope
 internal class LogsHeavyTrafficNavigationManager @Inject constructor() {
     private var navController: NavController? = null
 
     fun setNavController(navController: NavController) {
         this.navController = navController
+
+        navController.graph = navController.createGraph(startDestination = "logs_heavy_traffic") {
+            fragment<LogsHeavyTrafficFragment>("logs_heavy_traffic")
+            fragment<LogsHeavyTrafficSettingsFragment>("logs_heavy_traffic_settings")
+        }
     }
 
     fun openSettings() {

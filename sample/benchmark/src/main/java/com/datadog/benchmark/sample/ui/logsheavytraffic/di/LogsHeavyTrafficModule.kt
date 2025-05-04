@@ -19,6 +19,7 @@ import kotlinx.coroutines.Dispatchers
 internal interface LogsHeavyTrafficModule {
     companion object {
         @Provides
+        @LogsHeavyTrafficScope
         fun provideLogsHeavyTrafficViewModelFactory(
             logger: Logger,
             navigationManager: LogsHeavyTrafficNavigationManager,
