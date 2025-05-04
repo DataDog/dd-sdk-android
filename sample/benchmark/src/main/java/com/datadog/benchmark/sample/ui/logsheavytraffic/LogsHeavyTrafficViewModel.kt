@@ -15,14 +15,9 @@ import com.datadog.benchmark.sample.ui.createLogAttributes
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.Channel.Factory.UNLIMITED
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.filterIsInstance
-import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
-import kotlinx.coroutines.flow.launchIn
-import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.scan
 import kotlinx.coroutines.flow.stateIn
@@ -42,6 +37,7 @@ internal sealed interface LogsHeavyTrafficScreenAction{
 internal data class LogsHeavyTrafficScreenState(
     val imageUrls: List<String>,
     val loggingConfig: LoggingConfig,
+    val items: Set<String> = emptySet(),
 ) {
     data class LoggingConfig(
         val logMessage: String,
@@ -85,23 +81,6 @@ internal class LogsHeavyTrafficViewModel(
             initialValue = LogsHeavyTrafficScreenState.INITIAL
         )
 
-    init {
-//        Log.w("WAHAHA", navigationManager.navController.toString())
-//        actions
-//            .receiveAsFlow()
-//            .filterIsInstance<LogsHeavyTrafficScreenAction.VisibleItemsChanged>()
-//            .zipWithNext()
-//            .onEach { (prev, cur) ->
-//                val prevSet: Set<String> = prev?.items ?: emptySet()
-//                val newItems = cur.items - prevSet
-//                if (newItems.isNotEmpty()) {
-//                    logger.logConfig(statesPipeline.value.loggingConfig)
-//                }
-//            }
-//            .flowOn(defaultDispatcher)
-//            .launchIn(viewModelScope)
-    }
-
     fun states(): StateFlow<LogsHeavyTrafficScreenState> {
         return statesPipeline
     }
@@ -134,7 +113,13 @@ internal class LogsHeavyTrafficViewModel(
                 loggingConfig = prev.loggingConfig.copy(payloadSize = action.payloadSize)
             )
             is LogsHeavyTrafficScreenAction.VisibleItemsChanged -> {
-                prev
+                val newItems = action.items - prev.items
+                if (newItems.isNotEmpty()) {
+                    newItems.forEach {
+                        logger.logConfig(prev.loggingConfig)
+                    }
+                }
+                prev.copy(items = action.items)
             }
 
             LogsHeavyTrafficScreenAction.CloseSettings -> {
@@ -156,14 +141,5 @@ private fun Logger.logConfig(config: LogsHeavyTrafficScreenState.LoggingConfig) 
             message = config.logMessage,
             attributes = config.payloadSize.createLogAttributes()
         )
-    }
-}
-
-// TODO WAHAHA move to utils?
-private fun <T> Flow<T>.zipWithNext(): Flow<Pair<T?, T>> = flow {
-    var prev: T? = null
-    collect {
-        emit(prev to it)
-        prev = it
     }
 }
