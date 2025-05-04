@@ -30,7 +30,7 @@ import kotlinx.coroutines.flow.flowOn
 @Composable
 internal fun LogsHeavyTrafficScreen(
     modifier: Modifier,
-    state: LogsHeavyTrafficScreenState,
+    imageUrls: List<String>,
     dispatch: (LogsHeavyTrafficScreenAction) -> Unit,
 ) {
     val lazyListState = rememberLazyListState()
@@ -56,7 +56,7 @@ internal fun LogsHeavyTrafficScreen(
         }
 
         LazyColumn(modifier = modifier, state = lazyListState, horizontalAlignment = Alignment.CenterHorizontally) {
-            items(state.imageUrls, key = { it }) { item ->
+            items(imageUrls, key = { it }) { item ->
                 AsyncImage(
                     model = item,
                     contentDescription = "imageUrl $item"
@@ -73,10 +73,7 @@ internal fun LogsHeavyTrafficScreen(
 internal fun LogsHeavyTrafficScreenPreview() {
     LogsHeavyTrafficScreen(
         modifier = Modifier.fillMaxSize(),
-        state = LogsHeavyTrafficScreenState(
-            imageUrls = List(1) { "https://picsum.photos/800/600?random=${it}" },
-            loggingConfig = LogsHeavyTrafficScreenState.LoggingConfig.INITIAL
-        ),
+        imageUrls = List(1) { "https://picsum.photos/800/600?random=${it}" },
         dispatch = {}
     )
 }
