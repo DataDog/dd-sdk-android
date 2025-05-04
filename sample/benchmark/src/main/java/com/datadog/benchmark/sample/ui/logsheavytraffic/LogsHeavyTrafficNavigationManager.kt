@@ -9,14 +9,18 @@ package com.datadog.benchmark.sample.ui.logsheavytraffic
 import androidx.navigation.NavController
 import javax.inject.Inject
 
-internal class LogsHeavyTrafficNavigationManager @Inject constructor(
-    val navController: NavController,
-) {
+internal class LogsHeavyTrafficNavigationManager @Inject constructor() {
+    private var navController: NavController? = null
+
+    fun setNavController(navController: NavController) {
+        this.navController = navController
+    }
+
     fun openSettings() {
-        navController.navigate("logs_heavy_traffic_settings")
+        navController?.navigate("logs_heavy_traffic_settings")
     }
 
     fun closeSettings() {
-        navController.popBackStack()
+        navController?.popBackStack()
     }
 }

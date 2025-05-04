@@ -33,6 +33,9 @@ internal class LogsHeavyTrafficHostFragment: NavHostFragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+
+        viewModel.navigationManager.setNavController(findChildNavController())
+
         findChildNavController().graph = navController.createGraph(startDestination = "logs_heavy_traffic") {
             fragment<LogsHeavyTrafficFragment>("logs_heavy_traffic")
             fragment<LogsHeavyTrafficSettingsFragment>("logs_heavy_traffic_settings")

@@ -70,7 +70,7 @@ internal data class LogsHeavyTrafficScreenState(
 internal class LogsHeavyTrafficViewModel(
     private val logger: Logger,
     private val defaultDispatcher: CoroutineDispatcher,
-    private val navigationManager: LogsHeavyTrafficNavigationManager
+    val navigationManager: LogsHeavyTrafficNavigationManager
 ): ViewModel() {
 
     private val actions = Channel<LogsHeavyTrafficScreenAction>(UNLIMITED)

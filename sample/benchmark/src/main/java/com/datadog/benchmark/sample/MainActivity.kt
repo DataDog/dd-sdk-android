@@ -14,10 +14,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.findNavController
 import com.datadog.benchmark.DatadogBaseMeter
 import com.datadog.benchmark.sample.config.BenchmarkConfig
-import com.datadog.benchmark.sample.config.SyntheticsRun
-import com.datadog.benchmark.sample.config.SyntheticsScenario
 import com.datadog.benchmark.sample.di.activity.BenchmarkActivityComponent
-import com.datadog.benchmark.sample.di.activity.DaggerBenchmarkActivityComponent
 import com.datadog.benchmark.sample.navigation.FragmentsNavigationManager
 import com.datadog.benchmark.sample.ui.sessionreplaycompose.MainView
 import com.datadog.sample.benchmark.R
@@ -65,11 +62,11 @@ class MainActivity : AppCompatActivity() {
 
     override fun onStart() {
         super.onStart()
-        datadogMeter.startMeasuring()
+//        datadogMeter.startMeasuring()
     }
 
     override fun onStop() {
-        datadogMeter.stopMeasuring()
+//        datadogMeter.stopMeasuring()
         super.onStop()
     }
 
