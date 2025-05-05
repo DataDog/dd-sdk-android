@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.benchmark.sample.benchmark
+package com.datadog.benchmark.sample.config
 
 internal enum class SyntheticsRun(val value: String) {
 
