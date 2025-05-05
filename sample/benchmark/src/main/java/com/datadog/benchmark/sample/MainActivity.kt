@@ -10,11 +10,11 @@ import android.app.Activity
 import android.os.Bundle
 import androidx.activity.compose.setContent
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.findNavController
 import com.datadog.benchmark.DatadogBaseMeter
 import com.datadog.benchmark.sample.config.BenchmarkConfig
 import com.datadog.benchmark.sample.di.activity.BenchmarkActivityComponent
-import com.datadog.benchmark.sample.di.activity.DaggerBenchmarkActivityComponent
 import com.datadog.benchmark.sample.navigation.FragmentsNavigationManager
 import com.datadog.benchmark.sample.ui.sessionreplaycompose.MainView
 import com.datadog.sample.benchmark.R
@@ -34,20 +34,17 @@ class MainActivity : AppCompatActivity() {
     @Inject
     internal lateinit var datadogFeaturesInitializer: DatadogFeaturesInitializer
 
-    private lateinit var config: BenchmarkConfig
+    @Inject
+    internal lateinit var config: BenchmarkConfig
 
-    internal lateinit var benchmarkActivityComponent: BenchmarkActivityComponent
+    internal lateinit var viewModel: MainActivityViewModel
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        config = BenchmarkConfig.resolveSyntheticsBundle(intent.extras)
+        val factory = MainActivityViewModelFactory(application, this)
 
-        benchmarkActivityComponent = DaggerBenchmarkActivityComponent.factory().create(
-            deps = application.benchmarkAppComponent,
-            config = config,
-            mainActivity = this
-        )
+        viewModel = ViewModelProvider(this, factory)[MainActivityViewModel::class]
 
         benchmarkActivityComponent.inject(this)
 
@@ -82,4 +79,4 @@ class MainActivity : AppCompatActivity() {
 }
 
 internal val Activity.benchmarkActivityComponent: BenchmarkActivityComponent
-    get() = (this as MainActivity).benchmarkActivityComponent
+    get() = (this as MainActivity).viewModel.component
