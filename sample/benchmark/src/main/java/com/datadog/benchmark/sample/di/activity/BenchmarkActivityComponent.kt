@@ -11,6 +11,7 @@ import com.datadog.benchmark.sample.DatadogFeaturesInitializer
 import com.datadog.benchmark.sample.MainActivity
 import com.datadog.benchmark.sample.config.BenchmarkConfig
 import com.datadog.benchmark.sample.ui.logscustom.LogsFragment
+import com.datadog.benchmark.sample.ui.logsheavytraffic.di.LogsHeavyTrafficComponentDependencies
 import com.datadog.benchmark.sample.ui.sessionreplay.SessionReplayAppcompatFragment
 import com.datadog.benchmark.sample.ui.sessionreplay.SessionReplayMaterialFragment
 import dagger.BindsInstance
@@ -36,7 +37,7 @@ internal interface BenchmarkActivityComponentDependencies {
     ]
 )
 @BenchmarkActivityScope
-internal interface BenchmarkActivityComponent {
+internal interface BenchmarkActivityComponent : LogsHeavyTrafficComponentDependencies {
     @Component.Factory
     interface Factory {
         fun create(

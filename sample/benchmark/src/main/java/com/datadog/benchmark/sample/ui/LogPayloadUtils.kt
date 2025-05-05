@@ -6,15 +6,43 @@
 
 @file:Suppress("StringLiteralDuplication")
 
-package com.datadog.benchmark.sample.ui.logscustom
+package com.datadog.benchmark.sample.ui
 
+import android.util.Log
 import java.util.UUID
+
+internal enum class LogPayloadSize {
+    Small,
+    Medium,
+    Large
+}
 
 internal fun LogPayloadSize.createLogAttributes(): Map<String, Any?> {
     return when (this) {
         LogPayloadSize.Small -> SMALL_ATTRIBUTES_PAYLOAD
         LogPayloadSize.Medium -> MEDIUM_ATTRIBUTES_PAYLOAD
         LogPayloadSize.Large -> LARGE_ATTRIBUTES_PAYLOAD
+    }
+}
+
+internal val ALL_LOG_LEVELS = listOf(
+    Log.ERROR,
+    Log.VERBOSE,
+    Log.ASSERT,
+    Log.WARN,
+    Log.INFO,
+    Log.DEBUG
+)
+
+internal fun Int.stringRepresentation(): String {
+    return when (this) {
+        Log.ERROR -> "ERROR"
+        Log.VERBOSE -> "VERBOSE"
+        Log.ASSERT -> "ASSERT"
+        Log.WARN -> "WARN"
+        Log.INFO -> "INFO"
+        Log.DEBUG -> "DEBUG"
+        else -> "UNKNOWN"
     }
 }
 

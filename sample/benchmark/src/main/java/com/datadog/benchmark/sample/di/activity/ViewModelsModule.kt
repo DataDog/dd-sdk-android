@@ -9,7 +9,6 @@ package com.datadog.benchmark.sample.di.activity
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
-import com.datadog.android.api.SdkCore
 import com.datadog.android.log.Logger
 import com.datadog.benchmark.sample.ui.logscustom.LogsScreenViewModel
 import dagger.Module
@@ -18,6 +17,7 @@ import kotlinx.coroutines.Dispatchers
 import javax.inject.Qualifier
 import kotlin.reflect.KClass
 
+// TODO WAHAHA maybe rename
 @Qualifier
 internal annotation class ViewModel(val viewModelType: KClass<*>)
 
@@ -27,14 +27,9 @@ internal interface ViewModelsModule {
         @Provides
         @ViewModel(LogsScreenViewModel::class)
         fun provideLogsScreenViewModelFactory(
-            sdkCore: SdkCore
+            logger: Logger
         ): ViewModelProvider.Factory = viewModelFactory {
             initializer {
-                val logger = Logger.Builder(sdkCore)
-                    .setName("benchmarkLogger")
-                    .setLogcatLogsEnabled(true)
-                    .build()
-
                 LogsScreenViewModel(
                     logger = logger,
                     defaultDispatcher = Dispatchers.Default
