@@ -53,6 +53,12 @@ internal class TimelineView @JvmOverloads constructor(
     private val tickPaint: Paint
         get() = paint.apply { color = color(R.color.vital_bg) }
 
+    private val durationPaint: Paint
+        get() = textPaint.apply { color = color(R.color.vital_bg) }
+
+    private val headerPaint: Paint
+        get() = textPaint.apply { color = color(R.color.widget_text) }
+
     private val barSize: Float
         get() = width.toFloat() / (maxSize)
 
@@ -90,16 +96,16 @@ internal class TimelineView @JvmOverloads constructor(
             if (item.durationNs.ms > 0 || (item !is TimelineEvent.Tick && item !is TimelineEvent.Action)) {
                 canvas.withRotation(90f, xOffset, 0f) {
                     val text = item.durationNs.ms.toString()
-                    val textWidth = textPaint.measureText(text)
-                    drawText(text, xOffset + height.toFloat() - textWidth, 0f, textPaint)
+                    val textWidth = durationPaint.measureText(text)
+                    drawText(text, xOffset + height.toFloat() - textWidth, 0f, durationPaint)
                 }
             }
 
             canvas.drawText(
                 logoText,
-                width / 2 - textPaint.measureText(logoText) / 2,
-                height / 2f + textPaint.textSize / 2,
-                textPaint
+                width / 2 - headerPaint.measureText(logoText) / 2,
+                height / 2f + headerPaint.textSize / 2,
+                headerPaint
             )
             xOffset -= barSize
         }
@@ -118,7 +124,6 @@ internal class TimelineView @JvmOverloads constructor(
     }
 
     companion object {
-
 
         private const val ACTIVE = "\uD83D\uDFE2 Events"
         private const val PAUSED = "\uD83D\uDD34 Events"
