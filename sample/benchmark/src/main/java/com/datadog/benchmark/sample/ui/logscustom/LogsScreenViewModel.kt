@@ -10,6 +10,8 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.datadog.android.log.Logger
+import com.datadog.benchmark.sample.ui.LogPayloadSize
+import com.datadog.benchmark.sample.ui.createLogAttributes
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
@@ -35,12 +37,6 @@ internal sealed interface LogsScreenAction {
     data class SetRepeatLogging(val repeatLogging: Boolean) : LogsScreenAction
     object LogButtonClicked : LogsScreenAction
     data class LogJobFinished(val loggingTask: LogsScreenState.LoggingTask) : LogsScreenAction
-}
-
-internal enum class LogPayloadSize {
-    Small,
-    Medium,
-    Large
 }
 
 internal data class LogsScreenState(
