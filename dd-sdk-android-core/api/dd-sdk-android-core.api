@@ -342,6 +342,7 @@ public abstract interface class com/datadog/android/api/feature/FeatureEventRece
 
 public abstract interface class com/datadog/android/api/feature/FeatureScope {
 	public abstract fun getDataStore ()Lcom/datadog/android/api/storage/datastore/DataStoreHandler;
+	public abstract fun getWriteContextSync ()Lkotlin/Pair;
 	public abstract fun sendEvent (Ljava/lang/Object;)V
 	public abstract fun unwrap ()Lcom/datadog/android/api/feature/Feature;
 	public abstract fun withWriteContext (Lkotlin/jvm/functions/Function2;)V
@@ -812,6 +813,7 @@ public final class com/datadog/android/core/internal/utils/ConcurrencyExtKt {
 	public static final fun executeSafe (Ljava/util/concurrent/Executor;Ljava/lang/String;Lcom/datadog/android/api/InternalLogger;Ljava/lang/Runnable;)V
 	public static final fun scheduleSafe (Ljava/util/concurrent/ScheduledExecutorService;Ljava/lang/String;JLjava/util/concurrent/TimeUnit;Lcom/datadog/android/api/InternalLogger;Ljava/lang/Runnable;)Ljava/util/concurrent/ScheduledFuture;
 	public static final fun submitSafe (Ljava/util/concurrent/ExecutorService;Ljava/lang/String;Lcom/datadog/android/api/InternalLogger;Ljava/lang/Runnable;)Ljava/util/concurrent/Future;
+	public static final fun submitSafe (Ljava/util/concurrent/ExecutorService;Ljava/lang/String;Lcom/datadog/android/api/InternalLogger;Ljava/util/concurrent/Callable;)Ljava/util/concurrent/Future;
 }
 
 public final class com/datadog/android/core/internal/utils/JsonSerializer {

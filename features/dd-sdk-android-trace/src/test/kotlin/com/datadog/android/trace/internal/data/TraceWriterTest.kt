@@ -8,6 +8,7 @@ package com.datadog.android.trace.internal.data
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
+import com.datadog.android.api.feature.EventWriteScope
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.feature.FeatureSdkCore
@@ -77,6 +78,9 @@ internal class TraceWriterTest {
     @Mock
     lateinit var mockEventBatchWriter: EventBatchWriter
 
+    @Mock
+    lateinit var mockEventWriteScope: EventWriteScope
+
     @Forgery
     lateinit var fakeDatadogContext: DatadogContext
 
@@ -88,9 +92,13 @@ internal class TraceWriterTest {
             mockSdkCore.getFeature(Feature.TRACING_FEATURE_NAME)
         ) doReturn mockTracingFeatureScope
 
+        whenever(mockEventWriteScope.invoke(any())) doAnswer {
+            val callback = it.getArgument<(EventBatchWriter) -> Unit>(0)
+            callback.invoke(mockEventBatchWriter)
+        }
         whenever(mockTracingFeatureScope.withWriteContext(any())) doAnswer {
-            val callback = it.getArgument<(DatadogContext, EventBatchWriter) -> Unit>(0)
-            callback.invoke(fakeDatadogContext, mockEventBatchWriter)
+            val callback = it.getArgument<(DatadogContext, EventWriteScope) -> Unit>(0)
+            callback.invoke(fakeDatadogContext, mockEventWriteScope)
         }
 
         whenever(mockEventMapper.map(any())) doAnswer { it.getArgument(0) }

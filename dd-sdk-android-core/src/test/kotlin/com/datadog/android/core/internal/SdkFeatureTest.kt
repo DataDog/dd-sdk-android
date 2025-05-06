@@ -10,11 +10,11 @@ import android.app.Application
 import android.content.Context
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
+import com.datadog.android.api.feature.EventWriteScope
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureContextUpdateReceiver
 import com.datadog.android.api.feature.FeatureEventReceiver
 import com.datadog.android.api.feature.StorageBackedFeature
-import com.datadog.android.api.storage.EventBatchWriter
 import com.datadog.android.api.storage.FeatureStorageConfiguration
 import com.datadog.android.api.storage.datastore.DataStoreHandler
 import com.datadog.android.core.configuration.BatchProcessingLevel
@@ -54,6 +54,7 @@ import com.datadog.android.utils.verifyLog
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
+import com.datadog.tools.unit.forge.aThrowable
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -74,6 +75,7 @@ import org.mockito.kotlin.argThat
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
@@ -81,6 +83,11 @@ import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.util.Locale
+import java.util.concurrent.Callable
+import java.util.concurrent.CancellationException
+import java.util.concurrent.ExecutionException
+import java.util.concurrent.Future
+import java.util.concurrent.RejectedExecutionException
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -139,6 +146,9 @@ internal class SdkFeatureTest {
         whenever(mockWrappedFeature.name) doReturn fakeFeatureName
         whenever(mockWrappedFeature.requestFactory) doReturn mock()
         whenever(mockWrappedFeature.storageConfiguration) doReturn fakeStorageConfiguration
+        whenever(coreFeature.mockContextExecutorService.execute(any())) doAnswer {
+            it.getArgument<Runnable>(0).run()
+        }
         testedFeature = SdkFeature(
             coreFeature = coreFeature.mockInstance,
             wrappedFeature = mockWrappedFeature,
@@ -474,22 +484,16 @@ internal class SdkFeatureTest {
     @Test
     fun `M provide write context W withWriteContext(callback)`(
         @Forgery fakeContext: DatadogContext,
-        @Mock mockBatchWriter: EventBatchWriter
+        @Mock mockEventWriteScope: EventWriteScope
     ) {
         // Given
         testedFeature.storage = mockStorage
-        val callback = mock<(DatadogContext, EventBatchWriter) -> Unit>()
+        val callback = mock<(DatadogContext, EventWriteScope) -> Unit>()
         whenever(coreFeature.mockInstance.contextProvider.context) doReturn fakeContext
 
         whenever(
-            mockStorage.writeCurrentBatch(
-                eq(fakeContext),
-                any()
-            )
-        ) doAnswer {
-            val storageCallback = it.getArgument<(EventBatchWriter) -> Unit>(1)
-            storageCallback.invoke(mockBatchWriter)
-        }
+            mockStorage.getEventWriteScope(fakeContext)
+        ) doReturn mockEventWriteScope
 
         // When
         testedFeature.withWriteContext(callback = callback)
@@ -497,7 +501,7 @@ internal class SdkFeatureTest {
         // Then
         verify(callback).invoke(
             fakeContext,
-            mockBatchWriter
+            mockEventWriteScope
         )
     }
 
@@ -505,7 +509,7 @@ internal class SdkFeatureTest {
     fun `M do nothing W withWriteContext(callback) { no Datadog context }`() {
         // Given
         testedFeature.storage = mockStorage
-        val callback = mock<(DatadogContext, EventBatchWriter) -> Unit>()
+        val callback = mock<(DatadogContext, EventWriteScope) -> Unit>()
 
         whenever(coreFeature.mockInstance.contextProvider) doReturn NoOpContextProvider()
 
@@ -515,6 +519,120 @@ internal class SdkFeatureTest {
         // Then
         verifyNoInteractions(mockStorage)
         verifyNoInteractions(callback)
+    }
+
+    @Test
+    fun `M provide write context W getWriteContextSync()`(
+        @Forgery fakeContext: DatadogContext,
+        @Mock mockEventWriteScope: EventWriteScope
+    ) {
+        // Given
+        testedFeature.storage = mockStorage
+        whenever(coreFeature.mockInstance.contextProvider.context) doReturn fakeContext
+        whenever(coreFeature.mockInstance.contextExecutorService.submit(any<Callable<*>>())) doAnswer {
+            val callable = it.getArgument<Callable<Pair<DatadogContext, EventWriteScope>>>(0)
+            mock<Future<*>>().apply {
+                whenever(get()) doAnswer { callable.call() }
+            }
+        }
+
+        whenever(
+            mockStorage.getEventWriteScope(fakeContext)
+        ) doReturn mockEventWriteScope
+
+        // When
+        val writeContext = testedFeature.getWriteContextSync()
+
+        // Then
+        checkNotNull(writeContext)
+        assertThat(writeContext.first).isEqualTo(fakeContext)
+        assertThat(writeContext.second).isEqualTo(mockEventWriteScope)
+    }
+
+    @Test
+    fun `M provide null write context W getWriteContextSync() { no datadog context }`(
+        @Forgery fakeContext: DatadogContext,
+        @Mock mockEventWriteScope: EventWriteScope
+    ) {
+        // Given
+        testedFeature.storage = mockStorage
+        whenever(coreFeature.mockInstance.contextProvider) doReturn NoOpContextProvider()
+        whenever(coreFeature.mockInstance.contextExecutorService.submit(any<Callable<*>>())) doAnswer {
+            val callable = it.getArgument<Callable<Pair<DatadogContext, EventWriteScope>>>(0)
+            mock<Future<*>>().apply {
+                whenever(get()) doAnswer { callable.call() }
+            }
+        }
+
+        whenever(
+            mockStorage.getEventWriteScope(fakeContext)
+        ) doReturn mockEventWriteScope
+
+        // When
+        val writeContext = testedFeature.getWriteContextSync()
+
+        // Then
+        assertThat(writeContext).isNull()
+    }
+
+    @Test
+    fun `M provide null write context W getWriteContextSync() { task rejected }`(
+        @Forgery fakeContext: DatadogContext,
+        @Mock mockEventWriteScope: EventWriteScope
+    ) {
+        // Given
+        testedFeature.storage = mockStorage
+        whenever(coreFeature.mockInstance.contextProvider) doReturn NoOpContextProvider()
+        whenever(
+            coreFeature.mockInstance.contextExecutorService.submit(any<Callable<*>>())
+        ) doThrow RejectedExecutionException()
+
+        whenever(
+            mockStorage.getEventWriteScope(fakeContext)
+        ) doReturn mockEventWriteScope
+
+        // When
+        val writeContext = testedFeature.getWriteContextSync()
+
+        // Then
+        assertThat(writeContext).isNull()
+    }
+
+    @Test
+    fun `M provide null write context W getWriteContextSync() { failed to get task result }`(
+        @Forgery fakeContext: DatadogContext,
+        @Mock mockEventWriteScope: EventWriteScope,
+        forge: Forge
+    ) {
+        // Given
+        testedFeature.storage = mockStorage
+        whenever(coreFeature.mockInstance.contextProvider) doReturn NoOpContextProvider()
+        val throwable = forge.anElementFrom(
+            CancellationException(),
+            ExecutionException(forge.aThrowable()),
+            InterruptedException()
+        )
+        whenever(coreFeature.mockInstance.contextExecutorService.submit(any<Callable<*>>())) doAnswer {
+            mock<Future<*>>().apply {
+                whenever(get()) doThrow throwable
+            }
+        }
+
+        whenever(
+            mockStorage.getEventWriteScope(fakeContext)
+        ) doReturn mockEventWriteScope
+
+        // When
+        val writeContext = testedFeature.getWriteContextSync()
+
+        // Then
+        assertThat(writeContext).isNull()
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.USER,
+            SdkFeature.FAILED_TO_GET_WRITE_CONTEXT_SYNC,
+            throwable
+        )
     }
 
     @Test

@@ -8,6 +8,7 @@ package com.datadog.android.webview.internal.rum
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
+import com.datadog.android.api.feature.EventWriteScope
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.feature.FeatureSdkCore
@@ -100,14 +101,17 @@ internal class WebViewRumEventConsumerTest {
     @Mock
     lateinit var mockEventBatchWriter: EventBatchWriter
 
+    @Mock
+    lateinit var mockEventWriteScope: EventWriteScope
+
+    @Mock
+    lateinit var mockOffsetProvider: TimestampOffsetProvider
+
     @Forgery
     lateinit var fakeDatadogContext: DatadogContext
 
     @Forgery
     lateinit var fakeRumContext: RumContext
-
-    @Mock
-    lateinit var mockOffsetProvider: TimestampOffsetProvider
 
     @BoolForgery
     var fakeSessionReplayEnabled = false
@@ -143,9 +147,13 @@ internal class WebViewRumEventConsumerTest {
             mockSdkCore.getFeature(WebViewRumFeature.WEB_RUM_FEATURE_NAME)
         ) doReturn mockWebViewRumFeatureScope
 
+        whenever(mockEventWriteScope.invoke(any())) doAnswer {
+            val callback = it.getArgument<(EventBatchWriter) -> Unit>(0)
+            callback.invoke(mockEventBatchWriter)
+        }
         whenever(mockWebViewRumFeatureScope.withWriteContext(any())) doAnswer {
-            val callback = it.getArgument<(DatadogContext, EventBatchWriter) -> Unit>(0)
-            callback.invoke(fakeDatadogContext, mockEventBatchWriter)
+            val callback = it.getArgument<(DatadogContext, EventWriteScope) -> Unit>(0)
+            callback.invoke(fakeDatadogContext, mockEventWriteScope)
         }
         whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
         whenever(

@@ -7,6 +7,7 @@
 package com.datadog.android.sessionreplay.internal.storage
 
 import com.datadog.android.api.context.DatadogContext
+import com.datadog.android.api.feature.EventWriteScope
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.feature.FeatureSdkCore
@@ -50,14 +51,17 @@ internal class SessionReplayResourcesWriterTest {
     @Mock
     lateinit var mockResourcesFeature: FeatureScope
 
+    @Mock
+    lateinit var mockEventBatchWriter: EventBatchWriter
+
+    @Mock
+    lateinit var mockEventWriteScope: EventWriteScope
+
     @Forgery
     lateinit var fakeEnrichedResource: EnrichedResource
 
     @Forgery
     lateinit var fakeRumApplicationId: UUID
-
-    @Mock
-    lateinit var mockEventBatchWriter: EventBatchWriter
 
     @Forgery
     lateinit var fakeDatadogContext: DatadogContext
@@ -78,9 +82,13 @@ internal class SessionReplayResourcesWriterTest {
     @Test
     fun `M write the resource W write()`() {
         // Given
+        whenever(mockEventWriteScope.invoke(any())) doAnswer {
+            val callback = it.getArgument<(EventBatchWriter) -> Unit>(0)
+            callback.invoke(mockEventBatchWriter)
+        }
         whenever(mockResourcesFeature.withWriteContext(any())) doAnswer {
-            val callback = it.getArgument<(DatadogContext, EventBatchWriter) -> Unit>(0)
-            callback.invoke(fakeDatadogContext, mockEventBatchWriter)
+            val callback = it.getArgument<(DatadogContext, EventWriteScope) -> Unit>(0)
+            callback.invoke(fakeDatadogContext, mockEventWriteScope)
         }
         fakeDatadogContext = fakeDatadogContext.copy(
             featuresContext = fakeDatadogContext.featuresContext

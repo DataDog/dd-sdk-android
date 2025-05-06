@@ -7,6 +7,7 @@
 package com.datadog.android.core.stub
 
 import com.datadog.android.api.context.DatadogContext
+import com.datadog.android.api.feature.EventWriteScope
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.storage.EventBatchWriter
@@ -57,9 +58,16 @@ internal class StubFeatureScope(
     // region FeatureScope
 
     override fun withWriteContext(
-        callback: (DatadogContext, EventBatchWriter) -> Unit
+        callback: (DatadogContext, EventWriteScope) -> Unit
     ) {
-        callback(datadogContextProvider(), eventBatchWriter)
+        callback(
+            datadogContextProvider(),
+            { it.invoke(eventBatchWriter) }
+        )
+    }
+
+    override fun getWriteContextSync(): Pair<DatadogContext, EventWriteScope>? {
+        return datadogContextProvider() to { it.invoke(eventBatchWriter) }
     }
 
     override fun sendEvent(event: Any) {

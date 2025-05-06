@@ -50,7 +50,7 @@ import org.mockito.quality.Strictness
 @ForgeConfiguration(Configurator::class)
 internal class AbstractStorageTest {
 
-    lateinit var testedStorage: AbstractStorage
+    private lateinit var testedStorage: AbstractStorage
 
     @Mock
     lateinit var mockPersistenceStrategyFactory: PersistenceStrategy.Factory
@@ -100,10 +100,10 @@ internal class AbstractStorageTest {
         )
     }
 
-    // region Storage.writeCurrentBatch
+    // region Storage.getEventWriteScope
 
     @Test
-    fun `M provide writer W writeCurrentBatch()+write() {consent=granted, batchMetadata=null}`(
+    fun `M provide writer W getEventWriteScope()+invoke() {consent=granted, batchMetadata=null}`(
         @BoolForgery fakeResult: Boolean,
         @Forgery fakeBatchEvent: RawBatchEvent
     ) {
@@ -118,7 +118,8 @@ internal class AbstractStorageTest {
         }
 
         // When
-        testedStorage.writeCurrentBatch(fakeDatadogContext, mockWriteCallback)
+        testedStorage.getEventWriteScope(fakeDatadogContext)
+            .invoke(mockWriteCallback)
 
         // Then
         assertThat(result).isEqualTo(fakeResult)
@@ -131,7 +132,7 @@ internal class AbstractStorageTest {
     }
 
     @Test
-    fun `M provide writer W writeCurrentBatch()+write() {consent=granted, batchMetadata!=null}`(
+    fun `M provide writer W getEventWriteScope()+invoke() {consent=granted, batchMetadata!=null}`(
         @BoolForgery fakeResult: Boolean,
         @Forgery fakeBatchEvent: RawBatchEvent,
         @StringForgery fakeBatchMetadata: String
@@ -148,7 +149,8 @@ internal class AbstractStorageTest {
         }
 
         // When
-        testedStorage.writeCurrentBatch(fakeDatadogContext, mockWriteCallback)
+        testedStorage.getEventWriteScope(fakeDatadogContext)
+            .invoke(mockWriteCallback)
 
         // Then
         assertThat(result).isEqualTo(fakeResult)
@@ -161,19 +163,19 @@ internal class AbstractStorageTest {
     }
 
     @Test
-    fun `M provide writer W writeCurrentBatch()+currentMetadata() {consent=granted, batchMetadata=null}`() {
+    fun `M provide writer W getEventWriteScope()+currentMetadata() {consent=granted, batchMetadata=null}`() {
         // Given
         fakeDatadogContext = fakeDatadogContext.copy(trackingConsent = TrackingConsent.GRANTED)
         whenever(mockGrantedPersistenceStrategy.currentMetadata()) doReturn null
         val mockWriteCallback = mock<(EventBatchWriter) -> Unit>()
-        whenever(mockGrantedPersistenceStrategy.currentMetadata()) doReturn null
         var resultMetadata: ByteArray? = null
         whenever(mockWriteCallback.invoke(any())) doAnswer {
             resultMetadata = it.getArgument<EventBatchWriter>(0).currentMetadata()
         }
 
         // When
-        testedStorage.writeCurrentBatch(fakeDatadogContext, mockWriteCallback)
+        testedStorage.getEventWriteScope(fakeDatadogContext)
+            .invoke(mockWriteCallback)
 
         // Then
         assertThat(resultMetadata).isNull()
@@ -186,7 +188,7 @@ internal class AbstractStorageTest {
     }
 
     @Test
-    fun `M provide writer W writeCurrentBatch()+currentMetadata() {consent=granted, batchMetadata!=null}`(
+    fun `M provide writer W getEventWriteScope()+currentMetadata() {consent=granted, batchMetadata!=null}`(
         @StringForgery fakeBatchMetadata: String
     ) {
         // Given
@@ -200,7 +202,8 @@ internal class AbstractStorageTest {
         }
 
         // When
-        testedStorage.writeCurrentBatch(fakeDatadogContext, mockWriteCallback)
+        testedStorage.getEventWriteScope(fakeDatadogContext)
+            .invoke(mockWriteCallback)
 
         // Then
         assertThat(resultMetadata).isEqualTo(batchMetadata)
@@ -213,7 +216,7 @@ internal class AbstractStorageTest {
     }
 
     @Test
-    fun `M provide writer W writeCurrentBatch()+write() {consent=pending, batchMetadata=null}`(
+    fun `M provide writer W getEventWriteScope()+write() {consent=pending, batchMetadata=null}`(
         @BoolForgery fakeResult: Boolean,
         @Forgery fakeBatchEvent: RawBatchEvent
     ) {
@@ -227,7 +230,8 @@ internal class AbstractStorageTest {
         }
 
         // When
-        testedStorage.writeCurrentBatch(fakeDatadogContext, mockWriteCallback)
+        testedStorage.getEventWriteScope(fakeDatadogContext)
+            .invoke(mockWriteCallback)
 
         // Then
         assertThat(result).isEqualTo(fakeResult)
@@ -240,7 +244,7 @@ internal class AbstractStorageTest {
     }
 
     @Test
-    fun `M provide writer W writeCurrentBatch()+write() {consent=pending, batchMetadata!=null}`(
+    fun `M provide writer W getEventWriteScope()+write() {consent=pending, batchMetadata!=null}`(
         @BoolForgery fakeResult: Boolean,
         @Forgery fakeBatchEvent: RawBatchEvent,
         @StringForgery fakeBatchMetadata: String
@@ -256,7 +260,8 @@ internal class AbstractStorageTest {
         }
 
         // When
-        testedStorage.writeCurrentBatch(fakeDatadogContext, mockWriteCallback)
+        testedStorage.getEventWriteScope(fakeDatadogContext)
+            .invoke(mockWriteCallback)
 
         // Then
         assertThat(result).isEqualTo(fakeResult)
@@ -269,7 +274,7 @@ internal class AbstractStorageTest {
     }
 
     @Test
-    fun `M provide writer W writeCurrentBatch()+currentMetadata() {consent=pending, batchMetadata=null}`() {
+    fun `M provide writer W getEventWriteScope()+currentMetadata() {consent=pending, batchMetadata=null}`() {
         // Given
         fakeDatadogContext = fakeDatadogContext.copy(trackingConsent = TrackingConsent.PENDING)
         val mockWriteCallback = mock<(EventBatchWriter) -> Unit>()
@@ -280,7 +285,8 @@ internal class AbstractStorageTest {
         whenever(mockPendingPersistenceStrategy.currentMetadata()) doReturn null
 
         // When
-        testedStorage.writeCurrentBatch(fakeDatadogContext, mockWriteCallback)
+        testedStorage.getEventWriteScope(fakeDatadogContext)
+            .invoke(mockWriteCallback)
 
         // Then
         assertThat(resultMetadata).isNull()
@@ -293,7 +299,7 @@ internal class AbstractStorageTest {
     }
 
     @Test
-    fun `M provide writer W writeCurrentBatch()+currentMetadata() {consent=pending, batchMetadata!=null}`(
+    fun `M provide writer W getEventWriteScope()+currentMetadata() {consent=pending, batchMetadata!=null}`(
         @StringForgery fakeBatchMetadata: String
     ) {
         // Given
@@ -307,7 +313,8 @@ internal class AbstractStorageTest {
         whenever(mockPendingPersistenceStrategy.currentMetadata()) doReturn batchMetadata
 
         // When
-        testedStorage.writeCurrentBatch(fakeDatadogContext, mockWriteCallback)
+        testedStorage.getEventWriteScope(fakeDatadogContext)
+            .invoke(mockWriteCallback)
 
         // Then
         assertThat(resultMetadata).isEqualTo(batchMetadata)
@@ -320,7 +327,7 @@ internal class AbstractStorageTest {
     }
 
     @Test
-    fun `M provide no op writer W writeCurrentBatch()+write() {consent=not_granted}`(
+    fun `M provide no-op writer W getEventWriteScope()+write() {consent=not_granted}`(
         @Forgery fakeBatchEvent: RawBatchEvent,
         @StringForgery fakeBatchMetadata: String
     ) {
@@ -334,7 +341,8 @@ internal class AbstractStorageTest {
         }
 
         // When
-        testedStorage.writeCurrentBatch(fakeDatadogContext, mockWriteCallback)
+        testedStorage.getEventWriteScope(fakeDatadogContext)
+            .invoke(mockWriteCallback)
 
         // Then
         assertThat(result).isFalse()
@@ -346,7 +354,7 @@ internal class AbstractStorageTest {
     }
 
     @Test
-    fun `M provide no op writer W writeCurrentBatch()+currentMetadata() {consent=not_granted}`() {
+    fun `M provide no-op writer W getEventWriteScope()+currentMetadata() {consent=not_granted}`() {
         // Given
         fakeDatadogContext = fakeDatadogContext.copy(trackingConsent = TrackingConsent.NOT_GRANTED)
         val mockWriteCallback = mock<(EventBatchWriter) -> Unit>()
@@ -356,7 +364,8 @@ internal class AbstractStorageTest {
         }
 
         // When
-        testedStorage.writeCurrentBatch(fakeDatadogContext, mockWriteCallback)
+        testedStorage.getEventWriteScope(fakeDatadogContext)
+            .invoke(mockWriteCallback)
 
         // Then
         assertThat(resultMetadata).isNull()

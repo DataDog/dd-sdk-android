@@ -9,7 +9,7 @@ package com.datadog.android.core.internal.persistence
 import androidx.annotation.AnyThread
 import androidx.annotation.WorkerThread
 import com.datadog.android.api.context.DatadogContext
-import com.datadog.android.api.storage.EventBatchWriter
+import com.datadog.android.api.feature.EventWriteScope
 import com.datadog.android.core.internal.metrics.RemovalReason
 import com.datadog.tools.annotation.NoOpImplementation
 
@@ -20,16 +20,13 @@ import com.datadog.tools.annotation.NoOpImplementation
 internal interface Storage {
 
     /**
-     * Utility to write data, asynchronously.
+     * Utility to get the scope for the writing operation, synchronously.
      * @param datadogContext the context for the write operation
-     * @param callback an operation to perform with a [EventBatchWriter] that will target the current
-     * writeable Batch
      */
     @AnyThread
-    fun writeCurrentBatch(
-        datadogContext: DatadogContext,
-        callback: (EventBatchWriter) -> Unit
-    )
+    fun getEventWriteScope(
+        datadogContext: DatadogContext
+    ): EventWriteScope
 
     /**
      * Utility to read a batch, synchronously.

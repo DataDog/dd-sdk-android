@@ -179,12 +179,14 @@ internal class DatadogCore(
     /** @inheritDoc */
     @AnyThread
     override fun clearAllData() {
-        features.values.forEach {
-            it.clearAllData()
-        }
-        getPersistenceExecutorService().executeSafe("Clear all data", internalLogger) {
-            coreFeature.deleteLastViewEvent()
-            coreFeature.deleteLastFatalAnrSent()
+        coreFeature.contextExecutorService.executeSafe("DatadogCore.clearAllData", internalLogger) {
+            features.values.forEach {
+                it.clearAllData()
+            }
+            getPersistenceExecutorService().executeSafe("Clear all data", internalLogger) {
+                coreFeature.deleteLastViewEvent()
+                coreFeature.deleteLastFatalAnrSent()
+            }
         }
     }
 

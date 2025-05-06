@@ -40,16 +40,18 @@ internal class OtelTraceWriter(
     override fun write(trace: List<DDSpan>?) {
         if (trace == null) return
         sdkCore.getFeature(Feature.TRACING_FEATURE_NAME)
-            ?.withWriteContext { datadogContext, eventBatchWriter ->
+            ?.withWriteContext { datadogContext, writeScope ->
                 // TODO RUM-4092 Add the capability in the serializer to handle multiple spans in one payload
-                trace
-                    .filter {
-                        it.samplingPriority() !in DROP_SAMPLING_PRIORITIES
-                    }
-                    .forEach { span ->
-                        @Suppress("ThreadSafety") // called in the worker context
-                        writeSpan(datadogContext, eventBatchWriter, span)
-                    }
+                writeScope {
+                    trace
+                        .filter {
+                            it.samplingPriority() !in DROP_SAMPLING_PRIORITIES
+                        }
+                        .forEach { span ->
+                            @Suppress("ThreadSafety") // called in the worker context
+                            writeSpan(datadogContext, it, span)
+                        }
+                }
             }
     }
 

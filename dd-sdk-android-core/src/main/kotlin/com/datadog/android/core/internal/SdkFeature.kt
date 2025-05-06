@@ -12,13 +12,13 @@ import androidx.annotation.AnyThread
 import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
+import com.datadog.android.api.feature.EventWriteScope
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureContextUpdateReceiver
 import com.datadog.android.api.feature.FeatureEventReceiver
 import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.feature.StorageBackedFeature
 import com.datadog.android.api.net.RequestFactory
-import com.datadog.android.api.storage.EventBatchWriter
 import com.datadog.android.api.storage.FeatureStorageConfiguration
 import com.datadog.android.api.storage.datastore.DataStoreHandler
 import com.datadog.android.core.configuration.UploadSchedulerStrategy
@@ -52,6 +52,8 @@ import com.datadog.android.core.internal.persistence.file.NoOpFileOrchestrator
 import com.datadog.android.core.internal.persistence.file.advanced.FeatureFileOrchestrator
 import com.datadog.android.core.internal.persistence.file.batch.BatchFileReaderWriter
 import com.datadog.android.core.internal.persistence.tlvformat.TLVBlockFileReader
+import com.datadog.android.core.internal.utils.executeSafe
+import com.datadog.android.core.internal.utils.submitSafe
 import com.datadog.android.core.persistence.PersistenceStrategy
 import com.datadog.android.internal.profiler.BenchmarkSdkUploads
 import com.datadog.android.internal.profiler.GlobalBenchmark
@@ -59,7 +61,10 @@ import com.datadog.android.privacy.TrackingConsentProviderCallback
 import com.datadog.android.security.Encryption
 import java.util.Collections
 import java.util.Locale
+import java.util.concurrent.Callable
+import java.util.concurrent.CancellationException
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.ExecutionException
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
 
@@ -169,16 +174,43 @@ internal class SdkFeature(
     // region FeatureScope
 
     override fun withWriteContext(
-        callback: (DatadogContext, EventBatchWriter) -> Unit
+        callback: (DatadogContext, EventWriteScope) -> Unit
     ) {
-        // TODO RUM-1462 thread safety. Thread switch happens in Storage right now. Open questions:
-        // * what if caller wants to have a sync operation, without thread switch
-        // * should context read and write be on the dedicated thread? risk - time gap between
-        // caller and context
-        val contextProvider = coreFeature.contextProvider
-        if (contextProvider is NoOpContextProvider) return
-        val context = contextProvider.context
-        storage.writeCurrentBatch(context) { callback(context, it) }
+        coreFeature.contextExecutorService
+            .executeSafe("withWriteContext-${wrappedFeature.name}", internalLogger) {
+                val contextProvider = coreFeature.contextProvider
+                if (contextProvider is NoOpContextProvider) return@executeSafe
+                val context = contextProvider.context
+                val eventBatchWriteScope = storage.getEventWriteScope(context)
+                callback(context, eventBatchWriteScope)
+            }
+    }
+
+    override fun getWriteContextSync(): Pair<DatadogContext, EventWriteScope>? {
+        val future = coreFeature.contextExecutorService
+            .submitSafe(
+                "getWriteContextSync-${wrappedFeature.name}",
+                internalLogger,
+                Callable {
+                    val contextProvider = coreFeature.contextProvider
+                    if (contextProvider is NoOpContextProvider) return@Callable null
+                    val context = contextProvider.context
+                    val eventBatchWriteScope = storage.getEventWriteScope(context)
+                    context to eventBatchWriteScope
+                }
+            )
+        return try {
+            future?.get()
+        } catch (e: CancellationException) {
+            logGetWriteContextSyncError(e)
+            null
+        } catch (e: ExecutionException) {
+            logGetWriteContextSyncError(e)
+            null
+        } catch (e: InterruptedException) {
+            logGetWriteContextSyncError(e)
+            null
+        }
     }
 
     override fun sendEvent(event: Any) {
@@ -429,6 +461,15 @@ internal class SdkFeature(
         )
     }
 
+    private fun logGetWriteContextSyncError(e: Exception) {
+        internalLogger.log(
+            level = InternalLogger.Level.ERROR,
+            target = InternalLogger.Target.USER,
+            { FAILED_TO_GET_WRITE_CONTEXT_SYNC },
+            e
+        )
+    }
+
     // endregion
 
     // Used for nightly tests only
@@ -452,6 +493,7 @@ internal class SdkFeature(
             "Feature \"%s\" already has this listener registered."
         const val NO_EVENT_RECEIVER =
             "Feature \"%s\" has no event receiver registered, ignoring event."
+        internal const val FAILED_TO_GET_WRITE_CONTEXT_SYNC = "Failed to get write context in a sync manner."
         internal const val TRACK_NAME = "track"
         internal const val METER_NAME = "dd-sdk-android"
         internal const val BATCH_COUNT_METRIC_NAME = "android.benchmark.batch_count"

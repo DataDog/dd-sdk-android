@@ -8,6 +8,7 @@ package com.datadog.android.webview.internal.log
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
+import com.datadog.android.api.feature.EventWriteScope
 import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.storage.DataWriter
@@ -76,6 +77,9 @@ internal class WebViewLogEventConsumerTest {
     @Mock
     lateinit var mockEventBatchWriter: EventBatchWriter
 
+    @Mock
+    lateinit var mockEventWriteScope: EventWriteScope
+
     @Forgery
     lateinit var fakeDatadogContext: DatadogContext
 
@@ -100,9 +104,13 @@ internal class WebViewLogEventConsumerTest {
         ) doReturn mockWebViewLogsFeatureScope
         whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
 
+        whenever(mockEventWriteScope.invoke(any())) doAnswer {
+            val callback = it.getArgument<(EventBatchWriter) -> Unit>(0)
+            callback.invoke(mockEventBatchWriter)
+        }
         whenever(mockWebViewLogsFeatureScope.withWriteContext(any())) doAnswer {
-            val callback = it.getArgument<(DatadogContext, EventBatchWriter) -> Unit>(0)
-            callback.invoke(fakeDatadogContext, mockEventBatchWriter)
+            val callback = it.getArgument<(DatadogContext, EventWriteScope) -> Unit>(0)
+            callback.invoke(fakeDatadogContext, mockEventWriteScope)
         }
 
         testedConsumer = WebViewLogEventConsumer(

@@ -7,6 +7,7 @@
 package com.datadog.android.log.internal.logger
 
 import com.datadog.android.api.context.DatadogContext
+import com.datadog.android.api.feature.EventWriteScope
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.feature.FeatureSdkCore
@@ -100,6 +101,9 @@ internal class DatadogLogHandlerTest {
     lateinit var mockRumFeature: FeatureScope
 
     @Mock
+    lateinit var mockEventWriteScope: EventWriteScope
+
+    @Mock
     lateinit var mockEventBatchWriter: EventBatchWriter
 
     @Mock
@@ -137,9 +141,13 @@ internal class DatadogLogHandlerTest {
             mockSdkCore.getFeature(Feature.LOGS_FEATURE_NAME)
         ) doReturn mockLogsFeatureScope
         whenever(mockLogsFeatureScope.unwrap<LogsFeature>()) doReturn mockLogsFeature
+        whenever(mockEventWriteScope.invoke(any())) doAnswer {
+            val callback = it.getArgument<(EventBatchWriter) -> Unit>(0)
+            callback.invoke(mockEventBatchWriter)
+        }
         whenever(mockLogsFeatureScope.withWriteContext(any())) doAnswer {
-            val callback = it.getArgument<(DatadogContext, EventBatchWriter) -> Unit>(0)
-            callback.invoke(fakeDatadogContext, mockEventBatchWriter)
+            val callback = it.getArgument<(DatadogContext, EventWriteScope) -> Unit>(0)
+            callback.invoke(fakeDatadogContext, mockEventWriteScope)
         }
 
         whenever(

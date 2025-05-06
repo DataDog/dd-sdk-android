@@ -20,17 +20,19 @@ internal class SessionReplayResourcesWriter(
 ) : ResourcesWriter {
     override fun write(enrichedResource: EnrichedResource) {
         sdkCore.getFeature(SESSION_REPLAY_RESOURCES_FEATURE_NAME)
-            ?.withWriteContext { datadogContext, eventBatchWriter ->
-                synchronized(this) {
-                    val serializedMetadata = enrichedResource.asBinaryMetadata(datadogContext.rumApplicationId)
-                    eventBatchWriter.write(
-                        event = RawBatchEvent(
-                            data = enrichedResource.resource,
-                            metadata = serializedMetadata
-                        ),
-                        batchMetadata = null,
-                        eventType = EventType.DEFAULT
-                    )
+            ?.withWriteContext { datadogContext, writeScope ->
+                writeScope {
+                    synchronized(this@SessionReplayResourcesWriter) {
+                        val serializedMetadata = enrichedResource.asBinaryMetadata(datadogContext.rumApplicationId)
+                        it.write(
+                            event = RawBatchEvent(
+                                data = enrichedResource.resource,
+                                metadata = serializedMetadata
+                            ),
+                            batchMetadata = null,
+                            eventType = EventType.DEFAULT
+                        )
+                    }
                 }
             }
     }

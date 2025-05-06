@@ -7,6 +7,7 @@
 package com.datadog.android.sessionreplay.internal.storage
 
 import com.datadog.android.api.context.DatadogContext
+import com.datadog.android.api.feature.EventWriteScope
 import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.storage.EventBatchWriter
@@ -60,6 +61,9 @@ internal class SessionReplayRecordWriterTest {
     @Mock
     lateinit var mockEventBatchWriter: EventBatchWriter
 
+    @Mock
+    lateinit var mockEventWriteScope: EventWriteScope
+
     @BeforeEach
     fun `set up`() {
         whenever(mockEventBatchWriter.write(anyOrNull(), anyOrNull(), any()))
@@ -75,9 +79,13 @@ internal class SessionReplayRecordWriterTest {
     fun `M write the record in a batch W write`(forge: Forge) {
         // Given
         val fakeRecord = forge.forgeEnrichedRecord()
+        whenever(mockEventWriteScope.invoke(any())) doAnswer {
+            val callback = it.getArgument<(EventBatchWriter) -> Unit>(0)
+            callback.invoke(mockEventBatchWriter)
+        }
         whenever(mockSessionReplayFeature.withWriteContext(any())) doAnswer {
-            val callback = it.getArgument<(DatadogContext, EventBatchWriter) -> Unit>(0)
-            callback.invoke(fakeDatadogContext, mockEventBatchWriter)
+            val callback = it.getArgument<(DatadogContext, EventWriteScope) -> Unit>(0)
+            callback.invoke(fakeDatadogContext, mockEventWriteScope)
         }
 
         // When
@@ -117,9 +125,13 @@ internal class SessionReplayRecordWriterTest {
             .thenReturn(false)
 
         val fakeRecord = forge.forgeEnrichedRecord()
+        whenever(mockEventWriteScope.invoke(any())) doAnswer {
+            val callback = it.getArgument<(EventBatchWriter) -> Unit>(0)
+            callback.invoke(mockEventBatchWriter)
+        }
         whenever(mockSessionReplayFeature.withWriteContext(any())) doAnswer {
-            val callback = it.getArgument<(DatadogContext, EventBatchWriter) -> Unit>(0)
-            callback.invoke(fakeDatadogContext, mockEventBatchWriter)
+            val callback = it.getArgument<(DatadogContext, EventWriteScope) -> Unit>(0)
+            callback.invoke(fakeDatadogContext, mockEventWriteScope)
         }
 
         // When

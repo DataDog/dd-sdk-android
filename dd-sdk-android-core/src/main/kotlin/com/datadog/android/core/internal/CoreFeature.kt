@@ -59,6 +59,7 @@ import com.datadog.android.core.internal.system.NoOpAppVersionProvider
 import com.datadog.android.core.internal.system.NoOpSystemInfoProvider
 import com.datadog.android.core.internal.system.SystemInfoProvider
 import com.datadog.android.core.internal.thread.BackPressureExecutorService
+import com.datadog.android.core.internal.thread.DatadogThreadFactory
 import com.datadog.android.core.internal.thread.LoggingScheduledThreadPoolExecutor
 import com.datadog.android.core.internal.thread.ScheduledExecutorServiceFactory
 import com.datadog.android.core.internal.time.AppStartTimeProvider
@@ -97,8 +98,10 @@ import java.lang.ref.WeakReference
 import java.util.Locale
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ExecutorService
+import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.ScheduledThreadPoolExecutor
+import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -144,6 +147,7 @@ internal class CoreFeature(
 
     internal lateinit var uploadExecutorService: ScheduledThreadPoolExecutor
     internal lateinit var persistenceExecutorService: FlushableExecutorService
+    internal lateinit var contextExecutorService: ThreadPoolExecutor
     internal lateinit var backpressureStrategy: BackPressureStrategy
 
     internal var localDataEncryption: Encryption? = null
@@ -286,6 +290,7 @@ internal class CoreFeature(
     fun drainAndShutdownExecutors() {
         val tasks = arrayListOf<Runnable>()
 
+        contextExecutorService.queue.drainTo(tasks)
         persistenceExecutorService.drainTo(tasks)
 
         uploadExecutorService
@@ -295,9 +300,11 @@ internal class CoreFeature(
         // we need to make sure we drain the runnable list in both executors first
         // then we shut them down by using the await termination method to make sure we block
         // the thread until the active task is finished.
+        contextExecutorService.shutdown()
         persistenceExecutorService.shutdown()
         uploadExecutorService.shutdown()
 
+        contextExecutorService.awaitTermination(DRAIN_WAIT_SECONDS, TimeUnit.SECONDS)
         persistenceExecutorService.awaitTermination(DRAIN_WAIT_SECONDS, TimeUnit.SECONDS)
         uploadExecutorService.awaitTermination(DRAIN_WAIT_SECONDS, TimeUnit.SECONDS)
 
@@ -613,6 +620,19 @@ internal class CoreFeature(
             executorContext = "storage",
             backPressureStrategy = backpressureStrategy
         )
+        // TODO RUM-9851 Switch to the executor which is aware of backpressure, but only logs it
+        @Suppress("UnsafeThirdPartyFunctionCall") // all parameters are safe
+        contextExecutorService = ThreadPoolExecutor(
+            // core pool size
+            1,
+            // max pool size,
+            1,
+            // keep-alive time
+            0L,
+            TimeUnit.MILLISECONDS,
+            LinkedBlockingQueue(),
+            DatadogThreadFactory("context")
+        )
     }
 
     private fun resolveProcessInfo(appContext: Context) {
@@ -637,10 +657,12 @@ internal class CoreFeature(
 
     private fun shutDownExecutors() {
         uploadExecutorService.shutdownNow()
+        contextExecutorService.shutdownNow()
         persistenceExecutorService.shutdownNow()
 
         try {
             uploadExecutorService.awaitTermination(1, TimeUnit.SECONDS)
+            contextExecutorService.awaitTermination(1, TimeUnit.SECONDS)
             persistenceExecutorService.awaitTermination(1, TimeUnit.SECONDS)
         } catch (e: InterruptedException) {
             try {
