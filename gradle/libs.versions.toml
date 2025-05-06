@@ -103,6 +103,8 @@ protobufVersion = "4.26.1"
 protobufGradlePlugin = "0.9.3"
 
 
+androidPerfetto = "1.0.0"
+
 [libraries]
 
 # Classpaths
@@ -135,6 +137,7 @@ assertJ = { module = "org.assertj:assertj-core", version.ref = "assertJ" }
 protobuf = { module = "com.google.protobuf:protobuf-javalite", version.ref = "protobufVersion" }
 
 # Android libs
+androidPerfettoBinary = { module = "androidx.tracing:tracing-perfetto-binary", version.ref = "androidPerfetto" }
 androidDesugaringSdk = { module = "com.android.tools:desugar_jdk_libs", version.ref = "androidDesugaringSdk" }
 androidXAnnotation = { module = "androidx.annotation:annotation", version.ref = "androidXAnnotations" }
 androidXAppCompat = { module = "androidx.appcompat:appcompat", version.ref = "androidXAppCompat" }
