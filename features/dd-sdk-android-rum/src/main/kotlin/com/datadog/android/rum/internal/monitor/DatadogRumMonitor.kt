@@ -49,6 +49,7 @@ import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.rum.metric.interactiontonextview.LastInteractionIdentifier
 import com.datadog.android.rum.metric.networksettled.InitialResourceIdentifier
 import com.datadog.android.rum.profiling.MergeTraceDumper
+import com.datadog.android.rum.profiling.Profiler
 import com.datadog.android.rum.resource.ResourceId
 import com.datadog.android.telemetry.internal.TelemetryEventHandler
 import java.util.Locale
@@ -167,7 +168,10 @@ internal class DatadogRumMonitor(
 
     override fun startView(key: Any, name: String, attributes: Map<String, Any?>) {
         if (appWasStarted.compareAndSet(false, true)) {
-            MergeTraceDumper.getInstance().stopDumpingTrace()
+            Thread {
+                Thread.sleep(10000)
+                Profiler.stopProfiling()
+            }.start()
         }
         val eventTime = getEventTime(attributes)
         handleEvent(

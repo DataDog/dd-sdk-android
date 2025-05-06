@@ -5,6 +5,7 @@
  */
 @file:Suppress("StringLiteralDuplication")
 
+import com.datadog.gradle.Dependencies
 import com.datadog.gradle.config.androidLibraryConfig
 import com.datadog.gradle.config.dependencyUpdateConfig
 import com.datadog.gradle.config.detektCustomConfig
@@ -45,7 +46,13 @@ plugins {
 android {
     defaultConfig {
         consumerProguardFiles(Paths.get(rootDir.path, "consumer-rules.pro").toString())
+        externalNativeBuild {
+            cmake {
+                version = Dependencies.Versions.CMake
+            }
+        }
     }
+
     sourceSets {
         getByName("main") {
             proto {
@@ -56,6 +63,14 @@ android {
             }
         }
     }
+    externalNativeBuild {
+        cmake {
+            path = File("$projectDir/CMakeLists.txt")
+            version = Dependencies.Versions.CMake
+        }
+    }
+
+    ndkVersion = Dependencies.Versions.Ndk
 
     namespace = "com.datadog.android.rum"
 }
@@ -74,6 +89,7 @@ dependencies {
     implementation(libs.androidXRecyclerView)
     implementation(libs.androidXFragment)
     implementation(libs.protobuf)
+//    implementation(libs.androidPerfettoBinary)
 
     // Generate NoOp implementations
     ksp(project(":tools:noopfactory"))
