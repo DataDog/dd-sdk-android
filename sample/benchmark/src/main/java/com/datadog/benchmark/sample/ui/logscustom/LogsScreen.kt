@@ -26,7 +26,7 @@ import com.datadog.benchmark.sample.ui.ALL_LOG_LEVELS
 import com.datadog.benchmark.sample.ui.LogPayloadSize
 import com.datadog.benchmark.sample.ui.common.ExpandedItemView
 import com.datadog.benchmark.sample.ui.common.ValueChooserItemView
-import com.datadog.benchmark.sample.ui.stringRepresentation
+import com.datadog.benchmark.sample.ui.logStringRepresentation
 
 @Suppress("LongMethod")
 @Composable
@@ -46,8 +46,8 @@ internal fun LogsScreen(
         ExpandedItemView(
             titleText = "Log level",
             items = ALL_LOG_LEVELS,
-            headerText = state.config.logLevel.stringRepresentation(),
-            itemTextFactory = { it.stringRepresentation() },
+            headerText = state.config.logLevel.logStringRepresentation(),
+            itemTextFactory = { it.logStringRepresentation() },
             onClick = { dispatch(LogsScreenAction.SelectLogLevel(it)) }
         )
 

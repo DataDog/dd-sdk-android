@@ -19,7 +19,7 @@ import com.datadog.benchmark.sample.ui.ALL_LOG_LEVELS
 import com.datadog.benchmark.sample.ui.LogPayloadSize
 import com.datadog.benchmark.sample.ui.common.ExpandedItemView
 import com.datadog.benchmark.sample.ui.common.ValueChooserItemView
-import com.datadog.benchmark.sample.ui.stringRepresentation
+import com.datadog.benchmark.sample.ui.logStringRepresentation
 
 @Composable
 internal fun LogsHeavyTrafficSettingsScreen(
@@ -42,8 +42,8 @@ internal fun LogsHeavyTrafficSettingsScreen(
         ExpandedItemView(
             titleText = "Log level",
             items = ALL_LOG_LEVELS,
-            headerText = config.logLevel.stringRepresentation(),
-            itemTextFactory = { it.stringRepresentation() },
+            headerText = config.logLevel.logStringRepresentation(),
+            itemTextFactory = { it.logStringRepresentation() },
             onClick = { dispatch(LogsHeavyTrafficScreenAction.SelectLogLevel(it)) }
         )
 

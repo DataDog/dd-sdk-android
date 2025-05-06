@@ -34,7 +34,7 @@ internal val ALL_LOG_LEVELS = listOf(
     Log.DEBUG
 )
 
-internal fun Int.stringRepresentation(): String {
+internal fun Int.logStringRepresentation(): String {
     return when (this) {
         Log.ERROR -> "ERROR"
         Log.VERBOSE -> "VERBOSE"
