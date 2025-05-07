@@ -11,6 +11,7 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.context.NetworkInfo
 import com.datadog.android.api.context.UserInfo
+import com.datadog.android.api.feature.EventWriteScope
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.feature.FeatureSdkCore
@@ -82,6 +83,9 @@ internal class LogsFeatureTest {
     lateinit var mockLogsFeatureScope: FeatureScope
 
     @Mock
+    lateinit var mockEventWriteScope: EventWriteScope
+
+    @Mock
     lateinit var mockEventBatchWriter: EventBatchWriter
 
     @Mock
@@ -142,9 +146,13 @@ internal class LogsFeatureTest {
             mockSdkCore.getFeature(Feature.LOGS_FEATURE_NAME)
         ) doReturn mockLogsFeatureScope
 
+        whenever(mockEventWriteScope.invoke(any())) doAnswer {
+            val callback = it.getArgument<(EventBatchWriter) -> Unit>(0)
+            callback.invoke(mockEventBatchWriter)
+        }
         whenever(mockLogsFeatureScope.withWriteContext(any())) doAnswer {
-            val callback = it.getArgument<(DatadogContext, EventBatchWriter) -> Unit>(0)
-            callback.invoke(fakeDatadogContext, mockEventBatchWriter)
+            val callback = it.getArgument<(DatadogContext, EventWriteScope) -> Unit>(0)
+            callback.invoke(fakeDatadogContext, mockEventWriteScope)
         }
 
         fakeDatadogContext = fakeDatadogContext.copy(
@@ -372,6 +380,7 @@ internal class LogsFeatureTest {
             throwable = fakeThrowable,
             threads = fakeThreads
         )
+        whenever(mockLogsFeatureScope.getWriteContextSync()) doReturn (fakeDatadogContext to mockEventWriteScope)
 
         // When
         testedFeature.onReceive(event)
@@ -445,6 +454,7 @@ internal class LogsFeatureTest {
             throwable = fakeThrowable,
             threads = forge.aList { forge.getForgery() }
         )
+        whenever(mockLogsFeatureScope.getWriteContextSync()) doReturn (fakeDatadogContext to mockEventWriteScope)
 
         // When
         testedFeature.onReceive(event)
@@ -479,14 +489,16 @@ internal class LogsFeatureTest {
         forge: Forge
     ) {
         // Given
-        whenever(mockLogsFeatureScope.withWriteContext(any())) doAnswer {
-            val callback = it.getArgument<(DatadogContext, EventBatchWriter) -> Unit>(0)
+        whenever(mockEventWriteScope.invoke(any())) doAnswer {
+            val callback = it.getArgument<(EventBatchWriter) -> Unit>(0)
             val executor = Executors.newSingleThreadExecutor()
             executor.execute {
                 Thread.sleep(300)
-                callback.invoke(fakeDatadogContext, mockEventBatchWriter)
+                callback.invoke(mockEventBatchWriter)
+                executor.shutdown()
             }
         }
+        whenever(mockLogsFeatureScope.getWriteContextSync()) doReturn (fakeDatadogContext to mockEventWriteScope)
         testedFeature.dataWriter = mockDataWriter
         val fakeThrowable = forge.aThrowable()
         val event = JvmCrash.Logs(
@@ -561,14 +573,16 @@ internal class LogsFeatureTest {
         forge: Forge
     ) {
         // Given
-        whenever(mockLogsFeatureScope.withWriteContext(any())) doAnswer {
-            val callback = it.getArgument<(DatadogContext, EventBatchWriter) -> Unit>(0)
+        whenever(mockEventWriteScope.invoke(any())) doAnswer {
+            val callback = it.getArgument<(EventBatchWriter) -> Unit>(0)
             val executor = Executors.newSingleThreadExecutor()
             executor.execute {
                 Thread.sleep(LogsFeature.MAX_WRITE_WAIT_TIMEOUT_MS + 200)
-                callback.invoke(fakeDatadogContext, mockEventBatchWriter)
+                callback.invoke(mockEventBatchWriter)
+                executor.shutdown()
             }
         }
+        whenever(mockLogsFeatureScope.getWriteContextSync()) doReturn (fakeDatadogContext to mockEventWriteScope)
         testedFeature.dataWriter = mockDataWriter
         val fakeThrowable = forge.aThrowable()
         val event = JvmCrash.Logs(
@@ -584,7 +598,7 @@ internal class LogsFeatureTest {
         testedFeature.onReceive(event)
 
         // Then
-        verify(mockLogsFeatureScope).withWriteContext(any())
+        verify(mockLogsFeatureScope).getWriteContextSync()
         verifyNoInteractions(mockDataWriter)
     }
 

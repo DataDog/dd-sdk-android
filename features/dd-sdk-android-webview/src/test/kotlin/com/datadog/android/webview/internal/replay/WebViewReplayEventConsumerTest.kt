@@ -8,6 +8,7 @@ package com.datadog.android.webview.internal.replay
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
+import com.datadog.android.api.feature.EventWriteScope
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.storage.DataWriter
@@ -88,6 +89,9 @@ internal class WebViewReplayEventConsumerTest {
     @Mock
     lateinit var mockEventBatchWriter: EventBatchWriter
 
+    @Mock
+    lateinit var mockEventWriteScope: EventWriteScope
+
     @BeforeEach
     fun `set up`(forge: Forge) {
         fakeSessionReplayFeatureContext = forge.aMap {
@@ -113,9 +117,13 @@ internal class WebViewReplayEventConsumerTest {
         whenever(
             mockSdkCore.getFeature(WebViewReplayFeature.WEB_REPLAY_FEATURE_NAME)
         ) doReturn mockSessionReplayFeatureScope
+        whenever(mockEventWriteScope.invoke(any())) doAnswer {
+            val callback = it.getArgument<(EventBatchWriter) -> Unit>(0)
+            callback.invoke(mockEventBatchWriter)
+        }
         whenever(mockSessionReplayFeatureScope.withWriteContext(any())) doAnswer {
-            val callback = it.getArgument<(DatadogContext, EventBatchWriter) -> Unit>(0)
-            callback.invoke(fakeDatadogContext, mockEventBatchWriter)
+            val callback = it.getArgument<(DatadogContext, EventWriteScope) -> Unit>(0)
+            callback.invoke(fakeDatadogContext, mockEventWriteScope)
         }
         whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
 

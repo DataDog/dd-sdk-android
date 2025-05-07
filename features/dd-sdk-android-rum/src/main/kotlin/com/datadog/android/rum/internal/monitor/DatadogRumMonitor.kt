@@ -675,21 +675,35 @@ internal class DatadogRumMonitor(
     internal fun handleEvent(event: RumRawEvent) {
         if (event is RumRawEvent.AddError && event.isFatal) {
             synchronized(rootScope) {
-                @Suppress("ThreadSafety") // Crash handling, can't delegate to another thread
-                rootScope.handleEvent(event, writer)
+                // TODO RUM-9852 Implement better passthrough mechanism for the JVM crash scenario
+                val writeContext = sdkCore.getFeature(Feature.RUM_FEATURE_NAME)
+                    ?.getWriteContextSync()
+                if (writeContext != null) {
+                    val (datadogContext, eventWriteScope) = writeContext
+                    @Suppress("ThreadSafety") // Crash handling, can't delegate to another thread
+                    rootScope.handleEvent(event, datadogContext, eventWriteScope, writer)
+                } else {
+                    sdkCore.internalLogger.log(
+                        InternalLogger.Level.WARN,
+                        InternalLogger.Target.USER,
+                        { CANNOT_WRITE_CRASH_WRITE_CONTEXT_IS_NOT_AVAILABLE }
+                    )
+                }
             }
         } else if (event is RumRawEvent.TelemetryEventWrapper) {
             telemetryEventHandler.handleEvent(event, writer)
         } else {
             handler.removeCallbacks(keepAliveRunnable)
-            // avoid trowing a RejectedExecutionException
-            if (!executorService.isShutdown) {
-                executorService.executeSafe("Rum event handling", sdkCore.internalLogger) {
-                    synchronized(rootScope) {
-                        rootScope.handleEvent(event, writer)
-                        notifyDebugListenerWithState()
+            sdkCore.getFeature(Feature.RUM_FEATURE_NAME)?.withWriteContext { datadogContext, writeScope ->
+                // avoid trowing a RejectedExecutionException
+                if (!executorService.isShutdown) {
+                    executorService.executeSafe("Rum event handling", sdkCore.internalLogger) {
+                        synchronized(rootScope) {
+                            rootScope.handleEvent(event, datadogContext, writeScope, writer)
+                            notifyDebugListenerWithState()
+                        }
+                        handler.postDelayed(keepAliveRunnable, KEEP_ALIVE_MS)
                     }
-                    handler.postDelayed(keepAliveRunnable, KEEP_ALIVE_MS)
                 }
             }
         }
@@ -771,5 +785,8 @@ internal class DatadogRumMonitor(
 
         internal const val RUM_DEBUG_RUM_NOT_ENABLED_WARNING =
             "Cannot switch RUM debugging, because RUM feature is not enabled."
+
+        internal const val CANNOT_WRITE_CRASH_WRITE_CONTEXT_IS_NOT_AVAILABLE =
+            "Cannot write JVM crash, because write context is not available."
     }
 }

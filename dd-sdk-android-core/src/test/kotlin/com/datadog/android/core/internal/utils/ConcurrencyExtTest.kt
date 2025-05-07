@@ -28,7 +28,9 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
+import java.util.concurrent.Callable
 import java.util.concurrent.ExecutorService
+import java.util.concurrent.Future
 import java.util.concurrent.RejectedExecutionException
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.ScheduledFuture
@@ -133,13 +135,13 @@ internal class ConcurrencyExtTest {
     }
 
     @Test
-    fun `M submit task W submitSafe()`(
+    fun `M submit task W submitSafe() {runnable} `(
         @StringForgery name: String
     ) {
         // Given
         val service: ExecutorService = mock()
         val runnable: Runnable = mock()
-        val future: ScheduledFuture<*> = mock()
+        val future: Future<*> = mock()
         whenever(service.submit(runnable)) doReturn future
 
         // When
@@ -151,7 +153,7 @@ internal class ConcurrencyExtTest {
     }
 
     @Test
-    fun `M not throw W submitSafe() {rejected exception}`(
+    fun `M not throw W submitSafe() {runnable, rejected exception}`(
         @StringForgery name: String,
         @StringForgery message: String
     ) {
@@ -162,11 +164,54 @@ internal class ConcurrencyExtTest {
         doThrow(exception).whenever(service).submit(runnable)
 
         // When
-        val result: Any? = service.submitSafe(name, mockInternalLogger, runnable)
+        val result = service.submitSafe(name, mockInternalLogger, runnable)
 
         // Then
         assertThat(result).isNull()
         verify(service).submit(runnable)
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+            "Unable to schedule $name task on the executor",
+            exception
+        )
+    }
+
+    @Test
+    fun `M submit task W submitSafe() {callable} `(
+        @StringForgery name: String
+    ) {
+        // Given
+        val service: ExecutorService = mock()
+        val callable: Callable<Any> = mock()
+        val future: Future<Any> = mock()
+        whenever(service.submit(callable)) doReturn future
+
+        // When
+        val result = service.submitSafe(name, mockInternalLogger, callable)
+
+        // Then
+        assertThat(result).isSameAs(future)
+        verify(service).submit(callable)
+    }
+
+    @Test
+    fun `M not throw W submitSafe() {callable, rejected exception}`(
+        @StringForgery name: String,
+        @StringForgery message: String
+    ) {
+        // Given
+        val service: ExecutorService = mock()
+        val callable: Callable<Any> = mock()
+        val exception = RejectedExecutionException(message)
+        doThrow(exception).whenever(service).submit(callable)
+
+        // When
+        val result = service.submitSafe(name, mockInternalLogger, callable)
+
+        // Then
+        assertThat(result).isNull()
+        verify(service).submit(callable)
         mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),

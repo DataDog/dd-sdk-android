@@ -10,6 +10,7 @@ import android.webkit.WebSettings
 import android.webkit.WebView
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
+import com.datadog.android.api.feature.EventWriteScope
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.feature.FeatureSdkCore
@@ -626,6 +627,11 @@ internal class WebViewTrackingTest {
         val mockDatadogContext = mock<DatadogContext>()
         whenever(mockDatadogContext.featuresContext) doReturn fakeFeaturesContext
         val mockEventBatchWriter = mock<EventBatchWriter>()
+        val mockEventWriteScope = mock<EventWriteScope>()
+        whenever(mockEventWriteScope.invoke(any())) doAnswer {
+            val callback = it.getArgument<(EventBatchWriter) -> Unit>(0)
+            callback(mockEventBatchWriter)
+        }
         val proxy = WebViewTracking._InternalWebViewProxy(
             mockCore,
             System.identityHashCode(mockWebView).toString()
@@ -633,9 +639,9 @@ internal class WebViewTrackingTest {
 
         // When
         proxy.consumeWebviewEvent(fakeWebEvent.toString())
-        argumentCaptor<(DatadogContext, EventBatchWriter) -> Unit> {
+        argumentCaptor<(DatadogContext, EventWriteScope) -> Unit> {
             verify(mockWebViewRumFeature).withWriteContext(capture())
-            firstValue(mockDatadogContext, mockEventBatchWriter)
+            firstValue(mockDatadogContext, mockEventWriteScope)
         }
 
         // Then

@@ -10,7 +10,7 @@ import androidx.annotation.AnyThread
 import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
-import com.datadog.android.api.storage.EventBatchWriter
+import com.datadog.android.api.feature.EventWriteScope
 import com.datadog.android.core.internal.data.upload.DataOkHttpUploader.Companion.HTTP_ACCEPTED
 import com.datadog.android.core.internal.metrics.BenchmarkUploads
 import com.datadog.android.core.internal.metrics.MetricsDispatcher
@@ -45,46 +45,40 @@ internal class ConsentAwareStorage(
     /**
      * Keeps track of files currently being read.
      */
-    private val lockedBatches: MutableSet<Batch> = mutableSetOf()
+    private val lockedReadBatches: MutableSet<Batch> = mutableSetOf()
 
     private val writeLock = Any()
 
     /** @inheritdoc */
     @WorkerThread
-    override fun writeCurrentBatch(
-        datadogContext: DatadogContext,
-        callback: (EventBatchWriter) -> Unit
-    ) {
-        executorService.executeSafe("Data write", internalLogger) {
-            val orchestrator = resolveOrchestrator(datadogContext)
-            // TODO RUM-9712 Put performance metric for event processing + event write measurement
-            if (orchestrator == null) {
-                callback.invoke(NoOpEventBatchWriter())
-                return@executeSafe
-            }
-            synchronized(writeLock) {
-                val writer = FileEventBatchWriter(
-                    fileOrchestrator = orchestrator,
-                    eventsWriter = batchEventsReaderWriter,
-                    metadataReaderWriter = batchMetadataReaderWriter,
-                    filePersistenceConfig = filePersistenceConfig,
-                    batchWriteEventListener = this,
-                    internalLogger = internalLogger
-                )
-                callback.invoke(writer)
-            }
+    override fun getEventWriteScope(
+        datadogContext: DatadogContext
+    ): EventWriteScope {
+        val orchestrator = resolveOrchestrator(datadogContext)
+        // TODO RUM-9712 Put performance metric for event processing + event write measurement
+        if (orchestrator == null) {
+            return AsyncEventWriteScope(executorService, NoOpEventBatchWriter(), writeLock, featureName, internalLogger)
         }
+        val writer = FileEventBatchWriter(
+            fileOrchestrator = orchestrator,
+            eventsWriter = batchEventsReaderWriter,
+            metadataReaderWriter = batchMetadataReaderWriter,
+            filePersistenceConfig = filePersistenceConfig,
+            batchWriteEventListener = this,
+            internalLogger = internalLogger
+        )
+        return AsyncEventWriteScope(executorService, writer, writeLock, featureName, internalLogger)
     }
 
     /** @inheritdoc */
     @WorkerThread
     override fun readNextBatch(): BatchData? {
-        val (batchFile, metaFile) = synchronized(lockedBatches) {
+        val (batchFile, metaFile) = synchronized(lockedReadBatches) {
             val batchFile = grantedOrchestrator
-                .getReadableFile(lockedBatches.map { it.file }.toSet()) ?: return null
+                .getReadableFile(lockedReadBatches.map { it.file }.toSet()) ?: return null
 
             val metaFile = grantedOrchestrator.getMetadataFile(batchFile)
-            lockedBatches.add(Batch(batchFile, metaFile))
+            lockedReadBatches.add(Batch(batchFile, metaFile))
             batchFile to metaFile
         }
 
@@ -106,15 +100,15 @@ internal class ConsentAwareStorage(
         removalReason: RemovalReason,
         deleteBatch: Boolean
     ) {
-        val batch = synchronized(lockedBatches) {
-            lockedBatches.firstOrNull { batchId.matchesFile(it.file) }
+        val batch = synchronized(lockedReadBatches) {
+            lockedReadBatches.firstOrNull { batchId.matchesFile(it.file) }
         } ?: return
 
         if (deleteBatch) {
             deleteBatch(batch, removalReason)
         }
-        synchronized(lockedBatches) {
-            lockedBatches.remove(batch)
+        synchronized(lockedReadBatches) {
+            lockedReadBatches.remove(batch)
         }
     }
 
@@ -122,11 +116,11 @@ internal class ConsentAwareStorage(
     @AnyThread
     override fun dropAll() {
         executorService.executeSafe("ConsentAwareStorage.dropAll", internalLogger) {
-            synchronized(lockedBatches) {
-                lockedBatches.forEach {
+            synchronized(lockedReadBatches) {
+                lockedReadBatches.forEach {
                     deleteBatch(it, RemovalReason.Flushed)
                 }
-                lockedBatches.clear()
+                lockedReadBatches.clear()
             }
             arrayOf(pendingOrchestrator, grantedOrchestrator).forEach { orchestrator ->
                 orchestrator.getAllFiles().forEach {

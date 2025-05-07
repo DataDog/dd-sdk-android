@@ -26,16 +26,18 @@ internal class WebViewLogEventConsumer(
     sampleRate: Float
 ) : WebViewEventConsumer<Pair<JsonObject, String>> {
 
-    val sampler: Sampler<Unit> = RateBasedSampler(sampleRate)
+    private val sampler: Sampler<Unit> = RateBasedSampler(sampleRate)
 
     override fun consume(event: Pair<JsonObject, String>) {
         if (event.second == USER_LOG_EVENT_TYPE) {
             if (sampler.sample(Unit)) {
                 sdkCore.getFeature(WebViewLogsFeature.WEB_LOGS_FEATURE_NAME)
-                    ?.withWriteContext { datadogContext, eventBatchWriter ->
+                    ?.withWriteContext { datadogContext, writeScope ->
                         val rumContext = rumContextProvider.getRumContext(datadogContext)
-                        val mappedEvent = map(event.first, datadogContext, rumContext)
-                        userLogsWriter.write(eventBatchWriter, mappedEvent, EventType.DEFAULT)
+                        writeScope {
+                            val mappedEvent = map(event.first, datadogContext, rumContext)
+                            userLogsWriter.write(it, mappedEvent, EventType.DEFAULT)
+                        }
                     }
             }
         }

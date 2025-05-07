@@ -97,6 +97,7 @@ datadog:
       - "com.datadog.android.core.internal.utils.executeSafe"
       - "com.datadog.android.core.internal.utils.scheduleSafe"
       - "com.datadog.android.api.feature.FeatureScope.withWriteContext"
+      - "com.datadog.android.api.feature.EventWriteScope.invoke"
     mainThreadSwitchingCalls:
       - "android.widget.LinearLayout.post"
   TodoWithoutTask:
@@ -222,6 +223,7 @@ datadog:
       - "java.util.concurrent.ScheduledThreadPoolExecutor.awaitTermination(kotlin.Long, java.util.concurrent.TimeUnit?):java.lang.InterruptedException"
       - "java.util.concurrent.ScheduledThreadPoolExecutor.constructor(kotlin.Int):java.lang.IllegalArgumentException"
       - "java.util.concurrent.ScheduledThreadPoolExecutor.schedule(java.lang.Runnable, kotlin.Long, java.util.concurrent.TimeUnit):java.util.concurrent.RejectedExecutionException,java.lang.NullPointerException"
+      - "java.util.concurrent.ThreadPoolExecutor.awaitTermination(kotlin.Long, java.util.concurrent.TimeUnit?):java.lang.InterruptedException"
       - "java.util.concurrent.ThreadPoolExecutor.constructor(kotlin.Int, kotlin.Int, kotlin.Long, java.util.concurrent.TimeUnit, java.util.concurrent.BlockingQueue):java.lang.NullPointerException,java.lang.IllegalArgumentException"
       # endregion
       # region Java misc
@@ -685,6 +687,7 @@ datadog:
       - "java.util.Queue.isEmpty()"
       - "java.util.Queue.isNotEmpty()"
       - "java.util.Queue.poll()"
+      - "java.util.concurrent.Callable(kotlin.Function0)"
       - "java.util.concurrent.ConcurrentHashMap.constructor()"
       - "java.util.concurrent.ConcurrentHashMap.getOrPut(kotlin.String?, kotlin.Function0)"
       - "java.util.concurrent.ConcurrentHashMap.putIfAbsent(kotlin.String, com.datadog.android.rum.internal.metric.slowframes.DefaultUISlownessMetricDispatcher.SlowFramesTelemetry)"
@@ -703,6 +706,7 @@ datadog:
       - "java.util.concurrent.ExecutorService.shutdownNow()"
       - "java.util.concurrent.Executors.newSingleThreadExecutor()"
       - "java.util.concurrent.LinkedBlockingDeque.constructor()"
+      - "java.util.concurrent.LinkedBlockingQueue.constructor()"
       - "java.util.concurrent.RejectedExecutionHandler(kotlin.Function2)"
       - "java.util.concurrent.ScheduledExecutorService.shutdownNow()"
       - "java.util.concurrent.ScheduledThreadPoolExecutor.afterExecute(java.lang.Runnable?, kotlin.Throwable?)"
@@ -719,6 +723,7 @@ datadog:
       - "java.util.concurrent.TimeUnit.NANOSECONDS.toMillis(kotlin.Long)"
       - "java.util.concurrent.TimeUnit.SECONDS.toMillis(kotlin.Long)"
       - "java.util.concurrent.TimeUnit.SECONDS.toNanos(kotlin.Long)"
+      - "java.util.concurrent.ThreadPoolExecutor.shutdownNow()"
       - "java.util.concurrent.atomic.AtomicBoolean.compareAndSet(kotlin.Boolean, kotlin.Boolean)"
       - "java.util.concurrent.atomic.AtomicBoolean.constructor(kotlin.Boolean)"
       - "java.util.concurrent.atomic.AtomicBoolean.get()"

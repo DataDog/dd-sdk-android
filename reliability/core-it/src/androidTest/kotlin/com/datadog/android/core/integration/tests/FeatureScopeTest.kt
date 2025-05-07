@@ -101,13 +101,15 @@ class FeatureScopeTest : MockServerTest() {
 
         // When
         checkNotNull(featureScope)
-        featureScope.withWriteContext { _, eventBatchWriter ->
+        featureScope.withWriteContext { _, writeScope ->
             fakeBatchData.forEach { rawBatchEvent ->
-                eventBatchWriter.write(
-                    rawBatchEvent,
-                    fakeBatchMetadata,
-                    eventType
-                )
+                writeScope {
+                    it.write(
+                        rawBatchEvent,
+                        fakeBatchMetadata,
+                        eventType
+                    )
+                }
             }
         }
 
@@ -133,13 +135,15 @@ class FeatureScopeTest : MockServerTest() {
         testedInternalSdkCore.registerFeature(stubFeature)
         val featureScope = testedInternalSdkCore.getFeature(fakeFeatureName)
         checkNotNull(featureScope)
-        featureScope.withWriteContext { _, eventBatchWriter ->
+        featureScope.withWriteContext { _, writeScope ->
             fakeBatchData.forEach { rawBatchEvent ->
-                eventBatchWriter.write(
-                    rawBatchEvent,
-                    fakeBatchMetadata,
-                    eventType
-                )
+                writeScope {
+                    it.write(
+                        rawBatchEvent,
+                        fakeBatchMetadata,
+                        eventType
+                    )
+                }
             }
         }
 
@@ -170,13 +174,15 @@ class FeatureScopeTest : MockServerTest() {
 
         // When
         checkNotNull(featureScope)
-        featureScope.withWriteContext { _, eventBatchWriter ->
+        featureScope.withWriteContext { _, writeScope ->
             fakeBatchData.forEach { rawBatchEvent ->
-                eventBatchWriter.write(
-                    rawBatchEvent,
-                    null,
-                    eventType
-                )
+                writeScope {
+                    it.write(
+                        rawBatchEvent,
+                        null,
+                        eventType
+                    )
+                }
             }
         }
 
@@ -208,13 +214,15 @@ class FeatureScopeTest : MockServerTest() {
 
         // When
         checkNotNull(featureScope)
-        featureScope.withWriteContext { _, eventBatchWriter ->
+        featureScope.withWriteContext { _, writeScope ->
             fakeBatchData.forEach { rawBatchEvent ->
-                eventBatchWriter.write(
-                    rawBatchEvent,
-                    fakeBatchMetadata,
-                    eventType
-                )
+                writeScope {
+                    it.write(
+                        rawBatchEvent,
+                        fakeBatchMetadata,
+                        eventType
+                    )
+                }
             }
         }
 
@@ -244,13 +252,15 @@ class FeatureScopeTest : MockServerTest() {
 
         // When
         checkNotNull(featureScope)
-        featureScope.withWriteContext { _, eventBatchWriter ->
+        featureScope.withWriteContext { _, writeScope ->
             fakeBatchData.forEach { rawBatchEvent ->
-                eventBatchWriter.write(
-                    rawBatchEvent,
-                    fakeBatchMetadata,
-                    eventType
-                )
+                writeScope {
+                    it.write(
+                        rawBatchEvent,
+                        fakeBatchMetadata,
+                        eventType
+                    )
+                }
             }
         }
 
@@ -274,13 +284,15 @@ class FeatureScopeTest : MockServerTest() {
         testedInternalSdkCore.registerFeature(stubFeature)
         val featureScope = testedInternalSdkCore.getFeature(fakeFeatureName)
         checkNotNull(featureScope)
-        featureScope.withWriteContext { _, eventBatchWriter ->
+        featureScope.withWriteContext { _, writeScope ->
             fakeBatchData.forEach { rawBatchEvent ->
-                eventBatchWriter.write(
-                    rawBatchEvent,
-                    fakeBatchMetadata,
-                    eventType
-                )
+                writeScope {
+                    it.write(
+                        rawBatchEvent,
+                        fakeBatchMetadata,
+                        eventType
+                    )
+                }
             }
         }
 
@@ -311,13 +323,15 @@ class FeatureScopeTest : MockServerTest() {
         testedInternalSdkCore.registerFeature(stubFeature)
         val featureScope = testedInternalSdkCore.getFeature(fakeFeatureName)
         checkNotNull(featureScope)
-        featureScope.withWriteContext { _, eventBatchWriter ->
+        featureScope.withWriteContext { _, writeScope ->
             fakeBatchData.forEach { rawBatchEvent ->
-                eventBatchWriter.write(
-                    rawBatchEvent,
-                    fakeBatchMetadata,
-                    eventType
-                )
+                writeScope {
+                    it.write(
+                        rawBatchEvent,
+                        fakeBatchMetadata,
+                        eventType
+                    )
+                }
             }
         }
 
@@ -352,13 +366,15 @@ class FeatureScopeTest : MockServerTest() {
         Datadog.stopInstance()
 
         // When
-        featureScope.withWriteContext { _, eventBatchWriter ->
+        featureScope.withWriteContext { _, writeScope ->
             fakeBatchData.forEach { rawBatchEvent ->
-                eventBatchWriter.write(
-                    rawBatchEvent,
-                    fakeBatchMetadata,
-                    eventType
-                )
+                writeScope {
+                    it.write(
+                        rawBatchEvent,
+                        fakeBatchMetadata,
+                        eventType
+                    )
+                }
             }
         }
 

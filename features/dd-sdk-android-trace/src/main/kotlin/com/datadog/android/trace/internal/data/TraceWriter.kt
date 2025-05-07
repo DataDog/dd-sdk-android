@@ -39,14 +39,16 @@ internal class TraceWriter(
     override fun write(trace: List<DDSpan>?) {
         if (trace == null) return
         sdkCore.getFeature(Feature.TRACING_FEATURE_NAME)
-            ?.withWriteContext { datadogContext, eventBatchWriter ->
-                trace
-                    .filter {
-                        it.samplingPriority == null || it.samplingPriority !in DROP_SAMPLING_PRIORITIES
-                    }
-                    .forEach { span ->
-                        writeSpan(datadogContext, eventBatchWriter, span)
-                    }
+            ?.withWriteContext { datadogContext, writeScope ->
+                writeScope {
+                    trace
+                        .filter {
+                            it.samplingPriority == null || it.samplingPriority !in DROP_SAMPLING_PRIORITIES
+                        }
+                        .forEach { span ->
+                            writeSpan(datadogContext, it, span)
+                        }
+                }
             }
     }
 

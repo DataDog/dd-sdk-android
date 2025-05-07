@@ -55,7 +55,7 @@ internal class DatadogLogHandler(
         if (sampler.sample(Unit)) {
             if (logsFeature != null) {
                 val threadName = Thread.currentThread().name
-                logsFeature.withWriteContext { datadogContext, eventBatchWriter ->
+                logsFeature.withWriteContext { datadogContext, writeScope ->
                     val log = createLog(
                         level,
                         datadogContext,
@@ -67,7 +67,9 @@ internal class DatadogLogHandler(
                         resolvedTimeStamp
                     )
                     if (log != null) {
-                        writer.write(eventBatchWriter, log, EventType.DEFAULT)
+                        writeScope {
+                            writer.write(it, log, EventType.DEFAULT)
+                        }
                     }
                 }
             } else {
@@ -126,7 +128,7 @@ internal class DatadogLogHandler(
         if (sampler.sample(Unit)) {
             if (logsFeature != null) {
                 val threadName = Thread.currentThread().name
-                logsFeature.withWriteContext { datadogContext, eventBatchWriter ->
+                logsFeature.withWriteContext { datadogContext, writeScope ->
                     val log = createLog(
                         level,
                         datadogContext,
@@ -140,7 +142,9 @@ internal class DatadogLogHandler(
                         resolvedTimeStamp
                     )
                     if (log != null) {
-                        writer.write(eventBatchWriter, log, EventType.DEFAULT)
+                        writeScope {
+                            writer.write(it, log, EventType.DEFAULT)
+                        }
                     }
                 }
             } else {

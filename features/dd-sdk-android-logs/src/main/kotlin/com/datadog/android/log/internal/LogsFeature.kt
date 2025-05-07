@@ -47,7 +47,7 @@ internal class LogsFeature(
 ) : StorageBackedFeature, FeatureEventReceiver {
 
     internal var dataWriter: DataWriter<LogEvent> = NoOpDataWriter()
-    internal val initialized = AtomicBoolean(false)
+    private val initialized = AtomicBoolean(false)
     internal var packageName = ""
     private val logGenerator = DatadogLogGenerator()
     private val attributes = ConcurrentHashMap<String, Any?>()
@@ -172,29 +172,36 @@ internal class LogsFeature(
         val lock = CountDownLatch(1)
 
         val attributes = getAttributes()
-        sdkCore.getFeature(name)
-            ?.withWriteContext { datadogContext, eventBatchWriter ->
-                val log = logGenerator.generateLog(
-                    DatadogLogGenerator.CRASH,
-                    datadogContext = datadogContext,
-                    attachNetworkInfo = true,
-                    loggerName = jvmCrash.loggerName,
-                    message = jvmCrash.message,
-                    throwable = jvmCrash.throwable,
-                    attributes = attributes,
-                    timestamp = jvmCrash.timestamp,
-                    bundleWithTraces = true,
-                    bundleWithRum = true,
-                    networkInfo = null,
-                    userInfo = null,
-                    threadName = jvmCrash.threadName,
-                    threads = jvmCrash.threads,
-                    tags = emptySet()
-                )
+        // TODO RUM-9852 Implement better passthrough mechanism for the JVM crash scenario
+        val writeContext = sdkCore.getFeature(name)
+            ?.getWriteContextSync()
+        if (writeContext != null) {
+            val (datadogContext, writeScope) = writeContext
+            val log = logGenerator.generateLog(
+                DatadogLogGenerator.CRASH,
+                datadogContext = datadogContext,
+                attachNetworkInfo = true,
+                loggerName = jvmCrash.loggerName,
+                message = jvmCrash.message,
+                throwable = jvmCrash.throwable,
+                attributes = attributes,
+                timestamp = jvmCrash.timestamp,
+                bundleWithTraces = true,
+                bundleWithRum = true,
+                networkInfo = null,
+                userInfo = null,
+                threadName = jvmCrash.threadName,
+                threads = jvmCrash.threads,
+                tags = emptySet()
+            )
 
-                dataWriter.write(eventBatchWriter, log, EventType.CRASH)
+            writeScope {
+                dataWriter.write(it, log, EventType.CRASH)
                 lock.countDown()
             }
+        } else {
+            lock.countDown()
+        }
 
         try {
             lock.await(MAX_WRITE_WAIT_TIMEOUT_MS, TimeUnit.MILLISECONDS)
@@ -230,7 +237,7 @@ internal class LogsFeature(
         }
 
         sdkCore.getFeature(name)
-            ?.withWriteContext { datadogContext, eventBatchWriter ->
+            ?.withWriteContext { datadogContext, writeScope ->
                 val log = logGenerator.generateLog(
                     DatadogLogGenerator.CRASH,
                     datadogContext = datadogContext,
@@ -248,7 +255,9 @@ internal class LogsFeature(
                     tags = emptySet()
                 )
 
-                dataWriter.write(eventBatchWriter, log, EventType.CRASH)
+                writeScope {
+                    dataWriter.write(it, log, EventType.CRASH)
+                }
             }
     }
 
@@ -273,7 +282,7 @@ internal class LogsFeature(
         }
 
         sdkCore.getFeature(name)
-            ?.withWriteContext { datadogContext, eventBatchWriter ->
+            ?.withWriteContext { datadogContext, writeScope ->
                 val log = logGenerator.generateLog(
                     logStatus,
                     datadogContext = datadogContext,
@@ -290,7 +299,9 @@ internal class LogsFeature(
                     tags = emptySet()
                 )
 
-                dataWriter.write(eventBatchWriter, log, EventType.DEFAULT)
+                writeScope {
+                    dataWriter.write(it, log, EventType.DEFAULT)
+                }
             }
     }
 

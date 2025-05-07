@@ -42,7 +42,6 @@ import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argThat
 import org.mockito.kotlin.argumentCaptor
-import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doReturnConsecutively
 import org.mockito.kotlin.doThrow
@@ -57,9 +56,7 @@ import org.mockito.quality.Strictness
 import java.io.File
 import java.util.Locale
 import java.util.concurrent.ExecutorService
-import java.util.concurrent.Executors
 import java.util.concurrent.RejectedExecutionException
-import java.util.concurrent.TimeUnit
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -145,16 +142,17 @@ internal class ConsentAwareStorageTest {
         )
     }
 
-    // region writeCurrentBatch
+    // region getEventWriteScope
 
     @Test
-    fun `M provide writer W writeCurrentBatch() {consent=granted}`() {
+    fun `M provide writer W getEventWriteScope() {consent=granted}`() {
         // Given
         val mockCallback = mock<(EventBatchWriter) -> Unit>()
         fakeDatadogContext = fakeDatadogContext.copy(trackingConsent = TrackingConsent.GRANTED)
 
         // When
-        testedStorage.writeCurrentBatch(fakeDatadogContext, callback = mockCallback)
+        testedStorage.getEventWriteScope(fakeDatadogContext)
+            .invoke(mockCallback)
 
         // Then
         argumentCaptor<EventBatchWriter> {
@@ -170,13 +168,14 @@ internal class ConsentAwareStorageTest {
     }
 
     @Test
-    fun `M provide writer W writeCurrentBatch() {consent=pending}`() {
+    fun `M provide writer W getEventWriteScope() {consent=pending}`() {
         // Given
         val mockCallback = mock<(EventBatchWriter) -> Unit>()
         fakeDatadogContext = fakeDatadogContext.copy(trackingConsent = TrackingConsent.PENDING)
 
         // When
-        testedStorage.writeCurrentBatch(fakeDatadogContext, callback = mockCallback)
+        testedStorage.getEventWriteScope(fakeDatadogContext)
+            .invoke(mockCallback)
 
         // Then
         argumentCaptor<EventBatchWriter> {
@@ -192,13 +191,14 @@ internal class ConsentAwareStorageTest {
     }
 
     @Test
-    fun `M provide no-op writer W writeCurrentBatch() {not_granted}`() {
+    fun `M provide no-op writer W getEventWriteScope() {not_granted}`() {
         // Given
         val mockCallback = mock<(EventBatchWriter) -> Unit>()
         fakeDatadogContext = fakeDatadogContext.copy(trackingConsent = TrackingConsent.NOT_GRANTED)
 
         // When
-        testedStorage.writeCurrentBatch(fakeDatadogContext, callback = mockCallback)
+        testedStorage.getEventWriteScope(fakeDatadogContext)
+            .invoke(mockCallback)
 
         // Then
         argumentCaptor<EventBatchWriter> {
@@ -216,7 +216,7 @@ internal class ConsentAwareStorageTest {
     // endregion
 
     @Test
-    fun `M log error W writeCurrentBatch() { task was rejected }`() {
+    fun `M log error W getEventWriteScope() { task was rejected }`() {
         // Given
         val mockExecutor = mock<ExecutorService>()
         whenever(mockExecutor.execute(any())) doThrow RejectedExecutionException()
@@ -235,7 +235,7 @@ internal class ConsentAwareStorageTest {
         )
 
         // When
-        testedStorage.writeCurrentBatch(fakeDatadogContext) {
+        testedStorage.getEventWriteScope(fakeDatadogContext).invoke {
             // no-op
         }
 
@@ -243,7 +243,7 @@ internal class ConsentAwareStorageTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-            "Unable to schedule Data write task on the executor",
+            "Unable to schedule eventWriteScopeInvoke-$fakeFeatureName task on the executor",
             RejectedExecutionException::class.java,
             false
         )
@@ -253,71 +253,6 @@ internal class ConsentAwareStorageTest {
             mockBatchReaderWriter,
             mockMetaReaderWriter
         )
-    }
-
-    @Test
-    fun `M do sequential metadata write W writeCurrentBatch() { multithreaded }`(
-        @IntForgery(min = 2, max = 10) threadsCount: Int,
-        @Forgery file: File,
-        forge: Forge
-    ) {
-        // Given
-        val executor = Executors.newFixedThreadPool(threadsCount)
-        testedStorage = ConsentAwareStorage(
-            executorService = executor,
-            grantedOrchestrator = mockGrantedOrchestrator,
-            pendingOrchestrator = mockPendingOrchestrator,
-            batchEventsReaderWriter = mockBatchReaderWriter,
-            batchMetadataReaderWriter = mockMetaReaderWriter,
-            fileMover = mockFileMover,
-            internalLogger = mockInternalLogger,
-            filePersistenceConfig = mockFilePersistenceConfig,
-            metricsDispatcher = mockMetricsDispatcher,
-            featureName = fakeFeatureName
-        )
-        var accumulator: Byte = 0
-        val event = forge.aString().toByteArray()
-        // each write operation is going to increase value in meta by 1
-        // in the end if some write operation was parallel to another, total number in meta
-        // won't be equal to the number of threads
-        // if write operations are parallel, there is a chance that there will be a conflict
-        // updating the meta (applying different updates to the same original state).
-        val callback: (EventBatchWriter) -> Unit = {
-            val value = it.currentMetadata()?.first() ?: 0
-            it.write(
-                event = RawBatchEvent(data = event),
-                batchMetadata = byteArrayOf((value + 1).toByte()),
-                eventType = fakeEventType
-            )
-        }
-        fakeDatadogContext = fakeDatadogContext.copy(trackingConsent = TrackingConsent.GRANTED)
-        whenever(mockGrantedOrchestrator.getWritableFile()) doReturn file
-        val mockMetaFile = mock<File>().apply { whenever(exists()) doReturn true }
-        whenever(mockMetaReaderWriter.readData(mockMetaFile)) doAnswer {
-            byteArrayOf(accumulator)
-        }
-        whenever(mockGrantedOrchestrator.getMetadataFile(file)) doReturn mockMetaFile
-        whenever(
-            mockBatchReaderWriter.writeData(eq(file), data = any(), append = any())
-        ) doReturn true
-        whenever(
-            mockMetaReaderWriter.writeData(eq(mockMetaFile), data = any(), append = any())
-        ) doAnswer {
-            val value = it.getArgument<ByteArray>(1).first()
-            accumulator = value
-            true
-        }
-        whenever(mockFilePersistenceConfig.maxItemSize) doReturn (event.size + 1).toLong()
-
-        // When
-        repeat(threadsCount) {
-            testedStorage.writeCurrentBatch(fakeDatadogContext, callback = callback)
-        }
-        executor.shutdown()
-        executor.awaitTermination(1, TimeUnit.SECONDS)
-
-        // Then
-        assertThat(accumulator).isEqualTo(threadsCount.toByte())
     }
 
     // region readNextBatch

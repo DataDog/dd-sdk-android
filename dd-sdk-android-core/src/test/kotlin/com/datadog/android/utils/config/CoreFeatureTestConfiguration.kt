@@ -37,6 +37,7 @@ import java.nio.file.Files
 import java.util.Locale
 import java.util.UUID
 import java.util.concurrent.ScheduledThreadPoolExecutor
+import java.util.concurrent.ThreadPoolExecutor
 
 internal class CoreFeatureTestConfiguration<T : Context>(
     val appContext: ApplicationContextTestConfiguration<T>
@@ -58,6 +59,7 @@ internal class CoreFeatureTestConfiguration<T : Context>(
     lateinit var mockUploadExecutor: ScheduledThreadPoolExecutor
     lateinit var mockOkHttpClient: OkHttpClient
     lateinit var mockPersistenceExecutor: FlushableExecutorService
+    lateinit var mockContextExecutorService: ThreadPoolExecutor
     lateinit var mockKronosClock: KronosClock
     lateinit var mockContextRef: WeakReference<Context?>
     lateinit var mockFirstPartyHostHeaderTypeResolver: DefaultFirstPartyHostHeaderTypeResolver
@@ -109,6 +111,7 @@ internal class CoreFeatureTestConfiguration<T : Context>(
 
     private fun createMocks() {
         mockPersistenceExecutor = mock()
+        mockContextExecutorService = mock()
         mockUploadExecutor = mock()
         mockOkHttpClient = mock()
         mockKronosClock = mock()
@@ -143,6 +146,7 @@ internal class CoreFeatureTestConfiguration<T : Context>(
         whenever(mockInstance.featuresContext) doReturn fakeFeaturesContext
 
         whenever(mockInstance.persistenceExecutorService) doReturn mockPersistenceExecutor
+        whenever(mockInstance.contextExecutorService) doReturn mockContextExecutorService
         whenever(mockInstance.uploadExecutorService) doReturn mockUploadExecutor
         whenever(mockInstance.okHttpClient) doReturn mockOkHttpClient
         whenever(mockInstance.kronosClock) doReturn mockKronosClock

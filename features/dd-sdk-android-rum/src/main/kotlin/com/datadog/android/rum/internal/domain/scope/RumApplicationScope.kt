@@ -9,6 +9,8 @@ package com.datadog.android.rum.internal.domain.scope
 import android.app.ActivityManager
 import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.context.DatadogContext
+import com.datadog.android.api.feature.EventWriteScope
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.core.InternalSdkCore
@@ -78,6 +80,8 @@ internal class RumApplicationScope(
     @WorkerThread
     override fun handleEvent(
         event: RumRawEvent,
+        datadogContext: DatadogContext,
+        writeScope: EventWriteScope,
         writer: DataWriter<Any>
     ): RumScope {
         if (event is RumRawEvent.SetSyntheticsTestAttribute) {
@@ -89,7 +93,7 @@ internal class RumApplicationScope(
 
         val isInteraction = (event is RumRawEvent.StartView) || (event is RumRawEvent.StartAction)
         if (activeSession == null && isInteraction) {
-            startNewSession(event, writer)
+            startNewSession(event, datadogContext, writeScope, writer)
         } else if (event is RumRawEvent.StopSession) {
             sdkCore.updateFeatureContext(Feature.RUM_FEATURE_NAME) {
                 it.putAll(getRumContext().toMap())
@@ -97,10 +101,10 @@ internal class RumApplicationScope(
         }
 
         if (event !is RumRawEvent.SdkInit && !isAppStartedEventSent) {
-            sendApplicationStartEvent(event.eventTime, writer)
+            sendApplicationStartEvent(event.eventTime, datadogContext, writeScope, writer)
         }
 
-        delegateToChildren(event, writer)
+        delegateToChildren(event, datadogContext, writeScope, writer)
 
         return this
     }
@@ -126,12 +130,14 @@ internal class RumApplicationScope(
     @WorkerThread
     private fun delegateToChildren(
         event: RumRawEvent,
+        datadogContext: DatadogContext,
+        writeScope: EventWriteScope,
         writer: DataWriter<Any>
     ) {
         val iterator = childScopes.iterator()
         @Suppress("UnsafeThirdPartyFunctionCall") // next/remove can't fail: we checked hasNext
         while (iterator.hasNext()) {
-            val result = iterator.next().handleEvent(event, writer)
+            val result = iterator.next().handleEvent(event, datadogContext, writeScope, writer)
             if (result == null) {
                 iterator.remove()
             }
@@ -139,7 +145,12 @@ internal class RumApplicationScope(
     }
 
     @WorkerThread
-    private fun startNewSession(event: RumRawEvent, writer: DataWriter<Any>) {
+    private fun startNewSession(
+        event: RumRawEvent,
+        datadogContext: DatadogContext,
+        writeScope: EventWriteScope,
+        writer: DataWriter<Any>
+    ) {
         val newSession = RumSessionScope(
             this,
             sdkCore,
@@ -165,7 +176,7 @@ internal class RumApplicationScope(
                     key = it.key,
                     attributes = it.attributes
                 )
-                newSession.handleEvent(startViewEvent, writer)
+                newSession.handleEvent(startViewEvent, datadogContext, writeScope, writer)
             }
         }
 
@@ -180,7 +191,12 @@ internal class RumApplicationScope(
     }
 
     @WorkerThread
-    private fun sendApplicationStartEvent(eventTime: Time, writer: DataWriter<Any>) {
+    private fun sendApplicationStartEvent(
+        eventTime: Time,
+        datadogContext: DatadogContext,
+        writeScope: EventWriteScope,
+        writer: DataWriter<Any>
+    ) {
         val processImportance = DdRumContentProvider.processImportance
         val isForegroundProcess = processImportance ==
             ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND
@@ -200,7 +216,7 @@ internal class RumApplicationScope(
             val startupTime = eventTime.nanoTime - processStartTimeNs
             val appStartedEvent =
                 RumRawEvent.ApplicationStarted(applicationLaunchViewTime, startupTime)
-            delegateToChildren(appStartedEvent, writer)
+            delegateToChildren(appStartedEvent, datadogContext, writeScope, writer)
             isAppStartedEventSent = true
         }
     }

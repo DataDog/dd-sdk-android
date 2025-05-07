@@ -77,7 +77,7 @@ internal class DatadogLateCrashReporter(
             return
         }
 
-        rumFeature.withWriteContext { datadogContext, eventBatchWriter ->
+        rumFeature.withWriteContext { datadogContext, writeScope ->
             val toSendErrorEvent = resolveErrorEventFromViewEvent(
                 datadogContext,
                 ErrorEvent.SourceType.tryFromSource(sourceType),
@@ -90,10 +90,12 @@ internal class DatadogLateCrashReporter(
                 null,
                 lastViewEvent
             )
-            rumWriter.write(eventBatchWriter, toSendErrorEvent, EventType.CRASH)
-            if (lastViewEvent.isWithinSessionAvailability) {
-                val updatedViewEvent = updateViewEvent(lastViewEvent)
-                rumWriter.write(eventBatchWriter, updatedViewEvent, EventType.CRASH)
+            writeScope {
+                rumWriter.write(it, toSendErrorEvent, EventType.CRASH)
+                if (lastViewEvent.isWithinSessionAvailability) {
+                    val updatedViewEvent = updateViewEvent(lastViewEvent)
+                    rumWriter.write(it, updatedViewEvent, EventType.CRASH)
+                }
             }
         }
     }
@@ -121,7 +123,7 @@ internal class DatadogLateCrashReporter(
                 return
             }
 
-            rumFeature.withWriteContext { datadogContext, eventBatchWriter ->
+            rumFeature.withWriteContext { datadogContext, writeScope ->
                 // means we are too late, last view event belongs to the ongoing session
                 if (lastViewEvent.session.id == datadogContext.rumSessionId) return@withWriteContext
 
@@ -144,12 +146,14 @@ internal class DatadogLateCrashReporter(
                     threadDumps,
                     lastViewEvent
                 )
-                rumWriter.write(eventBatchWriter, toSendErrorEvent, EventType.CRASH)
-                if (lastViewEvent.isWithinSessionAvailability) {
-                    val updatedViewEvent = updateViewEvent(lastViewEvent)
-                    rumWriter.write(eventBatchWriter, updatedViewEvent, EventType.CRASH)
+                writeScope {
+                    rumWriter.write(it, toSendErrorEvent, EventType.CRASH)
+                    if (lastViewEvent.isWithinSessionAvailability) {
+                        val updatedViewEvent = updateViewEvent(lastViewEvent)
+                        rumWriter.write(it, updatedViewEvent, EventType.CRASH)
+                    }
+                    sdkCore.writeLastFatalAnrSent(anrExitInfo.timestamp)
                 }
-                sdkCore.writeLastFatalAnrSent(anrExitInfo.timestamp)
             }
         }
     }

@@ -10,6 +10,7 @@ import androidx.annotation.AnyThread
 import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
+import com.datadog.android.api.feature.EventWriteScope
 import com.datadog.android.api.storage.EventBatchWriter
 import com.datadog.android.api.storage.EventType
 import com.datadog.android.api.storage.FeatureStorageConfiguration
@@ -49,6 +50,8 @@ internal class AbstractStorage(
         )
     }
 
+    private val writeLock = Any()
+
     private val notGrantedPersistenceStrategy: PersistenceStrategy = NoOpPersistenceStrategy()
 
     init {
@@ -59,28 +62,26 @@ internal class AbstractStorage(
     // region Storage
 
     @AnyThread
-    override fun writeCurrentBatch(
-        datadogContext: DatadogContext,
-        callback: (EventBatchWriter) -> Unit
-    ) {
-        executorService.executeSafe("Data write", internalLogger) {
-            val strategy = resolvePersistenceStrategy(datadogContext)
-            val writer = object : EventBatchWriter {
-                @WorkerThread
-                override fun currentMetadata(): ByteArray? {
-                    return strategy.currentMetadata()
-                }
-
-                @WorkerThread
-                override fun write(event: RawBatchEvent, batchMetadata: ByteArray?, eventType: EventType): Boolean {
-                    return strategy.write(event, batchMetadata, eventType)
-                }
+    override fun getEventWriteScope(
+        datadogContext: DatadogContext
+    ): EventWriteScope {
+        val strategy = resolvePersistenceStrategy(datadogContext)
+        val writer = object : EventBatchWriter {
+            @WorkerThread
+            override fun currentMetadata(): ByteArray? {
+                return strategy.currentMetadata()
             }
-            callback.invoke(writer)
+
+            @WorkerThread
+            override fun write(event: RawBatchEvent, batchMetadata: ByteArray?, eventType: EventType): Boolean {
+                return strategy.write(event, batchMetadata, eventType)
+            }
         }
+        // although we don't know what storage is backed by the persistence strategy, so maybe writing in a concurrent
+        // way is fine there and lock is not needed, but taking precautions
+        return AsyncEventWriteScope(executorService, writer, writeLock, featureName, internalLogger)
     }
 
-    @WorkerThread
     private fun resolvePersistenceStrategy(datadogContext: DatadogContext) =
         when (datadogContext.trackingConsent) {
             TrackingConsent.GRANTED -> grantedPersistenceStrategy

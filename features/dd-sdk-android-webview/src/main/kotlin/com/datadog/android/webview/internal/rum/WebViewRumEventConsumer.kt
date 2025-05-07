@@ -37,7 +37,7 @@ internal class WebViewRumEventConsumer(
             )
         )
         sdkCore.getFeature(WebViewRumFeature.WEB_RUM_FEATURE_NAME)
-            ?.withWriteContext { datadogContext, eventBatchWriter ->
+            ?.withWriteContext { datadogContext, writeScope ->
                 val rumContext = contextProvider.getRumContext(datadogContext)
                 if (rumContext != null && rumContext.sessionState == "TRACKED") {
                     val sessionReplayFeatureContext = datadogContext.featuresContext[
@@ -46,8 +46,10 @@ internal class WebViewRumEventConsumer(
                     val sessionReplayEnabled = sessionReplayFeatureContext?.get(
                         WebViewReplayEventConsumer.SESSION_REPLAY_ENABLED_KEY
                     ) as? Boolean ?: false
-                    val mappedEvent = map(event, datadogContext, rumContext, sessionReplayEnabled)
-                    dataWriter.write(eventBatchWriter, mappedEvent, EventType.DEFAULT)
+                    writeScope {
+                        val mappedEvent = map(event, datadogContext, rumContext, sessionReplayEnabled)
+                        dataWriter.write(it, mappedEvent, EventType.DEFAULT)
+                    }
                 }
             }
     }

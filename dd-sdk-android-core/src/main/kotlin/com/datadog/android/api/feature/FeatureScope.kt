@@ -10,6 +10,7 @@ import androidx.annotation.AnyThread
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.storage.EventBatchWriter
 import com.datadog.android.api.storage.datastore.DataStoreHandler
+import com.datadog.android.lint.InternalApi
 
 /**
  * Represents a Datadog feature.
@@ -24,14 +25,23 @@ interface FeatureScope {
     /**
      * Utility to write an event, asynchronously.
      * @param callback an operation called with an up-to-date [DatadogContext]
-     * and an [EventBatchWriter]. Callback will be executed on a worker thread from I/O pool.
-     * [DatadogContext] will have a state created at the moment this method is called, before the
-     * thread switch for the callback invocation.
+     * and an [EventWriteScope]. Callback will be executed on a single context processing worker thread.
+     * [DatadogContext] will have a state created at the moment this method is called.
      */
     @AnyThread
     fun withWriteContext(
-        callback: (DatadogContext, EventBatchWriter) -> Unit
+        callback: (datadogContext: DatadogContext, write: EventWriteScope) -> Unit
     )
+
+    // TODO RUM-9852 Implement better passthrough mechanism for the JVM crash scenario
+    /**
+     * Same as [withWriteContext] but will be executed in the blocking manner.
+     *
+     * **NOTE**: This API is for the internal use only and is not guaranteed to be stable.
+     */
+    @AnyThread
+    @InternalApi
+    fun getWriteContextSync(): Pair<DatadogContext, EventWriteScope>?
 
     /**
      * Send event to a given feature. It will be sent in a synchronous way.
@@ -45,3 +55,9 @@ interface FeatureScope {
      */
     fun <T : Feature> unwrap(): T
 }
+
+/**
+ * Scope for the event write operation which is invoked on the worker thread from I/O pool, which is different
+ * from the context processing worker thread used for [FeatureScope.withWriteContext] callback invocation.
+ */
+typealias EventWriteScope = ((EventBatchWriter) -> Unit) -> Unit

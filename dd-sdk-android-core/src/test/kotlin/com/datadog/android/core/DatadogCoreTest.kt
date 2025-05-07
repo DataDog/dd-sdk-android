@@ -79,6 +79,7 @@ import java.util.Collections
 import java.util.Locale
 import java.util.UUID
 import java.util.concurrent.CountDownLatch
+import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
@@ -746,11 +747,15 @@ internal class DatadogCoreTest {
         )
         val mockCoreFeature = mock<CoreFeature>()
         testedCore.coreFeature = mockCoreFeature
-        val mockExecutorService: FlushableExecutorService = mock()
-        whenever(mockCoreFeature.persistenceExecutorService) doReturn mockExecutorService
-        whenever(mockExecutorService.execute(any())) doAnswer {
-            val runnable = it.arguments.first() as Runnable
-            runnable.run()
+        val mockPersistenceExecutor = mock<FlushableExecutorService>()
+        val mockContextExecutor = mock<ThreadPoolExecutor>()
+        whenever(mockCoreFeature.persistenceExecutorService) doReturn mockPersistenceExecutor
+        whenever(mockCoreFeature.contextExecutorService) doReturn mockContextExecutor
+        whenever(mockPersistenceExecutor.execute(any())) doAnswer {
+            it.getArgument<Runnable>(0).run()
+        }
+        whenever(mockContextExecutor.execute(any())) doAnswer {
+            it.getArgument<Runnable>(0).run()
         }
 
         // When

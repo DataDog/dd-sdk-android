@@ -9,6 +9,7 @@ package com.datadog.android.core.internal.utils
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.lint.InternalApi
 import java.util.Locale
+import java.util.concurrent.Callable
 import java.util.concurrent.Executor
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Future
@@ -20,7 +21,7 @@ import java.util.concurrent.TimeUnit
 internal const val ERROR_TASK_REJECTED = "Unable to schedule %s task on the executor"
 
 /**
- * Executes runnable without throwing [RejectedExecutionException] if it cannot be accepted
+ * Executes [Runnable] without throwing [RejectedExecutionException] if it cannot be accepted
  * for execution.
  *
  * @param operationName Name of the task.
@@ -47,7 +48,7 @@ fun Executor.executeSafe(
 }
 
 /**
- * Executes runnable without throwing [RejectedExecutionException] if it cannot be accepted
+ * Executes [Runnable] without throwing [RejectedExecutionException] if it cannot be accepted
  * for execution.
  *
  * @param operationName Name of the task.
@@ -79,7 +80,7 @@ fun ScheduledExecutorService.scheduleSafe(
 }
 
 /**
- * Submit runnable without throwing [RejectedExecutionException] if it cannot be accepted
+ * Submit [Runnable] without throwing [RejectedExecutionException] if it cannot be accepted
  * for execution.
  *
  * @param operationName Name of the task.
@@ -95,6 +96,35 @@ fun ExecutorService.submitSafe(
     return try {
         @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
         submit(runnable)
+    } catch (e: RejectedExecutionException) {
+        internalLogger.log(
+            InternalLogger.Level.ERROR,
+            listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+            { ERROR_TASK_REJECTED.format(Locale.US, operationName) },
+            e
+        )
+        null
+    }
+}
+
+/**
+ * Submit [Callable] without throwing [RejectedExecutionException] if it cannot be accepted
+ * for execution.
+ *
+ * @param T Task result type.
+ * @param operationName Name of the task.
+ * @param internalLogger Internal logger.
+ * @param callable Task to run.
+ */
+@InternalApi
+fun <T> ExecutorService.submitSafe(
+    operationName: String,
+    internalLogger: InternalLogger,
+    callable: Callable<T>
+): Future<T>? {
+    return try {
+        @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
+        submit(callable)
     } catch (e: RejectedExecutionException) {
         internalLogger.log(
             InternalLogger.Level.ERROR,

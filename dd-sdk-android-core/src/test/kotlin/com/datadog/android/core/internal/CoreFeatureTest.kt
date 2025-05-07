@@ -6,6 +6,7 @@
 
 package com.datadog.android.core.internal
 
+import android.annotation.SuppressLint
 import android.app.ActivityManager
 import android.app.Application
 import android.content.BroadcastReceiver
@@ -96,6 +97,7 @@ import java.util.UUID
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.ScheduledThreadPoolExecutor
+import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 import kotlin.experimental.xor
 
@@ -208,6 +210,7 @@ internal class CoreFeatureTest {
             .isInstanceOf(BroadcastReceiverSystemInfoProvider::class.java)
     }
 
+    @SuppressLint("UnspecifiedRegisterReceiverFlag")
     @Test
     fun `M initialize network info provider W initialize`() {
         // When
@@ -229,6 +232,7 @@ internal class CoreFeatureTest {
         }
     }
 
+    @SuppressLint("UnspecifiedRegisterReceiverFlag")
     @Test
     @TestTargetApi(Build.VERSION_CODES.N)
     fun `M initialize network info provider W initialize {N}`() {
@@ -683,6 +687,7 @@ internal class CoreFeatureTest {
         // Then
         assertThat(testedFeature.uploadExecutorService).isNotNull()
         assertThat(testedFeature.persistenceExecutorService).isNotNull()
+        assertThat(testedFeature.contextExecutorService).isNotNull()
     }
 
     @Test
@@ -1310,10 +1315,12 @@ internal class CoreFeatureTest {
             fakeConfig,
             fakeConsent
         )
-        val mockUploadExecutorService: ScheduledThreadPoolExecutor = mock()
+        val mockUploadExecutorService = mock<ScheduledThreadPoolExecutor>()
         testedFeature.uploadExecutorService = mockUploadExecutorService
-        val mockPersistenceExecutorService: FlushableExecutorService = mock()
+        val mockPersistenceExecutorService = mock<FlushableExecutorService>()
         testedFeature.persistenceExecutorService = mockPersistenceExecutorService
+        val mockContextExecutorService = mock<ThreadPoolExecutor>()
+        testedFeature.contextExecutorService = mockContextExecutorService
 
         // When
         testedFeature.stop()
@@ -1321,6 +1328,7 @@ internal class CoreFeatureTest {
         // Then
         verify(mockUploadExecutorService).shutdownNow()
         verify(mockPersistenceExecutorService).shutdownNow()
+        verify(mockContextExecutorService).shutdownNow()
     }
 
     @Test
@@ -1420,6 +1428,30 @@ internal class CoreFeatureTest {
     }
 
     @Test
+    fun `M drain the context executor queue W drainAndShutdownExecutors()`(forge: Forge) {
+        // Given
+        testedFeature.initialize(
+            appContext.mockInstance,
+            fakeSdkInstanceId,
+            fakeConfig,
+            fakeConsent
+        )
+
+        val blockingQueue = LinkedBlockingQueue<Runnable>(forge.aList { mock() })
+        val mockContextExecutor = mock<ThreadPoolExecutor>()
+        whenever(mockContextExecutor.queue).thenReturn(blockingQueue)
+        testedFeature.contextExecutorService = mockContextExecutor
+
+        // When
+        testedFeature.drainAndShutdownExecutors()
+
+        // Then
+        blockingQueue.forEach {
+            verify(it).run()
+        }
+    }
+
+    @Test
     fun `M shutdown with wait the persistence executor W drainAndShutdownExecutors()`() {
         // Given
         testedFeature.initialize(
@@ -1464,6 +1496,31 @@ internal class CoreFeatureTest {
         inOrder(mockUploadService) {
             verify(mockUploadService).shutdown()
             verify(mockUploadService).awaitTermination(10, TimeUnit.SECONDS)
+        }
+    }
+
+    @Test
+    fun `M shutdown with wait the context executor W drainAndShutdownExecutors()`() {
+        // Given
+        testedFeature.initialize(
+            appContext.mockInstance,
+            fakeSdkInstanceId,
+            fakeConfig,
+            fakeConsent
+        )
+
+        val blockingQueue = LinkedBlockingQueue<Runnable>()
+        val mockContextExecutor = mock<ThreadPoolExecutor>()
+        whenever(mockContextExecutor.queue).thenReturn(blockingQueue)
+        testedFeature.contextExecutorService = mockContextExecutor
+
+        // When
+        testedFeature.drainAndShutdownExecutors()
+
+        // Then
+        inOrder(mockContextExecutor) {
+            verify(mockContextExecutor).shutdown()
+            verify(mockContextExecutor).awaitTermination(10, TimeUnit.SECONDS)
         }
     }
 
