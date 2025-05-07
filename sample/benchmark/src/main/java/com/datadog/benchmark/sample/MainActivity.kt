@@ -6,29 +6,49 @@
 
 package com.datadog.benchmark.sample
 
+import android.app.Activity
 import android.os.Bundle
 import androidx.activity.compose.setContent
 import androidx.appcompat.app.AppCompatActivity
-import androidx.navigation.NavController
-import androidx.navigation.Navigation
-import com.datadog.benchmark.sample.benchmark.DatadogBenchmark
-import com.datadog.benchmark.sample.compose.MainView
+import androidx.lifecycle.ViewModelProvider
+import androidx.navigation.findNavController
+import com.datadog.benchmark.DatadogBaseMeter
+import com.datadog.benchmark.sample.config.BenchmarkConfig
+import com.datadog.benchmark.sample.di.activity.BenchmarkActivityComponent
+import com.datadog.benchmark.sample.navigation.FragmentsNavigationManager
+import com.datadog.benchmark.sample.ui.sessionreplaycompose.MainView
 import com.datadog.sample.benchmark.R
+import javax.inject.Inject
 
 /**
  * MainActivity of benchmark sample application.
  */
 class MainActivity : AppCompatActivity() {
 
-    private lateinit var navController: NavController
-    private lateinit var datadogBenchmark: DatadogBenchmark
+    @Inject
+    internal lateinit var datadogMeter: DatadogBaseMeter
+
+    @Inject
+    internal lateinit var fragmentsNavigationManager: FragmentsNavigationManager
+
+    @Inject
+    internal lateinit var datadogFeaturesInitializer: DatadogFeaturesInitializer
+
+    @Inject
+    internal lateinit var config: BenchmarkConfig
+
+    internal lateinit var viewModel: MainActivityViewModel
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        datadogBenchmark = DatadogBenchmark(
-            DatadogBenchmark.Config.resolveSyntheticsBundle(intent.extras)
-        )
-        if (datadogBenchmark.isComposeEnabled) {
+        val factory = MainActivityViewModelFactory(application, this)
+
+        viewModel = ViewModelProvider(this, factory)[MainActivityViewModel::class]
+
+        benchmarkActivityComponent.inject(this)
+
+        if (config.isComposeEnabled) {
             supportActionBar?.hide()
             setContent {
                 MainView()
@@ -36,22 +56,27 @@ class MainActivity : AppCompatActivity() {
         } else {
             setContentView(R.layout.activity_main)
         }
+
+        datadogFeaturesInitializer.initialize(config)
     }
 
     override fun onStart() {
         super.onStart()
-        datadogBenchmark.start()
+        datadogMeter.startMeasuring()
     }
 
     override fun onStop() {
+        datadogMeter.stopMeasuring()
         super.onStop()
-        datadogBenchmark.stop()
     }
 
     override fun onResume() {
         super.onResume()
-        if (!datadogBenchmark.isComposeEnabled) {
-            navController = Navigation.findNavController(this, R.id.nav_host_fragment)
+        if (!config.isComposeEnabled) {
+            fragmentsNavigationManager.setNavController(findNavController(R.id.nav_host_fragment))
         }
     }
 }
+
+internal val Activity.benchmarkActivityComponent: BenchmarkActivityComponent
+    get() = (this as MainActivity).viewModel.component
