@@ -58,7 +58,7 @@ nexusPublishing {
 }
 
 task<Delete>("clean") {
-    delete(rootProject.buildDir)
+    delete(rootProject.layout.buildDirectory)
 }
 
 tasks.register("checkAll") {
