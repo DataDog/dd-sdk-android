@@ -206,7 +206,7 @@ internal class RumSessionScope(
             lastUserInteractionNs.set(nanoTime)
         } else if (isExpired) {
             if (backgroundTrackingEnabled && (isBackgroundEvent || isSdkInitInBackground)) {
-                renewSession(nanoTime, StartReason.INACTIVITY_TIMEOUT)
+                renewSession(nanoTime, StartReason.BACKGROUND_LAUNCH)
                 lastUserInteractionNs.set(nanoTime)
             } else {
                 sessionState = State.EXPIRED

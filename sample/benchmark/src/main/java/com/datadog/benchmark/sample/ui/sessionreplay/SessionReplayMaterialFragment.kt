@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.benchmark.sample.fragment
+package com.datadog.benchmark.sample.ui.sessionreplay
 
 import android.graphics.drawable.Drawable
 import android.os.Bundle
@@ -20,23 +20,29 @@ import android.widget.ImageView
 import android.widget.NumberPicker
 import android.widget.Spinner
 import androidx.fragment.app.Fragment
-import androidx.navigation.fragment.NavHostFragment.Companion.findNavController
 import com.bumptech.glide.Glide
 import com.bumptech.glide.request.target.CustomTarget
 import com.bumptech.glide.request.transition.Transition
+import com.datadog.benchmark.sample.benchmarkActivityComponent
+import com.datadog.benchmark.sample.navigation.FragmentsNavigationManager
 import com.datadog.sample.benchmark.R
 import com.google.android.material.datepicker.MaterialDatePicker
 import com.google.android.material.timepicker.MaterialTimePicker
 import java.util.Locale
+import javax.inject.Inject
 
-internal class SessionReplayAppcompatFragment : Fragment() {
+internal class SessionReplayMaterialFragment : Fragment() {
+    @Inject
+    internal lateinit var fragmentsNavigationManager: FragmentsNavigationManager
 
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-        return inflater.inflate(R.layout.fragment_session_replay_compat, container, false).apply {
+        requireActivity().benchmarkActivityComponent.inject(this)
+
+        return inflater.inflate(R.layout.fragment_session_replay_material, container, false).apply {
             findViewById<CheckedTextView>(R.id.checked_text_view).apply {
                 setOnClickListener { this.toggle() }
             }
@@ -53,7 +59,6 @@ internal class SessionReplayAppcompatFragment : Fragment() {
                     spinner.adapter = adapter
                 }
             }
-
             val defaultNumberPicker: NumberPicker = findViewById(R.id.default_number_picker)
             val defaultPickerMinIndex = NUMBER_PICKER_INDEX_MIN
             val defaultPickerMaxIndex = NUMBER_PICKER_INDEX_MAX
@@ -63,11 +68,9 @@ internal class SessionReplayAppcompatFragment : Fragment() {
             findViewById<ImageView>(R.id.imageView_remote).apply {
                 loadImage(this)
             }
-
             findViewById<Button>(R.id.button_navigation).apply {
                 setOnClickListener {
-                    findNavController(this@SessionReplayAppcompatFragment)
-                        .navigate(R.id.fragment_session_replay_material)
+                    fragmentsNavigationManager.navigateToSessionReplayAppCompat()
                 }
             }
         }
@@ -76,7 +79,6 @@ internal class SessionReplayAppcompatFragment : Fragment() {
     private fun initTimePicker(rootView: View) {
         val setTimeTextView = rootView.findViewById<EditText>(R.id.set_time_text_view)
         val setDateTextView = rootView.findViewById<EditText>(R.id.set_date_text_view)
-
         rootView.findViewById<ImageButton>(R.id.set_time_button).setOnClickListener {
             activity?.supportFragmentManager?.let {
                 MaterialTimePicker.Builder().build().apply {
