@@ -2,6 +2,11 @@ Dependencies List
 
 com.squareup.okhttp3:okhttp:4.12.0                              :  771 Kb
 com.squareup.okio:okio-jvm:3.6.0                                :  351 Kb
+io.opentelemetry:opentelemetry-api:1.4.0                        :   78 Kb
+io.opentelemetry:opentelemetry-context:1.4.0                    :   42 Kb
+io.opentracing:opentracing-api:0.32.0                           :   18 Kb
+io.opentracing:opentracing-noop:0.32.0                          :   10 Kb
+io.opentracing:opentracing-util:0.32.0                          :   10 Kb
 org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.9.10                  :  959 b 
 org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.10                  :  965 b 
 org.jetbrains.kotlin:kotlin-stdlib:1.9.24                       : 1678 Kb

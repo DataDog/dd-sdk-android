@@ -26,6 +26,9 @@ config/*
 # .log
 *.log
 
+# Kotlin
+.kotlin/
+
 gh_token
 sdk_classpath
 detekt_classpath
