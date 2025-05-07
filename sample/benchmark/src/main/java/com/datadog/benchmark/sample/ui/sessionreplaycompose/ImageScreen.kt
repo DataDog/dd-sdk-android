@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.benchmark.sample.compose
+package com.datadog.benchmark.sample.ui.sessionreplaycompose
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -57,7 +57,7 @@ private fun LocalImageNoBackground() {
         Image(
             modifier = Modifier.imageModifier(),
             painter = painterResource(R.drawable.ic_dd_icon_rgb),
-            contentDescription = "purple dog"
+            contentDescription = null
         )
         DescriptionText("Image")
     }
@@ -78,7 +78,7 @@ private fun LocalIconDoubleBackground() {
                 .padding(4.dp),
             painter = painterResource(R.drawable.ic_dd_icon_red),
             tint = Color.Red,
-            contentDescription = "red dog"
+            contentDescription = null
         )
         DescriptionText("Icon")
     }
@@ -100,7 +100,7 @@ private fun IconButtonSingleBackground() {
                     .size(160.dp),
                 painter = painterResource(R.drawable.ic_dd_icon_white),
                 tint = Color.White,
-                contentDescription = "white dog"
+                contentDescription = null
             )
         }
         DescriptionText("Icon Button")
@@ -114,7 +114,7 @@ private fun CoilImage() {
             modifier = Modifier.imageModifier(),
             model = SMALL_IMAGE_URL,
             contentScale = ContentScale.Fit,
-            contentDescription = "Network Image"
+            contentDescription = null
         )
         DescriptionText("Network Image")
     }

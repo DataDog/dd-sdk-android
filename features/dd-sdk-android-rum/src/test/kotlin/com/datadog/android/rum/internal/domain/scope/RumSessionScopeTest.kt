@@ -128,7 +128,7 @@ internal class RumSessionScopeTest {
     @Forgery
     lateinit var fakeDatadogContext: DatadogContext
 
-    lateinit var fakeInitialViewEvent: RumRawEvent
+    private lateinit var fakeInitialViewEvent: RumRawEvent
 
     @BeforeEach
     fun `set up`(forge: Forge) {
@@ -472,7 +472,7 @@ internal class RumSessionScopeTest {
         assertThat(result).isSameAs(testedScope)
         assertThat(context.sessionId).isNotEqualTo(RumContext.NULL_UUID)
         assertThat(context.sessionState).isEqualTo(RumSessionScope.State.TRACKED)
-        assertThat(context.sessionStartReason).isEqualTo(RumSessionScope.StartReason.INACTIVITY_TIMEOUT)
+        assertThat(context.sessionStartReason).isEqualTo(RumSessionScope.StartReason.BACKGROUND_LAUNCH)
         assertThat(context.applicationId).isEqualTo(fakeParentContext.applicationId)
         assertThat(context.viewId).isEqualTo(fakeParentContext.viewId)
     }
@@ -671,7 +671,7 @@ internal class RumSessionScopeTest {
             .isNotEqualTo(initialContext.sessionId)
             .isNotEqualTo(RumContext.NULL_UUID)
         assertThat(context.sessionState).isEqualTo(RumSessionScope.State.TRACKED)
-        assertThat(context.sessionStartReason).isEqualTo(RumSessionScope.StartReason.INACTIVITY_TIMEOUT)
+        assertThat(context.sessionStartReason).isEqualTo(RumSessionScope.StartReason.BACKGROUND_LAUNCH)
     }
 
     @Test
@@ -694,7 +694,7 @@ internal class RumSessionScopeTest {
             .isNotEqualTo(initialContext.sessionId)
             .isNotEqualTo(RumContext.NULL_UUID)
         assertThat(context.sessionState).isEqualTo(RumSessionScope.State.TRACKED)
-        assertThat(context.sessionStartReason).isEqualTo(RumSessionScope.StartReason.INACTIVITY_TIMEOUT)
+        assertThat(context.sessionStartReason).isEqualTo(RumSessionScope.StartReason.BACKGROUND_LAUNCH)
     }
 
     @Test

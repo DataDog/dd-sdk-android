@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.benchmark.sample.benchmark
+package com.datadog.benchmark.sample.config
 
 internal enum class SyntheticsScenario(val value: String) {
 
@@ -16,7 +16,9 @@ internal enum class SyntheticsScenario(val value: String) {
 
     Trace("trace"),
 
-    Logs("logs"),
+    LogsCustom("logs_custom"),
+
+    LogsHeavyTraffic("logs_heavy_traffic"),
 
     Upload("upload");
 
