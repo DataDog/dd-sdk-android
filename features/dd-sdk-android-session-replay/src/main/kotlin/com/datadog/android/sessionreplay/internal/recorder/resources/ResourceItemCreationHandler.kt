@@ -11,8 +11,7 @@ import com.datadog.android.sessionreplay.internal.async.DataQueueHandler
 import java.util.Collections
 
 internal class ResourceItemCreationHandler(
-    private val recordedDataQueueHandler: DataQueueHandler,
-    private val applicationId: String
+    private val recordedDataQueueHandler: DataQueueHandler
 ) {
     // resource IDs previously sent in this session -
     // optimization to avoid sending the same resource multiple times
@@ -26,8 +25,7 @@ internal class ResourceItemCreationHandler(
 
             recordedDataQueueHandler.addResourceItem(
                 identifier = resourceId,
-                resourceData = resourceData,
-                applicationId = applicationId
+                resourceData = resourceData
             )
         }
     }

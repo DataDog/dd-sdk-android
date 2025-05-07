@@ -4434,6 +4434,7 @@ public class com/datadog/trace/core/propagation/ExtractedContext : com/datadog/t
 }
 
 public class com/datadog/trace/core/propagation/HttpCodec {
+	public static final field RUM_SESSION_ID_KEY Ljava/lang/String;
 	public fun <init> ()V
 	public static fun allInjectorsFor (Lcom/datadog/trace/api/Config;Ljava/util/Map;)Ljava/util/Map;
 	public static fun createExtractor (Lcom/datadog/trace/api/Config;Lcom/datadog/android/trace/internal/compat/function/Supplier;)Lcom/datadog/trace/core/propagation/HttpCodec$Extractor;
@@ -4522,7 +4523,6 @@ public class com/datadog/trace/core/propagation/ptags/W3CPTagsCodec {
 	protected static final field DECISION_MAKER_TAG Lcom/datadog/trace/core/propagation/ptags/TagKey;
 	protected static final field PROPAGATION_ERROR_INCONSISTENT_TID Ljava/lang/String;
 	protected static final field PROPAGATION_ERROR_MALFORMED_TID Ljava/lang/String;
-	protected static final field RUM_SESSION_ID_TAG Lcom/datadog/trace/core/propagation/ptags/TagKey;
 	protected static final field TRACE_ID_TAG Lcom/datadog/trace/core/propagation/ptags/TagKey;
 	protected static final field UPSTREAM_SERVICES_DEPRECATED_TAG Lcom/datadog/trace/core/propagation/ptags/TagKey;
 	public fun <init> ()V

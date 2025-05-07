@@ -8,6 +8,9 @@ package com.datadog.opentracing.propagation;
 
 import static com.datadog.opentracing.propagation.HttpCodec.validateUInt128BitsID;
 import static com.datadog.opentracing.propagation.HttpCodec.validateUInt64BitsID;
+import static com.datadog.trace.core.propagation.HttpCodec.RUM_SESSION_ID_KEY;
+import static com.datadog.opentracing.propagation.W3CHttpCodec.BAGGAGE_KEY;
+import static com.datadog.opentracing.propagation.W3CHttpCodec.RUM_SESSION_ID_BAGGAGE_KEY;
 
 import com.datadog.android.trace.internal.domain.event.BigIntegerUtils;
 import com.datadog.opentracing.DDSpanContext;
@@ -32,8 +35,6 @@ class DatadogHttpCodec {
     public static final String OT_BAGGAGE_PREFIX = "ot-baggage-";
     public static final String LEAST_SIGNIFICANT_TRACE_ID_KEY = "x-datadog-trace-id";
     public static final String MOST_SIGNIFICANT_TRACE_ID_TAG_KEY = "_dd.p.tid";
-    public static final String RUM_SESSION_ID_TAG_KEY = "_dd.p.rsid";
-    public static final String RUM_SESSION_ID_KEY = "session_id";
     public static final String DATADOG_TAGS_KEY = "x-datadog-tags";
     public static final String SPAN_ID_KEY = "x-datadog-parent-id";
     public static final String SAMPLING_PRIORITY_KEY = "x-datadog-sampling-priority";
@@ -77,13 +78,11 @@ class DatadogHttpCodec {
             tags.append(MOST_SIGNIFICANT_TRACE_ID_TAG_KEY);
             tags.append('=');
             tags.append(mostSignificantTraceId);
-            if(sessionId != null) {
-                tags.append(',');
-                tags.append(RUM_SESSION_ID_TAG_KEY);
-                tags.append('=');
-                tags.append(sessionId);
-            }
             carrier.put(DATADOG_TAGS_KEY, tags.toString());
+
+            if(sessionId != null) {
+                carrier.put(BAGGAGE_KEY, RUM_SESSION_ID_BAGGAGE_KEY + '='+sessionId);
+            }
 
             if (context.lockSamplingPriority()) {
                 carrier.put(SAMPLING_PRIORITY_KEY, String.valueOf(context.getSamplingPriority()));

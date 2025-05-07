@@ -21,7 +21,6 @@ import com.datadog.android.sessionreplay.internal.utils.DrawableUtils
 import com.datadog.android.sessionreplay.internal.utils.PathUtils
 import com.datadog.android.sessionreplay.recorder.resources.DrawableCopier
 import fr.xgouchet.elmyr.Forge
-import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -44,7 +43,6 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
-import java.util.UUID
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Future
@@ -115,9 +113,6 @@ internal class ResourceResolverTest {
     private var fakeBitmapWidth: Int = 1
 
     private var fakeBitmapHeight: Int = 1
-
-    @Forgery
-    lateinit var fakeApplicationid: UUID
 
     @StringForgery
     lateinit var fakeResourceKey: String
@@ -395,7 +390,6 @@ internal class ResourceResolverTest {
         // When
         val instance1 = ResourceResolver(
             recordedDataQueueHandler = mockRecordedDataQueueHandler,
-            applicationId = fakeApplicationid.toString(),
             webPImageCompression = mockWebPImageCompression,
             drawableUtils = mockDrawableUtils,
             logger = mockLogger,
@@ -405,7 +399,6 @@ internal class ResourceResolverTest {
         )
         val instance2 = ResourceResolver(
             recordedDataQueueHandler = mockRecordedDataQueueHandler,
-            applicationId = fakeApplicationid.toString(),
             webPImageCompression = mockWebPImageCompression,
             drawableUtils = mockDrawableUtils,
             logger = mockLogger,
@@ -939,7 +932,6 @@ internal class ResourceResolverTest {
 
         verify(mockRecordedDataQueueHandler, times(1)).addResourceItem(
             identifier = eq(fakeResourceId),
-            applicationId = eq(fakeApplicationid.toString()),
             resourceData = eq(fakeByteArray)
         )
 
@@ -958,7 +950,6 @@ internal class ResourceResolverTest {
 
         verify(mockRecordedDataQueueHandler, times(1)).addResourceItem(
             identifier = eq(fakeResourceId),
-            applicationId = eq(fakeApplicationid.toString()),
             resourceData = eq(fakeByteArray)
         )
     }
@@ -1041,7 +1032,6 @@ internal class ResourceResolverTest {
         webPImageCompression = mockWebPImageCompression,
         md5HashGenerator = mockMD5HashGenerator,
         recordedDataQueueHandler = mockRecordedDataQueueHandler,
-        applicationId = fakeApplicationid.toString(),
         bitmapCachesManager = mockBitmapCachesManager
     )
 

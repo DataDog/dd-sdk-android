@@ -30,7 +30,6 @@ import com.datadog.android.core.feature.event.JvmCrash
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import com.datadog.android.core.internal.utils.executeSafe
 import com.datadog.android.core.internal.utils.scheduleSafe
-import com.datadog.android.core.internal.utils.submitSafe
 import com.datadog.android.event.EventMapper
 import com.datadog.android.event.MapperSerializer
 import com.datadog.android.event.NoOpEventMapper
@@ -85,8 +84,10 @@ import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.model.ViewEvent
+import com.datadog.android.rum.tracking.ActionTrackingStrategy
 import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
 import com.datadog.android.rum.tracking.InteractionPredicate
+import com.datadog.android.rum.tracking.NoOpActionTrackingStrategy
 import com.datadog.android.rum.tracking.NoOpTrackingStrategy
 import com.datadog.android.rum.tracking.NoOpViewTrackingStrategy
 import com.datadog.android.rum.tracking.TrackingStrategy
@@ -180,6 +181,7 @@ internal class RumFeature(
             provideUserTrackingStrategy(
                 configuration.touchTargetExtraAttributesProviders.toTypedArray(),
                 configuration.interactionPredicate,
+                composeActionTrackingStrategy = configuration.composeActionTrackingStrategy,
                 sdkCore.internalLogger
             )
         } else {
@@ -418,7 +420,7 @@ internal class RumFeature(
             null
         } ?: return
 
-        rumEventsExecutorService.submitSafe("Send fatal ANR", sdkCore.internalLogger) {
+        rumEventsExecutorService.executeSafe("Send fatal ANR", sdkCore.internalLogger) {
             val lastRumViewEvent = (sdkCore as InternalSdkCore).lastViewEvent
             if (lastRumViewEvent != null) {
                 lateCrashEventHandler.handleAnrCrash(
@@ -623,6 +625,7 @@ internal class RumFeature(
         val initialResourceIdentifier: InitialResourceIdentifier,
         val lastInteractionIdentifier: LastInteractionIdentifier?,
         val slowFramesConfiguration: SlowFramesConfiguration?,
+        val composeActionTrackingStrategy: ActionTrackingStrategy,
         val additionalConfig: Map<String, Any>,
         val trackAnonymousUser: Boolean
     )
@@ -669,6 +672,7 @@ internal class RumFeature(
             sessionListener = NoOpRumSessionListener(),
             initialResourceIdentifier = TimeBasedInitialResourceIdentifier(),
             lastInteractionIdentifier = TimeBasedInteractionIdentifier(),
+            composeActionTrackingStrategy = NoOpActionTrackingStrategy(),
             additionalConfig = emptyMap(),
             trackAnonymousUser = true,
             slowFramesConfiguration = null
@@ -708,13 +712,15 @@ internal class RumFeature(
         private fun provideUserTrackingStrategy(
             touchTargetExtraAttributesProviders: Array<ViewAttributesProvider>,
             interactionPredicate: InteractionPredicate,
+            composeActionTrackingStrategy: ActionTrackingStrategy,
             internalLogger: InternalLogger
         ): UserActionTrackingStrategy {
             val gesturesTracker =
                 provideGestureTracker(
-                    touchTargetExtraAttributesProviders,
-                    interactionPredicate,
-                    internalLogger
+                    customProviders = touchTargetExtraAttributesProviders,
+                    interactionPredicate = interactionPredicate,
+                    composeActionTrackingStrategy = composeActionTrackingStrategy,
+                    internalLogger = internalLogger
                 )
             return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 UserActionTrackingStrategyApi29(gesturesTracker)
@@ -726,11 +732,17 @@ internal class RumFeature(
         private fun provideGestureTracker(
             customProviders: Array<ViewAttributesProvider>,
             interactionPredicate: InteractionPredicate,
+            composeActionTrackingStrategy: ActionTrackingStrategy,
             internalLogger: InternalLogger
         ): DatadogGesturesTracker {
             val defaultProviders = arrayOf(JetpackViewAttributesProvider())
             val providers = customProviders + defaultProviders
-            return DatadogGesturesTracker(providers, interactionPredicate, internalLogger)
+            return DatadogGesturesTracker(
+                providers,
+                interactionPredicate,
+                composeActionsTrackingStrategy = composeActionTrackingStrategy,
+                internalLogger
+            )
         }
 
         internal fun isTrackNonFatalAnrsEnabledByDefault(

@@ -43,7 +43,7 @@ abstract class BaseAsyncBackgroundWireframeMapper<in T : View> (
     drawableToColorMapper
 ) {
 
-    private var uniqueIdentifierGenerator = DefaultViewIdentifierResolver
+    private val uniqueIdentifierGenerator = DefaultViewIdentifierResolver
 
     @UiThread
     override fun map(

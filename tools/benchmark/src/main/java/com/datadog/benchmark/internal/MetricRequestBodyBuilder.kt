@@ -41,7 +41,7 @@ internal class MetricRequestBodyBuilder(private val benchmarkContext: BenchmarkC
             KEY_METRIC to metric.name,
             KEY_POINTS to resolvePoints(metric),
             KEY_RESOURCES to resolveResources(metric.resource),
-            KEY_TAGS to resolveTags(),
+            KEY_TAGS to resolveTags(metric),
             KEY_TYPE to resolveMetricType(metric.type).value,
             KEY_UNIT to metric.unit
         )
@@ -55,8 +55,8 @@ internal class MetricRequestBodyBuilder(private val benchmarkContext: BenchmarkC
         }
     }
 
-    private fun resolveTags(): List<String> {
-        return listOfNotNull(
+    private fun resolveTags(metric: MetricData): List<String> {
+        val tagsMap = listOfNotNull(
             "$KEY_TAG_DEVICE_MODEL:${benchmarkContext.deviceModel}",
             "$KEY_TAG_OS_VERSION:${benchmarkContext.osVersion}",
             "$KEY_TAG_RUN:${benchmarkContext.run}",
@@ -66,6 +66,14 @@ internal class MetricRequestBodyBuilder(private val benchmarkContext: BenchmarkC
             "$KEY_TAG_APPLICATION_ID:${benchmarkContext.applicationId}",
             "$KEY_ENV:${benchmarkContext.env}"
         )
+
+        return resolveTrack(metric)?.let {
+            tagsMap.plus("$KEY_TRACK:$it")
+        } ?: tagsMap
+    }
+
+    private fun resolveTrack(metric: MetricData): String? {
+        return metric.data.points.firstOrNull()?.attributes?.get(AttributeKey.stringKey(KEY_TRACK))
     }
 
     private fun resolvePoints(metric: MetricData): List<Map<String, Any>> {
@@ -116,6 +124,7 @@ internal class MetricRequestBodyBuilder(private val benchmarkContext: BenchmarkC
         private const val KEY_TAG_OS_VERSION = "os_version"
         private const val KEY_TAG_RUN = "run"
         private const val KEY_ENV = "env"
+        private const val KEY_TRACK = "track"
         private const val KEY_TAG_APPLICATION_ID = "application_id"
     }
 }

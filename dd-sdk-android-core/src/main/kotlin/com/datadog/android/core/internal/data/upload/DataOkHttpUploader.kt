@@ -14,6 +14,8 @@ import com.datadog.android.api.net.RequestFactory
 import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.core.internal.persistence.BatchId
 import com.datadog.android.core.internal.system.AndroidInfoProvider
+import com.datadog.android.internal.profiler.ExecutionTimer
+import com.datadog.android.internal.utils.safeGetThreadId
 import okhttp3.Call
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.Request
@@ -28,7 +30,8 @@ internal class DataOkHttpUploader(
     val internalLogger: InternalLogger,
     val callFactory: Call.Factory,
     val sdkVersion: String,
-    val androidInfoProvider: AndroidInfoProvider
+    val androidInfoProvider: AndroidInfoProvider,
+    val executionTimer: ExecutionTimer
 ) : DataUploader {
 
     @Volatile
@@ -66,33 +69,36 @@ internal class DataOkHttpUploader(
             return UploadStatus.RequestCreationError(e)
         }
 
-        val uploadStatus = try {
-            executeUploadRequest(request)
-        } catch (e: UnknownHostException) {
-            internalLogger.log(
-                InternalLogger.Level.ERROR,
-                InternalLogger.Target.USER,
-                { "Unable to find host for site ${context.site}; we will retry later." },
-                e
-            )
-            UploadStatus.DNSError(e)
-        } catch (e: IOException) {
-            internalLogger.log(
-                InternalLogger.Level.ERROR,
-                InternalLogger.Target.USER,
-                { "Unable to execute the request; we will retry later." },
-                e
-            )
-            UploadStatus.NetworkError(e)
-        } catch (e: Throwable) {
-            internalLogger.log(
-                InternalLogger.Level.ERROR,
-                InternalLogger.Target.USER,
-                { "Unable to execute the request; we will retry later." },
-                e
-            )
-            UploadStatus.UnknownException(throwable = e)
-        }
+        val uploadStatus =
+            executionTimer.measure {
+                try {
+                    executeUploadRequest(request)
+                } catch (e: UnknownHostException) {
+                    internalLogger.log(
+                        InternalLogger.Level.ERROR,
+                        InternalLogger.Target.USER,
+                        { "Unable to find host for site ${context.site}; we will retry later." },
+                        e
+                    )
+                    UploadStatus.DNSError(e)
+                } catch (e: IOException) {
+                    internalLogger.log(
+                        InternalLogger.Level.ERROR,
+                        InternalLogger.Target.USER,
+                        { "Unable to execute the request; we will retry later." },
+                        e
+                    )
+                    UploadStatus.NetworkError(e)
+                } catch (e: Throwable) {
+                    internalLogger.log(
+                        InternalLogger.Level.ERROR,
+                        InternalLogger.Target.USER,
+                        { "Unable to execute the request; we will retry later." },
+                        e
+                    )
+                    UploadStatus.UnknownException(throwable = e)
+                }
+            }
 
         uploadStatus.logStatus(
             request.description,
@@ -148,7 +154,7 @@ internal class DataOkHttpUploader(
         }
 
         val okHttpRequest = buildOkHttpRequest(request)
-        TrafficStats.setThreadStatsTag(Thread.currentThread().id.toInt())
+        TrafficStats.setThreadStatsTag(Thread.currentThread().safeGetThreadId().toInt())
         val call = callFactory.newCall(okHttpRequest)
         val response = call.execute()
         response.close()

@@ -6,6 +6,7 @@
 
 package com.datadog.trace.core
 
+import com.datadog.android.internal.utils.safeGetThreadId
 import com.datadog.trace.api.DDTags
 import com.datadog.trace.api.DDTraceId
 import com.datadog.trace.api.TracePropagationStyle
@@ -86,7 +87,7 @@ internal class DDSpanContextTest : DDCoreSpecification() {
 
         // Then
         val thread = Thread.currentThread()
-        val expectedTags = mapOf(DDTags.THREAD_NAME to thread.name, DDTags.THREAD_ID to thread.id)
+        val expectedTags = mapOf(DDTags.THREAD_NAME to thread.name, DDTags.THREAD_ID to thread.safeGetThreadId())
         assertThat(context.tags).containsAllEntriesOf(expectedTags)
         assertThat(
             context::class.java.getMethod(method)
@@ -116,7 +117,7 @@ internal class DDSpanContextTest : DDCoreSpecification() {
         val expectedTags = mapOf(
             name to value,
             DDTags.THREAD_NAME to thread.name,
-            DDTags.THREAD_ID to thread.id
+            DDTags.THREAD_ID to thread.safeGetThreadId()
         )
         assertThat(context.tags).containsAllEntriesOf(expectedTags)
     }
@@ -288,7 +289,7 @@ internal class DDSpanContextTest : DDCoreSpecification() {
                 mapOf(
                     "some.tag" to "asdf",
                     DDTags.THREAD_NAME to Thread.currentThread().name,
-                    DDTags.THREAD_ID to Thread.currentThread().id
+                    DDTags.THREAD_ID to Thread.currentThread().safeGetThreadId()
                 )
             ),
             Arguments.of(
@@ -296,7 +297,7 @@ internal class DDSpanContextTest : DDCoreSpecification() {
                 mapOf(
                     "some.tag" to "asdf",
                     DDTags.THREAD_NAME to Thread.currentThread().name,
-                    DDTags.THREAD_ID to Thread.currentThread().id
+                    DDTags.THREAD_ID to Thread.currentThread().safeGetThreadId()
                 )
             ),
             Arguments.of(
@@ -304,12 +305,15 @@ internal class DDSpanContextTest : DDCoreSpecification() {
                 mapOf(
                     "some.tag" to "asdf",
                     DDTags.THREAD_NAME to Thread.currentThread().name,
-                    DDTags.THREAD_ID to Thread.currentThread().id
+                    DDTags.THREAD_ID to Thread.currentThread().safeGetThreadId()
                 )
             ),
             Arguments.of(
                 "some.tag",
-                mapOf(DDTags.THREAD_NAME to Thread.currentThread().name, DDTags.THREAD_ID to Thread.currentThread().id)
+                mapOf(
+                    DDTags.THREAD_NAME to Thread.currentThread().name,
+                    DDTags.THREAD_ID to Thread.currentThread().safeGetThreadId()
+                )
             )
         )
 

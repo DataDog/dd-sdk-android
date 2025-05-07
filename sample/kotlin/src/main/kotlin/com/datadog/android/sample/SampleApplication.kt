@@ -13,6 +13,7 @@ import android.util.Log
 import androidx.lifecycle.ViewModelProvider
 import com.datadog.android.Datadog
 import com.datadog.android.DatadogSite
+import com.datadog.android.compose.enableComposeActionTracking
 import com.datadog.android.core.configuration.BackPressureMitigation
 import com.datadog.android.core.configuration.BackPressureStrategy
 import com.datadog.android.core.configuration.BatchSize
@@ -322,6 +323,7 @@ class SampleApplication : Application() {
             }
             .trackBackgroundEvents(true)
             .trackAnonymousUser(true)
+            .enableComposeActionTracking()
             .build()
     }
 

@@ -49,11 +49,6 @@ android {
     composeOptions {
         kotlinCompilerExtensionVersion = libs.versions.androidXComposeCompilerExtension.get()
     }
-
-    sourceSets.named("test") {
-        // Required because AGP doesn't support kotlin test fixtures :/
-        java.srcDirs("${project.rootDir.path}/dd-sdk-android-core/src/testFixtures/kotlin")
-    }
 }
 
 dependencies {

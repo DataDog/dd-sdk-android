@@ -4,11 +4,13 @@ import com.datadog.gradle.config.dependencyUpdateConfig
 import com.datadog.gradle.config.java17
 import com.datadog.gradle.config.junitConfig
 import com.datadog.gradle.config.kotlinConfig
+import com.datadog.gradle.plugin.InstrumentationMode
 
 plugins {
     id("com.android.application")
     kotlin("android")
     kotlin("kapt")
+    alias(libs.plugins.datadogGradlePlugin)
 }
 
 @Suppress("StringLiteralDuplication")
@@ -70,6 +72,10 @@ android {
             }
         }
     }
+}
+
+datadog {
+    composeInstrumentation = InstrumentationMode.AUTO
 }
 
 dependencies {

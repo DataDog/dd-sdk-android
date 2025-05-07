@@ -12,7 +12,7 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.internal.persistence.file.FileOrchestrator
 import com.datadog.android.core.internal.persistence.file.NoOpFileOrchestrator
 import com.datadog.android.core.internal.privacy.ConsentProvider
-import com.datadog.android.core.internal.utils.submitSafe
+import com.datadog.android.core.internal.utils.executeSafe
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.privacy.TrackingConsentProviderCallback
 import java.io.File
@@ -98,7 +98,7 @@ internal open class ConsentAwareFileOrchestrator(
     ) {
         val previousOrchestrator = resolveDelegateOrchestrator(previousConsent)
         val newOrchestrator = resolveDelegateOrchestrator(newConsent)
-        executorService.submitSafe("Data migration", internalLogger) {
+        executorService.executeSafe("Data migration", internalLogger) {
             dataMigrator.migrateData(
                 previousConsent,
                 previousOrchestrator,

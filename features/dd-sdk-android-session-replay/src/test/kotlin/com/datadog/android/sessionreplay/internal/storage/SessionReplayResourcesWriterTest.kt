@@ -7,6 +7,7 @@
 package com.datadog.android.sessionreplay.internal.storage
 
 import com.datadog.android.api.context.DatadogContext
+import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.storage.EventBatchWriter
@@ -32,6 +33,7 @@ import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
+import java.util.UUID
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -50,6 +52,9 @@ internal class SessionReplayResourcesWriterTest {
 
     @Forgery
     lateinit var fakeEnrichedResource: EnrichedResource
+
+    @Forgery
+    lateinit var fakeRumApplicationId: UUID
 
     @Mock
     lateinit var mockEventBatchWriter: EventBatchWriter
@@ -77,12 +82,18 @@ internal class SessionReplayResourcesWriterTest {
             val callback = it.getArgument<(DatadogContext, EventBatchWriter) -> Unit>(1)
             callback.invoke(fakeDatadogContext, mockEventBatchWriter)
         }
+        fakeDatadogContext = fakeDatadogContext.copy(
+            featuresContext = fakeDatadogContext.featuresContext
+                .toMutableMap().apply {
+                    put(Feature.RUM_FEATURE_NAME, mapOf("application_id" to fakeRumApplicationId.toString()))
+                }
+        )
 
         // When
         testedWriter.write(fakeEnrichedResource)
 
         // Then
-        val metadataBytearray = fakeEnrichedResource.asBinaryMetadata()
+        val metadataBytearray = fakeEnrichedResource.asBinaryMetadata(fakeRumApplicationId.toString())
         verify(mockEventBatchWriter).write(
             event = RawBatchEvent(data = fakeEnrichedResource.resource, metadata = metadataBytearray),
             batchMetadata = null,

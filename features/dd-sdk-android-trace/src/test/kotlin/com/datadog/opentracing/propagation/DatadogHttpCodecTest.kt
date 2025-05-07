@@ -125,7 +125,8 @@ internal class DatadogHttpCodecTest {
         assertThat(
             headers[DatadogHttpCodec.LEAST_SIGNIFICANT_TRACE_ID_KEY]
         ).isEqualTo(fakeLeastSignificant64BitsTraceId)
-        assertThat(headers[DatadogHttpCodec.DATADOG_TAGS_KEY]).isEqualTo(expectedInjectedTags(fakeSessionId))
+        assertThat(headers[DatadogHttpCodec.DATADOG_TAGS_KEY]).isEqualTo(expectedInjectedTags())
+        assertThat(headers[W3CHttpCodec.BAGGAGE_KEY]).isEqualTo(expectedInjectedBaggage())
         assertThat(headers[DatadogHttpCodec.SAMPLING_PRIORITY_KEY])
             .let {
                 if (fakeDDSpanContext.samplingPriority != PrioritySampling.UNSET) {
@@ -319,8 +320,8 @@ internal class DatadogHttpCodecTest {
         return "_dd.p.tid=$fakeMostSignificant64BitsTraceId"
     }
 
-    private fun expectedInjectedTags(sessionId: UUID): String {
-        return "_dd.p.tid=$fakeMostSignificant64BitsTraceId,_dd.p.rsid=$sessionId"
+    private fun expectedInjectedBaggage(): String {
+        return "session.id=$fakeSessionId"
     }
 
     private fun traceIdTagsAndNoise(traceId: String, forge: Forge): String {

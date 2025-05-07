@@ -53,6 +53,8 @@ import com.datadog.android.core.internal.persistence.file.advanced.FeatureFileOr
 import com.datadog.android.core.internal.persistence.file.batch.BatchFileReaderWriter
 import com.datadog.android.core.internal.persistence.tlvformat.TLVBlockFileReader
 import com.datadog.android.core.persistence.PersistenceStrategy
+import com.datadog.android.internal.profiler.BenchmarkSdkUploads
+import com.datadog.android.internal.profiler.GlobalBenchmark
 import com.datadog.android.privacy.TrackingConsentProviderCallback
 import com.datadog.android.security.Encryption
 import java.util.Collections
@@ -65,7 +67,8 @@ import java.util.concurrent.atomic.AtomicReference
 internal class SdkFeature(
     internal val coreFeature: CoreFeature,
     internal val wrappedFeature: Feature,
-    internal val internalLogger: InternalLogger
+    internal val internalLogger: InternalLogger,
+    private val benchmarkSdkUploads: BenchmarkSdkUploads = GlobalBenchmark.getBenchmarkSdkUploads()
 ) : FeatureScope {
 
     override var dataStore: DataStoreHandler = NoOpDataStoreHandler()
@@ -122,6 +125,8 @@ internal class SdkFeature(
         prepareDataStoreHandler(
             encryption = coreFeature.localDataEncryption
         )
+
+        createBatchCountBenchmark()
 
         initialized.set(true)
 
@@ -231,6 +236,21 @@ internal class SdkFeature(
     // endregion
 
     // region Internal
+
+    private fun createBatchCountBenchmark() {
+        val tags = mapOf(
+            TRACK_NAME to wrappedFeature.name
+        )
+
+        @Suppress("ThreadSafety") // called in worker thread context
+        benchmarkSdkUploads
+            .getMeter(METER_NAME)
+            .createObservableGauge(
+                metricName = BATCH_COUNT_METRIC_NAME,
+                tags = tags,
+                callback = { fileOrchestrator.getFlushableFiles().size.toDouble() }
+            )
+    }
 
     private fun setupMetricsDispatcher(
         dataUploadConfiguration: DataUploadConfiguration?,
@@ -363,7 +383,10 @@ internal class SdkFeature(
             internalLogger = internalLogger,
             callFactory = coreFeature.okHttpClient,
             sdkVersion = coreFeature.sdkVersion,
-            androidInfoProvider = coreFeature.androidInfoProvider
+            androidInfoProvider = coreFeature.androidInfoProvider,
+            executionTimer = GlobalBenchmark.createExecutionTimer(
+                track = wrappedFeature.name
+            )
         )
     }
 
@@ -431,5 +454,8 @@ internal class SdkFeature(
             "Feature \"%s\" already has this listener registered."
         const val NO_EVENT_RECEIVER =
             "Feature \"%s\" has no event receiver registered, ignoring event."
+        internal const val TRACK_NAME = "track"
+        internal const val METER_NAME = "dd-sdk-android"
+        internal const val BATCH_COUNT_METRIC_NAME = "android.benchmark.batch_count"
     }
 }

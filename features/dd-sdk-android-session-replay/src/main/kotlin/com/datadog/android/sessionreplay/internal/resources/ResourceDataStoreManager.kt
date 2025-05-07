@@ -27,8 +27,8 @@ internal class ResourceDataStoreManager(
 ) {
     @Suppress("UnsafeThirdPartyFunctionCall") // map is initialized empty
     private val knownResources = Collections.newSetFromMap(ConcurrentHashMap<String, Boolean>())
-    private var storedLastUpdateDateNs = AtomicLong(System.nanoTime())
-    private var isInitialized = AtomicBoolean(false) // has init finished executing its async actions
+    private val storedLastUpdateDateNs = AtomicLong(System.nanoTime())
+    private val isInitialized = AtomicBoolean(false) // has init finished executing its async actions
 
     init {
         fetchStoredResourceHashes(

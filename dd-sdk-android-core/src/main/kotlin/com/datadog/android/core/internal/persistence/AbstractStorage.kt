@@ -16,7 +16,7 @@ import com.datadog.android.api.storage.FeatureStorageConfiguration
 import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.core.internal.metrics.RemovalReason
 import com.datadog.android.core.internal.privacy.ConsentProvider
-import com.datadog.android.core.internal.utils.submitSafe
+import com.datadog.android.core.internal.utils.executeSafe
 import com.datadog.android.core.persistence.NoOpPersistenceStrategy
 import com.datadog.android.core.persistence.PersistenceStrategy
 import com.datadog.android.privacy.TrackingConsent
@@ -64,7 +64,7 @@ internal class AbstractStorage(
         forceNewBatch: Boolean,
         callback: (EventBatchWriter) -> Unit
     ) {
-        executorService.submitSafe("Data write", internalLogger) {
+        executorService.executeSafe("Data write", internalLogger) {
             val strategy = resolvePersistenceStrategy()
             val writer = object : EventBatchWriter {
                 @WorkerThread
@@ -115,7 +115,7 @@ internal class AbstractStorage(
 
     @AnyThread
     override fun dropAll() {
-        executorService.submitSafe("Data drop", internalLogger) {
+        executorService.executeSafe("Data drop", internalLogger) {
             grantedPersistenceStrategy.dropAll()
             pendingPersistenceStrategy.dropAll()
         }
@@ -129,7 +129,7 @@ internal class AbstractStorage(
         previousConsent: TrackingConsent,
         newConsent: TrackingConsent
     ) {
-        executorService.submitSafe("Data migration", internalLogger) {
+        executorService.executeSafe("Data migration", internalLogger) {
             if (previousConsent == TrackingConsent.PENDING) {
                 when (newConsent) {
                     TrackingConsent.GRANTED -> pendingPersistenceStrategy.migrateData(grantedPersistenceStrategy)

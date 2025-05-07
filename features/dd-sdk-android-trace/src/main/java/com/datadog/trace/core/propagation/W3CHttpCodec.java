@@ -36,6 +36,8 @@ class W3CHttpCodec {
 
     public static final String TRACE_PARENT_KEY = "traceparent";
     public static final String TRACE_STATE_KEY = "tracestate";
+    public static final String BAGGAGE_KEY = "baggage";
+    static final String RUM_SESSION_ID_BAGGAGE_KEY = "session.id";
     static final String OT_BAGGAGE_PREFIX = "ot-baggage-";
     private static final String E2E_START_KEY = OT_BAGGAGE_PREFIX + DDTags.TRACE_START_TIME;
 
@@ -103,6 +105,10 @@ class W3CHttpCodec {
                 String header = invertedBaggageMapping.get(entry.getKey());
                 header = header != null ? header : OT_BAGGAGE_PREFIX + entry.getKey();
                 setter.set(carrier, header, HttpCodec.encodeBaggage(entry.getValue()));
+            }
+            final String sessionId = (String) context.getTags().get(HttpCodec.RUM_SESSION_ID_KEY);
+            if(sessionId != null) {
+                setter.set(carrier, BAGGAGE_KEY, RUM_SESSION_ID_BAGGAGE_KEY + "=" + sessionId);
             }
         }
     }

@@ -260,6 +260,8 @@ internal class LogsFeature(
             ?.filterKeys { it is String }
             ?.mapKeys { it.key as String }
 
+        val logStatus = data[LOG_STATUS_EVENT_KEY] as? Int ?: Log.VERBOSE
+
         @Suppress("ComplexCondition")
         if (loggerName == null || message == null || attributes == null || timestamp == null) {
             sdkCore.internalLogger.log(
@@ -273,7 +275,7 @@ internal class LogsFeature(
         sdkCore.getFeature(name)
             ?.withWriteContext { datadogContext, eventBatchWriter ->
                 val log = logGenerator.generateLog(
-                    Log.VERBOSE,
+                    logStatus,
                     datadogContext = datadogContext,
                     attachNetworkInfo = true,
                     loggerName = loggerName,
@@ -303,6 +305,7 @@ internal class LogsFeature(
         private const val MESSAGE_EVENT_KEY = "message"
         private const val USER_INFO_EVENT_KEY = "userInfo"
         private const val NETWORK_INFO_EVENT_KEY = "networkInfo"
+        private const val LOG_STATUS_EVENT_KEY = "logStatus"
 
         internal const val UNSUPPORTED_EVENT_TYPE =
             "Logs feature receive an event of unsupported type=%s."

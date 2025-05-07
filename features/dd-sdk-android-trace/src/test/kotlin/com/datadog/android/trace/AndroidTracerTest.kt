@@ -6,6 +6,7 @@
 
 package com.datadog.android.trace
 
+import android.util.Log
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureScope
@@ -19,6 +20,7 @@ import com.datadog.legacy.trace.api.Config
 import com.datadog.legacy.trace.common.writer.Writer
 import com.datadog.opentracing.DDSpan
 import com.datadog.opentracing.LogHandler
+import com.datadog.opentracing.scopemanager.ScopeTestHelper
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.DoubleForgery
 import fr.xgouchet.elmyr.annotation.Forgery
@@ -133,6 +135,8 @@ internal class AndroidTracerTest {
         val activeScope = tracer?.scopeManager()?.active()
         activeSpan?.finish()
         activeScope?.close()
+
+        ScopeTestHelper.removeThreadLocalScope()
     }
 
     // region Tracer
@@ -650,7 +654,8 @@ internal class AndroidTracerTest {
             verify(mockSpan).log(capture())
             assertThat(firstValue)
                 .containsEntry(Fields.MESSAGE, anErrorMessage)
-                .containsOnlyKeys(Fields.MESSAGE)
+                .containsEntry(AndroidTracer.LOG_STATUS, Log.ERROR)
+                .containsOnlyKeys(Fields.MESSAGE, AndroidTracer.LOG_STATUS)
         }
     }
 

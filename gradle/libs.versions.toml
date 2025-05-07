@@ -8,7 +8,7 @@ kronosNTP = "0.0.1-alpha11"
 
 # Android
 androidDesugaringSdk = "2.0.4"
-androidToolsPlugin = "8.8.2"
+androidToolsPlugin = "8.9.1"
 androidXAnnotations = "1.9.1"
 androidXAppCompat = "1.4.2" # Next version will bring coroutines
 androidXCollection = "1.4.5"
@@ -65,6 +65,7 @@ fuzzyWuzzy = "1.2.0"
 
 versionsGradlePlugin = "0.46.0"
 nexusPublishGradlePlugin = "1.1.0"
+datadogPlugin = "1.17.0-rc1"
 
 kotlinPoet = "1.14.2"
 kotlinGrammarParser = "0.1.0"
@@ -113,7 +114,6 @@ unmockGradlePlugin = { module = "com.github.bjoernq:unmockplugin", version.ref =
 sqlDelightGradlePlugin = { module = "com.squareup.sqldelight:gradle-plugin", version.ref = "sqlDelight" }
 binaryCompatibilityGradlePlugin = { module = "org.jetbrains.kotlinx:binary-compatibility-validator", version.ref = "binaryCompatibility" }
 dependencyLicenseGradlePlugin = { module = "com.datadoghq:dependency-license", version.ref = "dependencyLicense" }
-
 versionsGradlePlugin = { module = "com.github.ben-manes:gradle-versions-plugin", version.ref = "versionsGradlePlugin" }
 
 # Annotation processors
@@ -337,4 +337,5 @@ traceCore = [
 [plugins]
 versionsGradlePlugin = { id = "com.github.ben-manes.versions", version.ref = "versionsGradlePlugin" }
 nexusPublishGradlePlugin = { id = "io.github.gradle-nexus.publish-plugin", version.ref = "nexusPublishGradlePlugin" }
+datadogGradlePlugin = { id = "com.datadoghq.dd-sdk-android-gradle-plugin", version.ref = "datadogPlugin" }
 

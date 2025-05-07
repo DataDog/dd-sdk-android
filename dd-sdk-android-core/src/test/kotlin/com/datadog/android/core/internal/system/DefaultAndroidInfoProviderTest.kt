@@ -389,7 +389,7 @@ internal class DefaultAndroidInfoProviderTest {
 
     companion object {
 
-        @Suppress("unused")
+        @Suppress("unused", "DEPRECATION")
         @JvmStatic
         fun phoneTypesWithDescription(): List<PhoneType> {
             return listOf(

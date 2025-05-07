@@ -6,6 +6,8 @@
 
 package com.datadog.android.sessionreplay.internal.storage
 
+import com.datadog.android.api.context.DatadogContext
+import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.storage.EventType
 import com.datadog.android.api.storage.RawBatchEvent
@@ -17,18 +19,22 @@ internal class SessionReplayResourcesWriter(
     private val sdkCore: FeatureSdkCore
 ) : ResourcesWriter {
     override fun write(enrichedResource: EnrichedResource) {
-        sdkCore.getFeature(SESSION_REPLAY_RESOURCES_FEATURE_NAME)?.withWriteContext() { _, eventBatchWriter ->
-            synchronized(this) {
-                val serializedMetadata = enrichedResource.asBinaryMetadata()
-                eventBatchWriter.write(
-                    event = RawBatchEvent(
-                        data = enrichedResource.resource,
-                        metadata = serializedMetadata
-                    ),
-                    batchMetadata = null,
-                    eventType = EventType.DEFAULT
-                )
+        sdkCore.getFeature(SESSION_REPLAY_RESOURCES_FEATURE_NAME)
+            ?.withWriteContext() { datadogContext, eventBatchWriter ->
+                synchronized(this) {
+                    val serializedMetadata = enrichedResource.asBinaryMetadata(datadogContext.rumApplicationId)
+                    eventBatchWriter.write(
+                        event = RawBatchEvent(
+                            data = enrichedResource.resource,
+                            metadata = serializedMetadata
+                        ),
+                        batchMetadata = null,
+                        eventType = EventType.DEFAULT
+                    )
+                }
             }
-        }
     }
+
+    private val DatadogContext.rumApplicationId: String
+        get() = (featuresContext[Feature.RUM_FEATURE_NAME]?.get("application_id") as? String).orEmpty()
 }

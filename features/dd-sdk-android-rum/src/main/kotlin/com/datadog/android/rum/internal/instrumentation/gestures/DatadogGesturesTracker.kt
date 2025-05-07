@@ -10,6 +10,7 @@ import android.content.Context
 import android.view.Window
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.SdkCore
+import com.datadog.android.rum.tracking.ActionTrackingStrategy
 import com.datadog.android.rum.tracking.InteractionPredicate
 import com.datadog.android.rum.tracking.ViewAttributesProvider
 import java.lang.ref.WeakReference
@@ -17,6 +18,7 @@ import java.lang.ref.WeakReference
 internal class DatadogGesturesTracker(
     internal val targetAttributesProviders: Array<ViewAttributesProvider>,
     internal val interactionPredicate: InteractionPredicate,
+    private val composeActionsTrackingStrategy: ActionTrackingStrategy,
     private val internalLogger: InternalLogger
 ) : GesturesTracker {
 
@@ -101,12 +103,13 @@ internal class DatadogGesturesTracker(
         return GesturesDetectorWrapper(
             context,
             GesturesListener(
-                sdkCore,
-                WeakReference(window),
-                targetAttributesProviders,
-                interactionPredicate,
-                WeakReference(context),
-                internalLogger
+                sdkCore = sdkCore,
+                windowReference = WeakReference(window),
+                attributesProviders = targetAttributesProviders,
+                interactionPredicate = interactionPredicate,
+                contextRef = WeakReference(context),
+                composeActionTrackingStrategy = composeActionsTrackingStrategy,
+                internalLogger = internalLogger
             )
         )
     }

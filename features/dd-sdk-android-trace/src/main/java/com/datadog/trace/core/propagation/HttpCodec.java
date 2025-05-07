@@ -48,7 +48,7 @@ public class HttpCodec {
   static final String CF_CONNECTING_IP_KEY = "cf-connecting-ip";
   static final String CF_CONNECTING_IP_V6_KEY = "cf-connecting-ipv6";
 
-  static final String RUM_SESSION_ID_KEY = "session_id";
+  public static final String RUM_SESSION_ID_KEY = "session_id";
 
   public interface Injector {
     <C> void inject(

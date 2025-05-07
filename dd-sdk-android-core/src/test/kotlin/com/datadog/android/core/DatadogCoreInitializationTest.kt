@@ -92,10 +92,6 @@ internal class DatadogCoreInitializationTest {
         whenever(mockPersistenceExecutorService.execute(any())) doAnswer {
             it.getArgument<Runnable>(0).run()
         }
-        whenever(mockPersistenceExecutorService.submit(any())) doAnswer {
-            it.getArgument<Runnable>(0).run()
-            mock()
-        }
     }
 
     @AfterEach

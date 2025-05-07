@@ -183,9 +183,8 @@ internal class DatadogRumMonitorTest {
 
     @BeforeEach
     fun `set up`(forge: Forge) {
-        whenever(mockExecutorService.submit(any())) doAnswer {
+        whenever(mockExecutorService.execute(any())) doAnswer {
             it.getArgument<Runnable>(0).run()
-            StubFuture()
         }
 
         whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
@@ -376,9 +375,8 @@ internal class DatadogRumMonitorTest {
         @Forgery type: RumActionType,
         @StringForgery name: String
     ) {
-        whenever(mockExecutorService.submit(any())) doAnswer {
+        whenever(mockExecutorService.execute(any())) doAnswer {
             it.getArgument<Runnable>(0).run()
-            StubFuture()
         }
 
         testedMonitor.addAction(type, name, fakeAttributes)
@@ -1777,7 +1775,7 @@ internal class DatadogRumMonitorTest {
         testedMonitor.handleEvent(mock())
 
         // Then
-        verify(mockExecutorService, never()).submit(any())
+        verify(mockExecutorService, never()).execute(any())
     }
 
     @Test
@@ -2243,17 +2241,6 @@ internal class DatadogRumMonitorTest {
             InternalLogger.Target.USER,
             DatadogRumMonitor.RUM_DEBUG_RUM_NOT_ENABLED_WARNING
         )
-    }
-
-    class StubFuture : Future<Any> {
-        override fun cancel(mayInterruptIfRunning: Boolean) =
-            error("Not supposed to be called")
-
-        override fun isCancelled(): Boolean = error("Not supposed to be called")
-        override fun isDone(): Boolean = error("Not supposed to be called")
-        override fun get(): Any = error("Not supposed to be called")
-        override fun get(timeout: Long, unit: TimeUnit?): Any =
-            error("Not supposed to be called")
     }
 
     companion object {
