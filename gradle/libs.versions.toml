@@ -63,8 +63,6 @@ unmock = "0.9.0"
 robolectric = "4.4_r1-robolectric-r2"
 androidLint = "31.0.2"
 
-fuzzyWuzzy = "1.2.0"
-
 versionsGradlePlugin = "0.46.0"
 nexusPublishGradlePlugin = "1.1.0"
 datadogPlugin = "1.17.0-rc1"
@@ -210,8 +208,6 @@ okHttpMock = { module = "com.squareup.okhttp3:mockwebserver", version.ref = "okH
 robolectric = { module = "org.robolectric:android-all", version.ref = "robolectric" }
 androidLintApi = { module = "com.android.tools.lint:lint-api", version.ref = "androidLint" }
 androidLintChecks = { module = "com.android.tools.lint:lint-checks", version.ref = "androidLint" }
-
-fuzzyWuzzy = { module = "me.xdrop:fuzzywuzzy", version.ref = "fuzzyWuzzy" }
 
 kotlinPoet = { module = "com.squareup:kotlinpoet", version.ref = "kotlinPoet" }
 kotlinPoetKsp = { module = "com.squareup:kotlinpoet-ksp", version.ref = "kotlinPoet" }
