@@ -237,7 +237,7 @@ public class PendingTrace extends LinkedList<DDSpan> {
   @Override
   public void addFirst(final DDSpan span) {
     synchronized (this) {
-      super.addFirst(span);
+      super.add(0, span);
     }
     completedSpanCount.incrementAndGet();
   }
