@@ -141,7 +141,7 @@ internal class DatadogFeaturesInitializer @Inject constructor(
         SyntheticsScenario.SessionReplayCompose,
         SyntheticsScenario.Upload,
         SyntheticsScenario.SessionReplay -> true
-        SyntheticsScenario.Rum,
+        SyntheticsScenario.RumManual,
         SyntheticsScenario.Trace,
         SyntheticsScenario.LogsCustom,
         SyntheticsScenario.LogsHeavyTraffic,
@@ -149,7 +149,7 @@ internal class DatadogFeaturesInitializer @Inject constructor(
     }
 
     private fun isRumScenario(config: BenchmarkConfig) = when (config.scenario) {
-        SyntheticsScenario.Rum -> true
+        SyntheticsScenario.RumManual -> true
         SyntheticsScenario.SessionReplay,
         SyntheticsScenario.SessionReplayCompose,
         SyntheticsScenario.Trace,
@@ -164,7 +164,7 @@ internal class DatadogFeaturesInitializer @Inject constructor(
         SyntheticsScenario.LogsHeavyTraffic -> true
         SyntheticsScenario.SessionReplay,
         SyntheticsScenario.SessionReplayCompose,
-        SyntheticsScenario.Rum,
+        SyntheticsScenario.RumManual,
         SyntheticsScenario.Trace,
         SyntheticsScenario.Upload,
         null -> false

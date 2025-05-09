@@ -13,6 +13,7 @@ import com.datadog.benchmark.sample.config.BenchmarkConfig
 import com.datadog.benchmark.sample.di.common.DispatchersModule
 import com.datadog.benchmark.sample.ui.logscustom.LogsFragment
 import com.datadog.benchmark.sample.ui.logsheavytraffic.di.LogsHeavyTrafficComponentDependencies
+import com.datadog.benchmark.sample.ui.rummanual.RumManualScenarioFragment
 import com.datadog.benchmark.sample.ui.sessionreplay.SessionReplayAppcompatFragment
 import com.datadog.benchmark.sample.ui.sessionreplay.SessionReplayMaterialFragment
 import com.datadog.benchmark.sample.ui.trace.TraceScenarioFragment
@@ -46,8 +47,7 @@ internal interface BenchmarkActivityComponent : LogsHeavyTrafficComponentDepende
     interface Factory {
         fun create(
             deps: BenchmarkActivityComponentDependencies,
-            @BindsInstance config: BenchmarkConfig,
-            @BindsInstance mainActivity: MainActivity
+            @BindsInstance config: BenchmarkConfig
         ): BenchmarkActivityComponent
     }
 
@@ -57,4 +57,5 @@ internal interface BenchmarkActivityComponent : LogsHeavyTrafficComponentDepende
     fun inject(sessionReplayMaterialFragment: SessionReplayMaterialFragment)
     fun inject(logsFragment: LogsFragment)
     fun inject(traceScenarioFragment: TraceScenarioFragment)
+    fun inject(rumManualScenarioFragment: RumManualScenarioFragment)
 }

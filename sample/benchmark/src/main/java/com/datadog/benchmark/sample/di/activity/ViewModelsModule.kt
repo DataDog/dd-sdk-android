@@ -10,9 +10,11 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.datadog.android.log.Logger
+import com.datadog.android.rum.RumMonitor
 import com.datadog.benchmark.sample.di.common.CoroutineDispatcherQualifier
 import com.datadog.benchmark.sample.di.common.CoroutineDispatcherType
 import com.datadog.benchmark.sample.ui.logscustom.LogsScreenViewModel
+import com.datadog.benchmark.sample.ui.rummanual.RumManualScenarioViewModel
 import com.datadog.benchmark.sample.ui.trace.TraceScenarioViewModel
 import dagger.Module
 import dagger.Provides
@@ -52,6 +54,21 @@ internal interface ViewModelsModule {
             initializer {
                 TraceScenarioViewModel(
                     tracer = tracer,
+                    defaultDispatcher = defaultDispatcher
+                )
+            }
+        }
+
+        @Provides
+        @ViewModelQualifier(RumManualScenarioViewModel::class)
+        fun provideRumManualScenarioViewModelFactory(
+            rumMonitor: RumMonitor,
+            @CoroutineDispatcherQualifier(CoroutineDispatcherType.Default)
+            defaultDispatcher: CoroutineDispatcher
+        ) : ViewModelProvider.Factory = viewModelFactory {
+            initializer {
+                RumManualScenarioViewModel(
+                    rumMonitor = rumMonitor,
                     defaultDispatcher = defaultDispatcher
                 )
             }

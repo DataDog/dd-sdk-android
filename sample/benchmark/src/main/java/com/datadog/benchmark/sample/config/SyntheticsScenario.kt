@@ -12,7 +12,7 @@ internal enum class SyntheticsScenario(val value: String) {
 
     SessionReplayCompose("sr_compose"),
 
-    Rum("rum"),
+    RumManual("rum_manual"),
 
     Trace("trace"),
 
