@@ -1,3 +1,7 @@
+# 2.15.2 / 2025-05-09
+
+* [BUGFIX] Replace `addFirst` usage in `PendingTrace`. [#2639](https://github.com/DataDog/dd-sdk-android/pull/2639)
+
 # 2.15.1 / 2024-11-04
 
 * [MAINTENANCE] Fix `resolveResourceId` not correctly calling job finished when drawable cloning
