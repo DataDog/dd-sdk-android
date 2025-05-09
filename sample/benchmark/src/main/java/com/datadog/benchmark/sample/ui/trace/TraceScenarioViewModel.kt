@@ -81,7 +81,7 @@ internal class TraceScenarioViewModel(
 ) : ViewModel() {
     private val actions = Channel<TraceScenarioScreenAction>(UNLIMITED)
 
-    private val _traceScenarioState: StateFlow<TraceScenarioScreenState> = actions
+    val traceScenarioState: StateFlow<TraceScenarioScreenState> = actions
         .receiveAsFlow()
         .scan(TraceScenarioScreenState.INITIAL, ::processAction)
         .flowOn(defaultDispatcher)
@@ -90,8 +90,6 @@ internal class TraceScenarioViewModel(
             started = SharingStarted.Lazily,
             initialValue = TraceScenarioScreenState.INITIAL
         )
-
-    val traceScenarioState: StateFlow<TraceScenarioScreenState> = _traceScenarioState
 
     fun dispatch(action: TraceScenarioScreenAction) {
         actions.trySend(action)

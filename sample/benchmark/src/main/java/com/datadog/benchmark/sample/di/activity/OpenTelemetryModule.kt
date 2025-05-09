@@ -8,6 +8,9 @@ package com.datadog.benchmark.sample.di.activity
 
 import com.datadog.android.api.SdkCore
 import com.datadog.android.trace.opentelemetry.OtelTracerProvider
+import com.datadog.benchmark.sample.config.BenchmarkConfig
+import com.datadog.benchmark.sample.config.SyntheticsRun
+import com.datadog.benchmark.sample.config.SyntheticsScenario
 import dagger.Module
 import dagger.Provides
 import io.opentelemetry.api.OpenTelemetry
@@ -21,9 +24,16 @@ internal interface OpenTelemetryModule {
         @Provides
         @BenchmarkActivityScope
         fun provideOpenTelemetry(
-            sdkCore: SdkCore
+            sdkCore: SdkCore,
+            config: BenchmarkConfig
         ): OpenTelemetry {
-            val tracerProvider = OtelTracerProvider.Builder(sdkCore).build()
+            val isTracingEnabled = config.run == SyntheticsRun.Instrumented &&
+                config.scenario == SyntheticsScenario.Trace
+
+            val tracerProvider = when (isTracingEnabled) {
+                true -> OtelTracerProvider.Builder(sdkCore).build()
+                false -> TracerProvider.noop()
+            }
 
             return object : OpenTelemetry {
                 override fun getTracerProvider(): TracerProvider {
