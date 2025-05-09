@@ -13,20 +13,22 @@ import com.datadog.android.log.Logger
 import com.datadog.benchmark.sample.di.common.CoroutineDispatcherQualifier
 import com.datadog.benchmark.sample.di.common.CoroutineDispatcherType
 import com.datadog.benchmark.sample.ui.logscustom.LogsScreenViewModel
+import com.datadog.benchmark.sample.ui.trace.TraceScenarioViewModel
 import dagger.Module
 import dagger.Provides
+import io.opentelemetry.api.trace.Tracer
 import kotlinx.coroutines.CoroutineDispatcher
 import javax.inject.Qualifier
 import kotlin.reflect.KClass
 
 @Qualifier
-internal annotation class ViewModel(val viewModelType: KClass<*>)
+internal annotation class ViewModelQualifier(val viewModelType: KClass<*>)
 
 @Module
 internal interface ViewModelsModule {
     companion object {
         @Provides
-        @ViewModel(LogsScreenViewModel::class)
+        @ViewModelQualifier(LogsScreenViewModel::class)
         fun provideLogsScreenViewModelFactory(
             logger: Logger,
             @CoroutineDispatcherQualifier(CoroutineDispatcherType.Default)
@@ -35,6 +37,21 @@ internal interface ViewModelsModule {
             initializer {
                 LogsScreenViewModel(
                     logger = logger,
+                    defaultDispatcher = defaultDispatcher
+                )
+            }
+        }
+
+        @Provides
+        @ViewModelQualifier(TraceScenarioViewModel::class)
+        fun provideTraceScenarioViewModelFactory(
+            tracer: Tracer,
+            @CoroutineDispatcherQualifier(CoroutineDispatcherType.Default)
+            defaultDispatcher: CoroutineDispatcher
+        ): ViewModelProvider.Factory = viewModelFactory {
+            initializer {
+                TraceScenarioViewModel(
+                    tracer = tracer,
                     defaultDispatcher = defaultDispatcher
                 )
             }

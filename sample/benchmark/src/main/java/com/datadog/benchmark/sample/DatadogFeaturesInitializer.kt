@@ -18,6 +18,8 @@ import com.datadog.android.sessionreplay.SessionReplayConfiguration
 import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import com.datadog.android.sessionreplay.compose.ComposeExtensionSupport
 import com.datadog.android.sessionreplay.material.MaterialExtensionSupport
+import com.datadog.android.trace.Trace
+import com.datadog.android.trace.TraceConfiguration
 import com.datadog.benchmark.sample.config.BenchmarkConfig
 import com.datadog.benchmark.sample.config.SyntheticsRun
 import com.datadog.benchmark.sample.config.SyntheticsScenario
@@ -54,6 +56,10 @@ internal class DatadogFeaturesInitializer @Inject constructor(
 
         if (needToEnableSessionReplay(config)) {
             enableSessionReplay()
+        }
+
+        if (needToEnableTracing(config)) {
+            enableTracing()
         }
     }
 
@@ -162,6 +168,21 @@ internal class DatadogFeaturesInitializer @Inject constructor(
         SyntheticsScenario.Trace,
         SyntheticsScenario.Upload,
         null -> false
+    }
+
+    private fun isTracingScenario(config: BenchmarkConfig) = when (config.scenario) {
+        SyntheticsScenario.Trace -> true
+        else -> false
+    }
+
+    private fun needToEnableTracing(config: BenchmarkConfig): Boolean {
+        return isInstrumentedRun(config) && isTracingScenario(config)
+    }
+
+    private fun enableTracing() {
+        val tracesConfig = TraceConfiguration.Builder().build()
+
+        Trace.enable(tracesConfig, sdkCore)
     }
 
     private fun isInstrumentedRun(config: BenchmarkConfig) = config.run == SyntheticsRun.Instrumented

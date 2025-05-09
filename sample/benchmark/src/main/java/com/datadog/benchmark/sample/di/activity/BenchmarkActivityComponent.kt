@@ -15,6 +15,7 @@ import com.datadog.benchmark.sample.ui.logscustom.LogsFragment
 import com.datadog.benchmark.sample.ui.logsheavytraffic.di.LogsHeavyTrafficComponentDependencies
 import com.datadog.benchmark.sample.ui.sessionreplay.SessionReplayAppcompatFragment
 import com.datadog.benchmark.sample.ui.sessionreplay.SessionReplayMaterialFragment
+import com.datadog.benchmark.sample.ui.trace.TraceScenarioFragment
 import dagger.BindsInstance
 import dagger.Component
 import javax.inject.Scope
@@ -35,7 +36,8 @@ internal interface BenchmarkActivityComponentDependencies {
         BenchmarkActivityModule::class,
         ViewModelsModule::class,
         DatadogActivityModule::class,
-        DispatchersModule::class
+        DispatchersModule::class,
+        OpenTelemetryModule::class
     ]
 )
 @BenchmarkActivityScope
@@ -54,4 +56,5 @@ internal interface BenchmarkActivityComponent : LogsHeavyTrafficComponentDepende
     fun inject(sessionReplayAppcompatFragment: SessionReplayAppcompatFragment)
     fun inject(sessionReplayMaterialFragment: SessionReplayMaterialFragment)
     fun inject(logsFragment: LogsFragment)
+    fun inject(traceScenarioFragment: TraceScenarioFragment)
 }
