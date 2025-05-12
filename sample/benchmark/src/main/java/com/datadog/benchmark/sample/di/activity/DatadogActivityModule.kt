@@ -8,6 +8,8 @@ package com.datadog.benchmark.sample.di.activity
 
 import com.datadog.android.api.SdkCore
 import com.datadog.android.log.Logger
+import com.datadog.android.rum.GlobalRumMonitor
+import com.datadog.android.rum.RumMonitor
 import com.datadog.benchmark.DatadogBaseMeter
 import com.datadog.benchmark.DatadogExporterConfiguration
 import com.datadog.benchmark.DatadogSdkMeter
@@ -47,6 +49,12 @@ internal interface DatadogActivityModule {
                 .setName("benchmarkLogger")
                 .setLogcatLogsEnabled(true)
                 .build()
+        }
+
+        @Provides
+        @BenchmarkActivityScope
+        fun provideRumMonitor(sdkCore: SdkCore): RumMonitor {
+            return GlobalRumMonitor.get(sdkCore = sdkCore)
         }
     }
 }
