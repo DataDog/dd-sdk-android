@@ -37,6 +37,7 @@ import com.datadog.android.utils.verifyLog
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
+import com.datadog.tools.unit.forge.aThrowable
 import com.google.gson.JsonObject
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.AdvancedForgery
@@ -66,6 +67,7 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.reset
@@ -78,7 +80,12 @@ import org.mockito.quality.Strictness
 import java.util.Collections
 import java.util.Locale
 import java.util.UUID
+import java.util.concurrent.Callable
+import java.util.concurrent.CancellationException
 import java.util.concurrent.CountDownLatch
+import java.util.concurrent.ExecutionException
+import java.util.concurrent.Future
+import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
@@ -105,6 +112,9 @@ internal class DatadogCoreTest {
     lateinit var mockPersistenceExecutorService: FlushableExecutorService
 
     @Mock
+    lateinit var mockContextExecutorService: ThreadPoolExecutor
+
+    @Mock
     lateinit var mockBuildSdkVersionProvider: BuildSdkVersionProvider
 
     @Forgery
@@ -122,6 +132,9 @@ internal class DatadogCoreTest {
         whenever(mockPersistenceExecutorService.execute(any())) doAnswer {
             it.getArgument<Runnable>(0).run()
         }
+        whenever(mockContextExecutorService.execute(any())) doAnswer {
+            it.getArgument<Runnable>(0).run()
+        }
 
         testedCore = DatadogCore(
             appContext.mockInstance,
@@ -133,6 +146,7 @@ internal class DatadogCoreTest {
         ).apply {
             initialize(fakeConfiguration)
         }
+        testedCore.coreFeature.contextExecutorService = mockContextExecutorService
     }
 
     @AfterEach
@@ -262,9 +276,10 @@ internal class DatadogCoreTest {
     ) {
         // Given
         testedCore.coreFeature = mock()
-        whenever(testedCore.coreFeature.initialized).thenReturn(AtomicBoolean())
+        whenever(testedCore.coreFeature.initialized).thenReturn(AtomicBoolean(true))
         val mockUserInfoProvider = mock<MutableUserInfoProvider>()
         whenever(testedCore.coreFeature.userInfoProvider) doReturn mockUserInfoProvider
+        whenever(testedCore.coreFeature.contextExecutorService) doReturn mockContextExecutorService
 
         // When
         testedCore.setUserInfo(id, name, email)
@@ -630,16 +645,46 @@ internal class DatadogCoreTest {
         @Forgery fakeTrackingConsent: TrackingConsent
     ) {
         // Given
-        testedCore.coreFeature = mock()
-        val mockConsentProvider = mock<ConsentProvider>()
-        whenever(mockConsentProvider.getConsent()) doReturn fakeTrackingConsent
-        whenever(testedCore.coreFeature.trackingConsentProvider) doReturn mockConsentProvider
+        val mockFuture = mock<Future<TrackingConsent>>()
+        whenever(mockFuture.get()) doReturn fakeTrackingConsent
+        whenever(
+            testedCore.coreFeature.contextExecutorService.submit(any<Callable<TrackingConsent>>())
+        ) doReturn mockFuture
 
         // When
         val trackingConsent = testedCore.trackingConsent
 
         // When + Then
         assertThat(trackingConsent).isEqualTo(fakeTrackingConsent)
+    }
+
+    @Test
+    fun `M return default tracking consent W trackingConsent() { failed to get tracking consent }`(
+        forge: Forge
+    ) {
+        // Given
+        val mockFuture = mock<Future<TrackingConsent>>()
+        val fakeThrowable = forge.anElementFrom(
+            ExecutionException(forge.aThrowable()),
+            CancellationException(),
+            InterruptedException()
+        )
+        whenever(mockFuture.get()) doThrow fakeThrowable
+        whenever(
+            testedCore.coreFeature.contextExecutorService.submit(any<Callable<TrackingConsent>>())
+        ) doReturn mockFuture
+
+        // When
+        val trackingConsent = testedCore.trackingConsent
+
+        // When + Then
+        assertThat(trackingConsent).isEqualTo(TrackingConsent.NOT_GRANTED)
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
+            DatadogCore.UNABLE_TO_GET_TRACKING_CONSENT,
+            fakeThrowable
+        )
     }
 
     @Test
@@ -747,16 +792,8 @@ internal class DatadogCoreTest {
         )
         val mockCoreFeature = mock<CoreFeature>()
         testedCore.coreFeature = mockCoreFeature
-        val mockPersistenceExecutor = mock<FlushableExecutorService>()
-        val mockContextExecutor = mock<ThreadPoolExecutor>()
-        whenever(mockCoreFeature.persistenceExecutorService) doReturn mockPersistenceExecutor
-        whenever(mockCoreFeature.contextExecutorService) doReturn mockContextExecutor
-        whenever(mockPersistenceExecutor.execute(any())) doAnswer {
-            it.getArgument<Runnable>(0).run()
-        }
-        whenever(mockContextExecutor.execute(any())) doAnswer {
-            it.getArgument<Runnable>(0).run()
-        }
+        whenever(mockCoreFeature.persistenceExecutorService) doReturn mockPersistenceExecutorService
+        whenever(mockCoreFeature.contextExecutorService) doReturn mockContextExecutorService
 
         // When
         testedCore.clearAllData()
@@ -782,6 +819,7 @@ internal class DatadogCoreTest {
                 anAlphaNumericalString() to mock()
             }
         )
+        whenever(mockContextExecutorService.queue) doReturn LinkedBlockingQueue()
 
         // When
         testedCore.flushStoredData()

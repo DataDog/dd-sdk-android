@@ -6,6 +6,7 @@
 
 package com.datadog.android.core.internal.utils
 
+import androidx.annotation.CheckResult
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.lint.InternalApi
 import java.util.Locale
@@ -88,6 +89,7 @@ fun ScheduledExecutorService.scheduleSafe(
  * @param runnable Task to run.
  */
 @InternalApi
+@CheckResult
 fun ExecutorService.submitSafe(
     operationName: String,
     internalLogger: InternalLogger,

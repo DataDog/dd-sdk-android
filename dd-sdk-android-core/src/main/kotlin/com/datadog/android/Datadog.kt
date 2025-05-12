@@ -93,8 +93,10 @@ object Datadog {
                 sdkInstanceName
             ).apply {
                 initialize(configuration)
+                // not pushing to the context thread to have it set already at the
+                // moment Datadog.initialize is completed
+                coreFeature.trackingConsentProvider.setConsent(trackingConsent)
             }
-            sdkCore.setTrackingConsent(trackingConsent)
             registry.register(sdkInstanceName, sdkCore)
 
             return sdkCore
