@@ -42,6 +42,8 @@ internal class RumApplicationScope(
     private val slowFramesListener: SlowFramesListener?
 ) : RumScope, RumViewChangedListener {
 
+    override val parentScope: RumScope? = null
+
     private var rumContext = RumContext(applicationId = applicationId)
 
     internal val childScopes: MutableList<RumScope> = mutableListOf(

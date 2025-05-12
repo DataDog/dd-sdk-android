@@ -33,7 +33,7 @@ import java.util.concurrent.TimeUnit
 
 @Suppress("LongParameterList")
 internal class RumViewManagerScope(
-    private val parentScope: RumScope,
+    override val parentScope: RumScope,
     private val sdkCore: InternalSdkCore,
     private val sessionEndedMetricDispatcher: SessionMetricDispatcher,
     private val backgroundTrackingEnabled: Boolean,

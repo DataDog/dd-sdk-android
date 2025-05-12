@@ -54,7 +54,7 @@ import kotlin.math.min
 
 @Suppress("TooManyFunctions", "LargeClass", "LongParameterList")
 internal open class RumViewScope(
-    private val parentScope: RumScope,
+    override val parentScope: RumScope,
     private val sdkCore: InternalSdkCore,
     private val sessionEndedMetricDispatcher: SessionMetricDispatcher,
     internal val key: RumScopeKey,

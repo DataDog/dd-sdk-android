@@ -24,7 +24,7 @@ import java.util.concurrent.TimeUnit
 import kotlin.math.max
 
 internal class RumActionScope(
-    val parentScope: RumScope,
+    override val parentScope: RumScope,
     private val sdkCore: InternalSdkCore,
     val waitForStop: Boolean,
     eventTime: Time,

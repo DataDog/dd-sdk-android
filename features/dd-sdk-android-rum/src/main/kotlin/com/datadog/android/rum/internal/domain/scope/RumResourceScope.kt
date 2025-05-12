@@ -35,7 +35,7 @@ import java.util.UUID
 
 @Suppress("LongParameterList", "TooManyFunctions")
 internal class RumResourceScope(
-    internal val parentScope: RumScope,
+    override val parentScope: RumScope,
     internal val sdkCore: InternalSdkCore,
     internal val url: String,
     internal val method: RumResourceMethod,

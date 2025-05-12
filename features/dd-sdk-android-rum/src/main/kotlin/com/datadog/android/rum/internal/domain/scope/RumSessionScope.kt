@@ -27,7 +27,7 @@ import java.util.concurrent.atomic.AtomicLong
 
 @Suppress("LongParameterList")
 internal class RumSessionScope(
-    private val parentScope: RumScope,
+    override val parentScope: RumScope,
     private val sdkCore: InternalSdkCore,
     private val sessionEndedMetricDispatcher: SessionMetricDispatcher,
     internal val sampleRate: Float,
