@@ -10,7 +10,6 @@ import androidx.annotation.WorkerThread
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.rum.internal.domain.RumContext
 
-@NoOpImplementation
 internal interface RumScope {
 
     val parentScope: RumScope?

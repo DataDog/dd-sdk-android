@@ -244,7 +244,7 @@ internal class RumViewManagerScopeTest {
                     .isEqualTo(resolveExpectedTimestamp(fakeEvent.eventTime.timestamp))
                 assertThat(it.key).isEqualTo(fakeEvent.key)
                 assertThat(it.type).isEqualTo(RumViewType.FOREGROUND)
-                assertThat(it.eventAttributes).containsAllEntriesOf(fakeEvent.attributes)
+                assertThat(it.viewAttributes).containsAllEntriesOf(fakeEvent.attributes)
                 assertThat(it.firstPartyHostHeaderTypeResolver).isSameAs(mockResolver)
                 assertThat(it.version).isEqualTo(2)
             }
@@ -271,7 +271,7 @@ internal class RumViewManagerScopeTest {
                     .isEqualTo(resolveExpectedTimestamp(fakeEvent.eventTime.timestamp))
                 assertThat(it.key).isEqualTo(fakeEvent.key)
                 assertThat(it.type).isEqualTo(RumViewType.FOREGROUND)
-                assertThat(it.eventAttributes).containsAllEntriesOf(fakeEvent.attributes)
+                assertThat(it.viewAttributes).containsAllEntriesOf(fakeEvent.attributes)
                 assertThat(it.firstPartyHostHeaderTypeResolver).isSameAs(mockResolver)
                 assertThat(it.version).isEqualTo(2)
             }
