@@ -11,6 +11,8 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.lint.InternalApi
 import java.util.Locale
 import java.util.concurrent.Callable
+import java.util.concurrent.CancellationException
+import java.util.concurrent.ExecutionException
 import java.util.concurrent.Executor
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Future
@@ -20,6 +22,7 @@ import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
 
 internal const val ERROR_TASK_REJECTED = "Unable to schedule %s task on the executor"
+internal const val ERROR_FUTURE_GET_FAILED = "Unable to get result of the %s task"
 
 /**
  * Executes [Runnable] without throwing [RejectedExecutionException] if it cannot be accepted
@@ -118,8 +121,7 @@ fun ExecutorService.submitSafe(
  * @param internalLogger Internal logger.
  * @param callable Task to run.
  */
-@InternalApi
-fun <T> ExecutorService.submitSafe(
+internal fun <T> ExecutorService.submitSafe(
     operationName: String,
     internalLogger: InternalLogger,
     callable: Callable<T>
@@ -132,6 +134,39 @@ fun <T> ExecutorService.submitSafe(
             InternalLogger.Level.ERROR,
             listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
             { ERROR_TASK_REJECTED.format(Locale.US, operationName) },
+            e
+        )
+        null
+    }
+}
+
+internal fun <T> Future<T>?.getSafe(
+    operationName: String,
+    internalLogger: InternalLogger
+): T? {
+    return try {
+        this?.get()
+    } catch (e: InterruptedException) {
+        internalLogger.log(
+            InternalLogger.Level.ERROR,
+            listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
+            { ERROR_FUTURE_GET_FAILED.format(Locale.US, operationName) },
+            e
+        )
+        null
+    } catch (e: CancellationException) {
+        internalLogger.log(
+            InternalLogger.Level.ERROR,
+            listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
+            { ERROR_FUTURE_GET_FAILED.format(Locale.US, operationName) },
+            e
+        )
+        null
+    } catch (e: ExecutionException) {
+        internalLogger.log(
+            InternalLogger.Level.ERROR,
+            listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
+            { ERROR_FUTURE_GET_FAILED.format(Locale.US, operationName) },
             e
         )
         null
