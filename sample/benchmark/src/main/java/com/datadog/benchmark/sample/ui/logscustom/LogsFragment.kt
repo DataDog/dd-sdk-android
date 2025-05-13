@@ -18,8 +18,11 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.lifecycleScope
 import com.datadog.benchmark.sample.benchmarkActivityComponent
 import com.datadog.benchmark.sample.di.activity.ViewModelQualifier
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 internal class LogsFragment : Fragment() {
@@ -32,6 +35,11 @@ internal class LogsFragment : Fragment() {
         requireActivity().benchmarkActivityComponent.inject(this)
 
         val viewModel by viewModels<LogsScreenViewModel> { viewModelFactory }
+
+        lifecycleScope.launch {
+            delay(3000)
+            LogsCustomScenarioExecutor(viewModel).execute()
+        }
 
         return ComposeView(requireContext()).apply {
             setContent {
