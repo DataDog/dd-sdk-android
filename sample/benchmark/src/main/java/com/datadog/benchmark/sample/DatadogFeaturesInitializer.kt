@@ -18,6 +18,8 @@ import com.datadog.android.sessionreplay.SessionReplayConfiguration
 import com.datadog.android.sessionreplay.SessionReplayPrivacy
 import com.datadog.android.sessionreplay.compose.ComposeExtensionSupport
 import com.datadog.android.sessionreplay.material.MaterialExtensionSupport
+import com.datadog.android.trace.Trace
+import com.datadog.android.trace.TraceConfiguration
 import com.datadog.benchmark.sample.config.BenchmarkConfig
 import com.datadog.benchmark.sample.config.SyntheticsRun
 import com.datadog.benchmark.sample.config.SyntheticsScenario
@@ -45,7 +47,7 @@ internal class DatadogFeaturesInitializer @Inject constructor(
         isInitialized = true
 
         if (needToEnableRum(config)) {
-            enableRum()
+            enableRum(config)
         }
 
         if (needToEnableLogs(config)) {
@@ -54,6 +56,10 @@ internal class DatadogFeaturesInitializer @Inject constructor(
 
         if (needToEnableSessionReplay(config)) {
             enableSessionReplay()
+        }
+
+        if (needToEnableTracing(config)) {
+            enableTracing()
         }
     }
 
@@ -89,45 +95,49 @@ internal class DatadogFeaturesInitializer @Inject constructor(
         }
     }
 
-    private fun createRumConfiguration(): RumConfiguration {
-        return RumConfiguration.Builder(BuildConfig.BENCHMARK_RUM_APPLICATION_ID)
-            .useViewTrackingStrategy(
-                NavigationViewTrackingStrategy(
-                    R.id.nav_host_fragment,
-                    true,
-                    BenchmarkNavigationPredicate()
+    private fun createRumConfiguration(config: BenchmarkConfig): RumConfiguration {
+        return RumConfiguration.Builder(BuildConfig.BENCHMARK_RUM_APPLICATION_ID).apply {
+            if (config.scenario != SyntheticsScenario.RumManual) {
+                useViewTrackingStrategy(
+                    NavigationViewTrackingStrategy(
+                        R.id.nav_host_fragment,
+                        true,
+                        BenchmarkNavigationPredicate()
+                    )
                 )
-            )
-            .setTelemetrySampleRate(SAMPLE_RATE_TELEMETRY)
-            .trackUserInteractions()
-            .trackLongTasks(THRESHOLD_LONG_TASK_INTERVAL)
-            .trackNonFatalAnrs(true)
-            .setViewEventMapper { event ->
+            } else {
+                useViewTrackingStrategy(null)
+            }
+            setTelemetrySampleRate(SAMPLE_RATE_TELEMETRY)
+            trackUserInteractions()
+            trackLongTasks(THRESHOLD_LONG_TASK_INTERVAL)
+            trackNonFatalAnrs(true)
+            setViewEventMapper { event ->
                 event.context?.additionalProperties?.put(ATTR_IS_MAPPED, true)
                 event
             }
-            .setActionEventMapper { event ->
+            setActionEventMapper { event ->
                 event.context?.additionalProperties?.put(ATTR_IS_MAPPED, true)
                 event
             }
-            .setResourceEventMapper { event ->
+            setResourceEventMapper { event ->
                 event.context?.additionalProperties?.put(ATTR_IS_MAPPED, true)
                 event
             }
-            .setErrorEventMapper { event ->
+            setErrorEventMapper { event ->
                 event.context?.additionalProperties?.put(ATTR_IS_MAPPED, true)
                 event
             }
-            .setLongTaskEventMapper { event ->
+            setLongTaskEventMapper { event ->
                 event.context?.additionalProperties?.put(ATTR_IS_MAPPED, true)
                 event
             }
-            .enableComposeActionTracking()
-            .build()
+            enableComposeActionTracking()
+        }.build()
     }
 
-    private fun enableRum() {
-        val rumConfig = createRumConfiguration()
+    private fun enableRum(config: BenchmarkConfig) {
+        val rumConfig = createRumConfiguration(config)
         Rum.enable(rumConfig, sdkCore = sdkCore)
     }
 
@@ -135,7 +145,7 @@ internal class DatadogFeaturesInitializer @Inject constructor(
         SyntheticsScenario.SessionReplayCompose,
         SyntheticsScenario.Upload,
         SyntheticsScenario.SessionReplay -> true
-        SyntheticsScenario.Rum,
+        SyntheticsScenario.RumManual,
         SyntheticsScenario.Trace,
         SyntheticsScenario.LogsCustom,
         SyntheticsScenario.LogsHeavyTraffic,
@@ -143,7 +153,7 @@ internal class DatadogFeaturesInitializer @Inject constructor(
     }
 
     private fun isRumScenario(config: BenchmarkConfig) = when (config.scenario) {
-        SyntheticsScenario.Rum -> true
+        SyntheticsScenario.RumManual -> true
         SyntheticsScenario.SessionReplay,
         SyntheticsScenario.SessionReplayCompose,
         SyntheticsScenario.Trace,
@@ -158,10 +168,25 @@ internal class DatadogFeaturesInitializer @Inject constructor(
         SyntheticsScenario.LogsHeavyTraffic -> true
         SyntheticsScenario.SessionReplay,
         SyntheticsScenario.SessionReplayCompose,
-        SyntheticsScenario.Rum,
+        SyntheticsScenario.RumManual,
         SyntheticsScenario.Trace,
         SyntheticsScenario.Upload,
         null -> false
+    }
+
+    private fun isTracingScenario(config: BenchmarkConfig) = when (config.scenario) {
+        SyntheticsScenario.Trace -> true
+        else -> false
+    }
+
+    private fun needToEnableTracing(config: BenchmarkConfig): Boolean {
+        return isInstrumentedRun(config) && isTracingScenario(config)
+    }
+
+    private fun enableTracing() {
+        val tracesConfig = TraceConfiguration.Builder().build()
+
+        Trace.enable(tracesConfig, sdkCore)
     }
 
     private fun isInstrumentedRun(config: BenchmarkConfig) = config.run == SyntheticsRun.Instrumented

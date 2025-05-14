@@ -15,8 +15,10 @@ import com.datadog.benchmark.sample.config.BenchmarkConfig
 import com.datadog.benchmark.sample.config.SyntheticsScenario
 import com.datadog.benchmark.sample.ui.logscustom.LogsFragment
 import com.datadog.benchmark.sample.ui.logsheavytraffic.LogsHeavyTrafficHostFragment
+import com.datadog.benchmark.sample.ui.rummanual.RumManualScenarioFragment
 import com.datadog.benchmark.sample.ui.sessionreplay.SessionReplayAppcompatFragment
 import com.datadog.benchmark.sample.ui.sessionreplay.SessionReplayMaterialFragment
+import com.datadog.benchmark.sample.ui.trace.TraceScenarioFragment
 import javax.inject.Inject
 
 internal class FragmentsNavigationManagerImpl @Inject constructor(
@@ -54,8 +56,8 @@ private fun createStartDestination(scenario: SyntheticsScenario?): String {
         SyntheticsScenario.SessionReplayCompose -> error("Using fragments for SessionReplayCompose scenario")
         SyntheticsScenario.LogsCustom -> LOGS_FRAGMENT_KEY
         SyntheticsScenario.LogsHeavyTraffic -> LOGS_HEAVY_TRAFFIC_FRAGMENT_KEY
-        SyntheticsScenario.Rum, // TODO RUM-9510
-        SyntheticsScenario.Trace -> SESSION_REPLAY_METERIAL_FRAGMENT_KEY // TODO RUM-9509
+        SyntheticsScenario.RumManual -> RUM_MANUAL_FRAGMENT_KEY
+        SyntheticsScenario.Trace -> TRACE_SCENARIO_FRAGMENT_KEY
     }
 }
 
@@ -67,8 +69,8 @@ private fun NavGraphBuilder.navGraph(scenario: SyntheticsScenario?) {
         SyntheticsScenario.SessionReplayCompose -> error("Using fragments for SessionReplayCompose scenario")
         SyntheticsScenario.LogsCustom -> navGraphLogs()
         SyntheticsScenario.LogsHeavyTraffic -> navGraphLogsHeavyTraffic()
-        SyntheticsScenario.Rum, // TODO RUM-9510
-        SyntheticsScenario.Trace -> navGraphSessionReplay() // TODO RUM-9509
+        SyntheticsScenario.RumManual -> navGraphRumManualScenario()
+        SyntheticsScenario.Trace -> navGraphTraceScenario()
     }
 }
 
@@ -94,7 +96,21 @@ private fun NavGraphBuilder.navGraphSessionReplay() {
     }
 }
 
+private fun NavGraphBuilder.navGraphTraceScenario() {
+    fragment<TraceScenarioFragment>(route = TRACE_SCENARIO_FRAGMENT_KEY) {
+        label = "trace scenario"
+    }
+}
+
+private fun NavGraphBuilder.navGraphRumManualScenario() {
+    fragment<RumManualScenarioFragment>(route = RUM_MANUAL_FRAGMENT_KEY) {
+        label = "rum manual scenario"
+    }
+}
+
 private const val LOGS_FRAGMENT_KEY = "logs_fragment"
 private const val LOGS_HEAVY_TRAFFIC_FRAGMENT_KEY = "logs_heavy_traffic_fragment"
 private const val SESSION_REPLAY_METERIAL_FRAGMENT_KEY = "fragment_session_replay_material"
 private const val SESSION_REPLAY_APPCOMPAT_FRAGMENT_KEY = "fragment_session_replay_appcompat"
+private const val TRACE_SCENARIO_FRAGMENT_KEY = "fragment_trace_scenario"
+private const val RUM_MANUAL_FRAGMENT_KEY = "fragment_rum_manual_scenario"

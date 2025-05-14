@@ -27,8 +27,7 @@ internal class MainActivityViewModelFactory(
 
         val benchmarkActivityComponent = DaggerBenchmarkActivityComponent.factory().create(
             deps = application.benchmarkAppComponent,
-            config = config,
-            mainActivity = activity
+            config = config
         )
 
         return MainActivityViewModel(benchmarkActivityComponent) as T
