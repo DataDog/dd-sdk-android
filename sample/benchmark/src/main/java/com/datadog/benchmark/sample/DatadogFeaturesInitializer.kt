@@ -23,24 +23,30 @@ import com.datadog.android.trace.TraceConfiguration
 import com.datadog.benchmark.sample.config.BenchmarkConfig
 import com.datadog.benchmark.sample.config.SyntheticsRun
 import com.datadog.benchmark.sample.config.SyntheticsScenario
+import com.datadog.benchmark.sample.di.activity.BenchmarkActivityScope
 import com.datadog.benchmark.sample.navigation.BenchmarkNavigationPredicate
 import com.datadog.sample.benchmark.BuildConfig
 import com.datadog.sample.benchmark.R
+import dagger.Lazy
 import javax.inject.Inject
-import javax.inject.Singleton
 
 /**
  * The general recommendation is to initialize all the components at the Application.onCreate
  * to have all the observability as early as possible. However in the Benchmark app we know what features
  * we need only in [MainActivity.onCreate], it depends on the [SyntheticsScenario] which is derived from intent extras.
  */
-@Singleton
+@BenchmarkActivityScope
 @Suppress("TooManyFunctions")
 internal class DatadogFeaturesInitializer @Inject constructor(
-    private val sdkCore: SdkCore
+    private val sdkCore: Lazy<SdkCore>
 ) {
     private var isInitialized = false
+
     fun initialize(config: BenchmarkConfig) {
+        if (config.run == SyntheticsRun.Baseline) {
+            return
+        }
+
         if (isInitialized) {
             return
         }
@@ -76,7 +82,7 @@ internal class DatadogFeaturesInitializer @Inject constructor(
             .addExtensionSupport(ComposeExtensionSupport())
             .build()
 
-        SessionReplay.enable(sessionReplayConfig, sdkCore)
+        SessionReplay.enable(sessionReplayConfig, sdkCore.get())
     }
 
     private fun needToEnableLogs(config: BenchmarkConfig): Boolean {
@@ -85,13 +91,13 @@ internal class DatadogFeaturesInitializer @Inject constructor(
 
     private fun enableLogs() {
         val logsConfig = LogsConfiguration.Builder().build()
-        Logs.enable(logsConfig, sdkCore)
+        Logs.enable(logsConfig, sdkCore.get())
     }
 
     private fun needToEnableRum(config: BenchmarkConfig): Boolean {
         return when (isInstrumentedRun(config)) {
             true -> isSessionReplayScenario(config) || isRumScenario(config)
-            false -> isSessionReplayScenario(config)
+            false -> false
         }
     }
 
@@ -138,7 +144,7 @@ internal class DatadogFeaturesInitializer @Inject constructor(
 
     private fun enableRum(config: BenchmarkConfig) {
         val rumConfig = createRumConfiguration(config)
-        Rum.enable(rumConfig, sdkCore = sdkCore)
+        Rum.enable(rumConfig, sdkCore = sdkCore.get())
     }
 
     private fun isSessionReplayScenario(config: BenchmarkConfig) = when (config.scenario) {
@@ -186,7 +192,7 @@ internal class DatadogFeaturesInitializer @Inject constructor(
     private fun enableTracing() {
         val tracesConfig = TraceConfiguration.Builder().build()
 
-        Trace.enable(tracesConfig, sdkCore)
+        Trace.enable(tracesConfig, sdkCore.get())
     }
 
     private fun isInstrumentedRun(config: BenchmarkConfig) = config.run == SyntheticsRun.Instrumented

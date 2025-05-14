@@ -6,15 +6,27 @@
 
 package com.datadog.benchmark.sample.di.activity
 
+import android.annotation.SuppressLint
+import android.content.Context
+import android.util.Log
+import com.datadog.android.Datadog
 import com.datadog.android.api.SdkCore
+import com.datadog.android.core.configuration.BackPressureMitigation
+import com.datadog.android.core.configuration.BackPressureStrategy
+import com.datadog.android.core.configuration.BatchSize
+import com.datadog.android.core.configuration.Configuration
+import com.datadog.android.core.configuration.UploadFrequency
 import com.datadog.android.log.Logger
+import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumMonitor
 import com.datadog.benchmark.DatadogBaseMeter
 import com.datadog.benchmark.DatadogExporterConfiguration
 import com.datadog.benchmark.DatadogSdkMeter
 import com.datadog.benchmark.DatadogVitalsMeter
+import com.datadog.benchmark.sample.MainActivity
 import com.datadog.benchmark.sample.config.BenchmarkConfig
+import com.datadog.benchmark.sample.config.SyntheticsRun
 import com.datadog.benchmark.sample.config.SyntheticsScenario
 import com.datadog.sample.benchmark.BuildConfig
 import dagger.Module
@@ -23,6 +35,29 @@ import dagger.Provides
 @Module
 internal interface DatadogActivityModule {
     companion object {
+        /**
+         * The general recommendation is to initialize Datadog SDK at the Application.onCreate
+         * to have all the observability as early as possible. However in the Benchmark app we know what kind of run we
+         * have [SyntheticsRun.Instrumented] or [SyntheticsRun.Baseline] only in [MainActivity.onCreate].
+         * It is derived from intent extras.
+         */
+        @Provides
+        @BenchmarkActivityScope
+        fun provideSdkCore(
+            context: Context,
+            config: BenchmarkConfig
+        ): SdkCore {
+            check(config.run != SyntheticsRun.Baseline) {
+                "Datadog must not be initialized in baseline run"
+            }
+
+            return Datadog.initialize(
+                context,
+                createDatadogConfiguration(),
+                TrackingConsent.GRANTED
+            )!!
+        }
+
         @Provides
         @BenchmarkActivityScope
         fun provideDatadogMeter(config: BenchmarkConfig): DatadogBaseMeter {
@@ -58,6 +93,30 @@ internal interface DatadogActivityModule {
         }
     }
 }
+
+@SuppressLint("LogNotTimber")
+private fun createDatadogConfiguration(): Configuration {
+    val configBuilder = Configuration.Builder(
+        clientToken = BuildConfig.BENCHMARK_CLIENT_TOKEN,
+        env = BuildConfig.BUILD_TYPE
+    )
+        .setBatchSize(BatchSize.SMALL)
+        .setUploadFrequency(UploadFrequency.FREQUENT)
+
+    configBuilder.setBackpressureStrategy(
+        BackPressureStrategy(
+            CAPACITY_BACK_PRESSURE_STRATEGY,
+            { Log.w("BackPressure", "THRESHOLD REACHED!") },
+            { Log.e("BackPressure", "ITEM DROPPED $it!") },
+            BackPressureMitigation.IGNORE_NEWEST
+        )
+    )
+
+    return configBuilder.build()
+}
+
+// the same as the default one
+private const val CAPACITY_BACK_PRESSURE_STRATEGY = 1024
 
 private const val METER_INTERVAL_IN_SECONDS = 10L
 private const val BENCHMARK_APPLICATION_NAME = "Benchmark Application"
