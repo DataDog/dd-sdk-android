@@ -679,12 +679,6 @@ internal class DatadogCoreTest {
 
         // When + Then
         assertThat(trackingConsent).isEqualTo(TrackingConsent.NOT_GRANTED)
-        mockInternalLogger.verifyLog(
-            InternalLogger.Level.ERROR,
-            listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
-            DatadogCore.UNABLE_TO_GET_TRACKING_CONSENT,
-            fakeThrowable
-        )
     }
 
     @Test

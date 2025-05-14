@@ -627,12 +627,6 @@ internal class SdkFeatureTest {
 
         // Then
         assertThat(writeContext).isNull()
-        mockInternalLogger.verifyLog(
-            InternalLogger.Level.ERROR,
-            InternalLogger.Target.USER,
-            SdkFeature.FAILED_TO_GET_WRITE_CONTEXT_SYNC,
-            throwable
-        )
     }
 
     @Test

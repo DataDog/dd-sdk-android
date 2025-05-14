@@ -13,6 +13,7 @@ internal class DatadogUserInfoProvider(
     internal val dataWriter: DataWriter<UserInfo>
 ) : MutableUserInfoProvider {
 
+    @Volatile
     private var internalUserInfo = UserInfo()
         set(value) {
             field = value

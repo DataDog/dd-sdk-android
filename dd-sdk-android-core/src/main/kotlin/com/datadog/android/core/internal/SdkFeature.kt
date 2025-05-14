@@ -53,6 +53,7 @@ import com.datadog.android.core.internal.persistence.file.advanced.FeatureFileOr
 import com.datadog.android.core.internal.persistence.file.batch.BatchFileReaderWriter
 import com.datadog.android.core.internal.persistence.tlvformat.TLVBlockFileReader
 import com.datadog.android.core.internal.utils.executeSafe
+import com.datadog.android.core.internal.utils.getSafe
 import com.datadog.android.core.internal.utils.submitSafe
 import com.datadog.android.core.persistence.PersistenceStrategy
 import com.datadog.android.internal.profiler.BenchmarkSdkUploads
@@ -62,9 +63,7 @@ import com.datadog.android.security.Encryption
 import java.util.Collections
 import java.util.Locale
 import java.util.concurrent.Callable
-import java.util.concurrent.CancellationException
 import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.ExecutionException
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
 
@@ -187,9 +186,10 @@ internal class SdkFeature(
     }
 
     override fun getWriteContextSync(): Pair<DatadogContext, EventWriteScope>? {
-        val future = coreFeature.contextExecutorService
+        val operationName = "getWriteContextSync-${wrappedFeature.name}"
+        return coreFeature.contextExecutorService
             .submitSafe(
-                "getWriteContextSync-${wrappedFeature.name}",
+                operationName,
                 internalLogger,
                 Callable {
                     val contextProvider = coreFeature.contextProvider
@@ -199,18 +199,7 @@ internal class SdkFeature(
                     context to eventBatchWriteScope
                 }
             )
-        return try {
-            future?.get()
-        } catch (e: CancellationException) {
-            logGetWriteContextSyncError(e)
-            null
-        } catch (e: ExecutionException) {
-            logGetWriteContextSyncError(e)
-            null
-        } catch (e: InterruptedException) {
-            logGetWriteContextSyncError(e)
-            null
-        }
+            .getSafe(operationName, internalLogger)
     }
 
     override fun sendEvent(event: Any) {
@@ -461,15 +450,6 @@ internal class SdkFeature(
         )
     }
 
-    private fun logGetWriteContextSyncError(e: Exception) {
-        internalLogger.log(
-            level = InternalLogger.Level.ERROR,
-            target = InternalLogger.Target.USER,
-            { FAILED_TO_GET_WRITE_CONTEXT_SYNC },
-            e
-        )
-    }
-
     // endregion
 
     // Used for nightly tests only
@@ -493,7 +473,6 @@ internal class SdkFeature(
             "Feature \"%s\" already has this listener registered."
         const val NO_EVENT_RECEIVER =
             "Feature \"%s\" has no event receiver registered, ignoring event."
-        internal const val FAILED_TO_GET_WRITE_CONTEXT_SYNC = "Failed to get write context in a sync manner."
         internal const val TRACK_NAME = "track"
         internal const val METER_NAME = "dd-sdk-android"
         internal const val BATCH_COUNT_METRIC_NAME = "android.benchmark.batch_count"

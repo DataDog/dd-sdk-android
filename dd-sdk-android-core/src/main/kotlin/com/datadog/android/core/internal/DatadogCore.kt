@@ -35,6 +35,7 @@ import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import com.datadog.android.core.internal.time.DefaultAppStartTimeProvider
 import com.datadog.android.core.internal.utils.executeSafe
+import com.datadog.android.core.internal.utils.getSafe
 import com.datadog.android.core.internal.utils.scheduleSafe
 import com.datadog.android.core.internal.utils.submitSafe
 import com.datadog.android.core.thread.FlushableExecutorService
@@ -47,9 +48,7 @@ import java.io.File
 import java.util.Locale
 import java.util.UUID
 import java.util.concurrent.Callable
-import java.util.concurrent.CancellationException
 import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.ExecutionException
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
@@ -300,25 +299,13 @@ internal class DatadogCore(
 
     override val trackingConsent: TrackingConsent
         get() {
-            val future = coreFeature.contextExecutorService.submitSafe(
+            return coreFeature.contextExecutorService.submitSafe(
                 "getTrackingConsent",
                 internalLogger,
                 Callable<TrackingConsent> {
                     coreFeature.trackingConsentProvider.getConsent()
                 }
-            )
-            return try {
-                future?.get() ?: TrackingConsent.NOT_GRANTED
-            } catch (e: InterruptedException) {
-                logTrackingConsentGetFailure(internalLogger, e)
-                TrackingConsent.NOT_GRANTED
-            } catch (e: CancellationException) {
-                logTrackingConsentGetFailure(internalLogger, e)
-                TrackingConsent.NOT_GRANTED
-            } catch (e: ExecutionException) {
-                logTrackingConsentGetFailure(internalLogger, e)
-                TrackingConsent.NOT_GRANTED
-            }
+            ).getSafe("getTrackingConsent", internalLogger) ?: TrackingConsent.NOT_GRANTED
         }
 
     override val rootStorageDir: File
@@ -371,7 +358,9 @@ internal class DatadogCore(
     }
 
     override fun getDatadogContext(): DatadogContext? {
-        return contextProvider?.context
+        return coreFeature.contextExecutorService
+            .submitSafe("getDatadogContext", internalLogger, Callable { contextProvider?.context })
+            .getSafe("getDatadogContext", internalLogger)
     }
 
     // endregion
@@ -569,15 +558,6 @@ internal class DatadogCore(
         )
     }
 
-    private fun logTrackingConsentGetFailure(internalLogger: InternalLogger, throwable: Throwable) {
-        internalLogger.log(
-            level = InternalLogger.Level.ERROR,
-            targets = listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
-            messageBuilder = { UNABLE_TO_GET_TRACKING_CONSENT },
-            throwable = throwable
-        )
-    }
-
     /**
      * Stops all process for this instance of the Datadog SDK.
      */
@@ -632,8 +612,6 @@ internal class DatadogCore(
         internal const val NO_NEED_TO_WRITE_LAST_VIEW_EVENT =
             "No need to write last RUM view event: NDK" +
                 " crash reports feature is not enabled and API is below 30."
-
-        internal const val UNABLE_TO_GET_TRACKING_CONSENT = "Unable to get tracking consent."
 
         internal val CONFIGURATION_TELEMETRY_DELAY_MS = TimeUnit.SECONDS.toMillis(5)
 
