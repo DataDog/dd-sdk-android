@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.benchmark.sample.ui.logscustom
+package com.datadog.benchmark.sample.ui.rummanual
 
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -22,24 +22,24 @@ import com.datadog.benchmark.sample.benchmarkActivityComponent
 import com.datadog.benchmark.sample.di.activity.ViewModelQualifier
 import javax.inject.Inject
 
-internal class LogsFragment : Fragment() {
+internal class RumManualScenarioFragment : Fragment() {
 
     @Inject
-    @ViewModelQualifier(LogsScreenViewModel::class)
+    @ViewModelQualifier(RumManualScenarioViewModel::class)
     internal lateinit var viewModelFactory: ViewModelProvider.Factory
+
+    private val viewModel: RumManualScenarioViewModel by viewModels { viewModelFactory }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         requireActivity().benchmarkActivityComponent.inject(this)
 
-        val viewModel by viewModels<LogsScreenViewModel> { viewModelFactory }
-
-        return ComposeView(requireContext()).apply {
+        return ComposeView(requireActivity()).apply {
             setContent {
-                val states by viewModel.logsScreenState.collectAsStateWithLifecycle()
+                val state by viewModel.rumManualScenarioState.collectAsStateWithLifecycle()
 
-                LogsScreen(
+                RumManualScenarioScreen(
                     modifier = Modifier.fillMaxSize(),
-                    state = states,
+                    state = state,
                     dispatch = viewModel::dispatch
                 )
             }
