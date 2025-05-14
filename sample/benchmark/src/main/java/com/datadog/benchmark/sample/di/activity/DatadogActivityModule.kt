@@ -106,8 +106,8 @@ private fun createDatadogConfiguration(): Configuration {
     configBuilder.setBackpressureStrategy(
         BackPressureStrategy(
             CAPACITY_BACK_PRESSURE_STRATEGY,
-            { Log.w("BackPressure", "THRESHOLD REACHED!") },
-            { Log.e("BackPressure", "ITEM DROPPED $it!") },
+            { Log.w("BackPressure", "Threshold reached") },
+            { Log.e("BackPressure", "Item dropped: $it") },
             BackPressureMitigation.IGNORE_NEWEST
         )
     )

@@ -95,9 +95,10 @@ internal class DatadogFeaturesInitializer @Inject constructor(
     }
 
     private fun needToEnableRum(config: BenchmarkConfig): Boolean {
-        return when (isInstrumentedRun(config)) {
-            true -> isSessionReplayScenario(config) || isRumScenario(config)
-            false -> false
+        return if (isInstrumentedRun(config)) {
+            isSessionReplayScenario(config) || isRumScenario(config)
+        } else {
+            false
         }
     }
 
