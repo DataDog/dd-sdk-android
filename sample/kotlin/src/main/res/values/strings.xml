@@ -92,6 +92,12 @@
         <item>🚨 Error</item>
         <item>💥 Assert</item>
     </string-array>
+    <string-array name="profiling_types">
+        <item>Simpleperf</item>
+        <item>Local</item>
+        <item>Debug profiling</item>
+        <item>No profiling</item>
+    </string-array>
 
 
     <string name="foreground_service_title">Sample App Logs Foreground Service</string>

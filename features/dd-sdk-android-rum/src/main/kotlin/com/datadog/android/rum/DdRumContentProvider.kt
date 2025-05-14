@@ -14,7 +14,6 @@ import android.database.Cursor
 import android.net.Uri
 import android.os.Process
 import android.util.Log
-import com.datadog.android.rum.profiling.MergeTraceDumper
 import com.datadog.android.rum.profiling.Profiler
 
 /**

@@ -32,6 +32,7 @@
         android:theme="@style/Sample.Theme"
         tools:ignore="GoogleAppIndexingWarning">
 
+        <profileable android:shell="true"/>
         <meta-data
             android:name="com.google.android.gms.car.application"
             android:resource="@xml/automotive_app_desc" />

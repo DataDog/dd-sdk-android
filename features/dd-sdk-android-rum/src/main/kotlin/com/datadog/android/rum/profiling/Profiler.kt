@@ -10,7 +10,6 @@ import android.content.Context
 
 object Profiler {
 
-    private val usePerfetto = true
     lateinit var filePath: String
 
     init {
@@ -18,28 +17,25 @@ object Profiler {
     }
 
     fun startProfiling(context: Context, samplingIntervalMs: Long) {
-        if (usePerfetto) {
-            filePath = "${context.getExternalFilesDir(null)}/${System.currentTimeMillis()}.pftrace"
-            // Start Perfetto profiling logic
-            startTracing(samplingIntervalMs, filePath)
-        } else {
-            // Start alternative profiling logic
-            MergeTraceDumper.getInstance(context).startDumpingTrace(samplingIntervalMs)
-        }
+        // Start alternative profiling logic
+        MergeTraceDumper.getInstance(context).startDumpingTrace(samplingIntervalMs)
+    }
+
+    fun startSimpleperfProfiling(context: Context, samplingIntervalMs: Long) {
+        filePath = "${context.getExternalFilesDir(null)}/${System.currentTimeMillis()}.data"
+        val samplesPerSecond = 1000 / samplingIntervalMs
+        startTracing(samplesPerSecond, filePath)
     }
 
     fun stopProfiling() {
-        if(usePerfetto) {
+        MergeTraceDumper.getInstance().stopDumpingTrace()
+    }
 
-            // Stop Perfetto profiling logic
-            stopTracing(filePath)
-        } else {
-            // Stop alternative profiling logic
-            MergeTraceDumper.getInstance().stopDumpingTrace()
-        }
+    fun stopSimpleperfProfiling() {
+        stopTracing(filePath)
     }
 
     private external fun stopTracing(filePath: String)
 
-    private external fun startTracing(samplingIntervalMs: Long, filePath: String)
+    private external fun startTracing(samplesPerSecond: Long, filePath: String)
 }

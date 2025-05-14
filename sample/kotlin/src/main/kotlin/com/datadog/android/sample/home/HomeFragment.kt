@@ -66,6 +66,7 @@ internal class HomeFragment :
             R.id.navigation_compose -> R.id.activity_jetpack_compose
             R.id.navigation_session_replay -> R.id.fragment_session_replay
             R.id.navigation_about -> R.id.fragment_about
+            R.id.navigation_profiling -> R.id.fragment_profiling
 
             else -> null
         }
