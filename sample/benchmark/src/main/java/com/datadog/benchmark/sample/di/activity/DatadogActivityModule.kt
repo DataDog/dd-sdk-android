@@ -47,8 +47,8 @@ internal interface DatadogActivityModule {
             context: Context,
             config: BenchmarkConfig
         ): SdkCore {
-            check(config.run != SyntheticsRun.Baseline) {
-                "Datadog must not be initialized in baseline run"
+            if (config.run == SyntheticsRun.Baseline) {
+                return Datadog.getInstance() // returns NoOpInternalSdkCore under the hood
             }
 
             return Datadog.initialize(
