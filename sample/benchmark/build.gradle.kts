@@ -10,7 +10,9 @@ plugins {
     id("com.android.application")
     kotlin("android")
     kotlin("kapt")
+    kotlin("plugin.serialization")
     alias(libs.plugins.datadogGradlePlugin)
+    id("transitiveDependencies")
 }
 
 @Suppress("StringLiteralDuplication")
@@ -98,6 +100,9 @@ dependencies {
     implementation(libs.daggerLib)
     kapt(libs.daggerCompiler)
     implementation(libs.coroutinesCore)
+    implementation(libs.ktorClientCore)
+    implementation(libs.ktorClientOkHttp)
+    implementation(libs.kotlinxSerializationJson)
     implementation(project(":features:dd-sdk-android-logs"))
     implementation(project(":features:dd-sdk-android-rum"))
     implementation(project(":features:dd-sdk-android-trace"))
