@@ -24,20 +24,27 @@ import androidx.compose.ui.semantics.SemanticsNode
 import androidx.compose.ui.semantics.SemanticsOwner
 import androidx.compose.ui.text.MultiParagraph
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection
+import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.AsyncImagePainterClass
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.BitmapField
+import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.ChildFieldOfModifierNode
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.CompositionField
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.ContentPainterElementClass
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.ContentPainterModifierClass
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.GetInnerLayerCoordinatorMethod
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.GetInteropViewMethod
+import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.HeadFieldOfNodeChain
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.ImageField
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.LayoutField
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.LayoutNodeField
+import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.NodesFieldOfLayoutNode
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.PainterElementClass
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.PainterField
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.PainterFieldOfAsyncImagePainter
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.PainterFieldOfContentPainterElement
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.PainterFieldOfContentPainterModifier
+import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.PainterFieldOfPainterNode
+import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.PainterMethodOfAsync3ImagePainter
+import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.PainterNodeClass
 import com.datadog.android.sessionreplay.compose.internal.reflection.ComposeReflection.StaticLayoutField
 import com.datadog.android.sessionreplay.compose.internal.reflection.getSafe
 
@@ -141,6 +148,31 @@ internal class ReflectionUtils {
         }
     }
 
+    fun getCoil3AsyncImagePainter(semanticsNode: SemanticsNode): Painter? {
+        // Check if Coil3 ContentPainterNode is present first to optimize the performance
+        // by skipping the node chain iteration
+        if (PainterNodeClass == null) {
+            return null
+        }
+        val layoutNode = LayoutNodeField?.getSafe(semanticsNode)
+        val nodeChain = NodesFieldOfLayoutNode?.getSafe(layoutNode)
+        val headNode = HeadFieldOfNodeChain?.getSafe(nodeChain) as? Modifier.Node
+        var currentNode = headNode
+        var painterNode: Modifier.Node? = null
+        // Iterate NodeChain to find Coil3 `ContentPainterNode`
+        while (currentNode != null) {
+            if (currentNode::class.java == PainterNodeClass) {
+                painterNode = currentNode
+                break
+            }
+            currentNode = ChildFieldOfModifierNode?.getSafe(currentNode) as? Modifier.Node
+        }
+        val asyncImagePainter = PainterFieldOfPainterNode?.getSafe(painterNode)
+        val painter =
+            asyncImagePainter?.let { PainterMethodOfAsync3ImagePainter?.invoke(it) }
+        return painter as? Painter
+    }
+
     fun getLocalImagePainter(semanticsNode: SemanticsNode): Painter? {
         val modifier = semanticsNode.layoutInfo.getModifierInfo().firstOrNull {
             PainterElementClass?.isInstance(it.modifier) == true
@@ -149,6 +181,11 @@ internal class ReflectionUtils {
     }
 
     fun getAsyncImagePainter(semanticsNode: SemanticsNode): Painter? {
+        // Check if Coil AsyncImagePainter is present first to optimize the performance
+        // by skipping the modifier iteration
+        if (AsyncImagePainterClass == null) {
+            return null
+        }
         val asyncPainter = semanticsNode.layoutInfo.getModifierInfo().firstNotNullOfOrNull {
             if (ContentPainterModifierClass?.isInstance(it.modifier) == true) {
                 PainterFieldOfContentPainterModifier?.getSafe(it.modifier)
