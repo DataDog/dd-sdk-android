@@ -24,6 +24,11 @@ internal object ComposeReflection {
 
     val LayoutNodeClass = getClassSafe("androidx.compose.ui.node.LayoutNode")
     val GetInteropViewMethod = LayoutNodeClass?.getDeclaredMethodSafe("getInteropView")
+    val NodesFieldOfLayoutNode = LayoutNodeClass?.getDeclaredFieldSafe("nodes")
+    val NodeChainClass = getClassSafe("androidx.compose.ui.node.NodeChain")
+    val HeadFieldOfNodeChain = NodeChainClass?.getDeclaredFieldSafe("head")
+    val ModifierNodeClass = getClassSafe("androidx.compose.ui.Modifier\$Node")
+    val ChildFieldOfModifierNode = ModifierNodeClass?.getDeclaredFieldSafe("child")
 
     val SemanticsNodeClass = getClassSafe("androidx.compose.ui.semantics.SemanticsNode")
     val LayoutNodeField = SemanticsNodeClass?.getDeclaredFieldSafe("layoutNode")
@@ -80,6 +85,8 @@ internal object ComposeReflection {
     val AndroidImageBitmapClass = getClassSafe("androidx.compose.ui.graphics.AndroidImageBitmap")
     val BitmapField = AndroidImageBitmapClass?.getDeclaredFieldSafe("bitmap")
 
+    // Region of Coil
+
     val ContentPainterModifierClass = getClassSafe("coil.compose.ContentPainterModifier")
     val PainterFieldOfContentPainterModifier =
         ContentPainterModifierClass?.getDeclaredFieldSafe("painter")
@@ -96,6 +103,26 @@ internal object ComposeReflection {
         isCritical = false
     )
     val PainterFieldOfAsyncImagePainter = AsyncImagePainterClass?.getDeclaredFieldSafe("_painter")
+
+    // End region of Coil
+
+    // Region of Coil3
+
+    val PainterNodeClass = getClassSafe(
+        "coil3.compose.internal.ContentPainterNode",
+        isCritical = false
+    )
+
+    val PainterFieldOfPainterNode = PainterNodeClass?.getDeclaredFieldSafe("painter")
+
+    val AsyncImagePainter3Class = getClassSafe(
+        "coil3.compose.AsyncImagePainter",
+        isCritical = false
+    )
+    val PainterMethodOfAsync3ImagePainter =
+        AsyncImagePainter3Class?.getDeclaredMethodSafe("getPainter")
+
+    // End region of Coil3
 
     // Region of MultiParagraph text
     val ParagraphInfoListField = MultiParagraph::class.java.getDeclaredFieldSafe(
