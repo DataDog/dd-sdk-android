@@ -38,7 +38,8 @@ internal interface BenchmarkActivityComponentDependencies {
         ViewModelsModule::class,
         DatadogActivityModule::class,
         DispatchersModule::class,
-        OpenTelemetryModule::class
+        OpenTelemetryModule::class,
+        OkHttpModule::class
     ]
 )
 @BenchmarkActivityScope
