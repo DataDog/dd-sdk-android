@@ -62,7 +62,7 @@ internal class RumSessionScope(
     private val noOpWriter = NoOpDataWriter<Any>()
 
     @Suppress("LongParameterList")
-    internal var childScope: RumScope? = RumViewManagerScope(
+    internal var childScope: RumViewManagerScope? = RumViewManagerScope(
         this,
         sdkCore,
         sessionEndedMetricDispatcher,
@@ -80,11 +80,12 @@ internal class RumSessionScope(
         lastInteractionIdentifier
     )
 
-    init {
-        sdkCore.updateFeatureContext(Feature.RUM_FEATURE_NAME) {
-            it.putAll(getRumContext().toMap())
+    internal val activeView: RumViewScope?
+        get() = if (isActive() && childScope != null) {
+            childScope?.activeView
+        } else {
+            null
         }
-    }
 
     enum class State(val asString: String) {
         NOT_TRACKED("NOT_TRACKED"),
@@ -135,7 +136,8 @@ internal class RumSessionScope(
         val actualWriter = if (sessionState == State.TRACKED) writer else noOpWriter
 
         if (event !is RumRawEvent.SdkInit) {
-            childScope = childScope?.handleEvent(event, datadogContext, writeScope, actualWriter)
+            childScope = childScope
+                ?.handleEvent(event, datadogContext, writeScope, actualWriter) as? RumViewManagerScope
         }
 
         return if (isSessionComplete()) {

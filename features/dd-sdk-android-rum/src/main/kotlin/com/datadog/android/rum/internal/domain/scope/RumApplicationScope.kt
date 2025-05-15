@@ -11,7 +11,6 @@ import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.EventWriteScope
-import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
@@ -46,7 +45,7 @@ internal class RumApplicationScope(
 
     private var rumContext = RumContext(applicationId = applicationId)
 
-    internal val childScopes: MutableList<RumScope> = mutableListOf(
+    internal val childScopes = mutableListOf<RumSessionScope>(
         RumSessionScope(
             this,
             sdkCore,
@@ -67,9 +66,17 @@ internal class RumApplicationScope(
         )
     )
 
-    val activeSession: RumScope?
+    val activeSession: RumSessionScope?
         get() {
-            return childScopes.find { it.isActive() }
+            val activeSessions = childScopes.filter { it.isActive() }
+            if (activeSessions.size > 1) {
+                sdkCore.internalLogger.log(
+                    InternalLogger.Level.ERROR,
+                    InternalLogger.Target.MAINTAINER,
+                    { MULTIPLE_ACTIVE_SESSIONS_ERROR }
+                )
+            }
+            return activeSessions.lastOrNull()
         }
 
     private var lastActiveViewInfo: RumViewInfo? = null
@@ -94,10 +101,6 @@ internal class RumApplicationScope(
         val isInteraction = (event is RumRawEvent.StartView) || (event is RumRawEvent.StartAction)
         if (activeSession == null && isInteraction) {
             startNewSession(event, datadogContext, writeScope, writer)
-        } else if (event is RumRawEvent.StopSession) {
-            sdkCore.updateFeatureContext(Feature.RUM_FEATURE_NAME) {
-                it.putAll(getRumContext().toMap())
-            }
         }
 
         if (event !is RumRawEvent.SdkInit && !isAppStartedEventSent) {
@@ -185,7 +188,7 @@ internal class RumApplicationScope(
             sdkCore.internalLogger.log(
                 InternalLogger.Level.ERROR,
                 InternalLogger.Target.TELEMETRY,
-                { MULTIPLE_ACTIVE_SESSIONS_ERROR }
+                { MULTIPLE_ACTIVE_SESSIONS_SESSION_START_ERROR }
             )
         }
     }
@@ -224,7 +227,9 @@ internal class RumApplicationScope(
     // endregion
 
     companion object {
-        internal const val MULTIPLE_ACTIVE_SESSIONS_ERROR = "Application has multiple active " +
+        internal const val MULTIPLE_ACTIVE_SESSIONS_SESSION_START_ERROR = "Application has multiple active " +
             "sessions when starting a new session"
+        internal const val MULTIPLE_ACTIVE_SESSIONS_ERROR = "Application has multiple active " +
+            "sessions, this shouldn't happen."
     }
 }

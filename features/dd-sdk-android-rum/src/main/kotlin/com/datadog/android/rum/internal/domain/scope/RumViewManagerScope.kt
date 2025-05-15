@@ -58,7 +58,25 @@ internal class RumViewManagerScope(
             lastInteractionIdentifier = lastInteractionIdentifier
         )
 
-    internal val childrenScopes = mutableListOf<RumScope>()
+    internal val childrenScopes = mutableListOf<RumViewScope>()
+
+    internal val activeView: RumViewScope?
+        get() {
+            return if (isActive()) {
+                val activeViews = childrenScopes.filter { it.isActive() }
+                if (activeViews.size > 1) {
+                    sdkCore.internalLogger.log(
+                        InternalLogger.Level.ERROR,
+                        InternalLogger.Target.MAINTAINER,
+                        { "Multiple views are active at the same time, this shouldn't happen." }
+                    )
+                }
+                activeViews.lastOrNull()
+            } else {
+                null
+            }
+        }
+
     internal var stopped = false
     private var lastStoppedViewTime: Time? = null
 
@@ -418,6 +436,9 @@ internal class RumViewManagerScope(
 
         internal const val NO_ACTIVE_VIEW_FOR_LOADING_TIME_WARNING_MESSAGE =
             "No active view found to add the loading time."
+
+        internal const val MULTIPLE_ACTIVE_VIEWS_ERROR =
+            "Multiple views are active at the same time, this shouldn't happen."
 
         internal val THREE_SECONDS_GAP_NS = TimeUnit.SECONDS.toNanos(3)
     }

@@ -7,6 +7,7 @@
 package com.datadog.android.rum.internal.domain.scope
 
 import android.app.ActivityManager
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.context.TimeInfo
 import com.datadog.android.api.feature.EventWriteScope
@@ -18,7 +19,6 @@ import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.rum.DdRumContentProvider
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumSessionListener
-import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.state.ViewUIPerformanceReport
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
 import com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener
@@ -26,6 +26,7 @@ import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.rum.metric.interactiontonextview.LastInteractionIdentifier
 import com.datadog.android.rum.metric.networksettled.InitialResourceIdentifier
 import com.datadog.android.rum.utils.forge.Configurator
+import com.datadog.android.rum.utils.verifyLog
 import com.datadog.tools.unit.forge.exhaustiveAttributes
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.BoolForgery
@@ -35,6 +36,7 @@ import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Assumptions.assumeTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -44,7 +46,6 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
-import org.mockito.kotlin.atLeastOnce
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
@@ -65,7 +66,7 @@ internal class RumApplicationScopeTest {
     lateinit var testedScope: RumApplicationScope
 
     @Mock
-    lateinit var mockChildScope: RumScope
+    lateinit var mockChildScope: RumSessionScope
 
     @Mock
     lateinit var mockEvent: RumRawEvent
@@ -109,6 +110,9 @@ internal class RumApplicationScopeTest {
     @Mock
     lateinit var mockEventWriteScope: EventWriteScope
 
+    @Mock
+    lateinit var mockInternalLogger: InternalLogger
+
     @StringForgery(regex = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
     lateinit var fakeApplicationId: String
 
@@ -134,7 +138,7 @@ internal class RumApplicationScopeTest {
     fun `set up`() {
         whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumFeatureScope
         whenever(mockSdkCore.time) doReturn fakeTimeInfoAtScopeStart
-        whenever(mockSdkCore.internalLogger) doReturn mock()
+        whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
         whenever(mockSlowFramesListener.resolveReport(any(), any(), any())) doReturn viewUIPerformanceReport
 
         testedScope = RumApplicationScope(
@@ -161,7 +165,7 @@ internal class RumApplicationScopeTest {
 
         assertThat(childScopes).hasSize(1)
         val childScope = childScopes.firstOrNull()
-        check(childScope is RumSessionScope)
+        checkNotNull(childScope)
         assertThat(childScope.sampleRate).isEqualTo(fakeSampleRate)
         assertThat(childScope.backgroundTrackingEnabled).isEqualTo(fakeBackgroundTrackingEnabled)
         assertThat(childScope.firstPartyHostHeaderTypeResolver).isSameAs(mockResolver)
@@ -221,9 +225,57 @@ internal class RumApplicationScopeTest {
 
     @Test
     fun `M return active session W activeSession`() {
-        // Then
+        // When
         val activeSession = testedScope.activeSession
-        assertThat(activeSession).isInstanceOf(RumSessionScope::class.java)
+
+        // Then
+        assertThat(activeSession).isNotNull
+        assertThat(activeSession).isSameAs(testedScope.childScopes.first())
+    }
+
+    @Test
+    fun `M return last known active session W activeSession { multiple active sessions }`(
+        forge: Forge
+    ) {
+        // Given
+        val mockSessions = forge.aList {
+            mock<RumSessionScope>().apply {
+                whenever(isActive()) doReturn aBool()
+            }
+        }
+        testedScope.childScopes += mockSessions
+        assumeTrue(mockSessions.count { it.isActive() } > 1)
+
+        // When
+        val activeSession = testedScope.activeSession
+
+        // Then
+        assertThat(activeSession).isNotNull
+        assertThat(activeSession).isSameAs(mockSessions.last { it.isActive() })
+    }
+
+    @Test
+    fun `M log error W activeSession { multiple active sessions }`(
+        forge: Forge
+    ) {
+        // Given
+        val mockSessions = forge.aList {
+            mock<RumSessionScope>().apply {
+                whenever(isActive()) doReturn aBool()
+            }
+        }
+        testedScope.childScopes += mockSessions
+        assumeTrue(mockSessions.count { it.isActive() } > 1)
+
+        // When
+        testedScope.activeSession
+
+        // Then
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.MAINTAINER,
+            RumApplicationScope.MULTIPLE_ACTIVE_SESSIONS_ERROR
+        )
     }
 
     @Test
@@ -281,7 +333,6 @@ internal class RumApplicationScopeTest {
         // Then
         assertThat(testedScope.childScopes).hasSize(1)
         val newSession = testedScope.childScopes.first()
-        check(newSession is RumSessionScope)
         assertThat(newSession).isNotSameAs(initialSession)
         assertThat(newSession.sampleRate).isEqualTo(fakeSampleRate)
         assertThat(newSession.backgroundTrackingEnabled).isEqualTo(fakeBackgroundTrackingEnabled)
@@ -323,95 +374,13 @@ internal class RumApplicationScopeTest {
 
         // Then
         val newSession = testedScope.activeSession
-        check(newSession is RumSessionScope)
+        checkNotNull(newSession)
         val viewManager = newSession.childScope
-        check(viewManager is RumViewManagerScope)
+        checkNotNull(viewManager)
         assertThat(viewManager.childrenScopes).isNotEmpty
         val viewScope = viewManager.childrenScopes.first()
-        check(viewScope is RumViewScope)
         assertThat(viewScope.key).isEqualTo(fakeKey)
         assertThat(viewScope.eventAttributes).isEqualTo(mockAttributes)
-    }
-
-    @Test
-    fun `M update feature context with no session W handleEvent { stop session }`(
-        forge: Forge
-    ) {
-        // Given - Make sure a session has already started
-        testedScope.handleEvent(
-            RumRawEvent.StartView(
-                key = RumScopeKey.from(forge.aString()),
-                attributes = mapOf()
-            ),
-            fakeDatadogContext,
-            mockEventWriteScope,
-            mockWriter
-        )
-
-        // When
-        testedScope.handleEvent(RumRawEvent.StopSession(), fakeDatadogContext, mockEventWriteScope, mockWriter)
-
-        // Then
-        argumentCaptor<(MutableMap<String, Any?>) -> Unit> {
-            // Feature context can be updated as many times as needed, we just want to verify it ends
-            // in the right state.
-            verify(mockSdkCore, atLeastOnce())
-                .updateFeatureContext(eq(Feature.RUM_FEATURE_NAME), capture())
-
-            val rumContext = mutableMapOf<String, Any?>()
-            lastValue.invoke(rumContext)
-
-            assertThat(rumContext["application_id"]).isEqualTo(fakeApplicationId)
-            assertThat(rumContext["session_id"]).isEqualTo(RumContext.NULL_UUID)
-            assertThat(rumContext["view_id"]).isNull()
-        }
-    }
-
-    @Test
-    fun `M update feature context with new session W startView { stopped session }`(
-        forge: Forge
-    ) {
-        // Given - Make sure a session has already started
-        testedScope.handleEvent(
-            RumRawEvent.StartView(
-                key = RumScopeKey.from(forge.aString()),
-                attributes = mapOf()
-            ),
-            fakeDatadogContext,
-            mockEventWriteScope,
-            mockWriter
-        )
-        val oldSession = (testedScope.activeSession as RumSessionScope).sessionId
-        testedScope.handleEvent(RumRawEvent.StopSession(), fakeDatadogContext, mockEventWriteScope, mockWriter)
-
-        // When
-        testedScope.handleEvent(
-            RumRawEvent.StartView(
-                key = RumScopeKey.from(forge.aString()),
-                attributes = mapOf()
-            ),
-            fakeDatadogContext,
-            mockEventWriteScope,
-            mockWriter
-        )
-
-        // Then
-        val newSessionId = (testedScope.activeSession as RumSessionScope).sessionId
-        assertThat(newSessionId).isNotEqualTo(RumContext.NULL_UUID)
-        assertThat(newSessionId).isNotEqualTo(oldSession)
-        argumentCaptor<(MutableMap<String, Any?>) -> Unit> {
-            // Feature context can be updated as many times as needed, we just want to verify it ends
-            // in the right state.
-            verify(mockSdkCore, atLeastOnce())
-                .updateFeatureContext(eq(Feature.RUM_FEATURE_NAME), capture())
-
-            val rumContext = mutableMapOf<String, Any?>()
-            lastValue.invoke(rumContext)
-
-            assertThat(rumContext["application_id"]).isEqualTo(fakeApplicationId)
-            assertThat(rumContext["session_id"]).isEqualTo(newSessionId)
-            assertThat(rumContext["view_id"]).isNotNull
-        }
     }
 
     @Test
@@ -432,7 +401,7 @@ internal class RumApplicationScopeTest {
         whenever(mockSdkCore.appStartTimeNs) doReturn appStartTimeNs
         DdRumContentProvider.processImportance =
             ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND
-        val mockSessionScope = mock<RumScope>()
+        val mockSessionScope = mock<RumSessionScope>()
         testedScope.childScopes.clear()
         testedScope.childScopes += mockSessionScope
 
@@ -496,7 +465,7 @@ internal class RumApplicationScopeTest {
             ActivityManager.RunningAppProcessInfo.IMPORTANCE_CACHED,
             ActivityManager.RunningAppProcessInfo.IMPORTANCE_GONE
         )
-        val mockSessionScope = mock<RumScope>()
+        val mockSessionScope = mock<RumSessionScope>()
         testedScope.childScopes.clear()
         testedScope.childScopes += mockSessionScope
 
@@ -539,7 +508,7 @@ internal class RumApplicationScopeTest {
             ActivityManager.RunningAppProcessInfo.IMPORTANCE_CACHED,
             ActivityManager.RunningAppProcessInfo.IMPORTANCE_GONE
         )
-        val mockSessionScope = mock<RumScope>()
+        val mockSessionScope = mock<RumSessionScope>()
         testedScope.childScopes.clear()
         testedScope.childScopes += mockSessionScope
 
