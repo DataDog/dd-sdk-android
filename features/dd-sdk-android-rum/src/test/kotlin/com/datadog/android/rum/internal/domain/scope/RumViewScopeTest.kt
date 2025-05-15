@@ -3499,7 +3499,7 @@ internal class RumViewScopeTest {
         assertThat(actionScope.eventTimestamp)
             .isEqualTo(resolveExpectedTimestamp(fakeStartActionEvent.eventTime.timestamp))
         assertThat(actionScope.waitForStop).isEqualTo(waitForStop)
-        assertThat(actionScope.attributes).containsAllEntriesOf(attributes)
+        assertThat(actionScope.actionAttributes).containsAllEntriesOf(attributes)
         assertThat(actionScope.parentScope).isSameAs(testedScope)
         assertThat(actionScope.sampleRate).isCloseTo(fakeSampleRate, Assertions.offset(0.001f))
     }

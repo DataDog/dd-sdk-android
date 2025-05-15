@@ -9,7 +9,6 @@ package com.datadog.android.rum.internal.domain.scope
 import androidx.annotation.WorkerThread
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.core.InternalSdkCore
-import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.internal.FeaturesContextResolver
 import com.datadog.android.rum.internal.domain.RumContext
@@ -51,9 +50,7 @@ internal class RumActionScope(
     private var lastInteractionNanos: Long = startedNanos
     private val networkInfo = sdkCore.networkInfo
 
-    internal val attributes: MutableMap<String, Any?> = initialAttributes.toMutableMap().apply {
-        putAll(GlobalRumMonitor.get(sdkCore).getAttributes())
-    }
+    internal val actionAttributes: MutableMap<String, Any?> = initialAttributes.toMutableMap()
 
     private val ongoingResourceKeys = mutableListOf<WeakReference<Any>>()
 
@@ -99,6 +96,10 @@ internal class RumActionScope(
         return parentScope.getRumContext()
     }
 
+    override fun getCustomAttributes(): Map<String, Any?> {
+        return parentScope.getCustomAttributes() + actionAttributes
+    }
+
     override fun isActive(): Boolean {
         return !stopped
     }
@@ -141,7 +142,7 @@ internal class RumActionScope(
     ) {
         event.type?.let { type = it }
         event.name?.let { name = it }
-        attributes.putAll(event.attributes)
+        actionAttributes.putAll(event.attributes)
         stopped = true
         stoppedNanos = now
         lastInteractionNanos = now
@@ -205,8 +206,6 @@ internal class RumActionScope(
         if (sent) return
 
         val actualType = type
-        attributes.putAll(GlobalRumMonitor.get(sdkCore).getAttributes())
-        val eventAttributes = attributes.toMutableMap()
         val rumContext = getRumContext()
 
         // make a copy so that closure captures at the state as of now
@@ -303,7 +302,7 @@ internal class RumActionScope(
                     brand = datadogContext.deviceInfo.deviceBrand,
                     architecture = datadogContext.deviceInfo.architecture
                 ),
-                context = ActionEvent.Context(additionalProperties = eventAttributes),
+                context = ActionEvent.Context(additionalProperties = getCustomAttributes().toMutableMap()),
                 dd = ActionEvent.Dd(
                     session = ActionEvent.DdSession(
                         sessionPrecondition = rumContext.sessionStartReason.toActionSessionPrecondition()

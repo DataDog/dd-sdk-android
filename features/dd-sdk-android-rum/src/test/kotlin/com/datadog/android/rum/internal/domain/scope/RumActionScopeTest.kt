@@ -63,7 +63,6 @@ import org.mockito.kotlin.verifyNoMoreInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.util.concurrent.TimeUnit
-import kotlin.math.max
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -1629,13 +1628,13 @@ internal class RumActionScopeTest {
         forge: Forge
     ) {
         // Given
-        val fakeGlobalAttributes = forge.aFilteredMap(excludedKeys = fakeAttributes.keys) {
+        val fakeParentAttributes = forge.aFilteredMap(excludedKeys = fakeAttributes.keys) {
             anHexadecimalString() to anAsciiString()
         }
         val expectedAttributes = mutableMapOf<String, Any?>()
+        expectedAttributes.putAll(fakeParentAttributes)
         expectedAttributes.putAll(fakeAttributes)
-        expectedAttributes.putAll(fakeGlobalAttributes)
-        whenever(rumMonitor.mockInstance.getAttributes()) doReturn fakeGlobalAttributes
+        whenever(mockParentScope.getCustomAttributes()) doReturn fakeParentAttributes
         testedScope = RumActionScope(
             mockParentScope,
             rumMonitor.mockSdkCore,
@@ -1651,7 +1650,6 @@ internal class RumActionScopeTest {
             fakeTrackFrustrations,
             fakeSampleRate
         )
-        whenever(rumMonitor.mockInstance.getAttributes()) doReturn emptyMap()
         fakeParentContext = fakeParentContext.copy(
             syntheticsTestId = fakeTestId,
             syntheticsResultId = fakeResultId
@@ -1711,17 +1709,17 @@ internal class RumActionScopeTest {
     }
 
     @Test
-    fun `M send Action with initial global attributes after threshold W init()+handleEvent(any) `(
+    fun `M send Action with parent attributes after threshold W init()+handleEvent(any) `(
         forge: Forge
     ) {
         // Given
-        val fakeGlobalAttributes = forge.aFilteredMap(excludedKeys = fakeAttributes.keys) {
+        val fakeParentAttributes = forge.aFilteredMap(excludedKeys = fakeAttributes.keys) {
             anHexadecimalString() to anAsciiString()
         }
         val expectedAttributes = mutableMapOf<String, Any?>()
+        expectedAttributes.putAll(fakeParentAttributes)
         expectedAttributes.putAll(fakeAttributes)
-        expectedAttributes.putAll(fakeGlobalAttributes)
-        whenever(rumMonitor.mockInstance.getAttributes()) doReturn fakeGlobalAttributes
+        whenever(mockParentScope.getCustomAttributes()) doReturn fakeParentAttributes
         testedScope = RumActionScope(
             mockParentScope,
             rumMonitor.mockSdkCore,
@@ -1737,7 +1735,6 @@ internal class RumActionScopeTest {
             fakeTrackFrustrations,
             fakeSampleRate
         )
-        whenever(rumMonitor.mockInstance.getAttributes()) doReturn emptyMap()
 
         // When
         Thread.sleep(TEST_INACTIVITY_MS)
@@ -1792,18 +1789,18 @@ internal class RumActionScopeTest {
     }
 
     @Test
-    fun `M send Action with global attributes after threshold W handleEvent(any)`(
+    fun `M send Action with parent attributes after threshold W handleEvent(any)`(
         forge: Forge
     ) {
         // Given
-        val fakeGlobalAttributes = forge.aFilteredMap(excludedKeys = fakeAttributes.keys) {
+        val fakeParentAttributes = forge.aFilteredMap(excludedKeys = fakeAttributes.keys) {
             anHexadecimalString() to anAsciiString()
         }
         val expectedAttributes = mutableMapOf<String, Any?>()
+        expectedAttributes.putAll(fakeParentAttributes)
         expectedAttributes.putAll(fakeAttributes)
-        expectedAttributes.putAll(fakeGlobalAttributes)
+        whenever(mockParentScope.getCustomAttributes()) doReturn fakeParentAttributes
         Thread.sleep(TEST_INACTIVITY_MS)
-        whenever(rumMonitor.mockInstance.getAttributes()) doReturn fakeGlobalAttributes
 
         // When
         val result = testedScope.handleEvent(mockEvent(), mockWriter)
