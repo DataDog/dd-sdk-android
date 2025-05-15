@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.utils.forge
+package com.datadog.utils.forge
 
 import com.datadog.android.tests.elmyr.useCoreFactories
 import com.datadog.tools.unit.forge.BaseConfigurator
@@ -19,10 +19,9 @@ internal class Configurator : BaseConfigurator() {
         forge.useCoreFactories()
 
         // APM
-        forge.addFactory(SpanForgeryFactory())
-        forge.addFactory(SpanEventForgeryFactory())
-        forge.addFactory(TraceConfigurationForgeryFactory())
-        forge.addFactory(CoreDDSpanForgeryFactory())
-        forge.addFactory(AgentSpanLinkForgeryFactory())
+        forge.addFactory(DDSpanContextForgeryFactory())
+
+        // MISC
+        forge.addFactory(BigIntegerFactory())
     }
 }
