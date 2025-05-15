@@ -119,7 +119,6 @@ object Datadog {
         configuration: Configuration,
         trackingConsent: TrackingConsent
     ): SdkCore? {
-        Thread.sleep(1000)
         return initialize(null, context, configuration, trackingConsent)
     }
 
