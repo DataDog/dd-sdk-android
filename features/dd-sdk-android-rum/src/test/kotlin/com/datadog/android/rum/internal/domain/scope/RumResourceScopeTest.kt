@@ -118,7 +118,7 @@ internal class RumResourceScopeTest {
 
     @Forgery
     lateinit var fakeMethod: RumResourceMethod
-    lateinit var fakeAttributes: Map<String, Any?>
+    lateinit var fakeResourceAttributes: Map<String, Any?>
 
     @Forgery
     lateinit var fakeParentContext: RumContext
@@ -180,7 +180,7 @@ internal class RumResourceScopeTest {
         val minLimit = -fakeEventTime.timestamp
         fakeServerOffset =
             forge.aLong(min = minLimit, max = maxLimit)
-        fakeAttributes = forge.exhaustiveAttributes()
+        fakeResourceAttributes = forge.exhaustiveAttributes()
         mockEvent = mockEvent()
         fakeSampleRate = forge.aFloat(min = 0.0f, max = 100.0f)
 
@@ -208,7 +208,7 @@ internal class RumResourceScopeTest {
             fakeMethod,
             fakeKey,
             fakeEventTime,
-            fakeAttributes,
+            fakeResourceAttributes,
             fakeServerOffset,
             mockResolver,
             mockFeaturesContextResolver,
@@ -257,9 +257,9 @@ internal class RumResourceScopeTest {
         forge: Forge
     ) {
         // Given
-        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys)
         val expectedAttributes = mutableMapOf<String, Any?>()
-        expectedAttributes.putAll(fakeAttributes)
+        expectedAttributes.putAll(fakeResourceAttributes)
         expectedAttributes.putAll(attributes)
 
         // When
@@ -326,9 +326,9 @@ internal class RumResourceScopeTest {
     ) {
         // Given
         doAnswer { true }.whenever(mockResolver).isFirstPartyUrl(fakeUrl)
-        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys)
         val expectedAttributes = mutableMapOf<String, Any?>()
-        expectedAttributes.putAll(fakeAttributes)
+        expectedAttributes.putAll(fakeResourceAttributes)
         expectedAttributes.putAll(attributes)
 
         // When
@@ -403,7 +403,7 @@ internal class RumResourceScopeTest {
             fakeMethod,
             fakeKey,
             fakeEventTime,
-            fakeAttributes,
+            fakeResourceAttributes,
             fakeServerOffset,
             mockResolver,
             mockFeaturesContextResolver,
@@ -411,9 +411,9 @@ internal class RumResourceScopeTest {
             mockNetworkSettledMetricResolver
         )
         doAnswer { true }.whenever(mockResolver).isFirstPartyUrl(brokenUrl)
-        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys)
         val expectedAttributes = mutableMapOf<String, Any?>()
-        expectedAttributes.putAll(fakeAttributes)
+        expectedAttributes.putAll(fakeResourceAttributes)
         expectedAttributes.putAll(attributes)
 
         // When
@@ -483,10 +483,10 @@ internal class RumResourceScopeTest {
         forge: Forge
     ) {
         // Given
-        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys)
             .toMutableMap()
         val expectedAttributes = mutableMapOf<String, Any?>()
-        expectedAttributes.putAll(fakeAttributes)
+        expectedAttributes.putAll(fakeResourceAttributes)
         expectedAttributes.putAll(attributes)
         attributes[RumAttributes.TRACE_ID] = fakeTraceId
         attributes[RumAttributes.SPAN_ID] = fakeSpanId
@@ -556,9 +556,9 @@ internal class RumResourceScopeTest {
         forge: Forge
     ) {
         // Given
-        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys)
         val expectedAttributes = mutableMapOf<String, Any?>()
-        expectedAttributes.putAll(fakeAttributes)
+        expectedAttributes.putAll(fakeResourceAttributes)
         expectedAttributes.putAll(attributes)
         whenever(mockParentScope.getRumContext()) doReturn context
 
@@ -627,9 +627,9 @@ internal class RumResourceScopeTest {
         forge: Forge
     ) {
         // Given
-        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys)
         val expectedAttributes = mutableMapOf<String, Any?>()
-        expectedAttributes.putAll(fakeAttributes)
+        expectedAttributes.putAll(fakeResourceAttributes)
         expectedAttributes.putAll(attributes)
         fakeParentContext = fakeParentContext.copy(
             syntheticsTestId = fakeTestId,
@@ -643,7 +643,7 @@ internal class RumResourceScopeTest {
             fakeMethod,
             fakeKey,
             fakeEventTime,
-            fakeAttributes,
+            fakeResourceAttributes,
             fakeServerOffset,
             mockResolver,
             mockFeaturesContextResolver,
@@ -743,7 +743,7 @@ internal class RumResourceScopeTest {
                     hasUserSession()
                     hasNoSyntheticsTest()
                     hasStartReason(fakeParentContext.sessionStartReason)
-                    containsExactlyContextAttributes(fakeAttributes)
+                    containsExactlyContextAttributes(fakeResourceAttributes)
                     hasSource(fakeSourceResourceEvent)
                     hasDeviceInfo(
                         fakeDatadogContext.deviceInfo.deviceName,
@@ -795,7 +795,7 @@ internal class RumResourceScopeTest {
                     hasUserSession()
                     hasNoSyntheticsTest()
                     hasReplay(fakeHasReplay)
-                    containsExactlyContextAttributes(fakeAttributes)
+                    containsExactlyContextAttributes(fakeResourceAttributes)
                     hasSource(fakeSourceResourceEvent)
                     hasDeviceInfo(
                         fakeDatadogContext.deviceInfo.deviceName,
@@ -868,13 +868,13 @@ internal class RumResourceScopeTest {
         forge: Forge
     ) {
         // Given
-        val fakeGlobalAttributes = forge.aFilteredMap(excludedKeys = fakeAttributes.keys) {
+        val fakeParentAttributes = forge.aFilteredMap(excludedKeys = fakeResourceAttributes.keys) {
             anHexadecimalString() to anAsciiString()
         }
         val expectedAttributes = mutableMapOf<String, Any?>()
-        expectedAttributes.putAll(fakeAttributes)
-        expectedAttributes.putAll(fakeGlobalAttributes)
-        whenever(rumMonitor.mockInstance.getAttributes()) doReturn fakeGlobalAttributes
+        expectedAttributes.putAll(fakeResourceAttributes)
+        expectedAttributes.putAll(fakeParentAttributes)
+        whenever(mockParentScope.getCustomAttributes()) doReturn fakeParentAttributes
         testedScope = RumResourceScope(
             mockParentScope,
             rumMonitor.mockSdkCore,
@@ -882,7 +882,7 @@ internal class RumResourceScopeTest {
             fakeMethod,
             fakeKey,
             fakeEventTime,
-            fakeAttributes,
+            fakeResourceAttributes,
             fakeServerOffset,
             mockResolver,
             mockFeaturesContextResolver,
@@ -954,13 +954,13 @@ internal class RumResourceScopeTest {
         forge: Forge
     ) {
         // Given
-        val fakeGlobalAttributes = forge.aFilteredMap(excludedKeys = fakeAttributes.keys) {
+        val fakeParentAttributes = forge.aFilteredMap(excludedKeys = fakeResourceAttributes.keys) {
             anHexadecimalString() to anAsciiString()
         }
         val expectedAttributes = mutableMapOf<String, Any?>()
-        expectedAttributes.putAll(fakeAttributes)
-        expectedAttributes.putAll(fakeGlobalAttributes)
-        whenever(rumMonitor.mockInstance.getAttributes()) doReturn fakeGlobalAttributes
+        expectedAttributes.putAll(fakeParentAttributes)
+        expectedAttributes.putAll(fakeResourceAttributes)
+        whenever(mockParentScope.getCustomAttributes()) doReturn fakeParentAttributes
 
         // When
         Thread.sleep(RESOURCE_DURATION_MS)
@@ -1026,9 +1026,9 @@ internal class RumResourceScopeTest {
         forge: Forge
     ) {
         // Given
-        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys)
         val expectedAttributes = mutableMapOf<String, Any?>()
-        expectedAttributes.putAll(fakeAttributes)
+        expectedAttributes.putAll(fakeResourceAttributes)
         expectedAttributes.putAll(attributes)
 
         // When
@@ -1099,9 +1099,9 @@ internal class RumResourceScopeTest {
         forge: Forge
     ) {
         // Given
-        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys)
         val expectedAttributes = mutableMapOf<String, Any?>()
-        expectedAttributes.putAll(fakeAttributes)
+        expectedAttributes.putAll(fakeResourceAttributes)
         expectedAttributes.putAll(attributes)
 
         // When
@@ -1171,9 +1171,9 @@ internal class RumResourceScopeTest {
         forge: Forge
     ) {
         // Given
-        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys)
         val expectedAttributes = mutableMapOf<String, Any?>()
-        expectedAttributes.putAll(fakeAttributes)
+        expectedAttributes.putAll(fakeResourceAttributes)
         expectedAttributes.putAll(attributes)
 
         mockEvent = RumRawEvent.StopResourceWithError(
@@ -1247,10 +1247,10 @@ internal class RumResourceScopeTest {
         forge: Forge
     ) {
         // Given
-        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys)
 
         val expectedAttributes = mutableMapOf<String, Any?>()
-        expectedAttributes.putAll(fakeAttributes)
+        expectedAttributes.putAll(fakeResourceAttributes)
         expectedAttributes.putAll(attributes)
 
         // Expected attributes should not have the ERROR_FINGERPRINT attribute so add it after
@@ -1325,9 +1325,9 @@ internal class RumResourceScopeTest {
     ) {
         // Given
         val errorType = forge.aNullable { anAlphabeticalString() }
-        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys)
         val expectedAttributes = mutableMapOf<String, Any?>()
-        expectedAttributes.putAll(fakeAttributes)
+        expectedAttributes.putAll(fakeResourceAttributes)
         expectedAttributes.putAll(attributes)
 
         mockEvent = RumRawEvent.StopResourceWithStackTrace(
@@ -1402,9 +1402,9 @@ internal class RumResourceScopeTest {
         forge: Forge
     ) {
         // Given
-        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys)
         val expectedAttributes = mutableMapOf<String, Any?>()
-        expectedAttributes.putAll(fakeAttributes)
+        expectedAttributes.putAll(fakeResourceAttributes)
         expectedAttributes.putAll(attributes)
         mockEvent = RumRawEvent.StopResourceWithError(
             fakeKey,
@@ -1426,7 +1426,7 @@ internal class RumResourceScopeTest {
             fakeMethod,
             fakeKey,
             fakeEventTime,
-            fakeAttributes,
+            fakeResourceAttributes,
             fakeServerOffset,
             mockResolver,
             mockFeaturesContextResolver,
@@ -1498,9 +1498,9 @@ internal class RumResourceScopeTest {
     ) {
         // Given
         val errorType = forge.aNullable { anAlphabeticalString() }
-        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys)
         val expectedAttributes = mutableMapOf<String, Any?>()
-        expectedAttributes.putAll(fakeAttributes)
+        expectedAttributes.putAll(fakeResourceAttributes)
         expectedAttributes.putAll(attributes)
         fakeParentContext = fakeParentContext.copy(
             syntheticsTestId = fakeTestId,
@@ -1523,7 +1523,7 @@ internal class RumResourceScopeTest {
             fakeMethod,
             fakeKey,
             fakeEventTime,
-            fakeAttributes,
+            fakeResourceAttributes,
             fakeServerOffset,
             mockResolver,
             mockFeaturesContextResolver,
@@ -1599,7 +1599,7 @@ internal class RumResourceScopeTest {
             fakeMethod,
             fakeKey,
             fakeEventTime,
-            fakeAttributes,
+            fakeResourceAttributes,
             fakeServerOffset,
             mockResolver,
             mockFeaturesContextResolver,
@@ -1607,9 +1607,9 @@ internal class RumResourceScopeTest {
             mockNetworkSettledMetricResolver
         )
         doAnswer { true }.whenever(mockResolver).isFirstPartyUrl(brokenUrl)
-        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys)
         val expectedAttributes = mutableMapOf<String, Any?>()
-        expectedAttributes.putAll(fakeAttributes)
+        expectedAttributes.putAll(fakeResourceAttributes)
         expectedAttributes.putAll(attributes)
 
         mockEvent = RumRawEvent.StopResourceWithError(
@@ -1693,7 +1693,7 @@ internal class RumResourceScopeTest {
             fakeMethod,
             fakeKey,
             fakeEventTime,
-            fakeAttributes,
+            fakeResourceAttributes,
             fakeServerOffset,
             mockResolver,
             mockFeaturesContextResolver,
@@ -1701,9 +1701,9 @@ internal class RumResourceScopeTest {
             mockNetworkSettledMetricResolver
         )
         doAnswer { true }.whenever(mockResolver).isFirstPartyUrl(brokenUrl)
-        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys)
         val expectedAttributes = mutableMapOf<String, Any?>()
-        expectedAttributes.putAll(fakeAttributes)
+        expectedAttributes.putAll(fakeResourceAttributes)
         expectedAttributes.putAll(attributes)
 
         mockEvent = RumRawEvent.StopResourceWithStackTrace(
@@ -1780,9 +1780,9 @@ internal class RumResourceScopeTest {
         // Given
         doAnswer { true }.whenever(mockResolver).isFirstPartyUrl(fakeUrl)
 
-        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys)
         val expectedAttributes = mutableMapOf<String, Any?>()
-        expectedAttributes.putAll(fakeAttributes)
+        expectedAttributes.putAll(fakeResourceAttributes)
         expectedAttributes.putAll(attributes)
 
         mockEvent = RumRawEvent.StopResourceWithError(
@@ -1859,9 +1859,9 @@ internal class RumResourceScopeTest {
         // Given
         doAnswer { true }.whenever(mockResolver).isFirstPartyUrl(fakeUrl)
         val errorType = forge.aNullable { anAlphabeticalString() }
-        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys)
         val expectedAttributes = mutableMapOf<String, Any?>()
-        expectedAttributes.putAll(fakeAttributes)
+        expectedAttributes.putAll(fakeResourceAttributes)
         expectedAttributes.putAll(attributes)
 
         mockEvent = RumRawEvent.StopResourceWithStackTrace(
@@ -1937,9 +1937,9 @@ internal class RumResourceScopeTest {
         forge: Forge
     ) {
         // Given
-        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys)
         val expectedAttributes = mutableMapOf<String, Any?>()
-        expectedAttributes.putAll(fakeAttributes)
+        expectedAttributes.putAll(fakeResourceAttributes)
         expectedAttributes.putAll(attributes)
 
         mockEvent = RumRawEvent.StopResourceWithError(
@@ -2016,9 +2016,9 @@ internal class RumResourceScopeTest {
     ) {
         // Given
         val errorType = forge.aNullable { anAlphabeticalString() }
-        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys)
         val expectedAttributes = mutableMapOf<String, Any?>()
-        expectedAttributes.putAll(fakeAttributes)
+        expectedAttributes.putAll(fakeResourceAttributes)
         expectedAttributes.putAll(attributes)
 
         mockEvent = RumRawEvent.StopResourceWithStackTrace(
@@ -2094,18 +2094,17 @@ internal class RumResourceScopeTest {
         forge: Forge
     ) {
         // Given
-        val attributes = forge.aFilteredMap(excludedKeys = fakeAttributes.keys) {
+        val fakeParentAttributes = forge.aFilteredMap(excludedKeys = fakeResourceAttributes.keys) {
             anHexadecimalString() to anAsciiString()
         }
         val errorAttributes = forge.exhaustiveAttributes(
-            excludedKeys = fakeAttributes.keys + attributes.keys
+            excludedKeys = fakeResourceAttributes.keys + fakeParentAttributes.keys
         )
         val expectedAttributes = mutableMapOf<String, Any?>()
-        expectedAttributes.putAll(fakeAttributes)
-        expectedAttributes.putAll(attributes)
+        expectedAttributes.putAll(fakeParentAttributes)
+        expectedAttributes.putAll(fakeResourceAttributes)
         expectedAttributes.putAll(errorAttributes)
-
-        whenever(rumMonitor.mockInstance.getAttributes()) doReturn attributes
+        whenever(mockParentScope.getCustomAttributes()) doReturn fakeParentAttributes
         mockEvent = RumRawEvent.StopResourceWithError(
             fakeKey,
             statusCode,
@@ -2179,17 +2178,17 @@ internal class RumResourceScopeTest {
     ) {
         // Given
         val errorType = forge.aNullable { anAlphabeticalString() }
-        val attributes = forge.aFilteredMap(excludedKeys = fakeAttributes.keys) {
+        val fakeParentAttributes = forge.aFilteredMap(excludedKeys = fakeResourceAttributes.keys) {
             anHexadecimalString() to anAsciiString()
         }
         val errorAttributes = forge.exhaustiveAttributes(
-            excludedKeys = fakeAttributes.keys + attributes.keys
+            excludedKeys = fakeResourceAttributes.keys + fakeParentAttributes.keys
         )
         val expectedAttributes = mutableMapOf<String, Any?>()
-        expectedAttributes.putAll(fakeAttributes)
-        expectedAttributes.putAll(attributes)
+        expectedAttributes.putAll(fakeParentAttributes)
+        expectedAttributes.putAll(fakeResourceAttributes)
         expectedAttributes.putAll(errorAttributes)
-        whenever(rumMonitor.mockInstance.getAttributes()) doReturn attributes
+        whenever(mockParentScope.getCustomAttributes()) doReturn fakeParentAttributes
         mockEvent = RumRawEvent.StopResourceWithStackTrace(
             fakeKey,
             statusCode,
@@ -2260,9 +2259,9 @@ internal class RumResourceScopeTest {
         @LongForgery(0, 1024) size: Long,
         forge: Forge
     ) {
-        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys)
         val expectedAttributes = mutableMapOf<String, Any?>()
-        expectedAttributes.putAll(fakeAttributes)
+        expectedAttributes.putAll(fakeResourceAttributes)
         expectedAttributes.putAll(attributes)
         mockEvent = RumRawEvent.StopResource("not_the_$fakeKey", statusCode, size, kind, attributes)
 
@@ -2341,9 +2340,9 @@ internal class RumResourceScopeTest {
         @LongForgery(0, 1024) size: Long,
         forge: Forge
     ) {
-        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys)
         val expectedAttributes = mutableMapOf<String, Any?>()
-        expectedAttributes.putAll(fakeAttributes)
+        expectedAttributes.putAll(fakeResourceAttributes)
         expectedAttributes.putAll(attributes)
 
         mockEvent = RumRawEvent.WaitForResourceTiming(fakeKey)
@@ -2368,9 +2367,9 @@ internal class RumResourceScopeTest {
         @LongForgery(0, 1024) size: Long,
         forge: Forge
     ) {
-        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys)
         val expectedAttributes = mutableMapOf<String, Any?>()
-        expectedAttributes.putAll(fakeAttributes)
+        expectedAttributes.putAll(fakeResourceAttributes)
         expectedAttributes.putAll(attributes)
 
         mockEvent = RumRawEvent.WaitForResourceTiming("not_the_$fakeKey")
@@ -2433,9 +2432,9 @@ internal class RumResourceScopeTest {
         @Forgery timing: ResourceTiming,
         forge: Forge
     ) {
-        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys)
         val expectedAttributes = mutableMapOf<String, Any?>()
-        expectedAttributes.putAll(fakeAttributes)
+        expectedAttributes.putAll(fakeResourceAttributes)
         expectedAttributes.putAll(attributes)
 
         mockEvent = RumRawEvent.WaitForResourceTiming(fakeKey)
@@ -2501,9 +2500,9 @@ internal class RumResourceScopeTest {
         @Forgery timing: ResourceTiming,
         forge: Forge
     ) {
-        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys)
         val expectedAttributes = mutableMapOf<String, Any?>()
-        expectedAttributes.putAll(fakeAttributes)
+        expectedAttributes.putAll(fakeResourceAttributes)
         expectedAttributes.putAll(attributes)
 
         mockEvent = RumRawEvent.WaitForResourceTiming(fakeKey)
@@ -2571,7 +2570,7 @@ internal class RumResourceScopeTest {
         forge: Forge
     ) {
         // Given
-        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys) +
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys) +
             mapOf(
                 "_dd.resource_timings"
                     to forge.getForgery(ResourceTiming::class.java).asTimingsPayload()
@@ -2600,7 +2599,7 @@ internal class RumResourceScopeTest {
         forge: Forge
     ) {
         // Given
-        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys) +
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys) +
             mapOf("_dd.resource_timings" to timing.asTimingsPayload())
 
         mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
@@ -2761,7 +2760,7 @@ internal class RumResourceScopeTest {
         val operationName = forge.aNullable { aString() }
         val payload = forge.aNullable { aString() }
         val variables = forge.aNullable { aString() }
-        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys) +
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys) +
             mapOf(
                 "_dd.graphql.operation_type" to operationType.toString(),
                 "_dd.graphql.operation_name" to operationName,
@@ -2791,7 +2790,7 @@ internal class RumResourceScopeTest {
         forge: Forge
     ) {
         // Given
-        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys)
 
         // When
         Thread.sleep(RESOURCE_DURATION_MS)
@@ -2814,7 +2813,7 @@ internal class RumResourceScopeTest {
         forge: Forge
     ) {
         // Given
-        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys)
         whenever(mockWriter.write(eq(mockEventBatchWriter), isA<ResourceEvent>(), eq(EventType.DEFAULT))) doReturn false
 
         // When
@@ -2838,7 +2837,7 @@ internal class RumResourceScopeTest {
         forge: Forge
     ) {
         // Given
-        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys)
         whenever(
             mockWriter.write(eq(mockEventBatchWriter), isA<ResourceEvent>(), eq(EventType.DEFAULT))
         ) doThrow forge.anException()
@@ -2864,7 +2863,7 @@ internal class RumResourceScopeTest {
         forge: Forge
     ) {
         // Given
-        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys)
 
         mockEvent = RumRawEvent.StopResourceWithError(
             fakeKey,
@@ -2895,7 +2894,7 @@ internal class RumResourceScopeTest {
         forge: Forge
     ) {
         // Given
-        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys)
         whenever(mockWriter.write(eq(mockEventBatchWriter), isA<ErrorEvent>(), eq(EventType.DEFAULT))) doReturn false
 
         mockEvent = RumRawEvent.StopResourceWithError(
@@ -2927,7 +2926,7 @@ internal class RumResourceScopeTest {
         forge: Forge
     ) {
         // Given
-        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys)
         whenever(
             mockWriter.write(eq(mockEventBatchWriter), isA<ErrorEvent>(), eq(EventType.DEFAULT))
         ) doThrow forge.anException()

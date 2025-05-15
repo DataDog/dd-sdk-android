@@ -3979,7 +3979,7 @@ internal class RumViewScopeTest {
         assertThat(entry.value).isInstanceOf(RumResourceScope::class.java)
         val resourceScope = entry.value as RumResourceScope
         assertThat(resourceScope.parentScope).isSameAs(testedScope)
-        assertThat(resourceScope.attributes).containsAllEntriesOf(attributes)
+        assertThat(resourceScope.resourceAttributes).containsAllEntriesOf(attributes)
         assertThat(resourceScope.key).isSameAs(key)
         assertThat(resourceScope.url).isEqualTo(url)
         assertThat(resourceScope.method).isSameAs(method)
@@ -4013,7 +4013,7 @@ internal class RumViewScopeTest {
         assertThat(entry.key).isEqualTo(key)
         val resourceScope = entry.value as RumResourceScope
         assertThat(resourceScope.parentScope).isSameAs(testedScope)
-        assertThat(resourceScope.attributes).containsAllEntriesOf(attributes)
+        assertThat(resourceScope.resourceAttributes).containsAllEntriesOf(attributes)
         assertThat(resourceScope.key).isSameAs(key)
         assertThat(resourceScope.url).isEqualTo(url)
         assertThat(resourceScope.method).isSameAs(method)
