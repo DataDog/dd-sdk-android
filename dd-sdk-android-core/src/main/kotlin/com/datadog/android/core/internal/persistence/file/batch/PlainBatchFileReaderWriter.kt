@@ -78,7 +78,7 @@ internal class PlainBatchFileReaderWriter(
             internalLogger.log(
                 InternalLogger.Level.ERROR,
                 listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-                { "ERROR_READ.format(Locale.US, file.path)" },
+                { ERROR_READ.format(Locale.US, file.path) },
                 e
             )
             emptyList()
