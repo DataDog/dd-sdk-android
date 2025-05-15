@@ -45,6 +45,7 @@ import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.Assumptions.assumeTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -80,7 +81,7 @@ internal class RumViewManagerScopeTest {
     lateinit var mockParentScope: RumScope
 
     @Mock
-    lateinit var mockChildScope: RumScope
+    lateinit var mockChildScope: RumViewScope
 
     @Mock
     lateinit var mockWriter: DataWriter<Any>
@@ -950,6 +951,94 @@ internal class RumViewManagerScopeTest {
             ),
             15f
         )
+    }
+
+    // endregion
+
+    // region Active view
+
+    @Test
+    fun `M return current active view scope W activeView()`() {
+        // Given
+        whenever(mockChildScope.isActive()) doReturn true
+        testedScope.childrenScopes.add(mockChildScope)
+
+        // When
+        val result = testedScope.activeView
+
+        // Then
+        assertThat(result).isSameAs(mockChildScope)
+    }
+
+    @Test
+    fun `M return last known active view scope W activeView() { multiple active view scopes }`(
+        forge: Forge
+    ) {
+        // Given
+        val viewScopes = forge.aList {
+            mock<RumViewScope>().apply {
+                whenever(isActive()) doReturn aBool()
+            }
+        }
+        assumeTrue(viewScopes.count { it.isActive() } > 1)
+        testedScope.childrenScopes.addAll(viewScopes)
+
+        // When
+        val result = testedScope.activeView
+
+        // Then
+        assertThat(result).isSameAs(viewScopes.last { it.isActive() })
+    }
+
+    @Test
+    fun `M log error W activeView() { multiple active view scopes }`(
+        forge: Forge
+    ) {
+        // Given
+        val viewScopes = forge.aList {
+            mock<RumViewScope>().apply {
+                whenever(isActive()) doReturn aBool()
+            }
+        }
+        assumeTrue(viewScopes.count { it.isActive() } > 1)
+        testedScope.childrenScopes.addAll(viewScopes)
+
+        // When
+        testedScope.activeView
+
+        // Then
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.MAINTAINER,
+            RumViewManagerScope.MULTIPLE_ACTIVE_VIEWS_ERROR
+        )
+    }
+
+    @Test
+    fun `M return null W activeView() { no active view scopes }`() {
+        // Given
+        whenever(mockChildScope.isActive()) doReturn false
+        testedScope.childrenScopes.add(mockChildScope)
+
+        // When
+        val result = testedScope.activeView
+
+        // Then
+        assertThat(result).isNull()
+    }
+
+    @Test
+    fun `M return null W activeView() { not active scope }`() {
+        // Given
+        whenever(mockChildScope.isActive()) doReturn true
+        testedScope.childrenScopes.add(mockChildScope)
+        testedScope.stopped = true
+
+        // When
+        val result = testedScope.activeView
+
+        // Then
+        assertThat(result).isNull()
     }
 
     // endregion

@@ -163,10 +163,6 @@ internal open class RumViewScope(
     // endregion
 
     init {
-        sdkCore.updateFeatureContext(Feature.RUM_FEATURE_NAME) {
-            it.putAll(getRumContext().toMap())
-        }
-
         cpuVitalMonitor.register(cpuVitalListener)
         memoryVitalMonitor.register(memoryVitalListener)
         frameRateVitalMonitor.register(frameRateVitalListener)
@@ -358,38 +354,6 @@ internal open class RumViewScope(
         val shouldStop = (event.key.id == key.id)
         if (shouldStop && !stopped) {
             stopScope(event, datadogContext, writeScope, writer) {
-                // we should not reset the timestamp offset here as due to async nature of feature context update
-                // we still need a stable value for the view timestamp offset for WebView RUM events timestamp
-                // correction
-                val newRumContext = getRumContext().copy(
-                    viewType = RumViewType.NONE,
-                    viewId = null,
-                    viewName = null,
-                    viewUrl = null,
-                    actionId = null
-                )
-                sdkCore.updateFeatureContext(Feature.RUM_FEATURE_NAME) { currentRumContext ->
-                    val canUpdate = when {
-                        currentRumContext[RumContext.SESSION_ID] != this.sessionId -> {
-                            // we have a new session, so whatever is in the Global context is
-                            // not valid anyway
-                            true
-                        }
-
-                        currentRumContext[RumContext.VIEW_ID] == this.viewId -> true
-                        else -> false
-                    }
-                    if (canUpdate) {
-                        currentRumContext.clear()
-                        currentRumContext.putAll(newRumContext.toMap())
-                    } else {
-                        sdkCore.internalLogger.log(
-                            InternalLogger.Level.DEBUG,
-                            InternalLogger.Target.MAINTAINER,
-                            { RUM_CONTEXT_UPDATE_IGNORED_AT_STOP_VIEW_MESSAGE }
-                        )
-                    }
-                }
                 eventAttributes.putAll(event.attributes)
             }
         }
@@ -432,16 +396,14 @@ internal open class RumViewScope(
             }
         }
 
-        updateActiveActionScope(
-            RumActionScope.fromEvent(
-                this,
-                sdkCore,
-                event,
-                serverTimeOffsetInMs,
-                featuresContextResolver,
-                trackFrustrations,
-                sampleRate
-            )
+        activeActionScope = RumActionScope.fromEvent(
+            this,
+            sdkCore,
+            event,
+            serverTimeOffsetInMs,
+            featuresContextResolver,
+            trackFrustrations,
+            sampleRate
         )
         pendingActionCount++
     }
@@ -707,31 +669,7 @@ internal open class RumViewScope(
         if (currentAction != null) {
             val updatedAction = currentAction.handleEvent(event, datadogContext, writeScope, writer)
             if (updatedAction == null) {
-                updateActiveActionScope(null)
-            }
-        }
-    }
-
-    private fun updateActiveActionScope(scope: RumScope?) {
-        activeActionScope = scope
-        // update the Rum Context to make it available for Logs/Trace bundling
-        val newRumContext = getRumContext()
-
-        sdkCore.updateFeatureContext(Feature.RUM_FEATURE_NAME) { currentRumContext ->
-            val canUpdate = when {
-                currentRumContext[RumContext.SESSION_ID] != sessionId -> true
-                currentRumContext[RumContext.VIEW_ID] == viewId -> true
-                else -> false
-            }
-            if (canUpdate) {
-                currentRumContext.clear()
-                currentRumContext.putAll(newRumContext.toMap())
-            } else {
-                sdkCore.internalLogger.log(
-                    InternalLogger.Level.DEBUG,
-                    InternalLogger.Target.MAINTAINER,
-                    { RUM_CONTEXT_UPDATE_IGNORED_AT_ACTION_UPDATE_MESSAGE }
-                )
+                activeActionScope = null
             }
         }
     }
@@ -1475,13 +1413,6 @@ internal open class RumViewScope(
 
         internal const val ACTION_DROPPED_WARNING = "RUM Action (%s on %s) was dropped, because" +
             " another action is still active for the same view"
-
-        internal const val RUM_CONTEXT_UPDATE_IGNORED_AT_STOP_VIEW_MESSAGE =
-            "Trying to update global RUM context when StopView event arrived, but the context" +
-                " doesn't reference this view."
-        internal const val RUM_CONTEXT_UPDATE_IGNORED_AT_ACTION_UPDATE_MESSAGE =
-            "Trying to update active action in the global RUM context, but the context" +
-                " doesn't reference this view."
 
         internal val FROZEN_FRAME_THRESHOLD_NS = TimeUnit.MILLISECONDS.toNanos(700)
         internal const val SLOW_RENDERED_THRESHOLD_FPS = 55

@@ -60,13 +60,13 @@ import java.util.concurrent.TimeUnit
 @ForgeConfiguration(Configurator::class)
 internal class RumSessionScopeTest {
 
-    lateinit var testedScope: RumScope
+    lateinit var testedScope: RumSessionScope
 
     @Mock
     lateinit var mockParentScope: RumScope
 
     @Mock
-    lateinit var mockChildScope: RumScope
+    lateinit var mockChildScope: RumViewManagerScope
 
     @Mock
     lateinit var mockWriter: DataWriter<Any>
@@ -144,28 +144,6 @@ internal class RumSessionScopeTest {
         initializeTestedScope()
     }
 
-    // region RUM Feature Context
-
-    @Test
-    fun `M update RUM feature context W init()`() {
-        // Given
-        val expectedContext = testedScope.getRumContext()
-
-        // Then
-        argumentCaptor<(MutableMap<String, Any?>) -> Unit> {
-            verify(mockSdkCore).updateFeatureContext(eq(Feature.RUM_FEATURE_NAME), capture())
-
-            val rumContext = mutableMapOf<String, Any?>()
-            lastValue.invoke(rumContext)
-
-            assertThat(rumContext["application_id"]).isEqualTo(expectedContext.applicationId)
-            assertThat(rumContext["session_id"]).isEqualTo(expectedContext.sessionId)
-            assertThat(rumContext["session_state"]).isEqualTo(expectedContext.sessionState.asString)
-        }
-    }
-
-    // endregion
-
     // region childScope
 
     @Test
@@ -174,11 +152,10 @@ internal class RumSessionScopeTest {
         initializeTestedScope(fakeSampleRate, false)
 
         // When
-        val childScope = (testedScope as RumSessionScope).childScope
+        val childScope = testedScope.childScope
 
         // Then
-        assertThat(childScope).isInstanceOf(RumViewManagerScope::class.java)
-        assertThat((childScope as? RumViewManagerScope)?.sampleRate).isCloseTo(fakeSampleRate, offset(0.001f))
+        assertThat(childScope?.sampleRate).isCloseTo(fakeSampleRate, offset(0.001f))
     }
 
     @Test
@@ -186,7 +163,7 @@ internal class RumSessionScopeTest {
         forge: Forge
     ) {
         // Given
-        (testedScope as RumSessionScope).sessionState = RumSessionScope.State.TRACKED
+        testedScope.sessionState = RumSessionScope.State.TRACKED
         val event = forge.interactiveRumRawEvent()
 
         // When
@@ -200,7 +177,7 @@ internal class RumSessionScopeTest {
     @Test
     fun `M delegate events to child scope W handleViewEvent() {NOT TRACKED}`() {
         // Given
-        (testedScope as RumSessionScope).sessionState = RumSessionScope.State.NOT_TRACKED
+        testedScope.sessionState = RumSessionScope.State.NOT_TRACKED
         val mockEvent: RumRawEvent = mock()
 
         // When
@@ -219,8 +196,8 @@ internal class RumSessionScopeTest {
     @Test
     fun `M delegate events to child scope W handleViewEvent() {EXPIRED}`() {
         // Given
-        (testedScope as RumSessionScope).sessionState = RumSessionScope.State.EXPIRED
-        val mockEvent: RumRawEvent = mock()
+        testedScope.sessionState = RumSessionScope.State.EXPIRED
+        val mockEvent = mock<RumRawEvent>()
 
         // When
         val result = testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
@@ -849,6 +826,61 @@ internal class RumSessionScopeTest {
 
     // endregion
 
+    // region Active View
+
+    @Test
+    fun `M return active view W activeView`() {
+        // Given
+        val mockViewScope = mock<RumViewScope>()
+        whenever(mockChildScope.activeView) doReturn mockViewScope
+
+        // When
+        val result = testedScope.activeView
+
+        // Then
+        assertThat(result).isSameAs(mockViewScope)
+    }
+
+    @Test
+    fun `M return null W activeView { no active view }`() {
+        // Given
+        whenever(mockChildScope.activeView) doReturn null
+
+        // When
+        val result = testedScope.activeView
+
+        // Then
+        assertThat(result).isNull()
+    }
+
+    @Test
+    fun `M return null W activeView { child scope is null}`() {
+        // Given
+        testedScope.childScope = null
+
+        // When
+        val result = testedScope.activeView
+
+        // Then
+        assertThat(result).isNull()
+    }
+
+    @Test
+    fun `M return null W activeView { session scope is not active }`() {
+        // Given
+        val mockViewScope = mock<RumViewScope>()
+        whenever(mockChildScope.activeView) doReturn mockViewScope
+        testedScope.isActive = false
+
+        // When
+        val result = testedScope.activeView
+
+        // Then
+        assertThat(result).isNull()
+    }
+
+    // endregion
+
     // region Session Listener
 
     @Test
@@ -1366,7 +1398,7 @@ internal class RumSessionScopeTest {
         )
 
         if (withMockChildScope) {
-            (testedScope as RumSessionScope).childScope = mockChildScope
+            testedScope.childScope = mockChildScope
         }
     }
 
