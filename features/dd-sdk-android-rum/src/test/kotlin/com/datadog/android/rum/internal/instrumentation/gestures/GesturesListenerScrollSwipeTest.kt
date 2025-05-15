@@ -466,8 +466,7 @@ internal class GesturesListenerScrollSwipeTest : AbstractGesturesListenerTest() 
             InternalLogger.Level.INFO,
             InternalLogger.Target.USER,
             {
-                it == GesturesListener.MSG_NO_TARGET_SCROLL_SWIPE ||
-                    it == GesturesListener.MSG_NO_TARGET_TAP
+                it == GesturesListener.MSG_NO_TARGET_ACTION
             },
             mode = times(intermediaryEvents.size + 2)
         )
