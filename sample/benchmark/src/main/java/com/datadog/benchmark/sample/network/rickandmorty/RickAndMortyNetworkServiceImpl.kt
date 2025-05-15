@@ -6,10 +6,26 @@
 
 package com.datadog.benchmark.sample.network.rickandmorty
 
-import okhttp3.OkHttpClient
+import com.datadog.benchmark.sample.network.rickandmorty.models.Character
+import com.datadog.benchmark.sample.network.safeGet
+import io.ktor.client.HttpClient
+import io.ktor.http.URLBuilder
+import io.ktor.http.path
 import javax.inject.Inject
 
 internal class RickAndMortyNetworkServiceImpl @Inject constructor(
-    private val okHttpClient: OkHttpClient,
+    private val httpClient: HttpClient,
 ): RickAndMortyNetworkService {
+
+    override suspend fun getCharacter(id: Int): Character? {
+        val url = URLBuilder(BASE_URL).apply {
+            path(CHARACTER_PATH)
+            path(id.toString())
+        }.build()
+
+        return httpClient.safeGet<Character>(url).optionalResult
+    }
 }
+
+private const val BASE_URL = "https://rickandmortyapi.com/api"
+private const val CHARACTER_PATH = "character"

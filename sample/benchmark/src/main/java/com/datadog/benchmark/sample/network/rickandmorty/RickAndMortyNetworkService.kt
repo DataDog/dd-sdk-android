@@ -6,5 +6,8 @@
 
 package com.datadog.benchmark.sample.network.rickandmorty
 
+import com.datadog.benchmark.sample.network.rickandmorty.models.Character
+
 internal interface RickAndMortyNetworkService {
+    suspend fun getCharacter(id: Int): Character?
 }

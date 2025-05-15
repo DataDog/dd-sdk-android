@@ -102,6 +102,8 @@ dependencies {
     implementation(libs.coroutinesCore)
     implementation(libs.ktorClientCore)
     implementation(libs.ktorClientOkHttp)
+    implementation(libs.ktorContentNegotiation)
+    implementation(libs.ktorSerializationKotlinxJson) // TODO WAHAHA bundle?
     implementation(libs.kotlinxSerializationJson)
     implementation(project(":features:dd-sdk-android-logs"))
     implementation(project(":features:dd-sdk-android-rum"))

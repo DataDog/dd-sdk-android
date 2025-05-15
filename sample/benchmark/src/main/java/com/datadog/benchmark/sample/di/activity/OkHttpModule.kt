@@ -15,6 +15,10 @@ import com.datadog.benchmark.sample.network.rickandmorty.RickAndMortyNetworkServ
 import dagger.Binds
 import dagger.Module
 import dagger.Provides
+import io.ktor.client.HttpClient
+import io.ktor.client.engine.okhttp.OkHttp
+import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.serialization.kotlinx.json.json
 import okhttp3.Cache
 import okhttp3.OkHttpClient
 import java.io.File
@@ -40,6 +44,21 @@ internal interface OkHttpModule {
                     addInterceptor(DatadogInterceptor.Builder(emptyMap()).build())
                 }
             }.build()
+        }
+
+        @Provides
+        @BenchmarkActivityScope
+        fun provideKtorHttpClient(
+            okHttpClient: OkHttpClient
+        ): HttpClient {
+            return HttpClient(OkHttp) {
+                engine {
+                    preconfigured = okHttpClient
+                }
+                install(ContentNegotiation) {
+                    json()
+                }
+            }
         }
     }
 }
