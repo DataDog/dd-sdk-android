@@ -40,7 +40,7 @@ internal class PlainBatchFileReaderWriter(
         } catch (e: IOException) {
             internalLogger.log(
                 InternalLogger.Level.ERROR,
-                listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+                listOf(InternalLogger.Target.MAINTAINER),
                 { ERROR_WRITE.format(Locale.US, file.path) },
                 e
             )
