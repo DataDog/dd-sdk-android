@@ -6,7 +6,19 @@
 
 package com.datadog.benchmark.sample.ui.rumauto.screens.characters
 
+import android.os.Bundle
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
+import androidx.compose.ui.platform.ComposeView
 import androidx.fragment.app.Fragment
 
 internal class RumAutoCharactersFragment: Fragment() {
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
+        return ComposeView(requireActivity()).apply {
+            setContent {
+                RumAutoCharactersScreen()
+            }
+        }
+    }
 }

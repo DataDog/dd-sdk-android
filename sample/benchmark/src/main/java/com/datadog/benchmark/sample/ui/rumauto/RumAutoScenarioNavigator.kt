@@ -6,5 +6,47 @@
 
 package com.datadog.benchmark.sample.ui.rumauto
 
-internal class RumAutoScenarioNavigator {
+import androidx.navigation.NavController
+import androidx.navigation.createGraph
+import androidx.navigation.fragment.fragment
+import com.datadog.benchmark.sample.ui.rumauto.di.RumAutoScenarioScope
+import com.datadog.benchmark.sample.ui.rumauto.screens.characters.RumAutoCharactersFragment
+import com.datadog.benchmark.sample.ui.rumauto.screens.docs.RumAutoDocsFragment
+import com.datadog.benchmark.sample.ui.rumauto.screens.episodes.RumAutoEpisodesFragment
+import com.datadog.benchmark.sample.ui.rumauto.screens.locations.RumAutoLocationsFragment
+import javax.inject.Inject
+
+// TODO WAHAHA rename to navigation manager
+@RumAutoScenarioScope
+internal class RumAutoScenarioNavigator @Inject constructor() {
+    private var navController: NavController? = null
+
+    fun setNavController(navController: NavController) {
+        this.navController = navController
+
+        navController.graph = navController.createGraph(startDestination = CHARACTERS_TAB_FRAGMENT_KEY) {
+            fragment<RumAutoCharactersFragment>(CHARACTERS_TAB_FRAGMENT_KEY)
+            fragment<RumAutoEpisodesFragment>(EPISODES_TAB_FRAGMENT_KEY)
+            fragment<RumAutoLocationsFragment>(LOCATIONS_TAB_FRAGMENT_KEY)
+            fragment<RumAutoDocsFragment>(DOCS_TAB_FRAGMENT_KEY)
+        }
+    }
+
+    fun openTab(tab: RumAutoScenarioTab) {
+        navController?.navigate(tab.toFragmentKey())
+    }
 }
+
+private fun RumAutoScenarioTab.toFragmentKey(): String {
+    return when (this) {
+        RumAutoScenarioTab.CHARACTERS -> CHARACTERS_TAB_FRAGMENT_KEY
+        RumAutoScenarioTab.EPISODES -> EPISODES_TAB_FRAGMENT_KEY
+        RumAutoScenarioTab.LOCATIONS -> LOCATIONS_TAB_FRAGMENT_KEY
+        RumAutoScenarioTab.DOCS -> DOCS_TAB_FRAGMENT_KEY
+    }
+}
+
+private const val CHARACTERS_TAB_FRAGMENT_KEY = "characters_tab_fragment"
+private const val EPISODES_TAB_FRAGMENT_KEY = "episodes_tab_fragment"
+private const val LOCATIONS_TAB_FRAGMENT_KEY = "locations_tab_fragment"
+private const val DOCS_TAB_FRAGMENT_KEY = "docs_tab_fragment"

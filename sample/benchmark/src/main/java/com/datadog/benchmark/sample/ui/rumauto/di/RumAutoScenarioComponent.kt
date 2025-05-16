@@ -13,11 +13,16 @@ import com.datadog.benchmark.sample.ui.rumauto.screens.episodes.RumAutoEpisodesF
 import com.datadog.benchmark.sample.ui.rumauto.screens.locations.RumAutoLocationsFragment
 import dagger.Component
 import io.ktor.client.HttpClient
+import javax.inject.Scope
 
 internal interface RumAutoScenarioComponentDependencies {
     val httpClient: HttpClient
 }
 
+@Scope
+internal annotation class RumAutoScenarioScope
+
+@RumAutoScenarioScope
 @Component(
     dependencies = [RumAutoScenarioComponentDependencies::class]
 )
