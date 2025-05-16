@@ -333,7 +333,7 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.INFO,
             InternalLogger.Target.USER,
-            GesturesListener.MSG_NO_TARGET_TAP
+            GesturesListener.MSG_NO_TARGET_ACTION
         )
         verifyNoInteractions(rumMonitor.mockInstance)
     }
