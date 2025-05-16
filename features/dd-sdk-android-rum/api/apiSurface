@@ -120,6 +120,8 @@ interface com.datadog.android.rum.RumMonitor
   fun clearAttributes()
   fun stopSession()
   fun addViewLoadingTime(Boolean)
+  fun addViewAttributes(Map<String, Any?>)
+  fun removeViewAttributes(Collection<String>)
   var debug: Boolean
   fun _getInternal(): _RumInternalProxy?
 enum com.datadog.android.rum.RumPerformanceMetric

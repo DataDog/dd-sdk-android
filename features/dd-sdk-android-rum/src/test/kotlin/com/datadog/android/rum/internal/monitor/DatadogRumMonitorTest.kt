@@ -55,12 +55,14 @@ import com.datadog.android.telemetry.internal.TelemetryEventHandler
 import com.datadog.tools.unit.forge.aThrowable
 import com.datadog.tools.unit.forge.exhaustiveAttributes
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.AdvancedForgery
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.DoubleForgery
 import fr.xgouchet.elmyr.annotation.FloatForgery
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.LongForgery
+import fr.xgouchet.elmyr.annotation.MapForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -915,6 +917,41 @@ internal class DatadogRumMonitorTest {
             verify(mockScope).handleEvent(capture(), same(mockWriter))
             val event = firstValue
             check(event is RumRawEvent.AddViewLoadingTime)
+        }
+        verifyNoMoreInteractions(mockScope, mockWriter)
+    }
+
+    @Test
+    fun `M delegate event to rootScope W addViewAttributes()`(
+        @MapForgery(
+            key = AdvancedForgery(string = [StringForgery(StringForgeryType.ALPHABETICAL)]),
+            value = AdvancedForgery(string = [StringForgery()])
+        ) fakeAttributes: Map<String, String>
+    ) {
+        testedMonitor.addViewAttributes(fakeAttributes)
+        Thread.sleep(PROCESSING_DELAY)
+
+        argumentCaptor<RumRawEvent> {
+            verify(mockScope).handleEvent(capture(), same(mockWriter))
+            val event = firstValue
+            check(event is RumRawEvent.AddViewAttributes)
+            assertThat(event.attributes).isSameAs(fakeAttributes)
+        }
+        verifyNoMoreInteractions(mockScope, mockWriter)
+    }
+
+    @Test
+    fun `M delegate event to rootScope W removeViewAttributes()`(
+        @StringForgery fakeAttributes: List<String>
+    ) {
+        testedMonitor.removeViewAttributes(fakeAttributes)
+        Thread.sleep(PROCESSING_DELAY)
+
+        argumentCaptor<RumRawEvent> {
+            verify(mockScope).handleEvent(capture(), same(mockWriter))
+            val event = firstValue
+            check(event is RumRawEvent.RemoveViewAttributes)
+            assertThat(event.attributes).isSameAs(fakeAttributes)
         }
         verifyNoMoreInteractions(mockScope, mockWriter)
     }

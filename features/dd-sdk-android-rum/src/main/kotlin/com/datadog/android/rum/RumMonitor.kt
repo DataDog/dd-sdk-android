@@ -335,6 +335,20 @@ interface RumMonitor {
     fun addViewLoadingTime(overwrite: Boolean)
 
     /**
+     * Adds attributes to the current active View. They will be propagated to all future RUM events within this View
+     * until it stops being active.
+     * @param attributes the attributes to add to the view
+     */
+    fun addViewAttributes(attributes: Map<String, Any?>)
+
+    /**
+     * Removes attributes from the current active View. Future RUM events within this view won't be having these
+     * attributes anymore.
+     * @param attributes the attribute keys to remove from the view
+     */
+    fun removeViewAttributes(attributes: Collection<String>)
+
+    /**
      * Utility setting to inspect the active RUM View.
      * If set, a debugging outline will be displayed on top of the application, describing the name
      * of the active RUM View in the default SDK instance (if any).

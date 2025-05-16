@@ -553,6 +553,18 @@ internal class DatadogRumMonitor(
         handleEvent(RumRawEvent.AddViewLoadingTime(overwrite = overwrite))
     }
 
+    override fun addViewAttributes(attributes: Map<String, Any?>) {
+        handleEvent(
+            RumRawEvent.AddViewAttributes(attributes)
+        )
+    }
+
+    override fun removeViewAttributes(attributes: Collection<String>) {
+        handleEvent(
+            RumRawEvent.RemoveViewAttributes(attributes)
+        )
+    }
+
     override fun addLongTask(durationNs: Long, target: String) {
         handleEvent(
             RumRawEvent.AddLongTask(durationNs, target)
