@@ -7,7 +7,6 @@ class com.datadog.android.rum.DdRumContentProvider : android.content.ContentProv
   override fun delete(android.net.Uri, String?, Array<String>?): Int
   override fun update(android.net.Uri, android.content.ContentValues?, String?, Array<String>?): Int
 annotation com.datadog.android.rum.ExperimentalRumApi
-typealias GlobalRum = GlobalRumMonitor
 object com.datadog.android.rum.GlobalRumMonitor
   fun isRegistered(com.datadog.android.api.SdkCore = Datadog.getInstance()): Boolean
   fun get(com.datadog.android.api.SdkCore = Datadog.getInstance()): RumMonitor
