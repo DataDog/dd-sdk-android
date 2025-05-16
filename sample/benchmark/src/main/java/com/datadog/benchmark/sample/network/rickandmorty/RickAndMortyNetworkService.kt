@@ -7,7 +7,11 @@
 package com.datadog.benchmark.sample.network.rickandmorty
 
 import com.datadog.benchmark.sample.network.rickandmorty.models.Character
+import com.datadog.benchmark.sample.network.rickandmorty.models.Episode
+import com.datadog.benchmark.sample.network.rickandmorty.models.Location
 
 internal interface RickAndMortyNetworkService {
     suspend fun getCharacter(id: Int): Character?
+    suspend fun getLocation(id: Int): Location?
+    suspend fun getEpisode(id: Int): Episode?
 }

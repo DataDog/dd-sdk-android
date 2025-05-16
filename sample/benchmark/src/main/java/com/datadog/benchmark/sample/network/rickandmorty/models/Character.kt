@@ -18,7 +18,7 @@ internal data class Character(
     val name: String,
 
     @SerialName("status")
-    val status: String,
+    val status: Status,
 
     @SerialName("species")
     val species: String,
@@ -27,7 +27,7 @@ internal data class Character(
     val type: String,
 
     @SerialName("gender")
-    val gender: String,
+    val gender: Gender,
 
     @SerialName("origin")
     val origin: LocationInfo,
@@ -46,13 +46,35 @@ internal data class Character(
 
     @SerialName("created")
     val created: String
-)
+) {
+    @Serializable
+    data class LocationInfo(
+        @SerialName("name")
+        val name: String,
 
-@Serializable
-internal data class LocationInfo(
-    @SerialName("name")
-    val name: String,
+        @SerialName("url")
+        val url: String
+    )
 
-    @SerialName("url")
-    val url: String
-)
+    @Serializable
+    enum class Status {
+        @SerialName("Alive")
+        ALIVE,
+        @SerialName("Dead")
+        DEAD,
+        @SerialName("unknown")
+        UNKNOWN
+    }
+
+    @Serializable
+    enum class Gender {
+        @SerialName("Female")
+        FEMALE,
+        @SerialName("Male")
+        MALE,
+        @SerialName("Genderless")
+        GENDERLESS,
+        @SerialName("unknown")
+        UNKNOWN
+    }
+}

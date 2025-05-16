@@ -38,7 +38,7 @@ class RickAndMortyNetworkServiceTest {
         val service = RickAndMortyNetworkServiceImpl(httpClient)
 
         runBlocking {
-            val char = service.getCharacter(1)
+            val char = service.getEpisode(1)
             println(char)
         }
     }
