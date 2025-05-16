@@ -14,6 +14,7 @@ import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.rum.DdRumContentProvider
+import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
@@ -113,6 +114,10 @@ internal class RumApplicationScope(
 
     override fun getRumContext(): RumContext {
         return rumContext
+    }
+
+    override fun getCustomAttributes(): Map<String, Any?> {
+        return GlobalRumMonitor.get(sdkCore).getAttributes()
     }
 
     // endregion

@@ -13,7 +13,6 @@ import com.datadog.android.api.context.TimeInfo
 import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.api.storage.EventBatchWriter
-import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.internal.FeaturesContextResolver
@@ -24,7 +23,12 @@ import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.rum.metric.interactiontonextview.LastInteractionIdentifier
 import com.datadog.android.rum.metric.networksettled.InitialResourceIdentifier
 import com.datadog.android.rum.model.ViewEvent
+import com.datadog.android.rum.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.rum.utils.forge.Configurator
+import com.datadog.tools.unit.annotations.TestConfigurationsProvider
+import com.datadog.tools.unit.extensions.TestConfigurationExtension
+import com.datadog.tools.unit.extensions.config.TestConfiguration
+import com.datadog.tools.unit.forge.exhaustiveAttributes
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.FloatForgery
@@ -52,16 +56,14 @@ import kotlin.math.min
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
-    ExtendWith(ForgeExtension::class)
+    ExtendWith(ForgeExtension::class),
+    ExtendWith(TestConfigurationExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
 internal class RumApplicationScopeAttributePropagationTest {
 
     lateinit var testedScope: RumApplicationScope
-
-    @Mock
-    lateinit var mockSdkCore: InternalSdkCore
 
     @Mock
     lateinit var mockParentScope: RumScope
@@ -74,9 +76,6 @@ internal class RumApplicationScopeAttributePropagationTest {
 
     @Mock
     lateinit var mockSessionListener: RumSessionListener
-
-    @Mock
-    lateinit var mockNetworkSettledResourceIdentifier: InitialResourceIdentifier
 
     @Mock
     lateinit var mockLastInteractionIdentifier: LastInteractionIdentifier
@@ -103,10 +102,7 @@ internal class RumApplicationScopeAttributePropagationTest {
     lateinit var mockFeaturesContextResolver: FeaturesContextResolver
 
     @Mock
-    lateinit var mockViewChangedListener: RumViewChangedListener
-
-    @Mock
-    private lateinit var mockSessionEndedMetricDispatcher: SessionMetricDispatcher
+    lateinit var mockSessionEndedMetricDispatcher: SessionMetricDispatcher
 
     @Mock
     lateinit var mockInitialResourceIdentifier: InitialResourceIdentifier
@@ -127,6 +123,8 @@ internal class RumApplicationScopeAttributePropagationTest {
     @Forgery
     lateinit var fakeDatadogContext: DatadogContext
 
+    lateinit var fakeGlobalAttributes: Map<String, Any?>
+
     @BoolForgery
     var fakeHasReplay: Boolean = false
 
@@ -144,6 +142,8 @@ internal class RumApplicationScopeAttributePropagationTest {
 
     @BeforeEach
     fun `set up`(forge: Forge) {
+        fakeGlobalAttributes = forge.exhaustiveAttributes()
+
         fakeDatadogContext = fakeDatadogContext.copy(
             source = forge.aValueFrom(ViewEvent.ViewEventSource::class.java).toJson().asString
         )
@@ -166,11 +166,11 @@ internal class RumApplicationScopeAttributePropagationTest {
             callback.invoke(fakeDatadogContext, mockEventBatchWriter)
         }
 
-        whenever(mockSdkCore.internalLogger) doReturn mock()
+        whenever(rumMonitor.mockSdkCore.internalLogger) doReturn mock()
 
         testedScope = RumApplicationScope(
             applicationId = fakeApplicationId,
-            sdkCore = mockSdkCore,
+            sdkCore = rumMonitor.mockSdkCore,
             sampleRate = fakeSampleRate,
             backgroundTrackingEnabled = fakeBackgroundTrackingEnabled,
             trackFrustrations = fakeTrackFrustrations,
@@ -190,12 +190,27 @@ internal class RumApplicationScopeAttributePropagationTest {
 
     @Test
     fun `M return global attributes W getCustomAttributes()`() {
+        // Given
+        whenever(rumMonitor.mockInstance.getAttributes()) doReturn fakeGlobalAttributes
+
         // When
         val customAttributes = testedScope.getCustomAttributes()
 
         // Then
-        assertThat(customAttributes).isEmpty()
+        assertThat(customAttributes)
+            .containsExactlyInAnyOrderEntriesOf(fakeGlobalAttributes)
     }
 
     // endregion
+
+    companion object {
+
+        val rumMonitor = GlobalRumMonitorTestConfiguration()
+
+        @TestConfigurationsProvider
+        @JvmStatic
+        fun getTestConfigurations(): List<TestConfiguration> {
+            return listOf(rumMonitor)
+        }
+    }
 }
