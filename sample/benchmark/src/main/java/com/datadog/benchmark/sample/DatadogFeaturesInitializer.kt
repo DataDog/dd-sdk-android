@@ -137,11 +137,6 @@ internal class DatadogFeaturesInitializer @Inject constructor(
     private fun rumViewTrackingStrategy(config: BenchmarkConfig): ViewTrackingStrategy? {
         return when (config.scenario) {
             SyntheticsScenario.RumManual -> null
-            SyntheticsScenario.RumAuto -> NavigationViewTrackingStrategy(
-                R.id.rum_auto_child_nav_host_fragment,
-                true,
-                BenchmarkNavigationPredicate()
-            )
             else -> NavigationViewTrackingStrategy(
                 R.id.nav_host_fragment,
                 true,

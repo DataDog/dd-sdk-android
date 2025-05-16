@@ -6,6 +6,7 @@
 
 package com.datadog.benchmark.sample.ui.rumauto
 
+import com.datadog.benchmark.sample.navigation.RumAutoScenarioNavigator
 import com.datadog.benchmark.sample.ui.rumauto.di.RumAutoScenarioScope
 import javax.inject.Inject
 

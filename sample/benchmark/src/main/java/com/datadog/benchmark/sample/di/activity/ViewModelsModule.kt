@@ -13,7 +13,9 @@ import com.datadog.android.log.Logger
 import com.datadog.android.rum.RumMonitor
 import com.datadog.benchmark.sample.di.common.CoroutineDispatcherQualifier
 import com.datadog.benchmark.sample.di.common.CoroutineDispatcherType
+import com.datadog.benchmark.sample.network.rickandmorty.RickAndMortyNetworkService
 import com.datadog.benchmark.sample.ui.logscustom.LogsScreenViewModel
+import com.datadog.benchmark.sample.ui.rumauto.screens.characters.RumAutoCharactersViewModel
 import com.datadog.benchmark.sample.ui.rummanual.RumManualScenarioViewModel
 import com.datadog.benchmark.sample.ui.trace.TraceScenarioViewModel
 import dagger.Module
@@ -70,6 +72,18 @@ internal interface ViewModelsModule {
                 RumManualScenarioViewModel(
                     rumMonitor = rumMonitor,
                     defaultDispatcher = defaultDispatcher
+                )
+            }
+        }
+
+        @Provides
+        @ViewModelQualifier(RumAutoCharactersViewModel::class)
+        fun provideRumAutoCharactersViewModelFactory(
+            rickAndMortyNetworkService: RickAndMortyNetworkService,
+        ) = viewModelFactory {
+            initializer {
+                RumAutoCharactersViewModel(
+                    rickAndMortyNetworkService = rickAndMortyNetworkService
                 )
             }
         }

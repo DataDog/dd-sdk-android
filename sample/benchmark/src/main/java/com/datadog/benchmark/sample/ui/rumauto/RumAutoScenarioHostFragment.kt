@@ -15,6 +15,7 @@ import androidx.fragment.app.Fragment
 import androidx.navigation.NavController
 import androidx.navigation.fragment.NavHostFragment
 import com.datadog.benchmark.sample.benchmarkActivityComponent
+import com.datadog.benchmark.sample.navigation.RumAutoScenarioNavigator
 import com.datadog.benchmark.sample.ui.rumauto.di.DaggerRumAutoScenarioComponent
 import com.datadog.benchmark.sample.ui.rumauto.di.RumAutoScenarioComponent
 import com.datadog.benchmark.sample.utils.componentHolderViewModel

@@ -15,7 +15,10 @@ import com.datadog.benchmark.sample.config.BenchmarkConfig
 import com.datadog.benchmark.sample.config.SyntheticsScenario
 import com.datadog.benchmark.sample.ui.logscustom.LogsFragment
 import com.datadog.benchmark.sample.ui.logsheavytraffic.LogsHeavyTrafficHostFragment
-import com.datadog.benchmark.sample.ui.rumauto.RumAutoScenarioHostFragment
+import com.datadog.benchmark.sample.ui.rumauto.screens.characters.RumAutoCharactersFragment
+import com.datadog.benchmark.sample.ui.rumauto.screens.docs.RumAutoDocsFragment
+import com.datadog.benchmark.sample.ui.rumauto.screens.episodes.RumAutoEpisodesFragment
+import com.datadog.benchmark.sample.ui.rumauto.screens.locations.RumAutoLocationsFragment
 import com.datadog.benchmark.sample.ui.rummanual.RumManualScenarioFragment
 import com.datadog.benchmark.sample.ui.sessionreplay.SessionReplayAppcompatFragment
 import com.datadog.benchmark.sample.ui.sessionreplay.SessionReplayMaterialFragment
@@ -57,7 +60,7 @@ private fun createStartDestination(scenario: SyntheticsScenario?): String {
         SyntheticsScenario.SessionReplayCompose -> error("Using fragments for SessionReplayCompose scenario")
         SyntheticsScenario.LogsCustom -> LOGS_FRAGMENT_KEY
         SyntheticsScenario.LogsHeavyTraffic -> LOGS_HEAVY_TRAFFIC_FRAGMENT_KEY
-        SyntheticsScenario.RumAuto -> RUM_AUTO_FRAGMENT_KEY
+        SyntheticsScenario.RumAuto -> CHARACTERS_TAB_FRAGMENT_KEY
         SyntheticsScenario.RumManual -> RUM_MANUAL_FRAGMENT_KEY
         SyntheticsScenario.Trace -> TRACE_SCENARIO_FRAGMENT_KEY
     }
@@ -112,8 +115,17 @@ private fun NavGraphBuilder.navGraphRumManualScenario() {
 }
 
 private fun NavGraphBuilder.navGraphRumAutoScenario() {
-    fragment<RumAutoScenarioHostFragment>(route = RUM_AUTO_FRAGMENT_KEY) {
-        label = "rum auto scenario"
+    fragment<RumAutoCharactersFragment>(CHARACTERS_TAB_FRAGMENT_KEY) {
+        label = "Characters screen"
+    }
+    fragment<RumAutoEpisodesFragment>(EPISODES_TAB_FRAGMENT_KEY) {
+        label = "Episodes screen"
+    }
+    fragment<RumAutoLocationsFragment>(LOCATIONS_TAB_FRAGMENT_KEY) {
+        label = "Locations screen"
+    }
+    fragment<RumAutoDocsFragment>(DOCS_TAB_FRAGMENT_KEY) {
+        label = "Docs screen"
     }
 }
 
@@ -124,3 +136,7 @@ private const val SESSION_REPLAY_APPCOMPAT_FRAGMENT_KEY = "fragment_session_repl
 private const val TRACE_SCENARIO_FRAGMENT_KEY = "fragment_trace_scenario"
 private const val RUM_MANUAL_FRAGMENT_KEY = "fragment_rum_manual_scenario"
 private const val RUM_AUTO_FRAGMENT_KEY = "fragment_rum_auto_scenario"
+private const val CHARACTERS_TAB_FRAGMENT_KEY = "characters_tab_fragment"
+private const val EPISODES_TAB_FRAGMENT_KEY = "episodes_tab_fragment"
+private const val LOCATIONS_TAB_FRAGMENT_KEY = "locations_tab_fragment"
+private const val DOCS_TAB_FRAGMENT_KEY = "docs_tab_fragment"

@@ -14,8 +14,10 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.findNavController
 import com.datadog.benchmark.DatadogBaseMeter
 import com.datadog.benchmark.sample.config.BenchmarkConfig
+import com.datadog.benchmark.sample.config.SyntheticsScenario
 import com.datadog.benchmark.sample.di.activity.BenchmarkActivityComponent
 import com.datadog.benchmark.sample.navigation.FragmentsNavigationManager
+import com.datadog.benchmark.sample.navigation.RumAutoScenarioNavigator
 import com.datadog.benchmark.sample.ui.sessionreplaycompose.MainView
 import com.datadog.sample.benchmark.R
 import javax.inject.Inject
@@ -30,6 +32,10 @@ class MainActivity : AppCompatActivity() {
 
     @Inject
     internal lateinit var fragmentsNavigationManager: FragmentsNavigationManager
+
+    // TODO WAHAHA refactor this stuff
+    @Inject
+    internal lateinit var rumAutoScenarioNavigator: RumAutoScenarioNavigator
 
     @Inject
     internal lateinit var datadogFeaturesInitializer: DatadogFeaturesInitializer
@@ -54,7 +60,11 @@ class MainActivity : AppCompatActivity() {
                 MainView()
             }
         } else {
-            setContentView(R.layout.activity_main)
+            val layout = when (config.scenario) {
+                SyntheticsScenario.RumAuto -> R.layout.fragment_rum_auto_host
+                else -> R.layout.activity_main
+            }
+            setContentView(layout)
         }
 
         datadogFeaturesInitializer.initialize(config)
@@ -73,7 +83,10 @@ class MainActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         if (!config.isComposeEnabled) {
-            fragmentsNavigationManager.setNavController(findNavController(R.id.nav_host_fragment))
+            when (config.scenario) {
+                SyntheticsScenario.RumAuto -> rumAutoScenarioNavigator.setNavController(findNavController(R.id.nav_host_fragment))
+                else -> fragmentsNavigationManager.setNavController(findNavController(R.id.nav_host_fragment))
+            }
         }
     }
 }

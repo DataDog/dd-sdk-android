@@ -4,20 +4,20 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.benchmark.sample.ui.rumauto
+package com.datadog.benchmark.sample.navigation
 
 import androidx.navigation.NavController
 import androidx.navigation.createGraph
 import androidx.navigation.fragment.fragment
-import com.datadog.benchmark.sample.ui.rumauto.di.RumAutoScenarioScope
+import com.datadog.benchmark.sample.di.activity.BenchmarkActivityScope
+import com.datadog.benchmark.sample.ui.rumauto.RumAutoScenarioTab
 import com.datadog.benchmark.sample.ui.rumauto.screens.characters.RumAutoCharactersFragment
 import com.datadog.benchmark.sample.ui.rumauto.screens.docs.RumAutoDocsFragment
 import com.datadog.benchmark.sample.ui.rumauto.screens.episodes.RumAutoEpisodesFragment
 import com.datadog.benchmark.sample.ui.rumauto.screens.locations.RumAutoLocationsFragment
 import javax.inject.Inject
 
-// TODO WAHAHA rename to navigation manager
-@RumAutoScenarioScope
+@BenchmarkActivityScope
 internal class RumAutoScenarioNavigator @Inject constructor() {
     private var navController: NavController? = null
 
