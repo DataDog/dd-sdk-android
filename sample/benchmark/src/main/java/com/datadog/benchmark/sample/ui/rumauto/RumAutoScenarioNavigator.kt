@@ -33,7 +33,9 @@ internal class RumAutoScenarioNavigator @Inject constructor() {
     }
 
     fun openTab(tab: RumAutoScenarioTab) {
-        navController?.navigate(tab.toFragmentKey())
+        navController?.navigate(tab.toFragmentKey()) {
+            launchSingleTop = true
+        }
     }
 }
 
