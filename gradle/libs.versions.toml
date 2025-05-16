@@ -253,6 +253,7 @@ ktorClientCore = { module = "io.ktor:ktor-client-core", version.ref = "ktorClien
 ktorClientOkHttp = { module = "io.ktor:ktor-client-okhttp", version.ref = "ktorClient" }
 ktorContentNegotiation = { module = "io.ktor:ktor-client-content-negotiation", version.ref = "ktorClient" }
 ktorSerializationKotlinxJson = { module = "io.ktor:ktor-serialization-kotlinx-json", version.ref = "ktorClient" }
+ktorClientMock = { module = "io.ktor:ktor-client-mock", version.ref = "ktorClient" }
 
 # Otel
 jctools = { module = "org.jctools:jctools-core", version.ref = "jctools" }

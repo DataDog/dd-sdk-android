@@ -6,12 +6,13 @@
 
 package com.datadog.benchmark.sample.network.rickandmorty
 
+import com.datadog.benchmark.sample.network.KtorHttpResponse
 import com.datadog.benchmark.sample.network.rickandmorty.models.Character
 import com.datadog.benchmark.sample.network.rickandmorty.models.Episode
 import com.datadog.benchmark.sample.network.rickandmorty.models.Location
 
 internal interface RickAndMortyNetworkService {
-    suspend fun getCharacter(id: Int): Character?
-    suspend fun getLocation(id: Int): Location?
-    suspend fun getEpisode(id: Int): Episode?
+    suspend fun getCharacter(id: Int): KtorHttpResponse<Character>
+    suspend fun getLocation(id: Int): KtorHttpResponse<Location>
+    suspend fun getEpisode(id: Int): KtorHttpResponse<Episode>
 }

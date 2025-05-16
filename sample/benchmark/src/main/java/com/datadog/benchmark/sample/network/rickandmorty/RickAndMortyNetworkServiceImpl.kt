@@ -6,6 +6,7 @@
 
 package com.datadog.benchmark.sample.network.rickandmorty
 
+import com.datadog.benchmark.sample.network.KtorHttpResponse
 import com.datadog.benchmark.sample.network.rickandmorty.models.Character
 import com.datadog.benchmark.sample.network.rickandmorty.models.Episode
 import com.datadog.benchmark.sample.network.rickandmorty.models.Location
@@ -19,28 +20,28 @@ internal class RickAndMortyNetworkServiceImpl @Inject constructor(
     private val httpClient: HttpClient,
 ): RickAndMortyNetworkService {
 
-    override suspend fun getCharacter(id: Int): Character? {
+    override suspend fun getCharacter(id: Int): KtorHttpResponse<Character> {
         val url = URLBuilder(BASE_URL).apply {
             appendPathSegments(CHARACTER_PATH, id.toString())
         }.build()
 
-        return httpClient.safeGet<Character>(url).optionalResult
+        return httpClient.safeGet<Character>(url)
     }
 
-    override suspend fun getLocation(id: Int): Location? {
+    override suspend fun getLocation(id: Int): KtorHttpResponse<Location> {
         val url = URLBuilder(BASE_URL).apply {
             appendPathSegments(LOCATION_PATH, id.toString())
         }.build()
 
-        return httpClient.safeGet<Location>(url).optionalResult
+        return httpClient.safeGet<Location>(url)
     }
 
-    override suspend fun getEpisode(id: Int): Episode? {
+    override suspend fun getEpisode(id: Int): KtorHttpResponse<Episode> {
         val url = URLBuilder(BASE_URL).apply {
             appendPathSegments(EPISODE_PATH, id.toString())
         }.build()
 
-        return httpClient.safeGet<Episode>(url).optionalResult
+        return httpClient.safeGet<Episode>(url)
     }
 }
 

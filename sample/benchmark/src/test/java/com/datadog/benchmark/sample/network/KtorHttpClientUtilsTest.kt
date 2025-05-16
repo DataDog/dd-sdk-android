@@ -6,14 +6,23 @@
 
 package com.datadog.benchmark.sample.network
 
-import com.datadog.benchmark.sample.network.rickandmorty.RickAndMortyNetworkServiceImpl
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import io.ktor.client.HttpClient
-import io.ktor.client.engine.okhttp.OkHttp
+import io.ktor.client.engine.mock.MockEngine
+import io.ktor.client.engine.mock.respond
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.client.request.get
+import io.ktor.http.HttpHeaders
+import io.ktor.http.HttpStatusCode
+import io.ktor.http.URLBuilder
+import io.ktor.http.headersOf
 import io.ktor.serialization.kotlinx.json.json
+import io.ktor.utils.io.ByteReadChannel
 import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
@@ -21,25 +30,39 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
 
+// TODO WAHAHA proper test
 @Extensions(
     ExtendWith(MockitoExtension::class),
     ExtendWith(ForgeExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
-class RickAndMortyNetworkServiceTest {
+class KtorHttpClientUtilsTest {
     @Test
     fun test1() {
-        val httpClient = HttpClient(OkHttp) {
+        val mockEngine = MockEngine { request ->
+            respond(
+                content = Json.Default.encodeToString(ResponseData(1)),
+                status = HttpStatusCode.OK,
+                headers = headersOf(HttpHeaders.ContentType, "application/json")
+            )
+        }
+
+        val client = HttpClient(mockEngine) {
             install(ContentNegotiation) {
                 json(Json { ignoreUnknownKeys = true })
             }
         }
 
-        val service = RickAndMortyNetworkServiceImpl(httpClient)
+        val url = URLBuilder("").build()
 
         runBlocking {
-            val char = service.getEpisode(1)
-            println(char)
+            val response = client.safeGet<ResponseData>(url)
+            assertEquals(ResponseData(1), response.optionalResult)
         }
     }
 }
+
+@Serializable
+private data class ResponseData(
+    val x: Int,
+)
