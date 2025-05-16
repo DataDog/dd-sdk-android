@@ -22,24 +22,6 @@ public final class com/datadog/android/okhttp/DatadogEventListener$Factory : okh
 }
 
 public class com/datadog/android/okhttp/DatadogInterceptor : com/datadog/android/okhttp/trace/TracingInterceptor {
-	public fun <init> ()V
-	public fun <init> (Ljava/lang/String;)V
-	public fun <init> (Ljava/lang/String;Lcom/datadog/android/okhttp/trace/TracedRequestListener;)V
-	public fun <init> (Ljava/lang/String;Lcom/datadog/android/okhttp/trace/TracedRequestListener;Lcom/datadog/android/rum/RumResourceAttributesProvider;)V
-	public fun <init> (Ljava/lang/String;Lcom/datadog/android/okhttp/trace/TracedRequestListener;Lcom/datadog/android/rum/RumResourceAttributesProvider;Lcom/datadog/android/core/sampling/Sampler;)V
-	public synthetic fun <init> (Ljava/lang/String;Lcom/datadog/android/okhttp/trace/TracedRequestListener;Lcom/datadog/android/rum/RumResourceAttributesProvider;Lcom/datadog/android/core/sampling/Sampler;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public fun <init> (Ljava/lang/String;Ljava/util/List;)V
-	public fun <init> (Ljava/lang/String;Ljava/util/List;Lcom/datadog/android/okhttp/trace/TracedRequestListener;)V
-	public fun <init> (Ljava/lang/String;Ljava/util/List;Lcom/datadog/android/okhttp/trace/TracedRequestListener;Lcom/datadog/android/rum/RumResourceAttributesProvider;)V
-	public fun <init> (Ljava/lang/String;Ljava/util/List;Lcom/datadog/android/okhttp/trace/TracedRequestListener;Lcom/datadog/android/rum/RumResourceAttributesProvider;Lcom/datadog/android/core/sampling/Sampler;)V
-	public synthetic fun <init> (Ljava/lang/String;Ljava/util/List;Lcom/datadog/android/okhttp/trace/TracedRequestListener;Lcom/datadog/android/rum/RumResourceAttributesProvider;Lcom/datadog/android/core/sampling/Sampler;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public fun <init> (Ljava/lang/String;Ljava/util/Map;)V
-	public fun <init> (Ljava/lang/String;Ljava/util/Map;Lcom/datadog/android/okhttp/trace/TracedRequestListener;)V
-	public fun <init> (Ljava/lang/String;Ljava/util/Map;Lcom/datadog/android/okhttp/trace/TracedRequestListener;Lcom/datadog/android/rum/RumResourceAttributesProvider;)V
-	public fun <init> (Ljava/lang/String;Ljava/util/Map;Lcom/datadog/android/okhttp/trace/TracedRequestListener;Lcom/datadog/android/rum/RumResourceAttributesProvider;Lcom/datadog/android/core/sampling/Sampler;)V
-	public synthetic fun <init> (Ljava/lang/String;Ljava/util/Map;Lcom/datadog/android/okhttp/trace/TracedRequestListener;Lcom/datadog/android/rum/RumResourceAttributesProvider;Lcom/datadog/android/core/sampling/Sampler;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public fun <init> (Ljava/util/List;)V
-	public fun <init> (Ljava/util/Map;)V
 	public fun intercept (Lokhttp3/Interceptor$Chain;)Lokhttp3/Response;
 	protected fun onRequestIntercepted (Lcom/datadog/android/api/feature/FeatureSdkCore;Lokhttp3/Request;Lio/opentracing/Span;Lokhttp3/Response;Ljava/lang/Throwable;)V
 }
