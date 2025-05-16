@@ -13,7 +13,6 @@ import com.datadog.benchmark.sample.network.safeGet
 import io.ktor.client.HttpClient
 import io.ktor.http.URLBuilder
 import io.ktor.http.appendPathSegments
-import io.ktor.http.path
 import javax.inject.Inject
 
 internal class RickAndMortyNetworkServiceImpl @Inject constructor(
@@ -49,4 +48,3 @@ private const val BASE_URL = "https://rickandmortyapi.com/api"
 private const val CHARACTER_PATH = "character"
 private const val LOCATION_PATH = "location"
 private const val EPISODE_PATH = "episode"
-

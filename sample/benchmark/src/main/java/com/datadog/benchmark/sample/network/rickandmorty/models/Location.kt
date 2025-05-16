@@ -10,7 +10,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class Location(
+internal data class Location(
     @SerialName("id")
     val id: Int,
 
@@ -32,3 +32,27 @@ data class Location(
     @SerialName("created")
     val created: String
 )
+
+@Serializable
+internal data class LocationResponse(
+    @SerialName("info")
+    val info: PageInfo,
+
+    @SerialName("results")
+    val results: List<Location>
+) {
+    @Serializable
+    data class PageInfo(
+        @SerialName("count")
+        val count: Int,
+
+        @SerialName("pages")
+        val pages: Int,
+
+        @SerialName("next")
+        val next: String?,
+
+        @SerialName("prev")
+        val prev: String?
+    )
+}

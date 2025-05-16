@@ -10,7 +10,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class Episode(
+internal data class Episode(
     @SerialName("id")
     val id: Int,
 
@@ -32,3 +32,29 @@ data class Episode(
     @SerialName("created")
     val created: String
 )
+
+@Serializable
+internal data class EpisodeResponse(
+    @SerialName("info")
+    val info: PageInfo,
+
+    @SerialName("results")
+    val results: List<Episode>
+) {
+    @Serializable
+    internal data class PageInfo(
+        @SerialName("count")
+        val count: Int,
+
+        @SerialName("pages")
+        val pages: Int,
+
+        @SerialName("next")
+        val next: String?,
+
+        @SerialName("prev")
+        val prev: String?
+    )
+}
+
+

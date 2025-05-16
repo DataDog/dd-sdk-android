@@ -78,3 +78,27 @@ internal data class Character(
         UNKNOWN
     }
 }
+
+@Serializable
+internal data class CharacterResponse(
+    @SerialName("info")
+    val info: PageInfo,
+
+    @SerialName("results")
+    val results: List<Character>
+) {
+    @Serializable
+    data class PageInfo(
+        @SerialName("count")
+        val count: Int,
+
+        @SerialName("pages")
+        val pages: Int,
+
+        @SerialName("next")
+        val next: String?,
+
+        @SerialName("prev")
+        val prev: String?
+    )
+}
