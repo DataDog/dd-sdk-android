@@ -45,7 +45,7 @@ internal class LogsHeavyTrafficHostFragment : Fragment() {
 
     private fun findChildNavController(): NavController {
         val navHostFragment =
-            childFragmentManager.findFragmentById(R.id.child_nav_host_fragment) as NavHostFragment
+            childFragmentManager.findFragmentById(R.id.rum_auto_child_nav_host_fragment) as NavHostFragment
 
         return navHostFragment.navController
     }

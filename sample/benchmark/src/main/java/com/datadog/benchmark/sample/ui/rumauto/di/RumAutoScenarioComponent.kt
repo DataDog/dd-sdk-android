@@ -6,6 +6,7 @@
 
 package com.datadog.benchmark.sample.ui.rumauto.di
 
+import com.datadog.benchmark.sample.network.rickandmorty.RickAndMortyNetworkService
 import com.datadog.benchmark.sample.ui.rumauto.RumAutoScenarioHostFragment
 import com.datadog.benchmark.sample.ui.rumauto.screens.characters.RumAutoCharactersFragment
 import com.datadog.benchmark.sample.ui.rumauto.screens.docs.RumAutoDocsFragment
@@ -16,7 +17,7 @@ import io.ktor.client.HttpClient
 import javax.inject.Scope
 
 internal interface RumAutoScenarioComponentDependencies {
-    val httpClient: HttpClient
+    val rickAndMortyNetworkService: RickAndMortyNetworkService
 }
 
 @Scope
@@ -24,7 +25,10 @@ internal annotation class RumAutoScenarioScope
 
 @RumAutoScenarioScope
 @Component(
-    dependencies = [RumAutoScenarioComponentDependencies::class]
+    dependencies = [RumAutoScenarioComponentDependencies::class],
+    modules = [
+        RumAutoViewModelsModule::class
+    ]
 )
 internal interface RumAutoScenarioComponent {
     @Component.Factory

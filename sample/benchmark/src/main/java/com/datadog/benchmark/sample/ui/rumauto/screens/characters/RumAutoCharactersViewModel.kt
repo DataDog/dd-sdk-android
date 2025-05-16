@@ -7,6 +7,10 @@
 package com.datadog.benchmark.sample.ui.rumauto.screens.characters
 
 import androidx.lifecycle.ViewModel
+import com.datadog.benchmark.sample.network.rickandmorty.RickAndMortyNetworkService
 
-internal class RumAutoCharactersViewModel: ViewModel() {
+internal class RumAutoCharactersViewModel(
+    private val rickAndMortyNetworkService: RickAndMortyNetworkService,
+): ViewModel() {
 }
+

@@ -13,6 +13,7 @@ import com.datadog.android.log.LogsConfiguration
 import com.datadog.android.rum.Rum
 import com.datadog.android.rum.RumConfiguration
 import com.datadog.android.rum.tracking.NavigationViewTrackingStrategy
+import com.datadog.android.rum.tracking.ViewTrackingStrategy
 import com.datadog.android.sessionreplay.SessionReplay
 import com.datadog.android.sessionreplay.SessionReplayConfiguration
 import com.datadog.android.sessionreplay.SessionReplayPrivacy
@@ -104,17 +105,7 @@ internal class DatadogFeaturesInitializer @Inject constructor(
 
     private fun createRumConfiguration(config: BenchmarkConfig): RumConfiguration {
         return RumConfiguration.Builder(BuildConfig.BENCHMARK_RUM_APPLICATION_ID).apply {
-            if (config.scenario != SyntheticsScenario.RumManual) {
-                useViewTrackingStrategy(
-                    NavigationViewTrackingStrategy(
-                        R.id.nav_host_fragment,
-                        true,
-                        BenchmarkNavigationPredicate()
-                    )
-                )
-            } else {
-                useViewTrackingStrategy(null)
-            }
+            useViewTrackingStrategy(rumViewTrackingStrategy(config))
             setTelemetrySampleRate(SAMPLE_RATE_TELEMETRY)
             trackUserInteractions()
             trackLongTasks(THRESHOLD_LONG_TASK_INTERVAL)
@@ -141,6 +132,22 @@ internal class DatadogFeaturesInitializer @Inject constructor(
             }
             enableComposeActionTracking()
         }.build()
+    }
+
+    private fun rumViewTrackingStrategy(config: BenchmarkConfig): ViewTrackingStrategy? {
+        return when (config.scenario) {
+            SyntheticsScenario.RumManual -> null
+            SyntheticsScenario.RumAuto -> NavigationViewTrackingStrategy(
+                R.id.rum_auto_child_nav_host_fragment,
+                true,
+                BenchmarkNavigationPredicate()
+            )
+            else -> NavigationViewTrackingStrategy(
+                R.id.nav_host_fragment,
+                true,
+                BenchmarkNavigationPredicate()
+            )
+        }
     }
 
     private fun enableRum(config: BenchmarkConfig) {
