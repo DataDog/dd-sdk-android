@@ -10,11 +10,14 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.compose.ui.platform.ComposeView
 import androidx.fragment.app.Fragment
 import com.datadog.benchmark.sample.benchmarkActivityComponent
 import com.datadog.benchmark.sample.ui.rumauto.di.DaggerRumAutoScenarioComponent
 import com.datadog.benchmark.sample.ui.rumauto.di.RumAutoScenarioComponent
 import com.datadog.benchmark.sample.utils.componentHolderViewModel
+import com.datadog.sample.benchmark.R
+
 
 internal class RumAutoScenarioHostFragment: Fragment() {
 
@@ -25,6 +28,11 @@ internal class RumAutoScenarioHostFragment: Fragment() {
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
-        return super.onCreateView(inflater, container, savedInstanceState)
+        val rootView = inflater.inflate(R.layout.fragment_rum_auto_host, container, false)
+        rootView.findViewById<ComposeView>(R.id.rum_auto_bottom_navbar).setContent {
+            RumAutoBottomNavBar()
+        }
+        return rootView
     }
 }
+
