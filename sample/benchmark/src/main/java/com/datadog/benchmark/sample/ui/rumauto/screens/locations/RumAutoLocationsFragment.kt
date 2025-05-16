@@ -6,7 +6,20 @@
 
 package com.datadog.benchmark.sample.ui.rumauto.screens.locations
 
+import android.os.Bundle
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
+import androidx.compose.ui.platform.ComposeView
 import androidx.fragment.app.Fragment
 
 internal class RumAutoLocationsFragment: Fragment() {
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
+        return ComposeView(requireActivity()).apply {
+            setContent {
+                RumAutoLocationsScreen()
+            }
+        }
+    }
 }
+

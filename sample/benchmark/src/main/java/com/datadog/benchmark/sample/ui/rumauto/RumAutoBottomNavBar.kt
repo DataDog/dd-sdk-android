@@ -24,29 +24,37 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.tooling.preview.Preview
 
 @Composable
-internal fun RumAutoBottomNavBar() {
+internal fun RumAutoBottomNavBar(
+    dispatch: (RumAutoScenarioAction) -> Unit
+) {
+    @Composable
+    fun RowScope.BottomBarItem(
+        icon: ImageVector,
+        label: String,
+        tab: RumAutoScenarioTab
+    ) {
+        IconButton(onClick = { dispatch(RumAutoScenarioAction.OnTabClicked(tab)) }, modifier = Modifier.weight(1f)) {
+            Column {
+                Icon(icon, contentDescription = null, modifier = Modifier.align(Alignment.CenterHorizontally))
+                Text(text = label)
+            }
+        }
+    }
+
     BottomAppBar(
         actions = {
-            BottomBarItem(icon = Icons.Filled.Person, label ="Characters", onClick = {})
-            BottomBarItem(icon = Icons.Filled.LocationOn, label ="Locations", onClick = {})
-            BottomBarItem(icon = Icons.Filled.DateRange, label ="Episodes", onClick = {})
-            BottomBarItem(icon = Icons.Filled.Menu, label ="Docs", onClick = {})
+            BottomBarItem(icon = Icons.Filled.Person, label ="Characters", tab = RumAutoScenarioTab.CHARACTERS)
+            BottomBarItem(icon = Icons.Filled.LocationOn, label ="Locations", tab = RumAutoScenarioTab.LOCATIONS)
+            BottomBarItem(icon = Icons.Filled.DateRange, label ="Episodes", tab = RumAutoScenarioTab.EPISODES)
+            BottomBarItem(icon = Icons.Filled.Menu, label ="Docs", tab = RumAutoScenarioTab.DOCS)
         }
     )
 }
 
-@Composable
-private fun RowScope.BottomBarItem(icon: ImageVector, label: String, onClick: () -> Unit) {
-    IconButton(onClick = onClick, modifier = Modifier.weight(1f)) {
-        Column {
-            Icon(icon, contentDescription = null, modifier = Modifier.align(Alignment.CenterHorizontally))
-            Text(text = label)
-        }
-    }
-}
+
 
 @Preview(showBackground = true)
 @Composable
 internal fun RumAutoBottomNavBarPreview() {
-    RumAutoBottomNavBar()
+    RumAutoBottomNavBar({})
 }

@@ -33,12 +33,15 @@ internal class RumAutoScenarioHostFragment: Fragment() {
     @Inject
     internal lateinit var navigator: RumAutoScenarioNavigator
 
+    @Inject
+    internal lateinit var viewModel: RumAutoHostViewModel
+
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         component.inject(this)
 
         val rootView = inflater.inflate(R.layout.fragment_rum_auto_host, container, false)
         rootView.findViewById<ComposeView>(R.id.rum_auto_bottom_navbar).setContent {
-            RumAutoBottomNavBar()
+            RumAutoBottomNavBar(viewModel::dispatch)
         }
         return rootView
     }
