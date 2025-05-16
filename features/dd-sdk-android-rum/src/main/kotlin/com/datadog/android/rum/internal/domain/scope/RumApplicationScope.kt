@@ -122,11 +122,15 @@ internal class RumApplicationScope(
 
     // endregion
 
+    // region RumViewChangedListener
+
     override fun onViewChanged(viewInfo: RumViewInfo) {
         if (viewInfo.isActive) {
             lastActiveViewInfo = viewInfo
         }
     }
+
+    // endregion
 
     // region Internal
 

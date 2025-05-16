@@ -45,10 +45,13 @@ import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.datadog.tools.unit.forge.exhaustiveAttributes
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.AdvancedForgery
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.LongForgery
+import fr.xgouchet.elmyr.annotation.MapForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
+import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -312,6 +315,52 @@ internal class RumViewScopeAttributePropagationTest {
             assertThat(lastValue)
                 .containsExactlyContextAttributes(expectedAttributes)
         }
+    }
+
+    @Test
+    fun `M send event with added view attributes W handleEvent(AddViewAttributes+KeepAlive) on active view`() {
+        // Given
+        val expectedAttributes = mutableMapOf<String, Any?>()
+        expectedAttributes.putAll(fakeParentAttributes)
+        expectedAttributes.putAll(fakeViewAttributes)
+        testedScope = newRumViewScope(initialAttributes = emptyMap())
+
+        // When
+        testedScope.handleEvent(RumRawEvent.AddViewAttributes(fakeViewAttributes), mockWriter)
+        val result = testedScope.handleEvent(RumRawEvent.KeepAlive(), mockWriter)
+
+        // Then
+        argumentCaptor<ViewEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            assertThat(lastValue)
+                .containsExactlyContextAttributes(expectedAttributes)
+        }
+        assertThat(result).isNotNull()
+    }
+
+    @Test
+    fun `M send event without removed view attributes W handleEvent(AddViewAttributes+KeepAlive) on active view`(
+        @MapForgery(
+            key = AdvancedForgery(string = [StringForgery(StringForgeryType.ALPHABETICAL)]),
+            value = AdvancedForgery(string = [StringForgery()])
+        ) fakeViewAttributes: Map<String, String>
+    ) {
+        // Given
+        val expectedAttributes = mutableMapOf<String, Any?>()
+        expectedAttributes.putAll(fakeParentAttributes)
+        testedScope = newRumViewScope(initialAttributes = fakeViewAttributes)
+
+        // When
+        testedScope.handleEvent(RumRawEvent.RemoveViewAttributes(fakeViewAttributes.keys), mockWriter)
+        val result = testedScope.handleEvent(RumRawEvent.KeepAlive(), mockWriter)
+
+        // Then
+        argumentCaptor<ViewEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            assertThat(lastValue)
+                .containsExactlyContextAttributes(expectedAttributes)
+        }
+        assertThat(result).isNotNull()
     }
 
     // endregion
