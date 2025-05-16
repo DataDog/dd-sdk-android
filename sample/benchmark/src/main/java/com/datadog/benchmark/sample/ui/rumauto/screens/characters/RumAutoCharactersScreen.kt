@@ -6,10 +6,14 @@
 
 package com.datadog.benchmark.sample.ui.rumauto.screens.characters
 
+import androidx.compose.foundation.layout.Column
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
 
 @Composable
-internal fun RumAutoCharactersScreen() {
-    Text(text = "RumAutoCharactersScreen")
+internal fun RumAutoCharactersScreen(modifier: Modifier) {
+    Column(modifier = modifier) {
+        Text(text = "RumAutoCharactersScreen")
+    }
 }

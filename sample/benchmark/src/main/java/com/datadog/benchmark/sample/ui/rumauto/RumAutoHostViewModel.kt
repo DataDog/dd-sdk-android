@@ -6,8 +6,8 @@
 
 package com.datadog.benchmark.sample.ui.rumauto
 
+import com.datadog.benchmark.sample.di.activity.BenchmarkActivityScope
 import com.datadog.benchmark.sample.navigation.RumAutoScenarioNavigator
-import com.datadog.benchmark.sample.ui.rumauto.di.RumAutoScenarioScope
 import javax.inject.Inject
 
 internal enum class RumAutoScenarioTab {
@@ -21,7 +21,7 @@ internal sealed interface RumAutoScenarioAction {
     data class OnTabClicked(val tab: RumAutoScenarioTab): RumAutoScenarioAction
 }
 
-@RumAutoScenarioScope
+@BenchmarkActivityScope
 internal class RumAutoHostViewModel @Inject constructor(
     private val navigator: RumAutoScenarioNavigator,
 ) {
