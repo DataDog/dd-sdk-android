@@ -11,8 +11,18 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
+import com.datadog.benchmark.sample.benchmarkActivityComponent
+import com.datadog.benchmark.sample.ui.rumauto.di.DaggerRumAutoScenarioComponent
+import com.datadog.benchmark.sample.ui.rumauto.di.RumAutoScenarioComponent
+import com.datadog.benchmark.sample.utils.componentHolderViewModel
 
 internal class RumAutoScenarioHostFragment: Fragment() {
+
+    val component: RumAutoScenarioComponent by componentHolderViewModel {
+        DaggerRumAutoScenarioComponent
+            .factory()
+            .create(requireActivity().benchmarkActivityComponent)
+    }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         return super.onCreateView(inflater, container, savedInstanceState)

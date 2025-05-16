@@ -14,6 +14,7 @@ import com.datadog.benchmark.sample.config.BenchmarkConfig
 import com.datadog.benchmark.sample.di.common.DispatchersModule
 import com.datadog.benchmark.sample.ui.logscustom.LogsFragment
 import com.datadog.benchmark.sample.ui.logsheavytraffic.di.LogsHeavyTrafficComponentDependencies
+import com.datadog.benchmark.sample.ui.rumauto.di.RumAutoScenarioComponentDependencies
 import com.datadog.benchmark.sample.ui.rummanual.RumManualScenarioFragment
 import com.datadog.benchmark.sample.ui.sessionreplay.SessionReplayAppcompatFragment
 import com.datadog.benchmark.sample.ui.sessionreplay.SessionReplayMaterialFragment
@@ -43,7 +44,10 @@ internal interface BenchmarkActivityComponentDependencies {
     ]
 )
 @BenchmarkActivityScope
-internal interface BenchmarkActivityComponent : LogsHeavyTrafficComponentDependencies {
+internal interface BenchmarkActivityComponent :
+    LogsHeavyTrafficComponentDependencies,
+    RumAutoScenarioComponentDependencies
+{
     @Component.Factory
     interface Factory {
         fun create(
