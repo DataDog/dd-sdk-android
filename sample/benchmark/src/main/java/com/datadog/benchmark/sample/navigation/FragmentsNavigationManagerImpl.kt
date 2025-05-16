@@ -56,6 +56,7 @@ private fun createStartDestination(scenario: SyntheticsScenario?): String {
         SyntheticsScenario.SessionReplayCompose -> error("Using fragments for SessionReplayCompose scenario")
         SyntheticsScenario.LogsCustom -> LOGS_FRAGMENT_KEY
         SyntheticsScenario.LogsHeavyTraffic -> LOGS_HEAVY_TRAFFIC_FRAGMENT_KEY
+        SyntheticsScenario.RumAuto,
         SyntheticsScenario.RumManual -> RUM_MANUAL_FRAGMENT_KEY
         SyntheticsScenario.Trace -> TRACE_SCENARIO_FRAGMENT_KEY
     }
@@ -69,6 +70,7 @@ private fun NavGraphBuilder.navGraph(scenario: SyntheticsScenario?) {
         SyntheticsScenario.SessionReplayCompose -> error("Using fragments for SessionReplayCompose scenario")
         SyntheticsScenario.LogsCustom -> navGraphLogs()
         SyntheticsScenario.LogsHeavyTraffic -> navGraphLogsHeavyTraffic()
+        SyntheticsScenario.RumAuto,
         SyntheticsScenario.RumManual -> navGraphRumManualScenario()
         SyntheticsScenario.Trace -> navGraphTraceScenario()
     }

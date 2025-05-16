@@ -91,12 +91,15 @@ io.coil-kt:coil-base:2.1.0                                      :  401 Kb
 io.coil-kt:coil-compose-base:2.1.0                              :   98 Kb
 io.coil-kt:coil-compose:2.1.0                                   :   23 Kb
 io.coil-kt:coil:2.1.0                                           :    9 Kb
+io.ktor:ktor-client-content-negotiation-jvm:2.3.13              :   26 Kb
 io.ktor:ktor-client-core-jvm:2.3.13                             :  816 Kb
 io.ktor:ktor-client-okhttp-jvm:2.3.13                           :   61 Kb
 io.ktor:ktor-events-jvm:2.3.13                                  :    7 Kb
 io.ktor:ktor-http-jvm:2.3.13                                    :  404 Kb
 io.ktor:ktor-io-jvm:2.3.13                                      :  791 Kb
 io.ktor:ktor-serialization-jvm:2.3.13                           :   24 Kb
+io.ktor:ktor-serialization-kotlinx-json-jvm:2.3.13              :   23 Kb
+io.ktor:ktor-serialization-kotlinx-jvm:2.3.13                   :   33 Kb
 io.ktor:ktor-utils-jvm:2.3.13                                   :  328 Kb
 io.ktor:ktor-websocket-serialization-jvm:2.3.13                 :    6 Kb
 io.ktor:ktor-websockets-jvm:2.3.13                              :  173 Kb

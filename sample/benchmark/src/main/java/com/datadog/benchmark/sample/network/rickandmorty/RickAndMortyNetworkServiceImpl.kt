@@ -10,6 +10,7 @@ import com.datadog.benchmark.sample.network.rickandmorty.models.Character
 import com.datadog.benchmark.sample.network.safeGet
 import io.ktor.client.HttpClient
 import io.ktor.http.URLBuilder
+import io.ktor.http.appendPathSegments
 import io.ktor.http.path
 import javax.inject.Inject
 
@@ -19,8 +20,7 @@ internal class RickAndMortyNetworkServiceImpl @Inject constructor(
 
     override suspend fun getCharacter(id: Int): Character? {
         val url = URLBuilder(BASE_URL).apply {
-            path(CHARACTER_PATH)
-            path(id.toString())
+            appendPathSegments(CHARACTER_PATH, id.toString())
         }.build()
 
         return httpClient.safeGet<Character>(url).optionalResult
