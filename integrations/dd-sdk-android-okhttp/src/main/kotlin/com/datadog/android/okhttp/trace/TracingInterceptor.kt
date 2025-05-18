@@ -268,6 +268,7 @@ internal constructor(
     @Synchronized
     private fun resolveTracer(sdkCore: InternalSdkCore): Tracer? {
         val tracingFeature = sdkCore.getFeature(Feature.TRACING_FEATURE_NAME)
+        val globalTracerInstance = globalTracerProvider.invoke()
         return if (tracingFeature == null) {
             sdkCore.internalLogger.log(
                 InternalLogger.Level.WARN,
@@ -276,10 +277,10 @@ internal constructor(
                 onlyOnce = true
             )
             null
-        } else if (GlobalTracer.isRegistered()) {
+        } else if (globalTracerInstance != null) {
             // clear the localTracer reference if any
             localTracerReference.set(null)
-            GlobalTracer.get()
+            globalTracerInstance
         } else {
             // we check if we already have a local tracer if not we instantiate one
             resolveLocalTracer(sdkCore)
@@ -707,7 +708,8 @@ internal constructor(
                 traceSampler,
                 traceContextInjection,
                 redacted404ResourceName,
-                localTracerFactory
+                localTracerFactory,
+                globalTracerProvider
             )
         }
     }
@@ -799,6 +801,11 @@ internal constructor(
 
         internal fun setLocalTracerFactory(factory: (SdkCore, Set<TracingHeaderType>) -> Tracer): R {
             this.localTracerFactory = factory
+            return getThis()
+        }
+
+        internal fun setGlobalTracerProvider(globalTracerProvider: () -> CoreTracer?) : R {
+            this.globalTracerProvider = globalTracerProvider
             return getThis()
         }
 
