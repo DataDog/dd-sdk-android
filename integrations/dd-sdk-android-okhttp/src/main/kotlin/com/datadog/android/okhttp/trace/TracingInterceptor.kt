@@ -33,9 +33,9 @@ import com.datadog.opentracing.DDSpan
 import com.datadog.opentracing.DDSpanContext
 import com.datadog.opentracing.DDTracer
 import com.datadog.opentracing.propagation.ExtractedContext
+import com.datadog.trace.core.CoreTracer
 import io.opentracing.Span
 import io.opentracing.SpanContext
-import io.opentracing.Tracer
 import io.opentracing.propagation.Format
 import io.opentracing.propagation.TextMapExtractAdapter
 import io.opentracing.propagation.TextMapInject
@@ -87,7 +87,8 @@ internal constructor(
     internal val traceSampler: Sampler<Span>,
     internal val traceContextInjection: TraceContextInjection,
     internal val redacted404ResourceName: Boolean,
-    internal val localTracerFactory: (SdkCore, Set<TracingHeaderType>) -> Tracer
+    internal val localTracerFactory: (SdkCore, Set<TracingHeaderType>) -> Tracer,
+    internal val globalTracerProvider: () -> Tracer?
 ) : Interceptor {
 
     private val localTracerReference: AtomicReference<Tracer> = AtomicReference()
@@ -722,6 +723,7 @@ internal constructor(
         internal var traceOrigin: String? = null
         internal var traceSampler: Sampler<Span> = DeterministicTraceSampler(DEFAULT_TRACE_SAMPLE_RATE)
         internal var localTracerFactory = DEFAULT_LOCAL_TRACER_FACTORY
+        internal var globalTracerProvider: () -> Tracer? = { null }
         internal var traceContextInjection = TraceContextInjection.SAMPLED
 
         internal var redacted404ResourceName = true
@@ -800,6 +802,11 @@ internal constructor(
             return getThis()
         }
 
+        internal fun setGlobalTracerProvider(globalTracerProvider: () -> Tracer?) : R {
+            this.globalTracerProvider = globalTracerProvider
+            return getThis()
+        }
+
         internal abstract fun getThis(): R
 
         /**
@@ -874,11 +881,12 @@ internal constructor(
         private const val AGENT_PSR_ATTRIBUTE = "_dd.agent_psr"
         private val DEFAULT_LOCAL_TRACER_FACTORY: (SdkCore, Set<TracingHeaderType>) -> Tracer =
             { sdkCore, tracingHeaderTypes ->
-                AndroidTracer.Builder(sdkCore)
-                    // set sample rate to 100 to avoid sampling in the tracer, we are going to sample in the interceptor
-                    .setSampleRate(ALL_IN_SAMPLE_RATE)
-                    .setTracingHeaderTypes(tracingHeaderTypes)
-                    .build()
+                CoreTracer.CoreTracerBuilder((sdkCore as FeatureSdkCore).internalLogger).build()
+//                AndroidTracer.Builder(sdkCore)
+//                    // set sample rate to 100 to avoid sampling in the tracer, we are going to sample in the interceptor
+//                    .setSampleRate(ALL_IN_SAMPLE_RATE)
+//                    .setTracingHeaderTypes(tracingHeaderTypes)
+//                    .build()
             }
     }
 }
