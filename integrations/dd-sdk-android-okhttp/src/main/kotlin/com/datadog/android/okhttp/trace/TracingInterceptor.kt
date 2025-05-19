@@ -312,8 +312,8 @@ internal constructor(
             .start()
 
         (span as? MutableSpan)?.resourceName = url.substringBefore(URL_QUERY_PARAMS_BLOCK_SEPARATOR)
-        span.setTag(Tags.HTTP_URL.key, url)
-        span.setTag(Tags.HTTP_METHOD.key, request.method)
+        span.setTag(Tags.HTTP_URL, url)
+        span.setTag(Tags.HTTP_METHOD, request.method)
         span.setTag(Tags.SPAN_KIND, Tags.SPAN_KIND_CLIENT)
 
         return span
@@ -608,7 +608,7 @@ internal constructor(
             onRequestIntercepted(sdkCore, request, null, response, null)
         } else {
             val statusCode = response.code
-            span.setTag(Tags.HTTP_STATUS.key, statusCode)
+            span.setTag(Tags.HTTP_STATUS, statusCode)
             if (statusCode in HttpURLConnection.HTTP_BAD_REQUEST until HttpURLConnection.HTTP_INTERNAL_ERROR) {
                 (span as? MutableSpan)?.isError = true
             }
