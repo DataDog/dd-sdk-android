@@ -40,7 +40,7 @@ internal interface OkHttpModule {
         ): OkHttpClient {
             return OkHttpClient.Builder().apply {
                 cache(Cache(File(context.cacheDir, "okhttp-cache"), 10 * 1024 * 1024))
-                // TODO WAHAHA
+                // TODO WAHAHA provide RumMonitor
                 if (config.scenario == SyntheticsScenario.RumAuto) {
                     addInterceptor(DatadogInterceptor.Builder(emptyMap()).build())
                 }

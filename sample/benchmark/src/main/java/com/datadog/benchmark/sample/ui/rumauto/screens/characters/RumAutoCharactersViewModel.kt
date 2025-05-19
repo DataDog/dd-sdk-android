@@ -11,6 +11,8 @@ import androidx.lifecycle.viewModelScope
 import com.datadog.benchmark.sample.network.KtorHttpResponse
 import com.datadog.benchmark.sample.network.rickandmorty.RickAndMortyNetworkService
 import com.datadog.benchmark.sample.network.rickandmorty.models.CharacterResponse
+import com.datadog.benchmark.sample.ui.rumauto.screens.characters.RumAutoCharactersScreenState.PageLoadingTask
+import com.datadog.benchmark.sample.ui.rumauto.screens.characters.RumAutoCharactersScreenState.PageLoadingTaskResult
 import com.datadog.benchmark.sample.utils.StateMachine
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Job
@@ -18,12 +20,28 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
 internal sealed interface RumAutoCharactersScreenAction {
-    data class PageLoadingFinished(val task: RumAutoCharactersScreenState.PageLoadingTask, val response: KtorHttpResponse<CharacterResponse>) : RumAutoCharactersScreenAction
+    data class PageLoadingFinished(
+        val task: PageLoadingTask,
+        val response: KtorHttpResponse<CharacterResponse>
+    ) : RumAutoCharactersScreenAction {
+        override fun isValid(state: RumAutoCharactersScreenState): Boolean {
+            return state.task?.first === task
+        }
+    }
+
+    object LoadNextPage : RumAutoCharactersScreenAction
+    data class VisibleItemsChanged(val items: Set<String>): RumAutoCharactersScreenAction
+
+    object EndReached : RumAutoCharactersScreenAction
+
+    fun isValid(state: RumAutoCharactersScreenState): Boolean {
+        return true
+    }
 }
 
 internal data class RumAutoCharactersScreenState(
     val pages: List<Page>,
-    val task: Pair<PageLoadingTask, PageLoadingTaskResult>?,
+    val task: Pair<PageLoadingTask, PageLoadingTaskResult>?
 ) {
     class PageLoadingTask(val nextPageUrl: String?)
 
@@ -47,18 +65,14 @@ internal class RumAutoCharactersViewModel(
     private val defaultDispatcher: CoroutineDispatcher,
 ): ViewModel() {
 
-    private val stateMachine = StateMachine.create<RumAutoCharactersScreenAction, RumAutoCharactersScreenState>(
+    private val stateMachine = StateMachine.create(
         initialState = RumAutoCharactersScreenState.INITIAL.copy(
             task = run {
-                val task = RumAutoCharactersScreenState.PageLoadingTask(null)
-                task to RumAutoCharactersScreenState.PageLoadingTaskResult.Loading(loadNextPage(task))
+                val task = PageLoadingTask(null)
+                task to PageLoadingTaskResult.Loading(loadNextPage(task))
             }
         ),
-        processAction = { prev, action ->
-            prev.copy(
-                pages = processPages(prev, action)
-            )
-        },
+        processAction = ::processAction,
         dispatcher = defaultDispatcher,
         scope = viewModelScope
     )
@@ -67,6 +81,42 @@ internal class RumAutoCharactersViewModel(
 
     fun dispatch(action: RumAutoCharactersScreenAction) {
         stateMachine.dispatch(action)
+    }
+
+    private fun processAction(prev: RumAutoCharactersScreenState, action: RumAutoCharactersScreenAction): RumAutoCharactersScreenState {
+        if (!action.isValid(prev)) {
+            return prev
+        }
+
+        return prev.copy(
+            pages = processPages(prev, action),
+            task = processTask(prev, action)
+        )
+    }
+
+    private fun processTask(prev: RumAutoCharactersScreenState, action: RumAutoCharactersScreenAction): Pair<PageLoadingTask, PageLoadingTaskResult>? {
+        return when (action) {
+            RumAutoCharactersScreenAction.EndReached -> {
+                if (prev.task != null) {
+                    val (_, result) = prev.task
+
+                    when (result) {
+                        is PageLoadingTaskResult.Loading -> prev.task
+                        is PageLoadingTaskResult.Result -> {
+                            val newTask = PageLoadingTask(result.response.optionalResult?.info?.next)
+                            newTask to PageLoadingTaskResult.Loading(loadNextPage(newTask))
+                        }
+                    }
+
+                } else {
+                    null
+                }
+            }
+            is RumAutoCharactersScreenAction.PageLoadingFinished -> {
+                action.task to PageLoadingTaskResult.Result(action.response)
+            }
+            else -> prev.task
+        }
     }
 
     private fun processPages(prev: RumAutoCharactersScreenState, action: RumAutoCharactersScreenAction): List<RumAutoCharactersScreenState.Page> {
@@ -83,7 +133,7 @@ internal class RumAutoCharactersViewModel(
         }
     }
 
-    private fun loadNextPage(task: RumAutoCharactersScreenState.PageLoadingTask): Job {
+    private fun loadNextPage(task: PageLoadingTask): Job {
         return viewModelScope.launch(defaultDispatcher) {
             val response = rickAndMortyNetworkService.getCharacters(task.nextPageUrl)
             stateMachine.dispatch(RumAutoCharactersScreenAction.PageLoadingFinished(task, response))

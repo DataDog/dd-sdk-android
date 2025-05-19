@@ -7,11 +7,16 @@
 package com.datadog.benchmark.sample.ui.rumauto.screens.characters
 
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.ComposeView
 import androidx.fragment.app.Fragment
@@ -35,10 +40,17 @@ internal class RumAutoCharactersFragment: Fragment() {
             setContent {
                 val state by viewModel.state.collectAsStateWithLifecycle()
 
+                val allItems by remember { derivedStateOf { state.pages.flatMap { it.response.results } } }
+
+                LaunchedEffect(Unit) {
+                    snapshotFlow { allItems }.collect {
+                        Log.w("WAHAHA", it.toString())
+                    }
+                }
 
                 RumAutoCharactersScreen(
                     modifier = Modifier.fillMaxSize(),
-                    state = state,
+                    allItems = allItems,
                     dispatch = viewModel::dispatch
                 )
             }
