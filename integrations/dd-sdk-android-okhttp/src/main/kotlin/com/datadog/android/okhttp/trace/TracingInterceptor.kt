@@ -213,13 +213,13 @@ internal constructor(
         request: Request,
         tracer: Tracer
     ): Response {
-        val span = buildSpan(tracer, request)
+        val span: Span = buildSpan(tracer, request)
         val isSampled = span.sample(tracer, request)
 
         if (span is DDSpan && span.isRootSpan) {
             val samplingPriority = if (isSampled) PrioritySampling.SAMPLER_KEEP else PrioritySampling.SAMPLER_DROP
             val spanContext = span.context()
-            if (spanContext.setSamplingPriority(samplingPriority)) {
+            if (spanContext.setSamplingPriority(samplingPriority, SamplingMechanism.EXTERNAL_OVERRIDE.toInt())) {
                 spanContext.setMetric(
                     AGENT_PSR_ATTRIBUTE,
                     (traceSampler.getSampleRate() ?: ZERO_SAMPLE_RATE) / ALL_IN_SAMPLE_RATE
