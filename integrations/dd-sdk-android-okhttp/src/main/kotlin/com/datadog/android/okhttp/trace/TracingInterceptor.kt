@@ -107,8 +107,11 @@ internal constructor(
 
         sdkCore?.updateFeatureContext(Feature.TRACING_FEATURE_NAME) {
             it[OKHTTP_INTERCEPTOR_SAMPLE_RATE] = traceSampler.getSampleRate()
-            it[OKHTTP_INTERCEPTOR_HEADER_TYPES] =
-                TracingHeaderTypesSet(tracedHosts.values.flatten().map { it.toInternalTracingHeaderType() }.toSet())
+            it[OKHTTP_INTERCEPTOR_HEADER_TYPES] = TracingHeaderTypesSet(
+                tracedHosts.values.flatten()
+                    .map(TracingHeaderType::toInternalTracingHeaderType)
+                    .toSet()
+            )
         }
     }
 
