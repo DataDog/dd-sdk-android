@@ -7,9 +7,14 @@
 package com.datadog.benchmark.sample
 
 import android.app.Activity
+import android.content.Context
+import android.content.SharedPreferences
 import android.os.Bundle
 import androidx.activity.compose.setContent
 import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.material.Text
+import androidx.compose.ui.platform.ComposeView
+import androidx.core.content.edit
 import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.findNavController
 import com.datadog.benchmark.DatadogBaseMeter
@@ -18,6 +23,8 @@ import com.datadog.benchmark.sample.config.SyntheticsScenario
 import com.datadog.benchmark.sample.di.activity.BenchmarkActivityComponent
 import com.datadog.benchmark.sample.navigation.FragmentsNavigationManager
 import com.datadog.benchmark.sample.navigation.RumAutoScenarioNavigator
+import com.datadog.benchmark.sample.ui.rumauto.RumAutoBottomNavBar
+import com.datadog.benchmark.sample.ui.rumauto.RumAutoHostViewModel
 import com.datadog.benchmark.sample.ui.sessionreplaycompose.MainView
 import com.datadog.sample.benchmark.R
 import javax.inject.Inject
@@ -43,6 +50,10 @@ class MainActivity : AppCompatActivity() {
     @Inject
     internal lateinit var config: BenchmarkConfig
 
+    // TODO WAHAHA refactor this stuff
+    @Inject
+    internal lateinit var rumAutoHostViewModel: RumAutoHostViewModel
+
     internal lateinit var viewModel: MainActivityViewModel
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -54,20 +65,39 @@ class MainActivity : AppCompatActivity() {
 
         benchmarkActivityComponent.inject(this)
 
-        if (config.isComposeEnabled) {
-            supportActionBar?.hide()
-            setContent {
-                MainView()
-            }
-        } else {
-            val layout = when (config.scenario) {
-                SyntheticsScenario.RumAuto -> R.layout.fragment_rum_auto_host
-                else -> R.layout.activity_main
-            }
-            setContentView(layout)
+        val sharedPref = getSharedPreferences("MyPrefs", Context.MODE_PRIVATE)
+
+        val str: String = sharedPref.getString("mega_key", "default")!!
+
+        sharedPref.edit { putString("mega_key", "edited") }
+
+        supportActionBar?.hide()
+        setContent {
+            Text(text = str)
         }
 
-        datadogFeaturesInitializer.initialize(config)
+//        if (config.isComposeEnabled) {
+//            supportActionBar?.hide()
+//            setContent {
+//                MainView()
+//            }
+//        } else {
+//            when (config.scenario) {
+//                SyntheticsScenario.RumAuto -> {
+//                    setContentView(R.layout.fragment_rum_auto_host)
+//                    findViewById<ComposeView>(R.id.rum_auto_bottom_navbar).apply {
+//                        setContent {
+//                            RumAutoBottomNavBar(rumAutoHostViewModel::dispatch)
+//                        }
+//                    }
+//                }
+//                else -> {
+//                    setContentView(R.layout.activity_main)
+//                }
+//            }
+//        }
+//
+//        datadogFeaturesInitializer.initialize(config)
     }
 
     override fun onStart() {
@@ -82,12 +112,12 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        if (!config.isComposeEnabled) {
-            when (config.scenario) {
-                SyntheticsScenario.RumAuto -> rumAutoScenarioNavigator.setNavController(findNavController(R.id.nav_host_fragment))
-                else -> fragmentsNavigationManager.setNavController(findNavController(R.id.nav_host_fragment))
-            }
-        }
+//        if (!config.isComposeEnabled) {
+//            when (config.scenario) {
+//                SyntheticsScenario.RumAuto -> rumAutoScenarioNavigator.setNavController(findNavController(R.id.nav_host_fragment))
+//                else -> fragmentsNavigationManager.setNavController(findNavController(R.id.nav_host_fragment))
+//            }
+//        }
     }
 }
 

@@ -25,10 +25,18 @@ internal class RumAutoScenarioNavigator @Inject constructor() {
         this.navController = navController
 
         navController.graph = navController.createGraph(startDestination = CHARACTERS_TAB_FRAGMENT_KEY) {
-            fragment<RumAutoCharactersFragment>(CHARACTERS_TAB_FRAGMENT_KEY)
-            fragment<RumAutoEpisodesFragment>(EPISODES_TAB_FRAGMENT_KEY)
-            fragment<RumAutoLocationsFragment>(LOCATIONS_TAB_FRAGMENT_KEY)
-            fragment<RumAutoDocsFragment>(DOCS_TAB_FRAGMENT_KEY)
+            fragment<RumAutoCharactersFragment>(CHARACTERS_TAB_FRAGMENT_KEY) {
+                label = "Characters screen"
+            }
+            fragment<RumAutoEpisodesFragment>(EPISODES_TAB_FRAGMENT_KEY) {
+                label = "Episodes screen"
+            }
+            fragment<RumAutoLocationsFragment>(LOCATIONS_TAB_FRAGMENT_KEY) {
+                label = "Locations screen"
+            }
+            fragment<RumAutoDocsFragment>(DOCS_TAB_FRAGMENT_KEY) {
+                label = "Docs screen"
+            }
         }
     }
 

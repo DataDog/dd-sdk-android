@@ -7,6 +7,7 @@
 package com.datadog.benchmark.sample.ui.rumauto.screens.characters
 
 import androidx.compose.foundation.layout.Column
+import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -15,5 +16,8 @@ import androidx.compose.ui.Modifier
 internal fun RumAutoCharactersScreen(modifier: Modifier) {
     Column(modifier = modifier) {
         Text(text = "RumAutoCharactersScreen")
+        Button(onClick = {}) {
+            Text(text = "PRESS ME")
+        }
     }
 }
