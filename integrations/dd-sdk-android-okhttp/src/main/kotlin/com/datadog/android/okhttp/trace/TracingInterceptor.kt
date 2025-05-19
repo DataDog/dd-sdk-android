@@ -644,7 +644,8 @@ internal constructor(
     private fun Span.drop() = (this as? MutableSpan)?.drop()
 
     private fun Span.sample(tracer: Tracer, request: Request): Boolean {
-        return if (this is DDSpan && samplingPriority != null) {
+        val samplingPriority = (this as? DDSpan)?.samplingPriority
+        return if (samplingPriority != null) {
             samplingPriority > 0
         } else {
             extractSamplingDecision(tracer, request) ?: traceSampler.sample(this)
