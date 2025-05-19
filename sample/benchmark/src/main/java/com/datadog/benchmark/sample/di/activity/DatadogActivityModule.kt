@@ -31,6 +31,7 @@ import com.datadog.benchmark.sample.config.SyntheticsScenario
 import com.datadog.sample.benchmark.BuildConfig
 import dagger.Module
 import dagger.Provides
+import javax.inject.Singleton
 
 @Module
 internal interface DatadogActivityModule {
@@ -42,7 +43,7 @@ internal interface DatadogActivityModule {
          * It is derived from intent extras.
          */
         @Provides
-        @BenchmarkActivityScope
+        @Singleton
         fun provideSdkCore(
             context: Context,
             config: BenchmarkConfig
@@ -59,7 +60,7 @@ internal interface DatadogActivityModule {
         }
 
         @Provides
-        @BenchmarkActivityScope
+        @Singleton
         fun provideDatadogMeter(config: BenchmarkConfig): DatadogBaseMeter {
             val exporterConfig = DatadogExporterConfiguration.Builder(BuildConfig.BENCHMARK_API_KEY)
                 .setApplicationId(BuildConfig.APPLICATION_ID)
@@ -78,7 +79,7 @@ internal interface DatadogActivityModule {
         }
 
         @Provides
-        @BenchmarkActivityScope
+        @Singleton
         fun provideLogger(sdkCore: SdkCore): Logger {
             return Logger.Builder(sdkCore)
                 .setName("benchmarkLogger")
@@ -87,7 +88,7 @@ internal interface DatadogActivityModule {
         }
 
         @Provides
-        @BenchmarkActivityScope
+        @Singleton
         fun provideRumMonitor(sdkCore: SdkCore): RumMonitor {
             return GlobalRumMonitor.get(sdkCore = sdkCore)
         }

@@ -27,11 +27,10 @@ internal class MainActivityViewModelFactory(
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
 //        val config = BenchmarkConfig.resolveSyntheticsBundle(activity.intent.extras)
 
-        val config = BenchmarkConfig(run = SyntheticsRun.Instrumented, scenario = SyntheticsScenario.RumAuto)
+//        val config = BenchmarkConfig(run = SyntheticsRun.Instrumented, scenario = SyntheticsScenario.RumAuto)
 
         val benchmarkActivityComponent = DaggerBenchmarkActivityComponent.factory().create(
             deps = application.benchmarkAppComponent,
-            config = config
         )
 
         return MainActivityViewModel(benchmarkActivityComponent) as T

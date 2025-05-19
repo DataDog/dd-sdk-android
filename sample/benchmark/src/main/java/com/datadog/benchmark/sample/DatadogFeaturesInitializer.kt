@@ -30,13 +30,14 @@ import com.datadog.sample.benchmark.BuildConfig
 import com.datadog.sample.benchmark.R
 import dagger.Lazy
 import javax.inject.Inject
+import javax.inject.Singleton
 
 /**
  * The general recommendation is to initialize all the components at the Application.onCreate
  * to have all the observability as early as possible. However in the Benchmark app we know what features
  * we need only in [MainActivity.onCreate], it depends on the [SyntheticsScenario] which is derived from intent extras.
  */
-@BenchmarkActivityScope
+@Singleton
 @Suppress("TooManyFunctions")
 internal class DatadogFeaturesInitializer @Inject constructor(
     private val sdkCore: Lazy<SdkCore>

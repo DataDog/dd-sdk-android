@@ -6,6 +6,7 @@
 
 package com.datadog.benchmark.sample.config
 
+import android.content.SharedPreferences
 import android.os.Bundle
 
 internal class BenchmarkConfig(
@@ -22,6 +23,14 @@ internal class BenchmarkConfig(
         return scenario?.value ?: ""
     }
 
+    fun saveToPrefs(preferences: SharedPreferences) {
+        preferences.edit().apply {
+            putString(SYNTHETICS_SCENARIO_PREFS_KEY, scenario?.value)
+            putString(SYNTHETICS_RUN_PREFS_KEY, run?.value)
+            commit()
+        }
+    }
+
     companion object {
         fun resolveSyntheticsBundle(bundle: Bundle?): BenchmarkConfig {
             val scenario = bundle?.getString(BM_SYNTHETICS_SCENARIO)
@@ -30,6 +39,13 @@ internal class BenchmarkConfig(
                 scenario = resolveScenario(scenario),
                 run = resolveRun(run)
             )
+        }
+
+        fun fromPrefs(sharedPreferences: SharedPreferences): BenchmarkConfig {
+            val scenario = resolveScenario(sharedPreferences.getString(SYNTHETICS_SCENARIO_PREFS_KEY, null))
+            val run = resolveRun(sharedPreferences.getString(SYNTHETICS_RUN_PREFS_KEY, null))
+
+            return BenchmarkConfig(run = run, scenario = scenario)
         }
 
         private fun resolveRun(run: String?): SyntheticsRun? {
@@ -46,5 +62,7 @@ internal class BenchmarkConfig(
 
         private const val BM_SYNTHETICS_SCENARIO = "synthetics.benchmark.scenario"
         private const val BM_SYNTHETICS_RUN = "synthetics.benchmark.run"
+        private const val SYNTHETICS_SCENARIO_PREFS_KEY = "synthetics.benchmark.scenario"
+        private const val SYNTHETICS_RUN_PREFS_KEY = "synthetics.benchmark.run"
     }
 }

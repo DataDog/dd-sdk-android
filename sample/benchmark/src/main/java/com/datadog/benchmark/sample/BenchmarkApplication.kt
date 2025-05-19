@@ -7,18 +7,28 @@
 package com.datadog.benchmark.sample
 
 import android.app.Application
+import com.datadog.benchmark.sample.config.BenchmarkConfig
 import com.datadog.benchmark.sample.di.app.BenchmarkAppComponent
 import com.datadog.benchmark.sample.di.app.DaggerBenchmarkAppComponent
+import javax.inject.Inject
 
 internal class BenchmarkApplication : Application() {
 
     internal lateinit var benchmarkAppComponent: BenchmarkAppComponent
+
+    @Inject
+    internal lateinit var benchmarkFeaturesInitializer: DatadogFeaturesInitializer
+
+    @Inject
+    internal lateinit var benchmarkConfig: BenchmarkConfig
 
     override fun onCreate() {
         super.onCreate()
 
         benchmarkAppComponent = DaggerBenchmarkAppComponent.factory().create(this)
         benchmarkAppComponent.inject(this)
+
+        benchmarkFeaturesInitializer.initialize(benchmarkConfig)
     }
 }
 

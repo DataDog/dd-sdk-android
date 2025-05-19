@@ -45,14 +45,14 @@ class MainActivity : AppCompatActivity() {
     internal lateinit var rumAutoScenarioNavigator: RumAutoScenarioNavigator
 
     @Inject
-    internal lateinit var datadogFeaturesInitializer: DatadogFeaturesInitializer
-
-    @Inject
     internal lateinit var config: BenchmarkConfig
 
     // TODO WAHAHA refactor this stuff
     @Inject
     internal lateinit var rumAutoHostViewModel: RumAutoHostViewModel
+
+    @Inject
+    internal lateinit var preferences: SharedPreferences
 
     internal lateinit var viewModel: MainActivityViewModel
 
@@ -65,39 +65,29 @@ class MainActivity : AppCompatActivity() {
 
         benchmarkActivityComponent.inject(this)
 
-        val sharedPref = getSharedPreferences("MyPrefs", Context.MODE_PRIVATE)
+        val benchmarkConfig = BenchmarkConfig.resolveSyntheticsBundle(intent.extras)
+        benchmarkConfig.saveToPrefs(preferences)
 
-        val str: String = sharedPref.getString("mega_key", "default")!!
-
-        sharedPref.edit { putString("mega_key", "edited") }
-
-        supportActionBar?.hide()
-        setContent {
-            Text(text = str)
+        if (config.isComposeEnabled) {
+            supportActionBar?.hide()
+            setContent {
+                MainView()
+            }
+        } else {
+            when (config.scenario) {
+                SyntheticsScenario.RumAuto -> {
+                    setContentView(R.layout.fragment_rum_auto_host)
+                    findViewById<ComposeView>(R.id.rum_auto_bottom_navbar).apply {
+                        setContent {
+                            RumAutoBottomNavBar(rumAutoHostViewModel::dispatch)
+                        }
+                    }
+                }
+                else -> {
+                    setContentView(R.layout.activity_main)
+                }
+            }
         }
-
-//        if (config.isComposeEnabled) {
-//            supportActionBar?.hide()
-//            setContent {
-//                MainView()
-//            }
-//        } else {
-//            when (config.scenario) {
-//                SyntheticsScenario.RumAuto -> {
-//                    setContentView(R.layout.fragment_rum_auto_host)
-//                    findViewById<ComposeView>(R.id.rum_auto_bottom_navbar).apply {
-//                        setContent {
-//                            RumAutoBottomNavBar(rumAutoHostViewModel::dispatch)
-//                        }
-//                    }
-//                }
-//                else -> {
-//                    setContentView(R.layout.activity_main)
-//                }
-//            }
-//        }
-//
-//        datadogFeaturesInitializer.initialize(config)
     }
 
     override fun onStart() {
@@ -112,12 +102,12 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-//        if (!config.isComposeEnabled) {
-//            when (config.scenario) {
-//                SyntheticsScenario.RumAuto -> rumAutoScenarioNavigator.setNavController(findNavController(R.id.nav_host_fragment))
-//                else -> fragmentsNavigationManager.setNavController(findNavController(R.id.nav_host_fragment))
-//            }
-//        }
+        if (!config.isComposeEnabled) {
+            when (config.scenario) {
+                SyntheticsScenario.RumAuto -> rumAutoScenarioNavigator.setNavController(findNavController(R.id.nav_host_fragment))
+                else -> fragmentsNavigationManager.setNavController(findNavController(R.id.nav_host_fragment))
+            }
+        }
     }
 }
 

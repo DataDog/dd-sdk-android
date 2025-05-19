@@ -7,9 +7,14 @@
 package com.datadog.benchmark.sample.di.app
 
 import android.content.Context
+import android.content.SharedPreferences
 import com.datadog.benchmark.sample.BenchmarkApplication
+import com.datadog.benchmark.sample.config.BenchmarkConfig
+import com.datadog.benchmark.sample.config.SyntheticsRun
+import com.datadog.benchmark.sample.config.SyntheticsScenario
 import dagger.Binds
 import dagger.Module
+import dagger.Provides
 import javax.inject.Singleton
 
 @Module
@@ -17,4 +22,22 @@ internal interface AppModule {
     @Binds
     @Singleton
     fun bindApplicationContext(benchmarkApplication: BenchmarkApplication): Context
+
+    companion object {
+        @Provides
+        @Singleton
+        fun provideSharedPreferences(context: Context): SharedPreferences {
+            return context.getSharedPreferences("BenchmarkAppPrefs", Context.MODE_PRIVATE)
+        }
+
+        @Provides
+        @Singleton
+        fun provideBenchmarkConfig(
+            preferences: SharedPreferences,
+        ): BenchmarkConfig {
+            return BenchmarkConfig(run = SyntheticsRun.Instrumented, scenario = SyntheticsScenario.RumAuto)
+//            return BenchmarkConfig.fromPrefs(preferences)
+        }
+    }
 }
+
