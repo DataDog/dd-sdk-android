@@ -16,10 +16,10 @@ import java.util.concurrent.TimeUnit
 
 internal class VitalReaderRunnable(
     val sdkCore: FeatureSdkCore,
-    val reader: VitalReader,
+    private val reader: VitalReader,
     val observer: VitalObserver,
     val executor: ScheduledExecutorService,
-    val periodMs: Long
+    private val periodMs: Long
 ) : Runnable {
 
     override fun run() {

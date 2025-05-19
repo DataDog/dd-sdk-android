@@ -24,6 +24,7 @@ internal class FileEventBatchWriter(
     private val eventsWriter: FileWriter<RawBatchEvent>,
     private val metadataReaderWriter: FileReaderWriter,
     private val filePersistenceConfig: FilePersistenceConfig,
+    private val batchWriteEventListener: BatchWriteEventListener,
     private val internalLogger: InternalLogger
 ) : EventBatchWriter {
 
@@ -46,6 +47,7 @@ internal class FileEventBatchWriter(
         } else if (!checkEventSize(event.data.size)) {
             false
         } else if (eventsWriter.writeData(batchFile, event, true)) {
+            batchWriteEventListener.onWriteEvent(event.data.size.toLong())
             if (batchMetadata?.isNotEmpty() == true && metadataFile != null) {
                 writeBatchMetadata(metadataFile, batchMetadata)
             }

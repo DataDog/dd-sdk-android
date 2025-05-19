@@ -10,6 +10,7 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.event.EventMapper
 import com.datadog.android.event.NoOpEventMapper
 import com.datadog.android.rum.assertj.ConfigurationRumAssert
+import com.datadog.android.rum.configuration.SlowFramesConfiguration
 import com.datadog.android.rum.configuration.VitalsUpdateFrequency
 import com.datadog.android.rum.event.ViewEventMapper
 import com.datadog.android.rum.internal.NoOpRumSessionListener
@@ -24,8 +25,11 @@ import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
+import com.datadog.android.rum.model.ViewEvent
+import com.datadog.android.rum.tracking.ActionTrackingStrategy
 import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
 import com.datadog.android.rum.tracking.InteractionPredicate
+import com.datadog.android.rum.tracking.NoOpActionTrackingStrategy
 import com.datadog.android.rum.tracking.ViewAttributesProvider
 import com.datadog.android.rum.tracking.ViewTrackingStrategy
 import com.datadog.android.rum.utils.forge.Configurator
@@ -77,38 +81,43 @@ internal class RumConfigurationBuilderTest {
         val rumConfiguration = testedBuilder.build()
 
         // Then
-        assertThat(rumConfiguration.featureConfiguration).isEqualTo(
-            RumFeature.Configuration(
-                customEndpointUrl = null,
-                sampleRate = RumFeature.DEFAULT_SAMPLE_RATE,
-                telemetrySampleRate = RumFeature.DEFAULT_TELEMETRY_SAMPLE_RATE,
-                telemetryConfigurationSampleRate = RumFeature.DEFAULT_TELEMETRY_CONFIGURATION_SAMPLE_RATE,
-                userActionTracking = true,
-                touchTargetExtraAttributesProviders = emptyList(),
-                interactionPredicate = NoOpInteractionPredicate(),
-                viewTrackingStrategy = ActivityViewTrackingStrategy(false),
-                viewEventMapper = NoOpEventMapper(),
-                errorEventMapper = NoOpEventMapper(),
-                actionEventMapper = NoOpEventMapper(),
-                resourceEventMapper = NoOpEventMapper(),
-                longTaskEventMapper = NoOpEventMapper(),
-                telemetryConfigurationMapper = NoOpEventMapper(),
-                longTaskTrackingStrategy = MainLooperLongTaskStrategy(100L),
-                backgroundEventTracking = false,
-                trackFrustrations = true,
-                // on Android R+ this should be false, but since default value is static property
-                // RumFeature.DEFAULT_RUM_CONFIG, it is evaluated at the static() block during class
-                // loading, so we are not able to set Build API version at this point. We will test
-                // it through a helper method in RumFeature.Companion
-                trackNonFatalAnrs = true,
-                vitalsMonitorUpdateFrequency = VitalsUpdateFrequency.AVERAGE,
-                sessionListener = NoOpRumSessionListener(),
-                additionalConfig = emptyMap(),
-                initialResourceIdentifier = TimeBasedInitialResourceIdentifier(),
-                lastInteractionIdentifier = TimeBasedInteractionIdentifier(),
-                trackAnonymousUser = true
-            )
-        )
+        with(rumConfiguration.featureConfiguration) {
+            assertThat(customEndpointUrl).isEqualTo(null)
+            assertThat(sampleRate).isEqualTo(RumFeature.DEFAULT_SAMPLE_RATE)
+            assertThat(telemetrySampleRate).isEqualTo(RumFeature.DEFAULT_TELEMETRY_SAMPLE_RATE)
+            assertThat(telemetryConfigurationSampleRate)
+                .isEqualTo(RumFeature.DEFAULT_TELEMETRY_CONFIGURATION_SAMPLE_RATE)
+            assertThat(userActionTracking).isTrue()
+            assertThat(touchTargetExtraAttributesProviders)
+                .isEqualTo(emptyList<ViewAttributesProvider>())
+            assertThat(interactionPredicate).isEqualTo(NoOpInteractionPredicate())
+            assertThat(viewTrackingStrategy)
+                .isEqualTo(ActivityViewTrackingStrategy(false))
+            assertThat(viewEventMapper).isEqualTo(NoOpEventMapper<ViewEvent>())
+            assertThat(errorEventMapper).isEqualTo(NoOpEventMapper<ErrorEvent>())
+            assertThat(actionEventMapper).isEqualTo(NoOpEventMapper<ActionEvent>())
+            assertThat(resourceEventMapper).isEqualTo(NoOpEventMapper<ResourceEvent>())
+            assertThat(longTaskEventMapper).isEqualTo(NoOpEventMapper<LongTaskEvent>())
+            assertThat(telemetryConfigurationMapper)
+                .isEqualTo(NoOpEventMapper<TelemetryConfigurationEvent>())
+            assertThat(longTaskTrackingStrategy)
+                .isEqualTo(MainLooperLongTaskStrategy(100L))
+            assertThat(backgroundEventTracking).isFalse()
+            assertThat(trackFrustrations).isTrue()
+            // on Android R+ this should be false, but since default value is static property
+            // RumFeature.DEFAULT_RUM_CONFIG, it is evaluated at the static() block during class
+            // loading, so we are not able to set Build API version at this point. We will test
+            // it through a helper method in RumFeature.Companion
+            assertThat(trackNonFatalAnrs).isTrue()
+            assertThat(vitalsMonitorUpdateFrequency).isEqualTo(VitalsUpdateFrequency.AVERAGE)
+            assertThat(sessionListener).isEqualTo(NoOpRumSessionListener())
+            assertThat(additionalConfig).isEqualTo(emptyMap<String, Any>())
+            assertThat(initialResourceIdentifier).isEqualTo(TimeBasedInitialResourceIdentifier())
+            assertThat(lastInteractionIdentifier).isEqualTo(TimeBasedInteractionIdentifier())
+            assertThat(composeActionTrackingStrategy)
+                .isInstanceOf(NoOpActionTrackingStrategy::class.java)
+            assertThat(slowFramesConfiguration).isNull()
+        }
     }
 
     @Test
@@ -560,5 +569,51 @@ internal class RumConfigurationBuilderTest {
         // Then
         assertThat(rumConfiguration.featureConfiguration.lastInteractionIdentifier)
             .isSameAs(customLastInteractionIdentifier)
+    }
+
+    @OptIn(ExperimentalRumApi::class)
+    @Test
+    fun `M changes default trackAnonymousUser W trackAnonymousUser()`(
+        @BoolForgery trackAnonymousUser: Boolean
+    ) {
+        // When
+        val rumConfiguration = testedBuilder
+            .trackAnonymousUser(trackAnonymousUser)
+            .build()
+
+        // Then
+        assertThat(rumConfiguration.featureConfiguration.trackAnonymousUser)
+            .isEqualTo(trackAnonymousUser)
+    }
+
+    @OptIn(ExperimentalRumApi::class)
+    @Test
+    fun `M use a custom slowFramesConfiguration W setSlowFramesConfiguration()`() {
+        // Given
+        val slowFramesConfiguration = mock<SlowFramesConfiguration>()
+
+        // When
+        val rumConfiguration = testedBuilder
+            .setSlowFramesConfiguration(slowFramesConfiguration)
+            .build()
+
+        // Then
+        assertThat(rumConfiguration.featureConfiguration.slowFramesConfiguration)
+            .isSameAs(slowFramesConfiguration)
+    }
+
+    @Test
+    fun `M use a custom ActionTrackingStrategy W setComposeActionTrackingStrategy()`() {
+        // Given
+        val mockActionTrackingStrategy = mock<ActionTrackingStrategy>()
+
+        // When
+        val rumConfiguration = testedBuilder
+            .setComposeActionTrackingStrategy(mockActionTrackingStrategy)
+            .build()
+
+        // Then
+        assertThat(rumConfiguration.featureConfiguration.composeActionTrackingStrategy)
+            .isSameAs(mockActionTrackingStrategy)
     }
 }

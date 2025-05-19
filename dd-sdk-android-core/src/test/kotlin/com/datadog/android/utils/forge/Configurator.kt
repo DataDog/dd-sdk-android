@@ -7,6 +7,7 @@
 package com.datadog.android.utils.forge
 
 import com.datadog.android.internal.tests.elmyr.InternalTelemetryApiUsageForgeryFactory
+import com.datadog.android.internal.tests.elmyr.TracingHeaderTypesSetForgeryFactory
 import com.datadog.android.test.elmyr.PersistenceStrategyBatchForgeryFactory
 import com.datadog.android.tests.elmyr.useCoreFactories
 import com.datadog.tools.unit.forge.BaseConfigurator
@@ -23,7 +24,6 @@ internal class Configurator :
         forge.addFactory(CustomAttributesForgeryFactory())
         forge.addFactory(ConfigurationForgeryFactory())
         forge.addFactory(ConfigurationCoreForgeryFactory())
-        forge.addFactory(ConfigurationForgeryFactory())
         forge.addFactory(FilePersistenceConfigForgeryFactory())
         forge.addFactory(AndroidInfoProviderForgeryFactory())
         forge.addFactory(FeatureStorageConfigurationForgeryFactory())
@@ -75,5 +75,6 @@ internal class Configurator :
 
         // telemetry
         forge.addFactory(InternalTelemetryApiUsageForgeryFactory())
+        forge.addFactory(TracingHeaderTypesSetForgeryFactory())
     }
 }

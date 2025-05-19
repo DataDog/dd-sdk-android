@@ -16,7 +16,9 @@ import fr.xgouchet.elmyr.ForgeryFactory
 import org.mockito.kotlin.mock
 import java.security.SecureRandom
 
-internal class SpanForgeryFactory : ForgeryFactory<DDSpan> {
+internal class SpanForgeryFactory(
+    private val forgeSamplingPriority: (forge: Forge, span: DDSpan) -> Unit = ::forgeSamplingPriorityDefault
+) : ForgeryFactory<DDSpan> {
 
     override fun getForgery(forge: Forge): DDSpan {
         val operationName = forge.anAlphabeticalString()
@@ -35,15 +37,9 @@ internal class SpanForgeryFactory : ForgeryFactory<DDSpan> {
             isWithErrorFlag,
             tags
         ).start() as DDSpan
-        if (forge.aBool()) {
-            span.samplingPriority = forge.anElementFrom(
-                PrioritySampling.UNSET,
-                PrioritySampling.SAMPLER_DROP,
-                PrioritySampling.USER_DROP,
-                PrioritySampling.SAMPLER_KEEP,
-                PrioritySampling.USER_KEEP
-            )
-        }
+
+        forgeSamplingPriority(forge, span)
+
         metrics.forEach {
             span.context().setMetric(it.key, it.value)
         }
@@ -115,5 +111,17 @@ internal class SpanForgeryFactory : ForgeryFactory<DDSpan> {
 
             return spanBuilder
         }
+    }
+}
+
+private fun forgeSamplingPriorityDefault(forge: Forge, span: DDSpan) {
+    if (forge.aBool()) {
+        span.samplingPriority = forge.anElementFrom(
+            PrioritySampling.UNSET,
+            PrioritySampling.SAMPLER_DROP,
+            PrioritySampling.USER_DROP,
+            PrioritySampling.SAMPLER_KEEP,
+            PrioritySampling.USER_KEEP
+        )
     }
 }

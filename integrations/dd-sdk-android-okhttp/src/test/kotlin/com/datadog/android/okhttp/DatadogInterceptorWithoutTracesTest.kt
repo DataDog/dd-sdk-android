@@ -154,6 +154,7 @@ internal class DatadogInterceptorWithoutTracesTest {
         whenever(mockSpanContext.toSpanId()) doReturn fakeSpanId
         whenever(mockSpanContext.toTraceId()) doReturn fakeTraceId
         whenever(mockTraceSampler.sample(any())) doReturn true
+        whenever(rumMonitor.mockSdkCore.firstPartyHostResolver) doReturn mockResolver
 
         val mediaType = forge.anElementFrom("application", "image", "text", "model") +
             "/" + forge.anAlphabeticalString()
@@ -171,7 +172,6 @@ internal class DatadogInterceptorWithoutTracesTest {
         whenever(rumMonitor.mockSdkCore.getFeature(Feature.TRACING_FEATURE_NAME)) doReturn mock()
         whenever(rumMonitor.mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mock()
         whenever(rumMonitor.mockSdkCore.internalLogger) doReturn mockInternalLogger
-        whenever(rumMonitor.mockSdkCore.firstPartyHostResolver) doReturn mockResolver
 
         fakeResourceAttributes = forge.exhaustiveAttributes()
 

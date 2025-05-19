@@ -17,10 +17,12 @@ import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.HostsSanitizer
 import com.datadog.android.core.internal.net.DefaultFirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.sampling.Sampler
+import com.datadog.android.internal.telemetry.TracingHeaderTypesSet
 import com.datadog.android.internal.utils.loggableStackTrace
 import com.datadog.android.okhttp.TraceContext
 import com.datadog.android.okhttp.TraceContextInjection
 import com.datadog.android.okhttp.internal.otel.toOpenTracingContext
+import com.datadog.android.okhttp.internal.trace.toInternalTracingHeaderType
 import com.datadog.android.okhttp.internal.utils.traceIdAsHexString
 import com.datadog.android.trace.AndroidTracer
 import com.datadog.android.trace.TracingHeaderType
@@ -220,6 +222,16 @@ internal constructor(
         redacted404ResourceName = true,
         localTracerFactory = DEFAULT_LOCAL_TRACER_FACTORY
     )
+
+    init {
+        val sdkCore = sdkCoreReference.get() as? FeatureSdkCore
+
+        sdkCore?.updateFeatureContext(Feature.TRACING_FEATURE_NAME) {
+            it[OKHTTP_INTERCEPTOR_SAMPLE_RATE] = traceSampler.getSampleRate()
+            it[OKHTTP_INTERCEPTOR_HEADER_TYPES] =
+                TracingHeaderTypesSet(tracedHosts.values.flatten().map { it.toInternalTracingHeaderType() }.toSet())
+        }
+    }
 
     // region Interceptor
 
@@ -973,6 +985,9 @@ internal constructor(
         internal const val W3C_SAMPLING_DECISION_INDEX = 3
         internal const val W3C_TRACE_ID_LENGTH = 32
         internal const val W3C_PARENT_ID_LENGTH = 16
+
+        internal const val OKHTTP_INTERCEPTOR_SAMPLE_RATE = "okhttp_interceptor_sample_rate"
+        internal const val OKHTTP_INTERCEPTOR_HEADER_TYPES = "okhttp_interceptor_header_types"
 
         private const val AGENT_PSR_ATTRIBUTE = "_dd.agent_psr"
         private val DEFAULT_LOCAL_TRACER_FACTORY: (SdkCore, Set<TracingHeaderType>) -> Tracer =

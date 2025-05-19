@@ -15,7 +15,7 @@ import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.feature.event.ThreadDump
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
-import com.datadog.android.core.internal.utils.submitSafe
+import com.datadog.android.core.internal.utils.executeSafe
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.rum.DdRumContentProvider
 import com.datadog.android.rum.ExperimentalRumApi
@@ -44,6 +44,7 @@ import com.datadog.android.rum.internal.domain.scope.RumSessionScope
 import com.datadog.android.rum.internal.domain.scope.RumViewManagerScope
 import com.datadog.android.rum.internal.domain.scope.RumViewScope
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
+import com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.rum.metric.interactiontonextview.LastInteractionIdentifier
 import com.datadog.android.rum.metric.networksettled.InitialResourceIdentifier
@@ -75,7 +76,8 @@ internal class DatadogRumMonitor(
     sessionListener: RumSessionListener,
     internal val executorService: ExecutorService,
     initialResourceIdentifier: InitialResourceIdentifier,
-    lastInteractionIdentifier: LastInteractionIdentifier?
+    lastInteractionIdentifier: LastInteractionIdentifier?,
+    slowFramesListener: SlowFramesListener?
 ) : RumMonitor, AdvancedRumMonitor {
 
     internal var rootScope: RumScope = RumApplicationScope(
@@ -91,7 +93,8 @@ internal class DatadogRumMonitor(
         sessionEndedMetricDispatcher = sessionEndedMetricDispatcher,
         CombinedRumSessionListener(sessionListener, telemetryEventHandler),
         initialResourceIdentifier,
-        lastInteractionIdentifier
+        lastInteractionIdentifier,
+        slowFramesListener
     )
 
     internal val keepAliveRunnable = Runnable {
@@ -113,7 +116,7 @@ internal class DatadogRumMonitor(
     // region RumMonitor
 
     override fun getCurrentSessionId(callback: (String?) -> Unit) {
-        executorService.submitSafe(
+        executorService.executeSafe(
             "Get current session ID",
             sdkCore.internalLogger
         ) {
@@ -681,7 +684,7 @@ internal class DatadogRumMonitor(
             handler.removeCallbacks(keepAliveRunnable)
             // avoid trowing a RejectedExecutionException
             if (!executorService.isShutdown) {
-                executorService.submitSafe("Rum event handling", sdkCore.internalLogger) {
+                executorService.executeSafe("Rum event handling", sdkCore.internalLogger) {
                     synchronized(rootScope) {
                         rootScope.handleEvent(event, writer)
                         notifyDebugListenerWithState()
@@ -701,7 +704,7 @@ internal class DatadogRumMonitor(
         if (!executorService.isShutdown) {
             @Suppress("UnsafeThirdPartyFunctionCall") // 1 cannot be negative
             val latch = CountDownLatch(1)
-            executorService.submitSafe("pending event waiting", sdkCore.internalLogger) {
+            executorService.executeSafe("pending event waiting", sdkCore.internalLogger) {
                 latch.countDown()
             }
             try {

@@ -11,7 +11,7 @@ import java.io.File
 
 @NoOpImplementation
 internal interface MetricsDispatcher {
-    fun sendBatchDeletedMetric(batchFile: File, removalReason: RemovalReason)
+    fun sendBatchDeletedMetric(batchFile: File, removalReason: RemovalReason, numPendingBatches: Int)
 
     fun sendBatchClosedMetric(batchFile: File, batchMetadata: BatchClosedMetadata)
 }

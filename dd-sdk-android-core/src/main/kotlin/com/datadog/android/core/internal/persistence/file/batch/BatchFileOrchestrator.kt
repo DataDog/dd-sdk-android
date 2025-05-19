@@ -22,15 +22,18 @@ import com.datadog.android.core.internal.persistence.file.mkdirsSafe
 import java.io.File
 import java.io.FileFilter
 import java.util.Locale
+import java.util.concurrent.atomic.AtomicInteger
 import kotlin.math.roundToLong
 
 // TODO RUM-438 Improve this class: need to make it thread-safe and optimize work with file
 //  system in order to reduce the number of syscalls (which are expensive) for files already seen
+@Suppress("TooManyFunctions")
 internal class BatchFileOrchestrator(
     private val rootDir: File,
     internal val config: FilePersistenceConfig,
     private val internalLogger: InternalLogger,
-    private val metricsDispatcher: MetricsDispatcher
+    private val metricsDispatcher: MetricsDispatcher,
+    private val pendingFiles: AtomicInteger = AtomicInteger(0)
 ) : FileOrchestrator {
 
     private val fileFilter = BatchFileFilter()
@@ -81,6 +84,7 @@ internal class BatchFileOrchestrator(
             deleteObsoleteFiles(it)
         }
         lastCleanupTimestamp = System.currentTimeMillis()
+        pendingFiles.set(files.count())
 
         return files.firstOrNull {
             (it !in excludeFiles) && !isFileRecent(it, recentReadDelayMs)
@@ -143,6 +147,10 @@ internal class BatchFileOrchestrator(
     // endregion
 
     // region Internal
+
+    override fun decrementAndGetPendingFilesCount(): Int {
+        return pendingFiles.decrementAndGet()
+    }
 
     @Suppress("LiftReturnOrAssignment", "ReturnCount")
     private fun isRootDirValid(): Boolean {
@@ -215,6 +223,7 @@ internal class BatchFileOrchestrator(
         previousFile = newFile
         previousFileItemCount = 1
         lastFileAccessTimestamp = System.currentTimeMillis()
+        pendingFiles.incrementAndGet()
         return newFile
     }
 
@@ -260,7 +269,11 @@ internal class BatchFileOrchestrator(
                 val isOldFile = (it.name.toLongOrNull() ?: 0) < threshold
                 if (isOldFile) {
                     if (it.deleteSafe(internalLogger)) {
-                        metricsDispatcher.sendBatchDeletedMetric(it, RemovalReason.Obsolete)
+                        metricsDispatcher.sendBatchDeletedMetric(
+                            batchFile = it,
+                            removalReason = RemovalReason.Obsolete,
+                            numPendingBatches = pendingFiles.decrementAndGet()
+                        )
                     }
                     if (it.metadata.existsSafe(internalLogger)) {
                         it.metadata.deleteSafe(internalLogger)
@@ -301,7 +314,7 @@ internal class BatchFileOrchestrator(
         val wasDeleted = file.deleteSafe(internalLogger)
         return if (wasDeleted) {
             if (sendMetric) {
-                metricsDispatcher.sendBatchDeletedMetric(file, RemovalReason.Purged)
+                metricsDispatcher.sendBatchDeletedMetric(file, RemovalReason.Purged, pendingFiles.decrementAndGet())
             }
             size
         } else {

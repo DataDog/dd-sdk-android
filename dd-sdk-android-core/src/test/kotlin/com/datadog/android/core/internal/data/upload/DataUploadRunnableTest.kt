@@ -12,6 +12,7 @@ import com.datadog.android.api.context.NetworkInfo
 import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.core.configuration.UploadSchedulerStrategy
 import com.datadog.android.core.internal.ContextProvider
+import com.datadog.android.core.internal.metrics.BenchmarkUploads
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.persistence.BatchData
 import com.datadog.android.core.internal.persistence.BatchId
@@ -42,6 +43,7 @@ import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
 import org.mockito.kotlin.reset
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
@@ -75,6 +77,9 @@ internal class DataUploadRunnableTest {
 
     @Mock
     lateinit var mockSystemInfoProvider: SystemInfoProvider
+
+    @Mock
+    lateinit var mockBenchmarkUploads: BenchmarkUploads
 
     @Mock
     lateinit var mockContextProvider: ContextProvider
@@ -121,16 +126,16 @@ internal class DataUploadRunnableTest {
         whenever(mockContextProvider.context) doReturn fakeContext
 
         testedRunnable = DataUploadRunnable(
-            fakeFeatureName,
-            mockThreadPoolExecutor,
-            mockStorage,
-            mockDataUploader,
-            mockContextProvider,
-            mockNetworkInfoProvider,
-            mockSystemInfoProvider,
-            mockUploadSchedulerStrategy,
-            fakeMaxBatchesPerJob,
-            mockInternalLogger
+            featureName = fakeFeatureName,
+            threadPoolExecutor = mockThreadPoolExecutor,
+            storage = mockStorage,
+            dataUploader = mockDataUploader,
+            contextProvider = mockContextProvider,
+            networkInfoProvider = mockNetworkInfoProvider,
+            systemInfoProvider = mockSystemInfoProvider,
+            uploadSchedulerStrategy = mockUploadSchedulerStrategy,
+            maxBatchesPerJob = fakeMaxBatchesPerJob,
+            internalLogger = mockInternalLogger
         )
     }
 
@@ -562,16 +567,16 @@ internal class DataUploadRunnableTest {
     ) {
         // Given
         testedRunnable = DataUploadRunnable(
-            fakeFeatureName,
-            mockThreadPoolExecutor,
-            mockStorage,
-            mockDataUploader,
-            mockContextProvider,
-            mockNetworkInfoProvider,
-            mockSystemInfoProvider,
-            mockUploadSchedulerStrategy,
-            fakeMaxBatchesPerJob,
-            mockInternalLogger
+            featureName = fakeFeatureName,
+            threadPoolExecutor = mockThreadPoolExecutor,
+            storage = mockStorage,
+            dataUploader = mockDataUploader,
+            contextProvider = mockContextProvider,
+            networkInfoProvider = mockNetworkInfoProvider,
+            systemInfoProvider = mockSystemInfoProvider,
+            uploadSchedulerStrategy = mockUploadSchedulerStrategy,
+            maxBatchesPerJob = fakeMaxBatchesPerJob,
+            internalLogger = mockInternalLogger
         )
         val batches = forge.aList(
             size = forge.anInt(
@@ -618,16 +623,16 @@ internal class DataUploadRunnableTest {
     ) {
         // Given
         testedRunnable = DataUploadRunnable(
-            fakeFeatureName,
-            mockThreadPoolExecutor,
-            mockStorage,
-            mockDataUploader,
-            mockContextProvider,
-            mockNetworkInfoProvider,
-            mockSystemInfoProvider,
-            mockUploadSchedulerStrategy,
-            fakeMaxBatchesPerJob,
-            mockInternalLogger
+            featureName = fakeFeatureName,
+            threadPoolExecutor = mockThreadPoolExecutor,
+            storage = mockStorage,
+            dataUploader = mockDataUploader,
+            contextProvider = mockContextProvider,
+            networkInfoProvider = mockNetworkInfoProvider,
+            systemInfoProvider = mockSystemInfoProvider,
+            uploadSchedulerStrategy = mockUploadSchedulerStrategy,
+            maxBatchesPerJob = fakeMaxBatchesPerJob,
+            internalLogger = mockInternalLogger
         )
         val fakeBatchesCount = forge.anInt(
             min = 1,
@@ -688,6 +693,150 @@ internal class DataUploadRunnableTest {
                 return data
             }
         }
+    }
+
+    // endregion
+
+    // region sdkBenchmarks
+
+    @Test
+    fun `M send upload benchmark telemetry W run { online }`() {
+        // Given
+        testedRunnable = DataUploadRunnable(
+            featureName = fakeFeatureName,
+            threadPoolExecutor = mockThreadPoolExecutor,
+            storage = mockStorage,
+            dataUploader = mockDataUploader,
+            contextProvider = mockContextProvider,
+            networkInfoProvider = mockNetworkInfoProvider,
+            systemInfoProvider = mockSystemInfoProvider,
+            uploadSchedulerStrategy = mockUploadSchedulerStrategy,
+            maxBatchesPerJob = fakeMaxBatchesPerJob,
+            internalLogger = mockInternalLogger,
+            benchmarkUploads = mockBenchmarkUploads
+        )
+
+        // When
+        testedRunnable.run()
+
+        // Then
+        verify(mockBenchmarkUploads).incrementBenchmarkUploadsCount(any())
+    }
+
+    @Test
+    fun `M not send upload benchmark telemetry W run { offline }`(
+        @Mock mockNetworkInfo: NetworkInfo
+    ) {
+        // Given
+        testedRunnable = DataUploadRunnable(
+            featureName = fakeFeatureName,
+            threadPoolExecutor = mockThreadPoolExecutor,
+            storage = mockStorage,
+            dataUploader = mockDataUploader,
+            contextProvider = mockContextProvider,
+            networkInfoProvider = mockNetworkInfoProvider,
+            systemInfoProvider = mockSystemInfoProvider,
+            uploadSchedulerStrategy = mockUploadSchedulerStrategy,
+            maxBatchesPerJob = fakeMaxBatchesPerJob,
+            internalLogger = mockInternalLogger,
+            benchmarkUploads = mockBenchmarkUploads
+        )
+
+        whenever(mockNetworkInfoProvider.getLatestNetworkInfo())
+            .thenReturn(mockNetworkInfo)
+
+        whenever(mockNetworkInfo.connectivity)
+            .thenReturn(NetworkInfo.Connectivity.NETWORK_NOT_CONNECTED)
+
+        // When
+        testedRunnable.run()
+
+        // Then
+        verify(mockBenchmarkUploads, never()).incrementBenchmarkUploadsCount(any())
+    }
+
+    @Test
+    fun `M send bytes uploaded benchmark telemetry W run { successful upload }`(
+        forge: Forge
+    ) {
+        // Given
+        testedRunnable = DataUploadRunnable(
+            featureName = fakeFeatureName,
+            threadPoolExecutor = mockThreadPoolExecutor,
+            storage = mockStorage,
+            dataUploader = mockDataUploader,
+            contextProvider = mockContextProvider,
+            networkInfoProvider = mockNetworkInfoProvider,
+            systemInfoProvider = mockSystemInfoProvider,
+            uploadSchedulerStrategy = mockUploadSchedulerStrategy,
+            maxBatchesPerJob = fakeMaxBatchesPerJob,
+            internalLogger = mockInternalLogger,
+            benchmarkUploads = mockBenchmarkUploads
+        )
+
+        val batch = forge.aList { getForgery<RawBatchEvent>() }
+        val batchMeta = forge.anAsciiString()
+        val batchId = mock<BatchId>()
+        val batchData = BatchData(batchId, batch, batchMeta.toByteArray())
+        whenever(mockStorage.readNextBatch())
+            .thenReturn(batchData)
+            .thenReturn(null)
+        whenever(
+            mockDataUploader.upload(
+                fakeContext,
+                batch,
+                batchMeta.toByteArray(),
+                batchId
+            )
+        ).thenReturn(UploadStatus.Success(202))
+
+        // When
+        testedRunnable.run()
+
+        // Then
+        verify(mockBenchmarkUploads).sendBenchmarkBytesUploaded(any(), any())
+    }
+
+    @Test
+    fun `M not send bytes uploaded benchmark telemetry W run { failed upload }`(
+        forge: Forge
+    ) {
+        // Given
+        testedRunnable = DataUploadRunnable(
+            featureName = fakeFeatureName,
+            threadPoolExecutor = mockThreadPoolExecutor,
+            storage = mockStorage,
+            dataUploader = mockDataUploader,
+            contextProvider = mockContextProvider,
+            networkInfoProvider = mockNetworkInfoProvider,
+            systemInfoProvider = mockSystemInfoProvider,
+            uploadSchedulerStrategy = mockUploadSchedulerStrategy,
+            maxBatchesPerJob = fakeMaxBatchesPerJob,
+            internalLogger = mockInternalLogger,
+            benchmarkUploads = mockBenchmarkUploads
+        )
+
+        val batch = forge.aList { getForgery<RawBatchEvent>() }
+        val batchMeta = forge.anAsciiString()
+        val batchId = mock<BatchId>()
+        val batchData = BatchData(batchId, batch, batchMeta.toByteArray())
+        whenever(mockStorage.readNextBatch())
+            .thenReturn(batchData)
+            .thenReturn(null)
+        whenever(
+            mockDataUploader.upload(
+                fakeContext,
+                batch,
+                batchMeta.toByteArray(),
+                batchId
+            )
+        ).thenReturn(UploadStatus.RequestCreationError(mock()))
+
+        // When
+        testedRunnable.run()
+
+        // Then
+        verify(mockBenchmarkUploads, never()).sendBenchmarkBytesUploaded(any(), any())
     }
 
     // endregion

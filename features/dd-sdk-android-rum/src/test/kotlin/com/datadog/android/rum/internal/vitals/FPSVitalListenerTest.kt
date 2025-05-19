@@ -10,10 +10,10 @@ import androidx.metrics.performance.FrameData
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import com.datadog.android.rum.internal.domain.FrameMetricsData
-import com.datadog.android.rum.internal.vitals.JankStatsActivityLifecycleListenerTest.Companion.MAX_FPS
-import com.datadog.android.rum.internal.vitals.JankStatsActivityLifecycleListenerTest.Companion.MIN_FPS
-import com.datadog.android.rum.internal.vitals.JankStatsActivityLifecycleListenerTest.Companion.ONE_MILLISECOND_NS
-import com.datadog.android.rum.internal.vitals.JankStatsActivityLifecycleListenerTest.Companion.ONE_SECOND_NS
+import com.datadog.android.rum.internal.vitals.FrameStatesAggregatorTest.Companion.MAX_FPS
+import com.datadog.android.rum.internal.vitals.FrameStatesAggregatorTest.Companion.MIN_FPS
+import com.datadog.android.rum.internal.vitals.FrameStatesAggregatorTest.Companion.ONE_MILLISECOND_NS
+import com.datadog.android.rum.internal.vitals.FrameStatesAggregatorTest.Companion.ONE_SECOND_NS
 import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import fr.xgouchet.elmyr.annotation.BoolForgery

@@ -4,7 +4,7 @@ include:
 # SETUP
 
 variables:
-  CURRENT_CI_IMAGE: "14"
+  CURRENT_CI_IMAGE: "16"
   CI_IMAGE_DOCKER: registry.ddbuild.io/ci/dd-sdk-android:$CURRENT_CI_IMAGE
   GIT_DEPTH: 5
 
@@ -19,7 +19,7 @@ variables:
 
   EMULATOR_NAME: "android_emulator"
   ANDROID_ARCH: "arm64-v8a"
-  ANDROID_API: "35"
+  ANDROID_API: "36"
   ANDROID_SDK_VERSION: "commandlinetools-mac-11076708_latest"
 
 stages:
@@ -235,7 +235,7 @@ test-pyramid:core-it-latest-api:
   stage: test-pyramid
   timeout: 1h
   variables:
-    ANDROID_API: "35"
+    ANDROID_API: "36"
     ANDROID_EMULATOR_IMAGE: "system-images;android-$ANDROID_API;google_apis;${ANDROID_ARCH}"
     ANDROID_PLATFORM: "platforms;android-$ANDROID_API"
     ANDROID_BUILD_TOOLS: "build-tools;$ANDROID_API.0.0"
@@ -360,7 +360,7 @@ test-pyramid:legacy-integration-instrumented-latest-api:
   stage: test-pyramid
   timeout: 1h
   variables:
-    ANDROID_API: "35"
+    ANDROID_API: "36"
     ANDROID_EMULATOR_IMAGE: "system-images;android-$ANDROID_API;google_apis;${ANDROID_ARCH}"
     ANDROID_PLATFORM: "platforms;android-$ANDROID_API"
     ANDROID_BUILD_TOOLS: "build-tools;$ANDROID_API.0.0"

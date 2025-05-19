@@ -32,7 +32,6 @@ internal class ResourceRecordedDataQueueItemTest {
         // Given
         val testedRecordedDataQueueItem = ResourceRecordedDataQueueItem(
             recordedQueuedItemContext = fakeResourceRecordedDataQueueItem.recordedQueuedItemContext,
-            applicationId = fakeResourceRecordedDataQueueItem.applicationId,
             identifier = fakeResourceRecordedDataQueueItem.identifier,
             resourceData = ByteArray(0)
         )

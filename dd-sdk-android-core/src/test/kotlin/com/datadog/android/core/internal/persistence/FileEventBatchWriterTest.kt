@@ -63,6 +63,9 @@ internal class FileEventBatchWriterTest {
     @Mock
     lateinit var mockFilePersistenceConfig: FilePersistenceConfig
 
+    @Mock
+    lateinit var mockBatchWriteEventListener: BatchWriteEventListener
+
     @Forgery
     lateinit var fakeBatchFile: File
 
@@ -80,7 +83,8 @@ internal class FileEventBatchWriterTest {
             eventsWriter = mockBatchWriter,
             metadataReaderWriter = mockMetaReaderWriter,
             filePersistenceConfig = mockFilePersistenceConfig,
-            internalLogger = mockInternalLogger
+            internalLogger = mockInternalLogger,
+            batchWriteEventListener = mockBatchWriteEventListener
         )
         whenever(mockFilePersistenceConfig.maxItemSize) doReturn Long.MAX_VALUE
     }
@@ -198,7 +202,8 @@ internal class FileEventBatchWriterTest {
             eventsWriter = mockBatchWriter,
             metadataReaderWriter = mockMetaReaderWriter,
             filePersistenceConfig = mockFilePersistenceConfig,
-            internalLogger = mockInternalLogger
+            internalLogger = mockInternalLogger,
+            batchWriteEventListener = mockBatchWriteEventListener
         )
 
         val serializedBatchMetadata = batchMetadata.toByteArray(Charsets.UTF_8)
@@ -319,7 +324,8 @@ internal class FileEventBatchWriterTest {
             eventsWriter = mockBatchWriter,
             metadataReaderWriter = mockMetaReaderWriter,
             filePersistenceConfig = mockFilePersistenceConfig,
-            internalLogger = mockInternalLogger
+            internalLogger = mockInternalLogger,
+            batchWriteEventListener = mockBatchWriteEventListener
         )
 
         // When
@@ -343,7 +349,8 @@ internal class FileEventBatchWriterTest {
             eventsWriter = mockBatchWriter,
             metadataReaderWriter = mockMetaReaderWriter,
             filePersistenceConfig = mockFilePersistenceConfig,
-            internalLogger = mockInternalLogger
+            internalLogger = mockInternalLogger,
+            batchWriteEventListener = mockBatchWriteEventListener
         )
 
         // When
@@ -370,7 +377,8 @@ internal class FileEventBatchWriterTest {
             eventsWriter = mockBatchWriter,
             metadataReaderWriter = mockMetaReaderWriter,
             filePersistenceConfig = mockFilePersistenceConfig,
-            internalLogger = mockInternalLogger
+            internalLogger = mockInternalLogger,
+            batchWriteEventListener = mockBatchWriteEventListener
         )
         whenever(mockMetaReaderWriter.readData(fakeMetaFile)) doReturn
             fakeMetadata.toByteArray()
@@ -380,6 +388,31 @@ internal class FileEventBatchWriterTest {
 
         // Then
         assertThat(meta).isEqualTo(fakeMetadata.toByteArray())
+    }
+
+    // endregion
+
+    // region benchmark
+
+    @Test
+    fun `M send onWriteEvent W write`(
+        @Forgery batchEvent: RawBatchEvent,
+        @StringForgery batchMetadata: String
+    ) {
+        // Given
+        val serializedBatchMetadata = batchMetadata.toByteArray(Charsets.UTF_8)
+        whenever(
+            mockBatchWriter.writeData(fakeBatchFile, batchEvent, true)
+        ) doReturn true
+        whenever(
+            mockMetaReaderWriter.writeData(fakeBatchMetadataFile, serializedBatchMetadata, false)
+        ) doReturn false
+
+        // When
+        testedWriter.write(batchEvent, serializedBatchMetadata, fakeEventType)
+
+        // Then
+        verify(mockBatchWriteEventListener).onWriteEvent(batchEvent.data.size.toLong())
     }
 
     // endregion

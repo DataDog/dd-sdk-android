@@ -12,7 +12,6 @@ import com.datadog.android.sessionreplay.recorder.SystemInformation
 internal class NoopDataQueueHandler : DataQueueHandler {
     override fun addResourceItem(
         identifier: String,
-        applicationId: String,
         resourceData: ByteArray
     ): ResourceRecordedDataQueueItem? = null
 

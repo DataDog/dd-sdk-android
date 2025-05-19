@@ -64,7 +64,9 @@ internal class ConfigurationRumForgeryFactory :
                     timeThresholdInMilliseconds = forge.aLong(min = 1)
                 )
             ),
-            trackAnonymousUser = forge.aBool()
+            trackAnonymousUser = forge.aBool(),
+            composeActionTrackingStrategy = mock(),
+            slowFramesConfiguration = forge.getForgery()
         )
     }
 }

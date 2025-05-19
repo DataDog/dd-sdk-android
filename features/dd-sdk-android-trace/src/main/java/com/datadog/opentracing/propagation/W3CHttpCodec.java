@@ -8,6 +8,7 @@ package com.datadog.opentracing.propagation;
 
 import static com.datadog.opentracing.propagation.HttpCodec.validateUInt128BitsID;
 import static com.datadog.opentracing.propagation.HttpCodec.validateUInt64BitsID;
+import static com.datadog.trace.core.propagation.HttpCodec.RUM_SESSION_ID_KEY;
 
 import com.datadog.opentracing.DDSpanContext;
 import com.datadog.legacy.trace.api.sampling.PrioritySampling;
@@ -34,6 +35,7 @@ class W3CHttpCodec {
 
   private static final String TRACEPARENT_KEY = "traceparent";
   private static final String TRACESTATE_KEY = "tracestate";
+  static final String BAGGAGE_KEY = "baggage";
 
   private static final String TRACEPARENT_VALUE = "00-%s-%s-0%s";
 
@@ -47,7 +49,8 @@ class W3CHttpCodec {
   private static final String SAMPLING_PRIORITY_TRACESTATE_TAG_VALUE = "s";
   private static final String PARENT_SPAN_ID_TRACESTATE_TAG_VALUE = "p";
   private static final String DATADOG_VENDOR_TRACESTATE_PREFIX = "dd=";
-  private static final String RUM_SESSION_ID_TAG_VALUE = "t.rsid";
+
+  static final String RUM_SESSION_ID_BAGGAGE_KEY = "session.id";
 
   private W3CHttpCodec() {
     // This class should not be created. This also makes code coverage checks happy.
@@ -62,15 +65,16 @@ class W3CHttpCodec {
         String spanId = context.getSpanId().toString(HEX_RADIX).toLowerCase(Locale.US);
         String samplingPriority = convertSamplingPriority(context.getSamplingPriority());
         String origin = context.getOrigin();
-        String sessionId = (String) context.getTags().get(DatadogHttpCodec.RUM_SESSION_ID_KEY);
+        String sessionId = (String) context.getTags().get(RUM_SESSION_ID_KEY);
 
         carrier.put(TRACEPARENT_KEY, String.format(TRACEPARENT_VALUE,
                   StringsKt.padStart(traceId, TRACECONTEXT_TRACE_ID_LENGTH, '0'),
                   StringsKt.padStart(spanId, TRACECONTEXT_PARENT_ID_LENGTH, '0'),
                   samplingPriority));
         // TODO RUM-2121 3rd party vendor information will be erased
-        carrier.put(TRACESTATE_KEY, createTraceStateHeader(samplingPriority, origin, spanId, sessionId));
+        carrier.put(TRACESTATE_KEY, createTraceStateHeader(samplingPriority, origin, spanId));
 
+        carrier.put(BAGGAGE_KEY, createSessionIdBaggage(sessionId));
       } catch (final NumberFormatException e) {
       }
     }
@@ -82,8 +86,7 @@ class W3CHttpCodec {
     private String createTraceStateHeader(
             String samplingPriority,
             String origin,
-            String parentSpanId,
-            String sessionId
+            String parentSpanId
     ) {
       StringBuilder sb = new StringBuilder(DATADOG_VENDOR_TRACESTATE_PREFIX)
               .append(SAMPLING_PRIORITY_TRACESTATE_TAG_VALUE)
@@ -101,14 +104,13 @@ class W3CHttpCodec {
                 .append(origin.toLowerCase(Locale.US));
       }
 
-      if (sessionId != null) {
-        sb.append(';')
-            .append(RUM_SESSION_ID_TAG_VALUE)
-            .append(':')
-            .append(sessionId);
-      }
-
       return sb.toString();
+    }
+
+    private String createSessionIdBaggage(
+        String sessionId
+    ) {
+      return RUM_SESSION_ID_BAGGAGE_KEY + "=" + sessionId;
     }
   }
 

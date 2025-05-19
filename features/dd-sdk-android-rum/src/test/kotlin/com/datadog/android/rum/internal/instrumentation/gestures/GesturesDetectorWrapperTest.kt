@@ -19,8 +19,10 @@ import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.any
 import org.mockito.kotlin.inOrder
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
@@ -87,5 +89,21 @@ internal class GesturesDetectorWrapperTest {
         testedWrapper.onTouchEvent(event)
 
         verifyNoInteractions(mockGesturesDetectorListener)
+    }
+
+    @Test
+    fun `M not call 'onUp' W action up is consumed`() {
+        // Given
+        val event: MotionEvent = mock {
+            whenever(it.actionMasked).thenReturn(MotionEvent.ACTION_UP)
+        }
+        whenever(mockGesturesDetectorCompat.onTouchEvent(event)).thenReturn(true)
+
+        // When
+        testedWrapper.onTouchEvent(event)
+
+        // Given
+        verify(mockGesturesDetectorCompat).onTouchEvent(event)
+        verify(mockGesturesDetectorListener, never()).onUp(any())
     }
 }

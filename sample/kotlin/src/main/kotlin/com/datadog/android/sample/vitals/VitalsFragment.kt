@@ -75,8 +75,8 @@ internal class VitalsFragment :
 
     // region CompoundButton.OnCheckedChangeListener
 
-    override fun onCheckedChanged(buttonView: CompoundButton?, isChecked: Boolean) {
-        when (buttonView?.id) {
+    override fun onCheckedChanged(buttonView: CompoundButton, isChecked: Boolean) {
+        when (buttonView.id) {
             R.id.vital_cpu -> {
                 viewModel.toggleHeavyComputation(isChecked)
             }

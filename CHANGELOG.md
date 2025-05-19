@@ -1,3 +1,69 @@
+# 2.21.0 / 2025-05-06
+
+* [FEATURE] Add Compose instrumentation API for view tracking and image recording. See [#2570](https://github.com/DataDog/dd-sdk-android/pull/2570)
+* [FEATURE] Add `ActionTrackingStrategy` interface to decouple find view logic. See [#2573](https://github.com/DataDog/dd-sdk-android/pull/2573)
+* [FEATURE] Add Compose actions tracking strategy API in `RumConfiguration`. See [#2575](https://github.com/DataDog/dd-sdk-android/pull/2575)
+* [FEATURE] Implement Compose actions tracking strategy. See [#2586](https://github.com/DataDog/dd-sdk-android/pull/2586)
+* [FEATURE] Change `TrackViews` and `RecordImages` annotations to `ComposeInstrumentation`. See [#2595](https://github.com/DataDog/dd-sdk-android/pull/2595)
+* [BUGFIX] Fix Rum Action Tap is added twice for every `ACTION_UP`. See [#2579](https://github.com/DataDog/dd-sdk-android/pull/2579)
+* [BUGFIX] Cover `IndexOutOfBoundsException` in `DrawableUtils`. See [#2604](https://github.com/DataDog/dd-sdk-android/pull/2604)
+* [BUGFIX] Let `AndroidTracer.logErrorMessage()` send an ERROR log. See [#2605](https://github.com/DataDog/dd-sdk-android/pull/2605)
+* [BUGFIX] Fix artifacts in Jetpack Compose scrolling. See [#2610](https://github.com/DataDog/dd-sdk-android/pull/2610)
+* [BUGFIX] Fix `ViewTarget` is garbage collected during actions tracking. See [#2608](https://github.com/DataDog/dd-sdk-android/pull/2608)
+* [BUGFIX] Fix the memory leak in the `PendingTrace#cleaner`. See [#2607](https://github.com/DataDog/dd-sdk-android/pull/2607)
+* [BUGFIX] Fix Session Replay is not resumed after the session has expired before. See [#2611](https://github.com/DataDog/dd-sdk-android/pull/2611)
+* [BUGFIX] Catch NPE when drawing cloned drawable in Session Replay. See [#2622](https://github.com/DataDog/dd-sdk-android/pull/2622)
+* [BUGFIX] Revert: Remove shared `ThreadLocal` scopes. See [#2603](https://github.com/DataDog/dd-sdk-android/pull/2603)
+* [IMPROVEMENT] Remove test fixtures content root duplication in `dd-sdk-android-session-replay-compose` module. See [#2592](https://github.com/DataDog/dd-sdk-android/pull/2592)
+* [IMPROVEMENT] Minor improvements. See [#2609](https://github.com/DataDog/dd-sdk-android/pull/2609)
+* [IMPROVEMENT] Propagate session ID in baggage header. See [#2602](https://github.com/DataDog/dd-sdk-android/pull/2602)
+* [MAINTENANCE] Add workflow: Changelog update to Confluence. See [#2596](https://github.com/DataDog/dd-sdk-android/pull/2596)
+* [MAINTENANCE] Add telemetry for Compose instrumentation functions. See [#2601](https://github.com/DataDog/dd-sdk-android/pull/2601)
+* [MAINTENANCE] Add Android Auto and Android XR support to the sample app. See [#2606](https://github.com/DataDog/dd-sdk-android/pull/2606)
+* [MAINTENANCE] Add metrics for internal benchmarking. See [#2581](https://github.com/DataDog/dd-sdk-android/pull/2581)
+* [MAINTENANCE] Sample telemetry for `RecordedDataQueueHandler`. See [#2600](https://github.com/DataDog/dd-sdk-android/pull/2600)
+* [MAINTENANCE] Remove the noisy warning log as for some views it is normal to not have ITV. See [#2617](https://github.com/DataDog/dd-sdk-android/pull/2617)
+* [MAINTENANCE] Fix semantics of `ExecutorService.submit` vs `Executor.execute` usage. See [#2616](https://github.com/DataDog/dd-sdk-android/pull/2616)
+* [MAINTENANCE] Integrate Datadog Plugin in benchmark application. See [#2618](https://github.com/DataDog/dd-sdk-android/pull/2618)
+* [MAINTENANCE] Merge `feature/compose-instrumentation-api` into `feature/actions-tracking`. See [#2583](https://github.com/DataDog/dd-sdk-android/pull/2583)
+* [MAINTENANCE] Merge 2.20.0 into `develop`. See [#2588](https://github.com/DataDog/dd-sdk-android/pull/2588)
+* [MAINTENANCE] Merge `Feature/actions-tracking` into `develop`. See [#2598](https://github.com/DataDog/dd-sdk-android/pull/2598)
+* [MAINTENANCE] Bump version to 2.21.0-SNAPSHOT. See [#2585](https://github.com/DataDog/dd-sdk-android/pull/2585)
+* [MAINTENANCE] Bump `targetSdk` to 36. See [#2589](https://github.com/DataDog/dd-sdk-android/pull/2589)
+
+# 2.20.0 / 2025-04-07
+
+* [FEATURE] Slow frames collection support. See [#2518](https://github.com/DataDog/dd-sdk-android/pull/2518)
+* [FEATURE] Introduce `UISlownessMetricDispatcher`. See [#2567](https://github.com/DataDog/dd-sdk-android/pull/2567)
+* [BUGFIX] Remove double computation of the `RUM` payload. See [#2528](https://github.com/DataDog/dd-sdk-android/pull/2528)
+* [BUGFIX] Add try-catch in `drawOnCanvas` in order to catch exceptions from `draw(canvas)` method. See [#2549](https://github.com/DataDog/dd-sdk-android/pull/2549)
+* [BUGFIX] Fix issue with missing freeze rate and slow frames rate. See [#2557](https://github.com/DataDog/dd-sdk-android/pull/2557)
+* [BUGFIX] Ignore secondary displays in `Session Replay`. See [#2574](https://github.com/DataDog/dd-sdk-android/pull/2574)
+* [IMPROVEMENT] Set the `local-ci` script to check for specific version of KtLint. See [#2526](https://github.com/DataDog/dd-sdk-android/pull/2526)
+* [IMPROVEMENT] Add missing builder function for anonymous user tracking. See [#2540](https://github.com/DataDog/dd-sdk-android/pull/2540)
+* [IMPROVEMENT] Add telemetry for pending batch files. See [#2548](https://github.com/DataDog/dd-sdk-android/pull/2548)
+* [IMPROVEMENT] Remove the possibility to read the `Tracer` config from `env` and from the config file. See [#2564](https://github.com/DataDog/dd-sdk-android/pull/2564)
+* [IMPROVEMENT] Add `traceSampleRate` to the telemetry `Configuration` events. See [#2563](https://github.com/DataDog/dd-sdk-android/pull/2563)
+* [IMPROVEMENT] Report configured distributed tracing headers as part of `Configuration` telemetry. See [#2572](https://github.com/DataDog/dd-sdk-android/pull/2572)
+* [IMPROVEMENT] Optimize features context reads in `TelemetryEventHandler`. See [#2576](https://github.com/DataDog/dd-sdk-android/pull/2576)
+* [IMPROVEMENT] Optimize `OkHttp` configuration telemetry. See [#2578](https://github.com/DataDog/dd-sdk-android/pull/2578)
+* [IMPROVEMENT] Make SDK support 16Kb page sizes. See [#2580](https://github.com/DataDog/dd-sdk-android/pull/2580)
+* [MAINTENANCE] Update AndroidX `Metrics` library to 1.0.0-beta02. See [#2546](https://github.com/DataDog/dd-sdk-android/pull/2546) 
+* [MAINTENANCE] Remove `RUM` feature check in `AndroidTracer` builder. [#2539](https://github.com/DataDog/dd-sdk-android/pull/2539)
+* [MAINTENANCE] Change `TraceWriter#write` type from `MutableList` to `List`. See [#2568](https://github.com/DataDog/dd-sdk-android/pull/2568)
+* [MAINTENANCE] Fix flaky `TraceWriterTest` M log error and proceed W write() { serialization failed }. See [#2565](https://github.com/DataDog/dd-sdk-android/pull/2565)
+* [MAINTENANCE] Fix flaky tests in `OtelTraceWriter`. See [#2571](https://github.com/DataDog/dd-sdk-android/pull/2571)
+* [MAINTENANCE] Change `OtelTraceWriter#write type` from `MutableList` to `List`. See [#2577](https://github.com/DataDog/dd-sdk-android/pull/2577)
+* [MAINTENANCE] Fix negative values in slow frames, adjusting telemetry. See [#2582](https://github.com/DataDog/dd-sdk-android/pull/2582)
+
+# 2.19.2 / 2025-03-20
+
+* [BUGFIX] Fix NPE with Metrics listener on older APIs. See[#2558](https://github.com/DataDog/dd-sdk-android/pull/2558)
+
+# 2.19.1 / 2025-03-17
+
+* [BUGFIX] Fix NPE when `Drawable.getCurrent` returns null. See[#2545](https://github.com/DataDog/dd-sdk-android/pull/2545)
+
 # 2.19.0 / 2025-03-10
 
 * [FEATURE] Core: Introduce anonymous RUM Identifier. See [#2487](https://github.com/DataDog/dd-sdk-android/pull/2487)

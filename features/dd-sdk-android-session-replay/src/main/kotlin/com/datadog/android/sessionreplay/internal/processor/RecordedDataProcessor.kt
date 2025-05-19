@@ -50,7 +50,6 @@ internal class RecordedDataProcessor(
 
             val enrichedResource = EnrichedResource(
                 resource = item.resourceData,
-                applicationId = item.applicationId,
                 filename = resourceHash
             )
 

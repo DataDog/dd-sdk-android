@@ -34,11 +34,11 @@ internal class BatchMetricsDispatcher(
 
     // region MetricsDispatcher
 
-    override fun sendBatchDeletedMetric(batchFile: File, removalReason: RemovalReason) {
+    override fun sendBatchDeletedMetric(batchFile: File, removalReason: RemovalReason, numPendingBatches: Int) {
         if (!removalReason.includeInMetrics() || trackName == null) {
             return
         }
-        resolveBatchDeletedMetricAttributes(batchFile, removalReason)?.let {
+        resolveBatchDeletedMetricAttributes(batchFile, removalReason, numPendingBatches)?.let {
             internalLogger.logMetric(
                 messageBuilder = { BATCH_DELETED_MESSAGE },
                 additionalProperties = it,
@@ -86,7 +86,8 @@ internal class BatchMetricsDispatcher(
     @SuppressWarnings("ReturnCount")
     private fun resolveBatchDeletedMetricAttributes(
         file: File,
-        deletionReason: RemovalReason
+        deletionReason: RemovalReason,
+        numPendingBatches: Int
     ): Map<String, Any?>? {
         val fileCreationTimestamp = file.nameAsTimestampSafe(internalLogger) ?: return null
         val fileAgeInMillis = dateTimeProvider.getDeviceTimestamp() - fileCreationTimestamp
@@ -109,6 +110,7 @@ internal class BatchMetricsDispatcher(
             IN_BACKGROUND_KEY to isInBackground.get(),
             TRACKING_CONSENT_KEY to file.resolveFileOriginAsConsent(),
             FILE_NAME to file.name,
+            PENDING_BATCHES to numPendingBatches,
             THREAD_NAME to Thread.currentThread().name
         )
     }
@@ -219,6 +221,9 @@ internal class BatchMetricsDispatcher(
 
         /* The reason of batch deletion. */
         internal const val BATCH_REMOVAL_KEY = "batch_removal_reason"
+
+        /* The number of still unsent batch files */
+        internal const val PENDING_BATCHES = "pending_batches"
 
         /* If the batch was deleted in the background. */
         internal const val IN_BACKGROUND_KEY = "in_background"

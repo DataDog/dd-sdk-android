@@ -23,6 +23,7 @@ internal class AndroidInfoProviderForgeryFactory : ForgeryFactory<AndroidInfoPro
         val osMajorVersion = forge.aSmallInt().toString()
         val osVersion = "${forge.aSmallInt()}.${forge.aSmallInt()}.${forge.aSmallInt()}"
         val architecture = forge.anAlphaNumericalString()
+        val numberOfDisplays = forge.aNullable { forge.anInt() }
 
         return object : AndroidInfoProvider {
             override val deviceName = deviceName
@@ -34,6 +35,7 @@ internal class AndroidInfoProviderForgeryFactory : ForgeryFactory<AndroidInfoPro
             override val osMajorVersion = osMajorVersion
             override val osVersion = osVersion
             override val architecture = architecture
+            override val numberOfDisplays = numberOfDisplays
         }
     }
 }

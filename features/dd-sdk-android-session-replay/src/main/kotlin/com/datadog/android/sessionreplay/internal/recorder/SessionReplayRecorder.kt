@@ -57,7 +57,6 @@ import java.util.concurrent.ConcurrentLinkedQueue
 internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
 
     private val appContext: Application
-    private val rumContextProvider: RumContextProvider
     private val textAndInputPrivacy: TextAndInputPrivacy
     private val imagePrivacy: ImagePrivacy
     private val touchPrivacyManager: TouchPrivacyManager
@@ -109,10 +108,7 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
             MutationResolver(internalLogger)
         )
 
-        val applicationId = rumContextProvider.getRumContext().applicationId
-
         this.appContext = appContext
-        this.rumContextProvider = rumContextProvider
         this.textAndInputPrivacy = textAndInputPrivacy
         this.imagePrivacy = imagePrivacy
         this.touchPrivacyManager = touchPrivacyManager
@@ -153,7 +149,6 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
         )
 
         val resourceResolver = ResourceResolver(
-            applicationId = applicationId,
             recordedDataQueueHandler = recordedDataQueueHandler,
             pathUtils = PathUtils(internalLogger, bitmapCachesManager),
             bitmapCachesManager = bitmapCachesManager,
@@ -226,7 +221,6 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
     @Suppress("LongParameterList")
     constructor(
         appContext: Application,
-        rumContextProvider: RumContextProvider,
         textAndInputPrivacy: TextAndInputPrivacy,
         imagePrivacy: ImagePrivacy,
         touchPrivacyManager: TouchPrivacyManager,
@@ -245,7 +239,6 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
         internalCallback: SessionReplayInternalCallback
     ) {
         this.appContext = appContext
-        this.rumContextProvider = rumContextProvider
         this.textAndInputPrivacy = textAndInputPrivacy
         this.imagePrivacy = imagePrivacy
         this.touchPrivacyManager = touchPrivacyManager

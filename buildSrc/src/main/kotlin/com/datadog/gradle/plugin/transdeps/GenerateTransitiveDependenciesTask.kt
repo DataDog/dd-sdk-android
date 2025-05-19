@@ -8,7 +8,7 @@ package com.datadog.gradle.plugin.transdeps
 
 import org.gradle.api.DefaultTask
 import org.gradle.api.artifacts.Configuration
-import org.gradle.api.artifacts.ProjectDependency
+import org.gradle.api.artifacts.component.ProjectComponentIdentifier
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.OutputFile
 import org.gradle.api.tasks.TaskAction
@@ -47,10 +47,12 @@ open class GenerateTransitiveDependenciesTask : DefaultTask() {
         check(configuration.isCanBeResolved) { "$configuration cannot be resolved" }
 
         val sortedArtifacts = if (sortByName) {
-            configuration.files {
-                // ProjectDependency (i.e. local modules) don't have a file associated
-                it !is ProjectDependency
-            }.sortedBy { it.absolutePath }
+            configuration.incoming
+                .artifactView {
+                    componentFilter { it !is ProjectComponentIdentifier }
+                }
+                .files
+                .sortedBy { it.absolutePath }
         } else {
             configuration.sortedBy { -it.length() }
         }

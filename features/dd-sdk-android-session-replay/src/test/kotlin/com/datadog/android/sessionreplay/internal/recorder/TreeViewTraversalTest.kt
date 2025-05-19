@@ -21,7 +21,6 @@ import com.datadog.android.api.feature.measureMethodCallPerf
 import com.datadog.android.core.metrics.MethodCallSamplingRate
 import com.datadog.android.sessionreplay.MapperTypeWrapper
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
-import com.datadog.android.sessionreplay.internal.TouchPrivacyManager
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueRefs
 import com.datadog.android.sessionreplay.internal.recorder.TreeViewTraversal.Companion.METHOD_CALL_MAP_PREFIX
 import com.datadog.android.sessionreplay.internal.recorder.mapper.DecorViewMapper
@@ -72,9 +71,6 @@ internal class TreeViewTraversalTest {
 
     @Mock
     lateinit var mockHiddenViewMapper: HiddenViewMapper
-
-    @Mock
-    lateinit var mockTouchPrivacyManager: TouchPrivacyManager
 
     @Mock
     lateinit var mockViewUtilsInternal: ViewUtilsInternal
@@ -477,6 +473,30 @@ internal class TreeViewTraversalTest {
             operationName = expectedOperationName,
             samplingRate = expectedSampleRate
         ) {}
+    }
+
+    // endregion
+
+    // region SecondaryDisplay
+
+    @Test
+    fun `M return STOP_AND_DROP_NODE W traverse(){ any view that is on a secondary display }`() {
+        // Given
+        val mockView = mock<View>()
+        whenever(mockViewUtilsInternal.isOnSecondaryDisplay(mockView))
+            .thenReturn(true)
+
+        // When
+        val traversedTreeView = testedTreeViewTraversal.traverse(
+            mockView,
+            fakeMappingContext,
+            mockRecordedDataQueueRefs
+        )
+
+        // Then
+        assertThat(traversedTreeView.mappedWireframes).isEmpty()
+        assertThat(traversedTreeView.nextActionStrategy)
+            .isEqualTo(TraversalStrategy.STOP_AND_DROP_NODE)
     }
 
     // endregion

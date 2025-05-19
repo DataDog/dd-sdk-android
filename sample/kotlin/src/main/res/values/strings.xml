@@ -77,7 +77,6 @@
     <string name="choice_fresco">Fresco</string>
     <string name="choice_glide">Glide</string>
     <string name="choice_picasso">Picasso</string>
-    <string name="choice_realm">Realm</string>
     <string name="choice_room">Room</string>
     <string name="choice_sqlite">SQLite</string>
     <string name="choice_sqldelight">SQLDelight</string>

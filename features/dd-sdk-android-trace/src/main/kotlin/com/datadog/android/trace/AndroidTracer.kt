@@ -6,6 +6,7 @@
 
 package com.datadog.android.trace
 
+import android.util.Log
 import androidx.annotation.FloatRange
 import com.datadog.android.Datadog
 import com.datadog.android.api.InternalLogger
@@ -297,6 +298,8 @@ class AndroidTracer internal constructor(
 
         internal const val SPAN_ID_BIT_SIZE = 63
 
+        internal const val LOG_STATUS = "status"
+
         /**
          * Helper method to attach a Throwable to a specific Span.
          * The Throwable information (class name, message and stacktrace) will be added to the
@@ -312,13 +315,13 @@ class AndroidTracer internal constructor(
 
         /**
          * Helper method to attach an error message to a specific Span.
-         * The error message will be added to the provided Span as a standard Error Tag.
+         * The error message will be logged with ERROR status and can be seen in logs attached to the span.
          * @param span the active Span
          * @param message the error message you want to attach
          */
         @JvmStatic
         fun logErrorMessage(span: Span, message: String) {
-            val fieldsMap = mapOf(Fields.MESSAGE to message)
+            val fieldsMap = mapOf(Fields.MESSAGE to message, LOG_STATUS to Log.ERROR)
             span.log(fieldsMap)
         }
     }

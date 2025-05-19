@@ -92,10 +92,6 @@ internal class DatadogCoreInitializationTest {
         whenever(mockPersistenceExecutorService.execute(any())) doAnswer {
             it.getArgument<Runnable>(0).run()
         }
-        whenever(mockPersistenceExecutorService.submit(any())) doAnswer {
-            it.getArgument<Runnable>(0).run()
-            mock()
-        }
     }
 
     @AfterEach
@@ -365,6 +361,9 @@ internal class DatadogCoreInitializationTest {
         // Then
         val mockRumFeature = mock<SdkFeature>()
         testedCore.features += Feature.RUM_FEATURE_NAME to mockRumFeature
+
+        val mockTracingFeature = mock<SdkFeature>()
+        testedCore.features += Feature.TRACING_FEATURE_NAME to mockTracingFeature
 
         testedCore.coreFeature.uploadExecutorService.queue
             .toTypedArray()

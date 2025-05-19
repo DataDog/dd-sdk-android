@@ -9,8 +9,9 @@ package com.datadog.android.sessionreplay.internal
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.sessionreplay.internal.processor.EnrichedRecord
 
-internal class SessionReplayRecordCallback(private val featureSdkCore: FeatureSdkCore) :
-    RecordCallback {
+internal class SessionReplayRecordCallback(
+    private val featureSdkCore: FeatureSdkCore
+) : RecordCallback {
 
     @Suppress("UNCHECKED_CAST")
     override fun onRecordForViewSent(record: EnrichedRecord) {
@@ -18,8 +19,7 @@ internal class SessionReplayRecordCallback(private val featureSdkCore: FeatureSd
         if (recordsSize > 0) {
             featureSdkCore.updateFeatureContext(SessionReplayFeature.SESSION_REPLAY_FEATURE_NAME) {
                 val viewId = record.viewId
-                val viewMetadata: MutableMap<String, Any?> =
-                    (it[viewId] as? MutableMap<String, Any?>) ?: mutableMapOf()
+                val viewMetadata = (it[viewId] as? MutableMap<String, Any?>) ?: mutableMapOf()
                 viewMetadata[HAS_REPLAY_KEY] = true
                 updateRecordsCount(viewMetadata, recordsSize)
                 it[viewId] = viewMetadata

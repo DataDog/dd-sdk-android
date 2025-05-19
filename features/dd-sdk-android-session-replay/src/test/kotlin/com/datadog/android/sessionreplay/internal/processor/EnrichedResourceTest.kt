@@ -25,6 +25,7 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
+import java.util.UUID
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -44,7 +45,6 @@ internal class EnrichedResourceTest : ObjectTest<EnrichedResource>() {
     override fun createEqualInstance(source: EnrichedResource, forge: Forge): EnrichedResource {
         return EnrichedResource(
             resource = source.resource,
-            applicationId = source.applicationId,
             filename = source.filename
         )
     }
@@ -55,14 +55,14 @@ internal class EnrichedResourceTest : ObjectTest<EnrichedResource>() {
 
     @Test
     fun `M return valid binary metadata W asBinaryMetadata`(
-        @Forgery enrichedResource: EnrichedResource
+        @Forgery enrichedResource: EnrichedResource,
+        @Forgery fakeApplicationId: UUID
     ) {
         // Given
         val expectedIdentifier = enrichedResource.filename
-        val expectedApplicationId = enrichedResource.applicationId
 
         // When
-        val metadata = enrichedResource.asBinaryMetadata()
+        val metadata = enrichedResource.asBinaryMetadata(fakeApplicationId.toString())
 
         // Then
         val deserializedData = safeDeserializeToJsonObject(
@@ -85,6 +85,6 @@ internal class EnrichedResourceTest : ObjectTest<EnrichedResource>() {
         )
 
         assertThat(actualIdentifier).isEqualTo(expectedIdentifier)
-        assertThat(actualApplicationId).isEqualTo(expectedApplicationId)
+        assertThat(actualApplicationId).isEqualTo(fakeApplicationId.toString())
     }
 }

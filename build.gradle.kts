@@ -32,7 +32,6 @@ buildscript {
         classpath(libs.kotlinSPGradlePlugin)
         classpath(libs.dokkaGradlePlugin)
         classpath(libs.unmockGradlePlugin)
-        classpath(libs.realmGradlePlugin)
         classpath(libs.sqlDelightGradlePlugin)
         classpath(libs.binaryCompatibilityGradlePlugin)
     }
@@ -59,7 +58,7 @@ nexusPublishing {
 }
 
 task<Delete>("clean") {
-    delete(rootProject.buildDir)
+    delete(rootProject.layout.buildDirectory)
 }
 
 tasks.register("checkAll") {

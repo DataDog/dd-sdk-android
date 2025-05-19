@@ -9,6 +9,7 @@ package com.datadog.android.rum
 import android.os.Looper
 import androidx.annotation.FloatRange
 import com.datadog.android.event.EventMapper
+import com.datadog.android.rum.configuration.SlowFramesConfiguration
 import com.datadog.android.rum.configuration.VitalsUpdateFrequency
 import com.datadog.android.rum.event.ViewEventMapper
 import com.datadog.android.rum.internal.RumFeature
@@ -22,6 +23,7 @@ import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.model.ViewEvent
+import com.datadog.android.rum.tracking.ActionTrackingStrategy
 import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
 import com.datadog.android.rum.tracking.InteractionPredicate
 import com.datadog.android.rum.tracking.ViewAttributesProvider
@@ -284,6 +286,45 @@ data class RumConfiguration internal constructor(
         }
 
         /**
+         * The [SlowFramesListener] provides statistical data to help identify performance issues related to UI rendering:
+         *
+         * - slowFrames: A list of records containing the timestamp and duration of frames where users experience
+         *   jank frames within the given view.
+         *
+         * - slowFrameRate: The rate of slow frames encountered during the view's lifetime.
+         *
+         * - freezeRate: The rate of freeze occurrences during the view's lifetime.
+         *
+         *
+         * This configuration sets the parameters for the [SlowFramesListener], which are used to calculate the slow frames array,
+         * slow frame ratio, and freeze ratio. For additional details, refer to [SlowFramesConfiguration].
+         *
+         * Assigning a null value to this property will disable the [SlowFramesListener] and stop the computation of the
+         * associated rates.
+         *
+         * @param slowFramesConfiguration The configuration to be applied to the [SlowFramesListener].
+         */
+        @ExperimentalRumApi
+        fun setSlowFramesConfiguration(
+            slowFramesConfiguration: SlowFramesConfiguration?
+        ): Builder {
+            rumConfig = rumConfig.copy(slowFramesConfiguration = slowFramesConfiguration)
+            return this
+        }
+
+        /**
+         * Enables/Disables collection of an anonymous user ID across sessions.
+         *
+         * By default, the SDK generates a unique, non-personal anonymous user ID that is
+         * persisted across app launches. This ID is attached to each RUM session, allowing
+         * to link sessions originating from the same user/device without collecting personal data.
+         */
+        fun trackAnonymousUser(enabled: Boolean): Builder {
+            rumConfig = rumConfig.copy(trackAnonymousUser = enabled)
+            return this
+        }
+
+        /**
          * Builds a [RumConfiguration] based on the current state of this Builder.
          */
         fun build(): RumConfiguration {
@@ -325,6 +366,18 @@ data class RumConfiguration internal constructor(
             return this
         }
 
+        /**
+         * Set custom [ActionTrackingStrategy] RUM actions tracking.
+         *
+         * @param composeActionTrackingStrategy custom actions tracking strategy.
+         */
+        internal fun setComposeActionTrackingStrategy(
+            composeActionTrackingStrategy: ActionTrackingStrategy
+        ): Builder {
+            rumConfig =
+                rumConfig.copy(composeActionTrackingStrategy = composeActionTrackingStrategy)
+            return this
+        }
         // endregion
     }
 }

@@ -4,11 +4,13 @@ import com.datadog.gradle.config.dependencyUpdateConfig
 import com.datadog.gradle.config.java17
 import com.datadog.gradle.config.junitConfig
 import com.datadog.gradle.config.kotlinConfig
+import com.datadog.gradle.plugin.InstrumentationMode
 
 plugins {
     id("com.android.application")
     kotlin("android")
     kotlin("kapt")
+    alias(libs.plugins.datadogGradlePlugin)
 }
 
 @Suppress("StringLiteralDuplication")
@@ -72,6 +74,10 @@ android {
     }
 }
 
+datadog {
+    composeInstrumentation = InstrumentationMode.AUTO
+}
+
 dependencies {
 
     implementation(libs.kotlin)
@@ -81,12 +87,17 @@ dependencies {
     implementation(libs.bundles.androidXNavigation)
     implementation(libs.androidXAppCompat)
     implementation(libs.androidXConstraintLayout)
+    implementation(libs.androidXLifecycleCompose)
     implementation(libs.googleMaterial)
     implementation(libs.glideCore)
+    implementation(libs.material3Android)
     implementation(libs.timber)
     implementation(platform(libs.androidXComposeBom))
     implementation(libs.bundles.androidXCompose)
     implementation(libs.coilCompose)
+    implementation(libs.daggerLib)
+    kapt(libs.daggerCompiler)
+    implementation(libs.coroutinesCore)
     implementation(project(":features:dd-sdk-android-logs"))
     implementation(project(":features:dd-sdk-android-rum"))
     implementation(project(":features:dd-sdk-android-trace"))

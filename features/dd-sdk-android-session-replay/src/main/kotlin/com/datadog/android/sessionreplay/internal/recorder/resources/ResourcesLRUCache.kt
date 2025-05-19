@@ -20,7 +20,7 @@ import com.datadog.android.sessionreplay.internal.utils.InvocationUtils
 internal class ResourcesLRUCache(
     private val cacheUtils: CacheUtils<String, ByteArray> = CacheUtils(),
     private val invocationUtils: InvocationUtils = InvocationUtils(),
-    private var cache: LruCache<String, ByteArray> =
+    private val cache: LruCache<String, ByteArray> =
         object :
             LruCache<String, ByteArray>(MAX_CACHE_MEMORY_SIZE_BYTES) {
             override fun sizeOf(key: String, value: ByteArray): Int {

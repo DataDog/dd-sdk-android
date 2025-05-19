@@ -36,6 +36,8 @@ import com.datadog.android.sessionreplay.compose.SessionReplayHidePropertyKey
 import com.datadog.android.sessionreplay.compose.TextInputSemanticsPropertyKey
 import com.datadog.android.sessionreplay.compose.TouchSemanticsPropertyKey
 import com.datadog.android.sessionreplay.compose.internal.data.BitmapInfo
+import com.datadog.android.sessionreplay.compose.internal.isLeafNode
+import com.datadog.android.sessionreplay.compose.internal.isPositionedAtOrigin
 import com.datadog.android.sessionreplay.compose.internal.mappers.semantics.TextLayoutInfo
 import com.datadog.android.sessionreplay.utils.GlobalBounds
 
@@ -247,14 +249,20 @@ internal class SemanticsUtils(private val reflectionUtils: ReflectionUtils = Ref
     ): BitmapInfo? {
         var isContextualImage = false
         var painter = reflectionUtils.getLocalImagePainter(semanticsNode)
+
+        // Try to resolve Coil AsyncImagePainter.
         if (painter == null) {
             isContextualImage = true
             painter = reflectionUtils.getAsyncImagePainter(semanticsNode)
         }
-        // TODO RUM-6535: support more painters.
+        // In some versions of Coil, bitmap painter is nested in `AsyncImagePainter`
         if (painter != null && reflectionUtils.isAsyncImagePainter(painter)) {
             isContextualImage = true
             painter = reflectionUtils.getNestedPainter(painter)
+        }
+        // Try to resolve Coil3 painter if is still null.
+        if (painter == null) {
+            painter = reflectionUtils.getCoil3AsyncImagePainter(semanticsNode)
         }
         val bitmap = when (painter) {
             is BitmapPainter -> reflectionUtils.getBitmapInBitmapPainter(painter)
@@ -327,6 +335,10 @@ internal class SemanticsUtils(private val reflectionUtils: ReflectionUtils = Ref
 
     internal fun isNodeHidden(semanticsNode: SemanticsNode): Boolean {
         return semanticsNode.config.getOrNull(SessionReplayHidePropertyKey) ?: false
+    }
+
+    internal fun isNodePositionUnavailable(semanticsNode: SemanticsNode): Boolean {
+        return semanticsNode.isLeafNode() && semanticsNode.isPositionedAtOrigin()
     }
 
     internal fun getInteropView(semanticsNode: SemanticsNode): View? {

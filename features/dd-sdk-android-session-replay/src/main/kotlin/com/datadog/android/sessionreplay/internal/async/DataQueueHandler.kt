@@ -12,7 +12,6 @@ import com.datadog.android.sessionreplay.recorder.SystemInformation
 internal interface DataQueueHandler {
     fun addResourceItem(
         identifier: String,
-        applicationId: String,
         resourceData: ByteArray
     ): ResourceRecordedDataQueueItem?
     fun addTouchEventItem(

@@ -41,7 +41,9 @@ import com.datadog.android.rum.internal.domain.scope.RumScopeKey
 import com.datadog.android.rum.internal.domain.scope.RumSessionScope
 import com.datadog.android.rum.internal.domain.scope.RumViewManagerScope
 import com.datadog.android.rum.internal.domain.scope.RumViewScope
+import com.datadog.android.rum.internal.domain.state.ViewUIPerformanceReport
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
+import com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.rum.metric.interactiontonextview.LastInteractionIdentifier
 import com.datadog.android.rum.metric.networksettled.InitialResourceIdentifier
@@ -167,21 +169,27 @@ internal class DatadogRumMonitorTest {
     @Forgery
     lateinit var fakeTimeInfo: TimeInfo
 
+    @Forgery
+    lateinit var fakeViewUIPerformanceReport: ViewUIPerformanceReport
+
     @Mock
     lateinit var mockNetworkSettledResourceIdentifier: InitialResourceIdentifier
 
     @Mock
     lateinit var mockLastInteractionIdentifier: LastInteractionIdentifier
 
+    @Mock
+    lateinit var mockSlowFramesListener: SlowFramesListener
+
     @BeforeEach
     fun `set up`(forge: Forge) {
-        whenever(mockExecutorService.submit(any())) doAnswer {
+        whenever(mockExecutorService.execute(any())) doAnswer {
             it.getArgument<Runnable>(0).run()
-            StubFuture()
         }
 
         whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
         whenever(mockSdkCore.time) doReturn fakeTimeInfo
+        whenever(mockSlowFramesListener.resolveReport(any(), any(), any())) doReturn fakeViewUIPerformanceReport
 
         fakeAttributes = forge.exhaustiveAttributes()
         testedMonitor = DatadogRumMonitor(
@@ -201,7 +209,8 @@ internal class DatadogRumMonitorTest {
             mockSessionListener,
             mockExecutorService,
             mockNetworkSettledResourceIdentifier,
-            mockLastInteractionIdentifier
+            mockLastInteractionIdentifier,
+            mockSlowFramesListener
         )
         testedMonitor.rootScope = mockScope
     }
@@ -225,7 +234,8 @@ internal class DatadogRumMonitorTest {
             mockSessionListener,
             mockExecutorService,
             mockNetworkSettledResourceIdentifier,
-            mockLastInteractionIdentifier
+            mockLastInteractionIdentifier,
+            mockSlowFramesListener
         )
 
         val rootScope = testedMonitor.rootScope
@@ -286,7 +296,8 @@ internal class DatadogRumMonitorTest {
             mockSessionListener,
             mockExecutorService,
             mockNetworkSettledResourceIdentifier,
-            mockLastInteractionIdentifier
+            mockLastInteractionIdentifier,
+            mockSlowFramesListener
         )
         val completableFuture = CompletableFuture<String>()
         testedMonitor.start()
@@ -325,7 +336,8 @@ internal class DatadogRumMonitorTest {
             mockSessionListener,
             mockExecutorService,
             mockNetworkSettledResourceIdentifier,
-            mockLastInteractionIdentifier
+            mockLastInteractionIdentifier,
+            mockSlowFramesListener
         )
 
         val completableFuture = CompletableFuture<String>()
@@ -363,9 +375,8 @@ internal class DatadogRumMonitorTest {
         @Forgery type: RumActionType,
         @StringForgery name: String
     ) {
-        whenever(mockExecutorService.submit(any())) doAnswer {
+        whenever(mockExecutorService.execute(any())) doAnswer {
             it.getArgument<Runnable>(0).run()
-            StubFuture()
         }
 
         testedMonitor.addAction(type, name, fakeAttributes)
@@ -1672,7 +1683,8 @@ internal class DatadogRumMonitorTest {
             mockSessionListener,
             mockExecutor,
             mockNetworkSettledResourceIdentifier,
-            mockLastInteractionIdentifier
+            mockLastInteractionIdentifier,
+            mockSlowFramesListener
         )
 
         // When
@@ -1719,7 +1731,8 @@ internal class DatadogRumMonitorTest {
             mockSessionListener,
             mockExecutorService,
             mockNetworkSettledResourceIdentifier,
-            mockLastInteractionIdentifier
+            mockLastInteractionIdentifier,
+            mockSlowFramesListener
         )
 
         // When
@@ -1753,7 +1766,8 @@ internal class DatadogRumMonitorTest {
             mockSessionListener,
             mockExecutorService,
             mockNetworkSettledResourceIdentifier,
-            mockLastInteractionIdentifier
+            mockLastInteractionIdentifier,
+            mockSlowFramesListener
         )
         whenever(mockExecutorService.isShutdown).thenReturn(true)
 
@@ -1761,7 +1775,7 @@ internal class DatadogRumMonitorTest {
         testedMonitor.handleEvent(mock())
 
         // Then
-        verify(mockExecutorService, never()).submit(any())
+        verify(mockExecutorService, never()).execute(any())
     }
 
     @Test
@@ -1955,7 +1969,8 @@ internal class DatadogRumMonitorTest {
             mockSessionListener,
             mockExecutorService,
             mockNetworkSettledResourceIdentifier,
-            mockLastInteractionIdentifier
+            mockLastInteractionIdentifier,
+            mockSlowFramesListener
         )
         testedMonitor.startView(key, name, attributes)
         // When
@@ -2226,17 +2241,6 @@ internal class DatadogRumMonitorTest {
             InternalLogger.Target.USER,
             DatadogRumMonitor.RUM_DEBUG_RUM_NOT_ENABLED_WARNING
         )
-    }
-
-    class StubFuture : Future<Any> {
-        override fun cancel(mayInterruptIfRunning: Boolean) =
-            error("Not supposed to be called")
-
-        override fun isCancelled(): Boolean = error("Not supposed to be called")
-        override fun isDone(): Boolean = error("Not supposed to be called")
-        override fun get(): Any = error("Not supposed to be called")
-        override fun get(timeout: Long, unit: TimeUnit?): Any =
-            error("Not supposed to be called")
     }
 
     companion object {

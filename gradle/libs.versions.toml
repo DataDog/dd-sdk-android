@@ -8,7 +8,7 @@ kronosNTP = "0.0.1-alpha11"
 
 # Android
 androidDesugaringSdk = "2.0.4"
-androidToolsPlugin = "8.8.2"
+androidToolsPlugin = "8.9.1"
 androidXAnnotations = "1.9.1"
 androidXAppCompat = "1.4.2" # Next version will bring coroutines
 androidXCollection = "1.4.5"
@@ -20,13 +20,15 @@ androidXConstraintLayout = "2.0.4"
 androidXCore = "1.3.1"
 androidXFragment = "1.2.4"
 androidXLeanback = "1.0.0"
-androidXMetrics = "1.0.0-beta01"
+androidXLifecycleRuntimeCompose = "2.8.7"
+androidXMetrics = "1.0.0-beta02"
 androidXMultidex = "2.0.1"
 androidXNavigation = "2.7.7"
 androidXRecyclerView = "1.3.2"
 androidXWorkManager = "2.8.1" # Next version will bring coroutines
 googleAccompanist = "0.20.2"
 googleMaterial = "1.3.0"
+dagger = "2.56.2"
 
 # DD-TRACE-OT
 openTracing = "0.32.0"
@@ -57,14 +59,13 @@ kspTesting = "1.5.0"
 # Tools
 detekt = "1.23.0"
 dokka = "1.8.20"
-unmock = "0.7.9"
+unmock = "0.9.0"
 robolectric = "4.4_r1-robolectric-r2"
 androidLint = "31.0.2"
 
-fuzzyWuzzy = "1.2.0"
-
 versionsGradlePlugin = "0.46.0"
 nexusPublishGradlePlugin = "1.1.0"
+datadogPlugin = "1.17.0-rc1"
 
 kotlinPoet = "1.14.2"
 kotlinGrammarParser = "0.1.0"
@@ -77,7 +78,6 @@ binaryCompatibility = "0.17.0"
 dependencyLicense = "0.3"
 
 # Integrations
-realm = "1.11.0"
 sqlDelight = "1.5.5"
 coil = "1.0.0"
 coilCompose = "2.1.0"
@@ -111,11 +111,9 @@ kotlinGradlePlugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", ver
 kotlinSPGradlePlugin = { module = "com.google.devtools.ksp:com.google.devtools.ksp.gradle.plugin", version.ref = "kotlinSP" }
 dokkaGradlePlugin = { module = "org.jetbrains.dokka:dokka-gradle-plugin", version.ref = "dokka" }
 unmockGradlePlugin = { module = "com.github.bjoernq:unmockplugin", version.ref = "unmock" }
-realmGradlePlugin = { module = "io.realm.kotlin:gradle-plugin", version.ref = "realm" }
 sqlDelightGradlePlugin = { module = "com.squareup.sqldelight:gradle-plugin", version.ref = "sqlDelight" }
 binaryCompatibilityGradlePlugin = { module = "org.jetbrains.kotlinx:binary-compatibility-validator", version.ref = "binaryCompatibility" }
 dependencyLicenseGradlePlugin = { module = "com.datadoghq:dependency-license", version.ref = "dependencyLicense" }
-
 versionsGradlePlugin = { module = "com.github.ben-manes:gradle-versions-plugin", version.ref = "versionsGradlePlugin" }
 
 # Annotation processors
@@ -146,6 +144,9 @@ androidXNavigationFragment = { module = "androidx.navigation:navigation-fragment
 androidXNavigationRuntime = { module = "androidx.navigation:navigation-runtime", version.ref = "androidXNavigation" }
 androidXRecyclerView = { module = "androidx.recyclerview:recyclerview", version.ref = "androidXRecyclerView" }
 androidXWorkManager = { module = "androidx.work:work-runtime", version.ref = "androidXWorkManager" }
+androidXLifecycleCompose = { module = "androidx.lifecycle:lifecycle-runtime-compose", version.ref = "androidXLifecycleRuntimeCompose" }
+daggerLib = { module = "com.google.dagger:dagger", version.ref = "dagger" }
+daggerCompiler = { module = "com.google.dagger:dagger-compiler", version.ref = "dagger" }
 googleAccompanistAppCompatTheme = { module = "com.google.accompanist:accompanist-appcompat-theme", version.ref = "googleAccompanist" }
 googleAccompanistPager = { module = "com.google.accompanist:accompanist-pager", version.ref = "googleAccompanist" }
 googleAccompanistPagerIndicators = { module = "com.google.accompanist:accompanist-pager-indicators", version.ref = "googleAccompanist" }
@@ -208,8 +209,6 @@ robolectric = { module = "org.robolectric:android-all", version.ref = "robolectr
 androidLintApi = { module = "com.android.tools.lint:lint-api", version.ref = "androidLint" }
 androidLintChecks = { module = "com.android.tools.lint:lint-checks", version.ref = "androidLint" }
 
-fuzzyWuzzy = { module = "me.xdrop:fuzzywuzzy", version.ref = "fuzzyWuzzy" }
-
 kotlinPoet = { module = "com.squareup:kotlinpoet", version.ref = "kotlinPoet" }
 kotlinPoetKsp = { module = "com.squareup:kotlinpoet-ksp", version.ref = "kotlinPoet" }
 kotlinSP = { module = "com.google.devtools.ksp:symbol-processing-api", version.ref = "kotlinSP" }
@@ -231,7 +230,6 @@ glideOkHttp3 = { module = "com.github.bumptech.glide:okhttp3-integration", versi
 
 picasso = { module = "com.squareup.picasso:picasso", version.ref = "picasso" }
 
-realm = { module = "io.realm.kotlin:library-base", version.ref = "realm" }
 room = { module = "androidx.room:room-runtime", version.ref = "room" }
 rxJava3 = { module = "io.reactivex.rxjava3:rxjava", version.ref = "rxJava3" }
 rxJava3Android = { module = "io.reactivex.rxjava3:rxandroid", version.ref = "rxJava3" }
@@ -340,4 +338,5 @@ traceCore = [
 [plugins]
 versionsGradlePlugin = { id = "com.github.ben-manes.versions", version.ref = "versionsGradlePlugin" }
 nexusPublishGradlePlugin = { id = "io.github.gradle-nexus.publish-plugin", version.ref = "nexusPublishGradlePlugin" }
+datadogGradlePlugin = { id = "com.datadoghq.dd-sdk-android-gradle-plugin", version.ref = "datadogPlugin" }
 

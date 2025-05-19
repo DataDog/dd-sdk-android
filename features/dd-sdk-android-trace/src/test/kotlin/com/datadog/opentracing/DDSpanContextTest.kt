@@ -7,6 +7,7 @@
 package com.datadog.opentracing
 
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.internal.utils.safeGetThreadId
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.legacy.trace.api.DDTags
 import com.datadog.legacy.trace.api.sampling.PrioritySampling
@@ -143,7 +144,7 @@ internal class DDSpanContextTest {
     fun `M add the threadName and threadId as tags W initialized`() {
         assertThat(testedContext).containsTags(
             mapOf(
-                DDTags.THREAD_ID to Thread.currentThread().id,
+                DDTags.THREAD_ID to Thread.currentThread().safeGetThreadId(),
                 DDTags.THREAD_NAME to Thread.currentThread().name
             )
         )
@@ -506,7 +507,7 @@ internal class DDSpanContextTest {
         assertThat(testedContext).hasExactlyTags(
             mapOf(
                 DDTags.THREAD_NAME to Thread.currentThread().name,
-                DDTags.THREAD_ID to Thread.currentThread().id,
+                DDTags.THREAD_ID to Thread.currentThread().safeGetThreadId(),
                 DDSpanContext.ORIGIN_KEY to fakeOrigin,
                 fakeTagKey to fakeTagValue
             )
@@ -534,7 +535,7 @@ internal class DDSpanContextTest {
         assertThat(testedContext).hasExactlyTags(
             mapOf(
                 DDTags.THREAD_NAME to Thread.currentThread().name,
-                DDTags.THREAD_ID to Thread.currentThread().id,
+                DDTags.THREAD_ID to Thread.currentThread().safeGetThreadId(),
                 DDSpanContext.ORIGIN_KEY to fakeOrigin,
                 fakeTagKey to fakeTagValue
             )
@@ -562,7 +563,7 @@ internal class DDSpanContextTest {
         assertThat(testedContext).hasExactlyTags(
             mapOf(
                 DDTags.THREAD_NAME to Thread.currentThread().name,
-                DDTags.THREAD_ID to Thread.currentThread().id,
+                DDTags.THREAD_ID to Thread.currentThread().safeGetThreadId(),
                 DDSpanContext.ORIGIN_KEY to fakeOrigin
             )
         )
@@ -583,7 +584,7 @@ internal class DDSpanContextTest {
         assertThat(testedContext).hasExactlyTags(
             mapOf(
                 DDTags.THREAD_NAME to Thread.currentThread().name,
-                DDTags.THREAD_ID to Thread.currentThread().id,
+                DDTags.THREAD_ID to Thread.currentThread().safeGetThreadId(),
                 DDSpanContext.ORIGIN_KEY to fakeOrigin
             )
         )

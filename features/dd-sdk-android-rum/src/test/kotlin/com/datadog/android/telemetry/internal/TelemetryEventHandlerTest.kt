@@ -18,6 +18,7 @@ import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.attributes.LocalAttribute
 import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
+import com.datadog.android.internal.telemetry.TracingHeaderTypesSet
 import com.datadog.android.internal.utils.loggableStackTrace
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.RumContext
@@ -37,6 +38,8 @@ import com.datadog.android.telemetry.assertj.TelemetryConfigurationEventAssert.C
 import com.datadog.android.telemetry.assertj.TelemetryDebugEventAssert.Companion.assertThat
 import com.datadog.android.telemetry.assertj.TelemetryErrorEventAssert.Companion.assertThat
 import com.datadog.android.telemetry.assertj.TelemetryUsageEventAssert.Companion.assertThat
+import com.datadog.android.telemetry.internal.TelemetryEventHandler.Companion.OKHTTP_INTERCEPTOR_HEADER_TYPES
+import com.datadog.android.telemetry.internal.TelemetryEventHandler.Companion.OKHTTP_INTERCEPTOR_SAMPLE_RATE
 import com.datadog.android.telemetry.model.TelemetryConfigurationEvent
 import com.datadog.android.telemetry.model.TelemetryDebugEvent
 import com.datadog.android.telemetry.model.TelemetryErrorEvent
@@ -599,11 +602,14 @@ internal class TelemetryEventHandlerTest {
             if (tracerApi == TelemetryEventHandler.TracerApi.OpenTracing) {
                 GlobalTracer.registerIfAbsent(mock<Tracer>())
             } else if (tracerApi == TelemetryEventHandler.TracerApi.OpenTelemetry) {
-                whenever(mockSdkCore.getFeatureContext(Feature.TRACING_FEATURE_NAME)) doReturn
-                    mapOf(
-                        TelemetryEventHandler.IS_OPENTELEMETRY_ENABLED_CONTEXT_KEY to true,
-                        TelemetryEventHandler.OPENTELEMETRY_API_VERSION_CONTEXT_KEY to tracerApiVersion
-                    )
+                fakeDatadogContext = fakeDatadogContext.copy(
+                    featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
+                        this[Feature.TRACING_FEATURE_NAME] = mapOf(
+                            TelemetryEventHandler.IS_OPENTELEMETRY_ENABLED_CONTEXT_KEY to true,
+                            TelemetryEventHandler.OPENTELEMETRY_API_VERSION_CONTEXT_KEY to tracerApiVersion
+                        )
+                    }
+                )
             }
         }
 
@@ -691,16 +697,19 @@ internal class TelemetryEventHandlerTest {
         val fakeSessionReplayTouchPrivacy = forge.aString()
         val fakeSessionReplayTextAndInputPrivacy = forge.aString()
         val fakeSessionReplayIsStartImmediately = forge.aBool()
-        val fakeSessionReplayContext = mutableMapOf<String, Any?>(
-            TelemetryEventHandler.SESSION_REPLAY_START_IMMEDIATE_RECORDING_KEY to
-                fakeSessionReplayIsStartImmediately,
-            TelemetryEventHandler.SESSION_REPLAY_SAMPLE_RATE_KEY to fakeSampleRate,
-            TelemetryEventHandler.SESSION_REPLAY_IMAGE_PRIVACY_KEY to fakeSessionReplayImagePrivacy,
-            TelemetryEventHandler.SESSION_REPLAY_TOUCH_PRIVACY_KEY to fakeSessionReplayTouchPrivacy,
-            TelemetryEventHandler.SESSION_REPLAY_TEXT_AND_INPUT_PRIVACY_KEY to fakeSessionReplayTextAndInputPrivacy
+        fakeDatadogContext = fakeDatadogContext.copy(
+            featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
+                this[Feature.SESSION_REPLAY_FEATURE_NAME] = mapOf(
+                    TelemetryEventHandler.SESSION_REPLAY_START_IMMEDIATE_RECORDING_KEY to
+                        fakeSessionReplayIsStartImmediately,
+                    TelemetryEventHandler.SESSION_REPLAY_SAMPLE_RATE_KEY to fakeSampleRate,
+                    TelemetryEventHandler.SESSION_REPLAY_IMAGE_PRIVACY_KEY to fakeSessionReplayImagePrivacy,
+                    TelemetryEventHandler.SESSION_REPLAY_TOUCH_PRIVACY_KEY to fakeSessionReplayTouchPrivacy,
+                    TelemetryEventHandler.SESSION_REPLAY_TEXT_AND_INPUT_PRIVACY_KEY to
+                        fakeSessionReplayTextAndInputPrivacy
+                )
+            }
         )
-        whenever(mockSdkCore.getFeatureContext(Feature.SESSION_REPLAY_FEATURE_NAME)) doReturn
-            fakeSessionReplayContext
         val configRawEvent = RumRawEvent.TelemetryEventWrapper(fakeConfiguration)
 
         // When
@@ -1532,6 +1541,7 @@ internal class TelemetryEventHandlerTest {
         rumContext: RumContext,
         time: Long
     ) {
+        val traceContext = fakeDatadogContext.featuresContext[Feature.TRACING_FEATURE_NAME].orEmpty()
         assertThat(actual)
             .hasDate(time + fakeServerOffset)
             .hasSource(TelemetryConfigurationEvent.Source.ANDROID)
@@ -1548,6 +1558,13 @@ internal class TelemetryEventHandlerTest {
             .hasUseProxy(internalConfigurationEvent.useProxy)
             .hasUseLocalEncryption(internalConfigurationEvent.useLocalEncryption)
             .hasIsMainProcess(fakeDatadogContext.processInfo.isMainProcess)
+            .hasTraceSampleRate(
+                traceContext[OKHTTP_INTERCEPTOR_SAMPLE_RATE] as? Long
+            )
+            .hasSelectedTracingPropagators(
+                (traceContext[OKHTTP_INTERCEPTOR_HEADER_TYPES] as? TracingHeaderTypesSet)
+                    ?.toSelectedTracingPropagators()
+            )
     }
 
     private fun assertConfigEventMatchesInternalEvent(
@@ -1555,6 +1572,7 @@ internal class TelemetryEventHandlerTest {
         internalConfigurationEvent: InternalTelemetryEvent.Configuration,
         time: Long
     ) {
+        val traceContext = fakeDatadogContext.featuresContext[Feature.TRACING_FEATURE_NAME].orEmpty()
         assertThat(actual)
             .hasDate(time + fakeServerOffset)
             .hasSource(TelemetryConfigurationEvent.Source.ANDROID)
@@ -1567,6 +1585,13 @@ internal class TelemetryEventHandlerTest {
             .hasUseProxy(internalConfigurationEvent.useProxy)
             .hasUseLocalEncryption(internalConfigurationEvent.useLocalEncryption)
             .hasIsMainProcess(fakeDatadogContext.processInfo.isMainProcess)
+            .hasTraceSampleRate(
+                traceContext[OKHTTP_INTERCEPTOR_SAMPLE_RATE] as? Long
+            )
+            .hasSelectedTracingPropagators(
+                (traceContext[OKHTTP_INTERCEPTOR_HEADER_TYPES] as? TracingHeaderTypesSet)
+                    ?.toSelectedTracingPropagators()
+            )
     }
 
     private fun Forge.forgeWritableInternalTelemetryEvent(): InternalTelemetryEvent {

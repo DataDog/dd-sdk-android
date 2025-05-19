@@ -13,6 +13,7 @@ import android.util.Log
 import androidx.lifecycle.ViewModelProvider
 import com.datadog.android.Datadog
 import com.datadog.android.DatadogSite
+import com.datadog.android.compose.enableComposeActionTracking
 import com.datadog.android.core.configuration.BackPressureMitigation
 import com.datadog.android.core.configuration.BackPressureStrategy
 import com.datadog.android.core.configuration.BatchSize
@@ -25,10 +26,12 @@ import com.datadog.android.ndk.NdkCrashReports
 import com.datadog.android.okhttp.DatadogEventListener
 import com.datadog.android.okhttp.DatadogInterceptor
 import com.datadog.android.okhttp.trace.TracingInterceptor
+import com.datadog.android.rum.ExperimentalRumApi
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.Rum
 import com.datadog.android.rum.RumConfiguration
 import com.datadog.android.rum.RumErrorSource
+import com.datadog.android.rum.configuration.SlowFramesConfiguration
 import com.datadog.android.rum.tracking.NavigationViewTrackingStrategy
 import com.datadog.android.sample.data.db.LocalDataSource
 import com.datadog.android.sample.data.remote.RemoteDataSource
@@ -275,6 +278,7 @@ class SampleApplication : Application() {
         }
     }
 
+    @OptIn(ExperimentalRumApi::class)
     private fun createRumConfiguration(): RumConfiguration {
         return RumConfiguration.Builder(BuildConfig.DD_RUM_APPLICATION_ID)
             .apply {
@@ -293,6 +297,7 @@ class SampleApplication : Application() {
             .trackUserInteractions()
             .trackLongTasks(250L)
             .trackNonFatalAnrs(true)
+            .setSlowFramesConfiguration(SlowFramesConfiguration.DEFAULT)
             .setViewEventMapper { event ->
                 event.context?.additionalProperties?.put(ATTR_IS_MAPPED, true)
                 event
@@ -314,6 +319,8 @@ class SampleApplication : Application() {
                 event
             }
             .trackBackgroundEvents(true)
+            .trackAnonymousUser(true)
+            .enableComposeActionTracking()
             .build()
     }
 

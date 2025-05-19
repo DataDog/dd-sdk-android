@@ -30,7 +30,6 @@ import com.datadog.android.core.feature.event.JvmCrash
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import com.datadog.android.core.internal.utils.executeSafe
 import com.datadog.android.core.internal.utils.scheduleSafe
-import com.datadog.android.core.internal.utils.submitSafe
 import com.datadog.android.event.EventMapper
 import com.datadog.android.event.MapperSerializer
 import com.datadog.android.event.NoOpEventMapper
@@ -38,6 +37,7 @@ import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumSessionListener
+import com.datadog.android.rum.configuration.SlowFramesConfiguration
 import com.datadog.android.rum.configuration.VitalsUpdateFrequency
 import com.datadog.android.rum.internal.anr.ANRDetectorRunnable
 import com.datadog.android.rum.internal.debug.UiRumDebugListener
@@ -51,6 +51,9 @@ import com.datadog.android.rum.internal.instrumentation.MainLooperLongTaskStrate
 import com.datadog.android.rum.internal.instrumentation.UserActionTrackingStrategyApi29
 import com.datadog.android.rum.internal.instrumentation.UserActionTrackingStrategyLegacy
 import com.datadog.android.rum.internal.instrumentation.gestures.DatadogGesturesTracker
+import com.datadog.android.rum.internal.metric.slowframes.DefaultSlowFramesListener
+import com.datadog.android.rum.internal.metric.slowframes.DefaultUISlownessMetricDispatcher
+import com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.internal.monitor.DatadogRumMonitor
 import com.datadog.android.rum.internal.net.RumRequestFactory
@@ -62,7 +65,8 @@ import com.datadog.android.rum.internal.tracking.UserActionTrackingStrategy
 import com.datadog.android.rum.internal.vitals.AggregatingVitalMonitor
 import com.datadog.android.rum.internal.vitals.CPUVitalReader
 import com.datadog.android.rum.internal.vitals.FPSVitalListener
-import com.datadog.android.rum.internal.vitals.JankStatsActivityLifecycleListener
+import com.datadog.android.rum.internal.vitals.FrameStateListener
+import com.datadog.android.rum.internal.vitals.FrameStatesAggregator
 import com.datadog.android.rum.internal.vitals.MemoryVitalReader
 import com.datadog.android.rum.internal.vitals.NoOpVitalMonitor
 import com.datadog.android.rum.internal.vitals.VitalMonitor
@@ -80,8 +84,10 @@ import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.model.ViewEvent
+import com.datadog.android.rum.tracking.ActionTrackingStrategy
 import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
 import com.datadog.android.rum.tracking.InteractionPredicate
+import com.datadog.android.rum.tracking.NoOpActionTrackingStrategy
 import com.datadog.android.rum.tracking.NoOpTrackingStrategy
 import com.datadog.android.rum.tracking.NoOpViewTrackingStrategy
 import com.datadog.android.rum.tracking.TrackingStrategy
@@ -128,7 +134,7 @@ internal class RumFeature(
 
     internal var debugActivityLifecycleListener =
         AtomicReference<Application.ActivityLifecycleCallbacks>(null)
-    internal var jankStatsActivityLifecycleListener: Application.ActivityLifecycleCallbacks? = null
+    internal var frameStatesAggregator: Application.ActivityLifecycleCallbacks? = null
     internal var sessionListener: RumSessionListener = NoOpRumSessionListener()
 
     internal var vitalExecutorService: ScheduledExecutorService = NoOpScheduledExecutorService()
@@ -137,6 +143,7 @@ internal class RumFeature(
     internal lateinit var appContext: Context
     internal var initialResourceIdentifier: InitialResourceIdentifier = NoOpInitialResourceIdentifier()
     internal var lastInteractionIdentifier: LastInteractionIdentifier? = NoOpLastInteractionIdentifier()
+    internal var slowFramesListener: SlowFramesListener? = null
 
     private val lateCrashEventHandler by lazy { lateCrashReporterFactory(sdkCore as InternalSdkCore) }
 
@@ -148,6 +155,7 @@ internal class RumFeature(
         this.appContext = appContext
         initialResourceIdentifier = configuration.initialResourceIdentifier
         lastInteractionIdentifier = configuration.lastInteractionIdentifier
+
         dataWriter = createDataWriter(
             configuration,
             sdkCore as InternalSdkCore
@@ -173,6 +181,7 @@ internal class RumFeature(
             provideUserTrackingStrategy(
                 configuration.touchTargetExtraAttributesProviders.toTypedArray(),
                 configuration.interactionPredicate,
+                composeActionTrackingStrategy = configuration.composeActionTrackingStrategy,
                 sdkCore.internalLogger
             )
         } else {
@@ -180,7 +189,20 @@ internal class RumFeature(
         }
         configuration.longTaskTrackingStrategy?.let { longTaskTrackingStrategy = it }
 
-        initializeVitalMonitors(configuration.vitalsMonitorUpdateFrequency)
+        val frequency = configuration.vitalsMonitorUpdateFrequency
+        val slowFrameListenerConfiguration = configuration.slowFramesConfiguration
+        if (frequency != VitalsUpdateFrequency.NEVER || slowFrameListenerConfiguration != null) {
+            initializeVitalExecutorService(frequency)
+            initializeCpuVitalMonitor(frequency)
+            initializeMemoryVitalMonitor(frequency)
+            initializeFrameStatesAggregator(
+                application = appContext as? Application,
+                listeners = listOfNotNull(
+                    initializeSlowFrameListener(slowFrameListenerConfiguration),
+                    initializeFPSVitalMonitor(frequency)
+                )
+            )
+        }
 
         if (configuration.trackNonFatalAnrs) {
             initializeANRDetector()
@@ -193,6 +215,42 @@ internal class RumFeature(
         sdkCore.setEventReceiver(name, this)
 
         initialized.set(true)
+    }
+
+    private fun initializeFrameStatesAggregator(
+        application: Application?,
+        listeners: List<FrameStateListener>
+    ) {
+        frameStatesAggregator = FrameStatesAggregator(listeners, sdkCore.internalLogger)
+        application?.registerActivityLifecycleCallbacks(frameStatesAggregator)
+    }
+
+    private fun initializeSlowFrameListener(
+        slowFramesConfiguration: SlowFramesConfiguration?
+    ): FrameStateListener? {
+        slowFramesListener = if (slowFramesConfiguration != null) {
+            sdkCore.internalLogger.log(
+                InternalLogger.Level.INFO,
+                InternalLogger.Target.USER,
+                { SLOW_FRAMES_MONITORING_ENABLED_MESSAGE }
+            )
+            DefaultSlowFramesListener(
+                configuration = slowFramesConfiguration,
+                metricDispatcher = DefaultUISlownessMetricDispatcher(
+                    slowFramesConfiguration,
+                    sdkCore.internalLogger
+                )
+            )
+        } else {
+            sdkCore.internalLogger.log(
+                InternalLogger.Level.INFO,
+                InternalLogger.Target.USER,
+                { SLOW_FRAMES_MONITORING_DISABLED_MESSAGE }
+            )
+            null
+        }
+
+        return slowFramesListener
     }
 
     override val requestFactory: RequestFactory by lazy {
@@ -362,7 +420,7 @@ internal class RumFeature(
             null
         } ?: return
 
-        rumEventsExecutorService.submitSafe("Send fatal ANR", sdkCore.internalLogger) {
+        rumEventsExecutorService.executeSafe("Send fatal ANR", sdkCore.internalLogger) {
             val lastRumViewEvent = (sdkCore as InternalSdkCore).lastViewEvent
             if (lastRumViewEvent != null) {
                 lateCrashEventHandler.handleAnrCrash(
@@ -388,7 +446,7 @@ internal class RumFeature(
     internal fun enableJankStatsTracking(activity: Activity) {
         try {
             @Suppress("UnsafeThirdPartyFunctionCall")
-            jankStatsActivityLifecycleListener?.onActivityStarted(activity)
+            frameStatesAggregator?.onActivityStarted(activity)
         } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
             sdkCore.internalLogger.log(
                 InternalLogger.Level.ERROR,
@@ -411,40 +469,41 @@ internal class RumFeature(
         longTaskTrackingStrategy.unregister(appContext)
     }
 
-    private fun initializeVitalMonitors(frequency: VitalsUpdateFrequency) {
+    private fun initializeVitalExecutorService(frequency: VitalsUpdateFrequency) {
         if (frequency == VitalsUpdateFrequency.NEVER) {
             return
         }
-        cpuVitalMonitor = AggregatingVitalMonitor()
-        memoryVitalMonitor = AggregatingVitalMonitor()
-        frameRateVitalMonitor = AggregatingVitalMonitor()
-        initializeVitalReaders(frequency.periodInMs)
-    }
-
-    private fun initializeVitalReaders(periodInMs: Long) {
         @Suppress("UnsafeThirdPartyFunctionCall") // pool size can't be <= 0
         vitalExecutorService = sdkCore.createScheduledExecutorService("rum-vital")
+    }
 
+    private fun initializeCpuVitalMonitor(frequency: VitalsUpdateFrequency) {
+        if (frequency == VitalsUpdateFrequency.NEVER) return
+
+        cpuVitalMonitor = AggregatingVitalMonitor()
         initializeVitalMonitor(
             CPUVitalReader(internalLogger = sdkCore.internalLogger),
             cpuVitalMonitor,
-            periodInMs
+            frequency.periodInMs
         )
+    }
+
+    private fun initializeMemoryVitalMonitor(frequency: VitalsUpdateFrequency) {
+        if (frequency == VitalsUpdateFrequency.NEVER) return
+
+        memoryVitalMonitor = AggregatingVitalMonitor()
         initializeVitalMonitor(
             MemoryVitalReader(internalLogger = sdkCore.internalLogger),
             memoryVitalMonitor,
-            periodInMs
+            frequency.periodInMs
         )
+    }
 
-        jankStatsActivityLifecycleListener = JankStatsActivityLifecycleListener(
-            listOf(
-                FPSVitalListener(frameRateVitalMonitor)
-            ),
-            sdkCore.internalLogger
-        )
-        (appContext as? Application)?.registerActivityLifecycleCallbacks(
-            jankStatsActivityLifecycleListener
-        )
+    private fun initializeFPSVitalMonitor(frequency: VitalsUpdateFrequency): FPSVitalListener? {
+        if (frequency == VitalsUpdateFrequency.NEVER) return null
+
+        frameRateVitalMonitor = AggregatingVitalMonitor()
+        return FPSVitalListener(frameRateVitalMonitor)
     }
 
     private fun initializeVitalMonitor(
@@ -565,6 +624,8 @@ internal class RumFeature(
         val sessionListener: RumSessionListener,
         val initialResourceIdentifier: InitialResourceIdentifier,
         val lastInteractionIdentifier: LastInteractionIdentifier?,
+        val slowFramesConfiguration: SlowFramesConfiguration?,
+        val composeActionTrackingStrategy: ActionTrackingStrategy,
         val additionalConfig: Map<String, Any>,
         val trackAnonymousUser: Boolean
     )
@@ -611,8 +672,10 @@ internal class RumFeature(
             sessionListener = NoOpRumSessionListener(),
             initialResourceIdentifier = TimeBasedInitialResourceIdentifier(),
             lastInteractionIdentifier = TimeBasedInteractionIdentifier(),
+            composeActionTrackingStrategy = NoOpActionTrackingStrategy(),
             additionalConfig = emptyMap(),
-            trackAnonymousUser = true
+            trackAnonymousUser = true,
+            slowFramesConfiguration = null
         )
 
         internal const val EVENT_MESSAGE_PROPERTY = "message"
@@ -636,6 +699,10 @@ internal class RumFeature(
                 " where mandatory message field is either missing or has a wrong type."
         internal const val DEVELOPER_MODE_SAMPLE_RATE_CHANGED_MESSAGE =
             "Developer mode enabled, setting RUM sample rate to 100%."
+        internal const val SLOW_FRAMES_MONITORING_ENABLED_MESSAGE =
+            "Slow frames monitoring enabled."
+        internal const val SLOW_FRAMES_MONITORING_DISABLED_MESSAGE =
+            "Slow frames monitoring disabled."
         internal const val RUM_FEATURE_NOT_YET_INITIALIZED =
             "RUM feature is not initialized yet, you need to register it with a" +
                 " SDK instance by calling SdkCore#registerFeature method."
@@ -645,13 +712,15 @@ internal class RumFeature(
         private fun provideUserTrackingStrategy(
             touchTargetExtraAttributesProviders: Array<ViewAttributesProvider>,
             interactionPredicate: InteractionPredicate,
+            composeActionTrackingStrategy: ActionTrackingStrategy,
             internalLogger: InternalLogger
         ): UserActionTrackingStrategy {
             val gesturesTracker =
                 provideGestureTracker(
-                    touchTargetExtraAttributesProviders,
-                    interactionPredicate,
-                    internalLogger
+                    customProviders = touchTargetExtraAttributesProviders,
+                    interactionPredicate = interactionPredicate,
+                    composeActionTrackingStrategy = composeActionTrackingStrategy,
+                    internalLogger = internalLogger
                 )
             return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 UserActionTrackingStrategyApi29(gesturesTracker)
@@ -663,11 +732,17 @@ internal class RumFeature(
         private fun provideGestureTracker(
             customProviders: Array<ViewAttributesProvider>,
             interactionPredicate: InteractionPredicate,
+            composeActionTrackingStrategy: ActionTrackingStrategy,
             internalLogger: InternalLogger
         ): DatadogGesturesTracker {
             val defaultProviders = arrayOf(JetpackViewAttributesProvider())
             val providers = customProviders + defaultProviders
-            return DatadogGesturesTracker(providers, interactionPredicate, internalLogger)
+            return DatadogGesturesTracker(
+                providers,
+                interactionPredicate,
+                composeActionsTrackingStrategy = composeActionTrackingStrategy,
+                internalLogger
+            )
         }
 
         internal fun isTrackNonFatalAnrsEnabledByDefault(

@@ -21,7 +21,7 @@ fun Span.setError(throwable: Throwable) {
 
 /**
  * Helper method to attach an error message to this [Span].
- * The error message will be added to this [Span] as a standard Error Tag.
+ * The error message will be logged with ERROR status and can be seen in logs attached to the span.
  * @param message the error message you want to attach.
  */
 fun Span.setError(message: String) {
