@@ -214,7 +214,7 @@ internal constructor(
         tracer: Tracer
     ): Response {
         val span: Span = buildSpan(tracer, request)
-        val isSampled = span.sample(tracer, request)
+        val isSampled = span.sample(request)
 
         if (span is DDSpan && span.isRootSpan) {
             val samplingPriority = if (isSampled) PrioritySampling.SAMPLER_KEEP else PrioritySampling.SAMPLER_DROP
@@ -323,7 +323,7 @@ internal constructor(
     }
 
     @Suppress("ReturnCount")
-    private fun extractSamplingDecision(tracer: Tracer, request: Request): Boolean? {
+    private fun extractSamplingDecision(request: Request): Boolean? {
         val headerSamplingPriority = extractSamplingDecisionFromHeader(request)
         if (headerSamplingPriority != null) return headerSamplingPriority
 
@@ -641,12 +641,12 @@ internal constructor(
 
     private fun Span.drop() = (this as? MutableSpan)?.drop()
 
-    private fun Span.sample(tracer: Tracer, request: Request): Boolean {
+    private fun Span.sample(request: Request): Boolean {
         val samplingPriority = (this as? DDSpan)?.samplingPriority
         return if (samplingPriority != null) {
             samplingPriority > 0
         } else {
-            extractSamplingDecision(tracer, request) ?: traceSampler.sample(this)
+            extractSamplingDecision(request) ?: traceSampler.sample(this)
         }
     }
 
