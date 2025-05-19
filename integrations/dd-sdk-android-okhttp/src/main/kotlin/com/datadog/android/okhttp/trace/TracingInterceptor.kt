@@ -794,11 +794,6 @@ internal constructor(
             return getThis()
         }
 
-        internal fun setGlobalTracerProvider(globalTracerProvider: () -> CoreTracer?) : R {
-            this.globalTracerProvider = globalTracerProvider
-            return getThis()
-        }
-
         internal fun setGlobalTracerProvider(globalTracerProvider: () -> Tracer?) : R {
             this.globalTracerProvider = globalTracerProvider
             return getThis()
