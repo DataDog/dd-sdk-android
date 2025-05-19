@@ -328,7 +328,6 @@ internal constructor(
         val headerSamplingPriority = extractSamplingDecisionFromHeader(request)
         if (headerSamplingPriority != null) return headerSamplingPriority
 
-        // TODO: should we add some dd-trace-java specific here?
         val openTelemetrySpan = request.tag(TraceContext::class.java)
         if (openTelemetrySpan != null) {
             return if (openTelemetrySpan.samplingPriority == PrioritySampling.UNSET) {
