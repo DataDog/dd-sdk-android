@@ -7,6 +7,7 @@
 package com.datadog.benchmark.sample.di.app
 
 import com.datadog.benchmark.sample.BenchmarkApplication
+import com.datadog.benchmark.sample.LaunchActivity
 import com.datadog.benchmark.sample.di.activity.BenchmarkActivityComponentDependencies
 import com.datadog.benchmark.sample.di.activity.DatadogActivityModule
 import dagger.BindsInstance
@@ -29,4 +30,6 @@ internal interface BenchmarkAppComponent : BenchmarkActivityComponentDependencie
     }
 
     fun inject(benchmarkApplication: BenchmarkApplication)
+    fun inject(launchActivity: LaunchActivity)
 }
+

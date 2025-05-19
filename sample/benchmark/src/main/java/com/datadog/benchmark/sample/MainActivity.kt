@@ -51,9 +51,6 @@ class MainActivity : AppCompatActivity() {
     @Inject
     internal lateinit var rumAutoHostViewModel: RumAutoHostViewModel
 
-    @Inject
-    internal lateinit var preferences: SharedPreferences
-
     internal lateinit var viewModel: MainActivityViewModel
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -64,9 +61,6 @@ class MainActivity : AppCompatActivity() {
         viewModel = ViewModelProvider(this, factory)[MainActivityViewModel::class]
 
         benchmarkActivityComponent.inject(this)
-
-        val benchmarkConfig = BenchmarkConfig.resolveSyntheticsBundle(intent.extras)
-        benchmarkConfig.saveToPrefs(preferences)
 
         if (config.isComposeEnabled) {
             supportActionBar?.hide()

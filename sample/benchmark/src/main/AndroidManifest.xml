@@ -3,6 +3,7 @@
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
     <application
         android:name="com.datadog.benchmark.sample.BenchmarkApplication"
         android:allowBackup="true"
@@ -16,6 +17,12 @@
             android:exported="true"
             android:label="@string/app_name"
             android:theme="@style/Theme.BenchmarkApp">
+
+        </activity>
+
+        <activity
+            android:name="com.datadog.benchmark.sample.LaunchActivity"
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 

@@ -9,11 +9,11 @@
 package com.datadog.benchmark.sample.di.activity
 
 import android.content.Context
-import android.content.SharedPreferences
 import com.datadog.android.api.SdkCore
 import com.datadog.android.log.Logger
 import com.datadog.android.rum.RumMonitor
 import com.datadog.benchmark.DatadogBaseMeter
+import com.datadog.benchmark.sample.BenchmarkConfigHolder
 import com.datadog.benchmark.sample.MainActivity
 import com.datadog.benchmark.sample.config.BenchmarkConfig
 import com.datadog.benchmark.sample.di.common.DispatchersModule
@@ -24,9 +24,7 @@ import com.datadog.benchmark.sample.ui.sessionreplay.SessionReplayAppcompatFragm
 import com.datadog.benchmark.sample.ui.sessionreplay.SessionReplayMaterialFragment
 import com.datadog.benchmark.sample.ui.trace.TraceScenarioFragment
 import com.datadog.trace.api.Tracer
-import dagger.BindsInstance
 import dagger.Component
-import javax.inject.Provider
 import javax.inject.Scope
 
 @Scope
@@ -34,13 +32,12 @@ internal annotation class BenchmarkActivityScope
 
 internal interface BenchmarkActivityComponentDependencies {
     val context: Context
-    val preferences: SharedPreferences
     val benchmarkConfig: BenchmarkConfig
 
+    val sdkCore: SdkCore
     val logger: Logger
     val rumMonitor: RumMonitor
     val datadogBaseMeter: DatadogBaseMeter
-    val sdkCore: SdkCore
 }
 
 @Component(
@@ -50,6 +47,7 @@ internal interface BenchmarkActivityComponentDependencies {
     modules = [
         BenchmarkActivityModule::class,
         ViewModelsModule::class,
+        BenchmarkActivityModule::class,
         DispatchersModule::class,
         OpenTelemetryModule::class,
         OkHttpModule::class

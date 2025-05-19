@@ -16,19 +16,11 @@ internal class BenchmarkApplication : Application() {
 
     internal lateinit var benchmarkAppComponent: BenchmarkAppComponent
 
-    @Inject
-    internal lateinit var benchmarkFeaturesInitializer: DatadogFeaturesInitializer
-
-    @Inject
-    internal lateinit var benchmarkConfig: BenchmarkConfig
-
     override fun onCreate() {
         super.onCreate()
 
         benchmarkAppComponent = DaggerBenchmarkAppComponent.factory().create(this)
         benchmarkAppComponent.inject(this)
-
-        benchmarkFeaturesInitializer.initialize(benchmarkConfig)
     }
 }
 
