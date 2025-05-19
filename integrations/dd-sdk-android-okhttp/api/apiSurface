@@ -41,9 +41,6 @@ fun okhttp3.Request.Builder.parentSpan(io.opentracing.Span): okhttp3.Request.Bui
 interface com.datadog.android.okhttp.trace.TracedRequestListener
   fun onRequestIntercepted(okhttp3.Request, io.opentracing.Span, okhttp3.Response?, Throwable?)
 open class com.datadog.android.okhttp.trace.TracingInterceptor : okhttp3.Interceptor
-  DEPRECATED constructor(String? = null, List<String>, TracedRequestListener = NoOpTracedRequestListener(), com.datadog.android.core.sampling.Sampler<io.opentracing.Span> = DeterministicTraceSampler(DEFAULT_TRACE_SAMPLE_RATE))
-  DEPRECATED constructor(String? = null, Map<String, Set<com.datadog.android.trace.TracingHeaderType>>, TracedRequestListener = NoOpTracedRequestListener(), com.datadog.android.core.sampling.Sampler<io.opentracing.Span> = DeterministicTraceSampler(DEFAULT_TRACE_SAMPLE_RATE))
-  DEPRECATED constructor(String? = null, TracedRequestListener = NoOpTracedRequestListener(), com.datadog.android.core.sampling.Sampler<io.opentracing.Span> = DeterministicTraceSampler(DEFAULT_TRACE_SAMPLE_RATE))
   override fun intercept(okhttp3.Interceptor.Chain): okhttp3.Response
   protected open fun onRequestIntercepted(com.datadog.android.api.feature.FeatureSdkCore, okhttp3.Request, io.opentracing.Span?, okhttp3.Response?, Throwable?)
   class Builder : BaseBuilder<TracingInterceptor, Builder>
