@@ -80,10 +80,13 @@ internal interface ViewModelsModule {
         @ViewModelQualifier(RumAutoCharactersViewModel::class)
         fun provideRumAutoCharactersViewModelFactory(
             rickAndMortyNetworkService: RickAndMortyNetworkService,
+            @CoroutineDispatcherQualifier(CoroutineDispatcherType.Default)
+            defaultDispatcher: CoroutineDispatcher
         ) = viewModelFactory {
             initializer {
                 RumAutoCharactersViewModel(
-                    rickAndMortyNetworkService = rickAndMortyNetworkService
+                    rickAndMortyNetworkService = rickAndMortyNetworkService,
+                    defaultDispatcher = defaultDispatcher
                 )
             }
         }

@@ -18,6 +18,7 @@ import io.opentelemetry.api.trace.Tracer
 import io.opentelemetry.api.trace.TracerProvider
 import io.opentelemetry.context.propagation.ContextPropagators
 
+// TODO WAHAHA move to app
 @Module
 internal interface OpenTelemetryModule {
     companion object {

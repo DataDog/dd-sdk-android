@@ -11,11 +11,14 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.ComposeView
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.datadog.benchmark.sample.benchmarkActivityComponent
 import com.datadog.benchmark.sample.di.activity.ViewModelQualifier
 import javax.inject.Inject
 
@@ -25,11 +28,19 @@ internal class RumAutoCharactersFragment: Fragment() {
     internal lateinit var viewModelFactory: ViewModelProvider.Factory
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
+        requireActivity().benchmarkActivityComponent.inject(this)
         val viewModel: RumAutoCharactersViewModel by viewModels { viewModelFactory }
 
         return ComposeView(requireActivity()).apply {
             setContent {
-                RumAutoCharactersScreen(modifier = Modifier.fillMaxSize())
+                val state by viewModel.state.collectAsStateWithLifecycle()
+
+
+                RumAutoCharactersScreen(
+                    modifier = Modifier.fillMaxSize(),
+                    state = state,
+                    dispatch = viewModel::dispatch
+                )
             }
         }
     }

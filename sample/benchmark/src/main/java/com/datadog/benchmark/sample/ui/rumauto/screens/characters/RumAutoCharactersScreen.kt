@@ -7,17 +7,24 @@
 package com.datadog.benchmark.sample.ui.rumauto.screens.characters
 
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 
 @Composable
-internal fun RumAutoCharactersScreen(modifier: Modifier) {
+internal fun RumAutoCharactersScreen(
+    modifier: Modifier,
+    state: RumAutoCharactersScreenState,
+    dispatch: (RumAutoCharactersScreenAction) -> Unit
+) {
     Column(modifier = modifier) {
-        Text(text = "RumAutoCharactersScreen")
-        Button(onClick = {}) {
-            Text(text = "PRESS ME")
+        LazyColumn {
+            items(state.pages.flatMap { it.response.results }, key = { it.id }) { item ->
+                Text(text = item.name)
+            }
         }
     }
 }

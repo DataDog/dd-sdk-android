@@ -19,6 +19,7 @@ import com.datadog.benchmark.sample.config.BenchmarkConfig
 import com.datadog.benchmark.sample.di.common.DispatchersModule
 import com.datadog.benchmark.sample.ui.logscustom.LogsFragment
 import com.datadog.benchmark.sample.ui.logsheavytraffic.di.LogsHeavyTrafficComponentDependencies
+import com.datadog.benchmark.sample.ui.rumauto.screens.characters.RumAutoCharactersFragment
 import com.datadog.benchmark.sample.ui.rummanual.RumManualScenarioFragment
 import com.datadog.benchmark.sample.ui.sessionreplay.SessionReplayAppcompatFragment
 import com.datadog.benchmark.sample.ui.sessionreplay.SessionReplayMaterialFragment
@@ -71,4 +72,6 @@ internal interface BenchmarkActivityComponent :
     fun inject(logsFragment: LogsFragment)
     fun inject(traceScenarioFragment: TraceScenarioFragment)
     fun inject(rumManualScenarioFragment: RumManualScenarioFragment)
+
+    fun inject(rumAutoCharactersFragment: RumAutoCharactersFragment)
 }
