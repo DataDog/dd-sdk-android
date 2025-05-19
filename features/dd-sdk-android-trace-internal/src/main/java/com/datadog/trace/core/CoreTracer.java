@@ -9,6 +9,8 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.annotation.VisibleForTesting;
 
 import com.datadog.android.api.InternalLogger;
@@ -823,6 +825,7 @@ public class CoreTracer implements AgentTracer.TracerAPI {
         private Object builderRequestContextDataIast;
         private Object builderCiVisibilityContextData;
         private List<AgentSpanLink> links;
+        private String origin;
 
         CoreSpanBuilder(
                 final String instrumentationName, final CharSequence operationName, CoreTracer tracer) {
@@ -972,6 +975,13 @@ public class CoreTracer implements AgentTracer.TracerAPI {
             return this;
         }
 
+        @NonNull
+        @Override
+        public AgentTracer.SpanBuilder withOrigin(@Nullable String origin) {
+            this.origin = origin;
+            return this;
+        }
+
         /**
          * Build the SpanContext, if the actual span has a parent, the following attributes must be
          * propagated: - ServiceName - Baggage - Trace (a list of all spans related) - SpanType
@@ -1079,9 +1089,9 @@ public class CoreTracer implements AgentTracer.TracerAPI {
                     requestContextDataIast = tc.getRequestContextDataIast();
                     ciVisibilityContextData = tc.getCiVisibilityContextData();
                 } else {
+                    origin = this.origin;
                     traceConfig = null;
                     coreTags = null;
-                    origin = null;
                     baggage = null;
                     requestContextDataAppSec = null;
                     requestContextDataIast = null;
