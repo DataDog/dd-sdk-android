@@ -8,12 +8,16 @@ package com.datadog.benchmark.sample.ui.rumauto.screens.characters
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.modifier.modifierLocalMapOf
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.datadog.benchmark.sample.network.rickandmorty.models.Character
 
@@ -27,15 +31,19 @@ internal fun CharacterItemView(modifier: Modifier, character: Character) {
 
         Column {
             Text(text = character.name)
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(text = "${character.species} ${character.status}")
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(text = character.origin.name)
         }
     }
 }
 
 @Preview(showBackground = true)
 @Composable
-private fun CharacterItemViewPreview() {
+internal fun CharacterItemViewPreview() {
     CharacterItemView(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier.fillMaxWidth(),
         character = Character(
             id = 1,
             name = "Rick Sanchez",
