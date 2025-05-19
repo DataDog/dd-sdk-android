@@ -43,21 +43,15 @@ android {
     defaultConfig {
         consumerProguardFiles("consumer-rules.pro")
     }
-    namespace = "com.datadog.android.trace"
+    namespace = "com.datadog.android.trace.internal"
 }
 
 dependencies {
     api(project(":dd-sdk-android-core"))
     implementation(project(":dd-sdk-android-internal"))
-    // TODO RUM-9902 This is temporary for compilation. Gonna change to implementation after removing opentracing code
-    api(project(":features:dd-sdk-android-trace-internal"))
-    implementation(libs.kotlin)
     implementation(libs.gson)
     implementation(libs.androidXAnnotation)
     implementation(libs.bundles.traceCore)
-
-    // Generate NoOp implementations
-    ksp(project(":tools:noopfactory"))
 
     // OpenTracing
     api(libs.bundles.openTracing)
@@ -71,19 +65,16 @@ dependencies {
         }
     }
     testImplementation(testFixtures(project(":dd-sdk-android-core")))
-    testImplementation(libs.okHttp)
     testImplementation(libs.bundles.jUnit5)
     testImplementation(libs.bundles.testTools)
     testImplementation(libs.systemStubsJupiter)
-
-    unmock(libs.robolectric)
 }
 
 unMock {
     keepStartingWith("org.json")
 }
 
-apply(from = "generate_trace_models.gradle.kts")
+apply(from = "clone_dd_trace.gradle.kts")
 
 kotlinConfig(jvmBytecodeTarget = JvmTarget.JVM_11)
 androidLibraryConfig()
@@ -91,7 +82,6 @@ junitConfig()
 javadocConfig()
 dependencyUpdateConfig()
 publishingConfig(
-    "The Tracing feature to use with the Datadog monitoring " +
-        "library for Android applications."
+    "Internal APM support library for Android applications."
 )
 detektCustomConfig(":dd-sdk-android-core", ":dd-sdk-android-internal")

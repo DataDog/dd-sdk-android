@@ -126,6 +126,7 @@ analysis:detekt-custom:
     - ./gradlew :features:dd-sdk-android-session-replay:customDetektRules
     - ./gradlew :features:dd-sdk-android-session-replay-material:customDetektRules
     - ./gradlew :features:dd-sdk-android-session-replay-compose:customDetektRules
+    - ./gradlew :features:dd-sdk-android-trace-internal:customDetektRules
     - ./gradlew :features:dd-sdk-android-trace:customDetektRules
     - ./gradlew :features:dd-sdk-android-trace-otel:customDetektRules
     - ./gradlew :features:dd-sdk-android-webview:customDetektRules
@@ -734,6 +735,18 @@ publish:release-okhttp-otel:
   script:
     - !reference [.snippets, set-publishing-credentials]
     - ./gradlew :integrations:dd-sdk-android-okhttp-otel:publishToSonatype --stacktrace --no-daemon
+
+publish:release-trace-internal:
+  tags: [ "arch:amd64" ]
+  only:
+    - tags
+    - develop
+  image: $CI_IMAGE_DOCKER
+  stage: publish
+  timeout: 30m
+  script:
+    - !reference [ .snippets, set-publishing-credentials ]
+    - ./gradlew :features:dd-sdk-android-trace-internal:publishToSonatype --stacktrace --no-daemon
 
 publish:release-trace:
   tags: [ "arch:amd64" ]
