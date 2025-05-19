@@ -27,7 +27,6 @@ import com.datadog.android.trace.AndroidTracer
 import com.datadog.android.trace.TracingHeaderType
 import com.datadog.legacy.trace.api.DDTags
 import com.datadog.legacy.trace.api.sampling.PrioritySampling
-import com.datadog.opentracing.DDTracer
 import com.datadog.trace.api.interceptor.MutableSpan
 import com.datadog.trace.api.sampling.SamplingMechanism
 import com.datadog.trace.bootstrap.instrumentation.api.Tags
@@ -309,7 +308,8 @@ internal constructor(
         val url = request.url.toString()
 
         val spanBuilder = tracer.buildSpan(SPAN_NAME)
-        (spanBuilder as? DDTracer.DDSpanBuilder)?.withOrigin(traceOrigin)
+            .withOrigin(traceOrigin)
+
         val span = spanBuilder
             .asChildOf(parentContext)
             .start()

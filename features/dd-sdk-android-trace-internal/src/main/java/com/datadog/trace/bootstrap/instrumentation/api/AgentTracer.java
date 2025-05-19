@@ -25,6 +25,8 @@ import java.util.List;
 import java.util.Map;
 import com.datadog.android.trace.internal.compat.function.Consumer;
 
+import org.jetbrains.annotations.NotNull;
+
 public class AgentTracer {
   private static final String DEFAULT_INSTRUMENTATION_NAME = "datadog";
 
@@ -163,6 +165,9 @@ public class AgentTracer {
     <T> SpanBuilder withRequestContextData(RequestContextSlot slot, T data);
 
     SpanBuilder withLink(AgentSpanLink link);
+
+    @NotNull
+    SpanBuilder withOrigin(@Nullable String origin);
   }
 
   public static final class NoopAgentSpan implements AgentSpan {
