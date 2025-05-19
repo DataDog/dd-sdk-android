@@ -324,17 +324,7 @@ internal constructor(
         val headerSamplingPriority = extractSamplingDecisionFromHeader(request)
         if (headerSamplingPriority != null) return headerSamplingPriority
 
-        // if parent context is propagated via headers, sampling decision will be there (see DDTracer#inject), but if
-        // it is tagged span, we need to trigger sampling decision manually, it is not yet made probably.
-        val openTracingSpan = request.tag(Span::class.java)
-        if (openTracingSpan != null && openTracingSpan.context() is DDSpanContext) {
-            // very hacky, this is to trigger sampling decision and avoid
-            // making DDTracer#setSamplingPriorityIfNecessary public
-            tracer.inject(openTracingSpan.context(), Format.Builtin.TEXT_MAP_INJECT, TextMapInject { _, _ -> })
-            return (openTracingSpan.context() as? DDSpanContext)
-                ?.let { if (it.samplingPriority == PrioritySampling.UNSET) null else it.samplingPriority > 0 }
-        }
-
+        // TODO: should we add some dd-trace-java specific here?
         val openTelemetrySpan = request.tag(TraceContext::class.java)
         if (openTelemetrySpan != null) {
             return if (openTelemetrySpan.samplingPriority == PrioritySampling.UNSET) {
