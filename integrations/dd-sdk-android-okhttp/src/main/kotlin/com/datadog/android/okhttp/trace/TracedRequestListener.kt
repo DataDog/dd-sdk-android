@@ -7,7 +7,6 @@
 package com.datadog.android.okhttp.trace
 
 import com.datadog.tools.annotation.NoOpImplementation
-import io.opentracing.Span
 import okhttp3.Request
 import okhttp3.Response
 
