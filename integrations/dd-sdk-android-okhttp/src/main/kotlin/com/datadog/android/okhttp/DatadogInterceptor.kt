@@ -16,7 +16,9 @@ import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.okhttp.internal.rum.NoOpRumResourceAttributesProvider
 import com.datadog.android.okhttp.internal.rum.buildResourceId
 import com.datadog.android.okhttp.internal.utils.traceIdAsHexString
+import com.datadog.android.okhttp.trace.Span
 import com.datadog.android.okhttp.trace.TracedRequestListener
+import com.datadog.android.okhttp.trace.Tracer
 import com.datadog.android.okhttp.trace.TracingInterceptor
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumAttributes
@@ -29,8 +31,6 @@ import com.datadog.android.rum.internal.monitor.AdvancedNetworkRumMonitor
 import com.datadog.android.rum.tracking.ViewTrackingStrategy
 import com.datadog.android.trace.AndroidTracer
 import com.datadog.android.trace.TracingHeaderType
-import io.opentracing.Span
-import io.opentracing.Tracer
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -78,7 +78,8 @@ open class DatadogInterceptor internal constructor(
     traceSampler: Sampler<Span>,
     traceContextInjection: TraceContextInjection,
     redacted404ResourceName: Boolean,
-    localTracerFactory: (SdkCore, Set<TracingHeaderType>) -> Tracer
+    localTracerFactory: (SdkCore, Set<TracingHeaderType>) -> Tracer,
+    globalTracerProvider: () -> Tracer?
 ) : TracingInterceptor(
     sdkInstanceName,
     tracedHosts,
@@ -87,7 +88,8 @@ open class DatadogInterceptor internal constructor(
     traceSampler,
     traceContextInjection,
     redacted404ResourceName,
-    localTracerFactory
+    localTracerFactory,
+    globalTracerProvider
 ) {
 
     // region Interceptor
@@ -178,8 +180,8 @@ open class DatadogInterceptor internal constructor(
             emptyMap<String, Any?>()
         } else {
             mapOf(
-                RumAttributes.TRACE_ID to span.context().traceIdAsHexString(),
-                RumAttributes.SPAN_ID to span.context().toSpanId(),
+                RumAttributes.TRACE_ID to span.context().traceId.toHexString(),
+                RumAttributes.SPAN_ID to span.context().spanId.toString(),
                 RumAttributes.RULE_PSR to (traceSampler.getSampleRate() ?: ZERO_SAMPLE_RATE) / ALL_IN_SAMPLE_RATE
             )
         }
@@ -327,7 +329,8 @@ open class DatadogInterceptor internal constructor(
                 traceSampler,
                 traceContextInjection,
                 redacted404ResourceName,
-                localTracerFactory
+                localTracerFactory,
+                globalTracerProvider
             )
         }
 
