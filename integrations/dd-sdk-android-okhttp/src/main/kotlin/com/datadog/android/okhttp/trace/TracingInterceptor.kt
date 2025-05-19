@@ -38,7 +38,6 @@ import com.datadog.trace.core.propagation.ExtractedContext
 import io.opentracing.propagation.Format
 import io.opentracing.propagation.TextMapExtractAdapter
 import io.opentracing.propagation.TextMapInject
-import io.opentracing.util.GlobalTracer
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.Request
