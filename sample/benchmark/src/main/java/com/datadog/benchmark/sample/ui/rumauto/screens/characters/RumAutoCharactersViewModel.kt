@@ -11,6 +11,7 @@ import androidx.lifecycle.viewModelScope
 import com.datadog.benchmark.sample.navigation.RumAutoScenarioNavigator
 import com.datadog.benchmark.sample.network.KtorHttpResponse
 import com.datadog.benchmark.sample.network.rickandmorty.RickAndMortyNetworkService
+import com.datadog.benchmark.sample.network.rickandmorty.models.Character
 import com.datadog.benchmark.sample.network.rickandmorty.models.CharacterResponse
 import com.datadog.benchmark.sample.ui.rumauto.screens.characters.RumAutoCharactersScreenState.PageLoadingTask
 import com.datadog.benchmark.sample.ui.rumauto.screens.characters.RumAutoCharactersScreenState.PageLoadingTaskResult
@@ -33,7 +34,7 @@ internal sealed interface RumAutoCharactersScreenAction {
     object LoadNextPage : RumAutoCharactersScreenAction
     data class VisibleItemsChanged(val items: Set<String>): RumAutoCharactersScreenAction
 
-    data class CharacterItemClicked(val characterId: Int): RumAutoCharactersScreenAction
+    data class CharacterItemClicked(val character: Character): RumAutoCharactersScreenAction
 
     object EndReached : RumAutoCharactersScreenAction
 
@@ -95,7 +96,7 @@ internal class RumAutoCharactersViewModel(
         return when (action) {
             is RumAutoCharactersScreenAction.CharacterItemClicked -> {
                 viewModelScope.launch {
-                    rumAutoScenarioNavigator.openCharacterScreen(action.characterId)
+                    rumAutoScenarioNavigator.openCharacterScreen(action.character)
                 }
                 prev
             }

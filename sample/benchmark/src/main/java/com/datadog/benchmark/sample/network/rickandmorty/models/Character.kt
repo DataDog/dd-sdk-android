@@ -6,10 +6,13 @@
 
 package com.datadog.benchmark.sample.network.rickandmorty.models
 
+import android.os.Parcelable
+import kotlinx.parcelize.Parcelize
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
+@Parcelize
 internal data class Character(
     @SerialName("id")
     val id: Int,
@@ -46,18 +49,20 @@ internal data class Character(
 
     @SerialName("created")
     val created: String
-) {
+): Parcelable {
     @Serializable
+    @Parcelize
     data class LocationInfo(
         @SerialName("name")
         val name: String,
 
         @SerialName("url")
         val url: String
-    )
+    ): Parcelable
 
     @Serializable
-    enum class Status {
+    @Parcelize
+    enum class Status: Parcelable {
         @SerialName("Alive")
         ALIVE,
         @SerialName("Dead")
@@ -67,7 +72,8 @@ internal data class Character(
     }
 
     @Serializable
-    enum class Gender {
+    @Parcelize
+    enum class Gender: Parcelable {
         @SerialName("Female")
         FEMALE,
         @SerialName("Male")

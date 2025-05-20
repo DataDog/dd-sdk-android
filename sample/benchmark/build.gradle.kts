@@ -11,6 +11,7 @@ plugins {
     kotlin("android")
     kotlin("kapt")
     kotlin("plugin.serialization")
+    id("kotlin-parcelize")
     alias(libs.plugins.datadogGradlePlugin)
     id("transitiveDependencies")
 }

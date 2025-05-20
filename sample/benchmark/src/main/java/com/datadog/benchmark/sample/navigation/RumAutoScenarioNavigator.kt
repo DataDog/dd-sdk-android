@@ -11,6 +11,7 @@ import androidx.navigation.NavController
 import androidx.navigation.createGraph
 import androidx.navigation.fragment.fragment
 import com.datadog.benchmark.sample.di.activity.BenchmarkActivityScope
+import com.datadog.benchmark.sample.network.rickandmorty.models.Character
 import com.datadog.benchmark.sample.ui.rumauto.RumAutoScenarioTab
 import com.datadog.benchmark.sample.ui.rumauto.screens.characterdetail.RumAutoCharacterDetailFragment
 import com.datadog.benchmark.sample.ui.rumauto.screens.characters.RumAutoCharactersFragment
@@ -52,9 +53,9 @@ internal class RumAutoScenarioNavigator @Inject constructor() {
         }
     }
 
-    fun openCharacterScreen(characterId: Int) {
+    fun openCharacterScreen(character: Character) {
         val bundle = Bundle().apply {
-            putInt("characterId", characterId)
+            putParcelable("character", character)
         }
 
         navController?.navigate(R.id.character_detail_fragment, bundle)

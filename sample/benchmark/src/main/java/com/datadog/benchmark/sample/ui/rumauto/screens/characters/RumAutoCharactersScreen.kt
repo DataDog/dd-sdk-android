@@ -71,7 +71,7 @@ internal fun RumAutoCharactersScreen(
             CharacterItemView(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clickable { dispatch(RumAutoCharactersScreenAction.CharacterItemClicked(item.id)) },
+                    .clickable { dispatch(RumAutoCharactersScreenAction.CharacterItemClicked(item)) },
                 character = item
             )
         }

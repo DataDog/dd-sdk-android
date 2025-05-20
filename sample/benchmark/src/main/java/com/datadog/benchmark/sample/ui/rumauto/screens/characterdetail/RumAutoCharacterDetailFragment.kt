@@ -18,6 +18,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.datadog.benchmark.sample.benchmarkActivityComponent
 import com.datadog.benchmark.sample.di.activity.ViewModelQualifier
+import com.datadog.benchmark.sample.network.rickandmorty.models.Character
 import javax.inject.Inject
 
 internal class RumAutoCharacterDetailFragment: Fragment() {
@@ -36,12 +37,12 @@ internal class RumAutoCharacterDetailFragment: Fragment() {
 
         val viewModel: RumAutoCharacterDetailsViewModel by viewModels { viewModelFactory }
 
-        val characterId = arguments?.getInt("characterId")
+        val character = arguments?.getParcelable<Character>("character")
 
         return ComposeView(requireContext()).apply {
             setContent {
                  val state by viewModel.state.collectAsStateWithLifecycle()
-                RumAutoCharacterScreen("${state.message} $characterId")
+                RumAutoCharacterScreen("${state.message} ${character?.name}")
             }
         }
     }
