@@ -32,6 +32,7 @@ internal class RumAutoCharacterDetailFragment: Fragment() {
         requireActivity().benchmarkActivityComponent.inject(this)
 
         val viewModel: RumAutoCharacterDetailsViewModel by viewModels {
+            // TODO WAHAHA deprecated
             val character = arguments?.getParcelable<Character>("character")
             viewModelFactory.create(character!!)
         }
@@ -39,7 +40,7 @@ internal class RumAutoCharacterDetailFragment: Fragment() {
         return ComposeView(requireContext()).apply {
             setContent {
                  val state by viewModel.state.collectAsStateWithLifecycle()
-                RumAutoCharacterScreen(state.message)
+                RumAutoCharacterScreen(state.character)
             }
         }
     }

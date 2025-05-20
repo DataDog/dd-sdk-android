@@ -7,18 +7,29 @@
 package com.datadog.benchmark.sample.ui.rumauto.screens.characterdetail
 
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import coil.compose.AsyncImage
+import com.datadog.benchmark.sample.network.rickandmorty.models.Character
 
 @Composable
-internal fun RumAutoCharacterScreen(displayText: String, modifier: Modifier = Modifier) {
-    Box(
+internal fun RumAutoCharacterScreen(character: Character, modifier: Modifier = Modifier) {
+    Column(
         modifier = modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
     ) {
-        Text(text = displayText)
+        AsyncImage(
+            model = character.image,
+            contentDescription = character.name,
+            modifier = Modifier.align(Alignment.CenterHorizontally)
+        )
+        Text(text = character.name)
+        Text(text = character.status.toString())
+        Text(text = character.species)
+        Text(text = character.gender.toString())
+        Text(text = character.created)
     }
 }

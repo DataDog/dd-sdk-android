@@ -20,7 +20,7 @@ import dagger.assisted.AssistedInject
 import kotlinx.coroutines.CoroutineDispatcher
 
 internal data class RumAutoCharacterState(
-    val message: String = "Initial Character Message"
+    val character: Character
 )
 
 internal sealed class RumAutoCharacterAction {
@@ -53,7 +53,7 @@ internal class RumAutoCharacterDetailsViewModel(
 ) : ViewModel() {
     private val stateMachine = StateMachine.create(
         scope = viewModelScope,
-        initialState = RumAutoCharacterState(character.name),
+        initialState = RumAutoCharacterState(character),
         dispatcher = defaultDispatcher,
         processAction = ::processAction
     )
@@ -63,7 +63,7 @@ internal class RumAutoCharacterDetailsViewModel(
     private fun processAction(prev: RumAutoCharacterState, action: RumAutoCharacterAction): RumAutoCharacterState {
         return when (action) {
             is RumAutoCharacterAction.UpdateCharacterMessage -> {
-                prev.copy(message = action.newMessage)
+                prev
             }
         }
     }
