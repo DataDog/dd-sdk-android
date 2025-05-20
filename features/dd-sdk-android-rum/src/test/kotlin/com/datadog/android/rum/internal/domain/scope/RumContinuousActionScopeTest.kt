@@ -1743,13 +1743,13 @@ internal class RumContinuousActionScopeTest {
         forge: Forge
     ) {
         // Given
-        val fakeGlobalAttributes = forge.aFilteredMap(excludedKeys = fakeAttributes.keys) {
+        val fakeParentAttributes = forge.aFilteredMap(excludedKeys = fakeAttributes.keys) {
             anHexadecimalString() to anAsciiString()
         }
         val expectedAttributes = mutableMapOf<String, Any?>()
+        expectedAttributes.putAll(fakeParentAttributes)
         expectedAttributes.putAll(fakeAttributes)
-        expectedAttributes.putAll(fakeGlobalAttributes)
-        whenever(rumMonitor.mockInstance.getAttributes()) doReturn fakeGlobalAttributes
+        whenever(mockParentScope.getCustomAttributes()) doReturn fakeParentAttributes
         testedScope = RumActionScope(
             mockParentScope,
             rumMonitor.mockSdkCore,
@@ -1832,17 +1832,17 @@ internal class RumContinuousActionScopeTest {
     }
 
     @Test
-    fun `M send Action with initial global attributes W handleEvent(StopAction+any)`(
+    fun `M send Action with parent attributes W handleEvent(StopAction+any)`(
         forge: Forge
     ) {
         // Given
-        val fakeGlobalAttributes = forge.aFilteredMap(excludedKeys = fakeAttributes.keys) {
+        val fakeParentAttributes = forge.aFilteredMap(excludedKeys = fakeAttributes.keys) {
             anHexadecimalString() to anAsciiString()
         }
         val expectedAttributes = mutableMapOf<String, Any?>()
+        expectedAttributes.putAll(fakeParentAttributes)
         expectedAttributes.putAll(fakeAttributes)
-        expectedAttributes.putAll(fakeGlobalAttributes)
-        whenever(rumMonitor.mockInstance.getAttributes()) doReturn fakeGlobalAttributes
+        whenever(mockParentScope.getCustomAttributes()) doReturn fakeParentAttributes
         testedScope = RumActionScope(
             mockParentScope,
             rumMonitor.mockSdkCore,
@@ -1914,17 +1914,17 @@ internal class RumContinuousActionScopeTest {
     }
 
     @Test
-    fun `M send Action with global attributes after threshold W handleEvent(StopAction+any)`(
+    fun `M send Action with parent attributes after threshold W handleEvent(StopAction+any)`(
         forge: Forge
     ) {
         // Given
-        val fakeGlobalAttributes = forge.aFilteredMap(excludedKeys = fakeAttributes.keys) {
+        val fakeParentAttributes = forge.aFilteredMap(excludedKeys = fakeAttributes.keys) {
             anHexadecimalString() to anAsciiString()
         }
         val expectedAttributes = mutableMapOf<String, Any?>()
+        expectedAttributes.putAll(fakeParentAttributes)
         expectedAttributes.putAll(fakeAttributes)
-        expectedAttributes.putAll(fakeGlobalAttributes)
-        whenever(rumMonitor.mockInstance.getAttributes()) doReturn fakeGlobalAttributes
+        whenever(mockParentScope.getCustomAttributes()) doReturn fakeParentAttributes
         fakeEvent = RumRawEvent.StopAction(fakeType, fakeName, emptyMap())
 
         // When

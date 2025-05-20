@@ -18,7 +18,6 @@ import com.datadog.android.core.internal.attributes.ViewScopeInstrumentationType
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.internal.utils.loggableStackTrace
-import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumPerformanceMetric
@@ -54,7 +53,7 @@ import kotlin.math.min
 
 @Suppress("TooManyFunctions", "LargeClass", "LongParameterList")
 internal open class RumViewScope(
-    private val parentScope: RumScope,
+    override val parentScope: RumScope,
     private val sdkCore: InternalSdkCore,
     private val sessionEndedMetricDispatcher: SessionMetricDispatcher,
     internal val key: RumScopeKey,
@@ -77,9 +76,9 @@ internal open class RumViewScope(
 
     internal val url = key.url.replace('.', '/')
 
-    internal val eventAttributes: MutableMap<String, Any?> = initialAttributes.toMutableMap()
-    private var globalAttributes: Map<String, Any?> = resolveGlobalAttributes(sdkCore)
+    internal val viewAttributes: MutableMap<String, Any?> = initialAttributes.toMutableMap()
     private val internalAttributes: MutableMap<String, Any?> = mutableMapOf()
+    private var memoizedParentAttributes: Map<String, Any?> = emptyMap()
 
     private var sessionId: String = parentScope.getRumContext().sessionId
     internal var viewId: String = UUID.randomUUID().toString()
@@ -187,7 +186,6 @@ internal open class RumViewScope(
         event: RumRawEvent,
         writer: DataWriter<Any>
     ): RumScope? {
-        updateGlobalAttributes(sdkCore, event)
         when (event) {
             is RumRawEvent.ResourceSent -> onResourceSent(event, writer)
             is RumRawEvent.ActionSent -> onActionSent(event, writer)
@@ -250,6 +248,14 @@ internal open class RumViewScope(
                 viewTimestampOffset = serverTimeOffsetInMs,
                 hasReplay = false
             )
+    }
+
+    override fun getCustomAttributes(): Map<String, Any?> {
+        return if (!stopped) {
+            parentScope.getCustomAttributes() + viewAttributes
+        } else {
+            memoizedParentAttributes + viewAttributes
+        }
     }
 
     override fun isActive(): Boolean {
@@ -365,7 +371,8 @@ internal open class RumViewScope(
                         )
                     }
                 }
-                eventAttributes.putAll(event.attributes)
+                viewAttributes.putAll(event.attributes)
+                memoizedParentAttributes = parentScope.getCustomAttributes().toMap()
             }
         }
     }
@@ -427,13 +434,10 @@ internal open class RumViewScope(
         delegateEventToChildren(event, writer)
         if (stopped) return
 
-        val updatedEvent = event.copy(
-            attributes = addExtraAttributes(event.attributes)
-        )
         activeResourceScopes[event.key] = RumResourceScope.fromEvent(
             this,
             sdkCore,
-            updatedEvent,
+            event,
             firstPartyHostHeaderTypeResolver,
             serverTimeOffsetInMs,
             featuresContextResolver,
@@ -454,10 +458,11 @@ internal open class RumViewScope(
 
         val rumContext = getRumContext()
 
-        val updatedAttributes = addExtraAttributes(event.attributes)
-        val isFatal = updatedAttributes
-            .remove(RumAttributes.INTERNAL_ERROR_IS_CRASH) as? Boolean == true || event.isFatal
-        val errorFingerprint = updatedAttributes.remove(RumAttributes.ERROR_FINGERPRINT) as? String
+        val errorCustomAttributes = getCustomAttributes().toMutableMap()
+        errorCustomAttributes.putAll(event.attributes)
+        val isFatal = errorCustomAttributes.remove(RumAttributes.INTERNAL_ERROR_IS_CRASH) as? Boolean == true ||
+            event.isFatal
+        val errorFingerprint = errorCustomAttributes.remove(RumAttributes.ERROR_FINGERPRINT) as? String
         // if a cross-platform crash was already reported, do not send its native version
         if (crashCount > 0 && isFatal) return
 
@@ -559,7 +564,7 @@ internal open class RumViewScope(
                     brand = datadogContext.deviceInfo.deviceBrand,
                     architecture = datadogContext.deviceInfo.architecture
                 ),
-                context = ErrorEvent.Context(additionalProperties = updatedAttributes),
+                context = ErrorEvent.Context(additionalProperties = errorCustomAttributes),
                 dd = ErrorEvent.Dd(
                     session = ErrorEvent.DdSession(
                         sessionPrecondition = rumContext.sessionStartReason.toErrorSessionPrecondition()
@@ -897,7 +902,7 @@ internal open class RumViewScope(
         val isSlowRendered = resolveRefreshRateInfo(refreshRateInfo) ?: false
         // make a copy - by the time we iterate over it on another thread, it may already be changed
         val eventFeatureFlags = featureFlags.toMutableMap()
-        val eventAdditionalAttributes = (eventAttributes + globalAttributes).toMutableMap()
+        val viewCustomAttributes = getCustomAttributes().toMutableMap()
         val uiSlownessReport = slowFramesListener?.resolveReport(viewId, viewComplete, durationNs)
         val slowFrames = uiSlownessReport?.slowFramesRecords?.map {
             ViewEvent.SlowFrame(
@@ -957,7 +962,6 @@ internal open class RumViewScope(
             } else {
                 ViewEvent.ViewEventSessionType.SYNTHETICS
             }
-
             ViewEvent(
                 date = eventTimestamp,
                 featureFlags = ViewEvent.Context(additionalProperties = eventFeatureFlags),
@@ -1032,7 +1036,7 @@ internal open class RumViewScope(
                     brand = datadogContext.deviceInfo.deviceBrand,
                     architecture = datadogContext.deviceInfo.architecture
                 ),
-                context = ViewEvent.Context(additionalProperties = eventAdditionalAttributes),
+                context = ViewEvent.Context(additionalProperties = viewCustomAttributes),
                 dd = ViewEvent.Dd(
                     documentVersion = eventVersion,
                     session = ViewEvent.DdSession(
@@ -1048,16 +1052,6 @@ internal open class RumViewScope(
                 sessionEndedMetricDispatcher.onViewTracked(sessionId, this)
             }
         }.submit()
-    }
-
-    private fun updateGlobalAttributes(sdkCore: InternalSdkCore, event: RumRawEvent) {
-        if (!stopped && event !is RumRawEvent.StartView) {
-            globalAttributes = resolveGlobalAttributes(sdkCore)
-        }
-    }
-
-    private fun resolveGlobalAttributes(sdkCore: InternalSdkCore): Map<String, Any?> {
-        return GlobalRumMonitor.get(sdkCore).getAttributes().toMap()
     }
 
     private fun resolveViewDuration(event: RumRawEvent) {
@@ -1114,12 +1108,6 @@ internal open class RumViewScope(
         null
     }
 
-    private fun addExtraAttributes(
-        attributes: Map<String, Any?>
-    ): MutableMap<String, Any?> {
-        return attributes.toMutableMap().apply { putAll(globalAttributes) }
-    }
-
     @Suppress("LongMethod")
     @WorkerThread
     private fun onApplicationStarted(
@@ -1128,7 +1116,7 @@ internal open class RumViewScope(
     ) {
         pendingActionCount++
         val rumContext = getRumContext()
-        val localCopyOfGlobalAttributes = globalAttributes.toMutableMap()
+        val actionCustomAttributes = getCustomAttributes().toMutableMap()
         sdkCore.newRumEventWriteOperation(writer) { datadogContext ->
             val user = datadogContext.userInfo
             val syntheticsAttribute = if (
@@ -1199,7 +1187,7 @@ internal open class RumViewScope(
                     architecture = datadogContext.deviceInfo.architecture
                 ),
                 context = ActionEvent.Context(
-                    additionalProperties = localCopyOfGlobalAttributes
+                    additionalProperties = actionCustomAttributes
                 ),
                 dd = ActionEvent.Dd(
                     session = ActionEvent.DdSession(
@@ -1231,9 +1219,10 @@ internal open class RumViewScope(
         if (stopped) return
 
         val rumContext = getRumContext()
-        val updatedAttributes = addExtraAttributes(
-            mapOf(RumAttributes.LONG_TASK_TARGET to event.target)
-        )
+        val longTaskCustomAttributes = getCustomAttributes().toMutableMap().apply {
+            put(RumAttributes.LONG_TASK_TARGET, event.target)
+        }
+
         val timestamp = event.eventTime.timestamp + serverTimeOffsetInMs
         val isFrozenFrame = event.durationNs > FROZEN_FRAME_THRESHOLD_NS
         slowFramesListener?.onAddLongTask(event.durationNs)
@@ -1307,7 +1296,7 @@ internal open class RumViewScope(
                     brand = datadogContext.deviceInfo.deviceBrand,
                     architecture = datadogContext.deviceInfo.architecture
                 ),
-                context = LongTaskEvent.Context(additionalProperties = updatedAttributes),
+                context = LongTaskEvent.Context(additionalProperties = longTaskCustomAttributes),
                 dd = LongTaskEvent.Dd(
                     session = LongTaskEvent.DdSession(
                         sessionPrecondition = rumContext.sessionStartReason.toLongTaskSessionPrecondition()
@@ -1367,7 +1356,7 @@ internal open class RumViewScope(
         viewChangedListener?.onViewChanged(
             RumViewInfo(
                 key = key,
-                attributes = eventAttributes,
+                attributes = viewAttributes,
                 isActive = isActive()
             )
         )
