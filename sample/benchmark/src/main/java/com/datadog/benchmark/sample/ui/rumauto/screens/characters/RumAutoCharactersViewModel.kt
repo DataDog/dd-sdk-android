@@ -8,6 +8,7 @@ package com.datadog.benchmark.sample.ui.rumauto.screens.characters
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.datadog.benchmark.sample.navigation.RumAutoScenarioNavigator
 import com.datadog.benchmark.sample.network.KtorHttpResponse
 import com.datadog.benchmark.sample.network.rickandmorty.RickAndMortyNetworkService
 import com.datadog.benchmark.sample.network.rickandmorty.models.CharacterResponse
@@ -31,6 +32,8 @@ internal sealed interface RumAutoCharactersScreenAction {
 
     object LoadNextPage : RumAutoCharactersScreenAction
     data class VisibleItemsChanged(val items: Set<String>): RumAutoCharactersScreenAction
+
+    data class CharacterItemClicked(val characterId: Int): RumAutoCharactersScreenAction
 
     object EndReached : RumAutoCharactersScreenAction
 
@@ -63,6 +66,7 @@ internal data class RumAutoCharactersScreenState(
 internal class RumAutoCharactersViewModel(
     private val rickAndMortyNetworkService: RickAndMortyNetworkService,
     private val defaultDispatcher: CoroutineDispatcher,
+    private val rumAutoScenarioNavigator: RumAutoScenarioNavigator
 ): ViewModel() {
 
     private val stateMachine = StateMachine.create(
@@ -88,10 +92,19 @@ internal class RumAutoCharactersViewModel(
             return prev
         }
 
-        return prev.copy(
-            pages = processPages(prev, action),
-            task = processTask(prev, action)
-        )
+        return when (action) {
+            is RumAutoCharactersScreenAction.CharacterItemClicked -> {
+                viewModelScope.launch {
+                    rumAutoScenarioNavigator.openCharacterScreen(action.characterId)
+                }
+                prev
+            }
+            else -> prev.copy(
+                pages = processPages(prev, action),
+                task = processTask(prev, action)
+            )
+        }
+
     }
 
     private fun processTask(prev: RumAutoCharactersScreenState, action: RumAutoCharactersScreenAction): Pair<PageLoadingTask, PageLoadingTaskResult>? {

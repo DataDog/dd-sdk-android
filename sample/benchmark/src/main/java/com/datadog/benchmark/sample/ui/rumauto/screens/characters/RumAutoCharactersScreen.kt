@@ -9,6 +9,7 @@
 package com.datadog.benchmark.sample.ui.rumauto.screens.characters
 
 import android.util.Log
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.lazy.LazyColumn
@@ -68,7 +69,9 @@ internal fun RumAutoCharactersScreen(
     LazyColumn(modifier = modifier, state = lazyListState) {
         items(items = allItems, key = { it.id }) { item ->
             CharacterItemView(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { dispatch(RumAutoCharactersScreenAction.CharacterItemClicked(item.id)) },
                 character = item
             )
         }

@@ -23,6 +23,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.tooling.preview.Preview
 
+// TODO WAHAHA selected tab state
 @Composable
 internal fun RumAutoBottomNavBar(
     dispatch: (RumAutoScenarioAction) -> Unit
