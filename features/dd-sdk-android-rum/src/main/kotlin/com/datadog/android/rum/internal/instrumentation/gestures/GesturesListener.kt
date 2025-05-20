@@ -266,8 +266,8 @@ internal class GesturesListener(
                 it.extractAttributes(view, attributes)
             }
         }
-        target.tag?.let {
-            // TODO RUM-9345: Enrich Compose action target attributes.
+        target.node?.let {
+            attributes.putAll(it.customAttributes)
         }
         GlobalRumMonitor.get(sdkCore).addAction(
             RumActionType.TAP,
@@ -289,8 +289,8 @@ internal class GesturesListener(
                 it.extractAttributes(view, attributes)
             }
         }
-        scrollTarget.tag?.let {
-            // TODO RUM-9345: Enrich Compose action target attributes.
+        scrollTarget.node?.let {
+            attributes.putAll(it.customAttributes)
         }
         if (onUpEvent != null) {
             gestureDirection = resolveGestureDirection(onUpEvent)

@@ -13,11 +13,14 @@ import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.node.LayoutNode
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsModifier
+import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import com.datadog.android.Datadog
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.compose.DatadogSemanticsPropertyKey
+import com.datadog.android.rum.RumAttributes.ACTION_TARGET_ROLE
+import com.datadog.android.rum.RumAttributes.ACTION_TARGET_SELECTED
 
 internal class LayoutNodeUtils {
 
@@ -60,10 +63,22 @@ internal class LayoutNodeUtils {
                 TargetNode(
                     tag = it,
                     isClickable = isClickable,
-                    isScrollable = isScrollable
+                    isScrollable = isScrollable,
+                    customAttributes = resolveCustomAttributes(node)
                 )
             }
         }
+    }
+
+    private fun resolveCustomAttributes(node: LayoutNode): Map<String, Any?> {
+        return node.collapsedSemantics?.let { configuration ->
+            val selected = configuration.getOrNull(SemanticsProperties.Selected)
+            val role = configuration.getOrNull(SemanticsProperties.Role)
+            mapOf(
+                ACTION_TARGET_SELECTED to selected,
+                ACTION_TARGET_ROLE to role
+            )
+        }.orEmpty()
     }
 
     fun getLayoutNodeBoundsInWindow(node: LayoutNode): Rect? {
@@ -92,7 +107,8 @@ internal class LayoutNodeUtils {
     data class TargetNode(
         val tag: String,
         val isScrollable: Boolean,
-        val isClickable: Boolean
+        val isClickable: Boolean,
+        val customAttributes: Map<String, Any?> = mapOf()
     )
 
     companion object {

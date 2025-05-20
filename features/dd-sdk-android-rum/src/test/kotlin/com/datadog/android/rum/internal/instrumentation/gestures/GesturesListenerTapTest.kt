@@ -20,6 +20,7 @@ import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.internal.instrumentation.gestures.GesturesListenerScrollSwipeTest.ScrollableListView
 import com.datadog.android.rum.tracking.ActionTrackingStrategy
 import com.datadog.android.rum.tracking.InteractionPredicate
+import com.datadog.android.rum.tracking.Node
 import com.datadog.android.rum.tracking.ViewAttributesProvider
 import com.datadog.android.rum.tracking.ViewTarget
 import com.datadog.android.rum.utils.forge.Configurator
@@ -364,7 +365,7 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
         val y = mockEvent.y
         val mockComposeActionTrackingStrategy: ActionTrackingStrategy = mock {
             whenever(it.findTargetForTap(composeView, x, y))
-                .thenReturn(ViewTarget(WeakReference(null), targetName))
+                .thenReturn(ViewTarget(WeakReference(null), Node(name = targetName)))
         }
         testedListener = GesturesListener(
             rumMonitor.mockSdkCore,
@@ -793,6 +794,76 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
             mockDecorView,
             startDownEvent.x,
             startDownEvent.y
+        )
+    }
+
+    @Test
+    fun `M add compose node attributes W send Tap action`(forge: Forge) {
+        val mockEvent: MotionEvent = forge.getForgery()
+        val targetId = forge.anInt()
+        val fakeCustomTargetName = forge.anAlphabeticalString()
+        val validTarget: View = mockView(
+            id = targetId,
+            forEvent = mockEvent,
+            hitTest = true,
+            forge = forge,
+            clickable = true
+        )
+        val fakeAttributes = mapOf(
+            RumAttributes.ACTION_TARGET_ROLE to forge.aString(),
+            RumAttributes.ACTION_TARGET_SELECTED to forge.aString()
+        )
+        val mockInteractionPredicate: InteractionPredicate = mock {
+            whenever(it.getTargetName(validTarget)).thenReturn(fakeCustomTargetName)
+        }
+        val mockComposeActionTrackingStrategy = mock<ActionTrackingStrategy>()
+        val mockAndroidActionTrackingStrategy = mock<ActionTrackingStrategy>()
+        mockDecorView = mockDecorView<ViewGroup>(
+            id = forge.anInt(),
+            forEvent = mockEvent,
+            hitTest = false,
+            forge = forge
+        ) {
+            whenever(it.childCount).thenReturn(1)
+            whenever(it.getChildAt(0)).thenReturn(validTarget)
+        }
+        val expectedResourceName = forge.anAlphabeticalString()
+        mockResourcesForTarget(validTarget, expectedResourceName)
+
+        testedListener = GesturesListener(
+            rumMonitor.mockSdkCore,
+            WeakReference(mockWindow),
+            interactionPredicate = mockInteractionPredicate,
+            contextRef = WeakReference(mockAppContext),
+            internalLogger = mockInternalLogger,
+            androidActionTrackingStrategy = mockAndroidActionTrackingStrategy,
+            composeActionTrackingStrategy = mockComposeActionTrackingStrategy
+        )
+
+        whenever(
+            mockAndroidActionTrackingStrategy.findTargetForTap(
+                mockDecorView,
+                mockEvent.x,
+                mockEvent.y
+            )
+        ).thenReturn(ViewTarget(viewRef = WeakReference<View?>(null)))
+
+        whenever(
+            mockComposeActionTrackingStrategy.findTargetForTap(
+                mockDecorView,
+                mockEvent.x,
+                mockEvent.y
+            )
+        ).thenReturn(ViewTarget(node = Node(fakeCustomTargetName, fakeAttributes)))
+
+        // When
+        testedListener.onSingleTapUp(mockEvent)
+
+        // Then
+        verify(rumMonitor.mockInstance).addAction(
+            RumActionType.TAP,
+            fakeCustomTargetName,
+            fakeAttributes
         )
     }
 
