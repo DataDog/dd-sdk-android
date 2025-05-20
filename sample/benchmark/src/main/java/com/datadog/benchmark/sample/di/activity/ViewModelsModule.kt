@@ -94,18 +94,5 @@ internal interface ViewModelsModule {
                 )
             }
         }
-
-        @Provides
-        @ViewModelQualifier(RumAutoCharacterDetailsViewModel::class)
-        fun provideRumAutoCharacterDetailsViewModelFactory(
-            @CoroutineDispatcherQualifier(CoroutineDispatcherType.Default)
-            defaultDispatcher: CoroutineDispatcher,
-        ) = viewModelFactory {
-            initializer {
-                RumAutoCharacterDetailsViewModel(
-                    defaultDispatcher = defaultDispatcher,
-                )
-            }
-        }
     }
 }

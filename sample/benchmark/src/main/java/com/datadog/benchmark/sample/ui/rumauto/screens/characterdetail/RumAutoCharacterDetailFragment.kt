@@ -14,19 +14,15 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.ComposeView
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.datadog.benchmark.sample.benchmarkActivityComponent
-import com.datadog.benchmark.sample.di.activity.ViewModelQualifier
 import com.datadog.benchmark.sample.network.rickandmorty.models.Character
 import javax.inject.Inject
 
 internal class RumAutoCharacterDetailFragment: Fragment() {
 
     @Inject
-    @ViewModelQualifier(RumAutoCharacterDetailsViewModel::class)
-    internal lateinit var viewModelFactory: ViewModelProvider.Factory
-
+    internal lateinit var viewModelFactory: AssistedRumAutoCharacterDetailViewModelFactory
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -35,14 +31,15 @@ internal class RumAutoCharacterDetailFragment: Fragment() {
     ): View {
         requireActivity().benchmarkActivityComponent.inject(this)
 
-        val viewModel: RumAutoCharacterDetailsViewModel by viewModels { viewModelFactory }
-
-        val character = arguments?.getParcelable<Character>("character")
+        val viewModel: RumAutoCharacterDetailsViewModel by viewModels {
+            val character = arguments?.getParcelable<Character>("character")
+            viewModelFactory.create(character!!)
+        }
 
         return ComposeView(requireContext()).apply {
             setContent {
                  val state by viewModel.state.collectAsStateWithLifecycle()
-                RumAutoCharacterScreen("${state.message} ${character?.name}")
+                RumAutoCharacterScreen(state.message)
             }
         }
     }
