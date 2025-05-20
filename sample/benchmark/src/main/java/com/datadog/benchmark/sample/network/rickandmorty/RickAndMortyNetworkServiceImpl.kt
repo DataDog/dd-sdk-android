@@ -57,6 +57,14 @@ internal class RickAndMortyNetworkServiceImpl @Inject constructor(
 
         return httpClient.safeGet(url)
     }
+
+    override suspend fun getEpisodes(ids: List<String>): KtorHttpResponse<List<Episode>> {
+        val url = URLBuilder(BASE_URL).apply {
+            appendPathSegments(EPISODE_PATH, ids.joinToString(","))
+        }.build()
+
+        return httpClient.safeGet<List<Episode>>(url)
+    }
 }
 
 private const val BASE_URL = "https://rickandmortyapi.com/api"

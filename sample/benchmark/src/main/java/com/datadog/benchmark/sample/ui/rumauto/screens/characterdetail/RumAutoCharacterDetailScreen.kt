@@ -6,7 +6,6 @@
 
 package com.datadog.benchmark.sample.ui.rumauto.screens.characterdetail
 
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Text
@@ -14,22 +13,36 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import coil.compose.AsyncImage
-import com.datadog.benchmark.sample.network.rickandmorty.models.Character
+import com.datadog.benchmark.sample.ui.common.ExpandableListCard
 
 @Composable
-internal fun RumAutoCharacterScreen(character: Character, modifier: Modifier = Modifier) {
+internal fun RumAutoCharacterScreen(
+    state: RumAutoCharacterState,
+    modifier: Modifier = Modifier,
+    dispatch: (RumAutoCharacterAction) -> Unit = {}
+) {
     Column(
         modifier = modifier.fillMaxSize(),
     ) {
         AsyncImage(
-            model = character.image,
-            contentDescription = character.name,
+            model = state.character.image,
+            contentDescription = state.character.name,
             modifier = Modifier.align(Alignment.CenterHorizontally)
         )
-        Text(text = character.name)
-        Text(text = character.status.toString())
-        Text(text = character.species)
-        Text(text = character.gender.toString())
-        Text(text = character.created)
+        Text(text = state.character.name)
+        Text(text = state.character.status.toString())
+        Text(text = state.character.species)
+        Text(text = state.character.gender.toString())
+        Text(text = state.character.created)
+
+        ExpandableListCard(
+            title = "Appears in ${state.character.episode.count()} episodes",
+            items = state.episodesTask?.optionalResult?.optionalResult?.map { it.name } ?: emptyList(),
+            onTitleClicked = { isExpanded ->
+                if (isExpanded) {
+                    dispatch(RumAutoCharacterAction.LoadEpisodes)
+                }
+            }
+        )
     }
 }

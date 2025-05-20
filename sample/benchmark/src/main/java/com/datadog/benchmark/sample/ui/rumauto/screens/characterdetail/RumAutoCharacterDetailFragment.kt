@@ -40,7 +40,7 @@ internal class RumAutoCharacterDetailFragment: Fragment() {
         return ComposeView(requireContext()).apply {
             setContent {
                  val state by viewModel.state.collectAsStateWithLifecycle()
-                RumAutoCharacterScreen(state.character)
+                RumAutoCharacterScreen(state, dispatch = viewModel::dispatch)
             }
         }
     }

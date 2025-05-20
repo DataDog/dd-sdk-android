@@ -18,4 +18,5 @@ internal interface RickAndMortyNetworkService {
     suspend fun getEpisode(id: Int): KtorHttpResponse<Episode>
 
     suspend fun getCharacters(nextPageUrl: String?): KtorHttpResponse<CharacterResponse>
+    suspend fun getEpisodes(ids: List<String>): KtorHttpResponse<List<Episode>>
 }
