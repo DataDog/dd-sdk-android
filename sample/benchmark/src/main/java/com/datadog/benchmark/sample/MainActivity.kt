@@ -17,6 +17,7 @@ import androidx.compose.ui.platform.ComposeView
 import androidx.core.content.edit
 import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.findNavController
+import androidx.recyclerview.widget.ConcatAdapter
 import com.datadog.benchmark.DatadogBaseMeter
 import com.datadog.benchmark.sample.config.BenchmarkConfig
 import com.datadog.benchmark.sample.config.SyntheticsScenario

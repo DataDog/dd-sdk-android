@@ -17,6 +17,7 @@ import com.datadog.benchmark.sample.ui.rumauto.screens.characterdetail.RumAutoCh
 import com.datadog.benchmark.sample.ui.rumauto.screens.characters.RumAutoCharactersFragment
 import com.datadog.benchmark.sample.ui.rumauto.screens.docs.RumAutoDocsFragment
 import com.datadog.benchmark.sample.ui.rumauto.screens.episodes.RumAutoEpisodesFragment
+import com.datadog.benchmark.sample.ui.rumauto.screens.episodeslist.RumAutoEpisodesListFragment
 import com.datadog.benchmark.sample.ui.rumauto.screens.locations.RumAutoLocationsFragment
 import com.datadog.sample.benchmark.R
 import javax.inject.Inject
@@ -32,7 +33,7 @@ internal class RumAutoScenarioNavigator @Inject constructor() {
             fragment<RumAutoCharactersFragment>(CHARACTERS_TAB_FRAGMENT_KEY) {
                 label = "Characters screen"
             }
-            fragment<RumAutoEpisodesFragment>(EPISODES_TAB_FRAGMENT_KEY) {
+            fragment<RumAutoEpisodesListFragment>(EPISODES_TAB_FRAGMENT_KEY) {
                 label = "Episodes screen"
             }
             fragment<RumAutoLocationsFragment>(LOCATIONS_TAB_FRAGMENT_KEY) {

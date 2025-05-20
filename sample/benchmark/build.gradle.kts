@@ -41,6 +41,7 @@ android {
 
     buildFeatures {
         compose = true
+        viewBinding = true
     }
     composeOptions {
         kotlinCompilerExtensionVersion = libs.versions.androidXComposeRuntime.get()
@@ -86,6 +87,7 @@ dependencies {
     implementation(libs.kotlin)
 
     // Android dependencies
+    implementation(libs.adapterDelegatesViewBinding)
     implementation(libs.androidXMultidex)
     implementation(libs.bundles.androidXNavigation)
     implementation(libs.androidXAppCompat)

@@ -10,7 +10,9 @@ import com.datadog.benchmark.sample.network.KtorHttpResponse
 import com.datadog.benchmark.sample.network.rickandmorty.models.Character
 import com.datadog.benchmark.sample.network.rickandmorty.models.CharacterResponse
 import com.datadog.benchmark.sample.network.rickandmorty.models.Episode
+import com.datadog.benchmark.sample.network.rickandmorty.models.EpisodeResponse
 import com.datadog.benchmark.sample.network.rickandmorty.models.Location
+import com.datadog.benchmark.sample.network.rickandmorty.models.LocationResponse
 import com.datadog.benchmark.sample.network.safeGet
 import io.ktor.client.HttpClient
 import io.ktor.http.URLBuilder
@@ -36,6 +38,18 @@ internal class RickAndMortyNetworkServiceImpl @Inject constructor(
         }.build()
 
         return httpClient.safeGet<Location>(url)
+    }
+
+    override suspend fun getLocations(nextPageUrl: String?): KtorHttpResponse<LocationResponse> {
+        val url = if (nextPageUrl != null) {
+            Url(nextPageUrl)
+        } else {
+            URLBuilder(BASE_URL).apply {
+                appendPathSegments(LOCATION_PATH)
+            }.build()
+        }
+
+        return httpClient.safeGet(url)
     }
 
     override suspend fun getEpisode(id: Int): KtorHttpResponse<Episode> {
@@ -64,6 +78,18 @@ internal class RickAndMortyNetworkServiceImpl @Inject constructor(
         }.build()
 
         return httpClient.safeGet<List<Episode>>(url)
+    }
+
+    override suspend fun getEpisodes(nextPageUrl: String?): KtorHttpResponse<EpisodeResponse> {
+        val url = if (nextPageUrl != null) {
+            Url(nextPageUrl)
+        } else {
+            URLBuilder(BASE_URL).apply {
+                appendPathSegments(EPISODE_PATH)
+            }.build()
+        }
+
+        return httpClient.safeGet(url)
     }
 }
 

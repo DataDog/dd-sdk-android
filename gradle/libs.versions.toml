@@ -8,6 +8,7 @@ kronosNTP = "0.0.1-alpha11"
 kotlinxSerialization = "1.6.3"
 
 # Android
+adapterDelegates = "4.3.2"
 androidDesugaringSdk = "2.0.4"
 androidToolsPlugin = "8.9.1"
 androidXAnnotations = "1.9.1"
@@ -134,6 +135,7 @@ kronosNTP = { module = "com.lyft.kronos:kronos-android", version.ref = "kronosNT
 assertJ = { module = "org.assertj:assertj-core", version.ref = "assertJ" }
 
 # Android libs
+adapterDelegatesViewBinding = { module = "com.hannesdorfmann:adapterdelegates4-kotlin-dsl-viewbinding", version.ref = "adapterDelegates" }
 androidDesugaringSdk = { module = "com.android.tools:desugar_jdk_libs", version.ref = "androidDesugaringSdk" }
 androidXAnnotation = { module = "androidx.annotation:annotation", version.ref = "androidXAnnotations" }
 androidXAppCompat = { module = "androidx.appcompat:appcompat", version.ref = "androidXAppCompat" }
