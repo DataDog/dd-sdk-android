@@ -205,6 +205,7 @@ internal class DatadogRumMonitorTest {
             val callback = it.getArgument<(DatadogContext, EventWriteScope) -> Unit>(0)
             callback.invoke(fakeDatadogContext, mockEventWriteScope)
         }
+        whenever(mockRumFeatureScope.getWriteContextSync()) doReturn (fakeDatadogContext to mockEventWriteScope)
 
         fakeAttributes = forge.exhaustiveAttributes()
         testedMonitor = DatadogRumMonitor(
