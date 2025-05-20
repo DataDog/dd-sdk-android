@@ -3,9 +3,8 @@
  * This product includes software developed at Datadog (https://www.datadoghq.com/).
  * Copyright 2016-Present Datadog, Inc.
  */
-package com.datadog.internal.collections
+package com.datadog.android.internal.collections
 
-import com.datadog.android.internal.collections.EvictingQueue
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow

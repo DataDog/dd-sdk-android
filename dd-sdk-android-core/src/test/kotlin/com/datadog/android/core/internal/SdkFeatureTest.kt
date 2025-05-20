@@ -522,6 +522,38 @@ internal class SdkFeatureTest {
     }
 
     @Test
+    fun `M provide Datadog context W withContext(callback)`(
+        @Forgery fakeContext: DatadogContext
+    ) {
+        // Given
+        testedFeature.storage = mockStorage
+        val callback = mock<(DatadogContext) -> Unit>()
+        whenever(coreFeature.mockInstance.contextProvider.context) doReturn fakeContext
+
+        // When
+        testedFeature.withContext(callback = callback)
+
+        // Then
+        verify(callback).invoke(fakeContext)
+    }
+
+    @Test
+    fun `M do nothing W withContext(callback) { no Datadog context }`() {
+        // Given
+        testedFeature.storage = mockStorage
+        val callback = mock<(DatadogContext) -> Unit>()
+
+        whenever(coreFeature.mockInstance.contextProvider) doReturn NoOpContextProvider()
+
+        // When
+        testedFeature.withContext(callback = callback)
+
+        // Then
+        verifyNoInteractions(mockStorage)
+        verifyNoInteractions(callback)
+    }
+
+    @Test
     fun `M provide write context W getWriteContextSync()`(
         @Forgery fakeContext: DatadogContext,
         @Mock mockEventWriteScope: EventWriteScope

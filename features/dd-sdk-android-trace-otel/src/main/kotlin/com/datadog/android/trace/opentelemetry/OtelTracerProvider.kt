@@ -11,9 +11,10 @@ import androidx.annotation.IntRange
 import com.datadog.android.Datadog
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.SdkCore
+import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
-import com.datadog.android.log.LogAttributes
+import com.datadog.android.internal.concurrent.CompletableFuture
 import com.datadog.android.trace.InternalCoreWriterProvider
 import com.datadog.android.trace.TracingHeaderType
 import com.datadog.android.trace.opentelemetry.internal.DatadogContextStorageWrapper
@@ -21,6 +22,7 @@ import com.datadog.android.trace.opentelemetry.internal.NoOpCoreTracerWriter
 import com.datadog.android.trace.opentelemetry.internal.addActiveTraceToContext
 import com.datadog.android.trace.opentelemetry.internal.executeIfJavaFunctionPackageExists
 import com.datadog.android.trace.opentelemetry.internal.removeActiveTraceFromContext
+import com.datadog.opentelemetry.trace.OtelSpanBuilder
 import com.datadog.opentelemetry.trace.OtelTracerBuilder
 import com.datadog.trace.api.IdGenerationStrategy
 import com.datadog.trace.api.config.TracerConfig
@@ -310,31 +312,18 @@ class OtelTracerProvider internal constructor(
 
     private fun resolveSpanBuilderDecorator(): (SpanBuilder) -> SpanBuilder {
         return if (bundleWithRumEnabled) {
-            resolveDecoratorFromRumContext()
+            resolveDecoratorWithRumContext()
         } else {
             NO_OP_SPAN_BUILDER_DECORATOR
         }
     }
 
-    private fun resolveDecoratorFromRumContext(): (SpanBuilder) -> SpanBuilder = { spanBuilder ->
-        val rumContext = sdkCore.getFeatureContext(Feature.RUM_FEATURE_NAME)
-        val applicationId = rumContext[RUM_APPLICATION_ID_KEY] as? String
-        val sessionId = rumContext[RUM_SESSION_ID_KEY] as? String
-        val viewId = rumContext[RUM_VIEW_ID_KEY] as? String
-        val actionId = rumContext[RUM_ACTION_ID_KEY] as? String
-        if (applicationId != null && sessionId != null && viewId != null) {
-            spanBuilder.setAttribute(LogAttributes.RUM_APPLICATION_ID, applicationId)
-            spanBuilder.setAttribute(LogAttributes.RUM_SESSION_ID, sessionId)
-            spanBuilder.setAttribute(LogAttributes.RUM_VIEW_ID, viewId)
-            if (actionId != null) {
-                spanBuilder.setAttribute(LogAttributes.RUM_ACTION_ID, actionId)
-            }
-        } else {
-            internalLogger.log(
-                InternalLogger.Level.WARN,
-                InternalLogger.Target.USER,
-                { RUM_CONTEXT_MISSING_ERROR_MESSAGE }
-            )
+    private fun resolveDecoratorWithRumContext(): (SpanBuilder) -> SpanBuilder = { spanBuilder ->
+        val rumFeature = sdkCore.getFeature(Feature.RUM_FEATURE_NAME)
+        if (rumFeature != null) {
+            val lazyContext = CompletableFuture<DatadogContext>()
+            rumFeature.withContext { lazyContext.complete(it) }
+            (spanBuilder as? OtelSpanBuilder)?.setLazyDatadogContext(lazyContext)
         }
         spanBuilder
     }

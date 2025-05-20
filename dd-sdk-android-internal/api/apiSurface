@@ -4,6 +4,10 @@ class com.datadog.android.internal.collections.EvictingQueue<T> : java.util.Queu
   override fun add(T): Boolean
   override fun offer(T): Boolean
   override fun addAll(Collection<T>): Boolean
+class com.datadog.android.internal.concurrent.CompletableFuture<T: Any>
+  var value: T
+  fun isComplete(): Boolean
+  fun complete(T)
 interface com.datadog.android.internal.profiler.BenchmarkCounter
   fun add(Long, Map<String, String>)
 interface com.datadog.android.internal.profiler.BenchmarkMeter
