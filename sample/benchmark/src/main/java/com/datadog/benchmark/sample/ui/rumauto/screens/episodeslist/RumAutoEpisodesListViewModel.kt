@@ -6,6 +6,7 @@
 
 package com.datadog.benchmark.sample.ui.rumauto.screens.episodeslist
 
+import androidx.compose.runtime.Stable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -43,6 +44,8 @@ internal sealed interface RumAutoEpisodesListAction {
         val response: KtorHttpResponse<EpisodeResponse>,
         val task: EpisodesTaskKey
     ): RumAutoEpisodesListAction
+
+    object EndReached: RumAutoEpisodesListAction
 }
 
 internal data class RumAutoEpisodesListState(
