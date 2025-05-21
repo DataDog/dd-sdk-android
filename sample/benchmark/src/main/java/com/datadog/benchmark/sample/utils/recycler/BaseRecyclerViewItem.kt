@@ -14,7 +14,23 @@ internal interface BaseRecyclerViewItem {
     val key: String
 }
 
-internal fun calculateRvDiff(
+@SuppressLint("NotifyDataSetChanged")
+internal fun ListDelegationAdapter<List<BaseRecyclerViewItem>>.applyNewItems(
+    newItems: List<BaseRecyclerViewItem>,
+    detectMoves: Boolean = false,
+) {
+    val itemsImpl = items
+    if (itemsImpl == null) {
+        items = newItems
+        notifyDataSetChanged()
+    } else {
+        val diff = calculateRvDiff(itemsImpl, newItems, detectMoves)
+        items = newItems
+        diff.dispatchUpdatesTo(this)
+    }
+}
+
+private fun calculateRvDiff(
     oldList: List<BaseRecyclerViewItem>,
     newList: List<BaseRecyclerViewItem>,
     detectMoves: Boolean = false
@@ -38,17 +54,4 @@ internal fun calculateRvDiff(
     }
 
     return DiffUtil.calculateDiff(callback, detectMoves)
-}
-
-@SuppressLint("NotifyDataSetChanged")
-internal fun ListDelegationAdapter<List<BaseRecyclerViewItem>>.applyNewItems(newItems: List<BaseRecyclerViewItem>) {
-    val itemsImpl = items
-    if (itemsImpl == null) {
-        items = newItems
-        notifyDataSetChanged()
-    } else {
-        val diff = calculateRvDiff(itemsImpl, newItems)
-        items = newItems
-        diff.dispatchUpdatesTo(this)
-    }
 }

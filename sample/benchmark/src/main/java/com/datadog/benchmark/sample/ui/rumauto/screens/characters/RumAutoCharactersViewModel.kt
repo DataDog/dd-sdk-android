@@ -31,9 +31,6 @@ internal sealed interface RumAutoCharactersScreenAction {
         }
     }
 
-    object LoadNextPage : RumAutoCharactersScreenAction
-    data class VisibleItemsChanged(val items: Set<String>): RumAutoCharactersScreenAction
-
     data class CharacterItemClicked(val character: Character): RumAutoCharactersScreenAction
 
     object EndReached : RumAutoCharactersScreenAction

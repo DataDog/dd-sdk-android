@@ -15,7 +15,7 @@ import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChangedBy
 import kotlinx.coroutines.flow.flowOn
-import kotlin.time.Duration.Companion.seconds
+import kotlin.time.Duration.Companion.milliseconds
 
 @OptIn(FlowPreview::class)
 @Composable
@@ -40,7 +40,7 @@ internal fun <T, I> LastItemTracker(
 
         lastItemChanges
             .distinctUntilChangedBy { it.first }
-            .debounce(2.seconds)
+            .debounce(500.milliseconds)
             .flowOn(Dispatchers.Default)
             .collect { (indexOfLastVisible, lastIndex) ->
                 if (indexOfLastVisible == lastIndex) {

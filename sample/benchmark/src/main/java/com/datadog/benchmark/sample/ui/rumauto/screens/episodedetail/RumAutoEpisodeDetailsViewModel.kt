@@ -79,12 +79,7 @@ internal class RumAutoEpisodeDetailsViewModel(
         processAction = ::processAction
     )
 
-    val state: Flow<List<BaseRecyclerViewItem>> = stateMachine.state.map {
-        listOf(
-            DetailsHeaderItem(it.episode.name, "header"),
-            DetailsInfoItem("Air date", it.episode.created, "info_air_date")
-        )
-    }
+    val state: Flow<List<BaseRecyclerViewItem>> = stateMachine.state.map { it.toViewState() }
 
     fun dispatch(action: RumAutoEpisodeDetailsAction) {
         stateMachine.dispatch(action)
@@ -109,5 +104,15 @@ internal class RumAutoEpisodeDetailsViewModel(
 
     private fun characterIds(episode: Episode): List<String> {
         return episode.characters.mapNotNull { it.split("/").lastOrNull() }
+    }
+
+    private fun RumAutoEpisodeDetailsState.toViewState(): List<BaseRecyclerViewItem> {
+        return listOf(
+            DetailsHeaderItem(text = episode.name, "header"),
+            DetailsInfoItem(startText = "Episode", endText = episode.episodeCode, key = "code"),
+            DetailsInfoItem(startText = "Air date", endText = episode.airDate, key = "info_air_date"),
+            DetailsInfoItem(startText = "Created", endText = episode.created, key = "created"),
+            DetailsHeaderItem(text = "Characters: ${episode.characters.count()}", key = "characters_count")
+        )
     }
 }
