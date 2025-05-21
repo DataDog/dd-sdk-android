@@ -8,10 +8,11 @@ package com.datadog.benchmark.sample.ui.rumauto.screens.episodedetail
 
 import com.datadog.benchmark.sample.ui.rumauto.screens.common.details.detailsHeaderItemDelegate
 import com.datadog.benchmark.sample.ui.rumauto.screens.common.details.detailsInfoItemDelegate
+import com.datadog.benchmark.sample.utils.recycler.BaseRecyclerViewItem
 import com.hannesdorfmann.adapterdelegates4.ListDelegationAdapter
 import javax.inject.Inject
 
-internal class RumAutoEpisodeDetailsAdapter @Inject constructor(): ListDelegationAdapter<List<Any>>() {
+internal class RumAutoEpisodeDetailsAdapter @Inject constructor(): ListDelegationAdapter<List<BaseRecyclerViewItem>>() {
     init {
         delegatesManager.addDelegate(detailsInfoItemDelegate())
         delegatesManager.addDelegate(detailsHeaderItemDelegate())

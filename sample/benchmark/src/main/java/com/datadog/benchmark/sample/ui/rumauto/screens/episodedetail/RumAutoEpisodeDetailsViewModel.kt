@@ -19,6 +19,7 @@ import com.datadog.benchmark.sample.ui.rumauto.screens.common.details.DetailsHea
 import com.datadog.benchmark.sample.ui.rumauto.screens.common.details.DetailsInfoItem
 import com.datadog.benchmark.sample.utils.BenchmarkAsyncTask
 import com.datadog.benchmark.sample.utils.StateMachine
+import com.datadog.benchmark.sample.utils.recycler.BaseRecyclerViewItem
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
@@ -78,10 +79,10 @@ internal class RumAutoEpisodeDetailsViewModel(
         processAction = ::processAction
     )
 
-    val state: Flow<List<Any>> = stateMachine.state.map {
+    val state: Flow<List<BaseRecyclerViewItem>> = stateMachine.state.map {
         listOf(
-            DetailsHeaderItem(it.episode.name),
-            DetailsInfoItem("Air date", it.episode.created)
+            DetailsHeaderItem(it.episode.name, "header"),
+            DetailsInfoItem("Air date", it.episode.created, "info_air_date")
         )
     }
 

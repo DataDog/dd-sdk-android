@@ -6,15 +6,17 @@
 
 package com.datadog.benchmark.sample.ui.rumauto.screens.common.details
 
+import com.datadog.benchmark.sample.utils.recycler.BaseRecyclerViewItem
 import com.datadog.sample.benchmark.databinding.ItemDetailsInfoBinding
 import com.hannesdorfmann.adapterdelegates4.dsl.adapterDelegateViewBinding
 
 internal data class DetailsInfoItem(
     val startText: String,
-    val endText: String
-)
+    val endText: String,
+    override val key: String
+) : BaseRecyclerViewItem
 
-internal fun detailsInfoItemDelegate() = adapterDelegateViewBinding<DetailsInfoItem, Any, ItemDetailsInfoBinding>(
+internal fun detailsInfoItemDelegate() = adapterDelegateViewBinding<DetailsInfoItem, BaseRecyclerViewItem, ItemDetailsInfoBinding>(
     { layoutInflater, root -> ItemDetailsInfoBinding.inflate(layoutInflater, root, false) }
 ) {
     bind {

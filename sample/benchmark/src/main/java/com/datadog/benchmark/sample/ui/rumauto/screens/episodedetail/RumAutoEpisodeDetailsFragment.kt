@@ -16,6 +16,7 @@ import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.datadog.benchmark.sample.benchmarkActivityComponent
+import com.datadog.benchmark.sample.utils.recycler.applyNewItems
 import com.datadog.sample.benchmark.databinding.FragmentRumAutoEpisodeDetailsBinding
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
@@ -43,8 +44,7 @@ class RumAutoEpisodeDetailsFragment: Fragment() {
 
         viewModel.state
             .onEach {
-                adapter.items = it
-                adapter.notifyDataSetChanged()
+                adapter.applyNewItems(it)
             }
             .launchIn(lifecycleScope)
 
