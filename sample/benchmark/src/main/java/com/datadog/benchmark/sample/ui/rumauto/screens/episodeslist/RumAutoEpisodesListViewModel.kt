@@ -21,6 +21,7 @@ import com.datadog.benchmark.sample.utils.BenchmarkAsyncTask
 import com.datadog.benchmark.sample.utils.StateMachine
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -94,6 +95,26 @@ internal class RumAutoEpisodesListViewModel(
             is RumAutoEpisodesListAction.EpisodesListLoadingFinished -> {
                 BenchmarkAsyncTask.Result(action.response, action.task)
             }
+            is RumAutoEpisodesListAction.EndReached -> {
+                when (prev.episodesListTask) {
+                    is BenchmarkAsyncTask.Loading<*> -> prev.episodesListTask
+                    is BenchmarkAsyncTask.Result<*, *> -> {
+                        val nextPage = prev.episodesListTask.optionalResult?.optionalResult?.info?.next
+                        if (nextPage != null) {
+                            val task = EpisodesTaskKey(pageUrl = nextPage)
+                            val job = launchNextPageLoadingTask(task)
+                            BenchmarkAsyncTask.Loading(job = job, key = task)
+                        } else {
+                            prev.episodesListTask
+                        }
+                    }
+                    null -> {
+                        val task = EpisodesTaskKey(pageUrl = null)
+                        val job = launchNextPageLoadingTask(task)
+                        BenchmarkAsyncTask.Loading(job = job, key = task)
+                    }
+                }
+            }
             else -> prev.episodesListTask
         }
     }
@@ -114,7 +135,8 @@ internal class RumAutoEpisodesListViewModel(
 
     private fun launchNextPageLoadingTask(task: EpisodesTaskKey): Job {
         return viewModelScope.launch(defaultDispatcher) {
-            val response = rickAndMortyNetworkService.getEpisodes(nextPageUrl = null)
+            val response = rickAndMortyNetworkService.getEpisodes(nextPageUrl = task.pageUrl)
+            delay(3000)
             dispatch(RumAutoEpisodesListAction.EpisodesListLoadingFinished(response, task))
         }
     }

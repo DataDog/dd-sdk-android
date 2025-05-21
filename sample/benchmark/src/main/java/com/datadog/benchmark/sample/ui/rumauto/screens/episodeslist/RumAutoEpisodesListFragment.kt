@@ -19,7 +19,9 @@ import androidx.compose.ui.platform.ComposeView
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.datadog.android.api.SdkCore
 import com.datadog.benchmark.sample.benchmarkActivityComponent
+import com.datadog.benchmark.sample.utils.BenchmarkAsyncTask
 import javax.inject.Inject
 
 internal class RumAutoEpisodesListFragment: Fragment() {
@@ -27,6 +29,7 @@ internal class RumAutoEpisodesListFragment: Fragment() {
     internal lateinit var viewModelFactory: RumAutoEpisodesListViewModelFactory
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
+
         requireActivity().benchmarkActivityComponent.inject(this)
 
         val viewModel by viewModels<RumAutoEpisodesListViewModel> { viewModelFactory }
@@ -40,7 +43,8 @@ internal class RumAutoEpisodesListFragment: Fragment() {
                 RumAutoEpisodesListScreen(
                     modifier = Modifier.fillMaxSize(),
                     allItems = allItems,
-                    dispatch = viewModel::dispatch
+                    dispatch = viewModel::dispatch,
+                    isLoading = state.episodesListTask is BenchmarkAsyncTask.Loading
                 )
             }
         }
