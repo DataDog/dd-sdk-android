@@ -14,7 +14,7 @@ androidToolsPlugin = "8.9.1"
 androidXAnnotations = "1.9.1"
 androidXAppCompat = "1.4.2" # Next version will bring coroutines
 androidXCollection = "1.4.5"
-androidXComposeBom = "2023.10.01" # Next version will bring coroutines
+androidXComposeBom = "2025.05.00" # Next version will bring coroutines TODO WAHAHA downgrade to the previous version
 androidXComposeCompilerExtension = "1.5.14"
 androidXComposeNavigation = "2.6.0"
 androidXComposeRuntime = "1.5.14"
@@ -164,7 +164,7 @@ androidXComposeRuntime = { module = "androidx.compose.runtime:runtime" }
 androidXComposeUi = { module = "androidx.compose.ui:ui" }
 androidXComposeUiTooling = { module = "androidx.compose.ui:ui-tooling" }
 androidXComposeMaterial = { module = "androidx.compose.material:material" }
-material3Android = { group = "androidx.compose.material3", name = "material3", version.ref = "material3Android" }
+material3Android = { module = "androidx.compose.material3:material3" }
 
 # DD-TRACE-OT
 openTracingApi = { module = "io.opentracing:opentracing-api", version.ref = "openTracing" }
