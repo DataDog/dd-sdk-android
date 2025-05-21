@@ -15,6 +15,7 @@ import com.datadog.benchmark.sample.network.KtorHttpResponse
 import com.datadog.benchmark.sample.network.rickandmorty.RickAndMortyNetworkService
 import com.datadog.benchmark.sample.network.rickandmorty.models.Character
 import com.datadog.benchmark.sample.network.rickandmorty.models.Episode
+import com.datadog.benchmark.sample.ui.rumauto.screens.common.details.CharactersRowItem
 import com.datadog.benchmark.sample.ui.rumauto.screens.common.details.DetailsHeaderItem
 import com.datadog.benchmark.sample.ui.rumauto.screens.common.details.DetailsInfoItem
 import com.datadog.benchmark.sample.utils.BenchmarkAsyncTask
@@ -28,6 +29,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 internal class RumAutoEpisodeDetailsViewModelFactory @AssistedInject constructor(
     @Assisted private val episode: Episode,
@@ -79,7 +81,11 @@ internal class RumAutoEpisodeDetailsViewModel(
         processAction = ::processAction
     )
 
-    val state: Flow<List<BaseRecyclerViewItem>> = stateMachine.state.map { it.toViewState() }
+    val state: Flow<List<BaseRecyclerViewItem>> = stateMachine.state.map {
+        withContext(defaultDispatcher) {
+            it.toViewState()
+        }
+    }
 
     fun dispatch(action: RumAutoEpisodeDetailsAction) {
         stateMachine.dispatch(action)
@@ -107,12 +113,20 @@ internal class RumAutoEpisodeDetailsViewModel(
     }
 
     private fun RumAutoEpisodeDetailsState.toViewState(): List<BaseRecyclerViewItem> {
-        return listOf(
-            DetailsHeaderItem(text = episode.name, "header"),
-            DetailsInfoItem(startText = "Episode", endText = episode.episodeCode, key = "code"),
-            DetailsInfoItem(startText = "Air date", endText = episode.airDate, key = "info_air_date"),
-            DetailsInfoItem(startText = "Created", endText = episode.created, key = "created"),
-            DetailsHeaderItem(text = "Characters: ${episode.characters.count()}", key = "characters_count")
-        )
+        return buildList {
+            add(DetailsHeaderItem(text = episode.name, "header"))
+            add(DetailsInfoItem(startText = "Episode", endText = episode.episodeCode, key = "code"))
+            add(DetailsInfoItem(startText = "Air date", endText = episode.airDate, key = "info_air_date"))
+            add(DetailsInfoItem(startText = "Created", endText = episode.created, key = "created"))
+            add(DetailsHeaderItem(text = "Characters: ${episode.characters.count()}", key = "characters_count"))
+
+            charactersLoadingTask
+                .optionalResult
+                ?.optionalResult
+                ?.chunked(3)
+                ?.forEach { chunk ->
+                    add(CharactersRowItem(chunk, "characters_row"))
+                }
+        }
     }
 }

@@ -6,6 +6,7 @@
 
 package com.datadog.benchmark.sample.ui.rumauto.screens.episodedetail
 
+import com.datadog.benchmark.sample.ui.rumauto.screens.common.details.charactersRowItemDelegate
 import com.datadog.benchmark.sample.ui.rumauto.screens.common.details.detailsHeaderItemDelegate
 import com.datadog.benchmark.sample.ui.rumauto.screens.common.details.detailsInfoItemDelegate
 import com.datadog.benchmark.sample.utils.recycler.BaseRecyclerViewItem
@@ -16,5 +17,6 @@ internal class RumAutoEpisodeDetailsAdapter @Inject constructor(): ListDelegatio
     init {
         delegatesManager.addDelegate(detailsInfoItemDelegate())
         delegatesManager.addDelegate(detailsHeaderItemDelegate())
+        delegatesManager.addDelegate(charactersRowItemDelegate())
     }
 }
