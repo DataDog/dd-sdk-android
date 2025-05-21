@@ -185,6 +185,16 @@ internal class SdkFeature(
             }
     }
 
+    override fun withContext(callback: (datadogContext: DatadogContext) -> Unit) {
+        coreFeature.contextExecutorService
+            .executeSafe("withContext-${wrappedFeature.name}", internalLogger) {
+                val contextProvider = coreFeature.contextProvider
+                if (contextProvider is NoOpContextProvider) return@executeSafe
+                val context = contextProvider.context
+                callback(context)
+            }
+    }
+
     override fun getWriteContextSync(): Pair<DatadogContext, EventWriteScope>? {
         val operationName = "getWriteContextSync-${wrappedFeature.name}"
         return coreFeature.contextExecutorService

@@ -345,6 +345,7 @@ public abstract interface class com/datadog/android/api/feature/FeatureScope {
 	public abstract fun getWriteContextSync ()Lkotlin/Pair;
 	public abstract fun sendEvent (Ljava/lang/Object;)V
 	public abstract fun unwrap ()Lcom/datadog/android/api/feature/Feature;
+	public abstract fun withContext (Lkotlin/jvm/functions/Function1;)V
 	public abstract fun withWriteContext (Lkotlin/jvm/functions/Function2;)V
 }
 

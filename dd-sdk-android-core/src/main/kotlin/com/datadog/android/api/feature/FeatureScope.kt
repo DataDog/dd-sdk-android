@@ -25,12 +25,23 @@ interface FeatureScope {
     /**
      * Utility to write an event, asynchronously.
      * @param callback an operation called with an up-to-date [DatadogContext]
-     * and an [EventWriteScope]. Callback will be executed on a single context processing worker thread.
+     * and an [EventWriteScope]. Callback will be executed on a single context processing worker thread. Execution of
+     * [EventWriteScope] will be done on a worker thread from I/O pool.
      * [DatadogContext] will have a state created at the moment this method is called.
      */
     @AnyThread
     fun withWriteContext(
         callback: (datadogContext: DatadogContext, write: EventWriteScope) -> Unit
+    )
+
+    /**
+     * Utility to read current [DatadogContext], asynchronously.
+     * @param callback an operation called with an up-to-date [DatadogContext].
+     * [DatadogContext] will have a state created at the moment this method is called.
+     */
+    @AnyThread
+    fun withContext(
+        callback: (datadogContext: DatadogContext) -> Unit
     )
 
     // TODO RUM-9852 Implement better passthrough mechanism for the JVM crash scenario

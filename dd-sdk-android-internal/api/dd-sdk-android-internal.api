@@ -22,6 +22,13 @@ public final class com/datadog/android/internal/collections/EvictingQueue : java
 	public fun toArray ([Ljava/lang/Object;)[Ljava/lang/Object;
 }
 
+public final class com/datadog/android/internal/concurrent/CompletableFuture {
+	public fun <init> ()V
+	public final fun complete (Ljava/lang/Object;)V
+	public final fun getValue ()Ljava/lang/Object;
+	public final fun isComplete ()Z
+}
+
 public abstract interface class com/datadog/android/internal/profiler/BenchmarkCounter {
 	public abstract fun add (JLjava/util/Map;)V
 }
