@@ -114,7 +114,7 @@ internal class SessionReplayFeatureTest {
             startRecordingImmediately = true,
             touchPrivacy = fakeConfiguration.touchPrivacy,
             rateBasedSampler = mockSampler
-        ) { _, _, _, _ -> mockRecorder }
+        ) { _, _, _, _, _ -> mockRecorder }
     }
 
     @Test
@@ -211,7 +211,7 @@ internal class SessionReplayFeatureTest {
             startRecordingImmediately = true,
             touchPrivacy = fakeConfiguration.touchPrivacy,
             rateBasedSampler = mockSampler
-        ) { _, _, _, _ -> mockRecorder }
+        ) { _, _, _, _, _ -> mockRecorder }
 
         // When
         testedFeature.onInitialize(appContext.mockInstance)
@@ -817,7 +817,7 @@ internal class SessionReplayFeatureTest {
             touchPrivacy = fakeConfiguration.touchPrivacy,
             startRecordingImmediately = true,
             rateBasedSampler = mockSampler
-        ) { _, _, _, _ -> mockRecorder }
+        ) { _, _, _, _, _ -> mockRecorder }
         testedFeature.onInitialize(appContext.mockInstance)
         val rumSessionUpdateBusMessage1 = mapOf(
             SessionReplayFeature.SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY to
@@ -868,7 +868,7 @@ internal class SessionReplayFeatureTest {
             touchPrivacy = fakeConfiguration.touchPrivacy,
             startRecordingImmediately = false,
             rateBasedSampler = mockSampler
-        ) { _, _, _, _ -> mockRecorder }
+        ) { _, _, _, _, _ -> mockRecorder }
         testedFeature.onInitialize(appContext.mockInstance)
         val rumSessionUpdateBusMessage1 = mapOf(
             SessionReplayFeature.SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY to
@@ -1151,7 +1151,7 @@ internal class SessionReplayFeatureTest {
             touchPrivacy = fakeConfiguration.touchPrivacy,
             startRecordingImmediately = scenario.startRecordingImmediately,
             rateBasedSampler = mockSampler
-        ) { _, _, _, _ -> mockRecorder }
+        ) { _, _, _, _, _ -> mockRecorder }
         testedFeature.onInitialize(fakeContext)
         testedFeature.onReceive(event)
 
@@ -1190,7 +1190,7 @@ internal class SessionReplayFeatureTest {
             touchPrivacy = fakeConfiguration.touchPrivacy,
             startRecordingImmediately = true,
             rateBasedSampler = mockSampler
-        ) { _, _, _, _ -> mockRecorder }
+        ) { _, _, _, _, _ -> mockRecorder }
         testedFeature.onInitialize(fakeContext)
         testedFeature.onReceive(event)
         testedFeature.onReceive(event)
@@ -1222,7 +1222,7 @@ internal class SessionReplayFeatureTest {
             touchPrivacy = fakeConfiguration.touchPrivacy,
             startRecordingImmediately = false,
             rateBasedSampler = mockSampler
-        ) { _, _, _, _ -> mockRecorder }
+        ) { _, _, _, _, _ -> mockRecorder }
         testedFeature.onInitialize(fakeContext)
         testedFeature.manuallyStartRecording()
         testedFeature.onReceive(event)
@@ -1256,7 +1256,7 @@ internal class SessionReplayFeatureTest {
             touchPrivacy = fakeConfiguration.touchPrivacy,
             startRecordingImmediately = true,
             rateBasedSampler = mockSampler
-        ) { _, _, _, _ -> mockRecorder }
+        ) { _, _, _, _, _ -> mockRecorder }
         testedFeature.onInitialize(fakeContext)
         testedFeature.onReceive(event)
         testedFeature.manuallyStopRecording()
@@ -1293,7 +1293,7 @@ internal class SessionReplayFeatureTest {
             touchPrivacy = fakeConfiguration.touchPrivacy,
             startRecordingImmediately = true,
             rateBasedSampler = mockSampler
-        ) { _, _, _, _ -> mockRecorder }
+        ) { _, _, _, _, _ -> mockRecorder }
         testedFeature.onInitialize(fakeContext)
         testedFeature.onReceive(event1)
 
