@@ -362,6 +362,8 @@ public class PendingTrace extends LinkedList<DDSpan> {
     @Override
     public void addFirst(final DDSpan span) {
         synchronized (this) {
+            // add(index, element) instead of addFirst here is on purpose, to prevent issues
+            // with old AGP being used when compiling with Android API 35.
             super.add(0, span);
         }
         completedSpanCount.incrementAndGet();
