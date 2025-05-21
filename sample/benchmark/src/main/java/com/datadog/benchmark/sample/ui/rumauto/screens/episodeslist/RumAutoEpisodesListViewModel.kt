@@ -12,8 +12,10 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.datadog.benchmark.sample.di.common.CoroutineDispatcherQualifier
 import com.datadog.benchmark.sample.di.common.CoroutineDispatcherType
+import com.datadog.benchmark.sample.navigation.RumAutoScenarioNavigator
 import com.datadog.benchmark.sample.network.KtorHttpResponse
 import com.datadog.benchmark.sample.network.rickandmorty.RickAndMortyNetworkService
+import com.datadog.benchmark.sample.network.rickandmorty.models.Episode
 import com.datadog.benchmark.sample.network.rickandmorty.models.EpisodeResponse
 import com.datadog.benchmark.sample.network.rickandmorty.models.LocationResponse
 import com.datadog.benchmark.sample.ui.rumauto.screens.episodeslist.RumAutoEpisodesListState.EpisodesTaskKey
@@ -29,13 +31,15 @@ internal class RumAutoEpisodesListViewModelFactory @Inject constructor(
     @CoroutineDispatcherQualifier(CoroutineDispatcherType.Default)
     private val defaultDispatcher: CoroutineDispatcher,
     private val rickAndMortyNetworkService: RickAndMortyNetworkService,
+    private val rumAutoScenarioNavigator: RumAutoScenarioNavigator
 ): ViewModelProvider.Factory {
 
     @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         return RumAutoEpisodesListViewModel(
             defaultDispatcher = defaultDispatcher,
-            rickAndMortyNetworkService = rickAndMortyNetworkService
+            rickAndMortyNetworkService = rickAndMortyNetworkService,
+            rumAutoScenarioNavigator = rumAutoScenarioNavigator
         ) as T
     }
 }
@@ -47,6 +51,8 @@ internal sealed interface RumAutoEpisodesListAction {
     ): RumAutoEpisodesListAction
 
     object EndReached: RumAutoEpisodesListAction
+
+    data class EpisodeClicked(val episode: Episode): RumAutoEpisodesListAction
 }
 
 internal data class RumAutoEpisodesListState(
@@ -61,6 +67,7 @@ internal data class RumAutoEpisodesListState(
 internal class RumAutoEpisodesListViewModel(
     private val defaultDispatcher: CoroutineDispatcher,
     private val rickAndMortyNetworkService: RickAndMortyNetworkService,
+    private val rumAutoScenarioNavigator: RumAutoScenarioNavigator,
 ): ViewModel() {
 
     private val stateMachine = StateMachine.create(
@@ -84,10 +91,18 @@ internal class RumAutoEpisodesListViewModel(
     }
 
     private fun processAction(prev: RumAutoEpisodesListState, action: RumAutoEpisodesListAction): RumAutoEpisodesListState {
-        return prev.copy(
-            episodesListTask = processTask(prev, action),
-            pages = processPages(prev, action)
-        )
+        return when (action) {
+            is RumAutoEpisodesListAction.EpisodeClicked -> {
+                viewModelScope.launch {
+                    rumAutoScenarioNavigator.openEpisodeScreen(action.episode)
+                }
+                prev
+            }
+            else -> prev.copy(
+                episodesListTask = processTask(prev, action),
+                pages = processPages(prev, action)
+            )
+        }
     }
 
     private fun processTask(prev: RumAutoEpisodesListState, action: RumAutoEpisodesListAction): BenchmarkAsyncTask<KtorHttpResponse<EpisodeResponse>, EpisodesTaskKey>? {
@@ -136,7 +151,6 @@ internal class RumAutoEpisodesListViewModel(
     private fun launchNextPageLoadingTask(task: EpisodesTaskKey): Job {
         return viewModelScope.launch(defaultDispatcher) {
             val response = rickAndMortyNetworkService.getEpisodes(nextPageUrl = task.pageUrl)
-            delay(3000)
             dispatch(RumAutoEpisodesListAction.EpisodesListLoadingFinished(response, task))
         }
     }

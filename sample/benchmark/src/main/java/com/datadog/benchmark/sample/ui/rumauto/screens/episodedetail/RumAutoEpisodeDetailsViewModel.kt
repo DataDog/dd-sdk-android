@@ -1,0 +1,112 @@
+/*
+ * Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
+ * This product includes software developed at Datadog (https://www.datadoghq.com/).
+ * Copyright 2016-Present Datadog, Inc.
+ */
+
+package com.datadog.benchmark.sample.ui.rumauto.screens.episodedetail
+
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewModelScope
+import com.datadog.benchmark.sample.di.common.CoroutineDispatcherQualifier
+import com.datadog.benchmark.sample.di.common.CoroutineDispatcherType
+import com.datadog.benchmark.sample.network.KtorHttpResponse
+import com.datadog.benchmark.sample.network.rickandmorty.RickAndMortyNetworkService
+import com.datadog.benchmark.sample.network.rickandmorty.models.Character
+import com.datadog.benchmark.sample.network.rickandmorty.models.Episode
+import com.datadog.benchmark.sample.ui.rumauto.screens.common.details.DetailsHeaderItem
+import com.datadog.benchmark.sample.ui.rumauto.screens.common.details.DetailsInfoItem
+import com.datadog.benchmark.sample.utils.BenchmarkAsyncTask
+import com.datadog.benchmark.sample.utils.StateMachine
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedFactory
+import dagger.assisted.AssistedInject
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
+
+internal class RumAutoEpisodeDetailsViewModelFactory @AssistedInject constructor(
+    @Assisted private val episode: Episode,
+    private val rickAndMortyNetworkService: RickAndMortyNetworkService,
+    @CoroutineDispatcherQualifier(CoroutineDispatcherType.Default) private val defaultDispatcher: CoroutineDispatcher
+): ViewModelProvider.Factory {
+    @Suppress("UNCHECKED_CAST")
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        return RumAutoEpisodeDetailsViewModel(
+            episode = episode,
+            rickAndMortyNetworkService = rickAndMortyNetworkService,
+            defaultDispatcher = defaultDispatcher
+        ) as T
+    }
+}
+
+@AssistedFactory
+internal interface AssistedRumAutoEpisodeDetailsViewModelFactory {
+    fun create(episode: Episode): RumAutoEpisodeDetailsViewModelFactory
+}
+
+internal data class RumAutoEpisodeDetailsState(
+    val episode: Episode,
+    val charactersLoadingTask: BenchmarkAsyncTask<KtorHttpResponse<List<Character>>, CharactersLoadingTask>
+) {
+    class CharactersLoadingTask(val ids: List<String>)
+}
+
+internal sealed interface RumAutoEpisodeDetailsAction {
+    data class CharactersLoadingTaskFinished(val result: KtorHttpResponse<List<Character>>, val task: RumAutoEpisodeDetailsState.CharactersLoadingTask): RumAutoEpisodeDetailsAction
+}
+
+internal class RumAutoEpisodeDetailsViewModel(
+    private val episode: Episode,
+    private val rickAndMortyNetworkService: RickAndMortyNetworkService,
+    private val defaultDispatcher: CoroutineDispatcher,
+): ViewModel() {
+    private val stateMachine = StateMachine.create(
+        scope = viewModelScope,
+        dispatcher = defaultDispatcher,
+        initialState = RumAutoEpisodeDetailsState(
+            episode = episode,
+            charactersLoadingTask = run {
+                val task = RumAutoEpisodeDetailsState.CharactersLoadingTask(characterIds(episode))
+                val job = launchCharactersLoadingTask(task)
+                BenchmarkAsyncTask.Loading(job, task)
+            }
+        ),
+        processAction = ::processAction
+    )
+
+    val state: Flow<List<Any>> = stateMachine.state.map {
+        listOf(
+            DetailsHeaderItem(it.episode.name),
+            DetailsInfoItem("Air date", it.episode.created)
+        )
+    }
+
+    fun dispatch(action: RumAutoEpisodeDetailsAction) {
+        stateMachine.dispatch(action)
+    }
+
+    private fun processAction(prev: RumAutoEpisodeDetailsState, action: RumAutoEpisodeDetailsAction): RumAutoEpisodeDetailsState {
+        return when (action) {
+            is RumAutoEpisodeDetailsAction.CharactersLoadingTaskFinished -> {
+                prev.copy(
+                    charactersLoadingTask = BenchmarkAsyncTask.Result(action.result, action.task)
+                )
+            }
+        }
+    }
+
+    private fun launchCharactersLoadingTask(task: RumAutoEpisodeDetailsState.CharactersLoadingTask): Job {
+        return viewModelScope.launch(defaultDispatcher) {
+            val result = rickAndMortyNetworkService.getCharacters(task.ids)
+            dispatch(RumAutoEpisodeDetailsAction.CharactersLoadingTaskFinished(result, task))
+        }
+    }
+
+    private fun characterIds(episode: Episode): List<String> {
+        return episode.characters.mapNotNull { it.split("/").lastOrNull() }
+    }
+}

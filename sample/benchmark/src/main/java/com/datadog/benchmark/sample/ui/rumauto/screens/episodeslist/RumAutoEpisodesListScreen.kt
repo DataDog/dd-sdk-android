@@ -6,6 +6,7 @@
 
 package com.datadog.benchmark.sample.ui.rumauto.screens.episodeslist
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -46,7 +47,9 @@ internal fun RumAutoEpisodesListScreen(
 
         LazyColumn(state = lazyListState) {
             items(allItems, key = { it.id }) { item ->
-                Column {
+                Column(
+                    modifier = Modifier.clickable { dispatch(RumAutoEpisodesListAction.EpisodeClicked(item)) }
+                ) {
                     Text(text = item.name)
                     Row {
                         Text(text = item.episodeCode)

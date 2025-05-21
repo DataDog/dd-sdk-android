@@ -17,7 +17,6 @@ import com.datadog.benchmark.sample.ui.logscustom.LogsFragment
 import com.datadog.benchmark.sample.ui.logsheavytraffic.LogsHeavyTrafficHostFragment
 import com.datadog.benchmark.sample.ui.rumauto.screens.characters.RumAutoCharactersFragment
 import com.datadog.benchmark.sample.ui.rumauto.screens.docs.RumAutoDocsFragment
-import com.datadog.benchmark.sample.ui.rumauto.screens.episodes.RumAutoEpisodesFragment
 import com.datadog.benchmark.sample.ui.rumauto.screens.locations.RumAutoLocationsFragment
 import com.datadog.benchmark.sample.ui.rummanual.RumManualScenarioFragment
 import com.datadog.benchmark.sample.ui.sessionreplay.SessionReplayAppcompatFragment
@@ -118,9 +117,6 @@ private fun NavGraphBuilder.navGraphRumAutoScenario() {
     fragment<RumAutoCharactersFragment>(CHARACTERS_TAB_FRAGMENT_KEY) {
         label = "Characters screen"
     }
-    fragment<RumAutoEpisodesFragment>(EPISODES_TAB_FRAGMENT_KEY) {
-        label = "Episodes screen"
-    }
     fragment<RumAutoLocationsFragment>(LOCATIONS_TAB_FRAGMENT_KEY) {
         label = "Locations screen"
     }
@@ -135,8 +131,6 @@ private const val SESSION_REPLAY_METERIAL_FRAGMENT_KEY = "fragment_session_repla
 private const val SESSION_REPLAY_APPCOMPAT_FRAGMENT_KEY = "fragment_session_replay_appcompat"
 private const val TRACE_SCENARIO_FRAGMENT_KEY = "fragment_trace_scenario"
 private const val RUM_MANUAL_FRAGMENT_KEY = "fragment_rum_manual_scenario"
-private const val RUM_AUTO_FRAGMENT_KEY = "fragment_rum_auto_scenario"
 private const val CHARACTERS_TAB_FRAGMENT_KEY = "characters_tab_fragment"
-private const val EPISODES_TAB_FRAGMENT_KEY = "episodes_tab_fragment"
 private const val LOCATIONS_TAB_FRAGMENT_KEY = "locations_tab_fragment"
 private const val DOCS_TAB_FRAGMENT_KEY = "docs_tab_fragment"

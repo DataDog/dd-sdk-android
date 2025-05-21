@@ -12,11 +12,12 @@ import androidx.navigation.createGraph
 import androidx.navigation.fragment.fragment
 import com.datadog.benchmark.sample.di.activity.BenchmarkActivityScope
 import com.datadog.benchmark.sample.network.rickandmorty.models.Character
+import com.datadog.benchmark.sample.network.rickandmorty.models.Episode
 import com.datadog.benchmark.sample.ui.rumauto.RumAutoScenarioTab
 import com.datadog.benchmark.sample.ui.rumauto.screens.characterdetail.RumAutoCharacterDetailFragment
 import com.datadog.benchmark.sample.ui.rumauto.screens.characters.RumAutoCharactersFragment
 import com.datadog.benchmark.sample.ui.rumauto.screens.docs.RumAutoDocsFragment
-import com.datadog.benchmark.sample.ui.rumauto.screens.episodes.RumAutoEpisodesFragment
+import com.datadog.benchmark.sample.ui.rumauto.screens.episodedetail.RumAutoEpisodeDetailsFragment
 import com.datadog.benchmark.sample.ui.rumauto.screens.episodeslist.RumAutoEpisodesListFragment
 import com.datadog.benchmark.sample.ui.rumauto.screens.locations.RumAutoLocationsFragment
 import com.datadog.sample.benchmark.R
@@ -45,6 +46,10 @@ internal class RumAutoScenarioNavigator @Inject constructor() {
             fragment<RumAutoCharacterDetailFragment>(R.id.character_detail_fragment) {
                 label = "Character detail screen"
             }
+            // TODO WAHAHA deprecation
+            fragment<RumAutoEpisodeDetailsFragment>(R.id.episode_detail_fragment) {
+                label = "Episode detail screen"
+            }
         }
     }
 
@@ -60,6 +65,14 @@ internal class RumAutoScenarioNavigator @Inject constructor() {
         }
 
         navController?.navigate(R.id.character_detail_fragment, bundle)
+    }
+
+    fun openEpisodeScreen(episode: Episode) {
+        val bundle = Bundle().apply {
+            putParcelable("episode", episode)
+        }
+
+        navController?.navigate(R.id.episode_detail_fragment, bundle)
     }
 }
 

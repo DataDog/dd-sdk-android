@@ -10,4 +10,5 @@
     <item name="locations_tab_fragment" type="id"/>
     <item name="docs_tab_fragment" type="id"/>
     <item name="character_detail_fragment" type="id"/>
+    <item name="episode_detail_fragment" type="id"/>
 </resources>

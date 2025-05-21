@@ -17,6 +17,7 @@ import com.datadog.benchmark.sample.network.rickandmorty.models.LocationResponse
 internal interface RickAndMortyNetworkService {
     suspend fun getCharacter(id: Int): KtorHttpResponse<Character>
     suspend fun getCharacters(nextPageUrl: String?): KtorHttpResponse<CharacterResponse>
+    suspend fun getCharacters(ids: List<String>): KtorHttpResponse<List<Character>>
 
     suspend fun getLocation(id: Int): KtorHttpResponse<Location>
     suspend fun getLocations(nextPageUrl: String?): KtorHttpResponse<LocationResponse>
