@@ -16,8 +16,6 @@ import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.okhttp.internal.rum.NoOpRumResourceAttributesProvider
 import com.datadog.android.okhttp.internal.rum.buildResourceId
 import com.datadog.android.okhttp.internal.utils.traceIdAsHexString
-import com.datadog.android.okhttp.trace.DeterministicTraceSampler
-import com.datadog.android.okhttp.trace.NoOpTracedRequestListener
 import com.datadog.android.okhttp.trace.TracedRequestListener
 import com.datadog.android.okhttp.trace.TracingInterceptor
 import com.datadog.android.rum.GlobalRumMonitor
@@ -91,153 +89,6 @@ open class DatadogInterceptor internal constructor(
     redacted404ResourceName,
     localTracerFactory
 ) {
-
-    /**
-     * Creates a [TracingInterceptor] to automatically create a trace around OkHttp [Request]s, and
-     * track RUM Resources.
-     *
-     * @param sdkInstanceName SDK instance name to bind to, or null to check the default instance.
-     * Instrumentation won't be working until SDK instance is ready.
-     * @param firstPartyHostsWithHeaderType the list of all the hosts and header types that you want to
-     * be automatically tracked by this interceptor.
-     * Requests made to a URL with any one of these hosts (or any subdomain) will:
-     * - be considered a first party RUM Resource and categorised as such in your RUM dashboard;
-     * - be wrapped in a Span and have trace id injected to get a full flame-graph in APM.
-     * If no host provided (via this argument, global configuration [Configuration.Builder.setFirstPartyHosts]
-     * or [Configuration.Builder.setFirstPartyHostsWithHeaderType])
-     * the interceptor won't trace any OkHttp [Request], nor propagate tracing
-     * information to the backend, but RUM Resource events will still be sent for each request.
-     * @param tracedRequestListener which listens on the intercepted [okhttp3.Request] and offers
-     * the possibility to modify the created [io.opentracing.Span].
-     * @param rumResourceAttributesProvider which listens on the intercepted [okhttp3.Request]
-     * and offers the possibility to add custom attributes to the RUM resource events.
-     * @param traceSampler Sampler controlling the sampling of APM traces created for
-     * auto-instrumented requests. By default it is [DeterministicTraceSampler], which either can accept
-     * fixed sample rate or can get it dynamically from the provider. Value between `0.0` and
-     * `100.0`. A value of `0.0` means no trace will be kept, `100.0` means all traces will
-     * be kept (default value is `100.0`).
-     */
-    @JvmOverloads
-    @Deprecated(
-        message = "This constructor is not going to be accessible anymore in future versions. " +
-            "Please use the Builder instead.",
-        replaceWith = ReplaceWith("DatadogInterceptor.Builder(tracedHosts).build()")
-    )
-    constructor(
-        sdkInstanceName: String? = null,
-        firstPartyHostsWithHeaderType: Map<String, Set<TracingHeaderType>>,
-        tracedRequestListener: TracedRequestListener = NoOpTracedRequestListener(),
-        rumResourceAttributesProvider: RumResourceAttributesProvider =
-            NoOpRumResourceAttributesProvider(),
-        traceSampler: Sampler<Span> = DeterministicTraceSampler(DEFAULT_TRACE_SAMPLE_RATE)
-    ) : this(
-        sdkInstanceName = sdkInstanceName,
-        tracedHosts = firstPartyHostsWithHeaderType,
-        tracedRequestListener = tracedRequestListener,
-        rumResourceAttributesProvider = rumResourceAttributesProvider,
-        traceSampler = traceSampler,
-        traceContextInjection = TraceContextInjection.SAMPLED,
-        redacted404ResourceName = true,
-        localTracerFactory = { sdkCore, tracingHeaderTypes ->
-            AndroidTracer.Builder(sdkCore).setTracingHeaderTypes(tracingHeaderTypes).build()
-        }
-    )
-
-    /**
-     * Creates a [DatadogInterceptor] to automatically create a trace around OkHttp [Request]s, and
-     * track RUM Resources.
-     *
-     * @param sdkInstanceName SDK instance name to bind to, or null to check the default instance.
-     * Instrumentation won't be working until SDK instance is ready.
-     * @param firstPartyHosts the list of first party hosts.
-     * Requests made to a URL with any one of these hosts (or any subdomain) will:
-     * - be considered a first party RUM Resource and categorised as such in your RUM dashboard;
-     * - be wrapped in a Span and have trace id injected to get a full flame-graph in APM.
-     * If no host provided (via this argument, global configuration [Configuration.Builder.setFirstPartyHosts]
-     * or [Configuration.Builder.setFirstPartyHostsWithHeaderType])
-     * the interceptor won't trace any OkHttp [Request], nor propagate tracing
-     * information to the backend, but RUM Resource events will still be sent for each request.
-     * @param tracedRequestListener which listens on the intercepted [okhttp3.Request] and offers
-     * the possibility to modify the created [io.opentracing.Span].
-     * @param rumResourceAttributesProvider which listens on the intercepted [okhttp3.Request]
-     * and offers the possibility to add custom attributes to the RUM resource events.
-     * @param traceSampler Sampler controlling the sampling of APM traces created for
-     * auto-instrumented requests. By default it is [DeterministicTraceSampler], which either can accept
-     * fixed sample rate or can get it dynamically from the provider. Value between `0.0` and
-     * `100.0`. A value of `0.0` means no trace will be kept, `100.0` means all traces will
-     * be kept (default value is `100.0`).
-     */
-    @JvmOverloads
-    @Deprecated(
-        message = "This constructor is not going to be accessible anymore in future versions. " +
-            "Please use the Builder instead.",
-        replaceWith = ReplaceWith("DatadogInterceptor.Builder(tracedHosts).build()")
-    )
-    constructor(
-        sdkInstanceName: String? = null,
-        firstPartyHosts: List<String>,
-        tracedRequestListener: TracedRequestListener = NoOpTracedRequestListener(),
-        rumResourceAttributesProvider: RumResourceAttributesProvider =
-            NoOpRumResourceAttributesProvider(),
-        traceSampler: Sampler<Span> = DeterministicTraceSampler(DEFAULT_TRACE_SAMPLE_RATE)
-    ) : this(
-        sdkInstanceName = sdkInstanceName,
-        tracedHosts = firstPartyHosts.associateWith {
-            setOf(
-                TracingHeaderType.DATADOG,
-                TracingHeaderType.TRACECONTEXT
-            )
-        },
-        tracedRequestListener = tracedRequestListener,
-        rumResourceAttributesProvider = rumResourceAttributesProvider,
-        traceSampler = traceSampler,
-        traceContextInjection = TraceContextInjection.SAMPLED,
-        redacted404ResourceName = true,
-        localTracerFactory = { sdkCore, tracingHeaderTypes ->
-            AndroidTracer.Builder(sdkCore).setTracingHeaderTypes(tracingHeaderTypes).build()
-        }
-    )
-
-    /**
-     * Creates a [TracingInterceptor] to automatically create a trace around OkHttp [Request]s, and
-     * track RUM Resources.
-     *
-     * @param sdkInstanceName SDK instance name to bind to, or null to check the default instance.
-     * Instrumentation won't be working until SDK instance is ready.
-     * @param tracedRequestListener which listens on the intercepted [okhttp3.Request] and offers
-     * the possibility to modify the created [io.opentracing.Span].
-     * @param rumResourceAttributesProvider which listens on the intercepted [okhttp3.Request]
-     * and offers the possibility to add custom attributes to the RUM resource events.
-     * @param traceSampler Sampler controlling the sampling of APM traces created for
-     * auto-instrumented requests. By default it is [DeterministicTraceSampler], which either can accept
-     * fixed sample rate or can get it dynamically from the provider. Value between `0.0` and
-     * `100.0`. A value of `0.0` means no trace will be kept, `100.0` means all traces will
-     * be kept (default value is `100.0`).
-     */
-    @JvmOverloads
-    @Deprecated(
-        message = "This constructor is not going to be accessible anymore in future versions. " +
-            "Please use the Builder instead.",
-        replaceWith = ReplaceWith("DatadogInterceptor.Builder(tracedHosts).build()")
-    )
-    constructor(
-        sdkInstanceName: String? = null,
-        tracedRequestListener: TracedRequestListener = NoOpTracedRequestListener(),
-        rumResourceAttributesProvider: RumResourceAttributesProvider =
-            NoOpRumResourceAttributesProvider(),
-        traceSampler: Sampler<Span> = DeterministicTraceSampler(DEFAULT_TRACE_SAMPLE_RATE)
-    ) : this(
-        sdkInstanceName = sdkInstanceName,
-        tracedHosts = emptyMap(),
-        tracedRequestListener = tracedRequestListener,
-        rumResourceAttributesProvider = rumResourceAttributesProvider,
-        traceSampler = traceSampler,
-        traceContextInjection = TraceContextInjection.SAMPLED,
-        redacted404ResourceName = true,
-        localTracerFactory = { sdkCore, tracingHeaderTypes ->
-            AndroidTracer.Builder(sdkCore).setTracingHeaderTypes(tracingHeaderTypes).build()
-        }
-    )
 
     // region Interceptor
 
@@ -435,6 +286,7 @@ open class DatadogInterceptor internal constructor(
     // endregion
 
     // region Builder
+
     /**
      * A Builder for the [DatadogInterceptor].
      * @param tracedHostsWithHeaderType a list of all the hosts and header types that you want to
