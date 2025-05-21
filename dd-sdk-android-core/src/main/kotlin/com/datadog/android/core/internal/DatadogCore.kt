@@ -260,6 +260,12 @@ internal class DatadogCore(
             )
         } else {
             feature.setContextUpdateListener(listener)
+            features.keys.forEach {
+                val currentContext = contextProvider?.getFeatureContext(it)
+                if (!currentContext.isNullOrEmpty()) {
+                    listener.onContextUpdate(it, currentContext)
+                }
+            }
         }
     }
 

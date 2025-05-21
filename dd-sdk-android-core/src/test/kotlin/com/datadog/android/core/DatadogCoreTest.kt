@@ -38,6 +38,7 @@ import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.datadog.tools.unit.forge.aThrowable
+import com.datadog.tools.unit.forge.exhaustiveAttributes
 import com.google.gson.JsonObject
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.AdvancedForgery
@@ -445,7 +446,7 @@ internal class DatadogCoreTest {
     ) {
         // Given
         val mockFeature = mock<SdkFeature>()
-        val mockContextUpdateListener: FeatureContextUpdateReceiver = mock()
+        val mockContextUpdateListener = mock<FeatureContextUpdateReceiver>()
         testedCore.features[feature] = mockFeature
 
         // When
@@ -456,11 +457,67 @@ internal class DatadogCoreTest {
     }
 
     @Test
+    fun `M not invoke listener W setContextUpdateListener() { other features have no context yet }`(
+        @StringForgery feature: String,
+        forge: Forge
+    ) {
+        // Given
+        val mockFeature = mock<SdkFeature>()
+        val mockContextUpdateListener = mock<FeatureContextUpdateReceiver>()
+        testedCore.features[feature] = mockFeature
+        val mockContextProvider = mock<ContextProvider>()
+        testedCore.coreFeature.contextProvider = mockContextProvider
+        whenever(mockContextProvider.getFeatureContext(any())) doAnswer {
+            forge.anElementFrom(null, emptyMap<String, Any?>())
+        }
+        repeat(forge.aTinyInt()) {
+            testedCore.features += forge.aString() to mock<SdkFeature>()
+        }
+
+        // When
+        testedCore.setContextUpdateReceiver(feature, mockContextUpdateListener)
+
+        // Then
+        verify(mockFeature).setContextUpdateListener(mockContextUpdateListener)
+        verifyNoInteractions(mockContextUpdateListener)
+    }
+
+    @Test
+    fun `M invoke listener W setContextUpdateListener() { other features have context }`(
+        @StringForgery feature: String,
+        forge: Forge
+    ) {
+        // Given
+        val mockFeature = mock<SdkFeature>()
+        val mockContextUpdateListener = mock<FeatureContextUpdateReceiver>()
+        testedCore.features[feature] = mockFeature
+        val mockContextProvider = mock<ContextProvider>()
+        testedCore.coreFeature.contextProvider = mockContextProvider
+        val otherFeatures = forge.aList {
+            forge.aString() to forge.exhaustiveAttributes()
+        }
+        otherFeatures.forEach {
+            testedCore.features += it.first to mock<SdkFeature>()
+            whenever(mockContextProvider.getFeatureContext(it.first)) doReturn it.second
+        }
+
+        // When
+        testedCore.setContextUpdateReceiver(feature, mockContextUpdateListener)
+
+        // Then
+        verify(mockFeature).setContextUpdateListener(mockContextUpdateListener)
+        otherFeatures.forEach {
+            verify(mockContextUpdateListener).onContextUpdate(it.first, it.second)
+        }
+        verifyNoMoreInteractions(mockContextUpdateListener)
+    }
+
+    @Test
     fun `M notify no feature registered W setContextUpdateListener() { feature is not registered }`(
         @StringForgery feature: String
     ) {
         // Given
-        val mockContextUpdateListener: FeatureContextUpdateReceiver = mock()
+        val mockContextUpdateListener = mock<FeatureContextUpdateReceiver>()
 
         // When
         testedCore.setContextUpdateReceiver(feature, mockContextUpdateListener)

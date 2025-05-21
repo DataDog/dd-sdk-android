@@ -41,8 +41,6 @@ internal class WebViewRumFeature(
         sdkCore.setContextUpdateReceiver(WEB_RUM_FEATURE_NAME, this)
         dataWriter = createDataWriter(sdkCore.internalLogger)
         initialized.set(true)
-        val currentRumContext = sdkCore.getFeatureContext(Feature.RUM_FEATURE_NAME)
-        nativeRumViewsCache.addToCache(currentRumContext)
     }
 
     override fun onContextUpdate(featureName: String, event: Map<String, Any?>) {
