@@ -4,11 +4,13 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.benchmark.sample.di.activity
+package com.datadog.benchmark.sample.di.app
 
 import android.content.Context
+import com.datadog.android.api.SdkCore
 import com.datadog.android.okhttp.DatadogInterceptor
 import com.datadog.benchmark.sample.config.BenchmarkConfig
+import com.datadog.benchmark.sample.config.SyntheticsRun
 import com.datadog.benchmark.sample.config.SyntheticsScenario
 import com.datadog.benchmark.sample.network.rickandmorty.RickAndMortyNetworkService
 import com.datadog.benchmark.sample.network.rickandmorty.RickAndMortyNetworkServiceImpl
@@ -23,32 +25,39 @@ import kotlinx.serialization.json.Json
 import okhttp3.Cache
 import okhttp3.OkHttpClient
 import java.io.File
+import javax.inject.Singleton
 
 @Module
 internal interface OkHttpModule {
 
     @Binds
-    @BenchmarkActivityScope
+    @Singleton
     fun bindRickAndMortyNetworkService(impl: RickAndMortyNetworkServiceImpl): RickAndMortyNetworkService
 
     companion object {
         @Provides
-        @BenchmarkActivityScope
+        @Singleton
         fun provideOkHttpClient(
             context: Context,
             config: BenchmarkConfig,
+            sdkCore: dagger.Lazy<SdkCore>,
         ): OkHttpClient {
+
             return OkHttpClient.Builder().apply {
                 cache(Cache(File(context.cacheDir, "okhttp-cache"), 10 * 1024 * 1024))
-                // TODO WAHAHA provide RumMonitor
-                if (config.scenario == SyntheticsScenario.RumAuto) {
-                    addInterceptor(DatadogInterceptor.Builder(emptyMap()).build())
+
+                if (config.scenario == SyntheticsScenario.RumAuto && config.run == SyntheticsRun.Instrumented) {
+                    val interceptor = DatadogInterceptor.Builder(emptyMap()).apply {
+                        setSdkInstanceName(sdkCore.get().name)
+                    }.build()
+
+                    addInterceptor(interceptor)
                 }
             }.build()
         }
 
         @Provides
-        @BenchmarkActivityScope
+        @Singleton
         fun provideKtorHttpClient(
             okHttpClient: OkHttpClient
         ): HttpClient {

@@ -8,6 +8,7 @@ package com.datadog.benchmark.sample.ui.rumauto.screens.common.details
 
 import android.view.LayoutInflater
 import android.view.ViewGroup
+import com.bumptech.glide.Glide
 import com.datadog.benchmark.sample.network.rickandmorty.models.Character
 import com.datadog.benchmark.sample.utils.recycler.BaseRecyclerViewItem
 import com.datadog.sample.benchmark.databinding.ItemCharacterBinding
@@ -26,6 +27,11 @@ internal fun charactersRowItemDelegate() = adapterDelegateViewBinding<Characters
         item.characters.forEach { character ->
             val characterView = ItemCharacterBinding.inflate(LayoutInflater.from(context), binding.root, false)
             characterView.characterName.text = character.name
+
+            Glide.with(context)
+                .load(character.image)
+                .into(characterView.characterImage)
+
             binding.root.addView(characterView.root, ViewGroup.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT))
         }
     }

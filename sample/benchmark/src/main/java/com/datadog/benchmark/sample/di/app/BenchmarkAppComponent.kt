@@ -7,9 +7,9 @@
 package com.datadog.benchmark.sample.di.app
 
 import com.datadog.benchmark.sample.BenchmarkApplication
+import com.datadog.benchmark.sample.BenchmarkGlideModule
 import com.datadog.benchmark.sample.LaunchActivity
 import com.datadog.benchmark.sample.di.activity.BenchmarkActivityComponentDependencies
-import com.datadog.benchmark.sample.di.activity.DatadogActivityModule
 import dagger.BindsInstance
 import dagger.Component
 import javax.inject.Singleton
@@ -17,7 +17,8 @@ import javax.inject.Singleton
 @Component(
     modules = [
         AppModule::class,
-        DatadogActivityModule::class
+        DatadogModule::class,
+        OkHttpModule::class
     ]
 )
 @Singleton
@@ -31,5 +32,5 @@ internal interface BenchmarkAppComponent : BenchmarkActivityComponentDependencie
 
     fun inject(benchmarkApplication: BenchmarkApplication)
     fun inject(launchActivity: LaunchActivity)
+    fun inject(glideModule: BenchmarkGlideModule)
 }
-

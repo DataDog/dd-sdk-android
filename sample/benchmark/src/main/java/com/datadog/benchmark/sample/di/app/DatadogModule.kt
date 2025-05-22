@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.benchmark.sample.di.activity
+package com.datadog.benchmark.sample.di.app
 
 import android.annotation.SuppressLint
 import android.content.Context
@@ -24,7 +24,6 @@ import com.datadog.benchmark.DatadogBaseMeter
 import com.datadog.benchmark.DatadogExporterConfiguration
 import com.datadog.benchmark.DatadogSdkMeter
 import com.datadog.benchmark.DatadogVitalsMeter
-import com.datadog.benchmark.sample.MainActivity
 import com.datadog.benchmark.sample.config.BenchmarkConfig
 import com.datadog.benchmark.sample.config.SyntheticsRun
 import com.datadog.benchmark.sample.config.SyntheticsScenario
@@ -34,7 +33,7 @@ import dagger.Provides
 import javax.inject.Singleton
 
 @Module
-internal interface DatadogActivityModule {
+internal interface DatadogModule {
     companion object {
         /**
          * The general recommendation is to initialize Datadog SDK at the Application.onCreate
