@@ -11,12 +11,14 @@ import com.datadog.android.sessionreplay.internal.recorder.Recorder
 import com.datadog.android.sessionreplay.internal.resources.ResourceDataStoreManager
 import com.datadog.android.sessionreplay.internal.storage.RecordWriter
 import com.datadog.android.sessionreplay.internal.storage.ResourcesWriter
+import com.datadog.android.sessionreplay.internal.utils.RumContextProvider
 
 internal fun interface RecorderProvider {
     fun provideSessionReplayRecorder(
         resourceDataStoreManager: ResourceDataStoreManager,
         resourceWriter: ResourcesWriter,
         recordWriter: RecordWriter,
+        rumContextProvider: RumContextProvider,
         application: Application
     ): Recorder
 }

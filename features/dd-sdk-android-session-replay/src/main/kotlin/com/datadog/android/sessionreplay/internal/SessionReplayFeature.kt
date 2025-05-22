@@ -118,6 +118,7 @@ internal class SessionReplayFeature(
     internal var sessionReplayRecorder: Recorder = NoOpRecorder()
     internal var dataWriter: RecordWriter = NoOpRecordWriter()
     internal val initialized = AtomicBoolean(false)
+    private val rumContextProvider = SessionReplayRumContextProvider()
 
     // region Feature
 
@@ -141,11 +142,13 @@ internal class SessionReplayFeature(
         )
 
         dataWriter = createDataWriter()
+        sdkCore.setContextUpdateReceiver(Feature.SESSION_REPLAY_FEATURE_NAME, rumContextProvider)
         sessionReplayRecorder =
             recorderProvider.provideSessionReplayRecorder(
                 resourceDataStoreManager = resourceDataStoreManager,
                 resourceWriter = resourcesFeature.dataWriter,
                 recordWriter = dataWriter,
+                rumContextProvider = rumContextProvider,
                 application = appContext
             )
         sessionReplayRecorder.registerCallbacks()
@@ -170,6 +173,7 @@ internal class SessionReplayFeature(
 
     override fun onStop() {
         stopRecording()
+        sdkCore.removeContextUpdateReceiver(Feature.RUM_FEATURE_NAME, rumContextProvider)
         sessionReplayRecorder.unregisterCallbacks()
         sessionReplayRecorder.stopProcessingRecords()
         dataWriter = NoOpRecordWriter()

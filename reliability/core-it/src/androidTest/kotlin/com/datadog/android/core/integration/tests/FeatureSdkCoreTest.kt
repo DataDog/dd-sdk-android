@@ -392,6 +392,34 @@ class FeatureSdkCoreTest : MockServerTest() {
     }
 
     @Test
+    fun mustReceiveCurrentContextIfExists_when_contextUpdateReceiverRegistered() {
+        // Given
+        val stubContextUpdateReceiver = StubContextUpdateReceiver()
+        val otherFeature = StubStorageBackedFeature(
+            forge,
+            forge.anAlphabeticalString(),
+            getMockServerWrapper().getServerUrl()
+        )
+        val fakeKeyValues = forge.aMap { forge.anAlphabeticalString() to forge.anAlphabeticalString() }
+        testedFeatureSdkCore.registerFeature(stubFeature)
+        testedFeatureSdkCore.registerFeature(otherFeature)
+        testedFeatureSdkCore.updateFeatureContext(stubFeature.name) {
+            fakeKeyValues.forEach { (key, value) ->
+                it[key] = value
+            }
+        }
+
+        // When
+        testedFeatureSdkCore.setContextUpdateReceiver(otherFeature.name, stubContextUpdateReceiver)
+
+        // Then
+        assertThat(stubContextUpdateReceiver.getReceivedEvents()).hasSize(1)
+        val receivedEvent = stubContextUpdateReceiver.getReceivedEvents().first()
+        assertThat(receivedEvent.featureName).isEqualTo(stubFeature.name)
+        assertThat(receivedEvent.eventData).containsExactlyInAnyOrderEntriesOf(fakeKeyValues)
+    }
+
+    @Test
     fun mustReceiveContextUpdate_when_contextUpdateReceiverRegistered_updateCalledFromDifferentThreads() {
         // Given
         val otherFeature = StubStorageBackedFeature(
