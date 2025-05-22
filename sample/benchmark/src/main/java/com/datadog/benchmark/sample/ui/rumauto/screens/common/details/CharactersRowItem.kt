@@ -16,7 +16,7 @@ import com.datadog.sample.benchmark.databinding.ItemCharactersRowBinding
 import com.hannesdorfmann.adapterdelegates4.dsl.adapterDelegateViewBinding
 
 internal data class CharactersRowItem(
-    val characters: List<Character>,
+    val characters: List<Character>, // TODO WAHAHA maybe not the whole character?
     override val key: String
 ): BaseRecyclerViewItem
 

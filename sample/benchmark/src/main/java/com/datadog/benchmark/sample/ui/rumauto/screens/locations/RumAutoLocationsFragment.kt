@@ -10,16 +10,50 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.compose.ui.platform.ComposeView
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.viewModelScope
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
+import com.datadog.benchmark.sample.benchmarkActivityComponent
+import com.datadog.benchmark.sample.ui.rumauto.screens.locations.di.DaggerRumAutoLocationsComponent
+import com.datadog.benchmark.sample.ui.rumauto.screens.locations.di.RumAutoLocationsComponent
+import com.datadog.benchmark.sample.utils.componentHolderViewModel
+import com.datadog.benchmark.sample.utils.recycler.applyNewItems
+import com.datadog.sample.benchmark.databinding.FragmentRumAutoLocationsBinding
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
+import javax.inject.Inject
 
 internal class RumAutoLocationsFragment: Fragment() {
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
-        return ComposeView(requireActivity()).apply {
-            setContent {
-                RumAutoLocationsScreen()
+
+    private val component: RumAutoLocationsComponent by componentHolderViewModel {
+        DaggerRumAutoLocationsComponent.factory().create(
+            deps = requireActivity().benchmarkActivityComponent,
+            viewModelScope = viewModelScope
+        )
+    }
+
+    @Inject
+    lateinit var adapter: RumAutoLocationsAdapter
+
+    @Inject
+    lateinit var viewModel: RumAutoLocationsViewModel
+
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
+        component.inject(this)
+
+        val binding = FragmentRumAutoLocationsBinding.inflate(inflater, container, false)
+
+        binding.locationsRecycler.layoutManager = LinearLayoutManager(requireContext(), RecyclerView.VERTICAL, false)
+        binding.locationsRecycler.adapter = adapter
+
+        viewModel.state
+            .onEach { items ->
+                adapter.applyNewItems(items)
             }
-        }
+            .launchIn(lifecycleScope)
+
+        return binding.root
     }
 }
-

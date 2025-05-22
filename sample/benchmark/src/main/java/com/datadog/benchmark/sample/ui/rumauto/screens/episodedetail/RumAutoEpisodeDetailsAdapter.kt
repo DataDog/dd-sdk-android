@@ -17,12 +17,12 @@ internal class RumAutoEpisodeDetailsAdapter @Inject constructor(
     private val viewModel: RumAutoEpisodeDetailsViewModel,
 ): ListDelegationAdapter<List<BaseRecyclerViewItem>>() {
     init {
-        delegatesManager.addDelegate(detailsInfoItemDelegate())
-        delegatesManager.addDelegate(detailsHeaderItemDelegate())
-        delegatesManager.addDelegate(
-            charactersRowItemDelegate {
-                viewModel.dispatch(RumAutoEpisodeDetailsAction.OnCharacterClicked(it))
-            }
-        )
+        delegatesManager.apply {
+            addDelegate(detailsInfoItemDelegate())
+            addDelegate(detailsHeaderItemDelegate())
+            addDelegate(
+                charactersRowItemDelegate { viewModel.dispatch(RumAutoEpisodeDetailsAction.OnCharacterClicked(it)) }
+            )
+        }
     }
 }

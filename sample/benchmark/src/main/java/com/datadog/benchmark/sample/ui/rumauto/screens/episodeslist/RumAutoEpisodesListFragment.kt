@@ -38,6 +38,7 @@ internal class RumAutoEpisodesListFragment: Fragment() {
             setContent {
                 val state by viewModel.state.collectAsStateWithLifecycle()
 
+                // TODO WAHAHA think
                 val allItems by remember { derivedStateOf { state.pages.flatMap { it.response.results } } }
 
                 RumAutoEpisodesListScreen(

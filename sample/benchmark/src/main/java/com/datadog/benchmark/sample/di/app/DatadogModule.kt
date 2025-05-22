@@ -32,6 +32,7 @@ import dagger.Module
 import dagger.Provides
 import javax.inject.Singleton
 
+// TODO WAHAHA change comment maybe?
 @Module
 internal interface DatadogModule {
     companion object {

@@ -13,6 +13,7 @@ import androidx.navigation.fragment.fragment
 import com.datadog.benchmark.sample.di.activity.BenchmarkActivityScope
 import com.datadog.benchmark.sample.network.rickandmorty.models.Character
 import com.datadog.benchmark.sample.network.rickandmorty.models.Episode
+import com.datadog.benchmark.sample.network.rickandmorty.models.Location
 import com.datadog.benchmark.sample.ui.rumauto.RumAutoScenarioTab
 import com.datadog.benchmark.sample.ui.rumauto.screens.characterdetail.RumAutoCharacterDetailFragment
 import com.datadog.benchmark.sample.ui.rumauto.screens.characters.RumAutoCharactersFragment
@@ -73,6 +74,10 @@ internal class RumAutoScenarioNavigator @Inject constructor() {
         }
 
         navController?.navigate(R.id.episode_detail_fragment, bundle)
+    }
+
+    fun openLocationDetailsScreen(location: Location) {
+        TODO()
     }
 }
 

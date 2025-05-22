@@ -63,7 +63,7 @@ internal class RumAutoEpisodeDetailsViewModel @Inject constructor(
         processAction = ::processAction
     )
 
-    val state: Flow<List<BaseRecyclerViewItem>> = stateMachine.state.map {
+    val state: Flow<List<BaseRecyclerViewItem>> get() = stateMachine.state.map {
         withContext(defaultDispatcher) {
             it.toViewState()
         }
