@@ -20,6 +20,7 @@ import com.datadog.benchmark.sample.ui.rumauto.screens.characters.RumAutoCharact
 import com.datadog.benchmark.sample.ui.rumauto.screens.docs.RumAutoDocsFragment
 import com.datadog.benchmark.sample.ui.rumauto.screens.episodedetail.RumAutoEpisodeDetailsFragment
 import com.datadog.benchmark.sample.ui.rumauto.screens.episodeslist.RumAutoEpisodesListFragment
+import com.datadog.benchmark.sample.ui.rumauto.screens.locationdetails.RumAutoLocationDetailsFragment
 import com.datadog.benchmark.sample.ui.rumauto.screens.locations.RumAutoLocationsFragment
 import com.datadog.sample.benchmark.R
 import javax.inject.Inject
@@ -51,6 +52,9 @@ internal class RumAutoScenarioNavigator @Inject constructor() {
             fragment<RumAutoEpisodeDetailsFragment>(R.id.episode_detail_fragment) {
                 label = "Episode detail screen"
             }
+            fragment<RumAutoLocationDetailsFragment>(R.id.location_details_fragment) {
+                label = "Episode detail screen"
+            }
         }
     }
 
@@ -77,7 +81,10 @@ internal class RumAutoScenarioNavigator @Inject constructor() {
     }
 
     fun openLocationDetailsScreen(location: Location) {
-        TODO()
+        val bundle = Bundle().apply {
+            putParcelable("location", location)
+        }
+        navController?.navigate(R.id.location_details_fragment, bundle)
     }
 }
 

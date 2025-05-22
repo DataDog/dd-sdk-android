@@ -16,4 +16,3 @@ internal sealed interface BenchmarkAsyncTask<out TResult, out TKey> {
 
     val optionalResult: TResult? get() = (this as? Result<TResult, TKey>)?.result
 }
-

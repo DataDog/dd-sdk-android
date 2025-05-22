@@ -6,10 +6,13 @@
 
 package com.datadog.benchmark.sample.network.rickandmorty.models
 
+import android.os.Parcelable
+import kotlinx.parcelize.Parcelize
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
+@Parcelize
 internal data class Location(
     @SerialName("id")
     val id: Int,
@@ -31,7 +34,7 @@ internal data class Location(
 
     @SerialName("created")
     val created: String
-)
+): Parcelable
 
 @Serializable
 internal data class LocationResponse(

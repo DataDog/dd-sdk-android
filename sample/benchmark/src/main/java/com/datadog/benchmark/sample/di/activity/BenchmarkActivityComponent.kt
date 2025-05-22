@@ -24,6 +24,8 @@ import com.datadog.benchmark.sample.ui.rumauto.screens.characters.RumAutoCharact
 import com.datadog.benchmark.sample.ui.rumauto.screens.episodedetail.RumAutoEpisodeDetailsFragment
 import com.datadog.benchmark.sample.ui.rumauto.screens.episodedetail.di.RumAutoEpisodeDetailsComponentDependencies
 import com.datadog.benchmark.sample.ui.rumauto.screens.episodeslist.RumAutoEpisodesListFragment
+import com.datadog.benchmark.sample.ui.rumauto.screens.locationdetails.di.RumAutoLocationDetailsComponent
+import com.datadog.benchmark.sample.ui.rumauto.screens.locationdetails.di.RumAutoLocationDetailsComponentDependencies
 import com.datadog.benchmark.sample.ui.rumauto.screens.locations.di.RumAutoLocationsComponentDependencies
 import com.datadog.benchmark.sample.ui.rummanual.RumManualScenarioFragment
 import com.datadog.benchmark.sample.ui.sessionreplay.SessionReplayAppcompatFragment
@@ -63,7 +65,8 @@ internal interface BenchmarkActivityComponentDependencies {
 internal interface BenchmarkActivityComponent :
     LogsHeavyTrafficComponentDependencies,
     RumAutoEpisodeDetailsComponentDependencies,
-    RumAutoLocationsComponentDependencies
+    RumAutoLocationsComponentDependencies,
+    RumAutoLocationDetailsComponentDependencies
 {
     @Component.Factory
     interface Factory {
