@@ -13,10 +13,16 @@ import com.datadog.benchmark.sample.utils.recycler.BaseRecyclerViewItem
 import com.hannesdorfmann.adapterdelegates4.ListDelegationAdapter
 import javax.inject.Inject
 
-internal class RumAutoEpisodeDetailsAdapter @Inject constructor(): ListDelegationAdapter<List<BaseRecyclerViewItem>>() {
+internal class RumAutoEpisodeDetailsAdapter @Inject constructor(
+    private val viewModel: RumAutoEpisodeDetailsViewModel,
+): ListDelegationAdapter<List<BaseRecyclerViewItem>>() {
     init {
         delegatesManager.addDelegate(detailsInfoItemDelegate())
         delegatesManager.addDelegate(detailsHeaderItemDelegate())
-        delegatesManager.addDelegate(charactersRowItemDelegate())
+        delegatesManager.addDelegate(
+            charactersRowItemDelegate {
+                viewModel.dispatch(RumAutoEpisodeDetailsAction.OnCharacterClicked(it))
+            }
+        )
     }
 }

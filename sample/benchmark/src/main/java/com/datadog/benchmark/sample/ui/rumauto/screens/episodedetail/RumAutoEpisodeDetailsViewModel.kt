@@ -6,11 +6,9 @@
 
 package com.datadog.benchmark.sample.ui.rumauto.screens.episodedetail
 
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.viewModelScope
 import com.datadog.benchmark.sample.di.common.CoroutineDispatcherQualifier
 import com.datadog.benchmark.sample.di.common.CoroutineDispatcherType
+import com.datadog.benchmark.sample.navigation.RumAutoScenarioNavigator
 import com.datadog.benchmark.sample.network.KtorHttpResponse
 import com.datadog.benchmark.sample.network.rickandmorty.RickAndMortyNetworkService
 import com.datadog.benchmark.sample.network.rickandmorty.models.Character
@@ -22,9 +20,6 @@ import com.datadog.benchmark.sample.ui.rumauto.screens.episodedetail.di.RumAutoE
 import com.datadog.benchmark.sample.utils.BenchmarkAsyncTask
 import com.datadog.benchmark.sample.utils.StateMachine
 import com.datadog.benchmark.sample.utils.recycler.BaseRecyclerViewItem
-import dagger.assisted.Assisted
-import dagger.assisted.AssistedFactory
-import dagger.assisted.AssistedInject
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -43,6 +38,7 @@ internal data class RumAutoEpisodeDetailsState(
 
 internal sealed interface RumAutoEpisodeDetailsAction {
     data class CharactersLoadingTaskFinished(val result: KtorHttpResponse<List<Character>>, val task: RumAutoEpisodeDetailsState.CharactersLoadingTask): RumAutoEpisodeDetailsAction
+    data class OnCharacterClicked(val character: Character): RumAutoEpisodeDetailsAction
 }
 
 @RumAutoEpisodeDetailsScope
@@ -50,7 +46,8 @@ internal class RumAutoEpisodeDetailsViewModel @Inject constructor(
     private val episode: Episode,
     private val rickAndMortyNetworkService: RickAndMortyNetworkService,
     @CoroutineDispatcherQualifier(CoroutineDispatcherType.Default) private val defaultDispatcher: CoroutineDispatcher,
-    private val viewModelScope: CoroutineScope
+    private val viewModelScope: CoroutineScope,
+    private val rumAutoScenarioNavigator: RumAutoScenarioNavigator,
 ) {
     private val stateMachine = StateMachine.create(
         scope = viewModelScope,
@@ -82,6 +79,12 @@ internal class RumAutoEpisodeDetailsViewModel @Inject constructor(
                 prev.copy(
                     charactersLoadingTask = BenchmarkAsyncTask.Result(action.result, action.task)
                 )
+            }
+            is RumAutoEpisodeDetailsAction.OnCharacterClicked -> {
+                viewModelScope.launch {
+                    rumAutoScenarioNavigator.openCharacterScreen(action.character)
+                }
+                prev
             }
         }
     }

@@ -28,7 +28,7 @@ import javax.inject.Inject
 
 class RumAutoEpisodeDetailsFragment: Fragment() {
 
-    internal val component: RumAutoEpisodeDetailsComponent by componentHolderViewModel {
+    private val component: RumAutoEpisodeDetailsComponent by componentHolderViewModel {
         // TODO WAHAHA
         val episode = arguments?.getParcelable<Episode>("episode")!!
         DaggerRumAutoEpisodeDetailsComponent.factory().create(

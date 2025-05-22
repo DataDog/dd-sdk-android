@@ -20,7 +20,9 @@ internal data class CharactersRowItem(
     override val key: String
 ): BaseRecyclerViewItem
 
-internal fun charactersRowItemDelegate() = adapterDelegateViewBinding<CharactersRowItem, BaseRecyclerViewItem, ItemCharactersRowBinding>(
+internal fun charactersRowItemDelegate(
+    onCharacterClicked: (Character) -> Unit,
+) = adapterDelegateViewBinding<CharactersRowItem, BaseRecyclerViewItem, ItemCharactersRowBinding>(
     { layoutInflater, root -> ItemCharactersRowBinding.inflate(layoutInflater, root, false) }
 ) {
     bind {
@@ -31,6 +33,10 @@ internal fun charactersRowItemDelegate() = adapterDelegateViewBinding<Characters
             Glide.with(context)
                 .load(character.image)
                 .into(characterView.characterImage)
+
+            characterView.root.setOnClickListener {
+                onCharacterClicked(character)
+            }
 
             binding.root.addView(characterView.root, ViewGroup.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT))
         }
