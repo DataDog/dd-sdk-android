@@ -126,6 +126,7 @@ internal open class RumViewScope(
     internal var version: Long = 1
     internal val customTimings: MutableMap<String, Long> = mutableMapOf()
     internal val featureFlags: MutableMap<String, Any?> = mutableMapOf()
+    internal var hasReplay = false
 
     internal var stopped: Boolean = false
 
@@ -258,7 +259,7 @@ internal open class RumViewScope(
                 viewType = type,
                 viewTimestamp = eventTimestamp,
                 viewTimestampOffset = serverTimeOffsetInMs,
-                hasReplay = false
+                hasReplay = hasReplay
             )
     }
 
@@ -464,13 +465,13 @@ internal open class RumViewScope(
         // make a copy - by the time we iterate over it on another thread, it may already be changed
         val eventFeatureFlags = featureFlags.toMutableMap()
         val eventType = if (isFatal) EventType.CRASH else EventType.DEFAULT
+        hasReplay = hasReplay || featuresContextResolver.resolveViewHasReplay(
+            datadogContext,
+            rumContext.viewId.orEmpty()
+        )
 
         sdkCore.newRumEventWriteOperation(datadogContext, writeScope, writer, eventType) {
             val user = datadogContext.userInfo
-            val hasReplay = featuresContextResolver.resolveViewHasReplay(
-                datadogContext,
-                rumContext.viewId.orEmpty()
-            )
             val syntheticsAttribute = if (
                 rumContext.syntheticsTestId.isNullOrBlank() ||
                 rumContext.syntheticsResultId.isNullOrBlank()
@@ -927,20 +928,18 @@ internal open class RumViewScope(
             )
         }
 
+        val currentViewId = rumContext.viewId.orEmpty()
+        hasReplay = hasReplay || featuresContextResolver.resolveViewHasReplay(
+            datadogContext,
+            currentViewId
+        )
+        val sessionReplayRecordsCount = featuresContextResolver.resolveViewRecordsCount(
+            datadogContext,
+            currentViewId
+        )
+
         sdkCore.newRumEventWriteOperation(datadogContext, writeScope, writer, eventType) {
-            val currentViewId = rumContext.viewId.orEmpty()
             val user = datadogContext.userInfo
-            val hasReplay = featuresContextResolver.resolveViewHasReplay(
-                datadogContext,
-                currentViewId
-            )
-            sdkCore.updateFeatureContext(Feature.RUM_FEATURE_NAME) { currentRumContext ->
-                currentRumContext[RumContext.HAS_REPLAY] = hasReplay
-            }
-            val sessionReplayRecordsCount = featuresContextResolver.resolveViewRecordsCount(
-                datadogContext,
-                currentViewId
-            )
             val replayStats = ViewEvent.ReplayStats(recordsCount = sessionReplayRecordsCount)
             val syntheticsAttribute = if (
                 rumContext.syntheticsTestId.isNullOrBlank() ||
@@ -1245,12 +1244,12 @@ internal open class RumViewScope(
         val timestamp = event.eventTime.timestamp + serverTimeOffsetInMs
         val isFrozenFrame = event.durationNs > FROZEN_FRAME_THRESHOLD_NS
         slowFramesListener?.onAddLongTask(event.durationNs)
+        hasReplay = hasReplay || featuresContextResolver.resolveViewHasReplay(
+            datadogContext,
+            rumContext.viewId.orEmpty()
+        )
         sdkCore.newRumEventWriteOperation(datadogContext, writeScope, writer) {
             val user = datadogContext.userInfo
-            val hasReplay = featuresContextResolver.resolveViewHasReplay(
-                datadogContext,
-                rumContext.viewId.orEmpty()
-            )
             val syntheticsAttribute = if (
                 rumContext.syntheticsTestId.isNullOrBlank() ||
                 rumContext.syntheticsResultId.isNullOrBlank()

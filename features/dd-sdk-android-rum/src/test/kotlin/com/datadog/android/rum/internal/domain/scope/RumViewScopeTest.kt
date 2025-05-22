@@ -191,6 +191,9 @@ internal class RumViewScopeTest {
     @Forgery
     lateinit var fakeDatadogContext: DatadogContext
 
+    @Forgery
+    lateinit var fakeViewType: RumViewType
+
     var fakeSourceViewEvent: ViewEvent.ViewEventSource? = null
     var fakeSourceErrorEvent: ErrorEvent.ErrorEventSource? = null
     var fakeSourceActionEvent: ActionEvent.ActionEventSource? = null
@@ -364,12 +367,17 @@ internal class RumViewScopeTest {
         val context = testedScope.getRumContext()
 
         // Then
-        assertThat(context.actionId).isNull()
+        assertThat(context.applicationId).isEqualTo(fakeParentContext.applicationId)
+        assertThat(context.sessionId).isEqualTo(fakeParentContext.sessionId)
         assertThat(context.viewId).isEqualTo(testedScope.viewId)
         assertThat(context.viewName).isEqualTo(fakeKey.name)
         assertThat(context.viewUrl).isEqualTo(fakeUrl)
-        assertThat(context.applicationId).isEqualTo(fakeParentContext.applicationId)
-        assertThat(context.sessionId).isEqualTo(fakeParentContext.sessionId)
+        assertThat(context.viewType).isEqualTo(fakeViewType)
+        assertThat(context.viewTimestamp)
+            .isEqualTo(fakeEventTime.timestamp + fakeTimeInfoAtScopeStart.serverTimeOffsetMs)
+        assertThat(context.viewTimestampOffset).isEqualTo(fakeTimeInfoAtScopeStart.serverTimeOffsetMs)
+        assertThat(context.actionId).isNull()
+        assertThat(context.hasReplay).isEqualTo(false)
     }
 
     @Test
@@ -382,11 +390,16 @@ internal class RumViewScopeTest {
 
         // Then
         assertThat(context.actionId).isEqualTo(fakeActionId)
+        assertThat(context.applicationId).isEqualTo(fakeParentContext.applicationId)
+        assertThat(context.sessionId).isEqualTo(fakeParentContext.sessionId)
         assertThat(context.viewId).isEqualTo(testedScope.viewId)
         assertThat(context.viewName).isEqualTo(fakeKey.name)
         assertThat(context.viewUrl).isEqualTo(fakeUrl)
-        assertThat(context.applicationId).isEqualTo(fakeParentContext.applicationId)
-        assertThat(context.sessionId).isEqualTo(fakeParentContext.sessionId)
+        assertThat(context.viewType).isEqualTo(fakeViewType)
+        assertThat(context.viewTimestamp)
+            .isEqualTo(fakeEventTime.timestamp + fakeTimeInfoAtScopeStart.serverTimeOffsetMs)
+        assertThat(context.viewTimestampOffset).isEqualTo(fakeTimeInfoAtScopeStart.serverTimeOffsetMs)
+        assertThat(context.hasReplay).isEqualTo(false)
     }
 
     @Test
@@ -403,19 +416,116 @@ internal class RumViewScopeTest {
         val updatedContext = testedScope.getRumContext()
 
         // Then
-        assertThat(context.actionId).isNull()
+        assertThat(context.applicationId).isEqualTo(fakeParentContext.applicationId)
+        assertThat(context.sessionId).isEqualTo(fakeParentContext.sessionId)
         assertThat(context.viewId).isEqualTo(initialViewId)
         assertThat(context.viewName).isEqualTo(fakeKey.name)
         assertThat(context.viewUrl).isEqualTo(fakeUrl)
-        assertThat(context.sessionId).isEqualTo(fakeParentContext.sessionId)
-        assertThat(context.applicationId).isEqualTo(fakeParentContext.applicationId)
+        assertThat(context.viewType).isEqualTo(fakeViewType)
+        assertThat(context.viewTimestamp)
+            .isEqualTo(fakeEventTime.timestamp + fakeTimeInfoAtScopeStart.serverTimeOffsetMs)
+        assertThat(context.viewTimestampOffset).isEqualTo(fakeTimeInfoAtScopeStart.serverTimeOffsetMs)
+        assertThat(context.actionId).isNull()
+        assertThat(context.hasReplay).isEqualTo(false)
 
-        assertThat(updatedContext.actionId).isNull()
-        assertThat(updatedContext.viewId).isNotEqualTo(initialViewId)
-        assertThat(context.viewName).isEqualTo(fakeKey.name)
-        assertThat(updatedContext.viewUrl).isEqualTo(fakeUrl)
-        assertThat(updatedContext.sessionId).isEqualTo(newSessionId.toString())
         assertThat(updatedContext.applicationId).isEqualTo(fakeParentContext.applicationId)
+        assertThat(updatedContext.sessionId).isEqualTo(newSessionId.toString())
+        assertThat(updatedContext.viewId).isNotEqualTo(initialViewId)
+        assertThat(updatedContext.viewName).isEqualTo(fakeKey.name)
+        assertThat(updatedContext.viewUrl).isEqualTo(fakeUrl)
+        assertThat(updatedContext.viewType).isEqualTo(fakeViewType)
+        assertThat(updatedContext.viewTimestamp)
+            .isEqualTo(fakeEventTime.timestamp + fakeTimeInfoAtScopeStart.serverTimeOffsetMs)
+        assertThat(updatedContext.viewTimestampOffset).isEqualTo(fakeTimeInfoAtScopeStart.serverTimeOffsetMs)
+        assertThat(updatedContext.actionId).isNull()
+        assertThat(updatedContext.hasReplay).isEqualTo(false)
+    }
+
+    @Test
+    fun `M update hasReplay W getRumContext() { event processed }`(
+        forge: Forge
+    ) {
+        // Given
+        val fakeEvent = RumRawEvent.StopView(fakeKey, forge.exhaustiveAttributes())
+        testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // When
+        val context = testedScope.getRumContext()
+
+        // Then
+        assertThat(context.applicationId).isEqualTo(fakeParentContext.applicationId)
+        assertThat(context.sessionId).isEqualTo(fakeParentContext.sessionId)
+        assertThat(context.viewId).isEqualTo(testedScope.viewId)
+        assertThat(context.viewName).isEqualTo(fakeKey.name)
+        assertThat(context.viewUrl).isEqualTo(fakeUrl)
+        assertThat(context.viewType).isEqualTo(fakeViewType)
+        assertThat(context.viewTimestamp)
+            .isEqualTo(fakeEventTime.timestamp + fakeTimeInfoAtScopeStart.serverTimeOffsetMs)
+        assertThat(context.viewTimestampOffset).isEqualTo(fakeTimeInfoAtScopeStart.serverTimeOffsetMs)
+        assertThat(context.actionId).isNull()
+        assertThat(context.hasReplay).isEqualTo(fakeHasReplay)
+    }
+
+    @Test
+    fun `M keep hasReplay=true flag if set W getRumContext() { events processed }`(
+        forge: Forge
+    ) {
+        // Given
+        val fakeEvent = forge.anElementFrom(
+            RumRawEvent.AddLongTask(durationNs = forge.aPositiveLong(), target = forge.aString()),
+            RumRawEvent.AddError(
+                message = forge.aString(),
+                sourceType = forge.getForgery(),
+                source = forge.getForgery(),
+                throwable = null,
+                stacktrace = null,
+                isFatal = true,
+                threads = emptyList(),
+                attributes = forge.exhaustiveAttributes()
+            ),
+            RumRawEvent.AddCustomTiming(
+                name = forge.aString()
+            )
+        )
+        val datadogContextWithReplay = fakeDatadogContext.copy(
+            featuresContext = fakeDatadogContext.featuresContext +
+                mapOf(Feature.SESSION_REPLAY_FEATURE_NAME to mapOf("has_replay" to fakeHasReplay))
+        )
+        whenever(
+            mockFeaturesContextResolver.resolveViewHasReplay(
+                datadogContextWithReplay,
+                testedScope.viewId
+            )
+        ) doReturn fakeHasReplay
+        testedScope.handleEvent(fakeEvent, datadogContextWithReplay, mockEventWriteScope, mockWriter)
+        val fakeStopEvent = RumRawEvent.StopView(fakeKey, forge.exhaustiveAttributes())
+        val stopViewContext = fakeDatadogContext.copy(
+            featuresContext = fakeDatadogContext.featuresContext +
+                mapOf(Feature.SESSION_REPLAY_FEATURE_NAME to mapOf("has_replay" to false))
+        )
+        whenever(
+            mockFeaturesContextResolver.resolveViewHasReplay(
+                stopViewContext,
+                testedScope.viewId
+            )
+        ) doReturn false
+        testedScope.handleEvent(fakeStopEvent, stopViewContext, mockEventWriteScope, mockWriter)
+
+        // When
+        val context = testedScope.getRumContext()
+
+        // Then
+        assertThat(context.applicationId).isEqualTo(fakeParentContext.applicationId)
+        assertThat(context.sessionId).isEqualTo(fakeParentContext.sessionId)
+        assertThat(context.viewId).isEqualTo(testedScope.viewId)
+        assertThat(context.viewName).isEqualTo(fakeKey.name)
+        assertThat(context.viewUrl).isEqualTo(fakeUrl)
+        assertThat(context.viewType).isEqualTo(fakeViewType)
+        assertThat(context.viewTimestamp)
+            .isEqualTo(fakeEventTime.timestamp + fakeTimeInfoAtScopeStart.serverTimeOffsetMs)
+        assertThat(context.viewTimestampOffset).isEqualTo(fakeTimeInfoAtScopeStart.serverTimeOffsetMs)
+        assertThat(context.actionId).isNull()
+        assertThat(context.hasReplay).isEqualTo(fakeHasReplay)
     }
 
     // endregion
@@ -9741,7 +9851,7 @@ internal class RumViewScopeTest {
         memoryVitalMonitor: VitalMonitor = mockMemoryVitalMonitor,
         frameRateVitalMonitor: VitalMonitor = mockFrameRateVitalMonitor,
         featuresContextResolver: FeaturesContextResolver = mockFeaturesContextResolver,
-        type: RumViewType = RumViewType.FOREGROUND,
+        type: RumViewType = fakeViewType,
         trackFrustrations: Boolean = fakeTrackFrustrations,
         sampleRate: Float = fakeSampleRate,
         interactionNextViewMetricResolver: InteractionToNextViewMetricResolver =
