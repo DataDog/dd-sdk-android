@@ -26,6 +26,8 @@ internal fun charactersRowItemDelegate(
     { layoutInflater, root -> ItemCharactersRowBinding.inflate(layoutInflater, root, false) }
 ) {
     bind {
+        binding.root.removeAllViews()
+
         item.characters.forEach { character ->
             val characterView = ItemCharacterBinding.inflate(LayoutInflater.from(context), binding.root, false)
             characterView.characterName.text = character.name

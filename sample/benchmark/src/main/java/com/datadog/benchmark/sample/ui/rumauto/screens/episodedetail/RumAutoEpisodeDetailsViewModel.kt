@@ -113,7 +113,7 @@ internal class RumAutoEpisodeDetailsViewModel @Inject constructor(
                 ?.optionalResult
                 ?.chunked(3)
                 ?.forEach { chunk ->
-                    add(CharactersRowItem(chunk, "characters_row"))
+                    add(CharactersRowItem(characters = chunk, key = "characters_row_${chunk.joinToString(",") { it.id.toString() }}"))
                 }
         }
     }
