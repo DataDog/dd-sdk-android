@@ -39,6 +39,9 @@ plugins {
 
 android {
     namespace = "com.datadog.android.compose"
+    defaultConfig {
+        consumerProguardFiles("consumer-rules.pro")
+    }
     buildFeatures {
         compose = true
     }
