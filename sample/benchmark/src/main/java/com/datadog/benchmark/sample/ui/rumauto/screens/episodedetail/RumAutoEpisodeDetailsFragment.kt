@@ -12,10 +12,14 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
-import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.viewModelScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.datadog.benchmark.sample.benchmarkActivityComponent
+import com.datadog.benchmark.sample.network.rickandmorty.models.Episode
+import com.datadog.benchmark.sample.ui.rumauto.screens.episodedetail.di.DaggerRumAutoEpisodeDetailsComponent
+import com.datadog.benchmark.sample.ui.rumauto.screens.episodedetail.di.RumAutoEpisodeDetailsComponent
+import com.datadog.benchmark.sample.utils.componentHolderViewModel
 import com.datadog.benchmark.sample.utils.recycler.applyNewItems
 import com.datadog.sample.benchmark.databinding.FragmentRumAutoEpisodeDetailsBinding
 import kotlinx.coroutines.flow.launchIn
@@ -24,23 +28,30 @@ import javax.inject.Inject
 
 class RumAutoEpisodeDetailsFragment: Fragment() {
 
+    internal val component: RumAutoEpisodeDetailsComponent by componentHolderViewModel {
+        // TODO WAHAHA
+        val episode = arguments?.getParcelable<Episode>("episode")!!
+        DaggerRumAutoEpisodeDetailsComponent.factory().create(
+            deps = requireActivity().benchmarkActivityComponent,
+            viewModelScope = viewModelScope,
+            episode = episode
+        )
+    }
+
     @Inject
     internal lateinit var adapter: RumAutoEpisodeDetailsAdapter
 
     @Inject
-    internal lateinit var viewModelFactory: AssistedRumAutoEpisodeDetailsViewModelFactory
+    internal lateinit var viewModel: RumAutoEpisodeDetailsViewModel
 
     @SuppressLint("NotifyDataSetChanged")
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        requireActivity().benchmarkActivityComponent.inject(this)
+        component.inject(this)
 
         val binding: FragmentRumAutoEpisodeDetailsBinding = FragmentRumAutoEpisodeDetailsBinding.inflate(inflater, container, false)
 
         binding.characterDetailsRecycler.layoutManager = LinearLayoutManager(requireContext(), LinearLayoutManager.VERTICAL, false)
         binding.characterDetailsRecycler.adapter = adapter
-
-        // TODO WAHAHA
-        val viewModel by viewModels<RumAutoEpisodeDetailsViewModel> { viewModelFactory.create(arguments?.getParcelable("episode")!!) }
 
         viewModel.state
             .onEach {

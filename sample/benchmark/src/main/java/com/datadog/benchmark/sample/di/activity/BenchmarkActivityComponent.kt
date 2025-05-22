@@ -22,6 +22,7 @@ import com.datadog.benchmark.sample.ui.logsheavytraffic.di.LogsHeavyTrafficCompo
 import com.datadog.benchmark.sample.ui.rumauto.screens.characterdetail.RumAutoCharacterDetailFragment
 import com.datadog.benchmark.sample.ui.rumauto.screens.characters.RumAutoCharactersFragment
 import com.datadog.benchmark.sample.ui.rumauto.screens.episodedetail.RumAutoEpisodeDetailsFragment
+import com.datadog.benchmark.sample.ui.rumauto.screens.episodedetail.di.RumAutoEpisodeDetailsComponentDependencies
 import com.datadog.benchmark.sample.ui.rumauto.screens.episodeslist.RumAutoEpisodesListFragment
 import com.datadog.benchmark.sample.ui.rummanual.RumManualScenarioFragment
 import com.datadog.benchmark.sample.ui.sessionreplay.SessionReplayAppcompatFragment
@@ -59,7 +60,8 @@ internal interface BenchmarkActivityComponentDependencies {
 )
 @BenchmarkActivityScope
 internal interface BenchmarkActivityComponent :
-    LogsHeavyTrafficComponentDependencies
+    LogsHeavyTrafficComponentDependencies,
+    RumAutoEpisodeDetailsComponentDependencies
 {
     @Component.Factory
     interface Factory {
@@ -79,5 +81,4 @@ internal interface BenchmarkActivityComponent :
     fun inject(rumAutoCharactersFragment: RumAutoCharactersFragment)
     fun inject(rumAutoCharacterDetailFragment: RumAutoCharacterDetailFragment)
     fun inject(rumAutoEpisodesListFragment: RumAutoEpisodesListFragment)
-    fun inject(rumAutoEpisodeDetailsFragment: RumAutoEpisodeDetailsFragment)
 }

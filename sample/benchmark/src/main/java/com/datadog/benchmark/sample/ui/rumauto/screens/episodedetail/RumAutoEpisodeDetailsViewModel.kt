@@ -18,6 +18,7 @@ import com.datadog.benchmark.sample.network.rickandmorty.models.Episode
 import com.datadog.benchmark.sample.ui.rumauto.screens.common.details.CharactersRowItem
 import com.datadog.benchmark.sample.ui.rumauto.screens.common.details.DetailsHeaderItem
 import com.datadog.benchmark.sample.ui.rumauto.screens.common.details.DetailsInfoItem
+import com.datadog.benchmark.sample.ui.rumauto.screens.episodedetail.di.RumAutoEpisodeDetailsScope
 import com.datadog.benchmark.sample.utils.BenchmarkAsyncTask
 import com.datadog.benchmark.sample.utils.StateMachine
 import com.datadog.benchmark.sample.utils.recycler.BaseRecyclerViewItem
@@ -25,31 +26,13 @@ import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-
-internal class RumAutoEpisodeDetailsViewModelFactory @AssistedInject constructor(
-    @Assisted private val episode: Episode,
-    private val rickAndMortyNetworkService: RickAndMortyNetworkService,
-    @CoroutineDispatcherQualifier(CoroutineDispatcherType.Default) private val defaultDispatcher: CoroutineDispatcher
-): ViewModelProvider.Factory {
-    @Suppress("UNCHECKED_CAST")
-    override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        return RumAutoEpisodeDetailsViewModel(
-            episode = episode,
-            rickAndMortyNetworkService = rickAndMortyNetworkService,
-            defaultDispatcher = defaultDispatcher
-        ) as T
-    }
-}
-
-@AssistedFactory
-internal interface AssistedRumAutoEpisodeDetailsViewModelFactory {
-    fun create(episode: Episode): RumAutoEpisodeDetailsViewModelFactory
-}
+import javax.inject.Inject
 
 internal data class RumAutoEpisodeDetailsState(
     val episode: Episode,
@@ -62,11 +45,13 @@ internal sealed interface RumAutoEpisodeDetailsAction {
     data class CharactersLoadingTaskFinished(val result: KtorHttpResponse<List<Character>>, val task: RumAutoEpisodeDetailsState.CharactersLoadingTask): RumAutoEpisodeDetailsAction
 }
 
-internal class RumAutoEpisodeDetailsViewModel(
+@RumAutoEpisodeDetailsScope
+internal class RumAutoEpisodeDetailsViewModel @Inject constructor(
     private val episode: Episode,
     private val rickAndMortyNetworkService: RickAndMortyNetworkService,
-    private val defaultDispatcher: CoroutineDispatcher,
-): ViewModel() {
+    @CoroutineDispatcherQualifier(CoroutineDispatcherType.Default) private val defaultDispatcher: CoroutineDispatcher,
+    private val viewModelScope: CoroutineScope
+) {
     private val stateMachine = StateMachine.create(
         scope = viewModelScope,
         dispatcher = defaultDispatcher,
