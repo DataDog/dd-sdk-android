@@ -35,19 +35,17 @@ public final class com/datadog/android/okhttp/DatadogInterceptor$Builder : com/d
 	public final fun setRumResourceAttributesProvider (Lcom/datadog/android/rum/RumResourceAttributesProvider;)Lcom/datadog/android/okhttp/DatadogInterceptor$Builder;
 }
 
-public final class com/datadog/android/okhttp/TraceContext : com/datadog/trace/bootstrap/instrumentation/api/AgentSpan$Context {
+public final class com/datadog/android/okhttp/TraceContext {
 	public fun <init> (Lcom/datadog/trace/api/DDTraceId;JI)V
-	public synthetic fun baggageItems ()Ljava/lang/Iterable;
-	public fun baggageItems ()Ljava/lang/Void;
+	public final fun component1 ()Lcom/datadog/trace/api/DDTraceId;
+	public final fun component2 ()J
+	public final fun component3 ()I
 	public final fun copy (Lcom/datadog/trace/api/DDTraceId;JI)Lcom/datadog/android/okhttp/TraceContext;
 	public static synthetic fun copy$default (Lcom/datadog/android/okhttp/TraceContext;Lcom/datadog/trace/api/DDTraceId;JIILjava/lang/Object;)Lcom/datadog/android/okhttp/TraceContext;
 	public fun equals (Ljava/lang/Object;)Z
-	public synthetic fun getPathwayContext ()Lcom/datadog/trace/bootstrap/instrumentation/api/PathwayContext;
-	public fun getPathwayContext ()Ljava/lang/Void;
-	public fun getSamplingPriority ()I
-	public fun getSpanId ()J
-	public fun getTrace ()Lcom/datadog/trace/bootstrap/instrumentation/api/AgentTrace;
-	public fun getTraceId ()Lcom/datadog/trace/api/DDTraceId;
+	public final fun getSamplingPriority ()I
+	public final fun getSpanId ()J
+	public final fun getTraceId ()Lcom/datadog/trace/api/DDTraceId;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
 }
