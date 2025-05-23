@@ -2667,6 +2667,7 @@ public abstract interface class com/datadog/trace/bootstrap/instrumentation/api/
 	public abstract fun start ()Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpan;
 	public abstract fun withErrorFlag ()Lcom/datadog/trace/bootstrap/instrumentation/api/AgentTracer$SpanBuilder;
 	public abstract fun withLink (Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpanLink;)Lcom/datadog/trace/bootstrap/instrumentation/api/AgentTracer$SpanBuilder;
+	public abstract fun withOrigin (Ljava/lang/String;)Lcom/datadog/trace/bootstrap/instrumentation/api/AgentTracer$SpanBuilder;
 	public abstract fun withRequestContextData (Lcom/datadog/trace/api/gateway/RequestContextSlot;Ljava/lang/Object;)Lcom/datadog/trace/bootstrap/instrumentation/api/AgentTracer$SpanBuilder;
 	public abstract fun withResourceName (Ljava/lang/String;)Lcom/datadog/trace/bootstrap/instrumentation/api/AgentTracer$SpanBuilder;
 	public abstract fun withServiceName (Ljava/lang/String;)Lcom/datadog/trace/bootstrap/instrumentation/api/AgentTracer$SpanBuilder;
@@ -3491,6 +3492,7 @@ public class com/datadog/trace/core/CoreTracer$CoreSpanBuilder : com/datadog/tra
 	public synthetic fun withErrorFlag ()Lcom/datadog/trace/bootstrap/instrumentation/api/AgentTracer$SpanBuilder;
 	public fun withErrorFlag ()Lcom/datadog/trace/core/CoreTracer$CoreSpanBuilder;
 	public fun withLink (Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpanLink;)Lcom/datadog/trace/bootstrap/instrumentation/api/AgentTracer$SpanBuilder;
+	public fun withOrigin (Ljava/lang/String;)Lcom/datadog/trace/bootstrap/instrumentation/api/AgentTracer$SpanBuilder;
 	public fun withRequestContextData (Lcom/datadog/trace/api/gateway/RequestContextSlot;Ljava/lang/Object;)Lcom/datadog/trace/bootstrap/instrumentation/api/AgentTracer$SpanBuilder;
 	public synthetic fun withResourceName (Ljava/lang/String;)Lcom/datadog/trace/bootstrap/instrumentation/api/AgentTracer$SpanBuilder;
 	public fun withResourceName (Ljava/lang/String;)Lcom/datadog/trace/core/CoreTracer$CoreSpanBuilder;
