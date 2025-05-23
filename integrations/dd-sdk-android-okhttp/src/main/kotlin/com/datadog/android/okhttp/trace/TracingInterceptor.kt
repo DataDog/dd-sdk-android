@@ -21,6 +21,7 @@ import com.datadog.android.internal.telemetry.TracingHeaderTypesSet
 import com.datadog.android.internal.utils.loggableStackTrace
 import com.datadog.android.okhttp.TraceContext
 import com.datadog.android.okhttp.TraceContextInjection
+import com.datadog.android.okhttp.internal.otel.toAgentSpanContext
 import com.datadog.android.okhttp.internal.trace.toInternalTracingHeaderType
 import com.datadog.android.trace.AndroidTracer
 import com.datadog.android.trace.TracingHeaderType
@@ -81,7 +82,7 @@ internal constructor(
     internal val traceContextInjection: TraceContextInjection,
     internal val redacted404ResourceName: Boolean,
     internal val localTracerFactory: (SdkCore, Set<TracingHeaderType>) -> Tracer,
-    internal val globalTracerProvider: () -> Tracer?
+    private val globalTracerProvider: () -> Tracer?
 ) : Interceptor {
 
     private val localTracerReference: AtomicReference<Tracer> = AtomicReference()
@@ -376,13 +377,10 @@ internal constructor(
     }
 
     private fun extractParentContext(tracer: Tracer, request: Request): SpanContext? {
-        val tagContext = request.tag(Span::class.java)?.context() ?: request.tag(TraceContext::class.java)
-        // need this, because TagContext#toSpanId returns empty string even if there is non-empty context
-        val hasTag = tagContext != null
+        val tagContext = request.tag(Span::class.java)?.context()
+            ?: request.tag(TraceContext::class.java)?.toAgentSpanContext()
 
-        val headerContext: AgentSpan.Context.Extracted = tracer.propagate().extract(
-            request
-        ) { carrier, classifier ->
+        val headerContext: AgentSpan.Context.Extracted = tracer.propagate().extract(request) { carrier, classifier ->
             val headers = carrier.headers.toMultimap()
                 .map { it.key to it.value.joinToString(";") }
                 .toMap()
@@ -390,15 +388,7 @@ internal constructor(
             for ((key, value) in headers) classifier.accept(key, value)
         }
 
-        // Tracer.extract will return empty object, not null, if nothing was extracted. ExtractedContext will be
-        // returned only if there is real tracing info.
-        return if (headerContext is ExtractedContext) {
-            headerContext
-        } else if (hasTag) {
-            tagContext
-        } else {
-            null
-        }
+        return if (headerContext is ExtractedContext) headerContext else tagContext
     }
 
     private fun setSampledOutHeaders(
