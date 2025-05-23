@@ -322,21 +322,14 @@ internal constructor(
         return span
     }
 
-    @Suppress("ReturnCount")
     private fun extractSamplingDecision(request: Request): Boolean? {
         val headerSamplingPriority = extractSamplingDecisionFromHeader(request)
         if (headerSamplingPriority != null) return headerSamplingPriority
 
-        val openTelemetrySpan = request.tag(TraceContext::class.java)
-        if (openTelemetrySpan != null) {
-            return if (openTelemetrySpan.samplingPriority == PrioritySampling.UNSET) {
-                null
-            } else {
-                openTelemetrySpan.samplingPriority > 0
-            }
-        }
+        val openTelemetrySpanSamplingPriority = request.tag(TraceContext::class.java)?.samplingPriority
+        if (openTelemetrySpanSamplingPriority == PrioritySampling.UNSET) return null
 
-        return null
+        return openTelemetrySpanSamplingPriority?.let { samplingPriority -> samplingPriority > 0 }
     }
 
     @Suppress("ReturnCount")
@@ -388,20 +381,20 @@ internal constructor(
     }
 
     private fun extractParentContext(tracer: Tracer, request: Request): SpanContext? {
-        val tagContext = request.tag(Span::class.java)?.context()
-            ?: request.tag(TraceContext::class.java)?.toOpenTracingContext()
+        val tagContext = request.tag(Span::class.java)?.context() ?: request.tag(TraceContext::class.java)
         // need this, because TagContext#toSpanId returns empty string even if there is non-empty context
-        val hasTag = request.tag(Span::class.java)
-            ?: request.tag(TraceContext::class.java) != null
+        val hasTag = tagContext != null
 
-        val headerContext = tracer.extract(
-            Format.Builtin.TEXT_MAP_EXTRACT,
-            TextMapExtractAdapter(
-                request.headers.toMultimap()
-                    .map { it.key to it.value.joinToString(";") }
-                    .toMap()
-            )
-        )
+        val headerContext: AgentSpan.Context.Extracted = tracer.propagate().extract(
+            request
+        ) { carrier, classifier ->
+            val headers = carrier.headers.toMultimap()
+                .map { it.key to it.value.joinToString(";") }
+                .toMap()
+
+            for ((key, value) in headers) classifier.accept(key, value)
+        }
+
 
         // Tracer.extract will return empty object, not null, if nothing was extracted. ExtractedContext will be
         // returned only if there is real tracing info.
