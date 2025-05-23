@@ -36,7 +36,7 @@ internal class TraceContextExtTest {
     @Test
     fun `M extract the context W toOpenTracingContext`() {
         // When
-        val spanContext = fakeTestedContext.toOpenTracingContext()
+        val spanContext = fakeTestedContext.toAgentSpanContext()
 
         // Then
         val extractedContext = spanContext as ExtractedContext
@@ -50,7 +50,7 @@ internal class TraceContextExtTest {
         // When
         val fakeBrokenTraceId = forge.aNonHexadecimalString()
         fakeTestedContext = fakeTestedContext.copy(traceId = fakeBrokenTraceId)
-        val spanContext = fakeTestedContext.toOpenTracingContext()
+        val spanContext = fakeTestedContext.toAgentSpanContext()
 
         // Then
         val extractedContext = spanContext as ExtractedContext
@@ -64,7 +64,7 @@ internal class TraceContextExtTest {
         // When
         val fakeBrokenSpanId = forge.aNonHexadecimalString()
         fakeTestedContext = fakeTestedContext.copy(spanId = fakeBrokenSpanId)
-        val spanContext = fakeTestedContext.toOpenTracingContext()
+        val spanContext = fakeTestedContext.toAgentSpanContext()
 
         // Then
         val extractedContext = spanContext as ExtractedContext

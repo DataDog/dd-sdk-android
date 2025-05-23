@@ -34,13 +34,13 @@ fun Request.Builder.addParentSpan(span: Span): Request.Builder = apply {
 }
 
 private fun Span.extractTraceContext() = TraceContext(
-    DDTraceId.from(spanContext.traceId),
+    spanContext.traceId,
     spanContext.spanId.toBigIntegerOrNull()?.toLong() ?: 0L,
     if (spanContext.isSampled) PrioritySampling.USER_KEEP else PrioritySampling.UNSET
 )
 
 private fun OtelSpan.extractTraceContext() = TraceContext(
-    DDTraceId.from(spanContext.traceId),
+    spanContext.traceId,
     spanContext.spanId.toBigIntegerOrNull()?.toLong() ?: 0L,
     agentSpanContext.samplingPriority
 )

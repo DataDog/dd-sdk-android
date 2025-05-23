@@ -7,7 +7,6 @@
 package com.datadog.android.okhttp
 
 import com.datadog.android.lint.InternalApi
-import com.datadog.trace.api.DDTraceId
 
 /**
  * The context of a trace to be propagated through the OkHttp requests for Datadog tracing.
@@ -17,11 +16,11 @@ data class TraceContext(
     /**
      * The trace id.
      */
-    val traceId: DDTraceId,
+    val traceId: String,
     /**
      * The span id.
      */
-    val spanId: Long,
+    val spanId: String,
     /**
      * The sampling priority.
      */
