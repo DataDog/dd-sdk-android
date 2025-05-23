@@ -9,6 +9,7 @@ package com.datadog.android.okhttp.otel
 import com.datadog.android.okhttp.TraceContext
 import com.datadog.legacy.trace.api.sampling.PrioritySampling
 import com.datadog.opentelemetry.trace.OtelSpan
+import com.datadog.trace.api.DDTraceId
 import com.datadog.trace.core.DDSpanContext
 import io.opentelemetry.api.trace.Span
 import okhttp3.Request
@@ -18,7 +19,7 @@ import okhttp3.Request
  * @param span the parent span to add to the request.
  * @return the modified Request.Builder instance
  */
-fun Request.Builder.addParentSpan(span: Span): Request.Builder {
+fun Request.Builder.addParentSpan(span: Span): Request.Builder = apply {
     // very fragile and assumes that Datadog Tracer is used
     // we need to trigger sampling decision at this point, because we are doing context propagation out of OpenTelemetry
     if (span is OtelSpan) {
@@ -26,16 +27,20 @@ fun Request.Builder.addParentSpan(span: Span): Request.Builder {
         if (agentSpanContext is DDSpanContext) {
             agentSpanContext.trace.setSamplingPriorityIfNecessary()
         }
-        @Suppress("UnsafeThirdPartyFunctionCall") // the context will always be a TraceContext
-        tag(
-            TraceContext::class.java,
-            TraceContext(span.spanContext.traceId, span.spanContext.spanId, agentSpanContext.samplingPriority)
-        )
+        tag(TraceContext::class.java, span.extractTraceContext())
     } else {
-        val context = span.spanContext
-        val prioritySampling = if (context.isSampled) PrioritySampling.USER_KEEP else PrioritySampling.UNSET
-        @Suppress("UnsafeThirdPartyFunctionCall") // the context will always be a TraceContext
-        tag(TraceContext::class.java, TraceContext(context.traceId, context.spanId, prioritySampling))
+        tag(TraceContext::class.java, span.extractTraceContext())
     }
-    return this
 }
+
+private fun Span.extractTraceContext() = TraceContext(
+    DDTraceId.from(spanContext.traceId),
+    spanContext.spanId.toBigIntegerOrNull()?.toLong() ?: 0L,
+    if (spanContext.isSampled) PrioritySampling.USER_KEEP else PrioritySampling.UNSET
+)
+
+private fun OtelSpan.extractTraceContext() = TraceContext(
+    DDTraceId.from(spanContext.traceId),
+    spanContext.spanId.toBigIntegerOrNull()?.toLong() ?: 0L,
+    agentSpanContext.samplingPriority
+)
