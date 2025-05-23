@@ -6,19 +6,16 @@
 
 package com.datadog.android.okhttp.internal.otel
 
-import java.math.BigInteger
+import com.datadog.android.okhttp.TraceContext
+import com.datadog.trace.core.propagation.ExtractedContext
 
-private const val BASE_16_RADIX = 16
-
-@Suppress("SwallowedException")
-private fun parseToBigInteger(value: String): BigInteger {
-    // just in case but theoretically it should never happen as we are controlling the way the ID is
-    // generated in the CoreTracer.
-    return try {
-        BigInteger(value, BASE_16_RADIX)
-    } catch (e: NumberFormatException) {
-        BigInteger.ZERO
-    } catch (e: ArithmeticException) {
-        BigInteger.ZERO
-    }
+internal fun TraceContext.toAgentSpanContext(): ExtractedContext {
+    return ExtractedContext(
+        traceId,
+        spanId,
+        samplingPriority,
+        null,
+        null,
+        null
+    )
 }
