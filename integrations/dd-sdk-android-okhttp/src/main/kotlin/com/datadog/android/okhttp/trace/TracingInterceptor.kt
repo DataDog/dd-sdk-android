@@ -21,7 +21,6 @@ import com.datadog.android.internal.telemetry.TracingHeaderTypesSet
 import com.datadog.android.internal.utils.loggableStackTrace
 import com.datadog.android.okhttp.TraceContext
 import com.datadog.android.okhttp.TraceContextInjection
-import com.datadog.android.okhttp.internal.otel.toOpenTracingContext
 import com.datadog.android.okhttp.internal.trace.toInternalTracingHeaderType
 import com.datadog.android.trace.AndroidTracer
 import com.datadog.android.trace.TracingHeaderType
@@ -29,14 +28,12 @@ import com.datadog.legacy.trace.api.DDTags
 import com.datadog.legacy.trace.api.sampling.PrioritySampling
 import com.datadog.trace.api.interceptor.MutableSpan
 import com.datadog.trace.api.sampling.SamplingMechanism
+import com.datadog.trace.bootstrap.instrumentation.api.AgentSpan
 import com.datadog.trace.bootstrap.instrumentation.api.Tags
 import com.datadog.trace.common.sampling.AllSampler
 import com.datadog.trace.core.CoreTracer
 import com.datadog.trace.core.DDSpan
 import com.datadog.trace.core.propagation.ExtractedContext
-import io.opentracing.propagation.Format
-import io.opentracing.propagation.TextMapExtractAdapter
-import io.opentracing.propagation.TextMapInject
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -307,10 +304,8 @@ internal constructor(
         val parentContext = extractParentContext(tracer, request)
         val url = request.url.toString()
 
-        val spanBuilder = tracer.buildSpan(SPAN_NAME)
+        val span = tracer.buildSpan(SPAN_NAME)
             .withOrigin(traceOrigin)
-
-        val span = spanBuilder
             .asChildOf(parentContext)
             .start()
 
@@ -395,7 +390,6 @@ internal constructor(
             for ((key, value) in headers) classifier.accept(key, value)
         }
 
-
         // Tracer.extract will return empty object, not null, if nothing was extracted. ExtractedContext will be
         // returned only if there is real tracing info.
         return if (headerContext is ExtractedContext) {
@@ -440,19 +434,17 @@ internal constructor(
 
     private fun handleDatadogSampledOutHeaders(requestBuilder: Request.Builder, span: Span, tracer: Tracer) {
         if (traceContextInjection == TraceContextInjection.ALL) {
-            tracer.inject(
+            tracer.propagate().inject(
                 span.context(),
-                Format.Builtin.TEXT_MAP_INJECT,
-                TextMapInject { key, value ->
-                    requestBuilder.removeHeader(key)
-                    when (key) {
-                        DATADOG_LEAST_SIGNIFICANT_64_BITS_TRACE_ID_HEADER,
-                        DATADOG_TAGS_HEADER,
-                        DATADOG_SPAN_ID_HEADER,
-                        DATADOG_ORIGIN_HEADER -> requestBuilder.addHeader(key, value)
-                    }
+                requestBuilder
+            ) { carrier, key, value ->
+                when (key) {
+                    DATADOG_LEAST_SIGNIFICANT_64_BITS_TRACE_ID_HEADER,
+                    DATADOG_TAGS_HEADER,
+                    DATADOG_SPAN_ID_HEADER,
+                    DATADOG_ORIGIN_HEADER -> carrier.addHeader(key, value)
                 }
-            )
+            }
             requestBuilder.addHeader(
                 DATADOG_SAMPLING_PRIORITY_HEADER,
                 DATADOG_DROP_SAMPLING_DECISION
@@ -539,44 +531,40 @@ internal constructor(
         if (!isSampled) {
             setSampledOutHeaders(tracedRequestBuilder, tracingHeaderTypes, span, tracer)
         } else {
-            tracer.inject(
+            tracer.propagate().inject(
                 span.context(),
-                Format.Builtin.TEXT_MAP_INJECT,
-                TextMapInject { key, value ->
-                    // By default the `addHeader` method adds a value and doesn't replace it
-                    // We need to remove the old trace/span info to use the one for the current span
-                    tracedRequestBuilder.removeHeader(key)
-                    when (key) {
-                        DATADOG_SAMPLING_PRIORITY_HEADER,
-                        DATADOG_LEAST_SIGNIFICANT_64_BITS_TRACE_ID_HEADER,
-                        DATADOG_TAGS_HEADER,
-                        DATADOG_SPAN_ID_HEADER,
-                        DATADOG_ORIGIN_HEADER -> if (tracingHeaderTypes.contains(TracingHeaderType.DATADOG)) {
-                            tracedRequestBuilder.addHeader(key, value)
-                        }
-
-                        B3_HEADER_KEY -> if (tracingHeaderTypes.contains(TracingHeaderType.B3)) {
-                            tracedRequestBuilder.addHeader(key, value)
-                        }
-
-                        B3M_SPAN_ID_KEY,
-                        B3M_TRACE_ID_KEY,
-                        B3M_SAMPLING_PRIORITY_KEY -> if (tracingHeaderTypes.contains(
-                                TracingHeaderType.B3MULTI
-                            )
-                        ) {
-                            tracedRequestBuilder.addHeader(key, value)
-                        }
-
-                        W3C_TRACEPARENT_KEY,
-                        W3C_TRACESTATE_KEY -> if (tracingHeaderTypes.contains(TracingHeaderType.TRACECONTEXT)) {
-                            tracedRequestBuilder.addHeader(key, value)
-                        }
-
-                        else -> tracedRequestBuilder.addHeader(key, value)
+                tracedRequestBuilder
+            ) { carrier, key, value ->
+                when (key) {
+                    DATADOG_SAMPLING_PRIORITY_HEADER,
+                    DATADOG_LEAST_SIGNIFICANT_64_BITS_TRACE_ID_HEADER,
+                    DATADOG_TAGS_HEADER,
+                    DATADOG_SPAN_ID_HEADER,
+                    DATADOG_ORIGIN_HEADER -> if (tracingHeaderTypes.contains(TracingHeaderType.DATADOG)) {
+                        carrier.addHeader(key, value)
                     }
+
+                    B3_HEADER_KEY -> if (tracingHeaderTypes.contains(TracingHeaderType.B3)) {
+                        carrier.addHeader(key, value)
+                    }
+
+                    B3M_SPAN_ID_KEY,
+                    B3M_TRACE_ID_KEY,
+                    B3M_SAMPLING_PRIORITY_KEY -> if (tracingHeaderTypes.contains(
+                            TracingHeaderType.B3MULTI
+                        )
+                    ) {
+                        carrier.addHeader(key, value)
+                    }
+
+                    W3C_TRACEPARENT_KEY,
+                    W3C_TRACESTATE_KEY -> if (tracingHeaderTypes.contains(TracingHeaderType.TRACECONTEXT)) {
+                        carrier.addHeader(key, value)
+                    }
+
+                    else -> carrier.addHeader(key, value)
                 }
-            )
+            }
         }
 
         return tracedRequestBuilder
@@ -632,7 +620,9 @@ internal constructor(
         }
     }
 
-    private fun Span.drop() = (this as? MutableSpan)?.drop()
+    private fun Span.drop() {
+        // TODO (this as? MutableSpan)?.drop()
+    }
 
     private fun Span.sample(request: Request): Boolean {
         val samplingPriority = (this as? DDSpan)?.samplingPriority
@@ -787,7 +777,7 @@ internal constructor(
             return getThis()
         }
 
-        internal fun setGlobalTracerProvider(globalTracerProvider: () -> Tracer?) : R {
+        internal fun setGlobalTracerProvider(globalTracerProvider: () -> Tracer?): R {
             this.globalTracerProvider = globalTracerProvider
             return getThis()
         }
@@ -865,8 +855,10 @@ internal constructor(
 
         private const val AGENT_PSR_ATTRIBUTE = "_dd.agent_psr"
         private val DEFAULT_LOCAL_TRACER_FACTORY: (SdkCore, Set<TracingHeaderType>) -> Tracer =
-            { sdkCore, tracingHeaderTypes ->
-                CoreTracer.CoreTracerBuilder((sdkCore as FeatureSdkCore).internalLogger).build()
+            { sdkCore, tracingHeaderTypes: Set<TracingHeaderType> ->
+                CoreTracer.CoreTracerBuilder((sdkCore as FeatureSdkCore).internalLogger)
+                    .sampler(AllSampler())
+                    .build()
 //                AndroidTracer.Builder(sdkCore)
 //                    // set sample rate to 100 to avoid sampling in the tracer, we are going to sample in the interceptor
 //                    .setSampleRate(ALL_IN_SAMPLE_RATE)
