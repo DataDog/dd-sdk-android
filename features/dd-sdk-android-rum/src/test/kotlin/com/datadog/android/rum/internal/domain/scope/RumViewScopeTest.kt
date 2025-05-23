@@ -472,20 +472,9 @@ internal class RumViewScopeTest {
     ) {
         // Given
         val fakeEvent = forge.anElementFrom(
-            RumRawEvent.AddLongTask(durationNs = forge.aPositiveLong(), target = forge.aString()),
-            RumRawEvent.AddError(
-                message = forge.aString(),
-                sourceType = forge.getForgery(),
-                source = forge.getForgery(),
-                throwable = null,
-                stacktrace = null,
-                isFatal = true,
-                threads = emptyList(),
-                attributes = forge.exhaustiveAttributes()
-            ),
-            RumRawEvent.AddCustomTiming(
-                name = forge.aString()
-            )
+            forge.addLongTaskEvent(),
+            forge.addErrorEvent(),
+            forge.addCustomTimingEvent()
         )
         val datadogContextWithReplay = fakeDatadogContext.copy(
             featuresContext = fakeDatadogContext.featuresContext +

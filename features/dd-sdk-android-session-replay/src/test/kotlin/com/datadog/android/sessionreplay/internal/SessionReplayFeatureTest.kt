@@ -8,6 +8,7 @@ package com.datadog.android.sessionreplay.internal
 
 import android.app.Application
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.sessionreplay.NoOpSessionReplayInternalCallback
@@ -182,7 +183,7 @@ internal class SessionReplayFeatureTest {
         argumentCaptor<(context: MutableMap<String, Any?>) -> Unit> {
             val updatedContext = mutableMapOf<String, Any?>()
             verify(mockSdkCore).updateFeatureContext(
-                eq(SessionReplayFeature.SESSION_REPLAY_FEATURE_NAME),
+                eq(Feature.SESSION_REPLAY_FEATURE_NAME),
                 capture()
             )
             firstValue.invoke(updatedContext)
@@ -218,7 +219,7 @@ internal class SessionReplayFeatureTest {
 
         // Then
         verify(mockSdkCore).setEventReceiver(
-            SessionReplayFeature.SESSION_REPLAY_FEATURE_NAME,
+            Feature.SESSION_REPLAY_FEATURE_NAME,
             testedFeature
         )
     }
@@ -296,7 +297,7 @@ internal class SessionReplayFeatureTest {
         argumentCaptor<(context: MutableMap<String, Any?>) -> Unit> {
             val updatedContext = mutableMapOf<String, Any?>()
             verify(mockSdkCore, times(3)).updateFeatureContext(
-                eq(SessionReplayFeature.SESSION_REPLAY_FEATURE_NAME),
+                eq(Feature.SESSION_REPLAY_FEATURE_NAME),
                 capture()
             )
             allValues.forEach { it.invoke(updatedContext) }
@@ -361,7 +362,7 @@ internal class SessionReplayFeatureTest {
         argumentCaptor<(context: MutableMap<String, Any?>) -> Unit> {
             val updatedContext = mutableMapOf<String, Any?>()
             verify(mockSdkCore, times(2)).updateFeatureContext(
-                eq(SessionReplayFeature.SESSION_REPLAY_FEATURE_NAME),
+                eq(Feature.SESSION_REPLAY_FEATURE_NAME),
                 capture()
             )
             allValues.forEach { it.invoke(updatedContext) }
@@ -1106,7 +1107,7 @@ internal class SessionReplayFeatureTest {
     fun `M provide session replay feature name W name()`() {
         // When+Then
         assertThat(testedFeature.name)
-            .isEqualTo(SessionReplayFeature.SESSION_REPLAY_FEATURE_NAME)
+            .isEqualTo(Feature.SESSION_REPLAY_FEATURE_NAME)
     }
 
     @Test
