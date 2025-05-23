@@ -9,6 +9,7 @@ package com.datadog.android.okhttp
 import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.okhttp.trace.DeterministicTraceSampler
 import com.datadog.android.okhttp.trace.NoOpTracedRequestListener
+import com.datadog.android.okhttp.trace.Span
 import com.datadog.android.okhttp.trace.TracedRequestListener
 import com.datadog.android.okhttp.trace.TracingInterceptor
 import com.datadog.android.trace.TracingHeaderType
@@ -20,7 +21,6 @@ import fr.xgouchet.elmyr.annotation.FloatForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
-import io.opentracing.Span
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test

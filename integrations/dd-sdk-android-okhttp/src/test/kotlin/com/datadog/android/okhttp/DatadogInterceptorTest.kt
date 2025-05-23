@@ -12,6 +12,7 @@ import com.datadog.android.api.feature.Feature
 import com.datadog.android.okhttp.internal.rum.NoOpRumResourceAttributesProvider
 import com.datadog.android.okhttp.trace.DeterministicTraceSampler
 import com.datadog.android.okhttp.trace.NoOpTracedRequestListener
+import com.datadog.android.okhttp.trace.Tracer
 import com.datadog.android.okhttp.trace.TracingInterceptor
 import com.datadog.android.okhttp.trace.TracingInterceptorNotSendingSpanTest
 import com.datadog.android.okhttp.utils.verifyLog
@@ -32,7 +33,6 @@ import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
-import io.opentracing.Tracer
 import okhttp3.MediaType
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.Protocol
@@ -96,7 +96,8 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
             traceSampler = mockTraceSampler,
             traceContextInjection = TraceContextInjection.ALL,
             redacted404ResourceName = fakeRedacted404Resources,
-            localTracerFactory = factory
+            localTracerFactory = factory,
+            globalTracerProvider = { null }
         )
     }
 
