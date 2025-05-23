@@ -65,4 +65,4 @@ dependencyUpdateConfig()
 publishingConfig(
     "A Trace Coroutines extension library to use with the Datadog monitoring library for Android applications."
 )
-detektCustomConfig(":dd-sdk-android-core", ":dd-sdk-android-internal", ":features:dd-sdk-android-trace")
+detektCustomConfig()
