@@ -216,6 +216,8 @@ internal open class RumViewScope(
 
             is RumRawEvent.UpdatePerformanceMetric -> onUpdatePerformanceMetric(event)
             is RumRawEvent.AddViewLoadingTime -> onAddViewLoadingTime(event, writer)
+            is RumRawEvent.AddViewAttributes -> onAddViewAttributes(event)
+            is RumRawEvent.RemoveViewAttributes -> onRemoveViewAttributes(event)
 
             else -> delegateEventToChildren(event, writer)
         }
@@ -320,6 +322,18 @@ internal open class RumViewScope(
         viewLoadingTime = newLoadingTime
         viewEndedMetricDispatcher.onViewLoadingTimeResolved(newLoadingTime)
         sendViewUpdate(event, writer)
+    }
+
+    @WorkerThread
+    private fun onAddViewAttributes(event: RumRawEvent.AddViewAttributes) {
+        viewAttributes.putAll(event.attributes)
+    }
+
+    @WorkerThread
+    private fun onRemoveViewAttributes(event: RumRawEvent.RemoveViewAttributes) {
+        event.attributes.forEach {
+            viewAttributes.remove(it)
+        }
     }
 
     @WorkerThread
