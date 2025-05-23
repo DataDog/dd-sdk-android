@@ -131,7 +131,7 @@ internal class SessionReplayFeature(
         }
 
         this.appContext = appContext
-        sdkCore.setEventReceiver(SESSION_REPLAY_FEATURE_NAME, this)
+        sdkCore.setEventReceiver(Feature.SESSION_REPLAY_FEATURE_NAME, this)
 
         val resourcesFeature = registerResourceFeature(sdkCore)
 
@@ -153,7 +153,7 @@ internal class SessionReplayFeature(
             )
         sessionReplayRecorder.registerCallbacks()
         initialized.set(true)
-        sdkCore.updateFeatureContext(SESSION_REPLAY_FEATURE_NAME) {
+        sdkCore.updateFeatureContext(Feature.SESSION_REPLAY_FEATURE_NAME) {
             it[SESSION_REPLAY_SAMPLE_RATE_KEY] = rateBasedSampler.getSampleRate()?.toLong()
             it[SESSION_REPLAY_START_IMMEDIATE_RECORDING_KEY] = startRecordingImmediately
             it[SESSION_REPLAY_TOUCH_PRIVACY_KEY] = touchPrivacy.toString().lowercase(Locale.US)
@@ -355,7 +355,7 @@ internal class SessionReplayFeature(
     internal fun startRecording() {
         // Check initialization again so we don't forget to do it when this method is made public
         if (checkIfInitialized() && !isRecording.getAndSet(true)) {
-            sdkCore.updateFeatureContext(SESSION_REPLAY_FEATURE_NAME) {
+            sdkCore.updateFeatureContext(Feature.SESSION_REPLAY_FEATURE_NAME) {
                 it[SESSION_REPLAY_ENABLED_KEY] = true
             }
             sessionReplayRecorder.resumeRecorders()
@@ -372,7 +372,7 @@ internal class SessionReplayFeature(
      */
     internal fun stopRecording() {
         if (isRecording.getAndSet(false)) {
-            sdkCore.updateFeatureContext(SESSION_REPLAY_FEATURE_NAME) {
+            sdkCore.updateFeatureContext(Feature.SESSION_REPLAY_FEATURE_NAME) {
                 it[SESSION_REPLAY_ENABLED_KEY] = false
             }
             sessionReplayRecorder.stopRecorders()
@@ -425,7 +425,6 @@ internal class SessionReplayFeature(
             " are either missing or have wrong type."
         internal const val CANNOT_START_RECORDING_NOT_INITIALIZED =
             "Cannot start session recording, because Session Replay feature is not initialized."
-        const val SESSION_REPLAY_FEATURE_NAME = "session-replay"
         const val SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY = "type"
         const val RUM_SESSION_RENEWED_BUS_MESSAGE = "rum_session_renewed"
         const val RUM_KEEP_SESSION_BUS_MESSAGE_KEY = "keepSession"

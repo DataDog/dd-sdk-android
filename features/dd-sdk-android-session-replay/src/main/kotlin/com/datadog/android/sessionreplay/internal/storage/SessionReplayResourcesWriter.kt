@@ -11,7 +11,6 @@ import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.storage.EventType
 import com.datadog.android.api.storage.RawBatchEvent
-import com.datadog.android.sessionreplay.internal.ResourcesFeature.Companion.SESSION_REPLAY_RESOURCES_FEATURE_NAME
 import com.datadog.android.sessionreplay.internal.processor.EnrichedResource
 import com.datadog.android.sessionreplay.internal.processor.asBinaryMetadata
 
@@ -19,7 +18,7 @@ internal class SessionReplayResourcesWriter(
     private val sdkCore: FeatureSdkCore
 ) : ResourcesWriter {
     override fun write(enrichedResource: EnrichedResource) {
-        sdkCore.getFeature(SESSION_REPLAY_RESOURCES_FEATURE_NAME)
+        sdkCore.getFeature(Feature.SESSION_REPLAY_RESOURCES_FEATURE_NAME)
             ?.withWriteContext { datadogContext, writeScope ->
                 writeScope {
                     synchronized(this@SessionReplayResourcesWriter) {

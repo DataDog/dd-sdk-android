@@ -8,6 +8,7 @@ package com.datadog.android.sessionreplay.internal.storage
 
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.EventWriteScope
+import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.storage.EventBatchWriter
@@ -15,7 +16,6 @@ import com.datadog.android.api.storage.EventType
 import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.RecordCallback
-import com.datadog.android.sessionreplay.internal.SessionReplayFeature
 import com.datadog.android.sessionreplay.internal.processor.EnrichedRecord
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
@@ -69,7 +69,7 @@ internal class SessionReplayRecordWriterTest {
         whenever(mockEventBatchWriter.write(anyOrNull(), anyOrNull(), any()))
             .thenReturn(true)
 
-        whenever(mockSdkCore.getFeature(SessionReplayFeature.SESSION_REPLAY_FEATURE_NAME))
+        whenever(mockSdkCore.getFeature(Feature.SESSION_REPLAY_FEATURE_NAME))
             .thenReturn(mockSessionReplayFeature)
 
         testedWriter = SessionReplayRecordWriter(mockSdkCore, mockRecordCallback)
@@ -107,7 +107,7 @@ internal class SessionReplayRecordWriterTest {
     fun `M do nothing W write { feature not properly initialized }`(forge: Forge) {
         // Given
         val fakeRecord = forge.forgeEnrichedRecord()
-        whenever(mockSdkCore.getFeature(SessionReplayFeature.SESSION_REPLAY_FEATURE_NAME))
+        whenever(mockSdkCore.getFeature(Feature.SESSION_REPLAY_FEATURE_NAME))
             .thenReturn(null)
 
         // When

@@ -15,7 +15,6 @@ import com.datadog.android.api.storage.EventBatchWriter
 import com.datadog.android.api.storage.EventType
 import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
-import com.datadog.android.sessionreplay.internal.ResourcesFeature
 import com.datadog.android.sessionreplay.internal.processor.EnrichedResource
 import com.datadog.android.sessionreplay.internal.processor.asBinaryMetadata
 import fr.xgouchet.elmyr.annotation.Forgery
@@ -71,7 +70,7 @@ internal class SessionReplayResourcesWriterTest {
         whenever(mockEventBatchWriter.write(anyOrNull(), anyOrNull(), any()))
             .thenReturn(true)
 
-        whenever(mockFeatureSdkCore.getFeature(ResourcesFeature.SESSION_REPLAY_RESOURCES_FEATURE_NAME))
+        whenever(mockFeatureSdkCore.getFeature(Feature.SESSION_REPLAY_RESOURCES_FEATURE_NAME))
             .thenReturn(mockResourcesFeature)
 
         testedWriter = SessionReplayResourcesWriter(
