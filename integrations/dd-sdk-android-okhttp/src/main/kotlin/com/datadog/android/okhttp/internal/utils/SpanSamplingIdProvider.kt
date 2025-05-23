@@ -7,8 +7,8 @@
 package com.datadog.android.okhttp.internal.utils
 
 import com.datadog.android.log.LogAttributes
+import com.datadog.android.okhttp.trace.Span
 import com.datadog.opentracing.DDSpanContext
-import io.opentracing.Span
 
 internal object SpanSamplingIdProvider {
 
@@ -18,12 +18,11 @@ internal object SpanSamplingIdProvider {
 
         // for a UUID with value aaaaaaaa-bbbb-Mccc-Nddd-1234567890ab
         // we use as the input id the last part : 0x1234567890ab
-        val sessionIdToken = sessionId?.split('-')?.lastOrNull()?.toLongOrNull(HEX_RADIX)?.toULong()
+        val sessionIdToken = sessionId?.split('-')
+            ?.lastOrNull()
+            ?.toLongOrNull(HEX_RADIX)
+            ?.toULong()
 
-        return if (sessionIdToken != null) {
-            sessionIdToken
-        } else {
-            context.toTraceId().toBigIntegerOrNull()?.toLong()?.toULong() ?: 0u
-        }
+        return sessionIdToken ?: context.traceId.toLong().toULong()
     }
 }
