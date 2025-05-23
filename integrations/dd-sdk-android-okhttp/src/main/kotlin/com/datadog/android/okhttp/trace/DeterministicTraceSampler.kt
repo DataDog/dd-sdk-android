@@ -9,7 +9,6 @@ package com.datadog.android.okhttp.trace
 import androidx.annotation.FloatRange
 import com.datadog.android.core.sampling.DeterministicSampler
 import com.datadog.android.okhttp.internal.utils.SpanSamplingIdProvider
-import io.opentracing.Span
 
 /**
  * A [DeterministicSampler] using the TraceID of a Span to compute the sampling decision.
