@@ -23,7 +23,7 @@ class DdRumContentProvider : ContentProvider() {
 
     override fun onCreate(): Boolean {
         context?.let {
-            Profiler.startProfiling(it, 2)
+            Profiler.startProfilingManagerProfiling(it, 2)
         }
         if (processImportance == 0) {
             val manager = context?.getSystemService(Context.ACTIVITY_SERVICE) as? ActivityManager

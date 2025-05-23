@@ -89,6 +89,7 @@ dependencies {
     implementation(libs.androidXRecyclerView)
     implementation(libs.androidXFragment)
     implementation(libs.protobuf)
+    implementation(libs.benchmarkTraceProcessor)
 //    implementation(libs.androidPerfettoBinary)
 
     // Generate NoOp implementations

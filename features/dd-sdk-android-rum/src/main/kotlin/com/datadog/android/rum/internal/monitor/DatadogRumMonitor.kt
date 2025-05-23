@@ -9,6 +9,7 @@ package com.datadog.android.rum.internal.monitor
 import android.app.Activity
 import android.app.ActivityManager
 import android.os.Handler
+import android.os.Looper
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.storage.DataWriter
@@ -167,10 +168,12 @@ internal class DatadogRumMonitor(
 
     override fun startView(key: Any, name: String, attributes: Map<String, Any?>) {
         if (appWasStarted.compareAndSet(false, true)) {
-            Thread {
-                Thread.sleep(10000)
-                Profiler.stopProfiling()
-            }.start()
+            Handler(Looper.getMainLooper()).postDelayed(
+                {
+                    Profiler.stopProfilingManagerProfiling()
+                },
+                20000
+            )
         }
         val eventTime = getEventTime(attributes)
         handleEvent(

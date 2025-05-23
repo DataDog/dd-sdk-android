@@ -86,6 +86,7 @@ import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.rum.profiling.MergedTracesUploader
+import com.datadog.android.rum.profiling.PerfettoTracesUploader
 import com.datadog.android.rum.tracking.ActionTrackingStrategy
 import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
 import com.datadog.android.rum.tracking.InteractionPredicate
@@ -150,6 +151,7 @@ internal class RumFeature(
     private val lateCrashEventHandler by lazy { lateCrashReporterFactory(sdkCore as InternalSdkCore) }
 
     private lateinit var tracesUploader: MergedTracesUploader
+    private lateinit var perfettoUploader: PerfettoTracesUploader
 
     // region Feature
 
@@ -230,6 +232,18 @@ internal class RumFeature(
         sdkCore.setEventReceiver(name, this)
         sdkCore.setEventReceiver(name, tracesUploader)
         tracesUploader.startUploadingTraces(20)
+        val perfettoStorage = appContext.filesDir.absolutePath + "/profiling"
+        perfettoUploader = PerfettoTracesUploader(
+            datadogContext.site.intakeEndpoint,
+            perfettoStorage,
+            internalLogger = sdkCore.internalLogger,
+            version = datadogContext.version,
+            sdkVersion = datadogContext.sdkVersion,
+            service = datadogContext.service,
+            apiKey = "<YOUR_API_KEY_HERE>"
+        )
+        sdkCore.setEventReceiver(name, perfettoUploader)
+        perfettoUploader.startUploadingTraces(10)
         initialized.set(true)
     }
 

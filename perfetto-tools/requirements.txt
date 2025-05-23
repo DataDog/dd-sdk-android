@@ -1,0 +1,6 @@
+flask==3.0.2
+requests==2.31.0
+werkzeug==3.0.1
+perfetto==0.11.0
+protobuf~=4.21
+grpcio-tools==1.48.1

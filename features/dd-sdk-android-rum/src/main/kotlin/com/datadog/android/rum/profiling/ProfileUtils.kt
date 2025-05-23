@@ -194,7 +194,7 @@ internal object ProfileUtils {
                             locationIdMap[locationId] ?: locationId
                         }
                     )
-                    .addValue(snapshotIntervalInNanos) // Keep value as 1
+                    .addValue(snapshotIntervalInNanos)
                     .addAllLabel(labels)
                     .build()
                 merged.addSample(newSample)

@@ -53,7 +53,6 @@ import com.datadog.android.timber.DatadogTree
 import com.datadog.android.trace.AndroidTracer
 import com.datadog.android.trace.Trace
 import com.datadog.android.trace.TraceConfiguration
-import com.datadog.android.trace.opentelemetry.MainThreadSpy
 import com.datadog.android.trace.opentelemetry.OtelTracerProvider
 import com.datadog.android.vendor.sample.LocalServer
 import com.facebook.stetho.Stetho
@@ -117,7 +116,6 @@ class SampleApplication : Application() {
         initializeTimber()
 
         initializeImageLoaders()
-        MainThreadSpy.spyOnMainThread()
         localServer.init(this)
     }
 
