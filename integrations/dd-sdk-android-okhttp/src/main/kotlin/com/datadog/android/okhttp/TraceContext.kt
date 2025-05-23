@@ -16,13 +16,13 @@ data class TraceContext(
     /**
      * The trace id.
      */
-    val traceId: String,
+    private val traceId: String,
     /**
      * The span id.
      */
-    val spanId: String,
+    private val spanId: String,
     /**
      * The sampling priority.
      */
-    val samplingPriority: Int
+    private val samplingPriority: Int
 )

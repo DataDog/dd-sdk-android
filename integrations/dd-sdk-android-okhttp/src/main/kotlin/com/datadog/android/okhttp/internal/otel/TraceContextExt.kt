@@ -6,25 +6,9 @@
 
 package com.datadog.android.okhttp.internal.otel
 
-import com.datadog.android.okhttp.TraceContext
-import com.datadog.opentracing.propagation.ExtractedContext
-import io.opentracing.SpanContext
 import java.math.BigInteger
 
 private const val BASE_16_RADIX = 16
-
-internal fun TraceContext.toOpenTracingContext(): SpanContext {
-    val traceIdAsBigInteger = parseToBigInteger(traceId)
-    val spanIdAsBigInteger = parseToBigInteger(spanId)
-    return ExtractedContext(
-        traceIdAsBigInteger,
-        spanIdAsBigInteger,
-        samplingPriority,
-        null,
-        emptyMap(),
-        emptyMap()
-    )
-}
 
 @Suppress("SwallowedException")
 private fun parseToBigInteger(value: String): BigInteger {

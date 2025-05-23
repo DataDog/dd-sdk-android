@@ -23,7 +23,7 @@ public final class com/datadog/android/okhttp/DatadogEventListener$Factory : okh
 
 public class com/datadog/android/okhttp/DatadogInterceptor : com/datadog/android/okhttp/trace/TracingInterceptor {
 	public fun intercept (Lokhttp3/Interceptor$Chain;)Lokhttp3/Response;
-	protected fun onRequestIntercepted (Lcom/datadog/android/api/feature/FeatureSdkCore;Lokhttp3/Request;Lio/opentracing/Span;Lokhttp3/Response;Ljava/lang/Throwable;)V
+	protected fun onRequestIntercepted (Lcom/datadog/android/api/feature/FeatureSdkCore;Lokhttp3/Request;Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpan;Lokhttp3/Response;Ljava/lang/Throwable;)V
 }
 
 public final class com/datadog/android/okhttp/DatadogInterceptor$Builder : com/datadog/android/okhttp/trace/TracingInterceptor$BaseBuilder {
@@ -35,17 +35,19 @@ public final class com/datadog/android/okhttp/DatadogInterceptor$Builder : com/d
 	public final fun setRumResourceAttributesProvider (Lcom/datadog/android/rum/RumResourceAttributesProvider;)Lcom/datadog/android/okhttp/DatadogInterceptor$Builder;
 }
 
-public final class com/datadog/android/okhttp/TraceContext {
-	public fun <init> (Ljava/lang/String;Ljava/lang/String;I)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun component2 ()Ljava/lang/String;
-	public final fun component3 ()I
-	public final fun copy (Ljava/lang/String;Ljava/lang/String;I)Lcom/datadog/android/okhttp/TraceContext;
-	public static synthetic fun copy$default (Lcom/datadog/android/okhttp/TraceContext;Ljava/lang/String;Ljava/lang/String;IILjava/lang/Object;)Lcom/datadog/android/okhttp/TraceContext;
+public final class com/datadog/android/okhttp/TraceContext : com/datadog/trace/bootstrap/instrumentation/api/AgentSpan$Context {
+	public fun <init> (Lcom/datadog/trace/api/DDTraceId;JI)V
+	public synthetic fun baggageItems ()Ljava/lang/Iterable;
+	public fun baggageItems ()Ljava/lang/Void;
+	public final fun copy (Lcom/datadog/trace/api/DDTraceId;JI)Lcom/datadog/android/okhttp/TraceContext;
+	public static synthetic fun copy$default (Lcom/datadog/android/okhttp/TraceContext;Lcom/datadog/trace/api/DDTraceId;JIILjava/lang/Object;)Lcom/datadog/android/okhttp/TraceContext;
 	public fun equals (Ljava/lang/Object;)Z
-	public final fun getSamplingPriority ()I
-	public final fun getSpanId ()Ljava/lang/String;
-	public final fun getTraceId ()Ljava/lang/String;
+	public synthetic fun getPathwayContext ()Lcom/datadog/trace/bootstrap/instrumentation/api/PathwayContext;
+	public fun getPathwayContext ()Ljava/lang/Void;
+	public fun getSamplingPriority ()I
+	public fun getSpanId ()J
+	public fun getTrace ()Lcom/datadog/trace/bootstrap/instrumentation/api/AgentTrace;
+	public fun getTraceId ()Lcom/datadog/trace/api/DDTraceId;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
 }
@@ -68,12 +70,12 @@ public final class com/datadog/android/okhttp/trace/OkHttpRequestExtKt {
 }
 
 public abstract interface class com/datadog/android/okhttp/trace/TracedRequestListener {
-	public abstract fun onRequestIntercepted (Lokhttp3/Request;Lio/opentracing/Span;Lokhttp3/Response;Ljava/lang/Throwable;)V
+	public abstract fun onRequestIntercepted (Lokhttp3/Request;Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpan;Lokhttp3/Response;Ljava/lang/Throwable;)V
 }
 
 public class com/datadog/android/okhttp/trace/TracingInterceptor : okhttp3/Interceptor {
 	public fun intercept (Lokhttp3/Interceptor$Chain;)Lokhttp3/Response;
-	protected fun onRequestIntercepted (Lcom/datadog/android/api/feature/FeatureSdkCore;Lokhttp3/Request;Lio/opentracing/Span;Lokhttp3/Response;Ljava/lang/Throwable;)V
+	protected fun onRequestIntercepted (Lcom/datadog/android/api/feature/FeatureSdkCore;Lokhttp3/Request;Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpan;Lokhttp3/Response;Ljava/lang/Throwable;)V
 }
 
 public abstract class com/datadog/android/okhttp/trace/TracingInterceptor$BaseBuilder {
