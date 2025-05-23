@@ -22,7 +22,6 @@ import com.datadog.android.trace.TracingHeaderType
 import com.datadog.legacy.trace.api.interceptor.MutableSpan
 import com.datadog.legacy.trace.api.sampling.PrioritySampling
 import com.datadog.opentracing.DDSpanContext
-import com.datadog.opentracing.DDTracer
 import com.datadog.opentracing.propagation.ExtractedContext
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
@@ -37,9 +36,6 @@ import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
-import io.opentracing.Span
-import io.opentracing.SpanContext
-import io.opentracing.Tracer
 import io.opentracing.propagation.TextMapExtract
 import io.opentracing.propagation.TextMapInject
 import io.opentracing.tag.Tags
@@ -217,6 +213,7 @@ internal open class TracingInterceptorNotSendingSpanTest {
                 traceOrigin = fakeOrigin,
                 traceSampler = mockTraceSampler,
                 localTracerFactory = factory,
+                globalTracerProvider = { null },
                 redacted404ResourceName = fakeRedacted404Resources,
                 traceContextInjection = TraceContextInjection.ALL
             ) {
@@ -581,7 +578,7 @@ internal open class TracingInterceptorNotSendingSpanTest {
                     isSampled = false
                 )
                 .hasTraceStateHeaderWithOnlyDatadogVendorValues(
-                    mockSpan.context().toSpanId(),
+                    mockSpan.context().spanId.toString(),
                     isSampled = false,
                     getExpectedOrigin()
                 )
