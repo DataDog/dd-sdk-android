@@ -13,7 +13,7 @@ import java.io.InputStreamReader
 
 fun Project.execShell(vararg command: String): List<String> {
     val outputStream = ByteArrayOutputStream()
-    this.exec {
+    providers.exec {
         commandLine(*command)
         standardOutput = outputStream
     }
