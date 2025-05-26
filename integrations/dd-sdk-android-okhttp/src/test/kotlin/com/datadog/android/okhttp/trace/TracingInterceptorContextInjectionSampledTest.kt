@@ -205,11 +205,6 @@ internal class TracingInterceptorContextInjectionSampledTest {
         return fakeOrigin
     }
 
-    @AfterEach
-    fun `tear down`() {
-        GlobalTracer::class.java.setStaticValue("isRegistered", false)
-    }
-
     @Test
     fun `M instantiate with default values W init()`() {
         // Given
