@@ -24,8 +24,9 @@ import com.datadog.legacy.trace.api.sampling.PrioritySampling
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
-import com.datadog.tools.unit.setStaticValue
 import com.datadog.trace.api.DDTraceId
+import com.datadog.trace.bootstrap.instrumentation.api.AgentPropagation
+import com.datadog.trace.bootstrap.instrumentation.api.AgentSpan.Context
 import com.datadog.trace.bootstrap.instrumentation.api.AgentTracer
 import com.datadog.trace.bootstrap.instrumentation.api.Tags
 import com.datadog.trace.core.DDSpanContext
@@ -50,7 +51,6 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
 import okhttp3.ResponseBody.Companion.toResponseBody
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -96,6 +96,9 @@ internal class TracingInterceptorContextInjectionSampledTest {
 
     @Mock
     lateinit var mockTracer: Tracer
+
+    @Mock
+    lateinit var mockPropagation: AgentPropagation
 
     @Mock
     lateinit var mockLocalTracer: Tracer
@@ -162,9 +165,11 @@ internal class TracingInterceptorContextInjectionSampledTest {
     @BeforeEach
     fun `set up`(forge: Forge) {
         fakeOrigin = forge.anAlphabeticalString()
-        fakeTraceId = DDTraceId.from(fakeTraceIdAsString)
+        fakeTraceId = newFakeTraceId(fakeTraceIdAsString)
         whenever(mockTracer.buildSpan(TracingInterceptor.SPAN_NAME)) doReturn mockSpanBuilder
+        whenever(mockTracer.propagate()).thenReturn(mockPropagation)
         whenever(mockLocalTracer.buildSpan(TracingInterceptor.SPAN_NAME)) doReturn mockSpanBuilder
+        whenever(mockLocalTracer.propagate()) doReturn mockPropagation
         whenever(mockSpanBuilder.withOrigin(fakeOrigin)) doReturn mockSpanBuilder
         whenever(mockSpanBuilder.asChildOf(null as SpanContext?)) doReturn mockSpanBuilder
         whenever(mockSpanBuilder.start()) doReturn mockSpan
@@ -276,10 +281,7 @@ internal class TracingInterceptorContextInjectionSampledTest {
             )
         )
 
-        doAnswer { invocation ->
-            val carrier = invocation.arguments[2] as TextMapIject
-            carrier.put(key, value)
-        }.whenever(mockTracer).inject<TextMapInject>(any(), any(), any())
+        mockPropagation.wheneverInjectPassKeyValueToHeaders(key, value)
 
         val response = testedInterceptor.intercept(mockChain)
 
@@ -315,12 +317,12 @@ internal class TracingInterceptorContextInjectionSampledTest {
             )
         )
         doAnswer { invocation ->
-            val carrier = invocation.arguments[2] as TextMapInject
+            val carrier = invocation.arguments[2] as Request.Builder
             datadogContextKeys.forEach {
-                carrier.put(it, forge.anAlphaNumericalString())
+                carrier.addHeader(it, forge.anAlphaNumericalString())
             }
-            carrier.put(nonDatadogContextKey, nonDatadogContextKeyValue)
-        }.whenever(mockTracer).inject<TextMapInject>(any(), any(), any())
+            carrier.addHeader(nonDatadogContextKey, nonDatadogContextKeyValue)
+        }.whenever(mockPropagation).inject(any<Context>(), any<Request>(), any())
         stubChain(mockChain, statusCode)
 
         // When
@@ -444,11 +446,11 @@ internal class TracingInterceptorContextInjectionSampledTest {
             )
         )
         stubChain(mockChain, statusCode)
-        doAnswer { invocation ->
-            val carrier = invocation.arguments[2] as TextMapInject
-            datadogContext.forEach { carrier.put(it.key, it.value) }
-            carrier.put(nonDatadogContextKey, nonDatadogContextKeyValue)
-        }.whenever(mockTracer).inject<TextMapInject>(any(), any(), any())
+        mockPropagation.wheneverInjectPassContextToHeaders(
+            datadogContext,
+            nonDatadogContextKey,
+            nonDatadogContextKeyValue
+        )
 
         // When
         val response = testedInterceptor.intercept(mockChain)
@@ -478,10 +480,7 @@ internal class TracingInterceptorContextInjectionSampledTest {
         fakeRequest = forgeRequest(forge) { it.tag(Span::class.java, parentSpan) }
         whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(true)
         stubChain(mockChain, statusCode)
-        doAnswer { invocation ->
-            val carrier = invocation.arguments[2] as TextMapInject
-            carrier.put(key, value)
-        }.whenever(mockTracer).inject<TextMapInject>(any(), any(), any())
+        mockPropagation.wheneverInjectPassKeyValueToHeaders(key, value)
 
         val response = testedInterceptor.intercept(mockChain)
 
@@ -509,10 +508,7 @@ internal class TracingInterceptorContextInjectionSampledTest {
         fakeRequest = forgeRequest(forge) { it.tag(TraceContext::class.java, fakeTraceContext) }
         whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(true)
         stubChain(mockChain, statusCode)
-        doAnswer { invocation ->
-            val carrier = invocation.arguments[2] as TextMapInject
-            carrier.put(key, value)
-        }.whenever(mockTracer).inject<TextMapInject>(any(), any(), any())
+        mockPropagation.wheneverInjectPassKeyValueToHeaders(key, value)
 
         // When
         val response = testedInterceptor.intercept(mockChain)
@@ -527,7 +523,7 @@ internal class TracingInterceptorContextInjectionSampledTest {
                 assertThat(firstValue.headers(key)).isEmpty()
             }
         }
-        argumentCaptor<SpanContext>() {
+        argumentCaptor<SpanContext> {
             verify(mockSpanBuilder).asChildOf(capture())
             val extractedContext = firstValue as ExtractedContext
             assertThat(extractedContext.traceId).isEqualTo(fakeExpectedTraceId)
@@ -546,10 +542,7 @@ internal class TracingInterceptorContextInjectionSampledTest {
         fakeRequest = fakeRequest.newBuilder().addHeader(key, previousValue).build()
         stubChain(mockChain, statusCode)
         whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(true)
-        doAnswer { invocation ->
-            val carrier = invocation.arguments[2] as TextMapInject
-            carrier.put(key, value)
-        }.whenever(mockTracer).inject<TextMapInject>(any(), any(), any())
+        mockPropagation.wheneverInjectPassKeyValueToHeaders(key, value)
 
         val response = testedInterceptor.intercept(mockChain)
 
@@ -572,10 +565,7 @@ internal class TracingInterceptorContextInjectionSampledTest {
         fakeRequest = forgeRequest(forge).newBuilder().addHeader(key, previousValue).build()
         whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(false)
         stubChain(mockChain, statusCode)
-        doAnswer { invocation ->
-            val carrier = invocation.arguments[2] as TextMapInject
-            carrier.put(key, value)
-        }.whenever(mockTracer).inject<TextMapInject>(any(), any(), any())
+        mockPropagation.wheneverInjectPassKeyValueToHeaders(key, value)
 
         val response = testedInterceptor.intercept(mockChain)
 
@@ -596,8 +586,7 @@ internal class TracingInterceptorContextInjectionSampledTest {
         fakeRequest = forgeRequest(forge)
         whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(false)
         stubChain(mockChain, statusCode)
-        doThrow(IllegalStateException(message)).whenever(mockTracer)
-            .inject<TextMapInject>(any(), any(), any())
+        mockPropagation.wheneverInjectThrow(IllegalStateException(message))
 
         val response = testedInterceptor.intercept(mockChain)
 
@@ -615,15 +604,11 @@ internal class TracingInterceptorContextInjectionSampledTest {
         @IntForgery(min = 200, max = 300) statusCode: Int
     ) {
         val parentSpanContext: ExtractedContext = mock()
-        whenever(mockTracer.extract<TextMapExtract>(any(), any())) doReturn parentSpanContext
+        whenever(mockPropagation.extract(any<Request>(), any())) doReturn parentSpanContext
         whenever(mockSpanBuilder.asChildOf(any<SpanContext>())) doReturn mockSpanBuilder
         whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(true)
         stubChain(mockChain, statusCode)
-        doAnswer { invocation ->
-            val carrier = invocation.arguments[2] as TextMapInject
-            carrier.put(key, value)
-        }.whenever(mockTracer).inject<TextMapInject>(any(), any(), any())
-
+        mockPropagation.wheneverInjectPassKeyValueToHeaders(key, value)
         val response = testedInterceptor.intercept(mockChain)
 
         assertThat(response).isSameAs(fakeResponse)
@@ -659,10 +644,7 @@ internal class TracingInterceptorContextInjectionSampledTest {
         }
         stubChain(mockChain, statusCode)
         whenever(mockTraceSampler.sample(mockSpan)).thenReturn(false)
-        doAnswer { invocation ->
-            val carrier = invocation.arguments[2] as TextMapInject
-            carrier.put(key, value)
-        }.whenever(mockTracer).inject<TextMapInject>(any(), any(), any())
+        mockPropagation.wheneverInjectPassKeyValueToHeaders(key, value)
 
         // When
         val response = testedInterceptor.intercept(mockChain)
@@ -692,10 +674,7 @@ internal class TracingInterceptorContextInjectionSampledTest {
         }
         stubChain(mockChain, statusCode)
         whenever(mockTraceSampler.sample(mockSpan)).thenReturn(false)
-        doAnswer { invocation ->
-            val carrier = invocation.arguments[2] as TextMapInject
-            carrier.put(key, value)
-        }.whenever(mockTracer).inject<TextMapInject>(any(), any(), any())
+        mockPropagation.wheneverInjectPassKeyValueToHeaders(key, value)
 
         // When
         val response = testedInterceptor.intercept(mockChain)
@@ -726,10 +705,7 @@ internal class TracingInterceptorContextInjectionSampledTest {
         }
         stubChain(mockChain, statusCode)
         whenever(mockTraceSampler.sample(mockSpan)).thenReturn(false)
-        doAnswer { invocation ->
-            val carrier = invocation.arguments[2] as TextMapInject
-            carrier.put(key, value)
-        }.whenever(mockTracer).inject<TextMapInject>(any(), any(), any())
+        mockPropagation.wheneverInjectPassKeyValueToHeaders(key, value)
 
         // When
         val response = testedInterceptor.intercept(mockChain)
@@ -760,10 +736,7 @@ internal class TracingInterceptorContextInjectionSampledTest {
         }
         stubChain(mockChain, statusCode)
         whenever(mockTraceSampler.sample(mockSpan)).thenReturn(false)
-        doAnswer { invocation ->
-            val carrier = invocation.arguments[2] as TextMapInject
-            carrier.put(key, value)
-        }.whenever(mockTracer).inject<TextMapInject>(any(), any(), any())
+        mockPropagation.wheneverInjectPassKeyValueToHeaders(key, value)
 
         // When
         val response = testedInterceptor.intercept(mockChain)
@@ -794,11 +767,12 @@ internal class TracingInterceptorContextInjectionSampledTest {
         ).associate { it to forge.anAlphabeticalString() }
         val nonDatadogContextKey = forge.anAlphabeticalString()
         val nonDatadogContextKeyValue = forge.anAlphabeticalString()
-        doAnswer { invocation ->
-            val carrier = invocation.arguments[2] as TextMapInject
-            datadogContext.forEach { carrier.put(it.key, it.value) }
-            carrier.put(nonDatadogContextKey, nonDatadogContextKeyValue)
-        }.whenever(mockTracer).inject<TextMapInject>(any(), any(), any())
+        mockPropagation.wheneverInjectPassContextToHeaders(
+            datadogContext,
+            nonDatadogContextKey,
+            nonDatadogContextKeyValue
+        )
+
         whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(true)
         whenever(mockResolver.headerTypesForUrl(fakeUrl.toHttpUrl())).thenReturn(
             setOf(
