@@ -5,13 +5,18 @@
  */
 package com.datadog.android.okhttp.trace
 
+import com.datadog.legacy.trace.api.interceptor.MutableSpan
 import com.datadog.trace.api.DDTraceId
 import com.datadog.trace.bootstrap.instrumentation.api.AgentPropagation
 import com.datadog.trace.bootstrap.instrumentation.api.AgentSpan.Context
+import com.datadog.trace.core.CoreTracer.CoreSpanBuilder
 import okhttp3.Request
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.doAnswer
+import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
+import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.math.BigInteger
 
@@ -44,3 +49,12 @@ internal fun AgentPropagation.wheneverInjectPassContextToHeaders(
         .whenever(this)
         .inject(any<Context>(), any<Request>(), any())
 }
+
+internal fun newSpanBuilderMock(
+    localSpan: Span = mock(extraInterfaces = arrayOf(MutableSpan::class))
+) = mock<CoreSpanBuilder> {
+    on { withOrigin(anyOrNull()) } doReturn it
+    on { asChildOf(any<Context>()) } doReturn it
+    on { start() } doReturn localSpan
+}
+
