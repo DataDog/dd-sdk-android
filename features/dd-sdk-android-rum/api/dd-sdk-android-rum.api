@@ -163,7 +163,6 @@ public abstract interface class com/datadog/android/rum/RumMonitor {
 	public abstract fun setDebug (Z)V
 	public abstract fun startAction (Lcom/datadog/android/rum/RumActionType;Ljava/lang/String;Ljava/util/Map;)V
 	public abstract fun startResource (Ljava/lang/String;Lcom/datadog/android/rum/RumResourceMethod;Ljava/lang/String;Ljava/util/Map;)V
-	public abstract fun startResource (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;)V
 	public abstract fun startView (Ljava/lang/Object;Ljava/lang/String;Ljava/util/Map;)V
 	public abstract fun stopAction (Lcom/datadog/android/rum/RumActionType;Ljava/lang/String;Ljava/util/Map;)V
 	public abstract fun stopResource (Ljava/lang/String;Ljava/lang/Integer;Ljava/lang/Long;Lcom/datadog/android/rum/RumResourceKind;Ljava/util/Map;)V
@@ -175,7 +174,6 @@ public abstract interface class com/datadog/android/rum/RumMonitor {
 
 public final class com/datadog/android/rum/RumMonitor$DefaultImpls {
 	public static synthetic fun startResource$default (Lcom/datadog/android/rum/RumMonitor;Ljava/lang/String;Lcom/datadog/android/rum/RumResourceMethod;Ljava/lang/String;Ljava/util/Map;ILjava/lang/Object;)V
-	public static synthetic fun startResource$default (Lcom/datadog/android/rum/RumMonitor;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;ILjava/lang/Object;)V
 	public static synthetic fun startView$default (Lcom/datadog/android/rum/RumMonitor;Ljava/lang/Object;Ljava/lang/String;Ljava/util/Map;ILjava/lang/Object;)V
 	public static synthetic fun stopAction$default (Lcom/datadog/android/rum/RumMonitor;Lcom/datadog/android/rum/RumActionType;Ljava/lang/String;Ljava/util/Map;ILjava/lang/Object;)V
 	public static synthetic fun stopResourceWithError$default (Lcom/datadog/android/rum/RumMonitor;Ljava/lang/String;Ljava/lang/Integer;Ljava/lang/String;Lcom/datadog/android/rum/RumErrorSource;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;ILjava/lang/Object;)V
