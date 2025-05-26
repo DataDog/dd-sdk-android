@@ -230,7 +230,7 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
     ) {
         whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(true)
         stubChain(mockChain, statusCode)
-        mockPropagation.wheneverInjectPassKeyValueToHeaders(key, value)
+        mockPropagation.wheneverInjectThenValueToHeaders(key, value)
 
         val response = testedInterceptor.intercept(mockChain)
 
@@ -371,7 +371,7 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
         fakeRequest = forgeRequest(forge)
         whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(false)
         stubChain(mockChain, statusCode)
-        mockPropagation.wheneverInjectPassKeyValueToHeaders(key, value)
+        mockPropagation.wheneverInjectThenValueToHeaders(key, value)
 
         val response = testedInterceptor.intercept(mockChain)
 
@@ -526,7 +526,7 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
         whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(true)
         doAnswer { true }.whenever(mockResolver).isFirstPartyUrl(fakeUrl.toHttpUrl())
         stubChain(mockChain, statusCode)
-        mockPropagation.wheneverInjectPassKeyValueToHeaders(key, value)
+        mockPropagation.wheneverInjectThenValueToHeaders(key, value)
 
         val response = testedInterceptor.intercept(mockChain)
 
@@ -552,7 +552,7 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
         fakeRequest = forgeRequest(forge)
         doAnswer { true }.whenever(mockResolver).isFirstPartyUrl(fakeUrl.toHttpUrl())
         stubChain(mockChain, statusCode)
-        mockPropagation.wheneverInjectPassKeyValueToHeaders(key, value)
+        mockPropagation.wheneverInjectThenValueToHeaders(key, value)
 
         val response = testedInterceptor.intercept(mockChain)
 
@@ -584,7 +584,7 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
         }
         stubChain(mockChain, statusCode)
         whenever(mockTraceSampler.sample(mockSpan)).thenReturn(false)
-        mockPropagation.wheneverInjectPassKeyValueToHeaders(key, value)
+        mockPropagation.wheneverInjectThenValueToHeaders(key, value)
 
         // When
         val response = testedInterceptor.intercept(mockChain)
@@ -614,7 +614,7 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
         }
         stubChain(mockChain, statusCode)
         whenever(mockTraceSampler.sample(mockSpan)).thenReturn(false)
-        mockPropagation.wheneverInjectPassKeyValueToHeaders(key, value)
+        mockPropagation.wheneverInjectThenValueToHeaders(key, value)
 
         // When
         val response = testedInterceptor.intercept(mockChain)
@@ -644,7 +644,7 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
         }
         stubChain(mockChain, statusCode)
         whenever(mockTraceSampler.sample(mockSpan)).thenReturn(false)
-        mockPropagation.wheneverInjectPassKeyValueToHeaders(key, value)
+        mockPropagation.wheneverInjectThenValueToHeaders(key, value)
 
         // When
         val response = testedInterceptor.intercept(mockChain)
@@ -674,7 +674,7 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
         }
         stubChain(mockChain, statusCode)
         whenever(mockTraceSampler.sample(mockSpan)).thenReturn(false)
-        mockPropagation.wheneverInjectPassKeyValueToHeaders(key, value)
+        mockPropagation.wheneverInjectThenValueToHeaders(key, value)
 
         // When
         val response = testedInterceptor.intercept(mockChain)
