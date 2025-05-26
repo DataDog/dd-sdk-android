@@ -1156,13 +1156,14 @@ internal class OtelTracerProviderTest {
 
     @RepeatedTest(10)
     fun `M send trace with custom user info W SDKCore#setUserInfo() + buildSpan() + start() + finish()`(
+        @StringForgery fakeUserId: String,
         @StringForgery fakeInstrumentationName: String,
         @StringForgery fakeOperation: String,
         @StringForgery fakeUserKey: String,
         @StringForgery fakeUserValue: String
     ) {
         // Given
-        stubSdkCore.setUserInfo(extraInfo = mapOf(fakeUserKey to fakeUserValue))
+        stubSdkCore.setUserInfo(id = fakeUserId, extraInfo = mapOf(fakeUserKey to fakeUserValue))
         val testedProvider = OtelTracerProvider.Builder(stubSdkCore).setBundleWithRumEnabled(true).build()
         val tracer = testedProvider.tracerBuilder(fakeInstrumentationName).build()
 

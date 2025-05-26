@@ -260,31 +260,6 @@ object Datadog {
     }
 
     /**
-     * Sets the user information.
-     *
-     * @param id (nullable) a unique user identifier (relevant to your business domain)
-     * @param name (nullable) the user name or alias
-     * @param email (nullable) the user email
-     * @param extraInfo additional information. An extra information can be
-     * nested up to 8 levels deep. Keys using more than 8 levels will be sanitized by SDK.
-     * @param sdkCore SDK instance to set user info in. If not provided, default SDK instance
-     * will be used.
-     */
-    @JvmStatic
-    @JvmOverloads
-    @Deprecated("UserInfo id property is now mandatory.")
-    @JvmName("setUserInfoDeprecated")
-    fun setUserInfo(
-        id: String? = null,
-        name: String? = null,
-        email: String? = null,
-        extraInfo: Map<String, Any?> = emptyMap(),
-        sdkCore: SdkCore = getInstance()
-    ) {
-        sdkCore.setUserInfo(id, name, email, extraInfo)
-    }
-
-    /**
      * Sets additional information on the [UserInfo] object
      *
      * If properties had originally been set with [SdkCore.setUserInfo], they will be preserved.

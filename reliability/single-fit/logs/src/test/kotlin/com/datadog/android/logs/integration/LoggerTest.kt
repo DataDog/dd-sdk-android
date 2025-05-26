@@ -391,13 +391,14 @@ class LoggerTest {
 
     @RepeatedTest(16)
     fun `M send log with custom user info W SDKCore#setUserInfo() + Logger#log()`(
+        @StringForgery fakeUserId: String,
         @StringForgery fakeMessage: String,
         @StringForgery fakeUserKey: String,
         @StringForgery fakeUserValue: String,
         @IntForgery(Log.VERBOSE, 10) fakeLevel: Int
     ) {
         // Given
-        stubSdkCore.setUserInfo(extraInfo = mapOf(fakeUserKey to fakeUserValue))
+        stubSdkCore.setUserInfo(id = fakeUserId, extraInfo = mapOf(fakeUserKey to fakeUserValue))
         val testedLogger = Logger.Builder(stubSdkCore).build()
 
         // When

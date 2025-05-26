@@ -177,7 +177,7 @@ class StubSDKCore(
     override val time: TimeInfo = mock()
 
     override fun setUserInfo(
-        id: String?,
+        id: String,
         name: String?,
         email: String?,
         extraInfo: Map<String, Any?>

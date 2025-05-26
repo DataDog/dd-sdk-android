@@ -80,7 +80,7 @@ internal object NoOpInternalSdkCore : InternalSdkCore {
     override fun setTrackingConsent(consent: TrackingConsent) = Unit
 
     override fun setUserInfo(
-        id: String?,
+        id: String,
         name: String?,
         email: String?,
         extraInfo: Map<String, Any?>
