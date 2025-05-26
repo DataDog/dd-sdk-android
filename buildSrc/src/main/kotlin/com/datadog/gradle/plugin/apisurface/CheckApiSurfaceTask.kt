@@ -10,10 +10,15 @@ import com.datadog.gradle.plugin.CheckGeneratedFileTask
 import org.gradle.api.tasks.InputFile
 import org.gradle.api.tasks.InputFiles
 import org.gradle.api.tasks.TaskAction
+import org.gradle.process.ExecOperations
 import java.io.File
+import javax.inject.Inject
 
-open class CheckApiSurfaceTask : CheckGeneratedFileTask(
-    genTaskName = ApiSurfacePlugin.TASK_GEN_KOTLIN_API_SURFACE
+open class CheckApiSurfaceTask @Inject constructor(
+    execOperations: ExecOperations
+) : CheckGeneratedFileTask(
+    genTaskName = ApiSurfacePlugin.TASK_GEN_KOTLIN_API_SURFACE,
+    execOperations
 ) {
 
     @InputFile
