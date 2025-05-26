@@ -9,7 +9,6 @@ package com.datadog.android.okhttp.otel
 import com.datadog.android.okhttp.TraceContext
 import com.datadog.legacy.trace.api.sampling.PrioritySampling
 import com.datadog.opentelemetry.trace.OtelSpan
-import com.datadog.trace.api.DDTraceId
 import com.datadog.trace.core.DDSpanContext
 import io.opentelemetry.api.trace.Span
 import okhttp3.Request
@@ -35,12 +34,12 @@ fun Request.Builder.addParentSpan(span: Span): Request.Builder = apply {
 
 private fun Span.extractTraceContext() = TraceContext(
     spanContext.traceId,
-    spanContext.spanId.toBigIntegerOrNull()?.toLong() ?: 0L,
+    spanContext.spanId,
     if (spanContext.isSampled) PrioritySampling.USER_KEEP else PrioritySampling.UNSET
 )
 
 private fun OtelSpan.extractTraceContext() = TraceContext(
     spanContext.traceId,
-    spanContext.spanId.toBigIntegerOrNull()?.toLong() ?: 0L,
+    spanContext.spanId,
     agentSpanContext.samplingPriority
 )
