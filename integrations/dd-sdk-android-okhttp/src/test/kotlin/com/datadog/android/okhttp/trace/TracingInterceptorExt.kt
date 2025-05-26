@@ -24,19 +24,19 @@ internal fun newFakeTraceId(hexString: String): DDTraceId {
     return DDTraceId.from(BigInteger(hexString, 16).toLong())
 }
 
-internal fun AgentPropagation.wheneverInjectThrow(throwable: Throwable) {
+internal fun AgentPropagation.wheneverInjectThenThrow(throwable: Throwable) {
     doThrow(throwable)
         .whenever(this)
         .inject(any<Context>(), any<Request>(), any())
 }
 
-internal fun AgentPropagation.wheneverInjectPassKeyValueToHeaders(key: String, value: String) {
+internal fun AgentPropagation.wheneverInjectThenValueToHeaders(key: String, value: String) {
     doAnswer { it.getArgument<Request.Builder>(2).addHeader(key, value) }
         .whenever(this)
         .inject(any<Context>(), any<Request>(), any())
 }
 
-internal fun AgentPropagation.wheneverInjectPassContextToHeaders(
+internal fun AgentPropagation.wheneverInjectThenContextToHeaders(
     datadogContext: Map<String, String>,
     nonDatadogContextKey: String,
     nonDatadogContextKeyValue: String
