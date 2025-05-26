@@ -26,6 +26,7 @@ import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.datadog.tools.unit.forge.BaseConfigurator
 import com.datadog.trace.api.DDTraceId
+import com.datadog.trace.bootstrap.instrumentation.api.AgentPropagation
 import com.datadog.trace.bootstrap.instrumentation.api.AgentTracer
 import com.datadog.trace.bootstrap.instrumentation.api.AgentTracer.SpanBuilder
 import com.datadog.trace.bootstrap.instrumentation.api.Tags
@@ -39,8 +40,6 @@ import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
-import io.opentracing.propagation.TextMapExtract
-import io.opentracing.propagation.TextMapInject
 import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.Interceptor
@@ -97,7 +96,10 @@ internal open class TracingInterceptorNotSendingSpanTest {
     lateinit var mockLocalTracer: Tracer
 
     @Mock
-    lateinit var mockSpanBuilder: AgentTracer.SpanBuilder
+    lateinit var mockPropagation: AgentPropagation
+
+    @Mock
+    lateinit var mockSpanBuilder: SpanBuilder
 
     @Mock
     lateinit var mockSpanContext: SpanContext
@@ -143,7 +145,7 @@ internal open class TracingInterceptorNotSendingSpanTest {
     lateinit var fakeResponse: Response
 
     @LongForgery
-    val fakeSpanId: Long = 0L
+    var fakeSpanId: Long = 0L
 
     @StringForgery(regex = "[a-f][0-9]{32}")
     lateinit var fakeTraceIdAsString: String
@@ -161,8 +163,10 @@ internal open class TracingInterceptorNotSendingSpanTest {
 
     @BeforeEach
     open fun `set up`(forge: Forge) {
-        fakeTraceId = DDTraceId.from(fakeTraceIdAsString)
+        fakeTraceId = newFakeTraceId(fakeTraceIdAsString)
         whenever(mockTracer.buildSpan(TracingInterceptor.SPAN_NAME)) doReturn mockSpanBuilder
+        whenever(mockTracer.propagate()) doReturn mockPropagation
+        whenever(mockLocalTracer.propagate()) doReturn mockPropagation
         whenever(mockSpanBuilder.asChildOf(null as SpanContext?)) doReturn mockSpanBuilder
         whenever(mockSpanBuilder.start()) doReturn mockSpan
         whenever(mockSpan.context()) doReturn mockSpanContext
@@ -241,10 +245,7 @@ internal open class TracingInterceptorNotSendingSpanTest {
             )
         )
         stubChain(mockChain, statusCode)
-        doAnswer { invocation ->
-            val carrier = invocation.arguments[2] as TextMapInject
-            carrier.put(key, value)
-        }.whenever(mockTracer).inject<TextMapInject>(any(), any(), any())
+        mockPropagation.wheneverInjectPassKeyValueToHeaders(key, value)
 
         val response = testedInterceptor.intercept(mockChain)
 
@@ -435,10 +436,7 @@ internal open class TracingInterceptorNotSendingSpanTest {
         fakeRequest = forgeRequest(forge)
         whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(false)
         stubChain(mockChain, statusCode)
-        doAnswer { invocation ->
-            val carrier = invocation.arguments[2] as TextMapInject
-            carrier.put(key, value)
-        }.whenever(mockTracer).inject<TextMapInject>(any(), any(), any())
+        mockPropagation.wheneverInjectPassKeyValueToHeaders(key, value)
 
         val response = testedInterceptor.intercept(mockChain)
 
@@ -593,10 +591,7 @@ internal open class TracingInterceptorNotSendingSpanTest {
         whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(true)
         doAnswer { true }.whenever(mockResolver).isFirstPartyUrl(fakeUrl.toHttpUrl())
         stubChain(mockChain, statusCode)
-        doAnswer { invocation ->
-            val carrier = invocation.arguments[2] as TextMapInject
-            carrier.put(key, value)
-        }.whenever(mockTracer).inject<TextMapInject>(any(), any(), any())
+        mockPropagation.wheneverInjectPassKeyValueToHeaders(key, value)
 
         val response = testedInterceptor.intercept(mockChain)
 
@@ -617,16 +612,13 @@ internal open class TracingInterceptorNotSendingSpanTest {
         forge: Forge
     ) {
         val parentSpanContext: ExtractedContext = mock()
-        whenever(mockTracer.extract<TextMapExtract>(any(), any())) doReturn parentSpanContext
+        whenever(mockPropagation.extract(any<Request>(), any())) doReturn parentSpanContext
         whenever(mockSpanBuilder.asChildOf(any<SpanContext>())) doReturn mockSpanBuilder
         whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(true)
         fakeRequest = forgeRequest(forge)
         doAnswer { true }.whenever(mockResolver).isFirstPartyUrl(fakeUrl.toHttpUrl())
         stubChain(mockChain, statusCode)
-        doAnswer { invocation ->
-            val carrier = invocation.arguments[2] as TextMapInject
-            carrier.put(key, value)
-        }.whenever(mockTracer).inject<TextMapInject>(any(), any(), any())
+        mockPropagation.wheneverInjectPassKeyValueToHeaders(key, value)
 
         val response = testedInterceptor.intercept(mockChain)
 
@@ -659,10 +651,7 @@ internal open class TracingInterceptorNotSendingSpanTest {
         }
         stubChain(mockChain, statusCode)
         whenever(mockTraceSampler.sample(mockSpan)).thenReturn(false)
-        doAnswer { invocation ->
-            val carrier = invocation.arguments[2] as TextMapInject
-            carrier.put(key, value)
-        }.whenever(mockTracer).inject<TextMapInject>(any(), any(), any())
+        mockPropagation.wheneverInjectPassKeyValueToHeaders(key, value)
 
         // When
         val response = testedInterceptor.intercept(mockChain)
@@ -692,10 +681,7 @@ internal open class TracingInterceptorNotSendingSpanTest {
         }
         stubChain(mockChain, statusCode)
         whenever(mockTraceSampler.sample(mockSpan)).thenReturn(false)
-        doAnswer { invocation ->
-            val carrier = invocation.arguments[2] as TextMapInject
-            carrier.put(key, value)
-        }.whenever(mockTracer).inject<TextMapInject>(any(), any(), any())
+        mockPropagation.wheneverInjectPassKeyValueToHeaders(key, value)
 
         // When
         val response = testedInterceptor.intercept(mockChain)
@@ -725,10 +711,7 @@ internal open class TracingInterceptorNotSendingSpanTest {
         }
         stubChain(mockChain, statusCode)
         whenever(mockTraceSampler.sample(mockSpan)).thenReturn(false)
-        doAnswer { invocation ->
-            val carrier = invocation.arguments[2] as TextMapInject
-            carrier.put(key, value)
-        }.whenever(mockTracer).inject<TextMapInject>(any(), any(), any())
+        mockPropagation.wheneverInjectPassKeyValueToHeaders(key, value)
 
         // When
         val response = testedInterceptor.intercept(mockChain)
@@ -758,10 +741,7 @@ internal open class TracingInterceptorNotSendingSpanTest {
         }
         stubChain(mockChain, statusCode)
         whenever(mockTraceSampler.sample(mockSpan)).thenReturn(false)
-        doAnswer { invocation ->
-            val carrier = invocation.arguments[2] as TextMapInject
-            carrier.put(key, value)
-        }.whenever(mockTracer).inject<TextMapInject>(any(), any(), any())
+        mockPropagation.wheneverInjectPassKeyValueToHeaders(key, value)
 
         // When
         val response = testedInterceptor.intercept(mockChain)
@@ -773,6 +753,7 @@ internal open class TracingInterceptorNotSendingSpanTest {
             assertThat(lastValue.header(key)).isEqualTo(value)
         }
     }
+
 
     @Test
     fun `M respect sampling decision W intercept() {sampled out in upstream interceptor}`(
@@ -842,8 +823,7 @@ internal open class TracingInterceptorNotSendingSpanTest {
         assertThat(response).isSameAs(fakeResponse)
         argumentCaptor<Request> {
             verify(mockChain).proceed(capture())
-            assertThat(lastValue.header(TracingInterceptor.B3M_SAMPLING_PRIORITY_KEY))
-                .isEqualTo("0")
+            assertThat(lastValue.header(TracingInterceptor.B3M_SAMPLING_PRIORITY_KEY)).isEqualTo("0")
             assertThat(lastValue.header(TracingInterceptor.B3M_SPAN_ID_KEY)).isNull()
             assertThat(lastValue.header(TracingInterceptor.B3M_TRACE_ID_KEY)).isNull()
         }
