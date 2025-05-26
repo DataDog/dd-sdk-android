@@ -121,28 +121,6 @@ interface RumMonitor {
      * @see [stopResource]
      * @see [stopResourceWithError]
      */
-    @Deprecated(
-        "This method is deprecated and will be removed in the future versions." +
-            " Use `startResource` method which takes `RumHttpMethod` as `method` parameter instead."
-    )
-    fun startResource(
-        key: String,
-        method: String,
-        url: String,
-        attributes: Map<String, Any?> = emptyMap()
-    )
-
-    /**
-     * Notify that a new Resource is being loaded, linked with the [key] instance.
-     * @param key the instance that represents the resource being loaded (usually your
-     * request or network call instance).
-     * @param method the method used to load the resource (E.g., for network: "GET" or "POST")
-     * @param url the url or local path of the resource being loaded
-     * @param attributes additional custom attributes to attach to the resource. Attributes can be
-     * nested up to 9 levels deep. Keys using more than 9 levels will be sanitized by SDK.
-     * @see [stopResource]
-     * @see [stopResourceWithError]
-     */
     fun startResource(
         key: String,
         method: RumResourceMethod,

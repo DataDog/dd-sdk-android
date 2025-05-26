@@ -93,7 +93,6 @@ import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.verifyNoMoreInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
-import java.util.Locale
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
@@ -430,61 +429,6 @@ internal class DatadogRumMonitorTest {
             val event = firstValue as RumRawEvent.StopAction
             assertThat(event.type).isEqualTo(type)
             assertThat(event.name).isEqualTo(name)
-            assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
-        }
-        verifyNoMoreInteractions(mockScope, mockWriter)
-    }
-
-    @Test
-    fun `M delegate event to rootScope W startResource() { deprecated, known http method }`(
-        @StringForgery key: String,
-        @StringForgery(regex = "http(s?)://[a-z]+\\.com/[a-z]+") url: String,
-        forge: Forge
-    ) {
-        val method = forge.anElementFrom(
-            "GeT",
-            "PoSt",
-            "pUt",
-            "HeAd",
-            "DeLeTe",
-            "pAtCh",
-            "cOnnEct",
-            "TrAcE",
-            "oPtIoNs"
-        )
-        @Suppress("DEPRECATION")
-        testedMonitor.startResource(key, method, url, fakeAttributes)
-        Thread.sleep(PROCESSING_DELAY)
-
-        argumentCaptor<RumRawEvent> {
-            verify(mockScope).handleEvent(capture(), same(mockWriter))
-
-            val event = firstValue as RumRawEvent.StartResource
-            assertThat(event.key).isEqualTo(key)
-            assertThat(event.method.name).isEqualTo(method.uppercase(Locale.US))
-            assertThat(event.url).isEqualTo(url)
-            assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
-        }
-        verifyNoMoreInteractions(mockScope, mockWriter)
-    }
-
-    @Test
-    fun `M delegate event to rootScope W startResource() { deprecated, unknown http method }`(
-        @StringForgery key: String,
-        @StringForgery method: String,
-        @StringForgery(regex = "http(s?)://[a-z]+\\.com/[a-z]+") url: String
-    ) {
-        @Suppress("DEPRECATION")
-        testedMonitor.startResource(key, method, url, fakeAttributes)
-        Thread.sleep(PROCESSING_DELAY)
-
-        argumentCaptor<RumRawEvent> {
-            verify(mockScope).handleEvent(capture(), same(mockWriter))
-
-            val event = firstValue as RumRawEvent.StartResource
-            assertThat(event.key).isEqualTo(key)
-            assertThat(event.method).isEqualTo(RumResourceMethod.GET)
-            assertThat(event.url).isEqualTo(url)
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
         }
         verifyNoMoreInteractions(mockScope, mockWriter)

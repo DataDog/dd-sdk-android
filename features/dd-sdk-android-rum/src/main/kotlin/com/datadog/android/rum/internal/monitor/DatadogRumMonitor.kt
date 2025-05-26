@@ -201,44 +201,6 @@ internal class DatadogRumMonitor(
         )
     }
 
-    @Deprecated(
-        "This method is deprecated and will be removed in the future versions." +
-            " Use `startResource` method which takes `RumHttpMethod` as `method` parameter instead."
-    )
-    override fun startResource(
-        key: String,
-        method: String,
-        url: String,
-        attributes: Map<String, Any?>
-    ) {
-        // enum value names may be changed if obfuscation is aggressive
-        val rumResourceMethod = when (method.uppercase(Locale.US)) {
-            "POST" -> RumResourceMethod.POST
-            "GET" -> RumResourceMethod.GET
-            "HEAD" -> RumResourceMethod.HEAD
-            "PUT" -> RumResourceMethod.PUT
-            "DELETE" -> RumResourceMethod.DELETE
-            "PATCH" -> RumResourceMethod.PATCH
-            "CONNECT" -> RumResourceMethod.CONNECT
-            "TRACE" -> RumResourceMethod.TRACE
-            "OPTIONS" -> RumResourceMethod.OPTIONS
-            else -> {
-                sdkCore.internalLogger.log(
-                    InternalLogger.Level.WARN,
-                    InternalLogger.Target.USER,
-                    {
-                        "Unsupported HTTP method %s reported, using GET instead".format(
-                            Locale.US,
-                            method
-                        )
-                    }
-                )
-                RumResourceMethod.GET
-            }
-        }
-        startResource(key, rumResourceMethod, url, attributes)
-    }
-
     override fun startResource(
         key: String,
         method: RumResourceMethod,
