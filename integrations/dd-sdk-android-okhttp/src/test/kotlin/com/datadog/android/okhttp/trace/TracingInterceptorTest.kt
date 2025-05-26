@@ -26,16 +26,14 @@ import com.datadog.android.okhttp.utils.verifyLog
 import com.datadog.android.trace.TracingHeaderType
 import com.datadog.legacy.trace.api.interceptor.MutableSpan
 import com.datadog.legacy.trace.api.sampling.PrioritySampling
-import com.datadog.opentracing.DDTracer
-import com.datadog.opentracing.propagation.ExtractedContext
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.datadog.tools.unit.setStaticValue
 import com.datadog.trace.api.DDTraceId
-import com.datadog.trace.bootstrap.instrumentation.api.AgentSpan
 import com.datadog.trace.bootstrap.instrumentation.api.AgentTracer
 import com.datadog.trace.bootstrap.instrumentation.api.Tags
+import com.datadog.trace.core.propagation.ExtractedContext
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.FloatForgery
@@ -48,7 +46,6 @@ import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import io.opentracing.propagation.TextMapExtract
 import io.opentracing.propagation.TextMapInject
-import io.opentracing.util.GlobalTracer
 import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.Interceptor
@@ -194,8 +191,6 @@ internal open class TracingInterceptorTest {
         testedInterceptor = instantiateTestedInterceptor(fakeLocalHosts) { _, _ ->
             mockLocalTracer
         }
-
-        GlobalTracer.registerIfAbsent(mockTracer)
     }
 
     open fun instantiateTestedInterceptor(
@@ -219,10 +214,6 @@ internal open class TracingInterceptorTest {
         return fakeOrigin
     }
 
-    @AfterEach
-    fun `tear down`() {
-        GlobalTracer::class.java.setStaticValue("isRegistered", false)
-    }
 
     @Test
     fun `M instantiate with default values W init()`() {
@@ -1271,7 +1262,6 @@ internal open class TracingInterceptorTest {
     fun `M warn the user W intercept() no tracer registered and TracingFeature not initialized`(
         @IntForgery(min = 200, max = 300) statusCode: Int
     ) {
-        GlobalTracer::class.java.setStaticValue("isRegistered", false)
         whenever(rumMonitor.mockSdkCore.getFeature(Feature.TRACING_FEATURE_NAME)) doReturn null
         whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(true)
         stubChain(mockChain, statusCode)
@@ -1295,7 +1285,6 @@ internal open class TracingInterceptorTest {
     ) {
         val localSpanBuilder: AgentTracer.SpanBuilder = mock()
         val localSpan: Span = mock(extraInterfaces = arrayOf(MutableSpan::class))
-        GlobalTracer::class.java.setStaticValue("isRegistered", false)
         whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(true)
         stubChain(mockChain, statusCode)
         whenever(localSpanBuilder.asChildOf(null as SpanContext?)) doReturn localSpanBuilder
@@ -1330,7 +1319,6 @@ internal open class TracingInterceptorTest {
     ) {
         val localSpanBuilder: AgentTracer.SpanBuilder = mock()
         val localSpan: Span = mock(extraInterfaces = arrayOf(MutableSpan::class))
-        GlobalTracer::class.java.setStaticValue("isRegistered", false)
         whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(true)
         stubChain(mockChain, statusCode)
         whenever(localSpanBuilder.asChildOf(null as SpanContext?)) doReturn localSpanBuilder
@@ -1344,7 +1332,6 @@ internal open class TracingInterceptorTest {
 
         val response1 = testedInterceptor.intercept(mockChain)
         val expectedResponse1 = fakeResponse
-        GlobalTracer.registerIfAbsent(mockTracer)
         stubChain(mockChain, statusCode)
         val response2 = testedInterceptor.intercept(mockChain)
         val expectedResponse2 = fakeResponse
@@ -1543,7 +1530,6 @@ internal open class TracingInterceptorTest {
             called++
             mockLocalTracer
         }
-        GlobalTracer::class.java.setStaticValue("isRegistered", false)
         whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(true)
         stubChain(mockChain, statusCode)
 
