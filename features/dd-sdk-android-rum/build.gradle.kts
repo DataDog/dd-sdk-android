@@ -42,7 +42,10 @@ plugins {
 
 android {
     defaultConfig {
-        consumerProguardFiles(Paths.get(rootDir.path, "consumer-rules.pro").toString())
+        consumerProguardFiles(
+            Paths.get(rootDir.path, "consumer-rules.pro").toString(),
+            "consumer-rules.pro"
+        )
     }
 
     namespace = "com.datadog.android.rum"

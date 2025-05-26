@@ -17,6 +17,7 @@ import com.datadog.android.core.feature.event.ThreadDump
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.utils.executeSafe
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
+import com.datadog.android.internal.thread.NamedRunnable
 import com.datadog.android.rum.DdRumContentProvider
 import com.datadog.android.rum.ExperimentalRumApi
 import com.datadog.android.rum.RumActionType
@@ -684,13 +685,17 @@ internal class DatadogRumMonitor(
             handler.removeCallbacks(keepAliveRunnable)
             // avoid trowing a RejectedExecutionException
             if (!executorService.isShutdown) {
-                executorService.executeSafe("Rum event handling", sdkCore.internalLogger) {
-                    synchronized(rootScope) {
-                        rootScope.handleEvent(event, writer)
-                        notifyDebugListenerWithState()
+                executorService.executeSafe(
+                    "Rum event handling",
+                    sdkCore.internalLogger,
+                    NamedRunnable("${event::class.simpleName}") {
+                        synchronized(rootScope) {
+                            rootScope.handleEvent(event, writer)
+                            notifyDebugListenerWithState()
+                        }
+                        handler.postDelayed(keepAliveRunnable, KEEP_ALIVE_MS)
                     }
-                    handler.postDelayed(keepAliveRunnable, KEEP_ALIVE_MS)
-                }
+                )
             }
         }
     }
