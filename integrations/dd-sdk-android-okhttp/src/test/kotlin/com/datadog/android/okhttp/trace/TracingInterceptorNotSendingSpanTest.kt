@@ -27,7 +27,6 @@ import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.datadog.tools.unit.forge.BaseConfigurator
 import com.datadog.trace.api.DDTraceId
 import com.datadog.trace.bootstrap.instrumentation.api.AgentPropagation
-import com.datadog.trace.bootstrap.instrumentation.api.AgentTracer
 import com.datadog.trace.bootstrap.instrumentation.api.AgentTracer.SpanBuilder
 import com.datadog.trace.bootstrap.instrumentation.api.Tags
 import com.datadog.trace.core.propagation.ExtractedContext
@@ -167,6 +166,9 @@ internal open class TracingInterceptorNotSendingSpanTest {
         whenever(mockTracer.buildSpan(TracingInterceptor.SPAN_NAME)) doReturn mockSpanBuilder
         whenever(mockTracer.propagate()) doReturn mockPropagation
         whenever(mockLocalTracer.propagate()) doReturn mockPropagation
+        val localSpanBuilder = newSpanBuilderMock()
+        whenever(mockLocalTracer.buildSpan(any<CharSequence>())).thenReturn(localSpanBuilder)
+        whenever(mockPropagation.extract(any<Request>(), any())) doReturn mock<ExtractedContext>()
         whenever(mockSpanBuilder.asChildOf(null as SpanContext?)) doReturn mockSpanBuilder
         whenever(mockSpanBuilder.start()) doReturn mockSpan
         whenever(mockSpan.context()) doReturn mockSpanContext
@@ -754,7 +756,6 @@ internal open class TracingInterceptorNotSendingSpanTest {
         }
     }
 
-
     @Test
     fun `M respect sampling decision W intercept() {sampled out in upstream interceptor}`(
         @IntForgery(min = 200, max = 600) statusCode: Int,
@@ -796,17 +797,16 @@ internal open class TracingInterceptorNotSendingSpanTest {
     }
 
     @Test
-    fun `M respect b3multi sampling decision W intercept() {sampled out in upstream interceptor}`(
+    fun `M respect b3multi sampling decision W intercept1`(
         @IntForgery(min = 200, max = 600) statusCode: Int,
         forge: Forge
     ) {
         // Given
+        val localSpanBuilder = newSpanBuilderMock()
+        whenever(mockLocalTracer.buildSpan(any<CharSequence>())).thenReturn(localSpanBuilder)
         whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(true)
-        whenever(mockResolver.headerTypesForUrl(fakeUrl.toHttpUrl())).thenReturn(
-            setOf(
-                TracingHeaderType.B3MULTI
-            )
-        )
+        whenever(mockResolver.headerTypesForUrl(fakeUrl.toHttpUrl())).thenReturn(setOf(TracingHeaderType.B3MULTI))
+
         fakeRequest = forgeRequest(forge) {
             it.addHeader(
                 TracingInterceptor.B3M_SAMPLING_PRIORITY_KEY,
