@@ -18,7 +18,6 @@ import com.datadog.android.core.internal.persistence.file.existsSafe
 import com.datadog.android.core.internal.persistence.file.listFilesSafe
 import com.datadog.android.core.internal.persistence.file.readTextSafe
 import com.datadog.android.core.internal.utils.executeSafe
-import com.datadog.android.log.LogAttributes
 import com.google.gson.JsonObject
 import java.io.File
 import java.util.Locale
@@ -44,9 +43,6 @@ internal class DatadogNdkCrashHandler(
     internal var lastNetworkInfo: NetworkInfo? = null
     internal var lastNdkCrashLog: NdkCrashLog? = null
 
-    internal var processedForLogs = false
-    internal var processedForRum = false
-
     // region NdkCrashHandler
 
     override fun prepareData() {
@@ -55,12 +51,9 @@ internal class DatadogNdkCrashHandler(
         }
     }
 
-    override fun handleNdkCrash(
-        sdkCore: FeatureSdkCore,
-        reportTarget: NdkCrashHandler.ReportTarget
-    ) {
+    override fun handleNdkCrash(sdkCore: FeatureSdkCore) {
         dataPersistenceExecutorService.executeSafe("NDK crash report ", internalLogger) {
-            checkAndHandleNdkCrashReport(sdkCore, reportTarget)
+            checkAndHandleNdkCrashReport(sdkCore)
         }
     }
 
@@ -136,27 +129,13 @@ internal class DatadogNdkCrashHandler(
     }
 
     @WorkerThread
-    private fun checkAndHandleNdkCrashReport(
-        sdkCore: FeatureSdkCore,
-        reportTarget: NdkCrashHandler.ReportTarget
-    ) {
+    private fun checkAndHandleNdkCrashReport(sdkCore: FeatureSdkCore) {
         if (lastNdkCrashLog != null) {
             handleNdkCrashLog(
                 sdkCore,
                 lastNdkCrashLog,
-                lastRumViewEvent,
-                lastUserInfo,
-                lastNetworkInfo,
-                reportTarget
+                lastRumViewEvent
             )
-        }
-
-        when (reportTarget) {
-            NdkCrashHandler.ReportTarget.RUM -> processedForRum = true
-            NdkCrashHandler.ReportTarget.LOGS -> processedForLogs = true
-        }
-
-        if (processedForRum && processedForLogs) {
             clearAllReferences()
         }
     }
@@ -172,86 +151,21 @@ internal class DatadogNdkCrashHandler(
     private fun handleNdkCrashLog(
         sdkCore: FeatureSdkCore,
         ndkCrashLog: NdkCrashLog?,
-        lastViewEvent: JsonObject?,
-        lastUserInfo: UserInfo?,
-        lastNetworkInfo: NetworkInfo?,
-        reportTarget: NdkCrashHandler.ReportTarget
+        lastViewEvent: JsonObject?
     ) {
         if (ndkCrashLog == null) {
             return
         }
         val errorLogMessage = LOG_CRASH_MSG.format(Locale.US, ndkCrashLog.signalName)
 
-        when (reportTarget) {
-            NdkCrashHandler.ReportTarget.RUM -> {
-                if (lastViewEvent != null) {
-                    sendCrashRumEvent(
-                        sdkCore,
-                        errorLogMessage,
-                        ndkCrashLog,
-                        lastViewEvent
-                    )
-                }
-            }
-
-            NdkCrashHandler.ReportTarget.LOGS -> {
-                sendCrashLogEvent(
-                    sdkCore,
-                    errorLogMessage,
-                    generateLogAttributes(lastViewEvent, ndkCrashLog),
-                    ndkCrashLog,
-                    lastNetworkInfo,
-                    lastUserInfo
-                )
-            }
-        }
-    }
-
-    private fun generateLogAttributes(
-        lastRumViewEvent: JsonObject?,
-        ndkCrashLog: NdkCrashLog
-    ): Map<String, String> {
-        val logAttributes = if (lastRumViewEvent != null) {
-            val (applicationId, sessionId, viewId) = try {
-                val extractId = { property: String ->
-                    lastRumViewEvent.getAsJsonObject(property)
-                        .getAsJsonPrimitive("id")
-                        .asString
-                }
-                val applicationId = extractId("application")
-                val sessionId = extractId("session")
-                val viewId = extractId("view")
-                Triple(applicationId, sessionId, viewId)
-            } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
-                internalLogger.log(
-                    InternalLogger.Level.WARN,
-                    InternalLogger.Target.MAINTAINER,
-                    { WARN_CANNOT_READ_VIEW_INFO_DATA },
-                    e
-                )
-                Triple(null, null, null)
-            }
-            if (applicationId != null && sessionId != null && viewId != null) {
-                mapOf(
-                    LogAttributes.RUM_SESSION_ID to sessionId,
-                    LogAttributes.RUM_APPLICATION_ID to applicationId,
-                    LogAttributes.RUM_VIEW_ID to viewId,
-                    LogAttributes.ERROR_STACK to ndkCrashLog.stacktrace,
-                    LogAttributes.ERROR_SOURCE_TYPE to nativeCrashSourceType
-                )
-            } else {
-                mapOf(
-                    LogAttributes.ERROR_STACK to ndkCrashLog.stacktrace,
-                    LogAttributes.ERROR_SOURCE_TYPE to nativeCrashSourceType
-                )
-            }
-        } else {
-            mapOf(
-                LogAttributes.ERROR_STACK to ndkCrashLog.stacktrace,
-                LogAttributes.ERROR_SOURCE_TYPE to nativeCrashSourceType
+        if (lastViewEvent != null) {
+            sendCrashRumEvent(
+                sdkCore,
+                errorLogMessage,
+                ndkCrashLog,
+                lastViewEvent
             )
         }
-        return logAttributes
     }
 
     @Suppress("StringLiteralDuplication")
@@ -281,38 +195,6 @@ internal class DatadogNdkCrashHandler(
                 InternalLogger.Level.INFO,
                 InternalLogger.Target.USER,
                 { INFO_RUM_FEATURE_NOT_REGISTERED }
-            )
-        }
-    }
-
-    @Suppress("StringLiteralDuplication")
-    @WorkerThread
-    private fun sendCrashLogEvent(
-        sdkCore: FeatureSdkCore,
-        errorLogMessage: String,
-        logAttributes: Map<String, String>,
-        ndkCrashLog: NdkCrashLog,
-        lastNetworkInfo: NetworkInfo?,
-        lastUserInfo: UserInfo?
-    ) {
-        val logsFeature = sdkCore.getFeature(Feature.LOGS_FEATURE_NAME)
-        if (logsFeature != null) {
-            logsFeature.sendEvent(
-                mapOf(
-                    "loggerName" to LOGGER_NAME,
-                    "type" to "ndk_crash",
-                    "message" to errorLogMessage,
-                    "attributes" to logAttributes,
-                    "timestamp" to ndkCrashLog.timestamp,
-                    "networkInfo" to lastNetworkInfo,
-                    "userInfo" to lastUserInfo
-                )
-            )
-        } else {
-            internalLogger.log(
-                InternalLogger.Level.INFO,
-                InternalLogger.Target.USER,
-                { INFO_LOGS_FEATURE_NOT_REGISTERED }
             )
         }
     }
@@ -349,16 +231,9 @@ internal class DatadogNdkCrashHandler(
         internal const val USER_INFO_FILE_NAME = "user_information"
         internal const val NETWORK_INFO_FILE_NAME = "network_information"
 
-        internal const val LOGGER_NAME = "ndk_crash"
-
         internal const val LOG_CRASH_MSG = "NDK crash detected with signal: %s"
         internal const val ERROR_READ_NDK_DIR = "Error while trying to read the NDK crash directory"
 
-        internal const val WARN_CANNOT_READ_VIEW_INFO_DATA =
-            "Cannot read application, session, view IDs data from view event."
-
-        internal const val INFO_LOGS_FEATURE_NOT_REGISTERED =
-            "Logs feature is not registered, won't report NDK crash info as log."
         internal const val INFO_RUM_FEATURE_NOT_REGISTERED =
             "RUM feature is not registered, won't report NDK crash info as RUM error."
 
