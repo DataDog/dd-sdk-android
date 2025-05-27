@@ -9,6 +9,7 @@ import com.datadog.legacy.trace.api.interceptor.MutableSpan
 import com.datadog.trace.api.DDTraceId
 import com.datadog.trace.bootstrap.instrumentation.api.AgentPropagation
 import com.datadog.trace.bootstrap.instrumentation.api.AgentSpan.Context
+import com.datadog.trace.bootstrap.instrumentation.api.AgentTracer.SpanBuilder
 import com.datadog.trace.core.CoreTracer.CoreSpanBuilder
 import com.datadog.trace.core.propagation.ExtractedContext
 import fr.xgouchet.elmyr.Forge
@@ -51,6 +52,14 @@ internal fun AgentPropagation.wheneverInjectThenContextToHeaders(
 internal fun Forge.aDDTraceId(fakeString: String? = null) = DDTraceId.from(
     BigInteger(fakeString ?: aStringMatching("[a-f0-9]{32}"), 16).toLong()
 )
+
+internal fun Forge.newTracerMock(
+    spanBuilder: SpanBuilder = newSpanBuilderMock(),
+    propagation: AgentPropagation = newAgentPropagationMock()
+) = mock<Tracer> {
+    on { buildSpan(TracingInterceptor.SPAN_NAME) } doReturn spanBuilder
+    on { propagate() } doReturn propagation
+}
 
 internal fun newAgentPropagationMock(
     extractedContext: ExtractedContext = mock()
