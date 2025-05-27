@@ -93,12 +93,10 @@ internal class TracingInterceptorContextInjectionSampledTest {
 
     // region Mocks
 
-    @Mock
     lateinit var mockTracer: Tracer
 
     lateinit var mockPropagation: AgentPropagation
 
-    @Mock
     lateinit var mockLocalTracer: Tracer
 
     lateinit var mockSpanBuilder: AgentTracer.SpanBuilder
@@ -165,12 +163,8 @@ internal class TracingInterceptorContextInjectionSampledTest {
         mockSpanContext = forge.newSpanContextMock(fakeTraceId, fakeSpanId)
         mockSpan = forge.newSpanMock(mockSpanContext)
         mockPropagation = newAgentPropagationMock()
-
-        whenever(mockTracer.buildSpan(TracingInterceptor.SPAN_NAME)) doReturn mockSpanBuilder
-        whenever(mockLocalTracer.buildSpan(TracingInterceptor.SPAN_NAME)) doReturn mockSpanBuilder
-
-        whenever(mockTracer.propagate()).thenReturn(mockPropagation)
-        whenever(mockLocalTracer.propagate()) doReturn mockPropagation
+        mockTracer = forge.newTracerMock(mockSpanBuilder, mockPropagation)
+        mockLocalTracer = forge.newTracerMock(mockSpanBuilder, mockPropagation)
 
         whenever(mockTraceSampler.sample(mockSpan)) doReturn true
         val mediaType = forge.anElementFrom("application", "image", "text", "model") +
