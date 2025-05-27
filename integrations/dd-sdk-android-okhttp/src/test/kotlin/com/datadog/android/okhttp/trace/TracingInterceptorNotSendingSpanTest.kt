@@ -115,7 +115,6 @@ internal open class TracingInterceptorNotSendingSpanTest {
     @Mock
     lateinit var mockResolver: DefaultFirstPartyHostHeaderTypeResolver
 
-    @Mock
     lateinit var mockTraceSampler: Sampler<Span>
 
     @Mock
@@ -163,20 +162,15 @@ internal open class TracingInterceptorNotSendingSpanTest {
     @BeforeEach
     open fun `set up`(forge: Forge) {
         fakeTraceId = forge.aDDTraceId(fakeTraceIdAsString)
-        whenever(mockTracer.buildSpan(TracingInterceptor.SPAN_NAME)) doReturn mockSpanBuilder
-        whenever(mockTracer.propagate()) doReturn mockPropagation
-        whenever(mockLocalTracer.propagate()) doReturn mockPropagation
-        val localSpanBuilder = forge.newSpanBuilderMock()
-        whenever(mockLocalTracer.buildSpan(any<CharSequence>())).thenReturn(localSpanBuilder)
-        whenever(mockPropagation.extract(any<Request>(), any())) doReturn mock<ExtractedContext>()
-        whenever(mockSpanBuilder.asChildOf(null as SpanContext?)) doReturn mockSpanBuilder
-        whenever(mockSpanBuilder.start()) doReturn mockSpan
-        whenever(mockSpan.context()) doReturn mockSpanContext
-        whenever(mockSpanContext.spanId) doReturn fakeSpanId
-        whenever(mockSpanContext.traceId) doReturn fakeTraceId
-        whenever(mockTraceSampler.sample(mockSpan)) doReturn true
-
         fakeOrigin = forge.aNullable { anAlphabeticalString() }
+        mockSpanBuilder = forge.newSpanBuilderMock()
+        mockSpanContext = forge.newSpanContextMock(fakeTraceId, fakeSpanId)
+        mockSpan = forge.newSpanMock(mockSpanContext)
+        mockPropagation = newAgentPropagationMock()
+        mockTracer = forge.newTracerMock(mockSpanBuilder, mockPropagation)
+        mockLocalTracer = forge.newTracerMock(mockSpanBuilder, mockPropagation)
+        mockTraceSampler = forge.newTraceSamplerMock(mockSpan)
+
         fakeMediaType = if (forge.aBool()) {
             val mediaType = forge.anElementFrom("application", "image", "text", "model") +
                 "/" + forge.anAlphabeticalString()
