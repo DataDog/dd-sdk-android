@@ -16,6 +16,12 @@ import com.datadog.android.okhttp.trace.TracedRequestListener
 import com.datadog.android.okhttp.trace.Tracer
 import com.datadog.android.okhttp.trace.TracingInterceptor
 import com.datadog.android.okhttp.trace.TracingInterceptorTest
+import com.datadog.android.okhttp.trace.aDDTraceId
+import com.datadog.android.okhttp.trace.newAgentPropagationMock
+import com.datadog.android.okhttp.trace.newSpanBuilderMock
+import com.datadog.android.okhttp.trace.newSpanContextMock
+import com.datadog.android.okhttp.trace.newSpanMock
+import com.datadog.android.okhttp.trace.newTracerMock
 import com.datadog.android.okhttp.utils.config.DatadogSingletonTestConfiguration
 import com.datadog.android.okhttp.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.okhttp.utils.verifyLog
@@ -25,13 +31,13 @@ import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.RumResourceMethod
 import com.datadog.android.rum.resource.ResourceId
 import com.datadog.legacy.trace.api.interceptor.MutableSpan
-import com.datadog.opentracing.DDSpanContext
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.datadog.tools.unit.forge.BaseConfigurator
 import com.datadog.tools.unit.forge.exhaustiveAttributes
 import com.datadog.trace.api.DDTraceId
+import com.datadog.trace.bootstrap.instrumentation.api.AgentPropagation
 import com.datadog.trace.bootstrap.instrumentation.api.AgentTracer
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.BoolForgery
@@ -86,8 +92,15 @@ internal class DatadogInterceptorWithoutTracesTest {
 
     // region Mocks
 
-    @Mock
     lateinit var mockLocalTracer: Tracer
+
+    lateinit var mockSpanBuilder: AgentTracer.SpanBuilder
+
+    lateinit var mockSpanContext: SpanContext
+
+    lateinit var mockPropagation: AgentPropagation
+
+    lateinit var mockSpan: Span
 
     @Mock
     lateinit var mockChain: Interceptor.Chain
@@ -101,14 +114,7 @@ internal class DatadogInterceptorWithoutTracesTest {
     @Mock
     lateinit var mockResolver: DefaultFirstPartyHostHeaderTypeResolver
 
-    @Mock
-    lateinit var mockSpanBuilder: AgentTracer.SpanBuilder
 
-    @Mock
-    lateinit var mockSpanContext: SpanContext
-
-    @Mock
-    lateinit var mockSpan: Span
 
     @Mock
     lateinit var mockTraceSampler: Sampler<Span>
@@ -137,7 +143,7 @@ internal class DatadogInterceptorWithoutTracesTest {
     @LongForgery
     var fakeSpanId: Long = 0L
 
-    @StringForgery(type = StringForgeryType.HEXADECIMAL)
+    @StringForgery(regex = "[a-f][0-9]{32}")
     lateinit var fakeTraceIdString: String
 
     lateinit var fakeTraceId: DDTraceId
@@ -148,15 +154,14 @@ internal class DatadogInterceptorWithoutTracesTest {
 
     @BeforeEach
     fun `set up`(forge: Forge) {
-        fakeTraceId = DDTraceId.from(fakeTraceIdString)
-        whenever(mockLocalTracer.buildSpan(TracingInterceptor.SPAN_NAME)) doReturn mockSpanBuilder
-        whenever(mockSpanBuilder.withOrigin(DatadogInterceptor.ORIGIN_RUM)) doReturn mockSpanBuilder
-        whenever(mockSpanBuilder.asChildOf(null as SpanContext?)) doReturn mockSpanBuilder
-        whenever(mockSpanBuilder.start()) doReturn mockSpan
+        fakeTraceId = forge.aDDTraceId(fakeTraceIdString)
+        mockSpanBuilder = forge.newSpanBuilderMock()
+        mockSpanContext = forge.newSpanContextMock(fakeTraceId, fakeSpanId)
+        mockSpan = forge.newSpanMock(mockSpanContext)
+        mockPropagation = newAgentPropagationMock()
+        mockLocalTracer = forge.newTracerMock(mockSpanBuilder, mockPropagation)
+
         whenever(mockSpan.samplingPriority) doReturn null
-        whenever(mockSpan.context()) doReturn mockSpanContext
-        whenever(mockSpanContext.spanId) doReturn fakeSpanId
-        whenever(mockSpanContext.traceId) doReturn fakeTraceId
         whenever(mockTraceSampler.sample(any())) doReturn true
         whenever(rumMonitor.mockSdkCore.firstPartyHostResolver) doReturn mockResolver
 
