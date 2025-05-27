@@ -53,36 +53,51 @@ internal class DatadogUserInfoProviderTest {
 
     @Test
     fun `M return saved userInfo W setUserInfo() and getUserInfo()`(
-        @Forgery userInfo: UserInfo
+        @Forgery userInfo: UserInfo,
+        @StringForgery userId: String
     ) {
+        // Given
+        val nonNullUserId = userInfo.id ?: userId
+        val validUserInfo = userInfo.copy(id = nonNullUserId)
+
         // When
-        testedProvider.setUserInfo(userInfo.id, userInfo.name, userInfo.email, userInfo.additionalProperties)
+        testedProvider.setUserInfo(nonNullUserId, userInfo.name, userInfo.email, userInfo.additionalProperties)
         val result = testedProvider.getUserInfo()
 
         // Then
-        assertThat(result).isEqualTo(userInfo)
+        assertThat(result).isEqualTo(validUserInfo)
     }
 
     @Test
-    fun `M delegate to persister W setUserInfo`(@Forgery userInfo: UserInfo) {
+    fun `M delegate to persister W setUserInfo`(
+        @Forgery userInfo: UserInfo,
+        @StringForgery userId: String
+    ) {
+        // Given
+        val nonNullUserId = userInfo.id ?: userId
+        val validUserInfo = userInfo.copy(id = nonNullUserId)
+
         // When
-        testedProvider.setUserInfo(userInfo.id, userInfo.name, userInfo.email, userInfo.additionalProperties)
+        testedProvider.setUserInfo(nonNullUserId, userInfo.name, userInfo.email, userInfo.additionalProperties)
 
         // Then
-        verify(mockWriter).write(userInfo)
+        verify(mockWriter).write(validUserInfo)
     }
 
     @Test
     fun `M keep existing properties W addUserProperties() is called`(
         @Forgery userInfo: UserInfo,
-        @StringForgery forge: Forge
+        @StringForgery userId: String,
+        forge: Forge
     ) {
         // Given
         val customProperties = forge.exhaustiveAttributes()
-        testedProvider.setUserInfo(userInfo.id, userInfo.name, userInfo.email, customProperties)
+        val nonNullUserId = userInfo.id ?: userId
+        testedProvider.setUserInfo(nonNullUserId, userInfo.name, userInfo.email, customProperties)
 
         // When
         testedProvider.addUserProperties(customProperties)
+
         // Then
         assertThat(
             testedProvider.getUserInfo().additionalProperties
@@ -91,7 +106,7 @@ internal class DatadogUserInfoProviderTest {
 
     @Test
     fun `M use immutable properties W addUserProperties() is called { changing properties values }`(
-        @StringForgery forge: Forge
+        forge: Forge
     ) {
         // Given
         val fakeProperties = forge.exhaustiveAttributes()
@@ -112,7 +127,7 @@ internal class DatadogUserInfoProviderTest {
 
     @Test
     fun `M use immutable properties W addUserProperties() is called { adding properties }`(
-        @StringForgery forge: Forge
+        forge: Forge
     ) {
         // Given
         val fakeProperties = forge.exhaustiveAttributes()
@@ -133,7 +148,7 @@ internal class DatadogUserInfoProviderTest {
 
     @Test
     fun `M use immutable properties W addUserProperties() is called { removing properties }`(
-        @StringForgery forge: Forge
+        forge: Forge
     ) {
         // Given
         val fakeProperties = forge.exhaustiveAttributes()
@@ -155,12 +170,14 @@ internal class DatadogUserInfoProviderTest {
     @Test
     fun `M keep new property key W addUserProperties() is called and the key already exists`(
         @Forgery userInfo: UserInfo,
+        @StringForgery userId: String,
         @StringForgery key: String,
         @StringForgery value1: String,
         @StringForgery value2: String
     ) {
         // Given
-        testedProvider.setUserInfo(userInfo.id, userInfo.name, userInfo.email, mutableMapOf(key to value1))
+        val nonNullUserId = userInfo.id ?: userId
+        testedProvider.setUserInfo(nonNullUserId, userInfo.name, userInfo.email, mutableMapOf(key to value1))
 
         // When
         testedProvider.addUserProperties(mapOf(key to value2))

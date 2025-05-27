@@ -50,7 +50,7 @@ interface SdkCore {
     /**
      * Sets the user information.
      *
-     * @param id (nullable) a unique user identifier (relevant to your business domain)
+     * @param id a unique user identifier (relevant to your business domain)
      * @param name (nullable) the user name or alias
      * @param email (nullable) the user email
      * @param extraInfo additional information. An extra information can be
@@ -58,7 +58,7 @@ interface SdkCore {
      */
     @AnyThread
     fun setUserInfo(
-        id: String? = null,
+        id: String,
         name: String? = null,
         email: String? = null,
         extraInfo: Map<String, Any?> = emptyMap()

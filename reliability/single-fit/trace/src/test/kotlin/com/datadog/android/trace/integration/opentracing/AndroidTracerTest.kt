@@ -436,12 +436,13 @@ class AndroidTracerTest {
 
     @RepeatedTest(16)
     fun `M send trace with custom user info W SDKCore#setUserInfo() + buildSpan() + start() + finish()`(
+        @StringForgery fakeUserId: String,
         @StringForgery fakeOperation: String,
         @StringForgery fakeUserKey: String,
         @StringForgery fakeUserValue: String
     ) {
         // Given
-        stubSdkCore.setUserInfo(extraInfo = mapOf(fakeUserKey to fakeUserValue))
+        stubSdkCore.setUserInfo(id = fakeUserId, extraInfo = mapOf(fakeUserKey to fakeUserValue))
         val testedTracer = AndroidTracer.Builder(stubSdkCore).build()
 
         // When
