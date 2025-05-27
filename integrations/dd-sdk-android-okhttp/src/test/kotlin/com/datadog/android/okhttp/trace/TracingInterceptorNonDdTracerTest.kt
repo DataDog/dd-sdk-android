@@ -161,19 +161,17 @@ internal open class TracingInterceptorNonDdTracerTest {
 
     @BeforeEach
     fun `set up`(forge: Forge) {
+        fakeOrigin = forge.aNullable { anAlphabeticalString() }
         fakeTraceId = forge.aDDTraceId(fakeTraceIdAsString)
-        whenever(mockTracer.buildSpan(TracingInterceptor.SPAN_NAME)) doReturn mockSpanBuilder
-        whenever(mockLocalTracer.buildSpan(TracingInterceptor.SPAN_NAME)) doReturn mockSpanBuilder
-        whenever(mockTracer.propagate()) doReturn mockPropagation
-        whenever(mockLocalTracer.propagate()) doReturn mockPropagation
-        whenever(mockSpanBuilder.asChildOf(null as SpanContext?)) doReturn mockSpanBuilder
-        whenever(mockSpanBuilder.start()) doReturn mockSpan
-        whenever(mockSpan.context()) doReturn mockSpanContext
-        whenever(mockSpanContext.spanId) doReturn fakeSpanId
-        whenever(mockSpanContext.traceId) doReturn fakeTraceId
+        mockSpanBuilder = forge.newSpanBuilderMock()
+        mockSpanContext = forge.newSpanContextMock(fakeTraceId, fakeSpanId)
+        mockSpan = forge.newSpanMock(mockSpanContext)
+        mockPropagation = newAgentPropagationMock()
+        mockTracer = forge.newTracerMock(mockSpanBuilder, mockPropagation)
+        mockLocalTracer = forge.newTracerMock(mockSpanBuilder, mockPropagation)
+
         whenever(mockTraceSampler.sample(mockSpan)) doReturn true
 
-        fakeOrigin = forge.aNullable { anAlphabeticalString() }
         val mediaType = forge.anElementFrom("application", "image", "text", "model") +
             "/" + forge.anAlphabeticalString()
         fakeLocalHosts = forge.aMap {
