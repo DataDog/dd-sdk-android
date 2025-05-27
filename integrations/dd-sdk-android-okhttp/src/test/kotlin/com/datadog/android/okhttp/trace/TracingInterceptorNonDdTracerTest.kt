@@ -117,7 +117,6 @@ internal open class TracingInterceptorNonDdTracerTest {
     @Mock
     lateinit var mockResolver: DefaultFirstPartyHostHeaderTypeResolver
 
-    @Mock
     lateinit var mockTraceSampler: Sampler<Span>
 
     @Mock
@@ -168,8 +167,7 @@ internal open class TracingInterceptorNonDdTracerTest {
         mockPropagation = newAgentPropagationMock()
         mockTracer = forge.newTracerMock(mockSpanBuilder, mockPropagation)
         mockLocalTracer = forge.newTracerMock(mockSpanBuilder, mockPropagation)
-
-        whenever(mockTraceSampler.sample(mockSpan)) doReturn true
+        mockTraceSampler = forge.newTraceSamplerMock(mockSpan)
 
         val mediaType = forge.anElementFrom("application", "image", "text", "model") +
             "/" + forge.anAlphabeticalString()

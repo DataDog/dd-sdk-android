@@ -5,6 +5,7 @@
  */
 package com.datadog.android.okhttp.trace
 
+import com.datadog.android.core.sampling.Sampler
 import com.datadog.legacy.trace.api.interceptor.MutableSpan
 import com.datadog.trace.api.DDTraceId
 import com.datadog.trace.bootstrap.instrumentation.api.AgentPropagation
@@ -52,6 +53,9 @@ internal fun AgentPropagation.wheneverInjectThenContextToHeaders(
 internal fun Forge.aDDTraceId(fakeString: String? = null) = DDTraceId.from(
     BigInteger(fakeString ?: aStringMatching("[a-f0-9]{32}"), 16).toLong()
 )
+internal fun Forge.newTraceSamplerMock(span: Span = newSpanMock()) = mock<Sampler<Span>> {
+    on { sample(span) } doReturn true
+}
 
 internal fun Forge.newTracerMock(
     spanBuilder: SpanBuilder = newSpanBuilderMock(),

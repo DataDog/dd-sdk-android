@@ -114,7 +114,7 @@ internal class TracingInterceptorContextInjectionSampledTest {
     @Mock
     lateinit var mockResolver: DefaultFirstPartyHostHeaderTypeResolver
 
-    @Mock
+
     lateinit var mockTraceSampler: Sampler<Span>
 
     @Mock
@@ -165,8 +165,8 @@ internal class TracingInterceptorContextInjectionSampledTest {
         mockPropagation = newAgentPropagationMock()
         mockTracer = forge.newTracerMock(mockSpanBuilder, mockPropagation)
         mockLocalTracer = forge.newTracerMock(mockSpanBuilder, mockPropagation)
+        mockTraceSampler = forge.newTraceSamplerMock(mockSpan)
 
-        whenever(mockTraceSampler.sample(mockSpan)) doReturn true
         val mediaType = forge.anElementFrom("application", "image", "text", "model") +
             "/" + forge.anAlphabeticalString()
         fakeLocalHosts =
@@ -1050,19 +1050,15 @@ internal class TracingInterceptorContextInjectionSampledTest {
 
     @Test
     fun `M create a span with automatic tracer W intercept() if no tracer registered`(
+        forge: Forge,
         @IntForgery(min = 200, max = 300) statusCode: Int
     ) {
-        val localSpanBuilder: AgentTracer.SpanBuilder = mock()
-        val localSpan: Span = mock(extraInterfaces = arrayOf(MutableSpan::class))
+        val localSpan: Span = forge.newSpanMock(mockSpanContext)
+        val localSpanBuilder: AgentTracer.SpanBuilder = forge.newSpanBuilderMock(localSpan)
         whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(true)
         stubChain(mockChain, statusCode)
-        whenever(localSpanBuilder.asChildOf(null as SpanContext?)) doReturn localSpanBuilder
-        whenever(localSpanBuilder.withOrigin(getExpectedOrigin())) doReturn localSpanBuilder
-        whenever(localSpanBuilder.start()) doReturn localSpan
-        whenever(localSpan.context()) doReturn mockSpanContext
+
         whenever(mockTraceSampler.sample(localSpan)).thenReturn(true)
-        whenever(mockSpanContext.spanId) doReturn fakeSpanId
-        whenever(mockSpanContext.traceId) doReturn fakeTraceId
         whenever(mockLocalTracer.buildSpan(TracingInterceptor.SPAN_NAME)) doReturn localSpanBuilder
 
         val response = testedInterceptor.intercept(mockChain)
@@ -1072,7 +1068,7 @@ internal class TracingInterceptorContextInjectionSampledTest {
         verify(localSpan).setTag("http.method", fakeMethod)
         verify(localSpan).setTag("http.status_code", statusCode)
         verify(localSpan).setTag(Tags.SPAN_KIND, Tags.SPAN_KIND_CLIENT)
-        verify(localSpan as MutableSpan).resourceName = fakeBaseUrl.lowercase(Locale.US)
+        verify(localSpan).setResourceName(fakeBaseUrl.lowercase(Locale.US))
         verify(localSpan).finish()
         assertThat(response).isSameAs(fakeResponse)
         mockInternalLogger.verifyLog(
