@@ -166,14 +166,14 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
     @BeforeEach
     open fun `set up`(forge: Forge) {
         fakeTraceId = forge.aDDTraceId(fakeTraceIdAsString)
-        whenever(mockTracer.buildSpan(TracingInterceptor.SPAN_NAME)) doReturn mockSpanBuilder
-        whenever(mockTracer.propagate()) doReturn mockPropagation
-        whenever(mockLocalTracer.propagate()) doReturn mockPropagation
-        whenever(mockSpanBuilder.asChildOf(null as SpanContext?)) doReturn mockSpanBuilder
-        whenever(mockSpanBuilder.start()) doReturn mockSpan
-        whenever(mockSpan.context()) doReturn mockSpanContext
-        whenever(mockSpanContext.spanId) doReturn fakeSpanId
-        whenever(mockSpanContext.traceId) doReturn fakeTraceId
+        fakeOrigin = forge.anAlphabeticalString()
+        mockSpanBuilder = forge.newSpanBuilderMock()
+        mockSpanContext = forge.newSpanContextMock(fakeTraceId, fakeSpanId)
+        mockSpan = forge.newSpanMock(mockSpanContext)
+        mockPropagation = newAgentPropagationMock()
+        mockTracer = forge.newTracerMock(mockSpanBuilder, mockPropagation)
+        mockLocalTracer = forge.newTracerMock(mockSpanBuilder, mockPropagation)
+
         whenever(mockTraceSampler.sample(mockSpan)) doReturn true
 
         fakeOrigin = forge.aNullable { anAlphabeticalString() }
@@ -969,15 +969,13 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
 
     @Test
     fun `M create a span with automatic tracer W intercept() if no tracer registered`(
+        forge: Forge,
         @IntForgery(min = 200, max = 300) statusCode: Int
     ) {
-        val localSpanBuilder: SpanBuilder = mock()
-        val localSpan: Span = mock()
+        val localSpan: Span = forge.newSpanMock()
+        val localSpanBuilder: SpanBuilder = forge.newSpanBuilderMock(localSpan)
         whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(true)
         stubChain(mockChain, statusCode)
-        whenever(localSpanBuilder.asChildOf(null as SpanContext?)) doReturn localSpanBuilder
-        whenever(localSpanBuilder.start()) doReturn localSpan
-        whenever(localSpan.context()) doReturn mockSpanContext
         whenever(mockTraceSampler.sample(localSpan)).thenReturn(true)
         whenever(mockSpanContext.spanId) doReturn fakeSpanId
         whenever(mockSpanContext.traceId) doReturn fakeTraceId
