@@ -929,12 +929,12 @@ internal open class TracingInterceptorNotSendingSpanTest {
         val response = testedInterceptor.intercept(mockChain)
 
         verify(mockSpanBuilder).withOrigin(getExpectedOrigin())
-        verify(mockSpan as MutableSpan).setResourceName(fakeUrl)
+        verify(mockSpan).setResourceName(fakeUrl)
         verify(mockSpan).setTag("http.url", fakeUrl)
         verify(mockSpan).setTag("http.method", fakeMethod.name)
         verify(mockSpan).setTag("http.status_code", statusCode)
         verify(mockSpan).setTag(Tags.SPAN_KIND, Tags.SPAN_KIND_CLIENT)
-        verify(mockSpan as MutableSpan).setError(true)
+        verify(mockSpan).setError(true)
         verify(mockSpan, never()).finish()
         verify(mockSpan as MutableSpan).drop()
         assertThat(response).isSameAs(fakeResponse)
@@ -950,11 +950,11 @@ internal open class TracingInterceptorNotSendingSpanTest {
         val response = testedInterceptor.intercept(mockChain)
 
         verify(mockSpanBuilder).withOrigin(getExpectedOrigin())
-        verify(mockSpan as MutableSpan).setResourceName(fakeUrl)
+        verify(mockSpan).setResourceName(fakeUrl)
         verify(mockSpan).setTag("http.url", fakeUrl)
         verify(mockSpan).setTag("http.method", fakeMethod.name)
         verify(mockSpan).setTag("http.status_code", statusCode)
-        verify(mockSpan as MutableSpan, never()).setError(true)
+        verify(mockSpan, never()).setError(true)
         verify(mockSpan).setTag(Tags.SPAN_KIND, Tags.SPAN_KIND_CLIENT)
         verify(mockSpan, never()).finish()
         verify(mockSpan as MutableSpan).drop()
@@ -973,11 +973,11 @@ internal open class TracingInterceptorNotSendingSpanTest {
         verify(mockSpan).setTag("http.method", fakeMethod.name)
         verify(mockSpan).setTag("http.status_code", 404)
         verify(mockSpan).setTag(Tags.SPAN_KIND, Tags.SPAN_KIND_CLIENT)
-        verify(mockSpan as MutableSpan).setError(true)
+        verify(mockSpan).setError(true)
         if (fakeRedacted404Resources) {
-            verify(mockSpan as MutableSpan).setResourceName(TracingInterceptor.RESOURCE_NAME_404)
+            verify(mockSpan).setResourceName(TracingInterceptor.RESOURCE_NAME_404)
         } else {
-            verify(mockSpan as MutableSpan, never()).setResourceName(TracingInterceptor.RESOURCE_NAME_404)
+            verify(mockSpan, never()).setResourceName(TracingInterceptor.RESOURCE_NAME_404)
         }
         verify(mockSpan, never()).finish()
         verify(mockSpan as MutableSpan).drop()

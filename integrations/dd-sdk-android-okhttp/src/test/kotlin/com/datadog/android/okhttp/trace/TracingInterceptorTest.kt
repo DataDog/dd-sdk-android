@@ -209,7 +209,7 @@ internal open class TracingInterceptorTest {
         verify(mockSpan).setTag("http.method", fakeMethod)
         verify(mockSpan).setTag("http.status_code", statusCode)
         verify(mockSpan).setTag(Tags.SPAN_KIND, Tags.SPAN_KIND_CLIENT)
-        verify(mockSpan as MutableSpan).resourceName = fakeBaseUrl.lowercase(Locale.US)
+        verify(mockSpan).resourceName = fakeBaseUrl.lowercase(Locale.US)
         verify(mockSpan).setTag(tagKey, tagValue)
         verify(mockSpan).finish()
         assertThat(response).isSameAs(fakeResponse)
@@ -1134,7 +1134,7 @@ internal open class TracingInterceptorTest {
         val response = testedInterceptor.intercept(mockChain)
 
         verify(mockSpanBuilder).withOrigin(getExpectedOrigin())
-        verify(mockSpan as MutableSpan).resourceName = fakeBaseUrl.lowercase(Locale.US)
+        verify(mockSpan).resourceName = fakeBaseUrl.lowercase(Locale.US)
         verify(mockSpan).setTag("http.url", fakeUrl.lowercase(Locale.US))
         verify(mockSpan).setTag("http.method", fakeMethod)
         verify(mockSpan).setTag("http.status_code", statusCode)
@@ -1157,7 +1157,7 @@ internal open class TracingInterceptorTest {
         val response = testedInterceptor.intercept(mockChain)
 
         verify(mockSpanBuilder).withOrigin(getExpectedOrigin())
-        verify(mockSpan as MutableSpan).resourceName =
+        verify(mockSpan).resourceName =
             fakeUrlWithoutQueryParams.lowercase(Locale.US)
         verify(mockSpan).setTag("http.url", fakeUrlWithoutQueryParams.lowercase(Locale.US))
         verify(mockSpan).setTag("http.method", fakeMethod)
@@ -1177,12 +1177,12 @@ internal open class TracingInterceptorTest {
         val response = testedInterceptor.intercept(mockChain)
 
         verify(mockSpanBuilder).withOrigin(getExpectedOrigin())
-        verify(mockSpan as MutableSpan).resourceName = fakeBaseUrl.lowercase(Locale.US)
+        verify(mockSpan).resourceName = fakeBaseUrl.lowercase(Locale.US)
         verify(mockSpan).setTag("http.url", fakeUrl.lowercase(Locale.US))
         verify(mockSpan).setTag("http.method", fakeMethod)
         verify(mockSpan).setTag("http.status_code", statusCode)
         verify(mockSpan).setTag(Tags.SPAN_KIND, Tags.SPAN_KIND_CLIENT)
-        verify(mockSpan as MutableSpan).setError(true)
+        verify(mockSpan).setError(true)
         verify(mockSpan).finish()
         assertThat(response).isSameAs(fakeResponse)
     }
@@ -1197,12 +1197,12 @@ internal open class TracingInterceptorTest {
         val response = testedInterceptor.intercept(mockChain)
 
         verify(mockSpanBuilder).withOrigin(getExpectedOrigin())
-        verify(mockSpan as MutableSpan).resourceName = fakeBaseUrl.lowercase(Locale.US)
+        verify(mockSpan).resourceName = fakeBaseUrl.lowercase(Locale.US)
         verify(mockSpan).setTag("http.url", fakeUrl.lowercase(Locale.US))
         verify(mockSpan).setTag("http.method", fakeMethod)
         verify(mockSpan).setTag("http.status_code", statusCode)
         verify(mockSpan).setTag(Tags.SPAN_KIND, Tags.SPAN_KIND_CLIENT)
-        verify(mockSpan as MutableSpan, never()).setError(true)
+        verify(mockSpan, never()).setError(true)
         verify(mockSpan).finish()
         assertThat(response).isSameAs(fakeResponse)
     }
@@ -1219,11 +1219,11 @@ internal open class TracingInterceptorTest {
         verify(mockSpan).setTag("http.method", fakeMethod)
         verify(mockSpan).setTag("http.status_code", 404)
         verify(mockSpan).setTag(Tags.SPAN_KIND, Tags.SPAN_KIND_CLIENT)
-        verify(mockSpan as MutableSpan).setError(true)
+        verify(mockSpan).setError(true)
         if (fakeRedacted404Resources) {
-            verify(mockSpan as MutableSpan).setResourceName(TracingInterceptor.RESOURCE_NAME_404)
+            verify(mockSpan).setResourceName(TracingInterceptor.RESOURCE_NAME_404)
         } else {
-            verify(mockSpan as MutableSpan, never()).setResourceName(TracingInterceptor.RESOURCE_NAME_404)
+            verify(mockSpan, never()).setResourceName(TracingInterceptor.RESOURCE_NAME_404)
         }
         verify(mockSpan).finish()
         assertThat(response).isSameAs(fakeResponse)
@@ -1248,7 +1248,7 @@ internal open class TracingInterceptorTest {
         verify(mockSpan).setTag("error.msg", throwable.message)
         verify(mockSpan).setTag("error.stack", throwable.loggableStackTrace())
         verify(mockSpan).setTag(Tags.SPAN_KIND, Tags.SPAN_KIND_CLIENT)
-        verify(mockSpan as MutableSpan).resourceName = fakeBaseUrl.lowercase(Locale.US)
+        verify(mockSpan).resourceName = fakeBaseUrl.lowercase(Locale.US)
         verify(mockSpan).finish()
     }
 
@@ -1294,7 +1294,7 @@ internal open class TracingInterceptorTest {
         verify(localSpan).setTag("http.method", fakeMethod)
         verify(localSpan).setTag("http.status_code", statusCode)
         verify(localSpan).setTag(Tags.SPAN_KIND, Tags.SPAN_KIND_CLIENT)
-        verify(localSpan as MutableSpan).resourceName = fakeBaseUrl.lowercase(Locale.US)
+        verify(localSpan).resourceName = fakeBaseUrl.lowercase(Locale.US)
         verify(localSpan).finish()
         assertThat(response).isSameAs(fakeResponse)
         mockInternalLogger.verifyLog(
@@ -1330,14 +1330,14 @@ internal open class TracingInterceptorTest {
         verify(localSpan).setTag("http.method", fakeMethod)
         verify(localSpan).setTag("http.status_code", statusCode)
         verify(localSpan).setTag(Tags.SPAN_KIND, Tags.SPAN_KIND_CLIENT)
-        verify(localSpan as MutableSpan).resourceName = fakeBaseUrl.lowercase(Locale.US)
+        verify(localSpan).resourceName = fakeBaseUrl.lowercase(Locale.US)
         verify(localSpan).finish()
         verify(mockSpanBuilder).withOrigin(getExpectedOrigin())
         verify(mockSpan).setTag("http.url", fakeUrl.lowercase(Locale.US))
         verify(mockSpan).setTag("http.method", fakeMethod)
         verify(mockSpan).setTag("http.status_code", statusCode)
         verify(mockSpan).setTag(Tags.SPAN_KIND, Tags.SPAN_KIND_CLIENT)
-        verify(mockSpan as MutableSpan).resourceName = fakeBaseUrl.lowercase(Locale.US)
+        verify(mockSpan).resourceName = fakeBaseUrl.lowercase(Locale.US)
         verify(mockSpan).finish()
         assertThat(response1).isSameAs(expectedResponse1)
         assertThat(response2).isSameAs(expectedResponse2)
