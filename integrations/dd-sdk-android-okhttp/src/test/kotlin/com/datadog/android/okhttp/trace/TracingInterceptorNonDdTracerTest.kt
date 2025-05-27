@@ -96,7 +96,6 @@ internal open class TracingInterceptorNonDdTracerTest {
     @Mock
     lateinit var mockPropagation: AgentPropagation
 
-
     @Mock
     lateinit var mockLocalTracer: Tracer
 
