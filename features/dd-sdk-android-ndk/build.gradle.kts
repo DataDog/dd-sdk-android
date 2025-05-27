@@ -109,4 +109,4 @@ dependencyUpdateConfig()
 publishingConfig(
     "An NDK integration to use with the Datadog monitoring library for Android applications."
 )
-detektCustomConfig(":dd-sdk-android-core")
+detektCustomConfig()
