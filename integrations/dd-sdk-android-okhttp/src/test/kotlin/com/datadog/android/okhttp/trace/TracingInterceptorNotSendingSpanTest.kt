@@ -162,11 +162,11 @@ internal open class TracingInterceptorNotSendingSpanTest {
 
     @BeforeEach
     open fun `set up`(forge: Forge) {
-        fakeTraceId = newFakeTraceId(fakeTraceIdAsString)
+        fakeTraceId = forge.aDDTraceId(fakeTraceIdAsString)
         whenever(mockTracer.buildSpan(TracingInterceptor.SPAN_NAME)) doReturn mockSpanBuilder
         whenever(mockTracer.propagate()) doReturn mockPropagation
         whenever(mockLocalTracer.propagate()) doReturn mockPropagation
-        val localSpanBuilder = newSpanBuilderMock()
+        val localSpanBuilder = forge.newSpanBuilderMock()
         whenever(mockLocalTracer.buildSpan(any<CharSequence>())).thenReturn(localSpanBuilder)
         whenever(mockPropagation.extract(any<Request>(), any())) doReturn mock<ExtractedContext>()
         whenever(mockSpanBuilder.asChildOf(null as SpanContext?)) doReturn mockSpanBuilder
@@ -802,7 +802,7 @@ internal open class TracingInterceptorNotSendingSpanTest {
         forge: Forge
     ) {
         // Given
-        val localSpanBuilder = newSpanBuilderMock()
+        val localSpanBuilder = forge.newSpanBuilderMock()
         whenever(mockLocalTracer.buildSpan(any<CharSequence>())).thenReturn(localSpanBuilder)
         whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(true)
         whenever(mockResolver.headerTypesForUrl(fakeUrl.toHttpUrl())).thenReturn(setOf(TracingHeaderType.B3MULTI))

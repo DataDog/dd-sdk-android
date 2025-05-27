@@ -29,7 +29,6 @@ import com.datadog.trace.bootstrap.instrumentation.api.AgentPropagation
 import com.datadog.trace.bootstrap.instrumentation.api.AgentSpan.Context
 import com.datadog.trace.bootstrap.instrumentation.api.AgentTracer
 import com.datadog.trace.bootstrap.instrumentation.api.Tags
-import com.datadog.trace.core.DDSpanContext
 import com.datadog.trace.core.propagation.ExtractedContext
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.BoolForgery
@@ -97,19 +96,15 @@ internal class TracingInterceptorContextInjectionSampledTest {
     @Mock
     lateinit var mockTracer: Tracer
 
-    @Mock
     lateinit var mockPropagation: AgentPropagation
 
     @Mock
     lateinit var mockLocalTracer: Tracer
 
-    @Mock
     lateinit var mockSpanBuilder: AgentTracer.SpanBuilder
 
-    @Mock
-    lateinit var mockSpanContext: DDSpanContext
+    lateinit var mockSpanContext: SpanContext
 
-    @Mock(extraInterfaces = [MutableSpan::class])
     lateinit var mockSpan: Span
 
     @Mock
@@ -165,18 +160,18 @@ internal class TracingInterceptorContextInjectionSampledTest {
     @BeforeEach
     fun `set up`(forge: Forge) {
         fakeOrigin = forge.anAlphabeticalString()
-        fakeTraceId = newFakeTraceId(fakeTraceIdAsString)
+        fakeTraceId = forge.aDDTraceId(fakeTraceIdAsString)
+        mockSpanBuilder = forge.newSpanBuilderMock()
+        mockSpanContext = forge.newSpanContextMock(fakeTraceId, fakeSpanId)
+        mockSpan = forge.newSpanMock(mockSpanContext)
+        mockPropagation = newAgentPropagationMock()
+
         whenever(mockTracer.buildSpan(TracingInterceptor.SPAN_NAME)) doReturn mockSpanBuilder
-        whenever(mockTracer.propagate()).thenReturn(mockPropagation)
         whenever(mockLocalTracer.buildSpan(TracingInterceptor.SPAN_NAME)) doReturn mockSpanBuilder
+
+        whenever(mockTracer.propagate()).thenReturn(mockPropagation)
         whenever(mockLocalTracer.propagate()) doReturn mockPropagation
-        whenever(mockSpanBuilder.withOrigin(fakeOrigin)) doReturn mockSpanBuilder
-        whenever(mockSpanBuilder.asChildOf(null as SpanContext?)) doReturn mockSpanBuilder
-        whenever(mockSpanBuilder.start()) doReturn mockSpan
-        whenever(mockSpan.context()) doReturn mockSpanContext
-        whenever(mockSpanContext.spanId) doReturn fakeSpanId
-        whenever(mockSpanContext.traceId).thenReturn(fakeTraceId)
-        whenever(mockSpanContext.traceId) doReturn fakeTraceId
+
         whenever(mockTraceSampler.sample(mockSpan)) doReturn true
         val mediaType = forge.anElementFrom("application", "image", "text", "model") +
             "/" + forge.anAlphabeticalString()

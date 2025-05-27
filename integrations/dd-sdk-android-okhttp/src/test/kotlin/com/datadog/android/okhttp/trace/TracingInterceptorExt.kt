@@ -10,6 +10,8 @@ import com.datadog.trace.api.DDTraceId
 import com.datadog.trace.bootstrap.instrumentation.api.AgentPropagation
 import com.datadog.trace.bootstrap.instrumentation.api.AgentSpan.Context
 import com.datadog.trace.core.CoreTracer.CoreSpanBuilder
+import com.datadog.trace.core.propagation.ExtractedContext
+import fr.xgouchet.elmyr.Forge
 import okhttp3.Request
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
@@ -19,10 +21,6 @@ import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.math.BigInteger
-
-internal fun newFakeTraceId(hexString: String): DDTraceId {
-    return DDTraceId.from(BigInteger(hexString, 16).toLong())
-}
 
 internal fun AgentPropagation.wheneverInjectThenThrow(throwable: Throwable) {
     doThrow(throwable)
@@ -50,11 +48,34 @@ internal fun AgentPropagation.wheneverInjectThenContextToHeaders(
         .inject(any<Context>(), any<Request>(), any())
 }
 
-internal fun newSpanBuilderMock(
-    localSpan: Span = mock(extraInterfaces = arrayOf(MutableSpan::class))
+internal fun Forge.aDDTraceId(fakeString: String? = null) = DDTraceId.from(
+    BigInteger(fakeString ?: aStringMatching("[a-f0-9]{32}"), 16).toLong()
+)
+
+internal fun newAgentPropagationMock(
+    extractedContext: ExtractedContext = mock()
+) = mock<AgentPropagation> {
+    on { extract(any<Request>(), any()) } doReturn extractedContext
+}
+
+internal fun Forge.newSpanContextMock(
+    fakeTraceId: DDTraceId = aDDTraceId(),
+    fakeSpanId: Long = aLong()
+) = mock<SpanContext> {
+    on { spanId } doReturn fakeSpanId
+    on { traceId } doReturn fakeTraceId
+}
+
+internal fun Forge.newSpanMock(
+    context: SpanContext = newSpanContextMock()
+) = mock<Span>(extraInterfaces = arrayOf(MutableSpan::class)) {
+    on { context() } doReturn context
+}
+
+internal fun Forge.newSpanBuilderMock(
+    localSpan: Span = newSpanMock()
 ) = mock<CoreSpanBuilder> {
     on { withOrigin(anyOrNull()) } doReturn it
     on { asChildOf(any<Context>()) } doReturn it
     on { start() } doReturn localSpan
 }
-
