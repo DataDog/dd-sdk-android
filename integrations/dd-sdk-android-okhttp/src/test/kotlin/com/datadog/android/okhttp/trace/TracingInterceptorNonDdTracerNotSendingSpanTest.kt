@@ -118,7 +118,6 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
     @Mock
     lateinit var mockResolver: DefaultFirstPartyHostHeaderTypeResolver
 
-    @Mock
     lateinit var mockTraceSampler: Sampler<Span>
 
     @Mock
@@ -165,18 +164,16 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
 
     @BeforeEach
     open fun `set up`(forge: Forge) {
+        fakeOrigin = forge.aNullable { anAlphabeticalString() }
         fakeTraceId = forge.aDDTraceId(fakeTraceIdAsString)
-        fakeOrigin = forge.anAlphabeticalString()
         mockSpanBuilder = forge.newSpanBuilderMock()
         mockSpanContext = forge.newSpanContextMock(fakeTraceId, fakeSpanId)
         mockSpan = forge.newSpanMock(mockSpanContext)
         mockPropagation = newAgentPropagationMock()
         mockTracer = forge.newTracerMock(mockSpanBuilder, mockPropagation)
         mockLocalTracer = forge.newTracerMock(mockSpanBuilder, mockPropagation)
+        mockTraceSampler = forge.newTraceSamplerMock(mockSpan)
 
-        whenever(mockTraceSampler.sample(mockSpan)) doReturn true
-
-        fakeOrigin = forge.aNullable { anAlphabeticalString() }
         fakeMediaType = if (forge.aBool()) {
             val mediaType = forge.anElementFrom("application", "image", "text", "model") +
                 "/" + forge.anAlphabeticalString()

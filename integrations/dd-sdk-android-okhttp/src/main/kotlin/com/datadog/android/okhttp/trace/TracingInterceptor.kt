@@ -310,7 +310,9 @@ internal constructor(
             .asChildOf(parentContext)
             .start()
 
-        (span as? MutableSpan)?.resourceName = url.substringBefore(URL_QUERY_PARAMS_BLOCK_SEPARATOR)
+        if (span is MutableSpan) {
+            span.setResourceName(url.substringBefore(URL_QUERY_PARAMS_BLOCK_SEPARATOR))
+        }
         span.setTag(Tags.HTTP_URL, url)
         span.setTag(Tags.HTTP_METHOD, request.method)
         span.setTag(Tags.SPAN_KIND, Tags.SPAN_KIND_CLIENT)
