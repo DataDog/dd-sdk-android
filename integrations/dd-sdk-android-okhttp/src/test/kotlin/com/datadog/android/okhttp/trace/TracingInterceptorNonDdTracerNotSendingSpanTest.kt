@@ -165,7 +165,7 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
 
     @BeforeEach
     open fun `set up`(forge: Forge) {
-        fakeTraceId = newFakeTraceId(fakeTraceIdAsString)
+        fakeTraceId = forge.aDDTraceId(fakeTraceIdAsString)
         whenever(mockTracer.buildSpan(TracingInterceptor.SPAN_NAME)) doReturn mockSpanBuilder
         whenever(mockTracer.propagate()) doReturn mockPropagation
         whenever(mockLocalTracer.propagate()) doReturn mockPropagation
