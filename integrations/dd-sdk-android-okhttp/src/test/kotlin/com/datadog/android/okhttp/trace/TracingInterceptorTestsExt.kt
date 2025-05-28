@@ -27,13 +27,15 @@ import java.math.BigInteger
 internal fun AgentPropagation.wheneverInjectThenThrow(throwable: Throwable) {
     doThrow(throwable)
         .whenever(this)
-        .inject(any<Context>(), any<Request>(), any())
+        .inject(any<Context>(), any<Request.Builder>(), any())
 }
 
 internal fun AgentPropagation.wheneverInjectThenValueToHeaders(key: String, value: String) {
-    doAnswer { it.getArgument<Request.Builder>(2).addHeader(key, value) }
+    doAnswer {
+        it.getArgument<Request.Builder>(1).addHeader(key, value)
+    }
         .whenever(this)
-        .inject(any<Context>(), any<Request>(), any())
+        .inject(any<Context>(), any<Request.Builder>(), any())
 }
 
 internal fun AgentPropagation.wheneverInjectThenContextToHeaders(
@@ -42,12 +44,12 @@ internal fun AgentPropagation.wheneverInjectThenContextToHeaders(
     nonDatadogContextKeyValue: String
 ) {
     doAnswer { invocation ->
-        val carrier = invocation.getArgument<Request.Builder>(2)
+        val carrier = invocation.getArgument<Request.Builder>(1)
         datadogContext.forEach { carrier.addHeader(it.key, it.value) }
         carrier.addHeader(nonDatadogContextKey, nonDatadogContextKeyValue)
     }
         .whenever(this)
-        .inject(any<Context>(), any<Request>(), any())
+        .inject(any<Context>(), any<Request.Builder>(), any())
 }
 
 internal fun Forge.aDDTraceId(fakeString: String? = null) = DDTraceId.from(
