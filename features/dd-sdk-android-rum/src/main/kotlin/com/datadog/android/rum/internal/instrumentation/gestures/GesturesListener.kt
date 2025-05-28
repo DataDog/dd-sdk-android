@@ -135,13 +135,20 @@ internal class GesturesListener(
         isScroll: Boolean = false
     ): ViewTarget? {
         val queue = LinkedList<View>()
-        queue.addFirst(decorView)
+        // add(index, element) instead of addFirst here is on purpose, to prevent issues with old AGP being used
+        // when compiling with Android API 35.
+        // Index 0 is always safe
+        @Suppress("UnsafeThirdPartyFunctionCall")
+        queue.add(0, decorView)
         var target: ViewTarget? = null
-
+        var composeViewDetected = false
         while (queue.isNotEmpty()) {
-            // removeFirst can't fail because we checked isNotEmpty
+            // removeAt(index) instead of removeFirst here is on purpose, to prevent issues
+            // with old AGP being used when compiling with Android API 35.
+            // removeAt can't fail because we checked isNotEmpty
             @Suppress("UnsafeThirdPartyFunctionCall")
-            val view = queue.removeFirst()
+            val view = queue.removeAt(0)
+            composeViewDetected = composeViewDetected || isJetpackComposeView(view)
             val newTarget = if (isScroll) {
                 findTargetForScroll(view, x, y)
             } else {
@@ -159,10 +166,15 @@ internal class GesturesListener(
         }
 
         if (target == null) {
+            val msg = if (composeViewDetected) {
+                MSG_NO_COMPOSE_TARGET
+            } else {
+                MSG_NO_TARGET_ACTION
+            }
             internalLogger.log(
                 InternalLogger.Level.INFO,
                 InternalLogger.Target.USER,
-                { MSG_NO_TARGET_TAP }
+                { msg }
             )
         }
         return target
@@ -260,8 +272,8 @@ internal class GesturesListener(
                 it.extractAttributes(view, attributes)
             }
         }
-        target.tag?.let {
-            // TODO RUM-9345: Enrich Compose action target attributes.
+        target.node?.let {
+            attributes.putAll(it.customAttributes)
         }
         GlobalRumMonitor.get(sdkCore).addAction(
             RumActionType.TAP,
@@ -283,8 +295,8 @@ internal class GesturesListener(
                 it.extractAttributes(view, attributes)
             }
         }
-        scrollTarget.tag?.let {
-            // TODO RUM-9345: Enrich Compose action target attributes.
+        scrollTarget.node?.let {
+            attributes.putAll(it.customAttributes)
         }
         if (onUpEvent != null) {
             gestureDirection = resolveGestureDirection(onUpEvent)
@@ -311,6 +323,13 @@ internal class GesturesListener(
         }
     }
 
+    private fun isJetpackComposeView(view: View): Boolean {
+        // startsWith here is to make testing easier: mocks don't have name exactly
+        // like this, and writing manual stub is not possible, because some necessary
+        // methods are final.
+        return view::class.java.name.startsWith("androidx.compose.ui.platform.ComposeView")
+    }
+
     // endregion
 
     companion object {
@@ -320,12 +339,11 @@ internal class GesturesListener(
         internal const val SCROLL_DIRECTION_UP = "up"
         internal const val SCROLL_DIRECTION_DOWN = "down"
 
-        internal val MSG_NO_TARGET_TAP = "We could not find a valid target for " +
-            "the ${RumActionType.TAP.name} event. " +
-            "The DecorView was empty and either transparent " +
-            "or not clickable for this Activity."
-        internal val MSG_NO_TARGET_SCROLL_SWIPE = "We could not find a valid target for " +
-            "the ${RumActionType.SCROLL.name} or ${RumActionType.SWIPE.name} event. " +
+        internal const val MSG_NO_COMPOSE_TARGET =
+            "We could not find a valid target for the gesture " +
+                "event. Compose actions tracking not enabled, or the compose view is not tagged."
+        internal const val MSG_NO_TARGET_ACTION = "We could not find a valid target for " +
+            "the gesture event. " +
             "The DecorView was empty and either transparent " +
             "or not clickable for this Activity."
     }

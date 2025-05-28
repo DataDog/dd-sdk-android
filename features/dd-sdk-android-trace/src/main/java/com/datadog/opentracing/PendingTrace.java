@@ -11,15 +11,22 @@ import androidx.annotation.VisibleForTesting;
 import com.datadog.android.api.InternalLogger;
 import com.datadog.exec.CommonTaskExecutor;
 import com.datadog.exec.CommonTaskExecutor.Task;
-import com.datadog.opentracing.scopemanager.ContinuableScope;
 import com.datadog.legacy.trace.common.util.Clock;
+import com.datadog.opentracing.scopemanager.ContinuableScope;
 
 import java.io.Closeable;
 import java.lang.ref.Reference;
 import java.lang.ref.ReferenceQueue;
 import java.lang.ref.WeakReference;
 import java.math.BigInteger;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -355,7 +362,9 @@ public class PendingTrace extends LinkedList<DDSpan> {
     @Override
     public void addFirst(final DDSpan span) {
         synchronized (this) {
-            super.addFirst(span);
+            // add(index, element) instead of addFirst here is on purpose, to prevent issues
+            // with old AGP being used when compiling with Android API 35.
+            super.add(0, span);
         }
         completedSpanCount.incrementAndGet();
     }

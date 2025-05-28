@@ -25,7 +25,6 @@ android {
 
     defaultConfig {
         minSdk = AndroidConfig.MIN_SDK
-        targetSdk = AndroidConfig.TARGET_SDK
     }
 
     namespace = "com.datadog.tools.unit"

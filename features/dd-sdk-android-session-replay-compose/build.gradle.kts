@@ -87,8 +87,4 @@ dependencyUpdateConfig()
 publishingConfig(
     "Session Replay Extension Support for Jetpack Compose."
 )
-detektCustomConfig(
-    ":dd-sdk-android-core",
-    ":dd-sdk-android-internal",
-    ":features:dd-sdk-android-session-replay"
-)
+detektCustomConfig()

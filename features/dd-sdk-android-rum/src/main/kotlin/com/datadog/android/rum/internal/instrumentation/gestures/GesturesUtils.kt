@@ -19,7 +19,7 @@ internal fun resolveViewTargetName(
 ): String {
     return target.viewRef.get()?.let { view ->
         resolveTargetName(interactionPredicate, view)
-    } ?: target.tag ?: ""
+    } ?: target.node?.name ?: ""
 }
 
 internal fun resolveTargetName(

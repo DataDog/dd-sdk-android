@@ -26,23 +26,34 @@ internal class BroadcastReceiverSystemInfoProvider(
     // region BroadcastReceiver
 
     override fun onReceive(context: Context, intent: Intent?) {
-        when (val action = intent?.action) {
-            Intent.ACTION_BATTERY_CHANGED -> {
-                handleBatteryIntent(intent)
+        try {
+            when (val action = intent?.action) {
+                Intent.ACTION_BATTERY_CHANGED -> {
+                    handleBatteryIntent(intent)
+                }
+
+                PowerManager.ACTION_POWER_SAVE_MODE_CHANGED -> {
+                    handlePowerSaveIntent(context)
+                }
+
+                else -> {
+                    internalLogger.log(
+                        InternalLogger.Level.DEBUG,
+                        listOf(
+                            InternalLogger.Target.MAINTAINER,
+                            InternalLogger.Target.TELEMETRY
+                        ),
+                        { "Received unknown broadcast intent: [$action]" }
+                    )
+                }
             }
-            PowerManager.ACTION_POWER_SAVE_MODE_CHANGED -> {
-                handlePowerSaveIntent(context)
-            }
-            else -> {
-                internalLogger.log(
-                    InternalLogger.Level.DEBUG,
-                    listOf(
-                        InternalLogger.Target.MAINTAINER,
-                        InternalLogger.Target.TELEMETRY
-                    ),
-                    { "Received unknown broadcast intent: [$action]" }
-                )
-            }
+        } catch (@Suppress("TooGenericExceptionCaught") e: RuntimeException) {
+            internalLogger.log(
+                level = InternalLogger.Level.ERROR,
+                targets = listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
+                messageBuilder = { ERROR_HANDLING_BROADCAST_INTENT },
+                throwable = e
+            )
         }
     }
 
@@ -111,6 +122,7 @@ internal class BroadcastReceiverSystemInfoProvider(
         private const val DEFAULT_BATTERY_SCALE = 100
         private const val BATTERY_UNPLUGGED = -1
         private const val BATTERY_LEVEL_UNKNOWN = -1
+        private const val ERROR_HANDLING_BROADCAST_INTENT = "Error handling system info broadcast intent."
 
         private val batteryFullOrChargingStatus = setOf(
             SystemInfo.BatteryStatus.CHARGING,

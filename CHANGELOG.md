@@ -1,3 +1,28 @@
+# 2.22.0 / 2025-05-28
+
+* [FEATURE] Session Replay: Support Coil3 for Session Replay image recording. See [#2648](https://github.com/DataDog/dd-sdk-android/pull/2648)
+* [FEATURE] RUM: Add Compose custom attributes for actions tracking. See [#2661](https://github.com/DataDog/dd-sdk-android/pull/2661)
+* [BUGFIX] RUM: Fix background session start reason. See [#2623](https://github.com/DataDog/dd-sdk-android/pull/2623)
+* [BUGFIX] Core: Catch exceptions during the Power or Battery broadcast intents processing. See [#2642](https://github.com/DataDog/dd-sdk-android/pull/2642)
+* [IMPROVEMENT] `LogsCustom` scenario for Android benchmark app. See [#2625](https://github.com/DataDog/dd-sdk-android/pull/2625)
+* [IMPROVEMENT] `LogsHeavyTraffic` scenario for Android benchmarks. See [#2629](https://github.com/DataDog/dd-sdk-android/pull/2629)
+* [IMPROVEMENT] `Trace` scenario for Android benchmark app. See [#2637](https://github.com/DataDog/dd-sdk-android/pull/2637)
+* [IMPROVEMENT] Replace `addFirst` usage in `PendingTrace`. See [#2638](https://github.com/DataDog/dd-sdk-android/pull/2638)
+* [IMPROVEMENT] `RumManual` scenario for Android benchmark app. See [#2644](https://github.com/DataDog/dd-sdk-android/pull/2644)
+* [IMPROVEMENT] Align Datadog initialization with iOS for benchmark app. See [#2647](https://github.com/DataDog/dd-sdk-android/pull/2647)
+* [IMPROVEMENT] Fix Datadog core creation in baseline benchmark run. See [#2649](https://github.com/DataDog/dd-sdk-android/pull/2649)
+* [IMPROVEMENT] RUM: Add Jetpack Compose specific log in gesture listener if target not found. See [#2651](https://github.com/DataDog/dd-sdk-android/pull/2651)
+* [IMPROVEMENT] Add sample screen for Compose image content scale. See [#2659](https://github.com/DataDog/dd-sdk-android/pull/2659)
+* [IMPROVEMENT] Remove `addFirst`, `removeFirst`, `removeLast` usages. See [#2664](https://github.com/DataDog/dd-sdk-android/pull/2664)
+* [IMPROVEMENT] RUM: Use reflection to retrieve semantics information in modifier. See [#2667](https://github.com/DataDog/dd-sdk-android/pull/2667)
+* [MAINTENANCE] Next dev iteration. See [#2630](https://github.com/DataDog/dd-sdk-android/pull/2630)
+* [MAINTENANCE] Merge `release/2.21.0` into develop. See [#2632](https://github.com/DataDog/dd-sdk-android/pull/2632)
+* [MAINTENANCE] Update `unMock` plugin version, remove `me.xdrop:fuzzywuzzy` dependency, remove deprecated Gradle APIs. See [#2634](https://github.com/DataDog/dd-sdk-android/pull/2634)
+* [MAINTENANCE] Speed up some tests in `FeatureScopeTest` by reducing unconditional wait time. See [#2643](https://github.com/DataDog/dd-sdk-android/pull/2643)
+* [MAINTENANCE] Fix logging format for error messages in `PlainBatchFileReaderWriter`. See [#2652](https://github.com/DataDog/dd-sdk-android/pull/2652)
+* [MAINTENANCE] Remove telemetry target from error logging in `PlainBatchFileReaderWriter`. See [#2653](https://github.com/DataDog/dd-sdk-android/pull/2653)
+* [MAINTENANCE] Better project-type dependency resolution for Detekt custom rules execution. See [#2670](https://github.com/DataDog/dd-sdk-android/pull/2670)
+
 # 2.21.0 / 2025-05-06
 
 * [FEATURE] Add Compose instrumentation API for view tracking and image recording. See [#2570](https://github.com/DataDog/dd-sdk-android/pull/2570)

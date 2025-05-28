@@ -15,7 +15,9 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.SdkCore
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.compose.internal.utils.LayoutNodeUtils
+import com.datadog.android.compose.internal.utils.LayoutNodeUtils.TargetNode
 import com.datadog.android.rum.tracking.ActionTrackingStrategy
+import com.datadog.android.rum.tracking.Node
 import com.datadog.android.rum.tracking.ViewTarget
 import java.util.LinkedList
 import java.util.Queue
@@ -67,22 +69,24 @@ internal class ComposeActionTrackingStrategy(
             return null
         }
 
-        var currentTag: String? = null
+        var currentNode: TargetNode? = null
         while (queue.isNotEmpty()) {
             val node = queue.poll() ?: continue
             if (node.isPlaced && hitTest(node, x, y)) {
                 layoutNodeUtils.resolveLayoutNode(node)?.let { target ->
                     if (target.isScrollable && isScrollEvent) {
-                        currentTag = target.tag
+                        currentNode = target
                     }
                     if (target.isClickable && !isScrollEvent) {
-                        currentTag = target.tag
+                        currentNode = target
                     }
                 }
             }
             queue.addAll(node.zSortedChildren.asMutableList())
         }
-        return currentTag?.let { ViewTarget(tag = it) }
+        return currentNode?.let {
+            ViewTarget(node = Node(name = it.tag, customAttributes = it.customAttributes))
+        }
     }
 
     private fun hitTest(layoutNode: LayoutNode, x: Float, y: Float): Boolean {
