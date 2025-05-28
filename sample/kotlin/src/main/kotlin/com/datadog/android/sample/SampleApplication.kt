@@ -189,7 +189,7 @@ class SampleApplication : Application() {
 
     private fun initializeUserInfo(preferences: Preferences.DefaultPreferences) {
         Datadog.setUserInfo(
-            id = preferences.getUserId(),
+            id = preferences.getUserId() ?: "unknown",
             name = preferences.getUserName(),
             email = preferences.getUserEmail(),
             extraInfo = mapOf(
