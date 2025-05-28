@@ -51,6 +51,8 @@ object com.datadog.android.rum.RumAttributes
   const val ACTION_TARGET_PARENT_CLASSNAME: String
   const val ACTION_TARGET_PARENT_RESOURCE_ID: String
   const val ACTION_TARGET_RESOURCE_ID: String
+  const val ACTION_TARGET_SELECTED: String
+  const val ACTION_TARGET_ROLE: String
   const val ACTION_GESTURE_DIRECTION: String
   const val ACTION_GESTURE_FROM_STATE: String
   const val ACTION_GESTURE_TO_STATE: String
@@ -300,9 +302,11 @@ interface com.datadog.android.rum.tracking.TrackingStrategy
 interface com.datadog.android.rum.tracking.ViewAttributesProvider
   fun extractAttributes(android.view.View, MutableMap<String, Any?>)
 class com.datadog.android.rum.tracking.ViewTarget
-  constructor(java.lang.ref.WeakReference<android.view.View?> = WeakReference(null), String? = null)
+  constructor(java.lang.ref.WeakReference<android.view.View?> = WeakReference(null), Node? = null)
   override fun equals(Any?): Boolean
   override fun hashCode(): Int
+data class com.datadog.android.rum.tracking.Node
+  constructor(String, Map<String, Any?> = mapOf())
 interface com.datadog.android.rum.tracking.ViewTrackingStrategy : TrackingStrategy
 class com.datadog.android.sqlite.DatadogDatabaseErrorHandler : android.database.DatabaseErrorHandler
   constructor(String? = null, android.database.DatabaseErrorHandler = DefaultDatabaseErrorHandler())

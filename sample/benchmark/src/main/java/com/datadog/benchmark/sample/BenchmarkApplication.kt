@@ -7,19 +7,12 @@
 package com.datadog.benchmark.sample
 
 import android.app.Application
-import androidx.annotation.Keep
-import com.datadog.android.api.SdkCore
 import com.datadog.benchmark.sample.di.app.BenchmarkAppComponent
 import com.datadog.benchmark.sample.di.app.DaggerBenchmarkAppComponent
-import javax.inject.Inject
 
 internal class BenchmarkApplication : Application() {
 
     internal lateinit var benchmarkAppComponent: BenchmarkAppComponent
-
-    @Inject
-    @Keep
-    internal lateinit var sdkCore: SdkCore
 
     override fun onCreate() {
         super.onCreate()

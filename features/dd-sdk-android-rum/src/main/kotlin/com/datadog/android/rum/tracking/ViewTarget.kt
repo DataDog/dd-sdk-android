@@ -7,6 +7,7 @@
 package com.datadog.android.rum.tracking
 
 import android.view.View
+import com.datadog.android.lint.InternalApi
 import java.lang.ref.WeakReference
 
 /**
@@ -15,14 +16,14 @@ import java.lang.ref.WeakReference
  *
  * @property viewRef The Weak Reference of Android [View] that was found.
  *                     If non-null, indicates a classic View was located.
- * @property tag The semantics tag associated with a Jetpack Compose component. If non-null, indicates
+ * @property node The semantics node associated with a Jetpack Compose component. If non-null, indicates
  *               that a Compose node with the given semantics tag was found.
  *
- * Only one of [viewRef] or [tag] is expected to be non-null, depending on the UI framework used.
+ * Only one of [viewRef] or [node] is expected to be non-null, depending on the UI framework used.
  */
 class ViewTarget(
     val viewRef: WeakReference<View?> = WeakReference(null),
-    val tag: String? = null
+    val node: Node? = null
 ) {
 
     override fun equals(other: Any?): Boolean {
@@ -32,14 +33,25 @@ class ViewTarget(
         if (other !is ViewTarget) return false
 
         if (viewRef.get() != other.viewRef.get()) return false
-        if (tag != other.tag) return false
+        if (node != other.node) return false
 
         return true
     }
 
     override fun hashCode(): Int {
         var result = viewRef.get().hashCode()
-        result = 31 * result + tag.hashCode()
+        result = 31 * result + node.hashCode()
         return result
     }
 }
+
+/**
+ * Represents the result of locating a target node in Jetpack compose.
+ * @property name the name of the target node.
+ * @property customAttributes the custom attributes that the target node may have.
+ */
+@InternalApi
+data class Node(
+    val name: String,
+    val customAttributes: Map<String, Any?> = mapOf()
+)

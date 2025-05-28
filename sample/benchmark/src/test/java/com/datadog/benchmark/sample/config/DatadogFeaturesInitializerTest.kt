@@ -21,6 +21,8 @@ import org.mockito.Mockito
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
+import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.quality.Strictness
 
 @Extensions(
@@ -48,7 +50,7 @@ class DatadogFeaturesInitializerTest {
     }
 
     @Test
-    fun `M skip session replay and enable rum W run is baseline and scenario is sr`() {
+    fun `M enable nothing W run is baseline and scenario is sr`() {
         // Given
         val config = BenchmarkConfig(
             run = SyntheticsRun.Baseline,
@@ -58,7 +60,7 @@ class DatadogFeaturesInitializerTest {
         mockAllAndCheck(config) {
             // Then
             sessionReplay.verifyNoInteractions()
-            rum.verifyRumEnabled()
+            rum.verifyNoInteractions()
             logs.verifyNoInteractions()
         }
     }
@@ -101,7 +103,7 @@ class DatadogFeaturesInitializerTest {
                 Mockito.mockStatic(Logs::class.java).use { logsStatic ->
                     // When
                     DatadogFeaturesInitializer(
-                        sdkCore = mockSdkCore
+                        sdkCore = { mockSdkCore }
                     ).initialize(config)
 
                     // Then

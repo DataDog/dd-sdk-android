@@ -68,9 +68,4 @@ dependencyUpdateConfig()
 publishingConfig(
     "A SQLDelight integration to use with the Datadog monitoring library for Android applications."
 )
-detektCustomConfig(
-    ":dd-sdk-android-core",
-    ":dd-sdk-android-internal",
-    ":features:dd-sdk-android-rum",
-    ":features:dd-sdk-android-trace"
-)
+detektCustomConfig()

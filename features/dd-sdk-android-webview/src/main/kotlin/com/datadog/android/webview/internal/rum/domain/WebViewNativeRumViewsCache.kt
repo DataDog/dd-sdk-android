@@ -63,12 +63,24 @@ internal class WebViewNativeRumViewsCache(
                     parentViewsHistoryQueue.first.timestamp <= entry.timestamp
                 )
         ) {
-            parentViewsHistoryQueue.addFirst(entry)
+            // add(index, element) instead of addFirst here is on purpose, to prevent issues
+            // with old AGP being used when compiling with Android API 35.
+            // Index 0 is always safe
+            @Suppress("UnsafeThirdPartyFunctionCall")
+            parentViewsHistoryQueue.add(0, entry)
         } else if (parentViewsHistoryQueue.first.viewId == entry.viewId) {
             // the function is synchronized and we are checking the size before
+            if (parentViewsHistoryQueue.isNotEmpty()) {
+                // removeAt(index) instead of removeFirst here is on purpose, to prevent issues
+                // with old AGP being used when compiling with Android API 35.
+                @Suppress("UnsafeThirdPartyFunctionCall")
+                parentViewsHistoryQueue.removeAt(0)
+            }
+            // add(index, element) instead of addFirst here is on purpose, to prevent issues
+            // with old AGP being used when compiling with Android API 35.
+            // Index 0 is always safe
             @Suppress("UnsafeThirdPartyFunctionCall")
-            parentViewsHistoryQueue.removeFirst()
-            parentViewsHistoryQueue.addFirst(entry)
+            parentViewsHistoryQueue.add(0, entry)
         }
     }
 
@@ -84,9 +96,11 @@ internal class WebViewNativeRumViewsCache(
             }
         }
         while (parentViewsHistoryQueue.size > DATA_CACHE_ENTRIES_LIMIT) {
+            // removeAt(index) instead of removeLast here is on purpose, to prevent issues
+            // with old AGP being used when compiling with Android API 35.
             // the function is synchronized and we are checking the size before
             @Suppress("UnsafeThirdPartyFunctionCall")
-            parentViewsHistoryQueue.removeLast()
+            parentViewsHistoryQueue.removeAt(parentViewsHistoryQueue.size - 1)
         }
     }
 
