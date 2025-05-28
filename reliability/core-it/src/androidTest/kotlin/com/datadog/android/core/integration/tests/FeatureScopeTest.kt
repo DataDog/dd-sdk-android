@@ -31,6 +31,8 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 
 /**
  * Instrumentation tests for the feature scope.
@@ -205,6 +207,7 @@ class FeatureScopeTest : MockServerTest() {
         ) as InternalSdkCore
         testedInternalSdkCore.registerFeature(stubFeature)
         val featureScope = testedInternalSdkCore.getFeature(fakeFeatureName)
+        val countDownLatch = CountDownLatch(fakeBatchData.size)
 
         // When
         checkNotNull(featureScope)
@@ -215,11 +218,14 @@ class FeatureScopeTest : MockServerTest() {
                     fakeBatchMetadata,
                     eventType
                 )
+                countDownLatch.countDown()
             }
         }
 
         // Then
-        Thread.sleep(MEDIUM_WAIT_MS)
+        countDownLatch.await(MEDIUM_WAIT_MS, TimeUnit.MILLISECONDS)
+        // TODO RUM-9917 Avoid using unconditional wait locks
+        Thread.sleep(UPLOAD_CYCLE_MAX_WAIT_MS)
         MockWebServerAssert.assertThat(getMockServerWrapper())
             .withConfiguration(fakeConfiguration)
             .withTrackingConsent(trackingConsent)
@@ -241,6 +247,7 @@ class FeatureScopeTest : MockServerTest() {
         ) as InternalSdkCore
         testedInternalSdkCore.registerFeature(stubFeature)
         val featureScope = testedInternalSdkCore.getFeature(fakeFeatureName)
+        val countDownLatch = CountDownLatch(fakeBatchData.size)
 
         // When
         checkNotNull(featureScope)
@@ -251,11 +258,14 @@ class FeatureScopeTest : MockServerTest() {
                     fakeBatchMetadata,
                     eventType
                 )
+                countDownLatch.countDown()
             }
         }
 
         // Then
-        Thread.sleep(MEDIUM_WAIT_MS)
+        countDownLatch.await(MEDIUM_WAIT_MS, TimeUnit.MILLISECONDS)
+        // TODO RUM-9917 Avoid using unconditional wait locks
+        Thread.sleep(UPLOAD_CYCLE_MAX_WAIT_MS)
         MockWebServerAssert.assertThat(getMockServerWrapper())
             .withConfiguration(fakeConfiguration)
             .withTrackingConsent(trackingConsent)
@@ -274,6 +284,7 @@ class FeatureScopeTest : MockServerTest() {
         testedInternalSdkCore.registerFeature(stubFeature)
         val featureScope = testedInternalSdkCore.getFeature(fakeFeatureName)
         checkNotNull(featureScope)
+        val countDownLatch = CountDownLatch(fakeBatchData.size)
         featureScope.withWriteContext { _, eventBatchWriter ->
             fakeBatchData.forEach { rawBatchEvent ->
                 eventBatchWriter.write(
@@ -281,6 +292,7 @@ class FeatureScopeTest : MockServerTest() {
                     fakeBatchMetadata,
                     eventType
                 )
+                countDownLatch.countDown()
             }
         }
 
@@ -288,7 +300,13 @@ class FeatureScopeTest : MockServerTest() {
         Datadog.setTrackingConsent(TrackingConsent.NOT_GRANTED)
 
         // Then
-        Thread.sleep(MEDIUM_WAIT_MS)
+        countDownLatch.await(MEDIUM_WAIT_MS, TimeUnit.MILLISECONDS)
+        with(testedInternalSdkCore.getPersistenceExecutorService()) {
+            shutdown()
+            awaitTermination(MEDIUM_WAIT_MS, TimeUnit.MILLISECONDS)
+        }
+        // TODO RUM-9917 Avoid using unconditional wait locks
+        Thread.sleep(UPLOAD_CYCLE_MAX_WAIT_MS)
         MockWebServerAssert.assertThat(getMockServerWrapper())
             .withConfiguration(fakeConfiguration)
             .withTrackingConsent(trackingConsent)
@@ -311,6 +329,7 @@ class FeatureScopeTest : MockServerTest() {
         testedInternalSdkCore.registerFeature(stubFeature)
         val featureScope = testedInternalSdkCore.getFeature(fakeFeatureName)
         checkNotNull(featureScope)
+        val countDownLatch = CountDownLatch(fakeBatchData.size)
         featureScope.withWriteContext { _, eventBatchWriter ->
             fakeBatchData.forEach { rawBatchEvent ->
                 eventBatchWriter.write(
@@ -318,6 +337,7 @@ class FeatureScopeTest : MockServerTest() {
                     fakeBatchMetadata,
                     eventType
                 )
+                countDownLatch.countDown()
             }
         }
 
@@ -326,7 +346,13 @@ class FeatureScopeTest : MockServerTest() {
         Datadog.setTrackingConsent(TrackingConsent.GRANTED)
 
         // Then
-        Thread.sleep(MEDIUM_WAIT_MS)
+        countDownLatch.await(MEDIUM_WAIT_MS, TimeUnit.MILLISECONDS)
+        with(testedInternalSdkCore.getPersistenceExecutorService()) {
+            shutdown()
+            awaitTermination(MEDIUM_WAIT_MS, TimeUnit.MILLISECONDS)
+        }
+        // TODO RUM-9917 Avoid using unconditional wait locks
+        Thread.sleep(UPLOAD_CYCLE_MAX_WAIT_MS)
         MockWebServerAssert.assertThat(getMockServerWrapper())
             .withConfiguration(fakeConfiguration)
             .withTrackingConsent(trackingConsent)
@@ -350,6 +376,7 @@ class FeatureScopeTest : MockServerTest() {
         val featureScope = testedInternalSdkCore.getFeature(fakeFeatureName)
         checkNotNull(featureScope)
         Datadog.stopInstance()
+        val countDownLatch = CountDownLatch(fakeBatchData.size)
 
         // When
         featureScope.withWriteContext { _, eventBatchWriter ->
@@ -359,11 +386,14 @@ class FeatureScopeTest : MockServerTest() {
                     fakeBatchMetadata,
                     eventType
                 )
+                countDownLatch.countDown()
             }
         }
 
         // Then
-        Thread.sleep(MEDIUM_WAIT_MS)
+        countDownLatch.await(MEDIUM_WAIT_MS, TimeUnit.MILLISECONDS)
+        // TODO RUM-9917 Avoid using unconditional wait locks
+        Thread.sleep(UPLOAD_CYCLE_MAX_WAIT_MS)
         MockWebServerAssert.assertThat(getMockServerWrapper())
             .withConfiguration(fakeConfiguration)
             .withTrackingConsent(trackingConsent)

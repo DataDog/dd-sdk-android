@@ -215,6 +215,8 @@ internal class RumEventSerializer(
             RumAttributes.ACTION_TARGET_CLASS_NAME,
             RumAttributes.ACTION_TARGET_RESOURCE_ID,
             RumAttributes.ACTION_TARGET_TITLE,
+            RumAttributes.ACTION_TARGET_SELECTED,
+            RumAttributes.ACTION_TARGET_ROLE,
             RumAttributes.ERROR_RESOURCE_METHOD,
             RumAttributes.ERROR_RESOURCE_STATUS_CODE,
             RumAttributes.ERROR_RESOURCE_URL

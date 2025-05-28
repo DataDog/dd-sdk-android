@@ -32,7 +32,6 @@ dependencies {
     implementation(libs.kotlinGradlePlugin)
     implementation(libs.androidToolsGradlePlugin)
     implementation(libs.versionsGradlePlugin)
-    implementation(libs.fuzzyWuzzy)
     implementation(libs.dokkaGradlePlugin)
     implementation(libs.dependencyLicenseGradlePlugin)
     implementation(libs.kover)

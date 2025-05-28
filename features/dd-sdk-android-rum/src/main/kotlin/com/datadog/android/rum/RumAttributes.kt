@@ -218,6 +218,20 @@ object RumAttributes {
     const val ACTION_TARGET_RESOURCE_ID: String = "action.target.resource_id"
 
     /**
+     * The touch target selection state if it is selectable.
+     * This is only available for Jetpack Compose components.
+     */
+    const val ACTION_TARGET_SELECTED: String = "action.target.selected"
+
+    /**
+     * The touch target semantics role if it is available.
+     * This is only available for Jetpack Compose components.
+     *
+     * @see [androidx.compose.ui.semantics.Role]
+     */
+    const val ACTION_TARGET_ROLE: String = "action.target.role"
+
+    /**
      * The gesture event direction.
      */
     const val ACTION_GESTURE_DIRECTION: String = "action.gesture.direction"

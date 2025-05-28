@@ -249,14 +249,20 @@ internal class SemanticsUtils(private val reflectionUtils: ReflectionUtils = Ref
     ): BitmapInfo? {
         var isContextualImage = false
         var painter = reflectionUtils.getLocalImagePainter(semanticsNode)
+
+        // Try to resolve Coil AsyncImagePainter.
         if (painter == null) {
             isContextualImage = true
             painter = reflectionUtils.getAsyncImagePainter(semanticsNode)
         }
-        // TODO RUM-6535: support more painters.
+        // In some versions of Coil, bitmap painter is nested in `AsyncImagePainter`
         if (painter != null && reflectionUtils.isAsyncImagePainter(painter)) {
             isContextualImage = true
             painter = reflectionUtils.getNestedPainter(painter)
+        }
+        // Try to resolve Coil3 painter if is still null.
+        if (painter == null) {
+            painter = reflectionUtils.getCoil3AsyncImagePainter(semanticsNode)
         }
         val bitmap = when (painter) {
             is BitmapPainter -> reflectionUtils.getBitmapInBitmapPainter(painter)
