@@ -44,7 +44,7 @@ internal class LogsConfigurationBuilderTest {
 
     @Test
     fun `M build configuration with custom site W useCustomEndpoint() and build()`(
-        @StringForgery(regex = "https://[a-z]+\\.com") logsEndpointUrl: String
+        @StringForgery(regex = "https://[a-z]+\\.com(/[a-z]+)+") logsEndpointUrl: String
     ) {
         // When
         val logsConfiguration = testedBuilder.useCustomEndpoint(logsEndpointUrl).build()

@@ -80,7 +80,8 @@ internal class RumRequestFactoryTest {
 
         // Then
         requireNotNull(request)
-        assertThat(request.url).isEqualTo(expectedUrl(fakeDatadogContext.site.intakeEndpoint))
+        val expectedUrl = expectedUrl(fakeDatadogContext.site.intakeEndpoint + "/api/v2/rum")
+        assertThat(request.url).isEqualTo(expectedUrl)
         assertThat(request.contentType).isEqualTo(RequestFactory.CONTENT_TYPE_TEXT_UTF8)
         assertThat(
             request.headers.minus(
@@ -111,7 +112,7 @@ internal class RumRequestFactoryTest {
     @Suppress("NAME_SHADOWING")
     @Test
     fun `M create a proper request W create() { custom endpoint }`(
-        @StringForgery(regex = "https://[a-z]+\\.com") fakeEndpoint: String,
+        @StringForgery(regex = "https://[a-z]+\\.com(/[a-z]+)+") fakeEndpoint: String,
         @Forgery batchData: List<RawBatchEvent>,
         @StringForgery batchMetadata: String,
         forge: Forge
@@ -173,7 +174,7 @@ internal class RumRequestFactoryTest {
             queryTags.add("${RumRequestFactory.LAST_FAILURE_STATUS_KEY}:${fakeExecutionContext.previousResponseCode}")
         }
 
-        return "$endpointUrl/api/v2/rum?ddsource=${fakeDatadogContext.source}" +
+        return "$endpointUrl?ddsource=${fakeDatadogContext.source}" +
             "&ddtags=${queryTags.joinToString(",")}"
     }
 }

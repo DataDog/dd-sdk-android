@@ -126,7 +126,7 @@ class TraceConfigurationTest {
 
         // Then
         checkNotNull(request)
-        assertThat(request.url).isEqualTo("$fakeEndpoint/api/v2/spans")
+        assertThat(request.url).isEqualTo(fakeEndpoint)
         assertThat(request.headers).containsEntry("DD-API-KEY", expectedClientToken)
         assertThat(request.headers).containsEntry("DD-EVP-ORIGIN", expectedSource)
         assertThat(request.headers).containsEntry("DD-EVP-ORIGIN-VERSION", expectedSdkVersion)

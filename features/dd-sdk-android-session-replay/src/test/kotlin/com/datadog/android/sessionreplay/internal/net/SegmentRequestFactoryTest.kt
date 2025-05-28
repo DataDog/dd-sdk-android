@@ -114,7 +114,7 @@ internal class SegmentRequestFactoryTest {
 
         // Then
         requireNotNull(request)
-        assertThat(request.url).isEqualTo(expectedUrl(fakeDatadogContext.site.intakeEndpoint))
+        assertThat(request.url).isEqualTo("${fakeDatadogContext.site.intakeEndpoint}/api/v2/replay")
         assertThat(request.contentType).isEqualTo(fakeMediaType.toString())
         assertThat(request.headers.minus(RequestFactory.HEADER_REQUEST_ID)).isEqualTo(
             mapOf(
@@ -131,7 +131,7 @@ internal class SegmentRequestFactoryTest {
 
     @Test
     fun `M return a valid Request W create { custom endpoint }`(
-        @StringForgery(regex = "https://[a-z]+\\.com") fakeEndpoint: String
+        @StringForgery(regex = "https://[a-z]+\\.com(/[a-z]+)+") fakeEndpoint: String
     ) {
         // When
         testedRequestFactory = SegmentRequestFactory(
@@ -148,7 +148,7 @@ internal class SegmentRequestFactoryTest {
 
         // Then
         requireNotNull(request)
-        assertThat(request.url).isEqualTo(expectedUrl(fakeEndpoint))
+        assertThat(request.url).isEqualTo(fakeEndpoint)
         assertThat(request.contentType).isEqualTo(fakeMediaType.toString())
         assertThat(request.headers.minus(RequestFactory.HEADER_REQUEST_ID)).isEqualTo(
             mapOf(
@@ -188,10 +188,6 @@ internal class SegmentRequestFactoryTest {
     // endregion
 
     // region Internal
-
-    private fun expectedUrl(endpointUrl: String): String {
-        return "$endpointUrl/api/v2/replay"
-    }
 
     private fun RequestBody.toByteArray(): ByteArray {
         val buffer = Buffer()

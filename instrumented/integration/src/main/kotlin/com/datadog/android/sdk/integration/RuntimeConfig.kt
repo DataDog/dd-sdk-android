@@ -29,10 +29,10 @@ internal object RuntimeConfig {
     const val CONTENT_TYPE_TEXT = "text/plain;charset=UTF-8"
     private const val LOCALHOST = "http://localhost"
 
-    var logsEndpointUrl: String = LOCALHOST
-    var tracesEndpointUrl: String = LOCALHOST
-    var rumEndpointUrl: String = LOCALHOST
-    var sessionReplayEndpointUrl: String = LOCALHOST
+    var logsEndpointUrl: String = "$LOCALHOST/logs"
+    var tracesEndpointUrl: String = "$LOCALHOST/traces"
+    var rumEndpointUrl: String = "$LOCALHOST/rum"
+    var sessionReplayEndpointUrl: String = "$LOCALHOST/session-replay"
 
     val LONG_TASK_LARGE_THRESHOLD = Long.MAX_VALUE
 
