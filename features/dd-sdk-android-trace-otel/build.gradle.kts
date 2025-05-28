@@ -89,4 +89,4 @@ dependencyUpdateConfig()
 publishingConfig(
     "The tracing library for Android, providing OpenTelemetry compatibility."
 )
-detektCustomConfig(":dd-sdk-android-core", ":features:dd-sdk-android-trace")
+detektCustomConfig()

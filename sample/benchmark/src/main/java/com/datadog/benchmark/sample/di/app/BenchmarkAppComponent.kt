@@ -14,8 +14,7 @@ import javax.inject.Singleton
 
 @Component(
     modules = [
-        AppModule::class,
-        DatadogModule::class
+        AppModule::class
     ]
 )
 @Singleton

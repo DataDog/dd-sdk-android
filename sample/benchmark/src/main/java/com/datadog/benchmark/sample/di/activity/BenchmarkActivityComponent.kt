@@ -8,8 +8,7 @@
 
 package com.datadog.benchmark.sample.di.activity
 
-import com.datadog.android.api.SdkCore
-import com.datadog.benchmark.sample.DatadogFeaturesInitializer
+import android.content.Context
 import com.datadog.benchmark.sample.MainActivity
 import com.datadog.benchmark.sample.config.BenchmarkConfig
 import com.datadog.benchmark.sample.di.common.DispatchersModule
@@ -27,8 +26,7 @@ import javax.inject.Scope
 internal annotation class BenchmarkActivityScope
 
 internal interface BenchmarkActivityComponentDependencies {
-    val sdkCore: SdkCore
-    val datadogFeaturesInitializer: DatadogFeaturesInitializer
+    val context: Context
 }
 
 @Component(

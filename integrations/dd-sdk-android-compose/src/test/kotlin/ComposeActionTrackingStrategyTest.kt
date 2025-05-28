@@ -15,6 +15,7 @@ import androidx.compose.ui.node.LayoutNode
 import androidx.compose.ui.platform.AndroidComposeView
 import com.datadog.android.compose.internal.ComposeActionTrackingStrategy
 import com.datadog.android.compose.internal.utils.LayoutNodeUtils
+import com.datadog.android.rum.tracking.Node
 import com.datadog.android.rum.tracking.ViewTarget
 import com.datadog.tools.unit.forge.BaseConfigurator
 import fr.xgouchet.elmyr.Forge
@@ -112,7 +113,7 @@ class ComposeActionTrackingStrategyTest {
             testedComposeActionTrackingStrategy.findTargetForTap(mockAndroidComposeView, x, y)
 
         // Then
-        assertThat(result).isEqualTo(ViewTarget(tag = "node3"))
+        assertThat(result).isEqualTo(ViewTarget(node = Node(name = "node3")))
     }
 
     /**
@@ -140,7 +141,7 @@ class ComposeActionTrackingStrategyTest {
             testedComposeActionTrackingStrategy.findTargetForScroll(mockAndroidComposeView, x, y)
 
         // Then
-        assertThat(result).isEqualTo(ViewTarget(tag = "node3"))
+        assertThat(result).isEqualTo(ViewTarget(node = Node(name = "node3")))
     }
 
     /**
@@ -169,7 +170,7 @@ class ComposeActionTrackingStrategyTest {
             testedComposeActionTrackingStrategy.findTargetForTap(mockAndroidComposeView, x, y)
 
         // Then
-        assertThat(result).isEqualTo(ViewTarget(tag = "node3"))
+        assertThat(result).isEqualTo(ViewTarget(node = Node(name = "node3")))
     }
 
     /**
@@ -201,7 +202,7 @@ class ComposeActionTrackingStrategyTest {
             testedComposeActionTrackingStrategy.findTargetForScroll(mockAndroidComposeView, x, y)
 
         // Then
-        assertThat(result).isEqualTo(ViewTarget(tag = "node3"))
+        assertThat(result).isEqualTo(ViewTarget(node = Node(name = "node3")))
     }
 
     /**
@@ -229,7 +230,7 @@ class ComposeActionTrackingStrategyTest {
             testedComposeActionTrackingStrategy.findTargetForTap(mockAndroidComposeView, x, y)
 
         // Then
-        assertThat(result).isEqualTo(ViewTarget(tag = "node4"))
+        assertThat(result).isEqualTo(ViewTarget(node = Node(name = "node4")))
     }
 
     /**
@@ -257,7 +258,7 @@ class ComposeActionTrackingStrategyTest {
             testedComposeActionTrackingStrategy.findTargetForScroll(mockAndroidComposeView, x, y)
 
         // Then
-        assertThat(result).isEqualTo(ViewTarget(tag = "node4"))
+        assertThat(result).isEqualTo(ViewTarget(node = Node(name = "node4")))
     }
 
     /**

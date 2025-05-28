@@ -13,6 +13,7 @@ import com.datadog.gradle.config.javadocConfig
 import com.datadog.gradle.config.junitConfig
 import com.datadog.gradle.config.kotlinConfig
 import com.datadog.gradle.config.taskConfig
+import com.datadog.gradle.plugin.InstrumentationMode
 
 plugins {
     id("com.android.application")
@@ -22,6 +23,7 @@ plugins {
     id("org.jetbrains.dokka")
     id("com.squareup.sqldelight")
     id("com.google.devtools.ksp")
+    alias(libs.plugins.datadogGradlePlugin)
 }
 
 sqldelight {
@@ -142,6 +144,10 @@ android {
             }
         }
     }
+}
+
+datadog {
+    composeInstrumentation = InstrumentationMode.AUTO
 }
 
 dependencies {
