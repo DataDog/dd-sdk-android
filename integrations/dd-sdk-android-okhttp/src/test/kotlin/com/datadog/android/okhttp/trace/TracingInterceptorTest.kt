@@ -163,13 +163,13 @@ internal open class TracingInterceptorTest {
     fun `set up`(forge: Forge) {
         fakeTraceId = forge.aDDTraceId(fakeTraceIdAsString)
         fakeOrigin = forge.aNullable { anAlphabeticalString() }
-        mockSpanBuilder = forge.newSpanBuilderMock()
         mockSpanContext = forge.newSpanContextMock(fakeTraceId, fakeSpanId)
         mockSpan = forge.newSpanMock(mockSpanContext)
+        mockSpanBuilder = forge.newSpanBuilderMock(mockSpan)
+        mockTraceSampler = forge.newTraceSamplerMock(mockSpan)
         mockPropagation = newAgentPropagationMock()
         mockTracer = forge.newTracerMock(mockSpanBuilder, mockPropagation)
         mockLocalTracer = forge.newTracerMock(mockSpanBuilder, mockPropagation)
-        mockTraceSampler = forge.newTraceSamplerMock(mockSpan)
 
         val mediaType = forge.anElementFrom("application", "image", "text", "model") +
             "/" + forge.anAlphabeticalString()

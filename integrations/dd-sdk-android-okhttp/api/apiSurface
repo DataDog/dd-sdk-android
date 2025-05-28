@@ -25,14 +25,8 @@ open class com.datadog.android.okhttp.DatadogInterceptor : com.datadog.android.o
     constructor(List<String>)
     override fun build(): DatadogInterceptor
     fun setRumResourceAttributesProvider(com.datadog.android.rum.RumResourceAttributesProvider): Builder
-data class com.datadog.android.okhttp.TraceContext : com.datadog.trace.bootstrap.instrumentation.api.AgentSpan.Context
-  constructor(com.datadog.trace.api.DDTraceId, Long, Int)
-  override fun getTraceId(): com.datadog.trace.api.DDTraceId
-  override fun getSpanId(): Long
-  override fun getTrace(): com.datadog.trace.bootstrap.instrumentation.api.AgentTrace
-  override fun getSamplingPriority()
-  override fun baggageItems()
-  override fun getPathwayContext()
+data class com.datadog.android.okhttp.TraceContext
+  constructor(String, String, Int)
 enum com.datadog.android.okhttp.TraceContextInjection
   - ALL
   - SAMPLED
