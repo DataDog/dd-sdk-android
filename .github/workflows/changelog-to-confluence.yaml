@@ -18,6 +18,7 @@ jobs:
               run: |
                   mkdir -p publish_folder
                   cp CHANGELOG.md publish_folder/
+                  mv publish_folder/CHANGELOG.md publish_folder/android-sdk-changelog.md
                   echo "Publishing only CHANGELOG.md"
 
             - name: Publish Markdown to Confluence
