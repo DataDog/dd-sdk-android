@@ -100,7 +100,7 @@ internal open class TracingInterceptorNonDdTracerTest {
     lateinit var mockLocalTracer: Tracer
 
     @Mock
-    lateinit var mockSpanBuilder: AgentTracer.SpanBuilder
+    lateinit var mockSpanBuilder: SpanBuilder
 
     @Mock
     lateinit var mockSpanContext: SpanContext
@@ -163,7 +163,7 @@ internal open class TracingInterceptorNonDdTracerTest {
         fakeOrigin = forge.aNullable { anAlphabeticalString() }
         mockSpanContext = forge.newSpanContextMock(fakeTraceId, fakeSpanId)
         mockSpan = forge.newSpanMock(mockSpanContext)
-        mockSpanBuilder = forge.newSpanBuilderMock(mockSpan)
+        mockSpanBuilder = forge.newSpanBuilderMock(mockSpan, mockSpanContext)
         mockTraceSampler = forge.newTraceSamplerMock(mockSpan)
         mockPropagation = newAgentPropagationMock()
         mockTracer = forge.newTracerMock(mockSpanBuilder, mockPropagation)
@@ -1079,15 +1079,13 @@ internal open class TracingInterceptorNonDdTracerTest {
 
     @Test
     fun `M create a span with automatic tracer W intercept() if no tracer registered`(
+        forge: Forge,
         @IntForgery(min = 200, max = 300) statusCode: Int
     ) {
-        val localSpanBuilder: AgentTracer.SpanBuilder = mock()
-        val localSpan: Span = mock()
+        val localSpan: Span = forge.newSpanMock(mockSpanContext)
+        val localSpanBuilder: SpanBuilder = forge.newSpanBuilderMock(localSpan, mockSpanContext)
         whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(true)
         stubChain(mockChain, statusCode)
-        whenever(localSpanBuilder.asChildOf(null as SpanContext?)) doReturn localSpanBuilder
-        whenever(localSpanBuilder.start()) doReturn localSpan
-        whenever(localSpan.context()) doReturn mockSpanContext
         whenever(mockTraceSampler.sample(localSpan)).thenReturn(true)
         whenever(mockSpanContext.spanId) doReturn fakeSpanId
         whenever(mockSpanContext.traceId) doReturn fakeTraceId

@@ -165,7 +165,7 @@ internal open class TracingInterceptorNotSendingSpanTest {
         fakeOrigin = forge.aNullable { anAlphabeticalString() }
         mockSpanContext = forge.newSpanContextMock(fakeTraceId, fakeSpanId)
         mockSpan = forge.newSpanMock(mockSpanContext)
-        mockSpanBuilder = forge.newSpanBuilderMock(mockSpan)
+        mockSpanBuilder = forge.newSpanBuilderMock(mockSpan, mockSpanContext)
         mockTraceSampler = forge.newTraceSamplerMock(mockSpan)
         mockPropagation = newAgentPropagationMock()
         mockTracer = forge.newTracerMock(mockSpanBuilder, mockPropagation)

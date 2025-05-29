@@ -25,7 +25,6 @@ import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.datadog.tools.unit.forge.BaseConfigurator
 import com.datadog.trace.api.DDTraceId
 import com.datadog.trace.bootstrap.instrumentation.api.AgentPropagation
-import com.datadog.trace.bootstrap.instrumentation.api.AgentTracer
 import com.datadog.trace.bootstrap.instrumentation.api.AgentTracer.SpanBuilder
 import com.datadog.trace.bootstrap.instrumentation.api.Tags
 import com.datadog.trace.core.propagation.ExtractedContext
@@ -101,7 +100,7 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
     lateinit var mockLocalTracer: Tracer
 
     @Mock
-    lateinit var mockSpanBuilder: AgentTracer.SpanBuilder
+    lateinit var mockSpanBuilder: SpanBuilder
 
     @Mock
     lateinit var mockSpanContext: SpanContext
@@ -168,7 +167,7 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
         fakeOrigin = forge.aNullable { anAlphabeticalString() }
         mockSpanContext = forge.newSpanContextMock(fakeTraceId, fakeSpanId)
         mockSpan = forge.newSpanMock(mockSpanContext)
-        mockSpanBuilder = forge.newSpanBuilderMock(mockSpan)
+        mockSpanBuilder = forge.newSpanBuilderMock(mockSpan, mockSpanContext)
         mockTraceSampler = forge.newTraceSamplerMock(mockSpan)
         mockPropagation = newAgentPropagationMock()
         mockTracer = forge.newTracerMock(mockSpanBuilder, mockPropagation)

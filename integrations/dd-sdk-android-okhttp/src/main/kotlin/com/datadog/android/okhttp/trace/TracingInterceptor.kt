@@ -430,6 +430,7 @@ internal constructor(
                 span.context(),
                 requestBuilder
             ) { carrier, key, value ->
+                carrier.removeHeader(key)
                 when (key) {
                     DATADOG_LEAST_SIGNIFICANT_64_BITS_TRACE_ID_HEADER,
                     DATADOG_TAGS_HEADER,
