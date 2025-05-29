@@ -7,6 +7,7 @@
 package com.datadog.android.okhttp.internal.otel
 
 import com.datadog.android.okhttp.TraceContext
+import com.datadog.trace.api.DDSpanId
 import com.datadog.trace.api.DDTraceId
 import com.datadog.trace.core.propagation.ExtractedContext
 import java.math.BigInteger
@@ -15,8 +16,8 @@ private const val BASE_16_RADIX = 16
 
 internal fun TraceContext.toAgentSpanContext(): ExtractedContext {
     return ExtractedContext(
-        DDTraceId.from(parseToBigInteger(traceId).toLong()),
-        parseToBigInteger(spanId).toLong(),
+        DDTraceId.fromHex(traceId),
+        DDSpanId.fromHex(spanId),
         samplingPriority,
         null,
         null,

@@ -12,7 +12,6 @@ import com.datadog.trace.bootstrap.instrumentation.api.AgentPropagation
 import com.datadog.trace.bootstrap.instrumentation.api.AgentSpan.Context
 import com.datadog.trace.bootstrap.instrumentation.api.AgentTracer.SpanBuilder
 import com.datadog.trace.core.CoreTracer.CoreSpanBuilder
-import com.datadog.trace.core.propagation.ExtractedContext
 import fr.xgouchet.elmyr.Forge
 import okhttp3.Request
 import org.mockito.kotlin.any
@@ -22,7 +21,6 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
-import java.math.BigInteger
 
 internal fun AgentPropagation.wheneverInjectThenThrow(throwable: Throwable) {
     doThrow(throwable)
@@ -38,15 +36,16 @@ internal fun AgentPropagation.wheneverInjectThenValueToHeaders(key: String, valu
         .inject(any<Context>(), any<Request.Builder>(), any())
 }
 
-internal fun AgentPropagation.wheneverInjectThenContextToHeaders(
+internal fun AgentPropagation.wheneverInjectCalledPassContextToHeaders(
     datadogContext: Map<String, String>,
     nonDatadogContextKey: String,
     nonDatadogContextKeyValue: String
 ) {
     doAnswer { invocation ->
         val carrier = invocation.getArgument<Request.Builder>(1)
-        datadogContext.forEach { carrier.addHeader(it.key, it.value) }
-        carrier.addHeader(nonDatadogContextKey, nonDatadogContextKeyValue)
+        val setter = invocation.getArgument<AgentPropagation.Setter<Request.Builder>>(2)
+        datadogContext.forEach { setter.set(carrier, it.key, it.value) }
+        setter.set(carrier, nonDatadogContextKey, nonDatadogContextKeyValue)
     }
         .whenever(this)
         .inject(any<Context>(), any<Request.Builder>(), any())
@@ -68,15 +67,15 @@ internal fun Forge.newTracerMock(
 }
 
 internal fun newAgentPropagationMock(
-    extractedContext: ExtractedContext = mock()
+    extractedContext: Context.Extracted = mock()
 ) = mock<AgentPropagation> {
     on { extract(any<Request>(), any()) } doReturn extractedContext
 }
 
-internal fun Forge.newSpanContextMock(
+internal inline fun <reified T : Context> Forge.newSpanContextMock(
     fakeTraceId: DDTraceId = aDDTraceId(),
     fakeSpanId: Long = aLong()
-) = mock<SpanContext> {
+): T = mock<T> {
     on { spanId } doReturn fakeSpanId
     on { traceId } doReturn fakeTraceId
 }
@@ -88,9 +87,11 @@ internal fun Forge.newSpanMock(
 }
 
 internal fun Forge.newSpanBuilderMock(
-    localSpan: Span = newSpanMock()
+    localSpan: Span = newSpanMock(),
+    context: Context = newSpanContextMock()
 ) = mock<CoreSpanBuilder> {
     on { withOrigin(anyOrNull()) } doReturn it
-    on { asChildOf(any<Context>()) } doReturn it
+    on { asChildOf(context) } doReturn it
+    on { asChildOf(null as Context?) } doReturn it
     on { start() } doReturn localSpan
 }
