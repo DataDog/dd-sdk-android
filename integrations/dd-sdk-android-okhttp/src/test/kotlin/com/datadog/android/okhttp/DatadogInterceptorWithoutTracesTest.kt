@@ -143,7 +143,7 @@ internal class DatadogInterceptorWithoutTracesTest {
     @LongForgery
     var fakeSpanId: Long = 0L
 
-    @StringForgery(regex = "[a-f][0-9]{32}")
+    @StringForgery(regex = "[a-f][0-9]{31}")
     lateinit var fakeTraceIdString: String
 
     lateinit var fakeTraceId: DDTraceId
@@ -155,8 +155,8 @@ internal class DatadogInterceptorWithoutTracesTest {
     @BeforeEach
     fun `set up`(forge: Forge) {
         fakeTraceId = forge.aDDTraceId(fakeTraceIdString)
-        mockSpanBuilder = forge.newSpanBuilderMock()
         mockSpanContext = forge.newSpanContextMock(fakeTraceId, fakeSpanId)
+        mockSpanBuilder = forge.newSpanBuilderMock(context = mockSpanContext)
         mockSpan = forge.newSpanMock(mockSpanContext)
         mockPropagation = newAgentPropagationMock()
         mockLocalTracer = forge.newTracerMock(mockSpanBuilder, mockPropagation)
