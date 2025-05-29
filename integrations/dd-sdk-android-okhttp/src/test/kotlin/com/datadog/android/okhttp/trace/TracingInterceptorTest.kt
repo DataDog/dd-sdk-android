@@ -145,7 +145,7 @@ internal open class TracingInterceptorTest {
     @LongForgery
     var fakeSpanId: Long = 0L
 
-    @StringForgery(regex = "[a-f][0-9]{32}")
+    @StringForgery(regex = "[a-f][0-9]{31}")
     lateinit var fakeTraceIdAsString: String
 
     lateinit var fakeTraceId: DDTraceId

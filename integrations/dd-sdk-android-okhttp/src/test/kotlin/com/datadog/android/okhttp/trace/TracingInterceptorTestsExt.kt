@@ -52,8 +52,8 @@ internal fun AgentPropagation.wheneverInjectThenContextToHeaders(
         .inject(any<Context>(), any<Request.Builder>(), any())
 }
 
-internal fun Forge.aDDTraceId(fakeString: String? = null) = DDTraceId.from(
-    BigInteger(fakeString ?: aStringMatching("[a-f0-9]{32}"), 16).toLong()
+internal fun Forge.aDDTraceId(fakeString: String? = null) = DDTraceId.fromHex(
+    fakeString ?: aStringMatching("[a-f0-9]{31}")
 )
 internal fun Forge.newTraceSamplerMock(span: Span = newSpanMock()) = mock<Sampler<Span>> {
     on { sample(span) } doReturn true
