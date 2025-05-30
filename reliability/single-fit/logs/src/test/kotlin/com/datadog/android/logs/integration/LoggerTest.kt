@@ -140,7 +140,7 @@ class LoggerTest {
 
         // Then
         checkNotNull(request)
-        assertThat(request.url).isEqualTo("$fakeEndpoint/api/v2/logs?ddsource=$expectedSource")
+        assertThat(request.url).isEqualTo("$fakeEndpoint?ddsource=$expectedSource")
         assertThat(request.headers).containsEntry("DD-API-KEY", expectedClientToken)
         assertThat(request.headers).containsEntry("DD-EVP-ORIGIN", expectedSource)
         assertThat(request.headers).containsEntry("DD-EVP-ORIGIN-VERSION", expectedSdkVersion)
