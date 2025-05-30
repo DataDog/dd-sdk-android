@@ -976,6 +976,7 @@ public final class com/datadog/trace/api/DDSpanId {
 	public static fun from (Ljava/lang/String;)J
 	public static fun fromHex (Ljava/lang/String;)J
 	public static fun fromHex (Ljava/lang/String;IIZ)J
+	public static fun fromHexOrDefault (Ljava/lang/String;J)J
 	public static fun toHexString (J)Ljava/lang/String;
 	public static fun toHexStringPadded (J)Ljava/lang/String;
 	public static fun toString (J)Ljava/lang/String;
@@ -1071,6 +1072,7 @@ public abstract class com/datadog/trace/api/DDTraceId {
 	public static fun from (J)Lcom/datadog/trace/api/DDTraceId;
 	public static fun from (Ljava/lang/String;)Lcom/datadog/trace/api/DDTraceId;
 	public static fun fromHex (Ljava/lang/String;)Lcom/datadog/trace/api/DDTraceId;
+	public static fun fromHexOrDefault (Ljava/lang/String;Lcom/datadog/trace/api/DDTraceId;)Lcom/datadog/trace/api/DDTraceId;
 	public abstract fun toHexString ()Ljava/lang/String;
 	public abstract fun toHexStringPadded (I)Ljava/lang/String;
 	public abstract fun toHighOrderLong ()J
