@@ -168,6 +168,12 @@ public final class com/datadog/android/internal/telemetry/TracingHeaderTypesSet 
 	public fun toString ()Ljava/lang/String;
 }
 
+public final class com/datadog/android/internal/thread/NamedRunnable : java/lang/Runnable {
+	public fun <init> (Ljava/lang/String;Ljava/lang/Runnable;)V
+	public final fun getSanitizedName ()Ljava/lang/String;
+	public fun run ()V
+}
+
 public final class com/datadog/android/internal/utils/ByteArrayExtKt {
 	public static final fun toHexString ([B)Ljava/lang/String;
 }

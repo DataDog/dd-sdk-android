@@ -1,0 +1,2 @@
+-keepnames class com.datadog.android.rum.internal.domain.scope.RumRawEvent { *; }
+-keepnames class com.datadog.android.rum.internal.domain.scope.RumRawEvent$* { *; }
