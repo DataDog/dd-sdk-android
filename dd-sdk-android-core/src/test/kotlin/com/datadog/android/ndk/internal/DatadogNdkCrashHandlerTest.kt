@@ -7,8 +7,6 @@
 package com.datadog.android.ndk.internal
 
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.api.context.NetworkInfo
-import com.datadog.android.api.context.UserInfo
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.feature.FeatureSdkCore
@@ -65,12 +63,6 @@ internal class DatadogNdkCrashHandlerTest {
     lateinit var mockNdkCrashLogDeserializer: Deserializer<String, NdkCrashLog>
 
     @Mock
-    lateinit var mockNetworkInfoDeserializer: Deserializer<String, NetworkInfo>
-
-    @Mock
-    lateinit var mockUserInfoDeserializer: Deserializer<String, UserInfo>
-
-    @Mock
     lateinit var mockSdkCore: FeatureSdkCore
 
     @Mock
@@ -118,10 +110,7 @@ internal class DatadogNdkCrashHandlerTest {
             tempDir,
             mockExecutorService,
             mockNdkCrashLogDeserializer,
-            mockNetworkInfoDeserializer,
-            mockUserInfoDeserializer,
             mockInternalLogger,
-            mockEnvFileReader,
             mockLastRumViewEventProvider
         )
     }
@@ -169,63 +158,16 @@ internal class DatadogNdkCrashHandlerTest {
     }
 
     @Test
-    fun `M read network info W prepareData()`(
-        @StringForgery networkInfoStr: String,
-        @Forgery fakeNetworkInfo: NetworkInfo
-    ) {
-        // Given
-        fakeNdkCacheDir.mkdirs()
-        File(fakeNdkCacheDir, DatadogNdkCrashHandler.NETWORK_INFO_FILE_NAME)
-            .writeText(networkInfoStr)
-        whenever(mockNetworkInfoDeserializer.deserialize(networkInfoStr)) doReturn fakeNetworkInfo
-
-        // When
-        testedHandler.prepareData()
-
-        // Then
-        assertThat(testedHandler.lastNetworkInfo).isNull()
-        verify(mockExecutorService).execute(captureRunnable.capture())
-        captureRunnable.firstValue.run()
-        assertThat(testedHandler.lastNetworkInfo)
-            .isEqualTo(fakeNetworkInfo)
-    }
-
-    @Test
-    fun `M read user info W prepareData()`(
-        @StringForgery userInfoStr: String,
-        @Forgery fakeUserInfo: UserInfo
-    ) {
-        // Given
-        fakeNdkCacheDir.mkdirs()
-        File(fakeNdkCacheDir, DatadogNdkCrashHandler.USER_INFO_FILE_NAME).writeText(userInfoStr)
-        whenever(mockUserInfoDeserializer.deserialize(userInfoStr)) doReturn fakeUserInfo
-
-        // When
-        testedHandler.prepareData()
-
-        // Then
-        assertThat(testedHandler.lastUserInfo).isNull()
-        verify(mockExecutorService).execute(captureRunnable.capture())
-        captureRunnable.firstValue.run()
-        assertThat(testedHandler.lastUserInfo)
-            .isEqualTo(fakeUserInfo)
-    }
-
-    @Test
     fun `M do nothing W prepareData() {directory does not exist}`() {
         // When
         testedHandler.prepareData()
         whenever(mockNdkCrashLogDeserializer.deserialize(any())) doReturn mock()
-        whenever(mockUserInfoDeserializer.deserialize(any())) doReturn mock()
-        whenever(mockNetworkInfoDeserializer.deserialize(any())) doReturn mock()
 
         // Then
         verify(mockExecutorService).execute(captureRunnable.capture())
         captureRunnable.firstValue.run()
         assertThat(testedHandler.lastRumViewEvent).isNull()
         assertThat(testedHandler.lastNdkCrashLog).isNull()
-        assertThat(testedHandler.lastUserInfo).isNull()
-        assertThat(testedHandler.lastNetworkInfo).isNull()
     }
 
     @Test
@@ -360,10 +302,7 @@ internal class DatadogNdkCrashHandlerTest {
             tempDir,
             mockExecutorService,
             mockNdkCrashLogDeserializer,
-            mockNetworkInfoDeserializer,
-            mockUserInfoDeserializer,
             mockInternalLogger,
-            mockEnvFileReader,
             lastRumViewEventProvider = { JsonObject() },
             nativeCrashSourceType = "ndk+il2cpp"
         )
@@ -396,16 +335,12 @@ internal class DatadogNdkCrashHandlerTest {
 
     @Test
     fun `M clear the references W handleNdkCrash()`(
-        @Forgery fakeUserInfo: UserInfo,
-        @Forgery fakeNetworkInfo: NetworkInfo,
         forge: Forge
     ) {
         // Given
         val fakeViewEvent = forge.aFakeViewEvent()
         testedHandler.lastNdkCrashLog = fakeNdkCrashLog
         testedHandler.lastRumViewEvent = fakeViewEvent.toJson()
-        testedHandler.lastUserInfo = fakeUserInfo
-        testedHandler.lastNetworkInfo = fakeNetworkInfo
 
         // When
         testedHandler.handleNdkCrash(mockSdkCore)
@@ -417,8 +352,6 @@ internal class DatadogNdkCrashHandlerTest {
 
         assertThat(testedHandler.lastNdkCrashLog).isNull()
         assertThat(testedHandler.lastRumViewEvent).isNull()
-        assertThat(testedHandler.lastUserInfo).isNull()
-        assertThat(testedHandler.lastNetworkInfo).isNull()
     }
 
     // endregion

@@ -10,8 +10,6 @@ import android.content.Context
 import android.util.Log
 import androidx.annotation.AnyThread
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.api.context.NetworkInfo
-import com.datadog.android.api.context.UserInfo
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureEventReceiver
 import com.datadog.android.api.feature.FeatureSdkCore
@@ -21,7 +19,6 @@ import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.api.storage.EventType
 import com.datadog.android.api.storage.FeatureStorageConfiguration
 import com.datadog.android.api.storage.NoOpDataWriter
-import com.datadog.android.core.feature.event.JvmCrash
 import com.datadog.android.core.internal.utils.NULL_MAP_VALUE
 import com.datadog.android.event.EventMapper
 import com.datadog.android.event.MapperSerializer
@@ -33,8 +30,6 @@ import com.datadog.android.log.internal.storage.LogsDataWriter
 import com.datadog.android.log.model.LogEvent
 import java.util.Locale
 import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.CountDownLatch
-import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 
 /**
@@ -126,10 +121,7 @@ internal class LogsFeature(
 
     @AnyThread
     override fun onReceive(event: Any) {
-        if (event is JvmCrash.Logs) {
-            sendJvmCrashLog(event)
-            return
-        } else if (event !is Map<*, *>) {
+        if (event !is Map<*, *>) {
             sdkCore.internalLogger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
@@ -138,9 +130,7 @@ internal class LogsFeature(
             return
         }
 
-        if (event[TYPE_EVENT_KEY] == "ndk_crash") {
-            sendNdkCrashLog(event)
-        } else if (event[TYPE_EVENT_KEY] == "span_log") {
+        if (event[TYPE_EVENT_KEY] == "span_log") {
             sendSpanLog(event)
         } else {
             sdkCore.internalLogger.log(
@@ -165,91 +155,6 @@ internal class LogsFeature(
             ),
             internalLogger = sdkCore.internalLogger
         )
-    }
-
-    private fun sendJvmCrashLog(jvmCrash: JvmCrash.Logs) {
-        @Suppress("UnsafeThirdPartyFunctionCall") // argument is good
-        val lock = CountDownLatch(1)
-
-        val attributes = getAttributes()
-        sdkCore.getFeature(name)
-            ?.withWriteContext { datadogContext, eventBatchWriter ->
-                val log = logGenerator.generateLog(
-                    DatadogLogGenerator.CRASH,
-                    datadogContext = datadogContext,
-                    attachNetworkInfo = true,
-                    loggerName = jvmCrash.loggerName,
-                    message = jvmCrash.message,
-                    throwable = jvmCrash.throwable,
-                    attributes = attributes,
-                    timestamp = jvmCrash.timestamp,
-                    bundleWithTraces = true,
-                    bundleWithRum = true,
-                    networkInfo = null,
-                    userInfo = null,
-                    threadName = jvmCrash.threadName,
-                    threads = jvmCrash.threads,
-                    tags = emptySet()
-                )
-
-                dataWriter.write(eventBatchWriter, log, EventType.CRASH)
-                lock.countDown()
-            }
-
-        try {
-            lock.await(MAX_WRITE_WAIT_TIMEOUT_MS, TimeUnit.MILLISECONDS)
-        } catch (e: InterruptedException) {
-            sdkCore.internalLogger.log(
-                InternalLogger.Level.ERROR,
-                InternalLogger.Target.MAINTAINER,
-                { "Log event write operation wait was interrupted." },
-                e
-            )
-        }
-    }
-
-    @Suppress("ComplexMethod")
-    private fun sendNdkCrashLog(data: Map<*, *>) {
-        val timestamp = data[TIMESTAMP_EVENT_KEY] as? Long
-        val message = data[MESSAGE_EVENT_KEY] as? String
-        val loggerName = data[LOGGER_NAME_EVENT_KEY] as? String
-        val attributes = (data[ATTRIBUTES_EVENT_KEY] as? Map<*, *>)
-            ?.filterKeys { it is String }
-            ?.mapKeys { it.key as String }
-        val networkInfo = data[NETWORK_INFO_EVENT_KEY] as? NetworkInfo
-        val userInfo = data[USER_INFO_EVENT_KEY] as? UserInfo
-
-        @Suppress("ComplexCondition")
-        if (loggerName == null || message == null || timestamp == null || attributes == null) {
-            sdkCore.internalLogger.log(
-                InternalLogger.Level.WARN,
-                InternalLogger.Target.USER,
-                { NDK_CRASH_EVENT_MISSING_MANDATORY_FIELDS_WARNING }
-            )
-            return
-        }
-
-        sdkCore.getFeature(name)
-            ?.withWriteContext { datadogContext, eventBatchWriter ->
-                val log = logGenerator.generateLog(
-                    DatadogLogGenerator.CRASH,
-                    datadogContext = datadogContext,
-                    attachNetworkInfo = true,
-                    loggerName = loggerName,
-                    message = message,
-                    throwable = null,
-                    attributes = attributes,
-                    timestamp = timestamp,
-                    bundleWithTraces = false,
-                    bundleWithRum = false,
-                    networkInfo = networkInfo,
-                    userInfo = userInfo,
-                    threadName = Thread.currentThread().name,
-                    tags = emptySet()
-                )
-
-                dataWriter.write(eventBatchWriter, log, EventType.CRASH)
-            }
     }
 
     private fun sendSpanLog(data: Map<*, *>) {
@@ -303,8 +208,6 @@ internal class LogsFeature(
         private const val LOGGER_NAME_EVENT_KEY = "loggerName"
         private const val ATTRIBUTES_EVENT_KEY = "attributes"
         private const val MESSAGE_EVENT_KEY = "message"
-        private const val USER_INFO_EVENT_KEY = "userInfo"
-        private const val NETWORK_INFO_EVENT_KEY = "networkInfo"
         private const val LOG_STATUS_EVENT_KEY = "logStatus"
 
         internal const val UNSUPPORTED_EVENT_TYPE =

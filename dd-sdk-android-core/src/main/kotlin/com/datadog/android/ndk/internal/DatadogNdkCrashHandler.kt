@@ -8,12 +8,9 @@ package com.datadog.android.ndk.internal
 
 import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.api.context.NetworkInfo
-import com.datadog.android.api.context.UserInfo
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.core.internal.persistence.Deserializer
-import com.datadog.android.core.internal.persistence.file.FileReader
 import com.datadog.android.core.internal.persistence.file.existsSafe
 import com.datadog.android.core.internal.persistence.file.listFilesSafe
 import com.datadog.android.core.internal.persistence.file.readTextSafe
@@ -28,10 +25,7 @@ internal class DatadogNdkCrashHandler(
     storageDir: File,
     private val dataPersistenceExecutorService: ExecutorService,
     private val ndkCrashLogDeserializer: Deserializer<String, NdkCrashLog>,
-    private val networkInfoDeserializer: Deserializer<String, NetworkInfo>,
-    private val userInfoDeserializer: Deserializer<String, UserInfo>,
     private val internalLogger: InternalLogger,
-    private val envFileReader: FileReader<ByteArray>,
     private val lastRumViewEventProvider: () -> JsonObject?,
     internal val nativeCrashSourceType: String = "ndk"
 ) : NdkCrashHandler {
@@ -39,8 +33,6 @@ internal class DatadogNdkCrashHandler(
     internal val ndkCrashDataDirectory: File = getNdkGrantedDir(storageDir)
 
     internal var lastRumViewEvent: JsonObject? = null
-    internal var lastUserInfo: UserInfo? = null
-    internal var lastNetworkInfo: NetworkInfo? = null
     internal var lastNdkCrashLog: NdkCrashLog? = null
 
     // region NdkCrashHandler
@@ -78,20 +70,6 @@ internal class DatadogNdkCrashHandler(
                             file.readTextSafe(internalLogger = internalLogger)?.let {
                                 ndkCrashLogDeserializer.deserialize(it)
                             }
-
-                    USER_INFO_FILE_NAME ->
-                        lastUserInfo =
-                            readFileContent(
-                                file,
-                                envFileReader
-                            )?.let { userInfoDeserializer.deserialize(it) }
-
-                    NETWORK_INFO_FILE_NAME ->
-                        lastNetworkInfo =
-                            readFileContent(
-                                file,
-                                envFileReader
-                            )?.let { networkInfoDeserializer.deserialize(it) }
                 }
             }
         } catch (e: SecurityException) {
@@ -103,28 +81,6 @@ internal class DatadogNdkCrashHandler(
             )
         } finally {
             clearCrashLog()
-        }
-    }
-
-    @WorkerThread
-    private fun readFileContent(file: File, fileReader: FileReader<ByteArray>): String? {
-        val content = fileReader.readData(file)
-        return if (content.isEmpty()) {
-            null
-        } else {
-            String(content).also {
-                // temporary, to have more telemetry data
-                if (it.contains("\\u0000") || it.contains("\u0000")) {
-                    internalLogger.log(
-                        InternalLogger.Level.ERROR,
-                        InternalLogger.Target.TELEMETRY,
-                        {
-                            "Decoded file (${file.name}) content contains NULL character, file content={$it}," +
-                                " raw_bytes=${content.joinToString(",")}"
-                        }
-                    )
-                }
-            }
         }
     }
 
@@ -142,8 +98,6 @@ internal class DatadogNdkCrashHandler(
 
     private fun clearAllReferences() {
         lastRumViewEvent = null
-        lastNetworkInfo = null
-        lastUserInfo = null
         lastNdkCrashLog = null
     }
 
