@@ -55,6 +55,23 @@ public abstract class DDTraceId {
   }
 
   /**
+   * Creates a new {@link DDTraceId} from the given {@link #toHexString() hexadecimal
+   * representation}.
+   *
+   * @param s The hexadecimal {@link String} representation of a {@link DD128bTraceId} to parse.
+   * @return A new {@link DDTraceId} instance or DDTraceId.ZERO if the given {@link #toHexString()
+   * hexadecimal String} does not represent a valid number.
+   */
+  public static DDTraceId fromHexOrDefault(String s, DDTraceId defaultValue) throws NumberFormatException {
+    try {
+      return fromHex(s);
+    } catch (NumberFormatException e) {
+      return defaultValue;
+    }
+  }
+
+
+  /**
    * Returns a 64-bit only decimal {@link String} representation of the {@link DDTraceId}. The
    * {@link String} will be cached.
    *

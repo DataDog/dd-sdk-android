@@ -8,7 +8,8 @@ package com.datadog.android.okhttp.internal.otel
 
 import com.datadog.android.okhttp.TraceContext
 import com.datadog.android.okhttp.internal.utils.forge.OkHttpConfigurator
-import com.datadog.trace.core.propagation.ExtractedContext
+import com.datadog.trace.api.DDSpanId
+import com.datadog.trace.api.DDTraceId
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -20,14 +21,13 @@ import org.junit.jupiter.api.extension.Extensions
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
-import java.math.BigInteger
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
     ExtendWith(ForgeExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
-@ForgeConfiguration(OkHttpConfigurator::class)
+@ForgeConfiguration(OkHttpConfigurator::class, seed = 0x4e2ef678ce69eL)
 internal class TraceContextExtTest {
 
     @Forgery
@@ -39,8 +39,8 @@ internal class TraceContextExtTest {
         val extractedContext = fakeTestedContext.toAgentSpanContext()
 
         // Then
-        assertThat(extractedContext.traceId).isEqualTo(BigInteger(fakeTestedContext.traceId, 16))
-        assertThat(extractedContext.spanId).isEqualTo(BigInteger(fakeTestedContext.spanId, 16))
+        assertThat(extractedContext.traceId).isEqualTo(DDTraceId.fromHex(fakeTestedContext.traceId))
+        assertThat(extractedContext.spanId).isEqualTo(DDSpanId.fromHex(fakeTestedContext.spanId))
         assertThat(extractedContext.samplingPriority).isEqualTo(fakeTestedContext.samplingPriority)
     }
 
@@ -52,8 +52,8 @@ internal class TraceContextExtTest {
         val extractedContext = fakeTestedContext.toAgentSpanContext()
 
         // Then
-        assertThat(extractedContext.traceId).isEqualTo(BigInteger.ZERO)
-        assertThat(extractedContext.spanId).isEqualTo(BigInteger(fakeTestedContext.spanId, 16))
+        assertThat(extractedContext.traceId).isEqualTo(DDTraceId.ZERO)
+        assertThat(extractedContext.spanId).isEqualTo(DDSpanId.fromHex(fakeTestedContext.spanId))
         assertThat(extractedContext.samplingPriority).isEqualTo(fakeTestedContext.samplingPriority)
     }
 
@@ -65,8 +65,8 @@ internal class TraceContextExtTest {
         val extractedContext = fakeTestedContext.toAgentSpanContext()
 
         // Then
-        assertThat(extractedContext.traceId).isEqualTo(BigInteger(fakeTestedContext.traceId, 16))
-        assertThat(extractedContext.spanId).isEqualTo(BigInteger.ZERO)
+        assertThat(extractedContext.traceId).isEqualTo(DDTraceId.fromHex(fakeTestedContext.traceId))
+        assertThat(extractedContext.spanId).isEqualTo(DDSpanId.ZERO)
         assertThat(extractedContext.samplingPriority).isEqualTo(fakeTestedContext.samplingPriority)
     }
 
