@@ -193,12 +193,16 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
         doAnswer { false }.whenever(mockResolver).isFirstPartyUrl(any<HttpUrl>())
         doAnswer { true }.whenever(mockResolver).isFirstPartyUrl(fakeUrl.toHttpUrl())
 
-        testedInterceptor = instantiateTestedInterceptor(fakeLocalHosts) { _, _ -> mockLocalTracer }
+        testedInterceptor = instantiateTestedInterceptor(
+            fakeLocalHosts,
+            localTracerFactory = { _, _ -> mockLocalTracer },
+            globalTracerProvider = { mockTracer })
     }
 
     open fun instantiateTestedInterceptor(
         tracedHosts: Map<String, Set<TracingHeaderType>>,
-        factory: (SdkCore, Set<TracingHeaderType>) -> Tracer
+        globalTracerProvider: () -> Tracer? = { null },
+        localTracerFactory: (SdkCore, Set<TracingHeaderType>) -> Tracer
     ): TracingInterceptor {
         return object :
             TracingInterceptor(
@@ -209,8 +213,8 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
                 traceSampler = mockTraceSampler,
                 traceContextInjection = TraceContextInjection.ALL,
                 redacted404ResourceName = fakeRedacted404Resources,
-                localTracerFactory = factory,
-                globalTracerProvider = { null }
+                localTracerFactory = localTracerFactory,
+                globalTracerProvider = globalTracerProvider
             ) {
             override fun canSendSpan(): Boolean {
                 return false
@@ -994,22 +998,37 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
 
     @Test
     fun `M drop automatic tracer W intercept() and global tracer registered`(
+        forge: Forge,
         @IntForgery(min = 200, max = 300) statusCode: Int
     ) {
-        val localSpanBuilder: SpanBuilder = mock()
-        val localSpan: Span = mock()
-        whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(true)
-        stubChain(mockChain, statusCode)
-        whenever(localSpanBuilder.asChildOf(null as SpanContext?)) doReturn localSpanBuilder
-        whenever(localSpanBuilder.start()) doReturn localSpan
-        whenever(localSpan.context()) doReturn mockSpanContext
-        whenever(mockTraceSampler.sample(localSpan)).thenReturn(true)
-        whenever(mockSpanContext.spanId) doReturn fakeSpanId
-        whenever(mockSpanContext.traceId) doReturn fakeTraceId
-        whenever(mockLocalTracer.buildSpan(TracingInterceptor.SPAN_NAME)) doReturn localSpanBuilder
+//        val localSpan: Span = forge.newSpanMock(mockSpanContext)
+//        val localSpanBuilder: SpanBuilder = forge.newSpanBuilderMock(localSpan, mockSpanContext)
+//        whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(true)
+//        whenever(mockLocalTracer.buildSpan(TracingInterceptor.SPAN_NAME)).thenReturn(localSpanBuilder)
+//        whenever(mockTraceSampler.sample(localSpan)).thenReturn(true)
+//        val testedInterceptorNoGlobal = instantiateTestedInterceptor(
+//            fakeLocalHosts,
+//            localTracerFactory = { _, _ -> mockLocalTracer },
+//            globalTracerProvider = { null }
+//        )
 
-        val response1 = testedInterceptor.intercept(mockChain)
+        val localSpan: Span = forge.newSpanMock(mockSpanContext)
+        val localSpanBuilder: SpanBuilder = forge.newSpanBuilderMock(localSpan, mockSpanContext)
+        whenever(mockLocalTracer.buildSpan(TracingInterceptor.SPAN_NAME)).thenReturn(localSpanBuilder)
+        whenever(mockTraceSampler.sample(localSpan)).thenReturn(true)
+        whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(true)
+        val testedInterceptorNoGlobal = instantiateTestedInterceptor(
+            fakeLocalHosts,
+            localTracerFactory = { _, _ -> mockLocalTracer },
+            globalTracerProvider = { null }
+        )
+
+        stubChain(mockChain, statusCode)
+
+        stubChain(mockChain, statusCode)
+        val response1 = testedInterceptorNoGlobal.intercept(mockChain)
         val expectedResponse1 = fakeResponse
+
         stubChain(mockChain, statusCode)
         val response2 = testedInterceptor.intercept(mockChain)
         val expectedResponse2 = fakeResponse
