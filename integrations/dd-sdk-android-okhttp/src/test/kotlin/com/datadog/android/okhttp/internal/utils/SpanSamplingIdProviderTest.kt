@@ -9,10 +9,9 @@ package com.datadog.android.okhttp.internal.utils
 import com.datadog.android.internal.utils.toHexString
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.okhttp.trace.Span
-import com.datadog.android.okhttp.trace.SpanContext
+import com.datadog.android.okhttp.trace.newSpanMock
 import com.datadog.tools.unit.forge.BaseConfigurator
 import com.datadog.trace.api.DDTraceId
-import com.datadog.trace.core.DDSpan
 import com.datadog.trace.core.DDSpanContext
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.LongForgery
@@ -50,8 +49,8 @@ internal class SpanSamplingIdProviderTest {
     @BeforeEach
     fun `set up`(forge: Forge) {
         fakeTags = forge.aMap { anAlphabeticalString() to aString() }
-        whenever(mockSpan.context()) doReturn mockSpanContext
         whenever(mockSpanContext.tags) doReturn forge.aNullable { fakeTags }
+        mockSpan = forge.newSpanMock(mockSpanContext)
     }
 
     @Test
@@ -96,7 +95,7 @@ internal class SpanSamplingIdProviderTest {
     ) {
         // Given
         val expectedId: ULong = 0u
-        whenever(mockSpanContext.traceId) doReturn DDTraceId.from(fakeString)
+        whenever(mockSpanContext.traceId) doReturn DDTraceId.ZERO
 
         // When
         val result = SpanSamplingIdProvider.provideId(mockSpan)
