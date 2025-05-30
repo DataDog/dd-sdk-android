@@ -9,13 +9,16 @@ package com.datadog.android.rum.internal.monitor
 import android.app.Activity
 import android.app.ActivityManager
 import android.os.Handler
+import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.Feature
+import com.datadog.android.api.feature.measureMethodCallPerf
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.feature.event.ThreadDump
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.utils.executeSafe
+import com.datadog.android.core.metrics.MethodCallSamplingRate
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.internal.thread.NamedRunnable
 import com.datadog.android.rum.DdRumContentProvider
@@ -690,13 +693,24 @@ internal class DatadogRumMonitor(
                     sdkCore.internalLogger,
                     NamedRunnable("${event::class.simpleName}") {
                         synchronized(rootScope) {
-                            rootScope.handleEvent(event, writer)
+                            handleEventWithMethodCallPerf(event)
                             notifyDebugListenerWithState()
                         }
                         handler.postDelayed(keepAliveRunnable, KEEP_ALIVE_MS)
                     }
                 )
             }
+        }
+    }
+
+    @WorkerThread
+    private fun handleEventWithMethodCallPerf(event: RumRawEvent) {
+        sdkCore.internalLogger.measureMethodCallPerf(
+            javaClass,
+            "RUM event - ${event::class.simpleName ?: "Unknown"}",
+            MethodCallSamplingRate.RARE.rate
+        ) {
+            rootScope.handleEvent(event, writer)
         }
     }
 
