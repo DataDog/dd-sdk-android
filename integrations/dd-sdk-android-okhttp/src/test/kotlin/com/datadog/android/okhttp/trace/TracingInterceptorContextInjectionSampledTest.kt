@@ -1060,12 +1060,16 @@ internal class TracingInterceptorContextInjectionSampledTest {
         val localSpan: Span = forge.newSpanMock(mockSpanContext)
         val localSpanBuilder: AgentTracer.SpanBuilder = forge.newSpanBuilderMock(localSpan)
         whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(true)
-        stubChain(mockChain, statusCode)
-
         whenever(mockTraceSampler.sample(localSpan)).thenReturn(true)
         whenever(mockLocalTracer.buildSpan(TracingInterceptor.SPAN_NAME)) doReturn localSpanBuilder
+        val testedInterceptorNoGlobal = instantiateTestedInterceptor(
+            fakeLocalHosts,
+            localTracerFactory = { _, _ -> mockLocalTracer },
+            globalTracerProvider = { null }
+        )
 
-        val response = testedInterceptor.intercept(mockChain)
+        stubChain(mockChain, statusCode)
+        val response = testedInterceptorNoGlobal.intercept(mockChain)
 
         verify(localSpanBuilder).withOrigin(getExpectedOrigin())
         verify(localSpan).setTag("http.url", fakeUrl.lowercase(Locale.US))
