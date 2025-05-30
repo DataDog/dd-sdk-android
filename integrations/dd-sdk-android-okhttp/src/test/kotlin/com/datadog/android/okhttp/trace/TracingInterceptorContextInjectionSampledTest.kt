@@ -312,7 +312,7 @@ internal class TracingInterceptorContextInjectionSampledTest {
                 carrier.addHeader(it, forge.anAlphaNumericalString())
             }
             carrier.addHeader(nonDatadogContextKey, nonDatadogContextKeyValue)
-        }.whenever(mockPropagation).inject(any<Context>(), any<Request>(), any())
+        }.whenever(mockPropagation).inject(any<Context>(), any<Request.Builder>(), any())
         stubChain(mockChain, statusCode)
 
         // When
