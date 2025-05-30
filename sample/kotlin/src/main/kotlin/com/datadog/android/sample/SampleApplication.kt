@@ -9,6 +9,8 @@ import android.annotation.SuppressLint
 import android.app.Application
 import android.content.Context
 import android.os.Build
+import android.os.StrictMode
+import android.os.StrictMode.ThreadPolicy
 import android.util.Log
 import androidx.lifecycle.ViewModelProvider
 import com.datadog.android.Datadog
@@ -110,8 +112,10 @@ class SampleApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        StrictMode.setThreadPolicy(ThreadPolicy.Builder().permitNetwork().build())
         Stetho.initializeWithDefaults(this)
         initializeDatadog()
+//        Thread.sleep(3000)
 
         initializeTimber()
 

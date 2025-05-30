@@ -9,6 +9,7 @@ import android.os.Bundle
 import android.os.Debug
 import android.os.Handler
 import android.os.Looper
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -17,7 +18,11 @@ import android.widget.Spinner
 import androidx.fragment.app.Fragment
 import com.datadog.android.rum.profiling.Profiler
 import com.datadog.android.sample.R
+import com.datadog.android.sample.data.db.room.RoomDataSource
+import io.reactivex.rxjava3.schedulers.Schedulers
 import java.io.File
+import java.net.URL
+import java.net.URLConnection
 import java.util.LinkedList
 import java.util.concurrent.TimeUnit
 import kotlin.system.measureNanoTime
@@ -32,6 +37,10 @@ internal class ProfilingFragment :
     private lateinit var levelSpinner: Spinner
 
     private val uiHandler = Handler(Looper.getMainLooper())
+
+    private val roomDataSource: RoomDataSource by lazy {
+        RoomDataSource(requireContext())
+    }
 
     // region Fragment
 
@@ -72,16 +81,62 @@ internal class ProfilingFragment :
             0 -> startSimplePerfScenario()
             1 -> startLocalJvmScenario()
             2 -> startDebugProfilingScenario()
+            3 -> startRandomHeavyOperations()
             else -> startNoTracingScenario()
         }
     }
 
     //endregion
 
+    private fun startRandomHeavyOperations() {
+        Profiler.startProfilingManagerProfiling(requireContext(), 2, "heavy_operations")
+        // let's start a heavy file write operation
+        val outputFile = File("${requireContext().getExternalFilesDir(null)}/heavy_operations.txt")
+        if (!outputFile.exists()) {
+            outputFile.createNewFile()
+        }
+        // let's write some big data to the file
+        val data = StringBuilder()
+        for (i in 0 until 100000) {
+            data.append("This is a heavy operation line number $i\n")
+        }
+        outputFile.writeText(data.toString())
+        outputFile.delete()
+        // let's do some CPU work
+        doCpuWork()
+        // let's sleep for a while to simulate a heavy operation
+        try {
+            Thread.sleep(5000) // sleep for 5 seconds
+        } catch (e: InterruptedException) {
+            e.printStackTrace()
+        }
+        // let's perform an url connection to simulate a network operation and wait for it to finish
+        val url = URL("https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_month.geojson")
+        val connection: URLConnection = url.openConnection()
+        connection.connectTimeout = 5000 // set timeout to 5 seconds
+        connection.readTimeout = 5000 // set read timeout to 5 seconds
+        try {
+            connection.connect()
+            val inputStream = connection.getInputStream()
+            inputStream.bufferedReader().use { reader ->
+                val stringBuilder = StringBuilder()
+                while (reader.readLine() != null) {
+                    stringBuilder.append(reader.readLine())
+                }
+            }
+        } catch (e: Exception) {
+            Log.e("ProfilingFragment", "Error during network operation", e)
+        } catch (e: Exception) {
+            Log.e("ProfilingFragment", "Error during network operation", e)
+        }
+        Profiler.stopProfilingManagerProfiling("heavy_operations")
+    }
+
+
     private fun startSimplePerfScenario() {
         Profiler.startSimpleperfProfiling(
             requireContext(),
-            2
+            8
         )
         val outputMetricsFilePath = "${requireContext().getExternalFilesDir(null)}/simpleperf"
         uiHandler.postDelayed(SimplePerfProfileCpuWorkRunnable(outputMetricsFilePath, uiHandler), 8)
@@ -161,45 +216,6 @@ internal class ProfilingFragment :
 
         abstract fun stopProfiling()
 
-        private fun doCpuWork() {
-            // Fibonacci calculation with sorting and prime number checking
-            val numbers = mutableListOf<Int>()
-            for (i in 0 until 10000) {
-                numbers.add((Math.random() * 1000).toInt())
-            }
-
-            // Sort the list multiple times
-            repeat(5) {
-                numbers.sort()
-                numbers.reverse()
-            }
-
-            // Calculate Fibonacci numbers
-            val fibs = mutableListOf<Long>()
-            for (i in 0 until 25) {
-                fibs.add(fibonacci(i))
-            }
-
-            // Check for prime numbers
-            val primes = mutableListOf<Int>()
-            for (num in numbers) {
-                if (isPrime(num)) {
-                    primes.add(num)
-                }
-            }
-        }
-
-        private fun fibonacci(n: Int): Long {
-            return if (n <= 1) n.toLong() else fibonacci(n - 1) + fibonacci(n - 2)
-        }
-
-        private fun isPrime(num: Int): Boolean {
-            if (num <= 1) return false
-            for (i in 2 until num) {
-                if (num % i == 0) return false
-            }
-            return true
-        }
     }
 
     class LocalProfileCpuWorkRunnable(outputMetricsFilePath: String, uiHandler: Handler) :
@@ -215,6 +231,7 @@ internal class ProfilingFragment :
             Debug.stopMethodTracing()
         }
     }
+
 
     companion object {
         private val TEST_EXECUTION_TIME_IN_MS = TimeUnit.SECONDS.toNanos(10)

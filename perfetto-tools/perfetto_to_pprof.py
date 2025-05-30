@@ -26,6 +26,73 @@ logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
+def get_profiling_start_utc_ns(tp: TraceProcessor) -> tuple[int | None, int | None]:
+        try:
+            # First, let's see what clock types are available
+            clock_types_query = """
+            SELECT DISTINCT clock_name 
+            FROM clock_snapshot 
+            ORDER BY clock_name;
+            """
+            clock_types = tp.query(clock_types_query)
+            logger.info("Available clock types:")
+            for clock in clock_types:
+                logger.info(f"  - {clock.clock_name}")
+
+            # Now try to get the delta using a more general approach
+            delta_result = tp.query("""
+            WITH clock_values AS (
+                SELECT 
+                    snapshot_id,
+                    clock_name,
+                    clock_value
+                FROM clock_snapshot
+                WHERE clock_name IN ('CLOCK_REALTIME', 'CLOCK_MONOTONIC', 'REALTIME', 'MONOTONIC')
+                ORDER BY snapshot_id
+            ),
+            clock_pairs AS (
+                SELECT 
+                    snapshot_id,
+                    MAX(CASE WHEN clock_name IN ('CLOCK_REALTIME', 'REALTIME') THEN clock_value END) as realtime,
+                    MAX(CASE WHEN clock_name IN ('CLOCK_MONOTONIC', 'MONOTONIC') THEN clock_value END) as monotonic
+                FROM clock_values
+                GROUP BY snapshot_id
+                HAVING realtime IS NOT NULL AND monotonic IS NOT NULL
+            )
+            SELECT (realtime - monotonic) as offset_ns
+            FROM clock_pairs
+            ORDER BY snapshot_id
+            LIMIT 1;
+            """)
+            
+            # Check if we got any results
+            try:
+                delta = next(delta_result).offset_ns
+                logger.info(f"Trace clock delta: {delta} ns")
+            except StopIteration:
+                logger.warning("No clock delta found in the trace, using 0 as default")
+                delta = 0
+                
+        except Exception as e:
+            logger.error(f"Error getting clock delta: {str(e)}")
+            logger.error("Using 0 as default clock delta")
+            delta = 0
+            
+        # Query to get the first and last timestamp in the trace
+        try:
+            query = """
+            SELECT  MIN(ts) AS start_ns,
+                    MAX(ts) AS end_ns
+            FROM    perf_sample 
+            """
+            result = tp.query(query)
+            row = next(result)
+            return int(row.start_ns), int(row.end_ns), int(delta)
+        except Exception as e:
+            logger.error(f"Error getting start and end timestamps: {str(e)}")
+            logger.error("Using 0 as default start and end timestamps")
+            return 0, 0, 0
+
 def create_pprof_profile(tp, output_file, pid_filter=None, sampling_interval_ns_arg=None):
     """Create a pprof profile from a Perfetto trace using the protobuf library."""
     try:
@@ -138,7 +205,7 @@ def create_pprof_profile(tp, output_file, pid_filter=None, sampling_interval_ns_
         logger.info(f"Fetched {len(callsites_by_id)} callsites.")
 
         # 4. Fetch Threads
-        sql_threads = "SELECT utid, name, tid FROM thread WHERE is_main_thread=1" # Perfetto's thread table
+        sql_threads = "SELECT utid, name, tid FROM thread" # Perfetto's thread table
         thread_rows = list(tp.query(sql_threads))
         threads_by_utid = {t.utid: t for t in thread_rows} # Keyed by utid for perf_sample
         logger.info(f"Fetched {len(threads_by_utid)} thread entries.")
@@ -151,6 +218,13 @@ def create_pprof_profile(tp, output_file, pid_filter=None, sampling_interval_ns_
         sql_perf_sample += " ORDER BY ts" # Order by timestamp
         
         perf_sample_rows = list(tp.query(sql_perf_sample))
+
+        session_start_ts = get_profiling_start_utc_ns(tp)
+        if session_start_ts is None:
+            logger.warning("No session start timestamp found. Using current time.")
+            session_start_ts = int(datetime.now(timezone.utc).timestamp() * 1e9)
+        else:
+            logger.info(f"Session start timestamp: {session_start_ts} ns.")
         
         if not perf_sample_rows:
             logger.warning("No samples found in the trace matching the criteria.")
@@ -181,7 +255,7 @@ def create_pprof_profile(tp, output_file, pid_filter=None, sampling_interval_ns_
             while current_cs_id is not None and current_cs_id in callsites_by_id:
                 callsite = callsites_by_id[current_cs_id]
                 if callsite.frame_id not in frames_by_id:
-                    logger.warning(f"Frame ID {callsite.frame_id} not found for callsite {current_cs_id}. Skipping frame.")
+                    # logger.warning(f"Frame ID {callsite.frame_id} not found for callsite {current_cs_id}. Skipping frame.")
                     current_cs_id = callsite.parent_id
                     continue
                 
@@ -271,23 +345,23 @@ def create_pprof_profile(tp, output_file, pid_filter=None, sampling_interval_ns_
                 
                 current_cs_id = callsite.parent_id # Move to parent callsite
 
+            labels = []
+            # labels.append(profile_pb2.Label(key=get_string_id("cpu"), str=get_string_id("nanoseconds")))
+            labels.append(profile_pb2.Label(key=get_string_id("pid"), str=get_string_id(str(r_sample.utid))))
+            labels.append(profile_pb2.Label(key=get_string_id("thread_id"), str=get_string_id(str(r_sample.utid))))
             if current_location_ids_for_sample: # If we successfully built a stack
                 thread_info = threads_by_utid.get(r_sample.utid)
                 thread_name_str = None
                 if thread_info and thread_info.name:
                     thread_name_str = thread_info.name
+                    labels.append(profile_pb2.Label(key=get_string_id("thread_name"), str=get_string_id(thread_name_str)))
                 elif r_sample.utid is not None: # Fallback if name is not available but utid is
                     thread_name_str = f"Thread ({r_sample.utid})"
 
                 pprof_sample = profile_pb2.Sample(
                     location_id=current_location_ids_for_sample,
                     value=[actual_sample_duration_ns],
-                    label=[
-                        profile_pb2.Label(key=get_string_id("cpu"), str=get_string_id("nanoseconds")),
-                        profile_pb2.Label(key=get_string_id("pid"), str=get_string_id(str(r_sample.utid))),
-                        profile_pb2.Label(key=get_string_id("thread_id"), str=get_string_id(str(r_sample.utid))),
-                        profile_pb2.Label(key=get_string_id("thread name"), str=get_string_id(thread_name_str))
-                    ]
+                    label=labels
                 )
                 profile.sample.append(pprof_sample)
                 processed_samples_count +=1

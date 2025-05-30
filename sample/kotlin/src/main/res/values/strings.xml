@@ -96,6 +96,7 @@
         <item>Simpleperf</item>
         <item>Local</item>
         <item>Debug profiling</item>
+        <item>Random Work Perfetto</item>
         <item>No profiling</item>
     </string-array>
 
