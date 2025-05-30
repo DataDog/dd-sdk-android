@@ -29,8 +29,10 @@ internal fun AgentPropagation.wheneverInjectThenThrow(throwable: Throwable) {
 }
 
 internal fun AgentPropagation.wheneverInjectThenValueToHeaders(key: String, value: String) {
-    doAnswer {
-        it.getArgument<Request.Builder>(1).addHeader(key, value)
+    doAnswer { invocation ->
+        val carrier = invocation.getArgument<Request.Builder>(1)
+        val setter = invocation.getArgument<AgentPropagation.Setter<Request.Builder>>(2)
+        setter.set(carrier, key, value)
     }
         .whenever(this)
         .inject(any<Context>(), any<Request.Builder>(), any())

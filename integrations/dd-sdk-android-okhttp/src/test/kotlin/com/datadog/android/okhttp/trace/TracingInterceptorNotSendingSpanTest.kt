@@ -189,12 +189,17 @@ internal open class TracingInterceptorNotSendingSpanTest {
         doAnswer { false }.whenever(mockResolver).isFirstPartyUrl(any<HttpUrl>())
         doAnswer { true }.whenever(mockResolver).isFirstPartyUrl(fakeUrl.toHttpUrl())
 
-        testedInterceptor = instantiateTestedInterceptor(fakeLocalHosts) { _, _ -> mockLocalTracer }
+        testedInterceptor = instantiateTestedInterceptor(
+            fakeLocalHosts,
+            localTracerFactory = { _, _ -> mockLocalTracer },
+            globalTracerProvider = { mockTracer }
+        )
     }
 
     open fun instantiateTestedInterceptor(
         tracedHosts: Map<String, Set<TracingHeaderType>>,
-        factory: (SdkCore, Set<TracingHeaderType>) -> Tracer
+        globalTracerProvider: () -> Tracer? = { null },
+        localTracerFactory: (SdkCore, Set<TracingHeaderType>) -> Tracer
     ): TracingInterceptor {
         return object :
             TracingInterceptor(
@@ -203,8 +208,8 @@ internal open class TracingInterceptorNotSendingSpanTest {
                 tracedRequestListener = mockRequestListener,
                 traceOrigin = fakeOrigin,
                 traceSampler = mockTraceSampler,
-                localTracerFactory = factory,
-                globalTracerProvider = { null },
+                localTracerFactory = localTracerFactory,
+                globalTracerProvider = globalTracerProvider,
                 redacted404ResourceName = fakeRedacted404Resources,
                 traceContextInjection = TraceContextInjection.ALL
             ) {
@@ -1056,20 +1061,24 @@ internal open class TracingInterceptorNotSendingSpanTest {
         forge: Forge,
         @IntForgery(min = 200, max = 300) statusCode: Int
     ) {
-        val localSpan: Span = forge.newSpanMock()
-        val localSpanBuilder: SpanBuilder = forge.newSpanBuilderMock(localSpan)
-
-        whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(true)
-        stubChain(mockChain, statusCode)
+        val localSpan: Span = forge.newSpanMock(mockSpanContext)
+        val localSpanBuilder: SpanBuilder = forge.newSpanBuilderMock(localSpan, mockSpanContext)
+        whenever(mockLocalTracer.buildSpan(TracingInterceptor.SPAN_NAME)).thenReturn(localSpanBuilder)
         whenever(mockTraceSampler.sample(localSpan)).thenReturn(true)
-        whenever(mockSpanContext.spanId) doReturn fakeSpanId
-        whenever(mockSpanContext.traceId) doReturn fakeTraceId
-        whenever(mockLocalTracer.buildSpan(TracingInterceptor.SPAN_NAME)) doReturn localSpanBuilder
+        whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(true)
+        val testedInterceptorNoGlobal = instantiateTestedInterceptor(
+            fakeLocalHosts,
+            localTracerFactory = { _, _ -> mockLocalTracer },
+            globalTracerProvider = { null }
+        )
 
+        stubChain(mockChain, statusCode)
+//        whenever(mockLocalTracer.buildSpan(TracingInterceptor.SPAN_NAME)) doReturn localSpanBuilder
         val response1 = testedInterceptor.intercept(mockChain)
         val expectedResponse1 = fakeResponse
+
         stubChain(mockChain, statusCode)
-        val response2 = testedInterceptor.intercept(mockChain)
+        val response2 = testedInterceptorNoGlobal.intercept(mockChain)
         val expectedResponse2 = fakeResponse
 
         verify(localSpanBuilder).withOrigin(getExpectedOrigin())
