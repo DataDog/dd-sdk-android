@@ -8,7 +8,7 @@ package com.datadog.android.okhttp.internal.utils
 
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.okhttp.trace.Span
-import com.datadog.opentracing.DDSpanContext
+import com.datadog.trace.core.DDSpanContext
 
 internal object SpanSamplingIdProvider {
 
