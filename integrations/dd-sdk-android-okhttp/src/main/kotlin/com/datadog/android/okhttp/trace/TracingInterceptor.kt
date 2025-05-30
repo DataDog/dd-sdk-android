@@ -528,6 +528,7 @@ internal constructor(
                 span.context(),
                 tracedRequestBuilder
             ) { carrier, key, value ->
+                tracedRequestBuilder.removeHeader(key)
                 when (key) {
                     DATADOG_SAMPLING_PRIORITY_HEADER,
                     DATADOG_LEAST_SIGNIFICANT_64_BITS_TRACE_ID_HEADER,
