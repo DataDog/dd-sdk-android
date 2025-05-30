@@ -253,8 +253,6 @@ sealed class com.datadog.android.core.feature.event.JvmCrash
   abstract val throwable: Throwable
   abstract val message: String
   abstract val threads: List<ThreadDump>
-  data class Logs : JvmCrash
-    constructor(String, Throwable, Long, String, String, List<ThreadDump>)
   data class Rum : JvmCrash
     constructor(Throwable, String, List<ThreadDump>)
 data class com.datadog.android.core.feature.event.ThreadDump

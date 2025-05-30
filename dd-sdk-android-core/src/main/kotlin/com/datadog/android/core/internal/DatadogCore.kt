@@ -39,7 +39,6 @@ import com.datadog.android.core.internal.utils.scheduleSafe
 import com.datadog.android.core.thread.FlushableExecutorService
 import com.datadog.android.error.internal.CrashReportsFeature
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
-import com.datadog.android.ndk.internal.NdkCrashHandler
 import com.datadog.android.privacy.TrackingConsent
 import com.google.gson.JsonObject
 import java.io.File
@@ -135,16 +134,8 @@ internal class DatadogCore(
         features[feature.name] = sdkFeature
         sdkFeature.initialize(context, instanceId)
 
-        when (feature.name) {
-            Feature.LOGS_FEATURE_NAME -> {
-                coreFeature.ndkCrashHandler
-                    .handleNdkCrash(this, NdkCrashHandler.ReportTarget.LOGS)
-            }
-
-            Feature.RUM_FEATURE_NAME -> {
-                coreFeature.ndkCrashHandler
-                    .handleNdkCrash(this, NdkCrashHandler.ReportTarget.RUM)
-            }
+        if (feature.name == Feature.RUM_FEATURE_NAME) {
+            coreFeature.ndkCrashHandler.handleNdkCrash(this)
         }
     }
 

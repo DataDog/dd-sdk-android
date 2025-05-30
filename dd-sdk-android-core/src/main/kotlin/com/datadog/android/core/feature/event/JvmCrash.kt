@@ -16,15 +16,6 @@ sealed class JvmCrash {
     abstract val message: String
     abstract val threads: List<ThreadDump>
 
-    data class Logs(
-        val threadName: String,
-        override val throwable: Throwable,
-        val timestamp: Long,
-        override val message: String,
-        val loggerName: String,
-        override val threads: List<ThreadDump>
-    ) : JvmCrash()
-
     data class Rum(
         override val throwable: Throwable,
         override val message: String,

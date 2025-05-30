@@ -32,15 +32,11 @@ import com.datadog.android.core.internal.data.upload.RotatingDnsResolver
 import com.datadog.android.core.internal.net.DefaultFirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.net.info.BroadcastReceiverNetworkInfoProvider
 import com.datadog.android.core.internal.net.info.CallbackNetworkInfoProvider
-import com.datadog.android.core.internal.net.info.NetworkInfoDeserializer
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.net.info.NoOpNetworkInfoProvider
 import com.datadog.android.core.internal.persistence.JsonObjectDeserializer
-import com.datadog.android.core.internal.persistence.file.FileMover
 import com.datadog.android.core.internal.persistence.file.FilePersistenceConfig
-import com.datadog.android.core.internal.persistence.file.FileReaderWriter
 import com.datadog.android.core.internal.persistence.file.FileWriter
-import com.datadog.android.core.internal.persistence.file.advanced.ScheduledWriter
 import com.datadog.android.core.internal.persistence.file.batch.BatchFileReaderWriter
 import com.datadog.android.core.internal.persistence.file.deleteSafe
 import com.datadog.android.core.internal.persistence.file.existsSafe
@@ -70,7 +66,6 @@ import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.core.internal.user.DatadogUserInfoProvider
 import com.datadog.android.core.internal.user.MutableUserInfoProvider
 import com.datadog.android.core.internal.user.NoOpMutableUserInfoProvider
-import com.datadog.android.core.internal.user.UserInfoDeserializer
 import com.datadog.android.core.internal.utils.executeSafe
 import com.datadog.android.core.internal.utils.unboundInternalLogger
 import com.datadog.android.core.persistence.PersistenceStrategy
@@ -78,8 +73,6 @@ import com.datadog.android.core.thread.FlushableExecutorService
 import com.datadog.android.ndk.internal.DatadogNdkCrashHandler
 import com.datadog.android.ndk.internal.NdkCrashHandler
 import com.datadog.android.ndk.internal.NdkCrashLogDeserializer
-import com.datadog.android.ndk.internal.NdkNetworkInfoDataWriter
-import com.datadog.android.ndk.internal.NdkUserInfoDataWriter
 import com.datadog.android.ndk.internal.NoOpNdkCrashHandler
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.security.Encryption
@@ -377,10 +370,7 @@ internal class CoreFeature(
                 storageDir,
                 persistenceExecutorService,
                 NdkCrashLogDeserializer(internalLogger),
-                NetworkInfoDeserializer(internalLogger),
-                UserInfoDeserializer(internalLogger),
                 internalLogger,
-                envFileReader = FileReaderWriter.create(internalLogger, localDataEncryption),
                 lastRumViewEventProvider = { lastViewEvent },
                 nativeCrashSourceType = nativeSourceType ?: "ndk"
             )
@@ -524,44 +514,14 @@ internal class CoreFeature(
         setupNetworkInfoProviders(appContext)
 
         // User Info Provider
-        setupUserInfoProvider()
-    }
-
-    private fun setupUserInfoProvider() {
-        val userInfoWriter = ScheduledWriter(
-            NdkUserInfoDataWriter(
-                storageDir,
-                trackingConsentProvider,
-                persistenceExecutorService,
-                FileReaderWriter.create(internalLogger, localDataEncryption),
-                FileMover(internalLogger),
-                internalLogger,
-                buildFilePersistenceConfig()
-            ),
-            persistenceExecutorService,
-            internalLogger
-        )
-        userInfoProvider = DatadogUserInfoProvider(userInfoWriter)
+        userInfoProvider = DatadogUserInfoProvider()
     }
 
     private fun setupNetworkInfoProviders(appContext: Context) {
-        val networkInfoWriter = ScheduledWriter(
-            NdkNetworkInfoDataWriter(
-                storageDir,
-                trackingConsentProvider,
-                persistenceExecutorService,
-                FileReaderWriter.create(internalLogger, localDataEncryption),
-                FileMover(internalLogger),
-                internalLogger,
-                buildFilePersistenceConfig()
-            ),
-            persistenceExecutorService,
-            internalLogger
-        )
         networkInfoProvider = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            CallbackNetworkInfoProvider(networkInfoWriter, internalLogger = internalLogger)
+            CallbackNetworkInfoProvider(internalLogger = internalLogger)
         } else {
-            BroadcastReceiverNetworkInfoProvider(networkInfoWriter)
+            BroadcastReceiverNetworkInfoProvider()
         }
         networkInfoProvider.register(appContext)
     }

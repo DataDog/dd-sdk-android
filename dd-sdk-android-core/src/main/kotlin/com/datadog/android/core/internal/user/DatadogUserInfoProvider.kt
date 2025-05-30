@@ -7,18 +7,10 @@
 package com.datadog.android.core.internal.user
 
 import com.datadog.android.api.context.UserInfo
-import com.datadog.android.core.internal.persistence.DataWriter
 
-internal class DatadogUserInfoProvider(
-    internal val dataWriter: DataWriter<UserInfo>
-) : MutableUserInfoProvider {
+internal class DatadogUserInfoProvider : MutableUserInfoProvider {
 
     private var internalUserInfo = UserInfo()
-        set(value) {
-            field = value
-            @Suppress("ThreadSafety") // TODO RUM-3756 delegate to another thread
-            dataWriter.write(field)
-        }
 
     override fun setUserInfo(id: String, name: String?, email: String?, extraInfo: Map<String, Any?>) {
         internalUserInfo = internalUserInfo.copy(

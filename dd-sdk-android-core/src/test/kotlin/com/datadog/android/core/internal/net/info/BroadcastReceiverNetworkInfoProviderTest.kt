@@ -14,7 +14,6 @@ import android.net.ConnectivityManager
 import android.os.Build
 import android.telephony.TelephonyManager
 import com.datadog.android.api.context.NetworkInfo
-import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import com.datadog.android.utils.assertj.NetworkInfoAssert.Companion.assertThat
 import com.datadog.android.utils.forge.Configurator
@@ -53,9 +52,6 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
     lateinit var testedProvider: BroadcastReceiverNetworkInfoProvider
 
     @Mock
-    lateinit var mockWriter: DataWriter<NetworkInfo>
-
-    @Mock
     lateinit var mockContext: Context
 
     @Mock
@@ -82,10 +78,7 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
         whenever(mockConnectivityManager.activeNetworkInfo) doReturn mockNetworkInfo
         whenever(mockBuildSdkVersionProvider.version) doReturn Build.VERSION_CODES.BASE
 
-        testedProvider = BroadcastReceiverNetworkInfoProvider(
-            mockWriter,
-            mockBuildSdkVersionProvider
-        )
+        testedProvider = BroadcastReceiverNetworkInfoProvider(mockBuildSdkVersionProvider)
     }
 
     @Test
@@ -141,16 +134,6 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
             .hasCarrierName(null)
             .hasCarrierId(null)
             .hasCellularTechnology(null)
-    }
-
-    @Test
-    fun `M delegate to persister W register`() {
-        stubNetworkInfo(ConnectivityManager.TYPE_WIFI, -1)
-
-        testedProvider.register(mockContext)
-        val networkInfo = testedProvider.getLatestNetworkInfo()
-
-        verify(mockWriter).write(networkInfo)
     }
 
     @Test
@@ -211,13 +194,17 @@ internal class BroadcastReceiverNetworkInfoProviderTest {
     }
 
     @Test
-    fun `connected to ethernet`(forge: Forge) {
-        stubNetworkInfo(forge.anInt(), -1)
+    fun `connected to ethernet`() {
+        stubNetworkInfo(ConnectivityManager.TYPE_ETHERNET, -1)
         testedProvider.onReceive(mockContext, mockIntent)
 
         val networkInfo = testedProvider.getLatestNetworkInfo()
 
-        verify(mockWriter).write(networkInfo)
+        assertThat(networkInfo)
+            .hasConnectivity(NetworkInfo.Connectivity.NETWORK_ETHERNET)
+            .hasCarrierName(null)
+            .hasCarrierId(null)
+            .hasCellularTechnology(null)
     }
 
     @ParameterizedTest

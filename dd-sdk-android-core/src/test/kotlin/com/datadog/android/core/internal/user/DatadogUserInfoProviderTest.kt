@@ -7,7 +7,6 @@
 package com.datadog.android.core.internal.user
 
 import com.datadog.android.api.context.UserInfo
-import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.tools.unit.forge.exhaustiveAttributes
 import fr.xgouchet.elmyr.Forge
@@ -22,9 +21,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
-import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoSettings
-import org.mockito.kotlin.verify
 import org.mockito.quality.Strictness
 
 @ExtendWith(ForgeExtension::class)
@@ -34,12 +31,9 @@ internal class DatadogUserInfoProviderTest {
 
     private lateinit var testedProvider: DatadogUserInfoProvider
 
-    @Mock
-    lateinit var mockWriter: DataWriter<UserInfo>
-
     @BeforeEach
     fun `set up`() {
-        testedProvider = DatadogUserInfoProvider(mockWriter)
+        testedProvider = DatadogUserInfoProvider()
     }
 
     @Test
@@ -66,22 +60,6 @@ internal class DatadogUserInfoProviderTest {
 
         // Then
         assertThat(result).isEqualTo(validUserInfo)
-    }
-
-    @Test
-    fun `M delegate to persister W setUserInfo`(
-        @Forgery userInfo: UserInfo,
-        @StringForgery userId: String
-    ) {
-        // Given
-        val nonNullUserId = userInfo.id ?: userId
-        val validUserInfo = userInfo.copy(id = nonNullUserId)
-
-        // When
-        testedProvider.setUserInfo(nonNullUserId, userInfo.name, userInfo.email, userInfo.additionalProperties)
-
-        // Then
-        verify(mockWriter).write(validUserInfo)
     }
 
     @Test

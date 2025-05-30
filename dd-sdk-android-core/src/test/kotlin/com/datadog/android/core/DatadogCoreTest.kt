@@ -182,12 +182,11 @@ internal class DatadogCoreTest {
         testedCore.registerFeature(mockFeature)
 
         // Then
-        verify(testedCore.coreFeature.ndkCrashHandler)
-            .handleNdkCrash(testedCore, NdkCrashHandler.ReportTarget.RUM)
+        verify(testedCore.coreFeature.ndkCrashHandler).handleNdkCrash(testedCore)
     }
 
     @Test
-    fun `M handle NDK crash for Logs W registerFeature() {Logs feature}`(
+    fun `M do nothing W registerFeature() {Logs feature}`(
         @Mock mockFeature: Feature
     ) {
         // Given
@@ -199,8 +198,7 @@ internal class DatadogCoreTest {
         testedCore.registerFeature(mockFeature)
 
         // Then
-        verify(testedCore.coreFeature.ndkCrashHandler)
-            .handleNdkCrash(testedCore, NdkCrashHandler.ReportTarget.LOGS)
+        verifyNoInteractions(testedCore.coreFeature.ndkCrashHandler)
     }
 
     @Test
