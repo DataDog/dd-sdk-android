@@ -10,6 +10,7 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.SdkCore
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.okhttp.internal.rum.NoOpRumResourceAttributesProvider
+import com.datadog.android.okhttp.internal.utils.traceIdAsHexString
 import com.datadog.android.okhttp.trace.DeterministicTraceSampler
 import com.datadog.android.okhttp.trace.NoOpTracedRequestListener
 import com.datadog.android.okhttp.trace.Tracer
@@ -190,7 +191,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
         val expectedStartAttrs = emptyMap<String, Any?>()
         val expectedStopAttrs = mapOf(
             RumAttributes.TRACE_ID to fakeTraceIdAsString,
-            RumAttributes.SPAN_ID to fakeSpanId,
+            RumAttributes.SPAN_ID to fakeSpanId.toString(),
             RumAttributes.RULE_PSR to fakeTracingSampleRate / 100
         ) + fakeAttributes
         val mimeType = fakeMediaType?.type
@@ -278,7 +279,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
         val expectedStartAttrs = emptyMap<String, Any?>()
         val expectedStopAttrs = mapOf(
             RumAttributes.TRACE_ID to fakeTraceIdAsString,
-            RumAttributes.SPAN_ID to fakeSpanId,
+            RumAttributes.SPAN_ID to fakeSpanId.toString(),
             RumAttributes.RULE_PSR to fakeTracingSampleRate / 100
         ) + fakeAttributes
         val kind = RumResourceKind.NATIVE
@@ -319,7 +320,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
         val expectedStartAttrs = emptyMap<String, Any?>()
         val expectedStopAttrs = mapOf(
             RumAttributes.TRACE_ID to fakeTraceIdAsString,
-            RumAttributes.SPAN_ID to fakeSpanId,
+            RumAttributes.SPAN_ID to fakeSpanId.toString(),
             RumAttributes.RULE_PSR to fakeTracingSampleRate / 100
         ) + fakeAttributes
         val mimeType = fakeMediaType?.type
@@ -366,7 +367,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
         val expectedStartAttrs = emptyMap<String, Any?>()
         val expectedStopAttrs = mapOf(
             RumAttributes.TRACE_ID to fakeTraceIdAsString,
-            RumAttributes.SPAN_ID to fakeSpanId,
+            RumAttributes.SPAN_ID to fakeSpanId.toString(),
             RumAttributes.RULE_PSR to fakeTracingSampleRate / 100
         ) + fakeAttributes
         val mimeType = fakeMediaType?.type
@@ -462,7 +463,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
         }
         val expectedStopAttrs = mapOf(
             RumAttributes.TRACE_ID to fakeTraceIdAsString,
-            RumAttributes.SPAN_ID to fakeSpanId,
+            RumAttributes.SPAN_ID to fakeSpanId.toString(),
             RumAttributes.RULE_PSR to fakeTracingSampleRate / 100
         ) + fakeAttributes
         val mimeType = fakeMediaType?.type
@@ -511,7 +512,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
         }
         val expectedStopAttrs = mapOf(
             RumAttributes.TRACE_ID to fakeTraceIdAsString,
-            RumAttributes.SPAN_ID to fakeSpanId,
+            RumAttributes.SPAN_ID to fakeSpanId.toString(),
             RumAttributes.RULE_PSR to fakeTracingSampleRate / 100
         ) + fakeAttributes
         val mimeType = fakeMediaType?.type
@@ -668,7 +669,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
         val expectedStartAttrs = emptyMap<String, Any?>()
         val expectedStopAttrs = mapOf(
             RumAttributes.TRACE_ID to fakeTraceIdAsString,
-            RumAttributes.SPAN_ID to fakeSpanId,
+            RumAttributes.SPAN_ID to fakeSpanId.toString(),
             RumAttributes.RULE_PSR to fakeTracingSampleRate / 100
         ) + fakeAttributes
         val mimeType = fakeMediaType?.type
@@ -770,7 +771,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
         val expectedStartAttrs = emptyMap<String, Any?>()
         val expectedStopAttrs = mapOf(
             RumAttributes.TRACE_ID to fakeTraceIdAsString,
-            RumAttributes.SPAN_ID to fakeSpanId,
+            RumAttributes.SPAN_ID to fakeSpanId.toString(),
             RumAttributes.RULE_PSR to fakeTracingSampleRate / 100
         ) + fakeAttributes
         val mimeType = fakeMediaType?.type
