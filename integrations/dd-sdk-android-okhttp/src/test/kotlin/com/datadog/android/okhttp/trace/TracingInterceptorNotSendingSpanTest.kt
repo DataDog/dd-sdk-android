@@ -1036,11 +1036,14 @@ internal open class TracingInterceptorNotSendingSpanTest {
         whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(true)
         stubChain(mockChain, statusCode)
         whenever(mockTraceSampler.sample(localSpan)).thenReturn(true)
-        whenever(mockSpanContext.spanId) doReturn fakeSpanId
-        whenever(mockSpanContext.traceId) doReturn fakeTraceId
         whenever(mockLocalTracer.buildSpan(TracingInterceptor.SPAN_NAME)) doReturn localSpanBuilder
+        val testedInterceptorNoGlobal = instantiateTestedInterceptor(
+            fakeLocalHosts,
+            localTracerFactory = { _, _ -> mockLocalTracer },
+            globalTracerProvider = { null }
+        )
 
-        val response = testedInterceptor.intercept(mockChain)
+        val response = testedInterceptorNoGlobal.intercept(mockChain)
 
         verify(localSpanBuilder).withOrigin(getExpectedOrigin())
         verify(localSpan).setTag("http.url", fakeUrl)
