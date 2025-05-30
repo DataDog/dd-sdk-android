@@ -180,9 +180,11 @@ internal open class TracingInterceptorTest {
         whenever(rumMonitor.mockSdkCore.getFeature(Feature.TRACING_FEATURE_NAME)) doReturn mock()
         whenever(rumMonitor.mockSdkCore.internalLogger) doReturn mockInternalLogger
         whenever(rumMonitor.mockSdkCore.firstPartyHostResolver) doReturn mockResolver
-        testedInterceptor = instantiateTestedInterceptor(fakeLocalHosts) { _, _ ->
-            mockLocalTracer
-        }
+        testedInterceptor = instantiateTestedInterceptor(
+            fakeLocalHosts,
+            globalTracerProvider = { mockTracer },
+            localTracerFactory = { _, _ -> mockLocalTracer }
+        )
     }
 
     @Test
@@ -216,7 +218,8 @@ internal open class TracingInterceptorTest {
 
     open fun instantiateTestedInterceptor(
         tracedHosts: Map<String, Set<TracingHeaderType>> = emptyMap(),
-        factory: (SdkCore, Set<TracingHeaderType>) -> Tracer
+        globalTracerProvider: () -> Tracer? = { null },
+        localTracerFactory: (SdkCore, Set<TracingHeaderType>) -> Tracer
     ): TracingInterceptor {
         return TracingInterceptor(
             sdkInstanceName = null,
@@ -224,10 +227,10 @@ internal open class TracingInterceptorTest {
             tracedRequestListener = mockRequestListener,
             traceOrigin = fakeOrigin,
             traceSampler = mockTraceSampler,
-            localTracerFactory = factory,
+            localTracerFactory = localTracerFactory,
             redacted404ResourceName = fakeRedacted404Resources,
             traceContextInjection = TraceContextInjection.ALL,
-            globalTracerProvider = { null }
+            globalTracerProvider = globalTracerProvider
         )
     }
 
@@ -1281,8 +1284,13 @@ internal open class TracingInterceptorTest {
         stubChain(mockChain, statusCode)
         whenever(mockTraceSampler.sample(localSpan)).thenReturn(true)
         whenever(mockLocalTracer.buildSpan(TracingInterceptor.SPAN_NAME)) doReturn localSpanBuilder
+        val testedInterceptorNoGlobal = instantiateTestedInterceptor(
+            fakeLocalHosts,
+            localTracerFactory = { _, _ -> mockLocalTracer },
+            globalTracerProvider = { null }
+        )
 
-        val response = testedInterceptor.intercept(mockChain)
+        val response = testedInterceptorNoGlobal.intercept(mockChain)
 
         verify(localSpanBuilder).withOrigin(getExpectedOrigin())
         verify(localSpan).setTag("http.url", fakeUrl.lowercase(Locale.US))
@@ -1313,8 +1321,13 @@ internal open class TracingInterceptorTest {
         whenever(mockSpanContext.spanId) doReturn fakeSpanId
         whenever(mockSpanContext.traceId) doReturn fakeTraceId
         whenever(mockLocalTracer.buildSpan(TracingInterceptor.SPAN_NAME)) doReturn localSpanBuilder
+        val testedInterceptorNoGlobal = instantiateTestedInterceptor(
+            fakeLocalHosts,
+            localTracerFactory = { _, _ -> mockLocalTracer },
+            globalTracerProvider = { null }
+        )
 
-        val response1 = testedInterceptor.intercept(mockChain)
+        val response1 = testedInterceptorNoGlobal.intercept(mockChain)
         val expectedResponse1 = fakeResponse
         stubChain(mockChain, statusCode)
         val response2 = testedInterceptor.intercept(mockChain)
