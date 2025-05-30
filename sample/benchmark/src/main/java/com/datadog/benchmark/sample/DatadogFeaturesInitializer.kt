@@ -13,6 +13,7 @@ import com.datadog.android.log.LogsConfiguration
 import com.datadog.android.rum.Rum
 import com.datadog.android.rum.RumConfiguration
 import com.datadog.android.rum.tracking.NavigationViewTrackingStrategy
+import com.datadog.android.rum.tracking.ViewTrackingStrategy
 import com.datadog.android.sessionreplay.SessionReplay
 import com.datadog.android.sessionreplay.SessionReplayConfiguration
 import com.datadog.android.sessionreplay.SessionReplayPrivacy
@@ -23,19 +24,19 @@ import com.datadog.android.trace.TraceConfiguration
 import com.datadog.benchmark.sample.config.BenchmarkConfig
 import com.datadog.benchmark.sample.config.SyntheticsRun
 import com.datadog.benchmark.sample.config.SyntheticsScenario
-import com.datadog.benchmark.sample.di.activity.BenchmarkActivityScope
 import com.datadog.benchmark.sample.navigation.BenchmarkNavigationPredicate
 import com.datadog.sample.benchmark.BuildConfig
 import com.datadog.sample.benchmark.R
 import dagger.Lazy
 import javax.inject.Inject
+import javax.inject.Singleton
 
 /**
  * The general recommendation is to initialize all the components at the Application.onCreate
  * to have all the observability as early as possible. However in the Benchmark app we know what features
  * we need only in [MainActivity.onCreate], it depends on the [SyntheticsScenario] which is derived from intent extras.
  */
-@BenchmarkActivityScope
+@Singleton
 @Suppress("TooManyFunctions")
 internal class DatadogFeaturesInitializer @Inject constructor(
     private val sdkCore: Lazy<SdkCore>
@@ -104,17 +105,7 @@ internal class DatadogFeaturesInitializer @Inject constructor(
 
     private fun createRumConfiguration(config: BenchmarkConfig): RumConfiguration {
         return RumConfiguration.Builder(BuildConfig.BENCHMARK_RUM_APPLICATION_ID).apply {
-            if (config.scenario != SyntheticsScenario.RumManual) {
-                useViewTrackingStrategy(
-                    NavigationViewTrackingStrategy(
-                        R.id.nav_host_fragment,
-                        true,
-                        BenchmarkNavigationPredicate()
-                    )
-                )
-            } else {
-                useViewTrackingStrategy(null)
-            }
+            useViewTrackingStrategy(rumViewTrackingStrategy(config))
             setTelemetrySampleRate(SAMPLE_RATE_TELEMETRY)
             trackUserInteractions()
             trackLongTasks(THRESHOLD_LONG_TASK_INTERVAL)
@@ -143,6 +134,17 @@ internal class DatadogFeaturesInitializer @Inject constructor(
         }.build()
     }
 
+    private fun rumViewTrackingStrategy(config: BenchmarkConfig): ViewTrackingStrategy? {
+        return when (config.scenario) {
+            SyntheticsScenario.RumManual -> null
+            else -> NavigationViewTrackingStrategy(
+                R.id.nav_host_fragment,
+                true,
+                BenchmarkNavigationPredicate()
+            )
+        }
+    }
+
     private fun enableRum(config: BenchmarkConfig) {
         val rumConfig = createRumConfiguration(config)
         Rum.enable(rumConfig, sdkCore = sdkCore.get())
@@ -156,10 +158,12 @@ internal class DatadogFeaturesInitializer @Inject constructor(
         SyntheticsScenario.Trace,
         SyntheticsScenario.LogsCustom,
         SyntheticsScenario.LogsHeavyTraffic,
+        SyntheticsScenario.RumAuto,
         null -> false
     }
 
     private fun isRumScenario(config: BenchmarkConfig) = when (config.scenario) {
+        SyntheticsScenario.RumAuto,
         SyntheticsScenario.RumManual -> true
         SyntheticsScenario.SessionReplay,
         SyntheticsScenario.SessionReplayCompose,
@@ -178,6 +182,7 @@ internal class DatadogFeaturesInitializer @Inject constructor(
         SyntheticsScenario.RumManual,
         SyntheticsScenario.Trace,
         SyntheticsScenario.Upload,
+        SyntheticsScenario.RumAuto,
         null -> false
     }
 

@@ -12,7 +12,6 @@ internal class BenchmarkConfig(
     val run: SyntheticsRun? = null,
     val scenario: SyntheticsScenario? = null
 ) {
-    val isComposeEnabled = scenario == SyntheticsScenario.SessionReplayCompose
 
     fun getRun(): String {
         return run?.value ?: ""

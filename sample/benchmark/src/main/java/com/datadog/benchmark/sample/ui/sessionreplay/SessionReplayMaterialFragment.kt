@@ -23,8 +23,7 @@ import androidx.fragment.app.Fragment
 import com.bumptech.glide.Glide
 import com.bumptech.glide.request.target.CustomTarget
 import com.bumptech.glide.request.transition.Transition
-import com.datadog.benchmark.sample.benchmarkActivityComponent
-import com.datadog.benchmark.sample.navigation.FragmentsNavigationManager
+import com.datadog.benchmark.sample.activities.scenarios.benchmarkActivityComponent
 import com.datadog.sample.benchmark.R
 import com.google.android.material.datepicker.MaterialDatePicker
 import com.google.android.material.timepicker.MaterialTimePicker
@@ -33,7 +32,7 @@ import javax.inject.Inject
 
 internal class SessionReplayMaterialFragment : Fragment() {
     @Inject
-    internal lateinit var fragmentsNavigationManager: FragmentsNavigationManager
+    internal lateinit var sessionReplayNavigationManager: SessionReplayNavigationManager
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -70,7 +69,7 @@ internal class SessionReplayMaterialFragment : Fragment() {
             }
             findViewById<Button>(R.id.button_navigation).apply {
                 setOnClickListener {
-                    fragmentsNavigationManager.navigateToSessionReplayAppCompat()
+                    sessionReplayNavigationManager.navigateToSessionReplayAppCompat()
                 }
             }
         }
