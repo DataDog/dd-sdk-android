@@ -232,7 +232,7 @@ internal class RumFeature(
         sdkCore.setEventReceiver(name, this)
         sdkCore.setEventReceiver(name, tracesUploader)
         tracesUploader.startUploadingTraces(20)
-        val perfettoStorage = appContext.filesDir.absolutePath + "/profiling"
+        val perfettoStorage = appContext.getExternalFilesDir(null)?.absolutePath + "/datadog_profiling"
         perfettoUploader = PerfettoTracesUploader(
             datadogContext.site.intakeEndpoint,
             perfettoStorage,

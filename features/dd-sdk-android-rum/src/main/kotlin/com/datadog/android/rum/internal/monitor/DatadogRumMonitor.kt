@@ -172,7 +172,7 @@ internal class DatadogRumMonitor(
                 {
                     Profiler.stopProfilingManagerProfiling()
                 },
-                20000
+                2000
             )
         }
         val eventTime = getEventTime(attributes)

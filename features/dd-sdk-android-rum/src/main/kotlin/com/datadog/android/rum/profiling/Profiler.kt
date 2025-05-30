@@ -9,21 +9,25 @@ package com.datadog.android.rum.profiling
 import android.annotation.SuppressLint
 import android.content.Context
 import android.os.Build
-import android.os.Bundle
 import android.os.CancellationSignal
-import android.os.ProfilingManager
 import androidx.core.os.StackSamplingRequestBuilder
 import android.util.Log
+import androidx.benchmark.FileMover.moveTo
+import androidx.core.os.ProfilingRequest
+import androidx.core.os.SystemTraceRequestBuilder
 import androidx.core.os.requestProfiling
+import java.io.File
+import java.nio.file.Files
+import java.nio.file.Path
 import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 
 object Profiler {
 
-    lateinit var filePath: String
+    private lateinit var filePath: String
 
     private val profilingExecutor = Executors.newSingleThreadExecutor()
-    private var profilingManager: ProfilingManager? = null
-    private var cancellationSignal: CancellationSignal = CancellationSignal()
+    private var cancellationSignals = mutableMapOf<String, Pair<Long, CancellationSignal>>()
 
     init {
         System.loadLibrary("datadog-profiling")
@@ -49,31 +53,78 @@ object Profiler {
     }
 
     @SuppressLint("WrongConstant")
-    fun startProfilingManagerProfiling(context: Context, samplingIntervalMs: Long) {
+    fun startProfilingManagerProfiling(context: Context, samplingIntervalMs: Long, tag: String = "AppStartup") {
         val samplesPerSecond = 1000 / samplingIntervalMs
-        if (profilingManager == null) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
-                requestProfiling(
-                    context,
-                    StackSamplingRequestBuilder()
-                        .setCancellationSignal(cancellationSignal)
-                        .setSamplingFrequencyHz(samplesPerSecond.toInt())
-                        .setTag("AppStartup")
-                        .build(),
-                    profilingExecutor
-                ) { result ->
-                    Log.v(
-                        "ProfilingManager",
-                        "Profiling result filepath: ${result.resultFilePath} error message: " +
-                                "${result.errorMessage}  and error code ${result.errorCode}"
-                    )
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
+            val startTimeInNanos = System.currentTimeMillis()
+            cancellationSignals.remove(tag)?.second?.cancel()
+            val cancellationSignal = CancellationSignal()
+            val request = randomRequest(samplesPerSecond, tag, cancellationSignal)
+            cancellationSignals[tag] = Pair(startTimeInNanos, cancellationSignal)
+            requestProfiling(
+                context,
+                request,
+                profilingExecutor
+            ) { result ->
+                val startTimestamp = cancellationSignals.remove(tag)?.first ?: 0L
+                Log.v(
+                    "ProfilingManager",
+                    "Profiling result filepath: ${result.resultFilePath} error message: " +
+                            "${result.errorMessage}  and error code ${result.errorCode}"
+                )
+                result.resultFilePath?.let { filePath ->
+                    val endTimestamp = System.currentTimeMillis()
+                    val file = File(filePath)
+                    val newFilePath = "profiling_${startTimestamp}_${endTimestamp}.trace"
+                    val datadogProfilingDirectory = File(context.getExternalFilesDir(null), "datadog_profiling")
+                    if (!datadogProfilingDirectory.exists()) {
+                        datadogProfilingDirectory.mkdirs()
+                    }
+                   val newFile = File(datadogProfilingDirectory, newFilePath)
+                   Files.move(file.toPath(), newFile.toPath())
                 }
             }
         }
     }
 
-    fun stopProfilingManagerProfiling() {
-        cancellationSignal?.cancel()
+    private fun randomRequest(
+        samplesPerSecond: Long,
+        tag: String,
+        cancellationSignal: CancellationSignal
+    ): ProfilingRequest {
+        val random = (0..1).random()
+        return if (random == 0) {
+            systemTraceRequest(tag, cancellationSignal)
+        } else {
+            stackSamplingRequest(samplesPerSecond, tag, cancellationSignal)
+        }
+    }
+
+    @SuppressLint("NewApi")
+    private fun systemTraceRequest(tag: String, cancellationSignal: CancellationSignal): ProfilingRequest {
+        return SystemTraceRequestBuilder()
+            .setTag(tag)
+            .setCancellationSignal(cancellationSignal)
+            .build()
+    }
+
+    @SuppressLint("NewApi")
+    private fun stackSamplingRequest(
+        samplesPerSecond: Long,
+        tag: String,
+        cancellationSignal: CancellationSignal
+    ): ProfilingRequest {
+        return StackSamplingRequestBuilder()
+            .setSamplingFrequencyHz(samplesPerSecond.toInt())
+            .setCancellationSignal(cancellationSignal)
+            .setTag(tag)
+            .build()
+    }
+
+
+    fun stopProfilingManagerProfiling(tag: String = "AppStartup") {
+        val pair = cancellationSignals[tag]
+        pair?.second?.cancel()
     }
 
     private external fun stopTracing(filePath: String)
