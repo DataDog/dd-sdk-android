@@ -14,6 +14,8 @@ internal enum class SyntheticsScenario(val value: String) {
 
     RumManual("rum_manual"),
 
+    RumAuto("rum_auto"),
+
     Trace("trace"),
 
     LogsCustom("logs_custom"),

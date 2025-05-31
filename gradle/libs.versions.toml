@@ -5,8 +5,10 @@ kotlinSP = "1.9.24-1.0.20"
 gson = "2.10.1"
 okHttp = "4.12.0"
 kronosNTP = "0.0.1-alpha11"
+kotlinxSerialization = "1.6.3"
 
 # Android
+adapterDelegates = "4.3.2"
 androidDesugaringSdk = "2.0.4"
 androidToolsPlugin = "8.9.1"
 androidXAnnotations = "1.9.1"
@@ -90,6 +92,7 @@ timber = "5.0.1"
 coroutines = "1.4.2"
 
 # Local Server
+ktorClient = "2.3.13"
 ktor = "1.6.8"
 ktorServer = "3.0.0-rc-1"
 
@@ -115,6 +118,7 @@ sqlDelightGradlePlugin = { module = "com.squareup.sqldelight:gradle-plugin", ver
 binaryCompatibilityGradlePlugin = { module = "org.jetbrains.kotlinx:binary-compatibility-validator", version.ref = "binaryCompatibility" }
 dependencyLicenseGradlePlugin = { module = "com.datadoghq:dependency-license", version.ref = "dependencyLicense" }
 versionsGradlePlugin = { module = "com.github.ben-manes:gradle-versions-plugin", version.ref = "versionsGradlePlugin" }
+kotlinxSerializationPlugin = { module = "org.jetbrains.kotlin:kotlin-serialization", version.ref = "kotlin"}
 
 # Annotation processors
 glideCompiler = { module = "com.github.bumptech.glide:compiler", version.ref = "glide" }
@@ -123,6 +127,7 @@ roomCompiler = { module = "androidx.room:room-compiler", version.ref = "room" }
 # Common
 
 kotlin = { module = "org.jetbrains.kotlin:kotlin-stdlib", version.ref = "kotlin" }
+kotlinxSerializationJson = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinxSerialization" }
 
 okHttp = { module = "com.squareup.okhttp3:okhttp", version.ref = "okHttp" }
 gson = { module = "com.google.code.gson:gson", version.ref = "gson" }
@@ -130,6 +135,7 @@ kronosNTP = { module = "com.lyft.kronos:kronos-android", version.ref = "kronosNT
 assertJ = { module = "org.assertj:assertj-core", version.ref = "assertJ" }
 
 # Android libs
+adapterDelegatesViewBinding = { module = "com.hannesdorfmann:adapterdelegates4-kotlin-dsl-viewbinding", version.ref = "adapterDelegates" }
 androidDesugaringSdk = { module = "com.android.tools:desugar_jdk_libs", version.ref = "androidDesugaringSdk" }
 androidXAnnotation = { module = "androidx.annotation:annotation", version.ref = "androidXAnnotations" }
 androidXAppCompat = { module = "androidx.appcompat:appcompat", version.ref = "androidXAppCompat" }
@@ -244,6 +250,13 @@ ktorServerCore = { module = "io.ktor:ktor-server-core", version.ref = "ktorServe
 ktorServerNetty = { module = "io.ktor:ktor-server-netty", version.ref = "ktorServer" }
 ktorServerSSE = { module = "io.ktor:ktor-server-sse", version.ref = "ktorServer" }
 
+# ktor client
+ktorClientCore = { module = "io.ktor:ktor-client-core", version.ref = "ktorClient" }
+ktorClientOkHttp = { module = "io.ktor:ktor-client-okhttp", version.ref = "ktorClient" }
+ktorContentNegotiation = { module = "io.ktor:ktor-client-content-negotiation", version.ref = "ktorClient" }
+ktorSerializationKotlinxJson = { module = "io.ktor:ktor-serialization-kotlinx-json", version.ref = "ktorClient" }
+ktorClientMock = { module = "io.ktor:ktor-client-mock", version.ref = "ktorClient" }
+
 # Otel
 jctools = { module = "org.jctools:jctools-core", version.ref = "jctools" }
 openTelemetryApi = { module = "io.opentelemetry:opentelemetry-api", version.ref = "openTelemetry" }
@@ -328,6 +341,12 @@ ktorServer = [
     "ktorServerCore",
     "ktorServerNetty",
     "ktorServerSSE"
+]
+ktorClient = [
+    "ktorClientCore",
+    "ktorClientOkHttp",
+    "ktorContentNegotiation",
+    "ktorSerializationKotlinxJson"
 ]
 
 traceCore = [

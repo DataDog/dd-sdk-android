@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.benchmark.sample.di.activity
+package com.datadog.benchmark.sample.di.app
 
 import com.datadog.android.api.SdkCore
 import com.datadog.android.trace.opentelemetry.OtelTracerProvider
@@ -17,12 +17,13 @@ import io.opentelemetry.api.OpenTelemetry
 import io.opentelemetry.api.trace.Tracer
 import io.opentelemetry.api.trace.TracerProvider
 import io.opentelemetry.context.propagation.ContextPropagators
+import javax.inject.Singleton
 
 @Module
 internal interface OpenTelemetryModule {
     companion object {
         @Provides
-        @BenchmarkActivityScope
+        @Singleton
         fun provideOpenTelemetry(
             sdkCore: SdkCore,
             config: BenchmarkConfig
@@ -47,7 +48,7 @@ internal interface OpenTelemetryModule {
         }
 
         @Provides
-        @BenchmarkActivityScope
+        @Singleton
         fun provideTracer(
             openTelemetry: OpenTelemetry
         ): Tracer {

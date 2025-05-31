@@ -6,8 +6,8 @@
 
 package com.datadog.benchmark.sample.di.activity
 
-import com.datadog.benchmark.sample.navigation.FragmentsNavigationManager
-import com.datadog.benchmark.sample.navigation.FragmentsNavigationManagerImpl
+import com.datadog.benchmark.sample.ui.sessionreplay.SessionReplayNavigationManager
+import com.datadog.benchmark.sample.ui.sessionreplay.SessionReplayNavigationManagerImpl
 import dagger.Binds
 import dagger.Module
 
@@ -15,5 +15,5 @@ import dagger.Module
 internal interface BenchmarkActivityModule {
     @Binds
     @BenchmarkActivityScope
-    fun bindFragmentsNavigationManager(impl: FragmentsNavigationManagerImpl): FragmentsNavigationManager
+    fun bindSessionReplayNavigationManager(impl: SessionReplayNavigationManagerImpl): SessionReplayNavigationManager
 }

@@ -4,11 +4,11 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.benchmark.sample.navigation
+package com.datadog.benchmark.sample.ui.sessionreplay
 
 import androidx.navigation.NavController
 
-internal interface FragmentsNavigationManager {
+internal interface SessionReplayNavigationManager {
     fun setNavController(navController: NavController)
     fun navigateToSessionReplayMaterial()
     fun navigateToSessionReplayAppCompat()

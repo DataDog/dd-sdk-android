@@ -9,7 +9,6 @@ package com.datadog.benchmark.sample
 import android.app.Application
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
-import com.datadog.benchmark.sample.config.BenchmarkConfig
 import com.datadog.benchmark.sample.di.activity.BenchmarkActivityComponent
 import com.datadog.benchmark.sample.di.activity.DaggerBenchmarkActivityComponent
 
@@ -18,16 +17,12 @@ internal class MainActivityViewModel(
 ) : ViewModel()
 
 internal class MainActivityViewModelFactory(
-    private val application: Application,
-    private val activity: MainActivity
+    private val application: Application
 ) : ViewModelProvider.Factory {
     @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        val config = BenchmarkConfig.resolveSyntheticsBundle(activity.intent.extras)
-
         val benchmarkActivityComponent = DaggerBenchmarkActivityComponent.factory().create(
-            deps = application.benchmarkAppComponent,
-            config = config
+            deps = application.benchmarkAppComponent
         )
 
         return MainActivityViewModel(benchmarkActivityComponent) as T
