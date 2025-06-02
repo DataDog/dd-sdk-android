@@ -52,6 +52,7 @@ internal class LayoutNodeUtils {
                     }
                 } else {
                     when (modifier::class.qualifiedName) {
+                        CLASS_NAME_SELECTABLE_ELEMENT,
                         CLASS_NAME_CLICKABLE_ELEMENT,
                         CLASS_NAME_COMBINED_CLICKABLE_ELEMENT -> {
                             role = role ?: getRole(modifier)
@@ -87,11 +88,12 @@ internal class LayoutNodeUtils {
     }
 
     @Suppress("UnsafeThirdPartyFunctionCall")
-    // Function is wrapped with `runSafe` in the call site.
-    private fun getRole(obj: Any): Role {
-        val roleField = obj::class.java.getDeclaredField("role")
-        roleField.isAccessible = true
-        return roleField.get(obj) as Role
+    private fun getRole(obj: Any): Role? {
+        return runSafe {
+            val roleField = obj::class.java.getDeclaredField("role")
+            roleField.isAccessible = true
+            roleField.get(obj) as? Role
+        }
     }
 
     fun getLayoutNodeBoundsInWindow(node: LayoutNode): Rect? {
@@ -135,5 +137,7 @@ internal class LayoutNodeUtils {
             "androidx.compose.foundation.ScrollingLayoutElement"
         private const val CLASS_NAME_SCROLLABLE_ELEMENT =
             "androidx.compose.foundation.gestures.ScrollableElement"
+        private const val CLASS_NAME_SELECTABLE_ELEMENT =
+            "androidx.compose.foundation.selection.SelectableElement"
     }
 }
