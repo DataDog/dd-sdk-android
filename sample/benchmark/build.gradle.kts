@@ -85,6 +85,7 @@ dependencies {
     implementation(libs.kotlin)
 
     // Android dependencies
+    implementation(libs.adapterDelegatesViewBinding)
     implementation(libs.androidXMultidex)
     implementation(libs.bundles.androidXNavigation)
     implementation(libs.androidXAppCompat)
