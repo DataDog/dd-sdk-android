@@ -244,7 +244,7 @@ coroutinesCore = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", ver
 
 # Local Server
 ktorCore = { module = "io.ktor:ktor", version.ref = "ktor" }
-ktorGson = { module = "io.ktor:ktor-gson", version.ref = "ktor" }
+ktorGson = { module = "io.ktor:ktor-serialization-gson", version.ref = "ktor" }
 ktorServerCore = { module = "io.ktor:ktor-server-core", version.ref = "ktorServer" }
 ktorServerNetty = { module = "io.ktor:ktor-server-netty", version.ref = "ktorServer" }
 ktorServerSSE = { module = "io.ktor:ktor-server-sse", version.ref = "ktorServer" }
