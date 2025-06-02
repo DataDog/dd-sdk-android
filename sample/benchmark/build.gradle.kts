@@ -10,6 +10,8 @@ plugins {
     id("com.android.application")
     kotlin("android")
     kotlin("kapt")
+    kotlin("plugin.serialization")
+    id("kotlin-parcelize")
     alias(libs.plugins.datadogGradlePlugin)
 }
 
@@ -98,6 +100,8 @@ dependencies {
     implementation(libs.daggerLib)
     kapt(libs.daggerCompiler)
     implementation(libs.coroutinesCore)
+    implementation(libs.bundles.ktorClient)
+    implementation(libs.kotlinxSerializationJson)
     implementation(project(":features:dd-sdk-android-logs"))
     implementation(project(":features:dd-sdk-android-rum"))
     implementation(project(":features:dd-sdk-android-trace"))
@@ -108,11 +112,14 @@ dependencies {
     implementation(project(":features:dd-sdk-android-session-replay-material"))
     implementation(project(":features:dd-sdk-android-session-replay-compose"))
     implementation(project(":integrations:dd-sdk-android-compose"))
+    implementation(project(":integrations:dd-sdk-android-glide"))
+    implementation(project(":integrations:dd-sdk-android-okhttp"))
     implementation(project(":tools:benchmark"))
 
     testImplementation(libs.bundles.jUnit5)
     testImplementation(libs.bundles.testTools)
     testImplementation(libs.systemStubsJupiter)
+    testImplementation(libs.ktorClientMock)
 }
 
 kotlinConfig()
