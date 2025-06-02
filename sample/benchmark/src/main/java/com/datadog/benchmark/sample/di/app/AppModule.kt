@@ -8,8 +8,11 @@ package com.datadog.benchmark.sample.di.app
 
 import android.content.Context
 import com.datadog.benchmark.sample.BenchmarkApplication
+import com.datadog.benchmark.sample.BenchmarkConfigHolder
+import com.datadog.benchmark.sample.config.BenchmarkConfig
 import dagger.Binds
 import dagger.Module
+import dagger.Provides
 import javax.inject.Singleton
 
 @Module
@@ -17,4 +20,13 @@ internal interface AppModule {
     @Binds
     @Singleton
     fun bindApplicationContext(benchmarkApplication: BenchmarkApplication): Context
+
+    companion object {
+        @Provides
+        fun provideBenchmarkConfig(
+            holder: BenchmarkConfigHolder
+        ): BenchmarkConfig {
+            return holder.config!!
+        }
+    }
 }
