@@ -6,7 +6,6 @@
 
 package com.datadog.benchmark.sample.network
 
-import fr.xgouchet.elmyr.junit5.ForgeExtension
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
@@ -24,21 +23,12 @@ import kotlinx.serialization.json.Json
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertInstanceOf
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.extension.ExtendWith
-import org.junit.jupiter.api.extension.Extensions
-import org.mockito.junit.jupiter.MockitoExtension
-import org.mockito.junit.jupiter.MockitoSettings
-import org.mockito.quality.Strictness
 
-@Extensions(
-    ExtendWith(MockitoExtension::class),
-    ExtendWith(ForgeExtension::class)
-)
-@MockitoSettings(strictness = Strictness.LENIENT)
 class KtorHttpClientUtilsTest {
     @Test
     fun `M return deserialized body W safeGet() { server returns 200 and proper json }`() {
-        val mockEngine = MockEngine { request ->
+        // Given
+        val mockEngine = MockEngine {
             respond(
                 content = Json.Default.encodeToString(ResponseData(1)),
                 status = HttpStatusCode.OK,
@@ -46,63 +36,57 @@ class KtorHttpClientUtilsTest {
             )
         }
 
-        val client = HttpClient(mockEngine) {
-            install(ContentNegotiation) {
-                json(Json { ignoreUnknownKeys = true })
-            }
-        }
+        val client = createClient(mockEngine)
 
         val url = URLBuilder("").build()
 
-        runBlocking {
-            val response = client.safeGet<ResponseData>(url)
-            assertEquals(ResponseData(1), response.optionalResult)
-        }
+        // When
+        val response = runBlocking { client.safeGet<ResponseData>(url) }
+
+        // Then
+        assertEquals(ResponseData(1), response.optionalResult)
     }
 
     @Test
     fun `M return ServerError W safeGet() { server returns 500 }`() {
-        val mockEngine = MockEngine { request ->
+        // Given
+        val mockEngine = MockEngine {
             respondError(status = HttpStatusCode.InternalServerError)
         }
 
-        val client = HttpClient(mockEngine) {
-            install(ContentNegotiation) {
-                json(Json { ignoreUnknownKeys = true })
-            }
-        }
+        val client = createClient(mockEngine)
 
         val url = URLBuilder("").build()
 
-        runBlocking {
-            val response = client.safeGet<ResponseData>(url)
-            assertEquals(KtorHttpResponse.ServerError(HttpStatusCode.InternalServerError), response)
-        }
+        // When
+        val response = runBlocking { client.safeGet<ResponseData>(url) }
+
+        // Then
+        assertEquals(KtorHttpResponse.ServerError(HttpStatusCode.InternalServerError), response)
     }
 
     @Test
     fun `M return ClientError W safeGet() { server returns 404 }`() {
-        val mockEngine = MockEngine { request ->
+        // Given
+        val mockEngine = MockEngine {
             respondError(status = HttpStatusCode.NotFound)
         }
 
-        val client = HttpClient(mockEngine) {
-            install(ContentNegotiation) {
-                json(Json { ignoreUnknownKeys = true })
-            }
-        }
+        val client = createClient(mockEngine)
 
         val url = URLBuilder("").build()
 
-        runBlocking {
-            val response = client.safeGet<ResponseData>(url)
-            assertEquals(KtorHttpResponse.ClientError(HttpStatusCode.NotFound), response)
-        }
+        // When
+        val response = runBlocking { client.safeGet<ResponseData>(url) }
+
+        // Then
+        assertEquals(KtorHttpResponse.ClientError(HttpStatusCode.NotFound), response)
     }
 
     @Test
     fun `M return UnknownException W safeGet() { server returns 200 and invalid json }`() {
-        val mockEngine = MockEngine { request ->
+        // Given
+        val mockEngine = MockEngine {
             respond(
                 content = "some_invalid_json",
                 status = HttpStatusCode.OK,
@@ -110,17 +94,22 @@ class KtorHttpClientUtilsTest {
             )
         }
 
-        val client = HttpClient(mockEngine) {
-            install(ContentNegotiation) {
-                json(Json { ignoreUnknownKeys = true })
-            }
-        }
+        val client = createClient(mockEngine)
 
         val url = URLBuilder("").build()
 
-        runBlocking {
-            val response = client.safeGet<ResponseData>(url)
-            assertInstanceOf(KtorHttpResponse.UnknownException::class.java, response)
+        // When
+        val response = runBlocking { client.safeGet<ResponseData>(url) }
+
+        // Then
+        assertInstanceOf(KtorHttpResponse.UnknownException::class.java, response)
+    }
+
+    private fun createClient(engine: MockEngine): HttpClient {
+        return HttpClient(engine) {
+            install(ContentNegotiation) {
+                json(Json { ignoreUnknownKeys = true })
+            }
         }
     }
 }

@@ -16,7 +16,6 @@ import com.datadog.benchmark.sample.di.activity.BenchmarkActivityComponent
 import com.datadog.benchmark.sample.navigation.NavigationGraphInitializer
 import com.datadog.benchmark.sample.ui.rumauto.RumAutoBottomNavBar
 import com.datadog.benchmark.sample.ui.rumauto.RumAutoScenarioNavigator
-import com.datadog.benchmark.sample.ui.rumauto.RumAutoScenarioTab
 import com.datadog.sample.benchmark.R
 import com.datadog.sample.benchmark.databinding.FragmentRumAutoHostBinding
 import javax.inject.Inject
@@ -41,7 +40,7 @@ internal class RumAutoScenarioActivity : BaseScenarioActivity() {
         setContentView(binding.root)
 
         binding.rumAutoBottomNavbar.setContent {
-            val currentTab: RumAutoScenarioTab? by rumAutoScenarioNavigator.currentTab.collectAsStateWithLifecycle(null)
+            val currentTab by rumAutoScenarioNavigator.currentTab.collectAsStateWithLifecycle(null)
 
             currentTab?.let { tab ->
                 RumAutoBottomNavBar(tab) {

@@ -26,7 +26,7 @@ internal interface AppModule {
         fun provideBenchmarkConfig(
             holder: BenchmarkConfigHolder
         ): BenchmarkConfig {
-            return holder.config!!
+            return holder.config
         }
     }
 }

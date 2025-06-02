@@ -12,5 +12,5 @@ import javax.inject.Singleton
 
 @Singleton
 internal class BenchmarkConfigHolder @Inject constructor() {
-    var config: BenchmarkConfig? = null
+    lateinit var config: BenchmarkConfig
 }
