@@ -250,6 +250,13 @@ ktorServerCore = { module = "io.ktor:ktor-server-core", version.ref = "ktorServe
 ktorServerNetty = { module = "io.ktor:ktor-server-netty", version.ref = "ktorServer" }
 ktorServerSSE = { module = "io.ktor:ktor-server-sse", version.ref = "ktorServer" }
 
+# ktor client
+ktorClientCore = { module = "io.ktor:ktor-client-core", version.ref = "ktorClient" }
+ktorClientOkHttp = { module = "io.ktor:ktor-client-okhttp", version.ref = "ktorClient" }
+ktorContentNegotiation = { module = "io.ktor:ktor-client-content-negotiation", version.ref = "ktorClient" }
+ktorSerializationKotlinxJson = { module = "io.ktor:ktor-serialization-kotlinx-json", version.ref = "ktorClient" }
+ktorClientMock = { module = "io.ktor:ktor-client-mock", version.ref = "ktorClient" }
+
 # Otel
 jctools = { module = "org.jctools:jctools-core", version.ref = "jctools" }
 openTelemetryApi = { module = "io.opentelemetry:opentelemetry-api", version.ref = "openTelemetry" }

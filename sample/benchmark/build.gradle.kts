@@ -13,6 +13,7 @@ plugins {
     kotlin("plugin.serialization")
     id("kotlin-parcelize")
     alias(libs.plugins.datadogGradlePlugin)
+    id("transitiveDependencies")
 }
 
 @Suppress("StringLiteralDuplication")
@@ -40,6 +41,7 @@ android {
 
     buildFeatures {
         compose = true
+        viewBinding = true
     }
     composeOptions {
         kotlinCompilerExtensionVersion = libs.versions.androidXComposeRuntime.get()
@@ -92,14 +94,15 @@ dependencies {
     implementation(libs.androidXConstraintLayout)
     implementation(libs.androidXLifecycleCompose)
     implementation(libs.googleMaterial)
-    implementation(libs.glideCore)
-    implementation(libs.material3Android)
+    implementation(libs.bundles.glide)
     implementation(libs.timber)
     implementation(platform(libs.androidXComposeBom))
+    implementation(libs.material3Android)
     implementation(libs.bundles.androidXCompose)
     implementation(libs.coilCompose)
     implementation(libs.daggerLib)
     kapt(libs.daggerCompiler)
+    kapt(libs.glideCompiler)
     implementation(libs.coroutinesCore)
     implementation(libs.bundles.ktorClient)
     implementation(libs.kotlinxSerializationJson)
