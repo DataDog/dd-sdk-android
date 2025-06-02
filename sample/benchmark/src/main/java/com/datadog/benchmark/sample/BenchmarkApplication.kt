@@ -7,6 +7,7 @@
 package com.datadog.benchmark.sample
 
 import android.app.Application
+import android.content.Context
 import com.datadog.benchmark.sample.di.app.BenchmarkAppComponent
 import com.datadog.benchmark.sample.di.app.DaggerBenchmarkAppComponent
 
@@ -22,5 +23,5 @@ internal class BenchmarkApplication : Application() {
     }
 }
 
-internal val Application.benchmarkAppComponent: BenchmarkAppComponent
-    get() = (this as BenchmarkApplication).benchmarkAppComponent
+internal val Context.benchmarkAppComponent: BenchmarkAppComponent
+    get() = (applicationContext as BenchmarkApplication).benchmarkAppComponent
