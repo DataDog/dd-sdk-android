@@ -1004,3 +1004,44 @@ notify:dogfood-gradle-plugin:
     - pip3 install GitPython requests
     - aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.gh_token --with-decryption --query "Parameter.Value" --out text >> ./gh_token
     - python3 dogfood.py -v $CI_COMMIT_TAG -t gradle-plugin
+
+notify:merge-verification-metadata:
+  tags: [ "arch:amd64" ]
+  only:
+    - tags
+  image: $CI_IMAGE_DOCKER
+  stage: notify
+  when: on_success
+  dependencies:
+    - publish:release-core
+    - publish:release-internal
+    - publish:release-trace
+    - publish:release-trace-otel
+    - publish:release-logs
+    - publish:release-rum
+    - publish:release-ndk
+    - publish:release-session-replay
+    - publish:release-session-replay-material
+    - publish:release-session-replay-compose
+    - publish:release-webview
+    - publish:release-coil
+    - publish:release-compose
+    - publish:release-fresco
+    - publish:release-glide
+    - publish:release-trace-coroutines
+    - publish:release-rum-coroutines
+    - publish:release-rx
+    - publish:release-sqldelight
+    - publish:release-timber
+    - publish:release-android-tv
+    - publish:release-okhttp
+    - publish:release-okhttp-otel
+    - publish:release-benchmark
+  script:
+    - python3 merge_verification_metadata.py
+  artifacts:
+    when: on_success
+    expire_in: 3 mos
+    paths:
+      - verification-metadata.xml
+
