@@ -304,6 +304,7 @@ internal constructor(
         val parentContext = extractParentContext(tracer, request)
         val url = request.url.toString()
 
+        @Suppress("DEPRECATION")
         val span = tracer.buildSpan(SPAN_NAME)
             .withOrigin(traceOrigin)
             .asChildOf(parentContext)

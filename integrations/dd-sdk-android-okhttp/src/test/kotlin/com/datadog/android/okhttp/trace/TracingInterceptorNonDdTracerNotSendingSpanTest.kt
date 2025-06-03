@@ -3,6 +3,7 @@
  * This product includes software developed at Datadog (https://www.datadoghq.com/).
  * Copyright 2016-Present Datadog, Inc.
  */
+@file:Suppress("DEPRECATION")
 
 package com.datadog.android.okhttp.trace
 
@@ -1004,17 +1005,6 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
         forge: Forge,
         @IntForgery(min = 200, max = 300) statusCode: Int
     ) {
-//        val localSpan: Span = forge.newSpanMock(mockSpanContext)
-//        val localSpanBuilder: SpanBuilder = forge.newSpanBuilderMock(localSpan, mockSpanContext)
-//        whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(true)
-//        whenever(mockLocalTracer.buildSpan(TracingInterceptor.SPAN_NAME)).thenReturn(localSpanBuilder)
-//        whenever(mockTraceSampler.sample(localSpan)).thenReturn(true)
-//        val testedInterceptorNoGlobal = instantiateTestedInterceptor(
-//            fakeLocalHosts,
-//            localTracerFactory = { _, _ -> mockLocalTracer },
-//            globalTracerProvider = { null }
-//        )
-
         val localSpan: Span = forge.newSpanMock(mockSpanContext)
         val localSpanBuilder: SpanBuilder = forge.newSpanBuilderMock(localSpan, mockSpanContext)
         whenever(mockLocalTracer.buildSpan(TracingInterceptor.SPAN_NAME)).thenReturn(localSpanBuilder)
