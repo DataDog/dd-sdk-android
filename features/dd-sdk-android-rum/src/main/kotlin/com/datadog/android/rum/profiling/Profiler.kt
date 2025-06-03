@@ -12,15 +12,12 @@ import android.os.Build
 import android.os.CancellationSignal
 import androidx.core.os.StackSamplingRequestBuilder
 import android.util.Log
-import androidx.benchmark.FileMover.moveTo
 import androidx.core.os.ProfilingRequest
 import androidx.core.os.SystemTraceRequestBuilder
 import androidx.core.os.requestProfiling
 import java.io.File
 import java.nio.file.Files
-import java.nio.file.Path
 import java.util.concurrent.Executors
-import java.util.concurrent.TimeUnit
 
 object Profiler {
 
@@ -92,12 +89,13 @@ object Profiler {
         tag: String,
         cancellationSignal: CancellationSignal
     ): ProfilingRequest {
-        val random = (0..1).random()
-        return if (random == 0) {
-            systemTraceRequest(tag, cancellationSignal)
-        } else {
-            stackSamplingRequest(samplesPerSecond, tag, cancellationSignal)
-        }
+//        val random = (0..1).random()
+//        return if (random == 0) {
+//            systemTraceRequest(tag, cancellationSignal)
+//        } else {
+//            stackSamplingRequest(samplesPerSecond, tag, cancellationSignal)
+//        }
+        return stackSamplingRequest(samplesPerSecond, tag, cancellationSignal)
     }
 
     @SuppressLint("NewApi")

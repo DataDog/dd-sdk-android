@@ -20,6 +20,10 @@ import okhttp3.Request
 import okhttp3.RequestBody.Companion.asRequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.File
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import java.util.TimeZone
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
@@ -36,7 +40,6 @@ internal class PerfettoTracesUploader(
 
     private val okHttpClient = OkHttpClient.Builder()
         .addNetworkInterceptor(CurlInterceptor(true))
-        .connectionSpecs(listOf(ConnectionSpec.CLEARTEXT))
         .build()
     private val scheduledExecutorService = Executors.newSingleThreadScheduledExecutor()
 
@@ -102,6 +105,12 @@ internal class PerfettoTracesUploader(
         }
 
         private fun uploadFiles(file: File) {
+            val intermediaryFilePath = file.absolutePath.substringBeforeLast(".").split("_")
+            val endTimestampInMillis  = intermediaryFilePath.lastOrNull()?.toLongOrNull() ?: return
+            val startTimestampInMillis = intermediaryFilePath.getOrNull(intermediaryFilePath.size - 2)?.toLongOrNull()
+                ?: return
+            val startTimestampUtcFormat = formatIsoUtc(startTimestampInMillis)
+            val endTimestampUtcFormat = formatIsoUtc(endTimestampInMillis)
             val context = appLaunchContext.get()
             val applicationId = JsonObject().apply {
                 addProperty("id", context?.applicationId as String)
@@ -118,14 +127,16 @@ internal class PerfettoTracesUploader(
             // let's create a json object here instead of a string
             val payload = JsonObject().apply {
                 val attachments = JsonArray().apply {
-                    add("cpu.pprof")
+                    add("perfetto.proto")
                 }
                 add("attachments", attachments)
                 add("application", applicationId)
                 add("session", sessionId)
                 add("view", viewId)
+                addProperty("start", startTimestampUtcFormat)
+                addProperty("end", endTimestampUtcFormat)
                 addProperty("tags_profiler", "service:$service,version:$version")
-                addProperty("family", "go")
+                addProperty("family", "android")
                 addProperty("version", "4")
             }
 
@@ -133,7 +144,7 @@ internal class PerfettoTracesUploader(
             val requestBody = MultipartBody.Builder()
                 .setType(MultipartBody.FORM)
                 .addFormDataPart(
-                    "cpu.pprof",
+                    "perfetto.proto",
                     file.name,
                     file.asRequestBody(CONTENT_TYPE_BINARY_TYPE)
                 )
@@ -145,7 +156,7 @@ internal class PerfettoTracesUploader(
                 .build()
 
             val request = Request.Builder()
-                .url(LOCAL_HOST)
+                .url("$siteName/api/v2/profile")
                 .addHeader("DD-API-KEY", apiKey)
                 .addHeader("DD-EVP-ORIGIN", origin)
                 .addHeader("DD-EVP-ORIGIN-VERSION", sdkVersion)
@@ -180,8 +191,16 @@ internal class PerfettoTracesUploader(
             }
         }
 
-        internal val CONTENT_TYPE_BINARY_TYPE = "application/octet-stream".toMediaTypeOrNull()
-        internal val CONTENT_TYPE_JSON_TYPE = "application/json".toMediaTypeOrNull()
+        fun formatIsoUtc(epochMillis: Long): String {
+            val sdf = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.US)
+            sdf.timeZone = TimeZone.getTimeZone("UTC")
+            return sdf.format(Date(epochMillis))
+        }
+
+        companion object{
+            internal val CONTENT_TYPE_BINARY_TYPE = "application/octet-stream".toMediaTypeOrNull()
+            internal val CONTENT_TYPE_JSON_TYPE = "application/json".toMediaTypeOrNull()
+        }
     }
 
     companion object {
