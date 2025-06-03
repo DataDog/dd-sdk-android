@@ -3,6 +3,8 @@
  * This product includes software developed at Datadog (https://www.datadoghq.com/).
  * Copyright 2016-Present Datadog, Inc.
  */
+@file:Suppress("DEPRECATION")
+
 package com.datadog.android.okhttp.trace
 
 import com.datadog.android.core.sampling.Sampler

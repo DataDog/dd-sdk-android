@@ -90,9 +90,7 @@ internal class SpanSamplingIdProviderTest {
     }
 
     @Test
-    fun `M return 0u W provideId() {no rum session, invalid traceId}`(
-        @StringForgery(regex = "([g-z][\\w\\d])+") fakeString: String
-    ) {
+    fun `M return 0u W provideId() {no rum session, invalid traceId}`() {
         // Given
         val expectedId: ULong = 0u
         whenever(mockSpanContext.traceId) doReturn DDTraceId.ZERO
