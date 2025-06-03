@@ -314,6 +314,75 @@ object Datadog {
         sdkCore.clearAllData()
     }
 
+    /**
+     * Sets current account information.
+     *
+     * Those will be added to logs, traces and RUM events automatically.
+     *
+     * @param id Account ID.
+     * @param name representing the account, if exists.
+     * @param extraInfo Account's custom attributes, if exists.
+     * @param sdkCore SDK instance to set account information. If not provided, default SDK
+     * instance will be used.
+     */
+    @JvmStatic
+    @JvmOverloads
+    fun setAccountInfo(
+        id: String,
+        name: String? = null,
+        extraInfo: Map<String, Any?> = emptyMap(),
+        sdkCore: SdkCore = getInstance()
+    ) {
+        sdkCore.setAccountInfo(
+            id = id,
+            name = name,
+            extraInfo = extraInfo
+        )
+    }
+
+    /** Add custom attributes to the current account information
+     *
+     * This extra info will be added to already existing extra info that is added
+     * to Logs, Traces and RUM events automatically.
+     *
+     * @param extraInfo Account's additional custom attributes.
+     * @param sdkCore SDK instance to add account custom attributes. If not provided,
+     * default SDK instance will be used.
+     */
+    @JvmStatic
+    @JvmOverloads
+    fun addAccountExtraInfo(
+        extraInfo: Map<String, Any?> = emptyMap(),
+        sdkCore: SdkCore = getInstance()
+    ) {
+        sdkCore.addAccountExtraInfo(extraInfo)
+    }
+
+    /** Clear the current account information
+     *
+     * Account information will set to null
+     * Following Logs, Traces, RUM Events will not include the account information anymore.
+     *
+     * Any active RUM Session, active RUM View at the time of call will have their `account` attribute cleared
+     *
+     * If you want to retain the current `account` on the active RUM session,
+     * you need to stop the session first by using `GlobalRumMonitor.get().stopSession()`
+     *
+     * If you want to retain the current `account` on the active RUM views,
+     * you need to stop the view first by using `GlobalRumMonitor.get().stopView()`.
+     *
+     * @param sdkCore SDK instance to clear account info. If not provided,
+     * default SDK instance will be used.
+     *
+     */
+    @JvmStatic
+    @JvmOverloads
+    fun clearAccountInfo(
+        sdkCore: SdkCore = getInstance()
+    ) {
+        sdkCore.clearAccountInfo()
+    }
+
     // Executes all the pending queues in the upload/persistence executors.
     // Tries to send all the granted data for each feature and then clears the folders and shuts
     // down the persistence and the upload executors.
