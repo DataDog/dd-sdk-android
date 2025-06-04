@@ -20,6 +20,7 @@ import com.datadog.android.okhttp.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.okhttp.utils.verifyLog
 import com.datadog.android.rum.RumResourceMethod
 import com.datadog.android.trace.TracingHeaderType
+import com.datadog.legacy.trace.api.interceptor.MutableSpan
 import com.datadog.legacy.trace.api.sampling.PrioritySampling
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
@@ -103,6 +104,7 @@ internal open class TracingInterceptorNotSendingSpanTest {
     @Mock
     lateinit var mockSpanContext: SpanContext
 
+    @Mock(extraInterfaces = [MutableSpan::class])
     lateinit var mockSpan: Span
 
     @Mock
@@ -919,6 +921,7 @@ internal open class TracingInterceptorNotSendingSpanTest {
         verify(mockSpan).setTag("http.status_code", statusCode)
         verify(mockSpan).setTag(Tags.SPAN_KIND, Tags.SPAN_KIND_CLIENT)
         verify(mockSpan, never()).finish()
+        verify(mockSpan as MutableSpan).drop()
         assertThat(response).isSameAs(fakeResponse)
     }
 
@@ -939,6 +942,7 @@ internal open class TracingInterceptorNotSendingSpanTest {
         verify(mockSpan).setTag(Tags.SPAN_KIND, Tags.SPAN_KIND_CLIENT)
         verify(mockSpan).setError(true)
         verify(mockSpan, never()).finish()
+        verify(mockSpan as MutableSpan).drop()
         assertThat(response).isSameAs(fakeResponse)
     }
 
@@ -959,6 +963,7 @@ internal open class TracingInterceptorNotSendingSpanTest {
         verify(mockSpan, never()).setError(true)
         verify(mockSpan).setTag(Tags.SPAN_KIND, Tags.SPAN_KIND_CLIENT)
         verify(mockSpan, never()).finish()
+        verify(mockSpan as MutableSpan).drop()
         assertThat(response).isSameAs(fakeResponse)
     }
 
@@ -981,6 +986,7 @@ internal open class TracingInterceptorNotSendingSpanTest {
             verify(mockSpan, never()).setResourceName(TracingInterceptor.RESOURCE_NAME_404)
         }
         verify(mockSpan, never()).finish()
+        verify(mockSpan as MutableSpan).drop()
         assertThat(response).isSameAs(fakeResponse)
     }
 
@@ -1004,6 +1010,7 @@ internal open class TracingInterceptorNotSendingSpanTest {
         verify(mockSpan).setTag("error.stack", throwable.loggableStackTrace())
         verify(mockSpan).setTag(Tags.SPAN_KIND, Tags.SPAN_KIND_CLIENT)
         verify(mockSpan, never()).finish()
+        verify(mockSpan as MutableSpan).drop()
     }
 
     @Test
@@ -1052,6 +1059,7 @@ internal open class TracingInterceptorNotSendingSpanTest {
         verify(localSpan).setTag("http.status_code", statusCode)
         verify(localSpan).setTag(Tags.SPAN_KIND, Tags.SPAN_KIND_CLIENT)
         verify(localSpan, never()).finish()
+        verify(localSpan as MutableSpan).drop()
         assertThat(response).isSameAs(fakeResponse)
         mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
@@ -1091,6 +1099,7 @@ internal open class TracingInterceptorNotSendingSpanTest {
         verify(localSpan).setTag(Tags.SPAN_KIND, Tags.SPAN_KIND_CLIENT)
 
         verify(localSpan, never()).finish()
+        verify(localSpan as MutableSpan).drop()
         verify(mockSpanBuilder).withOrigin(getExpectedOrigin())
         verify(mockSpan).setTag("http.url", fakeUrl)
         verify(mockSpan).setTag("http.method", fakeMethod.name)
@@ -1098,6 +1107,7 @@ internal open class TracingInterceptorNotSendingSpanTest {
         verify(mockSpan).setTag(Tags.SPAN_KIND, Tags.SPAN_KIND_CLIENT)
 
         verify(mockSpan, never()).finish()
+        verify(mockSpan as MutableSpan).drop()
         assertThat(response1).isSameAs(expectedResponse1)
         assertThat(response2).isSameAs(expectedResponse2)
         mockInternalLogger.verifyLog(
@@ -1133,6 +1143,7 @@ internal open class TracingInterceptorNotSendingSpanTest {
         verify(mockSpan).setTag(Tags.SPAN_KIND, Tags.SPAN_KIND_CLIENT)
 
         verify(mockSpan, never()).finish()
+        verify(mockSpan as MutableSpan).drop()
         assertThat(response).isSameAs(fakeResponse)
     }
 
@@ -1162,6 +1173,7 @@ internal open class TracingInterceptorNotSendingSpanTest {
         verify(mockSpan).setTag(Tags.SPAN_KIND, Tags.SPAN_KIND_CLIENT)
 
         verify(mockSpan, never()).finish()
+        verify(mockSpan as MutableSpan).drop()
         assertThat(response).isSameAs(fakeResponse)
     }
 
@@ -1213,6 +1225,7 @@ internal open class TracingInterceptorNotSendingSpanTest {
         verify(mockSpan).setTag(Tags.SPAN_KIND, Tags.SPAN_KIND_CLIENT)
 
         verify(mockSpan, never()).finish()
+        verify(mockSpan as MutableSpan).drop()
     }
 
     @Test

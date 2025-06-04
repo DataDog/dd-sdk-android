@@ -607,7 +607,15 @@ internal constructor(
     }
 
     private fun Span.finishRumAware(isSampled: Boolean) {
-        if (canSendSpan() && isSampled) finish()
+        if (canSendSpan()) {
+            if (isSampled) finish() else drop()
+        } else {
+            drop()
+        }
+    }
+
+    private fun Span.drop() {
+        // TODO (this as? MutableSpan)?.drop()
     }
 
     private fun Span.sample(request: Request): Boolean {
