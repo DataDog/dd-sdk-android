@@ -367,6 +367,8 @@ internal class DatadogInterceptorWithoutTracesTest {
         val response = testedInterceptor.intercept(mockChain)
 
         verify(mockSpanBuilder).withOrigin(DatadogInterceptor.ORIGIN_RUM)
+        //// TODO - fix drop method
+//        verify(mockSpan).drop()
         assertThat(response).isSameAs(fakeResponse)
     }
 
@@ -382,6 +384,8 @@ internal class DatadogInterceptorWithoutTracesTest {
         verify(mockSpanBuilder).withOrigin(DatadogInterceptor.ORIGIN_RUM)
         verify(mockSpan as MutableSpan).setResourceName(fakeUrl.lowercase(Locale.US))
         verify(mockSpan as MutableSpan).setError(true)
+        // TODO - fix drop method
+//        verify(mockSpan).drop()
         assertThat(response).isSameAs(fakeResponse)
     }
 
