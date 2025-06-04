@@ -44,6 +44,9 @@ dependencies {
     implementation(libs.gson)
     implementation(libs.kotlinPoet)
 
+    // Verification Metadata XML
+    implementation(libs.kotlinXmlBuilder)
+
     // Tests
     testImplementation(libs.jUnit4)
     testImplementation(libs.mockitoKotlin)
@@ -69,6 +72,10 @@ gradlePlugin {
         register("transitiveDependencies") {
             id = "transitiveDependencies" // the alias
             implementationClass = "com.datadog.gradle.plugin.transdeps.TransitiveDependenciesPlugin"
+        }
+        register("verificationXml") {
+            id = "verificationXml" // the alias
+            implementationClass = "com.datadog.gradle.plugin.verification.VerificationXmlPlugin"
         }
     }
 }

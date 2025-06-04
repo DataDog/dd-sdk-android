@@ -6,14 +6,15 @@
 
 package com.datadog.gradle.plugin.apisurface
 
-import com.datadog.gradle.utils.execShell
-import org.gradle.api.DefaultTask
+import com.datadog.gradle.plugin.CheckGeneratedFileTask
 import org.gradle.api.tasks.InputFile
 import org.gradle.api.tasks.InputFiles
 import org.gradle.api.tasks.TaskAction
 import java.io.File
 
-open class CheckApiSurfaceTask : DefaultTask() {
+open class CheckApiSurfaceTask : CheckGeneratedFileTask(
+    genTaskName = ApiSurfacePlugin.TASK_GEN_KOTLIN_API_SURFACE
+) {
 
     @InputFile
     lateinit var kotlinSurfaceFile: File
@@ -30,33 +31,9 @@ open class CheckApiSurfaceTask : DefaultTask() {
 
     @TaskAction
     fun applyTask() {
-        verifySurfaceFile(kotlinSurfaceFile)
+        verifyGeneratedFileExists(kotlinSurfaceFile)
         if (javaSurfaceFile.exists()) {
-            verifySurfaceFile(javaSurfaceFile)
-        }
-    }
-
-    private fun verifySurfaceFile(surfaceFile: File) {
-        val lines = project.execShell(
-            "git",
-            "diff",
-            "--color=never",
-            "HEAD",
-            "--",
-            surfaceFile.absolutePath
-        )
-
-        val additions = lines.filter { it.matches(Regex("^\\+[^+].*$")) }
-        val removals = lines.filter { it.matches(Regex("^-[^-].*$")) }
-
-        if (additions.isNotEmpty() || removals.isNotEmpty()) {
-            error(
-                "Make sure you run the ${ApiSurfacePlugin.TASK_GEN_KOTLIN_API_SURFACE} task" +
-                    " before you push your PR.\n" +
-                    additions.joinToString("\n") +
-                    "\n" +
-                    removals.joinToString("\n")
-            )
+            verifyGeneratedFileExists(javaSurfaceFile)
         }
     }
 

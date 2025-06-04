@@ -65,10 +65,12 @@ fun Project.publishingConfig(
                             url.set("https://www.apache.org/licenses/LICENSE-2.0")
                         }
                     }
+
                     organization {
                         name.set("Datadog")
                         url.set("https://www.datadoghq.com/")
                     }
+
                     developers {
                         developer {
                             name.set("Datadog")
