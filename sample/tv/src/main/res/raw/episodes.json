@@ -1,0 +1,560 @@
+{
+  "episodes": [
+    {
+      "date": "2021-03-23T00:00:00Z",
+      "draft": false,
+      "title": "Datadog on Agent Integration Development",
+      "ep_date": "2021-03-23T12:00:00Z",
+      "speakers": [
+        "Christine Chen",
+        "Ara Pulido",
+        "Julia Simon"
+      ],
+      "description": [
+        "To make sure that customers are getting the most out of the platform in the least amount of time, Datadog maintains more than 400 built-in integrations. These integrations collect metrics, events, and logs from a diverse set of sources: databases, source control, bug tracking tools, cloud providers, automation tools, and more.",
+        "How do we make sure that all those integrations are properly tested, updated for new features, and delivered to millions of hosts?",
+        "In this session Ara Pulido, Technical Evangelist, will chat with Julia Simon, Team Lead, and Christine Chen, Software Engineer, both on the Agent Integrations team. We’ll cover how a new integration is added to the catalog, how they are tested, and how we collaborate with Datadog’s community.",
+        "By the end of the session you will have a better understanding of how Datadog’s Agent integrations work, how they are delivered, and how you can contribute to them with issues, feature requests or pull requests; or even write your own integrations."
+      ],
+      "video": "https://www.youtube.com/embed/ZyAvPVj76VY",
+      "categories": [
+        "agent integration"
+      ]
+    },
+    {
+      "date": "2022-11-18T00:00:00Z",
+      "draft": false,
+      "title": "Datadog on Building an Event Storage System",
+      "ep_date": "2022-12-13T17:00:00Z",
+      "speakers": [
+        "Ara Pulido",
+        "Guillaume Duranceau",
+        "Ryan Worl"
+      ],
+      "description": [
+        "When Datadog introduced its Log Management product, it required a new event data storage platform, as storing logs and events is a completely different problem from storing metrics, which was the first Datadog product.",
+        "Over time, Datadog introduced more and more products that needed to store and index multi-kilobyte timeseries “events”, re-using the Event Platform infrastructure from Log Management. The increased use of the Event Platform and the new feature requirements coming from new products started exposing the limitations of the legacy system and the need for a new approach",
+        "In this session Ara Pulido, Staff Developer Advocate, will chat with Ryan Worl, Senior Software Engineer, and Guillaume Duranceau, Senior Software Engineer, both part of the Event Platform team, about the evolution of the events stores at Datadog. They’ll discuss the original log storage system and its limitations that led to the design and development of Husky, a complete rewrite of Datadog’s event store.",
+        "By the end of the session you will learn what to consider when designing event store systems and how to plan a full migration without downtime for your users."
+      ],
+      "video": "https://www.youtube.com/embed/mNneCaZewTg",
+      "categories": [
+        "storage",
+        "distributed systems",
+        "resilience"
+      ]
+    },
+    {
+      "date": "2021-09-30T00:00:00Z",
+      "draft": false,
+      "title": "Datadog on Building Responsive UX",
+      "ep_date": "2021-09-30T09:00:00Z",
+      "speakers": [
+        "Amy Luo",
+        "Edwin Morris",
+        "Ara Pulido"
+      ],
+      "description": [
+        "Datadog product designers and frontend developers have been working together to create a new, better UX for creating dashboards, which is one of the most important parts of using Datadog. A central part of this effort was building a new layout engine. Working on this project was a bit different from the usual feature work, so the collaboration cycle between our developers and designers had to change for us to more closely and quickly design, build, and test constraints and new ideas in the browser.",
+        "In this session Ara Pulido, Technical Evangelist, will chat with Edwin Morris, Senior Product Designer, and Amy Luo, Software Engineer on the Dashboards team. We’ll cover the full end-to-end process of designing and building the new Datadog Dashboards: from the first prototypes, to the implementation of the layout engine that brings it all together.",
+        "At the end of the session you’ll understand the process we used, the roadblocks we faced, and how close collaboration and effective communication between designers and developers made this project successful—allowing engineers to effectively work within solid design constraints, and helping designers understand implementation limitations in a way that was useful for them to work around."
+      ],
+      "video": "https://www.youtube.com/embed/1cRLvJmCnj8",
+      "categories": [
+        "UX"
+      ]
+    },
+    {
+      "date": "2023-04-27T00:00:00Z",
+      "draft": false,
+      "title": "Datadog on Caching",
+      "ep_date": "2023-04-27T16:00:00Z",
+      "speakers": [
+        "Jessica Cordonnier",
+        "Mitch Ward",
+        "Ara Pulido"
+      ],
+      "description": [
+        "Caching (and cache invalidation!) is often mentioned as one of the hardest problems in computer science. While caching can bring substantial performance improvements, reasoning about cached data can be extremely difficult as caching fundamentally means that you are no longer reading from your source of truth. With that in mind, many teams at Datadog needed to build distributed caches to scale their services and keep latency low.",
+        "As Datadog grew in size and complexity, teams designing and operating their own cache solutions started to become a bottleneck and added to the complexity. Based on that experience, a team was created to design, build and maintain a managed service for distributed in-memory caching, providing an easy way for over 2,000 engineers at Datadog to add fast caching to their system in a scalable, reliable, and consistent manner.",
+        "In this session, Ara Pulido, Staff Developer Advocate, will chat with Mitch Ward and Jessica Cordonnier, engineering managers on the Caching team at Datadog. They will explain how they used the learnings from prior cache implementations and distributed system principles to design the caching platform at Datadog. They will cover the various components that make up the platform, including the storage system, data structures, and scaling solutions.",
+        "By the end of the session you will understand caching systems better, their potential pitfalls and how to mitigate those, and how to run a cache infrastructure as an internal platform as a service. Unfortunately, we can't offer any help naming your internal caching platform; that's another difficult computer science problem for another time!"
+      ],
+      "categories": [
+        "distributed systems"
+      ],
+      "video": "https://www.youtube.com/embed/XXsRHOmPsGA"
+    },
+    {
+      "date": "2021-06-01T00:00:00Z",
+      "draft": false,
+      "title": "Datadog on Chaos Engineering",
+      "ep_date": "2021-06-01T09:00:00Z",
+      "speakers": [
+        "Joris Bonnefoy",
+        "Tay Nishimura",
+        "Ara Pulido"
+      ],
+      "description": [
+        "As you scale your applications, remaining resilient to underlying network failures, resource constraints introduced by other applications, or spikes in traffic can become exponentially more complex, even with very thorough testing and processes. Chaos engineering is a discipline that encourages experimenting in production and injecting controlled failures into the system to understand how the system will react in such conditions and to improve its reliability.",
+        "In this session Ara Pulido, Technical Evangelist, will chat with Tay Nishimura and Joris Bonnefoy, both site reliability engineers on the Chaos Engineering team at Datadog, to discuss how chaos engineering is done at Datadog and the in-house tooling they have built over the past few years to enable more robust testing of Datadog's rapidly growing enterprise systems.",
+        "By the end of the session you will have a better understanding of what chaos engineering is, how it can help your organization, and what you need to get started in your organization."
+      ],
+      "video": "https://www.youtube.com/embed/iYkYrZxiaHA",
+      "categories": [
+        "Chaos Engineering"
+      ]
+    },
+    {
+      "date": "2021-03-23T00:00:00Z",
+      "draft": false,
+      "title": "Datadog on Data Informed Product Development",
+      "ep_date": "2022-07-26T16:00:00Z",
+      "speakers": [
+        "Ara Pulido",
+        "Miranda Kapin",
+        "Derek Howles"
+      ],
+      "description": [
+        "Datadog is an observability and security platform. That means that our users may be in a high stress situation: debugging an issue in production, managing an incident or responding to a security threat. Having a good UX is particularly critical in those cases.",
+        "User interviews are very helpful, but after a product has been released in production we are able to gather a lot more data to understand how customers interact with it and make decisions about how it can be improved.",
+        "In this session Ara Pulido, Technical Evangelist, will chat with Derek Howles, Staff Product Designer, and Miranda Kapin, Senior Product Manager, on how they use telemetry data, collected from Datadog customers, to make informed product design and development decisions.",
+        "By the end of the session you’ll understand the processes we follow, the type of data we take into account to make product decisions, and how you can collect and leverage telemetry data to improve the products you are building."
+      ],
+      "video": "https://www.youtube.com/embed/wJg6ZdxsIlc",
+      "categories": [
+        "telemetry",
+        "product development"
+      ]
+    },
+    {
+      "date": "2021-12-14T00:00:00Z",
+      "draft": false,
+      "title": "Datadog on Data Visualization",
+      "ep_date": "2021-12-14T12:00:00Z",
+      "speakers": [
+        "Mark Hintz",
+        "Ara Pulido",
+        "Kemper Smith"
+      ],
+      "description": [
+        "Datadog customers send trillions of data points per day. These data points are processed by Datadog and used to debug production issues in real time. But, in order to reason about all this data, we humans need visual representations. Visualizations can help us discover connections and problem points.",
+        "In this session Ara Pulido, Technical Evangelist, will chat with Mark Hintz, Data Visualization Engineering Team Lead, and Kemper Smith, Data Visualization Design Team Lead, about Data Visualization, how engineering and design collaborate to create new visualizations, and how visualization widgets are built and rendered. They will also share some practical tips on visualizations that are available in Datadog that you may not know about.",
+        "By the end of the session you’ll understand what type of visualizations are best suited depending on the problem you are trying to solve, and what decisions are being made at Datadog when introducing new visualizations, along with some antipatterns when designing with data visualizations."
+      ],
+      "video": "https://www.youtube.com/embed/-eGAsBmZfOg",
+      "categories": [
+        "data visualization"
+      ]
+    },
+    {
+      "date": "2021-04-11T00:00:00Z",
+      "draft": false,
+      "title": "Datadog on Detecting Threats using Network Traffic Flows",
+      "ep_date": "2022-06-11T12:00:00Z",
+      "speakers": [
+        "Theo Guidoux",
+        "Andrew Krug",
+        "Anna Pauxberger"
+      ],
+      "description": [
+        "At Datadog’s scale, with over 18,000 customers sending trillions of data points per day, analyzing the volume of data coming in can be challenging. One of the largest log sources internally at Datadog are networking logs. Being able to analyze and make sense of them is critical to keep Datadog secure. To help with the task, we have built a flow analysis pipeline that alerts against network level Indicators of Compromise (IOCs) like IP address, port combinations, and data exchanged.",
+        "In this session, Andrew Krug, Technical Evangelist, will chat with Théo Guidoux, Software Engineer in the Threat-Detection Platform team and Anna Pauxberger, Software Engineer in the Security Platform team. They will discuss how they built the pipeline leveraging Datadog and Apache Spark and how they optimized the process by taking advantage of new AWS features and the Datadog Cloud Security Platform.",
+        "By the end of the session you will understand better how Network Traffic Flows are a critical tool to detect security threats and how you can start collecting, optimizing, and analyzing them at your organization."
+      ],
+      "video": "https://www.youtube.com/embed/uIysm82FvgE",
+      "categories": [
+        "security",
+        "threat detection"
+      ]
+    },
+    {
+      "date": "2021-01-26T00:00:00Z",
+      "draft": false,
+      "title": "Datadog on eBPF",
+      "ep_date": "2021-01-26T12:00:00Z",
+      "speakers": [
+        "Lee Avital",
+        "Guillaume Fournier",
+        "Ara Pulido"
+      ],
+      "description": [
+        "eBPF (extended Berkeley Packet Filter) is a Linux technology that can run sandboxed programs in the kernel without changing kernel source code or loading kernel modules. While the kernel is an ideal place to implement monitoring/observability, networking, and security it wasn't until the recent broad adoption of eBPF that it was feasible.",
+        "Datadog has embraced the possibilities that eBPF brings in those areas and there are several teams already using eBPF in some of their products.",
+        "In this session Ara Pulido, Technical Evangelist, will chat with Guillaume Fournier, security engineer on the Security Agent team and Lee Avital, Team Lead on the Networks team. Both teams are using eBPF in production at Datadog. We’ll cover what eBPF is, the problem it solves, and how it is currently being used for network monitoring and security.",
+        "By the end of the session you will have a better understanding of what eBPF is, why so many organizations are adopting this new technology, and how eBPF can benefit your organization."
+      ],
+      "video": "https://www.youtube.com/embed/58KtGtpn0_g",
+      "categories": [
+        "ebpf"
+      ]
+    },
+    {
+      "date": "2021-08-31T00:00:00Z",
+      "draft": false,
+      "title": "Datadog on Gamedays",
+      "ep_date": "2021-08-31T09:00:00Z",
+      "speakers": [
+        "Elijah Andrews",
+        "Mike Petruzelli",
+        "Ara Pulido"
+      ],
+      "description": [
+        "As engineers, as we scale our applications and infrastructure, we accept that failure can and will happen. But, how can we get ahead of those potential failures? Gamedays are events which aim to test the resilience of a system when facing abnormal and turbulent situations, checking whether our expectations on how it will fail (or not) are correct.",
+        "In this session Ara Pulido, Technical Evangelist, will chat with Mike Petruzelli, reliability engineer on the Core Resilience team, and Elijah Andrews, software engineer on the Traffic team. We’ll discuss and show examples on how gamedays are organized at Datadog, particularly how the reliability engineers partner with teams across the organization to run larger events focused on general system failures impacting a big part of the system.",
+        "By the end of the session you will have a better understanding of what gamedays are and how you can start organizing them at your company."
+      ],
+      "video": "https://www.youtube.com/embed/EPATNN5UFgQ",
+      "categories": [
+        "gamedays",
+        "resilience"
+      ]
+    },
+    {
+      "date": "2021-03-23T00:00:00Z",
+      "draft": false,
+      "title": "Datadog on gRPC",
+      "ep_date": "2022-09-29T14:30:00Z",
+      "speakers": [
+        "Ara Pulido",
+        "Anthonin Bonnefoy",
+        "Antoine Tollenaere"
+      ],
+      "description": [
+        "Datadog, the observability platform used by thousands of companies, is made up of hundreds of services that communicate over the network using gRPC, an RPC framework, making it a critical component for Datadog’s reliability.",
+        "As teams investigated incidents related to their services, they discovered that some of them were gRPC related. But, were there common patterns to those incidents? Could we use them to learn more about gRPC and how to use it better?",
+        "During this past year, an engineering squad with members from different teams was formed to study gRPC related incidents and share lessons learned. They wrote a set of best practices for all engineering teams to follow and common libraries that implement them.",
+        "In this session Ara Pulido, Staff Developer Advocate, will chat with Anthonin Bonnefoy, Senior Software Engineer in the Core Resilience team and Antoine Tollenaere, Team Lead in the Networking team, who were part of this squad, to share their investigation of the incidents and the gRPC best practices they came up with to avoid those in the future.",
+        "By the end of the session you will have a better understanding of the internals of gRPC and how to better implement it at your organization."
+      ],
+      "categories": [
+        "gRPC",
+        "distributed systems",
+        "best practices"
+      ],
+      "video": "https://www.youtube.com/embed/K4ixKyJQFeg"
+    },
+    {
+      "date": "2020-08-27T00:00:00Z",
+      "draft": false,
+      "title": "Datadog on Incident Management",
+      "ep_date": "2020-08-27T12:00:00Z",
+      "speakers": [
+        "Leo Cavaille",
+        "Matt Hardwick",
+        "Ara Pulido"
+      ],
+      "description": [
+        "Datadog is a monitoring and analytics platform that ingests trillions of data points per day, coming from more than 8,000 customers. With a complex distributed architecture and hundreds of deployments per day, needless to say sometimes things don't go as planned. Our teams have been improving the way incidents are managed at Datadog over the years and they are using that knowledge to help Datadog customers manage their own incidents.",
+        "In this session, Technical Evangelist Ara Pulido will chat with Léo Cavaillé, SRE Manager, and Matt Hardwick, an engineer working on Datadog’s incident application. They will discuss how incident management evolved at Datadog, how we handle incidents today, and how the SRE team is working alongside the engineers building Datadog’s Incident application to make Datadog the best place to organize, investigate, manage, and solve your infrastructure and application incidents.",
+        "By the end of the session you will have a better understanding of what chaos engineering is, how it can help your organization, and what you need to get started in your organization."
+      ],
+      "video": "https://www.youtube.com/embed/QIambwILy_M",
+      "categories": [
+        "incident management"
+      ]
+    },
+    {
+      "date": "2020-05-27T00:00:00Z",
+      "draft": false,
+      "title": "Datadog on Kafka",
+      "ep_date": "2020-05-27T12:00:00Z",
+      "speakers": [
+        "Jamie Alquiza",
+        "Kirk Kaiser",
+        "Balthazar Rouberol"
+      ],
+      "description": [
+        "In this session, we’ll speak with two engineers responsible for scaling the Kafka infrastructure within Datadog, Balthazar Rouberol and Jamie Alquiza. They'll share their strategy in scaling Kafka, how it’s been deployed on Kubernetes, and introduce kafka-kit; our open source toolkit for scaling Kafka clusters.",
+        "Join us, and you'll leave with lessons learned while scaling persistent storage on modern orchestrated infrastructure, and actionable insights you can apply at your organization."
+      ],
+      "video": "https://www.youtube.com/embed/J7RRJ1iBeAg",
+      "categories": [
+        "kafka"
+      ]
+    },
+    {
+      "date": "2020-11-16T00:00:00Z",
+      "draft": false,
+      "title": "Datadog on Kubernetes Monitoring",
+      "ep_date": "2020-11-16T12:00:00Z",
+      "speakers": [
+        "Celene Chang",
+        "Charly Fontaine",
+        "Ara Pulido"
+      ],
+      "description": [
+        "With many blog posts published and talks given on the topic, it’s no secret that Datadog is running Kubernetes at scale. We currently run dozens of clusters, some of them with thousands of nodes. Additionally, we have clusters running in multiple clouds. How are we monitoring all of that, ensuring we can scale up quickly and safely?",
+        "In this session Ara Pulido, Technical Evangelist, will chat with Celene Chang and Charly Fontaine - both software engineers on the Container Integrations team at Datadog. This team is responsible for deploying and running the Datadog Agent in our Kubernetes clusters. We’ll cover how we are running the Datadog Agent in our clusters, which metrics we care about, and the monitors we have set up. By the end of the session you will have new ideas and best practices on monitoring Kubernetes with Datadog that you can apply in your own environment.",
+        "By the end of the session you will have a better understanding of what chaos engineering is, how it can help your organization, and what you need to get started in your organization."
+      ],
+      "video": "https://www.youtube.com/embed/PlypVevZfW8",
+      "categories": [
+        "kubernetes"
+      ]
+    },
+    {
+      "date": "2020-05-27T00:00:00Z",
+      "draft": false,
+      "title": "Datadog on Kubernetes",
+      "ep_date": "2020-05-27T12:00:00Z",
+      "speakers": [
+        "Laurent Bernaille",
+        "Ara Pulido"
+      ],
+      "description": [
+        "When 2 years ago Datadog decided to move its infrastructure platform to Kubernetes we didn’t expect to find so many roadblocks, but ingesting trillions of datapoints per day in a reliable fashion requires pushing the limits of cloud computing.",
+        "Creating and managing dozens of clusters, with thousands of nodes each and operating in several clouds was a challenging but rewarding learning experience. In this session Ara Pulido, Developer Advocate, will chat with Laurent Bernaille, Staff Engineer at Datadog and part of the team that created Datadog’s Kubernetes platform. We’ll cover the challenges we found creating and scaling Datadog’s Kubernetes platform and how we overcame them. The discussion will include scaling the control plane, security, certificates, networking, our open source contributions, and more!"
+      ],
+      "video": "https://www.youtube.com/embed/HDm9iNkLyPI",
+      "categories": [
+        "kubernetes"
+      ]
+    },
+    {
+      "date": "2023-01-12T00:00:00Z",
+      "draft": true,
+      "title": "Datadog on the Lifecycle of Threats and Vulnerabilities",
+      "ep_date": "2023-01-12T17:30:00Z",
+      "speakers": [
+        "Nick Frichette",
+        "Adam Stevko",
+        "Andrew Krug"
+      ],
+      "description": [
+        "The security industry is full of complex terminology like threat, vulnerability, and mitigations.  Definitions matter as we design processes that scale.  At Datadog, the Security Research functions are focused on detection and response to specific types of threats and vulnerabilities.  Workload vulnerabilities, cloud control plane vulnerabilities, and even cloud service provider vulnerabilities.  Each security finding based on specific risk indicators needs to be addressed differently at Datadog and in our communications to the broader community.",
+        "In this session Andrew Krug, Head of Security Advocacy will chat with Nick Frichette, Senior Cloud Security Researcher, and Adam Stevko Senior Security Engineer in the Cloud Security team.  We’ll cover how we apply the hacker’s mindset to discovering potential threats, what we mean when we say vulnerability vs threat, and how each is handled in our internal Cloud Security team.",
+        "In this episode you’ll get a peak at how Datadog scales our incident handling process for the most impactful vulnerabilities and threats.  You’ll leave with a firm understanding as well of steps you can take to apply a similar process in your engineering organization to respond to the next security headline."
+      ],
+      "video": "https://www.youtube.com/embed/vx6Mtds9-N8",
+      "categories": [
+        "security"
+      ]
+    },
+    {
+      "date": "2023-06-15T00:00:00Z",
+      "draft": false,
+      "title": "Datadog on Mobile Software Development",
+      "ep_date": "2023-08-22T16:00:00Z",
+      "speakers": [
+        "Xavier Gouchet",
+        "Maciek Grzybowski",
+        "Ara Pulido"
+      ],
+      "description": [
+        "Understanding the health and user experience of your mobile application is critical in order to avoid user frustration, understand application crashes, and reduce bugs mean time to resolution. To help with that task, Datadog has a mobile monitoring solution that allows developers to better understand and improve their application. But what are the things to take into account when building observability mobile SDKs? How can we gather the right telemetry without affecting the underlying application?",
+        "In this “Datadog on” episode, Ara Pulido will chat with Xavier Gouchet, Senior Software Developer in the Android SDK team, and Maciek Grzybowski, Senior Software Developer in the iOS SDK team, to discuss how their teams designed and implemented Datadog’s mobile SDKs. They will cover how they ensure that the applications using the SDKs continue to work as usual, without performance degradation or unexpected crashes.",
+        "By the end of the episode, you will learn some best practices when designing and testing mobile applications and Open Source SDKs that need to be performant, safe and secure."
+      ],
+      "categories": [],
+      "video":"https://www.youtube.com/embed/KcOGQfTYBBM"
+    },
+    {
+      "date": "2022-01-28T00:00:00Z",
+      "draft": false,
+      "title": "Datadog on Profiling in Production",
+      "ep_date": "2022-01-28T12:00:00Z",
+      "speakers": [
+        "Julien Danjou",
+        "Kirk Kaiser"
+      ],
+      "description": [
+        "Depending on your chosen programming language and stack, you may have never used a profiler in production. The very idea of using a profiler in production for a web service may seem unrealistic, due to the amount of overhead involved. After all, aren’t profilers extremely computationally expensive to run?",
+        "Despite a reputation for being computationally expensive, many programming languages have examples of profilers built to run in production. The importance of seeing how your application behaves in production is critically important to understanding how it performs in the real world.",
+        "In this episode of Datadog on, we’ll learn how Datadog created a production ready profiler for Python using statistical sampling. We’ll explore the history of production profilers in other languages, and see how languages like Java have a rich history of profiling in production.",
+        "We’ll also see how profilers can be used to solve tricky memory leaks, save on cloud costs with more efficient CPU usage, and help you deploy better, more robust software to end users."
+      ],
+      "video": "https://www.youtube.com/embed/5ffJ8Zzg4YY",
+      "categories": [
+        "profiling"
+      ]
+    },
+    {
+      "date": "2020-06-30T00:00:00Z",
+      "draft": false,
+      "title": "Datadog on RocksDB",
+      "ep_date": "2020-06-30T12:00:00Z",
+      "speakers": [
+        "James Bibby",
+        "Kenny House",
+        "Ara Pulido"
+      ],
+      "description": [
+        "Datadog is a monitoring and analytics platform that ingests trillions of data points per day, coming from more than 8,000 customers. Each of those is associated with metadata, mostly in the form of tags, and it can also be part of streams of related data points, which can then be explored, queried, or aggregated. RocksDB is used by many services at Datadog that are part of that metrics ingestion, aggregation, query, and index pipeline.",
+        "In this session, Technical Evangelist Ara Pulido will chat with James Bibby and Kenny House, who are both Team Leads at Datadog. They will discuss why we chose to implement a datastore based on RocksDB, share their experiences adopting RocksDB for two different use cases, the challenges they found along the way, and the benefits of cross-team collaboration when adopting new technologies at an organization.",
+        "By the end of the session you will have a better understanding of what chaos engineering is, how it can help your organization, and what you need to get started in your organization."
+      ],
+      "video": "https://www.youtube.com/embed/M8LoF7cJJWQ",
+      "categories": [
+        "rocksDB"
+      ]
+    },
+    {
+      "date": "2022-02-11T00:00:00Z",
+      "draft": false,
+      "title": "Datadog on Rust",
+      "ep_date": "2022-02-23T12:00:00Z",
+      "speakers": [
+        "Duarte Nunes",
+        "Ara Pulido",
+        "Brian Troutwine"
+      ],
+      "description": [
+        "Rust is a programming language that has been gaining popularity over the past few years, with its adopters claiming that it helps them write faster, memory efficient, and more reliable software.",
+        "At Datadog many backend services are written in Go, but some teams have begun adopting Rust when building new services, especially when performance is critical.",
+        "In this session Ara Pulido, Senior Technical Evangelist, will chat with Brian Troutwine, Staff Software Engineer on the Vector team, and Duarte Nunes, Senior Software Engineer on the Metrics Index team. They will discuss why they chose Rust to implement their specific projects, share their experiences adopting Rust for two different use cases, and lessons learned along the way.",
+        "By the end of the session you will have a better understanding of why Rust is gaining popularity, whether it is the right fit for your use case, and how to start adopting it with minimal friction in your company."
+      ],
+      "video": "https://www.youtube.com/embed/2gQZaY_nCEc",
+      "categories": [
+        "rust"
+      ]
+    },
+    {
+      "date": "2021-03-31T00:00:00Z",
+      "draft": false,
+      "title": "Datadog on Security and Compliance",
+      "ep_date": "2021-03-31T09:00:00Z",
+      "speakers": [
+        "Kirk Kaiser",
+        "Andrew Spangler"
+      ],
+      "description": [
+        "At Datadog, customer trust and data security are of the utmost importance.",
+        "As a high growth company, navigating the tradeoffs of security and development agility are especially critical. Our customers expect us to continually improve our platform, while providing a compliant, secure environment for their most critical data. Balance is key to rolling out features rapidly and keeping systems secure.",
+        "In this episode of Datadog on, join Kirk Kaiser and Andrew Spangler, Team Lead for Information Security, as he shares how Datadog approaches compliance in a multi cloud, multi region, and multi security level environment.",
+        "We’ll discuss how Andrew and his team encourage organization compliance collaboration across teams, while still giving space for teams to get their work done. We’ll touch upon some tools enabling automated security and compliance, and discuss strategies and organizational challenges that apply to multi-cloud."
+      ],
+      "video": "https://www.youtube.com/embed/k-YUDldE5u8",
+      "categories": [
+        "security",
+        "compliance"
+      ]
+    },
+    {
+      "date": "2020-12-10T00:00:00Z",
+      "draft": false,
+      "title": "Datadog on Serverless",
+      "ep_date": "2020-12-10T09:00:00Z",
+      "speakers": [
+        "David Huie",
+        "Kirk Kaiser",
+        "Andrew Krug"
+      ],
+      "description": [
+        "The Datadog Security Platform team leverages Serverless to ingest security events across many different cloud providers, deployment platforms, and devices. These security events are then transformed and shipped to a data lake to help defend and protect the platform as a whole. Once there, these ingested events are used to drive internal investigations, create internal security alerts, and reason about security incidents.",
+        "In this episode of Datadog on Serverless, David Huie, Team Lead - Security Engineering and Andrew Krug, Technical Evangelist - Security, will join Kirk Kaiser, Technical Evangelism Team Lead. They will talk about the tradeoffs we’re making within the Serverless ecosystem and platform. From deciding when to use Fargate or Lambda, to how well lambda fits within a larger open source ecosystem, we’ll touch upon real world lessons learned from shipping Serveress systems at scale."
+      ],
+      "video": "https://www.youtube.com/embed/IshP8RyLrB4",
+      "categories": [
+        "serverless"
+      ]
+    },
+    {
+      "date": "2022-12-13T00:00:00Z",
+      "draft": false,
+      "title": "Datadog on Site Reliability Engineering",
+      "ep_date": "2023-02-22T18:00:00Z",
+      "speakers": [
+        "Brandon West",
+        "Laura de Vesine",
+        "Rick Mangi"
+      ],
+      "description": [
+        "There are many different ways to implement Site Reliability Engineering (SRE). From team structures to roles and responsibilities to planning and prioritization flows, there’s no golden path for how to organize things. As Datadog has shifted from a startup to a quickly-growing public company, we’ve seen our own SRE practice evolve. With over 22,000 customers sending trillions of data points each day, keeping Datadog reliable is critical to our business.",
+        "In this episode of Datadog on, join Staff Engineers Laura de Vesine and Rick Mangi to hear how Datadog’s approach to SRE has changed with scale and experience. Their unique backgrounds and roles – Rick is embedded on a team building an internal platform, while Laura works across multiple teams on a variety of projects – will highlight some of the different methodologies and how we use them.",
+        "You’ll learn how Datadog approaches technical debt and legacy systems, some key differences between SRE for startups versus larger companies, how to get buy-in for SRE practices at an organizational level, and more. Then you’ll have an opportunity to ask questions during live Q&A."
+      ],
+      "video": "https://www.youtube.com/embed/cWRO2gOWTG8",
+      "categories": [
+        "Best Practices",
+        "Incident Management",
+        "Distributed Systems",
+        "Resilience",
+        "Software Delivery"
+      ]
+    },
+    {
+      "date": "2020-09-30T00:00:00Z",
+      "draft": false,
+      "title": "Datadog on Software Delivery",
+      "ep_date": "2020-09-30T12:00:00Z",
+      "speakers": [
+        "Jacob LeGrone",
+        "Ara Pulido",
+        "Benjamin Smith"
+      ],
+      "description": [
+        "Over 800 Engineers at Datadog do thousands of deployments per day, to hundreds of services in different environments, regions, and cloud providers. How can we manage all those deployments in a common way and have a reliable paper trail way to audit any changes?",
+        "In this session Ara Pulido, Technical Evangelist, will chat with Benjamin Smith, Tech Lead, and Jacob LeGrone, Senior Software Engineer, who are part of the team that created Datadog’s software delivery platform. We will cover the challenges we found when creating a software delivery platform that all of our engineering teams could use, the decisions we had to make --- including technologies we dropped along the way --- and some of the technologies that are part of that platform like Helm, CNAB, and Bazel."
+      ],
+      "video": "https://www.youtube.com/embed/H67uuwVO1tc",
+      "categories": [
+        "software delivery"
+      ]
+    },
+    {
+      "date": "2023-03-23T00:00:00Z",
+      "draft": false,
+      "title": "Datadog on Data Engineering Pipelines: Apache Spark at Scale",
+      "ep_date": "2023-03-23T16:00:00Z",
+      "speakers": [
+        "Alodie Boissonnet",
+        "Anton Ippolitov",
+        "Ara Pulido"
+      ],
+      "description": [
+        "Datadog is an observability and security platform that ingests and processes tens of trillions of data points per day, coming from more than 22,000 customers. Processing that amount of data in a reasonable time stretches the limits of well known data engines like Apache Spark.",
+        "In addition to scale, Datadog infrastructure is multi-cloud on Kubernetes and the data engineering platform is used by different engineering teams, so having a good set of abstractions to make running Spark jobs easier is critical.",
+        "In this session, Ara Pulido, Staff Developer Advocate, will chat with Anton Ippolitov, Senior Software Engineer in the Data Engineering Infrastructure team, and Alodie Boissonnet, Software Engineer in the Historical Metrics Query team. They will share their journey on building and maintaining their infrastructure and data engineering pipelines, as well as run and optimize Spark batch jobs, with real-work examples.",
+        "By the end of the talk you will have a better understanding of what value Spark brings to your organization, why Spark continues to be one of the most popular open source data engines, and how to use it at scale."
+      ],
+      "categories": [
+        "distributed systems",
+        "spark",
+        "data engineering"
+      ],
+      "video": "https://www.youtube.com/embed/-3sjLjK81so"
+    },
+    {
+      "date": "2020-12-10T00:00:00Z",
+      "draft": false,
+      "title": "Datadog on Web Security Standards",
+      "ep_date": "2022-05-19T09:00:00Z",
+      "speakers": [
+        "Jean-Baptiste Aviat",
+        "Ayaz Badouraly",
+        "Andrew Krug"
+      ],
+      "description": [
+        "Modern web applications are incredibly complex. Frameworks, javascript, and dependency management have made understanding and maintaining a baseline security standard maximum difficulty. With attack vectors like those listed in the OWASP Top 10 it can be incredibly difficult to know where to start and what the metrics for success are. Every web browser today supports a variety of “secure headers”. These headers can be served as part of each response from the web server stack and can prevent a variety of common attacks. Perhaps the most impactful among these is content security policy headers or CSP.",
+        "Content Security Policy (CSP) is a W3C standard that helps defend web applications against cross-site scripting (XSS), clickjacking, and other code injection attacks by blocking web browsers from loading potentially dangerous resources (i.e., malicious script injections) when they do not comply with your policy. CSP reporting provides critical visibility into CSP violations, allowing you to build effective policies and ensure that they are configured correctly.",
+        "In this Datadog on session, Andrew Krug, Lead Security Evangelist, will chat with Jean-Baptiste Aviat, Staff Engineer, and Ayaz Badouraly, Site Reliability Engineer. They will explore how Datadog engineers collect CSP reports and use them to detect and analyze violations. They'll also walk through how Datadog’s built-in security rules can automatically notify about noteworthy trends in CSP violations, which may be triggered by problematic deployments or misconfigurations."
+      ],
+      "video": "https://www.youtube.com/embed/GndmQWj82Hw",
+      "categories": [
+        "security"
+      ]
+    },
+    {
+      "date": "2023-05-31T00:00:00Z",
+      "draft": false,
+      "title": "Datadog on WebRTC",
+      "ep_date": "2023-05-31T16:30:00Z",
+      "speakers": [
+        "Brandon West",
+        "Jason Thomas",
+        "Brad Carter"
+      ],
+      "description": [
+        "WebRTC is a standard for real-time digital communications by enabling video, audio, and data streaming. Originally created for web browsers, Datadog uses WebRTC to create streaming applications across a variety of platforms, from Electron-based native applications to mobile applications.",
+        "In this episode, Jason Thomas, Senior Staff Engineer and co-founder of CoScreen, and Brad Carter, Senior Software Engineer, will join Brandon West to share their knowledge and discuss how Datadog uses WebRTC to create great customer experiences. Jason and Brad will talk about what WebRTC is and why the CoScreen team at Datadog uses it, how we built frequently requested video and audio processing features, and using data channels to send other kinds of information. You’ll leave with a better understanding of the WebRTC ecosystem, what it’s good at, and some of the tradeoffs involved in using it."
+      ],
+      "video": null,
+      "categories": [
+        "Product Development",
+        "UX"
+      ]
+    }
+  ]
+}
