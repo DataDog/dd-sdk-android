@@ -30,7 +30,6 @@ import com.datadog.android.rum.RumResourceAttributesProvider
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.RumResourceMethod
 import com.datadog.android.rum.resource.ResourceId
-import com.datadog.legacy.trace.api.interceptor.MutableSpan
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
@@ -113,8 +112,6 @@ internal class DatadogInterceptorWithoutTracesTest {
 
     @Mock
     lateinit var mockResolver: DefaultFirstPartyHostHeaderTypeResolver
-
-
 
     @Mock
     lateinit var mockTraceSampler: Sampler<Span>

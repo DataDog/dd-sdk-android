@@ -26,8 +26,10 @@ fun Request.Builder.addParentSpan(span: Span): Request.Builder = apply {
         if (agentSpanContext is DDSpanContext) {
             agentSpanContext.trace.setSamplingPriorityIfNecessary()
         }
+        @Suppress("UnsafeThirdPartyFunctionCall") // the context will always be a TraceContext
         tag(TraceContext::class.java, span.extractTraceContext())
     } else {
+        @Suppress("UnsafeThirdPartyFunctionCall") // the context will always be a TraceContext
         tag(TraceContext::class.java, span.extractTraceContext())
     }
 }

@@ -10,7 +10,6 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.SdkCore
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.okhttp.internal.rum.NoOpRumResourceAttributesProvider
-import com.datadog.android.okhttp.internal.utils.traceIdAsHexString
 import com.datadog.android.okhttp.trace.DeterministicTraceSampler
 import com.datadog.android.okhttp.trace.NoOpTracedRequestListener
 import com.datadog.android.okhttp.trace.Tracer
