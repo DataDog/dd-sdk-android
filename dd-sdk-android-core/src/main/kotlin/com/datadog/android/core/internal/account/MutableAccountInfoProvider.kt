@@ -12,7 +12,7 @@ import com.datadog.tools.annotation.NoOpImplementation
 internal interface MutableAccountInfoProvider : AccountInfoProvider {
 
     fun setAccountInfo(
-        id: String?,
+        id: String,
         name: String?,
         extraInfo: Map<String, Any?>
     )

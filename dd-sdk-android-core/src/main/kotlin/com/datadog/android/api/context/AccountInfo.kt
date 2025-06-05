@@ -13,7 +13,7 @@ package com.datadog.android.api.context
  * @property extraInfo a dictionary of extra information to the current account.
  */
 data class AccountInfo(
-    val id: String? = null,
+    val id: String,
     val name: String? = null,
     val extraInfo: Map<String, Any?> = emptyMap()
 )

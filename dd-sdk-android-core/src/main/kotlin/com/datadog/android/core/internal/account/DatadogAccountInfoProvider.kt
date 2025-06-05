@@ -17,7 +17,7 @@ internal class DatadogAccountInfoProvider(
     private var internalAccountInfo: AccountInfo? = null
 
     override fun setAccountInfo(
-        id: String?,
+        id: String,
         name: String?,
         extraInfo: Map<String, Any?>
     ) {

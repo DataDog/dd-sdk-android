@@ -14,7 +14,7 @@ class AccountInfoForgeryFactory : ForgeryFactory<AccountInfo> {
 
     override fun getForgery(forge: Forge): AccountInfo {
         return AccountInfo(
-            id = forge.aNullable { anHexadecimalString() },
+            id = forge.anHexadecimalString(),
             name = forge.aNullable { forge.aStringMatching("[A-Z][a-z]+ [A-Z]\\. [A-Z][a-z]+") },
             extraInfo = forge.exhaustiveAttributes(
                 excludedKeys = setOf(
