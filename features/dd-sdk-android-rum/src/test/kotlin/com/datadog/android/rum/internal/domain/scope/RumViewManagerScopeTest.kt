@@ -79,7 +79,7 @@ internal class RumViewManagerScopeTest {
     lateinit var mockParentScope: RumScope
 
     @Mock
-    lateinit var mockChildScope: RumScope
+    lateinit var mockChildScope: RumViewScope
 
     @Mock
     lateinit var mockWriter: DataWriter<Any>
@@ -902,6 +902,22 @@ internal class RumViewManagerScopeTest {
             ),
             15f
         )
+    }
+
+    @Test
+    fun `M renew all the child scopes W renewViewScopes`(forge: Forge) {
+        // Given
+        val eventTime = Time()
+        repeat(forge.aSmallInt()) {
+            testedScope.handleEvent(forge.startViewEvent(eventTime), mockWriter)
+        }
+
+        // When
+        val oldScopes = testedScope.childrenScopes.toList()
+        testedScope.renewViewScopes(eventTime)
+
+        // Then
+        assertThat(testedScope.childrenScopes).isNotEqualTo(oldScopes)
     }
 
     // endregion

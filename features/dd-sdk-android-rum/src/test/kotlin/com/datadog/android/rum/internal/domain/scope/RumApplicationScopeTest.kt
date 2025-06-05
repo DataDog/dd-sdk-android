@@ -311,7 +311,6 @@ internal class RumApplicationScopeTest {
         check(viewManager is RumViewManagerScope)
         assertThat(viewManager.childrenScopes).isNotEmpty
         val viewScope = viewManager.childrenScopes.first()
-        check(viewScope is RumViewScope)
         assertThat(viewScope.key).isEqualTo(fakeKey)
         assertThat(viewScope.eventAttributes).isEqualTo(mockAttributes)
     }
