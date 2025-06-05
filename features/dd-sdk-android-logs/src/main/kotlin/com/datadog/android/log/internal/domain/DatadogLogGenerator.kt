@@ -6,6 +6,7 @@
 
 package com.datadog.android.log.internal.domain
 
+import com.datadog.android.api.context.AccountInfo
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.context.NetworkInfo
 import com.datadog.android.api.context.UserInfo
@@ -41,6 +42,7 @@ internal class DatadogLogGenerator(
         bundleWithTraces: Boolean,
         bundleWithRum: Boolean,
         userInfo: UserInfo?,
+        accountInfo: AccountInfo?,
         networkInfo: NetworkInfo?,
         threads: List<ThreadDump>
     ): LogEvent {
@@ -77,6 +79,7 @@ internal class DatadogLogGenerator(
             bundleWithTraces,
             bundleWithRum,
             userInfo,
+            accountInfo,
             networkInfo
         )
     }
@@ -97,6 +100,7 @@ internal class DatadogLogGenerator(
         bundleWithTraces: Boolean,
         bundleWithRum: Boolean,
         userInfo: UserInfo?,
+        accountInfo: AccountInfo?,
         networkInfo: NetworkInfo?
     ): LogEvent {
         val mutableAttributes = attributes.toMutableMap()
@@ -127,6 +131,7 @@ internal class DatadogLogGenerator(
             bundleWithTraces,
             bundleWithRum,
             userInfo,
+            accountInfo,
             networkInfo
         )
     }
@@ -148,6 +153,7 @@ internal class DatadogLogGenerator(
         bundleWithTraces: Boolean,
         bundleWithRum: Boolean,
         userInfo: UserInfo?,
+        accountInfo: AccountInfo?,
         networkInfo: NetworkInfo?
     ): LogEvent {
         val resolvedTimestamp = timestamp + datadogContext.time.serverTimeOffsetMs
@@ -164,6 +170,7 @@ internal class DatadogLogGenerator(
         }
         val combinedTags = resolveTags(datadogContext, tags)
         val usr = resolveUserInfo(datadogContext, userInfo)
+        val account = resolveAccountInfo(datadogContext, accountInfo)
         val network = if (networkInfo != null || attachNetworkInfo) {
             resolveNetworkInfo(datadogContext, networkInfo)
         } else {
@@ -190,6 +197,7 @@ internal class DatadogLogGenerator(
                 )
             ),
             usr = usr,
+            account = account,
             network = network,
             ddtags = combinedTags.joinToString(separator = ","),
             additionalProperties = combinedAttributes
@@ -247,6 +255,19 @@ internal class DatadogLogGenerator(
                 email = email,
                 id = id,
                 additionalProperties = additionalProperties.toMutableMap()
+            )
+        }
+    }
+
+    private fun resolveAccountInfo(
+        datadogContext: DatadogContext,
+        accountInfo: AccountInfo?
+    ): LogEvent.Account? {
+        return (accountInfo ?: datadogContext.accountInfo)?.let {
+            LogEvent.Account(
+                id = it.id,
+                name = it.name,
+                additionalProperties = it.extraInfo.toMutableMap()
             )
         }
     }
