@@ -115,7 +115,6 @@ internal class TracingInterceptorContextInjectionSampledTest {
     @Mock
     lateinit var mockResolver: DefaultFirstPartyHostHeaderTypeResolver
 
-
     lateinit var mockTraceSampler: Sampler<Span>
 
     @Mock

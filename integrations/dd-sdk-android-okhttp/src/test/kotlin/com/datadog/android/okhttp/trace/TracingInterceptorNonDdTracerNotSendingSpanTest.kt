@@ -197,7 +197,8 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
         testedInterceptor = instantiateTestedInterceptor(
             fakeLocalHosts,
             localTracerFactory = { _, _ -> mockLocalTracer },
-            globalTracerProvider = { mockTracer })
+            globalTracerProvider = { mockTracer }
+        )
     }
 
     open fun instantiateTestedInterceptor(
