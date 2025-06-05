@@ -27,6 +27,7 @@ import com.datadog.android.trace.AndroidTracer
 import com.datadog.android.trace.TracingHeaderType
 import com.datadog.legacy.trace.api.DDTags
 import com.datadog.legacy.trace.api.sampling.PrioritySampling
+import com.datadog.trace.api.config.TracerConfig
 import com.datadog.trace.api.interceptor.MutableSpan
 import com.datadog.trace.api.sampling.SamplingMechanism
 import com.datadog.trace.bootstrap.instrumentation.api.AgentSpan
@@ -40,6 +41,7 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import java.net.HttpURLConnection
+import java.util.Properties
 import java.util.concurrent.atomic.AtomicReference
 
 /**
@@ -846,16 +848,19 @@ internal constructor(
         internal const val OKHTTP_INTERCEPTOR_HEADER_TYPES = "okhttp_interceptor_header_types"
 
         private const val AGENT_PSR_ATTRIBUTE = "_dd.agent_psr"
+
         private val DEFAULT_LOCAL_TRACER_FACTORY: (SdkCore, Set<TracingHeaderType>) -> Tracer =
-            { sdkCore, _: Set<TracingHeaderType> ->
+            { sdkCore, tracingHeaderTypes: Set<TracingHeaderType> ->
+                val propagationStyles = tracingHeaderTypes.joinToString(",")
                 CoreTracer.CoreTracerBuilder((sdkCore as FeatureSdkCore).internalLogger)
+                    .withProperties(
+                        Properties().apply {
+                            setProperty(TracerConfig.PROPAGATION_STYLE_EXTRACT, propagationStyles)
+                            setProperty(TracerConfig.PROPAGATION_STYLE_INJECT, propagationStyles)
+                        }
+                    )
                     .sampler(AllSampler())
                     .build()
-//                AndroidTracer.Builder(sdkCore)
-//                    // set sample rate to 100 to avoid sampling in the tracer, we are going to sample in the interceptor
-//                    .setSampleRate(ALL_IN_SAMPLE_RATE)
-//                    .setTracingHeaderTypes(tracingHeaderTypes)
-//                    .build()
             }
     }
 }

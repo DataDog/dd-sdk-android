@@ -67,7 +67,7 @@ import com.datadog.trace.relocate.api.RatelimitedLogger;
 
 import java.io.IOException;
 import java.lang.ref.WeakReference;
-    import java.util.ArrayList;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;

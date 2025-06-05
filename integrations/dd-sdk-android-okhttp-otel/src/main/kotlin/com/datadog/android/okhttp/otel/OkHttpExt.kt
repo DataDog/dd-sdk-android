@@ -27,21 +27,23 @@ fun Request.Builder.addParentSpan(span: Span): Request.Builder = apply {
             agentSpanContext.trace.setSamplingPriorityIfNecessary()
         }
         @Suppress("UnsafeThirdPartyFunctionCall") // the context will always be a TraceContext
-        tag(TraceContext::class.java, span.extractTraceContext())
+        tag(
+            TraceContext::class.java,
+            TraceContext(
+                span.spanContext.traceId,
+                span.spanContext.spanId,
+                agentSpanContext.samplingPriority
+            )
+        )
     } else {
         @Suppress("UnsafeThirdPartyFunctionCall") // the context will always be a TraceContext
-        tag(TraceContext::class.java, span.extractTraceContext())
+        tag(
+            TraceContext::class.java,
+            TraceContext(
+                span.spanContext.traceId,
+                span.spanContext.spanId,
+                if (span.spanContext.isSampled) PrioritySampling.USER_KEEP else PrioritySampling.UNSET
+            )
+        )
     }
 }
-
-private fun Span.extractTraceContext() = TraceContext(
-    spanContext.traceId,
-    spanContext.spanId,
-    if (spanContext.isSampled) PrioritySampling.USER_KEEP else PrioritySampling.UNSET
-)
-
-private fun OtelSpan.extractTraceContext() = TraceContext(
-    spanContext.traceId,
-    spanContext.spanId,
-    agentSpanContext.samplingPriority
-)
