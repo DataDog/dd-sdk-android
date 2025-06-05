@@ -7,8 +7,8 @@
 package com.datadog.android.okhttp.trace
 
 import com.datadog.trace.bootstrap.instrumentation.api.AgentSpan
-import com.datadog.trace.core.CoreTracer
+import com.datadog.trace.bootstrap.instrumentation.api.AgentTracer
 
-typealias Tracer = CoreTracer
+typealias Tracer = AgentTracer.TracerAPI
 typealias Span = AgentSpan
 typealias SpanContext = AgentSpan.Context
