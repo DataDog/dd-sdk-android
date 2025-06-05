@@ -85,7 +85,7 @@ import java.util.Locale
     ExtendWith(TestConfigurationExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
-@ForgeConfiguration(BaseConfigurator::class)
+@ForgeConfiguration(value = BaseConfigurator::class, seed = 0x76e0a392b31aL)
 internal class DatadogInterceptorWithoutTracesTest {
 
     lateinit var testedInterceptor: TracingInterceptor
@@ -156,8 +156,8 @@ internal class DatadogInterceptorWithoutTracesTest {
     fun `set up`(forge: Forge) {
         fakeTraceId = forge.aDDTraceId(fakeTraceIdString)
         mockSpanContext = forge.newSpanContextMock(fakeTraceId, fakeSpanId)
-        mockSpanBuilder = forge.newSpanBuilderMock(context = mockSpanContext)
         mockSpan = forge.newSpanMock(mockSpanContext)
+        mockSpanBuilder = forge.newSpanBuilderMock(mockSpan, mockSpanContext)
         mockPropagation = newAgentPropagationMock()
         mockLocalTracer = forge.newTracerMock(mockSpanBuilder, mockPropagation)
 
@@ -367,8 +367,7 @@ internal class DatadogInterceptorWithoutTracesTest {
         val response = testedInterceptor.intercept(mockChain)
 
         verify(mockSpanBuilder).withOrigin(DatadogInterceptor.ORIGIN_RUM)
-        //// TODO - fix drop method
-//        verify(mockSpan).drop()
+        verify(mockSpan).drop()
         assertThat(response).isSameAs(fakeResponse)
     }
 
@@ -382,10 +381,9 @@ internal class DatadogInterceptorWithoutTracesTest {
         val response = testedInterceptor.intercept(mockChain)
 
         verify(mockSpanBuilder).withOrigin(DatadogInterceptor.ORIGIN_RUM)
-        verify(mockSpan as MutableSpan).setResourceName(fakeUrl.lowercase(Locale.US))
-        verify(mockSpan as MutableSpan).setError(true)
-        // TODO - fix drop method
-//        verify(mockSpan).drop()
+        verify(mockSpan).setResourceName(fakeUrl.lowercase(Locale.US))
+        verify(mockSpan).setError(true)
+        verify(mockSpan).drop()
         assertThat(response).isSameAs(fakeResponse)
     }
 
