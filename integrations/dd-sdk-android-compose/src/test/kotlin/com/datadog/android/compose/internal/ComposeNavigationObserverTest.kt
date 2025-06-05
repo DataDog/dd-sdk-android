@@ -10,8 +10,8 @@ import android.os.Bundle
 import androidx.lifecycle.Lifecycle
 import androidx.navigation.NavController
 import androidx.navigation.NavDestination
-import com.datadog.android.core.internal.attributes.LocalAttribute
-import com.datadog.android.core.internal.attributes.ViewScopeInstrumentationType
+import com.datadog.android.internal.attributes.LocalAttribute
+import com.datadog.android.internal.attributes.ViewScopeInstrumentationType
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.tracking.ComponentPredicate
 import com.datadog.tools.unit.forge.BaseConfigurator
