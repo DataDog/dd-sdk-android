@@ -4,6 +4,7 @@ import static java.util.Collections.emptyList;
 
 import androidx.annotation.Nullable;
 
+import com.datadog.android.trace.internal.compat.function.Consumer;
 import com.datadog.trace.api.DDSpanId;
 import com.datadog.trace.api.DDTraceId;
 import com.datadog.trace.api.EndpointCheckpointer;
@@ -19,13 +20,12 @@ import com.datadog.trace.api.sampling.SamplingRule;
 import com.datadog.trace.api.scopemanager.ScopeListener;
 import com.datadog.trace.bootstrap.instrumentation.api.AgentSpan.Context;
 
+import org.jetbrains.annotations.NotNull;
+
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import com.datadog.android.trace.internal.compat.function.Consumer;
-
-import org.jetbrains.annotations.NotNull;
 
 public class AgentTracer {
   private static final String DEFAULT_INSTRUMENTATION_NAME = "datadog";
@@ -419,6 +419,9 @@ public class AgentTracer {
     public AgentSpan setBaggageItem(final String key, final String value) {
       return this;
     }
+
+    @Override
+    public void drop() {}
 
     @Override
     public void finish() {}

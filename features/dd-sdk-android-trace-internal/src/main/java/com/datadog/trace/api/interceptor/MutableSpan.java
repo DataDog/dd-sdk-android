@@ -78,4 +78,6 @@ public interface MutableSpan {
    * @return The root span for the current trace fragment.
    */
   MutableSpan getLocalRootSpan();
+
+  void drop();
 }
