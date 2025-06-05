@@ -37,7 +37,7 @@ def run_main() -> int:
     metadata.text = "true"
     configuration.insert(0, metadata)
     signatures = ET.Element(SIGNATURES_TAG)
-    signatures.text = "false" # TODO RUM-3104 also copy signatures content
+    signatures.text = "true"
     configuration.insert(1, signatures)
     root.insert(0, configuration)
 

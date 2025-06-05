@@ -21,7 +21,7 @@ class VerificationXmlPlugin : Plugin<Project> {
             genTask.dependsOn("sourceReleaseJar")
             genTask.dependsOn("generatePomFileForReleasePublication")
             genTask.dependsOn("generateMetadataFileForReleasePublication")
-            // TODO RUM-3104 depends on "signReleasePublication"
+            genTask.dependsOn("signReleasePublication")
 
             getTasksByName("publishToSonatype", false).forEach {
                 it.dependsOn(genTask)
