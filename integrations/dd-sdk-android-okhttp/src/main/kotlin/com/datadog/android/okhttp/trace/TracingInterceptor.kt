@@ -615,10 +615,6 @@ internal constructor(
         }
     }
 
-    private fun Span.drop() {
-        // TODO (this as? MutableSpan)?.drop()
-    }
-
     private fun Span.sample(request: Request): Boolean {
         val samplingPriority = (this as? DDSpan)?.samplingPriority
         return if (samplingPriority != null) {

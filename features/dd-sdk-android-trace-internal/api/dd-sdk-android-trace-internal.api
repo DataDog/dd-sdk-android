@@ -1803,6 +1803,7 @@ public final class com/datadog/trace/api/gateway/RequestContextSlot : java/lang/
 }
 
 public abstract interface class com/datadog/trace/api/interceptor/MutableSpan {
+	public abstract fun drop ()V
 	public abstract fun getDurationNano ()J
 	public abstract fun getLocalRootSpan ()Lcom/datadog/trace/api/interceptor/MutableSpan;
 	public abstract fun getOperationName ()Ljava/lang/CharSequence;
@@ -2525,6 +2526,7 @@ public final class com/datadog/trace/bootstrap/instrumentation/api/AgentTracer$N
 	public fun addThrowable (Ljava/lang/Throwable;B)Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpan;
 	public fun beginEndToEnd ()V
 	public fun context ()Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpan$Context;
+	public fun drop ()V
 	public fun eligibleForDropping ()Z
 	public fun finish ()V
 	public fun finish (J)V
@@ -3550,6 +3552,7 @@ public class com/datadog/trace/core/DDSpan : com/datadog/trace/api/profiling/Tra
 	public fun beginEndToEnd ()V
 	public synthetic fun context ()Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpan$Context;
 	public final fun context ()Lcom/datadog/trace/core/DDSpanContext;
+	public fun drop ()V
 	public fun eligibleForDropping ()Z
 	public fun finish ()V
 	public fun finish (J)V
@@ -3838,6 +3841,7 @@ public class com/datadog/trace/core/PendingTrace : com/datadog/trace/bootstrap/i
 	public fun setSamplingPriorityIfNecessary ()V
 	public fun size ()I
 	public fun touch ()V
+	public fun unregisterSpan (Lcom/datadog/trace/core/DDSpan;)V
 	public fun write ()V
 	public fun writeOnBufferFull ()Z
 }
