@@ -15,9 +15,9 @@ import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureContextUpdateReceiver
 import com.datadog.android.api.feature.FeatureEventReceiver
 import com.datadog.android.core.configuration.Configuration
-import com.datadog.android.core.internal.ContextProvider
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.DatadogCore
+import com.datadog.android.core.internal.NoOpContextProvider
 import com.datadog.android.core.internal.SdkFeature
 import com.datadog.android.core.internal.lifecycle.ProcessLifecycleCallback
 import com.datadog.android.core.internal.lifecycle.ProcessLifecycleMonitor
@@ -42,6 +42,7 @@ import com.datadog.tools.unit.forge.exhaustiveAttributes
 import com.google.gson.JsonObject
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.AdvancedForgery
+import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.LongForgery
@@ -56,6 +57,7 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.AssertionFailureBuilder
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
@@ -80,6 +82,7 @@ import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.util.Collections
 import java.util.Locale
+import java.util.Random
 import java.util.UUID
 import java.util.concurrent.Callable
 import java.util.concurrent.CancellationException
@@ -91,6 +94,9 @@ import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
+import java.util.concurrent.locks.Lock
+import java.util.concurrent.locks.ReadWriteLock
+import java.util.concurrent.locks.ReentrantReadWriteLock
 
 /**
  * This region groups all test about DatadogCore instance (except Initialization).
@@ -135,6 +141,10 @@ internal class DatadogCoreTest {
         }
         whenever(mockContextExecutorService.execute(any())) doAnswer {
             it.getArgument<Runnable>(0).run()
+        }
+        whenever(mockContextExecutorService.submit(any<Callable<*>>())) doAnswer {
+            val result = it.getArgument<Callable<*>>(0).call()
+            mock<Future<*>>().apply { whenever(get()) doReturn result }
         }
 
         testedCore = DatadogCore(
@@ -257,7 +267,7 @@ internal class DatadogCoreTest {
     }
 
     @Test
-    fun `M clears anonymousId W setAnonymousId(null)`() {
+    fun `M clear anonymousId W setAnonymousId(null)`() {
         // Given
         val mockUserInfoProvider = mock<MutableUserInfoProvider>()
         testedCore.coreFeature.userInfoProvider = mockUserInfoProvider
@@ -306,59 +316,323 @@ internal class DatadogCoreTest {
         )
     }
 
+    // region update + read feature context
+
     @Test
     fun `M update feature context W updateFeatureContext()`(
         @StringForgery feature: String,
         @MapForgery(
             key = AdvancedForgery(string = [StringForgery(StringForgeryType.ALPHABETICAL)]),
             value = AdvancedForgery(string = [StringForgery(StringForgeryType.ALPHABETICAL)])
-        ) context: Map<String, String>,
+        ) fakeContext: Map<String, String>,
+        @BoolForgery fakeUseContextThread: Boolean,
         forge: Forge
     ) {
         // Given
-        val mockContextProvider = mock<ContextProvider>()
         val mockFeature = mock<SdkFeature>()
+        whenever(mockFeature.featureContextLock) doReturn ReentrantReadWriteLock()
+        whenever(mockFeature.featureContext) doReturn mutableMapOf<String, Any?>()
         val otherFeatures = mapOf(
             forge.anAlphaNumericalString() to mock<SdkFeature>()
         )
         testedCore.features[feature] = mockFeature
         testedCore.features.putAll(otherFeatures)
-        testedCore.coreFeature.contextProvider = mockContextProvider
 
         // When
-        testedCore.updateFeatureContext(feature) {
-            it.putAll(context)
+        testedCore.updateFeatureContext(feature, fakeUseContextThread) {
+            it.putAll(fakeContext)
         }
 
         // Then
-        verify(mockContextProvider).setFeatureContext(feature, context)
+        assertThat(mockFeature.featureContext).isEqualTo(fakeContext)
         otherFeatures.forEach { (_, otherFeature) ->
-            verify(otherFeature).notifyContextUpdated(feature, context)
+            verify(otherFeature).notifyContextUpdated(feature, fakeContext)
             verifyNoMoreInteractions(otherFeature)
         }
-        verify(mockFeature, never()).notifyContextUpdated(feature, context)
+        verify(mockFeature, never()).notifyContextUpdated(feature, fakeContext)
     }
 
     @Test
-    fun `M do nothing W updateFeatureContext() { feature is not registered}`(
+    fun `M update feature context W updateFeatureContext() { concurrent access }`(
         @StringForgery feature: String,
         @MapForgery(
             key = AdvancedForgery(string = [StringForgery(StringForgeryType.ALPHABETICAL)]),
             value = AdvancedForgery(string = [StringForgery(StringForgeryType.ALPHABETICAL)])
-        ) context: Map<String, String>
+        ) fakeContextA: Map<String, String>,
+        @MapForgery(
+            key = AdvancedForgery(string = [StringForgery(StringForgeryType.ALPHABETICAL)]),
+            value = AdvancedForgery(string = [StringForgery(StringForgeryType.ALPHABETICAL)])
+        ) fakeContextB: Map<String, String>,
+        @BoolForgery fakeUseContextThread: Boolean,
+        forge: Forge
     ) {
         // Given
-        val mockContextProvider = mock<ContextProvider>()
-        testedCore.coreFeature.contextProvider = mockContextProvider
+        val mockFeature = mock<SdkFeature>()
+        whenever(mockFeature.featureContextLock) doReturn ReentrantReadWriteLock()
+        whenever(mockFeature.featureContext) doReturn mutableMapOf<String, Any?>()
+        val otherFeatures = mapOf(
+            forge.anAlphaNumericalString() to mock<SdkFeature>()
+        )
+        testedCore.features[feature] = mockFeature
+        testedCore.features.putAll(otherFeatures)
 
         // When
-        testedCore.updateFeatureContext(feature) {
-            it.putAll(context)
+        listOf(
+            Thread {
+                testedCore.updateFeatureContext(feature, fakeUseContextThread) {
+                    it.clear()
+                    it.putAll(fakeContextA)
+                }
+            },
+            Thread {
+                testedCore.updateFeatureContext(feature, fakeUseContextThread) {
+                    it.clear()
+                    it.putAll(fakeContextB)
+                }
+            }
+        ).shuffled(Random(forge.seed))
+            .map { it.apply { start() } }
+            .forEach { it.join() }
+
+        // Then
+        // should be either of the two, but never something partial
+        assertThat(mockFeature.featureContext).isIn(fakeContextA, fakeContextB)
+    }
+
+    @Timeout(5, unit = TimeUnit.SECONDS)
+    @Test
+    fun `M update feature context W updateFeatureContext() { no deadlock }`(
+        @StringForgery feature: String,
+        @MapForgery(
+            key = AdvancedForgery(string = [StringForgery(StringForgeryType.ALPHABETICAL)]),
+            value = AdvancedForgery(string = [StringForgery(StringForgeryType.ALPHABETICAL)])
+        ) fakeContextA: Map<String, String>,
+        @MapForgery(
+            key = AdvancedForgery(string = [StringForgery(StringForgeryType.ALPHABETICAL)]),
+            value = AdvancedForgery(string = [StringForgery(StringForgeryType.ALPHABETICAL)])
+        ) fakeContextB: Map<String, String>,
+        @BoolForgery fakeUseContextThread: Boolean,
+        forge: Forge
+    ) {
+        // Given
+        val mockFeature = mock<SdkFeature>()
+        whenever(mockFeature.featureContextLock) doReturn ReentrantReadWriteLock()
+        whenever(mockFeature.featureContext) doReturn mutableMapOf<String, Any?>()
+        val otherFeatures = mapOf(
+            forge.anAlphaNumericalString() to mock<SdkFeature>()
+        )
+        testedCore.features[feature] = mockFeature
+        testedCore.features.putAll(otherFeatures)
+
+        // When
+        testedCore.updateFeatureContext(feature, fakeUseContextThread) {
+            Thread {
+                testedCore.updateFeatureContext(feature, fakeUseContextThread) {
+                    it.putAll(fakeContextA)
+                }
+            }.apply { start() }
+                .join()
+            it.putAll(fakeContextB)
         }
 
         // Then
-        verifyNoInteractions(mockContextProvider)
+        assertThat(mockFeature.featureContext).isEqualTo(fakeContextB)
     }
+
+    @Test
+    fun `M allow reentrant update W updateFeatureContext()`(
+        @StringForgery feature: String,
+        @MapForgery(
+            key = AdvancedForgery(string = [StringForgery(StringForgeryType.ALPHABETICAL)]),
+            value = AdvancedForgery(string = [StringForgery(StringForgeryType.ALPHABETICAL)])
+        ) fakeContextA: Map<String, String>,
+        @MapForgery(
+            key = AdvancedForgery(string = [StringForgery(StringForgeryType.ALPHABETICAL)]),
+            value = AdvancedForgery(string = [StringForgery(StringForgeryType.ALPHABETICAL)])
+        ) fakeContextB: Map<String, String>,
+        @BoolForgery fakeUseContextThread: Boolean,
+        forge: Forge
+    ) {
+        // Given
+        val mockFeature = mock<SdkFeature>()
+        whenever(mockFeature.featureContextLock) doReturn ReentrantReadWriteLock()
+        whenever(mockFeature.featureContext) doReturn mutableMapOf<String, Any?>()
+        val otherFeatures = mapOf(
+            forge.anAlphaNumericalString() to mock<SdkFeature>()
+        )
+        testedCore.features[feature] = mockFeature
+        testedCore.features.putAll(otherFeatures)
+
+        // When
+        testedCore.updateFeatureContext(feature, fakeUseContextThread) {
+            testedCore.updateFeatureContext(feature, fakeUseContextThread) {
+                it.putAll(fakeContextA)
+            }
+            it.putAll(fakeContextB)
+        }
+
+        // Then
+        assertThat(mockFeature.featureContext).isEqualTo(fakeContextA + fakeContextB)
+    }
+
+    @Test
+    fun `M do nothing W updateFeatureContext() { feature is not registered }`(
+        @StringForgery feature: String,
+        @MapForgery(
+            key = AdvancedForgery(string = [StringForgery(StringForgeryType.ALPHABETICAL)]),
+            value = AdvancedForgery(string = [StringForgery(StringForgeryType.ALPHABETICAL)])
+        ) fakeContext: Map<String, String>,
+        @BoolForgery fakeUseContextThread: Boolean
+    ) {
+        // When
+        testedCore.updateFeatureContext(feature, fakeUseContextThread) {
+            it.putAll(fakeContext)
+        }
+
+        // Then
+        testedCore.features.forEach {
+            assertThat(it.value.featureContext).doesNotContain(*fakeContext.entries.toTypedArray())
+        }
+    }
+
+    @Test
+    fun `M do nothing W updateFeatureContext() { write lock wasn't acquired }`(
+        @StringForgery feature: String,
+        @MapForgery(
+            key = AdvancedForgery(string = [StringForgery(StringForgeryType.ALPHABETICAL)]),
+            value = AdvancedForgery(string = [StringForgery(StringForgeryType.ALPHABETICAL)])
+        ) fakeContext: Map<String, String>,
+        @BoolForgery fakeUseContextThread: Boolean
+    ) {
+        // Given
+        val mockFeature = mock<SdkFeature>()
+        val mockRwLock = mock<ReadWriteLock>()
+        whenever(mockFeature.featureContextLock) doReturn mockRwLock
+        val mockWriteLock = mock<Lock>()
+        whenever(mockRwLock.writeLock()) doReturn mockWriteLock
+        whenever(mockWriteLock.tryLock(any(), any())) doReturn false
+        whenever(mockFeature.featureContext) doReturn mutableMapOf()
+        testedCore.features[feature] = mockFeature
+
+        // When
+        testedCore.updateFeatureContext(feature, fakeUseContextThread) {
+            it.putAll(fakeContext)
+        }
+
+        // Then
+        assertThat(mockFeature.featureContext).isEmpty()
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
+            "Couldn't acquire ${mockWriteLock::class.java.simpleName} due to" +
+                " timeout (1 ${TimeUnit.SECONDS}), aborting operation."
+        )
+    }
+
+    @Test
+    fun `M read feature context W getFeatureContext()`(
+        @StringForgery feature: String,
+        @MapForgery(
+            key = AdvancedForgery(string = [StringForgery(StringForgeryType.ALPHABETICAL)]),
+            value = AdvancedForgery(string = [StringForgery(StringForgeryType.ALPHABETICAL)])
+        ) fakeContext: Map<String, String>,
+        @BoolForgery fakeUseContextThread: Boolean
+    ) {
+        // Given
+        val mockFeature = mock<SdkFeature>()
+        whenever(mockFeature.featureContextLock) doReturn ReentrantReadWriteLock()
+        whenever(mockFeature.featureContext) doReturn fakeContext.toMutableMap()
+        testedCore.features[feature] = mockFeature
+
+        // When
+        val actualContext = testedCore.getFeatureContext(feature, fakeUseContextThread)
+
+        // Then
+        assertThat(actualContext).isEqualTo(fakeContext)
+    }
+
+    @Test
+    fun `M read updated feature context W getFeatureContext() { read when update is in progress }`(
+        @StringForgery feature: String,
+        @MapForgery(
+            key = AdvancedForgery(string = [StringForgery(StringForgeryType.ALPHABETICAL)]),
+            value = AdvancedForgery(string = [StringForgery(StringForgeryType.ALPHABETICAL)])
+        ) fakeContext: Map<String, String>,
+        @BoolForgery fakeUseContextThread: Boolean
+    ) {
+        // Given
+        val mockFeature = mock<SdkFeature>()
+        whenever(mockFeature.featureContextLock) doReturn ReentrantReadWriteLock()
+        whenever(mockFeature.featureContext) doReturn mutableMapOf()
+        testedCore.features[feature] = mockFeature
+        val countDownLatch = CountDownLatch(1)
+
+        // When
+        val workerThread = Thread {
+            testedCore.updateFeatureContext(feature, fakeUseContextThread) {
+                countDownLatch.countDown()
+                Thread.sleep(100)
+                it.putAll(fakeContext)
+            }
+        }.apply { start() }
+        countDownLatch.await(1, TimeUnit.SECONDS)
+        val actualContext = testedCore.getFeatureContext(feature, fakeUseContextThread)
+        workerThread.join(TimeUnit.SECONDS.toMillis(1))
+
+        // Then
+        assertThat(actualContext).isEqualTo(fakeContext)
+    }
+
+    @Test
+    fun `M read initial feature context W getFeatureContext() { update when read is in progress }`(
+        @StringForgery feature: String,
+        @MapForgery(
+            key = AdvancedForgery(string = [StringForgery(StringForgeryType.ALPHABETICAL)]),
+            value = AdvancedForgery(string = [StringForgery(StringForgeryType.ALPHABETICAL)])
+        ) fakeInitialContext: Map<String, String>,
+        @MapForgery(
+            key = AdvancedForgery(string = [StringForgery(StringForgeryType.ALPHABETICAL)]),
+            value = AdvancedForgery(string = [StringForgery(StringForgeryType.ALPHABETICAL)])
+        ) fakeNewContext: Map<String, String>,
+        @BoolForgery fakeUseContextThread: Boolean
+    ) {
+        // Given
+        val mockFeature = mock<SdkFeature>()
+        val rwLock = ReentrantReadWriteLock()
+        val updateStartLatch = CountDownLatch(1)
+        val mockRwLock = mock<ReadWriteLock>().apply {
+            whenever(readLock()) doAnswer {
+                mock<Lock>().apply {
+                    whenever(lock()) doAnswer {
+                        rwLock.readLock().lock()
+                        updateStartLatch.countDown()
+                    }
+                    whenever(unlock()) doAnswer {
+                        rwLock.readLock().unlock()
+                    }
+                }
+            }
+            whenever(writeLock()) doReturn rwLock.writeLock()
+        }
+        whenever(mockFeature.featureContextLock) doReturn mockRwLock
+        whenever(mockFeature.featureContext) doReturn fakeInitialContext.toMutableMap()
+        testedCore.features[feature] = mockFeature
+
+        // When
+        val workerThread = Thread {
+            updateStartLatch.await(1, TimeUnit.SECONDS)
+            testedCore.updateFeatureContext(feature, fakeUseContextThread) {
+                it.putAll(fakeNewContext)
+            }
+        }.apply { start() }
+        val actualContext = testedCore.getFeatureContext(feature, fakeUseContextThread)
+        workerThread.join(TimeUnit.SECONDS.toMillis(1))
+
+        // Then
+        assertThat(actualContext).isEqualTo(fakeInitialContext)
+    }
+
+    // endregion
 
     @Test
     fun `M set event receiver W setEventReceiver()`(
@@ -462,16 +736,16 @@ internal class DatadogCoreTest {
         forge: Forge
     ) {
         // Given
-        val mockFeature = mock<SdkFeature>()
+        val mockFeature = mock<SdkFeature>().apply {
+            whenever(featureContext) doReturn mutableMapOf<String, Any?>()
+        }
         val mockContextUpdateListener = mock<FeatureContextUpdateReceiver>()
         testedCore.features[feature] = mockFeature
-        val mockContextProvider = mock<ContextProvider>()
-        testedCore.coreFeature.contextProvider = mockContextProvider
-        whenever(mockContextProvider.getFeatureContext(any())) doAnswer {
-            forge.anElementFrom(null, emptyMap<String, Any?>())
-        }
         repeat(forge.aTinyInt()) {
-            testedCore.features += forge.aString() to mock<SdkFeature>()
+            testedCore.features += forge.aString() to mock<SdkFeature>().apply {
+                whenever(featureContext) doReturn mutableMapOf<String, Any?>()
+                whenever(featureContextLock) doReturn ReentrantReadWriteLock()
+            }
         }
 
         // When
@@ -488,17 +762,19 @@ internal class DatadogCoreTest {
         forge: Forge
     ) {
         // Given
-        val mockFeature = mock<SdkFeature>()
+        val mockFeature = mock<SdkFeature>().apply {
+            whenever(featureContext) doReturn mutableMapOf<String, Any?>()
+        }
         val mockContextUpdateListener = mock<FeatureContextUpdateReceiver>()
         testedCore.features[feature] = mockFeature
-        val mockContextProvider = mock<ContextProvider>()
-        testedCore.coreFeature.contextProvider = mockContextProvider
         val otherFeatures = forge.aList {
             forge.aString() to forge.exhaustiveAttributes()
         }
         otherFeatures.forEach {
-            testedCore.features += it.first to mock<SdkFeature>()
-            whenever(mockContextProvider.getFeatureContext(it.first)) doReturn it.second
+            testedCore.features += it.first to mock<SdkFeature>().apply {
+                whenever(featureContext) doReturn it.second
+                whenever(featureContextLock) doReturn ReentrantReadWriteLock()
+            }
         }
 
         // When
@@ -510,6 +786,46 @@ internal class DatadogCoreTest {
             verify(mockContextUpdateListener).onContextUpdate(it.first, it.second)
         }
         verifyNoMoreInteractions(mockContextUpdateListener)
+    }
+
+    @Test
+    fun `M invoke listener W setContextUpdateListener() { feature update is in progress }`(
+        @StringForgery feature: String,
+        forge: Forge
+    ) {
+        // Given
+        val mockFeature = mock<SdkFeature>().apply {
+            whenever(featureContext) doReturn mutableMapOf<String, Any?>()
+        }
+        val mockContextUpdateListener = mock<FeatureContextUpdateReceiver>()
+        testedCore.features[feature] = mockFeature
+        val rwLock = ReentrantReadWriteLock()
+        val countDownLatch = CountDownLatch(1)
+        val otherFeature = mock<SdkFeature>()
+        whenever(otherFeature.featureContext) doReturn mutableMapOf()
+        val mockRwLock = mock<ReadWriteLock>()
+        whenever(mockRwLock.writeLock()) doReturn rwLock.writeLock()
+        whenever(mockRwLock.readLock()) doAnswer {
+            countDownLatch.await(1, TimeUnit.SECONDS)
+            rwLock.readLock()
+        }
+        whenever(otherFeature.featureContextLock) doReturn mockRwLock
+
+        val otherFeatureName = forge.aString()
+        testedCore.features[otherFeatureName] = otherFeature
+        val fakeNewContext = forge.exhaustiveAttributes()
+
+        // When
+        Thread {
+            testedCore.updateFeatureContext(otherFeatureName) {
+                countDownLatch.countDown()
+                it.putAll(fakeNewContext)
+            }
+        }.apply { start() }
+        testedCore.setContextUpdateReceiver(feature, mockContextUpdateListener)
+
+        // Then
+        verify(mockContextUpdateListener).onContextUpdate(otherFeatureName, fakeNewContext)
     }
 
     @Test
@@ -905,7 +1221,7 @@ internal class DatadogCoreTest {
             verify(it.second).stop()
         }
 
-        assertThat(testedCore.contextProvider).isNull()
+        assertThat(testedCore.contextProvider).isInstanceOf(NoOpContextProvider::class.java)
         assertThat(testedCore.isActive).isFalse
         assertThat(testedCore.features).isEmpty()
     }
@@ -958,7 +1274,10 @@ internal class DatadogCoreTest {
         forge: Forge
     ) {
         // Given
-        testedCore.features += fakeFeature to mock()
+        val mockFeature = mock<SdkFeature>()
+        whenever(mockFeature.featureContextLock) doReturn ReentrantReadWriteLock()
+        whenever(mockFeature.featureContext) doReturn mutableMapOf()
+        testedCore.features += fakeFeature to mockFeature
 
         // When
         val errorCollector = Collections.synchronizedList(mutableListOf<Throwable>())

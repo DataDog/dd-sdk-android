@@ -3280,6 +3280,7 @@ internal class RumViewScopeTest {
         // Then
         verify(rumMonitor.mockSdkCore).updateFeatureContext(
             eq(Feature.SESSION_REPLAY_FEATURE_NAME),
+            eq(true),
             argumentCaptor.capture()
         )
         argumentCaptor.firstValue.invoke(fakeSessionReplayContext)
@@ -3303,6 +3304,7 @@ internal class RumViewScopeTest {
         assertThat(result).isSameAs(testedScope)
         verify(rumMonitor.mockSdkCore, never()).updateFeatureContext(
             eq(Feature.SESSION_REPLAY_FEATURE_NAME),
+            any(),
             any()
         )
     }
@@ -3324,6 +3326,7 @@ internal class RumViewScopeTest {
         assertThat(result).isSameAs(testedScope)
         verify(rumMonitor.mockSdkCore, never()).updateFeatureContext(
             eq(Feature.SESSION_REPLAY_FEATURE_NAME),
+            any(),
             any()
         )
     }
@@ -3345,6 +3348,7 @@ internal class RumViewScopeTest {
         assertThat(result).isSameAs(testedScope)
         verify(rumMonitor.mockSdkCore, never()).updateFeatureContext(
             eq(Feature.SESSION_REPLAY_FEATURE_NAME),
+            any(),
             any()
         )
     }
@@ -3366,6 +3370,7 @@ internal class RumViewScopeTest {
         assertThat(result).isSameAs(testedScope)
         verify(rumMonitor.mockSdkCore, never()).updateFeatureContext(
             eq(Feature.SESSION_REPLAY_FEATURE_NAME),
+            any(),
             any()
         )
     }

@@ -66,10 +66,13 @@ import java.util.concurrent.Callable
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
+import java.util.concurrent.locks.ReadWriteLock
+import java.util.concurrent.locks.ReentrantReadWriteLock
 
 @Suppress("TooManyFunctions")
 internal class SdkFeature(
     internal val coreFeature: CoreFeature,
+    internal val contextProvider: ContextProvider,
     internal val wrappedFeature: Feature,
     internal val internalLogger: InternalLogger,
     private val benchmarkSdkUploads: BenchmarkSdkUploads = GlobalBenchmark.getBenchmarkSdkUploads()
@@ -89,6 +92,8 @@ internal class SdkFeature(
     internal var fileOrchestrator: FileOrchestrator = NoOpFileOrchestrator()
     internal var metricsDispatcher: MetricsDispatcher = NoOpMetricsDispatcher()
     internal var processLifecycleMonitor: ProcessLifecycleMonitor? = null
+    internal val featureContextLock: ReadWriteLock = ReentrantReadWriteLock()
+    internal val featureContext: MutableMap<String, Any?> = mutableMapOf()
 
     // region SdkFeature
 
@@ -164,6 +169,7 @@ internal class SdkFeature(
             (coreFeature.contextRef.get() as? Application)
                 ?.unregisterActivityLifecycleCallbacks(processLifecycleMonitor)
             processLifecycleMonitor = null
+            featureContext.clear()
             initialized.set(false)
         }
     }
@@ -177,8 +183,6 @@ internal class SdkFeature(
     ) {
         coreFeature.contextExecutorService
             .executeSafe("withWriteContext-${wrappedFeature.name}", internalLogger) {
-                val contextProvider = coreFeature.contextProvider
-                if (contextProvider is NoOpContextProvider) return@executeSafe
                 val context = contextProvider.context
                 val eventBatchWriteScope = storage.getEventWriteScope(context)
                 callback(context, eventBatchWriteScope)
@@ -188,8 +192,6 @@ internal class SdkFeature(
     override fun withContext(callback: (datadogContext: DatadogContext) -> Unit) {
         coreFeature.contextExecutorService
             .executeSafe("withContext-${wrappedFeature.name}", internalLogger) {
-                val contextProvider = coreFeature.contextProvider
-                if (contextProvider is NoOpContextProvider) return@executeSafe
                 val context = contextProvider.context
                 callback(context)
             }
@@ -202,8 +204,6 @@ internal class SdkFeature(
                 operationName,
                 internalLogger,
                 Callable {
-                    val contextProvider = coreFeature.contextProvider
-                    if (contextProvider is NoOpContextProvider) return@Callable null
                     val context = contextProvider.context
                     val eventBatchWriteScope = storage.getEventWriteScope(context)
                     context to eventBatchWriteScope
@@ -314,7 +314,7 @@ internal class SdkFeature(
                 feature.name,
                 storage,
                 uploader,
-                coreFeature.contextProvider,
+                contextProvider,
                 coreFeature.networkInfoProvider,
                 coreFeature.systemInfoProvider,
                 uploadSchedulerStrategy,
@@ -466,7 +466,7 @@ internal class SdkFeature(
     @WorkerThread
     internal fun flushStoredData() {
         val flusher = DataFlusher(
-            coreFeature.contextProvider,
+            contextProvider,
             fileOrchestrator,
             BatchFileReaderWriter.create(internalLogger, coreFeature.localDataEncryption),
             FileReaderWriter.create(internalLogger, coreFeature.localDataEncryption),

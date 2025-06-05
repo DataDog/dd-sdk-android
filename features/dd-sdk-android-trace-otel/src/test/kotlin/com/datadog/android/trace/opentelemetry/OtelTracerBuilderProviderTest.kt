@@ -770,7 +770,8 @@ internal class OtelTracerBuilderProviderTest {
         // Then
         argumentCaptor<(MutableMap<String, Any?>) -> Unit> {
             val traceContext: MutableMap<String, Any?> = mutableMapOf()
-            verify(mockSdkCore, times(3)).updateFeatureContext(eq(Feature.TRACING_FEATURE_NAME), capture())
+            verify(mockSdkCore, times(3))
+                .updateFeatureContext(eq(Feature.TRACING_FEATURE_NAME), any(), capture())
             secondValue.invoke(traceContext)
             val activeTraceContext = traceContext[expectedActiveTraceContextName] as Map<String, Any>
             assertThat(activeTraceContext).containsEntry("trace_id", expectedTraceId)
@@ -807,7 +808,8 @@ internal class OtelTracerBuilderProviderTest {
         // Then
         argumentCaptor<(MutableMap<String, Any?>) -> Unit> {
             val traceContext: MutableMap<String, Any?> = mutableMapOf()
-            verify(mockSdkCore, times(2)).updateFeatureContext(eq(Feature.TRACING_FEATURE_NAME), capture())
+            verify(mockSdkCore, times(2))
+                .updateFeatureContext(eq(Feature.TRACING_FEATURE_NAME), any(), capture())
             lastValue.invoke(traceContext)
             assertThat(traceContext).doesNotContainKey(expectedActiveTraceContextName)
         }
@@ -825,7 +827,8 @@ internal class OtelTracerBuilderProviderTest {
         // THEN
         argumentCaptor<(MutableMap<String, Any?>) -> Unit> {
             val traceContext: MutableMap<String, Any?> = mutableMapOf()
-            verify(mockSdkCore, times(1)).updateFeatureContext(eq(Feature.TRACING_FEATURE_NAME), capture())
+            verify(mockSdkCore, times(1))
+                .updateFeatureContext(eq(Feature.TRACING_FEATURE_NAME), eq(false), capture())
             lastValue.invoke(traceContext)
             assertThat(traceContext[OtelTracerProvider.IS_OPENTELEMETRY_ENABLED_CONFIG_KEY]).isEqualTo(true)
             assertThat(traceContext[OtelTracerProvider.OPENTELEMETRY_API_VERSION_CONFIG_KEY])
@@ -840,7 +843,7 @@ internal class OtelTracerBuilderProviderTest {
         testedOtelTracerProviderBuilder.build()
 
         // THEN
-        verify(mockSdkCore, never()).updateFeatureContext(eq(Feature.TRACING_FEATURE_NAME), any())
+        verify(mockSdkCore, never()).updateFeatureContext(eq(Feature.TRACING_FEATURE_NAME), any(), any())
     }
 
     // endregion

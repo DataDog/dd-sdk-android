@@ -12,7 +12,10 @@ import com.datadog.android.api.context.ProcessInfo
 import com.datadog.android.api.context.TimeInfo
 import java.util.concurrent.TimeUnit
 
-internal class DatadogContextProvider(val coreFeature: CoreFeature) : ContextProvider {
+internal class DatadogContextProvider(
+    private val coreFeature: CoreFeature,
+    private val featureContextProvider: FeatureContextProvider
+) : ContextProvider {
     override val context: DatadogContext
         get() {
             // IMPORTANT All properties should be immutable and be frozen at the state
@@ -64,19 +67,13 @@ internal class DatadogContextProvider(val coreFeature: CoreFeature) : ContextPro
                 // Values at the top 2 levels are frozen: feature-name key,
                 // and feature-specific-name key.
                 featuresContext = mutableMapOf<String, Map<String, Any?>>().apply {
-                    val source = coreFeature.featuresContext
-                    source.forEach { (key, value) ->
-                        this[key] = value.toMap()
+                    featureContextProvider.getFeaturesContexts().forEach {
+                        val value = it.second()
+                        if (value.isNotEmpty()) {
+                            this[it.first] = value.toMap()
+                        }
                     }
                 }
             )
         }
-
-    override fun setFeatureContext(feature: String, context: Map<String, Any?>) {
-        coreFeature.featuresContext[feature] = context
-    }
-
-    override fun getFeatureContext(feature: String): Map<String, Any?> {
-        return coreFeature.featuresContext[feature] ?: emptyMap()
-    }
 }

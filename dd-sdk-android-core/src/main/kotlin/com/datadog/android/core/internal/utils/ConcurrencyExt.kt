@@ -121,7 +121,9 @@ fun ExecutorService.submitSafe(
  * @param internalLogger Internal logger.
  * @param callable Task to run.
  */
-internal fun <T> ExecutorService.submitSafe(
+@InternalApi
+@CheckResult
+fun <T> ExecutorService.submitSafe(
     operationName: String,
     internalLogger: InternalLogger,
     callable: Callable<T>
@@ -140,7 +142,15 @@ internal fun <T> ExecutorService.submitSafe(
     }
 }
 
-internal fun <T> Future<T>?.getSafe(
+/**
+ * Safely unwraps [Future] result without throwing any exception.
+ *
+ * @param T Task result type.
+ * @param operationName Name of the task.
+ * @param internalLogger Internal logger.
+ */
+@InternalApi
+fun <T> Future<T>?.getSafe(
     operationName: String,
     internalLogger: InternalLogger
 ): T? {

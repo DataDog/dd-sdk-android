@@ -57,6 +57,7 @@ internal class SessionReplayRecordCallbackTest {
         argumentCaptor<(MutableMap<String, Any?>) -> Unit> {
             verify(mockDatadogCore).updateFeatureContext(
                 eq(Feature.SESSION_REPLAY_FEATURE_NAME),
+                eq(false),
                 capture()
             )
 
@@ -97,6 +98,7 @@ internal class SessionReplayRecordCallbackTest {
         argumentCaptor<(MutableMap<String, Any?>) -> Unit> {
             verify(mockDatadogCore).updateFeatureContext(
                 eq(Feature.SESSION_REPLAY_FEATURE_NAME),
+                eq(false),
                 capture()
             )
 
@@ -135,6 +137,7 @@ internal class SessionReplayRecordCallbackTest {
         argumentCaptor<(MutableMap<String, Any?>) -> Unit> {
             verify(mockDatadogCore, times(fakeNumberOfUpdates)).updateFeatureContext(
                 eq(Feature.SESSION_REPLAY_FEATURE_NAME),
+                eq(false),
                 capture()
             )
 
