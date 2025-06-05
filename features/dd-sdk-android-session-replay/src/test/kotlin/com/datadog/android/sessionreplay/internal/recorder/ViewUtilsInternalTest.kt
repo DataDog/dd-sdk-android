@@ -7,6 +7,7 @@
 package com.datadog.android.sessionreplay.internal.recorder
 
 import android.graphics.drawable.Drawable
+import android.os.Build
 import android.view.Display
 import android.view.View
 import android.view.ViewStub
@@ -15,6 +16,7 @@ import androidx.appcompat.widget.ActionBarContextView
 import androidx.appcompat.widget.Toolbar
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.recorder.resources.DefaultImageWireframeHelper
+import com.datadog.tools.unit.annotations.TestTargetApi
 import com.datadog.tools.unit.extensions.ApiLevelExtension
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.IntForgery
@@ -28,6 +30,7 @@ import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
@@ -337,8 +340,9 @@ internal class ViewUtilsInternalTest {
         @IntForgery(min = Display.DEFAULT_DISPLAY + 1) fakeDisplayId: Int
     ) {
         // Given
-        whenever(mockView.display).thenReturn(mock())
-        whenever(mockView.display?.displayId).thenReturn(fakeDisplayId)
+        val mockDisplay = mock<Display>()
+        whenever(mockView.display) doReturn mockDisplay
+        whenever(mockDisplay.displayId) doReturn fakeDisplayId
 
         // When
         val isOnSecondaryDisplay = testViewUtilsInternal.isOnSecondaryDisplay(mockView)
@@ -352,8 +356,40 @@ internal class ViewUtilsInternalTest {
         @Mock mockView: View
     ) {
         // Given
-        whenever(mockView.display).thenReturn(mock())
-        whenever(mockView.display?.displayId).thenReturn(Display.DEFAULT_DISPLAY)
+        val mockDisplay = mock<Display>()
+        whenever(mockView.display) doReturn mockDisplay
+        whenever(mockDisplay.displayId) doReturn Display.DEFAULT_DISPLAY
+
+        // When
+        val isOnSecondaryDisplay = testViewUtilsInternal.isOnSecondaryDisplay(mockView)
+
+        // Then
+        assertThat(isOnSecondaryDisplay).isFalse
+    }
+
+    @Test
+    @TestTargetApi(Build.VERSION_CODES.M)
+    fun `M return false W isOnSecondaryDisplay { invalid display }`(
+        @Mock mockView: View
+    ) {
+        // Given
+        val mockDisplay = mock<Display>()
+        whenever(mockView.display) doReturn mockDisplay
+        whenever(mockDisplay.displayId) doReturn Display.INVALID_DISPLAY
+
+        // When
+        val isOnSecondaryDisplay = testViewUtilsInternal.isOnSecondaryDisplay(mockView)
+
+        // Then
+        assertThat(isOnSecondaryDisplay).isFalse
+    }
+
+    @Test
+    fun `M return false W isOnSecondaryDisplay { no display }`(
+        @Mock mockView: View
+    ) {
+        // Given
+        whenever(mockView.display) doReturn null
 
         // When
         val isOnSecondaryDisplay = testViewUtilsInternal.isOnSecondaryDisplay(mockView)
