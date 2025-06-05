@@ -323,12 +323,13 @@ internal constructor(
 
     private fun extractSamplingDecision(request: Request): Boolean? {
         val headerSamplingPriority = extractSamplingDecisionFromHeader(request)
-        if (headerSamplingPriority != null) return headerSamplingPriority
-
         val openTelemetrySpanSamplingPriority = request.tag(TraceContext::class.java)?.samplingPriority
-        if (openTelemetrySpanSamplingPriority == PrioritySampling.UNSET) return null
 
-        return openTelemetrySpanSamplingPriority?.let { samplingPriority -> samplingPriority > 0 }
+        return when {
+            headerSamplingPriority != null -> headerSamplingPriority
+            openTelemetrySpanSamplingPriority == PrioritySampling.UNSET -> null
+            else -> openTelemetrySpanSamplingPriority?.let { samplingPriority -> samplingPriority > 0 }
+        }
     }
 
     @Suppress("ReturnCount")
@@ -846,7 +847,7 @@ internal constructor(
 
         private const val AGENT_PSR_ATTRIBUTE = "_dd.agent_psr"
         private val DEFAULT_LOCAL_TRACER_FACTORY: (SdkCore, Set<TracingHeaderType>) -> Tracer =
-            { sdkCore, tracingHeaderTypes: Set<TracingHeaderType> ->
+            { sdkCore, _: Set<TracingHeaderType> ->
                 CoreTracer.CoreTracerBuilder((sdkCore as FeatureSdkCore).internalLogger)
                     .sampler(AllSampler())
                     .build()
