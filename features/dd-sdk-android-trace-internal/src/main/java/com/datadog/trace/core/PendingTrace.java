@@ -225,6 +225,7 @@ public class PendingTrace implements AgentTrace, PendingTraceBuffer.Element {
 
     public void unregisterSpan(final DDSpan span){
         PENDING_REFERENCE_COUNT.decrementAndGet(this);
+        ROOT_SPAN.compareAndSet(this, span, null);
         if (pendingTraceBuffer.longRunningSpansEnabled()){
             spans.remove(span);
         }
