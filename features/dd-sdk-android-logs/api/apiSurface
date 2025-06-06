@@ -35,7 +35,7 @@ data class com.datadog.android.log.LogsConfiguration
     fun setEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.log.model.LogEvent>): Builder
     fun build(): LogsConfiguration
 data class com.datadog.android.log.model.LogEvent
-  constructor(Status, kotlin.String, kotlin.String, kotlin.String, Logger, Dd, Usr? = null, Network? = null, Error? = null, kotlin.String? = null, kotlin.String, kotlin.collections.MutableMap<kotlin.String, kotlin.Any?> = mutableMapOf())
+  constructor(Status, kotlin.String, kotlin.String, kotlin.String, Logger, Dd, Usr? = null, Account? = null, Network? = null, Error? = null, kotlin.String? = null, kotlin.String, kotlin.collections.MutableMap<kotlin.String, kotlin.Any?> = mutableMapOf())
   fun toJson(): com.google.gson.JsonElement
   companion object 
     fun fromJson(kotlin.String): LogEvent
@@ -58,6 +58,12 @@ data class com.datadog.android.log.model.LogEvent
     companion object 
       fun fromJson(kotlin.String): Usr
       fun fromJsonObject(com.google.gson.JsonObject): Usr
+  data class Account
+    constructor(kotlin.String? = null, kotlin.String? = null, kotlin.collections.MutableMap<kotlin.String, kotlin.Any?> = mutableMapOf())
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Account
+      fun fromJsonObject(com.google.gson.JsonObject): Account
   data class Network
     constructor(Client)
     fun toJson(): com.google.gson.JsonElement

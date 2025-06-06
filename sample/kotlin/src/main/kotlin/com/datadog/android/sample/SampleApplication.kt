@@ -34,6 +34,7 @@ import com.datadog.android.rum.RumConfiguration
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.configuration.SlowFramesConfiguration
 import com.datadog.android.rum.tracking.NavigationViewTrackingStrategy
+import com.datadog.android.sample.account.AccountFragment
 import com.datadog.android.sample.data.db.LocalDataSource
 import com.datadog.android.sample.data.remote.RemoteDataSource
 import com.datadog.android.sample.picture.CoilImageLoader
@@ -163,6 +164,7 @@ class SampleApplication : Application() {
         NdkCrashReports.enable()
 
         initializeUserInfo(preferences)
+        initializeAccountInfo(preferences)
 
         GlobalTracer.registerIfAbsent(
             AndroidTracer.Builder()
@@ -200,6 +202,19 @@ class SampleApplication : Application() {
                 UserFragment.AGE_KEY to preferences.getUserAge()
             )
         )
+    }
+
+    private fun initializeAccountInfo(preferences: Preferences.DefaultPreferences) {
+        preferences.getAccountId()?.let { id ->
+            Datadog.setAccountInfo(
+                id = id,
+                name = preferences.getAccountName(),
+                extraInfo = mapOf(
+                    AccountFragment.ROLE_KEY to preferences.getAccountRole(),
+                    AccountFragment.AGE_KEY to preferences.getUserAge()
+                )
+            )
+        }
     }
 
     private fun initializeTraces() {

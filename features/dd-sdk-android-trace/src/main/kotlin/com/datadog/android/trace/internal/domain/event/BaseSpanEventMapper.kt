@@ -6,6 +6,7 @@
 
 package com.datadog.android.trace.internal.domain.event
 
+import com.datadog.android.api.context.AccountInfo
 import com.datadog.android.api.context.DeviceInfo
 import com.datadog.android.api.context.DeviceType
 import com.datadog.android.api.context.NetworkInfo
@@ -19,6 +20,12 @@ internal abstract class BaseSpanEventMapper<T> : ContextAwareMapper<T, SpanEvent
         name = userInfo.name,
         email = userInfo.email,
         additionalProperties = userInfo.additionalProperties.toMutableMap()
+    )
+
+    protected fun resolveAccountInfo(accountInfo: AccountInfo) = SpanEvent.Account(
+        id = accountInfo.id,
+        name = accountInfo.name,
+        additionalProperties = accountInfo.extraInfo.toMutableMap()
     )
 
     protected fun resolveDeviceInfo(deviceInfo: DeviceInfo): SpanEvent.Device {

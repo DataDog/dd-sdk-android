@@ -23,6 +23,7 @@
     <string name="title_foreground_service">Foreground service</string>
     <string name="title_picture">Picture loading</string>
     <string name="title_user_info">User Info</string>
+    <string name="title_account_info">Account Info</string>
     <string name="title_vitals">Mobile Vitals</string>
     <string name="title_about">About…</string>
     <string name="title_gdpr">GDPR</string>
@@ -105,6 +106,11 @@
     <string name="hint_user_gender">Gender</string>
     <string name="hint_user_age">Age</string>
     <string name="hint_message">Message</string>
+
+    <string name="hint_account_id">Account ID</string>
+    <string name="hint_account_name">Account name</string>
+    <string name="hint_account_role">Role</string>
+    <string name="hint_account_age">Age</string>
 
     <string name="load_picture">Load picture</string>
     <string name="widget_description">Datadog Sample Widget</string>

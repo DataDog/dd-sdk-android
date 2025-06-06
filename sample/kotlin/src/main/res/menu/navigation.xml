@@ -25,6 +25,12 @@
         app:showAsAction="ifRoom"/>
 
     <item
+        android:id="@+id/set_account_info"
+        android:icon="@drawable/ic_user_white_24dp"
+        android:title="@string/title_account_info"
+        app:showAsAction="ifRoom"/>
+
+    <item
         android:id="@+id/gdpr"
         android:icon="@drawable/ic_baseline_lock_open_24"
         android:title="@string/title_gdpr"

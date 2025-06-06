@@ -25,6 +25,9 @@ import com.datadog.android.core.configuration.BatchSize
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.UploadFrequency
 import com.datadog.android.core.configuration.UploadSchedulerStrategy
+import com.datadog.android.core.internal.account.DatadogAccountInfoProvider
+import com.datadog.android.core.internal.account.MutableAccountInfoProvider
+import com.datadog.android.core.internal.account.NoOpMutableAccountInfoProvider
 import com.datadog.android.core.internal.data.upload.CurlInterceptor
 import com.datadog.android.core.internal.data.upload.GzipRequestInterceptor
 import com.datadog.android.core.internal.data.upload.RotatingDnsResolver
@@ -120,6 +123,7 @@ internal class CoreFeature(
     internal var timeProvider: TimeProvider = NoOpTimeProvider()
     internal var trackingConsentProvider: ConsentProvider = NoOpConsentProvider()
     internal var userInfoProvider: MutableUserInfoProvider = NoOpMutableUserInfoProvider()
+    internal var accountInfoProvider: MutableAccountInfoProvider = NoOpMutableAccountInfoProvider()
     internal var contextProvider: ContextProvider = NoOpContextProvider()
 
     internal lateinit var okHttpClient: OkHttpClient
@@ -525,6 +529,9 @@ internal class CoreFeature(
 
         // User Info Provider
         setupUserInfoProvider()
+
+        // Account Info Provider
+        accountInfoProvider = DatadogAccountInfoProvider(internalLogger)
     }
 
     private fun setupUserInfoProvider() {

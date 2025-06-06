@@ -6,6 +6,7 @@
 
 package com.datadog.android.log.internal.domain
 
+import com.datadog.android.api.context.AccountInfo
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.context.NetworkInfo
 import com.datadog.android.api.context.UserInfo
@@ -31,6 +32,7 @@ internal interface LogGenerator {
         bundleWithTraces: Boolean = true,
         bundleWithRum: Boolean = true,
         userInfo: UserInfo? = null,
+        accountInfo: AccountInfo? = null,
         networkInfo: NetworkInfo? = null,
         threads: List<ThreadDump> = emptyList()
     ): LogEvent?
@@ -52,6 +54,7 @@ internal interface LogGenerator {
         bundleWithTraces: Boolean = true,
         bundleWithRum: Boolean = true,
         userInfo: UserInfo? = null,
+        accountInfo: AccountInfo? = null,
         networkInfo: NetworkInfo? = null
     ): LogEvent?
 }

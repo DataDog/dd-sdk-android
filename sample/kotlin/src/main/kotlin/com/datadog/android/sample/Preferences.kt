@@ -12,7 +12,6 @@ import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.sample.datalist.DataSourceType
 import com.datadog.android.sample.picture.ImageLoaderType
 import timber.log.Timber
-import java.lang.IllegalArgumentException
 
 internal object Preferences {
 
@@ -26,26 +25,26 @@ internal object Preferences {
         fun getUserId(): String? {
             return PreferenceManager
                 .getDefaultSharedPreferences(applicationContext)
-                .getString(PREF_ID, null)
+                .getString(PREF_USR_ID, null)
         }
 
         fun getUserName(): String? {
             return PreferenceManager
                 .getDefaultSharedPreferences(applicationContext)
-                .getString(PREF_NAME, null)
+                .getString(PREF_USR_NAME, null)
         }
 
         fun getUserEmail(): String? {
             return PreferenceManager
                 .getDefaultSharedPreferences(applicationContext)
-                .getString(PREF_EMAIL, null)
+                .getString(PREF_USR_EMAIL, null)
         }
 
         fun getUserGender(): String? {
             return PreferenceManager
                 .getDefaultSharedPreferences(applicationContext)
                 .getString(
-                    PREF_GENDER,
+                    PREF_USR_GENDER,
                     null
                 )
         }
@@ -54,7 +53,37 @@ internal object Preferences {
             return PreferenceManager
                 .getDefaultSharedPreferences(applicationContext)
                 .getInt(
-                    PREF_AGE,
+                    PREF_USR_AGE,
+                    0
+                )
+        }
+
+        fun getAccountId(): String? {
+            return PreferenceManager
+                .getDefaultSharedPreferences(applicationContext)
+                .getString(PREF_ACCOUNT_ID, null)
+        }
+
+        fun getAccountName(): String? {
+            return PreferenceManager
+                .getDefaultSharedPreferences(applicationContext)
+                .getString(PREF_ACCOUNT_NAME, null)
+        }
+
+        fun getAccountRole(): String? {
+            return PreferenceManager
+                .getDefaultSharedPreferences(applicationContext)
+                .getString(
+                    PREF_ACCOUNT_ROLE,
+                    null
+                )
+        }
+
+        fun getAccountAge(): Int {
+            return PreferenceManager
+                .getDefaultSharedPreferences(applicationContext)
+                .getInt(
+                    PREF_ACCOUNT_AGE,
                     0
                 )
         }
@@ -90,6 +119,21 @@ internal object Preferences {
             }
         }
 
+        fun setAccountInfo(
+            id: String,
+            name: String,
+            role: String,
+            age: Int
+        ) {
+            PreferenceManager.getDefaultSharedPreferences(applicationContext)
+                .edit()
+                .putString(PREF_ACCOUNT_ID, id)
+                .putString(PREF_ACCOUNT_NAME, name)
+                .putString(PREF_ACCOUNT_ROLE, role)
+                .putInt(PREF_USR_AGE, age)
+                .apply()
+        }
+
         fun setUserCredentials(
             id: String,
             name: String,
@@ -99,11 +143,11 @@ internal object Preferences {
         ) {
             PreferenceManager.getDefaultSharedPreferences(applicationContext)
                 .edit()
-                .putString(PREF_ID, id)
-                .putString(PREF_NAME, name)
-                .putString(PREF_EMAIL, email)
-                .putString(PREF_GENDER, gender)
-                .putInt(PREF_AGE, age)
+                .putString(PREF_USR_ID, id)
+                .putString(PREF_USR_NAME, name)
+                .putString(PREF_USR_EMAIL, email)
+                .putString(PREF_USR_GENDER, gender)
+                .putInt(PREF_USR_AGE, age)
                 .apply()
         }
 
@@ -145,11 +189,15 @@ internal object Preferences {
         }
 
         companion object {
-            private const val PREF_ID = "user-id"
-            private const val PREF_NAME = "user-name"
-            private const val PREF_EMAIL = "user-email"
-            private const val PREF_GENDER = "user-gender"
-            private const val PREF_AGE = "user-age"
+            private const val PREF_USR_ID = "user-id"
+            private const val PREF_USR_NAME = "user-name"
+            private const val PREF_USR_EMAIL = "user-email"
+            private const val PREF_USR_GENDER = "user-gender"
+            private const val PREF_USR_AGE = "user-age"
+            private const val PREF_ACCOUNT_ID = "account-id"
+            private const val PREF_ACCOUNT_NAME = "account-name"
+            private const val PREF_ACCOUNT_AGE = "account-age"
+            private const val PREF_ACCOUNT_ROLE = "account-role"
             private const val PREF_TRACKING_CONSENT = "tracking-consent"
             private const val PREF_LOCAL_DATA_SOURCE = "local-data-source"
             private const val PREF_IMAGE_LOADER = "image-loader"

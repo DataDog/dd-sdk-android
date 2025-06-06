@@ -90,6 +90,16 @@ internal object NoOpInternalSdkCore : InternalSdkCore {
 
     override fun clearAllData() = Unit
 
+    override fun setAccountInfo(
+        id: String,
+        name: String?,
+        extraInfo: Map<String, Any?>
+    ) = Unit
+
+    override fun addAccountExtraInfo(extraInfo: Map<String, Any?>) = Unit
+
+    override fun clearAccountInfo() = Unit
+
     override fun isCoreActive(): Boolean = false
 
     // endregion

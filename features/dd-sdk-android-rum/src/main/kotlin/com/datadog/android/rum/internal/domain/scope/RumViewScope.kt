@@ -535,6 +535,13 @@ internal open class RumViewScope(
                 } else {
                     null
                 },
+                account = datadogContext.accountInfo?.let {
+                    ErrorEvent.Account(
+                        id = it.id,
+                        name = it.name,
+                        additionalProperties = it.extraInfo.toMutableMap()
+                    )
+                },
                 connectivity = datadogContext.networkInfo.toErrorConnectivity(),
                 application = ErrorEvent.Application(rumContext.applicationId),
                 session = ErrorEvent.ErrorEventSession(
@@ -1008,6 +1015,13 @@ internal open class RumViewScope(
                 } else {
                     null
                 },
+                account = datadogContext.accountInfo?.let {
+                    ViewEvent.Account(
+                        id = it.id,
+                        name = it.name,
+                        additionalProperties = it.extraInfo.toMutableMap()
+                    )
+                },
                 application = ViewEvent.Application(rumContext.applicationId),
                 session = ViewEvent.ViewEventSession(
                     id = rumContext.sessionId,
@@ -1175,6 +1189,13 @@ internal open class RumViewScope(
                 } else {
                     null
                 },
+                account = datadogContext.accountInfo?.let {
+                    ActionEvent.Account(
+                        id = it.id,
+                        name = it.name,
+                        additionalProperties = it.extraInfo.toMutableMap()
+                    )
+                },
                 application = ActionEvent.Application(rumContext.applicationId),
                 session = ActionEvent.ActionEventSession(
                     id = rumContext.sessionId,
@@ -1282,6 +1303,13 @@ internal open class RumViewScope(
                     )
                 } else {
                     null
+                },
+                account = datadogContext.accountInfo?.let {
+                    LongTaskEvent.Account(
+                        id = it.id,
+                        name = it.name,
+                        additionalProperties = it.extraInfo.toMutableMap()
+                    )
                 },
                 connectivity = datadogContext.networkInfo.toLongTaskConnectivity(),
                 application = LongTaskEvent.Application(rumContext.applicationId),

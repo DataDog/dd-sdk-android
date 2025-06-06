@@ -6,6 +6,7 @@
 
 package com.datadog.android.log.internal.domain
 
+import com.datadog.android.api.context.AccountInfo
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.context.NetworkInfo
 import com.datadog.android.api.context.UserInfo
@@ -602,6 +603,49 @@ internal class DatadogLogGeneratorTest {
 
         // THEN
         assertThat(log).hasUserInfo(fakeDatadogContext.userInfo)
+    }
+
+    @Test
+    fun `M use custom accountInfo W creating the Log { accountInfo provided }`(
+        @Forgery fakeCustomAccountInfo: AccountInfo
+    ) {
+        // WHEN
+        val log = testedLogGenerator.generateLog(
+            fakeLevel,
+            fakeLogMessage,
+            fakeThrowable,
+            fakeAttributes,
+            fakeTags,
+            fakeTimestamp,
+            fakeThreadName,
+            fakeDatadogContext,
+            attachNetworkInfo = true,
+            fakeLoggerName,
+            accountInfo = fakeCustomAccountInfo
+        )
+
+        // THEN
+        assertThat(log).hasAccountInfo(fakeCustomAccountInfo)
+    }
+
+    @Test
+    fun `M add the accountInfo W creating the Log`() {
+        // WHEN
+        val log = testedLogGenerator.generateLog(
+            fakeLevel,
+            fakeLogMessage,
+            fakeThrowable,
+            fakeAttributes,
+            fakeTags,
+            fakeTimestamp,
+            fakeThreadName,
+            fakeDatadogContext,
+            attachNetworkInfo = true,
+            fakeLoggerName
+        )
+
+        // THEN
+        assertThat(log).hasAccountInfo(fakeDatadogContext.accountInfo)
     }
 
     @Test

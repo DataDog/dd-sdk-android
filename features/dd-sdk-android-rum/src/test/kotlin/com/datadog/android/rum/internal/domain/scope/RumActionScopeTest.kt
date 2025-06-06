@@ -63,7 +63,6 @@ import org.mockito.kotlin.verifyNoMoreInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.util.concurrent.TimeUnit
-import kotlin.math.max
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -1037,6 +1036,7 @@ internal class RumActionScopeTest {
                     }
                     hasView(fakeParentContext)
                     hasUserInfo(fakeDatadogContext.userInfo)
+                    hasAccountInfo(fakeDatadogContext.accountInfo)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasUserSession()
@@ -1103,6 +1103,7 @@ internal class RumActionScopeTest {
                     }
                     hasView(fakeParentContext)
                     hasUserInfo(fakeDatadogContext.userInfo)
+                    hasAccountInfo(fakeDatadogContext.accountInfo)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasUserSession()
@@ -1282,6 +1283,7 @@ internal class RumActionScopeTest {
                     }
                     hasView(fakeParentContext)
                     hasUserInfo(fakeDatadogContext.userInfo)
+                    hasAccountInfo(fakeDatadogContext.accountInfo)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasUserSession()
@@ -1347,6 +1349,7 @@ internal class RumActionScopeTest {
                     }
                     hasView(fakeParentContext)
                     hasUserInfo(fakeDatadogContext.userInfo)
+                    hasAccountInfo(fakeDatadogContext.accountInfo)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasUserSession()
@@ -1526,6 +1529,7 @@ internal class RumActionScopeTest {
                     }
                     hasView(fakeParentContext)
                     hasUserInfo(fakeDatadogContext.userInfo)
+                    hasAccountInfo(fakeDatadogContext.accountInfo)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasUserSession()
@@ -1591,6 +1595,7 @@ internal class RumActionScopeTest {
                     }
                     hasView(fakeParentContext)
                     hasUserInfo(fakeDatadogContext.userInfo)
+                    hasAccountInfo(fakeDatadogContext.accountInfo)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasUserSession()
@@ -1679,6 +1684,7 @@ internal class RumActionScopeTest {
                     hasNoFrustration()
                     hasView(fakeParentContext)
                     hasUserInfo(fakeDatadogContext.userInfo)
+                    hasAccountInfo(fakeDatadogContext.accountInfo)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasSyntheticsSession()
@@ -1760,6 +1766,7 @@ internal class RumActionScopeTest {
                     hasNoFrustration()
                     hasView(fakeParentContext)
                     hasUserInfo(fakeDatadogContext.userInfo)
+                    hasAccountInfo(fakeDatadogContext.accountInfo)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasUserSession()
@@ -1825,6 +1832,7 @@ internal class RumActionScopeTest {
                     hasNoFrustration()
                     hasView(fakeParentContext)
                     hasUserInfo(fakeDatadogContext.userInfo)
+                    hasAccountInfo(fakeDatadogContext.accountInfo)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasUserSession()
@@ -1881,6 +1889,7 @@ internal class RumActionScopeTest {
                     hasNoFrustration()
                     hasView(fakeParentContext)
                     hasUserInfo(fakeDatadogContext.userInfo)
+                    hasAccountInfo(fakeDatadogContext.accountInfo)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasUserSession()
@@ -1940,6 +1949,7 @@ internal class RumActionScopeTest {
                     hasNoFrustration()
                     hasView(fakeParentContext)
                     hasUserInfo(fakeDatadogContext.userInfo)
+                    hasAccountInfo(fakeDatadogContext.accountInfo)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasUserSession()
@@ -2003,6 +2013,7 @@ internal class RumActionScopeTest {
                     }
                     hasView(fakeParentContext)
                     hasUserInfo(fakeDatadogContext.userInfo)
+                    hasAccountInfo(fakeDatadogContext.accountInfo)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasUserSession()
@@ -2067,6 +2078,7 @@ internal class RumActionScopeTest {
                     }
                     hasView(fakeParentContext)
                     hasUserInfo(fakeDatadogContext.userInfo)
+                    hasAccountInfo(fakeDatadogContext.accountInfo)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasUserSession()
@@ -2122,6 +2134,7 @@ internal class RumActionScopeTest {
                     hasNoFrustration()
                     hasView(fakeParentContext)
                     hasUserInfo(fakeDatadogContext.userInfo)
+                    hasAccountInfo(fakeDatadogContext.accountInfo)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasUserSession()
@@ -2182,6 +2195,7 @@ internal class RumActionScopeTest {
                     hasNoFrustration()
                     hasView(fakeParentContext)
                     hasUserInfo(fakeDatadogContext.userInfo)
+                    hasAccountInfo(fakeDatadogContext.accountInfo)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasUserSession()
@@ -2240,6 +2254,7 @@ internal class RumActionScopeTest {
                     hasNoFrustration()
                     hasView(fakeParentContext)
                     hasUserInfo(fakeDatadogContext.userInfo)
+                    hasAccountInfo(fakeDatadogContext.accountInfo)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasUserSession()
@@ -2298,6 +2313,7 @@ internal class RumActionScopeTest {
                     hasNoFrustration()
                     hasView(fakeParentContext)
                     hasUserInfo(fakeDatadogContext.userInfo)
+                    hasAccountInfo(fakeDatadogContext.accountInfo)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasUserSession()
@@ -2356,6 +2372,7 @@ internal class RumActionScopeTest {
                     hasNoFrustration()
                     hasView(fakeParentContext)
                     hasUserInfo(fakeDatadogContext.userInfo)
+                    hasAccountInfo(fakeDatadogContext.accountInfo)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasUserSession()
@@ -2416,6 +2433,7 @@ internal class RumActionScopeTest {
                     hasNoFrustration()
                     hasView(fakeParentContext)
                     hasUserInfo(fakeDatadogContext.userInfo)
+                    hasAccountInfo(fakeDatadogContext.accountInfo)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasUserSession()
@@ -2506,6 +2524,7 @@ internal class RumActionScopeTest {
                     hasNoFrustration()
                     hasView(fakeParentContext)
                     hasUserInfo(fakeDatadogContext.userInfo)
+                    hasAccountInfo(fakeDatadogContext.accountInfo)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasUserSession()
@@ -2561,6 +2580,7 @@ internal class RumActionScopeTest {
                     hasNoFrustration()
                     hasView(fakeParentContext)
                     hasUserInfo(fakeDatadogContext.userInfo)
+                    hasAccountInfo(fakeDatadogContext.accountInfo)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasUserSession()
@@ -2616,6 +2636,7 @@ internal class RumActionScopeTest {
                     hasNoFrustration()
                     hasView(fakeParentContext)
                     hasUserInfo(fakeDatadogContext.userInfo)
+                    hasAccountInfo(fakeDatadogContext.accountInfo)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasUserSession()
@@ -2671,6 +2692,7 @@ internal class RumActionScopeTest {
                     hasNoFrustration()
                     hasView(fakeParentContext)
                     hasUserInfo(fakeDatadogContext.userInfo)
+                    hasAccountInfo(fakeDatadogContext.accountInfo)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasUserSession()
@@ -2763,6 +2785,7 @@ internal class RumActionScopeTest {
                     hasNoFrustration()
                     hasView(fakeParentContext)
                     hasUserInfo(fakeDatadogContext.userInfo)
+                    hasAccountInfo(fakeDatadogContext.accountInfo)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasUserSession()
