@@ -53,12 +53,14 @@ internal class DdSpanToSpanEventMapper(
         val deviceInfo = resolveDeviceInfo(datadogContext.deviceInfo)
         val osInfo = resolveOsInfo(datadogContext.deviceInfo)
         val userInfo = datadogContext.userInfo
+        val accountInfo = datadogContext.accountInfo
         val mostSignificantTraceId = bigIntegerUtils.mostSignificant64BitsAsHex(event.traceId)
         val additionalProperties = mutableMapOf<String, String>()
         additionalProperties[TRACE_ID_META_KEY] = mostSignificantTraceId
         additionalProperties[APPLICATION_VARIANT_KEY] = datadogContext.variant
         additionalProperties += event.meta
         val usrMeta = resolveUserInfo(userInfo)
+        val accountMeta = accountInfo?.let { resolveAccountInfo(it) }
         val dd = SpanEvent.Dd(
             source = datadogContext.source,
             application = event.tags[LogAttributes.RUM_APPLICATION_ID]?.let { SpanEvent.Application(it as? String) },
@@ -73,6 +75,7 @@ internal class DdSpanToSpanEventMapper(
                 version = datadogContext.sdkVersion
             ),
             usr = usrMeta,
+            account = accountMeta,
             network = networkInfoMeta,
             device = deviceInfo,
             os = osInfo,
