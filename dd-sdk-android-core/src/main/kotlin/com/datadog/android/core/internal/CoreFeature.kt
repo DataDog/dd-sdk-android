@@ -96,7 +96,6 @@ import java.io.File
 import java.io.FileNotFoundException
 import java.lang.ref.WeakReference
 import java.util.Locale
-import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.ScheduledExecutorService
@@ -123,7 +122,6 @@ internal class CoreFeature(
     internal var timeProvider: TimeProvider = NoOpTimeProvider()
     internal var trackingConsentProvider: ConsentProvider = NoOpConsentProvider()
     internal var userInfoProvider: MutableUserInfoProvider = NoOpMutableUserInfoProvider()
-    internal var contextProvider: ContextProvider = NoOpContextProvider()
 
     internal lateinit var okHttpClient: OkHttpClient
     internal var kronosClock: KronosClock? = null
@@ -154,8 +152,6 @@ internal class CoreFeature(
     internal var persistenceStrategyFactory: PersistenceStrategy.Factory? = null
     internal lateinit var storageDir: File
     internal lateinit var androidInfoProvider: AndroidInfoProvider
-
-    internal val featuresContext: MutableMap<String, Map<String, Any?>> = ConcurrentHashMap()
 
     internal val appStartTimeNs: Long
         get() = appStartTimeProvider.appStartTimeNs
@@ -232,7 +228,6 @@ internal class CoreFeature(
         prepareNdkCrashData(nativeSourceOverride)
         setupInfoProviders(appContext, consent)
         initialized.set(true)
-        contextProvider = DatadogContextProvider(this)
     }
 
     fun stop() {
@@ -262,12 +257,9 @@ internal class CoreFeature(
                 )
             }
 
-            featuresContext.clear()
-
             initialized.set(false)
             ndkCrashHandler = NoOpNdkCrashHandler()
             trackingConsentProvider = NoOpConsentProvider()
-            contextProvider = NoOpContextProvider()
         }
     }
 

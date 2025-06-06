@@ -77,7 +77,6 @@ import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argThat
 import org.mockito.kotlin.argumentCaptor
-import org.mockito.kotlin.capture
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
@@ -92,6 +91,7 @@ import org.mockito.kotlin.verifyNoMoreInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.util.Locale
+import java.util.concurrent.Callable
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.Future
@@ -191,8 +191,12 @@ internal class DatadogRumMonitorTest {
 
     @BeforeEach
     fun `set up`(forge: Forge) {
-        whenever(mockExecutorService.execute(any())) doAnswer {
+        whenever(mockExecutorService.execute(any<Runnable>())) doAnswer {
             it.getArgument<Runnable>(0).run()
+        }
+        whenever(mockExecutorService.submit(any<Callable<RumContext>>())) doAnswer {
+            val rumContext = it.getArgument<Callable<RumContext>>(0).call()
+            mock<Future<RumContext>>().apply { whenever(get()) doReturn rumContext }
         }
 
         whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
@@ -278,7 +282,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.key).isEqualTo(RumScopeKey.from(key, name))
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
         }
-        verifyNoMoreInteractions(mockApplicationScope, mockWriter)
+        verifyNoMoreInteractions(mockWriter)
     }
 
     @Test
@@ -380,7 +384,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.key).isEqualTo(RumScopeKey.from(key))
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
         }
-        verifyNoMoreInteractions(mockApplicationScope, mockWriter)
+        verifyNoMoreInteractions(mockWriter)
     }
 
     @Test
@@ -408,7 +412,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.waitForStop).isFalse
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
         }
-        verifyNoMoreInteractions(mockApplicationScope, mockWriter)
+        verifyNoMoreInteractions(mockWriter)
     }
 
     @Test
@@ -432,7 +436,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.waitForStop).isTrue
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
         }
-        verifyNoMoreInteractions(mockApplicationScope, mockWriter)
+        verifyNoMoreInteractions(mockWriter)
     }
 
     @Test
@@ -455,7 +459,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.name).isEqualTo(name)
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
         }
-        verifyNoMoreInteractions(mockApplicationScope, mockWriter)
+        verifyNoMoreInteractions(mockWriter)
     }
 
     @Test
@@ -492,7 +496,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.url).isEqualTo(url)
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
         }
-        verifyNoMoreInteractions(mockApplicationScope, mockWriter)
+        verifyNoMoreInteractions(mockWriter)
     }
 
     @Test
@@ -518,7 +522,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.url).isEqualTo(url)
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
         }
-        verifyNoMoreInteractions(mockApplicationScope, mockWriter)
+        verifyNoMoreInteractions(mockWriter)
     }
 
     @Test
@@ -543,7 +547,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.url).isEqualTo(url)
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
         }
-        verifyNoMoreInteractions(mockApplicationScope, mockWriter)
+        verifyNoMoreInteractions(mockWriter)
     }
 
     @Test
@@ -570,7 +574,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.size).isEqualTo(size)
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
         }
-        verifyNoMoreInteractions(mockApplicationScope, mockWriter)
+        verifyNoMoreInteractions(mockWriter)
     }
 
     @Test
@@ -595,7 +599,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.size).isNull()
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
         }
-        verifyNoMoreInteractions(mockApplicationScope, mockWriter)
+        verifyNoMoreInteractions(mockWriter)
     }
 
     @Test
@@ -631,7 +635,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.throwable).isEqualTo(throwable)
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
         }
-        verifyNoMoreInteractions(mockApplicationScope, mockWriter)
+        verifyNoMoreInteractions(mockWriter)
     }
 
     @Test
@@ -670,7 +674,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.errorType).isEqualTo(errorType)
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
         }
-        verifyNoMoreInteractions(mockApplicationScope, mockWriter)
+        verifyNoMoreInteractions(mockWriter)
     }
 
     @Test
@@ -698,7 +702,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.throwable).isEqualTo(throwable)
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
         }
-        verifyNoMoreInteractions(mockApplicationScope, mockWriter)
+        verifyNoMoreInteractions(mockWriter)
     }
 
     @Test
@@ -723,7 +727,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.url).isEqualTo(url)
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
         }
-        verifyNoMoreInteractions(mockApplicationScope, mockWriter)
+        verifyNoMoreInteractions(mockWriter)
     }
 
     @Test
@@ -750,7 +754,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.size).isEqualTo(size)
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
         }
-        verifyNoMoreInteractions(mockApplicationScope, mockWriter)
+        verifyNoMoreInteractions(mockWriter)
     }
 
     @Test
@@ -775,7 +779,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.size).isNull()
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
         }
-        verifyNoMoreInteractions(mockApplicationScope, mockWriter)
+        verifyNoMoreInteractions(mockWriter)
     }
 
     @Test
@@ -811,7 +815,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.throwable).isEqualTo(throwable)
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
         }
-        verifyNoMoreInteractions(mockApplicationScope, mockWriter)
+        verifyNoMoreInteractions(mockWriter)
     }
 
     @Test
@@ -850,7 +854,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.errorType).isEqualTo(errorType)
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
         }
-        verifyNoMoreInteractions(mockApplicationScope, mockWriter)
+        verifyNoMoreInteractions(mockWriter)
     }
 
     @Test
@@ -878,7 +882,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.throwable).isEqualTo(throwable)
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
         }
-        verifyNoMoreInteractions(mockApplicationScope, mockWriter)
+        verifyNoMoreInteractions(mockWriter)
     }
 
     @Test
@@ -907,7 +911,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.timeSinceAppStartNs).isNull()
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
         }
-        verifyNoMoreInteractions(mockApplicationScope, mockWriter)
+        verifyNoMoreInteractions(mockWriter)
     }
 
     @Test
@@ -936,7 +940,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.timeSinceAppStartNs).isNull()
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
         }
-        verifyNoMoreInteractions(mockApplicationScope, mockWriter)
+        verifyNoMoreInteractions(mockWriter)
     }
 
     @Test
@@ -957,7 +961,7 @@ internal class DatadogRumMonitorTest {
             check(event is RumRawEvent.WaitForResourceTiming)
             assertThat(event.key).isEqualTo(key)
         }
-        verifyNoMoreInteractions(mockApplicationScope, mockWriter)
+        verifyNoMoreInteractions(mockWriter)
     }
 
     @Test
@@ -980,7 +984,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.key).isEqualTo(key)
             assertThat(event.timing).isEqualTo(timing)
         }
-        verifyNoMoreInteractions(mockApplicationScope, mockWriter)
+        verifyNoMoreInteractions(mockWriter)
     }
 
     @Test
@@ -1001,7 +1005,7 @@ internal class DatadogRumMonitorTest {
             check(event is RumRawEvent.AddCustomTiming)
             assertThat(event.name).isEqualTo(name)
         }
-        verifyNoMoreInteractions(mockApplicationScope, mockWriter)
+        verifyNoMoreInteractions(mockWriter)
     }
 
     @Test
@@ -1021,7 +1025,7 @@ internal class DatadogRumMonitorTest {
             val event = firstValue
             check(event is RumRawEvent.AddViewLoadingTime)
         }
-        verifyNoMoreInteractions(mockApplicationScope, mockWriter)
+        verifyNoMoreInteractions(mockWriter)
     }
 
     @Test
@@ -1059,7 +1063,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.timeSinceAppStartNs).isEqualTo(event.eventTime.nanoTime - appStartTimeNs)
             assertThat(event.attributes).isEmpty()
         }
-        verifyNoMoreInteractions(mockApplicationScope, mockWriter)
+        verifyNoMoreInteractions(mockWriter)
     }
 
     @Test
@@ -1098,7 +1102,7 @@ internal class DatadogRumMonitorTest {
             val event = firstValue
             check(event is RumRawEvent.ResetSession)
         }
-        verifyNoMoreInteractions(mockApplicationScope, mockWriter)
+        verifyNoMoreInteractions(mockWriter)
     }
 
     @Test
@@ -1124,7 +1128,7 @@ internal class DatadogRumMonitorTest {
                 assertThat(isAppInForeground).isTrue()
             }
         }
-        verifyNoMoreInteractions(mockApplicationScope, mockWriter)
+        verifyNoMoreInteractions(mockWriter)
     }
 
     @Test
@@ -1163,7 +1167,7 @@ internal class DatadogRumMonitorTest {
                 assertThat(isAppInForeground).isFalse()
             }
         }
-        verifyNoMoreInteractions(mockApplicationScope, mockWriter)
+        verifyNoMoreInteractions(mockWriter)
     }
 
     @Test
@@ -1188,7 +1192,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.key).isEqualTo(RumScopeKey.from(key, name))
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
         }
-        verifyNoMoreInteractions(mockApplicationScope, mockWriter)
+        verifyNoMoreInteractions(mockWriter)
     }
 
     @Test
@@ -1212,7 +1216,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.key).isEqualTo(RumScopeKey.from(key))
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
         }
-        verifyNoMoreInteractions(mockApplicationScope, mockWriter)
+        verifyNoMoreInteractions(mockWriter)
     }
 
     @Test
@@ -1239,7 +1243,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.waitForStop).isFalse
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
         }
-        verifyNoMoreInteractions(mockApplicationScope, mockWriter)
+        verifyNoMoreInteractions(mockWriter)
     }
 
     @Test
@@ -1266,7 +1270,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.waitForStop).isTrue
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
         }
-        verifyNoMoreInteractions(mockApplicationScope, mockWriter)
+        verifyNoMoreInteractions(mockWriter)
     }
 
     @Test
@@ -1292,7 +1296,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.name).isEqualTo(name)
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
         }
-        verifyNoMoreInteractions(mockApplicationScope, mockWriter)
+        verifyNoMoreInteractions(mockWriter)
     }
 
     @Test
@@ -1320,7 +1324,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.url).isEqualTo(url)
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
         }
-        verifyNoMoreInteractions(mockApplicationScope, mockWriter)
+        verifyNoMoreInteractions(mockWriter)
     }
 
     @Test
@@ -1350,7 +1354,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.size).isEqualTo(size)
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
         }
-        verifyNoMoreInteractions(mockApplicationScope, mockWriter)
+        verifyNoMoreInteractions(mockWriter)
     }
 
     @Test
@@ -1383,7 +1387,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.timeSinceAppStartNs).isNull()
             assertThat(event.attributes).containsExactlyEntriesOf(fakeAttributes)
         }
-        verifyNoMoreInteractions(mockApplicationScope, mockWriter)
+        verifyNoMoreInteractions(mockWriter)
     }
 
     @Test
@@ -1415,7 +1419,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.timeSinceAppStartNs).isNull()
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
         }
-        verifyNoMoreInteractions(mockApplicationScope, mockWriter)
+        verifyNoMoreInteractions(mockWriter)
     }
 
     @Test
@@ -1447,7 +1451,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.timeSinceAppStartNs).isNull()
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributes)
         }
-        verifyNoMoreInteractions(mockApplicationScope, mockWriter)
+        verifyNoMoreInteractions(mockWriter)
     }
 
     @Test
@@ -1480,7 +1484,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.timeSinceAppStartNs).isNull()
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributesWithErrorType)
         }
-        verifyNoMoreInteractions(mockApplicationScope, mockWriter)
+        verifyNoMoreInteractions(mockWriter)
     }
 
     @Test
@@ -1518,7 +1522,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.timeSinceAppStartNs).isNull()
             assertThat(event.sourceType).isEqualTo(RumErrorSourceType.ANDROID)
         }
-        verifyNoMoreInteractions(mockApplicationScope, mockWriter)
+        verifyNoMoreInteractions(mockWriter)
     }
 
     @RepeatedTest(10)
@@ -1569,7 +1573,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.timeSinceAppStartNs).isNull()
             assertThat(event.attributes).containsAllEntriesOf(fakeAttributesWithErrorSourceType)
         }
-        verifyNoMoreInteractions(mockApplicationScope, mockWriter)
+        verifyNoMoreInteractions(mockWriter)
     }
 
     @Test
@@ -1590,7 +1594,7 @@ internal class DatadogRumMonitorTest {
             val event = firstValue as RumRawEvent.AddLongTask
             assertThat(event.durationNs).isEqualTo(duration)
         }
-        verifyNoMoreInteractions(mockApplicationScope, mockWriter)
+        verifyNoMoreInteractions(mockWriter)
     }
 
     @Test
@@ -1616,7 +1620,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.type).isEqualTo(actionType)
             assertThat(event.eventEndTimestampInNanos).isEqualTo(eventEndTimestamp)
         }
-        verifyNoMoreInteractions(mockApplicationScope, mockWriter)
+        verifyNoMoreInteractions(mockWriter)
     }
 
     @Test
@@ -1640,7 +1644,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.resourceId).isEqualTo(resourceId)
             assertThat(event.resourceEndTimestampInNanos).isEqualTo(resourceEndTimestampInNanos)
         }
-        verifyNoMoreInteractions(mockApplicationScope, mockWriter)
+        verifyNoMoreInteractions(mockWriter)
     }
 
     @Test
@@ -1660,7 +1664,7 @@ internal class DatadogRumMonitorTest {
             val event = firstValue as RumRawEvent.ErrorSent
             assertThat(event.viewId).isEqualTo(viewId)
         }
-        verifyNoMoreInteractions(mockApplicationScope, mockWriter)
+        verifyNoMoreInteractions(mockWriter)
     }
 
     @Test
@@ -1681,7 +1685,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.viewId).isEqualTo(viewId)
             assertThat(event.isFrozenFrame).isFalse()
         }
-        verifyNoMoreInteractions(mockApplicationScope, mockWriter)
+        verifyNoMoreInteractions(mockWriter)
     }
 
     @Test
@@ -1702,7 +1706,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.viewId).isEqualTo(viewId)
             assertThat(event.isFrozenFrame).isTrue()
         }
-        verifyNoMoreInteractions(mockApplicationScope, mockWriter)
+        verifyNoMoreInteractions(mockWriter)
     }
 
     @Test
@@ -1725,7 +1729,7 @@ internal class DatadogRumMonitorTest {
             val event = firstValue as RumRawEvent.ActionDropped
             assertThat(event.viewId).isEqualTo(viewId)
         }
-        verifyNoMoreInteractions(mockApplicationScope, mockWriter)
+        verifyNoMoreInteractions(mockWriter)
     }
 
     @Test
@@ -1748,7 +1752,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.viewId).isEqualTo(viewId)
             assertThat(event.resourceId).isEqualTo(resourceId)
         }
-        verifyNoMoreInteractions(mockApplicationScope, mockWriter)
+        verifyNoMoreInteractions(mockWriter)
     }
 
     @Test
@@ -1768,7 +1772,7 @@ internal class DatadogRumMonitorTest {
             val event = firstValue as RumRawEvent.ErrorDropped
             assertThat(event.viewId).isEqualTo(viewId)
         }
-        verifyNoMoreInteractions(mockApplicationScope, mockWriter)
+        verifyNoMoreInteractions(mockWriter)
     }
 
     @Test
@@ -1789,7 +1793,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.viewId).isEqualTo(viewId)
             assertThat(event.isFrozenFrame).isFalse()
         }
-        verifyNoMoreInteractions(mockApplicationScope, mockWriter)
+        verifyNoMoreInteractions(mockWriter)
     }
 
     @Test
@@ -1810,7 +1814,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.viewId).isEqualTo(viewId)
             assertThat(event.isFrozenFrame).isTrue()
         }
-        verifyNoMoreInteractions(mockApplicationScope, mockWriter)
+        verifyNoMoreInteractions(mockWriter)
     }
 
     @Test
@@ -1832,7 +1836,7 @@ internal class DatadogRumMonitorTest {
             assertThat(event.name).isEqualTo(name)
             assertThat(event.value).isEqualTo(value)
         }
-        verifyNoMoreInteractions(mockApplicationScope, mockWriter)
+        verifyNoMoreInteractions(mockWriter)
     }
 
     @Test
@@ -1854,7 +1858,7 @@ internal class DatadogRumMonitorTest {
             val event = firstValue as RumRawEvent.AddFeatureFlagEvaluations
             assertThat(event.featureFlags).isSameAs(batch)
         }
-        verifyNoMoreInteractions(mockApplicationScope, mockWriter)
+        verifyNoMoreInteractions(mockWriter)
     }
 
     @Test
@@ -1873,6 +1877,8 @@ internal class DatadogRumMonitorTest {
                     same(mockWriter)
                 )
                 verify(mockHandler).postDelayed(same(runnable), eq(DatadogRumMonitor.KEEP_ALIVE_MS))
+                verify(mockApplicationScope).activeSession
+                verify(mockApplicationScope).getRumContext()
                 verifyNoMoreInteractions()
             }
         }
@@ -1895,6 +1901,8 @@ internal class DatadogRumMonitorTest {
                     same(mockWriter)
                 )
                 verify(mockHandler).postDelayed(same(runnable), eq(DatadogRumMonitor.KEEP_ALIVE_MS))
+                verify(mockApplicationScope).activeSession
+                verify(mockApplicationScope).getRumContext()
                 verifyNoMoreInteractions()
             }
         }
@@ -1960,7 +1968,7 @@ internal class DatadogRumMonitorTest {
             same(mockEventWriteScope),
             same(mockWriter)
         )
-        verifyNoMoreInteractions(mockApplicationScope, mockWriter)
+        verifyNoMoreInteractions(mockWriter)
     }
 
     @Test
@@ -2463,6 +2471,8 @@ internal class DatadogRumMonitorTest {
         )
     }
 
+    // region update feature context
+
     @Test
     fun `M update feature context W handleEvent() { active view exists }`(
         @Forgery fakeRumEvent: RumRawEvent,
@@ -2482,7 +2492,7 @@ internal class DatadogRumMonitorTest {
 
         // Then
         argumentCaptor<(MutableMap<String, Any?>) -> Unit> {
-            verify(mockSdkCore).updateFeatureContext(eq(Feature.RUM_FEATURE_NAME), capture())
+            verify(mockSdkCore).updateFeatureContext(eq(Feature.RUM_FEATURE_NAME), any(), capture())
             val acc = mutableMapOf<String, Any?>()
             firstValue.invoke(acc)
             assertThat(acc).isEqualTo(fakeRumContext.toMap())
@@ -2507,7 +2517,7 @@ internal class DatadogRumMonitorTest {
 
         // Then
         argumentCaptor<(MutableMap<String, Any?>) -> Unit> {
-            verify(mockSdkCore).updateFeatureContext(eq(Feature.RUM_FEATURE_NAME), capture())
+            verify(mockSdkCore).updateFeatureContext(eq(Feature.RUM_FEATURE_NAME), any(), capture())
             val acc = mutableMapOf<String, Any?>()
             firstValue.invoke(acc)
             assertThat(acc).isEqualTo(fakeRumContext.toMap())
@@ -2530,12 +2540,33 @@ internal class DatadogRumMonitorTest {
 
         // Then
         argumentCaptor<(MutableMap<String, Any?>) -> Unit> {
-            verify(mockSdkCore).updateFeatureContext(eq(Feature.RUM_FEATURE_NAME), capture())
+            verify(mockSdkCore).updateFeatureContext(eq(Feature.RUM_FEATURE_NAME), any(), capture())
             val acc = mutableMapOf<String, Any?>()
             firstValue.invoke(acc)
             assertThat(acc).isEqualTo(fakeRumContext.toMap())
         }
     }
+
+    @Test
+    fun `M not update feature context W handleEvent() { event processing failed }`(
+        @Forgery fakeRumEvent: RumRawEvent
+    ) {
+        // Given
+        val mockFeatureScope = mock<FeatureScope>()
+        whenever(mockFeatureScope.getWriteContextSync()) doReturn null
+        whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockFeatureScope
+        whenever(mockExecutorService.submit(any<Callable<RumContext>>())) doAnswer {
+            mock<Future<RumContext>>().apply { whenever(get()) doReturn null }
+        }
+
+        // When
+        testedMonitor.handleEvent(fakeRumEvent)
+
+        // Then
+        verify(mockSdkCore, never()).updateFeatureContext(eq(Feature.RUM_FEATURE_NAME), any(), any())
+    }
+
+    // endregion
 
     companion object {
         const val TIMESTAMP_MIN = 1000000000000

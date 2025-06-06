@@ -160,7 +160,8 @@ class OtelTracerProvider internal constructor(
                         { WRITER_PROVIDER_INTERFACE_NOT_IMPLEMENTED_ERROR_MESSAGE }
                     )
                 } else {
-                    sdkCore.updateFeatureContext(Feature.TRACING_FEATURE_NAME) {
+                    // update meta for the configuration telemetry reporting, can be done directly from this thread
+                    sdkCore.updateFeatureContext(Feature.TRACING_FEATURE_NAME, useContextThread = false) {
                         it[IS_OPENTELEMETRY_ENABLED_CONFIG_KEY] = true
                         it[OPENTELEMETRY_API_VERSION_CONFIG_KEY] =
                             BuildConfig.OPENTELEMETRY_API_VERSION_NAME

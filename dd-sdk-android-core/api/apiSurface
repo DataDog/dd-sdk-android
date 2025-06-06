@@ -119,8 +119,8 @@ interface com.datadog.android.api.feature.FeatureSdkCore : com.datadog.android.a
   val internalLogger: com.datadog.android.api.InternalLogger
   fun registerFeature(Feature)
   fun getFeature(String): FeatureScope?
-  fun updateFeatureContext(String, (MutableMap<String, Any?>) -> Unit)
-  fun getFeatureContext(String): Map<String, Any?>
+  fun updateFeatureContext(String, Boolean = true, (MutableMap<String, Any?>) -> Unit)
+  fun getFeatureContext(String, Boolean = true): Map<String, Any?>
   fun setEventReceiver(String, FeatureEventReceiver)
   fun setContextUpdateReceiver(String, FeatureContextUpdateReceiver)
   fun removeContextUpdateReceiver(String, FeatureContextUpdateReceiver)
@@ -311,6 +311,8 @@ fun Collection<ByteArray>.join(ByteArray, ByteArray = ByteArray(0), ByteArray = 
 fun java.util.concurrent.Executor.executeSafe(String, com.datadog.android.api.InternalLogger, Runnable)
 fun java.util.concurrent.ScheduledExecutorService.scheduleSafe(String, Long, java.util.concurrent.TimeUnit, com.datadog.android.api.InternalLogger, Runnable): java.util.concurrent.ScheduledFuture<*>?
 fun java.util.concurrent.ExecutorService.submitSafe(String, com.datadog.android.api.InternalLogger, Runnable): java.util.concurrent.Future<*>?
+fun <T> java.util.concurrent.ExecutorService.submitSafe(String, com.datadog.android.api.InternalLogger, java.util.concurrent.Callable<T>): java.util.concurrent.Future<T>?
+fun <T> java.util.concurrent.Future<T>?.getSafe(String, com.datadog.android.api.InternalLogger): T?
 val NULL_MAP_VALUE: Object
 object com.datadog.android.core.internal.utils.JsonSerializer
   fun toJsonElement(Any?): com.google.gson.JsonElement

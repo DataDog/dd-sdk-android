@@ -153,7 +153,9 @@ internal class SessionReplayFeature(
             )
         sessionReplayRecorder.registerCallbacks()
         initialized.set(true)
-        sdkCore.updateFeatureContext(Feature.SESSION_REPLAY_FEATURE_NAME) {
+        // useContextThread = false, because the read will be on the same caller thread (in a WebViewTracking) during
+        // the SDK initialization, so we don't want to block there.
+        sdkCore.updateFeatureContext(Feature.SESSION_REPLAY_FEATURE_NAME, useContextThread = false) {
             it[SESSION_REPLAY_SAMPLE_RATE_KEY] = rateBasedSampler.getSampleRate()?.toLong()
             it[SESSION_REPLAY_START_IMMEDIATE_RECORDING_KEY] = startRecordingImmediately
             it[SESSION_REPLAY_TOUCH_PRIVACY_KEY] = touchPrivacy.toString().lowercase(Locale.US)

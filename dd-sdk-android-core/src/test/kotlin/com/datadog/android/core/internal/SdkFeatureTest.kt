@@ -79,7 +79,6 @@ import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
-import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.util.Locale
@@ -114,6 +113,9 @@ internal class SdkFeatureTest {
 
     @Mock
     lateinit var mockBenchmarkSdkUploads: BenchmarkSdkUploads
+
+    @Mock
+    lateinit var mockContextProvider: ContextProvider
 
     @Forgery
     lateinit var fakeConsent: TrackingConsent
@@ -151,6 +153,7 @@ internal class SdkFeatureTest {
         }
         testedFeature = SdkFeature(
             coreFeature = coreFeature.mockInstance,
+            contextProvider = mockContextProvider,
             wrappedFeature = mockWrappedFeature,
             internalLogger = mockInternalLogger
         )
@@ -266,6 +269,7 @@ internal class SdkFeatureTest {
         whenever(mockFeature.name).thenReturn(fakeFeatureName)
         testedFeature = SdkFeature(
             coreFeature.mockInstance,
+            mockContextProvider,
             mockFeature,
             internalLogger = mockInternalLogger
         )
@@ -286,6 +290,7 @@ internal class SdkFeatureTest {
         }
         testedFeature = SdkFeature(
             coreFeature = coreFeature.mockInstance,
+            mockContextProvider,
             wrappedFeature = mockSimpleFeature,
             internalLogger = mockInternalLogger
         )
@@ -353,6 +358,7 @@ internal class SdkFeatureTest {
             .isInstanceOf(NoOpFileOrchestrator::class.java)
         assertThat(testedFeature.processLifecycleMonitor).isNull()
         assertThat(testedFeature.metricsDispatcher).isInstanceOf(NoOpMetricsDispatcher::class.java)
+        assertThat(testedFeature.featureContext).isEmpty()
     }
 
     @Test
@@ -387,6 +393,7 @@ internal class SdkFeatureTest {
         }
         testedFeature = SdkFeature(
             coreFeature = coreFeature.mockInstance,
+            contextProvider = mockContextProvider,
             wrappedFeature = mockFeature,
             internalLogger = mockInternalLogger
         )
@@ -489,7 +496,7 @@ internal class SdkFeatureTest {
         // Given
         testedFeature.storage = mockStorage
         val callback = mock<(DatadogContext, EventWriteScope) -> Unit>()
-        whenever(coreFeature.mockInstance.contextProvider.context) doReturn fakeContext
+        whenever(mockContextProvider.context) doReturn fakeContext
 
         whenever(
             mockStorage.getEventWriteScope(fakeContext)
@@ -506,29 +513,13 @@ internal class SdkFeatureTest {
     }
 
     @Test
-    fun `M do nothing W withWriteContext(callback) { no Datadog context }`() {
-        // Given
-        testedFeature.storage = mockStorage
-        val callback = mock<(DatadogContext, EventWriteScope) -> Unit>()
-
-        whenever(coreFeature.mockInstance.contextProvider) doReturn NoOpContextProvider()
-
-        // When
-        testedFeature.withWriteContext(callback = callback)
-
-        // Then
-        verifyNoInteractions(mockStorage)
-        verifyNoInteractions(callback)
-    }
-
-    @Test
     fun `M provide Datadog context W withContext(callback)`(
         @Forgery fakeContext: DatadogContext
     ) {
         // Given
         testedFeature.storage = mockStorage
         val callback = mock<(DatadogContext) -> Unit>()
-        whenever(coreFeature.mockInstance.contextProvider.context) doReturn fakeContext
+        whenever(mockContextProvider.context) doReturn fakeContext
 
         // When
         testedFeature.withContext(callback = callback)
@@ -538,29 +529,13 @@ internal class SdkFeatureTest {
     }
 
     @Test
-    fun `M do nothing W withContext(callback) { no Datadog context }`() {
-        // Given
-        testedFeature.storage = mockStorage
-        val callback = mock<(DatadogContext) -> Unit>()
-
-        whenever(coreFeature.mockInstance.contextProvider) doReturn NoOpContextProvider()
-
-        // When
-        testedFeature.withContext(callback = callback)
-
-        // Then
-        verifyNoInteractions(mockStorage)
-        verifyNoInteractions(callback)
-    }
-
-    @Test
     fun `M provide write context W getWriteContextSync()`(
         @Forgery fakeContext: DatadogContext,
         @Mock mockEventWriteScope: EventWriteScope
     ) {
         // Given
         testedFeature.storage = mockStorage
-        whenever(coreFeature.mockInstance.contextProvider.context) doReturn fakeContext
+        whenever(mockContextProvider.context) doReturn fakeContext
         whenever(coreFeature.mockInstance.contextExecutorService.submit(any<Callable<*>>())) doAnswer {
             val callable = it.getArgument<Callable<Pair<DatadogContext, EventWriteScope>>>(0)
             mock<Future<*>>().apply {
@@ -582,39 +557,12 @@ internal class SdkFeatureTest {
     }
 
     @Test
-    fun `M provide null write context W getWriteContextSync() { no datadog context }`(
-        @Forgery fakeContext: DatadogContext,
-        @Mock mockEventWriteScope: EventWriteScope
-    ) {
-        // Given
-        testedFeature.storage = mockStorage
-        whenever(coreFeature.mockInstance.contextProvider) doReturn NoOpContextProvider()
-        whenever(coreFeature.mockInstance.contextExecutorService.submit(any<Callable<*>>())) doAnswer {
-            val callable = it.getArgument<Callable<Pair<DatadogContext, EventWriteScope>>>(0)
-            mock<Future<*>>().apply {
-                whenever(get()) doAnswer { callable.call() }
-            }
-        }
-
-        whenever(
-            mockStorage.getEventWriteScope(fakeContext)
-        ) doReturn mockEventWriteScope
-
-        // When
-        val writeContext = testedFeature.getWriteContextSync()
-
-        // Then
-        assertThat(writeContext).isNull()
-    }
-
-    @Test
     fun `M provide null write context W getWriteContextSync() { task rejected }`(
         @Forgery fakeContext: DatadogContext,
         @Mock mockEventWriteScope: EventWriteScope
     ) {
         // Given
         testedFeature.storage = mockStorage
-        whenever(coreFeature.mockInstance.contextProvider) doReturn NoOpContextProvider()
         whenever(
             coreFeature.mockInstance.contextExecutorService.submit(any<Callable<*>>())
         ) doThrow RejectedExecutionException()
@@ -638,7 +586,6 @@ internal class SdkFeatureTest {
     ) {
         // Given
         testedFeature.storage = mockStorage
-        whenever(coreFeature.mockInstance.contextProvider) doReturn NoOpContextProvider()
         val throwable = forge.anElementFrom(
             CancellationException(),
             ExecutionException(forge.aThrowable()),
@@ -700,6 +647,7 @@ internal class SdkFeatureTest {
 
         testedFeature = SdkFeature(
             coreFeature = coreFeature.mockInstance,
+            contextProvider = mockContextProvider,
             wrappedFeature = fakeFeature,
             internalLogger = mockInternalLogger
         )
@@ -720,6 +668,7 @@ internal class SdkFeatureTest {
 
         testedFeature = SdkFeature(
             coreFeature = coreFeature.mockInstance,
+            contextProvider = mockContextProvider,
             wrappedFeature = fakeFeature,
             internalLogger = mockInternalLogger
         )
@@ -910,6 +859,7 @@ internal class SdkFeatureTest {
 
         testedFeature = SdkFeature(
             coreFeature = coreFeature.mockInstance,
+            contextProvider = mockContextProvider,
             wrappedFeature = mockWrappedFeature,
             internalLogger = mockInternalLogger,
             benchmarkSdkUploads = mockBenchmarkSdkUploads

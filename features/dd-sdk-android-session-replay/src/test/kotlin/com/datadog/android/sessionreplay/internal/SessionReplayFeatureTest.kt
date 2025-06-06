@@ -184,6 +184,7 @@ internal class SessionReplayFeatureTest {
             val updatedContext = mutableMapOf<String, Any?>()
             verify(mockSdkCore).updateFeatureContext(
                 eq(Feature.SESSION_REPLAY_FEATURE_NAME),
+                eq(false),
                 capture()
             )
             firstValue.invoke(updatedContext)
@@ -298,6 +299,7 @@ internal class SessionReplayFeatureTest {
             val updatedContext = mutableMapOf<String, Any?>()
             verify(mockSdkCore, times(3)).updateFeatureContext(
                 eq(Feature.SESSION_REPLAY_FEATURE_NAME),
+                any(),
                 capture()
             )
             allValues.forEach { it.invoke(updatedContext) }
@@ -363,6 +365,7 @@ internal class SessionReplayFeatureTest {
             val updatedContext = mutableMapOf<String, Any?>()
             verify(mockSdkCore, times(2)).updateFeatureContext(
                 eq(Feature.SESSION_REPLAY_FEATURE_NAME),
+                any(),
                 capture()
             )
             allValues.forEach { it.invoke(updatedContext) }

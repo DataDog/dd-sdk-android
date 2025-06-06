@@ -51,11 +51,9 @@ import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.google.gson.JsonObject
 import fr.xgouchet.elmyr.Forge
-import fr.xgouchet.elmyr.annotation.AdvancedForgery
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.LongForgery
-import fr.xgouchet.elmyr.annotation.MapForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -288,21 +286,6 @@ internal class CoreFeatureTest {
             .isInstanceOf(TrackingConsentProvider::class.java)
         assertThat(testedFeature.trackingConsentProvider.getConsent())
             .isEqualTo(fakeConsent)
-    }
-
-    @Test
-    fun `M initialise the datadog context provider W initialize`() {
-        // When
-        testedFeature.initialize(
-            appContext.mockInstance,
-            fakeSdkInstanceId,
-            fakeConfig,
-            fakeConsent
-        )
-
-        // Then
-        assertThat(testedFeature.contextProvider)
-            .isInstanceOf(DatadogContextProvider::class.java)
     }
 
     @Test
@@ -1302,8 +1285,6 @@ internal class CoreFeatureTest {
             .isInstanceOf(NoOpConsentProvider::class.java)
         assertThat(testedFeature.userInfoProvider)
             .isInstanceOf(NoOpMutableUserInfoProvider::class.java)
-        assertThat(testedFeature.contextProvider)
-            .isInstanceOf(NoOpContextProvider::class.java)
     }
 
     @Test
@@ -1348,30 +1329,6 @@ internal class CoreFeatureTest {
 
         // Then
         verify(mockConsentProvider).unregisterAllCallbacks()
-    }
-
-    @Test
-    fun `M clean up feature context W stop()`(
-        @StringForgery feature: String,
-        @MapForgery(
-            key = AdvancedForgery(string = [StringForgery(StringForgeryType.ALPHABETICAL)]),
-            value = AdvancedForgery(string = [StringForgery(StringForgeryType.ALPHABETICAL)])
-        ) context: Map<String, String>
-    ) {
-        // Given
-        testedFeature.initialize(
-            appContext.mockInstance,
-            fakeSdkInstanceId,
-            fakeConfig,
-            fakeConsent
-        )
-        testedFeature.featuresContext[feature] = context
-
-        // When
-        testedFeature.stop()
-
-        // Then
-        assertThat(testedFeature.featuresContext).isEmpty()
     }
 
     @Test

@@ -52,6 +52,7 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.locks.Lock
 
 /**
  * Internal implementation of the [SdkCore] interface.
@@ -79,16 +80,9 @@ internal class DatadogCore(
 
     internal val features: MutableMap<String, SdkFeature> = ConcurrentHashMap()
 
-    internal val context: Context = context.applicationContext
+    internal val appContext: Context = context.applicationContext
 
-    internal val contextProvider: ContextProvider?
-        get() {
-            return if (coreFeature.initialized.get()) {
-                coreFeature.contextProvider
-            } else {
-                null
-            }
-        }
+    internal var contextProvider: ContextProvider = NoOpContextProvider()
 
     internal val isActive: Boolean
         get() = coreFeature.initialized.get()
@@ -132,11 +126,12 @@ internal class DatadogCore(
     override fun registerFeature(feature: Feature) {
         val sdkFeature = SdkFeature(
             coreFeature,
+            contextProvider,
             feature,
             internalLogger
         )
         features[feature.name] = sdkFeature
-        sdkFeature.initialize(context, instanceId)
+        sdkFeature.initialize(appContext, instanceId)
 
         when (feature.name) {
             Feature.LOGS_FEATURE_NAME -> {
@@ -204,29 +199,55 @@ internal class DatadogCore(
     /** @inheritDoc */
     override fun updateFeatureContext(
         featureName: String,
+        useContextThread: Boolean,
         updateCallback: (context: MutableMap<String, Any?>) -> Unit
     ) {
-        val feature = features[featureName] ?: return
-        contextProvider?.let { currentContext ->
-            synchronized(feature) {
-                // Use HashMap instead of .toMutableMap() for faster init
-                @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
-                val mutableContext = HashMap(currentContext.getFeatureContext(featureName))
-                updateCallback(mutableContext)
-                currentContext.setFeatureContext(featureName, mutableContext)
-                // notify all the other features
+        val runnable = runnable@{
+            val feature = features[featureName] ?: return@runnable
+            feature.featureContextLock.writeLock().safeTryWithLock(1, TimeUnit.SECONDS) {
+                val currentContext = feature.featureContext
+                updateCallback(currentContext)
                 features.forEach { (key, feature) ->
                     if (key != featureName) {
-                        feature.notifyContextUpdated(featureName, mutableContext)
+                        feature.notifyContextUpdated(featureName, currentContext)
                     }
                 }
             }
         }
+        if (useContextThread) {
+            coreFeature.contextExecutorService.executeSafe(
+                "DatadogCore.updateFeatureContext-$featureName",
+                internalLogger,
+                runnable
+            )
+        } else {
+            runnable.invoke()
+        }
     }
 
     /** @inheritDoc */
-    override fun getFeatureContext(featureName: String): Map<String, Any?> {
-        return contextProvider?.getFeatureContext(featureName) ?: emptyMap()
+    override fun getFeatureContext(featureName: String, useContextThread: Boolean): Map<String, Any?> {
+        val callable = Callable<Map<String, Any?>> {
+            val feature = features[featureName] ?: return@Callable emptyMap()
+            return@Callable feature.featureContextLock.readLock().safeWithLock {
+                // Use HashMap instead of .toMutableMap() for faster init
+                @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
+                HashMap(feature.featureContext)
+            }.orEmpty()
+        }
+        return if (useContextThread) {
+            return coreFeature.contextExecutorService
+                .submitSafe(
+                    "DatadogCore.getFeatureContext-$featureName",
+                    internalLogger,
+                    callable
+                )
+                .getSafe("DatadogCore.getFeatureContext-$featureName", internalLogger)
+                .orEmpty()
+        } else {
+            @Suppress("UnsafeThirdPartyFunctionCall") // not 3rd party
+            callable.call()
+        }
     }
 
     /** @inheritDoc */
@@ -250,6 +271,7 @@ internal class DatadogCore(
         }
     }
 
+    @Suppress("NestedBlockDepth")
     override fun setContextUpdateReceiver(featureName: String, listener: FeatureContextUpdateReceiver) {
         val feature = features[featureName]
         if (feature == null) {
@@ -260,10 +282,12 @@ internal class DatadogCore(
             )
         } else {
             feature.setContextUpdateListener(listener)
-            features.keys.forEach {
-                val currentContext = contextProvider?.getFeatureContext(it)
-                if (!currentContext.isNullOrEmpty()) {
-                    listener.onContextUpdate(it, currentContext)
+            features.forEach {
+                if (it.key != featureName) {
+                    val currentContext = getFeatureContext(it.key, false)
+                    if (currentContext.isNotEmpty()) {
+                        listener.onContextUpdate(it.key, currentContext)
+                    }
                 }
             }
         }
@@ -365,7 +389,13 @@ internal class DatadogCore(
 
     override fun getDatadogContext(): DatadogContext? {
         return coreFeature.contextExecutorService
-            .submitSafe("getDatadogContext", internalLogger, Callable { contextProvider?.context })
+            .submitSafe(
+                "getDatadogContext",
+                internalLogger,
+                Callable {
+                    with(contextProvider) { if (this is NoOpContextProvider) null else context }
+                }
+            )
             .getSafe("getDatadogContext", internalLogger)
     }
 
@@ -379,7 +409,7 @@ internal class DatadogCore(
             throw IllegalArgumentException(MESSAGE_ENV_NAME_NOT_VALID)
         }
 
-        val isDebug = isAppDebuggable(context)
+        val isDebug = isAppDebuggable(appContext)
 
         var mutableConfig = configuration
         if (isDebug and configuration.coreConfig.enableDeveloperModeWhenDebuggable) {
@@ -398,11 +428,20 @@ internal class DatadogCore(
             CoreFeature.DEFAULT_SCHEDULED_EXECUTOR_SERVICE_FACTORY
         )
         coreFeature.initialize(
-            context,
+            appContext,
             instanceId,
             mutableConfig,
             TrackingConsent.PENDING
         )
+
+        contextProvider = DatadogContextProvider(coreFeature) {
+            features.keys.map {
+                it to {
+                    // already on the context thread
+                    getFeatureContext(it, useContextThread = false)
+                }
+            }
+        }
 
         applyAdditionalConfiguration(mutableConfig.additionalConfig)
 
@@ -410,7 +449,7 @@ internal class DatadogCore(
             initializeCrashReportFeature()
         }
 
-        setupLifecycleMonitorCallback(context)
+        setupLifecycleMonitorCallback(appContext)
 
         setupShutdownHook()
         sendCoreConfigurationTelemetryEvent(configuration)
@@ -564,19 +603,76 @@ internal class DatadogCore(
         )
     }
 
+    private fun Lock.safeTryWithLock(time: Long, unit: TimeUnit, block: () -> Unit) {
+        val locked = try {
+            // NullPointerException cannot happen, time unit is not null
+            @Suppress("UnsafeThirdPartyFunctionCall")
+            tryLock(time, unit)
+        } catch (e: InterruptedException) {
+            internalLogger.log(
+                InternalLogger.Level.ERROR,
+                listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
+                { "Couldn't acquire ${javaClass.simpleName} due to the exception thrown, aborting operation." },
+                e
+            )
+            return
+        }
+        if (!locked) {
+            internalLogger.log(
+                InternalLogger.Level.ERROR,
+                listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
+                {
+                    "Couldn't acquire ${javaClass.simpleName} due to" +
+                        " timeout ($time $unit), aborting operation."
+                }
+            )
+            return
+        }
+        try {
+            block()
+        } finally {
+            if (locked) {
+                // IllegalMonitorStateException cannot happen, we check locked flag
+                @Suppress("UnsafeThirdPartyFunctionCall")
+                unlock()
+            }
+        }
+    }
+
+    private fun <T> Lock.safeWithLock(block: () -> T): T? {
+        try {
+            lock()
+        } catch (e: InterruptedException) {
+            internalLogger.log(
+                InternalLogger.Level.ERROR,
+                listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
+                { "Couldn't acquire ${javaClass.simpleName} lock due to the exception thrown, aborting operation." },
+                e
+            )
+            return null
+        }
+        return try {
+            block()
+        } finally {
+            // IllegalMonitorStateException cannot happen, lock() call above succeeded
+            @Suppress("UnsafeThirdPartyFunctionCall")
+            unlock()
+        }
+    }
+
     /**
      * Stops all process for this instance of the Datadog SDK.
      */
     internal fun stop() {
-        features.forEach {
-            it.value.stop()
-        }
-        features.clear()
-
-        if (context is Application && processLifecycleMonitor != null) {
-            context.unregisterActivityLifecycleCallbacks(processLifecycleMonitor)
+        features.keys.forEach {
+            features.remove(it)?.stop()
         }
 
+        if (appContext is Application && processLifecycleMonitor != null) {
+            appContext.unregisterActivityLifecycleCallbacks(processLifecycleMonitor)
+        }
+
+        contextProvider = NoOpContextProvider()
         coreFeature.stop()
         isDeveloperModeEnabled = false
 

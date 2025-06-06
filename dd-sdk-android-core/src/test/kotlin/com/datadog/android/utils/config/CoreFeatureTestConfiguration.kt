@@ -10,7 +10,6 @@ import android.content.Context
 import com.datadog.android.DatadogSite
 import com.datadog.android.core.configuration.BatchSize
 import com.datadog.android.core.configuration.UploadFrequency
-import com.datadog.android.core.internal.ContextProvider
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.net.DefaultFirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
@@ -24,7 +23,6 @@ import com.datadog.android.core.internal.user.MutableUserInfoProvider
 import com.datadog.android.core.thread.FlushableExecutorService
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.tools.unit.extensions.config.MockTestConfiguration
-import com.datadog.tools.unit.forge.exhaustiveAttributes
 import com.lyft.kronos.KronosClock
 import fr.xgouchet.elmyr.Forge
 import okhttp3.OkHttpClient
@@ -51,7 +49,6 @@ internal class CoreFeatureTestConfiguration<T : Context>(
     lateinit var fakeStorageDir: File
     lateinit var fakeUploadFrequency: UploadFrequency
     lateinit var fakeSite: DatadogSite
-    lateinit var fakeFeaturesContext: MutableMap<String, Map<String, Any?>>
     lateinit var fakeFilePersistenceConfig: FilePersistenceConfig
     lateinit var fakeBatchSize: BatchSize
     var fakeBuildId: String? = null
@@ -71,7 +68,6 @@ internal class CoreFeatureTestConfiguration<T : Context>(
     lateinit var mockTrackingConsentProvider: ConsentProvider
     lateinit var mockAndroidInfoProvider: AndroidInfoProvider
     lateinit var mockAppVersionProvider: AppVersionProvider
-    lateinit var mockContextProvider: ContextProvider
 
     // region CoreFeatureTestConfiguration
 
@@ -99,11 +95,6 @@ internal class CoreFeatureTestConfiguration<T : Context>(
         fakeStorageDir = Files.createTempDirectory(forge.anHexadecimalString()).toFile()
         fakeUploadFrequency = forge.aValueFrom(UploadFrequency::class.java)
         fakeSite = forge.aValueFrom(DatadogSite::class.java)
-        // building nested maps with default size slows down tests quite a lot, so will use
-        // an explicit small size
-        fakeFeaturesContext = forge.aMap(size = 2) {
-            forge.anAlphabeticalString() to forge.exhaustiveAttributes()
-        }.toMutableMap()
         fakeFilePersistenceConfig = forge.getForgery()
         fakeBatchSize = forge.aValueFrom(BatchSize::class.java)
         fakeBuildId = forge.aNullable { getForgery<UUID>().toString() }
@@ -126,7 +117,6 @@ internal class CoreFeatureTestConfiguration<T : Context>(
         mockAndroidInfoProvider = mock()
         mockTrackingConsentProvider = mock { on { getConsent() } doReturn TrackingConsent.PENDING }
         mockAppVersionProvider = mock { on { version } doReturn appContext.fakeVersionName }
-        mockContextProvider = mock()
     }
 
     private fun configureCoreFeature() {
@@ -143,7 +133,6 @@ internal class CoreFeatureTestConfiguration<T : Context>(
         whenever(mockInstance.uploadFrequency) doReturn fakeUploadFrequency
         whenever(mockInstance.site) doReturn fakeSite
         whenever(mockInstance.appBuildId) doReturn fakeBuildId
-        whenever(mockInstance.featuresContext) doReturn fakeFeaturesContext
 
         whenever(mockInstance.persistenceExecutorService) doReturn mockPersistenceExecutor
         whenever(mockInstance.contextExecutorService) doReturn mockContextExecutorService
@@ -159,7 +148,6 @@ internal class CoreFeatureTestConfiguration<T : Context>(
         whenever(mockInstance.userInfoProvider) doReturn mockUserInfoProvider
         whenever(mockInstance.trackingConsentProvider) doReturn mockTrackingConsentProvider
         whenever(mockInstance.androidInfoProvider) doReturn mockAndroidInfoProvider
-        whenever(mockInstance.contextProvider) doReturn mockContextProvider
 
         whenever(mockInstance.buildFilePersistenceConfig()) doReturn fakeFilePersistenceConfig.copy(
             recentDelayMs = fakeBatchSize.windowDurationMs

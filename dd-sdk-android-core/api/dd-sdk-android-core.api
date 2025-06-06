@@ -358,7 +358,7 @@ public abstract interface class com/datadog/android/api/feature/FeatureSdkCore :
 	public abstract fun createScheduledExecutorService (Ljava/lang/String;)Ljava/util/concurrent/ScheduledExecutorService;
 	public abstract fun createSingleThreadExecutorService (Ljava/lang/String;)Ljava/util/concurrent/ExecutorService;
 	public abstract fun getFeature (Ljava/lang/String;)Lcom/datadog/android/api/feature/FeatureScope;
-	public abstract fun getFeatureContext (Ljava/lang/String;)Ljava/util/Map;
+	public abstract fun getFeatureContext (Ljava/lang/String;Z)Ljava/util/Map;
 	public abstract fun getInternalLogger ()Lcom/datadog/android/api/InternalLogger;
 	public abstract fun registerFeature (Lcom/datadog/android/api/feature/Feature;)V
 	public abstract fun removeContextUpdateReceiver (Ljava/lang/String;Lcom/datadog/android/api/feature/FeatureContextUpdateReceiver;)V
@@ -366,7 +366,12 @@ public abstract interface class com/datadog/android/api/feature/FeatureSdkCore :
 	public abstract fun setAnonymousId (Ljava/util/UUID;)V
 	public abstract fun setContextUpdateReceiver (Ljava/lang/String;Lcom/datadog/android/api/feature/FeatureContextUpdateReceiver;)V
 	public abstract fun setEventReceiver (Ljava/lang/String;Lcom/datadog/android/api/feature/FeatureEventReceiver;)V
-	public abstract fun updateFeatureContext (Ljava/lang/String;Lkotlin/jvm/functions/Function1;)V
+	public abstract fun updateFeatureContext (Ljava/lang/String;ZLkotlin/jvm/functions/Function1;)V
+}
+
+public final class com/datadog/android/api/feature/FeatureSdkCore$DefaultImpls {
+	public static synthetic fun getFeatureContext$default (Lcom/datadog/android/api/feature/FeatureSdkCore;Ljava/lang/String;ZILjava/lang/Object;)Ljava/util/Map;
+	public static synthetic fun updateFeatureContext$default (Lcom/datadog/android/api/feature/FeatureSdkCore;Ljava/lang/String;ZLkotlin/jvm/functions/Function1;ILjava/lang/Object;)V
 }
 
 public abstract interface class com/datadog/android/api/feature/StorageBackedFeature : com/datadog/android/api/feature/Feature {
@@ -812,8 +817,10 @@ public final class com/datadog/android/core/internal/utils/ByteArrayExtKt {
 
 public final class com/datadog/android/core/internal/utils/ConcurrencyExtKt {
 	public static final fun executeSafe (Ljava/util/concurrent/Executor;Ljava/lang/String;Lcom/datadog/android/api/InternalLogger;Ljava/lang/Runnable;)V
+	public static final fun getSafe (Ljava/util/concurrent/Future;Ljava/lang/String;Lcom/datadog/android/api/InternalLogger;)Ljava/lang/Object;
 	public static final fun scheduleSafe (Ljava/util/concurrent/ScheduledExecutorService;Ljava/lang/String;JLjava/util/concurrent/TimeUnit;Lcom/datadog/android/api/InternalLogger;Ljava/lang/Runnable;)Ljava/util/concurrent/ScheduledFuture;
 	public static final fun submitSafe (Ljava/util/concurrent/ExecutorService;Ljava/lang/String;Lcom/datadog/android/api/InternalLogger;Ljava/lang/Runnable;)Ljava/util/concurrent/Future;
+	public static final fun submitSafe (Ljava/util/concurrent/ExecutorService;Ljava/lang/String;Lcom/datadog/android/api/InternalLogger;Ljava/util/concurrent/Callable;)Ljava/util/concurrent/Future;
 }
 
 public final class com/datadog/android/core/internal/utils/JsonSerializer {
