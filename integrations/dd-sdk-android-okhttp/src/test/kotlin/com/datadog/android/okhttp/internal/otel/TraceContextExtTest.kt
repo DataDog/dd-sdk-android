@@ -27,7 +27,7 @@ import org.mockito.quality.Strictness
     ExtendWith(ForgeExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
-@ForgeConfiguration(OkHttpConfigurator::class, seed = 0x4e2ef678ce69eL)
+@ForgeConfiguration(OkHttpConfigurator::class)
 internal class TraceContextExtTest {
 
     @Forgery
