@@ -84,7 +84,7 @@ import java.util.Locale
     ExtendWith(TestConfigurationExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
-@ForgeConfiguration(value = BaseConfigurator::class, seed = 0x76e0a392b31aL)
+@ForgeConfiguration(value = BaseConfigurator::class)
 internal class DatadogInterceptorWithoutTracesTest {
 
     lateinit var testedInterceptor: TracingInterceptor
