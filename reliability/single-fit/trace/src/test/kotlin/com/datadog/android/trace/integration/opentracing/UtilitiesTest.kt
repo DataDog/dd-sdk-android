@@ -7,8 +7,8 @@
 package com.datadog.android.trace.integration.opentracing
 
 import com.datadog.android.api.feature.Feature
-import com.datadog.android.core.internal.utils.toHexString
 import com.datadog.android.core.stub.StubSDKCore
+import com.datadog.android.internal.utils.toHexString
 import com.datadog.android.tests.ktx.getInt
 import com.datadog.android.tests.ktx.getLong
 import com.datadog.android.tests.ktx.getString

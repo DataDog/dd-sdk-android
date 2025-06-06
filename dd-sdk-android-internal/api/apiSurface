@@ -80,9 +80,17 @@ object com.datadog.android.internal.utils.ImageViewUtils
   fun resolveContentRectWithScaling(android.widget.ImageView, android.graphics.drawable.Drawable, android.widget.ImageView.ScaleType? = null): android.graphics.Rect
 fun Int.densityNormalized(Float): Int
 fun Long.densityNormalized(Float): Long
+val NULL_MAP_VALUE: Object
+fun Int.toHexString(): String
+fun Long.toHexString(): String
+fun java.math.BigInteger.toHexString(): String
+fun <T> allowThreadDiskReads(() -> T): T
+fun <T> allowThreadDiskWrites(() -> T): T
 fun StringBuilder.appendIfNotEmpty(String)
 fun StringBuilder.appendIfNotEmpty(Char)
 fun Thread.safeGetThreadId(): Long
+fun Thread.State.asString(): String
+fun Array<StackTraceElement>.loggableStackTrace(): String
 fun Throwable.loggableStackTrace(): String
 annotation com.datadog.tools.annotation.NoOpImplementation
   constructor(Boolean = false)

@@ -7,7 +7,7 @@
 package com.datadog.android.trace.internal.domain.event
 
 import com.datadog.android.api.context.DatadogContext
-import com.datadog.android.core.internal.utils.toHexString
+import com.datadog.android.internal.utils.toHexString
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.trace.model.SpanEvent
 import com.datadog.opentracing.DDSpan
