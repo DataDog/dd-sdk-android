@@ -9,6 +9,7 @@ package com.datadog.android.okhttp.trace
 import com.datadog.trace.bootstrap.instrumentation.api.AgentSpan
 import com.datadog.trace.bootstrap.instrumentation.api.AgentTracer
 
+// This code aimed to reduce amount of lines in PR for review. Gonna replace with actual class just before merging v3
 typealias Tracer = AgentTracer.TracerAPI
 typealias Span = AgentSpan
 typealias SpanContext = AgentSpan.Context
