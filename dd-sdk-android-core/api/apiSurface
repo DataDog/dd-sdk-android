@@ -64,7 +64,7 @@ interface com.datadog.android.api.SdkCore
   fun addAccountExtraInfo(Map<String, Any?> = emptyMap())
   fun clearAccountInfo()
 data class com.datadog.android.api.context.AccountInfo
-  constructor(String? = null, String? = null, Map<String, Any?> = emptyMap())
+  constructor(String, String? = null, Map<String, Any?> = emptyMap())
 data class com.datadog.android.api.context.DatadogContext
   constructor(com.datadog.android.DatadogSite, String, String, String, String, String, String, String, TimeInfo, ProcessInfo, NetworkInfo, DeviceInfo, UserInfo, AccountInfo?, com.datadog.android.privacy.TrackingConsent, String?, Map<String, Map<String, Any?>>)
 data class com.datadog.android.api.context.DeviceInfo
