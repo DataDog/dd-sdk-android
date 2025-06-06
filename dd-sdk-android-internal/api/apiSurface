@@ -1,3 +1,21 @@
+interface com.datadog.android.internal.attributes.LocalAttribute
+  enum Key
+    constructor(String)
+    - CREATION_SAMPLING_RATE
+    - REPORTING_SAMPLING_RATE
+    - VIEW_SCOPE_INSTRUMENTATION_TYPE
+    override fun toString(): String
+  interface Constant
+    val key: Key
+fun MutableMap<String, Any?>.enrichWithConstantAttribute(LocalAttribute.Constant)
+fun MutableMap<String, Any?>.enrichWithNonNullAttribute(LocalAttribute.Key, Any?)
+fun MutableMap<String, Any?>.enrichWithLocalAttribute(LocalAttribute.Key, Any?)
+enum com.datadog.android.internal.attributes.ViewScopeInstrumentationType : LocalAttribute.Constant
+  - MANUAL
+  - COMPOSE
+  - ACTIVITY
+  - FRAGMENT
+  override val key: LocalAttribute.Key
 class com.datadog.android.internal.collections.EvictingQueue<T> : java.util.Queue<T>
   constructor(Int = Int.MAX_VALUE)
   override val size: Int

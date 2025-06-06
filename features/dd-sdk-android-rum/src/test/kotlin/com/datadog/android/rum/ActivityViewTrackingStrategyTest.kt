@@ -8,8 +8,8 @@ package com.datadog.android.rum
 
 import android.app.Activity
 import android.os.Bundle
-import com.datadog.android.core.internal.attributes.ViewScopeInstrumentationType
-import com.datadog.android.core.internal.attributes.enrichWithConstantAttribute
+import com.datadog.android.internal.attributes.ViewScopeInstrumentationType
+import com.datadog.android.internal.attributes.enrichWithConstantAttribute
 import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
 import com.datadog.android.rum.tracking.ComponentPredicate
 import com.datadog.android.rum.tracking.StubComponentPredicate

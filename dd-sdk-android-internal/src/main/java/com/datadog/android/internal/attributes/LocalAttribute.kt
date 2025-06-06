@@ -3,15 +3,12 @@
  * This product includes software developed at Datadog (https://www.datadoghq.com/).
  * Copyright 2016-Present Datadog, Inc.
  */
-package com.datadog.android.core.internal.attributes
-
-import com.datadog.android.lint.InternalApi
+package com.datadog.android.internal.attributes
 
 /**
  * Local attributes are used to pass additional metadata along with the event
  * and are never sent to the backend directly.
  */
-@InternalApi
 interface LocalAttribute {
 
     /**
@@ -20,7 +17,6 @@ interface LocalAttribute {
      *
      * @param string - Unique string value for a local attribute key.
      */
-    @InternalApi
     enum class Key(
         private val string: String
     ) {
@@ -57,7 +53,6 @@ interface LocalAttribute {
      * an attribute and reduces the possibility of inconsistent use of api (when an unsupported value is passed
      * for a particular attribute key).
      */
-    @InternalApi
     interface Constant {
         /** Constant attribute key. For enum constants will be same for all values. */
         val key: Key
@@ -70,7 +65,6 @@ interface LocalAttribute {
  * @param attribute - Constant attribute value that should be added.
  * Key for the attribute will be resolved automatically.
  */
-@InternalApi
 fun MutableMap<String, Any?>.enrichWithConstantAttribute(
     attribute: LocalAttribute.Constant
 ) = enrichWithLocalAttribute(
@@ -84,7 +78,6 @@ fun MutableMap<String, Any?>.enrichWithConstantAttribute(
  * @param key - local attribute key.
  * @param value - attribute value.
  */
-@InternalApi
 fun MutableMap<String, Any?>.enrichWithNonNullAttribute(
     key: LocalAttribute.Key,
     value: Any?
@@ -96,7 +89,6 @@ fun MutableMap<String, Any?>.enrichWithNonNullAttribute(
  * @param key - local attribute key.
  * @param value - attribute value.
  */
-@InternalApi
 fun MutableMap<String, Any?>.enrichWithLocalAttribute(
     key: LocalAttribute.Key,
     value: Any?
