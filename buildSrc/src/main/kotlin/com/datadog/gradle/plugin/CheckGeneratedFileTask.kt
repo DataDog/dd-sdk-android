@@ -9,16 +9,18 @@ package com.datadog.gradle.plugin
 import com.datadog.gradle.utils.execShell
 import org.gradle.api.DefaultTask
 import org.gradle.api.tasks.Internal
+import org.gradle.process.ExecOperations
 import java.io.File
 
 abstract class CheckGeneratedFileTask(
-    @Internal val genTaskName: String
+    @Internal val genTaskName: String,
+    private val execOperations: ExecOperations
 ) : DefaultTask() {
 
     // region Task
 
     fun verifyGeneratedFileExists(targetFile: File) {
-        val lines = project.execShell(
+        val lines = execOperations.execShell(
             "git",
             "diff",
             "--color=never",
