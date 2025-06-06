@@ -4,10 +4,9 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.core
+package com.datadog.android.internal.utils
 
 import android.os.StrictMode
-import com.datadog.android.lint.InternalApi
 
 /**
  * This utility function wraps a call to a method that needs to perform a disk read operation
@@ -17,7 +16,6 @@ import com.datadog.android.lint.InternalApi
  * @param operation the operation
  * @return the value returned by the operation
  */
-@InternalApi
 fun <T> allowThreadDiskReads(
     operation: () -> T
 ): T {
@@ -37,7 +35,6 @@ fun <T> allowThreadDiskReads(
  * @param operation the operation
  * @return the value returned by the operation
  */
-@InternalApi
 fun <T> allowThreadDiskWrites(
     operation: () -> T
 ): T {

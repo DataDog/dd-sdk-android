@@ -68,6 +68,7 @@ android {
 }
 
 dependencies {
+    implementation(project(":dd-sdk-android-internal"))
     api(project(":dd-sdk-android-core"))
     implementation(libs.kotlin)
     implementation(libs.okHttp)

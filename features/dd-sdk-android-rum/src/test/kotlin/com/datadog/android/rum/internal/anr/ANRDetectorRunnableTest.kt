@@ -10,7 +10,6 @@ import android.content.Context
 import android.os.Handler
 import android.os.Looper
 import com.datadog.android.core.feature.event.ThreadDump
-import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.internal.utils.loggableStackTrace
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource

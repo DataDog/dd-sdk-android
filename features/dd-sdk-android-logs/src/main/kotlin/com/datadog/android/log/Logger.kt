@@ -12,8 +12,8 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.SdkCore
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
-import com.datadog.android.core.internal.utils.NULL_MAP_VALUE
 import com.datadog.android.core.sampling.RateBasedSampler
+import com.datadog.android.internal.utils.NULL_MAP_VALUE
 import com.datadog.android.log.internal.LogsFeature
 import com.datadog.android.log.internal.domain.DatadogLogGenerator
 import com.datadog.android.log.internal.logger.CombinedLogHandler

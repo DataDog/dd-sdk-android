@@ -11,8 +11,8 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.feature.FeatureSdkCore
-import com.datadog.android.core.internal.utils.toHexString
 import com.datadog.android.internal.utils.loggableStackTrace
+import com.datadog.android.internal.utils.toHexString
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.trace.utils.verifyLog
 import com.datadog.android.utils.forge.Configurator

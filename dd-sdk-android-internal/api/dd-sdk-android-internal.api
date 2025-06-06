@@ -227,12 +227,29 @@ public final class com/datadog/android/internal/utils/LongExtKt {
 	public static final fun densityNormalized (JF)J
 }
 
+public final class com/datadog/android/internal/utils/MapUtilsKt {
+	public static final fun getNULL_MAP_VALUE ()Ljava/lang/Object;
+}
+
+public final class com/datadog/android/internal/utils/NumberExtKt {
+	public static final fun toHexString (I)Ljava/lang/String;
+	public static final fun toHexString (J)Ljava/lang/String;
+	public static final fun toHexString (Ljava/math/BigInteger;)Ljava/lang/String;
+}
+
+public final class com/datadog/android/internal/utils/StrictModeExtKt {
+	public static final fun allowThreadDiskReads (Lkotlin/jvm/functions/Function0;)Ljava/lang/Object;
+	public static final fun allowThreadDiskWrites (Lkotlin/jvm/functions/Function0;)Ljava/lang/Object;
+}
+
 public final class com/datadog/android/internal/utils/StringBuilderExtKt {
 	public static final fun appendIfNotEmpty (Ljava/lang/StringBuilder;C)Ljava/lang/StringBuilder;
 	public static final fun appendIfNotEmpty (Ljava/lang/StringBuilder;Ljava/lang/String;)Ljava/lang/StringBuilder;
 }
 
 public final class com/datadog/android/internal/utils/ThreadExtKt {
+	public static final fun asString (Ljava/lang/Thread$State;)Ljava/lang/String;
+	public static final fun loggableStackTrace ([Ljava/lang/StackTraceElement;)Ljava/lang/String;
 	public static final fun safeGetThreadId (Ljava/lang/Thread;)J
 }
 
