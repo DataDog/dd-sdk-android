@@ -193,17 +193,17 @@ internal class DatadogCore(
         name: String?,
         extraInfo: Map<String, Any?>
     ) {
-        // TODO RUM-10241: Implement set account info in Datadog Core
+        coreFeature.accountInfoProvider.setAccountInfo(id, name, extraInfo)
     }
 
     override fun addAccountExtraInfo(
         extraInfo: Map<String, Any?>
     ) {
-        // TODO RUM-10241: Implement set account info in Datadog Core
+        coreFeature.accountInfoProvider.addExtraInfo(extraInfo)
     }
 
     override fun clearAccountInfo() {
-        // TODO RUM-10241: Implement set account info in Datadog Core
+        coreFeature.accountInfoProvider.clearAccountInfo()
     }
 
     /** @inheritDoc */
