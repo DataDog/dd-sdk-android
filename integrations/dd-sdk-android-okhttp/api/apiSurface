@@ -35,7 +35,7 @@ open class com.datadog.android.okhttp.trace.DeterministicTraceSampler : com.data
   constructor(Float)
   constructor(Double)
 fun okhttp3.Request.Builder.parentSpan(io.opentracing.Span): okhttp3.Request.Builder
-typealias Tracer = com.datadog.trace.core.CoreTracer
+typealias Tracer = com.datadog.trace.bootstrap.instrumentation.api.AgentTracer.TracerAPI
 typealias Span = com.datadog.trace.bootstrap.instrumentation.api.AgentSpan
 typealias SpanContext = com.datadog.trace.bootstrap.instrumentation.api.AgentSpan.Context
 interface com.datadog.android.okhttp.trace.TracedRequestListener
