@@ -12,6 +12,7 @@ import com.datadog.android.api.feature.Feature
 import com.datadog.android.okhttp.internal.rum.NoOpRumResourceAttributesProvider
 import com.datadog.android.okhttp.trace.DeterministicTraceSampler
 import com.datadog.android.okhttp.trace.NoOpTracedRequestListener
+import com.datadog.android.okhttp.trace.Tracer
 import com.datadog.android.okhttp.trace.TracingInterceptor
 import com.datadog.android.okhttp.trace.TracingInterceptorNotSendingSpanTest
 import com.datadog.android.okhttp.utils.verifyLog
@@ -32,7 +33,6 @@ import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
-import io.opentracing.Tracer
 import okhttp3.MediaType
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.Protocol
@@ -84,7 +84,8 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
 
     override fun instantiateTestedInterceptor(
         tracedHosts: Map<String, Set<TracingHeaderType>>,
-        factory: (SdkCore, Set<TracingHeaderType>) -> Tracer
+        globalTracerProvider: () -> Tracer?,
+        localTracerFactory: (SdkCore, Set<TracingHeaderType>) -> Tracer
     ): TracingInterceptor {
         whenever(rumMonitor.mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mock()
         whenever(rumMonitor.mockSdkCore.firstPartyHostResolver) doReturn mockResolver
@@ -96,7 +97,8 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
             traceSampler = mockTraceSampler,
             traceContextInjection = TraceContextInjection.ALL,
             redacted404ResourceName = fakeRedacted404Resources,
-            localTracerFactory = factory
+            localTracerFactory = localTracerFactory,
+            globalTracerProvider = globalTracerProvider
         )
     }
 
@@ -188,7 +190,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
         val expectedStartAttrs = emptyMap<String, Any?>()
         val expectedStopAttrs = mapOf(
             RumAttributes.TRACE_ID to fakeTraceIdAsString,
-            RumAttributes.SPAN_ID to fakeSpanId,
+            RumAttributes.SPAN_ID to fakeSpanId.toString(),
             RumAttributes.RULE_PSR to fakeTracingSampleRate / 100
         ) + fakeAttributes
         val mimeType = fakeMediaType?.type
@@ -233,7 +235,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
         val expectedStartAttrs = emptyMap<String, Any?>()
         val expectedStopAttrs = mapOf(
             RumAttributes.TRACE_ID to fakeTraceIdAsString,
-            RumAttributes.SPAN_ID to fakeSpanId,
+            RumAttributes.SPAN_ID to fakeSpanId.toString(),
             RumAttributes.RULE_PSR to fakeTracingSampleRate / 100
         ) + fakeAttributes
         val kind = RumResourceKind.NATIVE
@@ -274,7 +276,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
         val expectedStartAttrs = emptyMap<String, Any?>()
         val expectedStopAttrs = mapOf(
             RumAttributes.TRACE_ID to fakeTraceIdAsString,
-            RumAttributes.SPAN_ID to fakeSpanId,
+            RumAttributes.SPAN_ID to fakeSpanId.toString(),
             RumAttributes.RULE_PSR to fakeTracingSampleRate / 100
         ) + fakeAttributes
         val mimeType = fakeMediaType?.type
@@ -321,7 +323,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
         val expectedStartAttrs = emptyMap<String, Any?>()
         val expectedStopAttrs = mapOf(
             RumAttributes.TRACE_ID to fakeTraceIdAsString,
-            RumAttributes.SPAN_ID to fakeSpanId,
+            RumAttributes.SPAN_ID to fakeSpanId.toString(),
             RumAttributes.RULE_PSR to fakeTracingSampleRate / 100
         ) + fakeAttributes
         val mimeType = fakeMediaType?.type
@@ -417,7 +419,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
         }
         val expectedStopAttrs = mapOf(
             RumAttributes.TRACE_ID to fakeTraceIdAsString,
-            RumAttributes.SPAN_ID to fakeSpanId,
+            RumAttributes.SPAN_ID to fakeSpanId.toString(),
             RumAttributes.RULE_PSR to fakeTracingSampleRate / 100
         ) + fakeAttributes
         val mimeType = fakeMediaType?.type
@@ -466,7 +468,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
         }
         val expectedStopAttrs = mapOf(
             RumAttributes.TRACE_ID to fakeTraceIdAsString,
-            RumAttributes.SPAN_ID to fakeSpanId,
+            RumAttributes.SPAN_ID to fakeSpanId.toString(),
             RumAttributes.RULE_PSR to fakeTracingSampleRate / 100
         ) + fakeAttributes
         val mimeType = fakeMediaType?.type
@@ -624,7 +626,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
         val expectedStartAttrs = emptyMap<String, Any?>()
         val expectedStopAttrs = mapOf(
             RumAttributes.TRACE_ID to fakeTraceIdAsString,
-            RumAttributes.SPAN_ID to fakeSpanId,
+            RumAttributes.SPAN_ID to fakeSpanId.toString(),
             RumAttributes.RULE_PSR to fakeTracingSampleRate / 100
         ) + fakeAttributes
         val mimeType = fakeMediaType?.type
@@ -727,7 +729,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
         val expectedStartAttrs = emptyMap<String, Any?>()
         val expectedStopAttrs = mapOf(
             RumAttributes.TRACE_ID to fakeTraceIdAsString,
-            RumAttributes.SPAN_ID to fakeSpanId,
+            RumAttributes.SPAN_ID to fakeSpanId.toString(),
             RumAttributes.RULE_PSR to fakeTracingSampleRate / 100
         ) + fakeAttributes
         val mimeType = fakeMediaType?.type

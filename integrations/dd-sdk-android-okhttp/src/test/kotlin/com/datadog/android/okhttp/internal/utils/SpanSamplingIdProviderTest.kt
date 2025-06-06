@@ -8,14 +8,15 @@ package com.datadog.android.okhttp.internal.utils
 
 import com.datadog.android.core.internal.utils.toHexString
 import com.datadog.android.log.LogAttributes
-import com.datadog.opentracing.DDSpanContext
+import com.datadog.android.okhttp.trace.Span
+import com.datadog.android.okhttp.trace.newSpanMock
 import com.datadog.tools.unit.forge.BaseConfigurator
+import com.datadog.trace.api.DDTraceId
+import com.datadog.trace.core.DDSpanContext
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.LongForgery
-import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
-import io.opentracing.Span
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -47,8 +48,8 @@ internal class SpanSamplingIdProviderTest {
     @BeforeEach
     fun `set up`(forge: Forge) {
         fakeTags = forge.aMap { anAlphabeticalString() to aString() }
-        whenever(mockSpan.context()) doReturn mockSpanContext
         whenever(mockSpanContext.tags) doReturn forge.aNullable { fakeTags }
+        mockSpan = forge.newSpanMock(mockSpanContext)
     }
 
     @Test
@@ -78,7 +79,7 @@ internal class SpanSamplingIdProviderTest {
     ) {
         // Given
         val expectedId = traceId.toULong()
-        whenever(mockSpanContext.toTraceId()) doReturn traceId.toString()
+        whenever(mockSpanContext.traceId) doReturn DDTraceId.from(traceId)
 
         // When
         val result = SpanSamplingIdProvider.provideId(mockSpan)
@@ -88,12 +89,10 @@ internal class SpanSamplingIdProviderTest {
     }
 
     @Test
-    fun `M return 0u W provideId() {no rum session, invalid traceId}`(
-        @StringForgery(regex = "([g-z][\\w\\d])+") fakeString: String
-    ) {
+    fun `M return 0u W provideId() {no rum session, invalid traceId}`() {
         // Given
         val expectedId: ULong = 0u
-        whenever(mockSpanContext.toTraceId()) doReturn fakeString
+        whenever(mockSpanContext.traceId) doReturn DDTraceId.ZERO
 
         // When
         val result = SpanSamplingIdProvider.provideId(mockSpan)
@@ -106,7 +105,7 @@ internal class SpanSamplingIdProviderTest {
     fun `M return 0u W provideId() {no rum session, empty traceId}`() {
         // Given
         val expectedId: ULong = 0u
-        whenever(mockSpanContext.toTraceId()) doReturn ""
+        whenever(mockSpanContext.traceId) doReturn DDTraceId.ZERO
 
         // When
         val result = SpanSamplingIdProvider.provideId(mockSpan)

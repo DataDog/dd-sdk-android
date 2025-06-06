@@ -21,31 +21,27 @@ import com.datadog.android.internal.telemetry.TracingHeaderTypesSet
 import com.datadog.android.internal.utils.loggableStackTrace
 import com.datadog.android.okhttp.TraceContext
 import com.datadog.android.okhttp.TraceContextInjection
-import com.datadog.android.okhttp.internal.otel.toOpenTracingContext
+import com.datadog.android.okhttp.internal.otel.toAgentSpanContext
 import com.datadog.android.okhttp.internal.trace.toInternalTracingHeaderType
-import com.datadog.android.okhttp.internal.utils.traceIdAsHexString
 import com.datadog.android.trace.AndroidTracer
 import com.datadog.android.trace.TracingHeaderType
 import com.datadog.legacy.trace.api.DDTags
-import com.datadog.legacy.trace.api.interceptor.MutableSpan
 import com.datadog.legacy.trace.api.sampling.PrioritySampling
-import com.datadog.opentracing.DDSpan
-import com.datadog.opentracing.DDSpanContext
-import com.datadog.opentracing.DDTracer
-import com.datadog.opentracing.propagation.ExtractedContext
-import io.opentracing.Span
-import io.opentracing.SpanContext
-import io.opentracing.Tracer
-import io.opentracing.propagation.Format
-import io.opentracing.propagation.TextMapExtractAdapter
-import io.opentracing.propagation.TextMapInject
-import io.opentracing.tag.Tags
-import io.opentracing.util.GlobalTracer
+import com.datadog.trace.api.config.TracerConfig
+import com.datadog.trace.api.interceptor.MutableSpan
+import com.datadog.trace.api.sampling.SamplingMechanism
+import com.datadog.trace.bootstrap.instrumentation.api.AgentSpan
+import com.datadog.trace.bootstrap.instrumentation.api.Tags
+import com.datadog.trace.common.sampling.AllSampler
+import com.datadog.trace.core.CoreTracer
+import com.datadog.trace.core.DDSpan
+import com.datadog.trace.core.propagation.ExtractedContext
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import java.net.HttpURLConnection
+import java.util.Properties
 import java.util.concurrent.atomic.AtomicReference
 
 /**
@@ -87,7 +83,8 @@ internal constructor(
     internal val traceSampler: Sampler<Span>,
     internal val traceContextInjection: TraceContextInjection,
     internal val redacted404ResourceName: Boolean,
-    internal val localTracerFactory: (SdkCore, Set<TracingHeaderType>) -> Tracer
+    internal val localTracerFactory: (SdkCore, Set<TracingHeaderType>) -> Tracer,
+    private val globalTracerProvider: () -> Tracer?
 ) : Interceptor {
 
     private val localTracerReference: AtomicReference<Tracer> = AtomicReference()
@@ -109,8 +106,11 @@ internal constructor(
 
         sdkCore?.updateFeatureContext(Feature.TRACING_FEATURE_NAME) {
             it[OKHTTP_INTERCEPTOR_SAMPLE_RATE] = traceSampler.getSampleRate()
-            it[OKHTTP_INTERCEPTOR_HEADER_TYPES] =
-                TracingHeaderTypesSet(tracedHosts.values.flatten().map { it.toInternalTracingHeaderType() }.toSet())
+            it[OKHTTP_INTERCEPTOR_HEADER_TYPES] = TracingHeaderTypesSet(
+                tracedHosts.values.flatten()
+                    .map(TracingHeaderType::toInternalTracingHeaderType)
+                    .toSet()
+            )
         }
     }
 
@@ -211,13 +211,13 @@ internal constructor(
         request: Request,
         tracer: Tracer
     ): Response {
-        val span = buildSpan(tracer, request)
-        val isSampled = span.sample(tracer, request)
+        val span: Span = buildSpan(tracer, request)
+        val isSampled = span.sample(request)
 
         if (span is DDSpan && span.isRootSpan) {
             val samplingPriority = if (isSampled) PrioritySampling.SAMPLER_KEEP else PrioritySampling.SAMPLER_DROP
             val spanContext = span.context()
-            if (spanContext.setSamplingPriority(samplingPriority)) {
+            if (spanContext.setSamplingPriority(samplingPriority, SamplingMechanism.EXTERNAL_OVERRIDE.toInt())) {
                 spanContext.setMetric(
                     AGENT_PSR_ATTRIBUTE,
                     (traceSampler.getSampleRate() ?: ZERO_SAMPLE_RATE) / ALL_IN_SAMPLE_RATE
@@ -266,6 +266,7 @@ internal constructor(
     @Synchronized
     private fun resolveTracer(sdkCore: InternalSdkCore): Tracer? {
         val tracingFeature = sdkCore.getFeature(Feature.TRACING_FEATURE_NAME)
+        val globalTracerInstance = globalTracerProvider.invoke()
         return if (tracingFeature == null) {
             sdkCore.internalLogger.log(
                 InternalLogger.Level.WARN,
@@ -274,10 +275,10 @@ internal constructor(
                 onlyOnce = true
             )
             null
-        } else if (GlobalTracer.isRegistered()) {
+        } else if (globalTracerInstance != null) {
             // clear the localTracer reference if any
             localTracerReference.set(null)
-            GlobalTracer.get()
+            globalTracerInstance
         } else {
             // we check if we already have a local tracer if not we instantiate one
             resolveLocalTracer(sdkCore)
@@ -305,46 +306,31 @@ internal constructor(
         val parentContext = extractParentContext(tracer, request)
         val url = request.url.toString()
 
-        val spanBuilder = tracer.buildSpan(SPAN_NAME)
-        (spanBuilder as? DDTracer.DDSpanBuilder)?.withOrigin(traceOrigin)
-        val span = spanBuilder
+        @Suppress("DEPRECATION")
+        val span = tracer.buildSpan(SPAN_NAME)
+            .withOrigin(traceOrigin)
             .asChildOf(parentContext)
             .start()
 
-        (span as? MutableSpan)?.resourceName = url.substringBefore(URL_QUERY_PARAMS_BLOCK_SEPARATOR)
-        span.setTag(Tags.HTTP_URL.key, url)
-        span.setTag(Tags.HTTP_METHOD.key, request.method)
+        if (span is MutableSpan) {
+            span.setResourceName(url.substringBefore(URL_QUERY_PARAMS_BLOCK_SEPARATOR))
+        }
+        span.setTag(Tags.HTTP_URL, url)
+        span.setTag(Tags.HTTP_METHOD, request.method)
         span.setTag(Tags.SPAN_KIND, Tags.SPAN_KIND_CLIENT)
 
         return span
     }
 
-    @Suppress("ReturnCount")
-    private fun extractSamplingDecision(tracer: Tracer, request: Request): Boolean? {
+    private fun extractSamplingDecision(request: Request): Boolean? {
         val headerSamplingPriority = extractSamplingDecisionFromHeader(request)
-        if (headerSamplingPriority != null) return headerSamplingPriority
+        val openTelemetrySpanSamplingPriority = request.tag(TraceContext::class.java)?.samplingPriority
 
-        // if parent context is propagated via headers, sampling decision will be there (see DDTracer#inject), but if
-        // it is tagged span, we need to trigger sampling decision manually, it is not yet made probably.
-        val openTracingSpan = request.tag(Span::class.java)
-        if (openTracingSpan != null && openTracingSpan.context() is DDSpanContext) {
-            // very hacky, this is to trigger sampling decision and avoid
-            // making DDTracer#setSamplingPriorityIfNecessary public
-            tracer.inject(openTracingSpan.context(), Format.Builtin.TEXT_MAP_INJECT, TextMapInject { _, _ -> })
-            return (openTracingSpan.context() as? DDSpanContext)
-                ?.let { if (it.samplingPriority == PrioritySampling.UNSET) null else it.samplingPriority > 0 }
+        return when {
+            headerSamplingPriority != null -> headerSamplingPriority
+            openTelemetrySpanSamplingPriority == PrioritySampling.UNSET -> null
+            else -> openTelemetrySpanSamplingPriority?.let { samplingPriority -> samplingPriority > 0 }
         }
-
-        val openTelemetrySpan = request.tag(TraceContext::class.java)
-        if (openTelemetrySpan != null) {
-            return if (openTelemetrySpan.samplingPriority == PrioritySampling.UNSET) {
-                null
-            } else {
-                openTelemetrySpan.samplingPriority > 0
-            }
-        }
-
-        return null
     }
 
     @Suppress("ReturnCount")
@@ -397,29 +383,17 @@ internal constructor(
 
     private fun extractParentContext(tracer: Tracer, request: Request): SpanContext? {
         val tagContext = request.tag(Span::class.java)?.context()
-            ?: request.tag(TraceContext::class.java)?.toOpenTracingContext()
-        // need this, because TagContext#toSpanId returns empty string even if there is non-empty context
-        val hasTag = request.tag(Span::class.java)
-            ?: request.tag(TraceContext::class.java) != null
+            ?: request.tag(TraceContext::class.java)?.toAgentSpanContext()
 
-        val headerContext = tracer.extract(
-            Format.Builtin.TEXT_MAP_EXTRACT,
-            TextMapExtractAdapter(
-                request.headers.toMultimap()
-                    .map { it.key to it.value.joinToString(";") }
-                    .toMap()
-            )
-        )
+        val headerContext: AgentSpan.Context.Extracted = tracer.propagate().extract(request) { carrier, classifier ->
+            val headers = carrier.headers.toMultimap()
+                .map { it.key to it.value.joinToString(";") }
+                .toMap()
 
-        // Tracer.extract will return empty object, not null, if nothing was extracted. ExtractedContext will be
-        // returned only if there is real tracing info.
-        return if (headerContext is ExtractedContext) {
-            headerContext
-        } else if (hasTag) {
-            tagContext
-        } else {
-            null
+            for ((key, value) in headers) classifier.accept(key, value)
         }
+
+        return if (headerContext is ExtractedContext) headerContext else tagContext
     }
 
     private fun setSampledOutHeaders(
@@ -455,19 +429,18 @@ internal constructor(
 
     private fun handleDatadogSampledOutHeaders(requestBuilder: Request.Builder, span: Span, tracer: Tracer) {
         if (traceContextInjection == TraceContextInjection.ALL) {
-            tracer.inject(
+            tracer.propagate().inject(
                 span.context(),
-                Format.Builtin.TEXT_MAP_INJECT,
-                TextMapInject { key, value ->
-                    requestBuilder.removeHeader(key)
-                    when (key) {
-                        DATADOG_LEAST_SIGNIFICANT_64_BITS_TRACE_ID_HEADER,
-                        DATADOG_TAGS_HEADER,
-                        DATADOG_SPAN_ID_HEADER,
-                        DATADOG_ORIGIN_HEADER -> requestBuilder.addHeader(key, value)
-                    }
+                requestBuilder
+            ) { carrier, key, value ->
+                carrier.removeHeader(key)
+                when (key) {
+                    DATADOG_LEAST_SIGNIFICANT_64_BITS_TRACE_ID_HEADER,
+                    DATADOG_TAGS_HEADER,
+                    DATADOG_SPAN_ID_HEADER,
+                    DATADOG_ORIGIN_HEADER -> carrier.addHeader(key, value)
                 }
-            )
+            }
             requestBuilder.addHeader(
                 DATADOG_SAMPLING_PRIORITY_HEADER,
                 DATADOG_DROP_SAMPLING_DECISION
@@ -489,18 +462,18 @@ internal constructor(
 
     private fun handleW3CNotSampledHeaders(span: Span, requestBuilder: Request.Builder) {
         if (traceContextInjection == TraceContextInjection.ALL) {
-            val traceId = span.context().traceIdAsHexString()
-            val spanId = span.context().toSpanId()
+            val traceId = span.context().traceId.toHexString()
+            val spanId = span.context().spanId.toString()
             requestBuilder.addHeader(
                 W3C_TRACEPARENT_KEY,
-                @Suppress("UnsafeThirdPartyFunctionCall") // Format string is static
+                @Suppress("UnsafeThirdPartyFunctionCall", "InvalidStringFormat") // Format string is static
                 W3C_TRACEPARENT_DROP_SAMPLING_DECISION.format(
                     traceId.padStart(length = W3C_TRACE_ID_LENGTH, padChar = '0'),
                     spanId.padStart(length = W3C_PARENT_ID_LENGTH, padChar = '0')
                 )
             )
             // TODO RUM-2121 3rd party vendor information will be erased
-            @Suppress("UnsafeThirdPartyFunctionCall") // Format string is static
+            @Suppress("UnsafeThirdPartyFunctionCall", "InvalidStringFormat") // Format string is static
             var traceStateHeader = W3C_TRACESTATE_DROP_SAMPLING_DECISION
                 .format(spanId.padStart(length = W3C_PARENT_ID_LENGTH, padChar = '0'))
             if (traceOrigin != null) {
@@ -554,44 +527,41 @@ internal constructor(
         if (!isSampled) {
             setSampledOutHeaders(tracedRequestBuilder, tracingHeaderTypes, span, tracer)
         } else {
-            tracer.inject(
+            tracer.propagate().inject(
                 span.context(),
-                Format.Builtin.TEXT_MAP_INJECT,
-                TextMapInject { key, value ->
-                    // By default the `addHeader` method adds a value and doesn't replace it
-                    // We need to remove the old trace/span info to use the one for the current span
-                    tracedRequestBuilder.removeHeader(key)
-                    when (key) {
-                        DATADOG_SAMPLING_PRIORITY_HEADER,
-                        DATADOG_LEAST_SIGNIFICANT_64_BITS_TRACE_ID_HEADER,
-                        DATADOG_TAGS_HEADER,
-                        DATADOG_SPAN_ID_HEADER,
-                        DATADOG_ORIGIN_HEADER -> if (tracingHeaderTypes.contains(TracingHeaderType.DATADOG)) {
-                            tracedRequestBuilder.addHeader(key, value)
-                        }
-
-                        B3_HEADER_KEY -> if (tracingHeaderTypes.contains(TracingHeaderType.B3)) {
-                            tracedRequestBuilder.addHeader(key, value)
-                        }
-
-                        B3M_SPAN_ID_KEY,
-                        B3M_TRACE_ID_KEY,
-                        B3M_SAMPLING_PRIORITY_KEY -> if (tracingHeaderTypes.contains(
-                                TracingHeaderType.B3MULTI
-                            )
-                        ) {
-                            tracedRequestBuilder.addHeader(key, value)
-                        }
-
-                        W3C_TRACEPARENT_KEY,
-                        W3C_TRACESTATE_KEY -> if (tracingHeaderTypes.contains(TracingHeaderType.TRACECONTEXT)) {
-                            tracedRequestBuilder.addHeader(key, value)
-                        }
-
-                        else -> tracedRequestBuilder.addHeader(key, value)
+                tracedRequestBuilder
+            ) { carrier, key, value ->
+                tracedRequestBuilder.removeHeader(key)
+                when (key) {
+                    DATADOG_SAMPLING_PRIORITY_HEADER,
+                    DATADOG_LEAST_SIGNIFICANT_64_BITS_TRACE_ID_HEADER,
+                    DATADOG_TAGS_HEADER,
+                    DATADOG_SPAN_ID_HEADER,
+                    DATADOG_ORIGIN_HEADER -> if (tracingHeaderTypes.contains(TracingHeaderType.DATADOG)) {
+                        carrier.addHeader(key, value)
                     }
+
+                    B3_HEADER_KEY -> if (tracingHeaderTypes.contains(TracingHeaderType.B3)) {
+                        carrier.addHeader(key, value)
+                    }
+
+                    B3M_SPAN_ID_KEY,
+                    B3M_TRACE_ID_KEY,
+                    B3M_SAMPLING_PRIORITY_KEY -> if (tracingHeaderTypes.contains(
+                            TracingHeaderType.B3MULTI
+                        )
+                    ) {
+                        carrier.addHeader(key, value)
+                    }
+
+                    W3C_TRACEPARENT_KEY,
+                    W3C_TRACESTATE_KEY -> if (tracingHeaderTypes.contains(TracingHeaderType.TRACECONTEXT)) {
+                        carrier.addHeader(key, value)
+                    }
+
+                    else -> carrier.addHeader(key, value)
                 }
-            )
+            }
         }
 
         return tracedRequestBuilder
@@ -608,7 +578,7 @@ internal constructor(
             onRequestIntercepted(sdkCore, request, null, response, null)
         } else {
             val statusCode = response.code
-            span.setTag(Tags.HTTP_STATUS.key, statusCode)
+            span.setTag(Tags.HTTP_STATUS, statusCode)
             if (statusCode in HttpURLConnection.HTTP_BAD_REQUEST until HttpURLConnection.HTTP_INTERNAL_ERROR) {
                 (span as? MutableSpan)?.isError = true
             }
@@ -647,13 +617,12 @@ internal constructor(
         }
     }
 
-    private fun Span.drop() = (this as? MutableSpan)?.drop()
-
-    private fun Span.sample(tracer: Tracer, request: Request): Boolean {
-        return if (this is DDSpan && samplingPriority != null) {
+    private fun Span.sample(request: Request): Boolean {
+        val samplingPriority = (this as? DDSpan)?.samplingPriority
+        return if (samplingPriority != null) {
             samplingPriority > 0
         } else {
-            extractSamplingDecision(tracer, request) ?: traceSampler.sample(this)
+            extractSamplingDecision(request) ?: traceSampler.sample(this)
         }
     }
 
@@ -705,7 +674,8 @@ internal constructor(
                 traceSampler,
                 traceContextInjection,
                 redacted404ResourceName,
-                localTracerFactory
+                localTracerFactory,
+                globalTracerProvider
             )
         }
     }
@@ -721,6 +691,7 @@ internal constructor(
         internal var traceOrigin: String? = null
         internal var traceSampler: Sampler<Span> = DeterministicTraceSampler(DEFAULT_TRACE_SAMPLE_RATE)
         internal var localTracerFactory = DEFAULT_LOCAL_TRACER_FACTORY
+        internal var globalTracerProvider: () -> Tracer? = { null }
         internal var traceContextInjection = TraceContextInjection.SAMPLED
 
         internal var redacted404ResourceName = true
@@ -799,6 +770,11 @@ internal constructor(
             return getThis()
         }
 
+        internal fun setGlobalTracerProvider(globalTracerProvider: () -> Tracer?): R {
+            this.globalTracerProvider = globalTracerProvider
+            return getThis()
+        }
+
         internal abstract fun getThis(): R
 
         /**
@@ -871,12 +847,18 @@ internal constructor(
         internal const val OKHTTP_INTERCEPTOR_HEADER_TYPES = "okhttp_interceptor_header_types"
 
         private const val AGENT_PSR_ATTRIBUTE = "_dd.agent_psr"
+
         private val DEFAULT_LOCAL_TRACER_FACTORY: (SdkCore, Set<TracingHeaderType>) -> Tracer =
-            { sdkCore, tracingHeaderTypes ->
-                AndroidTracer.Builder(sdkCore)
-                    // set sample rate to 100 to avoid sampling in the tracer, we are going to sample in the interceptor
-                    .setSampleRate(ALL_IN_SAMPLE_RATE)
-                    .setTracingHeaderTypes(tracingHeaderTypes)
+            { sdkCore, tracingHeaderTypes: Set<TracingHeaderType> ->
+                val propagationStyles = tracingHeaderTypes.joinToString(",")
+                CoreTracer.CoreTracerBuilder((sdkCore as FeatureSdkCore).internalLogger)
+                    .withProperties(
+                        Properties().apply {
+                            setProperty(TracerConfig.PROPAGATION_STYLE_EXTRACT, propagationStyles)
+                            setProperty(TracerConfig.PROPAGATION_STYLE_INJECT, propagationStyles)
+                        }
+                    )
+                    .sampler(AllSampler())
                     .build()
             }
     }
