@@ -22,7 +22,7 @@ androidXConstraintLayout = "2.0.4"
 androidXCore = "1.3.1"
 androidXFragment = "1.2.4"
 androidXLeanback = "1.0.0"
-androidXLifecycleRuntimeCompose = "2.8.7"
+androidXLifecycle = "2.8.7"
 androidXMetrics = "1.0.0-beta02"
 androidXMultidex = "2.0.1"
 androidXNavigation = "2.7.7"
@@ -91,6 +91,8 @@ room = "2.5.1"
 rxJava3 = "3.0.0"
 timber = "5.0.1"
 coroutines = "1.4.2"
+exoplayer = "2.19.1"
+newPipeExtractor = "v0.24.6"
 
 # Local Server
 ktor = "2.3.13"
@@ -118,7 +120,7 @@ sqlDelightGradlePlugin = { module = "com.squareup.sqldelight:gradle-plugin", ver
 binaryCompatibilityGradlePlugin = { module = "org.jetbrains.kotlinx:binary-compatibility-validator", version.ref = "binaryCompatibility" }
 dependencyLicenseGradlePlugin = { module = "com.datadoghq:dependency-license", version.ref = "dependencyLicense" }
 versionsGradlePlugin = { module = "com.github.ben-manes:gradle-versions-plugin", version.ref = "versionsGradlePlugin" }
-kotlinxSerializationPlugin = { module = "org.jetbrains.kotlin:kotlin-serialization", version.ref = "kotlin"}
+kotlinxSerializationPlugin = { module = "org.jetbrains.kotlin:kotlin-serialization", version.ref = "kotlin" }
 
 # Annotation processors
 glideCompiler = { module = "com.github.bumptech.glide:compiler", version.ref = "glide" }
@@ -142,15 +144,19 @@ androidXAppCompat = { module = "androidx.appcompat:appcompat", version.ref = "an
 androidXCollection = { module = "androidx.collection:collection", version.ref = "androidXCollection" }
 androidXConstraintLayout = { module = "androidx.constraintlayout:constraintlayout", version.ref = "androidXConstraintLayout" }
 androidXCore = { module = "androidx.core:core", version.ref = "androidXCore" }
+androidXCoreKtx = { module = "androidx.core:core-ktx", version.ref = "androidXCore" }
 androidXFragment = { module = "androidx.fragment:fragment", version.ref = "androidXFragment" }
 androidXLeanback = { module = "androidx.leanback:leanback", version.ref = "androidXLeanback" }
 androidXMetrics = { module = "androidx.metrics:metrics-performance", version.ref = "androidXMetrics" }
 androidXMultidex = { module = "androidx.multidex:multidex", version.ref = "androidXMultidex" }
 androidXNavigationFragment = { module = "androidx.navigation:navigation-fragment", version.ref = "androidXNavigation" }
 androidXNavigationRuntime = { module = "androidx.navigation:navigation-runtime", version.ref = "androidXNavigation" }
+androidXNavigationUIKtx = { module = "androidx.navigation:navigation-ui-ktx", version.ref = "androidXNavigation" }
 androidXRecyclerView = { module = "androidx.recyclerview:recyclerview", version.ref = "androidXRecyclerView" }
 androidXWorkManager = { module = "androidx.work:work-runtime", version.ref = "androidXWorkManager" }
-androidXLifecycleCompose = { module = "androidx.lifecycle:lifecycle-runtime-compose", version.ref = "androidXLifecycleRuntimeCompose" }
+androidXLifecycleCompose = { module = "androidx.lifecycle:lifecycle-runtime-compose", version.ref = "androidXLifecycle" }
+androidXLifecycleLiveDataKtx = { module = "androidx.lifecycle:lifecycle-livedata-ktx", version.ref = "androidXLifecycle" }
+androidXLifecycleViewModelKtx = { module = "androidx.lifecycle:lifecycle-viewmodel-ktx", version.ref = "androidXLifecycle" }
 daggerLib = { module = "com.google.dagger:dagger", version.ref = "dagger" }
 daggerCompiler = { module = "com.google.dagger:dagger-compiler", version.ref = "dagger" }
 googleAccompanistAppCompatTheme = { module = "com.google.accompanist:accompanist-appcompat-theme", version.ref = "googleAccompanist" }
@@ -244,6 +250,11 @@ timber = { module = "com.jakewharton.timber:timber", version.ref = "timber" }
 
 coroutinesCore = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
 
+exoplayer = { module = "com.google.android.exoplayer:exoplayer", version.ref = "exoplayer" }
+exoplayerDataSource = { module = "com.google.android.exoplayer:exoplayer-datasource", version.ref = "exoplayer" }
+exoplayerOkHttp = { module = "com.google.android.exoplayer:extension-okhttp", version.ref = "exoplayer" }
+newPipeExtractor = { module = "com.github.TeamNewPipe.NewPipeExtractor:extractor", version.ref = "newPipeExtractor" }
+
 # Local Server
 ktorCore = { module = "io.ktor:ktor", version.ref = "ktor" }
 ktorGson = { module = "io.ktor:ktor-serialization-gson", version.ref = "ktor" }
@@ -332,6 +343,12 @@ glide = [
     "glideAnnotations",
     "glideCore",
     "glideOkHttp3",
+]
+
+exoplayer = [
+    "exoplayer",
+    "exoplayerDataSource",
+    "exoplayerOkHttp"
 ]
 
 ktor = [
