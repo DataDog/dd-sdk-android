@@ -6,6 +6,7 @@
 
 package com.datadog.android.log.assertj
 
+import com.datadog.android.api.context.AccountInfo
 import com.datadog.android.api.context.NetworkInfo
 import com.datadog.android.api.context.UserInfo
 import com.datadog.android.log.internal.domain.DatadogLogGenerator
@@ -220,6 +221,27 @@ internal class LogEventAssert(actual: LogEvent) :
         assertThat(actual.usr?.additionalProperties)
             .hasSameSizeAs(userInfo.additionalProperties)
             .containsAllEntriesOf(userInfo.additionalProperties)
+        return this
+    }
+
+    fun hasAccountInfo(accountInfo: AccountInfo?): LogEventAssert {
+        assertThat(actual.account?.name)
+            .overridingErrorMessage(
+                "Expected LogEvent to have account name: " +
+                    "${accountInfo?.name} but " +
+                    "instead was: ${actual.account?.name}"
+            )
+            .isEqualTo(accountInfo?.name)
+        assertThat(actual.account?.id)
+            .overridingErrorMessage(
+                "Expected LogEvent to have account id: " +
+                    "${accountInfo?.id} but " +
+                    "instead was: ${actual.account?.id}"
+            )
+            .isEqualTo(accountInfo?.id)
+        assertThat(actual.account?.additionalProperties)
+            .hasSameSizeAs(accountInfo?.extraInfo)
+            .containsAllEntriesOf(accountInfo?.extraInfo)
         return this
     }
 
