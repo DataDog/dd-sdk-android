@@ -6,6 +6,11 @@
 
 package com.datadog.android.core.internal.persistence.file.batch
 
+import android.os.FileObserver
+import android.os.FileObserver.CREATE
+import android.os.FileObserver.DELETE
+import android.os.FileObserver.MOVED_TO
+import android.os.FileObserver.MOVED_FROM
 import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.internal.metrics.BatchClosedMetadata
@@ -20,7 +25,6 @@ import com.datadog.android.core.internal.persistence.file.lengthSafe
 import com.datadog.android.core.internal.persistence.file.listFilesSafe
 import com.datadog.android.core.internal.persistence.file.mkdirsSafe
 import java.io.File
-import java.io.FileFilter
 import java.util.Locale
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.math.roundToLong
@@ -36,8 +40,6 @@ internal class BatchFileOrchestrator(
     private val pendingFiles: AtomicInteger = AtomicInteger(0)
 ) : FileOrchestrator {
 
-    private val fileFilter = BatchFileFilter()
-
     // Offset the recent threshold for read and write to avoid conflicts
     // Arbitrary offset as ±5% of the threshold
     @Suppress("UnsafeThirdPartyFunctionCall") // rounded Double isn't NaN
@@ -51,6 +53,37 @@ internal class BatchFileOrchestrator(
     private var previousFileItemCount: Long = 0
     private var lastFileAccessTimestamp: Long = 0L
     private var lastCleanupTimestamp: Long = 0L
+
+    private val knownFiles: MutableSet<File> =
+        rootDir.listFilesSafe(internalLogger)?.toMutableSet() ?: mutableSetOf()
+
+    @Suppress("DEPRECATION") // Recommended constructor only available in API 29 Q
+    internal val fileObserver = object : FileObserver(rootDir.path, FILE_OBSERVER_MASK) {
+        override fun onEvent(event: Int, name: String?) {
+            if (!name.isNullOrEmpty() && name.isBatchFileName) {
+                val file = File(rootDir, name)
+                when (event) {
+                    MOVED_TO, CREATE -> {
+                        synchronized(knownFiles) {
+                            knownFiles.add(file)
+                        }
+
+                    }
+
+                    MOVED_FROM, DELETE -> {
+                        synchronized(knownFiles) {
+                            knownFiles.remove(file)
+                        }
+                    }
+                }
+            }
+        }
+
+    }
+
+    init {
+        fileObserver.startWatching()
+    }
 
     // region FileOrchestrator
 
@@ -323,7 +356,9 @@ internal class BatchFileOrchestrator(
     }
 
     private fun listBatchFiles(): List<File> {
-        return rootDir.listFilesSafe(fileFilter, internalLogger).orEmpty().toList()
+        return synchronized(knownFiles) {
+            knownFiles.toList()
+        }
     }
 
     private fun listSortedBatchFiles(): List<File> {
@@ -340,27 +375,19 @@ internal class BatchFileOrchestrator(
         get() = File("${this.path}_metadata")
 
     private val File.isBatchFile: Boolean
-        get() = name.toLongOrNull() != null
+        get() = name.isBatchFileName
+
+    private val String.isBatchFileName: Boolean
+        get() = toLongOrNull() != null
 
     private val List<File>.latestBatchFile: File?
         get() = maxOrNull()
 
     // endregion
 
-    // region FileFilter
-
-    internal inner class BatchFileFilter : FileFilter {
-        @Suppress("ReturnCount")
-        override fun accept(file: File?): Boolean {
-            if (file == null) return false
-
-            return file.isBatchFile
-        }
-    }
-
-    // endregion
-
     companion object {
+
+        private const val FILE_OBSERVER_MASK = CREATE or DELETE or MOVED_TO or MOVED_FROM
 
         const val DECREASE_PERCENT = 0.95
         const val INCREASE_PERCENT = 1.05
