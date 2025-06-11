@@ -34,6 +34,9 @@ stages:
 .snippets:
   # macOS AMI will already have cmdline-tools installed
   install-android-api-components:
+    - export ANDROID_EMULATOR_IMAGE="system-images;android-$ANDROID_API;google_apis;${ANDROID_ARCH}"
+    - export ANDROID_PLATFORM="platforms;android-$ANDROID_API"
+    - export ANDROID_BUILD_TOOLS="build-tools;$ANDROID_API.0.0"
     - echo y | ~/android_sdk/cmdline-tools/latest/bin/sdkmanager --install "emulator"
     - echo y | ~/android_sdk/cmdline-tools/latest/bin/sdkmanager --install "platform-tools"
     - echo y | ~/android_sdk/cmdline-tools/latest/bin/sdkmanager --install "$ANDROID_PLATFORM"
@@ -225,17 +228,8 @@ test-pyramid:core-it:
   parallel:
     matrix:
       - ANDROID_API: "21"
-        ANDROID_EMULATOR_IMAGE: "system-images;android-$ANDROID_API;google_apis;${ANDROID_ARCH}"
-        ANDROID_PLATFORM: "platforms;android-$ANDROID_API"
-        ANDROID_BUILD_TOOLS: "build-tools;$ANDROID_API.0.0"
       - ANDROID_API: "28"
-        ANDROID_EMULATOR_IMAGE: "system-images;android-$ANDROID_API;google_apis;${ANDROID_ARCH}"
-        ANDROID_PLATFORM: "platforms;android-$ANDROID_API"
-        ANDROID_BUILD_TOOLS: "build-tools;$ANDROID_API.0.0"
       - ANDROID_API: "36"
-        ANDROID_EMULATOR_IMAGE: "system-images;android-$ANDROID_API;google_apis;${ANDROID_ARCH}"
-        ANDROID_PLATFORM: "platforms;android-$ANDROID_API"
-        ANDROID_BUILD_TOOLS: "build-tools;$ANDROID_API.0.0"
   script:
     - !reference [ .snippets, install-android-api-components ]
     - !reference [ .snippets, run-core-it-instrumented ]
@@ -333,17 +327,8 @@ test-pyramid:legacy-integration-instrumented:
   parallel:
     matrix:
       - ANDROID_API: "21"
-        ANDROID_EMULATOR_IMAGE: "system-images;android-$ANDROID_API;google_apis;${ANDROID_ARCH}"
-        ANDROID_PLATFORM: "platforms;android-$ANDROID_API"
-        ANDROID_BUILD_TOOLS: "build-tools;$ANDROID_API.0.0"
       - ANDROID_API: "28"
-        ANDROID_EMULATOR_IMAGE: "system-images;android-$ANDROID_API;google_apis;${ANDROID_ARCH}"
-        ANDROID_PLATFORM: "platforms;android-$ANDROID_API"
-        ANDROID_BUILD_TOOLS: "build-tools;$ANDROID_API.0.0"
       - ANDROID_API: "36"
-        ANDROID_EMULATOR_IMAGE: "system-images;android-$ANDROID_API;google_apis;${ANDROID_ARCH}"
-        ANDROID_PLATFORM: "platforms;android-$ANDROID_API"
-        ANDROID_BUILD_TOOLS: "build-tools;$ANDROID_API.0.0"
   script:
     - !reference [ .snippets, install-android-api-components ]
     - !reference [ .snippets, run-legacy-integration-instrumented ]
