@@ -123,7 +123,7 @@ internal class GsonExtTest {
     @Test
     fun `M return null W safeGetAsLong{a non long JsonPrimitive}`(forge: Forge) {
         // Given
-        val fakeNonLongJsonPrimitive = JsonPrimitive(forge.aString())
+        val fakeNonLongJsonPrimitive = JsonPrimitive(forge.anAlphabeticalString())
         val expectedLogMessage = BROKEN_JSON_ERROR_MESSAGE_FORMAT.format(
             fakeNonLongJsonPrimitive.toString(),
             JSON_PRIMITIVE_TYPE
