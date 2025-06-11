@@ -19,7 +19,6 @@ import androidx.fragment.app.Fragment
 import com.datadog.android.rum.profiling.Profiler
 import com.datadog.android.sample.R
 import com.datadog.android.sample.data.db.room.RoomDataSource
-import io.reactivex.rxjava3.schedulers.Schedulers
 import java.io.File
 import java.net.URL
 import java.net.URLConnection
@@ -132,7 +131,6 @@ internal class ProfilingFragment :
         Profiler.stopProfilingManagerProfiling("heavy_operations")
     }
 
-
     private fun startSimplePerfScenario() {
         Profiler.startSimpleperfProfiling(
             requireContext(),
@@ -215,7 +213,6 @@ internal class ProfilingFragment :
         }
 
         abstract fun stopProfiling()
-
     }
 
     class LocalProfileCpuWorkRunnable(outputMetricsFilePath: String, uiHandler: Handler) :
@@ -231,7 +228,6 @@ internal class ProfilingFragment :
             Debug.stopMethodTracing()
         }
     }
-
 
     companion object {
         private val TEST_EXECUTION_TIME_IN_MS = TimeUnit.SECONDS.toNanos(10)

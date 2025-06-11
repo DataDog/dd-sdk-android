@@ -10,9 +10,9 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.os.Build
 import android.os.CancellationSignal
-import androidx.core.os.StackSamplingRequestBuilder
 import android.util.Log
 import androidx.core.os.ProfilingRequest
+import androidx.core.os.StackSamplingRequestBuilder
 import androidx.core.os.SystemTraceRequestBuilder
 import androidx.core.os.requestProfiling
 import java.io.File
@@ -51,12 +51,12 @@ object Profiler {
 
     @SuppressLint("WrongConstant")
     fun startProfilingManagerProfiling(context: Context, samplingIntervalMs: Long, tag: String = "AppStartup") {
-        val samplesPerSecond = 1000 / samplingIntervalMs
+        val samplingFrequencyInHz = (1000 / samplingIntervalMs).toInt()
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
             val startTimeInNanos = System.currentTimeMillis()
             cancellationSignals.remove(tag)?.second?.cancel()
             val cancellationSignal = CancellationSignal()
-            val request = randomRequest(samplesPerSecond, tag, cancellationSignal)
+            val request = randomRequest(samplingFrequencyInHz, tag, cancellationSignal)
             cancellationSignals[tag] = Pair(startTimeInNanos, cancellationSignal)
             requestProfiling(
                 context,
@@ -67,25 +67,25 @@ object Profiler {
                 Log.v(
                     "ProfilingManager",
                     "Profiling result filepath: ${result.resultFilePath} error message: " +
-                            "${result.errorMessage}  and error code ${result.errorCode}"
+                        "${result.errorMessage}  and error code ${result.errorCode}"
                 )
                 result.resultFilePath?.let { filePath ->
                     val endTimestamp = System.currentTimeMillis()
                     val file = File(filePath)
-                    val newFilePath = "profiling_${startTimestamp}_${endTimestamp}.trace"
+                    val newFilePath = "profiling_${startTimestamp}_$endTimestamp.trace"
                     val datadogProfilingDirectory = File(context.getExternalFilesDir(null), "datadog_profiling")
                     if (!datadogProfilingDirectory.exists()) {
                         datadogProfilingDirectory.mkdirs()
                     }
-                   val newFile = File(datadogProfilingDirectory, newFilePath)
-                   Files.move(file.toPath(), newFile.toPath())
+                    val newFile = File(datadogProfilingDirectory, newFilePath)
+                    Files.move(file.toPath(), newFile.toPath())
                 }
             }
         }
     }
 
     private fun randomRequest(
-        samplesPerSecond: Long,
+        samplesPerSecond: Int,
         tag: String,
         cancellationSignal: CancellationSignal
     ): ProfilingRequest {
@@ -108,17 +108,16 @@ object Profiler {
 
     @SuppressLint("NewApi")
     private fun stackSamplingRequest(
-        samplesPerSecond: Long,
+        frequency: Int,
         tag: String,
         cancellationSignal: CancellationSignal
     ): ProfilingRequest {
         return StackSamplingRequestBuilder()
-            .setSamplingFrequencyHz(samplesPerSecond.toInt())
+            .setSamplingFrequencyHz(frequency.toInt())
             .setCancellationSignal(cancellationSignal)
             .setTag(tag)
             .build()
     }
-
 
     fun stopProfilingManagerProfiling(tag: String = "AppStartup") {
         val pair = cancellationSignals[tag]

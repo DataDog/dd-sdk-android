@@ -8,6 +8,11 @@ package com.datadog.android.sample
 import android.annotation.SuppressLint
 import android.app.Application
 import android.content.Context
+import android.database.Cursor
+import android.database.sqlite.SQLiteDatabase
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.graphics.BitmapFactory.Options
 import android.os.Build
 import android.os.StrictMode
 import android.os.StrictMode.ThreadPolicy
@@ -41,6 +46,7 @@ import com.datadog.android.sample.data.remote.RemoteDataSource
 import com.datadog.android.sample.picture.CoilImageLoader
 import com.datadog.android.sample.picture.FrescoImageLoader
 import com.datadog.android.sample.picture.PicassoImageLoader
+import com.datadog.android.sample.profiling.doCpuWork
 import com.datadog.android.sample.user.UserFragment
 import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.SessionReplay
@@ -72,6 +78,7 @@ import retrofit2.Retrofit
 import retrofit2.adapter.rxjava3.RxJava3CallAdapterFactory
 import retrofit2.converter.gson.GsonConverterFactory
 import timber.log.Timber
+import java.io.File
 import java.security.SecureRandom
 
 /**
@@ -112,15 +119,68 @@ class SampleApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        startRandomHeavyOperations()
         StrictMode.setThreadPolicy(ThreadPolicy.Builder().permitNetwork().build())
         Stetho.initializeWithDefaults(this)
         initializeDatadog()
-//        Thread.sleep(3000)
 
         initializeTimber()
 
         initializeImageLoaders()
         localServer.init(this)
+    }
+
+    private fun startRandomHeavyOperations() {
+        writeBigFile()
+        openDatabase()
+        parseLargeJson()
+        decodeLargeImage()
+        doCpuWork()
+    }
+
+    private fun writeBigFile() {
+        val outputFile = File("${applicationContext.getExternalFilesDir(null)}/big_file.txt")
+        if (!outputFile.exists()) {
+            outputFile.createNewFile()
+        }
+        outputFile.outputStream().bufferedWriter().use {
+            for (i in 0 until 100000) {
+                it.append("This is a big file line number $i\n")
+            }
+        }
+        outputFile.delete()
+    }
+
+    private fun openDatabase() {
+        val db: SQLiteDatabase = openOrCreateDatabase("bad.db", MODE_PRIVATE, null)
+        db.execSQL("CREATE TABLE IF NOT EXISTS huge_table (id INTEGER PRIMARY KEY, data TEXT)")
+        val cursor: Cursor = db.rawQuery("SELECT * FROM huge_table", null)
+        cursor.use {
+            for (i in 0 until 1000) {
+                db.execSQL(
+                    "INSERT INTO huge_table (data) VALUES ('This is a heavy cursor traversal line number $i')"
+                )
+            }
+        }
+        db.close()
+    }
+
+    private fun parseLargeJson() {
+        try {
+            val largeJson = "{ \"data\": [" + "0,".repeat(50000) + "0]}"
+            GsonBuilder().create().fromJson(largeJson, JsonObject::class.java)
+        } catch (ignored: Exception) {
+        }
+    }
+
+    private fun decodeLargeImage() {
+        try {
+            val options = Options()
+            options.inJustDecodeBounds = false
+            val bitmap: Bitmap = BitmapFactory.decodeResource(resources, R.drawable.loved_one, options)
+            bitmap.eraseColor(android.graphics.Color.RED)
+        } catch (ignored: Exception) {
+        }
     }
 
     override fun onLowMemory() {

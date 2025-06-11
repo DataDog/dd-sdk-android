@@ -12,7 +12,6 @@ import com.datadog.android.core.internal.data.upload.CurlInterceptor
 import com.datadog.android.rum.internal.domain.RumContext
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
-import okhttp3.ConnectionSpec
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
 import okhttp3.OkHttpClient
@@ -106,7 +105,7 @@ internal class PerfettoTracesUploader(
 
         private fun uploadFiles(file: File) {
             val intermediaryFilePath = file.absolutePath.substringBeforeLast(".").split("_")
-            val endTimestampInMillis  = intermediaryFilePath.lastOrNull()?.toLongOrNull() ?: return
+            val endTimestampInMillis = intermediaryFilePath.lastOrNull()?.toLongOrNull() ?: return
             val startTimestampInMillis = intermediaryFilePath.getOrNull(intermediaryFilePath.size - 2)?.toLongOrNull()
                 ?: return
             val startTimestampUtcFormat = formatIsoUtc(startTimestampInMillis)
@@ -145,7 +144,7 @@ internal class PerfettoTracesUploader(
                 .setType(MultipartBody.FORM)
                 .addFormDataPart(
                     "perfetto.proto",
-                    file.name,
+                    "perfetto.proto",
                     file.asRequestBody(CONTENT_TYPE_BINARY_TYPE)
                 )
                 .addFormDataPart(
@@ -197,7 +196,7 @@ internal class PerfettoTracesUploader(
             return sdf.format(Date(epochMillis))
         }
 
-        companion object{
+        companion object {
             internal val CONTENT_TYPE_BINARY_TYPE = "application/octet-stream".toMediaTypeOrNull()
             internal val CONTENT_TYPE_JSON_TYPE = "application/json".toMediaTypeOrNull()
         }
