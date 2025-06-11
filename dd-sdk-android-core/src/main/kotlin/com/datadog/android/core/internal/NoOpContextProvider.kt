@@ -18,47 +18,46 @@ import com.datadog.android.privacy.TrackingConsent
 
 internal class NoOpContextProvider : ContextProvider {
     // TODO RUM-3784 this one is quite ugly. Should return type be nullable?
-    override val context: DatadogContext
-        get() = DatadogContext(
-            site = DatadogSite.US1,
-            clientToken = "",
-            service = "",
-            env = "",
-            version = "",
-            variant = "",
-            source = "",
-            sdkVersion = "",
-            time = TimeInfo(
-                deviceTimeNs = 0L,
-                serverTimeNs = 0L,
-                serverTimeOffsetMs = 0L,
-                serverTimeOffsetNs = 0L
-            ),
-            processInfo = ProcessInfo(isMainProcess = true),
-            networkInfo = NetworkInfo(
-                connectivity = NetworkInfo.Connectivity.NETWORK_OTHER,
-                carrierName = null,
-                carrierId = null,
-                upKbps = null,
-                downKbps = null,
-                strength = null,
-                cellularTechnology = null
-            ),
-            deviceInfo = DeviceInfo(
-                deviceName = "",
-                deviceBrand = "",
-                deviceModel = "",
-                deviceType = DeviceType.OTHER,
-                deviceBuildId = "",
-                osName = "",
-                osMajorVersion = "",
-                osVersion = "",
-                architecture = "",
-                numberOfDisplays = null
-            ),
-            userInfo = UserInfo(null, null, null, null, emptyMap()),
-            trackingConsent = TrackingConsent.NOT_GRANTED,
-            appBuildId = null,
-            featuresContext = emptyMap()
-        )
+    override fun getContext(withFeatureContexts: Set<String>) = DatadogContext(
+        site = DatadogSite.US1,
+        clientToken = "",
+        service = "",
+        env = "",
+        version = "",
+        variant = "",
+        source = "",
+        sdkVersion = "",
+        time = TimeInfo(
+            deviceTimeNs = 0L,
+            serverTimeNs = 0L,
+            serverTimeOffsetMs = 0L,
+            serverTimeOffsetNs = 0L
+        ),
+        processInfo = ProcessInfo(isMainProcess = true),
+        networkInfo = NetworkInfo(
+            connectivity = NetworkInfo.Connectivity.NETWORK_OTHER,
+            carrierName = null,
+            carrierId = null,
+            upKbps = null,
+            downKbps = null,
+            strength = null,
+            cellularTechnology = null
+        ),
+        deviceInfo = DeviceInfo(
+            deviceName = "",
+            deviceBrand = "",
+            deviceModel = "",
+            deviceType = DeviceType.OTHER,
+            deviceBuildId = "",
+            osName = "",
+            osMajorVersion = "",
+            osVersion = "",
+            architecture = "",
+            numberOfDisplays = null
+        ),
+        userInfo = UserInfo(null, null, null, null, emptyMap()),
+        trackingConsent = TrackingConsent.NOT_GRANTED,
+        appBuildId = null,
+        featuresContext = emptyMap()
+    )
 }

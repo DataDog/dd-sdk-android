@@ -123,7 +123,9 @@ internal class DatadogLateCrashReporter(
                 return
             }
 
-            rumFeature.withWriteContext { datadogContext, writeScope ->
+            rumFeature.withWriteContext(
+                withFeatureContexts = setOf(Feature.RUM_FEATURE_NAME)
+            ) { datadogContext, writeScope ->
                 // means we are too late, last view event belongs to the ongoing session
                 if (lastViewEvent.session.id == datadogContext.rumSessionId) return@withWriteContext
 

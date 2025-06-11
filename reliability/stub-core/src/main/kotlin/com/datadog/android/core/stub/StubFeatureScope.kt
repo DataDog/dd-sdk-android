@@ -58,6 +58,7 @@ internal class StubFeatureScope(
     // region FeatureScope
 
     override fun withWriteContext(
+        withFeatureContexts: Set<String>,
         callback: (DatadogContext, EventWriteScope) -> Unit
     ) {
         callback(
@@ -66,11 +67,11 @@ internal class StubFeatureScope(
         )
     }
 
-    override fun withContext(callback: (datadogContext: DatadogContext) -> Unit) {
+    override fun withContext(withFeatureContexts: Set<String>, callback: (datadogContext: DatadogContext) -> Unit) {
         callback(datadogContextProvider())
     }
 
-    override fun getWriteContextSync(): Pair<DatadogContext, EventWriteScope>? {
+    override fun getWriteContextSync(withFeatureContexts: Set<String>): Pair<DatadogContext, EventWriteScope>? {
         return datadogContextProvider() to { it.invoke(eventBatchWriter) }
     }
 

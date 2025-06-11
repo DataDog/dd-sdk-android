@@ -11,8 +11,6 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.context.TimeInfo
 import com.datadog.android.api.feature.EventWriteScope
-import com.datadog.android.api.feature.Feature
-import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.api.storage.EventBatchWriter
 import com.datadog.android.api.storage.EventType
@@ -740,18 +738,10 @@ internal class RumViewManagerScopeTest {
         forge: Forge
     ) {
         // Given
-        // Because we have to test that the `application_started` action is written, we need to set
-        // up the feature scope properly
-        val mockRumFeatureScope: FeatureScope = mock()
         val mockEventBatchWriter: EventBatchWriter = mock()
-        whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumFeatureScope
         whenever(mockEventWriteScope.invoke(any())) doAnswer {
             val callback = it.getArgument<(EventBatchWriter) -> Unit>(0)
             callback.invoke(mockEventBatchWriter)
-        }
-        whenever(mockRumFeatureScope.withWriteContext(any())) doAnswer {
-            val callback = it.getArgument<(DatadogContext, EventWriteScope) -> Unit>(0)
-            callback.invoke(fakeDatadogContext, mockEventWriteScope)
         }
         val fakeAppStartEvent = forge.applicationStartedEvent()
 

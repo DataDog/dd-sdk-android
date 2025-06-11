@@ -644,7 +644,10 @@ internal class WebViewTrackingTest {
         // When
         proxy.consumeWebviewEvent(fakeWebEvent.toString())
         argumentCaptor<(DatadogContext, EventWriteScope) -> Unit> {
-            verify(mockWebViewRumFeature).withWriteContext(capture())
+            verify(mockWebViewRumFeature).withWriteContext(
+                eq(setOf(Feature.RUM_FEATURE_NAME, Feature.SESSION_REPLAY_FEATURE_NAME)),
+                capture()
+            )
             firstValue(mockDatadogContext, mockEventWriteScope)
         }
 

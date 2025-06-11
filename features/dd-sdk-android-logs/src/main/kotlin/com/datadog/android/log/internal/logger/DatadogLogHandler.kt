@@ -55,7 +55,10 @@ internal class DatadogLogHandler(
         if (sampler.sample(Unit)) {
             if (logsFeature != null) {
                 val threadName = Thread.currentThread().name
-                logsFeature.withWriteContext { datadogContext, writeScope ->
+                val withFeatureContexts = mutableSetOf<String>()
+                if (bundleWithRum) withFeatureContexts.add(Feature.RUM_FEATURE_NAME)
+                if (bundleWithTraces) withFeatureContexts.add(Feature.TRACING_FEATURE_NAME)
+                logsFeature.withWriteContext(withFeatureContexts) { datadogContext, writeScope ->
                     val log = createLog(
                         level,
                         datadogContext,
@@ -73,11 +76,7 @@ internal class DatadogLogHandler(
                     }
                 }
             } else {
-                sdkCore.internalLogger.log(
-                    InternalLogger.Level.WARN,
-                    InternalLogger.Target.USER,
-                    { LOGS_FEATURE_NOT_REGISTERED }
-                )
+                logLogsFeatureIsNotRegistered()
             }
         }
 
@@ -93,11 +92,7 @@ internal class DatadogLogHandler(
                     )
                 )
             } else {
-                sdkCore.internalLogger.log(
-                    InternalLogger.Level.INFO,
-                    InternalLogger.Target.USER,
-                    { RUM_FEATURE_NOT_REGISTERED }
-                )
+                logRumFeatureIsNotRegistered()
             }
         }
     }
@@ -128,7 +123,10 @@ internal class DatadogLogHandler(
         if (sampler.sample(Unit)) {
             if (logsFeature != null) {
                 val threadName = Thread.currentThread().name
-                logsFeature.withWriteContext { datadogContext, writeScope ->
+                val withFeatureContexts = mutableSetOf<String>()
+                if (bundleWithRum) withFeatureContexts.add(Feature.RUM_FEATURE_NAME)
+                if (bundleWithTraces) withFeatureContexts.add(Feature.TRACING_FEATURE_NAME)
+                logsFeature.withWriteContext(withFeatureContexts) { datadogContext, writeScope ->
                     val log = createLog(
                         level,
                         datadogContext,
@@ -148,11 +146,7 @@ internal class DatadogLogHandler(
                     }
                 }
             } else {
-                sdkCore.internalLogger.log(
-                    InternalLogger.Level.WARN,
-                    InternalLogger.Target.USER,
-                    { LOGS_FEATURE_NOT_REGISTERED }
-                )
+                logLogsFeatureIsNotRegistered()
             }
         }
 
@@ -168,11 +162,7 @@ internal class DatadogLogHandler(
                     )
                 )
             } else {
-                sdkCore.internalLogger.log(
-                    InternalLogger.Level.INFO,
-                    InternalLogger.Target.USER,
-                    { RUM_FEATURE_NOT_REGISTERED }
-                )
+                logRumFeatureIsNotRegistered()
             }
         }
     }
@@ -236,6 +226,22 @@ internal class DatadogLogHandler(
             threadName = threadName,
             bundleWithRum = bundleWithRum,
             bundleWithTraces = bundleWithTraces
+        )
+    }
+
+    private fun logLogsFeatureIsNotRegistered() {
+        sdkCore.internalLogger.log(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.USER,
+            { LOGS_FEATURE_NOT_REGISTERED }
+        )
+    }
+
+    private fun logRumFeatureIsNotRegistered() {
+        sdkCore.internalLogger.log(
+            InternalLogger.Level.INFO,
+            InternalLogger.Target.USER,
+            { RUM_FEATURE_NOT_REGISTERED }
         )
     }
 

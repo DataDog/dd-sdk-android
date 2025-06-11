@@ -230,6 +230,9 @@ internal class DatadogCore(
         val callable = Callable<Map<String, Any?>> {
             val feature = features[featureName] ?: return@Callable emptyMap()
             return@Callable feature.featureContextLock.readLock().safeWithLock {
+                // Creating copy here is VERY important - this will make
+                // independent snapshot of the features context which is not affected by the
+                // changes which can be made later by another thread.
                 // Use HashMap instead of .toMutableMap() for faster init
                 @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
                 HashMap(feature.featureContext)
@@ -387,13 +390,13 @@ internal class DatadogCore(
         return features.values.toList()
     }
 
-    override fun getDatadogContext(): DatadogContext? {
+    override fun getDatadogContext(withFeatureContexts: Set<String>): DatadogContext? {
         return coreFeature.contextExecutorService
             .submitSafe(
                 "getDatadogContext",
                 internalLogger,
                 Callable {
-                    with(contextProvider) { if (this is NoOpContextProvider) null else context }
+                    with(contextProvider) { if (this is NoOpContextProvider) null else getContext(withFeatureContexts) }
                 }
             )
             .getSafe("getDatadogContext", internalLogger)
@@ -435,12 +438,8 @@ internal class DatadogCore(
         )
 
         contextProvider = DatadogContextProvider(coreFeature) {
-            features.keys.map {
-                it to {
-                    // already on the context thread
-                    getFeatureContext(it, useContextThread = false)
-                }
-            }
+            // useContextThread = false to infer the caller thread (caller is responsible for the thread selection)
+            getFeatureContext(it, false)
         }
 
         applyAdditionalConfiguration(mutableConfig.additionalConfig)

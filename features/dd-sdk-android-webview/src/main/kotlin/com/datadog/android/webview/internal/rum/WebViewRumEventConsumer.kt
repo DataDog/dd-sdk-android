@@ -37,7 +37,9 @@ internal class WebViewRumEventConsumer(
             )
         )
         sdkCore.getFeature(WebViewRumFeature.WEB_RUM_FEATURE_NAME)
-            ?.withWriteContext { datadogContext, writeScope ->
+            ?.withWriteContext(
+                withFeatureContexts = setOf(Feature.RUM_FEATURE_NAME, Feature.SESSION_REPLAY_FEATURE_NAME)
+            ) { datadogContext, writeScope ->
                 val rumContext = contextProvider.getRumContext(datadogContext)
                 if (rumContext != null && rumContext.sessionState == "TRACKED") {
                     val sessionReplayFeatureContext = datadogContext.featuresContext[

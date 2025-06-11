@@ -323,7 +323,9 @@ class OtelTracerProvider internal constructor(
         val rumFeature = sdkCore.getFeature(Feature.RUM_FEATURE_NAME)
         if (rumFeature != null) {
             val lazyContext = CompletableFuture<DatadogContext>()
-            rumFeature.withContext { lazyContext.complete(it) }
+            rumFeature.withContext(withFeatureContexts = setOf(Feature.RUM_FEATURE_NAME)) {
+                lazyContext.complete(it)
+            }
             (spanBuilder as? OtelSpanBuilder)?.setLazyDatadogContext(lazyContext)
         }
         spanBuilder

@@ -231,8 +231,8 @@ internal class AndroidTracerTest {
         // Given
         val mockRumFeatureScope = mock<FeatureScope>()
         whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumFeatureScope
-        whenever(mockRumFeatureScope.withContext(any())) doAnswer {
-            it.getArgument<(DatadogContext) -> Unit>(0).invoke(fakeDatadogContext)
+        whenever(mockRumFeatureScope.withContext(eq(setOf(Feature.RUM_FEATURE_NAME)), any())) doAnswer {
+            it.getArgument<(DatadogContext) -> Unit>(it.arguments.lastIndex).invoke(fakeDatadogContext)
         }
         val tracer = AndroidTracer.Builder(mockSdkCore)
             .build()

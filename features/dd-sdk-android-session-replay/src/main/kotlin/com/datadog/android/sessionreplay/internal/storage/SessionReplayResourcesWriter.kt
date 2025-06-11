@@ -19,7 +19,9 @@ internal class SessionReplayResourcesWriter(
 ) : ResourcesWriter {
     override fun write(enrichedResource: EnrichedResource) {
         sdkCore.getFeature(Feature.SESSION_REPLAY_RESOURCES_FEATURE_NAME)
-            ?.withWriteContext { datadogContext, writeScope ->
+            ?.withWriteContext(
+                withFeatureContexts = setOf(Feature.RUM_FEATURE_NAME)
+            ) { datadogContext, writeScope ->
                 writeScope {
                     synchronized(this@SessionReplayResourcesWriter) {
                         val serializedMetadata = enrichedResource.asBinaryMetadata(datadogContext.rumApplicationId)

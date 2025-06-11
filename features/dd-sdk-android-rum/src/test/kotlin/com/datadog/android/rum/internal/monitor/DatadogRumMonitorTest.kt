@@ -205,11 +205,15 @@ internal class DatadogRumMonitorTest {
 
         whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumFeatureScope
 
-        whenever(mockRumFeatureScope.withWriteContext(any())) doAnswer {
-            val callback = it.getArgument<(DatadogContext, EventWriteScope) -> Unit>(0)
+        whenever(
+            mockRumFeatureScope.withWriteContext(eq(setOf(Feature.SESSION_REPLAY_FEATURE_NAME)), any())
+        ) doAnswer {
+            val callback = it.getArgument<(DatadogContext, EventWriteScope) -> Unit>(it.arguments.lastIndex)
             callback.invoke(fakeDatadogContext, mockEventWriteScope)
         }
-        whenever(mockRumFeatureScope.getWriteContextSync()) doReturn (fakeDatadogContext to mockEventWriteScope)
+        whenever(
+            mockRumFeatureScope.getWriteContextSync(setOf(Feature.SESSION_REPLAY_FEATURE_NAME))
+        ) doReturn (fakeDatadogContext to mockEventWriteScope)
 
         fakeAttributes = forge.exhaustiveAttributes()
         testedMonitor = DatadogRumMonitor(
@@ -1036,7 +1040,9 @@ internal class DatadogRumMonitorTest {
         forge: Forge
     ) {
         // Given
-        whenever(mockRumFeatureScope.getWriteContextSync()) doReturn (fakeDatadogContext to mockEventWriteScope)
+        whenever(
+            mockRumFeatureScope.getWriteContextSync(setOf(Feature.SESSION_REPLAY_FEATURE_NAME))
+        ) doReturn (fakeDatadogContext to mockEventWriteScope)
         testedMonitor.drainExecutorService()
         val now = System.nanoTime()
         val appStartTimeNs = forge.aLong(min = 0L, max = now)
@@ -1073,7 +1079,7 @@ internal class DatadogRumMonitorTest {
         @Forgery throwable: Throwable
     ) {
         // Given
-        whenever(mockRumFeatureScope.getWriteContextSync()) doReturn null
+        whenever(mockRumFeatureScope.getWriteContextSync(setOf(Feature.SESSION_REPLAY_FEATURE_NAME))) doReturn null
 
         // When
         testedMonitor.addCrash(message, source, throwable, threads = emptyList())
@@ -2553,7 +2559,7 @@ internal class DatadogRumMonitorTest {
     ) {
         // Given
         val mockFeatureScope = mock<FeatureScope>()
-        whenever(mockFeatureScope.getWriteContextSync()) doReturn null
+        whenever(mockFeatureScope.getWriteContextSync(setOf(Feature.SESSION_REPLAY_FEATURE_NAME))) doReturn null
         whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockFeatureScope
         whenever(mockExecutorService.submit(any<Callable<RumContext>>())) doAnswer {
             mock<Future<RumContext>>().apply { whenever(get()) doReturn null }

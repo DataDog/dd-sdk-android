@@ -342,11 +342,17 @@ public abstract interface class com/datadog/android/api/feature/FeatureEventRece
 
 public abstract interface class com/datadog/android/api/feature/FeatureScope {
 	public abstract fun getDataStore ()Lcom/datadog/android/api/storage/datastore/DataStoreHandler;
-	public abstract fun getWriteContextSync ()Lkotlin/Pair;
+	public abstract fun getWriteContextSync (Ljava/util/Set;)Lkotlin/Pair;
 	public abstract fun sendEvent (Ljava/lang/Object;)V
 	public abstract fun unwrap ()Lcom/datadog/android/api/feature/Feature;
-	public abstract fun withContext (Lkotlin/jvm/functions/Function1;)V
-	public abstract fun withWriteContext (Lkotlin/jvm/functions/Function2;)V
+	public abstract fun withContext (Ljava/util/Set;Lkotlin/jvm/functions/Function1;)V
+	public abstract fun withWriteContext (Ljava/util/Set;Lkotlin/jvm/functions/Function2;)V
+}
+
+public final class com/datadog/android/api/feature/FeatureScope$DefaultImpls {
+	public static synthetic fun getWriteContextSync$default (Lcom/datadog/android/api/feature/FeatureScope;Ljava/util/Set;ILjava/lang/Object;)Lkotlin/Pair;
+	public static synthetic fun withContext$default (Lcom/datadog/android/api/feature/FeatureScope;Ljava/util/Set;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)V
+	public static synthetic fun withWriteContext$default (Lcom/datadog/android/api/feature/FeatureScope;Ljava/util/Set;Lkotlin/jvm/functions/Function2;ILjava/lang/Object;)V
 }
 
 public final class com/datadog/android/api/feature/FeatureScopeExtKt {
@@ -533,7 +539,7 @@ public abstract interface class com/datadog/android/core/InternalSdkCore : com/d
 	public abstract fun deleteLastViewEvent ()V
 	public abstract fun getAllFeatures ()Ljava/util/List;
 	public abstract fun getAppStartTimeNs ()J
-	public abstract fun getDatadogContext ()Lcom/datadog/android/api/context/DatadogContext;
+	public abstract fun getDatadogContext (Ljava/util/Set;)Lcom/datadog/android/api/context/DatadogContext;
 	public abstract fun getFirstPartyHostResolver ()Lcom/datadog/android/core/internal/net/FirstPartyHostHeaderTypeResolver;
 	public abstract fun getLastFatalAnrSent ()Ljava/lang/Long;
 	public abstract fun getLastViewEvent ()Lcom/google/gson/JsonObject;
@@ -544,6 +550,10 @@ public abstract interface class com/datadog/android/core/InternalSdkCore : com/d
 	public abstract fun isDeveloperModeEnabled ()Z
 	public abstract fun writeLastFatalAnrSent (J)V
 	public abstract fun writeLastViewEvent ([B)V
+}
+
+public final class com/datadog/android/core/InternalSdkCore$DefaultImpls {
+	public static synthetic fun getDatadogContext$default (Lcom/datadog/android/core/InternalSdkCore;Ljava/util/Set;ILjava/lang/Object;)Lcom/datadog/android/api/context/DatadogContext;
 }
 
 public final class com/datadog/android/core/SdkReference {

@@ -108,9 +108,9 @@ interface com.datadog.android.api.feature.FeatureEventReceiver
   fun onReceive(Any)
 interface com.datadog.android.api.feature.FeatureScope
   val dataStore: com.datadog.android.api.storage.datastore.DataStoreHandler
-  fun withWriteContext((com.datadog.android.api.context.DatadogContext) -> Unit)
-  fun withContext((com.datadog.android.api.context.DatadogContext) -> Unit)
-  fun getWriteContextSync(): Pair<com.datadog.android.api.context.DatadogContext, EventWriteScope>?
+  fun withWriteContext(Set<String> = emptySet(), (com.datadog.android.api.context.DatadogContext) -> Unit)
+  fun withContext(Set<String> = emptySet(), (com.datadog.android.api.context.DatadogContext) -> Unit)
+  fun getWriteContextSync(Set<String> = emptySet()): Pair<com.datadog.android.api.context.DatadogContext, EventWriteScope>?
   fun sendEvent(Any)
   fun <T: Feature> unwrap(): T
 typealias EventWriteScope = ((com.datadog.android.api.storage.EventBatchWriter) -> Unit) -> Unit
@@ -191,7 +191,7 @@ interface com.datadog.android.core.InternalSdkCore : com.datadog.android.api.fea
   fun writeLastFatalAnrSent(Long)
   fun getPersistenceExecutorService(): java.util.concurrent.ExecutorService
   fun getAllFeatures(): List<com.datadog.android.api.feature.FeatureScope>
-  fun getDatadogContext(): com.datadog.android.api.context.DatadogContext?
+  fun getDatadogContext(Set<String> = emptySet()): com.datadog.android.api.context.DatadogContext?
 class com.datadog.android.core.SdkReference
   constructor(String? = null, (com.datadog.android.api.SdkCore) -> Unit = {})
   fun get(): com.datadog.android.api.SdkCore?

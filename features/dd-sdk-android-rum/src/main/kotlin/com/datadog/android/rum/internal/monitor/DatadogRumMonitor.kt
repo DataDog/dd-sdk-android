@@ -677,7 +677,7 @@ internal class DatadogRumMonitor(
             synchronized(rootScope) {
                 // TODO RUM-9852 Implement better passthrough mechanism for the JVM crash scenario
                 val writeContext = sdkCore.getFeature(Feature.RUM_FEATURE_NAME)
-                    ?.getWriteContextSync()
+                    ?.getWriteContextSync(withFeatureContexts = setOf(Feature.SESSION_REPLAY_FEATURE_NAME))
                 if (writeContext != null) {
                     val (datadogContext, eventWriteScope) = writeContext
                     @Suppress("ThreadSafety") // Crash handling, can't delegate to another thread
@@ -698,33 +698,36 @@ internal class DatadogRumMonitor(
             telemetryEventHandler.handleEvent(event, writer)
         } else {
             handler.removeCallbacks(keepAliveRunnable)
-            sdkCore.getFeature(Feature.RUM_FEATURE_NAME)?.withWriteContext { datadogContext, writeScope ->
-                // avoid trowing a RejectedExecutionException
-                if (!executorService.isShutdown) {
-                    // we are already on the context thread, which is single and shared between the features, but we
-                    // need still to delegate processing to the RUM-specific thread since it supports
-                    // backpressure handling
-                    val future = executorService.submitSafe(
-                        "Rum event handling",
-                        sdkCore.internalLogger,
-                        Callable<RumContext> {
-                            synchronized(rootScope) {
-                                rootScope.handleEvent(event, datadogContext, writeScope, writer)
-                                notifyDebugListenerWithState()
+            sdkCore.getFeature(Feature.RUM_FEATURE_NAME)
+                ?.withWriteContext(
+                    withFeatureContexts = setOf(Feature.SESSION_REPLAY_FEATURE_NAME)
+                ) { datadogContext, writeScope ->
+                    // avoid trowing a RejectedExecutionException
+                    if (!executorService.isShutdown) {
+                        // we are already on the context thread, which is single and shared between the features, but we
+                        // need still to delegate processing to the RUM-specific thread since it supports
+                        // backpressure handling
+                        val future = executorService.submitSafe(
+                            "Rum event handling",
+                            sdkCore.internalLogger,
+                            Callable<RumContext> {
+                                synchronized(rootScope) {
+                                    rootScope.handleEvent(event, datadogContext, writeScope, writer)
+                                    notifyDebugListenerWithState()
+                                }
+                                handler.postDelayed(keepAliveRunnable, KEEP_ALIVE_MS)
+                                currentRumContext()
                             }
-                            handler.postDelayed(keepAliveRunnable, KEEP_ALIVE_MS)
-                            currentRumContext()
-                        }
-                    )
-                    val rumContext = future.getSafe("Rum get context", sdkCore.internalLogger)
-                    if (rumContext != null) {
-                        // we are on the context thread already, so useContextThread=false
-                        sdkCore.updateFeatureContext(Feature.RUM_FEATURE_NAME, useContextThread = false) {
-                            it.putAll(rumContext.toMap())
+                        )
+                        val rumContext = future.getSafe("Rum get context", sdkCore.internalLogger)
+                        if (rumContext != null) {
+                            // we are on the context thread already, so useContextThread=false
+                            sdkCore.updateFeatureContext(Feature.RUM_FEATURE_NAME, useContextThread = false) {
+                                it.putAll(rumContext.toMap())
+                            }
                         }
                     }
                 }
-            }
         }
     }
 

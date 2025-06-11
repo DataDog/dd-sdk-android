@@ -10,8 +10,6 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.context.NetworkInfo
 import com.datadog.android.api.feature.EventWriteScope
-import com.datadog.android.api.feature.Feature
-import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.api.storage.EventBatchWriter
 import com.datadog.android.api.storage.EventType
@@ -106,9 +104,6 @@ internal class RumResourceScopeTest {
     lateinit var mockInternalLogger: InternalLogger
 
     @Mock
-    lateinit var mockRumFeatureScope: FeatureScope
-
-    @Mock
     lateinit var mockEventBatchWriter: EventBatchWriter
 
     @Mock
@@ -198,14 +193,9 @@ internal class RumResourceScopeTest {
                 fakeParentContext.viewId.orEmpty()
             )
         ).thenReturn(fakeHasReplay)
-        whenever(rumMonitor.mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumFeatureScope
         whenever(mockEventWriteScope.invoke(any())) doAnswer {
             val callback = it.getArgument<(EventBatchWriter) -> Unit>(0)
             callback.invoke(mockEventBatchWriter)
-        }
-        whenever(mockRumFeatureScope.withWriteContext(any())) doAnswer {
-            val callback = it.getArgument<(DatadogContext, EventWriteScope) -> Unit>(0)
-            callback.invoke(fakeDatadogContext, mockEventWriteScope)
         }
         whenever(mockWriter.write(eq(mockEventBatchWriter), any(), eq(EventType.DEFAULT))) doReturn true
 

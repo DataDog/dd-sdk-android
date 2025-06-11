@@ -677,8 +677,8 @@ internal class OtelTracerBuilderProviderTest {
             .tracerBuilder(fakeInstrumentationName)
             .build()
         val mockRumFeatureScope = mock<FeatureScope>()
-        whenever(mockRumFeatureScope.withContext(any())) doAnswer {
-            it.getArgument<(DatadogContext) -> Unit>(0).invoke(fakeInitialDatadogContext)
+        whenever(mockRumFeatureScope.withContext(eq(setOf(Feature.RUM_FEATURE_NAME)), any())) doAnswer {
+            it.getArgument<(DatadogContext) -> Unit>(it.arguments.lastIndex).invoke(fakeInitialDatadogContext)
         }
         whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumFeatureScope
 
