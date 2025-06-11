@@ -142,6 +142,7 @@ class StubSDKCore(
 
     override fun updateFeatureContext(
         featureName: String,
+        useContextThread: Boolean,
         updateCallback: (context: MutableMap<String, Any?>) -> Unit
     ) {
         val featureContext = datadogContext.featuresContext[featureName]?.toMutableMap() ?: mutableMapOf()
@@ -153,7 +154,7 @@ class StubSDKCore(
         )
     }
 
-    override fun getFeatureContext(featureName: String): Map<String, Any?> {
+    override fun getFeatureContext(featureName: String, useContextThread: Boolean): Map<String, Any?> {
         return datadogContext.featuresContext[featureName].orEmpty()
     }
 

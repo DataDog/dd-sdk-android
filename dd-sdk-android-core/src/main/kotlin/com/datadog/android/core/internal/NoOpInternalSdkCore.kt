@@ -102,10 +102,11 @@ internal object NoOpInternalSdkCore : InternalSdkCore {
 
     override fun updateFeatureContext(
         featureName: String,
+        useContextThread: Boolean,
         updateCallback: (MutableMap<String, Any?>) -> Unit
     ) = Unit
 
-    override fun getFeatureContext(featureName: String): Map<String, Any?> = emptyMap()
+    override fun getFeatureContext(featureName: String, useContextThread: Boolean): Map<String, Any?> = emptyMap()
 
     override fun setEventReceiver(featureName: String, `receiver`: FeatureEventReceiver) = Unit
 

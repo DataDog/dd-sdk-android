@@ -225,6 +225,9 @@ datadog:
       - "java.util.concurrent.ScheduledThreadPoolExecutor.schedule(java.lang.Runnable, kotlin.Long, java.util.concurrent.TimeUnit):java.util.concurrent.RejectedExecutionException,java.lang.NullPointerException"
       - "java.util.concurrent.ThreadPoolExecutor.awaitTermination(kotlin.Long, java.util.concurrent.TimeUnit?):java.lang.InterruptedException"
       - "java.util.concurrent.ThreadPoolExecutor.constructor(kotlin.Int, kotlin.Int, kotlin.Long, java.util.concurrent.TimeUnit, java.util.concurrent.BlockingQueue):java.lang.NullPointerException,java.lang.IllegalArgumentException"
+      - "java.util.concurrent.locks.Lock.lock():java.lang.InterruptedException"
+      - "java.util.concurrent.locks.Lock.tryLock(kotlin.Long, java.util.concurrent.TimeUnit?):java.lang.InterruptedException,java.lang.NullPointerException"
+      - "java.util.concurrent.locks.Lock.unlock():java.lang.IllegalMonitorStateException"
       # endregion
       # region Java misc
       - "java.io.PrintWriter.constructor(java.io.Writer):java.lang.NullPointerException"
@@ -761,6 +764,9 @@ datadog:
       - "java.util.concurrent.atomic.AtomicReference.set(io.opentracing.Tracer?)"
       - "java.util.concurrent.atomic.AtomicReference.set(kotlin.Nothing?)"
       - "java.util.concurrent.atomic.AtomicReference.set(kotlin.String?)"
+      - "java.util.concurrent.locks.ReadWriteLock.readLock()"
+      - "java.util.concurrent.locks.ReadWriteLock.writeLock()"
+      - "java.util.concurrent.locks.ReentrantReadWriteLock.constructor()"
       # endregion
       # region Java I/O
       - "java.io.BufferedReader.readText()"
@@ -829,6 +835,7 @@ datadog:
       - "java.security.SecureRandom.nextInt()"
       - "java.security.SecureRandom.nextLong()"
       - "java.util.HashMap.clear()"
+      - "java.util.HashMap.orEmpty()"
       - "java.util.HashSet.addAll(kotlin.collections.Collection)"
       - "java.util.HashSet.find(kotlin.Function1)"
       - "java.util.Properties.constructor()"

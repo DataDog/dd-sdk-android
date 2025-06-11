@@ -61,10 +61,4 @@ internal class NoOpContextProvider : ContextProvider {
             appBuildId = null,
             featuresContext = emptyMap()
         )
-
-    override fun setFeatureContext(feature: String, context: Map<String, Any?>) {
-        // no-op
-    }
-
-    override fun getFeatureContext(feature: String): Map<String, Any?> = emptyMap()
 }

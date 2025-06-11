@@ -533,13 +533,11 @@ internal class AndroidTracerTest {
         val tracer = testedTracerBuilder
             .setService(serviceName)
             .build()
-        // call to updateFeatureContext is guarded by "synchronize" in the real implementation,
-        // but since we are using mock here, let's use thread-safe map instead.
         val tracingContext = ConcurrentHashMap<String, Any?>()
         whenever(
-            mockSdkCore.updateFeatureContext(eq(Feature.TRACING_FEATURE_NAME), any())
+            mockSdkCore.updateFeatureContext(eq(Feature.TRACING_FEATURE_NAME), eq(true), any())
         ) doAnswer {
-            val callback = it.getArgument<(context: MutableMap<String, Any?>) -> Unit>(1)
+            val callback = it.getArgument<(context: MutableMap<String, Any?>) -> Unit>(it.arguments.lastIndex)
             callback.invoke(tracingContext)
         }
         val errorCollector = mutableListOf<Throwable>()
@@ -552,8 +550,8 @@ internal class AndroidTracerTest {
                 val parentSpan = tracer.buildSpan(forge.anAlphabeticalString()).start()
                 val parentActiveScope = tracer.activateSpan(parentSpan)
 
-                with(tracingContext.activeContext(threadName)) {
-                    assertThat(this!!["span_id"]).isEqualTo(parentSpan.context().toSpanId())
+                with(checkNotNull(tracingContext.activeContext(threadName))) {
+                    assertThat(this["span_id"]).isEqualTo(parentSpan.context().toSpanId())
                     assertThat(this["trace_id"]).isEqualTo(parentSpan.context().traceIdAsHexString())
                 }
 
@@ -562,8 +560,8 @@ internal class AndroidTracerTest {
                     .asChildOf(parentSpan).start()
                 val childActiveScope = tracer.activateSpan(childActiveSpan)
 
-                with(tracingContext.activeContext(threadName)) {
-                    assertThat(this!!["span_id"]).isEqualTo(childActiveSpan.context().toSpanId())
+                with(checkNotNull(tracingContext.activeContext(threadName))) {
+                    assertThat(this["span_id"]).isEqualTo(childActiveSpan.context().toSpanId())
                     assertThat(this["trace_id"]).isEqualTo(childActiveSpan.context().traceIdAsHexString())
                 }
 
@@ -571,15 +569,15 @@ internal class AndroidTracerTest {
                 val childNonActiveSpan = tracer.buildSpan(forge.anAlphabeticalString())
                     .asChildOf(parentSpan).start()
 
-                with(tracingContext.activeContext(threadName)) {
-                    assertThat(this!!["span_id"]).isEqualTo(childActiveSpan.context().toSpanId())
+                with(checkNotNull(tracingContext.activeContext(threadName))) {
+                    assertThat(this["span_id"]).isEqualTo(childActiveSpan.context().toSpanId())
                     assertThat(this["trace_id"]).isEqualTo(childActiveSpan.context().traceIdAsHexString())
                 }
 
                 childNonActiveSpan.finish()
 
-                with(tracingContext.activeContext(threadName)) {
-                    assertThat(this!!["span_id"]).isEqualTo(childActiveSpan.context().toSpanId())
+                with(checkNotNull(tracingContext.activeContext(threadName))) {
+                    assertThat(this["span_id"]).isEqualTo(childActiveSpan.context().toSpanId())
                     assertThat(this["trace_id"]).isEqualTo(childActiveSpan.context().traceIdAsHexString())
                 }
 
@@ -587,8 +585,8 @@ internal class AndroidTracerTest {
                 childActiveSpan.finish()
                 childActiveScope.close()
 
-                with(tracingContext.activeContext(threadName)) {
-                    assertThat(this!!["span_id"]).isEqualTo(parentSpan.context().toSpanId())
+                with(checkNotNull(tracingContext.activeContext(threadName))) {
+                    assertThat(this["span_id"]).isEqualTo(parentSpan.context().toSpanId())
                     assertThat(this["trace_id"]).isEqualTo(parentSpan.context().traceIdAsHexString())
                 }
 
