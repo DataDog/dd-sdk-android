@@ -687,6 +687,73 @@ class ManualTrackingRumTest {
             }
     }
 
+    @Test
+    fun `M send view event with user Info W set user Info`(
+        @StringForgery key: String,
+        @StringForgery name: String,
+        @StringForgery fakeUserId: String,
+        @StringForgery fakeUserName: String,
+        @StringForgery fakeUserEmail: String
+    ) {
+        // Given
+        val rumMonitor = GlobalRumMonitor.get(stubSdkCore) as AdvancedNetworkRumMonitor
+        stubSdkCore.setUserInfo(fakeUserId, fakeUserName, fakeUserEmail)
+        // When
+        rumMonitor.startView(key, name, emptyMap())
+
+        // Then
+        val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
+        assertThat(eventsWritten)
+            .hasSize(1)
+            .hasRumEvent(index = 0) {
+                // Initial view
+                hasService(stubSdkCore.getDatadogContext().service)
+                hasApplicationId(fakeApplicationId)
+                hasSessionType("user")
+                hasSource("android")
+                hasType("view")
+                hasViewUrl(key)
+                hasViewName(name)
+                hasUsrId(fakeUserId)
+                hasUsrName(fakeUserName)
+                hasUsrEmail(fakeUserEmail)
+                hasActionCount(0)
+                doesNotHaveField("feature_flag")
+            }
+    }
+
+    @Test
+    fun `M send view event with account Info W set account Info`(
+        @StringForgery key: String,
+        @StringForgery name: String,
+        @StringForgery fakeAccountId: String,
+        @StringForgery fakeAccountName: String
+    ) {
+        // Given
+        val rumMonitor = GlobalRumMonitor.get(stubSdkCore) as AdvancedNetworkRumMonitor
+        stubSdkCore.setAccountInfo(fakeAccountId, fakeAccountName)
+        // When
+        rumMonitor.startView(key, name, emptyMap())
+
+        // Then
+        val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
+        assertThat(eventsWritten)
+            .hasSize(1)
+            .hasRumEvent(index = 0) {
+                // Initial view
+                hasService(stubSdkCore.getDatadogContext().service)
+                hasApplicationId(fakeApplicationId)
+                hasSessionType("user")
+                hasSource("android")
+                hasType("view")
+                hasViewUrl(key)
+                hasViewName(name)
+                hasAccountId(fakeAccountId)
+                hasAccountName(fakeAccountName)
+                hasActionCount(0)
+                doesNotHaveField("feature_flag")
+            }
+    }
     // endregion
 
     companion object {

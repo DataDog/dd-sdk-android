@@ -408,6 +408,9 @@ object com.datadog.android.log.LogAttributes
   const val USR_EMAIL: String
   const val USR_ID: String
   const val USR_NAME: String
+  const val ACCOUNT_ATTRIBUTES_GROUP: String
+  const val ACCOUNT_ID: String
+  const val ACCOUNT_NAME: String
   const val VARIANT: String
   const val SOURCE_TYPE: String
   const val ERROR_FINGERPRINT: String
