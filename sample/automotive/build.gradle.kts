@@ -1,11 +1,11 @@
 import com.datadog.gradle.config.AndroidConfig
 import com.datadog.gradle.config.configureFlavorForAutoApp
-import com.datadog.gradle.config.configureFlavorForTvApp
 import com.datadog.gradle.config.dependencyUpdateConfig
 import com.datadog.gradle.config.java17
 import com.datadog.gradle.config.junitConfig
 import com.datadog.gradle.config.kotlinConfig
 import com.datadog.gradle.config.taskConfig
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
     id("com.android.application")
@@ -35,7 +35,6 @@ android {
     namespace = "com.datadog.sample.automotive"
 
     compileOptions {
-        isCoreLibraryDesugaringEnabled = true
         java17()
     }
 
@@ -62,11 +61,6 @@ dependencies {
     // Datadog Libraries
     implementation(project(":features:dd-sdk-android-logs"))
     implementation(project(":features:dd-sdk-android-rum"))
-    implementation(project(":integrations:dd-sdk-android-okhttp"))
-    implementation(project(":integrations:dd-sdk-android-okhttp-otel"))
-
-    // Desugaring SDK
-    coreLibraryDesugaring(libs.androidDesugaringSdk)
 
     implementation(libs.kotlin)
 
@@ -78,17 +72,15 @@ dependencies {
     implementation(libs.androidXLegacySupportV13)
 
     // Android Car
-     implementation(libs.androidXCarApp)
-     implementation(libs.androidXCarAutomotive)
+    implementation(libs.androidXCarApp)
+    implementation(libs.androidXCarAutomotive)
 }
 
 kotlinConfig(evaluateWarningsAsErrors = false)
-taskConfig<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
+taskConfig<KotlinCompile> {
     compilerOptions {
         freeCompilerArgs.add("-opt-in=kotlin.RequiresOptIn")
     }
 }
 junitConfig()
 dependencyUpdateConfig()
-
-
