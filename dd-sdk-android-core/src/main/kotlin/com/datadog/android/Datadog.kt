@@ -9,6 +9,7 @@ package com.datadog.android
 import android.content.Context
 import androidx.annotation.AnyThread
 import androidx.annotation.WorkerThread
+import com.datadog.android.Datadog.clearAccountInfo
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.SdkCore
 import com.datadog.android.api.context.UserInfo
@@ -260,7 +261,10 @@ object Datadog {
     }
 
     /**
-     * Sets the user information.
+     * Sets the information used to identify a real user.
+     *
+     * This API should be used to assign a stable identifier for the user, such as a user ID,
+     * email, or username. The information set here will be added to logs, traces and RUM events.
      *
      * @param id (nullable) a unique user identifier (relevant to your business domain)
      * @param name (nullable) the user name or alias
@@ -312,6 +316,82 @@ object Datadog {
     @AnyThread
     fun clearAllData(sdkCore: SdkCore = getInstance()) {
         sdkCore.clearAllData()
+    }
+
+    /**
+     * Sets the account information that the user is currently logged into.
+     *
+     * This API should be used to assign an identifier for the user's account which represents a
+     * contextual identity within the app, typically tied to business or tenant logic. The
+     * information set here will be added to logs, traces and RUM events.
+     *
+     * This value should be set when user logs in with his account, and cleared by calling
+     * [clearAccountInfo] when he logs out.
+     *
+     * @param id Account ID.
+     * @param name representing the account, if exists.
+     * @param extraInfo Account's custom attributes, if exists.
+     * @param sdkCore SDK instance to set account information. If not provided, default SDK
+     * instance will be used.
+     */
+    @JvmStatic
+    @JvmOverloads
+    fun setAccountInfo(
+        id: String,
+        name: String? = null,
+        extraInfo: Map<String, Any?> = emptyMap(),
+        sdkCore: SdkCore = getInstance()
+    ) {
+        sdkCore.setAccountInfo(
+            id = id,
+            name = name,
+            extraInfo = extraInfo
+        )
+    }
+
+    /**
+     * Add custom attributes to the current account information.
+     *
+     * This extra info will be added to already existing extra info that is added
+     * to Logs, Traces and RUM events automatically.
+     *
+     * @param extraInfo Account's additional custom attributes.
+     * @param sdkCore SDK instance to add account custom attributes. If not provided,
+     * default SDK instance will be used.
+     */
+    @JvmStatic
+    @JvmOverloads
+    fun addAccountExtraInfo(
+        extraInfo: Map<String, Any?> = emptyMap(),
+        sdkCore: SdkCore = getInstance()
+    ) {
+        sdkCore.addAccountExtraInfo(extraInfo)
+    }
+
+    /**
+     * Clear the current account information.
+     *
+     * Account information will set to null
+     * Following Logs, Traces, RUM Events will not include the account information anymore.
+     *
+     * Any active RUM Session, active RUM View at the time of call will have their `account` attribute cleared
+     *
+     * If you want to retain the current `account` on the active RUM session,
+     * you need to stop the session first by using `GlobalRumMonitor.get().stopSession()`
+     *
+     * If you want to retain the current `account` on the active RUM views,
+     * you need to stop the view first by using `GlobalRumMonitor.get().stopView()`.
+     *
+     * @param sdkCore SDK instance to clear account info. If not provided,
+     * default SDK instance will be used.
+     *
+     */
+    @JvmStatic
+    @JvmOverloads
+    fun clearAccountInfo(
+        sdkCore: SdkCore = getInstance()
+    ) {
+        sdkCore.clearAccountInfo()
     }
 
     // Executes all the pending queues in the upload/persistence executors.
