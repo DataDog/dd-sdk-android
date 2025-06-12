@@ -1,0 +1,4 @@
+<resources>
+
+    <style name="SampleAuto.Theme" parent="android:Theme.Material.Light.DarkActionBar" />
+</resources>
