@@ -34,6 +34,7 @@ buildscript {
         classpath(libs.unmockGradlePlugin)
         classpath(libs.sqlDelightGradlePlugin)
         classpath(libs.binaryCompatibilityGradlePlugin)
+        classpath(libs.kotlinxSerializationPlugin)
     }
 }
 
@@ -93,7 +94,8 @@ tasks.register("assembleSampleRelease") {
     dependsOn(
         ":sample:kotlin:assembleUs1Release",
         ":sample:wear:assembleUs1Release",
-        ":sample:vendor-lib:assembleRelease"
+        ":sample:vendor-lib:assembleRelease",
+        ":sample:tv:assembleRelease"
     )
 }
 

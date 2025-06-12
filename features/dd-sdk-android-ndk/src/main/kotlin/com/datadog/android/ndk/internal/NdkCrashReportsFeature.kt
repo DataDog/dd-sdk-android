@@ -11,8 +11,8 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.core.InternalSdkCore
-import com.datadog.android.core.allowThreadDiskReads
-import com.datadog.android.core.allowThreadDiskWrites
+import com.datadog.android.internal.utils.allowThreadDiskReads
+import com.datadog.android.internal.utils.allowThreadDiskWrites
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.privacy.TrackingConsentProviderCallback
 import java.io.File

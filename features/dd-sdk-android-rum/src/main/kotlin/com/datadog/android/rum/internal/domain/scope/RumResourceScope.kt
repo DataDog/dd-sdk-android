@@ -285,6 +285,13 @@ internal class RumResourceScope(
                 } else {
                     null
                 },
+                account = datadogContext.accountInfo?.let {
+                    ResourceEvent.Account(
+                        id = it.id,
+                        name = it.name,
+                        additionalProperties = it.extraInfo.toMutableMap()
+                    )
+                },
                 connectivity = networkInfo.toResourceConnectivity(),
                 application = ResourceEvent.Application(rumContext.applicationId),
                 session = ResourceEvent.ResourceEventSession(
@@ -435,6 +442,13 @@ internal class RumResourceScope(
                     )
                 } else {
                     null
+                },
+                account = datadogContext.accountInfo?.let {
+                    ErrorEvent.Account(
+                        id = it.id,
+                        name = it.name,
+                        additionalProperties = it.extraInfo.toMutableMap()
+                    )
                 },
                 connectivity = networkInfo.toErrorConnectivity(),
                 application = ErrorEvent.Application(rumContext.applicationId),

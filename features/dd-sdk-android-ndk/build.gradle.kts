@@ -35,6 +35,7 @@ plugins {
     id("com.datadoghq.dependency-license")
     id("apiSurface")
     id("transitiveDependencies")
+    id("verificationXml")
     id("binary-compatibility-validator")
 }
 
@@ -67,6 +68,7 @@ android {
 }
 
 dependencies {
+    implementation(project(":dd-sdk-android-internal"))
     api(project(":dd-sdk-android-core"))
     implementation(libs.kotlin)
     implementation(libs.okHttp)

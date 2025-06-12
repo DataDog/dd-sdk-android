@@ -196,6 +196,32 @@ internal class DatadogCore(
         }
     }
 
+    override fun setAccountInfo(
+        id: String,
+        name: String?,
+        extraInfo: Map<String, Any?>
+    ) {
+        val extraInfoSnapshot = extraInfo.toMap()
+        coreFeature.contextExecutorService.executeSafe("DatadogCore.setAccountInfo", internalLogger) {
+            coreFeature.accountInfoProvider.setAccountInfo(id, name, extraInfoSnapshot)
+        }
+    }
+
+    override fun addAccountExtraInfo(
+        extraInfo: Map<String, Any?>
+    ) {
+        val extraInfoSnapshot = extraInfo.toMap()
+        coreFeature.contextExecutorService.executeSafe("DatadogCore.addAccountExtraInfo", internalLogger) {
+            coreFeature.accountInfoProvider.addExtraInfo(extraInfoSnapshot)
+        }
+    }
+
+    override fun clearAccountInfo() {
+        coreFeature.contextExecutorService.executeSafe("DatadogCore.clearAccountInfo", internalLogger) {
+            coreFeature.accountInfoProvider.clearAccountInfo()
+        }
+    }
+
     /** @inheritDoc */
     override fun updateFeatureContext(
         featureName: String,

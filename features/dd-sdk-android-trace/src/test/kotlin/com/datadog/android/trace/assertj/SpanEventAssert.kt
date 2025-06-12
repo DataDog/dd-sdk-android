@@ -6,6 +6,7 @@
 
 package com.datadog.android.trace.assertj
 
+import com.datadog.android.api.context.AccountInfo
 import com.datadog.android.api.context.DeviceInfo
 import com.datadog.android.api.context.DeviceType
 import com.datadog.android.api.context.NetworkInfo
@@ -324,6 +325,27 @@ internal class SpanEventAssert(actual: SpanEvent) :
         assertThat(actual.meta.usr.additionalProperties)
             .hasSameSizeAs(userInfo.additionalProperties)
             .containsAllEntriesOf(userInfo.additionalProperties)
+        return this
+    }
+
+    fun hasAccountInfo(accountInfo: AccountInfo?): SpanEventAssert {
+        assertThat(actual.meta.account?.name)
+            .overridingErrorMessage(
+                "Expected SpanEvent to have account name: " +
+                    "${accountInfo?.name} but " +
+                    "instead was: ${actual.meta.account?.name}"
+            )
+            .isEqualTo(accountInfo?.name)
+        assertThat(actual.meta.account?.id)
+            .overridingErrorMessage(
+                "Expected SpanEvent to have account id: " +
+                    "${accountInfo?.id} but " +
+                    "instead was: ${actual.meta.account?.id}"
+            )
+            .isEqualTo(accountInfo?.id)
+        assertThat(actual.meta.account?.additionalProperties)
+            .hasSameSizeAs(accountInfo?.extraInfo)
+            .containsAllEntriesOf(accountInfo?.extraInfo)
         return this
     }
 

@@ -6,6 +6,8 @@
 
 package com.datadog.android.core.internal.utils
 
+import com.datadog.android.internal.utils.asString
+import com.datadog.android.internal.utils.loggableStackTrace
 import com.datadog.android.utils.forge.Configurator
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration

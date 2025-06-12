@@ -4,6 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
+import com.datadog.gradle.androidTestImplementation
 import com.datadog.gradle.config.AndroidConfig
 import com.datadog.gradle.config.java17
 import com.datadog.gradle.config.kotlinConfig
@@ -102,6 +103,7 @@ dependencies {
     implementation(libs.androidXMultidex)
     implementation(libs.elmyr)
 
+    androidTestImplementation(project(":dd-sdk-android-internal"))
     androidTestImplementation(project(":tools:unit")) {
         attributes {
             attribute(

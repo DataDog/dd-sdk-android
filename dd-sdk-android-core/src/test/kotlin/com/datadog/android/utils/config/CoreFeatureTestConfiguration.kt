@@ -11,6 +11,7 @@ import com.datadog.android.DatadogSite
 import com.datadog.android.core.configuration.BatchSize
 import com.datadog.android.core.configuration.UploadFrequency
 import com.datadog.android.core.internal.CoreFeature
+import com.datadog.android.core.internal.account.MutableAccountInfoProvider
 import com.datadog.android.core.internal.net.DefaultFirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.persistence.file.FilePersistenceConfig
@@ -65,6 +66,7 @@ internal class CoreFeatureTestConfiguration<T : Context>(
     lateinit var mockNetworkInfoProvider: NetworkInfoProvider
     lateinit var mockSystemInfoProvider: SystemInfoProvider
     lateinit var mockUserInfoProvider: MutableUserInfoProvider
+    lateinit var mockAccountInfoProvider: MutableAccountInfoProvider
     lateinit var mockTrackingConsentProvider: ConsentProvider
     lateinit var mockAndroidInfoProvider: AndroidInfoProvider
     lateinit var mockAppVersionProvider: AppVersionProvider
@@ -114,6 +116,7 @@ internal class CoreFeatureTestConfiguration<T : Context>(
         mockNetworkInfoProvider = mock()
         mockSystemInfoProvider = mock()
         mockUserInfoProvider = mock()
+        mockAccountInfoProvider = mock()
         mockAndroidInfoProvider = mock()
         mockTrackingConsentProvider = mock { on { getConsent() } doReturn TrackingConsent.PENDING }
         mockAppVersionProvider = mock { on { version } doReturn appContext.fakeVersionName }
@@ -146,6 +149,7 @@ internal class CoreFeatureTestConfiguration<T : Context>(
         whenever(mockInstance.networkInfoProvider) doReturn mockNetworkInfoProvider
         whenever(mockInstance.systemInfoProvider) doReturn mockSystemInfoProvider
         whenever(mockInstance.userInfoProvider) doReturn mockUserInfoProvider
+        whenever(mockInstance.accountInfoProvider) doReturn mockAccountInfoProvider
         whenever(mockInstance.trackingConsentProvider) doReturn mockTrackingConsentProvider
         whenever(mockInstance.androidInfoProvider) doReturn mockAndroidInfoProvider
 

@@ -56,6 +56,11 @@
         android:name="com.datadog.android.sample.user.UserFragment"
         android:label="@string/title_user_info"/>
 
+    <fragment
+        android:id="@+id/fragment_account"
+        android:name="com.datadog.android.sample.account.AccountFragment"
+        android:label="@string/title_account_info" />
+
     <activity android:id="@+id/activity_jetpack_compose"
         android:name="com.datadog.android.sample.compose.JetpackComposeActivity"
         android:label="@string/title_compose"/>

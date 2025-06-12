@@ -21,3 +21,23 @@ fun Thread.safeGetThreadId(): Long {
         id
     }
 }
+
+/**
+ * Converts Thread state to string format. This is needed, because enum may be obfuscated, so we
+ * cannot rely on the name property.
+ */
+fun Thread.State.asString(): String {
+    return when (this) {
+        Thread.State.NEW -> "new"
+        Thread.State.BLOCKED -> "blocked"
+        Thread.State.RUNNABLE -> "runnable"
+        Thread.State.TERMINATED -> "terminated"
+        Thread.State.TIMED_WAITING -> "timed_waiting"
+        Thread.State.WAITING -> "waiting"
+    }
+}
+
+/**
+ * Converts stacktrace to string format.
+ */
+fun Array<StackTraceElement>.loggableStackTrace(): String = joinToString("\n") { "at $it" }

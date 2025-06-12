@@ -8,7 +8,7 @@ package com.datadog.android.sdk.integration.trace
 
 import android.util.Log
 import androidx.test.platform.app.InstrumentationRegistry
-import com.datadog.android.core.internal.utils.toHexString
+import com.datadog.android.internal.utils.toHexString
 import com.datadog.android.sdk.assertj.HeadersAssert
 import com.datadog.android.sdk.assertj.HeadersAssert.Companion.assertThat
 import com.datadog.android.sdk.integration.RuntimeConfig

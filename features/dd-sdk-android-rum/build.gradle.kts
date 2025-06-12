@@ -37,12 +37,16 @@ plugins {
     id("com.datadoghq.dependency-license")
     id("apiSurface")
     id("transitiveDependencies")
+    id("verificationXml")
     id("binary-compatibility-validator")
 }
 
 android {
     defaultConfig {
-        consumerProguardFiles(Paths.get(rootDir.path, "consumer-rules.pro").toString())
+        consumerProguardFiles(
+            Paths.get(rootDir.path, "consumer-rules.pro").toString(),
+            "consumer-rules.pro"
+        )
     }
 
     namespace = "com.datadog.android.rum"

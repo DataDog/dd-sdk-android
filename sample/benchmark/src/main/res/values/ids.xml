@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
+  ~ This product includes software developed at Datadog (https://www.datadoghq.com/).
+  ~ Copyright 2016-Present Datadog, Inc.
+  -->
+
+<resources>
+    <item name="logs_fragment" type="id" />
+    <item name="logs_heavy_traffic_fragment" type="id" />
+    <item name="fragment_session_replay_material" type="id" />
+    <item name="fragment_session_replay_appcompat" type="id" />
+    <item name="fragment_trace_scenario" type="id" />
+    <item name="fragment_rum_manual_scenario" type="id" />
+    <item name="characters_tab_navigation" type="id" />
+    <item name="episodes_tab_navigation" type="id" />
+    <item name="locations_tab_navigation" type="id" />
+    <item name="characters_tab_fragment" type="id" />
+    <item name="episodes_tab_fragment" type="id" />
+    <item name="locations_tab_fragment" type="id" />
+    <item name="character_detail_fragment" type="id" />
+    <item name="episode_detail_fragment" type="id" />
+    <item name="location_details_fragment" type="id" />
+</resources>

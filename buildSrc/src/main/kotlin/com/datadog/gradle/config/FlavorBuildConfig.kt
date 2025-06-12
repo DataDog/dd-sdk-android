@@ -105,3 +105,20 @@ fun configureFlavorForSampleApp(
         "\"${flavor.name.uppercase(Locale.US)}\""
     )
 }
+
+@Suppress("UnstableApiUsage")
+fun ApplicationDefaultConfig.configureFlavorForTvApp(
+    rootDir: File
+) {
+    val config = sampleAppConfig("${rootDir.absolutePath}/config/tv.json")
+    buildConfigField(
+        "String",
+        "DD_RUM_APPLICATION_ID",
+        "\"${config.rumApplicationId}\""
+    )
+    buildConfigField(
+        "String",
+        "DD_CLIENT_TOKEN",
+        "\"${config.token}\""
+    )
+}
