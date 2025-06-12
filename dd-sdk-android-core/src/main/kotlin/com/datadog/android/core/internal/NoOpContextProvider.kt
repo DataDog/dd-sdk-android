@@ -56,6 +56,7 @@ internal class NoOpContextProvider : ContextProvider {
             numberOfDisplays = null
         ),
         userInfo = UserInfo(null, null, null, null, emptyMap()),
+        accountInfo = null,
         trackingConsent = TrackingConsent.NOT_GRANTED,
         appBuildId = null,
         featuresContext = emptyMap()

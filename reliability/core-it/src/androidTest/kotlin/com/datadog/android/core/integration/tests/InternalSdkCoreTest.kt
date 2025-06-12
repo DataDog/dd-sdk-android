@@ -21,7 +21,10 @@ import com.datadog.android.api.context.DeviceType
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.stub.StubStorageBackedFeature
 import com.datadog.android.core.InternalSdkCore
+import com.datadog.android.core.configuration.BatchProcessingLevel
+import com.datadog.android.core.configuration.BatchSize
 import com.datadog.android.core.configuration.Configuration
+import com.datadog.android.core.configuration.UploadFrequency
 import com.datadog.android.core.integration.tests.forge.factories.ConfigurationCoreForgeryFactory
 import com.datadog.android.core.integration.tests.utils.clientToken
 import com.datadog.android.core.integration.tests.utils.env
@@ -409,8 +412,9 @@ class InternalSdkCoreTest : MockServerTest() {
             .apply {
                 _InternalProxy.allowClearTextHttp(this)
             }
-            .setBatchSize(forge.getForgery())
-            .setUploadFrequency(forge.getForgery())
+            .setBatchSize(BatchSize.SMALL)
+            .setUploadFrequency(UploadFrequency.FREQUENT)
+            .setBatchProcessingLevel(BatchProcessingLevel.HIGH)
             .useSite(forge.aValueFrom(DatadogSite::class.java))
             .build()
 

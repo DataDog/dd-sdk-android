@@ -428,7 +428,7 @@ open class DatadogInterceptor internal constructor(
 
     private fun ResponseBody.contentLengthOrNull(): Long? {
         return contentLength().let {
-            if (it <= 0L) null else it
+            if (it < 0L) null else it
         }
     }
 

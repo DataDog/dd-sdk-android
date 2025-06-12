@@ -6,14 +6,14 @@
 
 package com.datadog.gradle.utils
 
-import org.gradle.api.Project
+import org.gradle.process.ExecOperations
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.InputStreamReader
 
-fun Project.execShell(vararg command: String): List<String> {
+fun ExecOperations.execShell(vararg command: String): List<String> {
     val outputStream = ByteArrayOutputStream()
-    this.exec {
+    exec {
         commandLine(*command)
         standardOutput = outputStream
     }

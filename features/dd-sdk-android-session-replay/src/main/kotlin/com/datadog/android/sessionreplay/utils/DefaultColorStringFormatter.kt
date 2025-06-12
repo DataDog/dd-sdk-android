@@ -6,7 +6,7 @@
 
 package com.datadog.android.sessionreplay.utils
 
-import com.datadog.android.core.internal.utils.toHexString
+import com.datadog.android.internal.utils.toHexString
 
 /**
  * String utility methods needed in the Session Replay Wireframe Mappers.

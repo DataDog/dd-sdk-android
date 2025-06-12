@@ -10,7 +10,7 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.core.constraints.DataConstraints
 import com.datadog.android.core.constraints.DatadogDataConstraints
-import com.datadog.android.core.internal.utils.NULL_MAP_VALUE
+import com.datadog.android.internal.utils.NULL_MAP_VALUE
 import com.datadog.android.trace.internal.storage.ContextAwareSerializer
 import com.datadog.android.trace.model.SpanEvent
 import com.google.gson.JsonArray

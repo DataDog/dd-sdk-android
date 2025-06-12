@@ -7,7 +7,7 @@
 package com.datadog.android.log.assertj
 
 import com.datadog.android.core.internal.utils.JsonSerializer
-import com.datadog.android.core.internal.utils.NULL_MAP_VALUE
+import com.datadog.android.internal.utils.NULL_MAP_VALUE
 import com.datadog.tools.unit.assertj.JsonObjectAssert
 import com.google.gson.JsonArray
 import com.google.gson.JsonElement

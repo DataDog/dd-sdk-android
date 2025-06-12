@@ -193,6 +193,7 @@ internal class DatadogLateCrashReporter(
         val user = viewEvent.usr
         val hasUserInfo = user?.id != null || user?.name != null ||
             user?.email != null || additionalUserProperties.isNotEmpty()
+        val account = viewEvent.account
         val deviceInfo = datadogContext.deviceInfo
 
         return ErrorEvent(
@@ -226,6 +227,13 @@ internal class DatadogLateCrashReporter(
                     user?.email,
                     user?.anonymousId,
                     additionalUserProperties
+                )
+            },
+            account = account?.let {
+                ErrorEvent.Account(
+                    id = it.id,
+                    name = it.name,
+                    additionalProperties = it.additionalProperties
                 )
             },
             connectivity = connectivity,

@@ -9,8 +9,12 @@ package com.datadog.android.rum.internal.monitor
 import android.app.Activity
 import android.app.ActivityManager
 import android.os.Handler
+import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.context.DatadogContext
+import com.datadog.android.api.feature.EventWriteScope
 import com.datadog.android.api.feature.Feature
+import com.datadog.android.api.feature.measureMethodCallPerf
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.feature.event.ThreadDump
@@ -18,7 +22,9 @@ import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.utils.executeSafe
 import com.datadog.android.core.internal.utils.getSafe
 import com.datadog.android.core.internal.utils.submitSafe
+import com.datadog.android.core.metrics.MethodCallSamplingRate
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
+import com.datadog.android.internal.thread.NamedCallable
 import com.datadog.android.rum.DdRumContentProvider
 import com.datadog.android.rum.ExperimentalRumApi
 import com.datadog.android.rum.RumActionType
@@ -51,7 +57,6 @@ import com.datadog.android.rum.metric.networksettled.InitialResourceIdentifier
 import com.datadog.android.rum.resource.ResourceId
 import com.datadog.android.telemetry.internal.TelemetryEventHandler
 import java.util.Locale
-import java.util.concurrent.Callable
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.ExecutorService
@@ -710,9 +715,9 @@ internal class DatadogRumMonitor(
                         val future = executorService.submitSafe(
                             "Rum event handling",
                             sdkCore.internalLogger,
-                            Callable<RumContext> {
+                            NamedCallable<RumContext>("${event::class.simpleName}") {
                                 synchronized(rootScope) {
-                                    rootScope.handleEvent(event, datadogContext, writeScope, writer)
+                                    handleEventWithMethodCallPerf(event, datadogContext, writeScope)
                                     notifyDebugListenerWithState()
                                 }
                                 handler.postDelayed(keepAliveRunnable, KEEP_ALIVE_MS)
@@ -728,6 +733,21 @@ internal class DatadogRumMonitor(
                         }
                     }
                 }
+        }
+    }
+
+    @WorkerThread
+    private fun handleEventWithMethodCallPerf(
+        event: RumRawEvent,
+        datadogContext: DatadogContext,
+        writeScope: EventWriteScope
+    ) {
+        sdkCore.internalLogger.measureMethodCallPerf(
+            javaClass,
+            "RUM event - ${event::class.simpleName ?: "Unknown"}",
+            MethodCallSamplingRate.RARE.rate
+        ) {
+            rootScope.handleEvent(event, datadogContext, writeScope, writer)
         }
     }
 

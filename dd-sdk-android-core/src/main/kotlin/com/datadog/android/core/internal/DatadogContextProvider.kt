@@ -58,6 +58,7 @@ internal class DatadogContextProvider(
                 )
             },
             userInfo = coreFeature.userInfoProvider.getUserInfo(),
+            accountInfo = coreFeature.accountInfoProvider.getAccountInfo(),
             trackingConsent = coreFeature.trackingConsentProvider.getConsent(),
             appBuildId = coreFeature.appBuildId,
             featuresContext = mutableMapOf<String, Map<String, Any?>>().apply {

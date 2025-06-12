@@ -6,6 +6,7 @@
 
 package com.datadog.android.rum.assertj
 
+import com.datadog.android.api.context.AccountInfo
 import com.datadog.android.api.context.NetworkInfo
 import com.datadog.android.api.context.UserInfo
 import com.datadog.android.rum.RumResourceKind
@@ -290,6 +291,29 @@ internal class ResourceEventAssert(actual: ResourceEvent) :
                     "but was ${actual.context?.additionalProperties}"
             )
             .containsExactlyInAnyOrderEntriesOf(expected)
+    }
+
+    fun hasAccountInfo(expected: AccountInfo?): ResourceEventAssert {
+        assertThat(actual.account?.id)
+            .overridingErrorMessage(
+                "Expected RUM event to have account.id ${expected?.id} " +
+                    "but was ${actual.account?.id}"
+            )
+            .isEqualTo(expected?.id)
+        assertThat(actual.account?.name)
+            .overridingErrorMessage(
+                "Expected RUM event to have account.name ${expected?.name} " +
+                    "but was ${actual.account?.name}"
+            )
+            .isEqualTo(expected?.name)
+        assertThat(actual.account?.additionalProperties)
+            .overridingErrorMessage(
+                "Expected event to have account additional " +
+                    "properties ${expected?.extraInfo} " +
+                    "but was ${actual.account?.additionalProperties}"
+            )
+            .containsExactlyInAnyOrderEntriesOf(expected?.extraInfo)
+        return this
     }
 
     fun hasConnectivityInfo(expected: NetworkInfo?): ResourceEventAssert {

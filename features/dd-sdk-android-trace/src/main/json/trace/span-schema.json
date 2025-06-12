@@ -191,6 +191,26 @@
           },
           "readOnly": true
         },
+        "account": {
+          "type": "object",
+          "description": "Account properties",
+          "properties": {
+            "id": {
+              "type": "string",
+              "description": "Identifier of the account",
+              "readOnly": true
+            },
+            "name": {
+              "type": "string",
+              "description": "Name of the account",
+              "readOnly": true
+            }
+          },
+          "additionalProperties": {
+            "type": "object"
+          },
+          "readOnly": true
+        },
         "network": {
           "type": "object",
           "description": "The network information in the moment the Span was created",

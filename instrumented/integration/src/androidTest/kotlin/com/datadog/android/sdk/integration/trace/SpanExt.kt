@@ -6,7 +6,7 @@
 
 package com.datadog.android.sdk.integration.trace
 
-import com.datadog.android.core.internal.utils.toHexString
+import com.datadog.android.internal.utils.toHexString
 import com.datadog.opentracing.DDSpan
 import io.opentracing.Span
 import io.opentracing.SpanContext

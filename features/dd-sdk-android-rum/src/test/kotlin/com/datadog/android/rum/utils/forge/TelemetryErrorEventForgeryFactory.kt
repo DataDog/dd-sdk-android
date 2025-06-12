@@ -6,7 +6,6 @@
 
 package com.datadog.android.rum.utils.forge
 
-import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.internal.utils.loggableStackTrace
 import com.datadog.android.telemetry.model.TelemetryErrorEvent
 import com.datadog.tools.unit.forge.aThrowable

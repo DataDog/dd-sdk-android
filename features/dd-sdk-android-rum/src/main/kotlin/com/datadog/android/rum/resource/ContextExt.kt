@@ -12,7 +12,7 @@ import android.content.res.Resources
 import androidx.annotation.RawRes
 import com.datadog.android.Datadog
 import com.datadog.android.api.SdkCore
-import com.datadog.android.core.internal.utils.toHexString
+import com.datadog.android.internal.utils.toHexString
 import java.io.InputStream
 
 /**

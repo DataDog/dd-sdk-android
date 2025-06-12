@@ -165,6 +165,15 @@ internal class RumFeatureTest {
     }
 
     @Test
+    fun `M allow 24h storage W init()`() {
+        // When
+        val config = testedFeature.storageConfiguration
+
+        // Then
+        assertThat(config.oldBatchThreshold).isEqualTo(24L * 60L * 60L * 1000L)
+    }
+
+    @Test
     fun `M store sample rate W initialize()`() {
         // When
         testedFeature.onInitialize(appContext.mockInstance)

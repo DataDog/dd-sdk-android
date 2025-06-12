@@ -15,9 +15,9 @@ import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.api.storage.EventType
 import com.datadog.android.core.InternalSdkCore
-import com.datadog.android.core.internal.attributes.LocalAttribute
-import com.datadog.android.core.internal.attributes.ViewScopeInstrumentationType
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
+import com.datadog.android.internal.attributes.LocalAttribute
+import com.datadog.android.internal.attributes.ViewScopeInstrumentationType
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.internal.utils.loggableStackTrace
 import com.datadog.android.rum.GlobalRumMonitor
@@ -528,6 +528,13 @@ internal open class RumViewScope(
                 } else {
                     null
                 },
+                account = datadogContext.accountInfo?.let {
+                    ErrorEvent.Account(
+                        id = it.id,
+                        name = it.name,
+                        additionalProperties = it.extraInfo.toMutableMap()
+                    )
+                },
                 connectivity = datadogContext.networkInfo.toErrorConnectivity(),
                 application = ErrorEvent.Application(rumContext.applicationId),
                 session = ErrorEvent.ErrorEventSession(
@@ -1008,6 +1015,13 @@ internal open class RumViewScope(
                 } else {
                     null
                 },
+                account = datadogContext.accountInfo?.let {
+                    ViewEvent.Account(
+                        id = it.id,
+                        name = it.name,
+                        additionalProperties = it.extraInfo.toMutableMap()
+                    )
+                },
                 application = ViewEvent.Application(rumContext.applicationId),
                 session = ViewEvent.ViewEventSession(
                     id = rumContext.sessionId,
@@ -1177,6 +1191,13 @@ internal open class RumViewScope(
                 } else {
                     null
                 },
+                account = datadogContext.accountInfo?.let {
+                    ActionEvent.Account(
+                        id = it.id,
+                        name = it.name,
+                        additionalProperties = it.extraInfo.toMutableMap()
+                    )
+                },
                 application = ActionEvent.Application(rumContext.applicationId),
                 session = ActionEvent.ActionEventSession(
                     id = rumContext.sessionId,
@@ -1288,6 +1309,13 @@ internal open class RumViewScope(
                     )
                 } else {
                     null
+                },
+                account = datadogContext.accountInfo?.let {
+                    LongTaskEvent.Account(
+                        id = it.id,
+                        name = it.name,
+                        additionalProperties = it.extraInfo.toMutableMap()
+                    )
                 },
                 connectivity = datadogContext.networkInfo.toLongTaskConnectivity(),
                 application = LongTaskEvent.Application(rumContext.applicationId),

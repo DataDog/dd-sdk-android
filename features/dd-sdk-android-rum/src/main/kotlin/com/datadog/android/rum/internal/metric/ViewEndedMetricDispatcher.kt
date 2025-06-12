@@ -8,7 +8,7 @@ package com.datadog.android.rum.internal.metric
 import androidx.annotation.VisibleForTesting
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.InternalLogger.Target
-import com.datadog.android.core.internal.attributes.ViewScopeInstrumentationType
+import com.datadog.android.internal.attributes.ViewScopeInstrumentationType
 import com.datadog.android.rum.internal.domain.scope.RumViewType
 
 internal class ViewEndedMetricDispatcher(

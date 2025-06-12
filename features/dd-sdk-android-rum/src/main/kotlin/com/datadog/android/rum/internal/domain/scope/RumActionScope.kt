@@ -313,6 +313,13 @@ internal class RumActionScope(
                 } else {
                     null
                 },
+                account = datadogContext.accountInfo?.let {
+                    ActionEvent.Account(
+                        id = it.id,
+                        name = it.name,
+                        additionalProperties = it.extraInfo.toMutableMap()
+                    )
+                },
                 os = ActionEvent.Os(
                     name = datadogContext.deviceInfo.osName,
                     version = datadogContext.deviceInfo.osVersion,
