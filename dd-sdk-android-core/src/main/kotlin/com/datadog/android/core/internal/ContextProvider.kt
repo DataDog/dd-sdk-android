@@ -7,10 +7,16 @@
 package com.datadog.android.core.internal
 
 import com.datadog.android.api.context.DatadogContext
+import com.datadog.android.api.feature.Feature
 
 internal interface ContextProvider {
     // TODO RUM-3784 lifecycle checks may be needed for the cases when context is requested
     //  when datadog is not initialized yet/anymore (case of UploadWorker, other calls site
     //  should be in sync with lifecycle)
-    val context: DatadogContext
+    /**
+     * @param withFeatureContexts Feature contexts ([DatadogContext.featuresContext] property) to include
+     * in the [DatadogContext] provided. The value should be the feature names as declared by [Feature.name].
+     * Default is empty, meaning that no feature contexts will be included.
+     */
+    fun getContext(withFeatureContexts: Set<String>): DatadogContext
 }

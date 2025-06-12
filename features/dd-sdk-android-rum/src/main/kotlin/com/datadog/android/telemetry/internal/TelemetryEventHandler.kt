@@ -70,7 +70,9 @@ internal class TelemetryEventHandler(
 
         eventIDsSeenInCurrentSession.add(event.identity)
         totalEventsSeenInCurrentSession++
-        sdkCore.getFeature(Feature.RUM_FEATURE_NAME)?.withWriteContext { datadogContext, writeScope ->
+        sdkCore.getFeature(Feature.RUM_FEATURE_NAME)?.withWriteContext(
+            withFeatureContexts = setOf(Feature.SESSION_REPLAY_FEATURE_NAME, Feature.TRACING_FEATURE_NAME)
+        ) { datadogContext, writeScope ->
             val timestamp = wrappedEvent.eventTime.timestamp + datadogContext.time.serverTimeOffsetMs
             val telemetryEvent: Any? = when (event) {
                 is InternalTelemetryEvent.Log.Debug -> {

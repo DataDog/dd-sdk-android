@@ -24,6 +24,9 @@ interface FeatureScope {
 
     /**
      * Utility to write an event, asynchronously.
+     * @param withFeatureContexts Feature contexts ([DatadogContext.featuresContext] property) to include
+     * in the [DatadogContext] provided. The value should be the feature names as declared by [Feature.name].
+     * Default is empty, meaning that no feature contexts will be included.
      * @param callback an operation called with an up-to-date [DatadogContext]
      * and an [EventWriteScope]. Callback will be executed on a single context processing worker thread. Execution of
      * [EventWriteScope] will be done on a worker thread from I/O pool.
@@ -31,16 +34,21 @@ interface FeatureScope {
      */
     @AnyThread
     fun withWriteContext(
+        withFeatureContexts: Set<String> = emptySet(),
         callback: (datadogContext: DatadogContext, write: EventWriteScope) -> Unit
     )
 
     /**
      * Utility to read current [DatadogContext], asynchronously.
+     * @param withFeatureContexts Feature contexts ([DatadogContext.featuresContext] property) to include
+     * in the [DatadogContext] provided. The value should be the feature names as declared by [Feature.name].
+     * Default is empty, meaning that no feature contexts will be included.
      * @param callback an operation called with an up-to-date [DatadogContext].
      * [DatadogContext] will have a state created at the moment this method is called.
      */
     @AnyThread
     fun withContext(
+        withFeatureContexts: Set<String> = emptySet(),
         callback: (datadogContext: DatadogContext) -> Unit
     )
 
@@ -48,11 +56,15 @@ interface FeatureScope {
     /**
      * Same as [withWriteContext] but will be executed in the blocking manner.
      *
+     * @param withFeatureContexts Feature contexts ([DatadogContext.featuresContext] property) to include
+     * in the [DatadogContext] provided. The value should be the feature names as declared by [Feature.name].
+     * Default is empty, meaning that no feature contexts will be included.
+     *
      * **NOTE**: This API is for the internal use only and is not guaranteed to be stable.
      */
     @AnyThread
     @InternalApi
-    fun getWriteContextSync(): Pair<DatadogContext, EventWriteScope>?
+    fun getWriteContextSync(withFeatureContexts: Set<String> = emptySet()): Pair<DatadogContext, EventWriteScope>?
 
     /**
      * Send event to a given feature. It will be sent in a synchronous way.

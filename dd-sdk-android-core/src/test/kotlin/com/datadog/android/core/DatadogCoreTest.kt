@@ -552,6 +552,32 @@ internal class DatadogCoreTest {
     }
 
     @Test
+    fun `M return immutable feature context W getFeatureContext() {feature context is changed after context creation}`(
+        @StringForgery feature: String,
+        @BoolForgery fakeUseContextThread: Boolean,
+        forge: Forge
+    ) {
+        // Given
+        val mockFeature = mock<SdkFeature>()
+        val mutableContext = forge.exhaustiveAttributes().toMutableMap()
+        val initialContext = mutableContext.toMap()
+        whenever(mockFeature.featureContextLock) doReturn ReentrantReadWriteLock()
+        whenever(mockFeature.featureContext) doReturn mutableContext
+        val keysToRemove = mutableContext.keys.take(forge.anInt(min = 1, max = mutableContext.keys.size))
+        testedCore.features[feature] = mockFeature
+
+        // When
+        val actualContext = testedCore.getFeatureContext(feature, fakeUseContextThread)
+        keysToRemove.forEach {
+            mutableContext.remove(it)
+        }
+
+        // Then
+        assertThat(actualContext).isEqualTo(initialContext)
+        assertThat(actualContext).isNotEqualTo(mutableContext)
+    }
+
+    @Test
     fun `M read updated feature context W getFeatureContext() { read when update is in progress }`(
         @StringForgery feature: String,
         @MapForgery(

@@ -146,7 +146,7 @@ internal object NoOpInternalSdkCore : InternalSdkCore {
 
     override fun getAllFeatures(): List<FeatureScope> = emptyList()
 
-    override fun getDatadogContext(): DatadogContext? = null
+    override fun getDatadogContext(withFeatureContexts: Set<String>): DatadogContext? = null
 
     // endregion
 

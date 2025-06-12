@@ -44,7 +44,7 @@ internal class DataUploadRunnable(
         var uploadAttempts = 0
         var lastBatchUploadStatus: UploadStatus? = null
         if (isNetworkAvailable() && isSystemReady()) {
-            val context = contextProvider.context
+            val context = contextProvider.getContext(withFeatureContexts = emptySet())
             var batchConsumerAvailableAttempts = maxBatchesPerJob
             do {
                 benchmarkUploads.incrementBenchmarkUploadsCount(

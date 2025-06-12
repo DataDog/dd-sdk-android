@@ -37,6 +37,7 @@ import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
@@ -121,8 +122,12 @@ internal class WebViewReplayEventConsumerTest {
             val callback = it.getArgument<(EventBatchWriter) -> Unit>(0)
             callback.invoke(mockEventBatchWriter)
         }
-        whenever(mockSessionReplayFeatureScope.withWriteContext(any())) doAnswer {
-            val callback = it.getArgument<(DatadogContext, EventWriteScope) -> Unit>(0)
+        whenever(
+            mockSessionReplayFeatureScope.withWriteContext(
+                eq(setOf(Feature.RUM_FEATURE_NAME, Feature.SESSION_REPLAY_FEATURE_NAME)), any()
+            )
+        ) doAnswer {
+            val callback = it.getArgument<(DatadogContext, EventWriteScope) -> Unit>(it.arguments.lastIndex)
             callback.invoke(fakeDatadogContext, mockEventWriteScope)
         }
         whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger

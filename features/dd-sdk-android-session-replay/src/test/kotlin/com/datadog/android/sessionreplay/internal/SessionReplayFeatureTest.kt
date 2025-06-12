@@ -9,6 +9,7 @@ package com.datadog.android.sessionreplay.internal
 import android.app.Application
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.Feature
+import com.datadog.android.api.feature.FeatureContextUpdateReceiver
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.sessionreplay.NoOpSessionReplayInternalCallback
@@ -129,6 +130,15 @@ internal class SessionReplayFeatureTest {
     }
 
     @Test
+    fun `M set feature context update listener W initialize()`() {
+        // When
+        testedFeature.onInitialize(appContext.mockInstance)
+
+        // Then
+        verify(mockSdkCore).setContextUpdateReceiver(eq(Feature.SESSION_REPLAY_FEATURE_NAME), any())
+    }
+
+    @Test
     fun `M initialize session replay recorder W initialize()`() {
         // Given
         testedFeature = SessionReplayFeature(
@@ -244,6 +254,22 @@ internal class SessionReplayFeatureTest {
 
         // Then
         verify(mockRecorder).unregisterCallbacks()
+    }
+
+    @Test
+    fun `M unregister the feature conttext listener W onStop()`() {
+        // Given
+        testedFeature.onInitialize(appContext.mockInstance)
+
+        // When
+        testedFeature.onStop()
+
+        // Then
+        argumentCaptor<FeatureContextUpdateReceiver> {
+            verify(mockSdkCore).setContextUpdateReceiver(eq(Feature.SESSION_REPLAY_FEATURE_NAME), capture())
+            verify(mockSdkCore).removeContextUpdateReceiver(eq(Feature.SESSION_REPLAY_FEATURE_NAME), capture())
+            assertThat(firstValue).isSameAs(lastValue)
+        }
     }
 
     @Test

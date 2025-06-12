@@ -103,8 +103,8 @@ internal class TraceWriterTest {
             val callback = it.getArgument<(EventBatchWriter) -> Unit>(0)
             callback.invoke(mockEventBatchWriter)
         }
-        whenever(mockTracingFeatureScope.withWriteContext(any())) doAnswer {
-            val callback = it.getArgument<(DatadogContext, EventWriteScope) -> Unit>(0)
+        whenever(mockTracingFeatureScope.withWriteContext(eq(emptySet()), any())) doAnswer {
+            val callback = it.getArgument<(DatadogContext, EventWriteScope) -> Unit>(it.arguments.lastIndex)
             callback.invoke(fakeDatadogContext, mockEventWriteScope)
         }
 
@@ -505,7 +505,7 @@ internal class TraceWriterTest {
 
         // THEN
         verify(mockSdkCore).getFeature(Feature.TRACING_FEATURE_NAME)
-        verify(mockTracingFeatureScope).withWriteContext(any())
+        verify(mockTracingFeatureScope).withWriteContext(any(), any())
 
         verifyNoMoreInteractions(mockSdkCore, mockTracingFeatureScope)
 

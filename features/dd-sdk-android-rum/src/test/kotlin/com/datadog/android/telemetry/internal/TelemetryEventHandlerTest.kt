@@ -202,8 +202,13 @@ internal class TelemetryEventHandlerTest {
             callback.invoke(mockEventBatchWriter)
         }
 
-        whenever(mockRumFeatureScope.withWriteContext(any())) doAnswer {
-            val callback = it.getArgument<(DatadogContext, EventWriteScope) -> Unit>(0)
+        whenever(
+            mockRumFeatureScope.withWriteContext(
+                eq(setOf(Feature.SESSION_REPLAY_FEATURE_NAME, Feature.TRACING_FEATURE_NAME)),
+                any()
+            )
+        ) doAnswer {
+            val callback = it.getArgument<(DatadogContext, EventWriteScope) -> Unit>(it.arguments.lastIndex)
             callback.invoke(fakeDatadogContext, mockEventWriteScope)
         }
         whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger

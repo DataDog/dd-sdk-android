@@ -9,8 +9,6 @@ package com.datadog.android.rum.internal.utils
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.EventWriteScope
-import com.datadog.android.api.feature.Feature
-import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.api.storage.EventBatchWriter
 import com.datadog.android.api.storage.EventType
@@ -55,9 +53,6 @@ import org.mockito.quality.Strictness
 internal class SdkCoreExtTest {
 
     @Mock
-    lateinit var mockRumFeatureScope: FeatureScope
-
-    @Mock
     lateinit var mockEventBatchWriter: EventBatchWriter
 
     @Mock
@@ -84,11 +79,6 @@ internal class SdkCoreExtTest {
             val callback = it.getArgument<(EventBatchWriter) -> Unit>(0)
             callback.invoke(mockEventBatchWriter)
         }
-        whenever(mockRumFeatureScope.withWriteContext(any())) doAnswer {
-            val callback = it.getArgument<(DatadogContext, EventWriteScope) -> Unit>(0)
-            callback.invoke(fakeDatadogContext, mockEventWriteScope)
-        }
-        whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumFeatureScope
         whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
         whenever(mockWriter.write(eq(mockEventBatchWriter), any(), any())) doReturn true
     }

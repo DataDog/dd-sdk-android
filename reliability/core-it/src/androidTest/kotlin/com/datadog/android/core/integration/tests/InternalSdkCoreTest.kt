@@ -164,7 +164,7 @@ class InternalSdkCoreTest : MockServerTest() {
         }
 
         // When
-        val context = testedInternalSdkCore.getDatadogContext()
+        val context = testedInternalSdkCore.getDatadogContext(withFeatureContexts = setOf(fakeFeatureName))
 
         // Then
         checkNotNull(context)
@@ -201,7 +201,7 @@ class InternalSdkCoreTest : MockServerTest() {
             .forEach { it.join(SHORT_WAIT_MS) }
 
         // When
-        val context = testedInternalSdkCore.getDatadogContext()
+        val context = testedInternalSdkCore.getDatadogContext(withFeatureContexts = setOf(fakeFeatureName))
 
         // Then
         checkNotNull(context)
@@ -250,7 +250,7 @@ class InternalSdkCoreTest : MockServerTest() {
             .join(SHORT_WAIT_MS)
 
         // When
-        val context = testedInternalSdkCore.getDatadogContext()
+        val context = testedInternalSdkCore.getDatadogContext(withFeatureContexts = setOf(fakeFeatureName))
 
         // Then
         checkNotNull(context)
@@ -299,7 +299,7 @@ class InternalSdkCoreTest : MockServerTest() {
             .join(SHORT_WAIT_MS)
 
         // When
-        val context = testedInternalSdkCore.getDatadogContext()
+        val context = testedInternalSdkCore.getDatadogContext(withFeatureContexts = setOf(fakeFeatureName))
 
         // Then
         checkNotNull(context)

@@ -113,7 +113,7 @@ class StubSDKCore(
     override val firstPartyHostResolver: FirstPartyHostHeaderTypeResolver =
         StubFirstPartyHostHeaderTypeResolver()
 
-    override fun getDatadogContext(): DatadogContext {
+    override fun getDatadogContext(withFeatureContexts: Set<String>): DatadogContext {
         return datadogContext
     }
 

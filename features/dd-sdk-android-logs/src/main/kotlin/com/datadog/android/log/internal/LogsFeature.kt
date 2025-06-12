@@ -174,7 +174,12 @@ internal class LogsFeature(
         val attributes = getAttributes()
         // TODO RUM-9852 Implement better passthrough mechanism for the JVM crash scenario
         val writeContext = sdkCore.getFeature(name)
-            ?.getWriteContextSync()
+            ?.getWriteContextSync(
+                withFeatureContexts = setOf(
+                    Feature.RUM_FEATURE_NAME,
+                    Feature.TRACING_FEATURE_NAME
+                )
+            )
         if (writeContext != null) {
             val (datadogContext, writeScope) = writeContext
             val log = logGenerator.generateLog(
@@ -282,7 +287,9 @@ internal class LogsFeature(
         }
 
         sdkCore.getFeature(name)
-            ?.withWriteContext { datadogContext, writeScope ->
+            ?.withWriteContext(
+                withFeatureContexts = setOf(Feature.RUM_FEATURE_NAME)
+            ) { datadogContext, writeScope ->
                 val log = logGenerator.generateLog(
                     logStatus,
                     datadogContext = datadogContext,

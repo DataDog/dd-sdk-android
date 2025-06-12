@@ -491,19 +491,20 @@ internal class SdkFeatureTest {
     @Test
     fun `M provide write context W withWriteContext(callback)`(
         @Forgery fakeContext: DatadogContext,
+        @StringForgery fakeWithFeatureContexts: Set<String>,
         @Mock mockEventWriteScope: EventWriteScope
     ) {
         // Given
         testedFeature.storage = mockStorage
         val callback = mock<(DatadogContext, EventWriteScope) -> Unit>()
-        whenever(mockContextProvider.context) doReturn fakeContext
+        whenever(mockContextProvider.getContext(fakeWithFeatureContexts)) doReturn fakeContext
 
         whenever(
             mockStorage.getEventWriteScope(fakeContext)
         ) doReturn mockEventWriteScope
 
         // When
-        testedFeature.withWriteContext(callback = callback)
+        testedFeature.withWriteContext(fakeWithFeatureContexts, callback = callback)
 
         // Then
         verify(callback).invoke(
@@ -514,15 +515,16 @@ internal class SdkFeatureTest {
 
     @Test
     fun `M provide Datadog context W withContext(callback)`(
-        @Forgery fakeContext: DatadogContext
+        @Forgery fakeContext: DatadogContext,
+        @StringForgery fakeWithFeatureContexts: Set<String>
     ) {
         // Given
         testedFeature.storage = mockStorage
         val callback = mock<(DatadogContext) -> Unit>()
-        whenever(mockContextProvider.context) doReturn fakeContext
+        whenever(mockContextProvider.getContext(fakeWithFeatureContexts)) doReturn fakeContext
 
         // When
-        testedFeature.withContext(callback = callback)
+        testedFeature.withContext(fakeWithFeatureContexts, callback = callback)
 
         // Then
         verify(callback).invoke(fakeContext)
@@ -531,11 +533,12 @@ internal class SdkFeatureTest {
     @Test
     fun `M provide write context W getWriteContextSync()`(
         @Forgery fakeContext: DatadogContext,
+        @StringForgery fakeWithFeatureContexts: Set<String>,
         @Mock mockEventWriteScope: EventWriteScope
     ) {
         // Given
         testedFeature.storage = mockStorage
-        whenever(mockContextProvider.context) doReturn fakeContext
+        whenever(mockContextProvider.getContext(fakeWithFeatureContexts)) doReturn fakeContext
         whenever(coreFeature.mockInstance.contextExecutorService.submit(any<Callable<*>>())) doAnswer {
             val callable = it.getArgument<Callable<Pair<DatadogContext, EventWriteScope>>>(0)
             mock<Future<*>>().apply {
@@ -548,7 +551,7 @@ internal class SdkFeatureTest {
         ) doReturn mockEventWriteScope
 
         // When
-        val writeContext = testedFeature.getWriteContextSync()
+        val writeContext = testedFeature.getWriteContextSync(fakeWithFeatureContexts)
 
         // Then
         checkNotNull(writeContext)

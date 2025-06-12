@@ -29,7 +29,12 @@ internal class WebViewReplayEventConsumer(
 
     override fun consume(event: JsonObject) {
         sdkCore.getFeature(WebViewReplayFeature.WEB_REPLAY_FEATURE_NAME)
-            ?.withWriteContext { datadogContext, writeScope ->
+            ?.withWriteContext(
+                withFeatureContexts = setOf(
+                    Feature.RUM_FEATURE_NAME,
+                    Feature.SESSION_REPLAY_FEATURE_NAME
+                )
+            ) { datadogContext, writeScope ->
                 val rumContext = contextProvider.getRumContext(datadogContext)
                 val sessionReplayFeatureContext = datadogContext.featuresContext[
                     Feature.SESSION_REPLAY_FEATURE_NAME

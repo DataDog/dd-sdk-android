@@ -179,32 +179,38 @@ internal class SdkFeature(
     // region FeatureScope
 
     override fun withWriteContext(
+        withFeatureContexts: Set<String>,
         callback: (DatadogContext, EventWriteScope) -> Unit
     ) {
         coreFeature.contextExecutorService
             .executeSafe("withWriteContext-${wrappedFeature.name}", internalLogger) {
-                val context = contextProvider.context
+                val context = contextProvider.getContext(withFeatureContexts)
                 val eventBatchWriteScope = storage.getEventWriteScope(context)
                 callback(context, eventBatchWriteScope)
             }
     }
 
-    override fun withContext(callback: (datadogContext: DatadogContext) -> Unit) {
+    override fun withContext(
+        withFeatureContexts: Set<String>,
+        callback: (datadogContext: DatadogContext) -> Unit
+    ) {
         coreFeature.contextExecutorService
             .executeSafe("withContext-${wrappedFeature.name}", internalLogger) {
-                val context = contextProvider.context
+                val context = contextProvider.getContext(withFeatureContexts)
                 callback(context)
             }
     }
 
-    override fun getWriteContextSync(): Pair<DatadogContext, EventWriteScope>? {
+    override fun getWriteContextSync(
+        withFeatureContexts: Set<String>
+    ): Pair<DatadogContext, EventWriteScope>? {
         val operationName = "getWriteContextSync-${wrappedFeature.name}"
         return coreFeature.contextExecutorService
             .submitSafe(
                 operationName,
                 internalLogger,
                 Callable {
-                    val context = contextProvider.context
+                    val context = contextProvider.getContext(withFeatureContexts)
                     val eventBatchWriteScope = storage.getEventWriteScope(context)
                     context to eventBatchWriteScope
                 }

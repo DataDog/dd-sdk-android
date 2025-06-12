@@ -7,5 +7,8 @@
 package com.datadog.android.core.internal
 
 internal fun interface FeatureContextProvider {
-    fun getFeaturesContexts(): List<Pair<String, () -> Map<String, Any?>>>
+    /**
+     * Returns **frozen** snapshot of the feature context which is not mutated over the time.
+     */
+    fun getFeatureContext(featureName: String): Map<String, Any?>
 }

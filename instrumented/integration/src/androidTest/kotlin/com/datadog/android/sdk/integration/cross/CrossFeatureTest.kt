@@ -283,7 +283,7 @@ class CrossFeatureTest {
     }
 
     @Test
-    fun logsMustNoLinkToTracesWhenCalledBefore() {
+    fun logsMustNotLinkToTracesWhenCalledBefore() {
         // Given
         val fakeOperationName = forge.aString()
         val fakeLogMessage = forge.aString()
@@ -309,7 +309,7 @@ class CrossFeatureTest {
     }
 
     @Test
-    fun logsMustNoLinkToTracesWhenCalledAfter() {
+    fun logsMustNotLinkToTracesWhenCalledAfter() {
         // Given
         val fakeOperationName = forge.aString()
         val fakeLogMessage = forge.aString()

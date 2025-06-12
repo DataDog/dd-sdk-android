@@ -8,6 +8,7 @@ package com.datadog.android.webview.internal.log
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
+import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.api.storage.EventType
@@ -32,7 +33,9 @@ internal class WebViewLogEventConsumer(
         if (event.second == USER_LOG_EVENT_TYPE) {
             if (sampler.sample(Unit)) {
                 sdkCore.getFeature(WebViewLogsFeature.WEB_LOGS_FEATURE_NAME)
-                    ?.withWriteContext { datadogContext, writeScope ->
+                    ?.withWriteContext(
+                        withFeatureContexts = setOf(Feature.RUM_FEATURE_NAME)
+                    ) { datadogContext, writeScope ->
                         val rumContext = rumContextProvider.getRumContext(datadogContext)
                         writeScope {
                             val mappedEvent = map(event.first, datadogContext, rumContext)
