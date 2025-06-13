@@ -23,6 +23,7 @@ variables:
   ANDROID_SDK_VERSION: "commandlinetools-mac-11076708_latest"
 
 stages:
+  - notify_test
   - ci-image
   - security
   - analysis
@@ -977,11 +978,9 @@ notify:publish-release-failure:
 
 notify:dogfood-app:
   tags: [ "arch:amd64" ]
-  only:
-    - tags
   image: $CI_IMAGE_DOCKER
-  stage: notify
-  when: on_success
+  stage: notify_test
+  when: manual
   script:
     - !reference [ .snippets, set-github-installation-token ]
     - pip3 install GitPython requests
@@ -989,11 +988,9 @@ notify:dogfood-app:
 
 notify:dogfood-demo:
   tags: [ "arch:amd64" ]
-  only:
-    - tags
   image: $CI_IMAGE_DOCKER
-  stage: notify
-  when: on_success
+  stage: notify_test
+  when: manual
   script:
     - !reference [ .snippets, set-github-installation-token ]
     - pip3 install GitPython requests
@@ -1001,11 +998,9 @@ notify:dogfood-demo:
 
 notify:dogfood-gradle-plugin:
   tags: [ "arch:amd64" ]
-  only:
-    - tags
   image: $CI_IMAGE_DOCKER
-  stage: notify
-  when: on_success
+  stage: notify_test
+  when: manual
   script:
     - !reference [ .snippets, set-github-installation-token ]
     - pip3 install GitPython requests
