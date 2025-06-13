@@ -7,6 +7,11 @@
 package com.datadog.android.log
 
 import com.datadog.android.api.SdkCore
+import com.datadog.android.log.LogAttributes.ACCOUNT_ID
+import com.datadog.android.log.LogAttributes.ACCOUNT_NAME
+import com.datadog.android.log.LogAttributes.USR_EMAIL
+import com.datadog.android.log.LogAttributes.USR_ID
+import com.datadog.android.log.LogAttributes.USR_NAME
 
 /**
  * This class holds constant log attribute keys.
@@ -317,6 +322,28 @@ object LogAttributes {
      * @see [SdkCore.setUserInfo]
      */
     const val USR_NAME: String = "$USR_ATTRIBUTES_GROUP.name"
+
+    /**
+     * Group containing account properties.
+     *
+     * @see ACCOUNT_ID
+     * @see ACCOUNT_NAME
+     */
+    const val ACCOUNT_ATTRIBUTES_GROUP: String = "account"
+
+    /**
+     * The account identifier. (String)
+     * This value is filled automatically by the [Logger].
+     * @see [SdkCore.setAccountInfo]
+     */
+    const val ACCOUNT_ID: String = "$ACCOUNT_ATTRIBUTES_GROUP.id"
+
+    /**
+     * The account friendly name. (String)
+     * This value is filled automatically by the [Logger].
+     * @see [SdkCore.setAccountInfo]
+     */
+    const val ACCOUNT_NAME: String = "$ACCOUNT_ATTRIBUTES_GROUP.name"
 
     /**
      * The application variant. (String)

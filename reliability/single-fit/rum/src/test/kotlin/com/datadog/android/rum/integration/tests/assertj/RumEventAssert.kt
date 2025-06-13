@@ -163,6 +163,47 @@ class RumEventAssert(actual: JsonObject) :
 
     // endregion
 
+    // region user
+    fun hasUsrId(id: String): RumEventAssert {
+        hasField("usr.id", id)
+        return this
+    }
+
+    fun hasUsrName(name: String): RumEventAssert {
+        hasField("usr.name", name)
+        return this
+    }
+
+    fun hasUsrEmail(email: String): RumEventAssert {
+        hasField("usr.email", email)
+        return this
+    }
+
+    fun hasUsrAdditionalAttributes(key: String, value: String): RumEventAssert {
+        hasField("usr.$key", value)
+        return this
+    }
+    // endregion
+
+    // region user
+    fun hasAccountId(id: String): RumEventAssert {
+        hasField("account.id", id)
+        return this
+    }
+
+    fun hasAccountName(name: String): RumEventAssert {
+        hasField("account.name", name)
+        return this
+    }
+
+    fun hasAccountExtraInfo(key: String, value: Any?): RumEventAssert {
+        if (value is String) {
+            hasField("account.$key", value)
+        }
+        return this
+    }
+    // endregion
+
     companion object {
         fun assertThat(actual: JsonObject): RumEventAssert {
             return RumEventAssert(actual)

@@ -19,6 +19,7 @@ import com.datadog.android.core.internal.ContextProvider
 import com.datadog.android.core.internal.CoreFeature
 import com.datadog.android.core.internal.DatadogCore
 import com.datadog.android.core.internal.SdkFeature
+import com.datadog.android.core.internal.account.MutableAccountInfoProvider
 import com.datadog.android.core.internal.lifecycle.ProcessLifecycleCallback
 import com.datadog.android.core.internal.lifecycle.ProcessLifecycleMonitor
 import com.datadog.android.core.internal.net.DefaultFirstPartyHostHeaderTypeResolver
@@ -37,6 +38,7 @@ import com.datadog.android.utils.verifyLog
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
+import com.datadog.tools.unit.forge.exhaustiveAttributes
 import com.google.gson.JsonObject
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.AdvancedForgery
@@ -287,6 +289,52 @@ internal class DatadogCoreTest {
                 "key2" to "one"
             )
         )
+    }
+
+    @Test
+    fun `M update accountInfoProvider W setAccountInfo()`(
+        @StringForgery(type = StringForgeryType.HEXADECIMAL) id: String,
+        @StringForgery name: String,
+        @MapForgery(
+            key = AdvancedForgery(string = [StringForgery(StringForgeryType.ALPHA_NUMERICAL)]),
+            value = AdvancedForgery(string = [StringForgery(StringForgeryType.ALPHA_NUMERICAL)])
+        ) fakeAccountProperties: Map<String, String>
+    ) {
+        // Given
+        val mockAccountInfoProvider = mock<MutableAccountInfoProvider>()
+        testedCore.coreFeature.accountInfoProvider = mockAccountInfoProvider
+
+        // When
+        testedCore.setAccountInfo(id, name, fakeAccountProperties)
+
+        // Then
+        verify(mockAccountInfoProvider).setAccountInfo(id, name, fakeAccountProperties)
+    }
+
+    @Test
+    fun `M set additional account info W addAccountExtraInfo() is called`(
+        forge: Forge,
+        @StringForgery(type = StringForgeryType.HEXADECIMAL) id: String,
+        @StringForgery name: String
+    ) {
+        // Given
+        val fakeExtraProperties = forge.exhaustiveAttributes(excludedKeys = setOf("id", "name"))
+        testedCore.coreFeature = mock()
+        whenever(testedCore.coreFeature.initialized).thenReturn(AtomicBoolean())
+        val mockAccountInfoProvider = mock<MutableAccountInfoProvider>()
+        whenever(testedCore.coreFeature.accountInfoProvider) doReturn mockAccountInfoProvider
+
+        // When
+        testedCore.setAccountInfo(id, name, emptyMap())
+        testedCore.addAccountExtraInfo(fakeExtraProperties)
+
+        // Then
+        verify(mockAccountInfoProvider).setAccountInfo(
+            id,
+            name,
+            emptyMap()
+        )
+        verify(mockAccountInfoProvider).addExtraInfo(extraInfo = fakeExtraProperties)
     }
 
     @Test
