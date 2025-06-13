@@ -8,7 +8,8 @@
 
 set -o pipefail
 
-pem='./gh_private_key.pem'
+client_id=$1
+installation_id=$2
 
 now=$(date +%s)
 iat=$((${now} - 60)) # Issues 60 seconds in the past
@@ -21,23 +22,20 @@ header_json='{
     "alg":"RS256"
 }'
 # Header encode
-header=$( echo -n "${header_json}" | b64enc )
+header=$(echo -n "${header_json}" | b64enc)
 
 payload_json="{
     \"iat\":${iat},
     \"exp\":${exp},
-    \"iss\":\"${GITHUB_APP_CLIENT_ID}\"
+    \"iss\":\"${client_id}\"
 }"
 
 # Payload encode
-payload=$( echo -n "${payload_json}" | b64enc )
+payload=$(echo -n "${payload_json}" | b64enc)
 
 # Signature
 header_payload="${header}"."${payload}"
-signature=$(
-    openssl dgst -sha256 -sign "${pem}" \
-    <(echo -n "${header_payload}") | b64enc
-)
+signature=$(openssl dgst -sha256 -sign /dev/stdin <(echo -n "${header_payload}") | b64enc)
 
 # Create JWT
 jwt_token="${header_payload}"."${signature}"
@@ -48,6 +46,6 @@ installation_token=$(curl \
   -X POST \
   -H "Authorization: Bearer $jwt_token" \
   -H "Accept: application/vnd.github+json" \
-  https://api.github.com/app/installations/$GITHUB_APP_INSTALLATION_ID/access_tokens)
+  https://api.github.com/app/installations/$installation_id/access_tokens)
 
 echo $installation_token | jq -r '.token'
