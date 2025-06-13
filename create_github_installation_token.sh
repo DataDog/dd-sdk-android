@@ -6,9 +6,12 @@
 # Copyright 2016-Present Datadog, Inc.
 #
 
+set -x
 set -o pipefail
 
-pem='./gh_private_key.pem'
+client_id=$1
+installation_id=$2
+pem=$3
 
 now=$(date +%s)
 iat=$((${now} - 60)) # Issues 60 seconds in the past
@@ -26,7 +29,7 @@ header=$( echo -n "${header_json}" | b64enc )
 payload_json="{
     \"iat\":${iat},
     \"exp\":${exp},
-    \"iss\":\"${GITHUB_APP_CLIENT_ID}\"
+    \"iss\":\"${client_id}\"
 }"
 
 # Payload encode
@@ -35,7 +38,7 @@ payload=$( echo -n "${payload_json}" | b64enc )
 # Signature
 header_payload="${header}"."${payload}"
 signature=$(
-    openssl dgst -sha256 -sign "${pem}" \
+    openssl dgst -sha256 -sign <(echo -n "${pem}") \
     <(echo -n "${header_payload}") | b64enc
 )
 
@@ -48,6 +51,6 @@ installation_token=$(curl \
   -X POST \
   -H "Authorization: Bearer $jwt_token" \
   -H "Accept: application/vnd.github+json" \
-  https://api.github.com/app/installations/$GITHUB_APP_INSTALLATION_ID/access_tokens)
+  https://api.github.com/app/installations/$installation_id/access_tokens)
 
 echo $installation_token | jq -r '.token'
