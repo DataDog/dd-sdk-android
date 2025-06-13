@@ -46,6 +46,7 @@ import org.mockito.kotlin.same
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
+import org.mockito.kotlin.verifyNoMoreInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.util.concurrent.TimeUnit
@@ -64,7 +65,7 @@ internal class RumSessionScopeTest {
     lateinit var mockParentScope: RumScope
 
     @Mock
-    lateinit var mockChildScope: RumScope
+    lateinit var mockChildScope: RumViewManagerScope
 
     @Mock
     lateinit var mockWriter: DataWriter<Any>
@@ -170,7 +171,7 @@ internal class RumSessionScopeTest {
 
         // Then
         assertThat(childScope).isInstanceOf(RumViewManagerScope::class.java)
-        assertThat((childScope as? RumViewManagerScope)?.sampleRate).isCloseTo(fakeSampleRate, offset(0.001f))
+        assertThat(childScope?.sampleRate).isCloseTo(fakeSampleRate, offset(0.001f))
     }
 
     @Test
@@ -228,7 +229,8 @@ internal class RumSessionScopeTest {
         testedScope.handleEvent(fakeEvent, mockWriter)
 
         // Then
-        verifyNoInteractions(mockChildScope)
+        verify(mockChildScope).renewViewScopes(any())
+        verifyNoMoreInteractions(mockChildScope)
     }
 
     // endregion
@@ -799,7 +801,8 @@ internal class RumSessionScopeTest {
 
         // When
         Thread.sleep(TEST_MAX_DURATION_MS)
-        val result = testedScope.handleEvent(forge.startViewEvent(), mockWriter)
+        val newEvent = forge.startViewEvent()
+        val result = testedScope.handleEvent(newEvent, mockWriter)
         val context = testedScope.getRumContext()
 
         // Then
@@ -807,6 +810,7 @@ internal class RumSessionScopeTest {
         assertThat(context.sessionId)
             .isNotEqualTo(RumContext.NULL_UUID)
             .isNotEqualTo(initialContext.sessionId)
+        verify(mockChildScope).renewViewScopes(eventTime = newEvent.eventTime)
         verify(mockSessionListener).onSessionStarted(initialContext.sessionId, false)
         verify(mockSessionListener).onSessionStarted(context.sessionId, false)
     }
@@ -821,7 +825,8 @@ internal class RumSessionScopeTest {
 
         // When
         Thread.sleep(TEST_INACTIVITY_MS)
-        val result = testedScope.handleEvent(forge.startViewEvent(), mockWriter)
+        val newEvent = forge.startViewEvent()
+        val result = testedScope.handleEvent(newEvent, mockWriter)
         val context = testedScope.getRumContext()
 
         // Then
@@ -829,6 +834,7 @@ internal class RumSessionScopeTest {
         assertThat(context.sessionId)
             .isNotEqualTo(RumContext.NULL_UUID)
             .isNotEqualTo(initialContext.sessionId)
+        verify(mockChildScope).renewViewScopes(eventTime = newEvent.eventTime)
         verify(mockSessionListener).onSessionStarted(initialContext.sessionId, false)
         verify(mockSessionListener).onSessionStarted(context.sessionId, false)
     }
@@ -842,7 +848,8 @@ internal class RumSessionScopeTest {
         val initialContext = testedScope.getRumContext()
 
         // When
-        val result = testedScope.handleEvent(RumRawEvent.ResetSession(), mockWriter)
+        val resetEvent = RumRawEvent.ResetSession()
+        val result = testedScope.handleEvent(resetEvent, mockWriter)
         testedScope.handleEvent(forge.startViewEvent(), mockWriter)
         val context = testedScope.getRumContext()
 
@@ -851,6 +858,7 @@ internal class RumSessionScopeTest {
         assertThat(context.sessionId)
             .isNotEqualTo(RumContext.NULL_UUID)
             .isNotEqualTo(initialContext.sessionId)
+        verify(mockChildScope).renewViewScopes(eventTime = resetEvent.eventTime)
         verify(mockSessionListener).onSessionStarted(initialContext.sessionId, false)
         verify(mockSessionListener).onSessionStarted(context.sessionId, false)
     }
@@ -871,7 +879,8 @@ internal class RumSessionScopeTest {
 
         // When
         Thread.sleep(TEST_MAX_DURATION_MS)
-        val result = testedScope.handleEvent(forge.startViewEvent(), mockWriter)
+        val newEvent = forge.startViewEvent()
+        val result = testedScope.handleEvent(newEvent, mockWriter)
         val context = testedScope.getRumContext()
 
         // Then
@@ -879,6 +888,7 @@ internal class RumSessionScopeTest {
         assertThat(context.sessionId)
             .isNotEqualTo(RumContext.NULL_UUID)
             .isNotEqualTo(initialContext.sessionId)
+        verify(mockChildScope).renewViewScopes(eventTime = newEvent.eventTime)
         verify(mockSessionListener).onSessionStarted(initialContext.sessionId, true)
         verify(mockSessionListener).onSessionStarted(context.sessionId, true)
     }
@@ -894,7 +904,8 @@ internal class RumSessionScopeTest {
 
         // When
         Thread.sleep(TEST_INACTIVITY_MS)
-        val result = testedScope.handleEvent(forge.startViewEvent(), mockWriter)
+        val newEvent = forge.startViewEvent()
+        val result = testedScope.handleEvent(newEvent, mockWriter)
         val context = testedScope.getRumContext()
 
         // Then
@@ -902,6 +913,7 @@ internal class RumSessionScopeTest {
         assertThat(context.sessionId)
             .isNotEqualTo(RumContext.NULL_UUID)
             .isNotEqualTo(initialContext.sessionId)
+        verify(mockChildScope).renewViewScopes(eventTime = newEvent.eventTime)
         verify(mockSessionListener).onSessionStarted(initialContext.sessionId, true)
         verify(mockSessionListener).onSessionStarted(context.sessionId, true)
     }
@@ -1022,13 +1034,15 @@ internal class RumSessionScopeTest {
 
         // When
         Thread.sleep(TEST_MAX_DURATION_MS)
-        testedScope.handleEvent(forge.startViewEvent(), mockWriter)
+        val newEvent = forge.startViewEvent()
+        testedScope.handleEvent(newEvent, mockWriter)
         val secondSessionId = testedScope.getRumContext().sessionId
 
         // Then
         val argumentCaptor = argumentCaptor<Any>()
         verify(mockSessionReplayFeatureScope, times(2))
             .sendEvent(argumentCaptor.capture())
+        verify(mockChildScope).renewViewScopes(eventTime = newEvent.eventTime)
         assertThat(argumentCaptor.firstValue).isEqualTo(
             mapOf(
                 RumSessionScope.SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY to
@@ -1057,13 +1071,15 @@ internal class RumSessionScopeTest {
 
         // When
         Thread.sleep(TEST_INACTIVITY_MS)
-        testedScope.handleEvent(forge.startViewEvent(), mockWriter)
+        val newEvent = forge.startViewEvent()
+        testedScope.handleEvent(newEvent, mockWriter)
         val secondSessionId = testedScope.getRumContext().sessionId
 
         // Then
         val argumentCaptor = argumentCaptor<Any>()
         verify(mockSessionReplayFeatureScope, times(2))
             .sendEvent(argumentCaptor.capture())
+        verify(mockChildScope).renewViewScopes(newEvent.eventTime)
         assertThat(argumentCaptor.firstValue).isEqualTo(
             mapOf(
                 RumSessionScope.SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY to
@@ -1093,7 +1109,9 @@ internal class RumSessionScopeTest {
         val firstSessionId = testedScope.getRumContext().sessionId
 
         // When
-        testedScope.handleEvent(RumRawEvent.ResetSession(), mockWriter)
+        val resetEvent = RumRawEvent.ResetSession()
+        testedScope.handleEvent(resetEvent, mockWriter)
+
         testedScope.handleEvent(forge.startViewEvent(), mockWriter)
         val secondSessionId = testedScope.getRumContext().sessionId
 
@@ -1101,6 +1119,7 @@ internal class RumSessionScopeTest {
         val argumentCaptor = argumentCaptor<Any>()
         verify(mockSessionReplayFeatureScope, times(3))
             .sendEvent(argumentCaptor.capture())
+        verify(mockChildScope).renewViewScopes(resetEvent.eventTime)
         assertThat(argumentCaptor.firstValue).isEqualTo(
             mapOf(
                 RumSessionScope.SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY to
@@ -1141,11 +1160,13 @@ internal class RumSessionScopeTest {
 
         // When
         Thread.sleep(TEST_MAX_DURATION_MS)
-        testedScope.handleEvent(forge.startViewEvent(), mockWriter)
+        val newEvent = forge.startViewEvent()
+        testedScope.handleEvent(newEvent, mockWriter)
         val secondSessionId = testedScope.getRumContext().sessionId
 
         // Then
         val argumentCaptor = argumentCaptor<Any>()
+        verify(mockChildScope).renewViewScopes(newEvent.eventTime)
         verify(mockSessionReplayFeatureScope, times(2))
             .sendEvent(argumentCaptor.capture())
         assertThat(argumentCaptor.firstValue).isEqualTo(
@@ -1178,13 +1199,15 @@ internal class RumSessionScopeTest {
 
         // When
         Thread.sleep(TEST_INACTIVITY_MS)
-        testedScope.handleEvent(forge.startViewEvent(), mockWriter)
+        val newEvent = forge.startViewEvent()
+        testedScope.handleEvent(newEvent, mockWriter)
         val secondSessionId = testedScope.getRumContext().sessionId
 
         // Then
         val argumentCaptor = argumentCaptor<Any>()
         verify(mockSessionReplayFeatureScope, times(2))
             .sendEvent(argumentCaptor.capture())
+        verify(mockChildScope).renewViewScopes(eventTime = newEvent.eventTime)
         assertThat(argumentCaptor.firstValue).isEqualTo(
             mapOf(
                 RumSessionScope.SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY to
@@ -1213,7 +1236,8 @@ internal class RumSessionScopeTest {
         val firstSessionId = testedScope.getRumContext().sessionId
 
         // When
-        testedScope.handleEvent(RumRawEvent.ResetSession(), mockWriter)
+        val resetEvent = RumRawEvent.ResetSession()
+        testedScope.handleEvent(resetEvent, mockWriter)
         testedScope.handleEvent(forge.startViewEvent(), mockWriter)
         val secondSessionId = testedScope.getRumContext().sessionId
 
@@ -1221,6 +1245,8 @@ internal class RumSessionScopeTest {
         val argumentCaptor = argumentCaptor<Any>()
         verify(mockSessionReplayFeatureScope, times(3))
             .sendEvent(argumentCaptor.capture())
+
+        verify(mockChildScope).renewViewScopes(eventTime = resetEvent.eventTime)
         assertThat(argumentCaptor.firstValue).isEqualTo(
             mapOf(
                 RumSessionScope.SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY to

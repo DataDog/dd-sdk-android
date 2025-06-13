@@ -992,6 +992,7 @@ datadog:
       - "kotlin.collections.MutableList.add(com.datadog.android.core.internal.persistence.tlvformat.TLVBlock)"
       - "kotlin.collections.MutableList.add(com.datadog.android.plugin.DatadogPlugin)"
       - "kotlin.collections.MutableList.add(com.datadog.android.rum.internal.domain.scope.RumScope)"
+      - "kotlin.collections.MutableList.add(com.datadog.android.rum.internal.domain.scope.RumViewScope)"
       - "kotlin.collections.MutableList.add(com.datadog.android.rum.internal.vitals.FrameStateListener)"
       - "kotlin.collections.MutableList.add(com.datadog.android.rum.model.ActionEvent.Type)"
       - "kotlin.collections.MutableList.add(com.datadog.android.sessionreplay.compose.internal.data.Parameter)"

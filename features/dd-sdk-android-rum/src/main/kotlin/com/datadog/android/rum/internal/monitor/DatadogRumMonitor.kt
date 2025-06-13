@@ -45,8 +45,6 @@ import com.datadog.android.rum.internal.domain.scope.RumRawEvent
 import com.datadog.android.rum.internal.domain.scope.RumScope
 import com.datadog.android.rum.internal.domain.scope.RumScopeKey
 import com.datadog.android.rum.internal.domain.scope.RumSessionScope
-import com.datadog.android.rum.internal.domain.scope.RumViewManagerScope
-import com.datadog.android.rum.internal.domain.scope.RumViewScope
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
 import com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener
 import com.datadog.android.rum.internal.vitals.VitalMonitor
@@ -746,11 +744,10 @@ internal class DatadogRumMonitor(
         debugListener?.let {
             val applicationScope = rootScope as? RumApplicationScope
             val sessionScope = applicationScope?.activeSession as? RumSessionScope
-            val viewManagerScope = sessionScope?.childScope as? RumViewManagerScope
+            val viewManagerScope = sessionScope?.childScope
             if (viewManagerScope != null) {
                 it.onReceiveRumActiveViews(
                     viewManagerScope.childrenScopes
-                        .filterIsInstance<RumViewScope>()
                         .filter { viewScope -> viewScope.isActive() }
                         .mapNotNull { viewScope -> viewScope.getRumContext().viewName }
                 )
