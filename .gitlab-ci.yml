@@ -66,10 +66,9 @@ stages:
     - export OSSRH_PASSWORD=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.ossrh_password --with-decryption --query "Parameter.Value" --out text)
     - export GPG_PUBLIC_FINGERPRINT=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.gpg_public_key --with-decryption --query "Parameter.Value" --out text | gpg --import --import-options show-only | grep -E -o -e "[A-F0-9]{40}")
   set-github-installation-token:
-    - export GITHUB_TOKEN=$(bash ./create_github_installation_token.sh \
-      "$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.gh_app_client_id --with-decryption --query "Parameter.Value" --out text)" \
-      "$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.gh_app_installation_id --with-decryption --query "Parameter.Value" --out text)" \
-      "$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.gh_app_private_key --with-decryption --query "Parameter.Value" --out text)")
+    - export GITHUB_APP_CLIENT_ID=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.gh_app_client_id --with-decryption --query "Parameter.Value" --out text)
+    - export GITHUB_APP_INSTALLATION_ID=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.gh_app_installation_id --with-decryption --query "Parameter.Value" --out text)
+    - export GITHUB_TOKEN=$("aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.gh_app_private_key --with-decryption --query "Parameter.Value" --out text | bash ./create_github_installation_token.sh "$GITHUB_APP_CLIENT_ID" "$GITHUB_APP_INSTALLATION_ID")
 
 # CI IMAGE
 
@@ -1004,7 +1003,7 @@ notify:dogfood-gradle-plugin:
   script:
     - !reference [ .snippets, set-github-installation-token ]
     - pip3 install GitPython requests
-    - python3 dogfood.py -v $CI_COMMIT_TAG -t gradle-plugin
+    - python3 dogfood.py -v 3.13.0 -t gradle-plugin
 
 notify:merge-verification-metadata:
   tags: [ "arch:amd64" ]

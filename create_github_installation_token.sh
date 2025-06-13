@@ -6,12 +6,10 @@
 # Copyright 2016-Present Datadog, Inc.
 #
 
-set -x
 set -o pipefail
 
 client_id=$1
 installation_id=$2
-pem=$3
 
 now=$(date +%s)
 iat=$((${now} - 60)) # Issues 60 seconds in the past
@@ -24,7 +22,7 @@ header_json='{
     "alg":"RS256"
 }'
 # Header encode
-header=$( echo -n "${header_json}" | b64enc )
+header=$(echo -n "${header_json}" | b64enc)
 
 payload_json="{
     \"iat\":${iat},
@@ -33,14 +31,11 @@ payload_json="{
 }"
 
 # Payload encode
-payload=$( echo -n "${payload_json}" | b64enc )
+payload=$(echo -n "${payload_json}" | b64enc)
 
 # Signature
 header_payload="${header}"."${payload}"
-signature=$(
-    openssl dgst -sha256 -sign <(echo -n "${pem}") \
-    <(echo -n "${header_payload}") | b64enc
-)
+signature=$(openssl dgst -sha256 -sign /dev/stdin <(echo -n "${header_payload}") | b64enc)
 
 # Create JWT
 jwt_token="${header_payload}"."${signature}"
