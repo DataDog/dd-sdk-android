@@ -13,10 +13,15 @@ import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.scope.RumViewType
 import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.android.rum.utils.verifyLog
+import com.datadog.tools.unit.extensions.TestConfigurationExtension
+import com.datadog.tools.unit.forge.exhaustiveAttributes
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.DoubleForgery
+import fr.xgouchet.elmyr.annotation.Forgery
+import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -42,7 +47,8 @@ import java.util.concurrent.TimeUnit
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
-    ExtendWith(ForgeExtension::class)
+    ExtendWith(ForgeExtension::class),
+    ExtendWith(TestConfigurationExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
@@ -65,14 +71,16 @@ internal class VitalReaderRunnableTest {
     @Mock
     lateinit var mockInternalLogger: InternalLogger
 
+    @Forgery
+    lateinit var fakeRumContext: RumContext
+
     @DoubleForgery
     var fakeValue: Double = 0.0
 
     @BeforeEach
-    fun `set up`(forge: Forge) {
-        val rumContext = forge.getForgery<RumContext>()
-            .copy(viewType = RumViewType.FOREGROUND).toMap()
-        whenever(mockSdkCore.getFeatureContext(Feature.RUM_FEATURE_NAME)) doReturn rumContext
+    fun `set up`() {
+        fakeRumContext = fakeRumContext
+            .copy(viewType = RumViewType.FOREGROUND)
         whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
         testedRunnable = VitalReaderRunnable(
             mockSdkCore,
@@ -81,6 +89,7 @@ internal class VitalReaderRunnableTest {
             mockExecutor,
             TEST_PERIOD_MS
         )
+        testedRunnable.onContextUpdate(Feature.RUM_FEATURE_NAME, fakeRumContext.toMap())
     }
 
     @Test
@@ -98,6 +107,21 @@ internal class VitalReaderRunnableTest {
         }
     }
 
+    @Test
+    fun `M accept only RUM context W onContextUpdate()`(
+        @StringForgery fakeFeatureName: String,
+        forge: Forge
+    ) {
+        // Given
+        val fakeContext = forge.exhaustiveAttributes()
+
+        // When
+        testedRunnable.onContextUpdate(fakeFeatureName, fakeContext)
+
+        // Then
+        assertThat(testedRunnable.currentRumContext).isEqualTo(fakeRumContext)
+    }
+
     @ParameterizedTest
     @EnumSource(
         value = RumViewType::class,
@@ -105,30 +129,12 @@ internal class VitalReaderRunnableTest {
         mode = EnumSource.Mode.EXCLUDE
     )
     fun `M not read data, not notify observer but schedule W run { viewType != FOREGROUND }()`(
-        viewType: RumViewType,
-        forge: Forge
+        viewType: RumViewType
     ) {
         // Given
-        val rumContext = forge.getForgery<RumContext>()
-            .copy(viewType = viewType).toMap()
-        whenever(mockSdkCore.getFeatureContext(Feature.RUM_FEATURE_NAME)) doReturn rumContext
-
-        // When
-        testedRunnable.run()
-
-        // Then
-        verifyNoInteractions(mockReader)
-        verifyNoInteractions(mockObserver)
-        verify(mockExecutor).schedule(testedRunnable, TEST_PERIOD_MS, TimeUnit.MILLISECONDS)
-    }
-
-    @Test
-    fun `M not read data, not notify observer but schedule W run { wrong type of viewType }()`() {
-        // Given
-        val rumContext = mapOf<String, Any?>(
-            "view_type" to Any()
-        )
-        whenever(mockSdkCore.getFeatureContext(Feature.RUM_FEATURE_NAME)) doReturn rumContext
+        fakeRumContext = fakeRumContext
+            .copy(viewType = viewType)
+        testedRunnable.onContextUpdate(Feature.RUM_FEATURE_NAME, fakeRumContext.toMap())
 
         // When
         testedRunnable.run()

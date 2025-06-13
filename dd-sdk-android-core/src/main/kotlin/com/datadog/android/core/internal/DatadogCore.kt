@@ -233,10 +233,8 @@ internal class DatadogCore(
             feature.featureContextLock.writeLock().safeTryWithLock(1, TimeUnit.SECONDS) {
                 val currentContext = feature.featureContext
                 updateCallback(currentContext)
-                features.forEach { (key, feature) ->
-                    if (key != featureName) {
-                        feature.notifyContextUpdated(featureName, currentContext)
-                    }
+                features.values.forEach {
+                    it.notifyContextUpdated(featureName, currentContext)
                 }
             }
         }
@@ -312,11 +310,9 @@ internal class DatadogCore(
         } else {
             feature.setContextUpdateListener(listener)
             features.forEach {
-                if (it.key != featureName) {
-                    val currentContext = getFeatureContext(it.key, false)
-                    if (currentContext.isNotEmpty()) {
-                        listener.onContextUpdate(it.key, currentContext)
-                    }
+                val currentContext = getFeatureContext(it.key, false)
+                if (currentContext.isNotEmpty()) {
+                    listener.onContextUpdate(it.key, currentContext)
                 }
             }
         }

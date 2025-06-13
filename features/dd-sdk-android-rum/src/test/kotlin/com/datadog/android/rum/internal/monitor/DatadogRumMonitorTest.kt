@@ -241,6 +241,7 @@ internal class DatadogRumMonitorTest {
 
     @Test
     fun `creates root scope`() {
+        // Given
         testedMonitor = DatadogRumMonitor(
             fakeApplicationId,
             mockSdkCore,
@@ -262,7 +263,10 @@ internal class DatadogRumMonitorTest {
             mockSlowFramesListener
         )
 
+        // When
         val rootScope = testedMonitor.rootScope
+
+        // Then
         assertThat(rootScope.sampleRate).isEqualTo(fakeSampleRate)
         assertThat(rootScope.backgroundTrackingEnabled).isEqualTo(fakeBackgroundTrackingEnabled)
     }
@@ -272,8 +276,10 @@ internal class DatadogRumMonitorTest {
         @StringForgery(type = StringForgeryType.ASCII) key: String,
         @StringForgery name: String
     ) {
+        // When
         testedMonitor.startView(key, name, fakeAttributes)
 
+        // Then
         argumentCaptor<RumRawEvent> {
             verify(mockApplicationScope).handleEvent(
                 capture(),
@@ -340,6 +346,7 @@ internal class DatadogRumMonitorTest {
 
     @Test
     fun `M send null sessionId W getCurrentSessionId { session started, sampled out }`() {
+        // Given
         testedMonitor = DatadogRumMonitor(
             fakeApplicationId,
             mockSdkCore,
@@ -374,8 +381,10 @@ internal class DatadogRumMonitorTest {
     fun `M delegate event to rootScope W stopView()`(
         @StringForgery(type = StringForgeryType.ASCII) key: String
     ) {
+        // When
         testedMonitor.stopView(key, fakeAttributes)
 
+        // Then
         argumentCaptor<RumRawEvent> {
             verify(mockApplicationScope).handleEvent(
                 capture(),
@@ -396,12 +405,10 @@ internal class DatadogRumMonitorTest {
         @Forgery type: RumActionType,
         @StringForgery name: String
     ) {
-        whenever(mockExecutorService.execute(any())) doAnswer {
-            it.getArgument<Runnable>(0).run()
-        }
-
+        // When
         testedMonitor.addAction(type, name, fakeAttributes)
 
+        // Then
         argumentCaptor<RumRawEvent> {
             verify(mockApplicationScope).handleEvent(
                 capture(),
@@ -424,8 +431,10 @@ internal class DatadogRumMonitorTest {
         @Forgery type: RumActionType,
         @StringForgery name: String
     ) {
+        // When
         testedMonitor.startAction(type, name, fakeAttributes)
 
+        // Then
         argumentCaptor<RumRawEvent> {
             verify(mockApplicationScope).handleEvent(
                 capture(),
@@ -448,8 +457,10 @@ internal class DatadogRumMonitorTest {
         @Forgery type: RumActionType,
         @StringForgery name: String
     ) {
+        // When
         testedMonitor.stopAction(type, name, fakeAttributes)
 
+        // Then
         argumentCaptor<RumRawEvent> {
             verify(mockApplicationScope).handleEvent(
                 capture(),
@@ -535,8 +546,10 @@ internal class DatadogRumMonitorTest {
         @Forgery method: RumResourceMethod,
         @StringForgery(regex = "http(s?)://[a-z]+\\.com/[a-z]+") url: String
     ) {
+        // When
         testedMonitor.startResource(key, method, url, fakeAttributes)
 
+        // Then
         argumentCaptor<RumRawEvent> {
             verify(mockApplicationScope).handleEvent(
                 capture(),
@@ -561,8 +574,10 @@ internal class DatadogRumMonitorTest {
         @LongForgery(0, 1024) size: Long,
         @Forgery kind: RumResourceKind
     ) {
+        // When
         testedMonitor.stopResource(key, statusCode, size, kind, fakeAttributes)
 
+        // Then
         argumentCaptor<RumRawEvent> {
             verify(mockApplicationScope).handleEvent(
                 capture(),
@@ -586,8 +601,10 @@ internal class DatadogRumMonitorTest {
         @StringForgery key: String,
         @Forgery kind: RumResourceKind
     ) {
+        // When
         testedMonitor.stopResource(key, null, null, kind, fakeAttributes)
 
+        // Then
         argumentCaptor<RumRawEvent> {
             verify(mockApplicationScope).handleEvent(
                 capture(),
@@ -614,6 +631,7 @@ internal class DatadogRumMonitorTest {
         @IntForgery(200, 600) statusCode: Int,
         @Forgery throwable: Throwable
     ) {
+        // When
         testedMonitor.stopResourceWithError(
             key,
             statusCode,
@@ -623,6 +641,7 @@ internal class DatadogRumMonitorTest {
             fakeAttributes
         )
 
+        // Then
         argumentCaptor<RumRawEvent> {
             verify(mockApplicationScope).handleEvent(
                 capture(),
@@ -651,6 +670,7 @@ internal class DatadogRumMonitorTest {
         @StringForgery(type = StringForgeryType.ASCII_EXTENDED) stackTrace: String,
         @StringForgery errorType: String
     ) {
+        // When
         testedMonitor.stopResourceWithError(
             key,
             statusCode,
@@ -661,6 +681,7 @@ internal class DatadogRumMonitorTest {
             fakeAttributes
         )
 
+        // Then
         argumentCaptor<RumRawEvent> {
             verify(mockApplicationScope).handleEvent(
                 capture(),
@@ -688,8 +709,10 @@ internal class DatadogRumMonitorTest {
         @Forgery source: RumErrorSource,
         @Forgery throwable: Throwable
     ) {
+        // When
         testedMonitor.stopResourceWithError(key, null, message, source, throwable, fakeAttributes)
 
+        // Then
         argumentCaptor<RumRawEvent> {
             verify(mockApplicationScope).handleEvent(
                 capture(),
@@ -715,8 +738,10 @@ internal class DatadogRumMonitorTest {
         @Forgery method: RumResourceMethod,
         @StringForgery(regex = "http(s?)://[a-z]+\\.com/[a-z]+") url: String
     ) {
+        // When
         testedMonitor.startResource(key, method, url, fakeAttributes)
 
+        // Then
         argumentCaptor<RumRawEvent> {
             verify(mockApplicationScope).handleEvent(
                 capture(),
@@ -741,8 +766,10 @@ internal class DatadogRumMonitorTest {
         @LongForgery(0, 1024) size: Long,
         @Forgery kind: RumResourceKind
     ) {
+        // When
         testedMonitor.stopResource(key, statusCode, size, kind, fakeAttributes)
 
+        // Then
         argumentCaptor<RumRawEvent> {
             verify(mockApplicationScope).handleEvent(
                 capture(),
@@ -766,8 +793,10 @@ internal class DatadogRumMonitorTest {
         @Forgery key: ResourceId,
         @Forgery kind: RumResourceKind
     ) {
+        // When
         testedMonitor.stopResource(key, null, null, kind, fakeAttributes)
 
+        // Then
         argumentCaptor<RumRawEvent> {
             verify(mockApplicationScope).handleEvent(
                 capture(),
@@ -794,6 +823,7 @@ internal class DatadogRumMonitorTest {
         @IntForgery(200, 600) statusCode: Int,
         @Forgery throwable: Throwable
     ) {
+        // When
         testedMonitor.stopResourceWithError(
             key,
             statusCode,
@@ -803,6 +833,7 @@ internal class DatadogRumMonitorTest {
             fakeAttributes
         )
 
+        // Then
         argumentCaptor<RumRawEvent> {
             verify(mockApplicationScope).handleEvent(
                 capture(),
@@ -831,6 +862,7 @@ internal class DatadogRumMonitorTest {
         @StringForgery(type = StringForgeryType.ASCII_EXTENDED) stackTrace: String,
         @StringForgery errorType: String
     ) {
+        // When
         testedMonitor.stopResourceWithError(
             key,
             statusCode,
@@ -841,6 +873,7 @@ internal class DatadogRumMonitorTest {
             fakeAttributes
         )
 
+        // Then
         argumentCaptor<RumRawEvent> {
             verify(mockApplicationScope).handleEvent(
                 capture(),
@@ -868,8 +901,10 @@ internal class DatadogRumMonitorTest {
         @Forgery source: RumErrorSource,
         @Forgery throwable: Throwable
     ) {
+        // When
         testedMonitor.stopResourceWithError(key, null, message, source, throwable, fakeAttributes)
 
+        // Then
         argumentCaptor<RumRawEvent> {
             verify(mockApplicationScope).handleEvent(
                 capture(),
@@ -895,8 +930,10 @@ internal class DatadogRumMonitorTest {
         @Forgery source: RumErrorSource,
         @Forgery throwable: Throwable
     ) {
+        // When
         testedMonitor.addError(message, source, throwable, fakeAttributes)
 
+        // Then
         argumentCaptor<RumRawEvent> {
             verify(mockApplicationScope).handleEvent(
                 capture(),
@@ -924,8 +961,10 @@ internal class DatadogRumMonitorTest {
         @Forgery source: RumErrorSource,
         @StringForgery stacktrace: String
     ) {
+        // When
         testedMonitor.addErrorWithStacktrace(message, source, stacktrace, fakeAttributes)
 
+        // Then
         argumentCaptor<RumRawEvent> {
             verify(mockApplicationScope).handleEvent(
                 capture(),
@@ -951,8 +990,10 @@ internal class DatadogRumMonitorTest {
     fun `M delegate event to rootScope W waitForResourceTiming()`(
         @StringForgery key: String
     ) {
+        // When
         testedMonitor.waitForResourceTiming(key)
 
+        // Then
         argumentCaptor<RumRawEvent> {
             verify(mockApplicationScope).handleEvent(
                 capture(),
@@ -973,8 +1014,10 @@ internal class DatadogRumMonitorTest {
         @StringForgery key: String,
         @Forgery timing: ResourceTiming
     ) {
+        // When
         testedMonitor.addResourceTiming(key, timing)
 
+        // Then
         argumentCaptor<RumRawEvent> {
             verify(mockApplicationScope).handleEvent(
                 capture(),
@@ -992,11 +1035,13 @@ internal class DatadogRumMonitorTest {
     }
 
     @Test
-    fun `M delegate event to rootScope W addCustomTiming()`(
+    fun `M delegate event to rootScope W addTiming()`(
         @StringForgery name: String
     ) {
+        // When
         testedMonitor.addTiming(name)
 
+        // Then
         argumentCaptor<RumRawEvent> {
             verify(mockApplicationScope).handleEvent(
                 capture(),
@@ -1014,7 +1059,7 @@ internal class DatadogRumMonitorTest {
 
     @Test
     @OptIn(ExperimentalRumApi::class)
-    fun `M delegate event to rootScope W addViewLoadTime()`(
+    fun `M delegate event to rootScope W addViewLoadingTime()`(
         @BoolForgery fakeOverwrite: Boolean
     ) {
         testedMonitor.addViewLoadingTime(fakeOverwrite)
@@ -1095,8 +1140,10 @@ internal class DatadogRumMonitorTest {
 
     @Test
     fun `M delegate event to rootScope W resetSession()`() {
+        // When
         testedMonitor.resetSession()
 
+        // Then
         argumentCaptor<RumRawEvent> {
             verify(mockApplicationScope).handleEvent(
                 capture(),
@@ -1963,22 +2010,7 @@ internal class DatadogRumMonitorTest {
     }
 
     @Test
-    fun `M delegate event to rootScope W sendWebViewEvent()`() {
-        // When
-        testedMonitor.sendWebViewEvent()
-
-        // Then
-        verify(mockApplicationScope).handleEvent(
-            argThat { this is RumRawEvent.WebViewEvent },
-            same(fakeDatadogContext),
-            same(mockEventWriteScope),
-            same(mockWriter)
-        )
-        verifyNoMoreInteractions(mockWriter)
-    }
-
-    @Test
-    fun `M shutdown with wait the persistence executor W drainAndShutdownExecutors()`() {
+    fun `M shutdown with wait the persistence executor W drainExecutorService()`() {
         // Given
         val mockExecutorService: ExecutorService = mock()
         testedMonitor = DatadogRumMonitor(
@@ -2174,7 +2206,7 @@ internal class DatadogRumMonitorTest {
     }
 
     @Test
-    fun `M call sessionEndedMetricDispatcher W addSkippedFrame`(
+    fun `M call sessionEndedMetricDispatcher W addSessionReplaySkippedFrame`(
         @IntForgery(min = 0, max = 100) count: Int,
         @StringForgery(type = StringForgeryType.ASCII) key: String,
         @StringForgery name: String
@@ -2211,6 +2243,21 @@ internal class DatadogRumMonitorTest {
 
         // Then
         verify(mockSessionEndedMetricDispatcher, times(count)).onSessionReplaySkippedFrameTracked(any())
+    }
+
+    @Test
+    fun `M delegate event to rootScope W sendWebViewEvent()`() {
+        // When
+        testedMonitor.sendWebViewEvent()
+
+        // Then
+        verify(mockApplicationScope).handleEvent(
+            argThat { this is RumRawEvent.WebViewEvent },
+            same(fakeDatadogContext),
+            same(mockEventWriteScope),
+            same(mockWriter)
+        )
+        verifyNoMoreInteractions(mockWriter)
     }
 
     @Test
@@ -2262,7 +2309,7 @@ internal class DatadogRumMonitorTest {
     }
 
     @Test
-    fun `M handle synthetics test attributes W setSyntheticsTestAttribute()`(
+    fun `M handle synthetics test attributes W setSyntheticsAttribute()`(
         @StringForgery fakeTestId: String,
         @StringForgery fakeResultId: String
     ) {
