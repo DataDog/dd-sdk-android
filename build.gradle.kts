@@ -95,6 +95,7 @@ tasks.register("assembleSampleRelease") {
         ":sample:kotlin:assembleUs1Release",
         ":sample:wear:assembleUs1Release",
         ":sample:vendor-lib:assembleRelease",
+        ":sample:automotive:assembleRelease",
         ":sample:tv:assembleRelease"
     )
 }
