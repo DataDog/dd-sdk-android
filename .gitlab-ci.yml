@@ -34,6 +34,9 @@ stages:
 .snippets:
   # macOS AMI will already have cmdline-tools installed
   install-android-api-components:
+    - export ANDROID_EMULATOR_IMAGE="system-images;android-$ANDROID_API;google_apis;${ANDROID_ARCH}"
+    - export ANDROID_PLATFORM="platforms;android-$ANDROID_API"
+    - export ANDROID_BUILD_TOOLS="build-tools;$ANDROID_API.0.0"
     - echo y | ~/android_sdk/cmdline-tools/latest/bin/sdkmanager --install "emulator"
     - echo y | ~/android_sdk/cmdline-tools/latest/bin/sdkmanager --install "platform-tools"
     - echo y | ~/android_sdk/cmdline-tools/latest/bin/sdkmanager --install "$ANDROID_PLATFORM"
@@ -218,44 +221,18 @@ test:kover:
 # TEST PYRAMID
 # the steps in this section should reflect our test pyramid strategy
 
-test-pyramid:core-it-min-api:
+test-pyramid:core-it:
   tags: [ "macos:sonoma", "specific:true" ]
   stage: test-pyramid
   timeout: 1h
-  variables:
-    ANDROID_API: "21"
-    ANDROID_EMULATOR_IMAGE: "system-images;android-$ANDROID_API;google_apis;${ANDROID_ARCH}"
-    ANDROID_PLATFORM: "platforms;android-$ANDROID_API"
-    ANDROID_BUILD_TOOLS: "build-tools;$ANDROID_API.0.0"
+  parallel:
+    matrix:
+      - ANDROID_API: "21"
+      - ANDROID_API: "28"
+      - ANDROID_API: "36"
   script:
-    - !reference [.snippets, install-android-api-components]
-    - !reference [.snippets, run-core-it-instrumented]
-
-test-pyramid:core-it-latest-api:
-  tags: [ "macos:sonoma", "specific:true" ]
-  stage: test-pyramid
-  timeout: 1h
-  variables:
-    ANDROID_API: "36"
-    ANDROID_EMULATOR_IMAGE: "system-images;android-$ANDROID_API;google_apis;${ANDROID_ARCH}"
-    ANDROID_PLATFORM: "platforms;android-$ANDROID_API"
-    ANDROID_BUILD_TOOLS: "build-tools;$ANDROID_API.0.0"
-  script:
-    - !reference [.snippets, install-android-api-components]
-    - !reference [.snippets, run-core-it-instrumented]
-
-test-pyramid:core-it-median-api:
-  tags: [ "macos:sonoma", "specific:true" ]
-  stage: test-pyramid
-  timeout: 1h
-  variables:
-    ANDROID_API: "28"
-    ANDROID_EMULATOR_IMAGE: "system-images;android-$ANDROID_API;google_apis;${ANDROID_ARCH}"
-    ANDROID_PLATFORM: "platforms;android-$ANDROID_API"
-    ANDROID_BUILD_TOOLS: "build-tools;$ANDROID_API.0.0"
-  script:
-    - !reference [.snippets, install-android-api-components]
-    - !reference [.snippets, run-core-it-instrumented]
+    - !reference [ .snippets, install-android-api-components ]
+    - !reference [ .snippets, run-core-it-instrumented ]
 
 test-pyramid:single-fit-logs:
   tags: [ "arch:amd64" ]
@@ -341,46 +318,20 @@ test-pyramid:single-fit-okhttp:
     reports:
       junit: "**/build/test-results/testReleaseUnitTest/*.xml"
 
-# RUN INSTRUMENTED TESTS ON MIN API (21), LATEST API (34) and MEDIAN API (28)
+# RUN INSTRUMENTED TESTS ON MIN API (21), LATEST API (36) and MEDIAN API (28)
 
-test-pyramid:legacy-integration-instrumented-min-api:
+test-pyramid:legacy-integration-instrumented:
   tags: [ "macos:sonoma", "specific:true" ]
   stage: test-pyramid
   timeout: 1h
-  variables:
-    ANDROID_API: "21"
-    ANDROID_EMULATOR_IMAGE: "system-images;android-$ANDROID_API;google_apis;${ANDROID_ARCH}"
-    ANDROID_PLATFORM: "platforms;android-$ANDROID_API"
-    ANDROID_BUILD_TOOLS: "build-tools;$ANDROID_API.0.0"
+  parallel:
+    matrix:
+      - ANDROID_API: "21"
+      - ANDROID_API: "28"
+      - ANDROID_API: "36"
   script:
-    - !reference [.snippets, install-android-api-components]
-    - !reference [.snippets, run-legacy-integration-instrumented]
-
-test-pyramid:legacy-integration-instrumented-latest-api:
-  tags: [ "macos:sonoma", "specific:true" ]
-  stage: test-pyramid
-  timeout: 1h
-  variables:
-    ANDROID_API: "36"
-    ANDROID_EMULATOR_IMAGE: "system-images;android-$ANDROID_API;google_apis;${ANDROID_ARCH}"
-    ANDROID_PLATFORM: "platforms;android-$ANDROID_API"
-    ANDROID_BUILD_TOOLS: "build-tools;$ANDROID_API.0.0"
-  script:
-    - !reference [.snippets, install-android-api-components]
-    - !reference [.snippets, run-legacy-integration-instrumented]
-
-test-pyramid:legacy-integration-instrumented-median-api:
-  tags: [ "macos:sonoma", "specific:true" ]
-  stage: test-pyramid
-  timeout: 1h
-  variables:
-    ANDROID_API: "28"
-    ANDROID_EMULATOR_IMAGE: "system-images;android-$ANDROID_API;google_apis;${ANDROID_ARCH}"
-    ANDROID_PLATFORM: "platforms;android-$ANDROID_API"
-    ANDROID_BUILD_TOOLS: "build-tools;$ANDROID_API.0.0"
-  script:
-    - !reference [.snippets, install-android-api-components]
-    - !reference [.snippets, run-legacy-integration-instrumented]
+    - !reference [ .snippets, install-android-api-components ]
+    - !reference [ .snippets, run-legacy-integration-instrumented ]
 
 test-pyramid:detekt-api-coverage:
   tags: [ "arch:amd64" ]
@@ -517,7 +468,7 @@ publish:release-core:
   stage: publish
   timeout: 30m
   script:
-    - !reference [.snippets, set-publishing-credentials]
+    - !reference [ .snippets, set-publishing-credentials ]
     - ./gradlew :dd-sdk-android-core:publishToSonatype --stacktrace --no-daemon
   artifacts:
     when: on_success
@@ -553,7 +504,7 @@ publish:release-trace:
   stage: publish
   timeout: 30m
   script:
-    - !reference [.snippets, set-publishing-credentials]
+    - !reference [ .snippets, set-publishing-credentials ]
     - ./gradlew :features:dd-sdk-android-trace:publishToSonatype --stacktrace --no-daemon
   artifacts:
     when: on_success
@@ -570,7 +521,7 @@ publish:release-trace-otel:
   stage: publish
   timeout: 30m
   script:
-    - !reference [.snippets, set-publishing-credentials]
+    - !reference [ .snippets, set-publishing-credentials ]
     - ./gradlew :features:dd-sdk-android-trace-otel:publishToSonatype --stacktrace --no-daemon
   artifacts:
     when: on_success
@@ -587,7 +538,7 @@ publish:release-logs:
   stage: publish
   timeout: 30m
   script:
-    - !reference [.snippets, set-publishing-credentials]
+    - !reference [ .snippets, set-publishing-credentials ]
     - ./gradlew :features:dd-sdk-android-logs:publishToSonatype --stacktrace --no-daemon
   artifacts:
     when: on_success
@@ -604,7 +555,7 @@ publish:release-rum:
   stage: publish
   timeout: 30m
   script:
-    - !reference [.snippets, set-publishing-credentials]
+    - !reference [ .snippets, set-publishing-credentials ]
     - ./gradlew :features:dd-sdk-android-rum:publishToSonatype --stacktrace --no-daemon
   artifacts:
     when: on_success
@@ -621,7 +572,7 @@ publish:release-ndk:
   stage: publish
   timeout: 30m
   script:
-    - !reference [.snippets, set-publishing-credentials]
+    - !reference [ .snippets, set-publishing-credentials ]
     - ./gradlew :features:dd-sdk-android-ndk:publishToSonatype --stacktrace --no-daemon
   artifacts:
     when: on_success
@@ -638,7 +589,7 @@ publish:release-session-replay:
   stage: publish
   timeout: 30m
   script:
-    - !reference [.snippets, set-publishing-credentials]
+    - !reference [ .snippets, set-publishing-credentials ]
     - ./gradlew :features:dd-sdk-android-session-replay:publishToSonatype --stacktrace --no-daemon
   artifacts:
     when: on_success
@@ -655,7 +606,7 @@ publish:release-session-replay-material:
   stage: publish
   timeout: 30m
   script:
-    - !reference [.snippets, set-publishing-credentials]
+    - !reference [ .snippets, set-publishing-credentials ]
     - ./gradlew :features:dd-sdk-android-session-replay-material:publishToSonatype --stacktrace --no-daemon
   artifacts:
     when: on_success
@@ -672,7 +623,7 @@ publish:release-session-replay-compose:
   stage: publish
   timeout: 30m
   script:
-    - !reference [.snippets, set-publishing-credentials]
+    - !reference [ .snippets, set-publishing-credentials ]
     - ./gradlew :features:dd-sdk-android-session-replay-compose:publishToSonatype --stacktrace --no-daemon
   artifacts:
     when: on_success
@@ -689,7 +640,7 @@ publish:release-webview:
   stage: publish
   timeout: 30m
   script:
-    - !reference [.snippets, set-publishing-credentials]
+    - !reference [ .snippets, set-publishing-credentials ]
     - ./gradlew :features:dd-sdk-android-webview:publishToSonatype --stacktrace --no-daemon
   artifacts:
     when: on_success
@@ -710,7 +661,7 @@ publish:release-coil:
   stage: publish
   timeout: 30m
   script:
-    - !reference [.snippets, set-publishing-credentials]
+    - !reference [ .snippets, set-publishing-credentials ]
     - ./gradlew :integrations:dd-sdk-android-coil:publishToSonatype --stacktrace --no-daemon
   artifacts:
     when: on_success
@@ -727,7 +678,7 @@ publish:release-compose:
   stage: publish
   timeout: 30m
   script:
-    - !reference [.snippets, set-publishing-credentials]
+    - !reference [ .snippets, set-publishing-credentials ]
     - ./gradlew :integrations:dd-sdk-android-compose:publishToSonatype --stacktrace --no-daemon
   artifacts:
     when: on_success
@@ -744,7 +695,7 @@ publish:release-fresco:
   stage: publish
   timeout: 30m
   script:
-    - !reference [.snippets, set-publishing-credentials]
+    - !reference [ .snippets, set-publishing-credentials ]
     - ./gradlew :integrations:dd-sdk-android-fresco:publishToSonatype --stacktrace --no-daemon
   artifacts:
     when: on_success
@@ -761,7 +712,7 @@ publish:release-glide:
   stage: publish
   timeout: 30m
   script:
-    - !reference [.snippets, set-publishing-credentials]
+    - !reference [ .snippets, set-publishing-credentials ]
     - ./gradlew :integrations:dd-sdk-android-glide:publishToSonatype --stacktrace --no-daemon
   artifacts:
     when: on_success
@@ -778,7 +729,7 @@ publish:release-trace-coroutines:
   stage: publish
   timeout: 30m
   script:
-    - !reference [.snippets, set-publishing-credentials]
+    - !reference [ .snippets, set-publishing-credentials ]
     - ./gradlew :integrations:dd-sdk-android-trace-coroutines:publishToSonatype --stacktrace --no-daemon
   artifacts:
     when: on_success
@@ -795,7 +746,7 @@ publish:release-rum-coroutines:
   stage: publish
   timeout: 30m
   script:
-    - !reference [.snippets, set-publishing-credentials]
+    - !reference [ .snippets, set-publishing-credentials ]
     - ./gradlew :integrations:dd-sdk-android-rum-coroutines:publishToSonatype --stacktrace --no-daemon
   artifacts:
     when: on_success
@@ -812,7 +763,7 @@ publish:release-rx:
   stage: publish
   timeout: 30m
   script:
-    - !reference [.snippets, set-publishing-credentials]
+    - !reference [ .snippets, set-publishing-credentials ]
     - ./gradlew :integrations:dd-sdk-android-rx:publishToSonatype --stacktrace --no-daemon
   artifacts:
     when: on_success
@@ -829,7 +780,7 @@ publish:release-sqldelight:
   stage: publish
   timeout: 30m
   script:
-    - !reference [.snippets, set-publishing-credentials]
+    - !reference [ .snippets, set-publishing-credentials ]
     - ./gradlew :integrations:dd-sdk-android-sqldelight:publishToSonatype --stacktrace --no-daemon
   artifacts:
     when: on_success
@@ -846,7 +797,7 @@ publish:release-timber:
   stage: publish
   timeout: 30m
   script:
-    - !reference [.snippets, set-publishing-credentials]
+    - !reference [ .snippets, set-publishing-credentials ]
     - ./gradlew :integrations:dd-sdk-android-timber:publishToSonatype --stacktrace --no-daemon
   artifacts:
     when: on_success
@@ -863,7 +814,7 @@ publish:release-android-tv:
   stage: publish
   timeout: 30m
   script:
-    - !reference [.snippets, set-publishing-credentials]
+    - !reference [ .snippets, set-publishing-credentials ]
     - ./gradlew :integrations:dd-sdk-android-tv:publishToSonatype --stacktrace --no-daemon
   artifacts:
     when: on_success
@@ -880,7 +831,7 @@ publish:release-okhttp:
   stage: publish
   timeout: 30m
   script:
-    - !reference [.snippets, set-publishing-credentials]
+    - !reference [ .snippets, set-publishing-credentials ]
     - ./gradlew :integrations:dd-sdk-android-okhttp:publishToSonatype --stacktrace --no-daemon
   artifacts:
     when: on_success
@@ -897,7 +848,7 @@ publish:release-okhttp-otel:
   stage: publish
   timeout: 30m
   script:
-    - !reference [.snippets, set-publishing-credentials]
+    - !reference [ .snippets, set-publishing-credentials ]
     - ./gradlew :integrations:dd-sdk-android-okhttp-otel:publishToSonatype --stacktrace --no-daemon
   artifacts:
     when: on_success
@@ -916,7 +867,7 @@ publish:release-benchmark:
   stage: publish
   timeout: 30m
   script:
-    - !reference [.snippets, set-publishing-credentials]
+    - !reference [ .snippets, set-publishing-credentials ]
     - ./gradlew :tools:benchmark:publishToSonatype --stacktrace --no-daemon
   artifacts:
     when: on_success
