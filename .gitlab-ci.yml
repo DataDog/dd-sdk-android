@@ -68,7 +68,7 @@ stages:
   set-github-installation-token:
     - export GITHUB_APP_CLIENT_ID=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.gh_app_client_id --with-decryption --query "Parameter.Value" --out text)
     - export GITHUB_APP_INSTALLATION_ID=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.gh_app_installation_id --with-decryption --query "Parameter.Value" --out text)
-    - export GITHUB_TOKEN=$("aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.gh_app_private_key --with-decryption --query "Parameter.Value" --out text | bash ./create_github_installation_token.sh "$GITHUB_APP_CLIENT_ID" "$GITHUB_APP_INSTALLATION_ID")
+    - export GITHUB_TOKEN=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.gh_app_private_key --with-decryption --query "Parameter.Value" --out text | bash ./create_github_installation_token.sh "$GITHUB_APP_CLIENT_ID" "$GITHUB_APP_INSTALLATION_ID")
 
 # CI IMAGE
 
