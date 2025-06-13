@@ -142,7 +142,7 @@ internal class SessionReplayFeature(
         )
 
         dataWriter = createDataWriter()
-        sdkCore.setContextUpdateReceiver(Feature.SESSION_REPLAY_FEATURE_NAME, rumContextProvider)
+        sdkCore.setContextUpdateReceiver(rumContextProvider)
         sessionReplayRecorder =
             recorderProvider.provideSessionReplayRecorder(
                 resourceDataStoreManager = resourceDataStoreManager,
@@ -175,7 +175,7 @@ internal class SessionReplayFeature(
 
     override fun onStop() {
         stopRecording()
-        sdkCore.removeContextUpdateReceiver(Feature.SESSION_REPLAY_FEATURE_NAME, rumContextProvider)
+        sdkCore.removeContextUpdateReceiver(rumContextProvider)
         sessionReplayRecorder.unregisterCallbacks()
         sessionReplayRecorder.stopProcessingRecords()
         dataWriter = NoOpRecordWriter()

@@ -45,6 +45,7 @@ import com.datadog.android.ndk.internal.NdkCrashHandler
 import com.datadog.android.privacy.TrackingConsent
 import com.google.gson.JsonObject
 import java.io.File
+import java.util.Collections
 import java.util.Locale
 import java.util.UUID
 import java.util.concurrent.Callable
@@ -88,6 +89,10 @@ internal class DatadogCore(
         get() = coreFeature.initialized.get()
 
     private var processLifecycleMonitor: ProcessLifecycleMonitor? = null
+
+    @Suppress("UnsafeThirdPartyFunctionCall") // the argument is always empty
+    internal val featureContextUpdateReceivers: MutableSet<FeatureContextUpdateReceiver> =
+        Collections.newSetFromMap(ConcurrentHashMap<FeatureContextUpdateReceiver, Boolean>())
 
     // region SdkCore
 
@@ -233,8 +238,8 @@ internal class DatadogCore(
             feature.featureContextLock.writeLock().safeTryWithLock(1, TimeUnit.SECONDS) {
                 val currentContext = feature.featureContext
                 updateCallback(currentContext)
-                features.values.forEach {
-                    it.notifyContextUpdated(featureName, currentContext)
+                featureContextUpdateReceivers.forEach {
+                    it.onContextUpdate(featureName, currentContext)
                 }
             }
         }
@@ -298,28 +303,27 @@ internal class DatadogCore(
         }
     }
 
-    @Suppress("NestedBlockDepth")
-    override fun setContextUpdateReceiver(featureName: String, listener: FeatureContextUpdateReceiver) {
-        val feature = features[featureName]
-        if (feature == null) {
+    override fun setContextUpdateReceiver(listener: FeatureContextUpdateReceiver) {
+        // the argument is always non - null, so we can suppress the warning
+        @Suppress("UnsafeThirdPartyFunctionCall")
+        if (featureContextUpdateReceivers.contains(listener)) {
             internalLogger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
-                { MISSING_FEATURE_FOR_CONTEXT_UPDATE_LISTENER.format(Locale.US, featureName) }
+                { CONTEXT_UPDATE_LISTENER_ALREADY_REGISTERED.format(Locale.US, listener) }
             )
-        } else {
-            feature.setContextUpdateListener(listener)
-            features.forEach {
-                val currentContext = getFeatureContext(it.key, false)
-                if (currentContext.isNotEmpty()) {
-                    listener.onContextUpdate(it.key, currentContext)
-                }
+        }
+        features.forEach {
+            val currentContext = getFeatureContext(it.key, false)
+            if (currentContext.isNotEmpty()) {
+                listener.onContextUpdate(it.key, currentContext)
             }
         }
+        featureContextUpdateReceivers.add(listener)
     }
 
-    override fun removeContextUpdateReceiver(featureName: String, listener: FeatureContextUpdateReceiver) {
-        features[featureName]?.removeContextUpdateListener(listener)
+    override fun removeContextUpdateReceiver(listener: FeatureContextUpdateReceiver) {
+        featureContextUpdateReceivers.remove(listener)
     }
 
     /** @inheritDoc */
@@ -735,6 +739,9 @@ internal class DatadogCore(
         internal const val NO_NEED_TO_WRITE_LAST_VIEW_EVENT =
             "No need to write last RUM view event: NDK" +
                 " crash reports feature is not enabled and API is below 30."
+
+        internal const val CONTEXT_UPDATE_LISTENER_ALREADY_REGISTERED =
+            "SDK core already has \"%s\" listener registered."
 
         internal val CONFIGURATION_TELEMETRY_DELAY_MS = TimeUnit.SECONDS.toMillis(5)
 

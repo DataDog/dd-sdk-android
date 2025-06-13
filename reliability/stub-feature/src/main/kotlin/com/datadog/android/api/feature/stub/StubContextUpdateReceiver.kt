@@ -16,9 +16,9 @@ class StubContextUpdateReceiver(private val onContextUpdate: () -> Unit = {}) : 
 
     private val events: MutableList<StubEvent> = mutableListOf()
 
-    override fun onContextUpdate(featureName: String, event: Map<String, Any?>) {
+    override fun onContextUpdate(featureName: String, context: Map<String, Any?>) {
         synchronized(events) {
-            events.add(StubEvent(featureName, event))
+            events.add(StubEvent(featureName, context))
         }
         onContextUpdate()
     }

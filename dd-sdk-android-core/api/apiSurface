@@ -130,9 +130,9 @@ interface com.datadog.android.api.feature.FeatureSdkCore : com.datadog.android.a
   fun updateFeatureContext(String, Boolean = true, (MutableMap<String, Any?>) -> Unit)
   fun getFeatureContext(String, Boolean = true): Map<String, Any?>
   fun setEventReceiver(String, FeatureEventReceiver)
-  fun setContextUpdateReceiver(String, FeatureContextUpdateReceiver)
-  fun removeContextUpdateReceiver(String, FeatureContextUpdateReceiver)
   fun removeEventReceiver(String)
+  fun setContextUpdateReceiver(FeatureContextUpdateReceiver)
+  fun removeContextUpdateReceiver(FeatureContextUpdateReceiver)
   fun createSingleThreadExecutorService(String): java.util.concurrent.ExecutorService
   fun createScheduledExecutorService(String): java.util.concurrent.ScheduledExecutorService
   fun setAnonymousId(java.util.UUID?)

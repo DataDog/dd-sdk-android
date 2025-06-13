@@ -13,7 +13,6 @@ import android.app.ApplicationExitInfo
 import android.content.Context
 import android.os.Build
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureContextUpdateReceiver
 import com.datadog.android.api.storage.NoOpDataWriter
 import com.datadog.android.core.InternalSdkCore
@@ -653,7 +652,7 @@ internal class RumFeatureTest {
         )
         argumentCaptor<FeatureContextUpdateReceiver> {
             verify(mockSdkCore, times(2))
-                .setContextUpdateReceiver(eq(Feature.RUM_FEATURE_NAME), capture())
+                .setContextUpdateReceiver(capture())
             assertThat(testedFeature.rumContextUpdateReceivers).hasSize(allValues.size)
             assertThat(testedFeature.rumContextUpdateReceivers).isEqualTo(allValues.toSet())
         }
@@ -762,7 +761,7 @@ internal class RumFeatureTest {
 
         // Then
         rumContextUpdateReceivers.forEach {
-            verify(mockSdkCore.removeContextUpdateReceiver(Feature.RUM_FEATURE_NAME, it))
+            verify(mockSdkCore.removeContextUpdateReceiver(it))
         }
         assertThat(testedFeature.rumContextUpdateReceivers).isEmpty()
     }
