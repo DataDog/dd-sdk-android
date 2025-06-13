@@ -273,7 +273,7 @@ internal class RumFeature(
         sdkCore.removeEventReceiver(name)
 
         rumContextUpdateReceivers.forEach {
-            sdkCore.removeContextUpdateReceiver(Feature.RUM_FEATURE_NAME, it)
+            sdkCore.removeContextUpdateReceiver(it)
         }
         rumContextUpdateReceivers.clear()
 
@@ -526,7 +526,7 @@ internal class RumFeature(
             vitalExecutorService,
             periodInMs
         ).apply {
-            sdkCore.setContextUpdateReceiver(Feature.RUM_FEATURE_NAME, this)
+            sdkCore.setContextUpdateReceiver(this)
             rumContextUpdateReceivers += this
         }
         vitalExecutorService.scheduleSafe(
