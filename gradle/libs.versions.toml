@@ -108,6 +108,9 @@ re2j = "1.7"
 material3Android = "1.1.2"
 uiautomator = "2.3.0"
 benchmarkMacroJunit4 = "1.3.4"
+benchmark = "1.2.4"
+benchmarkJunit4 = "1.3.4"
+kotlinVersion = "2.0.20"
 
 
 [libraries]
@@ -124,6 +127,8 @@ binaryCompatibilityGradlePlugin = { module = "org.jetbrains.kotlinx:binary-compa
 dependencyLicenseGradlePlugin = { module = "com.datadoghq:dependency-license", version.ref = "dependencyLicense" }
 versionsGradlePlugin = { module = "com.github.ben-manes:gradle-versions-plugin", version.ref = "versionsGradlePlugin" }
 kotlinxSerializationPlugin = { module = "org.jetbrains.kotlin:kotlin-serialization", version.ref = "kotlin" }
+androidXBenchmarkGradlePlugin = { module = "androidx.benchmark:androidx.benchmark.gradle.plugin", version.ref = "benchmark" }
+
 
 # Annotation processors
 glideCompiler = { module = "com.github.bumptech.glide:compiler", version.ref = "glide" }
@@ -281,6 +286,7 @@ openTelemetrySdkBenchmark = { module = "io.opentelemetry:opentelemetry-sdk", ver
 re2j = { module = "com.google.re2j:re2j", version.ref = "re2j" }
 uiautomator = { group = "androidx.test.uiautomator", name = "uiautomator", version.ref = "uiautomator" }
 benchmarkMacroJunit4 = { group = "androidx.benchmark", name = "benchmark-macro-junit4", version.ref = "benchmarkMacroJunit4" }
+benchmarkJunit4 = { group = "androidx.benchmark", name = "benchmark-junit4", version.ref = "benchmarkJunit4" }
 
 [bundles]
 
@@ -382,5 +388,5 @@ traceCore = [
 versionsGradlePlugin = { id = "com.github.ben-manes.versions", version.ref = "versionsGradlePlugin" }
 nexusPublishGradlePlugin = { id = "io.github.gradle-nexus.publish-plugin", version.ref = "nexusPublishGradlePlugin" }
 datadogGradlePlugin = { id = "com.datadoghq.dd-sdk-android-gradle-plugin", version.ref = "datadogPlugin" }
-androidTest = { id = "com.android.test", version.ref = "androidToolsPlugin" }
+androidXBenchmark = { id = "androidx.benchmark", version.ref = "benchmark" }
 

@@ -35,6 +35,7 @@ buildscript {
         classpath(libs.sqlDelightGradlePlugin)
         classpath(libs.binaryCompatibilityGradlePlugin)
         classpath(libs.kotlinxSerializationPlugin)
+        classpath(libs.androidXBenchmarkGradlePlugin)
     }
 }
 
