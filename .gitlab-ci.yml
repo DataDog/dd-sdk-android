@@ -24,6 +24,7 @@ variables:
 
 stages:
   - benchmark-pyramid
+  - ci-image
   - security
   - analysis
   - test # TODO RUM-1622 cleanup eventually
