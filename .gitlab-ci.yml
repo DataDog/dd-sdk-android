@@ -24,12 +24,12 @@ variables:
 
 stages:
   - benchmark-pyramid
-#  - security
-#  - analysis
-#  - test # TODO RUM-1622 cleanup eventually
-#  - test-pyramid
-#  - publish
-#  - notify
+  - security
+  - analysis
+  - test # TODO RUM-1622 cleanup eventually
+  - test-pyramid
+  - publish
+  - notify
 
 .snippets:
   # macOS AMI will already have cmdline-tools installed
