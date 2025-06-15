@@ -15,5 +15,5 @@ import androidx.benchmark.macro.StartupTimingMetric
 internal val DEFAULT_METRICS_LIST = listOf(
     StartupTimingMetric(),
     MemoryUsageMetric(mode = MemoryUsageMetric.Mode.Max),
-    FrameTimingMetric()
+    FrameTimingMetric(),
 )

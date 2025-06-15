@@ -1,5 +1,6 @@
 package com.datadog.android.macrobenchmark
 
+import android.content.Intent
 import androidx.benchmark.macro.CompilationMode
 import androidx.benchmark.macro.ExperimentalMetricApi
 import androidx.benchmark.macro.MemoryUsageMetric
@@ -36,6 +37,11 @@ class ExampleStartupBenchmark {
         startupMode = StartupMode.COLD
     ) {
         pressHome()
-        startActivityAndWait()
+        val intent = Intent().apply {
+            setClassName("com.datadog.sample.benchmark", "com.datadog.benchmark.sample.activities.LaunchActivity")
+            putExtra("synthetics.benchmark.scenario", "rum_auto")
+            putExtra("synthetics.benchmark.run", "baseline")
+        }
+        startActivityAndWait(intent)
     }
 }
