@@ -62,6 +62,12 @@ android {
         getByName("debug") {
             isMinifyEnabled = false
         }
+        create("benchmark") {
+            initWith(buildTypes.getByName("release"))
+            signingConfig = signingConfigs.getByName("debug")
+            matchingFallbacks += listOf("release")
+            isDebuggable = false
+        }
 
         getByName("release") {
             proguardFiles(
@@ -96,6 +102,7 @@ dependencies {
     implementation(libs.googleMaterial)
     implementation(libs.bundles.glide)
     implementation(libs.timber)
+    implementation(libs.androidXProfileinstaller)
     implementation(platform(libs.androidXComposeBom))
     implementation(libs.material3Android)
     implementation(libs.bundles.androidXCompose)
