@@ -1,6 +1,8 @@
 package com.datadog.android.macrobenchmark
 
 import androidx.benchmark.macro.CompilationMode
+import androidx.benchmark.macro.ExperimentalMetricApi
+import androidx.benchmark.macro.MemoryUsageMetric
 import androidx.benchmark.macro.StartupMode
 import androidx.benchmark.macro.StartupTimingMetric
 import androidx.benchmark.macro.junit4.MacrobenchmarkRule
@@ -29,7 +31,7 @@ class ExampleStartupBenchmark {
     @Test
     fun startup() = benchmarkRule.measureRepeated(
         packageName = "com.datadog.sample.benchmark",
-        metrics = listOf(StartupTimingMetric()),
+        metrics = DEFAULT_METRICS_LIST,
         iterations = 5,
         startupMode = StartupMode.COLD
     ) {

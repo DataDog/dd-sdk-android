@@ -23,13 +23,13 @@ variables:
   ANDROID_SDK_VERSION: "commandlinetools-mac-11076708_latest"
 
 stages:
-  - ci-image
-  - security
-  - analysis
-  - test # TODO RUM-1622 cleanup eventually
-  - test-pyramid
-  - publish
-  - notify
+  - benchmark-pyramid
+#  - security
+#  - analysis
+#  - test # TODO RUM-1622 cleanup eventually
+#  - test-pyramid
+#  - publish
+#  - notify
 
 .snippets:
   # macOS AMI will already have cmdline-tools installed
@@ -54,6 +54,14 @@ stages:
     - exit_code=0
     - $ANDROID_HOME/emulator/emulator -avd "$EMULATOR_NAME" -grpc-use-jwt -no-snapstorage -no-audio -no-window -no-boot-anim -verbose -qemu -machine virt &
     - GRADLE_OPTS="-Xmx3072m" ./gradlew :reliability:core-it:connectedDebugAndroidTest --stacktrace --no-daemon $( (( $ANDROID_API <= 23 )) && echo "-Puse-api21-java-backport -Puse-desugaring" ) || exit_code=$?
+    - $ANDROID_HOME/platform-tools/adb emu kill
+    - if [[ "$exit_code" -ne 0 ]]; then exit 1; fi
+    - exit 0
+  run-jetpack-benchmarks:
+    - set +e
+    - exit_code=0
+    - $ANDROID_HOME/emulator/emulator -avd "$EMULATOR_NAME" -grpc-use-jwt -no-snapstorage -no-audio -no-window -no-boot-anim -verbose -qemu -machine virt &
+    - GRADLE_OPTS="-Xmx3072m" ./gradlew :macrobenchmark:connectedBenchmark --stacktrace --no-daemon $( (( $ANDROID_API <= 23 )) && echo "-Puse-api21-java-backport -Puse-desugaring" ) || exit_code=$?
     - $ANDROID_HOME/platform-tools/adb emu kill
     - if [[ "$exit_code" -ne 0 ]]; then exit 1; fi
     - exit 0
@@ -243,6 +251,20 @@ test-pyramid:core-it-latest-api:
   script:
     - !reference [.snippets, install-android-api-components]
     - !reference [.snippets, run-core-it-instrumented]
+
+test-jetpack-benchmarks-latest-api:
+  tags: [ "macos:sonoma", "specific:true" ]
+  stage: benchmark-pyramid
+  when: manual
+  timeout: 1h
+  variables:
+    ANDROID_API: "36"
+    ANDROID_EMULATOR_IMAGE: "system-images;android-$ANDROID_API;google_apis;${ANDROID_ARCH}"
+    ANDROID_PLATFORM: "platforms;android-$ANDROID_API"
+    ANDROID_BUILD_TOOLS: "build-tools;$ANDROID_API.0.0"
+  script:
+    - !reference [.snippets, install-android-api-components]
+    - !reference [.snippets, run-jetpack-benchmarks]
 
 test-pyramid:core-it-median-api:
   tags: [ "macos:sonoma", "specific:true" ]
