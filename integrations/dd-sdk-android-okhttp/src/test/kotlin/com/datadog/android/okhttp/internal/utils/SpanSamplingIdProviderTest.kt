@@ -6,7 +6,7 @@
 
 package com.datadog.android.okhttp.internal.utils
 
-import com.datadog.android.core.internal.utils.toHexString
+import com.datadog.android.internal.utils.toHexString
 import com.datadog.android.log.LogAttributes
 import com.datadog.opentracing.DDSpanContext
 import com.datadog.tools.unit.forge.BaseConfigurator

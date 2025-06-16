@@ -16,9 +16,6 @@ import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.api.storage.EventBatchWriter
 import com.datadog.android.api.storage.EventType
 import com.datadog.android.api.storage.FeatureStorageConfiguration
-import com.datadog.android.core.feature.event.JvmCrash
-import com.datadog.android.core.feature.event.ThreadDump
-import com.datadog.android.core.internal.utils.NULL_MAP_VALUE
 import com.datadog.android.event.EventMapper
 import com.datadog.android.event.MapperSerializer
 import com.datadog.android.internal.utils.NULL_MAP_VALUE

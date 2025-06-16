@@ -524,7 +524,6 @@ internal class CoreFeature(
         accountInfoProvider = DatadogAccountInfoProvider(internalLogger)
     }
 
-
     private fun setupNetworkInfoProviders(appContext: Context) {
         networkInfoProvider = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             CallbackNetworkInfoProvider(internalLogger = internalLogger)

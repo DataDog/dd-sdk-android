@@ -8356,7 +8356,7 @@ internal class RumViewScopeTest {
         assertThat(newScope.type).isEqualTo(testedScope.type)
         assertThat(newScope.sampleRate).isEqualTo(testedScope.sampleRate)
         assertThat(newScope.url).isEqualTo(testedScope.url)
-        assertThat(newScope.eventAttributes).isEqualTo(testedScope.eventAttributes)
+        assertThat(newScope.viewAttributes).isEqualTo(testedScope.viewAttributes)
         assertThat(newScope.stoppedNanos).isEqualTo(expectedTime.nanoTime)
         assertThat(newScope.viewLoadingTime).isNull()
         assertThat(newScope.activeActionScope).isNull()
