@@ -33,6 +33,7 @@ plugins {
     id("com.datadoghq.dependency-license")
     id("apiSurface")
     id("transitiveDependencies")
+    id("verificationXml")
     id("binary-compatibility-validator")
 }
 
@@ -70,4 +71,4 @@ dependencyUpdateConfig()
 publishingConfig(
     "Session Replay Extension Support for Material UI components."
 )
-detektCustomConfig(":dd-sdk-android-core", ":dd-sdk-android-internal", ":features:dd-sdk-android-session-replay")
+detektCustomConfig()

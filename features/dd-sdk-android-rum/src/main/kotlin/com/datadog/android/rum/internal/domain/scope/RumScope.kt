@@ -45,8 +45,4 @@ internal interface RumScope {
         // Default implementation, simply returns the parent's attributes
         return parentScope?.getCustomAttributes() ?: emptyMap()
     }
-
-    companion object {
-        internal const val SYNTHETICS_LOGCAT_TAG = "DatadogSynthetics"
-    }
 }

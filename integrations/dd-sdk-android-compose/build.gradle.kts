@@ -35,10 +35,14 @@ plugins {
     id("com.datadoghq.dependency-license")
     id("apiSurface")
     id("transitiveDependencies")
+    id("verificationXml")
 }
 
 android {
     namespace = "com.datadog.android.compose"
+    defaultConfig {
+        consumerProguardFiles("consumer-rules.pro")
+    }
     buildFeatures {
         compose = true
     }
@@ -48,6 +52,7 @@ android {
 }
 
 dependencies {
+    implementation(project(":dd-sdk-android-internal"))
     implementation(project(":features:dd-sdk-android-rum"))
     implementation(libs.kotlin)
 
@@ -90,4 +95,4 @@ publishingConfig(
     "A Jetpack Compose integration to use with the Datadog monitoring library" +
         " for Android applications."
 )
-detektCustomConfig(":dd-sdk-android-core", ":dd-sdk-android-internal", ":features:dd-sdk-android-rum")
+detektCustomConfig()

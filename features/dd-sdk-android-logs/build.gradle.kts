@@ -37,6 +37,7 @@ plugins {
     id("com.datadoghq.dependency-license")
     id("apiSurface")
     id("transitiveDependencies")
+    id("verificationXml")
     id("binary-compatibility-validator")
 }
 
@@ -88,4 +89,4 @@ publishingConfig(
     "The Logs feature to use with the Datadog monitoring " +
         "library for Android applications."
 )
-detektCustomConfig(":dd-sdk-android-core", ":dd-sdk-android-internal")
+detektCustomConfig()

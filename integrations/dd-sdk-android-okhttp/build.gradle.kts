@@ -37,6 +37,7 @@ plugins {
     id("com.datadoghq.dependency-license")
     id("apiSurface")
     id("transitiveDependencies")
+    id("verificationXml")
     id("binary-compatibility-validator")
 }
 
@@ -84,9 +85,4 @@ dependencyUpdateConfig()
 publishingConfig(
     "An OkHttp monitoring integration to use with the Datadog monitoring library for Android applications."
 )
-detektCustomConfig(
-    ":dd-sdk-android-core",
-    ":dd-sdk-android-internal",
-    ":features:dd-sdk-android-rum",
-    ":features:dd-sdk-android-trace"
-)
+detektCustomConfig()

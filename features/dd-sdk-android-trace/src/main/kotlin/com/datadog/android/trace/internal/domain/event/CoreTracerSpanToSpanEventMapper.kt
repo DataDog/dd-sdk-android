@@ -72,12 +72,14 @@ internal class CoreTracerSpanToSpanEventMapper(
         val osInfo = resolveOsInfo(datadogContext.deviceInfo)
         val networkInfoMeta = if (networkInfoEnabled) resolveNetworkInfo(datadogContext.networkInfo) else null
         val userInfo = datadogContext.userInfo
+        val accountInfo = datadogContext.accountInfo
         val usrMeta = SpanEvent.Usr(
             id = userInfo.id,
             name = userInfo.name,
             email = userInfo.email,
             additionalProperties = userInfo.additionalProperties.toMutableMap()
         )
+        val accountMeta = accountInfo?.let { resolveAccountInfo(it) }
         val dd = SpanEvent.Dd(
             source = datadogContext.source,
             application = event.tags[LogAttributes.RUM_APPLICATION_ID]?.let { SpanEvent.Application(it as? String) },
@@ -101,6 +103,7 @@ internal class CoreTracerSpanToSpanEventMapper(
                 version = datadogContext.sdkVersion
             ),
             usr = usrMeta,
+            account = accountMeta,
             network = networkInfoMeta,
             device = deviceInfo,
             os = osInfo,

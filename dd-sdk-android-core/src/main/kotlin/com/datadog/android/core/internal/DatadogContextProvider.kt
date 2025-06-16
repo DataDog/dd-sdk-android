@@ -56,6 +56,7 @@ internal class DatadogContextProvider(val coreFeature: CoreFeature) : ContextPro
                     )
                 },
                 userInfo = coreFeature.userInfoProvider.getUserInfo(),
+                accountInfo = coreFeature.accountInfoProvider.getAccountInfo(),
                 trackingConsent = coreFeature.trackingConsentProvider.getConsent(),
                 appBuildId = coreFeature.appBuildId,
                 // toMap call here (and in getFeatureContext) is VERY important - this will make

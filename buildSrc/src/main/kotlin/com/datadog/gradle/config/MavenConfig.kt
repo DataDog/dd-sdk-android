@@ -18,7 +18,10 @@ object MavenConfig {
     const val PUBLICATION = "release"
 }
 
-fun Project.publishingConfig(projectDescription: String) {
+fun Project.publishingConfig(
+    projectDescription: String,
+    customArtifactId: String = name
+) {
     val projectName = name
 
     val androidExtension =
@@ -48,7 +51,7 @@ fun Project.publishingConfig(projectDescription: String) {
                 from(components.getByName("release"))
 
                 groupId = MavenConfig.GROUP_ID
-                artifactId = projectName
+                artifactId = customArtifactId
                 version = AndroidConfig.VERSION.name
 
                 pom {
@@ -62,10 +65,12 @@ fun Project.publishingConfig(projectDescription: String) {
                             url.set("https://www.apache.org/licenses/LICENSE-2.0")
                         }
                     }
+
                     organization {
                         name.set("Datadog")
                         url.set("https://www.datadoghq.com/")
                     }
+
                     developers {
                         developer {
                             name.set("Datadog")

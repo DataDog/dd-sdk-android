@@ -9,8 +9,8 @@ package com.datadog.android.okhttp
 import com.datadog.android.Datadog
 import com.datadog.android.api.SdkCore
 import com.datadog.android.api.feature.Feature
-import com.datadog.android.core.internal.utils.toHexString
 import com.datadog.android.core.stub.StubSDKCore
+import com.datadog.android.internal.utils.toHexString
 import com.datadog.android.okhttp.otel.addParentSpan
 import com.datadog.android.okhttp.tests.assertj.SpansPayloadAssert
 import com.datadog.android.okhttp.tests.elmyr.OkHttpConfigurator

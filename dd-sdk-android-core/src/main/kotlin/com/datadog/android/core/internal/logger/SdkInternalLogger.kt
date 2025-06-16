@@ -12,12 +12,12 @@ import com.datadog.android.Datadog
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
-import com.datadog.android.core.internal.attributes.LocalAttribute
-import com.datadog.android.core.internal.attributes.enrichWithNonNullAttribute
 import com.datadog.android.core.internal.metrics.MethodCalledTelemetry
 import com.datadog.android.core.metrics.PerformanceMetric
 import com.datadog.android.core.metrics.TelemetryMetricType
 import com.datadog.android.core.sampling.RateBasedSampler
+import com.datadog.android.internal.attributes.LocalAttribute
+import com.datadog.android.internal.attributes.enrichWithNonNullAttribute
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 
 internal class SdkInternalLogger(

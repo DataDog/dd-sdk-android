@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
+  ~ This product includes software developed at Datadog (https://www.datadoghq.com/).
+  ~ Copyright 2016-Present Datadog, Inc.
+  -->
+
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:layout_margin="16dp">
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/episodes"
+        android:layout_width="300dp"
+        android:layout_height="0dp"
+        android:layout_marginEnd="64dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        tools:layout_editor_absoluteY="1dp" />
+
+    <androidx.appcompat.widget.AppCompatTextView
+        android:id="@+id/episode_title"
+        android:layout_width="0dp"
+        android:layout_height="48dp"
+        android:textColor="@color/dd_purple_200"
+        android:textSize="24sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@id/episodes"
+        app:layout_constraintTop_toTopOf="parent"
+        tools:text="Datadog On… Android TV" />
+
+    <androidx.appcompat.widget.AppCompatTextView
+        android:id="@+id/episode_description"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:textColor="@color/text_default"
+        app:layout_constraintBottom_toTopOf="@id/episode_speakers"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@id/episodes"
+        app:layout_constraintTop_toBottomOf="@id/episode_title"
+        tools:text="Datadog On… Android TV" />
+
+    <androidx.appcompat.widget.AppCompatTextView
+        android:id="@+id/episode_speakers"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:textColor="@color/text_default"
+        app:layout_constraintBottom_toTopOf="@id/play"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@id/episodes"
+        tools:text="Datadog On… Android TV" />
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/play"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:contentDescription="@string/hint_play"
+        android:enabled="false"
+        android:src="@drawable/baseline_play_arrow_24"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+</androidx.constraintlayout.widget.ConstraintLayout>

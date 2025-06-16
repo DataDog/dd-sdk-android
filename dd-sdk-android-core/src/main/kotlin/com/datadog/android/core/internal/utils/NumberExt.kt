@@ -6,14 +6,7 @@
 
 package com.datadog.android.core.internal.utils
 
-import com.datadog.android.lint.InternalApi
-import java.math.BigInteger
 import java.nio.ByteBuffer
-
-/**
- * Radix used to convert numbers to hexadecimal strings.
- */
-internal const val HEX_RADIX: Int = 16
 
 /**
  * Converts this [Short] into a [ByteArray] representation.
@@ -26,12 +19,6 @@ internal fun Short.toByteArray(): ByteArray {
 }
 
 /**
- * Converts this [Int] into hexadecimal representation.
- */
-@InternalApi
-fun Int.toHexString(): String = toString(HEX_RADIX)
-
-/**
  * Converts this [Int] into a [ByteArray] representation.
  */
 internal fun Int.toByteArray(): ByteArray {
@@ -42,12 +29,6 @@ internal fun Int.toByteArray(): ByteArray {
 }
 
 /**
- * Converts this [Long] into hexadecimal representation.
- */
-@InternalApi
-fun Long.toHexString(): String = toString(HEX_RADIX)
-
-/**
  * Converts this [Long] into a [ByteArray] representation.
  */
 internal fun Long.toByteArray(): ByteArray {
@@ -55,12 +36,4 @@ internal fun Long.toByteArray(): ByteArray {
     // has sufficient capacity and is backed by an array
     @Suppress("UnsafeThirdPartyFunctionCall")
     return ByteBuffer.allocate(Long.SIZE_BYTES).putLong(this).array()
-}
-
-/**
- * Converts this [BigInteger] into hexadecimal representation.
- */
-@InternalApi
-fun BigInteger.toHexString(): String {
-    return toLong().toHexString()
 }

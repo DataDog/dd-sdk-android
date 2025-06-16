@@ -9,7 +9,7 @@ package com.datadog.android.rum.internal.tracking
 import android.content.res.Resources
 import android.view.View
 import androidx.recyclerview.widget.RecyclerView
-import com.datadog.android.core.internal.utils.toHexString
+import com.datadog.android.internal.utils.toHexString
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.tracking.ViewAttributesProvider
 

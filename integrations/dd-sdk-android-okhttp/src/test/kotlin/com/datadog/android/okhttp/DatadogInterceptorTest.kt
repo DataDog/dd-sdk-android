@@ -222,6 +222,49 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
     }
 
     @Test
+    fun `M start and stop RUM Resource W intercept() {successful request, empty response}`(
+        @IntForgery(min = 200, max = 300) statusCode: Int
+    ) {
+        // Given
+        fakeResponseBody = ""
+        stubChain(mockChain, statusCode)
+        val expectedStartAttrs = emptyMap<String, Any?>()
+        val expectedStopAttrs = mapOf(
+            RumAttributes.TRACE_ID to fakeTraceIdAsString,
+            RumAttributes.SPAN_ID to fakeSpanId,
+            RumAttributes.RULE_PSR to fakeTracingSampleRate / 100
+        ) + fakeAttributes
+        val mimeType = fakeMediaType?.type
+        val kind = when {
+            mimeType != null -> RumResourceKind.fromMimeType(mimeType)
+            else -> RumResourceKind.NATIVE
+        }
+
+        // When
+        testedInterceptor.intercept(mockChain)
+
+        // Then
+        inOrder(rumMonitor.mockInstance) {
+            argumentCaptor<ResourceId> {
+                verify(rumMonitor.mockInstance).startResource(
+                    capture(),
+                    eq(fakeMethod),
+                    eq(fakeUrl),
+                    eq(expectedStartAttrs)
+                )
+                verify(rumMonitor.mockInstance).stopResource(
+                    capture(),
+                    eq(statusCode),
+                    eq(0L),
+                    eq(kind),
+                    eq(expectedStopAttrs)
+                )
+                assertThat(firstValue).isEqualTo(secondValue)
+            }
+        }
+    }
+
+    @Test
     fun `M start and stop RUM Resource W intercept() {successful streaming request}`(
         @IntForgery(min = 200, max = 300) statusCode: Int,
         forge: Forge
@@ -441,7 +484,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
                 verify(rumMonitor.mockInstance).stopResource(
                     capture(),
                     eq(statusCode),
-                    eq(null),
+                    eq(0L),
                     eq(kind),
                     eq(expectedStopAttrs)
                 )
@@ -538,7 +581,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
                 verify(rumMonitor.mockInstance).stopResource(
                     capture(),
                     eq(statusCode),
-                    eq(null),
+                    eq(0L),
                     eq(kind),
                     eq(expectedStopAttrs)
                 )
@@ -596,8 +639,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
 
     @Test
     fun `M start and stop RUM Resource W intercept() {successful request throwing response}`(
-        @IntForgery(min = 200, max = 300) statusCode: Int,
-        forge: Forge
+        @IntForgery(min = 200, max = 300) statusCode: Int
     ) {
         // Given
         stubChain(mockChain) {
@@ -610,7 +652,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
                 .body(object : ResponseBody() {
                     override fun contentType(): MediaType? = fakeMediaType
 
-                    override fun contentLength(): Long = forge.anElementFrom(0, -1)
+                    override fun contentLength(): Long = -1L
 
                     override fun source(): BufferedSource {
                         val buffer = Buffer()
@@ -659,8 +701,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
 
     @Test
     fun `M start and stop RUM Resource W intercept() {success request throwing response + !smp}`(
-        @IntForgery(min = 200, max = 300) statusCode: Int,
-        forge: Forge
+        @IntForgery(min = 200, max = 300) statusCode: Int
     ) {
         // Given
         whenever(mockTraceSampler.sample(any())).thenReturn(false)
@@ -674,7 +715,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
                 .body(object : ResponseBody() {
                     override fun contentType(): MediaType? = fakeMediaType
 
-                    override fun contentLength(): Long = forge.anElementFrom(0, -1)
+                    override fun contentLength(): Long = -1
 
                     override fun source(): BufferedSource {
                         val buffer = Buffer()

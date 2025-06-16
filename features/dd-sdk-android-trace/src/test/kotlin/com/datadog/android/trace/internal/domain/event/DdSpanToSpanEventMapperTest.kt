@@ -7,7 +7,7 @@
 package com.datadog.android.trace.internal.domain.event
 
 import com.datadog.android.api.context.DatadogContext
-import com.datadog.android.core.internal.utils.toHexString
+import com.datadog.android.internal.utils.toHexString
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.trace.assertj.SpanEventAssert.Companion.assertThat
 import com.datadog.android.utils.forge.Configurator
@@ -101,6 +101,7 @@ internal class DdSpanToSpanEventMapperTest {
                 }
             }
             .hasUserInfo(fakeDatadogContext.userInfo)
+            .hasAccountInfo(fakeDatadogContext.accountInfo)
             .hasMeta(fakeSpan.meta)
             .hasDeviceInfo(fakeDatadogContext.deviceInfo)
             .hasOsInfo(fakeDatadogContext.deviceInfo)
@@ -149,6 +150,7 @@ internal class DdSpanToSpanEventMapperTest {
                 }
             }
             .hasUserInfo(fakeDatadogContext.userInfo)
+            .hasAccountInfo(fakeDatadogContext.accountInfo)
             .hasMeta(fakeSpan.meta)
             .hasDeviceInfo(fakeDatadogContext.deviceInfo)
             .hasOsInfo(fakeDatadogContext.deviceInfo)

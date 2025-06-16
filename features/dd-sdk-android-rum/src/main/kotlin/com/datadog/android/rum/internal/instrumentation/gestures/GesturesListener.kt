@@ -135,13 +135,19 @@ internal class GesturesListener(
         isScroll: Boolean = false
     ): ViewTarget? {
         val queue = LinkedList<View>()
-        queue.addFirst(decorView)
+        // add(index, element) instead of addFirst here is on purpose, to prevent issues with old AGP being used
+        // when compiling with Android API 35.
+        // Index 0 is always safe
+        @Suppress("UnsafeThirdPartyFunctionCall")
+        queue.add(0, decorView)
         var target: ViewTarget? = null
         var composeViewDetected = false
         while (queue.isNotEmpty()) {
-            // removeFirst can't fail because we checked isNotEmpty
+            // removeAt(index) instead of removeFirst here is on purpose, to prevent issues
+            // with old AGP being used when compiling with Android API 35.
+            // removeAt can't fail because we checked isNotEmpty
             @Suppress("UnsafeThirdPartyFunctionCall")
-            val view = queue.removeFirst()
+            val view = queue.removeAt(0)
             composeViewDetected = composeViewDetected || isJetpackComposeView(view)
             val newTarget = if (isScroll) {
                 findTargetForScroll(view, x, y)
@@ -266,8 +272,8 @@ internal class GesturesListener(
                 it.extractAttributes(view, attributes)
             }
         }
-        target.tag?.let {
-            // TODO RUM-9345: Enrich Compose action target attributes.
+        target.node?.let {
+            attributes.putAll(it.customAttributes)
         }
         GlobalRumMonitor.get(sdkCore).addAction(
             RumActionType.TAP,
@@ -289,8 +295,8 @@ internal class GesturesListener(
                 it.extractAttributes(view, attributes)
             }
         }
-        scrollTarget.tag?.let {
-            // TODO RUM-9345: Enrich Compose action target attributes.
+        scrollTarget.node?.let {
+            attributes.putAll(it.customAttributes)
         }
         if (onUpEvent != null) {
             gestureDirection = resolveGestureDirection(onUpEvent)

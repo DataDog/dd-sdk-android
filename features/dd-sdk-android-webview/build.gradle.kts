@@ -35,6 +35,7 @@ plugins {
     id("com.datadoghq.dependency-license")
     id("apiSurface")
     id("transitiveDependencies")
+    id("verificationXml")
     id("binary-compatibility-validator")
 }
 
@@ -81,4 +82,4 @@ publishingConfig(
     "The WebView integration feature to use with the Datadog monitoring " +
         "library for Android applications."
 )
-detektCustomConfig(":dd-sdk-android-internal")
+detektCustomConfig()

@@ -10,10 +10,14 @@ import com.datadog.gradle.utils.execShell
 import org.gradle.api.DefaultTask
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.TaskAction
+import org.gradle.process.ExecOperations
 import java.io.File
 import java.nio.file.Files.createTempDirectory
+import javax.inject.Inject
 
-open class GitCloneDependenciesTask : DefaultTask() {
+open class GitCloneDependenciesTask @Inject constructor(
+    private val execOperations: ExecOperations
+) : DefaultTask() {
 
     @get: Input
     var extension: GitCloneDependenciesExtension =
@@ -60,7 +64,7 @@ open class GitCloneDependenciesTask : DefaultTask() {
         target: File
     ) {
         println(" --- Cloning ${dependency.originRepository} into ${target.absolutePath}")
-        project.execShell(
+        execOperations.execShell(
             "git",
             "clone",
             "--branch",
@@ -135,7 +139,7 @@ open class GitCloneDependenciesTask : DefaultTask() {
 
     private fun deleteClone(target: File) {
         println(" --- Deleting temp folder ${target.absolutePath}")
-        project.execShell("rm", "-r", target.absolutePath)
+        execOperations.execShell("rm", "-r", target.absolutePath)
         println(" --- Deleted")
     }
 

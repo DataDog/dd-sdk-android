@@ -56,11 +56,18 @@ internal class RumViewManagerScope(
             lastInteractionIdentifier = lastInteractionIdentifier
         )
 
-    internal val childrenScopes = mutableListOf<RumScope>()
+    internal val childrenScopes = mutableListOf<RumViewScope>()
     internal var stopped = false
     private var lastStoppedViewTime: Time? = null
 
     // region RumScope
+    fun renewViewScopes(eventTime: Time) {
+        val newChildScope = childrenScopes.map { rumViewScope ->
+            rumViewScope.renew(eventTime)
+        }
+        childrenScopes.clear()
+        childrenScopes.addAll(newChildScope)
+    }
 
     @WorkerThread
     override fun handleEvent(event: RumRawEvent, writer: DataWriter<Any>): RumScope? {

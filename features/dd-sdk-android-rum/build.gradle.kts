@@ -37,12 +37,16 @@ plugins {
     id("com.datadoghq.dependency-license")
     id("apiSurface")
     id("transitiveDependencies")
+    id("verificationXml")
     id("binary-compatibility-validator")
 }
 
 android {
     defaultConfig {
-        consumerProguardFiles(Paths.get(rootDir.path, "consumer-rules.pro").toString())
+        consumerProguardFiles(
+            Paths.get(rootDir.path, "consumer-rules.pro").toString(),
+            "consumer-rules.pro"
+        )
     }
 
     namespace = "com.datadog.android.rum"
@@ -118,4 +122,4 @@ publishingConfig(
     "The RUM feature to use with the Datadog monitoring " +
         "library for Android applications."
 )
-detektCustomConfig(":dd-sdk-android-core", ":dd-sdk-android-internal")
+detektCustomConfig()

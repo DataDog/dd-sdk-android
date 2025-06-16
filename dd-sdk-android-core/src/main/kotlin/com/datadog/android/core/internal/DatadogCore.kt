@@ -179,6 +179,24 @@ internal class DatadogCore(
         }
     }
 
+    override fun setAccountInfo(
+        id: String,
+        name: String?,
+        extraInfo: Map<String, Any?>
+    ) {
+        coreFeature.accountInfoProvider.setAccountInfo(id, name, extraInfo)
+    }
+
+    override fun addAccountExtraInfo(
+        extraInfo: Map<String, Any?>
+    ) {
+        coreFeature.accountInfoProvider.addExtraInfo(extraInfo)
+    }
+
+    override fun clearAccountInfo() {
+        coreFeature.accountInfoProvider.clearAccountInfo()
+    }
+
     /** @inheritDoc */
     override fun updateFeatureContext(
         featureName: String,

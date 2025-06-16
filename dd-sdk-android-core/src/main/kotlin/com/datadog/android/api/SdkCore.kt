@@ -81,4 +81,45 @@ interface SdkCore {
      */
     @AnyThread
     fun clearAllData()
+
+    /**
+     * Sets current account information.
+     *
+     * Those will be added to logs, traces and RUM events automatically.
+     *
+     * @param id Account ID.
+     * @param name representing the account, if exists.
+     * @param extraInfo Account's custom attributes, if exists.
+     */
+    fun setAccountInfo(
+        id: String,
+        name: String? = null,
+        extraInfo: Map<String, Any?> = emptyMap()
+    )
+
+    /** Add custom attributes to the current account information
+     *
+     * This extra info will be added to already existing extra info that is added
+     * to logs traces and RUM events automatically.
+     *
+     * @param extraInfo Account's additional custom attributes.
+     */
+    fun addAccountExtraInfo(
+        extraInfo: Map<String, Any?> = emptyMap()
+    )
+
+    /** Clear the current account information
+     *
+     * Account information will set to null
+     * Following Logs, Traces, RUM Events will not include the account information anymore.
+     *
+     * Any active RUM Session, active RUM View at the time of call will have their `account` attribute cleared
+     *
+     * If you want to retain the current `account` on the active RUM session,
+     * you need to stop the session first by using `GlobalRumMonitor.get().stopSession()`
+     *
+     * If you want to retain the current `account` on the active RUM views,
+     * you need to stop the view first by using `GlobalRumMonitor.get().stopView()`
+     */
+    fun clearAccountInfo()
 }

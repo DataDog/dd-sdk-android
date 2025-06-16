@@ -33,6 +33,7 @@ plugins {
     id("com.datadoghq.dependency-license")
     id("apiSurface")
     id("transitiveDependencies")
+    id("verificationXml")
     id("binary-compatibility-validator")
 }
 
@@ -67,9 +68,4 @@ dependencyUpdateConfig()
 publishingConfig(
     "An OkHttp collection of extensions to be used in conjunction with OpenTelemetry Datadog SDK."
 )
-detektCustomConfig(
-    ":dd-sdk-android-core",
-    ":dd-sdk-android-internal",
-    ":features:dd-sdk-android-trace-otel",
-    ":integrations:dd-sdk-android-okhttp"
-)
+detektCustomConfig()

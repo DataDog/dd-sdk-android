@@ -1793,13 +1793,10 @@ internal class DatadogRumMonitorTest {
             }
         }
         val expectedViewNames = viewScopes.mapNotNull { it.getRumContext().viewName }
-        val otherScopes = forge.aList {
-            forge.anElementFrom(mock(), mock<RumActionScope>(), mock<RumResourceScope>())
-        }
         whenever(mockRumApplicationScope.activeSession) doReturn mockSessionScope
         whenever(mockSessionScope.childScope) doReturn mockViewManagerScope
         whenever(mockViewManagerScope.childrenScopes)
-            .thenReturn((viewScopes + otherScopes).toMutableList())
+            .thenReturn(viewScopes.toMutableList())
 
         // When
         testedMonitor.notifyDebugListenerWithState()
@@ -1829,14 +1826,10 @@ internal class DatadogRumMonitorTest {
             }
         }
         val expectedViewNames = emptyList<String>()
-        val otherScopes = forge.aList {
-            forge.anElementFrom(mock(), mock<RumActionScope>(), mock<RumResourceScope>())
-        }
         whenever(mockRumApplicationScope.activeSession) doReturn mockSessionScope
         whenever(mockSessionScope.childScope) doReturn mockViewManagerScope
         whenever(mockViewManagerScope.childrenScopes)
-            .thenReturn((viewScopes + otherScopes).toMutableList())
-
+            .thenReturn(viewScopes.toMutableList())
         // When
         testedMonitor.notifyDebugListenerWithState()
 

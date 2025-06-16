@@ -30,21 +30,23 @@ class ViewTargetTest : ObjectTest<ViewTarget>() {
     override fun createInstance(forge: Forge): ViewTarget {
         return ViewTarget(
             viewRef = WeakReference(mockView),
-            tag = forge.anAlphabeticalString()
+            node = Node(forge.anAlphabeticalString())
         )
     }
 
     override fun createUnequalInstance(source: ViewTarget, forge: Forge): ViewTarget? {
         return ViewTarget(
             viewRef = WeakReference(mockAnotherView),
-            tag = forge.anAlphabeticalString()
+            node = Node(forge.anAlphabeticalString())
         )
     }
 
     override fun createEqualInstance(source: ViewTarget, forge: Forge): ViewTarget {
         return ViewTarget(
             viewRef = WeakReference(source.viewRef.get()),
-            tag = source.tag
+            node = source.node?.let {
+                Node(it.name, it.customAttributes)
+            }
         )
     }
 }
