@@ -19,6 +19,7 @@ import com.datadog.android.core.internal.net.DefaultFirstPartyHostHeaderTypeReso
 import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.internal.telemetry.TracingHeaderTypesSet
 import com.datadog.android.internal.utils.loggableStackTrace
+import com.datadog.android.internal.utils.tryCastTo
 import com.datadog.android.okhttp.TraceContext
 import com.datadog.android.okhttp.TraceContextInjection
 import com.datadog.android.okhttp.internal.otel.toAgentSpanContext
@@ -33,6 +34,7 @@ import com.datadog.trace.api.sampling.SamplingMechanism
 import com.datadog.trace.bootstrap.instrumentation.api.AgentSpan
 import com.datadog.trace.bootstrap.instrumentation.api.Tags
 import com.datadog.trace.common.sampling.AllSampler
+import com.datadog.trace.common.writer.NoOpWriter
 import com.datadog.trace.core.CoreTracer
 import com.datadog.trace.core.DDSpan
 import com.datadog.trace.core.propagation.ExtractedContext
@@ -386,7 +388,7 @@ internal constructor(
         val tagContext = request.tag(Span::class.java)?.context()
             ?: request.tag(TraceContext::class.java)?.toAgentSpanContext()
 
-        val headerContext: AgentSpan.Context.Extracted = tracer.propagate().extract(request) { carrier, classifier ->
+        val headerContext: AgentSpan.Context.Extracted? = tracer.propagate().extract(request) { carrier, classifier ->
             val headers = carrier.headers.toMultimap()
                 .map { it.key to it.value.joinToString(";") }
                 .toMap()
@@ -848,17 +850,35 @@ internal constructor(
         internal const val OKHTTP_INTERCEPTOR_HEADER_TYPES = "okhttp_interceptor_header_types"
 
         private const val AGENT_PSR_ATTRIBUTE = "_dd.agent_psr"
+        private const val WRITER_PROVIDER_INTERFACE_NOT_IMPLEMENTED_ERROR_MESSAGE =
+            "The Tracing feature is not implementing the InternalCoreWriterProvider interface." +
+                    " No tracing data will be sent."
 
         private val DEFAULT_LOCAL_TRACER_FACTORY: (SdkCore, Set<TracingHeaderType>) -> Tracer =
             { sdkCore, tracingHeaderTypes: Set<TracingHeaderType> ->
-                val propagationStyles = tracingHeaderTypes.joinToString(",")
-                CoreTracer.CoreTracerBuilder((sdkCore as FeatureSdkCore).internalLogger)
+                val featuredSdkCore = sdkCore as FeatureSdkCore
+                val writer = featuredSdkCore.getFeature(Feature.TRACING_FEATURE_NAME)
+                    ?.unwrap<Feature>()
+                    ?.tryCastTo<com.datadog.android.trace.InternalCoreWriterProvider>()
+                    ?.getCoreTracerWriter()
+                    ?: run {
+                        sdkCore.internalLogger.log(
+                            InternalLogger.Level.ERROR,
+                            InternalLogger.Target.MAINTAINER,
+                            { WRITER_PROVIDER_INTERFACE_NOT_IMPLEMENTED_ERROR_MESSAGE }
+                        )
+                        NoOpWriter()
+                    }
+
+                CoreTracer.CoreTracerBuilder(featuredSdkCore.internalLogger)
                     .withProperties(
                         Properties().apply {
+                            val propagationStyles = tracingHeaderTypes.joinToString(",")
                             setProperty(TracerConfig.PROPAGATION_STYLE_EXTRACT, propagationStyles)
                             setProperty(TracerConfig.PROPAGATION_STYLE_INJECT, propagationStyles)
                         }
                     )
+                    .writer(writer)
                     .sampler(AllSampler())
                     .build()
             }

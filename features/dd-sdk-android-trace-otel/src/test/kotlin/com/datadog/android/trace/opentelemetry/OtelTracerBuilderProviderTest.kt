@@ -30,6 +30,7 @@ import com.datadog.trace.api.sampling.PrioritySampling
 import com.datadog.trace.bootstrap.instrumentation.api.AgentScopeManager
 import com.datadog.trace.bootstrap.instrumentation.api.AgentTracer
 import com.datadog.trace.bootstrap.instrumentation.api.ScopeSource
+import com.datadog.trace.common.writer.NoOpWriter
 import com.datadog.trace.common.writer.Writer
 import com.datadog.trace.core.CoreTracer
 import com.datadog.trace.core.DDSpan
@@ -181,7 +182,7 @@ internal class OtelTracerBuilderProviderTest {
         assertThat(tracer).isNotNull
         val coreTracer: CoreTracer = tracer.getFieldValue("coreTracer")
         val writer: Writer = coreTracer.getFieldValue("writer")
-        assertThat(writer).isInstanceOf(NoOpCoreTracerWriter::class.java)
+        assertThat(writer).isInstanceOf(NoOpWriter::class.java)
     }
 
     @Test

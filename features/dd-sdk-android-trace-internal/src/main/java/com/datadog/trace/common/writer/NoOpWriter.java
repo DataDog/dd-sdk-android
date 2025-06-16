@@ -10,16 +10,14 @@ import com.datadog.trace.core.DDSpan;
 
 import java.util.List;
 
-public class NoOpWriter implements Writer{
+public class NoOpWriter implements Writer {
 
     @Override
     public void write(List<DDSpan> trace) {
-
     }
 
     @Override
     public void start() {
-
     }
 
     @Override
@@ -29,11 +27,9 @@ public class NoOpWriter implements Writer{
 
     @Override
     public void close() {
-
     }
 
     @Override
     public void incrementDropCounts(int spanCount) {
-
     }
 }
