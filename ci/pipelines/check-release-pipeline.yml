@@ -1,0 +1,24 @@
+include:
+  - "ci/pipelines/common-snippets.yml"
+  - 'https://gitlab-templates.ddbuild.io/slack-notifier/v1/template.yml'
+
+stages:
+  - check-release
+  - notify
+
+check-release:is-published:
+  tags: [ "arch:amd64" ]
+  image: $CI_IMAGE_DOCKER
+  stage: check-release
+  script:
+    - !reference [ .common-snippets, set-github-installation-token ]
+    - bash ./ci/scripts/check_latest_release_is_published.sh
+
+notify:report-failure-to-slack:
+  extends: .slack-notifier-base
+  stage: notify
+  when: on_failure
+  script:
+    - BUILD_URL="$CI_PROJECT_URL/pipelines/$CI_PIPELINE_ID"
+    - 'MESSAGE_TEXT=":status_alert: Some release artifacts were not published to maven. $BUILD_URL"'
+    - postmessage "#mobile-sdk-ops" "$MESSAGE_TEXT"
