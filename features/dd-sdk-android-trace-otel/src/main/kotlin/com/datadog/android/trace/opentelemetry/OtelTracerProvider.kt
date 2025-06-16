@@ -18,7 +18,6 @@ import com.datadog.android.internal.concurrent.CompletableFuture
 import com.datadog.android.trace.InternalCoreWriterProvider
 import com.datadog.android.trace.TracingHeaderType
 import com.datadog.android.trace.opentelemetry.internal.DatadogContextStorageWrapper
-import com.datadog.android.trace.opentelemetry.internal.NoOpCoreTracerWriter
 import com.datadog.android.trace.opentelemetry.internal.addActiveTraceToContext
 import com.datadog.android.trace.opentelemetry.internal.executeIfJavaFunctionPackageExists
 import com.datadog.android.trace.opentelemetry.internal.removeActiveTraceFromContext
@@ -28,6 +27,7 @@ import com.datadog.trace.api.IdGenerationStrategy
 import com.datadog.trace.api.config.TracerConfig
 import com.datadog.trace.api.scopemanager.ScopeListener
 import com.datadog.trace.bootstrap.instrumentation.api.AgentTracer
+import com.datadog.trace.common.writer.NoOpWriter
 import com.datadog.trace.core.CoreTracer
 import io.opentelemetry.api.trace.SpanBuilder
 import io.opentelemetry.api.trace.Tracer
@@ -170,7 +170,7 @@ class OtelTracerProvider internal constructor(
                 val coreTracer = CoreTracer.CoreTracerBuilder(sdkCore.internalLogger)
                     .withProperties(properties())
                     .serviceName(serviceName)
-                    .writer(internalCoreWriterProvider?.getCoreTracerWriter() ?: NoOpCoreTracerWriter())
+                    .writer(internalCoreWriterProvider?.getCoreTracerWriter() ?: NoOpWriter())
                     .partialFlushMinSpans(partialFlushThreshold)
                     .idGenerationStrategy(IdGenerationStrategy.fromName("SECURE_RANDOM", true))
                     .build()
