@@ -72,7 +72,6 @@ import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.mock
-import org.mockito.kotlin.never
 import org.mockito.kotlin.reset
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
@@ -349,7 +348,7 @@ internal class DatadogCoreTest {
             verify(otherFeature).notifyContextUpdated(feature, fakeContext)
             verifyNoMoreInteractions(otherFeature)
         }
-        verify(mockFeature, never()).notifyContextUpdated(feature, fakeContext)
+        verify(mockFeature).notifyContextUpdated(feature, fakeContext)
     }
 
     @Test
@@ -745,7 +744,10 @@ internal class DatadogCoreTest {
         @StringForgery feature: String
     ) {
         // Given
-        val mockFeature = mock<SdkFeature>()
+        val mockFeature = mock<SdkFeature>().apply {
+            whenever(featureContext) doReturn mutableMapOf()
+            whenever(featureContextLock) doReturn ReentrantReadWriteLock()
+        }
         val mockContextUpdateListener = mock<FeatureContextUpdateReceiver>()
         testedCore.features[feature] = mockFeature
 
@@ -764,6 +766,7 @@ internal class DatadogCoreTest {
         // Given
         val mockFeature = mock<SdkFeature>().apply {
             whenever(featureContext) doReturn mutableMapOf<String, Any?>()
+            whenever(featureContextLock) doReturn ReentrantReadWriteLock()
         }
         val mockContextUpdateListener = mock<FeatureContextUpdateReceiver>()
         testedCore.features[feature] = mockFeature
@@ -790,6 +793,7 @@ internal class DatadogCoreTest {
         // Given
         val mockFeature = mock<SdkFeature>().apply {
             whenever(featureContext) doReturn mutableMapOf<String, Any?>()
+            whenever(featureContextLock) doReturn ReentrantReadWriteLock()
         }
         val mockContextUpdateListener = mock<FeatureContextUpdateReceiver>()
         testedCore.features[feature] = mockFeature
@@ -822,6 +826,7 @@ internal class DatadogCoreTest {
         // Given
         val mockFeature = mock<SdkFeature>().apply {
             whenever(featureContext) doReturn mutableMapOf<String, Any?>()
+            whenever(featureContextLock) doReturn ReentrantReadWriteLock()
         }
         val mockContextUpdateListener = mock<FeatureContextUpdateReceiver>()
         testedCore.features[feature] = mockFeature

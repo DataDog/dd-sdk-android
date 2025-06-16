@@ -468,25 +468,6 @@ class FeatureSdkCoreTest : MockServerTest() {
     }
 
     @Test
-    fun mustNotReceiveContextUpdate_when_contextUpdateReceiverRegistered_contextUpdateOnSameFeature() {
-        // Given
-        val stubContextUpdateReceiver = StubContextUpdateReceiver()
-        val fakeKeyValues = forge.aMap { anAlphabeticalString() to anAlphabeticalString() }
-        testedFeatureSdkCore.registerFeature(stubFeature)
-        testedFeatureSdkCore.setContextUpdateReceiver(stubFeature.name, stubContextUpdateReceiver)
-
-        // When
-        testedFeatureSdkCore.updateFeatureContext(stubFeature.name, useContextThread = false) {
-            fakeKeyValues.forEach { (key, value) ->
-                it[key] = value
-            }
-        }
-
-        // Then
-        assertThat(stubContextUpdateReceiver.getReceivedEvents()).isEmpty()
-    }
-
-    @Test
     fun mustReceiveNoContextUpdate_when_contextUpdateReceiverNotRegistered() {
         // Given
         val stubContextUpdateReceiver = StubContextUpdateReceiver()

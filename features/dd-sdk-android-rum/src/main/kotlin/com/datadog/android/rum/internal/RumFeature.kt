@@ -18,6 +18,7 @@ import androidx.annotation.AnyThread
 import androidx.annotation.RequiresApi
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.Feature
+import com.datadog.android.api.feature.FeatureContextUpdateReceiver
 import com.datadog.android.api.feature.FeatureEventReceiver
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.feature.StorageBackedFeature
@@ -144,6 +145,7 @@ internal class RumFeature(
     internal var initialResourceIdentifier: InitialResourceIdentifier = NoOpInitialResourceIdentifier()
     internal var lastInteractionIdentifier: LastInteractionIdentifier? = NoOpLastInteractionIdentifier()
     internal var slowFramesListener: SlowFramesListener? = null
+    internal val rumContextUpdateReceivers = mutableSetOf<FeatureContextUpdateReceiver>()
 
     private val lateCrashEventHandler by lazy { lateCrashReporterFactory(sdkCore as InternalSdkCore) }
 
@@ -269,6 +271,11 @@ internal class RumFeature(
 
     override fun onStop() {
         sdkCore.removeEventReceiver(name)
+
+        rumContextUpdateReceivers.forEach {
+            sdkCore.removeContextUpdateReceiver(Feature.RUM_FEATURE_NAME, it)
+        }
+        rumContextUpdateReceivers.clear()
 
         unregisterTrackingStrategies(appContext)
 
@@ -518,7 +525,10 @@ internal class RumFeature(
             vitalObserver,
             vitalExecutorService,
             periodInMs
-        )
+        ).apply {
+            sdkCore.setContextUpdateReceiver(Feature.RUM_FEATURE_NAME, this)
+            rumContextUpdateReceivers += this
+        }
         vitalExecutorService.scheduleSafe(
             "Vitals monitoring",
             periodInMs,
