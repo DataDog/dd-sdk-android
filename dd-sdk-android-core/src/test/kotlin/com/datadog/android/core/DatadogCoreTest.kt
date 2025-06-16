@@ -76,7 +76,6 @@ import org.mockito.kotlin.reset
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
-import org.mockito.kotlin.verifyNoMoreInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.util.Collections
@@ -324,18 +323,16 @@ internal class DatadogCoreTest {
             key = AdvancedForgery(string = [StringForgery(StringForgeryType.ALPHABETICAL)]),
             value = AdvancedForgery(string = [StringForgery(StringForgeryType.ALPHABETICAL)])
         ) fakeContext: Map<String, String>,
-        @BoolForgery fakeUseContextThread: Boolean,
-        forge: Forge
+        @BoolForgery fakeUseContextThread: Boolean
     ) {
         // Given
-        val mockFeature = mock<SdkFeature>()
-        whenever(mockFeature.featureContextLock) doReturn ReentrantReadWriteLock()
-        whenever(mockFeature.featureContext) doReturn mutableMapOf<String, Any?>()
-        val otherFeatures = mapOf(
-            forge.anAlphaNumericalString() to mock<SdkFeature>()
-        )
+        val mockFeature = mock<SdkFeature>().apply {
+            whenever(featureContextLock) doReturn ReentrantReadWriteLock()
+            whenever(featureContext) doReturn mutableMapOf<String, Any?>()
+        }
         testedCore.features[feature] = mockFeature
-        testedCore.features.putAll(otherFeatures)
+        val mockFeatureContextUpdateListener = mock<FeatureContextUpdateReceiver>()
+        testedCore.setContextUpdateReceiver(mockFeatureContextUpdateListener)
 
         // When
         testedCore.updateFeatureContext(feature, fakeUseContextThread) {
@@ -344,11 +341,7 @@ internal class DatadogCoreTest {
 
         // Then
         assertThat(mockFeature.featureContext).isEqualTo(fakeContext)
-        otherFeatures.forEach { (_, otherFeature) ->
-            verify(otherFeature).notifyContextUpdated(feature, fakeContext)
-            verifyNoMoreInteractions(otherFeature)
-        }
-        verify(mockFeature).notifyContextUpdated(feature, fakeContext)
+        verify(mockFeatureContextUpdateListener).onContextUpdate(feature, fakeContext)
     }
 
     @Test
@@ -740,157 +733,163 @@ internal class DatadogCoreTest {
     }
 
     @Test
-    fun `M set context update listener W setContextUpdateListener()`(
+    fun `M set context update listener W setContextUpdateReceiver()`() {
+        // Given
+        val mockContextUpdateListener = mock<FeatureContextUpdateReceiver>()
+
+        // When
+        testedCore.setContextUpdateReceiver(mockContextUpdateListener)
+
+        // Then
+        assertThat(testedCore.featureContextUpdateReceivers).contains(mockContextUpdateListener)
+    }
+
+    @Test
+    fun `M notify listener already registered W setContextUpdateReceiver()`() {
+        // Given
+        val mockContextUpdateListener = mock<FeatureContextUpdateReceiver>()
+
+        // When
+        testedCore.setContextUpdateReceiver(mockContextUpdateListener)
+        testedCore.setContextUpdateReceiver(mockContextUpdateListener)
+
+        // Then
+        assertThat(testedCore.featureContextUpdateReceivers).contains(mockContextUpdateListener)
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.USER,
+            DatadogCore.CONTEXT_UPDATE_LISTENER_ALREADY_REGISTERED.format(Locale.US, mockContextUpdateListener)
+        )
+    }
+
+    @Test
+    fun `M not throw W concurrent access to featureContextUpdateReceivers`(
+        forge: Forge
+    ) {
+        // Given
+        val mockListeners = forge.aList(size = forge.anInt(min = 2, max = 10)) {
+            mock<FeatureContextUpdateReceiver>()
+        }
+        val removeListeners = mockListeners.take(forge.anInt(min = 1, max = mockListeners.size))
+        val fakeContext = forge.aMap { forge.anAlphabeticalString() to forge.anAlphabeticalString() }
+        val fakeFeatureName = forge.anAlphabeticalString()
+        val iterationRepeats = forge.anInt(min = 1, max = 10)
+
+        // When + Then
+        mockListeners.map {
+            Thread {
+                assertDoesNotThrow {
+                    testedCore.setContextUpdateReceiver(it)
+                }
+            }.apply { start() }
+        }.forEach { it.join(5000) }
+        val removeHandles = removeListeners.map {
+            Thread {
+                assertDoesNotThrow {
+                    testedCore.removeContextUpdateReceiver(it)
+                }
+            }.apply { start() }
+        }
+        val iterationHandles = (0..iterationRepeats).map {
+            Thread {
+                assertDoesNotThrow {
+                    testedCore.featureContextUpdateReceivers.forEach {
+                        it.onContextUpdate(fakeFeatureName, fakeContext)
+                    }
+                }
+            }.apply { start() }
+        }
+
+        (removeHandles + iterationHandles).forEach { it.join() }
+    }
+
+    @Test
+    fun `M not invoke listener W setContextUpdateReceiver() { feature has no context yet }`(
         @StringForgery feature: String
     ) {
         // Given
         val mockFeature = mock<SdkFeature>().apply {
-            whenever(featureContext) doReturn mutableMapOf()
-            whenever(featureContextLock) doReturn ReentrantReadWriteLock()
-        }
-        val mockContextUpdateListener = mock<FeatureContextUpdateReceiver>()
-        testedCore.features[feature] = mockFeature
-
-        // When
-        testedCore.setContextUpdateReceiver(feature, mockContextUpdateListener)
-
-        // Then
-        verify(mockFeature).setContextUpdateListener(mockContextUpdateListener)
-    }
-
-    @Test
-    fun `M not invoke listener W setContextUpdateListener() { other features have no context yet }`(
-        @StringForgery feature: String,
-        forge: Forge
-    ) {
-        // Given
-        val mockFeature = mock<SdkFeature>().apply {
             whenever(featureContext) doReturn mutableMapOf<String, Any?>()
             whenever(featureContextLock) doReturn ReentrantReadWriteLock()
         }
         val mockContextUpdateListener = mock<FeatureContextUpdateReceiver>()
         testedCore.features[feature] = mockFeature
-        repeat(forge.aTinyInt()) {
-            testedCore.features += forge.aString() to mock<SdkFeature>().apply {
-                whenever(featureContext) doReturn mutableMapOf<String, Any?>()
-                whenever(featureContextLock) doReturn ReentrantReadWriteLock()
-            }
-        }
 
         // When
-        testedCore.setContextUpdateReceiver(feature, mockContextUpdateListener)
+        testedCore.setContextUpdateReceiver(mockContextUpdateListener)
 
         // Then
-        verify(mockFeature).setContextUpdateListener(mockContextUpdateListener)
         verifyNoInteractions(mockContextUpdateListener)
     }
 
     @Test
-    fun `M invoke listener W setContextUpdateListener() { other features have context }`(
+    fun `M invoke listener W setContextUpdateReceiver() { feature has context }`(
         @StringForgery feature: String,
         forge: Forge
     ) {
         // Given
+        val fakeContext = forge.exhaustiveAttributes()
         val mockFeature = mock<SdkFeature>().apply {
-            whenever(featureContext) doReturn mutableMapOf<String, Any?>()
+            whenever(featureContext) doReturn fakeContext
             whenever(featureContextLock) doReturn ReentrantReadWriteLock()
         }
         val mockContextUpdateListener = mock<FeatureContextUpdateReceiver>()
         testedCore.features[feature] = mockFeature
-        val otherFeatures = forge.aList {
-            forge.aString() to forge.exhaustiveAttributes()
-        }
-        otherFeatures.forEach {
-            testedCore.features += it.first to mock<SdkFeature>().apply {
-                whenever(featureContext) doReturn it.second
-                whenever(featureContextLock) doReturn ReentrantReadWriteLock()
-            }
-        }
 
         // When
-        testedCore.setContextUpdateReceiver(feature, mockContextUpdateListener)
+        testedCore.setContextUpdateReceiver(mockContextUpdateListener)
 
         // Then
-        verify(mockFeature).setContextUpdateListener(mockContextUpdateListener)
-        otherFeatures.forEach {
-            verify(mockContextUpdateListener).onContextUpdate(it.first, it.second)
-        }
-        verifyNoMoreInteractions(mockContextUpdateListener)
+        verify(mockContextUpdateListener).onContextUpdate(feature, fakeContext)
     }
 
     @Test
-    fun `M invoke listener W setContextUpdateListener() { feature update is in progress }`(
+    fun `M invoke listener W setContextUpdateReceiver() { feature update is in progress }`(
         @StringForgery feature: String,
         forge: Forge
     ) {
         // Given
-        val mockFeature = mock<SdkFeature>().apply {
-            whenever(featureContext) doReturn mutableMapOf<String, Any?>()
-            whenever(featureContextLock) doReturn ReentrantReadWriteLock()
-        }
-        val mockContextUpdateListener = mock<FeatureContextUpdateReceiver>()
-        testedCore.features[feature] = mockFeature
         val rwLock = ReentrantReadWriteLock()
         val countDownLatch = CountDownLatch(1)
-        val otherFeature = mock<SdkFeature>()
-        whenever(otherFeature.featureContext) doReturn mutableMapOf()
+        val mockFeature = mock<SdkFeature>().apply {
+            whenever(featureContext) doReturn mutableMapOf()
+        }
         val mockRwLock = mock<ReadWriteLock>()
         whenever(mockRwLock.writeLock()) doReturn rwLock.writeLock()
         whenever(mockRwLock.readLock()) doAnswer {
             countDownLatch.await(1, TimeUnit.SECONDS)
             rwLock.readLock()
         }
-        whenever(otherFeature.featureContextLock) doReturn mockRwLock
+        whenever(mockFeature.featureContextLock) doReturn mockRwLock
 
-        val otherFeatureName = forge.aString()
-        testedCore.features[otherFeatureName] = otherFeature
+        testedCore.features[feature] = mockFeature
         val fakeNewContext = forge.exhaustiveAttributes()
+        val mockContextUpdateListener = mock<FeatureContextUpdateReceiver>()
 
         // When
         Thread {
-            testedCore.updateFeatureContext(otherFeatureName) {
+            testedCore.updateFeatureContext(feature) {
                 countDownLatch.countDown()
                 it.putAll(fakeNewContext)
             }
         }.apply { start() }
-        testedCore.setContextUpdateReceiver(feature, mockContextUpdateListener)
+        testedCore.setContextUpdateReceiver(mockContextUpdateListener)
 
         // Then
-        verify(mockContextUpdateListener).onContextUpdate(otherFeatureName, fakeNewContext)
+        verify(mockContextUpdateListener).onContextUpdate(feature, fakeNewContext)
     }
 
     @Test
-    fun `M notify no feature registered W setContextUpdateListener() { feature is not registered }`(
-        @StringForgery feature: String
-    ) {
+    fun `M remove context update listener W removeContextUpdateReceiver()`() {
         // Given
-        val mockContextUpdateListener = mock<FeatureContextUpdateReceiver>()
+        val mockContextUpdateListener: FeatureContextUpdateReceiver = mock<FeatureContextUpdateReceiver>()
+        testedCore.featureContextUpdateReceivers += mockContextUpdateListener
 
         // When
-        testedCore.setContextUpdateReceiver(feature, mockContextUpdateListener)
+        testedCore.removeContextUpdateReceiver(mockContextUpdateListener)
 
         // Then
-        mockInternalLogger.verifyLog(
-            InternalLogger.Level.WARN,
-            InternalLogger.Target.USER,
-            DatadogCore.MISSING_FEATURE_FOR_CONTEXT_UPDATE_LISTENER.format(Locale.US, feature)
-        )
-    }
-
-    @Test
-    fun `M remove context update listener W removeContextUpdateListener()`(
-        @StringForgery feature: String
-    ) {
-        // Given
-        val mockFeature = mock<SdkFeature>()
-        val mockContextUpdateListener: FeatureContextUpdateReceiver = mock()
-        testedCore.features[feature] = mockFeature
-
-        // When
-        testedCore.removeContextUpdateReceiver(feature, mockContextUpdateListener)
-
-        // Then
-        verify(mockFeature).removeContextUpdateListener(mockContextUpdateListener)
+        assertThat(testedCore.featureContextUpdateReceivers).isEmpty()
     }
 
     @Test

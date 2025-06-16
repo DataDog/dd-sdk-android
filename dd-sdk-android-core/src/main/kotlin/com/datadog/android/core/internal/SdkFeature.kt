@@ -14,7 +14,6 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.EventWriteScope
 import com.datadog.android.api.feature.Feature
-import com.datadog.android.api.feature.FeatureContextUpdateReceiver
 import com.datadog.android.api.feature.FeatureEventReceiver
 import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.feature.StorageBackedFeature
@@ -60,10 +59,8 @@ import com.datadog.android.internal.profiler.BenchmarkSdkUploads
 import com.datadog.android.internal.profiler.GlobalBenchmark
 import com.datadog.android.privacy.TrackingConsentProviderCallback
 import com.datadog.android.security.Encryption
-import java.util.Collections
 import java.util.Locale
 import java.util.concurrent.Callable
-import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.locks.ReadWriteLock
@@ -81,10 +78,6 @@ internal class SdkFeature(
     override var dataStore: DataStoreHandler = NoOpDataStoreHandler()
 
     internal val initialized = AtomicBoolean(false)
-
-    @Suppress("UnsafeThirdPartyFunctionCall") // the argument is always empty
-    internal val contextUpdateListeners =
-        Collections.newSetFromMap(ConcurrentHashMap<FeatureContextUpdateReceiver, Boolean>())
     internal val eventReceiver = AtomicReference<FeatureEventReceiver>(null)
     internal var storage: Storage = NoOpStorage()
     internal var uploader: DataUploader = NoOpDataUploader()
@@ -235,39 +228,6 @@ internal class SdkFeature(
     // caught during our tests
     @Suppress("UNCHECKED_CAST")
     override fun <T : Feature> unwrap(): T = wrappedFeature as T
-
-    // endregion
-
-    // region Context Update Listener
-
-    internal fun notifyContextUpdated(featureName: String, context: Map<String, Any?>) {
-        contextUpdateListeners.forEach {
-            it.onContextUpdate(featureName, context)
-        }
-    }
-
-    internal fun setContextUpdateListener(listener: FeatureContextUpdateReceiver) {
-        synchronized(contextUpdateListeners) {
-            // the argument is always non - null, so we can suppress the warning
-            @Suppress("UnsafeThirdPartyFunctionCall")
-            if (contextUpdateListeners.contains(listener)) {
-                internalLogger.log(
-                    InternalLogger.Level.WARN,
-                    InternalLogger.Target.USER,
-                    { CONTEXT_UPDATE_LISTENER_ALREADY_EXISTS.format(Locale.US, wrappedFeature.name) }
-                )
-            }
-            contextUpdateListeners.add(listener)
-        }
-    }
-
-    internal fun removeContextUpdateListener(listener: FeatureContextUpdateReceiver) {
-        synchronized(contextUpdateListeners) {
-            @Suppress("UnsafeThirdPartyFunctionCall")
-            // the argument is always non - null, so we can suppress the warning
-            contextUpdateListeners.remove(listener)
-        }
-    }
 
     // endregion
 
@@ -485,8 +445,6 @@ internal class SdkFeature(
     // endregion
 
     companion object {
-        internal const val CONTEXT_UPDATE_LISTENER_ALREADY_EXISTS =
-            "Feature \"%s\" already has this listener registered."
         const val NO_EVENT_RECEIVER =
             "Feature \"%s\" has no event receiver registered, ignoring event."
         internal const val TRACK_NAME = "track"

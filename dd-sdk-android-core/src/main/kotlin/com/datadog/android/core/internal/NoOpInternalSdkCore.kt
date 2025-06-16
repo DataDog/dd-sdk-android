@@ -123,12 +123,10 @@ internal object NoOpInternalSdkCore : InternalSdkCore {
     override fun removeEventReceiver(featureName: String) = Unit
 
     override fun setContextUpdateReceiver(
-        featureName: String,
         listener: FeatureContextUpdateReceiver
     ) = Unit
 
     override fun removeContextUpdateReceiver(
-        featureName: String,
         listener: FeatureContextUpdateReceiver
     ) = Unit
 

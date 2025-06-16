@@ -378,7 +378,7 @@ class FeatureSdkCoreTest : MockServerTest() {
         val fakeKeyValues = forge.aMap { anAlphabeticalString() to anAlphabeticalString() }
         testedFeatureSdkCore.registerFeature(stubFeature)
         testedFeatureSdkCore.registerFeature(otherFeature)
-        testedFeatureSdkCore.setContextUpdateReceiver(otherFeature.name, stubContextUpdateReceiver)
+        testedFeatureSdkCore.setContextUpdateReceiver(stubContextUpdateReceiver)
 
         // When
         testedFeatureSdkCore.updateFeatureContext(stubFeature.name, useContextThread = false) {
@@ -413,7 +413,7 @@ class FeatureSdkCoreTest : MockServerTest() {
         }
 
         // When
-        testedFeatureSdkCore.setContextUpdateReceiver(otherFeature.name, stubContextUpdateReceiver)
+        testedFeatureSdkCore.setContextUpdateReceiver(stubContextUpdateReceiver)
 
         // Then
         assertThat(stubContextUpdateReceiver.getReceivedEvents()).hasSize(1)
@@ -436,7 +436,7 @@ class FeatureSdkCoreTest : MockServerTest() {
         testedFeatureSdkCore.registerFeature(otherFeature)
         val countDownLatch = CountDownLatch(2)
         val stubContextUpdateReceiver = StubContextUpdateReceiver(countDownLatch::countDown)
-        testedFeatureSdkCore.setContextUpdateReceiver(otherFeature.name, stubContextUpdateReceiver)
+        testedFeatureSdkCore.setContextUpdateReceiver(stubContextUpdateReceiver)
 
         // When
         Thread {
@@ -479,10 +479,10 @@ class FeatureSdkCoreTest : MockServerTest() {
         val fakeKeyValues = forge.aMap { anAlphabeticalString() to anAlphabeticalString() }
         testedFeatureSdkCore.registerFeature(stubFeature)
         testedFeatureSdkCore.registerFeature(otherFeature)
-        testedFeatureSdkCore.setContextUpdateReceiver(otherFeature.name, stubContextUpdateReceiver)
+        testedFeatureSdkCore.setContextUpdateReceiver(stubContextUpdateReceiver)
 
         // When
-        testedFeatureSdkCore.removeContextUpdateReceiver(otherFeature.name, stubContextUpdateReceiver)
+        testedFeatureSdkCore.removeContextUpdateReceiver(stubContextUpdateReceiver)
         testedFeatureSdkCore.updateFeatureContext(stubFeature.name, useContextThread = false) {
             fakeKeyValues.forEach { (key, value) ->
                 it[key] = value

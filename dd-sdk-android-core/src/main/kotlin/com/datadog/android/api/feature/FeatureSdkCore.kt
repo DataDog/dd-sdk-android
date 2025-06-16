@@ -79,28 +79,26 @@ interface FeatureSdkCore : SdkCore {
     fun setEventReceiver(featureName: String, receiver: FeatureEventReceiver)
 
     /**
-     * Sets context update receiver for the given feature. Once subscribed, current context will be emitted
-     * immdediately if it exists.
-     *
-     * @param featureName Feature name.
-     * @param listener Listener to remove.
-     */
-    fun setContextUpdateReceiver(featureName: String, listener: FeatureContextUpdateReceiver)
-
-    /**
-     * Removes context update listener for the given feature.
-     *
-     * @param featureName Feature name.
-     * @param listener Listener to remove.
-     */
-    fun removeContextUpdateReceiver(featureName: String, listener: FeatureContextUpdateReceiver)
-
-    /**
      * Removes events receive for the given feature.
      *
      * @param featureName Feature name.
      */
     fun removeEventReceiver(featureName: String)
+
+    /**
+     * Sets feature context update listener. Once subscribed, current context will be emitted
+     * immdediately if it exists.
+     *
+     * @param listener Listener to remove.
+     */
+    fun setContextUpdateReceiver(listener: FeatureContextUpdateReceiver)
+
+    /**
+     * Removes feature context update listener.
+     *
+     * @param listener Listener to remove.
+     */
+    fun removeContextUpdateReceiver(listener: FeatureContextUpdateReceiver)
 
     /**
      * Returns a new single thread [ExecutorService], set up with backpressure and internal monitoring.

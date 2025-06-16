@@ -43,9 +43,9 @@ internal class VitalReaderRunnable(
         )
     }
 
-    override fun onContextUpdate(featureName: String, event: Map<String, Any?>) {
+    override fun onContextUpdate(featureName: String, context: Map<String, Any?>) {
         if (featureName == Feature.RUM_FEATURE_NAME) {
-            currentRumContext = RumContext.fromFeatureContext(event)
+            currentRumContext = RumContext.fromFeatureContext(context)
         }
     }
 }

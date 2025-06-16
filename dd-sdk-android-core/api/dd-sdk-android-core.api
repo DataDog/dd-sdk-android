@@ -402,10 +402,10 @@ public abstract interface class com/datadog/android/api/feature/FeatureSdkCore :
 	public abstract fun getFeatureContext (Ljava/lang/String;Z)Ljava/util/Map;
 	public abstract fun getInternalLogger ()Lcom/datadog/android/api/InternalLogger;
 	public abstract fun registerFeature (Lcom/datadog/android/api/feature/Feature;)V
-	public abstract fun removeContextUpdateReceiver (Ljava/lang/String;Lcom/datadog/android/api/feature/FeatureContextUpdateReceiver;)V
+	public abstract fun removeContextUpdateReceiver (Lcom/datadog/android/api/feature/FeatureContextUpdateReceiver;)V
 	public abstract fun removeEventReceiver (Ljava/lang/String;)V
 	public abstract fun setAnonymousId (Ljava/util/UUID;)V
-	public abstract fun setContextUpdateReceiver (Ljava/lang/String;Lcom/datadog/android/api/feature/FeatureContextUpdateReceiver;)V
+	public abstract fun setContextUpdateReceiver (Lcom/datadog/android/api/feature/FeatureContextUpdateReceiver;)V
 	public abstract fun setEventReceiver (Ljava/lang/String;Lcom/datadog/android/api/feature/FeatureEventReceiver;)V
 	public abstract fun updateFeatureContext (Ljava/lang/String;ZLkotlin/jvm/functions/Function1;)V
 }

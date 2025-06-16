@@ -135,7 +135,7 @@ internal class SessionReplayFeatureTest {
         testedFeature.onInitialize(appContext.mockInstance)
 
         // Then
-        verify(mockSdkCore).setContextUpdateReceiver(eq(Feature.SESSION_REPLAY_FEATURE_NAME), any())
+        verify(mockSdkCore).setContextUpdateReceiver(any())
     }
 
     @Test
@@ -266,8 +266,8 @@ internal class SessionReplayFeatureTest {
 
         // Then
         argumentCaptor<FeatureContextUpdateReceiver> {
-            verify(mockSdkCore).setContextUpdateReceiver(eq(Feature.SESSION_REPLAY_FEATURE_NAME), capture())
-            verify(mockSdkCore).removeContextUpdateReceiver(eq(Feature.SESSION_REPLAY_FEATURE_NAME), capture())
+            verify(mockSdkCore).setContextUpdateReceiver(capture())
+            verify(mockSdkCore).removeContextUpdateReceiver(capture())
             assertThat(firstValue).isSameAs(lastValue)
         }
     }
