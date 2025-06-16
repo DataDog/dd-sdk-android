@@ -34,6 +34,7 @@ repos_list=(
   "dd-sdk-android-timber"
   "dd-sdk-android-trace-coroutines"
   "dd-sdk-android-tv"
+  "dd-sdk-android-fresco"
 )
 
 for repo in "${repos_list[@]}"; do
