@@ -957,6 +957,9 @@ public abstract interface annotation class com/datadog/android/lint/InternalApi 
 }
 
 public final class com/datadog/android/log/LogAttributes {
+	public static final field ACCOUNT_ATTRIBUTES_GROUP Ljava/lang/String;
+	public static final field ACCOUNT_ID Ljava/lang/String;
+	public static final field ACCOUNT_NAME Ljava/lang/String;
 	public static final field APPLICATION_PACKAGE Ljava/lang/String;
 	public static final field APPLICATION_VERSION Ljava/lang/String;
 	public static final field DATE Ljava/lang/String;
