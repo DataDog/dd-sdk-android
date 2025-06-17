@@ -24,5 +24,3 @@ include:
   - local: 'ci/pipelines/check-release-pipeline.yml'
     rules:
       - if: '$CI_PIPELINE_KEY == "check-release"'
-
-# adding a comment just for the sake of it
