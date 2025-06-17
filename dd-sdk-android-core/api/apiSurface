@@ -21,6 +21,7 @@ enum com.datadog.android.DatadogSite
   - US5
   - EU1
   - AP1
+  - AP2
   - US1_FED
   - STAGING
   val intakeEndpoint: String

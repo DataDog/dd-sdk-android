@@ -63,6 +63,7 @@ public final class com/datadog/android/Datadog {
 
 public final class com/datadog/android/DatadogSite : java/lang/Enum {
 	public static final field AP1 Lcom/datadog/android/DatadogSite;
+	public static final field AP2 Lcom/datadog/android/DatadogSite;
 	public static final field EU1 Lcom/datadog/android/DatadogSite;
 	public static final field STAGING Lcom/datadog/android/DatadogSite;
 	public static final field US1 Lcom/datadog/android/DatadogSite;
