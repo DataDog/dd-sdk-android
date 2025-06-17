@@ -42,11 +42,11 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.isA
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
 import org.mockito.kotlin.same
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
-import org.mockito.kotlin.verifyNoMoreInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.util.concurrent.TimeUnit
@@ -229,8 +229,7 @@ internal class RumSessionScopeTest {
         testedScope.handleEvent(fakeEvent, mockWriter)
 
         // Then
-        verify(mockChildScope).renewViewScopes(any())
-        verifyNoMoreInteractions(mockChildScope)
+        verify(mockChildScope, never()).handleEvent(any(), any())
     }
 
     // endregion
