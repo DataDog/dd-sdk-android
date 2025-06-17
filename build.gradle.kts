@@ -228,7 +228,7 @@ tasks.register("printSdkDebugRuntimeClasspath") {
 tasks.register("listAllPublishedArtifactIds") {
     doLast {
         val artifactIds = rootProject.subprojects.flatMap { subproject ->
-            val publishing = subproject.extensions.findByName("publishing") as? PublishingExtension
+            val publishing = subproject.extensions.findByType<PublishingExtension>()
             publishing?.publications?.mapNotNull { publication ->
                 if (publication is MavenPublication) {
                     publication.artifactId
