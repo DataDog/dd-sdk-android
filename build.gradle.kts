@@ -223,3 +223,21 @@ tasks.register("printSdkDebugRuntimeClasspath") {
         File("sdk_classpath").writeText(result.joinToString(File.pathSeparator) { it.absolutePath })
     }
 }
+
+tasks.register("listAllPublishedArtifactIds") {
+    doLast {
+        val artifactIds = rootProject.subprojects.flatMap { subproject ->
+            val publishing = subproject.extensions.findByName("publishing") as? PublishingExtension
+            publishing?.publications?.mapNotNull { publication ->
+                if (publication is MavenPublication) {
+                    publication.artifactId
+                } else {
+                    null
+                }
+            }.orEmpty()
+        }
+        artifactIds.forEach {
+            println(it)
+        }
+    }
+}
