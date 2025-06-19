@@ -61,6 +61,7 @@ import com.datadog.android.core.internal.system.NoOpAppVersionProvider
 import com.datadog.android.core.internal.system.NoOpSystemInfoProvider
 import com.datadog.android.core.internal.system.SystemInfoProvider
 import com.datadog.android.core.internal.thread.BackPressureExecutorService
+import com.datadog.android.core.internal.thread.BackPressuredBlockingQueue
 import com.datadog.android.core.internal.thread.DatadogThreadFactory
 import com.datadog.android.core.internal.thread.LoggingScheduledThreadPoolExecutor
 import com.datadog.android.core.internal.thread.ScheduledExecutorServiceFactory
@@ -100,7 +101,6 @@ import java.io.FileNotFoundException
 import java.lang.ref.WeakReference
 import java.util.Locale
 import java.util.concurrent.ExecutorService
-import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.ScheduledThreadPoolExecutor
 import java.util.concurrent.ThreadPoolExecutor
@@ -636,7 +636,16 @@ internal class CoreFeature(
             executorContext = "storage",
             backPressureStrategy = backpressureStrategy
         )
-        // TODO RUM-9851 Switch to the executor which is aware of backpressure, but only logs it
+        val contextQueue = BackPressuredBlockingQueue<Runnable>(
+            internalLogger,
+            executorContext = "context",
+            capacity = Int.MAX_VALUE,
+            notifyThreshold = 1024,
+            // just notify when reached
+            onItemDropped = {},
+            onThresholdReached = {},
+            backpressureMitigation = null
+        )
         @Suppress("UnsafeThirdPartyFunctionCall") // all parameters are safe
         contextExecutorService = ThreadPoolExecutor(
             // core pool size
@@ -646,7 +655,7 @@ internal class CoreFeature(
             // keep-alive time
             0L,
             TimeUnit.MILLISECONDS,
-            LinkedBlockingQueue(),
+            contextQueue,
             DatadogThreadFactory("context")
         )
     }

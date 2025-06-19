@@ -29,6 +29,7 @@ import com.datadog.android.core.internal.privacy.NoOpConsentProvider
 import com.datadog.android.core.internal.privacy.TrackingConsentProvider
 import com.datadog.android.core.internal.system.BroadcastReceiverSystemInfoProvider
 import com.datadog.android.core.internal.system.NoOpSystemInfoProvider
+import com.datadog.android.core.internal.thread.BackPressuredBlockingQueue
 import com.datadog.android.core.internal.time.AppStartTimeProvider
 import com.datadog.android.core.internal.time.KronosTimeProvider
 import com.datadog.android.core.internal.time.NoOpTimeProvider
@@ -665,6 +666,24 @@ internal class CoreFeatureTest {
         assertThat(testedFeature.uploadExecutorService).isNotNull()
         assertThat(testedFeature.persistenceExecutorService).isNotNull()
         assertThat(testedFeature.contextExecutorService).isNotNull()
+    }
+
+    @Test
+    fun `M initialize context executor with unbounded + observable queue W initialize()`() {
+        // When
+        testedFeature.initialize(
+            appContext.mockInstance,
+            fakeSdkInstanceId,
+            fakeConfig,
+            fakeConsent
+        )
+
+        // Then
+        assertThat(testedFeature.contextExecutorService).isNotNull()
+        with(testedFeature.contextExecutorService.queue) {
+            check(this is BackPressuredBlockingQueue)
+            assertThat(capacity).isEqualTo(Int.MAX_VALUE)
+        }
     }
 
     @Test

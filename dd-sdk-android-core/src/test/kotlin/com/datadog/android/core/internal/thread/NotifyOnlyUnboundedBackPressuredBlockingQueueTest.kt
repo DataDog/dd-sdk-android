@@ -7,8 +7,6 @@
 package com.datadog.android.core.internal.thread
 
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.core.configuration.BackPressureMitigation
-import com.datadog.android.core.configuration.BackPressureStrategy
 import com.datadog.android.utils.forge.Configurator
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.IntForgery
@@ -38,7 +36,7 @@ import kotlin.math.min
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
-class DropOldestBackPressuredBlockingQueueTest {
+class NotifyOnlyUnboundedBackPressuredBlockingQueueTest {
 
     lateinit var testedQueue: BlockingQueue<String>
 
@@ -52,19 +50,18 @@ class DropOldestBackPressuredBlockingQueueTest {
     lateinit var mockOnItemsDropped: (Any) -> Unit
 
     @IntForgery(8, 16)
-    var fakeBackPressureThreshold: Int = 0
+    var fakeNotifyThreshold: Int = 0
 
     @BeforeEach
     fun `set up`(forge: Forge) {
         testedQueue = BackPressuredBlockingQueue(
             mockLogger,
-            forge.anAlphabeticalString(),
-            BackPressureStrategy(
-                fakeBackPressureThreshold,
-                mockOnThresholdReached,
-                mockOnItemsDropped,
-                BackPressureMitigation.DROP_OLDEST
-            )
+            executorContext = forge.anAlphabeticalString(),
+            notifyThreshold = fakeNotifyThreshold,
+            capacity = Int.MAX_VALUE,
+            onThresholdReached = mockOnThresholdReached,
+            onItemDropped = mockOnItemsDropped,
+            backpressureMitigation = null
         )
     }
 
@@ -91,7 +88,7 @@ class DropOldestBackPressuredBlockingQueueTest {
         @StringForgery fakeNewItem: String
     ) {
         // Given
-        val previousCount = min(fakeBackPressureThreshold / 2, fakeItemList.size)
+        val previousCount = min(fakeNotifyThreshold / 2, fakeItemList.size)
         fakeItemList.take(previousCount).forEach {
             testedQueue.add(it)
         }
@@ -112,7 +109,7 @@ class DropOldestBackPressuredBlockingQueueTest {
         @StringForgery fakeNewItem: String
     ) {
         // Given
-        for (i in 1 until fakeBackPressureThreshold) {
+        for (i in 1 until fakeNotifyThreshold) {
             testedQueue.add(fakeItemList[i % fakeItemList.size])
         }
 
@@ -121,19 +118,19 @@ class DropOldestBackPressuredBlockingQueueTest {
 
         // Then
         assertThat(result).isTrue()
-        assertThat(testedQueue).hasSize(fakeBackPressureThreshold)
+        assertThat(testedQueue).hasSize(fakeNotifyThreshold)
         assertThat(testedQueue).contains(fakeNewItem)
         verify(mockOnThresholdReached).invoke()
         verifyNoInteractions(mockOnItemsDropped)
     }
 
     @Test
-    fun `M drop old item and accept W add() { queue already at threshold }`(
+    fun `M accept item W add() { queue at notify threshold }`(
         @StringForgery fakeItemList: List<String>,
         @StringForgery fakeNewItem: String
     ) {
         // Given
-        for (i in 0 until fakeBackPressureThreshold) {
+        for (i in 0 until fakeNotifyThreshold) {
             testedQueue.add(fakeItemList[i % fakeItemList.size])
         }
 
@@ -142,10 +139,10 @@ class DropOldestBackPressuredBlockingQueueTest {
 
         // Then
         assertThat(result).isTrue()
-        assertThat(testedQueue).hasSize(fakeBackPressureThreshold)
+        assertThat(testedQueue).hasSize(fakeNotifyThreshold + 1)
         assertThat(testedQueue).contains(fakeNewItem)
         verify(mockOnThresholdReached).invoke()
-        verify(mockOnItemsDropped).invoke(fakeItemList.first())
+        verifyNoInteractions(mockOnItemsDropped)
     }
 
     // endregion
@@ -173,7 +170,7 @@ class DropOldestBackPressuredBlockingQueueTest {
         @StringForgery fakeNewItem: String
     ) {
         // Given
-        val previousCount = min(fakeBackPressureThreshold / 2, fakeItemList.size)
+        val previousCount = min(fakeNotifyThreshold / 2, fakeItemList.size)
         fakeItemList.take(previousCount).forEach {
             testedQueue.add(it)
         }
@@ -194,7 +191,7 @@ class DropOldestBackPressuredBlockingQueueTest {
         @StringForgery fakeNewItem: String
     ) {
         // Given
-        for (i in 1 until fakeBackPressureThreshold) {
+        for (i in 1 until fakeNotifyThreshold) {
             testedQueue.add(fakeItemList[i % fakeItemList.size])
         }
 
@@ -203,19 +200,19 @@ class DropOldestBackPressuredBlockingQueueTest {
 
         // Then
         assertThat(result).isTrue()
-        assertThat(testedQueue).hasSize(fakeBackPressureThreshold)
+        assertThat(testedQueue).hasSize(fakeNotifyThreshold)
         assertThat(testedQueue).contains(fakeNewItem)
         verify(mockOnThresholdReached).invoke()
         verifyNoInteractions(mockOnItemsDropped)
     }
 
     @Test
-    fun `M drop old item and accept W offer() { queue already at threshold }`(
+    fun `M accept item W offer() { queue at notify threshold }`(
         @StringForgery fakeItemList: List<String>,
         @StringForgery fakeNewItem: String
     ) {
         // Given
-        for (i in 0 until fakeBackPressureThreshold) {
+        for (i in 0 until fakeNotifyThreshold) {
             testedQueue.add(fakeItemList[i % fakeItemList.size])
         }
 
@@ -224,10 +221,10 @@ class DropOldestBackPressuredBlockingQueueTest {
 
         // Then
         assertThat(result).isTrue()
-        assertThat(testedQueue).hasSize(fakeBackPressureThreshold)
+        assertThat(testedQueue).hasSize(fakeNotifyThreshold + 1)
         assertThat(testedQueue).contains(fakeNewItem)
         verify(mockOnThresholdReached).invoke()
-        verify(mockOnItemsDropped).invoke(fakeItemList.first())
+        verifyNoInteractions(mockOnItemsDropped)
     }
 
     // endregion
@@ -257,7 +254,7 @@ class DropOldestBackPressuredBlockingQueueTest {
         @LongForgery(10, 100) fakeTimeoutMs: Long
     ) {
         // Given
-        val previousCount = min(fakeBackPressureThreshold / 2, fakeItemList.size)
+        val previousCount = min(fakeNotifyThreshold / 2, fakeItemList.size)
         fakeItemList.take(previousCount).forEach {
             testedQueue.add(it)
         }
@@ -279,7 +276,7 @@ class DropOldestBackPressuredBlockingQueueTest {
         @LongForgery(10, 100) fakeTimeoutMs: Long
     ) {
         // Given
-        for (i in 1 until fakeBackPressureThreshold) {
+        for (i in 1 until fakeNotifyThreshold) {
             testedQueue.add(fakeItemList[i % fakeItemList.size])
         }
 
@@ -288,7 +285,7 @@ class DropOldestBackPressuredBlockingQueueTest {
 
         // Then
         assertThat(result).isTrue()
-        assertThat(testedQueue).hasSize(fakeBackPressureThreshold)
+        assertThat(testedQueue).hasSize(fakeNotifyThreshold)
         assertThat(testedQueue).contains(fakeNewItem)
         verify(mockOnThresholdReached).invoke()
         verifyNoInteractions(mockOnItemsDropped)
@@ -301,7 +298,7 @@ class DropOldestBackPressuredBlockingQueueTest {
         @LongForgery(10, 100) fakeTimeoutMs: Long
     ) {
         // Given
-        for (i in 1 until fakeBackPressureThreshold) {
+        for (i in 1 until fakeNotifyThreshold) {
             testedQueue.add(fakeItemList[i % fakeItemList.size])
         }
 
@@ -314,20 +311,20 @@ class DropOldestBackPressuredBlockingQueueTest {
 
         // Then
         assertThat(result).isTrue()
-        assertThat(testedQueue).hasSize(fakeBackPressureThreshold)
+        assertThat(testedQueue).hasSize(fakeNotifyThreshold)
         assertThat(testedQueue).contains(fakeNewItem)
         verify(mockOnThresholdReached).invoke()
         verifyNoInteractions(mockOnItemsDropped)
     }
 
     @Test
-    fun `M drop old item and accept W offer() { queue already at threshold }`(
+    fun `M accept item W offer() { queue at notify threshold }`(
         @StringForgery fakeItemList: List<String>,
         @StringForgery fakeNewItem: String,
         @LongForgery(10, 100) fakeTimeoutMs: Long
     ) {
         // Given
-        for (i in 0 until fakeBackPressureThreshold) {
+        for (i in 0 until fakeNotifyThreshold) {
             testedQueue.add(fakeItemList[i % fakeItemList.size])
         }
 
@@ -336,10 +333,10 @@ class DropOldestBackPressuredBlockingQueueTest {
 
         // Then
         assertThat(result).isTrue()
-        assertThat(testedQueue).hasSize(fakeBackPressureThreshold)
+        assertThat(testedQueue).hasSize(fakeNotifyThreshold + 1)
         assertThat(testedQueue).contains(fakeNewItem)
         verify(mockOnThresholdReached).invoke()
-        verify(mockOnItemsDropped).invoke(fakeItemList.first())
+        verifyNoInteractions(mockOnItemsDropped)
     }
 
     // endregion
@@ -366,7 +363,7 @@ class DropOldestBackPressuredBlockingQueueTest {
         @StringForgery fakeNewItem: String
     ) {
         // Given
-        val previousCount = min(fakeBackPressureThreshold / 2, fakeItemList.size)
+        val previousCount = min(fakeNotifyThreshold / 2, fakeItemList.size)
         fakeItemList.take(previousCount).forEach {
             testedQueue.put(it)
         }
@@ -386,7 +383,7 @@ class DropOldestBackPressuredBlockingQueueTest {
         @StringForgery fakeNewItem: String
     ) {
         // Given
-        for (i in 1 until fakeBackPressureThreshold) {
+        for (i in 1 until fakeNotifyThreshold) {
             testedQueue.put(fakeItemList[i % fakeItemList.size])
         }
 
@@ -394,33 +391,27 @@ class DropOldestBackPressuredBlockingQueueTest {
         testedQueue.put(fakeNewItem)
 
         // Then
-        assertThat(testedQueue).hasSize(fakeBackPressureThreshold)
+        assertThat(testedQueue).hasSize(fakeNotifyThreshold)
         assertThat(testedQueue).contains(fakeNewItem)
         verify(mockOnThresholdReached).invoke()
         verifyNoInteractions(mockOnItemsDropped)
     }
 
     @Test
-    fun `M wait and accept W put() { queue already at threshold }`(
+    fun `M accept item W put() { queue at notify threshold }`(
         @StringForgery fakeItemList: List<String>,
         @StringForgery fakeNewItem: String
     ) {
         // Given
-        for (i in 0 until fakeBackPressureThreshold) {
+        for (i in 0 until fakeNotifyThreshold) {
             testedQueue.put(fakeItemList[i % fakeItemList.size])
         }
 
         // When
-        Thread {
-            // put() inserts the specified element into this queue, waiting if necessary for space to become available.
-            // In order to not wait indefinitely, we need to remove an element
-            sleep(100)
-            testedQueue.take()
-        }.start()
         testedQueue.put(fakeNewItem)
 
         // Then
-        assertThat(testedQueue).hasSize(fakeBackPressureThreshold)
+        assertThat(testedQueue).hasSize(fakeNotifyThreshold + 1)
         assertThat(testedQueue).contains(fakeNewItem)
         verify(mockOnThresholdReached).invoke()
         verifyNoInteractions(mockOnItemsDropped)
