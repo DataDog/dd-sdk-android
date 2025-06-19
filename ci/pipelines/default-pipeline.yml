@@ -981,10 +981,13 @@ notify:dogfood-gradle-plugin:
   only:
     - tags
   image: $CI_IMAGE_DOCKER
+  id_tokens:
+    DDOCTOSTS_ID_TOKEN:
+      aud: dd-octo-sts
   stage: notify
   when: on_success
   script:
-    - !reference [ .common-snippets, set-github-installation-token ]
+    - export GITHUB_TOKEN=$(dd-octo-sts token --scope DataDog/dd-sdk-android-gradle-plugin --policy all.gitlab.pr)
     - pip3 install GitPython requests
     - python3 ./ci/scripts/dogfood.py -v $CI_COMMIT_TAG -t gradle-plugin
 
