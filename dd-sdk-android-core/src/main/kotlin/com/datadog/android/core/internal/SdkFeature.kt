@@ -177,6 +177,7 @@ internal class SdkFeature(
     ) {
         coreFeature.contextExecutorService
             .executeSafe("withWriteContext-${wrappedFeature.name}", internalLogger) {
+                if (coreFeature.initialized.get() == false) return@executeSafe
                 val context = contextProvider.getContext(withFeatureContexts)
                 val eventBatchWriteScope = storage.getEventWriteScope(context)
                 callback(context, eventBatchWriteScope)
@@ -189,6 +190,7 @@ internal class SdkFeature(
     ) {
         coreFeature.contextExecutorService
             .executeSafe("withContext-${wrappedFeature.name}", internalLogger) {
+                if (coreFeature.initialized.get() == false) return@executeSafe
                 val context = contextProvider.getContext(withFeatureContexts)
                 callback(context)
             }
@@ -203,6 +205,7 @@ internal class SdkFeature(
                 operationName,
                 internalLogger,
                 Callable {
+                    if (coreFeature.initialized.get() == false) return@Callable null
                     val context = contextProvider.getContext(withFeatureContexts)
                     val eventBatchWriteScope = storage.getEventWriteScope(context)
                     context to eventBatchWriteScope
