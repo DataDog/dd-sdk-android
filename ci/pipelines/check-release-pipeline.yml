@@ -10,8 +10,11 @@ check-release:is-published:
   tags: [ "arch:amd64" ]
   image: $CI_IMAGE_DOCKER
   stage: check-release
+  id_tokens:
+    DDOCTOSTS_ID_TOKEN:
+      aud: dd-octo-sts
   script:
-    - !reference [ .common-snippets, set-github-installation-token ]
+    - export GITHUB_TOKEN=$(dd-octo-sts token --scope DataDog/dd-sdk-android --policy self.gitlab.read)
     - bash ./ci/scripts/check_latest_release_is_published.sh
 
 notify:report-failure-to-slack:
