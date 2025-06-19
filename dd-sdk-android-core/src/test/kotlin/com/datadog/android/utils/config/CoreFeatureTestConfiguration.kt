@@ -126,7 +126,6 @@ internal class CoreFeatureTestConfiguration<T : Context>(
         whenever(mockInstance.isMainProcess) doReturn true
         whenever(mockInstance.envName) doReturn fakeEnvName
         whenever(mockInstance.serviceName) doReturn fakeServiceName
-        whenever(mockInstance.packageName) doReturn appContext.fakePackageName
         whenever(mockInstance.packageVersionProvider) doReturn mockAppVersionProvider
         whenever(mockInstance.variant) doReturn appContext.fakeVariant
         whenever(mockInstance.sourceName) doReturn fakeSourceName

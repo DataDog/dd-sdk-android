@@ -127,24 +127,41 @@ internal class CoreFeature(
     internal var userInfoProvider: MutableUserInfoProvider = NoOpMutableUserInfoProvider()
     internal var accountInfoProvider: MutableAccountInfoProvider = NoOpMutableAccountInfoProvider()
     internal var contextProvider: ContextProvider = NoOpContextProvider()
+    internal var packageVersionProvider: AppVersionProvider = NoOpAppVersionProvider()
+    internal var androidInfoProvider: AndroidInfoProvider = NoOpAndroidInfoProvider()
 
     internal lateinit var okHttpClient: OkHttpClient
     internal var kronosClock: KronosClock? = null
 
+    @Volatile
     internal var clientToken: String = ""
-    internal var packageName: String = ""
-    internal var packageVersionProvider: AppVersionProvider = NoOpAppVersionProvider()
+
+    @Volatile
     internal var serviceName: String = ""
+
+    @Volatile
     internal var sourceName: String = DEFAULT_SOURCE_NAME
+
+    @Volatile
     internal var sdkVersion: String = DEFAULT_SDK_VERSION
+
+    @Volatile
     internal var isMainProcess: Boolean = true
+
+    @Volatile
     internal var envName: String = ""
+
+    @Volatile
     internal var variant: String = ""
     internal var batchSize: BatchSize = BatchSize.MEDIUM
     internal var uploadFrequency: UploadFrequency = UploadFrequency.AVERAGE
     internal var batchProcessingLevel: BatchProcessingLevel = BatchProcessingLevel.MEDIUM
     internal var ndkCrashHandler: NdkCrashHandler = NoOpNdkCrashHandler()
+
+    @Volatile
     internal var site: DatadogSite = DatadogSite.US1
+
+    @Volatile
     internal var appBuildId: String? = null
     internal var customUploadSchedulerStrategy: UploadSchedulerStrategy? = null
 
@@ -156,7 +173,6 @@ internal class CoreFeature(
     internal var localDataEncryption: Encryption? = null
     internal var persistenceStrategyFactory: PersistenceStrategy.Factory? = null
     internal lateinit var storageDir: File
-    internal lateinit var androidInfoProvider: AndroidInfoProvider
 
     internal val appStartTimeNs: Long
         get() = appStartTimeProvider.appStartTimeNs
@@ -440,7 +456,6 @@ internal class CoreFeature(
     }
 
     private fun readApplicationInformation(appContext: Context, configuration: Configuration) {
-        packageName = appContext.packageName
         packageVersionProvider = DefaultAppVersionProvider(
             getPackageInfo(appContext)?.let {
                 // we need to use the deprecated method because getLongVersionCode method is only
@@ -460,6 +475,7 @@ internal class CoreFeature(
 
     private fun getPackageInfo(appContext: Context): PackageInfo? {
         return try {
+            val packageName = appContext.packageName
             with(appContext.packageManager) {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                     getPackageInfo(packageName, PackageManager.PackageInfoFlags.of(0))
@@ -682,7 +698,6 @@ internal class CoreFeature(
 
     private fun cleanupApplicationInfo() {
         clientToken = ""
-        packageName = ""
         packageVersionProvider = NoOpAppVersionProvider()
         serviceName = ""
         sourceName = DEFAULT_SOURCE_NAME

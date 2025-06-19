@@ -321,7 +321,6 @@ internal class CoreFeatureTest {
 
         // Then
         assertThat(testedFeature.clientToken).isEqualTo(fakeConfig.clientToken)
-        assertThat(testedFeature.packageName).isEqualTo(appContext.fakePackageName)
         assertThat(testedFeature.packageVersionProvider.version).isEqualTo(appContext.fakeVersionName)
         assertThat(testedFeature.serviceName).isEqualTo(fakeConfig.service)
         assertThat(testedFeature.envName).isEqualTo(fakeConfig.env)
@@ -344,7 +343,6 @@ internal class CoreFeatureTest {
 
         // Then
         assertThat(testedFeature.clientToken).isEqualTo(fakeConfig.clientToken)
-        assertThat(testedFeature.packageName).isEqualTo(appContext.fakePackageName)
         assertThat(testedFeature.packageVersionProvider.version)
             .isEqualTo(appContext.fakeVersionName)
         assertThat(testedFeature.serviceName).isEqualTo(fakeConfig.service)
@@ -367,7 +365,6 @@ internal class CoreFeatureTest {
 
         // Then
         assertThat(testedFeature.clientToken).isEqualTo(fakeConfig.clientToken)
-        assertThat(testedFeature.packageName).isEqualTo(appContext.fakePackageName)
         assertThat(testedFeature.packageVersionProvider.version)
             .isEqualTo(appContext.fakeVersionName)
         assertThat(testedFeature.serviceName).isEqualTo(appContext.fakePackageName)
@@ -395,7 +392,6 @@ internal class CoreFeatureTest {
 
         // Then
         assertThat(testedFeature.clientToken).isEqualTo(fakeConfig.clientToken)
-        assertThat(testedFeature.packageName).isEqualTo(appContext.fakePackageName)
         assertThat(testedFeature.packageVersionProvider.version)
             .isEqualTo(appContext.fakeVersionCode.toString())
         assertThat(testedFeature.serviceName).isEqualTo(fakeConfig.service)
@@ -425,7 +421,6 @@ internal class CoreFeatureTest {
 
         // Then
         assertThat(testedFeature.clientToken).isEqualTo(fakeConfig.clientToken)
-        assertThat(testedFeature.packageName).isEqualTo(appContext.fakePackageName)
         assertThat(testedFeature.packageVersionProvider.version)
             .isEqualTo(CoreFeature.DEFAULT_APP_VERSION)
         assertThat(testedFeature.serviceName).isEqualTo(fakeConfig.service)
@@ -460,7 +455,6 @@ internal class CoreFeatureTest {
 
         // Then
         assertThat(testedFeature.clientToken).isEqualTo(fakeConfig.clientToken)
-        assertThat(testedFeature.packageName).isEqualTo(appContext.fakePackageName)
         assertThat(testedFeature.packageVersionProvider.version).isEqualTo(
             CoreFeature.DEFAULT_APP_VERSION
         )
@@ -695,7 +689,6 @@ internal class CoreFeatureTest {
 
         // Then
         assertThat(testedFeature.clientToken).isEqualTo(fakeConfig.clientToken)
-        assertThat(testedFeature.packageName).isEqualTo(appContext.fakePackageName)
         assertThat(testedFeature.packageVersionProvider.version)
             .isEqualTo(appContext.fakeVersionName)
         assertThat(testedFeature.serviceName).isEqualTo(fakeConfig.service)
@@ -1251,7 +1244,6 @@ internal class CoreFeatureTest {
 
         // Then
         assertThat(testedFeature.clientToken).isEqualTo("")
-        assertThat(testedFeature.packageName).isEqualTo("")
         assertThat(testedFeature.packageVersionProvider.version).isEqualTo("")
         assertThat(testedFeature.serviceName).isEqualTo("")
         assertThat(testedFeature.envName).isEqualTo("")
