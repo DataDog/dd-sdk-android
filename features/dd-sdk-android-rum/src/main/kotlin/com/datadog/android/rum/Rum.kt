@@ -20,7 +20,6 @@ import com.datadog.android.rum.internal.RumAnonymousIdentifierManager
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.metric.SessionEndedMetricDispatcher
 import com.datadog.android.rum.internal.monitor.DatadogRumMonitor
-import com.datadog.android.rum.internal.utils.percent
 import com.datadog.android.telemetry.internal.TelemetryEventHandler
 
 /**
@@ -112,7 +111,7 @@ object Rum {
     ): DatadogRumMonitor {
         val sessionEndedMetricDispatcher = SessionEndedMetricDispatcher(
             internalLogger = sdkCore.internalLogger,
-            sessionSamplingRate = rumFeature.configuration.sampleRate.percent().toFloat()
+            sessionSamplingRate = rumFeature.configuration.sampleRate
         )
 
         return DatadogRumMonitor(
