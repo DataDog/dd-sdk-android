@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
@@ -12,35 +13,27 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.BenchmarkApp">
+        <profileable
+            android:shell="true"
+            tools:targetApi="29" />
+
         <activity
             android:name="com.datadog.benchmark.sample.activities.scenarios.DefaultScenarioActivity"
             android:exported="true"
             android:label="@string/app_name"
-            android:theme="@style/Theme.BenchmarkApp">
-
-        </activity>
-
+            android:theme="@style/Theme.BenchmarkApp"></activity>
         <activity
             android:name="com.datadog.benchmark.sample.activities.scenarios.RumAutoScenarioActivity"
             android:exported="true"
-            android:theme="@style/Theme.BenchmarkApp">
-
-        </activity>
-
+            android:theme="@style/Theme.BenchmarkApp"></activity>
         <activity
             android:name="com.datadog.benchmark.sample.activities.scenarios.SessionReplayComposeScenarioActivity"
             android:exported="true"
-            android:theme="@style/Theme.BenchmarkApp">
-
-        </activity>
-
+            android:theme="@style/Theme.BenchmarkApp"></activity>
         <activity
             android:name="com.datadog.benchmark.sample.activities.scenarios.SessionReplayScenarioActivity"
             android:exported="true"
-            android:theme="@style/Theme.BenchmarkApp">
-
-        </activity>
-
+            android:theme="@style/Theme.BenchmarkApp"></activity>
         <activity
             android:name="com.datadog.benchmark.sample.activities.LaunchActivity"
             android:exported="true">
