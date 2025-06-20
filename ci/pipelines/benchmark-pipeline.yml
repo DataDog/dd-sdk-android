@@ -1,0 +1,25 @@
+include:
+  - "ci/pipelines/common-snippets.yml"
+
+stages:
+  - benchmark
+
+benchmark:run-all:
+  stage: benchmark
+  tags: [ "macos:sonoma", "specific:true" ]
+  timeout: 1h
+  when: manual
+  variables:
+    ANDROID_API: "36"
+    ANDROID_EMULATOR_IMAGE: "system-images;android-$ANDROID_API;google_apis;${ANDROID_ARCH}"
+    ANDROID_PLATFORM: "platforms;android-$ANDROID_API"
+    ANDROID_BUILD_TOOLS: "build-tools;$ANDROID_API.0.0"
+  script:
+    - !reference [ .common-snippets, install-android-api-components-2 ]
+    - set +e
+    - exit_code=0
+    - $ANDROID_HOME/emulator/emulator -avd "$EMULATOR_NAME" -grpc-use-jwt -no-snapstorage -no-audio -no-window -no-boot-anim -verbose -qemu -machine virt &
+    - GRADLE_OPTS="-Xmx3072m" ./gradlew :macrobenchmark:connectedBenchmark --stacktrace --no-daemon $( (( $ANDROID_API <= 23 )) && echo "-Puse-api21-java-backport -Puse-desugaring" ) || exit_code=$?
+    - $ANDROID_HOME/platform-tools/adb emu kill
+    - if [[ "$exit_code" -ne 0 ]]; then exit 1; fi
+    - exit 0
