@@ -95,6 +95,7 @@ tasks.register("assembleSampleRelease") {
         ":sample:kotlin:assembleUs1Release",
         ":sample:wear:assembleUs1Release",
         ":sample:vendor-lib:assembleRelease",
+        ":sample:automotive:assembleRelease",
         ":sample:tv:assembleRelease"
     )
 }
@@ -221,5 +222,23 @@ tasks.register("printSdkDebugRuntimeClasspath") {
         }
 
         File("sdk_classpath").writeText(result.joinToString(File.pathSeparator) { it.absolutePath })
+    }
+}
+
+tasks.register("listAllPublishedArtifactIds") {
+    doLast {
+        val artifactIds = rootProject.subprojects.flatMap { subproject ->
+            val publishing = subproject.extensions.findByType<PublishingExtension>()
+            publishing?.publications?.mapNotNull { publication ->
+                if (publication is MavenPublication) {
+                    publication.artifactId
+                } else {
+                    null
+                }
+            }.orEmpty()
+        }
+        artifactIds.forEach {
+            println(it)
+        }
     }
 }

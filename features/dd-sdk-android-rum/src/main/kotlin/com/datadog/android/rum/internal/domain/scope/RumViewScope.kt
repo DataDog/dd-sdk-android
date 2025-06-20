@@ -6,7 +6,6 @@
 
 package com.datadog.android.rum.internal.domain.scope
 
-import android.util.Log
 import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
@@ -83,20 +82,9 @@ internal open class RumViewScope(
     private var globalAttributes: Map<String, Any?> = resolveGlobalAttributes(sdkCore)
     private val internalAttributes: MutableMap<String, Any?> = mutableMapOf()
 
-    private var sessionId: String = parentScope.getRumContext().sessionId
-    internal var viewId: String = UUID.randomUUID().toString()
-        set(value) {
-            oldViewIds += field
-            field = value
-            val rumContext = getRumContext()
-            if (rumContext.syntheticsTestId != null) {
-                Log.i(RumScope.SYNTHETICS_LOGCAT_TAG, "_dd.application.id=${rumContext.applicationId}")
-                Log.i(RumScope.SYNTHETICS_LOGCAT_TAG, "_dd.session.id=${rumContext.sessionId}")
-                Log.i(RumScope.SYNTHETICS_LOGCAT_TAG, "_dd.view.id=$viewId")
-            }
-        }
+    private val sessionId: String = parentScope.getRumContext().sessionId
+    internal val viewId: String = UUID.randomUUID().toString()
 
-    private val oldViewIds = mutableSetOf<String>()
     private val startedNanos: Long = eventTime.nanoTime
     internal var stoppedNanos: Long = eventTime.nanoTime
     internal var viewLoadingTime: Long? = null
@@ -170,9 +158,9 @@ internal open class RumViewScope(
 
         val rumContext = parentScope.getRumContext()
         if (rumContext.syntheticsTestId != null) {
-            Log.i(RumScope.SYNTHETICS_LOGCAT_TAG, "_dd.application.id=${rumContext.applicationId}")
-            Log.i(RumScope.SYNTHETICS_LOGCAT_TAG, "_dd.session.id=${rumContext.sessionId}")
-            Log.i(RumScope.SYNTHETICS_LOGCAT_TAG, "_dd.view.id=$viewId")
+            logSynthetics("_dd.application.id", rumContext.applicationId)
+            logSynthetics("_dd.session.id", rumContext.sessionId)
+            logSynthetics("_dd.view.id", viewId)
         }
         networkSettledMetricResolver.viewWasCreated(eventTime.nanoTime)
         interactionToNextViewMetricResolver.onViewCreated(viewId, eventTime.nanoTime)
@@ -244,27 +232,44 @@ internal open class RumViewScope(
     }
 
     override fun getRumContext(): RumContext {
-        val parentContext = parentScope.getRumContext()
-        if (parentContext.sessionId != sessionId) {
-            sessionId = parentContext.sessionId
-            viewId = UUID.randomUUID().toString()
-        }
-
-        return parentContext
-            .copy(
-                viewId = viewId,
-                viewName = key.name,
-                viewUrl = url,
-                actionId = (activeActionScope as? RumActionScope)?.actionId,
-                viewType = type,
-                viewTimestamp = eventTimestamp,
-                viewTimestampOffset = serverTimeOffsetInMs,
-                hasReplay = hasReplay
-            )
+        return parentScope.getRumContext().copy(
+            viewId = viewId,
+            viewName = key.name,
+            viewUrl = url,
+            actionId = (activeActionScope as? RumActionScope)?.actionId,
+            viewType = type,
+            viewTimestamp = eventTimestamp,
+            viewTimestampOffset = serverTimeOffsetInMs,
+            hasReplay = hasReplay
+        )
     }
 
     override fun isActive(): Boolean {
         return !stopped
+    }
+
+    internal fun renew(newEventTime: Time): RumViewScope {
+        return RumViewScope(
+            parentScope = this,
+            sdkCore = sdkCore,
+            sessionEndedMetricDispatcher = sessionEndedMetricDispatcher,
+            key = key,
+            eventTime = newEventTime,
+            initialAttributes = eventAttributes,
+            viewChangedListener = viewChangedListener,
+            firstPartyHostHeaderTypeResolver = firstPartyHostHeaderTypeResolver,
+            cpuVitalMonitor = cpuVitalMonitor,
+            memoryVitalMonitor = memoryVitalMonitor,
+            frameRateVitalMonitor = frameRateVitalMonitor,
+            featuresContextResolver = featuresContextResolver,
+            type = type,
+            trackFrustrations = trackFrustrations,
+            sampleRate = sampleRate,
+            interactionToNextViewMetricResolver = interactionToNextViewMetricResolver,
+            networkSettledMetricResolver = networkSettledMetricResolver,
+            viewEndedMetricDispatcher = viewEndedMetricDispatcher,
+            slowFramesListener = slowFramesListener
+        )
     }
 
     // endregion
@@ -715,7 +720,7 @@ internal open class RumViewScope(
         writeScope: EventWriteScope,
         writer: DataWriter<Any>
     ) {
-        if (event.viewId == viewId || event.viewId in oldViewIds) {
+        if (event.viewId == viewId) {
             pendingResourceCount--
             resourceCount++
             networkSettledMetricResolver.resourceWasStopped(
@@ -735,7 +740,7 @@ internal open class RumViewScope(
         writeScope: EventWriteScope,
         writer: DataWriter<Any>
     ) {
-        if (event.viewId == viewId || event.viewId in oldViewIds) {
+        if (event.viewId == viewId) {
             pendingActionCount--
             actionCount++
             frustrationCount += event.frustrationCount
@@ -757,7 +762,7 @@ internal open class RumViewScope(
         writeScope: EventWriteScope,
         writer: DataWriter<Any>
     ) {
-        if (event.viewId == viewId || event.viewId in oldViewIds) {
+        if (event.viewId == viewId) {
             pendingLongTaskCount--
             longTaskCount++
             if (event.isFrozenFrame) {
@@ -775,7 +780,7 @@ internal open class RumViewScope(
         writeScope: EventWriteScope,
         writer: DataWriter<Any>
     ) {
-        if (event.viewId == viewId || event.viewId in oldViewIds) {
+        if (event.viewId == viewId) {
             pendingErrorCount--
             errorCount++
             if (event.resourceId != null && event.resourceEndTimestampInNanos != null) {
@@ -791,20 +796,20 @@ internal open class RumViewScope(
     }
 
     private fun onResourceDropped(event: RumRawEvent.ResourceDropped) {
-        if (event.viewId == viewId || event.viewId in oldViewIds) {
+        if (event.viewId == viewId) {
             networkSettledMetricResolver.resourceWasDropped(event.resourceId)
             pendingResourceCount--
         }
     }
 
     private fun onActionDropped(event: RumRawEvent.ActionDropped) {
-        if (event.viewId == viewId || event.viewId in oldViewIds) {
+        if (event.viewId == viewId) {
             pendingActionCount--
         }
     }
 
     private fun onErrorDropped(event: RumRawEvent.ErrorDropped) {
-        if (event.viewId == viewId || event.viewId in oldViewIds) {
+        if (event.viewId == viewId) {
             pendingErrorCount--
             if (event.resourceId != null) {
                 networkSettledMetricResolver.resourceWasDropped(event.resourceId)
@@ -813,7 +818,7 @@ internal open class RumViewScope(
     }
 
     private fun onLongTaskDropped(event: RumRawEvent.LongTaskDropped) {
-        if (event.viewId == viewId || event.viewId in oldViewIds) {
+        if (event.viewId == viewId) {
             pendingLongTaskCount--
             if (event.isFrozenFrame) {
                 pendingFrozenFrameCount--
@@ -1431,6 +1436,14 @@ internal open class RumViewScope(
         } else {
             null
         }
+    }
+
+    private fun logSynthetics(key: String, value: String) {
+        sdkCore.internalLogger.log(
+            level = InternalLogger.Level.INFO,
+            target = InternalLogger.Target.USER,
+            messageBuilder = { "$key=$value" }
+        )
     }
 
     // endregion

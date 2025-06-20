@@ -48,7 +48,6 @@ import com.datadog.android.rum.internal.domain.scope.RumApplicationScope
 import com.datadog.android.rum.internal.domain.scope.RumRawEvent
 import com.datadog.android.rum.internal.domain.scope.RumScopeKey
 import com.datadog.android.rum.internal.domain.scope.RumSessionScope
-import com.datadog.android.rum.internal.domain.scope.RumViewScope
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
 import com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener
 import com.datadog.android.rum.internal.vitals.VitalMonitor
@@ -794,7 +793,6 @@ internal class DatadogRumMonitor(
             if (viewManagerScope != null) {
                 it.onReceiveRumActiveViews(
                     viewManagerScope.childrenScopes
-                        .filterIsInstance<RumViewScope>()
                         .filter { viewScope -> viewScope.isActive() }
                         .mapNotNull { viewScope -> viewScope.getRumContext().viewName }
                 )

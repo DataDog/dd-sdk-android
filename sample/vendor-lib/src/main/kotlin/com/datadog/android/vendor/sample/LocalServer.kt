@@ -73,6 +73,7 @@ public class LocalServer {
         )
         val instance = Datadog.getInstance(DATADOG_INSTANCE_ID)
         instance.setUserInfo(id = context.packageName)
+        instance.setAccountInfo(id = context.packageName)
 
         val logsConfig = LogsConfiguration.Builder()
             .build()

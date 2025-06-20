@@ -16,6 +16,7 @@ import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.internal.domain.RumContext
+import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
 import com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener
 import com.datadog.android.rum.internal.utils.percent
@@ -126,7 +127,7 @@ internal class RumSessionScope(
         writer: DataWriter<Any>
     ): RumScope? {
         if (event is RumRawEvent.ResetSession) {
-            renewSession(System.nanoTime(), StartReason.EXPLICIT_STOP)
+            renewSession(event.eventTime, StartReason.EXPLICIT_STOP)
         } else if (event is RumRawEvent.StopSession) {
             stopSession()
         }
@@ -136,8 +137,8 @@ internal class RumSessionScope(
         val actualWriter = if (sessionState == State.TRACKED) writer else noOpWriter
 
         if (event !is RumRawEvent.SdkInit) {
-            childScope = childScope
-                ?.handleEvent(event, datadogContext, writeScope, actualWriter) as? RumViewManagerScope
+            childScope =
+                childScope?.handleEvent(event, datadogContext, writeScope, actualWriter) as? RumViewManagerScope
         }
 
         return if (isSessionComplete()) {
@@ -203,29 +204,30 @@ internal class RumSessionScope(
                 } else {
                     StartReason.MAX_DURATION
                 }
-                renewSession(nanoTime, reason)
+                renewSession(event.eventTime, reason)
             }
             lastUserInteractionNs.set(nanoTime)
         } else if (isExpired) {
             if (backgroundTrackingEnabled && (isBackgroundEvent || isSdkInitInBackground)) {
-                renewSession(nanoTime, StartReason.BACKGROUND_LAUNCH)
+                renewSession(event.eventTime, StartReason.BACKGROUND_LAUNCH)
                 lastUserInteractionNs.set(nanoTime)
             } else {
                 sessionState = State.EXPIRED
             }
         } else if (isTimedOut) {
-            renewSession(nanoTime, StartReason.MAX_DURATION)
+            renewSession(event.eventTime, StartReason.MAX_DURATION)
         }
 
         updateSessionStateForSessionReplay(sessionState, sessionId)
     }
 
-    private fun renewSession(nanoTime: Long, reason: StartReason) {
+    private fun renewSession(time: Time, reason: StartReason) {
         val keepSession = random.nextFloat() < sampleRate.percent()
         startReason = reason
         sessionState = if (keepSession) State.TRACKED else State.NOT_TRACKED
         sessionId = UUID.randomUUID().toString()
-        sessionStartNs.set(nanoTime)
+        sessionStartNs.set(time.nanoTime)
+        childScope?.renewViewScopes(time)
         if (keepSession) {
             sessionEndedMetricDispatcher.startMetric(
                 sessionId = sessionId,

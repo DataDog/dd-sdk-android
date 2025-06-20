@@ -1090,4 +1090,59 @@ internal class ResourceResolverTest {
             bitmapCreationCallback = any()
         )
     }
+
+    @Test
+    fun `M only copy the drawable in work thread W resolveResourceIdFromDrawable`() {
+        // Given
+        whenever(
+            mockExecutorService.execute(
+                any()
+            )
+        ).then {
+            // do nothing to simulate that work thread doesn't execute the task.
+            mock<Future<Boolean>>()
+        }
+
+        // When
+        testedResourceResolver.resolveResourceIdFromDrawable(
+            resources = mockResources,
+            applicationContext = mockApplicationContext,
+            displayMetrics = mockDisplayMetrics,
+            originalDrawable = mockDrawable,
+            drawableCopier = mockDrawableCopier,
+            drawableWidth = mockDrawable.intrinsicWidth,
+            drawableHeight = mockDrawable.intrinsicHeight,
+            customResourceIdCacheKey = null,
+            resourceResolverCallback = mockSerializerCallback
+        )
+
+        // Then
+        verifyNoInteractions(mockDrawableCopier)
+
+        // Given
+        whenever(
+            mockExecutorService.execute(
+                any()
+            )
+        ).then {
+            (it.arguments[0] as Runnable).run()
+            mock<Future<Boolean>>()
+        }
+
+        // When
+        testedResourceResolver.resolveResourceIdFromDrawable(
+            resources = mockResources,
+            applicationContext = mockApplicationContext,
+            displayMetrics = mockDisplayMetrics,
+            originalDrawable = mockDrawable,
+            drawableCopier = mockDrawableCopier,
+            drawableWidth = mockDrawable.intrinsicWidth,
+            drawableHeight = mockDrawable.intrinsicHeight,
+            customResourceIdCacheKey = null,
+            resourceResolverCallback = mockSerializerCallback
+        )
+
+        // Then
+        verify(mockDrawableCopier).copy(mockDrawable, mockResources)
+    }
 }

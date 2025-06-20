@@ -10,6 +10,7 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.datadog.android.Datadog
 import com.datadog.android.api.SdkCore
+import com.datadog.android.api.context.AccountInfo
 import com.datadog.android.api.context.UserInfo
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.feature.StorageBackedFeature
@@ -56,6 +57,14 @@ class SdkCoreTest : MockServerTest() {
     @StringForgery(type = StringForgeryType.ALPHABETICAL)
     lateinit var fakeFeatureName: String
 
+    @StringForgery(type = StringForgeryType.ALPHABETICAL)
+    lateinit var fakeAccountId: String
+
+    @StringForgery(regex = "[A-Z][a-z]+ [A-Z]\\. [A-Z][a-z]+")
+    lateinit var fakeAccountName: String
+
+    private var fakeAccountExtraInfo: Map<String, Any?> = emptyMap()
+
     private lateinit var fakeTrackingConsent: TrackingConsent
 
     private lateinit var featureSdkCore: FeatureSdkCore
@@ -70,6 +79,7 @@ class SdkCoreTest : MockServerTest() {
         )
         fakeTrackingConsent = forge.aValueFrom(TrackingConsent::class.java)
         fakeUserAdditionalProperties = forge.exhaustiveAttributes(excludedKeys = setOf("id", "name", "email"))
+        fakeAccountExtraInfo = forge.exhaustiveAttributes(excludedKeys = setOf("id", "name"))
         val configuration: Configuration = forge.getForgery()
         testedSdkCore = checkNotNull(
             Datadog.initialize(
@@ -107,6 +117,42 @@ class SdkCoreTest : MockServerTest() {
         assertThat(readUserInfo?.email).isEqualTo(fakeUserEmail)
         assertThat(readUserInfo?.additionalProperties)
             .containsExactlyInAnyOrderEntriesOf(fakeUserAdditionalProperties)
+    }
+
+    // endregion
+
+    // region set AccountInfo
+
+    @Test
+    fun must_addAccountInformationIntoEvents_when_setAccountInformation() {
+        // When
+        testedSdkCore?.setAccountInfo(
+            fakeAccountId,
+            fakeAccountName,
+            fakeAccountExtraInfo
+        )
+
+        // Then
+        val countDownLatch = CountDownLatch(1)
+        var readAccountInfo: AccountInfo? = null
+        featureSdkCore?.getFeature(stubFeature.name)?.withWriteContext { datadogContext, _ ->
+            readAccountInfo = datadogContext.accountInfo
+            countDownLatch.countDown()
+        }
+        countDownLatch.await(SHORT_WAIT_MS, TimeUnit.MILLISECONDS)
+        assertThat(readAccountInfo?.id).isEqualTo(fakeAccountId)
+        assertThat(readAccountInfo?.name).isEqualTo(fakeAccountName)
+        assertThat(readAccountInfo?.extraInfo)
+            .containsExactlyInAnyOrderEntriesOf(fakeAccountExtraInfo)
+
+        testedSdkCore?.clearAccountInfo()
+        val countDownLatch2 = CountDownLatch(1)
+        featureSdkCore?.getFeature(stubFeature.name)?.withWriteContext { datadogContext, _ ->
+            readAccountInfo = datadogContext.accountInfo
+            countDownLatch2.countDown()
+        }
+        countDownLatch2.await(SHORT_WAIT_MS, TimeUnit.MILLISECONDS)
+        assertThat(readAccountInfo).isNull()
     }
 
     // endregion
@@ -353,6 +399,246 @@ class SdkCoreTest : MockServerTest() {
         assertThat(readUserInfo?.email).isEqualTo(fakeUserEmail)
         assertThat(readUserInfo?.additionalProperties)
             .containsExactlyInAnyOrderEntriesOf(fakeUserAdditionalProperties)
+    }
+
+    // endregion
+
+    // region add Account Properties
+
+    @Test
+    fun must_addAccountExtraInfo_when_addAccountInfo() {
+        // Given
+        testedSdkCore?.setAccountInfo(
+            fakeAccountId,
+            fakeAccountName,
+            fakeAccountExtraInfo
+        )
+        val expectedAccountExtraProperties = forge.exhaustiveAttributes()
+
+        // When
+        testedSdkCore?.addAccountExtraInfo(expectedAccountExtraProperties)
+
+        // Then
+        val countDownLatch = CountDownLatch(1)
+        var readAccountInfo: AccountInfo? = null
+        featureSdkCore?.getFeature(stubFeature.name)?.withWriteContext { datadogContext, _ ->
+            readAccountInfo = datadogContext.accountInfo
+            countDownLatch.countDown()
+        }
+        countDownLatch.await(SHORT_WAIT_MS, TimeUnit.MILLISECONDS)
+        assertThat(readAccountInfo?.id).isEqualTo(fakeAccountId)
+        assertThat(readAccountInfo?.name).isEqualTo(fakeAccountName)
+        assertThat(readAccountInfo?.extraInfo)
+            .containsExactlyInAnyOrderEntriesOf(fakeAccountExtraInfo + expectedAccountExtraProperties)
+    }
+
+    @Test
+    fun must_useImmutableProperties_when_setAccountProperties_attributesValuesModified() {
+        // Given
+        val fakeMutableProperties = forge.exhaustiveAttributes()
+        val expectedMutableProperties = fakeMutableProperties.toMap()
+        testedSdkCore?.setAccountInfo(fakeAccountId, fakeAccountName, fakeMutableProperties)
+
+        // When
+        fakeMutableProperties.keys.forEach { key ->
+            fakeMutableProperties[key] = forge.anAlphaNumericalString()
+        }
+
+        // Then
+        val countDownLatch = CountDownLatch(1)
+        var readAccountInfo: AccountInfo? = null
+        featureSdkCore?.getFeature(stubFeature.name)?.withWriteContext { datadogContext, _ ->
+            readAccountInfo = datadogContext.accountInfo
+            countDownLatch.countDown()
+        }
+        countDownLatch.await(SHORT_WAIT_MS, TimeUnit.MILLISECONDS)
+        assertThat(readAccountInfo?.id).isEqualTo(fakeAccountId)
+        assertThat(readAccountInfo?.name).isEqualTo(fakeAccountName)
+        assertThat(readAccountInfo?.extraInfo)
+            .containsExactlyInAnyOrderEntriesOf(expectedMutableProperties)
+    }
+
+    @Test
+    fun must_useImmutableProperties_when_setAccountProperties_attributesValuesRemoved() {
+        // Given
+        val fakeMutableProperties = forge.exhaustiveAttributes()
+        val expectedMutableProperties = fakeMutableProperties.toMap()
+        testedSdkCore?.setAccountInfo(fakeAccountId, fakeAccountName, fakeMutableProperties)
+
+        // When
+        repeat(forge.anInt(1, fakeMutableProperties.size / 2)) {
+            fakeMutableProperties.remove(fakeMutableProperties.keys.random())
+        }
+
+        // Then
+        val countDownLatch = CountDownLatch(1)
+        var readAccountInfo: AccountInfo? = null
+        featureSdkCore?.getFeature(stubFeature.name)?.withWriteContext { datadogContext, _ ->
+            readAccountInfo = datadogContext.accountInfo
+            countDownLatch.countDown()
+        }
+        countDownLatch.await(SHORT_WAIT_MS, TimeUnit.MILLISECONDS)
+        assertThat(readAccountInfo?.id).isEqualTo(fakeAccountId)
+        assertThat(readAccountInfo?.name).isEqualTo(fakeAccountName)
+        assertThat(readAccountInfo?.extraInfo)
+            .containsExactlyInAnyOrderEntriesOf(expectedMutableProperties)
+    }
+
+    @Test
+    fun must_useImmutableProperties_when_setAccountProperties_addExtraAttributes() {
+        // Given
+        val fakeMutableProperties = forge.exhaustiveAttributes()
+        val expectedMutableProperties = fakeMutableProperties.toMap()
+        testedSdkCore?.setAccountInfo(fakeAccountId, fakeAccountName, fakeMutableProperties)
+
+        // When
+        repeat(forge.anInt(1, 10)) {
+            fakeMutableProperties[forge.anAlphabeticalString()] = forge.anAlphabeticalString()
+        }
+
+        // Then
+        val countDownLatch = CountDownLatch(1)
+        var readAccountInfo: AccountInfo? = null
+        featureSdkCore?.getFeature(stubFeature.name)?.withWriteContext { datadogContext, _ ->
+            readAccountInfo = datadogContext.accountInfo
+            countDownLatch.countDown()
+        }
+        countDownLatch.await(SHORT_WAIT_MS, TimeUnit.MILLISECONDS)
+        assertThat(readAccountInfo?.id).isEqualTo(fakeAccountId)
+        assertThat(readAccountInfo?.name).isEqualTo(fakeAccountName)
+        assertThat(readAccountInfo?.extraInfo)
+            .containsExactlyInAnyOrderEntriesOf(expectedMutableProperties)
+    }
+
+    @Test
+    fun must_useImmutableProperties_when_addAccountExtraInfo_attributesValuesModified() {
+        // Given
+        val fakeExtraProperties = forge.exhaustiveAttributes()
+        val expectedExtraProperties = fakeExtraProperties.toMap()
+        testedSdkCore?.setAccountInfo(fakeAccountId, fakeAccountName, fakeAccountExtraInfo)
+        testedSdkCore?.addAccountExtraInfo(fakeExtraProperties)
+
+        // When
+        fakeExtraProperties.keys.forEach { key ->
+            fakeExtraProperties[key] = forge.anAlphabeticalString()
+        }
+
+        // Then
+        val countDownLatch = CountDownLatch(1)
+        var readAccountInfo: AccountInfo? = null
+        featureSdkCore?.getFeature(stubFeature.name)?.withWriteContext { datadogContext, _ ->
+            readAccountInfo = datadogContext.accountInfo
+            countDownLatch.countDown()
+        }
+        countDownLatch.await(SHORT_WAIT_MS, TimeUnit.MILLISECONDS)
+        assertThat(readAccountInfo?.id).isEqualTo(fakeAccountId)
+        assertThat(readAccountInfo?.name).isEqualTo(fakeAccountName)
+        assertThat(readAccountInfo?.extraInfo)
+            .containsExactlyInAnyOrderEntriesOf(fakeAccountExtraInfo + expectedExtraProperties)
+    }
+
+    @Test
+    fun must_useImmutableProperties_when_addAccountExtraInfo_attributesValuesRemoved() {
+        // Given
+        val fakeExtraProperties = forge.exhaustiveAttributes()
+        val expectedExtraProperties = fakeExtraProperties.toMap()
+        testedSdkCore?.setAccountInfo(fakeAccountId, fakeAccountName, fakeAccountExtraInfo)
+        testedSdkCore?.addAccountExtraInfo(fakeExtraProperties)
+
+        // When
+        repeat(forge.anInt(1, fakeExtraProperties.size / 2)) {
+            fakeExtraProperties.remove(fakeExtraProperties.keys.random())
+        }
+
+        // Then
+        val countDownLatch = CountDownLatch(1)
+        var readAccountInfo: AccountInfo? = null
+        featureSdkCore?.getFeature(stubFeature.name)?.withWriteContext { datadogContext, _ ->
+            readAccountInfo = datadogContext.accountInfo
+            countDownLatch.countDown()
+        }
+        countDownLatch.await(SHORT_WAIT_MS, TimeUnit.MILLISECONDS)
+        assertThat(readAccountInfo?.id).isEqualTo(fakeAccountId)
+        assertThat(readAccountInfo?.name).isEqualTo(fakeAccountName)
+        assertThat(readAccountInfo?.extraInfo)
+            .containsExactlyInAnyOrderEntriesOf(fakeAccountExtraInfo + expectedExtraProperties)
+    }
+
+    @Test
+    fun must_useImmutableProperties_when_addAccountExtraInfo_addExtraAttributes() {
+        // Given
+        val fakeExtraProperties = forge.exhaustiveAttributes()
+        val expectedExtraProperties = fakeExtraProperties.toMap()
+        testedSdkCore?.setAccountInfo(fakeAccountId, fakeAccountName, fakeAccountExtraInfo)
+        testedSdkCore?.addAccountExtraInfo(fakeExtraProperties)
+
+        // When
+        repeat(forge.anInt(1, 10)) {
+            fakeExtraProperties[forge.anAlphabeticalString()] = forge.anAlphabeticalString()
+        }
+
+        // Then
+        val countDownLatch = CountDownLatch(1)
+        var readAccountInfo: AccountInfo? = null
+        featureSdkCore?.getFeature(stubFeature.name)?.withWriteContext { datadogContext, _ ->
+            readAccountInfo = datadogContext.accountInfo
+            countDownLatch.countDown()
+        }
+        countDownLatch.await(SHORT_WAIT_MS, TimeUnit.MILLISECONDS)
+        assertThat(readAccountInfo?.id).isEqualTo(fakeAccountId)
+        assertThat(readAccountInfo?.name).isEqualTo(fakeAccountName)
+        assertThat(readAccountInfo?.extraInfo)
+            .containsExactlyInAnyOrderEntriesOf(fakeAccountExtraInfo + expectedExtraProperties)
+    }
+
+    @Test
+    fun must_resetAccountInfo_when_setAccountInfoCalledSecondTime() {
+        // Given
+        testedSdkCore?.setAccountInfo(fakeAccountId, fakeAccountName, fakeAccountExtraInfo)
+        val expectedAccountExtraProperties = forge.exhaustiveAttributes()
+        testedSdkCore?.addAccountExtraInfo(expectedAccountExtraProperties)
+        val fakeAccountId2 = forge.anAlphabeticalString()
+        val fakeAccountName2 = forge.anAlphabeticalString()
+        val fakeAccountExtraInfo2 = forge.exhaustiveAttributes()
+
+        // When
+        testedSdkCore?.setAccountInfo(fakeAccountId2, fakeAccountName2, fakeAccountExtraInfo2)
+
+        // Then
+        val countDownLatch = CountDownLatch(1)
+        var readAccountInfo: AccountInfo? = null
+        featureSdkCore?.getFeature(stubFeature.name)?.withWriteContext { datadogContext, _ ->
+            readAccountInfo = datadogContext.accountInfo
+            countDownLatch.countDown()
+        }
+        countDownLatch.await(SHORT_WAIT_MS, TimeUnit.MILLISECONDS)
+        assertThat(readAccountInfo?.id).isEqualTo(fakeAccountId2)
+        assertThat(readAccountInfo?.name).isEqualTo(fakeAccountName2)
+        assertThat(readAccountInfo?.extraInfo)
+            .containsExactlyInAnyOrderEntriesOf(fakeAccountExtraInfo2)
+    }
+
+    @Test
+    fun must_resetAccountInfo_when_setAccountInfoCalled_afterAddAccountExtraInfo() {
+        // Given
+        val expectedAccountExtraProperties = forge.exhaustiveAttributes()
+        testedSdkCore?.addAccountExtraInfo(expectedAccountExtraProperties)
+
+        // When
+        testedSdkCore?.setAccountInfo(fakeAccountId, fakeAccountName, fakeAccountExtraInfo)
+
+        // Then
+        val countDownLatch = CountDownLatch(1)
+        var readAccountInfo: AccountInfo? = null
+        featureSdkCore?.getFeature(stubFeature.name)?.withWriteContext { datadogContext, _ ->
+            readAccountInfo = datadogContext.accountInfo
+            countDownLatch.countDown()
+        }
+        countDownLatch.await(SHORT_WAIT_MS, TimeUnit.MILLISECONDS)
+        assertThat(readAccountInfo?.id).isEqualTo(fakeAccountId)
+        assertThat(readAccountInfo?.name).isEqualTo(fakeAccountName)
+        assertThat(readAccountInfo?.extraInfo)
+            .containsExactlyInAnyOrderEntriesOf(fakeAccountExtraInfo)
     }
 
     // endregion
