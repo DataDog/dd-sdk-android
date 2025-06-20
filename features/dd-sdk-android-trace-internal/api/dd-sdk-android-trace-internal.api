@@ -813,6 +813,7 @@ public class com/datadog/opentracing/scopemanager/SimpleScope : com/datadog/open
 
 public class com/datadog/trace/api/Config {
 	public static final field PREFIX Ljava/lang/String;
+	public final field configProvider Lcom/datadog/trace/bootstrap/config/provider/ConfigProvider;
 	public static fun get ()Lcom/datadog/trace/api/Config;
 	public static fun get (Ljava/util/Properties;)Lcom/datadog/trace/api/Config;
 	public fun getBaggageMapping ()Ljava/util/Map;
@@ -1719,6 +1720,7 @@ public final class com/datadog/trace/api/config/TracerConfig {
 	public static final field TRACE_SPAN_ATTRIBUTE_SCHEMA Ljava/lang/String;
 	public static final field TRACE_STRICT_WRITES_ENABLED Ljava/lang/String;
 	public static final field TRACE_X_DATADOG_TAGS_MAX_LENGTH Ljava/lang/String;
+	public static final field URL_AS_RESOURCE_NAME Ljava/lang/String;
 	public static final field WRITER_BAGGAGE_INJECT Ljava/lang/String;
 	public static final field WRITER_TYPE Ljava/lang/String;
 }
@@ -2325,6 +2327,7 @@ public final class com/datadog/trace/bootstrap/config/provider/ConfigProvider {
 	public fun getStringNotEmpty (Ljava/lang/String;Ljava/lang/String;[Ljava/lang/String;)Ljava/lang/String;
 	public fun isEnabled (Ljava/lang/Iterable;Ljava/lang/String;Ljava/lang/String;Z)Z
 	public fun isSet (Ljava/lang/String;)Z
+	public fun toString ()Ljava/lang/String;
 	public static fun withPropertiesOverride (Ljava/util/Properties;)Lcom/datadog/trace/bootstrap/config/provider/ConfigProvider;
 }
 
@@ -2333,6 +2336,7 @@ public abstract class com/datadog/trace/bootstrap/config/provider/ConfigProvider
 	protected abstract fun get (Ljava/lang/String;)Ljava/lang/String;
 	public final fun get (Ljava/lang/String;[Ljava/lang/String;)Ljava/lang/String;
 	public abstract fun origin ()Lcom/datadog/trace/api/ConfigOrigin;
+	public abstract fun toString ()Ljava/lang/String;
 }
 
 public abstract interface class com/datadog/trace/bootstrap/instrumentation/api/AgentPropagation {

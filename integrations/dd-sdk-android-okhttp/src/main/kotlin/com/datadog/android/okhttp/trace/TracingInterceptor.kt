@@ -876,6 +876,7 @@ internal constructor(
                             val propagationStyles = tracingHeaderTypes.joinToString(",")
                             setProperty(TracerConfig.PROPAGATION_STYLE_EXTRACT, propagationStyles)
                             setProperty(TracerConfig.PROPAGATION_STYLE_INJECT, propagationStyles)
+                            setProperty(TracerConfig.URL_AS_RESOURCE_NAME, "false")
                         }
                     )
                     .writer(writer)
