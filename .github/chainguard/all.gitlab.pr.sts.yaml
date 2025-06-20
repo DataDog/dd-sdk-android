@@ -1,0 +1,7 @@
+issuer: https://gitlab.ddbuild.io
+
+subject_pattern: "project_path:DataDog/dd-sdk-android:ref_type:branch:ref:.*"
+
+permissions:
+  contents: write
+  pull_requests: write
