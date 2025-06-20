@@ -6,6 +6,7 @@
 
 package com.datadog.android.core.internal.persistence.file.batch
 
+import android.os.FileObserver
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.internal.metrics.BatchClosedMetadata
 import com.datadog.android.core.internal.metrics.MetricsDispatcher
@@ -57,7 +58,7 @@ import java.util.concurrent.atomic.AtomicInteger
 @MockitoSettings(strictness = Strictness.LENIENT)
 internal class BatchFileOrchestratorTest {
 
-    private lateinit var testedOrchestrator: FileOrchestrator
+    private lateinit var testedOrchestrator: BatchFileOrchestrator
 
     @TempDir
     lateinit var tempDir: File
@@ -156,7 +157,11 @@ internal class BatchFileOrchestratorTest {
         var previousFile: File? = null
         val startTimestamp = System.currentTimeMillis()
         repeat(iterations) {
-            previousFile = testedOrchestrator.getWritableFile(false)
+            val file = testedOrchestrator.getWritableFile(false)
+            if (file != previousFile) {
+                testedOrchestrator.fileObserver.onEvent(FileObserver.CREATE, file?.name)
+            }
+            previousFile = file
             previousFile?.writeText(data)
         }
         val endTimestamp = System.currentTimeMillis()
@@ -291,11 +296,14 @@ internal class BatchFileOrchestratorTest {
         val oldTimestamp = System.currentTimeMillis() - oldFileAge
         val oldFile = File(fakeRootDir, oldTimestamp.toString())
         oldFile.createNewFile()
+        testedOrchestrator.fileObserver.onEvent(FileObserver.CREATE, oldFile.name)
         val oldFileMeta = File("${oldFile.path}_metadata")
         oldFileMeta.createNewFile()
+        testedOrchestrator.fileObserver.onEvent(FileObserver.CREATE, oldFileMeta.name)
         val youngTimestamp = System.currentTimeMillis() - RECENT_DELAY_MS - 1
         val youngFile = File(fakeRootDir, youngTimestamp.toString())
         youngFile.createNewFile()
+        testedOrchestrator.fileObserver.onEvent(FileObserver.CREATE, youngFile.name)
 
         // When
         val start = System.currentTimeMillis()
@@ -331,11 +339,14 @@ internal class BatchFileOrchestratorTest {
         val oldTimestamp = System.currentTimeMillis() - oldFileAge
         val oldFile = File(fakeRootDir, oldTimestamp.toString())
         oldFile.createNewFile()
+        testedOrchestrator.fileObserver.onEvent(FileObserver.CREATE, oldFile.name)
         val oldFileMeta = File("${oldFile.path}_metadata")
         oldFileMeta.createNewFile()
+        testedOrchestrator.fileObserver.onEvent(FileObserver.CREATE, oldFileMeta.name)
         val youngTimestamp = System.currentTimeMillis() - RECENT_DELAY_MS - 1
         val youngFile = File(fakeRootDir, youngTimestamp.toString())
         youngFile.createNewFile()
+        testedOrchestrator.fileObserver.onEvent(FileObserver.CREATE, youngFile.name)
 
         // When
         val start = System.currentTimeMillis()
@@ -345,6 +356,7 @@ internal class BatchFileOrchestratorTest {
         // cleanup shouldn't be performed during the next getWritableFile call
         val evenOlderFile = File(fakeRootDir, (oldTimestamp - 1).toString())
         evenOlderFile.createNewFile()
+        testedOrchestrator.fileObserver.onEvent(FileObserver.CREATE, evenOlderFile.name)
         testedOrchestrator.getWritableFile(forceNewFile)
 
         // Then
@@ -376,8 +388,10 @@ internal class BatchFileOrchestratorTest {
         val oldTimestamp = System.currentTimeMillis() - oldFileAge
         val oldFile = File(fakeRootDir, oldTimestamp.toString())
         oldFile.createNewFile()
+        testedOrchestrator.fileObserver.onEvent(FileObserver.CREATE, oldFile.name)
         val oldFileMeta = File("${oldFile.path}_metadata")
         oldFileMeta.createNewFile()
+        testedOrchestrator.fileObserver.onEvent(FileObserver.CREATE, oldFileMeta.name)
 
         // When
         val start = System.currentTimeMillis()
@@ -386,6 +400,7 @@ internal class BatchFileOrchestratorTest {
         Thread.sleep(CLEANUP_FREQUENCY_THRESHOLD_MS + 1)
         val evenOlderFile = File(fakeRootDir, (oldTimestamp - 1).toString())
         evenOlderFile.createNewFile()
+        testedOrchestrator.fileObserver.onEvent(FileObserver.CREATE, evenOlderFile.name)
         testedOrchestrator.getWritableFile(forceNewFile)
 
         // Then
@@ -450,6 +465,7 @@ internal class BatchFileOrchestratorTest {
         assumeTrue(fakeRootDir.listFiles().isNullOrEmpty())
         val previousFile = testedOrchestrator.getWritableFile()
         checkNotNull(previousFile)
+        testedOrchestrator.fileObserver.onEvent(FileObserver.CREATE, previousFile.name)
         previousFile.writeText(previousData)
         Thread.sleep(1)
 
@@ -667,12 +683,16 @@ internal class BatchFileOrchestratorTest {
         // Given
         assumeTrue(fakeRootDir.listFiles().isNullOrEmpty())
         val filesCount = MAX_DISK_SPACE / MAX_BATCH_SIZE
-        val files = (0..filesCount).map {
+        val files = mutableListOf<File>()
+        repeat(filesCount + 1) {
             val file = testedOrchestrator.getWritableFile()
             checkNotNull(file)
+            if (files.none { it.name == file.name }) {
+                testedOrchestrator.fileObserver.onEvent(FileObserver.CREATE, file.name)
+            }
             file.writeText(previousData)
+            files.add(file)
             Thread.sleep(1)
-            file
         }
 
         // When
@@ -831,11 +851,14 @@ internal class BatchFileOrchestratorTest {
         val oldTimestamp = System.currentTimeMillis() - oldFileAge
         val oldFile = File(fakeRootDir, oldTimestamp.toString())
         oldFile.createNewFile()
+        testedOrchestrator.fileObserver.onEvent(FileObserver.CREATE, oldFile.name)
         val oldFileMeta = File("${oldFile.path}_metadata")
         oldFileMeta.createNewFile()
+        testedOrchestrator.fileObserver.onEvent(FileObserver.CREATE, oldFileMeta.name)
         val youngTimestamp = System.currentTimeMillis() - RECENT_DELAY_MS - 1
         val youngFile = File(fakeRootDir, youngTimestamp.toString())
         youngFile.createNewFile()
+        testedOrchestrator.fileObserver.onEvent(FileObserver.CREATE, youngFile.name)
 
         // When
         val result = testedOrchestrator.getReadableFile(emptySet())
@@ -878,6 +901,7 @@ internal class BatchFileOrchestratorTest {
         val timestamp = System.currentTimeMillis() - (RECENT_DELAY_MS * 2)
         val file = File(fakeRootDir, timestamp.toString())
         file.createNewFile()
+        testedOrchestrator.fileObserver.onEvent(FileObserver.CREATE, file.name)
 
         // When
         val result = testedOrchestrator.getReadableFile(emptySet())
@@ -1039,10 +1063,16 @@ internal class BatchFileOrchestratorTest {
         for (i in 1..count) {
             // create both non readable and non writable files
             expectedFiles.add(
-                File(fakeRootDir, (new + i).toString()).also { it.createNewFile() }
+                File(fakeRootDir, (new + i).toString()).also {
+                    it.createNewFile()
+                    testedOrchestrator.fileObserver.onEvent(FileObserver.CREATE, it.name)
+                }
             )
             expectedFiles.add(
-                File(fakeRootDir, (old - i).toString()).also { it.createNewFile() }
+                File(fakeRootDir, (old - i).toString()).also {
+                    it.createNewFile()
+                    testedOrchestrator.fileObserver.onEvent(FileObserver.CREATE, it.name)
+                }
             )
         }
 
@@ -1085,10 +1115,16 @@ internal class BatchFileOrchestratorTest {
         for (i in 1..count) {
             // create both non readable and non writable files
             expectedFiles.add(
-                File(fakeRootDir, (new + i).toString()).also { it.createNewFile() }
+                File(fakeRootDir, (new + i).toString()).also {
+                    it.createNewFile()
+                    testedOrchestrator.fileObserver.onEvent(FileObserver.CREATE, it.name)
+                }
             )
             expectedFiles.add(
-                File(fakeRootDir, (old - i).toString()).also { it.createNewFile() }
+                File(fakeRootDir, (old - i).toString()).also {
+                    it.createNewFile()
+                    testedOrchestrator.fileObserver.onEvent(FileObserver.CREATE, it.name)
+                }
             )
         }
 
