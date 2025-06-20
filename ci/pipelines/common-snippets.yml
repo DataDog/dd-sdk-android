@@ -3,3 +3,11 @@
     - export GITHUB_APP_CLIENT_ID=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.gh_app_client_id --with-decryption --query "Parameter.Value" --out text)
     - export GITHUB_APP_INSTALLATION_ID=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.gh_app_installation_id --with-decryption --query "Parameter.Value" --out text)
     - export GITHUB_TOKEN=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.gh_app_private_key --with-decryption --query "Parameter.Value" --out text | bash ./ci/scripts/create_github_installation_token.sh "$GITHUB_APP_CLIENT_ID" "$GITHUB_APP_INSTALLATION_ID")
+  install-android-api-components-2:
+    - echo y | ~/android_sdk/cmdline-tools/latest/bin/sdkmanager --install "emulator"
+    - echo y | ~/android_sdk/cmdline-tools/latest/bin/sdkmanager --install "platform-tools"
+    - echo y | ~/android_sdk/cmdline-tools/latest/bin/sdkmanager --install "$ANDROID_PLATFORM"
+    - echo y | ~/android_sdk/cmdline-tools/latest/bin/sdkmanager --install "$ANDROID_BUILD_TOOLS"
+    - echo y | ~/android_sdk/cmdline-tools/latest/bin/sdkmanager --install "$ANDROID_EMULATOR_IMAGE"
+    - yes | ~/android_sdk/cmdline-tools/latest/bin/sdkmanager --licenses || true
+    - echo "no" | ~/android_sdk/cmdline-tools/latest/bin/avdmanager --verbose create avd --force --name "$EMULATOR_NAME" --package "$ANDROID_EMULATOR_IMAGE"

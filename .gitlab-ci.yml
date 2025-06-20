@@ -18,9 +18,9 @@ variables:
   ANDROID_SDK_VERSION: "commandlinetools-mac-11076708_latest"
 
 include:
-  - local: 'ci/pipelines/default-pipeline.yml'
-    rules:
-      - if: '$CI_PIPELINE_KEY == null'
-  - local: 'ci/pipelines/check-release-pipeline.yml'
-    rules:
-      - if: '$CI_PIPELINE_KEY == "check-release"'
+  - local: 'ci/pipelines/benchmark-pipeline.yml'
+#    rules:
+#      - if: '$CI_PIPELINE_KEY == null'
+#  - local: 'ci/pipelines/check-release-pipeline.yml'
+#    rules:
+#      - if: '$CI_PIPELINE_KEY == "check-release"'
