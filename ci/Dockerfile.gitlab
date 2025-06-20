@@ -40,7 +40,7 @@ RUN apt update && apt install -y python3
 
 #  Install pip for aws
 RUN set -x \
- && curl -OL https://bootstrap.pypa.io/get-pip.py \
+ && curl -OL https://bootstrap.pypa.io/pip/3.8/get-pip.py \
  && python3 get-pip.py \
  && rm get-pip.py
 
@@ -106,3 +106,5 @@ RUN npm install -g @datadog/datadog-ci
 ENV DD_TRACER_FOLDER $PWD/dd-java-agent
 RUN mkdir -p $DD_TRACER_FOLDER
 RUN wget -O $DD_TRACER_FOLDER/dd-java-agent.jar https://repo1.maven.org/maven2/com/datadoghq/dd-java-agent/$DD_TRACER_VERSION/dd-java-agent-$DD_TRACER_VERSION.jar
+
+COPY --from=registry.ddbuild.io/dd-octo-sts:v1.8.2 /usr/local/bin/dd-octo-sts /usr/local/bin/dd-octo-sts

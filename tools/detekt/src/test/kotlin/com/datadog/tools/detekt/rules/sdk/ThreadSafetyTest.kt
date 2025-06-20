@@ -874,6 +874,70 @@ class ThreadSafetyTest {
     }
 
     @Test
+    fun `ignore call from main thread to worker thread through threadSwitchingCall {typealias}`() {
+        fakeConfig = TestConfig("workerThreadSwitchingCalls" to listOf("foo.bar.ExecutorAlias.submit"))
+        val code =
+            """
+            package foo.bar
+
+            import androidx.annotation.MainThread
+            import androidx.annotation.WorkerThread
+            import java.util.concurrent.ExecutorService
+            
+            typealias ExecutorAlias = java.util.concurrent.ExecutorService
+
+
+            class Foo(val executorService: ExecutorAlias) {
+                @WorkerThread
+                fun callee() {}
+
+                @MainThread
+                fun caller() {
+                    executorService.submit {
+                        callee()
+                    }
+                }
+
+            }
+            """.trimIndent()
+
+        val findings = ThreadSafety(fakeConfig).compileAndLintWithContext(kotlinEnv.env, code)
+        assertThat(findings).hasSize(0)
+    }
+
+    @Test
+    fun `ignore call from main thread to worker thread through threadSwitchingCall {typealias + lambda}`() {
+        fakeConfig = TestConfig("workerThreadSwitchingCalls" to listOf("foo.bar.AsyncScope.invoke"))
+        val code =
+            """
+            package foo.bar
+
+            import androidx.annotation.MainThread
+            import androidx.annotation.WorkerThread
+            import java.util.concurrent.ExecutorService
+            
+            typealias AsyncScope = (Runnable) -> Unit
+
+
+            class Foo(val scope: AsyncScope) {
+                @WorkerThread
+                fun callee() {}
+
+                @MainThread
+                fun caller() {
+                    scope {
+                        callee()
+                    }
+                }
+
+            }
+            """.trimIndent()
+
+        val findings = ThreadSafety(fakeConfig).compileAndLintWithContext(kotlinEnv.env, code)
+        assertThat(findings).hasSize(0)
+    }
+
+    @Test
     fun `ignore call from worker thread to main thread through threadSwitchingCall`() {
         fakeConfig = TestConfig("mainThreadSwitchingCalls" to listOf("android.widget.LinearLayout.post"))
         val code =

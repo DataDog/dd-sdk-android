@@ -8,6 +8,7 @@ package com.datadog.android.trace.internal.data
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
+import com.datadog.android.api.feature.EventWriteScope
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.feature.FeatureSdkCore
@@ -15,6 +16,9 @@ import com.datadog.android.api.storage.EventBatchWriter
 import com.datadog.android.api.storage.EventType
 import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.event.EventMapper
+import com.datadog.android.internal.concurrent.CompletableFuture
+import com.datadog.android.log.LogAttributes
+import com.datadog.android.trace.AndroidTracer
 import com.datadog.android.trace.internal.domain.event.ContextAwareMapper
 import com.datadog.android.trace.internal.storage.ContextAwareSerializer
 import com.datadog.android.trace.model.SpanEvent
@@ -27,6 +31,7 @@ import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -35,9 +40,11 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
+import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
@@ -45,6 +52,7 @@ import org.mockito.kotlin.verifyNoMoreInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.util.Locale
+import java.util.UUID
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -77,6 +85,9 @@ internal class TraceWriterTest {
     @Mock
     lateinit var mockEventBatchWriter: EventBatchWriter
 
+    @Mock
+    lateinit var mockEventWriteScope: EventWriteScope
+
     @Forgery
     lateinit var fakeDatadogContext: DatadogContext
 
@@ -88,9 +99,13 @@ internal class TraceWriterTest {
             mockSdkCore.getFeature(Feature.TRACING_FEATURE_NAME)
         ) doReturn mockTracingFeatureScope
 
-        whenever(mockTracingFeatureScope.withWriteContext(any(), any())) doAnswer {
-            val callback = it.getArgument<(DatadogContext, EventBatchWriter) -> Unit>(1)
-            callback.invoke(fakeDatadogContext, mockEventBatchWriter)
+        whenever(mockEventWriteScope.invoke(any())) doAnswer {
+            val callback = it.getArgument<(EventBatchWriter) -> Unit>(0)
+            callback.invoke(mockEventBatchWriter)
+        }
+        whenever(mockTracingFeatureScope.withWriteContext(eq(emptySet()), any())) doAnswer {
+            val callback = it.getArgument<(DatadogContext, EventWriteScope) -> Unit>(it.arguments.lastIndex)
+            callback.invoke(fakeDatadogContext, mockEventWriteScope)
         }
 
         whenever(mockEventMapper.map(any())) doAnswer { it.getArgument(0) }
@@ -139,6 +154,178 @@ internal class TraceWriterTest {
             it.finish()
         }
     }
+
+    // region RUM context
+
+    @Test
+    fun `M write spans W write() { with RUM context }`(
+        @Forgery fakeApplicationId: UUID,
+        @Forgery fakeSessionId: UUID,
+        @Forgery fakeViewId: UUID,
+        @Forgery fakeActionId: UUID,
+        forge: Forge
+    ) {
+        // GIVEN
+        val fakeInitialDatadogContext = forge.getForgery<DatadogContext>().let {
+            it.copy(
+                featuresContext = it.featuresContext + mapOf(
+                    Feature.RUM_FEATURE_NAME to mapOf(
+                        "application_id" to fakeApplicationId.toString(),
+                        "session_id" to fakeSessionId.toString(),
+                        "view_id" to fakeViewId.toString(),
+                        "action_id" to fakeActionId.toString()
+                    )
+                )
+            )
+        }
+        val fakeLazyContext = CompletableFuture<DatadogContext>().apply { complete(fakeInitialDatadogContext) }
+        val ddSpans = generateSpanListWithPriorities(forge, TraceWriter.KEEP_AND_UNSET_SAMPLING_PRIORITIES)
+            .map {
+                it.apply { setTag(AndroidTracer.DATADOG_CONTEXT_TAG, fakeLazyContext) }
+            }
+
+        whenever(mockLegacyMapper.map(eq(fakeDatadogContext), any())) doReturn forge.getForgery<SpanEvent>()
+        whenever(mockSerializer.serialize(eq(fakeDatadogContext), any())) doReturn forge.aString()
+
+        // WHEN
+        testedWriter.write(ddSpans)
+
+        // THEN
+        argumentCaptor<DDSpan> {
+            verify(mockLegacyMapper, times(ddSpans.size)).map(eq(fakeDatadogContext), capture())
+            allValues.forEach {
+                assertThat(it.tags[LogAttributes.RUM_APPLICATION_ID]).isEqualTo(fakeApplicationId.toString())
+                assertThat(it.tags[LogAttributes.RUM_SESSION_ID]).isEqualTo(fakeSessionId.toString())
+                assertThat(it.tags[LogAttributes.RUM_VIEW_ID]).isEqualTo(fakeViewId.toString())
+                assertThat(it.tags[LogAttributes.RUM_ACTION_ID]).isEqualTo(fakeActionId.toString())
+                assertThat(it.tags).doesNotContainKey(AndroidTracer.DATADOG_CONTEXT_TAG.key)
+            }
+        }
+
+        ddSpans.forEach {
+            it.finish()
+        }
+    }
+
+    @Test
+    fun `M write spans W write() { without RUM context when empty }`(
+        forge: Forge
+    ) {
+        // GIVEN
+        val fakeInitialDatadogContext = forge.getForgery<DatadogContext>().let {
+            it.copy(
+                featuresContext = it.featuresContext + mapOf(
+                    Feature.RUM_FEATURE_NAME to emptyMap<String, Any?>()
+                )
+            )
+        }
+        val fakeLazyContext = CompletableFuture<DatadogContext>().apply { complete(fakeInitialDatadogContext) }
+        val ddSpans = generateSpanListWithPriorities(forge, TraceWriter.KEEP_AND_UNSET_SAMPLING_PRIORITIES)
+            .map {
+                it.apply { setTag(AndroidTracer.DATADOG_CONTEXT_TAG, fakeLazyContext) }
+            }
+
+        whenever(mockLegacyMapper.map(eq(fakeDatadogContext), any())) doReturn forge.getForgery<SpanEvent>()
+        whenever(mockSerializer.serialize(eq(fakeDatadogContext), any())) doReturn forge.aString()
+
+        // WHEN
+        testedWriter.write(ddSpans)
+
+        // THEN
+        argumentCaptor<DDSpan> {
+            verify(mockLegacyMapper, times(ddSpans.size)).map(eq(fakeDatadogContext), capture())
+            allValues.forEach {
+                assertThat(it.tags).doesNotContainKey(LogAttributes.RUM_APPLICATION_ID)
+                assertThat(it.tags).doesNotContainKey(LogAttributes.RUM_SESSION_ID)
+                assertThat(it.tags).doesNotContainKey(LogAttributes.RUM_VIEW_ID)
+                assertThat(it.tags).doesNotContainKey(LogAttributes.RUM_ACTION_ID)
+                assertThat(it.tags).doesNotContainKey(AndroidTracer.DATADOG_CONTEXT_TAG.key)
+            }
+            assertThat(allValues).isEqualTo(ddSpans)
+        }
+
+        ddSpans.forEach {
+            it.finish()
+        }
+    }
+
+    @Test
+    fun `M write spans W write() { without RUM context, lazy Datadog context is not complete }`(
+        forge: Forge
+    ) {
+        // GIVEN
+        val fakeLazyContext = CompletableFuture<DatadogContext>()
+        val ddSpans = generateSpanListWithPriorities(forge, TraceWriter.KEEP_AND_UNSET_SAMPLING_PRIORITIES)
+            .map {
+                it.apply { setTag(AndroidTracer.DATADOG_CONTEXT_TAG, fakeLazyContext) }
+            }
+
+        whenever(mockLegacyMapper.map(eq(fakeDatadogContext), any())) doReturn forge.getForgery<SpanEvent>()
+        whenever(mockSerializer.serialize(eq(fakeDatadogContext), any())) doReturn forge.aString()
+
+        // WHEN
+        testedWriter.write(ddSpans)
+
+        // THEN
+        argumentCaptor<DDSpan> {
+            verify(mockLegacyMapper, times(ddSpans.size)).map(eq(fakeDatadogContext), capture())
+            allValues.forEach {
+                assertThat(it.tags).doesNotContainKey(LogAttributes.RUM_APPLICATION_ID)
+                assertThat(it.tags).doesNotContainKey(LogAttributes.RUM_SESSION_ID)
+                assertThat(it.tags).doesNotContainKey(LogAttributes.RUM_VIEW_ID)
+                assertThat(it.tags).doesNotContainKey(LogAttributes.RUM_ACTION_ID)
+                assertThat(it.tags).doesNotContainKey(AndroidTracer.DATADOG_CONTEXT_TAG.key)
+            }
+            assertThat(allValues).isEqualTo(ddSpans)
+        }
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.USER,
+            TraceWriter.INITIAL_DATADOG_CONTEXT_NOT_AVAILABLE_ERROR,
+            mode = times(ddSpans.size)
+        )
+
+        ddSpans.forEach {
+            it.finish()
+        }
+    }
+
+    @Test
+    fun `M write spans W write() { without RUM context, lazy Datadog context is of wrong type }`(
+        forge: Forge
+    ) {
+        // GIVEN
+        val ddSpans = generateSpanListWithPriorities(forge, TraceWriter.KEEP_AND_UNSET_SAMPLING_PRIORITIES)
+            .map {
+                it.apply { setTag(AndroidTracer.DATADOG_CONTEXT_TAG.key, forge.aString()) }
+            }
+
+        whenever(mockLegacyMapper.map(eq(fakeDatadogContext), any())) doReturn forge.getForgery<SpanEvent>()
+        whenever(mockSerializer.serialize(eq(fakeDatadogContext), any())) doReturn forge.aString()
+
+        // WHEN
+        testedWriter.write(ddSpans)
+
+        // THEN
+        argumentCaptor<DDSpan> {
+            verify(mockLegacyMapper, times(ddSpans.size)).map(eq(fakeDatadogContext), capture())
+            allValues.forEach {
+                assertThat(it.tags).doesNotContainKey(LogAttributes.RUM_APPLICATION_ID)
+                assertThat(it.tags).doesNotContainKey(LogAttributes.RUM_SESSION_ID)
+                assertThat(it.tags).doesNotContainKey(LogAttributes.RUM_VIEW_ID)
+                assertThat(it.tags).doesNotContainKey(LogAttributes.RUM_ACTION_ID)
+                assertThat(it.tags).doesNotContainKey(AndroidTracer.DATADOG_CONTEXT_TAG.key)
+            }
+            assertThat(allValues).isEqualTo(ddSpans)
+        }
+        verifyNoInteractions(mockInternalLogger)
+
+        ddSpans.forEach {
+            it.finish()
+        }
+    }
+
+    // endregion
 
     @Test
     fun `M not write spans with drop sampling priority W write() { drop sampling decision }`(forge: Forge) {
@@ -317,8 +504,8 @@ internal class TraceWriterTest {
         testedWriter.write(ddSpans)
 
         // THEN
-        verify(mockSdkCore, times(1)).getFeature(Feature.TRACING_FEATURE_NAME)
-        verify(mockTracingFeatureScope, times(1)).withWriteContext(any(), any())
+        verify(mockSdkCore).getFeature(Feature.TRACING_FEATURE_NAME)
+        verify(mockTracingFeatureScope).withWriteContext(any(), any())
 
         verifyNoMoreInteractions(mockSdkCore, mockTracingFeatureScope)
 

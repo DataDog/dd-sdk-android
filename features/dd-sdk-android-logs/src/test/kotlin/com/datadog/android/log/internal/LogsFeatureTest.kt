@@ -9,6 +9,7 @@ package com.datadog.android.log.internal
 import android.content.Context
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
+import com.datadog.android.api.feature.EventWriteScope
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.feature.FeatureSdkCore
@@ -76,6 +77,9 @@ internal class LogsFeatureTest {
     lateinit var mockLogsFeatureScope: FeatureScope
 
     @Mock
+    lateinit var mockEventWriteScope: EventWriteScope
+
+    @Mock
     lateinit var mockEventBatchWriter: EventBatchWriter
 
     @Mock
@@ -136,9 +140,13 @@ internal class LogsFeatureTest {
             mockSdkCore.getFeature(Feature.LOGS_FEATURE_NAME)
         ) doReturn mockLogsFeatureScope
 
+        whenever(mockEventWriteScope.invoke(any())) doAnswer {
+            val callback = it.getArgument<(EventBatchWriter) -> Unit>(0)
+            callback.invoke(mockEventBatchWriter)
+        }
         whenever(mockLogsFeatureScope.withWriteContext(any(), any())) doAnswer {
-            val callback = it.getArgument<(DatadogContext, EventBatchWriter) -> Unit>(1)
-            callback.invoke(fakeDatadogContext, mockEventBatchWriter)
+            val callback = it.getArgument<(DatadogContext, EventWriteScope) -> Unit>(it.arguments.lastIndex)
+            callback.invoke(fakeDatadogContext, mockEventWriteScope)
         }
 
         fakeDatadogContext = fakeDatadogContext.copy(
@@ -424,6 +432,7 @@ internal class LogsFeatureTest {
         testedFeature.onReceive(event)
 
         // Then
+        verify(mockLogsFeatureScope).withWriteContext(eq(setOf(Feature.RUM_FEATURE_NAME)), any())
         argumentCaptor<LogEvent> {
             verify(mockDataWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
 

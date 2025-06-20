@@ -10,6 +10,7 @@ import android.app.ApplicationExitInfo
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.context.UserInfo
+import com.datadog.android.api.feature.EventWriteScope
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.storage.DataWriter
@@ -84,6 +85,9 @@ internal class DatadogLateCrashReporterTest {
     lateinit var mockEventBatchWriter: EventBatchWriter
 
     @Mock
+    lateinit var mockEventWriteScope: EventWriteScope
+
+    @Mock
     lateinit var mockAndroidTraceParser: AndroidTraceParser
 
     @Mock
@@ -97,9 +101,13 @@ internal class DatadogLateCrashReporterTest {
         whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
         whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumFeatureScope
 
+        whenever(mockEventWriteScope.invoke(any())) doAnswer {
+            val callback = it.getArgument<(EventBatchWriter) -> Unit>(0)
+            callback.invoke(mockEventBatchWriter)
+        }
         whenever(mockRumFeatureScope.withWriteContext(any(), any())) doAnswer {
-            val callback = it.getArgument<(DatadogContext, EventBatchWriter) -> Unit>(1)
-            callback.invoke(fakeDatadogContext, mockEventBatchWriter)
+            val callback = it.getArgument<(DatadogContext, EventWriteScope) -> Unit>(it.arguments.lastIndex)
+            callback.invoke(fakeDatadogContext, mockEventWriteScope)
         }
 
         testedHandler = DatadogLateCrashReporter(
@@ -711,6 +719,7 @@ internal class DatadogLateCrashReporterTest {
         testedHandler.handleAnrCrash(mockAnrExitInfo, fakeViewEventJson, mockRumWriter)
 
         // Then
+        verify(mockRumFeatureScope).withWriteContext(eq(setOf(Feature.RUM_FEATURE_NAME)), any())
         argumentCaptor<Any> {
             verify(mockRumWriter, times(2)).write(eq(mockEventBatchWriter), capture(), eq(EventType.CRASH))
 
@@ -801,6 +810,7 @@ internal class DatadogLateCrashReporterTest {
         testedHandler.handleAnrCrash(mockAnrExitInfo, fakeViewEventJson, mockRumWriter)
 
         // Then
+        verify(mockRumFeatureScope).withWriteContext(eq(setOf(Feature.RUM_FEATURE_NAME)), any())
         argumentCaptor<Any> {
             verify(mockRumWriter, times(2)).write(eq(mockEventBatchWriter), capture(), eq(EventType.CRASH))
 
@@ -889,6 +899,7 @@ internal class DatadogLateCrashReporterTest {
         testedHandler.handleAnrCrash(mockAnrExitInfo, fakeViewEventJson, mockRumWriter)
 
         // Then
+        verify(mockRumFeatureScope).withWriteContext(eq(setOf(Feature.RUM_FEATURE_NAME)), any())
         argumentCaptor<Any> {
             verify(mockRumWriter, times(1)).write(eq(mockEventBatchWriter), capture(), eq(EventType.CRASH))
 

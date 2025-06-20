@@ -4,9 +4,8 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.internal.utils
+package com.datadog.android.internal.utils
 
-import com.datadog.android.internal.utils.appendIfNotEmpty
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
