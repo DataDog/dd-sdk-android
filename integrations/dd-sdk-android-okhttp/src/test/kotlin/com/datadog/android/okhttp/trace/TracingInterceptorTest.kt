@@ -1582,8 +1582,8 @@ internal open class TracingInterceptorTest {
         whenever(mockTraceSampler.getSampleRate()) doReturn sampleRate
 
         val contextMock = mock<MutableMap<String, Any?>>()
-        whenever(rumMonitor.mockSdkCore.updateFeatureContext(eq(Feature.TRACING_FEATURE_NAME), any())) doAnswer {
-            val updater = it.getArgument<(MutableMap<String, Any?>) -> Unit>(1)
+        whenever(rumMonitor.mockSdkCore.updateFeatureContext(eq(Feature.TRACING_FEATURE_NAME), any(), any())) doAnswer {
+            val updater = it.getArgument<(MutableMap<String, Any?>) -> Unit>(it.arguments.lastIndex)
             updater(contextMock)
         }
 

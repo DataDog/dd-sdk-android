@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.internal.forge
+package com.datadog.android.internal.forge
 
 import com.datadog.android.internal.tests.elmyr.InternalTelemetryErrorLogForgeryFactory
 import com.datadog.tools.unit.forge.BaseConfigurator

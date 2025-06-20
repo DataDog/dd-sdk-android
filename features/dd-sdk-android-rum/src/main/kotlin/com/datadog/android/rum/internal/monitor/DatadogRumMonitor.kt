@@ -11,6 +11,8 @@ import android.app.ActivityManager
 import android.os.Handler
 import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.context.DatadogContext
+import com.datadog.android.api.feature.EventWriteScope
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.measureMethodCallPerf
 import com.datadog.android.api.storage.DataWriter
@@ -18,9 +20,11 @@ import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.feature.event.ThreadDump
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.utils.executeSafe
+import com.datadog.android.core.internal.utils.getSafe
+import com.datadog.android.core.internal.utils.submitSafe
 import com.datadog.android.core.metrics.MethodCallSamplingRate
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
-import com.datadog.android.internal.thread.NamedRunnable
+import com.datadog.android.internal.thread.NamedCallable
 import com.datadog.android.rum.DdRumContentProvider
 import com.datadog.android.rum.ExperimentalRumApi
 import com.datadog.android.rum.RumActionType
@@ -42,7 +46,6 @@ import com.datadog.android.rum.internal.domain.asTime
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
 import com.datadog.android.rum.internal.domain.scope.RumApplicationScope
 import com.datadog.android.rum.internal.domain.scope.RumRawEvent
-import com.datadog.android.rum.internal.domain.scope.RumScope
 import com.datadog.android.rum.internal.domain.scope.RumScopeKey
 import com.datadog.android.rum.internal.domain.scope.RumSessionScope
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
@@ -82,7 +85,7 @@ internal class DatadogRumMonitor(
     slowFramesListener: SlowFramesListener?
 ) : RumMonitor, AdvancedRumMonitor {
 
-    internal var rootScope: RumScope = RumApplicationScope(
+    internal var rootScope = RumApplicationScope(
         applicationId,
         sdkCore,
         sampleRate,
@@ -122,8 +125,7 @@ internal class DatadogRumMonitor(
             "Get current session ID",
             sdkCore.internalLogger
         ) {
-            val activeSessionId = (rootScope as? RumApplicationScope)
-                ?.activeSession
+            val activeSessionId = rootScope.activeSession
                 ?.getRumContext()
                 ?.let {
                     val sessionId = it.sessionId
@@ -651,38 +653,74 @@ internal class DatadogRumMonitor(
     internal fun handleEvent(event: RumRawEvent) {
         if (event is RumRawEvent.AddError && event.isFatal) {
             synchronized(rootScope) {
-                @Suppress("ThreadSafety") // Crash handling, can't delegate to another thread
-                rootScope.handleEvent(event, writer)
+                // TODO RUM-9852 Implement better passthrough mechanism for the JVM crash scenario
+                val writeContext = sdkCore.getFeature(Feature.RUM_FEATURE_NAME)
+                    ?.getWriteContextSync(withFeatureContexts = setOf(Feature.SESSION_REPLAY_FEATURE_NAME))
+                if (writeContext != null) {
+                    val (datadogContext, eventWriteScope) = writeContext
+                    @Suppress("ThreadSafety") // Crash handling, can't delegate to another thread
+                    rootScope.handleEvent(event, datadogContext, eventWriteScope, writer)
+                    val currentFeatureContext = currentRumContext()
+                    sdkCore.updateFeatureContext(Feature.RUM_FEATURE_NAME) {
+                        it.putAll(currentFeatureContext.toMap())
+                    }
+                } else {
+                    sdkCore.internalLogger.log(
+                        InternalLogger.Level.WARN,
+                        InternalLogger.Target.USER,
+                        { CANNOT_WRITE_CRASH_WRITE_CONTEXT_IS_NOT_AVAILABLE }
+                    )
+                }
             }
         } else if (event is RumRawEvent.TelemetryEventWrapper) {
             telemetryEventHandler.handleEvent(event, writer)
         } else {
             handler.removeCallbacks(keepAliveRunnable)
-            // avoid trowing a RejectedExecutionException
-            if (!executorService.isShutdown) {
-                executorService.executeSafe(
-                    "Rum event handling",
-                    sdkCore.internalLogger,
-                    NamedRunnable("${event::class.simpleName}") {
-                        synchronized(rootScope) {
-                            handleEventWithMethodCallPerf(event)
-                            notifyDebugListenerWithState()
+            sdkCore.getFeature(Feature.RUM_FEATURE_NAME)
+                ?.withWriteContext(
+                    withFeatureContexts = setOf(Feature.SESSION_REPLAY_FEATURE_NAME)
+                ) { datadogContext, writeScope ->
+                    // avoid trowing a RejectedExecutionException
+                    if (!executorService.isShutdown) {
+                        // we are already on the context thread, which is single and shared between the features, but we
+                        // need still to delegate processing to the RUM-specific thread since it supports
+                        // backpressure handling
+                        val future = executorService.submitSafe(
+                            "Rum event handling",
+                            sdkCore.internalLogger,
+                            NamedCallable<RumContext>("${event::class.simpleName}") {
+                                synchronized(rootScope) {
+                                    handleEventWithMethodCallPerf(event, datadogContext, writeScope)
+                                    notifyDebugListenerWithState()
+                                }
+                                handler.postDelayed(keepAliveRunnable, KEEP_ALIVE_MS)
+                                currentRumContext()
+                            }
+                        )
+                        val rumContext = future.getSafe("Rum get context", sdkCore.internalLogger)
+                        if (rumContext != null) {
+                            // we are on the context thread already, so useContextThread=false
+                            sdkCore.updateFeatureContext(Feature.RUM_FEATURE_NAME, useContextThread = false) {
+                                it.putAll(rumContext.toMap())
+                            }
                         }
-                        handler.postDelayed(keepAliveRunnable, KEEP_ALIVE_MS)
                     }
-                )
-            }
+                }
         }
     }
 
     @WorkerThread
-    private fun handleEventWithMethodCallPerf(event: RumRawEvent) {
+    private fun handleEventWithMethodCallPerf(
+        event: RumRawEvent,
+        datadogContext: DatadogContext,
+        writeScope: EventWriteScope
+    ) {
         sdkCore.internalLogger.measureMethodCallPerf(
             javaClass,
             "RUM event - ${event::class.simpleName ?: "Unknown"}",
             MethodCallSamplingRate.RARE.rate
         ) {
-            rootScope.handleEvent(event, writer)
+            rootScope.handleEvent(event, datadogContext, writeScope, writer)
         }
     }
 
@@ -710,14 +748,21 @@ internal class DatadogRumMonitor(
         }
     }
 
+    private fun currentRumContext(): RumContext {
+        val activeSession = rootScope.activeSession
+        val context = activeSession?.activeView?.getRumContext()
+            ?: activeSession?.getRumContext()
+            ?: rootScope.getRumContext()
+        return context
+    }
+
     internal fun stopKeepAliveCallback() {
         handler.removeCallbacks(keepAliveRunnable)
     }
 
     internal fun notifyDebugListenerWithState() {
         debugListener?.let {
-            val applicationScope = rootScope as? RumApplicationScope
-            val sessionScope = applicationScope?.activeSession as? RumSessionScope
+            val sessionScope = rootScope.activeSession
             val viewManagerScope = sessionScope?.childScope
             if (viewManagerScope != null) {
                 it.onReceiveRumActiveViews(
@@ -761,5 +806,8 @@ internal class DatadogRumMonitor(
 
         internal const val RUM_DEBUG_RUM_NOT_ENABLED_WARNING =
             "Cannot switch RUM debugging, because RUM feature is not enabled."
+
+        internal const val CANNOT_WRITE_CRASH_WRITE_CONTEXT_IS_NOT_AVAILABLE =
+            "Cannot write JVM crash, because write context is not available."
     }
 }

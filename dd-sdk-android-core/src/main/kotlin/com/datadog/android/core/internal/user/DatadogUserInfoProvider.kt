@@ -10,6 +10,7 @@ import com.datadog.android.api.context.UserInfo
 
 internal class DatadogUserInfoProvider : MutableUserInfoProvider {
 
+    @Volatile
     private var internalUserInfo = UserInfo()
 
     override fun setUserInfo(id: String, name: String?, email: String?, extraInfo: Map<String, Any?>) {

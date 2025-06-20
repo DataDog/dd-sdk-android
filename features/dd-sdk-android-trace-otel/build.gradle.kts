@@ -57,6 +57,7 @@ android {
 dependencies {
     api(project(":dd-sdk-android-core"))
     api(project(":features:dd-sdk-android-trace"))
+    implementation(project(":dd-sdk-android-internal"))
     api(libs.openTelemetryApi)
     implementation(libs.kotlin)
     implementation(libs.androidXAnnotation)

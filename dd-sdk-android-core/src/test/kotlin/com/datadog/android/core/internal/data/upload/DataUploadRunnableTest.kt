@@ -123,7 +123,7 @@ internal class DataUploadRunnableTest {
         whenever(mockUploadSchedulerStrategy.getMsDelayUntilNextUpload(any(), any(), anyOrNull(), anyOrNull()))
             .doReturn(fakeDelayUntilNextUploadMs)
 
-        whenever(mockContextProvider.context) doReturn fakeContext
+        whenever(mockContextProvider.getContext(emptySet())) doReturn fakeContext
 
         testedRunnable = DataUploadRunnable(
             featureName = fakeFeatureName,

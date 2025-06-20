@@ -64,6 +64,11 @@ public abstract interface class com/datadog/android/trace/event/SpanEventMapper 
 	public abstract fun map (Lcom/datadog/android/trace/model/SpanEvent;)Lcom/datadog/android/trace/model/SpanEvent;
 }
 
+public final class com/datadog/android/trace/internal/SpanAttributes {
+	public static final field DATADOG_INITIAL_CONTEXT Ljava/lang/String;
+	public static final field INSTANCE Lcom/datadog/android/trace/internal/SpanAttributes;
+}
+
 public final class com/datadog/android/trace/model/SpanEvent {
 	public static final field Companion Lcom/datadog/android/trace/model/SpanEvent$Companion;
 	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;JJJLcom/datadog/android/trace/model/SpanEvent$Metrics;Lcom/datadog/android/trace/model/SpanEvent$Meta;)V

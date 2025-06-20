@@ -9,6 +9,7 @@ package com.datadog.android.rum.internal.domain.scope
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.context.NetworkInfo
+import com.datadog.android.api.feature.EventWriteScope
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.storage.DataWriter
@@ -94,6 +95,9 @@ internal class RumActionScopeAttributePropagationTest {
     lateinit var mockRumFeatureScope: FeatureScope
 
     @Mock
+    lateinit var mockEventWriteScope: EventWriteScope
+
+    @Mock
     lateinit var mockEventBatchWriter: EventBatchWriter
 
     @Mock
@@ -146,11 +150,15 @@ internal class RumActionScopeAttributePropagationTest {
         whenever(rumMonitor.mockSdkCore.internalLogger) doReturn mock()
         whenever(rumMonitor.mockSdkCore.networkInfo) doReturn fakeNetworkInfoAtScopeStart
         whenever(rumMonitor.mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumFeatureScope
-        whenever(mockRumFeatureScope.withWriteContext(any(), any())) doAnswer {
-            val callback = it.getArgument<(DatadogContext, EventBatchWriter) -> Unit>(1)
-            callback.invoke(fakeDatadogContext, mockEventBatchWriter)
+        whenever(mockEventWriteScope.invoke(any())) doAnswer {
+            val callback = it.getArgument<(EventBatchWriter) -> Unit>(0)
+            callback.invoke(mockEventBatchWriter)
         }
         whenever(mockWriter.write(eq(mockEventBatchWriter), any(), eq(EventType.DEFAULT))) doReturn true
+        whenever(mockRumFeatureScope.withWriteContext(any(), any())) doAnswer {
+            val callback = it.getArgument<(DatadogContext, EventWriteScope) -> Unit>(1)
+            callback.invoke(fakeDatadogContext, mockEventWriteScope)
+        }
 
         testedScope = RumActionScope(
             parentScope = mockParentScope,
@@ -195,7 +203,7 @@ internal class RumActionScopeAttributePropagationTest {
 
         // When
         Thread.sleep(TEST_INACTIVITY_MS * 2)
-        testedScope.handleEvent(mockEvent(), mockWriter)
+        testedScope.handleEvent(mockEvent(), fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
         argumentCaptor<ActionEvent> {

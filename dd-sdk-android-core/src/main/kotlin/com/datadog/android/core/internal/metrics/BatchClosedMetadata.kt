@@ -8,6 +8,5 @@ package com.datadog.android.core.internal.metrics
 
 internal data class BatchClosedMetadata(
     internal val lastTimeWasUsedInMs: Long,
-    internal val forcedNew: Boolean,
     internal val eventsCount: Long
 )

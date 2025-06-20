@@ -100,7 +100,7 @@ def generate_target_code(target: str, temp_dir_path: str, version: str):
 
 def git_clone_repository(repo_name: str, gh_token: str, temp_dir_path: str) -> Tuple[Repo, str]:
     print("Cloning repository " + repo_name)
-    url = "https://" + gh_token + ":x-oauth-basic@github.com/DataDog/" + repo_name
+    url = "https://x-access-token:" + gh_token + "@github.com/DataDog/" + repo_name
     repo = Repo.clone_from(url, temp_dir_path)
     base_name = repo.active_branch.name
     return repo, base_name
@@ -143,10 +143,7 @@ def update_dependant(version: str, target: str, gh_token: str, dry_run: bool) ->
 def run_main() -> int:
     cli_args = parse_arguments(sys.argv[1:])
 
-    # This script expects to have a valid Github Token in a "gh_token" text file
-    # The token needs the `repo` permissions, and for now is a PAT
-    with open('gh_token', 'r') as f:
-        gh_token = f.read().strip()
+    gh_token = os.getenv("GITHUB_TOKEN")
 
     return update_dependant(cli_args.version, cli_args.target, gh_token, cli_args.dry_run)
 

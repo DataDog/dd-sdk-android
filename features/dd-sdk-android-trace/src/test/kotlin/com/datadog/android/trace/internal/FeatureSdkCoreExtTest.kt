@@ -54,7 +54,7 @@ internal class FeatureSdkCoreExtTest {
         // Then
         val traceContext: MutableMap<String, Any?> = mutableMapOf()
         argumentCaptor<(MutableMap<String, Any?>) -> Unit> {
-            verify(mockSdkCore).updateFeatureContext(eq(Feature.TRACING_FEATURE_NAME), capture())
+            verify(mockSdkCore).updateFeatureContext(eq(Feature.TRACING_FEATURE_NAME), eq(true), capture())
             firstValue.invoke(traceContext)
             val activeTraceContext = traceContext[activeTraceContextName] as Map<String, Any>
             assertThat(activeTraceContext).containsEntry("trace_id", fakeTraceId)
@@ -79,7 +79,7 @@ internal class FeatureSdkCoreExtTest {
 
         // Then
         argumentCaptor<(MutableMap<String, Any?>) -> Unit> {
-            verify(mockSdkCore).updateFeatureContext(eq(Feature.TRACING_FEATURE_NAME), capture())
+            verify(mockSdkCore).updateFeatureContext(eq(Feature.TRACING_FEATURE_NAME), eq(true), capture())
             firstValue.invoke(fakeTraceContext)
             assertThat(fakeTraceContext).doesNotContainKey(activeTraceContextName)
         }

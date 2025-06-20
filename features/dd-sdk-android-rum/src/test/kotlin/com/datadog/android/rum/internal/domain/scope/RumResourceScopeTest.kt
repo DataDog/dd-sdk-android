@@ -9,8 +9,7 @@ package com.datadog.android.rum.internal.domain.scope
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.context.NetworkInfo
-import com.datadog.android.api.feature.Feature
-import com.datadog.android.api.feature.FeatureScope
+import com.datadog.android.api.feature.EventWriteScope
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.api.storage.EventBatchWriter
 import com.datadog.android.api.storage.EventType
@@ -105,10 +104,16 @@ internal class RumResourceScopeTest {
     lateinit var mockInternalLogger: InternalLogger
 
     @Mock
-    lateinit var mockRumFeatureScope: FeatureScope
+    lateinit var mockEventBatchWriter: EventBatchWriter
 
     @Mock
-    lateinit var mockEventBatchWriter: EventBatchWriter
+    lateinit var mockEventWriteScope: EventWriteScope
+
+    @Mock
+    lateinit var mockFeaturesContextResolver: FeaturesContextResolver
+
+    @Mock
+    lateinit var mockNetworkSettledMetricResolver: NetworkSettledMetricResolver
 
     @StringForgery(regex = "http(s?)://[a-z]+\\.com/[a-z]+")
     lateinit var fakeUrl: String
@@ -129,21 +134,15 @@ internal class RumResourceScopeTest {
     @Forgery
     lateinit var fakeNetworkInfoAtScopeStart: NetworkInfo
 
-    var fakeServerOffset: Long = 0L
-    var fakeSampleRate: Float = 0.0f
+    private var fakeServerOffset: Long = 0L
+    private var fakeSampleRate: Float = 0.0f
 
     private lateinit var fakeEventTime: Time
-    var fakeSourceResourceEvent: ResourceEvent.ResourceEventSource? = null
-    var fakeSourceErrorEvent: ErrorEvent.ErrorEventSource? = null
+    private var fakeSourceResourceEvent: ResourceEvent.ResourceEventSource? = null
+    private var fakeSourceErrorEvent: ErrorEvent.ErrorEventSource? = null
 
     @BoolForgery
     var fakeHasReplay: Boolean = false
-
-    @Mock
-    lateinit var mockFeaturesContextResolver: FeaturesContextResolver
-
-    @Mock
-    lateinit var mockNetworkSettledMetricResolver: NetworkSettledMetricResolver
 
     @BeforeEach
     fun `set up`(forge: Forge) {
@@ -194,10 +193,9 @@ internal class RumResourceScopeTest {
                 fakeParentContext.viewId.orEmpty()
             )
         ).thenReturn(fakeHasReplay)
-        whenever(rumMonitor.mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumFeatureScope
-        whenever(mockRumFeatureScope.withWriteContext(any(), any())) doAnswer {
-            val callback = it.getArgument<(DatadogContext, EventBatchWriter) -> Unit>(1)
-            callback.invoke(fakeDatadogContext, mockEventBatchWriter)
+        whenever(mockEventWriteScope.invoke(any())) doAnswer {
+            val callback = it.getArgument<(EventBatchWriter) -> Unit>(0)
+            callback.invoke(mockEventBatchWriter)
         }
         whenever(mockWriter.write(eq(mockEventBatchWriter), any(), eq(EventType.DEFAULT))) doReturn true
 
@@ -265,7 +263,7 @@ internal class RumResourceScopeTest {
         // When
         Thread.sleep(RESOURCE_DURATION_MS)
         mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
-        val result = testedScope.handleEvent(mockEvent, mockWriter)
+        val result = testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
         argumentCaptor<ResourceEvent> {
@@ -313,7 +311,7 @@ internal class RumResourceScopeTest {
                     hasSampleRate(fakeSampleRate)
                 }
         }
-        verify(mockParentScope, never()).handleEvent(any(), any())
+        verify(mockParentScope, never()).handleEvent(any(), any(), any(), any())
         verifyNoMoreInteractions(mockWriter)
         assertThat(result).isEqualTo(null)
     }
@@ -335,7 +333,7 @@ internal class RumResourceScopeTest {
         // When
         Thread.sleep(RESOURCE_DURATION_MS)
         mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
-        val result = testedScope.handleEvent(mockEvent, mockWriter)
+        val result = testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
         argumentCaptor<ResourceEvent> {
@@ -384,7 +382,7 @@ internal class RumResourceScopeTest {
                     hasSampleRate(fakeSampleRate)
                 }
         }
-        verify(mockParentScope, never()).handleEvent(any(), any())
+        verify(mockParentScope, never()).handleEvent(any(), any(), any(), any())
         verifyNoMoreInteractions(mockWriter)
         assertThat(result).isEqualTo(null)
     }
@@ -421,7 +419,7 @@ internal class RumResourceScopeTest {
         // When
         Thread.sleep(RESOURCE_DURATION_MS)
         mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
-        val result = testedScope.handleEvent(mockEvent, mockWriter)
+        val result = testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
         argumentCaptor<ResourceEvent> {
@@ -470,7 +468,7 @@ internal class RumResourceScopeTest {
                     hasSampleRate(fakeSampleRate)
                 }
         }
-        verify(mockParentScope, never()).handleEvent(any(), any())
+        verify(mockParentScope, never()).handleEvent(any(), any(), any(), any())
         verifyNoMoreInteractions(mockWriter)
         assertThat(result).isEqualTo(null)
     }
@@ -498,7 +496,7 @@ internal class RumResourceScopeTest {
         // When
         Thread.sleep(RESOURCE_DURATION_MS)
         mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
-        val result = testedScope.handleEvent(mockEvent, mockWriter)
+        val result = testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
         argumentCaptor<ResourceEvent> {
@@ -546,7 +544,7 @@ internal class RumResourceScopeTest {
                     hasSampleRate(fakeSampleRate)
                 }
         }
-        verify(mockParentScope, never()).handleEvent(any(), any())
+        verify(mockParentScope, never()).handleEvent(any(), any(), any(), any())
         verifyNoMoreInteractions(mockWriter)
         assertThat(result).isEqualTo(null)
     }
@@ -569,7 +567,7 @@ internal class RumResourceScopeTest {
         // When
         Thread.sleep(RESOURCE_DURATION_MS)
         mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
-        val result = testedScope.handleEvent(mockEvent, mockWriter)
+        val result = testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
         argumentCaptor<ResourceEvent> {
@@ -617,7 +615,7 @@ internal class RumResourceScopeTest {
                     hasSampleRate(fakeSampleRate)
                 }
         }
-        verify(mockParentScope, never()).handleEvent(any(), any())
+        verify(mockParentScope, never()).handleEvent(any(), any(), any(), any())
         verifyNoMoreInteractions(mockWriter)
         assertThat(result).isEqualTo(null)
     }
@@ -659,7 +657,7 @@ internal class RumResourceScopeTest {
         // When
         Thread.sleep(RESOURCE_DURATION_MS)
         mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
-        val result = testedScope.handleEvent(mockEvent, mockWriter)
+        val result = testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
         argumentCaptor<ResourceEvent> {
@@ -707,7 +705,7 @@ internal class RumResourceScopeTest {
                     hasSampleRate(fakeSampleRate)
                 }
         }
-        verify(mockParentScope, never()).handleEvent(any(), any())
+        verify(mockParentScope, never()).handleEvent(any(), any(), any(), any())
         verifyNoMoreInteractions(mockWriter)
         assertThat(result).isEqualTo(null)
     }
@@ -721,7 +719,7 @@ internal class RumResourceScopeTest {
         // When
         Thread.sleep(RESOURCE_DURATION_MS)
         mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, emptyMap())
-        val result = testedScope.handleEvent(mockEvent, mockWriter)
+        val result = testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
         argumentCaptor<ResourceEvent> {
@@ -769,7 +767,7 @@ internal class RumResourceScopeTest {
                     hasSampleRate(fakeSampleRate)
                 }
         }
-        verify(mockParentScope, never()).handleEvent(any(), any())
+        verify(mockParentScope, never()).handleEvent(any(), any(), any(), any())
         verifyNoMoreInteractions(mockWriter)
         assertThat(result).isEqualTo(null)
     }
@@ -783,7 +781,7 @@ internal class RumResourceScopeTest {
         // When
         Thread.sleep(RESOURCE_DURATION_MS)
         mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, emptyMap())
-        val result = testedScope.handleEvent(mockEvent, mockWriter)
+        val result = testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
         argumentCaptor<ResourceEvent> {
@@ -822,7 +820,7 @@ internal class RumResourceScopeTest {
                     hasSampleRate(fakeSampleRate)
                 }
         }
-        verify(mockParentScope, never()).handleEvent(any(), any())
+        verify(mockParentScope, never()).handleEvent(any(), any(), any(), any())
         verifyNoMoreInteractions(mockWriter)
         assertThat(result).isEqualTo(null)
     }
@@ -836,14 +834,14 @@ internal class RumResourceScopeTest {
         // When
         Thread.sleep(RESOURCE_DURATION_MS)
         mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, emptyMap())
-        val result = testedScope.handleEvent(mockEvent, mockWriter)
+        val result = testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
         argumentCaptor<Any> {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(lastValue).isNotInstanceOf(ErrorEvent::class.java)
         }
-        verify(mockParentScope, never()).handleEvent(any(), any())
+        verify(mockParentScope, never()).handleEvent(any(), any(), any(), any())
         verifyNoMoreInteractions(mockWriter)
         assertThat(result).isEqualTo(null)
     }
@@ -856,14 +854,14 @@ internal class RumResourceScopeTest {
         // When
         Thread.sleep(RESOURCE_DURATION_MS)
         mockEvent = RumRawEvent.StopResource(fakeKey, null, size, kind, emptyMap())
-        val result = testedScope.handleEvent(mockEvent, mockWriter)
+        val result = testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
         argumentCaptor<Any> {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(lastValue).isNotInstanceOf(ErrorEvent::class.java)
         }
-        verify(mockParentScope, never()).handleEvent(any(), any())
+        verify(mockParentScope, never()).handleEvent(any(), any(), any(), any())
         verifyNoMoreInteractions(mockWriter)
         assertThat(result).isEqualTo(null)
     }
@@ -902,7 +900,7 @@ internal class RumResourceScopeTest {
         // When
         Thread.sleep(RESOURCE_DURATION_MS)
         mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, emptyMap())
-        val result = testedScope.handleEvent(mockEvent, mockWriter)
+        val result = testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
         argumentCaptor<ResourceEvent> {
@@ -950,7 +948,7 @@ internal class RumResourceScopeTest {
                     hasSampleRate(fakeSampleRate)
                 }
         }
-        verify(mockParentScope, never()).handleEvent(any(), any())
+        verify(mockParentScope, never()).handleEvent(any(), any(), any(), any())
         verifyNoMoreInteractions(mockWriter)
         assertThat(result).isEqualTo(null)
     }
@@ -974,7 +972,7 @@ internal class RumResourceScopeTest {
         // When
         Thread.sleep(RESOURCE_DURATION_MS)
         mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, emptyMap())
-        val result = testedScope.handleEvent(mockEvent, mockWriter)
+        val result = testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
         argumentCaptor<ResourceEvent> {
@@ -1022,7 +1020,7 @@ internal class RumResourceScopeTest {
                     hasSampleRate(fakeSampleRate)
                 }
         }
-        verify(mockParentScope, never()).handleEvent(any(), any())
+        verify(mockParentScope, never()).handleEvent(any(), any(), any(), any())
         verifyNoMoreInteractions(mockWriter)
         assertThat(result).isEqualTo(null)
     }
@@ -1043,10 +1041,10 @@ internal class RumResourceScopeTest {
 
         // When
         mockEvent = RumRawEvent.AddResourceTiming(fakeKey, timing)
-        val resultTiming = testedScope.handleEvent(mockEvent, mockWriter)
+        val resultTiming = testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
         Thread.sleep(RESOURCE_DURATION_MS)
         mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
-        val result = testedScope.handleEvent(mockEvent, mockWriter)
+        val result = testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
         argumentCaptor<ResourceEvent> {
@@ -1095,7 +1093,7 @@ internal class RumResourceScopeTest {
                     hasSampleRate(fakeSampleRate)
                 }
         }
-        verify(mockParentScope, never()).handleEvent(any(), any())
+        verify(mockParentScope, never()).handleEvent(any(), any(), any(), any())
         verifyNoMoreInteractions(mockWriter)
         assertThat(resultTiming).isEqualTo(testedScope)
         assertThat(result).isEqualTo(null)
@@ -1117,10 +1115,10 @@ internal class RumResourceScopeTest {
 
         // When
         mockEvent = RumRawEvent.AddResourceTiming("not_the_$fakeKey", timing)
-        val resultTiming = testedScope.handleEvent(mockEvent, mockWriter)
+        val resultTiming = testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
         Thread.sleep(RESOURCE_DURATION_MS)
         mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
-        val result = testedScope.handleEvent(mockEvent, mockWriter)
+        val result = testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
         argumentCaptor<ResourceEvent> {
@@ -1169,7 +1167,7 @@ internal class RumResourceScopeTest {
                     hasSampleRate(fakeSampleRate)
                 }
         }
-        verify(mockParentScope, never()).handleEvent(any(), any())
+        verify(mockParentScope, never()).handleEvent(any(), any(), any(), any())
         verifyNoMoreInteractions(mockWriter)
         assertThat(resultTiming).isEqualTo(testedScope)
         assertThat(result).isEqualTo(null)
@@ -1199,7 +1197,7 @@ internal class RumResourceScopeTest {
 
         // When
         Thread.sleep(RESOURCE_DURATION_MS)
-        val result = testedScope.handleEvent(mockEvent, mockWriter)
+        val result = testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
         argumentCaptor<ErrorEvent> {
@@ -1246,7 +1244,7 @@ internal class RumResourceScopeTest {
                     hasBuildId(fakeDatadogContext.appBuildId)
                 }
         }
-        verify(mockParentScope, never()).handleEvent(any(), any())
+        verify(mockParentScope, never()).handleEvent(any(), any(), any(), any())
         verifyNoMoreInteractions(mockWriter)
         assertThat(result).isEqualTo(null)
     }
@@ -1280,7 +1278,7 @@ internal class RumResourceScopeTest {
 
         // When
         Thread.sleep(RESOURCE_DURATION_MS)
-        val result = testedScope.handleEvent(mockEvent, mockWriter)
+        val result = testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
         argumentCaptor<ErrorEvent> {
@@ -1325,7 +1323,7 @@ internal class RumResourceScopeTest {
                     hasSampleRate(fakeSampleRate)
                 }
         }
-        verify(mockParentScope, never()).handleEvent(any(), any())
+        verify(mockParentScope, never()).handleEvent(any(), any(), any(), any())
         verifyNoMoreInteractions(mockWriter)
         assertThat(result).isEqualTo(null)
     }
@@ -1356,7 +1354,7 @@ internal class RumResourceScopeTest {
 
         // When
         Thread.sleep(RESOURCE_DURATION_MS)
-        val result = testedScope.handleEvent(mockEvent, mockWriter)
+        val result = testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
         argumentCaptor<ErrorEvent> {
@@ -1402,7 +1400,7 @@ internal class RumResourceScopeTest {
                     hasBuildId(fakeDatadogContext.appBuildId)
                 }
         }
-        verify(mockParentScope, never()).handleEvent(any(), any())
+        verify(mockParentScope, never()).handleEvent(any(), any(), any(), any())
         verifyNoMoreInteractions(mockWriter)
         assertThat(result).isEqualTo(null)
     }
@@ -1451,7 +1449,7 @@ internal class RumResourceScopeTest {
 
         // When
         Thread.sleep(RESOURCE_DURATION_MS)
-        val result = testedScope.handleEvent(mockEvent, mockWriter)
+        val result = testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
         argumentCaptor<ErrorEvent> {
@@ -1498,7 +1496,7 @@ internal class RumResourceScopeTest {
                     hasBuildId(fakeDatadogContext.appBuildId)
                 }
         }
-        verify(mockParentScope, never()).handleEvent(any(), any())
+        verify(mockParentScope, never()).handleEvent(any(), any(), any(), any())
         verifyNoMoreInteractions(mockWriter)
         assertThat(result).isEqualTo(null)
     }
@@ -1549,7 +1547,7 @@ internal class RumResourceScopeTest {
 
         // When
         Thread.sleep(RESOURCE_DURATION_MS)
-        val result = testedScope.handleEvent(mockEvent, mockWriter)
+        val result = testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
         argumentCaptor<ErrorEvent> {
@@ -1595,7 +1593,7 @@ internal class RumResourceScopeTest {
                     hasBuildId(fakeDatadogContext.appBuildId)
                 }
         }
-        verify(mockParentScope, never()).handleEvent(any(), any())
+        verify(mockParentScope, never()).handleEvent(any(), any(), any(), any())
         verifyNoMoreInteractions(mockWriter)
         assertThat(result).isEqualTo(null)
     }
@@ -1640,7 +1638,7 @@ internal class RumResourceScopeTest {
 
         // When
         Thread.sleep(RESOURCE_DURATION_MS)
-        val result = testedScope.handleEvent(mockEvent, mockWriter)
+        val result = testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
         argumentCaptor<ErrorEvent> {
@@ -1689,7 +1687,7 @@ internal class RumResourceScopeTest {
                     hasBuildId(fakeDatadogContext.appBuildId)
                 }
         }
-        verify(mockParentScope, never()).handleEvent(any(), any())
+        verify(mockParentScope, never()).handleEvent(any(), any(), any(), any())
         verifyNoMoreInteractions(mockWriter)
         assertThat(result).isEqualTo(null)
     }
@@ -1736,7 +1734,7 @@ internal class RumResourceScopeTest {
 
         // When
         Thread.sleep(RESOURCE_DURATION_MS)
-        val result = testedScope.handleEvent(mockEvent, mockWriter)
+        val result = testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
         argumentCaptor<ErrorEvent> {
@@ -1784,7 +1782,7 @@ internal class RumResourceScopeTest {
                     hasBuildId(fakeDatadogContext.appBuildId)
                 }
         }
-        verify(mockParentScope, never()).handleEvent(any(), any())
+        verify(mockParentScope, never()).handleEvent(any(), any(), any(), any())
         verifyNoMoreInteractions(mockWriter)
         assertThat(result).isEqualTo(null)
     }
@@ -1815,7 +1813,7 @@ internal class RumResourceScopeTest {
 
         // When
         Thread.sleep(RESOURCE_DURATION_MS)
-        val result = testedScope.handleEvent(mockEvent, mockWriter)
+        val result = testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
         argumentCaptor<ErrorEvent> {
@@ -1864,7 +1862,7 @@ internal class RumResourceScopeTest {
                     hasBuildId(fakeDatadogContext.appBuildId)
                 }
         }
-        verify(mockParentScope, never()).handleEvent(any(), any())
+        verify(mockParentScope, never()).handleEvent(any(), any(), any(), any())
         verifyNoMoreInteractions(mockWriter)
         assertThat(result).isEqualTo(null)
     }
@@ -1896,7 +1894,7 @@ internal class RumResourceScopeTest {
 
         // When
         Thread.sleep(RESOURCE_DURATION_MS)
-        val result = testedScope.handleEvent(mockEvent, mockWriter)
+        val result = testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
         argumentCaptor<ErrorEvent> {
@@ -1944,7 +1942,7 @@ internal class RumResourceScopeTest {
                     hasBuildId(fakeDatadogContext.appBuildId)
                 }
         }
-        verify(mockParentScope, never()).handleEvent(any(), any())
+        verify(mockParentScope, never()).handleEvent(any(), any(), any(), any())
         verifyNoMoreInteractions(mockWriter)
         assertThat(result).isEqualTo(null)
     }
@@ -1975,7 +1973,7 @@ internal class RumResourceScopeTest {
 
         // When
         Thread.sleep(RESOURCE_DURATION_MS)
-        val result = testedScope.handleEvent(mockEvent, mockWriter)
+        val result = testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
         argumentCaptor<ErrorEvent> {
@@ -2023,7 +2021,7 @@ internal class RumResourceScopeTest {
                     hasBuildId(fakeDatadogContext.appBuildId)
                 }
         }
-        verify(mockParentScope, never()).handleEvent(any(), any())
+        verify(mockParentScope, never()).handleEvent(any(), any(), any(), any())
         verifyNoMoreInteractions(mockWriter)
         assertThat(result).isEqualTo(null)
     }
@@ -2056,7 +2054,7 @@ internal class RumResourceScopeTest {
 
         // When
         Thread.sleep(RESOURCE_DURATION_MS)
-        val result = testedScope.handleEvent(mockEvent, mockWriter)
+        val result = testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
         argumentCaptor<ErrorEvent> {
@@ -2103,7 +2101,7 @@ internal class RumResourceScopeTest {
                     hasBuildId(fakeDatadogContext.appBuildId)
                 }
         }
-        verify(mockParentScope, never()).handleEvent(any(), any())
+        verify(mockParentScope, never()).handleEvent(any(), any(), any(), any())
         verifyNoMoreInteractions(mockWriter)
         assertThat(result).isEqualTo(null)
     }
@@ -2139,7 +2137,7 @@ internal class RumResourceScopeTest {
 
         // When
         Thread.sleep(RESOURCE_DURATION_MS)
-        val result = testedScope.handleEvent(mockEvent, mockWriter)
+        val result = testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
         argumentCaptor<ErrorEvent> {
@@ -2187,7 +2185,7 @@ internal class RumResourceScopeTest {
                     hasBuildId(fakeDatadogContext.appBuildId)
                 }
         }
-        verify(mockParentScope, never()).handleEvent(any(), any())
+        verify(mockParentScope, never()).handleEvent(any(), any(), any(), any())
         verifyNoMoreInteractions(mockWriter)
         assertThat(result).isEqualTo(null)
     }
@@ -2225,7 +2223,7 @@ internal class RumResourceScopeTest {
 
         // When
         Thread.sleep(RESOURCE_DURATION_MS)
-        val result = testedScope.handleEvent(mockEvent, mockWriter)
+        val result = testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
         argumentCaptor<ErrorEvent> {
@@ -2272,7 +2270,7 @@ internal class RumResourceScopeTest {
                     hasBuildId(fakeDatadogContext.appBuildId)
                 }
         }
-        verify(mockParentScope, never()).handleEvent(any(), any())
+        verify(mockParentScope, never()).handleEvent(any(), any(), any(), any())
         verifyNoMoreInteractions(mockWriter)
         assertThat(result).isEqualTo(null)
     }
@@ -2291,7 +2289,7 @@ internal class RumResourceScopeTest {
         mockEvent = RumRawEvent.StopResource("not_the_$fakeKey", statusCode, size, kind, attributes)
 
         Thread.sleep(RESOURCE_DURATION_MS)
-        val result = testedScope.handleEvent(mockEvent, mockWriter)
+        val result = testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         verify(mockParentScope, atMost(1)).getRumContext()
         verifyNoMoreInteractions(mockWriter, mockParentScope)
@@ -2318,7 +2316,7 @@ internal class RumResourceScopeTest {
         )
 
         Thread.sleep(RESOURCE_DURATION_MS)
-        val result = testedScope.handleEvent(mockEvent, mockWriter)
+        val result = testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         verify(mockParentScope, atMost(1)).getRumContext()
         verifyNoMoreInteractions(mockWriter, mockParentScope)
@@ -2348,7 +2346,7 @@ internal class RumResourceScopeTest {
         )
 
         Thread.sleep(RESOURCE_DURATION_MS)
-        val result = testedScope.handleEvent(mockEvent, mockWriter)
+        val result = testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         verify(mockParentScope, atMost(1)).getRumContext()
         verifyNoMoreInteractions(mockWriter, mockParentScope)
@@ -2371,10 +2369,11 @@ internal class RumResourceScopeTest {
         expectedAttributes.putAll(attributes)
 
         mockEvent = RumRawEvent.WaitForResourceTiming(fakeKey)
-        val resultWaitForTiming = testedScope.handleEvent(mockEvent, mockWriter)
+        val resultWaitForTiming =
+            testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
         Thread.sleep(RESOURCE_DURATION_MS)
         mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
-        val resultStop = testedScope.handleEvent(mockEvent, mockWriter)
+        val resultStop = testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         verify(mockParentScope, atMost(1)).getRumContext()
         verifyNoMoreInteractions(mockWriter, mockParentScope)
@@ -2398,10 +2397,11 @@ internal class RumResourceScopeTest {
         expectedAttributes.putAll(attributes)
 
         mockEvent = RumRawEvent.WaitForResourceTiming("not_the_$fakeKey")
-        val resultWaitForTiming = testedScope.handleEvent(mockEvent, mockWriter)
+        val resultWaitForTiming =
+            testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
         Thread.sleep(RESOURCE_DURATION_MS)
         mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
-        val resultStop = testedScope.handleEvent(mockEvent, mockWriter)
+        val resultStop = testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         argumentCaptor<ResourceEvent> {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
@@ -2445,7 +2445,7 @@ internal class RumResourceScopeTest {
                 }
         }
         verifyNoMoreInteractions(mockWriter)
-        verify(mockParentScope, never()).handleEvent(any(), any())
+        verify(mockParentScope, never()).handleEvent(any(), any(), any(), any())
         assertThat(resultWaitForTiming).isSameAs(testedScope)
         assertThat(resultStop).isEqualTo(null)
     }
@@ -2464,12 +2464,13 @@ internal class RumResourceScopeTest {
         expectedAttributes.putAll(attributes)
 
         mockEvent = RumRawEvent.WaitForResourceTiming(fakeKey)
-        val resultWaitForTiming = testedScope.handleEvent(mockEvent, mockWriter)
+        val resultWaitForTiming =
+            testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
         mockEvent = RumRawEvent.AddResourceTiming(fakeKey, timing)
-        val resultTiming = testedScope.handleEvent(mockEvent, mockWriter)
+        val resultTiming = testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
         Thread.sleep(RESOURCE_DURATION_MS)
         mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
-        val resultStop = testedScope.handleEvent(mockEvent, mockWriter)
+        val resultStop = testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         argumentCaptor<ResourceEvent> {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
@@ -2513,7 +2514,7 @@ internal class RumResourceScopeTest {
                 }
         }
         verifyNoMoreInteractions(mockWriter)
-        verify(mockParentScope, never()).handleEvent(any(), any())
+        verify(mockParentScope, never()).handleEvent(any(), any(), any(), any())
         assertThat(resultWaitForTiming).isEqualTo(testedScope)
         assertThat(resultTiming).isEqualTo(testedScope)
         assertThat(resultStop).isEqualTo(null)
@@ -2533,12 +2534,13 @@ internal class RumResourceScopeTest {
         expectedAttributes.putAll(attributes)
 
         mockEvent = RumRawEvent.WaitForResourceTiming(fakeKey)
-        val resultWaitForTiming = testedScope.handleEvent(mockEvent, mockWriter)
+        val resultWaitForTiming =
+            testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
         mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
-        val resultStop = testedScope.handleEvent(mockEvent, mockWriter)
+        val resultStop = testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
         Thread.sleep(RESOURCE_DURATION_MS)
         mockEvent = RumRawEvent.AddResourceTiming(fakeKey, timing)
-        val resultTiming = testedScope.handleEvent(mockEvent, mockWriter)
+        val resultTiming = testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         argumentCaptor<ResourceEvent> {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
@@ -2583,7 +2585,7 @@ internal class RumResourceScopeTest {
                 }
         }
         verifyNoMoreInteractions(mockWriter)
-        verify(mockParentScope, never()).handleEvent(any(), any())
+        verify(mockParentScope, never()).handleEvent(any(), any(), any(), any())
         assertThat(resultWaitForTiming).isEqualTo(testedScope)
         assertThat(resultStop).isEqualTo(testedScope)
         assertThat(resultTiming).isEqualTo(null)
@@ -2608,8 +2610,13 @@ internal class RumResourceScopeTest {
 
         // When
         testedScope
-            .handleEvent(RumRawEvent.AddResourceTiming(fakeKey, timing = timing), mockWriter)
-            ?.handleEvent(mockEvent, mockWriter)
+            .handleEvent(
+                RumRawEvent.AddResourceTiming(fakeKey, timing = timing),
+                fakeDatadogContext,
+                mockEventWriteScope,
+                mockWriter
+            )
+            ?.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
         argumentCaptor<ResourceEvent> {
@@ -2633,7 +2640,7 @@ internal class RumResourceScopeTest {
         mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
 
         // When
-        testedScope.handleEvent(mockEvent, mockWriter)
+        testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
         argumentCaptor<ResourceEvent> {
@@ -2658,7 +2665,7 @@ internal class RumResourceScopeTest {
             Time(0, 0)
         )
         // Given
-        val result = testedScope.handleEvent(fakeStopEvent, mockWriter)
+        val result = testedScope.handleEvent(fakeStopEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
         argumentCaptor<ResourceEvent> {
@@ -2700,7 +2707,7 @@ internal class RumResourceScopeTest {
                     hasSampleRate(fakeSampleRate)
                 }
         }
-        verify(mockParentScope, never()).handleEvent(any(), any())
+        verify(mockParentScope, never()).handleEvent(any(), any(), any(), any())
         mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
             InternalLogger.Target.USER,
@@ -2726,7 +2733,7 @@ internal class RumResourceScopeTest {
             fakeEventTime
         )
         // Given
-        val result = testedScope.handleEvent(fakeStopEvent, mockWriter)
+        val result = testedScope.handleEvent(fakeStopEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
         argumentCaptor<ResourceEvent> {
@@ -2768,7 +2775,7 @@ internal class RumResourceScopeTest {
                     hasSampleRate(fakeSampleRate)
                 }
         }
-        verify(mockParentScope, never()).handleEvent(any(), any())
+        verify(mockParentScope, never()).handleEvent(any(), any(), any(), any())
         mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
             InternalLogger.Target.USER,
@@ -2801,7 +2808,7 @@ internal class RumResourceScopeTest {
         mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
 
         // When
-        testedScope.handleEvent(mockEvent, mockWriter)
+        testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
         argumentCaptor<ResourceEvent> {
@@ -2825,7 +2832,7 @@ internal class RumResourceScopeTest {
         // When
         Thread.sleep(RESOURCE_DURATION_MS)
         mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
-        testedScope.handleEvent(mockEvent, mockWriter)
+        testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
         verify(rumMonitor.mockInstance as AdvancedRumMonitor)
@@ -2849,7 +2856,7 @@ internal class RumResourceScopeTest {
         // When
         Thread.sleep(RESOURCE_DURATION_MS)
         mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
-        testedScope.handleEvent(mockEvent, mockWriter)
+        testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
         verify(rumMonitor.mockInstance as AdvancedRumMonitor)
@@ -2875,7 +2882,7 @@ internal class RumResourceScopeTest {
         // When
         Thread.sleep(RESOURCE_DURATION_MS)
         mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
-        testedScope.handleEvent(mockEvent, mockWriter)
+        testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
         verify(rumMonitor.mockInstance as AdvancedRumMonitor)
@@ -2906,7 +2913,7 @@ internal class RumResourceScopeTest {
 
         // When
         Thread.sleep(RESOURCE_DURATION_MS)
-        testedScope.handleEvent(mockEvent, mockWriter)
+        testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
         verify(rumMonitor.mockInstance as AdvancedRumMonitor)
@@ -2938,7 +2945,7 @@ internal class RumResourceScopeTest {
 
         // When
         Thread.sleep(RESOURCE_DURATION_MS)
-        testedScope.handleEvent(mockEvent, mockWriter)
+        testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
         verify(rumMonitor.mockInstance as AdvancedRumMonitor)
@@ -2972,7 +2979,7 @@ internal class RumResourceScopeTest {
 
         // When
         Thread.sleep(RESOURCE_DURATION_MS)
-        testedScope.handleEvent(mockEvent, mockWriter)
+        testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
         verify(rumMonitor.mockInstance as AdvancedRumMonitor)

@@ -10,6 +10,7 @@ import android.webkit.WebSettings
 import android.webkit.WebView
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
+import com.datadog.android.api.feature.EventWriteScope
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.feature.FeatureSdkCore
@@ -167,28 +168,29 @@ internal class WebViewTrackingTest {
             WebViewTracking.SESSION_REPLAY_IMAGE_PRIVACY_KEY
                 to WebViewTracking.SESSION_REPLAY_MASK_NONE_IMAGE_PRIVACY
         )
-        whenever(mockCore.getFeatureContext(Feature.SESSION_REPLAY_FEATURE_NAME)) doReturn
+        whenever(mockCore.getFeatureContext(Feature.SESSION_REPLAY_FEATURE_NAME, false)) doReturn
             mockSrFeatureContext
         val fakeHosts = fakeUrls.map { it.host }
-        val mockSettings: WebSettings = mock {
+        val mockSettings = mock<WebSettings> {
             whenever(it.javaScriptEnabled).thenReturn(true)
         }
-        val mockWebView: WebView = mock {
+        val mockWebView = mock<WebView> {
             whenever(it.settings).thenReturn(mockSettings)
         }
-        val argumentCaptor = argumentCaptor<DatadogEventBridge>()
 
         // When
         WebViewTracking.enable(mockWebView, fakeHosts, sdkCore = mockCore)
 
         // Then
-        verify(mockWebView).addJavascriptInterface(
-            argumentCaptor.capture(),
-            eq(WebViewTracking.DATADOG_EVENT_BRIDGE_NAME)
-        )
-        assertThat(
-            argumentCaptor.firstValue.getPrivacyLevel()
-        ).isEqualTo(WebViewTracking.SESSION_REPLAY_MASK_NONE_PRIVACY)
+        argumentCaptor<DatadogEventBridge> {
+            verify(mockWebView).addJavascriptInterface(
+                capture(),
+                eq(WebViewTracking.DATADOG_EVENT_BRIDGE_NAME)
+            )
+            assertThat(
+                firstValue.getPrivacyLevel()
+            ).isEqualTo(WebViewTracking.SESSION_REPLAY_MASK_NONE_PRIVACY)
+        }
     }
 
     @Test
@@ -204,28 +206,29 @@ internal class WebViewTrackingTest {
             WebViewTracking.SESSION_REPLAY_IMAGE_PRIVACY_KEY
                 to WebViewTracking.SESSION_REPLAY_MASK_NONE_IMAGE_PRIVACY
         )
-        whenever(mockCore.getFeatureContext(Feature.SESSION_REPLAY_FEATURE_NAME)) doReturn
+        whenever(mockCore.getFeatureContext(Feature.SESSION_REPLAY_FEATURE_NAME, false)) doReturn
             mockSrFeatureContext
         val fakeHosts = fakeUrls.map { it.host }
-        val mockSettings: WebSettings = mock {
+        val mockSettings = mock<WebSettings> {
             whenever(it.javaScriptEnabled).thenReturn(true)
         }
-        val mockWebView: WebView = mock {
+        val mockWebView = mock<WebView> {
             whenever(it.settings).thenReturn(mockSettings)
         }
-        val argumentCaptor = argumentCaptor<DatadogEventBridge>()
 
         // When
         WebViewTracking.enable(mockWebView, fakeHosts, sdkCore = mockCore)
 
         // Then
-        verify(mockWebView).addJavascriptInterface(
-            argumentCaptor.capture(),
-            eq(WebViewTracking.DATADOG_EVENT_BRIDGE_NAME)
-        )
-        assertThat(
-            argumentCaptor.firstValue.getPrivacyLevel()
-        ).isEqualTo(WebViewTracking.SESSION_REPLAY_MASK_INPUTS_PRIVACY)
+        argumentCaptor<DatadogEventBridge> {
+            verify(mockWebView).addJavascriptInterface(
+                capture(),
+                eq(WebViewTracking.DATADOG_EVENT_BRIDGE_NAME)
+            )
+            assertThat(
+                firstValue.getPrivacyLevel()
+            ).isEqualTo(WebViewTracking.SESSION_REPLAY_MASK_INPUTS_PRIVACY)
+        }
     }
 
     @Test
@@ -241,28 +244,29 @@ internal class WebViewTrackingTest {
             WebViewTracking.SESSION_REPLAY_IMAGE_PRIVACY_KEY
                 to WebViewTracking.SESSION_REPLAY_MASK_NONE_IMAGE_PRIVACY
         )
-        whenever(mockCore.getFeatureContext(Feature.SESSION_REPLAY_FEATURE_NAME)) doReturn
+        whenever(mockCore.getFeatureContext(Feature.SESSION_REPLAY_FEATURE_NAME, false)) doReturn
             mockSrFeatureContext
         val fakeHosts = fakeUrls.map { it.host }
-        val mockSettings: WebSettings = mock {
+        val mockSettings = mock<WebSettings> {
             whenever(it.javaScriptEnabled).thenReturn(true)
         }
-        val mockWebView: WebView = mock {
+        val mockWebView = mock<WebView> {
             whenever(it.settings).thenReturn(mockSettings)
         }
-        val argumentCaptor = argumentCaptor<DatadogEventBridge>()
 
         // When
         WebViewTracking.enable(mockWebView, fakeHosts, sdkCore = mockCore)
 
         // Then
-        verify(mockWebView).addJavascriptInterface(
-            argumentCaptor.capture(),
-            eq(WebViewTracking.DATADOG_EVENT_BRIDGE_NAME)
-        )
-        assertThat(
-            argumentCaptor.firstValue.getPrivacyLevel()
-        ).isEqualTo(WebViewTracking.SESSION_REPLAY_MASK_ALL_PRIVACY)
+        argumentCaptor<DatadogEventBridge> {
+            verify(mockWebView).addJavascriptInterface(
+                capture(),
+                eq(WebViewTracking.DATADOG_EVENT_BRIDGE_NAME)
+            )
+            assertThat(
+                firstValue.getPrivacyLevel()
+            ).isEqualTo(WebViewTracking.SESSION_REPLAY_MASK_ALL_PRIVACY)
+        }
     }
 
     @Test
@@ -271,27 +275,28 @@ internal class WebViewTrackingTest {
     ) {
         // Given
         val mockSrFeatureContext = mapOf<String, Any>()
-        whenever(mockCore.getFeatureContext(Feature.SESSION_REPLAY_FEATURE_NAME)) doReturn
+        whenever(mockCore.getFeatureContext(Feature.SESSION_REPLAY_FEATURE_NAME, false)) doReturn
             mockSrFeatureContext
         val fakeHosts = fakeUrls.map { it.host }
-        val mockSettings: WebSettings = mock {
+        val mockSettings = mock<WebSettings> {
             whenever(it.javaScriptEnabled).thenReturn(true)
         }
-        val mockWebView: WebView = mock {
+        val mockWebView = mock<WebView> {
             whenever(it.settings).thenReturn(mockSettings)
         }
-        val argumentCaptor = argumentCaptor<DatadogEventBridge>()
 
         // When
         WebViewTracking.enable(mockWebView, fakeHosts, sdkCore = mockCore)
 
         // Then
-        verify(mockWebView).addJavascriptInterface(
-            argumentCaptor.capture(),
-            eq(WebViewTracking.DATADOG_EVENT_BRIDGE_NAME)
-        )
-        assertThat(argumentCaptor.firstValue.getPrivacyLevel())
-            .isEqualTo(WebViewTracking.SESSION_REPLAY_MASK_ALL_PRIVACY)
+        argumentCaptor<DatadogEventBridge> {
+            verify(mockWebView).addJavascriptInterface(
+                capture(),
+                eq(WebViewTracking.DATADOG_EVENT_BRIDGE_NAME)
+            )
+            assertThat(firstValue.getPrivacyLevel())
+                .isEqualTo(WebViewTracking.SESSION_REPLAY_MASK_ALL_PRIVACY)
+        }
     }
 
     @Test
@@ -626,6 +631,11 @@ internal class WebViewTrackingTest {
         val mockDatadogContext = mock<DatadogContext>()
         whenever(mockDatadogContext.featuresContext) doReturn fakeFeaturesContext
         val mockEventBatchWriter = mock<EventBatchWriter>()
+        val mockEventWriteScope = mock<EventWriteScope>()
+        whenever(mockEventWriteScope.invoke(any())) doAnswer {
+            val callback = it.getArgument<(EventBatchWriter) -> Unit>(0)
+            callback(mockEventBatchWriter)
+        }
         val proxy = WebViewTracking._InternalWebViewProxy(
             mockCore,
             System.identityHashCode(mockWebView).toString()
@@ -633,9 +643,12 @@ internal class WebViewTrackingTest {
 
         // When
         proxy.consumeWebviewEvent(fakeWebEvent.toString())
-        argumentCaptor<(DatadogContext, EventBatchWriter) -> Unit> {
-            verify(mockWebViewRumFeature).withWriteContext(any(), capture())
-            firstValue(mockDatadogContext, mockEventBatchWriter)
+        argumentCaptor<(DatadogContext, EventWriteScope) -> Unit> {
+            verify(mockWebViewRumFeature).withWriteContext(
+                eq(setOf(Feature.RUM_FEATURE_NAME, Feature.SESSION_REPLAY_FEATURE_NAME)),
+                capture()
+            )
+            firstValue(mockDatadogContext, mockEventWriteScope)
         }
 
         // Then

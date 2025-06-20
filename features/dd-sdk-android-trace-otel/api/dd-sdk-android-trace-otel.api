@@ -80,6 +80,7 @@ public class com/datadog/opentelemetry/trace/OtelSpanBuilder : io/opentelemetry/
 	public fun setAttribute (Ljava/lang/String;J)Lio/opentelemetry/api/trace/SpanBuilder;
 	public fun setAttribute (Ljava/lang/String;Ljava/lang/String;)Lio/opentelemetry/api/trace/SpanBuilder;
 	public fun setAttribute (Ljava/lang/String;Z)Lio/opentelemetry/api/trace/SpanBuilder;
+	public fun setLazyDatadogContext (Lcom/datadog/android/internal/concurrent/CompletableFuture;)Lio/opentelemetry/api/trace/SpanBuilder;
 	public fun setNoParent ()Lio/opentelemetry/api/trace/SpanBuilder;
 	public fun setParent (Lio/opentelemetry/context/Context;)Lio/opentelemetry/api/trace/SpanBuilder;
 	public fun setSpanKind (Lio/opentelemetry/api/trace/SpanKind;)Lio/opentelemetry/api/trace/SpanBuilder;

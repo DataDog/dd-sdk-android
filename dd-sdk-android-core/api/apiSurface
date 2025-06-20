@@ -20,6 +20,7 @@ enum com.datadog.android.DatadogSite
   - US5
   - EU1
   - AP1
+  - AP2
   - US1_FED
   - STAGING
   val intakeEndpoint: String
@@ -115,20 +116,23 @@ interface com.datadog.android.api.feature.FeatureEventReceiver
   fun onReceive(Any)
 interface com.datadog.android.api.feature.FeatureScope
   val dataStore: com.datadog.android.api.storage.datastore.DataStoreHandler
-  fun withWriteContext(Boolean = false, (com.datadog.android.api.context.DatadogContext, com.datadog.android.api.storage.EventBatchWriter) -> Unit)
+  fun withWriteContext(Set<String> = emptySet(), (com.datadog.android.api.context.DatadogContext) -> Unit)
+  fun withContext(Set<String> = emptySet(), (com.datadog.android.api.context.DatadogContext) -> Unit)
+  fun getWriteContextSync(Set<String> = emptySet()): Pair<com.datadog.android.api.context.DatadogContext, EventWriteScope>?
   fun sendEvent(Any)
   fun <T: Feature> unwrap(): T
+typealias EventWriteScope = ((com.datadog.android.api.storage.EventBatchWriter) -> Unit) -> Unit
 fun <R: Any?> com.datadog.android.api.InternalLogger.measureMethodCallPerf(Class<*>, String, Float = 100f, () -> R): R
 interface com.datadog.android.api.feature.FeatureSdkCore : com.datadog.android.api.SdkCore
   val internalLogger: com.datadog.android.api.InternalLogger
   fun registerFeature(Feature)
   fun getFeature(String): FeatureScope?
-  fun updateFeatureContext(String, (MutableMap<String, Any?>) -> Unit)
-  fun getFeatureContext(String): Map<String, Any?>
+  fun updateFeatureContext(String, Boolean = true, (MutableMap<String, Any?>) -> Unit)
+  fun getFeatureContext(String, Boolean = true): Map<String, Any?>
   fun setEventReceiver(String, FeatureEventReceiver)
-  fun setContextUpdateReceiver(String, FeatureContextUpdateReceiver)
-  fun removeContextUpdateReceiver(String, FeatureContextUpdateReceiver)
   fun removeEventReceiver(String)
+  fun setContextUpdateReceiver(FeatureContextUpdateReceiver)
+  fun removeContextUpdateReceiver(FeatureContextUpdateReceiver)
   fun createSingleThreadExecutorService(String): java.util.concurrent.ExecutorService
   fun createScheduledExecutorService(String): java.util.concurrent.ScheduledExecutorService
   fun setAnonymousId(java.util.UUID?)
@@ -195,7 +199,7 @@ interface com.datadog.android.core.InternalSdkCore : com.datadog.android.api.fea
   fun writeLastFatalAnrSent(Long)
   fun getPersistenceExecutorService(): java.util.concurrent.ExecutorService
   fun getAllFeatures(): List<com.datadog.android.api.feature.FeatureScope>
-  fun getDatadogContext(): com.datadog.android.api.context.DatadogContext?
+  fun getDatadogContext(Set<String> = emptySet()): com.datadog.android.api.context.DatadogContext?
 class com.datadog.android.core.SdkReference
   constructor(String? = null, (com.datadog.android.api.SdkCore) -> Unit = {})
   fun get(): com.datadog.android.api.SdkCore?
@@ -293,6 +297,8 @@ fun Collection<ByteArray>.join(ByteArray, ByteArray = ByteArray(0), ByteArray = 
 fun java.util.concurrent.Executor.executeSafe(String, com.datadog.android.api.InternalLogger, Runnable)
 fun java.util.concurrent.ScheduledExecutorService.scheduleSafe(String, Long, java.util.concurrent.TimeUnit, com.datadog.android.api.InternalLogger, Runnable): java.util.concurrent.ScheduledFuture<*>?
 fun java.util.concurrent.ExecutorService.submitSafe(String, com.datadog.android.api.InternalLogger, Runnable): java.util.concurrent.Future<*>?
+fun <T> java.util.concurrent.ExecutorService.submitSafe(String, com.datadog.android.api.InternalLogger, java.util.concurrent.Callable<T>): java.util.concurrent.Future<T>?
+fun <T> java.util.concurrent.Future<T>?.getSafe(String, com.datadog.android.api.InternalLogger): T?
 object com.datadog.android.core.internal.utils.JsonSerializer
   fun toJsonElement(Any?): com.google.gson.JsonElement
   fun Map<String, Any?>.safeMapValuesToJson(com.datadog.android.api.InternalLogger): Map<String, com.google.gson.JsonElement>
@@ -405,6 +411,9 @@ object com.datadog.android.log.LogAttributes
   const val USR_EMAIL: String
   const val USR_ID: String
   const val USR_NAME: String
+  const val ACCOUNT_ATTRIBUTES_GROUP: String
+  const val ACCOUNT_ID: String
+  const val ACCOUNT_NAME: String
   const val VARIANT: String
   const val SOURCE_TYPE: String
   const val ERROR_FINGERPRINT: String

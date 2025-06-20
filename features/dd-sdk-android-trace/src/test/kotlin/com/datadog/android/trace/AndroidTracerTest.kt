@@ -8,10 +8,12 @@ package com.datadog.android.trace
 
 import android.util.Log
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.feature.FeatureSdkCore
-import com.datadog.android.log.LogAttributes
+import com.datadog.android.internal.concurrent.CompletableFuture
+import com.datadog.android.trace.internal.SpanAttributes
 import com.datadog.android.trace.internal.TracingFeature
 import com.datadog.android.trace.internal.utils.traceIdAsHexString
 import com.datadog.android.trace.utils.verifyLog
@@ -218,257 +220,64 @@ internal class AndroidTracerTest {
             .isEqualTo(span.traceId)
     }
 
-    @Test
-    fun `M inject RumContext W buildSpan { bundleWithRum enabled and RumFeature initialized }`(
-        @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL) operationName: String,
-        @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL) serviceName: String
-    ) {
-        val tracer = AndroidTracer.Builder(mockSdkCore)
-            .setService(serviceName)
-            .build()
+    // region bundleWithRum
 
-        val span = tracer.buildSpan(operationName).start() as DDSpan
-        val meta = span.meta
-        assertThat(meta[LogAttributes.RUM_APPLICATION_ID])
-            .isEqualTo(fakeRumApplicationId)
-        assertThat(meta[LogAttributes.RUM_SESSION_ID])
-            .isEqualTo(fakeRumSessionId)
-        val viewId = fakeRumViewId
-        if (viewId == null) {
-            assertThat(meta.containsKey(LogAttributes.RUM_VIEW_ID)).isFalse()
-        } else {
-            assertThat(meta[LogAttributes.RUM_VIEW_ID]).isEqualTo(viewId)
+    @Suppress("UNCHECKED_CAST")
+    @Test
+    fun `M inject lazy Datadog context W buildSpan { bundleWithRum enabled }`(
+        @Forgery fakeDatadogContext: DatadogContext,
+        @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL) fakeOperationName: String
+    ) {
+        // Given
+        val mockRumFeatureScope = mock<FeatureScope>()
+        whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumFeatureScope
+        whenever(mockRumFeatureScope.withContext(eq(setOf(Feature.RUM_FEATURE_NAME)), any())) doAnswer {
+            it.getArgument<(DatadogContext) -> Unit>(it.arguments.lastIndex).invoke(fakeDatadogContext)
         }
-        val actionId = fakeRumActionId
-        if (actionId == null) {
-            assertThat(meta.containsKey(LogAttributes.RUM_ACTION_ID)).isFalse()
-        } else {
-            assertThat(meta[LogAttributes.RUM_ACTION_ID]).isEqualTo(actionId)
-        }
-    }
-
-    @Test
-    fun `M inject Rum ViewId W buildSpan { bundleWithRum enabled and ViewId not null }`(
-        forge: Forge
-    ) {
-        // Given
-        val fakeViewId = forge.getForgery<UUID>().toString()
-        whenever(
-            mockSdkCore.getFeatureContext(Feature.RUM_FEATURE_NAME)
-        ) doReturn mapOf(
-            "application_id" to fakeRumApplicationId,
-            "session_id" to fakeRumSessionId,
-            "view_id" to fakeViewId,
-            "action_id" to fakeRumActionId
-        )
-        val fakeOperationName = forge.anAlphaNumericalString()
         val tracer = AndroidTracer.Builder(mockSdkCore)
             .build()
 
         // When
         val span = tracer.buildSpan(fakeOperationName).start() as DDSpan
-        val meta = span.meta
 
         // Then
-        assertThat(meta[LogAttributes.RUM_VIEW_ID]).isEqualTo(fakeViewId)
+        val lazyContext = span.tags[SpanAttributes.DATADOG_INITIAL_CONTEXT] as CompletableFuture<DatadogContext>
+        assertThat(lazyContext.value).isEqualTo(fakeDatadogContext)
     }
 
     @Test
-    fun `M not inject Rum ViewId W buildSpan { bundleWithRum enabled and ViewId is missing }`(
-        forge: Forge
+    fun `M not inject lazy Datadog context W buildSpan { bundleWithRum = false }`(
+        @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL) fakeOperationName: String
     ) {
         // Given
-        whenever(
-            mockSdkCore.getFeatureContext(Feature.RUM_FEATURE_NAME)
-        ) doReturn mapOf(
-            "application_id" to fakeRumApplicationId,
-            "session_id" to fakeRumSessionId,
-            "action_id" to fakeRumActionId
-        )
-        val fakeOperationName = forge.anAlphaNumericalString()
-        val tracer = AndroidTracer.Builder(mockSdkCore)
-            .build()
-
-        // When
-        val span = tracer.buildSpan(fakeOperationName).start() as DDSpan
-        val meta = span.meta
-
-        // Then
-        assertThat(meta.containsKey(LogAttributes.RUM_VIEW_ID)).isFalse()
-    }
-
-    @Test
-    fun `M not inject Rum ViewId W buildSpan { bundleWithRum enabled and ViewId is null }`(
-        forge: Forge
-    ) {
-        // Given
-        whenever(
-            mockSdkCore.getFeatureContext(Feature.RUM_FEATURE_NAME)
-        ) doReturn mapOf(
-            "application_id" to fakeRumApplicationId,
-            "session_id" to fakeRumSessionId,
-            "view_id" to null,
-            "action_id" to fakeRumActionId
-        )
-        val fakeOperationName = forge.anAlphaNumericalString()
-        val tracer = AndroidTracer.Builder(mockSdkCore)
-            .build()
-
-        // When
-        val span = tracer.buildSpan(fakeOperationName).start() as DDSpan
-        val meta = span.meta
-
-        // Then
-        assertThat(meta.containsKey(LogAttributes.RUM_VIEW_ID)).isFalse()
-    }
-
-    @Test
-    fun `M inject Rum actionId W buildSpan { bundleWithRum enabled and ActionId not null }`(
-        forge: Forge
-    ) {
-        // Given
-        val fakeActionId = forge.getForgery<UUID>().toString()
-        whenever(
-            mockSdkCore.getFeatureContext(Feature.RUM_FEATURE_NAME)
-        ) doReturn mapOf(
-            "application_id" to fakeRumApplicationId,
-            "session_id" to fakeRumSessionId,
-            "view_id" to fakeRumActionId,
-            "action_id" to fakeActionId
-        )
-        val fakeOperationName = forge.anAlphaNumericalString()
-        val tracer = AndroidTracer.Builder(mockSdkCore)
-            .build()
-
-        // When
-        val span = tracer.buildSpan(fakeOperationName).start() as DDSpan
-        val meta = span.meta
-
-        // Then
-        assertThat(meta[LogAttributes.RUM_ACTION_ID]).isEqualTo(fakeActionId)
-    }
-
-    @Test
-    fun `M not inject Rum ActionId W buildSpan { bundleWithRum enabled and ActionId is missing }`(
-        forge: Forge
-    ) {
-        // Given
-        whenever(
-            mockSdkCore.getFeatureContext(Feature.RUM_FEATURE_NAME)
-        ) doReturn mapOf(
-            "application_id" to fakeRumApplicationId,
-            "session_id" to fakeRumSessionId,
-            "view_id" to fakeRumActionId
-        )
-        val fakeOperationName = forge.anAlphaNumericalString()
-        val tracer = AndroidTracer.Builder(mockSdkCore)
-            .build()
-
-        // When
-        val span = tracer.buildSpan(fakeOperationName).start() as DDSpan
-        val meta = span.meta
-
-        // Then
-        assertThat(meta.containsKey(LogAttributes.RUM_ACTION_ID)).isFalse()
-    }
-
-    @Test
-    fun `M not inject Rum ActionId W buildSpan { bundleWithRum enabled and ActionId is null }`(
-        forge: Forge
-    ) {
-        // Given
-        whenever(
-            mockSdkCore.getFeatureContext(Feature.RUM_FEATURE_NAME)
-        ) doReturn mapOf(
-            "application_id" to fakeRumApplicationId,
-            "session_id" to fakeRumSessionId,
-            "view_id" to fakeRumActionId,
-            "action_id" to null
-        )
-        val fakeOperationName = forge.anAlphaNumericalString()
-        val tracer = AndroidTracer.Builder(mockSdkCore)
-            .build()
-
-        // When
-        val span = tracer.buildSpan(fakeOperationName).start() as DDSpan
-        val meta = span.meta
-
-        // Then
-        assertThat(meta.containsKey(LogAttributes.RUM_ACTION_ID)).isFalse()
-    }
-
-    @Test
-    fun `M not inject RumContext W buildSpan { RumFeature not initialized }`(
-        @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL) operationName: String
-    ) {
-        // GIVEN
-        whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn null
-        whenever(mockSdkCore.getFeatureContext(Feature.RUM_FEATURE_NAME)) doReturn emptyMap()
-
-        val tracer = AndroidTracer.Builder(mockSdkCore)
-            .build()
-
-        // WHEN
-        val span = tracer.buildSpan(operationName).start() as DDSpan
-
-        // THEN
-        val meta = span.meta
-        assertThat(meta[LogAttributes.RUM_APPLICATION_ID])
-            .isNull()
-        assertThat(meta[LogAttributes.RUM_SESSION_ID])
-            .isNull()
-    }
-
-    @Test
-    fun `M inject RumContext W buildSpan { RumFeature is initialized after AndroidTracer is built }`(
-        @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL) operationName: String
-    ) {
-        // GIVEN
-        whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn null
-        whenever(mockSdkCore.getFeatureContext(Feature.RUM_FEATURE_NAME)) doReturn emptyMap()
-
-        val tracer = AndroidTracer.Builder(mockSdkCore)
-            .build()
-
-        whenever(mockSdkCore.getFeatureContext(Feature.RUM_FEATURE_NAME)) doReturn mapOf(
-            "application_id" to fakeRumApplicationId,
-            "session_id" to fakeRumSessionId,
-            "view_id" to fakeRumViewId,
-            "action_id" to fakeRumActionId
-        )
-
-        whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mock()
-
-        // WHEN
-        val span = tracer.buildSpan(operationName).start() as DDSpan
-
-        // THEN
-        val meta = span.meta
-        assertThat(meta[LogAttributes.RUM_APPLICATION_ID])
-            .isEqualTo(fakeRumApplicationId)
-        assertThat(meta[LogAttributes.RUM_SESSION_ID])
-            .isEqualTo(fakeRumSessionId)
-    }
-
-    @Test
-    fun `M not inject RumContext W buildSpan { bundleWithRum disabled }`(
-        @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL) operationName: String
-    ) {
-        // GIVEN
         val tracer = AndroidTracer.Builder(mockSdkCore)
             .setBundleWithRumEnabled(false)
             .build()
 
-        // WHEN
-        val span = tracer.buildSpan(operationName).start() as DDSpan
+        // When
+        val span = tracer.buildSpan(fakeOperationName).start() as DDSpan
 
-        // THEN
-        val meta = span.meta
-        assertThat(meta[LogAttributes.RUM_APPLICATION_ID])
-            .isNull()
-        assertThat(meta[LogAttributes.RUM_SESSION_ID])
-            .isNull()
+        // Then
+        assertThat(span.tags).doesNotContainKey(SpanAttributes.DATADOG_INITIAL_CONTEXT)
     }
+
+    @Test
+    fun `M not inject lazy Datadog context W buildSpan { bundleWithRum = true, RUM not initialized }`(
+        @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL) fakeOperationName: String
+    ) {
+        // Given
+        whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn null
+        val tracer = AndroidTracer.Builder(mockSdkCore)
+            .build()
+
+        // When
+        val span = tracer.buildSpan(fakeOperationName).start() as DDSpan
+
+        // Then
+        assertThat(span.tags).doesNotContainKey(SpanAttributes.DATADOG_INITIAL_CONTEXT)
+    }
+
+    // endregion
 
     @Test
     fun `it will build a valid Tracer`(
@@ -724,13 +533,11 @@ internal class AndroidTracerTest {
         val tracer = testedTracerBuilder
             .setService(serviceName)
             .build()
-        // call to updateFeatureContext is guarded by "synchronize" in the real implementation,
-        // but since we are using mock here, let's use thread-safe map instead.
         val tracingContext = ConcurrentHashMap<String, Any?>()
         whenever(
-            mockSdkCore.updateFeatureContext(eq(Feature.TRACING_FEATURE_NAME), any())
+            mockSdkCore.updateFeatureContext(eq(Feature.TRACING_FEATURE_NAME), eq(true), any())
         ) doAnswer {
-            val callback = it.getArgument<(context: MutableMap<String, Any?>) -> Unit>(1)
+            val callback = it.getArgument<(context: MutableMap<String, Any?>) -> Unit>(it.arguments.lastIndex)
             callback.invoke(tracingContext)
         }
         val errorCollector = mutableListOf<Throwable>()
@@ -743,8 +550,8 @@ internal class AndroidTracerTest {
                 val parentSpan = tracer.buildSpan(forge.anAlphabeticalString()).start()
                 val parentActiveScope = tracer.activateSpan(parentSpan)
 
-                with(tracingContext.activeContext(threadName)) {
-                    assertThat(this!!["span_id"]).isEqualTo(parentSpan.context().toSpanId())
+                with(checkNotNull(tracingContext.activeContext(threadName))) {
+                    assertThat(this["span_id"]).isEqualTo(parentSpan.context().toSpanId())
                     assertThat(this["trace_id"]).isEqualTo(parentSpan.context().traceIdAsHexString())
                 }
 
@@ -753,8 +560,8 @@ internal class AndroidTracerTest {
                     .asChildOf(parentSpan).start()
                 val childActiveScope = tracer.activateSpan(childActiveSpan)
 
-                with(tracingContext.activeContext(threadName)) {
-                    assertThat(this!!["span_id"]).isEqualTo(childActiveSpan.context().toSpanId())
+                with(checkNotNull(tracingContext.activeContext(threadName))) {
+                    assertThat(this["span_id"]).isEqualTo(childActiveSpan.context().toSpanId())
                     assertThat(this["trace_id"]).isEqualTo(childActiveSpan.context().traceIdAsHexString())
                 }
 
@@ -762,15 +569,15 @@ internal class AndroidTracerTest {
                 val childNonActiveSpan = tracer.buildSpan(forge.anAlphabeticalString())
                     .asChildOf(parentSpan).start()
 
-                with(tracingContext.activeContext(threadName)) {
-                    assertThat(this!!["span_id"]).isEqualTo(childActiveSpan.context().toSpanId())
+                with(checkNotNull(tracingContext.activeContext(threadName))) {
+                    assertThat(this["span_id"]).isEqualTo(childActiveSpan.context().toSpanId())
                     assertThat(this["trace_id"]).isEqualTo(childActiveSpan.context().traceIdAsHexString())
                 }
 
                 childNonActiveSpan.finish()
 
-                with(tracingContext.activeContext(threadName)) {
-                    assertThat(this!!["span_id"]).isEqualTo(childActiveSpan.context().toSpanId())
+                with(checkNotNull(tracingContext.activeContext(threadName))) {
+                    assertThat(this["span_id"]).isEqualTo(childActiveSpan.context().toSpanId())
                     assertThat(this["trace_id"]).isEqualTo(childActiveSpan.context().traceIdAsHexString())
                 }
 
@@ -778,8 +585,8 @@ internal class AndroidTracerTest {
                 childActiveSpan.finish()
                 childActiveScope.close()
 
-                with(tracingContext.activeContext(threadName)) {
-                    assertThat(this!!["span_id"]).isEqualTo(parentSpan.context().toSpanId())
+                with(checkNotNull(tracingContext.activeContext(threadName))) {
+                    assertThat(this["span_id"]).isEqualTo(parentSpan.context().toSpanId())
                     assertThat(this["trace_id"]).isEqualTo(parentSpan.context().traceIdAsHexString())
                 }
 

@@ -42,7 +42,7 @@ internal class LogsFeature(
 ) : StorageBackedFeature, FeatureEventReceiver {
 
     internal var dataWriter: DataWriter<LogEvent> = NoOpDataWriter()
-    internal val initialized = AtomicBoolean(false)
+    private val initialized = AtomicBoolean(false)
     internal var packageName = ""
     private val logGenerator = DatadogLogGenerator()
     private val attributes = ConcurrentHashMap<String, Any?>()
@@ -178,7 +178,9 @@ internal class LogsFeature(
         }
 
         sdkCore.getFeature(name)
-            ?.withWriteContext { datadogContext, eventBatchWriter ->
+            ?.withWriteContext(
+                withFeatureContexts = setOf(Feature.RUM_FEATURE_NAME)
+            ) { datadogContext, writeScope ->
                 val log = logGenerator.generateLog(
                     logStatus,
                     datadogContext = datadogContext,
@@ -195,7 +197,9 @@ internal class LogsFeature(
                     tags = emptySet()
                 )
 
-                dataWriter.write(eventBatchWriter, log, EventType.DEFAULT)
+                writeScope {
+                    dataWriter.write(it, log, EventType.DEFAULT)
+                }
             }
     }
 

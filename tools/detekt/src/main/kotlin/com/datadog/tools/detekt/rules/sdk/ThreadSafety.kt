@@ -6,6 +6,7 @@
 
 package com.datadog.tools.detekt.rules.sdk
 
+import com.datadog.tools.detekt.ext.fqTypeName
 import com.datadog.tools.detekt.rules.AbstractTypedRule
 import io.gitlab.arturbosch.detekt.api.CodeSmell
 import io.gitlab.arturbosch.detekt.api.Config
@@ -22,9 +23,11 @@ import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.KtNameReferenceExpression
 import org.jetbrains.kotlin.psi.KtNamedFunction
 import org.jetbrains.kotlin.resolve.BindingContext
+import org.jetbrains.kotlin.resolve.calls.model.ResolvedCall
 import org.jetbrains.kotlin.resolve.calls.util.getResolvedCall
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameOrNull
 import org.jetbrains.kotlin.types.SimpleType
+import org.jetbrains.kotlin.types.getAbbreviation
 
 /**
  * A rule to ensure thread safety is ensured.
@@ -107,11 +110,11 @@ class ThreadSafety(
 
             checkCallExpression(expression, callDescriptor)
 
-            val call = callDescriptor.fqNameOrNull()?.asString()
+            val callFullNames = resolveCallFullNames(resolvedCall)
 
-            wrapCallWith = if (call in workerThreadSwitchingCalls) {
+            wrapCallWith = if (workerThreadSwitchingCalls.any { callFullNames.contains(it) }) {
                 ThreadGroup.WORKER
-            } else if (call in mainThreadSwitchingCalls) {
+            } else if (mainThreadSwitchingCalls.any { callFullNames.contains(it) }) {
                 ThreadGroup.MAIN
             } else {
                 null
@@ -186,6 +189,29 @@ class ThreadSafety(
                         "could lead to unexpected behavior and must be avoided."
                 )
             )
+        }
+    }
+
+    private fun resolveCallFullNames(resolvedCall: ResolvedCall<out CallableDescriptor>): Set<String> {
+        val resolvedName = resolvedCall.candidateDescriptor.fqNameOrNull()?.asString()
+        if (resolvedName == null) return emptySet()
+
+        val hostType = resolvedCall.dispatchReceiver
+            ?.type
+
+        return if (hostType != null) {
+            val aliasedName = hostType
+                .getAbbreviation()
+                ?.constructor
+                ?.declarationDescriptor
+                ?.fqNameOrNull()
+                ?.let {
+                    resolvedName.replace(hostType.fqTypeName(includeTypeArguments = false), it.asString())
+                }
+
+            listOf(resolvedName, aliasedName).filterNotNull().toSet()
+        } else {
+            setOf(resolvedName)
         }
     }
 

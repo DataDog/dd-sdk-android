@@ -38,16 +38,14 @@ internal class WebViewRumFeature(
     override val name: String = WEB_RUM_FEATURE_NAME
 
     override fun onInitialize(appContext: Context) {
-        sdkCore.setContextUpdateReceiver(WEB_RUM_FEATURE_NAME, this)
+        sdkCore.setContextUpdateReceiver(this)
         dataWriter = createDataWriter(sdkCore.internalLogger)
         initialized.set(true)
-        val currentRumContext = sdkCore.getFeatureContext(Feature.RUM_FEATURE_NAME)
-        nativeRumViewsCache.addToCache(currentRumContext)
     }
 
-    override fun onContextUpdate(featureName: String, event: Map<String, Any?>) {
+    override fun onContextUpdate(featureName: String, context: Map<String, Any?>) {
         if (featureName == Feature.RUM_FEATURE_NAME) {
-            nativeRumViewsCache.addToCache(event)
+            nativeRumViewsCache.addToCache(context)
         }
     }
 
@@ -55,7 +53,7 @@ internal class WebViewRumFeature(
         FeatureStorageConfiguration.DEFAULT
 
     override fun onStop() {
-        sdkCore.removeContextUpdateReceiver(WEB_RUM_FEATURE_NAME, this)
+        sdkCore.removeContextUpdateReceiver(this)
         dataWriter = NoOpDataWriter()
         initialized.set(false)
     }

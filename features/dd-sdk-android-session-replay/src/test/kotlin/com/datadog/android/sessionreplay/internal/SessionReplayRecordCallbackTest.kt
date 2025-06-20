@@ -6,6 +6,7 @@
 
 package com.datadog.android.sessionreplay.internal
 
+import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.processor.EnrichedRecord
@@ -55,7 +56,8 @@ internal class SessionReplayRecordCallbackTest {
         // Then
         argumentCaptor<(MutableMap<String, Any?>) -> Unit> {
             verify(mockDatadogCore).updateFeatureContext(
-                eq(SessionReplayFeature.SESSION_REPLAY_FEATURE_NAME),
+                eq(Feature.SESSION_REPLAY_FEATURE_NAME),
+                eq(false),
                 capture()
             )
 
@@ -95,7 +97,8 @@ internal class SessionReplayRecordCallbackTest {
         // Then
         argumentCaptor<(MutableMap<String, Any?>) -> Unit> {
             verify(mockDatadogCore).updateFeatureContext(
-                eq(SessionReplayFeature.SESSION_REPLAY_FEATURE_NAME),
+                eq(Feature.SESSION_REPLAY_FEATURE_NAME),
+                eq(false),
                 capture()
             )
 
@@ -133,7 +136,8 @@ internal class SessionReplayRecordCallbackTest {
         // Then
         argumentCaptor<(MutableMap<String, Any?>) -> Unit> {
             verify(mockDatadogCore, times(fakeNumberOfUpdates)).updateFeatureContext(
-                eq(SessionReplayFeature.SESSION_REPLAY_FEATURE_NAME),
+                eq(Feature.SESSION_REPLAY_FEATURE_NAME),
+                eq(false),
                 capture()
             )
 

@@ -11,9 +11,11 @@ import androidx.annotation.FloatRange
 import com.datadog.android.Datadog
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.SdkCore
+import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
-import com.datadog.android.log.LogAttributes
+import com.datadog.android.internal.concurrent.CompletableFuture
+import com.datadog.android.trace.internal.SpanAttributes
 import com.datadog.android.trace.internal.TracingFeature
 import com.datadog.android.trace.internal.addActiveTraceToContext
 import com.datadog.android.trace.internal.data.NoOpWriter
@@ -27,6 +29,7 @@ import com.datadog.opentracing.DDTracer
 import com.datadog.opentracing.LogHandler
 import io.opentracing.Span
 import io.opentracing.log.Fields
+import io.opentracing.tag.Tag
 import java.security.SecureRandom
 import java.util.Properties
 import java.util.Random
@@ -264,15 +267,17 @@ class AndroidTracer internal constructor(
     // region Internal
 
     private fun DDSpanBuilder.withRumContext(): DDSpanBuilder {
-        return if (bundleWithRum) {
-            val rumContext = sdkCore.getFeatureContext(Feature.RUM_FEATURE_NAME)
-            withTag(LogAttributes.RUM_APPLICATION_ID, rumContext["application_id"] as? String)
-                .withTag(LogAttributes.RUM_SESSION_ID, rumContext["session_id"] as? String)
-                .withTag(LogAttributes.RUM_VIEW_ID, rumContext["view_id"] as? String)
-                .withTag(LogAttributes.RUM_ACTION_ID, rumContext["action_id"] as? String)
-        } else {
-            this
+        if (bundleWithRum) {
+            val rumFeature = sdkCore.getFeature(Feature.RUM_FEATURE_NAME)
+            if (rumFeature != null) {
+                val lazyContext = CompletableFuture<DatadogContext>()
+                rumFeature.withContext(withFeatureContexts = setOf(Feature.RUM_FEATURE_NAME)) {
+                    lazyContext.complete(it)
+                }
+                withTag(DATADOG_CONTEXT_TAG, lazyContext)
+            }
         }
+        return this
     }
 
     // endregion
@@ -299,6 +304,14 @@ class AndroidTracer internal constructor(
         internal const val SPAN_ID_BIT_SIZE = 63
 
         internal const val LOG_STATUS = "status"
+
+        internal val DATADOG_CONTEXT_TAG = object : Tag<CompletableFuture<DatadogContext>> {
+            override fun getKey(): String = SpanAttributes.DATADOG_INITIAL_CONTEXT
+
+            override fun set(span: Span?, value: CompletableFuture<DatadogContext>?) {
+                span?.setTag(this, value)
+            }
+        }
 
         /**
          * Helper method to attach a Throwable to a specific Span.

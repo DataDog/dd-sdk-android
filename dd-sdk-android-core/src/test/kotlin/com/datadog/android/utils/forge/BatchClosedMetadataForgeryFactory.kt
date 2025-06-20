@@ -15,7 +15,6 @@ internal class BatchClosedMetadataForgeryFactory : ForgeryFactory<BatchClosedMet
     override fun getForgery(forge: Forge): BatchClosedMetadata {
         return BatchClosedMetadata(
             lastTimeWasUsedInMs = forge.aPositiveLong(),
-            forcedNew = forge.aBool(),
             eventsCount = forge.aPositiveLong()
         )
     }

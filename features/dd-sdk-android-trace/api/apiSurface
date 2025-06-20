@@ -29,6 +29,8 @@ data class com.datadog.android.trace.TraceConfiguration
     fun build(): TraceConfiguration
 interface com.datadog.android.trace.event.SpanEventMapper : com.datadog.android.event.EventMapper<com.datadog.android.trace.model.SpanEvent>
   override fun map(com.datadog.android.trace.model.SpanEvent): com.datadog.android.trace.model.SpanEvent
+object com.datadog.android.trace.internal.SpanAttributes
+  const val DATADOG_INITIAL_CONTEXT: String
 fun <T> android.database.sqlite.SQLiteDatabase.transactionTraced(String, Boolean = true, io.opentracing.Span.(android.database.sqlite.SQLiteDatabase) -> T): T
 data class com.datadog.android.trace.model.SpanEvent
   constructor(kotlin.String, kotlin.String, kotlin.String, kotlin.String, kotlin.String, kotlin.String, kotlin.Long, kotlin.Long, kotlin.Long = 0L, Metrics, Meta)

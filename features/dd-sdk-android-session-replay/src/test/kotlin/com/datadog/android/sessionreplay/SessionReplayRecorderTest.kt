@@ -12,15 +12,11 @@ import android.view.View
 import android.view.Window
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.internal.LifecycleCallback
-import com.datadog.android.sessionreplay.internal.TouchPrivacyManager
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueHandler
 import com.datadog.android.sessionreplay.internal.recorder.SessionReplayRecorder
 import com.datadog.android.sessionreplay.internal.recorder.ViewOnDrawInterceptor
 import com.datadog.android.sessionreplay.internal.recorder.WindowCallbackInterceptor
 import com.datadog.android.sessionreplay.internal.recorder.WindowInspector
-import com.datadog.android.sessionreplay.internal.resources.ResourceDataStoreManager
-import com.datadog.android.sessionreplay.internal.storage.RecordWriter
-import com.datadog.android.sessionreplay.internal.utils.TimeProvider
 import com.datadog.android.sessionreplay.utils.config.ApplicationContextTestConfiguration
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
@@ -53,17 +49,11 @@ internal class SessionReplayRecorderTest {
     @Mock
     private lateinit var mockViewOnDrawInterceptor: ViewOnDrawInterceptor
 
-    @Mock
-    private lateinit var mockRecordWriter: RecordWriter
-
     @Forgery
     private lateinit var fakeTextAndInputPrivacy: TextAndInputPrivacy
 
     @Forgery
     private lateinit var fakeImagePrivacy: ImagePrivacy
-
-    @Mock
-    private lateinit var mockTimeProvider: TimeProvider
 
     @Mock
     private lateinit var mockWindowCallbackInterceptor: WindowCallbackInterceptor
@@ -79,12 +69,6 @@ internal class SessionReplayRecorderTest {
 
     @Mock
     lateinit var mockInternalLogger: InternalLogger
-
-    @Mock
-    lateinit var mockTouchPrivacyManager: TouchPrivacyManager
-
-    @Mock
-    lateinit var mockDataStoreManager: ResourceDataStoreManager
 
     private lateinit var fakeActiveWindows: List<Window>
     private lateinit var fakeActiveWindowsDecorViews: List<View>
@@ -108,10 +92,6 @@ internal class SessionReplayRecorderTest {
             appContext = appContext.mockInstance,
             textAndInputPrivacy = fakeTextAndInputPrivacy,
             imagePrivacy = fakeImagePrivacy,
-            touchPrivacyManager = mockTouchPrivacyManager,
-            recordWriter = mockRecordWriter,
-            timeProvider = mockTimeProvider,
-            mappers = mock(),
             customOptionSelectorDetectors = mock(),
             windowInspector = mockWindowInspector,
             windowCallbackInterceptor = mockWindowCallbackInterceptor,
@@ -119,9 +99,7 @@ internal class SessionReplayRecorderTest {
             viewOnDrawInterceptor = mockViewOnDrawInterceptor,
             recordedDataQueueHandler = mockRecordedDataQueueHandler,
             uiHandler = mockUiHandler,
-            internalLogger = mockInternalLogger,
-            resourceDataStoreManager = mockDataStoreManager,
-            internalCallback = NoOpSessionReplayInternalCallback()
+            internalLogger = mockInternalLogger
         )
     }
 

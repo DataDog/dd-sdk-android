@@ -11,14 +11,11 @@ import com.bumptech.glide.Glide
 import com.bumptech.glide.Registry
 import com.bumptech.glide.annotation.GlideModule
 import com.datadog.android.glide.DatadogGlideModule
-import com.datadog.benchmark.sample.di.app.DATADOG_SDK_INSTANCE_NAME
 import okhttp3.OkHttpClient
 import javax.inject.Inject
 
 @GlideModule
-internal class BenchmarkGlideModule : DatadogGlideModule(
-    sdkInstanceName = DATADOG_SDK_INSTANCE_NAME
-) {
+internal class BenchmarkGlideModule : DatadogGlideModule() {
     @Inject
     lateinit var okHttpClient: OkHttpClient
 

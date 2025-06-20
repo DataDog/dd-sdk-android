@@ -6,6 +6,7 @@
 
 package com.datadog.android.sessionreplay.internal
 
+import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.sessionreplay.internal.processor.EnrichedRecord
 
@@ -17,7 +18,9 @@ internal class SessionReplayRecordCallback(
     override fun onRecordForViewSent(record: EnrichedRecord) {
         val recordsSize = record.records.size
         if (recordsSize > 0) {
-            featureSdkCore.updateFeatureContext(SessionReplayFeature.SESSION_REPLAY_FEATURE_NAME) {
+            // we are already past the event processing pipeline and this method is called from write stage, we can
+            // update directly from this thread, given we patially mutate context.
+            featureSdkCore.updateFeatureContext(Feature.SESSION_REPLAY_FEATURE_NAME, useContextThread = false) {
                 val viewId = record.viewId
                 val viewMetadata = (it[viewId] as? MutableMap<String, Any?>) ?: mutableMapOf()
                 viewMetadata[HAS_REPLAY_KEY] = true

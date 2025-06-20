@@ -69,7 +69,7 @@ internal class DataFlusherTest {
 
     @BeforeEach
     fun `set up`() {
-        whenever(mockContextProvider.context) doReturn fakeContext
+        whenever(mockContextProvider.getContext(emptySet())) doReturn fakeContext
 
         testedFlusher = DataFlusher(
             mockContextProvider,

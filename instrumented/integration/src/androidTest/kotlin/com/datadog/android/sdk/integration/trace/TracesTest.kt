@@ -4,12 +4,11 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-@file:Suppress("PLATFORM_CLASS_MAPPED_TO_KOTLIN")
-
 package com.datadog.android.sdk.integration.trace
 
 import android.util.Log
 import androidx.test.platform.app.InstrumentationRegistry
+import com.datadog.android.internal.utils.toHexString
 import com.datadog.android.sdk.assertj.HeadersAssert
 import com.datadog.android.sdk.assertj.HeadersAssert.Companion.assertThat
 import com.datadog.android.sdk.integration.RuntimeConfig
@@ -24,7 +23,6 @@ import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.data.Offset
-import java.lang.Long
 import java.util.LinkedList
 import java.util.concurrent.TimeUnit
 
@@ -113,7 +111,7 @@ internal abstract class TracesTest {
             .hasField(SERVICE_NAME_KEY, span.serviceName)
             .hasField(TRACE_ID_KEY, span.leastSignificant64BitsTraceId())
             .hasField(SPAN_ID_KEY, span.spanIdAsHexString())
-            .hasField(PARENT_ID_KEY, Long.toHexString((span.parentId.toLong())))
+            .hasField(PARENT_ID_KEY, span.parentId.toLong().toHexString())
             .hasField(
                 START_TIMESTAMP_KEY,
                 span.startTime,

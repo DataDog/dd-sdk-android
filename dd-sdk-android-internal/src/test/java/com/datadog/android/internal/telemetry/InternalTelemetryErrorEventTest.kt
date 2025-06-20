@@ -4,9 +4,8 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.internal.telemetry
+package com.datadog.android.internal.telemetry
 
-import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.internal.utils.loggableStackTrace
 import com.datadog.tools.unit.forge.aThrowable
 import fr.xgouchet.elmyr.Forge

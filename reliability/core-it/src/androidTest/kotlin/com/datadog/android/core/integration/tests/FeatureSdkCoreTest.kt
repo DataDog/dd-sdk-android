@@ -43,7 +43,10 @@ import java.util.concurrent.TimeUnit
 class FeatureSdkCoreTest : MockServerTest() {
 
     @get:Rule
-    var forge = ForgeRule().useJvmFactories().useToolsFactories().withFactory(ConfigurationCoreForgeryFactory())
+    var forge = ForgeRule()
+        .useJvmFactories()
+        .useToolsFactories()
+        .withFactory(ConfigurationCoreForgeryFactory())
 
     private lateinit var stubFeature: Feature
 
@@ -215,8 +218,8 @@ class FeatureSdkCoreTest : MockServerTest() {
     fun mustReturnTheUpdatedFeatureContext_when_getFeatureContext_featureContextWasSet() {
         // Given
         testedFeatureSdkCore.registerFeature(stubFeature)
-        val fakeKeyValues = forge.aMap { forge.anAlphabeticalString() to forge.anAlphabeticalString() }
-        testedFeatureSdkCore.updateFeatureContext(fakeFeatureName) {
+        val fakeKeyValues = forge.aMap { anAlphabeticalString() to anAlphabeticalString() }
+        testedFeatureSdkCore.updateFeatureContext(fakeFeatureName, useContextThread = false) {
             fakeKeyValues.forEach { (key, value) ->
                 it[key] = value
             }
@@ -242,7 +245,7 @@ class FeatureSdkCoreTest : MockServerTest() {
         val expectedKeyValues = fakeKeyValues1 + fakeKeyValues2
 
         val updateAction = { newContext: Map<String, String> ->
-            testedFeatureSdkCore.updateFeatureContext(fakeFeatureName) { featureContext ->
+            testedFeatureSdkCore.updateFeatureContext(fakeFeatureName, useContextThread = false) { featureContext ->
                 newContext.forEach { (key, value) ->
                     featureContext[key] = value
                 }
@@ -279,7 +282,7 @@ class FeatureSdkCoreTest : MockServerTest() {
         val expectedKeyValues = fakeKeyValues1 + fakeModifiedValues
 
         val updateAction = { newContext: Map<String, String> ->
-            testedFeatureSdkCore.updateFeatureContext(fakeFeatureName) { featureContext ->
+            testedFeatureSdkCore.updateFeatureContext(fakeFeatureName, useContextThread = false) { featureContext ->
                 newContext.forEach { (key, value) ->
                     featureContext[key] = value
                 }
@@ -296,7 +299,7 @@ class FeatureSdkCoreTest : MockServerTest() {
             .forEach { it.join(SHORT_WAIT_MS) }
 
         Thread {
-            testedFeatureSdkCore.updateFeatureContext(fakeFeatureName) { featureContext ->
+            testedFeatureSdkCore.updateFeatureContext(fakeFeatureName, useContextThread = false) { featureContext ->
                 fakeKeyValues2.forEach { (key, _) ->
                     featureContext[key] = fakeModifiedValues[key]
                 }
@@ -326,7 +329,7 @@ class FeatureSdkCoreTest : MockServerTest() {
         val droppedKeyValues = expectedKeyValues.removeRandomEntries(forge)
 
         val updateAction = { newContext: Map<String, String> ->
-            testedFeatureSdkCore.updateFeatureContext(fakeFeatureName) { featureContext ->
+            testedFeatureSdkCore.updateFeatureContext(fakeFeatureName, useContextThread = false) { featureContext ->
                 newContext.forEach { (key, value) ->
                     featureContext[key] = value
                 }
@@ -343,7 +346,7 @@ class FeatureSdkCoreTest : MockServerTest() {
             .forEach { it.join(SHORT_WAIT_MS) }
 
         Thread {
-            testedFeatureSdkCore.updateFeatureContext(fakeFeatureName) { featureContext ->
+            testedFeatureSdkCore.updateFeatureContext(fakeFeatureName, useContextThread = false) { featureContext ->
                 droppedKeyValues.forEach { (key, _) ->
                     featureContext.remove(key)
                 }
@@ -372,17 +375,45 @@ class FeatureSdkCoreTest : MockServerTest() {
             forge.anAlphabeticalString(),
             getMockServerWrapper().getServerUrl()
         )
-        val fakeKeyValues = forge.aMap { forge.anAlphabeticalString() to forge.anAlphabeticalString() }
+        val fakeKeyValues = forge.aMap { anAlphabeticalString() to anAlphabeticalString() }
         testedFeatureSdkCore.registerFeature(stubFeature)
         testedFeatureSdkCore.registerFeature(otherFeature)
-        testedFeatureSdkCore.setContextUpdateReceiver(otherFeature.name, stubContextUpdateReceiver)
+        testedFeatureSdkCore.setContextUpdateReceiver(stubContextUpdateReceiver)
 
         // When
-        testedFeatureSdkCore.updateFeatureContext(stubFeature.name) {
+        testedFeatureSdkCore.updateFeatureContext(stubFeature.name, useContextThread = false) {
             fakeKeyValues.forEach { (key, value) ->
                 it[key] = value
             }
         }
+
+        // Then
+        assertThat(stubContextUpdateReceiver.getReceivedEvents()).hasSize(1)
+        val receivedEvent = stubContextUpdateReceiver.getReceivedEvents().first()
+        assertThat(receivedEvent.featureName).isEqualTo(stubFeature.name)
+        assertThat(receivedEvent.eventData).containsExactlyInAnyOrderEntriesOf(fakeKeyValues)
+    }
+
+    @Test
+    fun mustReceiveCurrentContextIfExists_when_contextUpdateReceiverRegistered() {
+        // Given
+        val stubContextUpdateReceiver = StubContextUpdateReceiver()
+        val otherFeature = StubStorageBackedFeature(
+            forge,
+            forge.anAlphabeticalString(),
+            getMockServerWrapper().getServerUrl()
+        )
+        val fakeKeyValues = forge.aMap { anAlphabeticalString() to anAlphabeticalString() }
+        testedFeatureSdkCore.registerFeature(stubFeature)
+        testedFeatureSdkCore.registerFeature(otherFeature)
+        testedFeatureSdkCore.updateFeatureContext(stubFeature.name, useContextThread = false) {
+            fakeKeyValues.forEach { (key, value) ->
+                it[key] = value
+            }
+        }
+
+        // When
+        testedFeatureSdkCore.setContextUpdateReceiver(stubContextUpdateReceiver)
 
         // Then
         assertThat(stubContextUpdateReceiver.getReceivedEvents()).hasSize(1)
@@ -399,24 +430,24 @@ class FeatureSdkCoreTest : MockServerTest() {
             forge.anAlphabeticalString(),
             getMockServerWrapper().getServerUrl()
         )
-        val fakeKeyValues1 = forge.aMap(size = 2) { forge.anAlphabeticalString() to forge.anAlphabeticalString() }
-        val fakeKeyValues2 = forge.aMap(size = 2) { forge.anAlphabeticalString() to forge.anAlphabeticalString() }
+        val fakeKeyValues1 = forge.aMap(size = 2) { anAlphabeticalString() to anAlphabeticalString() }
+        val fakeKeyValues2 = forge.aMap(size = 2) { anAlphabeticalString() to anAlphabeticalString() }
         testedFeatureSdkCore.registerFeature(stubFeature)
         testedFeatureSdkCore.registerFeature(otherFeature)
         val countDownLatch = CountDownLatch(2)
         val stubContextUpdateReceiver = StubContextUpdateReceiver(countDownLatch::countDown)
-        testedFeatureSdkCore.setContextUpdateReceiver(otherFeature.name, stubContextUpdateReceiver)
+        testedFeatureSdkCore.setContextUpdateReceiver(stubContextUpdateReceiver)
 
         // When
         Thread {
-            testedFeatureSdkCore.updateFeatureContext(stubFeature.name) {
+            testedFeatureSdkCore.updateFeatureContext(stubFeature.name, useContextThread = false) {
                 fakeKeyValues1.forEach { (key, value) ->
                     it[key] = value
                 }
             }
         }.start()
         Thread {
-            testedFeatureSdkCore.updateFeatureContext(stubFeature.name) {
+            testedFeatureSdkCore.updateFeatureContext(stubFeature.name, useContextThread = false) {
                 fakeKeyValues2.forEach { (key, value) ->
                     it[key] = value
                 }
@@ -437,25 +468,6 @@ class FeatureSdkCoreTest : MockServerTest() {
     }
 
     @Test
-    fun mustNotReceiveContextUpdate_when_contextUpdateReceiverRegistered_contextUpdateOnSameFeature() {
-        // Given
-        val stubContextUpdateReceiver = StubContextUpdateReceiver()
-        val fakeKeyValues = forge.aMap { forge.anAlphabeticalString() to forge.anAlphabeticalString() }
-        testedFeatureSdkCore.registerFeature(stubFeature)
-        testedFeatureSdkCore.setContextUpdateReceiver(stubFeature.name, stubContextUpdateReceiver)
-
-        // When
-        testedFeatureSdkCore.updateFeatureContext(stubFeature.name) {
-            fakeKeyValues.forEach { (key, value) ->
-                it[key] = value
-            }
-        }
-
-        // Then
-        assertThat(stubContextUpdateReceiver.getReceivedEvents()).isEmpty()
-    }
-
-    @Test
     fun mustReceiveNoContextUpdate_when_contextUpdateReceiverNotRegistered() {
         // Given
         val stubContextUpdateReceiver = StubContextUpdateReceiver()
@@ -464,14 +476,14 @@ class FeatureSdkCoreTest : MockServerTest() {
             forge.anAlphabeticalString(),
             getMockServerWrapper().getServerUrl()
         )
-        val fakeKeyValues = forge.aMap { forge.anAlphabeticalString() to forge.anAlphabeticalString() }
+        val fakeKeyValues = forge.aMap { anAlphabeticalString() to anAlphabeticalString() }
         testedFeatureSdkCore.registerFeature(stubFeature)
         testedFeatureSdkCore.registerFeature(otherFeature)
-        testedFeatureSdkCore.setContextUpdateReceiver(otherFeature.name, stubContextUpdateReceiver)
+        testedFeatureSdkCore.setContextUpdateReceiver(stubContextUpdateReceiver)
 
         // When
-        testedFeatureSdkCore.removeContextUpdateReceiver(otherFeature.name, stubContextUpdateReceiver)
-        testedFeatureSdkCore.updateFeatureContext(stubFeature.name) {
+        testedFeatureSdkCore.removeContextUpdateReceiver(stubContextUpdateReceiver)
+        testedFeatureSdkCore.updateFeatureContext(stubFeature.name, useContextThread = false) {
             fakeKeyValues.forEach { (key, value) ->
                 it[key] = value
             }

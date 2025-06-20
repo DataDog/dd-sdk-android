@@ -6,17 +6,27 @@
 
 package com.datadog.android.core.internal.thread
 
-import com.datadog.android.internal.thread.NamedRunnable
+import com.datadog.android.internal.thread.NamedExecutionUnit
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicLong
 
-internal open class ObservableLinkedBlockingQueue<E : Any>(
-    capacity: Int,
-    private val currentTimeProvider: () -> Long = { System.currentTimeMillis() }
-) : LinkedBlockingQueue<E>(capacity) {
+internal open class ObservableLinkedBlockingQueue<E : Any> : LinkedBlockingQueue<E> {
 
-    private var lastDumpTimestamp: AtomicLong = AtomicLong(0)
+    private val currentTimeProvider: () -> Long
+
+    constructor(
+        currentTimeProvider: () -> Long = { System.currentTimeMillis() }
+    ) : this(Int.MAX_VALUE, currentTimeProvider)
+
+    constructor(
+        capacity: Int,
+        currentTimeProvider: () -> Long = { System.currentTimeMillis() }
+    ) : super(capacity) {
+        this.currentTimeProvider = currentTimeProvider
+    }
+
+    private val lastDumpTimestamp: AtomicLong = AtomicLong(0)
 
     fun dumpQueue(): Map<String, Int>? {
         val currentTime = currentTimeProvider.invoke()
@@ -36,7 +46,7 @@ internal open class ObservableLinkedBlockingQueue<E : Any>(
     private fun buildDumpMap(): Map<String, Int> {
         val map = mutableMapOf<String, Int>()
         super.toArray().forEach { runnable ->
-            (runnable as? NamedRunnable)?.sanitizedName?.let {
+            (runnable as? NamedExecutionUnit)?.name?.let {
                 map.put(it, (map[it] ?: 0) + 1)
             }
         }

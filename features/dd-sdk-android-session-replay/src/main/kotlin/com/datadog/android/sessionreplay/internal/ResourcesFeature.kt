@@ -7,6 +7,7 @@
 package com.datadog.android.sessionreplay.internal
 
 import android.content.Context
+import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.feature.StorageBackedFeature
 import com.datadog.android.api.net.RequestFactory
@@ -30,7 +31,7 @@ internal class ResourcesFeature(
 
     // region Feature
 
-    override val name: String = SESSION_REPLAY_RESOURCES_FEATURE_NAME
+    override val name: String = Feature.SESSION_REPLAY_RESOURCES_FEATURE_NAME
 
     override val requestFactory: RequestFactory = ResourcesRequestFactory(
         customEndpointUrl = customEndpointUrl,
@@ -66,7 +67,5 @@ internal class ResourcesFeature(
                 maxItemSize = 10 * 1024 * 1024,
                 maxBatchSize = 10 * 1024 * 1024
             )
-
-        internal const val SESSION_REPLAY_RESOURCES_FEATURE_NAME = "session-replay-resources"
     }
 }

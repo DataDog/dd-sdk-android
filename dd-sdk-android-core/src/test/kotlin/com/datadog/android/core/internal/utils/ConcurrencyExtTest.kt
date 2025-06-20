@@ -9,6 +9,8 @@ package com.datadog.android.core.internal.utils
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.android.utils.verifyLog
+import com.datadog.tools.unit.forge.aThrowable
+import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -26,9 +28,14 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
+import java.util.concurrent.Callable
+import java.util.concurrent.CancellationException
+import java.util.concurrent.ExecutionException
 import java.util.concurrent.ExecutorService
+import java.util.concurrent.Future
 import java.util.concurrent.RejectedExecutionException
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.ScheduledFuture
@@ -133,13 +140,13 @@ internal class ConcurrencyExtTest {
     }
 
     @Test
-    fun `M submit task W submitSafe()`(
+    fun `M submit task W submitSafe() {runnable} `(
         @StringForgery name: String
     ) {
         // Given
         val service: ExecutorService = mock()
         val runnable: Runnable = mock()
-        val future: ScheduledFuture<*> = mock()
+        val future: Future<*> = mock()
         whenever(service.submit(runnable)) doReturn future
 
         // When
@@ -151,7 +158,7 @@ internal class ConcurrencyExtTest {
     }
 
     @Test
-    fun `M not throw W submitSafe() {rejected exception}`(
+    fun `M not throw W submitSafe() {runnable, rejected exception}`(
         @StringForgery name: String,
         @StringForgery message: String
     ) {
@@ -162,7 +169,7 @@ internal class ConcurrencyExtTest {
         doThrow(exception).whenever(service).submit(runnable)
 
         // When
-        val result: Any? = service.submitSafe(name, mockInternalLogger, runnable)
+        val result = service.submitSafe(name, mockInternalLogger, runnable)
 
         // Then
         assertThat(result).isNull()
@@ -172,6 +179,93 @@ internal class ConcurrencyExtTest {
             listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
             "Unable to schedule $name task on the executor",
             exception
+        )
+    }
+
+    @Test
+    fun `M submit task W submitSafe() {callable} `(
+        @StringForgery name: String
+    ) {
+        // Given
+        val service: ExecutorService = mock()
+        val callable: Callable<Any> = mock()
+        val future: Future<Any> = mock()
+        whenever(service.submit(callable)) doReturn future
+
+        // When
+        val result = service.submitSafe(name, mockInternalLogger, callable)
+
+        // Then
+        assertThat(result).isSameAs(future)
+        verify(service).submit(callable)
+    }
+
+    @Test
+    fun `M not throw W submitSafe() {callable, rejected exception}`(
+        @StringForgery name: String,
+        @StringForgery message: String
+    ) {
+        // Given
+        val service: ExecutorService = mock()
+        val callable: Callable<Any> = mock()
+        val exception = RejectedExecutionException(message)
+        doThrow(exception).whenever(service).submit(callable)
+
+        // When
+        val result = service.submitSafe(name, mockInternalLogger, callable)
+
+        // Then
+        assertThat(result).isNull()
+        verify(service).submit(callable)
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
+            "Unable to schedule $name task on the executor",
+            exception
+        )
+    }
+
+    @Test
+    fun `M return result W getSafe()`(
+        @StringForgery operationName: String
+    ) {
+        // Given
+        val future = mock<Future<Any>>()
+        val fakeResult = Any()
+        whenever(future.getSafe(operationName, mockInternalLogger)) doReturn fakeResult
+
+        // When
+        val result = future.getSafe(operationName, mockInternalLogger)
+
+        // Then
+        assertThat(result).isSameAs(fakeResult)
+        verifyNoInteractions(mockInternalLogger)
+    }
+
+    @Test
+    fun `M log error W getSafe() { exception thrown }`(
+        @StringForgery operationName: String,
+        forge: Forge
+    ) {
+        // Given
+        val future = mock<Future<Any>>()
+        val fakeException = forge.anElementFrom(
+            ExecutionException(forge.aThrowable()),
+            CancellationException(),
+            InterruptedException()
+        )
+        whenever(future.getSafe(operationName, mockInternalLogger)) doThrow fakeException
+
+        // When
+        val result = future.getSafe(operationName, mockInternalLogger)
+
+        // Then
+        assertThat(result).isNull()
+        mockInternalLogger.verifyLog(
+            level = InternalLogger.Level.ERROR,
+            targets = listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
+            message = "Unable to get result of the $operationName task",
+            throwable = fakeException
         )
     }
 }

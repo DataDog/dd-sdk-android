@@ -10,6 +10,7 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.context.NetworkInfo
 import com.datadog.android.api.context.TimeInfo
+import com.datadog.android.api.feature.EventWriteScope
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.storage.DataWriter
@@ -110,6 +111,9 @@ internal class RumViewScopeAttributePropagationTest {
 
     @Mock
     lateinit var mockRumFeatureScope: FeatureScope
+
+    @Mock
+    lateinit var mockEventWriteScope: EventWriteScope
 
     @Mock
     lateinit var mockEventBatchWriter: EventBatchWriter
@@ -221,8 +225,12 @@ internal class RumViewScopeAttributePropagationTest {
         whenever(rumMonitor.mockSdkCore.internalLogger) doReturn mockInternalLogger
 
         whenever(mockRumFeatureScope.withWriteContext(any(), any())) doAnswer {
-            val callback = it.getArgument<(DatadogContext, EventBatchWriter) -> Unit>(1)
-            callback.invoke(fakeDatadogContext, mockEventBatchWriter)
+            val callback = it.getArgument<(DatadogContext, EventWriteScope) -> Unit>(1)
+            callback.invoke(fakeDatadogContext, mockEventWriteScope)
+        }
+        whenever(mockEventWriteScope.invoke(any())) doAnswer {
+            val callback = it.getArgument<(EventBatchWriter) -> Unit>(0)
+            callback.invoke(mockEventBatchWriter)
         }
         whenever(mockWriter.write(eq(mockEventBatchWriter), any(), any())) doReturn true
     }
@@ -237,7 +245,8 @@ internal class RumViewScopeAttributePropagationTest {
         testedScope = newRumViewScope(initialAttributes = emptyMap())
 
         // When
-        val result = testedScope.handleEvent(RumRawEvent.KeepAlive(), mockWriter)
+        val result =
+            testedScope.handleEvent(RumRawEvent.KeepAlive(), fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
         argumentCaptor<ViewEvent> {
@@ -257,7 +266,8 @@ internal class RumViewScopeAttributePropagationTest {
         testedScope = newRumViewScope(initialAttributes = fakeViewAttributes)
 
         // When
-        val result = testedScope.handleEvent(RumRawEvent.KeepAlive(), mockWriter)
+        val result =
+            testedScope.handleEvent(RumRawEvent.KeepAlive(), fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
         argumentCaptor<ViewEvent> {
@@ -277,7 +287,8 @@ internal class RumViewScopeAttributePropagationTest {
         testedScope = newRumViewScope(initialAttributes = overriddenAttributes)
 
         // When
-        val result = testedScope.handleEvent(RumRawEvent.KeepAlive(), mockWriter)
+        val result =
+            testedScope.handleEvent(RumRawEvent.KeepAlive(), fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
         argumentCaptor<ViewEvent> {
@@ -301,9 +312,14 @@ internal class RumViewScopeAttributePropagationTest {
         val fakeEvent = RumRawEvent.ErrorSent(testedScope.viewId)
 
         // When
-        testedScope.handleEvent(RumRawEvent.StopView(fakeKey, emptyMap()), mockWriter)
+        testedScope.handleEvent(
+            RumRawEvent.StopView(fakeKey, emptyMap()),
+            fakeDatadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
         whenever(mockParentScope.getCustomAttributes()) doReturn fakeParentAttributes + (fakeAttrKey to fakeAttrValue)
-        testedScope.handleEvent(fakeEvent, mockWriter)
+        testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
         argumentCaptor<ViewEvent> {
@@ -326,8 +342,14 @@ internal class RumViewScopeAttributePropagationTest {
         testedScope = newRumViewScope(initialAttributes = emptyMap())
 
         // When
-        testedScope.handleEvent(RumRawEvent.AddViewAttributes(fakeViewAttributes), mockWriter)
-        val result = testedScope.handleEvent(RumRawEvent.KeepAlive(), mockWriter)
+        testedScope.handleEvent(
+            RumRawEvent.AddViewAttributes(fakeViewAttributes),
+            fakeDatadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
+        val result =
+            testedScope.handleEvent(RumRawEvent.KeepAlive(), fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
         argumentCaptor<ViewEvent> {
@@ -351,8 +373,14 @@ internal class RumViewScopeAttributePropagationTest {
         testedScope = newRumViewScope(initialAttributes = fakeViewAttributes)
 
         // When
-        testedScope.handleEvent(RumRawEvent.RemoveViewAttributes(fakeViewAttributes.keys), mockWriter)
-        val result = testedScope.handleEvent(RumRawEvent.KeepAlive(), mockWriter)
+        testedScope.handleEvent(
+            RumRawEvent.RemoveViewAttributes(fakeViewAttributes.keys),
+            fakeDatadogContext,
+            mockEventWriteScope,
+            mockWriter
+        )
+        val result =
+            testedScope.handleEvent(RumRawEvent.KeepAlive(), fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
         argumentCaptor<ViewEvent> {
@@ -393,7 +421,7 @@ internal class RumViewScopeAttributePropagationTest {
         )
 
         // When
-        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+        val result = testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
         val expectedType = if (fakeIsFatal) EventType.CRASH else EventType.DEFAULT
@@ -432,7 +460,7 @@ internal class RumViewScopeAttributePropagationTest {
         )
 
         // When
-        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+        val result = testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
         val expectedType = if (fakeIsFatal) EventType.CRASH else EventType.DEFAULT
@@ -472,7 +500,7 @@ internal class RumViewScopeAttributePropagationTest {
         )
 
         // When
-        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+        val result = testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
         val expectedType = if (fakeIsFatal) EventType.CRASH else EventType.DEFAULT
@@ -499,7 +527,7 @@ internal class RumViewScopeAttributePropagationTest {
         val fakeEvent = RumRawEvent.ApplicationStarted(Time(), fakeDuration)
 
         // When
-        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+        val result = testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
         argumentCaptor<ActionEvent> {
@@ -523,7 +551,7 @@ internal class RumViewScopeAttributePropagationTest {
         val fakeEvent = RumRawEvent.ApplicationStarted(Time(), fakeDuration)
 
         // When
-        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+        val result = testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
         argumentCaptor<ActionEvent> {
@@ -547,7 +575,7 @@ internal class RumViewScopeAttributePropagationTest {
         val fakeEvent = RumRawEvent.ApplicationStarted(Time(), fakeDuration)
 
         // When
-        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+        val result = testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
         argumentCaptor<ActionEvent> {
@@ -576,7 +604,7 @@ internal class RumViewScopeAttributePropagationTest {
         val fakeEvent = RumRawEvent.AddLongTask(fakeDuration, fakeTarget)
 
         // When
-        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+        val result = testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
         argumentCaptor<LongTaskEvent> {
@@ -602,7 +630,7 @@ internal class RumViewScopeAttributePropagationTest {
         val fakeEvent = RumRawEvent.AddLongTask(fakeDuration, fakeTarget)
 
         // When
-        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+        val result = testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
         argumentCaptor<LongTaskEvent> {
@@ -628,7 +656,7 @@ internal class RumViewScopeAttributePropagationTest {
         val fakeEvent = RumRawEvent.AddLongTask(fakeDuration, fakeTarget)
 
         // When
-        val result = testedScope.handleEvent(fakeEvent, mockWriter)
+        val result = testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
         argumentCaptor<LongTaskEvent> {

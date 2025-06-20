@@ -56,6 +56,11 @@ internal class DatadogSiteTest {
     }
 
     @Test
+    fun `M return intake endpoint W intakeEndpoint {AP2}`() {
+        assertThat(DatadogSite.AP2.intakeEndpoint).isEqualTo("https://browser-intake-ap2-datadoghq.com")
+    }
+
+    @Test
     fun `M return intake endpoint W intakeEndpoint {STAGING}`() {
         assertThat(DatadogSite.STAGING.intakeEndpoint).isEqualTo("https://browser-intake-datad0g.com")
     }

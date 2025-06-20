@@ -46,7 +46,6 @@ internal interface DatadogModule {
             }
 
             return Datadog.initialize(
-                DATADOG_SDK_INSTANCE_NAME,
                 context,
                 createDatadogConfiguration(),
                 TrackingConsent.GRANTED
@@ -109,8 +108,6 @@ private fun createDatadogConfiguration(): Configuration {
 
     return configBuilder.build()
 }
-
-internal const val DATADOG_SDK_INSTANCE_NAME = "benchmark_datadog_sdk"
 
 // the same as the default one
 private const val CAPACITY_BACK_PRESSURE_STRATEGY = 1024

@@ -15,6 +15,9 @@ import com.datadog.android.api.storage.EventBatchWriter
 import com.datadog.android.api.storage.EventType
 import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.event.EventMapper
+import com.datadog.android.internal.concurrent.CompletableFuture
+import com.datadog.android.log.LogAttributes
+import com.datadog.android.trace.AndroidTracer
 import com.datadog.android.trace.internal.domain.event.ContextAwareMapper
 import com.datadog.android.trace.internal.storage.ContextAwareSerializer
 import com.datadog.android.trace.model.SpanEvent
@@ -39,14 +42,18 @@ internal class TraceWriter(
     override fun write(trace: List<DDSpan>?) {
         if (trace == null) return
         sdkCore.getFeature(Feature.TRACING_FEATURE_NAME)
-            ?.withWriteContext { datadogContext, eventBatchWriter ->
-                trace
+            ?.withWriteContext { datadogContext, writeScope ->
+                val writeSpans = trace
                     .filter {
                         it.samplingPriority == null || it.samplingPriority !in DROP_SAMPLING_PRIORITIES
                     }
-                    .forEach { span ->
-                        writeSpan(datadogContext, eventBatchWriter, span)
-                    }
+                    .map { it.bundleWithRum() }
+                writeScope {
+                    writeSpans
+                        .forEach { span ->
+                            writeSpan(datadogContext, it, span)
+                        }
+                }
             }
     }
 
@@ -59,6 +66,34 @@ internal class TraceWriter(
     }
 
     // endregion
+
+    @Suppress("UNCHECKED_CAST")
+    private fun DDSpan.bundleWithRum(): DDSpan {
+        val initialDatadogContext = tags[AndroidTracer.DATADOG_CONTEXT_TAG.key]
+            as? CompletableFuture<DatadogContext>
+        setTag(AndroidTracer.DATADOG_CONTEXT_TAG, null)
+        if (initialDatadogContext != null) {
+            if (initialDatadogContext.isComplete()) {
+                val rumContext = initialDatadogContext.value
+                    .featuresContext[Feature.RUM_FEATURE_NAME]
+                    .orEmpty()
+                setTag(
+                    LogAttributes.RUM_APPLICATION_ID,
+                    rumContext["application_id"] as? String
+                )
+                setTag(LogAttributes.RUM_SESSION_ID, rumContext["session_id"] as? String)
+                setTag(LogAttributes.RUM_VIEW_ID, rumContext["view_id"] as? String)
+                setTag(LogAttributes.RUM_ACTION_ID, rumContext["action_id"] as? String)
+            } else {
+                internalLogger.log(
+                    InternalLogger.Level.ERROR,
+                    InternalLogger.Target.USER,
+                    { INITIAL_DATADOG_CONTEXT_NOT_AVAILABLE_ERROR }
+                )
+            }
+        }
+        return this
+    }
 
     @WorkerThread
     private fun writeSpan(
@@ -91,6 +126,8 @@ internal class TraceWriter(
 
     companion object {
         internal const val ERROR_SERIALIZING = "Error serializing %s model"
+        internal const val INITIAL_DATADOG_CONTEXT_NOT_AVAILABLE_ERROR = "Initial span creation Datadog context" +
+            " is not available at the write time."
         internal val DROP_SAMPLING_PRIORITIES = setOf(PrioritySampling.SAMPLER_DROP, PrioritySampling.USER_DROP)
         private val KEEP_SAMPLING_PRIORITIES = setOf(PrioritySampling.SAMPLER_KEEP, PrioritySampling.USER_KEEP)
         internal val KEEP_AND_UNSET_SAMPLING_PRIORITIES = KEEP_SAMPLING_PRIORITIES + PrioritySampling.UNSET

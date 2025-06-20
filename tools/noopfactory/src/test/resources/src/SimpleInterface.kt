@@ -44,4 +44,10 @@ interface SimpleInterface {
     val mapProperty: Map<String, String>
 
     var setProperty: Set<String>
+
+    fun functionalReturnType(): () -> Unit
+
+    fun functionalAliasReturnType(): FunctionalReturn
 }
+
+typealias FunctionalReturn = (String) -> Unit

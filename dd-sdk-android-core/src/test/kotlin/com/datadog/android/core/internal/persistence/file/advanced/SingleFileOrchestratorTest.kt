@@ -9,7 +9,6 @@ package com.datadog.android.core.internal.persistence.file.advanced
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.internal.persistence.file.single.SingleFileOrchestrator
 import com.datadog.android.utils.forge.Configurator
-import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -59,18 +58,18 @@ internal class SingleFileOrchestratorTest {
     // region getWritableFile
 
     @Test
-    fun `M create parent dir W getWritableFile()`(@BoolForgery forceNewBatch: Boolean) {
+    fun `M create parent dir W getWritableFile()`() {
         // When
-        testedOrchestrator.getWritableFile(forceNewBatch)
+        testedOrchestrator.getWritableFile()
 
         // Then
         assertThat(fakeFile.parentFile).exists()
     }
 
     @Test
-    fun `M return file W getWritableFile()`(@BoolForgery forceNewBatch: Boolean) {
+    fun `M return file W getWritableFile()`() {
         // When
-        val result = testedOrchestrator.getWritableFile(forceNewBatch)
+        val result = testedOrchestrator.getWritableFile()
 
         // Then
         assertThat(result).isSameAs(fakeFile)

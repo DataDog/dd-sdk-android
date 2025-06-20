@@ -4,9 +4,11 @@ package com.example
 
 import java.util.Date
 import kotlin.ByteArray
+import kotlin.Function0
 import kotlin.Int
 import kotlin.String
 import kotlin.Suppress
+import kotlin.Unit
 import kotlin.collections.List
 import kotlin.collections.Map
 import kotlin.collections.Set
@@ -57,4 +59,8 @@ internal class NoOpSimpleInterface : SimpleInterface {
     override fun doSomethingWithMapReturn(): Map<String, String> = emptyMap()
 
     override fun doSomethingWithSetReturn(): Set<String> = emptySet()
+
+    override fun functionalReturnType(): Function0<Unit> = {}
+
+    override fun functionalAliasReturnType(): FunctionalReturn = {}
 }
