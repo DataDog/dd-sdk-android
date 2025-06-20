@@ -7,6 +7,7 @@
 package com.datadog.android.sessionreplay.compose.internal.utils
 
 import android.graphics.Bitmap
+import android.os.Build
 import android.view.View
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.Modifier
@@ -28,6 +29,7 @@ import androidx.compose.ui.unit.Density
 import com.datadog.android.Datadog
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.TouchPrivacy
@@ -42,7 +44,10 @@ import com.datadog.android.sessionreplay.compose.internal.mappers.semantics.Text
 import com.datadog.android.sessionreplay.utils.GlobalBounds
 
 @Suppress("TooManyFunctions")
-internal class SemanticsUtils(private val reflectionUtils: ReflectionUtils = ReflectionUtils()) {
+internal class SemanticsUtils(
+    private val reflectionUtils: ReflectionUtils = ReflectionUtils(),
+    private val sampler: RateBasedSampler<Unit> = RateBasedSampler(BITMAP_TELEMETRY_SAMPLE_RATE)
+) {
 
     internal fun findRootSemanticsNode(view: View): SemanticsNode? {
         reflectionUtils.apply {
@@ -273,12 +278,39 @@ internal class SemanticsUtils(private val reflectionUtils: ReflectionUtils = Ref
             }
         }
 
+        // Send telemetry about the original bitmap before copying it.
+        bitmap?.let {
+            sendBitmapInfoTelemetry(it, isContextualImage)
+        }
+
+        // Avoid copying hardware bitmap because it is slow and may violate [StrictMode#noteSlowCall]
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && bitmap?.config == Bitmap.Config.HARDWARE) {
+            return BitmapInfo(bitmap, isContextualImage)
+        }
         val newBitmap = bitmap?.let {
             @Suppress("UnsafeThirdPartyFunctionCall") // isMutable is always false
             it.copy(Bitmap.Config.ARGB_8888, false)
         }
         return newBitmap?.let {
             BitmapInfo(it, isContextualImage)
+        }
+    }
+
+    private fun sendBitmapInfoTelemetry(bitmap: Bitmap, isContextual: Boolean) {
+        if (sampler.sample(Unit)) {
+            (Datadog.getInstance() as? FeatureSdkCore)?.internalLogger?.log(
+                level = InternalLogger.Level.INFO,
+                target = InternalLogger.Target.TELEMETRY,
+                messageBuilder = { "Resolved the bitmap from semantics node with id:${bitmap.generationId}" },
+                additionalProperties = mapOf(
+                    "bitmap.id" to bitmap.generationId,
+                    "bitmap.byteCount" to bitmap.byteCount,
+                    "bitmap.width" to bitmap.width,
+                    "bitmap.height" to bitmap.height,
+                    "bitmap.config" to bitmap.config,
+                    "bitmap.isContextual" to isContextual
+                )
+            )
         }
     }
 
@@ -390,6 +422,7 @@ internal class SemanticsUtils(private val reflectionUtils: ReflectionUtils = Ref
         }
         internal const val DEFAULT_COLOR_BLACK = "#000000FF"
         internal const val DEFAULT_COLOR_WHITE = "#FFFFFFFF"
+        private const val BITMAP_TELEMETRY_SAMPLE_RATE = 1f
     }
 
     internal fun getProgressBarRangeInfo(semanticsNode: SemanticsNode): ProgressBarRangeInfo? {

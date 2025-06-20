@@ -76,7 +76,6 @@ internal class RumViewManagerScope(
                 null
             }
         }
-
     internal var stopped = false
     private var lastStoppedViewTime: Time? = null
 
@@ -142,6 +141,14 @@ internal class RumViewManagerScope(
     // endregion
 
     // region Internal
+
+    internal fun renewViewScopes(eventTime: Time) {
+        val newChildScope = childrenScopes.map { rumViewScope ->
+            rumViewScope.renew(eventTime)
+        }
+        childrenScopes.clear()
+        childrenScopes.addAll(newChildScope)
+    }
 
     private fun isViewManagerComplete(): Boolean {
         return stopped && childrenScopes.isEmpty()

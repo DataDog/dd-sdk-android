@@ -945,6 +945,27 @@ internal class RumViewManagerScopeTest {
 
     // endregion
 
+    @Test
+    fun `M renew all the child scopes W renewViewScopes`(forge: Forge) {
+        // Given
+        val eventTime = Time()
+        repeat(forge.aSmallInt()) {
+            testedScope.handleEvent(
+                forge.startViewEvent(eventTime),
+                fakeDatadogContext,
+                mockEventWriteScope,
+                mockWriter
+            )
+        }
+
+        // When
+        val oldScopes = testedScope.childrenScopes.toList()
+        testedScope.renewViewScopes(eventTime)
+
+        // Then
+        assertThat(testedScope.childrenScopes).isNotEqualTo(oldScopes)
+    }
+
     // region Active view
 
     @Test

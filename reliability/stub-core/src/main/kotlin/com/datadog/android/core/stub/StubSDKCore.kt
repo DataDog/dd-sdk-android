@@ -8,6 +8,7 @@ package com.datadog.android.core.stub
 
 import android.app.Application
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.context.AccountInfo
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.context.NetworkInfo
 import com.datadog.android.api.context.TimeInfo
@@ -86,8 +87,15 @@ class StubSDKCore(
      * @param userInfo the user info
      */
     fun stubUserInfo(userInfo: UserInfo) {
-        networkInfo
         datadogContext = datadogContext.copy(userInfo = userInfo)
+    }
+
+    /**
+     * Stubs the account info visible via the SDK Core.
+     * @param accountInfo the account info
+     */
+    fun stubAccountInfo(accountInfo: AccountInfo) {
+        datadogContext = datadogContext.copy(accountInfo = accountInfo)
     }
 
     /**
@@ -184,6 +192,14 @@ class StubSDKCore(
         extraInfo: Map<String, Any?>
     ) {
         stubUserInfo(UserInfo(null, id, name, email, extraInfo))
+    }
+
+    override fun setAccountInfo(
+        id: String,
+        name: String?,
+        extraInfo: Map<String, Any?>
+    ) {
+        stubAccountInfo(AccountInfo(id, name, extraInfo))
     }
 
     // endregion
