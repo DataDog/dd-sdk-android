@@ -41,7 +41,10 @@ import java.util.concurrent.TimeUnit
 class SdkCoreTest : MockServerTest() {
 
     @get:Rule
-    var forge = ForgeRule().useJvmFactories().useToolsFactories().withFactory(ConfigurationCoreForgeryFactory())
+    var forge = ForgeRule()
+        .useJvmFactories()
+        .useToolsFactories()
+        .withFactory(ConfigurationCoreForgeryFactory())
 
     @StringForgery(type = StringForgeryType.ALPHABETICAL)
     lateinit var fakeUserId: String
@@ -126,7 +129,7 @@ class SdkCoreTest : MockServerTest() {
     @Test
     fun must_addAccountInformationIntoEvents_when_setAccountInformation() {
         // When
-        testedSdkCore?.setAccountInfo(
+        testedSdkCore.setAccountInfo(
             fakeAccountId,
             fakeAccountName,
             fakeAccountExtraInfo
@@ -135,7 +138,7 @@ class SdkCoreTest : MockServerTest() {
         // Then
         val countDownLatch = CountDownLatch(1)
         var readAccountInfo: AccountInfo? = null
-        featureSdkCore?.getFeature(stubFeature.name)?.withWriteContext { datadogContext, _ ->
+        featureSdkCore.getFeature(stubFeature.name)?.withWriteContext { datadogContext, _ ->
             readAccountInfo = datadogContext.accountInfo
             countDownLatch.countDown()
         }
@@ -145,9 +148,9 @@ class SdkCoreTest : MockServerTest() {
         assertThat(readAccountInfo?.extraInfo)
             .containsExactlyInAnyOrderEntriesOf(fakeAccountExtraInfo)
 
-        testedSdkCore?.clearAccountInfo()
+        testedSdkCore.clearAccountInfo()
         val countDownLatch2 = CountDownLatch(1)
-        featureSdkCore?.getFeature(stubFeature.name)?.withWriteContext { datadogContext, _ ->
+        featureSdkCore.getFeature(stubFeature.name)?.withWriteContext { datadogContext, _ ->
             readAccountInfo = datadogContext.accountInfo
             countDownLatch2.countDown()
         }
@@ -408,7 +411,7 @@ class SdkCoreTest : MockServerTest() {
     @Test
     fun must_addAccountExtraInfo_when_addAccountInfo() {
         // Given
-        testedSdkCore?.setAccountInfo(
+        testedSdkCore.setAccountInfo(
             fakeAccountId,
             fakeAccountName,
             fakeAccountExtraInfo
@@ -416,12 +419,12 @@ class SdkCoreTest : MockServerTest() {
         val expectedAccountExtraProperties = forge.exhaustiveAttributes()
 
         // When
-        testedSdkCore?.addAccountExtraInfo(expectedAccountExtraProperties)
+        testedSdkCore.addAccountExtraInfo(expectedAccountExtraProperties)
 
         // Then
         val countDownLatch = CountDownLatch(1)
         var readAccountInfo: AccountInfo? = null
-        featureSdkCore?.getFeature(stubFeature.name)?.withWriteContext { datadogContext, _ ->
+        featureSdkCore.getFeature(stubFeature.name)?.withWriteContext { datadogContext, _ ->
             readAccountInfo = datadogContext.accountInfo
             countDownLatch.countDown()
         }
@@ -437,7 +440,7 @@ class SdkCoreTest : MockServerTest() {
         // Given
         val fakeMutableProperties = forge.exhaustiveAttributes()
         val expectedMutableProperties = fakeMutableProperties.toMap()
-        testedSdkCore?.setAccountInfo(fakeAccountId, fakeAccountName, fakeMutableProperties)
+        testedSdkCore.setAccountInfo(fakeAccountId, fakeAccountName, fakeMutableProperties)
 
         // When
         fakeMutableProperties.keys.forEach { key ->
@@ -447,7 +450,7 @@ class SdkCoreTest : MockServerTest() {
         // Then
         val countDownLatch = CountDownLatch(1)
         var readAccountInfo: AccountInfo? = null
-        featureSdkCore?.getFeature(stubFeature.name)?.withWriteContext { datadogContext, _ ->
+        featureSdkCore.getFeature(stubFeature.name)?.withWriteContext { datadogContext, _ ->
             readAccountInfo = datadogContext.accountInfo
             countDownLatch.countDown()
         }
@@ -463,7 +466,7 @@ class SdkCoreTest : MockServerTest() {
         // Given
         val fakeMutableProperties = forge.exhaustiveAttributes()
         val expectedMutableProperties = fakeMutableProperties.toMap()
-        testedSdkCore?.setAccountInfo(fakeAccountId, fakeAccountName, fakeMutableProperties)
+        testedSdkCore.setAccountInfo(fakeAccountId, fakeAccountName, fakeMutableProperties)
 
         // When
         repeat(forge.anInt(1, fakeMutableProperties.size / 2)) {
@@ -473,7 +476,7 @@ class SdkCoreTest : MockServerTest() {
         // Then
         val countDownLatch = CountDownLatch(1)
         var readAccountInfo: AccountInfo? = null
-        featureSdkCore?.getFeature(stubFeature.name)?.withWriteContext { datadogContext, _ ->
+        featureSdkCore.getFeature(stubFeature.name)?.withWriteContext { datadogContext, _ ->
             readAccountInfo = datadogContext.accountInfo
             countDownLatch.countDown()
         }
@@ -489,7 +492,7 @@ class SdkCoreTest : MockServerTest() {
         // Given
         val fakeMutableProperties = forge.exhaustiveAttributes()
         val expectedMutableProperties = fakeMutableProperties.toMap()
-        testedSdkCore?.setAccountInfo(fakeAccountId, fakeAccountName, fakeMutableProperties)
+        testedSdkCore.setAccountInfo(fakeAccountId, fakeAccountName, fakeMutableProperties)
 
         // When
         repeat(forge.anInt(1, 10)) {
@@ -499,7 +502,7 @@ class SdkCoreTest : MockServerTest() {
         // Then
         val countDownLatch = CountDownLatch(1)
         var readAccountInfo: AccountInfo? = null
-        featureSdkCore?.getFeature(stubFeature.name)?.withWriteContext { datadogContext, _ ->
+        featureSdkCore.getFeature(stubFeature.name)?.withWriteContext { datadogContext, _ ->
             readAccountInfo = datadogContext.accountInfo
             countDownLatch.countDown()
         }
@@ -515,8 +518,8 @@ class SdkCoreTest : MockServerTest() {
         // Given
         val fakeExtraProperties = forge.exhaustiveAttributes()
         val expectedExtraProperties = fakeExtraProperties.toMap()
-        testedSdkCore?.setAccountInfo(fakeAccountId, fakeAccountName, fakeAccountExtraInfo)
-        testedSdkCore?.addAccountExtraInfo(fakeExtraProperties)
+        testedSdkCore.setAccountInfo(fakeAccountId, fakeAccountName, fakeAccountExtraInfo)
+        testedSdkCore.addAccountExtraInfo(fakeExtraProperties)
 
         // When
         fakeExtraProperties.keys.forEach { key ->
@@ -526,7 +529,7 @@ class SdkCoreTest : MockServerTest() {
         // Then
         val countDownLatch = CountDownLatch(1)
         var readAccountInfo: AccountInfo? = null
-        featureSdkCore?.getFeature(stubFeature.name)?.withWriteContext { datadogContext, _ ->
+        featureSdkCore.getFeature(stubFeature.name)?.withWriteContext { datadogContext, _ ->
             readAccountInfo = datadogContext.accountInfo
             countDownLatch.countDown()
         }
@@ -542,8 +545,8 @@ class SdkCoreTest : MockServerTest() {
         // Given
         val fakeExtraProperties = forge.exhaustiveAttributes()
         val expectedExtraProperties = fakeExtraProperties.toMap()
-        testedSdkCore?.setAccountInfo(fakeAccountId, fakeAccountName, fakeAccountExtraInfo)
-        testedSdkCore?.addAccountExtraInfo(fakeExtraProperties)
+        testedSdkCore.setAccountInfo(fakeAccountId, fakeAccountName, fakeAccountExtraInfo)
+        testedSdkCore.addAccountExtraInfo(fakeExtraProperties)
 
         // When
         repeat(forge.anInt(1, fakeExtraProperties.size / 2)) {
@@ -553,7 +556,7 @@ class SdkCoreTest : MockServerTest() {
         // Then
         val countDownLatch = CountDownLatch(1)
         var readAccountInfo: AccountInfo? = null
-        featureSdkCore?.getFeature(stubFeature.name)?.withWriteContext { datadogContext, _ ->
+        featureSdkCore.getFeature(stubFeature.name)?.withWriteContext { datadogContext, _ ->
             readAccountInfo = datadogContext.accountInfo
             countDownLatch.countDown()
         }
@@ -569,8 +572,8 @@ class SdkCoreTest : MockServerTest() {
         // Given
         val fakeExtraProperties = forge.exhaustiveAttributes()
         val expectedExtraProperties = fakeExtraProperties.toMap()
-        testedSdkCore?.setAccountInfo(fakeAccountId, fakeAccountName, fakeAccountExtraInfo)
-        testedSdkCore?.addAccountExtraInfo(fakeExtraProperties)
+        testedSdkCore.setAccountInfo(fakeAccountId, fakeAccountName, fakeAccountExtraInfo)
+        testedSdkCore.addAccountExtraInfo(fakeExtraProperties)
 
         // When
         repeat(forge.anInt(1, 10)) {
@@ -580,7 +583,7 @@ class SdkCoreTest : MockServerTest() {
         // Then
         val countDownLatch = CountDownLatch(1)
         var readAccountInfo: AccountInfo? = null
-        featureSdkCore?.getFeature(stubFeature.name)?.withWriteContext { datadogContext, _ ->
+        featureSdkCore.getFeature(stubFeature.name)?.withWriteContext { datadogContext, _ ->
             readAccountInfo = datadogContext.accountInfo
             countDownLatch.countDown()
         }
@@ -594,20 +597,20 @@ class SdkCoreTest : MockServerTest() {
     @Test
     fun must_resetAccountInfo_when_setAccountInfoCalledSecondTime() {
         // Given
-        testedSdkCore?.setAccountInfo(fakeAccountId, fakeAccountName, fakeAccountExtraInfo)
+        testedSdkCore.setAccountInfo(fakeAccountId, fakeAccountName, fakeAccountExtraInfo)
         val expectedAccountExtraProperties = forge.exhaustiveAttributes()
-        testedSdkCore?.addAccountExtraInfo(expectedAccountExtraProperties)
+        testedSdkCore.addAccountExtraInfo(expectedAccountExtraProperties)
         val fakeAccountId2 = forge.anAlphabeticalString()
         val fakeAccountName2 = forge.anAlphabeticalString()
         val fakeAccountExtraInfo2 = forge.exhaustiveAttributes()
 
         // When
-        testedSdkCore?.setAccountInfo(fakeAccountId2, fakeAccountName2, fakeAccountExtraInfo2)
+        testedSdkCore.setAccountInfo(fakeAccountId2, fakeAccountName2, fakeAccountExtraInfo2)
 
         // Then
         val countDownLatch = CountDownLatch(1)
         var readAccountInfo: AccountInfo? = null
-        featureSdkCore?.getFeature(stubFeature.name)?.withWriteContext { datadogContext, _ ->
+        featureSdkCore.getFeature(stubFeature.name)?.withWriteContext { datadogContext, _ ->
             readAccountInfo = datadogContext.accountInfo
             countDownLatch.countDown()
         }
@@ -622,15 +625,15 @@ class SdkCoreTest : MockServerTest() {
     fun must_resetAccountInfo_when_setAccountInfoCalled_afterAddAccountExtraInfo() {
         // Given
         val expectedAccountExtraProperties = forge.exhaustiveAttributes()
-        testedSdkCore?.addAccountExtraInfo(expectedAccountExtraProperties)
+        testedSdkCore.addAccountExtraInfo(expectedAccountExtraProperties)
 
         // When
-        testedSdkCore?.setAccountInfo(fakeAccountId, fakeAccountName, fakeAccountExtraInfo)
+        testedSdkCore.setAccountInfo(fakeAccountId, fakeAccountName, fakeAccountExtraInfo)
 
         // Then
         val countDownLatch = CountDownLatch(1)
         var readAccountInfo: AccountInfo? = null
-        featureSdkCore?.getFeature(stubFeature.name)?.withWriteContext { datadogContext, _ ->
+        featureSdkCore.getFeature(stubFeature.name)?.withWriteContext { datadogContext, _ ->
             readAccountInfo = datadogContext.accountInfo
             countDownLatch.countDown()
         }
