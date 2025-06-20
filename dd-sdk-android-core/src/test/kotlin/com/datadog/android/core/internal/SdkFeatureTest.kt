@@ -78,6 +78,7 @@ import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.util.Locale
@@ -86,6 +87,7 @@ import java.util.concurrent.CancellationException
 import java.util.concurrent.ExecutionException
 import java.util.concurrent.Future
 import java.util.concurrent.RejectedExecutionException
+import java.util.concurrent.atomic.AtomicBoolean
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -144,6 +146,7 @@ internal class SdkFeatureTest {
         whenever(coreFeature.mockInstance.batchProcessingLevel)
             .thenReturn(fakeCoreBatchProcessingLevel)
         whenever(coreFeature.mockTrackingConsentProvider.getConsent()) doReturn fakeConsent
+        whenever(coreFeature.mockInstance.initialized) doReturn AtomicBoolean(true)
         whenever(mockWrappedFeature.name) doReturn fakeFeatureName
         whenever(mockWrappedFeature.requestFactory) doReturn mock()
         whenever(mockWrappedFeature.storageConfiguration) doReturn fakeStorageConfiguration
@@ -513,6 +516,22 @@ internal class SdkFeatureTest {
     }
 
     @Test
+    fun `M not provide write context W withWriteContext(callback) { CoreFeature is not initialized }`(
+        @StringForgery fakeWithFeatureContexts: Set<String>
+    ) {
+        // Given
+        testedFeature.storage = mockStorage
+        val callback = mock<(DatadogContext, EventWriteScope) -> Unit>()
+        whenever(coreFeature.mockInstance.initialized) doReturn AtomicBoolean(false)
+
+        // When
+        testedFeature.withWriteContext(fakeWithFeatureContexts, callback = callback)
+
+        // Then
+        verifyNoInteractions(callback, mockContextProvider, mockStorage)
+    }
+
+    @Test
     fun `M provide Datadog context W withContext(callback)`(
         @Forgery fakeContext: DatadogContext,
         @StringForgery fakeWithFeatureContexts: Set<String>
@@ -527,6 +546,22 @@ internal class SdkFeatureTest {
 
         // Then
         verify(callback).invoke(fakeContext)
+    }
+
+    @Test
+    fun `M not provide Datadog context W withContext(callback) { CoreFeature is not initialized }`(
+        @StringForgery fakeWithFeatureContexts: Set<String>
+    ) {
+        // Given
+        testedFeature.storage = mockStorage
+        val callback = mock<(DatadogContext) -> Unit>()
+        whenever(coreFeature.mockInstance.initialized) doReturn AtomicBoolean(false)
+
+        // When
+        testedFeature.withContext(fakeWithFeatureContexts, callback = callback)
+
+        // Then
+        verifyNoInteractions(callback, mockContextProvider)
     }
 
     @Test
@@ -608,6 +643,19 @@ internal class SdkFeatureTest {
 
         // Then
         assertThat(writeContext).isNull()
+    }
+
+    @Test
+    fun `M provide null write context W getWriteContextSync() { CoreFeature is not initialized }`() {
+        // Given
+        whenever(coreFeature.mockInstance.initialized) doReturn AtomicBoolean(false)
+
+        // When
+        val writeContext = testedFeature.getWriteContextSync()
+
+        // Then
+        assertThat(writeContext).isNull()
+        verifyNoInteractions(mockContextProvider, mockStorage)
     }
 
     @Test
