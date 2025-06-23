@@ -9,12 +9,9 @@ import com.datadog.trace.api.DDSpanId;
 import com.datadog.trace.api.DDTraceId;
 import com.datadog.trace.api.EndpointCheckpointer;
 import com.datadog.trace.api.TraceConfig;
-import com.datadog.trace.api.TracePropagationStyle;
 import com.datadog.trace.api.gateway.Flow;
 import com.datadog.trace.api.gateway.RequestContext;
 import com.datadog.trace.api.gateway.RequestContextSlot;
-import com.datadog.trace.api.internal.InternalTracer;
-import com.datadog.trace.api.profiling.Timer;
 import com.datadog.trace.api.sampling.PrioritySampling;
 import com.datadog.trace.api.sampling.SamplingRule;
 import com.datadog.trace.api.scopemanager.ScopeListener;
@@ -34,7 +31,9 @@ public class AgentTracer {
   private AgentTracer() {}
 
   public interface TracerAPI
-      extends com.datadog.trace.api.Tracer, InternalTracer, EndpointCheckpointer, ScopeStateAware {
+          extends com.datadog.trace.api.Tracer,
+          EndpointCheckpointer,
+          ScopeStateAware {
 
     /**
      * Create and start a new span.
@@ -84,21 +83,10 @@ public class AgentTracer {
     AgentScope activateSpan(AgentSpan span, ScopeSource source);
 
     AgentScope activateSpan(AgentSpan span, ScopeSource source, boolean isAsyncPropagating);
-
-    AgentScope.Continuation captureSpan(AgentSpan span);
-
-    void closePrevious(boolean finishSpan);
-
-    AgentScope activateNext(AgentSpan span);
-
     @Nullable
     AgentSpan activeSpan();
 
-    AgentScope activeScope();
-
     AgentPropagation propagate();
-
-    AgentSpan noopSpan();
 
     /** Deprecated. Use {@link #buildSpan(String, CharSequence)} instead. */
     @Deprecated
@@ -117,24 +105,12 @@ public class AgentTracer {
      */
     void addScopeListener(ScopeListener listener);
 
-    /**
-     * Registers the checkpointer
-     *
-     * @param checkpointer
-     */
-    void registerCheckpointer(EndpointCheckpointer checkpointer);
-
-    void registerTimer(Timer timer);
-
-    Timer getTimer();
 
     String getTraceId(AgentSpan span);
 
     String getSpanId(AgentSpan span);
 
     TraceConfig captureTraceConfig();
-
-    ProfilingContextIntegration getProfilingContext();
   }
 
   public interface SpanBuilder {
@@ -507,25 +483,6 @@ public class AgentTracer {
     @Override
     public boolean isAsyncPropagating() {
       return false;
-    }
-  }
-
-  static class NoopAgentPropagation implements AgentPropagation {
-    static final NoopAgentPropagation INSTANCE = new NoopAgentPropagation();
-
-    @Override
-    public <C> void inject(final AgentSpan span, final C carrier, final Setter<C> setter) {}
-
-    @Override
-    public <C> void inject(final Context context, final C carrier, final Setter<C> setter) {}
-
-    @Override
-    public <C> void inject(
-        AgentSpan span, C carrier, Setter<C> setter, TracePropagationStyle style) {}
-
-    @Override
-    public <C> Context.Extracted extract(final C carrier, final ContextVisitor<C> getter) {
-      return NoopContext.INSTANCE;
     }
   }
 

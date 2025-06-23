@@ -409,7 +409,6 @@ public class CoreTracer implements AgentTracer.TracerAPI {
         assert baggageMapping != null;
 
         this.log = LoggerFactory.getLogger(CoreTracer.class.getSimpleName(), internalLogger);
-        this.rlLog = new RatelimitedLogger(log, 1, MINUTES);
         this.timeSource = timeSource == null ? SystemTimeSource.INSTANCE : timeSource;
         startTimeNano = this.timeSource.getCurrentTimeNanos();
         startNanoTicks = this.timeSource.getNanoTicks();
@@ -617,22 +616,6 @@ public class CoreTracer implements AgentTracer.TracerAPI {
     public AgentScope activateSpan(AgentSpan span, ScopeSource source, boolean isAsyncPropagating) {
         return scopeManager.activate(span, source, isAsyncPropagating);
     }
-
-    @Override
-    public AgentScope.Continuation captureSpan(final AgentSpan span) {
-        return scopeManager.captureSpan(span);
-    }
-
-    @Override
-    public void closePrevious(boolean finishSpan) {
-        scopeManager.closePrevious(finishSpan);
-    }
-
-    @Override
-    public AgentScope activateNext(AgentSpan span) {
-        return scopeManager.activateNext(span);
-    }
-
     public TagInterceptor getTagInterceptor() {
         return tagInterceptor;
     }
@@ -647,26 +630,9 @@ public class CoreTracer implements AgentTracer.TracerAPI {
     }
 
     @Override
-    public AgentScope activeScope() {
-        return scopeManager.active();
-    }
-
-    @Override
     public AgentPropagation propagate() {
         return this.propagation;
     }
-
-    @Override
-    public AgentSpan noopSpan() {
-        return AgentTracer.NoopAgentSpan.INSTANCE;
-    }
-
-    @Override
-    public Timer getTimer() {
-        return timer;
-    }
-
-    private final RatelimitedLogger rlLog;
 
     /**
      * We use the sampler to know if the trace has to be reported/written. The sampler is called on
@@ -758,16 +724,6 @@ public class CoreTracer implements AgentTracer.TracerAPI {
     }
 
     @Override
-    public void registerCheckpointer(EndpointCheckpointer implementation) {
-        endpointCheckpointer.register(implementation);
-    }
-
-    @Override
-    public void registerTimer(Timer timer) {
-        this.timer = timer;
-    }
-
-    @Override
     public void close() {
         pendingTraceBuffer.close();
         writer.close();
@@ -775,25 +731,13 @@ public class CoreTracer implements AgentTracer.TracerAPI {
         metricsAggregator.close();
     }
 
-    @Override
     public void flush() {
         pendingTraceBuffer.flush();
         writer.flush();
     }
 
-
-    @Override
-    public ProfilingContextIntegration getProfilingContext() {
-        return profilingContextIntegration;
-    }
-
-
     Recording writeTimer() {
         return traceWriteTimer.start();
-    }
-
-    private static String statsdTag(final String tagPrefix, final String tagValue) {
-        return tagPrefix + ":" + tagValue;
     }
 
     private static <K, V> Map<V, K> invertMap(Map<K, V> map) {
