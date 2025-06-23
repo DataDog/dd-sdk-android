@@ -10,7 +10,7 @@ import androidx.annotation.VisibleForTesting
 import com.datadog.android.Datadog
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.SdkCore
-import com.datadog.android.api.feature.Feature.Companion.SESSION_REPLAY_FEATURE_NAME
+import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.sessionreplay.internal.SessionReplayFeature
 import com.datadog.android.sessionreplay.internal.TouchPrivacyManager
@@ -81,7 +81,7 @@ object SessionReplay {
         sdkCore: SdkCore = Datadog.getInstance()
     ) {
         val sessionReplayFeature = (sdkCore as? FeatureSdkCore)
-            ?.getFeature(SESSION_REPLAY_FEATURE_NAME)?.let {
+            ?.getFeature(Feature.SESSION_REPLAY_FEATURE_NAME)?.let {
                 it.unwrap() as? SessionReplayFeature
             }
 
@@ -97,7 +97,7 @@ object SessionReplay {
         sdkCore: SdkCore = Datadog.getInstance()
     ) {
         val sessionReplayFeature = (sdkCore as? FeatureSdkCore)
-            ?.getFeature(SESSION_REPLAY_FEATURE_NAME)?.let {
+            ?.getFeature(Feature.SESSION_REPLAY_FEATURE_NAME)?.let {
                 it.unwrap() as? SessionReplayFeature
             }
 

@@ -121,7 +121,7 @@ class StubSDKCore(
     override val firstPartyHostResolver: FirstPartyHostHeaderTypeResolver =
         StubFirstPartyHostHeaderTypeResolver()
 
-    override fun getDatadogContext(): DatadogContext {
+    override fun getDatadogContext(withFeatureContexts: Set<String>): DatadogContext {
         return datadogContext
     }
 
@@ -150,6 +150,7 @@ class StubSDKCore(
 
     override fun updateFeatureContext(
         featureName: String,
+        useContextThread: Boolean,
         updateCallback: (context: MutableMap<String, Any?>) -> Unit
     ) {
         val featureContext = datadogContext.featuresContext[featureName]?.toMutableMap() ?: mutableMapOf()
@@ -161,7 +162,7 @@ class StubSDKCore(
         )
     }
 
-    override fun getFeatureContext(featureName: String): Map<String, Any?> {
+    override fun getFeatureContext(featureName: String, useContextThread: Boolean): Map<String, Any?> {
         return datadogContext.featuresContext[featureName].orEmpty()
     }
 

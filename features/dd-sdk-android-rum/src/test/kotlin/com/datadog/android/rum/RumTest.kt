@@ -13,7 +13,6 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.rum.internal.RumFeature
-import com.datadog.android.rum.internal.domain.scope.RumApplicationScope
 import com.datadog.android.rum.internal.monitor.DatadogRumMonitor
 import com.datadog.android.rum.internal.monitor.NoOpAdvancedRumMonitor
 import com.datadog.android.rum.internal.net.RumRequestFactory
@@ -135,14 +134,12 @@ internal class RumTest {
         // Then
         val monitor = GlobalRumMonitor.get(mockSdkCore)
         check(monitor is DatadogRumMonitor)
-        assertThat(monitor.rootScope).isInstanceOf(RumApplicationScope::class.java)
         assertThat(monitor.rootScope)
             .overridingErrorMessage(
                 "Expecting root scope to have applicationId ${fakeRumConfiguration.applicationId}"
             )
             .matches {
-                (it as RumApplicationScope)
-                    .getRumContext()
+                it.getRumContext()
                     .applicationId == fakeRumConfiguration.applicationId
             }
         assertThat(monitor.handler.looper).isSameAs(Looper.getMainLooper())
@@ -158,7 +155,7 @@ internal class RumTest {
 
         assertThat(telemetrySampler.getSampleRate())
             .isEqualTo(fakeRumConfiguration.featureConfiguration.telemetrySampleRate)
-        val rumApplicationScope = monitor.rootScope as RumApplicationScope
+        val rumApplicationScope = monitor.rootScope
         assertThat(rumApplicationScope.initialResourceIdentifier)
             .isSameAs(fakeRumConfiguration.featureConfiguration.initialResourceIdentifier)
         assertThat(rumApplicationScope.lastInteractionIdentifier)

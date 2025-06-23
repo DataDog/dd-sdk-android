@@ -7,6 +7,8 @@
 package com.datadog.android.rum.internal.domain.scope
 
 import androidx.annotation.WorkerThread
+import com.datadog.android.api.context.DatadogContext
+import com.datadog.android.api.feature.EventWriteScope
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.api.storage.NoOpDataWriter
@@ -79,11 +81,12 @@ internal class RumSessionScope(
         lastInteractionIdentifier
     )
 
-    init {
-        sdkCore.updateFeatureContext(Feature.RUM_FEATURE_NAME) {
-            it.putAll(getRumContext().toMap())
+    internal val activeView: RumViewScope?
+        get() = if (isActive() && childScope != null) {
+            childScope?.activeView
+        } else {
+            null
         }
-    }
 
     enum class State(val asString: String) {
         NOT_TRACKED("NOT_TRACKED"),
@@ -119,6 +122,8 @@ internal class RumSessionScope(
     @WorkerThread
     override fun handleEvent(
         event: RumRawEvent,
+        datadogContext: DatadogContext,
+        writeScope: EventWriteScope,
         writer: DataWriter<Any>
     ): RumScope? {
         if (event is RumRawEvent.ResetSession) {
@@ -132,7 +137,8 @@ internal class RumSessionScope(
         val actualWriter = if (sessionState == State.TRACKED) writer else noOpWriter
 
         if (event !is RumRawEvent.SdkInit) {
-            childScope = childScope?.handleEvent(event, actualWriter) as? RumViewManagerScope
+            childScope =
+                childScope?.handleEvent(event, datadogContext, writeScope, actualWriter) as? RumViewManagerScope
         }
 
         return if (isSessionComplete()) {

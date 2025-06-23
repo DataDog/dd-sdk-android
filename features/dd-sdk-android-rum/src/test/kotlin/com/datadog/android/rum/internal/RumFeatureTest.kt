@@ -13,6 +13,7 @@ import android.app.ApplicationExitInfo
 import android.content.Context
 import android.os.Build
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.feature.FeatureContextUpdateReceiver
 import com.datadog.android.api.storage.NoOpDataWriter
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.feature.event.JvmCrash
@@ -649,6 +650,12 @@ internal class RumFeatureTest {
         verifyFrameStateAggregatorInitialized(
             anyMatchPredicate = { it is FPSVitalListener }
         )
+        argumentCaptor<FeatureContextUpdateReceiver> {
+            verify(mockSdkCore, times(2))
+                .setContextUpdateReceiver(capture())
+            assertThat(testedFeature.rumContextUpdateReceivers).hasSize(allValues.size)
+            assertThat(testedFeature.rumContextUpdateReceivers).isEqualTo(allValues.toSet())
+        }
     }
 
     @Test
@@ -742,6 +749,21 @@ internal class RumFeatureTest {
         verify(mockActionTrackingStrategy).unregister(appContext.mockInstance)
         verify(mockViewTrackingStrategy).unregister(appContext.mockInstance)
         verify(mockLongTaskTrackingStrategy).unregister(appContext.mockInstance)
+    }
+
+    fun `M clean up all RUM context update receivers W onStop()`() {
+        // Given
+        testedFeature.onInitialize(appContext.mockInstance)
+        val rumContextUpdateReceivers = testedFeature.rumContextUpdateReceivers.toSet()
+
+        // When
+        testedFeature.onStop()
+
+        // Then
+        rumContextUpdateReceivers.forEach {
+            verify(mockSdkCore.removeContextUpdateReceiver(it))
+        }
+        assertThat(testedFeature.rumContextUpdateReceivers).isEmpty()
     }
 
     @Test

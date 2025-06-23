@@ -9,6 +9,7 @@ package com.datadog.android.rum.internal.domain.scope
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.context.NetworkInfo
+import com.datadog.android.api.feature.EventWriteScope
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.storage.DataWriter
@@ -96,6 +97,9 @@ internal class RumResourceScopeAttributePropagationTest {
     lateinit var mockRumFeatureScope: FeatureScope
 
     @Mock
+    lateinit var mockEventWriteScope: EventWriteScope
+
+    @Mock
     lateinit var mockEventBatchWriter: EventBatchWriter
 
     @Mock
@@ -162,8 +166,12 @@ internal class RumResourceScopeAttributePropagationTest {
         whenever(rumMonitor.mockSdkCore.networkInfo) doReturn fakeNetworkInfoAtScopeStart
         whenever(rumMonitor.mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumFeatureScope
         whenever(mockRumFeatureScope.withWriteContext(any(), any())) doAnswer {
-            val callback = it.getArgument<(DatadogContext, EventBatchWriter) -> Unit>(1)
-            callback.invoke(fakeDatadogContext, mockEventBatchWriter)
+            val callback = it.getArgument<(DatadogContext, EventWriteScope) -> Unit>(1)
+            callback.invoke(fakeDatadogContext, mockEventWriteScope)
+        }
+        whenever(mockEventWriteScope.invoke(any())) doAnswer {
+            val callback = it.getArgument<(EventBatchWriter) -> Unit>(0)
+            callback.invoke(mockEventBatchWriter)
         }
         whenever(mockWriter.write(eq(mockEventBatchWriter), any(), eq(EventType.DEFAULT))) doReturn true
 
@@ -216,7 +224,7 @@ internal class RumResourceScopeAttributePropagationTest {
         val fakeEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, stopResourceAttributes)
 
         // When
-        testedScope.handleEvent(fakeEvent, mockWriter)
+        testedScope.handleEvent(fakeEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
         argumentCaptor<ResourceEvent> {
@@ -249,7 +257,7 @@ internal class RumResourceScopeAttributePropagationTest {
 
         // When
         Thread.sleep(RESOURCE_DURATION_MS)
-        testedScope.handleEvent(event, mockWriter)
+        testedScope.handleEvent(event, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
         argumentCaptor<ErrorEvent> {

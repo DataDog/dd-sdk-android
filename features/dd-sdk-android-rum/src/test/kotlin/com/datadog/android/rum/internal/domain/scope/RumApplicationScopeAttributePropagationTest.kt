@@ -10,9 +10,9 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.context.NetworkInfo
 import com.datadog.android.api.context.TimeInfo
+import com.datadog.android.api.feature.EventWriteScope
 import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.storage.DataWriter
-import com.datadog.android.api.storage.EventBatchWriter
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.internal.FeaturesContextResolver
@@ -96,7 +96,7 @@ internal class RumApplicationScopeAttributePropagationTest {
     lateinit var mockRumFeatureScope: FeatureScope
 
     @Mock
-    lateinit var mockEventBatchWriter: EventBatchWriter
+    lateinit var mockEventWriteScope: EventWriteScope
 
     @Mock
     lateinit var mockFeaturesContextResolver: FeaturesContextResolver
@@ -162,8 +162,8 @@ internal class RumApplicationScopeAttributePropagationTest {
         fakeEventTime = Time(fakeTimestamp, fakeNanos)
 
         whenever(mockRumFeatureScope.withWriteContext(any(), any())) doAnswer {
-            val callback = it.getArgument<(DatadogContext, EventBatchWriter) -> Unit>(1)
-            callback.invoke(fakeDatadogContext, mockEventBatchWriter)
+            val callback = it.getArgument<(DatadogContext, EventWriteScope) -> Unit>(1)
+            callback.invoke(fakeDatadogContext, mockEventWriteScope)
         }
 
         whenever(rumMonitor.mockSdkCore.internalLogger) doReturn mock()

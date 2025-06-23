@@ -8,12 +8,14 @@ package com.datadog.android.trace.opentelemetry
 
 import android.content.Context
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.feature.FeatureSdkCore
-import com.datadog.android.log.LogAttributes
+import com.datadog.android.internal.concurrent.CompletableFuture
 import com.datadog.android.trace.InternalCoreWriterProvider
 import com.datadog.android.trace.TracingHeaderType
+import com.datadog.android.trace.internal.SpanAttributes
 import com.datadog.android.trace.opentelemetry.internal.NoOpCoreTracerWriter
 import com.datadog.android.trace.opentelemetry.utils.verifyLog
 import com.datadog.android.utils.forge.Configurator
@@ -34,6 +36,7 @@ import com.datadog.trace.core.DDSpan
 import com.datadog.trace.core.DDSpanContext
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.DoubleForgery
+import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.annotation.StringForgeryType
@@ -46,16 +49,13 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
-import org.junit.jupiter.params.ParameterizedTest
-import org.junit.jupiter.params.provider.MethodSource
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
-import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
-import org.mockito.kotlin.doReturnConsecutively
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
@@ -666,13 +666,21 @@ internal class OtelTracerBuilderProviderTest {
 
     // region bundle with RUM
 
+    @Suppress("UNCHECKED_CAST")
     @Test
-    fun `M build a Span with RUM context W startSpan`() {
+    fun `M build a Span with lazy Datadog context W startSpan()`(
+        @Forgery fakeInitialDatadogContext: DatadogContext
+    ) {
         // Given
         val tracer = testedOtelTracerProviderBuilder
             .build()
             .tracerBuilder(fakeInstrumentationName)
             .build()
+        val mockRumFeatureScope = mock<FeatureScope>()
+        whenever(mockRumFeatureScope.withContext(eq(setOf(Feature.RUM_FEATURE_NAME)), any())) doAnswer {
+            it.getArgument<(DatadogContext) -> Unit>(it.arguments.lastIndex).invoke(fakeInitialDatadogContext)
+        }
+        whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumFeatureScope
 
         // When
         val span = tracer
@@ -683,73 +691,13 @@ internal class OtelTracerBuilderProviderTest {
         span.end()
 
         // Then
-        assertThat(context.tags).containsEntry(LogAttributes.RUM_APPLICATION_ID, fakeApplicationId)
-        assertThat(context.tags).containsEntry(LogAttributes.RUM_SESSION_ID, fakeSessionId)
-        assertThat(context.tags).containsEntry(LogAttributes.RUM_VIEW_ID, fakeViewId)
-        assertThat(context.tags).containsEntry(LogAttributes.RUM_ACTION_ID, fakeActionId)
+        assertThat(context.tags).containsKey(SpanAttributes.DATADOG_INITIAL_CONTEXT)
+        val lazyContext = context.tags[SpanAttributes.DATADOG_INITIAL_CONTEXT] as CompletableFuture<DatadogContext>
+        assertThat(lazyContext.value).isEqualTo(fakeInitialDatadogContext)
     }
 
     @Test
-    fun `M bundle the span with current RUM context W startSpan`(forge: Forge) {
-        // Given
-        val fakeApppicationId1: String = forge.anHexadecimalString()
-        val fakeSessionId1: String = forge.anHexadecimalString()
-        val fakeViewId1: String = forge.anHexadecimalString()
-        val fakeActionId1: String = forge.anHexadecimalString()
-        val fakeApppicationId2: String = forge.anHexadecimalString()
-        val fakeSessionId2: String = forge.anHexadecimalString()
-        val fakeViewId2: String = forge.anHexadecimalString()
-        val fakeActionId2: String = forge.anHexadecimalString()
-        val fakeRumContext1 = mutableMapOf(
-            OtelTracerProvider.RUM_APPLICATION_ID_KEY to fakeApppicationId1,
-            OtelTracerProvider.RUM_SESSION_ID_KEY to fakeSessionId1,
-            OtelTracerProvider.RUM_VIEW_ID_KEY to fakeViewId1,
-            OtelTracerProvider.RUM_ACTION_ID_KEY to fakeActionId1
-        )
-        val fakeRumContext2 = mutableMapOf(
-            OtelTracerProvider.RUM_APPLICATION_ID_KEY to fakeApppicationId2,
-            OtelTracerProvider.RUM_SESSION_ID_KEY to fakeSessionId2,
-            OtelTracerProvider.RUM_VIEW_ID_KEY to fakeViewId2,
-            OtelTracerProvider.RUM_ACTION_ID_KEY to fakeActionId2
-        )
-        whenever(mockSdkCore.getFeatureContext(Feature.RUM_FEATURE_NAME)) doReturnConsecutively
-            listOf(fakeRumContext1, fakeRumContext2)
-        val tracer = testedOtelTracerProviderBuilder
-            .build()
-            .tracerBuilder(fakeInstrumentationName)
-            .build()
-
-        // When
-        val span1 = tracer
-            .spanBuilder(fakeOperationName)
-            .startSpan()
-        val delegateSpan1: DDSpan = span1.getFieldValue("delegate")
-        val context1 = delegateSpan1.context()
-        span1.end()
-
-        // Then
-        assertThat(context1.tags).containsEntry(LogAttributes.RUM_APPLICATION_ID, fakeApppicationId1)
-        assertThat(context1.tags).containsEntry(LogAttributes.RUM_SESSION_ID, fakeSessionId1)
-        assertThat(context1.tags).containsEntry(LogAttributes.RUM_VIEW_ID, fakeViewId1)
-        assertThat(context1.tags).containsEntry(LogAttributes.RUM_ACTION_ID, fakeActionId1)
-
-        // When
-        val span2 = tracer
-            .spanBuilder(fakeOperationName)
-            .startSpan()
-        val delegateSpan2: DDSpan = span2.getFieldValue("delegate")
-        val context2 = delegateSpan2.context()
-        span2.end()
-
-        // Then
-        assertThat(context2.tags).containsEntry(LogAttributes.RUM_APPLICATION_ID, fakeApppicationId2)
-        assertThat(context2.tags).containsEntry(LogAttributes.RUM_SESSION_ID, fakeSessionId2)
-        assertThat(context2.tags).containsEntry(LogAttributes.RUM_VIEW_ID, fakeViewId2)
-        assertThat(context2.tags).containsEntry(LogAttributes.RUM_ACTION_ID, fakeActionId2)
-    }
-
-    @Test
-    fun `M build a Span without RUM context W startSpan { bundleWithRum = false }`() {
+    fun `M build a Span without lazy Datadog context W startSpan() { bundleWithRum = false }`() {
         // Given
         val tracer = testedOtelTracerProviderBuilder
             .setBundleWithRumEnabled(false)
@@ -766,52 +714,18 @@ internal class OtelTracerBuilderProviderTest {
         span.end()
 
         // Then
-        assertThat(context.tags).doesNotContainKey(LogAttributes.RUM_APPLICATION_ID)
-        assertThat(context.tags).doesNotContainKey(LogAttributes.RUM_SESSION_ID)
-        assertThat(context.tags).doesNotContainKey(LogAttributes.RUM_VIEW_ID)
-        assertThat(context.tags).doesNotContainKey(LogAttributes.RUM_ACTION_ID)
-    }
-
-    @ParameterizedTest
-    @MethodSource("brokenRumContextProvider")
-    fun `M send a warning log W startSpan { bundle with RUM and broken RUM context }`(
-        fakeBrokenRumContext: Map<String, String>
-    ) {
-        // Given
-        whenever(mockSdkCore.getFeatureContext(Feature.RUM_FEATURE_NAME)) doReturn fakeBrokenRumContext
-        val tracer = testedOtelTracerProviderBuilder
-            .build()
-            .tracerBuilder(fakeInstrumentationName)
-            .build()
-
-        // When
-        val span = tracer
-            .spanBuilder(fakeOperationName)
-            .startSpan()
-        val delegateSpan: DDSpan = span.getFieldValue("delegate")
-        val context = delegateSpan.context()
-        span.end()
-
-        // Then
-        mockInternalLogger.verifyLog(
-            InternalLogger.Level.WARN,
-            InternalLogger.Target.USER,
-            OtelTracerProvider.RUM_CONTEXT_MISSING_ERROR_MESSAGE
-        )
-        assertThat(context.tags).doesNotContainKey(LogAttributes.RUM_APPLICATION_ID)
-        assertThat(context.tags).doesNotContainKey(LogAttributes.RUM_SESSION_ID)
-        assertThat(context.tags).doesNotContainKey(LogAttributes.RUM_VIEW_ID)
-        assertThat(context.tags).doesNotContainKey(LogAttributes.RUM_ACTION_ID)
+        assertThat(context.tags).doesNotContainKey(SpanAttributes.DATADOG_INITIAL_CONTEXT)
+        verify(mockSdkCore, never()).getFeature(Feature.RUM_FEATURE_NAME)
     }
 
     @Test
-    fun `M send span and do not log W startSpan { bundle with RUM and no RUM action id }`() {
+    fun `M build a Span without lazy Datadog context W startSpan() { bundleWithRum = true, RUM not initialized }`() {
         // Given
-        fakeRumContext.remove(OtelTracerProvider.RUM_ACTION_ID_KEY)
         val tracer = testedOtelTracerProviderBuilder
             .build()
             .tracerBuilder(fakeInstrumentationName)
             .build()
+        whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn null
 
         // When
         val span = tracer
@@ -822,18 +736,7 @@ internal class OtelTracerBuilderProviderTest {
         span.end()
 
         // Then
-        verify(mockInternalLogger, never()).log(
-            eq(InternalLogger.Level.WARN),
-            eq(listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY)),
-            eq { OtelTracerProvider.RUM_CONTEXT_MISSING_ERROR_MESSAGE },
-            anyOrNull(),
-            any(),
-            anyOrNull()
-        )
-        assertThat(context.tags).containsEntry(LogAttributes.RUM_APPLICATION_ID, fakeApplicationId)
-        assertThat(context.tags).containsEntry(LogAttributes.RUM_SESSION_ID, fakeSessionId)
-        assertThat(context.tags).containsEntry(LogAttributes.RUM_VIEW_ID, fakeViewId)
-        assertThat(context.tags).doesNotContainKey(LogAttributes.RUM_ACTION_ID)
+        assertThat(context.tags).doesNotContainKey(SpanAttributes.DATADOG_INITIAL_CONTEXT)
     }
 
     // endregion
@@ -867,7 +770,8 @@ internal class OtelTracerBuilderProviderTest {
         // Then
         argumentCaptor<(MutableMap<String, Any?>) -> Unit> {
             val traceContext: MutableMap<String, Any?> = mutableMapOf()
-            verify(mockSdkCore, times(3)).updateFeatureContext(eq(Feature.TRACING_FEATURE_NAME), capture())
+            verify(mockSdkCore, times(3))
+                .updateFeatureContext(eq(Feature.TRACING_FEATURE_NAME), any(), capture())
             secondValue.invoke(traceContext)
             val activeTraceContext = traceContext[expectedActiveTraceContextName] as Map<String, Any>
             assertThat(activeTraceContext).containsEntry("trace_id", expectedTraceId)
@@ -904,7 +808,8 @@ internal class OtelTracerBuilderProviderTest {
         // Then
         argumentCaptor<(MutableMap<String, Any?>) -> Unit> {
             val traceContext: MutableMap<String, Any?> = mutableMapOf()
-            verify(mockSdkCore, times(2)).updateFeatureContext(eq(Feature.TRACING_FEATURE_NAME), capture())
+            verify(mockSdkCore, times(2))
+                .updateFeatureContext(eq(Feature.TRACING_FEATURE_NAME), any(), capture())
             lastValue.invoke(traceContext)
             assertThat(traceContext).doesNotContainKey(expectedActiveTraceContextName)
         }
@@ -922,7 +827,8 @@ internal class OtelTracerBuilderProviderTest {
         // THEN
         argumentCaptor<(MutableMap<String, Any?>) -> Unit> {
             val traceContext: MutableMap<String, Any?> = mutableMapOf()
-            verify(mockSdkCore, times(1)).updateFeatureContext(eq(Feature.TRACING_FEATURE_NAME), capture())
+            verify(mockSdkCore, times(1))
+                .updateFeatureContext(eq(Feature.TRACING_FEATURE_NAME), eq(false), capture())
             lastValue.invoke(traceContext)
             assertThat(traceContext[OtelTracerProvider.IS_OPENTELEMETRY_ENABLED_CONFIG_KEY]).isEqualTo(true)
             assertThat(traceContext[OtelTracerProvider.OPENTELEMETRY_API_VERSION_CONFIG_KEY])
@@ -937,7 +843,7 @@ internal class OtelTracerBuilderProviderTest {
         testedOtelTracerProviderBuilder.build()
 
         // THEN
-        verify(mockSdkCore, never()).updateFeatureContext(eq(Feature.TRACING_FEATURE_NAME), any())
+        verify(mockSdkCore, never()).updateFeatureContext(eq(Feature.TRACING_FEATURE_NAME), any(), any())
     }
 
     // endregion
