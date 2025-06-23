@@ -137,84 +137,24 @@ public class com/datadog/legacy/trace/api/Config {
 	public static final field WRITER_TYPE Ljava/lang/String;
 	public static fun get ()Lcom/datadog/legacy/trace/api/Config;
 	public static fun get (Ljava/util/Properties;)Lcom/datadog/legacy/trace/api/Config;
-	public fun getAgentHost ()Ljava/lang/String;
-	public fun getAgentPort ()I
-	public fun getAgentUnixDomainSocket ()Ljava/lang/String;
 	public static fun getBooleanSettingFromEnvironment (Ljava/lang/String;Ljava/lang/Boolean;)Ljava/lang/Boolean;
-	public fun getExcludedClasses ()Ljava/util/List;
 	public fun getFinalProfilingUrl ()Ljava/lang/String;
 	public static fun getFloatSettingFromEnvironment (Ljava/lang/String;Ljava/lang/Float;)Ljava/lang/Float;
 	public fun getHeaderTags ()Ljava/util/Map;
-	public fun getHealthMetricsStatsdHost ()Ljava/lang/String;
-	public fun getHealthMetricsStatsdPort ()Ljava/lang/Integer;
-	public fun getHttpClientErrorStatuses ()Ljava/util/Set;
-	public fun getHttpServerErrorStatuses ()Ljava/util/Set;
-	public fun getInstrumentationAnalyticsSampleRate ([Ljava/lang/String;)F
-	public fun getJmxFetchCheckPeriod ()Ljava/lang/Integer;
-	public fun getJmxFetchConfigDir ()Ljava/lang/String;
-	public fun getJmxFetchConfigs ()Ljava/util/List;
-	public fun getJmxFetchMetricsConfigs ()Ljava/util/List;
-	public fun getJmxFetchRefreshBeansPeriod ()Ljava/lang/Integer;
-	public fun getJmxFetchStatsdHost ()Ljava/lang/String;
-	public fun getJmxFetchStatsdPort ()Ljava/lang/Integer;
 	public fun getLocalRootSpanTags ()Ljava/util/Map;
-	public fun getMergedJmxTags ()Ljava/util/Map;
-	public fun getMergedProfilingTags ()Ljava/util/Map;
 	public fun getMergedSpanTags ()Ljava/util/Map;
 	public fun getPartialFlushMinSpans ()Ljava/lang/Integer;
-	public fun getProfilingExceptionHistogramMaxCollectionSize ()I
-	public fun getProfilingExceptionHistogramTopItems ()I
-	public fun getProfilingExceptionSampleLimit ()I
-	public fun getProfilingProxyHost ()Ljava/lang/String;
-	public fun getProfilingProxyPassword ()Ljava/lang/String;
-	public fun getProfilingProxyPort ()I
-	public fun getProfilingProxyUsername ()Ljava/lang/String;
-	public fun getProfilingStartDelay ()I
-	public fun getProfilingTemplateOverrideFile ()Ljava/lang/String;
-	public fun getProfilingUploadCompression ()Ljava/lang/String;
-	public fun getProfilingUploadPeriod ()I
-	public fun getProfilingUploadTimeout ()I
 	public fun getPropagationStylesToExtract ()Ljava/util/Set;
 	public fun getPropagationStylesToInject ()Ljava/util/Set;
-	public fun getRuntimeId ()Ljava/lang/String;
 	public fun getScopeDepthLimit ()Ljava/lang/Integer;
 	public fun getServiceMapping ()Ljava/util/Map;
 	public fun getServiceName ()Ljava/lang/String;
-	public static fun getSettingFromEnvironment (Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;
 	public fun getSite ()Ljava/lang/String;
 	public fun getSplitByTags ()Ljava/util/Set;
-	public fun getTraceAnnotations ()Ljava/lang/String;
-	public fun getTraceExecutors ()Ljava/util/List;
-	public fun getTraceMethods ()Ljava/lang/String;
-	public fun getTraceRateLimit ()Ljava/lang/Double;
 	public fun getTraceSampleRate ()Ljava/lang/Double;
-	public fun getTraceSamplingOperationRules ()Ljava/util/Map;
-	public fun getTraceSamplingServiceRules ()Ljava/util/Map;
-	public fun getWriterType ()Ljava/lang/String;
-	public fun isDbClientSplitByInstance ()Z
-	public fun isHealthMetricsEnabled ()Z
-	public fun isHttpClientSplitByDomain ()Z
-	public fun isHttpClientTagQueryString ()Z
-	public fun isHttpServerTagQueryString ()Z
-	public fun isIntegrationEnabled (Ljava/util/SortedSet;Z)Z
-	public fun isIntegrationsEnabled ()Z
-	public fun isJmxFetchEnabled ()Z
-	public fun isJmxFetchIntegrationEnabled (Ljava/util/SortedSet;Z)Z
-	public fun isLogsInjectionEnabled ()Z
 	public fun isPrioritySamplingEnabled ()Z
-	public fun isProfilingEnabled ()Z
-	public fun isProfilingStartForceFirst ()Z
-	public fun isReportHostName ()Z
 	public fun isRuleEnabled (Ljava/lang/String;)Z
-	public fun isRuntimeContextFieldInjection ()Z
-	public fun isTraceAnalyticsEnabled ()Z
-	public fun isTraceAnalyticsIntegrationEnabled (Ljava/util/SortedSet;Z)Z
-	public fun isTraceEnabled ()Z
-	public fun isTraceExecutorsAll ()Z
-	public fun isTraceResolverEnabled ()Z
-	public static fun jmxFetchIntegrationEnabled (Ljava/util/SortedSet;Z)Z
 	public fun toString ()Ljava/lang/String;
-	public static fun traceAnalyticsIntegrationEnabled (Ljava/util/SortedSet;Z)Z
 }
 
 public final class com/datadog/legacy/trace/api/Config$PropagationStyle : java/lang/Enum {
