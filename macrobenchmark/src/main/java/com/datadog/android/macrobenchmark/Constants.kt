@@ -6,14 +6,20 @@
 
 package com.datadog.android.macrobenchmark
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.benchmark.macro.ExperimentalMetricApi
 import androidx.benchmark.macro.FrameTimingMetric
 import androidx.benchmark.macro.MemoryUsageMetric
+import androidx.benchmark.macro.PowerMetric
 import androidx.benchmark.macro.StartupTimingMetric
 
+@RequiresApi(Build.VERSION_CODES.Q)
 @OptIn(ExperimentalMetricApi::class)
 internal val DEFAULT_METRICS_LIST = listOf(
     StartupTimingMetric(),
-//    MemoryUsageMetric(mode = MemoryUsageMetric.Mode.Max),
-//    FrameTimingMetric(),
+    MemoryUsageMetric(mode = MemoryUsageMetric.Mode.Max),
+    FrameTimingMetric(),
+    PowerMetric(type = PowerMetric.Type.Battery())
 )
+
