@@ -834,8 +834,6 @@ public class com/datadog/trace/api/Config {
 	public fun getPrimaryTag ()Ljava/lang/String;
 	public fun getPrioritySamplingForce ()Ljava/lang/String;
 	public fun getProcessId ()Ljava/lang/Long;
-	public fun getPropagationStylesToExtract ()Ljava/util/Set;
-	public fun getPropagationStylesToInject ()Ljava/util/Set;
 	public fun getRequestHeaderTags ()Ljava/util/Map;
 	public fun getResponseHeaderTags ()Ljava/util/Map;
 	public fun getRootContextServiceName ()Ljava/lang/String;
@@ -1248,17 +1246,6 @@ public final class com/datadog/trace/api/Platform$GC : java/lang/Enum {
 	public static final field Z Lcom/datadog/trace/api/Platform$GC;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/trace/api/Platform$GC;
 	public static fun values ()[Lcom/datadog/trace/api/Platform$GC;
-}
-
-public final class com/datadog/trace/api/PropagationStyle : java/lang/Enum {
-	public static final field B3 Lcom/datadog/trace/api/PropagationStyle;
-	public static final field DATADOG Lcom/datadog/trace/api/PropagationStyle;
-	public static final field HAYSTACK Lcom/datadog/trace/api/PropagationStyle;
-	public static final field XRAY Lcom/datadog/trace/api/PropagationStyle;
-	public fun getNewStyles ()Ljava/util/List;
-	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/trace/api/PropagationStyle;
-	public static fun valueOfConfigName (Ljava/lang/String;)Lcom/datadog/trace/api/PropagationStyle;
-	public static fun values ()[Lcom/datadog/trace/api/PropagationStyle;
 }
 
 public abstract class com/datadog/trace/api/ResolverCacheConfig : java/lang/Enum {
