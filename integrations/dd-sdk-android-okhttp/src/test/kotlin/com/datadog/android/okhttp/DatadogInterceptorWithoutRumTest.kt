@@ -9,13 +9,13 @@ package com.datadog.android.okhttp
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.SdkCore
 import com.datadog.android.okhttp.internal.utils.forge.OkHttpConfigurator
-import com.datadog.android.okhttp.trace.Tracer
 import com.datadog.android.okhttp.trace.TracingInterceptor
 import com.datadog.android.okhttp.trace.TracingInterceptorTest
 import com.datadog.android.okhttp.utils.verifyLog
 import com.datadog.android.rum.RumResourceAttributesProvider
 import com.datadog.android.trace.TracingHeaderType
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
+import com.datadog.trace.bootstrap.instrumentation.api.AgentTracer
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -51,8 +51,8 @@ internal class DatadogInterceptorWithoutRumTest : TracingInterceptorTest() {
 
     override fun instantiateTestedInterceptor(
         tracedHosts: Map<String, Set<TracingHeaderType>>,
-        globalTracerProvider: () -> Tracer?,
-        localTracerFactory: (SdkCore, Set<TracingHeaderType>) -> Tracer
+        globalTracerProvider: () -> AgentTracer.TracerAPI?,
+        localTracerFactory: (SdkCore, Set<TracingHeaderType>) -> AgentTracer.TracerAPI
     ): TracingInterceptor {
         return DatadogInterceptor(
             sdkInstanceName = null,

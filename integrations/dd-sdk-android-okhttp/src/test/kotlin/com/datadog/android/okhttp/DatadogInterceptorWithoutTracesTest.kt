@@ -10,10 +10,7 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.core.internal.net.DefaultFirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.sampling.Sampler
-import com.datadog.android.okhttp.trace.Span
-import com.datadog.android.okhttp.trace.SpanContext
 import com.datadog.android.okhttp.trace.TracedRequestListener
-import com.datadog.android.okhttp.trace.Tracer
 import com.datadog.android.okhttp.trace.TracingInterceptor
 import com.datadog.android.okhttp.trace.TracingInterceptorTest
 import com.datadog.android.okhttp.trace.aDDTraceId
@@ -37,6 +34,7 @@ import com.datadog.tools.unit.forge.BaseConfigurator
 import com.datadog.tools.unit.forge.exhaustiveAttributes
 import com.datadog.trace.api.DDTraceId
 import com.datadog.trace.bootstrap.instrumentation.api.AgentPropagation
+import com.datadog.trace.bootstrap.instrumentation.api.AgentSpan
 import com.datadog.trace.bootstrap.instrumentation.api.AgentTracer
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.BoolForgery
@@ -91,15 +89,15 @@ internal class DatadogInterceptorWithoutTracesTest {
 
     // region Mocks
 
-    lateinit var mockLocalTracer: Tracer
+    lateinit var mockLocalTracer: AgentTracer.TracerAPI
 
     lateinit var mockSpanBuilder: AgentTracer.SpanBuilder
 
-    lateinit var mockSpanContext: SpanContext
+    lateinit var mockSpanContext: AgentSpan.Context
 
     lateinit var mockPropagation: AgentPropagation
 
-    lateinit var mockSpan: Span
+    lateinit var mockSpan: AgentSpan
 
     @Mock
     lateinit var mockChain: Interceptor.Chain
@@ -114,7 +112,7 @@ internal class DatadogInterceptorWithoutTracesTest {
     lateinit var mockResolver: DefaultFirstPartyHostHeaderTypeResolver
 
     @Mock
-    lateinit var mockTraceSampler: Sampler<Span>
+    lateinit var mockTraceSampler: Sampler<AgentSpan>
 
     @Mock
     lateinit var mockInternalLogger: InternalLogger

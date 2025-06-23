@@ -7,12 +7,12 @@
 package com.datadog.android.okhttp.internal.utils
 
 import com.datadog.android.log.LogAttributes
-import com.datadog.android.okhttp.trace.Span
+import com.datadog.trace.bootstrap.instrumentation.api.AgentSpan
 import com.datadog.trace.core.DDSpanContext
 
 internal object SpanSamplingIdProvider {
 
-    fun provideId(span: Span): ULong {
+    fun provideId(span: AgentSpan): ULong {
         val context = span.context()
         val sessionId = (context as? DDSpanContext)?.tags?.get(LogAttributes.RUM_SESSION_ID) as? String
 

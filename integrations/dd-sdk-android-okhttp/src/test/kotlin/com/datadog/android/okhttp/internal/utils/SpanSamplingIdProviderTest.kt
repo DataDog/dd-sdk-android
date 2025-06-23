@@ -8,10 +8,10 @@ package com.datadog.android.okhttp.internal.utils
 
 import com.datadog.android.internal.utils.toHexString
 import com.datadog.android.log.LogAttributes
-import com.datadog.android.okhttp.trace.Span
 import com.datadog.android.okhttp.trace.newSpanMock
 import com.datadog.tools.unit.forge.BaseConfigurator
 import com.datadog.trace.api.DDTraceId
+import com.datadog.trace.bootstrap.instrumentation.api.AgentSpan
 import com.datadog.trace.core.DDSpanContext
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.LongForgery
@@ -38,7 +38,7 @@ import org.mockito.quality.Strictness
 internal class SpanSamplingIdProviderTest {
 
     @Mock
-    lateinit var mockSpan: Span
+    lateinit var mockSpan: AgentSpan
 
     @Mock
     lateinit var mockSpanContext: DDSpanContext
