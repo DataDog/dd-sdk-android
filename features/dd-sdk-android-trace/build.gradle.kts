@@ -49,9 +49,9 @@ android {
 
 dependencies {
     api(project(":dd-sdk-android-core"))
+    api(project(":features:dd-sdk-android-trace-api"))
     implementation(project(":dd-sdk-android-internal"))
-    // TODO RUM-9902 This is temporary for compilation. Gonna change to implementation after removing opentracing code
-    api(project(":features:dd-sdk-android-trace-internal"))
+    implementation(project(":features:dd-sdk-android-trace-internal"))
     implementation(libs.kotlin)
     implementation(libs.gson)
     implementation(libs.androidXAnnotation)
