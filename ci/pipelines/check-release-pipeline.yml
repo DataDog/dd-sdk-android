@@ -1,5 +1,4 @@
 include:
-  - "ci/pipelines/common-snippets.yml"
   - 'https://gitlab-templates.ddbuild.io/slack-notifier/v1/template.yml'
 
 stages:
