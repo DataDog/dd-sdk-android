@@ -417,6 +417,65 @@ class LoggerTest {
         assertThat(event0.getString("usr.$fakeUserKey")).isEqualTo(fakeUserValue)
     }
 
+    @Test
+    fun `M send log with base account info W SDKCore#setAccountInfo() + Logger#log()`(
+        @StringForgery fakeMessage: String,
+        @StringForgery fakeAccountId: String,
+        @StringForgery fakeAccountName: String,
+        @IntForgery(Log.VERBOSE, 10) fakeLevel: Int
+    ) {
+        // Given
+        stubSdkCore.setAccountInfo(fakeAccountId, fakeAccountName)
+        val testedLogger = Logger.Builder(stubSdkCore).build()
+
+        // When
+        testedLogger.log(fakeLevel, fakeMessage)
+
+        // Then
+        val eventsWritten = stubSdkCore.eventsWritten(Feature.LOGS_FEATURE_NAME)
+        assertThat(eventsWritten).hasSize(1)
+        val event0 = JsonParser.parseString(eventsWritten[0].eventData) as JsonObject
+        assertThat(event0.getString("ddtags")).contains("env:" + stubSdkCore.getDatadogContext().env)
+        assertThat(event0.getString("ddtags")).contains("version:" + stubSdkCore.getDatadogContext().version)
+        assertThat(event0.getString("ddtags")).contains("variant:" + stubSdkCore.getDatadogContext().variant)
+        assertThat(event0.getString("service")).isEqualTo(stubSdkCore.getDatadogContext().service)
+        assertThat(event0.getString("message")).isEqualTo(fakeMessage)
+        assertThat(event0.getString("status")).isEqualTo(LEVEL_NAMES[fakeLevel])
+        assertThat(event0.getString("account.id")).isEqualTo(fakeAccountId)
+        assertThat(event0.getString("account.name")).isEqualTo(fakeAccountName)
+    }
+
+    @Test
+    fun `M send log with custom account info W SDKCore#setAccountInfo() + Logger#log()`(
+        @StringForgery fakeMessage: String,
+        @StringForgery fakeAccountId: String,
+        @StringForgery fakeAccountKey: String,
+        @StringForgery fakeAccountValue: String,
+        @IntForgery(Log.VERBOSE, 10) fakeLevel: Int
+    ) {
+        // Given
+        stubSdkCore.setAccountInfo(
+            id = fakeAccountId,
+            extraInfo = mapOf(fakeAccountKey to fakeAccountValue)
+        )
+        val testedLogger = Logger.Builder(stubSdkCore).build()
+
+        // When
+        testedLogger.log(fakeLevel, fakeMessage)
+
+        // Then
+        val eventsWritten = stubSdkCore.eventsWritten(Feature.LOGS_FEATURE_NAME)
+        assertThat(eventsWritten).hasSize(1)
+        val event0 = JsonParser.parseString(eventsWritten[0].eventData) as JsonObject
+        assertThat(event0.getString("ddtags")).contains("env:" + stubSdkCore.getDatadogContext().env)
+        assertThat(event0.getString("ddtags")).contains("version:" + stubSdkCore.getDatadogContext().version)
+        assertThat(event0.getString("ddtags")).contains("variant:" + stubSdkCore.getDatadogContext().variant)
+        assertThat(event0.getString("service")).isEqualTo(stubSdkCore.getDatadogContext().service)
+        assertThat(event0.getString("message")).isEqualTo(fakeMessage)
+        assertThat(event0.getString("status")).isEqualTo(LEVEL_NAMES[fakeLevel])
+        assertThat(event0.getString("account.$fakeAccountKey")).isEqualTo(fakeAccountValue)
+    }
+
     @RepeatedTest(16)
     fun `M send log with network info W Logger#Builder#setNetworkInfoEnabled(true) + Logger#log()`(
         @Forgery fakeNetworkInfo: NetworkInfo,

@@ -30,6 +30,7 @@ import org.assertj.core.data.Offset
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.RepeatedTest
+import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.mockito.junit.jupiter.MockitoExtension
@@ -479,6 +480,105 @@ class AndroidTracerTest {
                 hasResource(fakeOperation)
                 hasDurationBetween(OP_DURATION_NS, fullDuration)
                 hasGenericMetaValue("usr.$fakeUserKey", fakeUserValue)
+            }
+    }
+
+    @Test
+    fun `M send trace with base account info W SDKCore#setAccountInfo() + buildSpan() + start() + finish()`(
+        @StringForgery fakeOperation: String,
+        @StringForgery fakeAccountId: String,
+        @StringForgery fakeAccountName: String
+    ) {
+        // Given
+        stubSdkCore.setAccountInfo(fakeAccountId, fakeAccountName)
+        val testedTracer = AndroidTracer.Builder(stubSdkCore).build()
+
+        // When
+        var leastSignificantTraceId: String
+        var mostSignificantTraceId: String
+        var spanId: String
+        val fullDuration = measureNanoTime {
+            val span = testedTracer.buildSpan(fakeOperation).start()
+            leastSignificantTraceId = span.leastSignificant64BitsTraceId()
+            mostSignificantTraceId = span.mostSignificant64BitsTraceId()
+            spanId = span.spanIdAsHexString()
+            Thread.sleep(OP_DURATION_MS)
+            span.finish()
+        }
+
+        // Then
+        val eventsWritten = stubSdkCore.eventsWritten(Feature.TRACING_FEATURE_NAME)
+        assertThat(eventsWritten).hasSize(1)
+        val payload0 = JsonParser.parseString(eventsWritten[0].eventData) as JsonObject
+        SpansPayloadAssert.assertThat(payload0)
+            .hasEnv(stubSdkCore.getDatadogContext().env)
+            .hasSpanAtIndexWith(0) {
+                hasLeastSignificant64BitsTraceId(leastSignificantTraceId)
+                hasMostSignificant64BitsTraceId(mostSignificantTraceId)
+                hasValidMostSignificant64BitsTraceId()
+                hasValidLeastSignificant64BitsTraceId()
+                hasSpanId(spanId)
+                hasService(stubSdkCore.getDatadogContext().service)
+                hasVersion(stubSdkCore.getDatadogContext().version)
+                hasSource(stubSdkCore.getDatadogContext().source)
+                hasTracerVersion(stubSdkCore.getDatadogContext().sdkVersion)
+                hasError(0)
+                hasName(fakeOperation)
+                hasResource(fakeOperation)
+                hasDurationBetween(OP_DURATION_NS, fullDuration)
+                hasGenericMetaValue("account.id", fakeAccountId)
+                hasGenericMetaValue("account.name", fakeAccountName)
+            }
+    }
+
+    @RepeatedTest(16)
+    fun `M send trace with custom account info W SDKCore#setAccountInfo() + buildSpan() + start() + finish()`(
+        @StringForgery fakeOperation: String,
+        @StringForgery fakeAccountId: String,
+        @StringForgery fakeAccountKey: String,
+        @StringForgery fakeAccountValue: String
+    ) {
+        // Given
+        stubSdkCore.setAccountInfo(
+            id = fakeAccountId,
+            extraInfo = mapOf(fakeAccountKey to fakeAccountValue)
+        )
+        val testedTracer = AndroidTracer.Builder(stubSdkCore).build()
+
+        // When
+        var leastSignificantTraceId: String
+        var mostSignificantTraceId: String
+        var spanId: String
+        val fullDuration = measureNanoTime {
+            val span = testedTracer.buildSpan(fakeOperation).start()
+            leastSignificantTraceId = span.leastSignificant64BitsTraceId()
+            mostSignificantTraceId = span.mostSignificant64BitsTraceId()
+            spanId = span.spanIdAsHexString()
+            Thread.sleep(OP_DURATION_MS)
+            span.finish()
+        }
+
+        // Then
+        val eventsWritten = stubSdkCore.eventsWritten(Feature.TRACING_FEATURE_NAME)
+        assertThat(eventsWritten).hasSize(1)
+        val payload0 = JsonParser.parseString(eventsWritten[0].eventData) as JsonObject
+        SpansPayloadAssert.assertThat(payload0)
+            .hasEnv(stubSdkCore.getDatadogContext().env)
+            .hasSpanAtIndexWith(0) {
+                hasLeastSignificant64BitsTraceId(leastSignificantTraceId)
+                hasMostSignificant64BitsTraceId(mostSignificantTraceId)
+                hasValidMostSignificant64BitsTraceId()
+                hasValidLeastSignificant64BitsTraceId()
+                hasSpanId(spanId)
+                hasService(stubSdkCore.getDatadogContext().service)
+                hasVersion(stubSdkCore.getDatadogContext().version)
+                hasSource(stubSdkCore.getDatadogContext().source)
+                hasTracerVersion(stubSdkCore.getDatadogContext().sdkVersion)
+                hasError(0)
+                hasName(fakeOperation)
+                hasResource(fakeOperation)
+                hasDurationBetween(OP_DURATION_NS, fullDuration)
+                hasGenericMetaValue("account.$fakeAccountKey", fakeAccountValue)
             }
     }
 

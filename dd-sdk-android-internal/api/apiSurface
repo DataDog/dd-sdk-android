@@ -22,6 +22,10 @@ class com.datadog.android.internal.collections.EvictingQueue<T> : java.util.Queu
   override fun add(T): Boolean
   override fun offer(T): Boolean
   override fun addAll(Collection<T>): Boolean
+class com.datadog.android.internal.concurrent.CompletableFuture<T: Any>
+  var value: T
+  fun isComplete(): Boolean
+  fun complete(T)
 interface com.datadog.android.internal.profiler.BenchmarkCounter
   fun add(Long, Map<String, String>)
 interface com.datadog.android.internal.profiler.BenchmarkMeter
@@ -71,8 +75,12 @@ enum com.datadog.android.internal.telemetry.TracingHeaderType
   - TRACECONTEXT
 data class com.datadog.android.internal.telemetry.TracingHeaderTypesSet
   constructor(Set<TracingHeaderType>)
-class com.datadog.android.internal.thread.NamedRunnable : Runnable
+interface com.datadog.android.internal.thread.NamedExecutionUnit
+  val name: String
+class com.datadog.android.internal.thread.NamedRunnable : NamedExecutionUnit, Runnable
   constructor(String, Runnable)
+class com.datadog.android.internal.thread.NamedCallable<V> : NamedExecutionUnit, java.util.concurrent.Callable<V>
+  constructor(String, java.util.concurrent.Callable<V>)
 fun ByteArray.toHexString(): String
 object com.datadog.android.internal.utils.ImageViewUtils
   fun resolveParentRectAbsPosition(android.view.View, Boolean = true): android.graphics.Rect

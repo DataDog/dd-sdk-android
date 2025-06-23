@@ -107,7 +107,8 @@ internal constructor(
     init {
         val sdkCore = sdkCoreReference.get() as? FeatureSdkCore
 
-        sdkCore?.updateFeatureContext(Feature.TRACING_FEATURE_NAME) {
+        // update meta for the configuration telemetry reporting, can be done directly from this thread
+        sdkCore?.updateFeatureContext(Feature.TRACING_FEATURE_NAME, useContextThread = false) {
             it[OKHTTP_INTERCEPTOR_SAMPLE_RATE] = traceSampler.getSampleRate()
             it[OKHTTP_INTERCEPTOR_HEADER_TYPES] =
                 TracingHeaderTypesSet(tracedHosts.values.flatten().map { it.toInternalTracingHeaderType() }.toSet())

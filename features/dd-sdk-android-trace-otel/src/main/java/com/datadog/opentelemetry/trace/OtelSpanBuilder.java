@@ -19,6 +19,9 @@ import static java.util.Locale.ROOT;
 import androidx.annotation.NonNull;
 
 import com.datadog.android.api.InternalLogger;
+import com.datadog.android.api.context.DatadogContext;
+import com.datadog.android.internal.concurrent.CompletableFuture;
+import com.datadog.android.trace.internal.SpanAttributes;
 import com.datadog.trace.bootstrap.instrumentation.api.AgentSpan;
 import com.datadog.trace.bootstrap.instrumentation.api.AgentTracer;
 
@@ -32,7 +35,6 @@ import io.opentelemetry.context.Context;
 
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-import java.util.logging.Logger;
 
 public class OtelSpanBuilder implements SpanBuilder {
     private final AgentTracer.SpanBuilder delegate;
@@ -159,6 +161,14 @@ public class OtelSpanBuilder implements SpanBuilder {
                 this.delegate.withTag(key.getKey(), value);
                 break;
         }
+        return this;
+    }
+
+    /**
+     * This is internal method and should not be used outside of SDK.
+     */
+    public SpanBuilder setLazyDatadogContext(CompletableFuture<DatadogContext> context) {
+        this.delegate.withTag(SpanAttributes.DATADOG_INITIAL_CONTEXT, context);
         return this;
     }
 

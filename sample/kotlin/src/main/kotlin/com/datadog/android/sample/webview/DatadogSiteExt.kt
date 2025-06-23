@@ -30,6 +30,7 @@ private fun DatadogSite?.browserSite(): String {
         DatadogSite.US5 -> "us5.datadoghq.com"
         DatadogSite.EU1 -> "datadoghq.eu"
         DatadogSite.AP1 -> "ap1.datadoghq.com"
+        DatadogSite.AP2 -> "ap2.datadoghq.com"
         DatadogSite.US1_FED -> "ddog-gov.com"
     }
 }

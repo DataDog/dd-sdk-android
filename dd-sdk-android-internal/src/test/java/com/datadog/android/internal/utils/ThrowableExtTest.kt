@@ -4,10 +4,9 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.internal.utils
+package com.datadog.android.internal.utils
 
-import com.datadog.android.internal.utils.loggableStackTrace
-import com.datadog.internal.forge.Configurator
+import com.datadog.android.internal.forge.Configurator
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
