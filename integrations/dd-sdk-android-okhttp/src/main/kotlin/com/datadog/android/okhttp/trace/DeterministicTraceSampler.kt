@@ -9,6 +9,7 @@ package com.datadog.android.okhttp.trace
 import androidx.annotation.FloatRange
 import com.datadog.android.core.sampling.DeterministicSampler
 import com.datadog.android.okhttp.internal.utils.SpanSamplingIdProvider
+import com.datadog.trace.bootstrap.instrumentation.api.AgentSpan
 
 /**
  * A [DeterministicSampler] using the TraceID of a Span to compute the sampling decision.
@@ -18,7 +19,7 @@ import com.datadog.android.okhttp.internal.utils.SpanSamplingIdProvider
  */
 open class DeterministicTraceSampler(
     sampleRateProvider: () -> Float
-) : DeterministicSampler<Span>(
+) : DeterministicSampler<AgentSpan>(
     SpanSamplingIdProvider::provideId,
     sampleRateProvider
 ) {

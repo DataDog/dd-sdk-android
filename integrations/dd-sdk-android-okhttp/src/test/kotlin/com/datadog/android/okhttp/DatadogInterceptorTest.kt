@@ -12,7 +12,6 @@ import com.datadog.android.api.feature.Feature
 import com.datadog.android.okhttp.internal.rum.NoOpRumResourceAttributesProvider
 import com.datadog.android.okhttp.trace.DeterministicTraceSampler
 import com.datadog.android.okhttp.trace.NoOpTracedRequestListener
-import com.datadog.android.okhttp.trace.Tracer
 import com.datadog.android.okhttp.trace.TracingInterceptor
 import com.datadog.android.okhttp.trace.TracingInterceptorNotSendingSpanTest
 import com.datadog.android.okhttp.utils.verifyLog
@@ -26,6 +25,7 @@ import com.datadog.android.trace.TracingHeaderType
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.forge.BaseConfigurator
 import com.datadog.tools.unit.forge.exhaustiveAttributes
+import com.datadog.trace.bootstrap.instrumentation.api.AgentTracer
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.FloatForgery
 import fr.xgouchet.elmyr.annotation.Forgery
@@ -84,8 +84,8 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
 
     override fun instantiateTestedInterceptor(
         tracedHosts: Map<String, Set<TracingHeaderType>>,
-        globalTracerProvider: () -> Tracer?,
-        localTracerFactory: (SdkCore, Set<TracingHeaderType>) -> Tracer
+        globalTracerProvider: () -> AgentTracer.TracerAPI?,
+        localTracerFactory: (SdkCore, Set<TracingHeaderType>) -> AgentTracer.TracerAPI
     ): TracingInterceptor {
         whenever(rumMonitor.mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mock()
         whenever(rumMonitor.mockSdkCore.firstPartyHostResolver) doReturn mockResolver

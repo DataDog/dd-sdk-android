@@ -10,12 +10,12 @@ import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.okhttp.internal.rum.NoOpRumResourceAttributesProvider
 import com.datadog.android.okhttp.trace.DeterministicTraceSampler
 import com.datadog.android.okhttp.trace.NoOpTracedRequestListener
-import com.datadog.android.okhttp.trace.Span
 import com.datadog.android.okhttp.trace.TracedRequestListener
 import com.datadog.android.rum.RumResourceAttributesProvider
 import com.datadog.android.trace.TracingHeaderType
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.forge.BaseConfigurator
+import com.datadog.trace.bootstrap.instrumentation.api.AgentSpan
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.FloatForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -56,7 +56,7 @@ internal class DatadogInterceptorBuilderTest {
     private lateinit var fakeTracedHosts: List<String>
 
     @Mock
-    lateinit var mockSampler: Sampler<Span>
+    lateinit var mockSampler: Sampler<AgentSpan>
 
     @BeforeEach
     fun `set up`(forge: Forge) {

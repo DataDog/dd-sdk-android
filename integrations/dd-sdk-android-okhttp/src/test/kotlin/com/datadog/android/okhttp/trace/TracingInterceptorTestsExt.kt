@@ -11,7 +11,9 @@ import com.datadog.android.core.sampling.Sampler
 import com.datadog.legacy.trace.api.interceptor.MutableSpan
 import com.datadog.trace.api.DDTraceId
 import com.datadog.trace.bootstrap.instrumentation.api.AgentPropagation
+import com.datadog.trace.bootstrap.instrumentation.api.AgentSpan
 import com.datadog.trace.bootstrap.instrumentation.api.AgentSpan.Context
+import com.datadog.trace.bootstrap.instrumentation.api.AgentTracer
 import com.datadog.trace.bootstrap.instrumentation.api.AgentTracer.SpanBuilder
 import com.datadog.trace.core.CoreTracer.CoreSpanBuilder
 import fr.xgouchet.elmyr.Forge
@@ -58,14 +60,14 @@ internal fun AgentPropagation.wheneverInjectCalledPassContextToHeaders(
 internal fun Forge.aDDTraceId(fakeString: String? = null) = DDTraceId.fromHex(
     fakeString ?: aStringMatching("[a-f0-9]{31}")
 )
-internal fun Forge.newTraceSamplerMock(span: Span = newSpanMock()) = mock<Sampler<Span>> {
+internal fun Forge.newTraceSamplerMock(span: AgentSpan = newSpanMock()) = mock<Sampler<AgentSpan>> {
     on { sample(span) } doReturn true
 }
 
 internal fun Forge.newTracerMock(
     spanBuilder: SpanBuilder = newSpanBuilderMock(),
     propagation: AgentPropagation = newAgentPropagationMock()
-) = mock<Tracer> {
+) = mock<AgentTracer.TracerAPI> {
     on { buildSpan(TracingInterceptor.SPAN_NAME) } doReturn spanBuilder
     on { propagate() } doReturn propagation
 }
@@ -85,13 +87,13 @@ internal inline fun <reified T : Context> Forge.newSpanContextMock(
 }
 
 internal fun Forge.newSpanMock(
-    context: SpanContext = newSpanContextMock()
-) = mock<Span>(extraInterfaces = arrayOf(MutableSpan::class)) {
+    context: AgentSpan.Context = newSpanContextMock()
+) = mock<AgentSpan>(extraInterfaces = arrayOf(MutableSpan::class)) {
     on { context() } doReturn context
 }
 
 internal fun Forge.newSpanBuilderMock(
-    localSpan: Span = newSpanMock(),
+    localSpan: AgentSpan = newSpanMock(),
     context: Context = newSpanContextMock()
 ) = mock<CoreSpanBuilder> {
     on { withOrigin(anyOrNull()) } doReturn it

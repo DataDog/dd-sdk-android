@@ -32,6 +32,7 @@ import com.datadog.trace.api.config.TracerConfig
 import com.datadog.trace.api.interceptor.MutableSpan
 import com.datadog.trace.api.sampling.SamplingMechanism
 import com.datadog.trace.bootstrap.instrumentation.api.AgentSpan
+import com.datadog.trace.bootstrap.instrumentation.api.AgentTracer
 import com.datadog.trace.bootstrap.instrumentation.api.Tags
 import com.datadog.trace.common.sampling.AllSampler
 import com.datadog.trace.common.writer.NoOpWriter
@@ -82,14 +83,14 @@ internal constructor(
     internal val tracedHosts: Map<String, Set<TracingHeaderType>>,
     internal val tracedRequestListener: TracedRequestListener,
     internal val traceOrigin: String?,
-    internal val traceSampler: Sampler<Span>,
+    internal val traceSampler: Sampler<AgentSpan>,
     internal val traceContextInjection: TraceContextInjection,
     internal val redacted404ResourceName: Boolean,
-    internal val localTracerFactory: (SdkCore, Set<TracingHeaderType>) -> Tracer,
-    private val globalTracerProvider: () -> Tracer?
+    internal val localTracerFactory: (SdkCore, Set<TracingHeaderType>) -> AgentTracer.TracerAPI,
+    private val globalTracerProvider: () -> AgentTracer.TracerAPI?
 ) : Interceptor {
 
-    private val localTracerReference: AtomicReference<Tracer> = AtomicReference()
+    private val localTracerReference: AtomicReference<AgentTracer.TracerAPI> = AtomicReference()
     private val sanitizedHosts = HostsSanitizer().sanitizeHosts(
         tracedHosts.keys.toList(),
         NETWORK_REQUESTS_TRACKING_FEATURE_NAME
@@ -157,18 +158,18 @@ internal constructor(
 
     /**
      * Called whenever a span was successfully created around an OkHttp [Request].
-     * The given [Span] can be updated (e.g.: add custom tags / baggage items) before it is
+     * The given [AgentSpan] can be updated (e.g.: add custom tags / baggage items) before it is
      * finalized.
      * @param sdkCore SDK instance to use.
      * @param request the intercepted [Request]
-     * @param span the [Span] created around the [Request] (or null if request is not traced)
+     * @param span the [AgentSpan] created around the [Request] (or null if request is not traced)
      * @param response the [Request] response (or null if an error occurred)
      * @param throwable the error which occurred during the [Request] (or null)
      */
     protected open fun onRequestIntercepted(
         sdkCore: FeatureSdkCore,
         request: Request,
-        span: Span?,
+        span: AgentSpan?,
         response: Response?,
         throwable: Throwable?
     ) {
@@ -212,9 +213,9 @@ internal constructor(
         sdkCore: InternalSdkCore,
         chain: Interceptor.Chain,
         request: Request,
-        tracer: Tracer
+        tracer: AgentTracer.TracerAPI
     ): Response {
-        val span: Span = buildSpan(tracer, request)
+        val span: AgentSpan = buildSpan(tracer, request)
         val isSampled = span.sample(request)
 
         if (span is DDSpan && span.isRootSpan) {
@@ -267,7 +268,7 @@ internal constructor(
     }
 
     @Synchronized
-    private fun resolveTracer(sdkCore: InternalSdkCore): Tracer? {
+    private fun resolveTracer(sdkCore: InternalSdkCore): AgentTracer.TracerAPI? {
         val tracingFeature = sdkCore.getFeature(Feature.TRACING_FEATURE_NAME)
         val globalTracerInstance = globalTracerProvider.invoke()
         return if (tracingFeature == null) {
@@ -288,7 +289,7 @@ internal constructor(
         }
     }
 
-    private fun resolveLocalTracer(sdkCore: InternalSdkCore): Tracer {
+    private fun resolveLocalTracer(sdkCore: InternalSdkCore): AgentTracer.TracerAPI {
         // only register once
         if (localTracerReference.get() == null) {
             @Suppress("UnsafeThirdPartyFunctionCall") // internal safe call
@@ -305,7 +306,7 @@ internal constructor(
         return localTracerReference.get()
     }
 
-    private fun buildSpan(tracer: Tracer, request: Request): Span {
+    private fun buildSpan(tracer: AgentTracer.TracerAPI, request: Request): AgentSpan {
         val parentContext = extractParentContext(tracer, request)
         val url = request.url.toString()
 
@@ -384,8 +385,8 @@ internal constructor(
         return null
     }
 
-    private fun extractParentContext(tracer: Tracer, request: Request): SpanContext? {
-        val tagContext = request.tag(Span::class.java)?.context()
+    private fun extractParentContext(tracer: AgentTracer.TracerAPI, request: Request): AgentSpan.Context? {
+        val tagContext = request.tag(AgentSpan::class.java)?.context()
             ?: request.tag(TraceContext::class.java)?.toAgentSpanContext()
 
         val headerContext: AgentSpan.Context.Extracted? = tracer.propagate().extract(request) { carrier, classifier ->
@@ -402,8 +403,8 @@ internal constructor(
     private fun setSampledOutHeaders(
         requestBuilder: Request.Builder,
         tracingHeaderTypes: Set<TracingHeaderType>,
-        span: Span,
-        tracer: Tracer
+        span: AgentSpan,
+        tracer: AgentTracer.TracerAPI
     ) {
         for (headerType in tracingHeaderTypes) {
             when (headerType) {
@@ -430,7 +431,7 @@ internal constructor(
         }
     }
 
-    private fun handleDatadogSampledOutHeaders(requestBuilder: Request.Builder, span: Span, tracer: Tracer) {
+    private fun handleDatadogSampledOutHeaders(requestBuilder: Request.Builder, span: AgentSpan, tracer: AgentTracer.TracerAPI) {
         if (traceContextInjection == TraceContextInjection.ALL) {
             tracer.propagate().inject(
                 span.context(),
@@ -463,7 +464,7 @@ internal constructor(
         }
     }
 
-    private fun handleW3CNotSampledHeaders(span: Span, requestBuilder: Request.Builder) {
+    private fun handleW3CNotSampledHeaders(span: AgentSpan, requestBuilder: Request.Builder) {
         if (traceContextInjection == TraceContextInjection.ALL) {
             val traceId = span.context().traceId.toHexString()
             val spanId = span.context().spanId.toString()
@@ -516,8 +517,8 @@ internal constructor(
     private fun updateRequest(
         sdkCore: InternalSdkCore,
         request: Request,
-        tracer: Tracer,
-        span: Span,
+        tracer: AgentTracer.TracerAPI,
+        span: AgentSpan,
         isSampled: Boolean
     ): Request.Builder {
         val tracedRequestBuilder = request.newBuilder()
@@ -574,7 +575,7 @@ internal constructor(
         sdkCore: FeatureSdkCore,
         request: Request,
         response: Response,
-        span: Span,
+        span: AgentSpan,
         isSampled: Boolean
     ) {
         if (!isSampled) {
@@ -597,7 +598,7 @@ internal constructor(
         sdkCore: FeatureSdkCore,
         request: Request,
         throwable: Throwable,
-        span: Span,
+        span: AgentSpan,
         isSampled: Boolean
     ) {
         if (!isSampled) {
@@ -612,7 +613,7 @@ internal constructor(
         span.finishRumAware(isSampled)
     }
 
-    private fun Span.finishRumAware(isSampled: Boolean) {
+    private fun AgentSpan.finishRumAware(isSampled: Boolean) {
         if (canSendSpan()) {
             if (isSampled) finish() else drop()
         } else {
@@ -620,7 +621,7 @@ internal constructor(
         }
     }
 
-    private fun Span.sample(request: Request): Boolean {
+    private fun AgentSpan.sample(request: Request): Boolean {
         val samplingPriority = (this as? DDSpan)?.samplingPriority
         return if (samplingPriority != null) {
             samplingPriority > 0
@@ -692,9 +693,9 @@ internal constructor(
         internal var sdkInstanceName: String? = null
         internal var tracedRequestListener: TracedRequestListener = NoOpTracedRequestListener()
         internal var traceOrigin: String? = null
-        internal var traceSampler: Sampler<Span> = DeterministicTraceSampler(DEFAULT_TRACE_SAMPLE_RATE)
+        internal var traceSampler: Sampler<AgentSpan> = DeterministicTraceSampler(DEFAULT_TRACE_SAMPLE_RATE)
         internal var localTracerFactory = DEFAULT_LOCAL_TRACER_FACTORY
-        internal var globalTracerProvider: () -> Tracer? = { null }
+        internal var globalTracerProvider: () -> AgentTracer.TracerAPI? = { null }
         internal var traceContextInjection = TraceContextInjection.SAMPLED
 
         internal var redacted404ResourceName = true
@@ -710,8 +711,8 @@ internal constructor(
         }
 
         /**
-         * Set the listener for automatically created [Span]s.
-         * @param tracedRequestListener a listener for automatically created [Span]s
+         * Set the listener for automatically created [AgentSpan]s.
+         * @param tracedRequestListener a listener for automatically created [AgentSpan]s
          */
         fun setTracedRequestListener(tracedRequestListener: TracedRequestListener): R {
             this.tracedRequestListener = tracedRequestListener
@@ -736,7 +737,7 @@ internal constructor(
          * @param traceSampler the trace sampler controlling the sampling of APM traces.
          * By default it is a sampler accepting 100% of the traces.
          */
-        fun setTraceSampler(traceSampler: Sampler<Span>): R {
+        fun setTraceSampler(traceSampler: Sampler<AgentSpan>): R {
             this.traceSampler = traceSampler
             return getThis()
         }
@@ -768,12 +769,12 @@ internal constructor(
             return getThis()
         }
 
-        internal fun setLocalTracerFactory(factory: (SdkCore, Set<TracingHeaderType>) -> Tracer): R {
+        internal fun setLocalTracerFactory(factory: (SdkCore, Set<TracingHeaderType>) -> AgentTracer.TracerAPI): R {
             this.localTracerFactory = factory
             return getThis()
         }
 
-        internal fun setGlobalTracerProvider(globalTracerProvider: () -> Tracer?): R {
+        internal fun setGlobalTracerProvider(globalTracerProvider: () -> AgentTracer.TracerAPI?): R {
             this.globalTracerProvider = globalTracerProvider
             return getThis()
         }
@@ -808,7 +809,7 @@ internal constructor(
                 "Your requests won't be traced."
         internal const val WARNING_DEFAULT_TRACER =
             "You added a TracingInterceptor to your OkHttpClient, " +
-                "but you didn't register any Tracer. " +
+                "but you didn't register any AgentTracer.TracerAPI. " +
                 "We automatically created a local tracer for you."
 
         internal const val NETWORK_REQUESTS_TRACKING_FEATURE_NAME = "Network Requests"
@@ -854,7 +855,7 @@ internal constructor(
             "The Tracing feature is not implementing the InternalCoreWriterProvider interface." +
                     " No tracing data will be sent."
 
-        private val DEFAULT_LOCAL_TRACER_FACTORY: (SdkCore, Set<TracingHeaderType>) -> Tracer =
+        private val DEFAULT_LOCAL_TRACER_FACTORY: (SdkCore, Set<TracingHeaderType>) -> AgentTracer.TracerAPI =
             { sdkCore, tracingHeaderTypes: Set<TracingHeaderType> ->
                 val featuredSdkCore = sdkCore as FeatureSdkCore
                 val writer = featuredSdkCore.getFeature(Feature.TRACING_FEATURE_NAME)

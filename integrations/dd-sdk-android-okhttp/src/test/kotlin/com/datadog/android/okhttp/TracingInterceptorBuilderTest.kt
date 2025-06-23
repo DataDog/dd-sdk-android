@@ -9,12 +9,12 @@ package com.datadog.android.okhttp
 import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.okhttp.trace.DeterministicTraceSampler
 import com.datadog.android.okhttp.trace.NoOpTracedRequestListener
-import com.datadog.android.okhttp.trace.Span
 import com.datadog.android.okhttp.trace.TracedRequestListener
 import com.datadog.android.okhttp.trace.TracingInterceptor
 import com.datadog.android.trace.TracingHeaderType
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.forge.BaseConfigurator
+import com.datadog.trace.bootstrap.instrumentation.api.AgentSpan
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.FloatForgery
@@ -51,7 +51,7 @@ internal class TracingInterceptorBuilderTest {
     lateinit var mockTracedRequestListener: TracedRequestListener
 
     @Mock
-    lateinit var mockSampler: Sampler<Span>
+    lateinit var mockSampler: Sampler<AgentSpan>
 
     @StringForgery
     lateinit var fakeOrigin: String
