@@ -6,10 +6,12 @@
 
 package com.datadog.android.benchmark_converter
 
+import com.datadog.android.benchmark_converter.models.CBMFResult
 import com.datadog.android.benchmark_converter.models.MacrobenchmarkResult
 import kotlinx.cli.ArgParser
 import kotlinx.cli.ArgType
 import kotlinx.cli.required
+import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.io.File
 
@@ -21,5 +23,21 @@ fun main(args: Array<String>) {
     val txt = File(resultPath).readText()
     val result = Json.Default.decodeFromString<MacrobenchmarkResult>(txt)
 
-    println("Hello from converter $result")
+    val converted = CBMFResult(
+        schema_version = "v1",
+        benchmarks = result.benchmarks.map { benchmark ->
+            CBMFResult.Benchmark(
+                parameters = benchmark.params,
+                runs = benchmark.metrics.mapValues {
+                    mapOf("execution_time" to CBMFResult.Measurement("ms", it.value.runs))
+                }
+            )
+        }
+    )
+
+    println(
+        Json {
+            prettyPrint = true
+        }.encodeToString(converted)
+    )
 }

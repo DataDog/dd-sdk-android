@@ -1,0 +1,106 @@
+{
+  "schema_version": "v1",
+  "benchmarks": [
+    {
+      "parameters": {},
+      "runs": {
+        "batteryDiffMah": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ]
+          }
+        },
+        "batteryEndMah": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              4148.0,
+              4148.0,
+              4148.0,
+              4148.0,
+              4148.0
+            ]
+          }
+        },
+        "batteryStartMah": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              4148.0,
+              4148.0,
+              4148.0,
+              4148.0,
+              4148.0
+            ]
+          }
+        },
+        "frameCount": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              23.0,
+              19.0,
+              12.0,
+              14.0,
+              13.0
+            ]
+          }
+        },
+        "memoryHeapSizeMaxKb": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              20478.0,
+              19164.0,
+              19229.0,
+              19647.0,
+              19293.0
+            ]
+          }
+        },
+        "memoryRssAnonMaxKb": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              71172.0,
+              69368.0,
+              69856.0,
+              69812.0,
+              69656.0
+            ]
+          }
+        },
+        "memoryRssFileMaxKb": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              123020.0,
+              121924.0,
+              121408.0,
+              122036.0,
+              121384.0
+            ]
+          }
+        },
+        "timeToInitialDisplayMs": {
+          "execution_time": {
+            "uom": "ms",
+            "values": [
+              417.407854,
+              412.150145,
+              402.568582,
+              399.02228,
+              406.758895
+            ]
+          }
+        }
+      }
+    }
+  ]
+}
