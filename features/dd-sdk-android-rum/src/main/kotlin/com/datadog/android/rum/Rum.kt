@@ -109,7 +109,11 @@ object Rum {
         sdkCore: InternalSdkCore,
         rumFeature: RumFeature
     ): DatadogRumMonitor {
-        val sessionEndedMetricDispatcher = SessionEndedMetricDispatcher(internalLogger = sdkCore.internalLogger)
+        val sessionEndedMetricDispatcher = SessionEndedMetricDispatcher(
+            internalLogger = sdkCore.internalLogger,
+            sessionSamplingRate = rumFeature.configuration.sampleRate
+        )
+
         return DatadogRumMonitor(
             applicationId = rumFeature.applicationId,
             sdkCore = sdkCore,

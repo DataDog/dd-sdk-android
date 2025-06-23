@@ -90,6 +90,9 @@ class NavActivity : AppCompatActivity(), TrackingConsentChangeListener {
             R.id.set_user_info -> {
                 navController.navigate(R.id.fragment_user)
             }
+            R.id.set_account_info -> {
+                navController.navigate(R.id.fragment_account)
+            }
             R.id.show_snack_bar -> {
                 Snackbar.make(rootView, LIPSUM, Snackbar.LENGTH_LONG).show()
             }

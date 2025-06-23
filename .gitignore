@@ -29,6 +29,9 @@ config/*
 # Kotlin
 .kotlin/
 
+# dd-sdk-android tools
 gh_token
 sdk_classpath
 detekt_classpath
+**/verification-metadata.xml
+!gradle/verification-metadata.xml

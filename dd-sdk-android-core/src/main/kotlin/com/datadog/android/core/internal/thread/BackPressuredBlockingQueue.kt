@@ -9,16 +9,17 @@ package com.datadog.android.core.internal.thread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.configuration.BackPressureMitigation
 import com.datadog.android.core.configuration.BackPressureStrategy
-import java.util.concurrent.LinkedBlockingQueue
+import com.datadog.android.internal.thread.NamedRunnable
 import java.util.concurrent.TimeUnit
 
 internal class BackPressuredBlockingQueue<E : Any>(
     private val logger: InternalLogger,
     private val executorContext: String,
     private val backPressureStrategy: BackPressureStrategy
-) : LinkedBlockingQueue<E>(
+) : ObservableLinkedBlockingQueue<E>(
     backPressureStrategy.capacity
 ) {
+
     override fun offer(e: E): Boolean {
         return addWithBackPressure(e) {
             @Suppress("UnsafeThirdPartyFunctionCall") // can't have NPE here
@@ -66,6 +67,13 @@ internal class BackPressuredBlockingQueue<E : Any>(
     }
 
     private fun onThresholdReached() {
+        val dump = dumpQueue()
+        val backPressureMap = buildMap {
+            put("capacity", backPressureStrategy.capacity)
+            if (!dump.isNullOrEmpty()) {
+                put("dump", dump)
+            }
+        }
         backPressureStrategy.onThresholdReached()
         logger.log(
             level = InternalLogger.Level.WARN,
@@ -74,7 +82,7 @@ internal class BackPressuredBlockingQueue<E : Any>(
             throwable = null,
             onlyOnce = false,
             additionalProperties = mapOf(
-                "backpressure.capacity" to backPressureStrategy.capacity,
+                "backpressure" to backPressureMap,
                 "executor.context" to executorContext
             )
         )
@@ -82,12 +90,12 @@ internal class BackPressuredBlockingQueue<E : Any>(
 
     private fun onItemDropped(item: E) {
         backPressureStrategy.onItemDropped(item)
-
+        val name = (item as? NamedRunnable)?.sanitizedName ?: item.toString()
         // Note, do not send this to telemetry as it might cause a stack overflow
         logger.log(
             level = InternalLogger.Level.ERROR,
             target = InternalLogger.Target.MAINTAINER,
-            messageBuilder = { "Dropped item in BackPressuredBlockingQueue queue: $item" },
+            messageBuilder = { "Dropped item in BackPressuredBlockingQueue queue: $name" },
             throwable = null,
             onlyOnce = false,
             additionalProperties = mapOf(

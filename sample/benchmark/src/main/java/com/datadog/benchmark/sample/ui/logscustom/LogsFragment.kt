@@ -18,7 +18,7 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.datadog.benchmark.sample.benchmarkActivityComponent
+import com.datadog.benchmark.sample.activities.scenarios.benchmarkActivityComponent
 import com.datadog.benchmark.sample.di.activity.ViewModelQualifier
 import javax.inject.Inject
 

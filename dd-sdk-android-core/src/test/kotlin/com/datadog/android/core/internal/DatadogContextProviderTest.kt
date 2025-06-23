@@ -7,6 +7,7 @@
 package com.datadog.android.core.internal
 
 import android.app.Application
+import com.datadog.android.api.context.AccountInfo
 import com.datadog.android.api.context.NetworkInfo
 import com.datadog.android.api.context.UserInfo
 import com.datadog.android.core.internal.system.AndroidInfoProvider
@@ -57,6 +58,9 @@ internal class DatadogContextProviderTest {
     lateinit var fakeUserInfo: UserInfo
 
     @Forgery
+    lateinit var fakeAccountInfo: AccountInfo
+
+    @Forgery
     lateinit var fakeAndroidInfo: AndroidInfoProvider
 
     @LongForgery(min = 0L)
@@ -73,6 +77,7 @@ internal class DatadogContextProviderTest {
         testedProvider = DatadogContextProvider(coreFeature.mockInstance)
 
         whenever(coreFeature.mockInstance.userInfoProvider.getUserInfo()) doReturn fakeUserInfo
+        whenever(coreFeature.mockInstance.accountInfoProvider.getAccountInfo()) doReturn fakeAccountInfo
         whenever(
             coreFeature.mockInstance.networkInfoProvider.getLatestNetworkInfo()
         ) doReturn fakeNetworkInfo
@@ -150,6 +155,14 @@ internal class DatadogContextProviderTest {
         assertThat(context.userInfo.email).isEqualTo(fakeUserInfo.email)
         assertThat(context.userInfo.additionalProperties)
             .isEqualTo(fakeUserInfo.additionalProperties)
+
+        // account info
+        assertThat(context.accountInfo).isNotNull
+        context.accountInfo?.let {
+            assertThat(it.id).isEqualTo(fakeAccountInfo.id)
+            assertThat(it.name).isEqualTo(fakeAccountInfo.name)
+            assertThat(it.extraInfo).isEqualTo(fakeAccountInfo.extraInfo)
+        }
 
         assertThat(context.appBuildId).isEqualTo(coreFeature.mockInstance.appBuildId)
         assertThat(context.trackingConsent).isEqualTo(fakeTrackingConsent)

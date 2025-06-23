@@ -6,7 +6,6 @@
 
 package com.datadog.android.rum.integration.tests.elmyr
 
-import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.internal.utils.loggableStackTrace
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.tools.unit.forge.aThrowable

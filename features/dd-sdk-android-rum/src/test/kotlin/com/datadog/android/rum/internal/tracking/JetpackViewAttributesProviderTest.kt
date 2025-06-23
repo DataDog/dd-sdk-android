@@ -12,7 +12,7 @@ import android.view.ViewGroup
 import android.view.ViewParent
 import android.widget.LinearLayout
 import androidx.recyclerview.widget.RecyclerView
-import com.datadog.android.core.internal.utils.toHexString
+import com.datadog.android.internal.utils.toHexString
 import com.datadog.android.rum.RumAttributes
 import com.datadog.tools.unit.ObjectTest
 import fr.xgouchet.elmyr.Forge

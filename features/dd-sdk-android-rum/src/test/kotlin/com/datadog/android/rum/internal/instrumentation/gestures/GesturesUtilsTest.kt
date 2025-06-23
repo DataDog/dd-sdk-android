@@ -9,7 +9,7 @@ package com.datadog.android.rum.internal.instrumentation.gestures
 import android.app.Application
 import android.content.res.Resources
 import android.view.View
-import com.datadog.android.core.internal.utils.toHexString
+import com.datadog.android.internal.utils.toHexString
 import com.datadog.android.rum.tracking.InteractionPredicate
 import com.datadog.android.rum.utils.forge.Configurator
 import fr.xgouchet.elmyr.Forge

@@ -19,7 +19,7 @@ android {
 
     defaultConfig {
         applicationId = "com.datadog.android.wear.sample"
-        minSdk = AndroidConfig.MIN_SDK_FOR_WEAR
+        minSdk = AndroidConfig.MIN_SDK_FOR_WEAR_AND_TV
         targetSdk = AndroidConfig.TARGET_SDK
         versionCode = AndroidConfig.VERSION.code
         versionName = AndroidConfig.VERSION.name
@@ -38,7 +38,7 @@ android {
 
     flavorDimensions += listOf("site")
     productFlavors {
-        val regions = arrayOf("us1", "us3", "us5", "us1_fed", "eu1", "ap1", "staging")
+        val regions = arrayOf("us1", "us3", "us5", "us1_fed", "eu1", "ap1", "ap2", "staging")
 
         regions.forEachIndexed { index, region ->
             register(region) {

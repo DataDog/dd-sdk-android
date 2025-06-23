@@ -7,8 +7,8 @@
 package com.datadog.android.sessionreplay.internal.prerequisite
 
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.core.allowThreadDiskReads
 import com.datadog.android.core.internal.persistence.file.listFilesSafe
+import com.datadog.android.internal.utils.allowThreadDiskReads
 import java.io.File
 
 internal class CPURequirementChecker(
