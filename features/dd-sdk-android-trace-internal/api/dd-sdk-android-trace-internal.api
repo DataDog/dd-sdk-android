@@ -1251,11 +1251,6 @@ public final class com/datadog/trace/api/TracePropagationStyle : java/lang/Enum 
 	public static fun values ()[Lcom/datadog/trace/api/TracePropagationStyle;
 }
 
-public abstract interface class com/datadog/trace/api/Tracer {
-	public abstract fun getSpanId ()Ljava/lang/String;
-	public abstract fun getTraceId ()Ljava/lang/String;
-}
-
 public class com/datadog/trace/api/WellKnownTags {
 	public fun <init> (Ljava/lang/CharSequence;Ljava/lang/CharSequence;Ljava/lang/CharSequence;Ljava/lang/CharSequence;Ljava/lang/CharSequence;Ljava/lang/CharSequence;)V
 	public fun getEnv ()Lcom/datadog/trace/bootstrap/instrumentation/api/UTF8BytesString;
@@ -2595,7 +2590,7 @@ public abstract interface class com/datadog/trace/bootstrap/instrumentation/api/
 	public abstract fun withTag (Ljava/lang/String;Z)Lcom/datadog/trace/bootstrap/instrumentation/api/AgentTracer$SpanBuilder;
 }
 
-public abstract interface class com/datadog/trace/bootstrap/instrumentation/api/AgentTracer$TracerAPI : com/datadog/trace/api/EndpointCheckpointer, com/datadog/trace/api/Tracer, com/datadog/trace/bootstrap/instrumentation/api/ScopeStateAware {
+public abstract interface class com/datadog/trace/bootstrap/instrumentation/api/AgentTracer$TracerAPI : com/datadog/trace/api/EndpointCheckpointer, com/datadog/trace/bootstrap/instrumentation/api/ScopeStateAware {
 	public abstract fun activateSpan (Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpan;Lcom/datadog/trace/bootstrap/instrumentation/api/ScopeSource;)Lcom/datadog/trace/bootstrap/instrumentation/api/AgentScope;
 	public abstract fun activateSpan (Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpan;Lcom/datadog/trace/bootstrap/instrumentation/api/ScopeSource;Z)Lcom/datadog/trace/bootstrap/instrumentation/api/AgentScope;
 	public abstract fun activeSpan ()Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpan;

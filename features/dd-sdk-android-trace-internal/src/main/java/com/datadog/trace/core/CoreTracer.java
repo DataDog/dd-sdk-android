@@ -5,7 +5,6 @@ import static com.datadog.trace.api.DDTags.PROFILING_CONTEXT_ENGINE;
 import static com.datadog.trace.util.AgentThreadFactory.AGENT_THREAD_GROUP;
 import static com.datadog.trace.util.CollectionUtils.tryMakeImmutableMap;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -18,7 +17,6 @@ import com.datadog.trace.api.Config;
 import com.datadog.trace.api.DDSpanId;
 import com.datadog.trace.api.DDTraceId;
 import com.datadog.trace.api.DynamicConfig;
-import com.datadog.trace.api.EndpointCheckpointer;
 import com.datadog.trace.api.EndpointCheckpointerHolder;
 import com.datadog.trace.api.EndpointTracker;
 import com.datadog.trace.api.IdGenerationStrategy;
@@ -63,7 +61,6 @@ import com.datadog.trace.logger.Logger;
 import com.datadog.trace.logger.LoggerFactory;
 import com.datadog.trace.monitor.NoOpRecording;
 import com.datadog.trace.monitor.Recording;
-import com.datadog.trace.relocate.api.RatelimitedLogger;
 
 import java.io.IOException;
 import java.lang.ref.WeakReference;
@@ -683,12 +680,10 @@ public class CoreTracer implements AgentTracer.TracerAPI {
         return trace;
     }
 
-    @Override
     public String getTraceId() {
         return getTraceId(activeSpan());
     }
 
-    @Override
     public String getSpanId() {
         return getSpanId(activeSpan());
     }

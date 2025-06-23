@@ -30,10 +30,7 @@ public class AgentTracer {
   // Not intended to be constructed.
   private AgentTracer() {}
 
-  public interface TracerAPI
-          extends com.datadog.trace.api.Tracer,
-          EndpointCheckpointer,
-          ScopeStateAware {
+  public interface TracerAPI extends EndpointCheckpointer, ScopeStateAware {
 
     /**
      * Create and start a new span.
