@@ -233,7 +233,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
         val expectedStartAttrs = emptyMap<String, Any?>()
         val expectedStopAttrs = mapOf(
             RumAttributes.TRACE_ID to fakeTraceIdAsString,
-            RumAttributes.SPAN_ID to fakeSpanId,
+            RumAttributes.SPAN_ID to fakeSpanId.toString(),
             RumAttributes.RULE_PSR to fakeTracingSampleRate / 100
         ) + fakeAttributes
         val mimeType = fakeMediaType?.type
