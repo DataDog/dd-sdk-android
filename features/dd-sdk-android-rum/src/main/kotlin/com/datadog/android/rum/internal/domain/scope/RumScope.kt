@@ -36,8 +36,4 @@ internal interface RumScope {
      * @return the context related to this scope
      */
     fun getRumContext(): RumContext
-
-    companion object {
-        internal const val SYNTHETICS_LOGCAT_TAG = "DatadogSynthetics"
-    }
 }

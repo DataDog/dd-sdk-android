@@ -87,7 +87,10 @@ internal object ComposeReflection {
 
     // Region of Coil
 
-    val ContentPainterModifierClass = getClassSafe("coil.compose.ContentPainterModifier")
+    val ContentPainterModifierClass = getClassSafe(
+        "coil.compose.ContentPainterModifier",
+        isCritical = false
+    )
     val PainterFieldOfContentPainterModifier =
         ContentPainterModifierClass?.getDeclaredFieldSafe("painter")
 

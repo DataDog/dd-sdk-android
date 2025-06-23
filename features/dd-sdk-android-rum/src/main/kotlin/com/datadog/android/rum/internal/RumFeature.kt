@@ -263,8 +263,9 @@ internal class RumFeature(
         )
     }
 
-    override val storageConfiguration: FeatureStorageConfiguration =
-        FeatureStorageConfiguration.DEFAULT
+    override val storageConfiguration: FeatureStorageConfiguration = FeatureStorageConfiguration.DEFAULT.copy(
+        oldBatchThreshold = RUM_TTL_24H
+    )
 
     override fun onStop() {
         sdkCore.removeEventReceiver(name)
@@ -639,6 +640,7 @@ internal class RumFeature(
         internal const val TELEMETRY_SESSION_REPLAY_SKIP_FRAME = "sr_skipped_frame"
         internal const val FLUSH_AND_STOP_MONITOR_MESSAGE_TYPE = "flush_and_stop_monitor"
 
+        internal val RUM_TTL_24H = TimeUnit.HOURS.toMillis(24)
         internal const val ALL_IN_SAMPLE_RATE: Float = 100f
         internal const val DEFAULT_SAMPLE_RATE: Float = 100f
         internal const val DEFAULT_TELEMETRY_SAMPLE_RATE: Float = 20f

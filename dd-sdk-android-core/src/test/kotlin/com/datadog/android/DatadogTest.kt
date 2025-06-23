@@ -18,7 +18,6 @@ import com.datadog.android.core.internal.HashGenerator
 import com.datadog.android.core.internal.NoOpInternalSdkCore
 import com.datadog.android.core.internal.SdkCoreRegistry
 import com.datadog.android.core.internal.Sha256HashGenerator
-import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.internal.utils.loggableStackTrace
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
@@ -553,6 +552,61 @@ internal class DatadogTest {
         verify(mockSdkCore).clearAllData()
     }
 
+    @Test
+    fun `M call Core set account info W setAccountInfo()`(
+        @StringForgery(type = StringForgeryType.HEXADECIMAL) id: String,
+        @StringForgery name: String,
+        @MapForgery(
+            key = AdvancedForgery(string = [StringForgery(StringForgeryType.ALPHA_NUMERICAL)]),
+            value = AdvancedForgery(string = [StringForgery(StringForgeryType.ALPHA_NUMERICAL)])
+        ) fakeExtraInfo: Map<String, String>
+    ) {
+        // Given
+        val mockSdkCore = mock<SdkCore>()
+
+        // When
+        Datadog.setAccountInfo(
+            id = id,
+            name = name,
+            extraInfo = fakeExtraInfo,
+            sdkCore = mockSdkCore
+        )
+
+        // Then
+        verify(mockSdkCore).setAccountInfo(id, name, fakeExtraInfo)
+    }
+
+    @Test
+    fun `M call Core add account extra info W addAccountExtraInfo()`(
+        @MapForgery(
+            key = AdvancedForgery(string = [StringForgery(StringForgeryType.ALPHA_NUMERICAL)]),
+            value = AdvancedForgery(string = [StringForgery(StringForgeryType.ALPHA_NUMERICAL)])
+        ) fakeExtraInfo: Map<String, String>
+    ) {
+        // Given
+        val mockSdkCore = mock<SdkCore>()
+
+        // When
+        Datadog.addAccountExtraInfo(
+            extraInfo = fakeExtraInfo,
+            sdkCore = mockSdkCore
+        )
+
+        // Then
+        verify(mockSdkCore).addAccountExtraInfo(fakeExtraInfo)
+    }
+
+    @Test
+    fun `M call Core clear account info W clearAccountInfo()`() {
+        // Given
+        val mockSdkCore = mock<SdkCore>()
+
+        // When
+        Datadog.clearAccountInfo(sdkCore = mockSdkCore)
+
+        // Then
+        verify(mockSdkCore).clearAccountInfo()
+    }
     companion object {
         val appContext = ApplicationContextTestConfiguration(Application::class.java)
         val logger = InternalLoggerTestConfiguration()

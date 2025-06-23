@@ -6,11 +6,13 @@
 
 package com.datadog.android.rum.internal.metric
 
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.rum.internal.domain.scope.RumSessionScope
 import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import fr.xgouchet.elmyr.annotation.BoolForgery
+import fr.xgouchet.elmyr.annotation.FloatForgery
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.LongForgery
@@ -21,8 +23,12 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.mockito.Mockito.mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.any
+import org.mockito.kotlin.eq
+import org.mockito.kotlin.verify
 import org.mockito.quality.Strictness
 
 @Extensions(
@@ -48,10 +54,13 @@ internal class SessionEndedMetricDispatcherTest {
     @BoolForgery
     private var backgroundEventTracking: Boolean = false
 
+    @FloatForgery(min = 0f, max = 100f)
+    private var fakeSessionSampleRate: Float = 1f
+
     @Test
     fun `M register session stop W call onSessionStopped()`(@StringForgery fakeSessionId: String) {
         // Given
-        val dispatcher = SessionEndedMetricDispatcher(fakeInternalLogger)
+        val dispatcher = SessionEndedMetricDispatcher(fakeInternalLogger, fakeSessionSampleRate)
         dispatcher.startMetric(
             fakeSessionId,
             fakeStartReason,
@@ -74,7 +83,7 @@ internal class SessionEndedMetricDispatcherTest {
         @Forgery viewEvent: ViewEvent
     ) {
         // Given
-        val dispatcher = SessionEndedMetricDispatcher(fakeInternalLogger)
+        val dispatcher = SessionEndedMetricDispatcher(fakeInternalLogger, fakeSessionSampleRate)
 
         // When
         dispatcher.startMetric(
@@ -109,7 +118,7 @@ internal class SessionEndedMetricDispatcherTest {
         @Forgery viewEvents: List<ViewEvent>
     ) {
         // Given
-        val dispatcher = SessionEndedMetricDispatcher(fakeInternalLogger)
+        val dispatcher = SessionEndedMetricDispatcher(fakeInternalLogger, fakeSessionSampleRate)
 
         // When
         dispatcher.startMetric(
@@ -166,7 +175,7 @@ internal class SessionEndedMetricDispatcherTest {
         @StringForgery errorKinds: List<String>
     ) {
         // Given
-        val dispatcher = SessionEndedMetricDispatcher(fakeInternalLogger)
+        val dispatcher = SessionEndedMetricDispatcher(fakeInternalLogger, fakeSessionSampleRate)
 
         // When
         dispatcher.startMetric(
@@ -218,7 +227,7 @@ internal class SessionEndedMetricDispatcherTest {
         @Forgery viewEvents: List<ViewEvent>
     ) {
         // Given
-        val dispatcher = SessionEndedMetricDispatcher(fakeInternalLogger)
+        val dispatcher = SessionEndedMetricDispatcher(fakeInternalLogger, fakeSessionSampleRate)
 
         // When
         dispatcher.startMetric(
@@ -243,7 +252,7 @@ internal class SessionEndedMetricDispatcherTest {
         @Forgery missedTypes: List<SessionEndedMetric.MissedEventType>
     ) {
         // Given
-        val dispatcher = SessionEndedMetricDispatcher(fakeInternalLogger)
+        val dispatcher = SessionEndedMetricDispatcher(fakeInternalLogger, fakeSessionSampleRate)
 
         // When
         dispatcher.startMetric(
@@ -295,7 +304,7 @@ internal class SessionEndedMetricDispatcherTest {
         Boolean
     ) {
         // Given
-        val dispatcher = SessionEndedMetricDispatcher(fakeInternalLogger)
+        val dispatcher = SessionEndedMetricDispatcher(fakeInternalLogger, fakeSessionSampleRate)
 
         // When
         dispatcher.startMetric(
@@ -317,7 +326,7 @@ internal class SessionEndedMetricDispatcherTest {
         @LongForgery fakeNtpOffsetAtEnd: Long
     ) {
         // Given
-        val dispatcher = SessionEndedMetricDispatcher(fakeInternalLogger)
+        val dispatcher = SessionEndedMetricDispatcher(fakeInternalLogger, fakeSessionSampleRate)
 
         // When
         dispatcher.startMetric(
@@ -339,7 +348,7 @@ internal class SessionEndedMetricDispatcherTest {
         @IntForgery(min = 0, max = 100) skippedFramesCount: Int
     ) {
         // Given
-        val dispatcher = SessionEndedMetricDispatcher(fakeInternalLogger)
+        val dispatcher = SessionEndedMetricDispatcher(fakeInternalLogger, fakeSessionSampleRate)
 
         // When
         dispatcher.startMetric(
@@ -355,6 +364,32 @@ internal class SessionEndedMetricDispatcherTest {
 
         // Then
         assertThat(fakeInternalLogger.getSkippedFramesCount()).isEqualTo(skippedFramesCount)
+    }
+
+    @Test
+    fun `M has creationSamplingRate AND samplingRate W end metric`(
+        @StringForgery fakeSessionId: String
+    ) {
+        // Given
+        val mockInternalLogger = mock<InternalLogger>()
+        val dispatcher = SessionEndedMetricDispatcher(mockInternalLogger, fakeSessionSampleRate)
+
+        // When
+        dispatcher.startMetric(
+            fakeSessionId,
+            fakeStartReason,
+            fakeNtpOffsetAtStart,
+            backgroundEventTracking
+        )
+        dispatcher.endMetric(fakeSessionId, fakeNtpOffsetAtEnd)
+
+        // Then
+        verify(mockInternalLogger).logMetric(
+            any(),
+            any(),
+            eq(15.0f),
+            eq(fakeSessionSampleRate)
+        )
     }
 
     private fun FakeInternalLogger.getNtpAtStartOffset(): Long {

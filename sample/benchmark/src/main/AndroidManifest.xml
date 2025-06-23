@@ -3,6 +3,7 @@
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
     <application
         android:name="com.datadog.benchmark.sample.BenchmarkApplication"
         android:allowBackup="true"
@@ -12,10 +13,37 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.BenchmarkApp">
         <activity
-            android:name="com.datadog.benchmark.sample.MainActivity"
+            android:name="com.datadog.benchmark.sample.activities.scenarios.DefaultScenarioActivity"
             android:exported="true"
             android:label="@string/app_name"
             android:theme="@style/Theme.BenchmarkApp">
+
+        </activity>
+
+        <activity
+            android:name="com.datadog.benchmark.sample.activities.scenarios.RumAutoScenarioActivity"
+            android:exported="true"
+            android:theme="@style/Theme.BenchmarkApp">
+
+        </activity>
+
+        <activity
+            android:name="com.datadog.benchmark.sample.activities.scenarios.SessionReplayComposeScenarioActivity"
+            android:exported="true"
+            android:theme="@style/Theme.BenchmarkApp">
+
+        </activity>
+
+        <activity
+            android:name="com.datadog.benchmark.sample.activities.scenarios.SessionReplayScenarioActivity"
+            android:exported="true"
+            android:theme="@style/Theme.BenchmarkApp">
+
+        </activity>
+
+        <activity
+            android:name="com.datadog.benchmark.sample.activities.LaunchActivity"
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 

@@ -8,7 +8,7 @@ package com.datadog.android.trace.internal.domain.event
 
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.core.constraints.DatadogDataConstraints
-import com.datadog.android.core.internal.utils.NULL_MAP_VALUE
+import com.datadog.android.internal.utils.NULL_MAP_VALUE
 import com.datadog.android.trace.model.SpanEvent
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.tools.unit.assertj.JsonObjectAssert

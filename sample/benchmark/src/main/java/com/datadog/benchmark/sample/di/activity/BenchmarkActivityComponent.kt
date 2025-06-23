@@ -4,22 +4,36 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-@file:Suppress("MethodOverloading")
+@file:Suppress("MethodOverloading", "TooManyFunctions")
 
 package com.datadog.benchmark.sample.di.activity
 
 import android.content.Context
-import com.datadog.benchmark.sample.MainActivity
+import com.datadog.android.api.SdkCore
+import com.datadog.android.log.Logger
+import com.datadog.android.rum.RumMonitor
+import com.datadog.benchmark.DatadogBaseMeter
+import com.datadog.benchmark.sample.activities.scenarios.DefaultScenarioActivity
+import com.datadog.benchmark.sample.activities.scenarios.RumAutoScenarioActivity
+import com.datadog.benchmark.sample.activities.scenarios.SessionReplayComposeScenarioActivity
+import com.datadog.benchmark.sample.activities.scenarios.SessionReplayScenarioActivity
 import com.datadog.benchmark.sample.config.BenchmarkConfig
 import com.datadog.benchmark.sample.di.common.DispatchersModule
+import com.datadog.benchmark.sample.network.rickandmorty.RickAndMortyNetworkService
 import com.datadog.benchmark.sample.ui.logscustom.LogsFragment
 import com.datadog.benchmark.sample.ui.logsheavytraffic.di.LogsHeavyTrafficComponentDependencies
+import com.datadog.benchmark.sample.ui.rumauto.screens.characterdetails.RumAutoCharacterDetailFragment
+import com.datadog.benchmark.sample.ui.rumauto.screens.characters.RumAutoCharactersFragment
+import com.datadog.benchmark.sample.ui.rumauto.screens.episodedetails.di.RumAutoEpisodeDetailsComponentDependencies
+import com.datadog.benchmark.sample.ui.rumauto.screens.episodes.RumAutoEpisodesListFragment
+import com.datadog.benchmark.sample.ui.rumauto.screens.locationdetails.di.RumAutoLocationDetailsComponentDependencies
+import com.datadog.benchmark.sample.ui.rumauto.screens.locations.di.RumAutoLocationsComponentDependencies
 import com.datadog.benchmark.sample.ui.rummanual.RumManualScenarioFragment
 import com.datadog.benchmark.sample.ui.sessionreplay.SessionReplayAppcompatFragment
 import com.datadog.benchmark.sample.ui.sessionreplay.SessionReplayMaterialFragment
 import com.datadog.benchmark.sample.ui.trace.TraceScenarioFragment
-import dagger.BindsInstance
 import dagger.Component
+import io.opentelemetry.api.trace.Tracer
 import javax.inject.Scope
 
 @Scope
@@ -27,6 +41,15 @@ internal annotation class BenchmarkActivityScope
 
 internal interface BenchmarkActivityComponentDependencies {
     val context: Context
+    val benchmarkConfig: BenchmarkConfig
+
+    val sdkCore: SdkCore
+    val logger: Logger
+    val rumMonitor: RumMonitor
+    val datadogBaseMeter: DatadogBaseMeter
+    val tracer: Tracer
+
+    val rickAndMortyNetworkService: RickAndMortyNetworkService
 }
 
 @Component(
@@ -36,26 +59,35 @@ internal interface BenchmarkActivityComponentDependencies {
     modules = [
         BenchmarkActivityModule::class,
         ViewModelsModule::class,
-        DatadogActivityModule::class,
-        DispatchersModule::class,
-        OpenTelemetryModule::class
+        BenchmarkActivityModule::class,
+        DispatchersModule::class
     ]
 )
 @BenchmarkActivityScope
-internal interface BenchmarkActivityComponent : LogsHeavyTrafficComponentDependencies {
+internal interface BenchmarkActivityComponent :
+    LogsHeavyTrafficComponentDependencies,
+    RumAutoEpisodeDetailsComponentDependencies,
+    RumAutoLocationsComponentDependencies,
+    RumAutoLocationDetailsComponentDependencies {
     @Component.Factory
     interface Factory {
         fun create(
-            deps: BenchmarkActivityComponentDependencies,
-            @BindsInstance config: BenchmarkConfig
+            deps: BenchmarkActivityComponentDependencies
         ): BenchmarkActivityComponent
     }
 
-    fun inject(mainActivity: MainActivity)
+    fun inject(defaultScenarioActivity: DefaultScenarioActivity)
+    fun inject(rumAutoScenarioActivity: RumAutoScenarioActivity)
+    fun inject(sessionReplayAppcompatActivity: SessionReplayComposeScenarioActivity)
+    fun inject(sessionReplayScenarioActivity: SessionReplayScenarioActivity)
 
     fun inject(sessionReplayAppcompatFragment: SessionReplayAppcompatFragment)
     fun inject(sessionReplayMaterialFragment: SessionReplayMaterialFragment)
     fun inject(logsFragment: LogsFragment)
     fun inject(traceScenarioFragment: TraceScenarioFragment)
     fun inject(rumManualScenarioFragment: RumManualScenarioFragment)
+
+    fun inject(rumAutoCharactersFragment: RumAutoCharactersFragment)
+    fun inject(rumAutoCharacterDetailFragment: RumAutoCharacterDetailFragment)
+    fun inject(rumAutoEpisodesListFragment: RumAutoEpisodesListFragment)
 }

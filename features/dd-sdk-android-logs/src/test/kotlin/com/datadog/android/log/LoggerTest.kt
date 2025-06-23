@@ -7,7 +7,7 @@
 package com.datadog.android.log
 
 import android.util.Log
-import com.datadog.android.core.internal.utils.NULL_MAP_VALUE
+import com.datadog.android.internal.utils.NULL_MAP_VALUE
 import com.datadog.android.log.internal.logger.LogHandler
 import com.datadog.android.utils.forge.Configurator
 import com.google.gson.JsonArray

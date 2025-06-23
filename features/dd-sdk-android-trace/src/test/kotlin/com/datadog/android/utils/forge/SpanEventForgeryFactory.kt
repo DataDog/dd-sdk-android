@@ -10,7 +10,7 @@ import com.datadog.android.api.context.DeviceInfo
 import com.datadog.android.api.context.DeviceType
 import com.datadog.android.api.context.NetworkInfo
 import com.datadog.android.api.context.UserInfo
-import com.datadog.android.core.internal.utils.toHexString
+import com.datadog.android.internal.utils.toHexString
 import com.datadog.android.trace.model.SpanEvent
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory

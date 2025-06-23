@@ -17,8 +17,8 @@ import androidx.navigation.NavDestination
 import androidx.navigation.Navigation
 import androidx.navigation.fragment.NavHostFragment
 import com.datadog.android.api.feature.Feature
-import com.datadog.android.core.internal.attributes.ViewScopeInstrumentationType
-import com.datadog.android.core.internal.attributes.enrichWithConstantAttribute
+import com.datadog.android.internal.attributes.ViewScopeInstrumentationType
+import com.datadog.android.internal.attributes.enrichWithConstantAttribute
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.NoOpRumMonitor
 import com.datadog.android.rum.internal.RumFeature

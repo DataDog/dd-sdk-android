@@ -19,13 +19,15 @@ import com.datadog.android.Datadog
 import com.datadog.android.DatadogSite
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.storage.RawBatchEvent
-import com.datadog.android.core.allowThreadDiskReads
 import com.datadog.android.core.configuration.BackPressureStrategy
 import com.datadog.android.core.configuration.BatchProcessingLevel
 import com.datadog.android.core.configuration.BatchSize
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.UploadFrequency
 import com.datadog.android.core.configuration.UploadSchedulerStrategy
+import com.datadog.android.core.internal.account.DatadogAccountInfoProvider
+import com.datadog.android.core.internal.account.MutableAccountInfoProvider
+import com.datadog.android.core.internal.account.NoOpMutableAccountInfoProvider
 import com.datadog.android.core.internal.data.upload.CurlInterceptor
 import com.datadog.android.core.internal.data.upload.GzipRequestInterceptor
 import com.datadog.android.core.internal.data.upload.RotatingDnsResolver
@@ -75,6 +77,7 @@ import com.datadog.android.core.internal.utils.executeSafe
 import com.datadog.android.core.internal.utils.unboundInternalLogger
 import com.datadog.android.core.persistence.PersistenceStrategy
 import com.datadog.android.core.thread.FlushableExecutorService
+import com.datadog.android.internal.utils.allowThreadDiskReads
 import com.datadog.android.ndk.internal.DatadogNdkCrashHandler
 import com.datadog.android.ndk.internal.NdkCrashHandler
 import com.datadog.android.ndk.internal.NdkCrashLogDeserializer
@@ -120,6 +123,7 @@ internal class CoreFeature(
     internal var timeProvider: TimeProvider = NoOpTimeProvider()
     internal var trackingConsentProvider: ConsentProvider = NoOpConsentProvider()
     internal var userInfoProvider: MutableUserInfoProvider = NoOpMutableUserInfoProvider()
+    internal var accountInfoProvider: MutableAccountInfoProvider = NoOpMutableAccountInfoProvider()
     internal var contextProvider: ContextProvider = NoOpContextProvider()
 
     internal lateinit var okHttpClient: OkHttpClient
@@ -525,6 +529,9 @@ internal class CoreFeature(
 
         // User Info Provider
         setupUserInfoProvider()
+
+        // Account Info Provider
+        accountInfoProvider = DatadogAccountInfoProvider(internalLogger)
     }
 
     private fun setupUserInfoProvider() {

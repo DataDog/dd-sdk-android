@@ -24,7 +24,7 @@ import androidx.navigation.fragment.NavHostFragment
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureScope
-import com.datadog.android.core.internal.attributes.ViewScopeInstrumentationType
+import com.datadog.android.internal.attributes.ViewScopeInstrumentationType
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.rum.utils.forge.Configurator

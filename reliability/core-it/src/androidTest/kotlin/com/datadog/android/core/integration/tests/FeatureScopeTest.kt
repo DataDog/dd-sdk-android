@@ -120,7 +120,7 @@ class FeatureScopeTest : MockServerTest() {
                 .withTrackingConsent(trackingConsent)
                 .receivedData(fakeBatchData, fakeBatchMetadata)
             true
-        }.doWait(LONG_WAIT_MS)
+        }.doWait(MEDIUM_WAIT_MS)
     }
 
     @Test
@@ -155,7 +155,7 @@ class FeatureScopeTest : MockServerTest() {
                 .withTrackingConsent(trackingConsent)
                 .receivedData(fakeBatchData, fakeBatchMetadata)
             true
-        }.doWait(LONG_WAIT_MS)
+        }.doWait(MEDIUM_WAIT_MS)
     }
 
     @Test
@@ -189,7 +189,7 @@ class FeatureScopeTest : MockServerTest() {
                 .withTrackingConsent(trackingConsent)
                 .receivedData(fakeBatchData, null)
             true
-        }.doWait(LONG_WAIT_MS)
+        }.doWait(MEDIUM_WAIT_MS)
     }
 
     // endregion
@@ -224,12 +224,13 @@ class FeatureScopeTest : MockServerTest() {
 
         // Then
         countDownLatch.await(MEDIUM_WAIT_MS, TimeUnit.MILLISECONDS)
-        // TODO RUM-9917 Avoid using unconditional wait locks
-        Thread.sleep(UPLOAD_CYCLE_MAX_WAIT_MS)
-        MockWebServerAssert.assertThat(getMockServerWrapper())
-            .withConfiguration(fakeConfiguration)
-            .withTrackingConsent(trackingConsent)
-            .didNotReceiveData(fakeBatchData, fakeBatchMetadata)
+        ConditionWatcher {
+            MockWebServerAssert.assertThat(getMockServerWrapper())
+                .withConfiguration(fakeConfiguration)
+                .withTrackingConsent(trackingConsent)
+                .didNotReceiveData(fakeBatchData, fakeBatchMetadata)
+            true
+        }.doWait(MEDIUM_WAIT_MS)
     }
 
     // endregion
@@ -264,12 +265,13 @@ class FeatureScopeTest : MockServerTest() {
 
         // Then
         countDownLatch.await(MEDIUM_WAIT_MS, TimeUnit.MILLISECONDS)
-        // TODO RUM-9917 Avoid using unconditional wait locks
-        Thread.sleep(UPLOAD_CYCLE_MAX_WAIT_MS)
-        MockWebServerAssert.assertThat(getMockServerWrapper())
-            .withConfiguration(fakeConfiguration)
-            .withTrackingConsent(trackingConsent)
-            .didNotReceiveData(fakeBatchData, fakeBatchMetadata)
+        ConditionWatcher {
+            MockWebServerAssert.assertThat(getMockServerWrapper())
+                .withConfiguration(fakeConfiguration)
+                .withTrackingConsent(trackingConsent)
+                .didNotReceiveData(fakeBatchData, fakeBatchMetadata)
+            true
+        }.doWait(MEDIUM_WAIT_MS)
     }
 
     @Test
@@ -305,12 +307,13 @@ class FeatureScopeTest : MockServerTest() {
             shutdown()
             awaitTermination(MEDIUM_WAIT_MS, TimeUnit.MILLISECONDS)
         }
-        // TODO RUM-9917 Avoid using unconditional wait locks
-        Thread.sleep(UPLOAD_CYCLE_MAX_WAIT_MS)
-        MockWebServerAssert.assertThat(getMockServerWrapper())
-            .withConfiguration(fakeConfiguration)
-            .withTrackingConsent(trackingConsent)
-            .didNotReceiveData(fakeBatchData, fakeBatchMetadata)
+        ConditionWatcher {
+            MockWebServerAssert.assertThat(getMockServerWrapper())
+                .withConfiguration(fakeConfiguration)
+                .withTrackingConsent(trackingConsent)
+                .didNotReceiveData(fakeBatchData, fakeBatchMetadata)
+            true
+        }.doWait(MEDIUM_WAIT_MS)
     }
 
     // endregion
@@ -351,12 +354,13 @@ class FeatureScopeTest : MockServerTest() {
             shutdown()
             awaitTermination(MEDIUM_WAIT_MS, TimeUnit.MILLISECONDS)
         }
-        // TODO RUM-9917 Avoid using unconditional wait locks
-        Thread.sleep(UPLOAD_CYCLE_MAX_WAIT_MS)
-        MockWebServerAssert.assertThat(getMockServerWrapper())
-            .withConfiguration(fakeConfiguration)
-            .withTrackingConsent(trackingConsent)
-            .didNotReceiveData(fakeBatchData, fakeBatchMetadata)
+        ConditionWatcher {
+            MockWebServerAssert.assertThat(getMockServerWrapper())
+                .withConfiguration(fakeConfiguration)
+                .withTrackingConsent(trackingConsent)
+                .didNotReceiveData(fakeBatchData, fakeBatchMetadata)
+            true
+        }.doWait(MEDIUM_WAIT_MS)
     }
 
     // endregion
@@ -392,12 +396,13 @@ class FeatureScopeTest : MockServerTest() {
 
         // Then
         countDownLatch.await(MEDIUM_WAIT_MS, TimeUnit.MILLISECONDS)
-        // TODO RUM-9917 Avoid using unconditional wait locks
-        Thread.sleep(UPLOAD_CYCLE_MAX_WAIT_MS)
-        MockWebServerAssert.assertThat(getMockServerWrapper())
-            .withConfiguration(fakeConfiguration)
-            .withTrackingConsent(trackingConsent)
-            .didNotReceiveData(fakeBatchData, fakeBatchMetadata)
+        ConditionWatcher {
+            MockWebServerAssert.assertThat(getMockServerWrapper())
+                .withConfiguration(fakeConfiguration)
+                .withTrackingConsent(trackingConsent)
+                .didNotReceiveData(fakeBatchData, fakeBatchMetadata)
+            true
+        }.doWait(MEDIUM_WAIT_MS)
     }
 
     // endregion

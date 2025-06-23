@@ -29,6 +29,7 @@ import com.datadog.android.privacy.TrackingConsent
  * @property networkInfo information about the current network availability and quality
  * @property deviceInfo information about device
  * @property userInfo information about the current user
+ * @property accountInfo information about the current account
  * @property trackingConsent information about the current tracking consent
  * @property appBuildId unique build ID of the running application. Will be missing if Datadog Gradle Plugin is not applied or obfuscation is not enabled for the running build.
  * @property featuresContext agnostic dictionary with information from all features registered to
@@ -48,6 +49,7 @@ data class DatadogContext(
     val networkInfo: NetworkInfo,
     val deviceInfo: DeviceInfo,
     val userInfo: UserInfo,
+    val accountInfo: AccountInfo?,
     val trackingConsent: TrackingConsent,
     val appBuildId: String?,
     val featuresContext: Map<String, Map<String, Any?>>
