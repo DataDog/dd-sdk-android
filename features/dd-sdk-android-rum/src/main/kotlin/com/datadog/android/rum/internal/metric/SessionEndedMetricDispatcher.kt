@@ -12,7 +12,10 @@ import com.datadog.android.rum.internal.domain.scope.RumViewManagerScope
 import com.datadog.android.rum.model.ViewEvent
 import java.util.concurrent.ConcurrentHashMap
 
-internal class SessionEndedMetricDispatcher(private val internalLogger: InternalLogger) :
+internal class SessionEndedMetricDispatcher(
+    private val internalLogger: InternalLogger,
+    private val sessionSamplingRate: Float
+) :
     SessionMetricDispatcher {
 
     private val metricsBySessionId = ConcurrentHashMap<String, SessionEndedMetric>()
@@ -38,6 +41,7 @@ internal class SessionEndedMetricDispatcher(private val internalLogger: Internal
             internalLogger.logMetric(
                 messageBuilder = { SessionEndedMetric.RUM_SESSION_ENDED_METRIC_NAME },
                 additionalProperties = metric.toMetricAttributes(ntpOffsetAtEndMs),
+                creationSampleRate = sessionSamplingRate,
                 samplingRate = 15.0f
             )
         }

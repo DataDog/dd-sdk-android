@@ -31,8 +31,12 @@ enum class EndPoint(
         traces = "https://public-trace-http-intake.logs.datadoghq.eu/"
     ),
     AP1(
-        metrics = "https://ap1.datadoghq.com/",
+        metrics = "https://api.ap1.datadoghq.com/",
         traces = "https://browser-intake-ap1-datadoghq.com/"
+    ),
+    AP2(
+        metrics = "https://api.ap2.datadoghq.com/",
+        traces = "https://browser-intake-ap2-datadoghq.com/"
     );
 
     /**
