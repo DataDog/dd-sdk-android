@@ -1,6 +1,8 @@
 package com.datadog.android.macrobenchmark
 
 import android.content.Intent
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.benchmark.macro.StartupMode
 import androidx.benchmark.macro.junit4.MacrobenchmarkRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -27,6 +29,7 @@ class ExampleStartupBenchmark {
     @get:Rule
     val benchmarkRule = MacrobenchmarkRule()
 
+    @RequiresApi(Build.VERSION_CODES.Q)
     @Test
     fun startup() = benchmarkRule.measureRepeated(
         packageName = "com.datadog.sample.benchmark",
