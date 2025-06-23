@@ -17,10 +17,10 @@ package com.datadog.android.internal.utils
  * ```
  * now could be written as:
  * ```kotlin
-    val writer = featuredSdkCore.getFeature(Feature.TRACING_FEATURE_NAME)
-        ?.unwrap<Feature>()
-        ?.tryCastTo<com.datadog.android.trace.InternalCoreWriterProvider>()
-        ?.getCoreTracerWriter()
+ val writer = featuredSdkCore.getFeature(Feature.TRACING_FEATURE_NAME)
+ ?.unwrap<Feature>()
+ ?.tryCastTo<com.datadog.android.trace.InternalCoreWriterProvider>()
+ ?.getCoreTracerWriter()
  *  ```
  */
 inline fun <reified R> Any.tryCastTo(): R? {

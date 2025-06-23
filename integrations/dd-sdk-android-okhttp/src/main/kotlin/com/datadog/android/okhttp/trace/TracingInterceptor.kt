@@ -853,7 +853,7 @@ internal constructor(
         private const val AGENT_PSR_ATTRIBUTE = "_dd.agent_psr"
         private const val WRITER_PROVIDER_INTERFACE_NOT_IMPLEMENTED_ERROR_MESSAGE =
             "The Tracing feature is not implementing the InternalCoreWriterProvider interface." +
-                    " No tracing data will be sent."
+                " No tracing data will be sent."
 
         private val DEFAULT_LOCAL_TRACER_FACTORY: (SdkCore, Set<TracingHeaderType>) -> AgentTracer.TracerAPI =
             { sdkCore, tracingHeaderTypes: Set<TracingHeaderType> ->
