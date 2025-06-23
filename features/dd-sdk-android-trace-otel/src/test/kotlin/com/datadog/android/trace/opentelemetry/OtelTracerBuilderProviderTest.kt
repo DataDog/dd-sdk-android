@@ -16,7 +16,6 @@ import com.datadog.android.internal.concurrent.CompletableFuture
 import com.datadog.android.trace.InternalCoreWriterProvider
 import com.datadog.android.trace.TracingHeaderType
 import com.datadog.android.trace.internal.SpanAttributes
-import com.datadog.android.trace.opentelemetry.internal.NoOpCoreTracerWriter
 import com.datadog.android.trace.opentelemetry.utils.verifyLog
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.opentelemetry.trace.OtelSpan
