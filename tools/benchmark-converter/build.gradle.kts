@@ -1,6 +1,8 @@
 plugins {
     id("application")
     id("org.jetbrains.kotlin.jvm")
+    kotlin("plugin.serialization")
+
 }
 java {
     sourceCompatibility = JavaVersion.VERSION_11
@@ -14,4 +16,9 @@ kotlin {
 
 application {
     mainClass = "com.datadog.android.benchmark_converter.BenchmarkConverterKt"
+}
+
+dependencies {
+    implementation(libs.kotlinxSerializationJson)
+    implementation("org.jetbrains.kotlinx:kotlinx-cli:0.3.6")
 }
