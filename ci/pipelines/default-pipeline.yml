@@ -4,6 +4,7 @@ include:
 # SETUP
 
 stages:
+  - dd-octo-sts-debug
   - ci-image
   - security
   - analysis
@@ -45,6 +46,18 @@ stages:
     - export OSSRH_USERNAME=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.ossrh_username --with-decryption --query "Parameter.Value" --out text)
     - export OSSRH_PASSWORD=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.ossrh_password --with-decryption --query "Parameter.Value" --out text)
     - export GPG_PUBLIC_FINGERPRINT=$(aws ssm get-parameter --region us-east-1 --name ci.dd-sdk-android.signing.gpg_public_key --with-decryption --query "Parameter.Value" --out text | gpg --import --import-options show-only | grep -E -o -e "[A-F0-9]{40}")
+
+# DD-OCTO-STS-DEBUG
+dd-octo-sts-debug:print-claims:
+  stage: dd-octo-sts-debug
+  id_tokens:
+    DDOCTOSTS_ID_TOKEN:
+      aud: dd-octo-sts
+  when: manual
+  tags: [ "arch:amd64" ]
+  image: $CI_IMAGE_DOCKER
+  script:
+    - dd-octo-sts debug --scope DataDog/datadog-android --policy all.gitlab.pr
 
 # CI IMAGE
 
