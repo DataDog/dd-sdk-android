@@ -108,6 +108,7 @@ analysis:detekt-custom:
     - ./gradlew :features:dd-sdk-android-session-replay:customDetektRules
     - ./gradlew :features:dd-sdk-android-session-replay-material:customDetektRules
     - ./gradlew :features:dd-sdk-android-session-replay-compose:customDetektRules
+    - ./gradlew :features:dd-sdk-android-trace-internal:customDetektRules
     - ./gradlew :features:dd-sdk-android-trace:customDetektRules
     - ./gradlew :features:dd-sdk-android-trace-otel:customDetektRules
     - ./gradlew :features:dd-sdk-android-webview:customDetektRules
@@ -524,6 +525,23 @@ publish:release-internal:
       - dd-sdk-android-internal/verification-metadata.xml
 
 # region Publish features/*
+
+publish:release-trace-internal:
+  tags: [ "arch:amd64" ]
+  only:
+    - tags
+    - develop
+  image: $CI_IMAGE_DOCKER
+  stage: publish
+  timeout: 30m
+  script:
+    - !reference [ .snippets, set-publishing-credentials ]
+    - ./gradlew :features:dd-sdk-android-trace-internal:publishToSonatype --stacktrace --no-daemon
+  artifacts:
+    when: on_success
+    expire_in: 7 days
+    paths:
+      - features/dd-sdk-android-trace-internal/verification-metadata.xml
 
 publish:release-trace:
   tags: [ "arch:amd64" ]
