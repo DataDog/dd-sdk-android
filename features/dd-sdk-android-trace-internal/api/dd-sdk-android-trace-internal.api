@@ -2290,7 +2290,7 @@ public abstract interface class com/datadog/trace/bootstrap/instrumentation/api/
 	public abstract fun getSpan ()Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpan;
 }
 
-public abstract interface class com/datadog/trace/bootstrap/instrumentation/api/AgentScopeManager : com/datadog/trace/bootstrap/instrumentation/api/ScopeStateAware {
+public abstract interface class com/datadog/trace/bootstrap/instrumentation/api/AgentScopeManager {
 	public abstract fun activate (Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpan;Lcom/datadog/trace/bootstrap/instrumentation/api/ScopeSource;)Lcom/datadog/trace/bootstrap/instrumentation/api/AgentScope;
 	public abstract fun activate (Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpan;Lcom/datadog/trace/bootstrap/instrumentation/api/ScopeSource;Z)Lcom/datadog/trace/bootstrap/instrumentation/api/AgentScope;
 	public abstract fun activateNext (Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpan;)Lcom/datadog/trace/bootstrap/instrumentation/api/AgentScope;
@@ -2590,7 +2590,7 @@ public abstract interface class com/datadog/trace/bootstrap/instrumentation/api/
 	public abstract fun withTag (Ljava/lang/String;Z)Lcom/datadog/trace/bootstrap/instrumentation/api/AgentTracer$SpanBuilder;
 }
 
-public abstract interface class com/datadog/trace/bootstrap/instrumentation/api/AgentTracer$TracerAPI : com/datadog/trace/api/EndpointCheckpointer, com/datadog/trace/bootstrap/instrumentation/api/ScopeStateAware {
+public abstract interface class com/datadog/trace/bootstrap/instrumentation/api/AgentTracer$TracerAPI : com/datadog/trace/api/EndpointCheckpointer {
 	public abstract fun activateSpan (Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpan;Lcom/datadog/trace/bootstrap/instrumentation/api/ScopeSource;)Lcom/datadog/trace/bootstrap/instrumentation/api/AgentScope;
 	public abstract fun activateSpan (Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpan;Lcom/datadog/trace/bootstrap/instrumentation/api/ScopeSource;Z)Lcom/datadog/trace/bootstrap/instrumentation/api/AgentScope;
 	public abstract fun activeSpan ()Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpan;
@@ -2788,15 +2788,6 @@ public final class com/datadog/trace/bootstrap/instrumentation/api/ScopeSource :
 	public fun id ()B
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/trace/bootstrap/instrumentation/api/ScopeSource;
 	public static fun values ()[Lcom/datadog/trace/bootstrap/instrumentation/api/ScopeSource;
-}
-
-public abstract interface class com/datadog/trace/bootstrap/instrumentation/api/ScopeState {
-	public abstract fun activate ()V
-	public abstract fun fetchFromActive ()V
-}
-
-public abstract interface class com/datadog/trace/bootstrap/instrumentation/api/ScopeStateAware {
-	public abstract fun newScopeState ()Lcom/datadog/trace/bootstrap/instrumentation/api/ScopeState;
 }
 
 public class com/datadog/trace/bootstrap/instrumentation/api/SpanLink : com/datadog/trace/bootstrap/instrumentation/api/AgentSpanLink {
@@ -3361,7 +3352,6 @@ public class com/datadog/trace/core/CoreTracer : com/datadog/trace/bootstrap/ins
 	public fun getTagInterceptor ()Lcom/datadog/trace/core/taginterceptor/TagInterceptor;
 	public fun getTraceId ()Ljava/lang/String;
 	public fun getTraceId (Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpan;)Ljava/lang/String;
-	public fun newScopeState ()Lcom/datadog/trace/bootstrap/instrumentation/api/ScopeState;
 	public fun onRootSpanFinished (Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpan;Lcom/datadog/trace/api/EndpointTracker;)V
 	public fun onRootSpanStarted (Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpan;)Lcom/datadog/trace/api/EndpointTracker;
 	public fun propagate ()Lcom/datadog/trace/bootstrap/instrumentation/api/AgentPropagation;
@@ -3969,7 +3959,6 @@ public final class com/datadog/trace/core/scopemanager/ContinuableScopeManager :
 	public fun addScopeListener (Lcom/datadog/trace/api/scopemanager/ScopeListener;)V
 	public fun captureSpan (Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpan;)Lcom/datadog/trace/bootstrap/instrumentation/api/AgentScope$Continuation;
 	public fun closePrevious (Z)V
-	public fun newScopeState ()Lcom/datadog/trace/bootstrap/instrumentation/api/ScopeState;
 }
 
 public class com/datadog/trace/core/taginterceptor/RuleFlags {

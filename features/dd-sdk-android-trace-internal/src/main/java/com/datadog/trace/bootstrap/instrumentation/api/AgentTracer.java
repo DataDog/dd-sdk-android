@@ -30,7 +30,7 @@ public class AgentTracer {
   // Not intended to be constructed.
   private AgentTracer() {}
 
-  public interface TracerAPI extends EndpointCheckpointer, ScopeStateAware {
+  public interface TracerAPI extends EndpointCheckpointer {
 
     /**
      * Create and start a new span.
