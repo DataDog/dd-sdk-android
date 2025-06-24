@@ -131,8 +131,7 @@ internal class VitalsViewModel : ViewModel() {
                 GlobalRumMonitor.get().addFeatureFlagEvaluations(fflags)
                 GlobalRumMonitor.get().addAction(
                     RumActionType.CUSTOM,
-                    "custom action",
-                    emptyMap()
+                    "custom action"
                 )
                 Thread.sleep(1)
             }

@@ -147,7 +147,7 @@ internal class WindowCallbackWrapper(
         } else {
             customTargetName
         }
-        GlobalRumMonitor.get(sdkCore).addAction(RumActionType.BACK, targetName, emptyMap())
+        GlobalRumMonitor.get(sdkCore).addAction(RumActionType.BACK, targetName)
     }
 
     private fun logOrRethrowWrappedCallbackException(e: NullPointerException) {

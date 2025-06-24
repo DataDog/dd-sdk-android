@@ -123,8 +123,7 @@ class SampleApplication : Application() {
         GlobalRumMonitor.get().addError(
             "Low Memory warning",
             RumErrorSource.SOURCE,
-            null,
-            emptyMap()
+            null
         )
     }
 

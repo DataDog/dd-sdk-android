@@ -143,11 +143,11 @@ class CrossFeatureTest {
 
         // When
         GlobalRumMonitor.get().startView(fakeRumViewName, fakeRumViewName)
-        GlobalRumMonitor.get().startAction(RumActionType.TAP, fakeRumActionName, attributes = emptyMap())
+        GlobalRumMonitor.get().startAction(RumActionType.TAP, fakeRumActionName)
         openTracingTracer.withinSpan(fakeOperationName) {
             logger.i(fakeLogMessage)
         }
-        GlobalRumMonitor.get().stopAction(RumActionType.TAP, fakeRumActionName, attributes = emptyMap())
+        GlobalRumMonitor.get().stopAction(RumActionType.TAP, fakeRumActionName)
         GlobalRumMonitor.get().stopView(fakeRumViewName)
 
         // Then
@@ -199,8 +199,8 @@ class CrossFeatureTest {
             logger.i(fakeLogMessage)
         }
         GlobalRumMonitor.get().startView(fakeRumViewName, fakeRumViewName)
-        GlobalRumMonitor.get().startAction(RumActionType.TAP, fakeRumActionName, attributes = emptyMap())
-        GlobalRumMonitor.get().stopAction(RumActionType.TAP, fakeRumActionName, attributes = emptyMap())
+        GlobalRumMonitor.get().startAction(RumActionType.TAP, fakeRumActionName)
+        GlobalRumMonitor.get().stopAction(RumActionType.TAP, fakeRumActionName)
         GlobalRumMonitor.get().stopView(fakeRumViewName)
 
         // Then
@@ -244,8 +244,8 @@ class CrossFeatureTest {
 
         // When
         GlobalRumMonitor.get().startView(fakeRumViewName, fakeRumViewName)
-        GlobalRumMonitor.get().startAction(RumActionType.TAP, fakeRumActionName, attributes = emptyMap())
-        GlobalRumMonitor.get().stopAction(RumActionType.TAP, fakeRumActionName, attributes = emptyMap())
+        GlobalRumMonitor.get().startAction(RumActionType.TAP, fakeRumActionName)
+        GlobalRumMonitor.get().stopAction(RumActionType.TAP, fakeRumActionName)
         GlobalRumMonitor.get().stopView(fakeRumViewName)
         openTracingTracer.withinSpan(fakeOperationName) {
             logger.i(fakeLogMessage)

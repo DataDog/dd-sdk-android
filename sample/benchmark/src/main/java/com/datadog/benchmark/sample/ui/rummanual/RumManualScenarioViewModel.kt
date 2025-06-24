@@ -230,8 +230,7 @@ internal class RumManualScenarioViewModel(
             RumManualScenarioState.RumEventType.ACTION -> {
                 rumMonitor.addAction(
                     type = config.actionType,
-                    name = config.actionUrl,
-                    attributes = emptyMap()
+                    name = config.actionUrl
                 )
                 delay(100.milliseconds)
             }
@@ -246,16 +245,14 @@ internal class RumManualScenarioViewModel(
                     key = RUM_RESOURCE_KEY,
                     statusCode = 200,
                     size = 1024,
-                    kind = RumResourceKind.IMAGE,
-                    attributes = emptyMap()
+                    kind = RumResourceKind.IMAGE
                 )
             }
             RumManualScenarioState.RumEventType.ERROR -> {
                 rumMonitor.addError(
                     message = config.errorMessage,
                     source = RumErrorSource.SOURCE,
-                    throwable = null,
-                    attributes = emptyMap()
+                    throwable = null
                 )
                 delay(100.milliseconds)
             }
