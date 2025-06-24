@@ -18,7 +18,6 @@ data class CBMFResult(
     val benchmarks: List<Benchmark>
 ) {
 
-
     @Serializable
     data class Benchmark(
         val parameters: Map<String, String>, // scenario is required
