@@ -11,6 +11,7 @@ import android.os.Bundle
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.findNavController
+import androidx.tracing.Trace
 import com.datadog.benchmark.sample.config.BenchmarkConfig
 import com.datadog.benchmark.sample.di.activity.BenchmarkActivityComponent
 import com.datadog.benchmark.sample.navigation.NavigationGraphInitializer
@@ -48,6 +49,8 @@ internal class RumAutoScenarioActivity : BaseScenarioActivity() {
                 }
             }
         }
+
+        Trace.endAsyncSection("wahaha_section", 0)
     }
 
     override fun onResume() {

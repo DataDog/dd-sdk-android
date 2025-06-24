@@ -8,6 +8,7 @@ package com.datadog.benchmark.sample
 
 import android.app.Application
 import android.content.Context
+import androidx.tracing.Trace
 import com.datadog.benchmark.sample.di.app.BenchmarkAppComponent
 import com.datadog.benchmark.sample.di.app.DaggerBenchmarkAppComponent
 
@@ -16,6 +17,7 @@ internal class BenchmarkApplication : Application() {
     internal lateinit var benchmarkAppComponent: BenchmarkAppComponent
 
     override fun onCreate() {
+        Trace.beginAsyncSection("wahaha_section", 0)
         super.onCreate()
 
         benchmarkAppComponent = DaggerBenchmarkAppComponent.factory().create(this)
