@@ -131,6 +131,10 @@ dependencies {
     testImplementation(libs.bundles.testTools)
     testImplementation(libs.systemStubsJupiter)
     testImplementation(libs.ktorClientMock)
+
+    implementation(libs.androidxTracing)
+    implementation(libs.androidxTracingKtx)
+    implementation(libs.androidxTracingAndroid)
 }
 
 kotlinConfig()
