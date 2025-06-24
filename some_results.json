@@ -1,0 +1,357 @@
+{
+    "schema_version": "v1",
+    "benchmarks": [
+        {
+            "parameters": {
+                "scenario": "startup:wahaha_sectionCount",
+                "className": "com.datadog.android.macrobenchmark.BaselineStartupBenchmark"
+            },
+            "runs": {
+                "run0": {
+                    "execution_time": {
+                        "uom": "ms",
+                        "values": [
+                            1.0
+                        ]
+                    }
+                },
+                "run1": {
+                    "execution_time": {
+                        "uom": "ms",
+                        "values": [
+                            1.0
+                        ]
+                    }
+                },
+                "run2": {
+                    "execution_time": {
+                        "uom": "ms",
+                        "values": [
+                            1.0
+                        ]
+                    }
+                },
+                "run3": {
+                    "execution_time": {
+                        "uom": "ms",
+                        "values": [
+                            1.0
+                        ]
+                    }
+                },
+                "run4": {
+                    "execution_time": {
+                        "uom": "ms",
+                        "values": [
+                            1.0
+                        ]
+                    }
+                },
+                "run5": {
+                    "execution_time": {
+                        "uom": "ms",
+                        "values": [
+                            1.0
+                        ]
+                    }
+                },
+                "run6": {
+                    "execution_time": {
+                        "uom": "ms",
+                        "values": [
+                            1.0
+                        ]
+                    }
+                },
+                "run7": {
+                    "execution_time": {
+                        "uom": "ms",
+                        "values": [
+                            1.0
+                        ]
+                    }
+                },
+                "run8": {
+                    "execution_time": {
+                        "uom": "ms",
+                        "values": [
+                            1.0
+                        ]
+                    }
+                },
+                "run9": {
+                    "execution_time": {
+                        "uom": "ms",
+                        "values": [
+                            1.0
+                        ]
+                    }
+                }
+            }
+        },
+        {
+            "parameters": {
+                "scenario": "startup:wahaha_sectionSumMs",
+                "className": "com.datadog.android.macrobenchmark.BaselineStartupBenchmark"
+            },
+            "runs": {
+                "run0": {
+                    "execution_time": {
+                        "uom": "ms",
+                        "values": [
+                            119.032355
+                        ]
+                    }
+                },
+                "run1": {
+                    "execution_time": {
+                        "uom": "ms",
+                        "values": [
+                            110.326938
+                        ]
+                    }
+                },
+                "run2": {
+                    "execution_time": {
+                        "uom": "ms",
+                        "values": [
+                            114.05022
+                        ]
+                    }
+                },
+                "run3": {
+                    "execution_time": {
+                        "uom": "ms",
+                        "values": [
+                            119.865949
+                        ]
+                    }
+                },
+                "run4": {
+                    "execution_time": {
+                        "uom": "ms",
+                        "values": [
+                            120.954804
+                        ]
+                    }
+                },
+                "run5": {
+                    "execution_time": {
+                        "uom": "ms",
+                        "values": [
+                            117.527616
+                        ]
+                    }
+                },
+                "run6": {
+                    "execution_time": {
+                        "uom": "ms",
+                        "values": [
+                            111.433761
+                        ]
+                    }
+                },
+                "run7": {
+                    "execution_time": {
+                        "uom": "ms",
+                        "values": [
+                            115.897095
+                        ]
+                    }
+                },
+                "run8": {
+                    "execution_time": {
+                        "uom": "ms",
+                        "values": [
+                            152.161266
+                        ]
+                    }
+                },
+                "run9": {
+                    "execution_time": {
+                        "uom": "ms",
+                        "values": [
+                            140.342566
+                        ]
+                    }
+                }
+            }
+        },
+        {
+            "parameters": {
+                "scenario": "startup:wahaha_sectionCount",
+                "className": "com.datadog.android.macrobenchmark.InstrumentedStartupBenchmark"
+            },
+            "runs": {
+                "run0": {
+                    "execution_time": {
+                        "uom": "ms",
+                        "values": [
+                            1.0
+                        ]
+                    }
+                },
+                "run1": {
+                    "execution_time": {
+                        "uom": "ms",
+                        "values": [
+                            1.0
+                        ]
+                    }
+                },
+                "run2": {
+                    "execution_time": {
+                        "uom": "ms",
+                        "values": [
+                            1.0
+                        ]
+                    }
+                },
+                "run3": {
+                    "execution_time": {
+                        "uom": "ms",
+                        "values": [
+                            1.0
+                        ]
+                    }
+                },
+                "run4": {
+                    "execution_time": {
+                        "uom": "ms",
+                        "values": [
+                            1.0
+                        ]
+                    }
+                },
+                "run5": {
+                    "execution_time": {
+                        "uom": "ms",
+                        "values": [
+                            1.0
+                        ]
+                    }
+                },
+                "run6": {
+                    "execution_time": {
+                        "uom": "ms",
+                        "values": [
+                            1.0
+                        ]
+                    }
+                },
+                "run7": {
+                    "execution_time": {
+                        "uom": "ms",
+                        "values": [
+                            1.0
+                        ]
+                    }
+                },
+                "run8": {
+                    "execution_time": {
+                        "uom": "ms",
+                        "values": [
+                            1.0
+                        ]
+                    }
+                },
+                "run9": {
+                    "execution_time": {
+                        "uom": "ms",
+                        "values": [
+                            1.0
+                        ]
+                    }
+                }
+            }
+        },
+        {
+            "parameters": {
+                "scenario": "startup:wahaha_sectionSumMs",
+                "className": "com.datadog.android.macrobenchmark.InstrumentedStartupBenchmark"
+            },
+            "runs": {
+                "run0": {
+                    "execution_time": {
+                        "uom": "ms",
+                        "values": [
+                            135.1697
+                        ]
+                    }
+                },
+                "run1": {
+                    "execution_time": {
+                        "uom": "ms",
+                        "values": [
+                            131.482774
+                        ]
+                    }
+                },
+                "run2": {
+                    "execution_time": {
+                        "uom": "ms",
+                        "values": [
+                            130.018607
+                        ]
+                    }
+                },
+                "run3": {
+                    "execution_time": {
+                        "uom": "ms",
+                        "values": [
+                            130.58444
+                        ]
+                    }
+                },
+                "run4": {
+                    "execution_time": {
+                        "uom": "ms",
+                        "values": [
+                            124.26345
+                        ]
+                    }
+                },
+                "run5": {
+                    "execution_time": {
+                        "uom": "ms",
+                        "values": [
+                            134.873815
+                        ]
+                    }
+                },
+                "run6": {
+                    "execution_time": {
+                        "uom": "ms",
+                        "values": [
+                            149.969181
+                        ]
+                    }
+                },
+                "run7": {
+                    "execution_time": {
+                        "uom": "ms",
+                        "values": [
+                            133.128295
+                        ]
+                    }
+                },
+                "run8": {
+                    "execution_time": {
+                        "uom": "ms",
+                        "values": [
+                            138.603035
+                        ]
+                    }
+                },
+                "run9": {
+                    "execution_time": {
+                        "uom": "ms",
+                        "values": [
+                            140.407253
+                        ]
+                    }
+                }
+            }
+        }
+    ]
+}

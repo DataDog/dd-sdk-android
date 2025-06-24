@@ -30,6 +30,16 @@ android {
 
     targetProjectPath = ":sample:benchmark"
     experimentalProperties["android.experimental.self-instrumenting"] = true
+
+    packaging {
+        resources {
+            excludes += listOf(
+                "META-INF/jvm.kotlin_module",
+                "META-INF/LICENSE.md",
+                "META-INF/LICENSE-notice.md"
+            )
+        }
+    }
 }
 
 dependencies {
@@ -37,6 +47,7 @@ dependencies {
     implementation(libs.androidXEspressoCore)
     implementation(libs.uiautomator)
     implementation(libs.benchmarkMacroJunit4)
+    implementation(libs.bundles.jUnit5)
 }
 
 androidComponents {

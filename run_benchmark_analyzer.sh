@@ -6,7 +6,7 @@
 
 #resultsPath="/Users/aleksandr.gringauz/projects/dd-sdk-android/macrobenchmark/build/outputs/connected_android_test_additional_output/benchmark/connected/Pixel 5 - 13/com.datadog.android.macrobenchmark-benchmarkData.json"
 #
-#./gradlew -q :tools:benchmark-converter:run --args="--resultPath '$resultsPath'" > some_results.json
+#./gradlew -q :tools:benchmark-converter:run --args="--resultPath '$resultsPath'" > some_results5.json
 
 #docker run --rm --name benchmark_analyzer -it \
 #  -v$(pwd):/data:rw \
@@ -14,16 +14,14 @@
 #  analyze \
 #  --format=html \
 #  --outpath="summary.html" \
-#  "some_results.json"
-#
+#  "some_results3.json"
+
 
 docker run --rm --name benchmark_analyzer -it \
   -v$(pwd):/data:rw \
   registry.ddbuild.io/images/benchmark-analyzer \
   compare pairwise \
-  --baseline='{"className": "com.datadog.android.macrobenchmark.BaselineStartupBenchmark"}' \
-  --candidate='{"className": "com.datadog.android.macrobenchmark.InstrumentedStartupBenchmark"}' \
   --format=html \
   --outpath="summary.html" \
-  "some_results.json" \
-  "some_results.json"
+  "some_results3.json" \
+  "some_results5.json"
