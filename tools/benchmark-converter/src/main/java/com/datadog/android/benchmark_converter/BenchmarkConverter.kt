@@ -25,13 +25,15 @@ fun main(args: Array<String>) {
 
     val converted = CBMFResult(
         schema_version = "v1",
-        benchmarks = result.benchmarks.map { benchmark ->
-            CBMFResult.Benchmark(
-                parameters = benchmark.params,
-                runs = benchmark.metrics.mapValues {
-                    mapOf("execution_time" to CBMFResult.Measurement("ms", it.value.runs))
-                }
-            )
+        benchmarks = result.benchmarks.flatMap { benchmark ->
+            benchmark.metrics.map { (metricName, metric) ->
+                CBMFResult.Benchmark(
+                    parameters = mapOf("scenario" to "${benchmark.name}:${metricName}"),
+                    runs = metric.runs.mapIndexed { index, x ->
+                        "run$index" to mapOf("execution_time" to CBMFResult.Measurement("ms", listOf(x)))
+                    }.toMap()
+                )
+            }
         }
     )
 
