@@ -53,9 +53,6 @@ dependencies {
     implementation(libs.androidXAnnotation)
     implementation(libs.bundles.traceCore)
 
-    // OpenTracing
-    api(libs.bundles.openTracing)
-
     testImplementation(project(":tools:unit")) {
         attributes {
             attribute(
@@ -74,7 +71,6 @@ unMock {
     keepStartingWith("org.json")
 }
 
-apply(from = "clone_dd_trace.gradle.kts")
 
 kotlinConfig(jvmBytecodeTarget = JvmTarget.JVM_11)
 androidLibraryConfig()

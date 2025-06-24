@@ -1,4 +1,50 @@
-object com.datadog.android.trace.internal.domain.event.BigIntegerUtils
-  fun leastSignificant64BitsAsHex(java.math.BigInteger): String
-  fun leastSignificant64BitsAsDecimal(java.math.BigInteger): String
-  fun mostSignificant64BitsAsHex(java.math.BigInteger): String
+interface com.datadog.android.trace.api.DatadogTrace
+interface com.datadog.android.trace.api.DatadogTraceId
+  fun toHexString(): String
+object com.datadog.android.trace.api.constants.DatadogTracingConstants
+  object Tags
+    const val KEY_HTTP_URL: String
+    const val KEY_SPAN_KIND: String
+    const val KEY_HTTP_METHOD: String
+    const val KEY_HTTP_STATUS: String
+    const val KEY_ERROR_MSG: String
+    const val KEY_ERROR_TYPE: String
+    const val KEY_ERROR_STACK: String
+    const val VALUE_SPAN_KIND_CLIENT: String
+  object PrioritySampling
+    const val UNSET: Int
+    const val SAMPLER_DROP: Int
+    const val SAMPLER_KEEP: Int
+    const val USER_DROP: Int
+    const val USER_KEEP: Int
+interface com.datadog.android.trace.api.propagation.DatadogPropagation
+  fun <C> inject(com.datadog.android.trace.api.span.DatadogSpan, C, (C) -> Unit)
+  fun <C> inject(com.datadog.android.trace.api.span.DatadogSpanContext, C, (C) -> Unit)
+  fun <C> extract(C, (C) -> Unit): com.datadog.android.trace.api.span.DatadogSpanContext?
+  fun isExtracted(com.datadog.android.trace.api.span.DatadogSpanContext): Boolean
+interface com.datadog.android.trace.api.span.DatadogSpan
+  val isRootSpan: Boolean
+  val samplingPriority: Int?
+  var isError: Boolean?
+  var resourceName: CharSequence?
+  fun context(): DatadogSpanContext
+  fun finish()
+  fun drop()
+  fun setTag(String?, String?)
+  fun setTag(String?, Boolean)
+  fun setTag(String?, Number?)
+interface com.datadog.android.trace.api.span.DatadogSpanBuilder
+  fun withOrigin(String?): DatadogSpanBuilder
+  fun withParentContext(DatadogSpanContext?): DatadogSpanBuilder
+  fun start(): DatadogSpan
+interface com.datadog.android.trace.api.span.DatadogSpanContext
+  val traceId: com.datadog.android.trace.api.DatadogTraceId
+  val spanId: Long
+  val samplingPriority: Int
+  fun setSamplingPriority(Int): Boolean
+  fun setMetric(CharSequence?, Double)
+interface com.datadog.android.trace.api.tracer.DatadogTracer
+  fun buildSpan(CharSequence): com.datadog.android.trace.api.span.DatadogSpanBuilder
+  fun propagate(): com.datadog.android.trace.api.propagation.DatadogPropagation
+interface com.datadog.android.trace.api.tracer.DatadogTracerFactory
+  fun create(Set<com.datadog.android.trace.TracingHeaderType>): DatadogTracer

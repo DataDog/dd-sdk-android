@@ -162,11 +162,11 @@ class SampleApplication : Application() {
         initializeUserInfo(preferences)
         initializeAccountInfo(preferences)
 
-        GlobalTracer.registerIfAbsent(
-            AndroidTracer.Builder()
-                .setService(BuildConfig.APPLICATION_ID)
-                .build()
-        )
+//        GlobalTracer.registerIfAbsent(
+//            AndroidTracer.Builder()
+//                .setService(BuildConfig.APPLICATION_ID)
+//                .build()
+//        )
 
         val rumConfig = createRumConfiguration()
         Rum.enable(rumConfig)

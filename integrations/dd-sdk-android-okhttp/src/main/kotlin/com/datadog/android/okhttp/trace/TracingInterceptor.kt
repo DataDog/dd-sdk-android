@@ -19,32 +19,21 @@ import com.datadog.android.core.internal.net.DefaultFirstPartyHostHeaderTypeReso
 import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.internal.telemetry.TracingHeaderTypesSet
 import com.datadog.android.internal.utils.loggableStackTrace
-import com.datadog.android.internal.utils.tryCastTo
 import com.datadog.android.okhttp.TraceContext
 import com.datadog.android.okhttp.TraceContextInjection
-import com.datadog.android.okhttp.internal.otel.toAgentSpanContext
 import com.datadog.android.okhttp.internal.trace.toInternalTracingHeaderType
 import com.datadog.android.trace.AndroidTracer
 import com.datadog.android.trace.TracingHeaderType
-import com.datadog.legacy.trace.api.DDTags
-import com.datadog.legacy.trace.api.sampling.PrioritySampling
-import com.datadog.trace.api.config.TracerConfig
-import com.datadog.trace.api.interceptor.MutableSpan
-import com.datadog.trace.api.sampling.SamplingMechanism
-import com.datadog.trace.bootstrap.instrumentation.api.AgentSpan
-import com.datadog.trace.bootstrap.instrumentation.api.AgentTracer
-import com.datadog.trace.bootstrap.instrumentation.api.Tags
-import com.datadog.trace.common.sampling.AllSampler
-import com.datadog.trace.common.writer.NoOpWriter
-import com.datadog.trace.core.CoreTracer
-import com.datadog.trace.core.DDSpan
-import com.datadog.trace.core.propagation.ExtractedContext
+import com.datadog.android.trace.api.constants.DatadogTracingConstants
+import com.datadog.android.trace.api.span.DatadogSpan
+import com.datadog.android.trace.api.span.DatadogSpanContext
+import com.datadog.android.trace.api.tracer.DatadogTracer
+import com.datadog.android.trace.impl.DatadogTracerFactoryAdapter
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import java.net.HttpURLConnection
-import java.util.Properties
 import java.util.concurrent.atomic.AtomicReference
 
 /**
@@ -83,14 +72,14 @@ internal constructor(
     internal val tracedHosts: Map<String, Set<TracingHeaderType>>,
     internal val tracedRequestListener: TracedRequestListener,
     internal val traceOrigin: String?,
-    internal val traceSampler: Sampler<AgentSpan>,
+    internal val traceSampler: Sampler<DatadogSpan>,
     internal val traceContextInjection: TraceContextInjection,
     internal val redacted404ResourceName: Boolean,
-    internal val localTracerFactory: (SdkCore, Set<TracingHeaderType>) -> AgentTracer.TracerAPI,
-    private val globalTracerProvider: () -> AgentTracer.TracerAPI?
+    internal val localTracerFactory: (SdkCore, Set<TracingHeaderType>) -> DatadogTracer,
+    private val globalTracerProvider: () -> DatadogTracer?
 ) : Interceptor {
 
-    private val localTracerReference: AtomicReference<AgentTracer.TracerAPI> = AtomicReference()
+    private val localTracerReference: AtomicReference<DatadogTracer> = AtomicReference()
     private val sanitizedHosts = HostsSanitizer().sanitizeHosts(
         tracedHosts.keys.toList(),
         NETWORK_REQUESTS_TRACKING_FEATURE_NAME
@@ -169,7 +158,7 @@ internal constructor(
     protected open fun onRequestIntercepted(
         sdkCore: FeatureSdkCore,
         request: Request,
-        span: AgentSpan?,
+        span: DatadogSpan?,
         response: Response?,
         throwable: Throwable?
     ) {
@@ -213,15 +202,16 @@ internal constructor(
         sdkCore: InternalSdkCore,
         chain: Interceptor.Chain,
         request: Request,
-        tracer: AgentTracer.TracerAPI
+        tracer: DatadogTracer
     ): Response {
-        val span: AgentSpan = buildSpan(tracer, request)
+        val span: DatadogSpan = buildSpan(tracer, request)
         val isSampled = span.sample(request)
 
-        if (span is DDSpan && span.isRootSpan) {
-            val samplingPriority = if (isSampled) PrioritySampling.SAMPLER_KEEP else PrioritySampling.SAMPLER_DROP
+        if (span.isRootSpan) {
+            val samplingPriority =
+                if (isSampled) DatadogTracingConstants.PrioritySampling.SAMPLER_KEEP else DatadogTracingConstants.PrioritySampling.SAMPLER_DROP
             val spanContext = span.context()
-            if (spanContext.setSamplingPriority(samplingPriority, SamplingMechanism.DEFAULT.toInt())) {
+            if (spanContext.setSamplingPriority(samplingPriority)) {
                 spanContext.setMetric(
                     AGENT_PSR_ATTRIBUTE,
                     (traceSampler.getSampleRate() ?: ZERO_SAMPLE_RATE) / ALL_IN_SAMPLE_RATE
@@ -268,7 +258,7 @@ internal constructor(
     }
 
     @Synchronized
-    private fun resolveTracer(sdkCore: InternalSdkCore): AgentTracer.TracerAPI? {
+    private fun resolveTracer(sdkCore: InternalSdkCore): DatadogTracer? {
         val tracingFeature = sdkCore.getFeature(Feature.TRACING_FEATURE_NAME)
         val globalTracerInstance = globalTracerProvider.invoke()
         return if (tracingFeature == null) {
@@ -289,7 +279,7 @@ internal constructor(
         }
     }
 
-    private fun resolveLocalTracer(sdkCore: InternalSdkCore): AgentTracer.TracerAPI {
+    private fun resolveLocalTracer(sdkCore: InternalSdkCore): DatadogTracer {
         // only register once
         if (localTracerReference.get() == null) {
             @Suppress("UnsafeThirdPartyFunctionCall") // internal safe call
@@ -306,22 +296,20 @@ internal constructor(
         return localTracerReference.get()
     }
 
-    private fun buildSpan(tracer: AgentTracer.TracerAPI, request: Request): AgentSpan {
+    private fun buildSpan(tracer: DatadogTracer, request: Request): DatadogSpan {
         val parentContext = extractParentContext(tracer, request)
         val url = request.url.toString()
 
         @Suppress("DEPRECATION")
         val span = tracer.buildSpan(SPAN_NAME)
             .withOrigin(traceOrigin)
-            .asChildOf(parentContext)
+            .withParentContext(parentContext)
             .start()
 
-        if (span is MutableSpan) {
-            span.setResourceName(url.substringBefore(URL_QUERY_PARAMS_BLOCK_SEPARATOR))
-        }
-        span.setTag(Tags.HTTP_URL, url)
-        span.setTag(Tags.HTTP_METHOD, request.method)
-        span.setTag(Tags.SPAN_KIND, Tags.SPAN_KIND_CLIENT)
+        span.resourceName = url.substringBefore(URL_QUERY_PARAMS_BLOCK_SEPARATOR)
+        span.setTag(DatadogTracingConstants.Tags.KEY_HTTP_URL, url)
+        span.setTag(DatadogTracingConstants.Tags.KEY_HTTP_METHOD, request.method)
+        span.setTag(DatadogTracingConstants.Tags.KEY_SPAN_KIND, DatadogTracingConstants.Tags.VALUE_SPAN_KIND_CLIENT)
 
         return span
     }
@@ -332,7 +320,7 @@ internal constructor(
 
         return when {
             headerSamplingPriority != null -> headerSamplingPriority
-            openTelemetrySpanSamplingPriority == PrioritySampling.UNSET -> null
+            openTelemetrySpanSamplingPriority == DatadogTracingConstants.PrioritySampling.UNSET -> null
             else -> openTelemetrySpanSamplingPriority?.let { samplingPriority -> samplingPriority > 0 }
         }
     }
@@ -342,9 +330,9 @@ internal constructor(
         val datadogSamplingPriority =
             request.header(DATADOG_SAMPLING_PRIORITY_HEADER)?.toIntOrNull()
         if (datadogSamplingPriority != null) {
-            if (datadogSamplingPriority == PrioritySampling.UNSET) return null
-            return datadogSamplingPriority == PrioritySampling.USER_KEEP ||
-                datadogSamplingPriority == PrioritySampling.SAMPLER_KEEP
+            if (datadogSamplingPriority == DatadogTracingConstants.PrioritySampling.UNSET) return null
+            return datadogSamplingPriority == DatadogTracingConstants.PrioritySampling.USER_KEEP ||
+                    datadogSamplingPriority == DatadogTracingConstants.PrioritySampling.SAMPLER_KEEP
         }
         val b3MSamplingPriority = request.header(B3M_SAMPLING_PRIORITY_KEY)
         if (b3MSamplingPriority != null) {
@@ -385,26 +373,30 @@ internal constructor(
         return null
     }
 
-    private fun extractParentContext(tracer: AgentTracer.TracerAPI, request: Request): AgentSpan.Context? {
-        val tagContext = request.tag(AgentSpan::class.java)?.context()
-            ?: request.tag(TraceContext::class.java)?.toAgentSpanContext()
+    private fun extractParentContext(tracer: DatadogTracer, request: Request): DatadogSpanContext? {
+        val propagation = tracer.propagate()
+        val tagContext = request.tag(DatadogSpan::class.java)?.context()
+            ?: request.tag(TraceContext::class.java)?.let {
+                propagation.createExtractedContext(it.traceId, it.spanId, it.samplingPriority)
+            }
 
-        val headerContext: AgentSpan.Context.Extracted? = tracer.propagate().extract(request) { carrier, classifier ->
+        val headerContext: DatadogSpanContext? = propagation.extract(request) { carrier, classifier ->
             val headers = carrier.headers.toMultimap()
                 .map { it.key to it.value.joinToString(";") }
                 .toMap()
 
-            for ((key, value) in headers) classifier.accept(key, value)
+            // there is no actual classification here, values just got cached
+            for ((key, value) in headers) classifier(key, value)
         }
 
-        return if (headerContext is ExtractedContext) headerContext else tagContext
+        return if (headerContext == null || propagation.isExtractedContext(headerContext)) headerContext else tagContext
     }
 
     private fun setSampledOutHeaders(
         requestBuilder: Request.Builder,
         tracingHeaderTypes: Set<TracingHeaderType>,
-        span: AgentSpan,
-        tracer: AgentTracer.TracerAPI
+        span: DatadogSpan,
+        tracer: DatadogTracer
     ) {
         for (headerType in tracingHeaderTypes) {
             when (headerType) {
@@ -433,8 +425,8 @@ internal constructor(
 
     private fun handleDatadogSampledOutHeaders(
         requestBuilder: Request.Builder,
-        span: AgentSpan,
-        tracer: AgentTracer.TracerAPI
+        span: DatadogSpan,
+        tracer: DatadogTracer
     ) {
         if (traceContextInjection == TraceContextInjection.ALL) {
             tracer.propagate().inject(
@@ -468,7 +460,7 @@ internal constructor(
         }
     }
 
-    private fun handleW3CNotSampledHeaders(span: AgentSpan, requestBuilder: Request.Builder) {
+    private fun handleW3CNotSampledHeaders(span: DatadogSpan, requestBuilder: Request.Builder) {
         if (traceContextInjection == TraceContextInjection.ALL) {
             val traceId = span.context().traceId.toHexString()
             val spanId = span.context().spanId.toString()
@@ -521,11 +513,11 @@ internal constructor(
     private fun updateRequest(
         sdkCore: InternalSdkCore,
         request: Request,
-        tracer: AgentTracer.TracerAPI,
-        span: AgentSpan,
+        tracer: DatadogTracer,
+        span: DatadogSpan,
         isSampled: Boolean
     ): Request.Builder {
-        val tracedRequestBuilder = request.newBuilder()
+        val tracedRequestBuilder: Request.Builder = request.newBuilder()
         val tracingHeaderTypes =
             localFirstPartyHostHeaderTypeResolver.headerTypesForUrl(request.url)
                 .ifEmpty {
@@ -538,7 +530,7 @@ internal constructor(
             tracer.propagate().inject(
                 span.context(),
                 tracedRequestBuilder
-            ) { carrier, key, value ->
+            ) { carrier: Request.Builder, key: String, value: String ->
                 tracedRequestBuilder.removeHeader(key)
                 when (key) {
                     DATADOG_SAMPLING_PRIORITY_HEADER,
@@ -579,19 +571,19 @@ internal constructor(
         sdkCore: FeatureSdkCore,
         request: Request,
         response: Response,
-        span: AgentSpan,
+        span: DatadogSpan,
         isSampled: Boolean
     ) {
         if (!isSampled) {
             onRequestIntercepted(sdkCore, request, null, response, null)
         } else {
             val statusCode = response.code
-            span.setTag(Tags.HTTP_STATUS, statusCode)
+            span.setTag(DatadogTracingConstants.Tags.KEY_HTTP_STATUS, statusCode)
             if (statusCode in HttpURLConnection.HTTP_BAD_REQUEST until HttpURLConnection.HTTP_INTERNAL_ERROR) {
-                (span as? MutableSpan)?.isError = true
+                span.isError = true
             }
             if (statusCode == HttpURLConnection.HTTP_NOT_FOUND && redacted404ResourceName) {
-                (span as? MutableSpan)?.resourceName = RESOURCE_NAME_404
+                span.resourceName = RESOURCE_NAME_404
             }
             onRequestIntercepted(sdkCore, request, span, response, null)
         }
@@ -602,22 +594,22 @@ internal constructor(
         sdkCore: FeatureSdkCore,
         request: Request,
         throwable: Throwable,
-        span: AgentSpan,
+        span: DatadogSpan,
         isSampled: Boolean
     ) {
         if (!isSampled) {
             onRequestIntercepted(sdkCore, request, null, null, throwable)
         } else {
-            (span as? MutableSpan)?.isError = true
-            span.setTag(DDTags.ERROR_MSG, throwable.message)
-            span.setTag(DDTags.ERROR_TYPE, throwable.javaClass.name)
-            span.setTag(DDTags.ERROR_STACK, throwable.loggableStackTrace())
+            span.isError = true
+            span.setTag(DatadogTracingConstants.Tags.KEY_ERROR_MSG, throwable.message)
+            span.setTag(DatadogTracingConstants.Tags.KEY_ERROR_TYPE, throwable.javaClass.name)
+            span.setTag(DatadogTracingConstants.Tags.KEY_ERROR_STACK, throwable.loggableStackTrace())
             onRequestIntercepted(sdkCore, request, span, null, throwable)
         }
         span.finishRumAware(isSampled)
     }
 
-    private fun AgentSpan.finishRumAware(isSampled: Boolean) {
+    private fun DatadogSpan.finishRumAware(isSampled: Boolean) {
         if (canSendSpan()) {
             if (isSampled) finish() else drop()
         } else {
@@ -625,8 +617,8 @@ internal constructor(
         }
     }
 
-    private fun AgentSpan.sample(request: Request): Boolean {
-        val samplingPriority = (this as? DDSpan)?.samplingPriority
+    private fun DatadogSpan.sample(request: Request): Boolean {
+        val samplingPriority = samplingPriority
         return if (samplingPriority != null) {
             samplingPriority > 0
         } else {
@@ -697,9 +689,9 @@ internal constructor(
         internal var sdkInstanceName: String? = null
         internal var tracedRequestListener: TracedRequestListener = NoOpTracedRequestListener()
         internal var traceOrigin: String? = null
-        internal var traceSampler: Sampler<AgentSpan> = DeterministicTraceSampler(DEFAULT_TRACE_SAMPLE_RATE)
+        internal var traceSampler: Sampler<DatadogSpan> = DeterministicTraceSampler(DEFAULT_TRACE_SAMPLE_RATE)
         internal var localTracerFactory = DEFAULT_LOCAL_TRACER_FACTORY
-        internal var globalTracerProvider: () -> AgentTracer.TracerAPI? = { null }
+        internal var globalTracerProvider: () -> DatadogTracer? = { null }
         internal var traceContextInjection = TraceContextInjection.SAMPLED
 
         internal var redacted404ResourceName = true
@@ -741,7 +733,7 @@ internal constructor(
          * @param traceSampler the trace sampler controlling the sampling of APM traces.
          * By default it is a sampler accepting 100% of the traces.
          */
-        fun setTraceSampler(traceSampler: Sampler<AgentSpan>): R {
+        fun setTraceSampler(traceSampler: Sampler<DatadogSpan>): R {
             this.traceSampler = traceSampler
             return getThis()
         }
@@ -773,12 +765,12 @@ internal constructor(
             return getThis()
         }
 
-        internal fun setLocalTracerFactory(factory: (SdkCore, Set<TracingHeaderType>) -> AgentTracer.TracerAPI): R {
+        internal fun setLocalTracerFactory(factory: (SdkCore, Set<TracingHeaderType>) -> DatadogTracer): R {
             this.localTracerFactory = factory
             return getThis()
         }
 
-        internal fun setGlobalTracerProvider(globalTracerProvider: () -> AgentTracer.TracerAPI?): R {
+        internal fun setGlobalTracerProvider(globalTracerProvider: () -> DatadogTracer?): R {
             this.globalTracerProvider = globalTracerProvider
             return getThis()
         }
@@ -855,38 +847,11 @@ internal constructor(
         internal const val OKHTTP_INTERCEPTOR_HEADER_TYPES = "okhttp_interceptor_header_types"
 
         private const val AGENT_PSR_ATTRIBUTE = "_dd.agent_psr"
-        private const val WRITER_PROVIDER_INTERFACE_NOT_IMPLEMENTED_ERROR_MESSAGE =
-            "The Tracing feature is not implementing the InternalCoreWriterProvider interface." +
-                " No tracing data will be sent."
 
-        private val DEFAULT_LOCAL_TRACER_FACTORY: (SdkCore, Set<TracingHeaderType>) -> AgentTracer.TracerAPI =
+        private val DEFAULT_LOCAL_TRACER_FACTORY: (SdkCore, Set<TracingHeaderType>) -> DatadogTracer =
             { sdkCore, tracingHeaderTypes: Set<TracingHeaderType> ->
-                val featuredSdkCore = sdkCore as FeatureSdkCore
-                val writer = featuredSdkCore.getFeature(Feature.TRACING_FEATURE_NAME)
-                    ?.unwrap<Feature>()
-                    ?.tryCastTo<com.datadog.android.trace.InternalCoreWriterProvider>()
-                    ?.getCoreTracerWriter()
-                    ?: run {
-                        sdkCore.internalLogger.log(
-                            InternalLogger.Level.ERROR,
-                            InternalLogger.Target.MAINTAINER,
-                            { WRITER_PROVIDER_INTERFACE_NOT_IMPLEMENTED_ERROR_MESSAGE }
-                        )
-                        NoOpWriter()
-                    }
-
-                CoreTracer.CoreTracerBuilder(featuredSdkCore.internalLogger)
-                    .withProperties(
-                        Properties().apply {
-                            val propagationStyles = tracingHeaderTypes.joinToString(",")
-                            setProperty(TracerConfig.PROPAGATION_STYLE_EXTRACT, propagationStyles)
-                            setProperty(TracerConfig.PROPAGATION_STYLE_INJECT, propagationStyles)
-                            setProperty(TracerConfig.URL_AS_RESOURCE_NAME, "false")
-                        }
-                    )
-                    .writer(writer)
-                    .sampler(AllSampler())
-                    .build()
+                DatadogTracerFactoryAdapter(sdkCore)
+                    .create(tracingHeaderTypes)
             }
     }
 }

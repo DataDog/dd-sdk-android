@@ -44,6 +44,7 @@ android {
 dependencies {
     implementation(project(":integrations:dd-sdk-android-okhttp"))
     implementation(project(":features:dd-sdk-android-trace-otel"))
+    implementation(project(":features:dd-sdk-android-trace-internal"))
     implementation(libs.okHttp)
     implementation(libs.kotlin)
 

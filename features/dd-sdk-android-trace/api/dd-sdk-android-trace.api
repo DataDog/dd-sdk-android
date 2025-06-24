@@ -64,6 +64,74 @@ public abstract interface class com/datadog/android/trace/event/SpanEventMapper 
 	public abstract fun map (Lcom/datadog/android/trace/model/SpanEvent;)Lcom/datadog/android/trace/model/SpanEvent;
 }
 
+public final class com/datadog/android/trace/impl/DatadogPropagationAdapter : com/datadog/android/trace/api/propagation/DatadogPropagation {
+	public fun <init> (Lcom/datadog/trace/bootstrap/instrumentation/api/AgentPropagation;)V
+	public fun createExtractedContext (Ljava/lang/String;Ljava/lang/String;I)Lcom/datadog/android/trace/api/span/DatadogSpanContext;
+	public fun extract (Ljava/lang/Object;Lkotlin/jvm/functions/Function2;)Lcom/datadog/android/trace/api/span/DatadogSpanContext;
+	public fun inject (Lcom/datadog/android/trace/api/span/DatadogSpan;Ljava/lang/Object;Lkotlin/jvm/functions/Function3;)V
+	public fun inject (Lcom/datadog/android/trace/api/span/DatadogSpanContext;Ljava/lang/Object;Lkotlin/jvm/functions/Function3;)V
+	public fun isExtractedContext (Lcom/datadog/android/trace/api/span/DatadogSpanContext;)Z
+}
+
+public final class com/datadog/android/trace/impl/DatadogSpanAdapter : com/datadog/android/trace/api/span/DatadogSpan {
+	public fun <init> (Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpan;)V
+	public synthetic fun context ()Lcom/datadog/android/trace/api/span/DatadogSpanContext;
+	public fun context ()Lcom/datadog/android/trace/impl/DatadogSpanContextAdapter;
+	public fun drop ()V
+	public fun finish ()V
+	public fun getResourceName ()Ljava/lang/CharSequence;
+	public fun getSamplingPriority ()Ljava/lang/Integer;
+	public fun isError ()Ljava/lang/Boolean;
+	public fun isRootSpan ()Z
+	public fun setError (Ljava/lang/Boolean;)V
+	public fun setResourceName (Ljava/lang/CharSequence;)V
+	public fun setTag (Ljava/lang/String;Ljava/lang/Number;)V
+	public fun setTag (Ljava/lang/String;Ljava/lang/String;)V
+	public fun setTag (Ljava/lang/String;Z)V
+}
+
+public final class com/datadog/android/trace/impl/DatadogSpanBuilderAdapter : com/datadog/android/trace/api/span/DatadogSpanBuilder {
+	public fun <init> (Lcom/datadog/trace/bootstrap/instrumentation/api/AgentTracer$SpanBuilder;)V
+	public fun start ()Lcom/datadog/android/trace/api/span/DatadogSpan;
+	public synthetic fun withOrigin (Ljava/lang/String;)Lcom/datadog/android/trace/api/span/DatadogSpanBuilder;
+	public fun withOrigin (Ljava/lang/String;)Lcom/datadog/android/trace/impl/DatadogSpanBuilderAdapter;
+	public synthetic fun withParentContext (Lcom/datadog/android/trace/api/span/DatadogSpanContext;)Lcom/datadog/android/trace/api/span/DatadogSpanBuilder;
+	public fun withParentContext (Lcom/datadog/android/trace/api/span/DatadogSpanContext;)Lcom/datadog/android/trace/impl/DatadogSpanBuilderAdapter;
+}
+
+public final class com/datadog/android/trace/impl/DatadogSpanContextAdapter : com/datadog/android/trace/api/span/DatadogSpanContext {
+	public fun <init> (Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpan$Context;)V
+	public fun getSamplingPriority ()I
+	public fun getSpanId ()J
+	public fun getTags ()Ljava/util/Map;
+	public fun getTraceId ()Lcom/datadog/android/trace/api/DatadogTraceId;
+	public fun setMetric (Ljava/lang/CharSequence;D)V
+	public fun setSamplingPriority (I)Z
+}
+
+public final class com/datadog/android/trace/impl/DatadogTraceAdapter : com/datadog/android/trace/api/DatadogTrace {
+	public fun <init> (Lcom/datadog/trace/bootstrap/instrumentation/api/AgentTrace;)V
+}
+
+public final class com/datadog/android/trace/impl/DatadogTraceIdAdapter : com/datadog/android/trace/api/DatadogTraceId {
+	public fun <init> (Lcom/datadog/trace/api/DDTraceId;)V
+	public fun toHexString ()Ljava/lang/String;
+	public fun toLong ()J
+}
+
+public final class com/datadog/android/trace/impl/DatadogTracerAdapter : com/datadog/android/trace/api/tracer/DatadogTracer {
+	public fun <init> (Lcom/datadog/trace/bootstrap/instrumentation/api/AgentTracer$TracerAPI;)V
+	public synthetic fun buildSpan (Ljava/lang/CharSequence;)Lcom/datadog/android/trace/api/span/DatadogSpanBuilder;
+	public fun buildSpan (Ljava/lang/CharSequence;)Lcom/datadog/android/trace/impl/DatadogSpanBuilderAdapter;
+	public synthetic fun propagate ()Lcom/datadog/android/trace/api/propagation/DatadogPropagation;
+	public fun propagate ()Lcom/datadog/android/trace/impl/DatadogPropagationAdapter;
+}
+
+public final class com/datadog/android/trace/impl/DatadogTracerFactoryAdapter : com/datadog/android/trace/api/tracer/DatadogTracerFactory {
+	public fun <init> (Lcom/datadog/android/api/SdkCore;)V
+	public fun create (Ljava/util/Set;)Lcom/datadog/android/trace/api/tracer/DatadogTracer;
+}
+
 public final class com/datadog/android/trace/internal/SpanAttributes {
 	public static final field DATADOG_INITIAL_CONTEXT Ljava/lang/String;
 	public static final field INSTANCE Lcom/datadog/android/trace/internal/SpanAttributes;
