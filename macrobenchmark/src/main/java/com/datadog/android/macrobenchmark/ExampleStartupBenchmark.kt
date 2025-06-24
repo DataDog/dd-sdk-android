@@ -6,19 +6,17 @@ import androidx.annotation.RequiresApi
 import androidx.benchmark.macro.ExperimentalMetricApi
 import androidx.benchmark.macro.FrameTimingMetric
 import androidx.benchmark.macro.MemoryUsageMetric
-import androidx.benchmark.macro.PowerMetric
 import androidx.benchmark.macro.StartupMode
 import androidx.benchmark.macro.StartupTimingMetric
-import androidx.benchmark.macro.TraceSectionMetric
 import androidx.benchmark.macro.junit4.MacrobenchmarkRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.uiautomator.By
+import androidx.test.uiautomator.Direction
+import androidx.test.uiautomator.UiDevice
+import androidx.test.uiautomator.UiObject2
 import org.junit.Rule
 import org.junit.Test
-import org.junit.jupiter.params.ParameterizedTest
-import org.junit.jupiter.params.provider.ValueSource
 import org.junit.runner.RunWith
-import org.junit.runners.Parameterized.Parameters
 
 /**
  * This is an example startup benchmark.
@@ -47,17 +45,27 @@ class ExampleStartupBenchmark {
             MemoryUsageMetric(mode = MemoryUsageMetric.Mode.Max),
             FrameTimingMetric()
         ),
-        iterations = 10,
+        iterations = 20,
         startupMode = StartupMode.COLD
     ) {
         pressHome()
         val intent = Intent().apply {
             setClassName("com.datadog.sample.benchmark", "com.datadog.benchmark.sample.activities.LaunchActivity")
             putExtra("synthetics.benchmark.scenario", "rum_auto")
-            putExtra("synthetics.benchmark.run", "instrumented")
+            putExtra("synthetics.benchmark.run", "baseline")
         }
         startActivityAndWait(intent)
-        Thread.sleep(2000)
+        device.waitForIdle()
+
+        val charactersList = device.findObject(By.res("charactersList"))
+
+        charactersList.fling(Direction.DOWN)
+        device.waitForIdle()
+        charactersList.fling(Direction.DOWN)
+        device.waitForIdle()
+        charactersList.fling(Direction.DOWN)
+        device.waitForIdle()
+
         val charactersTabSelector = By.text("Episodes")
         device.findObject(charactersTabSelector).click()
         Thread.sleep(2000)

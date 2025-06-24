@@ -20,7 +20,7 @@ internal class DatadogMetricExporter(datadogExporterConfiguration: DatadogExport
         scenario = datadogExporterConfiguration.scenario,
         applicationId = datadogExporterConfiguration.applicationId ?: UNKNOWN_TAG_VALUE,
         intervalInSeconds = datadogExporterConfiguration.intervalInSeconds,
-        env = BuildConfig.BUILD_TYPE
+        env = "debug"
     )
     private val metricHttpClient: DatadogHttpClient = DatadogHttpClient(
         benchmarkContext,

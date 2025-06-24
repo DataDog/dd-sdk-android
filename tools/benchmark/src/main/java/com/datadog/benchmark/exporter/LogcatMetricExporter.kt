@@ -27,7 +27,7 @@ internal class LogcatMetricExporter(datadogExporterConfiguration: DatadogExporte
         scenario = datadogExporterConfiguration.scenario,
         applicationId = datadogExporterConfiguration.applicationId ?: DEFAULT_APPLICATION_ID,
         intervalInSeconds = datadogExporterConfiguration.intervalInSeconds,
-        env = BuildConfig.BUILD_TYPE
+        env = "debug"
     )
 
     override fun getAggregationTemporality(instrumentType: InstrumentType): AggregationTemporality {

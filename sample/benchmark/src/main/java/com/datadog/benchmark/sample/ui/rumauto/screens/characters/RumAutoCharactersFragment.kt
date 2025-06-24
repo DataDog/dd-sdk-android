@@ -12,8 +12,11 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.testTagsAsResourceId
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -25,6 +28,7 @@ internal class RumAutoCharactersFragment : Fragment() {
     @Inject
     internal lateinit var viewModelFactory: RumAutoCharactersViewModelFactory
 
+    @OptIn(ExperimentalComposeUiApi::class)
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         requireActivity().benchmarkActivityComponent.inject(this)
 
@@ -37,7 +41,9 @@ internal class RumAutoCharactersFragment : Fragment() {
                 val state by viewModel.state.collectAsStateWithLifecycle()
 
                 RumAutoCharactersScreen(
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier.fillMaxSize().semantics {
+                        testTagsAsResourceId = true
+                    },
                     state = state,
                     dispatch = viewModel::dispatch
                 )
