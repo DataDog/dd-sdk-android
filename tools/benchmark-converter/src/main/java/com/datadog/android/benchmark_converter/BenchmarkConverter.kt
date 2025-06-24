@@ -28,7 +28,10 @@ fun main(args: Array<String>) {
         benchmarks = result.benchmarks.flatMap { benchmark ->
             benchmark.metrics.map { (metricName, metric) ->
                 CBMFResult.Benchmark(
-                    parameters = mapOf("scenario" to "${benchmark.name}:${metricName}"),
+                    parameters = mapOf(
+                        "scenario" to "${benchmark.name}:${metricName}",
+                        "className" to benchmark.className,
+                    ),
                     runs = metric.runs.mapIndexed { index, x ->
                         "run$index" to mapOf("execution_time" to CBMFResult.Measurement("ms", listOf(x)))
                     }.toMap()

@@ -25,35 +25,14 @@ import org.junit.runner.RunWith
  * for investigating your app's performance.
  */
 @RunWith(AndroidJUnit4::class)
-class ExampleStartupBenchmark {
+class BaselineStartupBenchmark {
     @get:Rule
     val benchmarkRule = MacrobenchmarkRule()
-
-//    @RequiresApi(Build.VERSION_CODES.Q)
-//    @Test
-//    fun testing() = benchmarkRule.measureRepeated(
-//        packageName = "com.datadog.sample.benchmark",
-//        metrics = DEFAULT_METRICS_LIST,
-//        iterations = 5,
-//        startupMode = StartupMode.COLD
-//    ) {
-//        pressHome()
-//        val intent = Intent().apply {
-//            setClassName("com.datadog.sample.benchmark", "com.datadog.benchmark.sample.activities.LaunchActivity")
-//            putExtra("synthetics.benchmark.scenario", "rum_auto")
-//            putExtra("synthetics.benchmark.run", "baseline")
-//        }
-//        startActivityAndWait(intent)
-//        Thread.sleep(2000)
-//        val charactersTabSelector = By.text("Episodes")
-//        device.findObject(charactersTabSelector).click()
-//        Thread.sleep(2000)
-//    }
 
     @OptIn(ExperimentalMetricApi::class)
     @RequiresApi(Build.VERSION_CODES.Q)
     @Test
-    fun startup_baseline() = benchmarkRule.measureRepeated(
+    fun startup() = benchmarkRule.measureRepeated(
         packageName = "com.datadog.sample.benchmark",
         metrics = listOf(
             TraceSectionMetric(
@@ -68,28 +47,6 @@ class ExampleStartupBenchmark {
             setClassName("com.datadog.sample.benchmark", "com.datadog.benchmark.sample.activities.LaunchActivity")
             putExtra("synthetics.benchmark.scenario", "rum_auto")
             putExtra("synthetics.benchmark.run", "baseline")
-        }
-        startActivityAndWait(intent)
-    }
-
-    @OptIn(ExperimentalMetricApi::class)
-    @RequiresApi(Build.VERSION_CODES.Q)
-    @Test
-    fun startup_instrumented() = benchmarkRule.measureRepeated(
-        packageName = "com.datadog.sample.benchmark",
-        metrics = listOf(
-            TraceSectionMetric(
-                sectionName = "wahaha_section",
-            )
-        ),
-        iterations = 10,
-        startupMode = StartupMode.COLD
-    ) {
-        pressHome()
-        val intent = Intent().apply {
-            setClassName("com.datadog.sample.benchmark", "com.datadog.benchmark.sample.activities.LaunchActivity")
-            putExtra("synthetics.benchmark.scenario", "rum_auto")
-            putExtra("synthetics.benchmark.run", "instrumented")
         }
         startActivityAndWait(intent)
     }
