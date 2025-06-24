@@ -11,7 +11,7 @@ object com.datadog.android.Datadog
   fun addUserProperties(Map<String, Any?>, com.datadog.android.api.SdkCore = getInstance())
   fun clearAllData(com.datadog.android.api.SdkCore = getInstance())
   fun setAccountInfo(String, String? = null, Map<String, Any?> = emptyMap(), com.datadog.android.api.SdkCore = getInstance())
-  fun addAccountExtraInfo(Map<String, Any?> = emptyMap(), com.datadog.android.api.SdkCore = getInstance())
+  fun addAccountExtraInfo(Map<String, Any?>, com.datadog.android.api.SdkCore = getInstance())
   fun clearAccountInfo(com.datadog.android.api.SdkCore = getInstance())
   fun _internalProxy(String? = null): _InternalProxy
 enum com.datadog.android.DatadogSite
@@ -61,7 +61,7 @@ interface com.datadog.android.api.SdkCore
   fun addUserProperties(Map<String, Any?>)
   fun clearAllData()
   fun setAccountInfo(String, String? = null, Map<String, Any?> = emptyMap())
-  fun addAccountExtraInfo(Map<String, Any?> = emptyMap())
+  fun addAccountExtraInfo(Map<String, Any?>)
   fun clearAccountInfo()
 data class com.datadog.android.api.context.AccountInfo
   constructor(String, String? = null, Map<String, Any?> = emptyMap())
