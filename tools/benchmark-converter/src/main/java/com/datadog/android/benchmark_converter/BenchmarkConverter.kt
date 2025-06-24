@@ -26,17 +26,41 @@ fun main(args: Array<String>) {
     val converted = CBMFResult(
         schema_version = "v1",
         benchmarks = result.benchmarks.flatMap { benchmark ->
-            benchmark.metrics.map { (metricName, metric) ->
+            val metrics = benchmark.metrics.map { (metricName, metric) ->
                 CBMFResult.Benchmark(
                     parameters = mapOf(
                         "scenario" to "${benchmark.name}:${metricName}",
-                        "className" to benchmark.className,
+                        "className" to "instrumented_sr",
                     ),
-                    runs = metric.runs.mapIndexed { index, x ->
-                        "run$index" to mapOf("execution_time" to CBMFResult.Measurement("ms", listOf(x)))
+                    runs = metric.runs.mapIndexedNotNull { index, x ->
+                        cbmfMetricName(metricName)?.let { cbmfMetricName ->
+                            cbmfUom(metricName)?.let { cbmfUom ->
+                                "run$index" to mapOf(cbmfMetricName to CBMFResult.Measurement(cbmfUom, listOf(x)))
+                            }
+                        }
                     }.toMap()
                 )
             }
+
+            val sampledMetric = result.benchmarks.flatMap { benchmark ->
+                benchmark.sampledMetrics.map { (metricName, metric) ->
+                    CBMFResult.Benchmark(
+                        parameters = mapOf(
+                            "scenario" to "${benchmark.name}:${metricName}",
+                            "className" to "instrumented_sr",
+                        ),
+                        runs = metric.runs.mapIndexedNotNull { index, x ->
+                            cbmfMetricName(metricName)?.let { cbmfMetricName ->
+                                cbmfUom(metricName)?.let { cbmfUom ->
+                                    "run$index" to mapOf(cbmfMetricName to CBMFResult.Measurement(cbmfUom, x))
+                                }
+                            }
+                        }.toMap()
+                    )
+                }
+            }
+
+            metrics + sampledMetric
         }
     )
 
@@ -45,4 +69,22 @@ fun main(args: Array<String>) {
             prettyPrint = true
         }.encodeToString(converted)
     )
+}
+
+private fun cbmfMetricName(metricName: String): String? {
+    return when (metricName) {
+        "memoryHeapSizeMaxKb", "memoryRssAnonMaxKb", "memoryRssFileMaxKb" -> "rss"
+        "timeToInitialDisplayMs", "frameDurationCpuMs", "frameOverrunMs" -> "execution_time"
+        "frameCount" -> "iterations"
+        else -> null
+    }
+}
+
+private fun cbmfUom(metricName: String): String? {
+    return when (metricName) {
+        "memoryHeapSizeMaxKb", "memoryRssAnonMaxKb", "memoryRssFileMaxKb" -> "KB"
+        "timeToInitialDisplayMs", "frameDurationCpuMs", "frameOverrunMs" -> "ms"
+        "frameCount" -> "iterations"
+        else -> null
+    }
 }

@@ -153,12 +153,12 @@ internal class DatadogFeaturesInitializer @Inject constructor(
     private fun isSessionReplayScenario(config: BenchmarkConfig) = when (config.scenario) {
         SyntheticsScenario.SessionReplayCompose,
         SyntheticsScenario.Upload,
+        SyntheticsScenario.RumAuto,
         SyntheticsScenario.SessionReplay -> true
         SyntheticsScenario.RumManual,
         SyntheticsScenario.Trace,
         SyntheticsScenario.LogsCustom,
         SyntheticsScenario.LogsHeavyTraffic,
-        SyntheticsScenario.RumAuto,
         null -> false
     }
 
