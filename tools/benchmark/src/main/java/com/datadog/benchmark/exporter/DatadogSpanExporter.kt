@@ -25,7 +25,7 @@ internal class DatadogSpanExporter(datadogExporterConfiguration: DatadogExporter
         scenario = datadogExporterConfiguration.scenario,
         applicationId = datadogExporterConfiguration.applicationId ?: UNKNOWN_TAG_VALUE,
         intervalInSeconds = datadogExporterConfiguration.intervalInSeconds,
-        env = BuildConfig.BUILD_TYPE
+        env = "debug"
     )
 
     private val httpClient: DatadogHttpClient = DatadogHttpClient(

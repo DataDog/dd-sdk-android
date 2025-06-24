@@ -6,6 +6,7 @@
 
 package com.datadog.benchmark.internal.reader
 
+import android.util.Log
 import android.view.Choreographer
 import java.util.concurrent.TimeUnit
 

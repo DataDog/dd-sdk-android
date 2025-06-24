@@ -4,9 +4,9 @@
 # Copyright 2016-Present Datadog, Inc.
 #
 
-#resultsPath="/Users/aleksandr.gringauz/projects/dd-sdk-android/macrobenchmark/build/outputs/connected_android_test_additional_output/benchmark/connected/Pixel 5 - 13/com.datadog.android.macrobenchmark-benchmarkData.json"
-#
-#./gradlew -q :tools:benchmark-converter:run --args="--resultPath '$resultsPath'" > some_results5.json
+resultsPath="/Users/aleksandr.gringauz/projects/dd-sdk-android/macrobenchmark/build/outputs/connected_android_test_additional_output/benchmark/connected/Pixel 5 - 13/com.datadog.android.macrobenchmark-benchmarkData.json"
+
+./gradlew -q :tools:benchmark-converter:run --args="--resultPath '$resultsPath'" > results_baseline.json
 
 #docker run --rm --name benchmark_analyzer -it \
 #  -v$(pwd):/data:rw \
@@ -23,5 +23,5 @@ docker run --rm --name benchmark_analyzer -it \
   compare pairwise \
   --format=html \
   --outpath="summary.html" \
-  "some_results3.json" \
-  "some_results5.json"
+  "results_baseline.json" \
+  "results_instrumented_sr.json"

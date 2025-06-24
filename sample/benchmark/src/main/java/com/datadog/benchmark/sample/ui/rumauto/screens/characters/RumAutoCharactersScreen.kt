@@ -17,6 +17,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import com.datadog.benchmark.sample.utils.LastItemTracker
 import kotlinx.coroutines.FlowPreview
@@ -36,7 +37,7 @@ internal fun RumAutoCharactersScreen(
         onEndReached = { dispatch(RumAutoCharactersScreenAction.EndReached) }
     )
 
-    LazyColumn(modifier = modifier, state = lazyListState) {
+    LazyColumn(modifier = modifier.testTag("charactersList"), state = lazyListState) {
         items(items = state.allCharacters, key = { it.id }) { item ->
             CharacterItemView(
                 modifier = Modifier
