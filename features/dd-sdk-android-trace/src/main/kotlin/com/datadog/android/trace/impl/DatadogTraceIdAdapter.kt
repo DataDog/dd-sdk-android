@@ -11,4 +11,11 @@ import com.datadog.trace.api.DDTraceId
 class DatadogTraceIdAdapter(private val delegate: DDTraceId) : DatadogTraceId {
     override fun toHexString(): String = delegate.toHexString()
     override fun toLong(): Long = delegate.toLong()
+
+    companion object {
+        val ZERO: DatadogTraceId = DatadogTraceIdAdapter(DDTraceId.ZERO)
+        fun from(id: Long): DatadogTraceId = DatadogTraceIdAdapter(DDTraceId.from(id))
+        fun from(id: String): DatadogTraceId = DatadogTraceIdAdapter(DDTraceId.from(id))
+        fun fromHex(id: String): DatadogTraceId = DatadogTraceIdAdapter(DDTraceId.fromHex(id))
+    }
 }

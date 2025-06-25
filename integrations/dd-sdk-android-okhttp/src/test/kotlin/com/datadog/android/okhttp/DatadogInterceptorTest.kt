@@ -22,10 +22,10 @@ import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.RumResourceMethod
 import com.datadog.android.rum.resource.ResourceId
 import com.datadog.android.trace.TracingHeaderType
+import com.datadog.android.trace.api.tracer.DatadogTracer
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.forge.BaseConfigurator
 import com.datadog.tools.unit.forge.exhaustiveAttributes
-import com.datadog.trace.bootstrap.instrumentation.api.AgentTracer
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.FloatForgery
 import fr.xgouchet.elmyr.annotation.Forgery
@@ -84,8 +84,8 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
 
     override fun instantiateTestedInterceptor(
         tracedHosts: Map<String, Set<TracingHeaderType>>,
-        globalTracerProvider: () -> AgentTracer.TracerAPI?,
-        localTracerFactory: (SdkCore, Set<TracingHeaderType>) -> AgentTracer.TracerAPI
+        globalTracerProvider: () -> DatadogTracer?,
+        localTracerFactory: (SdkCore, Set<TracingHeaderType>) -> DatadogTracer
     ): TracingInterceptor {
         whenever(rumMonitor.mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mock()
         whenever(rumMonitor.mockSdkCore.firstPartyHostResolver) doReturn mockResolver

@@ -109,14 +109,34 @@ public final class com/datadog/android/trace/impl/DatadogSpanContextAdapter : co
 	public fun setSamplingPriority (I)Z
 }
 
+public final class com/datadog/android/trace/impl/DatadogSpanIdConverterAdapter : com/datadog/android/trace/api/DatadogSpanIdConverter {
+	public static final field INSTANCE Lcom/datadog/android/trace/impl/DatadogSpanIdConverterAdapter;
+	public static final field ZERO J
+	public fun from (Ljava/lang/String;)J
+	public fun fromHex (Ljava/lang/String;)J
+	public fun fromHex (Ljava/lang/String;IIZ)J
+	public fun fromHexOrDefault (Ljava/lang/String;J)J
+	public fun toHexString (J)Ljava/lang/String;
+	public fun toHexStringPadded (J)Ljava/lang/String;
+	public fun toString (J)Ljava/lang/String;
+}
+
 public final class com/datadog/android/trace/impl/DatadogTraceAdapter : com/datadog/android/trace/api/DatadogTrace {
 	public fun <init> (Lcom/datadog/trace/bootstrap/instrumentation/api/AgentTrace;)V
 }
 
 public final class com/datadog/android/trace/impl/DatadogTraceIdAdapter : com/datadog/android/trace/api/DatadogTraceId {
+	public static final field Companion Lcom/datadog/android/trace/impl/DatadogTraceIdAdapter$Companion;
 	public fun <init> (Lcom/datadog/trace/api/DDTraceId;)V
 	public fun toHexString ()Ljava/lang/String;
 	public fun toLong ()J
+}
+
+public final class com/datadog/android/trace/impl/DatadogTraceIdAdapter$Companion {
+	public final fun from (J)Lcom/datadog/android/trace/api/DatadogTraceId;
+	public final fun from (Ljava/lang/String;)Lcom/datadog/android/trace/api/DatadogTraceId;
+	public final fun fromHex (Ljava/lang/String;)Lcom/datadog/android/trace/api/DatadogTraceId;
+	public final fun getZERO ()Lcom/datadog/android/trace/api/DatadogTraceId;
 }
 
 public final class com/datadog/android/trace/impl/DatadogTracerAdapter : com/datadog/android/trace/api/tracer/DatadogTracer {

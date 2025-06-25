@@ -46,14 +46,12 @@ android {
 }
 
 dependencies {
-    implementation(project(":features:dd-sdk-android-trace"))
-    implementation(project(":features:dd-sdk-android-rum"))
-    implementation(project(":dd-sdk-android-internal"))
     implementation(libs.kotlin)
     implementation(libs.okHttp)
     implementation(libs.androidXAnnotation)
-    api(libs.openTracingApi)
-
+    implementation(project(":dd-sdk-android-internal"))
+    implementation(project(":features:dd-sdk-android-rum"))
+    implementation(project(":features:dd-sdk-android-trace"))
     // Generate NoOp implementations
     ksp(project(":tools:noopfactory"))
 

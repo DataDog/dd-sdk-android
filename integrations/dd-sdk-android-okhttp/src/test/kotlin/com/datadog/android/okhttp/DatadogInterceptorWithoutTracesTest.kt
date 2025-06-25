@@ -13,7 +13,7 @@ import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.okhttp.trace.TracedRequestListener
 import com.datadog.android.okhttp.trace.TracingInterceptor
 import com.datadog.android.okhttp.trace.TracingInterceptorTest
-import com.datadog.android.okhttp.trace.aDDTraceId
+import com.datadog.android.okhttp.trace.aDatadogTraceId
 import com.datadog.android.okhttp.trace.newAgentPropagationMock
 import com.datadog.android.okhttp.trace.newSpanBuilderMock
 import com.datadog.android.okhttp.trace.newSpanContextMock
@@ -27,15 +27,17 @@ import com.datadog.android.rum.RumResourceAttributesProvider
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.RumResourceMethod
 import com.datadog.android.rum.resource.ResourceId
+import com.datadog.android.trace.api.DatadogTraceId
+import com.datadog.android.trace.api.propagation.DatadogPropagation
+import com.datadog.android.trace.api.span.DatadogSpan
+import com.datadog.android.trace.api.span.DatadogSpanBuilder
+import com.datadog.android.trace.api.span.DatadogSpanContext
+import com.datadog.android.trace.api.tracer.DatadogTracer
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.datadog.tools.unit.forge.BaseConfigurator
 import com.datadog.tools.unit.forge.exhaustiveAttributes
-import com.datadog.trace.api.DDTraceId
-import com.datadog.trace.bootstrap.instrumentation.api.AgentPropagation
-import com.datadog.trace.bootstrap.instrumentation.api.AgentSpan
-import com.datadog.trace.bootstrap.instrumentation.api.AgentTracer
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.Forgery
@@ -89,15 +91,15 @@ internal class DatadogInterceptorWithoutTracesTest {
 
     // region Mocks
 
-    lateinit var mockLocalTracer: AgentTracer.TracerAPI
+    private lateinit var mockLocalTracer: DatadogTracer
 
-    lateinit var mockSpanBuilder: AgentTracer.SpanBuilder
+    private lateinit var mockSpanBuilder: DatadogSpanBuilder
 
-    lateinit var mockSpanContext: AgentSpan.Context
+    private lateinit var mockSpanContext: DatadogSpanContext
 
-    lateinit var mockPropagation: AgentPropagation
+    private lateinit var mockPropagation: DatadogPropagation
 
-    lateinit var mockSpan: AgentSpan
+    private lateinit var fakeSpan: DatadogSpan
 
     @Mock
     lateinit var mockChain: Interceptor.Chain
@@ -112,7 +114,7 @@ internal class DatadogInterceptorWithoutTracesTest {
     lateinit var mockResolver: DefaultFirstPartyHostHeaderTypeResolver
 
     @Mock
-    lateinit var mockTraceSampler: Sampler<AgentSpan>
+    lateinit var mockTraceSampler: Sampler<DatadogSpan>
 
     @Mock
     lateinit var mockInternalLogger: InternalLogger
@@ -141,7 +143,7 @@ internal class DatadogInterceptorWithoutTracesTest {
     @StringForgery(regex = "[a-f][0-9]{31}")
     lateinit var fakeTraceIdString: String
 
-    lateinit var fakeTraceId: DDTraceId
+    lateinit var fakeTraceId: DatadogTraceId
 
     @BoolForgery
     var fakeRedacted404Resources: Boolean = true
@@ -149,14 +151,14 @@ internal class DatadogInterceptorWithoutTracesTest {
 
     @BeforeEach
     fun `set up`(forge: Forge) {
-        fakeTraceId = forge.aDDTraceId(fakeTraceIdString)
+        fakeTraceId = forge.aDatadogTraceId(fakeTraceIdString)
         mockSpanContext = forge.newSpanContextMock(fakeTraceId, fakeSpanId)
-        mockSpan = forge.newSpanMock(mockSpanContext)
-        mockSpanBuilder = forge.newSpanBuilderMock(mockSpan, mockSpanContext)
+        fakeSpan = forge.newSpanMock(mockSpanContext)
+        mockSpanBuilder = forge.newSpanBuilderMock(fakeSpan, mockSpanContext)
         mockPropagation = newAgentPropagationMock()
         mockLocalTracer = forge.newTracerMock(mockSpanBuilder, mockPropagation)
 
-        whenever(mockSpan.samplingPriority) doReturn null
+        whenever(fakeSpan.samplingPriority) doReturn null
         whenever(mockTraceSampler.sample(any())) doReturn true
         whenever(rumMonitor.mockSdkCore.firstPartyHostResolver) doReturn mockResolver
 
@@ -362,7 +364,7 @@ internal class DatadogInterceptorWithoutTracesTest {
         val response = testedInterceptor.intercept(mockChain)
 
         verify(mockSpanBuilder).withOrigin(DatadogInterceptor.ORIGIN_RUM)
-        verify(mockSpan).drop()
+        verify(fakeSpan).drop()
         assertThat(response).isSameAs(fakeResponse)
     }
 
@@ -376,9 +378,9 @@ internal class DatadogInterceptorWithoutTracesTest {
         val response = testedInterceptor.intercept(mockChain)
 
         verify(mockSpanBuilder).withOrigin(DatadogInterceptor.ORIGIN_RUM)
-        verify(mockSpan).setResourceName(fakeUrl.lowercase(Locale.US))
-        verify(mockSpan).setError(true)
-        verify(mockSpan).drop()
+        verify(fakeSpan).resourceName = fakeUrl.lowercase(Locale.US)
+        verify(fakeSpan).isError = true
+        verify(fakeSpan).drop()
         assertThat(response).isSameAs(fakeResponse)
     }
 
