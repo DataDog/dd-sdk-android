@@ -1,4 +1,4 @@
-FROM registry.ddbuild.io/images/docker:24.0.4-gbi-focal
+FROM registry.ddbuild.io/images/docker:24.0.4-jammy
 
 ENV DEBIAN_FRONTEND=noninteractive
 
