@@ -1054,7 +1054,7 @@ internal open class TracingInterceptorNotSendingSpanTest {
         verify(localSpan).setTag("http.url", fakeUrl)
         verify(localSpan).setTag("http.method", fakeMethod.name)
         verify(localSpan).setTag("http.status_code", statusCode)
-        verify(mockSpan).setTag("span.kind", "client")
+        verify(localSpan).setTag("span.kind", "client")
         verify(localSpan, never()).finish()
         verify(localSpan).drop()
         assertThat(response).isSameAs(fakeResponse)
@@ -1093,7 +1093,7 @@ internal open class TracingInterceptorNotSendingSpanTest {
         verify(localSpan).setTag("http.url", fakeUrl)
         verify(localSpan).setTag("http.method", fakeMethod.name)
         verify(localSpan).setTag("http.status_code", statusCode)
-        verify(mockSpan).setTag("span.kind", "client")
+        verify(localSpan).setTag("span.kind", "client")
 
         verify(localSpan, never()).finish()
         verify(localSpan).drop()

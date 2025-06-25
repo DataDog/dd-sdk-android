@@ -991,7 +991,7 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
         verify(localSpan).setTag("http.url", fakeUrl)
         verify(localSpan).setTag("http.method", fakeMethod)
         verify(localSpan).setTag("http.status_code", statusCode)
-        verify(mockSpan).setTag("span.kind", "client")
+        verify(localSpan).setTag("span.kind", "client")
         verify(localSpan, never()).finish()
         assertThat(response).isSameAs(fakeResponse)
         mockInternalLogger.verifyLog(
@@ -1030,7 +1030,7 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
         verify(localSpan).setTag("http.url", fakeUrl)
         verify(localSpan).setTag("http.method", fakeMethod)
         verify(localSpan).setTag("http.status_code", statusCode)
-        verify(mockSpan).setTag("span.kind", "client")
+        verify(localSpan).setTag("span.kind", "client")
         verify(localSpan, never()).finish()
         verify(mockSpan).setTag("http.url", fakeUrl)
         verify(mockSpan).setTag("http.method", fakeMethod)

@@ -1,0 +1,94 @@
+public abstract interface class com/datadog/android/trace/api/DatadogSpanIdConverter {
+	public abstract fun from (Ljava/lang/String;)J
+	public abstract fun fromHex (Ljava/lang/String;)J
+	public abstract fun fromHex (Ljava/lang/String;IIZ)J
+	public abstract fun fromHexOrDefault (Ljava/lang/String;J)J
+	public abstract fun toHexString (J)Ljava/lang/String;
+	public abstract fun toHexStringPadded (J)Ljava/lang/String;
+	public abstract fun toString (J)Ljava/lang/String;
+}
+
+public final class com/datadog/android/trace/api/DatadogSpanIdConverter$DefaultImpls {
+	public static fun fromHexOrDefault (Lcom/datadog/android/trace/api/DatadogSpanIdConverter;Ljava/lang/String;J)J
+}
+
+public abstract interface class com/datadog/android/trace/api/DatadogTrace {
+}
+
+public abstract interface class com/datadog/android/trace/api/DatadogTraceId {
+	public abstract fun toHexString ()Ljava/lang/String;
+	public abstract fun toLong ()J
+}
+
+public final class com/datadog/android/trace/api/constants/DatadogTracingConstants {
+	public static final field INSTANCE Lcom/datadog/android/trace/api/constants/DatadogTracingConstants;
+}
+
+public final class com/datadog/android/trace/api/constants/DatadogTracingConstants$PrioritySampling {
+	public static final field INSTANCE Lcom/datadog/android/trace/api/constants/DatadogTracingConstants$PrioritySampling;
+	public static final field SAMPLER_DROP I
+	public static final field SAMPLER_KEEP I
+	public static final field UNSET I
+	public static final field USER_DROP I
+	public static final field USER_KEEP I
+}
+
+public final class com/datadog/android/trace/api/constants/DatadogTracingConstants$Tags {
+	public static final field INSTANCE Lcom/datadog/android/trace/api/constants/DatadogTracingConstants$Tags;
+	public static final field KEY_ERROR_MSG Ljava/lang/String;
+	public static final field KEY_ERROR_STACK Ljava/lang/String;
+	public static final field KEY_ERROR_TYPE Ljava/lang/String;
+	public static final field KEY_HTTP_METHOD Ljava/lang/String;
+	public static final field KEY_HTTP_STATUS Ljava/lang/String;
+	public static final field KEY_HTTP_URL Ljava/lang/String;
+	public static final field KEY_SPAN_KIND Ljava/lang/String;
+	public static final field VALUE_SPAN_KIND_CLIENT Ljava/lang/String;
+}
+
+public abstract interface class com/datadog/android/trace/api/propagation/DatadogPropagation {
+	public abstract fun createExtractedContext (Ljava/lang/String;Ljava/lang/String;I)Lcom/datadog/android/trace/api/span/DatadogSpanContext;
+	public abstract fun extract (Ljava/lang/Object;Lkotlin/jvm/functions/Function2;)Lcom/datadog/android/trace/api/span/DatadogSpanContext;
+	public abstract fun inject (Lcom/datadog/android/trace/api/span/DatadogSpan;Ljava/lang/Object;Lkotlin/jvm/functions/Function3;)V
+	public abstract fun inject (Lcom/datadog/android/trace/api/span/DatadogSpanContext;Ljava/lang/Object;Lkotlin/jvm/functions/Function3;)V
+	public abstract fun isExtractedContext (Lcom/datadog/android/trace/api/span/DatadogSpanContext;)Z
+}
+
+public abstract interface class com/datadog/android/trace/api/span/DatadogSpan {
+	public abstract fun context ()Lcom/datadog/android/trace/api/span/DatadogSpanContext;
+	public abstract fun drop ()V
+	public abstract fun finish ()V
+	public abstract fun getResourceName ()Ljava/lang/CharSequence;
+	public abstract fun getSamplingPriority ()Ljava/lang/Integer;
+	public abstract fun isError ()Ljava/lang/Boolean;
+	public abstract fun isRootSpan ()Z
+	public abstract fun setError (Ljava/lang/Boolean;)V
+	public abstract fun setResourceName (Ljava/lang/CharSequence;)V
+	public abstract fun setTag (Ljava/lang/String;Ljava/lang/Number;)V
+	public abstract fun setTag (Ljava/lang/String;Ljava/lang/String;)V
+	public abstract fun setTag (Ljava/lang/String;Z)V
+}
+
+public abstract interface class com/datadog/android/trace/api/span/DatadogSpanBuilder {
+	public abstract fun start ()Lcom/datadog/android/trace/api/span/DatadogSpan;
+	public abstract fun withOrigin (Ljava/lang/String;)Lcom/datadog/android/trace/api/span/DatadogSpanBuilder;
+	public abstract fun withParentContext (Lcom/datadog/android/trace/api/span/DatadogSpanContext;)Lcom/datadog/android/trace/api/span/DatadogSpanBuilder;
+}
+
+public abstract interface class com/datadog/android/trace/api/span/DatadogSpanContext {
+	public abstract fun getSamplingPriority ()I
+	public abstract fun getSpanId ()J
+	public abstract fun getTags ()Ljava/util/Map;
+	public abstract fun getTraceId ()Lcom/datadog/android/trace/api/DatadogTraceId;
+	public abstract fun setMetric (Ljava/lang/CharSequence;D)V
+	public abstract fun setSamplingPriority (I)Z
+}
+
+public abstract interface class com/datadog/android/trace/api/tracer/DatadogTracer {
+	public abstract fun buildSpan (Ljava/lang/CharSequence;)Lcom/datadog/android/trace/api/span/DatadogSpanBuilder;
+	public abstract fun propagate ()Lcom/datadog/android/trace/api/propagation/DatadogPropagation;
+}
+
+public abstract interface class com/datadog/android/trace/api/tracer/DatadogTracerFactory {
+	public abstract fun create (Ljava/util/Set;)Lcom/datadog/android/trace/api/tracer/DatadogTracer;
+}
+
