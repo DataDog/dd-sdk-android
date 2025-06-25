@@ -23,6 +23,11 @@ import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 
+internal fun newAgentPropagationMock(
+    extractedContext: DatadogSpanContext = mock()
+) = mock<DatadogPropagation> {
+    on { extract(any<Request>(), any()) } doReturn extractedContext
+}
 internal fun DatadogPropagation.wheneverInjectThenThrow(throwable: Throwable) {
     doThrow(throwable)
         .whenever(this)
@@ -72,12 +77,6 @@ internal fun Forge.newTracerMock(
     on { propagate() } doReturn propagation
 }
 
-internal fun newAgentPropagationMock(
-    extractedContext: DatadogSpanContext = mock()
-) = mock<DatadogPropagation> {
-    on { extract(any<Request>(), any()) } doReturn extractedContext
-}
-
 internal inline fun <reified T : DatadogSpanContext> Forge.newSpanContextMock(
     fakeTraceId: DatadogTraceId = aDatadogTraceId(),
     fakeSpanId: Long = aLong()
@@ -87,9 +86,11 @@ internal inline fun <reified T : DatadogSpanContext> Forge.newSpanContextMock(
 }
 
 internal fun Forge.newSpanMock(
-    context: DatadogSpanContext = newSpanContextMock()
+    context: DatadogSpanContext = newSpanContextMock(),
+    samplingPriority: Int? = null
 ) = mock<DatadogSpan> {
     on { context() } doReturn context
+    on { this.samplingPriority } doReturn samplingPriority
 }
 
 internal fun Forge.newSpanBuilderMock(

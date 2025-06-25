@@ -208,8 +208,12 @@ internal constructor(
         val isSampled = span.sample(request)
 
         if (span.isRootSpan) {
-            val samplingPriority =
-                if (isSampled) DatadogTracingConstants.PrioritySampling.SAMPLER_KEEP else DatadogTracingConstants.PrioritySampling.SAMPLER_DROP
+            val samplingPriority: Int = if (isSampled) {
+                DatadogTracingConstants.PrioritySampling.SAMPLER_KEEP
+            } else {
+                DatadogTracingConstants.PrioritySampling.SAMPLER_DROP
+            }
+
             val spanContext = span.context()
             if (spanContext.setSamplingPriority(samplingPriority)) {
                 spanContext.setMetric(
@@ -300,7 +304,6 @@ internal constructor(
         val parentContext = extractParentContext(tracer, request)
         val url = request.url.toString()
 
-        @Suppress("DEPRECATION")
         val span = tracer.buildSpan(SPAN_NAME)
             .withOrigin(traceOrigin)
             .withParentContext(parentContext)
@@ -332,7 +335,7 @@ internal constructor(
         if (datadogSamplingPriority != null) {
             if (datadogSamplingPriority == DatadogTracingConstants.PrioritySampling.UNSET) return null
             return datadogSamplingPriority == DatadogTracingConstants.PrioritySampling.USER_KEEP ||
-                    datadogSamplingPriority == DatadogTracingConstants.PrioritySampling.SAMPLER_KEEP
+                datadogSamplingPriority == DatadogTracingConstants.PrioritySampling.SAMPLER_KEEP
         }
         val b3MSamplingPriority = request.header(B3M_SAMPLING_PRIORITY_KEY)
         if (b3MSamplingPriority != null) {

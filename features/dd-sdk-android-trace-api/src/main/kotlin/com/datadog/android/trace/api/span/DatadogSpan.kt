@@ -6,9 +6,9 @@
 package com.datadog.android.trace.api.span
 
 interface DatadogSpan {
+    var isError: Boolean?
     val isRootSpan: Boolean
     val samplingPriority: Int?
-    var isError: Boolean?
     var resourceName: CharSequence?
 
     fun context(): DatadogSpanContext
