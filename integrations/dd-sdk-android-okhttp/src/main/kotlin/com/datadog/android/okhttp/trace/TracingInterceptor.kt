@@ -392,7 +392,11 @@ internal constructor(
             for ((key, value) in headers) classifier(key, value)
         }
 
-        return if (headerContext == null || propagation.isExtractedContext(headerContext)) headerContext else tagContext
+        return if (headerContext != null && propagation.isExtractedContext(headerContext)) {
+            headerContext
+        } else {
+            tagContext
+        }
     }
 
     private fun setSampledOutHeaders(

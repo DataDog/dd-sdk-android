@@ -723,6 +723,11 @@ internal open class TracingInterceptorTest {
 
         val fakeExpectedTraceId = DatadogTraceIdAdapter.fromHex(fakeTraceContext.traceId)
         val fakeExpectedSpanId = DatadogSpanIdConverterAdapter.fromHex(fakeTraceContext.spanId)
+        val fakeExtractedContext = forge.newSpanContextMock<DatadogSpanContext>(
+            fakeExpectedTraceId,
+            fakeExpectedSpanId
+        )
+        whenever(mockPropagation.createExtractedContext(any(), any(), any())) doReturn fakeExtractedContext
         whenever(mockSpanBuilder.withParentContext(any<DatadogSpanContext>())) doReturn mockSpanBuilder
 
         fakeRequest = forgeRequest(forge) { it.tag(TraceContext::class.java, fakeTraceContext) }
