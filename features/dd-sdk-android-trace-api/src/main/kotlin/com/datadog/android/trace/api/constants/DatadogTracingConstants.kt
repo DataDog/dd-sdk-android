@@ -12,7 +12,7 @@ object DatadogTracingConstants {
         const val KEY_HTTP_METHOD: String = "http.method"
         const val KEY_HTTP_STATUS: String = "http.status_code"
 
-        const val KEY_ERROR_MSG: String = "error.message"
+        const val KEY_ERROR_MSG: String = "error.msg"
         const val KEY_ERROR_TYPE: String = "error.type"
         const val KEY_ERROR_STACK: String = "error.stack"
 
