@@ -14,6 +14,7 @@ import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.internal.utils.NULL_MAP_VALUE
+import com.datadog.android.internal.utils.heavyCpuWork
 import com.datadog.android.log.internal.LogsFeature
 import com.datadog.android.log.internal.domain.DatadogLogGenerator
 import com.datadog.android.log.internal.logger.CombinedLogHandler
@@ -456,6 +457,7 @@ internal constructor(internal var handler: LogHandler) {
         localAttributes: Map<String, Any?>,
         timestamp: Long? = null
     ) {
+        heavyCpuWork()
         val combinedAttributes = mutableMapOf<String, Any?>()
         combinedAttributes.putAll(attributes)
         combinedAttributes.putAll(localAttributes)

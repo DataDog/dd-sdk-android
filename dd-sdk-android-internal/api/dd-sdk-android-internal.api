@@ -210,6 +210,10 @@ public final class com/datadog/android/internal/utils/ByteArrayExtKt {
 	public static final fun toHexString ([B)Ljava/lang/String;
 }
 
+public final class com/datadog/android/internal/utils/HeavyWorkKt {
+	public static final fun heavyCpuWork ()V
+}
+
 public final class com/datadog/android/internal/utils/ImageViewUtils {
 	public static final field INSTANCE Lcom/datadog/android/internal/utils/ImageViewUtils;
 	public final fun calculateClipping (Landroid/graphics/Rect;Landroid/graphics/Rect;F)Landroid/graphics/Rect;
