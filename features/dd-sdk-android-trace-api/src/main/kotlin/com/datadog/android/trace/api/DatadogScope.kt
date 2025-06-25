@@ -5,7 +5,6 @@
  */
 package com.datadog.android.trace.api
 
-interface DatadogTraceId {
-    fun toLong(): Long
-    fun toHexString(): String
+interface DatadogScope{
+    fun close()
 }

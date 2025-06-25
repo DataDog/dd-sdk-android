@@ -1,3 +1,7 @@
+public abstract interface class com/datadog/android/trace/api/DatadogScope {
+	public abstract fun close ()V
+}
+
 public abstract interface class com/datadog/android/trace/api/DatadogSpanIdConverter {
 	public abstract fun from (Ljava/lang/String;)J
 	public abstract fun fromHex (Ljava/lang/String;)J
@@ -57,12 +61,20 @@ public abstract interface class com/datadog/android/trace/api/span/DatadogSpan {
 	public abstract fun context ()Lcom/datadog/android/trace/api/span/DatadogSpanContext;
 	public abstract fun drop ()V
 	public abstract fun finish ()V
-	public abstract fun getResourceName ()Ljava/lang/CharSequence;
+	public abstract fun getDurationNano ()J
+	public abstract fun getOperationName ()Ljava/lang/String;
+	public abstract fun getParentSpanId ()Ljava/lang/Long;
+	public abstract fun getResourceName ()Ljava/lang/String;
 	public abstract fun getSamplingPriority ()Ljava/lang/Integer;
+	public abstract fun getServiceName ()Ljava/lang/String;
+	public abstract fun getStartTime ()J
+	public abstract fun getTraceId ()Lcom/datadog/android/trace/api/DatadogTraceId;
 	public abstract fun isError ()Ljava/lang/Boolean;
 	public abstract fun isRootSpan ()Z
 	public abstract fun setError (Ljava/lang/Boolean;)V
-	public abstract fun setResourceName (Ljava/lang/CharSequence;)V
+	public abstract fun setOperationName (Ljava/lang/String;)V
+	public abstract fun setResourceName (Ljava/lang/String;)V
+	public abstract fun setServiceName (Ljava/lang/String;)V
 	public abstract fun setTag (Ljava/lang/String;Ljava/lang/Number;)V
 	public abstract fun setTag (Ljava/lang/String;Ljava/lang/String;)V
 	public abstract fun setTag (Ljava/lang/String;Z)V
@@ -84,6 +96,8 @@ public abstract interface class com/datadog/android/trace/api/span/DatadogSpanCo
 }
 
 public abstract interface class com/datadog/android/trace/api/tracer/DatadogTracer {
+	public abstract fun activateSpan (Lcom/datadog/android/trace/api/span/DatadogSpan;)Lcom/datadog/android/trace/api/DatadogScope;
+	public abstract fun activeSpan ()Lcom/datadog/android/trace/api/span/DatadogSpan;
 	public abstract fun buildSpan (Ljava/lang/CharSequence;)Lcom/datadog/android/trace/api/span/DatadogSpanBuilder;
 	public abstract fun propagate ()Lcom/datadog/android/trace/api/propagation/DatadogPropagation;
 }

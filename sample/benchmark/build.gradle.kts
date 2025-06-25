@@ -116,6 +116,7 @@ dependencies {
     implementation(project(":integrations:dd-sdk-android-compose"))
     implementation(project(":integrations:dd-sdk-android-glide"))
     implementation(project(":integrations:dd-sdk-android-okhttp"))
+    implementation(project(":features:dd-sdk-android-trace-internal"))
     implementation(project(":tools:benchmark"))
 
     testImplementation(libs.bundles.jUnit5)

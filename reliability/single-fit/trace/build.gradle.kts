@@ -35,6 +35,7 @@ dependencies {
     implementation(project(":dd-sdk-android-core"))
     implementation(project(":features:dd-sdk-android-trace"))
     implementation(project(":features:dd-sdk-android-trace-otel"))
+    implementation(project(":features:dd-sdk-android-trace-internal"))
     implementation(libs.kotlin)
 
     // Desugaring SDK

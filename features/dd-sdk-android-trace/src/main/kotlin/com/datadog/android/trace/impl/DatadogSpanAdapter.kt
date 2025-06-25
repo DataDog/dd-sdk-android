@@ -5,6 +5,7 @@
  */
 package com.datadog.android.trace.impl
 
+import com.datadog.android.trace.api.DatadogTraceId
 import com.datadog.android.trace.api.span.DatadogSpan
 import com.datadog.trace.bootstrap.instrumentation.api.AgentSpan
 import com.datadog.trace.core.DDSpan
@@ -14,8 +15,20 @@ class DatadogSpanAdapter(internal val delegate: AgentSpan) : DatadogSpan {
     override val isRootSpan: Boolean
         get() = delegate is DDSpan && delegate.isRootSpan
 
+    override val traceId: DatadogTraceId
+        get() = DatadogTraceIdAdapter(delegate.traceId)
+
+    override val parentSpanId: Long?
+        get() = (delegate as? DDSpan)?.parentId
+
     override val samplingPriority: Int?
         get() = delegate.samplingPriority
+
+    override val durationNano: Long
+        get() = delegate.durationNano
+
+    override val startTime: Long
+        get() = delegate.startTime
 
     override var isError: Boolean?
         get() = delegate.isError
@@ -24,10 +37,22 @@ class DatadogSpanAdapter(internal val delegate: AgentSpan) : DatadogSpan {
             delegate.isError = value
         }
 
-    override var resourceName: CharSequence?
-        get() = delegate.resourceName
+    override var resourceName: String?
+        get() = delegate.resourceName?.toString()
         set(value) {
             delegate.resourceName = value
+        }
+
+    override var serviceName: String
+        get() = delegate.serviceName
+        set(value) {
+            delegate.serviceName = value
+        }
+
+    override var operationName: String
+        get() = delegate.operationName.toString()
+        set(value) {
+            delegate.operationName = value
         }
 
     override fun drop() = delegate.drop()

@@ -6,6 +6,7 @@
 
 package com.datadog.android.trace.internal.domain.event
 
+import androidx.annotation.VisibleForTesting
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.trace.model.SpanEvent
@@ -18,6 +19,7 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 
 @Suppress("TooManyFunctions")
+@VisibleForTesting
 internal class CoreTracerSpanToSpanEventMapper(
     internal val networkInfoEnabled: Boolean
 ) : BaseSpanEventMapper<DDSpan>() {

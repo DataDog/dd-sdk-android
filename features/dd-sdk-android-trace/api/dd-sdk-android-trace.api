@@ -73,18 +73,31 @@ public final class com/datadog/android/trace/impl/DatadogPropagationAdapter : co
 	public fun isExtractedContext (Lcom/datadog/android/trace/api/span/DatadogSpanContext;)Z
 }
 
+public final class com/datadog/android/trace/impl/DatadogScopeAdapter : com/datadog/android/trace/api/DatadogScope {
+	public fun <init> (Lcom/datadog/trace/bootstrap/instrumentation/api/AgentScope;)V
+	public fun close ()V
+}
+
 public final class com/datadog/android/trace/impl/DatadogSpanAdapter : com/datadog/android/trace/api/span/DatadogSpan {
 	public fun <init> (Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpan;)V
 	public synthetic fun context ()Lcom/datadog/android/trace/api/span/DatadogSpanContext;
 	public fun context ()Lcom/datadog/android/trace/impl/DatadogSpanContextAdapter;
 	public fun drop ()V
 	public fun finish ()V
-	public fun getResourceName ()Ljava/lang/CharSequence;
+	public fun getDurationNano ()J
+	public fun getOperationName ()Ljava/lang/String;
+	public fun getParentSpanId ()Ljava/lang/Long;
+	public fun getResourceName ()Ljava/lang/String;
 	public fun getSamplingPriority ()Ljava/lang/Integer;
+	public fun getServiceName ()Ljava/lang/String;
+	public fun getStartTime ()J
+	public fun getTraceId ()Lcom/datadog/android/trace/api/DatadogTraceId;
 	public fun isError ()Ljava/lang/Boolean;
 	public fun isRootSpan ()Z
 	public fun setError (Ljava/lang/Boolean;)V
-	public fun setResourceName (Ljava/lang/CharSequence;)V
+	public fun setOperationName (Ljava/lang/String;)V
+	public fun setResourceName (Ljava/lang/String;)V
+	public fun setServiceName (Ljava/lang/String;)V
 	public fun setTag (Ljava/lang/String;Ljava/lang/Number;)V
 	public fun setTag (Ljava/lang/String;Ljava/lang/String;)V
 	public fun setTag (Ljava/lang/String;Z)V
@@ -141,6 +154,8 @@ public final class com/datadog/android/trace/impl/DatadogTraceIdAdapter$Companio
 
 public final class com/datadog/android/trace/impl/DatadogTracerAdapter : com/datadog/android/trace/api/tracer/DatadogTracer {
 	public fun <init> (Lcom/datadog/trace/bootstrap/instrumentation/api/AgentTracer$TracerAPI;)V
+	public fun activateSpan (Lcom/datadog/android/trace/api/span/DatadogSpan;)Lcom/datadog/android/trace/api/DatadogScope;
+	public fun activeSpan ()Lcom/datadog/android/trace/api/span/DatadogSpan;
 	public synthetic fun buildSpan (Ljava/lang/CharSequence;)Lcom/datadog/android/trace/api/span/DatadogSpanBuilder;
 	public fun buildSpan (Ljava/lang/CharSequence;)Lcom/datadog/android/trace/impl/DatadogSpanBuilderAdapter;
 	public synthetic fun propagate ()Lcom/datadog/android/trace/api/propagation/DatadogPropagation;

@@ -32,6 +32,8 @@ dependencies {
     implementation(project(":features:dd-sdk-android-trace-otel"))
     implementation(project(":integrations:dd-sdk-android-okhttp"))
     implementation(project(":integrations:dd-sdk-android-okhttp-otel"))
+    implementation(project(":features:dd-sdk-android-trace-internal"))
+    implementation(libs.openTracingApi)
     implementation(libs.kotlin)
 
     // Testing

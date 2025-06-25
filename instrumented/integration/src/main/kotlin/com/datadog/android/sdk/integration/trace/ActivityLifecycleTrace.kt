@@ -15,11 +15,11 @@ import com.datadog.android.sdk.integration.R
 import com.datadog.android.sdk.integration.RuntimeConfig
 import com.datadog.android.sdk.utils.getForgeSeed
 import com.datadog.android.sdk.utils.getTrackingConsent
-import com.datadog.android.trace.AndroidTracer
 import com.datadog.android.trace.Trace
-import com.datadog.opentracing.DDSpan
+import com.datadog.android.trace.api.DatadogScope
+import com.datadog.android.trace.api.span.DatadogSpan
+import com.datadog.android.trace.api.tracer.DatadogTracer
 import fr.xgouchet.elmyr.Forge
-import io.opentracing.Scope
 import java.util.LinkedList
 import java.util.Random
 
@@ -27,11 +27,11 @@ internal class ActivityLifecycleTrace : AppCompatActivity() {
 
     private val forge by lazy { Forge().apply { seed = intent.getForgeSeed() } }
 
-    lateinit var tracer: AndroidTracer
-    private val sentSpans = LinkedList<DDSpan>()
+    private lateinit var tracer: DatadogTracer
+    private val sentSpans = LinkedList<DatadogSpan>()
     private val sentLogs = LinkedList<Pair<Int, String>>()
-    lateinit var activityStartScope: Scope
-    lateinit var activityResumeScope: Scope
+    private lateinit var activityStartScope: DatadogScope
+    private lateinit var activityResumeScope: DatadogScope
 
     // region Activity
 
@@ -58,12 +58,12 @@ internal class ActivityLifecycleTrace : AppCompatActivity() {
 
     override fun onStart() {
         super.onStart()
-        activityStartScope = buildSpan(forge.anAlphabeticalString())
+        activityStartScope = buildScope(forge.anAlphabeticalString())
     }
 
     override fun onResume() {
         super.onResume()
-        activityResumeScope = buildSpan(forge.anAlphabeticalString())
+        activityResumeScope = buildScope(forge.anAlphabeticalString())
     }
 
     override fun onPause() {
@@ -80,7 +80,7 @@ internal class ActivityLifecycleTrace : AppCompatActivity() {
 
     // region Tests
 
-    fun getSentSpans(): LinkedList<DDSpan> {
+    fun getSentSpans(): LinkedList<DatadogSpan> {
         return sentSpans
     }
 
@@ -92,10 +92,10 @@ internal class ActivityLifecycleTrace : AppCompatActivity() {
 
     // region Internal
 
-    private fun buildSpan(title: String): Scope {
-        val scope = tracer.buildSpan(title).startActive(true)
-        val ddSpan = tracer.activeSpan() as DDSpan
-        ddSpan.log(title)
+    private fun buildScope(title: String): DatadogScope {
+        val span = tracer.buildSpan(title).start()
+        val scope = tracer.activateSpan(span) ?: throw RuntimeException("Span activation failed")
+        val ddSpan = tracer.activeSpan() as DatadogSpan
         sentLogs.add(Log.VERBOSE to title)
         sentSpans.add(ddSpan)
         return scope

@@ -10,6 +10,7 @@ import com.datadog.trace.api.DDTraceId
 
 class DatadogTraceIdAdapter(private val delegate: DDTraceId) : DatadogTraceId {
     override fun toHexString(): String = delegate.toHexString()
+
     override fun toLong(): Long = delegate.toLong()
 
     companion object {

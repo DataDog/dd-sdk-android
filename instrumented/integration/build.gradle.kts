@@ -96,6 +96,7 @@ dependencies {
     implementation(project(":features:dd-sdk-android-trace"))
     implementation(project(":features:dd-sdk-android-rum"))
     implementation(project(":integrations:dd-sdk-android-okhttp"))
+    implementation(project(":features:dd-sdk-android-trace-internal"))
 
     implementation(libs.gson)
     implementation(libs.kotlin)

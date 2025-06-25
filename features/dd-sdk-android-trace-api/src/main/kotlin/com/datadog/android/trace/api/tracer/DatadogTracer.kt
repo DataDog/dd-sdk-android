@@ -5,10 +5,14 @@
  */
 package com.datadog.android.trace.api.tracer
 
+import com.datadog.android.trace.api.DatadogScope
 import com.datadog.android.trace.api.propagation.DatadogPropagation
+import com.datadog.android.trace.api.span.DatadogSpan
 import com.datadog.android.trace.api.span.DatadogSpanBuilder
 
 interface DatadogTracer {
+    fun activeSpan(): DatadogSpan?
+    fun activateSpan(span: DatadogSpan): DatadogScope?
     fun buildSpan(spanName: CharSequence): DatadogSpanBuilder
     fun propagate(): DatadogPropagation
 }
