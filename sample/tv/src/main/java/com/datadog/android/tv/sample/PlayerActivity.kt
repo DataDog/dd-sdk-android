@@ -80,8 +80,7 @@ class PlayerActivity : AppCompatActivity() {
             GlobalRumMonitor.get().addError(
                 "Unable to stream video",
                 RumErrorSource.SOURCE,
-                t,
-                emptyMap()
+                t
             )
         }
     }

@@ -45,7 +45,7 @@ constructor(
 
     init {
         val rumMonitor = GlobalRumMonitor.get(sdkCore)
-        rumMonitor.startResource(key, METHOD, url, emptyMap())
+        rumMonitor.startResource(key, METHOD, url)
         callStart = System.nanoTime()
         if (rumMonitor is AdvancedRumMonitor) {
             rumMonitor.waitForResourceTiming(key)
@@ -145,8 +145,7 @@ constructor(
                 key,
                 null,
                 size,
-                RumResourceKind.OTHER,
-                emptyMap()
+                RumResourceKind.OTHER
             )
         }
     }

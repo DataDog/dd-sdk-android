@@ -177,8 +177,7 @@ internal class EncryptionTest {
 
         rumMonitor.addAction(
             RumActionType.CUSTOM,
-            "rumAction-${forge.aString()}",
-            emptyMap()
+            "rumAction-${forge.aString()}"
         )
         logger.w("Action added")
 
@@ -186,8 +185,7 @@ internal class EncryptionTest {
             resourceName,
             forge.anInt(100, 600),
             forge.aLong(min = 0L),
-            forge.aValueFrom(RumResourceKind::class.java),
-            attributes = emptyMap()
+            forge.aValueFrom(RumResourceKind::class.java)
         )
 
         span.finish()

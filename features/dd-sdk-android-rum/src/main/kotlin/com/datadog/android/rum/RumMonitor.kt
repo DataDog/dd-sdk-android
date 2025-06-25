@@ -72,7 +72,7 @@ interface RumMonitor {
     fun addAction(
         type: RumActionType,
         name: String,
-        attributes: Map<String, Any?>
+        attributes: Map<String, Any?> = emptyMap()
     )
 
     /**
@@ -90,7 +90,7 @@ interface RumMonitor {
     fun startAction(
         type: RumActionType,
         name: String,
-        attributes: Map<String, Any?>
+        attributes: Map<String, Any?> = emptyMap()
     )
 
     /**
@@ -145,7 +145,7 @@ interface RumMonitor {
         statusCode: Int?,
         size: Long?,
         kind: RumResourceKind,
-        attributes: Map<String, Any?>
+        attributes: Map<String, Any?> = emptyMap()
     )
 
     /**
@@ -216,7 +216,7 @@ interface RumMonitor {
         message: String,
         source: RumErrorSource,
         throwable: Throwable?,
-        attributes: Map<String, Any?>
+        attributes: Map<String, Any?> = emptyMap()
     )
 
     /**
@@ -237,7 +237,7 @@ interface RumMonitor {
         message: String,
         source: RumErrorSource,
         stacktrace: String?,
-        attributes: Map<String, Any?>
+        attributes: Map<String, Any?> = emptyMap()
     )
 
     /**

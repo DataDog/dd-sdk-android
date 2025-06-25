@@ -31,8 +31,7 @@ internal fun Action.Builder.setMonitoredClickListener(
     return setOnClickListener {
         GlobalRumMonitor.get(sdkCore).addAction(
             type = RumActionType.TAP,
-            name = builtAction.title?.toString() ?: builtAction.icon.toString(),
-            attributes = emptyMap()
+            name = builtAction.title?.toString() ?: builtAction.icon.toString()
         )
         listener.onClick()
     }

@@ -46,7 +46,7 @@ class AutoMediaBrowserService : MediaBrowserServiceCompat() {
                 super.onPause()
                 Timber.i("Playing is on pause")
                 GlobalRumMonitor.get()
-                    .addAction(RumActionType.CUSTOM, "Pause song", emptyMap())
+                    .addAction(RumActionType.CUSTOM, "Pause song")
             }
         })
 
