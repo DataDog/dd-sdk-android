@@ -612,6 +612,7 @@ internal open class TracingInterceptorNotSendingSpanTest {
     ) {
         val parentSpanContext: DatadogSpanContext = mock()
         whenever(mockPropagation.extract(any<Request>(), any())) doReturn parentSpanContext
+        whenever(mockPropagation.isExtractedContext(parentSpanContext)) doReturn true
         whenever(mockSpanBuilder.withParentContext(any<DatadogSpanContext>())) doReturn mockSpanBuilder
         whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(true)
         fakeRequest = forgeRequest(forge)
