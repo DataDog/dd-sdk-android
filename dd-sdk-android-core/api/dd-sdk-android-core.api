@@ -12,7 +12,6 @@ public final class com/datadog/android/Datadog {
 	public static final field INSTANCE Lcom/datadog/android/Datadog;
 	public final fun _internalProxy (Ljava/lang/String;)Lcom/datadog/android/_InternalProxy;
 	public static synthetic fun _internalProxy$default (Lcom/datadog/android/Datadog;Ljava/lang/String;ILjava/lang/Object;)Lcom/datadog/android/_InternalProxy;
-	public static final fun addAccountExtraInfo ()V
 	public static final fun addAccountExtraInfo (Ljava/util/Map;)V
 	public static final fun addAccountExtraInfo (Ljava/util/Map;Lcom/datadog/android/api/SdkCore;)V
 	public static synthetic fun addAccountExtraInfo$default (Ljava/util/Map;Lcom/datadog/android/api/SdkCore;ILjava/lang/Object;)V
@@ -138,7 +137,6 @@ public abstract interface class com/datadog/android/api/SdkCore {
 }
 
 public final class com/datadog/android/api/SdkCore$DefaultImpls {
-	public static synthetic fun addAccountExtraInfo$default (Lcom/datadog/android/api/SdkCore;Ljava/util/Map;ILjava/lang/Object;)V
 	public static synthetic fun setAccountInfo$default (Lcom/datadog/android/api/SdkCore;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;ILjava/lang/Object;)V
 	public static synthetic fun setUserInfo$default (Lcom/datadog/android/api/SdkCore;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;ILjava/lang/Object;)V
 }

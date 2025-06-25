@@ -304,7 +304,7 @@ object Datadog {
      *
      * @param id Account ID.
      * @param name representing the account, if exists.
-     * @param extraInfo Account's custom attributes, if exists.
+     * @param extraInfo Account custom attributes, if exists.
      * @param sdkCore SDK instance to set account information. If not provided, default SDK
      * instance will be used.
      */
@@ -329,14 +329,14 @@ object Datadog {
      * This extra info will be added to already existing extra info that is added
      * to Logs, Traces and RUM events automatically.
      *
-     * @param extraInfo Account's additional custom attributes.
-     * @param sdkCore SDK instance to add account custom attributes. If not provided,
-     * default SDK instance will be used.
+     * @param extraInfo Account additional custom attributes.
+     * @param sdkCore SDK instance to add extra account information. If not provided, default SDK
+     * instance will be used.
      */
     @JvmStatic
     @JvmOverloads
     fun addAccountExtraInfo(
-        extraInfo: Map<String, Any?> = emptyMap(),
+        extraInfo: Map<String, Any?>,
         sdkCore: SdkCore = getInstance()
     ) {
         sdkCore.addAccountExtraInfo(extraInfo)
@@ -345,20 +345,19 @@ object Datadog {
     /**
      * Clear the current account information.
      *
-     * Account information will set to null
+     * Account information will be set to null.
      * Following Logs, Traces, RUM Events will not include the account information anymore.
      *
-     * Any active RUM Session, active RUM View at the time of call will have their `account` attribute cleared
+     * Any active RUM Session, active RUM View at the time of call will have their `account` attribute cleared.
      *
      * If you want to retain the current `account` on the active RUM session,
-     * you need to stop the session first by using `GlobalRumMonitor.get().stopSession()`
+     * you need to stop the session first by using `GlobalRumMonitor.get().stopSession()`.
      *
      * If you want to retain the current `account` on the active RUM views,
      * you need to stop the view first by using `GlobalRumMonitor.get().stopView()`.
      *
-     * @param sdkCore SDK instance to clear account info. If not provided,
-     * default SDK instance will be used.
-     *
+     * @param sdkCore SDK instance to clear account information. If not provided, default SDK
+     * instance will be used.
      */
     @JvmStatic
     @JvmOverloads
