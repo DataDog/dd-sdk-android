@@ -3,6 +3,9 @@
  * This product includes software developed at Datadog (https://www.datadoghq.com/).
  * Copyright 2016-Present Datadog, Inc.
  */
-package com.datadog.android.trace.api
+package com.datadog.android.trace.impl
 
-interface DatadogTrace
+import com.datadog.android.trace.api.tracer.DatadogTracerSampler
+import com.datadog.trace.common.sampling.Sampler
+
+internal class DatadogTracerSamplerWrapper(val delegate: Sampler) : DatadogTracerSampler

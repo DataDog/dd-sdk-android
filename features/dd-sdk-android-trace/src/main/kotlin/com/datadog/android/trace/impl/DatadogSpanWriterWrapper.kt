@@ -3,9 +3,9 @@
  * This product includes software developed at Datadog (https://www.datadoghq.com/).
  * Copyright 2016-Present Datadog, Inc.
  */
-package com.datadog.android.trace.api
+package com.datadog.android.trace.impl
 
-interface DatadogTraceId {
-    fun toLong(): Long
-    fun toHexString(): String
-}
+import com.datadog.android.trace.api.span.DatadogSpanWriter
+import com.datadog.trace.common.writer.Writer
+
+internal class DatadogSpanWriterWrapper(val delegate: Writer) : DatadogSpanWriter

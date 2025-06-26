@@ -3,8 +3,6 @@
  * This product includes software developed at Datadog (https://www.datadoghq.com/).
  * Copyright 2016-Present Datadog, Inc.
  */
-package com.datadog.android.trace.api
+package com.datadog.android.trace.api.tracer
 
-interface DatadogScope{
-    fun close()
-}
+interface DatadogTracerSampler

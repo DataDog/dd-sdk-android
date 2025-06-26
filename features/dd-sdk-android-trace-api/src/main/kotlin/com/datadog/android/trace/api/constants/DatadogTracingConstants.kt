@@ -6,7 +6,10 @@
 package com.datadog.android.trace.api.constants
 
 object DatadogTracingConstants {
+    const val DEFAULT_ASYNC_PROPAGATING = true
+
     object Tags {
+
         const val KEY_HTTP_URL: String = "http.url"
         const val KEY_SPAN_KIND: String = "span.kind"
         const val KEY_HTTP_METHOD: String = "http.method"
@@ -17,6 +20,11 @@ object DatadogTracingConstants {
         const val KEY_ERROR_STACK: String = "error.stack"
 
         const val VALUE_SPAN_KIND_CLIENT: String = "client"
+        const val VALUE_SPAN_KIND_SERVER: String = "server"
+        const val VALUE_SPAN_KIND_PRODUCER: String = "producer"
+        const val VALUE_SPAN_KIND_CONSUMER: String = "consumer"
+
+        const val KEY_ANALYTICS_SAMPLE_RATE: String = "_dd1.sr.eausr"
     }
 
     object PrioritySampling {
@@ -40,5 +48,21 @@ object DatadogTracingConstants {
         /** The user has decided to keep the trace.  */
 
         const val USER_KEEP: Int = 2
+    }
+
+    object TracerConfig {
+        const val SPAN_TAGS = "trace.span.tags"
+        const val TRACE_RATE_LIMIT = "trace.rate.limit"
+        const val TRACE_SAMPLE_RATE = "trace.sample.rate"
+        const val PROPAGATION_STYLE_EXTRACT = "propagation.style.extract"
+        const val PROPAGATION_STYLE_INJECT = "propagation.style.inject"
+    }
+
+    object ErrorPriorities {
+        const val UNSET: Byte = Byte.MIN_VALUE
+
+        const val HTTP_SERVER_DECORATOR: Byte = -1
+
+        const val DEFAULT: Byte = 0
     }
 }

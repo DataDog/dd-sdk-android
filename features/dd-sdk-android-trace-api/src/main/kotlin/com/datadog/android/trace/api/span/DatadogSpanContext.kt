@@ -5,12 +5,14 @@
  */
 package com.datadog.android.trace.api.span
 
-import com.datadog.android.trace.api.DatadogTraceId
+import com.datadog.android.trace.api.trace.DatadogTraceId
 
 interface DatadogSpanContext {
     val traceId: DatadogTraceId
 
     val spanId: Long
+
+    val serviceName: String?
 
     val samplingPriority: Int
 

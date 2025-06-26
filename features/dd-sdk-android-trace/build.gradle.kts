@@ -45,6 +45,10 @@ android {
         consumerProguardFiles("consumer-rules.pro")
     }
     namespace = "com.datadog.android.trace"
+
+    testFixtures {
+        enable = true
+    }
 }
 
 dependencies {
@@ -61,7 +65,7 @@ dependencies {
     ksp(project(":tools:noopfactory"))
 
     // OpenTracing
-    api(libs.bundles.openTracing)
+    implementation(libs.bundles.openTracing)
 
     testImplementation(project(":tools:unit")) {
         attributes {

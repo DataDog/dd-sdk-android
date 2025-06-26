@@ -8,14 +8,16 @@ package com.datadog.opentelemetry.trace;
 
 import androidx.annotation.VisibleForTesting;
 
-import com.datadog.trace.api.DDSpanId;
-import com.datadog.trace.bootstrap.instrumentation.api.AgentSpan;
+import com.datadog.android.trace.api.span.DatadogSpan;
+import com.datadog.android.trace.api.span.DatadogSpanContext;
+import com.datadog.android.trace.impl.DatadogTracing;
+
 import io.opentelemetry.api.trace.SpanContext;
 import io.opentelemetry.api.trace.TraceFlags;
 import io.opentelemetry.api.trace.TraceState;
 
 public class OtelSpanContext implements SpanContext {
-  final AgentSpan.Context delegate;
+  final DatadogSpanContext delegate;
   private final boolean sampled;
   private final boolean remote;
   private final TraceState traceState;
@@ -23,22 +25,22 @@ public class OtelSpanContext implements SpanContext {
   private String spanId;
 
   public OtelSpanContext(
-      AgentSpan.Context delegate, boolean sampled, boolean remote, TraceState traceState) {
+          DatadogSpanContext delegate, boolean sampled, boolean remote, TraceState traceState) {
     this.delegate = delegate;
     this.sampled = sampled;
     this.remote = remote;
     this.traceState = traceState;
   }
 
-  public static SpanContext fromLocalSpan(AgentSpan span) {
-    AgentSpan.Context delegate = span.context();
-    AgentSpan localRootSpan = span.getLocalRootSpan();
-    Integer samplingPriority = localRootSpan.getSamplingPriority();
+  public static SpanContext fromLocalSpan(DatadogSpan span) {
+    DatadogSpanContext delegate = span.context();
+    DatadogSpan localRootSpan = span.getLocalRootSpan();
+    Integer samplingPriority = localRootSpan != null ? localRootSpan.getSamplingPriority() : null;
     boolean sampled = samplingPriority != null && samplingPriority > 0;
     return new OtelSpanContext(delegate, sampled, false, TraceState.getDefault());
   }
 
-  public static SpanContext fromRemote(AgentSpan.Context extracted, TraceState traceState) {
+  public static SpanContext fromRemote(DatadogSpanContext extracted, TraceState traceState) {
     return new OtelSpanContext(extracted, extracted.getSamplingPriority() > 0, true, traceState);
   }
 
@@ -53,13 +55,13 @@ public class OtelSpanContext implements SpanContext {
   @Override
   public String getSpanId() {
     if (this.spanId == null) {
-      this.spanId = DDSpanId.toHexStringPadded(this.delegate.getSpanId());
+      this.spanId = DatadogTracing.spanIdConverter.toHexStringPadded(this.delegate.getSpanId());
     }
     return this.spanId;
   }
 
   @VisibleForTesting
-  public AgentSpan.Context getDelegate() {
+  public DatadogSpanContext getDelegate() {
     return delegate;
   }
 

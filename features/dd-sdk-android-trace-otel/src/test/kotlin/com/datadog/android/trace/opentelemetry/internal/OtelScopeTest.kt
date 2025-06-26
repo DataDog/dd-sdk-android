@@ -6,7 +6,7 @@
 
 package com.datadog.android.trace.opentelemetry.internal
 
-import com.datadog.trace.bootstrap.instrumentation.api.AgentScope
+import com.datadog.android.trace.api.span.DatadogScope
 import io.opentelemetry.context.Scope
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -28,7 +28,7 @@ internal class OtelScopeTest {
     lateinit var mockWrappedScope: Scope
 
     @Mock
-    lateinit var mockAgentScope: AgentScope
+    lateinit var mockAgentScope: DatadogScope
 
     lateinit var testedScope: OtelScope
 

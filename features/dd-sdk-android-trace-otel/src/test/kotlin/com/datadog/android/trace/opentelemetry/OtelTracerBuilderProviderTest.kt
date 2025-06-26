@@ -15,25 +15,23 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.internal.concurrent.CompletableFuture
 import com.datadog.android.trace.InternalCoreWriterProvider
 import com.datadog.android.trace.TracingHeaderType
+import com.datadog.android.trace.api.constants.DatadogTracingConstants.PrioritySampling
+import com.datadog.android.trace.api.constants.DatadogTracingConstants.TracerConfig
+import com.datadog.android.trace.api.span.DatadogSpan
+import com.datadog.android.trace.api.span.DatadogSpanContext
+import com.datadog.android.trace.api.span.DatadogSpanWriter
+import com.datadog.android.trace.api.tracer.DatadogTracer
 import com.datadog.android.trace.internal.SpanAttributes
+import com.datadog.android.trace.opentelemetry.utils.forge.Configurator
 import com.datadog.android.trace.opentelemetry.utils.verifyLog
-import com.datadog.android.utils.forge.Configurator
 import com.datadog.opentelemetry.trace.OtelSpan
 import com.datadog.opentelemetry.trace.OtelSpanContext
 import com.datadog.opentelemetry.trace.OtelTracer
 import com.datadog.tools.unit.getFieldValue
 import com.datadog.tools.unit.setFieldValue
 import com.datadog.trace.api.Config
-import com.datadog.trace.api.config.TracerConfig
-import com.datadog.trace.api.sampling.PrioritySampling
 import com.datadog.trace.bootstrap.instrumentation.api.AgentScopeManager
-import com.datadog.trace.bootstrap.instrumentation.api.AgentTracer
-import com.datadog.trace.bootstrap.instrumentation.api.ScopeSource
 import com.datadog.trace.common.writer.NoOpWriter
-import com.datadog.trace.common.writer.Writer
-import com.datadog.trace.core.CoreTracer
-import com.datadog.trace.core.DDSpan
-import com.datadog.trace.core.DDSpanContext
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.DoubleForgery
 import fr.xgouchet.elmyr.annotation.Forgery
@@ -42,6 +40,7 @@ import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import io.opentelemetry.api.trace.Span
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.offset
 import org.assertj.core.data.Offset
@@ -96,7 +95,7 @@ internal class OtelTracerBuilderProviderTest {
     lateinit var fakeOperationName: String
 
     @Mock
-    lateinit var mockTraceWriter: Writer
+    lateinit var mockTraceWriter: DatadogSpanWriter
 
     lateinit var fakeRumContext: MutableMap<String, String>
 
@@ -170,29 +169,14 @@ internal class OtelTracerBuilderProviderTest {
     }
 
     @Test
-    fun `M use a NoOpCoreTracerWriter W build { TracingFeature not enabled }`() {
-        // GIVEN
-        whenever(mockSdkCore.getFeature(Feature.TRACING_FEATURE_NAME)) doReturn null
-
-        // WHEN
-        val tracer = testedOtelTracerProviderBuilder.build()
-
-        // THEN
-        assertThat(tracer).isNotNull
-        val coreTracer: CoreTracer = tracer.getFieldValue("coreTracer")
-        val writer: Writer = coreTracer.getFieldValue("writer")
-        assertThat(writer).isInstanceOf(NoOpWriter::class.java)
-    }
-
-    @Test
     fun `M use the feature writer W build { TracingFeature enabled }`() {
         // WHEN
         val tracer = testedOtelTracerProviderBuilder.build()
 
         // THEN
         assertThat(tracer).isNotNull
-        val coreTracer: CoreTracer = tracer.getFieldValue("coreTracer")
-        val writer: Writer = coreTracer.getFieldValue("writer")
+        val coreTracer: DatadogTracer = tracer.getFieldValue("coreTracer")
+        val writer: DatadogSpanWriter = coreTracer.getFieldValue("writer")
         assertThat(writer).isSameAs(mockTraceWriter)
     }
 
@@ -332,8 +316,7 @@ internal class OtelTracerBuilderProviderTest {
         span.end()
 
         // Then
-        val agentContext = (span.spanContext as OtelSpanContext).delegate as DDSpanContext
-        assertThat(agentContext.resourceName).isEqualTo(spanName)
+        assertThat(span.datadogContext.resourceName).isEqualTo(spanName)
     }
 
     @Test
@@ -352,8 +335,7 @@ internal class OtelTracerBuilderProviderTest {
         span.end()
 
         // Then
-        val agentContext = (span.spanContext as OtelSpanContext).delegate as DDSpanContext
-        assertThat(agentContext.serviceName).isEqualTo(fakeServiceName)
+        assertThat(span.datadogContext.serviceName).isEqualTo(fakeServiceName)
     }
 
     @Test
@@ -373,9 +355,9 @@ internal class OtelTracerBuilderProviderTest {
         span.end()
 
         // Then
-        val agentContext = (span.spanContext as OtelSpanContext).delegate as DDSpanContext
-        assertThat(agentContext.serviceName).isEqualTo(fakeCustomServiceName)
+        assertThat(span.datadogContext.serviceName).isEqualTo(fakeCustomServiceName)
     }
+
 
     @Test
     fun `M use the default threshold value W creating a tracer`() {
@@ -384,7 +366,7 @@ internal class OtelTracerBuilderProviderTest {
             .tracerBuilder(fakeInstrumentationName).build()
 
         // When
-        val coreTracer: CoreTracer = tracer.getFieldValue("tracer")
+        val coreTracer: DatadogTracer = tracer.getFieldValue("tracer")
 
         // Then
         assertThat(coreTracer.partialFlushMinSpans).isEqualTo(OtelTracerProvider.DEFAULT_PARTIAL_MIN_FLUSH)
@@ -397,7 +379,7 @@ internal class OtelTracerBuilderProviderTest {
             .tracerBuilder(fakeInstrumentationName).build()
 
         // When
-        val coreTracer: CoreTracer = tracer.getFieldValue("tracer")
+        val coreTracer: DatadogTracer = tracer.getFieldValue("tracer")
 
         // Then
         assertThat(coreTracer.partialFlushMinSpans).isEqualTo(threshold)
@@ -471,7 +453,7 @@ internal class OtelTracerBuilderProviderTest {
         // Then
         assertThat(tracer).isNotNull()
         val span = tracer.spanBuilder(operation).startSpan() as OtelSpan
-        val agentSpanContext = span.agentSpanContext as DDSpanContext
+        val agentSpanContext = span.agentSpanContext as DatadogSpanContext
         assertThat(agentSpanContext.tags).containsEntry(key, value)
     }
 
@@ -483,7 +465,7 @@ internal class OtelTracerBuilderProviderTest {
         val tracer = tracerProvider.tracerBuilder(fakeInstrumentationName).build() as OtelTracer
 
         // Then
-        val coreTracer: CoreTracer = tracer.getFieldValue("tracer")
+        val coreTracer: DatadogTracer = tracer.getFieldValue("tracer")
         val internalLogger: InternalLogger = coreTracer.getFieldValue("internalLogger")
         assertThat(internalLogger).isSameAs(mockInternalLogger)
     }
@@ -499,7 +481,7 @@ internal class OtelTracerBuilderProviderTest {
             .tracerBuilder(fakeInstrumentationName).build()
 
         // When
-        val coreTracer: CoreTracer = tracer.getFieldValue("tracer")
+        val coreTracer: DatadogTracer = tracer.getFieldValue("tracer")
 
         // Then
         val config: Config = coreTracer.getFieldValue("initialConfig")
@@ -515,7 +497,7 @@ internal class OtelTracerBuilderProviderTest {
             .tracerBuilder(fakeInstrumentationName).build()
 
         // When
-        val coreTracer: CoreTracer = tracer.getFieldValue("tracer")
+        val coreTracer: DatadogTracer = tracer.getFieldValue("tracer")
 
         // Then
         val config: Config = coreTracer.getFieldValue("initialConfig")
@@ -536,13 +518,13 @@ internal class OtelTracerBuilderProviderTest {
         val span = tracer
             .spanBuilder(fakeOperationName)
             .startSpan()
-        val delegateSpan: DDSpan = span.getFieldValue("delegate")
+        val delegateSpan: DatadogSpan = span.getFieldValue("delegate")
         delegateSpan.forceSamplingDecision()
         span.end()
 
         // Then
         val priority = delegateSpan.samplingPriority
-        assertThat(priority).isEqualTo(PrioritySampling.USER_KEEP.toInt())
+        assertThat(priority).isEqualTo(PrioritySampling.USER_KEEP)
     }
 
     @Test
@@ -559,7 +541,7 @@ internal class OtelTracerBuilderProviderTest {
         val span = tracer
             .spanBuilder(fakeOperationName)
             .startSpan()
-        val delegateSpan: DDSpan = span.getFieldValue("delegate")
+        val delegateSpan: DatadogSpan = span.getFieldValue("delegate")
         delegateSpan.forceSamplingDecision()
         span.end()
 
@@ -590,7 +572,7 @@ internal class OtelTracerBuilderProviderTest {
             tracer.spanBuilder(forge.anAlphabeticalString()).startSpan()
         }
         val delegatedSpans = spans.map {
-            val delegatedSpan: DDSpan = it.getFieldValue("delegate")
+            val delegatedSpan: DatadogSpan = it.getFieldValue("delegate")
             delegatedSpan.forceSamplingDecision()
             delegatedSpan
         }
@@ -620,7 +602,7 @@ internal class OtelTracerBuilderProviderTest {
         val span = tracer
             .spanBuilder(fakeOperationName)
             .startSpan()
-        val delegateSpan: DDSpan = span.getFieldValue("delegate")
+        val delegateSpan: DatadogSpan = span.getFieldValue("delegate")
         delegateSpan.forceSamplingDecision()
         span.end()
 
@@ -642,7 +624,7 @@ internal class OtelTracerBuilderProviderTest {
             .tracerBuilder(fakeInstrumentationName).build()
 
         // When
-        val coreTracer: CoreTracer = tracer.getFieldValue("tracer")
+        val coreTracer: DatadogTracer = tracer.getFieldValue("tracer")
 
         // Then
         val config: Config = coreTracer.getFieldValue("initialConfig")
@@ -655,7 +637,7 @@ internal class OtelTracerBuilderProviderTest {
         val tracer = testedOtelTracerProviderBuilder.build().tracerBuilder(fakeInstrumentationName).build()
 
         // When
-        val coreTracer: CoreTracer = tracer.getFieldValue("tracer")
+        val coreTracer: DatadogTracer = tracer.getFieldValue("tracer")
 
         // Then
         val config: Config = coreTracer.getFieldValue("initialConfig")
@@ -686,7 +668,7 @@ internal class OtelTracerBuilderProviderTest {
         val span = tracer
             .spanBuilder(fakeOperationName)
             .startSpan()
-        val delegateSpan: DDSpan = span.getFieldValue("delegate")
+        val delegateSpan: DatadogSpan = span.getFieldValue("delegate")
         val context = delegateSpan.context()
         span.end()
 
@@ -709,7 +691,7 @@ internal class OtelTracerBuilderProviderTest {
         val span = tracer
             .spanBuilder(fakeOperationName)
             .startSpan()
-        val delegateSpan: DDSpan = span.getFieldValue("delegate")
+        val delegateSpan: DatadogSpan = span.getFieldValue("delegate")
         val context = delegateSpan.context()
         span.end()
 
@@ -731,7 +713,7 @@ internal class OtelTracerBuilderProviderTest {
         val span = tracer
             .spanBuilder(fakeOperationName)
             .startSpan()
-        val delegateSpan: DDSpan = span.getFieldValue("delegate")
+        val delegateSpan: DatadogSpan = span.getFieldValue("delegate")
         val context = delegateSpan.context()
         span.end()
 
@@ -753,17 +735,17 @@ internal class OtelTracerBuilderProviderTest {
             .build()
             .tracerBuilder(fakeInstrumentationName)
             .build()
-        val delegatedTracer: AgentTracer.TracerAPI = tracer.getFieldValue("tracer")
+        val delegatedTracer: DatadogTracer = tracer.getFieldValue("tracer")
         val scopeManager: AgentScopeManager = delegatedTracer.getFieldValue("scopeManager")
         val span = tracer
             .spanBuilder(fakeOperationName)
             .startSpan()
-        val delegateSpan: DDSpan = span.getFieldValue("delegate")
+        val delegateSpan: DatadogSpan = span.getFieldValue("delegate")
         val expectedTraceId = delegateSpan.context().traceId.toHexString()
         val expectedSpanId = delegateSpan.context().spanId.toString()
 
         // When
-        val scope = scopeManager.activate(delegateSpan, ScopeSource.INSTRUMENTATION)
+        val scope = scopeManager.activate(delegateSpan)
         scope.close()
         span.end()
 
@@ -790,7 +772,7 @@ internal class OtelTracerBuilderProviderTest {
             .build()
             .tracerBuilder(fakeInstrumentationName)
             .build()
-        val delegatedTracer: AgentTracer.TracerAPI = tracer.getFieldValue("tracer")
+        val delegatedTracer: DatadogTracer = tracer.getFieldValue("tracer")
         val scopeManager: AgentScopeManager = spy(delegatedTracer.getFieldValue("scopeManager")) {
             whenever(it.activeSpan()).thenReturn(null)
         }
@@ -798,10 +780,10 @@ internal class OtelTracerBuilderProviderTest {
         val span = tracer
             .spanBuilder(fakeOperationName)
             .startSpan()
-        val delegateSpan: DDSpan = span.getFieldValue("delegate")
+        val delegateSpan: DatadogSpan = span.getFieldValue("delegate")
 
         // When
-        val scope = scopeManager.activate(delegateSpan, ScopeSource.INSTRUMENTATION)
+        val scope = scopeManager.activate(delegateSpan)
         scope.close()
         span.end()
 
@@ -858,7 +840,7 @@ internal class OtelTracerBuilderProviderTest {
         override fun onStop() {
         }
 
-        override fun getCoreTracerWriter(): Writer {
+        override fun getCoreTracerWriter(): DatadogSpanWriter {
             return mock()
         }
     }
@@ -866,6 +848,10 @@ internal class OtelTracerBuilderProviderTest {
     companion object {
 
         val forge = Forge()
+
+
+        private val Span.datadogContext: DatadogSpanContext
+            get() = (spanContext as OtelSpanContext).delegate as DatadogSpanContext
 
         @JvmStatic
         fun brokenRumContextProvider(): List<Map<String, String>> {

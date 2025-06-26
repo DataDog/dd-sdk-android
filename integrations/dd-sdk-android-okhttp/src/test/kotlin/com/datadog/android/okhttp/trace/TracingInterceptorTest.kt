@@ -23,15 +23,14 @@ import com.datadog.android.okhttp.utils.config.DatadogSingletonTestConfiguration
 import com.datadog.android.okhttp.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.okhttp.utils.verifyLog
 import com.datadog.android.trace.TracingHeaderType
-import com.datadog.android.trace.api.DatadogTraceId
+import com.datadog.android.trace.api.trace.DatadogTraceId
 import com.datadog.android.trace.api.constants.DatadogTracingConstants
 import com.datadog.android.trace.api.propagation.DatadogPropagation
 import com.datadog.android.trace.api.span.DatadogSpan
 import com.datadog.android.trace.api.span.DatadogSpanBuilder
 import com.datadog.android.trace.api.span.DatadogSpanContext
 import com.datadog.android.trace.api.tracer.DatadogTracer
-import com.datadog.android.trace.impl.DatadogSpanIdConverterAdapter
-import com.datadog.android.trace.impl.DatadogTraceIdAdapter
+import com.datadog.android.trace.impl.DatadogTracing
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
@@ -721,8 +720,8 @@ internal open class TracingInterceptorTest {
     ) {
         // Given
 
-        val fakeExpectedTraceId = DatadogTraceIdAdapter.fromHex(fakeTraceContext.traceId)
-        val fakeExpectedSpanId = DatadogSpanIdConverterAdapter.fromHex(fakeTraceContext.spanId)
+        val fakeExpectedTraceId = DatadogTracing.traceIdFactory.fromHex(fakeTraceContext.traceId)
+        val fakeExpectedSpanId = DatadogTracing.spanIdConverter.fromHex(fakeTraceContext.spanId)
         val fakeExtractedContext = forge.newSpanContextMock<DatadogSpanContext>(
             fakeExpectedTraceId,
             fakeExpectedSpanId

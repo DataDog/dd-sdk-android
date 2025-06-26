@@ -6,67 +6,120 @@
 
 package com.datadog.opentelemetry.trace;
 
-import com.datadog.trace.api.DDSpanId;
-import com.datadog.trace.api.DDTraceId;
-import com.datadog.trace.bootstrap.instrumentation.api.SpanLink;
-import com.datadog.trace.bootstrap.instrumentation.api.SpanLinkAttributes;
-import com.datadog.opentelemetry.context.propagation.TraceStateHelper;
-import io.opentelemetry.api.trace.SpanContext;
-import java.util.List;
+import static java.util.Objects.requireNonNull;
 
-public class OtelSpanLink extends SpanLink {
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+
+import com.datadog.android.trace.api.span.DatadogSpanLink;
+import com.datadog.android.trace.api.trace.DatadogTraceId;
+import com.datadog.android.trace.impl.DatadogTracing;
+import com.datadog.opentelemetry.context.propagation.TraceStateHelper;
+
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import io.opentelemetry.api.trace.SpanContext;
+
+public class OtelSpanLink implements DatadogSpanLink {
+  private final long spanId;
+  private final boolean sampled;
+  private final String traceState;
+  private final DatadogTraceId traceId;
+  private final Map<String, String> attributes;
+
   public OtelSpanLink(SpanContext spanContext) {
     this(spanContext, io.opentelemetry.api.common.Attributes.empty());
   }
 
   public OtelSpanLink(SpanContext spanContext, io.opentelemetry.api.common.Attributes attributes) {
-    super(
-        DDTraceId.fromHex(spanContext.getTraceId()),
-        DDSpanId.fromHex(spanContext.getSpanId()),
-        spanContext.isSampled() ? SAMPLED_FLAG : DEFAULT_FLAGS,
-        TraceStateHelper.encodeHeader(spanContext.getTraceState()),
-        convertAttributes(attributes));
+    traceId = DatadogTracing.traceIdFactory.fromHex(spanContext.getTraceId());
+    spanId = DatadogTracing.spanIdConverter.fromHex(spanContext.getSpanId());
+    sampled = spanContext.isSampled();
+    traceState = TraceStateHelper.encodeHeader(spanContext.getTraceState());
+    this.attributes = convertAttributes(attributes);
   }
 
-  private static Attributes convertAttributes(io.opentelemetry.api.common.Attributes attributes) {
-    if (attributes.isEmpty()) {
-      return SpanLinkAttributes.EMPTY;
+  private static Map<String, String> convertAttributes(io.opentelemetry.api.common.Attributes attributes) {
+    if (attributes.isEmpty()) return Collections.emptyMap();
+
+
+    Map<String, String> bundle = new HashMap<>();
+    attributes.forEach((attributeKey, value) -> {
+      switch (attributeKey.getType()) {
+        case STRING:
+          bundle.put(attributeKey.getKey(), (String) value);
+          break;
+        case BOOLEAN:
+          bundle.put(attributeKey.getKey(), value.toString());
+          break;
+        case LONG:
+          bundle.put(attributeKey.getKey(), Long.toString((long) value));
+          break;
+        case DOUBLE:
+          bundle.put(attributeKey.getKey(), Double.toString((double) value));
+          break;
+        case STRING_ARRAY:
+          // noinspection unchecked
+          putArray(bundle, attributeKey.getKey(), (List<String>) value);
+          break;
+        case BOOLEAN_ARRAY:
+          //noinspection unchecked,DuplicateBranchesInSwitch
+          putArray(bundle, attributeKey.getKey(), (List<Boolean>) value);
+          break;
+        case LONG_ARRAY:
+          //noinspection unchecked,DuplicateBranchesInSwitch
+          putArray(bundle, attributeKey.getKey(), (List<Long>) value);
+          break;
+        case DOUBLE_ARRAY:
+          //noinspection unchecked,DuplicateBranchesInSwitch
+          putArray(bundle, attributeKey.getKey(), (List<Double>) value);
+          break;
+      }
+    });
+
+    return bundle;
+  }
+
+  @NonNull
+  @Override
+  public DatadogTraceId getTraceId() {
+    return traceId;
+  }
+
+  @Override
+  public long getSpanId() {
+    return spanId;
+  }
+
+  @Nullable
+  @Override
+  public Map<String, String> getAttributes() {
+    return attributes;
+  }
+
+  @Override
+  public boolean getSampled() {
+    return sampled;
+  }
+
+  @NonNull
+  @Override
+  public String getTraceStrace() {
+    return traceState;
+  }
+
+  private static <T> void putArray(Map<String, String> attributes, String key, List<T> array) {
+    requireNonNull(key, "key must not be null");
+    if (array != null) {
+      for (int index = 0; index < array.size(); index++) {
+        Object value = array.get(index);
+        if (value != null) {
+          attributes.put(key + "." + index, value.toString());
+        }
+      }
     }
-    SpanLinkAttributes.Builder builder = SpanLinkAttributes.builder();
-    attributes.forEach(
-        (attributeKey, value) -> {
-          String key = attributeKey.getKey();
-          switch (attributeKey.getType()) {
-            case STRING:
-              builder.put(key, (String) value);
-              break;
-            case BOOLEAN:
-              builder.put(key, (boolean) value);
-              break;
-            case LONG:
-              builder.put(key, (long) value);
-              break;
-            case DOUBLE:
-              builder.put(key, (double) value);
-              break;
-            case STRING_ARRAY:
-              //noinspection unchecked
-              builder.putStringArray(key, (List<String>) value);
-              break;
-            case BOOLEAN_ARRAY:
-              //noinspection unchecked
-              builder.putBooleanArray(key, (List<Boolean>) value);
-              break;
-            case LONG_ARRAY:
-              //noinspection unchecked
-              builder.putLongArray(key, (List<Long>) value);
-              break;
-            case DOUBLE_ARRAY:
-              //noinspection unchecked
-              builder.putDoubleArray(key, (List<Double>) value);
-              break;
-          }
-        });
-    return builder.build();
   }
 }

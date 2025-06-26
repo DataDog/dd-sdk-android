@@ -9,8 +9,9 @@ package com.datadog.opentelemetry.trace;
 import androidx.annotation.NonNull;
 
 import com.datadog.android.api.InternalLogger;
+import com.datadog.android.trace.api.span.DatadogSpanBuilder;
+import com.datadog.android.trace.api.tracer.DatadogTracer;
 import com.datadog.opentelemetry.compat.function.Function;
-import com.datadog.trace.bootstrap.instrumentation.api.AgentTracer;
 
 import io.opentelemetry.api.trace.SpanBuilder;
 import io.opentelemetry.api.trace.Tracer;
@@ -20,7 +21,7 @@ public class OtelTracer implements Tracer {
     private static final Function<SpanBuilder, SpanBuilder> NO_OP_DECORATOR = spanBuilder -> spanBuilder;
 
     @NonNull
-    private final AgentTracer.TracerAPI tracer;
+    private final DatadogTracer tracer;
     @NonNull
     private final String instrumentationScopeName;
     @NonNull
@@ -31,7 +32,7 @@ public class OtelTracer implements Tracer {
 
     public OtelTracer(
             @NonNull String instrumentationScopeName,
-            @NonNull AgentTracer.TracerAPI tracer,
+            @NonNull DatadogTracer tracer,
             @NonNull InternalLogger logger,
             @NonNull Function<SpanBuilder, SpanBuilder> spanBuilderDecorator) {
         this.instrumentationScopeName = instrumentationScopeName;
@@ -42,14 +43,14 @@ public class OtelTracer implements Tracer {
 
     public OtelTracer(
             @NonNull String instrumentationScopeName,
-            @NonNull AgentTracer.TracerAPI tracer,
+            @NonNull DatadogTracer tracer,
             @NonNull InternalLogger logger) {
         this(instrumentationScopeName, tracer, logger, NO_OP_DECORATOR);
     }
 
     @Override
-    public SpanBuilder spanBuilder(String spanName) {
-        AgentTracer.SpanBuilder delegate =
+    public SpanBuilder spanBuilder(@NonNull String spanName) {
+        DatadogSpanBuilder delegate =
                 this.tracer
                         .buildSpan(instrumentationScopeName, OtelConventions.SPAN_KIND_INTERNAL)
                         .withResourceName(spanName);

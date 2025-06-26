@@ -3,10 +3,10 @@
  * This product includes software developed at Datadog (https://www.datadoghq.com/).
  * Copyright 2016-Present Datadog, Inc.
  */
-package com.datadog.android.trace.impl
+package com.datadog.android.trace.api.trace
 
-import com.datadog.android.trace.api.DatadogTrace
-import com.datadog.trace.bootstrap.instrumentation.api.AgentTrace
-
-class DatadogTraceAdapter(private val delegate: AgentTrace) : DatadogTrace {
+interface DatadogTraceIdFactory {
+    fun from(id: Long): DatadogTraceId
+    fun from(id: String): DatadogTraceId
+    fun fromHex(id: String): DatadogTraceId
 }

@@ -5,9 +5,9 @@
  */
 package com.datadog.android.trace.impl
 
-import com.datadog.android.trace.api.DatadogScope
+import com.datadog.android.trace.api.span.DatadogScope
 import com.datadog.trace.bootstrap.instrumentation.api.AgentScope
 
-class DatadogScopeAdapter(private val delegate: AgentScope) : DatadogScope {
+internal class DatadogScopeAdapter(private val delegate: AgentScope) : DatadogScope {
     override fun close() = delegate.close()
 }

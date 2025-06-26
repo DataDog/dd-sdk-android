@@ -19,6 +19,7 @@ import com.datadog.android.core.internal.net.DefaultFirstPartyHostHeaderTypeReso
 import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.internal.telemetry.TracingHeaderTypesSet
 import com.datadog.android.internal.utils.loggableStackTrace
+import com.datadog.android.internal.utils.tryCastTo
 import com.datadog.android.okhttp.TraceContext
 import com.datadog.android.okhttp.TraceContextInjection
 import com.datadog.android.okhttp.internal.trace.toInternalTracingHeaderType
@@ -28,12 +29,13 @@ import com.datadog.android.trace.api.constants.DatadogTracingConstants
 import com.datadog.android.trace.api.span.DatadogSpan
 import com.datadog.android.trace.api.span.DatadogSpanContext
 import com.datadog.android.trace.api.tracer.DatadogTracer
-import com.datadog.android.trace.impl.DatadogTracerFactoryAdapter
+import com.datadog.android.trace.impl.DatadogTracing
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import java.net.HttpURLConnection
+import java.util.Properties
 import java.util.concurrent.atomic.AtomicReference
 
 /**
@@ -857,8 +859,35 @@ internal constructor(
 
         private val DEFAULT_LOCAL_TRACER_FACTORY: (SdkCore, Set<TracingHeaderType>) -> DatadogTracer =
             { sdkCore, tracingHeaderTypes: Set<TracingHeaderType> ->
-                DatadogTracerFactoryAdapter(sdkCore)
-                    .create(tracingHeaderTypes)
+                val featuredSdkCore = sdkCore as FeatureSdkCore
+                val writer = featuredSdkCore.getFeature(Feature.TRACING_FEATURE_NAME)
+                    ?.unwrap<Feature>()
+                    ?.tryCastTo<com.datadog.android.trace.InternalCoreWriterProvider>()
+                    ?.getCoreTracerWriter()
+
+                if (writer == null) {
+                        featuredSdkCore.internalLogger.log(
+                            InternalLogger.Level.ERROR,
+                            InternalLogger.Target.MAINTAINER,
+                            {
+                                "The Tracing feature is not implementing the InternalCoreWriterProvider interface. " +
+                                        "No tracing data will be sent."
+                            }
+                        )
+                    }
+
+                DatadogTracing.newTracerBuilder(featuredSdkCore.internalLogger)
+                    .withProperties(
+                        Properties().apply {
+                            val propagationStyles = tracingHeaderTypes.joinToString(",")
+                            setProperty(TracerConfig.PROPAGATION_STYLE_EXTRACT, propagationStyles)
+                            setProperty(TracerConfig.PROPAGATION_STYLE_INJECT, propagationStyles)
+                            setProperty(TracerConfig.URL_AS_RESOURCE_NAME, "false")
+                        }
+                    )
+                    .withWriter(writer)
+                    .withSampler(AllSampler())
+                    .build()
             }
     }
 }

@@ -6,24 +6,29 @@
 
 package com.datadog.opentelemetry.trace;
 
-import static com.datadog.trace.api.DDTags.ANALYTICS_SAMPLE_RATE;
-import static com.datadog.trace.bootstrap.instrumentation.api.Tags.SPAN_KIND;
 import static com.datadog.opentelemetry.trace.OtelConventions.ANALYTICS_EVENT_SPECIFIC_ATTRIBUTES;
 import static com.datadog.opentelemetry.trace.OtelConventions.OPERATION_NAME_SPECIFIC_ATTRIBUTE;
 import static com.datadog.opentelemetry.trace.OtelConventions.toSpanKindTagValue;
 import static com.datadog.opentelemetry.trace.OtelExtractedContext.extract;
-import static io.opentelemetry.api.trace.SpanKind.INTERNAL;
 import static java.lang.Boolean.parseBoolean;
 import static java.util.Locale.ROOT;
+import static io.opentelemetry.api.trace.SpanKind.INTERNAL;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 import com.datadog.android.api.InternalLogger;
 import com.datadog.android.api.context.DatadogContext;
 import com.datadog.android.internal.concurrent.CompletableFuture;
+import com.datadog.android.trace.api.constants.DatadogTracingConstants;
+import com.datadog.android.trace.api.span.DatadogSpan;
+import com.datadog.android.trace.api.span.DatadogSpanBuilder;
+import com.datadog.android.trace.api.span.DatadogSpanContext;
+import com.datadog.android.trace.api.tracer.DatadogTracer;
 import com.datadog.android.trace.internal.SpanAttributes;
-import com.datadog.trace.bootstrap.instrumentation.api.AgentSpan;
-import com.datadog.trace.bootstrap.instrumentation.api.AgentTracer;
+
+import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
@@ -33,12 +38,9 @@ import io.opentelemetry.api.trace.SpanContext;
 import io.opentelemetry.api.trace.SpanKind;
 import io.opentelemetry.context.Context;
 
-import java.util.List;
-import java.util.concurrent.TimeUnit;
-
 public class OtelSpanBuilder implements SpanBuilder {
-    private final AgentTracer.SpanBuilder delegate;
-    private final AgentTracer.TracerAPI agentTracer;
+    private final DatadogSpanBuilder delegate;
+    private final DatadogTracer agentTracer;
 
     private boolean spanKindSet;
     /**
@@ -57,8 +59,8 @@ public class OtelSpanBuilder implements SpanBuilder {
     private final InternalLogger logger;
 
     public OtelSpanBuilder(
-            AgentTracer.SpanBuilder delegate,
-            AgentTracer.TracerAPI agentTracer,
+            DatadogSpanBuilder delegate,
+            DatadogTracer agentTracer,
             @NonNull InternalLogger logger) {
         this.delegate = delegate;
         this.spanKindSet = false;
@@ -70,16 +72,16 @@ public class OtelSpanBuilder implements SpanBuilder {
 
     @Override
     public SpanBuilder setParent(Context context) {
-        AgentSpan.Context extractedContext = extract(context, logger);
+        DatadogSpanContext extractedContext = extract(context, logger);
         if (extractedContext != null) {
-            this.delegate.asChildOf(extractedContext);
+            this.delegate.withParentContext(extractedContext);
         }
         return this;
     }
 
     @Override
     public SpanBuilder setNoParent() {
-        this.delegate.asChildOf(null);
+        this.delegate.withParentContext(null);
         this.delegate.ignoreActiveSpan();
         return this;
     }
@@ -101,7 +103,7 @@ public class OtelSpanBuilder implements SpanBuilder {
     }
 
     @Override
-    public SpanBuilder setAttribute(String key, String value) {
+    public SpanBuilder setAttribute(@NonNull String key, @Nullable String value) {
         // Check reserved attributes
         if (OPERATION_NAME_SPECIFIC_ATTRIBUTE.equals(key) && value != null) {
             this.overriddenOperationName = value.toLowerCase(ROOT);
@@ -111,24 +113,24 @@ public class OtelSpanBuilder implements SpanBuilder {
             return this;
         }
         // Store as object to prevent delegate to remove tag when value is empty
-        this.delegate.withTag(key, (Object) value);
-        return this;
-    }
-
-    @Override
-    public SpanBuilder setAttribute(String key, long value) {
         this.delegate.withTag(key, value);
         return this;
     }
 
     @Override
-    public SpanBuilder setAttribute(String key, double value) {
+    public SpanBuilder setAttribute(@NonNull String key, long value) {
         this.delegate.withTag(key, value);
         return this;
     }
 
     @Override
-    public SpanBuilder setAttribute(String key, boolean value) {
+    public SpanBuilder setAttribute(@NonNull String key, double value) {
+        this.delegate.withTag(key, value);
+        return this;
+    }
+
+    @Override
+    public SpanBuilder setAttribute(@NonNull String key, boolean value) {
         // Check reserved attributes
         if (ANALYTICS_EVENT_SPECIFIC_ATTRIBUTES.equals(key)) {
             this.overriddenAnalyticsSampleRate = value ? 1 : 0;
@@ -139,7 +141,7 @@ public class OtelSpanBuilder implements SpanBuilder {
     }
 
     @Override
-    public <T> SpanBuilder setAttribute(AttributeKey<T> key, T value) {
+    public <T> SpanBuilder setAttribute(AttributeKey<T> key, @Nullable T value) {
         switch (key.getType()) {
             case STRING_ARRAY:
             case BOOLEAN_ARRAY:
@@ -173,9 +175,9 @@ public class OtelSpanBuilder implements SpanBuilder {
     }
 
     @Override
-    public SpanBuilder setSpanKind(SpanKind spanKind) {
+    public SpanBuilder setSpanKind(@Nullable SpanKind spanKind) {
         if (spanKind != null) {
-            this.delegate.withTag(SPAN_KIND, toSpanKindTagValue(spanKind));
+            this.delegate.withTag(DatadogTracingConstants.Tags.KEY_SPAN_KIND, toSpanKindTagValue(spanKind));
             this.spanKindSet = true;
         }
         return this;
@@ -193,13 +195,13 @@ public class OtelSpanBuilder implements SpanBuilder {
         if (!this.spanKindSet) {
             setSpanKind(INTERNAL);
         }
-        AgentSpan delegate = this.delegate.start();
+        DatadogSpan delegate = this.delegate.start();
         // Apply overrides
         if (this.overriddenOperationName != null) {
             delegate.setOperationName(this.overriddenOperationName);
         }
         if (this.overriddenAnalyticsSampleRate != -1) {
-            delegate.setMetric(ANALYTICS_SAMPLE_RATE, this.overriddenAnalyticsSampleRate);
+            delegate.setMetric(DatadogTracingConstants.Tags.KEY_ANALYTICS_SAMPLE_RATE, this.overriddenAnalyticsSampleRate);
         }
         return new OtelSpan(delegate, agentTracer);
     }

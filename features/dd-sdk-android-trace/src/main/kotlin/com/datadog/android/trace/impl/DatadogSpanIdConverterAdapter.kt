@@ -5,18 +5,11 @@
  */
 package com.datadog.android.trace.impl
 
-import com.datadog.android.trace.api.DatadogSpanIdConverter
+import com.datadog.android.trace.api.span.DatadogSpanIdConverter
 import com.datadog.trace.api.DDSpanId
 
-object DatadogSpanIdConverterAdapter : DatadogSpanIdConverter {
-    const val ZERO = DDSpanId.ZERO
-
-    override fun from(s: String?): Long = DDSpanId.from(s)
+internal object DatadogSpanIdConverterAdapter : DatadogSpanIdConverter {
     override fun fromHex(s: String?): Long = DDSpanId.fromHex(s)
-    override fun fromHex(s: String?, start: Int, len: Int, lowerCaseOnly: Boolean) =
-        DDSpanId.fromHex(s, start, len, lowerCaseOnly)
 
-    override fun toString(id: Long): String = DDSpanId.toString(id)
-    override fun toHexString(id: Long): String = DDSpanId.toHexString(id)
     override fun toHexStringPadded(id: Long): String = DDSpanId.toHexStringPadded(id)
 }

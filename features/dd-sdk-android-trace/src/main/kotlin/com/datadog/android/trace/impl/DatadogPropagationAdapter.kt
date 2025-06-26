@@ -8,7 +8,7 @@ import com.datadog.trace.api.DDTraceId
 import com.datadog.trace.bootstrap.instrumentation.api.AgentPropagation
 import com.datadog.trace.core.propagation.ExtractedContext
 
-class DatadogPropagationAdapter(private val delegate: AgentPropagation) : DatadogPropagation {
+internal class DatadogPropagationAdapter(private val delegate: AgentPropagation) : DatadogPropagation {
     override fun <C> inject(span: DatadogSpan, carrier: C, setter: (carrier: C, key: String, value: String) -> Unit) {
         if (span !is DatadogSpanAdapter) return
         delegate.inject(span.delegate, carrier, setter)

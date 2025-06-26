@@ -1,5 +1,5 @@
 interface com.datadog.android.trace.api.DatadogTrace
-interface com.datadog.android.trace.api.DatadogTraceId
+interface com.datadog.android.trace.api.trace.DatadogTraceId
   fun toHexString(): String
 object com.datadog.android.trace.api.constants.DatadogTracingConstants
   object Tags
@@ -38,7 +38,7 @@ interface com.datadog.android.trace.api.span.DatadogSpanBuilder
   fun withParentContext(DatadogSpanContext?): DatadogSpanBuilder
   fun start(): DatadogSpan
 interface com.datadog.android.trace.api.span.DatadogSpanContext
-  val traceId: com.datadog.android.trace.api.DatadogTraceId
+  val traceId: com.datadog.android.trace.api.trace.DatadogTraceId
   val spanId: Long
   val samplingPriority: Int
   fun setSamplingPriority(Int): Boolean

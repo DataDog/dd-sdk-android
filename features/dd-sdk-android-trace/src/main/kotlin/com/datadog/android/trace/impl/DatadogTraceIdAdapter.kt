@@ -5,18 +5,17 @@
  */
 package com.datadog.android.trace.impl
 
-import com.datadog.android.trace.api.DatadogTraceId
+import com.datadog.android.trace.api.trace.DatadogTraceId
 import com.datadog.trace.api.DDTraceId
 
-class DatadogTraceIdAdapter(private val delegate: DDTraceId) : DatadogTraceId {
-    override fun toHexString(): String = delegate.toHexString()
-
+internal class DatadogTraceIdAdapter(private val delegate: DDTraceId) : DatadogTraceId, DDTraceId() {
     override fun toLong(): Long = delegate.toLong()
+    override fun toString(): String = delegate.toString()
+    override fun toHexString(): String = delegate.toHexString()
+    override fun toHexStringPadded(size: Int): String = delegate.toHexStringPadded(size)
+    override fun toHighOrderLong(): Long = delegate.toHighOrderLong()
 
     companion object {
         val ZERO: DatadogTraceId = DatadogTraceIdAdapter(DDTraceId.ZERO)
-        fun from(id: Long): DatadogTraceId = DatadogTraceIdAdapter(DDTraceId.from(id))
-        fun from(id: String): DatadogTraceId = DatadogTraceIdAdapter(DDTraceId.from(id))
-        fun fromHex(id: String): DatadogTraceId = DatadogTraceIdAdapter(DDTraceId.fromHex(id))
     }
 }

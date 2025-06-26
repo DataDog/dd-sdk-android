@@ -6,18 +6,21 @@
 
 package com.datadog.opentelemetry.trace;
 
-import static com.datadog.trace.api.ConfigDefaults.DEFAULT_ASYNC_PROPAGATING;
+import static com.datadog.android.trace.api.constants.DatadogTracingConstants.DEFAULT_ASYNC_PROPAGATING;
 import static com.datadog.opentelemetry.trace.OtelConventions.applyNamingConvention;
 import static com.datadog.opentelemetry.trace.OtelConventions.applyReservedAttribute;
 import static io.opentelemetry.api.trace.StatusCode.ERROR;
 import static io.opentelemetry.api.trace.StatusCode.OK;
 import static io.opentelemetry.api.trace.StatusCode.UNSET;
 
-import com.datadog.trace.bootstrap.instrumentation.api.AgentScope;
-import com.datadog.trace.bootstrap.instrumentation.api.AgentSpan;
-import com.datadog.trace.bootstrap.instrumentation.api.AgentTracer;
-import com.datadog.trace.bootstrap.instrumentation.api.ErrorPriorities;
-import com.datadog.trace.bootstrap.instrumentation.api.ScopeSource;
+import com.datadog.android.trace.api.constants.DatadogTracingConstants;
+import com.datadog.android.trace.api.span.DatadogScope;
+import com.datadog.android.trace.api.span.DatadogSpan;
+import com.datadog.android.trace.api.span.DatadogSpanContext;
+import com.datadog.android.trace.api.tracer.DatadogTracer;
+
+import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
@@ -26,18 +29,16 @@ import io.opentelemetry.api.trace.SpanContext;
 import io.opentelemetry.api.trace.StatusCode;
 import io.opentelemetry.api.trace.TraceFlags;
 import io.opentelemetry.api.trace.TraceState;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 public class OtelSpan implements Span {
-  private final AgentSpan delegate;
+  private final DatadogSpan delegateSpan;
   private StatusCode statusCode;
   private boolean recording;
 
-  private final AgentTracer.TracerAPI agentTracer;
+  private final DatadogTracer agentTracer;
 
-  public OtelSpan(AgentSpan delegate, AgentTracer.TracerAPI agentTracer) {
-    this.delegate = delegate;
+  public OtelSpan(DatadogSpan delegateSpan, DatadogTracer agentTracer) {
+    this.delegateSpan = delegateSpan;
     this.statusCode = UNSET;
     this.recording = true;
     this.agentTracer = agentTracer;
@@ -49,7 +50,7 @@ public class OtelSpan implements Span {
 
   @Override
   public <T> Span setAttribute(AttributeKey<T> key, T value) {
-    if (this.recording && !applyReservedAttribute(this.delegate, key, value)) {
+    if (this.recording && !applyReservedAttribute(this.delegateSpan, key, value)) {
       switch (key.getType()) {
         case STRING_ARRAY:
         case BOOLEAN_ARRAY:
@@ -59,16 +60,16 @@ public class OtelSpan implements Span {
             List<?> valueList = (List<?>) value;
             if (valueList.isEmpty()) {
               // Store as object to prevent delegate to remove tag when value is empty
-              this.delegate.setTag(key.getKey(), (Object) "");
+              this.delegateSpan.setTag(key.getKey(), (Object) "");
             } else {
               for (int index = 0; index < valueList.size(); index++) {
-                this.delegate.setTag(key.getKey() + "." + index, valueList.get(index));
+                this.delegateSpan.setTag(key.getKey() + "." + index, valueList.get(index));
               }
             }
           }
           break;
         default:
-          this.delegate.setTag(key.getKey(), value);
+          this.delegateSpan.setTag(key.getKey(), value);
           break;
       }
     }
@@ -92,11 +93,11 @@ public class OtelSpan implements Span {
     if (this.recording) {
       if (this.statusCode == UNSET) {
         this.statusCode = statusCode;
-        this.delegate.setError(statusCode == ERROR);
-        this.delegate.setErrorMessage(statusCode == ERROR ? description : null);
+        this.delegateSpan.setError(statusCode == ERROR);
+        this.delegateSpan.setErrorMessage(statusCode == ERROR ? description : null);
       } else if (this.statusCode == ERROR && statusCode == OK) {
-        this.delegate.setError(false);
-        this.delegate.setErrorMessage(null);
+        this.delegateSpan.setError(false);
+        this.delegateSpan.setErrorMessage(null);
       }
     }
     return this;
@@ -110,7 +111,7 @@ public class OtelSpan implements Span {
   public Span recordException(Throwable exception, Attributes additionalAttributes) {
     if (this.recording) {
       // Store exception as span tags as span events are not supported yet
-      this.delegate.addThrowable(exception, ErrorPriorities.UNSET);
+      this.delegateSpan.addThrowable(exception, DatadogTracingConstants.ErrorPriorities.UNSET);
     }
     return this;
   }
@@ -118,7 +119,7 @@ public class OtelSpan implements Span {
   @Override
   public Span updateName(String name) {
     if (this.recording) {
-      this.delegate.setResourceName(name);
+      this.delegateSpan.setResourceName(name);
     }
     return this;
   }
@@ -126,20 +127,20 @@ public class OtelSpan implements Span {
   @Override
   public void end() {
     this.recording = false;
-    applyNamingConvention(this.delegate);
-    this.delegate.finish();
+    applyNamingConvention(this.delegateSpan);
+    this.delegateSpan.finish();
   }
 
   @Override
   public void end(long timestamp, TimeUnit unit) {
     this.recording = false;
-    applyNamingConvention(this.delegate);
-    this.delegate.finish(unit.toMicros(timestamp));
+    applyNamingConvention(this.delegateSpan);
+    this.delegateSpan.finish(unit.toMicros(timestamp));
   }
 
   @Override
   public SpanContext getSpanContext() {
-    return OtelSpanContext.fromLocalSpan(this.delegate);
+    return OtelSpanContext.fromLocalSpan(this.delegateSpan);
   }
 
   @Override
@@ -147,12 +148,12 @@ public class OtelSpan implements Span {
     return this.recording;
   }
 
-  public AgentScope activate() {
-    return agentTracer.activateSpan(this.delegate, ScopeSource.INSTRUMENTATION, DEFAULT_ASYNC_PROPAGATING);
+  public DatadogScope activate() {
+    return agentTracer.activateSpan(this.delegateSpan, DEFAULT_ASYNC_PROPAGATING);
   }
 
-  public AgentSpan.Context getAgentSpanContext() {
-    return this.delegate.context();
+  public DatadogSpanContext getAgentSpanContext() {
+    return this.delegateSpan.context();
   }
 
   static class NoopSpan implements Span {

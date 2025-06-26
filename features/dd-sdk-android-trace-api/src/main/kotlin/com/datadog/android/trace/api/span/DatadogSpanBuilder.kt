@@ -6,9 +6,24 @@
 package com.datadog.android.trace.api.span
 
 interface DatadogSpanBuilder {
+
+    fun start(): DatadogSpan
+
     fun withOrigin(origin: String?): DatadogSpanBuilder
+
+    fun withTag(key: String, value: Double?): DatadogSpanBuilder
+
+    fun withTag(key: String, value: Long?): DatadogSpanBuilder
+
+    fun withTag(key: String, value: Any?): DatadogSpanBuilder
+
+    fun withResourceName(resourceName: String?): DatadogSpanBuilder
 
     fun withParentContext(parentContext: DatadogSpanContext?): DatadogSpanBuilder
 
-    fun start(): DatadogSpan
+    fun withStartTimestamp(micros: Long): DatadogSpanBuilder
+
+    fun ignoreActiveSpan(): DatadogSpanBuilder
+
+    fun withLink(link: DatadogSpanLink): DatadogSpanBuilder
 }

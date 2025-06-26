@@ -6,24 +6,24 @@
 
 package com.datadog.opentelemetry.trace;
 
-import static com.datadog.trace.api.DDTags.ANALYTICS_SAMPLE_RATE;
-import static com.datadog.trace.bootstrap.instrumentation.api.Tags.SPAN_KIND;
-import static com.datadog.trace.bootstrap.instrumentation.api.Tags.SPAN_KIND_CLIENT;
-import static com.datadog.trace.bootstrap.instrumentation.api.Tags.SPAN_KIND_CONSUMER;
-import static com.datadog.trace.bootstrap.instrumentation.api.Tags.SPAN_KIND_PRODUCER;
-import static com.datadog.trace.bootstrap.instrumentation.api.Tags.SPAN_KIND_SERVER;
+import static com.datadog.android.trace.api.constants.DatadogTracingConstants.Tags.KEY_ANALYTICS_SAMPLE_RATE;
+import static com.datadog.android.trace.api.constants.DatadogTracingConstants.Tags.VALUE_SPAN_KIND_CLIENT;
+import static com.datadog.android.trace.api.constants.DatadogTracingConstants.Tags.VALUE_SPAN_KIND_CONSUMER;
+import static com.datadog.android.trace.api.constants.DatadogTracingConstants.Tags.VALUE_SPAN_KIND_PRODUCER;
+import static com.datadog.android.trace.api.constants.DatadogTracingConstants.Tags.VALUE_SPAN_KIND_SERVER;
+import static java.lang.Boolean.parseBoolean;
+import static java.util.Locale.ROOT;
 import static io.opentelemetry.api.trace.SpanKind.CLIENT;
 import static io.opentelemetry.api.trace.SpanKind.CONSUMER;
 import static io.opentelemetry.api.trace.SpanKind.INTERNAL;
 import static io.opentelemetry.api.trace.SpanKind.PRODUCER;
 import static io.opentelemetry.api.trace.SpanKind.SERVER;
-import static java.lang.Boolean.parseBoolean;
-import static java.util.Locale.ROOT;
 
 import androidx.annotation.Nullable;
 
-import com.datadog.trace.bootstrap.instrumentation.api.AgentSpan;
-import com.datadog.trace.bootstrap.instrumentation.api.Tags;
+import com.datadog.android.trace.api.constants.DatadogTracingConstants;
+import com.datadog.android.trace.api.span.DatadogSpan;
+
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.trace.SpanKind;
 
@@ -34,21 +34,21 @@ public final class OtelConventions {
   private OtelConventions() {}
 
   /**
-   * Convert OpenTelemetry {@link SpanKind} to {@link Tags#SPAN_KIND} value.
+   * Convert OpenTelemetry {@link SpanKind} to {@link DatadogTracingConstants.Tags#KEY_SPAN_KIND} value.
    *
    * @param spanKind The OpenTelemetry span kind to convert.
-   * @return The {@link Tags#SPAN_KIND} value.
+   * @return The {@link DatadogTracingConstants.Tags#KEY_SPAN_KIND} value.
    */
   public static String toSpanKindTagValue(SpanKind spanKind) {
     switch (spanKind) {
       case CLIENT:
-        return SPAN_KIND_CLIENT;
+        return VALUE_SPAN_KIND_CLIENT;
       case SERVER:
-        return SPAN_KIND_SERVER;
+        return VALUE_SPAN_KIND_SERVER;
       case PRODUCER:
-        return SPAN_KIND_PRODUCER;
+        return VALUE_SPAN_KIND_PRODUCER;
       case CONSUMER:
-        return SPAN_KIND_CONSUMER;
+        return VALUE_SPAN_KIND_CONSUMER;
       case INTERNAL:
         return SPAN_KIND_INTERNAL;
       default:
@@ -57,9 +57,9 @@ public final class OtelConventions {
   }
 
   /**
-   * Convert {@link Tags#SPAN_KIND} value to OpenTelemetry {@link SpanKind}.
+   * Convert {@link DatadogTracingConstants.Tags#KEY_SPAN_KIND} value to OpenTelemetry {@link SpanKind}.
    *
-   * @param spanKind The {@link Tags#SPAN_KIND} value to convert.
+   * @param spanKind The {@link DatadogTracingConstants.Tags#KEY_SPAN_KIND} value to convert.
    * @return The related OpenTelemetry {@link SpanKind}.
    */
   public static SpanKind toOtelSpanKind(String spanKind) {
@@ -67,13 +67,13 @@ public final class OtelConventions {
       return INTERNAL;
     }
     switch (spanKind) {
-      case SPAN_KIND_CLIENT:
+      case VALUE_SPAN_KIND_CLIENT:
         return CLIENT;
-      case SPAN_KIND_SERVER:
+      case VALUE_SPAN_KIND_SERVER:
         return SERVER;
-      case SPAN_KIND_PRODUCER:
+      case VALUE_SPAN_KIND_PRODUCER:
         return PRODUCER;
-      case SPAN_KIND_CONSUMER:
+      case VALUE_SPAN_KIND_CONSUMER:
         return CONSUMER;
       default:
         return INTERNAL;
@@ -91,7 +91,7 @@ public final class OtelConventions {
    * @return {@code true} if the attributes is a reserved attribute applied to the span, {@code
    *     false} otherwise.
    */
-  public static <T> boolean applyReservedAttribute(AgentSpan span, AttributeKey<T> key, T value) {
+  public static <T> boolean applyReservedAttribute(DatadogSpan span, AttributeKey<T> key, T value) {
     String name = key.getKey();
     switch (key.getType()) {
       case STRING:
@@ -99,27 +99,27 @@ public final class OtelConventions {
           span.setOperationName(((String) value).toLowerCase(ROOT));
           return true;
         } else if (ANALYTICS_EVENT_SPECIFIC_ATTRIBUTES.equals(name) && value instanceof String) {
-          span.setMetric(ANALYTICS_SAMPLE_RATE, parseBoolean((String) value) ? 1 : 0);
+          span.setMetric(KEY_ANALYTICS_SAMPLE_RATE, parseBoolean((String) value) ? 1 : 0);
           return true;
         }
       case BOOLEAN:
         if (ANALYTICS_EVENT_SPECIFIC_ATTRIBUTES.equals(name) && value instanceof Boolean) {
-          span.setMetric(ANALYTICS_SAMPLE_RATE, ((Boolean) value) ? 1 : 0);
+          span.setMetric(KEY_ANALYTICS_SAMPLE_RATE, ((Boolean) value) ? 1 : 0);
           return true;
         }
     }
     return false;
   }
 
-  public static void applyNamingConvention(AgentSpan span) {
+  public static void applyNamingConvention(DatadogSpan span) {
     // Check if span operation name is unchanged from its default value
-    if (span.getOperationName() == SPAN_KIND_INTERNAL) {
+    if (span.getOperationName().equals(SPAN_KIND_INTERNAL)) {
       span.setOperationName(computeOperationName(span).toLowerCase(ROOT));
     }
   }
 
-  private static String computeOperationName(AgentSpan span) {
-    Object spanKingTag = span.getTag(SPAN_KIND);
+  private static String computeOperationName(DatadogSpan span) {
+    Object spanKingTag = span.getTag(DatadogTracingConstants.Tags.KEY_SPAN_KIND);
     SpanKind spanKind =
         spanKingTag instanceof String ? toOtelSpanKind((String) spanKingTag) : INTERNAL;
     /*
@@ -210,7 +210,7 @@ public final class OtelConventions {
   }
 
   @Nullable
-  private static String getStringAttribute(AgentSpan span, String key) {
+  private static String getStringAttribute(DatadogSpan span, String key) {
     Object tag = span.getTag(key);
     if (tag == null) {
       return null;

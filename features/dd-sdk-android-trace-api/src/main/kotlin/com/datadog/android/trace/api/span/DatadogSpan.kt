@@ -5,7 +5,7 @@
  */
 package com.datadog.android.trace.api.span
 
-import com.datadog.android.trace.api.DatadogTraceId
+import com.datadog.android.trace.api.trace.DatadogTraceId
 
 interface DatadogSpan {
     var isError: Boolean?
@@ -18,12 +18,22 @@ interface DatadogSpan {
     var operationName: String
     val durationNano: Long
     val startTime: Long
+    val localRootSpan: DatadogSpan?
 
     fun context(): DatadogSpanContext
     fun finish()
+    fun finish(finishMicros: Long)
     fun drop()
+
+    fun setErrorMessage(message: String?)
+    fun addThrowable(throwable: Throwable)
+    fun addThrowable(throwable: Throwable, errorPriority: Byte)
 
     fun setTag(tag: String?, value: String?)
     fun setTag(tag: String?, value: Boolean)
     fun setTag(tag: String?, value: Number?)
+    fun setTag(tag: String?, value: Any?)
+    fun getTag(tag: String?): Any?
+
+    fun setMetric(key: String, value: Int)
 }

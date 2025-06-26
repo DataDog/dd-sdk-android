@@ -17,18 +17,16 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.internal.concurrent.CompletableFuture
 import com.datadog.android.trace.InternalCoreWriterProvider
 import com.datadog.android.trace.TracingHeaderType
+import com.datadog.android.trace.api.constants.DatadogTracingConstants
+import com.datadog.android.trace.api.span.DataScopeListener
+import com.datadog.android.trace.api.tracer.DatadogTracer
+import com.datadog.android.trace.impl.DatadogTracing
 import com.datadog.android.trace.opentelemetry.internal.DatadogContextStorageWrapper
 import com.datadog.android.trace.opentelemetry.internal.addActiveTraceToContext
 import com.datadog.android.trace.opentelemetry.internal.executeIfJavaFunctionPackageExists
 import com.datadog.android.trace.opentelemetry.internal.removeActiveTraceFromContext
 import com.datadog.opentelemetry.trace.OtelSpanBuilder
 import com.datadog.opentelemetry.trace.OtelTracerBuilder
-import com.datadog.trace.api.IdGenerationStrategy
-import com.datadog.trace.api.config.TracerConfig
-import com.datadog.trace.api.scopemanager.ScopeListener
-import com.datadog.trace.bootstrap.instrumentation.api.AgentTracer
-import com.datadog.trace.common.writer.NoOpWriter
-import com.datadog.trace.core.CoreTracer
 import io.opentelemetry.api.trace.SpanBuilder
 import io.opentelemetry.api.trace.Tracer
 import io.opentelemetry.api.trace.TracerBuilder
@@ -47,7 +45,7 @@ import java.util.Properties
  */
 class OtelTracerProvider internal constructor(
     private val sdkCore: FeatureSdkCore,
-    private val coreTracer: AgentTracer.TracerAPI,
+    private val datadogTracer: DatadogTracer,
     private val internalLogger: InternalLogger,
     private val bundleWithRumEnabled: Boolean
 ) : TracerProvider {
@@ -92,7 +90,7 @@ class OtelTracerProvider internal constructor(
         val resolvedInstrumentationScopeName = resolveInstrumentationScopeName(instrumentationScopeName)
         return OtelTracerBuilder(
             resolvedInstrumentationScopeName,
-            coreTracer,
+            datadogTracer,
             internalLogger,
             resolveSpanBuilderDecorator()
         )
@@ -144,8 +142,7 @@ class OtelTracerProvider internal constructor(
                 sdkCore.internalLogger,
                 TracerProvider.noop()
             ) {
-                val tracingFeature = sdkCore.getFeature(Feature.TRACING_FEATURE_NAME)
-                    ?.unwrap<Feature>()
+                val tracingFeature = sdkCore.getFeature(Feature.TRACING_FEATURE_NAME)?.unwrap<Feature>()
                 val internalCoreWriterProvider = tracingFeature as? InternalCoreWriterProvider
                 if (tracingFeature == null) {
                     sdkCore.internalLogger.log(
@@ -167,16 +164,18 @@ class OtelTracerProvider internal constructor(
                             BuildConfig.OPENTELEMETRY_API_VERSION_NAME
                     }
                 }
-                val coreTracer = CoreTracer.CoreTracerBuilder(sdkCore.internalLogger)
+                val writer = internalCoreWriterProvider?.getCoreTracerWriter()
+                val datadogTracer = DatadogTracing.newTracerBuilder(sdkCore.internalLogger)
                     .withProperties(properties())
-                    .serviceName(serviceName)
-                    .writer(internalCoreWriterProvider?.getCoreTracerWriter() ?: NoOpWriter())
-                    .partialFlushMinSpans(partialFlushThreshold)
-                    .idGenerationStrategy(IdGenerationStrategy.fromName("SECURE_RANDOM", true))
+                    .withServiceName(serviceName)
+                    .withPartialFlushMinSpans(partialFlushThreshold)
+                    .withIdGenerationStrategy("SECURE_RANDOM", true)
+                    .withWriter(writer)
                     .build()
-                coreTracer.addScopeListener(object : ScopeListener {
+
+                datadogTracer.addScopeListener(object : DataScopeListener {
                     override fun afterScopeActivated() {
-                        val activeSpanContext = coreTracer.activeSpan()?.context()
+                        val activeSpanContext = datadogTracer.activeSpan()?.context()
                         if (activeSpanContext != null) {
                             val activeSpanId = activeSpanContext.spanId.toString()
                             val activeTraceId = activeSpanContext.traceId.toHexString()
@@ -188,7 +187,7 @@ class OtelTracerProvider internal constructor(
                         sdkCore.removeActiveTraceFromContext()
                     }
                 })
-                OtelTracerProvider(sdkCore, coreTracer, sdkCore.internalLogger, bundleWithRumEnabled)
+                OtelTracerProvider(sdkCore, datadogTracer, sdkCore.internalLogger, bundleWithRumEnabled)
             }
         }
 
@@ -269,10 +268,10 @@ class OtelTracerProvider internal constructor(
         internal fun properties(): Properties {
             val properties = Properties()
             properties.setProperty(
-                TracerConfig.SPAN_TAGS,
+                DatadogTracingConstants.TracerConfig.SPAN_TAGS,
                 globalTags.map { "${it.key}:${it.value}" }.joinToString(",")
             )
-            properties.setProperty(TracerConfig.TRACE_RATE_LIMIT, traceRateLimit.toString())
+            properties.setProperty(DatadogTracingConstants.TracerConfig.TRACE_RATE_LIMIT, traceRateLimit.toString())
 
             // In case the sample rate is not set we should not specify it. The agent code under the hood
             // will provide different sampler based on this property and also different sampling priorities used
@@ -287,13 +286,13 @@ class OtelTracerProvider internal constructor(
             // 2 MANUAL_KEEP User indicated to keep the trace, either manually or via configuration (sampling rate)
             sampleRate?.let {
                 properties.setProperty(
-                    TracerConfig.TRACE_SAMPLE_RATE,
+                    DatadogTracingConstants.TracerConfig.TRACE_SAMPLE_RATE,
                     (it / KEEP_ALL_SAMPLE_RATE_PERCENT).toString()
                 )
             }
             val propagationStyles = tracingHeaderTypes.joinToString(",")
-            properties.setProperty(TracerConfig.PROPAGATION_STYLE_EXTRACT, propagationStyles)
-            properties.setProperty(TracerConfig.PROPAGATION_STYLE_INJECT, propagationStyles)
+            properties.setProperty(DatadogTracingConstants.TracerConfig.PROPAGATION_STYLE_EXTRACT, propagationStyles)
+            properties.setProperty(DatadogTracingConstants.TracerConfig.PROPAGATION_STYLE_INJECT, propagationStyles)
 
             return properties
         }

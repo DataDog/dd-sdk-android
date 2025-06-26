@@ -6,35 +6,37 @@
 
 package com.datadog.opentelemetry.trace;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+
 import com.datadog.android.api.InternalLogger;
-import com.datadog.trace.api.DDSpanId;
-import com.datadog.trace.api.DDTraceId;
-import com.datadog.trace.api.sampling.PrioritySampling;
-import com.datadog.trace.bootstrap.instrumentation.api.AgentSpan;
-import com.datadog.trace.bootstrap.instrumentation.api.AgentTrace;
-import com.datadog.trace.bootstrap.instrumentation.api.AgentTracer;
-import com.datadog.trace.bootstrap.instrumentation.api.PathwayContext;
+import com.datadog.android.trace.api.trace.DatadogTraceId;
+import com.datadog.android.trace.api.constants.DatadogTracingConstants;
+import com.datadog.android.trace.api.span.DatadogSpanContext;
+import com.datadog.android.trace.impl.DatadogTracing;
+
+import java.util.Collections;
+import java.util.Locale;
+import java.util.Map;
 
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanContext;
 import io.opentelemetry.context.Context;
 
-import java.util.Locale;
-import java.util.Map;
-
-public class OtelExtractedContext implements AgentSpan.Context {
-    private final DDTraceId traceId;
+public class OtelExtractedContext implements DatadogSpanContext {
+    private final DatadogTraceId traceId;
     private final long spanId;
     private final int prioritySampling;
 
     private OtelExtractedContext(SpanContext context) {
-        this.traceId = DDTraceId.fromHex(context.getTraceId());
-        this.spanId = DDSpanId.fromHex(context.getSpanId());
-        this.prioritySampling =
-                context.isSampled() ? PrioritySampling.SAMPLER_KEEP : PrioritySampling.UNSET;
+        traceId = DatadogTracing.traceIdFactory.fromHex(context.getTraceId());
+        spanId = DatadogTracing.spanIdConverter.fromHex(context.getSpanId());
+        prioritySampling = context.isSampled()
+                ? DatadogTracingConstants.PrioritySampling.SAMPLER_KEEP
+                : DatadogTracingConstants.PrioritySampling.UNSET;
     }
 
-    public static AgentSpan.Context extract(Context context, InternalLogger logger) {
+    public static DatadogSpanContext extract(Context context, InternalLogger logger) {
         Span span = Span.fromContext(context);
         SpanContext spanContext = span.getSpanContext();
         if (spanContext instanceof OtelSpanContext) {
@@ -57,33 +59,37 @@ public class OtelExtractedContext implements AgentSpan.Context {
         return null;
     }
 
+    @NonNull
     @Override
-    public DDTraceId getTraceId() {
-        return this.traceId;
+    public DatadogTraceId getTraceId() {
+        return traceId;
     }
 
     @Override
     public long getSpanId() {
-        return this.spanId;
-    }
-
-    @Override
-    public AgentTrace getTrace() {
-        return AgentTracer.NoopAgentTrace.INSTANCE;
+        return spanId;
     }
 
     @Override
     public int getSamplingPriority() {
-        return this.prioritySampling;
+        return prioritySampling;
+    }
+
+    @Nullable
+    @Override
+    public Map<String, Object> getTags() {
+        // Do nothing
+        return Collections.emptyMap();
     }
 
     @Override
-    public Iterable<Map.Entry<String, String>> baggageItems() {
-        return null;
+    public boolean setSamplingPriority(int samplingPriority) {
+        // Do nothing
+        return false;
     }
 
     @Override
-    public PathwayContext getPathwayContext() {
-        return null;
+    public void setMetric(@Nullable CharSequence key, double value) {
+        // Do nothing
     }
 }

@@ -5,18 +5,20 @@
  */
 package com.datadog.android.trace.impl
 
-import com.datadog.android.trace.api.DatadogTraceId
 import com.datadog.android.trace.api.span.DatadogSpanContext
+import com.datadog.android.trace.api.trace.DatadogTraceId
 import com.datadog.trace.api.sampling.SamplingMechanism
 import com.datadog.trace.bootstrap.instrumentation.api.AgentSpan
 import com.datadog.trace.core.DDSpan
 import com.datadog.trace.core.DDSpanContext
 
-class DatadogSpanContextAdapter(internal val delegate: AgentSpan.Context) : DatadogSpanContext {
+internal class DatadogSpanContextAdapter(internal val delegate: AgentSpan.Context) : DatadogSpanContext {
     override val spanId: Long = delegate.spanId
     override val samplingPriority: Int = delegate.samplingPriority
     override val traceId: DatadogTraceId = DatadogTraceIdAdapter(delegate.traceId)
     override val tags: Map<String?, Any?>? = (delegate as? DDSpanContext)?.tags
+    override val serviceName: String?
+        get() = (delegate as? DDSpanContext)?.serviceName
 
     override fun setSamplingPriority(samplingPriority: Int): Boolean {
         val delegate = delegate

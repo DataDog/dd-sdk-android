@@ -18,7 +18,6 @@ import com.datadog.android.sessionreplay.SessionReplayConfiguration
 import com.datadog.android.trace.TraceConfiguration
 import com.datadog.android.trace.TracingHeaderType
 import com.datadog.android.trace.api.tracer.DatadogTracer
-import com.datadog.android.trace.impl.DatadogTracerFactoryAdapter
 import java.util.UUID
 
 internal object RuntimeConfig {
