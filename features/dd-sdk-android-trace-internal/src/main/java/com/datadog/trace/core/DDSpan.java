@@ -322,6 +322,11 @@ public class DDSpan
     return context.getTrace().getRootSpan();
   }
 
+  @Override
+  public void drop() {
+    context.getTrace().unregisterSpan(this);
+  }
+
   /**
    * Checks whether the span is also the local root span
    *
