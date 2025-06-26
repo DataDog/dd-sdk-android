@@ -53,7 +53,7 @@ ci-image:
   when: manual
   except: [ tags, schedules ]
   tags: [ "arch:amd64" ]
-  image: 486234852809.dkr.ecr.us-east-1.amazonaws.com/docker:24.0.4-gbi-focal
+  image: 486234852809.dkr.ecr.us-east-1.amazonaws.com/docker:24.0.4-jammy
   script:
     - docker buildx build --tag $CI_IMAGE_DOCKER -f ./ci/Dockerfile.gitlab --push .
 
