@@ -3,7 +3,7 @@
  * This product includes software developed at Datadog (https://www.datadoghq.com/).
  * Copyright 2016-Present Datadog, Inc.
  */
-package com.datadog.android.trace.api.span
+package com.datadog.android.trace.api.scope
 
 interface DatadogScope{
     fun close()

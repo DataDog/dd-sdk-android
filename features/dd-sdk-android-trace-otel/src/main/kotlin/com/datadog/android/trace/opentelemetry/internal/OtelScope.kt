@@ -6,7 +6,7 @@
 
 package com.datadog.android.trace.opentelemetry.internal
 
-import com.datadog.android.trace.api.span.DatadogScope
+import com.datadog.android.trace.api.scope.DatadogScope
 import io.opentelemetry.context.Scope
 
 internal class OtelScope(internal val scope: Scope, internal val delegate: DatadogScope) : Scope {

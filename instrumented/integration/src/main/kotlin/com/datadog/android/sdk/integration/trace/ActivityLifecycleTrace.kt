@@ -16,7 +16,7 @@ import com.datadog.android.sdk.integration.RuntimeConfig
 import com.datadog.android.sdk.utils.getForgeSeed
 import com.datadog.android.sdk.utils.getTrackingConsent
 import com.datadog.android.trace.Trace
-import com.datadog.android.trace.api.span.DatadogScope
+import com.datadog.android.trace.api.scope.DatadogScope
 import com.datadog.android.trace.api.span.DatadogSpan
 import com.datadog.android.trace.api.tracer.DatadogTracer
 import fr.xgouchet.elmyr.Forge

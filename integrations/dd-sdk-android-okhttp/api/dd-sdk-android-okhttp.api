@@ -64,7 +64,7 @@ public class com/datadog/android/okhttp/trace/DeterministicTraceSampler : com/da
 }
 
 public final class com/datadog/android/okhttp/trace/OkHttpRequestExtKt {
-	public static final fun parentSpan (Lokhttp3/Request$Builder;Lio/opentracing/Span;)Lokhttp3/Request$Builder;
+	public static final fun parentSpan (Lokhttp3/Request$Builder;Lcom/datadog/android/trace/api/span/DatadogSpan;)Lokhttp3/Request$Builder;
 }
 
 public abstract interface class com/datadog/android/okhttp/trace/TracedRequestListener {

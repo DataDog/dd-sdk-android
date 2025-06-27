@@ -6,15 +6,15 @@
 package com.datadog.android.trace.impl
 
 import com.datadog.android.trace.api.propagation.DatadogPropagation
-import com.datadog.android.trace.api.span.DataScopeListener
-import com.datadog.android.trace.api.span.DatadogScope
+import com.datadog.android.trace.api.scope.DataScopeListener
+import com.datadog.android.trace.api.scope.DatadogScope
 import com.datadog.android.trace.api.span.DatadogSpan
 import com.datadog.android.trace.api.span.DatadogSpanBuilder
 import com.datadog.android.trace.api.tracer.DatadogTracer
 import com.datadog.trace.bootstrap.instrumentation.api.AgentTracer
 import com.datadog.trace.bootstrap.instrumentation.api.ScopeSource
 
-internal class DatadogTracerAdapter(private val delegate: AgentTracer.TracerAPI) : DatadogTracer {
+internal class DatadogTracerAdapter(internal val delegate: AgentTracer.TracerAPI) : DatadogTracer {
 
     override fun buildSpan(spanName: CharSequence): DatadogSpanBuilder = DatadogSpanBuilderAdapter(
         @Suppress("DEPRECATION")
@@ -31,6 +31,7 @@ internal class DatadogTracerAdapter(private val delegate: AgentTracer.TracerAPI)
     }
 
     override fun activeSpan(): DatadogSpan? = delegate.activeSpan()?.let(::DatadogSpanAdapter)
+
     override fun activateSpan(span: DatadogSpan): DatadogScope? {
         if (span !is DatadogSpanAdapter) return null
         val scope = delegate.activateSpan(span.delegate, ScopeSource.INSTRUMENTATION) ?: return null

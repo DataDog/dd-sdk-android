@@ -18,7 +18,7 @@ import com.datadog.android.internal.concurrent.CompletableFuture
 import com.datadog.android.trace.InternalCoreWriterProvider
 import com.datadog.android.trace.TracingHeaderType
 import com.datadog.android.trace.api.constants.DatadogTracingConstants
-import com.datadog.android.trace.api.span.DataScopeListener
+import com.datadog.android.trace.api.scope.DataScopeListener
 import com.datadog.android.trace.api.tracer.DatadogTracer
 import com.datadog.android.trace.impl.DatadogTracing
 import com.datadog.android.trace.opentelemetry.internal.DatadogContextStorageWrapper

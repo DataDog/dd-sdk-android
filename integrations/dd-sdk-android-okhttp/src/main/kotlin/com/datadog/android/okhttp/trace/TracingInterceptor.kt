@@ -25,7 +25,10 @@ import com.datadog.android.okhttp.TraceContextInjection
 import com.datadog.android.okhttp.internal.trace.toInternalTracingHeaderType
 import com.datadog.android.trace.AndroidTracer
 import com.datadog.android.trace.TracingHeaderType
-import com.datadog.android.trace.api.constants.DatadogTracingConstants
+import com.datadog.android.trace.api.constants.DatadogTracingConstants.TracerConfig
+import com.datadog.android.trace.api.constants.DatadogTracingConstants.Tags
+import com.datadog.android.trace.api.constants.DatadogTracingConstants.PrioritySampling
+import com.datadog.android.trace.api.constants.DatadogTracingConstants.ErrorPriorities
 import com.datadog.android.trace.api.span.DatadogSpan
 import com.datadog.android.trace.api.span.DatadogSpanContext
 import com.datadog.android.trace.api.tracer.DatadogTracer
@@ -211,9 +214,9 @@ internal constructor(
 
         if (span.isRootSpan) {
             val samplingPriority: Int = if (isSampled) {
-                DatadogTracingConstants.PrioritySampling.SAMPLER_KEEP
+                PrioritySampling.SAMPLER_KEEP
             } else {
-                DatadogTracingConstants.PrioritySampling.SAMPLER_DROP
+                PrioritySampling.SAMPLER_DROP
             }
 
             val spanContext = span.context()
@@ -312,9 +315,9 @@ internal constructor(
             .start()
 
         span.resourceName = url.substringBefore(URL_QUERY_PARAMS_BLOCK_SEPARATOR)
-        span.setTag(DatadogTracingConstants.Tags.KEY_HTTP_URL, url)
-        span.setTag(DatadogTracingConstants.Tags.KEY_HTTP_METHOD, request.method)
-        span.setTag(DatadogTracingConstants.Tags.KEY_SPAN_KIND, DatadogTracingConstants.Tags.VALUE_SPAN_KIND_CLIENT)
+        span.setTag(Tags.KEY_HTTP_URL, url)
+        span.setTag(Tags.KEY_HTTP_METHOD, request.method)
+        span.setTag(Tags.KEY_SPAN_KIND, Tags.VALUE_SPAN_KIND_CLIENT)
 
         return span
     }
@@ -325,7 +328,7 @@ internal constructor(
 
         return when {
             headerSamplingPriority != null -> headerSamplingPriority
-            openTelemetrySpanSamplingPriority == DatadogTracingConstants.PrioritySampling.UNSET -> null
+            openTelemetrySpanSamplingPriority == PrioritySampling.UNSET -> null
             else -> openTelemetrySpanSamplingPriority?.let { samplingPriority -> samplingPriority > 0 }
         }
     }
@@ -335,9 +338,9 @@ internal constructor(
         val datadogSamplingPriority =
             request.header(DATADOG_SAMPLING_PRIORITY_HEADER)?.toIntOrNull()
         if (datadogSamplingPriority != null) {
-            if (datadogSamplingPriority == DatadogTracingConstants.PrioritySampling.UNSET) return null
-            return datadogSamplingPriority == DatadogTracingConstants.PrioritySampling.USER_KEEP ||
-                datadogSamplingPriority == DatadogTracingConstants.PrioritySampling.SAMPLER_KEEP
+            if (datadogSamplingPriority == PrioritySampling.UNSET) return null
+            return datadogSamplingPriority == PrioritySampling.USER_KEEP ||
+                datadogSamplingPriority == PrioritySampling.SAMPLER_KEEP
         }
         val b3MSamplingPriority = request.header(B3M_SAMPLING_PRIORITY_KEY)
         if (b3MSamplingPriority != null) {
@@ -587,7 +590,7 @@ internal constructor(
             onRequestIntercepted(sdkCore, request, null, response, null)
         } else {
             val statusCode = response.code
-            span.setTag(DatadogTracingConstants.Tags.KEY_HTTP_STATUS, statusCode)
+            span.setTag(Tags.KEY_HTTP_STATUS, statusCode)
             if (statusCode in HttpURLConnection.HTTP_BAD_REQUEST until HttpURLConnection.HTTP_INTERNAL_ERROR) {
                 span.isError = true
             }
@@ -610,9 +613,9 @@ internal constructor(
             onRequestIntercepted(sdkCore, request, null, null, throwable)
         } else {
             span.isError = true
-            span.setTag(DatadogTracingConstants.Tags.KEY_ERROR_MSG, throwable.message)
-            span.setTag(DatadogTracingConstants.Tags.KEY_ERROR_TYPE, throwable.javaClass.name)
-            span.setTag(DatadogTracingConstants.Tags.KEY_ERROR_STACK, throwable.loggableStackTrace())
+            span.setTag(Tags.KEY_ERROR_MSG, throwable.message)
+            span.setTag(Tags.KEY_ERROR_TYPE, throwable.javaClass.name)
+            span.setTag(Tags.KEY_ERROR_STACK, throwable.loggableStackTrace())
             onRequestIntercepted(sdkCore, request, span, null, throwable)
         }
         span.finishRumAware(isSampled)
@@ -866,15 +869,17 @@ internal constructor(
                     ?.getCoreTracerWriter()
 
                 if (writer == null) {
-                        featuredSdkCore.internalLogger.log(
-                            InternalLogger.Level.ERROR,
-                            InternalLogger.Target.MAINTAINER,
-                            {
-                                "The Tracing feature is not implementing the InternalCoreWriterProvider interface. " +
-                                        "No tracing data will be sent."
-                            }
-                        )
-                    }
+                    featuredSdkCore.internalLogger.log(
+                        InternalLogger.Level.ERROR,
+                        InternalLogger.Target.MAINTAINER,
+                        {
+                            "The Tracing feature is not implementing the InternalCoreWriterProvider interface. " +
+                                "No tracing data will be sent."
+                        }
+                    )
+                }
+
+                val sampler = DatadogTracing.newSampler()
 
                 DatadogTracing.newTracerBuilder(featuredSdkCore.internalLogger)
                     .withProperties(
@@ -886,7 +891,7 @@ internal constructor(
                         }
                     )
                     .withWriter(writer)
-                    .withSampler(AllSampler())
+                    .withSampler(sampler)
                     .build()
             }
     }

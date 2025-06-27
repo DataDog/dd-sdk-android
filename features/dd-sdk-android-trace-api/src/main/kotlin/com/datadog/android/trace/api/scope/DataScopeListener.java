@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.trace.api.span;
+package com.datadog.android.trace.api.scope;
 
 /** Hooks for scope activation */
 public interface DataScopeListener {

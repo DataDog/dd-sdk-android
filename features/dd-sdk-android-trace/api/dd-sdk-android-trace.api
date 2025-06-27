@@ -68,8 +68,9 @@ public final class com/datadog/android/trace/impl/DatadogTracing {
 	public static final field INSTANCE Lcom/datadog/android/trace/impl/DatadogTracing;
 	public static final field spanIdConverter Lcom/datadog/android/trace/api/span/DatadogSpanIdConverter;
 	public static final field traceIdFactory Lcom/datadog/android/trace/api/trace/DatadogTraceIdFactory;
+	public final fun newSampler ()Lcom/datadog/android/trace/api/tracer/DatadogTracerSampler;
 	public final fun newTracerBuilder (Lcom/datadog/android/api/InternalLogger;)Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;
-	public final fun newWriter (Lcom/datadog/trace/common/writer/Writer;)Lcom/datadog/android/trace/api/span/DatadogSpanWriter;
+	public final fun wrapWriter (Lcom/datadog/trace/common/writer/Writer;)Lcom/datadog/android/trace/api/span/DatadogSpanWriter;
 }
 
 public final class com/datadog/android/trace/internal/SpanAttributes {

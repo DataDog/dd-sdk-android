@@ -6,6 +6,8 @@
 package com.datadog.android.trace.api.trace
 
 interface DatadogTraceIdFactory {
+    @Suppress("PropertyName")
+    val ZERO: DatadogTraceId
     fun from(id: Long): DatadogTraceId
     fun from(id: String): DatadogTraceId
     fun fromHex(id: String): DatadogTraceId

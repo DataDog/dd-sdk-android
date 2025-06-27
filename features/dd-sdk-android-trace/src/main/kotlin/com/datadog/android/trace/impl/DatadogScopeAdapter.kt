@@ -5,7 +5,7 @@
  */
 package com.datadog.android.trace.impl
 
-import com.datadog.android.trace.api.span.DatadogScope
+import com.datadog.android.trace.api.scope.DatadogScope
 import com.datadog.trace.bootstrap.instrumentation.api.AgentScope
 
 internal class DatadogScopeAdapter(private val delegate: AgentScope) : DatadogScope {

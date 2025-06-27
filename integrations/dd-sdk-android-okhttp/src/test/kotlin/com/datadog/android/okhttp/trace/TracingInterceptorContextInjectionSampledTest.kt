@@ -19,14 +19,13 @@ import com.datadog.android.okhttp.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.okhttp.utils.verifyLog
 import com.datadog.android.trace.TracingHeaderType
 import com.datadog.android.trace.api.trace.DatadogTraceId
-import com.datadog.android.trace.api.constants.DatadogTracingConstants
+import com.datadog.android.trace.api.constants.DatadogTracingUtility
 import com.datadog.android.trace.api.propagation.DatadogPropagation
 import com.datadog.android.trace.api.span.DatadogSpan
 import com.datadog.android.trace.api.span.DatadogSpanBuilder
 import com.datadog.android.trace.api.span.DatadogSpanContext
 import com.datadog.android.trace.api.tracer.DatadogTracer
-import com.datadog.android.trace.impl.DatadogSpanIdConverterAdapter
-import com.datadog.android.trace.impl.DatadogTraceIdAdapter
+import com.datadog.android.trace.impl.DatadogTracing
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
@@ -493,8 +492,8 @@ internal class TracingInterceptorContextInjectionSampledTest {
         forge: Forge
     ) {
         // Given
-        val fakeExpectedTraceId = DatadogTraceIdAdapter.fromHex(fakeTraceContext.traceId)
-        val fakeExpectedSpanId = DatadogSpanIdConverterAdapter.fromHex(fakeTraceContext.spanId)
+        val fakeExpectedTraceId = DatadogTracing.traceIdFactory.fromHex(fakeTraceContext.traceId)
+        val fakeExpectedSpanId = DatadogTracing.spanIdConverter.fromHex(fakeTraceContext.spanId)
         val fakeExtractedContext = forge.newSpanContextMock<DatadogSpanContext>(
             fakeExpectedTraceId,
             fakeExpectedSpanId
@@ -634,8 +633,8 @@ internal class TracingInterceptorContextInjectionSampledTest {
             it.addHeader(
                 TracingInterceptor.DATADOG_SAMPLING_PRIORITY_HEADER,
                 forge.anElementFrom(
-                    DatadogTracingConstants.PrioritySampling.SAMPLER_KEEP.toString(),
-                    DatadogTracingConstants.PrioritySampling.USER_KEEP.toString()
+                    DatadogTracingUtility.DatadogTracingPrioritySampling.SAMPLER_KEEP.toString(),
+                    DatadogTracingUtility.DatadogTracingPrioritySampling.USER_KEEP.toString()
                 )
             )
         }
@@ -666,7 +665,7 @@ internal class TracingInterceptorContextInjectionSampledTest {
         fakeRequest = forgeRequest(forge) {
             it.addHeader(
                 TracingInterceptor.B3M_SAMPLING_PRIORITY_KEY,
-                DatadogTracingConstants.PrioritySampling.SAMPLER_KEEP.toString()
+                DatadogTracingUtility.DatadogTracingPrioritySampling.SAMPLER_KEEP.toString()
             )
         }
         stubChain(mockChain, statusCode)
@@ -780,8 +779,8 @@ internal class TracingInterceptorContextInjectionSampledTest {
             it.addHeader(
                 TracingInterceptor.DATADOG_SAMPLING_PRIORITY_HEADER,
                 forge.anElementFrom(
-                    DatadogTracingConstants.PrioritySampling.SAMPLER_DROP.toString(),
-                    DatadogTracingConstants.PrioritySampling.USER_DROP.toString()
+                    DatadogTracingUtility.DatadogTracingPrioritySampling.SAMPLER_DROP.toString(),
+                    DatadogTracingUtility.DatadogTracingPrioritySampling.USER_DROP.toString()
                 )
             )
         }
@@ -818,7 +817,7 @@ internal class TracingInterceptorContextInjectionSampledTest {
         fakeRequest = forgeRequest(forge) {
             it.addHeader(
                 TracingInterceptor.B3M_SAMPLING_PRIORITY_KEY,
-                DatadogTracingConstants.PrioritySampling.SAMPLER_DROP.toString()
+                DatadogTracingUtility.DatadogTracingPrioritySampling.SAMPLER_DROP.toString()
             )
         }
         stubChain(mockChain, statusCode)
@@ -853,7 +852,7 @@ internal class TracingInterceptorContextInjectionSampledTest {
             it.addHeader(
                 TracingInterceptor.B3_HEADER_KEY,
                 forge.anElementFrom(
-                    DatadogTracingConstants.PrioritySampling.SAMPLER_DROP.toString(),
+                    DatadogTracingUtility.DatadogTracingPrioritySampling.SAMPLER_DROP.toString(),
                     forge.aStringMatching("[a-f0-9]{32}\\-[a-f0-9]{16}\\-0")
                 )
             )

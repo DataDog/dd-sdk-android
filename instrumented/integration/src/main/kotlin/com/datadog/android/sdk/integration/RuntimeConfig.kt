@@ -9,6 +9,7 @@ package com.datadog.android.sdk.integration
 import android.os.Build
 import com.datadog.android._InternalProxy
 import com.datadog.android.api.SdkCore
+import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.UploadFrequency
 import com.datadog.android.log.Logger
@@ -18,6 +19,7 @@ import com.datadog.android.sessionreplay.SessionReplayConfiguration
 import com.datadog.android.trace.TraceConfiguration
 import com.datadog.android.trace.TracingHeaderType
 import com.datadog.android.trace.api.tracer.DatadogTracer
+import com.datadog.android.trace.impl.DatadogTracing
 import java.util.UUID
 
 internal object RuntimeConfig {
@@ -54,10 +56,10 @@ internal object RuntimeConfig {
         return logger
     }
 
-    fun tracer(sdkCore: SdkCore): DatadogTracer = DatadogTracerFactoryAdapter(sdkCore)
-        .create(
-            setOf(TracingHeaderType.DATADOG, TracingHeaderType.TRACECONTEXT)
-        )
+    fun tracer(sdkCore: SdkCore): DatadogTracer =
+        DatadogTracing.newTracerBuilder((sdkCore as FeatureSdkCore).internalLogger)
+            .withTracingHeadersTypes(setOf(TracingHeaderType.DATADOG, TracingHeaderType.TRACECONTEXT))
+            .build()
 
     fun configBuilder(): Configuration.Builder {
         return Configuration.Builder(

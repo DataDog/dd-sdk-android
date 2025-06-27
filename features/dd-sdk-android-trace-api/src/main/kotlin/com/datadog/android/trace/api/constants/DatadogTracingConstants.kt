@@ -6,7 +6,7 @@
 package com.datadog.android.trace.api.constants
 
 object DatadogTracingConstants {
-    const val DEFAULT_ASYNC_PROPAGATING = true
+    const val DEFAULT_ASYNC_PROPAGATING: Boolean = true
 
     object Tags {
 
@@ -51,11 +51,12 @@ object DatadogTracingConstants {
     }
 
     object TracerConfig {
-        const val SPAN_TAGS = "trace.span.tags"
-        const val TRACE_RATE_LIMIT = "trace.rate.limit"
-        const val TRACE_SAMPLE_RATE = "trace.sample.rate"
-        const val PROPAGATION_STYLE_EXTRACT = "propagation.style.extract"
-        const val PROPAGATION_STYLE_INJECT = "propagation.style.inject"
+        const val SPAN_TAGS: String = "trace.span.tags"
+        const val TRACE_RATE_LIMIT: String = "trace.rate.limit"
+        const val TRACE_SAMPLE_RATE: String = "trace.sample.rate"
+        const val PROPAGATION_STYLE_EXTRACT: String = "propagation.style.extract"
+        const val PROPAGATION_STYLE_INJECT: String = "propagation.style.inject"
+        const val URL_AS_RESOURCE_NAME: String = "trace.URLAsResourceNameRule.enabled"
     }
 
     object ErrorPriorities {

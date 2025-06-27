@@ -8,4 +8,4 @@ package com.datadog.android.trace.impl
 import com.datadog.android.trace.api.tracer.DatadogTracerSampler
 import com.datadog.trace.common.sampling.Sampler
 
-internal class DatadogTracerSamplerWrapper(val delegate: Sampler) : DatadogTracerSampler
+internal class DatadogTracerSamplerWrapper(val delegate: Sampler?) : DatadogTracerSampler

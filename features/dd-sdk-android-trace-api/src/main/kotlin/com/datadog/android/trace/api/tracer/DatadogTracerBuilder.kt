@@ -5,14 +5,17 @@
  */
 package com.datadog.android.trace.api.tracer
 
+import com.datadog.android.trace.TracingHeaderType
 import com.datadog.android.trace.api.span.DatadogSpanWriter
 import java.util.Properties
 
 interface DatadogTracerBuilder {
     fun build(): DatadogTracer
     fun withProperties(properties: Properties): DatadogTracerBuilder
+    fun withTracingHeadersTypes(tracingHeadersTypes: Set<TracingHeaderType>): DatadogTracerBuilder
     fun withServiceName(serviceName: String): DatadogTracerBuilder
     fun withPartialFlushMinSpans(partialFlushThreshold: Int): DatadogTracerBuilder
     fun withIdGenerationStrategy(key: String, traceId128BitGenerationEnabled: Boolean): DatadogTracerBuilder
     fun withWriter(writerAdapter: DatadogSpanWriter?): DatadogTracerBuilder
+    fun withSampler(samplerAdapter: DatadogTracerSampler?): DatadogTracerBuilder
 }

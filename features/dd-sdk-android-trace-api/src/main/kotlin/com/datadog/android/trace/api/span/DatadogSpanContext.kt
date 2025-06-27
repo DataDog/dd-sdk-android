@@ -12,8 +12,6 @@ interface DatadogSpanContext {
 
     val spanId: Long
 
-    val serviceName: String?
-
     val samplingPriority: Int
 
     val tags: Map<String?, Any?>?

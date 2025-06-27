@@ -8,11 +8,10 @@ package com.datadog.android.okhttp.internal.utils
 
 import com.datadog.android.internal.utils.toHexString
 import com.datadog.android.log.LogAttributes
-import com.datadog.android.okhttp.trace.aDatadogTraceId
 import com.datadog.android.okhttp.trace.newSpanMock
 import com.datadog.android.trace.api.span.DatadogSpan
 import com.datadog.android.trace.api.span.DatadogSpanContext
-import com.datadog.android.trace.impl.DatadogTraceIdAdapter
+import com.datadog.android.trace.impl.DatadogTracing
 import com.datadog.tools.unit.forge.BaseConfigurator
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.LongForgery
@@ -80,7 +79,7 @@ internal class SpanSamplingIdProviderTest {
     ) {
         // Given
         val expectedId = traceId.toULong()
-        whenever(mockSpanContext.traceId) doReturn DatadogTraceIdAdapter.from(traceId)
+        whenever(mockSpanContext.traceId) doReturn DatadogTracing.traceIdFactory.from(traceId)
 
         // When
         val result = SpanSamplingIdProvider.provideId(mockSpan)
@@ -93,7 +92,7 @@ internal class SpanSamplingIdProviderTest {
     fun `M return 0u W provideId() {no rum session, invalid traceId}`() {
         // Given
         val expectedId: ULong = 0u
-        whenever(mockSpanContext.traceId) doReturn DatadogTraceIdAdapter.ZERO
+        whenever(mockSpanContext.traceId) doReturn DatadogTracing.traceIdFactory.ZERO
 
         // When
         val result = SpanSamplingIdProvider.provideId(mockSpan)
@@ -106,7 +105,7 @@ internal class SpanSamplingIdProviderTest {
     fun `M return 0u W provideId() {no rum session, empty traceId}`() {
         // Given
         val expectedId: ULong = 0u
-        whenever(mockSpanContext.traceId) doReturn DatadogTraceIdAdapter.ZERO
+        whenever(mockSpanContext.traceId) doReturn DatadogTracing.traceIdFactory.ZERO
 
         // When
         val result = SpanSamplingIdProvider.provideId(mockSpan)

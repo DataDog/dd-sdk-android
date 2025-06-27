@@ -6,11 +6,14 @@
 package com.datadog.android.trace.impl
 
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.SdkCore
 import com.datadog.android.lint.InternalApi
 import com.datadog.android.trace.api.span.DatadogSpanIdConverter
 import com.datadog.android.trace.api.span.DatadogSpanWriter
 import com.datadog.android.trace.api.trace.DatadogTraceIdFactory
 import com.datadog.android.trace.api.tracer.DatadogTracerBuilder
+import com.datadog.android.trace.api.tracer.DatadogTracerSampler
+import com.datadog.trace.common.sampling.AllSampler
 import com.datadog.trace.common.writer.NoOpWriter
 import com.datadog.trace.common.writer.Writer
 
@@ -25,7 +28,11 @@ object DatadogTracing {
     fun newTracerBuilder(internalLogger: InternalLogger): DatadogTracerBuilder =
         DatadogTracerBuilderAdapter(internalLogger)
 
-    fun newWriter(writerDelegate: Writer?): DatadogSpanWriter {
+    fun wrapWriter(writerDelegate: Writer?): DatadogSpanWriter {
         return DatadogSpanWriterWrapper(writerDelegate ?: NoOpWriter())
+    }
+
+    fun newSampler(): DatadogTracerSampler {
+        return DatadogTracerSamplerWrapper(AllSampler())
     }
 }

@@ -82,6 +82,21 @@ dependencies {
     testImplementation(libs.systemStubsJupiter)
 
     unmock(libs.robolectric)
+
+    // Test Fixtures
+    testFixturesImplementation(libs.kotlin)
+    testFixturesImplementation(libs.bundles.jUnit5)
+    testFixturesImplementation(libs.okHttp)
+    testFixturesImplementation(libs.bundles.testTools)
+    testFixturesImplementation(project(":features:dd-sdk-android-trace-internal"))
+    testFixturesImplementation(project(":tools:unit")) {
+        attributes {
+            attribute(
+                com.android.build.api.attributes.ProductFlavorAttr.of("platform"),
+                objects.named("jvm")
+            )
+        }
+    }
 }
 
 unMock {

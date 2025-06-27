@@ -6,7 +6,7 @@
 
 package com.datadog.android.trace.opentelemetry.internal
 
-import com.datadog.android.trace.api.span.DatadogScope
+import com.datadog.android.trace.api.scope.DatadogScope
 import com.datadog.android.trace.opentelemetry.utils.forge.Configurator
 import com.datadog.opentelemetry.trace.OtelSpan
 import fr.xgouchet.elmyr.Forge

@@ -44,6 +44,7 @@ dependencies {
     implementation(project(":features:dd-sdk-android-trace"))
     implementation(libs.kotlin)
     implementation(libs.coroutinesCore)
+    implementation(libs.bundles.openTracing)
 
     testImplementation(project(":tools:unit")) {
         attributes {

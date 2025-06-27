@@ -17,8 +17,6 @@ internal class DatadogSpanContextAdapter(internal val delegate: AgentSpan.Contex
     override val samplingPriority: Int = delegate.samplingPriority
     override val traceId: DatadogTraceId = DatadogTraceIdAdapter(delegate.traceId)
     override val tags: Map<String?, Any?>? = (delegate as? DDSpanContext)?.tags
-    override val serviceName: String?
-        get() = (delegate as? DDSpanContext)?.serviceName
 
     override fun setSamplingPriority(samplingPriority: Int): Boolean {
         val delegate = delegate

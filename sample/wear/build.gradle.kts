@@ -71,6 +71,8 @@ dependencies {
     implementation(project(":features:dd-sdk-android-logs"))
     coreLibraryDesugaring(libs.androidDesugaringSdk)
     implementation(libs.timber)
+    implementation(project(":features:dd-sdk-android-trace-internal"))
+    implementation(libs.bundles.openTracing)
     implementation("androidx.core:core-ktx:1.7.0")
     implementation("com.google.android.gms:play-services-wearable:17.1.0")
     implementation("androidx.legacy:legacy-support-v4:1.0.0")

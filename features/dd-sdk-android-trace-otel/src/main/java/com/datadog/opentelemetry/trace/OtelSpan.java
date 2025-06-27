@@ -13,8 +13,11 @@ import static io.opentelemetry.api.trace.StatusCode.ERROR;
 import static io.opentelemetry.api.trace.StatusCode.OK;
 import static io.opentelemetry.api.trace.StatusCode.UNSET;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+
 import com.datadog.android.trace.api.constants.DatadogTracingConstants;
-import com.datadog.android.trace.api.span.DatadogScope;
+import com.datadog.android.trace.api.scope.DatadogScope;
 import com.datadog.android.trace.api.span.DatadogSpan;
 import com.datadog.android.trace.api.span.DatadogSpanContext;
 import com.datadog.android.trace.api.tracer.DatadogTracer;
@@ -49,7 +52,7 @@ public class OtelSpan implements Span {
   }
 
   @Override
-  public <T> Span setAttribute(AttributeKey<T> key, T value) {
+  public <T> Span setAttribute(@NonNull AttributeKey<T> key, @Nullable T value) {
     if (this.recording && !applyReservedAttribute(this.delegateSpan, key, value)) {
       switch (key.getType()) {
         case STRING_ARRAY:

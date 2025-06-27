@@ -113,7 +113,7 @@ public final class OtelConventions {
 
   public static void applyNamingConvention(DatadogSpan span) {
     // Check if span operation name is unchanged from its default value
-    if (span.getOperationName().equals(SPAN_KIND_INTERNAL)) {
+    if (SPAN_KIND_INTERNAL.equals(span.getOperationName())) {
       span.setOperationName(computeOperationName(span).toLowerCase(ROOT));
     }
   }

@@ -10,6 +10,7 @@ import com.datadog.android.trace.api.trace.DatadogTraceIdFactory
 import com.datadog.trace.api.DDTraceId
 
 internal object DatadogTraceIdFactoryAdapter : DatadogTraceIdFactory {
+    override val ZERO: DatadogTraceId = DatadogTraceIdAdapter.ZERO
     override fun from(id: Long): DatadogTraceId = DatadogTraceIdAdapter(DDTraceId.from(id))
     override fun from(id: String): DatadogTraceId = DatadogTraceIdAdapter(DDTraceId.from(id))
     override fun fromHex(id: String): DatadogTraceId = DatadogTraceIdAdapter(DDTraceId.fromHex(id))

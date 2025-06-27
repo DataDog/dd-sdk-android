@@ -72,7 +72,7 @@ internal class TracingFeature(
     // region InternalCoreWriterProvider
 
     override fun getCoreTracerWriter(): DatadogSpanWriter {
-        return DatadogTracing.newWriter(coreTracerDataWriter)
+        return DatadogTracing.wrapWriter(coreTracerDataWriter)
     }
 
     // endregion

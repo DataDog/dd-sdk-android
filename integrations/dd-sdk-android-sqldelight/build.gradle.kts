@@ -47,6 +47,7 @@ dependencies {
     implementation(libs.kotlin)
     implementation(libs.okHttp)
     implementation(libs.sqlDelight)
+    implementation(libs.bundles.openTracing)
 
     testImplementation(project(":tools:unit")) {
         attributes {
