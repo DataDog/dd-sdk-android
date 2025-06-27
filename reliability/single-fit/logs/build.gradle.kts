@@ -6,7 +6,6 @@
 
 import com.datadog.gradle.config.androidLibraryConfig
 import com.datadog.gradle.config.dependencyUpdateConfig
-import com.datadog.gradle.config.javadocConfig
 import com.datadog.gradle.config.junitConfig
 import com.datadog.gradle.config.kotlinConfig
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
@@ -59,5 +58,4 @@ unMock {
 androidLibraryConfig()
 kotlinConfig(jvmBytecodeTarget = JvmTarget.JVM_11)
 junitConfig()
-javadocConfig()
 dependencyUpdateConfig()

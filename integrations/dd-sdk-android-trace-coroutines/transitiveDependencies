@@ -3,7 +3,7 @@ Dependencies List
 io.opentracing:opentracing-api:0.32.0                           :   18 Kb
 io.opentracing:opentracing-noop:0.32.0                          :   10 Kb
 io.opentracing:opentracing-util:0.32.0                          :   10 Kb
-org.jetbrains.kotlin:kotlin-stdlib:1.9.24                       : 1678 Kb
+org.jetbrains.kotlin:kotlin-stdlib:2.0.21                       : 1706 Kb
 org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.4.2         : 1635 Kb
 org.jetbrains:annotations:13.0                                  :   17 Kb
 
