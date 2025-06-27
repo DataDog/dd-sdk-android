@@ -17,7 +17,6 @@ import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.Rum
 import com.datadog.android.rum.RumConfiguration
 import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
-import com.datadog.android.trace.AndroidTracer
 import com.datadog.android.trace.Trace
 import com.datadog.android.trace.TraceConfiguration
 import com.datadog.android.trace.opentelemetry.OtelTracerProvider
@@ -25,7 +24,6 @@ import io.opentelemetry.api.GlobalOpenTelemetry
 import io.opentelemetry.api.OpenTelemetry
 import io.opentelemetry.api.trace.TracerProvider
 import io.opentelemetry.context.propagation.ContextPropagators
-import io.opentracing.util.GlobalTracer
 import timber.log.Timber
 
 /**
@@ -84,11 +82,6 @@ class WearApplication : Application() {
             email = null
         )
 
-        GlobalTracer.registerIfAbsent(
-            AndroidTracer.Builder()
-                .setService(BuildConfig.APPLICATION_ID)
-                .build()
-        )
         GlobalOpenTelemetry.set(object : OpenTelemetry {
             private val tracerProvider = OtelTracerProvider.Builder()
                 .setService(BuildConfig.APPLICATION_ID)
