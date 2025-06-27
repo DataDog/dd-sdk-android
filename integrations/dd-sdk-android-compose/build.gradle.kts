@@ -18,11 +18,12 @@ plugins {
     // Build
     id("com.android.library")
     kotlin("android")
+    alias(libs.plugins.composeCompilerPlugin)
 
     // Publish
     `maven-publish`
     signing
-    id("org.jetbrains.dokka")
+    id("org.jetbrains.dokka-javadoc")
 
     // Analysis tools
     id("com.github.ben-manes.versions")
@@ -42,12 +43,6 @@ android {
     namespace = "com.datadog.android.compose"
     defaultConfig {
         consumerProguardFiles("consumer-rules.pro")
-    }
-    buildFeatures {
-        compose = true
-    }
-    composeOptions {
-        kotlinCompilerExtensionVersion = libs.versions.androidXComposeCompilerExtension.get()
     }
 }
 
@@ -85,7 +80,7 @@ kotlinConfig(jvmBytecodeTarget = JvmTarget.JVM_11)
 androidLibraryConfig()
 taskConfig<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
     compilerOptions {
-        freeCompilerArgs.add("-opt-in=kotlin.RequiresOptIn")
+        optIn.add("kotlin.RequiresOptIn")
     }
 }
 junitConfig()
