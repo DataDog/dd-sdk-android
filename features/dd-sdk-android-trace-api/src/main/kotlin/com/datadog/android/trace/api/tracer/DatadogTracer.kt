@@ -13,7 +13,7 @@ import com.datadog.android.trace.api.span.DatadogSpan
 import com.datadog.android.trace.api.span.DatadogSpanBuilder
 import com.datadog.tools.annotation.NoOpImplementation
 
-@NoOpImplementation
+@NoOpImplementation(publicNoOpImplementation = true)
 interface DatadogTracer {
     fun activeSpan(): DatadogSpan?
     fun propagate(): DatadogPropagation = NoOpDatadogPropagation()

@@ -3,20 +3,22 @@
  * This product includes software developed at Datadog (https://www.datadoghq.com/).
  * Copyright 2016-Present Datadog, Inc.
  */
-package com.datadog.android.trace.api
+package com.datadog.android.trace
 
 import com.datadog.android.trace.api.tracer.DatadogTracer
 import com.datadog.android.trace.api.tracer.NoOpDatadogTracer
 
 object GlobalDatadogTracerHolder {
     @get:Synchronized
-    var tracer: DatadogTracer = NoOpDatadogTracer()
-        private set
+    var tracer: DatadogTracer? = null
+        internal set
 
     @Synchronized
     fun registerIfAbsent(tracer: DatadogTracer) {
-        if (tracer is NoOpDatadogTracer) {
-            this.tracer = tracer
+        if (GlobalDatadogTracerHolder.tracer == null) {
+            GlobalDatadogTracerHolder.tracer = tracer
         }
     }
+
+    fun get(): DatadogTracer = tracer ?: NoOpDatadogTracer()
 }

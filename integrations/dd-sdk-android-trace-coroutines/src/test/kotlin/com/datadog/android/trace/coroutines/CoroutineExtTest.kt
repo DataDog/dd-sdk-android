@@ -6,13 +6,14 @@
 
 package com.datadog.android.trace.coroutines
 
-import com.datadog.tools.unit.setStaticValue
+import com.datadog.android.trace.GlobalDatadogTracerHolder
+import com.datadog.android.trace.api.scope.DatadogScope
+import com.datadog.android.trace.api.span.DatadogSpan
+import com.datadog.android.trace.api.span.DatadogSpanBuilder
+import com.datadog.android.trace.api.span.clear
+import com.datadog.android.trace.api.tracer.DatadogTracer
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeExtension
-import io.opentracing.Scope
-import io.opentracing.Span
-import io.opentracing.Tracer
-import io.opentracing.util.GlobalTracer
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.async
@@ -42,26 +43,26 @@ import org.mockito.quality.Strictness
 class CoroutineExtTest {
 
     @Mock
-    lateinit var mockTracer: Tracer
+    lateinit var mockTracer: DatadogTracer
 
     @Mock
-    lateinit var mockSpanBuilder: Tracer.SpanBuilder
+    lateinit var mockSpanBuilder: DatadogSpanBuilder
 
     @Mock
-    lateinit var mockSpan: Span
+    lateinit var mockSpan: DatadogSpan
 
     @Mock
-    lateinit var mockParentSpan: Span
+    lateinit var mockParentSpan: DatadogSpan
 
     @Mock
-    lateinit var mockScope: Scope
+    lateinit var mockScope: DatadogScope
 
     @StringForgery
     lateinit var fakeOperationName: String
 
     @BeforeEach
     fun `set up`() {
-        GlobalTracer.registerIfAbsent(mockTracer)
+        GlobalDatadogTracerHolder.registerIfAbsent(mockTracer)
         whenever(mockTracer.buildSpan(fakeOperationName)) doReturn mockSpanBuilder
         whenever(mockTracer.activateSpan(mockSpan)) doReturn mockScope
         whenever(mockSpanBuilder.start()) doReturn mockSpan
@@ -69,7 +70,7 @@ class CoroutineExtTest {
 
     @AfterEach
     fun `tear down`() {
-        GlobalTracer::class.java.setStaticValue("isRegistered", false)
+        GlobalDatadogTracerHolder.clear()
     }
 
     @Test
@@ -77,7 +78,7 @@ class CoroutineExtTest {
         // Given
         var lambdaCalled = false
         whenever(mockTracer.activeSpan()) doReturn mockParentSpan
-        whenever(mockSpanBuilder.asChildOf(mockParentSpan)) doReturn mockSpanBuilder
+        whenever(mockSpanBuilder.withParentSpan(mockParentSpan)) doReturn mockSpanBuilder
 
         // When
         MainScope().launchTraced(
@@ -90,7 +91,7 @@ class CoroutineExtTest {
 
         // Then
         assertThat(lambdaCalled).isTrue()
-        verify(mockSpanBuilder).asChildOf(mockParentSpan)
+        verify(mockSpanBuilder).withParentSpan(mockParentSpan)
         inOrder(mockSpan, mockScope) {
             verify(mockSpan).finish()
             verify(mockScope).close()
@@ -102,7 +103,7 @@ class CoroutineExtTest {
         // Given
         var lambdaCalled = false
         whenever(mockTracer.activeSpan()) doReturn null
-        whenever(mockSpanBuilder.asChildOf(null as Span?)) doReturn mockSpanBuilder
+        whenever(mockSpanBuilder.withParentSpan(null as DatadogSpan?)) doReturn mockSpanBuilder
 
         // When
         MainScope().launchTraced(
@@ -115,7 +116,7 @@ class CoroutineExtTest {
 
         // Then
         assertThat(lambdaCalled).isTrue()
-        verify(mockSpanBuilder).asChildOf(null as Span?)
+        verify(mockSpanBuilder).withParentSpan(null as DatadogSpan?)
         inOrder(mockSpan, mockScope) {
             verify(mockSpan).finish()
             verify(mockScope).close()
@@ -127,7 +128,7 @@ class CoroutineExtTest {
         // Given
         var lambdaCalled = false
         whenever(mockTracer.activeSpan()) doReturn mockParentSpan
-        whenever(mockSpanBuilder.asChildOf(mockParentSpan)) doReturn mockSpanBuilder
+        whenever(mockSpanBuilder.withParentSpan(mockParentSpan)) doReturn mockSpanBuilder
 
         // When
         MainScope().launchTraced(
@@ -140,7 +141,7 @@ class CoroutineExtTest {
 
         // Then
         assertThat(lambdaCalled).isTrue()
-        verify(mockSpanBuilder).asChildOf(mockParentSpan)
+        verify(mockSpanBuilder).withParentSpan(mockParentSpan)
         verify(mockTracer, never()).activateSpan(mockSpan)
         verify(mockSpan).finish()
     }
@@ -150,7 +151,7 @@ class CoroutineExtTest {
         // Given
         var lambdaCalled = false
         whenever(mockTracer.activeSpan()) doReturn mockParentSpan
-        whenever(mockSpanBuilder.asChildOf(mockParentSpan)) doReturn mockSpanBuilder
+        whenever(mockSpanBuilder.withParentSpan(mockParentSpan)) doReturn mockSpanBuilder
 
         // When
         runBlocking {
@@ -165,7 +166,7 @@ class CoroutineExtTest {
 
         // Then
         assertThat(lambdaCalled).isTrue()
-        verify(mockSpanBuilder).asChildOf(mockParentSpan)
+        verify(mockSpanBuilder).withParentSpan(mockParentSpan)
         inOrder(mockSpan, mockScope) {
             verify(mockSpan).finish()
             verify(mockScope).close()
@@ -177,7 +178,7 @@ class CoroutineExtTest {
         // Given
         var lambdaCalled = false
         whenever(mockTracer.activeSpan()) doReturn null
-        whenever(mockSpanBuilder.asChildOf(null as Span?)) doReturn mockSpanBuilder
+        whenever(mockSpanBuilder.withParentSpan(null as DatadogSpan?)) doReturn mockSpanBuilder
 
         // When
         runBlocking {
@@ -192,7 +193,7 @@ class CoroutineExtTest {
 
         // Then
         assertThat(lambdaCalled).isTrue()
-        verify(mockSpanBuilder).asChildOf(null as Span?)
+        verify(mockSpanBuilder).withParentSpan(null as DatadogSpan?)
         inOrder(mockSpan, mockScope) {
             verify(mockSpan).finish()
             verify(mockScope).close()
@@ -204,7 +205,7 @@ class CoroutineExtTest {
         // Given
         var lambdaCalled = false
         whenever(mockTracer.activeSpan()) doReturn mockParentSpan
-        whenever(mockSpanBuilder.asChildOf(mockParentSpan)) doReturn mockSpanBuilder
+        whenever(mockSpanBuilder.withParentSpan(mockParentSpan)) doReturn mockSpanBuilder
 
         // When
         runBlocking {
@@ -219,7 +220,7 @@ class CoroutineExtTest {
 
         // Then
         assertThat(lambdaCalled).isTrue()
-        verify(mockSpanBuilder).asChildOf(mockParentSpan)
+        verify(mockSpanBuilder).withParentSpan(mockParentSpan)
         verify(mockTracer, never()).activateSpan(mockSpan)
         verify(mockSpan).finish()
     }
@@ -229,7 +230,7 @@ class CoroutineExtTest {
         // Given
         var lambdaCalled = false
         whenever(mockTracer.activeSpan()) doReturn mockParentSpan
-        whenever(mockSpanBuilder.asChildOf(mockParentSpan)) doReturn mockSpanBuilder
+        whenever(mockSpanBuilder.withParentSpan(mockParentSpan)) doReturn mockSpanBuilder
 
         // When
         runBlockingTraced(fakeOperationName, Dispatchers.Default) {
@@ -241,7 +242,7 @@ class CoroutineExtTest {
 
         // Then
         assertThat(lambdaCalled).isTrue()
-        verify(mockSpanBuilder).asChildOf(mockParentSpan)
+        verify(mockSpanBuilder).withParentSpan(mockParentSpan)
         inOrder(mockSpan, mockScope) {
             verify(mockSpan).finish()
             verify(mockScope).close()
@@ -253,7 +254,7 @@ class CoroutineExtTest {
         // Given
         var lambdaCalled = false
         whenever(mockTracer.activeSpan()) doReturn null
-        whenever(mockSpanBuilder.asChildOf(null as Span?)) doReturn mockSpanBuilder
+        whenever(mockSpanBuilder.withParentSpan(null as DatadogSpan?)) doReturn mockSpanBuilder
 
         // When
         runBlockingTraced(fakeOperationName, Dispatchers.Default) {
@@ -265,7 +266,7 @@ class CoroutineExtTest {
 
         // Then
         assertThat(lambdaCalled).isTrue()
-        verify(mockSpanBuilder).asChildOf(null as Span?)
+        verify(mockSpanBuilder).withParentSpan(null as DatadogSpan?)
         inOrder(mockSpan, mockScope) {
             verify(mockSpan).finish()
             verify(mockScope).close()
@@ -277,7 +278,7 @@ class CoroutineExtTest {
         // Given
         var lambdaCalled = false
         whenever(mockTracer.activeSpan()) doReturn mockParentSpan
-        whenever(mockSpanBuilder.asChildOf(mockParentSpan)) doReturn mockSpanBuilder
+        whenever(mockSpanBuilder.withParentSpan(mockParentSpan)) doReturn mockSpanBuilder
 
         // When
         runBlockingTraced(fakeOperationName, Dispatchers.Unconfined) {
@@ -289,7 +290,7 @@ class CoroutineExtTest {
 
         // Then
         assertThat(lambdaCalled).isTrue()
-        verify(mockSpanBuilder).asChildOf(mockParentSpan)
+        verify(mockSpanBuilder).withParentSpan(mockParentSpan)
         verify(mockTracer, never()).activateSpan(mockSpan)
         verify(mockSpan).finish()
     }
@@ -302,7 +303,7 @@ class CoroutineExtTest {
         var lambdaCalled = false
         var result: String? = null
         whenever(mockTracer.activeSpan()) doReturn mockParentSpan
-        whenever(mockSpanBuilder.asChildOf(mockParentSpan)) doReturn mockSpanBuilder
+        whenever(mockSpanBuilder.withParentSpan(mockParentSpan)) doReturn mockSpanBuilder
 
         // When
         runBlocking {
@@ -320,7 +321,7 @@ class CoroutineExtTest {
         // Then
         assertThat(lambdaCalled).isTrue()
         assertThat(result).isEqualTo(data)
-        verify(mockSpanBuilder).asChildOf(mockParentSpan)
+        verify(mockSpanBuilder).withParentSpan(mockParentSpan)
         inOrder(mockSpan, mockScope) {
             verify(mockSpan).finish()
             verify(mockScope).close()
@@ -335,7 +336,7 @@ class CoroutineExtTest {
         var lambdaCalled = false
         var result: String? = null
         whenever(mockTracer.activeSpan()) doReturn null
-        whenever(mockSpanBuilder.asChildOf(null as Span?)) doReturn mockSpanBuilder
+        whenever(mockSpanBuilder.withParentSpan(null as DatadogSpan?)) doReturn mockSpanBuilder
 
         // When
         runBlocking {
@@ -353,7 +354,7 @@ class CoroutineExtTest {
         // Then
         assertThat(lambdaCalled).isTrue()
         assertThat(result).isEqualTo(data)
-        verify(mockSpanBuilder).asChildOf(null as Span?)
+        verify(mockSpanBuilder).withParentSpan(null as DatadogSpan?)
         inOrder(mockSpan, mockScope) {
             verify(mockSpan).finish()
             verify(mockScope).close()
@@ -368,7 +369,7 @@ class CoroutineExtTest {
         var lambdaCalled = false
         var result: String? = null
         whenever(mockTracer.activeSpan()) doReturn mockParentSpan
-        whenever(mockSpanBuilder.asChildOf(mockParentSpan)) doReturn mockSpanBuilder
+        whenever(mockSpanBuilder.withParentSpan(mockParentSpan)) doReturn mockSpanBuilder
 
         // When
         runBlocking {
@@ -387,7 +388,7 @@ class CoroutineExtTest {
         // Then
         assertThat(lambdaCalled).isTrue()
         assertThat(result).isEqualTo(data)
-        verify(mockSpanBuilder).asChildOf(mockParentSpan)
+        verify(mockSpanBuilder).withParentSpan(mockParentSpan)
         verify(mockTracer, never()).activateSpan(mockSpan)
         verify(mockSpan).finish()
     }
@@ -400,7 +401,7 @@ class CoroutineExtTest {
         var lambdaCalled = false
         var result: String? = null
         whenever(mockTracer.activeSpan()) doReturn mockParentSpan
-        whenever(mockSpanBuilder.asChildOf(mockParentSpan)) doReturn mockSpanBuilder
+        whenever(mockSpanBuilder.withParentSpan(mockParentSpan)) doReturn mockSpanBuilder
 
         // When
         runBlocking {
@@ -415,7 +416,7 @@ class CoroutineExtTest {
         // Then
         assertThat(lambdaCalled).isTrue()
         assertThat(result).isEqualTo(data)
-        verify(mockSpanBuilder).asChildOf(mockParentSpan)
+        verify(mockSpanBuilder).withParentSpan(mockParentSpan)
         verify(mockTracer, never()).activateSpan(mockSpan)
         verify(mockSpan).finish()
     }
@@ -428,7 +429,7 @@ class CoroutineExtTest {
         var lambdaCalled = false
         var result: String? = null
         whenever(mockTracer.activeSpan()) doReturn null
-        whenever(mockSpanBuilder.asChildOf(null as Span?)) doReturn mockSpanBuilder
+        whenever(mockSpanBuilder.withParentSpan(null as DatadogSpan?)) doReturn mockSpanBuilder
 
         // When
         runBlocking {
@@ -443,7 +444,7 @@ class CoroutineExtTest {
         // Then
         assertThat(lambdaCalled).isTrue()
         assertThat(result).isEqualTo(data)
-        verify(mockSpanBuilder).asChildOf(null as Span?)
+        verify(mockSpanBuilder).withParentSpan(null as DatadogSpan?)
         verify(mockTracer, never()).activateSpan(mockSpan)
         verify(mockSpan).finish()
     }
@@ -456,7 +457,7 @@ class CoroutineExtTest {
         var lambdaCalled = false
         var result: String? = null
         whenever(mockTracer.activeSpan()) doReturn mockParentSpan
-        whenever(mockSpanBuilder.asChildOf(mockParentSpan)) doReturn mockSpanBuilder
+        whenever(mockSpanBuilder.withParentSpan(mockParentSpan)) doReturn mockSpanBuilder
 
         // When
         runBlocking {
@@ -472,7 +473,7 @@ class CoroutineExtTest {
         // Then
         assertThat(lambdaCalled).isTrue()
         assertThat(result).isEqualTo(data)
-        verify(mockSpanBuilder).asChildOf(mockParentSpan)
+        verify(mockSpanBuilder).withParentSpan(mockParentSpan)
         verify(mockTracer, never()).activateSpan(mockSpan)
         verify(mockSpan).finish()
     }

@@ -41,10 +41,9 @@ android {
 }
 
 dependencies {
-    implementation(project(":features:dd-sdk-android-trace"))
     implementation(libs.kotlin)
     implementation(libs.coroutinesCore)
-    implementation(libs.bundles.openTracing)
+    implementation(project(":features:dd-sdk-android-trace"))
 
     testImplementation(project(":tools:unit")) {
         attributes {
@@ -57,6 +56,7 @@ dependencies {
     testImplementation(libs.bundles.jUnit5)
     testImplementation(libs.bundles.testTools)
     testImplementation(libs.okHttpMock)
+    testImplementation(testFixtures(project(":features:dd-sdk-android-trace")))
 }
 
 kotlinConfig(jvmBytecodeTarget = JvmTarget.JVM_11)

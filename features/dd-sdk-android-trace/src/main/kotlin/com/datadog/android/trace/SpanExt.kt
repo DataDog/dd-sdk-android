@@ -6,8 +6,8 @@
 
 package com.datadog.android.trace
 
+import com.datadog.android.trace.api.span.DatadogSpan
 import io.opentracing.Span
-import io.opentracing.util.GlobalTracer
 
 /**
  * Helper method to attach a Throwable to this [Span].
@@ -41,14 +41,14 @@ fun Span.setError(message: String) {
 @SuppressWarnings("TooGenericExceptionCaught")
 inline fun <T : Any?> withinSpan(
     operationName: String,
-    parentSpan: Span? = null,
+    parentSpan: DatadogSpan? = null,
     activate: Boolean = true,
-    block: Span.() -> T
+    block: DatadogSpan.() -> T
 ): T {
-    val tracer = GlobalTracer.get()
+    val tracer = GlobalDatadogTracerHolder.get()
 
     val span = tracer.buildSpan(operationName)
-        .asChildOf(parentSpan)
+        .withParentSpan(parentSpan)
         .start()
 
     val scope = if (activate) tracer.activateSpan(span) else null
@@ -56,7 +56,7 @@ inline fun <T : Any?> withinSpan(
     return try {
         span.block()
     } catch (e: Throwable) {
-        span.setError(e)
+        span.addThrowable(e)
         throw e
     } finally {
         span.finish()

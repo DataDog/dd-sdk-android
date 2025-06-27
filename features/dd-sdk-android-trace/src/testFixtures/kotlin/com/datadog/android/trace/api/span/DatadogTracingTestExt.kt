@@ -6,14 +6,15 @@
 
 package com.datadog.android.trace.api.span
 
+import com.datadog.android.trace.GlobalDatadogTracerHolder
 import com.datadog.android.trace.api.tracer.DatadogTracer
 import com.datadog.android.trace.impl.DatadogSpanContextAdapter
 import com.datadog.android.trace.impl.DatadogSpanWriterWrapper
 import com.datadog.android.trace.impl.DatadogTracerAdapter
-import com.datadog.trace.core.CoreTracer
-import com.datadog.trace.core.DDSpanContext
 import com.datadog.tools.unit.getFieldValue
 import com.datadog.trace.common.writer.Writer
+import com.datadog.trace.core.CoreTracer
+import com.datadog.trace.core.DDSpanContext
 
 val DatadogSpanContext.resourceName: String?
     get() = ddSpanContext?.resourceName?.toString()
@@ -31,6 +32,10 @@ val DatadogTracer.writer: DatadogSpanWriter?
         val writer: Writer? = coreTracer?.getFieldValue("writer")
         return writer?.let(::DatadogSpanWriterWrapper)
     }
+
+fun GlobalDatadogTracerHolder.clear() {
+    tracer = null
+}
 
 private val DatadogSpanContext.ddSpanContext: DDSpanContext?
     get() {

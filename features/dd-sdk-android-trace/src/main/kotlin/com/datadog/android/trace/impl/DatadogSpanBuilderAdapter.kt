@@ -38,4 +38,6 @@ internal class DatadogSpanBuilderAdapter(private val delegate: AgentTracer.SpanB
     override fun withParentContext(parentContext: DatadogSpanContext?): DatadogSpanBuilder = apply {
         if (parentContext is DatadogSpanContextAdapter) delegate.asChildOf(parentContext.delegate)
     }
+
+    override fun withParentSpan(parentSpan: DatadogSpan?) = withParentContext(parentSpan?.context())
 }

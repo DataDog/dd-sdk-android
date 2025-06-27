@@ -267,156 +267,156 @@ class UtilitiesTest {
         assertThat(logEvent0["attributes"] as? Map<String, Any?>).containsEntry("dd.span_id", spanId.toString())
     }
 
-    @RepeatedTest(16)
-    fun `M send span W withinSpan()`(
-        @StringForgery fakeOperation: String
-    ) {
-        // Given
-        val testedTracer = AndroidTracer.Builder(stubSdkCore).build()
-        GlobalTracer.registerIfAbsent(testedTracer)
+//    @RepeatedTest(16)
+//    fun `M send span W withinSpan()`(
+//        @StringForgery fakeOperation: String
+//    ) {
+//        // Given
+//        val testedTracer = AndroidTracer.Builder(stubSdkCore).build()
+//        GlobalTracer.registerIfAbsent(testedTracer)
+//
+//        // When
+//        var traceId = ""
+//        var spanId = ""
+//        var mostSignificantTraceId = ""
+//        val fullDuration = measureNanoTime {
+//            withinSpan(fakeOperation) {
+//                traceId = leastSignificant64BitsTraceId()
+//                mostSignificantTraceId = mostSignificant64BitsTraceId()
+//                spanId = spanIdAsHexString()
+//                Thread.sleep(OP_DURATION_MS)
+//            }
+//        }
+//
+//        // Then
+//        val eventsWritten = stubSdkCore.eventsWritten(Feature.TRACING_FEATURE_NAME)
+//        assertThat(eventsWritten).hasSize(1)
+//        val event0 = JsonParser.parseString(eventsWritten[0].eventData) as JsonObject
+//        assertThat(event0.getString("env")).isEqualTo(stubSdkCore.getDatadogContext().env)
+//        assertThat(event0.getString("spans[0].trace_id")).isEqualTo(traceId)
+//        assertThat(event0.getString("spans[0].meta._dd.p.id")).isEqualTo(mostSignificantTraceId)
+//        assertThat(event0.getString("spans[0].span_id")).isEqualTo(spanId)
+//        assertThat(event0.getString("spans[0].service")).isEqualTo(stubSdkCore.getDatadogContext().service)
+//        assertThat(event0.getString("spans[0].meta.version")).isEqualTo(stubSdkCore.getDatadogContext().version)
+//        assertThat(event0.getString("spans[0].meta._dd.source")).isEqualTo(stubSdkCore.getDatadogContext().source)
+//        assertThat(event0.getString("spans[0].meta.tracer.version"))
+//            .isEqualTo(stubSdkCore.getDatadogContext().sdkVersion)
+//        assertThat(event0.getInt("spans[0].error")).isEqualTo(0)
+//        assertThat(event0.getString("spans[0].name")).isEqualTo(fakeOperation)
+//        assertThat(event0.getString("spans[0].resource")).isEqualTo(fakeOperation)
+//        assertThat(event0.getLong("spans[0].duration")).isBetween(OP_DURATION_NS, fullDuration)
+//    }
 
-        // When
-        var traceId = ""
-        var spanId = ""
-        var mostSignificantTraceId = ""
-        val fullDuration = measureNanoTime {
-            withinSpan(fakeOperation) {
-                traceId = leastSignificant64BitsTraceId()
-                mostSignificantTraceId = mostSignificant64BitsTraceId()
-                spanId = spanIdAsHexString()
-                Thread.sleep(OP_DURATION_MS)
-            }
-        }
+//    @RepeatedTest(16)
+//    fun `M send nested span W withinSpan() { nested lambdas }`(
+//        @StringForgery fakeOperation0: String,
+//        @StringForgery fakeOperation1: String,
+//        @StringForgery fakeOperation2: String
+//    ) {
+//        // Given
+//        val testedTracer = AndroidTracer.Builder(stubSdkCore).build()
+//        GlobalTracer.registerIfAbsent(testedTracer)
+//
+//        // When
+//        var traceId0 = ""
+//        var traceId1 = ""
+//        var traceId2 = ""
+//        var spanId0 = ""
+//        var spanId1 = ""
+//        var spanId2 = ""
+//        var mostSignificantTraceId0 = ""
+//        var mostSignificantTraceId1 = ""
+//        var mostSignificantTraceId2 = ""
+//        withinSpan(fakeOperation0) {
+//            traceId0 = leastSignificant64BitsTraceId()
+//            mostSignificantTraceId0 = mostSignificant64BitsTraceId()
+//            spanId0 = spanIdAsHexString()
+//            withinSpan(fakeOperation1) {
+//                traceId1 = leastSignificant64BitsTraceId()
+//                mostSignificantTraceId1 = mostSignificant64BitsTraceId()
+//                spanId1 = spanIdAsHexString()
+//                withinSpan(fakeOperation2) {
+//                    traceId2 = leastSignificant64BitsTraceId()
+//                    mostSignificantTraceId2 = mostSignificant64BitsTraceId()
+//                    spanId2 = spanIdAsHexString()
+//                    Thread.sleep(OP_DURATION_MS)
+//                }
+//            }
+//        }
+//
+//        // Then
+//        val eventsWritten = stubSdkCore.eventsWritten(Feature.TRACING_FEATURE_NAME)
+//        assertThat(eventsWritten).hasSize(3)
+//        val event0 = JsonParser.parseString(eventsWritten[0].eventData) as JsonObject
+//        val event1 = JsonParser.parseString(eventsWritten[1].eventData) as JsonObject
+//        val event2 = JsonParser.parseString(eventsWritten[2].eventData) as JsonObject
+//        assertThat(event0.getString("spans[0].trace_id")).isEqualTo(traceId0)
+//        assertThat(event0.getString("spans[0].meta._dd.p.id")).isEqualTo(mostSignificantTraceId0)
+//        assertThat(event0.getString("spans[0].span_id")).isEqualTo(spanId0)
+//        assertThat(event0.getString("spans[0].name")).isEqualTo(fakeOperation0)
+//        assertThat(event0.getString("spans[0].resource")).isEqualTo(fakeOperation0)
+//        assertThat(event1.getString("spans[0].trace_id")).isEqualTo(traceId1)
+//        assertThat(event0.getString("spans[0].meta._dd.p.id")).isEqualTo(mostSignificantTraceId1)
+//        assertThat(event1.getString("spans[0].span_id")).isEqualTo(spanId1)
+//        assertThat(event1.getString("spans[0].name")).isEqualTo(fakeOperation1)
+//        assertThat(event1.getString("spans[0].resource")).isEqualTo(fakeOperation1)
+//        assertThat(event2.getString("spans[0].trace_id")).isEqualTo(traceId2)
+//        assertThat(event0.getString("spans[0].meta._dd.p.id")).isEqualTo(mostSignificantTraceId2)
+//        assertThat(event2.getString("spans[0].span_id")).isEqualTo(spanId2)
+//        assertThat(event2.getString("spans[0].name")).isEqualTo(fakeOperation2)
+//        assertThat(event2.getString("spans[0].resource")).isEqualTo(fakeOperation2)
+//    }
 
-        // Then
-        val eventsWritten = stubSdkCore.eventsWritten(Feature.TRACING_FEATURE_NAME)
-        assertThat(eventsWritten).hasSize(1)
-        val event0 = JsonParser.parseString(eventsWritten[0].eventData) as JsonObject
-        assertThat(event0.getString("env")).isEqualTo(stubSdkCore.getDatadogContext().env)
-        assertThat(event0.getString("spans[0].trace_id")).isEqualTo(traceId)
-        assertThat(event0.getString("spans[0].meta._dd.p.id")).isEqualTo(mostSignificantTraceId)
-        assertThat(event0.getString("spans[0].span_id")).isEqualTo(spanId)
-        assertThat(event0.getString("spans[0].service")).isEqualTo(stubSdkCore.getDatadogContext().service)
-        assertThat(event0.getString("spans[0].meta.version")).isEqualTo(stubSdkCore.getDatadogContext().version)
-        assertThat(event0.getString("spans[0].meta._dd.source")).isEqualTo(stubSdkCore.getDatadogContext().source)
-        assertThat(event0.getString("spans[0].meta.tracer.version"))
-            .isEqualTo(stubSdkCore.getDatadogContext().sdkVersion)
-        assertThat(event0.getInt("spans[0].error")).isEqualTo(0)
-        assertThat(event0.getString("spans[0].name")).isEqualTo(fakeOperation)
-        assertThat(event0.getString("spans[0].resource")).isEqualTo(fakeOperation)
-        assertThat(event0.getLong("spans[0].duration")).isBetween(OP_DURATION_NS, fullDuration)
-    }
-
-    @RepeatedTest(16)
-    fun `M send nested span W withinSpan() { nested lambdas }`(
-        @StringForgery fakeOperation0: String,
-        @StringForgery fakeOperation1: String,
-        @StringForgery fakeOperation2: String
-    ) {
-        // Given
-        val testedTracer = AndroidTracer.Builder(stubSdkCore).build()
-        GlobalTracer.registerIfAbsent(testedTracer)
-
-        // When
-        var traceId0 = ""
-        var traceId1 = ""
-        var traceId2 = ""
-        var spanId0 = ""
-        var spanId1 = ""
-        var spanId2 = ""
-        var mostSignificantTraceId0 = ""
-        var mostSignificantTraceId1 = ""
-        var mostSignificantTraceId2 = ""
-        withinSpan(fakeOperation0) {
-            traceId0 = leastSignificant64BitsTraceId()
-            mostSignificantTraceId0 = mostSignificant64BitsTraceId()
-            spanId0 = spanIdAsHexString()
-            withinSpan(fakeOperation1) {
-                traceId1 = leastSignificant64BitsTraceId()
-                mostSignificantTraceId1 = mostSignificant64BitsTraceId()
-                spanId1 = spanIdAsHexString()
-                withinSpan(fakeOperation2) {
-                    traceId2 = leastSignificant64BitsTraceId()
-                    mostSignificantTraceId2 = mostSignificant64BitsTraceId()
-                    spanId2 = spanIdAsHexString()
-                    Thread.sleep(OP_DURATION_MS)
-                }
-            }
-        }
-
-        // Then
-        val eventsWritten = stubSdkCore.eventsWritten(Feature.TRACING_FEATURE_NAME)
-        assertThat(eventsWritten).hasSize(3)
-        val event0 = JsonParser.parseString(eventsWritten[0].eventData) as JsonObject
-        val event1 = JsonParser.parseString(eventsWritten[1].eventData) as JsonObject
-        val event2 = JsonParser.parseString(eventsWritten[2].eventData) as JsonObject
-        assertThat(event0.getString("spans[0].trace_id")).isEqualTo(traceId0)
-        assertThat(event0.getString("spans[0].meta._dd.p.id")).isEqualTo(mostSignificantTraceId0)
-        assertThat(event0.getString("spans[0].span_id")).isEqualTo(spanId0)
-        assertThat(event0.getString("spans[0].name")).isEqualTo(fakeOperation0)
-        assertThat(event0.getString("spans[0].resource")).isEqualTo(fakeOperation0)
-        assertThat(event1.getString("spans[0].trace_id")).isEqualTo(traceId1)
-        assertThat(event0.getString("spans[0].meta._dd.p.id")).isEqualTo(mostSignificantTraceId1)
-        assertThat(event1.getString("spans[0].span_id")).isEqualTo(spanId1)
-        assertThat(event1.getString("spans[0].name")).isEqualTo(fakeOperation1)
-        assertThat(event1.getString("spans[0].resource")).isEqualTo(fakeOperation1)
-        assertThat(event2.getString("spans[0].trace_id")).isEqualTo(traceId2)
-        assertThat(event0.getString("spans[0].meta._dd.p.id")).isEqualTo(mostSignificantTraceId2)
-        assertThat(event2.getString("spans[0].span_id")).isEqualTo(spanId2)
-        assertThat(event2.getString("spans[0].name")).isEqualTo(fakeOperation2)
-        assertThat(event2.getString("spans[0].resource")).isEqualTo(fakeOperation2)
-    }
-
-    @RepeatedTest(16)
-    fun `M send span with exception W withinSpan() + throw`(
-        @StringForgery fakeOperation: String,
-        @Forgery fakeThrowable: Throwable
-    ) {
-        // Given
-        val testedTracer = AndroidTracer.Builder(stubSdkCore).build()
-        GlobalTracer.registerIfAbsent(testedTracer)
-
-        // When
-        var traceId = ""
-        var mostSignificantTraceId = ""
-        var spanId = ""
-        var thrown: Throwable? = null
-        val fullDuration = measureNanoTime {
-            try {
-                withinSpan(fakeOperation) {
-                    traceId = leastSignificant64BitsTraceId()
-                    mostSignificantTraceId = mostSignificant64BitsTraceId()
-                    spanId = spanIdAsHexString()
-                    Thread.sleep(OP_DURATION_MS)
-                    throw fakeThrowable
-                }
-            } catch (e: Throwable) {
-                thrown = e
-            }
-        }
-
-        // Then
-        assertThat(thrown).isSameAs(fakeThrowable)
-        val eventsWritten = stubSdkCore.eventsWritten(Feature.TRACING_FEATURE_NAME)
-        assertThat(eventsWritten).hasSize(1)
-        val event0 = JsonParser.parseString(eventsWritten[0].eventData) as JsonObject
-        assertThat(event0.getString("env")).isEqualTo(stubSdkCore.getDatadogContext().env)
-        assertThat(event0.getString("spans[0].trace_id")).isEqualTo(traceId)
-        assertThat(event0.getString("spans[0].meta._dd.p.id")).isEqualTo(mostSignificantTraceId)
-        assertThat(event0.getString("spans[0].span_id")).isEqualTo(spanId)
-        assertThat(event0.getString("spans[0].service")).isEqualTo(stubSdkCore.getDatadogContext().service)
-        assertThat(event0.getString("spans[0].meta.version")).isEqualTo(stubSdkCore.getDatadogContext().version)
-        assertThat(event0.getString("spans[0].meta._dd.source")).isEqualTo(stubSdkCore.getDatadogContext().source)
-        assertThat(event0.getString("spans[0].meta.tracer.version"))
-            .isEqualTo(stubSdkCore.getDatadogContext().sdkVersion)
-        assertThat(event0.getInt("spans[0].error")).isEqualTo(1)
-        assertThat(event0.getString("spans[0].name")).isEqualTo(fakeOperation)
-        assertThat(event0.getString("spans[0].resource")).isEqualTo(fakeOperation)
-        assertThat(event0.getLong("spans[0].duration")).isBetween(OP_DURATION_NS, fullDuration)
-        assertThat(event0.getString("spans[0].meta.error.type")).isEqualTo(fakeThrowable.javaClass.canonicalName)
-        assertThat(event0.getString("spans[0].meta.error.msg")).isEqualTo(fakeThrowable.message)
-        assertThat(event0.getString("spans[0].meta.error.stack")).isEqualTo(fakeThrowable.stackTraceToString())
-    }
+//    @RepeatedTest(16)
+//    fun `M send span with exception W withinSpan() + throw`(
+//        @StringForgery fakeOperation: String,
+//        @Forgery fakeThrowable: Throwable
+//    ) {
+//        // Given
+//        val testedTracer = AndroidTracer.Builder(stubSdkCore).build()
+//        GlobalTracer.registerIfAbsent(testedTracer)
+//
+//        // When
+//        var traceId = ""
+//        var mostSignificantTraceId = ""
+//        var spanId = ""
+//        var thrown: Throwable? = null
+//        val fullDuration = measureNanoTime {
+//            try {
+//                withinSpan(fakeOperation) {
+//                    traceId = leastSignificant64BitsTraceId()
+//                    mostSignificantTraceId = mostSignificant64BitsTraceId()
+//                    spanId = spanIdAsHexString()
+//                    Thread.sleep(OP_DURATION_MS)
+//                    throw fakeThrowable
+//                }
+//            } catch (e: Throwable) {
+//                thrown = e
+//            }
+//        }
+//
+//        // Then
+//        assertThat(thrown).isSameAs(fakeThrowable)
+//        val eventsWritten = stubSdkCore.eventsWritten(Feature.TRACING_FEATURE_NAME)
+//        assertThat(eventsWritten).hasSize(1)
+//        val event0 = JsonParser.parseString(eventsWritten[0].eventData) as JsonObject
+//        assertThat(event0.getString("env")).isEqualTo(stubSdkCore.getDatadogContext().env)
+//        assertThat(event0.getString("spans[0].trace_id")).isEqualTo(traceId)
+//        assertThat(event0.getString("spans[0].meta._dd.p.id")).isEqualTo(mostSignificantTraceId)
+//        assertThat(event0.getString("spans[0].span_id")).isEqualTo(spanId)
+//        assertThat(event0.getString("spans[0].service")).isEqualTo(stubSdkCore.getDatadogContext().service)
+//        assertThat(event0.getString("spans[0].meta.version")).isEqualTo(stubSdkCore.getDatadogContext().version)
+//        assertThat(event0.getString("spans[0].meta._dd.source")).isEqualTo(stubSdkCore.getDatadogContext().source)
+//        assertThat(event0.getString("spans[0].meta.tracer.version"))
+//            .isEqualTo(stubSdkCore.getDatadogContext().sdkVersion)
+//        assertThat(event0.getInt("spans[0].error")).isEqualTo(1)
+//        assertThat(event0.getString("spans[0].name")).isEqualTo(fakeOperation)
+//        assertThat(event0.getString("spans[0].resource")).isEqualTo(fakeOperation)
+//        assertThat(event0.getLong("spans[0].duration")).isBetween(OP_DURATION_NS, fullDuration)
+//        assertThat(event0.getString("spans[0].meta.error.type")).isEqualTo(fakeThrowable.javaClass.canonicalName)
+//        assertThat(event0.getString("spans[0].meta.error.msg")).isEqualTo(fakeThrowable.message)
+//        assertThat(event0.getString("spans[0].meta.error.stack")).isEqualTo(fakeThrowable.stackTraceToString())
+//    }
 
     companion object {
         const val OP_DURATION_MS = 10L

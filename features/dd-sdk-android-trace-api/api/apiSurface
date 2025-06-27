@@ -1,6 +1,3 @@
-object com.datadog.android.trace.api.GlobalDatadogTracerHolder
-  var tracer: com.datadog.android.trace.api.tracer.DatadogTracer?
-  fun registerIfAbsent(com.datadog.android.trace.api.tracer.DatadogTracer)
 object com.datadog.android.trace.api.constants.DatadogTracingConstants
   const val DEFAULT_ASYNC_PROPAGATING: Boolean
   object Tags
@@ -39,6 +36,12 @@ interface com.datadog.android.trace.api.propagation.DatadogPropagation
   fun <C> extract(C, (C) -> Unit): com.datadog.android.trace.api.span.DatadogSpanContext?
   fun isExtractedContext(com.datadog.android.trace.api.span.DatadogSpanContext): Boolean
   fun createExtractedContext(String, String, Int): com.datadog.android.trace.api.span.DatadogSpanContext
+class com.datadog.android.trace.api.propagation.NoOpDatadogPropagation : DatadogPropagation
+  override fun <C> inject(com.datadog.android.trace.api.span.DatadogSpan, C, (C) -> Unit)
+  override fun <C> inject(com.datadog.android.trace.api.span.DatadogSpanContext, C, (C) -> Unit)
+  override fun <C> extract(C, (C) -> Unit): com.datadog.android.trace.api.span.DatadogSpanContext?
+  override fun isExtractedContext(com.datadog.android.trace.api.span.DatadogSpanContext)
+  override fun createExtractedContext(String, String, Int): com.datadog.android.trace.api.span.DatadogSpanContext
 interface com.datadog.android.trace.api.scope.DatadogScope
   fun close()
 interface com.datadog.android.trace.api.span.DatadogSpan
@@ -74,6 +77,7 @@ interface com.datadog.android.trace.api.span.DatadogSpanBuilder
   fun withTag(String, Any?): DatadogSpanBuilder
   fun withResourceName(String?): DatadogSpanBuilder
   fun withParentContext(DatadogSpanContext?): DatadogSpanBuilder
+  fun withParentSpan(DatadogSpan?): DatadogSpanBuilder
   fun withStartTimestamp(Long): DatadogSpanBuilder
   fun ignoreActiveSpan(): DatadogSpanBuilder
   fun withLink(DatadogSpanLink): DatadogSpanBuilder

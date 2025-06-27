@@ -47,7 +47,6 @@ dependencies {
     implementation(libs.kotlin)
     implementation(libs.okHttp)
     implementation(libs.sqlDelight)
-    implementation(libs.bundles.openTracing)
 
     testImplementation(project(":tools:unit")) {
         attributes {
@@ -60,6 +59,7 @@ dependencies {
     testImplementation(libs.bundles.jUnit5)
     testImplementation(libs.bundles.testTools)
     testImplementation(libs.okHttpMock)
+    testImplementation(testFixtures(project(":features:dd-sdk-android-trace")))
 }
 
 kotlinConfig(jvmBytecodeTarget = JvmTarget.JVM_11)

@@ -26,6 +26,13 @@ public final class com/datadog/android/trace/AndroidTracer$Companion {
 	public final fun logThrowable (Lio/opentracing/Span;Ljava/lang/Throwable;)V
 }
 
+public final class com/datadog/android/trace/GlobalDatadogTracerHolder {
+	public static final field INSTANCE Lcom/datadog/android/trace/GlobalDatadogTracerHolder;
+	public final fun get ()Lcom/datadog/android/trace/api/tracer/DatadogTracer;
+	public final fun getTracer ()Lcom/datadog/android/trace/api/tracer/DatadogTracer;
+	public final fun registerIfAbsent (Lcom/datadog/android/trace/api/tracer/DatadogTracer;)V
+}
+
 public abstract interface class com/datadog/android/trace/InternalCoreWriterProvider {
 	public abstract fun getCoreTracerWriter ()Lcom/datadog/android/trace/api/span/DatadogSpanWriter;
 }
@@ -33,8 +40,8 @@ public abstract interface class com/datadog/android/trace/InternalCoreWriterProv
 public final class com/datadog/android/trace/SpanExtKt {
 	public static final fun setError (Lio/opentracing/Span;Ljava/lang/String;)V
 	public static final fun setError (Lio/opentracing/Span;Ljava/lang/Throwable;)V
-	public static final fun withinSpan (Ljava/lang/String;Lio/opentracing/Span;ZLkotlin/jvm/functions/Function1;)Ljava/lang/Object;
-	public static synthetic fun withinSpan$default (Ljava/lang/String;Lio/opentracing/Span;ZLkotlin/jvm/functions/Function1;ILjava/lang/Object;)Ljava/lang/Object;
+	public static final fun withinSpan (Ljava/lang/String;Lcom/datadog/android/trace/api/span/DatadogSpan;ZLkotlin/jvm/functions/Function1;)Ljava/lang/Object;
+	public static synthetic fun withinSpan$default (Ljava/lang/String;Lcom/datadog/android/trace/api/span/DatadogSpan;ZLkotlin/jvm/functions/Function1;ILjava/lang/Object;)Ljava/lang/Object;
 }
 
 public final class com/datadog/android/trace/Trace {

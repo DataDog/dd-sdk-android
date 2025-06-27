@@ -6,8 +6,13 @@
 
 package com.datadog.android.sqldelight
 
+import com.datadog.android.trace.GlobalDatadogTracerHolder
+import com.datadog.android.trace.api.scope.DatadogScope
+import com.datadog.android.trace.api.span.DatadogSpan
+import com.datadog.android.trace.api.span.DatadogSpanBuilder
+import com.datadog.android.trace.api.span.clear
+import com.datadog.android.trace.api.tracer.DatadogTracer
 import com.datadog.tools.unit.forge.BaseConfigurator
-import com.datadog.tools.unit.setStaticValue
 import com.squareup.sqldelight.Transacter
 import com.squareup.sqldelight.TransactionWithReturn
 import com.squareup.sqldelight.TransactionWithoutReturn
@@ -16,11 +21,6 @@ import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
-import io.opentracing.Scope
-import io.opentracing.Span
-import io.opentracing.Tracer
-import io.opentracing.log.Fields
-import io.opentracing.util.GlobalTracer
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -49,19 +49,19 @@ import org.mockito.quality.Strictness
 @MockitoSettings(strictness = Strictness.LENIENT)
 class SqlDelightExtTest {
     @Mock
-    lateinit var mockTracer: Tracer
+    lateinit var mockTracer: DatadogTracer
 
     @Mock
-    lateinit var mockSpanBuilder: Tracer.SpanBuilder
+    lateinit var mockSpanBuilder: DatadogSpanBuilder
 
     @Mock
-    lateinit var mockSpan: Span
+    lateinit var mockSpan: DatadogSpan
 
     @Mock
-    lateinit var mockParentSpan: Span
+    lateinit var mockParentSpan: DatadogSpan
 
     @Mock
-    lateinit var mockScope: Scope
+    lateinit var mockScope: DatadogScope
 
     @StringForgery
     lateinit var fakeOperationName: String
@@ -80,7 +80,7 @@ class SqlDelightExtTest {
 
     @BeforeEach
     fun `set up`() {
-        GlobalTracer.registerIfAbsent(mockTracer)
+        GlobalDatadogTracerHolder.registerIfAbsent(mockTracer)
         whenever(mockTracer.buildSpan(fakeOperationName)) doReturn mockSpanBuilder
         whenever(mockTracer.activateSpan(mockSpan)) doReturn mockScope
         whenever(mockSpanBuilder.start()) doReturn mockSpan
@@ -99,14 +99,14 @@ class SqlDelightExtTest {
 
     @AfterEach
     fun `tear down`() {
-        GlobalTracer::class.java.setStaticValue("isRegistered", false)
+        GlobalDatadogTracerHolder.clear()
     }
 
     @Test
     fun `M create Span around transaction W transactionTraced() {nonEnclosing = true}`() {
         // GIVEN
         whenever(mockTracer.activeSpan()) doReturn mockParentSpan
-        whenever(mockSpanBuilder.asChildOf(mockParentSpan)) doReturn mockSpanBuilder
+        whenever(mockSpanBuilder.withParentSpan(mockParentSpan)) doReturn mockSpanBuilder
         var transactionExecuted = false
         val body: TransactionWithoutReturn.() -> Unit = {
             transactionExecuted = true
@@ -117,7 +117,7 @@ class SqlDelightExtTest {
 
         // THEN
         assertThat(transactionExecuted).isTrue()
-        verify(mockSpanBuilder).asChildOf(mockParentSpan)
+        verify(mockSpanBuilder).withParentSpan(mockParentSpan)
         inOrder(mockSpan, mockScope) {
             verify(mockSpan).finish()
             verify(mockScope).close()
@@ -130,7 +130,7 @@ class SqlDelightExtTest {
     fun `M create Span around transaction W transactionTraced() {nonEnclosing = false}`() {
         // GIVEN
         whenever(mockTracer.activeSpan()) doReturn mockParentSpan
-        whenever(mockSpanBuilder.asChildOf(mockParentSpan)) doReturn mockSpanBuilder
+        whenever(mockSpanBuilder.withParentSpan(mockParentSpan)) doReturn mockSpanBuilder
         var transactionExecuted = false
         val body: TransactionWithoutReturn.() -> Unit = {
             transactionExecuted = true
@@ -141,7 +141,7 @@ class SqlDelightExtTest {
 
         // THEN
         assertThat(transactionExecuted).isTrue()
-        verify(mockSpanBuilder).asChildOf(mockParentSpan)
+        verify(mockSpanBuilder).withParentSpan(mockParentSpan)
         inOrder(mockSpan, mockScope) {
             verify(mockSpan).finish()
             verify(mockScope).close()
@@ -155,7 +155,7 @@ class SqlDelightExtTest {
         // GIVEN
         val fakeNoEnclosing = forge.aBool()
         whenever(mockTracer.activeSpan()) doReturn null
-        whenever(mockSpanBuilder.asChildOf(null as Span?)) doReturn mockSpanBuilder
+        whenever(mockSpanBuilder.withParentSpan(null as DatadogSpan?)) doReturn mockSpanBuilder
         var transactionExecuted = false
         val body: TransactionWithSpanAndWithoutReturn.() -> Unit = {
             transactionExecuted = true
@@ -166,7 +166,7 @@ class SqlDelightExtTest {
 
         // THEN
         assertThat(transactionExecuted).isTrue()
-        verify(mockSpanBuilder).asChildOf(null as Span?)
+        verify(mockSpanBuilder).withParentSpan(null as DatadogSpan?)
         inOrder(mockSpan, mockScope) {
             verify(mockSpan).finish()
             verify(mockScope).close()
@@ -181,7 +181,7 @@ class SqlDelightExtTest {
         val fakeNoEnclosing = forge.aBool()
         var caughtException: Throwable? = null
         whenever(mockTracer.activeSpan()) doReturn null
-        whenever(mockSpanBuilder.asChildOf(null as Span?)) doReturn mockSpanBuilder
+        whenever(mockSpanBuilder.withParentSpan(null as DatadogSpan?)) doReturn mockSpanBuilder
 
         // WHEN
         try {
@@ -194,13 +194,9 @@ class SqlDelightExtTest {
 
         // THEN
         assertThat(caughtException).isEqualTo(fakeException)
-        verify(mockSpanBuilder).asChildOf(null as Span?)
+        verify(mockSpanBuilder).withParentSpan(null as DatadogSpan?)
         inOrder(mockSpan, mockScope) {
-            verify(mockSpan).log(
-                argThat<Map<String, Any?>> {
-                    this[Fields.ERROR_OBJECT] == fakeException
-                }
-            )
+            verify(mockSpan).addThrowable(fakeException)
             verify(mockSpan).finish()
             verify(mockScope).close()
         }
@@ -212,7 +208,7 @@ class SqlDelightExtTest {
         val fakeNoEnclosing = forge.aBool()
         var caughtException: Throwable? = null
         whenever(mockTracer.activeSpan()) doReturn null
-        whenever(mockSpanBuilder.asChildOf(null as Span?)) doReturn mockSpanBuilder
+        whenever(mockSpanBuilder.withParentSpan(null as DatadogSpan?)) doReturn mockSpanBuilder
 
         // WHEN
         try {
@@ -225,12 +221,8 @@ class SqlDelightExtTest {
 
         // THEN
         assertThat(caughtException).isEqualTo(fakeException)
-        verify(mockSpanBuilder).asChildOf(null as Span?)
-        verify(mockSpan).log(
-            argThat<Map<String, Any?>> {
-                this[Fields.ERROR_OBJECT] == fakeException
-            }
-        )
+        verify(mockSpanBuilder).withParentSpan(null as DatadogSpan?)
+        verify(mockSpan).addThrowable(fakeException)
     }
 
     @Test
@@ -238,7 +230,7 @@ class SqlDelightExtTest {
         // GIVEN
         val fakeNoEnclosing = forge.aBool()
         whenever(mockTracer.activeSpan()) doReturn null
-        whenever(mockSpanBuilder.asChildOf(null as Span?)) doReturn mockSpanBuilder
+        whenever(mockSpanBuilder.withParentSpan(null as DatadogSpan?)) doReturn mockSpanBuilder
         var transactionExecuted = false
         val afterCommitLambda = {
         }
@@ -262,7 +254,7 @@ class SqlDelightExtTest {
         val fakeTagValue = forge.anAlphabeticalString()
         val fakeNoEnclosing = forge.aBool()
         whenever(mockTracer.activeSpan()) doReturn null
-        whenever(mockSpanBuilder.asChildOf(null as Span?)) doReturn mockSpanBuilder
+        whenever(mockSpanBuilder.withParentSpan(null as DatadogSpan?)) doReturn mockSpanBuilder
         var transactionExecuted = false
         val body: TransactionWithSpanAndWithoutReturn.() -> Unit = {
             transactionExecuted = true
@@ -281,7 +273,7 @@ class SqlDelightExtTest {
     fun `M create Span around W transactionTracedWithResult() {noEnclosing = true}`() {
         // // GIVEN
         whenever(mockTracer.activeSpan()) doReturn mockParentSpan
-        whenever(mockSpanBuilder.asChildOf(mockParentSpan)) doReturn mockSpanBuilder
+        whenever(mockSpanBuilder.withParentSpan(mockParentSpan)) doReturn mockSpanBuilder
         val body: TransactionWithSpanAndWithReturn<Boolean>.() -> Boolean = {
             true
         }
@@ -292,7 +284,7 @@ class SqlDelightExtTest {
 
         // THEN
         assertThat(transactionExecuted).isTrue()
-        verify(mockSpanBuilder).asChildOf(mockParentSpan)
+        verify(mockSpanBuilder).withParentSpan(mockParentSpan)
         inOrder(mockSpan, mockScope) {
             verify(mockSpan).finish()
             verify(mockScope).close()
@@ -308,7 +300,7 @@ class SqlDelightExtTest {
     fun `M create Span around W transactionTracedWithResult() {noEnclosing = false}`() {
         // GIVEN
         whenever(mockTracer.activeSpan()) doReturn mockParentSpan
-        whenever(mockSpanBuilder.asChildOf(mockParentSpan)) doReturn mockSpanBuilder
+        whenever(mockSpanBuilder.withParentSpan(mockParentSpan)) doReturn mockSpanBuilder
         val body: TransactionWithSpanAndWithReturn<Boolean>.() -> Boolean = {
             true
         }
@@ -319,7 +311,7 @@ class SqlDelightExtTest {
 
         // THEN
         assertThat(transactionExecuted).isTrue()
-        verify(mockSpanBuilder).asChildOf(mockParentSpan)
+        verify(mockSpanBuilder).withParentSpan(mockParentSpan)
         inOrder(mockSpan, mockScope) {
             verify(mockSpan).finish()
             verify(mockScope).close()
@@ -336,7 +328,7 @@ class SqlDelightExtTest {
         // GIVEN
         val fakeNoEnclosing = forge.aBool()
         whenever(mockTracer.activeSpan()) doReturn null
-        whenever(mockSpanBuilder.asChildOf(null as Span?)) doReturn mockSpanBuilder
+        whenever(mockSpanBuilder.withParentSpan(null as DatadogSpan?)) doReturn mockSpanBuilder
         val body: TransactionWithSpanAndWithReturn<Boolean>.() -> Boolean = {
             true
         }
@@ -347,7 +339,7 @@ class SqlDelightExtTest {
 
         // THEN
         assertThat(transactionExecuted).isTrue()
-        verify(mockSpanBuilder).asChildOf(null as Span?)
+        verify(mockSpanBuilder).withParentSpan(null as DatadogSpan?)
         inOrder(mockSpan, mockScope) {
             verify(mockSpan).finish()
             verify(mockScope).close()
@@ -365,7 +357,7 @@ class SqlDelightExtTest {
         val fakeNoEnclosing = forge.aBool()
         var caughtException: Throwable? = null
         whenever(mockTracer.activeSpan()) doReturn null
-        whenever(mockSpanBuilder.asChildOf(null as Span?)) doReturn mockSpanBuilder
+        whenever(mockSpanBuilder.withParentSpan(null as DatadogSpan?)) doReturn mockSpanBuilder
 
         // WHEN
         try {
@@ -381,13 +373,9 @@ class SqlDelightExtTest {
 
         // THEN
         assertThat(caughtException).isEqualTo(fakeException)
-        verify(mockSpanBuilder).asChildOf(null as Span?)
+        verify(mockSpanBuilder).withParentSpan(null as DatadogSpan?)
         inOrder(mockSpan, mockScope) {
-            verify(mockSpan).log(
-                argThat<Map<String, Any?>> {
-                    this[Fields.ERROR_OBJECT] == fakeException
-                }
-            )
+            verify(mockSpan).addThrowable(fakeException)
             verify(mockSpan).finish()
             verify(mockScope).close()
         }
@@ -399,7 +387,7 @@ class SqlDelightExtTest {
         val fakeNoEnclosing = forge.aBool()
         var caughtException: Throwable? = null
         whenever(mockTracer.activeSpan()) doReturn null
-        whenever(mockSpanBuilder.asChildOf(null as Span?)) doReturn mockSpanBuilder
+        whenever(mockSpanBuilder.withParentSpan(null as DatadogSpan?)) doReturn mockSpanBuilder
 
         // WHEN
         try {
@@ -415,12 +403,8 @@ class SqlDelightExtTest {
 
         // THEN
         assertThat(caughtException).isEqualTo(fakeException)
-        verify(mockSpanBuilder).asChildOf(null as Span?)
-        verify(mockSpan).log(
-            argThat<Map<String, Any?>> {
-                this[Fields.ERROR_OBJECT] == fakeException
-            }
-        )
+        verify(mockSpanBuilder).withParentSpan(null as DatadogSpan?)
+        verify(mockSpan).addThrowable(fakeException)
     }
 
     @Test
@@ -428,7 +412,7 @@ class SqlDelightExtTest {
         // GIVEN
         val fakeNoEnclosing = forge.aBool()
         whenever(mockTracer.activeSpan()) doReturn null
-        whenever(mockSpanBuilder.asChildOf(null as Span?)) doReturn mockSpanBuilder
+        whenever(mockSpanBuilder.withParentSpan(null as DatadogSpan?)) doReturn mockSpanBuilder
         val afterCommitLambda = {
         }
         val body: TransactionWithSpanAndWithReturn<Boolean>.() -> Boolean = {
@@ -452,7 +436,7 @@ class SqlDelightExtTest {
         val fakeTagValue = forge.anAlphabeticalString()
         val fakeNoEnclosing = forge.aBool()
         whenever(mockTracer.activeSpan()) doReturn null
-        whenever(mockSpanBuilder.asChildOf(null as Span?)) doReturn mockSpanBuilder
+        whenever(mockSpanBuilder.withParentSpan(null as DatadogSpan?)) doReturn mockSpanBuilder
         val body: TransactionWithSpanAndWithReturn<Boolean>.() -> Boolean = {
             setTag(fakeTagKey, fakeTagValue)
             true

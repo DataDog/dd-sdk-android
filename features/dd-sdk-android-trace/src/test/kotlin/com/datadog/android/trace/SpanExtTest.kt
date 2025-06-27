@@ -7,6 +7,11 @@
 package com.datadog.android.trace
 
 import android.util.Log
+import com.datadog.android.trace.api.scope.DatadogScope
+import com.datadog.android.trace.api.span.DatadogSpan
+import com.datadog.android.trace.api.span.DatadogSpanBuilder
+import com.datadog.android.trace.api.span.clear
+import com.datadog.android.trace.api.tracer.DatadogTracer
 import com.datadog.tools.unit.forge.BaseConfigurator
 import com.datadog.tools.unit.setStaticValue
 import fr.xgouchet.elmyr.annotation.Forgery
@@ -47,35 +52,35 @@ import org.mockito.quality.Strictness
 class SpanExtTest {
 
     @Mock
-    lateinit var mockTracer: Tracer
+    lateinit var mockTracer: DatadogTracer
 
     @Mock
-    lateinit var mockSpanBuilder: Tracer.SpanBuilder
+    lateinit var mockSpanBuilder: DatadogSpanBuilder
 
     @Mock
-    lateinit var mockSpan: Span
+    lateinit var mockSpan: DatadogSpan
 
     @Mock
-    lateinit var mockParentSpan: Span
+    lateinit var mockParentSpan: DatadogSpan
 
     @Mock
-    lateinit var mockScope: Scope
+    lateinit var mockScope: DatadogScope
 
     @StringForgery
     lateinit var fakeOperationName: String
 
     @BeforeEach
     fun `set up`() {
-        GlobalTracer.registerIfAbsent(mockTracer)
+        GlobalDatadogTracerHolder.registerIfAbsent(mockTracer)
         whenever(mockTracer.buildSpan(fakeOperationName)) doReturn mockSpanBuilder
         whenever(mockTracer.activateSpan(mockSpan)) doReturn mockScope
-        whenever(mockSpanBuilder.asChildOf(mockParentSpan)) doReturn mockSpanBuilder
+        whenever(mockSpanBuilder.withParentSpan(mockParentSpan)) doReturn mockSpanBuilder
         whenever(mockSpanBuilder.start()) doReturn mockSpan
     }
 
     @AfterEach
     fun `tear down`() {
-        GlobalTracer::class.java.setStaticValue("isRegistered", false)
+        GlobalDatadogTracerHolder.clear()
     }
 
     @Test
@@ -116,7 +121,7 @@ class SpanExtTest {
         @LongForgery result: Long
     ) {
         var lambdaCalled = false
-        whenever(mockSpanBuilder.asChildOf(null as Span?)) doReturn mockSpanBuilder
+        whenever(mockSpanBuilder.withParentSpan(null as DatadogSpan?)) doReturn mockSpanBuilder
 
         val callResult = withinSpan(fakeOperationName) {
             lambdaCalled = true
@@ -125,7 +130,7 @@ class SpanExtTest {
 
         assertThat(lambdaCalled).isTrue()
         assertThat(callResult).isEqualTo(result)
-        verify(mockSpanBuilder).asChildOf(null as Span?)
+        verify(mockSpanBuilder).withParentSpan(null as DatadogSpan?)
         inOrder(mockSpan, mockScope) {
             verify(mockSpan).finish()
             verify(mockScope).close()
@@ -145,7 +150,7 @@ class SpanExtTest {
 
         assertThat(lambdaCalled).isTrue()
         assertThat(callResult).isEqualTo(result)
-        verify(mockSpanBuilder).asChildOf(mockParentSpan)
+        verify(mockSpanBuilder).withParentSpan(mockParentSpan)
         inOrder(mockSpan, mockScope) {
             verify(mockSpan).finish()
             verify(mockScope).close()
@@ -167,15 +172,9 @@ class SpanExtTest {
 
         assertThat(thrown).isEqualTo(throwable)
         assertThat(lambdaCalled).isTrue()
-        verify(mockSpanBuilder).asChildOf(mockParentSpan)
+        verify(mockSpanBuilder).withParentSpan(mockParentSpan)
         inOrder(mockSpan, mockScope) {
-            argumentCaptor<Map<String, Any>>().apply {
-                verify(mockSpan).log(capture())
-                assertThat(firstValue)
-                    .containsEntry(Fields.ERROR_OBJECT, throwable)
-                    .containsOnlyKeys(Fields.ERROR_OBJECT)
-            }
-
+            verify(mockSpan).addThrowable(throwable)
             verify(mockSpan).finish()
             verify(mockScope).close()
         }
@@ -194,7 +193,7 @@ class SpanExtTest {
 
         assertThat(lambdaCalled).isTrue()
         assertThat(callResult).isEqualTo(result)
-        verify(mockSpanBuilder).asChildOf(mockParentSpan)
+        verify(mockSpanBuilder).withParentSpan(mockParentSpan)
         inOrder(mockSpan) {
             verify(mockSpan).finish()
         }

@@ -24,6 +24,8 @@ interface DatadogSpanBuilder {
 
     fun withParentContext(parentContext: DatadogSpanContext?): DatadogSpanBuilder
 
+    fun withParentSpan(parentSpan: DatadogSpan?): DatadogSpanBuilder
+
     fun withStartTimestamp(micros: Long): DatadogSpanBuilder
 
     fun ignoreActiveSpan(): DatadogSpanBuilder

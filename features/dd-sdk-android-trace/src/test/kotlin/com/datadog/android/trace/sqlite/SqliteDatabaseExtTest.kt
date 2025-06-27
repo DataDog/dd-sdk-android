@@ -8,17 +8,18 @@ package com.datadog.android.trace.sqlite
 
 import android.content.ContentValues
 import android.database.sqlite.SQLiteDatabase
+import com.datadog.android.trace.GlobalDatadogTracerHolder
+import com.datadog.android.trace.api.scope.DatadogScope
+import com.datadog.android.trace.api.span.DatadogSpan
+import com.datadog.android.trace.api.span.DatadogSpanBuilder
+import com.datadog.android.trace.api.span.clear
+import com.datadog.android.trace.api.tracer.DatadogTracer
 import com.datadog.tools.unit.forge.BaseConfigurator
-import com.datadog.tools.unit.setStaticValue
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
-import io.opentracing.Scope
-import io.opentracing.Span
-import io.opentracing.Tracer
-import io.opentracing.util.GlobalTracer
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.catchThrowable
 import org.junit.jupiter.api.AfterEach
@@ -44,19 +45,19 @@ import org.mockito.quality.Strictness
 class SqliteDatabaseExtTest {
 
     @Mock
-    lateinit var mockTracer: Tracer
+    lateinit var mockTracer: DatadogTracer
 
     @Mock
-    lateinit var mockSpanBuilder: Tracer.SpanBuilder
+    lateinit var mockSpanBuilder: DatadogSpanBuilder
 
     @Mock
-    lateinit var mockSpan: Span
+    lateinit var mockSpan: DatadogSpan
 
     @Mock
-    lateinit var mockParentSpan: Span
+    lateinit var mockParentSpan: DatadogSpan
 
     @Mock
-    lateinit var mockScope: Scope
+    lateinit var mockScope: DatadogScope
 
     @StringForgery
     lateinit var fakeOperationName: String
@@ -69,7 +70,7 @@ class SqliteDatabaseExtTest {
 
     @BeforeEach
     fun `set up`() {
-        GlobalTracer.registerIfAbsent(mockTracer)
+        GlobalDatadogTracerHolder.registerIfAbsent(mockTracer)
         whenever(mockTracer.buildSpan(fakeOperationName)) doReturn mockSpanBuilder
         whenever(mockTracer.activateSpan(mockSpan)) doReturn mockScope
         whenever(mockSpanBuilder.start()) doReturn mockSpan
@@ -77,14 +78,14 @@ class SqliteDatabaseExtTest {
 
     @AfterEach
     fun `tear down`() {
-        GlobalTracer::class.java.setStaticValue("isRegistered", false)
+        GlobalDatadogTracerHolder.clear()
     }
 
     @Test
     fun `M create Span around transaction W transactionTraced() {exclusive = true}`() {
         // GIVEN
         whenever(mockTracer.activeSpan()) doReturn mockParentSpan
-        whenever(mockSpanBuilder.asChildOf(mockParentSpan)) doReturn mockSpanBuilder
+        whenever(mockSpanBuilder.withParentSpan(mockParentSpan)) doReturn mockSpanBuilder
 
         // WHEN
         val transactionExecuted: Boolean = mockDatabase.transactionTraced(
@@ -96,7 +97,7 @@ class SqliteDatabaseExtTest {
 
         // THEN
         assertThat(transactionExecuted).isTrue()
-        verify(mockSpanBuilder).asChildOf(mockParentSpan)
+        verify(mockSpanBuilder).withParentSpan(mockParentSpan)
         inOrder(mockSpan, mockScope) {
             verify(mockSpan).finish()
             verify(mockScope).close()
@@ -112,7 +113,7 @@ class SqliteDatabaseExtTest {
     fun `M create Span around transaction W transactionTraced() {exclusive = false}`() {
         // GIVEN
         whenever(mockTracer.activeSpan()) doReturn mockParentSpan
-        whenever(mockSpanBuilder.asChildOf(mockParentSpan)) doReturn mockSpanBuilder
+        whenever(mockSpanBuilder.withParentSpan(mockParentSpan)) doReturn mockSpanBuilder
 
         // WHEN
         val transactionExecuted: Boolean = mockDatabase.transactionTraced(
@@ -124,7 +125,7 @@ class SqliteDatabaseExtTest {
 
         // THEN
         assertThat(transactionExecuted).isTrue()
-        verify(mockSpanBuilder).asChildOf(mockParentSpan)
+        verify(mockSpanBuilder).withParentSpan(mockParentSpan)
         inOrder(mockSpan, mockScope) {
             verify(mockSpan).finish()
             verify(mockScope).close()
@@ -140,7 +141,7 @@ class SqliteDatabaseExtTest {
     fun `M create Span around transaction W transactionTraced() without parents`() {
         // GIVEN
         whenever(mockTracer.activeSpan()) doReturn null
-        whenever(mockSpanBuilder.asChildOf(null as Span?)) doReturn mockSpanBuilder
+        whenever(mockSpanBuilder.withParentSpan(null as DatadogSpan?)) doReturn mockSpanBuilder
 
         // WHEN
         val transactionExecuted = mockDatabase.transactionTraced(
@@ -152,7 +153,7 @@ class SqliteDatabaseExtTest {
 
         // THEN
         assertThat(transactionExecuted).isTrue()
-        verify(mockSpanBuilder).asChildOf(null as Span?)
+        verify(mockSpanBuilder).withParentSpan(null as DatadogSpan?)
         inOrder(mockSpan, mockScope) {
             verify(mockSpan).finish()
             verify(mockScope).close()
@@ -168,7 +169,7 @@ class SqliteDatabaseExtTest {
     fun `M close the Span around transaction W transactionTraced() throws exception`() {
         // GIVEN
         whenever(mockTracer.activeSpan()) doReturn null
-        whenever(mockSpanBuilder.asChildOf(null as Span?)) doReturn mockSpanBuilder
+        whenever(mockSpanBuilder.withParentSpan(null as DatadogSpan?)) doReturn mockSpanBuilder
 
         // WHEN
 
@@ -181,7 +182,7 @@ class SqliteDatabaseExtTest {
         ).isEqualTo(fakeException)
 
         // THEN
-        verify(mockSpanBuilder).asChildOf(null as Span?)
+        verify(mockSpanBuilder).withParentSpan(null as DatadogSpan?)
         inOrder(mockSpan, mockScope) {
             verify(mockSpan).finish()
             verify(mockScope).close()
@@ -198,7 +199,7 @@ class SqliteDatabaseExtTest {
         val fakeTagKey = forge.anAlphabeticalString()
         val fakeTagValue = forge.anAlphabeticalString()
         whenever(mockTracer.activeSpan()) doReturn mockParentSpan
-        whenever(mockSpanBuilder.asChildOf(mockParentSpan)) doReturn mockSpanBuilder
+        whenever(mockSpanBuilder.withParentSpan(mockParentSpan)) doReturn mockSpanBuilder
 
         // WHEN
         val transactionExecuted = mockDatabase.transactionTraced(
@@ -220,7 +221,7 @@ class SqliteDatabaseExtTest {
         val fakeTable = forge.anAlphabeticalString()
         val contentValues = ContentValues()
         whenever(mockTracer.activeSpan()) doReturn mockParentSpan
-        whenever(mockSpanBuilder.asChildOf(mockParentSpan)) doReturn mockSpanBuilder
+        whenever(mockSpanBuilder.withParentSpan(mockParentSpan)) doReturn mockSpanBuilder
 
         // WHEN
         val transactionExecuted = mockDatabase.transactionTraced(
