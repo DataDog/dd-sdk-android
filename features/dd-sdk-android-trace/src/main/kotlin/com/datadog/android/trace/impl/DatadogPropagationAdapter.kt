@@ -36,8 +36,12 @@ internal class DatadogPropagationAdapter(private val delegate: AgentPropagation)
         return context.delegate is ExtractedContext
     }
 
-    override fun createExtractedContext(traceId: String, spanId: String, samplingPriority: Int): DatadogSpanContext {
-        val extractedContext = ExtractedContext(
+    override fun createExtractedContext(
+        traceId: String,
+        spanId: String,
+        samplingPriority: Int
+    ): DatadogSpanContext = DatadogSpanContextAdapter(
+        ExtractedContext(
             DDTraceId.fromHexOrDefault(traceId, DDTraceId.ZERO),
             DDSpanId.fromHexOrDefault(spanId, DDSpanId.ZERO),
             samplingPriority,
@@ -45,7 +49,5 @@ internal class DatadogPropagationAdapter(private val delegate: AgentPropagation)
             null,
             null
         )
-
-        return DatadogSpanContextAdapter(extractedContext)
-    }
+    )
 }

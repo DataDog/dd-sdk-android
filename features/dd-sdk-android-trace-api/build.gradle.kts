@@ -53,6 +53,9 @@ dependencies {
     implementation(libs.androidXAnnotation)
     implementation(libs.bundles.traceCore)
 
+    // Generate NoOp implementations
+    ksp(project(":tools:noopfactory"))
+
     testImplementation(project(":tools:unit")) {
         attributes {
             attribute(

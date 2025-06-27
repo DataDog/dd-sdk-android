@@ -5,4 +5,7 @@
  */
 package com.datadog.android.trace.api.tracer
 
+import com.datadog.tools.annotation.NoOpImplementation
+
+@NoOpImplementation
 interface DatadogTracerSampler

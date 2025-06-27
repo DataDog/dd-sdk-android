@@ -59,6 +59,15 @@ public abstract interface class com/datadog/android/trace/api/propagation/Datado
 	public abstract fun isExtractedContext (Lcom/datadog/android/trace/api/span/DatadogSpanContext;)Z
 }
 
+public final class com/datadog/android/trace/api/propagation/NoOpDatadogPropagation : com/datadog/android/trace/api/propagation/DatadogPropagation {
+	public fun <init> ()V
+	public fun createExtractedContext (Ljava/lang/String;Ljava/lang/String;I)Lcom/datadog/android/trace/api/span/DatadogSpanContext;
+	public fun extract (Ljava/lang/Object;Lkotlin/jvm/functions/Function2;)Lcom/datadog/android/trace/api/span/DatadogSpanContext;
+	public fun inject (Lcom/datadog/android/trace/api/span/DatadogSpan;Ljava/lang/Object;Lkotlin/jvm/functions/Function3;)V
+	public fun inject (Lcom/datadog/android/trace/api/span/DatadogSpanContext;Ljava/lang/Object;Lkotlin/jvm/functions/Function3;)V
+	public fun isExtractedContext (Lcom/datadog/android/trace/api/span/DatadogSpanContext;)Z
+}
+
 public abstract interface class com/datadog/android/trace/api/scope/DataScopeListener {
 	public abstract fun afterScopeActivated ()V
 	public abstract fun afterScopeClosed ()V
@@ -157,6 +166,10 @@ public abstract interface class com/datadog/android/trace/api/tracer/DatadogTrac
 	public abstract fun buildSpan (Ljava/lang/CharSequence;)Lcom/datadog/android/trace/api/span/DatadogSpanBuilder;
 	public abstract fun buildSpan (Ljava/lang/String;Ljava/lang/CharSequence;)Lcom/datadog/android/trace/api/span/DatadogSpanBuilder;
 	public abstract fun propagate ()Lcom/datadog/android/trace/api/propagation/DatadogPropagation;
+}
+
+public final class com/datadog/android/trace/api/tracer/DatadogTracer$DefaultImpls {
+	public static fun propagate (Lcom/datadog/android/trace/api/tracer/DatadogTracer;)Lcom/datadog/android/trace/api/propagation/DatadogPropagation;
 }
 
 public abstract interface class com/datadog/android/trace/api/tracer/DatadogTracerBuilder {

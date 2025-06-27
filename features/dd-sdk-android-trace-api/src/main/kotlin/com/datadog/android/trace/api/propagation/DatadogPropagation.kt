@@ -7,10 +7,15 @@ package com.datadog.android.trace.api.propagation
 
 import com.datadog.android.trace.api.span.DatadogSpan
 import com.datadog.android.trace.api.span.DatadogSpanContext
+import com.datadog.android.trace.api.span.NoOpDatadogSpanContext
 
 interface DatadogPropagation {
     fun <C> inject(span: DatadogSpan, carrier: C, setter: (carrier: C, key: String, value: String) -> Unit)
-    fun <C> inject(context: DatadogSpanContext, carrier: C, setter: (carrier: C, key: String, value: String) -> Unit)
+    fun <C> inject(
+        context: DatadogSpanContext,
+        carrier: C,
+        setter: (carrier: C, key: String, value: String) -> Unit
+    )
     fun <C> extract(
         carrier: C,
         getter: (carrier: C, classifier: (String, String) -> Boolean) -> Unit
@@ -21,3 +26,30 @@ interface DatadogPropagation {
     fun createExtractedContext(traceId: String, spanId: String, samplingPriority: Int): DatadogSpanContext
 }
 
+// @TODO RUM-10573 - replace with @NoOpImplementation when method-level generics will be supported in noopfactory
+class NoOpDatadogPropagation : DatadogPropagation {
+    override fun <C> inject(
+        span: DatadogSpan,
+        carrier: C,
+        setter: (carrier: C, key: String, value: String) -> Unit
+    ) = Unit // Do nothing
+
+    override fun <C> inject(
+        context: DatadogSpanContext,
+        carrier: C,
+        setter: (carrier: C, key: String, value: String) -> Unit
+    ) = Unit // Do nothing
+
+    override fun <C> extract(
+        carrier: C,
+        getter: (carrier: C, classifier: (String, String) -> Boolean) -> Unit
+    ): DatadogSpanContext? = null // Do nothing
+
+    override fun isExtractedContext(context: DatadogSpanContext) = false // Do nothing
+
+    override fun createExtractedContext(
+        traceId: String,
+        spanId: String,
+        samplingPriority: Int
+    ): DatadogSpanContext = NoOpDatadogSpanContext()
+}

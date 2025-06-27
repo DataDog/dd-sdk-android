@@ -61,9 +61,7 @@ object DatadogTracingConstants {
 
     object ErrorPriorities {
         const val UNSET: Byte = Byte.MIN_VALUE
-
         const val HTTP_SERVER_DECORATOR: Byte = -1
-
         const val DEFAULT: Byte = 0
     }
 }

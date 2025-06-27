@@ -6,7 +6,9 @@
 package com.datadog.android.trace.api.span
 
 import com.datadog.android.trace.api.trace.DatadogTraceId
+import com.datadog.tools.annotation.NoOpImplementation
 
+@NoOpImplementation
 interface DatadogSpanContext {
     val traceId: DatadogTraceId
 

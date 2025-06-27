@@ -5,6 +5,9 @@
  */
 package com.datadog.android.trace.api.trace
 
+import com.datadog.tools.annotation.NoOpImplementation
+
+@NoOpImplementation
 interface DatadogTraceId {
     fun toLong(): Long
     fun toHexString(): String

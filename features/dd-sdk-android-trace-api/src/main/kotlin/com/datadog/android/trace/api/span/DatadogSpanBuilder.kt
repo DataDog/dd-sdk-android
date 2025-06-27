@@ -5,6 +5,9 @@
  */
 package com.datadog.android.trace.api.span
 
+import com.datadog.tools.annotation.NoOpImplementation
+
+@NoOpImplementation
 interface DatadogSpanBuilder {
 
     fun start(): DatadogSpan

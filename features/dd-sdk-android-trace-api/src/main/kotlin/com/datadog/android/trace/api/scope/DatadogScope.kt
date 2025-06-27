@@ -5,6 +5,9 @@
  */
 package com.datadog.android.trace.api.scope
 
-interface DatadogScope{
+import com.datadog.tools.annotation.NoOpImplementation
+
+@NoOpImplementation
+interface DatadogScope {
     fun close()
 }

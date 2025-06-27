@@ -6,15 +6,16 @@
 package com.datadog.android.trace.api
 
 import com.datadog.android.trace.api.tracer.DatadogTracer
+import com.datadog.android.trace.api.tracer.NoOpDatadogTracer
 
 object GlobalDatadogTracerHolder {
     @get:Synchronized
-    var tracer: DatadogTracer? = null
+    var tracer: DatadogTracer = NoOpDatadogTracer()
         private set
 
     @Synchronized
     fun registerIfAbsent(tracer: DatadogTracer) {
-        if (this.tracer == null) {
+        if (tracer is NoOpDatadogTracer) {
             this.tracer = tracer
         }
     }
