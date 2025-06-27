@@ -28,6 +28,7 @@ object com.datadog.android.trace.api.constants.DatadogTracingConstants
     const val TRACE_SAMPLE_RATE: String
     const val PROPAGATION_STYLE_EXTRACT: String
     const val PROPAGATION_STYLE_INJECT: String
+    const val URL_AS_RESOURCE_NAME: String
   object ErrorPriorities
     const val UNSET: Byte
     const val HTTP_SERVER_DECORATOR: Byte
@@ -112,6 +113,7 @@ interface com.datadog.android.trace.api.tracer.DatadogTracer
 interface com.datadog.android.trace.api.tracer.DatadogTracerBuilder
   fun build(): DatadogTracer
   fun withProperties(java.util.Properties): DatadogTracerBuilder
+  fun withTracingHeadersTypes(Set<com.datadog.android.trace.TracingHeaderType>): DatadogTracerBuilder
   fun withServiceName(String): DatadogTracerBuilder
   fun withPartialFlushMinSpans(Int): DatadogTracerBuilder
   fun withIdGenerationStrategy(String, Boolean): DatadogTracerBuilder

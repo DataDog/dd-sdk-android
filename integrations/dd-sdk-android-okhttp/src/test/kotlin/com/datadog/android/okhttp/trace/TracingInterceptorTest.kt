@@ -23,12 +23,12 @@ import com.datadog.android.okhttp.utils.config.DatadogSingletonTestConfiguration
 import com.datadog.android.okhttp.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.okhttp.utils.verifyLog
 import com.datadog.android.trace.TracingHeaderType
-import com.datadog.android.trace.api.trace.DatadogTraceId
-import com.datadog.android.trace.api.constants.DatadogTracingUtility
+import com.datadog.android.trace.api.constants.DatadogTracingConstants.PrioritySampling
 import com.datadog.android.trace.api.propagation.DatadogPropagation
 import com.datadog.android.trace.api.span.DatadogSpan
 import com.datadog.android.trace.api.span.DatadogSpanBuilder
 import com.datadog.android.trace.api.span.DatadogSpanContext
+import com.datadog.android.trace.api.trace.DatadogTraceId
 import com.datadog.android.trace.api.tracer.DatadogTracer
 import com.datadog.android.trace.impl.DatadogTracing
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
@@ -862,8 +862,8 @@ internal open class TracingInterceptorTest {
             it.addHeader(
                 TracingInterceptor.DATADOG_SAMPLING_PRIORITY_HEADER,
                 forge.anElementFrom(
-                    DatadogTracingUtility.DatadogTracingPrioritySampling.SAMPLER_KEEP.toString(),
-                    DatadogTracingUtility.DatadogTracingPrioritySampling.USER_KEEP.toString()
+                    PrioritySampling.SAMPLER_KEEP.toString(),
+                    PrioritySampling.USER_KEEP.toString()
                 )
             )
         }
@@ -894,7 +894,7 @@ internal open class TracingInterceptorTest {
         fakeRequest = forgeRequest(forge) {
             it.addHeader(
                 TracingInterceptor.B3M_SAMPLING_PRIORITY_KEY,
-                DatadogTracingUtility.DatadogTracingPrioritySampling.SAMPLER_KEEP.toString()
+                PrioritySampling.SAMPLER_KEEP.toString()
             )
         }
         stubChain(mockChain, statusCode)
@@ -990,8 +990,8 @@ internal open class TracingInterceptorTest {
             it.addHeader(
                 TracingInterceptor.DATADOG_SAMPLING_PRIORITY_HEADER,
                 forge.anElementFrom(
-                    DatadogTracingUtility.DatadogTracingPrioritySampling.SAMPLER_DROP.toString(),
-                    DatadogTracingUtility.DatadogTracingPrioritySampling.USER_DROP.toString()
+                    PrioritySampling.SAMPLER_DROP.toString(),
+                    PrioritySampling.USER_DROP.toString()
                 )
             )
         }
@@ -1029,7 +1029,7 @@ internal open class TracingInterceptorTest {
         fakeRequest = forgeRequest(forge) {
             it.addHeader(
                 TracingInterceptor.B3M_SAMPLING_PRIORITY_KEY,
-                DatadogTracingUtility.DatadogTracingPrioritySampling.SAMPLER_DROP.toString()
+                PrioritySampling.SAMPLER_DROP.toString()
             )
         }
         stubChain(mockChain, statusCode)
@@ -1065,7 +1065,7 @@ internal open class TracingInterceptorTest {
             it.addHeader(
                 TracingInterceptor.B3_HEADER_KEY,
                 forge.anElementFrom(
-                    DatadogTracingUtility.DatadogTracingPrioritySampling.SAMPLER_DROP.toString(),
+                    PrioritySampling.SAMPLER_DROP.toString(),
                     forge.aStringMatching("[a-f0-9]{32}\\-[a-f0-9]{16}\\-0")
                 )
             )

@@ -6,7 +6,7 @@
 
 package com.datadog.opentelemetry.trace
 
-import com.datadog.android.trace.api.constants.DatadogTracingUtility.DatadogTracingErrorPriorities
+import com.datadog.android.trace.api.constants.DatadogTracingConstants.ErrorPriorities
 import com.datadog.android.trace.api.span.DatadogSpan
 import com.datadog.android.trace.api.tracer.DatadogTracer
 import com.datadog.android.trace.opentelemetry.utils.forge.Configurator
@@ -216,7 +216,7 @@ internal class OtelSpanTest {
         testedSpan.recordException(fakeThrowable, mockAttributes)
 
         // Then
-        verify(mockAgentSpan).addThrowable(fakeThrowable, DatadogTracingErrorPriorities.UNSET)
+        verify(mockAgentSpan).addThrowable(fakeThrowable, ErrorPriorities.UNSET)
         verifyNoInteractions(mockAttributes)
     }
 
@@ -230,7 +230,7 @@ internal class OtelSpanTest {
         testedSpan.recordException(fakeThrowable, mockAttributes)
 
         // Then
-        verify(mockAgentSpan, never()).addThrowable(fakeThrowable, DatadogTracingErrorPriorities.UNSET)
+        verify(mockAgentSpan, never()).addThrowable(fakeThrowable, ErrorPriorities.UNSET)
         verifyNoInteractions(mockAttributes)
     }
 
