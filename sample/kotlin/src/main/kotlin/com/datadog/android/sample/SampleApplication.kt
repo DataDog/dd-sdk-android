@@ -13,6 +13,7 @@ import android.util.Log
 import androidx.lifecycle.ViewModelProvider
 import com.datadog.android.Datadog
 import com.datadog.android.DatadogSite
+import com.datadog.android.api.SdkCore
 import com.datadog.android.compose.enableComposeActionTracking
 import com.datadog.android.core.configuration.BackPressureMitigation
 import com.datadog.android.core.configuration.BackPressureStrategy
@@ -51,8 +52,11 @@ import com.datadog.android.sessionreplay.compose.ComposeExtensionSupport
 import com.datadog.android.sessionreplay.material.MaterialExtensionSupport
 import com.datadog.android.timber.DatadogTree
 import com.datadog.android.trace.AndroidTracer
+import com.datadog.android.trace.GlobalDatadogTracerHolder
 import com.datadog.android.trace.Trace
 import com.datadog.android.trace.TraceConfiguration
+import com.datadog.android.trace.impl.DatadogTracing
+import com.datadog.android.trace.opentelemetry.DatadogOpenTelemetry
 import com.datadog.android.trace.opentelemetry.OtelTracerProvider
 import com.datadog.android.vendor.sample.LocalServer
 import com.facebook.stetho.Stetho
@@ -147,7 +151,7 @@ class SampleApplication : Application() {
         val preferences = Preferences.defaultPreferences(this)
 
         Datadog.setVerbosity(Log.VERBOSE)
-        Datadog.initialize(
+        val sdkCore = Datadog.initialize(
             this,
             createDatadogConfiguration(),
             preferences.getTrackingConsent()
@@ -161,31 +165,26 @@ class SampleApplication : Application() {
 
         initializeUserInfo(preferences)
         initializeAccountInfo(preferences)
-
-//        GlobalTracer.registerIfAbsent(
-//            AndroidTracer.Builder()
-//                .setService(BuildConfig.APPLICATION_ID)
-//                .build()
-//        )
+        initializeTracing(sdkCore)
 
         val rumConfig = createRumConfiguration()
         Rum.enable(rumConfig)
 
-        GlobalOpenTelemetry.set(object : OpenTelemetry {
-            private val tracerProvider = OtelTracerProvider.Builder()
-                .setService(BuildConfig.APPLICATION_ID)
-                .build()
 
-            override fun getTracerProvider(): TracerProvider {
-                return tracerProvider
-            }
-
-            override fun getPropagators(): ContextPropagators {
-                return ContextPropagators.noop()
-            }
-        })
         GlobalRumMonitor.get().debug = true
         TracingRxJava3Utils.enableTracing(GlobalTracer.get())
+    }
+
+    private fun initializeTracing(sdkCore: SdkCore?) {
+        GlobalDatadogTracerHolder.registerIfAbsent(
+            DatadogTracing.newTracerBuilder(sdkCore)
+                .withServiceName(BuildConfig.APPLICATION_ID)
+                .build()
+        )
+
+        GlobalOpenTelemetry.set(
+            DatadogOpenTelemetry(BuildConfig.APPLICATION_ID)
+        )
     }
 
     private fun initializeUserInfo(preferences: Preferences.DefaultPreferences) {

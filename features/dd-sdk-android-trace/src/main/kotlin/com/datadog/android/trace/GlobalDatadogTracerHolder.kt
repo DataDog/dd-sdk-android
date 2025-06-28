@@ -10,8 +10,7 @@ import com.datadog.android.trace.api.tracer.NoOpDatadogTracer
 
 object GlobalDatadogTracerHolder {
     @get:Synchronized
-    var tracer: DatadogTracer? = null
-        internal set
+    internal var tracer: DatadogTracer? = null
 
     @Synchronized
     fun registerIfAbsent(tracer: DatadogTracer) {

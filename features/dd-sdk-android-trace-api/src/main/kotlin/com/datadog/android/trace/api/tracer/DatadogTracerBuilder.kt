@@ -7,8 +7,10 @@ package com.datadog.android.trace.api.tracer
 
 import com.datadog.android.trace.TracingHeaderType
 import com.datadog.android.trace.api.span.DatadogSpanWriter
+import com.datadog.tools.annotation.NoOpImplementation
 import java.util.Properties
 
+@NoOpImplementation(publicNoOpImplementation = true)
 interface DatadogTracerBuilder {
     fun build(): DatadogTracer
     fun withProperties(properties: Properties): DatadogTracerBuilder

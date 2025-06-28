@@ -8,9 +8,9 @@ package com.datadog.android.trace.api.span
 
 import com.datadog.android.trace.GlobalDatadogTracerHolder
 import com.datadog.android.trace.api.tracer.DatadogTracer
-import com.datadog.android.trace.impl.DatadogSpanContextAdapter
-import com.datadog.android.trace.impl.DatadogSpanWriterWrapper
-import com.datadog.android.trace.impl.DatadogTracerAdapter
+import com.datadog.android.trace.impl.internal.DatadogSpanContextAdapter
+import com.datadog.android.trace.impl.internal.DatadogSpanWriterWrapper
+import com.datadog.android.trace.impl.internal.DatadogTracerAdapter
 import com.datadog.tools.unit.getFieldValue
 import com.datadog.trace.common.writer.Writer
 import com.datadog.trace.core.CoreTracer

@@ -6,6 +6,12 @@ public final class com/datadog/android/trace/opentelemetry/BuildConfig {
 	public fun <init> ()V
 }
 
+public final class com/datadog/android/trace/opentelemetry/DatadogOpenTelemetry : io/opentelemetry/api/OpenTelemetry {
+	public fun <init> (Ljava/lang/String;)V
+	public fun getPropagators ()Lio/opentelemetry/context/propagation/ContextPropagators;
+	public fun getTracerProvider ()Lio/opentelemetry/api/trace/TracerProvider;
+}
+
 public final class com/datadog/android/trace/opentelemetry/OtelTracerProvider : io/opentelemetry/api/trace/TracerProvider {
 	public fun get (Ljava/lang/String;)Lio/opentelemetry/api/trace/Tracer;
 	public fun get (Ljava/lang/String;Ljava/lang/String;)Lio/opentelemetry/api/trace/Tracer;

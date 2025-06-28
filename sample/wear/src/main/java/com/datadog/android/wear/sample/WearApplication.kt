@@ -17,13 +17,12 @@ import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.Rum
 import com.datadog.android.rum.RumConfiguration
 import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
+import com.datadog.android.trace.GlobalDatadogTracerHolder
 import com.datadog.android.trace.Trace
 import com.datadog.android.trace.TraceConfiguration
-import com.datadog.android.trace.opentelemetry.OtelTracerProvider
+import com.datadog.android.trace.impl.DatadogTracing
+import com.datadog.android.trace.opentelemetry.DatadogOpenTelemetry
 import io.opentelemetry.api.GlobalOpenTelemetry
-import io.opentelemetry.api.OpenTelemetry
-import io.opentelemetry.api.trace.TracerProvider
-import io.opentelemetry.context.propagation.ContextPropagators
 import timber.log.Timber
 
 /**
@@ -39,42 +38,46 @@ class WearApplication : Application() {
     @Suppress("MagicNumber")
     private fun initializeDatadog() {
         Datadog.setVerbosity(Log.VERBOSE)
-        Datadog.initialize(
+
+        val sdkCore = Datadog.initialize(
             this,
             createDatadogConfiguration(),
             TrackingConsent.GRANTED
         )
 
-        val rumConfig = RumConfiguration.Builder(BuildConfig.DD_RUM_APPLICATION_ID)
-            .setTelemetrySampleRate(100f)
-            .useViewTrackingStrategy(ActivityViewTrackingStrategy(true))
-            .trackUserInteractions()
-            .trackLongTasks(250L)
-            .apply {
-                if (BuildConfig.DD_OVERRIDE_RUM_URL.isNotBlank()) {
-                    useCustomEndpoint(BuildConfig.DD_OVERRIDE_RUM_URL)
+        Rum.enable(
+            RumConfiguration.Builder(BuildConfig.DD_RUM_APPLICATION_ID)
+                .setTelemetrySampleRate(100f)
+                .useViewTrackingStrategy(ActivityViewTrackingStrategy(true))
+                .trackUserInteractions()
+                .trackLongTasks(250L)
+                .apply {
+                    if (BuildConfig.DD_OVERRIDE_RUM_URL.isNotBlank()) {
+                        useCustomEndpoint(BuildConfig.DD_OVERRIDE_RUM_URL)
+                    }
                 }
-            }
-            .build()
-        Rum.enable(rumConfig)
+                .build()
+        )
 
-        val logsConfig = LogsConfiguration.Builder()
-            .apply {
-                if (BuildConfig.DD_OVERRIDE_LOGS_URL.isNotBlank()) {
-                    useCustomEndpoint(BuildConfig.DD_OVERRIDE_LOGS_URL)
+        Logs.enable(
+            LogsConfiguration.Builder()
+                .apply {
+                    if (BuildConfig.DD_OVERRIDE_LOGS_URL.isNotBlank()) {
+                        useCustomEndpoint(BuildConfig.DD_OVERRIDE_LOGS_URL)
+                    }
                 }
-            }
-            .build()
-        Logs.enable(logsConfig)
+                .build()
+        )
 
-        val tracesConfig = TraceConfiguration.Builder()
-            .apply {
-                if (BuildConfig.DD_OVERRIDE_TRACES_URL.isNotBlank()) {
-                    useCustomEndpoint(BuildConfig.DD_OVERRIDE_TRACES_URL)
+        Trace.enable(
+            TraceConfiguration.Builder()
+                .apply {
+                    if (BuildConfig.DD_OVERRIDE_TRACES_URL.isNotBlank()) {
+                        useCustomEndpoint(BuildConfig.DD_OVERRIDE_TRACES_URL)
+                    }
                 }
-            }
-            .build()
-        Trace.enable(tracesConfig)
+                .build()
+        )
 
         Datadog.setUserInfo(
             id = "wear 42",
@@ -82,19 +85,15 @@ class WearApplication : Application() {
             email = null
         )
 
-        GlobalOpenTelemetry.set(object : OpenTelemetry {
-            private val tracerProvider = OtelTracerProvider.Builder()
-                .setService(BuildConfig.APPLICATION_ID)
+        GlobalDatadogTracerHolder.registerIfAbsent(
+            DatadogTracing.newTracerBuilder(sdkCore)
+                .withServiceName(BuildConfig.APPLICATION_ID)
                 .build()
+        )
 
-            override fun getTracerProvider(): TracerProvider {
-                return tracerProvider
-            }
-
-            override fun getPropagators(): ContextPropagators {
-                return ContextPropagators.noop()
-            }
-        })
+        GlobalOpenTelemetry.set(
+            DatadogOpenTelemetry(BuildConfig.APPLICATION_ID)
+        )
     }
 
     private fun createDatadogConfiguration(): Configuration {

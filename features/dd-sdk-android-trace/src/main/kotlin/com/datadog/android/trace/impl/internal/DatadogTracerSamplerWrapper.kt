@@ -3,9 +3,9 @@
  * This product includes software developed at Datadog (https://www.datadoghq.com/).
  * Copyright 2016-Present Datadog, Inc.
  */
-package com.datadog.android.trace.impl
+package com.datadog.android.trace.impl.internal
 
-import com.datadog.android.trace.api.span.DatadogSpanWriter
-import com.datadog.trace.common.writer.Writer
+import com.datadog.android.trace.api.tracer.DatadogTracerSampler
+import com.datadog.trace.common.sampling.Sampler
 
-internal class DatadogSpanWriterWrapper(val delegate: Writer) : DatadogSpanWriter
+internal class DatadogTracerSamplerWrapper(val delegate: Sampler?) : DatadogTracerSampler
