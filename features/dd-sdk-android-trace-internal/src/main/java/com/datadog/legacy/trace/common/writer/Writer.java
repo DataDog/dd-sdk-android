@@ -11,7 +11,6 @@ import java.io.Closeable;
 import java.util.List;
 
 /** A writer is responsible to send collected spans to some place */
-@Deprecated
 public interface Writer extends Closeable {
 
   /**

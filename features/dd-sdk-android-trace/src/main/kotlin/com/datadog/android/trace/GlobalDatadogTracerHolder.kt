@@ -13,10 +13,13 @@ object GlobalDatadogTracerHolder {
     internal var tracer: DatadogTracer? = null
 
     @Synchronized
-    fun registerIfAbsent(tracer: DatadogTracer) {
+    fun registerIfAbsent(tracer: DatadogTracer): Boolean {
         if (GlobalDatadogTracerHolder.tracer == null) {
             GlobalDatadogTracerHolder.tracer = tracer
+            return true
         }
+
+        return false
     }
 
     fun get(): DatadogTracer = tracer ?: NoOpDatadogTracer()

@@ -18,7 +18,7 @@ fun Project.kotlinConfig(
     taskConfig<KotlinCompile> {
         compilerOptions {
             jvmTarget.set(jvmBytecodeTarget)
-            val isCI = false//System.getenv("CI").toBoolean()
+            val isCI = System.getenv("CI").toBoolean()
             allWarningsAsErrors.set(evaluateWarningsAsErrors && isCI)
             apiVersion.set(KotlinVersion.KOTLIN_1_7)
             languageVersion.set(KotlinVersion.KOTLIN_1_7)

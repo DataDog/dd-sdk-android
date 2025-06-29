@@ -16,11 +16,25 @@ import com.datadog.trace.api.IdGenerationStrategy
 import com.datadog.trace.core.CoreTracer
 import java.util.Properties
 
-internal class DatadogTracerBuilderAdapter(internalLogger: InternalLogger) : DatadogTracerBuilder {
-
-    private val delegate = CoreTracer.CoreTracerBuilder(internalLogger)
+internal class DatadogTracerBuilderAdapter(
+    internalLogger: InternalLogger,
+    writer: DatadogSpanWriter?
+) : DatadogTracerBuilder {
 
     private var properties = Properties()
+    private val delegate = CoreTracer.CoreTracerBuilder(internalLogger)
+
+    init {
+        if (writer is DatadogSpanWriterWrapper) {
+            delegate.writer(writer.delegate)
+        } else {
+            internalLogger.log(
+                InternalLogger.Level.ERROR,
+                InternalLogger.Target.USER,
+                { MESSAGE_WRITER_NOT_PROVIDED }
+            )
+        }
+    }
 
     override fun build(): DatadogTracer = DatadogTracerAdapter(delegate.build())
 
@@ -38,10 +52,6 @@ internal class DatadogTracerBuilderAdapter(internalLogger: InternalLogger) : Dat
         return withProperties(properties)
     }
 
-    override fun withWriter(writerAdapter: DatadogSpanWriter?) = apply {
-        if (writerAdapter is DatadogSpanWriterWrapper) delegate.writer(writerAdapter.delegate)
-    }
-
     override fun withSampler(samplerAdapter: DatadogTracerSampler?): DatadogTracerBuilder = apply {
         if (samplerAdapter is DatadogTracerSamplerWrapper) delegate.sampler(samplerAdapter.delegate)
     }
@@ -52,5 +62,12 @@ internal class DatadogTracerBuilderAdapter(internalLogger: InternalLogger) : Dat
 
     override fun withIdGenerationStrategy(key: String, traceId128BitGenerationEnabled: Boolean) = apply {
         delegate.idGenerationStrategy(IdGenerationStrategy.fromName(key, traceId128BitGenerationEnabled))
+    }
+
+    companion object {
+        internal const val MESSAGE_WRITER_NOT_PROVIDED =
+            "You're trying to create an DatadogTracerBuilder instance, " +
+                    "but either the SDK was not initialized or the Tracing feature was " +
+                    "not registered. No tracing data will be sent."
     }
 }

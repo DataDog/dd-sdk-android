@@ -15,11 +15,14 @@ class com.datadog.android.trace.AndroidTracer : com.datadog.opentracing.DDTracer
     fun logThrowable(io.opentracing.Span, Throwable)
     fun logErrorMessage(io.opentracing.Span, String)
 object com.datadog.android.trace.GlobalDatadogTracerHolder
-  var tracer: com.datadog.android.trace.api.tracer.DatadogTracer?
-  fun registerIfAbsent(com.datadog.android.trace.api.tracer.DatadogTracer)
+  fun registerIfAbsent(com.datadog.android.trace.api.tracer.DatadogTracer): Boolean
   fun get(): com.datadog.android.trace.api.tracer.DatadogTracer
 interface com.datadog.android.trace.InternalCoreWriterProvider
   fun getCoreTracerWriter(): com.datadog.android.trace.api.span.DatadogSpanWriter
+fun io.opentracing.Span.setError(Throwable)
+fun io.opentracing.Span.setError(String)
+fun com.datadog.android.trace.api.span.DatadogSpan.log(String)
+fun com.datadog.android.trace.api.span.DatadogSpan.log(Map<String, Any>)
 fun <T: Any?> withinSpan(String, com.datadog.android.trace.api.span.DatadogSpan? = null, Boolean = true, com.datadog.android.trace.api.span.DatadogSpan.() -> T): T
 object com.datadog.android.trace.Trace
   fun enable(TraceConfiguration, com.datadog.android.api.SdkCore = Datadog.getInstance())
@@ -34,9 +37,11 @@ interface com.datadog.android.trace.event.SpanEventMapper : com.datadog.android.
 object com.datadog.android.trace.impl.DatadogTracing
   val spanIdConverter: com.datadog.android.trace.api.span.DatadogSpanIdConverter
   val traceIdFactory: com.datadog.android.trace.api.trace.DatadogTraceIdFactory
-  fun newTracerBuilder(com.datadog.android.api.InternalLogger): com.datadog.android.trace.api.tracer.DatadogTracerBuilder
-  fun wrapWriter(com.datadog.trace.common.writer.Writer?): com.datadog.android.trace.api.span.DatadogSpanWriter
+  val spanLogger: com.datadog.android.trace.api.span.DatadogSpanLogger
+  fun newTracerBuilder(com.datadog.android.api.SdkCore?): com.datadog.android.trace.api.tracer.DatadogTracerBuilder
   fun newSampler(): com.datadog.android.trace.api.tracer.DatadogTracerSampler
+  fun wrapWriter(com.datadog.trace.common.writer.Writer?): com.datadog.android.trace.api.span.DatadogSpanWriter
+  object Errors
 object com.datadog.android.trace.internal.SpanAttributes
   const val DATADOG_INITIAL_CONTEXT: String
 fun <T> android.database.sqlite.SQLiteDatabase.transactionTraced(String, Boolean = true, com.datadog.android.trace.api.span.DatadogSpan.(android.database.sqlite.SQLiteDatabase) -> T): T

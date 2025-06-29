@@ -19,16 +19,15 @@ import com.datadog.android.core.internal.net.DefaultFirstPartyHostHeaderTypeReso
 import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.internal.telemetry.TracingHeaderTypesSet
 import com.datadog.android.internal.utils.loggableStackTrace
-import com.datadog.android.internal.utils.tryCastTo
 import com.datadog.android.okhttp.TraceContext
 import com.datadog.android.okhttp.TraceContextInjection
 import com.datadog.android.okhttp.internal.trace.toInternalTracingHeaderType
 import com.datadog.android.trace.AndroidTracer
+import com.datadog.android.trace.GlobalDatadogTracerHolder
 import com.datadog.android.trace.TracingHeaderType
-import com.datadog.android.trace.api.constants.DatadogTracingConstants.TracerConfig
-import com.datadog.android.trace.api.constants.DatadogTracingConstants.Tags
 import com.datadog.android.trace.api.constants.DatadogTracingConstants.PrioritySampling
-import com.datadog.android.trace.api.constants.DatadogTracingConstants.ErrorPriorities
+import com.datadog.android.trace.api.constants.DatadogTracingConstants.Tags
+import com.datadog.android.trace.api.constants.DatadogTracingConstants.TracerConfig
 import com.datadog.android.trace.api.span.DatadogSpan
 import com.datadog.android.trace.api.span.DatadogSpanContext
 import com.datadog.android.trace.api.tracer.DatadogTracer
@@ -703,7 +702,7 @@ internal constructor(
         internal var traceOrigin: String? = null
         internal var traceSampler: Sampler<DatadogSpan> = DeterministicTraceSampler(DEFAULT_TRACE_SAMPLE_RATE)
         internal var localTracerFactory = DEFAULT_LOCAL_TRACER_FACTORY
-        internal var globalTracerProvider: () -> DatadogTracer? = { null }
+        internal var globalTracerProvider: () -> DatadogTracer? = { GlobalDatadogTracerHolder.get() }
         internal var traceContextInjection = TraceContextInjection.SAMPLED
 
         internal var redacted404ResourceName = true
@@ -862,26 +861,9 @@ internal constructor(
 
         private val DEFAULT_LOCAL_TRACER_FACTORY: (SdkCore, Set<TracingHeaderType>) -> DatadogTracer =
             { sdkCore, tracingHeaderTypes: Set<TracingHeaderType> ->
-                val featuredSdkCore = sdkCore as FeatureSdkCore
-                val writer = featuredSdkCore.getFeature(Feature.TRACING_FEATURE_NAME)
-                    ?.unwrap<Feature>()
-                    ?.tryCastTo<com.datadog.android.trace.InternalCoreWriterProvider>()
-                    ?.getCoreTracerWriter()
-
-                if (writer == null) {
-                    featuredSdkCore.internalLogger.log(
-                        InternalLogger.Level.ERROR,
-                        InternalLogger.Target.MAINTAINER,
-                        {
-                            "The Tracing feature is not implementing the InternalCoreWriterProvider interface. " +
-                                "No tracing data will be sent."
-                        }
-                    )
-                }
-
                 val sampler = DatadogTracing.newSampler()
 
-                DatadogTracing.newTracerBuilder(featuredSdkCore.internalLogger)
+                DatadogTracing.newTracerBuilder(sdkCore)
                     .withProperties(
                         Properties().apply {
                             val propagationStyles = tracingHeaderTypes.joinToString(",")
@@ -890,7 +872,6 @@ internal constructor(
                             setProperty(TracerConfig.URL_AS_RESOURCE_NAME, "false")
                         }
                     )
-                    .withWriter(writer)
                     .withSampler(sampler)
                     .build()
             }

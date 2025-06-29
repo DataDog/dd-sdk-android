@@ -57,7 +57,7 @@ internal object RuntimeConfig {
     }
 
     fun tracer(sdkCore: SdkCore): DatadogTracer =
-        DatadogTracing.newTracerBuilder((sdkCore as FeatureSdkCore).internalLogger)
+        DatadogTracing.newTracerBuilder(sdkCore)
             .withTracingHeadersTypes(setOf(TracingHeaderType.DATADOG, TracingHeaderType.TRACECONTEXT))
             .build()
 

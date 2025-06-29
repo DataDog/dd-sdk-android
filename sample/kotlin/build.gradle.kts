@@ -195,11 +195,6 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-extensions:2.2.0")
     implementation("androidx.preference:preference-ktx:1.1.1")
 
-    implementation(libs.bundles.openTracing)
-    implementation("io.opentracing.contrib:opentracing-rxjava-3:0.1.4") {
-        exclude(group = "io.opentracing")
-    }
-
     // Image Loading Library
     implementation(libs.coil)
     implementation(libs.coilCompose)

@@ -18,6 +18,5 @@ interface DatadogTracerBuilder {
     fun withServiceName(serviceName: String): DatadogTracerBuilder
     fun withPartialFlushMinSpans(partialFlushThreshold: Int): DatadogTracerBuilder
     fun withIdGenerationStrategy(key: String, traceId128BitGenerationEnabled: Boolean): DatadogTracerBuilder
-    fun withWriter(writerAdapter: DatadogSpanWriter?): DatadogTracerBuilder
     fun withSampler(samplerAdapter: DatadogTracerSampler?): DatadogTracerBuilder
 }

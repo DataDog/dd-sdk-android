@@ -51,24 +51,15 @@ import com.datadog.android.sessionreplay.TouchPrivacy
 import com.datadog.android.sessionreplay.compose.ComposeExtensionSupport
 import com.datadog.android.sessionreplay.material.MaterialExtensionSupport
 import com.datadog.android.timber.DatadogTree
-import com.datadog.android.trace.AndroidTracer
-import com.datadog.android.trace.GlobalDatadogTracerHolder
 import com.datadog.android.trace.Trace
 import com.datadog.android.trace.TraceConfiguration
-import com.datadog.android.trace.impl.DatadogTracing
 import com.datadog.android.trace.opentelemetry.DatadogOpenTelemetry
-import com.datadog.android.trace.opentelemetry.OtelTracerProvider
 import com.datadog.android.vendor.sample.LocalServer
 import com.facebook.stetho.Stetho
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import io.opentelemetry.api.GlobalOpenTelemetry
-import io.opentelemetry.api.OpenTelemetry
-import io.opentelemetry.api.trace.TracerProvider
-import io.opentelemetry.context.propagation.ContextPropagators
-import io.opentracing.rxjava3.TracingRxJava3Utils
-import io.opentracing.util.GlobalTracer
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.adapter.rxjava3.RxJava3CallAdapterFactory
@@ -165,23 +156,14 @@ class SampleApplication : Application() {
 
         initializeUserInfo(preferences)
         initializeAccountInfo(preferences)
-        initializeTracing(sdkCore)
+        initializeTracing()
 
-        val rumConfig = createRumConfiguration()
-        Rum.enable(rumConfig)
-
+        Rum.enable(createRumConfiguration())
 
         GlobalRumMonitor.get().debug = true
-        TracingRxJava3Utils.enableTracing(GlobalTracer.get())
     }
 
-    private fun initializeTracing(sdkCore: SdkCore?) {
-        GlobalDatadogTracerHolder.registerIfAbsent(
-            DatadogTracing.newTracerBuilder(sdkCore)
-                .withServiceName(BuildConfig.APPLICATION_ID)
-                .build()
-        )
-
+    private fun initializeTracing() {
         GlobalOpenTelemetry.set(
             DatadogOpenTelemetry(BuildConfig.APPLICATION_ID)
         )

@@ -138,7 +138,18 @@ public abstract interface class com/datadog/android/trace/api/span/DatadogSpanLi
 	public abstract fun getTraceStrace ()Ljava/lang/String;
 }
 
+public abstract interface class com/datadog/android/trace/api/span/DatadogSpanLogger {
+	public abstract fun log (Ljava/lang/String;Lcom/datadog/android/trace/api/span/DatadogSpan;)V
+	public abstract fun log (Ljava/util/Map;Lcom/datadog/android/trace/api/span/DatadogSpan;)V
+}
+
 public abstract interface class com/datadog/android/trace/api/span/DatadogSpanWriter {
+}
+
+public final class com/datadog/android/trace/api/span/NoOpDatadogSpanLogger : com/datadog/android/trace/api/span/DatadogSpanLogger {
+	public fun <init> ()V
+	public fun log (Ljava/lang/String;Lcom/datadog/android/trace/api/span/DatadogSpan;)V
+	public fun log (Ljava/util/Map;Lcom/datadog/android/trace/api/span/DatadogSpan;)V
 }
 
 public abstract interface class com/datadog/android/trace/api/trace/DatadogTraceId {
@@ -175,7 +186,6 @@ public abstract interface class com/datadog/android/trace/api/tracer/DatadogTrac
 	public abstract fun withSampler (Lcom/datadog/android/trace/api/tracer/DatadogTracerSampler;)Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;
 	public abstract fun withServiceName (Ljava/lang/String;)Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;
 	public abstract fun withTracingHeadersTypes (Ljava/util/Set;)Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;
-	public abstract fun withWriter (Lcom/datadog/android/trace/api/span/DatadogSpanWriter;)Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;
 }
 
 public abstract interface class com/datadog/android/trace/api/tracer/DatadogTracerSampler {
@@ -201,6 +211,5 @@ public final class com/datadog/android/trace/api/tracer/NoOpDatadogTracerBuilder
 	public fun withSampler (Lcom/datadog/android/trace/api/tracer/DatadogTracerSampler;)Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;
 	public fun withServiceName (Ljava/lang/String;)Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;
 	public fun withTracingHeadersTypes (Ljava/util/Set;)Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;
-	public fun withWriter (Lcom/datadog/android/trace/api/span/DatadogSpanWriter;)Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;
 }
 

@@ -7,6 +7,7 @@
 package com.datadog.android.trace
 
 import com.datadog.android.trace.api.span.DatadogSpan
+import com.datadog.android.trace.impl.DatadogTracing
 import io.opentracing.Span
 
 /**
@@ -28,14 +29,22 @@ fun Span.setError(message: String) {
     AndroidTracer.logErrorMessage(this, message)
 }
 
+fun DatadogSpan.log(message: String) {
+    DatadogTracing.spanLogger.log(message, this)
+}
+
+fun DatadogSpan.log(attributes: Map<String, Any>) {
+    DatadogTracing.spanLogger.log(attributes, this)
+}
+
 /**
- * Wraps the provided lambda within a [Span].
+ * Wraps the provided lambda within a [DatadogSpan].
  * @param T the type returned by the lambda
- * @param operationName the name of the [Span] created around the lambda
- * @param parentSpan the parent [Span] (default is `null`)
- * @param activate whether the created [Span] should be made active for the current thread
+ * @param operationName the name of the [DatadogSpan] created around the lambda
+ * @param parentSpan the parent [DatadogSpan] (default is `null`)
+ * @param activate whether the created [DatadogSpan] should be made active for the current thread
  * (default is `true`)
- * @param block the lambda function traced by this newly created [Span]
+ * @param block the lambda function traced by this newly created [DatadogSpan]
  *
  */
 @SuppressWarnings("TooGenericExceptionCaught")

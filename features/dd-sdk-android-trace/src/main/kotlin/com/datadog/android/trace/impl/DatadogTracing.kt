@@ -5,17 +5,24 @@
  */
 package com.datadog.android.trace.impl
 
+import com.datadog.android.Datadog
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.SdkCore
+import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.internal.utils.tryCastTo
 import com.datadog.android.lint.InternalApi
+import com.datadog.android.trace.InternalCoreWriterProvider
 import com.datadog.android.trace.api.span.DatadogSpanIdConverter
+import com.datadog.android.trace.api.span.DatadogSpanLogger
 import com.datadog.android.trace.api.span.DatadogSpanWriter
+import com.datadog.android.trace.api.span.NoOpDatadogSpanLogger
 import com.datadog.android.trace.api.trace.DatadogTraceIdFactory
 import com.datadog.android.trace.api.tracer.DatadogTracerBuilder
 import com.datadog.android.trace.api.tracer.DatadogTracerSampler
 import com.datadog.android.trace.api.tracer.NoOpDatadogTracerBuilder
 import com.datadog.android.trace.impl.internal.DatadogSpanIdConverterAdapter
+import com.datadog.android.trace.impl.internal.DatadogSpanLoggerAdapter
 import com.datadog.android.trace.impl.internal.DatadogSpanWriterWrapper
 import com.datadog.android.trace.impl.internal.DatadogTraceIdFactoryAdapter
 import com.datadog.android.trace.impl.internal.DatadogTracerBuilderAdapter
@@ -32,19 +39,54 @@ object DatadogTracing {
     @JvmField
     val traceIdFactory: DatadogTraceIdFactory = DatadogTraceIdFactoryAdapter
 
-    fun newTracerBuilder(internalLogger: InternalLogger): DatadogTracerBuilder =
-        DatadogTracerBuilderAdapter(internalLogger)
+    val spanLogger: DatadogSpanLogger by lazy {
+        Datadog.getInstance()
+            .tryCastTo<FeatureSdkCore>()
+            ?.let(::DatadogSpanLoggerAdapter)
+            ?: NoOpDatadogSpanLogger()
+    }
 
     fun newTracerBuilder(sdkCore: SdkCore?): DatadogTracerBuilder {
         val internalLogger = (sdkCore as? FeatureSdkCore)?.internalLogger ?: return NoOpDatadogTracerBuilder()
-        return DatadogTracerBuilderAdapter(internalLogger)
+        val tracingFeature = sdkCore.getFeature(Feature.TRACING_FEATURE_NAME)?.unwrap<Feature>()
+        val internalCoreWriterProvider = tracingFeature as? InternalCoreWriterProvider
+        val writer = internalCoreWriterProvider?.getCoreTracerWriter()
+        if (tracingFeature == null) {
+            internalLogger.log(
+                InternalLogger.Level.ERROR,
+                InternalLogger.Target.USER,
+                { Errors.TRACING_NOT_ENABLED_ERROR_MESSAGE }
+            )
+            return NoOpDatadogTracerBuilder()
+        }
+        if (internalCoreWriterProvider == null) {
+            internalLogger.log(
+                InternalLogger.Level.ERROR,
+                InternalLogger.Target.MAINTAINER,
+                { Errors.WRITER_PROVIDER_INTERFACE_NOT_IMPLEMENTED_ERROR_MESSAGE }
+            )
+            return NoOpDatadogTracerBuilder()
+        }
+
+        return DatadogTracerBuilderAdapter(internalLogger, writer)
+    }
+
+    fun newSampler(): DatadogTracerSampler {
+        return DatadogTracerSamplerWrapper(AllSampler())
     }
 
     fun wrapWriter(writerDelegate: Writer?): DatadogSpanWriter {
         return DatadogSpanWriterWrapper(writerDelegate ?: NoOpWriter())
     }
 
-    fun newSampler(): DatadogTracerSampler {
-        return DatadogTracerSamplerWrapper(AllSampler())
+    internal object Errors {
+        internal const val TRACING_NOT_ENABLED_ERROR_MESSAGE =
+            "You're trying to create an DatadogTracer instance, " +
+                    "but either the SDK was not initialized or the Tracing feature was " +
+                    "not registered. No tracing data will be sent."
+
+        internal const val WRITER_PROVIDER_INTERFACE_NOT_IMPLEMENTED_ERROR_MESSAGE =
+            "The Tracing feature is not implementing the InternalCoreWriterProvider interface." +
+                    " No tracing data will be sent."
     }
 }
