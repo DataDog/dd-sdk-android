@@ -140,9 +140,8 @@ class SampleApplication : Application() {
 
     private fun initializeDatadog() {
         val preferences = Preferences.defaultPreferences(this)
-
         Datadog.setVerbosity(Log.VERBOSE)
-        val sdkCore = Datadog.initialize(
+        Datadog.initialize(
             this,
             createDatadogConfiguration(),
             preferences.getTrackingConsent()
