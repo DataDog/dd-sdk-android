@@ -82,10 +82,6 @@ public final class com/datadog/android/trace/impl/DatadogTracing {
 	public final fun wrapWriter (Lcom/datadog/trace/common/writer/Writer;)Lcom/datadog/android/trace/api/span/DatadogSpanWriter;
 }
 
-public final class com/datadog/android/trace/impl/DatadogTracing$Errors {
-	public static final field INSTANCE Lcom/datadog/android/trace/impl/DatadogTracing$Errors;
-}
-
 public final class com/datadog/android/trace/internal/SpanAttributes {
 	public static final field DATADOG_INITIAL_CONTEXT Ljava/lang/String;
 	public static final field INSTANCE Lcom/datadog/android/trace/internal/SpanAttributes;

@@ -50,10 +50,10 @@ public class OtelTracer implements Tracer {
 
     @Override
     public SpanBuilder spanBuilder(@NonNull String spanName) {
-        DatadogSpanBuilder delegate =
-                this.tracer
+        DatadogSpanBuilder delegate = tracer
                         .buildSpan(instrumentationScopeName, OtelConventions.SPAN_KIND_INTERNAL)
                         .withResourceName(spanName);
+
         return spanBuilderDecorator.apply(new OtelSpanBuilder(delegate, tracer, logger));
     }
 }

@@ -5,6 +5,7 @@
  */
 package com.datadog.android.trace.impl
 
+import androidx.annotation.VisibleForTesting
 import com.datadog.android.Datadog
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.SdkCore
@@ -46,7 +47,13 @@ object DatadogTracing {
             ?: NoOpDatadogSpanLogger()
     }
 
+    @VisibleForTesting
+    internal var builderProvider: DatadogTracerBuilder? = null
+
     fun newTracerBuilder(sdkCore: SdkCore?): DatadogTracerBuilder {
+        if (builderProvider != null) {
+            return builderProvider as DatadogTracerBuilder
+        }
         val internalLogger = (sdkCore as? FeatureSdkCore)?.internalLogger ?: return NoOpDatadogTracerBuilder()
         val tracingFeature = sdkCore.getFeature(Feature.TRACING_FEATURE_NAME)?.unwrap<Feature>()
         val internalCoreWriterProvider = tracingFeature as? InternalCoreWriterProvider
@@ -80,12 +87,12 @@ object DatadogTracing {
     }
 
     internal object Errors {
-        internal const val TRACING_NOT_ENABLED_ERROR_MESSAGE =
+        const val TRACING_NOT_ENABLED_ERROR_MESSAGE =
             "You're trying to create an DatadogTracer instance, " +
                     "but either the SDK was not initialized or the Tracing feature was " +
                     "not registered. No tracing data will be sent."
 
-        internal const val WRITER_PROVIDER_INTERFACE_NOT_IMPLEMENTED_ERROR_MESSAGE =
+        const val WRITER_PROVIDER_INTERFACE_NOT_IMPLEMENTED_ERROR_MESSAGE =
             "The Tracing feature is not implementing the InternalCoreWriterProvider interface." +
                     " No tracing data will be sent."
     }

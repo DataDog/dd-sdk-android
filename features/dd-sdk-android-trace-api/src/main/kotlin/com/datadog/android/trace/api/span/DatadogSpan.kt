@@ -38,4 +38,6 @@ interface DatadogSpan {
     fun getTag(tag: String?): Any?
 
     fun setMetric(key: String, value: Int)
+
+    fun forceSamplingDecision()
 }

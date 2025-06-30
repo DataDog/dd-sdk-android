@@ -156,9 +156,7 @@ class OtelTracerProvider internal constructor(
                     }
                 }
 
-                val datadogTracer = createDatadogTracer()
-
-                OtelTracerProvider(sdkCore, datadogTracer, sdkCore.internalLogger, bundleWithRumEnabled)
+                OtelTracerProvider(sdkCore, createDatadogTracer(), sdkCore.internalLogger, bundleWithRumEnabled)
             }
         }
 

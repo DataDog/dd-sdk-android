@@ -8,6 +8,8 @@ package com.datadog.android.trace.api.span
 
 import com.datadog.android.trace.GlobalDatadogTracerHolder
 import com.datadog.android.trace.api.tracer.DatadogTracer
+import com.datadog.android.trace.api.tracer.DatadogTracerBuilder
+import com.datadog.android.trace.impl.DatadogTracing
 import com.datadog.android.trace.impl.internal.DatadogSpanContextAdapter
 import com.datadog.android.trace.impl.internal.DatadogSpanWriterWrapper
 import com.datadog.android.trace.impl.internal.DatadogTracerAdapter
@@ -20,10 +22,14 @@ val DatadogSpanContext.resourceName: String?
     get() = ddSpanContext?.resourceName?.toString()
 
 val DatadogSpanContext.serviceName: String?
-    get() = ddSpanContext?.resourceName?.toString()
+    get() = ddSpanContext?.serviceName?.toString()
 
 val DatadogTracer.partialFlushMinSpans: Int?
     get() = coreTracer?.partialFlushMinSpans
+
+fun DatadogTracing.setTracingAdapterBuilderMock(mock: DatadogTracerBuilder?) {
+    builderProvider = mock
+}
 
 val DatadogTracer.writer: DatadogSpanWriter?
     get() {

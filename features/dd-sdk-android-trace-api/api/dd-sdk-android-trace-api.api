@@ -78,6 +78,7 @@ public abstract interface class com/datadog/android/trace/api/span/DatadogSpan {
 	public abstract fun drop ()V
 	public abstract fun finish ()V
 	public abstract fun finish (J)V
+	public abstract fun forceSamplingDecision ()V
 	public abstract fun getDurationNano ()J
 	public abstract fun getLocalRootSpan ()Lcom/datadog/android/trace/api/span/DatadogSpan;
 	public abstract fun getOperationName ()Ljava/lang/String;
