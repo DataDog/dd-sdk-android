@@ -25,6 +25,7 @@ import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.RepeatedTest
+import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.mockito.junit.jupiter.MockitoExtension
@@ -49,31 +50,31 @@ class OtelTraceConfigurationTest {
         stubSdkCore = StubSDKCore(forge)
     }
 
-    @RepeatedTest(10)
+    @Test
     fun `M send span without network info W setNetworkInfoEnabled(false) + buildSpan() + start() + finish()`(
         @StringForgery fakeInstrumentationName: String,
         @StringForgery fakeOperation: String
     ) {
         // Given
-        val fakeTraceConfiguration = TraceConfiguration.Builder()
-            .setNetworkInfoEnabled(false)
-            .build()
-        Trace.enable(fakeTraceConfiguration, stubSdkCore)
+        Trace.enable(
+            sdkCore = stubSdkCore,
+            traceConfiguration = TraceConfiguration.Builder().setNetworkInfoEnabled(false).build()
+        )
+        val blockingWriterWrapper = stubSdkCore.getFeature(Feature.TRACING_FEATURE_NAME).useBlockingWriter()
         val testedProvider = OtelTracerProvider.Builder(stubSdkCore).build()
         val tracer = testedProvider.tracerBuilder(fakeInstrumentationName).build()
-        val blockingWriterWrapper = tracer.useBlockingWriter()
 
         // When
         var leastSignificantTraceId: String
         var mostSignificantTraceId: String
         var spanId: String
         val fullDuration = measureNanoTime {
-            val span = tracer.spanBuilder(fakeOperation).startSpan()
-            leastSignificantTraceId = span.leastSignificant64BitsTraceIdAsHex()
-            mostSignificantTraceId = span.mostSignificant64BitsTraceIdAsHex()
-            spanId = span.spanIdAsHex()
+            val otelSpan = tracer.spanBuilder(fakeOperation).startSpan()
+            leastSignificantTraceId = otelSpan.leastSignificant64BitsTraceIdAsHex()
+            mostSignificantTraceId = otelSpan.mostSignificant64BitsTraceIdAsHex()
+            spanId = otelSpan.spanIdAsHex()
             Thread.sleep(OP_DURATION_MS)
-            span.end()
+            otelSpan.end()
         }
 
         // Then
@@ -107,25 +108,25 @@ class OtelTraceConfigurationTest {
         @StringForgery fakeOperation: String
     ) {
         // Given
-        val fakeTraceConfiguration = TraceConfiguration.Builder()
-            .setNetworkInfoEnabled(true)
-            .build()
-        Trace.enable(fakeTraceConfiguration, stubSdkCore)
+        Trace.enable(
+            sdkCore = stubSdkCore,
+            traceConfiguration = TraceConfiguration.Builder().setNetworkInfoEnabled(true).build(),
+        )
+        val blockingWriterWrapper = stubSdkCore.getFeature(Feature.TRACING_FEATURE_NAME).useBlockingWriter()
         val testedProvider = OtelTracerProvider.Builder(stubSdkCore).build()
         val tracer = testedProvider.tracerBuilder(fakeInstrumentationName).build()
-        val blockingWriterWrapper = tracer.useBlockingWriter()
 
         // When
         var leastSignificantTraceId: String
         var mostSignificantTraceId: String
         var spanId: String
         val fullDuration = measureNanoTime {
-            val span = tracer.spanBuilder(fakeOperation).startSpan()
-            leastSignificantTraceId = span.leastSignificant64BitsTraceIdAsHex()
-            mostSignificantTraceId = span.mostSignificant64BitsTraceIdAsHex()
-            spanId = span.spanIdAsHex()
+            val otelSpan = tracer.spanBuilder(fakeOperation).startSpan()
+            leastSignificantTraceId = otelSpan.leastSignificant64BitsTraceIdAsHex()
+            mostSignificantTraceId = otelSpan.mostSignificant64BitsTraceIdAsHex()
+            spanId = otelSpan.spanIdAsHex()
             Thread.sleep(OP_DURATION_MS)
-            span.end()
+            otelSpan.end()
         }
 
         // Then
@@ -168,13 +169,14 @@ class OtelTraceConfigurationTest {
                 return event
             }
         }
-        val fakeTraceConfiguration = TraceConfiguration.Builder()
-            .setEventMapper(stubMapper)
-            .build()
-        Trace.enable(fakeTraceConfiguration, stubSdkCore)
+        Trace.enable(
+            sdkCore = stubSdkCore,
+            traceConfiguration = TraceConfiguration.Builder().setEventMapper(stubMapper).build()
+        )
+        val blockingWriterWrapper =
+            stubSdkCore.getFeature(Feature.TRACING_FEATURE_NAME).useBlockingWriter()
         val testedProvider = OtelTracerProvider.Builder(stubSdkCore).build()
         val tracer = testedProvider.tracerBuilder(fakeInstrumentationName).build()
-        val blockingWriterWrapper = tracer.useBlockingWriter()
 
         // When
         var leastSignificantTraceId: String

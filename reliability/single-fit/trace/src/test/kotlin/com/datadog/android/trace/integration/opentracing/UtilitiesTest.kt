@@ -64,8 +64,8 @@ class UtilitiesTest {
 
     @AfterEach
     fun `tear down`() {
-        GlobalDatadogTracerHolder.clear()
         DatadogTracing.clear()
+        GlobalDatadogTracerHolder.clear()
     }
 
     @RepeatedTest(16)

@@ -17,7 +17,7 @@ import com.datadog.trace.core.CoreTracer
 import java.util.Properties
 
 internal class DatadogTracerBuilderAdapter(
-    private val internalLogger: InternalLogger,
+    internalLogger: InternalLogger,
     writer: DatadogSpanWriter?,
     private val defaultServiceName: String
 ) : DatadogTracerBuilder {

@@ -54,14 +54,9 @@ object DatadogTracing {
     internal var spanLoggerProvider: DatadogSpanLogger? = null
 
     fun newTracerBuilder(sdkCore: SdkCore?): DatadogTracerBuilder {
-        if (builderProvider != null) {
-            return builderProvider as DatadogTracerBuilder
-        }
+        if (builderProvider != null) return builderProvider as DatadogTracerBuilder
         val internalLogger = (sdkCore as? FeatureSdkCore)?.internalLogger ?: return NoOpDatadogTracerBuilder()
-        val tracingFeature = sdkCore.getFeature(Feature.TRACING_FEATURE_NAME)?.unwrap<Feature>()
-        val internalCoreWriterProvider = tracingFeature as? InternalCoreWriterProvider
-        val writer = internalCoreWriterProvider?.getCoreTracerWriter()
-        if (tracingFeature == null) {
+        val tracingFeature = sdkCore.getFeature(Feature.TRACING_FEATURE_NAME)?.unwrap<Feature>() ?: run {
             internalLogger.log(
                 InternalLogger.Level.ERROR,
                 InternalLogger.Target.USER,
@@ -69,7 +64,8 @@ object DatadogTracing {
             )
             return NoOpDatadogTracerBuilder()
         }
-        if (internalCoreWriterProvider == null) {
+
+        val internalCoreWriterProvider = tracingFeature as? InternalCoreWriterProvider ?: run {
             internalLogger.log(
                 InternalLogger.Level.ERROR,
                 InternalLogger.Target.MAINTAINER,
@@ -86,7 +82,11 @@ object DatadogTracing {
             )
         }
 
-        return DatadogTracerBuilderAdapter(internalLogger, writer, sdkCore.service)
+        return DatadogTracerBuilderAdapter(
+            internalLogger,
+            internalCoreWriterProvider.getCoreTracerWriter(),
+            sdkCore.service
+        )
     }
 
     fun newSampler(): DatadogTracerSampler {
