@@ -19,7 +19,6 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 
 @Suppress("TooManyFunctions")
-@VisibleForTesting
 internal class CoreTracerSpanToSpanEventMapper(
     internal val networkInfoEnabled: Boolean
 ) : BaseSpanEventMapper<DDSpan>() {
