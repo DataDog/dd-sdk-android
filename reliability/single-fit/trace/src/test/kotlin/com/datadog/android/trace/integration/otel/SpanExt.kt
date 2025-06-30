@@ -6,8 +6,8 @@
 
 package com.datadog.android.trace.integration.otel
 
+import com.datadog.android.trace.api.span.DatadogSpan
 import com.datadog.tools.unit.getFieldValue
-import com.datadog.trace.bootstrap.instrumentation.api.AgentSpan
 import io.opentelemetry.api.trace.Span
 
 internal fun Span.leastSignificant64BitsTraceIdAsHex(): String {
@@ -23,6 +23,6 @@ internal fun Span.spanIdAsHex(): String {
 }
 
 internal fun Span.expectedSpanName(): String {
-    val agentSpan: AgentSpan = this.getFieldValue("delegate")
-    return agentSpan.operationName.toString()
+    val agentSpan: DatadogSpan = this.getFieldValue("delegateSpan")
+    return agentSpan.operationName
 }

@@ -14,7 +14,7 @@ import com.datadog.trace.bootstrap.instrumentation.api.SpanLinkAttributes
 internal class DatadogSpanLinkAdapter(delegate: DatadogSpanLink) :
     SpanLink(
         /* traceId */
-        DDTraceId.from(delegate.traceId.toString()),
+        DDTraceId.fromHex(delegate.traceId.toHexString()),
         /* spanId */
         delegate.spanId,
         /* traceFlags */
