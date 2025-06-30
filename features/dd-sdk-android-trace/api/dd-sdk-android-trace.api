@@ -37,8 +37,10 @@ public abstract interface class com/datadog/android/trace/InternalCoreWriterProv
 }
 
 public final class com/datadog/android/trace/SpanExtKt {
-	public static final fun log (Lcom/datadog/android/trace/api/span/DatadogSpan;Ljava/lang/String;)V
-	public static final fun log (Lcom/datadog/android/trace/api/span/DatadogSpan;Ljava/util/Map;)V
+	public static final fun logAttributes (Lcom/datadog/android/trace/api/span/DatadogSpan;Ljava/util/Map;)V
+	public static final fun logErrorMessage (Lcom/datadog/android/trace/api/span/DatadogSpan;Ljava/lang/String;)V
+	public static final fun logMessage (Lcom/datadog/android/trace/api/span/DatadogSpan;Ljava/lang/String;)V
+	public static final fun logThrowable (Lcom/datadog/android/trace/api/span/DatadogSpan;Ljava/lang/Throwable;)V
 	public static final fun setError (Lio/opentracing/Span;Ljava/lang/String;)V
 	public static final fun setError (Lio/opentracing/Span;Ljava/lang/Throwable;)V
 	public static final fun withinSpan (Ljava/lang/String;Lcom/datadog/android/trace/api/span/DatadogSpan;ZLkotlin/jvm/functions/Function1;)Ljava/lang/Object;

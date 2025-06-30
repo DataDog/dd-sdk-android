@@ -20,7 +20,7 @@ import com.datadog.android.trace.coroutines.asyncTraced
 import com.datadog.android.trace.coroutines.awaitTraced
 import com.datadog.android.trace.coroutines.launchTraced
 import com.datadog.android.trace.coroutines.withContextTraced
-import com.datadog.android.trace.log
+import com.datadog.android.trace.logAttributes
 import com.datadog.android.trace.withinSpan
 import com.datadog.android.vendor.sample.LocalServer
 import com.launchdarkly.eventsource.EventHandler
@@ -159,7 +159,7 @@ internal class TracesViewModel(
         delay(100)
 
         val x = deferred.awaitTraced("coroutine await")
-        scope.log("The answer to life, the universe and everything is… $x")
+        scope.logAttributes("The answer to life, the universe and everything is… $x")
     }
 
     @Suppress("TooGenericExceptionCaught", "MagicNumber")
@@ -180,7 +180,7 @@ internal class TracesViewModel(
                         if (Random().nextInt(5) == 0) {
                             error("Your flow just dried out…")
                         } else {
-                            log("got user $it")
+                            logAttributes("got user $it")
                         }
                     }
             } catch (e: Throwable) {
@@ -371,19 +371,19 @@ internal class TracesViewModel(
                 logger.v("Starting Async Operation...")
 
                 val count = (Random().nextInt() % 50) + 50
-                log("Async op loops $count times")
+                logAttributes("Async op loops $count times")
                 var actualCount = 0
 
                 for (i in 0 until count) {
                     if (isCancelled) {
-                        log("Async operation cancelled")
+                        logAttributes("Async operation cancelled")
                         break
                     }
                     onProgress(i)
                     Thread.sleep(((i * i).toDouble() / 100.0).toLong())
                     actualCount++
                 }
-                log(mapOf("wanted_count" to count, "actual_count" to actualCount))
+                logAttributes(mapOf("wanted_count" to count, "actual_count" to actualCount))
                 logger.v("Finishing Async Operation...")
             }
         }

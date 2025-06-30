@@ -27,6 +27,7 @@ import com.datadog.android.trace.impl.internal.DatadogSpanLoggerAdapter
 import com.datadog.android.trace.impl.internal.DatadogSpanWriterWrapper
 import com.datadog.android.trace.impl.internal.DatadogTraceIdFactoryAdapter
 import com.datadog.android.trace.impl.internal.DatadogTracerBuilderAdapter
+import com.datadog.android.trace.impl.internal.DatadogTracerBuilderAdapter.Companion.DEFAULT_SERVICE_NAME_IS_MISSING_ERROR_MESSAGE
 import com.datadog.android.trace.impl.internal.DatadogTracerSamplerWrapper
 import com.datadog.trace.common.sampling.AllSampler
 import com.datadog.trace.common.writer.NoOpWriter
@@ -40,15 +41,17 @@ object DatadogTracing {
     @JvmField
     val traceIdFactory: DatadogTraceIdFactory = DatadogTraceIdFactoryAdapter
 
-    val spanLogger: DatadogSpanLogger by lazy {
-        Datadog.getInstance()
+    val spanLogger: DatadogSpanLogger
+        get() = spanLoggerProvider ?: Datadog.getInstance()
             .tryCastTo<FeatureSdkCore>()
             ?.let(::DatadogSpanLoggerAdapter)
             ?: NoOpDatadogSpanLogger()
-    }
 
     @VisibleForTesting
     internal var builderProvider: DatadogTracerBuilder? = null
+
+    @VisibleForTesting
+    internal var spanLoggerProvider: DatadogSpanLogger? = null
 
     fun newTracerBuilder(sdkCore: SdkCore?): DatadogTracerBuilder {
         if (builderProvider != null) {
@@ -75,7 +78,15 @@ object DatadogTracing {
             return NoOpDatadogTracerBuilder()
         }
 
-        return DatadogTracerBuilderAdapter(internalLogger, writer)
+        if (sdkCore.service.isEmpty()) {
+            internalLogger.log(
+                InternalLogger.Level.ERROR,
+                InternalLogger.Target.USER,
+                { DEFAULT_SERVICE_NAME_IS_MISSING_ERROR_MESSAGE }
+            )
+        }
+
+        return DatadogTracerBuilderAdapter(internalLogger, writer, sdkCore.service)
     }
 
     fun newSampler(): DatadogTracerSampler {
@@ -89,11 +100,11 @@ object DatadogTracing {
     internal object Errors {
         const val TRACING_NOT_ENABLED_ERROR_MESSAGE =
             "You're trying to create an DatadogTracer instance, " +
-                    "but either the SDK was not initialized or the Tracing feature was " +
-                    "not registered. No tracing data will be sent."
+                "but either the SDK was not initialized or the Tracing feature was " +
+                "not registered. No tracing data will be sent."
 
         const val WRITER_PROVIDER_INTERFACE_NOT_IMPLEMENTED_ERROR_MESSAGE =
             "The Tracing feature is not implementing the InternalCoreWriterProvider interface." +
-                    " No tracing data will be sent."
+                " No tracing data will be sent."
     }
 }

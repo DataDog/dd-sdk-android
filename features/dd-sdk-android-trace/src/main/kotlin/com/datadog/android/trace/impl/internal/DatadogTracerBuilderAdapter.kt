@@ -17,12 +17,14 @@ import com.datadog.trace.core.CoreTracer
 import java.util.Properties
 
 internal class DatadogTracerBuilderAdapter(
-    internalLogger: InternalLogger,
-    writer: DatadogSpanWriter?
+    private val internalLogger: InternalLogger,
+    writer: DatadogSpanWriter?,
+    private val defaultServiceName: String
 ) : DatadogTracerBuilder {
 
     private var properties = Properties()
     private val delegate = CoreTracer.CoreTracerBuilder(internalLogger)
+    private var serviceNameSet: Boolean = false
 
     init {
         if (writer is DatadogSpanWriterWrapper) {
@@ -36,9 +38,18 @@ internal class DatadogTracerBuilderAdapter(
         }
     }
 
-    override fun build(): DatadogTracer = DatadogTracerAdapter(delegate.build())
+    override fun build(): DatadogTracer {
+        if (!serviceNameSet && !properties.contains(TracerConfig.SERVICE_NAME)) {
+            delegate.serviceName(defaultServiceName)
+        }
 
-    override fun withServiceName(serviceName: String) = apply { delegate.serviceName(serviceName) }
+        return DatadogTracerAdapter(delegate.build())
+    }
+
+    override fun withServiceName(serviceName: String) = apply {
+        this.serviceNameSet = true
+        delegate.serviceName(serviceName)
+    }
 
     override fun withProperties(properties: Properties) = apply {
         this.properties = properties
@@ -69,5 +80,9 @@ internal class DatadogTracerBuilderAdapter(
             "You're trying to create an DatadogTracerBuilder instance, " +
                     "but either the SDK was not initialized or the Tracing feature was " +
                     "not registered. No tracing data will be sent."
+
+        internal const val DEFAULT_SERVICE_NAME_IS_MISSING_ERROR_MESSAGE =
+            "Default service name is missing during" +
+                    " DatadogTracerBuilder creation, did you initialize SDK?"
     }
 }

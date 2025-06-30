@@ -118,10 +118,8 @@ internal class AndroidSpanLogsHandler(
     // endregion
 
     companion object {
-        internal const val DEFAULT_EVENT_MESSAGE = "Span event"
-
-        internal const val MISSING_LOG_FEATURE_INFO =
-            "Requested to write span log, but Logs feature is not registered."
         internal const val TRACE_LOGGER_NAME = "trace"
+        internal const val DEFAULT_EVENT_MESSAGE = "Span event"
+        internal const val MISSING_LOG_FEATURE_INFO = "Requested to write span log, but Logs feature is not registered."
     }
 }

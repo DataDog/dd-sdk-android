@@ -56,7 +56,41 @@ object DatadogTracingConstants {
         const val TRACE_SAMPLE_RATE: String = "trace.sample.rate"
         const val PROPAGATION_STYLE_EXTRACT: String = "propagation.style.extract"
         const val PROPAGATION_STYLE_INJECT: String = "propagation.style.inject"
+        const val SERVICE_NAME: String = "service.name"
         const val URL_AS_RESOURCE_NAME: String = "trace.URLAsResourceNameRule.enabled"
+    }
+
+    object LogAttributes {
+        /**
+         * The type or "kind" of an error (only for event="error" logs). E.g., "Exception", "OSError"
+         */
+        const val ERROR_KIND: String = "error.kind"
+
+        /**
+         * The actual Throwable/Exception/Error object instance itself. E.g., A java.lang.UnsupportedOperationException instance
+         */
+        const val ERROR_OBJECT: String = "error.object"
+
+        /**
+         * A stable identifier for some notable moment in the lifetime of a Span. For instance, a mutex
+         * lock acquisition or release or the sorts of lifetime events in a browser page load described
+         * in the Performance.timing specification. E.g., from Zipkin, "cs", "sr", "ss", or "cr". Or,
+         * more generally, "initialized" or "timed out". For errors, "error"
+         */
+        const val EVENT: String = "event"
+
+        /**
+         * A concise, human-readable, one-line message explaining the event. E.g., "Could not connect
+         * to backend", "Cache invalidation succeeded"
+         */
+        const val MESSAGE: String = "message"
+
+        /**
+         * A stack trace in platform-conventional format; may or may not pertain to an error.
+         */
+        const val STACK: String = "stack"
+
+        const val STATUS: String = "status"
     }
 
     object ErrorPriorities {

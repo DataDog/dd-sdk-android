@@ -10,5 +10,7 @@ import com.datadog.tools.annotation.NoOpImplementation
 @NoOpImplementation(publicNoOpImplementation = true)
 interface DatadogSpanLogger {
     fun log(message: String, span: DatadogSpan)
+    fun logErrorMessage(message: String, span: DatadogSpan)
+    fun log(throwable: Throwable, span: DatadogSpan)
     fun log(attributes: Map<String, Any>, span: DatadogSpan)
 }

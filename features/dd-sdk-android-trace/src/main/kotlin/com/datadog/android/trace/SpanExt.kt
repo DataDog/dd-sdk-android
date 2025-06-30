@@ -6,6 +6,7 @@
 
 package com.datadog.android.trace
 
+import com.datadog.android.trace.api.constants.DatadogTracingConstants
 import com.datadog.android.trace.api.span.DatadogSpan
 import com.datadog.android.trace.impl.DatadogTracing
 import io.opentracing.Span
@@ -29,11 +30,19 @@ fun Span.setError(message: String) {
     AndroidTracer.logErrorMessage(this, message)
 }
 
-fun DatadogSpan.log(message: String) {
+fun DatadogSpan.logThrowable(throwable: Throwable) {
+    DatadogTracing.spanLogger.log(throwable, this)
+}
+
+fun DatadogSpan.logErrorMessage(message: String) {
+    DatadogTracing.spanLogger.logErrorMessage(message, this)
+}
+
+fun DatadogSpan.logMessage(message: String) {
     DatadogTracing.spanLogger.log(message, this)
 }
 
-fun DatadogSpan.log(attributes: Map<String, Any>) {
+fun DatadogSpan.logAttributes(attributes: Map<String, Any>) {
     DatadogTracing.spanLogger.log(attributes, this)
 }
 
@@ -65,7 +74,7 @@ inline fun <T : Any?> withinSpan(
     return try {
         span.block()
     } catch (e: Throwable) {
-        span.addThrowable(e)
+        DatadogTracing.spanLogger.log(e, span)
         throw e
     } finally {
         span.finish()

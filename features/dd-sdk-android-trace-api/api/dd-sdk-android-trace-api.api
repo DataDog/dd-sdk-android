@@ -10,6 +10,16 @@ public final class com/datadog/android/trace/api/constants/DatadogTracingConstan
 	public static final field UNSET B
 }
 
+public final class com/datadog/android/trace/api/constants/DatadogTracingConstants$LogAttributes {
+	public static final field ERROR_KIND Ljava/lang/String;
+	public static final field ERROR_OBJECT Ljava/lang/String;
+	public static final field EVENT Ljava/lang/String;
+	public static final field INSTANCE Lcom/datadog/android/trace/api/constants/DatadogTracingConstants$LogAttributes;
+	public static final field MESSAGE Ljava/lang/String;
+	public static final field STACK Ljava/lang/String;
+	public static final field STATUS Ljava/lang/String;
+}
+
 public final class com/datadog/android/trace/api/constants/DatadogTracingConstants$PrioritySampling {
 	public static final field INSTANCE Lcom/datadog/android/trace/api/constants/DatadogTracingConstants$PrioritySampling;
 	public static final field SAMPLER_DROP I
@@ -39,6 +49,7 @@ public final class com/datadog/android/trace/api/constants/DatadogTracingConstan
 	public static final field INSTANCE Lcom/datadog/android/trace/api/constants/DatadogTracingConstants$TracerConfig;
 	public static final field PROPAGATION_STYLE_EXTRACT Ljava/lang/String;
 	public static final field PROPAGATION_STYLE_INJECT Ljava/lang/String;
+	public static final field SERVICE_NAME Ljava/lang/String;
 	public static final field SPAN_TAGS Ljava/lang/String;
 	public static final field TRACE_RATE_LIMIT Ljava/lang/String;
 	public static final field TRACE_SAMPLE_RATE Ljava/lang/String;
@@ -141,7 +152,9 @@ public abstract interface class com/datadog/android/trace/api/span/DatadogSpanLi
 
 public abstract interface class com/datadog/android/trace/api/span/DatadogSpanLogger {
 	public abstract fun log (Ljava/lang/String;Lcom/datadog/android/trace/api/span/DatadogSpan;)V
+	public abstract fun log (Ljava/lang/Throwable;Lcom/datadog/android/trace/api/span/DatadogSpan;)V
 	public abstract fun log (Ljava/util/Map;Lcom/datadog/android/trace/api/span/DatadogSpan;)V
+	public abstract fun logErrorMessage (Ljava/lang/String;Lcom/datadog/android/trace/api/span/DatadogSpan;)V
 }
 
 public abstract interface class com/datadog/android/trace/api/span/DatadogSpanWriter {
@@ -150,7 +163,9 @@ public abstract interface class com/datadog/android/trace/api/span/DatadogSpanWr
 public final class com/datadog/android/trace/api/span/NoOpDatadogSpanLogger : com/datadog/android/trace/api/span/DatadogSpanLogger {
 	public fun <init> ()V
 	public fun log (Ljava/lang/String;Lcom/datadog/android/trace/api/span/DatadogSpan;)V
+	public fun log (Ljava/lang/Throwable;Lcom/datadog/android/trace/api/span/DatadogSpan;)V
 	public fun log (Ljava/util/Map;Lcom/datadog/android/trace/api/span/DatadogSpan;)V
+	public fun logErrorMessage (Ljava/lang/String;Lcom/datadog/android/trace/api/span/DatadogSpan;)V
 }
 
 public abstract interface class com/datadog/android/trace/api/trace/DatadogTraceId {
