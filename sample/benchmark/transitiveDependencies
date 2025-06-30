@@ -114,11 +114,11 @@ io.opentracing:opentracing-noop:0.32.0                          :   10 Kb
 io.opentracing:opentracing-util:0.32.0                          :   10 Kb
 jakarta.inject:jakarta.inject-api:2.0.1                         :   10 Kb
 javax.inject:javax.inject:1                                     :    2 Kb
-org.jetbrains.kotlin:kotlin-android-extensions-runtime:1.9.24   :    9 Kb
-org.jetbrains.kotlin:kotlin-parcelize-runtime:1.9.24            :    6 Kb
+org.jetbrains.kotlin:kotlin-android-extensions-runtime:2.0.21   :    9 Kb
+org.jetbrains.kotlin:kotlin-parcelize-runtime:2.0.21            :    6 Kb
 org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.8.22                  :  963 b 
 org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.8.22                  :  969 b 
-org.jetbrains.kotlin:kotlin-stdlib:1.9.24                       : 1678 Kb
+org.jetbrains.kotlin:kotlin-stdlib:2.0.21                       : 1706 Kb
 org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3          :   20 Kb
 org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.7.3         : 1514 Kb
 org.jetbrains.kotlinx:kotlinx-coroutines-jdk8:1.7.3             :  953 b 
