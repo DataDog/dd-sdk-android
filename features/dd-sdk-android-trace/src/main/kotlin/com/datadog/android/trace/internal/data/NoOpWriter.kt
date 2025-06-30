@@ -4,8 +4,6 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-@file:Suppress("DEPRECATION")
-
 package com.datadog.android.trace.internal.data
 
 import com.datadog.legacy.trace.common.writer.Writer
