@@ -38,6 +38,10 @@ object com.datadog.android.trace.api.constants.DatadogTracingConstants
     const val UNSET: Byte
     const val HTTP_SERVER_DECORATOR: Byte
     const val DEFAULT: Byte
+  object DDTags
+    const val RESOURCE_NAME: String
+    const val ERROR_MSG: String
+    const val ERROR_TYPE: String
 interface com.datadog.android.trace.api.propagation.DatadogPropagation
   fun <C> inject(com.datadog.android.trace.api.span.DatadogSpan, C, (C) -> Unit)
   fun <C> inject(com.datadog.android.trace.api.span.DatadogSpanContext, C, (C) -> Unit)
@@ -96,6 +100,7 @@ interface com.datadog.android.trace.api.span.DatadogSpanContext
   val samplingPriority: Int
   val tags: Map<String?, Any?>?
   fun setSamplingPriority(Int): Boolean
+  fun setTracingSamplingPriorityIfNecessary()
   fun setMetric(CharSequence?, Double)
 interface com.datadog.android.trace.api.span.DatadogSpanIdConverter
   fun fromHex(String): Long
