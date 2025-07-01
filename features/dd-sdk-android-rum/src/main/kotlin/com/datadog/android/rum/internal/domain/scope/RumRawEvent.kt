@@ -218,7 +218,7 @@ internal sealed class RumRawEvent {
     ) : RumRawEvent()
 
     internal data class UpdateExternalRefreshRate(
-        val frameTimeNanos: Long,
+        val frameTimeSeconds: Double,
         override val eventTime: Time = Time()
     ) : RumRawEvent()
 

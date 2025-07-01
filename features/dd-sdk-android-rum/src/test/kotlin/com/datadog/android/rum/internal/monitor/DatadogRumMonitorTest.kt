@@ -2003,10 +2003,10 @@ internal class DatadogRumMonitorTest {
         forge: Forge
     ) {
         // Given
-        val frameTimeNanos = forge.aLong(min = 1_000_000L, max = 50_000_000L)
+        val frameTimeSeconds = forge.aDouble(min = 0.001, max = 1.0)
 
         // When
-        testedMonitor.updateExternalRefreshRate(frameTimeNanos)
+        testedMonitor.updateExternalRefreshRate(frameTimeSeconds)
         Thread.sleep(PROCESSING_DELAY)
 
         // Then
@@ -2015,7 +2015,7 @@ internal class DatadogRumMonitorTest {
                 capture(),
                 eq(mockWriter)
             )
-            assertThat(lastValue.frameTimeNanos).isEqualTo(frameTimeNanos)
+            assertThat(lastValue.frameTimeSeconds).isEqualTo(frameTimeSeconds)
         }
     }
 

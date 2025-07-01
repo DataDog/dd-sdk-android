@@ -49,7 +49,7 @@ internal interface AdvancedRumMonitor : RumMonitor, AdvancedNetworkRumMonitor {
 
     fun updatePerformanceMetric(metric: RumPerformanceMetric, value: Double)
 
-    fun updateExternalRefreshRate(frameTimeNanos: Long)
+    fun updateExternalRefreshRate(frameTimeSeconds: Double)
 
     fun setInternalViewAttribute(key: String, value: Any?)
 

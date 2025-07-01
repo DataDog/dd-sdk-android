@@ -10,6 +10,7 @@ import android.app.Activity
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.utils.forge.Configurator
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.DoubleForgery
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -66,17 +67,17 @@ internal class RumInternalProxyTest {
 
     @Test
     fun `M proxy updateExternalRefreshRate to RumMonitor W updateExternalRefreshRate()`(
-        @LongForgery frameTimeNanos: Long
+        @DoubleForgery(min = 0.001, max = 1.0) frameTimeSeconds: Double
     ) {
         // Given
         val mockRumMonitor = mock(AdvancedRumMonitor::class.java)
         val proxy = _RumInternalProxy(mockRumMonitor)
 
         // When
-        proxy.updateExternalRefreshRate(frameTimeNanos)
+        proxy.updateExternalRefreshRate(frameTimeSeconds)
 
         // Then
-        verify(mockRumMonitor).updateExternalRefreshRate(frameTimeNanos)
+        verify(mockRumMonitor).updateExternalRefreshRate(frameTimeSeconds)
     }
 
     @Test

@@ -7870,12 +7870,12 @@ internal class RumViewScopeTest {
         forge: Forge
     ) {
         // GIVEN
-        val frameTimeNanos = forge.aLong(min = 1_000_000L, max = 50_000_000L) // 1ms to 50ms
-        val expectedRefreshRate = 1_000_000_000.0 / frameTimeNanos.toDouble()
+        val frameTimeSeconds = forge.aDouble(min = 0.001, max = 0.05) // 1ms to 50ms
+        val expectedRefreshRate = 1.0 / frameTimeSeconds
 
         // WHEN
         testedScope.handleEvent(
-            RumRawEvent.UpdateExternalRefreshRate(frameTimeNanos),
+            RumRawEvent.UpdateExternalRefreshRate(frameTimeSeconds),
             mockWriter
         )
         val result = testedScope.handleEvent(
@@ -7898,8 +7898,8 @@ internal class RumViewScopeTest {
         forge: Forge
     ) {
         // GIVEN
-        val frameTimesNanos = forge.aList(size = 5) {
-            aLong(min = 8_000_000L, max = 20_000_000L) // ~50-125 FPS range
+        val frameTimesSeconds = forge.aList(size = 5) {
+            aDouble(min = 0.008, max = 0.02) // ~50-125 FPS range
         }
 
         var sum = 0.0
@@ -7908,8 +7908,8 @@ internal class RumViewScopeTest {
         val refreshRates = mutableListOf<Double>()
 
         // WHEN
-        frameTimesNanos.forEach { frameTime ->
-            val refreshRate = 1_000_000_000.0 / frameTime.toDouble()
+        frameTimesSeconds.forEach { frameTime ->
+            val refreshRate = 1.0 / frameTime
             refreshRates.add(refreshRate)
             sum += refreshRate
             min = kotlin.math.min(min, refreshRate)
@@ -7941,7 +7941,7 @@ internal class RumViewScopeTest {
     fun `M ignore invalid frame time W handleEvent(UpdateExternalRefreshRate+KeepAlive) { zero frame time }`() {
         // WHEN
         testedScope.handleEvent(
-            RumRawEvent.UpdateExternalRefreshRate(0L),
+            RumRawEvent.UpdateExternalRefreshRate(0.0),
             mockWriter
         )
         val result = testedScope.handleEvent(
@@ -7964,7 +7964,7 @@ internal class RumViewScopeTest {
         forge: Forge
     ) {
         // GIVEN
-        val negativeFrameTime = -forge.aLong(min = 1L, max = 1_000_000L)
+        val negativeFrameTime = -forge.aDouble(min = 0.001, max = 1.0)
 
         // WHEN
         testedScope.handleEvent(
@@ -7991,8 +7991,8 @@ internal class RumViewScopeTest {
         forge: Forge
     ) {
         // GIVEN
-        val externalFrameTime = forge.aLong(min = 16_000_000L, max = 17_000_000L) // ~60 FPS
-        val expectedExternalRefreshRate = 1_000_000_000.0 / externalFrameTime.toDouble()
+        val externalFrameTime = forge.aDouble(min = 0.016, max = 0.017) // ~60 FPS
+        val expectedExternalRefreshRate = 1.0 / externalFrameTime
 
         val internalRefreshRate = forge.aDouble(min = 30.0, max = 45.0) // Different range
         val listenerCaptor = argumentCaptor<VitalListener> {
@@ -8059,11 +8059,11 @@ internal class RumViewScopeTest {
     ) {
         // GIVEN
         testedScope.handleEvent(RumRawEvent.StopView(fakeKey, emptyMap()), mockWriter)
-        val frameTimeNanos = forge.aLong(min = 16_000_000L, max = 17_000_000L)
+        val frameTimeSeconds = forge.aDouble(min = 0.016, max = 0.017)
 
         // WHEN
         val result = testedScope.handleEvent(
-            RumRawEvent.UpdateExternalRefreshRate(frameTimeNanos),
+            RumRawEvent.UpdateExternalRefreshRate(frameTimeSeconds),
             mockWriter
         )
 
@@ -8075,13 +8075,13 @@ internal class RumViewScopeTest {
     @Test
     fun `M accumulate external refresh rate samples correctly W multiple updates`() {
         // GIVEN
-        val frameTime1 = 16_666_667L // 60 FPS
-        val frameTime2 = 33_333_333L // 30 FPS
-        val frameTime3 = 11_111_111L // 90 FPS
+        val frameTime1 = 1.0 / 60.0 // 60 FPS
+        val frameTime2 = 1.0 / 30.0 // 30 FPS
+        val frameTime3 = 1.0 / 90.0 // 90 FPS
 
-        val refreshRate1 = 1_000_000_000.0 / frameTime1.toDouble()
-        val refreshRate2 = 1_000_000_000.0 / frameTime2.toDouble()
-        val refreshRate3 = 1_000_000_000.0 / frameTime3.toDouble()
+        val refreshRate1 = 1.0 / frameTime1
+        val refreshRate2 = 1.0 / frameTime2
+        val refreshRate3 = 1.0 / frameTime3
 
         val expectedAverage = (refreshRate1 + refreshRate2 + refreshRate3) / 3.0
         val expectedMin = kotlin.math.min(refreshRate2, kotlin.math.min(refreshRate1, refreshRate3))

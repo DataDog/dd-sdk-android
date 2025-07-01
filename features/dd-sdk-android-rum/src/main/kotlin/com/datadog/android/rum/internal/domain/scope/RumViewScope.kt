@@ -643,9 +643,9 @@ internal open class RumViewScope(
     ) {
         if (stopped) return
 
-        // Convert frame time (nanoseconds) to refresh rate (Hz)
-        val refreshRateHz = if (event.frameTimeNanos > 0) {
-            1_000_000_000.0 / event.frameTimeNanos.toDouble()
+        // Convert frame time (seconds) to refresh rate (Hz)
+        val refreshRateHz = if (event.frameTimeSeconds > 0) {
+            1.0 / event.frameTimeSeconds
         } else {
             return // Invalid frame time
         }
