@@ -80,7 +80,7 @@ interface SdkCore {
      * Clear the current user information.
      *
      * User information will be set to null.
-     * Following Logs, Traces, RUM Events will not include the user information anymore.
+     * After calling this api, Logs, Traces, RUM Events will not include the user information anymore.
      *
      * Any active RUM Session, active RUM View at the time of call will have their `usr` attribute cleared.
      *
