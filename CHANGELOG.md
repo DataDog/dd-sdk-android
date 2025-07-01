@@ -1,5 +1,7 @@
 # 2.23.0 / 2025-06-23
 
+* [TEST] This is a test commit of MCP.
+
 * [FEATURE] Global: Add public APIs for set account information. See [#2694](https://github.com/DataDog/dd-sdk-android/pull/2694)
 * [FEATURE] Global: Add `AccountInfo` data class and provider. See [#2696](https://github.com/DataDog/dd-sdk-android/pull/2696)
 * [FEATURE] Global: Add `AccountInfo` into `CoreFeature` and `DatadogContext`. See [#2702](https://github.com/DataDog/dd-sdk-android/pull/2702)
