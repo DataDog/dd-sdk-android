@@ -23,7 +23,7 @@ plugins {
     // Publish
     `maven-publish`
     signing
-    id("org.jetbrains.dokka")
+    id("org.jetbrains.dokka-javadoc")
 
     // Analysis tools
     id("com.github.ben-manes.versions")
@@ -43,7 +43,7 @@ android {
     defaultConfig {
         consumerProguardFiles("consumer-rules.pro")
     }
-    namespace = "com.datadog.android.trace.internal"
+    namespace = "com.datadog.android.trace.api"
 }
 
 dependencies {
@@ -67,6 +67,6 @@ junitConfig()
 javadocConfig()
 dependencyUpdateConfig()
 publishingConfig(
-    "Internal APM support library for Android applications."
+    "Tracing engine api."
 )
 detektCustomConfig()
