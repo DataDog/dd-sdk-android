@@ -35,6 +35,7 @@ import com.datadog.android.rum.internal.anr.ANRException
 import com.datadog.android.rum.internal.collections.toEvictingQueue
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
+import com.datadog.android.rum.internal.domain.accessibility.AccessibilityReader
 import com.datadog.android.rum.internal.domain.state.SlowFrameRecord
 import com.datadog.android.rum.internal.domain.state.ViewUIPerformanceReport
 import com.datadog.android.rum.internal.metric.NoValueReason
@@ -145,6 +146,9 @@ internal class RumViewScopeTest {
 
     @Mock
     lateinit var mockCpuVitalMonitor: VitalMonitor
+
+    @Mock
+    lateinit var mockAccessibilityReader: AccessibilityReader
 
     @Mock
     lateinit var mockMemoryVitalMonitor: VitalMonitor
@@ -9392,25 +9396,26 @@ internal class RumViewScopeTest {
         viewEndedMetricDispatcher: ViewMetricDispatcher = mockViewEndedMetricDispatcher,
         slowFramesMetricListener: SlowFramesListener = mockSlowFramesListener
     ) = RumViewScope(
-        parentScope,
-        sdkCore,
-        sessionEndedMetricDispatcher,
-        key,
-        eventTime,
-        initialAttributes,
-        viewChangedListener,
-        firstPartyHostHeaderTypeResolver,
-        cpuVitalMonitor,
-        memoryVitalMonitor,
-        frameRateVitalMonitor,
-        featuresContextResolver,
-        type,
-        trackFrustrations,
-        sampleRate,
-        interactionNextViewMetricResolver,
-        networkSettledMetricResolver,
-        slowFramesMetricListener,
-        viewEndedMetricDispatcher
+        parentScope = parentScope,
+        sdkCore = sdkCore,
+        sessionEndedMetricDispatcher = sessionEndedMetricDispatcher,
+        key = key,
+        eventTime = eventTime,
+        initialAttributes = initialAttributes,
+        viewChangedListener = viewChangedListener,
+        firstPartyHostHeaderTypeResolver = firstPartyHostHeaderTypeResolver,
+        cpuVitalMonitor = cpuVitalMonitor,
+        memoryVitalMonitor = memoryVitalMonitor,
+        frameRateVitalMonitor = frameRateVitalMonitor,
+        featuresContextResolver = featuresContextResolver,
+        type = type,
+        trackFrustrations = trackFrustrations,
+        sampleRate = sampleRate,
+        interactionToNextViewMetricResolver = interactionNextViewMetricResolver,
+        networkSettledMetricResolver = networkSettledMetricResolver,
+        slowFramesListener = slowFramesMetricListener,
+        viewEndedMetricDispatcher = viewEndedMetricDispatcher,
+        accessibilityReader = mockAccessibilityReader
     )
 
     data class RumRawEventData(val event: RumRawEvent, val viewKey: RumScopeKey)

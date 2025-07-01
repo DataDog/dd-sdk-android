@@ -17,6 +17,7 @@ import com.datadog.android.rum.DdRumContentProvider
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
+import com.datadog.android.rum.internal.domain.accessibility.AccessibilityReader
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
 import com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener
 import com.datadog.android.rum.internal.vitals.VitalMonitor
@@ -39,29 +40,31 @@ internal class RumApplicationScope(
     private val sessionListener: RumSessionListener?,
     internal val initialResourceIdentifier: InitialResourceIdentifier,
     internal val lastInteractionIdentifier: LastInteractionIdentifier?,
-    private val slowFramesListener: SlowFramesListener?
+    private val slowFramesListener: SlowFramesListener?,
+    private val accessibilityReader: AccessibilityReader
 ) : RumScope, RumViewChangedListener {
 
     private var rumContext = RumContext(applicationId = applicationId)
 
     internal val childScopes: MutableList<RumScope> = mutableListOf(
         RumSessionScope(
-            this,
-            sdkCore,
-            sessionEndedMetricDispatcher,
-            sampleRate,
-            backgroundTrackingEnabled,
-            trackFrustrations,
-            this,
-            firstPartyHostHeaderTypeResolver,
-            cpuVitalMonitor,
-            memoryVitalMonitor,
-            frameRateVitalMonitor,
-            sessionListener,
-            false,
-            initialResourceIdentifier,
-            lastInteractionIdentifier,
-            slowFramesListener
+            parentScope = this,
+            sdkCore = sdkCore,
+            sessionEndedMetricDispatcher = sessionEndedMetricDispatcher,
+            sampleRate = sampleRate,
+            backgroundTrackingEnabled = backgroundTrackingEnabled,
+            trackFrustrations = trackFrustrations,
+            viewChangedListener = this,
+            firstPartyHostHeaderTypeResolver = firstPartyHostHeaderTypeResolver,
+            cpuVitalMonitor = cpuVitalMonitor,
+            memoryVitalMonitor = memoryVitalMonitor,
+            frameRateVitalMonitor = frameRateVitalMonitor,
+            sessionListener = sessionListener,
+            applicationDisplayed = false,
+            networkSettledResourceIdentifier = initialResourceIdentifier,
+            lastInteractionIdentifier = lastInteractionIdentifier,
+            slowFramesListener = slowFramesListener,
+            accessibilityReader = accessibilityReader
         )
     )
 
@@ -141,22 +144,23 @@ internal class RumApplicationScope(
     @WorkerThread
     private fun startNewSession(event: RumRawEvent, writer: DataWriter<Any>) {
         val newSession = RumSessionScope(
-            this,
-            sdkCore,
-            sessionEndedMetricDispatcher,
-            sampleRate,
-            backgroundTrackingEnabled,
-            trackFrustrations,
-            this,
-            firstPartyHostHeaderTypeResolver,
-            cpuVitalMonitor,
-            memoryVitalMonitor,
-            frameRateVitalMonitor,
-            sessionListener,
-            true,
-            initialResourceIdentifier,
-            lastInteractionIdentifier,
-            slowFramesListener
+            parentScope = this,
+            sdkCore = sdkCore,
+            sessionEndedMetricDispatcher = sessionEndedMetricDispatcher,
+            sampleRate = sampleRate,
+            backgroundTrackingEnabled = backgroundTrackingEnabled,
+            trackFrustrations = trackFrustrations,
+            viewChangedListener = this,
+            firstPartyHostHeaderTypeResolver = firstPartyHostHeaderTypeResolver,
+            cpuVitalMonitor = cpuVitalMonitor,
+            memoryVitalMonitor = memoryVitalMonitor,
+            frameRateVitalMonitor = frameRateVitalMonitor,
+            sessionListener = sessionListener,
+            applicationDisplayed = true,
+            networkSettledResourceIdentifier = initialResourceIdentifier,
+            lastInteractionIdentifier = lastInteractionIdentifier,
+            slowFramesListener = slowFramesListener,
+            accessibilityReader = accessibilityReader
         )
         childScopes.add(newSession)
         if (event !is RumRawEvent.StartView) {

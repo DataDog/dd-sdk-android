@@ -15,6 +15,7 @@ import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
+import com.datadog.android.rum.internal.domain.accessibility.AccessibilityReader
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
 import com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener
 import com.datadog.android.rum.internal.utils.percent
@@ -44,6 +45,7 @@ internal class RumSessionScope(
     networkSettledResourceIdentifier: InitialResourceIdentifier,
     lastInteractionIdentifier: LastInteractionIdentifier?,
     slowFramesListener: SlowFramesListener?,
+    private val accessibilityReader: AccessibilityReader,
     private val sessionInactivityNanos: Long = DEFAULT_SESSION_INACTIVITY_NS,
     private val sessionMaxDurationNanos: Long = DEFAULT_SESSION_MAX_DURATION_NS
 ) : RumScope {
@@ -62,21 +64,22 @@ internal class RumSessionScope(
 
     @Suppress("LongParameterList")
     internal var childScope: RumViewManagerScope? = RumViewManagerScope(
-        this,
-        sdkCore,
-        sessionEndedMetricDispatcher,
-        backgroundTrackingEnabled,
-        trackFrustrations,
-        viewChangedListener,
-        firstPartyHostHeaderTypeResolver,
-        cpuVitalMonitor,
-        memoryVitalMonitor,
-        frameRateVitalMonitor,
-        applicationDisplayed,
-        sampleRate,
-        networkSettledResourceIdentifier,
-        slowFramesListener,
-        lastInteractionIdentifier
+        parentScope = this,
+        sdkCore = sdkCore,
+        sessionEndedMetricDispatcher = sessionEndedMetricDispatcher,
+        backgroundTrackingEnabled = backgroundTrackingEnabled,
+        trackFrustrations = trackFrustrations,
+        viewChangedListener = viewChangedListener,
+        firstPartyHostHeaderTypeResolver = firstPartyHostHeaderTypeResolver,
+        cpuVitalMonitor = cpuVitalMonitor,
+        memoryVitalMonitor = memoryVitalMonitor,
+        frameRateVitalMonitor = frameRateVitalMonitor,
+        applicationDisplayed = applicationDisplayed,
+        sampleRate = sampleRate,
+        initialResourceIdentifier = networkSettledResourceIdentifier,
+        slowFramesListener = slowFramesListener,
+        accessibilityReader = accessibilityReader,
+        lastInteractionIdentifier = lastInteractionIdentifier
     )
 
     init {

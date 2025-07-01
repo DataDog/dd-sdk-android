@@ -66,7 +66,8 @@ internal class ConfigurationRumForgeryFactory :
             ),
             trackAnonymousUser = forge.aBool(),
             composeActionTrackingStrategy = mock(),
-            slowFramesConfiguration = forge.getForgery()
+            slowFramesConfiguration = forge.getForgery(),
+            collectAccessibilitySettings = forge.aBool()
         )
     }
 }

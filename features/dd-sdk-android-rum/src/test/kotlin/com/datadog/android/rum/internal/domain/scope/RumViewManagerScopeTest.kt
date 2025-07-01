@@ -24,6 +24,7 @@ import com.datadog.android.rum.internal.anr.ANRDetectorRunnable
 import com.datadog.android.rum.internal.anr.ANRException
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
+import com.datadog.android.rum.internal.domain.accessibility.AccessibilityReader
 import com.datadog.android.rum.internal.domain.state.ViewUIPerformanceReport
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
 import com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener
@@ -124,6 +125,9 @@ internal class RumViewManagerScopeTest {
     lateinit var mockNetworkSettledResourceIdentifier: InitialResourceIdentifier
 
     @Mock
+    lateinit var mockAccessibilityReader: AccessibilityReader
+
+    @Mock
     lateinit var mockLastInteractionIdentifier: LastInteractionIdentifier
 
     @Mock
@@ -161,7 +165,8 @@ internal class RumViewManagerScopeTest {
             sampleRate = fakeSampleRate,
             initialResourceIdentifier = mockNetworkSettledResourceIdentifier,
             lastInteractionIdentifier = mockLastInteractionIdentifier,
-            slowFramesListener = mockSlowFramesListener
+            slowFramesListener = mockSlowFramesListener,
+            accessibilityReader = mockAccessibilityReader
         )
     }
 
@@ -527,7 +532,8 @@ internal class RumViewManagerScopeTest {
             sampleRate = fakeSampleRate,
             initialResourceIdentifier = mockNetworkSettledResourceIdentifier,
             lastInteractionIdentifier = mockLastInteractionIdentifier,
-            slowFramesListener = mockSlowFramesListener
+            slowFramesListener = mockSlowFramesListener,
+            accessibilityReader = mockAccessibilityReader
         )
         testedScope.applicationDisplayed = true
         val fakeEvent = forge.validBackgroundEvent()
@@ -559,7 +565,8 @@ internal class RumViewManagerScopeTest {
             sampleRate = fakeSampleRate,
             initialResourceIdentifier = mockNetworkSettledResourceIdentifier,
             lastInteractionIdentifier = mockLastInteractionIdentifier,
-            slowFramesListener = mockSlowFramesListener
+            slowFramesListener = mockSlowFramesListener,
+            accessibilityReader = mockAccessibilityReader
         )
         testedScope.childrenScopes.add(mockChildScope)
         whenever(mockChildScope.isActive()) doReturn true
@@ -594,7 +601,8 @@ internal class RumViewManagerScopeTest {
             sampleRate = fakeSampleRate,
             initialResourceIdentifier = mockNetworkSettledResourceIdentifier,
             lastInteractionIdentifier = mockLastInteractionIdentifier,
-            slowFramesListener = mockSlowFramesListener
+            slowFramesListener = mockSlowFramesListener,
+            accessibilityReader = mockAccessibilityReader
         )
         testedScope.applicationDisplayed = true
         val fakeEvent = forge.validBackgroundEvent()
@@ -662,7 +670,8 @@ internal class RumViewManagerScopeTest {
             sampleRate = fakeSampleRate,
             initialResourceIdentifier = mockNetworkSettledResourceIdentifier,
             lastInteractionIdentifier = mockLastInteractionIdentifier,
-            slowFramesListener = mockSlowFramesListener
+            slowFramesListener = mockSlowFramesListener,
+            accessibilityReader = mockAccessibilityReader
         )
         testedScope.childrenScopes.add(mockChildScope)
         whenever(mockChildScope.isActive()) doReturn true
@@ -698,7 +707,8 @@ internal class RumViewManagerScopeTest {
             sampleRate = fakeSampleRate,
             initialResourceIdentifier = mockNetworkSettledResourceIdentifier,
             lastInteractionIdentifier = mockLastInteractionIdentifier,
-            slowFramesListener = mockSlowFramesListener
+            slowFramesListener = mockSlowFramesListener,
+            accessibilityReader = mockAccessibilityReader
         )
         testedScope.stopped = true
         val fakeEvent = forge.applicationStartedEvent()
