@@ -247,7 +247,7 @@ internal class OtelSpanTest {
         // Then
         verify(mockAgentTracer).activateSpan(
             mockAgentSpan,
-            DEFAULT_ASYNC_PROPAGATING,
+            DEFAULT_ASYNC_PROPAGATING
         )
     }
 

@@ -191,6 +191,9 @@ object DatadogTracingConstants {
         const val DEFAULT: Byte = 0
     }
 
+    /**
+     * Provides constant keys used for Datadog tracing tags.
+     */
     object DDTags {
 
         /**
@@ -204,7 +207,7 @@ object DatadogTracingConstants {
         const val ERROR_MSG: String = "error.message"
 
         /**
-         *  String representing the type of the error
+         *  String representing the type of the error.
          */
         const val ERROR_TYPE: String = "error.type"
     }

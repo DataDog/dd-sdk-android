@@ -60,10 +60,11 @@ internal class OkHttpExtTest {
             on { traceId }.thenReturn(fakeTraceId)
             on { isSampled }.thenReturn(fakeIsSampled)
         }
-        expectedPrioritySampling = if (fakeIsSampled)
+        expectedPrioritySampling = if (fakeIsSampled) {
             DatadogTracingConstants.PrioritySampling.USER_KEEP
-        else
+        } else {
             DatadogTracingConstants.PrioritySampling.UNSET
+        }
         whenever(mockSpan.spanContext).thenReturn(spanContext)
     }
 
