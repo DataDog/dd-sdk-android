@@ -102,6 +102,7 @@ if [[ $CLEANUP == 1 ]]; then
   rm -rf features/dd-sdk-android-ndk/build/
   rm -rf features/dd-sdk-android-rum/build/
   rm -rf features/dd-sdk-android-session-replay/build/
+  rm -rf features/dd-sdk-android-session-replay-compose/build/
   rm -rf features/dd-sdk-android-session-replay-material/build/
   rm -rf features/dd-sdk-android-trace/build/
   rm -rf features/dd-sdk-android-trace-otel/build/

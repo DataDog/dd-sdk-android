@@ -15,6 +15,7 @@ import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
@@ -25,7 +26,6 @@ import org.mockito.kotlin.eq
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.util.LinkedList
-import kotlin.collections.ArrayList
 import kotlin.math.pow
 
 @Extensions(
@@ -135,9 +135,50 @@ internal class NodeFlattenerTest {
         assertThat(wireframes).isEqualTo(expectedList)
     }
 
+    @Test
+    fun `M not have ConcurrentModificationException W modifying nodes concurrently`(forge: Forge) {
+        // Given
+        val maxWidth = forge.aLong(2, 1000)
+        val maxHeight = forge.aLong(2, 1000)
+        val wireframeSize = forge.anInt(min = 10, max = 100)
+        val expectedList: MutableList<MobileSegment.Wireframe> =
+            Array<MobileSegment.Wireframe>(wireframeSize) {
+                // just to avoid collisions we will add the wireframes manually
+                val width = forge.aLong(min = 1, max = maxWidth)
+                val height = forge.aLong(min = 1, max = maxHeight)
+                val x = it * maxWidth
+                val y = it * maxHeight
+                forge.getForgery<MobileSegment.Wireframe.ShapeWireframe>()
+                    .copy(width = width, height = height, x = x, y = y)
+            }.toMutableList()
+        val fakeSnapshot = generateFlattenNodeFromList(expectedList)
+
+        // When
+        val thread = Thread {
+            repeat(forge.anInt(1, wireframeSize - 1)) {
+                expectedList.removeAt(0)
+            }
+        }
+
+        // Then
+        assertDoesNotThrow {
+            thread.start()
+            testedNodeFlattener.flattenNode(fakeSnapshot)
+            thread.join()
+        }
+    }
+
     // endregion
 
     // region Internals
+
+    private fun generateFlattenNodeFromList(list: List<MobileSegment.Wireframe>): Node {
+        return Node(
+            wireframes = list,
+            children = emptyList(),
+            parents = emptyList()
+        )
+    }
 
     private fun generateTreeFromList(list: List<MobileSegment.Wireframe>): Node {
         val mutableList = list.toMutableList()

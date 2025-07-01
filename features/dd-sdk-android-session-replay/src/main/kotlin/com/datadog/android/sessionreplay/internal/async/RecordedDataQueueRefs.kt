@@ -6,15 +6,11 @@
 
 package com.datadog.android.sessionreplay.internal.async
 
-import android.os.Handler
-import android.os.Looper
-
 /**
  * References to the work queue context.
  */
 internal data class RecordedDataQueueRefs(
-    private val recordedDataQueueHandler: RecordedDataQueueHandler,
-    private val mainThreadHandler: Handler = Handler(Looper.getMainLooper())
+    private val recordedDataQueueHandler: RecordedDataQueueHandler
 ) {
     // this can only be populated after the snapshot has been created
     internal var recordedDataQueueItem: SnapshotRecordedDataQueueItem? = null
@@ -28,9 +24,6 @@ internal data class RecordedDataQueueRefs(
     }
 
     internal fun tryToConsumeItem() {
-        mainThreadHandler.post {
-            @Suppress("ThreadSafety") // we are in the main thread context
-            recordedDataQueueHandler.tryToConsumeItems()
-        }
+        recordedDataQueueHandler.tryToConsumeItems()
     }
 }

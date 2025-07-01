@@ -1,4 +1,5 @@
-FROM registry.ddbuild.io/images/docker:24.0.4-gbi-focal
+# This base image is based on a GBI image
+FROM registry.ddbuild.io/images/docker:24.0.4-jammy
 
 ENV DEBIAN_FRONTEND=noninteractive
 

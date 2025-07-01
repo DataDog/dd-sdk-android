@@ -18,11 +18,5 @@ for artifactId in $(./gradlew -q listAllPublishedArtifactIds); do
     echo "Release $tag_name exists for $artifactId"
   else
     echo "Release $tag_name doesn't exist for $artifactId"
-    # TODO remove this check when
-    # https://github.com/DataDog/dd-sdk-android/commit/ccd79322895a6ba135e2b73b32005fb4aeb5c31c
-    # is released
-    if [ $artifactId != "dd-sdk-android-benchmark-internal" ]; then
-      exit 1
-    fi
   fi
 done
