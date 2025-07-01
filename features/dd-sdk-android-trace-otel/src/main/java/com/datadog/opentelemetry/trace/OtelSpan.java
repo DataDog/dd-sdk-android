@@ -155,7 +155,7 @@ public class OtelSpan implements Span {
     return agentTracer.activateSpan(this.delegateSpan, DEFAULT_ASYNC_PROPAGATING);
   }
 
-  public DatadogSpanContext getAgentSpanContext() {
+  public DatadogSpanContext getDatadogSpanContext() {
     return this.delegateSpan.context();
   }
 

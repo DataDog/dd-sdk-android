@@ -7,7 +7,7 @@
 package com.datadog.android.okhttp.otel
 
 import com.datadog.android.okhttp.TraceContext
-import com.datadog.legacy.trace.api.sampling.PrioritySampling
+import com.datadog.android.trace.api.constants.DatadogTracingConstants
 import com.datadog.tools.unit.forge.BaseConfigurator
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -60,8 +60,10 @@ internal class OkHttpExtTest {
             on { traceId }.thenReturn(fakeTraceId)
             on { isSampled }.thenReturn(fakeIsSampled)
         }
-        expectedPrioritySampling =
-            if (fakeIsSampled) PrioritySampling.USER_KEEP else PrioritySampling.UNSET
+        expectedPrioritySampling = if (fakeIsSampled)
+            DatadogTracingConstants.PrioritySampling.USER_KEEP
+        else
+            DatadogTracingConstants.PrioritySampling.UNSET
         whenever(mockSpan.spanContext).thenReturn(spanContext)
     }
 

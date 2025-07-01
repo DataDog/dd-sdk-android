@@ -7,9 +7,8 @@
 package com.datadog.android.okhttp.otel
 
 import com.datadog.android.okhttp.TraceContext
-import com.datadog.legacy.trace.api.sampling.PrioritySampling
+import com.datadog.android.trace.api.constants.DatadogTracingConstants
 import com.datadog.opentelemetry.trace.OtelSpan
-import com.datadog.trace.core.DDSpanContext
 import io.opentelemetry.api.trace.Span
 import okhttp3.Request
 
@@ -22,17 +21,14 @@ fun Request.Builder.addParentSpan(span: Span): Request.Builder = apply {
     // very fragile and assumes that Datadog Tracer is used
     // we need to trigger sampling decision at this point, because we are doing context propagation out of OpenTelemetry
     if (span is OtelSpan) {
-        val agentSpanContext = span.agentSpanContext
-        if (agentSpanContext is DDSpanContext) {
-            agentSpanContext.trace.setSamplingPriorityIfNecessary()
-        }
+        span.datadogSpanContext.setTracingSamplingPriorityIfNecessary()
         @Suppress("UnsafeThirdPartyFunctionCall") // the context will always be a TraceContext
         tag(
             TraceContext::class.java,
             TraceContext(
                 span.spanContext.traceId,
                 span.spanContext.spanId,
-                agentSpanContext.samplingPriority
+                span.datadogSpanContext.samplingPriority
             )
         )
     } else {
@@ -42,7 +38,11 @@ fun Request.Builder.addParentSpan(span: Span): Request.Builder = apply {
             TraceContext(
                 span.spanContext.traceId,
                 span.spanContext.spanId,
-                if (span.spanContext.isSampled) PrioritySampling.USER_KEEP else PrioritySampling.UNSET
+                if (span.spanContext.isSampled) {
+                    DatadogTracingConstants.PrioritySampling.USER_KEEP
+                } else {
+                    DatadogTracingConstants.PrioritySampling.UNSET
+                }
             )
         )
     }

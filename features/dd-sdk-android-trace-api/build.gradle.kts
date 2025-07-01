@@ -55,19 +55,6 @@ dependencies {
 
     // Generate NoOp implementations
     ksp(project(":tools:noopfactory"))
-
-    testImplementation(project(":tools:unit")) {
-        attributes {
-            attribute(
-                com.android.build.api.attributes.ProductFlavorAttr.of("platform"),
-                objects.named("jvm")
-            )
-        }
-    }
-    testImplementation(testFixtures(project(":dd-sdk-android-core")))
-    testImplementation(libs.bundles.jUnit5)
-    testImplementation(libs.bundles.testTools)
-    testImplementation(libs.systemStubsJupiter)
 }
 
 unMock {

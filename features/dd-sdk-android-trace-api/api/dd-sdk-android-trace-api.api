@@ -135,6 +135,7 @@ public abstract interface class com/datadog/android/trace/api/span/DatadogSpanCo
 	public abstract fun getTraceId ()Lcom/datadog/android/trace/api/trace/DatadogTraceId;
 	public abstract fun setMetric (Ljava/lang/CharSequence;D)V
 	public abstract fun setSamplingPriority (I)Z
+	public abstract fun setTracingSamplingPriorityIfNecessary ()V
 }
 
 public abstract interface class com/datadog/android/trace/api/span/DatadogSpanIdConverter {

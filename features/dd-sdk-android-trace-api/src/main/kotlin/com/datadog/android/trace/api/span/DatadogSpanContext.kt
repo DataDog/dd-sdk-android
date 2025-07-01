@@ -5,6 +5,7 @@
  */
 package com.datadog.android.trace.api.span
 
+import com.datadog.android.lint.InternalApi
 import com.datadog.android.trace.api.trace.DatadogTraceId
 import com.datadog.tools.annotation.NoOpImplementation
 
@@ -40,6 +41,12 @@ interface DatadogSpanContext {
      * @return True if the sampling priority was successfully set, false otherwise.
      */
     fun setSamplingPriority(samplingPriority: Int): Boolean
+
+    /**
+     * Sets the tracing sampling priority if it is necessary.
+     */
+    @InternalApi
+    fun setTracingSamplingPriorityIfNecessary()
 
     /**
      * Sets a numerical metric associated with the span.

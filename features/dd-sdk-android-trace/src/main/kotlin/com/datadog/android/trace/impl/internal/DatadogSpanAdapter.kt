@@ -12,26 +12,19 @@ import com.datadog.trace.core.DDSpan
 
 internal class DatadogSpanAdapter(internal val delegate: AgentSpan) : DatadogSpan {
 
-    override val isRootSpan: Boolean
-        get() = delegate is DDSpan && delegate.isRootSpan
+    override val isRootSpan: Boolean get() = delegate is DDSpan && delegate.isRootSpan
 
-    override val traceId: DatadogTraceId
-        get() = DatadogTraceIdAdapter(delegate.traceId)
+    override val traceId: DatadogTraceId get() = DatadogTraceIdAdapter(delegate.traceId)
 
-    override val parentSpanId: Long?
-        get() = (delegate as? DDSpan)?.parentId
+    override val parentSpanId: Long? get() = (delegate as? DDSpan)?.parentId
 
-    override val samplingPriority: Int?
-        get() = delegate.samplingPriority
+    override val samplingPriority: Int? get() = delegate.samplingPriority
 
-    override val durationNano: Long
-        get() = delegate.durationNano
+    override val durationNano: Long get() = delegate.durationNano
 
-    override val startTime: Long
-        get() = delegate.startTime
+    override val startTime: Long get() = delegate.startTime
 
-    override val localRootSpan: DatadogSpan?
-        get() = delegate.localRootSpan?.let { DatadogSpanAdapter(it) }
+    override val localRootSpan: DatadogSpan? get() = delegate.localRootSpan?.let { DatadogSpanAdapter(it) }
 
     override var isError: Boolean?
         get() = delegate.isError

@@ -471,7 +471,7 @@ internal class OtelTracerBuilderProviderTest {
         // Then
         assertThat(tracer).isNotNull()
         val span = tracer.spanBuilder(operation).startSpan() as OtelSpan
-        val agentSpanContext = span.agentSpanContext as DatadogSpanContext
+        val agentSpanContext = span.datadogSpanContext as DatadogSpanContext
         assertThat(agentSpanContext.tags).containsEntry(key, value)
     }
 
