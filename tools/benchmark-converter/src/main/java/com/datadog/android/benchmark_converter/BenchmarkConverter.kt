@@ -30,7 +30,7 @@ fun main(args: Array<String>) {
                 CBMFResult.Benchmark(
                     parameters = mapOf(
                         "scenario" to "${benchmark.name}:${metricName}",
-                        "className" to "tracing",
+                        "className" to "tracing_regress",
                     ),
                     runs = metric.runs.mapIndexedNotNull { index, x ->
                         cbmfMetricName(metricName)?.let { cbmfMetricName ->
@@ -47,7 +47,7 @@ fun main(args: Array<String>) {
                     CBMFResult.Benchmark(
                         parameters = mapOf(
                             "scenario" to "${benchmark.name}:${metricName}",
-                            "className" to "tracing",
+                            "className" to "tracing_regress",
                         ),
                         runs = metric.runs.mapIndexedNotNull { index, x ->
                             cbmfMetricName(metricName)?.let { cbmfMetricName ->

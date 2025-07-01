@@ -180,6 +180,12 @@ public class OtelSpanBuilder implements SpanBuilder {
     @Override
     public Span startSpan() {
         // Ensure the span kind is set
+//        try {
+//            Thread.sleep(1);
+//        } catch (InterruptedException e) {
+//            throw new RuntimeException(e);
+//        }
+
         if (!this.spanKindSet) {
             setSpanKind(INTERNAL);
         }
