@@ -30,7 +30,7 @@ fun main(args: Array<String>) {
                 CBMFResult.Benchmark(
                     parameters = mapOf(
                         "scenario" to "${benchmark.name}:${metricName}",
-                        "className" to "baseline",
+                        "className" to "tracing",
                     ),
                     runs = metric.runs.mapIndexedNotNull { index, x ->
                         cbmfMetricName(metricName)?.let { cbmfMetricName ->
@@ -47,7 +47,7 @@ fun main(args: Array<String>) {
                     CBMFResult.Benchmark(
                         parameters = mapOf(
                             "scenario" to "${benchmark.name}:${metricName}",
-                            "className" to "baseline",
+                            "className" to "tracing",
                         ),
                         runs = metric.runs.mapIndexedNotNull { index, x ->
                             cbmfMetricName(metricName)?.let { cbmfMetricName ->
@@ -74,7 +74,7 @@ fun main(args: Array<String>) {
 private fun cbmfMetricName(metricName: String): String? {
     return when (metricName) {
         "memoryHeapSizeMaxKb", "memoryRssAnonMaxKb", "memoryRssFileMaxKb" -> "rss"
-        "timeToInitialDisplayMs", "frameDurationCpuMs", "frameOverrunMs" -> "execution_time"
+        "timeToInitialDisplayMs", "frameDurationCpuMs", "frameOverrunMs", "timeNs" -> "execution_time"
         "frameCount" -> "iterations"
         else -> null
     }
@@ -84,6 +84,7 @@ private fun cbmfUom(metricName: String): String? {
     return when (metricName) {
         "memoryHeapSizeMaxKb", "memoryRssAnonMaxKb", "memoryRssFileMaxKb" -> "KB"
         "timeToInitialDisplayMs", "frameDurationCpuMs", "frameOverrunMs" -> "ms"
+        "timeNs" -> "ns"
         "frameCount" -> "iterations"
         else -> null
     }
