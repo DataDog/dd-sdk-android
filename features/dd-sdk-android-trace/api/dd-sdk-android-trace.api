@@ -26,10 +26,6 @@ public final class com/datadog/android/trace/AndroidTracer$Companion {
 	public final fun logThrowable (Lio/opentracing/Span;Ljava/lang/Throwable;)V
 }
 
-public final class com/datadog/android/trace/DatadogTracer {
-	public fun <init> ()V
-}
-
 public abstract interface class com/datadog/android/trace/InternalCoreWriterProvider {
 	public abstract fun getCoreTracerWriter ()Lcom/datadog/trace/common/writer/Writer;
 }

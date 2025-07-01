@@ -431,7 +431,11 @@ internal constructor(
         }
     }
 
-    private fun handleDatadogSampledOutHeaders(requestBuilder: Request.Builder, span: AgentSpan, tracer: AgentTracer.TracerAPI) {
+    private fun handleDatadogSampledOutHeaders(
+        requestBuilder: Request.Builder,
+        span: AgentSpan,
+        tracer: AgentTracer.TracerAPI
+    ) {
         if (traceContextInjection == TraceContextInjection.ALL) {
             tracer.propagate().inject(
                 span.context(),
