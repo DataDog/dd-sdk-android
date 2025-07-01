@@ -3,6 +3,13 @@ public final class com/datadog/android/trace/api/constants/DatadogTracingConstan
 	public static final field INSTANCE Lcom/datadog/android/trace/api/constants/DatadogTracingConstants;
 }
 
+public final class com/datadog/android/trace/api/constants/DatadogTracingConstants$DDTags {
+	public static final field ERROR_MSG Ljava/lang/String;
+	public static final field ERROR_TYPE Ljava/lang/String;
+	public static final field INSTANCE Lcom/datadog/android/trace/api/constants/DatadogTracingConstants$DDTags;
+	public static final field RESOURCE_NAME Ljava/lang/String;
+}
+
 public final class com/datadog/android/trace/api/constants/DatadogTracingConstants$ErrorPriorities {
 	public static final field DEFAULT B
 	public static final field HTTP_SERVER_DECORATOR B

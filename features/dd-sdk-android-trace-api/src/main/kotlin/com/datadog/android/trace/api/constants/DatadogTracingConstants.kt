@@ -190,4 +190,22 @@ object DatadogTracingConstants {
          */
         const val DEFAULT: Byte = 0
     }
+
+    object DDTags {
+
+        /**
+         * Represents the resource name tag used for tracing spans.
+         */
+        const val RESOURCE_NAME: String = "resource.name"
+
+        /**
+         *  String representing the error message.
+         */
+        const val ERROR_MSG: String = "error.message"
+
+        /**
+         *  String representing the type of the error
+         */
+        const val ERROR_TYPE: String = "error.type"
+    }
 }
