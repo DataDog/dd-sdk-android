@@ -84,17 +84,14 @@ internal class UserFragment : Fragment(), View.OnClickListener {
                 withinSpan("clearUserInfo") {
                     // Clear preferences
                     Preferences.defaultPreferences(requireContext()).clearUserCredentials()
-                    
                     // Clear Datadog user info
                     Datadog.clearUserInfo()
-                    
                     // Clear UI fields
                     idField.text.clear()
                     nameField.text.clear()
                     emailField.text.clear()
                     userGenderField.text.clear()
                     userAgeField.text.clear()
-                    
                     log("Cleared user info")
                 }
                 Snackbar.make(view ?: v.rootView, "User info cleared", Snackbar.LENGTH_SHORT).show()
