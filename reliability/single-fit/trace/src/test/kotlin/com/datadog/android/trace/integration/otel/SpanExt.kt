@@ -23,6 +23,6 @@ internal fun Span.spanIdAsHex(): String {
 }
 
 internal fun Span.expectedSpanName(): String {
-    val agentSpan: DatadogSpan = this.getFieldValue("delegateSpan")
-    return agentSpan.operationName
+    val datadogSpan: DatadogSpan = this.getFieldValue("delegate")
+    return datadogSpan.operationName
 }

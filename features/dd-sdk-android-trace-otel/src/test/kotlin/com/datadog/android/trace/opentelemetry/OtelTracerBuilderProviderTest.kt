@@ -795,7 +795,7 @@ internal class OtelTracerBuilderProviderTest {
             get() = getFieldValue("tracer")
 
         private val Span.delegate: DatadogSpan
-            get() = getFieldValue("delegateSpan")
+            get() = getFieldValue("delegate")
 
         private val TracerProvider.delegate: DatadogTracer
             get() = getFieldValue("datadogTracer")
