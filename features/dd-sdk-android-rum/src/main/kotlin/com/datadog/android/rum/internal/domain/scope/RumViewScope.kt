@@ -23,6 +23,7 @@ import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumPerformanceMetric
 import com.datadog.android.rum.internal.FeaturesContextResolver
 import com.datadog.android.rum.internal.anr.ANRException
+import com.datadog.android.rum.internal.domain.AccessibilityReader
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.metric.NoValueReason
@@ -71,7 +72,8 @@ internal open class RumViewScope(
     private val interactionToNextViewMetricResolver: InteractionToNextViewMetricResolver,
     private val networkSettledMetricResolver: NetworkSettledMetricResolver,
     private val slowFramesListener: SlowFramesListener?,
-    private val viewEndedMetricDispatcher: ViewMetricDispatcher
+    private val viewEndedMetricDispatcher: ViewMetricDispatcher,
+    private val accessibilityReader: AccessibilityReader
 ) : RumScope {
 
     internal val url = key.url.replace('.', '/')
@@ -257,7 +259,8 @@ internal open class RumViewScope(
             interactionToNextViewMetricResolver = interactionToNextViewMetricResolver,
             networkSettledMetricResolver = networkSettledMetricResolver,
             viewEndedMetricDispatcher = viewEndedMetricDispatcher,
-            slowFramesListener = slowFramesListener
+            slowFramesListener = slowFramesListener,
+            accessibilityReader = accessibilityReader
         )
     }
 
@@ -370,6 +373,7 @@ internal open class RumViewScope(
                         )
                     }
                 }
+
                 eventAttributes.putAll(event.attributes)
             }
         }
@@ -909,6 +913,10 @@ internal open class RumViewScope(
         val isSlowRendered = resolveRefreshRateInfo(refreshRateInfo) ?: false
         // make a copy - by the time we iterate over it on another thread, it may already be changed
         val eventFeatureFlags = featureFlags.toMutableMap()
+
+        val accessibilityParams = accessibilityReader.getState().toMap()
+        println("yondbg acccessibilityParams: $accessibilityParams")
+
         val eventAdditionalAttributes = (eventAttributes + globalAttributes).toMutableMap()
         val uiSlownessReport = slowFramesListener?.resolveReport(viewId, viewComplete, durationNs)
         val slowFrames = uiSlownessReport?.slowFramesRecords?.map {
@@ -1477,7 +1485,8 @@ internal open class RumViewScope(
             sampleRate: Float,
             interactionToNextViewMetricResolver: InteractionToNextViewMetricResolver,
             networkSettledResourceIdentifier: InitialResourceIdentifier,
-            slowFramesListener: SlowFramesListener?
+            slowFramesListener: SlowFramesListener?,
+            accessibilityReader: AccessibilityReader
         ): RumViewScope {
             val networkSettledMetricResolver = NetworkSettledMetricResolver(
                 networkSettledResourceIdentifier,
@@ -1509,7 +1518,8 @@ internal open class RumViewScope(
                 interactionToNextViewMetricResolver = interactionToNextViewMetricResolver,
                 networkSettledMetricResolver = networkSettledMetricResolver,
                 viewEndedMetricDispatcher = viewEndedMetricDispatcher,
-                slowFramesListener = slowFramesListener
+                slowFramesListener = slowFramesListener,
+                accessibilityReader = accessibilityReader
             )
         }
 

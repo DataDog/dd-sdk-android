@@ -16,6 +16,7 @@ import com.datadog.android.core.metrics.MethodCallSamplingRate
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.rum.DdRumContentProvider
 import com.datadog.android.rum.internal.anr.ANRException
+import com.datadog.android.rum.internal.domain.AccessibilityReader
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.metric.SessionEndedMetric
@@ -47,6 +48,7 @@ internal class RumViewManagerScope(
     internal val sampleRate: Float,
     internal val initialResourceIdentifier: InitialResourceIdentifier,
     private val slowFramesListener: SlowFramesListener?,
+    private val accessibilityReader: AccessibilityReader,
     lastInteractionIdentifier: LastInteractionIdentifier?
 ) : RumScope {
 
@@ -233,7 +235,8 @@ internal class RumViewManagerScope(
             sampleRate,
             interactionToNextViewMetricResolver,
             initialResourceIdentifier,
-            slowFramesListener
+            slowFramesListener,
+            accessibilityReader
         )
         applicationDisplayed = true
         childrenScopes.add(viewScope)
@@ -310,7 +313,8 @@ internal class RumViewManagerScope(
             interactionToNextViewMetricResolver = interactionToNextViewMetricResolver,
             networkSettledMetricResolver = networkSettledMetricResolver,
             viewEndedMetricDispatcher = viewEndedMetricDispatcher,
-            slowFramesListener = slowFramesListener
+            slowFramesListener = slowFramesListener,
+            accessibilityReader = accessibilityReader
         )
     }
 
@@ -348,7 +352,8 @@ internal class RumViewManagerScope(
             interactionToNextViewMetricResolver = interactionToNextViewMetricResolver,
             networkSettledMetricResolver = networkSettledMetricResolver,
             viewEndedMetricDispatcher = viewEndedMetricDispatcher,
-            slowFramesListener = slowFramesListener
+            slowFramesListener = slowFramesListener,
+            accessibilityReader = accessibilityReader
         )
     }
 
