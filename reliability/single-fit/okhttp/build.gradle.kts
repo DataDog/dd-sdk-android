@@ -32,8 +32,6 @@ dependencies {
     implementation(project(":features:dd-sdk-android-trace-otel"))
     implementation(project(":integrations:dd-sdk-android-okhttp"))
     implementation(project(":integrations:dd-sdk-android-okhttp-otel"))
-    implementation(project(":features:dd-sdk-android-trace-internal"))
-    implementation(libs.openTracingApi)
     implementation(libs.kotlin)
 
     // Testing
@@ -48,6 +46,8 @@ dependencies {
     testImplementation(project(":dd-sdk-android-internal"))
     testImplementation(testFixtures(project(":dd-sdk-android-core")))
     testImplementation(project(":reliability:stub-core"))
+    testImplementation(project(":features:dd-sdk-android-trace-internal"))
+    testImplementation(libs.bundles.openTracing)
     testImplementation(libs.bundles.jUnit5)
     testImplementation(libs.bundles.testTools)
     testImplementation(libs.okHttp)

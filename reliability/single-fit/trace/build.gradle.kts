@@ -35,7 +35,6 @@ dependencies {
     implementation(project(":dd-sdk-android-core"))
     implementation(project(":features:dd-sdk-android-trace"))
     implementation(project(":features:dd-sdk-android-trace-otel"))
-    implementation(project(":features:dd-sdk-android-trace-internal"))
     implementation(libs.kotlin)
 
     // Desugaring SDK
@@ -50,11 +49,13 @@ dependencies {
             )
         }
     }
+    testImplementation(project(":reliability:stub-core"))
     testImplementation(project(":dd-sdk-android-internal"))
+    testImplementation(project(":features:dd-sdk-android-trace-internal"))
     testImplementation(testFixtures(project(":dd-sdk-android-core")))
     testImplementation(testFixtures(project(":features:dd-sdk-android-trace")))
-    testImplementation(project(":reliability:stub-core"))
     testImplementation(libs.bundles.jUnit5)
+    testImplementation(libs.bundles.openTracing)
     testImplementation(libs.bundles.testTools)
     testImplementation(libs.okHttp)
     testImplementation(libs.gson)
