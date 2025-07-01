@@ -131,5 +131,7 @@ public final class TracerConfig {
 
   public static final String TRACE_FLUSH_INTERVAL = "trace.flush.interval";
 
+  public static final String URL_AS_RESOURCE_NAME = "trace.URLAsResourceNameRule.enabled";
+
   private TracerConfig() {}
 }

@@ -92,6 +92,7 @@ internal class CoreSpanBuilderTest : DDCoreSpecification() {
         val expectedResource = "fakeResource"
         val expectedService = "fakeService"
         val expectedType = "fakeType"
+        val expectedOrigin = "fakeOrigin"
 
         // When
         val thirdSpan = tracer
@@ -99,6 +100,7 @@ internal class CoreSpanBuilderTest : DDCoreSpecification() {
             .withServiceName("foo")
             .withResourceName(expectedResource)
             .withServiceName(expectedService)
+            .withOrigin(expectedOrigin)
             .withErrorFlag()
             .withSpanType(expectedType)
             .start()
@@ -110,6 +112,7 @@ internal class CoreSpanBuilderTest : DDCoreSpecification() {
         assertThat(context.errorFlag).isTrue
         assertThat(context.serviceName).isEqualTo(expectedService)
         assertThat(context.spanType).isEqualTo(expectedType)
+        assertThat(context.origin).isEqualTo(expectedOrigin)
     }
 
     @ParameterizedTest

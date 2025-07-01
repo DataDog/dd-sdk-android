@@ -15,11 +15,11 @@ import com.datadog.android.okhttp.utils.verifyLog
 import com.datadog.android.rum.RumResourceAttributesProvider
 import com.datadog.android.trace.TracingHeaderType
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
+import com.datadog.trace.bootstrap.instrumentation.api.AgentTracer
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
-import io.opentracing.Tracer
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.ExtendWith
@@ -51,7 +51,8 @@ internal class DatadogInterceptorWithoutRumTest : TracingInterceptorTest() {
 
     override fun instantiateTestedInterceptor(
         tracedHosts: Map<String, Set<TracingHeaderType>>,
-        factory: (SdkCore, Set<TracingHeaderType>) -> Tracer
+        globalTracerProvider: () -> AgentTracer.TracerAPI?,
+        localTracerFactory: (SdkCore, Set<TracingHeaderType>) -> AgentTracer.TracerAPI
     ): TracingInterceptor {
         return DatadogInterceptor(
             sdkInstanceName = null,
@@ -61,7 +62,8 @@ internal class DatadogInterceptorWithoutRumTest : TracingInterceptorTest() {
             traceSampler = mockTraceSampler,
             traceContextInjection = TraceContextInjection.ALL,
             redacted404ResourceName = fakeRedacted404Resources,
-            localTracerFactory = factory
+            localTracerFactory = localTracerFactory,
+            globalTracerProvider = globalTracerProvider
         )
     }
 

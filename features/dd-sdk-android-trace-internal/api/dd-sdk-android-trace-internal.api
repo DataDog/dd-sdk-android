@@ -137,84 +137,24 @@ public class com/datadog/legacy/trace/api/Config {
 	public static final field WRITER_TYPE Ljava/lang/String;
 	public static fun get ()Lcom/datadog/legacy/trace/api/Config;
 	public static fun get (Ljava/util/Properties;)Lcom/datadog/legacy/trace/api/Config;
-	public fun getAgentHost ()Ljava/lang/String;
-	public fun getAgentPort ()I
-	public fun getAgentUnixDomainSocket ()Ljava/lang/String;
 	public static fun getBooleanSettingFromEnvironment (Ljava/lang/String;Ljava/lang/Boolean;)Ljava/lang/Boolean;
-	public fun getExcludedClasses ()Ljava/util/List;
 	public fun getFinalProfilingUrl ()Ljava/lang/String;
 	public static fun getFloatSettingFromEnvironment (Ljava/lang/String;Ljava/lang/Float;)Ljava/lang/Float;
 	public fun getHeaderTags ()Ljava/util/Map;
-	public fun getHealthMetricsStatsdHost ()Ljava/lang/String;
-	public fun getHealthMetricsStatsdPort ()Ljava/lang/Integer;
-	public fun getHttpClientErrorStatuses ()Ljava/util/Set;
-	public fun getHttpServerErrorStatuses ()Ljava/util/Set;
-	public fun getInstrumentationAnalyticsSampleRate ([Ljava/lang/String;)F
-	public fun getJmxFetchCheckPeriod ()Ljava/lang/Integer;
-	public fun getJmxFetchConfigDir ()Ljava/lang/String;
-	public fun getJmxFetchConfigs ()Ljava/util/List;
-	public fun getJmxFetchMetricsConfigs ()Ljava/util/List;
-	public fun getJmxFetchRefreshBeansPeriod ()Ljava/lang/Integer;
-	public fun getJmxFetchStatsdHost ()Ljava/lang/String;
-	public fun getJmxFetchStatsdPort ()Ljava/lang/Integer;
 	public fun getLocalRootSpanTags ()Ljava/util/Map;
-	public fun getMergedJmxTags ()Ljava/util/Map;
-	public fun getMergedProfilingTags ()Ljava/util/Map;
 	public fun getMergedSpanTags ()Ljava/util/Map;
 	public fun getPartialFlushMinSpans ()Ljava/lang/Integer;
-	public fun getProfilingExceptionHistogramMaxCollectionSize ()I
-	public fun getProfilingExceptionHistogramTopItems ()I
-	public fun getProfilingExceptionSampleLimit ()I
-	public fun getProfilingProxyHost ()Ljava/lang/String;
-	public fun getProfilingProxyPassword ()Ljava/lang/String;
-	public fun getProfilingProxyPort ()I
-	public fun getProfilingProxyUsername ()Ljava/lang/String;
-	public fun getProfilingStartDelay ()I
-	public fun getProfilingTemplateOverrideFile ()Ljava/lang/String;
-	public fun getProfilingUploadCompression ()Ljava/lang/String;
-	public fun getProfilingUploadPeriod ()I
-	public fun getProfilingUploadTimeout ()I
 	public fun getPropagationStylesToExtract ()Ljava/util/Set;
 	public fun getPropagationStylesToInject ()Ljava/util/Set;
-	public fun getRuntimeId ()Ljava/lang/String;
 	public fun getScopeDepthLimit ()Ljava/lang/Integer;
 	public fun getServiceMapping ()Ljava/util/Map;
 	public fun getServiceName ()Ljava/lang/String;
-	public static fun getSettingFromEnvironment (Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;
 	public fun getSite ()Ljava/lang/String;
 	public fun getSplitByTags ()Ljava/util/Set;
-	public fun getTraceAnnotations ()Ljava/lang/String;
-	public fun getTraceExecutors ()Ljava/util/List;
-	public fun getTraceMethods ()Ljava/lang/String;
-	public fun getTraceRateLimit ()Ljava/lang/Double;
 	public fun getTraceSampleRate ()Ljava/lang/Double;
-	public fun getTraceSamplingOperationRules ()Ljava/util/Map;
-	public fun getTraceSamplingServiceRules ()Ljava/util/Map;
-	public fun getWriterType ()Ljava/lang/String;
-	public fun isDbClientSplitByInstance ()Z
-	public fun isHealthMetricsEnabled ()Z
-	public fun isHttpClientSplitByDomain ()Z
-	public fun isHttpClientTagQueryString ()Z
-	public fun isHttpServerTagQueryString ()Z
-	public fun isIntegrationEnabled (Ljava/util/SortedSet;Z)Z
-	public fun isIntegrationsEnabled ()Z
-	public fun isJmxFetchEnabled ()Z
-	public fun isJmxFetchIntegrationEnabled (Ljava/util/SortedSet;Z)Z
-	public fun isLogsInjectionEnabled ()Z
 	public fun isPrioritySamplingEnabled ()Z
-	public fun isProfilingEnabled ()Z
-	public fun isProfilingStartForceFirst ()Z
-	public fun isReportHostName ()Z
 	public fun isRuleEnabled (Ljava/lang/String;)Z
-	public fun isRuntimeContextFieldInjection ()Z
-	public fun isTraceAnalyticsEnabled ()Z
-	public fun isTraceAnalyticsIntegrationEnabled (Ljava/util/SortedSet;Z)Z
-	public fun isTraceEnabled ()Z
-	public fun isTraceExecutorsAll ()Z
-	public fun isTraceResolverEnabled ()Z
-	public static fun jmxFetchIntegrationEnabled (Ljava/util/SortedSet;Z)Z
 	public fun toString ()Ljava/lang/String;
-	public static fun traceAnalyticsIntegrationEnabled (Ljava/util/SortedSet;Z)Z
 }
 
 public final class com/datadog/legacy/trace/api/Config$PropagationStyle : java/lang/Enum {
@@ -834,8 +774,6 @@ public class com/datadog/trace/api/Config {
 	public fun getPrimaryTag ()Ljava/lang/String;
 	public fun getPrioritySamplingForce ()Ljava/lang/String;
 	public fun getProcessId ()Ljava/lang/Long;
-	public fun getPropagationStylesToExtract ()Ljava/util/Set;
-	public fun getPropagationStylesToInject ()Ljava/util/Set;
 	public fun getRequestHeaderTags ()Ljava/util/Map;
 	public fun getResponseHeaderTags ()Ljava/util/Map;
 	public fun getRootContextServiceName ()Ljava/lang/String;
@@ -976,6 +914,7 @@ public final class com/datadog/trace/api/DDSpanId {
 	public static fun from (Ljava/lang/String;)J
 	public static fun fromHex (Ljava/lang/String;)J
 	public static fun fromHex (Ljava/lang/String;IIZ)J
+	public static fun fromHexOrDefault (Ljava/lang/String;J)J
 	public static fun toHexString (J)Ljava/lang/String;
 	public static fun toHexStringPadded (J)Ljava/lang/String;
 	public static fun toString (J)Ljava/lang/String;
@@ -1071,6 +1010,7 @@ public abstract class com/datadog/trace/api/DDTraceId {
 	public static fun from (J)Lcom/datadog/trace/api/DDTraceId;
 	public static fun from (Ljava/lang/String;)Lcom/datadog/trace/api/DDTraceId;
 	public static fun fromHex (Ljava/lang/String;)Lcom/datadog/trace/api/DDTraceId;
+	public static fun fromHexOrDefault (Ljava/lang/String;Lcom/datadog/trace/api/DDTraceId;)Lcom/datadog/trace/api/DDTraceId;
 	public abstract fun toHexString ()Ljava/lang/String;
 	public abstract fun toHexStringPadded (I)Ljava/lang/String;
 	public abstract fun toHighOrderLong ()J
@@ -1137,10 +1077,6 @@ public abstract interface class com/datadog/trace/api/EndpointTracker {
 	public abstract fun endpointWritten (Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpan;)V
 }
 
-public class com/datadog/trace/api/EventTracker {
-	public static final field NO_EVENT_TRACKER Lcom/datadog/trace/api/EventTracker;
-}
-
 public final class com/datadog/trace/api/Functions {
 	public static final field UTF8_ENCODE Lcom/datadog/android/trace/internal/compat/function/Function;
 }
@@ -1150,14 +1086,6 @@ public final class com/datadog/trace/api/Functions$LowerCase : com/datadog/andro
 	public fun <init> ()V
 	public synthetic fun apply (Ljava/lang/Object;)Ljava/lang/Object;
 	public fun apply (Ljava/lang/String;)Ljava/lang/String;
-}
-
-public class com/datadog/trace/api/GlobalTracer {
-	public fun <init> ()V
-	public static fun forceRegister (Lcom/datadog/trace/api/Tracer;)V
-	public static fun get ()Lcom/datadog/trace/api/Tracer;
-	public static fun getEventTracker ()Lcom/datadog/trace/api/EventTracker;
-	public static fun registerIfAbsent (Lcom/datadog/trace/api/Tracer;)V
 }
 
 public abstract class com/datadog/trace/api/IdGenerationStrategy {
@@ -1260,17 +1188,6 @@ public final class com/datadog/trace/api/Platform$GC : java/lang/Enum {
 	public static fun values ()[Lcom/datadog/trace/api/Platform$GC;
 }
 
-public final class com/datadog/trace/api/PropagationStyle : java/lang/Enum {
-	public static final field B3 Lcom/datadog/trace/api/PropagationStyle;
-	public static final field DATADOG Lcom/datadog/trace/api/PropagationStyle;
-	public static final field HAYSTACK Lcom/datadog/trace/api/PropagationStyle;
-	public static final field XRAY Lcom/datadog/trace/api/PropagationStyle;
-	public fun getNewStyles ()Ljava/util/List;
-	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/trace/api/PropagationStyle;
-	public static fun valueOfConfigName (Ljava/lang/String;)Lcom/datadog/trace/api/PropagationStyle;
-	public static fun values ()[Lcom/datadog/trace/api/PropagationStyle;
-}
-
 public abstract class com/datadog/trace/api/ResolverCacheConfig : java/lang/Enum {
 	public static final field LARGE Lcom/datadog/trace/api/ResolverCacheConfig;
 	public static final field LEGACY Lcom/datadog/trace/api/ResolverCacheConfig;
@@ -1332,11 +1249,6 @@ public final class com/datadog/trace/api/TracePropagationStyle : java/lang/Enum 
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/trace/api/TracePropagationStyle;
 	public static fun valueOfDisplayName (Ljava/lang/String;)Lcom/datadog/trace/api/TracePropagationStyle;
 	public static fun values ()[Lcom/datadog/trace/api/TracePropagationStyle;
-}
-
-public abstract interface class com/datadog/trace/api/Tracer {
-	public abstract fun getSpanId ()Ljava/lang/String;
-	public abstract fun getTraceId ()Ljava/lang/String;
 }
 
 public class com/datadog/trace/api/WellKnownTags {
@@ -1717,6 +1629,7 @@ public final class com/datadog/trace/api/config/TracerConfig {
 	public static final field TRACE_SPAN_ATTRIBUTE_SCHEMA Ljava/lang/String;
 	public static final field TRACE_STRICT_WRITES_ENABLED Ljava/lang/String;
 	public static final field TRACE_X_DATADOG_TAGS_MAX_LENGTH Ljava/lang/String;
+	public static final field URL_AS_RESOURCE_NAME Ljava/lang/String;
 	public static final field WRITER_BAGGAGE_INJECT Ljava/lang/String;
 	public static final field WRITER_TYPE Ljava/lang/String;
 }
@@ -1801,6 +1714,7 @@ public final class com/datadog/trace/api/gateway/RequestContextSlot : java/lang/
 }
 
 public abstract interface class com/datadog/trace/api/interceptor/MutableSpan {
+	public abstract fun drop ()V
 	public abstract fun getDurationNano ()J
 	public abstract fun getLocalRootSpan ()Lcom/datadog/trace/api/interceptor/MutableSpan;
 	public abstract fun getOperationName ()Ljava/lang/CharSequence;
@@ -1825,10 +1739,6 @@ public abstract interface class com/datadog/trace/api/interceptor/MutableSpan {
 	public abstract fun setTag (Ljava/lang/String;Ljava/lang/Number;)Lcom/datadog/trace/api/interceptor/MutableSpan;
 	public abstract fun setTag (Ljava/lang/String;Ljava/lang/String;)Lcom/datadog/trace/api/interceptor/MutableSpan;
 	public abstract fun setTag (Ljava/lang/String;Z)Lcom/datadog/trace/api/interceptor/MutableSpan;
-}
-
-public abstract interface class com/datadog/trace/api/internal/InternalTracer {
-	public abstract fun flush ()V
 }
 
 public abstract interface class com/datadog/trace/api/internal/TraceSegment {
@@ -2380,7 +2290,7 @@ public abstract interface class com/datadog/trace/bootstrap/instrumentation/api/
 	public abstract fun getSpan ()Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpan;
 }
 
-public abstract interface class com/datadog/trace/bootstrap/instrumentation/api/AgentScopeManager : com/datadog/trace/bootstrap/instrumentation/api/ScopeStateAware {
+public abstract interface class com/datadog/trace/bootstrap/instrumentation/api/AgentScopeManager {
 	public abstract fun activate (Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpan;Lcom/datadog/trace/bootstrap/instrumentation/api/ScopeSource;)Lcom/datadog/trace/bootstrap/instrumentation/api/AgentScope;
 	public abstract fun activate (Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpan;Lcom/datadog/trace/bootstrap/instrumentation/api/ScopeSource;Z)Lcom/datadog/trace/bootstrap/instrumentation/api/AgentScope;
 	public abstract fun activateNext (Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpan;)Lcom/datadog/trace/bootstrap/instrumentation/api/AgentScope;
@@ -2523,6 +2433,7 @@ public final class com/datadog/trace/bootstrap/instrumentation/api/AgentTracer$N
 	public fun addThrowable (Ljava/lang/Throwable;B)Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpan;
 	public fun beginEndToEnd ()V
 	public fun context ()Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpan$Context;
+	public fun drop ()V
 	public fun eligibleForDropping ()Z
 	public fun finish ()V
 	public fun finish (J)V
@@ -2667,6 +2578,7 @@ public abstract interface class com/datadog/trace/bootstrap/instrumentation/api/
 	public abstract fun start ()Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpan;
 	public abstract fun withErrorFlag ()Lcom/datadog/trace/bootstrap/instrumentation/api/AgentTracer$SpanBuilder;
 	public abstract fun withLink (Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpanLink;)Lcom/datadog/trace/bootstrap/instrumentation/api/AgentTracer$SpanBuilder;
+	public abstract fun withOrigin (Ljava/lang/String;)Lcom/datadog/trace/bootstrap/instrumentation/api/AgentTracer$SpanBuilder;
 	public abstract fun withRequestContextData (Lcom/datadog/trace/api/gateway/RequestContextSlot;Ljava/lang/Object;)Lcom/datadog/trace/bootstrap/instrumentation/api/AgentTracer$SpanBuilder;
 	public abstract fun withResourceName (Ljava/lang/String;)Lcom/datadog/trace/bootstrap/instrumentation/api/AgentTracer$SpanBuilder;
 	public abstract fun withServiceName (Ljava/lang/String;)Lcom/datadog/trace/bootstrap/instrumentation/api/AgentTracer$SpanBuilder;
@@ -2678,27 +2590,18 @@ public abstract interface class com/datadog/trace/bootstrap/instrumentation/api/
 	public abstract fun withTag (Ljava/lang/String;Z)Lcom/datadog/trace/bootstrap/instrumentation/api/AgentTracer$SpanBuilder;
 }
 
-public abstract interface class com/datadog/trace/bootstrap/instrumentation/api/AgentTracer$TracerAPI : com/datadog/trace/api/EndpointCheckpointer, com/datadog/trace/api/Tracer, com/datadog/trace/api/internal/InternalTracer, com/datadog/trace/bootstrap/instrumentation/api/ScopeStateAware {
-	public abstract fun activateNext (Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpan;)Lcom/datadog/trace/bootstrap/instrumentation/api/AgentScope;
+public abstract interface class com/datadog/trace/bootstrap/instrumentation/api/AgentTracer$TracerAPI : com/datadog/trace/api/EndpointCheckpointer {
 	public abstract fun activateSpan (Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpan;Lcom/datadog/trace/bootstrap/instrumentation/api/ScopeSource;)Lcom/datadog/trace/bootstrap/instrumentation/api/AgentScope;
 	public abstract fun activateSpan (Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpan;Lcom/datadog/trace/bootstrap/instrumentation/api/ScopeSource;Z)Lcom/datadog/trace/bootstrap/instrumentation/api/AgentScope;
-	public abstract fun activeScope ()Lcom/datadog/trace/bootstrap/instrumentation/api/AgentScope;
 	public abstract fun activeSpan ()Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpan;
 	public abstract fun addScopeListener (Lcom/datadog/trace/api/scopemanager/ScopeListener;)V
 	public fun buildSpan (Ljava/lang/CharSequence;)Lcom/datadog/trace/bootstrap/instrumentation/api/AgentTracer$SpanBuilder;
 	public abstract fun buildSpan (Ljava/lang/String;Ljava/lang/CharSequence;)Lcom/datadog/trace/bootstrap/instrumentation/api/AgentTracer$SpanBuilder;
-	public abstract fun captureSpan (Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpan;)Lcom/datadog/trace/bootstrap/instrumentation/api/AgentScope$Continuation;
 	public abstract fun captureTraceConfig ()Lcom/datadog/trace/api/TraceConfig;
 	public abstract fun close ()V
-	public abstract fun closePrevious (Z)V
-	public abstract fun getProfilingContext ()Lcom/datadog/trace/bootstrap/instrumentation/api/ProfilingContextIntegration;
 	public abstract fun getSpanId (Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpan;)Ljava/lang/String;
-	public abstract fun getTimer ()Lcom/datadog/trace/api/profiling/Timer;
 	public abstract fun getTraceId (Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpan;)Ljava/lang/String;
-	public abstract fun noopSpan ()Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpan;
 	public abstract fun propagate ()Lcom/datadog/trace/bootstrap/instrumentation/api/AgentPropagation;
-	public abstract fun registerCheckpointer (Lcom/datadog/trace/api/EndpointCheckpointer;)V
-	public abstract fun registerTimer (Lcom/datadog/trace/api/profiling/Timer;)V
 	public abstract fun startSpan (Ljava/lang/String;Ljava/lang/CharSequence;)Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpan;
 	public abstract fun startSpan (Ljava/lang/String;Ljava/lang/CharSequence;J)Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpan;
 	public abstract fun startSpan (Ljava/lang/String;Ljava/lang/CharSequence;Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpan$Context;)Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpan;
@@ -2885,15 +2788,6 @@ public final class com/datadog/trace/bootstrap/instrumentation/api/ScopeSource :
 	public fun id ()B
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/trace/bootstrap/instrumentation/api/ScopeSource;
 	public static fun values ()[Lcom/datadog/trace/bootstrap/instrumentation/api/ScopeSource;
-}
-
-public abstract interface class com/datadog/trace/bootstrap/instrumentation/api/ScopeState {
-	public abstract fun activate ()V
-	public abstract fun fetchFromActive ()V
-}
-
-public abstract interface class com/datadog/trace/bootstrap/instrumentation/api/ScopeStateAware {
-	public abstract fun newScopeState ()Lcom/datadog/trace/bootstrap/instrumentation/api/ScopeState;
 }
 
 public class com/datadog/trace/bootstrap/instrumentation/api/SpanLink : com/datadog/trace/bootstrap/instrumentation/api/AgentSpanLink {
@@ -3440,37 +3334,27 @@ public abstract interface class com/datadog/trace/core/CoreSpan {
 }
 
 public class com/datadog/trace/core/CoreTracer : com/datadog/trace/bootstrap/instrumentation/api/AgentTracer$TracerAPI {
-	public fun activateNext (Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpan;)Lcom/datadog/trace/bootstrap/instrumentation/api/AgentScope;
 	public fun activateSpan (Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpan;)Lcom/datadog/trace/bootstrap/instrumentation/api/AgentScope;
 	public fun activateSpan (Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpan;Lcom/datadog/trace/bootstrap/instrumentation/api/ScopeSource;)Lcom/datadog/trace/bootstrap/instrumentation/api/AgentScope;
 	public fun activateSpan (Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpan;Lcom/datadog/trace/bootstrap/instrumentation/api/ScopeSource;Z)Lcom/datadog/trace/bootstrap/instrumentation/api/AgentScope;
-	public fun activeScope ()Lcom/datadog/trace/bootstrap/instrumentation/api/AgentScope;
 	public fun activeSpan ()Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpan;
 	public fun addScopeListener (Lcom/datadog/trace/api/scopemanager/ScopeListener;)V
 	public synthetic fun buildSpan (Ljava/lang/String;Ljava/lang/CharSequence;)Lcom/datadog/trace/bootstrap/instrumentation/api/AgentTracer$SpanBuilder;
 	public fun buildSpan (Ljava/lang/String;Ljava/lang/CharSequence;)Lcom/datadog/trace/core/CoreTracer$CoreSpanBuilder;
-	public fun captureSpan (Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpan;)Lcom/datadog/trace/bootstrap/instrumentation/api/AgentScope$Continuation;
 	public synthetic fun captureTraceConfig ()Lcom/datadog/trace/api/TraceConfig;
 	public fun captureTraceConfig ()Lcom/datadog/trace/core/CoreTracer$ConfigSnapshot;
 	public fun close ()V
-	public fun closePrevious (Z)V
 	protected fun finalize ()V
 	public fun flush ()V
 	public fun getPartialFlushMinSpans ()I
-	public fun getProfilingContext ()Lcom/datadog/trace/bootstrap/instrumentation/api/ProfilingContextIntegration;
 	public fun getSpanId ()Ljava/lang/String;
 	public fun getSpanId (Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpan;)Ljava/lang/String;
 	public fun getTagInterceptor ()Lcom/datadog/trace/core/taginterceptor/TagInterceptor;
-	public fun getTimer ()Lcom/datadog/trace/api/profiling/Timer;
 	public fun getTraceId ()Ljava/lang/String;
 	public fun getTraceId (Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpan;)Ljava/lang/String;
-	public fun newScopeState ()Lcom/datadog/trace/bootstrap/instrumentation/api/ScopeState;
-	public fun noopSpan ()Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpan;
 	public fun onRootSpanFinished (Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpan;Lcom/datadog/trace/api/EndpointTracker;)V
 	public fun onRootSpanStarted (Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpan;)Lcom/datadog/trace/api/EndpointTracker;
 	public fun propagate ()Lcom/datadog/trace/bootstrap/instrumentation/api/AgentPropagation;
-	public fun registerCheckpointer (Lcom/datadog/trace/api/EndpointCheckpointer;)V
-	public fun registerTimer (Lcom/datadog/trace/api/profiling/Timer;)V
 	public fun startSpan (Ljava/lang/String;Ljava/lang/CharSequence;)Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpan;
 	public fun startSpan (Ljava/lang/String;Ljava/lang/CharSequence;J)Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpan;
 	public fun startSpan (Ljava/lang/String;Ljava/lang/CharSequence;Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpan$Context;)Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpan;
@@ -3491,6 +3375,7 @@ public class com/datadog/trace/core/CoreTracer$CoreSpanBuilder : com/datadog/tra
 	public synthetic fun withErrorFlag ()Lcom/datadog/trace/bootstrap/instrumentation/api/AgentTracer$SpanBuilder;
 	public fun withErrorFlag ()Lcom/datadog/trace/core/CoreTracer$CoreSpanBuilder;
 	public fun withLink (Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpanLink;)Lcom/datadog/trace/bootstrap/instrumentation/api/AgentTracer$SpanBuilder;
+	public fun withOrigin (Ljava/lang/String;)Lcom/datadog/trace/bootstrap/instrumentation/api/AgentTracer$SpanBuilder;
 	public fun withRequestContextData (Lcom/datadog/trace/api/gateway/RequestContextSlot;Ljava/lang/Object;)Lcom/datadog/trace/bootstrap/instrumentation/api/AgentTracer$SpanBuilder;
 	public synthetic fun withResourceName (Ljava/lang/String;)Lcom/datadog/trace/bootstrap/instrumentation/api/AgentTracer$SpanBuilder;
 	public fun withResourceName (Ljava/lang/String;)Lcom/datadog/trace/core/CoreTracer$CoreSpanBuilder;
@@ -3546,6 +3431,7 @@ public class com/datadog/trace/core/DDSpan : com/datadog/trace/api/profiling/Tra
 	public fun beginEndToEnd ()V
 	public synthetic fun context ()Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpan$Context;
 	public final fun context ()Lcom/datadog/trace/core/DDSpanContext;
+	public fun drop ()V
 	public fun eligibleForDropping ()Z
 	public fun finish ()V
 	public fun finish (J)V
@@ -3834,6 +3720,7 @@ public class com/datadog/trace/core/PendingTrace : com/datadog/trace/bootstrap/i
 	public fun setSamplingPriorityIfNecessary ()V
 	public fun size ()I
 	public fun touch ()V
+	public fun unregisterSpan (Lcom/datadog/trace/core/DDSpan;)V
 	public fun write ()V
 	public fun writeOnBufferFull ()Z
 }
@@ -4072,7 +3959,6 @@ public final class com/datadog/trace/core/scopemanager/ContinuableScopeManager :
 	public fun addScopeListener (Lcom/datadog/trace/api/scopemanager/ScopeListener;)V
 	public fun captureSpan (Lcom/datadog/trace/bootstrap/instrumentation/api/AgentSpan;)Lcom/datadog/trace/bootstrap/instrumentation/api/AgentScope$Continuation;
 	public fun closePrevious (Z)V
-	public fun newScopeState ()Lcom/datadog/trace/bootstrap/instrumentation/api/ScopeState;
 }
 
 public class com/datadog/trace/core/taginterceptor/RuleFlags {

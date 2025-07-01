@@ -1,6 +1,71 @@
 package com.datadog.trace.api;
 
-import static com.datadog.trace.api.ConfigDefaults.*;
+import static com.datadog.trace.api.ConfigDefaults.DEFAULT_AGENT_HOST;
+import static com.datadog.trace.api.ConfigDefaults.DEFAULT_AGENT_TIMEOUT;
+import static com.datadog.trace.api.ConfigDefaults.DEFAULT_AGENT_WRITER_TYPE;
+import static com.datadog.trace.api.ConfigDefaults.DEFAULT_CLIENT_IP_ENABLED;
+import static com.datadog.trace.api.ConfigDefaults.DEFAULT_CLOCK_SYNC_PERIOD;
+import static com.datadog.trace.api.ConfigDefaults.DEFAULT_DATA_STREAMS_BUCKET_DURATION;
+import static com.datadog.trace.api.ConfigDefaults.DEFAULT_DATA_STREAMS_ENABLED;
+import static com.datadog.trace.api.ConfigDefaults.DEFAULT_DB_CLIENT_HOST_SPLIT_BY_HOST;
+import static com.datadog.trace.api.ConfigDefaults.DEFAULT_DB_CLIENT_HOST_SPLIT_BY_INSTANCE;
+import static com.datadog.trace.api.ConfigDefaults.DEFAULT_DB_CLIENT_HOST_SPLIT_BY_INSTANCE_TYPE_SUFFIX;
+import static com.datadog.trace.api.ConfigDefaults.DEFAULT_DB_DBM_PROPAGATION_MODE_MODE;
+import static com.datadog.trace.api.ConfigDefaults.DEFAULT_DOGSTATSD_START_DELAY;
+import static com.datadog.trace.api.ConfigDefaults.DEFAULT_ELASTICSEARCH_BODY_AND_PARAMS_ENABLED;
+import static com.datadog.trace.api.ConfigDefaults.DEFAULT_ELASTICSEARCH_BODY_ENABLED;
+import static com.datadog.trace.api.ConfigDefaults.DEFAULT_ELASTICSEARCH_PARAMS_ENABLED;
+import static com.datadog.trace.api.ConfigDefaults.DEFAULT_GRPC_CLIENT_ERROR_STATUSES;
+import static com.datadog.trace.api.ConfigDefaults.DEFAULT_GRPC_SERVER_ERROR_STATUSES;
+import static com.datadog.trace.api.ConfigDefaults.DEFAULT_HEALTH_METRICS_ENABLED;
+import static com.datadog.trace.api.ConfigDefaults.DEFAULT_HTTP_CLIENT_ERROR_STATUSES;
+import static com.datadog.trace.api.ConfigDefaults.DEFAULT_HTTP_CLIENT_SPLIT_BY_DOMAIN;
+import static com.datadog.trace.api.ConfigDefaults.DEFAULT_HTTP_CLIENT_TAG_QUERY_STRING;
+import static com.datadog.trace.api.ConfigDefaults.DEFAULT_HTTP_SERVER_ERROR_STATUSES;
+import static com.datadog.trace.api.ConfigDefaults.DEFAULT_HTTP_SERVER_ROUTE_BASED_NAMING;
+import static com.datadog.trace.api.ConfigDefaults.DEFAULT_HTTP_SERVER_TAG_QUERY_STRING;
+import static com.datadog.trace.api.ConfigDefaults.DEFAULT_JAX_RS_EXCEPTION_AS_ERROR_ENABLED;
+import static com.datadog.trace.api.ConfigDefaults.DEFAULT_LOGS_INJECTION_ENABLED;
+import static com.datadog.trace.api.ConfigDefaults.DEFAULT_PARTIAL_FLUSH_MIN_SPANS;
+import static com.datadog.trace.api.ConfigDefaults.DEFAULT_PERF_METRICS_ENABLED;
+import static com.datadog.trace.api.ConfigDefaults.DEFAULT_PRIORITY_SAMPLING_ENABLED;
+import static com.datadog.trace.api.ConfigDefaults.DEFAULT_PRIORITY_SAMPLING_FORCE;
+import static com.datadog.trace.api.ConfigDefaults.DEFAULT_PROPAGATION_EXTRACT_LOG_HEADER_NAMES_ENABLED;
+import static com.datadog.trace.api.ConfigDefaults.DEFAULT_REMOTE_CONFIG_ENABLED;
+import static com.datadog.trace.api.ConfigDefaults.DEFAULT_REMOTE_CONFIG_INTEGRITY_CHECK_ENABLED;
+import static com.datadog.trace.api.ConfigDefaults.DEFAULT_REMOTE_CONFIG_MAX_PAYLOAD_SIZE;
+import static com.datadog.trace.api.ConfigDefaults.DEFAULT_REMOTE_CONFIG_POLL_INTERVAL_SECONDS;
+import static com.datadog.trace.api.ConfigDefaults.DEFAULT_REMOTE_CONFIG_TARGETS_KEY;
+import static com.datadog.trace.api.ConfigDefaults.DEFAULT_REMOTE_CONFIG_TARGETS_KEY_ID;
+import static com.datadog.trace.api.ConfigDefaults.DEFAULT_SCOPE_DEPTH_LIMIT;
+import static com.datadog.trace.api.ConfigDefaults.DEFAULT_SCOPE_ITERATION_KEEP_ALIVE;
+import static com.datadog.trace.api.ConfigDefaults.DEFAULT_SECURE_RANDOM;
+import static com.datadog.trace.api.ConfigDefaults.DEFAULT_SERVICE_NAME;
+import static com.datadog.trace.api.ConfigDefaults.DEFAULT_SERVLET_ROOT_CONTEXT_SERVICE_NAME;
+import static com.datadog.trace.api.ConfigDefaults.DEFAULT_SITE;
+import static com.datadog.trace.api.ConfigDefaults.DEFAULT_SPARK_TASK_HISTOGRAM_ENABLED;
+import static com.datadog.trace.api.ConfigDefaults.DEFAULT_STARTUP_LOGS_ENABLED;
+import static com.datadog.trace.api.ConfigDefaults.DEFAULT_TELEMETRY_DEBUG_REQUESTS_ENABLED;
+import static com.datadog.trace.api.ConfigDefaults.DEFAULT_TELEMETRY_DEPENDENCY_COLLECTION_ENABLED;
+import static com.datadog.trace.api.ConfigDefaults.DEFAULT_TELEMETRY_EXTENDED_HEARTBEAT_INTERVAL;
+import static com.datadog.trace.api.ConfigDefaults.DEFAULT_TELEMETRY_HEARTBEAT_INTERVAL;
+import static com.datadog.trace.api.ConfigDefaults.DEFAULT_TELEMETRY_LOG_COLLECTION_ENABLED;
+import static com.datadog.trace.api.ConfigDefaults.DEFAULT_TELEMETRY_METRICS_INTERVAL;
+import static com.datadog.trace.api.ConfigDefaults.DEFAULT_TRACE_128_BIT_TRACEID_GENERATION_ENABLED;
+import static com.datadog.trace.api.ConfigDefaults.DEFAULT_TRACE_AGENT_PORT;
+import static com.datadog.trace.api.ConfigDefaults.DEFAULT_TRACE_AGENT_V05_ENABLED;
+import static com.datadog.trace.api.ConfigDefaults.DEFAULT_TRACE_ANALYTICS_ENABLED;
+import static com.datadog.trace.api.ConfigDefaults.DEFAULT_TRACE_FLUSH_INTERVAL;
+import static com.datadog.trace.api.ConfigDefaults.DEFAULT_TRACE_HTTP_RESOURCE_REMOVE_TRAILING_SLASH;
+import static com.datadog.trace.api.ConfigDefaults.DEFAULT_TRACE_LONG_RUNNING_ENABLED;
+import static com.datadog.trace.api.ConfigDefaults.DEFAULT_TRACE_LONG_RUNNING_FLUSH_INTERVAL;
+import static com.datadog.trace.api.ConfigDefaults.DEFAULT_TRACE_PROPAGATION_EXTRACT_FIRST;
+import static com.datadog.trace.api.ConfigDefaults.DEFAULT_TRACE_PROPAGATION_STYLE;
+import static com.datadog.trace.api.ConfigDefaults.DEFAULT_TRACE_RATE_LIMIT;
+import static com.datadog.trace.api.ConfigDefaults.DEFAULT_TRACE_REPORT_HOSTNAME;
+import static com.datadog.trace.api.ConfigDefaults.DEFAULT_TRACE_RESOLVER_ENABLED;
+import static com.datadog.trace.api.ConfigDefaults.DEFAULT_TRACE_X_DATADOG_TAGS_MAX_LENGTH;
+import static com.datadog.trace.api.ConfigDefaults.DEFAULT_WRITER_BAGGAGE_INJECT;
 import static com.datadog.trace.api.DDTags.INTERNAL_HOST_NAME;
 import static com.datadog.trace.api.DDTags.LANGUAGE_TAG_KEY;
 import static com.datadog.trace.api.DDTags.LANGUAGE_TAG_VALUE;
@@ -135,7 +200,6 @@ import static com.datadog.trace.api.config.TracerConfig.AGENT_HOST;
 import static com.datadog.trace.api.config.TracerConfig.AGENT_NAMED_PIPE;
 import static com.datadog.trace.api.config.TracerConfig.AGENT_PORT_LEGACY;
 import static com.datadog.trace.api.config.TracerConfig.AGENT_TIMEOUT;
-import static com.datadog.trace.api.config.TracerConfig.AGENT_UNIX_DOMAIN_SOCKET;
 import static com.datadog.trace.api.config.TracerConfig.BAGGAGE_MAPPING;
 import static com.datadog.trace.api.config.TracerConfig.CLIENT_IP_ENABLED;
 import static com.datadog.trace.api.config.TracerConfig.CLOCK_SYNC_PERIOD;
@@ -149,8 +213,6 @@ import static com.datadog.trace.api.config.TracerConfig.PARTIAL_FLUSH_MIN_SPANS;
 import static com.datadog.trace.api.config.TracerConfig.PRIORITY_SAMPLING;
 import static com.datadog.trace.api.config.TracerConfig.PRIORITY_SAMPLING_FORCE;
 import static com.datadog.trace.api.config.TracerConfig.PROPAGATION_EXTRACT_LOG_HEADER_NAMES_ENABLED;
-import static com.datadog.trace.api.config.TracerConfig.PROPAGATION_STYLE_EXTRACT;
-import static com.datadog.trace.api.config.TracerConfig.PROPAGATION_STYLE_INJECT;
 import static com.datadog.trace.api.config.TracerConfig.PROXY_NO_PROXY;
 import static com.datadog.trace.api.config.TracerConfig.REQUEST_HEADER_TAGS;
 import static com.datadog.trace.api.config.TracerConfig.REQUEST_HEADER_TAGS_COMMA_ALLOWED;
@@ -201,6 +263,7 @@ import static com.datadog.trace.util.CollectionUtils.tryMakeImmutableSet;
 
 import androidx.annotation.NonNull;
 
+import com.datadog.android.trace.internal.compat.function.Function;
 import com.datadog.trace.api.config.GeneralConfig;
 import com.datadog.trace.api.config.ProfilingConfig;
 import com.datadog.trace.api.config.TracerConfig;
@@ -229,7 +292,6 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.UUID;
-import com.datadog.android.trace.internal.compat.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -339,8 +401,6 @@ public class Config {
     private final int partialFlushMinSpans;
     private final boolean traceStrictWritesEnabled;
     private final boolean logExtractHeaderNames;
-    private final Set<PropagationStyle> propagationStylesToExtract;
-    private final Set<PropagationStyle> propagationStylesToInject;
     private final boolean tracePropagationStyleB3PaddingEnabled;
     private final Set<TracePropagationStyle> tracePropagationStylesToExtract;
     private final Set<TracePropagationStyle> tracePropagationStylesToInject;
@@ -787,19 +847,6 @@ public class Config {
         tracePropagationStyleB3PaddingEnabled =
                 isEnabled(true, TRACE_PROPAGATION_STYLE, ".b3.padding.enabled");
         {
-            // The dd.propagation.style.(extract|inject) settings have been deprecated in
-            // favor of dd.trace.propagation.style(|.extract|.inject) settings.
-            // The different propagation settings when set will be applied in the following order of
-            // precedence, and warnings will be logged for both deprecation and overrides.
-            // * dd.trace.propagation.style.(extract|inject)
-            // * dd.trace.propagation.style
-            // * dd.propagation.style.(extract|inject)
-            Set<PropagationStyle> deprecatedExtract =
-                    getSettingsSetFromEnvironment(
-                            PROPAGATION_STYLE_EXTRACT, PropagationStyle::valueOfConfigName, true);
-            Set<PropagationStyle> deprecatedInject =
-                    getSettingsSetFromEnvironment(
-                            PROPAGATION_STYLE_INJECT, PropagationStyle::valueOfConfigName, true);
             Set<TracePropagationStyle> common =
                     getSettingsSetFromEnvironment(
                             TRACE_PROPAGATION_STYLE, TracePropagationStyle::valueOfDisplayName, false);
@@ -823,49 +870,15 @@ public class Config {
             // Check if we should use the common setting for injection
             if (inject.isEmpty()) {
                 inject = common;
-                injectOrigin = TRACE_PROPAGATION_STYLE;
             } else if (!common.isEmpty()) {
                 // The more specific settings will override the common setting, so log a warning
                 logOverriddenSettingWarning(
                         TRACE_PROPAGATION_STYLE, TRACE_PROPAGATION_STYLE_INJECT, inject);
             }
-            // Check if we should use the deprecated setting for extraction
-            if (extract.isEmpty()) {
-                // If we don't have a new setting, we convert the deprecated one
-                extract = convertSettingsSet(deprecatedExtract, PropagationStyle::getNewStyles);
-                if (!extract.isEmpty()) {
-                    logDeprecatedConvertedSetting(
-                            PROPAGATION_STYLE_EXTRACT,
-                            deprecatedExtract,
-                            TRACE_PROPAGATION_STYLE_EXTRACT,
-                            extract);
-                }
-            } else if (!deprecatedExtract.isEmpty()) {
-                // If we have a new setting, we log a warning
-                logOverriddenDeprecatedSettingWarning(PROPAGATION_STYLE_EXTRACT, extractOrigin, extract);
-            }
-            // Check if we should use the deprecated setting for injection
-            if (inject.isEmpty()) {
-                // If we don't have a new setting, we convert the deprecated one
-                inject = convertSettingsSet(deprecatedInject, PropagationStyle::getNewStyles);
-                if (!inject.isEmpty()) {
-                    logDeprecatedConvertedSetting(
-                            PROPAGATION_STYLE_INJECT, deprecatedInject, TRACE_PROPAGATION_STYLE_INJECT, inject);
-                }
-            } else if (!deprecatedInject.isEmpty()) {
-                // If we have a new setting, we log a warning
-                logOverriddenDeprecatedSettingWarning(PROPAGATION_STYLE_INJECT, injectOrigin, inject);
-            }
             // Now we can check if we should pick the default injection/extraction
             tracePropagationStylesToExtract =
                     extract.isEmpty() ? DEFAULT_TRACE_PROPAGATION_STYLE : extract;
             tracePropagationStylesToInject = inject.isEmpty() ? DEFAULT_TRACE_PROPAGATION_STYLE : inject;
-            // These setting are here for backwards compatibility until they can be removed in a major
-            // release of the tracer
-            propagationStylesToExtract =
-                    deprecatedExtract.isEmpty() ? DEFAULT_PROPAGATION_STYLE : deprecatedExtract;
-            propagationStylesToInject =
-                    deprecatedInject.isEmpty() ? DEFAULT_PROPAGATION_STYLE : deprecatedInject;
         }
 
         tracePropagationExtractFirst =
@@ -1343,16 +1356,6 @@ public class Config {
 
     public boolean isLogExtractHeaderNames() {
         return logExtractHeaderNames;
-    }
-
-    @Deprecated
-    public Set<PropagationStyle> getPropagationStylesToExtract() {
-        return propagationStylesToExtract;
-    }
-
-    @Deprecated
-    public Set<PropagationStyle> getPropagationStylesToInject() {
-        return propagationStylesToInject;
     }
 
     public boolean isTracePropagationStyleB3PaddingEnabled() {

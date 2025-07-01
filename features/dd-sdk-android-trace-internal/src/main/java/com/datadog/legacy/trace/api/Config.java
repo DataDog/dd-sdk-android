@@ -15,7 +15,18 @@ import java.io.InputStreamReader;
 import java.lang.reflect.Method;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Properties;
+import java.util.Set;
+import java.util.UUID;
 import java.util.regex.Pattern;
 
 /**
@@ -686,55 +697,6 @@ public class Config {
         return Collections.unmodifiableMap(result);
     }
 
-    public Map<String, String> getMergedJmxTags() {
-        final Map<String, String> runtimeTags = getRuntimeTags();
-        final Map<String, String> result =
-                newHashMap(
-                        getGlobalTags().size() + jmxTags.size() + runtimeTags.size() + 1 /* for serviceName */);
-        result.putAll(getGlobalTags());
-        result.putAll(jmxTags);
-        result.putAll(runtimeTags);
-        // service name set here instead of getRuntimeTags because apm already manages the service tag
-        // and may chose to override it.
-        // Additionally, infra/JMX metrics require `service` rather than APM's `service.name` tag
-        result.put(SERVICE_TAG, serviceName);
-        return Collections.unmodifiableMap(result);
-    }
-
-    public Map<String, String> getMergedProfilingTags() {
-        final Map<String, String> runtimeTags = getRuntimeTags();
-        final String host = getHostName();
-        final Map<String, String> result =
-                newHashMap(
-                        getGlobalTags().size()
-                                + profilingTags.size()
-                                + runtimeTags.size()
-                                + 3 /* for serviceName and host and language */);
-        result.put(HOST_TAG, host); // Host goes first to allow to override it
-        result.putAll(getGlobalTags());
-        result.putAll(profilingTags);
-        result.putAll(runtimeTags);
-        // service name set here instead of getRuntimeTags because apm already manages the service tag
-        // and may chose to override it.
-        result.put(SERVICE_TAG, serviceName);
-        result.put(LANGUAGE_TAG_KEY, LANGUAGE_TAG_VALUE);
-        return Collections.unmodifiableMap(result);
-    }
-
-    /**
-     * Returns the sample rate for the specified instrumentation or {@link
-     * #DEFAULT_ANALYTICS_SAMPLE_RATE} if none specified.
-     */
-    public float getInstrumentationAnalyticsSampleRate(final String... aliases) {
-        for (final String alias : aliases) {
-            final Float rate = getFloatSettingFromEnvironment(alias + ".analytics.sample-rate", null);
-            if (null != rate) {
-                return rate;
-            }
-        }
-        return DEFAULT_ANALYTICS_SAMPLE_RATE;
-    }
-
     /**
      * Provide 'global' tags, i.e. tags set everywhere. We have to support old (dd.trace.global.tags)
      * version of this setting if new (dd.tags) version has not been specified.
@@ -765,100 +727,9 @@ public class Config {
             return profilingUrl;
         }
     }
-
-    public boolean isIntegrationEnabled(
-            final SortedSet<String> integrationNames, final boolean defaultEnabled) {
-        return integrationEnabled(integrationNames, defaultEnabled);
-    }
-
-    /**
-     * @param integrationNames
-     * @param defaultEnabled
-     * @return
-     * @deprecated This method should only be used internally. Use the instance getter instead {@link
-     * #isIntegrationEnabled(SortedSet, boolean)}.
-     */
-    @Deprecated
-    private static boolean integrationEnabled(
-            final SortedSet<String> integrationNames, final boolean defaultEnabled) {
-        // If default is enabled, we want to enable individually,
-        // if default is disabled, we want to disable individually.
-        boolean anyEnabled = defaultEnabled;
-        for (final String name : integrationNames) {
-            final boolean configEnabled =
-                    getBooleanSettingFromEnvironment("integration." + name + ".enabled", defaultEnabled);
-            if (defaultEnabled) {
-                anyEnabled &= configEnabled;
-            } else {
-                anyEnabled |= configEnabled;
-            }
-        }
-        return anyEnabled;
-    }
-
-    public boolean isJmxFetchIntegrationEnabled(
-            final SortedSet<String> integrationNames, final boolean defaultEnabled) {
-        return jmxFetchIntegrationEnabled(integrationNames, defaultEnabled);
-    }
-
     public boolean isRuleEnabled(final String name) {
         return getBooleanSettingFromEnvironment("trace." + name + ".enabled", true)
                 && getBooleanSettingFromEnvironment("trace." + name.toLowerCase(Locale.US) + ".enabled", true);
-    }
-
-    /**
-     * @param integrationNames
-     * @param defaultEnabled
-     * @return
-     * @deprecated This method should only be used internally. Use the instance getter instead {@link
-     * #isJmxFetchIntegrationEnabled(SortedSet, boolean)}.
-     */
-    @Deprecated
-    public static boolean jmxFetchIntegrationEnabled(
-            final SortedSet<String> integrationNames, final boolean defaultEnabled) {
-        // If default is enabled, we want to enable individually,
-        // if default is disabled, we want to disable individually.
-        boolean anyEnabled = defaultEnabled;
-        for (final String name : integrationNames) {
-            final boolean configEnabled =
-                    getBooleanSettingFromEnvironment("jmxfetch." + name + ".enabled", defaultEnabled);
-            if (defaultEnabled) {
-                anyEnabled &= configEnabled;
-            } else {
-                anyEnabled |= configEnabled;
-            }
-        }
-        return anyEnabled;
-    }
-
-    public boolean isTraceAnalyticsIntegrationEnabled(
-            final SortedSet<String> integrationNames, final boolean defaultEnabled) {
-        return traceAnalyticsIntegrationEnabled(integrationNames, defaultEnabled);
-    }
-
-    /**
-     * @param integrationNames
-     * @param defaultEnabled
-     * @return
-     * @deprecated This method should only be used internally. Use the instance getter instead {@link
-     * #isTraceAnalyticsIntegrationEnabled(SortedSet, boolean)}.
-     */
-    @Deprecated
-    public static boolean traceAnalyticsIntegrationEnabled(
-            final SortedSet<String> integrationNames, final boolean defaultEnabled) {
-        // If default is enabled, we want to enable individually,
-        // if default is disabled, we want to disable individually.
-        boolean anyEnabled = defaultEnabled;
-        for (final String name : integrationNames) {
-            final boolean configEnabled =
-                    getBooleanSettingFromEnvironment(name + ".analytics.enabled", defaultEnabled);
-            if (defaultEnabled) {
-                anyEnabled &= configEnabled;
-            } else {
-                anyEnabled |= configEnabled;
-            }
-        }
-        return anyEnabled;
     }
 
     /**
@@ -873,7 +744,7 @@ public class Config {
      * @deprecated This method should only be used internally. Use the explicit getter instead.
      */
     @Deprecated
-    public static String getSettingFromEnvironment(final String name, final String defaultValue) {
+    private static String getSettingFromEnvironment(final String name, final String defaultValue) {
         String value;
         final String systemPropertyName = propertyNameToSystemPropertyName(name);
 
@@ -1320,10 +1191,6 @@ public class Config {
 
     // region GENERATED GETTERS
 
-    public String getRuntimeId() {
-        return runtimeId;
-    }
-
     public String getSite() {
         return site;
     }
@@ -1331,75 +1198,17 @@ public class Config {
     public String getServiceName() {
         return serviceName;
     }
-
-    public boolean isTraceEnabled() {
-        return traceEnabled;
-    }
-
-    public boolean isIntegrationsEnabled() {
-        return integrationsEnabled;
-    }
-
-    public String getWriterType() {
-        return writerType;
-    }
-
-    public String getAgentHost() {
-        return agentHost;
-    }
-
-    public int getAgentPort() {
-        return agentPort;
-    }
-
-    public String getAgentUnixDomainSocket() {
-        return agentUnixDomainSocket;
-    }
-
     public boolean isPrioritySamplingEnabled() {
         return prioritySamplingEnabled;
-    }
-
-    public boolean isTraceResolverEnabled() {
-        return traceResolverEnabled;
     }
 
     public Map<String, String> getServiceMapping() {
         return serviceMapping;
     }
 
-    public List<String> getExcludedClasses() {
-        return excludedClasses;
-    }
-
     public Map<String, String> getHeaderTags() {
         return headerTags;
     }
-
-    public Set<Integer> getHttpServerErrorStatuses() {
-        return httpServerErrorStatuses;
-    }
-
-    public Set<Integer> getHttpClientErrorStatuses() {
-        return httpClientErrorStatuses;
-    }
-
-    public boolean isHttpServerTagQueryString() {
-        return httpServerTagQueryString;
-    }
-
-    public boolean isHttpClientTagQueryString() {
-        return httpClientTagQueryString;
-    }
-
-    public boolean isHttpClientSplitByDomain() {
-        return httpClientSplitByDomain;
-    }
-
-    public boolean isDbClientSplitByInstance() {
-        return dbClientSplitByInstance;
-    }
-
     public Set<String> getSplitByTags() {
         return splitByTags;
     }
@@ -1412,10 +1221,6 @@ public class Config {
         return partialFlushMinSpans;
     }
 
-    public boolean isRuntimeContextFieldInjection() {
-        return runtimeContextFieldInjection;
-    }
-
     public Set<PropagationStyle> getPropagationStylesToExtract() {
         return propagationStylesToExtract;
     }
@@ -1423,149 +1228,8 @@ public class Config {
     public Set<PropagationStyle> getPropagationStylesToInject() {
         return propagationStylesToInject;
     }
-
-    public boolean isJmxFetchEnabled() {
-        return jmxFetchEnabled;
-    }
-
-    public String getJmxFetchConfigDir() {
-        return jmxFetchConfigDir;
-    }
-
-    public List<String> getJmxFetchConfigs() {
-        return jmxFetchConfigs;
-    }
-
-    public List<String> getJmxFetchMetricsConfigs() {
-        return jmxFetchMetricsConfigs;
-    }
-
-    public Integer getJmxFetchCheckPeriod() {
-        return jmxFetchCheckPeriod;
-    }
-
-    public Integer getJmxFetchRefreshBeansPeriod() {
-        return jmxFetchRefreshBeansPeriod;
-    }
-
-    public String getJmxFetchStatsdHost() {
-        return jmxFetchStatsdHost;
-    }
-
-    public Integer getJmxFetchStatsdPort() {
-        return jmxFetchStatsdPort;
-    }
-
-    public boolean isHealthMetricsEnabled() {
-        return healthMetricsEnabled;
-    }
-
-    public String getHealthMetricsStatsdHost() {
-        return healthMetricsStatsdHost;
-    }
-
-    public Integer getHealthMetricsStatsdPort() {
-        return healthMetricsStatsdPort;
-    }
-
-    public boolean isLogsInjectionEnabled() {
-        return logsInjectionEnabled;
-    }
-
-    public boolean isReportHostName() {
-        return reportHostName;
-    }
-
-    public String getTraceAnnotations() {
-        return traceAnnotations;
-    }
-
-    public String getTraceMethods() {
-        return traceMethods;
-    }
-
-    public boolean isTraceExecutorsAll() {
-        return traceExecutorsAll;
-    }
-
-    public List<String> getTraceExecutors() {
-        return traceExecutors;
-    }
-
-    public boolean isTraceAnalyticsEnabled() {
-        return traceAnalyticsEnabled;
-    }
-
-    public Map<String, String> getTraceSamplingServiceRules() {
-        return traceSamplingServiceRules;
-    }
-
-    public Map<String, String> getTraceSamplingOperationRules() {
-        return traceSamplingOperationRules;
-    }
-
     public Double getTraceSampleRate() {
         return traceSampleRate;
-    }
-
-    public Double getTraceRateLimit() {
-        return traceRateLimit;
-    }
-
-    public boolean isProfilingEnabled() {
-        return profilingEnabled;
-    }
-
-    public int getProfilingStartDelay() {
-        return profilingStartDelay;
-    }
-
-    public boolean isProfilingStartForceFirst() {
-        return profilingStartForceFirst;
-    }
-
-    public int getProfilingUploadPeriod() {
-        return profilingUploadPeriod;
-    }
-
-    public String getProfilingTemplateOverrideFile() {
-        return profilingTemplateOverrideFile;
-    }
-
-    public int getProfilingUploadTimeout() {
-        return profilingUploadTimeout;
-    }
-
-    public String getProfilingUploadCompression() {
-        return profilingUploadCompression;
-    }
-
-    public String getProfilingProxyHost() {
-        return profilingProxyHost;
-    }
-
-    public int getProfilingProxyPort() {
-        return profilingProxyPort;
-    }
-
-    public String getProfilingProxyUsername() {
-        return profilingProxyUsername;
-    }
-
-    public String getProfilingProxyPassword() {
-        return profilingProxyPassword;
-    }
-
-    public int getProfilingExceptionSampleLimit() {
-        return profilingExceptionSampleLimit;
-    }
-
-    public int getProfilingExceptionHistogramTopItems() {
-        return profilingExceptionHistogramTopItems;
-    }
-
-    public int getProfilingExceptionHistogramMaxCollectionSize() {
-        return profilingExceptionHistogramMaxCollectionSize;
     }
 
     // endregion

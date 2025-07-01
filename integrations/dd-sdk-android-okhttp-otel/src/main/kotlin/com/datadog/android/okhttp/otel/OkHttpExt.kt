@@ -18,7 +18,7 @@ import okhttp3.Request
  * @param span the parent span to add to the request.
  * @return the modified Request.Builder instance
  */
-fun Request.Builder.addParentSpan(span: Span): Request.Builder {
+fun Request.Builder.addParentSpan(span: Span): Request.Builder = apply {
     // very fragile and assumes that Datadog Tracer is used
     // we need to trigger sampling decision at this point, because we are doing context propagation out of OpenTelemetry
     if (span is OtelSpan) {
@@ -29,13 +29,21 @@ fun Request.Builder.addParentSpan(span: Span): Request.Builder {
         @Suppress("UnsafeThirdPartyFunctionCall") // the context will always be a TraceContext
         tag(
             TraceContext::class.java,
-            TraceContext(span.spanContext.traceId, span.spanContext.spanId, agentSpanContext.samplingPriority)
+            TraceContext(
+                span.spanContext.traceId,
+                span.spanContext.spanId,
+                agentSpanContext.samplingPriority
+            )
         )
     } else {
-        val context = span.spanContext
-        val prioritySampling = if (context.isSampled) PrioritySampling.USER_KEEP else PrioritySampling.UNSET
         @Suppress("UnsafeThirdPartyFunctionCall") // the context will always be a TraceContext
-        tag(TraceContext::class.java, TraceContext(context.traceId, context.spanId, prioritySampling))
+        tag(
+            TraceContext::class.java,
+            TraceContext(
+                span.spanContext.traceId,
+                span.spanContext.spanId,
+                if (span.spanContext.isSampled) PrioritySampling.USER_KEEP else PrioritySampling.UNSET
+            )
+        )
     }
-    return this
 }
