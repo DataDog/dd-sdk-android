@@ -8,36 +8,178 @@ package com.datadog.android.trace.api.span
 import com.datadog.android.trace.api.trace.DatadogTraceId
 import com.datadog.tools.annotation.NoOpImplementation
 
+/**
+ * Represents an interface for a Datadog span, which encapsulates information about a single span within a trace.
+ * This includes span metadata, error handling, timing, and tag/metric management.
+ */
 @NoOpImplementation
+@SuppressWarnings("TooManyFunctions")
 interface DatadogSpan {
+    /**
+     * Indicates whether the current span is marked as an error.
+     */
     var isError: Boolean?
+
+    /**
+     * Indicates whether the current span is the root span in a trace.
+     */
     val isRootSpan: Boolean
+
+    /**
+     * Represents the sampling priority of the span, which determines if the span should be
+     * included or excluded from trace collection and analysis.
+     */
     val samplingPriority: Int?
+
+    /**
+     * Represents the unique identifier for a trace in the Datadog tracing system.
+     */
     val traceId: DatadogTraceId
+
+    /**
+     * Represents the parent span's unique identifier in a trace.
+     */
     val parentSpanId: Long?
+
+    /**
+     * Represents the name of the resource associated with the span.
+     */
     var resourceName: String?
+
+    /**
+     * Defines the name of the service associated with this span.
+     */
     var serviceName: String
+
+    /**
+     * The name of the operation represented by the span.
+     */
     var operationName: String
+
+    /**
+     * Represents the duration of a span in nanoseconds.
+     */
     val durationNano: Long
+
+    /**
+     * Represents the start time of the span in nanoseconds.
+     */
     val startTime: Long
+
+    /**
+     * Refers to the local root span within a trace hierarchy.
+     */
     val localRootSpan: DatadogSpan?
 
+    /**
+     * Retrieves the context associated with this Datadog span.
+     *
+     * @return The DatadogSpanContext containing trace and span-specific information such as identifiers, sampling priority, and tags.
+     */
     fun context(): DatadogSpanContext
+
+    /**
+     * Marks the end of this span and captures its duration.
+     * This method should be called once the operation represented by the span
+     * is completed to ensure proper timing and resource tracking.
+     */
     fun finish()
+
+    /**
+     * Marks the end of this span and sets its finish time.
+     * This method should be used when the operation represented by the span is completed,
+     * and the exact finish timestamp in microseconds needs to be explicitly provided.
+     *
+     * @param finishMicros The finish time of the span, provided in microseconds since the epoch.
+     */
     fun finish(finishMicros: Long)
+
+    /**
+     * Marks the current span for removal, indicating it should no longer be processed or considered active.
+     * This method can be used to discard spans that are no longer relevant or should not be reported.
+     */
     fun drop()
 
+    /**
+     * Sets the error message for the current span. This message provides a description
+     * of the error that occurred during the span's operation.
+     *
+     * @param message The error message to be associated with the span.
+     */
     fun setErrorMessage(message: String?)
+
+    /**
+     * Associates a throwable with the current span, marking it as an error
+     * and capturing the provided throwable for additional context.
+     *
+     * @param throwable The throwable to associate with the current span.
+     *                  This provides error details such as stack trace and message.
+     */
     fun addThrowable(throwable: Throwable)
+
+    /**
+     * Associates a throwable with the current span, marking it as an error
+     * and capturing the provided throwable for additional context with a specified error priority.
+     *
+     * @param throwable The throwable to associate with the current span. It provides
+     *                  error details such as stack trace and message.
+     * @param errorPriority The priority level of the error, represented as a byte.
+     */
     fun addThrowable(throwable: Throwable, errorPriority: Byte)
 
+    /**
+     * Associates a tag with the specified value for the current span.
+     *
+     * @param tag The name of the tag to associate with the span.
+     * @param value The value to associate with the specified tag.
+     */
     fun setTag(tag: String?, value: String?)
+
+    /**
+     * Associates a tag with a boolean value for the current span.
+     *
+     * @param tag The name of the tag to associate with the span.
+     * @param value The boolean value to associate with the specified tag.
+     */
     fun setTag(tag: String?, value: Boolean)
+
+    /**
+     * Associates a tag with a numerical value for the current span.
+     *
+     * @param tag The name of the tag to associate with the span.
+     * @param value The numerical value to associate with the specified tag.
+     */
     fun setTag(tag: String?, value: Number?)
+
+    /**
+     * Associates a tag with a specified value for the current span.
+     *
+     * @param tag The name of the tag to associate with the span.
+     * @param value The value to associate with the specified tag.
+     */
     fun setTag(tag: String?, value: Any?)
+
+    /**
+     * Retrieves the value associated with the specified tag for the current span.
+     *
+     * @param tag The name of the tag whose value is to be retrieved.
+     * @return The value associated with the specified tag.
+     */
     fun getTag(tag: String?): Any?
 
+    /**
+     * Sets a metric for the current span with the specified key and value.
+     *
+     * @param key The name of the metric to be associated with the span.
+     * @param value The value of the metric to be set for the specified key.
+     */
     fun setMetric(key: String, value: Int)
 
+    /**
+     * Forces the sampling decision for the current span.
+     * This method overrides any default or previously set sampling priority,
+     * ensuring that the span will be included or excluded from the trace data
+     * based on specific internal logic.
+     */
     fun forceSamplingDecision()
 }

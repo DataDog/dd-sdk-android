@@ -81,6 +81,7 @@ public final class com/datadog/android/trace/impl/DatadogTracing {
 	public final fun getSpanLogger ()Lcom/datadog/android/trace/api/span/DatadogSpanLogger;
 	public final fun newSampler ()Lcom/datadog/android/trace/api/tracer/DatadogTracerSampler;
 	public final fun newTracerBuilder (Lcom/datadog/android/api/SdkCore;)Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;
+	public final fun wrapSampler (Lcom/datadog/trace/common/sampling/Sampler;)Lcom/datadog/android/trace/api/tracer/DatadogTracerSampler;
 	public final fun wrapWriter (Lcom/datadog/trace/common/writer/Writer;)Lcom/datadog/android/trace/api/span/DatadogSpanWriter;
 }
 

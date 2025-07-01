@@ -177,7 +177,7 @@ public abstract interface class com/datadog/android/trace/api/trace/DatadogTrace
 	public abstract fun from (J)Lcom/datadog/android/trace/api/trace/DatadogTraceId;
 	public abstract fun from (Ljava/lang/String;)Lcom/datadog/android/trace/api/trace/DatadogTraceId;
 	public abstract fun fromHex (Ljava/lang/String;)Lcom/datadog/android/trace/api/trace/DatadogTraceId;
-	public abstract fun getZERO ()Lcom/datadog/android/trace/api/trace/DatadogTraceId;
+	public abstract fun zero ()Lcom/datadog/android/trace/api/trace/DatadogTraceId;
 }
 
 public abstract interface class com/datadog/android/trace/api/tracer/DatadogTracer {

@@ -5,9 +5,17 @@
  */
 package com.datadog.android.trace.api.scope
 
+import com.datadog.android.trace.api.span.DatadogSpan
 import com.datadog.tools.annotation.NoOpImplementation
 
+/**
+ * A DatadogScope formalizes the activation and deactivation of a [DatadogSpan].
+ */
 @NoOpImplementation
 interface DatadogScope {
+
+    /**
+     * Mark the end of the active period for the current context.
+     */
     fun close()
 }

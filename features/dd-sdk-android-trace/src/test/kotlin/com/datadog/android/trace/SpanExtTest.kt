@@ -13,17 +13,13 @@ import com.datadog.android.trace.api.span.DatadogSpanBuilder
 import com.datadog.android.trace.api.span.clear
 import com.datadog.android.trace.api.tracer.DatadogTracer
 import com.datadog.tools.unit.forge.BaseConfigurator
-import com.datadog.tools.unit.setStaticValue
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
-import io.opentracing.Scope
 import io.opentracing.Span
-import io.opentracing.Tracer
 import io.opentracing.log.Fields
-import io.opentracing.util.GlobalTracer
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -174,7 +170,7 @@ class SpanExtTest {
         assertThat(lambdaCalled).isTrue()
         verify(mockSpanBuilder).withParentSpan(mockParentSpan)
         inOrder(mockSpan, mockScope) {
-            verify(mockSpan).addThrowable(throwable)
+            verify(mockSpan).logThrowable(throwable)
             verify(mockSpan).finish()
             verify(mockScope).close()
         }

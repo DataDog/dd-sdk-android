@@ -7,5 +7,9 @@ package com.datadog.android.trace.api.tracer
 
 import com.datadog.tools.annotation.NoOpImplementation
 
+/**
+ * Represents an interface for a custom sampling mechanism to determine whether or not
+ * a span should be traced.
+ */
 @NoOpImplementation
 interface DatadogTracerSampler

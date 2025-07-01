@@ -6,11 +6,11 @@
 package com.datadog.android.okhttp.trace
 
 import com.datadog.android.core.sampling.Sampler
-import com.datadog.android.trace.api.trace.DatadogTraceId
 import com.datadog.android.trace.api.propagation.DatadogPropagation
 import com.datadog.android.trace.api.span.DatadogSpan
 import com.datadog.android.trace.api.span.DatadogSpanBuilder
 import com.datadog.android.trace.api.span.DatadogSpanContext
+import com.datadog.android.trace.api.trace.DatadogTraceId
 import com.datadog.android.trace.api.tracer.DatadogTracer
 import com.datadog.android.trace.impl.DatadogTracing
 import fr.xgouchet.elmyr.Forge

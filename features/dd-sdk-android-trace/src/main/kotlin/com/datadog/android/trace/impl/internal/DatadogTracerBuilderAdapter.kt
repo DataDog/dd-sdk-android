@@ -78,11 +78,11 @@ internal class DatadogTracerBuilderAdapter(
     companion object {
         internal const val MESSAGE_WRITER_NOT_PROVIDED =
             "You're trying to create an DatadogTracerBuilder instance, " +
-                    "but either the SDK was not initialized or the Tracing feature was " +
-                    "not registered. No tracing data will be sent."
+                "but either the SDK was not initialized or the Tracing feature was " +
+                "not registered. No tracing data will be sent."
 
         internal const val DEFAULT_SERVICE_NAME_IS_MISSING_ERROR_MESSAGE =
             "Default service name is missing during" +
-                    " DatadogTracerBuilder creation, did you initialize SDK?"
+                " DatadogTracerBuilder creation, did you initialize SDK?"
     }
 }

@@ -9,6 +9,9 @@ import io.opentelemetry.api.OpenTelemetry
 import io.opentelemetry.api.trace.TracerProvider
 import io.opentelemetry.context.propagation.ContextPropagators
 
+/**
+ * Default implementation of the OpenTelemetry interface that integrates with Datadog.
+ */
 class DatadogOpenTelemetry(serviceName: String) : OpenTelemetry {
 
     private val tracerProvider = OtelTracerProvider.Builder()

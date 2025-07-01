@@ -94,7 +94,7 @@ internal class ActivityLifecycleTrace : AppCompatActivity() {
 
     private fun buildScope(title: String): DatadogScope {
         val span = tracer.buildSpan(title).start()
-        val scope = tracer.activateSpan(span) ?: throw RuntimeException("Span activation failed")
+        val scope = checkNotNull(tracer.activateSpan(span)) { "Span activation failed" }
         val ddSpan = tracer.activeSpan() as DatadogSpan
         sentLogs.add(Log.VERBOSE to title)
         sentSpans.add(ddSpan)

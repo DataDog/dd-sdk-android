@@ -21,6 +21,9 @@ import com.datadog.android.trace.coroutines.awaitTraced
 import com.datadog.android.trace.coroutines.launchTraced
 import com.datadog.android.trace.coroutines.withContextTraced
 import com.datadog.android.trace.logAttributes
+import com.datadog.android.trace.logErrorMessage
+import com.datadog.android.trace.logMessage
+import com.datadog.android.trace.logThrowable
 import com.datadog.android.trace.withinSpan
 import com.datadog.android.vendor.sample.LocalServer
 import com.launchdarkly.eventsource.EventHandler
@@ -159,7 +162,7 @@ internal class TracesViewModel(
         delay(100)
 
         val x = deferred.awaitTraced("coroutine await")
-        scope.logAttributes("The answer to life, the universe and everything is… $x")
+        scope.logMessage("The answer to life, the universe and everything is… $x")
     }
 
     @Suppress("TooGenericExceptionCaught", "MagicNumber")
@@ -180,11 +183,11 @@ internal class TracesViewModel(
                         if (Random().nextInt(5) == 0) {
                             error("Your flow just dried out…")
                         } else {
-                            logAttributes("got user $it")
+                            logErrorMessage("got user $it")
                         }
                     }
             } catch (e: Throwable) {
-                addThrowable(e)
+                logThrowable(e)
             }
         }
     }
@@ -366,17 +369,17 @@ internal class TracesViewModel(
         @Deprecated("Deprecated in Java")
         override fun doInBackground(vararg params: Unit?) {
             withinSpan("AsyncOperation", activeSpanInMainThread) {
-                this.setErrorMessage("Test error log in async operation")
+                logErrorMessage("Test error log in async operation")
 
                 logger.v("Starting Async Operation...")
 
                 val count = (Random().nextInt() % 50) + 50
-                logAttributes("Async op loops $count times")
+                logMessage("Async op loops $count times")
                 var actualCount = 0
 
                 for (i in 0 until count) {
                     if (isCancelled) {
-                        logAttributes("Async operation cancelled")
+                        logMessage("Async operation cancelled")
                         break
                     }
                     onProgress(i)

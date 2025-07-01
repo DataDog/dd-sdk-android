@@ -6,7 +6,6 @@
 
 package com.datadog.android.trace.internal.domain.event
 
-import androidx.annotation.VisibleForTesting
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.trace.model.SpanEvent

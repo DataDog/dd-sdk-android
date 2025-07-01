@@ -5,10 +5,38 @@
  */
 package com.datadog.android.trace.api.trace
 
+/**
+ * Factory interface for creating and manipulating `DatadogTraceId` instances.
+ */
 interface DatadogTraceIdFactory {
-    @Suppress("PropertyName")
-    val ZERO: DatadogTraceId
+    /**
+     * Creates a [DatadogTraceId] instance representing the zero value.
+     *
+     * @return a [DatadogTraceId] instance initialized to the zero value.
+     */
+    fun zero(): DatadogTraceId
+
+    /**
+     * Creates a [DatadogTraceId] instance from the given numeric representation of a trace ID.
+     *
+     * @param id the numeric value of the trace ID as a `Long`.
+     * @return a [DatadogTraceId] instance representing the given trace ID.
+     */
     fun from(id: Long): DatadogTraceId
+
+    /**
+     * Creates a [DatadogTraceId] instance from the given string representation of a trace ID.
+     *
+     * @param id the string representation of the trace ID.
+     * @return a [DatadogTraceId] instance representing the given trace ID.
+     */
     fun from(id: String): DatadogTraceId
+
+    /**
+     * Creates a [DatadogTraceId] instance from the given hexadecimal string representation of a trace ID.
+     *
+     * @param id the hexadecimal string representation of the trace ID.
+     * @return a [DatadogTraceId] instance representing the given trace ID.
+     */
     fun fromHex(id: String): DatadogTraceId
 }

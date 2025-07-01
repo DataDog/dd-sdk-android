@@ -27,11 +27,11 @@ import com.datadog.android.rum.RumResourceAttributesProvider
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.RumResourceMethod
 import com.datadog.android.rum.resource.ResourceId
-import com.datadog.android.trace.api.trace.DatadogTraceId
 import com.datadog.android.trace.api.propagation.DatadogPropagation
 import com.datadog.android.trace.api.span.DatadogSpan
 import com.datadog.android.trace.api.span.DatadogSpanBuilder
 import com.datadog.android.trace.api.span.DatadogSpanContext
+import com.datadog.android.trace.api.trace.DatadogTraceId
 import com.datadog.android.trace.api.tracer.DatadogTracer
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension

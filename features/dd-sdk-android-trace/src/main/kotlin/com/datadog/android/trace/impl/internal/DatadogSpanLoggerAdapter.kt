@@ -17,7 +17,7 @@ import com.datadog.android.trace.api.span.DatadogSpanLogger
 import io.opentracing.log.Fields
 
 internal class DatadogSpanLoggerAdapter(
-    private val sdkCore: FeatureSdkCore,
+    private val sdkCore: FeatureSdkCore
 ) : DatadogSpanLogger {
 
     override fun log(message: String, span: DatadogSpan) {
@@ -69,7 +69,7 @@ internal class DatadogSpanLoggerAdapter(
 
     private fun sendLogEvent(
         fields: MutableMap<String, Any>,
-        span: DatadogSpan,
+        span: DatadogSpan
     ) {
         val logsFeature = sdkCore.getFeature(Feature.LOGS_FEATURE_NAME)
 

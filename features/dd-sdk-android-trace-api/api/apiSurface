@@ -25,7 +25,15 @@ object com.datadog.android.trace.api.constants.DatadogTracingConstants
     const val TRACE_SAMPLE_RATE: String
     const val PROPAGATION_STYLE_EXTRACT: String
     const val PROPAGATION_STYLE_INJECT: String
+    const val SERVICE_NAME: String
     const val URL_AS_RESOURCE_NAME: String
+  object LogAttributes
+    const val ERROR_KIND: String
+    const val ERROR_OBJECT: String
+    const val EVENT: String
+    const val MESSAGE: String
+    const val STACK: String
+    const val STATUS: String
   object ErrorPriorities
     const val UNSET: Byte
     const val HTTP_SERVER_DECORATOR: Byte
@@ -69,6 +77,7 @@ interface com.datadog.android.trace.api.span.DatadogSpan
   fun setTag(String?, Any?)
   fun getTag(String?): Any?
   fun setMetric(String, Int)
+  fun forceSamplingDecision()
 interface com.datadog.android.trace.api.span.DatadogSpanBuilder
   fun start(): DatadogSpan
   fun withOrigin(String?): DatadogSpanBuilder
@@ -89,7 +98,7 @@ interface com.datadog.android.trace.api.span.DatadogSpanContext
   fun setSamplingPriority(Int): Boolean
   fun setMetric(CharSequence?, Double)
 interface com.datadog.android.trace.api.span.DatadogSpanIdConverter
-  fun fromHex(String?): Long
+  fun fromHex(String): Long
   fun toHexStringPadded(Long): String
 interface com.datadog.android.trace.api.span.DatadogSpanLink
   val spanId: Long
@@ -99,13 +108,15 @@ interface com.datadog.android.trace.api.span.DatadogSpanLink
   val attributes: Map<String, String>?
 interface com.datadog.android.trace.api.span.DatadogSpanLogger
   fun log(String, DatadogSpan)
+  fun logErrorMessage(String, DatadogSpan)
+  fun log(Throwable, DatadogSpan)
   fun log(Map<String, Any>, DatadogSpan)
 interface com.datadog.android.trace.api.span.DatadogSpanWriter
 interface com.datadog.android.trace.api.trace.DatadogTraceId
   fun toLong(): Long
   fun toHexString(): String
 interface com.datadog.android.trace.api.trace.DatadogTraceIdFactory
-  val ZERO: DatadogTraceId
+  fun zero(): DatadogTraceId
   fun from(Long): DatadogTraceId
   fun from(String): DatadogTraceId
   fun fromHex(String): DatadogTraceId

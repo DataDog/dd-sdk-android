@@ -32,16 +32,18 @@ internal class DatadogTracerAdapter(internal val delegate: AgentTracer.TracerAPI
 
     override fun activeSpan(): DatadogSpan? = delegate.activeSpan()?.let(::DatadogSpanAdapter)
 
-    override fun activateSpan(span: DatadogSpan): DatadogScope? {
-        if (span !is DatadogSpanAdapter) return null
-        val scope = delegate.activateSpan(span.delegate, ScopeSource.INSTRUMENTATION) ?: return null
-        return DatadogScopeAdapter(scope)
+    override fun activateSpan(span: DatadogSpan): DatadogScope? = (span as? DatadogSpanAdapter)?.let {
+        DatadogScopeAdapter(
+            delegate.activateSpan(span.delegate, ScopeSource.INSTRUMENTATION) ?: return null
+        )
     }
 
     override fun activateSpan(span: DatadogSpan, asyncPropagating: Boolean): DatadogScope? {
-        if (span !is DatadogSpanAdapter) return null
-        val scope = delegate.activateSpan(span.delegate, ScopeSource.INSTRUMENTATION, asyncPropagating) ?: return null
-        return DatadogScopeAdapter(scope)
+        return (span as? DatadogSpanAdapter)?.let {
+            DatadogScopeAdapter(
+                delegate.activateSpan(span.delegate, ScopeSource.INSTRUMENTATION, asyncPropagating) ?: return null
+            )
+        }
     }
 
     override fun propagate(): DatadogPropagation = DatadogPropagationAdapter(delegate.propagate())

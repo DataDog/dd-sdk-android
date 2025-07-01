@@ -92,7 +92,7 @@ internal class SpanSamplingIdProviderTest {
     fun `M return 0u W provideId() {no rum session, invalid traceId}`() {
         // Given
         val expectedId: ULong = 0u
-        whenever(mockSpanContext.traceId) doReturn DatadogTracing.traceIdFactory.ZERO
+        whenever(mockSpanContext.traceId) doReturn DatadogTracing.traceIdFactory.zero()
 
         // When
         val result = SpanSamplingIdProvider.provideId(mockSpan)
@@ -105,7 +105,7 @@ internal class SpanSamplingIdProviderTest {
     fun `M return 0u W provideId() {no rum session, empty traceId}`() {
         // Given
         val expectedId: ULong = 0u
-        whenever(mockSpanContext.traceId) doReturn DatadogTracing.traceIdFactory.ZERO
+        whenever(mockSpanContext.traceId) doReturn DatadogTracing.traceIdFactory.zero()
 
         // When
         val result = SpanSamplingIdProvider.provideId(mockSpan)

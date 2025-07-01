@@ -7,8 +7,24 @@ package com.datadog.android.trace.api.trace
 
 import com.datadog.tools.annotation.NoOpImplementation
 
+/**
+ * Represents a Datadog trace ID, which is a unique identifier for a specific trace.
+ *
+ * This interface is typically used with a factory (`DatadogTraceIdFactory`) to generate or retrieve trace IDs.
+ */
 @NoOpImplementation
 interface DatadogTraceId {
+    /**
+     * Converts the Datadog trace ID to its numeric representation as a `Long`.
+     *
+     * @return the numeric value of the trace ID as a `Long`.
+     */
     fun toLong(): Long
+
+    /**
+     * Converts the current trace ID into its hexadecimal string representation.
+     *
+     * @return the hexadecimal string representation of the trace ID.
+     */
     fun toHexString(): String
 }

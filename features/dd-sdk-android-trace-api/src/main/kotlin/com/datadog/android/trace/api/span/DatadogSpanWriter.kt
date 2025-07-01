@@ -5,4 +5,5 @@
  */
 package com.datadog.android.trace.api.span
 
+/** A writer is responsible to send collected spans to some place. */
 interface DatadogSpanWriter

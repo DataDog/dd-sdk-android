@@ -13,7 +13,6 @@ import android.util.Log
 import androidx.lifecycle.ViewModelProvider
 import com.datadog.android.Datadog
 import com.datadog.android.DatadogSite
-import com.datadog.android.api.SdkCore
 import com.datadog.android.compose.enableComposeActionTracking
 import com.datadog.android.core.configuration.BackPressureMitigation
 import com.datadog.android.core.configuration.BackPressureStrategy

@@ -7,8 +7,8 @@
 package com.datadog.android.trace.opentelemetry.internal
 
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.trace.opentelemetry.utils.verifyLog
 import com.datadog.android.trace.opentelemetry.utils.forge.Configurator
+import com.datadog.android.trace.opentelemetry.utils.verifyLog
 import com.datadog.tools.unit.annotations.TestTargetApi
 import com.datadog.tools.unit.extensions.ApiLevelExtension
 import fr.xgouchet.elmyr.annotation.StringForgery

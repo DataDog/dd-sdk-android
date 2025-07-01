@@ -9,7 +9,6 @@ package com.datadog.android.sdk.integration
 import android.os.Build
 import com.datadog.android._InternalProxy
 import com.datadog.android.api.SdkCore
-import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.UploadFrequency
 import com.datadog.android.log.Logger

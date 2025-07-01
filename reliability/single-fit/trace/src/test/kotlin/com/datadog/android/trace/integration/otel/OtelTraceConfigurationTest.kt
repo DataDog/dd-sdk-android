@@ -110,7 +110,7 @@ class OtelTraceConfigurationTest {
         // Given
         Trace.enable(
             sdkCore = stubSdkCore,
-            traceConfiguration = TraceConfiguration.Builder().setNetworkInfoEnabled(true).build(),
+            traceConfiguration = TraceConfiguration.Builder().setNetworkInfoEnabled(true).build()
         )
         val blockingWriterWrapper = stubSdkCore.getFeature(Feature.TRACING_FEATURE_NAME).useBlockingWriter()
         val testedProvider = OtelTracerProvider.Builder(stubSdkCore).build()

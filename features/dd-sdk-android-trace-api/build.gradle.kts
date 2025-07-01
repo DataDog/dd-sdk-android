@@ -74,7 +74,6 @@ unMock {
     keepStartingWith("org.json")
 }
 
-
 kotlinConfig(jvmBytecodeTarget = JvmTarget.JVM_11)
 androidLibraryConfig()
 junitConfig()

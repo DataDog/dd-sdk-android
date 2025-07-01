@@ -79,7 +79,7 @@ internal abstract class TracesTest {
 
                 leastSignificantTraceId == span.leastSignificant64BitsTraceId() &&
                     mostSignificantTraceId == span.mostSignificant64BitsTraceId() &&
-                        spanJson.get(SPAN_ID_KEY).asString == span.spanIdAsHexString()
+                    spanJson.get(SPAN_ID_KEY).asString == span.spanIdAsHexString()
             }
             assertMatches(json, span)
         }

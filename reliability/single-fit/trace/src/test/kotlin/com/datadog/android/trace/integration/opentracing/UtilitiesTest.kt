@@ -21,7 +21,6 @@ import com.datadog.android.trace.integration.tests.elmyr.TraceIntegrationForgeCo
 import com.datadog.android.trace.logErrorMessage
 import com.datadog.android.trace.logThrowable
 import com.datadog.android.trace.withinSpan
-
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
@@ -34,7 +33,6 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.RepeatedTest
-import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.mockito.junit.jupiter.MockitoExtension

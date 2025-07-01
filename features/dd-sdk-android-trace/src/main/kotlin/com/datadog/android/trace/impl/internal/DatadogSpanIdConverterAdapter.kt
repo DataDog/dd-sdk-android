@@ -9,7 +9,7 @@ import com.datadog.android.trace.api.span.DatadogSpanIdConverter
 import com.datadog.trace.api.DDSpanId
 
 internal object DatadogSpanIdConverterAdapter : DatadogSpanIdConverter {
-    override fun fromHex(s: String?): Long = DDSpanId.fromHex(s)
+    override fun fromHex(spanId: String): Long = DDSpanId.fromHex(spanId)
 
-    override fun toHexStringPadded(id: Long): String = DDSpanId.toHexStringPadded(id)
+    override fun toHexStringPadded(spanId: Long): String = DDSpanId.toHexStringPadded(spanId)
 }

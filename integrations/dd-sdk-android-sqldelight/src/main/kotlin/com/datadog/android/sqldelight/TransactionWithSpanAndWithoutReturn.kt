@@ -7,7 +7,6 @@
 package com.datadog.android.sqldelight
 
 import com.datadog.android.trace.api.span.DatadogSpan
-import com.datadog.android.trace.model.SpanEvent
 import com.squareup.sqldelight.TransactionWithoutReturn
 
 /**
