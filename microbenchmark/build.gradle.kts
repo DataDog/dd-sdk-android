@@ -1,3 +1,5 @@
+import com.datadog.gradle.config.configureFlavorForBenchmark2
+
 plugins {
     id("com.android.library")
     kotlin("android")
@@ -14,6 +16,12 @@ android {
 
         testInstrumentationRunner = "androidx.benchmark.junit4.AndroidBenchmarkRunner"
         testInstrumentationRunnerArguments["androidx.benchmark.suppressErrors"] = "EMULATOR,LOW-BATTERY"
+
+        configureFlavorForBenchmark2(project.rootDir)
+    }
+
+    buildFeatures {
+        buildConfig = true
     }
 
     testBuildType = "release"
@@ -45,6 +53,20 @@ dependencies {
     androidTestImplementation(libs.androidXTestJUnitExt)
     androidTestImplementation(libs.jUnit4)
     androidTestImplementation(libs.benchmarkJunit4)
+
+    androidTestImplementation(project(":features:dd-sdk-android-logs"))
+    androidTestImplementation(project(":features:dd-sdk-android-rum"))
+    androidTestImplementation(project(":features:dd-sdk-android-trace"))
+    androidTestImplementation(project(":features:dd-sdk-android-trace-otel"))
+    androidTestImplementation(project(":features:dd-sdk-android-ndk"))
+    androidTestImplementation(project(":features:dd-sdk-android-webview"))
+    androidTestImplementation(project(":features:dd-sdk-android-session-replay"))
+    androidTestImplementation(project(":features:dd-sdk-android-session-replay-material"))
+    androidTestImplementation(project(":features:dd-sdk-android-session-replay-compose"))
+    androidTestImplementation(project(":integrations:dd-sdk-android-compose"))
+    androidTestImplementation(project(":integrations:dd-sdk-android-glide"))
+    androidTestImplementation(project(":integrations:dd-sdk-android-okhttp"))
+    androidTestImplementation(project(":tools:benchmark"))
     // Add your dependencies here. Note that you cannot benchmark code
     // in an app module this way - you will need to move any code you
     // want to benchmark to a library module:

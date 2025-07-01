@@ -6,6 +6,7 @@ import androidx.annotation.RequiresApi
 import androidx.benchmark.macro.ExperimentalMetricApi
 import androidx.benchmark.macro.FrameTimingMetric
 import androidx.benchmark.macro.MemoryUsageMetric
+import androidx.benchmark.macro.PowerMetric
 import androidx.benchmark.macro.StartupMode
 import androidx.benchmark.macro.StartupTimingMetric
 import androidx.benchmark.macro.junit4.MacrobenchmarkRule
@@ -43,16 +44,16 @@ class ExampleStartupBenchmark {
         metrics = listOf(
             StartupTimingMetric(),
             MemoryUsageMetric(mode = MemoryUsageMetric.Mode.Max),
-            FrameTimingMetric()
+            FrameTimingMetric(),
         ),
-        iterations = 20,
+        iterations = 10,
         startupMode = StartupMode.COLD
     ) {
         pressHome()
         val intent = Intent().apply {
             setClassName("com.datadog.sample.benchmark", "com.datadog.benchmark.sample.activities.LaunchActivity")
             putExtra("synthetics.benchmark.scenario", "rum_auto")
-            putExtra("synthetics.benchmark.run", "baseline")
+            putExtra("synthetics.benchmark.run", "instrumented")
         }
         startActivityAndWait(intent)
         device.waitForIdle()
