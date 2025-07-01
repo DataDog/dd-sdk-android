@@ -357,6 +357,7 @@ internal class DatadogUserInfoProviderTest {
     @Test
     fun `M delegate to persister W clearUserInfo()`(
         @StringForgery(type = StringForgeryType.HEXADECIMAL) id: String,
+        @StringForgery(type = StringForgeryType.HEXADECIMAL) anonymousId: String,
         @StringForgery name: String,
         @StringForgery(regex = "\\w+@\\w+") email: String,
         @MapForgery(
@@ -366,11 +367,12 @@ internal class DatadogUserInfoProviderTest {
     ) {
         // Given
         testedProvider.setUserInfo(id, name, email, fakeUserProperties)
+        testedProvider.setAnonymousId(anonymousId)
 
         // When
         testedProvider.clearUserInfo()
 
         // Then
-        verify(mockWriter).write(UserInfo())
+        verify(mockWriter).write(UserInfo(anonymousId))
     }
 }

@@ -42,7 +42,7 @@ internal class DatadogUserInfoProvider(
     }
 
     override fun clearUserInfo() {
-        internalUserInfo = UserInfo()
+        internalUserInfo = UserInfo(internalUserInfo.anonymousId)
     }
 
     override fun getUserInfo(): UserInfo {
