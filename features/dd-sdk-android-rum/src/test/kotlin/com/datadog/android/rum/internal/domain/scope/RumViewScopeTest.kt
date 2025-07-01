@@ -7863,6 +7863,248 @@ internal class RumViewScopeTest {
 
     // endregion
 
+    // region External Refresh Rate
+
+    @Test
+    fun `M send update W handleEvent(UpdateExternalRefreshRate+KeepAlive) { single value }`(
+        forge: Forge
+    ) {
+        // GIVEN
+        val frameTimeNanos = forge.aLong(min = 1_000_000L, max = 50_000_000L) // 1ms to 50ms
+        val expectedRefreshRate = 1_000_000_000.0 / frameTimeNanos.toDouble()
+
+        // WHEN
+        testedScope.handleEvent(
+            RumRawEvent.UpdateExternalRefreshRate(frameTimeNanos),
+            mockWriter
+        )
+        val result = testedScope.handleEvent(
+            RumRawEvent.KeepAlive(),
+            mockWriter
+        )
+
+        // THEN
+        argumentCaptor<ViewEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            assertThat(lastValue)
+                .hasRefreshRateMetric(expectedRefreshRate, expectedRefreshRate)
+        }
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isSameAs(testedScope)
+    }
+
+    @Test
+    fun `M send update W handleEvent(UpdateExternalRefreshRate+KeepAlive) { multiple values }`(
+        forge: Forge
+    ) {
+        // GIVEN
+        val frameTimesNanos = forge.aList(size = 5) {
+            aLong(min = 8_000_000L, max = 20_000_000L) // ~50-125 FPS range
+        }
+
+        var sum = 0.0
+        var min = Double.MAX_VALUE
+        var max = -Double.MAX_VALUE
+        val refreshRates = mutableListOf<Double>()
+
+        // WHEN
+        frameTimesNanos.forEach { frameTime ->
+            val refreshRate = 1_000_000_000.0 / frameTime.toDouble()
+            refreshRates.add(refreshRate)
+            sum += refreshRate
+            min = kotlin.math.min(min, refreshRate)
+            max = kotlin.math.max(max, refreshRate)
+
+            testedScope.handleEvent(
+                RumRawEvent.UpdateExternalRefreshRate(frameTime),
+                mockWriter
+            )
+        }
+
+        val result = testedScope.handleEvent(
+            RumRawEvent.KeepAlive(),
+            mockWriter
+        )
+
+        // THEN
+        val expectedAverage = sum / refreshRates.size
+        argumentCaptor<ViewEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            assertThat(lastValue)
+                .hasRefreshRateMetric(expectedAverage, min)
+        }
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isSameAs(testedScope)
+    }
+
+    @Test
+    fun `M ignore invalid frame time W handleEvent(UpdateExternalRefreshRate+KeepAlive) { zero frame time }`() {
+        // WHEN
+        testedScope.handleEvent(
+            RumRawEvent.UpdateExternalRefreshRate(0L),
+            mockWriter
+        )
+        val result = testedScope.handleEvent(
+            RumRawEvent.KeepAlive(),
+            mockWriter
+        )
+
+        // THEN
+        argumentCaptor<ViewEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            assertThat(lastValue)
+                .hasRefreshRateMetric(null, null)
+        }
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isSameAs(testedScope)
+    }
+
+    @Test
+    fun `M ignore invalid frame time W handleEvent(UpdateExternalRefreshRate+KeepAlive) { negative frame time }`(
+        forge: Forge
+    ) {
+        // GIVEN
+        val negativeFrameTime = -forge.aLong(min = 1L, max = 1_000_000L)
+
+        // WHEN
+        testedScope.handleEvent(
+            RumRawEvent.UpdateExternalRefreshRate(negativeFrameTime),
+            mockWriter
+        )
+        val result = testedScope.handleEvent(
+            RumRawEvent.KeepAlive(),
+            mockWriter
+        )
+
+        // THEN
+        argumentCaptor<ViewEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            assertThat(lastValue)
+                .hasRefreshRateMetric(null, null)
+        }
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isSameAs(testedScope)
+    }
+
+    @Test
+    fun `M prioritize external data W handleEvent(UpdateExternalRefreshRate+VitalUpdate+KeepAlive)`(
+        forge: Forge
+    ) {
+        // GIVEN
+        val externalFrameTime = forge.aLong(min = 16_000_000L, max = 17_000_000L) // ~60 FPS
+        val expectedExternalRefreshRate = 1_000_000_000.0 / externalFrameTime.toDouble()
+
+        val internalRefreshRate = forge.aDouble(min = 30.0, max = 45.0) // Different range
+        val listenerCaptor = argumentCaptor<VitalListener> {
+            verify(mockFrameRateVitalMonitor).register(capture())
+        }
+        val vitalListener = listenerCaptor.firstValue
+
+        // WHEN - Add external refresh rate data
+        testedScope.handleEvent(
+            RumRawEvent.UpdateExternalRefreshRate(externalFrameTime),
+            mockWriter
+        )
+
+        // AND - Add internal refresh rate data (should be ignored)
+        vitalListener.onVitalUpdate(VitalInfo(1, internalRefreshRate, internalRefreshRate, internalRefreshRate))
+
+        val result = testedScope.handleEvent(
+            RumRawEvent.KeepAlive(),
+            mockWriter
+        )
+
+        // THEN - Should use external data, not internal
+        argumentCaptor<ViewEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            assertThat(lastValue)
+                .hasRefreshRateMetric(expectedExternalRefreshRate, expectedExternalRefreshRate)
+        }
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isSameAs(testedScope)
+    }
+
+    @Test
+    fun `M fallback to internal data W no external data provided`(
+        forge: Forge
+    ) {
+        // GIVEN
+        val internalRefreshRate = forge.aDouble(min = 55.0, max = 60.0)
+        val listenerCaptor = argumentCaptor<VitalListener> {
+            verify(mockFrameRateVitalMonitor).register(capture())
+        }
+        val vitalListener = listenerCaptor.firstValue
+
+        // WHEN - Only add internal refresh rate data (no external data)
+        vitalListener.onVitalUpdate(VitalInfo(1, internalRefreshRate, internalRefreshRate, internalRefreshRate))
+
+        val result = testedScope.handleEvent(
+            RumRawEvent.KeepAlive(),
+            mockWriter
+        )
+
+        // THEN - Should use internal data
+        argumentCaptor<ViewEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            assertThat(lastValue)
+                .hasRefreshRateMetric(internalRefreshRate, internalRefreshRate)
+        }
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isSameAs(testedScope)
+    }
+
+    @Test
+    fun `M not update external refresh rate W view is stopped`(
+        forge: Forge
+    ) {
+        // GIVEN
+        testedScope.handleEvent(RumRawEvent.StopView(fakeKey, emptyMap()), mockWriter)
+        val frameTimeNanos = forge.aLong(min = 16_000_000L, max = 17_000_000L)
+
+        // WHEN
+        val result = testedScope.handleEvent(
+            RumRawEvent.UpdateExternalRefreshRate(frameTimeNanos),
+            mockWriter
+        )
+
+        // THEN
+        // Should not process external refresh rate updates after view is stopped
+        assertThat(result).isNull() // View scope should be completed
+    }
+
+    @Test
+    fun `M accumulate external refresh rate samples correctly W multiple updates`() {
+        // GIVEN
+        val frameTime1 = 16_666_667L // 60 FPS
+        val frameTime2 = 33_333_333L // 30 FPS
+        val frameTime3 = 11_111_111L // 90 FPS
+
+        val refreshRate1 = 1_000_000_000.0 / frameTime1.toDouble()
+        val refreshRate2 = 1_000_000_000.0 / frameTime2.toDouble()
+        val refreshRate3 = 1_000_000_000.0 / frameTime3.toDouble()
+
+        val expectedAverage = (refreshRate1 + refreshRate2 + refreshRate3) / 3.0
+        val expectedMin = kotlin.math.min(refreshRate2, kotlin.math.min(refreshRate1, refreshRate3))
+
+        // WHEN
+        testedScope.handleEvent(RumRawEvent.UpdateExternalRefreshRate(frameTime1), mockWriter)
+        testedScope.handleEvent(RumRawEvent.UpdateExternalRefreshRate(frameTime2), mockWriter)
+        testedScope.handleEvent(RumRawEvent.UpdateExternalRefreshRate(frameTime3), mockWriter)
+
+        val result = testedScope.handleEvent(RumRawEvent.KeepAlive(), mockWriter)
+
+        // THEN
+        argumentCaptor<ViewEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            assertThat(lastValue)
+                .hasRefreshRateMetric(expectedAverage, expectedMin)
+        }
+        verifyNoMoreInteractions(mockWriter)
+        assertThat(result).isSameAs(testedScope)
+    }
+
+    // endregion
+
     // region Internal attributes
 
     @Test

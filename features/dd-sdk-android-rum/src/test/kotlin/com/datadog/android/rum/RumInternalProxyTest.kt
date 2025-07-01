@@ -65,6 +65,21 @@ internal class RumInternalProxyTest {
     }
 
     @Test
+    fun `M proxy updateExternalRefreshRate to RumMonitor W updateExternalRefreshRate()`(
+        @LongForgery frameTimeNanos: Long
+    ) {
+        // Given
+        val mockRumMonitor = mock(AdvancedRumMonitor::class.java)
+        val proxy = _RumInternalProxy(mockRumMonitor)
+
+        // When
+        proxy.updateExternalRefreshRate(frameTimeNanos)
+
+        // Then
+        verify(mockRumMonitor).updateExternalRefreshRate(frameTimeNanos)
+    }
+
+    @Test
     fun `M proxy enableJankStatsTracking to RumMonitor W enableJankStatsTracking()`() {
         // Given
         val mockRumMonitor = mock(AdvancedRumMonitor::class.java)

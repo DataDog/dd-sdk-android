@@ -631,6 +631,10 @@ internal class DatadogRumMonitor(
         handleEvent(RumRawEvent.UpdatePerformanceMetric(metric, value))
     }
 
+    override fun updateExternalRefreshRate(frameTimeNanos: Long) {
+        handleEvent(RumRawEvent.UpdateExternalRefreshRate(frameTimeNanos))
+    }
+
     override fun setInternalViewAttribute(key: String, value: Any?) {
         handleEvent(RumRawEvent.SetInternalViewAttribute(key, value))
     }
