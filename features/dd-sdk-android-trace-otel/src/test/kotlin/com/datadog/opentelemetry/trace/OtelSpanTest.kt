@@ -6,6 +6,7 @@
 
 package com.datadog.opentelemetry.trace
 
+import com.datadog.android.trace.api.constants.DatadogTracingConstants.DEFAULT_ASYNC_PROPAGATING
 import com.datadog.android.trace.api.constants.DatadogTracingConstants.ErrorPriorities
 import com.datadog.android.trace.api.span.DatadogSpan
 import com.datadog.android.trace.api.tracer.DatadogTracer
@@ -238,18 +239,17 @@ internal class OtelSpanTest {
 
     // region activate
 
-//    @Test
-//    fun `M delegate to AgentSpan W activate`() {
-//        // When
-//        testedSpan.activate()
-//
-//        // Then
-//        verify(mockAgentTracer).activateSpan(
-//            mockAgentSpan,
-//            ScopeSource.INSTRUMENTATION,
-//            ConfigDefaults.DEFAULT_ASYNC_PROPAGATING
-//        )
-//    }
+    @Test
+    fun `M delegate to AgentSpan W activate`() {
+        // When
+        testedSpan.activate()
+
+        // Then
+        verify(mockAgentTracer).activateSpan(
+            mockAgentSpan,
+            DEFAULT_ASYNC_PROPAGATING,
+        )
+    }
 
     // endregion
 

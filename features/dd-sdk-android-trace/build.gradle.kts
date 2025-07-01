@@ -67,6 +67,11 @@ dependencies {
     // OpenTracing
     implementation(libs.bundles.openTracing)
 
+    testImplementation(testFixtures(project(":dd-sdk-android-core")))
+    testImplementation(libs.okHttp)
+    testImplementation(libs.bundles.jUnit5)
+    testImplementation(libs.bundles.testTools)
+    testImplementation(libs.systemStubsJupiter)
     testImplementation(project(":tools:unit")) {
         attributes {
             attribute(
@@ -75,11 +80,6 @@ dependencies {
             )
         }
     }
-    testImplementation(testFixtures(project(":dd-sdk-android-core")))
-    testImplementation(libs.okHttp)
-    testImplementation(libs.bundles.jUnit5)
-    testImplementation(libs.bundles.testTools)
-    testImplementation(libs.systemStubsJupiter)
 
     unmock(libs.robolectric)
 
