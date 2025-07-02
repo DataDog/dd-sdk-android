@@ -33,6 +33,7 @@ import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import io.opentracing.Span
 import io.opentracing.propagation.Format
 import io.opentracing.propagation.TextMapInject
 import io.opentracing.util.GlobalTracer
@@ -79,6 +80,12 @@ class HeadBasedSamplingTest {
         unregisterGlobalTracer()
         Datadog.stopInstance(stubSdkCore.name)
         mockServer.shutdown()
+    }
+
+    private fun Request.Builder.parentSpan(span: Span): Request.Builder {
+        @Suppress("UnsafeThirdPartyFunctionCall") // Span can't be null
+        tag(Span::class.java, span)
+        return this
     }
 
     @Test

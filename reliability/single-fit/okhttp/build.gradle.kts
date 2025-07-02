@@ -46,6 +46,8 @@ dependencies {
     testImplementation(project(":dd-sdk-android-internal"))
     testImplementation(testFixtures(project(":dd-sdk-android-core")))
     testImplementation(project(":reliability:stub-core"))
+    testImplementation(project(":features:dd-sdk-android-trace-internal"))
+    testImplementation(libs.bundles.openTracing)
     testImplementation(libs.bundles.jUnit5)
     testImplementation(libs.bundles.testTools)
     testImplementation(libs.okHttp)

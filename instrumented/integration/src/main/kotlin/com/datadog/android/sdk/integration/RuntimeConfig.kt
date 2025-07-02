@@ -15,8 +15,10 @@ import com.datadog.android.log.Logger
 import com.datadog.android.log.LogsConfiguration
 import com.datadog.android.rum.RumConfiguration
 import com.datadog.android.sessionreplay.SessionReplayConfiguration
-import com.datadog.android.trace.AndroidTracer
 import com.datadog.android.trace.TraceConfiguration
+import com.datadog.android.trace.TracingHeaderType
+import com.datadog.android.trace.api.tracer.DatadogTracer
+import com.datadog.android.trace.impl.DatadogTracing
 import java.util.UUID
 
 internal object RuntimeConfig {
@@ -53,9 +55,10 @@ internal object RuntimeConfig {
         return logger
     }
 
-    fun tracer(sdkCore: SdkCore): AndroidTracer {
-        return AndroidTracer.Builder(sdkCore).build()
-    }
+    fun tracer(sdkCore: SdkCore): DatadogTracer =
+        DatadogTracing.newTracerBuilder(sdkCore)
+            .withTracingHeadersTypes(setOf(TracingHeaderType.DATADOG, TracingHeaderType.TRACECONTEXT))
+            .build()
 
     fun configBuilder(): Configuration.Builder {
         return Configuration.Builder(

@@ -54,7 +54,7 @@ dependencies {
     implementation(libs.bundles.traceCore)
 
     // OpenTracing
-    api(libs.bundles.openTracing)
+    implementation(libs.bundles.openTracing)
 
     testImplementation(project(":tools:unit")) {
         attributes {

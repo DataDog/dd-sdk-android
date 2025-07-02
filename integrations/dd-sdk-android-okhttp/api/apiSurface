@@ -17,7 +17,7 @@ class com.datadog.android.okhttp.DatadogEventListener : okhttp3.EventListener
     override fun create(okhttp3.Call): okhttp3.EventListener
 open class com.datadog.android.okhttp.DatadogInterceptor : com.datadog.android.okhttp.trace.TracingInterceptor
   override fun intercept(okhttp3.Interceptor.Chain): okhttp3.Response
-  override fun onRequestIntercepted(com.datadog.android.api.feature.FeatureSdkCore, okhttp3.Request, com.datadog.trace.bootstrap.instrumentation.api.AgentSpan?, okhttp3.Response?, Throwable?)
+  override fun onRequestIntercepted(com.datadog.android.api.feature.FeatureSdkCore, okhttp3.Request, com.datadog.android.trace.api.span.DatadogSpan?, okhttp3.Response?, Throwable?)
   override fun canSendSpan(): Boolean
   override fun onSdkInstanceReady(com.datadog.android.core.InternalSdkCore)
   class Builder : BaseBuilder<DatadogInterceptor, Builder>
@@ -30,16 +30,16 @@ data class com.datadog.android.okhttp.TraceContext
 enum com.datadog.android.okhttp.TraceContextInjection
   - ALL
   - SAMPLED
-open class com.datadog.android.okhttp.trace.DeterministicTraceSampler : com.datadog.android.core.sampling.DeterministicSampler<com.datadog.trace.bootstrap.instrumentation.api.AgentSpan>
+open class com.datadog.android.okhttp.trace.DeterministicTraceSampler : com.datadog.android.core.sampling.DeterministicSampler<com.datadog.android.trace.api.span.DatadogSpan>
   constructor(() -> Float)
   constructor(Float)
   constructor(Double)
-fun okhttp3.Request.Builder.parentSpan(io.opentracing.Span): okhttp3.Request.Builder
+fun okhttp3.Request.Builder.parentSpan(com.datadog.android.trace.api.span.DatadogSpan): okhttp3.Request.Builder
 interface com.datadog.android.okhttp.trace.TracedRequestListener
-  fun onRequestIntercepted(okhttp3.Request, com.datadog.trace.bootstrap.instrumentation.api.AgentSpan, okhttp3.Response?, Throwable?)
+  fun onRequestIntercepted(okhttp3.Request, com.datadog.android.trace.api.span.DatadogSpan, okhttp3.Response?, Throwable?)
 open class com.datadog.android.okhttp.trace.TracingInterceptor : okhttp3.Interceptor
   override fun intercept(okhttp3.Interceptor.Chain): okhttp3.Response
-  protected open fun onRequestIntercepted(com.datadog.android.api.feature.FeatureSdkCore, okhttp3.Request, com.datadog.trace.bootstrap.instrumentation.api.AgentSpan?, okhttp3.Response?, Throwable?)
+  protected open fun onRequestIntercepted(com.datadog.android.api.feature.FeatureSdkCore, okhttp3.Request, com.datadog.android.trace.api.span.DatadogSpan?, okhttp3.Response?, Throwable?)
   class Builder : BaseBuilder<TracingInterceptor, Builder>
     constructor(Map<String, Set<com.datadog.android.trace.TracingHeaderType>>)
     constructor(List<String>)
@@ -50,7 +50,7 @@ open class com.datadog.android.okhttp.trace.TracingInterceptor : okhttp3.Interce
     fun setSdkInstanceName(String): R
     fun setTracedRequestListener(TracedRequestListener): R
     fun setTraceSampleRate(Float): R
-    fun setTraceSampler(com.datadog.android.core.sampling.Sampler<com.datadog.trace.bootstrap.instrumentation.api.AgentSpan>): R
+    fun setTraceSampler(com.datadog.android.core.sampling.Sampler<com.datadog.android.trace.api.span.DatadogSpan>): R
     fun setTraceContextInjection(com.datadog.android.okhttp.TraceContextInjection): R
     fun set404ResourcesRedacted(Boolean): R
     abstract fun build(): T

@@ -12,9 +12,9 @@ import com.datadog.android.okhttp.trace.NoOpTracedRequestListener
 import com.datadog.android.okhttp.trace.TracedRequestListener
 import com.datadog.android.okhttp.trace.TracingInterceptor
 import com.datadog.android.trace.TracingHeaderType
+import com.datadog.android.trace.api.span.DatadogSpan
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.forge.BaseConfigurator
-import com.datadog.trace.bootstrap.instrumentation.api.AgentSpan
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.FloatForgery
@@ -41,7 +41,7 @@ import org.mockito.quality.Strictness
 internal class TracingInterceptorBuilderTest {
 
     @StringForgery
-    lateinit var fakeSdkInstaceName: String
+    lateinit var fakeSdkInstanceName: String
 
     private lateinit var fakeTraceContextInjection: TraceContextInjection
 
@@ -51,7 +51,7 @@ internal class TracingInterceptorBuilderTest {
     lateinit var mockTracedRequestListener: TracedRequestListener
 
     @Mock
-    lateinit var mockSampler: Sampler<AgentSpan>
+    lateinit var mockSampler: Sampler<DatadogSpan>
 
     @StringForgery
     lateinit var fakeOrigin: String
@@ -115,13 +115,13 @@ internal class TracingInterceptorBuilderTest {
     fun `M set sdkInstanceName W build { setSdkInstanceName }`() {
         // When
         val interceptor = TracingInterceptor.Builder(fakeTracedHostsWithHeaderType)
-            .setSdkInstanceName(fakeSdkInstaceName)
+            .setSdkInstanceName(fakeSdkInstanceName)
             .build()
 
         // Then
         assertThat(interceptor.tracedHosts).isEqualTo(fakeTracedHostsWithHeaderType)
         assertThat(interceptor.traceContextInjection).isEqualTo(TraceContextInjection.SAMPLED)
-        assertThat(interceptor.sdkInstanceName).isEqualTo(fakeSdkInstaceName)
+        assertThat(interceptor.sdkInstanceName).isEqualTo(fakeSdkInstanceName)
         assertThat(interceptor.tracedRequestListener).isInstanceOf(NoOpTracedRequestListener::class.java)
         assertThat(interceptor.traceSampler).isInstanceOf(DeterministicTraceSampler::class.java)
         assertThat(interceptor.traceSampler.getSampleRate()).isEqualTo(100f)
