@@ -15,6 +15,8 @@ import com.datadog.android.trace.api.tracer.NoOpDatadogTracer
  * `OkHttp, Kotlin's coroutines, ect.
  */
 object GlobalDatadogTracerHolder {
+
+    @Volatile
     @get:Synchronized
     internal var tracer: DatadogTracer? = null
 
