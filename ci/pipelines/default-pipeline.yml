@@ -499,7 +499,7 @@ publish:release-core:
   timeout: 30m
   script:
     - !reference [.snippets, set-publishing-credentials]
-    - ./gradlew :dd-sdk-android-core:publishToSonatype --stacktrace --no-daemon
+    - ./gradlew :dd-sdk-android-core:publishToSonatype closeSonatypeStagingRepository --stacktrace --no-daemon
   artifacts:
     when: on_success
     expire_in: 7 days
@@ -516,7 +516,7 @@ publish:release-internal:
   timeout: 30m
   script:
     - !reference [ .snippets, set-publishing-credentials ]
-    - ./gradlew :dd-sdk-android-internal:publishToSonatype --stacktrace --no-daemon
+    - ./gradlew :dd-sdk-android-internal:publishToSonatype closeSonatypeStagingRepository --stacktrace --no-daemon
   artifacts:
     when: on_success
     expire_in: 7 days
@@ -535,7 +535,7 @@ publish:release-trace:
   timeout: 30m
   script:
     - !reference [.snippets, set-publishing-credentials]
-    - ./gradlew :features:dd-sdk-android-trace:publishToSonatype --stacktrace --no-daemon
+    - ./gradlew :features:dd-sdk-android-trace:publishToSonatype closeSonatypeStagingRepository --stacktrace --no-daemon
   artifacts:
     when: on_success
     expire_in: 7 days
@@ -552,7 +552,7 @@ publish:release-trace-otel:
   timeout: 30m
   script:
     - !reference [.snippets, set-publishing-credentials]
-    - ./gradlew :features:dd-sdk-android-trace-otel:publishToSonatype --stacktrace --no-daemon
+    - ./gradlew :features:dd-sdk-android-trace-otel:publishToSonatype closeSonatypeStagingRepository --stacktrace --no-daemon
   artifacts:
     when: on_success
     expire_in: 7 days
@@ -569,7 +569,7 @@ publish:release-logs:
   timeout: 30m
   script:
     - !reference [.snippets, set-publishing-credentials]
-    - ./gradlew :features:dd-sdk-android-logs:publishToSonatype --stacktrace --no-daemon
+    - ./gradlew :features:dd-sdk-android-logs:publishToSonatype closeSonatypeStagingRepository --stacktrace --no-daemon
   artifacts:
     when: on_success
     expire_in: 7 days
@@ -586,7 +586,7 @@ publish:release-rum:
   timeout: 30m
   script:
     - !reference [.snippets, set-publishing-credentials]
-    - ./gradlew :features:dd-sdk-android-rum:publishToSonatype --stacktrace --no-daemon
+    - ./gradlew :features:dd-sdk-android-rum:publishToSonatype closeSonatypeStagingRepository --stacktrace --no-daemon
   artifacts:
     when: on_success
     expire_in: 7 days
@@ -603,7 +603,7 @@ publish:release-ndk:
   timeout: 30m
   script:
     - !reference [.snippets, set-publishing-credentials]
-    - ./gradlew :features:dd-sdk-android-ndk:publishToSonatype --stacktrace --no-daemon
+    - ./gradlew :features:dd-sdk-android-ndk:publishToSonatype closeSonatypeStagingRepository --stacktrace --no-daemon
   artifacts:
     when: on_success
     expire_in: 7 days
@@ -620,7 +620,7 @@ publish:release-session-replay:
   timeout: 30m
   script:
     - !reference [.snippets, set-publishing-credentials]
-    - ./gradlew :features:dd-sdk-android-session-replay:publishToSonatype --stacktrace --no-daemon
+    - ./gradlew :features:dd-sdk-android-session-replay:publishToSonatype closeSonatypeStagingRepository --stacktrace --no-daemon
   artifacts:
     when: on_success
     expire_in: 7 days
@@ -637,7 +637,7 @@ publish:release-session-replay-material:
   timeout: 30m
   script:
     - !reference [.snippets, set-publishing-credentials]
-    - ./gradlew :features:dd-sdk-android-session-replay-material:publishToSonatype --stacktrace --no-daemon
+    - ./gradlew :features:dd-sdk-android-session-replay-material:publishToSonatype closeSonatypeStagingRepository --stacktrace --no-daemon
   artifacts:
     when: on_success
     expire_in: 7 days
@@ -654,7 +654,7 @@ publish:release-session-replay-compose:
   timeout: 30m
   script:
     - !reference [.snippets, set-publishing-credentials]
-    - ./gradlew :features:dd-sdk-android-session-replay-compose:publishToSonatype --stacktrace --no-daemon
+    - ./gradlew :features:dd-sdk-android-session-replay-compose:publishToSonatype closeSonatypeStagingRepository --stacktrace --no-daemon
   artifacts:
     when: on_success
     expire_in: 7 days
@@ -671,7 +671,7 @@ publish:release-webview:
   timeout: 30m
   script:
     - !reference [.snippets, set-publishing-credentials]
-    - ./gradlew :features:dd-sdk-android-webview:publishToSonatype --stacktrace --no-daemon
+    - ./gradlew :features:dd-sdk-android-webview:publishToSonatype closeSonatypeStagingRepository --stacktrace --no-daemon
   artifacts:
     when: on_success
     expire_in: 7 days
@@ -692,7 +692,7 @@ publish:release-coil:
   timeout: 30m
   script:
     - !reference [.snippets, set-publishing-credentials]
-    - ./gradlew :integrations:dd-sdk-android-coil:publishToSonatype --stacktrace --no-daemon
+    - ./gradlew :integrations:dd-sdk-android-coil:publishToSonatype closeSonatypeStagingRepository --stacktrace --no-daemon
   artifacts:
     when: on_success
     expire_in: 7 days
@@ -709,7 +709,7 @@ publish:release-compose:
   timeout: 30m
   script:
     - !reference [.snippets, set-publishing-credentials]
-    - ./gradlew :integrations:dd-sdk-android-compose:publishToSonatype --stacktrace --no-daemon
+    - ./gradlew :integrations:dd-sdk-android-compose:publishToSonatype closeSonatypeStagingRepository --stacktrace --no-daemon
   artifacts:
     when: on_success
     expire_in: 7 days
@@ -726,7 +726,7 @@ publish:release-fresco:
   timeout: 30m
   script:
     - !reference [.snippets, set-publishing-credentials]
-    - ./gradlew :integrations:dd-sdk-android-fresco:publishToSonatype --stacktrace --no-daemon
+    - ./gradlew :integrations:dd-sdk-android-fresco:publishToSonatype closeSonatypeStagingRepository --stacktrace --no-daemon
   artifacts:
     when: on_success
     expire_in: 7 days
@@ -743,7 +743,7 @@ publish:release-glide:
   timeout: 30m
   script:
     - !reference [.snippets, set-publishing-credentials]
-    - ./gradlew :integrations:dd-sdk-android-glide:publishToSonatype --stacktrace --no-daemon
+    - ./gradlew :integrations:dd-sdk-android-glide:publishToSonatype closeSonatypeStagingRepository --stacktrace --no-daemon
   artifacts:
     when: on_success
     expire_in: 7 days
@@ -760,7 +760,7 @@ publish:release-trace-coroutines:
   timeout: 30m
   script:
     - !reference [.snippets, set-publishing-credentials]
-    - ./gradlew :integrations:dd-sdk-android-trace-coroutines:publishToSonatype --stacktrace --no-daemon
+    - ./gradlew :integrations:dd-sdk-android-trace-coroutines:publishToSonatype closeSonatypeStagingRepository --stacktrace --no-daemon
   artifacts:
     when: on_success
     expire_in: 7 days
@@ -777,7 +777,7 @@ publish:release-rum-coroutines:
   timeout: 30m
   script:
     - !reference [.snippets, set-publishing-credentials]
-    - ./gradlew :integrations:dd-sdk-android-rum-coroutines:publishToSonatype --stacktrace --no-daemon
+    - ./gradlew :integrations:dd-sdk-android-rum-coroutines:publishToSonatype closeSonatypeStagingRepository --stacktrace --no-daemon
   artifacts:
     when: on_success
     expire_in: 7 days
@@ -794,7 +794,7 @@ publish:release-rx:
   timeout: 30m
   script:
     - !reference [.snippets, set-publishing-credentials]
-    - ./gradlew :integrations:dd-sdk-android-rx:publishToSonatype --stacktrace --no-daemon
+    - ./gradlew :integrations:dd-sdk-android-rx:publishToSonatype closeSonatypeStagingRepository --stacktrace --no-daemon
   artifacts:
     when: on_success
     expire_in: 7 days
@@ -811,7 +811,7 @@ publish:release-sqldelight:
   timeout: 30m
   script:
     - !reference [.snippets, set-publishing-credentials]
-    - ./gradlew :integrations:dd-sdk-android-sqldelight:publishToSonatype --stacktrace --no-daemon
+    - ./gradlew :integrations:dd-sdk-android-sqldelight:publishToSonatype closeSonatypeStagingRepository --stacktrace --no-daemon
   artifacts:
     when: on_success
     expire_in: 7 days
@@ -828,7 +828,7 @@ publish:release-timber:
   timeout: 30m
   script:
     - !reference [.snippets, set-publishing-credentials]
-    - ./gradlew :integrations:dd-sdk-android-timber:publishToSonatype --stacktrace --no-daemon
+    - ./gradlew :integrations:dd-sdk-android-timber:publishToSonatype closeSonatypeStagingRepository --stacktrace --no-daemon
   artifacts:
     when: on_success
     expire_in: 7 days
@@ -845,7 +845,7 @@ publish:release-android-tv:
   timeout: 30m
   script:
     - !reference [.snippets, set-publishing-credentials]
-    - ./gradlew :integrations:dd-sdk-android-tv:publishToSonatype --stacktrace --no-daemon
+    - ./gradlew :integrations:dd-sdk-android-tv:publishToSonatype closeSonatypeStagingRepository --stacktrace --no-daemon
   artifacts:
     when: on_success
     expire_in: 7 days
@@ -862,7 +862,7 @@ publish:release-okhttp:
   timeout: 30m
   script:
     - !reference [.snippets, set-publishing-credentials]
-    - ./gradlew :integrations:dd-sdk-android-okhttp:publishToSonatype --stacktrace --no-daemon
+    - ./gradlew :integrations:dd-sdk-android-okhttp:publishToSonatype closeSonatypeStagingRepository --stacktrace --no-daemon
   artifacts:
     when: on_success
     expire_in: 7 days
@@ -879,7 +879,7 @@ publish:release-okhttp-otel:
   timeout: 30m
   script:
     - !reference [.snippets, set-publishing-credentials]
-    - ./gradlew :integrations:dd-sdk-android-okhttp-otel:publishToSonatype --stacktrace --no-daemon
+    - ./gradlew :integrations:dd-sdk-android-okhttp-otel:publishToSonatype closeSonatypeStagingRepository --stacktrace --no-daemon
   artifacts:
     when: on_success
     expire_in: 7 days
@@ -898,7 +898,7 @@ publish:release-benchmark:
   timeout: 30m
   script:
     - !reference [.snippets, set-publishing-credentials]
-    - ./gradlew :tools:benchmark:publishToSonatype --stacktrace --no-daemon
+    - ./gradlew :tools:benchmark:publishToSonatype closeSonatypeStagingRepository --stacktrace --no-daemon
   artifacts:
     when: on_success
     expire_in: 7 days
