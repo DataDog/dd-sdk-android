@@ -49,6 +49,7 @@ allprojects {
 nexusPublishing {
     this.repositories {
         sonatype {
+            stagingProfileId = "378eecbbe2cf9"
             val sonatypeUsername = System.getenv("CENTRAL_PUBLISHER_USERNAME")
             val sonatypePassword = System.getenv("CENTRAL_PUBLISHER_PASSWORD")
             if (sonatypeUsername != null) username.set(sonatypeUsername)
