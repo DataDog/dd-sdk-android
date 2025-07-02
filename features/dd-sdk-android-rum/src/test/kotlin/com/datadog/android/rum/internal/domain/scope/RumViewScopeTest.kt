@@ -7872,6 +7872,7 @@ internal class RumViewScopeTest {
         // GIVEN
         val frameTimeSeconds = forge.aDouble(min = 0.001, max = 0.05) // 1ms to 50ms
         val expectedRefreshRate = 1.0 / frameTimeSeconds
+        var expectedRefreshRateMin = expectedRefreshRate
 
         // WHEN
         testedScope.handleEvent(
@@ -7887,7 +7888,7 @@ internal class RumViewScopeTest {
         argumentCaptor<ViewEvent> {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(lastValue)
-                .hasRefreshRateMetric(expectedRefreshRate, expectedRefreshRate)
+                .hasRefreshRateMetric(expectedRefreshRate, expectedRefreshRateMin)
         }
         verifyNoMoreInteractions(mockWriter)
         assertThat(result).isSameAs(testedScope)
@@ -7912,8 +7913,8 @@ internal class RumViewScopeTest {
             val refreshRate = 1.0 / frameTime
             refreshRates.add(refreshRate)
             sum += refreshRate
-            min = kotlin.math.min(min, refreshRate)
-            max = kotlin.math.max(max, refreshRate)
+            min = min(min, refreshRate)
+            max = max(max, refreshRate)
 
             testedScope.handleEvent(
                 RumRawEvent.UpdateExternalRefreshRate(frameTime),
@@ -7991,22 +7992,22 @@ internal class RumViewScopeTest {
         forge: Forge
     ) {
         // GIVEN
-        val externalFrameTime = forge.aDouble(min = 0.016, max = 0.017) // ~60 FPS
+        val externalFrameTime = forge.aDouble(min = 0.0004, max = 100.0)
         val expectedExternalRefreshRate = 1.0 / externalFrameTime
 
-        val internalRefreshRate = forge.aDouble(min = 30.0, max = 45.0) // Different range
+        val internalRefreshRate = forge.aDouble(min = 0.1, max = 240.0)
         val listenerCaptor = argumentCaptor<VitalListener> {
             verify(mockFrameRateVitalMonitor).register(capture())
         }
         val vitalListener = listenerCaptor.firstValue
 
-        // WHEN - Add external refresh rate data
+        // WHEN
         testedScope.handleEvent(
             RumRawEvent.UpdateExternalRefreshRate(externalFrameTime),
             mockWriter
         )
 
-        // AND - Add internal refresh rate data (should be ignored)
+        // AND
         vitalListener.onVitalUpdate(VitalInfo(1, internalRefreshRate, internalRefreshRate, internalRefreshRate))
 
         val result = testedScope.handleEvent(
@@ -8014,7 +8015,7 @@ internal class RumViewScopeTest {
             mockWriter
         )
 
-        // THEN - Should use external data, not internal
+        // THEN
         argumentCaptor<ViewEvent> {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(lastValue)
@@ -8029,13 +8030,13 @@ internal class RumViewScopeTest {
         forge: Forge
     ) {
         // GIVEN
-        val internalRefreshRate = forge.aDouble(min = 55.0, max = 60.0)
+        val internalRefreshRate = forge.aDouble(min = 1.0, max = 240.0)
         val listenerCaptor = argumentCaptor<VitalListener> {
             verify(mockFrameRateVitalMonitor).register(capture())
         }
         val vitalListener = listenerCaptor.firstValue
 
-        // WHEN - Only add internal refresh rate data (no external data)
+        // WHEN
         vitalListener.onVitalUpdate(VitalInfo(1, internalRefreshRate, internalRefreshRate, internalRefreshRate))
 
         val result = testedScope.handleEvent(
@@ -8043,7 +8044,7 @@ internal class RumViewScopeTest {
             mockWriter
         )
 
-        // THEN - Should use internal data
+        // THEN
         argumentCaptor<ViewEvent> {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(lastValue)
@@ -8059,7 +8060,7 @@ internal class RumViewScopeTest {
     ) {
         // GIVEN
         testedScope.handleEvent(RumRawEvent.StopView(fakeKey, emptyMap()), mockWriter)
-        val frameTimeSeconds = forge.aDouble(min = 0.016, max = 0.017)
+        val frameTimeSeconds = forge.aDouble(min = 0.08, max = 0.8)
 
         // WHEN
         val result = testedScope.handleEvent(
@@ -8084,7 +8085,7 @@ internal class RumViewScopeTest {
         val refreshRate3 = 1.0 / frameTime3
 
         val expectedAverage = (refreshRate1 + refreshRate2 + refreshRate3) / 3.0
-        val expectedMin = kotlin.math.min(refreshRate2, kotlin.math.min(refreshRate1, refreshRate3))
+        val expectedMin = min(refreshRate2, min(refreshRate1, refreshRate3))
 
         // WHEN
         testedScope.handleEvent(RumRawEvent.UpdateExternalRefreshRate(frameTime1), mockWriter)
