@@ -46,8 +46,8 @@ internal object ComposeReflection {
     val ShapeField = BackgroundElementClass?.getDeclaredFieldSafe("shape")
 
     val DrawBehindElementClass = getClassSafe("androidx.compose.ui.draw.DrawBehindElement")
-    val CheckboxKtClass = getClassSafe("androidx.compose.material.CheckboxKt\$CheckboxImpl\$1\$1")
-    val RadioButtonKtClass = getClassSafe("androidx.compose.material.RadioButtonKt\$RadioButton\$2\$1")
+    val CheckboxKtClass = getClassSafe("androidx.compose.material.CheckboxKt\$CheckboxImpl\$1\$1", false)
+    val RadioButtonKtClass = getClassSafe("androidx.compose.material.RadioButtonKt\$RadioButton\$2\$1", false)
     val CheckDrawingCacheClass = getClassSafe("androidx.compose.material.CheckDrawingCache")
 
     val BorderColorField = CheckboxKtClass?.getDeclaredFieldSafe("\$borderColor\$delegate")
