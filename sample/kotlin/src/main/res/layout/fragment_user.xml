@@ -78,6 +78,18 @@
         android:layout_gravity="center_horizontal"
         android:layout_margin="8dp"
         app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toStartOf="@+id/clear_user"
+        app:layout_constraintTop_toBottomOf="@id/user_age"
+    />
+
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/clear_user"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:text="@string/button_clear"
+        android:layout_gravity="center_horizontal"
+        android:layout_margin="8dp"
+        app:layout_constraintStart_toEndOf="@+id/save_user"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toBottomOf="@id/user_age"
     />

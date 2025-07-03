@@ -64,6 +64,7 @@
     <string name="button_start_sse">Start Server Sent Event Request</string>
     <string name="button_start_404">Start 404 Request</string>
     <string name="button_save">Save</string>
+    <string name="button_clear">Clear</string>
     <string name="button_long_task">Long Task</string>
     <string name="button_frozen_frame">Frozen Frame</string>
     <string name="button_slow_frame_rate">Slow frame rate</string>
