@@ -12,7 +12,6 @@ import com.datadog.android.core.internal.net.DefaultFirstPartyHostHeaderTypeReso
 import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.internal.telemetry.TracingHeaderTypesSet
 import com.datadog.android.internal.utils.loggableStackTrace
-import com.datadog.android.okhttp.TraceContext
 import com.datadog.android.okhttp.TraceContextInjection
 import com.datadog.android.okhttp.internal.trace.toInternalTracingHeaderType
 import com.datadog.android.okhttp.internal.utils.forge.OkHttpConfigurator
@@ -30,7 +29,6 @@ import com.datadog.android.trace.api.span.DatadogSpanBuilder
 import com.datadog.android.trace.api.span.DatadogSpanContext
 import com.datadog.android.trace.api.trace.DatadogTraceId
 import com.datadog.android.trace.api.tracer.DatadogTracer
-import com.datadog.android.trace.impl.DatadogTracing
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
@@ -711,25 +709,30 @@ internal open class TracingInterceptorTest {
     }
 
     @Test
-    fun `M inject tracing header W intercept() for request with parent TraceContext`(
+    fun `M inject tracing header W intercept() for request with parent DatadogSpan`(
         @StringForgery key: String,
         @StringForgery(type = StringForgeryType.ALPHA_NUMERICAL) value: String,
         @IntForgery(min = 200, max = 300) statusCode: Int,
-        @Forgery fakeTraceContext: TraceContext,
         forge: Forge
     ) {
         // Given
-
-        val fakeExpectedTraceId = DatadogTracing.traceIdFactory.fromHex(fakeTraceContext.traceId)
-        val fakeExpectedSpanId = DatadogTracing.spanIdConverter.fromHex(fakeTraceContext.spanId)
+        mockPropagation.wheneverInjectThenValueToHeaders(key, value)
+        val fakeDatadogSpanContext = forge.newSpanContextMock<DatadogSpanContext>(
+            samplingPriority = forge.anInt(min = 0)
+        )
+        val fakeExpectedTraceId = fakeDatadogSpanContext.traceId
+        val fakeExpectedSpanId = fakeDatadogSpanContext.spanId
         val fakeExtractedContext = forge.newSpanContextMock<DatadogSpanContext>(
             fakeExpectedTraceId,
             fakeExpectedSpanId
         )
-        whenever(mockPropagation.createExtractedContext(any(), any(), any())) doReturn fakeExtractedContext
         whenever(mockSpanBuilder.withParentContext(any<DatadogSpanContext>())) doReturn mockSpanBuilder
-
-        fakeRequest = forgeRequest(forge) { it.tag(TraceContext::class.java, fakeTraceContext) }
+        fakeRequest = forgeRequest(forge) {
+            it.tag(
+                DatadogSpan::class.java,
+                forge.newSpanMock(context = fakeExtractedContext)
+            )
+        }
         whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(true)
         stubChain(mockChain, statusCode)
         mockPropagation.wheneverInjectThenValueToHeaders(key, value)
@@ -741,7 +744,7 @@ internal open class TracingInterceptorTest {
         assertThat(response).isSameAs(fakeResponse)
         argumentCaptor<Request> {
             verify(mockChain).proceed(capture())
-            if (fakeTraceContext.samplingPriority > 0) {
+            if (fakeExtractedContext.samplingPriority > 0) {
                 assertThat(firstValue.headers(key)).containsOnly(value)
             } else {
                 assertThat(firstValue.headers(key)).isEmpty()

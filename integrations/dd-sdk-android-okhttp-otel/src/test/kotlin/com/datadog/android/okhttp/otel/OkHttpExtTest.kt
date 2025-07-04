@@ -6,8 +6,9 @@
 
 package com.datadog.android.okhttp.otel
 
-import com.datadog.android.okhttp.TraceContext
 import com.datadog.android.trace.api.constants.DatadogTracingConstants
+import com.datadog.android.trace.api.span.DatadogSpan
+import com.datadog.opentelemetry.trace.OtelSpan
 import com.datadog.tools.unit.forge.BaseConfigurator
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -24,6 +25,7 @@ import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
@@ -70,14 +72,21 @@ internal class OkHttpExtTest {
 
     @Test
     fun `M set the parentSpan through the Request builder W addParentSpan`() {
+        // Given
+        val datadogSpan = mock<DatadogSpan>()
+        val mockSpan = mock<OtelSpan> {
+            on { mock.datadogSpan } doReturn datadogSpan
+        }
+
         // When
         val request = Request.Builder().url(fakeUrl).addParentSpan(mockSpan).build()
 
         // Then
-        val taggedContext = request.tag(TraceContext::class.java)
-        checkNotNull(taggedContext)
-        assertThat(taggedContext.spanId).isEqualTo(fakeSpanId)
-        assertThat(taggedContext.traceId).isEqualTo(fakeTraceId)
-        assertThat(taggedContext.samplingPriority).isEqualTo(expectedPrioritySampling)
+        val taggedContext = request.tag(DatadogSpan::class.java)
+        assertThat(
+            checkNotNull(taggedContext)
+        ).isEqualTo(
+            datadogSpan
+        )
     }
 }
