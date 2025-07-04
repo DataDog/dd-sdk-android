@@ -95,6 +95,11 @@ registerSubModuleAggregationTask(
     ":features:"
 )
 registerSubModuleAggregationTask("unitTestDebugIntegrations", "testDebugUnitTest", ":integrations:")
+tasks.register("unitTestDebugSamples") {
+    dependsOn(
+        ":sample:benchmark:testDebugUnitTest"
+    )
+}
 
 tasks.register("assembleSampleRelease") {
     dependsOn(
@@ -111,7 +116,8 @@ tasks.register("unitTestTools") {
         ":tools:unit:testJvmReleaseUnitTest",
         ":tools:detekt:test",
         ":tools:lint:test",
-        ":tools:noopfactory:test"
+        ":tools:noopfactory:test",
+        ":tools:benchmark:test"
     )
 }
 

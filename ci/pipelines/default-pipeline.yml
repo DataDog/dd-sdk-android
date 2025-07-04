@@ -146,6 +146,7 @@ test:debug:
     - GRADLE_OPTS="-Xmx3072m" DD_TAGS="test.configuration.variant:debug" ./gradlew :dd-sdk-android-internal:testDebugUnitTest --no-daemon --build-cache --gradle-user-home cache/ -Dorg.gradle.jvmargs=-javaagent:$DD_TRACER_FOLDER/dd-java-agent.jar=$DD_COMMON_AGENT_CONFIG
     - GRADLE_OPTS="-Xmx3072m" DD_TAGS="test.configuration.variant:debug" ./gradlew :unitTestDebugFeatures --no-daemon --build-cache --gradle-user-home cache/ -Dorg.gradle.jvmargs=-javaagent:$DD_TRACER_FOLDER/dd-java-agent.jar=$DD_COMMON_AGENT_CONFIG
     - GRADLE_OPTS="-Xmx3072m" DD_TAGS="test.configuration.variant:debug" ./gradlew :unitTestDebugIntegrations --no-daemon --build-cache --gradle-user-home cache/ -Dorg.gradle.jvmargs=-javaagent:$DD_TRACER_FOLDER/dd-java-agent.jar=$DD_COMMON_AGENT_CONFIG
+    - GRADLE_OPTS="-Xmx3072m" DD_TAGS="test.configuration.variant:debug" ./gradlew :unitTestDebugSamples --no-daemon --build-cache --gradle-user-home cache/ -Dorg.gradle.jvmargs=-javaagent:$DD_TRACER_FOLDER/dd-java-agent.jar=$DD_COMMON_AGENT_CONFIG
   artifacts:
     when: always
     expire_in: 1 week
