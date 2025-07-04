@@ -73,7 +73,8 @@ class DatadogHttpClientTest {
     @Forgery
     private lateinit var spanEvents: List<SpanEvent>
 
-    private val contentType = "application/json; charset=utf-8"
+    private val contentTypeJson = "application/json; charset=utf-8"
+    private val contentTypePlainText = "text/plain;charset=UTF-8"
 
     @BeforeEach
     fun `set up`() {
@@ -104,7 +105,7 @@ class DatadogHttpClientTest {
             verifyRequestBody(
                 firstValue.body,
                 fakeMetricJson,
-                contentType
+                contentTypeJson
             )
         }
     }
@@ -125,7 +126,7 @@ class DatadogHttpClientTest {
             verifyRequestBody(
                 firstValue.body,
                 fakeSpanJson,
-                contentType
+                contentTypePlainText
             )
         }
     }
