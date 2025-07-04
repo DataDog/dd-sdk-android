@@ -162,6 +162,7 @@ interface com.datadog.android.rum.RumSessionListener
 class com.datadog.android.rum._RumInternalProxy
   fun addLongTask(Long, String)
   fun updatePerformanceMetric(RumPerformanceMetric, Double)
+  fun updateExternalRefreshRate(Double)
   fun setInternalViewAttribute(String, Any?)
   fun setSyntheticsAttribute(String?, String?)
   fun enableJankStatsTracking(android.app.Activity)
