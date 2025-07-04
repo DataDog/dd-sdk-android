@@ -520,8 +520,8 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
         @IntForgery(min = 200, max = 300) statusCode: Int,
         forge: Forge
     ) {
-        val parentSpan: DatadogSpan = mock()
-        val parentSpanContext: DatadogSpanContext = mock()
+        val parentSpanContext: DatadogSpanContext = forge.newSpanContextMock<DatadogSpanContext>(samplingPriority = 1)
+        val parentSpan: DatadogSpan = forge.newSpanMock(parentSpanContext)
         whenever(parentSpan.context()) doReturn parentSpanContext
         whenever(mockSpanBuilder.withParentContext(parentSpanContext)) doReturn mockSpanBuilder
         fakeRequest = forgeRequest(forge) { it.tag(DatadogSpan::class.java, parentSpan) }
