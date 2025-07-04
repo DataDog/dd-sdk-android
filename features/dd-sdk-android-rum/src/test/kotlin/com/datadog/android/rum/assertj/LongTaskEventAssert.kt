@@ -205,19 +205,11 @@ internal class LongTaskEventAssert(actual: LongTaskEvent) :
         return this
     }
 
-    fun hasUserSession(): LongTaskEventAssert {
+    fun hasSessionType(expected: LongTaskEvent.LongTaskEventSessionType): LongTaskEventAssert {
         assertThat(actual.session.type)
             .overridingErrorMessage(
-                "Expected event to have session.type:user but was ${actual.session.type}"
-            ).isEqualTo(LongTaskEvent.LongTaskEventSessionType.USER)
-        return this
-    }
-
-    fun hasSyntheticsSession(): LongTaskEventAssert {
-        assertThat(actual.session.type)
-            .overridingErrorMessage(
-                "Expected event to have session.type:synthetics but was ${actual.session.type}"
-            ).isEqualTo(LongTaskEvent.LongTaskEventSessionType.SYNTHETICS)
+                "Expected event to have session.type:$expected but was ${actual.session.type}"
+            ).isEqualTo(expected)
         return this
     }
 

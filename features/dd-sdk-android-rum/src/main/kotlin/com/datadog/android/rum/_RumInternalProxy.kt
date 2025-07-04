@@ -104,5 +104,12 @@ class _RumInternalProxy internal constructor(private val rumMonitor: AdvancedRum
         ): Builder {
             return builder.setComposeActionTrackingStrategy(composeActionTrackingStrategy)
         }
+
+        fun setRumSessionType(
+            builder: Builder,
+            rumSessionType: RumSessionType
+        ): Builder {
+            return builder.setRumSessionType(rumSessionType)
+        }
     }
 }

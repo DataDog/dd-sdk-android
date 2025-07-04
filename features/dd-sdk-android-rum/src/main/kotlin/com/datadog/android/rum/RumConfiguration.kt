@@ -378,6 +378,15 @@ data class RumConfiguration internal constructor(
                 rumConfig.copy(composeActionTrackingStrategy = composeActionTrackingStrategy)
             return this
         }
+
+        /**
+         * Set RUM session type that will be propagated to all RUM events and used regardless of
+         * whether the session is happening inside a synthetic test or not.
+         */
+        internal fun setRumSessionType(rumSessionType: RumSessionType): Builder {
+            rumConfig = rumConfig.copy(rumSessionType = rumSessionType)
+            return this
+        }
         // endregion
     }
 }
