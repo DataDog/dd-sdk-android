@@ -203,19 +203,11 @@ internal class ViewEventAssert(actual: ViewEvent) :
         return this
     }
 
-    fun hasUserSession(): ViewEventAssert {
+    fun hasSessionType(expected: ViewEvent.ViewEventSessionType): ViewEventAssert {
         assertThat(actual.session.type)
             .overridingErrorMessage(
-                "Expected event to have session.type:user but was ${actual.session.type}"
-            ).isEqualTo(ViewEvent.ViewEventSessionType.USER)
-        return this
-    }
-
-    fun hasSyntheticsSession(): ViewEventAssert {
-        assertThat(actual.session.type)
-            .overridingErrorMessage(
-                "Expected event to have session.type:synthetics but was ${actual.session.type}"
-            ).isEqualTo(ViewEvent.ViewEventSessionType.SYNTHETICS)
+                "Expected event to have session.type:$expected but was ${actual.session.type}"
+            ).isEqualTo(expected)
         return this
     }
 

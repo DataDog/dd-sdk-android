@@ -411,19 +411,11 @@ internal class ResourceEventAssert(actual: ResourceEvent) :
         return this
     }
 
-    fun hasUserSession(): ResourceEventAssert {
+    fun hasSessionType(expected: ResourceEvent.ResourceEventSessionType): ResourceEventAssert {
         assertThat(actual.session.type)
             .overridingErrorMessage(
-                "Expected event to have session.type:user but was ${actual.session.type}"
-            ).isEqualTo(ResourceEvent.ResourceEventSessionType.USER)
-        return this
-    }
-
-    fun hasSyntheticsSession(): ResourceEventAssert {
-        assertThat(actual.session.type)
-            .overridingErrorMessage(
-                "Expected event to have session.type:synthetics but was ${actual.session.type}"
-            ).isEqualTo(ResourceEvent.ResourceEventSessionType.SYNTHETICS)
+                "Expected event to have sessionType:$expected but was ${actual.session.type}"
+            ).isEqualTo(expected)
         return this
     }
 

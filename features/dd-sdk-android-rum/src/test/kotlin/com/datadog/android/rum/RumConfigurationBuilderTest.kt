@@ -34,6 +34,7 @@ import com.datadog.android.rum.tracking.ViewAttributesProvider
 import com.datadog.android.rum.tracking.ViewTrackingStrategy
 import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.android.telemetry.model.TelemetryConfigurationEvent
+import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.FloatForgery
 import fr.xgouchet.elmyr.annotation.Forgery
@@ -615,5 +616,21 @@ internal class RumConfigurationBuilderTest {
         // Then
         assertThat(rumConfiguration.featureConfiguration.composeActionTrackingStrategy)
             .isSameAs(mockActionTrackingStrategy)
+    }
+
+    @Test
+    fun `M set rumSessionType W setRumSessionType()`(
+        forge: Forge
+    ) {
+        // Given
+        val rumSessionType = forge.aValueFrom(RumSessionType::class.java)
+
+        // When
+        _RumInternalProxy.setRumSessionType(testedBuilder, rumSessionType)
+        val rumConfiguration = testedBuilder.build()
+
+        // Then
+        assertThat(rumConfiguration.featureConfiguration.rumSessionType)
+            .isEqualTo(rumSessionType)
     }
 }
