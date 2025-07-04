@@ -37,6 +37,7 @@ import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumSessionListener
+import com.datadog.android.rum.RumSessionType
 import com.datadog.android.rum.configuration.SlowFramesConfiguration
 import com.datadog.android.rum.configuration.VitalsUpdateFrequency
 import com.datadog.android.rum.internal.anr.ANRDetectorRunnable
@@ -628,7 +629,8 @@ internal class RumFeature(
         val slowFramesConfiguration: SlowFramesConfiguration?,
         val composeActionTrackingStrategy: ActionTrackingStrategy,
         val additionalConfig: Map<String, Any>,
-        val trackAnonymousUser: Boolean
+        val trackAnonymousUser: Boolean,
+        val rumSessionTypeOverride: RumSessionType?
     )
 
     internal companion object {
@@ -677,7 +679,8 @@ internal class RumFeature(
             composeActionTrackingStrategy = NoOpActionTrackingStrategy(),
             additionalConfig = emptyMap(),
             trackAnonymousUser = true,
-            slowFramesConfiguration = null
+            slowFramesConfiguration = null,
+            rumSessionTypeOverride = null
         )
 
         internal const val EVENT_MESSAGE_PROPERTY = "message"

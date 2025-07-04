@@ -27,6 +27,7 @@ import com.datadog.android.rum.RumPerformanceMetric
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.RumResourceMethod
 import com.datadog.android.rum.RumSessionListener
+import com.datadog.android.rum.RumSessionType
 import com.datadog.android.rum.internal.RumErrorSourceType
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.debug.RumDebugListener
@@ -181,6 +182,8 @@ internal class DatadogRumMonitorTest {
     @Mock
     lateinit var mockSlowFramesListener: SlowFramesListener
 
+    private var fakeRumSessionType: RumSessionType? = null
+
     @BeforeEach
     fun `set up`(forge: Forge) {
         whenever(mockExecutorService.execute(any())) doAnswer {
@@ -192,25 +195,29 @@ internal class DatadogRumMonitorTest {
         whenever(mockSlowFramesListener.resolveReport(any(), any(), any())) doReturn fakeViewUIPerformanceReport
 
         fakeAttributes = forge.exhaustiveAttributes()
+
+        fakeRumSessionType = forge.aNullable { aValueFrom(RumSessionType::class.java) }
+
         testedMonitor = DatadogRumMonitor(
-            fakeApplicationId,
-            mockSdkCore,
-            fakeSampleRate,
-            fakeBackgroundTrackingEnabled,
-            fakeTrackFrustrations,
-            mockWriter,
-            mockHandler,
-            mockTelemetryEventHandler,
-            mockSessionEndedMetricDispatcher,
-            mockResolver,
-            mockCpuVitalMonitor,
-            mockMemoryVitalMonitor,
-            mockFrameRateVitalMonitor,
-            mockSessionListener,
-            mockExecutorService,
-            mockNetworkSettledResourceIdentifier,
-            mockLastInteractionIdentifier,
-            mockSlowFramesListener
+            applicationId = fakeApplicationId,
+            sdkCore = mockSdkCore,
+            sampleRate = fakeSampleRate,
+            backgroundTrackingEnabled = fakeBackgroundTrackingEnabled,
+            trackFrustrations = fakeTrackFrustrations,
+            writer = mockWriter,
+            handler = mockHandler,
+            telemetryEventHandler = mockTelemetryEventHandler,
+            sessionEndedMetricDispatcher = mockSessionEndedMetricDispatcher,
+            firstPartyHostHeaderTypeResolver = mockResolver,
+            cpuVitalMonitor = mockCpuVitalMonitor,
+            memoryVitalMonitor = mockMemoryVitalMonitor,
+            frameRateVitalMonitor = mockFrameRateVitalMonitor,
+            sessionListener = mockSessionListener,
+            executorService = mockExecutorService,
+            initialResourceIdentifier = mockNetworkSettledResourceIdentifier,
+            lastInteractionIdentifier = mockLastInteractionIdentifier,
+            slowFramesListener = mockSlowFramesListener,
+            rumSessionTypeOverride = fakeRumSessionType
         )
         testedMonitor.rootScope = mockScope
     }
@@ -218,24 +225,25 @@ internal class DatadogRumMonitorTest {
     @Test
     fun `creates root scope`() {
         testedMonitor = DatadogRumMonitor(
-            fakeApplicationId,
-            mockSdkCore,
-            fakeSampleRate,
-            fakeBackgroundTrackingEnabled,
-            fakeTrackFrustrations,
-            mockWriter,
-            mockHandler,
-            mockTelemetryEventHandler,
-            mockSessionEndedMetricDispatcher,
-            mockResolver,
-            mockCpuVitalMonitor,
-            mockMemoryVitalMonitor,
-            mockFrameRateVitalMonitor,
-            mockSessionListener,
-            mockExecutorService,
-            mockNetworkSettledResourceIdentifier,
-            mockLastInteractionIdentifier,
-            mockSlowFramesListener
+            applicationId = fakeApplicationId,
+            sdkCore = mockSdkCore,
+            sampleRate = fakeSampleRate,
+            backgroundTrackingEnabled = fakeBackgroundTrackingEnabled,
+            trackFrustrations = fakeTrackFrustrations,
+            writer = mockWriter,
+            handler = mockHandler,
+            telemetryEventHandler = mockTelemetryEventHandler,
+            sessionEndedMetricDispatcher = mockSessionEndedMetricDispatcher,
+            firstPartyHostHeaderTypeResolver = mockResolver,
+            cpuVitalMonitor = mockCpuVitalMonitor,
+            memoryVitalMonitor = mockMemoryVitalMonitor,
+            frameRateVitalMonitor = mockFrameRateVitalMonitor,
+            sessionListener = mockSessionListener,
+            executorService = mockExecutorService,
+            initialResourceIdentifier = mockNetworkSettledResourceIdentifier,
+            lastInteractionIdentifier = mockLastInteractionIdentifier,
+            slowFramesListener = mockSlowFramesListener,
+            rumSessionTypeOverride = fakeRumSessionType
         )
 
         val rootScope = testedMonitor.rootScope
@@ -280,24 +288,25 @@ internal class DatadogRumMonitorTest {
     fun `M send correct sessionId W getCurrentSessionId { session started, sampled in }`() {
         // Given
         testedMonitor = DatadogRumMonitor(
-            fakeApplicationId,
-            mockSdkCore,
-            100.0f,
-            fakeBackgroundTrackingEnabled,
-            fakeTrackFrustrations,
-            mockWriter,
-            mockHandler,
-            mockTelemetryEventHandler,
-            mockSessionEndedMetricDispatcher,
-            mockResolver,
-            mockCpuVitalMonitor,
-            mockMemoryVitalMonitor,
-            mockFrameRateVitalMonitor,
-            mockSessionListener,
-            mockExecutorService,
-            mockNetworkSettledResourceIdentifier,
-            mockLastInteractionIdentifier,
-            mockSlowFramesListener
+            applicationId = fakeApplicationId,
+            sdkCore = mockSdkCore,
+            sampleRate = 100.0f,
+            backgroundTrackingEnabled = fakeBackgroundTrackingEnabled,
+            trackFrustrations = fakeTrackFrustrations,
+            writer = mockWriter,
+            handler = mockHandler,
+            telemetryEventHandler = mockTelemetryEventHandler,
+            sessionEndedMetricDispatcher = mockSessionEndedMetricDispatcher,
+            firstPartyHostHeaderTypeResolver = mockResolver,
+            cpuVitalMonitor = mockCpuVitalMonitor,
+            memoryVitalMonitor = mockMemoryVitalMonitor,
+            frameRateVitalMonitor = mockFrameRateVitalMonitor,
+            sessionListener = mockSessionListener,
+            executorService = mockExecutorService,
+            initialResourceIdentifier = mockNetworkSettledResourceIdentifier,
+            lastInteractionIdentifier = mockLastInteractionIdentifier,
+            slowFramesListener = mockSlowFramesListener,
+            rumSessionTypeOverride = fakeRumSessionType
         )
         val completableFuture = CompletableFuture<String>()
         testedMonitor.start()
@@ -320,24 +329,25 @@ internal class DatadogRumMonitorTest {
     @Test
     fun `M send null sessionId W getCurrentSessionId { session started, sampled out }`() {
         testedMonitor = DatadogRumMonitor(
-            fakeApplicationId,
-            mockSdkCore,
-            0.0f,
-            fakeBackgroundTrackingEnabled,
-            fakeTrackFrustrations,
-            mockWriter,
-            mockHandler,
-            mockTelemetryEventHandler,
-            mockSessionEndedMetricDispatcher,
-            mockResolver,
-            mockCpuVitalMonitor,
-            mockMemoryVitalMonitor,
-            mockFrameRateVitalMonitor,
-            mockSessionListener,
-            mockExecutorService,
-            mockNetworkSettledResourceIdentifier,
-            mockLastInteractionIdentifier,
-            mockSlowFramesListener
+            applicationId = fakeApplicationId,
+            sdkCore = mockSdkCore,
+            sampleRate = 0.0f,
+            backgroundTrackingEnabled = fakeBackgroundTrackingEnabled,
+            trackFrustrations = fakeTrackFrustrations,
+            writer = mockWriter,
+            handler = mockHandler,
+            telemetryEventHandler = mockTelemetryEventHandler,
+            sessionEndedMetricDispatcher = mockSessionEndedMetricDispatcher,
+            firstPartyHostHeaderTypeResolver = mockResolver,
+            cpuVitalMonitor = mockCpuVitalMonitor,
+            memoryVitalMonitor = mockMemoryVitalMonitor,
+            frameRateVitalMonitor = mockFrameRateVitalMonitor,
+            sessionListener = mockSessionListener,
+            executorService = mockExecutorService,
+            initialResourceIdentifier = mockNetworkSettledResourceIdentifier,
+            lastInteractionIdentifier = mockLastInteractionIdentifier,
+            slowFramesListener = mockSlowFramesListener,
+            rumSessionTypeOverride = fakeRumSessionType
         )
 
         val completableFuture = CompletableFuture<String>()
@@ -1667,24 +1677,25 @@ internal class DatadogRumMonitorTest {
         val mockExecutor: ScheduledThreadPoolExecutor = mock()
         whenever(mockExecutor.queue).thenReturn(blockingQueue)
         testedMonitor = DatadogRumMonitor(
-            fakeApplicationId,
-            mockSdkCore,
-            fakeSampleRate,
-            fakeBackgroundTrackingEnabled,
-            fakeTrackFrustrations,
-            mockWriter,
-            mockHandler,
-            mockTelemetryEventHandler,
-            mockSessionEndedMetricDispatcher,
-            mockResolver,
-            mockCpuVitalMonitor,
-            mockMemoryVitalMonitor,
-            mockFrameRateVitalMonitor,
-            mockSessionListener,
-            mockExecutor,
-            mockNetworkSettledResourceIdentifier,
-            mockLastInteractionIdentifier,
-            mockSlowFramesListener
+            applicationId = fakeApplicationId,
+            sdkCore = mockSdkCore,
+            sampleRate = fakeSampleRate,
+            backgroundTrackingEnabled = fakeBackgroundTrackingEnabled,
+            trackFrustrations = fakeTrackFrustrations,
+            writer = mockWriter,
+            handler = mockHandler,
+            telemetryEventHandler = mockTelemetryEventHandler,
+            sessionEndedMetricDispatcher = mockSessionEndedMetricDispatcher,
+            firstPartyHostHeaderTypeResolver = mockResolver,
+            cpuVitalMonitor = mockCpuVitalMonitor,
+            memoryVitalMonitor = mockMemoryVitalMonitor,
+            frameRateVitalMonitor = mockFrameRateVitalMonitor,
+            sessionListener = mockSessionListener,
+            executorService = mockExecutor,
+            initialResourceIdentifier = mockNetworkSettledResourceIdentifier,
+            lastInteractionIdentifier = mockLastInteractionIdentifier,
+            slowFramesListener = mockSlowFramesListener,
+            rumSessionTypeOverride = fakeRumSessionType
         )
 
         // When
@@ -1715,24 +1726,25 @@ internal class DatadogRumMonitorTest {
         // Given
         val mockExecutorService: ExecutorService = mock()
         testedMonitor = DatadogRumMonitor(
-            fakeApplicationId,
-            mockSdkCore,
-            fakeSampleRate,
-            fakeBackgroundTrackingEnabled,
-            fakeTrackFrustrations,
-            mockWriter,
-            mockHandler,
-            mockTelemetryEventHandler,
-            mockSessionEndedMetricDispatcher,
-            mockResolver,
-            mockCpuVitalMonitor,
-            mockMemoryVitalMonitor,
-            mockFrameRateVitalMonitor,
-            mockSessionListener,
-            mockExecutorService,
-            mockNetworkSettledResourceIdentifier,
-            mockLastInteractionIdentifier,
-            mockSlowFramesListener
+            applicationId = fakeApplicationId,
+            sdkCore = mockSdkCore,
+            sampleRate = fakeSampleRate,
+            backgroundTrackingEnabled = fakeBackgroundTrackingEnabled,
+            trackFrustrations = fakeTrackFrustrations,
+            writer = mockWriter,
+            handler = mockHandler,
+            telemetryEventHandler = mockTelemetryEventHandler,
+            sessionEndedMetricDispatcher = mockSessionEndedMetricDispatcher,
+            firstPartyHostHeaderTypeResolver = mockResolver,
+            cpuVitalMonitor = mockCpuVitalMonitor,
+            memoryVitalMonitor = mockMemoryVitalMonitor,
+            frameRateVitalMonitor = mockFrameRateVitalMonitor,
+            sessionListener = mockSessionListener,
+            executorService = mockExecutorService,
+            initialResourceIdentifier = mockNetworkSettledResourceIdentifier,
+            lastInteractionIdentifier = mockLastInteractionIdentifier,
+            slowFramesListener = mockSlowFramesListener,
+            rumSessionTypeOverride = fakeRumSessionType
         )
 
         // When
@@ -1767,7 +1779,8 @@ internal class DatadogRumMonitorTest {
             mockExecutorService,
             mockNetworkSettledResourceIdentifier,
             mockLastInteractionIdentifier,
-            mockSlowFramesListener
+            mockSlowFramesListener,
+            null
         )
         whenever(mockExecutorService.isShutdown).thenReturn(true)
 
@@ -1946,24 +1959,25 @@ internal class DatadogRumMonitorTest {
         testedMonitor.startView(key, name, attributes)
         // Given
         testedMonitor = DatadogRumMonitor(
-            fakeApplicationId,
-            mockSdkCore,
-            100.0f,
-            fakeBackgroundTrackingEnabled,
-            fakeTrackFrustrations,
-            mockWriter,
-            mockHandler,
-            mockTelemetryEventHandler,
-            mockSessionEndedMetricDispatcher,
-            mockResolver,
-            mockCpuVitalMonitor,
-            mockMemoryVitalMonitor,
-            mockFrameRateVitalMonitor,
-            mockSessionListener,
-            mockExecutorService,
-            mockNetworkSettledResourceIdentifier,
-            mockLastInteractionIdentifier,
-            mockSlowFramesListener
+            applicationId = fakeApplicationId,
+            sdkCore = mockSdkCore,
+            sampleRate = 100.0f,
+            backgroundTrackingEnabled = fakeBackgroundTrackingEnabled,
+            trackFrustrations = fakeTrackFrustrations,
+            writer = mockWriter,
+            handler = mockHandler,
+            telemetryEventHandler = mockTelemetryEventHandler,
+            sessionEndedMetricDispatcher = mockSessionEndedMetricDispatcher,
+            firstPartyHostHeaderTypeResolver = mockResolver,
+            cpuVitalMonitor = mockCpuVitalMonitor,
+            memoryVitalMonitor = mockMemoryVitalMonitor,
+            frameRateVitalMonitor = mockFrameRateVitalMonitor,
+            sessionListener = mockSessionListener,
+            executorService = mockExecutorService,
+            initialResourceIdentifier = mockNetworkSettledResourceIdentifier,
+            lastInteractionIdentifier = mockLastInteractionIdentifier,
+            slowFramesListener = mockSlowFramesListener,
+            rumSessionTypeOverride = fakeRumSessionType
         )
         testedMonitor.startView(key, name, attributes)
         // When

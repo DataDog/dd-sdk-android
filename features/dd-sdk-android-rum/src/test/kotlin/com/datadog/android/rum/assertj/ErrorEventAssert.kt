@@ -304,19 +304,11 @@ internal class ErrorEventAssert(actual: ErrorEvent) :
         return this
     }
 
-    fun hasUserSession(): ErrorEventAssert {
+    fun hasSessionType(expected: ErrorEvent.ErrorEventSessionType): ErrorEventAssert {
         assertThat(actual.session.type)
             .overridingErrorMessage(
-                "Expected event to have session.type:user but was ${actual.session.type}"
-            ).isEqualTo(ErrorEvent.ErrorEventSessionType.USER)
-        return this
-    }
-
-    fun hasSyntheticsSession(): ErrorEventAssert {
-        assertThat(actual.session.type)
-            .overridingErrorMessage(
-                "Expected event to have session.type:synthetics but was ${actual.session.type}"
-            ).isEqualTo(ErrorEvent.ErrorEventSessionType.SYNTHETICS)
+                "Expected event to have session.type:$expected but was ${actual.session.type}"
+            ).isEqualTo(expected)
         return this
     }
 
