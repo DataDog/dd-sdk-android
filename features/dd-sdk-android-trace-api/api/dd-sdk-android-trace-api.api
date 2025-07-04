@@ -80,6 +80,16 @@ public final class com/datadog/android/trace/api/propagation/NoOpDatadogPropagat
 	public fun isExtractedContext (Lcom/datadog/android/trace/api/span/DatadogSpanContext;)Z
 }
 
+public abstract interface class com/datadog/android/trace/api/sampling/DatadogSamplersFactory {
+	public abstract fun newAllSampler ()Lcom/datadog/android/trace/api/sampling/DatadogTracerSampler;
+	public abstract fun newRateBasedSampler (D)Lcom/datadog/android/trace/api/sampling/DatadogTracerSampler;
+	public abstract fun newSpanSampler (D)Lcom/datadog/android/trace/api/sampling/DatadogTracerSampler;
+	public abstract fun newTraceSampler (D)Lcom/datadog/android/trace/api/sampling/DatadogTracerSampler;
+}
+
+public abstract interface class com/datadog/android/trace/api/sampling/DatadogTracerSampler {
+}
+
 public abstract interface class com/datadog/android/trace/api/scope/DataScopeListener {
 	public abstract fun afterScopeActivated ()V
 	public abstract fun afterScopeClosed ()V
@@ -206,13 +216,14 @@ public abstract interface class com/datadog/android/trace/api/tracer/DatadogTrac
 	public abstract fun build ()Lcom/datadog/android/trace/api/tracer/DatadogTracer;
 	public abstract fun withIdGenerationStrategy (Ljava/lang/String;Z)Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;
 	public abstract fun withPartialFlushMinSpans (I)Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;
+	public abstract fun withPartialFlushThreshold (I)Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;
 	public abstract fun withProperties (Ljava/util/Properties;)Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;
-	public abstract fun withSampler (Lcom/datadog/android/trace/api/tracer/DatadogTracerSampler;)Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;
+	public abstract fun withSampleRate (D)Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;
+	public abstract fun withSampler (Lcom/datadog/android/trace/api/sampling/DatadogTracerSampler;)Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;
 	public abstract fun withServiceName (Ljava/lang/String;)Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;
+	public abstract fun withTag (Ljava/lang/String;Ljava/lang/String;)Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;
+	public abstract fun withTraceLimit (I)Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;
 	public abstract fun withTracingHeadersTypes (Ljava/util/Set;)Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;
-}
-
-public abstract interface class com/datadog/android/trace/api/tracer/DatadogTracerSampler {
 }
 
 public final class com/datadog/android/trace/api/tracer/NoOpDatadogTracer : com/datadog/android/trace/api/tracer/DatadogTracer {
@@ -231,9 +242,13 @@ public final class com/datadog/android/trace/api/tracer/NoOpDatadogTracerBuilder
 	public fun build ()Lcom/datadog/android/trace/api/tracer/DatadogTracer;
 	public fun withIdGenerationStrategy (Ljava/lang/String;Z)Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;
 	public fun withPartialFlushMinSpans (I)Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;
+	public fun withPartialFlushThreshold (I)Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;
 	public fun withProperties (Ljava/util/Properties;)Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;
-	public fun withSampler (Lcom/datadog/android/trace/api/tracer/DatadogTracerSampler;)Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;
+	public fun withSampleRate (D)Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;
+	public fun withSampler (Lcom/datadog/android/trace/api/sampling/DatadogTracerSampler;)Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;
 	public fun withServiceName (Ljava/lang/String;)Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;
+	public fun withTag (Ljava/lang/String;Ljava/lang/String;)Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;
+	public fun withTraceLimit (I)Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;
 	public fun withTracingHeadersTypes (Ljava/util/Set;)Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;
 }
 

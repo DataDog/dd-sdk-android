@@ -13,9 +13,8 @@ import com.datadog.android.api.feature.StorageBackedFeature
 import com.datadog.android.api.net.RequestFactory
 import com.datadog.android.api.storage.FeatureStorageConfiguration
 import com.datadog.android.trace.InternalCoreWriterProvider
-import com.datadog.android.trace.api.span.DatadogSpanWriter
 import com.datadog.android.trace.event.SpanEventMapper
-import com.datadog.android.trace.impl.DatadogTracing
+import com.datadog.android.trace.impl.internal.DatadogSpanWriterWrapper
 import com.datadog.android.trace.internal.data.NoOpCoreTracerWriter
 import com.datadog.android.trace.internal.data.NoOpWriter
 import com.datadog.android.trace.internal.data.OtelTraceWriter
@@ -71,9 +70,7 @@ internal class TracingFeature(
 
     // region InternalCoreWriterProvider
 
-    override fun getCoreTracerWriter(): DatadogSpanWriter {
-        return DatadogTracing.wrapWriter(coreTracerDataWriter)
-    }
+    override fun getCoreTracerWriter() = DatadogSpanWriterWrapper(coreTracerDataWriter)
 
     // endregion
 

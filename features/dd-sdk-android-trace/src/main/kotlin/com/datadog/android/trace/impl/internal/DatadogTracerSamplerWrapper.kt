@@ -5,7 +5,7 @@
  */
 package com.datadog.android.trace.impl.internal
 
-import com.datadog.android.trace.api.tracer.DatadogTracerSampler
+import com.datadog.android.trace.api.sampling.DatadogTracerSampler
 import com.datadog.trace.common.sampling.Sampler
 
 internal class DatadogTracerSamplerWrapper(val delegate: Sampler?) : DatadogTracerSampler

@@ -9,25 +9,24 @@ import com.datadog.android.trace.api.span.DatadogSpanContext
 import com.datadog.android.trace.api.trace.DatadogTraceId
 import com.datadog.trace.api.sampling.SamplingMechanism
 import com.datadog.trace.bootstrap.instrumentation.api.AgentSpan
-import com.datadog.trace.core.DDSpan
 import com.datadog.trace.core.DDSpanContext
 import com.datadog.trace.core.PendingTrace
 
 internal class DatadogSpanContextAdapter(internal val delegate: AgentSpan.Context) : DatadogSpanContext {
     override val spanId: Long get() = delegate.spanId
     override val samplingPriority: Int get() = delegate.samplingPriority
-    override val tags: Map<String?, Any?>? get() = (delegate as? DDSpanContext)?.tags
+    override val tags: Map<String?, Any?>? get() = ddSpanContext?.tags
     override val traceId: DatadogTraceId get() = DatadogTraceIdAdapter(delegate.traceId)
 
-    override fun setSamplingPriority(samplingPriority: Int): Boolean {
-        val delegate = delegate
-        if (delegate !is DDSpanContext) return false
+    private val ddSpanContext: DDSpanContext?
+        get() = delegate as? DDSpanContext
 
-        return delegate.setSamplingPriority(samplingPriority, SamplingMechanism.DEFAULT.toInt())
+    override fun setSamplingPriority(samplingPriority: Int): Boolean {
+        return ddSpanContext?.setSamplingPriority(samplingPriority, SamplingMechanism.DEFAULT.toInt()) ?: false
     }
 
     override fun setMetric(key: CharSequence?, value: Double) {
-        (delegate as? DDSpan)?.setMetric(key, value)
+        ddSpanContext?.setMetric(key, value)
     }
 
     override fun setTracingSamplingPriorityIfNecessary() {

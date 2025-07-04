@@ -27,7 +27,6 @@ import com.datadog.android.trace.GlobalDatadogTracerHolder
 import com.datadog.android.trace.TracingHeaderType
 import com.datadog.android.trace.api.constants.DatadogTracingConstants.PrioritySampling
 import com.datadog.android.trace.api.constants.DatadogTracingConstants.Tags
-import com.datadog.android.trace.api.constants.DatadogTracingConstants.TracerConfig
 import com.datadog.android.trace.api.span.DatadogSpan
 import com.datadog.android.trace.api.span.DatadogSpanContext
 import com.datadog.android.trace.api.tracer.DatadogTracer
@@ -37,7 +36,6 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import java.net.HttpURLConnection
-import java.util.Properties
 import java.util.concurrent.atomic.AtomicReference
 
 /**
@@ -323,10 +321,15 @@ internal constructor(
 
     private fun extractSamplingDecision(request: Request): Boolean? {
         val headerSamplingPriority = extractSamplingDecisionFromHeader(request)
+        val datadogSpan = request.tag(DatadogSpan::class.java)
         val openTelemetrySpanSamplingPriority = request.tag(TraceContext::class.java)?.samplingPriority
 
         return when {
             headerSamplingPriority != null -> headerSamplingPriority
+            datadogSpan != null -> {
+                datadogSpan.context().setTracingSamplingPriorityIfNecessary()
+                datadogSpan.context().samplingPriority > 0
+            }
             openTelemetrySpanSamplingPriority == PrioritySampling.UNSET -> null
             else -> openTelemetrySpanSamplingPriority?.let { samplingPriority -> samplingPriority > 0 }
         }
@@ -702,7 +705,7 @@ internal constructor(
         internal var traceOrigin: String? = null
         internal var traceSampler: Sampler<DatadogSpan> = DeterministicTraceSampler(DEFAULT_TRACE_SAMPLE_RATE)
         internal var localTracerFactory = DEFAULT_LOCAL_TRACER_FACTORY
-        internal var globalTracerProvider: () -> DatadogTracer? = { GlobalDatadogTracerHolder.get() }
+        internal var globalTracerProvider: () -> DatadogTracer? = { GlobalDatadogTracerHolder.getUnsafe() }
         internal var traceContextInjection = TraceContextInjection.SAMPLED
 
         internal var redacted404ResourceName = true
@@ -861,17 +864,11 @@ internal constructor(
 
         private val DEFAULT_LOCAL_TRACER_FACTORY: (SdkCore, Set<TracingHeaderType>) -> DatadogTracer =
             { sdkCore, tracingHeaderTypes: Set<TracingHeaderType> ->
-                val sampler = DatadogTracing.newSampler()
+                val sampler = DatadogTracing.samplersFactory.newAllSampler()
 
                 DatadogTracing.newTracerBuilder(sdkCore)
-                    .withProperties(
-                        Properties().apply {
-                            val propagationStyles = tracingHeaderTypes.joinToString(",")
-                            setProperty(TracerConfig.PROPAGATION_STYLE_EXTRACT, propagationStyles)
-                            setProperty(TracerConfig.PROPAGATION_STYLE_INJECT, propagationStyles)
-                            setProperty(TracerConfig.URL_AS_RESOURCE_NAME, "false")
-                        }
-                    )
+                    .withTracingHeadersTypes(tracingHeaderTypes)
+                    .withSampleRate(ALL_IN_SAMPLE_RATE)
                     .withSampler(sampler)
                     .build()
             }

@@ -42,5 +42,7 @@ object GlobalDatadogTracerHolder {
      * @return The current instance of [DatadogTracer] if available. Otherwise, an instance of
      * [NoOpDatadogTracer] that performs no operations.
      */
-    fun get(): DatadogTracer = tracer ?: NoOpDatadogTracer()
+    fun get(): DatadogTracer = getUnsafe() ?: NoOpDatadogTracer()
+
+    fun getUnsafe(): DatadogTracer? = tracer
 }

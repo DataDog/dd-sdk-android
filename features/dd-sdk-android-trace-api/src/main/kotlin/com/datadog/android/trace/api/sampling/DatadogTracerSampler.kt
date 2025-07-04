@@ -3,7 +3,7 @@
  * This product includes software developed at Datadog (https://www.datadoghq.com/).
  * Copyright 2016-Present Datadog, Inc.
  */
-package com.datadog.android.trace.api.tracer
+package com.datadog.android.trace.api.sampling
 
 import com.datadog.tools.annotation.NoOpImplementation
 
@@ -13,3 +13,4 @@ import com.datadog.tools.annotation.NoOpImplementation
  */
 @NoOpImplementation
 interface DatadogTracerSampler
+

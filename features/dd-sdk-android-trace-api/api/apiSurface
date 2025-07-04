@@ -54,6 +54,12 @@ class com.datadog.android.trace.api.propagation.NoOpDatadogPropagation : Datadog
   override fun <C> extract(C, (C) -> Unit): com.datadog.android.trace.api.span.DatadogSpanContext?
   override fun isExtractedContext(com.datadog.android.trace.api.span.DatadogSpanContext)
   override fun createExtractedContext(String, String, Int): com.datadog.android.trace.api.span.DatadogSpanContext
+interface com.datadog.android.trace.api.sampling.DatadogSamplersFactory
+  fun newAllSampler(): DatadogTracerSampler
+  fun newTraceSampler(Double): DatadogTracerSampler
+  fun newSpanSampler(Double): DatadogTracerSampler
+  fun newRateBasedSampler(Double): DatadogTracerSampler
+interface com.datadog.android.trace.api.sampling.DatadogTracerSampler
 interface com.datadog.android.trace.api.scope.DatadogScope
   fun close()
 interface com.datadog.android.trace.api.span.DatadogSpan
@@ -140,5 +146,5 @@ interface com.datadog.android.trace.api.tracer.DatadogTracerBuilder
   fun withServiceName(String): DatadogTracerBuilder
   fun withPartialFlushMinSpans(Int): DatadogTracerBuilder
   fun withIdGenerationStrategy(String, Boolean): DatadogTracerBuilder
-  fun withSampler(DatadogTracerSampler?): DatadogTracerBuilder
-interface com.datadog.android.trace.api.tracer.DatadogTracerSampler
+  fun withSampler(com.datadog.android.trace.api.sampling.DatadogTracerSampler?): DatadogTracerBuilder
+  fun withSampleRate(Double): DatadogTracerBuilder

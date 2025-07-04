@@ -8,10 +8,11 @@ package com.datadog.android.trace.impl.internal
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.trace.TracingHeaderType
 import com.datadog.android.trace.api.constants.DatadogTracingConstants.TracerConfig
+import com.datadog.android.trace.api.sampling.DatadogTracerSampler
 import com.datadog.android.trace.api.span.DatadogSpanWriter
 import com.datadog.android.trace.api.tracer.DatadogTracer
 import com.datadog.android.trace.api.tracer.DatadogTracerBuilder
-import com.datadog.android.trace.api.tracer.DatadogTracerSampler
+import com.datadog.legacy.trace.api.Config
 import com.datadog.trace.api.IdGenerationStrategy
 import com.datadog.trace.core.CoreTracer
 import java.util.Properties
@@ -19,12 +20,20 @@ import java.util.Properties
 internal class DatadogTracerBuilderAdapter(
     internalLogger: InternalLogger,
     writer: DatadogSpanWriter?,
-    private val defaultServiceName: String
+    defaultServiceName: String
 ) : DatadogTracerBuilder {
 
-    private var properties = Properties()
+    private var properties: Properties? = null
     private val delegate = CoreTracer.CoreTracerBuilder(internalLogger)
-    private var serviceNameSet: Boolean = false
+    private var serviceName: String = defaultServiceName
+    private var sampleRate: Double = DEFAULT_SAMPLE_RATE
+    private var traceRateLimit = Int.MAX_VALUE
+    private var partialFlushThreshold = DEFAULT_PARTIAL_MIN_FLUSH
+    private val globalTags: MutableMap<String, String> = mutableMapOf()
+    private var tracingHeadersTypes: Set<TracingHeaderType> = setOf(
+        TracingHeaderType.DATADOG,
+        TracingHeaderType.TRACECONTEXT
+    )
 
     init {
         if (writer is DatadogSpanWriterWrapper) {
@@ -39,16 +48,14 @@ internal class DatadogTracerBuilderAdapter(
     }
 
     override fun build(): DatadogTracer {
-        if (!serviceNameSet && !properties.contains(TracerConfig.SERVICE_NAME)) {
-            delegate.serviceName(defaultServiceName)
-        }
-
-        return DatadogTracerAdapter(delegate.build())
+        return DatadogTracerAdapter(
+            delegate.withProperties(properties ?: properties())
+                .build()
+        )
     }
 
     override fun withServiceName(serviceName: String) = apply {
-        this.serviceNameSet = true
-        delegate.serviceName(serviceName)
+        this.serviceName = serviceName
     }
 
     override fun withProperties(properties: Properties) = apply {
@@ -56,16 +63,19 @@ internal class DatadogTracerBuilderAdapter(
         delegate.withProperties(properties)
     }
 
-    override fun withTracingHeadersTypes(tracingHeadersTypes: Set<TracingHeaderType>): DatadogTracerBuilder {
-        val propagationStyles = tracingHeadersTypes.joinToString(",")
-        properties.setProperty(TracerConfig.PROPAGATION_STYLE_EXTRACT, propagationStyles)
-        properties.setProperty(TracerConfig.PROPAGATION_STYLE_INJECT, propagationStyles)
-        return withProperties(properties)
+    override fun withTraceLimit(traceRateLimit: Int) = apply {
+        this.traceRateLimit = traceRateLimit
+    }
+
+    override fun withTracingHeadersTypes(tracingHeadersTypes: Set<TracingHeaderType>) = apply {
+        this.tracingHeadersTypes = tracingHeadersTypes
     }
 
     override fun withSampler(samplerAdapter: DatadogTracerSampler?): DatadogTracerBuilder = apply {
         if (samplerAdapter is DatadogTracerSamplerWrapper) delegate.sampler(samplerAdapter.delegate)
     }
+
+    override fun withSampleRate(sampleRate: Double) = apply { this.sampleRate = sampleRate }
 
     override fun withPartialFlushMinSpans(partialFlushThreshold: Int) = apply {
         delegate.partialFlushMinSpans(partialFlushThreshold)
@@ -75,6 +85,33 @@ internal class DatadogTracerBuilderAdapter(
         delegate.idGenerationStrategy(IdGenerationStrategy.fromName(key, traceId128BitGenerationEnabled))
     }
 
+    override fun withPartialFlushThreshold(threshold: Int) = apply {
+        this.partialFlushThreshold = threshold
+    }
+
+    override fun withTag(key: String, value: String) = apply {
+        globalTags[key] = value
+    }
+
+    private fun properties(): Properties {
+        val properties = Properties()
+
+        val propagationStyles = tracingHeadersTypes.joinToString(",")
+        properties.setProperty(Config.PROPAGATION_STYLE_EXTRACT, propagationStyles)
+        properties.setProperty(Config.PROPAGATION_STYLE_INJECT, propagationStyles)
+        properties.setProperty(Config.SERVICE_NAME, serviceName)
+        properties.setProperty(TracerConfig.TRACE_RATE_LIMIT, traceRateLimit.toString())
+        properties.setProperty(Config.PARTIAL_FLUSH_MIN_SPANS, partialFlushThreshold.toString())
+        properties.setProperty(TracerConfig.URL_AS_RESOURCE_NAME, DEFAULT_URL_AS_RESOURCE_NAME.toString())
+        properties.setProperty(Config.TRACE_SAMPLE_RATE, (sampleRate / DEFAULT_SAMPLE_RATE).toString())
+        properties.setProperty(
+            Config.TAGS,
+            globalTags.map { "${it.key}:${it.value}" }.joinToString(",")
+        )
+
+        return properties
+    }
+
     companion object {
         internal const val MESSAGE_WRITER_NOT_PROVIDED =
             "You're trying to create an DatadogTracerBuilder instance, " +
@@ -82,7 +119,10 @@ internal class DatadogTracerBuilderAdapter(
                 "not registered. No tracing data will be sent."
 
         internal const val DEFAULT_SERVICE_NAME_IS_MISSING_ERROR_MESSAGE =
-            "Default service name is missing during" +
-                " DatadogTracerBuilder creation, did you initialize SDK?"
+            "Default service name is missing during DatadogTracerBuilder creation, did you initialize SDK?"
+
+        internal const val DEFAULT_SAMPLE_RATE = 100.0
+        internal const val DEFAULT_PARTIAL_MIN_FLUSH = 5
+        internal const val DEFAULT_URL_AS_RESOURCE_NAME = false
     }
 }

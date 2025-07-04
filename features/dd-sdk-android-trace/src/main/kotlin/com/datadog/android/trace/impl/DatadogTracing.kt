@@ -12,26 +12,21 @@ import com.datadog.android.api.SdkCore
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.internal.utils.tryCastTo
+import com.datadog.android.lint.InternalApi
 import com.datadog.android.trace.InternalCoreWriterProvider
+import com.datadog.android.trace.api.sampling.DatadogSamplersFactory
 import com.datadog.android.trace.api.span.DatadogSpanIdConverter
 import com.datadog.android.trace.api.span.DatadogSpanLogger
-import com.datadog.android.trace.api.span.DatadogSpanWriter
 import com.datadog.android.trace.api.span.NoOpDatadogSpanLogger
 import com.datadog.android.trace.api.trace.DatadogTraceIdFactory
 import com.datadog.android.trace.api.tracer.DatadogTracerBuilder
-import com.datadog.android.trace.api.tracer.DatadogTracerSampler
 import com.datadog.android.trace.api.tracer.NoOpDatadogTracerBuilder
+import com.datadog.android.trace.impl.internal.DatadogSamplersFactoryImpl
 import com.datadog.android.trace.impl.internal.DatadogSpanIdConverterAdapter
 import com.datadog.android.trace.impl.internal.DatadogSpanLoggerAdapter
-import com.datadog.android.trace.impl.internal.DatadogSpanWriterWrapper
 import com.datadog.android.trace.impl.internal.DatadogTraceIdFactoryAdapter
 import com.datadog.android.trace.impl.internal.DatadogTracerBuilderAdapter
 import com.datadog.android.trace.impl.internal.DatadogTracerBuilderAdapter.Companion.DEFAULT_SERVICE_NAME_IS_MISSING_ERROR_MESSAGE
-import com.datadog.android.trace.impl.internal.DatadogTracerSamplerWrapper
-import com.datadog.trace.common.sampling.AllSampler
-import com.datadog.trace.common.sampling.Sampler
-import com.datadog.trace.common.writer.NoOpWriter
-import com.datadog.trace.common.writer.Writer
 
 /**
  * Provides utilities and components for creating Datadog distributed tracing components in an application.
@@ -56,9 +51,17 @@ object DatadogTracing {
     val traceIdFactory: DatadogTraceIdFactory = DatadogTraceIdFactoryAdapter
 
     /**
+     * Provides a shared instance of [DatadogSamplersFactory] used to create different types of samplers
+     * for controlling and customizing tracing behavior.
+     */
+    @JvmField
+    val samplersFactory: DatadogSamplersFactory = DatadogSamplersFactoryImpl
+
+    /**
      * Provides an instance of [DatadogSpanLogger] for logging span-related messages, errors,
      * and attributes. Selects the appropriate logger implementation based on the available context.
      */
+    @InternalApi
     val spanLogger: DatadogSpanLogger
         get() = spanLoggerProvider ?: Datadog.getInstance()
             .tryCastTo<FeatureSdkCore>()
@@ -110,35 +113,6 @@ object DatadogTracing {
             internalCoreWriterProvider.getCoreTracerWriter(),
             sdkCore.service
         )
-    }
-
-    /**
-     * Creates a new instance of a [DatadogTracerSampler] that uses an [AllSampler].
-     *
-     * @return a [DatadogTracerSampler] that always samples all spans.
-     */
-    fun newSampler(): DatadogTracerSampler = wrapSampler(AllSampler())
-
-    /**
-     * Wraps a provided [Sampler] instance into a [DatadogTracerSampler] implementation.
-     *
-     * @param sampler The [Sampler] instance to be wrapped.
-     * @return An instance of [DatadogTracerSampler] that delegates sampling functionality to the given [Sampler].
-     */
-    @Suppress("MemberVisibilityCanBePrivate")
-    fun wrapSampler(sampler: Sampler): DatadogTracerSampler {
-        return DatadogTracerSamplerWrapper(sampler)
-    }
-
-    /**
-     * Wraps the provided Writer instance into a DatadogSpanWriter implementation.
-     *
-     * @param writerDelegate the Writer instance to be wrapped.
-     * If null, a NoOpWriter will be used as the delegate.
-     * @return an instance of DatadogSpanWriter that wraps the given Writer instance.
-     */
-    fun wrapWriter(writerDelegate: Writer?): DatadogSpanWriter {
-        return DatadogSpanWriterWrapper(writerDelegate ?: NoOpWriter())
     }
 
     @VisibleForTesting
