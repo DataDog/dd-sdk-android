@@ -110,6 +110,11 @@ object DatadogTracingConstants {
         /**  Configuration key for setting the trace rate limit in the tracer. */
         const val TRACE_RATE_LIMIT: String = "trace.rate.limit"
 
+        /**
+         * A configuration key used to set the minimum number of spans required to trigger a partial flush of trace data.
+         */
+        const val PARTIAL_FLUSH_MIN_SPANS: String = "trace.partial.flush.min.spans"
+
         /** The configuration key used to set the trace sample rate for the tracer.*/
         const val TRACE_SAMPLE_RATE: String = "trace.sample.rate"
 
@@ -130,6 +135,11 @@ object DatadogTracingConstants {
          * that uses URLs as resource names in tracing.
          */
         const val URL_AS_RESOURCE_NAME: String = "trace.URLAsResourceNameRule.enabled"
+
+        /**
+         * A constant representing the property key used for setting custom global tags
+         */
+        const val TAGS: String = "tags"
     }
 
     /**

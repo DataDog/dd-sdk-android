@@ -54,10 +54,12 @@ public final class com/datadog/android/trace/api/constants/DatadogTracingConstan
 
 public final class com/datadog/android/trace/api/constants/DatadogTracingConstants$TracerConfig {
 	public static final field INSTANCE Lcom/datadog/android/trace/api/constants/DatadogTracingConstants$TracerConfig;
+	public static final field PARTIAL_FLUSH_MIN_SPANS Ljava/lang/String;
 	public static final field PROPAGATION_STYLE_EXTRACT Ljava/lang/String;
 	public static final field PROPAGATION_STYLE_INJECT Ljava/lang/String;
 	public static final field SERVICE_NAME Ljava/lang/String;
 	public static final field SPAN_TAGS Ljava/lang/String;
+	public static final field TAGS Ljava/lang/String;
 	public static final field TRACE_RATE_LIMIT Ljava/lang/String;
 	public static final field TRACE_SAMPLE_RATE Ljava/lang/String;
 	public static final field URL_AS_RESOURCE_NAME Ljava/lang/String;

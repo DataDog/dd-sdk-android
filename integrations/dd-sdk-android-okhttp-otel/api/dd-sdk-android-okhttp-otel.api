@@ -1,4 +1,4 @@
 public final class com/datadog/android/okhttp/otel/OkHttpExtKt {
-	public static final fun addParentSpan (Lokhttp3/Request$Builder;Lcom/datadog/opentelemetry/trace/OtelSpan;)Lokhttp3/Request$Builder;
+	public static final fun addParentSpan (Lokhttp3/Request$Builder;Lio/opentelemetry/api/trace/Span;)Lokhttp3/Request$Builder;
 }
 

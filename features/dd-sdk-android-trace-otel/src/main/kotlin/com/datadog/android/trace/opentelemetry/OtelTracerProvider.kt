@@ -18,7 +18,6 @@ import com.datadog.android.internal.concurrent.CompletableFuture
 import com.datadog.android.trace.GlobalDatadogTracerHolder
 import com.datadog.android.trace.InternalCoreWriterProvider
 import com.datadog.android.trace.TracingHeaderType
-import com.datadog.android.trace.api.constants.DatadogTracingConstants
 import com.datadog.android.trace.api.scope.DataScopeListener
 import com.datadog.android.trace.api.tracer.DatadogTracer
 import com.datadog.android.trace.impl.DatadogTracing
@@ -34,7 +33,6 @@ import io.opentelemetry.api.trace.TracerBuilder
 import io.opentelemetry.api.trace.TracerProvider
 import io.opentelemetry.context.ContextStorage
 import java.util.Locale
-import java.util.Properties
 
 /**
  *  A class enabling Datadog OpenTelemetry features.
@@ -103,13 +101,15 @@ class OtelTracerProvider internal constructor(
     class Builder internal constructor(
         private val sdkCore: FeatureSdkCore
     ) {
-
-        private var sampleRate: Double? = null
-        private var traceRateLimit = Int.MAX_VALUE
-        private var tracingHeaderTypes: Set<TracingHeaderType> = setOf(
-            TracingHeaderType.DATADOG,
-            TracingHeaderType.TRACECONTEXT
-        )
+        private val builderDelegate = DatadogTracing.newTracerBuilder(sdkCore)
+            .withPartialFlushThreshold(DEFAULT_PARTIAL_MIN_FLUSH)
+            .withIdGenerationStrategy("SECURE_RANDOM", true)
+            .withTracingHeadersTypes(
+                setOf(
+                    TracingHeaderType.DATADOG,
+                    TracingHeaderType.TRACECONTEXT
+                )
+            )
 
         private var serviceName: String = ""
             get() {
@@ -125,8 +125,6 @@ class OtelTracerProvider internal constructor(
                     service
                 }
             }
-        private var partialFlushThreshold = DEFAULT_PARTIAL_MIN_FLUSH
-        private val globalTags: MutableMap<String, String> = mutableMapOf()
         private var bundleWithRumEnabled: Boolean = true
 
         /**
@@ -161,11 +159,8 @@ class OtelTracerProvider internal constructor(
         }
 
         private fun createDatadogTracer(): DatadogTracer {
-            val datadogTracer = DatadogTracing.newTracerBuilder(sdkCore)
-                .withProperties(properties())
+            val datadogTracer = builderDelegate
                 .withServiceName(serviceName)
-                .withPartialFlushMinSpans(partialFlushThreshold)
-                .withIdGenerationStrategy("SECURE_RANDOM", true)
                 .build()
 
             datadogTracer.addScopeListener(object : DataScopeListener {
@@ -183,15 +178,16 @@ class OtelTracerProvider internal constructor(
                 }
             })
 
-            val registeredAsGlobal = GlobalDatadogTracerHolder.registerIfAbsent(datadogTracer)
-            sdkCore.internalLogger.log(
-                InternalLogger.Level.INFO,
-                listOf(
-                    InternalLogger.Target.USER,
-                    InternalLogger.Target.MAINTAINER
-                ),
-                { if (registeredAsGlobal) USED_AS_GLOBAL_INFO_MESSAGE else NOT_USED_AS_GLOBAL_INFO_MESSAGE }
-            )
+            GlobalDatadogTracerHolder.registerIfAbsent(datadogTracer).let { registeredAsGlobal ->
+                sdkCore.internalLogger.log(
+                    InternalLogger.Level.INFO,
+                    listOf(
+                        InternalLogger.Target.USER,
+                        InternalLogger.Target.MAINTAINER
+                    ),
+                    { if (registeredAsGlobal) USED_AS_GLOBAL_INFO_MESSAGE else NOT_USED_AS_GLOBAL_INFO_MESSAGE }
+                )
+            }
 
             return datadogTracer
         }
@@ -201,7 +197,7 @@ class OtelTracerProvider internal constructor(
          * @param headerTypes the list of header types injected (default = datadog style headers)
          */
         fun setTracingHeaderTypes(headerTypes: Set<TracingHeaderType>): Builder {
-            this.tracingHeaderTypes = headerTypes
+            builderDelegate.withTracingHeadersTypes(headerTypes)
             return this
         }
 
@@ -221,7 +217,7 @@ class OtelTracerProvider internal constructor(
          * @param threshold the threshold value (default = 5)
          */
         fun setPartialFlushThreshold(threshold: Int): Builder {
-            this.partialFlushThreshold = threshold
+            builderDelegate.withPartialFlushThreshold(threshold)
             return this
         }
 
@@ -231,7 +227,7 @@ class OtelTracerProvider internal constructor(
          * @param value the tag value
          */
         fun addTag(key: String, value: String): Builder {
-            this.globalTags[key] = value
+            builderDelegate.withTag(key, value)
             return this
         }
 
@@ -242,7 +238,18 @@ class OtelTracerProvider internal constructor(
         fun setSampleRate(
             @FloatRange(from = 0.0, to = 100.0) sampleRate: Double
         ): Builder {
-            this.sampleRate = sampleRate
+            // In case the sample rate is not set we should not specify it. The agent code under the hood
+            // will provide different sampler based on this property and also different sampling priorities used
+            // in the metrics
+            // -1 MANUAL_DROP User indicated to drop the trace via configuration (sampling rate).
+            // 0 AUTO_DROP Sampler indicated to drop the trace using a sampling rate provided by the Agent through
+            // a remote configuration. The Agent API is not used in Android so this `sampling_priority:0` will never
+            // be used.
+            // 1 AUTO_KEEP Sampler indicated to keep the trace using a sampling rate from the default configuration
+            // which right now is 100.0
+            // (Default sampling priority value. or in our case no specified sample rate will be considered as 100)
+            // 2 MANUAL_KEEP User indicated to keep the trace, either manually or via configuration (sampling rate)
+            builderDelegate.withSampleRate(sampleRate)
             return this
         }
 
@@ -255,7 +262,7 @@ class OtelTracerProvider internal constructor(
         fun setTraceRateLimit(
             @IntRange(from = 1, to = Int.MAX_VALUE.toLong()) traceRateLimit: Int
         ): Builder {
-            this.traceRateLimit = traceRateLimit
+            builderDelegate.withTraceLimit(traceRateLimit)
             return this
         }
 
@@ -268,38 +275,6 @@ class OtelTracerProvider internal constructor(
         fun setBundleWithRumEnabled(enabled: Boolean): Builder {
             bundleWithRumEnabled = enabled
             return this
-        }
-
-        internal fun properties(): Properties {
-            val properties = Properties()
-            properties.setProperty(
-                DatadogTracingConstants.TracerConfig.SPAN_TAGS,
-                globalTags.map { "${it.key}:${it.value}" }.joinToString(",")
-            )
-            properties.setProperty(DatadogTracingConstants.TracerConfig.TRACE_RATE_LIMIT, traceRateLimit.toString())
-
-            // In case the sample rate is not set we should not specify it. The agent code under the hood
-            // will provide different sampler based on this property and also different sampling priorities used
-            // in the metrics
-            // -1 MANUAL_DROP User indicated to drop the trace via configuration (sampling rate).
-            // 0 AUTO_DROP Sampler indicated to drop the trace using a sampling rate provided by the Agent through
-            // a remote configuration. The Agent API is not used in Android so this `sampling_priority:0` will never
-            // be used.
-            // 1 AUTO_KEEP Sampler indicated to keep the trace using a sampling rate from the default configuration
-            // which right now is 100.0
-            // (Default sampling priority value. or in our case no specified sample rate will be considered as 100)
-            // 2 MANUAL_KEEP User indicated to keep the trace, either manually or via configuration (sampling rate)
-            sampleRate?.let {
-                properties.setProperty(
-                    DatadogTracingConstants.TracerConfig.TRACE_SAMPLE_RATE,
-                    (it / KEEP_ALL_SAMPLE_RATE_PERCENT).toString()
-                )
-            }
-            val propagationStyles = tracingHeaderTypes.joinToString(",")
-            properties.setProperty(DatadogTracingConstants.TracerConfig.PROPAGATION_STYLE_EXTRACT, propagationStyles)
-            properties.setProperty(DatadogTracingConstants.TracerConfig.PROPAGATION_STYLE_INJECT, propagationStyles)
-
-            return properties
         }
 
         // endregion

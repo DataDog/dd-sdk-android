@@ -12,7 +12,6 @@ import com.datadog.android.trace.api.sampling.DatadogTracerSampler
 import com.datadog.android.trace.api.span.DatadogSpanWriter
 import com.datadog.android.trace.api.tracer.DatadogTracer
 import com.datadog.android.trace.api.tracer.DatadogTracerBuilder
-import com.datadog.legacy.trace.api.Config
 import com.datadog.trace.api.IdGenerationStrategy
 import com.datadog.trace.core.CoreTracer
 import java.util.Properties
@@ -97,15 +96,15 @@ internal class DatadogTracerBuilderAdapter(
         val properties = Properties()
 
         val propagationStyles = tracingHeadersTypes.joinToString(",")
-        properties.setProperty(Config.PROPAGATION_STYLE_EXTRACT, propagationStyles)
-        properties.setProperty(Config.PROPAGATION_STYLE_INJECT, propagationStyles)
-        properties.setProperty(Config.SERVICE_NAME, serviceName)
+        properties.setProperty(TracerConfig.PROPAGATION_STYLE_EXTRACT, propagationStyles)
+        properties.setProperty(TracerConfig.PROPAGATION_STYLE_INJECT, propagationStyles)
+        properties.setProperty(TracerConfig.SERVICE_NAME, serviceName)
         properties.setProperty(TracerConfig.TRACE_RATE_LIMIT, traceRateLimit.toString())
-        properties.setProperty(Config.PARTIAL_FLUSH_MIN_SPANS, partialFlushThreshold.toString())
+        properties.setProperty(TracerConfig.PARTIAL_FLUSH_MIN_SPANS, partialFlushThreshold.toString())
         properties.setProperty(TracerConfig.URL_AS_RESOURCE_NAME, DEFAULT_URL_AS_RESOURCE_NAME.toString())
-        properties.setProperty(Config.TRACE_SAMPLE_RATE, (sampleRate / DEFAULT_SAMPLE_RATE).toString())
+        properties.setProperty(TracerConfig.TRACE_SAMPLE_RATE, (sampleRate / DEFAULT_SAMPLE_RATE).toString())
         properties.setProperty(
-            Config.TAGS,
+            TracerConfig.TAGS,
             globalTags.map { "${it.key}:${it.value}" }.joinToString(",")
         )
 

@@ -72,15 +72,16 @@ internal class SpansPayloadAssert(actual: JsonObject) :
             val actualSpanId = actualSpan.getString(SPAN_ID_KEY)
             assertThat(actualSpanId).overridingErrorMessage(
                 "Expected spanId to be $spanId but was $actualSpanId for index $index"
-            ).isEqualTo(spanId)
+            )
+                .isEqualTo(spanId)
             return this
         }
 
         fun hasParentId(parentId: String): SpanAssert {
             val actualParentId = actualSpan.getString(PARENT_ID_KEY)
-            assertThat(actualParentId).overridingErrorMessage(
-                "Expected parentId to be $parentId but was $actualParentId for index $index"
-            ).isEqualTo(parentId)
+            assertThat(actualParentId)
+                .overridingErrorMessage("Expected parentId to be $parentId but was $actualParentId for index $index")
+                .isEqualTo(parentId)
             return this
         }
 
