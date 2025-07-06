@@ -11,7 +11,7 @@ public interface DataScopeListener {
   /**
    * Called just after a scope becomes the active scope
    *
-   * <p>May be called multiple times. When a scope is initially created, or after a child scope is
+   * May be called multiple times. When a scope is initially created, or after a child scope is
    * deactivated.
    */
   void afterScopeActivated();

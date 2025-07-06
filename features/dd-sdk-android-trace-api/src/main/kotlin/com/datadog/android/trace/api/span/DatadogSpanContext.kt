@@ -10,7 +10,7 @@ import com.datadog.android.trace.api.trace.DatadogTraceId
 import com.datadog.tools.annotation.NoOpImplementation
 
 /**
- * SpanContext represents Span state that must propagate to descendant Spans and across process boundaries.
+ * DatadogSpanContext represents Span state that must propagate to descendant Spans and across process boundaries.
  */
 @NoOpImplementation
 interface DatadogSpanContext {
