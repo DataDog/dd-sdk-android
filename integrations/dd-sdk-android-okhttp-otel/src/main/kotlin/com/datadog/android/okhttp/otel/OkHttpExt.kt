@@ -8,6 +8,7 @@ package com.datadog.android.okhttp.otel
 
 import com.datadog.android.trace.api.span.DatadogSpan
 import com.datadog.opentelemetry.trace.OtelSpan
+import io.opentelemetry.api.trace.Span
 import okhttp3.Request
 
 /**
@@ -15,7 +16,9 @@ import okhttp3.Request
  * @param span the parent span to add to the request.
  * @return the modified Request.Builder instance
  */
-fun Request.Builder.addParentSpan(span: OtelSpan): Request.Builder = apply {
+fun Request.Builder.addParentSpan(span: Span): Request.Builder = apply {
+    if (span !is OtelSpan) return@apply
+
     // very fragile and assumes that Datadog Tracer is used
     // we need to trigger sampling decision at this point, because we are doing context propagation out of OpenTelemetry
     @Suppress("UnsafeThirdPartyFunctionCall") // the context will always be a TraceContext
