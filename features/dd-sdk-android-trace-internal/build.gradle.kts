@@ -53,9 +53,6 @@ dependencies {
     implementation(libs.androidXAnnotation)
     implementation(libs.bundles.traceCore)
 
-    // OpenTracing
-    implementation(libs.bundles.openTracing)
-
     testImplementation(project(":tools:unit")) {
         attributes {
             attribute(

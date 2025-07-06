@@ -8,26 +8,6 @@ package com.datadog.android.trace
 
 import com.datadog.android.trace.api.span.DatadogSpan
 import com.datadog.android.trace.impl.DatadogTracing
-import io.opentracing.Span
-
-/**
- * Helper method to attach a Throwable to this [Span].
- * The Throwable information (class name, message and stacktrace) will be added to
- * this [Span] as standard Error Tags.
- * @param throwable the [Throwable] you wan to log
- */
-fun Span.setError(throwable: Throwable) {
-    AndroidTracer.logThrowable(this, throwable)
-}
-
-/**
- * Helper method to attach an error message to this [Span].
- * The error message will be logged with ERROR status and can be seen in logs attached to the span.
- * @param message the error message you want to attach.
- */
-fun Span.setError(message: String) {
-    AndroidTracer.logErrorMessage(this, message)
-}
 
 /**
  * Logs a throwable and associates it with the current [DatadogSpan].

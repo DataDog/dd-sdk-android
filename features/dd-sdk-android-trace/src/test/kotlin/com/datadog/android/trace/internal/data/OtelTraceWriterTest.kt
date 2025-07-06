@@ -282,7 +282,7 @@ internal class OtelTraceWriterTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             InternalLogger.Target.USER,
-            TraceWriter.INITIAL_DATADOG_CONTEXT_NOT_AVAILABLE_ERROR,
+            OtelTraceWriter.INITIAL_DATADOG_CONTEXT_NOT_AVAILABLE_ERROR,
             mode = times(ddSpans.size)
         )
 
@@ -480,7 +480,7 @@ internal class OtelTraceWriterTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
-            TraceWriter.ERROR_SERIALIZING.format(Locale.US, SpanEvent::class.java.simpleName),
+            OtelTraceWriter.ERROR_SERIALIZING.format(Locale.US, SpanEvent::class.java.simpleName),
             fakeThrowable
         )
     }

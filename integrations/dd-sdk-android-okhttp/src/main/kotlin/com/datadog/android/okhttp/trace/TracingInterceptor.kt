@@ -21,7 +21,6 @@ import com.datadog.android.internal.telemetry.TracingHeaderTypesSet
 import com.datadog.android.internal.utils.loggableStackTrace
 import com.datadog.android.okhttp.TraceContextInjection
 import com.datadog.android.okhttp.internal.trace.toInternalTracingHeaderType
-import com.datadog.android.trace.AndroidTracer
 import com.datadog.android.trace.GlobalDatadogTracerHolder
 import com.datadog.android.trace.TracingHeaderType
 import com.datadog.android.trace.api.DatadogTracingConstants.PrioritySampling
@@ -641,8 +640,8 @@ internal constructor(
     /**
      * A Builder class for the [TracingInterceptor].
      * @param tracedHostsWithHeaderType a list of all the hosts and header types that you want to
-     * be automatically tracked by this interceptor. If registering a [GlobalTracer], the tracer must be
-     * configured with [AndroidTracer.Builder.setTracingHeaderTypes] containing all the necessary
+     * be automatically tracked by this interceptor. If registering a [GlobalDatadogTracerHolder], the tracer must be
+     * configured with [com.datadog.android.trace.api.tracer.DatadogTracerBuilder.withTracingHeadersTypes] containing all the necessary
      * header types configured for OkHttp tracking.
      * If no hosts are provided (via this argument or global configuration
      * [Configuration.Builder.setFirstPartyHosts] or [Configuration.Builder.setFirstPartyHostsWithHeaderType] )

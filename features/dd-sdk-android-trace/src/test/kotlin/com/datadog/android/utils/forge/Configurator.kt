@@ -19,7 +19,6 @@ internal class Configurator : BaseConfigurator() {
         forge.useCoreFactories()
 
         // APM
-        forge.addFactory(SpanForgeryFactory())
         forge.addFactory(SpanEventForgeryFactory())
         forge.addFactory(TraceConfigurationForgeryFactory())
         forge.addFactory(CoreDDSpanForgeryFactory())
