@@ -330,7 +330,7 @@ class HeadBasedSamplingTest {
 
         // Then
         val requestSent = mockServer.takeRequest()
-        assertThat(requestSent.getHeader(DATADOG_SAMPLING_PRIORITY_HEADER)).isEqualTo("1")
+        assertThat(requestSent.getHeader(DATADOG_SAMPLING_PRIORITY_HEADER)).isEqualTo("2")
         val leastSignificantTraceId = requestSent.getHeader(DATADOG_TRACE_ID_HEADER)
         checkNotNull(leastSignificantTraceId)
         val spanId = requestSent.getHeader(DATADOG_SPAN_ID_HEADER)
@@ -345,16 +345,16 @@ class HeadBasedSamplingTest {
         val eventsWritten = stubSdkCore.eventsWritten(Feature.TRACING_FEATURE_NAME)
         assertThat(eventsWritten).hasSize(2)
 
-        val localSpanPayload = JsonParser.parseString(eventsWritten[0].eventData).asJsonObject
+        val localSpanPayload = JsonParser.parseString(eventsWritten.first().eventData).asJsonObject
         SpansPayloadAssert.assertThat(localSpanPayload)
             .hasSpanAtIndexWith(0) {
                 hasLeastSignificant64BitsTraceId(
                     leastSignificantTraceId.toLong().toHexString().padStart(16, '0')
                 )
                 hasMostSignificant64BitsTraceId(mostSignificantTraceId)
-                hasParentId("0")
-                hasAgentPsr(1.0)
-                hasSamplingPriority(DatadogTracingConstants.PrioritySampling.SAMPLER_KEEP)
+                hasParentId("0000000000000000")
+                hasRulePsr(1.0)
+                hasSamplingPriority(DatadogTracingConstants.PrioritySampling.USER_KEEP)
                 hasGenericMetricValue("_top_level", 1)
             }
 
@@ -381,7 +381,7 @@ class HeadBasedSamplingTest {
                 hasName("okhttp.request")
                 hasResource("http://${mockServer.hostName}:${mockServer.port}/")
                 hasNoAgentPsr()
-                hasNoSamplingPriority()
+                hasSamplingPriority(2)
                 hasNoGenericMetric("_top_level")
                 hasSpanKind("client")
                 hasHttpMethod("GET")
@@ -584,7 +584,7 @@ class HeadBasedSamplingTest {
 
         // Then
         val requestSent = mockServer.takeRequest()
-        assertThat(requestSent.getHeader(DATADOG_SAMPLING_PRIORITY_HEADER)).isEqualTo("1")
+        assertThat(requestSent.getHeader(DATADOG_SAMPLING_PRIORITY_HEADER)).isEqualTo("2")
         val leastSignificantTraceId = requestSent.getHeader(DATADOG_TRACE_ID_HEADER)
         checkNotNull(leastSignificantTraceId)
         val spanId = requestSent.getHeader(DATADOG_SPAN_ID_HEADER)
@@ -606,9 +606,9 @@ class HeadBasedSamplingTest {
                     leastSignificantTraceId.toLong().toHexString().padStart(16, '0')
                 )
                 hasMostSignificant64BitsTraceId(mostSignificantTraceId)
-                hasParentId("0")
-                hasAgentPsr(1.0)
-                hasSamplingPriority(DatadogTracingConstants.PrioritySampling.SAMPLER_KEEP)
+                hasParentId("0000000000000000")
+                hasRulePsr(1.0)
+                hasSamplingPriority(DatadogTracingConstants.PrioritySampling.USER_KEEP)
                 hasGenericMetricValue("_top_level", 1)
             }
 
@@ -626,7 +626,7 @@ class HeadBasedSamplingTest {
                     leastSignificantTraceId.toLong().toHexString().padStart(16, '0')
                 )
                 hasMostSignificant64BitsTraceId(mostSignificantTraceId)
-                hasSpanId(spanId.toLong().toHexString())
+                hasSpanId(DatadogTracing.spanIdConverter.toHexStringPadded(spanId.toLong()))
                 hasParentId(localSpanId)
                 hasVersion(stubSdkCore.getDatadogContext().version)
                 hasSource(stubSdkCore.getDatadogContext().source)
@@ -637,7 +637,7 @@ class HeadBasedSamplingTest {
                 hasNoAgentPsr()
                 // this one will have sampling priority unlike in case of propagation with tagged Span directly,
                 // because there sampling priority is not yet set at the parent during child creation
-                hasSamplingPriority(1)
+                hasSamplingPriority(2)
                 hasNoGenericMetric("_top_level")
                 hasSpanKind("client")
                 hasHttpMethod("GET")
