@@ -19,7 +19,7 @@ interface DatadogPropagation {
      * This enables the propagation of trace and span information across different systems
      * or process boundaries.
      *
-     * @param span The DatadogSpan containing the trace and span information to be injected.
+     * @param span The [DatadogSpan] containing the trace and span information to be injected.
      * @param carrier The carrier object where the span context will be injected.
      * @param setter A setter function that defines how to insert key-value pairs into the carrier.
      *               It accepts the carrier, a key, and a value as parameters.
@@ -31,7 +31,7 @@ interface DatadogPropagation {
      * This method facilitates the propagation of trace information across process boundaries
      * or systems by embedding relevant span context data into the carrier.
      *
-     * @param context The DatadogSpanContext containing the trace and span information to inject.
+     * @param context The [DatadogSpanContext] containing the trace and span information to inject.
      * @param carrier The carrier object where the trace information will be injected.
      * @param setter A function used to set key-value pairs into the carrier. It takes the carrier,
      *               a key, and a value as parameters.
@@ -43,7 +43,7 @@ interface DatadogPropagation {
     )
 
     /**
-     * Extracts a `DatadogSpanContext` from the provided carrier using the specified getter function.
+     * Extracts a [DatadogSpanContext] from the provided carrier using the specified getter function.
      * This method is used to propagate Datadog span context information across systems by retrieving
      * trace and span information from the carrier.
      *
@@ -53,7 +53,7 @@ interface DatadogPropagation {
      *               to match desired key-value pairs.
      *               The classifier function takes two strings (key and value) and returns a boolean
      *               indicating whether the key-value pair belongs to the span context.
-     * @return The extracted `DatadogSpanContext` if one could be retrieved, or null otherwise.
+     * @return The extracted [DatadogSpanContext] if one could be retrieved, or null otherwise.
      */
     fun <C> extract(
         carrier: C,
@@ -61,7 +61,7 @@ interface DatadogPropagation {
     ): DatadogSpanContext?
 
     /**
-     * Determines if the provided DatadogSpanContext represents an extracted context.
+     * Determines if the provided [DatadogSpanContext] represents an extracted context.
      *
      * @param context The DatadogSpanContext to be evaluated.
      * @return True if the context is identified as an extracted context, otherwise false.

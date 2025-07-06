@@ -7,7 +7,7 @@ package com.datadog.android.trace.api.constants
 
 /**
  * Contains constants related to Datadog tracing. This object groups constants into several
- * nested objects for better organization, such as `Tags`, [PrioritySampling],
+ * nested objects for better organization, such as [Tags], [PrioritySampling],
  * [TracerConfig], [LogAttributes], and [ErrorPriorities].
  */
 object DatadogTracingConstants {
@@ -72,7 +72,7 @@ object DatadogTracingConstants {
     }
 
     /**
-     * PrioritySampling class defines the priority sampling decisions used
+     * [PrioritySampling] class defines the priority sampling decisions used
      * for tracing purposes. These constants represent both system-driven
      * and user-driven sampling decisions to manage trace propagation.
      */
@@ -100,7 +100,7 @@ object DatadogTracingConstants {
     }
 
     /**
-     * Configuration constants for the Tracer. These constants define the keys used to configure
+     * Configuration constants for the [Tracer.] These constants define the keys used to configure
      * various tracer settings using [java.util.Properties].
      */
     object TracerConfig {
@@ -172,7 +172,7 @@ object DatadogTracingConstants {
     }
 
     /**
-     * Defines constants representing the priorities of error recording in the Datadog tracing system.
+     * Defines constants representing the priorities of error recording in the Datadog tracing library.
      */
     object ErrorPriorities {
         /**
