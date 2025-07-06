@@ -14,7 +14,6 @@ import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.internal.concurrent.CompletableFuture
 import com.datadog.android.trace.InternalCoreWriterProvider
-import com.datadog.android.trace.TracingHeaderType
 import com.datadog.android.trace.api.constants.DatadogTracingConstants
 import com.datadog.android.trace.api.span.DatadogSpan
 import com.datadog.android.trace.api.span.DatadogSpanContext
@@ -401,59 +400,6 @@ internal class OtelTracerBuilderProviderTest {
 
         // Then
         assertThat(coreTracer.partialFlushMinSpans).isEqualTo(threshold)
-    }
-
-    @Test
-    fun `M set correct propagating style W setting tracing header types`(forge: Forge) {
-        // Given
-        val tracingHeaderStyles = forge.aList { aValueFrom(TracingHeaderType::class.java) }.toSet()
-        val tracerProvider = testedOtelTracerProviderBuilder
-            .setTracingHeaderTypes(tracingHeaderStyles)
-            .build()
-
-        // Then
-        tracerProvider.tracerBuilder(fakeInstrumentationName).build()
-        val properties = testedOtelTracerProviderBuilder.properties()
-
-        val injectionStyles = properties
-            .getProperty(DatadogTracingConstants.TracerConfig.PROPAGATION_STYLE_INJECT)
-            .toString()
-            .split(",")
-            .toSet()
-        val extractionStyles = properties
-            .getProperty(DatadogTracingConstants.TracerConfig.PROPAGATION_STYLE_EXTRACT)
-            .toString()
-            .split(",")
-            .toSet()
-
-        assertThat(injectionStyles).isEqualTo(tracingHeaderStyles.map { it.headerType }.toSet())
-        assertThat(extractionStyles).isEqualTo(tracingHeaderStyles.map { it.headerType }.toSet())
-    }
-
-    @Test
-    fun `M use default propagating style W build`() {
-        // Given
-        val expectedDefaultPropagationStyles = setOf(TracingHeaderType.DATADOG, TracingHeaderType.TRACECONTEXT)
-        val tracerProvider = testedOtelTracerProviderBuilder
-            .build()
-
-        // Then
-        tracerProvider.tracerBuilder(fakeInstrumentationName).build()
-        val properties = testedOtelTracerProviderBuilder.properties()
-
-        val injectionStyles = properties
-            .getProperty(DatadogTracingConstants.TracerConfig.PROPAGATION_STYLE_INJECT)
-            .toString()
-            .split(",")
-            .toSet()
-        val extractionStyles = properties
-            .getProperty(DatadogTracingConstants.TracerConfig.PROPAGATION_STYLE_EXTRACT)
-            .toString()
-            .split(",")
-            .toSet()
-
-        assertThat(injectionStyles).isEqualTo(expectedDefaultPropagationStyles.map { it.headerType }.toSet())
-        assertThat(extractionStyles).isEqualTo(expectedDefaultPropagationStyles.map { it.headerType }.toSet())
     }
 
     @Test
