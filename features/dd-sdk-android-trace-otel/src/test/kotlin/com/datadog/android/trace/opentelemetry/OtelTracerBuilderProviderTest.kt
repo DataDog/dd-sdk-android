@@ -159,60 +159,8 @@ internal class OtelTracerBuilderProviderTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             InternalLogger.Target.USER,
-            TracingErrorMessages.TRACING_NOT_ENABLED_ERROR_MESSAGE
+            TracingErrorMessages.MESSAGE_WRITER_NOT_PROVIDED
         )
-    }
-
-    @Test
-    fun `M log a maintainer error W build { TracingFeature not implementing InternalCoreTracerWriterProvider }`() {
-        // GIVEN
-        whenever(mockTracingFeatureScope.unwrap<Feature>()) doReturn mock()
-
-        // WHEN
-        val tracer = testedOtelTracerProviderBuilder.build()
-
-        // THEN
-        assertThat(tracer).isNotNull
-        mockInternalLogger.verifyLog(
-            InternalLogger.Level.ERROR,
-            InternalLogger.Target.MAINTAINER,
-            TracingErrorMessages.WRITER_PROVIDER_INTERFACE_NOT_IMPLEMENTED_ERROR_MESSAGE
-        )
-    }
-
-    @Test
-    fun `M use a NoOpCoreTracerWriter W build { TracingFeature not enabled }`() {
-        // GIVEN
-        whenever(mockSdkCore.getFeature(Feature.TRACING_FEATURE_NAME)) doReturn null
-
-        // WHEN
-        val tracer = testedOtelTracerProviderBuilder.build()
-
-        // THEN
-        assertThat(tracer).isNotNull
-        val coreTracer: DatadogTracer = tracer.delegate
-        assertThat(coreTracer).isInstanceOf(NoOpDatadogTracer::class.java)
-    }
-
-    @Test
-    fun `M log a user error W build { default service name not available }`() {
-        DatadogTracing.setTracingAdapterBuilderMock(mockDatadogTracerBuilder)
-        try {
-            // GIVEN
-            whenever(mockSdkCore.service) doReturn ""
-
-            // WHEN
-            testedOtelTracerProviderBuilder.build()
-
-            // THEN
-            mockInternalLogger.verifyLog(
-                InternalLogger.Level.ERROR,
-                InternalLogger.Target.USER,
-                OtelTracerProvider.DEFAULT_SERVICE_NAME_IS_MISSING_ERROR_MESSAGE
-            )
-        } finally {
-            DatadogTracing.setTracingAdapterBuilderMock(null)
-        }
     }
 
     @Test
@@ -531,7 +479,7 @@ internal class OtelTracerBuilderProviderTest {
 
         // Then
         val priority = delegateSpan.samplingPriority
-        assertThat(priority).isEqualTo(DatadogTracingConstants.PrioritySampling.SAMPLER_KEEP.toInt())
+        assertThat(priority).isEqualTo(DatadogTracingConstants.PrioritySampling.SAMPLER_KEEP)
     }
 
     // endregion

@@ -6,9 +6,13 @@
 
 package com.datadog.android.trace.impl
 
+import com.datadog.android.trace.impl.internal.DatadogTracerBuilderAdapter
+
 object TracingErrorMessages {
     const val TRACING_NOT_ENABLED_ERROR_MESSAGE = DatadogTracing.Errors.TRACING_NOT_ENABLED_ERROR_MESSAGE
 
     const val WRITER_PROVIDER_INTERFACE_NOT_IMPLEMENTED_ERROR_MESSAGE =
         DatadogTracing.Errors.WRITER_PROVIDER_INTERFACE_NOT_IMPLEMENTED_ERROR_MESSAGE
+
+    const val MESSAGE_WRITER_NOT_PROVIDED = DatadogTracerBuilderAdapter.MESSAGE_WRITER_NOT_PROVIDED
 }

@@ -5,6 +5,7 @@
  */
 package com.datadog.android.trace.impl.internal
 
+import androidx.annotation.VisibleForTesting
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.trace.TracingHeaderType
 import com.datadog.android.trace.api.constants.DatadogTracingConstants.TracerConfig
@@ -23,9 +24,10 @@ internal class DatadogTracerBuilderAdapter(
 ) : DatadogTracerBuilder {
 
     private var properties: Properties? = null
-    private val delegate = CoreTracer.CoreTracerBuilder(internalLogger)
+    @VisibleForTesting
+    internal val delegate = CoreTracer.CoreTracerBuilder(internalLogger)
     private var serviceName: String = defaultServiceName
-    private var sampleRate: Double = DEFAULT_SAMPLE_RATE
+    private var sampleRate: Double? = null
     private var traceRateLimit = Int.MAX_VALUE
     private var partialFlushThreshold = DEFAULT_PARTIAL_MIN_FLUSH
     private val globalTags: MutableMap<String, String> = mutableMapOf()
@@ -74,7 +76,21 @@ internal class DatadogTracerBuilderAdapter(
         if (samplerAdapter is DatadogTracerSamplerWrapper) delegate.sampler(samplerAdapter.delegate)
     }
 
-    override fun withSampleRate(sampleRate: Double) = apply { this.sampleRate = sampleRate }
+    override fun withSampleRate(sampleRate: Double) = apply {
+        // In case the sample rate is not set we should not specify it. The agent code under the hood
+        // will provide different sampler based on this property and also different sampling priorities used
+        // in the metrics
+        // -1 MANUAL_DROP User indicated to drop the trace via configuration (sampling rate).
+        // 0 AUTO_DROP Sampler indicated to drop the trace using a sampling rate provided by the Agent through
+        // a remote configuration. The Agent API is not used in Android so this `sampling_priority:0` will never
+        // be used.
+        // 1 AUTO_KEEP Sampler indicated to keep the trace using a sampling rate from the default configuration
+        // which right now is 100.0
+        // (Default sampling priority value. or in our case no specified sample rate will be considered as 100)
+        // 2 MANUAL_KEEP User indicated to keep the trace, either manually or via configuration (sampling rate)
+
+        this.sampleRate = sampleRate
+    }
 
     override fun withPartialFlushMinSpans(partialFlushThreshold: Int) = apply {
         delegate.partialFlushMinSpans(partialFlushThreshold)
@@ -102,7 +118,12 @@ internal class DatadogTracerBuilderAdapter(
         properties.setProperty(TracerConfig.TRACE_RATE_LIMIT, traceRateLimit.toString())
         properties.setProperty(TracerConfig.PARTIAL_FLUSH_MIN_SPANS, partialFlushThreshold.toString())
         properties.setProperty(TracerConfig.URL_AS_RESOURCE_NAME, DEFAULT_URL_AS_RESOURCE_NAME.toString())
-        properties.setProperty(TracerConfig.TRACE_SAMPLE_RATE, (sampleRate / DEFAULT_SAMPLE_RATE).toString())
+        sampleRate?.let {
+            properties.setProperty(
+                TracerConfig.TRACE_SAMPLE_RATE,
+                (it / DEFAULT_SAMPLE_RATE).toString()
+            )
+        }
         properties.setProperty(
             TracerConfig.TAGS,
             globalTags.map { "${it.key}:${it.value}" }.joinToString(",")
@@ -116,9 +137,6 @@ internal class DatadogTracerBuilderAdapter(
             "You're trying to create an DatadogTracerBuilder instance, " +
                 "but either the SDK was not initialized or the Tracing feature was " +
                 "not registered. No tracing data will be sent."
-
-        internal const val DEFAULT_SERVICE_NAME_IS_MISSING_ERROR_MESSAGE =
-            "Default service name is missing during DatadogTracerBuilder creation, did you initialize SDK?"
 
         internal const val DEFAULT_SAMPLE_RATE = 100.0
         internal const val DEFAULT_PARTIAL_MIN_FLUSH = 5
