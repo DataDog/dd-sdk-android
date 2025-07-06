@@ -85,7 +85,6 @@ internal inline fun <reified T : DatadogSpanContext> Forge.newSpanContextMock(
     on { spanId } doReturn fakeSpanId
     on { traceId } doReturn fakeTraceId
     on { mock.samplingPriority } doReturn samplingPriority
-
 }
 
 internal fun Forge.newSpanMock(

@@ -16,6 +16,7 @@ import java.util.Properties
  * Builder interface for creating and configuring a [DatadogTracer] instance.
  */
 @NoOpImplementation(publicNoOpImplementation = true)
+@SuppressWarnings("TooManyFunctions")
 interface DatadogTracerBuilder {
     /**
      * Constructs and returns an instance of [DatadogTracer] based on the current builder configuration.

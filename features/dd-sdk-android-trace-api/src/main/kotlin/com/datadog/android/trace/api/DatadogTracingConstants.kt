@@ -3,7 +3,7 @@
  * This product includes software developed at Datadog (https://www.datadoghq.com/).
  * Copyright 2016-Present Datadog, Inc.
  */
-package com.datadog.android.trace.api.constants
+package com.datadog.android.trace.api
 
 /**
  * Contains constants related to Datadog tracing. This object groups constants into several
@@ -100,8 +100,8 @@ object DatadogTracingConstants {
     }
 
     /**
-     * Configuration constants for the [Tracer.] These constants define the keys used to configure
-     * various tracer settings using [java.util.Properties].
+     * Configuration constants for the [com.datadog.android.trace.api.tracer.DatadogTracer] implementation.
+     * These constants define the keys used to configure various tracer settings using [java.util.Properties].
      */
     object TracerConfig {
         /** The configuration key used to set span-level tags in the tracer. */
@@ -137,7 +137,7 @@ object DatadogTracingConstants {
         const val URL_AS_RESOURCE_NAME: String = "trace.URLAsResourceNameRule.enabled"
 
         /**
-         * A constant representing the property key used for setting custom global tags
+         * A constant representing the property key used for setting custom global tracer tags.
          */
         const val TAGS: String = "tags"
     }

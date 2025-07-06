@@ -13,4 +13,3 @@ import com.datadog.tools.annotation.NoOpImplementation
  */
 @NoOpImplementation
 interface DatadogTracerSampler
-

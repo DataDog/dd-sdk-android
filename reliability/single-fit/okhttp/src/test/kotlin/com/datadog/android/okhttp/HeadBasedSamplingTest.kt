@@ -20,7 +20,7 @@ import com.datadog.android.trace.GlobalDatadogTracerHolder
 import com.datadog.android.trace.Trace
 import com.datadog.android.trace.TraceConfiguration
 import com.datadog.android.trace.TracingHeaderType
-import com.datadog.android.trace.api.constants.DatadogTracingConstants
+import com.datadog.android.trace.api.DatadogTracingConstants
 import com.datadog.android.trace.api.span.DatadogSpan
 import com.datadog.android.trace.api.span.clear
 import com.datadog.android.trace.impl.DatadogTracing

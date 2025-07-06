@@ -51,7 +51,7 @@ val DatadogTracer.writer: DatadogSpanWriter?
     }
 
 fun GlobalDatadogTracerHolder.clear() {
-    tracer = null
+    instance = null
 }
 
 private val DatadogSpanContext.ddSpanContext: DDSpanContext?

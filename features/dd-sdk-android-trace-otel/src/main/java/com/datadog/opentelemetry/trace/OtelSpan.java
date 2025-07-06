@@ -6,7 +6,7 @@
 
 package com.datadog.opentelemetry.trace;
 
-import static com.datadog.android.trace.api.constants.DatadogTracingConstants.DEFAULT_ASYNC_PROPAGATING;
+import static com.datadog.android.trace.api.DatadogTracingConstants.DEFAULT_ASYNC_PROPAGATING;
 import static com.datadog.opentelemetry.trace.OtelConventions.applyNamingConvention;
 import static com.datadog.opentelemetry.trace.OtelConventions.applyReservedAttribute;
 import static io.opentelemetry.api.trace.StatusCode.ERROR;
@@ -16,7 +16,7 @@ import static io.opentelemetry.api.trace.StatusCode.UNSET;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-import com.datadog.android.trace.api.constants.DatadogTracingConstants;
+import com.datadog.android.trace.api.DatadogTracingConstants;
 import com.datadog.android.trace.api.scope.DatadogScope;
 import com.datadog.android.trace.api.span.DatadogSpan;
 import com.datadog.android.trace.api.span.DatadogSpanContext;

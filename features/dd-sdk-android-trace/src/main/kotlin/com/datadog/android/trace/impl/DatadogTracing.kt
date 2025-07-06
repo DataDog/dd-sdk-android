@@ -14,14 +14,12 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.internal.utils.tryCastTo
 import com.datadog.android.lint.InternalApi
 import com.datadog.android.trace.InternalCoreWriterProvider
-import com.datadog.android.trace.api.sampling.DatadogSamplersFactory
 import com.datadog.android.trace.api.span.DatadogSpanIdConverter
 import com.datadog.android.trace.api.span.DatadogSpanLogger
 import com.datadog.android.trace.api.span.NoOpDatadogSpanLogger
 import com.datadog.android.trace.api.trace.DatadogTraceIdFactory
 import com.datadog.android.trace.api.tracer.DatadogTracerBuilder
 import com.datadog.android.trace.api.tracer.NoOpDatadogTracerBuilder
-import com.datadog.android.trace.impl.internal.DatadogSamplersFactoryImpl
 import com.datadog.android.trace.impl.internal.DatadogSpanIdConverterAdapter
 import com.datadog.android.trace.impl.internal.DatadogSpanLoggerAdapter
 import com.datadog.android.trace.impl.internal.DatadogSpanWriterWrapper
@@ -52,13 +50,6 @@ object DatadogTracing {
     val traceIdFactory: DatadogTraceIdFactory = DatadogTraceIdFactoryAdapter
 
     /**
-     * Provides a shared instance of [DatadogSamplersFactory] used to create different types of samplers
-     * for controlling and customizing tracing behavior.
-     */
-    @JvmField
-    val samplersFactory: DatadogSamplersFactory = DatadogSamplersFactoryImpl
-
-    /**
      * Provides an instance of [DatadogSpanLogger] for logging span-related messages, errors,
      * and attributes. Selects the appropriate logger implementation based on the available context.
      */
@@ -79,41 +70,44 @@ object DatadogTracing {
      * @return A configured instance of [DatadogTracerBuilder], or a no-operation implementation if the necessary
      * configurations or features are unavailable.
      */
-    fun newTracerBuilder(sdkCore: SdkCore): DatadogTracerBuilder {
-        if (builderProvider != null) return builderProvider as DatadogTracerBuilder
-        if (sdkCore !is FeatureSdkCore) return NoOpDatadogTracerBuilder()
-        val internalLogger = sdkCore.internalLogger
-        val tracingFeature = sdkCore.getFeature(Feature.TRACING_FEATURE_NAME)?.unwrap<Feature>()
-        if (tracingFeature == null) {
-            internalLogger.log(
-                InternalLogger.Level.ERROR,
-                InternalLogger.Target.USER,
-                { Errors.TRACING_NOT_ENABLED_ERROR_MESSAGE }
+    fun newTracerBuilder(sdkCore: SdkCore): DatadogTracerBuilder = when {
+        builderProvider != null -> builderProvider as DatadogTracerBuilder
+        sdkCore !is FeatureSdkCore -> NoOpDatadogTracerBuilder()
+        else -> {
+            val internalLogger = sdkCore.internalLogger
+            val tracingFeature = sdkCore.getFeature(Feature.TRACING_FEATURE_NAME)?.unwrap<Feature>()
+            if (tracingFeature == null) {
+                internalLogger.log(
+                    InternalLogger.Level.ERROR,
+                    InternalLogger.Target.USER,
+                    { Errors.TRACING_NOT_ENABLED_ERROR_MESSAGE }
+                )
+            }
+
+            val internalCoreWriterProvider = tracingFeature as? InternalCoreWriterProvider
+            if (internalCoreWriterProvider == null) {
+                internalLogger.log(
+                    InternalLogger.Level.ERROR,
+                    InternalLogger.Target.MAINTAINER,
+                    { Errors.WRITER_PROVIDER_INTERFACE_NOT_IMPLEMENTED_ERROR_MESSAGE }
+                )
+            }
+
+            if (sdkCore.service.isEmpty()) {
+                internalLogger.log(
+                    InternalLogger.Level.ERROR,
+                    InternalLogger.Target.USER,
+                    { Errors.DEFAULT_SERVICE_NAME_IS_MISSING_ERROR_MESSAGE }
+                )
+            }
+
+            DatadogTracerBuilderAdapter(
+                internalLogger,
+                internalCoreWriterProvider?.getCoreTracerWriter()
+                    ?: DatadogSpanWriterWrapper(NoOpCoreTracerWriter()),
+                sdkCore.service
             )
         }
-
-        val internalCoreWriterProvider = tracingFeature as? InternalCoreWriterProvider
-        if (internalCoreWriterProvider == null) {
-            internalLogger.log(
-                InternalLogger.Level.ERROR,
-                InternalLogger.Target.MAINTAINER,
-                { Errors.WRITER_PROVIDER_INTERFACE_NOT_IMPLEMENTED_ERROR_MESSAGE }
-            )
-        }
-
-        if (sdkCore.service.isEmpty()) {
-            internalLogger.log(
-                InternalLogger.Level.ERROR,
-                InternalLogger.Target.USER,
-                { Errors.DEFAULT_SERVICE_NAME_IS_MISSING_ERROR_MESSAGE }
-            )
-        }
-
-        return DatadogTracerBuilderAdapter(
-            internalLogger,
-            internalCoreWriterProvider?.getCoreTracerWriter() ?: DatadogSpanWriterWrapper(NoOpCoreTracerWriter()),
-            sdkCore.service
-        )
     }
 
     @VisibleForTesting

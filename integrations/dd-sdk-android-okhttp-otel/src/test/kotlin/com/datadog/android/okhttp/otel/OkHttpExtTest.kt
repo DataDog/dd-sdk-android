@@ -6,7 +6,7 @@
 
 package com.datadog.android.okhttp.otel
 
-import com.datadog.android.trace.api.constants.DatadogTracingConstants
+import com.datadog.android.trace.api.DatadogTracingConstants
 import com.datadog.android.trace.api.span.DatadogSpan
 import com.datadog.opentelemetry.trace.OtelSpan
 import com.datadog.tools.unit.forge.BaseConfigurator

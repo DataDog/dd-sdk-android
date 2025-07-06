@@ -18,7 +18,7 @@ object GlobalDatadogTracerHolder {
 
     @Volatile
     @get:Synchronized
-    internal var tracer: DatadogTracer? = null
+    internal var instance: DatadogTracer? = null
 
     /**
      * Registers the provided tracer as the global tracer if no tracer is currently registered.
@@ -28,8 +28,8 @@ object GlobalDatadogTracerHolder {
      */
     @Synchronized
     fun registerIfAbsent(tracer: DatadogTracer): Boolean {
-        if (GlobalDatadogTracerHolder.tracer == null) {
-            GlobalDatadogTracerHolder.tracer = tracer
+        if (instance == null) {
+            instance = tracer
             return true
         }
 
@@ -42,7 +42,12 @@ object GlobalDatadogTracerHolder {
      * @return The current instance of [DatadogTracer] if available. Otherwise, an instance of
      * [NoOpDatadogTracer] that performs no operations.
      */
-    fun get(): DatadogTracer = getUnsafe() ?: NoOpDatadogTracer()
+    fun get(): DatadogTracer = getOrNull() ?: NoOpDatadogTracer()
 
-    fun getUnsafe(): DatadogTracer? = tracer
+    /**
+     * Retrieves the current instance of the DatadogTracer, if available.
+     *
+     * @return An instance of DatadogTracer or null.
+     */
+    fun getOrNull(): DatadogTracer? = instance
 }

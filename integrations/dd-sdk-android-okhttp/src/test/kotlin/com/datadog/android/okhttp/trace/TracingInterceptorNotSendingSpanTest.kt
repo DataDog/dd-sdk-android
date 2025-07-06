@@ -18,7 +18,7 @@ import com.datadog.android.okhttp.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.okhttp.utils.verifyLog
 import com.datadog.android.rum.RumResourceMethod
 import com.datadog.android.trace.TracingHeaderType
-import com.datadog.android.trace.api.constants.DatadogTracingConstants
+import com.datadog.android.trace.api.DatadogTracingConstants
 import com.datadog.android.trace.api.propagation.DatadogPropagation
 import com.datadog.android.trace.api.span.DatadogSpan
 import com.datadog.android.trace.api.span.DatadogSpanBuilder

@@ -11,7 +11,7 @@ import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.internal.utils.loggableStackTrace
 import com.datadog.android.log.LogAttributes
-import com.datadog.android.trace.api.constants.DatadogTracingConstants
+import com.datadog.android.trace.api.DatadogTracingConstants
 import com.datadog.android.trace.api.span.DatadogSpan
 import com.datadog.android.trace.api.span.DatadogSpanLogger
 import io.opentracing.log.Fields

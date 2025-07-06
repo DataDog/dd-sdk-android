@@ -1,34 +1,34 @@
-public final class com/datadog/android/trace/api/constants/DatadogTracingConstants {
+public final class com/datadog/android/trace/api/DatadogTracingConstants {
 	public static final field DEFAULT_ASYNC_PROPAGATING Z
-	public static final field INSTANCE Lcom/datadog/android/trace/api/constants/DatadogTracingConstants;
+	public static final field INSTANCE Lcom/datadog/android/trace/api/DatadogTracingConstants;
 }
 
-public final class com/datadog/android/trace/api/constants/DatadogTracingConstants$DDTags {
+public final class com/datadog/android/trace/api/DatadogTracingConstants$DDTags {
 	public static final field ERROR_MSG Ljava/lang/String;
 	public static final field ERROR_TYPE Ljava/lang/String;
-	public static final field INSTANCE Lcom/datadog/android/trace/api/constants/DatadogTracingConstants$DDTags;
+	public static final field INSTANCE Lcom/datadog/android/trace/api/DatadogTracingConstants$DDTags;
 	public static final field RESOURCE_NAME Ljava/lang/String;
 }
 
-public final class com/datadog/android/trace/api/constants/DatadogTracingConstants$ErrorPriorities {
+public final class com/datadog/android/trace/api/DatadogTracingConstants$ErrorPriorities {
 	public static final field DEFAULT B
 	public static final field HTTP_SERVER_DECORATOR B
-	public static final field INSTANCE Lcom/datadog/android/trace/api/constants/DatadogTracingConstants$ErrorPriorities;
+	public static final field INSTANCE Lcom/datadog/android/trace/api/DatadogTracingConstants$ErrorPriorities;
 	public static final field UNSET B
 }
 
-public final class com/datadog/android/trace/api/constants/DatadogTracingConstants$LogAttributes {
+public final class com/datadog/android/trace/api/DatadogTracingConstants$LogAttributes {
 	public static final field ERROR_KIND Ljava/lang/String;
 	public static final field ERROR_OBJECT Ljava/lang/String;
 	public static final field EVENT Ljava/lang/String;
-	public static final field INSTANCE Lcom/datadog/android/trace/api/constants/DatadogTracingConstants$LogAttributes;
+	public static final field INSTANCE Lcom/datadog/android/trace/api/DatadogTracingConstants$LogAttributes;
 	public static final field MESSAGE Ljava/lang/String;
 	public static final field STACK Ljava/lang/String;
 	public static final field STATUS Ljava/lang/String;
 }
 
-public final class com/datadog/android/trace/api/constants/DatadogTracingConstants$PrioritySampling {
-	public static final field INSTANCE Lcom/datadog/android/trace/api/constants/DatadogTracingConstants$PrioritySampling;
+public final class com/datadog/android/trace/api/DatadogTracingConstants$PrioritySampling {
+	public static final field INSTANCE Lcom/datadog/android/trace/api/DatadogTracingConstants$PrioritySampling;
 	public static final field SAMPLER_DROP I
 	public static final field SAMPLER_KEEP I
 	public static final field UNSET I
@@ -36,8 +36,8 @@ public final class com/datadog/android/trace/api/constants/DatadogTracingConstan
 	public static final field USER_KEEP I
 }
 
-public final class com/datadog/android/trace/api/constants/DatadogTracingConstants$Tags {
-	public static final field INSTANCE Lcom/datadog/android/trace/api/constants/DatadogTracingConstants$Tags;
+public final class com/datadog/android/trace/api/DatadogTracingConstants$Tags {
+	public static final field INSTANCE Lcom/datadog/android/trace/api/DatadogTracingConstants$Tags;
 	public static final field KEY_ANALYTICS_SAMPLE_RATE Ljava/lang/String;
 	public static final field KEY_ERROR_MSG Ljava/lang/String;
 	public static final field KEY_ERROR_STACK Ljava/lang/String;
@@ -52,8 +52,8 @@ public final class com/datadog/android/trace/api/constants/DatadogTracingConstan
 	public static final field VALUE_SPAN_KIND_SERVER Ljava/lang/String;
 }
 
-public final class com/datadog/android/trace/api/constants/DatadogTracingConstants$TracerConfig {
-	public static final field INSTANCE Lcom/datadog/android/trace/api/constants/DatadogTracingConstants$TracerConfig;
+public final class com/datadog/android/trace/api/DatadogTracingConstants$TracerConfig {
+	public static final field INSTANCE Lcom/datadog/android/trace/api/DatadogTracingConstants$TracerConfig;
 	public static final field PARTIAL_FLUSH_MIN_SPANS Ljava/lang/String;
 	public static final field PROPAGATION_STYLE_EXTRACT Ljava/lang/String;
 	public static final field PROPAGATION_STYLE_INJECT Ljava/lang/String;
@@ -80,13 +80,6 @@ public final class com/datadog/android/trace/api/propagation/NoOpDatadogPropagat
 	public fun inject (Lcom/datadog/android/trace/api/span/DatadogSpan;Ljava/lang/Object;Lkotlin/jvm/functions/Function3;)V
 	public fun inject (Lcom/datadog/android/trace/api/span/DatadogSpanContext;Ljava/lang/Object;Lkotlin/jvm/functions/Function3;)V
 	public fun isExtractedContext (Lcom/datadog/android/trace/api/span/DatadogSpanContext;)Z
-}
-
-public abstract interface class com/datadog/android/trace/api/sampling/DatadogSamplersFactory {
-	public abstract fun newAllSampler ()Lcom/datadog/android/trace/api/sampling/DatadogTracerSampler;
-	public abstract fun newRateBasedSampler (D)Lcom/datadog/android/trace/api/sampling/DatadogTracerSampler;
-	public abstract fun newSpanSampler (D)Lcom/datadog/android/trace/api/sampling/DatadogTracerSampler;
-	public abstract fun newTraceSampler (D)Lcom/datadog/android/trace/api/sampling/DatadogTracerSampler;
 }
 
 public abstract interface class com/datadog/android/trace/api/sampling/DatadogTracerSampler {

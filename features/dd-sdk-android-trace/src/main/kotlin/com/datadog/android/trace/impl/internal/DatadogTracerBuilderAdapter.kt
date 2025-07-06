@@ -8,7 +8,7 @@ package com.datadog.android.trace.impl.internal
 import androidx.annotation.VisibleForTesting
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.trace.TracingHeaderType
-import com.datadog.android.trace.api.constants.DatadogTracingConstants.TracerConfig
+import com.datadog.android.trace.api.DatadogTracingConstants.TracerConfig
 import com.datadog.android.trace.api.sampling.DatadogTracerSampler
 import com.datadog.android.trace.api.span.DatadogSpanWriter
 import com.datadog.android.trace.api.tracer.DatadogTracer
@@ -24,6 +24,7 @@ internal class DatadogTracerBuilderAdapter(
 ) : DatadogTracerBuilder {
 
     private var properties: Properties? = null
+
     @VisibleForTesting
     internal val delegate = CoreTracer.CoreTracerBuilder(internalLogger)
     private var serviceName: String = defaultServiceName

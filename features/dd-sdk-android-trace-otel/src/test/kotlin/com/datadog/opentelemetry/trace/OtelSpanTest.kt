@@ -6,8 +6,8 @@
 
 package com.datadog.opentelemetry.trace
 
-import com.datadog.android.trace.api.constants.DatadogTracingConstants.DEFAULT_ASYNC_PROPAGATING
-import com.datadog.android.trace.api.constants.DatadogTracingConstants.ErrorPriorities
+import com.datadog.android.trace.api.DatadogTracingConstants.DEFAULT_ASYNC_PROPAGATING
+import com.datadog.android.trace.api.DatadogTracingConstants.ErrorPriorities
 import com.datadog.android.trace.api.span.DatadogSpan
 import com.datadog.android.trace.api.tracer.DatadogTracer
 import com.datadog.android.trace.opentelemetry.utils.forge.Configurator

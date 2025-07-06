@@ -9,7 +9,7 @@ package com.datadog.benchmark.sample.ui.trace
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.datadog.android.trace.api.constants.DatadogTracingConstants
+import com.datadog.android.trace.api.DatadogTracingConstants
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.api.trace.StatusCode
 import io.opentelemetry.api.trace.Tracer

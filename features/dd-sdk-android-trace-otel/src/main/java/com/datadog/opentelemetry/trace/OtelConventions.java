@@ -6,11 +6,11 @@
 
 package com.datadog.opentelemetry.trace;
 
-import static com.datadog.android.trace.api.constants.DatadogTracingConstants.Tags.KEY_ANALYTICS_SAMPLE_RATE;
-import static com.datadog.android.trace.api.constants.DatadogTracingConstants.Tags.VALUE_SPAN_KIND_CLIENT;
-import static com.datadog.android.trace.api.constants.DatadogTracingConstants.Tags.VALUE_SPAN_KIND_CONSUMER;
-import static com.datadog.android.trace.api.constants.DatadogTracingConstants.Tags.VALUE_SPAN_KIND_PRODUCER;
-import static com.datadog.android.trace.api.constants.DatadogTracingConstants.Tags.VALUE_SPAN_KIND_SERVER;
+import static com.datadog.android.trace.api.DatadogTracingConstants.Tags.KEY_ANALYTICS_SAMPLE_RATE;
+import static com.datadog.android.trace.api.DatadogTracingConstants.Tags.VALUE_SPAN_KIND_CLIENT;
+import static com.datadog.android.trace.api.DatadogTracingConstants.Tags.VALUE_SPAN_KIND_CONSUMER;
+import static com.datadog.android.trace.api.DatadogTracingConstants.Tags.VALUE_SPAN_KIND_PRODUCER;
+import static com.datadog.android.trace.api.DatadogTracingConstants.Tags.VALUE_SPAN_KIND_SERVER;
 import static java.lang.Boolean.parseBoolean;
 import static java.util.Locale.ROOT;
 import static io.opentelemetry.api.trace.SpanKind.CLIENT;
@@ -21,7 +21,7 @@ import static io.opentelemetry.api.trace.SpanKind.SERVER;
 
 import androidx.annotation.Nullable;
 
-import com.datadog.android.trace.api.constants.DatadogTracingConstants;
+import com.datadog.android.trace.api.DatadogTracingConstants;
 import com.datadog.android.trace.api.span.DatadogSpan;
 
 import io.opentelemetry.api.common.AttributeKey;

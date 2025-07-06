@@ -1,4 +1,4 @@
-object com.datadog.android.trace.api.constants.DatadogTracingConstants
+object com.datadog.android.trace.api.DatadogTracingConstants
   const val DEFAULT_ASYNC_PROPAGATING: Boolean
   object Tags
     const val KEY_HTTP_URL: String
@@ -22,11 +22,13 @@ object com.datadog.android.trace.api.constants.DatadogTracingConstants
   object TracerConfig
     const val SPAN_TAGS: String
     const val TRACE_RATE_LIMIT: String
+    const val PARTIAL_FLUSH_MIN_SPANS: String
     const val TRACE_SAMPLE_RATE: String
     const val PROPAGATION_STYLE_EXTRACT: String
     const val PROPAGATION_STYLE_INJECT: String
     const val SERVICE_NAME: String
     const val URL_AS_RESOURCE_NAME: String
+    const val TAGS: String
   object LogAttributes
     const val ERROR_KIND: String
     const val ERROR_OBJECT: String
@@ -54,11 +56,6 @@ class com.datadog.android.trace.api.propagation.NoOpDatadogPropagation : Datadog
   override fun <C> extract(C, (C) -> Unit): com.datadog.android.trace.api.span.DatadogSpanContext?
   override fun isExtractedContext(com.datadog.android.trace.api.span.DatadogSpanContext)
   override fun createExtractedContext(String, String, Int): com.datadog.android.trace.api.span.DatadogSpanContext
-interface com.datadog.android.trace.api.sampling.DatadogSamplersFactory
-  fun newAllSampler(): DatadogTracerSampler
-  fun newTraceSampler(Double): DatadogTracerSampler
-  fun newSpanSampler(Double): DatadogTracerSampler
-  fun newRateBasedSampler(Double): DatadogTracerSampler
 interface com.datadog.android.trace.api.sampling.DatadogTracerSampler
 interface com.datadog.android.trace.api.scope.DatadogScope
   fun close()
@@ -148,3 +145,6 @@ interface com.datadog.android.trace.api.tracer.DatadogTracerBuilder
   fun withIdGenerationStrategy(String, Boolean): DatadogTracerBuilder
   fun withSampler(com.datadog.android.trace.api.sampling.DatadogTracerSampler?): DatadogTracerBuilder
   fun withSampleRate(Double): DatadogTracerBuilder
+  fun withTraceLimit(Int): DatadogTracerBuilder
+  fun withPartialFlushThreshold(Int): DatadogTracerBuilder
+  fun withTag(String, String): DatadogTracerBuilder
