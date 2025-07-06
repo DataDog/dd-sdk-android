@@ -10,7 +10,7 @@ import androidx.annotation.VisibleForTesting;
 
 import com.datadog.android.trace.api.span.DatadogSpan;
 import com.datadog.android.trace.api.span.DatadogSpanContext;
-import com.datadog.android.trace.impl.DatadogTracing;
+import com.datadog.android.trace.impl.internal.DatadogTracingInternal;
 
 import io.opentelemetry.api.trace.SpanContext;
 import io.opentelemetry.api.trace.TraceFlags;
@@ -55,7 +55,7 @@ public class OtelSpanContext implements SpanContext {
   @Override
   public String getSpanId() {
     if (this.spanId == null) {
-      this.spanId = DatadogTracing.spanIdConverter.toHexStringPadded(this.delegate.getSpanId());
+      this.spanId = DatadogTracingInternal.spanIdConverter.toHexStringPadded(this.delegate.getSpanId());
     }
     return this.spanId;
   }

@@ -8,7 +8,7 @@ package com.datadog.android.trace.integration.opentracing
 
 import com.datadog.android.internal.utils.toHexString
 import com.datadog.android.trace.api.span.DatadogSpan
-import com.datadog.android.trace.impl.DatadogTracing
+import com.datadog.android.trace.impl.internal.DatadogTracingInternal
 import com.datadog.opentracing.DDSpan
 import io.opentracing.Span
 import io.opentracing.SpanContext
@@ -56,7 +56,7 @@ fun Span.spanIdAsHexString(): String {
  * which doesn't match what we send in our events
  */
 fun DatadogSpan.spanIdAsHexString(): String {
-    return DatadogTracing.spanIdConverter.toHexStringPadded(context().spanId)
+    return DatadogTracingInternal.spanIdConverter.toHexStringPadded(context().spanId)
 }
 
 /**

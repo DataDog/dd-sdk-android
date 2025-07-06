@@ -17,6 +17,7 @@ import com.datadog.android.trace.TraceConfiguration
 import com.datadog.android.trace.api.span.clear
 import com.datadog.android.trace.api.span.setSpanLoggerMock
 import com.datadog.android.trace.impl.DatadogTracing
+import com.datadog.android.trace.impl.internal.DatadogTracingInternal
 import com.datadog.android.trace.integration.tests.elmyr.TraceIntegrationForgeConfigurator
 import com.datadog.android.trace.logErrorMessage
 import com.datadog.android.trace.logThrowable
@@ -149,7 +150,7 @@ class UtilitiesTest {
         assertThat(event0.getString("spans[0].meta._dd.p.id")).isEqualTo(mostSignificantTraceId)
         assertThat(
             event0.getString("spans[0].span_id")
-        ).isEqualTo(DatadogTracing.spanIdConverter.toHexStringPadded(spanId))
+        ).isEqualTo(DatadogTracingInternal.spanIdConverter.toHexStringPadded(spanId))
         assertThat(event0.getString("spans[0].service")).isEqualTo(stubSdkCore.getDatadogContext().service)
         assertThat(event0.getString("spans[0].meta.version")).isEqualTo(stubSdkCore.getDatadogContext().version)
         assertThat(event0.getString("spans[0].meta._dd.source")).isEqualTo(stubSdkCore.getDatadogContext().source)
@@ -255,7 +256,7 @@ class UtilitiesTest {
         assertThat(
             event0.getString("spans[0].span_id")
         ).isEqualTo(
-            DatadogTracing.spanIdConverter.toHexStringPadded(spanId)
+            DatadogTracingInternal.spanIdConverter.toHexStringPadded(spanId)
         )
         assertThat(event0.getString("spans[0].service")).isEqualTo(stubSdkCore.getDatadogContext().service)
         assertThat(event0.getString("spans[0].meta.version")).isEqualTo(stubSdkCore.getDatadogContext().version)

@@ -24,6 +24,7 @@ import com.datadog.android.trace.api.DatadogTracingConstants
 import com.datadog.android.trace.api.span.DatadogSpan
 import com.datadog.android.trace.api.span.clear
 import com.datadog.android.trace.impl.DatadogTracing
+import com.datadog.android.trace.impl.internal.DatadogTracingInternal
 import com.datadog.android.trace.opentelemetry.OtelTracerProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.getFieldValue
@@ -626,7 +627,7 @@ class HeadBasedSamplingTest {
                     leastSignificantTraceId.toLong().toHexString().padStart(16, '0')
                 )
                 hasMostSignificant64BitsTraceId(mostSignificantTraceId)
-                hasSpanId(DatadogTracing.spanIdConverter.toHexStringPadded(spanId.toLong()))
+                hasSpanId(DatadogTracingInternal.spanIdConverter.toHexStringPadded(spanId.toLong()))
                 hasParentId(localSpanId)
                 hasVersion(stubSdkCore.getDatadogContext().version)
                 hasSource(stubSdkCore.getDatadogContext().source)

@@ -14,16 +14,12 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.internal.utils.tryCastTo
 import com.datadog.android.lint.InternalApi
 import com.datadog.android.trace.InternalCoreWriterProvider
-import com.datadog.android.trace.api.span.DatadogSpanIdConverter
 import com.datadog.android.trace.api.span.DatadogSpanLogger
 import com.datadog.android.trace.api.span.NoOpDatadogSpanLogger
-import com.datadog.android.trace.api.trace.DatadogTraceIdFactory
 import com.datadog.android.trace.api.tracer.DatadogTracerBuilder
 import com.datadog.android.trace.api.tracer.NoOpDatadogTracerBuilder
-import com.datadog.android.trace.impl.internal.DatadogSpanIdConverterAdapter
 import com.datadog.android.trace.impl.internal.DatadogSpanLoggerAdapter
 import com.datadog.android.trace.impl.internal.DatadogSpanWriterWrapper
-import com.datadog.android.trace.impl.internal.DatadogTraceIdFactoryAdapter
 import com.datadog.android.trace.impl.internal.DatadogTracerBuilderAdapter
 import com.datadog.android.trace.internal.data.NoOpCoreTracerWriter
 
@@ -34,21 +30,6 @@ import com.datadog.android.trace.internal.data.NoOpCoreTracerWriter
  */
 @SuppressWarnings("UndocumentedPublicFunction")
 object DatadogTracing {
-    /**
-     * Provides a mechanism for converting Datadog span IDs between decimal and hexadecimal representations.
-     *
-     * This converter is utilized to ensure span ID consistency and proper formatting for distributed tracing
-     * when working with the Datadog SDK.
-     */
-    @JvmField
-    val spanIdConverter: DatadogSpanIdConverter = DatadogSpanIdConverterAdapter
-
-    /**
-     * A factory instance for creating and working with [com.datadog.android.trace.api.trace.DatadogTraceId] objects.
-     */
-    @JvmField
-    val traceIdFactory: DatadogTraceIdFactory = DatadogTraceIdFactoryAdapter
-
     /**
      * Provides an instance of [DatadogSpanLogger] for logging span-related messages, errors,
      * and attributes. Selects the appropriate logger implementation based on the available context.

@@ -525,7 +525,7 @@ internal constructor(
         span: DatadogSpan,
         isSampled: Boolean
     ): Request.Builder {
-        val tracedRequestBuilder: Request.Builder = request.newBuilder()
+        val tracedRequestBuilder = request.newBuilder()
         val tracingHeaderTypes =
             localFirstPartyHostHeaderTypeResolver.headerTypesForUrl(request.url)
                 .ifEmpty {
