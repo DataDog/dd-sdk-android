@@ -64,9 +64,6 @@ dependencies {
     // Generate NoOp implementations
     ksp(project(":tools:noopfactory"))
 
-    // OpenTracing
-    implementation(libs.bundles.openTracing)
-
     testImplementation(testFixtures(project(":dd-sdk-android-core")))
     testImplementation(libs.okHttp)
     testImplementation(libs.bundles.jUnit5)
