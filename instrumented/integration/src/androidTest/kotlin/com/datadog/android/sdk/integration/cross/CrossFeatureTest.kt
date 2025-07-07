@@ -111,10 +111,7 @@ class CrossFeatureTest {
             .withPartialFlushMinSpans(1)
             .setBundleWithRumEnabled(true)
             .build()
-        // don't register GlobalTracer, because call to unregister it
-        // GlobalTracer::class.java.setStaticValue("isRegistered", false) will fail on API 21,
-        // it is impossible to change static final field there
-        // TODO RUM-0000 missing Otel tracer
+        GlobalDatadogTracerHolder.registerIfAbsent(openTracingTracer)
         val logsConfiguration = LogsConfiguration.Builder()
             .useCustomEndpoint(mockWebServer.url("/logs").toString())
             .build()

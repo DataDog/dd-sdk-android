@@ -22,7 +22,7 @@ import com.datadog.android.trace.internal.SpanAttributes
 import com.datadog.android.trace.internal.domain.event.ContextAwareMapper
 import com.datadog.android.trace.internal.storage.ContextAwareSerializer
 import com.datadog.android.trace.model.SpanEvent
-import com.datadog.legacy.trace.api.sampling.PrioritySampling
+import com.datadog.trace.api.sampling.PrioritySampling
 import com.datadog.trace.common.writer.Writer
 import com.datadog.trace.core.DDSpan
 import java.util.Locale
@@ -132,6 +132,9 @@ internal class CoreTraceWriter(
         internal const val ERROR_SERIALIZING = "Error serializing %s model"
         internal const val INITIAL_DATADOG_CONTEXT_NOT_AVAILABLE_ERROR = "Initial span creation Datadog context" +
             " is not available at the write time."
-        internal val DROP_SAMPLING_PRIORITIES = setOf(PrioritySampling.SAMPLER_DROP, PrioritySampling.USER_DROP)
+        internal val DROP_SAMPLING_PRIORITIES = setOf(
+            PrioritySampling.SAMPLER_DROP.toInt(),
+            PrioritySampling.USER_DROP.toInt()
+        )
     }
 }

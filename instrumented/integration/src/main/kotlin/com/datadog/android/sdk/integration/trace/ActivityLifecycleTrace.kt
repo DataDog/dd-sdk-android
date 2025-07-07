@@ -32,8 +32,8 @@ internal class ActivityLifecycleTrace : AppCompatActivity() {
     private lateinit var tracer: DatadogTracer
     private val sentSpans = LinkedList<DatadogSpan>()
     private val sentLogs = LinkedList<Pair<Int, String>>()
-    private lateinit var activityStartScope: DatadogSpan
-    private lateinit var activityResumeScope: DatadogSpan
+    private lateinit var activityStartSpan: DatadogSpan
+    private lateinit var activityResumeSpan: DatadogSpan
 
     // region Activity
 
@@ -62,22 +62,22 @@ internal class ActivityLifecycleTrace : AppCompatActivity() {
 
     override fun onStart() {
         super.onStart()
-        activityStartScope = buildScope(forge.anAlphabeticalString())
+        activityStartSpan = buildSpan(forge.anAlphabeticalString())
     }
 
     override fun onResume() {
         super.onResume()
-        activityResumeScope = buildScope(forge.anAlphabeticalString())
+        activityResumeSpan = buildSpan(forge.anAlphabeticalString())
     }
 
     override fun onPause() {
         super.onPause()
-        activityResumeScope.finish()
+        activityResumeSpan.finish()
     }
 
     override fun onStop() {
         super.onStop()
-        activityStartScope.finish()
+        activityStartSpan.finish()
     }
 
     // endregion
@@ -100,7 +100,7 @@ internal class ActivityLifecycleTrace : AppCompatActivity() {
 
     // region Internal
 
-    private fun buildScope(title: String): DatadogSpan {
+    private fun buildSpan(title: String): DatadogSpan {
         val span = tracer.buildSpan(title).start()
         checkNotNull(tracer.activateSpan(span)) { "Span activation failed" }
         val ddSpan = tracer.activeSpan() as DatadogSpan

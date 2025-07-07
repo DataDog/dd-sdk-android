@@ -8,7 +8,6 @@ package com.datadog.android.trace.api.span
 
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.FeatureSdkCore
-import com.datadog.android.lint.InternalApi
 import com.datadog.android.trace.GlobalDatadogTracerHolder
 import com.datadog.android.trace.api.tracer.DatadogTracer
 import com.datadog.android.trace.api.tracer.DatadogTracerBuilder
@@ -45,14 +44,12 @@ fun DatadogTracing.clear() {
     setTracingAdapterBuilderMock(null)
 }
 
-@InternalApi
 fun DatadogSpan.resolveMeta(datadogContext: DatadogContext): JsonElement {
     val mapper = CoreTracerSpanToSpanEventMapper(false)
     val ddSpan = (this as DatadogSpanAdapter).delegate as DDSpan
     return mapper.resolveMeta(datadogContext, ddSpan).toJson()
 }
 
-@InternalApi
 fun DatadogSpan.resolveMetrics(): JsonElement {
     val mapper = CoreTracerSpanToSpanEventMapper(false)
     val ddSpan = (this as DatadogSpanAdapter).delegate as DDSpan
