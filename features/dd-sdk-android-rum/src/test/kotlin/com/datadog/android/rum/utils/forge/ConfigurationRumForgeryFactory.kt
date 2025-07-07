@@ -6,6 +6,7 @@
 
 package com.datadog.android.rum.utils.forge
 
+import com.datadog.android.rum.RumSessionType
 import com.datadog.android.rum.configuration.VitalsUpdateFrequency
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.metric.interactiontonextview.NoOpLastInteractionIdentifier
@@ -66,7 +67,8 @@ internal class ConfigurationRumForgeryFactory :
             ),
             trackAnonymousUser = forge.aBool(),
             composeActionTrackingStrategy = mock(),
-            slowFramesConfiguration = forge.getForgery()
+            slowFramesConfiguration = forge.getForgery(),
+            rumSessionTypeOverride = forge.aNullable { aValueFrom(RumSessionType::class.java) }
         )
     }
 }
