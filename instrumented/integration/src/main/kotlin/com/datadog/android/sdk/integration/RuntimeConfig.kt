@@ -29,6 +29,8 @@ internal object RuntimeConfig {
     const val CONTENT_TYPE_JSON = "application/json"
     const val CONTENT_TYPE_TEXT = "text/plain;charset=UTF-8"
     private const val LOCALHOST = "http://localhost"
+    private const val SAMPLE_ALL = 100.0
+    private const val SEND_EACH_SPAN_THRESHOLD = 1
 
     var logsEndpointUrl: String = "$LOCALHOST/logs"
     var tracesEndpointUrl: String = "$LOCALHOST/traces"
@@ -55,8 +57,8 @@ internal object RuntimeConfig {
     }
 
     fun tracer(sdkCore: SdkCore): DatadogTracer = DatadogTracing.newTracerBuilder(sdkCore)
-        .withSampleRate(100.0)
-        .withPartialFlushMinSpans(1)
+        .withSampleRate(SAMPLE_ALL)
+        .withPartialFlushMinSpans(SEND_EACH_SPAN_THRESHOLD)
         .build()
 
     fun configBuilder(): Configuration.Builder {
