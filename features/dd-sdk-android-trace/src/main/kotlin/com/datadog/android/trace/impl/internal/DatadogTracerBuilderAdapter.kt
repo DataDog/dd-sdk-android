@@ -7,6 +7,7 @@ package com.datadog.android.trace.impl.internal
 
 import androidx.annotation.VisibleForTesting
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.trace.TracingHeaderType
 import com.datadog.android.trace.api.DatadogTracingConstants.TracerConfig
 import com.datadog.android.trace.api.sampling.DatadogTracerSampler
@@ -18,17 +19,20 @@ import com.datadog.trace.core.CoreTracer
 import java.util.Properties
 
 internal class DatadogTracerBuilderAdapter(
-    internalLogger: InternalLogger,
+    private val sdkCore: FeatureSdkCore,
     writer: DatadogSpanWriter?,
     defaultServiceName: String
 ) : DatadogTracerBuilder {
 
     private var properties: Properties? = null
+    private val internalLogger: InternalLogger
+        get() = sdkCore.internalLogger
 
     @VisibleForTesting
     internal val delegate = CoreTracer.CoreTracerBuilder(internalLogger)
     private var serviceName: String = defaultServiceName
     private var sampleRate: Double? = null
+    private var bundleWithRumEnabled: Boolean = true
     private var traceRateLimit = Int.MAX_VALUE
     private var partialFlushThreshold = DEFAULT_PARTIAL_MIN_FLUSH
     private val globalTags: MutableMap<String, String> = mutableMapOf()
@@ -50,9 +54,12 @@ internal class DatadogTracerBuilderAdapter(
     }
 
     override fun build(): DatadogTracer {
+        val coreTracer = delegate.withProperties(properties ?: properties()).build()
+
         return DatadogTracerAdapter(
-            delegate.withProperties(properties ?: properties())
-                .build()
+            sdkCore,
+            coreTracer,
+            bundleWithRumEnabled
         )
     }
 
@@ -107,6 +114,10 @@ internal class DatadogTracerBuilderAdapter(
 
     override fun withTag(key: String, value: String) = apply {
         globalTags[key] = value
+    }
+
+    override fun setBundleWithRumEnabled(enabled: Boolean) = apply {
+        bundleWithRumEnabled = enabled
     }
 
     private fun properties(): Properties {

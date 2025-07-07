@@ -60,9 +60,9 @@ import java.util.UUID
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
-internal class OtelTraceWriterTest {
+internal class CoreTraceWriterTest {
 
-    private lateinit var testedWriter: OtelTraceWriter
+    private lateinit var testedWriter: CoreTraceWriter
 
     @Mock
     lateinit var mockSdkCore: FeatureSdkCore
@@ -110,7 +110,7 @@ internal class OtelTraceWriterTest {
 
         whenever(mockEventMapper.map(any())) doAnswer { it.getArgument(0) }
 
-        testedWriter = OtelTraceWriter(
+        testedWriter = CoreTraceWriter(
             sdkCore = mockSdkCore,
             ddSpanToSpanEventMapper = mockLegacyMapper,
             eventMapper = mockEventMapper,
@@ -282,7 +282,7 @@ internal class OtelTraceWriterTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             InternalLogger.Target.USER,
-            OtelTraceWriter.INITIAL_DATADOG_CONTEXT_NOT_AVAILABLE_ERROR,
+            CoreTraceWriter.INITIAL_DATADOG_CONTEXT_NOT_AVAILABLE_ERROR,
             mode = times(ddSpans.size)
         )
 
@@ -480,7 +480,7 @@ internal class OtelTraceWriterTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
-            OtelTraceWriter.ERROR_SERIALIZING.format(Locale.US, SpanEvent::class.java.simpleName),
+            CoreTraceWriter.ERROR_SERIALIZING.format(Locale.US, SpanEvent::class.java.simpleName),
             fakeThrowable
         )
     }
@@ -505,9 +505,9 @@ internal class OtelTraceWriterTest {
 
     private fun createNonEmptyDdSpans(forge: Forge, includeDropSamplingPriority: Boolean): List<DDSpan> {
         val predicate: (DDSpan) -> Boolean = if (includeDropSamplingPriority) {
-            { it.samplingPriority() in OtelTraceWriter.DROP_SAMPLING_PRIORITIES }
+            { it.samplingPriority() in CoreTraceWriter.DROP_SAMPLING_PRIORITIES }
         } else {
-            { it.samplingPriority() !in OtelTraceWriter.DROP_SAMPLING_PRIORITIES }
+            { it.samplingPriority() !in CoreTraceWriter.DROP_SAMPLING_PRIORITIES }
         }
 
         var spans = emptyList<DDSpan>()

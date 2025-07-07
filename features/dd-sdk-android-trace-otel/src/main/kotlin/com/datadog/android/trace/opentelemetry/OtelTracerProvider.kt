@@ -43,10 +43,8 @@ import java.util.Locale
  *
  */
 class OtelTracerProvider internal constructor(
-    private val sdkCore: FeatureSdkCore,
     private val datadogTracer: DatadogTracer,
     private val internalLogger: InternalLogger,
-    private val bundleWithRumEnabled: Boolean
 ) : TracerProvider {
 
     private val tracers: MutableMap<String, Tracer> = mutableMapOf()
@@ -90,8 +88,7 @@ class OtelTracerProvider internal constructor(
         return OtelTracerBuilder(
             resolvedInstrumentationScopeName,
             datadogTracer,
-            internalLogger,
-            resolveSpanBuilderDecorator()
+            internalLogger
         )
     }
 
@@ -125,7 +122,6 @@ class OtelTracerProvider internal constructor(
                     service
                 }
             }
-        private var bundleWithRumEnabled: Boolean = true
 
         /**
          * @param sdkCore SDK instance to bind to. If not provided, default instance will be used.
@@ -154,7 +150,7 @@ class OtelTracerProvider internal constructor(
                     }
                 }
 
-                OtelTracerProvider(sdkCore, createDatadogTracer(), sdkCore.internalLogger, bundleWithRumEnabled)
+                OtelTracerProvider(createDatadogTracer(), sdkCore.internalLogger)
             }
         }
 
@@ -273,7 +269,7 @@ class OtelTracerProvider internal constructor(
          * @param enabled true by default
          */
         fun setBundleWithRumEnabled(enabled: Boolean): Builder {
-            bundleWithRumEnabled = enabled
+            builderDelegate.setBundleWithRumEnabled(enabled)
             return this
         }
 
@@ -288,26 +284,6 @@ class OtelTracerProvider internal constructor(
         } else {
             instrumentationScopeName
         }
-    }
-
-    private fun resolveSpanBuilderDecorator(): (SpanBuilder) -> SpanBuilder {
-        return if (bundleWithRumEnabled) {
-            resolveDecoratorWithRumContext()
-        } else {
-            NO_OP_SPAN_BUILDER_DECORATOR
-        }
-    }
-
-    private fun resolveDecoratorWithRumContext(): (SpanBuilder) -> SpanBuilder = { spanBuilder ->
-        val rumFeature = sdkCore.getFeature(Feature.RUM_FEATURE_NAME)
-        if (rumFeature != null) {
-            val lazyContext = CompletableFuture<DatadogContext>()
-            rumFeature.withContext(withFeatureContexts = setOf(Feature.RUM_FEATURE_NAME)) {
-                lazyContext.complete(it)
-            }
-            (spanBuilder as? OtelSpanBuilder)?.setLazyDatadogContext(lazyContext)
-        }
-        spanBuilder
     }
 
     override fun toString(): String {
@@ -339,7 +315,6 @@ class OtelTracerProvider internal constructor(
         internal const val RUM_SESSION_ID_KEY = "session_id"
         internal const val RUM_VIEW_ID_KEY = "view_id"
         internal const val RUM_ACTION_ID_KEY = "action_id"
-        internal val NO_OP_SPAN_BUILDER_DECORATOR: (SpanBuilder) -> SpanBuilder = { it }
         internal const val TRACER_ALREADY_EXISTS_WARNING_MESSAGE =
             "Tracer for %s already exists. Returning existing instance."
         internal const val DEFAULT_TRACER_NAME = "android"

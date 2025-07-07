@@ -16,11 +16,12 @@ import com.datadog.android.trace.InternalCoreWriterProvider
 import com.datadog.android.trace.event.SpanEventMapper
 import com.datadog.android.trace.impl.internal.DatadogSpanWriterWrapper
 import com.datadog.android.trace.internal.data.NoOpCoreTracerWriter
-import com.datadog.android.trace.internal.data.OtelTraceWriter
+import com.datadog.android.trace.internal.data.CoreTraceWriter
 import com.datadog.android.trace.internal.domain.event.CoreTracerSpanToSpanEventMapper
 import com.datadog.android.trace.internal.domain.event.SpanEventMapperWrapper
 import com.datadog.android.trace.internal.domain.event.SpanEventSerializer
 import com.datadog.android.trace.internal.net.TracesRequestFactory
+import com.datadog.trace.common.writer.Writer
 import java.util.concurrent.atomic.AtomicBoolean
 
 /**
@@ -33,7 +34,7 @@ internal class TracingFeature(
     internal val networkInfoEnabled: Boolean
 ) : InternalCoreWriterProvider, StorageBackedFeature {
 
-    internal var coreTracerDataWriter: com.datadog.trace.common.writer.Writer = NoOpCoreTracerWriter()
+    internal var coreTracerDataWriter: Writer = NoOpCoreTracerWriter()
     internal val initialized = AtomicBoolean(false)
 
     // region Feature
@@ -41,7 +42,7 @@ internal class TracingFeature(
     override val name: String = Feature.TRACING_FEATURE_NAME
 
     override fun onInitialize(appContext: Context) {
-        coreTracerDataWriter = createOtelDataWriter(sdkCore)
+        coreTracerDataWriter = createCoreTracerDataWriter(sdkCore)
         initialized.set(true)
     }
 
@@ -67,21 +68,14 @@ internal class TracingFeature(
 
     // endregion
 
-    private fun createOtelDataWriter(
-        sdkCore: FeatureSdkCore
-    ): com.datadog.trace.common.writer.Writer {
+    private fun createCoreTracerDataWriter(sdkCore: FeatureSdkCore): Writer {
         val internalLogger = sdkCore.internalLogger
-        return OtelTraceWriter(
+        return CoreTraceWriter(
             sdkCore,
             ddSpanToSpanEventMapper = CoreTracerSpanToSpanEventMapper(networkInfoEnabled),
             eventMapper = SpanEventMapperWrapper(spanEventMapper, internalLogger),
             serializer = SpanEventSerializer(internalLogger),
             internalLogger = internalLogger
         )
-    }
-
-    companion object {
-        internal const val IS_OPENTELEMETRY_ENABLED_CONFIG_KEY = "is_opentelemetry_enabled"
-        internal const val OPENTELEMETRY_API_VERSION_CONFIG_KEY = "opentelemetry_api_version"
     }
 }

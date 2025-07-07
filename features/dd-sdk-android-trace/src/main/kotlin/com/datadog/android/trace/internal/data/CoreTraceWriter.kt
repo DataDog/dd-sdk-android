@@ -27,7 +27,7 @@ import com.datadog.trace.common.writer.Writer
 import com.datadog.trace.core.DDSpan
 import java.util.Locale
 
-internal class OtelTraceWriter(
+internal class CoreTraceWriter(
     private val sdkCore: FeatureSdkCore,
     internal val ddSpanToSpanEventMapper: ContextAwareMapper<DDSpan, SpanEvent>,
     internal val eventMapper: EventMapper<SpanEvent> = NoOpEventMapper(),

@@ -90,7 +90,7 @@ public abstract interface class com/datadog/android/trace/api/scope/DataScopeLis
 	public abstract fun afterScopeClosed ()V
 }
 
-public abstract interface class com/datadog/android/trace/api/scope/DatadogScope {
+public abstract interface class com/datadog/android/trace/api/scope/DatadogScope : java/io/Closeable {
 	public abstract fun close ()V
 }
 
@@ -209,6 +209,7 @@ public final class com/datadog/android/trace/api/tracer/DatadogTracer$DefaultImp
 
 public abstract interface class com/datadog/android/trace/api/tracer/DatadogTracerBuilder {
 	public abstract fun build ()Lcom/datadog/android/trace/api/tracer/DatadogTracer;
+	public abstract fun setBundleWithRumEnabled (Z)Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;
 	public abstract fun withIdGenerationStrategy (Ljava/lang/String;Z)Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;
 	public abstract fun withPartialFlushMinSpans (I)Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;
 	public abstract fun withPartialFlushThreshold (I)Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;
@@ -235,6 +236,7 @@ public final class com/datadog/android/trace/api/tracer/NoOpDatadogTracer : com/
 public final class com/datadog/android/trace/api/tracer/NoOpDatadogTracerBuilder : com/datadog/android/trace/api/tracer/DatadogTracerBuilder {
 	public fun <init> ()V
 	public fun build ()Lcom/datadog/android/trace/api/tracer/DatadogTracer;
+	public fun setBundleWithRumEnabled (Z)Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;
 	public fun withIdGenerationStrategy (Ljava/lang/String;Z)Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;
 	public fun withPartialFlushMinSpans (I)Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;
 	public fun withPartialFlushThreshold (I)Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;

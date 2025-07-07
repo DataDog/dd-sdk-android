@@ -51,7 +51,7 @@ object DatadogTracing {
      * @return A configured instance of [DatadogTracerBuilder], or a no-operation implementation if the necessary
      * configurations or features are unavailable.
      */
-    fun newTracerBuilder(sdkCore: SdkCore): DatadogTracerBuilder = when {
+    fun newTracerBuilder(sdkCore: SdkCore = Datadog.getInstance()): DatadogTracerBuilder = when {
         builderProvider != null -> builderProvider as DatadogTracerBuilder
         sdkCore !is FeatureSdkCore -> NoOpDatadogTracerBuilder()
         else -> {
@@ -83,7 +83,7 @@ object DatadogTracing {
             }
 
             DatadogTracerBuilderAdapter(
-                internalLogger,
+                sdkCore,
                 internalCoreWriterProvider?.getCoreTracerWriter()
                     ?: DatadogSpanWriterWrapper(NoOpCoreTracerWriter()),
                 sdkCore.service

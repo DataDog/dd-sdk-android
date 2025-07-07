@@ -319,12 +319,6 @@ androidXCompose = [
     "androidXComposeMaterial",
 ]
 
-openTracing = [
-    "openTracingApi",
-    "openTracingNoOp",
-    "openTracingUtil"
-]
-
 integrationTests = [
     "androidXTestCore",
     "androidXTestRunner",

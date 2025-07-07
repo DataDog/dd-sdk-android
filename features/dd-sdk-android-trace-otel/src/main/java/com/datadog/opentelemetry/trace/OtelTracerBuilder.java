@@ -27,19 +27,14 @@ public class OtelTracerBuilder implements TracerBuilder {
     @NonNull
     private final InternalLogger logger;
 
-    @NonNull
-    private final Function<SpanBuilder, SpanBuilder> spanBuilderDecorator;
-
 
     public OtelTracerBuilder(
             @NonNull String instrumentationScopeName,
             @NonNull DatadogTracer datadogTracer,
-            @NonNull InternalLogger logger,
-            @NonNull Function<SpanBuilder, SpanBuilder> spanBuilderDecorator) {
+            @NonNull InternalLogger logger) {
         this.datadogTracer = datadogTracer;
         this.instrumentationScopeName = instrumentationScopeName;
         this.logger = logger;
-        this.spanBuilderDecorator = spanBuilderDecorator;
     }
 
     @Override
@@ -56,6 +51,6 @@ public class OtelTracerBuilder implements TracerBuilder {
 
     @Override
     public Tracer build() {
-        return new OtelTracer(this.instrumentationScopeName, this.datadogTracer, this.logger, this.spanBuilderDecorator);
+        return new OtelTracer(this.instrumentationScopeName, this.datadogTracer, this.logger);
     }
 }

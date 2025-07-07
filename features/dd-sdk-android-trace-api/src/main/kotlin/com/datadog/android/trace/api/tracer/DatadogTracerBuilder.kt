@@ -109,4 +109,12 @@ interface DatadogTracerBuilder {
      * @param value the tag value
      */
     fun withTag(key: String, value: String): DatadogTracerBuilder
+
+    /**
+     * Enables the trace bundling with the current active View. If this feature is enabled all
+     * the spans from this moment on will be bundled with the current view information and you
+     * will be able to see all the traces sent during a specific view in the Rum Explorer.
+     * @param enabled true by default
+     */
+    fun setBundleWithRumEnabled(enabled: Boolean): DatadogTracerBuilder
 }

@@ -11,7 +11,7 @@ import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.storage.FeatureStorageConfiguration
 import com.datadog.android.trace.event.SpanEventMapper
-import com.datadog.android.trace.internal.data.OtelTraceWriter
+import com.datadog.android.trace.internal.data.CoreTraceWriter
 import com.datadog.android.trace.internal.domain.event.SpanEventMapperWrapper
 import com.datadog.android.trace.internal.net.TracesRequestFactory
 import com.datadog.android.utils.forge.Configurator
@@ -75,7 +75,7 @@ internal class TracingFeatureTest {
         testedFeature.onInitialize(mock())
 
         // Then
-        val dataWriter = testedFeature.coreTracerDataWriter as? OtelTraceWriter
+        val dataWriter = testedFeature.coreTracerDataWriter as? CoreTraceWriter
         val spanEventMapperWrapper = dataWriter?.eventMapper as? SpanEventMapperWrapper
         val spanEventMapper = spanEventMapperWrapper?.wrappedEventMapper
         assertThat(spanEventMapper).isSameAs(mockSpanEventMapper)

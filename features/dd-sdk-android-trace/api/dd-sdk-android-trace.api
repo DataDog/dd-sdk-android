@@ -49,6 +49,7 @@ public final class com/datadog/android/trace/impl/DatadogTracing {
 	public static final field INSTANCE Lcom/datadog/android/trace/impl/DatadogTracing;
 	public final fun getSpanLogger ()Lcom/datadog/android/trace/api/span/DatadogSpanLogger;
 	public final fun newTracerBuilder (Lcom/datadog/android/api/SdkCore;)Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;
+	public static synthetic fun newTracerBuilder$default (Lcom/datadog/android/trace/impl/DatadogTracing;Lcom/datadog/android/api/SdkCore;ILjava/lang/Object;)Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;
 }
 
 public final class com/datadog/android/trace/impl/internal/DatadogTracingInternal {
