@@ -84,7 +84,7 @@ internal class TracingFeatureTest {
     }
 
     @Test
-    fun `M use the eventMapper for otel writer W initialize()`() {
+    fun `M use the eventMapper for core writer W initialize()`() {
         // When
         testedFeature.onInitialize(mock())
 
