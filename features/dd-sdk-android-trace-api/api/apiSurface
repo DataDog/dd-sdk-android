@@ -141,11 +141,10 @@ interface com.datadog.android.trace.api.tracer.DatadogTracerBuilder
   fun withProperties(java.util.Properties): DatadogTracerBuilder
   fun withTracingHeadersTypes(Set<com.datadog.android.trace.TracingHeaderType>): DatadogTracerBuilder
   fun withServiceName(String): DatadogTracerBuilder
-  fun withPartialFlushMinSpans(Int): DatadogTracerBuilder
   fun withIdGenerationStrategy(String, Boolean): DatadogTracerBuilder
   fun withSampler(com.datadog.android.trace.api.sampling.DatadogTracerSampler?): DatadogTracerBuilder
   fun withSampleRate(Double): DatadogTracerBuilder
   fun withTraceLimit(Int): DatadogTracerBuilder
-  fun withPartialFlushThreshold(Int): DatadogTracerBuilder
+  fun withPartialFlushMinSpans(Int): DatadogTracerBuilder
   fun withTag(String, String): DatadogTracerBuilder
   fun setBundleWithRumEnabled(Boolean): DatadogTracerBuilder

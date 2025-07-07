@@ -16,13 +16,10 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.trace.GlobalDatadogTracerHolder
 import com.datadog.android.trace.InternalCoreWriterProvider
 import com.datadog.android.trace.TracingHeaderType
-import com.datadog.android.trace.api.scope.DataScopeListener
 import com.datadog.android.trace.api.tracer.DatadogTracer
 import com.datadog.android.trace.impl.DatadogTracing
 import com.datadog.android.trace.opentelemetry.internal.DatadogContextStorageWrapper
-import com.datadog.android.trace.opentelemetry.internal.addActiveTraceToContext
 import com.datadog.android.trace.opentelemetry.internal.executeIfJavaFunctionPackageExists
-import com.datadog.android.trace.opentelemetry.internal.removeActiveTraceFromContext
 import com.datadog.opentelemetry.trace.OtelTracerBuilder
 import io.opentelemetry.api.trace.Tracer
 import io.opentelemetry.api.trace.TracerBuilder
