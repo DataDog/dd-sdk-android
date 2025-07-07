@@ -115,7 +115,9 @@ dependencies {
     androidTestImplementation(libs.assertJ)
     androidTestImplementation(libs.bundles.integrationTests)
     androidTestImplementation(libs.okHttpMock)
+    androidTestImplementation(project(":features:dd-sdk-android-trace"))
     androidTestImplementation(project(":features:dd-sdk-android-trace-internal"))
+    androidTestImplementation(testFixtures(project(":features:dd-sdk-android-trace")))
     if (project.hasProperty(com.datadog.gradle.Properties.USE_API21_JAVA_BACKPORT)) {
         // this is needed to make AssertJ working on APIs <24
         androidTestImplementation(project(":tools:javabackport"))

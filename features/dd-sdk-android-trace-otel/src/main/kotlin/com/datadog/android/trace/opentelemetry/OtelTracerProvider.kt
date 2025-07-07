@@ -11,10 +11,8 @@ import androidx.annotation.IntRange
 import com.datadog.android.Datadog
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.SdkCore
-import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
-import com.datadog.android.internal.concurrent.CompletableFuture
 import com.datadog.android.trace.GlobalDatadogTracerHolder
 import com.datadog.android.trace.InternalCoreWriterProvider
 import com.datadog.android.trace.TracingHeaderType
@@ -25,9 +23,7 @@ import com.datadog.android.trace.opentelemetry.internal.DatadogContextStorageWra
 import com.datadog.android.trace.opentelemetry.internal.addActiveTraceToContext
 import com.datadog.android.trace.opentelemetry.internal.executeIfJavaFunctionPackageExists
 import com.datadog.android.trace.opentelemetry.internal.removeActiveTraceFromContext
-import com.datadog.opentelemetry.trace.OtelSpanBuilder
 import com.datadog.opentelemetry.trace.OtelTracerBuilder
-import io.opentelemetry.api.trace.SpanBuilder
 import io.opentelemetry.api.trace.Tracer
 import io.opentelemetry.api.trace.TracerBuilder
 import io.opentelemetry.api.trace.TracerProvider
@@ -44,7 +40,7 @@ import java.util.Locale
  */
 class OtelTracerProvider internal constructor(
     private val datadogTracer: DatadogTracer,
-    private val internalLogger: InternalLogger,
+    private val internalLogger: InternalLogger
 ) : TracerProvider {
 
     private val tracers: MutableMap<String, Tracer> = mutableMapOf()
@@ -99,7 +95,7 @@ class OtelTracerProvider internal constructor(
         private val sdkCore: FeatureSdkCore
     ) {
         private val builderDelegate = DatadogTracing.newTracerBuilder(sdkCore)
-            .withPartialFlushThreshold(DEFAULT_PARTIAL_MIN_FLUSH)
+            .withPartialFlushMinSpans(DEFAULT_PARTIAL_MIN_FLUSH)
             .withIdGenerationStrategy("SECURE_RANDOM", true)
             .withTracingHeadersTypes(
                 setOf(
@@ -159,21 +155,6 @@ class OtelTracerProvider internal constructor(
                 .withServiceName(serviceName)
                 .build()
 
-            datadogTracer.addScopeListener(object : DataScopeListener {
-                override fun afterScopeActivated() {
-                    val activeSpanContext = datadogTracer.activeSpan()?.context()
-                    if (activeSpanContext != null) {
-                        val activeSpanId = activeSpanContext.spanId.toString()
-                        val activeTraceId = activeSpanContext.traceId.toHexString()
-                        sdkCore.addActiveTraceToContext(activeTraceId, activeSpanId)
-                    }
-                }
-
-                override fun afterScopeClosed() {
-                    sdkCore.removeActiveTraceFromContext()
-                }
-            })
-
             GlobalDatadogTracerHolder.registerIfAbsent(datadogTracer).let { registeredAsGlobal ->
                 sdkCore.internalLogger.log(
                     InternalLogger.Level.INFO,
@@ -213,7 +194,7 @@ class OtelTracerProvider internal constructor(
          * @param threshold the threshold value (default = 5)
          */
         fun setPartialFlushThreshold(threshold: Int): Builder {
-            builderDelegate.withPartialFlushThreshold(threshold)
+            builderDelegate.withPartialFlushMinSpans(threshold)
             return this
         }
 

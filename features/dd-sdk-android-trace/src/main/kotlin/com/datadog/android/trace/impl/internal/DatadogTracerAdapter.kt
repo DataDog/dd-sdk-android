@@ -25,12 +25,20 @@ internal class DatadogTracerAdapter(
     private val bundleWithRumEnabled: Boolean
 ) : DatadogTracer {
 
-    override fun buildSpan(spanName: CharSequence): DatadogSpanBuilder = DatadogSpanBuilderAdapter(
+    override fun buildSpan(instrumentationName: String, spanName: CharSequence): DatadogSpanBuilder = wrapSpan(
+        delegate.buildSpan(instrumentationName, spanName)
+    )
+
+    override fun buildSpan(spanName: CharSequence): DatadogSpanBuilder = wrapSpan(
         @Suppress("DEPRECATION")
         delegate.buildSpan(spanName)
     )
 
-    private fun DatadogSpanBuilder.withRumContext() = apply {
+    private fun wrapSpan(span: AgentTracer.SpanBuilder) =
+        DatadogSpanBuilderAdapter(span)
+            .withRumContextIfNeeded()
+
+    private fun DatadogSpanBuilder.withRumContextIfNeeded() = apply {
         if (bundleWithRumEnabled) {
             val rumFeature = sdkCore.getFeature(Feature.RUM_FEATURE_NAME)
             if (rumFeature != null) {
@@ -41,11 +49,6 @@ internal class DatadogTracerAdapter(
                 withTag(SpanAttributes.DATADOG_INITIAL_CONTEXT, lazyContext)
             }
         }
-    }
-
-    override fun buildSpan(instrumentationName: String, spanName: CharSequence): DatadogSpanBuilder {
-        val agentSpan = delegate.buildSpan(instrumentationName, spanName)
-        return DatadogSpanBuilderAdapter(agentSpan).withRumContext()
     }
 
     override fun addScopeListener(dataScopeListener: DataScopeListener) {

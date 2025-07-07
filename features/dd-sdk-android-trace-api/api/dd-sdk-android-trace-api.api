@@ -212,7 +212,6 @@ public abstract interface class com/datadog/android/trace/api/tracer/DatadogTrac
 	public abstract fun setBundleWithRumEnabled (Z)Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;
 	public abstract fun withIdGenerationStrategy (Ljava/lang/String;Z)Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;
 	public abstract fun withPartialFlushMinSpans (I)Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;
-	public abstract fun withPartialFlushThreshold (I)Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;
 	public abstract fun withProperties (Ljava/util/Properties;)Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;
 	public abstract fun withSampleRate (D)Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;
 	public abstract fun withSampler (Lcom/datadog/android/trace/api/sampling/DatadogTracerSampler;)Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;
@@ -239,7 +238,6 @@ public final class com/datadog/android/trace/api/tracer/NoOpDatadogTracerBuilder
 	public fun setBundleWithRumEnabled (Z)Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;
 	public fun withIdGenerationStrategy (Ljava/lang/String;Z)Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;
 	public fun withPartialFlushMinSpans (I)Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;
-	public fun withPartialFlushThreshold (I)Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;
 	public fun withProperties (Ljava/util/Properties;)Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;
 	public fun withSampleRate (D)Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;
 	public fun withSampler (Lcom/datadog/android/trace/api/sampling/DatadogTracerSampler;)Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;

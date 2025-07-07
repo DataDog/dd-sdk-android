@@ -55,12 +55,10 @@ internal class DatadogTracerBuilderAdapter(
 
     override fun build(): DatadogTracer {
         val coreTracer = delegate.withProperties(properties ?: properties()).build()
+        val datadogTracer = DatadogTracerAdapter(sdkCore, coreTracer, bundleWithRumEnabled)
+        datadogTracer.addScopeListener(DataTracePropagationScopeListener(sdkCore, datadogTracer))
 
-        return DatadogTracerAdapter(
-            sdkCore,
-            coreTracer,
-            bundleWithRumEnabled
-        )
+        return datadogTracer
     }
 
     override fun withServiceName(serviceName: String) = apply {
@@ -101,15 +99,11 @@ internal class DatadogTracerBuilderAdapter(
     }
 
     override fun withPartialFlushMinSpans(partialFlushThreshold: Int) = apply {
-        delegate.partialFlushMinSpans(partialFlushThreshold)
+        this.partialFlushThreshold = partialFlushThreshold
     }
 
     override fun withIdGenerationStrategy(key: String, traceId128BitGenerationEnabled: Boolean) = apply {
         delegate.idGenerationStrategy(IdGenerationStrategy.fromName(key, traceId128BitGenerationEnabled))
-    }
-
-    override fun withPartialFlushThreshold(threshold: Int) = apply {
-        this.partialFlushThreshold = threshold
     }
 
     override fun withTag(key: String, value: String) = apply {

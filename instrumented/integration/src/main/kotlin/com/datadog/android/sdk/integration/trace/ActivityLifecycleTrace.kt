@@ -10,15 +10,17 @@ import android.os.Bundle
 import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
 import com.datadog.android.Datadog
+import com.datadog.android.api.context.DatadogContext
+import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.log.Logs
 import com.datadog.android.sdk.integration.R
 import com.datadog.android.sdk.integration.RuntimeConfig
 import com.datadog.android.sdk.utils.getForgeSeed
 import com.datadog.android.sdk.utils.getTrackingConsent
 import com.datadog.android.trace.Trace
-import com.datadog.android.trace.api.scope.DatadogScope
 import com.datadog.android.trace.api.span.DatadogSpan
 import com.datadog.android.trace.api.tracer.DatadogTracer
+import com.datadog.android.trace.logMessage
 import fr.xgouchet.elmyr.Forge
 import java.util.LinkedList
 import java.util.Random
@@ -30,8 +32,8 @@ internal class ActivityLifecycleTrace : AppCompatActivity() {
     private lateinit var tracer: DatadogTracer
     private val sentSpans = LinkedList<DatadogSpan>()
     private val sentLogs = LinkedList<Pair<Int, String>>()
-    private lateinit var activityStartScope: DatadogScope
-    private lateinit var activityResumeScope: DatadogScope
+    private lateinit var activityStartScope: DatadogSpan
+    private lateinit var activityResumeScope: DatadogSpan
 
     // region Activity
 
@@ -43,9 +45,11 @@ internal class ActivityLifecycleTrace : AppCompatActivity() {
         val trackingConsent = intent.getTrackingConsent()
 
         Datadog.setVerbosity(Log.VERBOSE)
-        val sdkCore = Datadog.initialize(this, config, trackingConsent)
-        checkNotNull(sdkCore)
-        mutableListOf(
+        val sdkCore = checkNotNull(
+            Datadog.initialize(this, config, trackingConsent)
+        )
+
+        listOf(
             { Logs.enable(RuntimeConfig.logsConfigBuilder().build(), sdkCore) },
             { Trace.enable(RuntimeConfig.tracesConfigBuilder().build(), sdkCore) }
         )
@@ -68,12 +72,12 @@ internal class ActivityLifecycleTrace : AppCompatActivity() {
 
     override fun onPause() {
         super.onPause()
-        activityResumeScope.close()
+        activityResumeScope.finish()
     }
 
     override fun onStop() {
         super.onStop()
-        activityStartScope.close()
+        activityStartScope.finish()
     }
 
     // endregion
@@ -88,17 +92,22 @@ internal class ActivityLifecycleTrace : AppCompatActivity() {
         return sentLogs
     }
 
+    fun getDatadogContext(): DatadogContext? {
+        return (Datadog.getInstance() as InternalSdkCore).getDatadogContext()
+    }
+
     // endregion
 
     // region Internal
 
-    private fun buildScope(title: String): DatadogScope {
+    private fun buildScope(title: String): DatadogSpan {
         val span = tracer.buildSpan(title).start()
-        val scope = checkNotNull(tracer.activateSpan(span)) { "Span activation failed" }
+        checkNotNull(tracer.activateSpan(span)) { "Span activation failed" }
         val ddSpan = tracer.activeSpan() as DatadogSpan
+        ddSpan.logMessage(title)
         sentLogs.add(Log.VERBOSE to title)
         sentSpans.add(ddSpan)
-        return scope
+        return ddSpan
     }
 
     // endregion

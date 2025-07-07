@@ -1,27 +1,9 @@
-class com.datadog.android.trace.AndroidTracer : com.datadog.opentracing.DDTracer
-  override fun buildSpan(String): DDSpanBuilder
-  class Builder
-    constructor(com.datadog.android.api.SdkCore = Datadog.getInstance())
-    fun build(): AndroidTracer
-    fun setTracingHeaderTypes(Set<TracingHeaderType>): Builder
-    fun setService(String): Builder
-    fun setPartialFlushThreshold(Int): Builder
-    DEPRECATED fun addGlobalTag(String, String): Builder
-    fun addTag(String, String): Builder
-    fun setBundleWithRumEnabled(Boolean): Builder
-    fun setSampleRate(Double): Builder
-  override fun toString(): String
-  companion object 
-    fun logThrowable(io.opentracing.Span, Throwable)
-    fun logErrorMessage(io.opentracing.Span, String)
 object com.datadog.android.trace.GlobalDatadogTracerHolder
   fun registerIfAbsent(com.datadog.android.trace.api.tracer.DatadogTracer): Boolean
   fun get(): com.datadog.android.trace.api.tracer.DatadogTracer
   fun getOrNull(): com.datadog.android.trace.api.tracer.DatadogTracer?
 interface com.datadog.android.trace.InternalCoreWriterProvider
   fun getCoreTracerWriter(): com.datadog.android.trace.api.span.DatadogSpanWriter
-fun io.opentracing.Span.setError(Throwable)
-fun io.opentracing.Span.setError(String)
 fun com.datadog.android.trace.api.span.DatadogSpan.logThrowable(Throwable)
 fun com.datadog.android.trace.api.span.DatadogSpan.logErrorMessage(String)
 fun com.datadog.android.trace.api.span.DatadogSpan.logMessage(String)
@@ -39,7 +21,7 @@ interface com.datadog.android.trace.event.SpanEventMapper : com.datadog.android.
   override fun map(com.datadog.android.trace.model.SpanEvent): com.datadog.android.trace.model.SpanEvent
 object com.datadog.android.trace.impl.DatadogTracing
   val spanLogger: com.datadog.android.trace.api.span.DatadogSpanLogger
-  fun newTracerBuilder(com.datadog.android.api.SdkCore): com.datadog.android.trace.api.tracer.DatadogTracerBuilder
+  fun newTracerBuilder(com.datadog.android.api.SdkCore = Datadog.getInstance()): com.datadog.android.trace.api.tracer.DatadogTracerBuilder
 object com.datadog.android.trace.impl.internal.DatadogTracingInternal
   val spanIdConverter: com.datadog.android.trace.api.span.DatadogSpanIdConverter
   val traceIdFactory: com.datadog.android.trace.api.trace.DatadogTraceIdFactory

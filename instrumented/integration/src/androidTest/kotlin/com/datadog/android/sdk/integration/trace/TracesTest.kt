@@ -8,7 +8,7 @@ package com.datadog.android.sdk.integration.trace
 
 import android.util.Log
 import androidx.test.platform.app.InstrumentationRegistry
-import com.datadog.android.internal.utils.toHexString
+import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.sdk.assertj.HeadersAssert
 import com.datadog.android.sdk.assertj.HeadersAssert.Companion.assertThat
 import com.datadog.android.sdk.integration.RuntimeConfig
@@ -17,6 +17,9 @@ import com.datadog.android.sdk.rules.MockServerActivityTestRule
 import com.datadog.android.sdk.utils.isLogsUrl
 import com.datadog.android.sdk.utils.isTracesUrl
 import com.datadog.android.trace.api.span.DatadogSpan
+import com.datadog.android.trace.api.span.resolveMeta
+import com.datadog.android.trace.api.span.resolveMetrics
+import com.datadog.android.trace.impl.internal.DatadogTracingInternal
 import com.datadog.tools.unit.assertj.JsonObjectAssert.Companion.assertThat
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
@@ -47,6 +50,7 @@ internal abstract class TracesTest {
     }
 
     protected fun verifyExpectedSpans(
+        context: DatadogContext,
         handledRequests: List<HandledRequest>,
         expectedSpans: List<DatadogSpan>
     ) {
@@ -81,7 +85,7 @@ internal abstract class TracesTest {
                     mostSignificantTraceId == span.mostSignificant64BitsTraceId() &&
                     spanJson.get(SPAN_ID_KEY).asString == span.spanIdAsHexString()
             }
-            assertMatches(json, span)
+            assertMatches(json, span, context)
         }
     }
 
@@ -114,14 +118,18 @@ internal abstract class TracesTest {
         }
     }
 
-    private fun assertMatches(jsonObject: JsonObject, span: DatadogSpan) {
+    private fun assertMatches(jsonObject: JsonObject, span: DatadogSpan, context: DatadogContext) {
+        val meta = span.resolveMeta(context)
+        val metrics = span.resolveMetrics()
         assertThat(jsonObject)
             .hasField(SERVICE_NAME_KEY, span.serviceName)
             .hasField(TRACE_ID_KEY, span.leastSignificant64BitsTraceId())
             .hasField(SPAN_ID_KEY, span.spanIdAsHexString())
             .hasField(
                 PARENT_ID_KEY,
-                span.parentSpanId?.toHexString()
+                span.parentSpanId?.let {
+                    DatadogTracingInternal.spanIdConverter.toHexStringPadded(it)
+                }
                     ?: throw AssertionError("No parentId provided from $span")
             )
             .hasField(
@@ -132,13 +140,8 @@ internal abstract class TracesTest {
             .hasField(DURATION_KEY, span.durationNano)
             .hasField(RESOURCE_KEY, span.resourceName.orEmpty())
             .hasField(OPERATION_NAME_KEY, span.operationName)
-            .hasField(
-                META_KEY,
-                mapOf(
-                    VERSION_KEY to ""
-                )
-            )
-            .hasField(METRICS_KEY, mapOf())
+            .hasField(META_KEY, meta)
+            .hasField(METRICS_KEY, metrics)
         val metaObject = jsonObject.getAsJsonObject(META_KEY)
         assertThat(metaObject)
             .hasField(MOST_SIGNIFICANT_64_BITS_TRACE_ID_KEY, span.mostSignificant64BitsTraceId())
@@ -168,8 +171,7 @@ internal abstract class TracesTest {
         const val OPERATION_NAME_KEY = "name"
         const val META_KEY = "meta"
         const val METRICS_KEY = "metrics"
-        const val VERSION_KEY = "version"
-        internal val INITIAL_WAIT_MS = TimeUnit.SECONDS.toMillis(60)
+        internal val INITIAL_WAIT_MS = TimeUnit.SECONDS.toMillis(100)
 
         private const val TAG_STATUS = "status"
         private const val TAG_MESSAGE = "message"

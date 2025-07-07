@@ -15,8 +15,8 @@ import com.datadog.android.api.storage.FeatureStorageConfiguration
 import com.datadog.android.trace.InternalCoreWriterProvider
 import com.datadog.android.trace.event.SpanEventMapper
 import com.datadog.android.trace.impl.internal.DatadogSpanWriterWrapper
-import com.datadog.android.trace.internal.data.NoOpCoreTracerWriter
 import com.datadog.android.trace.internal.data.CoreTraceWriter
+import com.datadog.android.trace.internal.data.NoOpCoreTracerWriter
 import com.datadog.android.trace.internal.domain.event.CoreTracerSpanToSpanEventMapper
 import com.datadog.android.trace.internal.domain.event.SpanEventMapperWrapper
 import com.datadog.android.trace.internal.domain.event.SpanEventSerializer

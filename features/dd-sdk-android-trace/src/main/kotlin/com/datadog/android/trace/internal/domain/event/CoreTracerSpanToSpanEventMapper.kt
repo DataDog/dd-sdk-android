@@ -57,7 +57,7 @@ internal class CoreTracerSpanToSpanEventMapper(
         return DDSpanId.toHexStringPadded(model.parentId)
     }
 
-    private fun resolveMetrics(event: DDSpan): SpanEvent.Metrics {
+    internal fun resolveMetrics(event: DDSpan): SpanEvent.Metrics {
         val metrics = resolveMetricsFromSpanContext(event).apply {
             this[DDSpanContext.PRIORITY_SAMPLING_KEY] = event.samplingPriority()
         }
@@ -67,7 +67,7 @@ internal class CoreTracerSpanToSpanEventMapper(
         )
     }
 
-    private fun resolveMeta(datadogContext: DatadogContext, event: DDSpan): SpanEvent.Meta {
+    internal fun resolveMeta(datadogContext: DatadogContext, event: DDSpan): SpanEvent.Meta {
         val deviceInfo = resolveDeviceInfo(datadogContext.deviceInfo)
         val osInfo = resolveOsInfo(datadogContext.deviceInfo)
         val networkInfoMeta = if (networkInfoEnabled) resolveNetworkInfo(datadogContext.networkInfo) else null
