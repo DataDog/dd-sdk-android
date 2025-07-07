@@ -140,7 +140,7 @@ class HeadBasedSamplingTest {
                     leastSignificantTraceId.toLong().toHexString().padStart(16, '0')
                 )
                 hasMostSignificant64BitsTraceId(mostSignificantTraceId)
-                hasSpanId(spanId.toLong().toHexString())
+                hasSpanId(spanId.cleanDecimalFormat())
                 hasVersion(stubSdkCore.getDatadogContext().version)
                 hasSource(stubSdkCore.getDatadogContext().source)
                 hasTracerVersion(stubSdkCore.getDatadogContext().sdkVersion)
@@ -359,11 +359,7 @@ class HeadBasedSamplingTest {
                 hasGenericMetricValue("_top_level", 1)
             }
 
-        val localSpanId = localSpanPayload.getAsJsonArray("spans")
-            .first()
-            .asJsonObject
-            .getString("span_id")
-            .orEmpty()
+        val localSpanId = getLocalSpanId(localSpanPayload)
 
         val okHttpSpanPayload = JsonParser.parseString(eventsWritten[1].eventData) as JsonObject
         SpansPayloadAssert.assertThat(okHttpSpanPayload)
@@ -373,8 +369,8 @@ class HeadBasedSamplingTest {
                     leastSignificantTraceId.toLong().toHexString().padStart(16, '0')
                 )
                 hasMostSignificant64BitsTraceId(mostSignificantTraceId)
-                hasSpanId(spanId.toLong().toHexString())
-                hasParentId(localSpanId)
+                hasSpanId(spanId.cleanDecimalFormat())
+                hasParentId(localSpanId.cleanHexFormat())
                 hasVersion(stubSdkCore.getDatadogContext().version)
                 hasSource(stubSdkCore.getDatadogContext().source)
                 hasTracerVersion(stubSdkCore.getDatadogContext().sdkVersion)
@@ -460,11 +456,7 @@ class HeadBasedSamplingTest {
                 hasGenericMetricValue("_top_level", 1)
             }
 
-        val localSpanId = localSpanPayload.getAsJsonArray("spans")
-            .first()
-            .asJsonObject
-            .getString("span_id")
-            .orEmpty()
+        val localSpanId = getLocalSpanId(localSpanPayload)
 
         val okHttpSpanPayload = JsonParser.parseString(eventsWritten[1].eventData) as JsonObject
         SpansPayloadAssert.assertThat(okHttpSpanPayload)
@@ -474,9 +466,8 @@ class HeadBasedSamplingTest {
                     leastSignificantTraceId.toLong().toHexString().padStart(16, '0')
                 )
                 hasMostSignificant64BitsTraceId(mostSignificantTraceId)
-                hasSpanId(spanId.toLong().toHexString())
-                // OpenTelemetry Span IDs are always padded with 0
-                hasParentId(localSpanId.dropWhile { it == '0' })
+                hasSpanId(spanId.cleanDecimalFormat())
+                hasParentId(localSpanId.cleanHexFormat())
                 hasVersion(stubSdkCore.getDatadogContext().version)
                 hasSource(stubSdkCore.getDatadogContext().source)
                 hasTracerVersion(stubSdkCore.getDatadogContext().sdkVersion)
@@ -613,11 +604,7 @@ class HeadBasedSamplingTest {
                 hasGenericMetricValue("_top_level", 1)
             }
 
-        val localSpanId = localSpanPayload.getAsJsonArray("spans")
-            .first()
-            .asJsonObject
-            .getString("span_id")
-            .orEmpty()
+        val localSpanId = getLocalSpanId(localSpanPayload)
 
         val okHttpSpanPayload = JsonParser.parseString(eventsWritten[0].eventData) as JsonObject
         SpansPayloadAssert.assertThat(okHttpSpanPayload)
@@ -627,8 +614,8 @@ class HeadBasedSamplingTest {
                     leastSignificantTraceId.toLong().toHexString().padStart(16, '0')
                 )
                 hasMostSignificant64BitsTraceId(mostSignificantTraceId)
-                hasSpanId(DatadogTracingInternal.spanIdConverter.toHexStringPadded(spanId.toLong()))
-                hasParentId(localSpanId)
+                hasSpanId(spanId.cleanDecimalFormat())
+                hasParentId(localSpanId.cleanHexFormat())
                 hasVersion(stubSdkCore.getDatadogContext().version)
                 hasSource(stubSdkCore.getDatadogContext().source)
                 hasTracerVersion(stubSdkCore.getDatadogContext().sdkVersion)
@@ -647,6 +634,14 @@ class HeadBasedSamplingTest {
             }
     }
 
+    private fun getLocalSpanId(localSpanPayload: JsonObject): String {
+        return localSpanPayload.getAsJsonArray("spans")
+            .first()
+            .asJsonObject
+            .getString("span_id")
+            .orEmpty()
+    }
+
     private fun registerGlobalTracer(sampleRate: Double) {
         GlobalDatadogTracerHolder.registerIfAbsent(
             DatadogTracing.newTracerBuilder(stubSdkCore)
@@ -663,6 +658,14 @@ class HeadBasedSamplingTest {
 
     private fun String.toTags(): Map<String, String> = split(",")
         .associate { it.split("=").let { it[0] to it[1] } }
+
+    private fun String.cleanHexFormat(): String = with(DatadogTracingInternal.spanIdConverter) {
+        toHexStringPadded(fromHex(this@cleanHexFormat))
+    }
+
+    private fun String.cleanDecimalFormat(): String = with(DatadogTracingInternal.spanIdConverter) {
+        toHexStringPadded(this@cleanDecimalFormat.toLong())
+    }
 
     companion object {
         private const val DATADOG_TAGS_HEADER = "x-datadog-tags"
