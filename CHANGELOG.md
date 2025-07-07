@@ -1,3 +1,22 @@
+# 2.24.0 / 2025-07-07
+
+* [MAINTENANCE] Next dev iteration. See [#2752](https://github.com/DataDog/dd-sdk-android/pull/2752)
+* [MAINTENANCE] Merge 'release/2.23.0' branch into 'develop' branch. See [#2755](https://github.com/DataDog/dd-sdk-android/pull/2755)
+* [MAINTENANCE] Remove non-existent Gitlab file reference. See [#2753](https://github.com/DataDog/dd-sdk-android/pull/2753)
+* [MAINTENANCE] Remove workaround when checking dd-sdk-android-benchmark-internal is published. See [#2758](https://github.com/DataDog/dd-sdk-android/pull/2758)
+* [FEATURE] RUM: Add DDOCTOSTS_ID_TOKEN to dogfood-app and dogfood-demo. See [#2757](https://github.com/DataDog/dd-sdk-android/pull/2757)
+* [IMPROVEMENT] RUM: Shallow copy node wireframes before iterating in 'NodeFlattener'. See [#2736](https://github.com/DataDog/dd-sdk-android/pull/2736)
+* [IMPROVEMENT] RUM: Stop posting recorded data item from main thread. See [#2763](https://github.com/DataDog/dd-sdk-android/pull/2763)
+* [MAINTENANCE] Update 'CONTRIBUTING' doc with missing modules. See [#2762](https://github.com/DataDog/dd-sdk-android/pull/2762)
+* [MAINTENANCE] Update base docker image to 'jammy'. See [#2761](https://github.com/DataDog/dd-sdk-android/pull/2761)
+* [MAINTENANCE] Update docker image used in ci-image job. See [#2764](https://github.com/DataDog/dd-sdk-android/pull/2764)
+* [MAINTENANCE] Use Datadog Gradle Plugin version 1.18.0. See [#2769](https://github.com/DataDog/dd-sdk-android/pull/2769)
+* [MAINTENANCE] Migrate publishing from OSSRH to Central Publisher portal. See [#2770](https://github.com/DataDog/dd-sdk-android/pull/2770)
+* [MAINTENANCE] Close Sonatype staging repo after publishing. See [#2774](https://github.com/DataDog/dd-sdk-android/pull/2774)
+* [FEATURE] RUM: Add clear user info API. See [#2768](https://github.com/DataDog/dd-sdk-android/pull/2768)
+* [IMPROVEMENT] RUM: Stop telemetry for compose checkbox and radiobutton. See [#2775](https://github.com/DataDog/dd-sdk-android/pull/2775)
+* [MAINTENANCE] Run unit tests from samples folder and for tools:benchmark module. See [#2777](https://github.com/DataDog/dd-sdk-android/pull/2777)
+
 # 2.23.0 / 2025-06-23
 
 * [FEATURE] Global: Add public APIs for set account information. See [#2694](https://github.com/DataDog/dd-sdk-android/pull/2694)
