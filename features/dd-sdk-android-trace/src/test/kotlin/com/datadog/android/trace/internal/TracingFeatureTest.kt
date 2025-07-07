@@ -12,6 +12,7 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.storage.FeatureStorageConfiguration
 import com.datadog.android.trace.event.SpanEventMapper
 import com.datadog.android.trace.internal.data.CoreTraceWriter
+import com.datadog.android.trace.internal.domain.event.CoreTracerSpanToSpanEventMapper
 import com.datadog.android.trace.internal.domain.event.SpanEventMapperWrapper
 import com.datadog.android.trace.internal.net.TracesRequestFactory
 import com.datadog.android.utils.forge.Configurator
@@ -67,6 +68,19 @@ internal class TracingFeatureTest {
             mockSpanEventMapper,
             fakeNetworkInfoEnabled
         )
+    }
+
+    @Test
+    fun `M initialize core writer W initialize()`() {
+        // When
+        testedFeature.onInitialize(mock())
+
+        // Then
+        val traceWriter = testedFeature.coreTracerDataWriter as CoreTraceWriter
+        val ddSpanToSpanEventMapper = traceWriter.ddSpanToSpanEventMapper
+        assertThat(ddSpanToSpanEventMapper).isInstanceOf(CoreTracerSpanToSpanEventMapper::class.java)
+        assertThat((ddSpanToSpanEventMapper as CoreTracerSpanToSpanEventMapper).networkInfoEnabled)
+            .isEqualTo(fakeNetworkInfoEnabled)
     }
 
     @Test
