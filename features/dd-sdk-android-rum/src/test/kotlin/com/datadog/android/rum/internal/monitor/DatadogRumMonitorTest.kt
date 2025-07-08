@@ -2013,6 +2013,27 @@ internal class DatadogRumMonitorTest {
     }
 
     @Test
+    fun `M handle external refresh rate update W updateExternalRefreshRate()`(
+        forge: Forge
+    ) {
+        // Given
+        val frameTimeSeconds = forge.aDouble(min = 0.001, max = 1.0)
+
+        // When
+        testedMonitor.updateExternalRefreshRate(frameTimeSeconds)
+        Thread.sleep(PROCESSING_DELAY)
+
+        // Then
+        argumentCaptor<RumRawEvent.UpdateExternalRefreshRate> {
+            verify(mockScope).handleEvent(
+                capture(),
+                eq(mockWriter)
+            )
+            assertThat(lastValue.frameTimeSeconds).isEqualTo(frameTimeSeconds)
+        }
+    }
+
+    @Test
     fun `M delegate internal view attributes W setInternalViewAttribute()`(
         forge: Forge
     ) {

@@ -150,6 +150,14 @@ internal fun Forge.updatePerformanceMetricEvent(): RumRawEvent.UpdatePerformance
     )
 }
 
+internal fun Forge.updateExternalRefreshRateEvent(): RumRawEvent.UpdateExternalRefreshRate {
+    val time = Time()
+    return RumRawEvent.UpdateExternalRefreshRate(
+        frameTimeSeconds = aDouble(),
+        eventTime = time
+    )
+}
+
 internal fun Forge.addFeatureFlagEvaluationEvent(): RumRawEvent.AddFeatureFlagEvaluation {
     val time = Time()
     return RumRawEvent.AddFeatureFlagEvaluation(
@@ -206,6 +214,7 @@ internal fun Forge.anyRumEvent(excluding: List<KClass<out RumRawEvent>> = listOf
         strictSameTypePair(RumRawEvent.AddFeatureFlagEvaluation::class, { addFeatureFlagEvaluationEvent() }),
         strictSameTypePair(RumRawEvent.AddCustomTiming::class, { addCustomTimingEvent() }),
         strictSameTypePair(RumRawEvent.UpdatePerformanceMetric::class, { updatePerformanceMetricEvent() }),
+        strictSameTypePair(RumRawEvent.UpdateExternalRefreshRate::class, { updateExternalRefreshRateEvent() }),
         strictSameTypePair(RumRawEvent.AddViewLoadingTime::class, { addViewLoadingTimeEvent() })
     )
     return this.anElementFrom(

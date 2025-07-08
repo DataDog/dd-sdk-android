@@ -152,6 +152,8 @@ internal open class RumViewScope(
 
     private val performanceMetrics: MutableMap<RumPerformanceMetric, VitalInfo> = mutableMapOf()
 
+    private var externalRefreshRateInfo: VitalInfo? = null
+
     // endregion
 
     init {
@@ -211,6 +213,7 @@ internal open class RumViewScope(
             is RumRawEvent.StopSession -> onStopSession(event, writer)
 
             is RumRawEvent.UpdatePerformanceMetric -> onUpdatePerformanceMetric(event)
+            is RumRawEvent.UpdateExternalRefreshRate -> onUpdateExternalRefreshRate(event)
             is RumRawEvent.AddViewLoadingTime -> onAddViewLoadingTime(event, writer)
 
             else -> delegateEventToChildren(event, writer)
@@ -647,6 +650,31 @@ internal open class RumViewScope(
         )
     }
 
+    private fun onUpdateExternalRefreshRate(
+        event: RumRawEvent.UpdateExternalRefreshRate
+    ) {
+        if (stopped) return
+
+        // Convert frame time (seconds) to refresh rate (Hz)
+        val refreshRateHz = if (event.frameTimeSeconds > 0) {
+            1.0 / event.frameTimeSeconds
+        } else {
+            return // Invalid frame time
+        }
+
+        val currentInfo = externalRefreshRateInfo ?: VitalInfo.EMPTY
+        val newSampleCount = currentInfo.sampleCount + 1
+
+        // Calculate incremental mean using the same algorithm as performance metrics
+        val meanValue = (refreshRateHz + (currentInfo.sampleCount * currentInfo.meanValue)) / newSampleCount
+        externalRefreshRateInfo = VitalInfo(
+            newSampleCount,
+            min(refreshRateHz, currentInfo.minValue),
+            max(refreshRateHz, currentInfo.maxValue),
+            meanValue
+        )
+    }
+
     @WorkerThread
     private fun onSetInternalViewAttribute(event: RumRawEvent.SetInternalViewAttribute) {
         if (stopped) return
@@ -917,7 +945,8 @@ internal open class RumViewScope(
 
         val timings = resolveCustomTimings()
         val memoryInfo = lastMemoryInfo
-        val refreshRateInfo = lastFrameRateInfo
+        // Use external refresh rate data if available, otherwise fall back to internal data
+        val refreshRateInfo = externalRefreshRateInfo ?: lastFrameRateInfo
         val isSlowRendered = resolveRefreshRateInfo(refreshRateInfo) ?: false
         // make a copy - by the time we iterate over it on another thread, it may already be changed
         val eventFeatureFlags = featureFlags.toMutableMap()

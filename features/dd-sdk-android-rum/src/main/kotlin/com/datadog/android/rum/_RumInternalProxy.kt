@@ -45,6 +45,10 @@ class _RumInternalProxy internal constructor(private val rumMonitor: AdvancedRum
         rumMonitor.updatePerformanceMetric(metric, value)
     }
 
+    fun updateExternalRefreshRate(frameTimeSeconds: Double) {
+        rumMonitor.updateExternalRefreshRate(frameTimeSeconds)
+    }
+
     fun setInternalViewAttribute(key: String, value: Any?) {
         rumMonitor.setInternalViewAttribute(key, value)
     }
