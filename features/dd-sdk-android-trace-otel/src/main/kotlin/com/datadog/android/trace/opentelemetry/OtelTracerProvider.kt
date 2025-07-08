@@ -11,23 +11,16 @@ import androidx.annotation.IntRange
 import com.datadog.android.Datadog
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.SdkCore
-import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
-import com.datadog.android.internal.concurrent.CompletableFuture
 import com.datadog.android.trace.GlobalDatadogTracerHolder
 import com.datadog.android.trace.InternalCoreWriterProvider
 import com.datadog.android.trace.TracingHeaderType
-import com.datadog.android.trace.api.scope.DataScopeListener
 import com.datadog.android.trace.api.tracer.DatadogTracer
 import com.datadog.android.trace.impl.DatadogTracing
 import com.datadog.android.trace.opentelemetry.internal.DatadogContextStorageWrapper
-import com.datadog.android.trace.opentelemetry.internal.addActiveTraceToContext
 import com.datadog.android.trace.opentelemetry.internal.executeIfJavaFunctionPackageExists
-import com.datadog.android.trace.opentelemetry.internal.removeActiveTraceFromContext
-import com.datadog.opentelemetry.trace.OtelSpanBuilder
 import com.datadog.opentelemetry.trace.OtelTracerBuilder
-import io.opentelemetry.api.trace.SpanBuilder
 import io.opentelemetry.api.trace.Tracer
 import io.opentelemetry.api.trace.TracerBuilder
 import io.opentelemetry.api.trace.TracerProvider
@@ -43,10 +36,8 @@ import java.util.Locale
  *
  */
 class OtelTracerProvider internal constructor(
-    private val sdkCore: FeatureSdkCore,
     private val datadogTracer: DatadogTracer,
-    private val internalLogger: InternalLogger,
-    private val bundleWithRumEnabled: Boolean
+    private val internalLogger: InternalLogger
 ) : TracerProvider {
 
     private val tracers: MutableMap<String, Tracer> = mutableMapOf()
@@ -90,8 +81,7 @@ class OtelTracerProvider internal constructor(
         return OtelTracerBuilder(
             resolvedInstrumentationScopeName,
             datadogTracer,
-            internalLogger,
-            resolveSpanBuilderDecorator()
+            internalLogger
         )
     }
 
@@ -102,7 +92,7 @@ class OtelTracerProvider internal constructor(
         private val sdkCore: FeatureSdkCore
     ) {
         private val builderDelegate = DatadogTracing.newTracerBuilder(sdkCore)
-            .withPartialFlushThreshold(DEFAULT_PARTIAL_MIN_FLUSH)
+            .withPartialFlushMinSpans(DEFAULT_PARTIAL_MIN_FLUSH)
             .withIdGenerationStrategy("SECURE_RANDOM", true)
             .withTracingHeadersTypes(
                 setOf(
@@ -125,7 +115,6 @@ class OtelTracerProvider internal constructor(
                     service
                 }
             }
-        private var bundleWithRumEnabled: Boolean = true
 
         /**
          * @param sdkCore SDK instance to bind to. If not provided, default instance will be used.
@@ -154,7 +143,7 @@ class OtelTracerProvider internal constructor(
                     }
                 }
 
-                OtelTracerProvider(sdkCore, createDatadogTracer(), sdkCore.internalLogger, bundleWithRumEnabled)
+                OtelTracerProvider(createDatadogTracer(), sdkCore.internalLogger)
             }
         }
 
@@ -162,21 +151,6 @@ class OtelTracerProvider internal constructor(
             val datadogTracer = builderDelegate
                 .withServiceName(serviceName)
                 .build()
-
-            datadogTracer.addScopeListener(object : DataScopeListener {
-                override fun afterScopeActivated() {
-                    val activeSpanContext = datadogTracer.activeSpan()?.context()
-                    if (activeSpanContext != null) {
-                        val activeSpanId = activeSpanContext.spanId.toString()
-                        val activeTraceId = activeSpanContext.traceId.toHexString()
-                        sdkCore.addActiveTraceToContext(activeTraceId, activeSpanId)
-                    }
-                }
-
-                override fun afterScopeClosed() {
-                    sdkCore.removeActiveTraceFromContext()
-                }
-            })
 
             GlobalDatadogTracerHolder.registerIfAbsent(datadogTracer).let { registeredAsGlobal ->
                 sdkCore.internalLogger.log(
@@ -217,7 +191,7 @@ class OtelTracerProvider internal constructor(
          * @param threshold the threshold value (default = 5)
          */
         fun setPartialFlushThreshold(threshold: Int): Builder {
-            builderDelegate.withPartialFlushThreshold(threshold)
+            builderDelegate.withPartialFlushMinSpans(threshold)
             return this
         }
 
@@ -273,7 +247,7 @@ class OtelTracerProvider internal constructor(
          * @param enabled true by default
          */
         fun setBundleWithRumEnabled(enabled: Boolean): Builder {
-            bundleWithRumEnabled = enabled
+            builderDelegate.setBundleWithRumEnabled(enabled)
             return this
         }
 
@@ -288,26 +262,6 @@ class OtelTracerProvider internal constructor(
         } else {
             instrumentationScopeName
         }
-    }
-
-    private fun resolveSpanBuilderDecorator(): (SpanBuilder) -> SpanBuilder {
-        return if (bundleWithRumEnabled) {
-            resolveDecoratorWithRumContext()
-        } else {
-            NO_OP_SPAN_BUILDER_DECORATOR
-        }
-    }
-
-    private fun resolveDecoratorWithRumContext(): (SpanBuilder) -> SpanBuilder = { spanBuilder ->
-        val rumFeature = sdkCore.getFeature(Feature.RUM_FEATURE_NAME)
-        if (rumFeature != null) {
-            val lazyContext = CompletableFuture<DatadogContext>()
-            rumFeature.withContext(withFeatureContexts = setOf(Feature.RUM_FEATURE_NAME)) {
-                lazyContext.complete(it)
-            }
-            (spanBuilder as? OtelSpanBuilder)?.setLazyDatadogContext(lazyContext)
-        }
-        spanBuilder
     }
 
     override fun toString(): String {
@@ -339,7 +293,6 @@ class OtelTracerProvider internal constructor(
         internal const val RUM_SESSION_ID_KEY = "session_id"
         internal const val RUM_VIEW_ID_KEY = "view_id"
         internal const val RUM_ACTION_ID_KEY = "action_id"
-        internal val NO_OP_SPAN_BUILDER_DECORATOR: (SpanBuilder) -> SpanBuilder = { it }
         internal const val TRACER_ALREADY_EXISTS_WARNING_MESSAGE =
             "Tracer for %s already exists. Returning existing instance."
         internal const val DEFAULT_TRACER_NAME = "android"

@@ -14,7 +14,6 @@ import com.datadog.android.log.LogAttributes
 import com.datadog.android.trace.api.DatadogTracingConstants
 import com.datadog.android.trace.api.span.DatadogSpan
 import com.datadog.android.trace.api.span.DatadogSpanLogger
-import io.opentracing.log.Fields
 
 internal class DatadogSpanLoggerAdapter(
     private val sdkCore: FeatureSdkCore
@@ -74,7 +73,8 @@ internal class DatadogSpanLoggerAdapter(
         val logsFeature = sdkCore.getFeature(Feature.LOGS_FEATURE_NAME)
 
         if (logsFeature != null && fields.isNotEmpty()) {
-            val message = fields.remove(Fields.MESSAGE)?.toString() ?: DEFAULT_EVENT_MESSAGE
+            val message = fields.remove(DatadogTracingConstants.LogAttributes.MESSAGE)
+                ?.toString() ?: DEFAULT_EVENT_MESSAGE
             val logStatus = fields[DatadogTracingConstants.LogAttributes.STATUS] ?: Log.VERBOSE
             fields[LogAttributes.DD_TRACE_ID] = span.context().traceId.toHexString()
             fields[LogAttributes.DD_SPAN_ID] = span.context().spanId.toString()

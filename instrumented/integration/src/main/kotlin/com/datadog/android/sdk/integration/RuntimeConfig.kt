@@ -16,7 +16,6 @@ import com.datadog.android.log.LogsConfiguration
 import com.datadog.android.rum.RumConfiguration
 import com.datadog.android.sessionreplay.SessionReplayConfiguration
 import com.datadog.android.trace.TraceConfiguration
-import com.datadog.android.trace.TracingHeaderType
 import com.datadog.android.trace.api.tracer.DatadogTracer
 import com.datadog.android.trace.impl.DatadogTracing
 import java.util.UUID
@@ -30,6 +29,8 @@ internal object RuntimeConfig {
     const val CONTENT_TYPE_JSON = "application/json"
     const val CONTENT_TYPE_TEXT = "text/plain;charset=UTF-8"
     private const val LOCALHOST = "http://localhost"
+    private const val SAMPLE_ALL = 100.0
+    private const val SEND_EACH_SPAN_THRESHOLD = 1
 
     var logsEndpointUrl: String = "$LOCALHOST/logs"
     var tracesEndpointUrl: String = "$LOCALHOST/traces"
@@ -55,10 +56,10 @@ internal object RuntimeConfig {
         return logger
     }
 
-    fun tracer(sdkCore: SdkCore): DatadogTracer =
-        DatadogTracing.newTracerBuilder(sdkCore)
-            .withTracingHeadersTypes(setOf(TracingHeaderType.DATADOG, TracingHeaderType.TRACECONTEXT))
-            .build()
+    fun tracer(sdkCore: SdkCore): DatadogTracer = DatadogTracing.newTracerBuilder(sdkCore)
+        .withSampleRate(SAMPLE_ALL)
+        .withPartialFlushMinSpans(SEND_EACH_SPAN_THRESHOLD)
+        .build()
 
     fun configBuilder(): Configuration.Builder {
         return Configuration.Builder(

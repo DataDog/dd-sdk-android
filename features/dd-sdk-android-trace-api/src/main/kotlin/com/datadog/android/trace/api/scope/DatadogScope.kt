@@ -7,15 +7,16 @@ package com.datadog.android.trace.api.scope
 
 import com.datadog.android.trace.api.span.DatadogSpan
 import com.datadog.tools.annotation.NoOpImplementation
+import java.io.Closeable
 
 /**
  * A DatadogScope formalizes the activation and deactivation of a [DatadogSpan].
  */
 @NoOpImplementation
-interface DatadogScope {
+interface DatadogScope : Closeable {
 
     /**
      * Mark the end of the active period for the current context.
      */
-    fun close()
+    override fun close()
 }

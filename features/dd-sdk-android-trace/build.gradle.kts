@@ -64,9 +64,6 @@ dependencies {
     // Generate NoOp implementations
     ksp(project(":tools:noopfactory"))
 
-    // OpenTracing
-    implementation(libs.bundles.openTracing)
-
     testImplementation(testFixtures(project(":dd-sdk-android-core")))
     testImplementation(libs.okHttp)
     testImplementation(libs.bundles.jUnit5)
@@ -84,19 +81,12 @@ dependencies {
     unmock(libs.robolectric)
 
     // Test Fixtures
+    testFixturesImplementation(libs.gson)
     testFixturesImplementation(libs.kotlin)
-    testFixturesImplementation(libs.bundles.jUnit5)
     testFixturesImplementation(libs.okHttp)
+    testFixturesImplementation(libs.bundles.jUnit5)
     testFixturesImplementation(libs.bundles.testTools)
     testFixturesImplementation(project(":features:dd-sdk-android-trace-internal"))
-    testFixturesImplementation(project(":tools:unit")) {
-        attributes {
-            attribute(
-                com.android.build.api.attributes.ProductFlavorAttr.of("platform"),
-                objects.named("jvm")
-            )
-        }
-    }
 }
 
 unMock {

@@ -37,7 +37,8 @@ internal class ConsentGrantedTracesTest : TracesTest() {
         ConditionWatcher {
             // Check sent requests
             val handledRequests = mockServerRule.getRequests()
-            verifyExpectedSpans(handledRequests, mockServerRule.activity.getSentSpans())
+            val datadogContext = mockServerRule.activity.getDatadogContext()!!
+            verifyExpectedSpans(datadogContext, handledRequests, mockServerRule.activity.getSentSpans())
             verifyExpectedLogs(handledRequests, mockServerRule.activity.getSentLogs())
             true
         }.doWait(timeoutMs = INITIAL_WAIT_MS)

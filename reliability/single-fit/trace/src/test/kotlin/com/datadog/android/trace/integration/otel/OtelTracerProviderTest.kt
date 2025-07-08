@@ -11,7 +11,6 @@ import com.datadog.android.core.stub.StubSDKCore
 import com.datadog.android.tests.ktx.getInt
 import com.datadog.android.trace.Trace
 import com.datadog.android.trace.TraceConfiguration
-import com.datadog.android.trace.integration.opentracing.AndroidTracerTest
 import com.datadog.android.trace.integration.tests.assertj.SpansPayloadAssert
 import com.datadog.android.trace.integration.tests.elmyr.TraceIntegrationForgeConfigurator
 import com.datadog.android.trace.integration.tests.utils.BlockingWriterWrapper
@@ -1053,7 +1052,7 @@ internal class OtelTracerProviderTest {
             leastSignificantTraceId = span.leastSignificant64BitsTraceIdAsHex()
             mostSignificantTraceId = span.mostSignificant64BitsTraceIdAsHex()
             spanId = span.spanIdAsHex()
-            Thread.sleep(AndroidTracerTest.OP_DURATION_MS)
+            Thread.sleep(OP_DURATION_MS)
             span.end()
         }
 
@@ -1076,7 +1075,7 @@ internal class OtelTracerProviderTest {
                 hasError(0)
                 hasName(DEFAULT_SPAN_NAME)
                 hasResource(fakeOperationName)
-                hasDurationBetween(AndroidTracerTest.OP_DURATION_NS, fullDuration)
+                hasDurationBetween(OP_DURATION_NS, fullDuration)
                 hasApplicationId(fakeRumApplicationId)
                 hasSessionId(fakeRumSessionId)
                 hasViewId(fakeRumViewId)
@@ -1109,7 +1108,7 @@ internal class OtelTracerProviderTest {
             leastSignificantTraceId = span.leastSignificant64BitsTraceIdAsHex()
             mostSignificantTraceId = span.mostSignificant64BitsTraceIdAsHex()
             spanId = span.spanIdAsHex()
-            Thread.sleep(AndroidTracerTest.OP_DURATION_MS)
+            Thread.sleep(OP_DURATION_MS)
             span.end()
         }
 
@@ -1132,7 +1131,7 @@ internal class OtelTracerProviderTest {
                 hasError(0)
                 hasName(DEFAULT_SPAN_NAME)
                 hasResource(fakeOperationName)
-                hasDurationBetween(AndroidTracerTest.OP_DURATION_NS, fullDuration)
+                hasDurationBetween(OP_DURATION_NS, fullDuration)
                 hasUserId(fakeUserId)
                 hasUserName(fakeUserName)
                 hasUserEmail(fakeUserEmail)
@@ -1161,7 +1160,7 @@ internal class OtelTracerProviderTest {
             leastSignificantTraceId = span.leastSignificant64BitsTraceIdAsHex()
             mostSignificantTraceId = span.mostSignificant64BitsTraceIdAsHex()
             spanId = span.spanIdAsHex()
-            Thread.sleep(AndroidTracerTest.OP_DURATION_MS)
+            Thread.sleep(OP_DURATION_MS)
             span.end()
         }
 
@@ -1184,7 +1183,7 @@ internal class OtelTracerProviderTest {
                 hasError(0)
                 hasName(DEFAULT_SPAN_NAME)
                 hasResource(fakeOperation)
-                hasDurationBetween(AndroidTracerTest.OP_DURATION_NS, fullDuration)
+                hasDurationBetween(OP_DURATION_NS, fullDuration)
                 hasGenericMetaValue("usr.$fakeUserKey", fakeUserValue)
             }
     }
@@ -1211,7 +1210,7 @@ internal class OtelTracerProviderTest {
             leastSignificantTraceId = span.leastSignificant64BitsTraceIdAsHex()
             mostSignificantTraceId = span.mostSignificant64BitsTraceIdAsHex()
             spanId = span.spanIdAsHex()
-            Thread.sleep(AndroidTracerTest.OP_DURATION_MS)
+            Thread.sleep(OP_DURATION_MS)
             span.end()
         }
 
@@ -1234,7 +1233,7 @@ internal class OtelTracerProviderTest {
                 hasError(0)
                 hasName(DEFAULT_SPAN_NAME)
                 hasResource(fakeOperationName)
-                hasDurationBetween(AndroidTracerTest.OP_DURATION_NS, fullDuration)
+                hasDurationBetween(OP_DURATION_NS, fullDuration)
                 hasGenericMetaValue("account.id", fakeAccountId)
                 hasGenericMetaValue("account.name", fakeAccountName)
             }
@@ -1266,7 +1265,7 @@ internal class OtelTracerProviderTest {
             leastSignificantTraceId = span.leastSignificant64BitsTraceIdAsHex()
             mostSignificantTraceId = span.mostSignificant64BitsTraceIdAsHex()
             spanId = span.spanIdAsHex()
-            Thread.sleep(AndroidTracerTest.OP_DURATION_MS)
+            Thread.sleep(OP_DURATION_MS)
             span.end()
         }
 
@@ -1289,7 +1288,7 @@ internal class OtelTracerProviderTest {
                 hasError(0)
                 hasName(DEFAULT_SPAN_NAME)
                 hasResource(fakeOperation)
-                hasDurationBetween(AndroidTracerTest.OP_DURATION_NS, fullDuration)
+                hasDurationBetween(OP_DURATION_NS, fullDuration)
                 hasGenericMetaValue("account.$fakeAccountKey", fakeAccountValue)
             }
     }

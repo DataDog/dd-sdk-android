@@ -30,11 +30,13 @@ import com.datadog.android.sdk.utils.isLogsUrl
 import com.datadog.android.sdk.utils.isRumUrl
 import com.datadog.android.sdk.utils.isTracesUrl
 import com.datadog.android.sdk.utils.overrideProcessImportance
-import com.datadog.android.trace.AndroidTracer
+import com.datadog.android.trace.GlobalDatadogTracerHolder
 import com.datadog.android.trace.Trace
 import com.datadog.android.trace.TraceConfiguration
+import com.datadog.android.trace.api.span.clear
+import com.datadog.android.trace.api.tracer.DatadogTracer
+import com.datadog.android.trace.impl.DatadogTracing
 import com.datadog.android.trace.model.SpanEvent
-import com.datadog.android.trace.withinSpan
 import com.datadog.tools.unit.ConditionWatcher
 import com.google.gson.JsonNull
 import com.google.gson.JsonObject
@@ -59,7 +61,7 @@ class CrossFeatureTest {
     private val logEvents = mutableListOf<JsonObject>()
     private val spanEvents = mutableListOf<JsonObject>()
     private lateinit var logger: Logger
-    private lateinit var openTracingTracer: AndroidTracer
+    private lateinit var openTracingTracer: DatadogTracer
     private val forge = Forge()
 
     @Before
@@ -105,13 +107,11 @@ class CrossFeatureTest {
             .useCustomEndpoint(mockWebServer.url("/traces").toString())
             .build()
         Trace.enable(traceConfiguration)
-        openTracingTracer = AndroidTracer.Builder()
+        openTracingTracer = DatadogTracing.newTracerBuilder()
+            .withPartialFlushMinSpans(1)
             .setBundleWithRumEnabled(true)
             .build()
-        // don't register GlobalTracer, because call to unregister it
-        // GlobalTracer::class.java.setStaticValue("isRegistered", false) will fail on API 21,
-        // it is impossible to change static final field there
-        // TODO RUM-0000 missing Otel tracer
+        GlobalDatadogTracerHolder.registerIfAbsent(openTracingTracer)
         val logsConfiguration = LogsConfiguration.Builder()
             .useCustomEndpoint(mockWebServer.url("/logs").toString())
             .build()
@@ -131,6 +131,7 @@ class CrossFeatureTest {
             .getInstrumentation()
             .targetContext
             .cacheDir.deleteRecursively()
+        GlobalDatadogTracerHolder.clear()
     }
 
     @Test
@@ -334,7 +335,7 @@ class CrossFeatureTest {
         }.doWait(TimeUnit.SECONDS.toMillis(30))
     }
 
-    private fun AndroidTracer.withinSpan(operationName: String, block: () -> Unit) {
+    private fun DatadogTracer.withinSpan(operationName: String, block: () -> Unit) {
         val span = buildSpan(operationName).start()
         activateSpan(span).use {
             block()

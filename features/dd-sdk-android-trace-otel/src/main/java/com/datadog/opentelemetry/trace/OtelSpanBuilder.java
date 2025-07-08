@@ -166,14 +166,6 @@ public class OtelSpanBuilder implements SpanBuilder {
         return this;
     }
 
-    /**
-     * This is internal method and should not be used outside of SDK.
-     */
-    public SpanBuilder setLazyDatadogContext(CompletableFuture<DatadogContext> context) {
-        this.delegate.withTag(SpanAttributes.DATADOG_INITIAL_CONTEXT, context);
-        return this;
-    }
-
     @Override
     public SpanBuilder setSpanKind(@Nullable SpanKind spanKind) {
         if (spanKind != null) {

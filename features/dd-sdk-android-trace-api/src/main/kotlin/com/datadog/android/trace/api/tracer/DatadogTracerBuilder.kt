@@ -55,15 +55,6 @@ interface DatadogTracerBuilder {
     fun withServiceName(serviceName: String): DatadogTracerBuilder
 
     /**
-     * Configures the builder to enable partial flushes when the number of spans in a specific trace
-     * reaches the given threshold.
-     *
-     * @param partialFlushThreshold The minimum number of spans required to trigger a partial flush.
-     * @return The updated instance of [DatadogTracerBuilder] to allow method chaining.
-     */
-    fun withPartialFlushMinSpans(partialFlushThreshold: Int): DatadogTracerBuilder
-
-    /**
      * Configures the builder with a specific ID generation strategy.
      *
      * @param key The key representing the strategy to be used for generating IDs.
@@ -96,12 +87,13 @@ interface DatadogTracerBuilder {
     fun withTraceLimit(@IntRange(from = 1, to = Int.MAX_VALUE.toLong()) traceRateLimit: Int): DatadogTracerBuilder
 
     /**
-     * Sets the partial flush threshold. When this threshold is reached (you have a specific
-     * amount of spans closed waiting) the flush mechanism will be triggered and all the pending
-     * closed spans will be processed in order to be sent to the intake.
-     * @param threshold the threshold value (default = 5)
+     * Configures the builder to enable partial flushes when the number of spans in a specific trace
+     * reaches the given threshold.
+     *
+     * @param partialFlushThreshold The minimum number of spans required to trigger a partial flush.
+     * @return The updated instance of [DatadogTracerBuilder] to allow method chaining.
      */
-    fun withPartialFlushThreshold(threshold: Int): DatadogTracerBuilder
+    fun withPartialFlushMinSpans(partialFlushThreshold: Int): DatadogTracerBuilder
 
     /**
      * Adds a global tag which will be appended to all spans created with the built tracer.
@@ -109,4 +101,12 @@ interface DatadogTracerBuilder {
      * @param value the tag value
      */
     fun withTag(key: String, value: String): DatadogTracerBuilder
+
+    /**
+     * Enables the trace bundling with the current active View. If this feature is enabled all
+     * the spans from this moment on will be bundled with the current view information and you
+     * will be able to see all the traces sent during a specific view in the Rum Explorer.
+     * @param enabled true by default
+     */
+    fun setBundleWithRumEnabled(enabled: Boolean): DatadogTracerBuilder
 }

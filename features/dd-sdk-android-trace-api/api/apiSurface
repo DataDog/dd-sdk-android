@@ -57,8 +57,8 @@ class com.datadog.android.trace.api.propagation.NoOpDatadogPropagation : Datadog
   override fun isExtractedContext(com.datadog.android.trace.api.span.DatadogSpanContext)
   override fun createExtractedContext(String, String, Int): com.datadog.android.trace.api.span.DatadogSpanContext
 interface com.datadog.android.trace.api.sampling.DatadogTracerSampler
-interface com.datadog.android.trace.api.scope.DatadogScope
-  fun close()
+interface com.datadog.android.trace.api.scope.DatadogScope : java.io.Closeable
+  override fun close()
 interface com.datadog.android.trace.api.span.DatadogSpan
   var isError: Boolean?
   val isRootSpan: Boolean
@@ -141,10 +141,10 @@ interface com.datadog.android.trace.api.tracer.DatadogTracerBuilder
   fun withProperties(java.util.Properties): DatadogTracerBuilder
   fun withTracingHeadersTypes(Set<com.datadog.android.trace.TracingHeaderType>): DatadogTracerBuilder
   fun withServiceName(String): DatadogTracerBuilder
-  fun withPartialFlushMinSpans(Int): DatadogTracerBuilder
   fun withIdGenerationStrategy(String, Boolean): DatadogTracerBuilder
   fun withSampler(com.datadog.android.trace.api.sampling.DatadogTracerSampler?): DatadogTracerBuilder
   fun withSampleRate(Double): DatadogTracerBuilder
   fun withTraceLimit(Int): DatadogTracerBuilder
-  fun withPartialFlushThreshold(Int): DatadogTracerBuilder
+  fun withPartialFlushMinSpans(Int): DatadogTracerBuilder
   fun withTag(String, String): DatadogTracerBuilder
+  fun setBundleWithRumEnabled(Boolean): DatadogTracerBuilder

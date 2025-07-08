@@ -6,7 +6,6 @@
 
 package com.datadog.android.trace
 
-import android.util.Log
 import com.datadog.android.trace.api.scope.DatadogScope
 import com.datadog.android.trace.api.span.DatadogSpan
 import com.datadog.android.trace.api.span.DatadogSpanBuilder
@@ -18,8 +17,6 @@ import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
-import io.opentracing.Span
-import io.opentracing.log.Fields
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -30,10 +27,8 @@ import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
-import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.inOrder
-import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
@@ -77,39 +72,6 @@ class SpanExtTest {
     @AfterEach
     fun `tear down`() {
         GlobalDatadogTracerHolder.clear()
-    }
-
-    @Test
-    fun `M log throwable W setError(Throwable)`(
-        @Forgery throwable: Throwable
-    ) {
-        val mockSpan: Span = mock()
-
-        mockSpan.setError(throwable)
-
-        argumentCaptor<Map<String, Any>>().apply {
-            verify(mockSpan).log(capture())
-            assertThat(firstValue)
-                .containsEntry(Fields.ERROR_OBJECT, throwable)
-                .containsOnlyKeys(Fields.ERROR_OBJECT)
-        }
-    }
-
-    @Test
-    fun `M log error message W setError(String)`(
-        @StringForgery message: String
-    ) {
-        val mockSpan: Span = mock()
-
-        mockSpan.setError(message)
-
-        argumentCaptor<Map<String, Any>>().apply {
-            verify(mockSpan).log(capture())
-            assertThat(firstValue)
-                .containsEntry(Fields.MESSAGE, message)
-                .containsEntry(AndroidTracer.LOG_STATUS, Log.ERROR)
-                .containsOnlyKeys(Fields.MESSAGE, AndroidTracer.LOG_STATUS)
-        }
     }
 
     @Test

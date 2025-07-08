@@ -25,13 +25,13 @@ import com.datadog.android.rum.RumResourceMethod
 import com.datadog.android.security.Encryption
 import com.datadog.android.sessionreplay.SessionReplay
 import com.datadog.android.sessionreplay.SessionReplayConfiguration
-import com.datadog.android.trace.AndroidTracer
+import com.datadog.android.trace.GlobalDatadogTracerHolder
 import com.datadog.android.trace.Trace
 import com.datadog.android.trace.TraceConfiguration
-import com.datadog.tools.unit.setStaticValue
+import com.datadog.android.trace.api.span.clear
+import com.datadog.android.trace.api.tracer.DatadogTracer
+import com.datadog.android.trace.impl.DatadogTracing
 import fr.xgouchet.elmyr.junit4.ForgeRule
-import io.opentracing.Tracer
-import io.opentracing.util.GlobalTracer
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
 import org.junit.Before
@@ -80,8 +80,8 @@ internal class EncryptionTest {
         )
         featureActivations.shuffled(Random(forge.seed)).forEach { it() }
 
-        val tracer = AndroidTracer.Builder(sdkCore).setBundleWithRumEnabled(true).build()
-        GlobalTracer.registerIfAbsent(tracer)
+        val tracer = DatadogTracing.newTracerBuilder(sdkCore).setBundleWithRumEnabled(true).build()
+        GlobalDatadogTracerHolder.registerIfAbsent(tracer)
 
         val logger = Logger.Builder(sdkCore)
             .setBundleWithRumEnabled(true)
@@ -159,7 +159,7 @@ internal class EncryptionTest {
             .build()
     }
 
-    private fun sendEventsForAllFeatures(rumMonitor: RumMonitor, logger: Logger, tracer: Tracer) {
+    private fun sendEventsForAllFeatures(rumMonitor: RumMonitor, logger: Logger, tracer: DatadogTracer) {
         val viewName = "rumView-${forge.aString()}"
         rumMonitor.startView(viewName, viewName)
 
@@ -202,7 +202,7 @@ internal class EncryptionTest {
 
     private fun stopSdk() {
         Datadog.stopInstance()
-        GlobalTracer::class.java.setStaticValue("isRegistered", false)
+        GlobalDatadogTracerHolder.clear()
     }
 
     private fun flushAndShutdownExecutors() {

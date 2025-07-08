@@ -18,15 +18,14 @@ import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.event.EventMapper
 import com.datadog.android.internal.concurrent.CompletableFuture
 import com.datadog.android.log.LogAttributes
-import com.datadog.android.trace.AndroidTracer
+import com.datadog.android.trace.internal.SpanAttributes
 import com.datadog.android.trace.internal.domain.event.ContextAwareMapper
 import com.datadog.android.trace.internal.storage.ContextAwareSerializer
 import com.datadog.android.trace.model.SpanEvent
 import com.datadog.android.trace.utils.verifyLog
 import com.datadog.android.utils.forge.Configurator
-import com.datadog.android.utils.forge.SpanForgeryFactory
-import com.datadog.opentracing.DDSpan
 import com.datadog.tools.unit.forge.aThrowable
+import com.datadog.trace.core.DDSpan
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -45,6 +44,7 @@ import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
+import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
@@ -60,9 +60,9 @@ import java.util.UUID
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
-internal class TraceWriterTest {
+internal class CoreTraceWriterTest {
 
-    private lateinit var testedWriter: TraceWriter
+    private lateinit var testedWriter: CoreTraceWriter
 
     @Mock
     lateinit var mockSdkCore: FeatureSdkCore
@@ -110,7 +110,7 @@ internal class TraceWriterTest {
 
         whenever(mockEventMapper.map(any())) doAnswer { it.getArgument(0) }
 
-        testedWriter = TraceWriter(
+        testedWriter = CoreTraceWriter(
             sdkCore = mockSdkCore,
             ddSpanToSpanEventMapper = mockLegacyMapper,
             eventMapper = mockEventMapper,
@@ -122,8 +122,10 @@ internal class TraceWriterTest {
     @Test
     fun `M write spans W write()`(forge: Forge) {
         // GIVEN
-        val ddSpans = generateSpanListWithPriorities(forge, TraceWriter.KEEP_AND_UNSET_SAMPLING_PRIORITIES)
-
+        val ddSpans = createNonEmptyDdSpans(
+            forge = forge,
+            includeDropSamplingPriority = false
+        )
         val spanEvents = ddSpans.map { forge.getForgery<SpanEvent>() }
         val serializedSpans = ddSpans.map { forge.aString() }
 
@@ -142,17 +144,10 @@ internal class TraceWriterTest {
 
         // THEN
         serializedSpans.forEach {
-            verify(mockEventBatchWriter).write(
-                event = RawBatchEvent(data = it.toByteArray()),
-                batchMetadata = null,
-                eventType = EventType.DEFAULT
-            )
+            verify(mockEventBatchWriter)
+                .write(RawBatchEvent(data = it.toByteArray()), null, EventType.DEFAULT)
         }
         verifyNoMoreInteractions(mockEventBatchWriter)
-
-        ddSpans.forEach {
-            it.finish()
-        }
     }
 
     // region RUM context
@@ -179,9 +174,11 @@ internal class TraceWriterTest {
             )
         }
         val fakeLazyContext = CompletableFuture<DatadogContext>().apply { complete(fakeInitialDatadogContext) }
-        val ddSpans = generateSpanListWithPriorities(forge, TraceWriter.KEEP_AND_UNSET_SAMPLING_PRIORITIES)
+        val ddSpans = createNonEmptyDdSpans(forge, includeDropSamplingPriority = false)
             .map {
-                it.apply { setTag(AndroidTracer.DATADOG_CONTEXT_TAG, fakeLazyContext) }
+                it.apply {
+                    whenever(tags) doReturn mapOf(SpanAttributes.DATADOG_INITIAL_CONTEXT to fakeLazyContext)
+                }
             }
 
         whenever(mockLegacyMapper.map(eq(fakeDatadogContext), any())) doReturn forge.getForgery<SpanEvent>()
@@ -194,11 +191,11 @@ internal class TraceWriterTest {
         argumentCaptor<DDSpan> {
             verify(mockLegacyMapper, times(ddSpans.size)).map(eq(fakeDatadogContext), capture())
             allValues.forEach {
-                assertThat(it.tags[LogAttributes.RUM_APPLICATION_ID]).isEqualTo(fakeApplicationId.toString())
-                assertThat(it.tags[LogAttributes.RUM_SESSION_ID]).isEqualTo(fakeSessionId.toString())
-                assertThat(it.tags[LogAttributes.RUM_VIEW_ID]).isEqualTo(fakeViewId.toString())
-                assertThat(it.tags[LogAttributes.RUM_ACTION_ID]).isEqualTo(fakeActionId.toString())
-                assertThat(it.tags).doesNotContainKey(AndroidTracer.DATADOG_CONTEXT_TAG.key)
+                verify(it).setTag(LogAttributes.RUM_APPLICATION_ID, fakeApplicationId.toString())
+                verify(it).setTag(LogAttributes.RUM_VIEW_ID, fakeViewId.toString())
+                verify(it).setTag(LogAttributes.RUM_SESSION_ID, fakeSessionId.toString())
+                verify(it).setTag(LogAttributes.RUM_ACTION_ID, fakeActionId.toString())
+                verify(it).setTag(SpanAttributes.DATADOG_INITIAL_CONTEXT, null as String?)
             }
         }
 
@@ -220,9 +217,11 @@ internal class TraceWriterTest {
             )
         }
         val fakeLazyContext = CompletableFuture<DatadogContext>().apply { complete(fakeInitialDatadogContext) }
-        val ddSpans = generateSpanListWithPriorities(forge, TraceWriter.KEEP_AND_UNSET_SAMPLING_PRIORITIES)
+        val ddSpans = createNonEmptyDdSpans(forge, includeDropSamplingPriority = false)
             .map {
-                it.apply { setTag(AndroidTracer.DATADOG_CONTEXT_TAG, fakeLazyContext) }
+                it.apply {
+                    whenever(tags) doReturn mapOf(SpanAttributes.DATADOG_INITIAL_CONTEXT to fakeLazyContext)
+                }
             }
 
         whenever(mockLegacyMapper.map(eq(fakeDatadogContext), any())) doReturn forge.getForgery<SpanEvent>()
@@ -235,11 +234,11 @@ internal class TraceWriterTest {
         argumentCaptor<DDSpan> {
             verify(mockLegacyMapper, times(ddSpans.size)).map(eq(fakeDatadogContext), capture())
             allValues.forEach {
-                assertThat(it.tags).doesNotContainKey(LogAttributes.RUM_APPLICATION_ID)
-                assertThat(it.tags).doesNotContainKey(LogAttributes.RUM_SESSION_ID)
-                assertThat(it.tags).doesNotContainKey(LogAttributes.RUM_VIEW_ID)
-                assertThat(it.tags).doesNotContainKey(LogAttributes.RUM_ACTION_ID)
-                assertThat(it.tags).doesNotContainKey(AndroidTracer.DATADOG_CONTEXT_TAG.key)
+                verify(it, never()).setTag(eq(LogAttributes.RUM_APPLICATION_ID), any<String>())
+                verify(it, never()).setTag(eq(LogAttributes.RUM_SESSION_ID), any<String>())
+                verify(it, never()).setTag(eq(LogAttributes.RUM_VIEW_ID), any<String>())
+                verify(it, never()).setTag(eq(LogAttributes.RUM_ACTION_ID), any<String>())
+                verify(it).setTag(SpanAttributes.DATADOG_INITIAL_CONTEXT, null as String?)
             }
             assertThat(allValues).isEqualTo(ddSpans)
         }
@@ -255,9 +254,11 @@ internal class TraceWriterTest {
     ) {
         // GIVEN
         val fakeLazyContext = CompletableFuture<DatadogContext>()
-        val ddSpans = generateSpanListWithPriorities(forge, TraceWriter.KEEP_AND_UNSET_SAMPLING_PRIORITIES)
+        val ddSpans = createNonEmptyDdSpans(forge, includeDropSamplingPriority = false)
             .map {
-                it.apply { setTag(AndroidTracer.DATADOG_CONTEXT_TAG, fakeLazyContext) }
+                it.apply {
+                    whenever(tags) doReturn mapOf(SpanAttributes.DATADOG_INITIAL_CONTEXT to fakeLazyContext)
+                }
             }
 
         whenever(mockLegacyMapper.map(eq(fakeDatadogContext), any())) doReturn forge.getForgery<SpanEvent>()
@@ -270,18 +271,18 @@ internal class TraceWriterTest {
         argumentCaptor<DDSpan> {
             verify(mockLegacyMapper, times(ddSpans.size)).map(eq(fakeDatadogContext), capture())
             allValues.forEach {
-                assertThat(it.tags).doesNotContainKey(LogAttributes.RUM_APPLICATION_ID)
-                assertThat(it.tags).doesNotContainKey(LogAttributes.RUM_SESSION_ID)
-                assertThat(it.tags).doesNotContainKey(LogAttributes.RUM_VIEW_ID)
-                assertThat(it.tags).doesNotContainKey(LogAttributes.RUM_ACTION_ID)
-                assertThat(it.tags).doesNotContainKey(AndroidTracer.DATADOG_CONTEXT_TAG.key)
+                verify(it, never()).setTag(eq(LogAttributes.RUM_APPLICATION_ID), any<String>())
+                verify(it, never()).setTag(eq(LogAttributes.RUM_SESSION_ID), any<String>())
+                verify(it, never()).setTag(eq(LogAttributes.RUM_VIEW_ID), any<String>())
+                verify(it, never()).setTag(eq(LogAttributes.RUM_ACTION_ID), any<String>())
+                verify(it).setTag(SpanAttributes.DATADOG_INITIAL_CONTEXT, null as String?)
             }
             assertThat(allValues).isEqualTo(ddSpans)
         }
         mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             InternalLogger.Target.USER,
-            TraceWriter.INITIAL_DATADOG_CONTEXT_NOT_AVAILABLE_ERROR,
+            CoreTraceWriter.INITIAL_DATADOG_CONTEXT_NOT_AVAILABLE_ERROR,
             mode = times(ddSpans.size)
         )
 
@@ -295,9 +296,11 @@ internal class TraceWriterTest {
         forge: Forge
     ) {
         // GIVEN
-        val ddSpans = generateSpanListWithPriorities(forge, TraceWriter.KEEP_AND_UNSET_SAMPLING_PRIORITIES)
+        val ddSpans = createNonEmptyDdSpans(forge, includeDropSamplingPriority = false)
             .map {
-                it.apply { setTag(AndroidTracer.DATADOG_CONTEXT_TAG.key, forge.aString()) }
+                it.apply {
+                    whenever(tags) doReturn mapOf(SpanAttributes.DATADOG_INITIAL_CONTEXT to Any())
+                }
             }
 
         whenever(mockLegacyMapper.map(eq(fakeDatadogContext), any())) doReturn forge.getForgery<SpanEvent>()
@@ -310,11 +313,11 @@ internal class TraceWriterTest {
         argumentCaptor<DDSpan> {
             verify(mockLegacyMapper, times(ddSpans.size)).map(eq(fakeDatadogContext), capture())
             allValues.forEach {
-                assertThat(it.tags).doesNotContainKey(LogAttributes.RUM_APPLICATION_ID)
-                assertThat(it.tags).doesNotContainKey(LogAttributes.RUM_SESSION_ID)
-                assertThat(it.tags).doesNotContainKey(LogAttributes.RUM_VIEW_ID)
-                assertThat(it.tags).doesNotContainKey(LogAttributes.RUM_ACTION_ID)
-                assertThat(it.tags).doesNotContainKey(AndroidTracer.DATADOG_CONTEXT_TAG.key)
+                verify(it, never()).setTag(eq(LogAttributes.RUM_APPLICATION_ID), any<String>())
+                verify(it, never()).setTag(eq(LogAttributes.RUM_SESSION_ID), any<String>())
+                verify(it, never()).setTag(eq(LogAttributes.RUM_VIEW_ID), any<String>())
+                verify(it, never()).setTag(eq(LogAttributes.RUM_ACTION_ID), any<String>())
+                verify(it).setTag(SpanAttributes.DATADOG_INITIAL_CONTEXT, null as String?)
             }
             assertThat(allValues).isEqualTo(ddSpans)
         }
@@ -328,9 +331,12 @@ internal class TraceWriterTest {
     // endregion
 
     @Test
-    fun `M not write spans with drop sampling priority W write() { drop sampling decision }`(forge: Forge) {
+    fun `M not write spans with drop sampling priority W write()`(forge: Forge) {
         // GIVEN
-        val ddSpans = generateSpanListWithPriorities(forge, TraceWriter.DROP_SAMPLING_PRIORITIES)
+        val ddSpans = createNonEmptyDdSpans(
+            forge = forge,
+            includeDropSamplingPriority = true
+        )
 
         // WHEN
         testedWriter.write(ddSpans)
@@ -346,10 +352,11 @@ internal class TraceWriterTest {
     @Test
     fun `M not write non-mapped spans W write()`(forge: Forge) {
         // GIVEN
-        val ddSpans = generateSpanListWithPriorities(forge, TraceWriter.KEEP_AND_UNSET_SAMPLING_PRIORITIES)
-
-        val spanEvents = ddSpans
-            .map { forge.getForgery<SpanEvent>() }
+        val ddSpans = createNonEmptyDdSpans(
+            forge = forge,
+            includeDropSamplingPriority = false
+        )
+        val spanEvents = ddSpans.map { forge.getForgery<SpanEvent>() }
         val mappedEvents = spanEvents.map { forge.aNullable { it } }
 
         val serializedSpans = mappedEvents.filterNotNull().map { forge.aString() }
@@ -373,24 +380,19 @@ internal class TraceWriterTest {
 
         // THEN
         serializedSpans.forEach {
-            verify(mockEventBatchWriter).write(
-                event = RawBatchEvent(data = it.toByteArray()),
-                batchMetadata = null,
-                eventType = EventType.DEFAULT
-            )
+            verify(mockEventBatchWriter)
+                .write(RawBatchEvent(data = it.toByteArray()), null, EventType.DEFAULT)
         }
         verifyNoMoreInteractions(mockEventBatchWriter)
-
-        ddSpans.forEach {
-            it.finish()
-        }
     }
 
     @Test
     fun `M not write non-serialized spans W write()`(forge: Forge) {
         // GIVEN
-        val ddSpans = generateSpanListWithPriorities(forge, TraceWriter.KEEP_AND_UNSET_SAMPLING_PRIORITIES)
-
+        val ddSpans = createNonEmptyDdSpans(
+            forge = forge,
+            includeDropSamplingPriority = false
+        )
         val spanEvents = ddSpans.map { forge.getForgery<SpanEvent>() }
 
         val serializedSpans = spanEvents.map { forge.aNullable { aString() } }
@@ -410,17 +412,10 @@ internal class TraceWriterTest {
 
         // THEN
         serializedSpans.filterNotNull().forEach {
-            verify(mockEventBatchWriter).write(
-                event = RawBatchEvent(data = it.toByteArray()),
-                batchMetadata = null,
-                eventType = EventType.DEFAULT
-            )
+            verify(mockEventBatchWriter)
+                .write(RawBatchEvent(data = it.toByteArray()), null, EventType.DEFAULT)
         }
         verifyNoMoreInteractions(mockEventBatchWriter)
-
-        ddSpans.forEach {
-            it.finish()
-        }
     }
 
     @Test
@@ -442,8 +437,10 @@ internal class TraceWriterTest {
     @Test
     fun `M log error and proceed W write() { serialization failed }`(forge: Forge) {
         // GIVEN
-        val ddSpans = generateSpanListWithPriorities(forge, TraceWriter.KEEP_AND_UNSET_SAMPLING_PRIORITIES)
-
+        val ddSpans = createNonEmptyDdSpans(
+            forge = forge,
+            includeDropSamplingPriority = false
+        )
         val spanEvents = ddSpans.map { forge.getForgery<SpanEvent>() }
         val serializedSpans = ddSpans.map { forge.aString() }
 
@@ -474,11 +471,8 @@ internal class TraceWriterTest {
         // THEN
         serializedSpans.forEachIndexed { index, serializedSpan ->
             if (index != faultySpanIndex) {
-                verify(mockEventBatchWriter).write(
-                    event = RawBatchEvent(data = serializedSpan.toByteArray()),
-                    batchMetadata = null,
-                    eventType = EventType.DEFAULT
-                )
+                verify(mockEventBatchWriter)
+                    .write(RawBatchEvent(data = serializedSpan.toByteArray()), null, EventType.DEFAULT)
             }
         }
         verifyNoMoreInteractions(mockEventBatchWriter)
@@ -486,19 +480,18 @@ internal class TraceWriterTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
-            TraceWriter.ERROR_SERIALIZING.format(Locale.US, SpanEvent::class.java.simpleName),
+            CoreTraceWriter.ERROR_SERIALIZING.format(Locale.US, SpanEvent::class.java.simpleName),
             fakeThrowable
         )
-
-        ddSpans.forEach {
-            it.finish()
-        }
     }
 
     @Test
     fun `M request event write context once W write()`(forge: Forge) {
         // GIVEN
-        val ddSpans = forge.aList { getForgery<DDSpan>() }
+        val ddSpans = createNonEmptyDdSpans(
+            forge = forge,
+            includeDropSamplingPriority = false
+        )
 
         // WHEN
         testedWriter.write(ddSpans)
@@ -508,19 +501,23 @@ internal class TraceWriterTest {
         verify(mockTracingFeatureScope).withWriteContext(any(), any())
 
         verifyNoMoreInteractions(mockSdkCore, mockTracingFeatureScope)
+    }
 
-        ddSpans.forEach {
-            it.finish()
+    private fun createNonEmptyDdSpans(forge: Forge, includeDropSamplingPriority: Boolean): List<DDSpan> {
+        val predicate: (DDSpan) -> Boolean = if (includeDropSamplingPriority) {
+            { it.samplingPriority() in CoreTraceWriter.DROP_SAMPLING_PRIORITIES }
+        } else {
+            { it.samplingPriority() !in CoreTraceWriter.DROP_SAMPLING_PRIORITIES }
         }
+
+        var spans = emptyList<DDSpan>()
+        while (spans.isEmpty()) {
+            spans = forge.aList { getForgery<DDSpan>() }
+                .filter(predicate)
+        }
+
+        return spans
     }
 
     // endregion
-
-    private fun generateSpanListWithPriorities(forge: Forge, priorities: Set<Int>): List<DDSpan> {
-        return forge.aList {
-            SpanForgeryFactory { frg, span ->
-                span.samplingPriority = frg.anElementFrom(priorities)
-            }.getForgery(forge)
-        }
-    }
 }

@@ -6,19 +6,21 @@
 
 package com.datadog.android.trace.api.span
 
+import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.trace.GlobalDatadogTracerHolder
 import com.datadog.android.trace.api.tracer.DatadogTracer
 import com.datadog.android.trace.api.tracer.DatadogTracerBuilder
 import com.datadog.android.trace.impl.DatadogTracing
+import com.datadog.android.trace.impl.internal.DatadogSpanAdapter
 import com.datadog.android.trace.impl.internal.DatadogSpanContextAdapter
 import com.datadog.android.trace.impl.internal.DatadogSpanLoggerAdapter
-import com.datadog.android.trace.impl.internal.DatadogSpanWriterWrapper
 import com.datadog.android.trace.impl.internal.DatadogTracerAdapter
-import com.datadog.tools.unit.getFieldValue
-import com.datadog.trace.common.writer.Writer
+import com.datadog.android.trace.internal.domain.event.CoreTracerSpanToSpanEventMapper
 import com.datadog.trace.core.CoreTracer
+import com.datadog.trace.core.DDSpan
 import com.datadog.trace.core.DDSpanContext
+import com.google.gson.JsonElement
 
 val DatadogSpanContext.resourceName: String?
     get() = ddSpanContext?.resourceName?.toString()
@@ -42,13 +44,17 @@ fun DatadogTracing.clear() {
     setTracingAdapterBuilderMock(null)
 }
 
-val DatadogTracer.writer: DatadogSpanWriter?
-    get() {
-        val tracerAdapter: DatadogTracerAdapter? = this as? DatadogTracerAdapter
-        val coreTracer = tracerAdapter?.delegate as? CoreTracer
-        val writer: Writer? = coreTracer?.getFieldValue("writer")
-        return writer?.let(::DatadogSpanWriterWrapper)
-    }
+fun DatadogSpan.resolveMeta(datadogContext: DatadogContext): JsonElement {
+    val mapper = CoreTracerSpanToSpanEventMapper(false)
+    val ddSpan = (this as DatadogSpanAdapter).delegate as DDSpan
+    return mapper.resolveMeta(datadogContext, ddSpan).toJson()
+}
+
+fun DatadogSpan.resolveMetrics(): JsonElement {
+    val mapper = CoreTracerSpanToSpanEventMapper(false)
+    val ddSpan = (this as DatadogSpanAdapter).delegate as DDSpan
+    return mapper.resolveMetrics(ddSpan).toJson()
+}
 
 fun GlobalDatadogTracerHolder.clear() {
     instance = null

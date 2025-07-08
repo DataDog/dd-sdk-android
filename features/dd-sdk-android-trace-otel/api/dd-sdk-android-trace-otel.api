@@ -88,7 +88,6 @@ public class com/datadog/opentelemetry/trace/OtelSpanBuilder : io/opentelemetry/
 	public fun setAttribute (Ljava/lang/String;J)Lio/opentelemetry/api/trace/SpanBuilder;
 	public fun setAttribute (Ljava/lang/String;Ljava/lang/String;)Lio/opentelemetry/api/trace/SpanBuilder;
 	public fun setAttribute (Ljava/lang/String;Z)Lio/opentelemetry/api/trace/SpanBuilder;
-	public fun setLazyDatadogContext (Lcom/datadog/android/internal/concurrent/CompletableFuture;)Lio/opentelemetry/api/trace/SpanBuilder;
 	public fun setNoParent ()Lio/opentelemetry/api/trace/SpanBuilder;
 	public fun setParent (Lio/opentelemetry/context/Context;)Lio/opentelemetry/api/trace/SpanBuilder;
 	public fun setSpanKind (Lio/opentelemetry/api/trace/SpanKind;)Lio/opentelemetry/api/trace/SpanBuilder;
@@ -126,7 +125,7 @@ public class com/datadog/opentelemetry/trace/OtelTracer : io/opentelemetry/api/t
 }
 
 public class com/datadog/opentelemetry/trace/OtelTracerBuilder : io/opentelemetry/api/trace/TracerBuilder {
-	public fun <init> (Ljava/lang/String;Lcom/datadog/android/trace/api/tracer/DatadogTracer;Lcom/datadog/android/api/InternalLogger;Lcom/datadog/opentelemetry/compat/function/Function;)V
+	public fun <init> (Ljava/lang/String;Lcom/datadog/android/trace/api/tracer/DatadogTracer;Lcom/datadog/android/api/InternalLogger;)V
 	public fun build ()Lio/opentelemetry/api/trace/Tracer;
 	public fun setInstrumentationVersion (Ljava/lang/String;)Lio/opentelemetry/api/trace/TracerBuilder;
 	public fun setSchemaUrl (Ljava/lang/String;)Lio/opentelemetry/api/trace/TracerBuilder;

@@ -233,6 +233,7 @@ datadog:
       - "java.io.PrintWriter.constructor(java.io.Writer):java.lang.NullPointerException"
       - "java.lang.Character.toChars(kotlin.Int):java.lang.IllegalArgumentException"
       - "java.lang.Class.forName(kotlin.String?):java.lang.LinkageError,java.lang.ExceptionInInitializerError,java.lang.ClassNotFoundException"
+      - "java.lang.Class.getField(kotlin.String?):java.lang.NoSuchMethodException,java.lang.NullPointerException,java.lang.SecurityException"
       - "java.lang.Class.getDeclaredField(kotlin.String?):java.lang.NoSuchFieldException,java.lang.SecurityException,java.lang.NullPointerException"
       - "java.lang.Class.getDeclaredMethod(kotlin.String?, kotlin.Array?):java.lang.NoSuchMethodException,java.lang.SecurityException,java.lang.NullPointerException"
       - "java.lang.Class.getMethod(kotlin.String?, kotlin.Array?):java.lang.NoSuchMethodException,java.lang.SecurityException,java.lang.NullPointerException"
