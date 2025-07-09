@@ -188,12 +188,21 @@ open class TextViewMapper<in T : TextView>(
     }
 
     private fun resolvePadding(textView: TextView, pixelsDensity: Float): MobileSegment.Padding {
-        return MobileSegment.Padding(
-            top = textView.totalPaddingTop.densityNormalized(pixelsDensity).toLong(),
-            bottom = textView.totalPaddingBottom.densityNormalized(pixelsDensity).toLong(),
-            left = textView.totalPaddingStart.densityNormalized(pixelsDensity).toLong(),
-            right = textView.totalPaddingEnd.densityNormalized(pixelsDensity).toLong()
-        )
+        return if (textView.layout != null) {
+            MobileSegment.Padding(
+                top = textView.totalPaddingTop.densityNormalized(pixelsDensity).toLong(),
+                bottom = textView.totalPaddingBottom.densityNormalized(pixelsDensity).toLong(),
+                left = textView.totalPaddingStart.densityNormalized(pixelsDensity).toLong(),
+                right = textView.totalPaddingEnd.densityNormalized(pixelsDensity).toLong()
+            )
+        } else {
+            MobileSegment.Padding(
+                top = textView.paddingTop.densityNormalized(pixelsDensity).toLong(),
+                bottom = textView.paddingBottom.densityNormalized(pixelsDensity).toLong(),
+                left = textView.paddingStart.densityNormalized(pixelsDensity).toLong(),
+                right = textView.paddingEnd.densityNormalized(pixelsDensity).toLong()
+            )
+        }
     }
 
     private fun resolveAlignment(textView: TextView): MobileSegment.Alignment {
