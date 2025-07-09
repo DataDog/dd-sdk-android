@@ -3,11 +3,9 @@
  * This product includes software developed at Datadog (https://www.datadoghq.com/).
  * Copyright 2016-Present Datadog, Inc.
  */
+package com.datadog.android.trace.impl.internal
 
-package com.datadog.android.trace.impl
+import com.datadog.android.trace.api.span.DatadogSpanWriter
+import com.datadog.trace.common.writer.Writer
 
-import com.datadog.android.trace.impl.internal.DatadogTracerBuilderAdapter
-
-object TracingErrorMessages {
-    const val MESSAGE_WRITER_NOT_PROVIDED = DatadogTracerBuilderAdapter.MESSAGE_WRITER_NOT_PROVIDED
-}
+internal class DatadogSpanWriterWrapper(internal val delegate: Writer) : DatadogSpanWriter

@@ -29,7 +29,7 @@ import com.datadog.android.trace.api.span.DatadogSpan
 import com.datadog.android.trace.api.span.DatadogSpanContext
 import com.datadog.android.trace.api.tracer.DatadogTracer
 import com.datadog.android.trace.impl.DatadogTracing
-import com.datadog.android.trace.impl.internal.DatadogTracingInternal
+import com.datadog.android.trace.impl.internal.DatadogTracingInternalToolkit
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -325,7 +325,7 @@ internal constructor(
         return when {
             headerSamplingPriority != null -> headerSamplingPriority
             datadogSpan != null -> {
-                DatadogTracingInternal.setTracingSamplingPriorityIfNecessary(datadogSpan.context())
+                DatadogTracingInternalToolkit.setTracingSamplingPriorityIfNecessary(datadogSpan.context())
                 datadogSpan.context().samplingPriority > 0
             }
             else -> null
@@ -470,7 +470,7 @@ internal constructor(
 
     private fun handleW3CNotSampledHeaders(span: DatadogSpan, requestBuilder: Request.Builder) {
         if (traceContextInjection == TraceContextInjection.ALL) {
-            val traceId = span.context().traceId.toHexString()
+            val traceId = DatadogTracingInternalToolkit.traceIdConverter.toHexString(span.context().traceId)
             val spanId = span.context().spanId.toString()
             requestBuilder.addHeader(
                 W3C_TRACEPARENT_KEY,

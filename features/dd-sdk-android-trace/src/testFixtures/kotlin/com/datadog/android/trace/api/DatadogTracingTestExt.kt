@@ -4,45 +4,35 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.trace.api.span
+package com.datadog.android.trace.api
 
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.trace.GlobalDatadogTracerHolder
+import com.datadog.android.trace.api.span.DatadogSpan
+import com.datadog.android.trace.api.span.DatadogSpanContext
+import com.datadog.android.trace.api.trace.DatadogTraceId
 import com.datadog.android.trace.api.tracer.DatadogTracer
 import com.datadog.android.trace.api.tracer.DatadogTracerBuilder
-import com.datadog.android.trace.impl.DatadogTracing
 import com.datadog.android.trace.impl.internal.DatadogSpanAdapter
 import com.datadog.android.trace.impl.internal.DatadogSpanContextAdapter
 import com.datadog.android.trace.impl.internal.DatadogSpanLoggerAdapter
 import com.datadog.android.trace.impl.internal.DatadogTracerAdapter
+import com.datadog.android.trace.impl.internal.DatadogTracingInternalToolkit
 import com.datadog.android.trace.internal.domain.event.CoreTracerSpanToSpanEventMapper
 import com.datadog.trace.core.CoreTracer
 import com.datadog.trace.core.DDSpan
 import com.datadog.trace.core.DDSpanContext
 import com.google.gson.JsonElement
 
+val DatadogTracer.partialFlushMinSpans: Int?
+    get() = coreTracer?.partialFlushMinSpans
+
 val DatadogSpanContext.resourceName: String?
     get() = ddSpanContext?.resourceName?.toString()
 
 val DatadogSpanContext.serviceName: String?
     get() = ddSpanContext?.serviceName?.toString()
-
-val DatadogTracer.partialFlushMinSpans: Int?
-    get() = coreTracer?.partialFlushMinSpans
-
-fun DatadogTracing.setTracingAdapterBuilderMock(mock: DatadogTracerBuilder?) {
-    builderProvider = mock
-}
-
-fun DatadogTracing.setSpanLoggerMock(sdkCore: FeatureSdkCore?) {
-    spanLoggerProvider = sdkCore?.let(::DatadogSpanLoggerAdapter)
-}
-
-fun DatadogTracing.clear() {
-    setSpanLoggerMock(null)
-    setTracingAdapterBuilderMock(null)
-}
 
 fun DatadogSpan.resolveMeta(datadogContext: DatadogContext): JsonElement {
     val mapper = CoreTracerSpanToSpanEventMapper(false)
@@ -58,6 +48,22 @@ fun DatadogSpan.resolveMetrics(): JsonElement {
 
 fun DatadogSpan.forceSamplingDecision() {
     (this as DatadogSpanAdapter).delegate.forceSamplingDecision()
+}
+
+fun DatadogTraceId.toHexString(): String = DatadogTracingInternalToolkit.traceIdConverter
+    .toHexString(this)
+
+fun DatadogTracingInternalToolkit.setTracingAdapterBuilderMock(mock: DatadogTracerBuilder?) {
+    builderProvider = mock
+}
+
+fun DatadogTracingInternalToolkit.setSpanLoggerMock(sdkCore: FeatureSdkCore?) {
+    spanLoggerNullable = sdkCore?.let(::DatadogSpanLoggerAdapter)
+}
+
+fun DatadogTracingInternalToolkit.clear() {
+    setSpanLoggerMock(null)
+    setTracingAdapterBuilderMock(null)
 }
 
 fun GlobalDatadogTracerHolder.clear() {

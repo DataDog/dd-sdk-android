@@ -5,7 +5,6 @@
  */
 package com.datadog.android.trace.api.span
 
-import com.datadog.android.lint.InternalApi
 import com.datadog.android.trace.api.trace.DatadogTraceId
 import com.datadog.tools.annotation.NoOpImplementation
 

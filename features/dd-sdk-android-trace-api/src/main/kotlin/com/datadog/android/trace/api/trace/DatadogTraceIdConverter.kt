@@ -8,7 +8,7 @@ package com.datadog.android.trace.api.trace
 /**
  * Factory interface for creating and manipulating `DatadogTraceId` instances.
  */
-interface DatadogTraceIdFactory {
+interface DatadogTraceIdConverter {
     /**
      * Creates a [DatadogTraceId] instance representing the zero value.
      *
@@ -39,4 +39,18 @@ interface DatadogTraceIdFactory {
      * @return a [DatadogTraceId] instance representing the given trace ID.
      */
     fun fromHex(id: String): DatadogTraceId
+
+    /**
+     * Converts the Datadog trace ID to its numeric representation as a `Long`.
+     *
+     * @return the numeric value of the trace ID as a `Long`.
+     */
+    fun toLong(traceId: DatadogTraceId): Long
+
+    /**
+     * Converts the current trace ID into its hexadecimal string representation.
+     *
+     * @return the hexadecimal string representation of the trace ID.
+     */
+    fun toHexString(traceId: DatadogTraceId): String
 }

@@ -14,12 +14,13 @@ import com.datadog.android.api.net.RequestFactory
 import com.datadog.android.api.storage.FeatureStorageConfiguration
 import com.datadog.android.trace.InternalCoreWriterProvider
 import com.datadog.android.trace.event.SpanEventMapper
+import com.datadog.android.trace.impl.internal.DatadogSpanWriterWrapper
 import com.datadog.android.trace.internal.data.CoreTraceWriter
-import com.datadog.android.trace.internal.data.NoOpCoreTracerWriter
 import com.datadog.android.trace.internal.domain.event.CoreTracerSpanToSpanEventMapper
 import com.datadog.android.trace.internal.domain.event.SpanEventMapperWrapper
 import com.datadog.android.trace.internal.domain.event.SpanEventSerializer
 import com.datadog.android.trace.internal.net.TracesRequestFactory
+import com.datadog.trace.common.writer.NoOpWriter
 import com.datadog.trace.common.writer.Writer
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -33,7 +34,7 @@ internal class TracingFeature(
     internal val networkInfoEnabled: Boolean
 ) : InternalCoreWriterProvider, StorageBackedFeature {
 
-    internal var coreTracerDataWriter: Writer = NoOpCoreTracerWriter()
+    internal var coreTracerDataWriter: Writer = NoOpWriter()
     internal val initialized = AtomicBoolean(false)
 
     // region Feature
@@ -63,7 +64,7 @@ internal class TracingFeature(
 
     // region InternalCoreWriterProvider
 
-    override fun getCoreTracerWriter() = coreTracerDataWriter
+    override fun getCoreTracerWriter() = DatadogSpanWriterWrapper(coreTracerDataWriter)
 
     // endregion
 

@@ -10,11 +10,14 @@ import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.trace.InternalCoreWriterProvider
+import com.datadog.android.trace.impl.internal.DatadogSpanWriterWrapper
 import com.datadog.android.trace.impl.internal.DatadogTracerAdapter
-import com.datadog.android.trace.internal.data.NoOpCoreTracerWriter
+import com.datadog.android.trace.impl.internal.DatadogTracingInternalToolkit.ErrorMessages.DEFAULT_SERVICE_NAME_IS_MISSING_ERROR_MESSAGE
+import com.datadog.android.trace.impl.internal.DatadogTracingInternalToolkit.ErrorMessages.WRITER_PROVIDER_INTERFACE_NOT_IMPLEMENTED_ERROR_MESSAGE
 import com.datadog.android.trace.utils.verifyLog
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.tools.unit.getFieldValue
+import com.datadog.trace.common.writer.NoOpWriter
 import com.datadog.trace.common.writer.Writer
 import com.datadog.trace.core.CoreTracer
 import fr.xgouchet.elmyr.Forge
@@ -60,11 +63,14 @@ class DatadogTracingTest {
     @BeforeEach
     fun `set up`(forge: Forge) {
         fakeServiceName = forge.anAlphabeticalString()
+        val writerWrapperMock = mock<DatadogSpanWriterWrapper> {
+            on { delegate } doReturn mock()
+        }
         whenever(mockSdkCore.service) doReturn fakeServiceName
         whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
         whenever(mockTracingFeature.unwrap<Feature>()) doReturn mockTracingFeatureScope
         whenever(mockSdkCore.getFeature(Feature.TRACING_FEATURE_NAME)) doReturn mockTracingFeature
-        whenever(mockTracingFeatureScope.getCoreTracerWriter()) doReturn mock()
+        whenever(mockTracingFeatureScope.getCoreTracerWriter()) doReturn writerWrapperMock
     }
 
     @Test
@@ -79,7 +85,7 @@ class DatadogTracingTest {
         assertThat(tracer).isNotNull
         val coreTracer: CoreTracer = tracer.delegate as CoreTracer
         val writer: Writer = coreTracer.getFieldValue("writer")
-        assertThat(writer).isInstanceOf(NoOpCoreTracerWriter::class.java)
+        assertThat(writer).isInstanceOf(NoOpWriter::class.java)
     }
 
     @Test
@@ -96,7 +102,7 @@ class DatadogTracingTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             InternalLogger.Target.MAINTAINER,
-            DatadogTracing.Errors.WRITER_PROVIDER_INTERFACE_NOT_IMPLEMENTED_ERROR_MESSAGE
+            WRITER_PROVIDER_INTERFACE_NOT_IMPLEMENTED_ERROR_MESSAGE
         )
     }
 
@@ -112,7 +118,7 @@ class DatadogTracingTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             InternalLogger.Target.USER,
-            DatadogTracing.Errors.DEFAULT_SERVICE_NAME_IS_MISSING_ERROR_MESSAGE
+            DEFAULT_SERVICE_NAME_IS_MISSING_ERROR_MESSAGE
         )
     }
 }

@@ -18,6 +18,7 @@ import com.datadog.android.trace.InternalCoreWriterProvider
 import com.datadog.android.trace.TracingHeaderType
 import com.datadog.android.trace.api.tracer.DatadogTracer
 import com.datadog.android.trace.impl.DatadogTracing
+import com.datadog.android.trace.impl.internal.DatadogTracingInternalToolkit.setTraceId128BitGenerationEnabled
 import com.datadog.android.trace.opentelemetry.internal.DatadogContextStorageWrapper
 import com.datadog.android.trace.opentelemetry.internal.executeIfJavaFunctionPackageExists
 import com.datadog.opentelemetry.trace.OtelTracerBuilder
@@ -93,13 +94,13 @@ class OtelTracerProvider internal constructor(
     ) {
         private val builderDelegate = DatadogTracing.newTracerBuilder(sdkCore)
             .withPartialFlushMinSpans(DEFAULT_PARTIAL_MIN_FLUSH)
-            .withIdGenerationStrategy("SECURE_RANDOM", true)
             .withTracingHeadersTypes(
                 setOf(
                     TracingHeaderType.DATADOG,
                     TracingHeaderType.TRACECONTEXT
                 )
             )
+            .also { setTraceId128BitGenerationEnabled(it) }
 
         private var serviceName: String = ""
             get() {

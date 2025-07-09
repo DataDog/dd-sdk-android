@@ -12,7 +12,7 @@ import com.datadog.android.trace.api.span.DatadogSpanBuilder
 import com.datadog.android.trace.api.span.DatadogSpanContext
 import com.datadog.android.trace.api.trace.DatadogTraceId
 import com.datadog.android.trace.api.tracer.DatadogTracer
-import com.datadog.android.trace.impl.internal.DatadogTracingInternal
+import com.datadog.android.trace.impl.internal.DatadogTracingInternalToolkit
 import fr.xgouchet.elmyr.Forge
 import okhttp3.Request
 import org.mockito.kotlin.any
@@ -61,7 +61,7 @@ internal fun DatadogPropagation.wheneverInjectCalledPassContextToHeaders(
 
 internal fun Forge.aDatadogTraceId(
     fakeString: String? = null
-) = DatadogTracingInternal.traceIdFactory.fromHex(fakeString ?: aStringMatching("[a-f0-9]{31}"))
+) = DatadogTracingInternalToolkit.traceIdConverter.fromHex(fakeString ?: aStringMatching("[a-f0-9]{31}"))
 
 internal fun Forge.newTraceSamplerMock(
     span: DatadogSpan = newSpanMock()

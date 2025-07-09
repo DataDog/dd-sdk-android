@@ -9,7 +9,6 @@ import androidx.annotation.FloatRange
 import androidx.annotation.IntRange
 import com.datadog.android.trace.TracingHeaderType
 import com.datadog.tools.annotation.NoOpImplementation
-import java.util.Properties
 
 /**
  * Builder interface for creating and configuring a [DatadogTracer] instance.
@@ -23,15 +22,6 @@ interface DatadogTracerBuilder {
      * @return An instance of [DatadogTracer] configured with the options provided in the builder.
      */
     fun build(): DatadogTracer
-
-    /**
-     * Configures the builder with the provided set of properties.
-     *
-     * @param properties The properties to configure the Datadog Tracer with. These properties could define
-     * specific behaviors or configurations that the tracer should utilize.
-     * @return The updated instance of [DatadogTracerBuilder] to allow method chaining.
-     */
-    fun withProperties(properties: Properties): DatadogTracerBuilder
 
     /**
      * Configures the builder with the specified set of tracing header types. Tracing headers
@@ -52,15 +42,6 @@ interface DatadogTracerBuilder {
      * @return The updated instance of [DatadogTracerBuilder] to allow method chaining.
      */
     fun withServiceName(serviceName: String): DatadogTracerBuilder
-
-    /**
-     * Configures the builder with a specific ID generation strategy.
-     *
-     * @param key The key representing the strategy to be used for generating IDs.
-     * @param traceId128BitGenerationEnabled A flag indicating whether 128-bit trace ID generation should be enabled.
-     * @return The updated instance of [DatadogTracerBuilder] to allow method chaining.
-     */
-    fun withIdGenerationStrategy(key: String, traceId128BitGenerationEnabled: Boolean): DatadogTracerBuilder
 
     /**
      * Sets the sample rate of spans.

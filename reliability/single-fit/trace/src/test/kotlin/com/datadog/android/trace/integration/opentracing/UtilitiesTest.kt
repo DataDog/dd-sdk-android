@@ -14,10 +14,11 @@ import com.datadog.android.tests.ktx.getString
 import com.datadog.android.trace.GlobalDatadogTracerHolder
 import com.datadog.android.trace.Trace
 import com.datadog.android.trace.TraceConfiguration
-import com.datadog.android.trace.api.span.clear
-import com.datadog.android.trace.api.span.setSpanLoggerMock
+import com.datadog.android.trace.api.clear
+import com.datadog.android.trace.api.setSpanLoggerMock
+import com.datadog.android.trace.api.toHexString
 import com.datadog.android.trace.impl.DatadogTracing
-import com.datadog.android.trace.impl.internal.DatadogTracingInternal
+import com.datadog.android.trace.impl.internal.DatadogTracingInternalToolkit
 import com.datadog.android.trace.integration.tests.elmyr.TraceIntegrationForgeConfigurator
 import com.datadog.android.trace.logErrorMessage
 import com.datadog.android.trace.logThrowable
@@ -63,7 +64,7 @@ class UtilitiesTest {
 
     @AfterEach
     fun `tear down`() {
-        DatadogTracing.clear()
+        DatadogTracingInternalToolkit.clear()
         GlobalDatadogTracerHolder.clear()
     }
 
@@ -86,7 +87,7 @@ class UtilitiesTest {
             mostSignificantTraceId = span.mostSignificant64BitsTraceId()
             spanId = span.spanIdAsHexString()
             Thread.sleep(OP_DURATION_MS)
-            DatadogTracing.spanLogger.log(fakeThrowable, span)
+            DatadogTracingInternalToolkit.spanLogger.log(fakeThrowable, span)
             span.finish()
         }
 
@@ -122,7 +123,7 @@ class UtilitiesTest {
     ) {
         // Given
         stubSdkCore.stubFeature(Feature.LOGS_FEATURE_NAME)
-        DatadogTracing.setSpanLoggerMock(stubSdkCore)
+        DatadogTracingInternalToolkit.setSpanLoggerMock(stubSdkCore)
         val testedTracer = DatadogTracing.newTracerBuilder(stubSdkCore).build()
 
         // When
@@ -137,7 +138,7 @@ class UtilitiesTest {
             traceId = span.traceId.toHexString()
             spanId = span.context().spanId
             Thread.sleep(OP_DURATION_MS)
-            DatadogTracing.spanLogger.logErrorMessage(fakeErrorMessage, span)
+            DatadogTracingInternalToolkit.spanLogger.logErrorMessage(fakeErrorMessage, span)
             span.finish()
         }
 
@@ -150,7 +151,7 @@ class UtilitiesTest {
         assertThat(event0.getString("spans[0].meta._dd.p.id")).isEqualTo(mostSignificantTraceId)
         assertThat(
             event0.getString("spans[0].span_id")
-        ).isEqualTo(DatadogTracingInternal.spanIdConverter.toHexStringPadded(spanId))
+        ).isEqualTo(DatadogTracingInternalToolkit.spanIdConverter.toHexStringPadded(spanId))
         assertThat(event0.getString("spans[0].service")).isEqualTo(stubSdkCore.getDatadogContext().service)
         assertThat(event0.getString("spans[0].meta.version")).isEqualTo(stubSdkCore.getDatadogContext().version)
         assertThat(event0.getString("spans[0].meta._dd.source")).isEqualTo(stubSdkCore.getDatadogContext().source)
@@ -227,7 +228,7 @@ class UtilitiesTest {
     ) {
         // Given
         stubSdkCore.stubFeature(Feature.LOGS_FEATURE_NAME)
-        DatadogTracing.setSpanLoggerMock(stubSdkCore)
+        DatadogTracingInternalToolkit.setSpanLoggerMock(stubSdkCore)
         val testedTracer = DatadogTracing.newTracerBuilder(stubSdkCore).build()
 
         // When
@@ -256,7 +257,7 @@ class UtilitiesTest {
         assertThat(
             event0.getString("spans[0].span_id")
         ).isEqualTo(
-            DatadogTracingInternal.spanIdConverter.toHexStringPadded(spanId)
+            DatadogTracingInternalToolkit.spanIdConverter.toHexStringPadded(spanId)
         )
         assertThat(event0.getString("spans[0].service")).isEqualTo(stubSdkCore.getDatadogContext().service)
         assertThat(event0.getString("spans[0].meta.version")).isEqualTo(stubSdkCore.getDatadogContext().version)

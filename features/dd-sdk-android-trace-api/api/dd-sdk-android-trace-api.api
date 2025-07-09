@@ -154,6 +154,9 @@ public abstract interface class com/datadog/android/trace/api/span/DatadogSpanLo
 	public abstract fun logErrorMessage (Ljava/lang/String;Lcom/datadog/android/trace/api/span/DatadogSpan;)V
 }
 
+public abstract interface class com/datadog/android/trace/api/span/DatadogSpanWriter {
+}
+
 public final class com/datadog/android/trace/api/span/NoOpDatadogSpanLogger : com/datadog/android/trace/api/span/DatadogSpanLogger {
 	public fun <init> ()V
 	public fun log (Ljava/lang/String;Lcom/datadog/android/trace/api/span/DatadogSpan;)V
@@ -163,14 +166,14 @@ public final class com/datadog/android/trace/api/span/NoOpDatadogSpanLogger : co
 }
 
 public abstract interface class com/datadog/android/trace/api/trace/DatadogTraceId {
-	public abstract fun toHexString ()Ljava/lang/String;
-	public abstract fun toLong ()J
 }
 
-public abstract interface class com/datadog/android/trace/api/trace/DatadogTraceIdFactory {
+public abstract interface class com/datadog/android/trace/api/trace/DatadogTraceIdConverter {
 	public abstract fun from (J)Lcom/datadog/android/trace/api/trace/DatadogTraceId;
 	public abstract fun from (Ljava/lang/String;)Lcom/datadog/android/trace/api/trace/DatadogTraceId;
 	public abstract fun fromHex (Ljava/lang/String;)Lcom/datadog/android/trace/api/trace/DatadogTraceId;
+	public abstract fun toHexString (Lcom/datadog/android/trace/api/trace/DatadogTraceId;)Ljava/lang/String;
+	public abstract fun toLong (Lcom/datadog/android/trace/api/trace/DatadogTraceId;)J
 	public abstract fun zero ()Lcom/datadog/android/trace/api/trace/DatadogTraceId;
 }
 

@@ -10,7 +10,7 @@ import com.datadog.android.trace.GlobalDatadogTracerHolder
 import com.datadog.android.trace.api.scope.DatadogScope
 import com.datadog.android.trace.api.span.DatadogSpan
 import com.datadog.android.trace.api.span.DatadogSpanBuilder
-import com.datadog.android.trace.api.span.clear
+import com.datadog.android.trace.api.clear
 import com.datadog.android.trace.api.tracer.DatadogTracer
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeExtension

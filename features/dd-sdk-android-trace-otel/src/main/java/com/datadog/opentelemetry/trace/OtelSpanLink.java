@@ -6,14 +6,13 @@
 
 package com.datadog.opentelemetry.trace;
 
-import static java.util.Objects.requireNonNull;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import com.datadog.android.trace.api.span.DatadogSpanLink;
 import com.datadog.android.trace.api.trace.DatadogTraceId;
-import com.datadog.android.trace.impl.internal.DatadogTracingInternal;
+import com.datadog.android.trace.impl.internal.DatadogTracingInternalToolkit;
 import com.datadog.opentelemetry.context.propagation.TraceStateHelper;
 
 import java.util.Collections;
@@ -35,8 +34,8 @@ public class OtelSpanLink implements DatadogSpanLink {
   }
 
   public OtelSpanLink(SpanContext spanContext, io.opentelemetry.api.common.Attributes attributes) {
-    traceId = DatadogTracingInternal.traceIdFactory.fromHex(spanContext.getTraceId());
-    spanId = DatadogTracingInternal.spanIdConverter.fromHex(spanContext.getSpanId());
+    traceId = DatadogTracingInternalToolkit.traceIdConverter.fromHex(spanContext.getTraceId());
+    spanId = DatadogTracingInternalToolkit.spanIdConverter.fromHex(spanContext.getSpanId());
     sampled = spanContext.isSampled();
     traceState = TraceStateHelper.encodeHeader(spanContext.getTraceState());
     this.attributes = convertAttributes(attributes);
@@ -112,8 +111,7 @@ public class OtelSpanLink implements DatadogSpanLink {
   }
 
   private static <T> void putArray(Map<String, String> attributes, String key, List<T> array) {
-    requireNonNull(key, "key must not be null");
-    if (array != null) {
+    if (key != null && array != null) {
       for (int index = 0; index < array.size(); index++) {
         Object value = array.get(index);
         if (value != null) {

@@ -29,6 +29,7 @@ import com.datadog.android.rum.tracking.ViewTrackingStrategy
 import com.datadog.android.trace.TracingHeaderType
 import com.datadog.android.trace.api.span.DatadogSpan
 import com.datadog.android.trace.api.tracer.DatadogTracer
+import com.datadog.android.trace.impl.internal.DatadogTracingInternalToolkit
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -178,7 +179,7 @@ open class DatadogInterceptor internal constructor(
             emptyMap<String, Any?>()
         } else {
             mapOf(
-                RumAttributes.TRACE_ID to span.context().traceId.toHexString(),
+                RumAttributes.TRACE_ID to DatadogTracingInternalToolkit.traceIdConverter.toHexString(span.context().traceId),
                 RumAttributes.SPAN_ID to span.context().spanId.toString(),
                 RumAttributes.RULE_PSR to (traceSampler.getSampleRate() ?: ZERO_SAMPLE_RATE) / ALL_IN_SAMPLE_RATE
             )

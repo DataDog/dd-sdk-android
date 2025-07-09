@@ -46,7 +46,7 @@ import com.datadog.android.telemetry.model.TelemetryDebugEvent
 import com.datadog.android.telemetry.model.TelemetryErrorEvent
 import com.datadog.android.telemetry.model.TelemetryUsageEvent
 import com.datadog.android.trace.GlobalDatadogTracerHolder
-import com.datadog.android.trace.api.span.clear
+import com.datadog.android.trace.api.clear
 import com.datadog.android.trace.api.tracer.DatadogTracer
 import com.datadog.tools.unit.forge.aThrowable
 import fr.xgouchet.elmyr.Forge

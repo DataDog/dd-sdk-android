@@ -13,18 +13,5 @@ import com.datadog.tools.annotation.NoOpImplementation
  * This interface is typically used with a factory (`DatadogTraceIdFactory`) to generate or retrieve trace IDs.
  */
 @NoOpImplementation
-interface DatadogTraceId {
-    /**
-     * Converts the Datadog trace ID to its numeric representation as a `Long`.
-     *
-     * @return the numeric value of the trace ID as a `Long`.
-     */
-    fun toLong(): Long
+interface DatadogTraceId
 
-    /**
-     * Converts the current trace ID into its hexadecimal string representation.
-     *
-     * @return the hexadecimal string representation of the trace ID.
-     */
-    fun toHexString(): String
-}

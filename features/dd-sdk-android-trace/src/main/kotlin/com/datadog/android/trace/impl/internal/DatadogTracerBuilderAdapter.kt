@@ -5,7 +5,6 @@
  */
 package com.datadog.android.trace.impl.internal
 
-import androidx.annotation.VisibleForTesting
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.trace.TracingHeaderType
@@ -19,16 +18,14 @@ import java.util.Properties
 
 internal class DatadogTracerBuilderAdapter(
     private val sdkCore: FeatureSdkCore,
-    writer: Writer?,
+    writer: Writer,
     defaultServiceName: String
 ) : DatadogTracerBuilder {
 
-    private var properties: Properties? = null
     private val internalLogger: InternalLogger
         get() = sdkCore.internalLogger
 
-    @VisibleForTesting
-    internal val delegate = CoreTracer.CoreTracerBuilder(internalLogger)
+    private val delegate = CoreTracer.CoreTracerBuilder(internalLogger).writer(writer)
     private var serviceName: String = defaultServiceName
     private var sampleRate: Double? = null
     private var bundleWithRumEnabled: Boolean = true
@@ -40,20 +37,8 @@ internal class DatadogTracerBuilderAdapter(
         TracingHeaderType.TRACECONTEXT
     )
 
-    init {
-        if (writer != null) {
-            delegate.writer(writer)
-        } else {
-            internalLogger.log(
-                InternalLogger.Level.ERROR,
-                InternalLogger.Target.USER,
-                { MESSAGE_WRITER_NOT_PROVIDED }
-            )
-        }
-    }
-
     override fun build(): DatadogTracer {
-        val coreTracer = delegate.withProperties(properties ?: properties()).build()
+        val coreTracer = delegate.withProperties(properties()).build()
         val datadogTracer = DatadogTracerAdapter(sdkCore, coreTracer, bundleWithRumEnabled)
         datadogTracer.addScopeListener(DataTracePropagationScopeListener(sdkCore, datadogTracer))
 
@@ -62,11 +47,6 @@ internal class DatadogTracerBuilderAdapter(
 
     override fun withServiceName(serviceName: String) = apply {
         this.serviceName = serviceName
-    }
-
-    override fun withProperties(properties: Properties) = apply {
-        this.properties = properties
-        delegate.withProperties(properties)
     }
 
     override fun withTraceLimit(traceRateLimit: Int) = apply {
@@ -97,16 +77,16 @@ internal class DatadogTracerBuilderAdapter(
         this.partialFlushThreshold = partialFlushThreshold
     }
 
-    override fun withIdGenerationStrategy(key: String, traceId128BitGenerationEnabled: Boolean) = apply {
-        delegate.idGenerationStrategy(IdGenerationStrategy.fromName(key, traceId128BitGenerationEnabled))
-    }
-
     override fun withTag(key: String, value: String) = apply {
         globalTags[key] = value
     }
 
     override fun setBundleWithRumEnabled(enabled: Boolean) = apply {
         bundleWithRumEnabled = enabled
+    }
+
+    internal fun setTraceId128BitGenerationEnabled(traceId128BitGenerationEnabled: Boolean) = apply {
+        delegate.idGenerationStrategy(IdGenerationStrategy.fromName("SECURE_RANDOM", traceId128BitGenerationEnabled))
     }
 
     private fun properties(): Properties {
@@ -134,11 +114,6 @@ internal class DatadogTracerBuilderAdapter(
     }
 
     companion object {
-        internal const val MESSAGE_WRITER_NOT_PROVIDED =
-            "You're trying to create an DatadogTracerBuilder instance, " +
-                "but either the SDK was not initialized or the Tracing feature was " +
-                "not registered. No tracing data will be sent."
-
         internal const val DEFAULT_SAMPLE_RATE = 100.0
         internal const val DEFAULT_PARTIAL_MIN_FLUSH = 5
         internal const val DEFAULT_URL_AS_RESOURCE_NAME = false

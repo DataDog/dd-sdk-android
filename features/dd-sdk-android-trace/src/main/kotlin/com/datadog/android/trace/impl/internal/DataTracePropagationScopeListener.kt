@@ -19,7 +19,7 @@ internal class DataTracePropagationScopeListener(
         val activeSpanContext = datadogTracer.activeSpan()?.context()
         if (activeSpanContext != null) {
             val activeSpanId = activeSpanContext.spanId.toString()
-            val activeTraceId = activeSpanContext.traceId.toHexString()
+            val activeTraceId = DatadogTracingInternalToolkit.traceIdConverter.toHexString(activeSpanContext.traceId)
             sdkCore.addActiveTraceToContext(activeTraceId, activeSpanId)
         }
     }

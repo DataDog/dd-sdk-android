@@ -6,7 +6,7 @@ public final class com/datadog/android/trace/GlobalDatadogTracerHolder {
 }
 
 public abstract interface class com/datadog/android/trace/InternalCoreWriterProvider {
-	public abstract fun getCoreTracerWriter ()Lcom/datadog/trace/common/writer/Writer;
+	public abstract fun getCoreTracerWriter ()Lcom/datadog/android/trace/api/span/DatadogSpanWriter;
 }
 
 public final class com/datadog/android/trace/SpanExtKt {
@@ -47,16 +47,24 @@ public abstract interface class com/datadog/android/trace/event/SpanEventMapper 
 
 public final class com/datadog/android/trace/impl/DatadogTracing {
 	public static final field INSTANCE Lcom/datadog/android/trace/impl/DatadogTracing;
-	public final fun getSpanLogger ()Lcom/datadog/android/trace/api/span/DatadogSpanLogger;
 	public final fun newTracerBuilder (Lcom/datadog/android/api/SdkCore;)Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;
 	public static synthetic fun newTracerBuilder$default (Lcom/datadog/android/trace/impl/DatadogTracing;Lcom/datadog/android/api/SdkCore;ILjava/lang/Object;)Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;
 }
 
-public final class com/datadog/android/trace/impl/internal/DatadogTracingInternal {
-	public static final field INSTANCE Lcom/datadog/android/trace/impl/internal/DatadogTracingInternal;
+public final class com/datadog/android/trace/impl/internal/DatadogTracingInternalToolkit {
+	public static final field INSTANCE Lcom/datadog/android/trace/impl/internal/DatadogTracingInternalToolkit;
 	public static final field spanIdConverter Lcom/datadog/android/trace/api/span/DatadogSpanIdConverter;
-	public static final field traceIdFactory Lcom/datadog/android/trace/api/trace/DatadogTraceIdFactory;
+	public static final field traceIdConverter Lcom/datadog/android/trace/api/trace/DatadogTraceIdConverter;
+	public final fun getSpanLogger ()Lcom/datadog/android/trace/api/span/DatadogSpanLogger;
 	public final fun setTracingSamplingPriorityIfNecessary (Lcom/datadog/android/trace/api/span/DatadogSpanContext;)V
+}
+
+public final class com/datadog/android/trace/impl/internal/DatadogTracingInternalToolkit$ErrorMessages {
+	public static final field DEFAULT_SERVICE_NAME_IS_MISSING_ERROR_MESSAGE Ljava/lang/String;
+	public static final field INSTANCE Lcom/datadog/android/trace/impl/internal/DatadogTracingInternalToolkit$ErrorMessages;
+	public static final field MESSAGE_WRITER_NOT_PROVIDED Ljava/lang/String;
+	public static final field TRACING_NOT_ENABLED_ERROR_MESSAGE Ljava/lang/String;
+	public static final field WRITER_PROVIDER_INTERFACE_NOT_IMPLEMENTED_ERROR_MESSAGE Ljava/lang/String;
 }
 
 public final class com/datadog/android/trace/internal/SpanAttributes {

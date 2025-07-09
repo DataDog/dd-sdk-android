@@ -28,7 +28,7 @@ import com.datadog.android.sessionreplay.SessionReplayConfiguration
 import com.datadog.android.trace.GlobalDatadogTracerHolder
 import com.datadog.android.trace.Trace
 import com.datadog.android.trace.TraceConfiguration
-import com.datadog.android.trace.api.span.clear
+import com.datadog.android.trace.api.clear
 import com.datadog.android.trace.api.tracer.DatadogTracer
 import com.datadog.android.trace.impl.DatadogTracing
 import fr.xgouchet.elmyr.junit4.ForgeRule

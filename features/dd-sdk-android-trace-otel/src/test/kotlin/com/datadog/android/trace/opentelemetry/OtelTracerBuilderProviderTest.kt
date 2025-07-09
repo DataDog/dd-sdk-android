@@ -15,15 +15,17 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.internal.concurrent.CompletableFuture
 import com.datadog.android.trace.InternalCoreWriterProvider
 import com.datadog.android.trace.api.DatadogTracingConstants
+import com.datadog.android.trace.api.forceSamplingDecision
+import com.datadog.android.trace.api.partialFlushMinSpans
+import com.datadog.android.trace.api.resourceName
+import com.datadog.android.trace.api.serviceName
 import com.datadog.android.trace.api.span.DatadogSpan
 import com.datadog.android.trace.api.span.DatadogSpanContext
-import com.datadog.android.trace.api.span.forceSamplingDecision
-import com.datadog.android.trace.api.span.partialFlushMinSpans
-import com.datadog.android.trace.api.span.resourceName
-import com.datadog.android.trace.api.span.serviceName
+import com.datadog.android.trace.api.span.DatadogSpanWriter
+import com.datadog.android.trace.api.toHexString
 import com.datadog.android.trace.api.tracer.DatadogTracer
 import com.datadog.android.trace.api.tracer.DatadogTracerBuilder
-import com.datadog.android.trace.impl.TracingErrorMessages
+import com.datadog.android.trace.impl.internal.DatadogTracingInternalToolkit
 import com.datadog.android.trace.internal.SpanAttributes
 import com.datadog.android.trace.opentelemetry.utils.forge.Configurator
 import com.datadog.android.trace.opentelemetry.utils.verifyLog
@@ -76,11 +78,9 @@ internal class OtelTracerBuilderProviderTest {
     lateinit var fakeServiceName: String
 
     val mockDatadogTracerBuilder: DatadogTracerBuilder = mock {
-        on { withProperties(any()) } doReturn it
         on { withServiceName(any()) } doReturn it
         on { withTracingHeadersTypes(any()) } doReturn it
         on { withPartialFlushMinSpans(any()) } doReturn it
-        on { withIdGenerationStrategy(any(), any()) } doReturn it
     }
 
     @Mock
@@ -154,7 +154,7 @@ internal class OtelTracerBuilderProviderTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             InternalLogger.Target.USER,
-            TracingErrorMessages.MESSAGE_WRITER_NOT_PROVIDED
+            DatadogTracingInternalToolkit.ErrorMessages.MESSAGE_WRITER_NOT_PROVIDED
         )
     }
 
@@ -662,18 +662,10 @@ internal class OtelTracerBuilderProviderTest {
     // endregion
 
     class StubTracingFeature : Feature, InternalCoreWriterProvider {
-        override val name: String
-            get() = ""
-
-        override fun onInitialize(appContext: Context) {
-        }
-
-        override fun onStop() {
-        }
-
-        override fun getCoreTracerWriter(): com.datadog.trace.common.writer.Writer {
-            TODO("Not yet implemented")
-        }
+        override val name: String = ""
+        override fun onStop() = Unit
+        override fun onInitialize(appContext: Context) = Unit
+        override fun getCoreTracerWriter(): DatadogSpanWriter = mock()
     }
 
     companion object {

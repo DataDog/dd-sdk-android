@@ -8,6 +8,7 @@ package com.datadog.android.okhttp.internal.utils
 
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.trace.api.span.DatadogSpan
+import com.datadog.android.trace.impl.internal.DatadogTracingInternalToolkit
 
 private const val HEX_RADIX = 16
 
@@ -24,6 +25,6 @@ internal object SpanSamplingIdProvider {
             ?.toLongOrNull(HEX_RADIX)
             ?.toULong()
 
-        return sessionIdToken ?: context.traceId.toLong().toULong()
+        return sessionIdToken ?: DatadogTracingInternalToolkit.traceIdConverter.toLong(context.traceId).toULong()
     }
 }
