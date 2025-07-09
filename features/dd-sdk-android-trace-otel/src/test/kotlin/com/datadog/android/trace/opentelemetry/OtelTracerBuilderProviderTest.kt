@@ -17,6 +17,7 @@ import com.datadog.android.trace.InternalCoreWriterProvider
 import com.datadog.android.trace.api.DatadogTracingConstants
 import com.datadog.android.trace.api.span.DatadogSpan
 import com.datadog.android.trace.api.span.DatadogSpanContext
+import com.datadog.android.trace.api.span.forceSamplingDecision
 import com.datadog.android.trace.api.span.partialFlushMinSpans
 import com.datadog.android.trace.api.span.resourceName
 import com.datadog.android.trace.api.span.serviceName
@@ -75,8 +76,6 @@ internal class OtelTracerBuilderProviderTest {
     lateinit var fakeServiceName: String
 
     val mockDatadogTracerBuilder: DatadogTracerBuilder = mock {
-        on { withSampler(any()) } doReturn it
-        on { withSampler(any()) } doReturn it
         on { withProperties(any()) } doReturn it
         on { withServiceName(any()) } doReturn it
         on { withTracingHeadersTypes(any()) } doReturn it
@@ -672,8 +671,8 @@ internal class OtelTracerBuilderProviderTest {
         override fun onStop() {
         }
 
-        override fun getCoreTracerWriter(): DatadogSpanWriter {
-            return mock()
+        override fun getCoreTracerWriter(): com.datadog.trace.common.writer.Writer {
+            TODO("Not yet implemented")
         }
     }
 

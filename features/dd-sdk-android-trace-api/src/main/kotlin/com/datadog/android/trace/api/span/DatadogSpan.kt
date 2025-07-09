@@ -64,7 +64,7 @@ interface DatadogSpan {
     /**
      * Represents the start time of the span in nanoseconds.
      */
-    val startTime: Long
+    val startTimeNano: Long
 
     /**
      * Refers to the local root span within a trace hierarchy.
@@ -113,7 +113,6 @@ interface DatadogSpan {
      * and capturing the provided throwable for additional context.
      *
      * @param throwable The throwable to associate with the current span.
-     *                  This provides error details such as stack trace and message.
      */
     fun addThrowable(throwable: Throwable)
 
@@ -121,8 +120,7 @@ interface DatadogSpan {
      * Associates a throwable with the current span, marking it as an error
      * and capturing the provided throwable for additional context with a specified error priority.
      *
-     * @param throwable The throwable to associate with the current span. It provides
-     *                  error details such as stack trace and message.
+     * @param throwable The throwable to associate with the current span.
      * @param errorPriority The priority level of the error, represented as a byte.
      */
     fun addThrowable(throwable: Throwable, errorPriority: Byte)
@@ -174,12 +172,4 @@ interface DatadogSpan {
      * @param value The value of the metric to be set for the specified key.
      */
     fun setMetric(key: String, value: Int)
-
-    /**
-     * Forces the sampling decision for the current span.
-     * This method overrides any default or previously set sampling priority,
-     * ensuring that the span will be included or excluded from the trace data
-     * based on specific internal logic.
-     */
-    fun forceSamplingDecision()
 }

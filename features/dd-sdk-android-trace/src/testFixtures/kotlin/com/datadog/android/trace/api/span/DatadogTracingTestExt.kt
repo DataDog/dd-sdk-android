@@ -56,6 +56,10 @@ fun DatadogSpan.resolveMetrics(): JsonElement {
     return mapper.resolveMetrics(ddSpan).toJson()
 }
 
+fun DatadogSpan.forceSamplingDecision() {
+    (this as DatadogSpanAdapter).delegate.forceSamplingDecision()
+}
+
 fun GlobalDatadogTracerHolder.clear() {
     instance = null
 }

@@ -43,12 +43,6 @@ interface DatadogSpanContext {
     fun setSamplingPriority(samplingPriority: Int): Boolean
 
     /**
-     * Sets the tracing sampling priority if it is necessary.
-     */
-    @InternalApi
-    fun setTracingSamplingPriorityIfNecessary()
-
-    /**
      * Sets a numerical metric associated with the span.
      *
      * @param key The name of the metric to be set.

@@ -70,7 +70,7 @@ interface DatadogTracerBuilder {
 
     /**
      * Sets the trace rate limit. This is the maximum number of traces per second that will be
-     * accepted. Please not that this property is used in conjunction with the sample rate. If no sample rate
+     * accepted. Please note that this property is used in conjunction with the sample rate. If no sample rate
      * is provided this property and its related logic will be ignored.
      * @param traceRateLimit the trace rate limit as a value between 1 and Int.MAX_VALUE (default is Int.MAX_VALUE)
      */

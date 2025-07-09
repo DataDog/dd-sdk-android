@@ -66,23 +66,9 @@ public final class com/datadog/android/trace/api/DatadogTracingConstants$TracerC
 }
 
 public abstract interface class com/datadog/android/trace/api/propagation/DatadogPropagation {
-	public abstract fun createExtractedContext (Ljava/lang/String;Ljava/lang/String;I)Lcom/datadog/android/trace/api/span/DatadogSpanContext;
 	public abstract fun extract (Ljava/lang/Object;Lkotlin/jvm/functions/Function2;)Lcom/datadog/android/trace/api/span/DatadogSpanContext;
-	public abstract fun inject (Lcom/datadog/android/trace/api/span/DatadogSpan;Ljava/lang/Object;Lkotlin/jvm/functions/Function3;)V
 	public abstract fun inject (Lcom/datadog/android/trace/api/span/DatadogSpanContext;Ljava/lang/Object;Lkotlin/jvm/functions/Function3;)V
 	public abstract fun isExtractedContext (Lcom/datadog/android/trace/api/span/DatadogSpanContext;)Z
-}
-
-public final class com/datadog/android/trace/api/propagation/NoOpDatadogPropagation : com/datadog/android/trace/api/propagation/DatadogPropagation {
-	public fun <init> ()V
-	public fun createExtractedContext (Ljava/lang/String;Ljava/lang/String;I)Lcom/datadog/android/trace/api/span/DatadogSpanContext;
-	public fun extract (Ljava/lang/Object;Lkotlin/jvm/functions/Function2;)Lcom/datadog/android/trace/api/span/DatadogSpanContext;
-	public fun inject (Lcom/datadog/android/trace/api/span/DatadogSpan;Ljava/lang/Object;Lkotlin/jvm/functions/Function3;)V
-	public fun inject (Lcom/datadog/android/trace/api/span/DatadogSpanContext;Ljava/lang/Object;Lkotlin/jvm/functions/Function3;)V
-	public fun isExtractedContext (Lcom/datadog/android/trace/api/span/DatadogSpanContext;)Z
-}
-
-public abstract interface class com/datadog/android/trace/api/sampling/DatadogTracerSampler {
 }
 
 public abstract interface class com/datadog/android/trace/api/scope/DataScopeListener {
@@ -101,7 +87,6 @@ public abstract interface class com/datadog/android/trace/api/span/DatadogSpan {
 	public abstract fun drop ()V
 	public abstract fun finish ()V
 	public abstract fun finish (J)V
-	public abstract fun forceSamplingDecision ()V
 	public abstract fun getDurationNano ()J
 	public abstract fun getLocalRootSpan ()Lcom/datadog/android/trace/api/span/DatadogSpan;
 	public abstract fun getOperationName ()Ljava/lang/String;
@@ -109,7 +94,7 @@ public abstract interface class com/datadog/android/trace/api/span/DatadogSpan {
 	public abstract fun getResourceName ()Ljava/lang/String;
 	public abstract fun getSamplingPriority ()Ljava/lang/Integer;
 	public abstract fun getServiceName ()Ljava/lang/String;
-	public abstract fun getStartTime ()J
+	public abstract fun getStartTimeNano ()J
 	public abstract fun getTag (Ljava/lang/String;)Ljava/lang/Object;
 	public abstract fun getTraceId ()Lcom/datadog/android/trace/api/trace/DatadogTraceId;
 	public abstract fun isError ()Ljava/lang/Boolean;
@@ -147,7 +132,6 @@ public abstract interface class com/datadog/android/trace/api/span/DatadogSpanCo
 	public abstract fun getTraceId ()Lcom/datadog/android/trace/api/trace/DatadogTraceId;
 	public abstract fun setMetric (Ljava/lang/CharSequence;D)V
 	public abstract fun setSamplingPriority (I)Z
-	public abstract fun setTracingSamplingPriorityIfNecessary ()V
 }
 
 public abstract interface class com/datadog/android/trace/api/span/DatadogSpanIdConverter {
@@ -168,9 +152,6 @@ public abstract interface class com/datadog/android/trace/api/span/DatadogSpanLo
 	public abstract fun log (Ljava/lang/Throwable;Lcom/datadog/android/trace/api/span/DatadogSpan;)V
 	public abstract fun log (Ljava/util/Map;Lcom/datadog/android/trace/api/span/DatadogSpan;)V
 	public abstract fun logErrorMessage (Ljava/lang/String;Lcom/datadog/android/trace/api/span/DatadogSpan;)V
-}
-
-public abstract interface class com/datadog/android/trace/api/span/DatadogSpanWriter {
 }
 
 public final class com/datadog/android/trace/api/span/NoOpDatadogSpanLogger : com/datadog/android/trace/api/span/DatadogSpanLogger {
@@ -214,7 +195,6 @@ public abstract interface class com/datadog/android/trace/api/tracer/DatadogTrac
 	public abstract fun withPartialFlushMinSpans (I)Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;
 	public abstract fun withProperties (Ljava/util/Properties;)Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;
 	public abstract fun withSampleRate (D)Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;
-	public abstract fun withSampler (Lcom/datadog/android/trace/api/sampling/DatadogTracerSampler;)Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;
 	public abstract fun withServiceName (Ljava/lang/String;)Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;
 	public abstract fun withTag (Ljava/lang/String;Ljava/lang/String;)Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;
 	public abstract fun withTraceLimit (I)Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;
@@ -240,7 +220,6 @@ public final class com/datadog/android/trace/api/tracer/NoOpDatadogTracerBuilder
 	public fun withPartialFlushMinSpans (I)Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;
 	public fun withProperties (Ljava/util/Properties;)Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;
 	public fun withSampleRate (D)Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;
-	public fun withSampler (Lcom/datadog/android/trace/api/sampling/DatadogTracerSampler;)Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;
 	public fun withServiceName (Ljava/lang/String;)Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;
 	public fun withTag (Ljava/lang/String;Ljava/lang/String;)Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;
 	public fun withTraceLimit (I)Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;

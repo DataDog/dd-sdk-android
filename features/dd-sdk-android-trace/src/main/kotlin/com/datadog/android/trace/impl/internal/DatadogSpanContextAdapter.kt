@@ -29,7 +29,7 @@ internal class DatadogSpanContextAdapter(internal val delegate: AgentSpan.Contex
         ddSpanContext?.setMetric(key, value)
     }
 
-    override fun setTracingSamplingPriorityIfNecessary() {
+    internal fun setTracingSamplingPriorityIfNecessary() {
         (delegate.trace as? PendingTrace)?.setSamplingPriorityIfNecessary()
     }
 }

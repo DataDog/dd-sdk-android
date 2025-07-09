@@ -7,18 +7,11 @@
 package com.datadog.android.trace.impl.internal
 
 import com.datadog.android.trace.api.propagation.DatadogPropagation
-import com.datadog.android.trace.api.span.DatadogSpan
 import com.datadog.android.trace.api.span.DatadogSpanContext
-import com.datadog.trace.api.DDSpanId
-import com.datadog.trace.api.DDTraceId
 import com.datadog.trace.bootstrap.instrumentation.api.AgentPropagation
 import com.datadog.trace.core.propagation.ExtractedContext
 
 internal class DatadogPropagationAdapter(private val delegate: AgentPropagation) : DatadogPropagation {
-    override fun <C> inject(span: DatadogSpan, carrier: C, setter: (carrier: C, key: String, value: String) -> Unit) {
-        if (span !is DatadogSpanAdapter) return
-        delegate.inject(span.delegate, carrier, setter)
-    }
 
     override fun <C> inject(
         context: DatadogSpanContext,
@@ -41,19 +34,4 @@ internal class DatadogPropagationAdapter(private val delegate: AgentPropagation)
         if (context !is DatadogSpanContextAdapter) return false
         return context.delegate is ExtractedContext
     }
-
-    override fun createExtractedContext(
-        traceId: String,
-        spanId: String,
-        samplingPriority: Int
-    ): DatadogSpanContext = DatadogSpanContextAdapter(
-        ExtractedContext(
-            DDTraceId.fromHexOrDefault(traceId, DDTraceId.ZERO),
-            DDSpanId.fromHexOrDefault(spanId, DDSpanId.ZERO),
-            samplingPriority,
-            null,
-            null,
-            null
-        )
-    )
 }

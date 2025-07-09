@@ -92,9 +92,4 @@ public class OtelExtractedContext implements DatadogSpanContext {
     public void setMetric(@Nullable CharSequence key, double value) {
         // Do nothing
     }
-
-    @Override
-    public void setTracingSamplingPriorityIfNecessary() {
-        // Do nothing
-    }
 }

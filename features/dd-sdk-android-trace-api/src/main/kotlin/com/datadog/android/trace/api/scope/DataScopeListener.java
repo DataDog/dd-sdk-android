@@ -9,9 +9,7 @@ package com.datadog.android.trace.api.scope;
 /** Hooks for scope activation */
 public interface DataScopeListener {
   /**
-   * Called just after a scope becomes the active scope
-   * May be called multiple times. When a scope is initially created, or after a child scope is
-   * deactivated.
+   * Called just after a scope becomes the active scope.
    */
   void afterScopeActivated();
 

@@ -6,7 +6,7 @@ public final class com/datadog/android/trace/GlobalDatadogTracerHolder {
 }
 
 public abstract interface class com/datadog/android/trace/InternalCoreWriterProvider {
-	public abstract fun getCoreTracerWriter ()Lcom/datadog/android/trace/api/span/DatadogSpanWriter;
+	public abstract fun getCoreTracerWriter ()Lcom/datadog/trace/common/writer/Writer;
 }
 
 public final class com/datadog/android/trace/SpanExtKt {
@@ -56,6 +56,7 @@ public final class com/datadog/android/trace/impl/internal/DatadogTracingInterna
 	public static final field INSTANCE Lcom/datadog/android/trace/impl/internal/DatadogTracingInternal;
 	public static final field spanIdConverter Lcom/datadog/android/trace/api/span/DatadogSpanIdConverter;
 	public static final field traceIdFactory Lcom/datadog/android/trace/api/trace/DatadogTraceIdFactory;
+	public final fun setTracingSamplingPriorityIfNecessary (Lcom/datadog/android/trace/api/span/DatadogSpanContext;)V
 }
 
 public final class com/datadog/android/trace/internal/SpanAttributes {

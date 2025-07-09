@@ -134,7 +134,7 @@ internal abstract class TracesTest {
             )
             .hasField(
                 START_TIMESTAMP_KEY,
-                span.startTime,
+                span.startTimeNano,
                 Offset.offset(TimeUnit.MINUTES.toNanos(1))
             )
             .hasField(DURATION_KEY, span.durationNano)

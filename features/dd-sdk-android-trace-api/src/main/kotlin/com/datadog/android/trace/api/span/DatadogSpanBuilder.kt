@@ -25,7 +25,6 @@ interface DatadogSpanBuilder {
 
     /**
      * Specifies the origin of the span.
-     * The origin provides metadata about the context or source where the span was created.
      *
      * @param origin The origin string to associate with the span. Can be nullable.
      * @return The current instance of [DatadogSpanBuilder] to allow method chaining.
@@ -34,8 +33,6 @@ interface DatadogSpanBuilder {
 
     /**
      * Adds a tag to the span with the specified key and a nullable double value.
-     * Tags are used to add contextual information to spans, which can later be
-     * used for filtering, grouping, or analyzing spans in trace data.
      *
      * @param key The key identifying the tag. Cannot be null.
      * @param value The value associated with the tag. Can be null.
@@ -45,8 +42,6 @@ interface DatadogSpanBuilder {
 
     /**
      * Adds a tag to the span with the specified key and a nullable long value.
-     * Tags are used to provide contextual information, which can later be
-     * used for filtering, grouping, or analyzing spans in trace data.
      *
      * @param key The key identifying the tag. Must not be null.
      * @param value The nullable long value associated with the tag.
@@ -56,8 +51,6 @@ interface DatadogSpanBuilder {
 
     /**
      * Adds a tag to the span with the specified key and a nullable value of any type.
-     * Tags provide additional context to spans, which can later be used for filtering,
-     * grouping, or analyzing trace data.
      *
      * @param key The key identifying the tag. Cannot be null.
      * @param value The nullable value associated with the tag.
@@ -66,8 +59,7 @@ interface DatadogSpanBuilder {
     fun withTag(key: String, value: Any?): DatadogSpanBuilder
 
     /**
-     * Specifies the resource name of the span. The resource name is used to describe
-     * the operation or endpoint associated with the span.
+     * Specifies the resource name of the span.
      *
      * @param resourceName The resource name to associate with the span.
      * @return The current instance of [DatadogSpanBuilder] to allow method chaining.
@@ -76,7 +68,6 @@ interface DatadogSpanBuilder {
 
     /**
      * Sets the parent context for the span being built.
-     * This allows associating the new span with a parent span, enabling distributed tracing.
      *
      * @param parentContext The parent context to associate with the span. Can be null.
      * @return The current instance of [DatadogSpanBuilder] to enable method chaining.

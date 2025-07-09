@@ -22,7 +22,7 @@ internal class DatadogSpanAdapter(internal val delegate: AgentSpan) : DatadogSpa
 
     override val durationNano: Long get() = delegate.durationNano
 
-    override val startTime: Long get() = delegate.startTime
+    override val startTimeNano: Long get() = delegate.startTime
 
     override val localRootSpan: DatadogSpan? get() = delegate.localRootSpan?.let { DatadogSpanAdapter(it) }
 
@@ -93,9 +93,5 @@ internal class DatadogSpanAdapter(internal val delegate: AgentSpan) : DatadogSpa
 
     override fun addThrowable(throwable: Throwable, errorPriority: Byte) {
         delegate.addThrowable(throwable)
-    }
-
-    override fun forceSamplingDecision() {
-        delegate.forceSamplingDecision()
     }
 }

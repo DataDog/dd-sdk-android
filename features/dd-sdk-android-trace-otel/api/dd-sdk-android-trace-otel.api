@@ -57,7 +57,6 @@ public class com/datadog/opentelemetry/trace/OtelExtractedContext : com/datadog/
 	public fun getTraceId ()Lcom/datadog/android/trace/api/trace/DatadogTraceId;
 	public fun setMetric (Ljava/lang/CharSequence;D)V
 	public fun setSamplingPriority (I)Z
-	public fun setTracingSamplingPriorityIfNecessary ()V
 }
 
 public class com/datadog/opentelemetry/trace/OtelSpan : io/opentelemetry/api/trace/Span {

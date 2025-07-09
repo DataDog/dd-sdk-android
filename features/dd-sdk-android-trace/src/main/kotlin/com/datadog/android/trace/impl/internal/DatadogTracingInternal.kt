@@ -6,6 +6,7 @@
 package com.datadog.android.trace.impl.internal
 
 import com.datadog.android.lint.InternalApi
+import com.datadog.android.trace.api.span.DatadogSpanContext
 import com.datadog.android.trace.api.span.DatadogSpanIdConverter
 import com.datadog.android.trace.api.trace.DatadogTraceIdFactory
 
@@ -22,11 +23,21 @@ object DatadogTracingInternal {
      * when working with the Datadog SDK.
      */
     @JvmField
+    @InternalApi
     val spanIdConverter: DatadogSpanIdConverter = DatadogSpanIdConverterAdapter
 
     /**
      * A factory instance for creating and working with [com.datadog.android.trace.api.trace.DatadogTraceId] objects.
      */
     @JvmField
+    @InternalApi
     val traceIdFactory: DatadogTraceIdFactory = DatadogTraceIdFactoryAdapter
+
+    /**
+     * Sets the tracing sampling priority if it is necessary.
+     */
+    @InternalApi
+    fun setTracingSamplingPriorityIfNecessary(context: DatadogSpanContext) {
+        (context as? DatadogSpanContextAdapter)?.setTracingSamplingPriorityIfNecessary()
+    }
 }

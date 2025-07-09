@@ -29,6 +29,7 @@ import com.datadog.android.trace.api.span.DatadogSpan
 import com.datadog.android.trace.api.span.DatadogSpanContext
 import com.datadog.android.trace.api.tracer.DatadogTracer
 import com.datadog.android.trace.impl.DatadogTracing
+import com.datadog.android.trace.impl.internal.DatadogTracingInternal
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -324,7 +325,7 @@ internal constructor(
         return when {
             headerSamplingPriority != null -> headerSamplingPriority
             datadogSpan != null -> {
-                datadogSpan.context().setTracingSamplingPriorityIfNecessary()
+                DatadogTracingInternal.setTracingSamplingPriorityIfNecessary(datadogSpan.context())
                 datadogSpan.context().samplingPriority > 0
             }
             else -> null
@@ -538,7 +539,7 @@ internal constructor(
                 span.context(),
                 tracedRequestBuilder
             ) { carrier: Request.Builder, key: String, value: String ->
-                tracedRequestBuilder.removeHeader(key)
+                carrier.removeHeader(key)
                 when (key) {
                     DATADOG_SAMPLING_PRIORITY_HEADER,
                     DATADOG_LEAST_SIGNIFICANT_64_BITS_TRACE_ID_HEADER,
