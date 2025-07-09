@@ -21,6 +21,7 @@ import com.datadog.android.trace.impl.internal.DatadogTracingInternalToolkit.Err
 import com.datadog.android.trace.impl.internal.DatadogTracingInternalToolkit.ErrorMessages.TRACING_NOT_ENABLED_ERROR_MESSAGE
 import com.datadog.android.trace.impl.internal.DatadogTracingInternalToolkit.ErrorMessages.WRITER_PROVIDER_INTERFACE_NOT_IMPLEMENTED_ERROR_MESSAGE
 import com.datadog.trace.common.writer.NoOpWriter
+import com.datadog.trace.core.CoreTracer
 
 /**
  * Object responsible for providing tracing capabilities in the Datadog SDK.
@@ -74,8 +75,8 @@ object DatadogTracing {
 
             DatadogTracerBuilderAdapter(
                 sdkCore = sdkCore,
-                writer = writer ?: NoOpWriter(),
-                defaultServiceName = sdkCore.service
+                serviceName = sdkCore.service,
+                delegate = CoreTracer.CoreTracerBuilder(sdkCore.internalLogger).writer(writer ?: NoOpWriter()),
             )
         }
     }

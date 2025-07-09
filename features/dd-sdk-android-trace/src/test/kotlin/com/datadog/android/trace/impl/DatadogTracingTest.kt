@@ -12,7 +12,10 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.trace.InternalCoreWriterProvider
 import com.datadog.android.trace.impl.internal.DatadogSpanWriterWrapper
 import com.datadog.android.trace.impl.internal.DatadogTracerAdapter
+import com.datadog.android.trace.impl.internal.DatadogTracingInternalToolkit
 import com.datadog.android.trace.impl.internal.DatadogTracingInternalToolkit.ErrorMessages.DEFAULT_SERVICE_NAME_IS_MISSING_ERROR_MESSAGE
+import com.datadog.android.trace.impl.internal.DatadogTracingInternalToolkit.ErrorMessages.MESSAGE_WRITER_NOT_PROVIDED
+import com.datadog.android.trace.impl.internal.DatadogTracingInternalToolkit.ErrorMessages.TRACING_NOT_ENABLED_ERROR_MESSAGE
 import com.datadog.android.trace.impl.internal.DatadogTracingInternalToolkit.ErrorMessages.WRITER_PROVIDER_INTERFACE_NOT_IMPLEMENTED_ERROR_MESSAGE
 import com.datadog.android.trace.utils.verifyLog
 import com.datadog.android.utils.forge.Configurator
@@ -119,6 +122,23 @@ class DatadogTracingTest {
             InternalLogger.Level.ERROR,
             InternalLogger.Target.USER,
             DEFAULT_SERVICE_NAME_IS_MISSING_ERROR_MESSAGE
+        )
+    }
+
+    @Test
+    fun `M log a user error W build { TracingFeature not enabled }`() {
+        // GIVEN
+        whenever(mockSdkCore.getFeature(Feature.TRACING_FEATURE_NAME)) doReturn null
+
+        // WHEN
+        val tracer = DatadogTracing.newTracerBuilder(mockSdkCore).build()
+
+        // THEN
+        assertThat(tracer).isNotNull
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.USER,
+            TRACING_NOT_ENABLED_ERROR_MESSAGE
         )
     }
 }

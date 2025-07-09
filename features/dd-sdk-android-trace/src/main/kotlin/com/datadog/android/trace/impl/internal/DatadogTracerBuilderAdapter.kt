@@ -5,28 +5,22 @@
  */
 package com.datadog.android.trace.impl.internal
 
-import com.datadog.android.api.InternalLogger
+import androidx.annotation.VisibleForTesting
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.trace.TracingHeaderType
 import com.datadog.android.trace.api.DatadogTracingConstants.TracerConfig
 import com.datadog.android.trace.api.tracer.DatadogTracer
 import com.datadog.android.trace.api.tracer.DatadogTracerBuilder
 import com.datadog.trace.api.IdGenerationStrategy
-import com.datadog.trace.common.writer.Writer
 import com.datadog.trace.core.CoreTracer
 import java.util.Properties
 
 internal class DatadogTracerBuilderAdapter(
     private val sdkCore: FeatureSdkCore,
-    writer: Writer,
-    defaultServiceName: String
+    private var serviceName: String,
+    private val delegate: CoreTracer.CoreTracerBuilder
 ) : DatadogTracerBuilder {
 
-    private val internalLogger: InternalLogger
-        get() = sdkCore.internalLogger
-
-    private val delegate = CoreTracer.CoreTracerBuilder(internalLogger).writer(writer)
-    private var serviceName: String = defaultServiceName
     private var sampleRate: Double? = null
     private var bundleWithRumEnabled: Boolean = true
     private var traceRateLimit = Int.MAX_VALUE
@@ -40,7 +34,7 @@ internal class DatadogTracerBuilderAdapter(
     override fun build(): DatadogTracer {
         val coreTracer = delegate.withProperties(properties()).build()
         val datadogTracer = DatadogTracerAdapter(sdkCore, coreTracer, bundleWithRumEnabled)
-        datadogTracer.addScopeListener(DataTracePropagationScopeListener(sdkCore, datadogTracer))
+        datadogTracer.addScopeListener(TracePropagationDataScopeListener(sdkCore, datadogTracer))
 
         return datadogTracer
     }
@@ -89,7 +83,8 @@ internal class DatadogTracerBuilderAdapter(
         delegate.idGenerationStrategy(IdGenerationStrategy.fromName("SECURE_RANDOM", traceId128BitGenerationEnabled))
     }
 
-    private fun properties(): Properties {
+    @VisibleForTesting
+    internal fun properties(): Properties {
         val properties = Properties()
 
         val propagationStyles = tracingHeadersTypes.joinToString(",")

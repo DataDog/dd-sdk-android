@@ -15,7 +15,7 @@ import com.datadog.trace.core.PendingTrace
 internal class DatadogSpanContextAdapter(internal val delegate: AgentSpan.Context) : DatadogSpanContext {
     override val spanId: Long get() = delegate.spanId
     override val samplingPriority: Int get() = delegate.samplingPriority
-    override val tags: Map<String?, Any?>? get() = ddSpanContext?.tags
+    override val tags: Map<String?, Any?> get() = ddSpanContext?.tags.orEmpty()
     override val traceId: DatadogTraceId get() = DatadogTraceIdAdapter(delegate.traceId)
 
     private val ddSpanContext: DDSpanContext?
