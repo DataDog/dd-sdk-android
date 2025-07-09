@@ -2,6 +2,7 @@ object com.datadog.android.trace.GlobalDatadogTracerHolder
   fun registerIfAbsent(com.datadog.android.trace.api.tracer.DatadogTracer): Boolean
   fun get(): com.datadog.android.trace.api.tracer.DatadogTracer
   fun getOrNull(): com.datadog.android.trace.api.tracer.DatadogTracer?
+  fun clear()
 interface com.datadog.android.trace.InternalCoreWriterProvider
   fun getCoreTracerWriter(): com.datadog.android.trace.api.span.DatadogSpanWriter
 fun com.datadog.android.trace.api.span.DatadogSpan.logThrowable(Throwable)
@@ -20,11 +21,23 @@ data class com.datadog.android.trace.TraceConfiguration
 interface com.datadog.android.trace.event.SpanEventMapper : com.datadog.android.event.EventMapper<com.datadog.android.trace.model.SpanEvent>
   override fun map(com.datadog.android.trace.model.SpanEvent): com.datadog.android.trace.model.SpanEvent
 object com.datadog.android.trace.impl.DatadogTracing
-  val spanLogger: com.datadog.android.trace.api.span.DatadogSpanLogger
   fun newTracerBuilder(com.datadog.android.api.SdkCore = Datadog.getInstance()): com.datadog.android.trace.api.tracer.DatadogTracerBuilder
-object com.datadog.android.trace.impl.internal.DatadogTracingInternal
-  val spanIdConverter: com.datadog.android.trace.api.span.DatadogSpanIdConverter
-  val traceIdFactory: com.datadog.android.trace.api.trace.DatadogTraceIdFactory
+interface com.datadog.android.trace.impl.internal.DatadogSpanIdConverter
+  fun fromHex(String): Long
+  fun toHexStringPadded(Long): String
+interface com.datadog.android.trace.impl.internal.DatadogTraceIdConverter
+  fun zero(): com.datadog.android.trace.api.trace.DatadogTraceId
+  fun from(Long): com.datadog.android.trace.api.trace.DatadogTraceId
+  fun from(String): com.datadog.android.trace.api.trace.DatadogTraceId
+  fun fromHex(String): com.datadog.android.trace.api.trace.DatadogTraceId
+  fun toLong(com.datadog.android.trace.api.trace.DatadogTraceId): Long
+  fun toHexString(com.datadog.android.trace.api.trace.DatadogTraceId): String
+object com.datadog.android.trace.impl.internal.DatadogTracingInternalToolkit
+  val spanIdConverter: DatadogSpanIdConverter
+  val traceIdConverter: DatadogTraceIdConverter
+  var spanLogger: com.datadog.android.trace.api.span.DatadogSpanLogger
+  fun setTracingSamplingPriorityIfNecessary(com.datadog.android.trace.api.span.DatadogSpanContext)
+  fun setTraceId128BitGenerationEnabled(com.datadog.android.trace.api.tracer.DatadogTracerBuilder): com.datadog.android.trace.api.tracer.DatadogTracerBuilder
 object com.datadog.android.trace.internal.SpanAttributes
   const val DATADOG_INITIAL_CONTEXT: String
 fun <T> android.database.sqlite.SQLiteDatabase.transactionTraced(String, Boolean = true, com.datadog.android.trace.api.span.DatadogSpan.(android.database.sqlite.SQLiteDatabase) -> T): T

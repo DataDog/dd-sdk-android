@@ -64,7 +64,7 @@ interface DatadogSpan {
     /**
      * Represents the start time of the span in nanoseconds.
      */
-    val startTimeNano: Long
+    val startTimeNanos: Long
 
     /**
      * Refers to the local root span within a trace hierarchy.

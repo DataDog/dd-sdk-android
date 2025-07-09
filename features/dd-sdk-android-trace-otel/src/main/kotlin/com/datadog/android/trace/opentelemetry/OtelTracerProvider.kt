@@ -13,7 +13,7 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.SdkCore
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
-import com.datadog.android.trace.GlobalDatadogTracerHolder
+import com.datadog.android.trace.GlobalDatadogTracer
 import com.datadog.android.trace.InternalCoreWriterProvider
 import com.datadog.android.trace.TracingHeaderType
 import com.datadog.android.trace.api.tracer.DatadogTracer
@@ -153,7 +153,7 @@ class OtelTracerProvider internal constructor(
                 .withServiceName(serviceName)
                 .build()
 
-            GlobalDatadogTracerHolder.registerIfAbsent(datadogTracer).let { registeredAsGlobal ->
+            GlobalDatadogTracer.registerIfAbsent(datadogTracer).let { registeredAsGlobal ->
                 sdkCore.internalLogger.log(
                     InternalLogger.Level.INFO,
                     listOf(

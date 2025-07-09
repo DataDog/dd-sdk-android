@@ -6,11 +6,10 @@
 
 package com.datadog.android.sqldelight
 
-import com.datadog.android.trace.GlobalDatadogTracerHolder
+import com.datadog.android.trace.GlobalDatadogTracer
 import com.datadog.android.trace.api.scope.DatadogScope
 import com.datadog.android.trace.api.span.DatadogSpan
 import com.datadog.android.trace.api.span.DatadogSpanBuilder
-import com.datadog.android.trace.api.clear
 import com.datadog.android.trace.api.tracer.DatadogTracer
 import com.datadog.tools.unit.forge.BaseConfigurator
 import com.squareup.sqldelight.Transacter
@@ -79,7 +78,7 @@ class SqlDelightExtTest {
 
     @BeforeEach
     fun `set up`() {
-        GlobalDatadogTracerHolder.registerIfAbsent(mockTracer)
+        GlobalDatadogTracer.registerIfAbsent(mockTracer)
         whenever(mockTracer.buildSpan(fakeOperationName)) doReturn mockSpanBuilder
         whenever(mockTracer.activateSpan(mockSpan)) doReturn mockScope
         whenever(mockSpanBuilder.start()) doReturn mockSpan
@@ -98,7 +97,7 @@ class SqlDelightExtTest {
 
     @AfterEach
     fun `tear down`() {
-        GlobalDatadogTracerHolder.clear()
+        GlobalDatadogTracer.clear()
     }
 
     @Test

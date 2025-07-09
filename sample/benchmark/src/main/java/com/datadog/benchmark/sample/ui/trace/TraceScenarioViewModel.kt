@@ -182,14 +182,14 @@ internal class TraceScenarioViewModel(
     private fun launchTracingJob(task: TraceScenarioScreenState.TracingTask): Job {
         return viewModelScope.launch(defaultDispatcher) {
             val rootSpan = tracer.spanBuilder(task.config.spanOperation).apply {
-                setAttribute(DatadogTracingConstants.DDTags.RESOURCE_NAME, task.config.spanResource)
+                setAttribute(DatadogTracingConstants.Tags.RESOURCE_NAME, task.config.spanResource)
             }.startSpan()
 
             if (task.config.isError) {
                 rootSpan.apply {
                     setStatus(StatusCode.ERROR)
-                    setAttribute(DatadogTracingConstants.DDTags.ERROR_TYPE, "simulated_error")
-                    setAttribute(DatadogTracingConstants.DDTags.ERROR_MSG, "Simulated error message")
+                    setAttribute(DatadogTracingConstants.Tags.ERROR_TYPE, "simulated_error")
+                    setAttribute(DatadogTracingConstants.Tags.ERROR_MSG, "Simulated error message")
                 }
             }
 

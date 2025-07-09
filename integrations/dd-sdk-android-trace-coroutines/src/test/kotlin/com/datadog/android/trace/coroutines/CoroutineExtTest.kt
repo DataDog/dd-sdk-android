@@ -6,11 +6,10 @@
 
 package com.datadog.android.trace.coroutines
 
-import com.datadog.android.trace.GlobalDatadogTracerHolder
+import com.datadog.android.trace.GlobalDatadogTracer
 import com.datadog.android.trace.api.scope.DatadogScope
 import com.datadog.android.trace.api.span.DatadogSpan
 import com.datadog.android.trace.api.span.DatadogSpanBuilder
-import com.datadog.android.trace.api.clear
 import com.datadog.android.trace.api.tracer.DatadogTracer
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -62,7 +61,7 @@ class CoroutineExtTest {
 
     @BeforeEach
     fun `set up`() {
-        GlobalDatadogTracerHolder.registerIfAbsent(mockTracer)
+        GlobalDatadogTracer.registerIfAbsent(mockTracer)
         whenever(mockTracer.buildSpan(fakeOperationName)) doReturn mockSpanBuilder
         whenever(mockTracer.activateSpan(mockSpan)) doReturn mockScope
         whenever(mockSpanBuilder.start()) doReturn mockSpan
@@ -70,7 +69,7 @@ class CoroutineExtTest {
 
     @AfterEach
     fun `tear down`() {
-        GlobalDatadogTracerHolder.clear()
+        GlobalDatadogTracer.clear()
     }
 
     @Test

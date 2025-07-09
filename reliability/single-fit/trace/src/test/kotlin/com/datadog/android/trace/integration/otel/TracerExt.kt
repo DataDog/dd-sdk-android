@@ -15,8 +15,8 @@ import com.datadog.trace.common.writer.Writer
 
 private const val WRITER_FIELD_NAME = "coreTracerDataWriter"
 
-internal fun FeatureScope?.useBlockingWriter(): BlockingWriterWrapper {
-    val feature = this?.unwrap<Feature>() ?: throw NullPointerException("Can't cast to Feature")
+internal fun FeatureScope.useBlockingWriter(): BlockingWriterWrapper {
+    val feature = this.unwrap<Feature>()
     val writer: Writer = feature.getFieldValue(WRITER_FIELD_NAME)
     return if (writer is BlockingWriterWrapper) {
         writer

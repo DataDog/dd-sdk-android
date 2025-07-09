@@ -1084,6 +1084,7 @@ datadog:
       - "kotlin.collections.MutableMap.isEmpty()"
       - "kotlin.collections.MutableMap.isNotEmpty()"
       - "kotlin.collections.MutableMap.iterator()"
+      - "kotlin.collections.MutableMap.orEmpty()"
       - "kotlin.collections.MutableMap.map(kotlin.Function1)"
       - "kotlin.collections.MutableMap.mapValues(kotlin.Function1)"
       - "kotlin.collections.MutableMap.put(kotlin.Any?, kotlin.Any?)"

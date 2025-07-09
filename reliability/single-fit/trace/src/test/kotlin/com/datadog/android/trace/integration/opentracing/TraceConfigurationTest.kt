@@ -14,10 +14,9 @@ import com.datadog.android.core.stub.StubSDKCore
 import com.datadog.android.tests.ktx.getInt
 import com.datadog.android.tests.ktx.getLong
 import com.datadog.android.tests.ktx.getString
-import com.datadog.android.trace.GlobalDatadogTracerHolder
+import com.datadog.android.trace.GlobalDatadogTracer
 import com.datadog.android.trace.Trace
 import com.datadog.android.trace.TraceConfiguration
-import com.datadog.android.trace.api.clear
 import com.datadog.android.trace.event.SpanEventMapper
 import com.datadog.android.trace.impl.DatadogTracing
 import com.datadog.android.trace.integration.tests.elmyr.TraceIntegrationForgeConfigurator
@@ -66,7 +65,7 @@ class TraceConfigurationTest {
 
     @AfterEach
     fun `tear down`() {
-        GlobalDatadogTracerHolder.clear()
+        GlobalDatadogTracer.clear()
     }
 
     @RepeatedTest(16)

@@ -9,7 +9,7 @@ package com.datadog.android.sqldelight
 import com.datadog.android.sqldelight.internal.TransactionWithSpanAndWithReturnImpl
 import com.datadog.android.sqldelight.internal.TransactionWithSpanAndWithoutReturnImpl
 import com.datadog.android.sqldelight.internal.withinSpan
-import com.datadog.android.trace.GlobalDatadogTracerHolder
+import com.datadog.android.trace.GlobalDatadogTracer
 import com.squareup.sqldelight.Transacter
 import com.squareup.sqldelight.Transacter.Transaction
 
@@ -29,7 +29,7 @@ fun <T : Transacter> T.transactionTraced(
     noEnclosing: Boolean = false,
     body: TransactionWithSpanAndWithoutReturn.() -> Unit
 ) {
-    withinSpan(operationName, GlobalDatadogTracerHolder.get().activeSpan()) {
+    withinSpan(operationName, GlobalDatadogTracer.get().activeSpan()) {
         @Suppress("UnsafeThirdPartyFunctionCall") // handled by caller
         transaction(noEnclosing = noEnclosing) {
             @Suppress("UnsafeThirdPartyFunctionCall") // handled by caller
@@ -55,7 +55,7 @@ fun <T : Transacter, R> T.transactionTracedWithResult(
     noEnclosing: Boolean = false,
     body: TransactionWithSpanAndWithReturn<R>.() -> R
 ): R {
-    withinSpan(operationName, GlobalDatadogTracerHolder.get().activeSpan()) {
+    withinSpan(operationName, GlobalDatadogTracer.get().activeSpan()) {
         @Suppress("UnsafeThirdPartyFunctionCall") // handled by caller
         return transactionWithResult(noEnclosing = noEnclosing) {
             @Suppress("UnsafeThirdPartyFunctionCall") // handled by caller

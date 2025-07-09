@@ -7,7 +7,7 @@
 package com.datadog.android.trace.sqlite
 
 import android.database.sqlite.SQLiteDatabase
-import com.datadog.android.trace.GlobalDatadogTracerHolder
+import com.datadog.android.trace.GlobalDatadogTracer
 import com.datadog.android.trace.api.span.DatadogSpan
 import com.datadog.android.trace.withinSpan
 
@@ -26,7 +26,7 @@ inline fun <T> SQLiteDatabase.transactionTraced(
     exclusive: Boolean = true,
     body: DatadogSpan.(SQLiteDatabase) -> T
 ): T {
-    val parentSpan = GlobalDatadogTracerHolder.get().activeSpan()
+    val parentSpan = GlobalDatadogTracer.get().activeSpan()
     withinSpan(operationName, parentSpan, true) {
         if (exclusive) {
             @Suppress("UnsafeThirdPartyFunctionCall") // we are in a valid state

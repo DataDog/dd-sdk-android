@@ -11,7 +11,7 @@ import com.datadog.android.core.stub.StubSDKCore
 import com.datadog.android.tests.ktx.getInt
 import com.datadog.android.tests.ktx.getLong
 import com.datadog.android.tests.ktx.getString
-import com.datadog.android.trace.GlobalDatadogTracerHolder
+import com.datadog.android.trace.GlobalDatadogTracer
 import com.datadog.android.trace.Trace
 import com.datadog.android.trace.TraceConfiguration
 import com.datadog.android.trace.api.clear
@@ -65,7 +65,7 @@ class UtilitiesTest {
     @AfterEach
     fun `tear down`() {
         DatadogTracingInternalToolkit.clear()
-        GlobalDatadogTracerHolder.clear()
+        GlobalDatadogTracer.clear()
     }
 
     @RepeatedTest(16)
@@ -285,7 +285,7 @@ class UtilitiesTest {
     ) {
         // Given
         val testedTracer = DatadogTracing.newTracerBuilder(stubSdkCore).build()
-        GlobalDatadogTracerHolder.registerIfAbsent(testedTracer)
+        GlobalDatadogTracer.registerIfAbsent(testedTracer)
 
         // When
         var traceId = ""
@@ -327,7 +327,7 @@ class UtilitiesTest {
     ) {
         // Given
         val testedTracer = DatadogTracing.newTracerBuilder(stubSdkCore).build()
-        GlobalDatadogTracerHolder.registerIfAbsent(testedTracer)
+        GlobalDatadogTracer.registerIfAbsent(testedTracer)
 
         // When
         var traceId0 = ""
@@ -386,7 +386,7 @@ class UtilitiesTest {
     ) {
         // Given
         val testedTracer = DatadogTracing.newTracerBuilder(stubSdkCore).build()
-        GlobalDatadogTracerHolder.registerIfAbsent(testedTracer)
+        GlobalDatadogTracer.registerIfAbsent(testedTracer)
 
         // When
         var traceId = ""

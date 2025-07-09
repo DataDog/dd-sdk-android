@@ -10,7 +10,7 @@ import com.datadog.android.sample.data.db.LocalDataSource
 import com.datadog.android.sample.data.model.Log
 import com.datadog.android.sample.data.remote.RemoteDataSource
 import com.datadog.android.sample.datalist.DataSourceType
-import com.datadog.android.trace.GlobalDatadogTracerHolder
+import com.datadog.android.trace.GlobalDatadogTracer
 import com.datadog.android.trace.api.scope.DatadogScope
 import io.reactivex.rxjava3.core.Flowable
 import io.reactivex.rxjava3.core.Single
@@ -32,14 +32,14 @@ internal class DataRepository(
                     localDataSource.persistLogs(it)
                 }
                 .doOnSubscribe {
-                    val tracer = GlobalDatadogTracerHolder.get()
+                    val tracer = GlobalDatadogTracer.get()
                     val span = tracer
                         .buildSpan("Fetch recent logs")
                         .start()
                     spanScope = tracer.activateSpan(span)
                 }
                 .doFinally {
-                    GlobalDatadogTracerHolder.get().activeSpan()?.let {
+                    GlobalDatadogTracer.get().activeSpan()?.let {
                         it.finish()
                     }
                     spanScope?.close()

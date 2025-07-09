@@ -60,7 +60,8 @@ class OtelTraceConfigurationTest {
             sdkCore = stubSdkCore,
             traceConfiguration = TraceConfiguration.Builder().setNetworkInfoEnabled(false).build()
         )
-        val blockingWriterWrapper = stubSdkCore.getFeature(Feature.TRACING_FEATURE_NAME).useBlockingWriter()
+        val blockingWriterWrapper = checkNotNull(stubSdkCore.getFeature(Feature.TRACING_FEATURE_NAME))
+            .useBlockingWriter()
         val testedProvider = OtelTracerProvider.Builder(stubSdkCore).build()
         val tracer = testedProvider.tracerBuilder(fakeInstrumentationName).build()
 
@@ -112,7 +113,8 @@ class OtelTraceConfigurationTest {
             sdkCore = stubSdkCore,
             traceConfiguration = TraceConfiguration.Builder().setNetworkInfoEnabled(true).build()
         )
-        val blockingWriterWrapper = stubSdkCore.getFeature(Feature.TRACING_FEATURE_NAME).useBlockingWriter()
+        val blockingWriterWrapper = checkNotNull(stubSdkCore.getFeature(Feature.TRACING_FEATURE_NAME))
+            .useBlockingWriter()
         val testedProvider = OtelTracerProvider.Builder(stubSdkCore).build()
         val tracer = testedProvider.tracerBuilder(fakeInstrumentationName).build()
 
@@ -173,8 +175,9 @@ class OtelTraceConfigurationTest {
             sdkCore = stubSdkCore,
             traceConfiguration = TraceConfiguration.Builder().setEventMapper(stubMapper).build()
         )
-        val blockingWriterWrapper =
-            stubSdkCore.getFeature(Feature.TRACING_FEATURE_NAME).useBlockingWriter()
+        val blockingWriterWrapper = checkNotNull(
+            stubSdkCore.getFeature(Feature.TRACING_FEATURE_NAME)
+        ).useBlockingWriter()
         val testedProvider = OtelTracerProvider.Builder(stubSdkCore).build()
         val tracer = testedProvider.tracerBuilder(fakeInstrumentationName).build()
 

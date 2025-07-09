@@ -30,10 +30,9 @@ import com.datadog.android.sdk.utils.isLogsUrl
 import com.datadog.android.sdk.utils.isRumUrl
 import com.datadog.android.sdk.utils.isTracesUrl
 import com.datadog.android.sdk.utils.overrideProcessImportance
-import com.datadog.android.trace.GlobalDatadogTracerHolder
+import com.datadog.android.trace.GlobalDatadogTracer
 import com.datadog.android.trace.Trace
 import com.datadog.android.trace.TraceConfiguration
-import com.datadog.android.trace.api.clear
 import com.datadog.android.trace.api.tracer.DatadogTracer
 import com.datadog.android.trace.impl.DatadogTracing
 import com.datadog.android.trace.model.SpanEvent
@@ -111,7 +110,7 @@ class CrossFeatureTest {
             .withPartialFlushMinSpans(1)
             .setBundleWithRumEnabled(true)
             .build()
-        GlobalDatadogTracerHolder.registerIfAbsent(openTracingTracer)
+        GlobalDatadogTracer.registerIfAbsent(openTracingTracer)
         val logsConfiguration = LogsConfiguration.Builder()
             .useCustomEndpoint(mockWebServer.url("/logs").toString())
             .build()
@@ -131,7 +130,7 @@ class CrossFeatureTest {
             .getInstrumentation()
             .targetContext
             .cacheDir.deleteRecursively()
-        GlobalDatadogTracerHolder.clear()
+        GlobalDatadogTracer.clear()
     }
 
     @Test

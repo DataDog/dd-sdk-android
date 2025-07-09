@@ -8,7 +8,7 @@ package com.datadog.android.trace.impl.internal
 import com.datadog.android.trace.api.trace.DatadogTraceId
 import com.datadog.trace.api.DDTraceId
 
-internal class DatadogTraceIdAdapter(private val delegate: DDTraceId) : DatadogTraceId, DDTraceId() {
+internal data class DatadogTraceIdAdapter(private val delegate: DDTraceId) : DatadogTraceId, DDTraceId() {
     override fun toLong(): Long = delegate.toLong()
     override fun toString(): String = delegate.toString()
     override fun toHexString(): String = delegate.toHexString()

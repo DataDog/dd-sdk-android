@@ -45,18 +45,13 @@ object com.datadog.android.trace.api.DatadogTracingConstants
     const val ERROR_MSG: String
     const val ERROR_TYPE: String
 interface com.datadog.android.trace.api.propagation.DatadogPropagation
-  fun <C> inject(com.datadog.android.trace.api.span.DatadogSpan, C, (C) -> Unit)
   fun <C> inject(com.datadog.android.trace.api.span.DatadogSpanContext, C, (C) -> Unit)
   fun <C> extract(C, (C) -> Unit): com.datadog.android.trace.api.span.DatadogSpanContext?
   fun isExtractedContext(com.datadog.android.trace.api.span.DatadogSpanContext): Boolean
-  fun createExtractedContext(String, String, Int): com.datadog.android.trace.api.span.DatadogSpanContext
 class com.datadog.android.trace.api.propagation.NoOpDatadogPropagation : DatadogPropagation
-  override fun <C> inject(com.datadog.android.trace.api.span.DatadogSpan, C, (C) -> Unit)
   override fun <C> inject(com.datadog.android.trace.api.span.DatadogSpanContext, C, (C) -> Unit)
   override fun <C> extract(C, (C) -> Unit): com.datadog.android.trace.api.span.DatadogSpanContext?
   override fun isExtractedContext(com.datadog.android.trace.api.span.DatadogSpanContext)
-  override fun createExtractedContext(String, String, Int): com.datadog.android.trace.api.span.DatadogSpanContext
-interface com.datadog.android.trace.api.sampling.DatadogTracerSampler
 interface com.datadog.android.trace.api.scope.DatadogScope : java.io.Closeable
   override fun close()
 interface com.datadog.android.trace.api.span.DatadogSpan
@@ -69,7 +64,7 @@ interface com.datadog.android.trace.api.span.DatadogSpan
   var serviceName: String
   var operationName: String
   val durationNano: Long
-  val startTime: Long
+  val startTimeNano: Long
   val localRootSpan: DatadogSpan?
   fun context(): DatadogSpanContext
   fun finish()
@@ -84,7 +79,6 @@ interface com.datadog.android.trace.api.span.DatadogSpan
   fun setTag(String?, Any?)
   fun getTag(String?): Any?
   fun setMetric(String, Int)
-  fun forceSamplingDecision()
 interface com.datadog.android.trace.api.span.DatadogSpanBuilder
   fun start(): DatadogSpan
   fun withOrigin(String?): DatadogSpanBuilder
@@ -101,13 +95,9 @@ interface com.datadog.android.trace.api.span.DatadogSpanContext
   val traceId: com.datadog.android.trace.api.trace.DatadogTraceId
   val spanId: Long
   val samplingPriority: Int
-  val tags: Map<String?, Any?>?
+  val tags: Map<String?, Any?>
   fun setSamplingPriority(Int): Boolean
-  fun setTracingSamplingPriorityIfNecessary()
   fun setMetric(CharSequence?, Double)
-interface com.datadog.android.trace.api.span.DatadogSpanIdConverter
-  fun fromHex(String): Long
-  fun toHexStringPadded(Long): String
 interface com.datadog.android.trace.api.span.DatadogSpanLink
   val spanId: Long
   val sampled: Boolean
@@ -121,13 +111,6 @@ interface com.datadog.android.trace.api.span.DatadogSpanLogger
   fun log(Map<String, Any>, DatadogSpan)
 interface com.datadog.android.trace.api.span.DatadogSpanWriter
 interface com.datadog.android.trace.api.trace.DatadogTraceId
-  fun toLong(): Long
-  fun toHexString(): String
-interface com.datadog.android.trace.api.trace.DatadogTraceIdFactory
-  fun zero(): DatadogTraceId
-  fun from(Long): DatadogTraceId
-  fun from(String): DatadogTraceId
-  fun fromHex(String): DatadogTraceId
 interface com.datadog.android.trace.api.tracer.DatadogTracer
   fun activeSpan(): com.datadog.android.trace.api.span.DatadogSpan?
   fun propagate(): com.datadog.android.trace.api.propagation.DatadogPropagation
@@ -138,11 +121,8 @@ interface com.datadog.android.trace.api.tracer.DatadogTracer
   fun addScopeListener(com.datadog.android.trace.api.scope.DataScopeListener)
 interface com.datadog.android.trace.api.tracer.DatadogTracerBuilder
   fun build(): DatadogTracer
-  fun withProperties(java.util.Properties): DatadogTracerBuilder
   fun withTracingHeadersTypes(Set<com.datadog.android.trace.TracingHeaderType>): DatadogTracerBuilder
   fun withServiceName(String): DatadogTracerBuilder
-  fun withIdGenerationStrategy(String, Boolean): DatadogTracerBuilder
-  fun withSampler(com.datadog.android.trace.api.sampling.DatadogTracerSampler?): DatadogTracerBuilder
   fun withSampleRate(Double): DatadogTracerBuilder
   fun withTraceLimit(Int): DatadogTracerBuilder
   fun withPartialFlushMinSpans(Int): DatadogTracerBuilder

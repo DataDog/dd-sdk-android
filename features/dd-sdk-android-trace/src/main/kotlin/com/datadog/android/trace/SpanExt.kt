@@ -63,7 +63,7 @@ inline fun <T : Any?> withinSpan(
     activate: Boolean = true,
     block: DatadogSpan.() -> T
 ): T {
-    val tracer = GlobalDatadogTracerHolder.get()
+    val tracer = GlobalDatadogTracer.get()
 
     val span = tracer.buildSpan(operationName)
         .withParentSpan(parentSpan)

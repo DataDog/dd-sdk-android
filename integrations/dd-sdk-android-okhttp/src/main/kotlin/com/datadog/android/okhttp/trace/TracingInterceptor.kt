@@ -21,7 +21,7 @@ import com.datadog.android.internal.telemetry.TracingHeaderTypesSet
 import com.datadog.android.internal.utils.loggableStackTrace
 import com.datadog.android.okhttp.TraceContextInjection
 import com.datadog.android.okhttp.internal.trace.toInternalTracingHeaderType
-import com.datadog.android.trace.GlobalDatadogTracerHolder
+import com.datadog.android.trace.GlobalDatadogTracer
 import com.datadog.android.trace.TracingHeaderType
 import com.datadog.android.trace.api.DatadogTracingConstants.PrioritySampling
 import com.datadog.android.trace.api.DatadogTracingConstants.Tags
@@ -641,7 +641,7 @@ internal constructor(
     /**
      * A Builder class for the [TracingInterceptor].
      * @param tracedHostsWithHeaderType a list of all the hosts and header types that you want to
-     * be automatically tracked by this interceptor. If registering a [GlobalDatadogTracerHolder], the tracer must be
+     * be automatically tracked by this interceptor. If registering a [GlobalDatadogTracer], the tracer must be
      * configured with [com.datadog.android.trace.api.tracer.DatadogTracerBuilder.withTracingHeadersTypes] containing all the necessary
      * header types configured for OkHttp tracking.
      * If no hosts are provided (via this argument or global configuration
@@ -699,7 +699,7 @@ internal constructor(
         internal var traceOrigin: String? = null
         internal var traceSampler: Sampler<DatadogSpan> = DeterministicTraceSampler(DEFAULT_TRACE_SAMPLE_RATE)
         internal var localTracerFactory = DEFAULT_LOCAL_TRACER_FACTORY
-        internal var globalTracerProvider: () -> DatadogTracer? = { GlobalDatadogTracerHolder.getOrNull() }
+        internal var globalTracerProvider: () -> DatadogTracer? = { GlobalDatadogTracer.getOrNull() }
         internal var traceContextInjection = TraceContextInjection.SAMPLED
 
         internal var redacted404ResourceName = true

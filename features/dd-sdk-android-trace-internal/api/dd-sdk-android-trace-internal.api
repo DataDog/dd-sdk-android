@@ -191,7 +191,6 @@ public final class com/datadog/trace/api/DDSpanId {
 	public static fun from (Ljava/lang/String;)J
 	public static fun fromHex (Ljava/lang/String;)J
 	public static fun fromHex (Ljava/lang/String;IIZ)J
-	public static fun fromHexOrDefault (Ljava/lang/String;J)J
 	public static fun toHexString (J)Ljava/lang/String;
 	public static fun toHexStringPadded (J)Ljava/lang/String;
 	public static fun toString (J)Ljava/lang/String;

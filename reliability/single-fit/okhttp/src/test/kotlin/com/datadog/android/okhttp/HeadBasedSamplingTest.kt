@@ -16,13 +16,12 @@ import com.datadog.android.okhttp.tests.assertj.SpansPayloadAssert
 import com.datadog.android.okhttp.tests.elmyr.OkHttpConfigurator
 import com.datadog.android.okhttp.trace.TracingInterceptor
 import com.datadog.android.tests.ktx.getString
-import com.datadog.android.trace.GlobalDatadogTracerHolder
+import com.datadog.android.trace.GlobalDatadogTracer
 import com.datadog.android.trace.Trace
 import com.datadog.android.trace.TraceConfiguration
 import com.datadog.android.trace.TracingHeaderType
 import com.datadog.android.trace.api.DatadogTracingConstants
 import com.datadog.android.trace.api.span.DatadogSpan
-import com.datadog.android.trace.api.clear
 import com.datadog.android.trace.impl.DatadogTracing
 import com.datadog.android.trace.impl.internal.DatadogTracingInternalToolkit
 import com.datadog.android.trace.opentelemetry.OtelTracerProvider
@@ -222,7 +221,7 @@ class HeadBasedSamplingTest {
             )
             .build()
 
-        val parentSpan = GlobalDatadogTracerHolder.get()
+        val parentSpan = GlobalDatadogTracer.get()
             .buildSpan(fakeSpanName)
             .start()
 
@@ -316,7 +315,7 @@ class HeadBasedSamplingTest {
             )
             .build()
 
-        val parentSpan = GlobalDatadogTracerHolder.get()
+        val parentSpan = GlobalDatadogTracer.get()
             .buildSpan(fakeSpanName)
             .start()
 
@@ -505,7 +504,7 @@ class HeadBasedSamplingTest {
             )
             .build()
 
-        val parentSpan = GlobalDatadogTracerHolder.get()
+        val parentSpan = GlobalDatadogTracer.get()
             .buildSpan(fakeSpanName)
             .start()
 
@@ -514,7 +513,7 @@ class HeadBasedSamplingTest {
             Request.Builder()
                 .url(mockServer.url("/"))
                 .apply {
-                    GlobalDatadogTracerHolder.get().propagate().inject(
+                    GlobalDatadogTracer.get().propagate().inject(
                         context = parentSpan.context(),
                         carrier = this
                     ) { carrier, key, value -> carrier.addHeader(key, value) }
@@ -555,7 +554,7 @@ class HeadBasedSamplingTest {
             )
             .build()
 
-        val parentSpan = GlobalDatadogTracerHolder.get()
+        val parentSpan = GlobalDatadogTracer.get()
             .buildSpan(fakeSpanName)
             .start()
 
@@ -564,7 +563,7 @@ class HeadBasedSamplingTest {
             Request.Builder()
                 .url(mockServer.url("/"))
                 .apply {
-                    GlobalDatadogTracerHolder.get()
+                    GlobalDatadogTracer.get()
                         .propagate()
                         .inject(parentSpan.context(), this) { _, key, value ->
                             addHeader(key, value)
@@ -643,7 +642,7 @@ class HeadBasedSamplingTest {
     }
 
     private fun registerGlobalTracer(sampleRate: Double) {
-        GlobalDatadogTracerHolder.registerIfAbsent(
+        GlobalDatadogTracer.registerIfAbsent(
             DatadogTracing.newTracerBuilder(stubSdkCore)
                 .withTracingHeadersTypes(setOf(TracingHeaderType.DATADOG))
                 // this is on purpose, we want to make sure that it is not taken into account
@@ -653,7 +652,7 @@ class HeadBasedSamplingTest {
     }
 
     private fun unregisterGlobalTracer() {
-        GlobalDatadogTracerHolder.clear()
+        GlobalDatadogTracer.clear()
     }
 
     private fun String.toTags(): Map<String, String> = split(",")

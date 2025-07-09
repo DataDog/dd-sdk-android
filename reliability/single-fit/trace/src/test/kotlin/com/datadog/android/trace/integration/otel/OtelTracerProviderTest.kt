@@ -63,7 +63,7 @@ internal class OtelTracerProviderTest {
         stubSdkCore = StubSDKCore(forge)
         val fakeTraceConfiguration = TraceConfiguration.Builder().build()
         Trace.enable(fakeTraceConfiguration, stubSdkCore)
-        blockingWriterWrapper = stubSdkCore.getFeature(Feature.TRACING_FEATURE_NAME).useBlockingWriter()
+        blockingWriterWrapper = checkNotNull(stubSdkCore.getFeature(Feature.TRACING_FEATURE_NAME)).useBlockingWriter()
     }
 
     // region Span attributes

@@ -40,21 +40,6 @@ public final class DDSpanId {
    * Parse the span id from the given {@code String} hex representation of the unsigned 64 bit id.
    *
    * @param s String in hex of unsigned 64 bit id
-   * @return long created from parsing sting or defaultValue if there was NumberFormatException during parsing
-   */
-  public static long fromHexOrDefault(String s, long defaultValue) {
-    try {
-      return fromHex(s);
-    } catch (NumberFormatException e) {
-      return defaultValue;
-    }
-
-  }
-
-  /**
-   * Parse the span id from the given {@code String} hex representation of the unsigned 64 bit id.
-   *
-   * @param s String in hex of unsigned 64 bit id
    * @param start the start index of the hex value
    * @param len the len of the hex value
    * @param lowerCaseOnly if the allowed hex characters are lower case only

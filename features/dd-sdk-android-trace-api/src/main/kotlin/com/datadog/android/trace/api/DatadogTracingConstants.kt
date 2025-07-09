@@ -69,6 +69,21 @@ object DatadogTracingConstants {
          * Represents the key used for tagging the analytics sample rate in the Datadog tracer.
          */
         const val KEY_ANALYTICS_SAMPLE_RATE: String = "_dd1.sr.eausr"
+
+        /**
+         * Represents the resource name tag used for tracing spans.
+         */
+        const val RESOURCE_NAME: String = "resource.name"
+
+        /**
+         *  String representing the error message.
+         */
+        const val ERROR_MSG: String = "error.message"
+
+        /**
+         *  String representing the type of the error.
+         */
+        const val ERROR_TYPE: String = "error.type"
     }
 
     /**
@@ -95,7 +110,6 @@ object DatadogTracingConstants {
         const val USER_DROP: Int = -1
 
         /** The user has decided to keep the trace.  */
-
         const val USER_KEEP: Int = 2
     }
 
@@ -152,7 +166,7 @@ object DatadogTracingConstants {
         const val ERROR_KIND: String = "error.kind"
 
         /**
-         * The actual Throwable/Exception/Error object instance itself. E.g., A java.lang.UnsupportedOperationException instance
+         * The actual Throwable/Exception/Error object instance itself. E.g., a [UnsupportedOperationException] instance.
          */
         const val ERROR_OBJECT: String = "error.object"
 
@@ -199,26 +213,5 @@ object DatadogTracingConstants {
          * Represents the default value used in contexts where a specific value is not provided.
          */
         const val DEFAULT: Byte = 0
-    }
-
-    /**
-     * Provides constant keys used for Datadog tracing tags.
-     */
-    object DDTags {
-
-        /**
-         * Represents the resource name tag used for tracing spans.
-         */
-        const val RESOURCE_NAME: String = "resource.name"
-
-        /**
-         *  String representing the error message.
-         */
-        const val ERROR_MSG: String = "error.message"
-
-        /**
-         *  String representing the type of the error.
-         */
-        const val ERROR_TYPE: String = "error.type"
     }
 }

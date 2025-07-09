@@ -6,7 +6,6 @@
 
 package com.datadog.android.okhttp.otel
 
-import com.datadog.android.trace.api.DatadogTracingConstants
 import com.datadog.android.trace.api.span.DatadogSpan
 import com.datadog.opentelemetry.trace.OtelSpan
 import com.datadog.tools.unit.forge.BaseConfigurator
@@ -53,19 +52,12 @@ internal class OkHttpExtTest {
     @Mock
     internal lateinit var mockSpan: Span
 
-    private var expectedPrioritySampling: Int = 0
-
     @BeforeEach
     fun `set up`() {
         val spanContext: SpanContext = mock {
             on { spanId }.thenReturn(fakeSpanId)
             on { traceId }.thenReturn(fakeTraceId)
             on { isSampled }.thenReturn(fakeIsSampled)
-        }
-        expectedPrioritySampling = if (fakeIsSampled) {
-            DatadogTracingConstants.PrioritySampling.USER_KEEP
-        } else {
-            DatadogTracingConstants.PrioritySampling.UNSET
         }
         whenever(mockSpan.spanContext).thenReturn(spanContext)
     }
@@ -83,6 +75,7 @@ internal class OkHttpExtTest {
 
         // Then
         val taggedContext = request.tag(DatadogSpan::class.java)
+
         assertThat(
             checkNotNull(taggedContext)
         ).isEqualTo(

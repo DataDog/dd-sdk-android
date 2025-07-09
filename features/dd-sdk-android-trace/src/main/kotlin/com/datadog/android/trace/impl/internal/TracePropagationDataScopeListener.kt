@@ -11,7 +11,7 @@ import com.datadog.android.trace.api.tracer.DatadogTracer
 import com.datadog.android.trace.internal.addActiveTraceToContext
 import com.datadog.android.trace.internal.removeActiveTraceFromContext
 
-internal class DataTracePropagationScopeListener(
+internal class TracePropagationDataScopeListener(
     private val sdkCore: FeatureSdkCore,
     private val datadogTracer: DatadogTracer
 ) : DataScopeListener {

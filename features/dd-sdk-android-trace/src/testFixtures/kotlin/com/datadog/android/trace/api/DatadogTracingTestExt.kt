@@ -8,7 +8,6 @@ package com.datadog.android.trace.api
 
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.FeatureSdkCore
-import com.datadog.android.trace.GlobalDatadogTracerHolder
 import com.datadog.android.trace.api.span.DatadogSpan
 import com.datadog.android.trace.api.span.DatadogSpanContext
 import com.datadog.android.trace.api.trace.DatadogTraceId
@@ -64,10 +63,6 @@ fun DatadogTracingInternalToolkit.setSpanLoggerMock(sdkCore: FeatureSdkCore?) {
 fun DatadogTracingInternalToolkit.clear() {
     setSpanLoggerMock(null)
     setTracingAdapterBuilderMock(null)
-}
-
-fun GlobalDatadogTracerHolder.clear() {
-    instance = null
 }
 
 private val DatadogSpanContext.ddSpanContext: DDSpanContext?

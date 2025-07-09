@@ -179,7 +179,8 @@ open class DatadogInterceptor internal constructor(
             emptyMap<String, Any?>()
         } else {
             mapOf(
-                RumAttributes.TRACE_ID to DatadogTracingInternalToolkit.traceIdConverter.toHexString(span.context().traceId),
+                RumAttributes.TRACE_ID to DatadogTracingInternalToolkit.traceIdConverter
+                    .toHexString(span.context().traceId),
                 RumAttributes.SPAN_ID to span.context().spanId.toString(),
                 RumAttributes.RULE_PSR to (traceSampler.getSampleRate() ?: ZERO_SAMPLE_RATE) / ALL_IN_SAMPLE_RATE
             )
@@ -291,7 +292,7 @@ open class DatadogInterceptor internal constructor(
     /**
      * A Builder for the [DatadogInterceptor].
      * @param tracedHostsWithHeaderType a list of all the hosts and header types that you want to
-     * be automatically tracked by this interceptor. If registering a [com.datadog.android.trace.GlobalDatadogTracerHolder],
+     * be automatically tracked by this interceptor. If registering a [com.datadog.android.trace.GlobalDatadogTracer],
      * the tracer must be configured with [com.datadog.android.trace.api.tracer.DatadogTracerBuilder.withTracingHeadersTypes] containing all the necessary
      * header types configured for OkHttp tracking.
      * If no hosts are provided (via this argument or global configuration

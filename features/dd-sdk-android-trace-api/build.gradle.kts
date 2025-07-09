@@ -67,6 +67,6 @@ junitConfig()
 javadocConfig()
 dependencyUpdateConfig()
 publishingConfig(
-    "Tracing engine api specification used for internal module communication."
+    "Tracing engine API specification used for internal module communication."
 )
 detektCustomConfig()

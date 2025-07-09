@@ -45,8 +45,7 @@ import com.datadog.android.telemetry.model.TelemetryConfigurationEvent
 import com.datadog.android.telemetry.model.TelemetryDebugEvent
 import com.datadog.android.telemetry.model.TelemetryErrorEvent
 import com.datadog.android.telemetry.model.TelemetryUsageEvent
-import com.datadog.android.trace.GlobalDatadogTracerHolder
-import com.datadog.android.trace.api.clear
+import com.datadog.android.trace.GlobalDatadogTracer
 import com.datadog.android.trace.api.tracer.DatadogTracer
 import com.datadog.tools.unit.forge.aThrowable
 import fr.xgouchet.elmyr.Forge
@@ -224,7 +223,7 @@ internal class TelemetryEventHandlerTest {
 
     @AfterEach
     fun `tear down`() {
-        GlobalDatadogTracerHolder.clear()
+        GlobalDatadogTracer.clear()
     }
 
     // region Debug Event
@@ -615,7 +614,7 @@ internal class TelemetryEventHandlerTest {
         if (useTracer) {
             whenever(mockSdkCore.getFeature(Feature.TRACING_FEATURE_NAME)) doReturn mock()
             if (tracerApi == TelemetryEventHandler.TracerApi.OpenTracing) {
-                GlobalDatadogTracerHolder.registerIfAbsent(mock<DatadogTracer>())
+                GlobalDatadogTracer.registerIfAbsent(mock<DatadogTracer>())
             } else if (tracerApi == TelemetryEventHandler.TracerApi.OpenTelemetry) {
                 fakeDatadogContext = fakeDatadogContext.copy(
                     featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {

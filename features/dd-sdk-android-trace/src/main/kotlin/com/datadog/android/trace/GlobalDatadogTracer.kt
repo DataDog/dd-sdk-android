@@ -14,7 +14,7 @@ import com.datadog.android.trace.api.tracer.NoOpDatadogTracer
  * This object is used to share same instance of [DatadogTracer] across different integrations such as
  * `OkHttp, Kotlin's coroutines, ect.
  */
-object GlobalDatadogTracerHolder {
+object GlobalDatadogTracer {
 
     @Volatile
     @get:Synchronized
@@ -50,4 +50,15 @@ object GlobalDatadogTracerHolder {
      * @return An instance of DatadogTracer or null.
      */
     fun getOrNull(): DatadogTracer? = instance
+
+    /**
+     * Clears the current instance of the global Datadog tracer.
+     *
+     * This method sets the internal tracer instance to null, effectively
+     * removing any active tracer currently held in the global state.
+     * The general purpose is to use it for test implementation..
+     */
+    fun clear() {
+        instance = null
+    }
 }

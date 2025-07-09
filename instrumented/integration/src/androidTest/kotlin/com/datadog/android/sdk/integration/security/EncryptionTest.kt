@@ -25,10 +25,9 @@ import com.datadog.android.rum.RumResourceMethod
 import com.datadog.android.security.Encryption
 import com.datadog.android.sessionreplay.SessionReplay
 import com.datadog.android.sessionreplay.SessionReplayConfiguration
-import com.datadog.android.trace.GlobalDatadogTracerHolder
+import com.datadog.android.trace.GlobalDatadogTracer
 import com.datadog.android.trace.Trace
 import com.datadog.android.trace.TraceConfiguration
-import com.datadog.android.trace.api.clear
 import com.datadog.android.trace.api.tracer.DatadogTracer
 import com.datadog.android.trace.impl.DatadogTracing
 import fr.xgouchet.elmyr.junit4.ForgeRule
@@ -81,7 +80,7 @@ internal class EncryptionTest {
         featureActivations.shuffled(Random(forge.seed)).forEach { it() }
 
         val tracer = DatadogTracing.newTracerBuilder(sdkCore).setBundleWithRumEnabled(true).build()
-        GlobalDatadogTracerHolder.registerIfAbsent(tracer)
+        GlobalDatadogTracer.registerIfAbsent(tracer)
 
         val logger = Logger.Builder(sdkCore)
             .setBundleWithRumEnabled(true)
@@ -202,7 +201,7 @@ internal class EncryptionTest {
 
     private fun stopSdk() {
         Datadog.stopInstance()
-        GlobalDatadogTracerHolder.clear()
+        GlobalDatadogTracer.clear()
     }
 
     private fun flushAndShutdownExecutors() {

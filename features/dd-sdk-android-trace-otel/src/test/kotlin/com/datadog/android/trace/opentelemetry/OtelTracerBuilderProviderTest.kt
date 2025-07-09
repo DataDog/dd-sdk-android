@@ -25,7 +25,6 @@ import com.datadog.android.trace.api.span.DatadogSpanWriter
 import com.datadog.android.trace.api.toHexString
 import com.datadog.android.trace.api.tracer.DatadogTracer
 import com.datadog.android.trace.api.tracer.DatadogTracerBuilder
-import com.datadog.android.trace.impl.internal.DatadogTracingInternalToolkit
 import com.datadog.android.trace.internal.SpanAttributes
 import com.datadog.android.trace.opentelemetry.utils.forge.Configurator
 import com.datadog.android.trace.opentelemetry.utils.verifyLog
@@ -140,23 +139,6 @@ internal class OtelTracerBuilderProviderTest {
     }
 
     // region feature checks
-
-    @Test
-    fun `M log a user error W build { TracingFeature not enabled }`() {
-        // GIVEN
-        whenever(mockSdkCore.getFeature(Feature.TRACING_FEATURE_NAME)) doReturn null
-
-        // WHEN
-        val tracer = testedOtelTracerProviderBuilder.build()
-
-        // THEN
-        assertThat(tracer).isNotNull
-        mockInternalLogger.verifyLog(
-            InternalLogger.Level.ERROR,
-            InternalLogger.Target.USER,
-            DatadogTracingInternalToolkit.ErrorMessages.MESSAGE_WRITER_NOT_PROVIDED
-        )
-    }
 
     @Test
     fun `M build tracers which generate Spans with 64 bits long ids W build`(
@@ -507,7 +489,7 @@ internal class OtelTracerBuilderProviderTest {
 
         // Then
         assertThat(context.tags).containsKey(SpanAttributes.DATADOG_INITIAL_CONTEXT)
-        val lazyContext = context.tags?.get(SpanAttributes.DATADOG_INITIAL_CONTEXT) as CompletableFuture<DatadogContext>
+        val lazyContext = context.tags[SpanAttributes.DATADOG_INITIAL_CONTEXT] as CompletableFuture<DatadogContext>
         assertThat(lazyContext.value).isEqualTo(fakeInitialDatadogContext)
     }
 

@@ -3,11 +3,17 @@
  * This product includes software developed at Datadog (https://www.datadoghq.com/).
  * Copyright 2016-Present Datadog, Inc.
  */
-package com.datadog.android.trace.api.trace
+package com.datadog.android.trace.impl.internal
+
+import com.datadog.android.lint.InternalApi
+import com.datadog.android.trace.api.trace.DatadogTraceId
+import com.datadog.trace.api.DDTraceId
 
 /**
- * Factory interface for creating and manipulating `DatadogTraceId` instances.
+ * For library usage only.
+ * Factory interface for converting `DatadogTraceId` instances to Long/String and vice-versa.
  */
+@InternalApi
 interface DatadogTraceIdConverter {
     /**
      * Creates a [DatadogTraceId] instance representing the zero value.
@@ -53,4 +59,13 @@ interface DatadogTraceIdConverter {
      * @return the hexadecimal string representation of the trace ID.
      */
     fun toHexString(traceId: DatadogTraceId): String
+}
+
+internal object DatadogTraceIdConverterAdapter : DatadogTraceIdConverter {
+    override fun zero(): DatadogTraceId = DatadogTraceIdAdapter.ZERO
+    override fun from(id: Long): DatadogTraceId = DatadogTraceIdAdapter(DDTraceId.from(id))
+    override fun from(id: String): DatadogTraceId = DatadogTraceIdAdapter(DDTraceId.from(id))
+    override fun fromHex(id: String): DatadogTraceId = DatadogTraceIdAdapter(DDTraceId.fromHex(id))
+    override fun toLong(traceId: DatadogTraceId): Long = (traceId as DatadogTraceIdAdapter).toLong()
+    override fun toHexString(traceId: DatadogTraceId): String = (traceId as DatadogTraceIdAdapter).toHexString()
 }

@@ -75,8 +75,10 @@ internal class DatadogSpanLoggerAdapter(
         if (logsFeature != null && fields.isNotEmpty()) {
             val message = fields.remove(DatadogTracingConstants.LogAttributes.MESSAGE)
                 ?.toString() ?: DEFAULT_EVENT_MESSAGE
-            val logStatus = fields[DatadogTracingConstants.LogAttributes.STATUS] ?: Log.VERBOSE
-            fields[LogAttributes.DD_TRACE_ID] = DatadogTracingInternalToolkit.traceIdConverter.toHexString(span.context().traceId)
+            val logStatus = fields.remove(DatadogTracingConstants.LogAttributes.STATUS) ?: Log.VERBOSE
+            fields[LogAttributes.DD_TRACE_ID] = DatadogTracingInternalToolkit.traceIdConverter.toHexString(
+                span.context().traceId
+            )
             fields[LogAttributes.DD_SPAN_ID] = span.context().spanId.toString()
             val timestamp = System.currentTimeMillis()
             logsFeature.sendEvent(

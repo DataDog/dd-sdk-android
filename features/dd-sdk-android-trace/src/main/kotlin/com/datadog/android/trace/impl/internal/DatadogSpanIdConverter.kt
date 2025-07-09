@@ -3,11 +3,16 @@
  * This product includes software developed at Datadog (https://www.datadoghq.com/).
  * Copyright 2016-Present Datadog, Inc.
  */
-package com.datadog.android.trace.api.span
+package com.datadog.android.trace.impl.internal
+
+import com.datadog.android.lint.InternalApi
+import com.datadog.trace.api.DDSpanId
 
 /**
+ * For library usage only.
  * Interface for converting Datadog span IDs between hexadecimal and decimal representations.
  */
+@InternalApi
 interface DatadogSpanIdConverter {
 
     /**
@@ -28,4 +33,10 @@ interface DatadogSpanIdConverter {
      * @return A hexadecimal string representation of the given span ID, padded as necessary.
      */
     fun toHexStringPadded(spanId: Long): String
+}
+
+internal object DatadogSpanIdConverterAdapter : DatadogSpanIdConverter {
+    override fun fromHex(spanId: String): Long = DDSpanId.fromHex(spanId)
+
+    override fun toHexStringPadded(spanId: Long): String = DDSpanId.toHexStringPadded(spanId)
 }

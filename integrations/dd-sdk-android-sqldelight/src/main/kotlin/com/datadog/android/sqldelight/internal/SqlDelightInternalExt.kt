@@ -6,7 +6,7 @@
 
 package com.datadog.android.sqldelight.internal
 
-import com.datadog.android.trace.GlobalDatadogTracerHolder
+import com.datadog.android.trace.GlobalDatadogTracer
 import com.datadog.android.trace.api.span.DatadogSpan
 
 @Suppress("ThrowingInternalException", "TooGenericExceptionCaught")
@@ -15,7 +15,7 @@ internal inline fun <T : Any?> withinSpan(
     parentSpan: DatadogSpan? = null,
     block: DatadogSpan.() -> T
 ): T {
-    val tracer = GlobalDatadogTracerHolder.get()
+    val tracer = GlobalDatadogTracer.get()
 
     val span = tracer.buildSpan(operationName)
         .withParentSpan(parentSpan)

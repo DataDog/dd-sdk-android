@@ -17,7 +17,7 @@ import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.Rum
 import com.datadog.android.rum.RumConfiguration
 import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
-import com.datadog.android.trace.GlobalDatadogTracerHolder
+import com.datadog.android.trace.GlobalDatadogTracer
 import com.datadog.android.trace.Trace
 import com.datadog.android.trace.TraceConfiguration
 import com.datadog.android.trace.impl.DatadogTracing
@@ -85,8 +85,8 @@ class WearApplication : Application() {
             email = null
         )
 
-        GlobalDatadogTracerHolder.registerIfAbsent(
-            DatadogTracing.newTracerBuilder(sdkCore)
+        GlobalDatadogTracer.registerIfAbsent(
+            DatadogTracing.newTracerBuilder(checkNotNull(sdkCore))
                 .withServiceName(BuildConfig.APPLICATION_ID)
                 .build()
         )

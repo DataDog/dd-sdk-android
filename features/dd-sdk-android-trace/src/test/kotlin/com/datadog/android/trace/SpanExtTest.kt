@@ -9,7 +9,6 @@ package com.datadog.android.trace
 import com.datadog.android.trace.api.scope.DatadogScope
 import com.datadog.android.trace.api.span.DatadogSpan
 import com.datadog.android.trace.api.span.DatadogSpanBuilder
-import com.datadog.android.trace.api.clear
 import com.datadog.android.trace.api.tracer.DatadogTracer
 import com.datadog.tools.unit.forge.BaseConfigurator
 import fr.xgouchet.elmyr.annotation.Forgery
@@ -62,7 +61,7 @@ class SpanExtTest {
 
     @BeforeEach
     fun `set up`() {
-        GlobalDatadogTracerHolder.registerIfAbsent(mockTracer)
+        GlobalDatadogTracer.registerIfAbsent(mockTracer)
         whenever(mockTracer.buildSpan(fakeOperationName)) doReturn mockSpanBuilder
         whenever(mockTracer.activateSpan(mockSpan)) doReturn mockScope
         whenever(mockSpanBuilder.withParentSpan(mockParentSpan)) doReturn mockSpanBuilder
@@ -71,7 +70,7 @@ class SpanExtTest {
 
     @AfterEach
     fun `tear down`() {
-        GlobalDatadogTracerHolder.clear()
+        GlobalDatadogTracer.clear()
     }
 
     @Test

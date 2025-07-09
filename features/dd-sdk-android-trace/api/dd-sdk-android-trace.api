@@ -1,5 +1,6 @@
 public final class com/datadog/android/trace/GlobalDatadogTracerHolder {
 	public static final field INSTANCE Lcom/datadog/android/trace/GlobalDatadogTracerHolder;
+	public final fun clear ()V
 	public final fun get ()Lcom/datadog/android/trace/api/tracer/DatadogTracer;
 	public final fun getOrNull ()Lcom/datadog/android/trace/api/tracer/DatadogTracer;
 	public final fun registerIfAbsent (Lcom/datadog/android/trace/api/tracer/DatadogTracer;)Z
@@ -51,20 +52,27 @@ public final class com/datadog/android/trace/impl/DatadogTracing {
 	public static synthetic fun newTracerBuilder$default (Lcom/datadog/android/trace/impl/DatadogTracing;Lcom/datadog/android/api/SdkCore;ILjava/lang/Object;)Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;
 }
 
-public final class com/datadog/android/trace/impl/internal/DatadogTracingInternalToolkit {
-	public static final field INSTANCE Lcom/datadog/android/trace/impl/internal/DatadogTracingInternalToolkit;
-	public static final field spanIdConverter Lcom/datadog/android/trace/api/span/DatadogSpanIdConverter;
-	public static final field traceIdConverter Lcom/datadog/android/trace/api/trace/DatadogTraceIdConverter;
-	public final fun getSpanLogger ()Lcom/datadog/android/trace/api/span/DatadogSpanLogger;
-	public final fun setTracingSamplingPriorityIfNecessary (Lcom/datadog/android/trace/api/span/DatadogSpanContext;)V
+public abstract interface class com/datadog/android/trace/impl/internal/DatadogSpanIdConverter {
+	public abstract fun fromHex (Ljava/lang/String;)J
+	public abstract fun toHexStringPadded (J)Ljava/lang/String;
 }
 
-public final class com/datadog/android/trace/impl/internal/DatadogTracingInternalToolkit$ErrorMessages {
-	public static final field DEFAULT_SERVICE_NAME_IS_MISSING_ERROR_MESSAGE Ljava/lang/String;
-	public static final field INSTANCE Lcom/datadog/android/trace/impl/internal/DatadogTracingInternalToolkit$ErrorMessages;
-	public static final field MESSAGE_WRITER_NOT_PROVIDED Ljava/lang/String;
-	public static final field TRACING_NOT_ENABLED_ERROR_MESSAGE Ljava/lang/String;
-	public static final field WRITER_PROVIDER_INTERFACE_NOT_IMPLEMENTED_ERROR_MESSAGE Ljava/lang/String;
+public abstract interface class com/datadog/android/trace/impl/internal/DatadogTraceIdConverter {
+	public abstract fun from (J)Lcom/datadog/android/trace/api/trace/DatadogTraceId;
+	public abstract fun from (Ljava/lang/String;)Lcom/datadog/android/trace/api/trace/DatadogTraceId;
+	public abstract fun fromHex (Ljava/lang/String;)Lcom/datadog/android/trace/api/trace/DatadogTraceId;
+	public abstract fun toHexString (Lcom/datadog/android/trace/api/trace/DatadogTraceId;)Ljava/lang/String;
+	public abstract fun toLong (Lcom/datadog/android/trace/api/trace/DatadogTraceId;)J
+	public abstract fun zero ()Lcom/datadog/android/trace/api/trace/DatadogTraceId;
+}
+
+public final class com/datadog/android/trace/impl/internal/DatadogTracingInternalToolkit {
+	public static final field INSTANCE Lcom/datadog/android/trace/impl/internal/DatadogTracingInternalToolkit;
+	public static final field spanIdConverter Lcom/datadog/android/trace/impl/internal/DatadogSpanIdConverter;
+	public static final field traceIdConverter Lcom/datadog/android/trace/impl/internal/DatadogTraceIdConverter;
+	public final fun getSpanLogger ()Lcom/datadog/android/trace/api/span/DatadogSpanLogger;
+	public final fun setTraceId128BitGenerationEnabled (Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;)Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;
+	public final fun setTracingSamplingPriorityIfNecessary (Lcom/datadog/android/trace/api/span/DatadogSpanContext;)V
 }
 
 public final class com/datadog/android/trace/internal/SpanAttributes {

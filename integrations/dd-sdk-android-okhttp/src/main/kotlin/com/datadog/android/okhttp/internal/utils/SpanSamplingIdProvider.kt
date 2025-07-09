@@ -16,7 +16,7 @@ internal object SpanSamplingIdProvider {
 
     fun provideId(span: DatadogSpan): ULong {
         val context = span.context()
-        val sessionId = context.tags?.get(LogAttributes.RUM_SESSION_ID) as? String
+        val sessionId = context.tags[LogAttributes.RUM_SESSION_ID] as? String
 
         // for a UUID with value aaaaaaaa-bbbb-Mccc-Nddd-1234567890ab
         // we use as the input id the last part : 0x1234567890ab
