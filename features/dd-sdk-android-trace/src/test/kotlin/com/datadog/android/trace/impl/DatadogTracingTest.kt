@@ -10,7 +10,6 @@ import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.trace.InternalCoreWriterProvider
-import com.datadog.android.trace.impl.internal.DatadogSpanWriterWrapper
 import com.datadog.android.trace.impl.internal.DatadogTracerAdapter
 import com.datadog.android.trace.internal.data.NoOpCoreTracerWriter
 import com.datadog.android.trace.utils.verifyLog
@@ -65,7 +64,7 @@ class DatadogTracingTest {
         whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
         whenever(mockTracingFeature.unwrap<Feature>()) doReturn mockTracingFeatureScope
         whenever(mockSdkCore.getFeature(Feature.TRACING_FEATURE_NAME)) doReturn mockTracingFeature
-        whenever(mockTracingFeatureScope.getCoreTracerWriter()) doReturn DatadogSpanWriterWrapper(mock())
+        whenever(mockTracingFeatureScope.getCoreTracerWriter()) doReturn mock()
     }
 
     @Test

@@ -17,7 +17,6 @@ import com.datadog.android.trace.InternalCoreWriterProvider
 import com.datadog.android.trace.api.DatadogTracingConstants
 import com.datadog.android.trace.api.span.DatadogSpan
 import com.datadog.android.trace.api.span.DatadogSpanContext
-import com.datadog.android.trace.api.span.DatadogSpanWriter
 import com.datadog.android.trace.api.span.partialFlushMinSpans
 import com.datadog.android.trace.api.span.resourceName
 import com.datadog.android.trace.api.span.serviceName

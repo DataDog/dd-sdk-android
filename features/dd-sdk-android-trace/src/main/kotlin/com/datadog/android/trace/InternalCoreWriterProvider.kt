@@ -7,7 +7,7 @@
 package com.datadog.android.trace
 
 import com.datadog.android.lint.InternalApi
-import com.datadog.android.trace.api.span.DatadogSpanWriter
+import com.datadog.trace.common.writer.Writer
 
 /**
  * Internal interface to provide the core writer to the tracer.
@@ -23,5 +23,5 @@ interface InternalCoreWriterProvider {
     /**
      * Returns the core writer used by the tracer.
      */
-    fun getCoreTracerWriter(): DatadogSpanWriter
+    fun getCoreTracerWriter(): Writer
 }

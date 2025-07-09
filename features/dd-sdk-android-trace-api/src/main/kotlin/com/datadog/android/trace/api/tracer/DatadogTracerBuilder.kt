@@ -8,7 +8,6 @@ package com.datadog.android.trace.api.tracer
 import androidx.annotation.FloatRange
 import androidx.annotation.IntRange
 import com.datadog.android.trace.TracingHeaderType
-import com.datadog.android.trace.api.sampling.DatadogTracerSampler
 import com.datadog.tools.annotation.NoOpImplementation
 import java.util.Properties
 
@@ -62,15 +61,6 @@ interface DatadogTracerBuilder {
      * @return The updated instance of [DatadogTracerBuilder] to allow method chaining.
      */
     fun withIdGenerationStrategy(key: String, traceId128BitGenerationEnabled: Boolean): DatadogTracerBuilder
-
-    /**
-     * Configures the builder to use the specified custom sampler for determining
-     * whether or not a span should be traced.
-     *
-     * @param samplerAdapter The custom sampling mechanism to be used.
-     * @return The updated instance of [DatadogTracerBuilder] to allow method chaining.
-     */
-    fun withSampler(samplerAdapter: DatadogTracerSampler?): DatadogTracerBuilder
 
     /**
      * Sets the sample rate of spans.

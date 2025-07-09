@@ -10,17 +10,16 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.trace.TracingHeaderType
 import com.datadog.android.trace.api.DatadogTracingConstants.TracerConfig
-import com.datadog.android.trace.api.sampling.DatadogTracerSampler
-import com.datadog.android.trace.api.span.DatadogSpanWriter
 import com.datadog.android.trace.api.tracer.DatadogTracer
 import com.datadog.android.trace.api.tracer.DatadogTracerBuilder
 import com.datadog.trace.api.IdGenerationStrategy
+import com.datadog.trace.common.writer.Writer
 import com.datadog.trace.core.CoreTracer
 import java.util.Properties
 
 internal class DatadogTracerBuilderAdapter(
     private val sdkCore: FeatureSdkCore,
-    writer: DatadogSpanWriter?,
+    writer: Writer?,
     defaultServiceName: String
 ) : DatadogTracerBuilder {
 
@@ -42,8 +41,8 @@ internal class DatadogTracerBuilderAdapter(
     )
 
     init {
-        if (writer is DatadogSpanWriterWrapper) {
-            delegate.writer(writer.delegate)
+        if (writer != null) {
+            delegate.writer(writer)
         } else {
             internalLogger.log(
                 InternalLogger.Level.ERROR,
@@ -76,10 +75,6 @@ internal class DatadogTracerBuilderAdapter(
 
     override fun withTracingHeadersTypes(tracingHeadersTypes: Set<TracingHeaderType>) = apply {
         this.tracingHeadersTypes = tracingHeadersTypes
-    }
-
-    override fun withSampler(samplerAdapter: DatadogTracerSampler?): DatadogTracerBuilder = apply {
-        if (samplerAdapter is DatadogTracerSamplerWrapper) delegate.sampler(samplerAdapter.delegate)
     }
 
     override fun withSampleRate(sampleRate: Double) = apply {

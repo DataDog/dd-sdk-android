@@ -19,9 +19,7 @@ import com.datadog.android.trace.api.span.NoOpDatadogSpanLogger
 import com.datadog.android.trace.api.tracer.DatadogTracerBuilder
 import com.datadog.android.trace.api.tracer.NoOpDatadogTracerBuilder
 import com.datadog.android.trace.impl.internal.DatadogSpanLoggerAdapter
-import com.datadog.android.trace.impl.internal.DatadogSpanWriterWrapper
 import com.datadog.android.trace.impl.internal.DatadogTracerBuilderAdapter
-import com.datadog.android.trace.internal.data.NoOpCoreTracerWriter
 
 /**
  * Provides utilities and components for creating Datadog distributed tracing components in an application.
@@ -84,8 +82,7 @@ object DatadogTracing {
 
             DatadogTracerBuilderAdapter(
                 sdkCore,
-                internalCoreWriterProvider?.getCoreTracerWriter()
-                    ?: DatadogSpanWriterWrapper(NoOpCoreTracerWriter()),
+                internalCoreWriterProvider?.getCoreTracerWriter(),
                 sdkCore.service
             )
         }
