@@ -16,9 +16,9 @@ import com.datadog.android.sdk.rules.HandledRequest
 import com.datadog.android.sdk.rules.MockServerActivityTestRule
 import com.datadog.android.sdk.utils.isLogsUrl
 import com.datadog.android.sdk.utils.isTracesUrl
-import com.datadog.android.trace.api.span.DatadogSpan
 import com.datadog.android.trace.api.resolveMeta
 import com.datadog.android.trace.api.resolveMetrics
+import com.datadog.android.trace.api.span.DatadogSpan
 import com.datadog.android.trace.impl.internal.DatadogTracingInternalToolkit
 import com.datadog.tools.unit.assertj.JsonObjectAssert.Companion.assertThat
 import com.google.gson.JsonElement

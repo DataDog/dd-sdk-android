@@ -39,8 +39,12 @@ object DatadogTracing {
      * configurations or features are unavailable.
      */
     fun newTracerBuilder(sdkCore: SdkCore = Datadog.getInstance()): DatadogTracerBuilder = when {
-        DatadogTracingInternalToolkit.builderProvider != null -> DatadogTracingInternalToolkit.builderProvider as DatadogTracerBuilder
-        sdkCore !is FeatureSdkCore -> NoOpDatadogTracerBuilder()
+        DatadogTracingInternalToolkit.builderProvider != null -> {
+            DatadogTracingInternalToolkit.builderProvider as DatadogTracerBuilder
+        }
+        sdkCore !is FeatureSdkCore -> {
+            NoOpDatadogTracerBuilder()
+        }
         else -> {
             val internalLogger = sdkCore.internalLogger
             val tracingFeature = sdkCore.getFeature(Feature.TRACING_FEATURE_NAME)?.unwrap<Feature>()
@@ -76,7 +80,7 @@ object DatadogTracing {
             DatadogTracerBuilderAdapter(
                 sdkCore = sdkCore,
                 serviceName = sdkCore.service,
-                delegate = CoreTracer.CoreTracerBuilder(sdkCore.internalLogger).writer(writer ?: NoOpWriter()),
+                delegate = CoreTracer.CoreTracerBuilder(sdkCore.internalLogger).writer(writer ?: NoOpWriter())
             )
         }
     }

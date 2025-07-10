@@ -72,6 +72,7 @@ internal class DatadogTracerAdapterTest {
     private var fakeBool: Boolean = false
 
     @BeforeEach
+    @Suppress("DEPRECATION")
     fun `se tup`() {
         testedTracer = DatadogTracerAdapter(mockSdk, mockTracer, true)
         whenever(mockDatadogSpan.delegate).thenReturn(mockSpan)
@@ -81,6 +82,7 @@ internal class DatadogTracerAdapterTest {
     }
 
     @Test
+    @Suppress("DEPRECATION")
     fun `M return span W buildSpan(String)`() {
         val builder = testedTracer.buildSpan(fakeString)
 

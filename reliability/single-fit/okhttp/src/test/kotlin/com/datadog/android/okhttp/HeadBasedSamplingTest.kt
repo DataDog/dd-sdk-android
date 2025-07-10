@@ -21,8 +21,8 @@ import com.datadog.android.trace.Trace
 import com.datadog.android.trace.TraceConfiguration
 import com.datadog.android.trace.TracingHeaderType
 import com.datadog.android.trace.api.DatadogTracingConstants
-import com.datadog.android.trace.api.span.DatadogSpan
 import com.datadog.android.trace.api.clear
+import com.datadog.android.trace.api.span.DatadogSpan
 import com.datadog.android.trace.impl.DatadogTracing
 import com.datadog.android.trace.impl.internal.DatadogTracingInternalToolkit
 import com.datadog.android.trace.opentelemetry.OtelTracerProvider

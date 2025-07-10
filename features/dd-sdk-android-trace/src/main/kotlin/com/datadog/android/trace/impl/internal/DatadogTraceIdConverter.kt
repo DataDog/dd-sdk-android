@@ -69,4 +69,3 @@ internal object DatadogTraceIdConverterAdapter : DatadogTraceIdConverter {
     override fun toLong(traceId: DatadogTraceId): Long = (traceId as DatadogTraceIdAdapter).toLong()
     override fun toHexString(traceId: DatadogTraceId): String = (traceId as DatadogTraceIdAdapter).toHexString()
 }
-

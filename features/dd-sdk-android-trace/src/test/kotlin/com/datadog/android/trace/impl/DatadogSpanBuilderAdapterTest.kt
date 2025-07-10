@@ -109,7 +109,7 @@ class DatadogSpanBuilderAdapterTest {
         val value = Any()
         testedBuilderAdapter.withTag(fakeString, value)
 
-        verify(mockAgentSpanBuilderAdapter).withTag(fakeString, value as Object)
+        verify(mockAgentSpanBuilderAdapter).withTag(fakeString, value)
     }
 
     @Test

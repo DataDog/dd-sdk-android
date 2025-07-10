@@ -9,10 +9,10 @@ package com.datadog.android.trace.sqlite
 import android.content.ContentValues
 import android.database.sqlite.SQLiteDatabase
 import com.datadog.android.trace.GlobalDatadogTracerHolder
+import com.datadog.android.trace.api.clear
 import com.datadog.android.trace.api.scope.DatadogScope
 import com.datadog.android.trace.api.span.DatadogSpan
 import com.datadog.android.trace.api.span.DatadogSpanBuilder
-import com.datadog.android.trace.api.clear
 import com.datadog.android.trace.api.tracer.DatadogTracer
 import com.datadog.tools.unit.forge.BaseConfigurator
 import fr.xgouchet.elmyr.Forge

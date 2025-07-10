@@ -48,7 +48,7 @@ internal class SpanSamplingIdProviderTest {
     @BeforeEach
     fun `set up`(forge: Forge) {
         fakeTags = forge.aMap { anAlphabeticalString() to aString() }
-        whenever(mockSpanContext.tags) doReturn forge.aNullable { fakeTags }
+        whenever(mockSpanContext.tags) doReturn fakeTags
         mockSpan = forge.newSpanMock(mockSpanContext)
     }
 

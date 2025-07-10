@@ -15,7 +15,7 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.verify
 
 @Extensions(
-    ExtendWith(MockitoExtension::class),
+    ExtendWith(MockitoExtension::class)
 )
 class DatadogScopeAdapterTest {
     @Mock

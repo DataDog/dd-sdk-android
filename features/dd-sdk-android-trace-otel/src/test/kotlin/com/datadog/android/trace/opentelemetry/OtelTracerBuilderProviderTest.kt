@@ -489,7 +489,7 @@ internal class OtelTracerBuilderProviderTest {
 
         // Then
         assertThat(context.tags).containsKey(SpanAttributes.DATADOG_INITIAL_CONTEXT)
-        val lazyContext = context.tags?.get(SpanAttributes.DATADOG_INITIAL_CONTEXT) as CompletableFuture<DatadogContext>
+        val lazyContext = context.tags[SpanAttributes.DATADOG_INITIAL_CONTEXT] as CompletableFuture<DatadogContext>
         assertThat(lazyContext.value).isEqualTo(fakeInitialDatadogContext)
     }
 

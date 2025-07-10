@@ -105,7 +105,7 @@ class DatadogSpanAdapterTest {
     fun `M delegate setTag(String, Number) W drop is called`() {
         testedSpanAdapter.setTag(fakeString, fakeLong)
 
-        verify(mockAgentSpan).setTag(fakeString as String?, fakeLong as Number?)
+        verify(mockAgentSpan).setTag(fakeString as? String, fakeLong as? Number)
     }
 
     @Test

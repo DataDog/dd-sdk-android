@@ -80,7 +80,7 @@ object DatadogTracingInternalToolkit {
 
         internal fun buildWrongWrapperMessage(cls: Class<*>?): String {
             return "You're trying to create an DatadogTracer instance, " +
-                    "but provided ${cls?.canonicalName} writer wrapper is not supported"
+                "but provided ${cls?.canonicalName} writer wrapper is not supported."
         }
     }
 }

@@ -179,7 +179,8 @@ open class DatadogInterceptor internal constructor(
             emptyMap<String, Any?>()
         } else {
             mapOf(
-                RumAttributes.TRACE_ID to DatadogTracingInternalToolkit.traceIdConverter.toHexString(span.context().traceId),
+                RumAttributes.TRACE_ID to DatadogTracingInternalToolkit.traceIdConverter
+                    .toHexString(span.context().traceId),
                 RumAttributes.SPAN_ID to span.context().spanId.toString(),
                 RumAttributes.RULE_PSR to (traceSampler.getSampleRate() ?: ZERO_SAMPLE_RATE) / ALL_IN_SAMPLE_RATE
             )

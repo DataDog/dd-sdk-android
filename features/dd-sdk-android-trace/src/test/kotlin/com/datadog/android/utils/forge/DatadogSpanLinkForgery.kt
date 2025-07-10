@@ -19,4 +19,3 @@ internal class DatadogSpanLinkForgery : ForgeryFactory<DatadogSpanLink> {
         override val traceId: DatadogTraceId = forge.getForgery()
     }
 }
-

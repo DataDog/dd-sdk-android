@@ -13,7 +13,7 @@ import com.datadog.android.trace.api.span.DatadogSpanContext
  * This implementation is intended as a placeholder making possible to create other NoOp.* classes.
  */
 // TODO RUM-10573 - replace with @NoOpImplementation when method-level generics will be supported in noopfactory
-internal class NoOpDatadogPropagation : DatadogPropagation {
+class NoOpDatadogPropagation : DatadogPropagation {
 
     override fun <C> inject(
         context: DatadogSpanContext,
