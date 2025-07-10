@@ -5,9 +5,12 @@
  */
 package com.datadog.android.trace.impl.internal
 
+import androidx.annotation.VisibleForTesting
 import com.datadog.android.trace.api.scope.DatadogScope
 import com.datadog.trace.bootstrap.instrumentation.api.AgentScope
 
-internal class DatadogScopeAdapter(private val delegate: AgentScope) : DatadogScope {
+internal class DatadogScopeAdapter(
+    @get:VisibleForTesting internal val delegate: AgentScope
+) : DatadogScope {
     override fun close() = delegate.close()
 }

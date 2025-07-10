@@ -74,14 +74,6 @@ public final class com/datadog/android/trace/impl/internal/DatadogTracingInterna
 	public final fun setTracingSamplingPriorityIfNecessary (Lcom/datadog/android/trace/api/span/DatadogSpanContext;)V
 }
 
-public final class com/datadog/android/trace/impl/internal/DatadogTracingInternalToolkit$ErrorMessages {
-	public static final field DEFAULT_SERVICE_NAME_IS_MISSING_ERROR_MESSAGE Ljava/lang/String;
-	public static final field INSTANCE Lcom/datadog/android/trace/impl/internal/DatadogTracingInternalToolkit$ErrorMessages;
-	public static final field MESSAGE_WRITER_NOT_PROVIDED Ljava/lang/String;
-	public static final field TRACING_NOT_ENABLED_ERROR_MESSAGE Ljava/lang/String;
-	public static final field WRITER_PROVIDER_INTERFACE_NOT_IMPLEMENTED_ERROR_MESSAGE Ljava/lang/String;
-}
-
 public final class com/datadog/android/trace/internal/SpanAttributes {
 	public static final field DATADOG_INITIAL_CONTEXT Ljava/lang/String;
 	public static final field INSTANCE Lcom/datadog/android/trace/internal/SpanAttributes;

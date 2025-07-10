@@ -10,13 +10,13 @@ import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.trace.InternalCoreWriterProvider
+import com.datadog.android.trace.api.span.DatadogSpanWriter
 import com.datadog.android.trace.impl.internal.DatadogSpanWriterWrapper
 import com.datadog.android.trace.impl.internal.DatadogTracerAdapter
-import com.datadog.android.trace.impl.internal.DatadogTracingInternalToolkit
 import com.datadog.android.trace.impl.internal.DatadogTracingInternalToolkit.ErrorMessages.DEFAULT_SERVICE_NAME_IS_MISSING_ERROR_MESSAGE
-import com.datadog.android.trace.impl.internal.DatadogTracingInternalToolkit.ErrorMessages.MESSAGE_WRITER_NOT_PROVIDED
 import com.datadog.android.trace.impl.internal.DatadogTracingInternalToolkit.ErrorMessages.TRACING_NOT_ENABLED_ERROR_MESSAGE
 import com.datadog.android.trace.impl.internal.DatadogTracingInternalToolkit.ErrorMessages.WRITER_PROVIDER_INTERFACE_NOT_IMPLEMENTED_ERROR_MESSAGE
+import com.datadog.android.trace.impl.internal.DatadogTracingInternalToolkit.ErrorMessages.buildWrongWrapperMessage
 import com.datadog.android.trace.utils.verifyLog
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.tools.unit.getFieldValue
@@ -122,6 +122,25 @@ class DatadogTracingTest {
             InternalLogger.Level.ERROR,
             InternalLogger.Target.USER,
             DEFAULT_SERVICE_NAME_IS_MISSING_ERROR_MESSAGE
+        )
+    }
+
+    @Test
+    fun `M log a user error W build { writer is null }`() {
+        // GIVEN
+        class CustomWrapper : DatadogSpanWriter
+
+        val customWrapperInstance = CustomWrapper()
+        whenever(mockTracingFeatureScope.getCoreTracerWriter()) doReturn customWrapperInstance
+
+        // WHEN
+        DatadogTracing.newTracerBuilder(mockSdkCore).build()
+
+        // THEN
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.USER,
+            buildWrongWrapperMessage(customWrapperInstance.javaClass)
         )
     }
 

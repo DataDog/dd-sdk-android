@@ -92,6 +92,6 @@ internal class DatadogSpanAdapter(internal val delegate: AgentSpan) : DatadogSpa
     }
 
     override fun addThrowable(throwable: Throwable, errorPriority: Byte) {
-        delegate.addThrowable(throwable)
+        delegate.addThrowable(throwable, errorPriority)
     }
 }

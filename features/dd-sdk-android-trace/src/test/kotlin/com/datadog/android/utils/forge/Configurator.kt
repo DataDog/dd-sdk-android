@@ -23,5 +23,10 @@ internal class Configurator : BaseConfigurator() {
         forge.addFactory(TraceConfigurationForgeryFactory())
         forge.addFactory(CoreDDSpanForgeryFactory())
         forge.addFactory(AgentSpanLinkForgeryFactory())
+        forge.addFactory(DatadogSpanLinkForgery())
+        forge.addFactory(DDTraceIdForgeryFactory())
+        forge.addFactory(DatadogSpanForgeryFactory())
+        forge.addFactory(DatadogTraceIdForgeryFactory())
+        forge.addFactory(DatadogSpanContextForgeryFactory())
     }
 }

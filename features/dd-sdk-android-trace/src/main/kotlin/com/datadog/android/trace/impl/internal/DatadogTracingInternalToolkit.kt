@@ -75,12 +75,12 @@ object DatadogTracingInternalToolkit {
             "The Tracing feature is not implementing the InternalCoreWriterProvider interface." +
                 " No tracing data will be sent."
 
-        const val MESSAGE_WRITER_NOT_PROVIDED: String =
-            "You're trying to create an DatadogTracerBuilder instance, " +
-                "but either the SDK was not initialized or the Tracing feature was " +
-                "not registered. No tracing data will be sent."
-
         const val DEFAULT_SERVICE_NAME_IS_MISSING_ERROR_MESSAGE: String =
             "Default service name is missing during DatadogTracerBuilder creation, did you initialize SDK?"
+
+        internal fun buildWrongWrapperMessage(cls: Class<*>?): String {
+            return "You're trying to create an DatadogTracer instance, " +
+                    "but provided ${cls?.canonicalName} writer wrapper is not supported"
+        }
     }
 }

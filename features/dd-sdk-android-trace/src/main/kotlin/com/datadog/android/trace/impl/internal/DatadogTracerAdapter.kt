@@ -5,6 +5,7 @@
  */
 package com.datadog.android.trace.impl.internal
 
+import androidx.annotation.VisibleForTesting
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
@@ -20,9 +21,12 @@ import com.datadog.trace.bootstrap.instrumentation.api.AgentTracer
 import com.datadog.trace.bootstrap.instrumentation.api.ScopeSource
 
 internal class DatadogTracerAdapter(
-    private val sdkCore: FeatureSdkCore,
+    @get:VisibleForTesting
+    internal val sdkCore: FeatureSdkCore,
+    @get:VisibleForTesting
     internal val delegate: AgentTracer.TracerAPI,
-    private val bundleWithRumEnabled: Boolean
+    @get:VisibleForTesting
+    internal val bundleWithRumEnabled: Boolean
 ) : DatadogTracer {
 
     override fun buildSpan(instrumentationName: String, spanName: CharSequence): DatadogSpanBuilder = wrapSpan(

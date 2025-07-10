@@ -5,10 +5,13 @@
  */
 package com.datadog.android.trace.impl.internal
 
+import androidx.annotation.VisibleForTesting
 import com.datadog.android.trace.api.scope.DataScopeListener
 import com.datadog.trace.api.scopemanager.ScopeListener
 
-internal class DatadogScopeListenerAdapter(private val delegate: DataScopeListener) : ScopeListener {
+internal class DatadogScopeListenerAdapter(
+    @get:VisibleForTesting internal val delegate: DataScopeListener
+) : ScopeListener {
     override fun afterScopeClosed() = delegate.afterScopeClosed()
     override fun afterScopeActivated() = delegate.afterScopeActivated()
 }
