@@ -143,7 +143,7 @@ class DatadogSpanAdapterTest {
         testedSpanAdapter.setMetric(fakeString, fakeInt)
 
         // Then
-        verify(mockAgentSpan).setMetric(fakeString as CharSequence, fakeInt)
+        verify(mockAgentSpan).setMetric(fakeString, fakeInt)
     }
 
     @Test
