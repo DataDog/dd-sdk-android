@@ -78,13 +78,13 @@ class DatadogTracingTest {
 
     @Test
     fun `M use a NoOpCoreTracerWriter W build { TracingFeature not enabled }`() {
-        // GIVEN
+        // Given
         whenever(mockSdkCore.getFeature(Feature.TRACING_FEATURE_NAME)) doReturn null
 
-        // WHEN
+        // When
         val tracer = DatadogTracing.newTracerBuilder(mockSdkCore).build() as DatadogTracerAdapter
 
-        // THEN
+        // Then
         assertThat(tracer).isNotNull
         val coreTracer: CoreTracer = tracer.delegate as CoreTracer
         val writer: Writer = coreTracer.getFieldValue("writer")
@@ -93,14 +93,14 @@ class DatadogTracingTest {
 
     @Test
     fun `M log a maintainer error W build { TracingFeature not implementing InternalCoreTracerWriterProvider }`() {
-        // GIVEN
+        // Given
 
         whenever(mockTracingFeature.unwrap<Feature>()) doReturn mock()
 
-        // WHEN
+        // When
         val tracer = DatadogTracing.newTracerBuilder(mockSdkCore).build()
 
-        // THEN
+        // Then
         assertThat(tracer).isNotNull
         mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
@@ -111,13 +111,13 @@ class DatadogTracingTest {
 
     @Test
     fun `M log a user error W build { default service name not available }`() {
-        // GIVEN
+        // Given
         whenever(mockSdkCore.service) doReturn ""
 
-        // WHEN
+        // When
         DatadogTracing.newTracerBuilder(mockSdkCore).build()
 
-        // THEN
+        // Then
         mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             InternalLogger.Target.USER,
@@ -127,16 +127,16 @@ class DatadogTracingTest {
 
     @Test
     fun `M log a user error W build { writer is null }`() {
-        // GIVEN
+        // Given
         class CustomWrapper : DatadogSpanWriter
 
         val customWrapperInstance = CustomWrapper()
         whenever(mockTracingFeatureScope.getCoreTracerWriter()) doReturn customWrapperInstance
 
-        // WHEN
+        // When
         DatadogTracing.newTracerBuilder(mockSdkCore).build()
 
-        // THEN
+        // Then
         mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             InternalLogger.Target.USER,
@@ -146,13 +146,13 @@ class DatadogTracingTest {
 
     @Test
     fun `M log a user error W build { TracingFeature not enabled }`() {
-        // GIVEN
+        // Given
         whenever(mockSdkCore.getFeature(Feature.TRACING_FEATURE_NAME)) doReturn null
 
-        // WHEN
+        // When
         val tracer = DatadogTracing.newTracerBuilder(mockSdkCore).build()
 
-        // THEN
+        // Then
         assertThat(tracer).isNotNull
         mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,

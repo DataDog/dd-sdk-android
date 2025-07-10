@@ -24,7 +24,7 @@ internal class DatadogTracerBuilderAdapter(
     private var sampleRate: Double? = null
     private var bundleWithRumEnabled: Boolean = true
     private var traceRateLimit = Int.MAX_VALUE
-    private var partialFlushThreshold = DEFAULT_PARTIAL_MIN_FLUSH
+    private var partialFlushMinSpans = DEFAULT_PARTIAL_MIN_FLUSH
     private val globalTags: MutableMap<String, String> = mutableMapOf()
     private var tracingHeadersTypes: Set<TracingHeaderType> = setOf(
         TracingHeaderType.DATADOG,
@@ -67,8 +67,8 @@ internal class DatadogTracerBuilderAdapter(
         this.sampleRate = sampleRate
     }
 
-    override fun withPartialFlushMinSpans(partialFlushThreshold: Int) = apply {
-        this.partialFlushThreshold = partialFlushThreshold
+    override fun withPartialFlushMinSpans(withPartialFlushMinSpans: Int) = apply {
+        this.partialFlushMinSpans = withPartialFlushMinSpans
     }
 
     override fun withTag(key: String, value: String) = apply {
@@ -92,7 +92,7 @@ internal class DatadogTracerBuilderAdapter(
         properties.setProperty(TracerConfig.PROPAGATION_STYLE_INJECT, propagationStyles)
         properties.setProperty(TracerConfig.SERVICE_NAME, serviceName)
         properties.setProperty(TracerConfig.TRACE_RATE_LIMIT, traceRateLimit.toString())
-        properties.setProperty(TracerConfig.PARTIAL_FLUSH_MIN_SPANS, partialFlushThreshold.toString())
+        properties.setProperty(TracerConfig.PARTIAL_FLUSH_MIN_SPANS, partialFlushMinSpans.toString())
         properties.setProperty(TracerConfig.URL_AS_RESOURCE_NAME, DEFAULT_URL_AS_RESOURCE_NAME.toString())
         sampleRate?.let {
             properties.setProperty(

@@ -63,10 +63,13 @@ class TracePropagationDataScopeListenerTest {
 
     @Test
     fun `M add context tag W afterScopeActivated {context present}`() {
+        // Given
         whenever(mockTracer.activeSpan()).thenReturn(mockSpan)
 
+        // When
         testedListener.afterScopeActivated()
 
+        // Then
         val mapWithContext = assertCallbackCalled(mutableMapOf())
         assertThat(mapWithContext[contextName]).isEqualTo(
             mapOf(
@@ -78,19 +81,25 @@ class TracePropagationDataScopeListenerTest {
 
     @Test
     fun `M context tag not added W afterScopeActivated {context absent}`() {
+        // Given
         whenever(mockTracer.activeSpan()).thenReturn(null)
 
+        // When
         testedListener.afterScopeActivated()
 
+        // Then
         verifyNoInteractions(mockSdkCore)
     }
 
     @Test
     fun `M remove context tag W afterScopeClosed`() {
+        // Given
         testedListener.afterScopeClosed()
 
+        // When
         val mapWithContext = assertCallbackCalled(mutableMapOf(contextName to Any()))
 
+        // Then
         assertThat(mapWithContext).isEmpty()
     }
 

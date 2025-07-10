@@ -14,6 +14,8 @@ import com.datadog.android.trace.impl.internal.DatadogTracerBuilderAdapter
 import com.datadog.android.trace.impl.internal.DatadogTracerBuilderAdapter.Companion.DEFAULT_URL_AS_RESOURCE_NAME
 import com.datadog.android.trace.impl.internal.TracePropagationDataScopeListener
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.trace.api.DD128bTraceId
+import com.datadog.trace.api.DD64bTraceId
 import com.datadog.trace.api.IdGenerationStrategy
 import com.datadog.trace.core.CoreTracer
 import fr.xgouchet.elmyr.Forge
@@ -69,6 +71,7 @@ class DatadogTracerBuilderAdapterTest {
 
     @Test
     fun `M return default properties W properties() {no method called}`() {
+        // Given
         val expected = Properties()
         expected.setProperty(TracerConfig.PROPAGATION_STYLE_EXTRACT, EXPECTED_DEFAULT_PROPAGATION)
         expected.setProperty(TracerConfig.PROPAGATION_STYLE_INJECT, EXPECTED_DEFAULT_PROPAGATION)
@@ -81,13 +84,16 @@ class DatadogTracerBuilderAdapterTest {
         expected.setProperty(TracerConfig.URL_AS_RESOURCE_NAME, DEFAULT_URL_AS_RESOURCE_NAME.toString())
         expected.setProperty(TracerConfig.TAGS, "")
 
+        // When
         val actual = testedBuilder.properties()
 
+        // Then
         assertThat(actual).isEqualTo(expected)
     }
 
     @Test
     fun `M return valid properties W {setters called}`(forge: Forge) {
+        // Given
         val fakeServiceName = forge.aString()
         val fakeTagKey = forge.aString()
         val fakeTagValue = forge.aString()
@@ -112,6 +118,7 @@ class DatadogTracerBuilderAdapterTest {
             setProperty(TracerConfig.TAGS, "$fakeTagKey:$fakeTagValue")
         }
 
+        // When
         val actual = testedBuilder
             .withTag(fakeTagKey, fakeTagValue)
             .withSampleRate(fakeSampleRate)
@@ -121,22 +128,38 @@ class DatadogTracerBuilderAdapterTest {
             .withPartialFlushMinSpans(fakePartialFlushMinSpans)
             .properties()
 
+        // Then
         assertThat(actual).isEqualTo(expected)
     }
 
     @Test
     fun `M delegate CoreTracerBuilder#idGenerationStrategy W idGenerationStrategy`() {
+        // Given
+        val expectedTraceIdClass = if (fakeBoolean) {
+            DD128bTraceId::class.java
+        } else {
+            DD64bTraceId::class.java
+        }
+
+        // When
         testedBuilder.setTraceId128BitGenerationEnabled(fakeBoolean)
 
-        mockBuilder.idGenerationStrategy(IdGenerationStrategy.fromName("SECURE_RANDOM", fakeBoolean))
+        // Then
+        argumentCaptor<IdGenerationStrategy> {
+            verify(mockBuilder).idGenerationStrategy(capture())
+            assertThat(firstValue::class.simpleName).isEqualTo("SRandom")
+            assertThat(firstValue.generateTraceId()).isInstanceOf(expectedTraceIdClass)
+        }
     }
 
     @Test
     fun `M return tracer with expected parameters W build`() {
+        // When
         val tracer = testedBuilder
             .setBundleWithRumEnabled(fakeBoolean)
             .build() as DatadogTracerAdapter
 
+        // Then
         assertThat(tracer.delegate).isEqualTo(mockTracerDelegate)
         assertThat(tracer.sdkCore).isEqualTo(mockSdk)
         assertThat(tracer.bundleWithRumEnabled).isEqualTo(fakeBoolean)

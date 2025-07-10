@@ -37,11 +37,6 @@ object com.datadog.android.trace.impl.internal.DatadogTracingInternalToolkit
   var spanLogger: com.datadog.android.trace.api.span.DatadogSpanLogger
   fun setTracingSamplingPriorityIfNecessary(com.datadog.android.trace.api.span.DatadogSpanContext)
   fun setTraceId128BitGenerationEnabled(com.datadog.android.trace.api.tracer.DatadogTracerBuilder): com.datadog.android.trace.api.tracer.DatadogTracerBuilder
-  object ErrorMessages
-    const val TRACING_NOT_ENABLED_ERROR_MESSAGE: String
-    const val WRITER_PROVIDER_INTERFACE_NOT_IMPLEMENTED_ERROR_MESSAGE: String
-    const val MESSAGE_WRITER_NOT_PROVIDED: String
-    const val DEFAULT_SERVICE_NAME_IS_MISSING_ERROR_MESSAGE: String
 object com.datadog.android.trace.internal.SpanAttributes
   const val DATADOG_INITIAL_CONTEXT: String
 fun <T> android.database.sqlite.SQLiteDatabase.transactionTraced(String, Boolean = true, com.datadog.android.trace.api.span.DatadogSpan.(android.database.sqlite.SQLiteDatabase) -> T): T

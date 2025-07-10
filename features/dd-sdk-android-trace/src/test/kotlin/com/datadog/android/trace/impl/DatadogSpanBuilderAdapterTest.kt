@@ -69,60 +69,81 @@ class DatadogSpanBuilderAdapterTest {
 
     @Test
     fun `M delegate ignoreActiveSpan W ignoreActiveSpan is called`() {
+        // When
         testedBuilderAdapter.ignoreActiveSpan()
 
+        // Then
         verify(mockAgentSpanBuilderAdapter).ignoreActiveSpan()
     }
 
     @Test
     fun `M return DatadogSpan W start() is called`() {
+        // Given
         whenever(mockAgentSpanBuilderAdapter.start()).thenReturn(mock<AgentSpan>())
 
-        val span = testedBuilderAdapter.start()
+        // When
+        val actual = testedBuilderAdapter.start()
 
-        assertThat(span).isInstanceOf(DatadogSpan::class.java)
+        // Then
+        assertThat(actual).isInstanceOf(DatadogSpan::class.java)
     }
 
     @Test
     fun `M delegate withOrigin W withOrigin is called`() {
-        assertThat(testedBuilderAdapter.withOrigin(fakeString)).isEqualTo(testedBuilderAdapter)
+        // When
+        val actual = testedBuilderAdapter.withOrigin(fakeString)
 
+        // Then
+        assertThat(actual).isEqualTo(testedBuilderAdapter)
         verify(mockAgentSpanBuilderAdapter).withOrigin(fakeString)
     }
 
     @Test
     fun `M delegate withStartTimestamp W withStartTimestamp is called`() {
-        assertThat(testedBuilderAdapter.withStartTimestamp(fakeLong)).isEqualTo(testedBuilderAdapter)
+        // When
+        val actual = testedBuilderAdapter.withStartTimestamp(fakeLong)
 
+        // Then
+        assertThat(actual).isEqualTo(testedBuilderAdapter)
         verify(mockAgentSpanBuilderAdapter).withStartTimestamp(fakeLong)
     }
 
     @Test
     fun `M delegate withTag W withTag(String, Long) is called`() {
+        // When
         testedBuilderAdapter.withTag(fakeString, fakeLong)
 
+        // Then
         verify(mockAgentSpanBuilderAdapter).withTag(fakeString, fakeLong)
     }
 
     @Test
     fun `M delegate withTag W withTag(String, Any) is called`() {
+        // Given
         val value = Any()
+
+        // When
         testedBuilderAdapter.withTag(fakeString, value)
 
+        // Then
         verify(mockAgentSpanBuilderAdapter).withTag(fakeString, value)
     }
 
     @Test
     fun `M delegate withTag W withTag(String, Double) is called`() {
+        // When
         testedBuilderAdapter.withTag(fakeString, fakeDouble)
 
+        // Then
         verify(mockAgentSpanBuilderAdapter).withTag(fakeString, fakeDouble)
     }
 
     @Test
     fun `M delegate withTag W withLink(DatadogSpanLink) is called`() {
+        // When
         testedBuilderAdapter.withLink(fakeDatadogSpanLink)
 
+        // Then
         argumentCaptor<AgentSpanLink> {
             verify(mockAgentSpanBuilderAdapter).withLink(capture())
             assertThat(firstValue.spanId()).isEqualTo(fakeDatadogSpanLink.spanId)
@@ -133,26 +154,33 @@ class DatadogSpanBuilderAdapterTest {
 
     @Test
     fun `M delegate withResourceName W withResourceName(String) is called`() {
+        // When
         testedBuilderAdapter.withResourceName(fakeString)
 
+        // Then
         verify(mockAgentSpanBuilderAdapter).withResourceName(fakeString)
     }
 
     @Test
     fun `M delegate asChildOf W withParentContext(DatadogSpanContextAdapter) is called`() {
+        // When
         testedBuilderAdapter.withParentContext(DatadogSpanContextAdapter(mockAgentSpanContext))
 
+        // Then
         verify(mockAgentSpanBuilderAdapter).asChildOf(mockAgentSpanContext)
     }
 
     @Test
     fun `M delegate asChildOf W withParentSpan(DatadogSpanContextAdapter) is called`() {
+        // Given
         val mockSpan = mock<DatadogSpan> {
             on { context() } doReturn DatadogSpanContextAdapter(mockAgentSpanContext)
         }
 
+        // When
         testedBuilderAdapter.withParentSpan(mockSpan)
 
+        // Then
         verify(mockAgentSpanBuilderAdapter).asChildOf(mockAgentSpanContext)
     }
 }

@@ -50,36 +50,46 @@ class DatadogTraceIdAdapterTest {
 
     @Test
     fun `M delegate to DDTraceId#toLong W toLong is called`() {
+        // When
         testedAdapter.toLong()
 
+        // Then
         verify(mockDDTraceId).toLong()
     }
 
     @Test
     fun `M delegate to DDTraceId#toString W toString is called`() {
+        // When
         val actual = testedAdapter.toString()
 
+        // Then
         assertThat(actual).isEqualTo(fakeInt.toString())
     }
 
     @Test
     fun `M delegate to DDTraceId#toHexString W toHexString is called`() {
+        // When
         testedAdapter.toHexString()
 
+        // Then
         verify(mockDDTraceId).toHexString()
     }
 
     @Test
     fun `M delegate to DDTraceId#toHighOrderLong W toHighOrderLong is called`() {
+        // When
         testedAdapter.toHighOrderLong()
 
+        // Then
         verify(mockDDTraceId).toHighOrderLong()
     }
 
     @Test
     fun `M delegate to DDTraceId#toHexStringPadded W toHexStringPadded is called`() {
+        // When
         testedAdapter.toHexStringPadded(fakeInt)
 
+        // Then
         verify(mockDDTraceId).toHexStringPadded(fakeInt)
     }
 }

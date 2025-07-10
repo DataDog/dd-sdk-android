@@ -24,19 +24,25 @@ class DatadogScopeListenerAdapterTest {
 
     @Test
     fun `M delegate afterScopeClosed W afterScopeClosed is called`() {
+        // Given
         val adapter = DatadogScopeListenerAdapter(delegate)
 
+        // When
         adapter.afterScopeClosed()
 
+        // Then
         verify(delegate).afterScopeClosed()
     }
 
     @Test
     fun `M delegate afterScopeActivated W afterScopeActivated is called`() {
+        // Then
         val adapter = DatadogScopeListenerAdapter(delegate)
 
+        // When
         adapter.afterScopeActivated()
 
+        // Then
         verify(delegate).afterScopeActivated()
     }
 }

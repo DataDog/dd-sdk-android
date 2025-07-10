@@ -82,148 +82,218 @@ class DatadogSpanAdapterTest {
 
     @Test
     fun `M delegate drop W drop is called`() {
+        // When
         testedSpanAdapter.drop()
 
+        // Then
         verify(mockAgentSpan).drop()
     }
 
     @Test
     fun `M delegate finish W finish() is called`() {
+        // When
         testedSpanAdapter.finish()
 
+        // Then
         verify(mockAgentSpan).finish()
     }
 
     @Test
     fun `M delegate finish W finish(millis) is called`() {
+        // When
         testedSpanAdapter.finish(fakeLong)
 
+        // Then
         verify(mockAgentSpan).finish(fakeLong)
     }
 
     @Test
     fun `M delegate setTag(String, Number) W drop is called`() {
+        // When
         testedSpanAdapter.setTag(fakeString, fakeLong)
 
-        verify(mockAgentSpan).setTag(fakeString as? String, fakeLong as? Number)
+        // Then
+        verify(mockAgentSpan).setTag(fakeString, fakeLong as? Number)
     }
 
     @Test
     fun `M delegate setTag(String, String) W drop is called`() {
+        // When
         testedSpanAdapter.setTag(fakeString, fakeString)
 
+        // Then
         verify(mockAgentSpan).setTag(fakeString, fakeString)
     }
 
     @Test
     fun `M delegate setTag(String, Object) W drop is called`() {
+        // Given
         val value = Any()
+
+        // When
         testedSpanAdapter.setTag(fakeString, value)
 
+        // Then
         verify(mockAgentSpan).setTag(fakeString, value)
     }
 
     @Test
     fun `M delegate setMetric(String, Int) W drop is called`() {
+        // When
         testedSpanAdapter.setMetric(fakeString, fakeInt)
 
+        // Then
         verify(mockAgentSpan).setMetric(fakeString as CharSequence, fakeInt)
     }
 
     @Test
     fun `M delegate setErrorMessage(String) W drop is called`() {
+        // When
         testedSpanAdapter.setErrorMessage(fakeString)
 
+        // Then
         verify(mockAgentSpan).setErrorMessage(fakeString)
     }
 
     @Test
     fun `M delegate addThrowable(Throwable) W drop is called`() {
+        // When
         testedSpanAdapter.addThrowable(fakeThrowable)
 
+        // Then
         verify(mockAgentSpan).addThrowable(fakeThrowable)
     }
 
     @Test
     fun `M delegate addThrowable(Throwable, Byte) W drop is called`() {
+        // Given
         val errorPriority = fakeInt.toByte()
 
+        // When
         testedSpanAdapter.addThrowable(fakeThrowable, errorPriority)
 
+        // Then
         verify(mockAgentSpan).addThrowable(fakeThrowable, errorPriority)
     }
 
     @Test
     fun `M return delegate#isError W isError is set`() {
+        // When
         testedSpanAdapter.isError = fakeBool
 
+        // Then
         verify(mockAgentSpan).setError(fakeBool)
     }
 
     @Test
     fun `M return delegate#isError W isError is get`() {
+        // Given
         whenever(mockAgentSpan.isError) doReturn fakeBool
 
-        assertThat(testedSpanAdapter.isError).isEqualTo(fakeBool)
+        // When
+        val error = testedSpanAdapter.isError
+
+        // Then
+        assertThat(error).isEqualTo(fakeBool)
     }
 
     @Test
     fun `M return false W isRootSpan {delegate is not DDSpan}`() {
-        assertThat(testedSpanAdapter.isRootSpan).isFalse()
+        // When
+        val rootSpan = testedSpanAdapter.isRootSpan
+
+        // Then
+        assertThat(rootSpan).isFalse()
     }
 
     @Test
     fun `M return return delegate#isRootSpan W isRootSpan {delegate is DDSpan}`() {
+        // Given
         whenever(testedSpanAdapterWithDDSpanDelegate.isRootSpan).thenReturn(fakeBool)
 
-        assertThat(testedSpanAdapterWithDDSpanDelegate.isRootSpan).isEqualTo(fakeBool)
+        // When
+        val actual = testedSpanAdapterWithDDSpanDelegate.isRootSpan
+
+        // Then
+        assertThat(actual).isEqualTo(fakeBool)
     }
 
     @Test
     fun `M return DatadogContext instance W context() is called`() {
+        // When
         val context = testedSpanAdapter.context()
 
+        // Then
         assertThat(context).isInstanceOf(DatadogSpanContext::class.java)
     }
 
     @Test
     fun `M return DatadogTraceId instance W traceId is called`() {
-        assertThat(testedSpanAdapter.traceId).isInstanceOf(DatadogTraceId::class.java)
+        // When
+        val traceId = testedSpanAdapter.traceId
+
+        // Then
+        assertThat(traceId).isInstanceOf(DatadogTraceId::class.java)
     }
 
     @Test
     fun `M return delegate#parentSpanId W parentSpanId is called`() {
+        // Given
         whenever(mockDDSpan.parentId).thenReturn(fakeLong)
 
-        assertThat(testedSpanAdapterWithDDSpanDelegate.parentSpanId).isEqualTo(fakeLong)
+        // When
+        val actual = testedSpanAdapterWithDDSpanDelegate.parentSpanId
+
+        // Then
+        assertThat(actual).isEqualTo(fakeLong)
     }
 
     @Test
     fun `M return delegate#samplingPriority W samplingPriority is called`() {
+        // Given
         whenever(mockAgentSpan.samplingPriority).thenReturn(fakeInt)
 
-        assertThat(testedSpanAdapter.samplingPriority).isEqualTo(fakeInt)
+        // When
+        val actual = testedSpanAdapter.samplingPriority
+
+        // Then
+        assertThat(actual).isEqualTo(fakeInt)
     }
 
     @Test
     fun `M return delegate#durationNano W durationNano is called`() {
+        // Given
         whenever(mockAgentSpan.durationNano).thenReturn(fakeLong)
 
-        assertThat(testedSpanAdapter.durationNano).isEqualTo(fakeLong)
+        // When
+        val actual = testedSpanAdapter.durationNano
+
+        // Then
+        assertThat(actual).isEqualTo(fakeLong)
     }
 
     @Test
     fun `M return delegate#startTimeNano W startTimeNano is called`() {
+        // Given
         whenever(mockAgentSpan.startTime).thenReturn(fakeLong)
 
-        assertThat(testedSpanAdapter.startTimeNano).isEqualTo(fakeLong)
+        // When
+        val startTimeNano = testedSpanAdapter.startTimeNano
+
+        // Then
+        assertThat(startTimeNano).isEqualTo(fakeLong)
     }
 
     @Test
     fun `M return DatadogContext instance W localRootSpan is called`() {
+        // Given
         val expected = mock<AgentSpan>()
         whenever(mockAgentSpan.localRootSpan).thenReturn(expected)
 
-        assertThat(testedSpanAdapter.localRootSpan).isInstanceOf(DatadogSpan::class.java)
+        // When
+        val actual = testedSpanAdapter.localRootSpan
+
+        // Then
+        assertThat(actual).isInstanceOf(DatadogSpan::class.java)
     }
 }

@@ -18,8 +18,10 @@ class DatadogSpanIdConverterAdapterTest {
 
     @Test
     fun `M serialize to String and deserialize valid W fromHeX(toHexStringPadded(Long))`() {
+        // When
         val actual = fromHex(toHexStringPadded(fakeLong))
 
+        // Then
         assertThat(actual).isEqualTo(fakeLong)
     }
 }

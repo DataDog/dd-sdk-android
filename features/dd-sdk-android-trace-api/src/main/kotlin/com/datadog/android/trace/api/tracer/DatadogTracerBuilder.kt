@@ -61,10 +61,10 @@ interface DatadogTracerBuilder {
      * Configures the builder to enable partial flushes when the number of spans in a specific trace
      * reaches the given threshold.
      *
-     * @param partialFlushThreshold The minimum number of spans required to trigger a partial flush.
+     * @param withPartialFlushMinSpans The minimum number of spans required to trigger a partial flush.
      * @return The updated instance of [DatadogTracerBuilder] to allow method chaining.
      */
-    fun withPartialFlushMinSpans(partialFlushThreshold: Int): DatadogTracerBuilder
+    fun withPartialFlushMinSpans(withPartialFlushMinSpans: Int): DatadogTracerBuilder
 
     /**
      * Adds a global tag which will be appended to all spans created with the built tracer.

@@ -35,63 +35,66 @@ class DatadogTraceIdConverterAdapterTest {
 
     @Test
     fun `M return ZERO W zero`() {
-        assertThat(
-            testedConverter.zero()
-        ).isEqualTo(
-            DatadogTraceIdAdapter(DDTraceId.ZERO)
-        )
+        // When
+        val actual = testedConverter.zero()
+
+        // Then
+        assertThat(actual).isEqualTo(DatadogTraceIdAdapter(DDTraceId.ZERO))
     }
 
     @Test
     fun `M return expected W from(Long)`() {
-        assertThat(
-            testedConverter.from(fakeLong)
-        ).isEqualTo(
-            DatadogTraceIdAdapter(DDTraceId.from(fakeLong))
-        )
+        // When
+        val actual = testedConverter.from(fakeLong)
+
+        // Then
+        assertThat(actual).isEqualTo(DatadogTraceIdAdapter(DDTraceId.from(fakeLong)))
     }
 
     @Test
     fun `M return expected W from(String)`() {
+        // Given
         val stringTraceId = fakeLong.toString()
 
-        assertThat(
-            testedConverter.from(stringTraceId)
-        ).isEqualTo(
-            DatadogTraceIdAdapter(DDTraceId.from(stringTraceId))
-        )
+        // When
+        val actual = testedConverter.from(stringTraceId)
+
+        assertThat(actual).isEqualTo(DatadogTraceIdAdapter(DDTraceId.from(stringTraceId)))
     }
 
     @Test
     fun `M return expected W fromHex(String)`() {
+        // Given
         val stringTraceId = fakeLong.toString()
 
-        assertThat(
-            testedConverter.fromHex(stringTraceId)
-        ).isEqualTo(
-            DatadogTraceIdAdapter(DDTraceId.fromHex(stringTraceId))
-        )
+        // When
+        val actual = testedConverter.fromHex(stringTraceId)
+
+        // Then
+        assertThat(actual).isEqualTo(DatadogTraceIdAdapter(DDTraceId.fromHex(stringTraceId)))
     }
 
     @Test
     fun `M return expected W toLong()`() {
+        // Given
         val traceId = DatadogTraceIdAdapter(DDTraceId.from(fakeLong))
 
-        assertThat(
-            testedConverter.toLong(traceId)
-        ).isEqualTo(
-            fakeLong
-        )
+        // When
+        val actual = testedConverter.toLong(traceId)
+
+        // Then
+        assertThat(actual).isEqualTo(fakeLong)
     }
 
     @Test
     fun `M return expected W toHexString()`() {
+        // Given
         val ddTraceId = DDTraceId.from(fakeLong)
 
-        assertThat(
-            testedConverter.toHexString(DatadogTraceIdAdapter(ddTraceId))
-        ).isEqualTo(
-            ddTraceId.toHexString()
-        )
+        // When
+        val actual = testedConverter.toHexString(DatadogTraceIdAdapter(ddTraceId))
+
+        // Then
+        assertThat(actual).isEqualTo(ddTraceId.toHexString())
     }
 }

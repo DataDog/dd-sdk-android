@@ -66,10 +66,6 @@ fun DatadogTracingInternalToolkit.clear() {
     setTracingAdapterBuilderMock(null)
 }
 
-fun GlobalDatadogTracerHolder.clear() {
-    instance = null
-}
-
 private val DatadogSpanContext.ddSpanContext: DDSpanContext?
     get() {
         val spanContextAdapter = this as? DatadogSpanContextAdapter

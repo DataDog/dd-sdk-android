@@ -58,33 +58,50 @@ class DatadogSpanContextAdapterTest {
 
     @Test
     fun `M return delegate#spanId W spanId is called`() {
+        // Given
         whenever(mockAgentSpanContext.spanId).thenReturn(fakeLong)
 
-        assertThat(testedAgentSpanContextAdapter.spanId).isEqualTo(fakeLong)
+        // When
+        val actual = testedAgentSpanContextAdapter.spanId
+
+        // Then
+        assertThat(actual).isEqualTo(fakeLong)
     }
 
     @Test
     fun `M return delegate#samplingPriority W samplingPriority is called`() {
+        // Given
         whenever(mockAgentSpanContext.samplingPriority).thenReturn(fakeInt)
 
-        assertThat(testedAgentSpanContextAdapter.samplingPriority).isEqualTo(fakeInt)
+        // When
+        val actual = testedAgentSpanContextAdapter.samplingPriority
+
+        // Then
+        assertThat(actual).isEqualTo(fakeInt)
     }
 
     @Test
     fun `M return delegate#tags W tags is called`(forge: Forge) {
+        // Given
         val expectedMap = forge.aMap { aString() to aString() }
-
         whenever(mockDDSpanContext.tags).thenReturn(expectedMap)
 
-        assertThat(testedDDSpanContextContextAdapter.tags).isEqualTo(expectedMap)
+        // When
+        val actual = testedDDSpanContextContextAdapter.tags
+
+        // Then
+        assertThat(actual).isEqualTo(expectedMap)
     }
 
     @Test
     fun `M return delegate#traceId W traceId is called`(forge: Forge) {
+        // Given
         val ddTraceId = forge.getForgery<DDTraceId>()
 
+        // When
         whenever(mockAgentSpanContext.traceId).thenReturn(ddTraceId)
 
+        // Then
         assertThat(testedAgentSpanContextAdapter.traceId).isEqualTo(DatadogTraceIdAdapter(ddTraceId))
     }
 }

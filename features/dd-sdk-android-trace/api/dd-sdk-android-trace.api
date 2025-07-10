@@ -1,5 +1,6 @@
 public final class com/datadog/android/trace/GlobalDatadogTracerHolder {
 	public static final field INSTANCE Lcom/datadog/android/trace/GlobalDatadogTracerHolder;
+	public final fun clear ()V
 	public final fun get ()Lcom/datadog/android/trace/api/tracer/DatadogTracer;
 	public final fun getOrNull ()Lcom/datadog/android/trace/api/tracer/DatadogTracer;
 	public final fun registerIfAbsent (Lcom/datadog/android/trace/api/tracer/DatadogTracer;)Z

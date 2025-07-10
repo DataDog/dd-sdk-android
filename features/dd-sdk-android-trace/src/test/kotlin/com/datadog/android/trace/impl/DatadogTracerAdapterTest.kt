@@ -84,58 +84,78 @@ internal class DatadogTracerAdapterTest {
     @Test
     @Suppress("DEPRECATION")
     fun `M return span W buildSpan(String)`() {
+        // When
         val builder = testedTracer.buildSpan(fakeString)
 
+        // Then
         assertThat(builder).isInstanceOf(DatadogSpanBuilder::class.java)
         verify(mockTracer).buildSpan(fakeString)
     }
 
     @Test
     fun `M return span W buildSpan(String, String) `() {
+        // When
         val builder = testedTracer.buildSpan(fakeString, fakeString)
 
+        // Then
         assertThat(builder).isInstanceOf(DatadogSpanBuilder::class.java)
         verify(mockTracer).buildSpan(fakeString, fakeString)
     }
 
     @Test
     fun `M delegate SpanBuilder#addScopeListener W addScopeListener`() {
+        // Given
         val mockListener = mock<DataScopeListener>()
 
+        // When
         testedTracer.addScopeListener(mockListener)
 
+        // Then
         verify(mockTracer).addScopeListener(isA<DatadogScopeListenerAdapter>())
     }
 
     @Test
     fun `M return wrapped span W activeSpan`() {
+        // Given
         whenever(mockTracer.activeSpan()).thenReturn(mockSpan)
 
+        // When
         val span = testedTracer.activeSpan() as DatadogSpanAdapter
 
+        // Then
         assertThat(span.delegate).isEqualTo(mockSpan)
     }
 
     @Test
     fun `M return wrapped scope W activateSpan(DatadogSpan)`() {
+        // Given
         whenever(mockTracer.activateSpan(mockSpan, ScopeSource.INSTRUMENTATION)).thenReturn(mockScope)
 
+        // When
         val scope = testedTracer.activateSpan(mockDatadogSpan) as DatadogScopeAdapter
 
+        // Then
         assertThat(scope.delegate).isEqualTo(mockScope)
     }
 
     @Test
     fun `M return wrapped scope W activateSpan(DatadogSpan, Boolean)`() {
+        // Given
         whenever(mockTracer.activateSpan(mockSpan, ScopeSource.INSTRUMENTATION, fakeBool)).thenReturn(mockScope)
 
+        // When
         val scope = testedTracer.activateSpan(mockDatadogSpan, fakeBool) as DatadogScopeAdapter
 
+        // Then
         assertThat(scope.delegate).isEqualTo(mockScope)
     }
 
     @Test
     fun `M return propagate W propagate()`() {
-        assertThat(testedTracer.propagate()).isInstanceOf(DatadogPropagationAdapter::class.java)
+        // When
+        val actual = testedTracer.propagate()
+
+        // Then
+        assertThat(actual).isInstanceOf(DatadogPropagationAdapter::class.java)
     }
 }

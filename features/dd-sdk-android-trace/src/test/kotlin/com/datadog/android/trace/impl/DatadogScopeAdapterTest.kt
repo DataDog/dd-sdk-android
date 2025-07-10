@@ -23,10 +23,13 @@ class DatadogScopeAdapterTest {
 
     @Test
     fun `M delegate close W close is called`() {
+        // Given
         val adapter = DatadogScopeAdapter(delegate)
 
+        // When
         adapter.close()
 
+        // Then
         verify(delegate).close()
     }
 }

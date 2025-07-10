@@ -75,8 +75,10 @@ class DatadogSpanLoggerAdapterTest {
 
     @Test
     fun `M send expected event W log(String)`() {
+        // When
         testedLogger.log(fakeString, fakeSpan)
 
+        // Then
         argumentCaptor<Map<Any, Any>> {
             verify(mockLogFeatureScope).sendEvent(capture())
 
@@ -96,8 +98,10 @@ class DatadogSpanLoggerAdapterTest {
 
     @Test
     fun `M send expected event W logErrorMessage(String)`() {
+        // When
         testedLogger.logErrorMessage(fakeString, fakeSpan)
 
+        // Then
         argumentCaptor<Map<Any, Any>> {
             verify(mockLogFeatureScope).sendEvent(capture())
 
@@ -116,8 +120,10 @@ class DatadogSpanLoggerAdapterTest {
 
     @Test
     fun `M set expected tags W log(fakeThrowable)`() {
+        // When
         testedLogger.log(fakeThrowable, mockSpan)
 
+        // Then
         verify(mockSpan).isError = true
         verify(mockSpan).setTag(DatadogTracingConstants.Tags.KEY_ERROR_TYPE, fakeThrowable.javaClass.name)
         verify(mockSpan).setTag(DatadogTracingConstants.Tags.KEY_ERROR_MSG, fakeThrowable.message)
@@ -126,10 +132,13 @@ class DatadogSpanLoggerAdapterTest {
 
     @Test
     fun `M send expected event W logErrorMessage(Map)`(forge: Forge) {
+        // Given
         val fakeAttributes = forge.aMap { aString() to aString() }
 
+        // When
         testedLogger.log(fakeAttributes, fakeSpan)
 
+        // Then
         argumentCaptor<Map<Any, Any>> {
             verify(mockLogFeatureScope).sendEvent(capture())
 
