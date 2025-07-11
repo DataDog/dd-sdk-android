@@ -2,6 +2,7 @@ object com.datadog.android.trace.GlobalDatadogTracerHolder
   fun registerIfAbsent(com.datadog.android.trace.api.tracer.DatadogTracer): Boolean
   fun get(): com.datadog.android.trace.api.tracer.DatadogTracer
   fun getOrNull(): com.datadog.android.trace.api.tracer.DatadogTracer?
+  fun clear()
 interface com.datadog.android.trace.InternalCoreWriterProvider
   fun getCoreTracerWriter(): com.datadog.android.trace.api.span.DatadogSpanWriter
 fun com.datadog.android.trace.api.span.DatadogSpan.logThrowable(Throwable)
