@@ -21,7 +21,7 @@ object DatadogTracingConstants {
      * Contains constants used for tagging spans in the Datadog tracer.
      */
     object Tags {
-        /**  The URL of the HTTP request. (String)*/
+        /**  The URL of the HTTP request. */
         const val KEY_HTTP_URL: String = "http.url"
 
         /**

@@ -3,7 +3,7 @@
  * This product includes software developed at Datadog (https://www.datadoghq.com/).
  * Copyright 2016-Present Datadog, Inc.
  */
-package com.datadog.android.trace.impl.internal
+package com.datadog.android.trace.internal
 
 import android.util.Log
 import com.datadog.android.api.InternalLogger
@@ -76,7 +76,7 @@ internal class DatadogSpanLoggerAdapter(
             val message = fields.remove(DatadogTracingConstants.LogAttributes.MESSAGE)
                 ?.toString() ?: DEFAULT_EVENT_MESSAGE
             val logStatus = fields.remove(DatadogTracingConstants.LogAttributes.STATUS) ?: Log.VERBOSE
-            fields[LogAttributes.DD_TRACE_ID] = DatadogTracingInternalToolkit.traceIdConverter.toHexString(
+            fields[LogAttributes.DD_TRACE_ID] = DatadogTracingToolkit.traceIdConverter.toHexString(
                 span.context().traceId
             )
             fields[LogAttributes.DD_SPAN_ID] = span.context().spanId.toString()

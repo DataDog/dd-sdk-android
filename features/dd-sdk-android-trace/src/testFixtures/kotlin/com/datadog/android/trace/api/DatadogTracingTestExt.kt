@@ -13,11 +13,11 @@ import com.datadog.android.trace.api.span.DatadogSpanContext
 import com.datadog.android.trace.api.trace.DatadogTraceId
 import com.datadog.android.trace.api.tracer.DatadogTracer
 import com.datadog.android.trace.api.tracer.DatadogTracerBuilder
-import com.datadog.android.trace.impl.internal.DatadogSpanAdapter
-import com.datadog.android.trace.impl.internal.DatadogSpanContextAdapter
-import com.datadog.android.trace.impl.internal.DatadogSpanLoggerAdapter
-import com.datadog.android.trace.impl.internal.DatadogTracerAdapter
-import com.datadog.android.trace.impl.internal.DatadogTracingInternalToolkit
+import com.datadog.android.trace.internal.DatadogSpanAdapter
+import com.datadog.android.trace.internal.DatadogSpanContextAdapter
+import com.datadog.android.trace.internal.DatadogSpanLoggerAdapter
+import com.datadog.android.trace.internal.DatadogTracerAdapter
+import com.datadog.android.trace.internal.DatadogTracingToolkit
 import com.datadog.android.trace.internal.domain.event.CoreTracerSpanToSpanEventMapper
 import com.datadog.trace.core.CoreTracer
 import com.datadog.trace.core.DDSpan
@@ -49,18 +49,18 @@ fun DatadogSpan.forceSamplingDecision() {
     (this as DatadogSpanAdapter).delegate.forceSamplingDecision()
 }
 
-fun DatadogTraceId.toHexString(): String = DatadogTracingInternalToolkit.traceIdConverter
+fun DatadogTraceId.toHexString(): String = DatadogTracingToolkit.traceIdConverter
     .toHexString(this)
 
-fun DatadogTracingInternalToolkit.setTracingAdapterBuilderMock(mock: DatadogTracerBuilder?) {
+fun DatadogTracingToolkit.setTracingAdapterBuilderMock(mock: DatadogTracerBuilder?) {
     builderProvider = mock
 }
 
-fun DatadogTracingInternalToolkit.setSpanLoggerMock(sdkCore: FeatureSdkCore?) {
+fun DatadogTracingToolkit.setSpanLoggerMock(sdkCore: FeatureSdkCore?) {
     spanLoggerNullable = sdkCore?.let(::DatadogSpanLoggerAdapter)
 }
 
-fun DatadogTracingInternalToolkit.clear() {
+fun DatadogTracingToolkit.clear() {
     setSpanLoggerMock(null)
     setTracingAdapterBuilderMock(null)
 }

@@ -3,15 +3,13 @@
  * This product includes software developed at Datadog (https://www.datadoghq.com/).
  * Copyright 2016-Present Datadog, Inc.
  */
-package com.datadog.android.trace.impl
+package com.datadog.android.trace.internal
 
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.trace.api.span.DatadogSpan
 import com.datadog.android.trace.api.span.DatadogSpanContext
 import com.datadog.android.trace.api.tracer.DatadogTracer
-import com.datadog.android.trace.impl.internal.DatadogTracingInternalToolkit
-import com.datadog.android.trace.impl.internal.TracePropagationDataScopeListener
 import com.datadog.android.utils.forge.Configurator
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -74,7 +72,7 @@ class TracePropagationDataScopeListenerTest {
         assertThat(mapWithContext[contextName]).isEqualTo(
             mapOf(
                 "span_id" to fakeSpanContext.spanId.toString(),
-                "trace_id" to DatadogTracingInternalToolkit.traceIdConverter.toHexString(fakeSpanContext.traceId)
+                "trace_id" to DatadogTracingToolkit.traceIdConverter.toHexString(fakeSpanContext.traceId)
             )
         )
     }

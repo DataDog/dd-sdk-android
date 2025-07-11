@@ -3,7 +3,7 @@
  * This product includes software developed at Datadog (https://www.datadoghq.com/).
  * Copyright 2016-Present Datadog, Inc.
  */
-package com.datadog.android.trace.impl.internal
+package com.datadog.android.trace.internal
 
 import com.datadog.android.trace.api.span.DatadogSpanLink
 import com.datadog.trace.api.DDTraceId
@@ -14,7 +14,7 @@ import com.datadog.trace.bootstrap.instrumentation.api.SpanLinkAttributes
 internal class DatadogSpanLinkAdapter(delegate: DatadogSpanLink) :
     SpanLink(
         /* traceId */
-        DDTraceId.fromHex(DatadogTracingInternalToolkit.traceIdConverter.toHexString(delegate.traceId)),
+        DDTraceId.fromHex(DatadogTracingToolkit.traceIdConverter.toHexString(delegate.traceId)),
         /* spanId */
         delegate.spanId,
         /* traceFlags */

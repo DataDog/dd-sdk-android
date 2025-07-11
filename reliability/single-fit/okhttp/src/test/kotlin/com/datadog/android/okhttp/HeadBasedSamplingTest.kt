@@ -22,8 +22,8 @@ import com.datadog.android.trace.TraceConfiguration
 import com.datadog.android.trace.TracingHeaderType
 import com.datadog.android.trace.api.DatadogTracingConstants
 import com.datadog.android.trace.api.span.DatadogSpan
-import com.datadog.android.trace.impl.DatadogTracing
-import com.datadog.android.trace.impl.internal.DatadogTracingInternalToolkit
+import com.datadog.android.trace.DatadogTracing
+import com.datadog.android.trace.internal.DatadogTracingToolkit
 import com.datadog.android.trace.opentelemetry.OtelTracerProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.getFieldValue
@@ -658,11 +658,11 @@ class HeadBasedSamplingTest {
     private fun String.toTags(): Map<String, String> = split(",")
         .associate { it.split("=").let { it[0] to it[1] } }
 
-    private fun String.cleanHexFormat(): String = with(DatadogTracingInternalToolkit.spanIdConverter) {
+    private fun String.cleanHexFormat(): String = with(DatadogTracingToolkit.spanIdConverter) {
         toHexStringPadded(fromHex(this@cleanHexFormat))
     }
 
-    private fun String.cleanDecimalFormat(): String = with(DatadogTracingInternalToolkit.spanIdConverter) {
+    private fun String.cleanDecimalFormat(): String = with(DatadogTracingToolkit.spanIdConverter) {
         toHexStringPadded(this@cleanDecimalFormat.toLong())
     }
 

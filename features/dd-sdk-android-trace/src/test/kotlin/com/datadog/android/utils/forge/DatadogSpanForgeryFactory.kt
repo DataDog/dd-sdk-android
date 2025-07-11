@@ -7,7 +7,7 @@ package com.datadog.android.utils.forge
 
 import com.datadog.android.trace.api.span.DatadogSpan
 import com.datadog.android.trace.api.span.DatadogSpanContext
-import com.datadog.android.trace.impl.internal.DatadogTraceIdAdapter
+import com.datadog.android.trace.internal.DatadogTraceIdAdapter
 import com.datadog.trace.api.DDTraceId
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory

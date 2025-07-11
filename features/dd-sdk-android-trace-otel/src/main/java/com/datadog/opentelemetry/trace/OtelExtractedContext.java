@@ -13,7 +13,7 @@ import com.datadog.android.api.InternalLogger;
 import com.datadog.android.trace.api.trace.DatadogTraceId;
 import com.datadog.android.trace.api.DatadogTracingConstants;
 import com.datadog.android.trace.api.span.DatadogSpanContext;
-import com.datadog.android.trace.impl.internal.DatadogTracingInternalToolkit;
+import com.datadog.android.trace.internal.DatadogTracingToolkit;
 
 import java.util.Collections;
 import java.util.Locale;
@@ -29,8 +29,8 @@ public class OtelExtractedContext implements DatadogSpanContext {
     private final int prioritySampling;
 
     private OtelExtractedContext(SpanContext context) {
-        traceId = DatadogTracingInternalToolkit.traceIdConverter.fromHex(context.getTraceId());
-        spanId = DatadogTracingInternalToolkit.spanIdConverter.fromHex(context.getSpanId());
+        traceId = DatadogTracingToolkit.traceIdConverter.fromHex(context.getTraceId());
+        spanId = DatadogTracingToolkit.spanIdConverter.fromHex(context.getSpanId());
         prioritySampling = context.isSampled()
                 ? DatadogTracingConstants.PrioritySampling.SAMPLER_KEEP
                 : DatadogTracingConstants.PrioritySampling.UNSET;

@@ -3,12 +3,11 @@
  * This product includes software developed at Datadog (https://www.datadoghq.com/).
  * Copyright 2016-Present Datadog, Inc.
  */
-package com.datadog.android.trace.impl
+package com.datadog.android.trace.internal
 
 import com.datadog.android.trace.api.span.DatadogSpan
 import com.datadog.android.trace.api.span.DatadogSpanContext
 import com.datadog.android.trace.api.trace.DatadogTraceId
-import com.datadog.android.trace.impl.internal.DatadogSpanAdapter
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.trace.api.DDTraceId
 import com.datadog.trace.bootstrap.instrumentation.api.AgentSpan

@@ -3,7 +3,7 @@
  * This product includes software developed at Datadog (https://www.datadoghq.com/).
  * Copyright 2016-Present Datadog, Inc.
  */
-package com.datadog.android.trace.impl
+package com.datadog.android.trace.internal
 
 import android.util.Log
 import com.datadog.android.api.feature.Feature
@@ -13,10 +13,8 @@ import com.datadog.android.internal.utils.loggableStackTrace
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.trace.api.DatadogTracingConstants
 import com.datadog.android.trace.api.span.DatadogSpan
-import com.datadog.android.trace.impl.internal.DatadogSpanLoggerAdapter
-import com.datadog.android.trace.impl.internal.DatadogSpanLoggerAdapter.Companion.DEFAULT_EVENT_MESSAGE
-import com.datadog.android.trace.impl.internal.DatadogSpanLoggerAdapter.Companion.TRACE_LOGGER_NAME
-import com.datadog.android.trace.impl.internal.DatadogTracingInternalToolkit
+import com.datadog.android.trace.internal.DatadogSpanLoggerAdapter.Companion.DEFAULT_EVENT_MESSAGE
+import com.datadog.android.trace.internal.DatadogSpanLoggerAdapter.Companion.TRACE_LOGGER_NAME
 import com.datadog.android.utils.forge.Configurator
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
@@ -91,7 +89,7 @@ class DatadogSpanLoggerAdapterTest {
             assertThat(attributes[DatadogTracingConstants.LogAttributes.EVENT]).isEqualTo(fakeString)
             assertThat(attributes[LogAttributes.DD_SPAN_ID]).isEqualTo(fakeSpan.context().spanId.toString())
             assertThat(attributes[LogAttributes.DD_TRACE_ID]).isEqualTo(
-                DatadogTracingInternalToolkit.traceIdConverter.toHexString(fakeSpan.context().traceId)
+                DatadogTracingToolkit.traceIdConverter.toHexString(fakeSpan.context().traceId)
             )
         }
     }
@@ -113,7 +111,7 @@ class DatadogSpanLoggerAdapterTest {
             val attributes = firstValue["attributes"] as Map<*, *>
             assertThat(attributes[LogAttributes.DD_SPAN_ID]).isEqualTo(fakeSpan.context().spanId.toString())
             assertThat(attributes[LogAttributes.DD_TRACE_ID]).isEqualTo(
-                DatadogTracingInternalToolkit.traceIdConverter.toHexString(fakeSpan.context().traceId)
+                DatadogTracingToolkit.traceIdConverter.toHexString(fakeSpan.context().traceId)
             )
         }
     }
@@ -150,7 +148,7 @@ class DatadogSpanLoggerAdapterTest {
             val attributes = (firstValue["attributes"] as Map<*, *>).toMutableMap()
             assertThat(attributes[LogAttributes.DD_SPAN_ID]).isEqualTo(fakeSpan.context().spanId.toString())
             assertThat(attributes[LogAttributes.DD_TRACE_ID]).isEqualTo(
-                DatadogTracingInternalToolkit.traceIdConverter.toHexString(fakeSpan.context().traceId)
+                DatadogTracingToolkit.traceIdConverter.toHexString(fakeSpan.context().traceId)
             )
             assertThat(attributes).containsAllEntriesOf(fakeAttributes)
         }

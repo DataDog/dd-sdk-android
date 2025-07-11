@@ -1,4 +1,6 @@
-object com.datadog.android.trace.GlobalDatadogTracerHolder
+object com.datadog.android.trace.DatadogTracing
+  fun newTracerBuilder(com.datadog.android.api.SdkCore = Datadog.getInstance()): com.datadog.android.trace.api.tracer.DatadogTracerBuilder
+object com.datadog.android.trace.GlobalDatadogTracer
   fun registerIfAbsent(com.datadog.android.trace.api.tracer.DatadogTracer): Boolean
   fun get(): com.datadog.android.trace.api.tracer.DatadogTracer
   fun getOrNull(): com.datadog.android.trace.api.tracer.DatadogTracer?
@@ -20,19 +22,17 @@ data class com.datadog.android.trace.TraceConfiguration
     fun build(): TraceConfiguration
 interface com.datadog.android.trace.event.SpanEventMapper : com.datadog.android.event.EventMapper<com.datadog.android.trace.model.SpanEvent>
   override fun map(com.datadog.android.trace.model.SpanEvent): com.datadog.android.trace.model.SpanEvent
-object com.datadog.android.trace.impl.DatadogTracing
-  fun newTracerBuilder(com.datadog.android.api.SdkCore = Datadog.getInstance()): com.datadog.android.trace.api.tracer.DatadogTracerBuilder
-interface com.datadog.android.trace.impl.internal.DatadogSpanIdConverter
+interface com.datadog.android.trace.internal.DatadogSpanIdConverter
   fun fromHex(String): Long
   fun toHexStringPadded(Long): String
-interface com.datadog.android.trace.impl.internal.DatadogTraceIdConverter
+interface com.datadog.android.trace.internal.DatadogTraceIdConverter
   fun zero(): com.datadog.android.trace.api.trace.DatadogTraceId
   fun from(Long): com.datadog.android.trace.api.trace.DatadogTraceId
   fun from(String): com.datadog.android.trace.api.trace.DatadogTraceId
   fun fromHex(String): com.datadog.android.trace.api.trace.DatadogTraceId
   fun toLong(com.datadog.android.trace.api.trace.DatadogTraceId): Long
   fun toHexString(com.datadog.android.trace.api.trace.DatadogTraceId): String
-object com.datadog.android.trace.impl.internal.DatadogTracingInternalToolkit
+object com.datadog.android.trace.internal.DatadogTracingInternalToolkit
   val spanIdConverter: DatadogSpanIdConverter
   val traceIdConverter: DatadogTraceIdConverter
   var spanLogger: com.datadog.android.trace.api.span.DatadogSpanLogger

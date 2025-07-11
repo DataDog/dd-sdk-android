@@ -3,23 +3,18 @@
  * This product includes software developed at Datadog (https://www.datadoghq.com/).
  * Copyright 2016-Present Datadog, Inc.
  */
-package com.datadog.android.trace.impl
+package com.datadog.android.trace
 
 import com.datadog.android.Datadog
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.SdkCore
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
-import com.datadog.android.trace.InternalCoreWriterProvider
 import com.datadog.android.trace.api.tracer.DatadogTracerBuilder
 import com.datadog.android.trace.api.tracer.NoOpDatadogTracerBuilder
-import com.datadog.android.trace.impl.internal.DatadogSpanWriterWrapper
-import com.datadog.android.trace.impl.internal.DatadogTracerBuilderAdapter
-import com.datadog.android.trace.impl.internal.DatadogTracingInternalToolkit
-import com.datadog.android.trace.impl.internal.DatadogTracingInternalToolkit.ErrorMessages.DEFAULT_SERVICE_NAME_IS_MISSING_ERROR_MESSAGE
-import com.datadog.android.trace.impl.internal.DatadogTracingInternalToolkit.ErrorMessages.TRACING_NOT_ENABLED_ERROR_MESSAGE
-import com.datadog.android.trace.impl.internal.DatadogTracingInternalToolkit.ErrorMessages.WRITER_PROVIDER_INTERFACE_NOT_IMPLEMENTED_ERROR_MESSAGE
-import com.datadog.android.trace.impl.internal.DatadogTracingInternalToolkit.ErrorMessages.buildWrongWrapperMessage
+import com.datadog.android.trace.internal.DatadogSpanWriterWrapper
+import com.datadog.android.trace.internal.DatadogTracerBuilderAdapter
+import com.datadog.android.trace.internal.DatadogTracingToolkit
 import com.datadog.trace.common.writer.NoOpWriter
 import com.datadog.trace.core.CoreTracer
 
@@ -39,8 +34,8 @@ object DatadogTracing {
      * configurations or features are unavailable.
      */
     fun newTracerBuilder(sdkCore: SdkCore = Datadog.getInstance()): DatadogTracerBuilder = when {
-        DatadogTracingInternalToolkit.builderProvider != null -> {
-            DatadogTracingInternalToolkit.builderProvider as DatadogTracerBuilder
+        DatadogTracingToolkit.builderProvider != null -> {
+            DatadogTracingToolkit.builderProvider as DatadogTracerBuilder
         }
         sdkCore !is FeatureSdkCore -> {
             NoOpDatadogTracerBuilder()
@@ -55,25 +50,29 @@ object DatadogTracing {
                 null == tracingFeature -> internalLogger.log(
                     InternalLogger.Level.ERROR,
                     InternalLogger.Target.USER,
-                    { TRACING_NOT_ENABLED_ERROR_MESSAGE }
+                    { ErrorMessages.TRACING_NOT_ENABLED_ERROR_MESSAGE }
                 )
 
                 null == internalCoreWriterProvider -> internalLogger.log(
                     InternalLogger.Level.ERROR,
                     InternalLogger.Target.MAINTAINER,
-                    { WRITER_PROVIDER_INTERFACE_NOT_IMPLEMENTED_ERROR_MESSAGE }
+                    { ErrorMessages.WRITER_PROVIDER_INTERFACE_NOT_IMPLEMENTED_ERROR_MESSAGE }
                 )
 
                 null == writer -> internalLogger.log(
                     InternalLogger.Level.ERROR,
                     InternalLogger.Target.USER,
-                    { buildWrongWrapperMessage(internalCoreWriterProvider.getCoreTracerWriter().javaClass) }
+                    {
+                        ErrorMessages.buildWrongWrapperMessage(
+                            internalCoreWriterProvider.getCoreTracerWriter().javaClass
+                        )
+                    }
                 )
 
                 sdkCore.service.isEmpty() -> internalLogger.log(
                     InternalLogger.Level.ERROR,
                     InternalLogger.Target.USER,
-                    { DEFAULT_SERVICE_NAME_IS_MISSING_ERROR_MESSAGE }
+                    { ErrorMessages.DEFAULT_SERVICE_NAME_IS_MISSING_ERROR_MESSAGE }
                 )
             }
 
@@ -82,6 +81,25 @@ object DatadogTracing {
                 serviceName = sdkCore.service,
                 delegate = CoreTracer.CoreTracerBuilder(sdkCore.internalLogger).writer(writer ?: NoOpWriter())
             )
+        }
+    }
+
+    internal object ErrorMessages {
+        const val TRACING_NOT_ENABLED_ERROR_MESSAGE: String =
+            "You're trying to create an DatadogTracer instance, " +
+                "but either the SDK was not initialized or the Tracing feature was " +
+                "not registered. No tracing data will be sent."
+
+        const val WRITER_PROVIDER_INTERFACE_NOT_IMPLEMENTED_ERROR_MESSAGE: String =
+            "The Tracing feature is not implementing the InternalCoreWriterProvider interface." +
+                " No tracing data will be sent."
+
+        const val DEFAULT_SERVICE_NAME_IS_MISSING_ERROR_MESSAGE: String =
+            "Default service name is missing during DatadogTracerBuilder creation, did you initialize SDK?"
+
+        fun buildWrongWrapperMessage(cls: Class<*>?): String {
+            return "You're trying to create an DatadogTracer instance, " +
+                "but provided ${cls?.canonicalName} writer wrapper is not supported."
         }
     }
 }

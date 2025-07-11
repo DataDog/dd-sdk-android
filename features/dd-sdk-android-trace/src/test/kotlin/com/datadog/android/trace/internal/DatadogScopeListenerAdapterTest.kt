@@ -3,10 +3,9 @@
  * This product includes software developed at Datadog (https://www.datadoghq.com/).
  * Copyright 2016-Present Datadog, Inc.
  */
-package com.datadog.android.trace.impl
+package com.datadog.android.trace.internal
 
 import com.datadog.android.trace.api.scope.DataScopeListener
-import com.datadog.android.trace.impl.internal.DatadogScopeListenerAdapter
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions

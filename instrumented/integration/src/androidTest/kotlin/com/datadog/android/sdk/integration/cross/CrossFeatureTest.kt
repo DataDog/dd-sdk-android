@@ -34,7 +34,7 @@ import com.datadog.android.trace.GlobalDatadogTracer
 import com.datadog.android.trace.Trace
 import com.datadog.android.trace.TraceConfiguration
 import com.datadog.android.trace.api.tracer.DatadogTracer
-import com.datadog.android.trace.impl.DatadogTracing
+import com.datadog.android.trace.DatadogTracing
 import com.datadog.android.trace.model.SpanEvent
 import com.datadog.tools.unit.ConditionWatcher
 import com.google.gson.JsonNull

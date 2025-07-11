@@ -16,7 +16,6 @@ import com.datadog.android.trace.api.tracer.NoOpDatadogTracer
  */
 object GlobalDatadogTracer {
 
-    @Volatile
     @get:Synchronized
     internal var instance: DatadogTracer? = null
 
@@ -47,7 +46,7 @@ object GlobalDatadogTracer {
     /**
      * Retrieves the current instance of the DatadogTracer, if available.
      *
-     * @return An instance of DatadogTracer or null.
+     * @return An instance of [DatadogTracer] or null.
      */
     fun getOrNull(): DatadogTracer? = instance
 

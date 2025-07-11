@@ -17,7 +17,7 @@ import com.datadog.android.rum.RumConfiguration
 import com.datadog.android.sessionreplay.SessionReplayConfiguration
 import com.datadog.android.trace.TraceConfiguration
 import com.datadog.android.trace.api.tracer.DatadogTracer
-import com.datadog.android.trace.impl.DatadogTracing
+import com.datadog.android.trace.DatadogTracing
 import java.util.UUID
 
 internal object RuntimeConfig {

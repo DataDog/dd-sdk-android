@@ -3,16 +3,11 @@
  * This product includes software developed at Datadog (https://www.datadoghq.com/).
  * Copyright 2016-Present Datadog, Inc.
  */
-package com.datadog.android.trace.impl
+package com.datadog.android.trace.internal
 
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.trace.api.scope.DataScopeListener
 import com.datadog.android.trace.api.span.DatadogSpanBuilder
-import com.datadog.android.trace.impl.internal.DatadogPropagationAdapter
-import com.datadog.android.trace.impl.internal.DatadogScopeAdapter
-import com.datadog.android.trace.impl.internal.DatadogScopeListenerAdapter
-import com.datadog.android.trace.impl.internal.DatadogSpanAdapter
-import com.datadog.android.trace.impl.internal.DatadogTracerAdapter
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.trace.bootstrap.instrumentation.api.AgentScope
 import com.datadog.trace.bootstrap.instrumentation.api.AgentSpan
@@ -72,23 +67,23 @@ internal class DatadogTracerAdapterTest {
     private var fakeBool: Boolean = false
 
     @BeforeEach
-    @Suppress("DEPRECATION")
-    fun `se tup`() {
+    fun `set up`() {
         testedTracer = DatadogTracerAdapter(mockSdk, mockTracer, true)
         whenever(mockDatadogSpan.delegate).thenReturn(mockSpan)
         whenever(mockTracer.propagate()).thenReturn(mock())
+        @Suppress("DEPRECATION")
         whenever(mockTracer.buildSpan(any())).thenReturn(mockSpanBuilder)
         whenever(mockTracer.buildSpan(any(), any())).thenReturn(mockSpanBuilder)
     }
 
     @Test
-    @Suppress("DEPRECATION")
     fun `M return span W buildSpan(String)`() {
         // When
         val builder = testedTracer.buildSpan(fakeString)
 
         // Then
         assertThat(builder).isInstanceOf(DatadogSpanBuilder::class.java)
+        @Suppress("DEPRECATION")
         verify(mockTracer).buildSpan(fakeString)
     }
 

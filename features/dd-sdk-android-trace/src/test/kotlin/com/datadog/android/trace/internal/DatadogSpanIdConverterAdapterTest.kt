@@ -3,10 +3,10 @@
  * This product includes software developed at Datadog (https://www.datadoghq.com/).
  * Copyright 2016-Present Datadog, Inc.
  */
-package com.datadog.android.trace.impl
+package com.datadog.android.trace.internal
 
-import com.datadog.android.trace.impl.internal.DatadogSpanIdConverterAdapter.fromHex
-import com.datadog.android.trace.impl.internal.DatadogSpanIdConverterAdapter.toHexStringPadded
+import com.datadog.android.trace.internal.DatadogSpanIdConverterAdapter.fromHex
+import com.datadog.android.trace.internal.DatadogSpanIdConverterAdapter.toHexStringPadded
 import fr.xgouchet.elmyr.annotation.LongForgery
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test

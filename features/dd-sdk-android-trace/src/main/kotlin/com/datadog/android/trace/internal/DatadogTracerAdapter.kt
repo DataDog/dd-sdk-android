@@ -3,7 +3,7 @@
  * This product includes software developed at Datadog (https://www.datadoghq.com/).
  * Copyright 2016-Present Datadog, Inc.
  */
-package com.datadog.android.trace.impl.internal
+package com.datadog.android.trace.internal
 
 import androidx.annotation.VisibleForTesting
 import com.datadog.android.api.context.DatadogContext
@@ -16,7 +16,6 @@ import com.datadog.android.trace.api.scope.DatadogScope
 import com.datadog.android.trace.api.span.DatadogSpan
 import com.datadog.android.trace.api.span.DatadogSpanBuilder
 import com.datadog.android.trace.api.tracer.DatadogTracer
-import com.datadog.android.trace.internal.SpanAttributes
 import com.datadog.trace.bootstrap.instrumentation.api.AgentTracer
 import com.datadog.trace.bootstrap.instrumentation.api.ScopeSource
 

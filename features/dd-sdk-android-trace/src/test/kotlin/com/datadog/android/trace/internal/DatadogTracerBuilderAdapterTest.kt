@@ -3,16 +3,12 @@
  * This product includes software developed at Datadog (https://www.datadoghq.com/).
  * Copyright 2016-Present Datadog, Inc.
  */
-package com.datadog.android.trace.impl
+package com.datadog.android.trace.internal
 
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.trace.TracingHeaderType
 import com.datadog.android.trace.api.DatadogTracingConstants.TracerConfig
-import com.datadog.android.trace.impl.internal.DatadogScopeListenerAdapter
-import com.datadog.android.trace.impl.internal.DatadogTracerAdapter
-import com.datadog.android.trace.impl.internal.DatadogTracerBuilderAdapter
-import com.datadog.android.trace.impl.internal.DatadogTracerBuilderAdapter.Companion.DEFAULT_URL_AS_RESOURCE_NAME
-import com.datadog.android.trace.impl.internal.TracePropagationDataScopeListener
+import com.datadog.android.trace.internal.DatadogTracerBuilderAdapter.Companion.DEFAULT_URL_AS_RESOURCE_NAME
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.trace.api.DD128bTraceId
 import com.datadog.trace.api.DD64bTraceId
@@ -48,7 +44,7 @@ class DatadogTracerBuilderAdapterTest {
     private lateinit var testedBuilder: DatadogTracerBuilderAdapter
 
     @Mock
-    lateinit var mockSdk: FeatureSdkCore
+    lateinit var mockSdkCore: FeatureSdkCore
 
     @Mock
     lateinit var mockBuilder: CoreTracer.CoreTracerBuilder
@@ -66,7 +62,7 @@ class DatadogTracerBuilderAdapterTest {
     fun `set up`() {
         whenever(mockBuilder.build()).thenReturn(mockTracerDelegate)
         whenever(mockBuilder.withProperties(any())).thenReturn(mockBuilder)
-        testedBuilder = DatadogTracerBuilderAdapter(mockSdk, fakeServiceName, mockBuilder)
+        testedBuilder = DatadogTracerBuilderAdapter(mockSdkCore, fakeServiceName, mockBuilder)
     }
 
     @Test
@@ -161,7 +157,7 @@ class DatadogTracerBuilderAdapterTest {
 
         // Then
         assertThat(tracer.delegate).isEqualTo(mockTracerDelegate)
-        assertThat(tracer.sdkCore).isEqualTo(mockSdk)
+        assertThat(tracer.sdkCore).isEqualTo(mockSdkCore)
         assertThat(tracer.bundleWithRumEnabled).isEqualTo(fakeBoolean)
         argumentCaptor<DatadogScopeListenerAdapter> {
             verify(mockTracerDelegate).addScopeListener(capture())

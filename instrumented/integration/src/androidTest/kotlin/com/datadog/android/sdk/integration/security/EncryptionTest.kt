@@ -29,7 +29,7 @@ import com.datadog.android.trace.GlobalDatadogTracer
 import com.datadog.android.trace.Trace
 import com.datadog.android.trace.TraceConfiguration
 import com.datadog.android.trace.api.tracer.DatadogTracer
-import com.datadog.android.trace.impl.DatadogTracing
+import com.datadog.android.trace.DatadogTracing
 import fr.xgouchet.elmyr.junit4.ForgeRule
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After

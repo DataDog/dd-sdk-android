@@ -3,13 +3,11 @@
  * This product includes software developed at Datadog (https://www.datadoghq.com/).
  * Copyright 2016-Present Datadog, Inc.
  */
-package com.datadog.android.trace.impl.internal
+package com.datadog.android.trace.internal
 
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.trace.api.scope.DataScopeListener
 import com.datadog.android.trace.api.tracer.DatadogTracer
-import com.datadog.android.trace.internal.addActiveTraceToContext
-import com.datadog.android.trace.internal.removeActiveTraceFromContext
 
 internal class TracePropagationDataScopeListener(
     private val sdkCore: FeatureSdkCore,
@@ -19,7 +17,7 @@ internal class TracePropagationDataScopeListener(
         val activeSpanContext = datadogTracer.activeSpan()?.context()
         if (activeSpanContext != null) {
             val activeSpanId = activeSpanContext.spanId.toString()
-            val activeTraceId = DatadogTracingInternalToolkit.traceIdConverter.toHexString(activeSpanContext.traceId)
+            val activeTraceId = DatadogTracingToolkit.traceIdConverter.toHexString(activeSpanContext.traceId)
             sdkCore.addActiveTraceToContext(activeTraceId, activeSpanId)
         }
     }

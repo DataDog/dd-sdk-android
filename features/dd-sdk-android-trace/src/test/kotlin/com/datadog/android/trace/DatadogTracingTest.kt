@@ -3,20 +3,19 @@
  * This product includes software developed at Datadog (https://www.datadoghq.com/).
  * Copyright 2016-Present Datadog, Inc.
  */
-package com.datadog.android.trace.impl
+package com.datadog.android.trace
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.feature.FeatureSdkCore
-import com.datadog.android.trace.InternalCoreWriterProvider
 import com.datadog.android.trace.api.span.DatadogSpanWriter
-import com.datadog.android.trace.impl.internal.DatadogSpanWriterWrapper
-import com.datadog.android.trace.impl.internal.DatadogTracerAdapter
-import com.datadog.android.trace.impl.internal.DatadogTracingInternalToolkit.ErrorMessages.DEFAULT_SERVICE_NAME_IS_MISSING_ERROR_MESSAGE
-import com.datadog.android.trace.impl.internal.DatadogTracingInternalToolkit.ErrorMessages.TRACING_NOT_ENABLED_ERROR_MESSAGE
-import com.datadog.android.trace.impl.internal.DatadogTracingInternalToolkit.ErrorMessages.WRITER_PROVIDER_INTERFACE_NOT_IMPLEMENTED_ERROR_MESSAGE
-import com.datadog.android.trace.impl.internal.DatadogTracingInternalToolkit.ErrorMessages.buildWrongWrapperMessage
+import com.datadog.android.trace.DatadogTracing.ErrorMessages.DEFAULT_SERVICE_NAME_IS_MISSING_ERROR_MESSAGE
+import com.datadog.android.trace.DatadogTracing.ErrorMessages.TRACING_NOT_ENABLED_ERROR_MESSAGE
+import com.datadog.android.trace.DatadogTracing.ErrorMessages.WRITER_PROVIDER_INTERFACE_NOT_IMPLEMENTED_ERROR_MESSAGE
+import com.datadog.android.trace.DatadogTracing.ErrorMessages.buildWrongWrapperMessage
+import com.datadog.android.trace.internal.DatadogSpanWriterWrapper
+import com.datadog.android.trace.internal.DatadogTracerAdapter
 import com.datadog.android.trace.utils.verifyLog
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.tools.unit.getFieldValue
@@ -85,8 +84,7 @@ class DatadogTracingTest {
         val tracer = DatadogTracing.newTracerBuilder(mockSdkCore).build() as DatadogTracerAdapter
 
         // Then
-        assertThat(tracer).isNotNull
-        val coreTracer: CoreTracer = tracer.delegate as CoreTracer
+        val coreTracer = tracer.delegate as CoreTracer
         val writer: Writer = coreTracer.getFieldValue("writer")
         assertThat(writer).isInstanceOf(NoOpWriter::class.java)
     }
@@ -94,7 +92,6 @@ class DatadogTracingTest {
     @Test
     fun `M log a maintainer error W build { TracingFeature not implementing InternalCoreTracerWriterProvider }`() {
         // Given
-
         whenever(mockTracingFeature.unwrap<Feature>()) doReturn mock()
 
         // When

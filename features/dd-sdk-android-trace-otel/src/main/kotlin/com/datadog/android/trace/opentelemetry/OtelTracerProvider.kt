@@ -17,8 +17,8 @@ import com.datadog.android.trace.GlobalDatadogTracer
 import com.datadog.android.trace.InternalCoreWriterProvider
 import com.datadog.android.trace.TracingHeaderType
 import com.datadog.android.trace.api.tracer.DatadogTracer
-import com.datadog.android.trace.impl.DatadogTracing
-import com.datadog.android.trace.impl.internal.DatadogTracingInternalToolkit.setTraceId128BitGenerationEnabled
+import com.datadog.android.trace.DatadogTracing
+import com.datadog.android.trace.internal.DatadogTracingToolkit.setTraceId128BitGenerationEnabled
 import com.datadog.android.trace.opentelemetry.internal.DatadogContextStorageWrapper
 import com.datadog.android.trace.opentelemetry.internal.executeIfJavaFunctionPackageExists
 import com.datadog.opentelemetry.trace.OtelTracerBuilder

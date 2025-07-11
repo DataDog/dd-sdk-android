@@ -12,7 +12,7 @@ import androidx.annotation.Nullable;
 
 import com.datadog.android.trace.api.span.DatadogSpanLink;
 import com.datadog.android.trace.api.trace.DatadogTraceId;
-import com.datadog.android.trace.impl.internal.DatadogTracingInternalToolkit;
+import com.datadog.android.trace.internal.DatadogTracingToolkit;
 import com.datadog.opentelemetry.context.propagation.TraceStateHelper;
 
 import java.util.Collections;
@@ -34,8 +34,8 @@ public class OtelSpanLink implements DatadogSpanLink {
   }
 
   public OtelSpanLink(SpanContext spanContext, io.opentelemetry.api.common.Attributes attributes) {
-    traceId = DatadogTracingInternalToolkit.traceIdConverter.fromHex(spanContext.getTraceId());
-    spanId = DatadogTracingInternalToolkit.spanIdConverter.fromHex(spanContext.getSpanId());
+    traceId = DatadogTracingToolkit.traceIdConverter.fromHex(spanContext.getTraceId());
+    spanId = DatadogTracingToolkit.spanIdConverter.fromHex(spanContext.getSpanId());
     sampled = spanContext.isSampled();
     traceState = TraceStateHelper.encodeHeader(spanContext.getTraceState());
     this.attributes = convertAttributes(attributes);

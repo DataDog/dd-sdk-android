@@ -19,7 +19,7 @@ import com.datadog.android.sdk.utils.isTracesUrl
 import com.datadog.android.trace.api.resolveMeta
 import com.datadog.android.trace.api.resolveMetrics
 import com.datadog.android.trace.api.span.DatadogSpan
-import com.datadog.android.trace.impl.internal.DatadogTracingInternalToolkit
+import com.datadog.android.trace.internal.DatadogTracingToolkit
 import com.datadog.tools.unit.assertj.JsonObjectAssert.Companion.assertThat
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
@@ -128,7 +128,7 @@ internal abstract class TracesTest {
             .hasField(
                 PARENT_ID_KEY,
                 span.parentSpanId?.let {
-                    DatadogTracingInternalToolkit.spanIdConverter.toHexStringPadded(it)
+                    DatadogTracingToolkit.spanIdConverter.toHexStringPadded(it)
                 }
                     ?: throw AssertionError("No parentId provided from $span")
             )

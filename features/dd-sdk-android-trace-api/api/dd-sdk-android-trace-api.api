@@ -3,13 +3,6 @@ public final class com/datadog/android/trace/api/DatadogTracingConstants {
 	public static final field INSTANCE Lcom/datadog/android/trace/api/DatadogTracingConstants;
 }
 
-public final class com/datadog/android/trace/api/DatadogTracingConstants$DDTags {
-	public static final field ERROR_MSG Ljava/lang/String;
-	public static final field ERROR_TYPE Ljava/lang/String;
-	public static final field INSTANCE Lcom/datadog/android/trace/api/DatadogTracingConstants$DDTags;
-	public static final field RESOURCE_NAME Ljava/lang/String;
-}
-
 public final class com/datadog/android/trace/api/DatadogTracingConstants$ErrorPriorities {
 	public static final field DEFAULT B
 	public static final field HTTP_SERVER_DECORATOR B
@@ -37,6 +30,8 @@ public final class com/datadog/android/trace/api/DatadogTracingConstants$Priorit
 }
 
 public final class com/datadog/android/trace/api/DatadogTracingConstants$Tags {
+	public static final field ERROR_MSG Ljava/lang/String;
+	public static final field ERROR_TYPE Ljava/lang/String;
 	public static final field INSTANCE Lcom/datadog/android/trace/api/DatadogTracingConstants$Tags;
 	public static final field KEY_ANALYTICS_SAMPLE_RATE Ljava/lang/String;
 	public static final field KEY_ERROR_MSG Ljava/lang/String;
@@ -46,6 +41,7 @@ public final class com/datadog/android/trace/api/DatadogTracingConstants$Tags {
 	public static final field KEY_HTTP_STATUS Ljava/lang/String;
 	public static final field KEY_HTTP_URL Ljava/lang/String;
 	public static final field KEY_SPAN_KIND Ljava/lang/String;
+	public static final field RESOURCE_NAME Ljava/lang/String;
 	public static final field VALUE_SPAN_KIND_CLIENT Ljava/lang/String;
 	public static final field VALUE_SPAN_KIND_CONSUMER Ljava/lang/String;
 	public static final field VALUE_SPAN_KIND_PRODUCER Ljava/lang/String;
@@ -101,7 +97,7 @@ public abstract interface class com/datadog/android/trace/api/span/DatadogSpan {
 	public abstract fun getResourceName ()Ljava/lang/String;
 	public abstract fun getSamplingPriority ()Ljava/lang/Integer;
 	public abstract fun getServiceName ()Ljava/lang/String;
-	public abstract fun getStartTimeNano ()J
+	public abstract fun getStartTimeNanos ()J
 	public abstract fun getTag (Ljava/lang/String;)Ljava/lang/Object;
 	public abstract fun getTraceId ()Lcom/datadog/android/trace/api/trace/DatadogTraceId;
 	public abstract fun isError ()Ljava/lang/Boolean;

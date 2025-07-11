@@ -8,7 +8,7 @@ package com.datadog.android.sdk.integration.trace
 
 import com.datadog.android.trace.api.span.DatadogSpan
 import com.datadog.android.trace.api.toHexString
-import com.datadog.android.trace.impl.internal.DatadogTracingInternalToolkit
+import com.datadog.android.trace.internal.DatadogTracingToolkit
 
 /**
  * Returns the span's least significant trace id in hex format (the last 64 bits from the 128 bits trace id)
@@ -28,5 +28,5 @@ fun DatadogSpan.mostSignificant64BitsTraceId(): String {
  * Returns the span's spanId in hex format.
  */
 fun DatadogSpan.spanIdAsHexString(): String {
-    return DatadogTracingInternalToolkit.spanIdConverter.toHexStringPadded(context().spanId)
+    return DatadogTracingToolkit.spanIdConverter.toHexStringPadded(context().spanId)
 }

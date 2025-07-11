@@ -18,7 +18,7 @@ import com.datadog.android.trace.GlobalDatadogTracer
 import com.datadog.android.trace.Trace
 import com.datadog.android.trace.TraceConfiguration
 import com.datadog.android.trace.event.SpanEventMapper
-import com.datadog.android.trace.impl.DatadogTracing
+import com.datadog.android.trace.DatadogTracing
 import com.datadog.android.trace.integration.tests.elmyr.TraceIntegrationForgeConfigurator
 import com.datadog.android.trace.model.SpanEvent
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
