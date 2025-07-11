@@ -15,6 +15,7 @@ import androidx.fragment.app.Fragment
 import com.datadog.android.Datadog
 import com.datadog.android.sample.Preferences
 import com.datadog.android.sample.R
+import com.datadog.android.trace.logMessage
 import com.datadog.android.trace.withinSpan
 import com.google.android.material.snackbar.Snackbar
 
@@ -69,7 +70,7 @@ internal class AccountFragment : Fragment(), View.OnClickListener {
                     AGE_KEY to age
                 )
             )
-            log("Updated account info")
+            logMessage("Updated account info")
         }
         Snackbar.make(view ?: v.rootView, "Account info updated", Snackbar.LENGTH_SHORT).show()
     }

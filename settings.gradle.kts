@@ -9,6 +9,7 @@ include(":dd-sdk-android-core")
 include(":dd-sdk-android-internal")
 
 // MAIN FEATURE LIBRARIES
+include(":features:dd-sdk-android-trace-api")
 include(":features:dd-sdk-android-trace-internal")
 include(":features:dd-sdk-android-rum")
 include(":features:dd-sdk-android-logs")

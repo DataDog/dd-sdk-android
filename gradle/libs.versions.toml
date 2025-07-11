@@ -33,9 +33,6 @@ googleAccompanist = "0.20.2"
 googleMaterial = "1.3.0"
 dagger = "2.56.2"
 
-# DD-TRACE-OT
-openTracing = "0.32.0"
-
 # JUnit
 jUnit4 = "4.13.2"
 jUnitJupiter = "5.9.3"
@@ -177,11 +174,6 @@ androidXComposeUiTooling = { module = "androidx.compose.ui:ui-tooling" }
 androidXComposeMaterial = { module = "androidx.compose.material:material" }
 material3Android = { group = "androidx.compose.material3", name = "material3", version.ref = "material3Android" }
 
-# DD-TRACE-OT
-openTracingApi = { module = "io.opentracing:opentracing-api", version.ref = "openTracing" }
-openTracingNoOp = { module = "io.opentracing:opentracing-noop", version.ref = "openTracing" }
-openTracingUtil = { module = "io.opentracing:opentracing-util", version.ref = "openTracing" }
-
 # Junit 4 (for buildSrc)
 jUnit4 = { module = "junit:junit", version.ref = "jUnit4" }
 
@@ -317,12 +309,6 @@ androidXCompose = [
     "androidXComposeUi",
     "androidXComposeUiTooling",
     "androidXComposeMaterial",
-]
-
-openTracing = [
-    "openTracingApi",
-    "openTracingNoOp",
-    "openTracingUtil"
 ]
 
 integrationTests = [

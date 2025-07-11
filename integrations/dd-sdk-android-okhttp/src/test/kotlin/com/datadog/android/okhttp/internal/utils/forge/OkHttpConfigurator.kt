@@ -16,7 +16,6 @@ internal class OkHttpConfigurator : BaseConfigurator() {
         super.configure(forge)
 
         // custom factories
-        forge.addFactory(TraceContextFactory())
         forge.addFactory(TracingHeaderTypesSetForgeryFactory())
     }
 }

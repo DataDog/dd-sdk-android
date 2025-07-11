@@ -26,10 +26,10 @@ import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.RumResourceMethod
 import com.datadog.android.rum.internal.monitor.AdvancedNetworkRumMonitor
 import com.datadog.android.rum.tracking.ViewTrackingStrategy
-import com.datadog.android.trace.AndroidTracer
 import com.datadog.android.trace.TracingHeaderType
-import com.datadog.trace.bootstrap.instrumentation.api.AgentSpan
-import com.datadog.trace.bootstrap.instrumentation.api.AgentTracer
+import com.datadog.android.trace.api.span.DatadogSpan
+import com.datadog.android.trace.api.tracer.DatadogTracer
+import com.datadog.android.trace.internal.DatadogTracingToolkit
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -74,11 +74,11 @@ open class DatadogInterceptor internal constructor(
     tracedHosts: Map<String, Set<TracingHeaderType>>,
     tracedRequestListener: TracedRequestListener,
     internal val rumResourceAttributesProvider: RumResourceAttributesProvider,
-    traceSampler: Sampler<AgentSpan>,
+    traceSampler: Sampler<DatadogSpan>,
     traceContextInjection: TraceContextInjection,
     redacted404ResourceName: Boolean,
-    localTracerFactory: (SdkCore, Set<TracingHeaderType>) -> AgentTracer.TracerAPI,
-    globalTracerProvider: () -> AgentTracer.TracerAPI?
+    localTracerFactory: (SdkCore, Set<TracingHeaderType>) -> DatadogTracer,
+    globalTracerProvider: () -> DatadogTracer?
 ) : TracingInterceptor(
     sdkInstanceName,
     tracedHosts,
@@ -127,7 +127,7 @@ open class DatadogInterceptor internal constructor(
     override fun onRequestIntercepted(
         sdkCore: FeatureSdkCore,
         request: Request,
-        span: AgentSpan?,
+        span: DatadogSpan?,
         response: Response?,
         throwable: Throwable?
     ) {
@@ -166,7 +166,7 @@ open class DatadogInterceptor internal constructor(
         sdkCore: FeatureSdkCore,
         request: Request,
         response: Response,
-        span: AgentSpan?,
+        span: DatadogSpan?,
         isSampled: Boolean
     ) {
         val requestId = request.buildResourceId(generateUuid = false)
@@ -179,7 +179,8 @@ open class DatadogInterceptor internal constructor(
             emptyMap<String, Any?>()
         } else {
             mapOf(
-                RumAttributes.TRACE_ID to span.context().traceId.toHexString(),
+                RumAttributes.TRACE_ID to DatadogTracingToolkit.traceIdConverter
+                    .toHexString(span.context().traceId),
                 RumAttributes.SPAN_ID to span.context().spanId.toString(),
                 RumAttributes.RULE_PSR to (traceSampler.getSampleRate() ?: ZERO_SAMPLE_RATE) / ALL_IN_SAMPLE_RATE
             )
@@ -291,8 +292,8 @@ open class DatadogInterceptor internal constructor(
     /**
      * A Builder for the [DatadogInterceptor].
      * @param tracedHostsWithHeaderType a list of all the hosts and header types that you want to
-     * be automatically tracked by this interceptor. If registering a [io.opentracing.util.GlobalTracer],
-     * the tracer must be configured with [AndroidTracer.Builder.setTracingHeaderTypes] containing all the necessary
+     * be automatically tracked by this interceptor. If registering a [com.datadog.android.trace.GlobalDatadogTracer],
+     * the tracer must be configured with [com.datadog.android.trace.api.tracer.DatadogTracerBuilder.withTracingHeadersTypes] containing all the necessary
      * header types configured for OkHttp tracking.
      * If no hosts are provided (via this argument or global configuration
      * [Configuration.Builder.setFirstPartyHosts] or [Configuration.Builder.setFirstPartyHostsWithHeaderType] )

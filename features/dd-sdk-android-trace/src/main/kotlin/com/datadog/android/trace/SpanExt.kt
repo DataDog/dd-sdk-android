@@ -6,49 +6,67 @@
 
 package com.datadog.android.trace
 
-import io.opentracing.Span
-import io.opentracing.util.GlobalTracer
+import com.datadog.android.trace.api.span.DatadogSpan
+import com.datadog.android.trace.internal.DatadogTracingToolkit
 
 /**
- * Helper method to attach a Throwable to this [Span].
- * The Throwable information (class name, message and stacktrace) will be added to
- * this [Span] as standard Error Tags.
- * @param throwable the [Throwable] you wan to log
+ * Logs a throwable and associates it with the current [DatadogSpan].
+ *
+ * @param throwable The throwable containing error details to be logged with the span.
  */
-fun Span.setError(throwable: Throwable) {
-    AndroidTracer.logThrowable(this, throwable)
+fun DatadogSpan.logThrowable(throwable: Throwable) {
+    DatadogTracingToolkit.spanLogger.log(throwable, this)
 }
 
 /**
- * Helper method to attach an error message to this [Span].
- * The error message will be logged with ERROR status and can be seen in logs attached to the span.
- * @param message the error message you want to attach.
+ * Logs an error message and associates it with the current [DatadogSpan].
+ *
+ * @param message The error message to log.
  */
-fun Span.setError(message: String) {
-    AndroidTracer.logErrorMessage(this, message)
+fun DatadogSpan.logErrorMessage(message: String) {
+    DatadogTracingToolkit.spanLogger.logErrorMessage(message, this)
 }
 
 /**
- * Wraps the provided lambda within a [Span].
+ * Logs a message associated with the current [DatadogSpan].
+ *
+ * @param message The log message to be associated with the span.
+ */
+fun DatadogSpan.logMessage(message: String) {
+    DatadogTracingToolkit.spanLogger.log(message, this)
+}
+
+/**
+ * Logs a set of attributes and associates them with the current [DatadogSpan].
+ *
+ * @param attributes A map containing key-value pairs of attributes to be logged.
+ *                   These attributes provide additional context or metadata for the span.
+ */
+fun DatadogSpan.logAttributes(attributes: Map<String, Any>) {
+    DatadogTracingToolkit.spanLogger.log(attributes, this)
+}
+
+/**
+ * Wraps the provided lambda within a [DatadogSpan].
  * @param T the type returned by the lambda
- * @param operationName the name of the [Span] created around the lambda
- * @param parentSpan the parent [Span] (default is `null`)
- * @param activate whether the created [Span] should be made active for the current thread
+ * @param operationName the name of the [DatadogSpan] created around the lambda
+ * @param parentSpan the parent [DatadogSpan] (default is `null`)
+ * @param activate whether the created [DatadogSpan] should be made active for the current thread
  * (default is `true`)
- * @param block the lambda function traced by this newly created [Span]
+ * @param block the lambda function traced by this newly created [DatadogSpan]
  *
  */
 @SuppressWarnings("TooGenericExceptionCaught")
 inline fun <T : Any?> withinSpan(
     operationName: String,
-    parentSpan: Span? = null,
+    parentSpan: DatadogSpan? = null,
     activate: Boolean = true,
-    block: Span.() -> T
+    block: DatadogSpan.() -> T
 ): T {
-    val tracer = GlobalTracer.get()
+    val tracer = GlobalDatadogTracer.get()
 
     val span = tracer.buildSpan(operationName)
-        .asChildOf(parentSpan)
+        .withParentSpan(parentSpan)
         .start()
 
     val scope = if (activate) tracer.activateSpan(span) else null
@@ -56,7 +74,7 @@ inline fun <T : Any?> withinSpan(
     return try {
         span.block()
     } catch (e: Throwable) {
-        span.setError(e)
+        DatadogTracingToolkit.spanLogger.log(e, span)
         throw e
     } finally {
         span.finish()

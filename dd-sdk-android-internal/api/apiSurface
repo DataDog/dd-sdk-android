@@ -82,7 +82,6 @@ class com.datadog.android.internal.thread.NamedRunnable : NamedExecutionUnit, Ru
 class com.datadog.android.internal.thread.NamedCallable<V> : NamedExecutionUnit, java.util.concurrent.Callable<V>
   constructor(String, java.util.concurrent.Callable<V>)
 fun ByteArray.toHexString(): String
-fun <R> Any.tryCastTo(): R?
 object com.datadog.android.internal.utils.ImageViewUtils
   fun resolveParentRectAbsPosition(android.view.View, Boolean = true): android.graphics.Rect
   fun calculateClipping(android.graphics.Rect, android.graphics.Rect, Float): android.graphics.Rect

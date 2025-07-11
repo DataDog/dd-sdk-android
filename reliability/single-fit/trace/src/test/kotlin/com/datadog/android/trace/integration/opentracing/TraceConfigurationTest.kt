@@ -14,14 +14,14 @@ import com.datadog.android.core.stub.StubSDKCore
 import com.datadog.android.tests.ktx.getInt
 import com.datadog.android.tests.ktx.getLong
 import com.datadog.android.tests.ktx.getString
-import com.datadog.android.trace.AndroidTracer
+import com.datadog.android.trace.GlobalDatadogTracer
 import com.datadog.android.trace.Trace
 import com.datadog.android.trace.TraceConfiguration
 import com.datadog.android.trace.event.SpanEventMapper
+import com.datadog.android.trace.DatadogTracing
 import com.datadog.android.trace.integration.tests.elmyr.TraceIntegrationForgeConfigurator
 import com.datadog.android.trace.model.SpanEvent
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
-import com.datadog.tools.unit.setStaticValue
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import fr.xgouchet.elmyr.Forge
@@ -29,7 +29,6 @@ import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
-import io.opentracing.util.GlobalTracer
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -66,7 +65,7 @@ class TraceConfigurationTest {
 
     @AfterEach
     fun `tear down`() {
-        GlobalTracer::class.java.setStaticValue("isRegistered", false)
+        GlobalDatadogTracer.clear()
     }
 
     @RepeatedTest(16)
@@ -142,7 +141,7 @@ class TraceConfigurationTest {
             .setNetworkInfoEnabled(false)
             .build()
         Trace.enable(fakeTraceConfiguration, stubSdkCore)
-        val testedTracer = AndroidTracer.Builder(stubSdkCore).build()
+        val testedTracer = DatadogTracing.newTracerBuilder(stubSdkCore).build()
 
         // When
         var leastSignificantTraceId: String
@@ -188,7 +187,7 @@ class TraceConfigurationTest {
             .setNetworkInfoEnabled(true)
             .build()
         Trace.enable(fakeTraceConfiguration, stubSdkCore)
-        val testedTracer = AndroidTracer.Builder(stubSdkCore).build()
+        val testedTracer = DatadogTracing.newTracerBuilder(stubSdkCore).build()
 
         // When
         var leastSignificantTraceId: String
@@ -246,7 +245,7 @@ class TraceConfigurationTest {
             .setEventMapper(stubMapper)
             .build()
         Trace.enable(fakeTraceConfiguration, stubSdkCore)
-        val testedTracer = AndroidTracer.Builder(stubSdkCore).build()
+        val testedTracer = DatadogTracing.newTracerBuilder(stubSdkCore).build()
 
         // When
         val fullDuration = measureNanoTime {

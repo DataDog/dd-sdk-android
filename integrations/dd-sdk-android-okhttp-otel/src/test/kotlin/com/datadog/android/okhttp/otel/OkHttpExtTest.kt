@@ -6,8 +6,8 @@
 
 package com.datadog.android.okhttp.otel
 
-import com.datadog.android.okhttp.TraceContext
-import com.datadog.legacy.trace.api.sampling.PrioritySampling
+import com.datadog.android.trace.api.span.DatadogSpan
+import com.datadog.opentelemetry.trace.OtelSpan
 import com.datadog.tools.unit.forge.BaseConfigurator
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -24,6 +24,7 @@ import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
@@ -51,8 +52,6 @@ internal class OkHttpExtTest {
     @Mock
     internal lateinit var mockSpan: Span
 
-    private var expectedPrioritySampling: Int = 0
-
     @BeforeEach
     fun `set up`() {
         val spanContext: SpanContext = mock {
@@ -60,21 +59,27 @@ internal class OkHttpExtTest {
             on { traceId }.thenReturn(fakeTraceId)
             on { isSampled }.thenReturn(fakeIsSampled)
         }
-        expectedPrioritySampling =
-            if (fakeIsSampled) PrioritySampling.USER_KEEP else PrioritySampling.UNSET
         whenever(mockSpan.spanContext).thenReturn(spanContext)
     }
 
     @Test
     fun `M set the parentSpan through the Request builder W addParentSpan`() {
+        // Given
+        val datadogSpan = mock<DatadogSpan>()
+        val mockSpan = mock<OtelSpan> {
+            on { mock.datadogSpan } doReturn datadogSpan
+        }
+
         // When
         val request = Request.Builder().url(fakeUrl).addParentSpan(mockSpan).build()
 
         // Then
-        val taggedContext = request.tag(TraceContext::class.java)
-        checkNotNull(taggedContext)
-        assertThat(taggedContext.spanId).isEqualTo(fakeSpanId)
-        assertThat(taggedContext.traceId).isEqualTo(fakeTraceId)
-        assertThat(taggedContext.samplingPriority).isEqualTo(expectedPrioritySampling)
+        val taggedContext = request.tag(DatadogSpan::class.java)
+
+        assertThat(
+            checkNotNull(taggedContext)
+        ).isEqualTo(
+            datadogSpan
+        )
     }
 }
