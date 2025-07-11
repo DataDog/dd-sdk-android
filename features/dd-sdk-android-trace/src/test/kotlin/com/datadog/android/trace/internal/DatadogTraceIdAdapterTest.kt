@@ -5,9 +5,11 @@
  */
 package com.datadog.android.trace.internal
 
+import com.datadog.android.trace.api.trace.DatadogTraceId
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.trace.api.DDTraceId
 import fr.xgouchet.elmyr.annotation.IntForgery
+import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -38,6 +40,9 @@ class DatadogTraceIdAdapterTest {
 
     @IntForgery
     private var fakeInt = 0
+
+    @LongForgery
+    private var fakeLong = 0L
 
     @BeforeEach
     fun `set up`() {
@@ -90,5 +95,41 @@ class DatadogTraceIdAdapterTest {
 
         // Then
         verify(mockDDTraceId).toHexStringPadded(fakeInt)
+    }
+
+    @Test
+    fun `M return expected W fromHex(String)`() {
+        // Given
+        val stringTraceId = fakeLong.toString()
+
+        // When
+        val actual = DatadogTraceId.fromHex(stringTraceId)
+
+        // Then
+        assertThat(actual).isEqualTo(DatadogTraceIdAdapter(DDTraceId.fromHex(stringTraceId)))
+    }
+
+    @Test
+    fun `M return expected W toHexString()`() {
+        // Given
+        val ddTraceId = DDTraceId.from(fakeLong)
+
+        // When
+        val actual = DatadogTraceIdAdapter(ddTraceId).toHexString()
+
+        // Then
+        assertThat(actual).isEqualTo(ddTraceId.toHexString())
+    }
+
+    @Test
+    fun `M return expected W toLong()`() {
+        // Given
+        val traceId = DatadogTraceIdAdapter(DDTraceId.from(fakeLong))
+
+        // When
+        val actual = traceId.toLong()
+
+        // Then
+        assertThat(actual).isEqualTo(fakeLong)
     }
 }

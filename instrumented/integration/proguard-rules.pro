@@ -11,9 +11,10 @@
     *;
 }
 
-# Required because we need access to GlobalDatadogTracerHolder getOrNull method to reset it through reflection
--keepclassmembernames class com.datadog.android.trace.GlobalDatadogTracerHolder {
+# Required because we need access to GlobalDatadogTracer getOrNull method to reset it through reflection
+-keepnames class com.datadog.android.trace.GlobalDatadogTracer {
     public com.datadog.android.trace.api.tracer.DatadogTracer getOrNull();
+    public static com.datadog.android.trace.GlobalDatadogTracer INSTANCE;
 }
 
 # Required because we need access to GlobalRumMonitor reset method to reset it through reflection

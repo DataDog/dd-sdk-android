@@ -16,13 +16,13 @@ import com.datadog.android.okhttp.tests.assertj.SpansPayloadAssert
 import com.datadog.android.okhttp.tests.elmyr.OkHttpConfigurator
 import com.datadog.android.okhttp.trace.TracingInterceptor
 import com.datadog.android.tests.ktx.getString
+import com.datadog.android.trace.DatadogTracing
 import com.datadog.android.trace.GlobalDatadogTracer
 import com.datadog.android.trace.Trace
 import com.datadog.android.trace.TraceConfiguration
 import com.datadog.android.trace.TracingHeaderType
 import com.datadog.android.trace.api.DatadogTracingConstants
 import com.datadog.android.trace.api.span.DatadogSpan
-import com.datadog.android.trace.DatadogTracing
 import com.datadog.android.trace.internal.DatadogTracingToolkit
 import com.datadog.android.trace.opentelemetry.OtelTracerProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension

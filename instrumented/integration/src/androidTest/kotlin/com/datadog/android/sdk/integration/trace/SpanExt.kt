@@ -7,7 +7,6 @@
 package com.datadog.android.sdk.integration.trace
 
 import com.datadog.android.trace.api.span.DatadogSpan
-import com.datadog.android.trace.api.toHexString
 import com.datadog.android.trace.internal.DatadogTracingToolkit
 
 /**

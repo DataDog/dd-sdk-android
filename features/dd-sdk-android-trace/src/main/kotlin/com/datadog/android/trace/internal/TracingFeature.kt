@@ -41,7 +41,7 @@ internal class TracingFeature(
     override val name: String = Feature.TRACING_FEATURE_NAME
 
     override fun onInitialize(appContext: Context) {
-        coreTracerDataWriter = createCoreTracerDataWriter(sdkCore)
+        coreTracerDataWriter = createDataWriter(sdkCore)
         initialized.set(true)
     }
 
@@ -67,7 +67,7 @@ internal class TracingFeature(
 
     // endregion
 
-    private fun createCoreTracerDataWriter(sdkCore: FeatureSdkCore): Writer {
+    private fun createDataWriter(sdkCore: FeatureSdkCore): Writer {
         val internalLogger = sdkCore.internalLogger
         return CoreTraceWriter(
             sdkCore,

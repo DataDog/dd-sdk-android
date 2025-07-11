@@ -11,15 +11,14 @@ import com.datadog.android.core.stub.StubSDKCore
 import com.datadog.android.tests.ktx.getInt
 import com.datadog.android.tests.ktx.getLong
 import com.datadog.android.tests.ktx.getString
+import com.datadog.android.trace.DatadogTracing
 import com.datadog.android.trace.GlobalDatadogTracer
 import com.datadog.android.trace.Trace
 import com.datadog.android.trace.TraceConfiguration
 import com.datadog.android.trace.api.clear
 import com.datadog.android.trace.api.setSpanLoggerMock
-import com.datadog.android.trace.api.toHexString
-import com.datadog.android.trace.DatadogTracing
-import com.datadog.android.trace.internal.DatadogTracingToolkit
 import com.datadog.android.trace.integration.tests.elmyr.TraceIntegrationForgeConfigurator
+import com.datadog.android.trace.internal.DatadogTracingToolkit
 import com.datadog.android.trace.logErrorMessage
 import com.datadog.android.trace.logThrowable
 import com.datadog.android.trace.withinSpan

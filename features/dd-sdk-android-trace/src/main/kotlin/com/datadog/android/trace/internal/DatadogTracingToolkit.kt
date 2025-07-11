@@ -15,7 +15,7 @@ import com.datadog.android.trace.api.tracer.DatadogTracerBuilder
 
 /**
  * For library usage only.
- * Provides implementation for specific interfaces to dependant modules
+ * Provides implementation for specific interfaces to dependent modules
  */
 @InternalApi
 object DatadogTracingToolkit {
@@ -27,12 +27,6 @@ object DatadogTracingToolkit {
      */
     @JvmField
     val spanIdConverter: DatadogSpanIdConverter = DatadogSpanIdConverterAdapter
-
-    /**
-     * A factory instance for creating and working with [com.datadog.android.trace.api.trace.DatadogTraceId] objects.
-     */
-    @JvmField
-    val traceIdConverter: DatadogTraceIdConverter = DatadogTraceIdConverterAdapter
 
     /**
      * Provides an instance of [DatadogSpanLogger] for logging span-related messages, errors,

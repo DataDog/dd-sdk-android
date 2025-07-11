@@ -47,7 +47,7 @@ public class OtelSpanContext implements SpanContext {
   @Override
   public String getTraceId() {
     if (this.traceId == null) {
-      this.traceId = DatadogTracingToolkit.traceIdConverter.toHexString(this.delegate.getTraceId());
+      traceId = delegate.getTraceId().toHexString();
     }
     return this.traceId;
   }

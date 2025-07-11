@@ -10,9 +10,10 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import com.datadog.android.api.InternalLogger;
-import com.datadog.android.trace.api.trace.DatadogTraceId;
 import com.datadog.android.trace.api.DatadogTracingConstants;
 import com.datadog.android.trace.api.span.DatadogSpanContext;
+import com.datadog.android.trace.api.trace.DatadogTraceId;
+import com.datadog.android.trace.internal.DatadogTraceExtKt;
 import com.datadog.android.trace.internal.DatadogTracingToolkit;
 
 import java.util.Collections;
@@ -29,7 +30,7 @@ public class OtelExtractedContext implements DatadogSpanContext {
     private final int prioritySampling;
 
     private OtelExtractedContext(SpanContext context) {
-        traceId = DatadogTracingToolkit.traceIdConverter.fromHex(context.getTraceId());
+        traceId = DatadogTraceExtKt.fromHex(DatadogTraceId.Companion, context.getTraceId());
         spanId = DatadogTracingToolkit.spanIdConverter.fromHex(context.getSpanId());
         prioritySampling = context.isSampled()
                 ? DatadogTracingConstants.PrioritySampling.SAMPLER_KEEP

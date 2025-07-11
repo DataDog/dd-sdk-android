@@ -22,7 +22,6 @@ import com.datadog.android.trace.api.serviceName
 import com.datadog.android.trace.api.span.DatadogSpan
 import com.datadog.android.trace.api.span.DatadogSpanContext
 import com.datadog.android.trace.api.span.DatadogSpanWriter
-import com.datadog.android.trace.api.toHexString
 import com.datadog.android.trace.api.tracer.DatadogTracer
 import com.datadog.android.trace.api.tracer.DatadogTracerBuilder
 import com.datadog.android.trace.internal.SpanAttributes
@@ -451,7 +450,6 @@ internal class OtelTracerBuilderProviderTest {
             .spanBuilder(fakeOperationName)
             .startSpan()
         val delegateSpan: DatadogSpan = span.delegate
-//        delegateSpan.forceSamplingDecision()
         span.end()
 
         // Then

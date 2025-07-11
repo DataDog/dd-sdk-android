@@ -9,11 +9,11 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.feature.FeatureSdkCore
-import com.datadog.android.trace.api.span.DatadogSpanWriter
 import com.datadog.android.trace.DatadogTracing.ErrorMessages.DEFAULT_SERVICE_NAME_IS_MISSING_ERROR_MESSAGE
 import com.datadog.android.trace.DatadogTracing.ErrorMessages.TRACING_NOT_ENABLED_ERROR_MESSAGE
 import com.datadog.android.trace.DatadogTracing.ErrorMessages.WRITER_PROVIDER_INTERFACE_NOT_IMPLEMENTED_ERROR_MESSAGE
 import com.datadog.android.trace.DatadogTracing.ErrorMessages.buildWrongWrapperMessage
+import com.datadog.android.trace.api.span.DatadogSpanWriter
 import com.datadog.android.trace.internal.DatadogSpanWriterWrapper
 import com.datadog.android.trace.internal.DatadogTracerAdapter
 import com.datadog.android.trace.utils.verifyLog

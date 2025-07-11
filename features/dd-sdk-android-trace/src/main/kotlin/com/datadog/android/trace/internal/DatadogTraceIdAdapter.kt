@@ -14,8 +14,4 @@ internal data class DatadogTraceIdAdapter(private val delegate: DDTraceId) : Dat
     override fun toHexString(): String = delegate.toHexString()
     override fun toHighOrderLong(): Long = delegate.toHighOrderLong()
     override fun toHexStringPadded(size: Int): String = delegate.toHexStringPadded(size)
-
-    companion object {
-        val ZERO: DatadogTraceId = DatadogTraceIdAdapter(DDTraceId.ZERO)
-    }
 }

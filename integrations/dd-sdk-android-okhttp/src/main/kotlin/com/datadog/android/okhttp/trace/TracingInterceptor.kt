@@ -21,6 +21,7 @@ import com.datadog.android.internal.telemetry.TracingHeaderTypesSet
 import com.datadog.android.internal.utils.loggableStackTrace
 import com.datadog.android.okhttp.TraceContextInjection
 import com.datadog.android.okhttp.internal.trace.toInternalTracingHeaderType
+import com.datadog.android.trace.DatadogTracing
 import com.datadog.android.trace.GlobalDatadogTracer
 import com.datadog.android.trace.TracingHeaderType
 import com.datadog.android.trace.api.DatadogTracingConstants.PrioritySampling
@@ -28,7 +29,6 @@ import com.datadog.android.trace.api.DatadogTracingConstants.Tags
 import com.datadog.android.trace.api.span.DatadogSpan
 import com.datadog.android.trace.api.span.DatadogSpanContext
 import com.datadog.android.trace.api.tracer.DatadogTracer
-import com.datadog.android.trace.DatadogTracing
 import com.datadog.android.trace.internal.DatadogTracingToolkit
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
@@ -470,7 +470,7 @@ internal constructor(
 
     private fun handleW3CNotSampledHeaders(span: DatadogSpan, requestBuilder: Request.Builder) {
         if (traceContextInjection == TraceContextInjection.ALL) {
-            val traceId = DatadogTracingToolkit.traceIdConverter.toHexString(span.context().traceId)
+            val traceId = span.context().traceId.toHexString()
             val spanId = span.context().spanId.toString()
             requestBuilder.addHeader(
                 W3C_TRACEPARENT_KEY,

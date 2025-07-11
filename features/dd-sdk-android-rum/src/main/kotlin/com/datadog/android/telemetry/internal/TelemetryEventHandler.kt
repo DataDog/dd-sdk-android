@@ -440,17 +440,17 @@ internal class TelemetryEventHandler(
         // Would be nice to add the test with the flavor which is has no io.opentracing and test
         // for obfuscation enabled case.
         return try {
-            val globalDatadogTracerHolderClass =
-                Class.forName("com.datadog.android.trace.GlobalDatadogTracerHolder")
+            val globalDatadogTracer =
+                Class.forName("com.datadog.android.trace.GlobalDatadogTracer")
             return try {
-                val holderInstance = globalDatadogTracerHolderClass.getField("INSTANCE").get(null)
-                globalDatadogTracerHolderClass.getDeclaredMethod("getOrNull").invoke(holderInstance) != null
+                val holderInstance = globalDatadogTracer.getField("INSTANCE").get(null)
+                globalDatadogTracer.getDeclaredMethod("getOrNull").invoke(holderInstance) != null
             } catch (@Suppress("TooGenericExceptionCaught") t: Throwable) {
                 sdkCore.internalLogger.log(
                     InternalLogger.Level.ERROR,
                     InternalLogger.Target.TELEMETRY,
                     {
-                        "GlobalDatadogTracerHolder class exists in the runtime classpath, " +
+                        "GlobalDatadogTracer class exists in the runtime classpath, " +
                             "but there is an error invoking isRegistered method"
                     },
                     t

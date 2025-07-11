@@ -30,11 +30,11 @@ import com.datadog.android.sdk.utils.isLogsUrl
 import com.datadog.android.sdk.utils.isRumUrl
 import com.datadog.android.sdk.utils.isTracesUrl
 import com.datadog.android.sdk.utils.overrideProcessImportance
+import com.datadog.android.trace.DatadogTracing
 import com.datadog.android.trace.GlobalDatadogTracer
 import com.datadog.android.trace.Trace
 import com.datadog.android.trace.TraceConfiguration
 import com.datadog.android.trace.api.tracer.DatadogTracer
-import com.datadog.android.trace.DatadogTracing
 import com.datadog.android.trace.model.SpanEvent
 import com.datadog.tools.unit.ConditionWatcher
 import com.google.gson.JsonNull

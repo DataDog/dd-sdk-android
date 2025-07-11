@@ -25,11 +25,11 @@ import com.datadog.android.rum.RumResourceMethod
 import com.datadog.android.security.Encryption
 import com.datadog.android.sessionreplay.SessionReplay
 import com.datadog.android.sessionreplay.SessionReplayConfiguration
+import com.datadog.android.trace.DatadogTracing
 import com.datadog.android.trace.GlobalDatadogTracer
 import com.datadog.android.trace.Trace
 import com.datadog.android.trace.TraceConfiguration
 import com.datadog.android.trace.api.tracer.DatadogTracer
-import com.datadog.android.trace.DatadogTracing
 import fr.xgouchet.elmyr.junit4.ForgeRule
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After

@@ -25,16 +25,9 @@ interface com.datadog.android.trace.event.SpanEventMapper : com.datadog.android.
 interface com.datadog.android.trace.internal.DatadogSpanIdConverter
   fun fromHex(String): Long
   fun toHexStringPadded(Long): String
-interface com.datadog.android.trace.internal.DatadogTraceIdConverter
-  fun zero(): com.datadog.android.trace.api.trace.DatadogTraceId
-  fun from(Long): com.datadog.android.trace.api.trace.DatadogTraceId
-  fun from(String): com.datadog.android.trace.api.trace.DatadogTraceId
-  fun fromHex(String): com.datadog.android.trace.api.trace.DatadogTraceId
-  fun toLong(com.datadog.android.trace.api.trace.DatadogTraceId): Long
-  fun toHexString(com.datadog.android.trace.api.trace.DatadogTraceId): String
-object com.datadog.android.trace.internal.DatadogTracingInternalToolkit
+fun com.datadog.android.trace.api.trace.DatadogTraceId.Companion.fromHex(String): com.datadog.android.trace.api.trace.DatadogTraceId
+object com.datadog.android.trace.internal.DatadogTracingToolkit
   val spanIdConverter: DatadogSpanIdConverter
-  val traceIdConverter: DatadogTraceIdConverter
   var spanLogger: com.datadog.android.trace.api.span.DatadogSpanLogger
   fun setTracingSamplingPriorityIfNecessary(com.datadog.android.trace.api.span.DatadogSpanContext)
   fun setTraceId128BitGenerationEnabled(com.datadog.android.trace.api.tracer.DatadogTracerBuilder): com.datadog.android.trace.api.tracer.DatadogTracerBuilder

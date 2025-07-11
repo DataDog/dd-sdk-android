@@ -5,7 +5,6 @@
  */
 package com.datadog.android.trace.internal
 
-import androidx.annotation.VisibleForTesting
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
@@ -20,11 +19,8 @@ import com.datadog.trace.bootstrap.instrumentation.api.AgentTracer
 import com.datadog.trace.bootstrap.instrumentation.api.ScopeSource
 
 internal class DatadogTracerAdapter(
-    @get:VisibleForTesting
     internal val sdkCore: FeatureSdkCore,
-    @get:VisibleForTesting
     internal val delegate: AgentTracer.TracerAPI,
-    @get:VisibleForTesting
     internal val bundleWithRumEnabled: Boolean
 ) : DatadogTracer {
 

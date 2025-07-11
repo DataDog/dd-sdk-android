@@ -65,6 +65,7 @@ dependencies {
     }
     testImplementation(testFixtures(project(":dd-sdk-android-core")))
     testImplementation(testFixtures(project(":dd-sdk-android-internal")))
+    testImplementation(testFixtures(project(":features:dd-sdk-android-trace")))
     testImplementation(libs.bundles.jUnit5)
     testImplementation(libs.bundles.testTools)
     testImplementation(libs.okHttpMock)

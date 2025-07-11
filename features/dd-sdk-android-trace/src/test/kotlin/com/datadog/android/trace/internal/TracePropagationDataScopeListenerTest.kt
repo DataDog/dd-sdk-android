@@ -72,7 +72,7 @@ class TracePropagationDataScopeListenerTest {
         assertThat(mapWithContext[contextName]).isEqualTo(
             mapOf(
                 "span_id" to fakeSpanContext.spanId.toString(),
-                "trace_id" to DatadogTracingToolkit.traceIdConverter.toHexString(fakeSpanContext.traceId)
+                "trace_id" to fakeSpanContext.traceId.toHexString()
             )
         )
     }

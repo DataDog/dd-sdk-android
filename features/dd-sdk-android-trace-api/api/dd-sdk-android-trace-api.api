@@ -164,6 +164,13 @@ public final class com/datadog/android/trace/api/span/NoOpDatadogSpanLogger : co
 }
 
 public abstract interface class com/datadog/android/trace/api/trace/DatadogTraceId {
+	public static final field Companion Lcom/datadog/android/trace/api/trace/DatadogTraceId$Companion;
+	public abstract fun toHexString ()Ljava/lang/String;
+	public abstract fun toHexStringPadded (I)Ljava/lang/String;
+	public abstract fun toLong ()J
+}
+
+public final class com/datadog/android/trace/api/trace/DatadogTraceId$Companion {
 }
 
 public abstract interface class com/datadog/android/trace/api/tracer/DatadogTracer {

@@ -6,7 +6,7 @@
 package com.datadog.android.trace.api.span
 
 /**
- * A writer is responsible to send collected spans to some place.
- * This wrapper is required to no expose CoreTracer wrapper to dependant modules
+ * A writer is responsible for sending collected spans.
+ * This wrapper is required to not expose CoreTracer wrapper to dependent modules
  * */
 interface DatadogSpanWriter

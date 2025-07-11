@@ -88,9 +88,7 @@ class DatadogSpanLoggerAdapterTest {
             val attributes = firstValue["attributes"] as Map<*, *>
             assertThat(attributes[DatadogTracingConstants.LogAttributes.EVENT]).isEqualTo(fakeString)
             assertThat(attributes[LogAttributes.DD_SPAN_ID]).isEqualTo(fakeSpan.context().spanId.toString())
-            assertThat(attributes[LogAttributes.DD_TRACE_ID]).isEqualTo(
-                DatadogTracingToolkit.traceIdConverter.toHexString(fakeSpan.context().traceId)
-            )
+            assertThat(attributes[LogAttributes.DD_TRACE_ID]).isEqualTo(fakeSpan.context().traceId.toHexString())
         }
     }
 
@@ -110,9 +108,7 @@ class DatadogSpanLoggerAdapterTest {
 
             val attributes = firstValue["attributes"] as Map<*, *>
             assertThat(attributes[LogAttributes.DD_SPAN_ID]).isEqualTo(fakeSpan.context().spanId.toString())
-            assertThat(attributes[LogAttributes.DD_TRACE_ID]).isEqualTo(
-                DatadogTracingToolkit.traceIdConverter.toHexString(fakeSpan.context().traceId)
-            )
+            assertThat(attributes[LogAttributes.DD_TRACE_ID]).isEqualTo(fakeSpan.context().traceId.toHexString())
         }
     }
 
@@ -147,9 +143,7 @@ class DatadogSpanLoggerAdapterTest {
 
             val attributes = (firstValue["attributes"] as Map<*, *>).toMutableMap()
             assertThat(attributes[LogAttributes.DD_SPAN_ID]).isEqualTo(fakeSpan.context().spanId.toString())
-            assertThat(attributes[LogAttributes.DD_TRACE_ID]).isEqualTo(
-                DatadogTracingToolkit.traceIdConverter.toHexString(fakeSpan.context().traceId)
-            )
+            assertThat(attributes[LogAttributes.DD_TRACE_ID]).isEqualTo(fakeSpan.context().traceId.toHexString())
             assertThat(attributes).containsAllEntriesOf(fakeAttributes)
         }
     }
