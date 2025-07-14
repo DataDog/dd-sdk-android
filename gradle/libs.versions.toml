@@ -98,9 +98,7 @@ ktorServer = "3.0.0-rc-1"
 
 # Otel
 jctools = "3.3.0"
-openTelemetry = "1.4.0"
-# Only for internal benchmark use
-openTelemetryBenchmark = "1.40.0"
+openTelemetry = "1.40.0"
 re2j = "1.7"
 material3Android = "1.1.2"
 
@@ -269,8 +267,7 @@ ktorClientMock = { module = "io.ktor:ktor-client-mock", version.ref = "ktor" }
 # Otel
 jctools = { module = "org.jctools:jctools-core", version.ref = "jctools" }
 openTelemetryApi = { module = "io.opentelemetry:opentelemetry-api", version.ref = "openTelemetry" }
-openTelemetryApiBenchmark = { module = "io.opentelemetry:opentelemetry-api", version.ref = "openTelemetryBenchmark" }
-openTelemetrySdkBenchmark = { module = "io.opentelemetry:opentelemetry-sdk", version.ref = "openTelemetryBenchmark" }
+openTelemetrySdk = { module = "io.opentelemetry:opentelemetry-sdk", version.ref = "openTelemetry" }
 re2j = { module = "com.google.re2j:re2j", version.ref = "re2j" }
 
 [bundles]
