@@ -103,9 +103,9 @@ internal class LogEventAssert(actual: LogEvent) :
     }
 
     fun hasDeviceArchitecture(expected: String): LogEventAssert {
-        assertThat(actual.dd.device.architecture)
+        assertThat(actual.device.architecture)
             .overridingErrorMessage(
-                "Expected device to have architecture $expected but was ${actual.dd.device.architecture}"
+                "Expected device to have architecture $expected but was ${actual.device.architecture}"
             )
             .isEqualTo(expected)
         return this
