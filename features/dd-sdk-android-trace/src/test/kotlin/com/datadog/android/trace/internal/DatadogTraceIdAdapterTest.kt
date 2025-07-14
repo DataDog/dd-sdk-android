@@ -41,7 +41,7 @@ class DatadogTraceIdAdapterTest {
     @IntForgery
     private var fakeInt = 0
 
-    @LongForgery
+    @LongForgery(min = 0)
     private var fakeLong = 0L
 
     @BeforeEach
@@ -101,12 +101,13 @@ class DatadogTraceIdAdapterTest {
     fun `M return expected W fromHex(String)`() {
         // Given
         val stringTraceId = fakeLong.toString()
+        val expected = DatadogTraceIdAdapter(DDTraceId.fromHex(stringTraceId))
 
         // When
         val actual = DatadogTraceId.fromHex(stringTraceId)
 
         // Then
-        assertThat(actual).isEqualTo(DatadogTraceIdAdapter(DDTraceId.fromHex(stringTraceId)))
+        assertThat(actual).isEqualTo(expected)
     }
 
     @Test
