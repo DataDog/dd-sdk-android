@@ -286,6 +286,14 @@ data class RumConfiguration internal constructor(
         }
 
         /**
+         * Sets a flag to collect accessibility settings inside the RUM view end event.
+         */
+        fun collectAccessibilitySettings(): Builder {
+            rumConfig = rumConfig.copy(collectAccessibilitySettings = true)
+            return this
+        }
+
+        /**
          * The [SlowFramesListener] provides statistical data to help identify performance issues related to UI rendering:
          *
          * - slowFrames: A list of records containing the timestamp and duration of frames where users experience

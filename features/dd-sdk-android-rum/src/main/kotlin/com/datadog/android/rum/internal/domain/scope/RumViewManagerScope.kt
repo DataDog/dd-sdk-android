@@ -19,6 +19,7 @@ import com.datadog.android.rum.RumSessionType
 import com.datadog.android.rum.internal.anr.ANRException
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
+import com.datadog.android.rum.internal.domain.accessibility.AccessibilityReader
 import com.datadog.android.rum.internal.metric.SessionEndedMetric
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
 import com.datadog.android.rum.internal.metric.ViewEndedMetricDispatcher
@@ -49,7 +50,8 @@ internal class RumViewManagerScope(
     internal val initialResourceIdentifier: InitialResourceIdentifier,
     private val slowFramesListener: SlowFramesListener?,
     lastInteractionIdentifier: LastInteractionIdentifier?,
-    private val rumSessionTypeOverride: RumSessionType?
+    private val rumSessionTypeOverride: RumSessionType?,
+    private val accessibilityReader: AccessibilityReader
 ) : RumScope {
 
     private val interactionToNextViewMetricResolver: InteractionToNextViewMetricResolver =
@@ -236,7 +238,8 @@ internal class RumViewManagerScope(
             interactionToNextViewMetricResolver = interactionToNextViewMetricResolver,
             networkSettledResourceIdentifier = initialResourceIdentifier,
             slowFramesListener = slowFramesListener,
-            rumSessionTypeOverride = rumSessionTypeOverride
+            rumSessionTypeOverride = rumSessionTypeOverride,
+            accessibilityReader = accessibilityReader
         )
         applicationDisplayed = true
         childrenScopes.add(viewScope)
@@ -314,7 +317,8 @@ internal class RumViewManagerScope(
             networkSettledMetricResolver = networkSettledMetricResolver,
             viewEndedMetricDispatcher = viewEndedMetricDispatcher,
             slowFramesListener = slowFramesListener,
-            rumSessionTypeOverride = rumSessionTypeOverride
+            rumSessionTypeOverride = rumSessionTypeOverride,
+            accessibilityReader = accessibilityReader
         )
     }
 
@@ -353,7 +357,8 @@ internal class RumViewManagerScope(
             networkSettledMetricResolver = networkSettledMetricResolver,
             viewEndedMetricDispatcher = viewEndedMetricDispatcher,
             slowFramesListener = slowFramesListener,
-            rumSessionTypeOverride = rumSessionTypeOverride
+            rumSessionTypeOverride = rumSessionTypeOverride,
+            accessibilityReader = accessibilityReader
         )
     }
 

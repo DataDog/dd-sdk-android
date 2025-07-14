@@ -336,6 +336,7 @@ class SampleApplication : Application() {
                 event.context?.additionalProperties?.put(ATTR_IS_MAPPED, true)
                 event
             }
+            .collectAccessibilitySettings()
             .trackBackgroundEvents(true)
             .trackAnonymousUser(true)
             .enableComposeActionTracking()
