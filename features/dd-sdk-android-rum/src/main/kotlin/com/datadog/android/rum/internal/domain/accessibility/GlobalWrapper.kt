@@ -12,7 +12,7 @@ import android.provider.Settings.SettingNotFoundException
 import com.datadog.android.api.InternalLogger
 
 internal class GlobalWrapper {
-    @Suppress("TooGenericExceptionCaught")
+    @Suppress("TooGenericExceptionCaught", "UnsafeThirdPartyFunctionCall") // exceptions caught
     internal fun getFloat(
         internalLogger: InternalLogger,
         applicationContext: Context,

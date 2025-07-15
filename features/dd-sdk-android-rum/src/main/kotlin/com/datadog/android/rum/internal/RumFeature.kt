@@ -299,6 +299,7 @@ internal class RumFeature(
         anrDetectorRunnable?.stop()
         vitalExecutorService = NoOpScheduledExecutorService()
         sessionListener = NoOpRumSessionListener()
+        accessibilityReader.cleanup()
 
         GlobalRumMonitor.unregister(sdkCore)
     }

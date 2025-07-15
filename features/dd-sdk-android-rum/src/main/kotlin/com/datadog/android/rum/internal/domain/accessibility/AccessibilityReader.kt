@@ -12,6 +12,8 @@ import com.datadog.tools.annotation.NoOpImplementation
 internal interface AccessibilityReader {
     fun getState(): Map<String, Any>
 
+    fun cleanup()
+
     companion object {
         internal const val ACCESSIBILITY_KEY = "accessibility"
     }

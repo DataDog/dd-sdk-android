@@ -12,7 +12,7 @@ import android.provider.Settings.SettingNotFoundException
 import com.datadog.android.api.InternalLogger
 
 internal class SecureWrapper {
-    @Suppress("TooGenericExceptionCaught")
+    @Suppress("TooGenericExceptionCaught", "UnsafeThirdPartyFunctionCall") // exceptions caught
     internal fun getInt(
         internalLogger: InternalLogger,
         applicationContext: Context,
