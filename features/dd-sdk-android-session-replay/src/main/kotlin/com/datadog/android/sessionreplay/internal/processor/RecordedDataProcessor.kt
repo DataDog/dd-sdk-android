@@ -38,8 +38,13 @@ internal class RecordedDataProcessor(
     override fun processResources(
         item: ResourceRecordedDataQueueItem
     ) {
+        println("*** Process Resources ***")
+        println("*** Item: $item ***")
+        println("*** Item identifier: ${item.identifier} ***")
+
         val resourceHash = item.identifier
         val isKnownResource = resourceDataStoreManager.isPreviouslySentResource(resourceHash)
+        println("isKnownResource: $isKnownResource")
 
         if (!isKnownResource) {
             // the cacheResourceHash method overwrites the datastore entry and we don't want that if we haven't finished
@@ -50,8 +55,11 @@ internal class RecordedDataProcessor(
 
             val enrichedResource = EnrichedResource(
                 resource = item.resourceData,
-                filename = resourceHash
+                filename = resourceHash,
+                mimeType = item.mimeType
             )
+
+            println("enrichedResource: $enrichedResource")
 
             resourcesWriter.write(enrichedResource)
         }

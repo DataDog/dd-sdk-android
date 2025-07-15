@@ -44,7 +44,8 @@ internal class RecordedDataQueueHandler(
     @MainThread
     override fun addResourceItem(
         identifier: String,
-        resourceData: ByteArray
+        resourceData: ByteArray,
+        mimeType: String?
     ): ResourceRecordedDataQueueItem? {
         val rumContextData = rumContextDataHandler.createRumContextData()
             ?: return null
@@ -52,8 +53,11 @@ internal class RecordedDataQueueHandler(
         val item = ResourceRecordedDataQueueItem(
             recordedQueuedItemContext = rumContextData,
             identifier = identifier,
-            resourceData = resourceData
+            resourceData = resourceData,
+            mimeType
         )
+
+        println("*** AddResourceItem: $item ***")
 
         insertIntoRecordedDataQueue(item)
 

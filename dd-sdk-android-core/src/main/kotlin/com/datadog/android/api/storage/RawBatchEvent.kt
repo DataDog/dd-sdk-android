@@ -14,7 +14,8 @@ package com.datadog.android.api.storage
  */
 data class RawBatchEvent(
     val data: ByteArray,
-    val metadata: ByteArray = EMPTY_BYTE_ARRAY
+    val metadata: ByteArray = EMPTY_BYTE_ARRAY,
+    val mimeType: String? = null
 ) {
 
     override fun equals(other: Any?): Boolean {

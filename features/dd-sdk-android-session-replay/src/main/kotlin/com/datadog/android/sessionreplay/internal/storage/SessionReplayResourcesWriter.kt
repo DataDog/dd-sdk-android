@@ -26,7 +26,8 @@ internal class SessionReplayResourcesWriter(
                     eventBatchWriter.write(
                         event = RawBatchEvent(
                             data = enrichedResource.resource,
-                            metadata = serializedMetadata
+                            metadata = serializedMetadata,
+                            mimeType = enrichedResource.mimeType
                         ),
                         batchMetadata = null,
                         eventType = EventType.DEFAULT

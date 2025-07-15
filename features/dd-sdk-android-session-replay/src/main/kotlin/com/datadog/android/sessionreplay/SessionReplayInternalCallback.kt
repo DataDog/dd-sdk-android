@@ -21,4 +21,8 @@ interface SessionReplayInternalCallback {
      * that were missed because the client was initialized after the `Application.onCreate` phase.
      */
     fun getCurrentActivity(): Activity?
+
+    fun addResourceItem(identifier: String, resourceData: ByteArray, mimeType: String? = null)
+
+    fun setResourceQueue(resourceQueue: SessionReplayInternalResourceQueue)
 }
