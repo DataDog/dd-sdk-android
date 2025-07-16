@@ -13,7 +13,7 @@ import com.datadog.trace.api.DDSpanId
  * Interface for converting Datadog span IDs between hexadecimal and decimal representations.
  */
 @InternalApi
-interface DatadogSpanIdConverter {
+class DatadogSpanIdConverter internal constructor() {
 
     /**
      * Converts a hexadecimal string representation of an spanId into its equivalent long value.
@@ -23,7 +23,7 @@ interface DatadogSpanIdConverter {
      * @throws NumberFormatException if the input string is not a valid hexadecimal representation or is null.
      */
     @Throws(NumberFormatException::class)
-    fun fromHex(spanId: String): Long
+    fun fromHex(spanId: String): Long = DDSpanId.fromHex(spanId)
 
     /**
      * Converts the given long-based span ID into a hexadecimal string representation,
@@ -32,11 +32,5 @@ interface DatadogSpanIdConverter {
      * @param spanId The span ID to convert, represented as a long value.
      * @return A hexadecimal string representation of the given span ID, padded as necessary.
      */
-    fun toHexStringPadded(spanId: Long): String
-}
-
-internal object DatadogSpanIdConverterAdapter : DatadogSpanIdConverter {
-    override fun fromHex(spanId: String): Long = DDSpanId.fromHex(spanId)
-
-    override fun toHexStringPadded(spanId: Long): String = DDSpanId.toHexStringPadded(spanId)
+    fun toHexStringPadded(spanId: Long): String = DDSpanId.toHexStringPadded(spanId)
 }

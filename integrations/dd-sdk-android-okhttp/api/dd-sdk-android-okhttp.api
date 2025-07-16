@@ -35,6 +35,21 @@ public final class com/datadog/android/okhttp/DatadogInterceptor$Builder : com/d
 	public final fun setRumResourceAttributesProvider (Lcom/datadog/android/rum/RumResourceAttributesProvider;)Lcom/datadog/android/okhttp/DatadogInterceptor$Builder;
 }
 
+public final class com/datadog/android/okhttp/TraceContext {
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;I)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()I
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;I)Lcom/datadog/android/okhttp/TraceContext;
+	public static synthetic fun copy$default (Lcom/datadog/android/okhttp/TraceContext;Ljava/lang/String;Ljava/lang/String;IILjava/lang/Object;)Lcom/datadog/android/okhttp/TraceContext;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getSamplingPriority ()I
+	public final fun getSpanId ()Ljava/lang/String;
+	public final fun getTraceId ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
 public final class com/datadog/android/okhttp/TraceContextInjection : java/lang/Enum {
 	public static final field ALL Lcom/datadog/android/okhttp/TraceContextInjection;
 	public static final field SAMPLED Lcom/datadog/android/okhttp/TraceContextInjection;

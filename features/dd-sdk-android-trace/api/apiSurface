@@ -22,12 +22,16 @@ data class com.datadog.android.trace.TraceConfiguration
     fun build(): TraceConfiguration
 interface com.datadog.android.trace.event.SpanEventMapper : com.datadog.android.event.EventMapper<com.datadog.android.trace.model.SpanEvent>
   override fun map(com.datadog.android.trace.model.SpanEvent): com.datadog.android.trace.model.SpanEvent
-interface com.datadog.android.trace.internal.DatadogSpanIdConverter
+class com.datadog.android.trace.internal.DatadogPropagationHelper
+  fun isExtractedContext(com.datadog.android.trace.api.span.DatadogSpanContext): Boolean
+  fun createExtractedContext(String, String, Int): com.datadog.android.trace.api.span.DatadogSpanContext
+class com.datadog.android.trace.internal.DatadogSpanIdConverter
   fun fromHex(String): Long
   fun toHexStringPadded(Long): String
 fun com.datadog.android.trace.api.trace.DatadogTraceId.Companion.fromHex(String): com.datadog.android.trace.api.trace.DatadogTraceId
 object com.datadog.android.trace.internal.DatadogTracingToolkit
   val spanIdConverter: DatadogSpanIdConverter
+  var propagationHelper: DatadogPropagationHelper
   var spanLogger: com.datadog.android.trace.api.span.DatadogSpanLogger
   fun setTracingSamplingPriorityIfNecessary(com.datadog.android.trace.api.span.DatadogSpanContext)
   fun setTraceId128BitGenerationEnabled(com.datadog.android.trace.api.tracer.DatadogTracerBuilder): com.datadog.android.trace.api.tracer.DatadogTracerBuilder

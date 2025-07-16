@@ -13,6 +13,7 @@ import com.datadog.android.trace.api.span.DatadogSpanContext
 import com.datadog.android.trace.api.trace.DatadogTraceId
 import com.datadog.android.trace.api.tracer.DatadogTracer
 import com.datadog.android.trace.api.tracer.DatadogTracerBuilder
+import com.datadog.android.trace.internal.DatadogPropagationHelper
 import com.datadog.android.trace.internal.DatadogSpanAdapter
 import com.datadog.android.trace.internal.DatadogSpanContextAdapter
 import com.datadog.android.trace.internal.DatadogSpanLoggerAdapter
@@ -73,6 +74,19 @@ fun DatadogTracingToolkit.setSpanLoggerMock(sdkCore: FeatureSdkCore?) {
 fun DatadogTracingToolkit.clear() {
     setSpanLoggerMock(null)
     setTracingAdapterBuilderMock(null)
+}
+
+fun DatadogTracingToolkit.withMockPropagationHelper(
+    mockHelper: DatadogPropagationHelper,
+    block: DatadogTracingToolkit.() -> Unit
+) {
+    val helper = propagationHelper
+    try {
+        propagationHelper = mockHelper
+        block()
+    } finally {
+        propagationHelper = helper
+    }
 }
 
 private val DatadogSpanContext.ddSpanContext: DDSpanContext?

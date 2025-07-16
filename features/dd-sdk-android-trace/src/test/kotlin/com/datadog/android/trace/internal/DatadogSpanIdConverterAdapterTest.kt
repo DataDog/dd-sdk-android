@@ -5,8 +5,7 @@
  */
 package com.datadog.android.trace.internal
 
-import com.datadog.android.trace.internal.DatadogSpanIdConverterAdapter.fromHex
-import com.datadog.android.trace.internal.DatadogSpanIdConverterAdapter.toHexStringPadded
+import com.datadog.trace.api.DDSpanId.toHexStringPadded
 import fr.xgouchet.elmyr.annotation.LongForgery
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -18,8 +17,11 @@ class DatadogSpanIdConverterAdapterTest {
 
     @Test
     fun `M serialize to String and deserialize valid W fromHeX(toHexStringPadded(Long))`() {
+        // Given
+        val converter = DatadogSpanIdConverter()
+
         // When
-        val actual = fromHex(toHexStringPadded(fakeLong))
+        val actual = converter.fromHex(toHexStringPadded(fakeLong))
 
         // Then
         assertThat(actual).isEqualTo(fakeLong)

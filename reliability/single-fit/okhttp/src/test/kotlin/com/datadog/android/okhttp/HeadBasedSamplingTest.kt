@@ -345,7 +345,7 @@ class HeadBasedSamplingTest {
         val eventsWritten = stubSdkCore.eventsWritten(Feature.TRACING_FEATURE_NAME)
         assertThat(eventsWritten).hasSize(2)
 
-        val localSpanPayload = JsonParser.parseString(eventsWritten.first().eventData).asJsonObject
+        val localSpanPayload = JsonParser.parseString(eventsWritten[0].eventData).asJsonObject
         SpansPayloadAssert.assertThat(localSpanPayload)
             .hasSpanAtIndexWith(0) {
                 hasLeastSignificant64BitsTraceId(
@@ -441,7 +441,7 @@ class HeadBasedSamplingTest {
         val eventsWritten = stubSdkCore.eventsWritten(Feature.TRACING_FEATURE_NAME)
         assertThat(eventsWritten).hasSize(2)
 
-        val localSpanPayload = JsonParser.parseString(eventsWritten[0].eventData).asJsonObject
+        val localSpanPayload = JsonParser.parseString(eventsWritten[1].eventData).asJsonObject
         SpansPayloadAssert.assertThat(localSpanPayload)
             .hasSpanAtIndexWith(0) {
                 hasLeastSignificant64BitsTraceId(
@@ -457,7 +457,7 @@ class HeadBasedSamplingTest {
 
         val localSpanId = getLocalSpanId(localSpanPayload)
 
-        val okHttpSpanPayload = JsonParser.parseString(eventsWritten[1].eventData) as JsonObject
+        val okHttpSpanPayload = JsonParser.parseString(eventsWritten[0].eventData) as JsonObject
         SpansPayloadAssert.assertThat(okHttpSpanPayload)
             .hasEnv(stubSdkCore.getDatadogContext().env)
             .hasSpanAtIndexWith(0) {

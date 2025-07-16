@@ -25,6 +25,4 @@ class NoOpDatadogPropagation : DatadogPropagation {
         carrier: C,
         getter: (carrier: C, classifier: (String, String) -> Boolean) -> Unit
     ): DatadogSpanContext? = null
-
-    override fun isExtractedContext(context: DatadogSpanContext) = false
 }

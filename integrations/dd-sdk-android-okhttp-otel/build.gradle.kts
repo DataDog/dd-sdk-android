@@ -46,6 +46,7 @@ dependencies {
     implementation(libs.kotlin)
 
     api(project(":features:dd-sdk-android-trace-api"))
+    implementation(project(":features:dd-sdk-android-trace"))
     implementation(project(":integrations:dd-sdk-android-okhttp"))
     implementation(project(":features:dd-sdk-android-trace-otel"))
 

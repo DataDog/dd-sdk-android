@@ -19,6 +19,7 @@ import com.datadog.android.core.internal.net.DefaultFirstPartyHostHeaderTypeReso
 import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.internal.telemetry.TracingHeaderTypesSet
 import com.datadog.android.internal.utils.loggableStackTrace
+import com.datadog.android.okhttp.TraceContext
 import com.datadog.android.okhttp.TraceContextInjection
 import com.datadog.android.okhttp.internal.trace.toInternalTracingHeaderType
 import com.datadog.android.trace.DatadogTracing
@@ -321,6 +322,7 @@ internal constructor(
     private fun extractSamplingDecision(request: Request): Boolean? {
         val headerSamplingPriority = extractSamplingDecisionFromHeader(request)
         val datadogSpan = request.tag(DatadogSpan::class.java)
+        val openTelemetrySpanSamplingPriority = request.tag(TraceContext::class.java)?.samplingPriority
 
         return when {
             headerSamplingPriority != null -> headerSamplingPriority
@@ -328,7 +330,8 @@ internal constructor(
                 DatadogTracingToolkit.setTracingSamplingPriorityIfNecessary(datadogSpan.context())
                 datadogSpan.context().samplingPriority > 0
             }
-            else -> null
+            openTelemetrySpanSamplingPriority == PrioritySampling.UNSET -> null
+            else -> openTelemetrySpanSamplingPriority?.let { samplingPriority -> samplingPriority > 0 }
         }
     }
 
@@ -381,10 +384,9 @@ internal constructor(
     }
 
     private fun extractParentContext(tracer: DatadogTracer, request: Request): DatadogSpanContext? {
-        val propagation = tracer.propagate()
-        val tagContext = request.tag(DatadogSpan::class.java)?.context()
+        val tagContext = request.tag(DatadogSpan::class.java)?.context() ?: extractTraceContext(request)
 
-        val headerContext: DatadogSpanContext? = propagation.extract(request) { carrier, classifier ->
+        val headerContext: DatadogSpanContext? = tracer.propagate().extract(request) { carrier, classifier ->
             val headers = carrier.headers.toMultimap()
                 .map { it.key to it.value.joinToString(";") }
                 .toMap()
@@ -393,12 +395,21 @@ internal constructor(
             for ((key, value) in headers) classifier(key, value)
         }
 
-        return if (headerContext != null && propagation.isExtractedContext(headerContext)) {
+        return if (headerContext != null && DatadogTracingToolkit.propagationHelper.isExtractedContext(headerContext)) {
             headerContext
         } else {
             tagContext
         }
     }
+
+    private fun extractTraceContext(request: Request): DatadogSpanContext? =
+        request.tag(TraceContext::class.java)?.let {
+            DatadogTracingToolkit.propagationHelper.createExtractedContext(
+                it.traceId,
+                it.spanId,
+                it.samplingPriority
+            )
+        }
 
     private fun setSampledOutHeaders(
         requestBuilder: Request.Builder,

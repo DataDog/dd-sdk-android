@@ -3,8 +3,6 @@
  * This product includes software developed at Datadog (https://www.datadoghq.com/).
  * Copyright 2016-Present Datadog, Inc.
  */
-@file:Suppress("DEPRECATION")
-
 package com.datadog.android.okhttp.trace
 
 import com.datadog.android.api.InternalLogger
@@ -25,6 +23,9 @@ import com.datadog.android.trace.api.span.DatadogSpanBuilder
 import com.datadog.android.trace.api.span.DatadogSpanContext
 import com.datadog.android.trace.api.trace.DatadogTraceId
 import com.datadog.android.trace.api.tracer.DatadogTracer
+import com.datadog.android.trace.api.withMockPropagationHelper
+import com.datadog.android.trace.internal.DatadogPropagationHelper
+import com.datadog.android.trace.internal.DatadogTracingToolkit
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
@@ -96,6 +97,9 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
 
     @Mock
     lateinit var mockPropagation: DatadogPropagation
+
+    @Mock
+    lateinit var mockPropagationHelper: DatadogPropagationHelper
 
     @Mock
     lateinit var mockLocalTracer: DatadogTracer
@@ -550,21 +554,22 @@ internal open class TracingInterceptorNonDdTracerNotSendingSpanTest {
         val parentSpanContext: DatadogSpanContext = mock()
         whenever(mockSpanBuilder.withParentContext(any<DatadogSpanContext>())) doReturn mockSpanBuilder
         whenever(mockPropagation.extract(any<Request>(), any())) doReturn parentSpanContext
-        whenever(mockPropagation.isExtractedContext(parentSpanContext)) doReturn true
+        whenever(mockPropagationHelper.isExtractedContext(parentSpanContext)) doReturn true
         whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(true)
         fakeRequest = forgeRequest(forge)
         doAnswer { true }.whenever(mockResolver).isFirstPartyUrl(fakeUrl.toHttpUrl())
         stubChain(mockChain, statusCode)
         mockPropagation.wheneverInjectThenValueToHeaders(key, value)
+        DatadogTracingToolkit.withMockPropagationHelper(mockPropagationHelper) {
+            val response = testedInterceptor.intercept(mockChain)
 
-        val response = testedInterceptor.intercept(mockChain)
-
-        assertThat(response).isSameAs(fakeResponse)
-        argumentCaptor<Request> {
-            verify(mockChain).proceed(capture())
-            assertThat(lastValue.header(key)).isEqualTo(value)
+            assertThat(response).isSameAs(fakeResponse)
+            argumentCaptor<Request> {
+                verify(mockChain).proceed(capture())
+                assertThat(lastValue.header(key)).isEqualTo(value)
+            }
+            verify(mockSpanBuilder).withParentContext(parentSpanContext)
         }
-        verify(mockSpanBuilder).withParentContext(parentSpanContext)
     }
 
     @Test

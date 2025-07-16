@@ -26,7 +26,16 @@ object DatadogTracingToolkit {
      * when working with the Datadog SDK.
      */
     @JvmField
-    val spanIdConverter: DatadogSpanIdConverter = DatadogSpanIdConverterAdapter
+    val spanIdConverter: DatadogSpanIdConverter = DatadogSpanIdConverter()
+
+    /**
+     * Providing helper function to extract [DatadogSpanContext] from tracing context added by addParentSpan method.
+
+     * This property is intended for internal usage only and should not
+     * be altered externally.
+     */
+    var propagationHelper: DatadogPropagationHelper = DatadogPropagationHelper()
+        internal set
 
     /**
      * Provides an instance of [DatadogSpanLogger] for logging span-related messages, errors,

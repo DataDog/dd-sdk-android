@@ -64,14 +64,12 @@ public final class com/datadog/android/trace/api/DatadogTracingConstants$TracerC
 public abstract interface class com/datadog/android/trace/api/propagation/DatadogPropagation {
 	public abstract fun extract (Ljava/lang/Object;Lkotlin/jvm/functions/Function2;)Lcom/datadog/android/trace/api/span/DatadogSpanContext;
 	public abstract fun inject (Lcom/datadog/android/trace/api/span/DatadogSpanContext;Ljava/lang/Object;Lkotlin/jvm/functions/Function3;)V
-	public abstract fun isExtractedContext (Lcom/datadog/android/trace/api/span/DatadogSpanContext;)Z
 }
 
 public final class com/datadog/android/trace/api/propagation/NoOpDatadogPropagation : com/datadog/android/trace/api/propagation/DatadogPropagation {
 	public fun <init> ()V
 	public fun extract (Ljava/lang/Object;Lkotlin/jvm/functions/Function2;)Lcom/datadog/android/trace/api/span/DatadogSpanContext;
 	public fun inject (Lcom/datadog/android/trace/api/span/DatadogSpanContext;Ljava/lang/Object;Lkotlin/jvm/functions/Function3;)V
-	public fun isExtractedContext (Lcom/datadog/android/trace/api/span/DatadogSpanContext;)Z
 }
 
 public abstract interface class com/datadog/android/trace/api/scope/DataScopeListener {

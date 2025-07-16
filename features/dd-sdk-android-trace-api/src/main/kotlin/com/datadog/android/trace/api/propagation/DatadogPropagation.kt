@@ -47,12 +47,4 @@ interface DatadogPropagation {
         carrier: C,
         getter: (carrier: C, classifier: (String, String) -> Boolean) -> Unit
     ): DatadogSpanContext?
-
-    /**
-     * Determines if the provided [DatadogSpanContext] represents an extracted context.
-     *
-     * @param context The DatadogSpanContext to be evaluated.
-     * @return True if the context is identified as an extracted context, otherwise false.
-     */
-    fun isExtractedContext(context: DatadogSpanContext): Boolean
 }

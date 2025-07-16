@@ -46,11 +46,9 @@ object com.datadog.android.trace.api.DatadogTracingConstants
 interface com.datadog.android.trace.api.propagation.DatadogPropagation
   fun <C> inject(com.datadog.android.trace.api.span.DatadogSpanContext, C, (C) -> Unit)
   fun <C> extract(C, (C) -> Unit): com.datadog.android.trace.api.span.DatadogSpanContext?
-  fun isExtractedContext(com.datadog.android.trace.api.span.DatadogSpanContext): Boolean
 class com.datadog.android.trace.api.propagation.NoOpDatadogPropagation : DatadogPropagation
   override fun <C> inject(com.datadog.android.trace.api.span.DatadogSpanContext, C, (C) -> Unit)
   override fun <C> extract(C, (C) -> Unit): com.datadog.android.trace.api.span.DatadogSpanContext?
-  override fun isExtractedContext(com.datadog.android.trace.api.span.DatadogSpanContext)
 interface com.datadog.android.trace.api.scope.DatadogScope : java.io.Closeable
   override fun close()
 interface com.datadog.android.trace.api.span.DatadogSpan
