@@ -6,7 +6,6 @@
 
 package com.datadog.android.sessionreplay.internal.async
 
-import android.os.Handler
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -15,10 +14,8 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
-import org.mockito.Mockito.`when`
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
-import org.mockito.kotlin.any
 import org.mockito.kotlin.verify
 import org.mockito.quality.Strictness
 
@@ -37,18 +34,9 @@ internal class RecordedDataQueueRefsTest {
     @Mock
     lateinit var mockRecordedDataQueueItem: SnapshotRecordedDataQueueItem
 
-    @Mock
-    lateinit var mockHandler: Handler
-
     @BeforeEach
     fun setup() {
-        // make mockHandler execute all runnables immediately
-        `when`(mockHandler.post(any())).thenAnswer {
-            (it.arguments[0] as Runnable).run()
-            true
-        }
-
-        testedDataQueueRefs = RecordedDataQueueRefs(mockDataQueueHandler, mockHandler)
+        testedDataQueueRefs = RecordedDataQueueRefs(mockDataQueueHandler)
         testedDataQueueRefs.recordedDataQueueItem = mockRecordedDataQueueItem
     }
 

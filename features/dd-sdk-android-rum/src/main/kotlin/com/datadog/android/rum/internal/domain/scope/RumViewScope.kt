@@ -21,6 +21,7 @@ import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumPerformanceMetric
+import com.datadog.android.rum.RumSessionType
 import com.datadog.android.rum.internal.FeaturesContextResolver
 import com.datadog.android.rum.internal.anr.ANRException
 import com.datadog.android.rum.internal.domain.RumContext
@@ -35,6 +36,10 @@ import com.datadog.android.rum.internal.metric.networksettled.InternalResourceCo
 import com.datadog.android.rum.internal.metric.networksettled.NetworkSettledMetricResolver
 import com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener
 import com.datadog.android.rum.internal.monitor.StorageEvent
+import com.datadog.android.rum.internal.toAction
+import com.datadog.android.rum.internal.toError
+import com.datadog.android.rum.internal.toLongTask
+import com.datadog.android.rum.internal.toView
 import com.datadog.android.rum.internal.utils.hasUserData
 import com.datadog.android.rum.internal.utils.newRumEventWriteOperation
 import com.datadog.android.rum.internal.vitals.VitalInfo
@@ -71,7 +76,8 @@ internal open class RumViewScope(
     private val interactionToNextViewMetricResolver: InteractionToNextViewMetricResolver,
     private val networkSettledMetricResolver: NetworkSettledMetricResolver,
     private val slowFramesListener: SlowFramesListener?,
-    private val viewEndedMetricDispatcher: ViewMetricDispatcher
+    private val viewEndedMetricDispatcher: ViewMetricDispatcher,
+    private val rumSessionTypeOverride: RumSessionType?
 ) : RumScope {
 
     internal val url = key.url.replace('.', '/')
@@ -146,6 +152,8 @@ internal open class RumViewScope(
 
     private val performanceMetrics: MutableMap<RumPerformanceMetric, VitalInfo> = mutableMapOf()
 
+    private var externalRefreshRateInfo: VitalInfo? = null
+
     // endregion
 
     init {
@@ -205,6 +213,7 @@ internal open class RumViewScope(
             is RumRawEvent.StopSession -> onStopSession(event, writer)
 
             is RumRawEvent.UpdatePerformanceMetric -> onUpdatePerformanceMetric(event)
+            is RumRawEvent.UpdateExternalRefreshRate -> onUpdateExternalRefreshRate(event)
             is RumRawEvent.AddViewLoadingTime -> onAddViewLoadingTime(event, writer)
 
             else -> delegateEventToChildren(event, writer)
@@ -257,7 +266,8 @@ internal open class RumViewScope(
             interactionToNextViewMetricResolver = interactionToNextViewMetricResolver,
             networkSettledMetricResolver = networkSettledMetricResolver,
             viewEndedMetricDispatcher = viewEndedMetricDispatcher,
-            slowFramesListener = slowFramesListener
+            slowFramesListener = slowFramesListener,
+            rumSessionTypeOverride = rumSessionTypeOverride
         )
     }
 
@@ -389,13 +399,14 @@ internal open class RumViewScope(
             if (event.type == RumActionType.CUSTOM && !event.waitForStop) {
                 // deliver it anyway, even if there is active action ongoing
                 val customActionScope = RumActionScope.fromEvent(
-                    this,
-                    sdkCore,
-                    event,
-                    serverTimeOffsetInMs,
-                    featuresContextResolver,
-                    trackFrustrations,
-                    sampleRate
+                    parentScope = this,
+                    sdkCore = sdkCore,
+                    event = event,
+                    timestampOffset = serverTimeOffsetInMs,
+                    featuresContextResolver = featuresContextResolver,
+                    trackFrustrations = trackFrustrations,
+                    sampleRate = sampleRate,
+                    rumSessionTypeOverride = rumSessionTypeOverride
                 )
                 pendingActionCount++
                 customActionScope.handleEvent(RumRawEvent.SendCustomActionNow(), writer)
@@ -412,13 +423,14 @@ internal open class RumViewScope(
 
         updateActiveActionScope(
             RumActionScope.fromEvent(
-                this,
-                sdkCore,
-                event,
-                serverTimeOffsetInMs,
-                featuresContextResolver,
-                trackFrustrations,
-                sampleRate
+                parentScope = this,
+                sdkCore = sdkCore,
+                event = event,
+                timestampOffset = serverTimeOffsetInMs,
+                featuresContextResolver = featuresContextResolver,
+                trackFrustrations = trackFrustrations,
+                sampleRate = sampleRate,
+                rumSessionTypeOverride = rumSessionTypeOverride
             )
         )
         pendingActionCount++
@@ -436,14 +448,15 @@ internal open class RumViewScope(
             attributes = addExtraAttributes(event.attributes)
         )
         activeResourceScopes[event.key] = RumResourceScope.fromEvent(
-            this,
-            sdkCore,
-            updatedEvent,
-            firstPartyHostHeaderTypeResolver,
-            serverTimeOffsetInMs,
-            featuresContextResolver,
-            sampleRate,
-            networkSettledMetricResolver
+            parentScope = this,
+            sdkCore = sdkCore,
+            event = updatedEvent,
+            firstPartyHostHeaderTypeResolver = firstPartyHostHeaderTypeResolver,
+            timestampOffset = serverTimeOffsetInMs,
+            featuresContextResolver = featuresContextResolver,
+            sampleRate = sampleRate,
+            networkSettledMetricResolver = networkSettledMetricResolver,
+            rumSessionTypeOverride = rumSessionTypeOverride
         )
         pendingResourceCount++
     }
@@ -495,11 +508,13 @@ internal open class RumViewScope(
                     resultId = rumContext.syntheticsResultId
                 )
             }
-            val sessionType = if (syntheticsAttribute == null) {
-                ErrorEvent.ErrorEventSessionType.USER
-            } else {
-                ErrorEvent.ErrorEventSessionType.SYNTHETICS
+
+            val sessionType = when {
+                rumSessionTypeOverride != null -> rumSessionTypeOverride.toError()
+                syntheticsAttribute == null -> ErrorEvent.ErrorEventSessionType.USER
+                else -> ErrorEvent.ErrorEventSessionType.SYNTHETICS
             }
+
             ErrorEvent(
                 buildId = datadogContext.appBuildId,
                 date = event.eventTime.timestamp + serverTimeOffsetInMs,
@@ -631,6 +646,31 @@ internal open class RumViewScope(
             newSampleCount,
             min(value, vitalInfo.minValue),
             max(value, vitalInfo.maxValue),
+            meanValue
+        )
+    }
+
+    private fun onUpdateExternalRefreshRate(
+        event: RumRawEvent.UpdateExternalRefreshRate
+    ) {
+        if (stopped) return
+
+        // Convert frame time (seconds) to refresh rate (Hz)
+        val refreshRateHz = if (event.frameTimeSeconds > 0) {
+            1.0 / event.frameTimeSeconds
+        } else {
+            return // Invalid frame time
+        }
+
+        val currentInfo = externalRefreshRateInfo ?: VitalInfo.EMPTY
+        val newSampleCount = currentInfo.sampleCount + 1
+
+        // Calculate incremental mean using the same algorithm as performance metrics
+        val meanValue = (refreshRateHz + (currentInfo.sampleCount * currentInfo.meanValue)) / newSampleCount
+        externalRefreshRateInfo = VitalInfo(
+            newSampleCount,
+            min(refreshRateHz, currentInfo.minValue),
+            max(refreshRateHz, currentInfo.maxValue),
             meanValue
         )
     }
@@ -905,7 +945,8 @@ internal open class RumViewScope(
 
         val timings = resolveCustomTimings()
         val memoryInfo = lastMemoryInfo
-        val refreshRateInfo = lastFrameRateInfo
+        // Use external refresh rate data if available, otherwise fall back to internal data
+        val refreshRateInfo = externalRefreshRateInfo ?: lastFrameRateInfo
         val isSlowRendered = resolveRefreshRateInfo(refreshRateInfo) ?: false
         // make a copy - by the time we iterate over it on another thread, it may already be changed
         val eventFeatureFlags = featureFlags.toMutableMap()
@@ -964,10 +1005,11 @@ internal open class RumViewScope(
                     resultId = rumContext.syntheticsResultId
                 )
             }
-            val sessionType = if (syntheticsAttribute == null) {
-                ViewEvent.ViewEventSessionType.USER
-            } else {
-                ViewEvent.ViewEventSessionType.SYNTHETICS
+
+            val sessionType = when {
+                rumSessionTypeOverride != null -> rumSessionTypeOverride.toView()
+                syntheticsAttribute == null -> ViewEvent.ViewEventSessionType.USER
+                else -> ViewEvent.ViewEventSessionType.SYNTHETICS
             }
 
             ViewEvent(
@@ -1161,10 +1203,11 @@ internal open class RumViewScope(
                     resultId = rumContext.syntheticsResultId
                 )
             }
-            val sessionType = if (syntheticsAttribute == null) {
-                ActionEvent.ActionEventSessionType.USER
-            } else {
-                ActionEvent.ActionEventSessionType.SYNTHETICS
+
+            val sessionType = when {
+                rumSessionTypeOverride != null -> rumSessionTypeOverride.toAction()
+                syntheticsAttribute == null -> ActionEvent.ActionEventSessionType.USER
+                else -> ActionEvent.ActionEventSessionType.SYNTHETICS
             }
 
             ActionEvent(
@@ -1281,11 +1324,13 @@ internal open class RumViewScope(
                     resultId = rumContext.syntheticsResultId
                 )
             }
-            val sessionType = if (syntheticsAttribute == null) {
-                LongTaskEvent.LongTaskEventSessionType.USER
-            } else {
-                LongTaskEvent.LongTaskEventSessionType.SYNTHETICS
+
+            val sessionType = when {
+                rumSessionTypeOverride != null -> rumSessionTypeOverride.toLongTask()
+                syntheticsAttribute == null -> LongTaskEvent.LongTaskEventSessionType.USER
+                else -> LongTaskEvent.LongTaskEventSessionType.SYNTHETICS
             }
+
             LongTaskEvent(
                 date = timestamp - TimeUnit.NANOSECONDS.toMillis(event.durationNs),
                 longTask = LongTaskEvent.LongTask(
@@ -1477,7 +1522,8 @@ internal open class RumViewScope(
             sampleRate: Float,
             interactionToNextViewMetricResolver: InteractionToNextViewMetricResolver,
             networkSettledResourceIdentifier: InitialResourceIdentifier,
-            slowFramesListener: SlowFramesListener?
+            slowFramesListener: SlowFramesListener?,
+            rumSessionTypeOverride: RumSessionType?
         ): RumViewScope {
             val networkSettledMetricResolver = NetworkSettledMetricResolver(
                 networkSettledResourceIdentifier,
@@ -1509,7 +1555,8 @@ internal open class RumViewScope(
                 interactionToNextViewMetricResolver = interactionToNextViewMetricResolver,
                 networkSettledMetricResolver = networkSettledMetricResolver,
                 viewEndedMetricDispatcher = viewEndedMetricDispatcher,
-                slowFramesListener = slowFramesListener
+                slowFramesListener = slowFramesListener,
+                rumSessionTypeOverride = rumSessionTypeOverride
             )
         }
 

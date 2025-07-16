@@ -4,6 +4,7 @@ import android.graphics.Typeface
 import android.text.Layout
 import android.view.Gravity
 import android.widget.TextView
+import com.datadog.android.internal.utils.densityNormalized
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.model.MobileSegment.Horizontal.LEFT
@@ -46,6 +47,18 @@ internal abstract class TextViewMapperTest :
 
     @IntForgery(min = 0, max = 0xffffff)
     var fakeTextColor: Int = 0
+
+    @IntForgery(min = 0, max = 100)
+    var fakeTotalBottomPadding: Int = 0
+
+    @IntForgery(min = 0, max = 100)
+    var fakeTotalTopPadding: Int = 0
+
+    @IntForgery
+    var fakeTotalStartPadding: Int = 0
+
+    @IntForgery
+    var fakeTotalEndPadding: Int = 0
 
     @StringForgery(regex = "#[0-9A-F]{8}")
     lateinit var fakeTextColorHexString: String
@@ -93,6 +106,10 @@ internal abstract class TextViewMapperTest :
             whenever(mockView.textAlignment) doReturn fakeTextAlignment
             whenever(mockView.gravity) doReturn fakeTextGravity
             whenever(mockView.text) doReturn fakeText
+            whenever(mockView.totalPaddingBottom) doReturn fakeTotalBottomPadding
+            whenever(mockView.totalPaddingTop) doReturn fakeTotalTopPadding
+            whenever(mockView.totalPaddingStart) doReturn fakeTotalStartPadding
+            whenever(mockView.totalPaddingEnd) doReturn fakeTotalEndPadding
         }
         val expectedFontSize = (fakeFontSize / fakeMappingContext.systemInformation.screenDensity).toLong()
 
@@ -127,7 +144,20 @@ internal abstract class TextViewMapperTest :
                         color = fakeTextColorHexString
                     ),
                     textPosition = MobileSegment.TextPosition(
-                        padding = MobileSegment.Padding(0L, 0L, 0L, 0L),
+                        padding = MobileSegment.Padding(
+                            top = fakeTotalTopPadding
+                                .densityNormalized(fakeMappingContext.systemInformation.screenDensity)
+                                .toLong(),
+                            fakeTotalBottomPadding
+                                .densityNormalized(fakeMappingContext.systemInformation.screenDensity)
+                                .toLong(),
+                            fakeTotalStartPadding
+                                .densityNormalized(fakeMappingContext.systemInformation.screenDensity)
+                                .toLong(),
+                            fakeTotalEndPadding
+                                .densityNormalized(fakeMappingContext.systemInformation.screenDensity)
+                                .toLong()
+                        ),
                         alignment = MobileSegment.Alignment(
                             horizontal = expectedHorizontal,
                             vertical = expectedVertical
