@@ -50,7 +50,7 @@ class OtelTraceConfigurationTest {
         stubSdkCore = StubSDKCore(forge)
     }
 
-    @Test
+    @RepeatedTest(10)
     fun `M send span without network info W setNetworkInfoEnabled(false) + buildSpan() + start() + finish()`(
         @StringForgery fakeInstrumentationName: String,
         @StringForgery fakeOperation: String

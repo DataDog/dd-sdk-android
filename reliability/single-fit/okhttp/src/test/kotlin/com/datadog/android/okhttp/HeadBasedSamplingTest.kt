@@ -80,7 +80,6 @@ class HeadBasedSamplingTest {
     }
 
     private fun Request.Builder.parentSpan(span: DatadogSpan): Request.Builder {
-        @Suppress("UnsafeThirdPartyFunctionCall") // Span can't be null
         tag(DatadogSpan::class.java, span)
         return this
     }

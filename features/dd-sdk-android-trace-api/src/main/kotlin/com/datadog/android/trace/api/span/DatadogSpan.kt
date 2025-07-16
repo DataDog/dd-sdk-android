@@ -74,7 +74,7 @@ interface DatadogSpan {
     /**
      * Retrieves the context associated with this Datadog span.
      *
-     * @return The DatadogSpanContext containing trace and span-specific information such as identifiers, sampling priority, and tags.
+     * @return The [DatadogSpanContext] containing trace and span-specific information such as identifiers, sampling priority, and tags.
      */
     fun context(): DatadogSpanContext
 
