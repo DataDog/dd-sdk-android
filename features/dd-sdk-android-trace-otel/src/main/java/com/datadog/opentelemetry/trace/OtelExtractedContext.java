@@ -76,7 +76,7 @@ public class OtelExtractedContext implements DatadogSpanContext {
         return prioritySampling;
     }
 
-    @Nullable
+    @NonNull
     @Override
     public Map<String, Object> getTags() {
         // Do nothing

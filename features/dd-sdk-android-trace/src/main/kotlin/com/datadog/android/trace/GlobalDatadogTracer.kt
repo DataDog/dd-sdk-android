@@ -7,17 +7,17 @@ package com.datadog.android.trace
 
 import com.datadog.android.trace.api.tracer.DatadogTracer
 import com.datadog.android.trace.api.tracer.NoOpDatadogTracer
+import java.util.concurrent.atomic.AtomicReference
 
 /**
  * A holder object for managing and retrieving a global instance of the [DatadogTracer].
  *
  * This object is used to share same instance of [DatadogTracer] across different integrations such as
- * `OkHttp, Kotlin's coroutines, ect.
+ * `OkHttp`, Kotlin's coroutines, ect.
  */
 object GlobalDatadogTracer {
 
-    @get:Synchronized
-    internal var instance: DatadogTracer? = null
+    private val instance = AtomicReference<DatadogTracer?>()
 
     /**
      * Registers the provided tracer as the global tracer if no tracer is currently registered.
@@ -27,12 +27,7 @@ object GlobalDatadogTracer {
      */
     @Synchronized
     fun registerIfAbsent(tracer: DatadogTracer): Boolean {
-        if (instance == null) {
-            instance = tracer
-            return true
-        }
-
-        return false
+        return instance.compareAndSet(null, tracer)
     }
 
     /**
@@ -48,16 +43,17 @@ object GlobalDatadogTracer {
      *
      * @return An instance of [DatadogTracer] or null.
      */
-    fun getOrNull(): DatadogTracer? = instance
+    fun getOrNull(): DatadogTracer? = instance.get()
 
     /**
      * Clears the current instance of the global Datadog tracer.
      *
      * This method sets the internal tracer instance to null, effectively
      * removing any active tracer currently held in the global state.
-     * The general purpose is to use it for test implementation..
+     * The general purpose is to use it for test implementation.
      */
+    @Synchronized
     fun clear() {
-        instance = null
+        instance.set(null)
     }
 }

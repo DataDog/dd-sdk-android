@@ -153,17 +153,6 @@ class OtelTracerProvider internal constructor(
                 .withServiceName(serviceName)
                 .build()
 
-            GlobalDatadogTracer.registerIfAbsent(datadogTracer).let { registeredAsGlobal ->
-                sdkCore.internalLogger.log(
-                    InternalLogger.Level.INFO,
-                    listOf(
-                        InternalLogger.Target.USER,
-                        InternalLogger.Target.MAINTAINER
-                    ),
-                    { if (registeredAsGlobal) USED_AS_GLOBAL_INFO_MESSAGE else NOT_USED_AS_GLOBAL_INFO_MESSAGE }
-                )
-            }
-
             return datadogTracer
         }
 
@@ -213,17 +202,6 @@ class OtelTracerProvider internal constructor(
         fun setSampleRate(
             @FloatRange(from = 0.0, to = 100.0) sampleRate: Double
         ): Builder {
-            // In case the sample rate is not set we should not specify it. The agent code under the hood
-            // will provide different sampler based on this property and also different sampling priorities used
-            // in the metrics
-            // -1 MANUAL_DROP User indicated to drop the trace via configuration (sampling rate).
-            // 0 AUTO_DROP Sampler indicated to drop the trace using a sampling rate provided by the Agent through
-            // a remote configuration. The Agent API is not used in Android so this `sampling_priority:0` will never
-            // be used.
-            // 1 AUTO_KEEP Sampler indicated to keep the trace using a sampling rate from the default configuration
-            // which right now is 100.0
-            // (Default sampling priority value. or in our case no specified sample rate will be considered as 100)
-            // 2 MANUAL_KEEP User indicated to keep the trace, either manually or via configuration (sampling rate)
             builderDelegate.withSampleRate(sampleRate)
             return this
         }
@@ -237,7 +215,7 @@ class OtelTracerProvider internal constructor(
         fun setTraceRateLimit(
             @IntRange(from = 1, to = Int.MAX_VALUE.toLong()) traceRateLimit: Int
         ): Builder {
-            builderDelegate.withTraceLimit(traceRateLimit)
+            builderDelegate.withTraceRateLimit(traceRateLimit)
             return this
         }
 
@@ -306,10 +284,6 @@ class OtelTracerProvider internal constructor(
             "You are trying to bundle the traces with a RUM context, " +
                 "but the RUM context is missing. " +
                 "You should check if the RUM feature is enabled for your SDK instance."
-        internal const val USED_AS_GLOBAL_INFO_MESSAGE =
-            "OpenTracer's DatadogTracer instance will be used as global instance"
-        internal const val NOT_USED_AS_GLOBAL_INFO_MESSAGE =
-            "OpenTracer's DatadogTracer instance will not be used as global instance"
 
         // the minimum closed spans required for triggering a flush and deliver
         // everything to the writer

@@ -43,7 +43,7 @@ internal class DatadogTracerBuilderAdapter(
         this.serviceName = serviceName
     }
 
-    override fun withTraceLimit(traceRateLimit: Int) = apply {
+    override fun withTraceRateLimit(traceRateLimit: Int) = apply {
         this.traceRateLimit = traceRateLimit
     }
 
@@ -67,8 +67,8 @@ internal class DatadogTracerBuilderAdapter(
         this.sampleRate = sampleRate
     }
 
-    override fun withPartialFlushMinSpans(withPartialFlushMinSpans: Int) = apply {
-        this.partialFlushMinSpans = withPartialFlushMinSpans
+    override fun withPartialFlushMinSpans(partialFlushMinSpans: Int) = apply {
+        this.partialFlushMinSpans = partialFlushMinSpans
     }
 
     override fun withTag(key: String, value: String) = apply {

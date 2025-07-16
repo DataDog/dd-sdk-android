@@ -192,7 +192,7 @@ public abstract interface class com/datadog/android/trace/api/tracer/DatadogTrac
 	public abstract fun withSampleRate (D)Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;
 	public abstract fun withServiceName (Ljava/lang/String;)Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;
 	public abstract fun withTag (Ljava/lang/String;Ljava/lang/String;)Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;
-	public abstract fun withTraceLimit (I)Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;
+	public abstract fun withTraceRateLimit (I)Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;
 	public abstract fun withTracingHeadersTypes (Ljava/util/Set;)Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;
 }
 
@@ -215,7 +215,7 @@ public final class com/datadog/android/trace/api/tracer/NoOpDatadogTracerBuilder
 	public fun withSampleRate (D)Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;
 	public fun withServiceName (Ljava/lang/String;)Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;
 	public fun withTag (Ljava/lang/String;Ljava/lang/String;)Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;
-	public fun withTraceLimit (I)Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;
+	public fun withTraceRateLimit (I)Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;
 	public fun withTracingHeadersTypes (Ljava/util/Set;)Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;
 }
 

@@ -31,7 +31,7 @@ interface DatadogSpanContext {
     /**
      * Represents a collection of tags associated with the span.
      */
-    val tags: Map<String?, Any?>
+    val tags: Map<String, Any?>
 
     /**
      * Sets the sampling priority for the span.

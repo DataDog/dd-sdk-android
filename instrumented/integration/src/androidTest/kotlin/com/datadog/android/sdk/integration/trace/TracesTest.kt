@@ -171,7 +171,7 @@ internal abstract class TracesTest {
         const val OPERATION_NAME_KEY = "name"
         const val META_KEY = "meta"
         const val METRICS_KEY = "metrics"
-        internal val INITIAL_WAIT_MS = TimeUnit.SECONDS.toMillis(100)
+        internal val INITIAL_WAIT_MS = TimeUnit.SECONDS.toMillis(60)
 
         private const val TAG_STATUS = "status"
         private const val TAG_MESSAGE = "message"

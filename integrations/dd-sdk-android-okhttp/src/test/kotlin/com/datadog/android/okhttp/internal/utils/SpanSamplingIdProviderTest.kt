@@ -45,7 +45,7 @@ internal class SpanSamplingIdProviderTest {
     @Mock
     lateinit var mockSpanContext: DatadogSpanContext
 
-    private lateinit var fakeTags: Map<String?, Any?>
+    private lateinit var fakeTags: Map<String, Any?>
 
     @BeforeEach
     fun `set up`(forge: Forge) {
