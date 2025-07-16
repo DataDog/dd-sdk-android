@@ -55,16 +55,16 @@ interface DatadogTracerBuilder {
      * is provided this property and its related logic will be ignored.
      * @param traceRateLimit the trace rate limit as a value between 1 and Int.MAX_VALUE (default is Int.MAX_VALUE)
      */
-    fun withTraceLimit(@IntRange(from = 1, to = Int.MAX_VALUE.toLong()) traceRateLimit: Int): DatadogTracerBuilder
+    fun withTraceRateLimit(@IntRange(from = 1, to = Int.MAX_VALUE.toLong()) traceRateLimit: Int): DatadogTracerBuilder
 
     /**
      * Configures the builder to enable partial flushes when the number of spans in a specific trace
      * reaches the given threshold.
      *
-     * @param withPartialFlushMinSpans The minimum number of spans required to trigger a partial flush.
+     * @param partialFlushMinSpans The minimum number of spans required to trigger a partial flush.
      * @return The updated instance of [DatadogTracerBuilder] to allow method chaining.
      */
-    fun withPartialFlushMinSpans(withPartialFlushMinSpans: Int): DatadogTracerBuilder
+    fun withPartialFlushMinSpans(partialFlushMinSpans: Int): DatadogTracerBuilder
 
     /**
      * Adds a global tag which will be appended to all spans created with the built tracer.
@@ -74,9 +74,9 @@ interface DatadogTracerBuilder {
     fun withTag(key: String, value: String): DatadogTracerBuilder
 
     /**
-     * Enables the trace bundling with the current active View. If this feature is enabled all
+     * Enables the trace bundling with the current active RUM View. If this feature is enabled all
      * the spans from this moment on will be bundled with the current view information and you
-     * will be able to see all the traces sent during a specific view in the Rum Explorer.
+     * will be able to see all the traces sent during a specific view in the RUM Explorer.
      * @param enabled true by default
      */
     fun setBundleWithRumEnabled(enabled: Boolean): DatadogTracerBuilder

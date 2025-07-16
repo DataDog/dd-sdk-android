@@ -42,7 +42,7 @@ object DatadogTracingConstants {
         /** String representing the type of the error. */
         const val KEY_ERROR_TYPE: String = "error.type"
 
-        /** human readable version of the stack. */
+        /** Human readable version of the stack. */
         const val KEY_ERROR_STACK: String = "error.stack"
 
         /**
