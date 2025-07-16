@@ -11,6 +11,7 @@ import com.datadog.android.trace.api.trace.DatadogTraceId
 import com.datadog.android.trace.utils.verifyLog
 import com.datadog.trace.bootstrap.instrumentation.api.AgentPropagation
 import com.datadog.trace.bootstrap.instrumentation.api.AgentSpan
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -22,6 +23,7 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
+import org.mockito.kotlin.whenever
 
 @Extensions(
     ExtendWith(MockitoExtension::class)
@@ -94,6 +96,21 @@ internal class DatadogPropagationAdapterTest {
 
         // Then
         verify(mockAgentPropagation).extract(eq(carrier), any())
+    }
+
+    @Test
+    fun `M return DatadogSpanContextAdapter W extract `() {
+        // Given
+        val carrier = Any()
+        val expectedContext = mock<AgentSpan.Context.Extracted>()
+        val getter = { _: Any, _: (String, String) -> Boolean -> }
+        whenever(mockAgentPropagation.extract(eq(carrier), any())).doReturn(expectedContext)
+
+        // When
+        val actual = testedPropagation.extract(carrier, getter) as DatadogSpanContextAdapter
+
+        // Then
+        assertThat(actual.delegate).isEqualTo(expectedContext)
     }
 
     private class UnsupportedDatadogSpanContextImplementation : DatadogSpanContext {
