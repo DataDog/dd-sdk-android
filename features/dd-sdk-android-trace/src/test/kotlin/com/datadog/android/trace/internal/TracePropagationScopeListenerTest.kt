@@ -35,7 +35,7 @@ import org.mockito.quality.Strictness
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
-class TracePropagationDataScopeListenerTest {
+class TracePropagationScopeListenerTest {
 
     @Mock
     lateinit var mockSdkCore: FeatureSdkCore
@@ -51,12 +51,12 @@ class TracePropagationDataScopeListenerTest {
 
     private val contextName = "context@${Thread.currentThread().name}"
 
-    private lateinit var testedListener: TracePropagationDataScopeListener
+    private lateinit var testedListener: TracePropagationScopeListener
 
     @BeforeEach
     fun `set up`() {
         whenever(mockSpan.context()).thenReturn(fakeSpanContext)
-        testedListener = TracePropagationDataScopeListener(mockSdkCore, mockTracer)
+        testedListener = TracePropagationScopeListener(mockSdkCore, mockTracer)
     }
 
     @Test

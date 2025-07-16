@@ -6,13 +6,13 @@
 package com.datadog.android.trace.internal
 
 import com.datadog.android.api.feature.FeatureSdkCore
-import com.datadog.android.trace.api.scope.DataScopeListener
+import com.datadog.android.trace.api.scope.DatadogScopeListener
 import com.datadog.android.trace.api.tracer.DatadogTracer
 
-internal class TracePropagationDataScopeListener(
+internal class TracePropagationScopeListener(
     private val sdkCore: FeatureSdkCore,
     private val datadogTracer: DatadogTracer
-) : DataScopeListener {
+) : DatadogScopeListener {
     override fun afterScopeActivated() {
         val activeSpanContext = datadogTracer.activeSpan()?.context()
         if (activeSpanContext != null) {
