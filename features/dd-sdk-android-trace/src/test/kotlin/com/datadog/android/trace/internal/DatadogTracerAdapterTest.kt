@@ -6,7 +6,7 @@
 package com.datadog.android.trace.internal
 
 import com.datadog.android.api.feature.FeatureSdkCore
-import com.datadog.android.trace.api.scope.DataScopeListener
+import com.datadog.android.trace.api.scope.DatadogScopeListener
 import com.datadog.android.trace.api.span.DatadogSpanBuilder
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.trace.bootstrap.instrumentation.api.AgentScope
@@ -100,7 +100,7 @@ internal class DatadogTracerAdapterTest {
     @Test
     fun `M delegate SpanBuilder#addScopeListener W addScopeListener`() {
         // Given
-        val mockListener = mock<DataScopeListener>()
+        val mockListener = mock<DatadogScopeListener>()
 
         // When
         testedTracer.addScopeListener(mockListener)

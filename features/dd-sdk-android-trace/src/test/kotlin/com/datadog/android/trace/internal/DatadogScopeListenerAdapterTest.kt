@@ -5,7 +5,7 @@
  */
 package com.datadog.android.trace.internal
 
-import com.datadog.android.trace.api.scope.DataScopeListener
+import com.datadog.android.trace.api.scope.DatadogScopeListener
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
@@ -19,7 +19,7 @@ import org.mockito.kotlin.verify
 class DatadogScopeListenerAdapterTest {
 
     @Mock
-    lateinit var delegate: DataScopeListener
+    lateinit var delegate: DatadogScopeListener
 
     @Test
     fun `M delegate afterScopeClosed W afterScopeClosed is called`() {

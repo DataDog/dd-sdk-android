@@ -34,7 +34,7 @@ internal class DatadogTracerBuilderAdapter(
     override fun build(): DatadogTracer {
         val coreTracer = delegate.withProperties(properties()).build()
         val datadogTracer = DatadogTracerAdapter(sdkCore, coreTracer, bundleWithRumEnabled)
-        datadogTracer.addScopeListener(TracePropagationDataScopeListener(sdkCore, datadogTracer))
+        datadogTracer.addScopeListener(TracePropagationScopeListener(sdkCore, datadogTracer))
 
         return datadogTracer
     }

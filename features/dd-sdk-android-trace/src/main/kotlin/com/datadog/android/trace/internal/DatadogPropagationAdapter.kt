@@ -6,18 +6,33 @@
 
 package com.datadog.android.trace.internal
 
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.trace.api.propagation.DatadogPropagation
 import com.datadog.android.trace.api.span.DatadogSpanContext
 import com.datadog.trace.bootstrap.instrumentation.api.AgentPropagation
+import kotlin.reflect.KClass
 
-internal class DatadogPropagationAdapter(private val delegate: AgentPropagation) : DatadogPropagation {
+internal class DatadogPropagationAdapter(
+    private val internalLogger: InternalLogger,
+    private val delegate: AgentPropagation
+) : DatadogPropagation {
 
     override fun <C> inject(
         context: DatadogSpanContext,
         carrier: C,
         setter: (carrier: C, key: String, value: String) -> Unit
     ) {
-        if (context !is DatadogSpanContextAdapter) return
+        if (context !is DatadogSpanContextAdapter) {
+            internalLogger.log(
+                InternalLogger.Level.ERROR,
+                targets = listOf(
+                    InternalLogger.Target.MAINTAINER,
+                    InternalLogger.Target.USER,
+                ),
+                { constructErrorMessage(context::class) }
+            )
+            return
+        }
         delegate.inject(context.delegate, carrier, setter)
     }
 
@@ -28,4 +43,7 @@ internal class DatadogPropagationAdapter(private val delegate: AgentPropagation)
         return delegate.extract(carrier) { car, cls -> getter(car, cls::accept) }
             ?.let { DatadogSpanContextAdapter(it) }
     }
+
+    private fun constructErrorMessage(klass: KClass<*>) = "DatadogPropagationAdapter supports only" +
+        " DatadogSpanContextAdapter instancies for injection but ${klass.simpleName} is given"
 }

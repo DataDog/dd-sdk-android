@@ -5,13 +5,14 @@
  */
 package com.datadog.android.trace.internal
 
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.internal.concurrent.CompletableFuture
 import com.datadog.android.trace.api.propagation.DatadogPropagation
-import com.datadog.android.trace.api.scope.DataScopeListener
 import com.datadog.android.trace.api.scope.DatadogScope
+import com.datadog.android.trace.api.scope.DatadogScopeListener
 import com.datadog.android.trace.api.span.DatadogSpan
 import com.datadog.android.trace.api.span.DatadogSpanBuilder
 import com.datadog.android.trace.api.tracer.DatadogTracer
@@ -23,6 +24,9 @@ internal class DatadogTracerAdapter(
     internal val delegate: AgentTracer.TracerAPI,
     internal val bundleWithRumEnabled: Boolean
 ) : DatadogTracer {
+
+    private val internalLogger: InternalLogger
+        get() = sdkCore.internalLogger
 
     override fun buildSpan(instrumentationName: String, spanName: CharSequence): DatadogSpanBuilder = wrapSpan(
         delegate.buildSpan(instrumentationName, spanName)
@@ -50,8 +54,8 @@ internal class DatadogTracerAdapter(
         }
     }
 
-    override fun addScopeListener(dataScopeListener: DataScopeListener) {
-        delegate.addScopeListener(DatadogScopeListenerAdapter(dataScopeListener))
+    override fun addScopeListener(scopeListener: DatadogScopeListener) {
+        delegate.addScopeListener(DatadogScopeListenerAdapter(scopeListener))
     }
 
     override fun activeSpan(): DatadogSpan? = delegate.activeSpan()?.let(::DatadogSpanAdapter)
@@ -70,5 +74,5 @@ internal class DatadogTracerAdapter(
         }
     }
 
-    override fun propagate(): DatadogPropagation = DatadogPropagationAdapter(delegate.propagate())
+    override fun propagate(): DatadogPropagation = DatadogPropagationAdapter(internalLogger, delegate.propagate())
 }

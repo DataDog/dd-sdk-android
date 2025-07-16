@@ -72,13 +72,13 @@ public final class com/datadog/android/trace/api/propagation/NoOpDatadogPropagat
 	public fun inject (Lcom/datadog/android/trace/api/span/DatadogSpanContext;Ljava/lang/Object;Lkotlin/jvm/functions/Function3;)V
 }
 
-public abstract interface class com/datadog/android/trace/api/scope/DataScopeListener {
-	public abstract fun afterScopeActivated ()V
-	public abstract fun afterScopeClosed ()V
-}
-
 public abstract interface class com/datadog/android/trace/api/scope/DatadogScope : java/io/Closeable {
 	public abstract fun close ()V
+}
+
+public abstract interface class com/datadog/android/trace/api/scope/DatadogScopeListener {
+	public abstract fun afterScopeActivated ()V
+	public abstract fun afterScopeClosed ()V
 }
 
 public abstract interface class com/datadog/android/trace/api/span/DatadogSpan {
@@ -175,7 +175,7 @@ public abstract interface class com/datadog/android/trace/api/tracer/DatadogTrac
 	public abstract fun activateSpan (Lcom/datadog/android/trace/api/span/DatadogSpan;)Lcom/datadog/android/trace/api/scope/DatadogScope;
 	public abstract fun activateSpan (Lcom/datadog/android/trace/api/span/DatadogSpan;Z)Lcom/datadog/android/trace/api/scope/DatadogScope;
 	public abstract fun activeSpan ()Lcom/datadog/android/trace/api/span/DatadogSpan;
-	public abstract fun addScopeListener (Lcom/datadog/android/trace/api/scope/DataScopeListener;)V
+	public abstract fun addScopeListener (Lcom/datadog/android/trace/api/scope/DatadogScopeListener;)V
 	public abstract fun buildSpan (Ljava/lang/CharSequence;)Lcom/datadog/android/trace/api/span/DatadogSpanBuilder;
 	public abstract fun buildSpan (Ljava/lang/String;Ljava/lang/CharSequence;)Lcom/datadog/android/trace/api/span/DatadogSpanBuilder;
 	public abstract fun propagate ()Lcom/datadog/android/trace/api/propagation/DatadogPropagation;
@@ -201,7 +201,7 @@ public final class com/datadog/android/trace/api/tracer/NoOpDatadogTracer : com/
 	public fun activateSpan (Lcom/datadog/android/trace/api/span/DatadogSpan;)Lcom/datadog/android/trace/api/scope/DatadogScope;
 	public fun activateSpan (Lcom/datadog/android/trace/api/span/DatadogSpan;Z)Lcom/datadog/android/trace/api/scope/DatadogScope;
 	public fun activeSpan ()Lcom/datadog/android/trace/api/span/DatadogSpan;
-	public fun addScopeListener (Lcom/datadog/android/trace/api/scope/DataScopeListener;)V
+	public fun addScopeListener (Lcom/datadog/android/trace/api/scope/DatadogScopeListener;)V
 	public fun buildSpan (Ljava/lang/CharSequence;)Lcom/datadog/android/trace/api/span/DatadogSpanBuilder;
 	public fun buildSpan (Ljava/lang/String;Ljava/lang/CharSequence;)Lcom/datadog/android/trace/api/span/DatadogSpanBuilder;
 	public fun propagate ()Lcom/datadog/android/trace/api/propagation/DatadogPropagation;

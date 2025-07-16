@@ -7,7 +7,7 @@ package com.datadog.android.trace.api.tracer
 
 import com.datadog.android.trace.api.propagation.DatadogPropagation
 import com.datadog.android.trace.api.propagation.NoOpDatadogPropagation
-import com.datadog.android.trace.api.scope.DataScopeListener
+import com.datadog.android.trace.api.scope.DatadogScopeListener
 import com.datadog.android.trace.api.scope.DatadogScope
 import com.datadog.android.trace.api.span.DatadogSpan
 import com.datadog.android.trace.api.span.DatadogSpanBuilder
@@ -73,8 +73,8 @@ interface DatadogTracer {
     /**
      * Adds a listener to be notified when a scope is activated or closed.
      *
-     * @param dataScopeListener The listener to be added. It defines the actions
+     * @param scopeListener The listener to be added. It defines the actions
      * to be executed after a scope is activated or closed.
      */
-    fun addScopeListener(dataScopeListener: DataScopeListener)
+    fun addScopeListener(scopeListener: DatadogScopeListener)
 }

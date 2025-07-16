@@ -119,7 +119,7 @@ interface com.datadog.android.trace.api.tracer.DatadogTracer
   fun activateSpan(com.datadog.android.trace.api.span.DatadogSpan, Boolean): com.datadog.android.trace.api.scope.DatadogScope?
   fun buildSpan(CharSequence): com.datadog.android.trace.api.span.DatadogSpanBuilder
   fun buildSpan(String, CharSequence): com.datadog.android.trace.api.span.DatadogSpanBuilder
-  fun addScopeListener(com.datadog.android.trace.api.scope.DataScopeListener)
+  fun addScopeListener(com.datadog.android.trace.api.scope.DatadogScopeListener)
 interface com.datadog.android.trace.api.tracer.DatadogTracerBuilder
   fun build(): DatadogTracer
   fun withTracingHeadersTypes(Set<com.datadog.android.trace.TracingHeaderType>): DatadogTracerBuilder

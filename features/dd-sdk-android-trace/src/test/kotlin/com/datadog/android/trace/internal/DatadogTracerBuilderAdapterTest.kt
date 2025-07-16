@@ -161,7 +161,7 @@ class DatadogTracerBuilderAdapterTest {
         assertThat(tracer.bundleWithRumEnabled).isEqualTo(fakeBoolean)
         argumentCaptor<DatadogScopeListenerAdapter> {
             verify(mockTracerDelegate).addScopeListener(capture())
-            assertThat(firstValue.delegate).isInstanceOf(TracePropagationDataScopeListener::class.java)
+            assertThat(firstValue.delegate).isInstanceOf(TracePropagationScopeListener::class.java)
         }
     }
 

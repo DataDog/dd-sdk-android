@@ -5,11 +5,11 @@
  */
 package com.datadog.android.trace.internal
 
-import com.datadog.android.trace.api.scope.DataScopeListener
+import com.datadog.android.trace.api.scope.DatadogScopeListener
 import com.datadog.trace.api.scopemanager.ScopeListener
 
 internal class DatadogScopeListenerAdapter(
-    internal val delegate: DataScopeListener
+    internal val delegate: DatadogScopeListener
 ) : ScopeListener {
     override fun afterScopeClosed() = delegate.afterScopeClosed()
     override fun afterScopeActivated() = delegate.afterScopeActivated()
