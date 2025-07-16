@@ -210,7 +210,7 @@ internal constructor(
         val isSampled = span.sample(request)
 
         if (span.isRootSpan) {
-            val samplingPriority: Int = if (isSampled) {
+            val samplingPriority = if (isSampled) {
                 PrioritySampling.SAMPLER_KEEP
             } else {
                 PrioritySampling.SAMPLER_DROP
