@@ -958,11 +958,9 @@ internal open class RumViewScope(
 
         val eventAdditionalAttributes = (eventAttributes + globalAttributes).toMutableMap()
 
-        accessibilityReader.let { reader ->
-            val accessibilityState = reader.getState()
-            if (accessibilityState.isNotEmpty()) {
-                eventAdditionalAttributes[ACCESSIBILITY_KEY] = accessibilityState
-            }
+        val accessibilityState = accessibilityReader.getState()
+        if (accessibilityState.isNotEmpty()) {
+            eventAdditionalAttributes[ACCESSIBILITY_KEY] = accessibilityState
         }
 
         val uiSlownessReport = slowFramesListener?.resolveReport(viewId, viewComplete, durationNs)

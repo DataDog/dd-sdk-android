@@ -68,21 +68,6 @@ internal class AccessibilityTest {
     }
 
     @Test
-    fun `M return expected EMPTY_STATE W EMPTY_STATE constant`() {
-        // When
-        val result = Accessibility.EMPTY_STATE.toMap()
-
-        // Then
-        assertThat(result).isEmpty()
-        assertThat(Accessibility.EMPTY_STATE.textSize).isNull()
-        assertThat(Accessibility.EMPTY_STATE.isScreenReaderEnabled).isNull()
-        assertThat(Accessibility.EMPTY_STATE.isColorInversionEnabled).isNull()
-        assertThat(Accessibility.EMPTY_STATE.isClosedCaptioningEnabled).isNull()
-        assertThat(Accessibility.EMPTY_STATE.isReducedAnimationsEnabled).isNull()
-        assertThat(Accessibility.EMPTY_STATE.isScreenPinningEnabled).isNull()
-    }
-
-    @Test
     fun `M have correct constant values W key constants`() {
         // Then
         assertThat(Accessibility.TEXT_SIZE_KEY).isEqualTo("text_size")

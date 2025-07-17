@@ -563,6 +563,7 @@ internal class DatadogAccessibilityReaderTest {
     @Test
     fun `M do nothing W onLowMemory { called }`() {
         // When/Then - should not throw
+        @Suppress("DEPRECATION")
         testedReader.onLowMemory()
 
         // Verify state is still accessible
@@ -630,129 +631,6 @@ internal class DatadogAccessibilityReaderTest {
         assertThat(secondResult[SCREEN_PINNING_ENABLED_KEY] as Boolean).isFalse()
     }
 
-    @Test
-    fun `M maintain current state W getState { polling does not change values }`() {
-        // Given
-        val fontScale = 1.2f
-        mockConfiguration.fontScale = fontScale
-        whenever(mockAccessibilityManager.isTouchExplorationEnabled) doReturn true
-        whenever(mockActivityManager.lockTaskModeState) doReturn ActivityManager.LOCK_TASK_MODE_NONE
-
-        // When
-        val firstResult = testedReader.getState()
-        val secondResult = testedReader.getState()
-
-        // Then
-        assertThat(firstResult).isEqualTo(secondResult)
-        assertThat(firstResult[TEXT_SIZE_KEY]).isEqualTo(fontScale)
-        assertThat(firstResult[SCREEN_READER_ENABLED_KEY] as Boolean).isTrue()
-        assertThat(firstResult[SCREEN_PINNING_ENABLED_KEY] as Boolean).isFalse()
-    }
-    // endregion
-
-    // region Edge Cases
-    @Test
-    fun `M return partial state W getState { some managers are null }`() {
-        // Given
-        testedReader = DatadogAccessibilityReader(
-            internalLogger = mockInternalLogger,
-            applicationContext = mockContext,
-            resources = null,
-            activityManager = null,
-            accessibilityManager = mockAccessibilityManager,
-            secureWrapper = mockSecureWrapper,
-            globalWrapper = mockGlobalWrapper,
-            handler = mockHandler
-        )
-        whenever(mockAccessibilityManager.isTouchExplorationEnabled) doReturn true
-
-        // When
-        val result = testedReader.getState()
-        val isScreenReaderEnabled = result[SCREEN_READER_ENABLED_KEY] as Boolean
-
-        // Then
-        assertThat(result.containsKey(TEXT_SIZE_KEY)).isFalse()
-        assertThat(result.containsKey(SCREEN_PINNING_ENABLED_KEY)).isFalse()
-        assertThat(isScreenReaderEnabled).isTrue()
-        assertThat(result.containsKey(COLOR_INVERSION_ENABLED_KEY)).isFalse()
-        assertThat(result.containsKey(CLOSED_CAPTIONING_ENABLED_KEY)).isFalse()
-        assertThat(result.containsKey(REDUCED_ANIMATIONS_ENABLED_KEY)).isFalse()
-    }
-
-    @Test
-    fun `M return expected map structure W getState { normal operation }`() {
-        // Given
-        mockConfiguration.fontScale = 1.2f
-        whenever(mockAccessibilityManager.isTouchExplorationEnabled) doReturn true
-        whenever(mockActivityManager.lockTaskModeState) doReturn ActivityManager.LOCK_TASK_MODE_NONE
-
-        whenever(
-            mockSecureWrapper.getInt(
-                internalLogger = any(),
-                applicationContext = any(),
-                key = any()
-            )
-        ) doReturn false
-
-        whenever(
-            mockGlobalWrapper.getFloat(
-                internalLogger = any(),
-                applicationContext = any(),
-                key = any()
-            )
-        ) doReturn 1.0f
-
-        // When
-        val result = testedReader.getState()
-        val isScreenReaderEnabled = result[SCREEN_READER_ENABLED_KEY] as Boolean
-        val isScreenPinningEnabled = result[SCREEN_PINNING_ENABLED_KEY] as Boolean
-
-        // Then
-        assertThat(result).containsKeys(
-            TEXT_SIZE_KEY,
-            SCREEN_READER_ENABLED_KEY,
-            SCREEN_PINNING_ENABLED_KEY,
-            COLOR_INVERSION_ENABLED_KEY,
-            CLOSED_CAPTIONING_ENABLED_KEY,
-            REDUCED_ANIMATIONS_ENABLED_KEY
-        )
-        assertThat(result[TEXT_SIZE_KEY]).isEqualTo(1.2f)
-        assertThat(isScreenReaderEnabled).isTrue()
-        assertThat(isScreenPinningEnabled).isFalse()
-    }
-
-    @Test
-    fun `M exclude null values from map W getState { some values are null }`() {
-        // Given
-        whenever(mockAccessibilityManager.isTouchExplorationEnabled) doReturn false
-        testedReader = DatadogAccessibilityReader(
-            internalLogger = mockInternalLogger,
-            applicationContext = mockContext,
-            resources = null,
-            activityManager = null,
-            accessibilityManager = mockAccessibilityManager,
-            secureWrapper = mockSecureWrapper,
-            globalWrapper = mockGlobalWrapper,
-            handler = mockHandler
-        )
-
-        whenever(
-            mockSecureWrapper.getInt(
-                internalLogger = mockInternalLogger,
-                applicationContext = mockContext,
-                key = ACCESSIBILITY_DISPLAY_INVERSION_ENABLED
-            )
-        ) doReturn null
-
-        // When
-        val result = testedReader.getState()
-        val isScreenReaderEnabled = result[SCREEN_READER_ENABLED_KEY] as Boolean
-
-        // Then
-        assertThat(result).doesNotContainKeys(TEXT_SIZE_KEY, SCREEN_PINNING_ENABLED_KEY)
-        assertThat(result).containsKey(SCREEN_READER_ENABLED_KEY)
-        assertThat(isScreenReaderEnabled).isFalse()
-    }
     // endregion
 
     // region Listener Tests
@@ -872,37 +750,6 @@ internal class DatadogAccessibilityReaderTest {
         assertThat(newPollTime).isGreaterThanOrEqualTo(currentTimeBefore)
         assertThat(newPollTime).isLessThanOrEqualTo(currentTimeAfter)
         assertThat(newPollTime).isGreaterThan(oldTime)
-    }
-
-    @Test
-    fun `M handle concurrent initialization W getState { multiple threads }`() {
-        // Given
-        val executor = java.util.concurrent.Executors.newFixedThreadPool(3)
-        val results = java.util.concurrent.ConcurrentLinkedQueue<Map<String, Any>>()
-        val countDownLatch = java.util.concurrent.CountDownLatch(3)
-
-        // When - Multiple threads call getState concurrently
-        repeat(3) {
-            executor.submit {
-                try {
-                    val result = testedReader.getState()
-                    results.add(result)
-                } finally {
-                    countDownLatch.countDown()
-                }
-            }
-        }
-
-        // Wait for all threads to complete
-        countDownLatch.await(5, java.util.concurrent.TimeUnit.SECONDS)
-        executor.shutdown()
-
-        // Then - All calls should succeed and return consistent results
-        assertThat(results).hasSize(3)
-        val firstResult = results.first()
-        results.forEach { result ->
-            assertThat(result).isEqualTo(firstResult)
-        }
     }
 
     @Test

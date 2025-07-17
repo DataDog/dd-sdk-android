@@ -34,15 +34,6 @@ internal data class Accessibility(
     }
 
     companion object {
-        internal val EMPTY_STATE = Accessibility(
-            textSize = null,
-            isScreenReaderEnabled = null,
-            isColorInversionEnabled = null,
-            isClosedCaptioningEnabled = null,
-            isReducedAnimationsEnabled = null,
-            isScreenPinningEnabled = null
-        )
-
         internal const val TEXT_SIZE_KEY = "text_size"
         internal const val SCREEN_READER_ENABLED_KEY = "screen_reader_enabled"
         internal const val COLOR_INVERSION_ENABLED_KEY = "invert_colors_enabled"

@@ -39,7 +39,7 @@ internal class DatadogAccessibilityReader(
 ) : AccessibilityReader, ComponentCallbacks {
 
     @Volatile
-    private var currentState = Accessibility.EMPTY_STATE
+    private var currentState = Accessibility()
 
     private var lastPollTime: AtomicLong = AtomicLong(0)
 
