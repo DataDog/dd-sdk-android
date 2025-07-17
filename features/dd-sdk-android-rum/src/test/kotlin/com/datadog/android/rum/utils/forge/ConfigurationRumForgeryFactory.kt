@@ -68,7 +68,8 @@ internal class ConfigurationRumForgeryFactory :
             trackAnonymousUser = forge.aBool(),
             composeActionTrackingStrategy = mock(),
             slowFramesConfiguration = forge.getForgery(),
-            rumSessionTypeOverride = forge.aNullable { aValueFrom(RumSessionType::class.java) }
+            rumSessionTypeOverride = forge.aNullable { aValueFrom(RumSessionType::class.java) },
+            collectAccessibilitySettings = forge.aBool()
         )
     }
 }

@@ -16,6 +16,7 @@ import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.RumSessionType
 import com.datadog.android.rum.internal.domain.RumContext
+import com.datadog.android.rum.internal.domain.accessibility.AccessibilityReader
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
 import com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener
 import com.datadog.android.rum.internal.vitals.VitalMonitor
@@ -82,6 +83,9 @@ internal class RumSessionScopeTest {
 
     @Mock
     lateinit var mockFrameRateVitalMonitor: VitalMonitor
+
+    @Mock
+    lateinit var mockAccessibilityReader: AccessibilityReader
 
     @Mock
     lateinit var mockSessionListener: RumSessionListener
@@ -1320,7 +1324,8 @@ internal class RumSessionScopeTest {
             slowFramesListener = mockSlowFramesListener,
             sessionInactivityNanos = TEST_INACTIVITY_NS,
             sessionMaxDurationNanos = TEST_MAX_DURATION_NS,
-            rumSessionTypeOverride = fakeRumSessionType
+            rumSessionTypeOverride = fakeRumSessionType,
+            accessibilityReader = mockAccessibilityReader
         )
 
         if (withMockChildScope) {

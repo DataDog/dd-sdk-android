@@ -253,6 +253,7 @@ public final class com/datadog/android/rum/_RumInternalProxy {
 }
 
 public final class com/datadog/android/rum/_RumInternalProxy$Companion {
+	public final fun collectAccessibilitySettings (Lcom/datadog/android/rum/RumConfiguration$Builder;)Lcom/datadog/android/rum/RumConfiguration$Builder;
 	public final fun setAdditionalConfiguration (Lcom/datadog/android/rum/RumConfiguration$Builder;Ljava/util/Map;)Lcom/datadog/android/rum/RumConfiguration$Builder;
 	public final fun setComposeActionTrackingStrategy (Lcom/datadog/android/rum/RumConfiguration$Builder;Lcom/datadog/android/rum/tracking/ActionTrackingStrategy;)Lcom/datadog/android/rum/RumConfiguration$Builder;
 	public final fun setRumSessionTypeOverride (Lcom/datadog/android/rum/RumConfiguration$Builder;Lcom/datadog/android/rum/RumSessionType;)Lcom/datadog/android/rum/RumConfiguration$Builder;

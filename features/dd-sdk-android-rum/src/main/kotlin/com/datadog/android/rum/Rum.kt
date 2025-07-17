@@ -140,7 +140,8 @@ object Rum {
             initialResourceIdentifier = rumFeature.initialResourceIdentifier,
             lastInteractionIdentifier = rumFeature.lastInteractionIdentifier,
             slowFramesListener = rumFeature.slowFramesListener,
-            rumSessionTypeOverride = rumFeature.configuration.rumSessionTypeOverride
+            rumSessionTypeOverride = rumFeature.configuration.rumSessionTypeOverride,
+            accessibilityReader = rumFeature.accessibilityReader
         )
     }
 
