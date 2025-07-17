@@ -99,7 +99,6 @@ internal class RecordedDataQueueHandler(
      * for example if a snapshot failed to traverse the tree).
      * If neither of the previous conditions occurs, the loop breaks.
      */
-    @MainThread
     override fun tryToConsumeItems() {
         // no need to create a thread if the queue is empty
         if (recordedDataQueue.isEmpty()) {

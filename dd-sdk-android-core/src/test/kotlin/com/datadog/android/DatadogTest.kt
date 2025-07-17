@@ -541,6 +541,18 @@ internal class DatadogTest {
     }
 
     @Test
+    fun `M clear user info W clearUserInfo()`() {
+        // Given
+        val mockSdkCore = mock<SdkCore>()
+
+        // When
+        Datadog.clearUserInfo(mockSdkCore)
+
+        // Then
+        verify(mockSdkCore).clearUserInfo()
+    }
+
+    @Test
     fun `M clear all data W clearAllData()`() {
         // Given
         val mockSdkCore = mock<SdkCore>()

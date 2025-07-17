@@ -25,6 +25,9 @@ public final class com/datadog/android/Datadog {
 	public static final fun clearAllData ()V
 	public static final fun clearAllData (Lcom/datadog/android/api/SdkCore;)V
 	public static synthetic fun clearAllData$default (Lcom/datadog/android/api/SdkCore;ILjava/lang/Object;)V
+	public static final fun clearUserInfo ()V
+	public static final fun clearUserInfo (Lcom/datadog/android/api/SdkCore;)V
+	public static synthetic fun clearUserInfo$default (Lcom/datadog/android/api/SdkCore;ILjava/lang/Object;)V
 	public static final fun getInstance ()Lcom/datadog/android/api/SdkCore;
 	public static final fun getInstance (Ljava/lang/String;)Lcom/datadog/android/api/SdkCore;
 	public static synthetic fun getInstance$default (Ljava/lang/String;ILjava/lang/Object;)Lcom/datadog/android/api/SdkCore;
@@ -135,6 +138,7 @@ public abstract interface class com/datadog/android/api/SdkCore {
 	public abstract fun addUserProperties (Ljava/util/Map;)V
 	public abstract fun clearAccountInfo ()V
 	public abstract fun clearAllData ()V
+	public abstract fun clearUserInfo ()V
 	public abstract fun getName ()Ljava/lang/String;
 	public abstract fun getService ()Ljava/lang/String;
 	public abstract fun getTime ()Lcom/datadog/android/api/context/TimeInfo;

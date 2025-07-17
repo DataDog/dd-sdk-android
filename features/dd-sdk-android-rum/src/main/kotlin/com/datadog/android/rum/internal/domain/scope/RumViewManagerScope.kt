@@ -15,6 +15,7 @@ import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.metrics.MethodCallSamplingRate
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.rum.DdRumContentProvider
+import com.datadog.android.rum.RumSessionType
 import com.datadog.android.rum.internal.anr.ANRException
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
@@ -47,7 +48,8 @@ internal class RumViewManagerScope(
     internal val sampleRate: Float,
     internal val initialResourceIdentifier: InitialResourceIdentifier,
     private val slowFramesListener: SlowFramesListener?,
-    lastInteractionIdentifier: LastInteractionIdentifier?
+    lastInteractionIdentifier: LastInteractionIdentifier?,
+    private val rumSessionTypeOverride: RumSessionType?
 ) : RumScope {
 
     private val interactionToNextViewMetricResolver: InteractionToNextViewMetricResolver =
@@ -220,20 +222,21 @@ internal class RumViewManagerScope(
     @WorkerThread
     private fun startForegroundView(event: RumRawEvent.StartView, writer: DataWriter<Any>) {
         val viewScope = RumViewScope.fromEvent(
-            this,
-            sessionEndedMetricDispatcher,
-            sdkCore,
-            event,
-            viewChangedListener,
-            firstPartyHostHeaderTypeResolver,
-            cpuVitalMonitor,
-            memoryVitalMonitor,
-            frameRateVitalMonitor,
-            trackFrustrations,
-            sampleRate,
-            interactionToNextViewMetricResolver,
-            initialResourceIdentifier,
-            slowFramesListener
+            parentScope = this,
+            sessionEndedMetricDispatcher = sessionEndedMetricDispatcher,
+            sdkCore = sdkCore,
+            event = event,
+            viewChangedListener = viewChangedListener,
+            firstPartyHostHeaderTypeResolver = firstPartyHostHeaderTypeResolver,
+            cpuVitalMonitor = cpuVitalMonitor,
+            memoryVitalMonitor = memoryVitalMonitor,
+            frameRateVitalMonitor = frameRateVitalMonitor,
+            trackFrustrations = trackFrustrations,
+            sampleRate = sampleRate,
+            interactionToNextViewMetricResolver = interactionToNextViewMetricResolver,
+            networkSettledResourceIdentifier = initialResourceIdentifier,
+            slowFramesListener = slowFramesListener,
+            rumSessionTypeOverride = rumSessionTypeOverride
         )
         applicationDisplayed = true
         childrenScopes.add(viewScope)
@@ -289,28 +292,29 @@ internal class RumViewManagerScope(
         )
 
         return RumViewScope(
-            this,
-            sdkCore,
-            sessionEndedMetricDispatcher,
-            RumScopeKey(
+            parentScope = this,
+            sdkCore = sdkCore,
+            sessionEndedMetricDispatcher = sessionEndedMetricDispatcher,
+            key = RumScopeKey(
                 RUM_BACKGROUND_VIEW_ID,
                 RUM_BACKGROUND_VIEW_URL,
                 RUM_BACKGROUND_VIEW_NAME
             ),
-            event.eventTime,
-            emptyMap(),
-            viewChangedListener,
-            firstPartyHostHeaderTypeResolver,
-            NoOpVitalMonitor(),
-            NoOpVitalMonitor(),
-            NoOpVitalMonitor(),
+            eventTime = event.eventTime,
+            initialAttributes = emptyMap(),
+            viewChangedListener = viewChangedListener,
+            firstPartyHostHeaderTypeResolver = firstPartyHostHeaderTypeResolver,
+            cpuVitalMonitor = NoOpVitalMonitor(),
+            memoryVitalMonitor = NoOpVitalMonitor(),
+            frameRateVitalMonitor = NoOpVitalMonitor(),
             type = viewType,
             trackFrustrations = trackFrustrations,
             sampleRate = sampleRate,
             interactionToNextViewMetricResolver = interactionToNextViewMetricResolver,
             networkSettledMetricResolver = networkSettledMetricResolver,
             viewEndedMetricDispatcher = viewEndedMetricDispatcher,
-            slowFramesListener = slowFramesListener
+            slowFramesListener = slowFramesListener,
+            rumSessionTypeOverride = rumSessionTypeOverride
         )
     }
 
@@ -327,28 +331,29 @@ internal class RumViewManagerScope(
         )
 
         return RumViewScope(
-            this,
-            sdkCore,
-            sessionEndedMetricDispatcher,
-            RumScopeKey(
+            parentScope = this,
+            sdkCore = sdkCore,
+            sessionEndedMetricDispatcher = sessionEndedMetricDispatcher,
+            key = RumScopeKey(
                 RUM_APP_LAUNCH_VIEW_ID,
                 RUM_APP_LAUNCH_VIEW_URL,
                 RUM_APP_LAUNCH_VIEW_NAME
             ),
-            time,
-            emptyMap(),
-            viewChangedListener,
-            firstPartyHostHeaderTypeResolver,
-            NoOpVitalMonitor(),
-            NoOpVitalMonitor(),
-            NoOpVitalMonitor(),
+            eventTime = time,
+            initialAttributes = emptyMap(),
+            viewChangedListener = viewChangedListener,
+            firstPartyHostHeaderTypeResolver = firstPartyHostHeaderTypeResolver,
+            cpuVitalMonitor = NoOpVitalMonitor(),
+            memoryVitalMonitor = NoOpVitalMonitor(),
+            frameRateVitalMonitor = NoOpVitalMonitor(),
             type = viewType,
             trackFrustrations = trackFrustrations,
             sampleRate = sampleRate,
             interactionToNextViewMetricResolver = interactionToNextViewMetricResolver,
             networkSettledMetricResolver = networkSettledMetricResolver,
             viewEndedMetricDispatcher = viewEndedMetricDispatcher,
-            slowFramesListener = slowFramesListener
+            slowFramesListener = slowFramesListener,
+            rumSessionTypeOverride = rumSessionTypeOverride
         )
     }
 
@@ -375,7 +380,8 @@ internal class RumViewManagerScope(
             RumRawEvent.LongTaskSent::class.java,
             RumRawEvent.ResourceDropped::class.java,
             RumRawEvent.ResourceSent::class.java,
-            RumRawEvent.UpdatePerformanceMetric::class.java
+            RumRawEvent.UpdatePerformanceMetric::class.java,
+            RumRawEvent.UpdateExternalRefreshRate::class.java
         )
 
         internal const val RUM_BACKGROUND_VIEW_ID = "com.datadog.background.view"

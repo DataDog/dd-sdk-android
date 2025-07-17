@@ -45,6 +45,10 @@ class _RumInternalProxy internal constructor(private val rumMonitor: AdvancedRum
         rumMonitor.updatePerformanceMetric(metric, value)
     }
 
+    fun updateExternalRefreshRate(frameTimeSeconds: Double) {
+        rumMonitor.updateExternalRefreshRate(frameTimeSeconds)
+    }
+
     fun setInternalViewAttribute(key: String, value: Any?) {
         rumMonitor.setInternalViewAttribute(key, value)
     }
@@ -103,6 +107,13 @@ class _RumInternalProxy internal constructor(private val rumMonitor: AdvancedRum
             composeActionTrackingStrategy: ActionTrackingStrategy
         ): Builder {
             return builder.setComposeActionTrackingStrategy(composeActionTrackingStrategy)
+        }
+
+        fun setRumSessionTypeOverride(
+            builder: Builder,
+            rumSessionTypeOverride: RumSessionType
+        ): Builder {
+            return builder.setRumSessionTypeOverride(rumSessionTypeOverride)
         }
     }
 }
