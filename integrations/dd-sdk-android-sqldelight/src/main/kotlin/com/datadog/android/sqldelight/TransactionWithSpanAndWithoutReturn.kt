@@ -6,10 +6,10 @@
 
 package com.datadog.android.sqldelight
 
+import com.datadog.android.trace.api.span.DatadogSpan
 import com.squareup.sqldelight.TransactionWithoutReturn
-import io.opentracing.Span
 
 /**
- * An object that implements both [Span] and [TransactionWithoutReturn].
+ * An object that implements both [DatadogSpan] and [TransactionWithoutReturn].
  */
-interface TransactionWithSpanAndWithoutReturn : TransactionWithoutReturn, Span
+interface TransactionWithSpanAndWithoutReturn : TransactionWithoutReturn, DatadogSpan

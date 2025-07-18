@@ -109,9 +109,6 @@ io.ktor:ktor-websocket-serialization-jvm:2.3.13                 :    6 Kb
 io.ktor:ktor-websockets-jvm:2.3.13                              :  173 Kb
 io.opentelemetry:opentelemetry-api:1.40.0                       :  138 Kb
 io.opentelemetry:opentelemetry-context:1.40.0                   :   46 Kb
-io.opentracing:opentracing-api:0.32.0                           :   18 Kb
-io.opentracing:opentracing-noop:0.32.0                          :   10 Kb
-io.opentracing:opentracing-util:0.32.0                          :   10 Kb
 jakarta.inject:jakarta.inject-api:2.0.1                         :   10 Kb
 javax.inject:javax.inject:1                                     :    2 Kb
 org.jetbrains.kotlin:kotlin-android-extensions-runtime:2.0.21   :    9 Kb

@@ -6,12 +6,11 @@
 
 package com.datadog.opentelemetry.trace
 
-import com.datadog.android.utils.forge.Configurator
-import com.datadog.trace.api.ConfigDefaults
-import com.datadog.trace.bootstrap.instrumentation.api.AgentSpan
-import com.datadog.trace.bootstrap.instrumentation.api.AgentTracer
-import com.datadog.trace.bootstrap.instrumentation.api.ErrorPriorities
-import com.datadog.trace.bootstrap.instrumentation.api.ScopeSource
+import com.datadog.android.trace.api.DatadogTracingConstants.DEFAULT_ASYNC_PROPAGATING
+import com.datadog.android.trace.api.DatadogTracingConstants.ErrorPriorities
+import com.datadog.android.trace.api.span.DatadogSpan
+import com.datadog.android.trace.api.tracer.DatadogTracer
+import com.datadog.android.trace.opentelemetry.utils.forge.Configurator
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -49,10 +48,10 @@ import org.mockito.quality.Strictness
 internal class OtelSpanTest {
 
     @Mock
-    lateinit var mockAgentTracer: AgentTracer.TracerAPI
+    lateinit var mockAgentTracer: DatadogTracer
 
     @Mock
-    lateinit var mockAgentSpan: AgentSpan
+    lateinit var mockAgentSpan: DatadogSpan
     lateinit var testedSpan: OtelSpan
 
     @BeforeEach
@@ -142,7 +141,7 @@ internal class OtelSpanTest {
         testedSpan.setStatus(fakeStatusCode, fakeDescription)
 
         // Then
-        verify(mockAgentSpan).setError(expectedIsError)
+        verify(mockAgentSpan).isError = expectedIsError
         verify(mockAgentSpan).setErrorMessage(expectedErrorMessage)
         assertThat(testedSpan.statusCode).isEqualTo(fakeStatusCode)
     }
@@ -160,7 +159,7 @@ internal class OtelSpanTest {
         testedSpan.setStatus(fakeStatusCode, fakeDescription)
 
         // Then
-        verify(mockAgentSpan, never()).setError(any())
+        verify(mockAgentSpan, never()).isError = any()
         verify(mockAgentSpan, never()).setErrorMessage(anyOrNull())
         assertThat(testedSpan.statusCode).isEqualTo(StatusCode.UNSET)
     }
@@ -177,7 +176,7 @@ internal class OtelSpanTest {
         testedSpan.setStatus(StatusCode.OK, fakeDescription2)
 
         // Then
-        verify(mockAgentSpan).setError(false)
+        verify(mockAgentSpan).isError = false
         verify(mockAgentSpan).setErrorMessage(null)
         assertThat(testedSpan.statusCode).isEqualTo(StatusCode.ERROR)
     }
@@ -199,7 +198,7 @@ internal class OtelSpanTest {
         testedSpan.setStatus(fakeStatusCode2, fakeDescription2)
 
         // Then
-        verify(mockAgentSpan).setError(expectedIsError)
+        verify(mockAgentSpan).isError = expectedIsError
         verify(mockAgentSpan).setErrorMessage(expectedErrorMessage)
         assertThat(testedSpan.statusCode).isEqualTo(fakeStatusCode1)
         verifyNoMoreInteractions(mockAgentSpan)
@@ -248,8 +247,7 @@ internal class OtelSpanTest {
         // Then
         verify(mockAgentTracer).activateSpan(
             mockAgentSpan,
-            ScopeSource.INSTRUMENTATION,
-            ConfigDefaults.DEFAULT_ASYNC_PROPAGATING
+            DEFAULT_ASYNC_PROPAGATING
         )
     }
 

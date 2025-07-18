@@ -1,40 +1,24 @@
-public final class com/datadog/android/trace/AndroidTracer : com/datadog/opentracing/DDTracer {
-	public static final field Companion Lcom/datadog/android/trace/AndroidTracer$Companion;
-	public fun buildSpan (Ljava/lang/String;)Lcom/datadog/opentracing/DDTracer$DDSpanBuilder;
-	public synthetic fun buildSpan (Ljava/lang/String;)Lio/opentracing/Tracer$SpanBuilder;
-	public static final fun logErrorMessage (Lio/opentracing/Span;Ljava/lang/String;)V
-	public static final fun logThrowable (Lio/opentracing/Span;Ljava/lang/Throwable;)V
-	public fun toString ()Ljava/lang/String;
+public final class com/datadog/android/trace/DatadogTracing {
+	public static final field INSTANCE Lcom/datadog/android/trace/DatadogTracing;
+	public final fun newTracerBuilder (Lcom/datadog/android/api/SdkCore;)Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;
+	public static synthetic fun newTracerBuilder$default (Lcom/datadog/android/trace/DatadogTracing;Lcom/datadog/android/api/SdkCore;ILjava/lang/Object;)Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;
 }
 
-public final class com/datadog/android/trace/AndroidTracer$Builder {
-	public fun <init> ()V
-	public fun <init> (Lcom/datadog/android/api/SdkCore;)V
-	public synthetic fun <init> (Lcom/datadog/android/api/SdkCore;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun addGlobalTag (Ljava/lang/String;Ljava/lang/String;)Lcom/datadog/android/trace/AndroidTracer$Builder;
-	public final fun addTag (Ljava/lang/String;Ljava/lang/String;)Lcom/datadog/android/trace/AndroidTracer$Builder;
-	public final fun build ()Lcom/datadog/android/trace/AndroidTracer;
-	public final fun setBundleWithRumEnabled (Z)Lcom/datadog/android/trace/AndroidTracer$Builder;
-	public final fun setPartialFlushThreshold (I)Lcom/datadog/android/trace/AndroidTracer$Builder;
-	public final fun setSampleRate (D)Lcom/datadog/android/trace/AndroidTracer$Builder;
-	public final fun setService (Ljava/lang/String;)Lcom/datadog/android/trace/AndroidTracer$Builder;
-	public final fun setTracingHeaderTypes (Ljava/util/Set;)Lcom/datadog/android/trace/AndroidTracer$Builder;
-}
-
-public final class com/datadog/android/trace/AndroidTracer$Companion {
-	public final fun logErrorMessage (Lio/opentracing/Span;Ljava/lang/String;)V
-	public final fun logThrowable (Lio/opentracing/Span;Ljava/lang/Throwable;)V
+public final class com/datadog/android/trace/GlobalDatadogTracer {
+	public static final field INSTANCE Lcom/datadog/android/trace/GlobalDatadogTracer;
+	public final fun clear ()V
+	public final fun get ()Lcom/datadog/android/trace/api/tracer/DatadogTracer;
+	public final fun getOrNull ()Lcom/datadog/android/trace/api/tracer/DatadogTracer;
+	public final fun registerIfAbsent (Lcom/datadog/android/trace/api/tracer/DatadogTracer;)Z
 }
 
 public abstract interface class com/datadog/android/trace/InternalCoreWriterProvider {
-	public abstract fun getCoreTracerWriter ()Lcom/datadog/trace/common/writer/Writer;
+	public abstract fun getCoreTracerWriter ()Lcom/datadog/android/trace/api/span/DatadogSpanWriter;
 }
 
 public final class com/datadog/android/trace/SpanExtKt {
-	public static final fun setError (Lio/opentracing/Span;Ljava/lang/String;)V
-	public static final fun setError (Lio/opentracing/Span;Ljava/lang/Throwable;)V
-	public static final fun withinSpan (Ljava/lang/String;Lio/opentracing/Span;ZLkotlin/jvm/functions/Function1;)Ljava/lang/Object;
-	public static synthetic fun withinSpan$default (Ljava/lang/String;Lio/opentracing/Span;ZLkotlin/jvm/functions/Function1;ILjava/lang/Object;)Ljava/lang/Object;
+	public static final fun withinSpan (Ljava/lang/String;Lcom/datadog/android/trace/api/span/DatadogSpan;ZLkotlin/jvm/functions/Function1;)Ljava/lang/Object;
+	public static synthetic fun withinSpan$default (Ljava/lang/String;Lcom/datadog/android/trace/api/span/DatadogSpan;ZLkotlin/jvm/functions/Function1;ILjava/lang/Object;)Ljava/lang/Object;
 }
 
 public final class com/datadog/android/trace/Trace {
@@ -62,6 +46,29 @@ public final class com/datadog/android/trace/TraceConfiguration$Builder {
 
 public abstract interface class com/datadog/android/trace/event/SpanEventMapper : com/datadog/android/event/EventMapper {
 	public abstract fun map (Lcom/datadog/android/trace/model/SpanEvent;)Lcom/datadog/android/trace/model/SpanEvent;
+}
+
+public final class com/datadog/android/trace/internal/DatadogPropagationHelper {
+	public final fun createExtractedContext (Ljava/lang/String;Ljava/lang/String;I)Lcom/datadog/android/trace/api/span/DatadogSpanContext;
+	public final fun isExtractedContext (Lcom/datadog/android/trace/api/span/DatadogSpanContext;)Z
+}
+
+public final class com/datadog/android/trace/internal/DatadogSpanIdConverter {
+	public final fun fromHex (Ljava/lang/String;)J
+	public final fun toHexStringPadded (J)Ljava/lang/String;
+}
+
+public final class com/datadog/android/trace/internal/DatadogTraceExtKt {
+	public static final fun fromHex (Lcom/datadog/android/trace/api/trace/DatadogTraceId$Companion;Ljava/lang/String;)Lcom/datadog/android/trace/api/trace/DatadogTraceId;
+}
+
+public final class com/datadog/android/trace/internal/DatadogTracingToolkit {
+	public static final field INSTANCE Lcom/datadog/android/trace/internal/DatadogTracingToolkit;
+	public static final field spanIdConverter Lcom/datadog/android/trace/internal/DatadogSpanIdConverter;
+	public final fun getPropagationHelper ()Lcom/datadog/android/trace/internal/DatadogPropagationHelper;
+	public final fun setTraceId128BitGenerationEnabled (Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;)Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;
+	public final fun setTraceRateLimit (Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;I)Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;
+	public final fun setTracingSamplingPriorityIfNecessary (Lcom/datadog/android/trace/api/span/DatadogSpanContext;)V
 }
 
 public final class com/datadog/android/trace/internal/SpanAttributes {

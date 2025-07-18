@@ -8,7 +8,7 @@ package com.datadog.android.sdk.integration.trace
 
 import android.util.Log
 import androidx.test.platform.app.InstrumentationRegistry
-import com.datadog.android.internal.utils.toHexString
+import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.sdk.assertj.HeadersAssert
 import com.datadog.android.sdk.assertj.HeadersAssert.Companion.assertThat
 import com.datadog.android.sdk.integration.RuntimeConfig
@@ -16,7 +16,10 @@ import com.datadog.android.sdk.rules.HandledRequest
 import com.datadog.android.sdk.rules.MockServerActivityTestRule
 import com.datadog.android.sdk.utils.isLogsUrl
 import com.datadog.android.sdk.utils.isTracesUrl
-import com.datadog.opentracing.DDSpan
+import com.datadog.android.trace.api.resolveMeta
+import com.datadog.android.trace.api.resolveMetrics
+import com.datadog.android.trace.api.span.DatadogSpan
+import com.datadog.android.trace.internal.DatadogTracingToolkit
 import com.datadog.tools.unit.assertj.JsonObjectAssert.Companion.assertThat
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
@@ -47,8 +50,9 @@ internal abstract class TracesTest {
     }
 
     protected fun verifyExpectedSpans(
+        context: DatadogContext,
         handledRequests: List<HandledRequest>,
-        expectedSpans: List<DDSpan>
+        expectedSpans: List<DatadogSpan>
     ) {
         val sentSpansObjects = mutableListOf<JsonObject>()
         handledRequests
@@ -57,23 +61,31 @@ internal abstract class TracesTest {
                 assertThat(request.headers)
                     .isNotNull
                     .hasHeader(HeadersAssert.HEADER_CT, RuntimeConfig.CONTENT_TYPE_TEXT)
-                val sentSpans = tracesPayloadToJsonArray(request.textBody.orEmpty())
-                sentSpans.forEach {
-                    Log.i("EndToEndTraceTest", "adding span $it")
-                    sentSpansObjects.add(it.asJsonObject)
-                }
+
+                tracesPayloadToJsonArray(request.textBody.orEmpty())
+                    .forEach {
+                        Log.i("EndToEndTraceTest", "adding span $it")
+                        sentSpansObjects.add(it.asJsonObject)
+                    }
             }
-        assertThat(expectedSpans.size).isEqualTo(sentSpansObjects.size)
+        assertThat(expectedSpans.size)
+            .withFailMessage {
+                "Expected spans doesn't equal to sent spans. Expected=$expectedSpans, sent=$sentSpansObjects"
+            }
+            .isEqualTo(sentSpansObjects.size)
+
         expectedSpans.forEach { span ->
-            val json = sentSpansObjects.first {
-                val leastSignificantTraceId = it.get(TRACE_ID_KEY).asString
-                val mostSignificantTraceId = it.getAsJsonObject("meta")
+            val json = sentSpansObjects.first { spanJson ->
+                val leastSignificantTraceId = spanJson.get(TRACE_ID_KEY).asString
+                val mostSignificantTraceId = spanJson
+                    .getAsJsonObject("meta")
                     .getAsJsonPrimitive(MOST_SIGNIFICANT_64_BITS_TRACE_ID_KEY).asString
+
                 leastSignificantTraceId == span.leastSignificant64BitsTraceId() &&
                     mostSignificantTraceId == span.mostSignificant64BitsTraceId() &&
-                    it.get(SPAN_ID_KEY).asString == span.spanIdAsHexString()
+                    spanJson.get(SPAN_ID_KEY).asString == span.spanIdAsHexString()
             }
-            assertMatches(json, span)
+            assertMatches(json, span, context)
         }
     }
 
@@ -106,22 +118,30 @@ internal abstract class TracesTest {
         }
     }
 
-    private fun assertMatches(jsonObject: JsonObject, span: DDSpan) {
+    private fun assertMatches(jsonObject: JsonObject, span: DatadogSpan, context: DatadogContext) {
+        val meta = span.resolveMeta(context)
+        val metrics = span.resolveMetrics()
         assertThat(jsonObject)
             .hasField(SERVICE_NAME_KEY, span.serviceName)
             .hasField(TRACE_ID_KEY, span.leastSignificant64BitsTraceId())
             .hasField(SPAN_ID_KEY, span.spanIdAsHexString())
-            .hasField(PARENT_ID_KEY, span.parentId.toLong().toHexString())
+            .hasField(
+                PARENT_ID_KEY,
+                span.parentSpanId?.let {
+                    DatadogTracingToolkit.spanIdConverter.toHexStringPadded(it)
+                }
+                    ?: throw AssertionError("No parentId provided from $span")
+            )
             .hasField(
                 START_TIMESTAMP_KEY,
-                span.startTime,
+                span.startTimeNanos,
                 Offset.offset(TimeUnit.MINUTES.toNanos(1))
             )
             .hasField(DURATION_KEY, span.durationNano)
-            .hasField(RESOURCE_KEY, span.resourceName)
+            .hasField(RESOURCE_KEY, span.resourceName.orEmpty())
             .hasField(OPERATION_NAME_KEY, span.operationName)
-            .hasField(META_KEY, span.meta)
-            .hasField(METRICS_KEY, span.metrics)
+            .hasField(META_KEY, meta)
+            .hasField(METRICS_KEY, metrics)
         val metaObject = jsonObject.getAsJsonObject(META_KEY)
         assertThat(metaObject)
             .hasField(MOST_SIGNIFICANT_64_BITS_TRACE_ID_KEY, span.mostSignificant64BitsTraceId())
