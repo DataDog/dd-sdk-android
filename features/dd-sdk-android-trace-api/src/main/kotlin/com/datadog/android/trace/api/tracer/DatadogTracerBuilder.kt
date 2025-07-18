@@ -6,7 +6,6 @@
 package com.datadog.android.trace.api.tracer
 
 import androidx.annotation.FloatRange
-import androidx.annotation.IntRange
 import com.datadog.android.trace.TracingHeaderType
 import com.datadog.tools.annotation.NoOpImplementation
 
@@ -48,14 +47,6 @@ interface DatadogTracerBuilder {
      * @param sampleRate the sample rate as a percentage between 0 and 100 (default is 100%)
      */
     fun withSampleRate(@FloatRange(from = 0.0, to = 100.0) sampleRate: Double): DatadogTracerBuilder
-
-    /**
-     * Sets the trace rate limit. This is the maximum number of traces per second that will be
-     * accepted. Please note that this property is used in conjunction with the sample rate. If no sample rate
-     * is provided this property and its related logic will be ignored.
-     * @param traceRateLimit the trace rate limit as a value between 1 and Int.MAX_VALUE (default is Int.MAX_VALUE)
-     */
-    fun withTraceRateLimit(@IntRange(from = 1, to = Int.MAX_VALUE.toLong()) traceRateLimit: Int): DatadogTracerBuilder
 
     /**
      * Configures the builder to enable partial flushes when the number of spans in a specific trace

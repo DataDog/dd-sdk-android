@@ -7,7 +7,6 @@
 package com.datadog.android.trace.api
 
 import com.datadog.android.api.context.DatadogContext
-import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.trace.api.span.DatadogSpan
 import com.datadog.android.trace.api.span.DatadogSpanContext
 import com.datadog.android.trace.api.trace.DatadogTraceId
@@ -16,7 +15,6 @@ import com.datadog.android.trace.api.tracer.DatadogTracerBuilder
 import com.datadog.android.trace.internal.DatadogPropagationHelper
 import com.datadog.android.trace.internal.DatadogSpanAdapter
 import com.datadog.android.trace.internal.DatadogSpanContextAdapter
-import com.datadog.android.trace.internal.DatadogSpanLoggerAdapter
 import com.datadog.android.trace.internal.DatadogTraceIdAdapter
 import com.datadog.android.trace.internal.DatadogTracerAdapter
 import com.datadog.android.trace.internal.DatadogTracingToolkit
@@ -67,12 +65,7 @@ fun DatadogTracingToolkit.setTracingAdapterBuilderMock(mock: DatadogTracerBuilde
     builderProvider = mock
 }
 
-fun DatadogTracingToolkit.setSpanLoggerMock(sdkCore: FeatureSdkCore?) {
-    spanLoggerNullable = sdkCore?.let(::DatadogSpanLoggerAdapter)
-}
-
 fun DatadogTracingToolkit.clear() {
-    setSpanLoggerMock(null)
     setTracingAdapterBuilderMock(null)
 }
 

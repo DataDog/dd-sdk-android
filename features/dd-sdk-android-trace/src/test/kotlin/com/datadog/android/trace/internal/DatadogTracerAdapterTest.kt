@@ -52,6 +52,9 @@ internal class DatadogTracerAdapterTest {
     lateinit var mockSpan: AgentSpan
 
     @Mock
+    lateinit var mockSpanLogger: DatadogSpanLogger
+
+    @Mock
     lateinit var mockDatadogSpan: DatadogSpanAdapter
 
     @Mock
@@ -68,7 +71,8 @@ internal class DatadogTracerAdapterTest {
 
     @BeforeEach
     fun `set up`() {
-        testedTracer = DatadogTracerAdapter(mockSdk, mockTracer, true)
+        whenever(mockSdk.internalLogger).thenReturn(mock())
+        testedTracer = DatadogTracerAdapter(mockSdk, mockTracer, true, mockSpanLogger)
         whenever(mockDatadogSpan.delegate).thenReturn(mockSpan)
         whenever(mockTracer.propagate()).thenReturn(mock())
         @Suppress("DEPRECATION")

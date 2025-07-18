@@ -33,7 +33,8 @@ internal class DatadogTracerBuilderAdapter(
 
     override fun build(): DatadogTracer {
         val coreTracer = delegate.withProperties(properties()).build()
-        val datadogTracer = DatadogTracerAdapter(sdkCore, coreTracer, bundleWithRumEnabled)
+        val spanLogger = DatadogSpanLogger(sdkCore)
+        val datadogTracer = DatadogTracerAdapter(sdkCore, coreTracer, bundleWithRumEnabled, spanLogger)
         datadogTracer.addScopeListener(TracePropagationScopeListener(sdkCore, datadogTracer))
 
         return datadogTracer
@@ -41,10 +42,6 @@ internal class DatadogTracerBuilderAdapter(
 
     override fun withServiceName(serviceName: String) = apply {
         this.serviceName = serviceName
-    }
-
-    override fun withTraceRateLimit(traceRateLimit: Int) = apply {
-        this.traceRateLimit = traceRateLimit
     }
 
     override fun withTracingHeadersTypes(tracingHeadersTypes: Set<TracingHeaderType>) = apply {
@@ -81,6 +78,10 @@ internal class DatadogTracerBuilderAdapter(
 
     internal fun setTraceId128BitGenerationEnabled(traceId128BitGenerationEnabled: Boolean) = apply {
         delegate.idGenerationStrategy(IdGenerationStrategy.fromName("SECURE_RANDOM", traceId128BitGenerationEnabled))
+    }
+
+    internal fun withTraceRateLimit(traceRateLimit: Int) = apply {
+        this.traceRateLimit = traceRateLimit
     }
 
     @VisibleForTesting

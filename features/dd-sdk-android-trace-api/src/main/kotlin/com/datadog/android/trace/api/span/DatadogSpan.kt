@@ -172,4 +172,33 @@ interface DatadogSpan {
      * @param value The value of the metric to be set for the specified key.
      */
     fun setMetric(key: String, value: Int)
+
+    /**
+     * Logs a throwable and associates it with the current [DatadogSpan].
+     *
+     * @param throwable The throwable containing error details to be logged with the span.
+     */
+    fun logThrowable(throwable: Throwable)
+
+    /**
+     * Logs an error message and associates it with the current [DatadogSpan].
+     *
+     * @param message The error message to log.
+     */
+    fun logErrorMessage(message: String)
+
+    /**
+     * Logs a message associated with the current [DatadogSpan].
+     *
+     * @param message The log message to be associated with the span.
+     */
+    fun logMessage(message: String)
+
+    /**
+     * Logs a set of attributes and associates them with the current [DatadogSpan].
+     *
+     * @param attributes A map containing key-value pairs of attributes to be logged.
+     *                   These attributes provide additional context or metadata for the span.
+     */
+    fun logAttributes(attributes: Map<String, Any>)
 }

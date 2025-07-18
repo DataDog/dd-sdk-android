@@ -20,7 +20,6 @@ import com.datadog.android.sdk.utils.getTrackingConsent
 import com.datadog.android.trace.Trace
 import com.datadog.android.trace.api.span.DatadogSpan
 import com.datadog.android.trace.api.tracer.DatadogTracer
-import com.datadog.android.trace.logMessage
 import fr.xgouchet.elmyr.Forge
 import java.util.LinkedList
 import java.util.Random

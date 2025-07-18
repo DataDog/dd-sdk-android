@@ -20,7 +20,7 @@ class DatadogPropagationHelper internal constructor() {
     /**
      * Determines if the provided [DatadogSpanContext] represents an extracted context.
      *
-     * @param context The DatadogSpanContext to be evaluated.
+     * @param context The [DatadogSpanContext] to be evaluated.
      * @return True if the context is identified as an extracted context, otherwise false.
      */
     fun isExtractedContext(context: DatadogSpanContext): Boolean {
@@ -29,12 +29,12 @@ class DatadogPropagationHelper internal constructor() {
     }
 
     /**
-     * Creates a `DatadogSpanContext` object that represents an extracted context from the given parameters.
+     * Creates a [DatadogSpanContext] object that represents an extracted context from the given parameters.
      *
      * @param traceId The unique identifier for the trace.
      * @param spanId The unique identifier for the span.
      * @param samplingPriority The sampling priority value for determining the trace's sampling behavior.
-     * @return A `DatadogSpanContext` instance containing the extracted context.
+     * @return A [DatadogSpanContext] instance containing the extracted context.
      */
     fun createExtractedContext(
         traceId: String,

@@ -39,10 +39,13 @@ import org.mockito.quality.Strictness
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
-class DatadogSpanAdapterTest {
+internal class DatadogSpanAdapterTest {
 
     @Mock
     lateinit var mockAgentSpan: AgentSpan
+
+    @Mock
+    lateinit var mockSpanLogger: DatadogSpanLogger
 
     @Mock
     lateinit var mockDDTraceId: DDTraceId
@@ -75,8 +78,8 @@ class DatadogSpanAdapterTest {
     fun `set up`() {
         whenever(mockAgentSpan.context()).thenReturn(mockSpanContext)
         whenever(mockAgentSpan.traceId).thenReturn(mockDDTraceId)
-        testedSpanAdapter = DatadogSpanAdapter(mockAgentSpan)
-        testedSpanAdapterWithDDSpanDelegate = DatadogSpanAdapter(mockDDSpan)
+        testedSpanAdapter = DatadogSpanAdapter(mockAgentSpan, mockSpanLogger)
+        testedSpanAdapterWithDDSpanDelegate = DatadogSpanAdapter(mockDDSpan, mockSpanLogger)
     }
 
     @Test

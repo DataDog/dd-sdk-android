@@ -5,12 +5,9 @@
  */
 package com.datadog.android.trace.internal
 
-import com.datadog.android.Datadog
-import com.datadog.android.api.feature.FeatureSdkCore
+import androidx.annotation.IntRange
 import com.datadog.android.lint.InternalApi
 import com.datadog.android.trace.api.span.DatadogSpanContext
-import com.datadog.android.trace.api.span.DatadogSpanLogger
-import com.datadog.android.trace.api.span.NoOpDatadogSpanLogger
 import com.datadog.android.trace.api.tracer.DatadogTracerBuilder
 
 /**
@@ -37,20 +34,6 @@ object DatadogTracingToolkit {
     var propagationHelper: DatadogPropagationHelper = DatadogPropagationHelper()
         internal set
 
-    /**
-     * Provides an instance of [DatadogSpanLogger] for logging span-related messages, errors,
-     * and attributes. Selects the appropriate logger implementation based on the available context.
-     */
-    var spanLogger: DatadogSpanLogger
-        internal set(value) {
-            spanLoggerNullable = value
-        }
-        get() = spanLoggerNullable
-            ?: (Datadog.getInstance() as? FeatureSdkCore)?.let(::DatadogSpanLoggerAdapter)
-            ?: NoOpDatadogSpanLogger()
-
-    internal var spanLoggerNullable: DatadogSpanLogger? = null
-
     internal var builderProvider: DatadogTracerBuilder? = null
 
     /**
@@ -65,6 +48,21 @@ object DatadogTracingToolkit {
      */
     fun setTraceId128BitGenerationEnabled(builder: DatadogTracerBuilder): DatadogTracerBuilder {
         (builder as? DatadogTracerBuilderAdapter)?.setTraceId128BitGenerationEnabled(true)
+        return builder
+    }
+
+    /**
+     * Sets the trace rate limit. This is the maximum number of traces per second that will be
+     * accepted. Please note that this property is used in conjunction with the sample rate. If no sample rate
+     * is provided this property and its related logic will be ignored.
+     * @param builder the tracer builder to set the trace rate limit for
+     * @param traceRateLimit the trace rate limit as a value between 1 and Int.MAX_VALUE (default is Int.MAX_VALUE)
+     */
+    fun setTraceRateLimit(
+        builder: DatadogTracerBuilder,
+        @IntRange(from = 1, to = Int.MAX_VALUE.toLong()) traceRateLimit: Int
+    ): DatadogTracerBuilder {
+        (builder as? DatadogTracerBuilderAdapter)?.withTraceRateLimit(traceRateLimit)
         return builder
     }
 }

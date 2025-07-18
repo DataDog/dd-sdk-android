@@ -16,7 +16,7 @@ class DatadogSpanIdConverterAdapterTest {
     private var fakeLong: Long = 0L
 
     @Test
-    fun `M serialize to String and deserialize valid W fromHeX(toHexStringPadded(Long))`() {
+    fun `M serialize to String and deserialize valid W fromHex(toHexStringPadded(Long))`() {
         // Given
         val converter = DatadogSpanIdConverter()
 

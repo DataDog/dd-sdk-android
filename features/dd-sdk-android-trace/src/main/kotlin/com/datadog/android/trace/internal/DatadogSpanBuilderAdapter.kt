@@ -11,11 +11,14 @@ import com.datadog.android.trace.api.span.DatadogSpanContext
 import com.datadog.android.trace.api.span.DatadogSpanLink
 import com.datadog.trace.bootstrap.instrumentation.api.AgentTracer
 
-internal class DatadogSpanBuilderAdapter(private val delegate: AgentTracer.SpanBuilder) : DatadogSpanBuilder {
+internal class DatadogSpanBuilderAdapter(
+    private val delegate: AgentTracer.SpanBuilder,
+    private val spanLogger: DatadogSpanLogger
+) : DatadogSpanBuilder {
 
     override fun ignoreActiveSpan() = apply { delegate.ignoreActiveSpan() }
 
-    override fun start(): DatadogSpan = DatadogSpanAdapter(delegate.start())
+    override fun start(): DatadogSpan = DatadogSpanAdapter(delegate.start(), spanLogger)
 
     override fun withOrigin(origin: String?) = apply { delegate.withOrigin(origin) }
 

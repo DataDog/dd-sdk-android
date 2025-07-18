@@ -58,11 +58,14 @@ class DatadogSpanBuilderAdapterTest {
     @Mock
     private lateinit var mockAgentSpanContext: AgentSpan.Context
 
+    @Mock
+    private lateinit var mockSpanLogger: DatadogSpanLogger
+
     private lateinit var testedBuilderAdapter: DatadogSpanBuilderAdapter
 
     @BeforeEach
     fun `set up`() {
-        testedBuilderAdapter = DatadogSpanBuilderAdapter(mockAgentSpanBuilderAdapter)
+        testedBuilderAdapter = DatadogSpanBuilderAdapter(mockAgentSpanBuilderAdapter, mockSpanLogger)
     }
 
     @Test

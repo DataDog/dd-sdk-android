@@ -8,7 +8,7 @@ package com.datadog.android.trace.api.propagation
 import com.datadog.android.trace.api.span.DatadogSpanContext
 
 /**
- * A no-operation implementation of the `DatadogPropagation` interface.
+ * A no-operation implementation of the [DatadogPropagation] interface.
  *
  * This implementation is intended as a placeholder making possible to create other NoOp.* classes.
  */

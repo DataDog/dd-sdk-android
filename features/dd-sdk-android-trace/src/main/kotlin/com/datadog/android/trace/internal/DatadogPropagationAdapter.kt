@@ -25,10 +25,7 @@ internal class DatadogPropagationAdapter(
         if (context !is DatadogSpanContextAdapter) {
             internalLogger.log(
                 InternalLogger.Level.ERROR,
-                targets = listOf(
-                    InternalLogger.Target.MAINTAINER,
-                    InternalLogger.Target.USER,
-                ),
+                InternalLogger.Target.USER,
                 { constructErrorMessage(context::class) }
             )
             return

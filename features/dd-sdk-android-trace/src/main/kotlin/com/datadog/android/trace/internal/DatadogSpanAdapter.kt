@@ -10,7 +10,10 @@ import com.datadog.android.trace.api.trace.DatadogTraceId
 import com.datadog.trace.bootstrap.instrumentation.api.AgentSpan
 import com.datadog.trace.core.DDSpan
 
-internal class DatadogSpanAdapter(internal val delegate: AgentSpan) : DatadogSpan {
+internal class DatadogSpanAdapter(
+    internal val delegate: AgentSpan,
+    private val spanLogger: DatadogSpanLogger
+) : DatadogSpan {
 
     override val isRootSpan: Boolean get() = delegate is DDSpan && delegate.isRootSpan
 
@@ -24,7 +27,7 @@ internal class DatadogSpanAdapter(internal val delegate: AgentSpan) : DatadogSpa
 
     override val startTimeNanos: Long get() = delegate.startTime
 
-    override val localRootSpan: DatadogSpan? get() = delegate.localRootSpan?.let { DatadogSpanAdapter(it) }
+    override val localRootSpan: DatadogSpan? get() = delegate.localRootSpan?.let { DatadogSpanAdapter(it, spanLogger) }
 
     override var isError: Boolean?
         get() = delegate.isError
@@ -93,5 +96,21 @@ internal class DatadogSpanAdapter(internal val delegate: AgentSpan) : DatadogSpa
 
     override fun addThrowable(throwable: Throwable, errorPriority: Byte) {
         delegate.addThrowable(throwable, errorPriority)
+    }
+
+    override fun logThrowable(throwable: Throwable) {
+        spanLogger.log(throwable, this)
+    }
+
+    override fun logErrorMessage(message: String) {
+        spanLogger.logErrorMessage(message, this)
+    }
+
+    override fun logMessage(message: String) {
+        spanLogger.log(message, this)
+    }
+
+    override fun logAttributes(attributes: Map<String, Any>) {
+        spanLogger.log(attributes, this)
     }
 }

@@ -7,14 +7,14 @@ package com.datadog.android.trace.api.tracer
 
 import com.datadog.android.trace.api.propagation.DatadogPropagation
 import com.datadog.android.trace.api.propagation.NoOpDatadogPropagation
-import com.datadog.android.trace.api.scope.DatadogScopeListener
 import com.datadog.android.trace.api.scope.DatadogScope
+import com.datadog.android.trace.api.scope.DatadogScopeListener
 import com.datadog.android.trace.api.span.DatadogSpan
 import com.datadog.android.trace.api.span.DatadogSpanBuilder
 import com.datadog.tools.annotation.NoOpImplementation
 
 /**
- * DatadogTracer is a simple, thin interface for Span creation and propagation across arbitrary transports.
+ * [DatadogTracer] is a simple, thin interface for span creation and propagation across arbitrary transports.
  */
 @NoOpImplementation(publicNoOpImplementation = true)
 interface DatadogTracer {

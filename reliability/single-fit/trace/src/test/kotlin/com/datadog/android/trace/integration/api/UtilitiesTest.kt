@@ -16,11 +16,8 @@ import com.datadog.android.trace.GlobalDatadogTracer
 import com.datadog.android.trace.Trace
 import com.datadog.android.trace.TraceConfiguration
 import com.datadog.android.trace.api.clear
-import com.datadog.android.trace.api.setSpanLoggerMock
 import com.datadog.android.trace.integration.tests.elmyr.TraceIntegrationForgeConfigurator
 import com.datadog.android.trace.internal.DatadogTracingToolkit
-import com.datadog.android.trace.logErrorMessage
-import com.datadog.android.trace.logThrowable
 import com.datadog.android.trace.withinSpan
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.google.gson.JsonObject
@@ -86,7 +83,7 @@ class UtilitiesTest {
             mostSignificantTraceId = span.mostSignificant64BitsTraceId()
             spanId = span.spanIdAsHexString()
             Thread.sleep(OP_DURATION_MS)
-            DatadogTracingToolkit.spanLogger.log(fakeThrowable, span)
+            span.logThrowable(fakeThrowable)
             span.finish()
         }
 
@@ -122,7 +119,6 @@ class UtilitiesTest {
     ) {
         // Given
         stubSdkCore.stubFeature(Feature.LOGS_FEATURE_NAME)
-        DatadogTracingToolkit.setSpanLoggerMock(stubSdkCore)
         val testedTracer = DatadogTracing.newTracerBuilder(stubSdkCore).build()
 
         // When
@@ -137,7 +133,7 @@ class UtilitiesTest {
             traceId = span.traceId.toHexString()
             spanId = span.context().spanId
             Thread.sleep(OP_DURATION_MS)
-            DatadogTracingToolkit.spanLogger.logErrorMessage(fakeErrorMessage, span)
+            span.logErrorMessage(fakeErrorMessage)
             span.finish()
         }
 
@@ -173,7 +169,7 @@ class UtilitiesTest {
     }
 
     @RepeatedTest(16)
-    fun `M send span with exception W buildSpan() + start() + logThrowable () + finish()`(
+    fun `M send span with exception W buildSpan() + start() + logThrowable() + finish()`(
         @StringForgery fakeOperation: String,
         @Forgery fakeThrowable: Throwable
     ) {
@@ -227,7 +223,6 @@ class UtilitiesTest {
     ) {
         // Given
         stubSdkCore.stubFeature(Feature.LOGS_FEATURE_NAME)
-        DatadogTracingToolkit.setSpanLoggerMock(stubSdkCore)
         val testedTracer = DatadogTracing.newTracerBuilder(stubSdkCore).build()
 
         // When

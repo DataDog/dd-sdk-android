@@ -13,8 +13,8 @@ import com.datadog.android.internal.utils.loggableStackTrace
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.trace.api.DatadogTracingConstants
 import com.datadog.android.trace.api.span.DatadogSpan
-import com.datadog.android.trace.internal.DatadogSpanLoggerAdapter.Companion.DEFAULT_EVENT_MESSAGE
-import com.datadog.android.trace.internal.DatadogSpanLoggerAdapter.Companion.TRACE_LOGGER_NAME
+import com.datadog.android.trace.internal.DatadogSpanLogger.Companion.DEFAULT_EVENT_MESSAGE
+import com.datadog.android.trace.internal.DatadogSpanLogger.Companion.TRACE_LOGGER_NAME
 import com.datadog.android.utils.forge.Configurator
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
@@ -41,7 +41,7 @@ import org.mockito.quality.Strictness
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
-class DatadogSpanLoggerAdapterTest {
+class DatadogSpanLoggerTest {
 
     private lateinit var mockSdkCore: FeatureSdkCore
 
@@ -60,7 +60,7 @@ class DatadogSpanLoggerAdapterTest {
     @Mock
     lateinit var mockLogFeatureScope: FeatureScope
 
-    private lateinit var testedLogger: DatadogSpanLoggerAdapter
+    private lateinit var testedLogger: DatadogSpanLogger
 
     @BeforeEach
     fun `set up`() {
@@ -68,7 +68,7 @@ class DatadogSpanLoggerAdapterTest {
             on { getFeature(Feature.LOGS_FEATURE_NAME) } doReturn mockLogFeatureScope
         }
 
-        testedLogger = DatadogSpanLoggerAdapter(mockSdkCore)
+        testedLogger = DatadogSpanLogger(mockSdkCore)
     }
 
     @Test

@@ -7,44 +7,6 @@
 package com.datadog.android.trace
 
 import com.datadog.android.trace.api.span.DatadogSpan
-import com.datadog.android.trace.internal.DatadogTracingToolkit
-
-/**
- * Logs a throwable and associates it with the current [DatadogSpan].
- *
- * @param throwable The throwable containing error details to be logged with the span.
- */
-fun DatadogSpan.logThrowable(throwable: Throwable) {
-    DatadogTracingToolkit.spanLogger.log(throwable, this)
-}
-
-/**
- * Logs an error message and associates it with the current [DatadogSpan].
- *
- * @param message The error message to log.
- */
-fun DatadogSpan.logErrorMessage(message: String) {
-    DatadogTracingToolkit.spanLogger.logErrorMessage(message, this)
-}
-
-/**
- * Logs a message associated with the current [DatadogSpan].
- *
- * @param message The log message to be associated with the span.
- */
-fun DatadogSpan.logMessage(message: String) {
-    DatadogTracingToolkit.spanLogger.log(message, this)
-}
-
-/**
- * Logs a set of attributes and associates them with the current [DatadogSpan].
- *
- * @param attributes A map containing key-value pairs of attributes to be logged.
- *                   These attributes provide additional context or metadata for the span.
- */
-fun DatadogSpan.logAttributes(attributes: Map<String, Any>) {
-    DatadogTracingToolkit.spanLogger.log(attributes, this)
-}
 
 /**
  * Wraps the provided lambda within a [DatadogSpan].
@@ -74,7 +36,7 @@ inline fun <T : Any?> withinSpan(
     return try {
         span.block()
     } catch (e: Throwable) {
-        DatadogTracingToolkit.spanLogger.log(e, span)
+        span.logThrowable(e)
         throw e
     } finally {
         span.finish()

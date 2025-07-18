@@ -13,19 +13,18 @@ import com.datadog.android.internal.utils.loggableStackTrace
 import com.datadog.android.log.LogAttributes
 import com.datadog.android.trace.api.DatadogTracingConstants
 import com.datadog.android.trace.api.span.DatadogSpan
-import com.datadog.android.trace.api.span.DatadogSpanLogger
 
-internal class DatadogSpanLoggerAdapter(
+internal class DatadogSpanLogger(
     private val sdkCore: FeatureSdkCore
-) : DatadogSpanLogger {
+) {
 
-    override fun log(message: String, span: DatadogSpan) {
+    fun log(message: String, span: DatadogSpan) {
         val fields = mutableMapOf<String, Any>(DatadogTracingConstants.LogAttributes.EVENT to message)
         extractError(fields, span)
         sendLogEvent(fields, span)
     }
 
-    override fun logErrorMessage(message: String, span: DatadogSpan) {
+    fun logErrorMessage(message: String, span: DatadogSpan) {
         val fields = mutableMapOf<String, Any>(
             DatadogTracingConstants.LogAttributes.MESSAGE to message,
             DatadogTracingConstants.LogAttributes.STATUS to Log.ERROR
@@ -34,13 +33,13 @@ internal class DatadogSpanLoggerAdapter(
         sendLogEvent(fields, span)
     }
 
-    override fun log(throwable: Throwable, span: DatadogSpan) {
+    fun log(throwable: Throwable, span: DatadogSpan) {
         val fields = mutableMapOf<String, Any>(DatadogTracingConstants.LogAttributes.ERROR_OBJECT to throwable)
         extractError(fields, span)
         sendLogEvent(fields, span)
     }
 
-    override fun log(attributes: Map<String, Any>, span: DatadogSpan) {
+    fun log(attributes: Map<String, Any>, span: DatadogSpan) {
         extractError(attributes.toMutableMap(), span)
         sendLogEvent(attributes.toMutableMap(), span)
     }
@@ -98,7 +97,7 @@ internal class DatadogSpanLoggerAdapter(
         }
     }
 
-    companion object {
+    companion object Companion {
         internal const val TRACE_LOGGER_NAME = "trace"
         internal const val DEFAULT_EVENT_MESSAGE = "Span event"
         internal const val MISSING_LOG_FEATURE_INFO = "Requested to write span log, but Logs feature is not registered."

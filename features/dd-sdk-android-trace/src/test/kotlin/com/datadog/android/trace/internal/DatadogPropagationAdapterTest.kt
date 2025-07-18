@@ -60,13 +60,9 @@ internal class DatadogPropagationAdapterTest {
         // Then
         mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
-            listOf(
-                InternalLogger.Target.MAINTAINER,
-                InternalLogger.Target.USER
-            ),
+            InternalLogger.Target.USER,
             "DatadogPropagationAdapter supports only DatadogSpanContextAdapter instancies for injection " +
                 "but UnsupportedDatadogSpanContextImplementation is given"
-
         )
     }
 
@@ -91,6 +87,7 @@ internal class DatadogPropagationAdapterTest {
         // Given
         val carrier = Any()
         val getter = { _: Any, _: (String, String) -> Boolean -> }
+
         // When
         testedPropagation.extract(carrier, getter)
 
@@ -120,7 +117,7 @@ internal class DatadogPropagationAdapterTest {
             get() = TODO("Not yet implemented")
         override val samplingPriority: Int
             get() = TODO("Not yet implemented")
-        override val tags: Map<String?, Any?>
+        override val tags: Map<String, Any?>
             get() = TODO("Not yet implemented")
 
         override fun setSamplingPriority(samplingPriority: Int): Boolean = TODO("Not yet implemented")

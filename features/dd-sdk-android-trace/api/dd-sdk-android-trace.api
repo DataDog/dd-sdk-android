@@ -17,10 +17,6 @@ public abstract interface class com/datadog/android/trace/InternalCoreWriterProv
 }
 
 public final class com/datadog/android/trace/SpanExtKt {
-	public static final fun logAttributes (Lcom/datadog/android/trace/api/span/DatadogSpan;Ljava/util/Map;)V
-	public static final fun logErrorMessage (Lcom/datadog/android/trace/api/span/DatadogSpan;Ljava/lang/String;)V
-	public static final fun logMessage (Lcom/datadog/android/trace/api/span/DatadogSpan;Ljava/lang/String;)V
-	public static final fun logThrowable (Lcom/datadog/android/trace/api/span/DatadogSpan;Ljava/lang/Throwable;)V
 	public static final fun withinSpan (Ljava/lang/String;Lcom/datadog/android/trace/api/span/DatadogSpan;ZLkotlin/jvm/functions/Function1;)Ljava/lang/Object;
 	public static synthetic fun withinSpan$default (Ljava/lang/String;Lcom/datadog/android/trace/api/span/DatadogSpan;ZLkotlin/jvm/functions/Function1;ILjava/lang/Object;)Ljava/lang/Object;
 }
@@ -70,8 +66,8 @@ public final class com/datadog/android/trace/internal/DatadogTracingToolkit {
 	public static final field INSTANCE Lcom/datadog/android/trace/internal/DatadogTracingToolkit;
 	public static final field spanIdConverter Lcom/datadog/android/trace/internal/DatadogSpanIdConverter;
 	public final fun getPropagationHelper ()Lcom/datadog/android/trace/internal/DatadogPropagationHelper;
-	public final fun getSpanLogger ()Lcom/datadog/android/trace/api/span/DatadogSpanLogger;
 	public final fun setTraceId128BitGenerationEnabled (Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;)Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;
+	public final fun setTraceRateLimit (Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;I)Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;
 	public final fun setTracingSamplingPriorityIfNecessary (Lcom/datadog/android/trace/api/span/DatadogSpanContext;)V
 }
 

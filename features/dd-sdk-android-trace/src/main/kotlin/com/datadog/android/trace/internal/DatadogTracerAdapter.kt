@@ -22,7 +22,8 @@ import com.datadog.trace.bootstrap.instrumentation.api.ScopeSource
 internal class DatadogTracerAdapter(
     internal val sdkCore: FeatureSdkCore,
     internal val delegate: AgentTracer.TracerAPI,
-    internal val bundleWithRumEnabled: Boolean
+    internal val bundleWithRumEnabled: Boolean,
+    private val spanLogger: DatadogSpanLogger
 ) : DatadogTracer {
 
     private val internalLogger: InternalLogger
@@ -38,7 +39,7 @@ internal class DatadogTracerAdapter(
     )
 
     private fun wrapSpan(span: AgentTracer.SpanBuilder) =
-        DatadogSpanBuilderAdapter(span)
+        DatadogSpanBuilderAdapter(span, spanLogger)
             .withRumContextIfNeeded()
 
     private fun DatadogSpanBuilder.withRumContextIfNeeded() = apply {
@@ -58,7 +59,7 @@ internal class DatadogTracerAdapter(
         delegate.addScopeListener(DatadogScopeListenerAdapter(scopeListener))
     }
 
-    override fun activeSpan(): DatadogSpan? = delegate.activeSpan()?.let(::DatadogSpanAdapter)
+    override fun activeSpan(): DatadogSpan? = delegate.activeSpan()?.let { DatadogSpanAdapter(it, spanLogger) }
 
     override fun activateSpan(span: DatadogSpan): DatadogScope? = (span as? DatadogSpanAdapter)?.let {
         DatadogScopeAdapter(
