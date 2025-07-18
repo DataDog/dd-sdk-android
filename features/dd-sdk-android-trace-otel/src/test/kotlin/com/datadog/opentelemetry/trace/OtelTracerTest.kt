@@ -7,9 +7,9 @@
 package com.datadog.opentelemetry.trace
 
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.utils.forge.Configurator
-import com.datadog.trace.bootstrap.instrumentation.api.AgentTracer
-import com.datadog.trace.bootstrap.instrumentation.api.AgentTracer.TracerAPI
+import com.datadog.android.trace.api.span.DatadogSpanBuilder
+import com.datadog.android.trace.api.tracer.DatadogTracer
+import com.datadog.android.trace.opentelemetry.utils.forge.Configurator
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -38,7 +38,7 @@ internal class OtelTracerTest {
     private lateinit var testedTracer: OtelTracer
 
     @Mock
-    lateinit var mockDelegateTracer: TracerAPI
+    lateinit var mockDelegateTracer: DatadogTracer
 
     @StringForgery
     lateinit var fakeIntstrumentationName: String
@@ -50,7 +50,7 @@ internal class OtelTracerTest {
     lateinit var mockLogger: InternalLogger
 
     @Mock
-    lateinit var mockDelegateSpanBuilder: AgentTracer.SpanBuilder
+    lateinit var mockDelegateSpanBuilder: DatadogSpanBuilder
 
     // region Unit Tests
 

@@ -6,18 +6,24 @@
 
 package com.datadog.opentelemetry.trace;
 
-import static com.datadog.trace.api.ConfigDefaults.DEFAULT_ASYNC_PROPAGATING;
+import static com.datadog.android.trace.api.DatadogTracingConstants.DEFAULT_ASYNC_PROPAGATING;
 import static com.datadog.opentelemetry.trace.OtelConventions.applyNamingConvention;
 import static com.datadog.opentelemetry.trace.OtelConventions.applyReservedAttribute;
 import static io.opentelemetry.api.trace.StatusCode.ERROR;
 import static io.opentelemetry.api.trace.StatusCode.OK;
 import static io.opentelemetry.api.trace.StatusCode.UNSET;
 
-import com.datadog.trace.bootstrap.instrumentation.api.AgentScope;
-import com.datadog.trace.bootstrap.instrumentation.api.AgentSpan;
-import com.datadog.trace.bootstrap.instrumentation.api.AgentTracer;
-import com.datadog.trace.bootstrap.instrumentation.api.ErrorPriorities;
-import com.datadog.trace.bootstrap.instrumentation.api.ScopeSource;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+
+import com.datadog.android.trace.api.DatadogTracingConstants;
+import com.datadog.android.trace.api.scope.DatadogScope;
+import com.datadog.android.trace.api.span.DatadogSpan;
+import com.datadog.android.trace.api.span.DatadogSpanContext;
+import com.datadog.android.trace.api.tracer.DatadogTracer;
+
+import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
@@ -26,17 +32,15 @@ import io.opentelemetry.api.trace.SpanContext;
 import io.opentelemetry.api.trace.StatusCode;
 import io.opentelemetry.api.trace.TraceFlags;
 import io.opentelemetry.api.trace.TraceState;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 public class OtelSpan implements Span {
-  private final AgentSpan delegate;
+  private final DatadogSpan delegate;
   private StatusCode statusCode;
   private boolean recording;
 
-  private final AgentTracer.TracerAPI agentTracer;
+  private final DatadogTracer agentTracer;
 
-  public OtelSpan(AgentSpan delegate, AgentTracer.TracerAPI agentTracer) {
+  public OtelSpan(DatadogSpan delegate, DatadogTracer agentTracer) {
     this.delegate = delegate;
     this.statusCode = UNSET;
     this.recording = true;
@@ -48,7 +52,7 @@ public class OtelSpan implements Span {
   }
 
   @Override
-  public <T> Span setAttribute(AttributeKey<T> key, T value) {
+  public <T> Span setAttribute(@NonNull AttributeKey<T> key, @Nullable T value) {
     if (this.recording && !applyReservedAttribute(this.delegate, key, value)) {
       switch (key.getType()) {
         case STRING_ARRAY:
@@ -110,7 +114,7 @@ public class OtelSpan implements Span {
   public Span recordException(Throwable exception, Attributes additionalAttributes) {
     if (this.recording) {
       // Store exception as span tags as span events are not supported yet
-      this.delegate.addThrowable(exception, ErrorPriorities.UNSET);
+      this.delegate.addThrowable(exception, DatadogTracingConstants.ErrorPriorities.UNSET);
     }
     return this;
   }
@@ -147,11 +151,15 @@ public class OtelSpan implements Span {
     return this.recording;
   }
 
-  public AgentScope activate() {
-    return agentTracer.activateSpan(this.delegate, ScopeSource.INSTRUMENTATION, DEFAULT_ASYNC_PROPAGATING);
+  public DatadogScope activate() {
+    return agentTracer.activateSpan(this.delegate, DEFAULT_ASYNC_PROPAGATING);
   }
 
-  public AgentSpan.Context getAgentSpanContext() {
+  public DatadogSpan getDatadogSpan() {
+    return this.delegate;
+  }
+
+  public DatadogSpanContext getDatadogSpanContext() {
     return this.delegate.context();
   }
 

@@ -1,3 +1,9 @@
+/*
+ * Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
+ * This product includes software developed at Datadog (https://www.datadoghq.com/).
+ * Copyright 2016-Present Datadog, Inc.
+ */
+
 package com.datadog.trace.api.config;
 
 /**
@@ -130,8 +136,6 @@ public final class TracerConfig {
   public static final String TRACE_PEER_SERVICE_MAPPING = "trace.peer.service.mapping";
 
   public static final String TRACE_FLUSH_INTERVAL = "trace.flush.interval";
-
-  public static final String URL_AS_RESOURCE_NAME = "trace.URLAsResourceNameRule.enabled";
 
   private TracerConfig() {}
 }

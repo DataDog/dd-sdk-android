@@ -15,6 +15,7 @@ import androidx.fragment.app.Fragment
 import com.datadog.android.Datadog
 import com.datadog.android.sample.Preferences
 import com.datadog.android.sample.R
+import com.datadog.android.trace.logMessage
 import com.datadog.android.trace.withinSpan
 import com.google.android.material.snackbar.Snackbar
 
@@ -32,7 +33,7 @@ internal class UserFragment : Fragment(), View.OnClickListener {
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View? {
+    ): View {
         val rootView: View = inflater.inflate(R.layout.fragment_user, container, false)
         idField = rootView.findViewById(R.id.user_id)
         nameField = rootView.findViewById(R.id.user_name)
@@ -73,7 +74,7 @@ internal class UserFragment : Fragment(), View.OnClickListener {
                     AGE_KEY to age
                 )
             )
-            log("Updated user info")
+            logMessage("Updated user info")
         }
         Snackbar.make(view ?: v.rootView, "User info updated", Snackbar.LENGTH_SHORT).show()
     }

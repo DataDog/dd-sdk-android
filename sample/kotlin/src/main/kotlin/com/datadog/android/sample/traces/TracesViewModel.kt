@@ -13,20 +13,22 @@ import com.datadog.android.log.Logger
 import com.datadog.android.rum.coroutines.sendErrorToDatadog
 import com.datadog.android.sample.BuildConfig
 import com.datadog.android.sample.data.Result
-import com.datadog.android.trace.AndroidTracer
+import com.datadog.android.trace.GlobalDatadogTracer
+import com.datadog.android.trace.api.span.DatadogSpan
 import com.datadog.android.trace.coroutines.CoroutineScopeSpan
 import com.datadog.android.trace.coroutines.asyncTraced
 import com.datadog.android.trace.coroutines.awaitTraced
 import com.datadog.android.trace.coroutines.launchTraced
 import com.datadog.android.trace.coroutines.withContextTraced
+import com.datadog.android.trace.logAttributes
+import com.datadog.android.trace.logErrorMessage
+import com.datadog.android.trace.logMessage
+import com.datadog.android.trace.logThrowable
 import com.datadog.android.trace.withinSpan
 import com.datadog.android.vendor.sample.LocalServer
 import com.launchdarkly.eventsource.EventHandler
 import com.launchdarkly.eventsource.EventSource
 import com.launchdarkly.eventsource.MessageEvent
-import io.opentracing.Span
-import io.opentracing.log.Fields
-import io.opentracing.util.GlobalTracer
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.delay
@@ -160,7 +162,7 @@ internal class TracesViewModel(
         delay(100)
 
         val x = deferred.awaitTraced("coroutine await")
-        scope.log(mapOf(Fields.MESSAGE to "The answer to life, the universe and everything is… $x"))
+        scope.logMessage("The answer to life, the universe and everything is… $x")
     }
 
     @Suppress("TooGenericExceptionCaught", "MagicNumber")
@@ -181,11 +183,11 @@ internal class TracesViewModel(
                         if (Random().nextInt(5) == 0) {
                             error("Your flow just dried out…")
                         } else {
-                            log(mapOf(Fields.MESSAGE to "got user $it"))
+                            logErrorMessage("got user $it")
                         }
                     }
             } catch (e: Throwable) {
-                log(mapOf(Fields.ERROR_OBJECT to e))
+                logThrowable(e)
             }
         }
     }
@@ -212,12 +214,12 @@ internal class TracesViewModel(
         private val onException: (Throwable) -> Unit,
         private val onCancel: () -> Unit
     ) : AsyncTask<Unit, Unit, Result>() {
-        private var currentActiveMainSpan: Span? = null
+        private var currentActiveMainSpan: DatadogSpan? = null
 
         @Deprecated("Deprecated in Java")
         override fun onPreExecute() {
             super.onPreExecute()
-            currentActiveMainSpan = GlobalTracer.get().activeSpan()
+            currentActiveMainSpan = GlobalDatadogTracer.get().activeSpan()
         }
 
         @Deprecated("Deprecated in Java")
@@ -229,7 +231,7 @@ internal class TracesViewModel(
 
             if (currentActiveMainSpan != null) {
                 builder.tag(
-                    Span::class.java,
+                    DatadogSpan::class.java,
                     currentActiveMainSpan
                 )
             }
@@ -286,12 +288,12 @@ internal class TracesViewModel(
         private val onResponse: () -> Unit,
         private val onException: (Throwable) -> Unit
     ) : AsyncTask<Unit, Unit, Result>(), EventHandler {
-        private var currentActiveMainSpan: Span? = null
+        private var currentActiveMainSpan: DatadogSpan? = null
 
         @Deprecated("Deprecated in Java")
         override fun onPreExecute() {
             super.onPreExecute()
-            currentActiveMainSpan = GlobalTracer.get().activeSpan()
+            currentActiveMainSpan = GlobalDatadogTracer.get().activeSpan()
         }
 
         @Deprecated("Deprecated in Java")
@@ -343,7 +345,7 @@ internal class TracesViewModel(
         val onDone: () -> Unit
     ) : AsyncTask<Unit, Unit, Unit>() {
 
-        var activeSpanInMainThread: Span? = null
+        var activeSpanInMainThread: DatadogSpan? = null
 
         @Suppress("CheckInternal")
         private val logger: Logger by lazy {
@@ -360,31 +362,31 @@ internal class TracesViewModel(
         @Deprecated("Deprecated in Java")
         override fun onPreExecute() {
             super.onPreExecute()
-            activeSpanInMainThread = GlobalTracer.get().activeSpan()
+            activeSpanInMainThread = GlobalDatadogTracer.get().activeSpan()
         }
 
         @Suppress("MagicNumber")
         @Deprecated("Deprecated in Java")
         override fun doInBackground(vararg params: Unit?) {
             withinSpan("AsyncOperation", activeSpanInMainThread) {
-                AndroidTracer.logErrorMessage(this, "Test error log in async operation")
+                logErrorMessage("Test error log in async operation")
 
                 logger.v("Starting Async Operation...")
 
                 val count = (Random().nextInt() % 50) + 50
-                log("Async op loops $count times")
+                logMessage("Async op loops $count times")
                 var actualCount = 0
 
                 for (i in 0 until count) {
                     if (isCancelled) {
-                        log("Async operation cancelled")
+                        logMessage("Async operation cancelled")
                         break
                     }
                     onProgress(i)
                     Thread.sleep(((i * i).toDouble() / 100.0).toLong())
                     actualCount++
                 }
-                log(mapOf("wanted_count" to count, "actual_count" to actualCount))
+                logAttributes(mapOf("wanted_count" to count, "actual_count" to actualCount))
                 logger.v("Finishing Async Operation...")
             }
         }

@@ -11,31 +11,22 @@ import androidx.annotation.IntRange
 import com.datadog.android.Datadog
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.SdkCore
-import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
-import com.datadog.android.internal.concurrent.CompletableFuture
+import com.datadog.android.trace.DatadogTracing
 import com.datadog.android.trace.InternalCoreWriterProvider
 import com.datadog.android.trace.TracingHeaderType
+import com.datadog.android.trace.api.tracer.DatadogTracer
+import com.datadog.android.trace.internal.DatadogTracingToolkit
+import com.datadog.android.trace.internal.DatadogTracingToolkit.setTraceId128BitGenerationEnabled
 import com.datadog.android.trace.opentelemetry.internal.DatadogContextStorageWrapper
-import com.datadog.android.trace.opentelemetry.internal.addActiveTraceToContext
 import com.datadog.android.trace.opentelemetry.internal.executeIfJavaFunctionPackageExists
-import com.datadog.android.trace.opentelemetry.internal.removeActiveTraceFromContext
-import com.datadog.opentelemetry.trace.OtelSpanBuilder
 import com.datadog.opentelemetry.trace.OtelTracerBuilder
-import com.datadog.trace.api.IdGenerationStrategy
-import com.datadog.trace.api.config.TracerConfig
-import com.datadog.trace.api.scopemanager.ScopeListener
-import com.datadog.trace.bootstrap.instrumentation.api.AgentTracer
-import com.datadog.trace.common.writer.NoOpWriter
-import com.datadog.trace.core.CoreTracer
-import io.opentelemetry.api.trace.SpanBuilder
 import io.opentelemetry.api.trace.Tracer
 import io.opentelemetry.api.trace.TracerBuilder
 import io.opentelemetry.api.trace.TracerProvider
 import io.opentelemetry.context.ContextStorage
 import java.util.Locale
-import java.util.Properties
 
 /**
  *  A class enabling Datadog OpenTelemetry features.
@@ -46,10 +37,8 @@ import java.util.Properties
  *
  */
 class OtelTracerProvider internal constructor(
-    private val sdkCore: FeatureSdkCore,
-    private val coreTracer: AgentTracer.TracerAPI,
-    private val internalLogger: InternalLogger,
-    private val bundleWithRumEnabled: Boolean
+    private val datadogTracer: DatadogTracer,
+    private val internalLogger: InternalLogger
 ) : TracerProvider {
 
     private val tracers: MutableMap<String, Tracer> = mutableMapOf()
@@ -92,9 +81,8 @@ class OtelTracerProvider internal constructor(
         val resolvedInstrumentationScopeName = resolveInstrumentationScopeName(instrumentationScopeName)
         return OtelTracerBuilder(
             resolvedInstrumentationScopeName,
-            coreTracer,
-            internalLogger,
-            resolveSpanBuilderDecorator()
+            datadogTracer,
+            internalLogger
         )
     }
 
@@ -104,11 +92,15 @@ class OtelTracerProvider internal constructor(
     class Builder internal constructor(
         private val sdkCore: FeatureSdkCore
     ) {
-
-        private var tracingHeaderTypes: Set<TracingHeaderType> =
-            setOf(TracingHeaderType.DATADOG, TracingHeaderType.TRACECONTEXT)
-        private var sampleRate: Double? = null
-        private var traceRateLimit = Int.MAX_VALUE
+        private val builderDelegate = DatadogTracing.newTracerBuilder(sdkCore)
+            .withPartialFlushMinSpans(DEFAULT_PARTIAL_MIN_FLUSH)
+            .withTracingHeadersTypes(
+                setOf(
+                    TracingHeaderType.DATADOG,
+                    TracingHeaderType.TRACECONTEXT
+                )
+            )
+            .also { setTraceId128BitGenerationEnabled(it) }
 
         private var serviceName: String = ""
             get() {
@@ -124,9 +116,6 @@ class OtelTracerProvider internal constructor(
                     service
                 }
             }
-        private var partialFlushThreshold = DEFAULT_PARTIAL_MIN_FLUSH
-        private val globalTags: MutableMap<String, String> = mutableMapOf()
-        private var bundleWithRumEnabled: Boolean = true
 
         /**
          * @param sdkCore SDK instance to bind to. If not provided, default instance will be used.
@@ -144,22 +133,9 @@ class OtelTracerProvider internal constructor(
                 sdkCore.internalLogger,
                 TracerProvider.noop()
             ) {
-                val tracingFeature = sdkCore.getFeature(Feature.TRACING_FEATURE_NAME)
-                    ?.unwrap<Feature>()
+                val tracingFeature = sdkCore.getFeature(Feature.TRACING_FEATURE_NAME)?.unwrap<Feature>()
                 val internalCoreWriterProvider = tracingFeature as? InternalCoreWriterProvider
-                if (tracingFeature == null) {
-                    sdkCore.internalLogger.log(
-                        InternalLogger.Level.ERROR,
-                        InternalLogger.Target.USER,
-                        { TRACING_NOT_ENABLED_ERROR_MESSAGE }
-                    )
-                } else if (internalCoreWriterProvider == null) {
-                    sdkCore.internalLogger.log(
-                        InternalLogger.Level.ERROR,
-                        InternalLogger.Target.MAINTAINER,
-                        { WRITER_PROVIDER_INTERFACE_NOT_IMPLEMENTED_ERROR_MESSAGE }
-                    )
-                } else {
+                if (tracingFeature != null && internalCoreWriterProvider != null) {
                     // update meta for the configuration telemetry reporting, can be done directly from this thread
                     sdkCore.updateFeatureContext(Feature.TRACING_FEATURE_NAME, useContextThread = false) {
                         it[IS_OPENTELEMETRY_ENABLED_CONFIG_KEY] = true
@@ -167,29 +143,17 @@ class OtelTracerProvider internal constructor(
                             BuildConfig.OPENTELEMETRY_API_VERSION_NAME
                     }
                 }
-                val coreTracer = CoreTracer.CoreTracerBuilder(sdkCore.internalLogger)
-                    .withProperties(properties())
-                    .serviceName(serviceName)
-                    .writer(internalCoreWriterProvider?.getCoreTracerWriter() ?: NoOpWriter())
-                    .partialFlushMinSpans(partialFlushThreshold)
-                    .idGenerationStrategy(IdGenerationStrategy.fromName("SECURE_RANDOM", true))
-                    .build()
-                coreTracer.addScopeListener(object : ScopeListener {
-                    override fun afterScopeActivated() {
-                        val activeSpanContext = coreTracer.activeSpan()?.context()
-                        if (activeSpanContext != null) {
-                            val activeSpanId = activeSpanContext.spanId.toString()
-                            val activeTraceId = activeSpanContext.traceId.toHexString()
-                            sdkCore.addActiveTraceToContext(activeTraceId, activeSpanId)
-                        }
-                    }
 
-                    override fun afterScopeClosed() {
-                        sdkCore.removeActiveTraceFromContext()
-                    }
-                })
-                OtelTracerProvider(sdkCore, coreTracer, sdkCore.internalLogger, bundleWithRumEnabled)
+                OtelTracerProvider(createDatadogTracer(), sdkCore.internalLogger)
             }
+        }
+
+        private fun createDatadogTracer(): DatadogTracer {
+            val datadogTracer = builderDelegate
+                .withServiceName(serviceName)
+                .build()
+
+            return datadogTracer
         }
 
         /**
@@ -197,7 +161,7 @@ class OtelTracerProvider internal constructor(
          * @param headerTypes the list of header types injected (default = datadog style headers)
          */
         fun setTracingHeaderTypes(headerTypes: Set<TracingHeaderType>): Builder {
-            this.tracingHeaderTypes = headerTypes
+            builderDelegate.withTracingHeadersTypes(headerTypes)
             return this
         }
 
@@ -217,7 +181,7 @@ class OtelTracerProvider internal constructor(
          * @param threshold the threshold value (default = 5)
          */
         fun setPartialFlushThreshold(threshold: Int): Builder {
-            this.partialFlushThreshold = threshold
+            builderDelegate.withPartialFlushMinSpans(threshold)
             return this
         }
 
@@ -227,7 +191,7 @@ class OtelTracerProvider internal constructor(
          * @param value the tag value
          */
         fun addTag(key: String, value: String): Builder {
-            this.globalTags[key] = value
+            builderDelegate.withTag(key, value)
             return this
         }
 
@@ -238,7 +202,7 @@ class OtelTracerProvider internal constructor(
         fun setSampleRate(
             @FloatRange(from = 0.0, to = 100.0) sampleRate: Double
         ): Builder {
-            this.sampleRate = sampleRate
+            builderDelegate.withSampleRate(sampleRate)
             return this
         }
 
@@ -251,7 +215,7 @@ class OtelTracerProvider internal constructor(
         fun setTraceRateLimit(
             @IntRange(from = 1, to = Int.MAX_VALUE.toLong()) traceRateLimit: Int
         ): Builder {
-            this.traceRateLimit = traceRateLimit
+            DatadogTracingToolkit.setTraceRateLimit(builderDelegate, traceRateLimit)
             return this
         }
 
@@ -262,40 +226,8 @@ class OtelTracerProvider internal constructor(
          * @param enabled true by default
          */
         fun setBundleWithRumEnabled(enabled: Boolean): Builder {
-            bundleWithRumEnabled = enabled
+            builderDelegate.setBundleWithRumEnabled(enabled)
             return this
-        }
-
-        internal fun properties(): Properties {
-            val properties = Properties()
-            properties.setProperty(
-                TracerConfig.SPAN_TAGS,
-                globalTags.map { "${it.key}:${it.value}" }.joinToString(",")
-            )
-            properties.setProperty(TracerConfig.TRACE_RATE_LIMIT, traceRateLimit.toString())
-
-            // In case the sample rate is not set we should not specify it. The agent code under the hood
-            // will provide different sampler based on this property and also different sampling priorities used
-            // in the metrics
-            // -1 MANUAL_DROP User indicated to drop the trace via configuration (sampling rate).
-            // 0 AUTO_DROP Sampler indicated to drop the trace using a sampling rate provided by the Agent through
-            // a remote configuration. The Agent API is not used in Android so this `sampling_priority:0` will never
-            // be used.
-            // 1 AUTO_KEEP Sampler indicated to keep the trace using a sampling rate from the default configuration
-            // which right now is 100.0
-            // (Default sampling priority value. or in our case no specified sample rate will be considered as 100)
-            // 2 MANUAL_KEEP User indicated to keep the trace, either manually or via configuration (sampling rate)
-            sampleRate?.let {
-                properties.setProperty(
-                    TracerConfig.TRACE_SAMPLE_RATE,
-                    (it / KEEP_ALL_SAMPLE_RATE_PERCENT).toString()
-                )
-            }
-            val propagationStyles = tracingHeaderTypes.joinToString(",")
-            properties.setProperty(TracerConfig.PROPAGATION_STYLE_EXTRACT, propagationStyles)
-            properties.setProperty(TracerConfig.PROPAGATION_STYLE_INJECT, propagationStyles)
-
-            return properties
         }
 
         // endregion
@@ -309,26 +241,6 @@ class OtelTracerProvider internal constructor(
         } else {
             instrumentationScopeName
         }
-    }
-
-    private fun resolveSpanBuilderDecorator(): (SpanBuilder) -> SpanBuilder {
-        return if (bundleWithRumEnabled) {
-            resolveDecoratorWithRumContext()
-        } else {
-            NO_OP_SPAN_BUILDER_DECORATOR
-        }
-    }
-
-    private fun resolveDecoratorWithRumContext(): (SpanBuilder) -> SpanBuilder = { spanBuilder ->
-        val rumFeature = sdkCore.getFeature(Feature.RUM_FEATURE_NAME)
-        if (rumFeature != null) {
-            val lazyContext = CompletableFuture<DatadogContext>()
-            rumFeature.withContext(withFeatureContexts = setOf(Feature.RUM_FEATURE_NAME)) {
-                lazyContext.complete(it)
-            }
-            (spanBuilder as? OtelSpanBuilder)?.setLazyDatadogContext(lazyContext)
-        }
-        spanBuilder
     }
 
     override fun toString(): String {
@@ -360,20 +272,11 @@ class OtelTracerProvider internal constructor(
         internal const val RUM_SESSION_ID_KEY = "session_id"
         internal const val RUM_VIEW_ID_KEY = "view_id"
         internal const val RUM_ACTION_ID_KEY = "action_id"
-        internal val NO_OP_SPAN_BUILDER_DECORATOR: (SpanBuilder) -> SpanBuilder = { it }
         internal const val TRACER_ALREADY_EXISTS_WARNING_MESSAGE =
             "Tracer for %s already exists. Returning existing instance."
         internal const val DEFAULT_TRACER_NAME = "android"
         internal const val KEEP_ALL_SAMPLE_RATE_PERCENT = 100.0
 
-        internal const val TRACING_NOT_ENABLED_ERROR_MESSAGE =
-            "You're trying to create an OtelTracerProvider instance, " +
-                "but either the SDK was not initialized or the Tracing feature was " +
-                "not registered. No tracing data will be sent."
-
-        internal const val WRITER_PROVIDER_INTERFACE_NOT_IMPLEMENTED_ERROR_MESSAGE =
-            "The Tracing feature is not implementing the InternalCoreWriterProvider interface." +
-                " No tracing data will be sent."
         internal const val DEFAULT_SERVICE_NAME_IS_MISSING_ERROR_MESSAGE =
             "Default service name is missing during" +
                 " OtelTracerProvider creation, did you initialize SDK?"

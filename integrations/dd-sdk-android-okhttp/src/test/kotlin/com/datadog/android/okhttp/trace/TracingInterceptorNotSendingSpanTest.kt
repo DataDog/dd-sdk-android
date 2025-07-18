@@ -3,8 +3,6 @@
  * This product includes software developed at Datadog (https://www.datadoghq.com/).
  * Copyright 2016-Present Datadog, Inc.
  */
-@file:Suppress("DEPRECATION")
-
 package com.datadog.android.okhttp.trace
 
 import com.datadog.android.api.InternalLogger
@@ -20,19 +18,20 @@ import com.datadog.android.okhttp.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.okhttp.utils.verifyLog
 import com.datadog.android.rum.RumResourceMethod
 import com.datadog.android.trace.TracingHeaderType
-import com.datadog.legacy.trace.api.interceptor.MutableSpan
-import com.datadog.legacy.trace.api.sampling.PrioritySampling
+import com.datadog.android.trace.api.DatadogTracingConstants
+import com.datadog.android.trace.api.propagation.DatadogPropagation
+import com.datadog.android.trace.api.span.DatadogSpan
+import com.datadog.android.trace.api.span.DatadogSpanBuilder
+import com.datadog.android.trace.api.span.DatadogSpanContext
+import com.datadog.android.trace.api.trace.DatadogTraceId
+import com.datadog.android.trace.api.tracer.DatadogTracer
+import com.datadog.android.trace.api.withMockPropagationHelper
+import com.datadog.android.trace.internal.DatadogPropagationHelper
+import com.datadog.android.trace.internal.DatadogTracingToolkit
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.datadog.tools.unit.forge.BaseConfigurator
-import com.datadog.trace.api.DDTraceId
-import com.datadog.trace.bootstrap.instrumentation.api.AgentPropagation
-import com.datadog.trace.bootstrap.instrumentation.api.AgentSpan
-import com.datadog.trace.bootstrap.instrumentation.api.AgentTracer
-import com.datadog.trace.bootstrap.instrumentation.api.AgentTracer.SpanBuilder
-import com.datadog.trace.bootstrap.instrumentation.api.Tags
-import com.datadog.trace.core.propagation.ExtractedContext
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.Forgery
@@ -92,22 +91,24 @@ internal open class TracingInterceptorNotSendingSpanTest {
     // region Mocks
 
     @Mock
-    lateinit var mockTracer: AgentTracer.TracerAPI
+    lateinit var mockTracer: DatadogTracer
 
     @Mock
-    lateinit var mockLocalTracer: AgentTracer.TracerAPI
+    lateinit var mockLocalTracer: DatadogTracer
 
     @Mock
-    lateinit var mockPropagation: AgentPropagation
+    lateinit var mockPropagation: DatadogPropagation
 
     @Mock
-    lateinit var mockSpanBuilder: SpanBuilder
+    lateinit var mockPropagationHelper: DatadogPropagationHelper
 
     @Mock
-    lateinit var mockSpanContext: AgentSpan.Context
+    lateinit var mockSpanBuilder: DatadogSpanBuilder
 
-    @Mock(extraInterfaces = [MutableSpan::class])
-    lateinit var mockSpan: AgentSpan
+    @Mock
+    lateinit var mockSpanContext: DatadogSpanContext
+
+    lateinit var mockSpan: DatadogSpan
 
     @Mock
     lateinit var mockChain: Interceptor.Chain
@@ -118,7 +119,7 @@ internal open class TracingInterceptorNotSendingSpanTest {
     @Mock
     lateinit var mockResolver: DefaultFirstPartyHostHeaderTypeResolver
 
-    lateinit var mockTraceSampler: Sampler<AgentSpan>
+    lateinit var mockTraceSampler: Sampler<DatadogSpan>
 
     @Mock
     lateinit var mockInternalLogger: InternalLogger
@@ -151,7 +152,7 @@ internal open class TracingInterceptorNotSendingSpanTest {
     @StringForgery(regex = "[a-f][0-9]{31}")
     lateinit var fakeTraceIdAsString: String
 
-    private lateinit var fakeTraceId: DDTraceId
+    private lateinit var fakeTraceId: DatadogTraceId
 
     private var fakeOrigin: String? = null
 
@@ -164,7 +165,7 @@ internal open class TracingInterceptorNotSendingSpanTest {
 
     @BeforeEach
     open fun `set up`(forge: Forge) {
-        fakeTraceId = forge.aDDTraceId(fakeTraceIdAsString)
+        fakeTraceId = forge.aDatadogTraceId(fakeTraceIdAsString)
         fakeOrigin = forge.aNullable { anAlphabeticalString() }
         mockSpanContext = forge.newSpanContextMock(fakeTraceId, fakeSpanId)
         mockSpan = forge.newSpanMock(mockSpanContext)
@@ -203,8 +204,8 @@ internal open class TracingInterceptorNotSendingSpanTest {
 
     open fun instantiateTestedInterceptor(
         tracedHosts: Map<String, Set<TracingHeaderType>>,
-        globalTracerProvider: () -> AgentTracer.TracerAPI? = { null },
-        localTracerFactory: (SdkCore, Set<TracingHeaderType>) -> AgentTracer.TracerAPI
+        globalTracerProvider: () -> DatadogTracer? = { null },
+        localTracerFactory: (SdkCore, Set<TracingHeaderType>) -> DatadogTracer
     ): TracingInterceptor {
         return object :
             TracingInterceptor(
@@ -587,11 +588,10 @@ internal open class TracingInterceptorNotSendingSpanTest {
         @IntForgery(min = 200, max = 300) statusCode: Int,
         forge: Forge
     ) {
-        val parentSpan: AgentSpan = mock()
-        val parentSpanContext: AgentSpan.Context = mock()
-        whenever(parentSpan.context()) doReturn parentSpanContext
-        whenever(mockSpanBuilder.asChildOf(parentSpanContext)) doReturn mockSpanBuilder
-        fakeRequest = forgeRequest(forge) { it.tag(AgentSpan::class.java, parentSpan) }
+        val parentSpanContext: DatadogSpanContext = forge.newSpanContextMock<DatadogSpanContext>(samplingPriority = 1)
+        val parentSpan: DatadogSpan = forge.newSpanMock(parentSpanContext)
+        whenever(mockSpanBuilder.withParentContext(parentSpanContext)) doReturn mockSpanBuilder
+        fakeRequest = forgeRequest(forge) { it.tag(DatadogSpan::class.java, parentSpan) }
         whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(true)
         doAnswer { true }.whenever(mockResolver).isFirstPartyUrl(fakeUrl.toHttpUrl())
         stubChain(mockChain, statusCode)
@@ -604,7 +604,7 @@ internal open class TracingInterceptorNotSendingSpanTest {
             verify(mockChain).proceed(capture())
             assertThat(lastValue.header(key)).isEqualTo(value)
         }
-        verify(mockSpanBuilder).asChildOf(parentSpanContext)
+        verify(mockSpanBuilder).withParentContext(parentSpanContext)
         verify(mockSpanBuilder).withOrigin(getExpectedOrigin())
     }
 
@@ -615,24 +615,27 @@ internal open class TracingInterceptorNotSendingSpanTest {
         @IntForgery(min = 200, max = 300) statusCode: Int,
         forge: Forge
     ) {
-        val parentSpanContext: ExtractedContext = mock()
+        val parentSpanContext: DatadogSpanContext = mock()
         whenever(mockPropagation.extract(any<Request>(), any())) doReturn parentSpanContext
-        whenever(mockSpanBuilder.asChildOf(any<AgentSpan.Context>())) doReturn mockSpanBuilder
+        whenever(mockPropagationHelper.isExtractedContext(parentSpanContext)) doReturn true
+        whenever(mockSpanBuilder.withParentContext(any<DatadogSpanContext>())) doReturn mockSpanBuilder
         whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(true)
         fakeRequest = forgeRequest(forge)
         doAnswer { true }.whenever(mockResolver).isFirstPartyUrl(fakeUrl.toHttpUrl())
         stubChain(mockChain, statusCode)
         mockPropagation.wheneverInjectThenValueToHeaders(key, value)
 
-        val response = testedInterceptor.intercept(mockChain)
+        DatadogTracingToolkit.withMockPropagationHelper(mockPropagationHelper) {
+            val response = testedInterceptor.intercept(mockChain)
 
-        assertThat(response).isSameAs(fakeResponse)
-        argumentCaptor<Request> {
-            verify(mockChain).proceed(capture())
-            assertThat(lastValue.header(key)).isEqualTo(value)
+            assertThat(response).isSameAs(fakeResponse)
+            argumentCaptor<Request> {
+                verify(mockChain).proceed(capture())
+                assertThat(lastValue.header(key)).isEqualTo(value)
+            }
+            verify(mockSpanBuilder).withParentContext(parentSpanContext)
+            verify(mockSpanBuilder).withOrigin(getExpectedOrigin())
         }
-        verify(mockSpanBuilder).asChildOf(parentSpanContext)
-        verify(mockSpanBuilder).withOrigin(getExpectedOrigin())
     }
 
     @Test
@@ -648,8 +651,8 @@ internal open class TracingInterceptorNotSendingSpanTest {
             it.addHeader(
                 TracingInterceptor.DATADOG_SAMPLING_PRIORITY_HEADER,
                 forge.anElementFrom(
-                    PrioritySampling.SAMPLER_KEEP.toString(),
-                    PrioritySampling.USER_KEEP.toString()
+                    DatadogTracingConstants.PrioritySampling.SAMPLER_KEEP.toString(),
+                    DatadogTracingConstants.PrioritySampling.USER_KEEP.toString()
                 )
             )
         }
@@ -680,7 +683,7 @@ internal open class TracingInterceptorNotSendingSpanTest {
         fakeRequest = forgeRequest(forge) {
             it.addHeader(
                 TracingInterceptor.B3M_SAMPLING_PRIORITY_KEY,
-                PrioritySampling.SAMPLER_KEEP.toString()
+                DatadogTracingConstants.PrioritySampling.SAMPLER_KEEP.toString()
             )
         }
         stubChain(mockChain, statusCode)
@@ -774,8 +777,8 @@ internal open class TracingInterceptorNotSendingSpanTest {
             it.addHeader(
                 TracingInterceptor.DATADOG_SAMPLING_PRIORITY_HEADER,
                 forge.anElementFrom(
-                    PrioritySampling.SAMPLER_DROP.toString(),
-                    PrioritySampling.USER_DROP.toString()
+                    DatadogTracingConstants.PrioritySampling.SAMPLER_DROP.toString(),
+                    DatadogTracingConstants.PrioritySampling.USER_DROP.toString()
                 )
             )
         }
@@ -812,7 +815,7 @@ internal open class TracingInterceptorNotSendingSpanTest {
         fakeRequest = forgeRequest(forge) {
             it.addHeader(
                 TracingInterceptor.B3M_SAMPLING_PRIORITY_KEY,
-                PrioritySampling.SAMPLER_DROP.toString()
+                DatadogTracingConstants.PrioritySampling.SAMPLER_DROP.toString()
             )
         }
         stubChain(mockChain, statusCode)
@@ -847,7 +850,7 @@ internal open class TracingInterceptorNotSendingSpanTest {
             it.addHeader(
                 TracingInterceptor.B3_HEADER_KEY,
                 forge.anElementFrom(
-                    PrioritySampling.SAMPLER_DROP.toString(),
+                    DatadogTracingConstants.PrioritySampling.SAMPLER_DROP.toString(),
                     forge.aStringMatching("[a-f0-9]{32}\\-[a-f0-9]{16}\\-0")
                 )
             )
@@ -921,9 +924,9 @@ internal open class TracingInterceptorNotSendingSpanTest {
         verify(mockSpan).setTag("http.url", fakeUrl)
         verify(mockSpan).setTag("http.method", fakeMethod.name)
         verify(mockSpan).setTag("http.status_code", statusCode)
-        verify(mockSpan).setTag(Tags.SPAN_KIND, Tags.SPAN_KIND_CLIENT)
+        verify(mockSpan).setTag("span.kind", "client")
         verify(mockSpan, never()).finish()
-        verify(mockSpan as MutableSpan).drop()
+        verify(mockSpan).drop()
         assertThat(response).isSameAs(fakeResponse)
     }
 
@@ -937,14 +940,14 @@ internal open class TracingInterceptorNotSendingSpanTest {
         val response = testedInterceptor.intercept(mockChain)
 
         verify(mockSpanBuilder).withOrigin(getExpectedOrigin())
-        verify(mockSpan).setResourceName(fakeUrl)
+        verify(mockSpan).resourceName = fakeUrl
         verify(mockSpan).setTag("http.url", fakeUrl)
         verify(mockSpan).setTag("http.method", fakeMethod.name)
         verify(mockSpan).setTag("http.status_code", statusCode)
-        verify(mockSpan).setTag(Tags.SPAN_KIND, Tags.SPAN_KIND_CLIENT)
-        verify(mockSpan).setError(true)
+        verify(mockSpan).setTag("span.kind", "client")
+        verify(mockSpan).isError = true
         verify(mockSpan, never()).finish()
-        verify(mockSpan as MutableSpan).drop()
+        verify(mockSpan).drop()
         assertThat(response).isSameAs(fakeResponse)
     }
 
@@ -958,14 +961,14 @@ internal open class TracingInterceptorNotSendingSpanTest {
         val response = testedInterceptor.intercept(mockChain)
 
         verify(mockSpanBuilder).withOrigin(getExpectedOrigin())
-        verify(mockSpan).setResourceName(fakeUrl)
+        verify(mockSpan).resourceName = fakeUrl
         verify(mockSpan).setTag("http.url", fakeUrl)
         verify(mockSpan).setTag("http.method", fakeMethod.name)
         verify(mockSpan).setTag("http.status_code", statusCode)
-        verify(mockSpan, never()).setError(true)
-        verify(mockSpan).setTag(Tags.SPAN_KIND, Tags.SPAN_KIND_CLIENT)
+        verify(mockSpan, never()).isError = true
+        verify(mockSpan).setTag("span.kind", "client")
         verify(mockSpan, never()).finish()
-        verify(mockSpan as MutableSpan).drop()
+        verify(mockSpan).drop()
         assertThat(response).isSameAs(fakeResponse)
     }
 
@@ -980,15 +983,15 @@ internal open class TracingInterceptorNotSendingSpanTest {
         verify(mockSpan).setTag("http.url", fakeUrl)
         verify(mockSpan).setTag("http.method", fakeMethod.name)
         verify(mockSpan).setTag("http.status_code", 404)
-        verify(mockSpan).setTag(Tags.SPAN_KIND, Tags.SPAN_KIND_CLIENT)
-        verify(mockSpan).setError(true)
+        verify(mockSpan).setTag("span.kind", "client")
+        verify(mockSpan).isError = true
         if (fakeRedacted404Resources) {
-            verify(mockSpan).setResourceName(TracingInterceptor.RESOURCE_NAME_404)
+            verify(mockSpan).resourceName = TracingInterceptor.RESOURCE_NAME_404
         } else {
-            verify(mockSpan, never()).setResourceName(TracingInterceptor.RESOURCE_NAME_404)
+            verify(mockSpan, never()).resourceName = TracingInterceptor.RESOURCE_NAME_404
         }
         verify(mockSpan, never()).finish()
-        verify(mockSpan as MutableSpan).drop()
+        verify(mockSpan).drop()
         assertThat(response).isSameAs(fakeResponse)
     }
 
@@ -1010,9 +1013,9 @@ internal open class TracingInterceptorNotSendingSpanTest {
         verify(mockSpan).setTag("error.type", throwable.javaClass.canonicalName)
         verify(mockSpan).setTag("error.msg", throwable.message)
         verify(mockSpan).setTag("error.stack", throwable.loggableStackTrace())
-        verify(mockSpan).setTag(Tags.SPAN_KIND, Tags.SPAN_KIND_CLIENT)
+        verify(mockSpan).setTag("span.kind", "client")
         verify(mockSpan, never()).finish()
-        verify(mockSpan as MutableSpan).drop()
+        verify(mockSpan).drop()
     }
 
     @Test
@@ -1040,8 +1043,8 @@ internal open class TracingInterceptorNotSendingSpanTest {
         forge: Forge,
         @IntForgery(min = 200, max = 300) statusCode: Int
     ) {
-        val localSpan: AgentSpan = forge.newSpanMock(mockSpanContext)
-        val localSpanBuilder: SpanBuilder = forge.newSpanBuilderMock(localSpan)
+        val localSpan: DatadogSpan = forge.newSpanMock(mockSpanContext)
+        val localSpanBuilder: DatadogSpanBuilder = forge.newSpanBuilderMock(localSpan)
 
         whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(true)
         stubChain(mockChain, statusCode)
@@ -1059,9 +1062,9 @@ internal open class TracingInterceptorNotSendingSpanTest {
         verify(localSpan).setTag("http.url", fakeUrl)
         verify(localSpan).setTag("http.method", fakeMethod.name)
         verify(localSpan).setTag("http.status_code", statusCode)
-        verify(localSpan).setTag(Tags.SPAN_KIND, Tags.SPAN_KIND_CLIENT)
+        verify(localSpan).setTag("span.kind", "client")
         verify(localSpan, never()).finish()
-        verify(localSpan as MutableSpan).drop()
+        verify(localSpan).drop()
         assertThat(response).isSameAs(fakeResponse)
         mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
@@ -1075,8 +1078,8 @@ internal open class TracingInterceptorNotSendingSpanTest {
         forge: Forge,
         @IntForgery(min = 200, max = 300) statusCode: Int
     ) {
-        val localSpan: AgentSpan = forge.newSpanMock(mockSpanContext)
-        val localSpanBuilder: SpanBuilder = forge.newSpanBuilderMock(localSpan, mockSpanContext)
+        val localSpan: DatadogSpan = forge.newSpanMock(mockSpanContext)
+        val localSpanBuilder: DatadogSpanBuilder = forge.newSpanBuilderMock(localSpan, mockSpanContext)
         whenever(mockLocalTracer.buildSpan(TracingInterceptor.SPAN_NAME)).thenReturn(localSpanBuilder)
         whenever(mockTraceSampler.sample(localSpan)).thenReturn(true)
         whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(true)
@@ -1098,18 +1101,18 @@ internal open class TracingInterceptorNotSendingSpanTest {
         verify(localSpan).setTag("http.url", fakeUrl)
         verify(localSpan).setTag("http.method", fakeMethod.name)
         verify(localSpan).setTag("http.status_code", statusCode)
-        verify(localSpan).setTag(Tags.SPAN_KIND, Tags.SPAN_KIND_CLIENT)
+        verify(localSpan).setTag("span.kind", "client")
 
         verify(localSpan, never()).finish()
-        verify(localSpan as MutableSpan).drop()
+        verify(localSpan).drop()
         verify(mockSpanBuilder).withOrigin(getExpectedOrigin())
         verify(mockSpan).setTag("http.url", fakeUrl)
         verify(mockSpan).setTag("http.method", fakeMethod.name)
         verify(mockSpan).setTag("http.status_code", statusCode)
-        verify(mockSpan).setTag(Tags.SPAN_KIND, Tags.SPAN_KIND_CLIENT)
+        verify(mockSpan).setTag("span.kind", "client")
 
         verify(mockSpan, never()).finish()
-        verify(mockSpan as MutableSpan).drop()
+        verify(mockSpan).drop()
         assertThat(response1).isSameAs(expectedResponse1)
         assertThat(response2).isSameAs(expectedResponse2)
         mockInternalLogger.verifyLog(
@@ -1130,7 +1133,7 @@ internal open class TracingInterceptorNotSendingSpanTest {
         whenever(
             mockRequestListener.onRequestIntercepted(any(), any(), anyOrNull(), anyOrNull())
         ).doAnswer {
-            val span = it.arguments[1] as AgentSpan
+            val span = it.arguments[1] as DatadogSpan
             span.setTag(tagKey, tagValue)
             return@doAnswer Unit
         }
@@ -1142,10 +1145,10 @@ internal open class TracingInterceptorNotSendingSpanTest {
         verify(mockSpan).setTag("http.method", fakeMethod.name)
         verify(mockSpan).setTag("http.status_code", statusCode)
         verify(mockSpan).setTag(tagKey, tagValue)
-        verify(mockSpan).setTag(Tags.SPAN_KIND, Tags.SPAN_KIND_CLIENT)
+        verify(mockSpan).setTag("span.kind", "client")
 
         verify(mockSpan, never()).finish()
-        verify(mockSpan as MutableSpan).drop()
+        verify(mockSpan).drop()
         assertThat(response).isSameAs(fakeResponse)
     }
 
@@ -1160,7 +1163,7 @@ internal open class TracingInterceptorNotSendingSpanTest {
         whenever(
             mockRequestListener.onRequestIntercepted(any(), any(), anyOrNull(), anyOrNull())
         ).doAnswer {
-            val span = it.arguments[1] as AgentSpan
+            val span = it.arguments[1] as DatadogSpan
             span.setTag(tagKey, tagValue)
             return@doAnswer Unit
         }
@@ -1172,10 +1175,10 @@ internal open class TracingInterceptorNotSendingSpanTest {
         verify(mockSpan).setTag("http.method", fakeMethod.name)
         verify(mockSpan).setTag("http.status_code", statusCode)
         verify(mockSpan).setTag(tagKey, tagValue)
-        verify(mockSpan).setTag(Tags.SPAN_KIND, Tags.SPAN_KIND_CLIENT)
+        verify(mockSpan).setTag("span.kind", "client")
 
         verify(mockSpan, never()).finish()
-        verify(mockSpan as MutableSpan).drop()
+        verify(mockSpan).drop()
         assertThat(response).isSameAs(fakeResponse)
     }
 
@@ -1206,7 +1209,7 @@ internal open class TracingInterceptorNotSendingSpanTest {
         whenever(
             mockRequestListener.onRequestIntercepted(any(), any(), anyOrNull(), anyOrNull())
         ).doAnswer {
-            val span = it.arguments[1] as AgentSpan
+            val span = it.arguments[1] as DatadogSpan
             span.setTag(tagKey, tagValue)
             return@doAnswer Unit
         }
@@ -1224,10 +1227,10 @@ internal open class TracingInterceptorNotSendingSpanTest {
         verify(mockSpan).setTag("error.msg", throwable.message)
         verify(mockSpan).setTag("error.stack", throwable.loggableStackTrace())
         verify(mockSpan).setTag(tagKey, tagValue)
-        verify(mockSpan).setTag(Tags.SPAN_KIND, Tags.SPAN_KIND_CLIENT)
+        verify(mockSpan).setTag("span.kind", "client")
 
         verify(mockSpan, never()).finish()
-        verify(mockSpan as MutableSpan).drop()
+        verify(mockSpan).drop()
     }
 
     @Test
@@ -1305,8 +1308,8 @@ internal open class TracingInterceptorNotSendingSpanTest {
         stubChain(mockChain, statusCode)
 
         // need this setup, otherwise #intercept actually throws NPE, which pollutes the log
-        val localSpan: AgentSpan = forge.newSpanMock(mockSpanContext)
-        val localSpanBuilder: SpanBuilder = forge.newSpanBuilderMock(localSpan)
+        val localSpan: DatadogSpan = forge.newSpanMock(mockSpanContext)
+        val localSpanBuilder: DatadogSpanBuilder = forge.newSpanBuilderMock(localSpan)
         whenever(mockSpanContext.spanId) doReturn fakeSpanId
         whenever(mockSpanContext.traceId) doReturn fakeTraceId
         whenever(mockLocalTracer.buildSpan(TracingInterceptor.SPAN_NAME)) doReturn localSpanBuilder
