@@ -235,38 +235,6 @@ internal class DatadogAccessibilityReaderTest {
     }
 
     // region Text Size Tests
-    @Test
-    fun `M return null text size W getState { resources is null }`() {
-        // Given
-        testedReader = DatadogAccessibilityReader(
-            internalLogger = mockInternalLogger,
-            applicationContext = mockContext,
-            resources = null,
-            activityManager = mockActivityManager,
-            accessibilityManager = mockAccessibilityManager,
-            secureWrapper = mockSecureWrapper,
-            globalWrapper = mockGlobalWrapper,
-            handler = mockHandler
-        )
-
-        // When
-        val result = testedReader.getState()
-
-        // Then
-        assertThat(result[TEXT_SIZE_KEY]).isNull()
-    }
-
-    @Test
-    fun `M return null text size W getState { resources configuration is null }`() {
-        // Given
-        whenever(mockResources.configuration) doReturn null
-
-        // When
-        val result = testedReader.getState()
-
-        // Then
-        assertThat(result[TEXT_SIZE_KEY]).isNull()
-    }
 
     @Test
     fun `M return text size W getState { valid font scale }`(

@@ -562,7 +562,6 @@ datadog:
       - "androidx.compose.ui.text.AnnotatedString.getStringAnnotations(kotlin.Int, kotlin.Int)"
       - "android.content.ContentResolver.registerContentObserver(android.net.Uri, kotlin.Boolean, android.database.ContentObserver)"
       - "android.content.ContentResolver.unregisterContentObserver(android.database.ContentObserver)"
-      - "android.content.res.Resources.getSystem()"
       - "androidx.core.view.GestureDetectorCompat.constructor(android.content.Context, android.view.GestureDetector.OnGestureListener)"
       - "androidx.core.view.GestureDetectorCompat.onTouchEvent(android.view.MotionEvent)"
       - "androidx.fragment.app.FragmentManager.FragmentLifecycleCallbacks.onFragmentActivityCreated(androidx.fragment.app.FragmentManager, androidx.fragment.app.Fragment, android.os.Bundle?)"

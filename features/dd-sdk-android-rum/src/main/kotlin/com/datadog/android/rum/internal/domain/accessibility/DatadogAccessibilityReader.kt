@@ -28,7 +28,7 @@ import java.util.concurrent.atomic.AtomicLong
 internal class DatadogAccessibilityReader(
     private val internalLogger: InternalLogger,
     private val applicationContext: Context,
-    private val resources: Resources? = Resources.getSystem(),
+    private val resources: Resources = applicationContext.resources,
     private val activityManager: ActivityManager? =
         applicationContext.getSystemService(Context.ACTIVITY_SERVICE) as? ActivityManager,
     private val accessibilityManager: AccessibilityManager? =
@@ -190,8 +190,8 @@ internal class DatadogAccessibilityReader(
         )
     }
 
-    private fun getTextSize(): Float? {
-        return resources?.configuration?.fontScale
+    private fun getTextSize(): Float {
+        return resources.configuration.fontScale
     }
 
     private fun isScreenReaderEnabled(accessibilityManager: AccessibilityManager?): Boolean? {
