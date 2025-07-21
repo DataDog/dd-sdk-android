@@ -23,6 +23,8 @@ internal class DdSpanToSpanEventMapper(
         val serverOffset = datadogContext.time.serverTimeOffsetNs
         val metrics = resolveMetrics(model)
         val metadata = resolveMeta(datadogContext, model)
+        val deviceInfo = resolveDeviceInfo(datadogContext.deviceInfo)
+        val osInfo = resolveOsInfo(datadogContext.deviceInfo)
         val leastSignificantTraceId = bigIntegerUtils.leastSignificant64BitsAsHex(model.traceId)
         return SpanEvent(
             traceId = leastSignificantTraceId,
@@ -35,7 +37,9 @@ internal class DdSpanToSpanEventMapper(
             start = model.startTime + serverOffset,
             error = if (model.isError) 1 else 0,
             meta = metadata,
-            metrics = metrics
+            metrics = metrics,
+            os = osInfo,
+            device = deviceInfo
         )
     }
 
@@ -50,8 +54,6 @@ internal class DdSpanToSpanEventMapper(
 
     private fun resolveMeta(datadogContext: DatadogContext, event: DDSpan): SpanEvent.Meta {
         val networkInfoMeta = if (networkInfoEnabled) resolveNetworkInfo(datadogContext.networkInfo) else null
-        val deviceInfo = resolveDeviceInfo(datadogContext.deviceInfo)
-        val osInfo = resolveOsInfo(datadogContext.deviceInfo)
         val userInfo = datadogContext.userInfo
         val accountInfo = datadogContext.accountInfo
         val mostSignificantTraceId = bigIntegerUtils.mostSignificant64BitsAsHex(event.traceId)
@@ -77,8 +79,6 @@ internal class DdSpanToSpanEventMapper(
             usr = usrMeta,
             account = accountMeta,
             network = networkInfoMeta,
-            device = deviceInfo,
-            os = osInfo,
             additionalProperties = additionalProperties
         )
     }
