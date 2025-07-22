@@ -18,6 +18,7 @@ import com.datadog.android.api.storage.EventType
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.rum.RumActionType
+import com.datadog.android.rum.RumSessionType
 import com.datadog.android.rum.assertj.ActionEventAssert.Companion.assertThat
 import com.datadog.android.rum.internal.FeaturesContextResolver
 import com.datadog.android.rum.internal.domain.RumContext
@@ -138,6 +139,8 @@ internal class RumActionScopeAttributePropagationTest {
     @LongForgery(-1000L, 1000L)
     var fakeServerOffset: Long = 0L
 
+    private var fakeRumSessionType: RumSessionType? = null
+
     @BeforeEach
     fun `set up`(forge: Forge) {
         fakeEventTime = Time()
@@ -160,6 +163,8 @@ internal class RumActionScopeAttributePropagationTest {
             callback.invoke(fakeDatadogContext, mockEventWriteScope)
         }
 
+        fakeRumSessionType = forge.aNullable { aValueFrom(RumSessionType::class.java) }
+
         testedScope = RumActionScope(
             parentScope = mockParentScope,
             sdkCore = rumMonitor.mockSdkCore,
@@ -173,7 +178,8 @@ internal class RumActionScopeAttributePropagationTest {
             maxDurationMs = TEST_MAX_DURATION_MS,
             featuresContextResolver = mockFeaturesContextResolver,
             trackFrustrations = true,
-            sampleRate = fakeSampleRate
+            sampleRate = fakeSampleRate,
+            rumSessionTypeOverride = fakeRumSessionType
         )
     }
 

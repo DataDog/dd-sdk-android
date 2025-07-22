@@ -1646,6 +1646,7 @@ internal class RumActionScopeTest {
         expectedAttributes.putAll(fakeParentAttributes)
         expectedAttributes.putAll(fakeAttributes)
         whenever(mockParentScope.getCustomAttributes()) doReturn fakeParentAttributes
+
         testedScope = RumActionScope(
             parentScope = mockParentScope,
             sdkCore = rumMonitor.mockSdkCore,

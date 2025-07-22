@@ -20,7 +20,6 @@ import com.datadog.android.rum.DdRumContentProvider
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.RumSessionType
-import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.accessibility.AccessibilityReader
 import com.datadog.android.rum.internal.domain.state.ViewUIPerformanceReport
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher

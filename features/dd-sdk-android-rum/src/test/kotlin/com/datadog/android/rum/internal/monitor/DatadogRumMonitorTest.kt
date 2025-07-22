@@ -38,6 +38,7 @@ import com.datadog.android.rum.internal.domain.accessibility.AccessibilityReader
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
 import com.datadog.android.rum.internal.domain.scope.RumApplicationScope
 import com.datadog.android.rum.internal.domain.scope.RumRawEvent
+import com.datadog.android.rum.internal.domain.scope.RumScope
 import com.datadog.android.rum.internal.domain.scope.RumScopeKey
 import com.datadog.android.rum.internal.domain.scope.RumSessionScope
 import com.datadog.android.rum.internal.domain.scope.RumViewManagerScope
@@ -111,6 +112,9 @@ import java.util.concurrent.TimeUnit
 internal class DatadogRumMonitorTest {
 
     private lateinit var testedMonitor: DatadogRumMonitor
+
+    @Mock
+    lateinit var mockScope: RumScope
 
     @Mock
     lateinit var mockApplicationScope: RumApplicationScope
@@ -2304,8 +2308,10 @@ internal class DatadogRumMonitorTest {
 
         // Then
         argumentCaptor<RumRawEvent.UpdateExternalRefreshRate> {
-            verify(mockScope).handleEvent(
+            verify(mockApplicationScope).handleEvent(
                 capture(),
+                any(),
+                any<EventWriteScope>(),
                 eq(mockWriter)
             )
             assertThat(lastValue.frameTimeSeconds).isEqualTo(frameTimeSeconds)
@@ -2652,5 +2658,6 @@ internal class DatadogRumMonitorTest {
     companion object {
         const val TIMESTAMP_MIN = 1000000000000
         const val TIMESTAMP_MAX = 2000000000000
+        const val PROCESSING_DELAY = 100L
     }
 }

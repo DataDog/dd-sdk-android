@@ -137,7 +137,6 @@ internal class RumViewManagerScopeTest {
     @Mock
     lateinit var mockAccessibilityReader: AccessibilityReader
 
-
     @BoolForgery
     var fakeTrackFrustrations: Boolean = true
 
