@@ -18,6 +18,7 @@ import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.RumResourceMethod
+import com.datadog.android.rum.RumSessionType
 import com.datadog.android.rum.internal.FeaturesContextResolver
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
@@ -25,6 +26,8 @@ import com.datadog.android.rum.internal.domain.event.ResourceTiming
 import com.datadog.android.rum.internal.metric.networksettled.InternalResourceContext
 import com.datadog.android.rum.internal.metric.networksettled.NetworkSettledMetricResolver
 import com.datadog.android.rum.internal.monitor.StorageEvent
+import com.datadog.android.rum.internal.toError
+import com.datadog.android.rum.internal.toResource
 import com.datadog.android.rum.internal.utils.hasUserData
 import com.datadog.android.rum.internal.utils.newRumEventWriteOperation
 import com.datadog.android.rum.model.ErrorEvent
@@ -47,7 +50,8 @@ internal class RumResourceScope(
     internal val firstPartyHostHeaderTypeResolver: FirstPartyHostHeaderTypeResolver,
     private val featuresContextResolver: FeaturesContextResolver,
     internal val sampleRate: Float,
-    internal val networkSettledMetricResolver: NetworkSettledMetricResolver
+    internal val networkSettledMetricResolver: NetworkSettledMetricResolver,
+    private val rumSessionTypeOverride: RumSessionType?
 ) : RumScope {
 
     internal val resourceId: String = UUID.randomUUID().toString()
@@ -227,10 +231,10 @@ internal class RumResourceScope(
                 resultId = rumContext.syntheticsResultId
             )
         }
-        val sessionType = if (syntheticsAttribute == null) {
-            ResourceEvent.ResourceEventSessionType.USER
-        } else {
-            ResourceEvent.ResourceEventSessionType.SYNTHETICS
+        val sessionType = when {
+            rumSessionTypeOverride != null -> rumSessionTypeOverride.toResource()
+            syntheticsAttribute == null -> ResourceEvent.ResourceEventSessionType.USER
+            else -> ResourceEvent.ResourceEventSessionType.SYNTHETICS
         }
 
         @Suppress("UNCHECKED_CAST")
@@ -394,11 +398,13 @@ internal class RumResourceScope(
                 resultId = rumContext.syntheticsResultId
             )
         }
-        val sessionType = if (syntheticsAttribute == null) {
-            ErrorEvent.ErrorEventSessionType.USER
-        } else {
-            ErrorEvent.ErrorEventSessionType.SYNTHETICS
+
+        val sessionType = when {
+            rumSessionTypeOverride != null -> rumSessionTypeOverride.toError()
+            syntheticsAttribute == null -> ErrorEvent.ErrorEventSessionType.USER
+            else -> ErrorEvent.ErrorEventSessionType.SYNTHETICS
         }
+
         sdkCore.newRumEventWriteOperation(datadogContext, writeScope, writer) {
             val user = datadogContext.userInfo
             val hasReplay = featuresContextResolver.resolveViewHasReplay(
@@ -551,7 +557,8 @@ internal class RumResourceScope(
             timestampOffset: Long,
             featuresContextResolver: FeaturesContextResolver,
             sampleRate: Float,
-            networkSettledMetricResolver: NetworkSettledMetricResolver
+            networkSettledMetricResolver: NetworkSettledMetricResolver,
+            rumSessionTypeOverride: RumSessionType?
         ): RumScope {
             return RumResourceScope(
                 parentScope = parentScope,
@@ -565,7 +572,8 @@ internal class RumResourceScope(
                 firstPartyHostHeaderTypeResolver = firstPartyHostHeaderTypeResolver,
                 featuresContextResolver = featuresContextResolver,
                 sampleRate = sampleRate,
-                networkSettledMetricResolver = networkSettledMetricResolver
+                networkSettledMetricResolver = networkSettledMetricResolver,
+                rumSessionTypeOverride = rumSessionTypeOverride
             )
         }
     }

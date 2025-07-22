@@ -49,6 +49,7 @@ allprojects {
 nexusPublishing {
     this.repositories {
         sonatype {
+            stagingProfileId = "378eecbbe2cf9"
             val sonatypeUsername = System.getenv("CENTRAL_PUBLISHER_USERNAME")
             val sonatypePassword = System.getenv("CENTRAL_PUBLISHER_PASSWORD")
             if (sonatypeUsername != null) username.set(sonatypeUsername)
@@ -94,6 +95,11 @@ registerSubModuleAggregationTask(
     ":features:"
 )
 registerSubModuleAggregationTask("unitTestDebugIntegrations", "testDebugUnitTest", ":integrations:")
+tasks.register("unitTestDebugSamples") {
+    dependsOn(
+        ":sample:benchmark:testDebugUnitTest"
+    )
+}
 
 tasks.register("assembleSampleRelease") {
     dependsOn(
@@ -110,7 +116,8 @@ tasks.register("unitTestTools") {
         ":tools:unit:testJvmReleaseUnitTest",
         ":tools:detekt:test",
         ":tools:lint:test",
-        ":tools:noopfactory:test"
+        ":tools:noopfactory:test",
+        ":tools:benchmark:test"
     )
 }
 

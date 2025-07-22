@@ -12,10 +12,12 @@ import com.datadog.android.api.feature.EventWriteScope
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.rum.RumActionType
+import com.datadog.android.rum.RumSessionType
 import com.datadog.android.rum.internal.FeaturesContextResolver
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.monitor.StorageEvent
+import com.datadog.android.rum.internal.toAction
 import com.datadog.android.rum.internal.utils.hasUserData
 import com.datadog.android.rum.internal.utils.newRumEventWriteOperation
 import com.datadog.android.rum.model.ActionEvent
@@ -37,7 +39,8 @@ internal class RumActionScope(
     maxDurationMs: Long = ACTION_MAX_DURATION_MS,
     private val featuresContextResolver: FeaturesContextResolver = FeaturesContextResolver(),
     private val trackFrustrations: Boolean,
-    internal val sampleRate: Float
+    internal val sampleRate: Float,
+    private val rumSessionTypeOverride: RumSessionType?
 ) : RumScope {
 
     private val inactivityThresholdNs = TimeUnit.MILLISECONDS.toNanos(inactivityThresholdMs)
@@ -251,11 +254,13 @@ internal class RumActionScope(
                 resultId = rumContext.syntheticsResultId
             )
         }
-        val sessionType = if (syntheticsAttribute == null) {
-            ActionEvent.ActionEventSessionType.USER
-        } else {
-            ActionEvent.ActionEventSessionType.SYNTHETICS
+
+        val sessionType = when {
+            rumSessionTypeOverride != null -> rumSessionTypeOverride.toAction()
+            syntheticsAttribute == null -> ActionEvent.ActionEventSessionType.USER
+            else -> ActionEvent.ActionEventSessionType.SYNTHETICS
         }
+
         val frustrations = mutableListOf<ActionEvent.Type>()
         if (trackFrustrations && eventErrorCount > 0 && actualType == RumActionType.TAP) {
             frustrations.add(ActionEvent.Type.ERROR_TAP)
@@ -372,20 +377,22 @@ internal class RumActionScope(
             timestampOffset: Long,
             featuresContextResolver: FeaturesContextResolver,
             trackFrustrations: Boolean,
-            sampleRate: Float
+            sampleRate: Float,
+            rumSessionTypeOverride: RumSessionType?
         ): RumScope {
             return RumActionScope(
-                parentScope,
-                sdkCore,
-                event.waitForStop,
-                event.eventTime,
-                event.type,
-                event.name,
-                event.attributes,
-                timestampOffset,
+                parentScope = parentScope,
+                sdkCore = sdkCore,
+                waitForStop = event.waitForStop,
+                eventTime = event.eventTime,
+                initialType = event.type,
+                initialName = event.name,
+                initialAttributes = event.attributes,
+                serverTimeOffsetInMs = timestampOffset,
                 featuresContextResolver = featuresContextResolver,
                 trackFrustrations = trackFrustrations,
-                sampleRate = sampleRate
+                sampleRate = sampleRate,
+                rumSessionTypeOverride = rumSessionTypeOverride
             )
         }
     }

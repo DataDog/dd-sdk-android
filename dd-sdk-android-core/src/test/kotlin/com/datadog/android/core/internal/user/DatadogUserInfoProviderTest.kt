@@ -328,4 +328,46 @@ internal class DatadogUserInfoProviderTest {
         // Then
         assertThat(testedProvider.getUserInfo().additionalProperties).isEqualTo(fakeExpectedUserProperties)
     }
+
+    @Test
+    fun `M return default userInfo W clearUserInfo()`(
+        @StringForgery(type = StringForgeryType.HEXADECIMAL) id: String,
+        @StringForgery name: String,
+        @StringForgery(regex = "\\w+@\\w+") email: String,
+        @MapForgery(
+            key = AdvancedForgery(string = [StringForgery(StringForgeryType.ALPHA_NUMERICAL)]),
+            value = AdvancedForgery(string = [StringForgery(StringForgeryType.ALPHA_NUMERICAL)])
+        ) fakeUserProperties: Map<String, String>
+    ) {
+        // Given
+        testedProvider.setUserInfo(id, name, email, fakeUserProperties)
+
+        // When
+        testedProvider.clearUserInfo()
+
+        // Then
+        assertThat(testedProvider.getUserInfo()).isEqualTo(UserInfo())
+    }
+
+    @Test
+    fun `M delegate to persister W clearUserInfo()`(
+        @StringForgery(type = StringForgeryType.HEXADECIMAL) id: String,
+        @StringForgery(type = StringForgeryType.HEXADECIMAL) anonymousId: String,
+        @StringForgery name: String,
+        @StringForgery(regex = "\\w+@\\w+") email: String,
+        @MapForgery(
+            key = AdvancedForgery(string = [StringForgery(StringForgeryType.ALPHA_NUMERICAL)]),
+            value = AdvancedForgery(string = [StringForgery(StringForgeryType.ALPHA_NUMERICAL)])
+        ) fakeUserProperties: Map<String, String>
+    ) {
+        // Given
+        testedProvider.setUserInfo(id, name, email, fakeUserProperties)
+        testedProvider.setAnonymousId(anonymousId)
+
+        // When
+        testedProvider.clearUserInfo()
+
+        // Then
+        verify(mockWriter).write(UserInfo(anonymousId))
+    }
 }

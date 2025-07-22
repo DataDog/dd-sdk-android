@@ -314,6 +314,19 @@ internal class DatadogCoreTest {
     }
 
     @Test
+    fun `M clear user info W clearUserInfo() is called`() {
+        // Given
+        val mockUserInfoProvider = mock<MutableUserInfoProvider>()
+        testedCore.coreFeature.userInfoProvider = mockUserInfoProvider
+
+        // When
+        testedCore.clearUserInfo()
+
+        // Then
+        verify(mockUserInfoProvider).clearUserInfo()
+    }
+
+    @Test
     fun `M update accountInfoProvider W setAccountInfo()`(
         @StringForgery(type = StringForgeryType.HEXADECIMAL) id: String,
         @StringForgery name: String,

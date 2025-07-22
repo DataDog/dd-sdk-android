@@ -280,6 +280,32 @@ object Datadog {
     }
 
     /**
+     * Clear the current user information.
+     *
+     * User information will be set to null.
+     * After calling this api, Logs, Traces, RUM Events will not include the user information anymore.
+     *
+     * Any active RUM Session, active RUM View at the time of call will have their `usr` attribute cleared.
+     *
+     * If you want to retain the current `usr` on the active RUM session,
+     * you need to stop the session first by using `GlobalRumMonitor.get().stopSession()`
+     *
+     * If you want to retain the current `usr` on the active RUM views,
+     * you need to stop the view first by using `GlobalRumMonitor.get().stopView()`.
+     *
+     * @param sdkCore SDK instance to clear user info. If not provided,
+     * default SDK instance will be used.
+     */
+    @JvmStatic
+    @JvmOverloads
+    @AnyThread
+    fun clearUserInfo(
+        sdkCore: SdkCore = getInstance()
+    ) {
+        sdkCore.clearUserInfo()
+    }
+
+    /**
      * Clears all unsent data in all registered features.
      *
      * @param sdkCore SDK instance to clear the data. If not provided, default SDK instance

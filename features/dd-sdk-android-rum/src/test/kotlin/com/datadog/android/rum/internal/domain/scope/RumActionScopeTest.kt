@@ -17,12 +17,14 @@ import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.RumResourceMethod
+import com.datadog.android.rum.RumSessionType
 import com.datadog.android.rum.assertj.ActionEventAssert.Companion.assertThat
 import com.datadog.android.rum.internal.FeaturesContextResolver
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.internal.monitor.StorageEvent
+import com.datadog.android.rum.internal.toAction
 import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.rum.utils.forge.Configurator
@@ -125,6 +127,8 @@ internal class RumActionScopeTest {
     @BoolForgery
     var fakeTrackFrustrations: Boolean = true
 
+    private var fakeRumSessionType: RumSessionType? = null
+
     @BeforeEach
     fun `set up`(forge: Forge) {
         fakeSourceActionEvent = forge.aNullable { aValueFrom(ActionEvent.ActionEventSource::class.java) }
@@ -167,20 +171,23 @@ internal class RumActionScopeTest {
         ).thenReturn(fakeHasReplay)
         whenever(mockWriter.write(eq(mockEventBatchWriter), any(), eq(EventType.DEFAULT))) doReturn true
 
+        fakeRumSessionType = forge.aNullable { aValueFrom(RumSessionType::class.java) }
+
         testedScope = RumActionScope(
-            mockParentScope,
-            rumMonitor.mockSdkCore,
-            false,
-            fakeEventTime,
-            fakeType,
-            fakeName,
-            fakeAttributes,
-            fakeServerOffset,
-            TEST_INACTIVITY_MS,
-            TEST_MAX_DURATION_MS,
-            mockFeaturesContextResolver,
-            true,
-            fakeSampleRate
+            parentScope = mockParentScope,
+            sdkCore = rumMonitor.mockSdkCore,
+            waitForStop = false,
+            eventTime = fakeEventTime,
+            initialType = fakeType,
+            initialName = fakeName,
+            initialAttributes = fakeAttributes,
+            serverTimeOffsetInMs = fakeServerOffset,
+            inactivityThresholdMs = TEST_INACTIVITY_MS,
+            maxDurationMs = TEST_MAX_DURATION_MS,
+            featuresContextResolver = mockFeaturesContextResolver,
+            trackFrustrations = true,
+            sampleRate = fakeSampleRate,
+            rumSessionTypeOverride = fakeRumSessionType
         )
     }
 
@@ -246,7 +253,7 @@ internal class RumActionScopeTest {
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
-                    hasUserSession()
+                    hasSessionType(fakeRumSessionType?.toAction() ?: ActionEvent.ActionEventSessionType.USER)
                     hasNoSyntheticsTest()
                     hasStartReason(fakeParentContext.sessionStartReason)
                     containsExactlyContextAttributes(fakeAttributes)
@@ -352,7 +359,7 @@ internal class RumActionScopeTest {
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
-                    hasUserSession()
+                    hasSessionType(fakeRumSessionType?.toAction() ?: ActionEvent.ActionEventSessionType.USER)
                     hasNoSyntheticsTest()
                     hasStartReason(fakeParentContext.sessionStartReason)
                     hasReplay(fakeHasReplay)
@@ -437,7 +444,7 @@ internal class RumActionScopeTest {
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
-                    hasUserSession()
+                    hasSessionType(fakeRumSessionType?.toAction() ?: ActionEvent.ActionEventSessionType.USER)
                     hasNoSyntheticsTest()
                     hasStartReason(fakeParentContext.sessionStartReason)
                     hasReplay(fakeHasReplay)
@@ -575,7 +582,7 @@ internal class RumActionScopeTest {
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
-                    hasUserSession()
+                    hasSessionType(fakeRumSessionType?.toAction() ?: ActionEvent.ActionEventSessionType.USER)
                     hasNoSyntheticsTest()
                     hasStartReason(fakeParentContext.sessionStartReason)
                     hasReplay(fakeHasReplay)
@@ -648,7 +655,7 @@ internal class RumActionScopeTest {
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
-                    hasUserSession()
+                    hasSessionType(fakeRumSessionType?.toAction() ?: ActionEvent.ActionEventSessionType.USER)
                     hasNoSyntheticsTest()
                     hasStartReason(fakeParentContext.sessionStartReason)
                     hasReplay(fakeHasReplay)
@@ -707,7 +714,7 @@ internal class RumActionScopeTest {
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
-                    hasUserSession()
+                    hasSessionType(fakeRumSessionType?.toAction() ?: ActionEvent.ActionEventSessionType.USER)
                     hasNoSyntheticsTest()
                     hasStartReason(fakeParentContext.sessionStartReason)
                     hasReplay(fakeHasReplay)
@@ -777,7 +784,7 @@ internal class RumActionScopeTest {
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
-                    hasUserSession()
+                    hasSessionType(fakeRumSessionType?.toAction() ?: ActionEvent.ActionEventSessionType.USER)
                     hasNoSyntheticsTest()
                     hasStartReason(fakeParentContext.sessionStartReason)
                     hasReplay(fakeHasReplay)
@@ -856,7 +863,7 @@ internal class RumActionScopeTest {
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
-                    hasUserSession()
+                    hasSessionType(fakeRumSessionType?.toAction() ?: ActionEvent.ActionEventSessionType.USER)
                     hasNoSyntheticsTest()
                     hasStartReason(fakeParentContext.sessionStartReason)
                     hasReplay(fakeHasReplay)
@@ -915,7 +922,7 @@ internal class RumActionScopeTest {
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
-                    hasUserSession()
+                    hasSessionType(fakeRumSessionType?.toAction() ?: ActionEvent.ActionEventSessionType.USER)
                     hasNoSyntheticsTest()
                     hasStartReason(fakeParentContext.sessionStartReason)
                     hasReplay(fakeHasReplay)
@@ -973,7 +980,7 @@ internal class RumActionScopeTest {
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
-                    hasUserSession()
+                    hasSessionType(fakeRumSessionType?.toAction() ?: ActionEvent.ActionEventSessionType.USER)
                     hasNoSyntheticsTest()
                     hasStartReason(fakeParentContext.sessionStartReason)
                     hasReplay(fakeHasReplay)
@@ -1037,7 +1044,7 @@ internal class RumActionScopeTest {
                     hasAccountInfo(fakeDatadogContext.accountInfo)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
-                    hasUserSession()
+                    hasSessionType(fakeRumSessionType?.toAction() ?: ActionEvent.ActionEventSessionType.USER)
                     hasNoSyntheticsTest()
                     hasStartReason(fakeParentContext.sessionStartReason)
                     hasReplay(fakeHasReplay)
@@ -1104,7 +1111,7 @@ internal class RumActionScopeTest {
                     hasAccountInfo(fakeDatadogContext.accountInfo)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
-                    hasUserSession()
+                    hasSessionType(fakeRumSessionType?.toAction() ?: ActionEvent.ActionEventSessionType.USER)
                     hasNoSyntheticsTest()
                     hasStartReason(fakeParentContext.sessionStartReason)
                     hasReplay(fakeHasReplay)
@@ -1162,7 +1169,7 @@ internal class RumActionScopeTest {
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
-                    hasUserSession()
+                    hasSessionType(fakeRumSessionType?.toAction() ?: ActionEvent.ActionEventSessionType.USER)
                     hasNoSyntheticsTest()
                     hasStartReason(fakeParentContext.sessionStartReason)
                     hasReplay(fakeHasReplay)
@@ -1220,7 +1227,7 @@ internal class RumActionScopeTest {
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
-                    hasUserSession()
+                    hasSessionType(fakeRumSessionType?.toAction() ?: ActionEvent.ActionEventSessionType.USER)
                     hasNoSyntheticsTest()
                     hasStartReason(fakeParentContext.sessionStartReason)
                     hasReplay(fakeHasReplay)
@@ -1284,7 +1291,7 @@ internal class RumActionScopeTest {
                     hasAccountInfo(fakeDatadogContext.accountInfo)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
-                    hasUserSession()
+                    hasSessionType(fakeRumSessionType?.toAction() ?: ActionEvent.ActionEventSessionType.USER)
                     hasNoSyntheticsTest()
                     hasStartReason(fakeParentContext.sessionStartReason)
                     hasReplay(fakeHasReplay)
@@ -1350,7 +1357,7 @@ internal class RumActionScopeTest {
                     hasAccountInfo(fakeDatadogContext.accountInfo)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
-                    hasUserSession()
+                    hasSessionType(fakeRumSessionType?.toAction() ?: ActionEvent.ActionEventSessionType.USER)
                     hasNoSyntheticsTest()
                     hasStartReason(fakeParentContext.sessionStartReason)
                     hasReplay(fakeHasReplay)
@@ -1408,7 +1415,7 @@ internal class RumActionScopeTest {
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
-                    hasUserSession()
+                    hasSessionType(fakeRumSessionType?.toAction() ?: ActionEvent.ActionEventSessionType.USER)
                     hasNoSyntheticsTest()
                     hasStartReason(fakeParentContext.sessionStartReason)
                     hasReplay(fakeHasReplay)
@@ -1466,7 +1473,7 @@ internal class RumActionScopeTest {
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
-                    hasUserSession()
+                    hasSessionType(fakeRumSessionType?.toAction() ?: ActionEvent.ActionEventSessionType.USER)
                     hasNoSyntheticsTest()
                     hasStartReason(fakeParentContext.sessionStartReason)
                     hasReplay(fakeHasReplay)
@@ -1530,7 +1537,7 @@ internal class RumActionScopeTest {
                     hasAccountInfo(fakeDatadogContext.accountInfo)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
-                    hasUserSession()
+                    hasSessionType(fakeRumSessionType?.toAction() ?: ActionEvent.ActionEventSessionType.USER)
                     hasNoSyntheticsTest()
                     hasStartReason(fakeParentContext.sessionStartReason)
                     hasReplay(fakeHasReplay)
@@ -1596,7 +1603,7 @@ internal class RumActionScopeTest {
                     hasAccountInfo(fakeDatadogContext.accountInfo)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
-                    hasUserSession()
+                    hasSessionType(fakeRumSessionType?.toAction() ?: ActionEvent.ActionEventSessionType.USER)
                     hasNoSyntheticsTest()
                     hasStartReason(fakeParentContext.sessionStartReason)
                     hasReplay(fakeHasReplay)
@@ -1640,19 +1647,20 @@ internal class RumActionScopeTest {
         expectedAttributes.putAll(fakeAttributes)
         whenever(mockParentScope.getCustomAttributes()) doReturn fakeParentAttributes
         testedScope = RumActionScope(
-            mockParentScope,
-            rumMonitor.mockSdkCore,
-            false,
-            fakeEventTime,
-            fakeType,
-            fakeName,
-            fakeAttributes,
-            fakeServerOffset,
-            TEST_INACTIVITY_MS,
-            TEST_MAX_DURATION_MS,
-            mockFeaturesContextResolver,
-            fakeTrackFrustrations,
-            fakeSampleRate
+            parentScope = mockParentScope,
+            sdkCore = rumMonitor.mockSdkCore,
+            waitForStop = false,
+            eventTime = fakeEventTime,
+            initialType = fakeType,
+            initialName = fakeName,
+            initialAttributes = fakeAttributes,
+            serverTimeOffsetInMs = fakeServerOffset,
+            inactivityThresholdMs = TEST_INACTIVITY_MS,
+            maxDurationMs = TEST_MAX_DURATION_MS,
+            featuresContextResolver = mockFeaturesContextResolver,
+            trackFrustrations = fakeTrackFrustrations,
+            sampleRate = fakeSampleRate,
+            rumSessionTypeOverride = fakeRumSessionType
         )
         fakeParentContext = fakeParentContext.copy(
             syntheticsTestId = fakeTestId,
@@ -1684,7 +1692,7 @@ internal class RumActionScopeTest {
                     hasAccountInfo(fakeDatadogContext.accountInfo)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
-                    hasSyntheticsSession()
+                    hasSessionType(fakeRumSessionType?.toAction() ?: ActionEvent.ActionEventSessionType.SYNTHETICS)
                     hasSyntheticsTest(fakeTestId, fakeResultId)
                     hasStartReason(fakeParentContext.sessionStartReason)
                     hasReplay(fakeHasReplay)
@@ -1726,19 +1734,20 @@ internal class RumActionScopeTest {
         expectedAttributes.putAll(fakeAttributes)
         whenever(mockParentScope.getCustomAttributes()) doReturn fakeParentAttributes
         testedScope = RumActionScope(
-            mockParentScope,
-            rumMonitor.mockSdkCore,
-            false,
-            fakeEventTime,
-            fakeType,
-            fakeName,
-            fakeAttributes,
-            fakeServerOffset,
-            TEST_INACTIVITY_MS,
-            TEST_MAX_DURATION_MS,
-            mockFeaturesContextResolver,
-            fakeTrackFrustrations,
-            fakeSampleRate
+            parentScope = mockParentScope,
+            sdkCore = rumMonitor.mockSdkCore,
+            waitForStop = false,
+            eventTime = fakeEventTime,
+            initialType = fakeType,
+            initialName = fakeName,
+            initialAttributes = fakeAttributes,
+            serverTimeOffsetInMs = fakeServerOffset,
+            inactivityThresholdMs = TEST_INACTIVITY_MS,
+            maxDurationMs = TEST_MAX_DURATION_MS,
+            featuresContextResolver = mockFeaturesContextResolver,
+            trackFrustrations = fakeTrackFrustrations,
+            sampleRate = fakeSampleRate,
+            rumSessionTypeOverride = fakeRumSessionType
         )
 
         // When
@@ -1765,7 +1774,7 @@ internal class RumActionScopeTest {
                     hasAccountInfo(fakeDatadogContext.accountInfo)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
-                    hasUserSession()
+                    hasSessionType(fakeRumSessionType?.toAction() ?: ActionEvent.ActionEventSessionType.USER)
                     hasNoSyntheticsTest()
                     hasStartReason(fakeParentContext.sessionStartReason)
                     hasReplay(fakeHasReplay)
@@ -1831,7 +1840,7 @@ internal class RumActionScopeTest {
                     hasAccountInfo(fakeDatadogContext.accountInfo)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
-                    hasUserSession()
+                    hasSessionType(fakeRumSessionType?.toAction() ?: ActionEvent.ActionEventSessionType.USER)
                     hasNoSyntheticsTest()
                     hasStartReason(fakeParentContext.sessionStartReason)
                     hasReplay(fakeHasReplay)
@@ -1888,7 +1897,7 @@ internal class RumActionScopeTest {
                     hasAccountInfo(fakeDatadogContext.accountInfo)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
-                    hasUserSession()
+                    hasSessionType(fakeRumSessionType?.toAction() ?: ActionEvent.ActionEventSessionType.USER)
                     hasNoSyntheticsTest()
                     hasStartReason(fakeParentContext.sessionStartReason)
                     hasReplay(fakeHasReplay)
@@ -1948,7 +1957,7 @@ internal class RumActionScopeTest {
                     hasAccountInfo(fakeDatadogContext.accountInfo)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
-                    hasUserSession()
+                    hasSessionType(fakeRumSessionType?.toAction() ?: ActionEvent.ActionEventSessionType.USER)
                     hasNoSyntheticsTest()
                     hasStartReason(fakeParentContext.sessionStartReason)
                     hasReplay(fakeHasReplay)
@@ -2012,7 +2021,7 @@ internal class RumActionScopeTest {
                     hasAccountInfo(fakeDatadogContext.accountInfo)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
-                    hasUserSession()
+                    hasSessionType(fakeRumSessionType?.toAction() ?: ActionEvent.ActionEventSessionType.USER)
                     hasNoSyntheticsTest()
                     hasStartReason(fakeParentContext.sessionStartReason)
                     hasReplay(fakeHasReplay)
@@ -2077,7 +2086,7 @@ internal class RumActionScopeTest {
                     hasAccountInfo(fakeDatadogContext.accountInfo)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
-                    hasUserSession()
+                    hasSessionType(fakeRumSessionType?.toAction() ?: ActionEvent.ActionEventSessionType.USER)
                     hasNoSyntheticsTest()
                     hasStartReason(fakeParentContext.sessionStartReason)
                     hasReplay(fakeHasReplay)
@@ -2133,7 +2142,7 @@ internal class RumActionScopeTest {
                     hasAccountInfo(fakeDatadogContext.accountInfo)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
-                    hasUserSession()
+                    hasSessionType(fakeRumSessionType?.toAction() ?: ActionEvent.ActionEventSessionType.USER)
                     hasNoSyntheticsTest()
                     hasStartReason(fakeParentContext.sessionStartReason)
                     hasReplay(fakeHasReplay)
@@ -2194,7 +2203,7 @@ internal class RumActionScopeTest {
                     hasAccountInfo(fakeDatadogContext.accountInfo)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
-                    hasUserSession()
+                    hasSessionType(fakeRumSessionType?.toAction() ?: ActionEvent.ActionEventSessionType.USER)
                     hasNoSyntheticsTest()
                     hasStartReason(fakeParentContext.sessionStartReason)
                     hasReplay(fakeHasReplay)
@@ -2253,7 +2262,7 @@ internal class RumActionScopeTest {
                     hasAccountInfo(fakeDatadogContext.accountInfo)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
-                    hasUserSession()
+                    hasSessionType(fakeRumSessionType?.toAction() ?: ActionEvent.ActionEventSessionType.USER)
                     hasNoSyntheticsTest()
                     hasStartReason(fakeParentContext.sessionStartReason)
                     hasReplay(fakeHasReplay)
@@ -2312,7 +2321,7 @@ internal class RumActionScopeTest {
                     hasAccountInfo(fakeDatadogContext.accountInfo)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
-                    hasUserSession()
+                    hasSessionType(fakeRumSessionType?.toAction() ?: ActionEvent.ActionEventSessionType.USER)
                     hasNoSyntheticsTest()
                     hasStartReason(fakeParentContext.sessionStartReason)
                     hasReplay(fakeHasReplay)
@@ -2371,7 +2380,7 @@ internal class RumActionScopeTest {
                     hasAccountInfo(fakeDatadogContext.accountInfo)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
-                    hasUserSession()
+                    hasSessionType(fakeRumSessionType?.toAction() ?: ActionEvent.ActionEventSessionType.USER)
                     hasNoSyntheticsTest()
                     hasStartReason(fakeParentContext.sessionStartReason)
                     hasReplay(fakeHasReplay)
@@ -2432,7 +2441,7 @@ internal class RumActionScopeTest {
                     hasAccountInfo(fakeDatadogContext.accountInfo)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
-                    hasUserSession()
+                    hasSessionType(fakeRumSessionType?.toAction() ?: ActionEvent.ActionEventSessionType.USER)
                     hasNoSyntheticsTest()
                     hasStartReason(fakeParentContext.sessionStartReason)
                     hasReplay(fakeHasReplay)
@@ -2523,7 +2532,7 @@ internal class RumActionScopeTest {
                     hasAccountInfo(fakeDatadogContext.accountInfo)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
-                    hasUserSession()
+                    hasSessionType(fakeRumSessionType?.toAction() ?: ActionEvent.ActionEventSessionType.USER)
                     hasNoSyntheticsTest()
                     hasStartReason(fakeParentContext.sessionStartReason)
                     hasReplay(fakeHasReplay)
@@ -2579,7 +2588,7 @@ internal class RumActionScopeTest {
                     hasAccountInfo(fakeDatadogContext.accountInfo)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
-                    hasUserSession()
+                    hasSessionType(fakeRumSessionType?.toAction() ?: ActionEvent.ActionEventSessionType.USER)
                     hasNoSyntheticsTest()
                     hasStartReason(fakeParentContext.sessionStartReason)
                     hasReplay(fakeHasReplay)
@@ -2635,7 +2644,7 @@ internal class RumActionScopeTest {
                     hasAccountInfo(fakeDatadogContext.accountInfo)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
-                    hasUserSession()
+                    hasSessionType(fakeRumSessionType?.toAction() ?: ActionEvent.ActionEventSessionType.USER)
                     hasNoSyntheticsTest()
                     hasStartReason(fakeParentContext.sessionStartReason)
                     hasReplay(fakeHasReplay)
@@ -2691,7 +2700,7 @@ internal class RumActionScopeTest {
                     hasAccountInfo(fakeDatadogContext.accountInfo)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
-                    hasUserSession()
+                    hasSessionType(fakeRumSessionType?.toAction() ?: ActionEvent.ActionEventSessionType.USER)
                     hasNoSyntheticsTest()
                     hasStartReason(fakeParentContext.sessionStartReason)
                     hasReplay(fakeHasReplay)
@@ -2729,18 +2738,19 @@ internal class RumActionScopeTest {
     ) {
         // Given
         testedScope = RumActionScope(
-            mockParentScope,
-            rumMonitor.mockSdkCore,
-            false,
-            fakeEventTime,
-            fakeType,
-            fakeName,
-            fakeAttributes,
-            fakeServerOffset,
-            TEST_INACTIVITY_MS,
-            TEST_MAX_DURATION_MS,
+            parentScope = mockParentScope,
+            sdkCore = rumMonitor.mockSdkCore,
+            waitForStop = false,
+            eventTime = fakeEventTime,
+            initialType = fakeType,
+            initialName = fakeName,
+            initialAttributes = fakeAttributes,
+            serverTimeOffsetInMs = fakeServerOffset,
+            inactivityThresholdMs = TEST_INACTIVITY_MS,
+            maxDurationMs = TEST_MAX_DURATION_MS,
             trackFrustrations = false,
-            sampleRate = fakeSampleRate
+            sampleRate = fakeSampleRate,
+            rumSessionTypeOverride = fakeRumSessionType
         )
 
         // When
@@ -2784,7 +2794,7 @@ internal class RumActionScopeTest {
                     hasAccountInfo(fakeDatadogContext.accountInfo)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
-                    hasUserSession()
+                    hasSessionType(fakeRumSessionType?.toAction() ?: ActionEvent.ActionEventSessionType.USER)
                     hasNoSyntheticsTest()
                     hasStartReason(fakeParentContext.sessionStartReason)
                     containsExactlyContextAttributes(fakeAttributes)

@@ -180,6 +180,12 @@ internal class DatadogCore(
 
     /** @inheritDoc */
     @AnyThread
+    override fun clearUserInfo() {
+        coreFeature.userInfoProvider.clearUserInfo()
+    }
+
+    /** @inheritDoc */
+    @AnyThread
     override fun clearAllData() {
         coreFeature.contextExecutorService.executeSafe("DatadogCore.clearAllData", internalLogger) {
             features.values.forEach {
