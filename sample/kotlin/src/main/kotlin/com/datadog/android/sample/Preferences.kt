@@ -151,6 +151,17 @@ internal object Preferences {
                 .apply()
         }
 
+        fun clearUserCredentials() {
+            PreferenceManager.getDefaultSharedPreferences(applicationContext)
+                .edit()
+                .remove(PREF_USR_ID)
+                .remove(PREF_USR_NAME)
+                .remove(PREF_USR_EMAIL)
+                .remove(PREF_USR_GENDER)
+                .remove(PREF_USR_AGE)
+                .apply()
+        }
+
         fun setTrackingConsent(consent: TrackingConsent) {
             PreferenceManager.getDefaultSharedPreferences(applicationContext)
                 .edit()

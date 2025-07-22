@@ -194,12 +194,20 @@ class StubSDKCore(
         stubUserInfo(UserInfo(null, id, name, email, extraInfo))
     }
 
+    override fun clearUserInfo() {
+        stubUserInfo(UserInfo())
+    }
+
     override fun setAccountInfo(
         id: String,
         name: String?,
         extraInfo: Map<String, Any?>
     ) {
         stubAccountInfo(AccountInfo(id, name, extraInfo))
+    }
+
+    override fun clearAccountInfo() {
+        datadogContext = datadogContext.copy(accountInfo = null)
     }
 
     // endregion

@@ -227,6 +227,11 @@ internal sealed class RumRawEvent {
         override val eventTime: Time = Time()
     ) : RumRawEvent()
 
+    internal data class UpdateExternalRefreshRate(
+        val frameTimeSeconds: Double,
+        override val eventTime: Time = Time()
+    ) : RumRawEvent()
+
     internal data class SetInternalViewAttribute(
         val key: String,
         val value: Any?,

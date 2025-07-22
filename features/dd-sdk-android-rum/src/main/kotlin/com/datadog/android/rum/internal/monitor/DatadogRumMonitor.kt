@@ -35,6 +35,7 @@ import com.datadog.android.rum.RumPerformanceMetric
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.RumResourceMethod
 import com.datadog.android.rum.RumSessionListener
+import com.datadog.android.rum.RumSessionType
 import com.datadog.android.rum._RumInternalProxy
 import com.datadog.android.rum.internal.CombinedRumSessionListener
 import com.datadog.android.rum.internal.RumErrorSourceType
@@ -42,6 +43,7 @@ import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.debug.RumDebugListener
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
+import com.datadog.android.rum.internal.domain.accessibility.AccessibilityReader
 import com.datadog.android.rum.internal.domain.asTime
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
 import com.datadog.android.rum.internal.domain.scope.RumApplicationScope
@@ -82,24 +84,28 @@ internal class DatadogRumMonitor(
     internal val executorService: ExecutorService,
     initialResourceIdentifier: InitialResourceIdentifier,
     lastInteractionIdentifier: LastInteractionIdentifier?,
-    slowFramesListener: SlowFramesListener?
+    slowFramesListener: SlowFramesListener?,
+    rumSessionTypeOverride: RumSessionType?,
+    accessibilityReader: AccessibilityReader
 ) : RumMonitor, AdvancedRumMonitor {
 
     internal var rootScope = RumApplicationScope(
-        applicationId,
-        sdkCore,
-        sampleRate,
-        backgroundTrackingEnabled,
-        trackFrustrations,
-        firstPartyHostHeaderTypeResolver,
-        cpuVitalMonitor,
-        memoryVitalMonitor,
-        frameRateVitalMonitor,
+        applicationId = applicationId,
+        sdkCore = sdkCore,
+        sampleRate = sampleRate,
+        backgroundTrackingEnabled = backgroundTrackingEnabled,
+        trackFrustrations = trackFrustrations,
+        firstPartyHostHeaderTypeResolver = firstPartyHostHeaderTypeResolver,
+        cpuVitalMonitor = cpuVitalMonitor,
+        memoryVitalMonitor = memoryVitalMonitor,
+        frameRateVitalMonitor = frameRateVitalMonitor,
         sessionEndedMetricDispatcher = sessionEndedMetricDispatcher,
-        CombinedRumSessionListener(sessionListener, telemetryEventHandler),
-        initialResourceIdentifier,
-        lastInteractionIdentifier,
-        slowFramesListener
+        sessionListener = CombinedRumSessionListener(sessionListener, telemetryEventHandler),
+        initialResourceIdentifier = initialResourceIdentifier,
+        lastInteractionIdentifier = lastInteractionIdentifier,
+        slowFramesListener = slowFramesListener,
+        rumSessionTypeOverride = rumSessionTypeOverride,
+        accessibilityReader = accessibilityReader
     )
 
     internal val keepAliveRunnable = Runnable {
@@ -605,6 +611,10 @@ internal class DatadogRumMonitor(
 
     override fun updatePerformanceMetric(metric: RumPerformanceMetric, value: Double) {
         handleEvent(RumRawEvent.UpdatePerformanceMetric(metric, value))
+    }
+
+    override fun updateExternalRefreshRate(frameTimeSeconds: Double) {
+        handleEvent(RumRawEvent.UpdateExternalRefreshRate(frameTimeSeconds))
     }
 
     override fun setInternalViewAttribute(key: String, value: Any?) {

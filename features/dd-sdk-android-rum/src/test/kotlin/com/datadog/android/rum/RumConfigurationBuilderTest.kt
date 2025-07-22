@@ -34,6 +34,7 @@ import com.datadog.android.rum.tracking.ViewAttributesProvider
 import com.datadog.android.rum.tracking.ViewTrackingStrategy
 import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.android.telemetry.model.TelemetryConfigurationEvent
+import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.FloatForgery
 import fr.xgouchet.elmyr.annotation.Forgery
@@ -615,5 +616,36 @@ internal class RumConfigurationBuilderTest {
         // Then
         assertThat(rumConfiguration.featureConfiguration.composeActionTrackingStrategy)
             .isSameAs(mockActionTrackingStrategy)
+    }
+
+    @Test
+    fun `M set rumSessionTypeOverride W setRumSessionTypeOverride()`(
+        forge: Forge
+    ) {
+        // Given
+        val rumSessionTypeOverride = forge.aValueFrom(RumSessionType::class.java)
+
+        // When
+        _RumInternalProxy.setRumSessionTypeOverride(testedBuilder, rumSessionTypeOverride)
+        val rumConfiguration = testedBuilder.build()
+
+        // Then
+        assertThat(rumConfiguration.featureConfiguration.rumSessionTypeOverride)
+            .isEqualTo(rumSessionTypeOverride)
+    }
+
+    @Test
+    fun `M enable accessibility settings collection W collectAccessibilitySettings`() {
+        // When
+        val rumConfiguration = testedBuilder
+            .collectAccessibilitySettings()
+            .build()
+
+        // Then
+        assertThat(rumConfiguration.featureConfiguration).isEqualTo(
+            RumFeature.DEFAULT_RUM_CONFIG.copy(
+                collectAccessibilitySettings = true
+            )
+        )
     }
 }

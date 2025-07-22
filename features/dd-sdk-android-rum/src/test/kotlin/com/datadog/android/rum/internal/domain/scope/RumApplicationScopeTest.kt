@@ -19,6 +19,8 @@ import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.rum.DdRumContentProvider
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumSessionListener
+import com.datadog.android.rum.RumSessionType
+import com.datadog.android.rum.internal.domain.accessibility.AccessibilityReader
 import com.datadog.android.rum.internal.domain.state.ViewUIPerformanceReport
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
 import com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener
@@ -70,6 +72,9 @@ internal class RumApplicationScopeTest {
 
     @Mock
     lateinit var mockEvent: RumRawEvent
+
+    @Mock
+    lateinit var mockAccessibilityReader: AccessibilityReader
 
     @Mock
     lateinit var mockWriter: DataWriter<Any>
@@ -134,28 +139,34 @@ internal class RumApplicationScopeTest {
     @Forgery
     lateinit var viewUIPerformanceReport: ViewUIPerformanceReport
 
+    private var fakeRumSessionType: RumSessionType? = null
+
     @BeforeEach
-    fun `set up`() {
+    fun `set up`(forge: Forge) {
         whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumFeatureScope
         whenever(mockSdkCore.time) doReturn fakeTimeInfoAtScopeStart
         whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
         whenever(mockSlowFramesListener.resolveReport(any(), any(), any())) doReturn viewUIPerformanceReport
 
+        fakeRumSessionType = forge.aNullable { aValueFrom(RumSessionType::class.java) }
+
         testedScope = RumApplicationScope(
-            fakeApplicationId,
-            mockSdkCore,
-            fakeSampleRate,
-            fakeBackgroundTrackingEnabled,
-            fakeTrackFrustrations,
-            mockResolver,
-            mockCpuVitalMonitor,
-            mockMemoryVitalMonitor,
-            mockFrameRateVitalMonitor,
-            mockDispatcher,
-            mockSessionListener,
-            mockNetworkSettledResourceIdentifier,
-            mockLastInteractionIdentifier,
-            mockSlowFramesListener
+            applicationId = fakeApplicationId,
+            sdkCore = mockSdkCore,
+            sampleRate = fakeSampleRate,
+            backgroundTrackingEnabled = fakeBackgroundTrackingEnabled,
+            trackFrustrations = fakeTrackFrustrations,
+            firstPartyHostHeaderTypeResolver = mockResolver,
+            cpuVitalMonitor = mockCpuVitalMonitor,
+            memoryVitalMonitor = mockMemoryVitalMonitor,
+            frameRateVitalMonitor = mockFrameRateVitalMonitor,
+            sessionEndedMetricDispatcher = mockDispatcher,
+            sessionListener = mockSessionListener,
+            initialResourceIdentifier = mockNetworkSettledResourceIdentifier,
+            lastInteractionIdentifier = mockLastInteractionIdentifier,
+            slowFramesListener = mockSlowFramesListener,
+            rumSessionTypeOverride = fakeRumSessionType,
+            accessibilityReader = mockAccessibilityReader
         )
     }
 

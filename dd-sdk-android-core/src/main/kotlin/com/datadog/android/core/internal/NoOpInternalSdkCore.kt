@@ -88,6 +88,8 @@ internal object NoOpInternalSdkCore : InternalSdkCore {
 
     override fun addUserProperties(extraInfo: Map<String, Any?>) = Unit
 
+    override fun clearUserInfo() = Unit
+
     override fun clearAllData() = Unit
 
     override fun setAccountInfo(

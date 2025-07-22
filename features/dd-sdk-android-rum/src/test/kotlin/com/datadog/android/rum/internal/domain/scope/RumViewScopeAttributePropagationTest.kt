@@ -20,6 +20,7 @@ import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
+import com.datadog.android.rum.RumSessionType
 import com.datadog.android.rum.assertj.ActionEventAssert.Companion.assertThat
 import com.datadog.android.rum.assertj.ErrorEventAssert.Companion.assertThat
 import com.datadog.android.rum.assertj.LongTaskEventAssert.Companion.assertThat
@@ -27,6 +28,7 @@ import com.datadog.android.rum.assertj.ViewEventAssert.Companion.assertThat
 import com.datadog.android.rum.internal.FeaturesContextResolver
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
+import com.datadog.android.rum.internal.domain.accessibility.AccessibilityReader
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
 import com.datadog.android.rum.internal.metric.ViewEndedMetricDispatcher
 import com.datadog.android.rum.internal.metric.ViewInitializationMetricsState
@@ -93,6 +95,9 @@ internal class RumViewScopeAttributePropagationTest {
 
     @Mock
     lateinit var mockWriter: DataWriter<Any>
+
+    @Mock
+    lateinit var mockAccessibilityReader: AccessibilityReader
 
     @Mock
     lateinit var mockResolver: FirstPartyHostHeaderTypeResolver
@@ -179,11 +184,14 @@ internal class RumViewScopeAttributePropagationTest {
     @BoolForgery
     var fakeTrackFrustrations: Boolean = true
 
+    private var fakeRumSessionType: RumSessionType? = null
+
     private var fakeSampleRate: Float = 0.0f
 
     @BeforeEach
     fun `set up`(forge: Forge) {
         fakeNetworkSettledMetricValue = forge.aNullable { aPositiveLong() }
+        fakeRumSessionType = forge.aNullable { aValueFrom(RumSessionType::class.java) }
         fakeInteractionToNextViewMetricValue = forge.aNullable { aPositiveLong() }
         whenever(mockNetworkSettledMetricResolver.resolveMetric()) doReturn fakeNetworkSettledMetricValue
         whenever(mockNetworkSettledMetricResolver.getState()) doReturn fakeTnsState
@@ -692,7 +700,9 @@ internal class RumViewScopeAttributePropagationTest {
             mockInteractionToNextViewMetricResolver,
         networkSettledMetricResolver: NetworkSettledMetricResolver = mockNetworkSettledMetricResolver,
         viewEndedMetricDispatcher: ViewMetricDispatcher = mockViewEndedMetricDispatcher,
-        slowFramesListener: SlowFramesListener = mockSlowFramesListener
+        slowFramesListener: SlowFramesListener = mockSlowFramesListener,
+        rumSessionType: RumSessionType? = fakeRumSessionType,
+        accessibilityReader: AccessibilityReader = mockAccessibilityReader
     ) = RumViewScope(
         parentScope = parentScope,
         sdkCore = sdkCore,
@@ -712,7 +722,9 @@ internal class RumViewScopeAttributePropagationTest {
         interactionToNextViewMetricResolver = interactionNextViewMetricResolver,
         networkSettledMetricResolver = networkSettledMetricResolver,
         viewEndedMetricDispatcher = viewEndedMetricDispatcher,
-        slowFramesListener = slowFramesListener
+        slowFramesListener = slowFramesListener,
+        accessibilityReader = accessibilityReader,
+        rumSessionTypeOverride = rumSessionType
     )
 
     // endregion

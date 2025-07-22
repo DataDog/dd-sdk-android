@@ -79,7 +79,10 @@ internal class RumTest {
             verify(mockSdkCore).registerFeature(capture())
 
             lastValue.onInitialize(
-                appContext = mock { whenever(it.packageName) doReturn fakePackageName }
+                appContext = mock {
+                    whenever(it.packageName) doReturn fakePackageName
+                    whenever(it.resources) doReturn mock()
+                }
             )
             assertThat(lastValue.sampleRate)
                 .isEqualTo(fakeRumConfiguration.featureConfiguration.sampleRate)
@@ -125,7 +128,10 @@ internal class RumTest {
         whenever(mockSdkCore.registerFeature(any())) doAnswer {
             val feature = it.getArgument<RumFeature>(0)
             feature.onInitialize(
-                appContext = mock { whenever(it.packageName) doReturn fakePackageName }
+                appContext = mock {
+                    whenever(it.packageName) doReturn fakePackageName
+                    whenever(it.resources) doReturn mock()
+                }
             )
         }
         // When

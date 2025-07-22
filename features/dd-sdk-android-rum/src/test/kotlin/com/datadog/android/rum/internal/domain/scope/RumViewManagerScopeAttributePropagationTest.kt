@@ -15,9 +15,11 @@ import com.datadog.android.api.storage.EventBatchWriter
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.rum.RumSessionListener
+import com.datadog.android.rum.RumSessionType
 import com.datadog.android.rum.internal.FeaturesContextResolver
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
+import com.datadog.android.rum.internal.domain.accessibility.AccessibilityReader
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
 import com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener
 import com.datadog.android.rum.internal.vitals.VitalMonitor
@@ -43,8 +45,6 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
-import kotlin.math.max
-import kotlin.math.min
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -67,6 +67,9 @@ internal class RumViewManagerScopeAttributePropagationTest {
 
     @Mock
     lateinit var mockResolver: FirstPartyHostHeaderTypeResolver
+
+    @Mock
+    lateinit var mockAccessibilityReader: AccessibilityReader
 
     @Mock
     lateinit var mockSessionListener: RumSessionListener
@@ -137,9 +140,12 @@ internal class RumViewManagerScopeAttributePropagationTest {
     @BoolForgery
     var fakeTrackFrustrations: Boolean = true
 
+    private var fakeRumSessionType: RumSessionType? = null
+
     @BeforeEach
     fun `set up`(forge: Forge) {
         fakeParentAttributes = forge.exhaustiveAttributes()
+        fakeRumSessionType = forge.aNullable { aValueFrom(RumSessionType::class.java) }
         whenever(mockParentScope.getCustomAttributes()) doReturn fakeParentAttributes.toMutableMap()
 
         whenever(mockSdkCore.internalLogger) doReturn mock()
@@ -159,7 +165,9 @@ internal class RumViewManagerScopeAttributePropagationTest {
             applicationDisplayed = false,
             initialResourceIdentifier = mockInitialResourceIdentifier,
             lastInteractionIdentifier = mockLastInteractionIdentifier,
-            slowFramesListener = mockSlowFramesListener
+            slowFramesListener = mockSlowFramesListener,
+            accessibilityReader = mockAccessibilityReader,
+            rumSessionTypeOverride = fakeRumSessionType
         )
     }
 

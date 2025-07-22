@@ -15,9 +15,11 @@ import com.datadog.android.api.storage.EventBatchWriter
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.rum.RumSessionListener
+import com.datadog.android.rum.RumSessionType
 import com.datadog.android.rum.internal.FeaturesContextResolver
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
+import com.datadog.android.rum.internal.domain.accessibility.AccessibilityReader
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
 import com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener
 import com.datadog.android.rum.internal.vitals.VitalMonitor
@@ -44,8 +46,6 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.util.concurrent.TimeUnit
-import kotlin.math.max
-import kotlin.math.min
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -91,6 +91,9 @@ internal class RumSessionScopeAttributePropagationTest {
     lateinit var mockInternalLogger: InternalLogger
 
     @Mock
+    lateinit var mockAccessibilityReader: AccessibilityReader
+
+    @Mock
     lateinit var mockRumFeatureScope: FeatureScope
 
     @Mock
@@ -134,6 +137,7 @@ internal class RumSessionScopeAttributePropagationTest {
 
     @BoolForgery
     var fakeTrackFrustrations: Boolean = true
+    private var fakeRumSessionType: RumSessionType? = null
 
     @BeforeEach
     fun `set up`(forge: Forge) {
@@ -141,7 +145,7 @@ internal class RumSessionScopeAttributePropagationTest {
         whenever(mockParentScope.getCustomAttributes()) doReturn fakeParentAttributes.toMutableMap()
 
         whenever(mockSdkCore.internalLogger) doReturn mock()
-
+        fakeRumSessionType = forge.aNullable { aValueFrom(RumSessionType::class.java) }
         testedScope = RumSessionScope(
             parentScope = mockParentScope,
             sdkCore = mockSdkCore,
@@ -160,7 +164,9 @@ internal class RumSessionScopeAttributePropagationTest {
             lastInteractionIdentifier = mockLastInteractionIdentifier,
             slowFramesListener = mockSlowFramesListener,
             sessionInactivityNanos = TEST_INACTIVITY_NS,
-            sessionMaxDurationNanos = TEST_MAX_DURATION_NS
+            sessionMaxDurationNanos = TEST_MAX_DURATION_NS,
+            rumSessionTypeOverride = fakeRumSessionType,
+            accessibilityReader = mockAccessibilityReader
         )
     }
 

@@ -278,19 +278,11 @@ internal class ActionEventAssert(actual: ActionEvent) :
         return this
     }
 
-    fun hasUserSession(): ActionEventAssert {
+    fun hasSessionType(expected: ActionEvent.ActionEventSessionType): ActionEventAssert {
         assertThat(actual.session.type)
-            .overridingErrorMessage(
-                "Expected event to have session.type:user but was ${actual.session.type}"
-            ).isEqualTo(ActionEvent.ActionEventSessionType.USER)
-        return this
-    }
-
-    fun hasSyntheticsSession(): ActionEventAssert {
-        assertThat(actual.session.type)
-            .overridingErrorMessage(
-                "Expected event to have session.type:synthetics but was ${actual.session.type}"
-            ).isEqualTo(ActionEvent.ActionEventSessionType.SYNTHETICS)
+            .overridingErrorMessage {
+                "Expected event to have session.type:$expected but was ${actual.session.type}"
+            }.isEqualTo(expected)
         return this
     }
 

@@ -19,6 +19,7 @@ import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.RumResourceMethod
+import com.datadog.android.rum.RumSessionType
 import com.datadog.android.rum.assertj.ErrorEventAssert.Companion.assertThat
 import com.datadog.android.rum.assertj.ResourceEventAssert.Companion.assertThat
 import com.datadog.android.rum.internal.FeaturesContextResolver
@@ -151,6 +152,8 @@ internal class RumResourceScopeAttributePropagationTest {
     @LongForgery(-1000L, 1000L)
     var fakeServerOffset: Long = 0L
 
+    private var fakeRumSessionType: RumSessionType? = null
+
     @BeforeEach
     fun `set up`(forge: Forge) {
         fakeEventTime = Time()
@@ -158,6 +161,7 @@ internal class RumResourceScopeAttributePropagationTest {
         fakeParentAttributes = forge.exhaustiveAttributes()
         fakeResourceAttributes = forge.exhaustiveAttributes()
         fakeErrorAttributes = forge.exhaustiveAttributes()
+        fakeRumSessionType = forge.aNullable { aValueFrom(RumSessionType::class.java) }
 
         whenever(mockParentScope.getCustomAttributes()) doReturn fakeParentAttributes.toMutableMap()
         whenever(mockParentScope.getRumContext()) doReturn fakeParentContext
@@ -187,7 +191,8 @@ internal class RumResourceScopeAttributePropagationTest {
             firstPartyHostHeaderTypeResolver = mockResolver,
             featuresContextResolver = mockFeaturesContextResolver,
             sampleRate = fakeSampleRate,
-            networkSettledMetricResolver = mockNetworkSettledMetricResolver
+            networkSettledMetricResolver = mockNetworkSettledMetricResolver,
+            rumSessionTypeOverride = fakeRumSessionType
         )
     }
 

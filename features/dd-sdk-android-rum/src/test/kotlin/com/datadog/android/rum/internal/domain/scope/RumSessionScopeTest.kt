@@ -16,7 +16,9 @@ import com.datadog.android.api.storage.NoOpDataWriter
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.rum.RumSessionListener
+import com.datadog.android.rum.RumSessionType
 import com.datadog.android.rum.internal.domain.RumContext
+import com.datadog.android.rum.internal.domain.accessibility.AccessibilityReader
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
 import com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener
 import com.datadog.android.rum.internal.vitals.VitalMonitor
@@ -85,6 +87,9 @@ internal class RumSessionScopeTest {
     lateinit var mockFrameRateVitalMonitor: VitalMonitor
 
     @Mock
+    lateinit var mockAccessibilityReader: AccessibilityReader
+
+    @Mock
     lateinit var mockSessionListener: RumSessionListener
 
     @Mock
@@ -131,6 +136,8 @@ internal class RumSessionScopeTest {
 
     private lateinit var fakeInitialViewEvent: RumRawEvent
 
+    private var fakeRumSessionType: RumSessionType? = null
+
     @BeforeEach
     fun `set up`(forge: Forge) {
         fakeInitialViewEvent = forge.startViewEvent()
@@ -141,6 +148,8 @@ internal class RumSessionScopeTest {
             mockSessionReplayFeatureScope
         whenever(mockSdkCore.time) doReturn (fakeTimeInfo)
         whenever(mockSdkCore.internalLogger) doReturn mock()
+
+        fakeRumSessionType = forge.aNullable { aValueFrom(RumSessionType::class.java) }
 
         initializeTestedScope()
     }
@@ -1398,24 +1407,26 @@ internal class RumSessionScopeTest {
         backgroundTrackingEnabled: Boolean? = null
     ) {
         testedScope = RumSessionScope(
-            mockParentScope,
-            mockSdkCore,
-            mockSessionEndedMetricDispatcher,
-            sampleRate,
-            backgroundTrackingEnabled ?: fakeBackgroundTrackingEnabled,
-            fakeTrackFrustrations,
-            mockViewChangedListener,
-            mockResolver,
-            mockCpuVitalMonitor,
-            mockMemoryVitalMonitor,
-            mockFrameRateVitalMonitor,
-            mockSessionListener,
+            parentScope = mockParentScope,
+            sdkCore = mockSdkCore,
+            sessionEndedMetricDispatcher = mockSessionEndedMetricDispatcher,
+            sampleRate = sampleRate,
+            backgroundTrackingEnabled = backgroundTrackingEnabled ?: fakeBackgroundTrackingEnabled,
+            trackFrustrations = fakeTrackFrustrations,
+            viewChangedListener = mockViewChangedListener,
+            firstPartyHostHeaderTypeResolver = mockResolver,
+            cpuVitalMonitor = mockCpuVitalMonitor,
+            memoryVitalMonitor = mockMemoryVitalMonitor,
+            frameRateVitalMonitor = mockFrameRateVitalMonitor,
+            sessionListener = mockSessionListener,
             applicationDisplayed = false,
             networkSettledResourceIdentifier = mockNetworkSettledResourceIdentifier,
             lastInteractionIdentifier = mockLastInteractionIdentifier,
             slowFramesListener = mockSlowFramesListener,
-            TEST_INACTIVITY_NS,
-            TEST_MAX_DURATION_NS
+            sessionInactivityNanos = TEST_INACTIVITY_NS,
+            sessionMaxDurationNanos = TEST_MAX_DURATION_NS,
+            rumSessionTypeOverride = fakeRumSessionType,
+            accessibilityReader = mockAccessibilityReader
         )
 
         if (withMockChildScope) {

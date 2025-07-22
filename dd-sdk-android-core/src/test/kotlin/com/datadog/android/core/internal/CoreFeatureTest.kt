@@ -67,6 +67,7 @@ import okhttp3.TlsVersion
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
@@ -211,6 +212,7 @@ internal class CoreFeatureTest {
 
     @SuppressLint("UnspecifiedRegisterReceiverFlag")
     @Test
+    @Disabled // RUM-10684: ApiLevelExtension is not able to set API level property
     fun `M initialize network info provider W initialize`() {
         // When
         testedFeature.initialize(
@@ -234,6 +236,7 @@ internal class CoreFeatureTest {
     @SuppressLint("UnspecifiedRegisterReceiverFlag")
     @Test
     @TestTargetApi(Build.VERSION_CODES.N)
+    @Disabled // RUM-10684: ApiLevelExtension is not able to set API level property
     fun `M initialize network info provider W initialize {N}`() {
         // When
         testedFeature.initialize(

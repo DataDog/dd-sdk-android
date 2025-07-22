@@ -122,6 +122,28 @@ class SdkCoreTest : MockServerTest() {
             .containsExactlyInAnyOrderEntriesOf(fakeUserAdditionalProperties)
     }
 
+    @Test
+    fun must_clearUserInformation_when_clearUserInfo() {
+        // Given
+        testedSdkCore?.setUserInfo(fakeUserId, fakeUserName, fakeUserEmail, fakeUserAdditionalProperties)
+
+        // When
+        testedSdkCore?.clearUserInfo()
+
+        // Then
+        val countDownLatch = CountDownLatch(1)
+        var readUserInfo: UserInfo? = null
+        featureSdkCore?.getFeature(stubFeature.name)?.withWriteContext { datadogContext, _ ->
+            readUserInfo = datadogContext.userInfo
+            countDownLatch.countDown()
+        }
+        countDownLatch.await(SHORT_WAIT_MS, TimeUnit.MILLISECONDS)
+        assertThat(readUserInfo?.id).isNull()
+        assertThat(readUserInfo?.name).isNull()
+        assertThat(readUserInfo?.email).isNull()
+        assertThat(readUserInfo?.additionalProperties).isEmpty()
+    }
+
     // endregion
 
     // region set AccountInfo
