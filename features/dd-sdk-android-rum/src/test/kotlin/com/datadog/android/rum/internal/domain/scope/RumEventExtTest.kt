@@ -503,7 +503,7 @@ internal class RumEventExtTest {
         // Then
         assertThat(result).isEqualTo(
             LongTaskEvent.Connectivity(
-                LongTaskEvent.Status.NOT_CONNECTED,
+                LongTaskEvent.ConnectivityStatus.NOT_CONNECTED,
                 emptyList(),
                 null
             )
@@ -528,7 +528,7 @@ internal class RumEventExtTest {
         // Then
         assertThat(result).isEqualTo(
             LongTaskEvent.Connectivity(
-                LongTaskEvent.Status.CONNECTED,
+                LongTaskEvent.ConnectivityStatus.CONNECTED,
                 listOf(LongTaskEvent.Interface.WIFI),
                 null
             )
@@ -553,7 +553,7 @@ internal class RumEventExtTest {
         // Then
         assertThat(result).isEqualTo(
             LongTaskEvent.Connectivity(
-                LongTaskEvent.Status.CONNECTED,
+                LongTaskEvent.ConnectivityStatus.CONNECTED,
                 listOf(LongTaskEvent.Interface.WIMAX),
                 null
             )
@@ -578,7 +578,7 @@ internal class RumEventExtTest {
         // Then
         assertThat(result).isEqualTo(
             LongTaskEvent.Connectivity(
-                LongTaskEvent.Status.CONNECTED,
+                LongTaskEvent.ConnectivityStatus.CONNECTED,
                 listOf(LongTaskEvent.Interface.ETHERNET),
                 null
             )
@@ -603,7 +603,7 @@ internal class RumEventExtTest {
         // Then
         assertThat(result).isEqualTo(
             LongTaskEvent.Connectivity(
-                LongTaskEvent.Status.CONNECTED,
+                LongTaskEvent.ConnectivityStatus.CONNECTED,
                 listOf(LongTaskEvent.Interface.BLUETOOTH),
                 null
             )
@@ -637,7 +637,7 @@ internal class RumEventExtTest {
         // Then
         assertThat(result).isEqualTo(
             LongTaskEvent.Connectivity(
-                LongTaskEvent.Status.CONNECTED,
+                LongTaskEvent.ConnectivityStatus.CONNECTED,
                 listOf(LongTaskEvent.Interface.CELLULAR),
                 cellular = LongTaskEvent.Cellular(networkInfo.cellularTechnology, networkInfo.carrierName)
             )
@@ -662,7 +662,7 @@ internal class RumEventExtTest {
         // Then
         assertThat(result).isEqualTo(
             LongTaskEvent.Connectivity(
-                LongTaskEvent.Status.CONNECTED,
+                LongTaskEvent.ConnectivityStatus.CONNECTED,
                 listOf(LongTaskEvent.Interface.OTHER),
                 null
             )
@@ -873,7 +873,7 @@ internal class RumEventExtTest {
         // Then
         assertThat(result).isEqualTo(
             ViewEvent.Connectivity(
-                ViewEvent.Status.NOT_CONNECTED,
+                ViewEvent.ConnectivityStatus.NOT_CONNECTED,
                 emptyList(),
                 null
             )
@@ -898,7 +898,7 @@ internal class RumEventExtTest {
         // Then
         assertThat(result).isEqualTo(
             ViewEvent.Connectivity(
-                ViewEvent.Status.CONNECTED,
+                ViewEvent.ConnectivityStatus.CONNECTED,
                 listOf(ViewEvent.Interface.WIFI),
                 null
             )
@@ -923,7 +923,7 @@ internal class RumEventExtTest {
         // Then
         assertThat(result).isEqualTo(
             ViewEvent.Connectivity(
-                ViewEvent.Status.CONNECTED,
+                ViewEvent.ConnectivityStatus.CONNECTED,
                 listOf(ViewEvent.Interface.WIMAX),
                 null
             )
@@ -948,7 +948,7 @@ internal class RumEventExtTest {
         // Then
         assertThat(result).isEqualTo(
             ViewEvent.Connectivity(
-                ViewEvent.Status.CONNECTED,
+                ViewEvent.ConnectivityStatus.CONNECTED,
                 listOf(ViewEvent.Interface.ETHERNET),
                 null
             )
@@ -973,7 +973,7 @@ internal class RumEventExtTest {
         // Then
         assertThat(result).isEqualTo(
             ViewEvent.Connectivity(
-                ViewEvent.Status.CONNECTED,
+                ViewEvent.ConnectivityStatus.CONNECTED,
                 listOf(ViewEvent.Interface.BLUETOOTH),
                 null
             )
@@ -1007,7 +1007,7 @@ internal class RumEventExtTest {
         // Then
         assertThat(result).isEqualTo(
             ViewEvent.Connectivity(
-                ViewEvent.Status.CONNECTED,
+                ViewEvent.ConnectivityStatus.CONNECTED,
                 listOf(ViewEvent.Interface.CELLULAR),
                 cellular = ViewEvent.Cellular(networkInfo.cellularTechnology, networkInfo.carrierName)
             )
@@ -1032,7 +1032,7 @@ internal class RumEventExtTest {
         // Then
         assertThat(result).isEqualTo(
             ViewEvent.Connectivity(
-                ViewEvent.Status.CONNECTED,
+                ViewEvent.ConnectivityStatus.CONNECTED,
                 listOf(ViewEvent.Interface.OTHER),
                 null
             )
