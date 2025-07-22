@@ -387,6 +387,15 @@ data class RumConfiguration internal constructor(
             rumConfig = rumConfig.copy(rumSessionTypeOverride = rumSessionTypeOverride)
             return this
         }
+
+        /**
+         * Sets a flag to collect accessibility settings inside the RUM view end event.
+         * By default these settings are not collected.
+         */
+        internal fun collectAccessibilitySettings(): Builder {
+            rumConfig = rumConfig.copy(collectAccessibilitySettings = true)
+            return this
+        }
         // endregion
     }
 }

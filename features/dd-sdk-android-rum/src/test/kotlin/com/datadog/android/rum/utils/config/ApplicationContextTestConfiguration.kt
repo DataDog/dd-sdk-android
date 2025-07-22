@@ -48,6 +48,7 @@ internal open class ApplicationContextTestConfiguration<T : Context>(klass: Clas
         whenever(mockInstance.packageManager) doReturn mockPackageManager
         whenever(mockInstance.packageName) doReturn fakePackageName
         whenever(mockInstance.applicationInfo) doReturn fakeAppInfo
+        whenever(mockInstance.resources) doReturn mock()
 
         // ???
         whenever(mockInstance.getSystemService(Context.ACTIVITY_SERVICE)) doReturn mock()

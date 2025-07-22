@@ -39,6 +39,7 @@ import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.debug.RumDebugListener
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
+import com.datadog.android.rum.internal.domain.accessibility.AccessibilityReader
 import com.datadog.android.rum.internal.domain.asTime
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
 import com.datadog.android.rum.internal.domain.scope.RumApplicationScope
@@ -81,7 +82,8 @@ internal class DatadogRumMonitor(
     initialResourceIdentifier: InitialResourceIdentifier,
     lastInteractionIdentifier: LastInteractionIdentifier?,
     slowFramesListener: SlowFramesListener?,
-    rumSessionTypeOverride: RumSessionType?
+    rumSessionTypeOverride: RumSessionType?,
+    accessibilityReader: AccessibilityReader
 ) : RumMonitor, AdvancedRumMonitor {
 
     internal var rootScope: RumScope = RumApplicationScope(
@@ -99,7 +101,8 @@ internal class DatadogRumMonitor(
         initialResourceIdentifier = initialResourceIdentifier,
         lastInteractionIdentifier = lastInteractionIdentifier,
         slowFramesListener = slowFramesListener,
-        rumSessionTypeOverride = rumSessionTypeOverride
+        rumSessionTypeOverride = rumSessionTypeOverride,
+        accessibilityReader = accessibilityReader
     )
 
     internal val keepAliveRunnable = Runnable {

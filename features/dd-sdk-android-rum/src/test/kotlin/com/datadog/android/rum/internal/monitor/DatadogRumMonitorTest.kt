@@ -32,6 +32,7 @@ import com.datadog.android.rum.internal.RumErrorSourceType
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.debug.RumDebugListener
 import com.datadog.android.rum.internal.domain.RumContext
+import com.datadog.android.rum.internal.domain.accessibility.AccessibilityReader
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
 import com.datadog.android.rum.internal.domain.scope.RumActionScope
 import com.datadog.android.rum.internal.domain.scope.RumApplicationScope
@@ -119,6 +120,9 @@ internal class DatadogRumMonitorTest {
 
     @Mock
     lateinit var mockHandler: Handler
+
+    @Mock
+    lateinit var mockAccessibilityReader: AccessibilityReader
 
     @Mock
     lateinit var mockResolver: FirstPartyHostHeaderTypeResolver
@@ -217,7 +221,8 @@ internal class DatadogRumMonitorTest {
             initialResourceIdentifier = mockNetworkSettledResourceIdentifier,
             lastInteractionIdentifier = mockLastInteractionIdentifier,
             slowFramesListener = mockSlowFramesListener,
-            rumSessionTypeOverride = fakeRumSessionType
+            rumSessionTypeOverride = fakeRumSessionType,
+            accessibilityReader = mockAccessibilityReader
         )
         testedMonitor.rootScope = mockScope
     }
@@ -243,7 +248,8 @@ internal class DatadogRumMonitorTest {
             initialResourceIdentifier = mockNetworkSettledResourceIdentifier,
             lastInteractionIdentifier = mockLastInteractionIdentifier,
             slowFramesListener = mockSlowFramesListener,
-            rumSessionTypeOverride = fakeRumSessionType
+            rumSessionTypeOverride = fakeRumSessionType,
+            accessibilityReader = mockAccessibilityReader
         )
 
         val rootScope = testedMonitor.rootScope
@@ -306,7 +312,8 @@ internal class DatadogRumMonitorTest {
             initialResourceIdentifier = mockNetworkSettledResourceIdentifier,
             lastInteractionIdentifier = mockLastInteractionIdentifier,
             slowFramesListener = mockSlowFramesListener,
-            rumSessionTypeOverride = fakeRumSessionType
+            rumSessionTypeOverride = fakeRumSessionType,
+            accessibilityReader = mockAccessibilityReader
         )
         val completableFuture = CompletableFuture<String>()
         testedMonitor.start()
@@ -347,7 +354,8 @@ internal class DatadogRumMonitorTest {
             initialResourceIdentifier = mockNetworkSettledResourceIdentifier,
             lastInteractionIdentifier = mockLastInteractionIdentifier,
             slowFramesListener = mockSlowFramesListener,
-            rumSessionTypeOverride = fakeRumSessionType
+            rumSessionTypeOverride = fakeRumSessionType,
+            accessibilityReader = mockAccessibilityReader
         )
 
         val completableFuture = CompletableFuture<String>()
@@ -1695,7 +1703,8 @@ internal class DatadogRumMonitorTest {
             initialResourceIdentifier = mockNetworkSettledResourceIdentifier,
             lastInteractionIdentifier = mockLastInteractionIdentifier,
             slowFramesListener = mockSlowFramesListener,
-            rumSessionTypeOverride = fakeRumSessionType
+            rumSessionTypeOverride = fakeRumSessionType,
+            accessibilityReader = mockAccessibilityReader
         )
 
         // When
@@ -1744,7 +1753,8 @@ internal class DatadogRumMonitorTest {
             initialResourceIdentifier = mockNetworkSettledResourceIdentifier,
             lastInteractionIdentifier = mockLastInteractionIdentifier,
             slowFramesListener = mockSlowFramesListener,
-            rumSessionTypeOverride = fakeRumSessionType
+            rumSessionTypeOverride = fakeRumSessionType,
+            accessibilityReader = mockAccessibilityReader
         )
 
         // When
@@ -1762,25 +1772,26 @@ internal class DatadogRumMonitorTest {
         // Given
         val mockExecutorService: ExecutorService = mock()
         testedMonitor = DatadogRumMonitor(
-            fakeApplicationId,
-            mockSdkCore,
-            fakeSampleRate,
-            fakeBackgroundTrackingEnabled,
-            fakeTrackFrustrations,
-            mockWriter,
-            mockHandler,
-            mockTelemetryEventHandler,
-            mockSessionEndedMetricDispatcher,
-            mockResolver,
-            mockCpuVitalMonitor,
-            mockMemoryVitalMonitor,
-            mockFrameRateVitalMonitor,
-            mockSessionListener,
-            mockExecutorService,
-            mockNetworkSettledResourceIdentifier,
-            mockLastInteractionIdentifier,
-            mockSlowFramesListener,
-            null
+            applicationId = fakeApplicationId,
+            sdkCore = mockSdkCore,
+            sampleRate = fakeSampleRate,
+            backgroundTrackingEnabled = fakeBackgroundTrackingEnabled,
+            trackFrustrations = fakeTrackFrustrations,
+            writer = mockWriter,
+            handler = mockHandler,
+            telemetryEventHandler = mockTelemetryEventHandler,
+            sessionEndedMetricDispatcher = mockSessionEndedMetricDispatcher,
+            firstPartyHostHeaderTypeResolver = mockResolver,
+            cpuVitalMonitor = mockCpuVitalMonitor,
+            memoryVitalMonitor = mockMemoryVitalMonitor,
+            frameRateVitalMonitor = mockFrameRateVitalMonitor,
+            sessionListener = mockSessionListener,
+            executorService = mockExecutorService,
+            initialResourceIdentifier = mockNetworkSettledResourceIdentifier,
+            lastInteractionIdentifier = mockLastInteractionIdentifier,
+            slowFramesListener = mockSlowFramesListener,
+            accessibilityReader = mockAccessibilityReader,
+            rumSessionTypeOverride = null
         )
         whenever(mockExecutorService.isShutdown).thenReturn(true)
 
@@ -1977,7 +1988,8 @@ internal class DatadogRumMonitorTest {
             initialResourceIdentifier = mockNetworkSettledResourceIdentifier,
             lastInteractionIdentifier = mockLastInteractionIdentifier,
             slowFramesListener = mockSlowFramesListener,
-            rumSessionTypeOverride = fakeRumSessionType
+            rumSessionTypeOverride = fakeRumSessionType,
+            accessibilityReader = mockAccessibilityReader
         )
         testedMonitor.startView(key, name, attributes)
         // When
