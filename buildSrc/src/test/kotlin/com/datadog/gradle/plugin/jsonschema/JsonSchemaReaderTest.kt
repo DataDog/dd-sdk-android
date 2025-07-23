@@ -80,6 +80,7 @@ class JsonSchemaReaderTest(
                 arrayOf("minimal", Person),
                 arrayOf("required", Product),
                 arrayOf("external_nested_description", Shipping),
+                arrayOf("external_nested_description_properties", Shipping),
                 arrayOf("enum", Style),
                 arrayOf("all_of", User),
                 arrayOf("all_of_merged", UserMerged),
