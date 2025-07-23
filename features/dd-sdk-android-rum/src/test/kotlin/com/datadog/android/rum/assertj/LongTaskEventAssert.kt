@@ -119,9 +119,9 @@ internal class LongTaskEventAssert(actual: LongTaskEvent) :
 
     fun hasConnectivityInfo(expected: NetworkInfo?): LongTaskEventAssert {
         val expectedStatus = if (expected?.isConnected() == true) {
-            LongTaskEvent.Status.CONNECTED
+            LongTaskEvent.ConnectivityStatus.CONNECTED
         } else {
-            LongTaskEvent.Status.NOT_CONNECTED
+            LongTaskEvent.ConnectivityStatus.NOT_CONNECTED
         }
         val expectedInterfaces = when (expected?.connectivity) {
             NetworkInfo.Connectivity.NETWORK_ETHERNET -> listOf(LongTaskEvent.Interface.ETHERNET)

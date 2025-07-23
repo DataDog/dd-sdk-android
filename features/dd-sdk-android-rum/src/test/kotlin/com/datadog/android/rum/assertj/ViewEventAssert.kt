@@ -493,9 +493,9 @@ internal class ViewEventAssert(actual: ViewEvent) :
 
     fun hasConnectivityInfo(expected: NetworkInfo?): ViewEventAssert {
         val expectedStatus = if (expected?.isConnected() == true) {
-            ViewEvent.Status.CONNECTED
+            ViewEvent.ConnectivityStatus.CONNECTED
         } else {
-            ViewEvent.Status.NOT_CONNECTED
+            ViewEvent.ConnectivityStatus.NOT_CONNECTED
         }
         val expectedInterfaces = when (expected?.connectivity) {
             NetworkInfo.Connectivity.NETWORK_ETHERNET -> listOf(ViewEvent.Interface.ETHERNET)
