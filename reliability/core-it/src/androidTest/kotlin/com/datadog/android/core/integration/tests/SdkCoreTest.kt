@@ -127,15 +127,15 @@ class SdkCoreTest : MockServerTest() {
     @Ignore("RUM-11016 disabling because it's flaky")
     fun must_clearUserInformation_when_clearUserInfo() {
         // Given
-        testedSdkCore?.setUserInfo(fakeUserId, fakeUserName, fakeUserEmail, fakeUserAdditionalProperties)
+        testedSdkCore.setUserInfo(fakeUserId, fakeUserName, fakeUserEmail, fakeUserAdditionalProperties)
 
         // When
-        testedSdkCore?.clearUserInfo()
+        testedSdkCore.clearUserInfo()
 
         // Then
         val countDownLatch = CountDownLatch(1)
         var readUserInfo: UserInfo? = null
-        featureSdkCore?.getFeature(stubFeature.name)?.withWriteContext { datadogContext, _ ->
+        featureSdkCore.getFeature(stubFeature.name)?.withWriteContext { datadogContext, _ ->
             readUserInfo = datadogContext.userInfo
             countDownLatch.countDown()
         }
