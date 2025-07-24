@@ -270,7 +270,10 @@ internal class RumResourceScope(
                     )
                 },
                 connectivity = networkInfo.toResourceConnectivity(),
-                application = ResourceEvent.Application(rumContext.applicationId),
+                application = ResourceEvent.Application(
+                    id = rumContext.applicationId,
+                    currentLocale = datadogContext.deviceInfo.localeInfo.currentLocale
+                ),
                 session = ResourceEvent.ResourceEventSession(
                     id = rumContext.sessionId,
                     type = sessionType,
@@ -291,7 +294,9 @@ internal class RumResourceScope(
                     name = datadogContext.deviceInfo.deviceName,
                     model = datadogContext.deviceInfo.deviceModel,
                     brand = datadogContext.deviceInfo.deviceBrand,
-                    architecture = datadogContext.deviceInfo.architecture
+                    architecture = datadogContext.deviceInfo.architecture,
+                    locales = datadogContext.deviceInfo.localeInfo.locales,
+                    timeZone = datadogContext.deviceInfo.localeInfo.timeZone
                 ),
                 context = ResourceEvent.Context(additionalProperties = eventAttributes),
                 dd = ResourceEvent.Dd(

@@ -29,4 +29,10 @@ internal interface AndroidInfoProvider {
     val architecture: String
 
     val numberOfDisplays: Int?
+
+    val locales: List<String>
+
+    val currentLocale: String
+
+    val timeZone: String
 }

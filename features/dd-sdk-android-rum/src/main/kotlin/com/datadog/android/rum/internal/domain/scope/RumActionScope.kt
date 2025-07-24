@@ -274,7 +274,10 @@ internal class RumActionScope(
                     name = rumContext.viewName,
                     url = rumContext.viewUrl.orEmpty()
                 ),
-                application = ActionEvent.Application(rumContext.applicationId),
+                application = ActionEvent.Application(
+                    id = rumContext.applicationId,
+                    currentLocale = datadogContext.deviceInfo.localeInfo.currentLocale
+                ),
                 session = ActionEvent.ActionEventSession(
                     id = rumContext.sessionId,
                     type = sessionType,
@@ -313,7 +316,9 @@ internal class RumActionScope(
                     name = datadogContext.deviceInfo.deviceName,
                     model = datadogContext.deviceInfo.deviceModel,
                     brand = datadogContext.deviceInfo.deviceBrand,
-                    architecture = datadogContext.deviceInfo.architecture
+                    architecture = datadogContext.deviceInfo.architecture,
+                    locales = datadogContext.deviceInfo.localeInfo.locales,
+                    timeZone = datadogContext.deviceInfo.localeInfo.timeZone
                 ),
                 context = ActionEvent.Context(additionalProperties = eventAttributes),
                 dd = ActionEvent.Dd(
