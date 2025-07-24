@@ -493,9 +493,7 @@ test-pyramid:publish-benchmark-synthetics:
 
 publish:release-core:
   tags: [ "arch:amd64" ]
-  only:
-    - tags
-    - develop
+  when: manual
   image: $CI_IMAGE_DOCKER
   stage: publish
   timeout: 30m
@@ -510,9 +508,7 @@ publish:release-core:
 
 publish:release-internal:
   tags: [ "arch:amd64" ]
-  only:
-    - tags
-    - develop
+  when: manual
   image: $CI_IMAGE_DOCKER
   stage: publish
   timeout: 30m
@@ -529,9 +525,7 @@ publish:release-internal:
 
 publish:release-trace-internal:
   tags: [ "arch:amd64" ]
-  only:
-    - tags
-    - develop
+  when: manual
   image: $CI_IMAGE_DOCKER
   stage: publish
   timeout: 30m
@@ -546,9 +540,7 @@ publish:release-trace-internal:
 
 publish:release-trace:
   tags: [ "arch:amd64" ]
-  only:
-    - tags
-    - develop
+  when: manual
   image: $CI_IMAGE_DOCKER
   stage: publish
   timeout: 30m
@@ -563,9 +555,7 @@ publish:release-trace:
 
 publish:release-trace-otel:
   tags: [ "arch:amd64" ]
-  only:
-    - tags
-    - develop
+  when: manual
   image: $CI_IMAGE_DOCKER
   stage: publish
   timeout: 30m
@@ -580,9 +570,7 @@ publish:release-trace-otel:
 
 publish:release-logs:
   tags: [ "arch:amd64" ]
-  only:
-    - tags
-    - develop
+  when: manual
   image: $CI_IMAGE_DOCKER
   stage: publish
   timeout: 30m
@@ -597,9 +585,7 @@ publish:release-logs:
 
 publish:release-rum:
   tags: [ "arch:amd64" ]
-  only:
-    - tags
-    - develop
+  when: manual
   image: $CI_IMAGE_DOCKER
   stage: publish
   timeout: 30m
@@ -614,9 +600,7 @@ publish:release-rum:
 
 publish:release-ndk:
   tags: [ "arch:amd64" ]
-  only:
-    - tags
-    - develop
+  when: manual
   image: $CI_IMAGE_DOCKER
   stage: publish
   timeout: 30m
@@ -631,9 +615,7 @@ publish:release-ndk:
 
 publish:release-session-replay:
   tags: [ "arch:amd64" ]
-  only:
-    - tags
-    - develop
+  when: manual
   image: $CI_IMAGE_DOCKER
   stage: publish
   timeout: 30m
@@ -648,9 +630,7 @@ publish:release-session-replay:
 
 publish:release-session-replay-material:
   tags: [ "arch:amd64" ]
-  only:
-    - tags
-    - develop
+  when: manual
   image: $CI_IMAGE_DOCKER
   stage: publish
   timeout: 30m
@@ -665,9 +645,7 @@ publish:release-session-replay-material:
 
 publish:release-session-replay-compose:
   tags: [ "arch:amd64" ]
-  only:
-    - tags
-    - develop
+  when: manual
   image: $CI_IMAGE_DOCKER
   stage: publish
   timeout: 30m
@@ -682,9 +660,7 @@ publish:release-session-replay-compose:
 
 publish:release-webview:
   tags: [ "arch:amd64" ]
-  only:
-    - tags
-    - develop
+  when: manual
   image: $CI_IMAGE_DOCKER
   stage: publish
   timeout: 30m
@@ -703,9 +679,7 @@ publish:release-webview:
 
 publish:release-coil:
   tags: [ "arch:amd64" ]
-  only:
-    - tags
-    - develop
+  when: manual
   image: $CI_IMAGE_DOCKER
   stage: publish
   timeout: 30m
@@ -720,9 +694,7 @@ publish:release-coil:
 
 publish:release-compose:
   tags: [ "arch:amd64" ]
-  only:
-    - tags
-    - develop
+  when: manual
   image: $CI_IMAGE_DOCKER
   stage: publish
   timeout: 30m
@@ -737,9 +709,7 @@ publish:release-compose:
 
 publish:release-fresco:
   tags: [ "arch:amd64" ]
-  only:
-    - tags
-    - develop
+  when: manual
   image: $CI_IMAGE_DOCKER
   stage: publish
   timeout: 30m
@@ -754,9 +724,7 @@ publish:release-fresco:
 
 publish:release-glide:
   tags: [ "arch:amd64" ]
-  only:
-    - tags
-    - develop
+  when: manual
   image: $CI_IMAGE_DOCKER
   stage: publish
   timeout: 30m
@@ -771,9 +739,7 @@ publish:release-glide:
 
 publish:release-trace-coroutines:
   tags: [ "arch:amd64" ]
-  only:
-    - tags
-    - develop
+  when: manual
   image: $CI_IMAGE_DOCKER
   stage: publish
   timeout: 30m
@@ -788,9 +754,7 @@ publish:release-trace-coroutines:
 
 publish:release-rum-coroutines:
   tags: [ "arch:amd64" ]
-  only:
-    - tags
-    - develop
+  when: manual
   image: $CI_IMAGE_DOCKER
   stage: publish
   timeout: 30m
@@ -805,9 +769,7 @@ publish:release-rum-coroutines:
 
 publish:release-rx:
   tags: [ "arch:amd64" ]
-  only:
-    - tags
-    - develop
+  when: manual
   image: $CI_IMAGE_DOCKER
   stage: publish
   timeout: 30m
@@ -822,9 +784,7 @@ publish:release-rx:
 
 publish:release-sqldelight:
   tags: [ "arch:amd64" ]
-  only:
-    - tags
-    - develop
+  when: manual
   image: $CI_IMAGE_DOCKER
   stage: publish
   timeout: 30m
@@ -839,9 +799,7 @@ publish:release-sqldelight:
 
 publish:release-timber:
   tags: [ "arch:amd64" ]
-  only:
-    - tags
-    - develop
+  when: manual
   image: $CI_IMAGE_DOCKER
   stage: publish
   timeout: 30m
@@ -856,9 +814,7 @@ publish:release-timber:
 
 publish:release-android-tv:
   tags: [ "arch:amd64" ]
-  only:
-    - tags
-    - develop
+  when: manual
   image: $CI_IMAGE_DOCKER
   stage: publish
   timeout: 30m
@@ -873,9 +829,7 @@ publish:release-android-tv:
 
 publish:release-okhttp:
   tags: [ "arch:amd64" ]
-  only:
-    - tags
-    - develop
+  when: manual
   image: $CI_IMAGE_DOCKER
   stage: publish
   timeout: 30m
@@ -890,9 +844,7 @@ publish:release-okhttp:
 
 publish:release-okhttp-otel:
   tags: [ "arch:amd64" ]
-  only:
-    - tags
-    - develop
+  when: manual
   image: $CI_IMAGE_DOCKER
   stage: publish
   timeout: 30m
@@ -909,9 +861,7 @@ publish:release-okhttp-otel:
 
 publish:release-benchmark:
   tags: [ "arch:amd64" ]
-  only:
-    - tags
-    - develop
+  when: manual
   image: $CI_IMAGE_DOCKER
   stage: publish
   timeout: 30m
