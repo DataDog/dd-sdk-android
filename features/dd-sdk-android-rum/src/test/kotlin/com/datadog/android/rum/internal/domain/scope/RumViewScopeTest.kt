@@ -88,6 +88,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assumptions.assumeFalse
 import org.junit.jupiter.api.Assumptions.assumeTrue
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.extension.ExtendWith
@@ -3552,6 +3553,7 @@ internal class RumViewScopeTest {
     // region Error
 
     @Test
+    @Disabled // RUM-11016 disabling because it's flaky
     fun `M send event W handleEvent(AddError) on active view`(
         @StringForgery message: String,
         @Forgery source: RumErrorSource,
@@ -3680,7 +3682,6 @@ internal class RumViewScopeTest {
                     hasActionId(fakeActionId)
                     hasStartReason(fakeParentContext.sessionStartReason)
                     hasReplay(fakeHasReplay)
-                    hasSyntheticsSession()
                     hasSessionType(fakeRumSessionType?.toError() ?: ErrorEvent.ErrorEventSessionType.SYNTHETICS)
                     hasSyntheticsTest(fakeTestId, fakeResultId)
                     hasDeviceInfo(

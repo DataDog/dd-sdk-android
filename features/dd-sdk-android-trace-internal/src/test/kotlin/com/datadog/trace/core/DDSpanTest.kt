@@ -30,6 +30,8 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
+import org.mockito.kotlin.any
+import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
@@ -508,6 +510,27 @@ internal class DDSpanTest : DDCoreSpecification() {
         assertThat(span.getTag(DDSpanContext.SPAN_SAMPLING_RULE_RATE_TAG)).isEqualTo(rate)
         assertThat(span.getTag(DDSpanContext.SPAN_SAMPLING_MAX_PER_SECOND_TAG)).isEqualTo(expectedLimit)
         assertThat(span.samplingPriority()).isEqualTo(PrioritySampling.UNSET.toInt())
+    }
+
+    @Test
+    fun `W drop T unregisterSpan is called`() {
+        val mockTrace = mock<PendingTrace> {
+            on { rootSpan } doReturn mock()
+        }
+
+        val mockContext = mock<DDSpanContext> {
+            on { traceId } doReturn mock<DDTraceId>()
+            on { trace } doReturn mockTrace
+        }
+
+        val span = tracer
+            .buildSpan(instrumentationName, "testSpan")
+            .asChildOf(mockContext)
+            .start() as DDSpan
+
+        span.drop()
+
+        verify(mockTrace).unregisterSpan(any())
     }
 
     @Test
