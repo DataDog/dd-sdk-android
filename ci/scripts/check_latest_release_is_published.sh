@@ -18,5 +18,6 @@ for artifactId in $(./gradlew -q listAllPublishedArtifactIds); do
     echo "Release $tag_name exists for $artifactId"
   else
     echo "Release $tag_name doesn't exist for $artifactId"
+    exit 1
   fi
 done
