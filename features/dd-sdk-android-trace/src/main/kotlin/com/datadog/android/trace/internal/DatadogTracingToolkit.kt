@@ -5,7 +5,6 @@
  */
 package com.datadog.android.trace.internal
 
-import androidx.annotation.IntRange
 import com.datadog.android.lint.InternalApi
 import com.datadog.android.trace.api.span.DatadogSpanContext
 import com.datadog.android.trace.api.tracer.DatadogTracerBuilder
@@ -34,7 +33,7 @@ object DatadogTracingToolkit {
     var propagationHelper: DatadogPropagationHelper = DatadogPropagationHelper()
         internal set
 
-    internal var builderProvider: DatadogTracerBuilder? = null
+    internal var testBuilderProvider: DatadogTracerBuilder? = null
 
     /**
      * Sets the tracing sampling priority if it is necessary.
@@ -48,21 +47,6 @@ object DatadogTracingToolkit {
      */
     fun setTraceId128BitGenerationEnabled(builder: DatadogTracerBuilder): DatadogTracerBuilder {
         (builder as? DatadogTracerBuilderAdapter)?.setTraceId128BitGenerationEnabled(true)
-        return builder
-    }
-
-    /**
-     * Sets the trace rate limit. This is the maximum number of traces per second that will be
-     * accepted. Please note that this property is used in conjunction with the sample rate. If no sample rate
-     * is provided this property and its related logic will be ignored.
-     * @param builder the tracer builder to set the trace rate limit for
-     * @param traceRateLimit the trace rate limit as a value between 1 and Int.MAX_VALUE (default is Int.MAX_VALUE)
-     */
-    fun setTraceRateLimit(
-        builder: DatadogTracerBuilder,
-        @IntRange(from = 1, to = Int.MAX_VALUE.toLong()) traceRateLimit: Int
-    ): DatadogTracerBuilder {
-        (builder as? DatadogTracerBuilderAdapter)?.withTraceRateLimit(traceRateLimit)
         return builder
     }
 }

@@ -177,6 +177,7 @@ public final class com/datadog/android/trace/api/tracer/DatadogTracer$DefaultImp
 public abstract interface class com/datadog/android/trace/api/tracer/DatadogTracerBuilder {
 	public abstract fun build ()Lcom/datadog/android/trace/api/tracer/DatadogTracer;
 	public abstract fun setBundleWithRumEnabled (Z)Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;
+	public abstract fun setTraceRateLimit (I)Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;
 	public abstract fun withPartialFlushMinSpans (I)Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;
 	public abstract fun withSampleRate (D)Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;
 	public abstract fun withServiceName (Ljava/lang/String;)Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;
@@ -199,6 +200,7 @@ public final class com/datadog/android/trace/api/tracer/NoOpDatadogTracerBuilder
 	public fun <init> ()V
 	public fun build ()Lcom/datadog/android/trace/api/tracer/DatadogTracer;
 	public fun setBundleWithRumEnabled (Z)Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;
+	public fun setTraceRateLimit (I)Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;
 	public fun withPartialFlushMinSpans (I)Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;
 	public fun withSampleRate (D)Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;
 	public fun withServiceName (Ljava/lang/String;)Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;

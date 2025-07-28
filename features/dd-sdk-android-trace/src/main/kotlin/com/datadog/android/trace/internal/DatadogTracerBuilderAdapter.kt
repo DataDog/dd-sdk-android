@@ -5,6 +5,7 @@
  */
 package com.datadog.android.trace.internal
 
+import androidx.annotation.IntRange
 import androidx.annotation.VisibleForTesting
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.trace.TracingHeaderType
@@ -76,12 +77,12 @@ internal class DatadogTracerBuilderAdapter(
         bundleWithRumEnabled = enabled
     }
 
-    internal fun setTraceId128BitGenerationEnabled(traceId128BitGenerationEnabled: Boolean) = apply {
-        delegate.idGenerationStrategy(IdGenerationStrategy.fromName("SECURE_RANDOM", traceId128BitGenerationEnabled))
+    override fun setTraceRateLimit(@IntRange(from = 1, to = Int.MAX_VALUE.toLong()) traceRateLimit: Int) = apply {
+        this.traceRateLimit = traceRateLimit
     }
 
-    internal fun withTraceRateLimit(traceRateLimit: Int) = apply {
-        this.traceRateLimit = traceRateLimit
+    internal fun setTraceId128BitGenerationEnabled(traceId128BitGenerationEnabled: Boolean) = apply {
+        delegate.idGenerationStrategy(IdGenerationStrategy.fromName("SECURE_RANDOM", traceId128BitGenerationEnabled))
     }
 
     @VisibleForTesting

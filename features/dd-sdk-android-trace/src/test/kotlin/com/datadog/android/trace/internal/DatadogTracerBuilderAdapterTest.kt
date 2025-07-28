@@ -118,7 +118,7 @@ class DatadogTracerBuilderAdapterTest {
         val actual = testedBuilder
             .withTag(fakeTagKey, fakeTagValue)
             .withSampleRate(fakeSampleRate)
-            .withTraceRateLimit(fakeTraceLimit)
+            .setTraceRateLimit(fakeTraceLimit)
             .withServiceName(fakeServiceName)
             .withTracingHeadersTypes(setOf(fakeHeaderType))
             .withPartialFlushMinSpans(fakePartialFlushMinSpans)

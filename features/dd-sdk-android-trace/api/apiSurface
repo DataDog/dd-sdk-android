@@ -30,7 +30,6 @@ object com.datadog.android.trace.internal.DatadogTracingToolkit
   var propagationHelper: DatadogPropagationHelper
   fun setTracingSamplingPriorityIfNecessary(com.datadog.android.trace.api.span.DatadogSpanContext)
   fun setTraceId128BitGenerationEnabled(com.datadog.android.trace.api.tracer.DatadogTracerBuilder): com.datadog.android.trace.api.tracer.DatadogTracerBuilder
-  fun setTraceRateLimit(com.datadog.android.trace.api.tracer.DatadogTracerBuilder, Int): com.datadog.android.trace.api.tracer.DatadogTracerBuilder
 object com.datadog.android.trace.internal.SpanAttributes
   const val DATADOG_INITIAL_CONTEXT: String
 fun <T> android.database.sqlite.SQLiteDatabase.transactionTraced(String, Boolean = true, com.datadog.android.trace.api.span.DatadogSpan.(android.database.sqlite.SQLiteDatabase) -> T): T

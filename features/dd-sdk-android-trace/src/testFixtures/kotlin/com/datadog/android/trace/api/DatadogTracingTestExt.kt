@@ -62,7 +62,7 @@ fun DatadogSpan.forceSamplingDecision() {
 }
 
 fun DatadogTracingToolkit.setTracingAdapterBuilderMock(mock: DatadogTracerBuilder?) {
-    builderProvider = mock
+    testBuilderProvider = mock
 }
 
 fun DatadogTracingToolkit.clear() {

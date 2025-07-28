@@ -127,3 +127,4 @@ interface com.datadog.android.trace.api.tracer.DatadogTracerBuilder
   fun withPartialFlushMinSpans(Int): DatadogTracerBuilder
   fun withTag(String, String): DatadogTracerBuilder
   fun setBundleWithRumEnabled(Boolean): DatadogTracerBuilder
+  fun setTraceRateLimit(Int): DatadogTracerBuilder

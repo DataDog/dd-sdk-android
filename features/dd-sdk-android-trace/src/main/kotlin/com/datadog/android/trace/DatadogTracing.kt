@@ -34,8 +34,8 @@ object DatadogTracing {
      * configurations or features are unavailable.
      */
     fun newTracerBuilder(sdkCore: SdkCore = Datadog.getInstance()): DatadogTracerBuilder = when {
-        DatadogTracingToolkit.builderProvider != null -> {
-            DatadogTracingToolkit.builderProvider as DatadogTracerBuilder
+        DatadogTracingToolkit.testBuilderProvider != null -> {
+            DatadogTracingToolkit.testBuilderProvider as DatadogTracerBuilder
         }
         sdkCore !is FeatureSdkCore -> {
             NoOpDatadogTracerBuilder()

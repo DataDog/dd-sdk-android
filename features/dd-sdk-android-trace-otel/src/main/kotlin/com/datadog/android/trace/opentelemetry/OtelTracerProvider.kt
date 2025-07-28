@@ -17,7 +17,6 @@ import com.datadog.android.trace.DatadogTracing
 import com.datadog.android.trace.InternalCoreWriterProvider
 import com.datadog.android.trace.TracingHeaderType
 import com.datadog.android.trace.api.tracer.DatadogTracer
-import com.datadog.android.trace.internal.DatadogTracingToolkit
 import com.datadog.android.trace.internal.DatadogTracingToolkit.setTraceId128BitGenerationEnabled
 import com.datadog.android.trace.opentelemetry.internal.DatadogContextStorageWrapper
 import com.datadog.android.trace.opentelemetry.internal.executeIfJavaFunctionPackageExists
@@ -215,7 +214,7 @@ class OtelTracerProvider internal constructor(
         fun setTraceRateLimit(
             @IntRange(from = 1, to = Int.MAX_VALUE.toLong()) traceRateLimit: Int
         ): Builder {
-            DatadogTracingToolkit.setTraceRateLimit(builderDelegate, traceRateLimit)
+            builderDelegate.setTraceRateLimit(traceRateLimit)
             return this
         }
 
