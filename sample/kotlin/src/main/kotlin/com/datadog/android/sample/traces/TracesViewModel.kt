@@ -20,10 +20,6 @@ import com.datadog.android.trace.coroutines.asyncTraced
 import com.datadog.android.trace.coroutines.awaitTraced
 import com.datadog.android.trace.coroutines.launchTraced
 import com.datadog.android.trace.coroutines.withContextTraced
-import com.datadog.android.trace.logAttributes
-import com.datadog.android.trace.logErrorMessage
-import com.datadog.android.trace.logMessage
-import com.datadog.android.trace.logThrowable
 import com.datadog.android.trace.withinSpan
 import com.datadog.android.vendor.sample.LocalServer
 import com.launchdarkly.eventsource.EventHandler

@@ -15,7 +15,6 @@ import androidx.fragment.app.Fragment
 import com.datadog.android.Datadog
 import com.datadog.android.sample.Preferences
 import com.datadog.android.sample.R
-import com.datadog.android.trace.logMessage
 import com.datadog.android.trace.withinSpan
 import com.google.android.material.snackbar.Snackbar
 

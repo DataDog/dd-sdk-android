@@ -15,7 +15,6 @@ import androidx.fragment.app.Fragment
 import com.datadog.android.Datadog
 import com.datadog.android.sample.Preferences
 import com.datadog.android.sample.R
-import com.datadog.android.trace.logMessage
 import com.datadog.android.trace.withinSpan
 import com.google.android.material.snackbar.Snackbar
 
@@ -93,7 +92,7 @@ internal class UserFragment : Fragment(), View.OnClickListener {
                     emailField.text.clear()
                     userGenderField.text.clear()
                     userAgeField.text.clear()
-                    log("Cleared user info")
+                    logMessage("Cleared user info")
                 }
                 Snackbar.make(view ?: v.rootView, "User info cleared", Snackbar.LENGTH_SHORT).show()
             }
