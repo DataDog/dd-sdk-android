@@ -35,12 +35,24 @@ object com.datadog.android.trace.internal.SpanAttributes
   const val DATADOG_INITIAL_CONTEXT: String
 fun <T> android.database.sqlite.SQLiteDatabase.transactionTraced(String, Boolean = true, com.datadog.android.trace.api.span.DatadogSpan.(android.database.sqlite.SQLiteDatabase) -> T): T
 data class com.datadog.android.trace.model.SpanEvent
-  constructor(kotlin.String, kotlin.String, kotlin.String, kotlin.String, kotlin.String, kotlin.String, kotlin.Long, kotlin.Long, kotlin.Long = 0L, Metrics, Meta)
+  constructor(Device, Os, kotlin.String, kotlin.String, kotlin.String, kotlin.String, kotlin.String, kotlin.String, kotlin.Long, kotlin.Long, kotlin.Long = 0L, Metrics, Meta)
   val type: kotlin.String
   fun toJson(): com.google.gson.JsonElement
   companion object 
     fun fromJson(kotlin.String): SpanEvent
     fun fromJsonObject(com.google.gson.JsonObject): SpanEvent
+  data class Device
+    constructor(Type? = null, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.collections.List<kotlin.String>? = null, kotlin.String? = null, kotlin.Number? = null, kotlin.Boolean? = null, kotlin.Number? = null)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Device
+      fun fromJsonObject(com.google.gson.JsonObject): Device
+  data class Os
+    constructor(kotlin.String, kotlin.String, kotlin.String? = null, kotlin.String)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Os
+      fun fromJsonObject(com.google.gson.JsonObject): Os
   data class Metrics
     constructor(kotlin.Long? = null, kotlin.collections.Map<kotlin.String, kotlin.Number> = mapOf())
     fun toJson(): com.google.gson.JsonElement
@@ -48,7 +60,7 @@ data class com.datadog.android.trace.model.SpanEvent
       fun fromJson(kotlin.String): Metrics
       fun fromJsonObject(com.google.gson.JsonObject): Metrics
   data class Meta
-    constructor(kotlin.String, Dd, Span, Tracer, Usr, Account? = null, Network? = null, Device, Os, kotlin.collections.Map<kotlin.String, kotlin.String> = mapOf())
+    constructor(kotlin.String, Dd, Span, Tracer, Usr, Account? = null, Network? = null, kotlin.collections.Map<kotlin.String, kotlin.String> = mapOf())
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Meta
@@ -89,18 +101,6 @@ data class com.datadog.android.trace.model.SpanEvent
     companion object 
       fun fromJson(kotlin.String): Network
       fun fromJsonObject(com.google.gson.JsonObject): Network
-  data class Device
-    constructor(Type, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null)
-    fun toJson(): com.google.gson.JsonElement
-    companion object 
-      fun fromJson(kotlin.String): Device
-      fun fromJsonObject(com.google.gson.JsonObject): Device
-  data class Os
-    constructor(kotlin.String, kotlin.String, kotlin.String? = null, kotlin.String)
-    fun toJson(): com.google.gson.JsonElement
-    companion object 
-      fun fromJson(kotlin.String): Os
-      fun fromJsonObject(com.google.gson.JsonObject): Os
   data class Application
     constructor(kotlin.String? = null)
     fun toJson(): com.google.gson.JsonElement
