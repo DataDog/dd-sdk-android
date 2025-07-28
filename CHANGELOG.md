@@ -1,3 +1,12 @@
+# 2.25.0 / 2025-07-28
+
+* [BUGFIX] Fix `WindowCallbackWrapper` NPE. See [#2800](https://github.com/DataDog/dd-sdk-android/pull/2800)
+* [MAINTENANCE] Fix release checking script. See [#2799](https://github.com/DataDog/dd-sdk-android/pull/2799)
+* [MAINTENANCE] Next dev iteration. See [#2789](https://github.com/DataDog/dd-sdk-android/pull/2789)
+* [MAINTENANCE] Merge `release/2.24.0` branch into `develop` branch. See [#2792](https://github.com/DataDog/dd-sdk-android/pull/2792)
+* [MAINTENANCE] Update RUM schema. See [#2795](https://github.com/DataDog/dd-sdk-android/pull/2795)
+* [MAINTENANCE] Collect `Locale` attributes. See [#2797](https://github.com/DataDog/dd-sdk-android/pull/2797)
+
 # 2.24.0 / 2025-07-16
 
 * [FEATURE] Add Clear User Info API. See [#2768](https://github.com/DataDog/dd-sdk-android/pull/2768)
