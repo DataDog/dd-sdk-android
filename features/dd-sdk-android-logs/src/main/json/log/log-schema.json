@@ -5,6 +5,12 @@
   "type": "object",
   "description": "Structure holding information about a Log",
   "properties": {
+    "device": {
+      "$ref": "_common-schema.json#/properties/device"
+    },
+    "os": {
+      "$ref": "_common-schema.json#/properties/os"
+    },
     "status": {
       "type": "string",
       "description": "The severity of this log",
@@ -57,31 +63,6 @@
       "required": [
         "name",
         "version"
-      ],
-      "readOnly": true
-    },
-    "_dd": {
-      "type": "object",
-      "description": "Datadog internal information",
-      "properties": {
-        "device": {
-          "type": "object",
-          "description": "Information about the device that produced this log.",
-          "properties": {
-            "architecture": {
-              "type": "string",
-              "description": "The CPU architecture of the device",
-              "readOnly": true
-            }
-          },
-          "required": [
-            "architecture"
-          ],
-          "readOnly": true
-        }
-      },
-      "required": [
-        "device"
       ],
       "readOnly": true
     },
@@ -258,8 +239,9 @@
     "date",
     "service",
     "logger",
-    "_dd",
-    "ddtags"
+    "ddtags",
+    "device",
+    "os"
   ],
   "additionalProperties": {
     "type": "object",
