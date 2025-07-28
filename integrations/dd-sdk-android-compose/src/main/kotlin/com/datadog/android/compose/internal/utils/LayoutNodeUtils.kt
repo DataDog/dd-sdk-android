@@ -92,7 +92,7 @@ internal class LayoutNodeUtils {
         return runSafe {
             val roleField = obj::class.java.getDeclaredField("role")
             roleField.isAccessible = true
-            roleField.get(obj) as? Role
+            roleField.get(obj) as? Role?
         }
     }
 
