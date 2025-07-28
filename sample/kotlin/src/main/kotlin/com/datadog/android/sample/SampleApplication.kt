@@ -10,6 +10,7 @@ import android.app.Application
 import android.content.Context
 import android.os.Build
 import android.util.Log
+import androidx.annotation.Keep
 import androidx.lifecycle.ViewModelProvider
 import com.datadog.android.Datadog
 import com.datadog.android.DatadogSite
@@ -109,6 +110,9 @@ class SampleApplication : Application() {
 
     private val localServer = LocalServer()
 
+    @Keep
+    private lateinit var appStartupTypeManager: AppStartupTypeManager
+
     override fun onCreate() {
         super.onCreate()
         Stetho.initializeWithDefaults(this)
@@ -190,6 +194,12 @@ class SampleApplication : Application() {
         })
         GlobalRumMonitor.get().debug = true
         TracingRxJava3Utils.enableTracing(GlobalTracer.get())
+
+        appStartupTypeManager = AppStartupTypeManager(
+            this,
+            GlobalOpenTelemetry.get().tracerProvider.get("app_start_tracer"),
+            Datadog.getInstance()
+        )
     }
 
     private fun initializeUserInfo(preferences: Preferences.DefaultPreferences) {
