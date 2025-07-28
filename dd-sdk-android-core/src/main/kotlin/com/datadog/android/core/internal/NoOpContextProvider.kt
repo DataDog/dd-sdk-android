@@ -10,6 +10,7 @@ import com.datadog.android.DatadogSite
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.context.DeviceInfo
 import com.datadog.android.api.context.DeviceType
+import com.datadog.android.api.context.LocaleInfo
 import com.datadog.android.api.context.NetworkInfo
 import com.datadog.android.api.context.ProcessInfo
 import com.datadog.android.api.context.TimeInfo
@@ -54,7 +55,12 @@ internal class NoOpContextProvider : ContextProvider {
                 osMajorVersion = "",
                 osVersion = "",
                 architecture = "",
-                numberOfDisplays = null
+                numberOfDisplays = null,
+                localeInfo = LocaleInfo(
+                    locales = emptyList(),
+                    currentLocale = "",
+                    timeZone = ""
+                )
             ),
             accountInfo = null,
             userInfo = UserInfo(null, null, null, null, emptyMap()),
