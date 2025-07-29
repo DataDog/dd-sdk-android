@@ -19,7 +19,6 @@ import com.datadog.android.rum.internal.tracking.NoOpInteractionPredicate
 import com.datadog.android.rum.tracking.InteractionPredicate
 import com.datadog.android.rum.tracking.ViewAttributesProvider
 import java.lang.ref.WeakReference
-import kotlin.Exception
 
 @Suppress("TooGenericExceptionCaught")
 internal class WindowCallbackWrapper(
@@ -34,7 +33,7 @@ internal class WindowCallbackWrapper(
     },
     val targetAttributesProviders: Array<ViewAttributesProvider> = emptyArray(),
     val internalLogger: InternalLogger
-) : Window.Callback by wrappedCallback {
+) : FixedWindowCallback(wrappedCallback) {
 
     internal val windowReference = WeakReference(window)
 

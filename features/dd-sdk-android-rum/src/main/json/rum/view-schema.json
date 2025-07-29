@@ -397,6 +397,10 @@
             "performance": {
               "description": "Performance data. (Web Vitals, etc.)",
               "allOf": [{ "$ref": "_view-performance-schema.json" }]
+            },
+            "accessibility": {
+              "description": "Accessibility properties of the view",
+              "allOf": [{ "$ref": "_view-accessibility-schema.json" }]
             }
           },
           "readOnly": true
@@ -521,6 +525,11 @@
                   "readOnly": true
                 }
               }
+            },
+            "profiling": {
+              "type": "object",
+              "description": "Profiling context",
+              "allOf": [{ "$ref": "./_profiling-internal-context-schema.json" }]
             }
           },
           "readOnly": true

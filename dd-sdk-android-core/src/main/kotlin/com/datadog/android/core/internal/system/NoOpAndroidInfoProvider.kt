@@ -19,4 +19,7 @@ internal class NoOpAndroidInfoProvider : AndroidInfoProvider {
     override val osVersion: String = ""
     override val architecture: String = ""
     override val numberOfDisplays: Int? = null
+    override val locales: List<String> = emptyList()
+    override val currentLocale: String = ""
+    override val timeZone: String = ""
 }
