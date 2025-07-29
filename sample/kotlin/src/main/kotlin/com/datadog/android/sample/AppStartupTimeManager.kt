@@ -10,6 +10,7 @@ import android.app.Activity
 import android.app.Application
 import android.content.Context
 import android.os.Bundle
+import android.util.Log
 import com.datadog.android.api.SdkCore
 import com.datadog.android.core.InternalSdkCore
 import io.opentelemetry.api.trace.Span
@@ -22,7 +23,9 @@ class AppStartupTypeManager(
     private val sdkCore: SdkCore,
 ): Application.ActivityLifecycleCallbacks {
 
-    private var appStartupSpan: Span = tracer.spanBuilder("app_startup").startSpan()
+    private var appStartupSpan: Span = tracer.spanBuilder("app_startup")
+        .apply { setStartTimestamp(0, TimeUnit.NANOSECONDS) }
+        .startSpan()
 
     private var activityCreatedStartTime: Long = 0
     private var activityStartedStartTime: Long = 0
@@ -42,10 +45,10 @@ class AppStartupTypeManager(
     override fun onActivityPostCreated(activity: Activity, savedInstanceState: Bundle?) {
         val span = tracer.spanBuilder("Activity.onCreate")
             .setParent(io.opentelemetry.context.Context.current().with(appStartupSpan))
-            .setStartTimestamp(activityCreatedStartTime - getProcessStartTimeNs(), TimeUnit.NANOSECONDS)
+            .setStartTimestamp(relativeTime(activityCreatedStartTime), TimeUnit.NANOSECONDS)
             .startSpan()
 
-        span.end(System.nanoTime() - getProcessStartTimeNs(), TimeUnit.NANOSECONDS)
+        span.end(System.nanoTime() - processStartTimeNs, TimeUnit.NANOSECONDS)
     }
 
     override fun onActivityDestroyed(activity: Activity) {
@@ -75,18 +78,24 @@ class AppStartupTypeManager(
     override fun onActivityPostStarted(activity: Activity) {
         val span = tracer.spanBuilder("Activity.onStart")
             .setParent(io.opentelemetry.context.Context.current().with(appStartupSpan))
-            .setStartTimestamp(activityStartedStartTime - getProcessStartTimeNs(), TimeUnit.NANOSECONDS)
+            .setStartTimestamp(relativeTime(activityStartedStartTime), TimeUnit.NANOSECONDS)
             .startSpan()
 
-        span.end(System.nanoTime() - getProcessStartTimeNs(), TimeUnit.NANOSECONDS)
-        appStartupSpan.end(System.nanoTime() - getProcessStartTimeNs(), TimeUnit.NANOSECONDS)
+        val now = relativeNow()
+        Log.w("WAHAHA", "app_startup: $now, process_start: $processStartTimeNs")
+        span.end(now, TimeUnit.NANOSECONDS)
+        appStartupSpan.end(now, TimeUnit.NANOSECONDS)
     }
 
     override fun onActivityStopped(activity: Activity) {
         
     }
 
-    private fun getProcessStartTimeNs(): Long {
-        return (sdkCore as InternalSdkCore).appStartTimeNs
+    private fun relativeTime(time: Long): Long = time - processStartTimeNs
+
+    private fun relativeNow(): Long = System.nanoTime() - processStartTimeNs
+
+    private val processStartTimeNs: Long by lazy {
+        (sdkCore as InternalSdkCore).appStartTimeNs
     }
 }
