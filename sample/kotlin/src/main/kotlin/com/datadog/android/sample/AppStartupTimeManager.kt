@@ -10,6 +10,8 @@ import android.app.Activity
 import android.app.Application
 import android.content.Context
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import com.datadog.android.api.SdkCore
 import com.datadog.android.core.InternalSdkCore
@@ -23,8 +25,14 @@ class AppStartupTypeManager(
     private val sdkCore: SdkCore,
 ): Application.ActivityLifecycleCallbacks {
 
+    private val handler = Handler(Looper.getMainLooper())
+
+    private val processStartTimeNs: Long by lazy {
+        (sdkCore as InternalSdkCore).appStartTimeNs
+    }
+
     private var appStartupSpan: Span = tracer.spanBuilder("app_startup")
-        .apply { setStartTimestamp(0, TimeUnit.NANOSECONDS) }
+        .apply { setStartTimestamp(processStartTimeNs, TimeUnit.NANOSECONDS) }
         .startSpan()
 
     private var activityCreatedStartTime: Long = 0
@@ -48,7 +56,7 @@ class AppStartupTypeManager(
             .setStartTimestamp(relativeTime(activityCreatedStartTime), TimeUnit.NANOSECONDS)
             .startSpan()
 
-        span.end(System.nanoTime() - processStartTimeNs, TimeUnit.NANOSECONDS)
+        span.end(relativeNow(), TimeUnit.NANOSECONDS)
     }
 
     override fun onActivityDestroyed(activity: Activity) {
@@ -84,18 +92,15 @@ class AppStartupTypeManager(
         val now = relativeNow()
         Log.w("WAHAHA", "app_startup: $now, process_start: $processStartTimeNs")
         span.end(now, TimeUnit.NANOSECONDS)
-        appStartupSpan.end(now, TimeUnit.NANOSECONDS)
+        handler.postDelayed({appStartupSpan.end(relativeNow(), TimeUnit.NANOSECONDS)}, 5000)
+
     }
 
     override fun onActivityStopped(activity: Activity) {
         
     }
 
-    private fun relativeTime(time: Long): Long = time - processStartTimeNs
+    private fun relativeTime(time: Long): Long = time
 
-    private fun relativeNow(): Long = System.nanoTime() - processStartTimeNs
-
-    private val processStartTimeNs: Long by lazy {
-        (sdkCore as InternalSdkCore).appStartTimeNs
-    }
+    private fun relativeNow(): Long = relativeTime(System.nanoTime())
 }
