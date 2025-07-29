@@ -580,7 +580,10 @@ internal open class RumViewScope(
                     )
                 },
                 connectivity = datadogContext.networkInfo.toErrorConnectivity(),
-                application = ErrorEvent.Application(rumContext.applicationId),
+                application = ErrorEvent.Application(
+                    id = rumContext.applicationId,
+                    currentLocale = datadogContext.deviceInfo.localeInfo.currentLocale
+                ),
                 session = ErrorEvent.ErrorEventSession(
                     id = rumContext.sessionId,
                     type = sessionType,
@@ -601,7 +604,9 @@ internal open class RumViewScope(
                     name = datadogContext.deviceInfo.deviceName,
                     model = datadogContext.deviceInfo.deviceModel,
                     brand = datadogContext.deviceInfo.deviceBrand,
-                    architecture = datadogContext.deviceInfo.architecture
+                    architecture = datadogContext.deviceInfo.architecture,
+                    locales = datadogContext.deviceInfo.localeInfo.locales,
+                    timeZone = datadogContext.deviceInfo.localeInfo.timeZone
                 ),
                 context = ErrorEvent.Context(additionalProperties = errorCustomAttributes),
                 dd = ErrorEvent.Dd(
@@ -1098,7 +1103,10 @@ internal open class RumViewScope(
                         additionalProperties = it.extraInfo.toMutableMap()
                     )
                 },
-                application = ViewEvent.Application(rumContext.applicationId),
+                application = ViewEvent.Application(
+                    id = rumContext.applicationId,
+                    currentLocale = datadogContext.deviceInfo.localeInfo.currentLocale
+                ),
                 session = ViewEvent.ViewEventSession(
                     id = rumContext.sessionId,
                     type = sessionType,
@@ -1120,7 +1128,9 @@ internal open class RumViewScope(
                     name = datadogContext.deviceInfo.deviceName,
                     model = datadogContext.deviceInfo.deviceModel,
                     brand = datadogContext.deviceInfo.deviceBrand,
-                    architecture = datadogContext.deviceInfo.architecture
+                    architecture = datadogContext.deviceInfo.architecture,
+                    locales = datadogContext.deviceInfo.localeInfo.locales,
+                    timeZone = datadogContext.deviceInfo.localeInfo.timeZone
                 ),
                 context = ViewEvent.Context(additionalProperties = viewCustomAttributes),
                 dd = ViewEvent.Dd(

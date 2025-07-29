@@ -324,10 +324,16 @@
               "pattern": "^[0-9]+$",
               "readOnly": true
             },
+            "parent_span_id": {
+              "type": "string",
+              "description": "parent span identifier in decimal format",
+              "pattern": "^[0-9]+$",
+              "readOnly": true
+            },
             "trace_id": {
               "type": "string",
-              "description": "trace identifier in decimal format",
-              "pattern": "^[0-9]+$",
+              "description": "trace identifier, either a 64 bit decimal number or a 128 bit hexadecimal number padded with 0s",
+              "pattern": "^[0-9]{1,20}|[0-9a-fA-F]{32}$",
               "readOnly": true
             },
             "rule_psr": {
