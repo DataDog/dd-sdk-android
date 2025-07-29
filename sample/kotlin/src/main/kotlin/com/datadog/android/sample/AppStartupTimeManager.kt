@@ -17,6 +17,7 @@ import com.datadog.android.api.SdkCore
 import com.datadog.android.core.InternalSdkCore
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.api.trace.Tracer
+import java.time.Instant
 import java.util.concurrent.TimeUnit
 
 class AppStartupTypeManager(
@@ -25,6 +26,8 @@ class AppStartupTypeManager(
     private val sdkCore: SdkCore,
 ): Application.ActivityLifecycleCallbacks {
 
+    private val epoch = Instant.now()
+
     private val handler = Handler(Looper.getMainLooper())
 
     private val processStartTimeNs: Long by lazy {
@@ -32,18 +35,18 @@ class AppStartupTypeManager(
     }
 
     private var appStartupSpan: Span = tracer.spanBuilder("app_startup")
-        .apply { setStartTimestamp(processStartTimeNs, TimeUnit.NANOSECONDS) }
+        .apply { setStartTimestamp(epoch) }
         .startSpan()
 
-    private var activityCreatedStartTime: Long = 0
-    private var activityStartedStartTime: Long = 0
+    private var activityCreatedStartTime: Instant = Instant.MIN
+    private var activityStartedStartTime: Instant = Instant.MIN
 
     init {
         (context.applicationContext as Application).registerActivityLifecycleCallbacks(this)
     }
 
     override fun onActivityPreCreated(activity: Activity, savedInstanceState: Bundle?) {
-        activityCreatedStartTime = System.nanoTime()
+        activityCreatedStartTime = relativeNow()
     }
 
     override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {
@@ -53,10 +56,10 @@ class AppStartupTypeManager(
     override fun onActivityPostCreated(activity: Activity, savedInstanceState: Bundle?) {
         val span = tracer.spanBuilder("Activity.onCreate")
             .setParent(io.opentelemetry.context.Context.current().with(appStartupSpan))
-            .setStartTimestamp(relativeTime(activityCreatedStartTime), TimeUnit.NANOSECONDS)
+            .setStartTimestamp(activityCreatedStartTime)
             .startSpan()
 
-        span.end(relativeNow(), TimeUnit.NANOSECONDS)
+        span.end(relativeNow())
     }
 
     override fun onActivityDestroyed(activity: Activity) {
@@ -80,19 +83,19 @@ class AppStartupTypeManager(
     }
 
     override fun onActivityPreStarted(activity: Activity) {
-        activityStartedStartTime = System.nanoTime()
+        activityStartedStartTime = relativeNow()
     }
 
     override fun onActivityPostStarted(activity: Activity) {
         val span = tracer.spanBuilder("Activity.onStart")
             .setParent(io.opentelemetry.context.Context.current().with(appStartupSpan))
-            .setStartTimestamp(relativeTime(activityStartedStartTime), TimeUnit.NANOSECONDS)
+            .setStartTimestamp(activityStartedStartTime)
             .startSpan()
 
         val now = relativeNow()
         Log.w("WAHAHA", "app_startup: $now, process_start: $processStartTimeNs")
-        span.end(now, TimeUnit.NANOSECONDS)
-        handler.postDelayed({appStartupSpan.end(relativeNow(), TimeUnit.NANOSECONDS)}, 5000)
+        span.end(now)
+        handler.postDelayed({appStartupSpan.end(relativeNow())}, 5000)
 
     }
 
@@ -100,7 +103,7 @@ class AppStartupTypeManager(
         
     }
 
-    private fun relativeTime(time: Long): Long = time
+    private fun relativeTime(time: Long): Instant = epoch.plusNanos(time - processStartTimeNs)
 
-    private fun relativeNow(): Long = relativeTime(System.nanoTime())
+    private fun relativeNow(): Instant = relativeTime(System.nanoTime())
 }
