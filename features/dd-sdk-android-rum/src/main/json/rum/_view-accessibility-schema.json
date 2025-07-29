@@ -110,6 +110,11 @@
       "type": "boolean",
       "description": "Indicates whether the text-to-speech selection feature is enabled.",
       "readOnly": true
+    },
+    "rtl_enabled": {
+      "type": "boolean",
+      "description": "Indicates whether the right-to-left support is enabled.",
+      "readOnly": true
     }
   }
 }

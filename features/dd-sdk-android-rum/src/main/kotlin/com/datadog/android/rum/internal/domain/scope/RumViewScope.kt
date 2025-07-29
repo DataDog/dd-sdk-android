@@ -1062,7 +1062,8 @@ internal open class RumViewScope(
                         singleAppModeEnabled = accessibilityState.isScreenPinningEnabled,
                         screenReaderEnabled = accessibilityState.isScreenReaderEnabled,
                         closedCaptioningEnabled = accessibilityState.isClosedCaptioningEnabled,
-                        reducedAnimationsEnabled = accessibilityState.isReducedAnimationsEnabled
+                        reducedAnimationsEnabled = accessibilityState.isReducedAnimationsEnabled,
+                        rtlEnabled = accessibilityState.isRtlEnabled
                     ),
                     performance = performance,
                     networkSettledTime = timeToSettled,
