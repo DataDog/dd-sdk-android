@@ -20,6 +20,12 @@ import io.opentelemetry.api.trace.Tracer
 import java.time.Instant
 import java.util.concurrent.TimeUnit
 
+enum class AppStartupType {
+    COLD,
+    WARM,
+    HOT
+}
+
 class AppStartupTypeManager(
     private val context: Context,
     private val tracer: Tracer,
@@ -35,7 +41,9 @@ class AppStartupTypeManager(
     }
 
     private var appStartupSpan: Span = tracer.spanBuilder("app_startup")
-        .apply { setStartTimestamp(epoch) }
+        .apply {
+            setStartTimestamp(epoch)
+        }
         .startSpan()
 
     private var activityCreatedStartTime: Instant = Instant.MIN
@@ -46,14 +54,16 @@ class AppStartupTypeManager(
     }
 
     override fun onActivityPreCreated(activity: Activity, savedInstanceState: Bundle?) {
+        Log.w("WAHAHA", "${activity::class.java.name} onActivityPreCreated")
         activityCreatedStartTime = relativeNow()
     }
 
     override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {
-
+        Log.w("WAHAHA", "${activity::class.java.name} onActivityCreated")
     }
 
     override fun onActivityPostCreated(activity: Activity, savedInstanceState: Bundle?) {
+        Log.w("WAHAHA", "${activity::class.java.name} onActivityPostCreated")
         val span = tracer.spanBuilder("Activity.onCreate")
             .setParent(io.opentelemetry.context.Context.current().with(appStartupSpan))
             .setStartTimestamp(activityCreatedStartTime)
@@ -63,30 +73,32 @@ class AppStartupTypeManager(
     }
 
     override fun onActivityDestroyed(activity: Activity) {
-        
+        Log.w("WAHAHA", "${activity::class.java.name} onActivityDestroyed")
     }
 
     override fun onActivityPaused(activity: Activity) {
-        
+        Log.w("WAHAHA", "${activity::class.java.name} onActivityPaused")
     }
 
     override fun onActivityResumed(activity: Activity) {
-        
+        Log.w("WAHAHA", "${activity::class.java.name} onActivityResumed")
     }
 
     override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle) {
-        
+        Log.w("WAHAHA", "${activity::class.java.name} onActivitySaveInstanceState")
     }
 
     override fun onActivityStarted(activity: Activity) {
-        
+        Log.w("WAHAHA", "${activity::class.java.name} onActivityStarted")
     }
 
     override fun onActivityPreStarted(activity: Activity) {
+        Log.w("WAHAHA", "${activity::class.java.name} onActivityPreStarted")
         activityStartedStartTime = relativeNow()
     }
 
     override fun onActivityPostStarted(activity: Activity) {
+        Log.w("WAHAHA", "${activity::class.java.name} onActivityPostStarted")
         val span = tracer.spanBuilder("Activity.onStart")
             .setParent(io.opentelemetry.context.Context.current().with(appStartupSpan))
             .setStartTimestamp(activityStartedStartTime)
@@ -100,10 +112,14 @@ class AppStartupTypeManager(
     }
 
     override fun onActivityStopped(activity: Activity) {
-        
+        Log.w("WAHAHA", "${activity::class.java.name} onActivityStopped")
     }
 
     private fun relativeTime(time: Long): Instant = epoch.plusNanos(time - processStartTimeNs)
 
     private fun relativeNow(): Instant = relativeTime(System.nanoTime())
+
+    private fun addStartupTypeAttribute(type: AppStartupType) {
+        appStartupSpan.setAttribute("app_startup_type", type.name)
+    }
 }
