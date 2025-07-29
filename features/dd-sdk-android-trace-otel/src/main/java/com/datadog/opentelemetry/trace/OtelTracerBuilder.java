@@ -10,8 +10,8 @@ package com.datadog.opentelemetry.trace;
 import androidx.annotation.NonNull;
 
 import com.datadog.android.api.InternalLogger;
+import com.datadog.android.trace.api.tracer.DatadogTracer;
 import com.datadog.opentelemetry.compat.function.Function;
-import com.datadog.trace.bootstrap.instrumentation.api.AgentTracer;
 
 import io.opentelemetry.api.trace.SpanBuilder;
 import io.opentelemetry.api.trace.Tracer;
@@ -22,24 +22,19 @@ public class OtelTracerBuilder implements TracerBuilder {
     private final String instrumentationScopeName;
 
     @NonNull
-    private final AgentTracer.TracerAPI coreTracer;
+    private final DatadogTracer datadogTracer;
 
     @NonNull
     private final InternalLogger logger;
 
-    @NonNull
-    private final Function<SpanBuilder, SpanBuilder> spanBuilderDecorator;
-
 
     public OtelTracerBuilder(
             @NonNull String instrumentationScopeName,
-            @NonNull AgentTracer.TracerAPI coreTracer,
-            @NonNull InternalLogger logger,
-            @NonNull Function<SpanBuilder, SpanBuilder> spanBuilderDecorator) {
-        this.coreTracer = coreTracer;
+            @NonNull DatadogTracer datadogTracer,
+            @NonNull InternalLogger logger) {
+        this.datadogTracer = datadogTracer;
         this.instrumentationScopeName = instrumentationScopeName;
         this.logger = logger;
-        this.spanBuilderDecorator = spanBuilderDecorator;
     }
 
     @Override
@@ -56,6 +51,6 @@ public class OtelTracerBuilder implements TracerBuilder {
 
     @Override
     public Tracer build() {
-        return new OtelTracer(this.instrumentationScopeName, this.coreTracer, this.logger, this.spanBuilderDecorator);
+        return new OtelTracer(this.instrumentationScopeName, this.datadogTracer, this.logger);
     }
 }

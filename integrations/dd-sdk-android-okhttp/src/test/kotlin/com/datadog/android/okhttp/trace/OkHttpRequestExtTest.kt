@@ -6,11 +6,11 @@
 
 package com.datadog.android.okhttp.trace
 
+import com.datadog.android.trace.api.span.DatadogSpan
 import com.datadog.tools.unit.forge.BaseConfigurator
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
-import io.opentracing.Span
 import okhttp3.Request
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -33,9 +33,9 @@ class OkHttpRequestExtTest {
     fun `set the parentSpan through the Request builder`(
         @StringForgery(regex = "http://[a-z0-9_]{8}\\.[a-z]{3}/") fakeUrl: String
     ) {
-        val parentSpan: Span = mock()
+        val parentSpan: DatadogSpan = mock()
         val request = Request.Builder().url(fakeUrl).parentSpan(parentSpan).build()
 
-        assertThat(request.tag(Span::class.java)).isEqualTo(parentSpan)
+        assertThat(request.tag(DatadogSpan::class.java)).isEqualTo(parentSpan)
     }
 }

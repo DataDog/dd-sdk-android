@@ -56,10 +56,10 @@ internal class NoOpContextProvider : ContextProvider {
             architecture = "",
             numberOfDisplays = null,
             localeInfo = LocaleInfo(
-                    locales = emptyList(),
-                    currentLocale = "",
-                    timeZone = ""
-                )
+                locales = emptyList(),
+                currentLocale = "",
+                timeZone = ""
+            )
         ),
         userInfo = UserInfo(null, null, null, null, emptyMap()),
         accountInfo = null,

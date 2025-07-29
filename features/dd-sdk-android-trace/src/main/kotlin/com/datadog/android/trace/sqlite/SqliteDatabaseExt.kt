@@ -7,9 +7,9 @@
 package com.datadog.android.trace.sqlite
 
 import android.database.sqlite.SQLiteDatabase
+import com.datadog.android.trace.GlobalDatadogTracer
+import com.datadog.android.trace.api.span.DatadogSpan
 import com.datadog.android.trace.withinSpan
-import io.opentracing.Span
-import io.opentracing.util.GlobalTracer
 
 /**
  * Run [body] in a transaction marking it as successful if it completes without exception.
@@ -24,9 +24,9 @@ import io.opentracing.util.GlobalTracer
 inline fun <T> SQLiteDatabase.transactionTraced(
     operationName: String,
     exclusive: Boolean = true,
-    body: Span.(SQLiteDatabase) -> T
+    body: DatadogSpan.(SQLiteDatabase) -> T
 ): T {
-    val parentSpan = GlobalTracer.get().activeSpan()
+    val parentSpan = GlobalDatadogTracer.get().activeSpan()
     withinSpan(operationName, parentSpan, true) {
         if (exclusive) {
             @Suppress("UnsafeThirdPartyFunctionCall") // we are in a valid state

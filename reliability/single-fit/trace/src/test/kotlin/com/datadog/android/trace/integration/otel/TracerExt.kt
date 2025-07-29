@@ -6,21 +6,23 @@
 
 package com.datadog.android.trace.integration.otel
 
+import com.datadog.android.api.feature.Feature
+import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.trace.integration.tests.utils.BlockingWriterWrapper
 import com.datadog.tools.unit.getFieldValue
 import com.datadog.tools.unit.setFieldValue
 import com.datadog.trace.common.writer.Writer
-import com.datadog.trace.core.CoreTracer
-import io.opentelemetry.api.trace.Tracer
 
-internal fun Tracer.useBlockingWriter(): BlockingWriterWrapper {
-    val coreTracer: CoreTracer = this.getFieldValue("tracer")
-    val writer: Writer = coreTracer.getFieldValue("writer")
-    return if (writer !is BlockingWriterWrapper) {
-        val blockingWriterWrapper = BlockingWriterWrapper(writer)
-        coreTracer.setFieldValue("writer", blockingWriterWrapper)
-        blockingWriterWrapper
-    } else {
+private const val WRITER_FIELD_NAME = "coreTracerDataWriter"
+
+internal fun FeatureScope.useBlockingWriter(): BlockingWriterWrapper {
+    val feature = this.unwrap<Feature>()
+    val writer: Writer = feature.getFieldValue(WRITER_FIELD_NAME)
+    return if (writer is BlockingWriterWrapper) {
         writer
+    } else {
+        val blockingWriterWrapper = BlockingWriterWrapper(writer)
+        feature.setFieldValue(WRITER_FIELD_NAME, blockingWriterWrapper)
+        blockingWriterWrapper
     }
 }
