@@ -9,7 +9,6 @@ package com.datadog.android.rum.internal.domain.accessibility
 import com.datadog.tools.annotation.NoOpImplementation
 
 @NoOpImplementation
-internal interface AccessibilityReader {
-    fun getState(): Map<String, Any>
-    fun cleanup()
+internal interface AccessibilitySnapshotManager {
+    fun latestSnapshot(): Accessibility
 }

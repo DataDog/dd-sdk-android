@@ -18,6 +18,7 @@ import android.os.Handler
 import android.os.Looper
 import android.provider.Settings
 import android.provider.Settings.Secure.ACCESSIBILITY_DISPLAY_INVERSION_ENABLED
+import android.view.View
 import android.view.accessibility.AccessibilityManager
 import android.view.accessibility.AccessibilityManager.TouchExplorationStateChangeListener
 import com.datadog.android.api.InternalLogger
@@ -87,8 +88,13 @@ internal class DatadogAccessibilityReader(
     }
 
     override fun onConfigurationChanged(p0: Configuration) {
+        val newRtlLayout = p0.layoutDirection
+        val isRtlEnabled = newRtlLayout == View.LAYOUT_DIRECTION_RTL
+
         val newTextSize = getTextSize()
-        updateState { it.copy(textSize = newTextSize) }
+        updateState {
+            it.copy(textSize = newTextSize, isRtlEnabled = isRtlEnabled)
+        }
     }
 
     @Synchronized
@@ -125,7 +131,8 @@ internal class DatadogAccessibilityReader(
             isColorInversionEnabled = isDisplayInversionEnabled(),
             isScreenPinningEnabled = isLockToScreenEnabled(),
             isReducedAnimationsEnabled = isReducedAnimationsEnabled(),
-            isClosedCaptioningEnabled = isClosedCaptioningEnabled()
+            isClosedCaptioningEnabled = isClosedCaptioningEnabled(),
+            isRtlEnabled = getRtlEnabled()
         )
     }
 
@@ -190,8 +197,12 @@ internal class DatadogAccessibilityReader(
         )
     }
 
-    private fun getTextSize(): Float {
-        return resources.configuration.fontScale
+    private fun getTextSize(): String {
+        return resources.configuration.fontScale.toString()
+    }
+
+    private fun getRtlEnabled(): Boolean {
+        return resources.configuration.layoutDirection == View.LAYOUT_DIRECTION_RTL
     }
 
     private fun isScreenReaderEnabled(accessibilityManager: AccessibilityManager?): Boolean? {

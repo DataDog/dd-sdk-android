@@ -43,7 +43,7 @@ internal class AccessibilityTest {
     ) {
         // Given
         val accessibility = Accessibility(
-            textSize = textSize,
+            textSize = textSize.toString(),
             isScreenReaderEnabled = isScreenReaderEnabled,
             isColorInversionEnabled = isColorInversionEnabled,
             isClosedCaptioningEnabled = isClosedCaptioningEnabled,
@@ -57,7 +57,7 @@ internal class AccessibilityTest {
         // Then
         assertThat(result).containsExactlyInAnyOrderEntriesOf(
             mapOf(
-                Accessibility.TEXT_SIZE_KEY to textSize,
+                Accessibility.TEXT_SIZE_KEY to textSize.toString(),
                 Accessibility.SCREEN_READER_ENABLED_KEY to isScreenReaderEnabled,
                 Accessibility.COLOR_INVERSION_ENABLED_KEY to isColorInversionEnabled,
                 Accessibility.CLOSED_CAPTIONING_ENABLED_KEY to isClosedCaptioningEnabled,
@@ -82,7 +82,7 @@ internal class AccessibilityTest {
     fun `M exclude null values from map W toMap() { mixed null and non-null values }`() {
         // Given
         val accessibility = Accessibility(
-            textSize = 1.5f,
+            textSize = "1.5f",
             isScreenReaderEnabled = null,
             isColorInversionEnabled = true,
             isClosedCaptioningEnabled = false,
@@ -96,7 +96,7 @@ internal class AccessibilityTest {
         // Then
         assertThat(result).containsExactlyInAnyOrderEntriesOf(
             mapOf(
-                Accessibility.TEXT_SIZE_KEY to 1.5f,
+                Accessibility.TEXT_SIZE_KEY to "1.5f",
                 Accessibility.COLOR_INVERSION_ENABLED_KEY to true,
                 Accessibility.CLOSED_CAPTIONING_ENABLED_KEY to false,
                 Accessibility.SCREEN_PINNING_ENABLED_KEY to true
