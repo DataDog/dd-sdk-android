@@ -633,4 +633,19 @@ internal class RumConfigurationBuilderTest {
         assertThat(rumConfiguration.featureConfiguration.rumSessionTypeOverride)
             .isEqualTo(rumSessionTypeOverride)
     }
+
+    @Test
+    fun `M enable accessibility settings collection W collectAccessibilitySettings`() {
+        // When
+        val rumConfiguration = testedBuilder
+            .collectAccessibilitySettings()
+            .build()
+
+        // Then
+        assertThat(rumConfiguration.featureConfiguration).isEqualTo(
+            RumFeature.DEFAULT_RUM_CONFIG.copy(
+                collectAccessibilitySettings = true
+            )
+        )
+    }
 }

@@ -43,6 +43,7 @@ fun <T : Forge> T.useCoreFactories(): T {
     addFactory(DatadogContextForgeryFactory())
     addFactory(DeviceInfoForgeryFactory())
     addFactory(NetworkInfoForgeryFactory())
+    addFactory(LocaleInfoForgeryFactory())
     addFactory(ProcessInfoForgeryFactory())
     addFactory(TimeInfoForgeryFactory())
     addFactory(UserInfoForgeryFactory())

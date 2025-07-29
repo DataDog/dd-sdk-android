@@ -16,6 +16,7 @@ import android.telephony.TelephonyManager
 import android.view.Display
 import com.datadog.android.api.context.DeviceType
 import java.util.Locale
+import java.util.TimeZone
 
 internal class DefaultAndroidInfoProvider(
     appContext: Context,
@@ -48,6 +49,46 @@ internal class DefaultAndroidInfoProvider(
         } else {
             "$deviceBrand $deviceModel"
         }
+    }
+
+    override val locales: List<String> by lazy(LazyThreadSafetyMode.PUBLICATION) {
+        val resources = appContext.resources
+        val languageList = mutableListOf<String>()
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            val locales = resources.configuration.locales
+            val localesSize = locales.size()
+
+            for (localeIndex in 0 until localesSize) {
+                locales[localeIndex]?.toLanguageTag()?.let {
+                    languageList.add(it)
+                }
+            }
+        } else {
+            @Suppress("DEPRECATION")
+            resources.configuration.locale?.toLanguageTag()?.let {
+                languageList.add(it)
+            }
+        }
+
+        languageList
+    }
+
+    override val currentLocale: String by lazy(LazyThreadSafetyMode.PUBLICATION) {
+        val resources = appContext.resources
+        val currentLocale = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            resources.configuration.locales[0]?.toLanguageTag()
+        } else {
+            @Suppress("DEPRECATION")
+            resources.configuration.locale?.toLanguageTag()
+        }
+
+        // null shouldn't happen, but if it does this ensures that we return a valid languageTag
+        currentLocale ?: Locale.getDefault().toLanguageTag()
+    }
+
+    override val timeZone: String by lazy(LazyThreadSafetyMode.PUBLICATION) {
+        TimeZone.getDefault().id
     }
 
     override val deviceBrand: String by lazy(LazyThreadSafetyMode.PUBLICATION) {

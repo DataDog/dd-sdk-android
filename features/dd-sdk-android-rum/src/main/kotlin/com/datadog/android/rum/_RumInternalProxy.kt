@@ -115,5 +115,11 @@ class _RumInternalProxy internal constructor(private val rumMonitor: AdvancedRum
         ): Builder {
             return builder.setRumSessionTypeOverride(rumSessionTypeOverride)
         }
+
+        fun collectAccessibilitySettings(
+            builder: Builder
+        ): Builder {
+            return builder.collectAccessibilitySettings()
+        }
     }
 }

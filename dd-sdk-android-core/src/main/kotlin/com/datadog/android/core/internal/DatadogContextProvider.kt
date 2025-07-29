@@ -8,6 +8,7 @@ package com.datadog.android.core.internal
 
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.context.DeviceInfo
+import com.datadog.android.api.context.LocaleInfo
 import com.datadog.android.api.context.ProcessInfo
 import com.datadog.android.api.context.TimeInfo
 import java.util.concurrent.TimeUnit
@@ -52,7 +53,14 @@ internal class DatadogContextProvider(val coreFeature: CoreFeature) : ContextPro
                         osVersion = osVersion,
                         osMajorVersion = osMajorVersion,
                         architecture = architecture,
-                        numberOfDisplays = numberOfDisplays
+                        numberOfDisplays = numberOfDisplays,
+                        localeInfo = with(coreFeature.androidInfoProvider) {
+                            LocaleInfo(
+                                locales = locales,
+                                currentLocale = currentLocale,
+                                timeZone = timeZone
+                            )
+                        }
                     )
                 },
                 userInfo = coreFeature.userInfoProvider.getUserInfo(),
