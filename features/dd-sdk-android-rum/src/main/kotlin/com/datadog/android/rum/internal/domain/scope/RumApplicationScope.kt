@@ -18,7 +18,7 @@ import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.RumSessionType
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
-import com.datadog.android.rum.internal.domain.accessibility.AccessibilityReader
+import com.datadog.android.rum.internal.domain.accessibility.AccessibilitySnapshotManager
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
 import com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener
 import com.datadog.android.rum.internal.vitals.VitalMonitor
@@ -43,7 +43,7 @@ internal class RumApplicationScope(
     internal val lastInteractionIdentifier: LastInteractionIdentifier?,
     private val slowFramesListener: SlowFramesListener?,
     private val rumSessionTypeOverride: RumSessionType?,
-    private val accessibilityReader: AccessibilityReader
+    private val accessibilitySnapshotManager: AccessibilitySnapshotManager
 ) : RumScope, RumViewChangedListener {
 
     private var rumContext = RumContext(applicationId = applicationId)
@@ -67,7 +67,7 @@ internal class RumApplicationScope(
             lastInteractionIdentifier = lastInteractionIdentifier,
             slowFramesListener = slowFramesListener,
             rumSessionTypeOverride = rumSessionTypeOverride,
-            accessibilityReader = accessibilityReader
+            accessibilitySnapshotManager = accessibilitySnapshotManager
         )
     )
 
@@ -164,7 +164,7 @@ internal class RumApplicationScope(
             lastInteractionIdentifier = lastInteractionIdentifier,
             slowFramesListener = slowFramesListener,
             rumSessionTypeOverride = rumSessionTypeOverride,
-            accessibilityReader = accessibilityReader
+            accessibilitySnapshotManager = accessibilitySnapshotManager
         )
         childScopes.add(newSession)
         if (event !is RumRawEvent.StartView) {

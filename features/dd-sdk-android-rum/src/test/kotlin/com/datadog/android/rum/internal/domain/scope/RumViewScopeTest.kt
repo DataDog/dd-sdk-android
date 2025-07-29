@@ -36,7 +36,7 @@ import com.datadog.android.rum.internal.anr.ANRException
 import com.datadog.android.rum.internal.collections.toEvictingQueue
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
-import com.datadog.android.rum.internal.domain.accessibility.AccessibilityReader
+import com.datadog.android.rum.internal.domain.accessibility.AccessibilitySnapshotManager
 import com.datadog.android.rum.internal.domain.state.SlowFrameRecord
 import com.datadog.android.rum.internal.domain.state.ViewUIPerformanceReport
 import com.datadog.android.rum.internal.metric.NoValueReason
@@ -153,7 +153,7 @@ internal class RumViewScopeTest {
     lateinit var mockCpuVitalMonitor: VitalMonitor
 
     @Mock
-    lateinit var mockAccessibilityReader: AccessibilityReader
+    lateinit var mockAccessibilitySnapshotManager: AccessibilitySnapshotManager
 
     @Mock
     lateinit var mockMemoryVitalMonitor: VitalMonitor
@@ -270,6 +270,7 @@ internal class RumViewScopeTest {
         whenever(mockInteractionToNextViewMetricResolver.resolveMetric(any())) doReturn
             fakeInteractionToNextViewMetricValue
         val isValidSource = forge.aBool()
+        whenever(mockAccessibilitySnapshotManager.latestSnapshot()) doReturn mock()
 
         val fakeSource = if (isValidSource) {
             forge.anElementFrom(
@@ -9671,7 +9672,7 @@ internal class RumViewScopeTest {
         slowFramesListener = slowFramesMetricListener,
         viewEndedMetricDispatcher = viewEndedMetricDispatcher,
         rumSessionTypeOverride = fakeRumSessionType,
-        accessibilityReader = mockAccessibilityReader
+        accessibilitySnapshotManager = mockAccessibilitySnapshotManager
     )
 
     data class RumRawEventData(val event: RumRawEvent, val viewKey: RumScopeKey)
