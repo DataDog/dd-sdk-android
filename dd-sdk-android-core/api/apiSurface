@@ -70,7 +70,7 @@ data class com.datadog.android.api.context.AccountInfo
 data class com.datadog.android.api.context.DatadogContext
   constructor(com.datadog.android.DatadogSite, String, String, String, String, String, String, String, TimeInfo, ProcessInfo, NetworkInfo, DeviceInfo, UserInfo, AccountInfo?, com.datadog.android.privacy.TrackingConsent, String?, Map<String, Map<String, Any?>>)
 data class com.datadog.android.api.context.DeviceInfo
-  constructor(String, String, String, DeviceType, String, String, String, String, String, Int?)
+  constructor(String, String, String, DeviceType, String, String, String, String, String, Int?, LocaleInfo)
 enum com.datadog.android.api.context.DeviceType
   - MOBILE
   - TABLET
@@ -79,6 +79,8 @@ enum com.datadog.android.api.context.DeviceType
   - GAMING_CONSOLE
   - BOT
   - OTHER
+data class com.datadog.android.api.context.LocaleInfo
+  constructor(List<String>, String, String)
 data class com.datadog.android.api.context.NetworkInfo
   constructor(Connectivity = Connectivity.NETWORK_NOT_CONNECTED, kotlin.String? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.String? = null)
   enum Connectivity

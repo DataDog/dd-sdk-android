@@ -163,6 +163,13 @@ internal class DatadogContextProviderTest {
         assertThat(context.deviceInfo.osName).isEqualTo(fakeAndroidInfo.osName)
         assertThat(context.deviceInfo.osVersion).isEqualTo(fakeAndroidInfo.osVersion)
         assertThat(context.deviceInfo.osMajorVersion).isEqualTo(fakeAndroidInfo.osMajorVersion)
+        assertThat(context.deviceInfo.architecture).isEqualTo(fakeAndroidInfo.architecture)
+        assertThat(context.deviceInfo.numberOfDisplays).isEqualTo(fakeAndroidInfo.numberOfDisplays)
+
+        // locale info
+        assertThat(context.deviceInfo.localeInfo.locales).isEqualTo(fakeAndroidInfo.locales)
+        assertThat(context.deviceInfo.localeInfo.currentLocale).isEqualTo(fakeAndroidInfo.currentLocale)
+        assertThat(context.deviceInfo.localeInfo.timeZone).isEqualTo(fakeAndroidInfo.timeZone)
 
         // user info
         assertThat(context.userInfo.id).isEqualTo(fakeUserInfo.id)

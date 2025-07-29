@@ -24,6 +24,9 @@ internal class AndroidInfoProviderForgeryFactory : ForgeryFactory<AndroidInfoPro
         val osVersion = "${forge.aSmallInt()}.${forge.aSmallInt()}.${forge.aSmallInt()}"
         val architecture = forge.anAlphaNumericalString()
         val numberOfDisplays = forge.aNullable { forge.anInt() }
+        val locales = forge.aList { forge.aString() }
+        val currentLocale = forge.aString()
+        val timeZone = forge.aString()
 
         return object : AndroidInfoProvider {
             override val deviceName = deviceName
@@ -36,6 +39,9 @@ internal class AndroidInfoProviderForgeryFactory : ForgeryFactory<AndroidInfoPro
             override val osVersion = osVersion
             override val architecture = architecture
             override val numberOfDisplays = numberOfDisplays
+            override val locales: List<String> = locales
+            override val currentLocale: String = currentLocale
+            override val timeZone: String = timeZone
         }
     }
 }
