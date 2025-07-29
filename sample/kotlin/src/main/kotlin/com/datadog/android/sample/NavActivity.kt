@@ -128,6 +128,11 @@ class NavActivity : AppCompatActivity(), TrackingConsentChangeListener {
     override fun onTrackingConsentChanged(trackingConsent: TrackingConsent) =
         updateTrackingConsentLabel(trackingConsent)
 
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        Timber.d("onSaveInstanceState")
+    }
+
     private fun updateTrackingConsentLabel(trackingConsent: TrackingConsent) {
         appInfoView.text = "${BuildConfig.FLAVOR} / Tracking: $trackingConsent"
     }
