@@ -87,10 +87,8 @@ internal class DatadogAccessibilityReader(
         // do nothing - there's nothing we're holding onto that takes up any significant memory
     }
 
-    override fun onConfigurationChanged(p0: Configuration) {
-        val newRtlLayout = p0.layoutDirection
-        val isRtlEnabled = newRtlLayout == View.LAYOUT_DIRECTION_RTL
-
+    override fun onConfigurationChanged(configuration: Configuration) {
+        val isRtlEnabled = getRtlEnabled()
         val newTextSize = getTextSize()
         updateState {
             it.copy(textSize = newTextSize, isRtlEnabled = isRtlEnabled)
