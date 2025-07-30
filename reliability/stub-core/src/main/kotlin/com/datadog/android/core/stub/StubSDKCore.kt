@@ -7,6 +7,9 @@
 package com.datadog.android.core.stub
 
 import android.app.Application
+import android.content.ContentResolver
+import android.content.res.Configuration
+import android.content.res.Resources
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.AccountInfo
 import com.datadog.android.api.context.DatadogContext
@@ -43,7 +46,13 @@ class StubSDKCore(
     private var datadogContext = forge.getForgery<DatadogContext>().copy(source = "android")
 
     init {
+        val mockResources = mock<Resources>()
+        val mockConfiguration = mock<Configuration>()
+        val mockContentResolver = mock<ContentResolver>()
         whenever(mockContext.packageName) doReturn forge.anAlphabeticalString()
+        whenever(mockContext.resources) doReturn mockResources
+        whenever(mockResources.configuration) doReturn mockConfiguration
+        whenever(mockContext.contentResolver) doReturn mockContentResolver
     }
 
     // region Stub

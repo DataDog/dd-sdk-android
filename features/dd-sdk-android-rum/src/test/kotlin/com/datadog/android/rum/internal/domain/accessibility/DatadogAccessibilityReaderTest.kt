@@ -173,7 +173,7 @@ internal class DatadogAccessibilityReaderTest {
         assertThat(result[REDUCED_ANIMATIONS_ENABLED_KEY]).isNull()
         assertThat(result[SCREEN_PINNING_ENABLED_KEY] as Boolean).isFalse()
         assertThat(result[COLOR_INVERSION_ENABLED_KEY]).isNull()
-        assertThat(result[TEXT_SIZE_KEY]).isEqualTo(1.0f)
+        assertThat(result[TEXT_SIZE_KEY]).isEqualTo("1.0")
     }
 
     @Test
@@ -226,7 +226,7 @@ internal class DatadogAccessibilityReaderTest {
         val result = testedReader.getState()
 
         // Then
-        assertThat(result[TEXT_SIZE_KEY]).isEqualTo(textSize)
+        assertThat(result[TEXT_SIZE_KEY]).isEqualTo(textSize.toString())
         assertThat(result[SCREEN_READER_ENABLED_KEY]).isEqualTo(isScreenReaderEnabled)
         assertThat(result[SCREEN_PINNING_ENABLED_KEY]).isEqualTo(isScreenPinningEnabled)
         assertThat(result[COLOR_INVERSION_ENABLED_KEY]).isEqualTo(isColorInversionEnabled)
@@ -247,7 +247,7 @@ internal class DatadogAccessibilityReaderTest {
         val result = testedReader.getState()
 
         // Then
-        assertThat(result[TEXT_SIZE_KEY]).isEqualTo(fontScale)
+        assertThat(result[TEXT_SIZE_KEY]).isEqualTo(fontScale.toString())
     }
     // endregion
 
@@ -495,7 +495,7 @@ internal class DatadogAccessibilityReaderTest {
 
         // Establish initial state
         val initialResult = testedReader.getState()
-        assertThat(initialResult[TEXT_SIZE_KEY]).isEqualTo(originalFontScale)
+        assertThat(initialResult[TEXT_SIZE_KEY]).isEqualTo(originalFontScale.toString())
 
         // Change configuration
         val newConfiguration = Configuration().apply { fontScale = newFontScale }
@@ -506,7 +506,7 @@ internal class DatadogAccessibilityReaderTest {
 
         // Then
         val result = testedReader.getState()
-        assertThat(result[TEXT_SIZE_KEY]).isEqualTo(newFontScale)
+        assertThat(result[TEXT_SIZE_KEY]).isEqualTo(newFontScale.toString())
     }
 
     @Test
@@ -524,7 +524,7 @@ internal class DatadogAccessibilityReaderTest {
 
         // Then
         val result = testedReader.getState()
-        assertThat(result[TEXT_SIZE_KEY]).isEqualTo(fontScale)
+        assertThat(result[TEXT_SIZE_KEY]).isEqualTo(fontScale.toString())
         assertThat(result).isEqualTo(initialResult)
     }
 

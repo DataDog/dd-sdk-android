@@ -15,14 +15,16 @@ package com.datadog.android.rum.internal.domain.accessibility
  * @property isClosedCaptioningEnabled Whether closed captions are enabled
  * @property isReducedAnimationsEnabled Whether animations are disabled/reduced
  * @property isScreenPinningEnabled Whether the device is in single-app mode
+ * @property isRtlEnabled Whether right to left layout is enabled
  */
 internal data class Accessibility(
-    val textSize: Float? = null,
+    val textSize: String? = null,
     val isScreenReaderEnabled: Boolean? = null,
     val isColorInversionEnabled: Boolean? = null,
     val isClosedCaptioningEnabled: Boolean? = null,
     val isReducedAnimationsEnabled: Boolean? = null,
-    val isScreenPinningEnabled: Boolean? = null
+    val isScreenPinningEnabled: Boolean? = null,
+    val isRtlEnabled: Boolean? = null
 ) {
     fun toMap(): Map<String, Any> = buildMap {
         textSize?.let { put(TEXT_SIZE_KEY, it) }
@@ -31,6 +33,7 @@ internal data class Accessibility(
         isClosedCaptioningEnabled?.let { put(CLOSED_CAPTIONING_ENABLED_KEY, it) }
         isReducedAnimationsEnabled?.let { put(REDUCED_ANIMATIONS_ENABLED_KEY, it) }
         isScreenPinningEnabled?.let { put(SCREEN_PINNING_ENABLED_KEY, it) }
+        isRtlEnabled?.let { put(RTL_ENABLED, it) }
     }
 
     companion object {
@@ -40,5 +43,18 @@ internal data class Accessibility(
         internal const val CLOSED_CAPTIONING_ENABLED_KEY = "closed_captioning_enabled"
         internal const val REDUCED_ANIMATIONS_ENABLED_KEY = "reduced_animations_enabled"
         internal const val SCREEN_PINNING_ENABLED_KEY = "single_app_mode_enabled"
+        internal const val RTL_ENABLED = "rtl_enabled"
+
+        internal fun fromMap(map: Map<String, Any>): Accessibility {
+            return Accessibility(
+                textSize = map[TEXT_SIZE_KEY] as? String,
+                isScreenReaderEnabled = map[SCREEN_READER_ENABLED_KEY] as? Boolean,
+                isColorInversionEnabled = map[COLOR_INVERSION_ENABLED_KEY] as? Boolean,
+                isClosedCaptioningEnabled = map[CLOSED_CAPTIONING_ENABLED_KEY] as? Boolean,
+                isReducedAnimationsEnabled = map[REDUCED_ANIMATIONS_ENABLED_KEY] as? Boolean,
+                isScreenPinningEnabled = map[SCREEN_PINNING_ENABLED_KEY] as? Boolean,
+                isRtlEnabled = map[RTL_ENABLED] as? Boolean
+            )
+        }
     }
 }

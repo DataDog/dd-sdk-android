@@ -28,12 +28,18 @@
             "type": {
               "type": "string",
               "description": "Type of the vital",
-              "enum": ["duration"],
+              "enum": ["duration", "step"],
               "readOnly": true
             },
             "id": {
               "type": "string",
               "description": "UUID of the vital",
+              "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$",
+              "readOnly": true
+            },
+            "parent_id": {
+              "type": "string",
+              "description": "UUID for linking the step vital to the parent event, if applicable",
               "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$",
               "readOnly": true
             },
@@ -60,6 +66,18 @@
                 "minimum": 0,
                 "readOnly": true
               },
+              "readOnly": true
+            },
+            "step_type": {
+              "type": "string",
+              "description": "Type of the step that triggered the vital, if applicable",
+              "enum": ["start", "update", "retry", "end"],
+              "readOnly": true
+            },
+            "failure_reason": {
+              "type": "string",
+              "description": "Reason for the failure of the step, if applicable",
+              "enum": ["error", "abandoned", "other"],
               "readOnly": true
             }
           },

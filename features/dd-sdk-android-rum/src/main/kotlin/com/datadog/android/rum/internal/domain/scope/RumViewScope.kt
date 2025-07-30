@@ -26,8 +26,7 @@ import com.datadog.android.rum.internal.FeaturesContextResolver
 import com.datadog.android.rum.internal.anr.ANRException
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
-import com.datadog.android.rum.internal.domain.accessibility.AccessibilityReader
-import com.datadog.android.rum.internal.domain.accessibility.AccessibilityReader.Companion.ACCESSIBILITY_KEY
+import com.datadog.android.rum.internal.domain.accessibility.AccessibilitySnapshotManager
 import com.datadog.android.rum.internal.metric.NoValueReason
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
 import com.datadog.android.rum.internal.metric.ViewEndedMetricDispatcher
@@ -80,7 +79,7 @@ internal open class RumViewScope(
     private val slowFramesListener: SlowFramesListener?,
     private val viewEndedMetricDispatcher: ViewMetricDispatcher,
     private val rumSessionTypeOverride: RumSessionType?,
-    private val accessibilityReader: AccessibilityReader
+    private val accessibilitySnapshotManager: AccessibilitySnapshotManager
 ) : RumScope {
 
     internal val url = key.url.replace('.', '/')
@@ -271,7 +270,7 @@ internal open class RumViewScope(
             viewEndedMetricDispatcher = viewEndedMetricDispatcher,
             slowFramesListener = slowFramesListener,
             rumSessionTypeOverride = rumSessionTypeOverride,
-            accessibilityReader = accessibilityReader
+            accessibilitySnapshotManager = accessibilitySnapshotManager
         )
     }
 
@@ -963,11 +962,6 @@ internal open class RumViewScope(
 
         val eventAdditionalAttributes = (eventAttributes + globalAttributes).toMutableMap()
 
-        val accessibilityState = accessibilityReader.getState()
-        if (accessibilityState.isNotEmpty()) {
-            eventAdditionalAttributes[ACCESSIBILITY_KEY] = accessibilityState
-        }
-
         val uiSlownessReport = slowFramesListener?.resolveReport(viewId, viewComplete, durationNs)
         val slowFrames = uiSlownessReport?.slowFramesRecords?.map {
             ViewEvent.SlowFrame(
@@ -1029,6 +1023,8 @@ internal open class RumViewScope(
                 else -> ViewEvent.ViewEventSessionType.SYNTHETICS
             }
 
+            val accessibilityState = accessibilitySnapshotManager.latestSnapshot()
+
             ViewEvent(
                 date = eventTimestamp,
                 featureFlags = ViewEvent.Context(additionalProperties = eventFeatureFlags),
@@ -1060,6 +1056,15 @@ internal open class RumViewScope(
                     flutterBuildTime = eventFlutterBuildTime,
                     flutterRasterTime = eventFlutterRasterTime,
                     jsRefreshRate = eventJsRefreshRate,
+                    accessibility = ViewEvent.Accessibility(
+                        textSize = accessibilityState.textSize,
+                        invertColorsEnabled = accessibilityState.isColorInversionEnabled,
+                        singleAppModeEnabled = accessibilityState.isScreenPinningEnabled,
+                        screenReaderEnabled = accessibilityState.isScreenReaderEnabled,
+                        closedCaptioningEnabled = accessibilityState.isClosedCaptioningEnabled,
+                        reducedAnimationsEnabled = accessibilityState.isReducedAnimationsEnabled,
+                        rtlEnabled = accessibilityState.isRtlEnabled
+                    ),
                     performance = performance,
                     networkSettledTime = timeToSettled,
                     interactionToNextViewTime = interactionToNextViewTime,
@@ -1546,7 +1551,7 @@ internal open class RumViewScope(
             networkSettledResourceIdentifier: InitialResourceIdentifier,
             slowFramesListener: SlowFramesListener?,
             rumSessionTypeOverride: RumSessionType?,
-            accessibilityReader: AccessibilityReader
+            accessibilitySnapshotManager: AccessibilitySnapshotManager
         ): RumViewScope {
             val networkSettledMetricResolver = NetworkSettledMetricResolver(
                 networkSettledResourceIdentifier,
@@ -1580,7 +1585,7 @@ internal open class RumViewScope(
                 viewEndedMetricDispatcher = viewEndedMetricDispatcher,
                 slowFramesListener = slowFramesListener,
                 rumSessionTypeOverride = rumSessionTypeOverride,
-                accessibilityReader = accessibilityReader
+                accessibilitySnapshotManager = accessibilitySnapshotManager
             )
         }
 
