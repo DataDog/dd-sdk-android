@@ -52,22 +52,8 @@ public interface Sampler {
         }
         Double traceSampleRate =
             null != traceConfig ? traceConfig.getTraceSampleRate() : config.getTraceSampleRate();
-        if (serviceRulesDefined
-            || operationRulesDefined
-            || jsonTraceSamplingRulesDefined
-            || traceSampleRate != null) {
-          try {
-            sampler =
-                RuleBasedTraceSampler.build(
-                    serviceRules,
-                    operationRules,
-                    traceSamplingRules,
-                    traceSampleRate,
-                    config.getTraceRateLimit());
-          } catch (final IllegalArgumentException e) {
-            log.error("Invalid sampler configuration. Using AllSampler", e);
-            sampler = new AllSampler();
-          }
+        if (traceSampleRate != null) {
+          sampler = new RateByServiceTraceSampler(traceSampleRate);
         } else if (config.isPrioritySamplingEnabled()) {
           if (KEEP.equalsIgnoreCase(config.getPrioritySamplingForce())) {
             log.debug("Force Sampling Priority to: SAMPLER_KEEP.");
