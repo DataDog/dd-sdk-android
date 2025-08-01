@@ -65,10 +65,11 @@ internal class CoreTracerSpanToSpanEventMapper(
     // TODO RUM-10805 - make it back private and re-create objects in tests
     internal fun resolveMetrics(event: DDSpan): SpanEvent.Metrics {
         val metrics = resolveMetricsFromSpanContext(event).apply {
-            if (event.spanSamplingPriority != PrioritySampling.UNSET.toInt()) {
+            val spanSamplingPriority = event.spanSamplingPriority
+            if (spanSamplingPriority != PrioritySampling.UNSET.toInt()) {
                 // This required for backward compatibility with AndroidTracer that
                 // don't add the sampling priority if it not set for current span.
-                this[DDSpanContext.PRIORITY_SAMPLING_KEY] = event.spanSamplingPriority
+                this[DDSpanContext.PRIORITY_SAMPLING_KEY] = spanSamplingPriority
             }
         }
         return SpanEvent.Metrics(

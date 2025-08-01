@@ -116,7 +116,6 @@ internal class SpansPayloadAssert(actual: JsonObject) :
             return this
         }
 
-
         fun hasResource(resource: String): SpanAssert {
             val actualResource = actualSpan.getString(RESOURCE_KEY)
             assertThat(actualResource).overridingErrorMessage(

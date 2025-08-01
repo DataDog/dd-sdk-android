@@ -499,7 +499,7 @@ internal class DDSpanTest : DDCoreSpecification() {
 
         // Then
         val expectedLimit = if (limit == Int.MAX_VALUE) null else limit
-        assertThat(span.spanSamplingPriority).isEqualTo(PrioritySampling.UNSET.toInt())
+        assertThat(span.traceSamplingPriority).isNull()
 
         // When
         span.setSpanSamplingPriority(rate, limit)
@@ -509,7 +509,7 @@ internal class DDSpanTest : DDCoreSpecification() {
             .isEqualTo(SamplingMechanism.SPAN_SAMPLING_RATE)
         assertThat(span.getTag(DDSpanContext.SPAN_SAMPLING_RULE_RATE_TAG)).isEqualTo(rate)
         assertThat(span.getTag(DDSpanContext.SPAN_SAMPLING_MAX_PER_SECOND_TAG)).isEqualTo(expectedLimit)
-        assertThat(span.spanSamplingPriority).isEqualTo(PrioritySampling.UNSET.toInt())
+        assertThat(span.traceSamplingPriority).isNull()
     }
 
     @Test

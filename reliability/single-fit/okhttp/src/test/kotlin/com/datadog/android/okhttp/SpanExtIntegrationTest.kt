@@ -96,7 +96,6 @@ class SpanExtIntegrationTest {
         mockServer.shutdown()
     }
 
-
     @Test
     fun `M return expected events W withinSpan {two composite spans}`() {
         registerTracer(partialFlushMinSpans = 1)
@@ -114,7 +113,6 @@ class SpanExtIntegrationTest {
         val eventsWritten = stubSdkCore.eventsWritten(Feature.TRACING_FEATURE_NAME)
         val rootSpanJson = eventsWritten[0].asJson()
         val childSpanJson = eventsWritten[1].asJson()
-
 
         assertThat(isCalled).isTrue
         SpansPayloadAssert.assertThat(rootSpanJson)
@@ -174,7 +172,6 @@ class SpanExtIntegrationTest {
         val rootSpanJson = checkNotNull(eventsJson[rootSpanId])
         val child1Json = checkNotNull(eventsJson[level1ChildSpanId])
         val child2Json = checkNotNull(eventsJson[level2ChildSpanId])
-
 
         assertThat(isCalled).isTrue
         SpansPayloadAssert.assertThat(rootSpanJson)
@@ -241,7 +238,6 @@ class SpanExtIntegrationTest {
         val eventsWritten = stubSdkCore.eventsWritten(Feature.TRACING_FEATURE_NAME)
         val rootSpanJson = eventsWritten[0].asJson()
         val childSpanJson = eventsWritten[1].asJson()
-
 
         assertThat(isCalled).isTrue
         SpansPayloadAssert.assertThat(rootSpanJson)
