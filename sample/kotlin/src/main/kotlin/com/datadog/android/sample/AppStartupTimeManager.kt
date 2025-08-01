@@ -15,11 +15,12 @@ import android.os.Looper
 import android.util.Log
 import android.view.ViewTreeObserver
 import com.datadog.android.api.SdkCore
+import com.datadog.android.api.feature.Feature
 import com.datadog.android.core.InternalSdkCore
+import com.datadog.android.log.LogAttributes
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.api.trace.Tracer
 import java.time.Instant
-import java.util.concurrent.TimeUnit
 
 enum class AppStartupType {
     COLD,
@@ -185,6 +186,15 @@ class AppStartupTypeManager(
 
             handler.postDelayed({
                 reportFullyDisplayed()
+
+                val rumContext = (sdkCore as InternalSdkCore).getFeatureContext(Feature.RUM_FEATURE_NAME)
+                val appLaunchViewId = rumContext["application_launch_view_id"] as? String
+                val applicationId = rumContext["application_id"] as? String
+                val sessionId = rumContext["session_id"] as? String
+                appStartupSpan.setAttribute(LogAttributes.RUM_APPLICATION_ID, applicationId!!)
+                appStartupSpan.setAttribute(LogAttributes.RUM_SESSION_ID, sessionId!!)
+                appStartupSpan.setAttribute(LogAttributes.RUM_VIEW_ID, appLaunchViewId!!)
+
                 appStartupSpan.end(relativeNow())
             }, 2000)
         }
