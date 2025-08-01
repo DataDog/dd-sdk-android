@@ -9,6 +9,7 @@ package com.datadog.android.rum.internal.domain.scope
 import android.app.ActivityManager
 import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
@@ -144,6 +145,11 @@ internal class RumViewManagerScope(
         writer: DataWriter<Any>
     ) {
         val viewScope = createAppLaunchViewScope(event.eventTime)
+
+        sdkCore.updateFeatureContext(Feature.RUM_FEATURE_NAME) {
+            it["application_launch_view_id"] = viewScope.viewId
+        }
+
         applicationDisplayed = true
         viewScope.handleEvent(event, writer)
         childrenScopes.add(viewScope)
