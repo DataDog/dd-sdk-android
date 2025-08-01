@@ -183,6 +183,7 @@ class SampleApplication : Application() {
         GlobalOpenTelemetry.set(object : OpenTelemetry {
             private val tracerProvider = OtelTracerProvider.Builder()
                 .setService(BuildConfig.APPLICATION_ID)
+                .setBundleWithRumEnabled(false)
                 .build()
 
             override fun getTracerProvider(): TracerProvider {
