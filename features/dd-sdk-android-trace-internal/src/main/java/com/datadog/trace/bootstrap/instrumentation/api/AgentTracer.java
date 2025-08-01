@@ -287,7 +287,7 @@ public class AgentTracer {
     }
 
     @Override
-    public Integer getSamplingPriority() {
+    public Integer getTraceSamplingPriority() {
       return (int) PrioritySampling.UNSET;
     }
 
@@ -521,7 +521,12 @@ public class AgentTracer {
     }
 
     @Override
-    public int getSamplingPriority() {
+    public int getTraceSamplingPriority() {
+      return PrioritySampling.UNSET;
+    }
+
+    @Override
+    public int getSpanSamplingPriority() {
       return PrioritySampling.UNSET;
     }
 

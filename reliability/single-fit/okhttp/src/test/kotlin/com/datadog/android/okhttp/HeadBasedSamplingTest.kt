@@ -329,7 +329,7 @@ class HeadBasedSamplingTest {
 
         // Then
         val requestSent = mockServer.takeRequest()
-        assertThat(requestSent.getHeader(DATADOG_SAMPLING_PRIORITY_HEADER)).isEqualTo("2")
+        assertThat(requestSent.getHeader(DATADOG_SAMPLING_PRIORITY_HEADER)).isEqualTo("1")
         val leastSignificantTraceId = requestSent.getHeader(DATADOG_TRACE_ID_HEADER)
         checkNotNull(leastSignificantTraceId)
         val spanId = requestSent.getHeader(DATADOG_SPAN_ID_HEADER)
@@ -352,8 +352,8 @@ class HeadBasedSamplingTest {
                 )
                 hasMostSignificant64BitsTraceId(mostSignificantTraceId)
                 hasParentId("0000000000000000")
-                hasRulePsr(1.0)
-                hasSamplingPriority(DatadogTracingConstants.PrioritySampling.USER_KEEP)
+                hasAgentPsr(1.0)
+                hasSamplingPriority(DatadogTracingConstants.PrioritySampling.SAMPLER_KEEP)
                 hasGenericMetricValue("_top_level", 1)
             }
 
@@ -376,7 +376,7 @@ class HeadBasedSamplingTest {
                 hasName("okhttp.request")
                 hasResource("http://${mockServer.hostName}:${mockServer.port}/")
                 hasNoAgentPsr()
-                hasSamplingPriority(2)
+                hasNoSamplingPriority()
                 hasNoGenericMetric("_top_level")
                 hasSpanKind("client")
                 hasHttpMethod("GET")
@@ -425,7 +425,7 @@ class HeadBasedSamplingTest {
 
         // Then
         val requestSent = mockServer.takeRequest()
-        assertThat(requestSent.getHeader(DATADOG_SAMPLING_PRIORITY_HEADER)).isEqualTo("2")
+        assertThat(requestSent.getHeader(DATADOG_SAMPLING_PRIORITY_HEADER)).isEqualTo("1")
         val leastSignificantTraceId = requestSent.getHeader(DATADOG_TRACE_ID_HEADER)
         checkNotNull(leastSignificantTraceId)
         val spanId = requestSent.getHeader(DATADOG_SPAN_ID_HEADER)
@@ -449,8 +449,8 @@ class HeadBasedSamplingTest {
                 hasMostSignificant64BitsTraceId(mostSignificantTraceId)
                 hasParentId("0000000000000000")
                 // OpenTelemetry span will have _dd.rule_psr instead of _dd.agent_psr
-                hasRulePsr(1.0)
-                hasSamplingPriority(DatadogTracingConstants.PrioritySampling.USER_KEEP)
+                hasAgentPsr(1.0)
+                hasSamplingPriority(DatadogTracingConstants.PrioritySampling.SAMPLER_KEEP)
                 hasGenericMetricValue("_top_level", 1)
             }
 
@@ -473,7 +473,7 @@ class HeadBasedSamplingTest {
                 hasName("okhttp.request")
                 hasResource("http://${mockServer.hostName}:${mockServer.port}/")
                 hasNoAgentPsr()
-                hasSamplingPriority(DatadogTracingConstants.PrioritySampling.USER_KEEP)
+                hasSamplingPriority(DatadogTracingConstants.PrioritySampling.SAMPLER_KEEP)
                 hasNoGenericMetric("_top_level")
                 hasSpanKind("client")
                 hasHttpMethod("GET")
@@ -574,7 +574,7 @@ class HeadBasedSamplingTest {
 
         // Then
         val requestSent = mockServer.takeRequest()
-        assertThat(requestSent.getHeader(DATADOG_SAMPLING_PRIORITY_HEADER)).isEqualTo("2")
+        assertThat(requestSent.getHeader(DATADOG_SAMPLING_PRIORITY_HEADER)).isEqualTo("1")
         val leastSignificantTraceId = requestSent.getHeader(DATADOG_TRACE_ID_HEADER)
         checkNotNull(leastSignificantTraceId)
         val spanId = requestSent.getHeader(DATADOG_SPAN_ID_HEADER)
@@ -597,8 +597,8 @@ class HeadBasedSamplingTest {
                 )
                 hasMostSignificant64BitsTraceId(mostSignificantTraceId)
                 hasParentId("0000000000000000")
-                hasRulePsr(1.0)
-                hasSamplingPriority(DatadogTracingConstants.PrioritySampling.USER_KEEP)
+                hasAgentPsr(1.0)
+                hasSamplingPriority(DatadogTracingConstants.PrioritySampling.SAMPLER_KEEP)
                 hasGenericMetricValue("_top_level", 1)
             }
 
@@ -623,7 +623,7 @@ class HeadBasedSamplingTest {
                 hasNoAgentPsr()
                 // this one will have sampling priority unlike in case of propagation with tagged Span directly,
                 // because there sampling priority is not yet set at the parent during child creation
-                hasSamplingPriority(2)
+                hasSamplingPriority(1)
                 hasNoGenericMetric("_top_level")
                 hasSpanKind("client")
                 hasHttpMethod("GET")

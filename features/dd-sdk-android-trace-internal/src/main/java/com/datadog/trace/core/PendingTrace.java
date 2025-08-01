@@ -247,7 +247,7 @@ public class PendingTrace implements AgentTrace, PendingTraceBuffer.Element {
         if (span == null) {
             return null;
         }
-        Integer prio = span.getSamplingPriority();
+        Integer prio = span.getTraceSamplingPriority();
         if (prio == null) {
             prio = span.forceSamplingDecision();
         }
@@ -331,7 +331,7 @@ public class PendingTrace implements AgentTrace, PendingTraceBuffer.Element {
             // Finished root with pending work ... delay write
             pendingTraceBuffer.enqueue(this);
             return PublishState.ROOT_BUFFERED;
-        } else if (partialFlushMinSpans > 0 && size() >= partialFlushMinSpans) {
+        } else if (partialFlushMinSpans > 0 && size() > partialFlushMinSpans) {
             // Trace is getting too big, write anything completed.
             partialFlush();
             return PublishState.PARTIAL_FLUSH;
@@ -524,7 +524,7 @@ public class PendingTrace implements AgentTrace, PendingTraceBuffer.Element {
 
         if (traceConfig.sampler instanceof PrioritySampler
                 && rootSpan != null
-                && rootSpan.context().getSamplingPriority() == PrioritySampling.UNSET) {
+                && rootSpan.context().getTraceSamplingPriority() == PrioritySampling.UNSET) {
             ((PrioritySampler) traceConfig.sampler).setSamplingPriority(rootSpan);
         }
     }

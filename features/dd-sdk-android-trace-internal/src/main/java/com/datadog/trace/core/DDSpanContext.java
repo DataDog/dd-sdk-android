@@ -558,8 +558,13 @@ public class DDSpanContext
   }
 
   @Override
-  public int getSamplingPriority() {
+  public int getTraceSamplingPriority() {
     return getRootSpanContextOrThis().samplingPriority;
+  }
+
+  @Override
+  public int getSpanSamplingPriority() {
+    return samplingPriority;
   }
 
   public void setSpanSamplingPriority(double rate, int limit) {
@@ -806,7 +811,7 @@ public class DDSpanContext
               threadName,
               tags,
               baggageItemsWithPropagationTags,
-              samplingPriority != PrioritySampling.UNSET ? samplingPriority : getSamplingPriority(),
+              samplingPriority != PrioritySampling.UNSET ? samplingPriority : getTraceSamplingPriority(),
               measured,
               topLevel,
               httpStatusCode == 0 ? null : HTTP_STATUSES.get(httpStatusCode),

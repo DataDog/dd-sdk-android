@@ -60,7 +60,7 @@ internal class CoreDDSpanForgeryFactory : ForgeryFactory<DDSpan> {
             whenever(it.parentId).thenReturn(parentId)
             whenever(it.baggage).thenReturn(baggageItems)
             whenever(it.tags).thenReturn(tagsAndMetrics)
-            whenever(it.samplingPriority()).thenReturn(samplingPriority)
+            whenever(it.traceSamplingPriority).thenReturn(samplingPriority)
             whenever(it.links).thenReturn(spanLinks)
         }
         return mockDDSpan

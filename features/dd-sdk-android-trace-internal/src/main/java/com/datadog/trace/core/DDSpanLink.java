@@ -50,7 +50,7 @@ public class DDSpanLink extends SpanLink {
      * @return A span link to the given context with custom attributes.
      */
     public static SpanLink from(ExtractedContext context, Attributes attributes) {
-        byte traceFlags = context.getSamplingPriority() > 0 ? SAMPLED_FLAG : DEFAULT_FLAGS;
+        byte traceFlags = context.getTraceSamplingPriority() > 0 ? SAMPLED_FLAG : DEFAULT_FLAGS;
         String traceState =
                 context.getPropagationTags() == null
                         ? ""
