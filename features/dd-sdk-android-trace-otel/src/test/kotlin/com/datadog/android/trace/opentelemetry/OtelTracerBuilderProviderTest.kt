@@ -369,11 +369,11 @@ internal class OtelTracerBuilderProviderTest {
 
         // Then
         val priority = delegateSpan.samplingPriority
-        assertThat(priority).isEqualTo(DatadogTracingConstants.PrioritySampling.SAMPLER_KEEP)
+        assertThat(priority).isEqualTo(DatadogTracingConstants.PrioritySampling.USER_KEEP)
     }
 
     @Test
-    fun `M use sampler-drop priority W buildSpan { provide not keep sample rate }`() {
+    fun `M use user-drop priority W buildSpan { provide not keep sample rate }`() {
         // Given
         val tracer = testedOtelTracerProviderBuilder
             .setPartialFlushThreshold(1)
@@ -392,11 +392,11 @@ internal class OtelTracerBuilderProviderTest {
 
         // Then
         val priority = delegateSpan.samplingPriority
-        assertThat(priority).isEqualTo(DatadogTracingConstants.PrioritySampling.SAMPLER_DROP)
+        assertThat(priority).isEqualTo(DatadogTracingConstants.PrioritySampling.USER_DROP)
     }
 
     @Test
-    fun `M use sampler-keep or sampler-not-keep priority W buildSpan { provided random sample rate }`(
+    fun `M use user-keep or user-not-keep priority W buildSpan { provided random sample rate }`(
         @DoubleForgery(min = 0.0, max = 100.0) sampleRate: Double,
         forge: Forge
     ) {
@@ -423,9 +423,9 @@ internal class OtelTracerBuilderProviderTest {
         }
         spans.forEach { it.end() }
         val droppedSpans =
-            delegatedSpans.filter { it.samplingPriority == DatadogTracingConstants.PrioritySampling.SAMPLER_DROP }
+            delegatedSpans.filter { it.samplingPriority == DatadogTracingConstants.PrioritySampling.USER_DROP }
         val keptSpans =
-            delegatedSpans.filter { it.samplingPriority == DatadogTracingConstants.PrioritySampling.SAMPLER_KEEP }
+            delegatedSpans.filter { it.samplingPriority == DatadogTracingConstants.PrioritySampling.USER_KEEP }
 
         // Then
         assertThat(droppedSpans.size + keptSpans.size).isEqualTo(numberOfSpans)
