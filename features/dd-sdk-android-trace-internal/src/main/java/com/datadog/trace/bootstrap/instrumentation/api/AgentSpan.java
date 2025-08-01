@@ -179,7 +179,21 @@ public interface AgentSpan extends MutableSpan, IGSpanInfo {
      * @return The trace sampling priority of the span's trace, or {@link PrioritySampling#UNSET} if
      *     no priority has been set.
      */
-    int getSamplingPriority();
+    int getTraceSamplingPriority();
+
+    /**
+     * Gets the span's sampling priority.
+     *
+     * <p>Check {@link PrioritySampling} for possible values.
+     * <p>
+     *
+     * Main difference between this and {@link #getTraceSamplingPriority()} is that this method
+     * does not take into account the root context sampling priority.
+     *
+     * @return The span sampling priority or {@link PrioritySampling#UNSET} if
+     * no priority has been set.
+     */
+    int getSpanSamplingPriority();
 
     Iterable<Map.Entry<String, String>> baggageItems();
 

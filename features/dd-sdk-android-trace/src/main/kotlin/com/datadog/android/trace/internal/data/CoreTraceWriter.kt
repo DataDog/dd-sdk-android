@@ -46,7 +46,7 @@ internal class CoreTraceWriter(
             ?.withWriteContext { datadogContext, writeScope ->
                 val writeSpans = trace
                     .filter {
-                        it.samplingPriority() !in DROP_SAMPLING_PRIORITIES
+                        it.getTraceSamplingPriority() !in DROP_SAMPLING_PRIORITIES
                     }
                     .map { it.bundleWithRum() }
                 // TODO RUM-4092 Add the capability in the serializer to handle multiple spans in one payload
