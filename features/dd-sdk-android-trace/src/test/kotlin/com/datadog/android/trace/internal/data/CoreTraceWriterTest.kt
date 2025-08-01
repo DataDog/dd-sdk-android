@@ -505,9 +505,9 @@ internal class CoreTraceWriterTest {
 
     private fun createNonEmptyDdSpans(forge: Forge, includeDropSamplingPriority: Boolean): List<DDSpan> {
         val predicate: (DDSpan) -> Boolean = if (includeDropSamplingPriority) {
-            { it.samplingPriority() in CoreTraceWriter.DROP_SAMPLING_PRIORITIES }
+            { it.getTraceSamplingPriority() in CoreTraceWriter.DROP_SAMPLING_PRIORITIES }
         } else {
-            { it.samplingPriority() !in CoreTraceWriter.DROP_SAMPLING_PRIORITIES }
+            { it.getTraceSamplingPriority() !in CoreTraceWriter.DROP_SAMPLING_PRIORITIES }
         }
 
         var spans = emptyList<DDSpan>()

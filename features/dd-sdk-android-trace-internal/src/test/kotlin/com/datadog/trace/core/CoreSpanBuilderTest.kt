@@ -327,7 +327,7 @@ internal class CoreSpanBuilderTest : DDCoreSpecification() {
         // Then
         assertThat(span.traceId).isEqualTo(extractedContext.traceId)
         assertThat(span.parentId).isEqualTo(extractedContext.spanId)
-        assertThat(span.samplingPriority).isEqualTo(extractedContext.samplingPriority)
+        assertThat(span.traceSamplingPriority).isEqualTo(extractedContext.traceSamplingPriority)
         assertThat(span.context().origin).isEqualTo(extractedContext.origin)
         assertThat(span.context().baggageItems).isEqualTo(extractedContext.baggage)
         // check the extracted context has been copied into the span tags. Intercepted tags will be skipped from
@@ -353,7 +353,7 @@ internal class CoreSpanBuilderTest : DDCoreSpecification() {
         // Then
         assertThat(span.traceId).isNotEqualTo(DDTraceId.ZERO)
         assertThat(span.parentId).isEqualTo(DDSpanId.ZERO)
-        assertThat(span.samplingPriority).isNull()
+        assertThat(span.traceSamplingPriority).isNull()
         assertThat(span.context().origin).isEqualTo(tagContext.origin)
         assertThat(span.context().baggageItems).isEqualTo(emptyMap<String, String>())
         assertThat(span.context().tags).containsExactlyInAnyOrderEntriesOf(

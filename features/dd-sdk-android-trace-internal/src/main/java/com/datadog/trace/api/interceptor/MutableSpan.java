@@ -27,7 +27,7 @@ public interface MutableSpan {
   MutableSpan setResourceName(final CharSequence resourceName);
 
   @Nullable
-  Integer getSamplingPriority();
+  Integer getTraceSamplingPriority();
 
   /**
    * @param newPriority

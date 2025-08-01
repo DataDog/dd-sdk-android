@@ -988,7 +988,7 @@ public class CoreTracer implements AgentTracer.TracerAPI {
                     final ExtractedContext extractedContext = (ExtractedContext) parentContext;
                     traceId = extractedContext.getTraceId();
                     parentSpanId = extractedContext.getSpanId();
-                    samplingPriority = extractedContext.getSamplingPriority();
+                    samplingPriority = extractedContext.getTraceSamplingPriority();
                     endToEndStartTime = extractedContext.getEndToEndStartTime();
                     propagationTags = extractedContext.getPropagationTags();
                 } else if (parentContext != null) {
@@ -997,7 +997,7 @@ public class CoreTracer implements AgentTracer.TracerAPI {
                                     ? idGenerationStrategy.generateTraceId()
                                     : parentContext.getTraceId();
                     parentSpanId = parentContext.getSpanId();
-                    samplingPriority = parentContext.getSamplingPriority();
+                    samplingPriority = parentContext.getTraceSamplingPriority();
                     endToEndStartTime = 0;
                     propagationTags = propagationTagsFactory.empty();
                 } else {

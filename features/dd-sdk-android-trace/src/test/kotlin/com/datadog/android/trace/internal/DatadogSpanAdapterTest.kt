@@ -253,7 +253,7 @@ internal class DatadogSpanAdapterTest {
     @Test
     fun `M return delegate#samplingPriority W samplingPriority is called`() {
         // Given
-        whenever(mockAgentSpan.samplingPriority).thenReturn(fakeInt)
+        whenever(mockAgentSpan.traceSamplingPriority).thenReturn(fakeInt)
 
         // When
         val actual = testedSpanAdapter.samplingPriority

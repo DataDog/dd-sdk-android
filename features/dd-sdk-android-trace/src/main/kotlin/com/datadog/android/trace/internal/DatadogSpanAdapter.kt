@@ -21,7 +21,7 @@ internal class DatadogSpanAdapter(
 
     override val parentSpanId: Long? get() = (delegate as? DDSpan)?.parentId
 
-    override val samplingPriority: Int? get() = delegate.samplingPriority
+    override val samplingPriority: Int? get() = delegate.traceSamplingPriority
 
     override val durationNano: Long get() = delegate.durationNano
 

@@ -69,7 +69,7 @@ class DatadogSpanContextAdapterTest {
     @Test
     fun `M return delegate#samplingPriority W samplingPriority is called`() {
         // Given
-        whenever(mockAgentSpanContext.samplingPriority).thenReturn(fakeInt)
+        whenever(mockAgentSpanContext.traceSamplingPriority).thenReturn(fakeInt)
 
         // When
         val actual = testedAgentSpanContextAdapter.samplingPriority

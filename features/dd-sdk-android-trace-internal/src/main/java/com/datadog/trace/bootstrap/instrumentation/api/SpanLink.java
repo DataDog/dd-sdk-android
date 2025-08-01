@@ -44,7 +44,7 @@ public class SpanLink implements AgentSpanLink {
    */
   public static SpanLink from(
       AgentSpan.Context context, byte traceFlags, String traceState, Attributes attributes) {
-    if (context.getSamplingPriority() > 0) {
+    if (context.getTraceSamplingPriority() > 0) {
       traceFlags = (byte) (traceFlags | SAMPLED_FLAG);
     }
     return new SpanLink(

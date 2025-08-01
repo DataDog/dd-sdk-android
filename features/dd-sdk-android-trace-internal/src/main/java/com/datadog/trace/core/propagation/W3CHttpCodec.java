@@ -81,7 +81,7 @@ class W3CHttpCodec {
             sb.append(context.getTraceId().toHexString());
             sb.append("-");
             sb.append(DDSpanId.toHexStringPadded(context.getSpanId()));
-            sb.append(context.getSamplingPriority() > 0 ? "-01" : "-00");
+            sb.append(context.getTraceSamplingPriority() > 0 ? "-01" : "-00");
             setter.set(carrier, TRACE_PARENT_KEY, sb.toString());
         }
 
