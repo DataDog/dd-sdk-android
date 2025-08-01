@@ -125,7 +125,8 @@ object DatadogTracingConstants {
         const val TRACE_RATE_LIMIT: String = "trace.rate.limit"
 
         /**
-         * A configuration key used to set the minimum number of spans required to trigger a partial flush of trace data.
+         * A configuration key used to set the minimum number of spans
+         * required to trigger a partial flush of trace data.
          */
         const val PARTIAL_FLUSH_MIN_SPANS: String = "trace.partial.flush.min.spans"
 
@@ -143,6 +144,16 @@ object DatadogTracingConstants {
          * in the tracer's properties or context.
          */
         const val SERVICE_NAME: String = "service.name"
+
+        /**
+         * A constant flag used to toggle compatibility with SDK version 2 for the tracer.
+         *
+         * When this flag is enabled (set to "true"), the SDK adjusts its behavior of a sampler factory,
+         * making it same sampler as in SDK v2.*.*.
+         *
+         * This flag only being used by OTel tracer implementation and disabled by default.
+         */
+        const val SDK_V2_COMPATIBILITY_FLAG: String = "v2.compatibility.enabled"
 
         /**
          * A constant representing the configuration key for enabling or disabling the rule
@@ -166,7 +177,8 @@ object DatadogTracingConstants {
         const val ERROR_KIND: String = "error.kind"
 
         /**
-         * The actual Throwable/Exception/Error object instance itself. E.g., a [UnsupportedOperationException] instance.
+         * The actual Throwable/Exception/Error object instance itself.
+         * E.g., a [UnsupportedOperationException] instance.
          */
         const val ERROR_OBJECT: String = "error.object"
 

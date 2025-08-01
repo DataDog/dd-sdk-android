@@ -49,4 +49,12 @@ object DatadogTracingToolkit {
         (builder as? DatadogTracerBuilderAdapter)?.setTraceId128BitGenerationEnabled(true)
         return builder
     }
+
+    /**
+     * Enables compatibility mode with SDK v2 for sampling factory strategy.
+     */
+    fun setSdkV2Compatible(builder: DatadogTracerBuilder): DatadogTracerBuilder {
+        (builder as? DatadogTracerBuilderAdapter)?.setSdkV2Compatible()
+        return builder
+    }
 }

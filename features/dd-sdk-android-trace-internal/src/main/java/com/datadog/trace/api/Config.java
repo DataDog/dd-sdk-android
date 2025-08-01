@@ -1803,6 +1803,10 @@ public class Config {
         return configProvider.getBoolean(TracerConfig.SAMPLING_MECHANISM_VALIDATION_DISABLED, false);
     }
 
+    public boolean isV2CompatibilityEnabled() {
+        return configProvider.getBoolean(TracerConfig.SDK_V2_COMPATIBILITY_FLAG, false);
+    }
+
     /**
      * @param integrationNames
      * @param defaultEnabled

@@ -78,6 +78,7 @@ class DatadogTracerBuilderAdapterTest {
             DatadogTracerBuilderAdapter.DEFAULT_PARTIAL_MIN_FLUSH.toString()
         )
         expected.setProperty(TracerConfig.URL_AS_RESOURCE_NAME, DEFAULT_URL_AS_RESOURCE_NAME.toString())
+        expected.setProperty(TracerConfig.SDK_V2_COMPATIBILITY_FLAG, false.toString())
         expected.setProperty(TracerConfig.TAGS, "")
 
         // When
@@ -95,6 +96,7 @@ class DatadogTracerBuilderAdapterTest {
         val fakeTagValue = forge.aString()
         val fakeSampleRate = forge.aDouble(min = 0.0, max = 100.0)
         val fakeTraceLimit = forge.anInt()
+        val fakeV2Compatible = forge.aBool()
         val fakePartialFlushMinSpans = forge.anInt()
         val fakeHeaderType = forge.anElementFrom(
             TracingHeaderType.B3,
@@ -111,6 +113,7 @@ class DatadogTracerBuilderAdapterTest {
             setProperty(TracerConfig.TRACE_SAMPLE_RATE, (fakeSampleRate / 100.0).toString())
             setProperty(TracerConfig.PARTIAL_FLUSH_MIN_SPANS, fakePartialFlushMinSpans.toString())
             setProperty(TracerConfig.URL_AS_RESOURCE_NAME, DEFAULT_URL_AS_RESOURCE_NAME.toString())
+            setProperty(TracerConfig.SDK_V2_COMPATIBILITY_FLAG, fakeV2Compatible.toString())
             setProperty(TracerConfig.TAGS, "$fakeTagKey:$fakeTagValue")
         }
 
@@ -122,6 +125,7 @@ class DatadogTracerBuilderAdapterTest {
             .withServiceName(fakeServiceName)
             .withTracingHeadersTypes(setOf(fakeHeaderType))
             .withPartialFlushMinSpans(fakePartialFlushMinSpans)
+            .also { if (fakeV2Compatible) it.setSdkV2Compatible() }
             .properties()
 
         // Then

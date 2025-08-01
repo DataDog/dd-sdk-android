@@ -94,6 +94,11 @@ internal class LogEventForgeryFactory : ForgeryFactory<LogEvent> {
                 brand = deviceInfo.deviceBrand,
                 architecture = deviceInfo.architecture
             ),
+            dd = LogEvent.Dd(
+                device = LogEvent.DdDevice(
+                    architecture = deviceInfo.architecture
+                )
+            ),
             os = LogEvent.Os(
                 name = deviceInfo.osName,
                 version = deviceInfo.osVersion,

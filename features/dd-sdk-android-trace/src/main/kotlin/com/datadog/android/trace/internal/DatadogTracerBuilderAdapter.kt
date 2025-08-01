@@ -24,6 +24,7 @@ internal class DatadogTracerBuilderAdapter(
 
     private var sampleRate: Double? = null
     private var bundleWithRumEnabled: Boolean = true
+    private var sdkV2OTelCompatible: Boolean = false
     private var traceRateLimit = Int.MAX_VALUE
     private var partialFlushMinSpans = DEFAULT_PARTIAL_MIN_FLUSH
     private val globalTags: MutableMap<String, String> = mutableMapOf()
@@ -85,6 +86,10 @@ internal class DatadogTracerBuilderAdapter(
         delegate.idGenerationStrategy(IdGenerationStrategy.fromName("SECURE_RANDOM", traceId128BitGenerationEnabled))
     }
 
+    internal fun setSdkV2Compatible() {
+        sdkV2OTelCompatible = true
+    }
+
     @VisibleForTesting
     internal fun properties(): Properties {
         val properties = Properties()
@@ -96,6 +101,7 @@ internal class DatadogTracerBuilderAdapter(
         properties.setProperty(TracerConfig.TRACE_RATE_LIMIT, traceRateLimit.toString())
         properties.setProperty(TracerConfig.PARTIAL_FLUSH_MIN_SPANS, partialFlushMinSpans.toString())
         properties.setProperty(TracerConfig.URL_AS_RESOURCE_NAME, DEFAULT_URL_AS_RESOURCE_NAME.toString())
+        properties.setProperty(TracerConfig.SDK_V2_COMPATIBILITY_FLAG, sdkV2OTelCompatible.toString())
         sampleRate?.let {
             properties.setProperty(
                 TracerConfig.TRACE_SAMPLE_RATE,

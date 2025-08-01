@@ -445,6 +445,7 @@ internal class SpansPayloadAssert(actual: JsonObject) :
         private const val SERVICE_KEY = "service"
         private const val ERROR_KEY = "error"
         private const val NAME_KEY = "name"
+        private const val TYPE_KEY = "type"
         private const val RESOURCE_KEY = "resource"
         private const val USR_KEY = "meta.usr"
         private const val USR_ID_KEY = "meta.usr.id"
