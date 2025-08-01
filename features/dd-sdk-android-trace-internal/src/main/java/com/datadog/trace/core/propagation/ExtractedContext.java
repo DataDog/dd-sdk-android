@@ -96,8 +96,8 @@ public class ExtractedContext extends TagContext {
     if (getBaggage() != null) {
       builder.append("baggage=").append(getBaggage()).append(", ");
     }
-    if (getSamplingPriority() != PrioritySampling.UNSET) {
-      builder.append("samplingPriority=").append(getSamplingPriority()).append(", ");
+    if (getTraceSamplingPriority() != PrioritySampling.UNSET) {
+      builder.append("samplingPriority=").append(getTraceSamplingPriority()).append(", ");
     }
     return builder.append('}').toString();
   }

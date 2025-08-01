@@ -154,7 +154,7 @@ internal class DDSpanContextTest : DDCoreSpecification() {
         context.setSamplingPriority(PrioritySampling.SAMPLER_DROP.toInt(), SamplingMechanism.DEFAULT.toInt())
 
         // Then: "priority should be set"
-        assertThat(context.samplingPriority).isEqualTo(PrioritySampling.SAMPLER_DROP.toInt())
+        assertThat(context.traceSamplingPriority).isEqualTo(PrioritySampling.SAMPLER_DROP.toInt())
 
         // When: "sampling priority locked"
         context.lockSamplingPriority()
@@ -164,13 +164,13 @@ internal class DDSpanContextTest : DDCoreSpecification() {
             context.setSamplingPriority(PrioritySampling.USER_DROP.toInt(), SamplingMechanism.MANUAL.toInt())
         assertThat(samplingPriority)
             .isFalse()
-        assertThat(context.samplingPriority).isEqualTo(PrioritySampling.SAMPLER_DROP.toInt())
+        assertThat(context.traceSamplingPriority).isEqualTo(PrioritySampling.SAMPLER_DROP.toInt())
 
         // When
         context.forceKeep()
 
         // Then: "lock is bypassed and priority set to USER_KEEP"
-        assertThat(context.samplingPriority).isEqualTo(PrioritySampling.USER_KEEP.toInt())
+        assertThat(context.traceSamplingPriority).isEqualTo(PrioritySampling.USER_KEEP.toInt())
 
         // Tear down
         span.finish()
@@ -187,7 +187,7 @@ internal class DDSpanContextTest : DDCoreSpecification() {
         val context = span.context() as DDSpanContext
 
         // Then
-        assertThat(context.samplingPriority).isEqualTo(PrioritySampling.UNSET.toInt())
+        assertThat(context.traceSamplingPriority).isEqualTo(PrioritySampling.UNSET.toInt())
 
         // Given
         context.setSpanSamplingPriority(rate, limit)
@@ -200,7 +200,7 @@ internal class DDSpanContextTest : DDCoreSpecification() {
         assertThat(context.getTag(DDSpanContext.SPAN_SAMPLING_MAX_PER_SECOND_TAG))
             .isEqualTo(if (limit == Int.MAX_VALUE) null else limit)
         // single span sampling should not change the trace sampling priority
-        assertThat(context.samplingPriority).isEqualTo(PrioritySampling.UNSET.toInt())
+        assertThat(context.traceSamplingPriority).isEqualTo(PrioritySampling.UNSET.toInt())
         // make sure the `_dd.p.dm` tag has not been set by single span sampling
         assertThat(context.propagationTags.createTagMap().containsKey("_dd.p.dm")).isFalse()
     }

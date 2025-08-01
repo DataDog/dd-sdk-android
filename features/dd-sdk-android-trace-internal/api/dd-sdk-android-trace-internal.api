@@ -301,7 +301,6 @@ public final class com/datadog/trace/api/DynamicConfig {
 	public static fun create (Lcom/datadog/android/trace/internal/compat/function/BiFunction;)Lcom/datadog/trace/api/DynamicConfig$Builder;
 	public fun current ()Lcom/datadog/trace/api/DynamicConfig$Builder;
 	public fun initial ()Lcom/datadog/trace/api/DynamicConfig$Builder;
-	public fun resetTraceConfig ()V
 	public fun toString ()Ljava/lang/String;
 }
 
@@ -1638,6 +1637,7 @@ public abstract interface class com/datadog/trace/bootstrap/instrumentation/api/
 
 public abstract interface class com/datadog/trace/bootstrap/instrumentation/api/AgentSpan$Context {
 	public abstract fun baggageItems ()Ljava/lang/Iterable;
+	public abstract fun getInstanceSamplingPriority ()I
 	public abstract fun getPathwayContext ()Lcom/datadog/trace/bootstrap/instrumentation/api/PathwayContext;
 	public abstract fun getSamplingPriority ()I
 	public abstract fun getSpanId ()J
@@ -1801,6 +1801,7 @@ public final class com/datadog/trace/bootstrap/instrumentation/api/AgentTracer$N
 	public fun getFastlyClientIp ()Ljava/lang/String;
 	public fun getForwarded ()Ljava/lang/String;
 	public fun getForwardedFor ()Ljava/lang/String;
+	public fun getInstanceSamplingPriority ()I
 	public fun getPathwayContext ()Lcom/datadog/trace/bootstrap/instrumentation/api/PathwayContext;
 	public fun getSamplingPriority ()I
 	public fun getSpanId ()J
@@ -2128,6 +2129,7 @@ public class com/datadog/trace/bootstrap/instrumentation/api/TagContext : com/da
 	public fun getFastlyClientIp ()Ljava/lang/String;
 	public fun getForwarded ()Ljava/lang/String;
 	public fun getForwardedFor ()Ljava/lang/String;
+	public fun getInstanceSamplingPriority ()I
 	public final fun getOrigin ()Ljava/lang/CharSequence;
 	public fun getPathwayContext ()Lcom/datadog/trace/bootstrap/instrumentation/api/PathwayContext;
 	public fun getPropagationStyle ()Lcom/datadog/trace/api/TracePropagationStyle;
@@ -2443,19 +2445,6 @@ public final class com/datadog/trace/common/sampling/SamplingRule$SpanSamplingRu
 public final class com/datadog/trace/common/sampling/SamplingRule$TraceSamplingRule : com/datadog/trace/common/sampling/SamplingRule {
 	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;Lcom/datadog/trace/common/sampling/RateSampler;)V
 	public fun matches (Lcom/datadog/trace/core/CoreSpan;)Z
-}
-
-public abstract interface class com/datadog/trace/common/sampling/SingleSpanSampler {
-	public abstract fun setSamplingPriority (Lcom/datadog/trace/core/CoreSpan;)Z
-}
-
-public final class com/datadog/trace/common/sampling/SingleSpanSampler$Builder {
-	public static fun forConfig (Lcom/datadog/trace/api/Config;)Lcom/datadog/trace/common/sampling/SingleSpanSampler;
-}
-
-public final class com/datadog/trace/common/sampling/SingleSpanSampler$RuleBasedSingleSpanSampler : com/datadog/trace/common/sampling/SingleSpanSampler {
-	public fun <init> (Lcom/datadog/trace/common/sampling/SpanSamplingRules;)V
-	public fun setSamplingPriority (Lcom/datadog/trace/core/CoreSpan;)Z
 }
 
 public class com/datadog/trace/common/sampling/SpanSamplingRules {
@@ -2875,6 +2864,7 @@ public class com/datadog/trace/core/DDSpanContext : com/datadog/trace/api/gatewa
 	public fun getEndToEndStartTime ()J
 	public fun getErrorFlag ()Z
 	public fun getHttpStatusCode ()S
+	public fun getInstanceSamplingPriority ()I
 	public fun getOperationName ()Ljava/lang/CharSequence;
 	public fun getOrigin ()Ljava/lang/CharSequence;
 	public fun getParentId ()J

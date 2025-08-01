@@ -89,7 +89,7 @@ class XRayHttpCodec {
 
             if (context.lockSamplingPriority()) {
                 buf.append(';' + SAMPLED_PREFIX)
-                        .append(convertSamplingPriority(context.getSamplingPriority()));
+                        .append(convertSamplingPriority(context.getTraceSamplingPriority()));
             }
 
             int maxCapacity = buf.length() + MAX_ADDITIONAL_BYTES;
