@@ -331,7 +331,7 @@ public class PendingTrace implements AgentTrace, PendingTraceBuffer.Element {
             // Finished root with pending work ... delay write
             pendingTraceBuffer.enqueue(this);
             return PublishState.ROOT_BUFFERED;
-        } else if (partialFlushMinSpans > 0 && size() >= partialFlushMinSpans) {
+        } else if (partialFlushMinSpans > 0 && size() > partialFlushMinSpans) {
             // Trace is getting too big, write anything completed.
             partialFlush();
             return PublishState.PARTIAL_FLUSH;
