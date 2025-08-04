@@ -46,7 +46,7 @@ class ExampleStartupBenchmark {
             MemoryUsageMetric(mode = MemoryUsageMetric.Mode.Max),
             FrameTimingMetric(),
         ),
-        iterations = 10,
+        iterations = 2,
         startupMode = StartupMode.COLD
     ) {
         pressHome()
