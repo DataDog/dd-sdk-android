@@ -4,6 +4,8 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
+includeBuild("../dd-sdk-android-gradle-plugin")
+
 // CORE LIBRARY
 include(":dd-sdk-android-core")
 include(":dd-sdk-android-internal")
