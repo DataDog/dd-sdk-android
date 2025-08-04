@@ -390,5 +390,5 @@ traceCore = [
 [plugins]
 versionsGradlePlugin = { id = "com.github.ben-manes.versions", version.ref = "versionsGradlePlugin" }
 nexusPublishGradlePlugin = { id = "io.github.gradle-nexus.publish-plugin", version.ref = "nexusPublishGradlePlugin" }
-datadogGradlePlugin = { id = "com.datadoghq.dd-sdk-android-gradle-plugin", version.ref = "datadogPlugin" }
+datadogGradlePlugin = { id = "com.datadoghq.dd-sdk-android-gradle-plugin-local", version.ref = "datadogPlugin" }
 
