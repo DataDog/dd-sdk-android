@@ -80,6 +80,15 @@ class AppStartupTypeManager(
         if (!firstActivityDrawn) {
             activity.window.decorView.viewTreeObserver.addOnDrawListener(this)
             activityCreatedStartTime = relativeNow()
+
+            val span = tracer.spanBuilder("Application.onCreate")
+                .setParent(io.opentelemetry.context.Context.current().with(appStartupSpan))
+                .setStartTimestamp(relativeTime(AppStartMetrics.onApplicationCreateStartedTs))
+                .startSpan()
+
+            val now = relativeNow()
+//            Log.w("WAHAHA", "app_startup: $now, process_start: $processStartTimeNs")
+            span.end(relativeTime(AppStartMetrics.onApplicationCreateEndedTs))
         }
 
         Log.w("WAHAHA", "${activity::class.java.name} onActivityPreCreated")
