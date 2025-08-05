@@ -78,33 +78,29 @@ public final class com/datadog/android/trace/internal/SpanAttributes {
 
 public final class com/datadog/android/trace/model/SpanEvent {
 	public static final field Companion Lcom/datadog/android/trace/model/SpanEvent$Companion;
-	public fun <init> (Lcom/datadog/android/trace/model/SpanEvent$Device;Lcom/datadog/android/trace/model/SpanEvent$Os;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;JJJLcom/datadog/android/trace/model/SpanEvent$Metrics;Lcom/datadog/android/trace/model/SpanEvent$Meta;)V
-	public synthetic fun <init> (Lcom/datadog/android/trace/model/SpanEvent$Device;Lcom/datadog/android/trace/model/SpanEvent$Os;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;JJJLcom/datadog/android/trace/model/SpanEvent$Metrics;Lcom/datadog/android/trace/model/SpanEvent$Meta;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Lcom/datadog/android/trace/model/SpanEvent$Device;
-	public final fun component10 ()J
-	public final fun component11 ()J
-	public final fun component12 ()Lcom/datadog/android/trace/model/SpanEvent$Metrics;
-	public final fun component13 ()Lcom/datadog/android/trace/model/SpanEvent$Meta;
-	public final fun component2 ()Lcom/datadog/android/trace/model/SpanEvent$Os;
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;JJJLcom/datadog/android/trace/model/SpanEvent$Metrics;Lcom/datadog/android/trace/model/SpanEvent$Meta;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;JJJLcom/datadog/android/trace/model/SpanEvent$Metrics;Lcom/datadog/android/trace/model/SpanEvent$Meta;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component10 ()Lcom/datadog/android/trace/model/SpanEvent$Metrics;
+	public final fun component11 ()Lcom/datadog/android/trace/model/SpanEvent$Meta;
+	public final fun component2 ()Ljava/lang/String;
 	public final fun component3 ()Ljava/lang/String;
 	public final fun component4 ()Ljava/lang/String;
 	public final fun component5 ()Ljava/lang/String;
 	public final fun component6 ()Ljava/lang/String;
-	public final fun component7 ()Ljava/lang/String;
-	public final fun component8 ()Ljava/lang/String;
+	public final fun component7 ()J
+	public final fun component8 ()J
 	public final fun component9 ()J
-	public final fun copy (Lcom/datadog/android/trace/model/SpanEvent$Device;Lcom/datadog/android/trace/model/SpanEvent$Os;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;JJJLcom/datadog/android/trace/model/SpanEvent$Metrics;Lcom/datadog/android/trace/model/SpanEvent$Meta;)Lcom/datadog/android/trace/model/SpanEvent;
-	public static synthetic fun copy$default (Lcom/datadog/android/trace/model/SpanEvent;Lcom/datadog/android/trace/model/SpanEvent$Device;Lcom/datadog/android/trace/model/SpanEvent$Os;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;JJJLcom/datadog/android/trace/model/SpanEvent$Metrics;Lcom/datadog/android/trace/model/SpanEvent$Meta;ILjava/lang/Object;)Lcom/datadog/android/trace/model/SpanEvent;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;JJJLcom/datadog/android/trace/model/SpanEvent$Metrics;Lcom/datadog/android/trace/model/SpanEvent$Meta;)Lcom/datadog/android/trace/model/SpanEvent;
+	public static synthetic fun copy$default (Lcom/datadog/android/trace/model/SpanEvent;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;JJJLcom/datadog/android/trace/model/SpanEvent$Metrics;Lcom/datadog/android/trace/model/SpanEvent$Meta;ILjava/lang/Object;)Lcom/datadog/android/trace/model/SpanEvent;
 	public fun equals (Ljava/lang/Object;)Z
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/trace/model/SpanEvent;
 	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/trace/model/SpanEvent;
-	public final fun getDevice ()Lcom/datadog/android/trace/model/SpanEvent$Device;
 	public final fun getDuration ()J
 	public final fun getError ()J
 	public final fun getMeta ()Lcom/datadog/android/trace/model/SpanEvent$Meta;
 	public final fun getMetrics ()Lcom/datadog/android/trace/model/SpanEvent$Metrics;
 	public final fun getName ()Ljava/lang/String;
-	public final fun getOs ()Lcom/datadog/android/trace/model/SpanEvent$Os;
 	public final fun getParentId ()Ljava/lang/String;
 	public final fun getResource ()Ljava/lang/String;
 	public final fun getService ()Ljava/lang/String;
@@ -274,25 +270,29 @@ public final class com/datadog/android/trace/model/SpanEvent$Device$Companion {
 
 public final class com/datadog/android/trace/model/SpanEvent$Meta {
 	public static final field Companion Lcom/datadog/android/trace/model/SpanEvent$Meta$Companion;
-	public fun <init> (Ljava/lang/String;Lcom/datadog/android/trace/model/SpanEvent$Dd;Lcom/datadog/android/trace/model/SpanEvent$Span;Lcom/datadog/android/trace/model/SpanEvent$Tracer;Lcom/datadog/android/trace/model/SpanEvent$Usr;Lcom/datadog/android/trace/model/SpanEvent$Account;Lcom/datadog/android/trace/model/SpanEvent$Network;Ljava/util/Map;)V
-	public synthetic fun <init> (Ljava/lang/String;Lcom/datadog/android/trace/model/SpanEvent$Dd;Lcom/datadog/android/trace/model/SpanEvent$Span;Lcom/datadog/android/trace/model/SpanEvent$Tracer;Lcom/datadog/android/trace/model/SpanEvent$Usr;Lcom/datadog/android/trace/model/SpanEvent$Account;Lcom/datadog/android/trace/model/SpanEvent$Network;Ljava/util/Map;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Ljava/lang/String;Lcom/datadog/android/trace/model/SpanEvent$Dd;Lcom/datadog/android/trace/model/SpanEvent$Span;Lcom/datadog/android/trace/model/SpanEvent$Tracer;Lcom/datadog/android/trace/model/SpanEvent$Usr;Lcom/datadog/android/trace/model/SpanEvent$Account;Lcom/datadog/android/trace/model/SpanEvent$Network;Lcom/datadog/android/trace/model/SpanEvent$Device;Lcom/datadog/android/trace/model/SpanEvent$Os;Ljava/util/Map;)V
+	public synthetic fun <init> (Ljava/lang/String;Lcom/datadog/android/trace/model/SpanEvent$Dd;Lcom/datadog/android/trace/model/SpanEvent$Span;Lcom/datadog/android/trace/model/SpanEvent$Tracer;Lcom/datadog/android/trace/model/SpanEvent$Usr;Lcom/datadog/android/trace/model/SpanEvent$Account;Lcom/datadog/android/trace/model/SpanEvent$Network;Lcom/datadog/android/trace/model/SpanEvent$Device;Lcom/datadog/android/trace/model/SpanEvent$Os;Ljava/util/Map;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Ljava/lang/String;
+	public final fun component10 ()Ljava/util/Map;
 	public final fun component2 ()Lcom/datadog/android/trace/model/SpanEvent$Dd;
 	public final fun component3 ()Lcom/datadog/android/trace/model/SpanEvent$Span;
 	public final fun component4 ()Lcom/datadog/android/trace/model/SpanEvent$Tracer;
 	public final fun component5 ()Lcom/datadog/android/trace/model/SpanEvent$Usr;
 	public final fun component6 ()Lcom/datadog/android/trace/model/SpanEvent$Account;
 	public final fun component7 ()Lcom/datadog/android/trace/model/SpanEvent$Network;
-	public final fun component8 ()Ljava/util/Map;
-	public final fun copy (Ljava/lang/String;Lcom/datadog/android/trace/model/SpanEvent$Dd;Lcom/datadog/android/trace/model/SpanEvent$Span;Lcom/datadog/android/trace/model/SpanEvent$Tracer;Lcom/datadog/android/trace/model/SpanEvent$Usr;Lcom/datadog/android/trace/model/SpanEvent$Account;Lcom/datadog/android/trace/model/SpanEvent$Network;Ljava/util/Map;)Lcom/datadog/android/trace/model/SpanEvent$Meta;
-	public static synthetic fun copy$default (Lcom/datadog/android/trace/model/SpanEvent$Meta;Ljava/lang/String;Lcom/datadog/android/trace/model/SpanEvent$Dd;Lcom/datadog/android/trace/model/SpanEvent$Span;Lcom/datadog/android/trace/model/SpanEvent$Tracer;Lcom/datadog/android/trace/model/SpanEvent$Usr;Lcom/datadog/android/trace/model/SpanEvent$Account;Lcom/datadog/android/trace/model/SpanEvent$Network;Ljava/util/Map;ILjava/lang/Object;)Lcom/datadog/android/trace/model/SpanEvent$Meta;
+	public final fun component8 ()Lcom/datadog/android/trace/model/SpanEvent$Device;
+	public final fun component9 ()Lcom/datadog/android/trace/model/SpanEvent$Os;
+	public final fun copy (Ljava/lang/String;Lcom/datadog/android/trace/model/SpanEvent$Dd;Lcom/datadog/android/trace/model/SpanEvent$Span;Lcom/datadog/android/trace/model/SpanEvent$Tracer;Lcom/datadog/android/trace/model/SpanEvent$Usr;Lcom/datadog/android/trace/model/SpanEvent$Account;Lcom/datadog/android/trace/model/SpanEvent$Network;Lcom/datadog/android/trace/model/SpanEvent$Device;Lcom/datadog/android/trace/model/SpanEvent$Os;Ljava/util/Map;)Lcom/datadog/android/trace/model/SpanEvent$Meta;
+	public static synthetic fun copy$default (Lcom/datadog/android/trace/model/SpanEvent$Meta;Ljava/lang/String;Lcom/datadog/android/trace/model/SpanEvent$Dd;Lcom/datadog/android/trace/model/SpanEvent$Span;Lcom/datadog/android/trace/model/SpanEvent$Tracer;Lcom/datadog/android/trace/model/SpanEvent$Usr;Lcom/datadog/android/trace/model/SpanEvent$Account;Lcom/datadog/android/trace/model/SpanEvent$Network;Lcom/datadog/android/trace/model/SpanEvent$Device;Lcom/datadog/android/trace/model/SpanEvent$Os;Ljava/util/Map;ILjava/lang/Object;)Lcom/datadog/android/trace/model/SpanEvent$Meta;
 	public fun equals (Ljava/lang/Object;)Z
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/trace/model/SpanEvent$Meta;
 	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/trace/model/SpanEvent$Meta;
 	public final fun getAccount ()Lcom/datadog/android/trace/model/SpanEvent$Account;
 	public final fun getAdditionalProperties ()Ljava/util/Map;
 	public final fun getDd ()Lcom/datadog/android/trace/model/SpanEvent$Dd;
+	public final fun getDevice ()Lcom/datadog/android/trace/model/SpanEvent$Device;
 	public final fun getNetwork ()Lcom/datadog/android/trace/model/SpanEvent$Network;
+	public final fun getOs ()Lcom/datadog/android/trace/model/SpanEvent$Os;
 	public final fun getSpan ()Lcom/datadog/android/trace/model/SpanEvent$Span;
 	public final fun getTracer ()Lcom/datadog/android/trace/model/SpanEvent$Tracer;
 	public final fun getUsr ()Lcom/datadog/android/trace/model/SpanEvent$Usr;
