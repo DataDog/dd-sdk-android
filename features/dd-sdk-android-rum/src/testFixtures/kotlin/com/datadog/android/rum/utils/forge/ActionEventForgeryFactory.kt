@@ -6,7 +6,7 @@
 
 package com.datadog.android.rum.utils.forge
 
-import com.datadog.android.rum.model.LongTaskEvent
+import com.datadog.android.rum.model.ActionEvent
 import com.datadog.tools.unit.forge.exhaustiveAttributes
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
@@ -14,28 +14,43 @@ import fr.xgouchet.elmyr.jvm.ext.aTimestamp
 import java.net.URL
 import java.util.UUID
 
-internal class LongTaskEventForgeryFactory :
-    ForgeryFactory<LongTaskEvent> {
-    override fun getForgery(forge: Forge): LongTaskEvent {
-        return LongTaskEvent(
+class ActionEventForgeryFactory :
+    ForgeryFactory<ActionEvent> {
+    override fun getForgery(forge: Forge): ActionEvent {
+        return ActionEvent(
             date = forge.aTimestamp(),
-            longTask = LongTaskEvent.LongTask(
+            action = ActionEvent.ActionEventAction(
+                type = forge.getForgery(),
                 id = forge.aNullable { getForgery<UUID>().toString() },
-                duration = forge.aPositiveLong(),
-                isFrozenFrame = forge.aNullable { aBool() }
+                target = forge.aNullable {
+                    ActionEvent.ActionEventActionTarget(anAlphabeticalString())
+                },
+                error = forge.aNullable { ActionEvent.Error(aLong(0, 512)) },
+                crash = forge.aNullable { ActionEvent.Crash(aLong(0, 512)) },
+                resource = forge.aNullable { ActionEvent.Resource(aLong(0, 512)) },
+                longTask = forge.aNullable { ActionEvent.LongTask(aLong(0, 512)) },
+                loadingTime = forge.aNullable { aPositiveLong(strict = true) },
+                frustration = forge.aNullable {
+                    ActionEvent.Frustration(
+                        type = forge.aList {
+                            forge.aValueFrom(ActionEvent.Type::class.java)
+                        }.distinct()
+                    )
+                }
             ),
-            view = LongTaskEvent.LongTaskEventView(
+            view = ActionEvent.ActionEventView(
                 id = forge.getForgery<UUID>().toString(),
-                referrer = forge.aNullable { getForgery<URL>().toString() },
                 url = forge.aStringMatching("https://[a-z]+.[a-z]{3}/[a-z0-9_/]+"),
-                name = forge.aNullable { anAlphabeticalString() }
+                referrer = forge.aNullable { getForgery<URL>().toString() },
+                name = forge.aNullable { anAlphabeticalString() },
+                inForeground = forge.aNullable { aBool() }
             ),
             connectivity = forge.aNullable {
-                LongTaskEvent.Connectivity(
+                ActionEvent.Connectivity(
                     status = getForgery(),
                     interfaces = aList { getForgery() },
                     cellular = aNullable {
-                        LongTaskEvent.Cellular(
+                        ActionEvent.Cellular(
                             technology = aNullable { anAlphabeticalString() },
                             carrierName = aNullable { anAlphabeticalString() }
                         )
@@ -43,13 +58,13 @@ internal class LongTaskEventForgeryFactory :
                 )
             },
             synthetics = forge.aNullable {
-                LongTaskEvent.Synthetics(
+                ActionEvent.Synthetics(
                     testId = forge.anHexadecimalString(),
                     resultId = forge.anHexadecimalString()
                 )
             },
             usr = forge.aNullable {
-                LongTaskEvent.Usr(
+                ActionEvent.Usr(
                     id = aNullable { anHexadecimalString() },
                     name = aNullable { aStringMatching("[A-Z][a-z]+ [A-Z]\\. [A-Z][a-z]+") },
                     email = aNullable { aStringMatching("[a-z]+\\.[a-z]+@[a-z]+\\.[a-z]{3}") },
@@ -57,45 +72,41 @@ internal class LongTaskEventForgeryFactory :
                     additionalProperties = exhaustiveAttributes(excludedKeys = setOf("id", "name", "email"))
                 )
             },
-            action = forge.aNullable {
-                LongTaskEvent.Action(aList { getForgery<UUID>().toString() })
-            },
-            application = LongTaskEvent.Application(forge.getForgery<UUID>().toString()),
+            application = ActionEvent.Application(forge.getForgery<UUID>().toString()),
             service = forge.aNullable { anAlphabeticalString() },
-            session = LongTaskEvent.LongTaskEventSession(
+            session = ActionEvent.ActionEventSession(
                 id = forge.getForgery<UUID>().toString(),
-                type = LongTaskEvent.LongTaskEventSessionType.USER,
+                type = ActionEvent.ActionEventSessionType.USER,
                 hasReplay = forge.aNullable { aBool() }
             ),
-            source = forge.aNullable { aValueFrom(LongTaskEvent.LongTaskEventSource::class.java) },
+            source = forge.aNullable { aValueFrom(ActionEvent.ActionEventSource::class.java) },
             ciTest = forge.aNullable {
-                LongTaskEvent.CiTest(anHexadecimalString())
+                ActionEvent.CiTest(anHexadecimalString())
             },
             os = forge.aNullable {
-                LongTaskEvent.Os(
+                ActionEvent.Os(
                     name = forge.aString(),
                     version = "${forge.aSmallInt()}.${forge.aSmallInt()}.${forge.aSmallInt()}",
                     versionMajor = forge.aSmallInt().toString()
                 )
             },
             device = forge.aNullable {
-                LongTaskEvent.Device(
+                ActionEvent.Device(
                     name = forge.aString(),
                     model = forge.aString(),
                     brand = forge.aString(),
-                    type = forge.aValueFrom(LongTaskEvent.DeviceType::class.java),
+                    type = forge.aValueFrom(ActionEvent.DeviceType::class.java),
                     architecture = forge.aString()
                 )
             },
             context = forge.aNullable {
-                LongTaskEvent.Context(
-                    additionalProperties = forge.exhaustiveAttributes()
-                )
+                ActionEvent.Context(additionalProperties = forge.exhaustiveAttributes())
             },
-            dd = LongTaskEvent.Dd(
-                session = forge.aNullable { LongTaskEvent.DdSession(getForgery()) },
+            dd = ActionEvent.Dd(
+                session = forge.aNullable { ActionEvent.DdSession(aNullable { getForgery() }) },
                 browserSdkVersion = forge.aNullable { aStringMatching("\\d+\\.\\d+\\.\\d+") }
-            )
+            ),
+            ddtags = forge.aNullable { ddTagsString() }
         )
     }
 }
