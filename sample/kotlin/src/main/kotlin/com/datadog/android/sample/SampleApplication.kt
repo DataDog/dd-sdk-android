@@ -51,6 +51,8 @@ import com.datadog.android.sessionreplay.TouchPrivacy
 import com.datadog.android.sessionreplay.compose.ComposeExtensionSupport
 import com.datadog.android.sessionreplay.material.MaterialExtensionSupport
 import com.datadog.android.timber.DatadogTree
+import com.datadog.android.trace.DatadogTracing
+import com.datadog.android.trace.GlobalDatadogTracer
 import com.datadog.android.trace.Trace
 import com.datadog.android.trace.TraceConfiguration
 import com.datadog.android.trace.opentelemetry.DatadogOpenTelemetry
@@ -155,17 +157,10 @@ class SampleApplication : Application() {
 
         initializeUserInfo(preferences)
         initializeAccountInfo(preferences)
-        initializeTracing()
 
         Rum.enable(createRumConfiguration())
 
         GlobalRumMonitor.get().debug = true
-    }
-
-    private fun initializeTracing() {
-        GlobalOpenTelemetry.set(
-            DatadogOpenTelemetry(BuildConfig.APPLICATION_ID)
-        )
     }
 
     private fun initializeUserInfo(preferences: Preferences.DefaultPreferences) {
@@ -200,6 +195,16 @@ class SampleApplication : Application() {
             }
         }.build()
         Trace.enable(tracesConfig)
+
+        GlobalDatadogTracer.registerIfAbsent(
+            DatadogTracing.newTracerBuilder()
+                .withPartialFlushMinSpans(1)
+                .build()
+        )
+
+        GlobalOpenTelemetry.set(
+            DatadogOpenTelemetry(BuildConfig.APPLICATION_ID)
+        )
     }
 
     private fun initializeLogs() {
