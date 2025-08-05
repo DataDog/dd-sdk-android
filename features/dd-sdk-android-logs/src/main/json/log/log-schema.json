@@ -66,6 +66,31 @@
       ],
       "readOnly": true
     },
+    "_dd": {
+      "type": "object",
+      "description": "Datadog internal information",
+      "properties": {
+        "device": {
+          "type": "object",
+          "description": "Information about the device that produced this log.",
+          "properties": {
+            "architecture": {
+              "type": "string",
+              "description": "The CPU architecture of the device",
+              "readOnly": true
+            }
+          },
+          "required": [
+            "architecture"
+          ],
+          "readOnly": true
+        }
+      },
+      "required": [
+        "device"
+      ],
+      "readOnly": true
+    },
     "usr": {
       "type": "object",
       "description": "User properties",
@@ -239,6 +264,7 @@
     "date",
     "service",
     "logger",
+    "_dd",
     "ddtags",
     "device",
     "os"

@@ -30,6 +30,7 @@ object com.datadog.android.trace.api.DatadogTracingConstants
     const val PROPAGATION_STYLE_EXTRACT: String
     const val PROPAGATION_STYLE_INJECT: String
     const val SERVICE_NAME: String
+    const val SDK_V2_COMPATIBILITY_FLAG: String
     const val URL_AS_RESOURCE_NAME: String
     const val TAGS: String
   object LogAttributes
