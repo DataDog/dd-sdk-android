@@ -984,6 +984,17 @@ internal open class RumViewScope(
             )
         }
 
+        val accessibilityState = accessibilitySnapshotManager.latestSnapshot()
+        val accessibility = ViewEvent.Accessibility(
+            textSize = accessibilityState.textSize,
+            invertColorsEnabled = accessibilityState.isColorInversionEnabled,
+            singleAppModeEnabled = accessibilityState.isScreenPinningEnabled,
+            screenReaderEnabled = accessibilityState.isScreenReaderEnabled,
+            closedCaptioningEnabled = accessibilityState.isClosedCaptioningEnabled,
+            reducedAnimationsEnabled = accessibilityState.isReducedAnimationsEnabled,
+            rtlEnabled = accessibilityState.isRtlEnabled
+        )
+
         val performance = (internalAttributes[RumAttributes.FLUTTER_FIRST_BUILD_COMPLETE] as? Number)?.let {
             ViewEvent.Performance(
                 fbc = ViewEvent.Fbc(
@@ -1025,8 +1036,6 @@ internal open class RumViewScope(
                 else -> ViewEvent.ViewEventSessionType.SYNTHETICS
             }
 
-            val accessibilityState = accessibilitySnapshotManager.latestSnapshot()
-
             ViewEvent(
                 date = eventTimestamp,
                 featureFlags = ViewEvent.Context(additionalProperties = eventFeatureFlags),
@@ -1058,16 +1067,8 @@ internal open class RumViewScope(
                     flutterBuildTime = eventFlutterBuildTime,
                     flutterRasterTime = eventFlutterRasterTime,
                     jsRefreshRate = eventJsRefreshRate,
-                    accessibility = ViewEvent.Accessibility(
-                        textSize = accessibilityState.textSize,
-                        invertColorsEnabled = accessibilityState.isColorInversionEnabled,
-                        singleAppModeEnabled = accessibilityState.isScreenPinningEnabled,
-                        screenReaderEnabled = accessibilityState.isScreenReaderEnabled,
-                        closedCaptioningEnabled = accessibilityState.isClosedCaptioningEnabled,
-                        reducedAnimationsEnabled = accessibilityState.isReducedAnimationsEnabled,
-                        rtlEnabled = accessibilityState.isRtlEnabled
-                    ),
                     performance = performance,
+                    accessibility = accessibility,
                     networkSettledTime = timeToSettled,
                     interactionToNextViewTime = interactionToNextViewTime,
                     loadingTime = viewLoadingTime,

@@ -77,13 +77,45 @@ internal class RumViewEventFilterTest {
         }
 
         val expectedViewEvent = batch
-            .find { it.metadata.contentEquals(metas.maxBy { it.documentVersion }.toBytes()) }
+            .find { element -> element.metadata.contentEquals(metas.maxBy { it.documentVersion }.toBytes()) }
 
         // When
         val result = testedFilter.filterOutRedundantViewEvents(batch)
 
         // Then
         assertThat(result).containsOnly(expectedViewEvent)
+    }
+
+    @Test
+    fun `M keep view event W hasAccessibility true { regardless of doc version }`(
+        forge: Forge
+    ) {
+        // Given
+        val viewEventMetas = forge.aList { getForgery<UUID>().toString() }.toSet()
+            .flatMap { forge.aList { getForgery<RumEventMeta.View>().copy(viewId = it, hasAccessibility = true) } }
+
+        val viewEvents = viewEventMetas.map {
+            RawBatchEvent(
+                data = forge.aString().toByteArray(),
+                metadata = it.toBytes()
+            )
+        }
+        val nonViewEvents = forge.aList {
+            RawBatchEvent(
+                data = forge.aString().toByteArray(),
+                metadata = forge.aString().toByteArray()
+            )
+        }
+        val batch = forge.shuffle(nonViewEvents + viewEvents)
+        viewEventMetas.forEach {
+            whenever(mockEventMetaDeserializer.deserialize(it.toBytes())) doReturn it
+        }
+
+        // When
+        val result = testedFilter.filterOutRedundantViewEvents(batch)
+
+        // Then
+        assertThat(result).containsExactlyElementsOf(batch)
     }
 
     @Test
@@ -109,7 +141,7 @@ internal class RumViewEventFilterTest {
             whenever(mockEventMetaDeserializer.deserialize(it.toBytes())) doReturn it
         }
         val expectedViewMetasToKeep = viewEventMetas.groupBy { it.viewId }
-            .mapValues { it.value.maxBy { it.documentVersion } }
+            .mapValues { element -> element.value.maxBy { it.documentVersion } }
             .values
         val expectedViewEventsToDrop = viewEvents
             .filter { viewEvent ->
@@ -130,7 +162,7 @@ internal class RumViewEventFilterTest {
 
     private fun Forge.aViewEventMetaList(viewIds: Set<String> = emptySet()): List<RumEventMeta.View> {
         return viewIds.ifEmpty { aList { getForgery<UUID>().toString() }.toSet() }
-            .flatMap { aList { getForgery<RumEventMeta.View>().copy(viewId = it) } }
+            .flatMap { aList { getForgery<RumEventMeta.View>().copy(viewId = it, hasAccessibility = false) } }
     }
 
     private fun RumEventMeta.View.toBytes() = toJson().toString().toByteArray()

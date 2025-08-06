@@ -125,14 +125,17 @@ internal class RumDataWriterTest {
     @Test
     fun `M write data with event meta W write() {View Event}`(
         @Forgery fakeViewEvent: ViewEvent,
-        @StringForgery fakeSerializedViewEventMeta: String
+        forge: Forge
     ) {
         // Given
         whenever(mockSerializer.serialize(fakeViewEvent)) doReturn fakeSerializedEvent
+        val hasAccessibility = isAccessibilityPopulated(fakeViewEvent.view.accessibility)
         val eventMeta = RumEventMeta.View(
             viewId = fakeViewEvent.view.id,
-            documentVersion = fakeViewEvent.dd.documentVersion
+            documentVersion = fakeViewEvent.dd.documentVersion,
+            hasAccessibility = hasAccessibility
         )
+        val fakeSerializedViewEventMeta = forge.aString()
         whenever(mockEventMetaSerializer.serialize(eventMeta)) doReturn fakeSerializedViewEventMeta
 
         // When
@@ -142,7 +145,7 @@ internal class RumDataWriterTest {
         verify(mockEventBatchWriter).write(
             RawBatchEvent(
                 data = fakeSerializedData,
-                metadata = fakeSerializedViewEventMeta.toByteArray()
+                metadata = fakeSerializedViewEventMeta.toByteArray(Charsets.UTF_8)
             ),
             null,
             fakeEventType
@@ -156,9 +159,11 @@ internal class RumDataWriterTest {
     ) {
         // Given
         whenever(mockSerializer.serialize(fakeViewEvent)) doReturn fakeSerializedEvent
+        val hasAccessibility = isAccessibilityPopulated(fakeViewEvent.view.accessibility)
         val eventMeta = RumEventMeta.View(
             viewId = fakeViewEvent.view.id,
-            documentVersion = fakeViewEvent.dd.documentVersion
+            documentVersion = fakeViewEvent.dd.documentVersion,
+            hasAccessibility = hasAccessibility
         )
         whenever(mockEventMetaSerializer.serialize(eventMeta)) doThrow forge.aThrowable()
 
@@ -186,7 +191,7 @@ internal class RumDataWriterTest {
             forge.getForgery(ErrorEvent::class.java)
         )
 
-        whenever(mockSerializer.serialize(fakeEvent)) doThrow forge.aThrowable()
+        whenever(mockSerializer.serialize(fakeEvent)) doReturn null
 
         // When
         val result = testedWriter.write(mockEventBatchWriter, fakeEvent, fakeEventType)
@@ -210,6 +215,7 @@ internal class RumDataWriterTest {
             forge.getForgery(ErrorEvent::class.java)
         )
 
+        whenever(mockSerializer.serialize(fakeEvent)) doReturn fakeSerializedEvent
         whenever(mockEventBatchWriter.write(RawBatchEvent(fakeSerializedData), null, fakeEventType)) doReturn false
 
         // When
@@ -245,6 +251,34 @@ internal class RumDataWriterTest {
     }
 
     // endregion
+
+    private fun isAccessibilityPopulated(accessibility: ViewEvent.Accessibility?): Boolean {
+        if (accessibility == null) return false
+        return setOf<Any?>(
+            accessibility.textSize,
+            accessibility.assistiveSwitchEnabled,
+            accessibility.assistiveTouchEnabled,
+            accessibility.boldTextEnabled,
+            accessibility.buttonShapesEnabled,
+            accessibility.closedCaptioningEnabled,
+            accessibility.grayscaleEnabled,
+            accessibility.increaseContrastEnabled,
+            accessibility.invertColorsEnabled,
+            accessibility.monoAudioEnabled,
+            accessibility.onOffSwitchLabelsEnabled,
+            accessibility.reduceMotionEnabled,
+            accessibility.reduceTransparencyEnabled,
+            accessibility.reducedAnimationsEnabled,
+            accessibility.rtlEnabled,
+            accessibility.screenReaderEnabled,
+            accessibility.shakeToUndoEnabled,
+            accessibility.shouldDifferentiateWithoutColor,
+            accessibility.singleAppModeEnabled,
+            accessibility.speakScreenEnabled,
+            accessibility.speakSelectionEnabled,
+            accessibility.videoAutoplayEnabled
+        ).any { it != null }
+    }
 
     companion object {
         val rumMonitor = GlobalRumMonitorTestConfiguration()

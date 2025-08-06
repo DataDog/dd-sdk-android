@@ -33,9 +33,16 @@ internal class RumDataWriter(
         ) ?: return false
 
         val batchEvent = if (element is ViewEvent) {
+            val hasAccessibility = if (element.view.accessibility != null) {
+                isAccessibilityPopulated(element.view.accessibility)
+            } else {
+                false
+            }
+
             val eventMeta = RumEventMeta.View(
                 viewId = element.view.id,
-                documentVersion = element.dd.documentVersion
+                documentVersion = element.dd.documentVersion,
+                hasAccessibility = hasAccessibility
             )
             val serializedEventMeta =
                 eventMetaSerializer.serializeToByteArray(eventMeta, sdkCore.internalLogger)
@@ -66,6 +73,33 @@ internal class RumDataWriter(
         when (data) {
             is ViewEvent -> sdkCore.writeLastViewEvent(rawData)
         }
+    }
+
+    private fun isAccessibilityPopulated(accessibility: ViewEvent.Accessibility): Boolean {
+        return setOf<Any?>(
+            accessibility.textSize,
+            accessibility.assistiveSwitchEnabled,
+            accessibility.assistiveTouchEnabled,
+            accessibility.boldTextEnabled,
+            accessibility.buttonShapesEnabled,
+            accessibility.closedCaptioningEnabled,
+            accessibility.grayscaleEnabled,
+            accessibility.increaseContrastEnabled,
+            accessibility.invertColorsEnabled,
+            accessibility.monoAudioEnabled,
+            accessibility.onOffSwitchLabelsEnabled,
+            accessibility.reduceMotionEnabled,
+            accessibility.reduceTransparencyEnabled,
+            accessibility.reducedAnimationsEnabled,
+            accessibility.rtlEnabled,
+            accessibility.screenReaderEnabled,
+            accessibility.shakeToUndoEnabled,
+            accessibility.shouldDifferentiateWithoutColor,
+            accessibility.singleAppModeEnabled,
+            accessibility.speakScreenEnabled,
+            accessibility.speakSelectionEnabled,
+            accessibility.videoAutoplayEnabled
+        ).any { it != null }
     }
 
     // endregion

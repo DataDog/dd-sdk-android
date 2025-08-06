@@ -11,7 +11,6 @@ import com.google.gson.JsonObject
 import com.google.gson.JsonParseException
 import com.google.gson.JsonParser
 import java.util.Locale
-import kotlin.jvm.Throws
 
 internal sealed class RumEventMeta {
 
@@ -27,7 +26,8 @@ internal sealed class RumEventMeta {
 
     data class View(
         val viewId: String,
-        val documentVersion: Long
+        val documentVersion: Long,
+        val hasAccessibility: Boolean? = false
     ) : RumEventMeta() {
 
         override val type: String = VIEW_TYPE_VALUE
@@ -37,6 +37,7 @@ internal sealed class RumEventMeta {
 
             model.addProperty(VIEW_ID_KEY, viewId)
             model.addProperty(DOCUMENT_VERSION_KEY, documentVersion)
+            model.addProperty(HAS_ACCESSIBILITY_KEY, hasAccessibility)
 
             return model
         }
@@ -50,6 +51,7 @@ internal sealed class RumEventMeta {
         const val TYPE_KEY = "type"
         const val VIEW_TYPE_VALUE = "view"
         const val VIEW_ID_KEY = "viewId"
+        const val HAS_ACCESSIBILITY_KEY = "hasAccessibility"
         const val DOCUMENT_VERSION_KEY = "documentVersion"
 
         @Suppress("ThrowsCount", "ThrowingInternalException")
@@ -62,8 +64,14 @@ internal sealed class RumEventMeta {
                     VIEW_TYPE_VALUE -> {
                         val viewId = model.get(VIEW_ID_KEY).asString
                         val docVersion = model.get(DOCUMENT_VERSION_KEY).asLong
+                        val hasAccessibilityElement = model.get(HAS_ACCESSIBILITY_KEY)
+                        val hasAccessibility = when {
+                            hasAccessibilityElement == null -> false // Missing field (backward compatibility)
+                            hasAccessibilityElement.isJsonNull -> null // Explicit null in JSON
+                            else -> hasAccessibilityElement.asBoolean // Valid boolean value
+                        }
 
-                        View(viewId, docVersion)
+                        View(viewId, docVersion, hasAccessibility)
                     }
 
                     else -> {

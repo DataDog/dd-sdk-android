@@ -629,6 +629,7 @@ datadog:
       - "com.google.gson.JsonArray.map(kotlin.Function1)"
       - "com.google.gson.JsonArray.size()"
       - "com.google.gson.JsonObject.add(kotlin.String?, com.google.gson.JsonElement?)"
+      - "com.google.gson.JsonObject.addProperty(kotlin.String?, kotlin.Boolean?)"
       - "com.google.gson.JsonObject.addProperty(kotlin.String?, kotlin.Number?)"
       - "com.google.gson.JsonObject.addProperty(kotlin.String?, kotlin.String?)"
       - "com.google.gson.JsonObject.constructor()"

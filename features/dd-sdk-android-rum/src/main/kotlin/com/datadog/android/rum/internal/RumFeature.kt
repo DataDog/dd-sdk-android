@@ -165,9 +165,11 @@ internal class RumFeature(
     override fun onInitialize(appContext: Context) {
         this.appContext = appContext
 
-        accessibilityReader =
-            DatadogAccessibilityReader(applicationContext = appContext, internalLogger = sdkCore.internalLogger)
-        accessibilitySnapshotManager = DefaultAccessibilitySnapshotManager(accessibilityReader)
+        if (configuration.collectAccessibility) {
+            accessibilityReader =
+                DatadogAccessibilityReader(applicationContext = appContext, internalLogger = sdkCore.internalLogger)
+            accessibilitySnapshotManager = DefaultAccessibilitySnapshotManager(accessibilityReader)
+        }
 
         initialResourceIdentifier = configuration.initialResourceIdentifier
         lastInteractionIdentifier = configuration.lastInteractionIdentifier
@@ -303,7 +305,12 @@ internal class RumFeature(
         anrDetectorRunnable?.stop()
         vitalExecutorService = NoOpScheduledExecutorService()
         sessionListener = NoOpRumSessionListener()
-        accessibilityReader.cleanup()
+
+        if (configuration.collectAccessibility) {
+            accessibilityReader.cleanup()
+            accessibilityReader = NoOpAccessibilityReader()
+            accessibilitySnapshotManager = NoOpAccessibilitySnapshotManager()
+        }
 
         GlobalRumMonitor.unregister(sdkCore)
     }
@@ -647,7 +654,7 @@ internal class RumFeature(
         val additionalConfig: Map<String, Any>,
         val trackAnonymousUser: Boolean,
         val rumSessionTypeOverride: RumSessionType?,
-        val collectAccessibilitySettings: Boolean
+        val collectAccessibility: Boolean
     )
 
     internal companion object {
@@ -698,7 +705,7 @@ internal class RumFeature(
             trackAnonymousUser = true,
             slowFramesConfiguration = null,
             rumSessionTypeOverride = null,
-            collectAccessibilitySettings = false
+            collectAccessibility = false
         )
 
         internal const val EVENT_MESSAGE_PROPERTY = "message"
