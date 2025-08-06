@@ -6,13 +6,13 @@
 
 package com.datadog.android.rum.utils.forge
 
-import com.datadog.android.rum.model.ViewEvent
+import com.datadog.android.rum.model.ViewEvent.Accessibility
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
 
-internal class AccessibilityForgeryFactory : ForgeryFactory<ViewEvent.Accessibility> {
-    override fun getForgery(forge: Forge): ViewEvent.Accessibility {
-        return ViewEvent.Accessibility(
+internal class AccessibilityForgeryFactory : ForgeryFactory<Accessibility> {
+    override fun getForgery(forge: Forge): Accessibility {
+        return Accessibility(
             textSize = forge.aNullable { forge.aString() },
             rtlEnabled = forge.aNullable { forge.aBool() },
             screenReaderEnabled = forge.aNullable { forge.aBool() },
