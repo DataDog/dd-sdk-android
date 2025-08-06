@@ -1,10 +1,10 @@
 Dependencies List
 
-org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.9.10                  :  959 b 
-org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.10                  :  965 b 
-org.jetbrains.kotlin:kotlin-stdlib:1.9.24                       : 1678 Kb
-org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.6.4         : 1442 Kb
-org.jetbrains:annotations:13.0                                  :   17 Kb
+org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.8.21                  :  963 b 
+org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.8.21                  :  968 b 
+org.jetbrains.kotlin:kotlin-stdlib:2.0.21                       : 1706 Kb
+org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.7.3         : 1514 Kb
+org.jetbrains:annotations:23.0.0                                :   28 Kb
 
 Total transitive dependencies size                              :    3 Mb
 

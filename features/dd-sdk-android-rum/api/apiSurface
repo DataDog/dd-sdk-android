@@ -123,6 +123,8 @@ interface com.datadog.android.rum.RumMonitor
   fun addViewLoadingTime(Boolean)
   var debug: Boolean
   fun _getInternal(): _RumInternalProxy?
+  fun startProfiling()
+  fun stopProfiling()
 enum com.datadog.android.rum.RumPerformanceMetric
   - FLUTTER_BUILD_TIME
   - FLUTTER_RASTER_TIME
@@ -209,6 +211,60 @@ class com.datadog.android.rum.metric.networksettled.TimeBasedInitialResourceIden
   override fun equals(Any?): Boolean
   override fun hashCode(): Int
   companion object 
+const val MAX_STACK_DEPTH: Int
+const val MAX_THREADS: Int
+const val HTML_BUFSIZE: Int
+const val GRAPH_LABEL_VISITED: Int
+const val GRAPH_NODE_VISITED: Int
+var versionNumber: Int
+data class com.datadog.android.rum.profiling.DataHeader
+  constructor(UInt = 0u, Short = 0, Short = 0, Long = 0, Short = 0)
+data class com.datadog.android.rum.profiling.ThreadEntry
+  constructor(Int, String)
+class com.datadog.android.rum.profiling.TimedMethod
+  constructor(TimedMethod? = null, ULong = 0u, Int = 0, MethodEntry? = null)
+data class com.datadog.android.rum.profiling.ClassEntry
+  constructor(String, ULong = 0u, Int = 0, MutableList<MethodEntry> = mutableListOf(), IntArray = IntArray(2))
+data class com.datadog.android.rum.profiling.UniqueMethodEntry
+  constructor(ULong = 0u, Int = 0, MutableList<MethodEntry> = mutableListOf(), IntArray = IntArray(2))
+data class com.datadog.android.rum.profiling.MethodEntry
+  constructor(Long, String, String?, String?, String?, Int, ULong = 0u, ULong = 0u, ULong = 0u, ULong = 0u, Array<TimedMethod?> = arrayOfNulls(2), Array<TimedMethod?> = arrayOfNulls(2), IntArray = IntArray(2), Int = 0, Int = 0, Int = 0)
+data class com.datadog.android.rum.profiling.DataKeys
+  constructor(ByteArray, Long, Int = 0, MutableList<ThreadEntry> = mutableListOf(), Int = 0, MutableList<MethodEntry> = mutableListOf())
+data class com.datadog.android.rum.profiling.StackEntry
+  constructor(MethodEntry?, ULong)
+data class com.datadog.android.rum.profiling.CallStack
+  constructor(Int = 0, Array<StackEntry?> = Array(MAX_STACK_DEPTH) { null }, ULong = 0u, ULong = 0u)
+data class com.datadog.android.rum.profiling.DiffEntry
+  constructor(MethodEntry?, MethodEntry?, Long = 0, Long = 0, Double = 0.0, Double = 0.0)
+data class com.datadog.android.rum.profiling.Options
+  constructor(String? = null, String? = null, String? = null, Boolean = false, Boolean = false, Boolean = false, String? = null, Int = 20)
+data class com.datadog.android.rum.profiling.TraceData
+  constructor(Int = 0, MutableList<ClassEntry> = mutableListOf(), Array<CallStack?> = Array(MAX_THREADS) { null }, IntArray = IntArray(MAX_THREADS), Int = 0, MutableList<UniqueMethodEntry> = mutableListOf())
+fun parseDataHeader(java.io.DataInputStream): DataHeader?
+fun parseDataKeys(TraceData, java.io.File): DataKeys?
+fun parseKeys(java.io.File): DataKeys?
+fun dumpTrace(String)
+fun java.io.InputStream.read2LE(): Int
+fun java.io.InputStream.read4LE(): Int
+fun java.io.InputStream.read8LE(): Long
+object com.datadog.android.rum.profiling.Profiler
+  var filePath: String
+  fun startProfiling(android.content.Context, Long)
+  fun startSimpleperfProfiling(android.content.Context, Long)
+  fun stopProfiling()
+  fun stopSimpleperfProfiling()
+  fun startProfilingManagerProfiling(android.content.Context, Long)
+  fun stopProfilingManagerProfiling()
+fun processTraceFile(android.content.Context, String)
+fun splitTraceFile(android.content.Context, String)
+fun convertToPprof(String, String, String)
+fun allocateString(String): Int
+fun parseDataFile(String, String)
+fun decodeAction(Int): String
+fun formatTimestamp(Long): String
+data class com.datadog.android.rum.profiling.TraceRecord
+  constructor(Int, Int, Int, Long)
 fun android.content.Context.getAssetAsRumResource(String, Int = AssetManager.ACCESS_STREAMING, com.datadog.android.api.SdkCore = Datadog.getInstance()): java.io.InputStream
 fun android.content.Context.getRawResAsRumResource(Int, com.datadog.android.api.SdkCore = Datadog.getInstance()): java.io.InputStream
 fun java.io.InputStream.asRumResource(String, com.datadog.android.api.SdkCore = Datadog.getInstance()): java.io.InputStream

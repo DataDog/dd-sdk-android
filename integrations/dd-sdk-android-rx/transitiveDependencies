@@ -1,12 +1,12 @@
 Dependencies List
 
 com.squareup.okhttp3:okhttp:4.12.0                              :  771 Kb
-com.squareup.okio:okio-jvm:3.6.0                                :  351 Kb
+com.squareup.okio:okio-jvm:3.9.1                                :  363 Kb
 io.reactivex.rxjava3:rxjava:3.0.0                               :    2 Mb
-org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.9.10                  :  959 b 
-org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.10                  :  965 b 
-org.jetbrains.kotlin:kotlin-stdlib:1.9.24                       : 1678 Kb
-org.jetbrains:annotations:13.0                                  :   17 Kb
+org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.8.21                  :  963 b 
+org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.8.21                  :  968 b 
+org.jetbrains.kotlin:kotlin-stdlib:2.0.21                       : 1706 Kb
+org.jetbrains:annotations:23.0.0                                :   28 Kb
 org.reactivestreams:reactive-streams:1.0.3                      :   11 Kb
 
 Total transitive dependencies size                              :    5 Mb

@@ -6,42 +6,56 @@
 
 package com.datadog.android.sample.profiling
 
-fun doCpuWork() {
-    // Fibonacci calculation with sorting and prime number checking
-    val numbers = mutableListOf<Int>()
-    for (i in 0 until 10000) {
-        numbers.add((Math.random() * 1000).toInt())
-    }
+open class CpuWorkUtils {
+    fun doCpuWork() {
+        // Fibonacci calculation with sorting and prime number checking
+        val numbers = mutableListOf<Int>()
+        for (i in 0 until 10000) {
+            numbers.add((Math.random() * 1000).toInt())
+        }
 
-    // Sort the list multiple times
-    repeat(5) {
-        numbers.sort()
-        numbers.reverse()
-    }
+        // Sort the list multiple times
+        repeat(5) {
+            numbers.sort()
+            numbers.reverse()
+        }
 
-    // Calculate Fibonacci numbers
-    val fibs = mutableListOf<Long>()
-    for (i in 0 until 25) {
-        fibs.add(fibonacci(i))
-    }
+        // Calculate Fibonacci numbers
+        val fibs = mutableListOf<Long>()
+        for (i in 0 until 25) {
+            fibs.add(fibonacci(i))
+        }
 
-    // Check for prime numbers
-    val primes = mutableListOf<Int>()
-    for (num in numbers) {
-        if (isPrime(num)) {
-            primes.add(num)
+        // Check for prime numbers
+        val primes = mutableListOf<Int>()
+        for (num in numbers) {
+            if (isPrime(num)) {
+                primes.add(num)
+            }
         }
     }
-}
 
-private fun fibonacci(n: Int): Long {
-    return if (n <= 1) n.toLong() else fibonacci(n - 1) + fibonacci(n - 2)
-}
-
-private fun isPrime(num: Int): Boolean {
-    if (num <= 1) return false
-    for (i in 2 until num) {
-        if (num % i == 0) return false
+    fun fibonacci(n: Int): Long {
+        val result = dummy()
+        //println("Dummy result")
+        return if (n <= 1) n.toLong() else fibonacci(n - 1) + fibonacci(n - 2)
     }
-    return true
+
+    fun dummy(): Int {
+        var sum = 0
+        for (i in 1..100) {
+            sum += (i * i) % 7
+        }
+        //println("Dummy calculation done")
+        return sum
+    }
+
+    private fun isPrime(num: Int): Boolean {
+        if (num <= 1) return false
+        for (i in 2 until num) {
+            if (num % i == 0) return false
+        }
+        return true
+    }
+
 }

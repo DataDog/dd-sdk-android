@@ -6702,6 +6702,379 @@ public final class com/datadog/android/rum/model/ViewPerformanceData$PreviousRec
 	public final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/rum/model/ViewPerformanceData$PreviousRect;
 }
 
+public final class com/datadog/android/rum/profiling/CallStack {
+	public synthetic fun <init> (I[Lcom/datadog/android/rum/profiling/StackEntry;JJILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public synthetic fun <init> (I[Lcom/datadog/android/rum/profiling/StackEntry;JJLkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()I
+	public final fun component2 ()[Lcom/datadog/android/rum/profiling/StackEntry;
+	public final fun component3-s-VKNKU ()J
+	public final fun component4-s-VKNKU ()J
+	public final fun copy-RQJlUXk (I[Lcom/datadog/android/rum/profiling/StackEntry;JJ)Lcom/datadog/android/rum/profiling/CallStack;
+	public static synthetic fun copy-RQJlUXk$default (Lcom/datadog/android/rum/profiling/CallStack;I[Lcom/datadog/android/rum/profiling/StackEntry;JJILjava/lang/Object;)Lcom/datadog/android/rum/profiling/CallStack;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getCalls ()[Lcom/datadog/android/rum/profiling/StackEntry;
+	public final fun getLastEventTime-s-VKNKU ()J
+	public final fun getThreadStartTime-s-VKNKU ()J
+	public final fun getTop ()I
+	public fun hashCode ()I
+	public final fun setCalls ([Lcom/datadog/android/rum/profiling/StackEntry;)V
+	public final fun setLastEventTime-VKZWuLQ (J)V
+	public final fun setThreadStartTime-VKZWuLQ (J)V
+	public final fun setTop (I)V
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/rum/profiling/ClassEntry {
+	public synthetic fun <init> (Ljava/lang/String;JILjava/util/List;[IILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public synthetic fun <init> (Ljava/lang/String;JILjava/util/List;[ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2-s-VKNKU ()J
+	public final fun component3 ()I
+	public final fun component4 ()Ljava/util/List;
+	public final fun component5 ()[I
+	public final fun copy-lhpF3nk (Ljava/lang/String;JILjava/util/List;[I)Lcom/datadog/android/rum/profiling/ClassEntry;
+	public static synthetic fun copy-lhpF3nk$default (Lcom/datadog/android/rum/profiling/ClassEntry;Ljava/lang/String;JILjava/util/List;[IILjava/lang/Object;)Lcom/datadog/android/rum/profiling/ClassEntry;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getClassName ()Ljava/lang/String;
+	public final fun getElapsedExclusive-s-VKNKU ()J
+	public final fun getMethods ()Ljava/util/List;
+	public final fun getNumCalls ()[I
+	public final fun getNumMethods ()I
+	public fun hashCode ()I
+	public final fun setElapsedExclusive-VKZWuLQ (J)V
+	public final fun setMethods (Ljava/util/List;)V
+	public final fun setNumCalls ([I)V
+	public final fun setNumMethods (I)V
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/rum/profiling/DataHeader {
+	public synthetic fun <init> (ISSJSILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public synthetic fun <init> (ISSJSLkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1-pVg5ArA ()I
+	public final fun component2 ()S
+	public final fun component3 ()S
+	public final fun component4 ()J
+	public final fun component5 ()S
+	public final fun copy-iyaXS9w (ISSJS)Lcom/datadog/android/rum/profiling/DataHeader;
+	public static synthetic fun copy-iyaXS9w$default (Lcom/datadog/android/rum/profiling/DataHeader;ISSJSILjava/lang/Object;)Lcom/datadog/android/rum/profiling/DataHeader;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getMagic-pVg5ArA ()I
+	public final fun getOffsetToData ()S
+	public final fun getRecordSize ()S
+	public final fun getStartWhen ()J
+	public final fun getVersion ()S
+	public fun hashCode ()I
+	public final fun setMagic-WZ4Q5Ns (I)V
+	public final fun setOffsetToData (S)V
+	public final fun setRecordSize (S)V
+	public final fun setStartWhen (J)V
+	public final fun setVersion (S)V
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/rum/profiling/DataKeys {
+	public fun <init> ([BJILjava/util/List;ILjava/util/List;)V
+	public synthetic fun <init> ([BJILjava/util/List;ILjava/util/List;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()[B
+	public final fun component2 ()J
+	public final fun component3 ()I
+	public final fun component4 ()Ljava/util/List;
+	public final fun component5 ()I
+	public final fun component6 ()Ljava/util/List;
+	public final fun copy ([BJILjava/util/List;ILjava/util/List;)Lcom/datadog/android/rum/profiling/DataKeys;
+	public static synthetic fun copy$default (Lcom/datadog/android/rum/profiling/DataKeys;[BJILjava/util/List;ILjava/util/List;ILjava/lang/Object;)Lcom/datadog/android/rum/profiling/DataKeys;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getFileData ()[B
+	public final fun getFileLen ()J
+	public final fun getMethods ()Ljava/util/List;
+	public final fun getNumMethods ()I
+	public final fun getNumThreads ()I
+	public final fun getThreads ()Ljava/util/List;
+	public fun hashCode ()I
+	public final fun setFileData ([B)V
+	public final fun setFileLen (J)V
+	public final fun setMethods (Ljava/util/List;)V
+	public final fun setNumMethods (I)V
+	public final fun setNumThreads (I)V
+	public final fun setThreads (Ljava/util/List;)V
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/rum/profiling/DiffEntry {
+	public fun <init> (Lcom/datadog/android/rum/profiling/MethodEntry;Lcom/datadog/android/rum/profiling/MethodEntry;JJDD)V
+	public synthetic fun <init> (Lcom/datadog/android/rum/profiling/MethodEntry;Lcom/datadog/android/rum/profiling/MethodEntry;JJDDILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Lcom/datadog/android/rum/profiling/MethodEntry;
+	public final fun component2 ()Lcom/datadog/android/rum/profiling/MethodEntry;
+	public final fun component3 ()J
+	public final fun component4 ()J
+	public final fun component5 ()D
+	public final fun component6 ()D
+	public final fun copy (Lcom/datadog/android/rum/profiling/MethodEntry;Lcom/datadog/android/rum/profiling/MethodEntry;JJDD)Lcom/datadog/android/rum/profiling/DiffEntry;
+	public static synthetic fun copy$default (Lcom/datadog/android/rum/profiling/DiffEntry;Lcom/datadog/android/rum/profiling/MethodEntry;Lcom/datadog/android/rum/profiling/MethodEntry;JJDDILjava/lang/Object;)Lcom/datadog/android/rum/profiling/DiffEntry;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getDifferenceExclusive ()J
+	public final fun getDifferenceExclusivePercentage ()D
+	public final fun getDifferenceInclusive ()J
+	public final fun getDifferenceInclusivePercentage ()D
+	public final fun getMethod1 ()Lcom/datadog/android/rum/profiling/MethodEntry;
+	public final fun getMethod2 ()Lcom/datadog/android/rum/profiling/MethodEntry;
+	public fun hashCode ()I
+	public final fun setDifferenceExclusive (J)V
+	public final fun setDifferenceExclusivePercentage (D)V
+	public final fun setDifferenceInclusive (J)V
+	public final fun setDifferenceInclusivePercentage (D)V
+	public final fun setMethod1 (Lcom/datadog/android/rum/profiling/MethodEntry;)V
+	public final fun setMethod2 (Lcom/datadog/android/rum/profiling/MethodEntry;)V
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/rum/profiling/DumpTraceKt {
+	public static final field GRAPH_LABEL_VISITED I
+	public static final field GRAPH_NODE_VISITED I
+	public static final field HTML_BUFSIZE I
+	public static final field MAX_STACK_DEPTH I
+	public static final field MAX_THREADS I
+	public static final fun addInclusiveTime-aPcrCvc (Lcom/datadog/android/rum/profiling/MethodEntry;Lcom/datadog/android/rum/profiling/MethodEntry;J)V
+	public static final fun convertToPprof (Lcom/datadog/android/rum/profiling/DataKeys;Lcom/datadog/android/rum/profiling/TraceData;Ljava/lang/String;)V
+	public static final fun dumpTrace (Landroid/content/Context;Ljava/lang/String;)V
+	public static final fun getVersionNumber ()I
+	public static final fun parseDataHeader (Ljava/io/DataInputStream;)Lcom/datadog/android/rum/profiling/DataHeader;
+	public static final fun parseDataKeys (Lcom/datadog/android/rum/profiling/TraceData;Ljava/io/File;)Lcom/datadog/android/rum/profiling/DataKeys;
+	public static final fun parseKeys (Ljava/io/File;)Lcom/datadog/android/rum/profiling/DataKeys;
+	public static final fun parseKeysOffset (Ljava/io/File;)Lkotlin/Pair;
+	public static final fun read2LE (Ljava/io/InputStream;)I
+	public static final fun read4LE (Ljava/io/InputStream;)I
+	public static final fun read8LE (Ljava/io/InputStream;)J
+	public static final fun readDataRecord (Ljava/io/DataInputStream;Lcom/datadog/android/rum/profiling/DataHeader;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function1;)Z
+	public static final fun setVersionNumber (I)V
+}
+
+public final class com/datadog/android/rum/profiling/MethodEntry {
+	public synthetic fun <init> (JLjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;IJJJJ[Lcom/datadog/android/rum/profiling/TimedMethod;[Lcom/datadog/android/rum/profiling/TimedMethod;[IIIIILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public synthetic fun <init> (JLjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;IJJJJ[Lcom/datadog/android/rum/profiling/TimedMethod;[Lcom/datadog/android/rum/profiling/TimedMethod;[IIIILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()J
+	public final fun component10-s-VKNKU ()J
+	public final fun component11 ()[Lcom/datadog/android/rum/profiling/TimedMethod;
+	public final fun component12 ()[Lcom/datadog/android/rum/profiling/TimedMethod;
+	public final fun component13 ()[I
+	public final fun component14 ()I
+	public final fun component15 ()I
+	public final fun component16 ()I
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Ljava/lang/String;
+	public final fun component4 ()Ljava/lang/String;
+	public final fun component5 ()Ljava/lang/String;
+	public final fun component6 ()I
+	public final fun component7-s-VKNKU ()J
+	public final fun component8-s-VKNKU ()J
+	public final fun component9-s-VKNKU ()J
+	public final fun copy-ddpVyRE (JLjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;IJJJJ[Lcom/datadog/android/rum/profiling/TimedMethod;[Lcom/datadog/android/rum/profiling/TimedMethod;[IIII)Lcom/datadog/android/rum/profiling/MethodEntry;
+	public static synthetic fun copy-ddpVyRE$default (Lcom/datadog/android/rum/profiling/MethodEntry;JLjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;IJJJJ[Lcom/datadog/android/rum/profiling/TimedMethod;[Lcom/datadog/android/rum/profiling/TimedMethod;[IIIIILjava/lang/Object;)Lcom/datadog/android/rum/profiling/MethodEntry;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getChildren ()[Lcom/datadog/android/rum/profiling/TimedMethod;
+	public final fun getClassName ()Ljava/lang/String;
+	public final fun getElapsedExclusive-s-VKNKU ()J
+	public final fun getElapsedInclusive-s-VKNKU ()J
+	public final fun getFileName ()Ljava/lang/String;
+	public final fun getGraphState ()I
+	public final fun getIndex ()I
+	public final fun getLineNum ()I
+	public final fun getMethodId ()J
+	public final fun getMethodName ()Ljava/lang/String;
+	public final fun getNumCalls ()[I
+	public final fun getParents ()[Lcom/datadog/android/rum/profiling/TimedMethod;
+	public final fun getRecursiveEntries ()I
+	public final fun getRecursiveInclusive-s-VKNKU ()J
+	public final fun getSignature ()Ljava/lang/String;
+	public final fun getTopExclusive-s-VKNKU ()J
+	public fun hashCode ()I
+	public final fun setChildren ([Lcom/datadog/android/rum/profiling/TimedMethod;)V
+	public final fun setClassName (Ljava/lang/String;)V
+	public final fun setElapsedExclusive-VKZWuLQ (J)V
+	public final fun setElapsedInclusive-VKZWuLQ (J)V
+	public final fun setFileName (Ljava/lang/String;)V
+	public final fun setGraphState (I)V
+	public final fun setIndex (I)V
+	public final fun setLineNum (I)V
+	public final fun setMethodId (J)V
+	public final fun setMethodName (Ljava/lang/String;)V
+	public final fun setNumCalls ([I)V
+	public final fun setParents ([Lcom/datadog/android/rum/profiling/TimedMethod;)V
+	public final fun setRecursiveEntries (I)V
+	public final fun setRecursiveInclusive-VKZWuLQ (J)V
+	public final fun setSignature (Ljava/lang/String;)V
+	public final fun setTopExclusive-VKZWuLQ (J)V
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/rum/profiling/Options {
+	public fun <init> ()V
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ZZZLjava/lang/String;I)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ZZZLjava/lang/String;IILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Ljava/lang/String;
+	public final fun component4 ()Z
+	public final fun component5 ()Z
+	public final fun component6 ()Z
+	public final fun component7 ()Ljava/lang/String;
+	public final fun component8 ()I
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ZZZLjava/lang/String;I)Lcom/datadog/android/rum/profiling/Options;
+	public static synthetic fun copy$default (Lcom/datadog/android/rum/profiling/Options;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ZZZLjava/lang/String;IILjava/lang/Object;)Lcom/datadog/android/rum/profiling/Options;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getDiffFileName ()Ljava/lang/String;
+	public final fun getDump ()Z
+	public final fun getGraphFileName ()Ljava/lang/String;
+	public final fun getKeepDotFile ()Z
+	public final fun getOutputHtml ()Z
+	public final fun getSortableUrl ()Ljava/lang/String;
+	public final fun getThreshold ()I
+	public final fun getTraceFileName ()Ljava/lang/String;
+	public fun hashCode ()I
+	public final fun setDiffFileName (Ljava/lang/String;)V
+	public final fun setDump (Z)V
+	public final fun setGraphFileName (Ljava/lang/String;)V
+	public final fun setKeepDotFile (Z)V
+	public final fun setOutputHtml (Z)V
+	public final fun setSortableUrl (Ljava/lang/String;)V
+	public final fun setThreshold (I)V
+	public final fun setTraceFileName (Ljava/lang/String;)V
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/rum/profiling/Profiler {
+	public static final field INSTANCE Lcom/datadog/android/rum/profiling/Profiler;
+	public static field filePath Ljava/lang/String;
+	public final fun getFilePath ()Ljava/lang/String;
+	public final fun setFilePath (Ljava/lang/String;)V
+	public final fun startProfiling (Landroid/content/Context;J)V
+	public final fun startProfilingManagerProfiling (Landroid/content/Context;J)V
+	public final fun startSimpleperfProfiling (Landroid/content/Context;J)V
+	public final fun stopProfiling ()V
+	public final fun stopProfilingManagerProfiling ()V
+	public final fun stopSimpleperfProfiling ()V
+}
+
+public final class com/datadog/android/rum/profiling/StackEntry {
+	public synthetic fun <init> (Lcom/datadog/android/rum/profiling/MethodEntry;JLkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Lcom/datadog/android/rum/profiling/MethodEntry;
+	public final fun component2-s-VKNKU ()J
+	public final fun copy-2TYgG_w (Lcom/datadog/android/rum/profiling/MethodEntry;J)Lcom/datadog/android/rum/profiling/StackEntry;
+	public static synthetic fun copy-2TYgG_w$default (Lcom/datadog/android/rum/profiling/StackEntry;Lcom/datadog/android/rum/profiling/MethodEntry;JILjava/lang/Object;)Lcom/datadog/android/rum/profiling/StackEntry;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getEntryTime-s-VKNKU ()J
+	public final fun getMethod ()Lcom/datadog/android/rum/profiling/MethodEntry;
+	public fun hashCode ()I
+	public final fun setEntryTime-VKZWuLQ (J)V
+	public final fun setMethod (Lcom/datadog/android/rum/profiling/MethodEntry;)V
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/rum/profiling/ThreadEntry {
+	public fun <init> (ILjava/lang/String;)V
+	public final fun component1 ()I
+	public final fun component2 ()Ljava/lang/String;
+	public final fun copy (ILjava/lang/String;)Lcom/datadog/android/rum/profiling/ThreadEntry;
+	public static synthetic fun copy$default (Lcom/datadog/android/rum/profiling/ThreadEntry;ILjava/lang/String;ILjava/lang/Object;)Lcom/datadog/android/rum/profiling/ThreadEntry;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getThreadId ()I
+	public final fun getThreadName ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/rum/profiling/TimedMethod {
+	public synthetic fun <init> (Lcom/datadog/android/rum/profiling/TimedMethod;JILcom/datadog/android/rum/profiling/MethodEntry;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public synthetic fun <init> (Lcom/datadog/android/rum/profiling/TimedMethod;JILcom/datadog/android/rum/profiling/MethodEntry;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun getElapsedInclusive-s-VKNKU ()J
+	public final fun getMethod ()Lcom/datadog/android/rum/profiling/MethodEntry;
+	public final fun getNext ()Lcom/datadog/android/rum/profiling/TimedMethod;
+	public final fun getNumCalls ()I
+	public final fun setElapsedInclusive-VKZWuLQ (J)V
+	public final fun setMethod (Lcom/datadog/android/rum/profiling/MethodEntry;)V
+	public final fun setNext (Lcom/datadog/android/rum/profiling/TimedMethod;)V
+	public final fun setNumCalls (I)V
+}
+
+public final class com/datadog/android/rum/profiling/TraceConverterKt {
+	public static final fun allocateString (Ljava/lang/String;)I
+	public static final fun convertToPprof (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
+	public static final fun decodeAction (I)Ljava/lang/String;
+	public static final fun formatTimestamp (J)Ljava/lang/String;
+	public static final fun parseDataFile (Ljava/lang/String;Ljava/lang/String;)V
+	public static final fun processTraceFile (Landroid/content/Context;Ljava/lang/String;)V
+	public static final fun splitTraceFile (Landroid/content/Context;Ljava/lang/String;)V
+}
+
+public final class com/datadog/android/rum/profiling/TraceData {
+	public fun <init> ()V
+	public fun <init> (ILjava/util/List;[Lcom/datadog/android/rum/profiling/CallStack;[IILjava/util/List;)V
+	public synthetic fun <init> (ILjava/util/List;[Lcom/datadog/android/rum/profiling/CallStack;[IILjava/util/List;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()I
+	public final fun component2 ()Ljava/util/List;
+	public final fun component3 ()[Lcom/datadog/android/rum/profiling/CallStack;
+	public final fun component4 ()[I
+	public final fun component5 ()I
+	public final fun component6 ()Ljava/util/List;
+	public final fun copy (ILjava/util/List;[Lcom/datadog/android/rum/profiling/CallStack;[IILjava/util/List;)Lcom/datadog/android/rum/profiling/TraceData;
+	public static synthetic fun copy$default (Lcom/datadog/android/rum/profiling/TraceData;ILjava/util/List;[Lcom/datadog/android/rum/profiling/CallStack;[IILjava/util/List;ILjava/lang/Object;)Lcom/datadog/android/rum/profiling/TraceData;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getClasses ()Ljava/util/List;
+	public final fun getDepth ()[I
+	public final fun getNumClasses ()I
+	public final fun getNumUniqueMethods ()I
+	public final fun getStacks ()[Lcom/datadog/android/rum/profiling/CallStack;
+	public final fun getUniqueMethods ()Ljava/util/List;
+	public fun hashCode ()I
+	public final fun setClasses (Ljava/util/List;)V
+	public final fun setDepth ([I)V
+	public final fun setNumClasses (I)V
+	public final fun setNumUniqueMethods (I)V
+	public final fun setStacks ([Lcom/datadog/android/rum/profiling/CallStack;)V
+	public final fun setUniqueMethods (Ljava/util/List;)V
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/rum/profiling/TraceRecord {
+	public fun <init> (IIIJ)V
+	public final fun component1 ()I
+	public final fun component2 ()I
+	public final fun component3 ()I
+	public final fun component4 ()J
+	public final fun copy (IIIJ)Lcom/datadog/android/rum/profiling/TraceRecord;
+	public static synthetic fun copy$default (Lcom/datadog/android/rum/profiling/TraceRecord;IIIJILjava/lang/Object;)Lcom/datadog/android/rum/profiling/TraceRecord;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getAction ()I
+	public final fun getMethodId ()I
+	public final fun getThreadId ()I
+	public final fun getTimeDelta ()J
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/rum/profiling/UniqueMethodEntry {
+	public synthetic fun <init> (JILjava/util/List;[IILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public synthetic fun <init> (JILjava/util/List;[ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1-s-VKNKU ()J
+	public final fun component2 ()I
+	public final fun component3 ()Ljava/util/List;
+	public final fun component4 ()[I
+	public final fun copy-v3sQxsQ (JILjava/util/List;[I)Lcom/datadog/android/rum/profiling/UniqueMethodEntry;
+	public static synthetic fun copy-v3sQxsQ$default (Lcom/datadog/android/rum/profiling/UniqueMethodEntry;JILjava/util/List;[IILjava/lang/Object;)Lcom/datadog/android/rum/profiling/UniqueMethodEntry;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getElapsedExclusive-s-VKNKU ()J
+	public final fun getMethods ()Ljava/util/List;
+	public final fun getNumCalls ()[I
+	public final fun getNumMethods ()I
+	public fun hashCode ()I
+	public final fun setElapsedExclusive-VKZWuLQ (J)V
+	public final fun setMethods (Ljava/util/List;)V
+	public final fun setNumCalls ([I)V
+	public final fun setNumMethods (I)V
+	public fun toString ()Ljava/lang/String;
+}
+
 public final class com/datadog/android/rum/resource/ContextExtKt {
 	public static final fun getAssetAsRumResource (Landroid/content/Context;Ljava/lang/String;ILcom/datadog/android/api/SdkCore;)Ljava/io/InputStream;
 	public static synthetic fun getAssetAsRumResource$default (Landroid/content/Context;Ljava/lang/String;ILcom/datadog/android/api/SdkCore;ILjava/lang/Object;)Ljava/io/InputStream;

@@ -17,9 +17,9 @@ import android.widget.ArrayAdapter
 import android.widget.Spinner
 import androidx.fragment.app.Fragment
 import com.datadog.android.rum.profiling.Profiler
+import com.datadog.android.rum.profiling.dumpTrace
 import com.datadog.android.sample.R
 import com.datadog.android.sample.data.db.room.RoomDataSource
-import io.reactivex.rxjava3.schedulers.Schedulers
 import java.io.File
 import java.net.URL
 import java.net.URLConnection
@@ -89,7 +89,7 @@ internal class ProfilingFragment :
     //endregion
 
     private fun startRandomHeavyOperations() {
-        Profiler.startProfilingManagerProfiling(requireContext(), 2, "heavy_operations")
+        Profiler.startProfilingManagerProfiling(requireContext(), 2)
         // let's start a heavy file write operation
         val outputFile = File("${requireContext().getExternalFilesDir(null)}/heavy_operations.txt")
         if (!outputFile.exists()) {
@@ -103,7 +103,7 @@ internal class ProfilingFragment :
         outputFile.writeText(data.toString())
         outputFile.delete()
         // let's do some CPU work
-        doCpuWork()
+        CpuWorkUtils().doCpuWork()
         // let's sleep for a while to simulate a heavy operation
         try {
             Thread.sleep(5000) // sleep for 5 seconds
@@ -129,7 +129,7 @@ internal class ProfilingFragment :
         } catch (e: Exception) {
             Log.e("ProfilingFragment", "Error during network operation", e)
         }
-        Profiler.stopProfilingManagerProfiling("heavy_operations")
+        Profiler.stopProfilingManagerProfiling()
     }
 
 
@@ -143,23 +143,37 @@ internal class ProfilingFragment :
     }
 
     private fun startLocalJvmScenario() {
+        val frequency = 1000 // 500 Hz
         Profiler.startProfiling(
             requireContext(),
-            2
+            1000L / frequency
         )
-        val outputMetricsFilePath = "${requireContext().getExternalFilesDir(null)}/localprofiler"
+        val outputMetricsFilePath =
+            "${requireContext().getExternalFilesDir(null)}/localprofiler_${frequency}hz"
         uiHandler.postDelayed(LocalProfileCpuWorkRunnable(outputMetricsFilePath, uiHandler), 8)
     }
 
     private fun startDebugProfilingScenario() {
         val interval = TimeUnit.MILLISECONDS.toMicros(2).toInt()
-        Debug.startMethodTracingSampling(
-            "${requireContext().getExternalFilesDir(null)}/debugprofiling_trace",
-            20 * 1024 * 1024,
-            interval
-        )
-        val outputMetricsFilePath = "${requireContext().getExternalFilesDir(null)}/debugprofiling"
-        uiHandler.postDelayed(DebugProfileCpuWorkRunnable(outputMetricsFilePath, uiHandler), 8)
+        val traceFilePath = "${requireContext().getExternalFilesDir(null)}/debugprofiling_trace"
+        val traceFile = File(traceFilePath)
+
+        /* Debug.startMethodTracingSampling(
+             traceFilePath,
+             20 * 1024 * 1024,
+             interval
+         )
+         Log.i("ProfilingFragment", "Starting debug profiling with interval: $interval")
+         val outputMetricsFilePath =
+             "${requireContext().getExternalFilesDir(null)}/debugprofiling"
+         uiHandler.postDelayed(
+             DebugProfileCpuWorkRunnable(
+                 traceFilePath,
+                 outputMetricsFilePath,
+                 uiHandler
+             ), 8
+         )*/
+        dumpTrace(requireContext(), traceFilePath + ".trace")
     }
 
     private fun startNoTracingScenario() {
@@ -182,11 +196,11 @@ internal class ProfilingFragment :
     }
 
     abstract class BaseCpuWorkRunnable(val outputMetricsFilePath: String, val uiHandler: Handler) : Runnable {
-        private var startTime = System.nanoTime()
+        private var executionCount = 0
         private val metrics = LinkedList<Long>()
 
         override fun run() {
-            if (System.nanoTime() - startTime > TEST_EXECUTION_TIME_IN_MS) {
+            if (executionCount >= TEST_COUNT) {
                 stopProfiling()
                 val outputFile = File(outputMetricsFilePath)
                 dumpMetrics(outputFile)
@@ -194,6 +208,7 @@ internal class ProfilingFragment :
                 return
             }
             executeCpuWork()
+            executionCount++
             uiHandler.postDelayed(this, 8)
         }
 
@@ -204,11 +219,15 @@ internal class ProfilingFragment :
             val metricsAsString = metrics.joinToString(",")
             outputFile.writeText(metricsAsString)
             metrics.clear()
+            Log.i(
+                "ProfilingFragment",
+                "Metrics[${metrics.size}] dumped to ${outputFile.absolutePath}"
+            )
         }
 
         protected fun executeCpuWork() {
             measureNanoTime {
-                doCpuWork()
+                CpuWorkUtils().doCpuWork()
             }.let {
                 metrics.add(it)
             }
@@ -225,9 +244,13 @@ internal class ProfilingFragment :
         }
     }
 
-    class DebugProfileCpuWorkRunnable(outputMetricsFilePath: String, uiHandler: Handler) :
+    class DebugProfileCpuWorkRunnable(
+        private val traceFilePath: String,
+        outputMetricsFilePath: String, uiHandler: Handler
+    ) :
         BaseCpuWorkRunnable(outputMetricsFilePath, uiHandler) {
         override fun stopProfiling() {
+            Log.i("ProfilingFragment", "Stopping debug profiling")
             Debug.stopMethodTracing()
         }
     }
@@ -235,5 +258,6 @@ internal class ProfilingFragment :
 
     companion object {
         private val TEST_EXECUTION_TIME_IN_MS = TimeUnit.SECONDS.toNanos(10)
+        private val TEST_COUNT = 300
     }
 }

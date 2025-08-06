@@ -43,17 +43,17 @@ internal object ProfileUtils {
         val functionIdsSet = mutableSetOf<Long>()
 
         // Process the provided thread stack traces
-        for ((thread, stack) in threadStackTraces) {
+        for ((thread, stacks) in threadStackTraces) {
             if (thread == Thread.currentThread()) {
                 continue
             }
             if (thread.name != "main") {
                 continue
             }
-            if (stack.isEmpty()) continue // skip threads with no Java stack
+            if (stacks.isEmpty()) continue // skip threads with no Java stack
 
             val locationIdList = mutableListOf<Long>()
-            for ((_, frame) in stack.withIndex()) {
+            for ((_, frame) in stacks.withIndex()) {
                 // Determine function (method) info from the stack frame
                 val className = frame.className // e.g. "com.example.MyClass"
                 val methodName = frame.methodName // e.g. "myFunction"

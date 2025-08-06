@@ -12,7 +12,6 @@ import com.datadog.android.core.internal.data.upload.CurlInterceptor
 import com.datadog.android.rum.internal.domain.RumContext
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
-import okhttp3.ConnectionSpec
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
 import okhttp3.OkHttpClient
@@ -20,6 +19,10 @@ import okhttp3.Request
 import okhttp3.RequestBody.Companion.asRequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.File
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import java.util.TimeZone
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
@@ -36,7 +39,7 @@ internal class PerfettoTracesUploader(
 
     private val okHttpClient = OkHttpClient.Builder()
         .addNetworkInterceptor(CurlInterceptor(true))
-        .connectionSpecs(listOf(ConnectionSpec.CLEARTEXT))
+        //.connectionSpecs(listOf(ConnectionSpec.CLEARTEXT))
         .build()
     private val scheduledExecutorService = Executors.newSingleThreadScheduledExecutor()
 
@@ -102,10 +105,16 @@ internal class PerfettoTracesUploader(
         }
 
         private fun uploadFiles(file: File) {
+            //val startTime = file.nameWithoutExtension.split("_")[1].toLong()
+            //val end = file.nameWithoutExtension.split("_")[2].toLong()
+            val startTime = System.currentTimeMillis() - TimeUnit.MINUTES.toMillis(1)
+            val end = System.currentTimeMillis()
             val context = appLaunchContext.get()
             val applicationId = JsonObject().apply {
                 addProperty("id", context?.applicationId as String)
             }
+            val formattedStartTime = formatIsoUtc(startTime)
+            val formattedEndTime = formatIsoUtc(end)
             val sessionId = JsonObject().apply {
                 addProperty("id", context?.sessionId as String)
             }
@@ -125,6 +134,8 @@ internal class PerfettoTracesUploader(
                 add("session", sessionId)
                 add("view", viewId)
                 addProperty("tags_profiler", "service:$service,version:$version")
+                addProperty("start", formattedStartTime)
+                addProperty("end", formattedEndTime)
                 addProperty("family", "go")
                 addProperty("version", "4")
             }
@@ -145,7 +156,7 @@ internal class PerfettoTracesUploader(
                 .build()
 
             val request = Request.Builder()
-                .url(LOCAL_HOST)
+                .url("$siteName/api/v2/profile")
                 .addHeader("DD-API-KEY", apiKey)
                 .addHeader("DD-EVP-ORIGIN", origin)
                 .addHeader("DD-EVP-ORIGIN-VERSION", sdkVersion)
@@ -182,6 +193,13 @@ internal class PerfettoTracesUploader(
 
         internal val CONTENT_TYPE_BINARY_TYPE = "application/octet-stream".toMediaTypeOrNull()
         internal val CONTENT_TYPE_JSON_TYPE = "application/json".toMediaTypeOrNull()
+
+        fun formatIsoUtc(epochMillis: Long): String {
+            val sdf = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.US)
+            sdf.timeZone = TimeZone.getTimeZone("UTC")
+            return sdf.format(Date(epochMillis))
+        }
+
     }
 
     companion object {

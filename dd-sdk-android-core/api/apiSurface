@@ -278,6 +278,14 @@ enum com.datadog.android.core.internal.attributes.ViewScopeInstrumentationType :
   - ACTIVITY
   - FRAGMENT
   override val key: LocalAttribute.Key
+class com.datadog.android.core.internal.data.upload.CurlInterceptor : okhttp3.Interceptor
+  constructor(Boolean = false, (String) -> Unit = { Log.i("Curl", it) })
+  override fun intercept(okhttp3.Interceptor.Chain): okhttp3.Response
+  class CurlBuilder
+    constructor(String, String, String? = null, okhttp3.RequestBody? = null, Map<String, List<String>> = emptyMap(), Boolean)
+    constructor(okhttp3.Request, Boolean)
+    fun toCommand(): String
+  companion object 
 class com.datadog.android.core.internal.net.DefaultFirstPartyHostHeaderTypeResolver : FirstPartyHostHeaderTypeResolver
   constructor(Map<String, Set<com.datadog.android.trace.TracingHeaderType>>)
   override fun isFirstPartyUrl(okhttp3.HttpUrl): Boolean
