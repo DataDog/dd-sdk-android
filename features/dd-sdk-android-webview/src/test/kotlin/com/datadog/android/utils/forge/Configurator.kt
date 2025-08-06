@@ -6,6 +6,7 @@
 
 package com.datadog.android.utils.forge
 
+import com.datadog.android.rum.utils.forge.useCommonRumFactories
 import com.datadog.android.tests.elmyr.useCoreFactories
 import com.datadog.tools.unit.forge.BaseConfigurator
 import fr.xgouchet.elmyr.Forge
@@ -18,11 +19,7 @@ internal class Configurator : BaseConfigurator() {
         forge.useCoreFactories()
 
         // RUM
+        forge.useCommonRumFactories()
         forge.addFactory(RumContextForgeryFactory())
-        forge.addFactory(ViewEventForgeryFactory())
-        forge.addFactory(ResourceEventForgeryFactory())
-        forge.addFactory(ActionEventForgeryFactory())
-        forge.addFactory(ErrorEventForgeryFactory())
-        forge.addFactory(LongTaskEventForgeryFactory())
     }
 }
