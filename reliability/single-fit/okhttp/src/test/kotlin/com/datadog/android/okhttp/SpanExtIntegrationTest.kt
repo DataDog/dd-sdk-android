@@ -10,7 +10,6 @@ import com.datadog.android.api.SdkCore
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.core.stub.StubEvent
 import com.datadog.android.core.stub.StubSDKCore
-import com.datadog.android.internal.utils.toHexString
 import com.datadog.android.okhttp.tests.assertj.SpansPayloadAssert
 import com.datadog.android.okhttp.tests.elmyr.OkHttpConfigurator
 import com.datadog.android.trace.DatadogTracing
@@ -18,6 +17,7 @@ import com.datadog.android.trace.GlobalDatadogTracer
 import com.datadog.android.trace.Trace
 import com.datadog.android.trace.TraceConfiguration
 import com.datadog.android.trace.api.span.DatadogSpan
+import com.datadog.android.trace.internal.DatadogTracingToolkit
 import com.datadog.android.trace.withinSpan
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.getFieldValue
@@ -61,7 +61,8 @@ class SpanExtIntegrationTest {
 
     private fun JsonArray.getObject(index: Int) = get(index).asJsonObject
     private fun StubEvent.asJson(): JsonObject = JsonParser.parseString(eventData).asJsonObject
-    private fun DatadogSpan.getSpanId(): String = context().spanId.toHexString()
+    private fun DatadogSpan.getSpanId(): String = DatadogTracingToolkit.spanIdConverter
+        .toHexStringPadded(context().spanId)
     private fun registerTracer(
         sampleRate: Double? = null,
         partialFlushMinSpans: Int? = null
