@@ -16,7 +16,7 @@ internal class ViewEventMetaForgeryFactory : ForgeryFactory<RumEventMeta.View> {
         return RumEventMeta.View(
             viewId = forge.getForgery<UUID>().toString(),
             documentVersion = forge.aPositiveLong(strict = true),
-            hasAccessibility = forge.aNullable { forge.aBool() }
+            hasAccessibility = forge.aBool()
         )
     }
 }

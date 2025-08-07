@@ -67,7 +67,6 @@ internal sealed class RumEventMeta {
                         val hasAccessibilityElement = model.get(HAS_ACCESSIBILITY_KEY)
                         val hasAccessibility = when {
                             hasAccessibilityElement == null -> false // Missing field (backward compatibility)
-                            hasAccessibilityElement.isJsonNull -> null // Explicit null in JSON
                             else -> hasAccessibilityElement.asBoolean // Valid boolean value
                         }
 
