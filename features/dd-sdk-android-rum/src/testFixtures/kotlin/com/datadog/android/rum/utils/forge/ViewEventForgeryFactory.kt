@@ -7,6 +7,7 @@
 package com.datadog.android.rum.utils.forge
 
 import com.datadog.android.rum.model.ViewEvent
+import com.datadog.android.rum.model.ViewEvent.Accessibility
 import com.datadog.tools.unit.forge.exhaustiveAttributes
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
@@ -63,7 +64,8 @@ class ViewEventForgeryFactory : ForgeryFactory<ViewEvent> {
                 cpuTicksPerSecond = forge.aNullable { aPositiveDouble() },
                 refreshRateAverage = forge.aNullable { aPositiveDouble() },
                 refreshRateMin = forge.aNullable { aPositiveDouble() },
-                frustration = forge.aNullable { ViewEvent.Frustration(aPositiveLong()) }
+                frustration = forge.aNullable { ViewEvent.Frustration(aPositiveLong()) },
+                accessibility = forge.aNullable { forge.getForgery<Accessibility>() }
             ),
             connectivity = forge.aNullable {
                 ViewEvent.Connectivity(

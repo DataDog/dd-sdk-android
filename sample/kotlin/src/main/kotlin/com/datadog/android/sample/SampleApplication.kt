@@ -32,7 +32,6 @@ import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.Rum
 import com.datadog.android.rum.RumConfiguration
 import com.datadog.android.rum.RumErrorSource
-import com.datadog.android.rum._RumInternalProxy
 import com.datadog.android.rum.configuration.SlowFramesConfiguration
 import com.datadog.android.rum.tracking.NavigationViewTrackingStrategy
 import com.datadog.android.sample.account.AccountFragment
@@ -340,9 +339,7 @@ class SampleApplication : Application() {
             .trackBackgroundEvents(true)
             .trackAnonymousUser(true)
             .enableComposeActionTracking()
-            .apply {
-                _RumInternalProxy.collectAccessibilitySettings(this)
-            }
+            .collectAccessibility(true)
             .build()
     }
 

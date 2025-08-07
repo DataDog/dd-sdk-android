@@ -28,6 +28,10 @@ import com.datadog.android.rum.configuration.VitalsUpdateFrequency
 import com.datadog.android.rum.internal.RumFeature.Companion.SLOW_FRAMES_MONITORING_DISABLED_MESSAGE
 import com.datadog.android.rum.internal.RumFeature.Companion.SLOW_FRAMES_MONITORING_ENABLED_MESSAGE
 import com.datadog.android.rum.internal.domain.RumDataWriter
+import com.datadog.android.rum.internal.domain.accessibility.DatadogAccessibilityReader
+import com.datadog.android.rum.internal.domain.accessibility.DefaultAccessibilitySnapshotManager
+import com.datadog.android.rum.internal.domain.accessibility.NoOpAccessibilityReader
+import com.datadog.android.rum.internal.domain.accessibility.NoOpAccessibilitySnapshotManager
 import com.datadog.android.rum.internal.domain.event.RumEventMapper
 import com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
@@ -1373,6 +1377,81 @@ internal class RumFeatureTest {
         verify(mockRumMonitor).sendTelemetryEvent(fakeInternalTelemetryEvent)
         verifyNoMoreInteractions(mockRumMonitor)
         verifySlowFramesListenerLogMessage()
+    }
+
+    // endregion
+
+    // region accessibility
+
+    @Test
+    fun `M have noop accessibility classes W onInitialize { collectAccessibility not set or explicit false }`() {
+        // Given
+        val configWithoutAccessibility = fakeConfiguration.copy(
+            collectAccessibility = false
+        )
+        testedFeature = RumFeature(
+            mockSdkCore,
+            fakeApplicationId.toString(),
+            configWithoutAccessibility,
+            lateCrashReporterFactory = { mockLateCrashReporter }
+        )
+
+        // When
+        testedFeature.onInitialize(appContext.mockInstance)
+
+        // Then
+        assertThat(testedFeature.accessibilityReader).isInstanceOf(NoOpAccessibilityReader::class.java)
+        assertThat(
+            testedFeature.accessibilitySnapshotManager
+        ).isInstanceOf(NoOpAccessibilitySnapshotManager::class.java)
+    }
+
+    @Test
+    fun `M set accessibility classes to implementation W onInitialize { collectAccessibility set true }`() {
+        // Given
+        val configWithoutAccessibility = fakeConfiguration.copy(
+            collectAccessibility = true
+        )
+        testedFeature = RumFeature(
+            mockSdkCore,
+            fakeApplicationId.toString(),
+            configWithoutAccessibility,
+            lateCrashReporterFactory = { mockLateCrashReporter }
+        )
+
+        // When
+        testedFeature.onInitialize(appContext.mockInstance)
+
+        // Then
+        assertThat(testedFeature.accessibilityReader).isInstanceOf(DatadogAccessibilityReader::class.java)
+        assertThat(
+            testedFeature.accessibilitySnapshotManager
+        ).isInstanceOf(DefaultAccessibilitySnapshotManager::class.java)
+    }
+
+    @Test
+    fun `M cleanup accessibility classes W onStop`() {
+        // Given
+        val configWithoutAccessibility = fakeConfiguration.copy(
+            collectAccessibility = true
+        )
+        testedFeature = RumFeature(
+            mockSdkCore,
+            fakeApplicationId.toString(),
+            configWithoutAccessibility,
+            lateCrashReporterFactory = { mockLateCrashReporter }
+        )
+
+        testedFeature.onInitialize(appContext.mockInstance)
+
+        // When
+        testedFeature.onStop()
+
+        // Then
+        assertThat(testedFeature.accessibilityReader).isInstanceOf(NoOpAccessibilityReader::class.java)
+        assertThat(
+            testedFeature.accessibilitySnapshotManager
+        ).isInstanceOf(NoOpAccessibilitySnapshotManager::class.java)
     }
 
     // endregion

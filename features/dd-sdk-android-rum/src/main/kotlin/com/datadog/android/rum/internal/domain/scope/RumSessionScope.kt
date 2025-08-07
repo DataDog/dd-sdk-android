@@ -16,7 +16,7 @@ import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.RumSessionType
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
-import com.datadog.android.rum.internal.domain.accessibility.AccessibilityReader
+import com.datadog.android.rum.internal.domain.accessibility.AccessibilitySnapshotManager
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
 import com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener
 import com.datadog.android.rum.internal.utils.percent
@@ -46,7 +46,7 @@ internal class RumSessionScope(
     networkSettledResourceIdentifier: InitialResourceIdentifier,
     lastInteractionIdentifier: LastInteractionIdentifier?,
     slowFramesListener: SlowFramesListener?,
-    private val accessibilityReader: AccessibilityReader,
+    private val accessibilitySnapshotManager: AccessibilitySnapshotManager,
     private val sessionInactivityNanos: Long = DEFAULT_SESSION_INACTIVITY_NS,
     private val sessionMaxDurationNanos: Long = DEFAULT_SESSION_MAX_DURATION_NS,
     rumSessionTypeOverride: RumSessionType?
@@ -82,7 +82,7 @@ internal class RumSessionScope(
         slowFramesListener = slowFramesListener,
         lastInteractionIdentifier = lastInteractionIdentifier,
         rumSessionTypeOverride = rumSessionTypeOverride,
-        accessibilityReader = accessibilityReader
+        accessibilitySnapshotManager = accessibilitySnapshotManager
     )
 
     init {

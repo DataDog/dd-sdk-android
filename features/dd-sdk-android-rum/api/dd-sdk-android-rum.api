@@ -104,6 +104,7 @@ public final class com/datadog/android/rum/RumConfiguration {
 public final class com/datadog/android/rum/RumConfiguration$Builder {
 	public fun <init> (Ljava/lang/String;)V
 	public final fun build ()Lcom/datadog/android/rum/RumConfiguration;
+	public final fun collectAccessibility (Z)Lcom/datadog/android/rum/RumConfiguration$Builder;
 	public final fun disableUserInteractionTracking ()Lcom/datadog/android/rum/RumConfiguration$Builder;
 	public final fun setActionEventMapper (Lcom/datadog/android/event/EventMapper;)Lcom/datadog/android/rum/RumConfiguration$Builder;
 	public final fun setErrorEventMapper (Lcom/datadog/android/event/EventMapper;)Lcom/datadog/android/rum/RumConfiguration$Builder;
@@ -253,7 +254,6 @@ public final class com/datadog/android/rum/_RumInternalProxy {
 }
 
 public final class com/datadog/android/rum/_RumInternalProxy$Companion {
-	public final fun collectAccessibilitySettings (Lcom/datadog/android/rum/RumConfiguration$Builder;)Lcom/datadog/android/rum/RumConfiguration$Builder;
 	public final fun setAdditionalConfiguration (Lcom/datadog/android/rum/RumConfiguration$Builder;Ljava/util/Map;)Lcom/datadog/android/rum/RumConfiguration$Builder;
 	public final fun setComposeActionTrackingStrategy (Lcom/datadog/android/rum/RumConfiguration$Builder;Lcom/datadog/android/rum/tracking/ActionTrackingStrategy;)Lcom/datadog/android/rum/RumConfiguration$Builder;
 	public final fun setRumSessionTypeOverride (Lcom/datadog/android/rum/RumConfiguration$Builder;Lcom/datadog/android/rum/RumSessionType;)Lcom/datadog/android/rum/RumConfiguration$Builder;
@@ -5051,6 +5051,21 @@ public final class com/datadog/android/rum/model/RumVitalEvent$EffectiveType$Com
 	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/RumVitalEvent$EffectiveType;
 }
 
+public final class com/datadog/android/rum/model/RumVitalEvent$FailureReason : java/lang/Enum {
+	public static final field ABANDONED Lcom/datadog/android/rum/model/RumVitalEvent$FailureReason;
+	public static final field Companion Lcom/datadog/android/rum/model/RumVitalEvent$FailureReason$Companion;
+	public static final field ERROR Lcom/datadog/android/rum/model/RumVitalEvent$FailureReason;
+	public static final field OTHER Lcom/datadog/android/rum/model/RumVitalEvent$FailureReason;
+	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/RumVitalEvent$FailureReason;
+	public final fun toJson ()Lcom/google/gson/JsonElement;
+	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/model/RumVitalEvent$FailureReason;
+	public static fun values ()[Lcom/datadog/android/rum/model/RumVitalEvent$FailureReason;
+}
+
+public final class com/datadog/android/rum/model/RumVitalEvent$FailureReason$Companion {
+	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/RumVitalEvent$FailureReason;
+}
+
 public final class com/datadog/android/rum/model/RumVitalEvent$Interface : java/lang/Enum {
 	public static final field BLUETOOTH Lcom/datadog/android/rum/model/RumVitalEvent$Interface;
 	public static final field CELLULAR Lcom/datadog/android/rum/model/RumVitalEvent$Interface;
@@ -5205,24 +5220,30 @@ public final class com/datadog/android/rum/model/RumVitalEvent$RumVitalEventView
 
 public final class com/datadog/android/rum/model/RumVitalEvent$RumVitalEventVital {
 	public static final field Companion Lcom/datadog/android/rum/model/RumVitalEvent$RumVitalEventVital$Companion;
-	public fun <init> (Lcom/datadog/android/rum/model/RumVitalEvent$RumVitalEventVitalType;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Number;Lcom/datadog/android/rum/model/RumVitalEvent$Custom;)V
-	public synthetic fun <init> (Lcom/datadog/android/rum/model/RumVitalEvent$RumVitalEventVitalType;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Number;Lcom/datadog/android/rum/model/RumVitalEvent$Custom;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Lcom/datadog/android/rum/model/RumVitalEvent$RumVitalEventVitalType;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Number;Lcom/datadog/android/rum/model/RumVitalEvent$Custom;Lcom/datadog/android/rum/model/RumVitalEvent$StepType;Lcom/datadog/android/rum/model/RumVitalEvent$FailureReason;)V
+	public synthetic fun <init> (Lcom/datadog/android/rum/model/RumVitalEvent$RumVitalEventVitalType;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Number;Lcom/datadog/android/rum/model/RumVitalEvent$Custom;Lcom/datadog/android/rum/model/RumVitalEvent$StepType;Lcom/datadog/android/rum/model/RumVitalEvent$FailureReason;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Lcom/datadog/android/rum/model/RumVitalEvent$RumVitalEventVitalType;
 	public final fun component2 ()Ljava/lang/String;
 	public final fun component3 ()Ljava/lang/String;
 	public final fun component4 ()Ljava/lang/String;
-	public final fun component5 ()Ljava/lang/Number;
-	public final fun component6 ()Lcom/datadog/android/rum/model/RumVitalEvent$Custom;
-	public final fun copy (Lcom/datadog/android/rum/model/RumVitalEvent$RumVitalEventVitalType;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Number;Lcom/datadog/android/rum/model/RumVitalEvent$Custom;)Lcom/datadog/android/rum/model/RumVitalEvent$RumVitalEventVital;
-	public static synthetic fun copy$default (Lcom/datadog/android/rum/model/RumVitalEvent$RumVitalEventVital;Lcom/datadog/android/rum/model/RumVitalEvent$RumVitalEventVitalType;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Number;Lcom/datadog/android/rum/model/RumVitalEvent$Custom;ILjava/lang/Object;)Lcom/datadog/android/rum/model/RumVitalEvent$RumVitalEventVital;
+	public final fun component5 ()Ljava/lang/String;
+	public final fun component6 ()Ljava/lang/Number;
+	public final fun component7 ()Lcom/datadog/android/rum/model/RumVitalEvent$Custom;
+	public final fun component8 ()Lcom/datadog/android/rum/model/RumVitalEvent$StepType;
+	public final fun component9 ()Lcom/datadog/android/rum/model/RumVitalEvent$FailureReason;
+	public final fun copy (Lcom/datadog/android/rum/model/RumVitalEvent$RumVitalEventVitalType;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Number;Lcom/datadog/android/rum/model/RumVitalEvent$Custom;Lcom/datadog/android/rum/model/RumVitalEvent$StepType;Lcom/datadog/android/rum/model/RumVitalEvent$FailureReason;)Lcom/datadog/android/rum/model/RumVitalEvent$RumVitalEventVital;
+	public static synthetic fun copy$default (Lcom/datadog/android/rum/model/RumVitalEvent$RumVitalEventVital;Lcom/datadog/android/rum/model/RumVitalEvent$RumVitalEventVitalType;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Number;Lcom/datadog/android/rum/model/RumVitalEvent$Custom;Lcom/datadog/android/rum/model/RumVitalEvent$StepType;Lcom/datadog/android/rum/model/RumVitalEvent$FailureReason;ILjava/lang/Object;)Lcom/datadog/android/rum/model/RumVitalEvent$RumVitalEventVital;
 	public fun equals (Ljava/lang/Object;)Z
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/RumVitalEvent$RumVitalEventVital;
 	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/rum/model/RumVitalEvent$RumVitalEventVital;
 	public final fun getCustom ()Lcom/datadog/android/rum/model/RumVitalEvent$Custom;
 	public final fun getDescription ()Ljava/lang/String;
 	public final fun getDuration ()Ljava/lang/Number;
+	public final fun getFailureReason ()Lcom/datadog/android/rum/model/RumVitalEvent$FailureReason;
 	public final fun getId ()Ljava/lang/String;
 	public final fun getName ()Ljava/lang/String;
+	public final fun getParentId ()Ljava/lang/String;
+	public final fun getStepType ()Lcom/datadog/android/rum/model/RumVitalEvent$StepType;
 	public final fun getType ()Lcom/datadog/android/rum/model/RumVitalEvent$RumVitalEventVitalType;
 	public fun hashCode ()I
 	public final fun toJson ()Lcom/google/gson/JsonElement;
@@ -5237,6 +5258,7 @@ public final class com/datadog/android/rum/model/RumVitalEvent$RumVitalEventVita
 public final class com/datadog/android/rum/model/RumVitalEvent$RumVitalEventVitalType : java/lang/Enum {
 	public static final field Companion Lcom/datadog/android/rum/model/RumVitalEvent$RumVitalEventVitalType$Companion;
 	public static final field DURATION Lcom/datadog/android/rum/model/RumVitalEvent$RumVitalEventVitalType;
+	public static final field STEP Lcom/datadog/android/rum/model/RumVitalEvent$RumVitalEventVitalType;
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/RumVitalEvent$RumVitalEventVitalType;
 	public final fun toJson ()Lcom/google/gson/JsonElement;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/model/RumVitalEvent$RumVitalEventVitalType;
@@ -5279,6 +5301,22 @@ public final class com/datadog/android/rum/model/RumVitalEvent$Status : java/lan
 
 public final class com/datadog/android/rum/model/RumVitalEvent$Status$Companion {
 	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/RumVitalEvent$Status;
+}
+
+public final class com/datadog/android/rum/model/RumVitalEvent$StepType : java/lang/Enum {
+	public static final field Companion Lcom/datadog/android/rum/model/RumVitalEvent$StepType$Companion;
+	public static final field END Lcom/datadog/android/rum/model/RumVitalEvent$StepType;
+	public static final field RETRY Lcom/datadog/android/rum/model/RumVitalEvent$StepType;
+	public static final field START Lcom/datadog/android/rum/model/RumVitalEvent$StepType;
+	public static final field UPDATE Lcom/datadog/android/rum/model/RumVitalEvent$StepType;
+	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/RumVitalEvent$StepType;
+	public final fun toJson ()Lcom/google/gson/JsonElement;
+	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/model/RumVitalEvent$StepType;
+	public static fun values ()[Lcom/datadog/android/rum/model/RumVitalEvent$StepType;
+}
+
+public final class com/datadog/android/rum/model/RumVitalEvent$StepType$Companion {
+	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/RumVitalEvent$StepType;
 }
 
 public final class com/datadog/android/rum/model/RumVitalEvent$Synthetics {
@@ -5361,8 +5399,8 @@ public final class com/datadog/android/rum/model/RumVitalEvent$Viewport$Companio
 public final class com/datadog/android/rum/model/ViewAccessibilityProperties {
 	public static final field Companion Lcom/datadog/android/rum/model/ViewAccessibilityProperties$Companion;
 	public fun <init> ()V
-	public fun <init> (Ljava/lang/String;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;)V
-	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Ljava/lang/String;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Ljava/lang/String;
 	public final fun component10 ()Ljava/lang/Boolean;
 	public final fun component11 ()Ljava/lang/Boolean;
@@ -5377,6 +5415,7 @@ public final class com/datadog/android/rum/model/ViewAccessibilityProperties {
 	public final fun component2 ()Ljava/lang/Boolean;
 	public final fun component20 ()Ljava/lang/Boolean;
 	public final fun component21 ()Ljava/lang/Boolean;
+	public final fun component22 ()Ljava/lang/Boolean;
 	public final fun component3 ()Ljava/lang/Boolean;
 	public final fun component4 ()Ljava/lang/Boolean;
 	public final fun component5 ()Ljava/lang/Boolean;
@@ -5384,8 +5423,8 @@ public final class com/datadog/android/rum/model/ViewAccessibilityProperties {
 	public final fun component7 ()Ljava/lang/Boolean;
 	public final fun component8 ()Ljava/lang/Boolean;
 	public final fun component9 ()Ljava/lang/Boolean;
-	public final fun copy (Ljava/lang/String;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;)Lcom/datadog/android/rum/model/ViewAccessibilityProperties;
-	public static synthetic fun copy$default (Lcom/datadog/android/rum/model/ViewAccessibilityProperties;Ljava/lang/String;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;ILjava/lang/Object;)Lcom/datadog/android/rum/model/ViewAccessibilityProperties;
+	public final fun copy (Ljava/lang/String;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;)Lcom/datadog/android/rum/model/ViewAccessibilityProperties;
+	public static synthetic fun copy$default (Lcom/datadog/android/rum/model/ViewAccessibilityProperties;Ljava/lang/String;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;ILjava/lang/Object;)Lcom/datadog/android/rum/model/ViewAccessibilityProperties;
 	public fun equals (Ljava/lang/Object;)Z
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/ViewAccessibilityProperties;
 	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/rum/model/ViewAccessibilityProperties;
@@ -5402,6 +5441,7 @@ public final class com/datadog/android/rum/model/ViewAccessibilityProperties {
 	public final fun getReduceMotionEnabled ()Ljava/lang/Boolean;
 	public final fun getReduceTransparencyEnabled ()Ljava/lang/Boolean;
 	public final fun getReducedAnimationsEnabled ()Ljava/lang/Boolean;
+	public final fun getRtlEnabled ()Ljava/lang/Boolean;
 	public final fun getScreenReaderEnabled ()Ljava/lang/Boolean;
 	public final fun getShakeToUndoEnabled ()Ljava/lang/Boolean;
 	public final fun getShouldDifferentiateWithoutColor ()Ljava/lang/Boolean;
@@ -5484,8 +5524,8 @@ public final class com/datadog/android/rum/model/ViewEvent {
 public final class com/datadog/android/rum/model/ViewEvent$Accessibility {
 	public static final field Companion Lcom/datadog/android/rum/model/ViewEvent$Accessibility$Companion;
 	public fun <init> ()V
-	public fun <init> (Ljava/lang/String;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;)V
-	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Ljava/lang/String;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Ljava/lang/String;
 	public final fun component10 ()Ljava/lang/Boolean;
 	public final fun component11 ()Ljava/lang/Boolean;
@@ -5500,6 +5540,7 @@ public final class com/datadog/android/rum/model/ViewEvent$Accessibility {
 	public final fun component2 ()Ljava/lang/Boolean;
 	public final fun component20 ()Ljava/lang/Boolean;
 	public final fun component21 ()Ljava/lang/Boolean;
+	public final fun component22 ()Ljava/lang/Boolean;
 	public final fun component3 ()Ljava/lang/Boolean;
 	public final fun component4 ()Ljava/lang/Boolean;
 	public final fun component5 ()Ljava/lang/Boolean;
@@ -5507,8 +5548,8 @@ public final class com/datadog/android/rum/model/ViewEvent$Accessibility {
 	public final fun component7 ()Ljava/lang/Boolean;
 	public final fun component8 ()Ljava/lang/Boolean;
 	public final fun component9 ()Ljava/lang/Boolean;
-	public final fun copy (Ljava/lang/String;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;)Lcom/datadog/android/rum/model/ViewEvent$Accessibility;
-	public static synthetic fun copy$default (Lcom/datadog/android/rum/model/ViewEvent$Accessibility;Ljava/lang/String;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;ILjava/lang/Object;)Lcom/datadog/android/rum/model/ViewEvent$Accessibility;
+	public final fun copy (Ljava/lang/String;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;)Lcom/datadog/android/rum/model/ViewEvent$Accessibility;
+	public static synthetic fun copy$default (Lcom/datadog/android/rum/model/ViewEvent$Accessibility;Ljava/lang/String;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;ILjava/lang/Object;)Lcom/datadog/android/rum/model/ViewEvent$Accessibility;
 	public fun equals (Ljava/lang/Object;)Z
 	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/rum/model/ViewEvent$Accessibility;
 	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/rum/model/ViewEvent$Accessibility;
@@ -5525,6 +5566,7 @@ public final class com/datadog/android/rum/model/ViewEvent$Accessibility {
 	public final fun getReduceMotionEnabled ()Ljava/lang/Boolean;
 	public final fun getReduceTransparencyEnabled ()Ljava/lang/Boolean;
 	public final fun getReducedAnimationsEnabled ()Ljava/lang/Boolean;
+	public final fun getRtlEnabled ()Ljava/lang/Boolean;
 	public final fun getScreenReaderEnabled ()Ljava/lang/Boolean;
 	public final fun getShakeToUndoEnabled ()Ljava/lang/Boolean;
 	public final fun getShouldDifferentiateWithoutColor ()Ljava/lang/Boolean;
