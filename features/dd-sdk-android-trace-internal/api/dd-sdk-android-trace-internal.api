@@ -3004,7 +3004,6 @@ public class com/datadog/trace/core/PendingTrace : com/datadog/trace/bootstrap/i
 	public fun setSamplingPriorityIfNecessary ()V
 	public fun size ()I
 	public fun touch ()V
-	public fun unregisterSpan (Lcom/datadog/trace/core/DDSpan;)V
 	public fun write ()V
 	public fun writeOnBufferFull ()Z
 }
