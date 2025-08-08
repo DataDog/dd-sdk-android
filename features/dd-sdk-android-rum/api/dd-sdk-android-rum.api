@@ -157,7 +157,7 @@ public abstract interface class com/datadog/android/rum/RumMonitor {
 	public abstract fun addTiming (Ljava/lang/String;)V
 	public abstract fun addViewLoadingTime (Z)V
 	public abstract fun clearAttributes ()V
-	public abstract fun failFeatureOperation (Ljava/lang/String;Ljava/lang/String;Lcom/datadog/android/rum/featureoperation/FailureReason;Ljava/util/Map;)V
+	public abstract fun failFeatureOperation (Ljava/lang/String;Ljava/lang/String;Lcom/datadog/android/rum/featureoperations/FailureReason;Ljava/util/Map;)V
 	public abstract fun getAttributes ()Ljava/util/Map;
 	public abstract fun getCurrentSessionId (Lkotlin/jvm/functions/Function1;)V
 	public abstract fun getDebug ()Z
@@ -180,7 +180,7 @@ public abstract interface class com/datadog/android/rum/RumMonitor {
 }
 
 public final class com/datadog/android/rum/RumMonitor$DefaultImpls {
-	public static synthetic fun failFeatureOperation$default (Lcom/datadog/android/rum/RumMonitor;Ljava/lang/String;Ljava/lang/String;Lcom/datadog/android/rum/featureoperation/FailureReason;Ljava/util/Map;ILjava/lang/Object;)V
+	public static synthetic fun failFeatureOperation$default (Lcom/datadog/android/rum/RumMonitor;Ljava/lang/String;Ljava/lang/String;Lcom/datadog/android/rum/featureoperations/FailureReason;Ljava/util/Map;ILjava/lang/Object;)V
 	public static synthetic fun retryFeatureOperation$default (Lcom/datadog/android/rum/RumMonitor;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;ILjava/lang/Object;)V
 	public static synthetic fun startFeatureOperation$default (Lcom/datadog/android/rum/RumMonitor;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;ILjava/lang/Object;)V
 	public static synthetic fun startResource$default (Lcom/datadog/android/rum/RumMonitor;Ljava/lang/String;Lcom/datadog/android/rum/RumResourceMethod;Ljava/lang/String;Ljava/util/Map;ILjava/lang/Object;)V
@@ -299,12 +299,12 @@ public abstract interface class com/datadog/android/rum/event/ViewEventMapper : 
 	public abstract fun map (Lcom/datadog/android/rum/model/ViewEvent;)Lcom/datadog/android/rum/model/ViewEvent;
 }
 
-public final class com/datadog/android/rum/featureoperation/FailureReason : java/lang/Enum {
-	public static final field ABANDONED Lcom/datadog/android/rum/featureoperation/FailureReason;
-	public static final field ERROR Lcom/datadog/android/rum/featureoperation/FailureReason;
-	public static final field OTHER Lcom/datadog/android/rum/featureoperation/FailureReason;
-	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/featureoperation/FailureReason;
-	public static fun values ()[Lcom/datadog/android/rum/featureoperation/FailureReason;
+public final class com/datadog/android/rum/featureoperations/FailureReason : java/lang/Enum {
+	public static final field ABANDONED Lcom/datadog/android/rum/featureoperations/FailureReason;
+	public static final field ERROR Lcom/datadog/android/rum/featureoperations/FailureReason;
+	public static final field OTHER Lcom/datadog/android/rum/featureoperations/FailureReason;
+	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/featureoperations/FailureReason;
+	public static fun values ()[Lcom/datadog/android/rum/featureoperations/FailureReason;
 }
 
 public final class com/datadog/android/rum/internal/domain/event/ResourceTiming {

@@ -673,12 +673,20 @@ internal class DatadogRumMonitor(
 
     @ExperimentalRumApi
     override fun startFeatureOperation(name: String, operationKey: String?, attributes: Map<String, Any?>) {
-        // TODO RUM-11252 - Only declaring public methods for RN integration. Implementation will be provided later.
+        handleEvent(
+            RumRawEvent.StartFeatureOperation(name, operationKey, attributes.toMap(), getEventTime(attributes))
+        )
     }
 
     @ExperimentalRumApi
     override fun succeedFeatureOperation(name: String, operationKey: String?, attributes: Map<String, Any?>) {
-        // TODO RUM-11252 - Only declaring public methods for RN integration. Implementation will be provided later.
+        handleEvent(
+            RumRawEvent.StopFeatureOperation(
+                name, operationKey, attributes.toMap(),
+                failureReason = null,
+                eventTime = getEventTime(attributes)
+            )
+        )
     }
 
     @ExperimentalRumApi
@@ -688,17 +696,32 @@ internal class DatadogRumMonitor(
         failureReason: FailureReason,
         attributes: Map<String, Any?>
     ) {
-        // TODO RUM-11252 - Only declaring public methods for RN integration. Implementation will be provided later.
+        handleEvent(
+            RumRawEvent.StopFeatureOperation(
+                name,
+                operationKey,
+                attributes.toMap(),
+                failureReason = failureReason,
+                eventTime = getEventTime(attributes)
+            )
+        )
     }
 
     @ExperimentalRumApi
     override fun retryFeatureOperation(name: String, operationKey: String?, attributes: Map<String, Any?>) {
-        // TODO RUM-11252 - Only declaring public methods for RN integration. Implementation will be provided later.
+        handleEvent(RumRawEvent.RetryFeatureOperation(name, operationKey, attributes.toMap(), getEventTime(attributes)))
     }
 
     @ExperimentalRumApi
     override fun updateFeatureOperation(name: String, operationKey: String?, attributes: Map<String, Any?>) {
-        // TODO RUM-11252 - Only declaring public methods for RN integration. Implementation will be provided later.
+        handleEvent(
+            RumRawEvent.UpdateFeatureOperation(
+                name,
+                operationKey,
+                attributes.toMap(),
+                getEventTime(attributes)
+            )
+        )
     }
 
     // endregion
