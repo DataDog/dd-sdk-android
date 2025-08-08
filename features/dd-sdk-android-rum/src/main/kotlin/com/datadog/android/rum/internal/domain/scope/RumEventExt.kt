@@ -20,6 +20,7 @@ import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
+import com.datadog.android.rum.model.RumVitalEvent
 import com.datadog.android.rum.model.ViewEvent
 import java.util.Locale
 
@@ -548,6 +549,18 @@ internal fun RumSessionScope.StartReason.toErrorSessionPrecondition(): ErrorEven
         RumSessionScope.StartReason.PREWARM -> ErrorEvent.SessionPrecondition.PREWARM
         RumSessionScope.StartReason.FROM_NON_INTERACTIVE_SESSION ->
             ErrorEvent.SessionPrecondition.FROM_NON_INTERACTIVE_SESSION
+    }
+}
+internal fun RumSessionScope.StartReason.toVitalSessionPrecondition(): RumVitalEvent.SessionPrecondition {
+    return when (this) {
+        RumSessionScope.StartReason.USER_APP_LAUNCH -> RumVitalEvent.SessionPrecondition.USER_APP_LAUNCH
+        RumSessionScope.StartReason.INACTIVITY_TIMEOUT -> RumVitalEvent.SessionPrecondition.INACTIVITY_TIMEOUT
+        RumSessionScope.StartReason.MAX_DURATION -> RumVitalEvent.SessionPrecondition.MAX_DURATION
+        RumSessionScope.StartReason.EXPLICIT_STOP -> RumVitalEvent.SessionPrecondition.EXPLICIT_STOP
+        RumSessionScope.StartReason.BACKGROUND_LAUNCH -> RumVitalEvent.SessionPrecondition.BACKGROUND_LAUNCH
+        RumSessionScope.StartReason.PREWARM -> RumVitalEvent.SessionPrecondition.PREWARM
+        RumSessionScope.StartReason.FROM_NON_INTERACTIVE_SESSION ->
+            RumVitalEvent.SessionPrecondition.FROM_NON_INTERACTIVE_SESSION
     }
 }
 
