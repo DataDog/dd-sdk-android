@@ -48,6 +48,17 @@
         app:layout_constraintTop_toBottomOf="@id/start_async_operation"
         android:visibility="invisible"/>
 
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/send_span"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_margin="16dp"
+        android:text="@string/button_send_span"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/spinner_async" />
+
+
     <androidx.appcompat.widget.AppCompatTextView
         android:id="@+id/coroutine_operation"
         android:layout_width="0dp"
@@ -59,7 +70,7 @@
         android:textAppearance="@style/TextAppearance.AppCompat.Medium"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/spinner_async"/>
+        app:layout_constraintTop_toBottomOf="@id/send_span"/>
 
     <androidx.appcompat.widget.AppCompatButton
         android:id="@+id/start_coroutine_operation"

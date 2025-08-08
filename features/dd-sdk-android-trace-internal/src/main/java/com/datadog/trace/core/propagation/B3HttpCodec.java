@@ -120,7 +120,7 @@ class B3HttpCodec {
       setter.set(carrier, SPAN_ID_KEY, injectedSpanId);
       if (context.lockSamplingPriority()) {
         final String injectedSamplingPriority =
-            convertSamplingPriority(context.getSamplingPriority());
+            convertSamplingPriority(context.getTraceSamplingPriority());
         setter.set(carrier, SAMPLING_PRIORITY_KEY, injectedSamplingPriority);
       }
       log.debug(
@@ -146,7 +146,7 @@ class B3HttpCodec {
 
       if (context.lockSamplingPriority()) {
         final String injectedSamplingPriority =
-            convertSamplingPriority(context.getSamplingPriority());
+            convertSamplingPriority(context.getTraceSamplingPriority());
         injectedB3IdBuilder.append('-').append(injectedSamplingPriority);
       }
       String injectedB3Id = injectedB3IdBuilder.toString();

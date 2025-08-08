@@ -87,12 +87,17 @@ internal class LogEventForgeryFactory : ForgeryFactory<LogEvent> {
                 version = forge.aStringMatching("[0-9]\\.[0-9]\\.[0-9]"),
                 threadName = forge.aNullable { forge.anAlphabeticalString() }
             ),
-            device = LogEvent.Device(
+            device = LogEvent.LogEventDevice(
                 type = resolveDeviceType(deviceInfo.deviceType),
                 name = deviceInfo.deviceName,
                 model = deviceInfo.deviceModel,
                 brand = deviceInfo.deviceBrand,
                 architecture = deviceInfo.architecture
+            ),
+            dd = LogEvent.Dd(
+                device = LogEvent.DdDevice(
+                    architecture = deviceInfo.architecture
+                )
             ),
             os = LogEvent.Os(
                 name = deviceInfo.osName,

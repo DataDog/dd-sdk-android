@@ -17,6 +17,7 @@ internal class DatadogContextProvider(
     private val coreFeature: CoreFeature,
     private val featureContextProvider: FeatureContextProvider
 ) : ContextProvider {
+    @Suppress("LongMethod")
     override fun getContext(withFeatureContexts: Set<String>): DatadogContext {
         // IMPORTANT All properties should be immutable and be frozen at the state
         // of the context construction moment
@@ -57,12 +58,13 @@ internal class DatadogContextProvider(
                     architecture = architecture,
                     numberOfDisplays = numberOfDisplays,
                     localeInfo = with(coreFeature.androidInfoProvider) {
-                            LocaleInfo(
-                                locales = locales,
-                                currentLocale = currentLocale,
-                                timeZone = timeZone
-                            )
-                        })
+                        LocaleInfo(
+                            locales = locales,
+                            currentLocale = currentLocale,
+                            timeZone = timeZone
+                        )
+                    }
+                )
             },
             userInfo = coreFeature.userInfoProvider.getUserInfo(),
             accountInfo = coreFeature.accountInfoProvider.getAccountInfo(),

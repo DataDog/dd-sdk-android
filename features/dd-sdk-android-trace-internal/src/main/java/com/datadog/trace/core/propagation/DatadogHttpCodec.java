@@ -62,7 +62,7 @@ class DatadogHttpCodec {
       setter.set(carrier, TRACE_ID_KEY, context.getTraceId().toString());
       setter.set(carrier, SPAN_ID_KEY, DDSpanId.toString(context.getSpanId()));
       if (context.lockSamplingPriority()) {
-        setter.set(carrier, SAMPLING_PRIORITY_KEY, String.valueOf(context.getSamplingPriority()));
+        setter.set(carrier, SAMPLING_PRIORITY_KEY, String.valueOf(context.getTraceSamplingPriority()));
       }
       final CharSequence origin = context.getOrigin();
       if (origin != null) {

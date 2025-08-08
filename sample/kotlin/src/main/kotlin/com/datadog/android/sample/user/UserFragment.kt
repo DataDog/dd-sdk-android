@@ -32,7 +32,7 @@ internal class UserFragment : Fragment(), View.OnClickListener {
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View? {
+    ): View {
         val rootView: View = inflater.inflate(R.layout.fragment_user, container, false)
         idField = rootView.findViewById(R.id.user_id)
         nameField = rootView.findViewById(R.id.user_name)
@@ -76,7 +76,7 @@ internal class UserFragment : Fragment(), View.OnClickListener {
                             AGE_KEY to age
                         )
                     )
-                    log("Updated user info")
+                    logMessage("Updated user info")
                 }
                 Snackbar.make(view ?: v.rootView, "User info updated", Snackbar.LENGTH_SHORT).show()
             }
@@ -92,7 +92,7 @@ internal class UserFragment : Fragment(), View.OnClickListener {
                     emailField.text.clear()
                     userGenderField.text.clear()
                     userAgeField.text.clear()
-                    log("Cleared user info")
+                    logMessage("Cleared user info")
                 }
                 Snackbar.make(view ?: v.rootView, "User info cleared", Snackbar.LENGTH_SHORT).show()
             }
