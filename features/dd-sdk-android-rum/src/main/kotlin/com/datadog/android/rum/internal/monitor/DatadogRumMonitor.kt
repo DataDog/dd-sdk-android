@@ -33,6 +33,7 @@ import com.datadog.android.rum.RumResourceMethod
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.RumSessionType
 import com.datadog.android.rum._RumInternalProxy
+import com.datadog.android.rum.featureoperations.FailureReason
 import com.datadog.android.rum.internal.CombinedRumSessionListener
 import com.datadog.android.rum.internal.RumErrorSourceType
 import com.datadog.android.rum.internal.RumFeature
@@ -664,6 +665,40 @@ internal class DatadogRumMonitor(
         sdkCore.getFeature(Feature.RUM_FEATURE_NAME)
             ?.unwrap<RumFeature>()
             ?.enableJankStatsTracking(activity)
+    }
+
+    // endregion
+
+    // region Feature Operations
+
+    @ExperimentalRumApi
+    override fun startFeatureOperation(name: String, operationKey: String?, attributes: Map<String, Any?>) {
+        // TODO RUM-11252 - Only declaring public methods for RN integration. Implementation will be provided later.
+    }
+
+    @ExperimentalRumApi
+    override fun succeedFeatureOperation(name: String, operationKey: String?, attributes: Map<String, Any?>) {
+        // TODO RUM-11252 - Only declaring public methods for RN integration. Implementation will be provided later.
+    }
+
+    @ExperimentalRumApi
+    override fun failFeatureOperation(
+        name: String,
+        operationKey: String?,
+        failureReason: FailureReason,
+        attributes: Map<String, Any?>
+    ) {
+        // TODO RUM-11252 - Only declaring public methods for RN integration. Implementation will be provided later.
+    }
+
+    @ExperimentalRumApi
+    override fun retryFeatureOperation(name: String, operationKey: String?, attributes: Map<String, Any?>) {
+        // TODO RUM-11252 - Only declaring public methods for RN integration. Implementation will be provided later.
+    }
+
+    @ExperimentalRumApi
+    override fun updateFeatureOperation(name: String, operationKey: String?, attributes: Map<String, Any?>) {
+        // TODO RUM-11252 - Only declaring public methods for RN integration. Implementation will be provided later.
     }
 
     // endregion
