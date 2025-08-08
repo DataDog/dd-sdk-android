@@ -28,7 +28,7 @@
             "type": {
               "type": "string",
               "description": "Type of the vital",
-              "enum": ["duration", "step"],
+              "enum": ["duration", "operation_step"],
               "readOnly": true
             },
             "id": {
@@ -37,9 +37,9 @@
               "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$",
               "readOnly": true
             },
-            "parent_id": {
+            "operation_key": {
               "type": "string",
-              "description": "UUID for linking the step vital to the parent event, if applicable",
+              "description": "UUID for distinguishing the active operations in parallel, if applicable",
               "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$",
               "readOnly": true
             },
@@ -56,16 +56,6 @@
             "duration": {
               "type": "number",
               "description": "Duration of the vital in nanoseconds",
-              "readOnly": true
-            },
-            "custom": {
-              "type": "object",
-              "description": "User custom vital.",
-              "additionalProperties": {
-                "type": "number",
-                "minimum": 0,
-                "readOnly": true
-              },
               "readOnly": true
             },
             "step_type": {
