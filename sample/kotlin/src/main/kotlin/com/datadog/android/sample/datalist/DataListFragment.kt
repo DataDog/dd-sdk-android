@@ -78,6 +78,7 @@ internal class DataListFragment : Fragment() {
         )
         fab.setOnClickListener { loadData() }
         loadData()
+        rootView.viewTreeObserver
         return rootView
     }
 
