@@ -27,7 +27,7 @@ class DdRumContentProvider : ContentProvider() {
             val currentProcess = manager?.runningAppProcesses?.firstOrNull {
                 it.pid == currentProcessId
             }
-            processImportance = currentProcess?.importance ?: DEFAULT_IMPORTANCE
+            processImportance = currentProcess?.importance ?: -1
             Log.w("DdRumContentProvider", "processImportance:$processImportance")
         }
         return true

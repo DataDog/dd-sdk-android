@@ -14,13 +14,16 @@ import androidx.annotation.Keep
 import androidx.lifecycle.ViewModelProvider
 import com.datadog.android.Datadog
 import com.datadog.android.DatadogSite
+import com.datadog.android.api.feature.Feature
 import com.datadog.android.compose.enableComposeActionTracking
+import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.configuration.BackPressureMitigation
 import com.datadog.android.core.configuration.BackPressureStrategy
 import com.datadog.android.core.configuration.BatchSize
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.UploadFrequency
 import com.datadog.android.core.sampling.RateBasedSampler
+import com.datadog.android.log.LogAttributes
 import com.datadog.android.log.Logger
 import com.datadog.android.log.Logs
 import com.datadog.android.log.LogsConfiguration
@@ -41,6 +44,8 @@ import com.datadog.android.sample.data.remote.RemoteDataSource
 import com.datadog.android.sample.picture.CoilImageLoader
 import com.datadog.android.sample.picture.FrescoImageLoader
 import com.datadog.android.sample.picture.PicassoImageLoader
+import com.datadog.android.sample.start.AppInfoRepo
+import com.datadog.android.sample.start.StartupTimestamps
 import com.datadog.android.sample.user.UserFragment
 import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.SessionReplay
@@ -67,12 +72,17 @@ import io.opentelemetry.api.trace.TracerProvider
 import io.opentelemetry.context.propagation.ContextPropagators
 import io.opentracing.rxjava3.TracingRxJava3Utils
 import io.opentracing.util.GlobalTracer
+import kotlinx.coroutines.DelicateCoroutinesApi
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.adapter.rxjava3.RxJava3CallAdapterFactory
 import retrofit2.converter.gson.GsonConverterFactory
 import timber.log.Timber
 import java.security.SecureRandom
+import java.time.Instant
 
 /**
  * The main [Application] for the sample project.
@@ -113,6 +123,11 @@ class SampleApplication : Application() {
     @Keep
     private lateinit var appStartupTypeManager: AppStartupTypeManager
 
+    private val appStartTracer by lazy {
+        GlobalOpenTelemetry.get().tracerProvider.get("app_start_tracer")
+    }
+
+    @OptIn(DelicateCoroutinesApi::class)
     override fun onCreate() {
         super.onCreate()
         Stetho.initializeWithDefaults(this)
@@ -123,6 +138,58 @@ class SampleApplication : Application() {
         initializeImageLoaders()
 
         localServer.init(this)
+
+        GlobalScope.launch {
+            AppInfoRepo.create(this@SampleApplication).streaming()
+                .collect { info ->
+                    delay(5000)
+                    val epoch = Instant.now()
+                    val ts = info.timestamps
+
+                    fun relativeInstant(nanos: Long): Instant = epoch.plusNanos(nanos - ts.launch!!)
+
+                    var endTsFinal: Long = 0
+
+                    val rootSpan = appStartTracer.spanBuilder("api_35_app_start")
+                        .setStartTimestamp(epoch)
+                        .startSpan()
+
+                    fun appendSpan(key: String, time: StartupTimestamps.() -> Long?) {
+                        ts.time()?.let { endTs ->
+                            endTsFinal = maxOf(endTsFinal, endTs)
+                            val forkSpan = appStartTracer.spanBuilder("api_35_$key")
+                                .setParent(io.opentelemetry.context.Context.current().with(rootSpan))
+                                .setStartTimestamp(epoch)
+                                .startSpan()
+
+                            forkSpan.end(relativeInstant(endTs))
+                        }
+                    }
+
+                    appendSpan("applicationOnCreate") { applicationOnCreate }
+                    appendSpan("bindApplication") { bindApplication }
+                    appendSpan("firstFrame") { firstFrame }
+                    appendSpan("fork") { fork }
+                    appendSpan("fullyDrawn") { fullyDrawn }
+                    appendSpan("initialRenderThreadFrame") { initialRenderThreadFrame }
+                    appendSpan("launch") { launch }
+                    appendSpan("postOnCreate") { postOnCreate }
+                    appendSpan("preOnCreate") { preOnCreate }
+                    appendSpan("reservedRangeSystem") { reservedRangeSystem }
+                    appendSpan("surfaceFlingerCompositionComplete") { surfaceFlingerCompositionComplete }
+
+                    val rumContext = (Datadog.getInstance() as InternalSdkCore).getFeatureContext(Feature.RUM_FEATURE_NAME)
+                    val appLaunchViewId = rumContext["application_launch_view_id"] as? String
+                    val applicationId = rumContext["application_id"] as? String
+                    val sessionId = rumContext["session_id"] as? String
+
+                    rootSpan.setAttribute(LogAttributes.RUM_APPLICATION_ID, applicationId!!)
+                    rootSpan.setAttribute(LogAttributes.RUM_SESSION_ID, sessionId!!)
+                    rootSpan.setAttribute(LogAttributes.RUM_VIEW_ID, appLaunchViewId!!)
+
+                    rootSpan.end(relativeInstant(endTsFinal))
+                }
+        }
     }
 
     override fun onLowMemory() {
@@ -198,7 +265,7 @@ class SampleApplication : Application() {
 
         appStartupTypeManager = AppStartupTypeManager(
             this,
-            GlobalOpenTelemetry.get().tracerProvider.get("app_start_tracer"),
+            appStartTracer,
             Datadog.getInstance()
         )
     }

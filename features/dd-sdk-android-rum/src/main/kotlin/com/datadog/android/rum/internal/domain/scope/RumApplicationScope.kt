@@ -7,6 +7,7 @@
 package com.datadog.android.rum.internal.domain.scope
 
 import android.app.ActivityManager
+import android.util.Log
 import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.Feature
@@ -217,6 +218,7 @@ internal class RumApplicationScope(
             val startupTime = eventTime.nanoTime - processStartTimeNs
             val appStartedEvent =
                 RumRawEvent.ApplicationStarted(applicationLaunchViewTime, startupTime)
+            Log.w("WAHAHA", "app_start ${appStartedEvent}")
             delegateToChildren(appStartedEvent, writer)
             isAppStartedEventSent = true
         }
