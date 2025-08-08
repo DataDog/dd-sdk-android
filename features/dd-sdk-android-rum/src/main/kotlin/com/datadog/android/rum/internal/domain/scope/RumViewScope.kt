@@ -219,6 +219,11 @@ internal open class RumViewScope(
             is RumRawEvent.UpdateExternalRefreshRate -> onUpdateExternalRefreshRate(event)
             is RumRawEvent.AddViewLoadingTime -> onAddViewLoadingTime(event, writer)
 
+            is RumRawEvent.StartFeatureOperation,
+            is RumRawEvent.RetryFeatureOperation,
+            is RumRawEvent.UpdateFeatureOperation,
+            is RumRawEvent.StopFeatureOperation -> sendViewUpdate(event, writer)
+
             else -> delegateEventToChildren(event, writer)
         }
 

@@ -30,6 +30,7 @@ import com.datadog.android.rum.assertj.ActionEventAssert.Companion.assertThat
 import com.datadog.android.rum.assertj.ErrorEventAssert.Companion.assertThat
 import com.datadog.android.rum.assertj.LongTaskEventAssert.Companion.assertThat
 import com.datadog.android.rum.assertj.ViewEventAssert.Companion.assertThat
+import com.datadog.android.rum.featureoperations.FailureReason
 import com.datadog.android.rum.internal.FeaturesContextResolver
 import com.datadog.android.rum.internal.RumErrorSourceType
 import com.datadog.android.rum.internal.anr.ANRException
@@ -9590,6 +9591,129 @@ internal class RumViewScopeTest {
     }
 
     // endregion
+
+    // region Feature Operations
+
+    @Test
+    fun `M send view update W handleEvent { StartFeatureOperation }`(
+        @StringForgery key: String,
+        @StringForgery name: String,
+        @LongForgery(min = 0) duration: Long,
+        forge: Forge
+    ) {
+        // Given
+        val event = RumRawEvent.StartFeatureOperation(
+            name,
+            operationKey = forge.aNullable { key },
+            attributes = fakeAttributes,
+            eventTime = fakeEventTime + duration
+        )
+
+        // When
+        testedScope.handleEvent(event, mockWriter)
+
+        // Then
+        argumentCaptor<ViewEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            assertThat(lastValue).apply {
+                hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
+                hasDuration(duration)
+            }
+        }
+
+        verifyNoMoreInteractions(mockWriter)
+    }
+
+    @Test
+    fun `M send view update W handleEvent { StopFeatureOperation }`(
+        @StringForgery key: String,
+        @StringForgery name: String,
+        @LongForgery(min = 0) duration: Long,
+        forge: Forge
+    ) {
+        // Given
+        val event = RumRawEvent.StopFeatureOperation(
+            name,
+            operationKey = forge.aNullable { key },
+            attributes = fakeAttributes,
+            failureReason = forge.aNullable { aValueFrom(FailureReason::class.java) },
+            eventTime = fakeEventTime + duration
+        )
+
+        // When
+        testedScope.handleEvent(event, mockWriter)
+
+        // Then
+        argumentCaptor<ViewEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            assertThat(lastValue).apply {
+                hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
+                hasDuration(duration)
+            }
+        }
+
+        verifyNoMoreInteractions(mockWriter)
+    }
+
+    @Test
+    fun `M send view update W handleEvent { RetryFeatureOperation }`(
+        @StringForgery key: String,
+        @StringForgery name: String,
+        @LongForgery(min = 0) duration: Long,
+        forge: Forge
+    ) {
+        // Given
+        val event = RumRawEvent.RetryFeatureOperation(
+            name = name,
+            operationKey = forge.aNullable { key },
+            fakeAttributes,
+            fakeEventTime + duration
+        )
+
+        // When
+        testedScope.handleEvent(event, mockWriter)
+
+        // Then
+        argumentCaptor<ViewEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            assertThat(lastValue).apply {
+                hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
+                hasDuration(duration)
+            }
+        }
+
+        verifyNoMoreInteractions(mockWriter)
+    }
+
+    @Test
+    fun `M send view update W handleEvent { UpdateFeatureOperation }`(
+        @StringForgery key: String,
+        @StringForgery name: String,
+        @LongForgery(min = 0) duration: Long,
+        forge: Forge
+    ) {
+        // Given
+        val event = RumRawEvent.UpdateFeatureOperation(
+            name,
+            operationKey = forge.aNullable { key },
+            attributes = fakeAttributes,
+            eventTime = fakeEventTime + duration
+        )
+
+        // When
+        testedScope.handleEvent(event, mockWriter)
+
+        // Then
+        argumentCaptor<ViewEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            assertThat(lastValue).apply {
+                hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
+                hasDuration(duration)
+            }
+        }
+    }
+
+    //
 
     // region Internal
 
