@@ -49,6 +49,12 @@ import com.datadog.android.rum.internal.domain.accessibility.DatadogAccessibilit
 import com.datadog.android.rum.internal.domain.accessibility.DefaultAccessibilitySnapshotManager
 import com.datadog.android.rum.internal.domain.accessibility.NoOpAccessibilityReader
 import com.datadog.android.rum.internal.domain.accessibility.NoOpAccessibilitySnapshotManager
+import com.datadog.android.rum.internal.domain.battery.BatteryInfoProvider
+import com.datadog.android.rum.internal.domain.battery.DefaultBatteryInfoProvider
+import com.datadog.android.rum.internal.domain.battery.NoOpBatteryInfoProvider
+import com.datadog.android.rum.internal.domain.display.DefaultDisplayInfoProvider
+import com.datadog.android.rum.internal.domain.display.DisplayInfoProvider
+import com.datadog.android.rum.internal.domain.display.NoOpDisplayInfoProvider
 import com.datadog.android.rum.internal.domain.event.RumEventMapper
 import com.datadog.android.rum.internal.domain.event.RumEventMetaDeserializer
 import com.datadog.android.rum.internal.domain.event.RumEventMetaSerializer
@@ -154,6 +160,8 @@ internal class RumFeature(
     internal var accessibilityReader: AccessibilityReader = NoOpAccessibilityReader()
     internal var accessibilitySnapshotManager: AccessibilitySnapshotManager =
         NoOpAccessibilitySnapshotManager()
+    internal var batteryInfoProvider: BatteryInfoProvider = NoOpBatteryInfoProvider()
+    internal var displayInfoProvider: DisplayInfoProvider = NoOpDisplayInfoProvider()
 
     private val lateCrashEventHandler by lazy { lateCrashReporterFactory(sdkCore as InternalSdkCore) }
 
@@ -193,6 +201,12 @@ internal class RumFeature(
         telemetryConfigurationSampleRate = configuration.telemetryConfigurationSampleRate
         backgroundEventTracking = configuration.backgroundEventTracking
         trackFrustrations = configuration.trackFrustrations
+        batteryInfoProvider = DefaultBatteryInfoProvider(
+            applicationContext = appContext
+        )
+        displayInfoProvider = DefaultDisplayInfoProvider(
+            applicationContext = appContext
+        )
 
         configuration.viewTrackingStrategy?.let { viewTrackingStrategy = it }
         actionTrackingStrategy = if (configuration.userActionTracking) {
@@ -311,6 +325,8 @@ internal class RumFeature(
             accessibilityReader = NoOpAccessibilityReader()
             accessibilitySnapshotManager = NoOpAccessibilitySnapshotManager()
         }
+
+        batteryInfoProvider = NoOpBatteryInfoProvider()
 
         GlobalRumMonitor.unregister(sdkCore)
     }

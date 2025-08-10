@@ -17,6 +17,8 @@ import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.RumSessionType
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.accessibility.AccessibilitySnapshotManager
+import com.datadog.android.rum.internal.domain.battery.BatteryInfoProvider
+import com.datadog.android.rum.internal.domain.display.DisplayInfoProvider
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
 import com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener
 import com.datadog.android.rum.internal.vitals.VitalMonitor
@@ -86,6 +88,12 @@ internal class RumSessionScopeTest {
 
     @Mock
     lateinit var mockAccessibilitySnapshotManager: AccessibilitySnapshotManager
+
+    @Mock
+    lateinit var mockBatteryInfoProvider: BatteryInfoProvider
+
+    @Mock
+    lateinit var mockDisplayInfoProvider: DisplayInfoProvider
 
     @Mock
     lateinit var mockSessionListener: RumSessionListener
@@ -1325,7 +1333,9 @@ internal class RumSessionScopeTest {
             sessionInactivityNanos = TEST_INACTIVITY_NS,
             sessionMaxDurationNanos = TEST_MAX_DURATION_NS,
             rumSessionTypeOverride = fakeRumSessionType,
-            accessibilitySnapshotManager = mockAccessibilitySnapshotManager
+            accessibilitySnapshotManager = mockAccessibilitySnapshotManager,
+            batteryInfoProvider = mockBatteryInfoProvider,
+            displayInfoProvider = mockDisplayInfoProvider
         )
 
         if (withMockChildScope) {

@@ -32,6 +32,8 @@ import com.datadog.android.rum.internal.domain.accessibility.DatadogAccessibilit
 import com.datadog.android.rum.internal.domain.accessibility.DefaultAccessibilitySnapshotManager
 import com.datadog.android.rum.internal.domain.accessibility.NoOpAccessibilityReader
 import com.datadog.android.rum.internal.domain.accessibility.NoOpAccessibilitySnapshotManager
+import com.datadog.android.rum.internal.domain.battery.DefaultBatteryInfoProvider
+import com.datadog.android.rum.internal.domain.battery.NoOpBatteryInfoProvider
 import com.datadog.android.rum.internal.domain.event.RumEventMapper
 import com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
@@ -143,6 +145,7 @@ internal class RumFeatureTest {
     fun `set up`() {
         whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
         whenever(mockSdkCore.createScheduledExecutorService(any())) doReturn mockScheduledExecutorService
+        whenever(appContext.mockInstance.contentResolver) doReturn mock()
 
         testedFeature = RumFeature(
             mockSdkCore,
@@ -1452,6 +1455,31 @@ internal class RumFeatureTest {
         assertThat(
             testedFeature.accessibilitySnapshotManager
         ).isInstanceOf(NoOpAccessibilitySnapshotManager::class.java)
+    }
+
+    // endregion
+
+    // region BatteryInfoProvider
+
+    @Test
+    fun `M setup BatteryInfoProvider W onInitialize`() {
+        // When
+        testedFeature.onInitialize(appContext.mockInstance)
+
+        // Then
+        assertThat(testedFeature.batteryInfoProvider).isInstanceOf(DefaultBatteryInfoProvider::class.java)
+    }
+
+    @Test
+    fun `M cleanup BatteryInfoProvider W onStop`() {
+        // Given
+        testedFeature.onInitialize(appContext.mockInstance)
+
+        // When
+        testedFeature.onStop()
+
+        // Then
+        assertThat(testedFeature.batteryInfoProvider).isInstanceOf(NoOpBatteryInfoProvider::class.java)
     }
 
     // endregion

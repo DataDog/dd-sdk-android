@@ -37,6 +37,9 @@ import com.datadog.android.rum.internal.collections.toEvictingQueue
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.domain.accessibility.AccessibilitySnapshotManager
+import com.datadog.android.rum.internal.domain.battery.BatteryInfo
+import com.datadog.android.rum.internal.domain.battery.BatteryInfoProvider
+import com.datadog.android.rum.internal.domain.display.DisplayInfoProvider
 import com.datadog.android.rum.internal.domain.state.SlowFrameRecord
 import com.datadog.android.rum.internal.domain.state.ViewUIPerformanceReport
 import com.datadog.android.rum.internal.metric.NoValueReason
@@ -154,6 +157,12 @@ internal class RumViewScopeTest {
 
     @Mock
     lateinit var mockAccessibilitySnapshotManager: AccessibilitySnapshotManager
+
+    @Mock
+    lateinit var mockBatteryInfoProvider: BatteryInfoProvider
+
+    @Mock
+    lateinit var mockDisplayInfoProvider: DisplayInfoProvider
 
     @Mock
     lateinit var mockMemoryVitalMonitor: VitalMonitor
@@ -312,6 +321,9 @@ internal class RumViewScopeTest {
         val fakeNanos = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(fakeOffset)
         val maxLimit = max(Long.MAX_VALUE - fakeTimestamp, Long.MAX_VALUE)
         val minLimit = min(-fakeTimestamp, maxLimit)
+        val fakeBrightness = forge.aFloat(0f, 255f)
+        val fakeBatteryLevel = forge.aFloat(0f, 100f)
+        val fakeLowPowerMode = forge.aBool()
         fakeSampleRate = forge.aFloat(min = 0.0f, max = 100.0f)
 
         fakeDatadogContext = fakeDatadogContext.copy(
@@ -357,6 +369,14 @@ internal class RumViewScopeTest {
         }
         whenever(mockWriter.write(eq(mockEventBatchWriter), any(), eq(EventType.DEFAULT))) doReturn true
         fakeReplayStats = ViewEvent.ReplayStats(recordsCount = fakeReplayRecordsCount)
+
+        // Mock battery and brightness providers
+        whenever(mockBatteryInfoProvider.getBatteryState()) doReturn BatteryInfo(
+            batteryLevel = fakeBatteryLevel,
+            lowPowerMode = fakeLowPowerMode
+        )
+        whenever(mockDisplayInfoProvider.getBrightnessLevel()) doReturn fakeBrightness
+
         testedScope = newRumViewScope(trackFrustrations = true)
         mockSessionReplayContext(testedScope)
     }
@@ -9672,7 +9692,9 @@ internal class RumViewScopeTest {
         slowFramesListener = slowFramesMetricListener,
         viewEndedMetricDispatcher = viewEndedMetricDispatcher,
         rumSessionTypeOverride = fakeRumSessionType,
-        accessibilitySnapshotManager = mockAccessibilitySnapshotManager
+        accessibilitySnapshotManager = mockAccessibilitySnapshotManager,
+        batteryInfoProvider = mockBatteryInfoProvider,
+        displayInfoProvider = mockDisplayInfoProvider
     )
 
     data class RumRawEventData(val event: RumRawEvent, val viewKey: RumScopeKey)

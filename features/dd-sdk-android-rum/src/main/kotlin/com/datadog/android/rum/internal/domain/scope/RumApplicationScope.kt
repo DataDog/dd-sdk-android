@@ -19,6 +19,8 @@ import com.datadog.android.rum.RumSessionType
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.domain.accessibility.AccessibilitySnapshotManager
+import com.datadog.android.rum.internal.domain.battery.BatteryInfoProvider
+import com.datadog.android.rum.internal.domain.display.DisplayInfoProvider
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
 import com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener
 import com.datadog.android.rum.internal.vitals.VitalMonitor
@@ -43,7 +45,9 @@ internal class RumApplicationScope(
     internal val lastInteractionIdentifier: LastInteractionIdentifier?,
     private val slowFramesListener: SlowFramesListener?,
     private val rumSessionTypeOverride: RumSessionType?,
-    private val accessibilitySnapshotManager: AccessibilitySnapshotManager
+    private val accessibilitySnapshotManager: AccessibilitySnapshotManager,
+    private val batteryInfoProvider: BatteryInfoProvider,
+    private val displayInfoProvider: DisplayInfoProvider
 ) : RumScope, RumViewChangedListener {
 
     private var rumContext = RumContext(applicationId = applicationId)
@@ -67,7 +71,9 @@ internal class RumApplicationScope(
             lastInteractionIdentifier = lastInteractionIdentifier,
             slowFramesListener = slowFramesListener,
             rumSessionTypeOverride = rumSessionTypeOverride,
-            accessibilitySnapshotManager = accessibilitySnapshotManager
+            accessibilitySnapshotManager = accessibilitySnapshotManager,
+            batteryInfoProvider = batteryInfoProvider,
+            displayInfoProvider = displayInfoProvider
         )
     )
 
@@ -164,7 +170,9 @@ internal class RumApplicationScope(
             lastInteractionIdentifier = lastInteractionIdentifier,
             slowFramesListener = slowFramesListener,
             rumSessionTypeOverride = rumSessionTypeOverride,
-            accessibilitySnapshotManager = accessibilitySnapshotManager
+            accessibilitySnapshotManager = accessibilitySnapshotManager,
+            batteryInfoProvider = batteryInfoProvider,
+            displayInfoProvider = displayInfoProvider
         )
         childScopes.add(newSession)
         if (event !is RumRawEvent.StartView) {

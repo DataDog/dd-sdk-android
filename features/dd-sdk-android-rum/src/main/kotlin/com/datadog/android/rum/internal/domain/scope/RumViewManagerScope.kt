@@ -20,6 +20,8 @@ import com.datadog.android.rum.internal.anr.ANRException
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.domain.accessibility.AccessibilitySnapshotManager
+import com.datadog.android.rum.internal.domain.battery.BatteryInfoProvider
+import com.datadog.android.rum.internal.domain.display.DisplayInfoProvider
 import com.datadog.android.rum.internal.metric.SessionEndedMetric
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
 import com.datadog.android.rum.internal.metric.ViewEndedMetricDispatcher
@@ -51,7 +53,9 @@ internal class RumViewManagerScope(
     private val slowFramesListener: SlowFramesListener?,
     lastInteractionIdentifier: LastInteractionIdentifier?,
     private val rumSessionTypeOverride: RumSessionType?,
-    private val accessibilitySnapshotManager: AccessibilitySnapshotManager
+    private val accessibilitySnapshotManager: AccessibilitySnapshotManager,
+    private val batteryInfoProvider: BatteryInfoProvider,
+    private val displayInfoProvider: DisplayInfoProvider
 ) : RumScope {
 
     private val interactionToNextViewMetricResolver: InteractionToNextViewMetricResolver =
@@ -239,7 +243,9 @@ internal class RumViewManagerScope(
             networkSettledResourceIdentifier = initialResourceIdentifier,
             slowFramesListener = slowFramesListener,
             rumSessionTypeOverride = rumSessionTypeOverride,
-            accessibilitySnapshotManager = accessibilitySnapshotManager
+            accessibilitySnapshotManager = accessibilitySnapshotManager,
+            batteryInfoProvider = batteryInfoProvider,
+            displayInfoProvider = displayInfoProvider
         )
         applicationDisplayed = true
         childrenScopes.add(viewScope)
@@ -318,7 +324,9 @@ internal class RumViewManagerScope(
             viewEndedMetricDispatcher = viewEndedMetricDispatcher,
             slowFramesListener = slowFramesListener,
             rumSessionTypeOverride = rumSessionTypeOverride,
-            accessibilitySnapshotManager = accessibilitySnapshotManager
+            accessibilitySnapshotManager = accessibilitySnapshotManager,
+            batteryInfoProvider = batteryInfoProvider,
+            displayInfoProvider = displayInfoProvider
         )
     }
 
@@ -358,7 +366,9 @@ internal class RumViewManagerScope(
             viewEndedMetricDispatcher = viewEndedMetricDispatcher,
             slowFramesListener = slowFramesListener,
             rumSessionTypeOverride = rumSessionTypeOverride,
-            accessibilitySnapshotManager = accessibilitySnapshotManager
+            accessibilitySnapshotManager = accessibilitySnapshotManager,
+            batteryInfoProvider = batteryInfoProvider,
+            displayInfoProvider = displayInfoProvider
         )
     }
 

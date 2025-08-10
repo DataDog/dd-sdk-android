@@ -83,6 +83,7 @@ internal class RumTest {
                 appContext = mock {
                     whenever(it.packageName) doReturn fakePackageName
                     whenever(it.resources) doReturn mock()
+                    whenever(it.contentResolver) doReturn mock()
                 }
             )
             assertThat(lastValue.sampleRate)
@@ -132,6 +133,7 @@ internal class RumTest {
                 appContext = mock {
                     whenever(it.packageName) doReturn fakePackageName
                     whenever(it.resources) doReturn mock()
+                    whenever(it.contentResolver) doReturn mock()
                 }
             )
         }
