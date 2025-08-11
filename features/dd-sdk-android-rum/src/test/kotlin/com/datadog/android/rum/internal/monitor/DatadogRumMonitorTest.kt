@@ -2361,7 +2361,6 @@ internal class DatadogRumMonitorTest {
         whenCalled: () -> Unit,
         then: (T) -> Unit
     ) {
-
         whenCalled()
         Thread.sleep(PROCESSING_DELAY)
 

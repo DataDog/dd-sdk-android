@@ -329,7 +329,7 @@ internal open class RumViewScope(
                 operationKey = operationKey,
                 stepType = stepType,
                 failureReason = failureReason,
-                type = RumVitalEvent.RumVitalEventVitalType.OPERATION_STEP,
+                type = RumVitalEvent.RumVitalEventVitalType.OPERATION_STEP
             )
         )
     }
