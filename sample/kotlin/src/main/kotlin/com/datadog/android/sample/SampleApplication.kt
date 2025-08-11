@@ -9,8 +9,10 @@ import android.annotation.SuppressLint
 import android.app.Application
 import android.content.Context
 import android.os.Build
+import android.os.Process
 import android.util.Log
 import androidx.annotation.Keep
+import androidx.annotation.RequiresApi
 import androidx.lifecycle.ViewModelProvider
 import com.datadog.android.Datadog
 import com.datadog.android.DatadogSite
@@ -127,7 +129,6 @@ class SampleApplication : Application() {
         GlobalOpenTelemetry.get().tracerProvider.get("app_start_tracer")
     }
 
-    @OptIn(DelicateCoroutinesApi::class)
     override fun onCreate() {
         super.onCreate()
         Stetho.initializeWithDefaults(this)
@@ -139,6 +140,34 @@ class SampleApplication : Application() {
 
         localServer.init(this)
 
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            useNewAppStartApi()
+        }
+    }
+
+    override fun onLowMemory() {
+        super.onLowMemory()
+        GlobalRumMonitor.get().addError(
+            "Low Memory warning",
+            RumErrorSource.SOURCE,
+            null,
+            emptyMap()
+        )
+    }
+
+    override fun onTrimMemory(level: Int) {
+        super.onTrimMemory(level)
+        GlobalRumMonitor.get().addError(
+            "Low Memory warning",
+            RumErrorSource.SOURCE,
+            null,
+            mapOf("trim.level" to level)
+        )
+    }
+
+    @RequiresApi(Build.VERSION_CODES.N)
+    @OptIn(DelicateCoroutinesApi::class)
+    private fun useNewAppStartApi() {
         GlobalScope.launch {
             AppInfoRepo.create(this@SampleApplication).streaming()
                 .collect { info ->
@@ -146,7 +175,12 @@ class SampleApplication : Application() {
                     val epoch = Instant.now()
                     val ts = info.timestamps
 
-                    fun relativeInstant(nanos: Long): Instant = epoch.plusNanos(nanos - ts.launch!!)
+                    Log.w("WAHAHA", ts.toString())
+
+                    val processStartNanos: Long = Process.getStartElapsedRealtime() * 1000000
+                    Log.w("WAHAHA", "processStartNanos: $processStartNanos")
+
+                    fun relativeInstant(nanos: Long): Instant = epoch.plusNanos(nanos - processStartNanos)
 
                     var endTsFinal: Long = 0
 
@@ -156,6 +190,7 @@ class SampleApplication : Application() {
 
                     fun appendSpan(key: String, time: StartupTimestamps.() -> Long?) {
                         ts.time()?.let { endTs ->
+                            Log.w("WAHAHA", "$key: $endTs")
                             endTsFinal = maxOf(endTsFinal, endTs)
                             val forkSpan = appStartTracer.spanBuilder("api_35_$key")
                                 .setParent(io.opentelemetry.context.Context.current().with(rootSpan))
@@ -190,26 +225,6 @@ class SampleApplication : Application() {
                     rootSpan.end(relativeInstant(endTsFinal))
                 }
         }
-    }
-
-    override fun onLowMemory() {
-        super.onLowMemory()
-        GlobalRumMonitor.get().addError(
-            "Low Memory warning",
-            RumErrorSource.SOURCE,
-            null,
-            emptyMap()
-        )
-    }
-
-    override fun onTrimMemory(level: Int) {
-        super.onTrimMemory(level)
-        GlobalRumMonitor.get().addError(
-            "Low Memory warning",
-            RumErrorSource.SOURCE,
-            null,
-            mapOf("trim.level" to level)
-        )
     }
 
     private fun initializeImageLoaders() {
