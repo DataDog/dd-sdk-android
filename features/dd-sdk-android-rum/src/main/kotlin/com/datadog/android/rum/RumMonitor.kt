@@ -8,6 +8,7 @@ package com.datadog.android.rum
 
 import android.app.Activity
 import androidx.fragment.app.Fragment
+import com.datadog.android.rum.featureoperations.FailureReason
 import com.datadog.tools.annotation.NoOpImplementation
 
 /**
@@ -333,6 +334,49 @@ interface RumMonitor {
      */
     @ExperimentalRumApi
     fun addViewLoadingTime(overwrite: Boolean)
+
+    /**
+     * Starts the [name] feature operation.
+     *
+     * @param name the name of the operation.
+     * @param operationKey optional operation key. Allows to track multiple operations of the same [name].
+     * For example, multiple network requests (photo or file uploads) for the same URL.
+     * @param attributes additional custom attributes to attach to the feature operation.
+     */
+    @ExperimentalRumApi
+    fun startFeatureOperation(name: String, operationKey: String? = null, attributes: Map<String, Any?> = emptyMap())
+
+    /**
+     * Finishes the [name] feature operation with successful status.
+     *
+     * @param name the name of the operation.
+     * @param operationKey optional operation key identifying a specific operation
+     * instance from the list of feature operations of the same [name]. Should be provided if [operationKey] was
+     * provided during [startFeatureOperation] invocation.
+     * @param attributes additional custom attributes to attach to the feature operation. Can be
+     * used to add some result data produced as the result of the operation.
+     */
+    @ExperimentalRumApi
+    fun succeedFeatureOperation(name: String, operationKey: String? = null, attributes: Map<String, Any?> = emptyMap())
+
+    /**
+     * Finishes the [name] feature operation with failure status.
+     *
+     * @param name the name of the operation.
+     * @param operationKey optional operation key identifying a specific operation
+     * instance from the list of feature operations of the same [name]. Should be provided if [operationKey] was
+     * provided during [startFeatureOperation] invocation.
+     * @param failureReason the reason for the operation failure.
+     * @param attributes additional custom attributes to attach to the feature operation. Can be
+     * used to add some result data produced as the result of the operation.
+     */
+    @ExperimentalRumApi
+    fun failFeatureOperation(
+        name: String,
+        operationKey: String? = null,
+        failureReason: FailureReason,
+        attributes: Map<String, Any?> = emptyMap()
+    )
 
     /**
      * Utility setting to inspect the active RUM View.
