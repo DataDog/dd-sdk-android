@@ -13,6 +13,7 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
+import android.view.Choreographer
 import android.view.ViewTreeObserver
 import com.datadog.android.api.SdkCore
 import com.datadog.android.api.feature.Feature

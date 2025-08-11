@@ -16,6 +16,7 @@ import androidx.annotation.RequiresApi
 import androidx.lifecycle.ViewModelProvider
 import com.datadog.android.Datadog
 import com.datadog.android.DatadogSite
+import com.datadog.android.api.SdkCore
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.compose.enableComposeActionTracking
 import com.datadog.android.core.InternalSdkCore
@@ -70,6 +71,7 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import io.opentelemetry.api.GlobalOpenTelemetry
 import io.opentelemetry.api.OpenTelemetry
+import io.opentelemetry.api.trace.Span
 import io.opentelemetry.api.trace.TracerProvider
 import io.opentelemetry.context.propagation.ContextPropagators
 import io.opentracing.rxjava3.TracingRxJava3Utils
@@ -124,6 +126,9 @@ class SampleApplication : Application() {
 
     @Keep
     private lateinit var appStartupTypeManager: AppStartupTypeManager
+
+    @Keep
+    private lateinit var betterAppStartupTimeManager: BetterAppStartupTimeManager
 
     private val appStartTracer by lazy {
         GlobalOpenTelemetry.get().tracerProvider.get("app_start_tracer")
@@ -213,14 +218,7 @@ class SampleApplication : Application() {
                     appendSpan("reservedRangeSystem") { reservedRangeSystem }
                     appendSpan("surfaceFlingerCompositionComplete") { surfaceFlingerCompositionComplete }
 
-                    val rumContext = (Datadog.getInstance() as InternalSdkCore).getFeatureContext(Feature.RUM_FEATURE_NAME)
-                    val appLaunchViewId = rumContext["application_launch_view_id"] as? String
-                    val applicationId = rumContext["application_id"] as? String
-                    val sessionId = rumContext["session_id"] as? String
-
-                    rootSpan.setAttribute(LogAttributes.RUM_APPLICATION_ID, applicationId!!)
-                    rootSpan.setAttribute(LogAttributes.RUM_SESSION_ID, sessionId!!)
-                    rootSpan.setAttribute(LogAttributes.RUM_VIEW_ID, appLaunchViewId!!)
+                    attachTraceToRumView(rootSpan, Datadog.getInstance())
 
                     rootSpan.end(relativeInstant(endTsFinal))
                 }
@@ -283,6 +281,13 @@ class SampleApplication : Application() {
             appStartTracer,
             Datadog.getInstance()
         )
+
+        betterAppStartupTimeManager = BetterAppStartupTimeManager(
+            this,
+            appStartTracer,
+            Datadog.getInstance()
+        )
+        betterAppStartupTimeManager.launch()
     }
 
     private fun initializeUserInfo(preferences: Preferences.DefaultPreferences) {
@@ -530,4 +535,16 @@ class SampleApplication : Application() {
             return application.localServer
         }
     }
+}
+
+fun attachTraceToRumView(span: Span, sdk: SdkCore) {
+    val rumContext = (sdk as InternalSdkCore).getFeatureContext(Feature.RUM_FEATURE_NAME)
+
+    val appLaunchViewId = rumContext["application_launch_view_id"] as? String
+    val applicationId = rumContext["application_id"] as? String
+    val sessionId = rumContext["session_id"] as? String
+
+    span.setAttribute(LogAttributes.RUM_APPLICATION_ID, applicationId!!)
+    span.setAttribute(LogAttributes.RUM_SESSION_ID, sessionId!!)
+    span.setAttribute(LogAttributes.RUM_VIEW_ID, appLaunchViewId!!)
 }
