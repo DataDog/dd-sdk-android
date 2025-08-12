@@ -197,13 +197,7 @@ class AppStartupTypeManager(
             handler.postDelayed({
                 reportFullyDisplayed()
 
-                val rumContext = (sdkCore as InternalSdkCore).getFeatureContext(Feature.RUM_FEATURE_NAME)
-                val appLaunchViewId = rumContext["application_launch_view_id"] as? String
-                val applicationId = rumContext["application_id"] as? String
-                val sessionId = rumContext["session_id"] as? String
-                appStartupSpan.setAttribute(LogAttributes.RUM_APPLICATION_ID, applicationId!!)
-                appStartupSpan.setAttribute(LogAttributes.RUM_SESSION_ID, sessionId!!)
-                appStartupSpan.setAttribute(LogAttributes.RUM_VIEW_ID, appLaunchViewId!!)
+                attachTraceToRumView(appStartupSpan, sdkCore)
 
                 appStartupSpan.end(relativeNow())
             }, 2000)
