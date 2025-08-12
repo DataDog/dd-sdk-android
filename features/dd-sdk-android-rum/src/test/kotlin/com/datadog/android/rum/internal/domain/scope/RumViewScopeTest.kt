@@ -29,7 +29,9 @@ import com.datadog.android.rum.RumSessionType
 import com.datadog.android.rum.assertj.ActionEventAssert.Companion.assertThat
 import com.datadog.android.rum.assertj.ErrorEventAssert.Companion.assertThat
 import com.datadog.android.rum.assertj.LongTaskEventAssert.Companion.assertThat
+import com.datadog.android.rum.assertj.RumVitalEventAssert
 import com.datadog.android.rum.assertj.ViewEventAssert.Companion.assertThat
+import com.datadog.android.rum.featureoperations.FailureReason
 import com.datadog.android.rum.internal.FeaturesContextResolver
 import com.datadog.android.rum.internal.RumErrorSourceType
 import com.datadog.android.rum.internal.anr.ANRException
@@ -56,12 +58,14 @@ import com.datadog.android.rum.internal.toAction
 import com.datadog.android.rum.internal.toError
 import com.datadog.android.rum.internal.toLongTask
 import com.datadog.android.rum.internal.toView
+import com.datadog.android.rum.internal.toVital
 import com.datadog.android.rum.internal.vitals.VitalInfo
 import com.datadog.android.rum.internal.vitals.VitalListener
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
+import com.datadog.android.rum.model.RumVitalEvent
 import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.rum.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.rum.utils.forge.Configurator
@@ -9591,7 +9595,213 @@ internal class RumViewScopeTest {
 
     // endregion
 
+    // region Feature Operations
+
+    @Test
+    fun `M send view update W handleEvent { StartFeatureOperation }`(
+        @StringForgery key: String,
+        @StringForgery name: String,
+        @LongForgery(min = 0) duration: Long,
+        forge: Forge
+    ) {
+        // Given
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+        val event = RumRawEvent.StartFeatureOperation(
+            name,
+            attributes = attributes,
+            operationKey = forge.aNullable { key },
+            eventTime = fakeEventTime + duration
+        )
+
+        // When
+        testedScope.handleEvent(event, mockWriter)
+
+        // Then
+        argumentCaptor<ViewEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            assertThat(lastValue).apply {
+                hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
+                hasDuration(duration)
+            }
+        }
+    }
+
+    @Test
+    fun `M send view update W handleEvent { StopFeatureOperation }`(
+        @StringForgery key: String,
+        @StringForgery name: String,
+        @LongForgery(min = 0) duration: Long,
+        forge: Forge
+    ) {
+        // Given
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+        val event = RumRawEvent.StopFeatureOperation(
+            name,
+            attributes = attributes,
+            operationKey = forge.aNullable { key },
+            failureReason = forge.aNullable { aValueFrom(FailureReason::class.java) },
+            eventTime = fakeEventTime + duration
+        )
+
+        // When
+        testedScope.handleEvent(event, mockWriter)
+
+        // Then
+        argumentCaptor<ViewEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            assertThat(lastValue).apply {
+                hasTimestamp(resolveExpectedTimestamp(fakeEventTime.timestamp))
+                hasDuration(duration)
+            }
+        }
+    }
+
+    @Test
+    fun `M send RumVitalEvent W handleEvent { StartFeatureOperation }`(
+        @StringForgery key: String,
+        @StringForgery fakeName: String,
+        @LongForgery(min = 0) fakeDuration: Long,
+        forge: Forge
+    ) {
+        // Given
+        val operationKey = forge.aNullable { key }
+        val (attributes, expectedAttributes) = withAttributesCheckingMergeWithGlobal(forge)
+        val event = RumRawEvent.StartFeatureOperation(
+            fakeName,
+            operationKey = operationKey,
+            attributes = attributes,
+            eventTime = fakeEventTime + fakeDuration
+        )
+
+        // When
+        testedScope.handleEvent(event, mockWriter)
+
+        // Then
+        argumentCaptor<RumVitalEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            RumVitalEventAssert.assertThat(lastValue)
+                .hasDate(fakeEventTime.timestamp + fakeTimeInfoAtScopeStart.serverTimeOffsetMs)
+                .hasApplicationId(fakeParentContext.applicationId)
+                .containsExactlyContextAttributes(expectedAttributes)
+                .hasStartReason(fakeParentContext.sessionStartReason)
+                .hasSampleRate(fakeSampleRate)
+                .hasSessionId(fakeParentContext.sessionId)
+                .hasSessionType(fakeRumSessionType?.toVital() ?: RumVitalEvent.RumVitalEventSessionType.USER)
+                .hasSessionReplay(fakeHasReplay)
+                .hasViewId(testedScope.viewId)
+                .hasName(fakeKey.name)
+                .hasUrl(fakeUrl)
+                .hasVitalName(fakeName)
+                .hasVitalOperationalKey(operationKey)
+                .hasVitalStepType(RumVitalEvent.StepType.START)
+                .hasNoVitalFailureReason()
+                .hasVitalType(RumVitalEvent.RumVitalEventVitalType.OPERATION_STEP)
+        }
+    }
+
+    @Test
+    fun `M send RumVitalEvent W handleEvent { StopFeatureOperation, succeed }`(
+        @StringForgery key: String,
+        @StringForgery fakeName: String,
+        @LongForgery(min = 0) fakeDuration: Long,
+        forge: Forge
+    ) {
+        // Given
+        val fakeOperationKey = forge.aNullable { key }
+        val (attributes, expectedAttributes) = withAttributesCheckingMergeWithGlobal(forge)
+        val event = RumRawEvent.StopFeatureOperation(
+            fakeName,
+            operationKey = fakeOperationKey,
+            attributes = attributes,
+            failureReason = null,
+            eventTime = fakeEventTime + fakeDuration
+        )
+
+        // When
+        testedScope.handleEvent(event, mockWriter)
+
+        // Then
+        argumentCaptor<RumVitalEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            RumVitalEventAssert.assertThat(lastValue)
+                .hasDate(fakeEventTime.timestamp + fakeTimeInfoAtScopeStart.serverTimeOffsetMs)
+                .hasApplicationId(fakeParentContext.applicationId)
+                .containsExactlyContextAttributes(expectedAttributes)
+                .hasStartReason(fakeParentContext.sessionStartReason)
+                .hasSampleRate(fakeSampleRate)
+                .hasSessionId(fakeParentContext.sessionId)
+                .hasSessionType(fakeRumSessionType?.toVital() ?: RumVitalEvent.RumVitalEventSessionType.USER)
+                .hasSessionReplay(fakeHasReplay)
+                .hasViewId(testedScope.viewId)
+                .hasName(fakeKey.name)
+                .hasUrl(fakeUrl)
+                .hasVitalName(fakeName)
+                .hasVitalOperationalKey(fakeOperationKey)
+                .hasVitalStepType(RumVitalEvent.StepType.END)
+                .hasNoVitalFailureReason()
+                .hasVitalType(RumVitalEvent.RumVitalEventVitalType.OPERATION_STEP)
+        }
+    }
+
+    @Test
+    fun `M send RumVitalEvent W handleEvent { StopFeatureOperation, failed }`(
+        @StringForgery key: String,
+        @StringForgery fakeName: String,
+        @LongForgery(min = 0) fakeDuration: Long,
+        forge: Forge
+    ) {
+        // Given
+        val fakeOperationKey = forge.aNullable { key }
+        val (attributes, expectedAttributes) = withAttributesCheckingMergeWithGlobal(forge)
+        val failureReason = forge.aValueFrom(FailureReason::class.java)
+        val event = RumRawEvent.StopFeatureOperation(
+            fakeName,
+            operationKey = fakeOperationKey,
+            attributes = attributes,
+            failureReason = failureReason,
+            eventTime = fakeEventTime + fakeDuration
+        )
+
+        // When
+        testedScope.handleEvent(event, mockWriter)
+
+        // Then
+        argumentCaptor<RumVitalEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            RumVitalEventAssert.assertThat(lastValue)
+                .hasDate(fakeEventTime.timestamp + fakeTimeInfoAtScopeStart.serverTimeOffsetMs)
+                .hasApplicationId(fakeParentContext.applicationId)
+                .containsExactlyContextAttributes(expectedAttributes)
+                .hasStartReason(fakeParentContext.sessionStartReason)
+                .hasSampleRate(fakeSampleRate)
+                .hasSessionId(fakeParentContext.sessionId)
+                .hasSessionType(fakeRumSessionType?.toVital() ?: RumVitalEvent.RumVitalEventSessionType.USER)
+                .hasSessionReplay(fakeHasReplay)
+                .hasViewId(testedScope.viewId)
+                .hasName(fakeKey.name)
+                .hasUrl(fakeUrl)
+                .hasVitalName(fakeName)
+                .hasVitalOperationalKey(fakeOperationKey)
+                .hasVitalStepType(RumVitalEvent.StepType.END)
+                .hasVitalFailureReason(failureReason)
+                .hasVitalType(RumVitalEvent.RumVitalEventVitalType.OPERATION_STEP)
+        }
+    }
+    //
+
     // region Internal
+    private fun withAttributesCheckingMergeWithGlobal(forge: Forge): Pair<Map<String, Any?>, Map<String, Any?>> {
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+        val fakeGlobalAttributes = forgeGlobalAttributes(forge, attributes)
+        whenever(rumMonitor.mockInstance.getAttributes()) doReturn fakeGlobalAttributes
+
+        val expectedAttributes = buildMap {
+            putAll(attributes)
+            putAll(fakeGlobalAttributes)
+        }
+
+        return attributes to expectedAttributes
+    }
 
     private fun mockEvent(): RumRawEvent {
         val event: RumRawEvent = mock()

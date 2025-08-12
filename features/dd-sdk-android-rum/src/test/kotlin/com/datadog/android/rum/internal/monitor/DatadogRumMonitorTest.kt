@@ -28,6 +28,7 @@ import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.RumResourceMethod
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.RumSessionType
+import com.datadog.android.rum.featureoperations.FailureReason
 import com.datadog.android.rum.internal.RumErrorSourceType
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.debug.RumDebugListener
@@ -2282,6 +2283,95 @@ internal class DatadogRumMonitorTest {
             InternalLogger.Target.USER,
             DatadogRumMonitor.RUM_DEBUG_RUM_NOT_ENABLED_WARNING
         )
+    }
+
+    @OptIn(ExperimentalRumApi::class)
+    @Test
+    fun `M produce StartFeatureOperation event W startFeatureOperation`(
+        @StringForgery key: String,
+        @StringForgery name: String,
+        forge: Forge
+    ) {
+        val operationKey = forge.aNullable { key }
+        val attributes = fakeAttributes + (RumAttributes.INTERNAL_TIMESTAMP to fakeTimestamp)
+
+        assertMethodCallProducesValidEvent<RumRawEvent.StartFeatureOperation>(
+            whenCalled = {
+                testedMonitor.startFeatureOperation(name, operationKey, attributes)
+            },
+            then = { event ->
+                assertThat(event.name).isEqualTo(name)
+                assertThat(event.operationKey).isEqualTo(operationKey)
+                assertThat(event.eventTime.timestamp).isEqualTo(fakeTimestamp)
+                assertThat(event.attributes).containsAllEntriesOf(attributes)
+            }
+        )
+    }
+
+    @OptIn(ExperimentalRumApi::class)
+    @Test
+    fun `M produce StopFeatureOperation event W succeedFeatureOperation { successful }`(
+        @StringForgery key: String,
+        @StringForgery name: String,
+        forge: Forge
+    ) {
+        val operationKey = forge.aNullable { key }
+        val attributes = fakeAttributes + (RumAttributes.INTERNAL_TIMESTAMP to fakeTimestamp)
+
+        assertMethodCallProducesValidEvent<RumRawEvent.StopFeatureOperation>(
+            whenCalled = {
+                testedMonitor.succeedFeatureOperation(name, operationKey, attributes)
+            },
+            then = { event ->
+                assertThat(event.name).isEqualTo(name)
+                assertThat(event.operationKey).isEqualTo(operationKey)
+                assertThat(event.eventTime.timestamp).isEqualTo(fakeTimestamp)
+                assertThat(event.attributes).containsAllEntriesOf(attributes)
+                assertThat(event.failureReason).isNull()
+            }
+        )
+    }
+
+    @OptIn(ExperimentalRumApi::class)
+    @Test
+    fun `M produce StopFeatureOperation event W failFeatureOperation { failed }`(
+        @StringForgery key: String,
+        @StringForgery name: String,
+        forge: Forge
+    ) {
+        val operationKey = forge.aNullable { key }
+        val failureReason = forge.aValueFrom(FailureReason::class.java)
+        val attributes = fakeAttributes + (RumAttributes.INTERNAL_TIMESTAMP to fakeTimestamp)
+
+        assertMethodCallProducesValidEvent<RumRawEvent.StopFeatureOperation>(
+            whenCalled = {
+                testedMonitor.failFeatureOperation(name, operationKey, failureReason, attributes)
+            },
+            then = { event ->
+                assertThat(event.name).isEqualTo(name)
+                assertThat(event.operationKey).isEqualTo(operationKey)
+                assertThat(event.eventTime.timestamp).isEqualTo(fakeTimestamp)
+                assertThat(event.attributes).containsAllEntriesOf(attributes)
+                assertThat(event.failureReason).isEqualTo(failureReason)
+            }
+        )
+    }
+
+    private inline fun <reified T : RumRawEvent> assertMethodCallProducesValidEvent(
+        whenCalled: () -> Unit,
+        then: (T) -> Unit
+    ) {
+        whenCalled()
+        Thread.sleep(PROCESSING_DELAY)
+
+        argumentCaptor<RumRawEvent> {
+            verify(mockScope).handleEvent(capture(), same(mockWriter))
+            val event = firstValue as T
+            assertThat(event.eventTime.timestamp).isEqualTo(fakeTimestamp)
+            then(event)
+        }
+
+        verifyNoMoreInteractions(mockScope, mockWriter)
     }
 
     companion object {
