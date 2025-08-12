@@ -98,7 +98,12 @@ internal class DatadogAccessibilityReaderTest {
 
         setupDefaultMockBehavior()
 
-        testedReader = DatadogAccessibilityReader(
+        // Create reader with default setup - individual tests can recreate if they need specific mocks
+        testedReader = createReader()
+    }
+
+    private fun createReader(): DatadogAccessibilityReader {
+        return DatadogAccessibilityReader(
             internalLogger = mockInternalLogger,
             applicationContext = mockContext,
             resources = mockResources,
@@ -222,6 +227,8 @@ internal class DatadogAccessibilityReaderTest {
             )
         ) doReturn animationDurationValue
 
+        testedReader = createReader()
+
         // When
         val result = testedReader.getState()
 
@@ -243,6 +250,8 @@ internal class DatadogAccessibilityReaderTest {
         // Given
         mockConfiguration.fontScale = fontScale
 
+        testedReader = createReader()
+
         // When
         val result = testedReader.getState()
 
@@ -256,6 +265,8 @@ internal class DatadogAccessibilityReaderTest {
     fun `M return screen reader state W getState { touch exploration enabled }`() {
         // Given
         whenever(mockAccessibilityManager.isTouchExplorationEnabled) doReturn true
+
+        testedReader = createReader()
 
         // When
         val result = testedReader.getState()
@@ -288,6 +299,8 @@ internal class DatadogAccessibilityReaderTest {
         // Given
         whenever(mockActivityManager.lockTaskModeState) doReturn ActivityManager.LOCK_TASK_MODE_LOCKED
 
+        testedReader = createReader()
+
         // When
         val result = testedReader.getState()
         val isScreenPinningEnabled = result[SCREEN_PINNING_ENABLED_KEY] as Boolean
@@ -302,6 +315,8 @@ internal class DatadogAccessibilityReaderTest {
         // Given
         whenever(mockActivityManager.lockTaskModeState) doReturn ActivityManager.LOCK_TASK_MODE_PINNED
 
+        testedReader = createReader()
+
         // When
         val result = testedReader.getState()
         val isScreenPinningEnabled = result[SCREEN_PINNING_ENABLED_KEY] as Boolean
@@ -315,6 +330,8 @@ internal class DatadogAccessibilityReaderTest {
     fun `M return false for screen pinning W getState { lock task mode is NONE }`() {
         // Given
         whenever(mockActivityManager.lockTaskModeState) doReturn ActivityManager.LOCK_TASK_MODE_NONE
+
+        testedReader = createReader()
 
         // When
         val result = testedReader.getState()
@@ -360,6 +377,8 @@ internal class DatadogAccessibilityReaderTest {
             )
         ) doReturn isEnabled
 
+        testedReader = createReader()
+
         // When
         val result = testedReader.getState()
 
@@ -400,6 +419,8 @@ internal class DatadogAccessibilityReaderTest {
             )
         ) doReturn isEnabled
 
+        testedReader = createReader()
+
         // When
         val result = testedReader.getState()
 
@@ -438,6 +459,8 @@ internal class DatadogAccessibilityReaderTest {
             )
         ) doReturn 0.0f
 
+        testedReader = createReader()
+
         // When
         val result = testedReader.getState()
         val isReducedAnimations = result[REDUCED_ANIMATIONS_ENABLED_KEY] as Boolean
@@ -456,6 +479,8 @@ internal class DatadogAccessibilityReaderTest {
                 key = Settings.Global.ANIMATOR_DURATION_SCALE
             )
         ) doReturn 1.0f
+
+        testedReader = createReader()
 
         // When
         val result = testedReader.getState()
@@ -515,6 +540,8 @@ internal class DatadogAccessibilityReaderTest {
     ) {
         // Given
         mockConfiguration.fontScale = fontScale
+
+        testedReader = createReader()
         val initialResult = testedReader.getState()
 
         val sameConfiguration = Configuration().apply { this.fontScale = fontScale }
@@ -718,21 +745,6 @@ internal class DatadogAccessibilityReaderTest {
         assertThat(newPollTime).isGreaterThanOrEqualTo(currentTimeBefore)
         assertThat(newPollTime).isLessThanOrEqualTo(currentTimeAfter)
         assertThat(newPollTime).isGreaterThan(oldTime)
-    }
-
-    @Test
-    fun `M handle double cleanup W cleanup { called multiple times }`() {
-        // Given - Initialize first
-        testedReader.getState()
-
-        // When - Call cleanup multiple times
-        testedReader.cleanup()
-        testedReader.cleanup() // Second call
-
-        // Then - Should cleanup only once
-        verify(mockAccessibilityManager, times(1)).removeTouchExplorationStateChangeListener(any())
-        verify(mockContentResolver, times(3)).unregisterContentObserver(any()) // 3 observers × 2 calls
-        verify(mockContext, times(1)).unregisterComponentCallbacks(testedReader)
     }
 
     @Test

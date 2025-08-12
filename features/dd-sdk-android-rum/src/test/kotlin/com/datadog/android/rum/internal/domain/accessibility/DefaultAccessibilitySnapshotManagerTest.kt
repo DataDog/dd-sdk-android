@@ -6,6 +6,7 @@
 
 package com.datadog.android.rum.internal.domain.accessibility
 
+import com.datadog.android.rum.internal.domain.InfoProvider
 import com.datadog.android.rum.internal.domain.accessibility.Accessibility.Companion.CLOSED_CAPTIONING_ENABLED_KEY
 import com.datadog.android.rum.internal.domain.accessibility.Accessibility.Companion.COLOR_INVERSION_ENABLED_KEY
 import com.datadog.android.rum.internal.domain.accessibility.Accessibility.Companion.REDUCED_ANIMATIONS_ENABLED_KEY
@@ -39,7 +40,7 @@ import org.mockito.quality.Strictness
 internal class DefaultAccessibilitySnapshotManagerTest {
 
     @Mock
-    lateinit var mockAccessibilityReader: AccessibilityReader
+    lateinit var mockAccessibilityReader: InfoProvider
 
     private lateinit var testedManager: DefaultAccessibilitySnapshotManager
 

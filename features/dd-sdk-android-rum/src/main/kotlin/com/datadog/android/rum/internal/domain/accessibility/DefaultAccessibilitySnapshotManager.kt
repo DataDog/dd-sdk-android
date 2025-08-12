@@ -6,8 +6,10 @@
 
 package com.datadog.android.rum.internal.domain.accessibility
 
+import com.datadog.android.rum.internal.domain.InfoProvider
+
 internal class DefaultAccessibilitySnapshotManager(
-    private val accessibilityReader: AccessibilityReader
+    private val accessibilityReader: InfoProvider
 ) : AccessibilitySnapshotManager {
     private val lastSnapshot = mutableMapOf<String, Any>()
 

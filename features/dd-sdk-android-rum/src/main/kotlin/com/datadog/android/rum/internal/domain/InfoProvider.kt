@@ -4,12 +4,12 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.rum.internal.domain.accessibility
+package com.datadog.android.rum.internal.domain
 
 import com.datadog.tools.annotation.NoOpImplementation
 
 @NoOpImplementation
-internal interface AccessibilityReader {
+internal interface InfoProvider {
     fun getState(): Map<String, Any>
     fun cleanup()
 }

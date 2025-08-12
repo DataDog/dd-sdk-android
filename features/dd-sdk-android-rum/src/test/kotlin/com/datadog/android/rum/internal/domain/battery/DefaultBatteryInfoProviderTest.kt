@@ -6,12 +6,20 @@
 
 package com.datadog.android.rum.internal.domain.battery
 
+import android.annotation.SuppressLint
+import android.content.BroadcastReceiver
 import android.content.ContentResolver
 import android.content.Context
+import android.content.IntentFilter
 import android.os.BatteryManager
 import android.os.BatteryManager.BATTERY_PROPERTY_CAPACITY
+import android.os.Build
 import android.os.PowerManager
 import com.datadog.android.rum.utils.forge.Configurator
+import com.datadog.tools.unit.annotations.TestTargetApi
+import com.datadog.tools.unit.extensions.ApiLevelExtension
+import fr.xgouchet.elmyr.annotation.BoolForgery
+import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -19,19 +27,21 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
-import org.junit.jupiter.params.ParameterizedTest
-import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.any
+import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import kotlin.math.roundToInt
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
-    ExtendWith(ForgeExtension::class)
+    ExtendWith(ForgeExtension::class),
+    ExtendWith(ApiLevelExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
@@ -53,28 +63,34 @@ internal class DefaultBatteryInfoProviderTest {
     @BeforeEach
     fun setup() {
         whenever(mockApplicationContext.contentResolver) doReturn mockContentResolver
-
-        testedProvider = DefaultBatteryInfoProvider(
-            applicationContext = mockApplicationContext,
-            powerManager = mockPowerManager,
-            batteryManager = mockBatteryManager
-        )
     }
 
     // region getBatteryState
 
     @Test
-    fun `M return complete battery info W getBatteryState() { all services available }`() {
+    fun `M return complete battery info W getBatteryState() { all services available }`(
+        @BoolForgery fakeLowPowerMode: Boolean,
+        @IntForgery(0, 100) fakeBatteryLevel: Int
+    ) {
         // Given
-        whenever(mockPowerManager.isPowerSaveMode) doReturn false
-        whenever(mockBatteryManager.getIntProperty(BATTERY_PROPERTY_CAPACITY)) doReturn 85
+        whenever(mockPowerManager.isPowerSaveMode) doReturn fakeLowPowerMode
+        whenever(mockBatteryManager.getIntProperty(BATTERY_PROPERTY_CAPACITY)) doReturn fakeBatteryLevel
+
+        // Create provider (initialization happens in constructor)
+        testedProvider = DefaultBatteryInfoProvider(
+            applicationContext = mockApplicationContext,
+            powerManager = mockPowerManager,
+            batteryManager = mockBatteryManager
+        )
 
         // When
-        val batteryInfo = testedProvider.getBatteryState()
+        val batteryInfo = BatteryInfo.fromMap(testedProvider.getState())
+        val batteryPct = fakeBatteryLevel / 100f
+        val expectedBatteryPct = (batteryPct * 10f).roundToInt() / 10f
 
         // Then
-        assertThat(batteryInfo.lowPowerMode).isEqualTo(false)
-        assertThat(batteryInfo.batteryLevel).isEqualTo(0.9f)
+        assertThat(batteryInfo.lowPowerMode).isEqualTo(fakeLowPowerMode)
+        assertThat(batteryInfo.batteryLevel).isEqualTo(expectedBatteryPct)
     }
 
     @Test
@@ -87,7 +103,7 @@ internal class DefaultBatteryInfoProviderTest {
         )
 
         // When
-        val batteryInfo = testedProvider.getBatteryState()
+        val batteryInfo = BatteryInfo.fromMap(testedProvider.getState())
 
         // Then
         assertThat(batteryInfo).isNotNull
@@ -97,58 +113,168 @@ internal class DefaultBatteryInfoProviderTest {
 
     // endregion
 
-    // region Battery Level Tests
+    // region BroadcastReceiver Tests
 
-    @ParameterizedTest
-    @ValueSource(ints = [0, 25, 50, 75, 100])
-    fun `M return correct battery level W getBatteryState() { various battery percentages }`(batteryPercentage: Int) {
-        // Given
-        whenever(mockBatteryManager.getIntProperty(BATTERY_PROPERTY_CAPACITY)) doReturn batteryPercentage
-        whenever(mockPowerManager.isPowerSaveMode) doReturn false
-
-        // When
-        val batteryInfo = testedProvider.getBatteryState()
-
-        // Then
-        val expectedLevel = ((batteryPercentage / 100f) * 10.0f).roundToInt() / 10.0f
-        assertThat(batteryInfo.batteryLevel).isEqualTo(expectedLevel)
-    }
-
-    // endregion
-
-    // region Power Save Mode Tests
-
+    @SuppressLint("UnspecifiedRegisterReceiverFlag")
     @Test
-    fun `M return true W getBatteryState() { power save mode enabled }`() {
+    fun `M register broadcast receiver W constructor { initialization }`() {
         // Given
-        whenever(mockPowerManager.isPowerSaveMode) doReturn true
+        whenever(mockPowerManager.isPowerSaveMode) doReturn false
         whenever(mockBatteryManager.getIntProperty(BATTERY_PROPERTY_CAPACITY)) doReturn 50
 
-        // When
-        val batteryInfo = testedProvider.getBatteryState()
+        // When - provider is created (initialization happens in constructor)
+        testedProvider = DefaultBatteryInfoProvider(
+            applicationContext = mockApplicationContext,
+            powerManager = mockPowerManager,
+            batteryManager = mockBatteryManager
+        )
 
         // Then
-        assertThat(batteryInfo.lowPowerMode).isEqualTo(true)
+        val receiverCaptor = argumentCaptor<BroadcastReceiver>()
+        val filterCaptor = argumentCaptor<IntentFilter>()
+        verify(mockApplicationContext).registerReceiver(receiverCaptor.capture(), filterCaptor.capture())
     }
 
     // endregion
 
-    // region Edge Cases
+    // region Cleanup Tests
 
+    @SuppressLint("UnspecifiedRegisterReceiverFlag")
     @Test
-    fun `M handle low battery percentage W getBatteryState() { edge case calculations }`() {
-        // Given
-        whenever(mockPowerManager.isPowerSaveMode) doReturn true
-        // Test edge case with very low battery
-        whenever(mockBatteryManager.getIntProperty(BATTERY_PROPERTY_CAPACITY)) doReturn 1
+    fun `M unregister receiver W cleanup() { after initialization }`() {
+        // Given - create provider (initialization happens in constructor)
+        whenever(mockPowerManager.isPowerSaveMode) doReturn false
+        whenever(mockBatteryManager.getIntProperty(BATTERY_PROPERTY_CAPACITY)) doReturn 50
+        testedProvider = DefaultBatteryInfoProvider(
+            applicationContext = mockApplicationContext,
+            powerManager = mockPowerManager,
+            batteryManager = mockBatteryManager
+        )
 
         // When
-        val batteryInfo = testedProvider.getBatteryState()
+        testedProvider.cleanup()
 
         // Then
-        assertThat(batteryInfo).isNotNull
-        assertThat(batteryInfo.lowPowerMode).isEqualTo(true)
-        assertThat(batteryInfo.batteryLevel).isEqualTo(0.0f)
+        val receiverCaptor = argumentCaptor<BroadcastReceiver>()
+        verify(mockApplicationContext).registerReceiver(receiverCaptor.capture(), any())
+        verify(mockApplicationContext).unregisterReceiver(receiverCaptor.firstValue)
+    }
+
+    @Test
+    fun `M retain initial state W cleanup() then getState() { no re-initialization }`() {
+        // Given - create provider
+        whenever(mockPowerManager.isPowerSaveMode) doReturn false
+        whenever(mockBatteryManager.getIntProperty(BATTERY_PROPERTY_CAPACITY)) doReturn 50
+        testedProvider = DefaultBatteryInfoProvider(
+            applicationContext = mockApplicationContext,
+            powerManager = mockPowerManager,
+            batteryManager = mockBatteryManager
+        )
+
+        // When - cleanup (no re-initialization happens)
+        testedProvider.cleanup()
+        val batteryInfo = BatteryInfo.fromMap(testedProvider.getState())
+
+        // Then - should retain the initial state from constructor
+        assertThat(batteryInfo.lowPowerMode).isEqualTo(false)
+        assertThat(batteryInfo.batteryLevel).isEqualTo(0.5f)
+    }
+
+    // endregion
+
+    // region Polling Tests
+
+    @Test
+    fun `M respect polling interval W getState() { multiple rapid calls }`() {
+        // Given
+        val shortInterval = 500 // 500ms for testing
+        whenever(mockPowerManager.isPowerSaveMode) doReturn false
+        whenever(mockBatteryManager.getIntProperty(BATTERY_PROPERTY_CAPACITY)) doReturn 50
+
+        testedProvider = DefaultBatteryInfoProvider(
+            applicationContext = mockApplicationContext,
+            powerManager = mockPowerManager,
+            batteryManager = mockBatteryManager,
+            batteryLevelPollInterval = shortInterval
+        )
+
+        // When - rapid calls within polling interval
+        whenever(mockBatteryManager.getIntProperty(BATTERY_PROPERTY_CAPACITY)) doReturn 75
+        testedProvider.getState()
+
+        // Then - should still have initial battery level (50) from constructor, not 75
+        val batteryInfo = BatteryInfo.fromMap(testedProvider.getState())
+        assertThat(batteryInfo.batteryLevel).isEqualTo(0.5f) // Still 50, not 75
+    }
+
+    @Test
+    fun `M update battery level W getState() { after polling interval }`() {
+        // Given
+        val shortInterval = 50 // 50ms for testing
+        whenever(mockPowerManager.isPowerSaveMode) doReturn false
+        whenever(mockBatteryManager.getIntProperty(BATTERY_PROPERTY_CAPACITY)) doReturn 50
+
+        testedProvider = DefaultBatteryInfoProvider(
+            applicationContext = mockApplicationContext,
+            powerManager = mockPowerManager,
+            batteryManager = mockBatteryManager,
+            batteryLevelPollInterval = shortInterval
+        )
+
+        // When
+        Thread.sleep(shortInterval + 10L)
+        whenever(mockBatteryManager.getIntProperty(BATTERY_PROPERTY_CAPACITY)) doReturn 75
+        val batteryInfo = BatteryInfo.fromMap(testedProvider.getState())
+
+        assertThat(batteryInfo.batteryLevel).isEqualTo(0.8f) // Now 75
+    }
+
+    // endregion
+
+    // region Error Handling Tests
+
+    @Test
+    @TestTargetApi(Build.VERSION_CODES.Q)
+    fun `M return null battery level W getBatteryLevel() { Integer MIN_VALUE }`() {
+        // Given
+        whenever(mockPowerManager.isPowerSaveMode) doReturn false
+        whenever(mockBatteryManager.getIntProperty(BATTERY_PROPERTY_CAPACITY)) doReturn Integer.MIN_VALUE
+
+        // Create provider (initialization happens in constructor)
+        testedProvider = DefaultBatteryInfoProvider(
+            applicationContext = mockApplicationContext,
+            powerManager = mockPowerManager,
+            batteryManager = mockBatteryManager
+        )
+
+        // When
+        val batteryInfo = BatteryInfo.fromMap(testedProvider.getState())
+
+        // Then
+        assertThat(batteryInfo.batteryLevel).isNull()
+        assertThat(batteryInfo.lowPowerMode).isEqualTo(false)
+    }
+
+    @Test
+    @TestTargetApi(Build.VERSION_CODES.P)
+    fun `M return null battery level W getBatteryLevel() { zero - on old api }`() {
+        // Given
+        whenever(mockPowerManager.isPowerSaveMode) doReturn false
+        whenever(mockBatteryManager.getIntProperty(BATTERY_PROPERTY_CAPACITY)) doReturn 0
+
+        // Create provider (initialization happens in constructor)
+        testedProvider = DefaultBatteryInfoProvider(
+            applicationContext = mockApplicationContext,
+            powerManager = mockPowerManager,
+            batteryManager = mockBatteryManager
+        )
+
+        // When
+        val batteryInfo = BatteryInfo.fromMap(testedProvider.getState())
+
+        // Then
+        assertThat(batteryInfo.batteryLevel).isNull()
+        assertThat(batteryInfo.lowPowerMode).isEqualTo(false)
     }
 
     // endregion

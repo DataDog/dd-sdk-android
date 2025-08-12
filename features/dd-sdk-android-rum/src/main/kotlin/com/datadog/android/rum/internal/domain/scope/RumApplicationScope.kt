@@ -16,11 +16,10 @@ import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.rum.DdRumContentProvider
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.RumSessionType
+import com.datadog.android.rum.internal.domain.InfoProvider
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.domain.accessibility.AccessibilitySnapshotManager
-import com.datadog.android.rum.internal.domain.battery.BatteryInfoProvider
-import com.datadog.android.rum.internal.domain.display.DisplayInfoProvider
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
 import com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener
 import com.datadog.android.rum.internal.vitals.VitalMonitor
@@ -46,8 +45,8 @@ internal class RumApplicationScope(
     private val slowFramesListener: SlowFramesListener?,
     private val rumSessionTypeOverride: RumSessionType?,
     private val accessibilitySnapshotManager: AccessibilitySnapshotManager,
-    private val batteryInfoProvider: BatteryInfoProvider,
-    private val displayInfoProvider: DisplayInfoProvider
+    private val batteryInfoProvider: InfoProvider,
+    private val displayInfoProvider: InfoProvider
 ) : RumScope, RumViewChangedListener {
 
     private var rumContext = RumContext(applicationId = applicationId)

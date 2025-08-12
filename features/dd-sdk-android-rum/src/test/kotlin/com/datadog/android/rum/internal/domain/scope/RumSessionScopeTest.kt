@@ -15,10 +15,9 @@ import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.RumSessionType
+import com.datadog.android.rum.internal.domain.InfoProvider
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.accessibility.AccessibilitySnapshotManager
-import com.datadog.android.rum.internal.domain.battery.BatteryInfoProvider
-import com.datadog.android.rum.internal.domain.display.DisplayInfoProvider
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
 import com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener
 import com.datadog.android.rum.internal.vitals.VitalMonitor
@@ -90,10 +89,10 @@ internal class RumSessionScopeTest {
     lateinit var mockAccessibilitySnapshotManager: AccessibilitySnapshotManager
 
     @Mock
-    lateinit var mockBatteryInfoProvider: BatteryInfoProvider
+    lateinit var mockBatteryInfoProvider: InfoProvider
 
     @Mock
-    lateinit var mockDisplayInfoProvider: DisplayInfoProvider
+    lateinit var mockDisplayInfoProvider: InfoProvider
 
     @Mock
     lateinit var mockSessionListener: RumSessionListener

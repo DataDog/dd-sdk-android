@@ -37,12 +37,11 @@ import com.datadog.android.rum.internal.CombinedRumSessionListener
 import com.datadog.android.rum.internal.RumErrorSourceType
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.debug.RumDebugListener
+import com.datadog.android.rum.internal.domain.InfoProvider
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.domain.accessibility.AccessibilitySnapshotManager
 import com.datadog.android.rum.internal.domain.asTime
-import com.datadog.android.rum.internal.domain.battery.BatteryInfoProvider
-import com.datadog.android.rum.internal.domain.display.DisplayInfoProvider
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
 import com.datadog.android.rum.internal.domain.scope.RumApplicationScope
 import com.datadog.android.rum.internal.domain.scope.RumRawEvent
@@ -86,8 +85,8 @@ internal class DatadogRumMonitor(
     slowFramesListener: SlowFramesListener?,
     rumSessionTypeOverride: RumSessionType?,
     accessibilitySnapshotManager: AccessibilitySnapshotManager,
-    batteryInfoProvider: BatteryInfoProvider,
-    displayInfoProvider: DisplayInfoProvider
+    batteryInfoProvider: InfoProvider,
+    displayInfoProvider: InfoProvider
 ) : RumMonitor, AdvancedRumMonitor {
 
     internal var rootScope: RumScope = RumApplicationScope(
