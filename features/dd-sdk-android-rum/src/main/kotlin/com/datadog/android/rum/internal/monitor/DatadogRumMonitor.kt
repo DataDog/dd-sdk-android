@@ -681,6 +681,7 @@ internal class DatadogRumMonitor(
                 eventTime = getEventTime(attributes)
             )
         )
+        reportTelemetry { FO_TELEMETRY_STARTED_MESSAGE }
     }
 
     @ExperimentalRumApi
@@ -694,6 +695,7 @@ internal class DatadogRumMonitor(
                 eventTime = getEventTime(attributes)
             )
         )
+        reportTelemetry { FO_TELEMETRY_SUCCEED_MESSAGE }
     }
 
     @ExperimentalRumApi
@@ -711,6 +713,15 @@ internal class DatadogRumMonitor(
                 failureReason = failureReason,
                 eventTime = getEventTime(attributes)
             )
+        )
+        reportTelemetry { FO_TELEMETRY_FAILED_MESSAGE }
+    }
+
+    private fun reportTelemetry(messageProvider: () -> String) {
+        sdkCore.internalLogger.log(
+            level = InternalLogger.Level.INFO,
+            target = InternalLogger.Target.TELEMETRY,
+            messageBuilder = messageProvider
         )
     }
     // endregion
@@ -844,5 +855,9 @@ internal class DatadogRumMonitor(
 
         internal const val RUM_DEBUG_RUM_NOT_ENABLED_WARNING =
             "Cannot switch RUM debugging, because RUM feature is not enabled."
+
+        private const val FO_TELEMETRY_STARTED_MESSAGE = "startFeatureOperation API called"
+        private const val FO_TELEMETRY_SUCCEED_MESSAGE = "succeedFeatureOperation API called"
+        private const val FO_TELEMETRY_FAILED_MESSAGE = "failFeatureOperation API called"
     }
 }
