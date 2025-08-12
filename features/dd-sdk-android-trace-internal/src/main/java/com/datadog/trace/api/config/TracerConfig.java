@@ -1,3 +1,9 @@
+/*
+ * Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
+ * This product includes software developed at Datadog (https://www.datadoghq.com/).
+ * Copyright 2016-Present Datadog, Inc.
+ */
+
 package com.datadog.trace.api.config;
 
 /**
@@ -44,6 +50,7 @@ public final class TracerConfig {
   public static final String TRACE_SAMPLING_OPERATION_RULES = "trace.sampling.operation.rules";
   // JSON rules
   public static final String TRACE_SAMPLING_RULES = "trace.sampling.rules";
+  public static final String SDK_V2_COMPATIBILITY_FLAG = "v2.compatibility.enabled";
   public static final String SPAN_SAMPLING_RULES = "span.sampling.rules";
   public static final String SPAN_SAMPLING_RULES_FILE = "span.sampling.rules.file";
   // a global rate used for all services (that don’t have a dedicated rule defined).

@@ -13,6 +13,7 @@ import com.datadog.android.okhttp.trace.NoOpTracedRequestListener
 import com.datadog.android.okhttp.trace.TracedRequestListener
 import com.datadog.android.rum.RumResourceAttributesProvider
 import com.datadog.android.trace.TracingHeaderType
+import com.datadog.android.trace.api.span.DatadogSpan
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.forge.BaseConfigurator
 import fr.xgouchet.elmyr.Forge
@@ -20,7 +21,6 @@ import fr.xgouchet.elmyr.annotation.FloatForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
-import io.opentracing.Span
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -56,7 +56,7 @@ internal class DatadogInterceptorBuilderTest {
     private lateinit var fakeTracedHosts: List<String>
 
     @Mock
-    lateinit var mockSampler: Sampler<Span>
+    lateinit var mockSampler: Sampler<DatadogSpan>
 
     @BeforeEach
     fun `set up`(forge: Forge) {

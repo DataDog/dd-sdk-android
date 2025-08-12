@@ -4,26 +4,25 @@ import static java.util.Collections.emptyList;
 
 import androidx.annotation.Nullable;
 
+import com.datadog.android.trace.internal.compat.function.Consumer;
 import com.datadog.trace.api.DDSpanId;
 import com.datadog.trace.api.DDTraceId;
 import com.datadog.trace.api.EndpointCheckpointer;
 import com.datadog.trace.api.TraceConfig;
-import com.datadog.trace.api.TracePropagationStyle;
 import com.datadog.trace.api.gateway.Flow;
 import com.datadog.trace.api.gateway.RequestContext;
 import com.datadog.trace.api.gateway.RequestContextSlot;
-import com.datadog.trace.api.internal.InternalTracer;
-import com.datadog.trace.api.profiling.Timer;
 import com.datadog.trace.api.sampling.PrioritySampling;
 import com.datadog.trace.api.sampling.SamplingRule;
 import com.datadog.trace.api.scopemanager.ScopeListener;
 import com.datadog.trace.bootstrap.instrumentation.api.AgentSpan.Context;
 
+import org.jetbrains.annotations.NotNull;
+
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import com.datadog.android.trace.internal.compat.function.Consumer;
 
 public class AgentTracer {
   private static final String DEFAULT_INSTRUMENTATION_NAME = "datadog";
@@ -31,8 +30,7 @@ public class AgentTracer {
   // Not intended to be constructed.
   private AgentTracer() {}
 
-  public interface TracerAPI
-      extends com.datadog.trace.api.Tracer, InternalTracer, EndpointCheckpointer, ScopeStateAware {
+  public interface TracerAPI extends EndpointCheckpointer {
 
     /**
      * Create and start a new span.
@@ -82,21 +80,10 @@ public class AgentTracer {
     AgentScope activateSpan(AgentSpan span, ScopeSource source);
 
     AgentScope activateSpan(AgentSpan span, ScopeSource source, boolean isAsyncPropagating);
-
-    AgentScope.Continuation captureSpan(AgentSpan span);
-
-    void closePrevious(boolean finishSpan);
-
-    AgentScope activateNext(AgentSpan span);
-
     @Nullable
     AgentSpan activeSpan();
 
-    AgentScope activeScope();
-
     AgentPropagation propagate();
-
-    AgentSpan noopSpan();
 
     /** Deprecated. Use {@link #buildSpan(String, CharSequence)} instead. */
     @Deprecated
@@ -115,24 +102,12 @@ public class AgentTracer {
      */
     void addScopeListener(ScopeListener listener);
 
-    /**
-     * Registers the checkpointer
-     *
-     * @param checkpointer
-     */
-    void registerCheckpointer(EndpointCheckpointer checkpointer);
-
-    void registerTimer(Timer timer);
-
-    Timer getTimer();
 
     String getTraceId(AgentSpan span);
 
     String getSpanId(AgentSpan span);
 
     TraceConfig captureTraceConfig();
-
-    ProfilingContextIntegration getProfilingContext();
   }
 
   public interface SpanBuilder {
@@ -163,6 +138,9 @@ public class AgentTracer {
     <T> SpanBuilder withRequestContextData(RequestContextSlot slot, T data);
 
     SpanBuilder withLink(AgentSpanLink link);
+
+    @NotNull
+    SpanBuilder withOrigin(@Nullable String origin);
   }
 
   public static final class NoopAgentSpan implements AgentSpan {
@@ -309,7 +287,7 @@ public class AgentTracer {
     }
 
     @Override
-    public Integer getSamplingPriority() {
+    public Integer getTraceSamplingPriority() {
       return (int) PrioritySampling.UNSET;
     }
 
@@ -416,6 +394,9 @@ public class AgentTracer {
     }
 
     @Override
+    public void drop() {}
+
+    @Override
     public void finish() {}
 
     @Override
@@ -502,25 +483,6 @@ public class AgentTracer {
     }
   }
 
-  static class NoopAgentPropagation implements AgentPropagation {
-    static final NoopAgentPropagation INSTANCE = new NoopAgentPropagation();
-
-    @Override
-    public <C> void inject(final AgentSpan span, final C carrier, final Setter<C> setter) {}
-
-    @Override
-    public <C> void inject(final Context context, final C carrier, final Setter<C> setter) {}
-
-    @Override
-    public <C> void inject(
-        AgentSpan span, C carrier, Setter<C> setter, TracePropagationStyle style) {}
-
-    @Override
-    public <C> Context.Extracted extract(final C carrier, final ContextVisitor<C> getter) {
-      return NoopContext.INSTANCE;
-    }
-  }
-
   static class NoopContinuation implements AgentScope.Continuation {
     static final NoopContinuation INSTANCE = new NoopContinuation();
 
@@ -559,7 +521,7 @@ public class AgentTracer {
     }
 
     @Override
-    public int getSamplingPriority() {
+    public int getTraceSamplingPriority() {
       return PrioritySampling.UNSET;
     }
 

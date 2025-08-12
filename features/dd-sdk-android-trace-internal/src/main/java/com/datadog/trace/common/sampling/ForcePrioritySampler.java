@@ -1,12 +1,17 @@
 package com.datadog.trace.common.sampling;
 
+import androidx.annotation.VisibleForTesting;
+
 import com.datadog.trace.core.CoreSpan;
 
 /** A sampler which forces the sampling priority */
 public class ForcePrioritySampler implements Sampler, PrioritySampler {
 
-  private final int prioritySampling;
-  private final int samplingMechanism;
+  @VisibleForTesting
+  final int prioritySampling;
+
+  @VisibleForTesting
+  final int samplingMechanism;
 
   public ForcePrioritySampler(final int prioritySampling, final int samplingMechanism) {
     this.prioritySampling = prioritySampling;

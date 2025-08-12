@@ -1,5 +1,8 @@
 package com.datadog.trace.common.sampling;
 
+import androidx.annotation.VisibleForTesting;
+
+import com.datadog.android.trace.internal.compat.function.Function;
 import com.datadog.trace.api.cache.DDCache;
 import com.datadog.trace.api.cache.DDCaches;
 import com.datadog.trace.api.sampling.PrioritySampling;
@@ -12,7 +15,6 @@ import com.datadog.trace.logger.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
-import com.datadog.android.trace.internal.compat.function.Function;
 
 /**
  * A rate sampler which maintains different sample rates per service+env name.
@@ -20,13 +22,19 @@ import com.datadog.android.trace.internal.compat.function.Function;
  * <p>The configuration of (serviceName,env)->rate is configured by the core agent.
  */
 public class RateByServiceTraceSampler implements Sampler, PrioritySampler, RemoteResponseListener {
+    private static final double DEFAULT_RATE = 1.0;
 
+    private volatile RateSamplersByEnvAndService serviceRates;
     private static final Logger log = LoggerFactory.getLogger(RateByServiceTraceSampler.class);
     public static final String SAMPLING_AGENT_RATE = "_dd.agent_psr";
 
-    private static final double DEFAULT_RATE = 1.0;
+    public RateByServiceTraceSampler() {
+        this(DEFAULT_RATE);
+    }
 
-    private volatile RateSamplersByEnvAndService serviceRates = new RateSamplersByEnvAndService();
+    public RateByServiceTraceSampler(Double defaultSampleRate) {
+        serviceRates = new RateSamplersByEnvAndService(defaultSampleRate);
+    }
 
     @Override
     public <T extends CoreSpan<T>> boolean sample(final T span) {
@@ -86,8 +94,13 @@ public class RateByServiceTraceSampler implements Sampler, PrioritySampler, Remo
                                     RateByServiceTraceSampler.createRateSampler(entry.getValue().doubleValue()));
                 }
             }
-            serviceRates = new RateSamplersByEnvAndService(updatedEnvServiceRates);
+            serviceRates = new RateSamplersByEnvAndService(updatedEnvServiceRates, serviceRates.getSampleRate());
         }
+    }
+
+    @VisibleForTesting
+    public double getSampleRate() {
+        return serviceRates.getSampleRate();
     }
 
     private static RateSampler createRateSampler(final double sampleRate) {
@@ -105,16 +118,19 @@ public class RateByServiceTraceSampler implements Sampler, PrioritySampler, Remo
     }
 
     private static final class RateSamplersByEnvAndService {
-        private static final RateSampler DEFAULT = createRateSampler(DEFAULT_RATE);
+        private final double sampleRate;
+        private final RateSampler defaultSampler;
 
         private final Map<String, Map<String, RateSampler>> envServiceRates;
 
-        RateSamplersByEnvAndService() {
-            this(new HashMap<>(0));
+        RateSamplersByEnvAndService(double defaultSampleRate) {
+            this(new HashMap<>(0), defaultSampleRate);
         }
 
-        RateSamplersByEnvAndService(Map<String, Map<String, RateSampler>> envServiceRates) {
+        RateSamplersByEnvAndService(Map<String, Map<String, RateSampler>> envServiceRates, double sampleRate) {
+            this.sampleRate = sampleRate;
             this.envServiceRates = envServiceRates;
+            this.defaultSampler = createRateSampler(sampleRate);
         }
 
         // used in tests only
@@ -125,10 +141,14 @@ public class RateByServiceTraceSampler implements Sampler, PrioritySampler, Remo
         public RateSampler getSampler(String env, String service) {
             Map<String, RateSampler> serviceRates = envServiceRates.get(env);
             if (serviceRates == null) {
-                return DEFAULT;
+                return defaultSampler;
             }
             RateSampler sampler = serviceRates.get(service);
-            return null == sampler ? DEFAULT : sampler;
+            return null == sampler ? defaultSampler : sampler;
+        }
+
+        public double getSampleRate() {
+            return sampleRate;
         }
     }
 

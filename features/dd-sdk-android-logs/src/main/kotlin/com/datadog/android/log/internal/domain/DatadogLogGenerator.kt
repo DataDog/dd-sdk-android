@@ -194,6 +194,11 @@ internal class DatadogLogGenerator(
             buildId = datadogContext.appBuildId,
             error = error,
             logger = loggerInfo,
+            dd = LogEvent.Dd(
+                device = LogEvent.DdDevice(
+                    architecture = deviceInfo.architecture
+                )
+            ),
             usr = usr,
             account = account,
             network = network,
@@ -210,7 +215,7 @@ internal class DatadogLogGenerator(
         versionMajor = deviceInfo.osMajorVersion
     )
 
-    private fun resolveDeviceInfo(deviceInfo: DeviceInfo) = LogEvent.Device(
+    private fun resolveDeviceInfo(deviceInfo: DeviceInfo) = LogEvent.LogEventDevice(
         type = resolveDeviceType(deviceInfo.deviceType),
         name = deviceInfo.deviceName,
         model = deviceInfo.deviceModel,
