@@ -603,4 +603,4 @@ internal fun FailureReason.toSchemaFailureReason(): VitalEvent.FailureReason {
         FailureReason.OTHER -> VitalEvent.FailureReason.OTHER
     }
 }
-//
+// endregion
