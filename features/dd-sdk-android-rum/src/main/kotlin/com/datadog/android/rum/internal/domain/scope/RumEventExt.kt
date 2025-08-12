@@ -602,4 +602,4 @@ internal fun FailureReason.toSchemaFailureReason(): RumVitalEvent.FailureReason 
         FailureReason.OTHER -> RumVitalEvent.FailureReason.OTHER
     }
 }
-//
+// endregion
