@@ -1642,7 +1642,6 @@ public abstract interface class com/datadog/trace/bootstrap/instrumentation/api/
 	public abstract fun baggageItems ()Ljava/lang/Iterable;
 	public abstract fun getPathwayContext ()Lcom/datadog/trace/bootstrap/instrumentation/api/PathwayContext;
 	public abstract fun getSpanId ()J
-	public abstract fun getSpanSamplingPriority ()I
 	public abstract fun getTrace ()Lcom/datadog/trace/bootstrap/instrumentation/api/AgentTrace;
 	public abstract fun getTraceId ()Lcom/datadog/trace/api/DDTraceId;
 	public abstract fun getTraceSamplingPriority ()I
@@ -1806,7 +1805,6 @@ public final class com/datadog/trace/bootstrap/instrumentation/api/AgentTracer$N
 	public fun getForwardedFor ()Ljava/lang/String;
 	public fun getPathwayContext ()Lcom/datadog/trace/bootstrap/instrumentation/api/PathwayContext;
 	public fun getSpanId ()J
-	public fun getSpanSamplingPriority ()I
 	public fun getTerminatedContextLinks ()Ljava/util/List;
 	public fun getTrace ()Lcom/datadog/trace/bootstrap/instrumentation/api/AgentTrace;
 	public fun getTraceId ()Lcom/datadog/trace/api/DDTraceId;
@@ -2138,7 +2136,6 @@ public class com/datadog/trace/bootstrap/instrumentation/api/TagContext : com/da
 	public final fun getRequestContextDataAppSec ()Ljava/lang/Object;
 	public final fun getRequestContextDataIast ()Ljava/lang/Object;
 	public fun getSpanId ()J
-	public fun getSpanSamplingPriority ()I
 	public final fun getTags ()Ljava/util/Map;
 	public fun getTerminatedContextLinks ()Ljava/util/List;
 	public final fun getTrace ()Lcom/datadog/trace/bootstrap/instrumentation/api/AgentTrace;
@@ -2584,7 +2581,6 @@ public abstract interface class com/datadog/trace/core/CoreSpan {
 	public abstract fun getResourceName ()Ljava/lang/CharSequence;
 	public abstract fun getServiceName ()Ljava/lang/String;
 	public abstract fun getSpanId ()J
-	public abstract fun getSpanSamplingPriority ()I
 	public abstract fun getStartTime ()J
 	public abstract fun getTag (Ljava/lang/CharSequence;)Ljava/lang/Object;
 	public abstract fun getTag (Ljava/lang/CharSequence;Ljava/lang/Object;)Ljava/lang/Object;
