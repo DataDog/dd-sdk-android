@@ -2357,6 +2357,79 @@ internal class DatadogRumMonitorTest {
         )
     }
 
+    @OptIn(ExperimentalRumApi::class)
+    @Test
+    fun `M log telemetry message W startFeatureOperation`(
+        @StringForgery key: String,
+        @StringForgery name: String,
+        forge: Forge
+    ) {
+        // Given
+        val mockInternalLogger = mock<InternalLogger>()
+        whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
+        val operationKey = forge.aNullable { key }
+        val attributes = fakeAttributes + (RumAttributes.INTERNAL_TIMESTAMP to fakeTimestamp)
+
+        // When
+        testedMonitor.startFeatureOperation(name, operationKey, attributes)
+
+        // Then
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.INFO,
+            InternalLogger.Target.TELEMETRY,
+            "startFeatureOperation API called"
+        )
+    }
+
+    @OptIn(ExperimentalRumApi::class)
+    @Test
+    fun `M log telemetry message W succeedFeatureOperation`(
+        @StringForgery key: String,
+        @StringForgery name: String,
+        forge: Forge
+    ) {
+        // Given
+        val mockInternalLogger = mock<InternalLogger>()
+        whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
+        val operationKey = forge.aNullable { key }
+        val attributes = fakeAttributes + (RumAttributes.INTERNAL_TIMESTAMP to fakeTimestamp)
+
+        // When
+        testedMonitor.succeedFeatureOperation(name, operationKey, attributes)
+
+        // Then
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.INFO,
+            InternalLogger.Target.TELEMETRY,
+            "succeedFeatureOperation API called"
+        )
+    }
+
+    @OptIn(ExperimentalRumApi::class)
+    @Test
+    fun `M log telemetry message W failFeatureOperation`(
+        @StringForgery key: String,
+        @StringForgery name: String,
+        forge: Forge
+    ) {
+        // Given
+        val mockInternalLogger = mock<InternalLogger>()
+        whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
+        val operationKey = forge.aNullable { key }
+        val failureReason = forge.aValueFrom(FailureReason::class.java)
+        val attributes = fakeAttributes + (RumAttributes.INTERNAL_TIMESTAMP to fakeTimestamp)
+
+        // When
+        testedMonitor.failFeatureOperation(name, operationKey, failureReason, attributes)
+
+        // Then
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.INFO,
+            InternalLogger.Target.TELEMETRY,
+            "failFeatureOperation API called"
+        )
+    }
+
     private inline fun <reified T : RumRawEvent> assertMethodCallProducesValidEvent(
         whenCalled: () -> Unit,
         then: (T) -> Unit
