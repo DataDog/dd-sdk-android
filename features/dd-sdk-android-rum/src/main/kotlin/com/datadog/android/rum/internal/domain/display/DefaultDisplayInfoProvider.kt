@@ -50,7 +50,6 @@ internal class DefaultDisplayInfoProvider(
         buildInitialState()
     }
 
-    @Synchronized
     override fun getState(): Map<String, Any> {
         return currentState.toMap()
     }

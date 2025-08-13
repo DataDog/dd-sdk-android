@@ -28,13 +28,14 @@ internal class DefaultBatteryInfoProvider(
     private val batteryManager: BatteryManager? = applicationContext.getSystemService(
         BATTERY_SERVICE
     ) as? BatteryManager,
-    private val batteryLevelPollInterval: Int = BATTERY_POLL_INTERVAL_MS
+    private val batteryLevelPollInterval: Int = BATTERY_POLL_INTERVAL_MS,
+    private val systemClockWrapper: SystemClockWrapper = SystemClockWrapper() // this wrapper is needed for unit tests
 ) : InfoProvider {
 
     @Volatile
     private var currentState = BatteryInfo()
 
-    private var lastTimeBatteryLevelChecked = AtomicLong(System.currentTimeMillis())
+    private var lastTimeBatteryLevelChecked = AtomicLong(systemClockWrapper.elapsedRealTime())
 
     private val powerSaveModeReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
@@ -57,8 +58,8 @@ internal class DefaultBatteryInfoProvider(
         // while we could register a receiver for battery level,
         // it fires far too often (multiple times per second)
         // so it seems better to only poll battery charge state once in a period of time
-        val now = System.currentTimeMillis()
-        if (now >= lastTimeBatteryLevelChecked.get() + batteryLevelPollInterval) {
+        val now = systemClockWrapper.elapsedRealTime()
+        if (now - batteryLevelPollInterval >= lastTimeBatteryLevelChecked.get()) {
             lastTimeBatteryLevelChecked.set(now)
 
             getBatteryLevel()?.let {

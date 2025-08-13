@@ -58,11 +58,22 @@ internal class DefaultBatteryInfoProviderTest {
     lateinit var mockPowerManager: PowerManager
 
     @Mock
+    lateinit var mockSystemClockWrapper: SystemClockWrapper
+
+    @Mock
     lateinit var mockBatteryManager: BatteryManager
+
+    private val testSuiteStartTime = System.currentTimeMillis()
+
+    private val shortPollingInterval = 200
 
     @BeforeEach
     fun setup() {
         whenever(mockApplicationContext.contentResolver) doReturn mockContentResolver
+        whenever(mockSystemClockWrapper.elapsedRealTime()) doReturn testSuiteStartTime
+        whenever(mockPowerManager.isPowerSaveMode) doReturn false
+        whenever(mockBatteryManager.getIntProperty(BATTERY_PROPERTY_CAPACITY)) doReturn 50
+        initializeBatteryManager()
     }
 
     // region getBatteryState
@@ -75,13 +86,7 @@ internal class DefaultBatteryInfoProviderTest {
         // Given
         whenever(mockPowerManager.isPowerSaveMode) doReturn fakeLowPowerMode
         whenever(mockBatteryManager.getIntProperty(BATTERY_PROPERTY_CAPACITY)) doReturn fakeBatteryLevel
-
-        // Create provider (initialization happens in constructor)
-        testedProvider = DefaultBatteryInfoProvider(
-            applicationContext = mockApplicationContext,
-            powerManager = mockPowerManager,
-            batteryManager = mockBatteryManager
-        )
+        initializeBatteryManager()
 
         // When
         val batteryInfo = BatteryInfo.fromMap(testedProvider.getState())
@@ -96,11 +101,7 @@ internal class DefaultBatteryInfoProviderTest {
     @Test
     fun `M return battery info with nulls W getBatteryState() { services unavailable }`() {
         // Given
-        testedProvider = DefaultBatteryInfoProvider(
-            applicationContext = mockApplicationContext,
-            powerManager = null,
-            batteryManager = null
-        )
+        initializeBatteryManager(null, null)
 
         // When
         val batteryInfo = BatteryInfo.fromMap(testedProvider.getState())
@@ -118,17 +119,6 @@ internal class DefaultBatteryInfoProviderTest {
     @SuppressLint("UnspecifiedRegisterReceiverFlag")
     @Test
     fun `M register broadcast receiver W constructor { initialization }`() {
-        // Given
-        whenever(mockPowerManager.isPowerSaveMode) doReturn false
-        whenever(mockBatteryManager.getIntProperty(BATTERY_PROPERTY_CAPACITY)) doReturn 50
-
-        // When - provider is created (initialization happens in constructor)
-        testedProvider = DefaultBatteryInfoProvider(
-            applicationContext = mockApplicationContext,
-            powerManager = mockPowerManager,
-            batteryManager = mockBatteryManager
-        )
-
         // Then
         val receiverCaptor = argumentCaptor<BroadcastReceiver>()
         val filterCaptor = argumentCaptor<IntentFilter>()
@@ -142,15 +132,6 @@ internal class DefaultBatteryInfoProviderTest {
     @SuppressLint("UnspecifiedRegisterReceiverFlag")
     @Test
     fun `M unregister receiver W cleanup() { after initialization }`() {
-        // Given - create provider (initialization happens in constructor)
-        whenever(mockPowerManager.isPowerSaveMode) doReturn false
-        whenever(mockBatteryManager.getIntProperty(BATTERY_PROPERTY_CAPACITY)) doReturn 50
-        testedProvider = DefaultBatteryInfoProvider(
-            applicationContext = mockApplicationContext,
-            powerManager = mockPowerManager,
-            batteryManager = mockBatteryManager
-        )
-
         // When
         testedProvider.cleanup()
 
@@ -162,15 +143,6 @@ internal class DefaultBatteryInfoProviderTest {
 
     @Test
     fun `M retain initial state W cleanup() then getState() { no re-initialization }`() {
-        // Given - create provider
-        whenever(mockPowerManager.isPowerSaveMode) doReturn false
-        whenever(mockBatteryManager.getIntProperty(BATTERY_PROPERTY_CAPACITY)) doReturn 50
-        testedProvider = DefaultBatteryInfoProvider(
-            applicationContext = mockApplicationContext,
-            powerManager = mockPowerManager,
-            batteryManager = mockBatteryManager
-        )
-
         // When - cleanup (no re-initialization happens)
         testedProvider.cleanup()
         val batteryInfo = BatteryInfo.fromMap(testedProvider.getState())
@@ -185,47 +157,19 @@ internal class DefaultBatteryInfoProviderTest {
     // region Polling Tests
 
     @Test
-    fun `M respect polling interval W getState() { multiple rapid calls }`() {
-        // Given
-        val shortInterval = 500 // 500ms for testing
-        whenever(mockPowerManager.isPowerSaveMode) doReturn false
-        whenever(mockBatteryManager.getIntProperty(BATTERY_PROPERTY_CAPACITY)) doReturn 50
-
-        testedProvider = DefaultBatteryInfoProvider(
-            applicationContext = mockApplicationContext,
-            powerManager = mockPowerManager,
-            batteryManager = mockBatteryManager,
-            batteryLevelPollInterval = shortInterval
-        )
-
-        // When - rapid calls within polling interval
-        whenever(mockBatteryManager.getIntProperty(BATTERY_PROPERTY_CAPACITY)) doReturn 75
-        testedProvider.getState()
-
-        // Then - should still have initial battery level (50) from constructor, not 75
-        val batteryInfo = BatteryInfo.fromMap(testedProvider.getState())
-        assertThat(batteryInfo.batteryLevel).isEqualTo(0.5f) // Still 50, not 75
-    }
-
-    @Test
     fun `M update battery level W getState() { after polling interval }`() {
-        // Given
-        val shortInterval = 50 // 50ms for testing
-        whenever(mockPowerManager.isPowerSaveMode) doReturn false
-        whenever(mockBatteryManager.getIntProperty(BATTERY_PROPERTY_CAPACITY)) doReturn 50
-
-        testedProvider = DefaultBatteryInfoProvider(
-            applicationContext = mockApplicationContext,
-            powerManager = mockPowerManager,
-            batteryManager = mockBatteryManager,
-            batteryLevelPollInterval = shortInterval
-        )
-
         // When
-        Thread.sleep(shortInterval + 10L)
         whenever(mockBatteryManager.getIntProperty(BATTERY_PROPERTY_CAPACITY)) doReturn 75
-        val batteryInfo = BatteryInfo.fromMap(testedProvider.getState())
 
+        // nothing changes because we are within polling interval
+        assertThat(BatteryInfo.fromMap(testedProvider.getState()).batteryLevel).isEqualTo(0.5f)
+        whenever(mockSystemClockWrapper.elapsedRealTime()) doReturn testSuiteStartTime + shortPollingInterval / 2
+        assertThat(BatteryInfo.fromMap(testedProvider.getState()).batteryLevel).isEqualTo(0.5f)
+
+        // Then
+        // after polling interval level should change
+        whenever(mockSystemClockWrapper.elapsedRealTime()) doReturn testSuiteStartTime + shortPollingInterval
+        val batteryInfo = BatteryInfo.fromMap(testedProvider.getState())
         assertThat(batteryInfo.batteryLevel).isEqualTo(0.8f) // Now 75
     }
 
@@ -239,13 +183,7 @@ internal class DefaultBatteryInfoProviderTest {
         // Given
         whenever(mockPowerManager.isPowerSaveMode) doReturn false
         whenever(mockBatteryManager.getIntProperty(BATTERY_PROPERTY_CAPACITY)) doReturn Integer.MIN_VALUE
-
-        // Create provider (initialization happens in constructor)
-        testedProvider = DefaultBatteryInfoProvider(
-            applicationContext = mockApplicationContext,
-            powerManager = mockPowerManager,
-            batteryManager = mockBatteryManager
-        )
+        initializeBatteryManager()
 
         // When
         val batteryInfo = BatteryInfo.fromMap(testedProvider.getState())
@@ -261,13 +199,7 @@ internal class DefaultBatteryInfoProviderTest {
         // Given
         whenever(mockPowerManager.isPowerSaveMode) doReturn false
         whenever(mockBatteryManager.getIntProperty(BATTERY_PROPERTY_CAPACITY)) doReturn 0
-
-        // Create provider (initialization happens in constructor)
-        testedProvider = DefaultBatteryInfoProvider(
-            applicationContext = mockApplicationContext,
-            powerManager = mockPowerManager,
-            batteryManager = mockBatteryManager
-        )
+        initializeBatteryManager()
 
         // When
         val batteryInfo = BatteryInfo.fromMap(testedProvider.getState())
@@ -278,4 +210,17 @@ internal class DefaultBatteryInfoProviderTest {
     }
 
     // endregion
+
+    private fun initializeBatteryManager(
+        powerManager: PowerManager? = mockPowerManager,
+        batteryManager: BatteryManager? = mockBatteryManager
+    ) {
+        testedProvider = DefaultBatteryInfoProvider(
+            applicationContext = mockApplicationContext,
+            batteryLevelPollInterval = shortPollingInterval,
+            powerManager = powerManager,
+            batteryManager = batteryManager,
+            systemClockWrapper = mockSystemClockWrapper
+        )
+    }
 }

@@ -6,6 +6,12 @@
 
 package com.datadog.android.rum.internal.domain.display
 
+/**
+ * Provides information about the display state.
+ *
+ * @property screenBrightness The current screen brightness,
+ * normalized as a float between 0.0 (darkest) and 1.0 (brightest).
+ */
 internal data class DisplayInfo(
     val screenBrightness: Number? = null
 ) {

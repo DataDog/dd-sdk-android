@@ -6,6 +6,8 @@
 
 package com.datadog.android.rum.internal.domain.battery
 
+import androidx.annotation.FloatRange
+
 /**
  * Provides information about the battery state.
  *
@@ -13,7 +15,7 @@ package com.datadog.android.rum.internal.domain.battery
  * @property lowPowerMode a boolean indicating whether the device is currently in Low Power Mode.
  */
 internal data class BatteryInfo(
-    val batteryLevel: Float? = null,
+    @FloatRange(0.0, 1.0) val batteryLevel: Float? = null,
     val lowPowerMode: Boolean? = null
 ) {
     fun toMap(): Map<String, Any> = buildMap {
