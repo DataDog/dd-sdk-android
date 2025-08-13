@@ -2357,6 +2357,80 @@ internal class DatadogRumMonitorTest {
         )
     }
 
+    @OptIn(ExperimentalRumApi::class)
+    @Test
+    fun `M log user message W startFeatureOperation`(
+        @StringForgery key: String,
+        @StringForgery name: String,
+        forge: Forge
+    ) {
+        // Given
+        val mockInternalLogger = mock<InternalLogger>()
+        whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
+        val operationKey = forge.aNullable { key }
+        val attributes = fakeAttributes + (RumAttributes.INTERNAL_TIMESTAMP to fakeTimestamp)
+
+        // When
+        testedMonitor.startFeatureOperation(name, operationKey, attributes)
+
+        // Then
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.DEBUG,
+            InternalLogger.Target.USER,
+            "Feature Operation `$name` (operationKey `$operationKey`) was started."
+        )
+    }
+
+    @OptIn(ExperimentalRumApi::class)
+    @Test
+    fun `M log user message W succeedFeatureOperation`(
+        @StringForgery key: String,
+        @StringForgery name: String,
+        forge: Forge
+    ) {
+        // Given
+        val mockInternalLogger = mock<InternalLogger>()
+        whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
+        val operationKey = forge.aNullable { key }
+        val attributes = fakeAttributes + (RumAttributes.INTERNAL_TIMESTAMP to fakeTimestamp)
+
+        // When
+        testedMonitor.succeedFeatureOperation(name, operationKey, attributes)
+
+        // Then
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.DEBUG,
+            InternalLogger.Target.USER,
+            "Feature Operation `$name` (operationKey `$operationKey`) was successfully ended."
+        )
+    }
+
+    @OptIn(ExperimentalRumApi::class)
+    @Test
+    fun `M log user message W failFeatureOperation`(
+        @StringForgery key: String,
+        @StringForgery name: String,
+        forge: Forge
+    ) {
+        // Given
+        val mockInternalLogger = mock<InternalLogger>()
+        whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
+        val operationKey = forge.aNullable { key }
+        val failureReason = forge.aValueFrom(FailureReason::class.java)
+        val attributes = fakeAttributes + (RumAttributes.INTERNAL_TIMESTAMP to fakeTimestamp)
+
+        // When
+        testedMonitor.failFeatureOperation(name, operationKey, failureReason, attributes)
+
+        // Then
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.DEBUG,
+            InternalLogger.Target.USER,
+            "Feature Operation `$name` (operationKey `$operationKey`) was unsuccessfully " +
+                "ended with the following failure reason: $failureReason."
+        )
+    }
+
     private inline fun <reified T : RumRawEvent> assertMethodCallProducesValidEvent(
         whenCalled: () -> Unit,
         then: (T) -> Unit

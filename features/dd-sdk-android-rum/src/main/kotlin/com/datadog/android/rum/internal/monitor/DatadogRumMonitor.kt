@@ -155,11 +155,7 @@ internal class DatadogRumMonitor(
             val rumFeatureScope = sdkCore.getFeature(Feature.RUM_FEATURE_NAME)
                 ?.unwrap<RumFeature>()
             if (rumFeatureScope == null) {
-                sdkCore.internalLogger.log(
-                    InternalLogger.Level.WARN,
-                    InternalLogger.Target.USER,
-                    { RUM_DEBUG_RUM_NOT_ENABLED_WARNING }
-                )
+                sdkCore.internalLogger.logToUser(InternalLogger.Level.WARN) { RUM_DEBUG_RUM_NOT_ENABLED_WARNING }
                 return
             }
 
@@ -232,16 +228,12 @@ internal class DatadogRumMonitor(
             "TRACE" -> RumResourceMethod.TRACE
             "OPTIONS" -> RumResourceMethod.OPTIONS
             else -> {
-                sdkCore.internalLogger.log(
-                    InternalLogger.Level.WARN,
-                    InternalLogger.Target.USER,
-                    {
-                        "Unsupported HTTP method %s reported, using GET instead".format(
-                            Locale.US,
-                            method
-                        )
-                    }
-                )
+                sdkCore.internalLogger.logToUser(InternalLogger.Level.WARN) {
+                    "Unsupported HTTP method %s reported, using GET instead".format(
+                        Locale.US,
+                        method
+                    )
+                }
                 RumResourceMethod.GET
             }
         }
@@ -681,6 +673,9 @@ internal class DatadogRumMonitor(
                 eventTime = getEventTime(attributes)
             )
         )
+        sdkCore.internalLogger.logToUser(InternalLogger.Level.DEBUG) {
+            "Feature Operation `$name` (operationKey `$operationKey`) was started."
+        }
     }
 
     @ExperimentalRumApi
@@ -694,6 +689,9 @@ internal class DatadogRumMonitor(
                 eventTime = getEventTime(attributes)
             )
         )
+        sdkCore.internalLogger.logToUser(InternalLogger.Level.DEBUG) {
+            "Feature Operation `$name` (operationKey `$operationKey`) was successfully ended."
+        }
     }
 
     @ExperimentalRumApi
@@ -712,7 +710,12 @@ internal class DatadogRumMonitor(
                 eventTime = getEventTime(attributes)
             )
         )
+        sdkCore.internalLogger.logToUser(InternalLogger.Level.DEBUG) {
+            "Feature Operation `$name` (operationKey `$operationKey`) was unsuccessfully ended" +
+                " with the following failure reason: $failureReason."
+        }
     }
+
     // endregion
 
     // region Internal
@@ -844,5 +847,14 @@ internal class DatadogRumMonitor(
 
         internal const val RUM_DEBUG_RUM_NOT_ENABLED_WARNING =
             "Cannot switch RUM debugging, because RUM feature is not enabled."
+
+        private fun InternalLogger.logToUser(
+            level: InternalLogger.Level,
+            messageProvider: () -> String
+        ) = log(
+            level = level,
+            target = InternalLogger.Target.USER,
+            messageBuilder = messageProvider
+        )
     }
 }
