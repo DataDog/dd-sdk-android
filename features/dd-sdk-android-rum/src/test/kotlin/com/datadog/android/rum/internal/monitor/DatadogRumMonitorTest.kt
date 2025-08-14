@@ -2377,7 +2377,7 @@ internal class DatadogRumMonitorTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.DEBUG,
             InternalLogger.Target.USER,
-            "Feature Operation `$name` (operationKey `$operationKey`) was started."
+            "Feature Operation `$name` (operationKey `$operationKey`) started."
         )
     }
 
@@ -2401,7 +2401,7 @@ internal class DatadogRumMonitorTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.DEBUG,
             InternalLogger.Target.USER,
-            "Feature Operation `$name` (operationKey `$operationKey`) was successfully ended."
+            "Feature Operation `$name` (operationKey `$operationKey`) successfully ended."
         )
     }
 
@@ -2426,7 +2426,7 @@ internal class DatadogRumMonitorTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.DEBUG,
             InternalLogger.Target.USER,
-            "Feature Operation `$name` (operationKey `$operationKey`) was unsuccessfully " +
+            "Feature Operation `$name` (operationKey `$operationKey`) unsuccessfully " +
                 "ended with the following failure reason: $failureReason."
         )
     }

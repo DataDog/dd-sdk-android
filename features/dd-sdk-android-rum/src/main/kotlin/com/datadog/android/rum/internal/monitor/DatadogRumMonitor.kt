@@ -674,7 +674,7 @@ internal class DatadogRumMonitor(
             )
         )
         sdkCore.internalLogger.logToUser(InternalLogger.Level.DEBUG) {
-            "Feature Operation `$name` (operationKey `$operationKey`) was started."
+            "Feature Operation `$name` (operationKey `$operationKey`) started."
         }
     }
 
@@ -690,7 +690,7 @@ internal class DatadogRumMonitor(
             )
         )
         sdkCore.internalLogger.logToUser(InternalLogger.Level.DEBUG) {
-            "Feature Operation `$name` (operationKey `$operationKey`) was successfully ended."
+            "Feature Operation `$name` (operationKey `$operationKey`) successfully ended."
         }
     }
 
@@ -711,7 +711,7 @@ internal class DatadogRumMonitor(
             )
         )
         sdkCore.internalLogger.logToUser(InternalLogger.Level.DEBUG) {
-            "Feature Operation `$name` (operationKey `$operationKey`) was unsuccessfully ended" +
+            "Feature Operation `$name` (operationKey `$operationKey`) unsuccessfully ended" +
                 " with the following failure reason: $failureReason."
         }
     }
