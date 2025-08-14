@@ -71,9 +71,17 @@
     <string name="button_high_cpu_usage">High CPU usage</string>
     <string name="button_high_memory_usage">High RAM usage</string>
     <string name="button_stress_test_events">Stress Test Events</string>
+    <string name="button_fo_start">Start</string>
+    <string name="button_fo_stop_successfully">Success</string>
+    <string name="button_fo_stop_unsuccessfully">Fail</string>
+    <string name="divider_feature_operations">Feature Operations</string>
+    <string name="divider_performance_degradation">Performance degradation</string>
+    <string name="text_feature_operation_name">Test</string>
+    <string name="text_feature_operation_name_hint">Operation name</string>
+    <string name="text_feature_operation_key_hint">Operation key</string>
+
     <string name="group_image_loader">Image Loader</string>
     <string name="group_data_source">Data Source</string>
-    <string name="divider_performance_degradation">Performance degradation</string>
 
     <string name="choice_coil">Coil</string>
     <string name="choice_fresco">Fresco</string>
