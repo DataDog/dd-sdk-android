@@ -26,7 +26,7 @@ import com.datadog.android.rum.internal.domain.InfoProvider
 import java.util.concurrent.atomic.AtomicLong
 
 @Suppress("TooManyFunctions")
-internal class DatadogAccessibilityReader(
+internal class DefaultAccessibilityReader(
     private val internalLogger: InternalLogger,
     private val applicationContext: Context,
     private val resources: Resources = applicationContext.resources,
@@ -37,7 +37,7 @@ internal class DatadogAccessibilityReader(
     private val secureWrapper: SecureWrapper = SecureWrapper(),
     private val globalWrapper: GlobalWrapper = GlobalWrapper(),
     private val handler: Handler = Handler(Looper.getMainLooper())
-) : InfoProvider, ComponentCallbacks {
+) : InfoProvider<AccessibilityInfo>, ComponentCallbacks {
 
     private val displayInversionListener = object : ContentObserver(handler) {
         override fun onChange(selfChange: Boolean, uri: Uri?) {
@@ -66,7 +66,7 @@ internal class DatadogAccessibilityReader(
     }
 
     @Volatile
-    private var currentState = Accessibility()
+    private var currentState = AccessibilityInfo()
 
     private var lastPollTime: AtomicLong = AtomicLong(0)
 
@@ -96,7 +96,7 @@ internal class DatadogAccessibilityReader(
     }
 
     @Synchronized
-    override fun getState(): Map<String, Any> {
+    override fun getState(): AccessibilityInfo {
         val currentTime = System.currentTimeMillis()
         val shouldPoll = currentTime - lastPollTime.get() >= POLL_THRESHOLD
         if (shouldPoll) {
@@ -104,16 +104,16 @@ internal class DatadogAccessibilityReader(
             pollForAttributesWithoutListeners()
         }
 
-        return currentState.toMap()
+        return currentState
     }
 
     @Synchronized
-    private fun updateState(updater: (Accessibility) -> Accessibility) {
+    private fun updateState(updater: (AccessibilityInfo) -> AccessibilityInfo) {
         currentState = updater(currentState)
     }
 
     private fun buildInitialState() {
-        currentState = Accessibility(
+        currentState = AccessibilityInfo(
             textSize = getTextSize(),
             isScreenReaderEnabled = isScreenReaderEnabled(accessibilityManager),
             isColorInversionEnabled = isDisplayInversionEnabled(),

@@ -84,8 +84,8 @@ internal open class RumViewScope(
     private val viewEndedMetricDispatcher: ViewMetricDispatcher,
     private val rumSessionTypeOverride: RumSessionType?,
     private val accessibilitySnapshotManager: AccessibilitySnapshotManager,
-    private val batteryInfoProvider: InfoProvider,
-    private val displayInfoProvider: InfoProvider
+    private val batteryInfoProvider: InfoProvider<BatteryInfo>,
+    private val displayInfoProvider: InfoProvider<DisplayInfo>
 ) : RumScope {
 
     internal val url = key.url.replace('.', '/')
@@ -502,8 +502,8 @@ internal open class RumViewScope(
         val eventFeatureFlags = featureFlags.toMutableMap()
         val eventType = if (isFatal) EventType.CRASH else EventType.DEFAULT
 
-        val batteryInfo = BatteryInfo.fromMap(batteryInfoProvider.getState())
-        val displayInfo = DisplayInfo.fromMap(displayInfoProvider.getState())
+        val batteryInfo = batteryInfoProvider.getState()
+        val displayInfo = displayInfoProvider.getState()
 
         sdkCore.newRumEventWriteOperation(writer, eventType) { datadogContext ->
 
@@ -1008,8 +1008,8 @@ internal open class RumViewScope(
             rtlEnabled = accessibilityState.isRtlEnabled
         )
 
-        val batteryInfo = BatteryInfo.fromMap(batteryInfoProvider.getState())
-        val displayInfo = DisplayInfo.fromMap(displayInfoProvider.getState())
+        val batteryInfo = batteryInfoProvider.getState()
+        val displayInfo = displayInfoProvider.getState()
 
         val performance = (internalAttributes[RumAttributes.FLUTTER_FIRST_BUILD_COMPLETE] as? Number)?.let {
             ViewEvent.Performance(
@@ -1577,8 +1577,8 @@ internal open class RumViewScope(
             slowFramesListener: SlowFramesListener?,
             rumSessionTypeOverride: RumSessionType?,
             accessibilitySnapshotManager: AccessibilitySnapshotManager,
-            batteryInfoProvider: InfoProvider,
-            displayInfoProvider: InfoProvider
+            batteryInfoProvider: InfoProvider<BatteryInfo>,
+            displayInfoProvider: InfoProvider<DisplayInfo>
         ): RumViewScope {
             val networkSettledMetricResolver = NetworkSettledMetricResolver(
                 networkSettledResourceIdentifier,

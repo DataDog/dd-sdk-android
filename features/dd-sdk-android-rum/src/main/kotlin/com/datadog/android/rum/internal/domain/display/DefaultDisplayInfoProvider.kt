@@ -26,7 +26,7 @@ internal class DefaultDisplayInfoProvider(
     ),
     private val contentResolver: ContentResolver = applicationContext.contentResolver,
     private val handler: Handler = Handler(Looper.getMainLooper())
-) : InfoProvider {
+) : InfoProvider<DisplayInfo> {
 
     @Volatile
     private var currentState = DisplayInfo()
@@ -50,8 +50,8 @@ internal class DefaultDisplayInfoProvider(
         buildInitialState()
     }
 
-    override fun getState(): Map<String, Any> {
-        return currentState.toMap()
+    override fun getState(): DisplayInfo {
+        return currentState
     }
 
     override fun cleanup() {

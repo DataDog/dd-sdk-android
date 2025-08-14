@@ -6,10 +6,9 @@
 
 package com.datadog.android.rum.internal.domain
 
-import com.datadog.tools.annotation.NoOpImplementation
+internal interface InfoData
 
-@NoOpImplementation
-internal interface InfoProvider {
-    fun getState(): Map<String, Any>
+internal interface InfoProvider<T : InfoData> {
+    fun getState(): T
     fun cleanup()
 }

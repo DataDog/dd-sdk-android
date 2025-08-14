@@ -159,10 +159,10 @@ internal class RumViewScopeTest {
     lateinit var mockAccessibilitySnapshotManager: AccessibilitySnapshotManager
 
     @Mock
-    lateinit var mockBatteryInfoProvider: InfoProvider
+    lateinit var mockBatteryInfoProvider: InfoProvider<BatteryInfo>
 
     @Mock
-    lateinit var mockDisplayInfoProvider: InfoProvider
+    lateinit var mockDisplayInfoProvider: InfoProvider<DisplayInfo>
 
     @Mock
     lateinit var mockMemoryVitalMonitor: VitalMonitor
@@ -374,10 +374,10 @@ internal class RumViewScopeTest {
         whenever(mockBatteryInfoProvider.getState()) doReturn BatteryInfo(
             batteryLevel = fakeBatteryLevel,
             lowPowerMode = fakeLowPowerMode
-        ).toMap()
+        )
         whenever(mockDisplayInfoProvider.getState()) doReturn DisplayInfo(
             screenBrightness = fakeBrightness
-        ).toMap()
+        )
 
         testedScope = newRumViewScope(trackFrustrations = true)
         mockSessionReplayContext(testedScope)

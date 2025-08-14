@@ -9,28 +9,71 @@ package com.datadog.android.rum.internal.domain.accessibility
 import com.datadog.android.rum.internal.domain.InfoProvider
 
 internal class DefaultAccessibilitySnapshotManager(
-    private val accessibilityReader: InfoProvider
+    private val accessibilityReader: InfoProvider<AccessibilityInfo>
 ) : AccessibilitySnapshotManager {
-    private val lastSnapshot = mutableMapOf<String, Any>()
+    @Volatile
+    private var lastSnapshot = AccessibilityInfo()
 
     @Synchronized
-    override fun latestSnapshot(): Accessibility {
-        val newAccessibilityState = accessibilityReader.getState()
-        val newSnapshot = mutableMapOf<String, Any>()
+    override fun latestSnapshot(): AccessibilityInfo {
+        val newAccessibilitySnapshot = accessibilityReader.getState()
 
-        // remove the ones we saw already
-        for (key in newAccessibilityState.keys) {
-            val newValue = newAccessibilityState[key]
-                ?: continue
+        // Create delta by comparing new snapshot to last snapshot
+        // Only include properties that have changed (null for unchanged properties)
+        val deltaSnapshot = AccessibilityInfo(
+            textSize =
+            if (newAccessibilitySnapshot.textSize != lastSnapshot.textSize) {
+                newAccessibilitySnapshot.textSize
+            } else {
+                null
+            },
 
-            val oldValue = lastSnapshot[key]
+            isScreenReaderEnabled =
+            if (newAccessibilitySnapshot.isScreenReaderEnabled != lastSnapshot.isScreenReaderEnabled) {
+                newAccessibilitySnapshot.isScreenReaderEnabled
+            } else {
+                null
+            },
 
-            if (newValue != oldValue) {
-                newSnapshot[key] = newValue
-                lastSnapshot[key] = newValue
+            isColorInversionEnabled =
+            if (newAccessibilitySnapshot.isColorInversionEnabled != lastSnapshot.isColorInversionEnabled) {
+                newAccessibilitySnapshot.isColorInversionEnabled
+            } else {
+                null
+            },
+
+            isClosedCaptioningEnabled =
+            if (newAccessibilitySnapshot.isClosedCaptioningEnabled != lastSnapshot.isClosedCaptioningEnabled) {
+                newAccessibilitySnapshot.isClosedCaptioningEnabled
+            } else {
+                null
+            },
+
+            isReducedAnimationsEnabled =
+            if (newAccessibilitySnapshot.isReducedAnimationsEnabled != lastSnapshot.isReducedAnimationsEnabled) {
+                newAccessibilitySnapshot.isReducedAnimationsEnabled
+            } else {
+                null
+            },
+
+            isScreenPinningEnabled =
+            if (newAccessibilitySnapshot.isScreenPinningEnabled != lastSnapshot.isScreenPinningEnabled) {
+                newAccessibilitySnapshot.isScreenPinningEnabled
+            } else {
+                null
+            },
+
+            isRtlEnabled =
+            if (newAccessibilitySnapshot.isRtlEnabled != lastSnapshot.isRtlEnabled) {
+                newAccessibilitySnapshot.isRtlEnabled
+            } else {
+                null
             }
-        }
+        )
 
-        return Accessibility.fromMap(newSnapshot)
+        // Update last snapshot for future comparisons
+        lastSnapshot = newAccessibilitySnapshot
+
+        return deltaSnapshot
     }
 }

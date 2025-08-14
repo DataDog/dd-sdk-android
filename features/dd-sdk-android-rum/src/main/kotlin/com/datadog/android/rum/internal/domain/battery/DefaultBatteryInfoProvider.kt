@@ -17,9 +17,9 @@ import android.os.BatteryManager.BATTERY_PROPERTY_CAPACITY
 import android.os.Build
 import android.os.PowerManager
 import android.os.PowerManager.ACTION_POWER_SAVE_MODE_CHANGED
+import androidx.annotation.FloatRange
 import com.datadog.android.rum.internal.domain.InfoProvider
 import java.util.concurrent.atomic.AtomicLong
-import kotlin.math.roundToInt
 
 internal class DefaultBatteryInfoProvider(
     private val applicationContext: Context,
@@ -30,10 +30,14 @@ internal class DefaultBatteryInfoProvider(
     ) as? BatteryManager,
     private val batteryLevelPollInterval: Int = BATTERY_POLL_INTERVAL_MS,
     private val systemClockWrapper: SystemClockWrapper = SystemClockWrapper() // this wrapper is needed for unit tests
-) : InfoProvider {
+) : InfoProvider<BatteryInfo> {
 
     @Volatile
-    private var currentState = BatteryInfo()
+    @FloatRange(0.0, 1.0)
+    var batteryLevel: Float? = null
+
+    @Volatile
+    var lowPowerMode: Boolean? = null
 
     private var lastTimeBatteryLevelChecked = AtomicLong(systemClockWrapper.elapsedRealTime())
 
@@ -41,9 +45,7 @@ internal class DefaultBatteryInfoProvider(
         override fun onReceive(context: Context, intent: Intent) {
             val isPowerSaveMode = powerManager?.isPowerSaveMode
             isPowerSaveMode?.let {
-                currentState = currentState.copy(
-                    lowPowerMode = isPowerSaveMode
-                )
+                lowPowerMode = it
             }
         }
     }
@@ -54,7 +56,7 @@ internal class DefaultBatteryInfoProvider(
     }
 
     @Synchronized
-    override fun getState(): Map<String, Any> {
+    override fun getState(): BatteryInfo {
         // while we could register a receiver for battery level,
         // it fires far too often (multiple times per second)
         // so it seems better to only poll battery charge state once in a period of time
@@ -62,14 +64,16 @@ internal class DefaultBatteryInfoProvider(
         if (now - batteryLevelPollInterval >= lastTimeBatteryLevelChecked.get()) {
             lastTimeBatteryLevelChecked.set(now)
 
-            getBatteryLevel()?.let {
-                currentState = currentState.copy(
-                    batteryLevel = it
-                )
+            resolveBatteryLevel()?.let {
+                batteryLevel = it
             }
         }
 
-        return currentState.toMap()
+        // construct current state from the latest values
+        return BatteryInfo(
+            batteryLevel = batteryLevel,
+            lowPowerMode = lowPowerMode
+        )
     }
 
     override fun cleanup() {
@@ -85,10 +89,8 @@ internal class DefaultBatteryInfoProvider(
     }
 
     private fun buildInitialState() {
-        currentState = BatteryInfo(
-            lowPowerMode = getLowPowerMode(),
-            batteryLevel = getBatteryLevel()
-        )
+        lowPowerMode = resolveLowPowerMode()
+        batteryLevel = resolveBatteryLevel()
     }
 
     private fun registerReceivers() {
@@ -96,11 +98,11 @@ internal class DefaultBatteryInfoProvider(
         applicationContext.registerReceiver(powerSaveModeReceiver, powerSaveFilter)
     }
 
-    private fun getLowPowerMode(): Boolean? {
+    private fun resolveLowPowerMode(): Boolean? {
         return powerManager?.isPowerSaveMode
     }
 
-    private fun getBatteryLevel(): Float? {
+    private fun resolveBatteryLevel(): Float? {
         val batteryLevel = batteryManager?.getIntProperty(BATTERY_PROPERTY_CAPACITY)
 
         return batteryLevel?.let {
@@ -118,12 +120,7 @@ internal class DefaultBatteryInfoProvider(
     }
 
     private fun normalizeBatteryLevel(batteryLevel: Int): Float {
-        val normalizedLevel = batteryLevel / FULL_BATTERY_PCT
-        return roundToOneDecimalPlace(normalizedLevel)
-    }
-
-    private fun roundToOneDecimalPlace(input: Float): Float {
-        return (input * DECIMAL_SCALING).roundToInt() / DECIMAL_SCALING
+        return batteryLevel / FULL_BATTERY_PCT
     }
 
     private companion object {

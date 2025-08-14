@@ -67,7 +67,7 @@ internal class DefaultDisplayInfoProviderTest {
             createDisplayInfoProvider()
 
             // When
-            val result = DisplayInfo.fromMap(testedProvider.getState()).screenBrightness
+            val result = testedProvider.getState().screenBrightness
 
             // Then
             assertThat(result)
@@ -85,7 +85,7 @@ internal class DefaultDisplayInfoProviderTest {
         createDisplayInfoProvider()
 
         // When
-        val result = DisplayInfo.fromMap(testedProvider.getState()).screenBrightness
+        val result = testedProvider.getState().screenBrightness
 
         // Then
         assertThat(result).isEqualTo(0.7f)
@@ -102,7 +102,7 @@ internal class DefaultDisplayInfoProviderTest {
 
         // When - cleanup (no re-initialization happens)
         testedProvider.cleanup()
-        val displayInfo = DisplayInfo.fromMap(testedProvider.getState())
+        val displayInfo = testedProvider.getState()
 
         // Then - should retain the initial state from constructor
         assertThat(displayInfo.screenBrightness).isEqualTo(0.5f)
@@ -138,7 +138,7 @@ internal class DefaultDisplayInfoProviderTest {
         createDisplayInfoProvider()
 
         // When
-        val displayInfo = DisplayInfo.fromMap(testedProvider.getState())
+        val displayInfo = testedProvider.getState()
 
         // Then - should handle gracefully with null brightness
         assertThat(displayInfo.screenBrightness).isNull()

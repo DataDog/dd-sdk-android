@@ -30,10 +30,10 @@ import com.datadog.android.rum.configuration.VitalsUpdateFrequency
 import com.datadog.android.rum.internal.RumFeature.Companion.SLOW_FRAMES_MONITORING_DISABLED_MESSAGE
 import com.datadog.android.rum.internal.RumFeature.Companion.SLOW_FRAMES_MONITORING_ENABLED_MESSAGE
 import com.datadog.android.rum.internal.domain.InfoProvider
-import com.datadog.android.rum.internal.domain.NoOpInfoProvider
 import com.datadog.android.rum.internal.domain.RumDataWriter
-import com.datadog.android.rum.internal.domain.accessibility.DatadogAccessibilityReader
+import com.datadog.android.rum.internal.domain.accessibility.DefaultAccessibilityReader
 import com.datadog.android.rum.internal.domain.accessibility.DefaultAccessibilitySnapshotManager
+import com.datadog.android.rum.internal.domain.accessibility.NoOpAccessibilityReader
 import com.datadog.android.rum.internal.domain.accessibility.NoOpAccessibilitySnapshotManager
 import com.datadog.android.rum.internal.domain.battery.DefaultBatteryInfoProvider
 import com.datadog.android.rum.internal.domain.display.DefaultDisplayInfoProvider
@@ -150,7 +150,6 @@ internal class RumFeatureTest {
         whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
         whenever(mockSdkCore.createScheduledExecutorService(any())) doReturn mockScheduledExecutorService
 
-        // Setup complete mocking for DatadogAccessibilityReader (when needed)
         val mockContentResolver = mock<ContentResolver>()
         whenever(appContext.mockInstance.contentResolver) doReturn mockContentResolver
         doNothing().whenever(appContext.mockInstance).registerComponentCallbacks(any())
@@ -1416,7 +1415,7 @@ internal class RumFeatureTest {
         testedFeature.onInitialize(appContext.mockInstance)
 
         // Then
-        assertThat(testedFeature.accessibilityReader).isInstanceOf(NoOpInfoProvider::class.java)
+        assertThat(testedFeature.accessibilityReader).isInstanceOf(NoOpAccessibilityReader::class.java)
         assertThat(
             testedFeature.accessibilitySnapshotManager
         ).isInstanceOf(NoOpAccessibilitySnapshotManager::class.java)
@@ -1439,7 +1438,7 @@ internal class RumFeatureTest {
         testedFeature.onInitialize(appContext.mockInstance)
 
         // Then
-        assertThat(testedFeature.accessibilityReader).isInstanceOf(DatadogAccessibilityReader::class.java)
+        assertThat(testedFeature.accessibilityReader).isInstanceOf(DefaultAccessibilityReader::class.java)
         assertThat(
             testedFeature.accessibilitySnapshotManager
         ).isInstanceOf(DefaultAccessibilitySnapshotManager::class.java)
@@ -1464,7 +1463,7 @@ internal class RumFeatureTest {
         testedFeature.onStop()
 
         // Then
-        assertThat(testedFeature.accessibilityReader).isInstanceOf(NoOpInfoProvider::class.java)
+        assertThat(testedFeature.accessibilityReader).isInstanceOf(NoOpAccessibilityReader::class.java)
         assertThat(
             testedFeature.accessibilitySnapshotManager
         ).isInstanceOf(NoOpAccessibilitySnapshotManager::class.java)

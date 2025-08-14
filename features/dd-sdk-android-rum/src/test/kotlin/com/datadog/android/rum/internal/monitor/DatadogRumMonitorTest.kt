@@ -34,6 +34,8 @@ import com.datadog.android.rum.internal.debug.RumDebugListener
 import com.datadog.android.rum.internal.domain.InfoProvider
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.accessibility.AccessibilitySnapshotManager
+import com.datadog.android.rum.internal.domain.battery.BatteryInfo
+import com.datadog.android.rum.internal.domain.display.DisplayInfo
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
 import com.datadog.android.rum.internal.domain.scope.RumActionScope
 import com.datadog.android.rum.internal.domain.scope.RumApplicationScope
@@ -126,10 +128,10 @@ internal class DatadogRumMonitorTest {
     lateinit var mockAccessibilitySnapshotManager: AccessibilitySnapshotManager
 
     @Mock
-    lateinit var mockBatteryInfoProvider: InfoProvider
+    lateinit var mockBatteryInfoProvider: InfoProvider<BatteryInfo>
 
     @Mock
-    lateinit var mockDisplayInfoProvider: InfoProvider
+    lateinit var mockDisplayInfoProvider: InfoProvider<DisplayInfo>
 
     @Mock
     lateinit var mockResolver: FirstPartyHostHeaderTypeResolver

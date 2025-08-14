@@ -6,6 +6,8 @@
 
 package com.datadog.android.rum.internal.domain.display
 
+import com.datadog.android.rum.internal.domain.InfoData
+
 /**
  * Provides information about the display state.
  *
@@ -14,18 +16,4 @@ package com.datadog.android.rum.internal.domain.display
  */
 internal data class DisplayInfo(
     val screenBrightness: Number? = null
-) {
-    fun toMap(): Map<String, Any> = buildMap {
-        screenBrightness?.let { put(SCREEN_BRIGHTNESS_KEY, it) }
-    }
-
-    internal companion object {
-        const val SCREEN_BRIGHTNESS_KEY = "screen_brightness"
-
-        fun fromMap(map: Map<String, Any>): DisplayInfo {
-            return DisplayInfo(
-                screenBrightness = map[SCREEN_BRIGHTNESS_KEY] as? Number
-            )
-        }
-    }
-}
+) : InfoData

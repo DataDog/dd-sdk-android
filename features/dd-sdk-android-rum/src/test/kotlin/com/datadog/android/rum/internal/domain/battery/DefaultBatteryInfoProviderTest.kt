@@ -36,7 +36,6 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
-import kotlin.math.roundToInt
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -89,9 +88,8 @@ internal class DefaultBatteryInfoProviderTest {
         initializeBatteryManager()
 
         // When
-        val batteryInfo = BatteryInfo.fromMap(testedProvider.getState())
-        val batteryPct = fakeBatteryLevel / 100f
-        val expectedBatteryPct = (batteryPct * 10f).roundToInt() / 10f
+        val batteryInfo = testedProvider.getState()
+        val expectedBatteryPct = fakeBatteryLevel / 100f
 
         // Then
         assertThat(batteryInfo.lowPowerMode).isEqualTo(fakeLowPowerMode)
@@ -104,7 +102,7 @@ internal class DefaultBatteryInfoProviderTest {
         initializeBatteryManager(null, null)
 
         // When
-        val batteryInfo = BatteryInfo.fromMap(testedProvider.getState())
+        val batteryInfo = testedProvider.getState()
 
         // Then
         assertThat(batteryInfo).isNotNull
@@ -145,7 +143,7 @@ internal class DefaultBatteryInfoProviderTest {
     fun `M retain initial state W cleanup() then getState() { no re-initialization }`() {
         // When - cleanup (no re-initialization happens)
         testedProvider.cleanup()
-        val batteryInfo = BatteryInfo.fromMap(testedProvider.getState())
+        val batteryInfo = testedProvider.getState()
 
         // Then - should retain the initial state from constructor
         assertThat(batteryInfo.lowPowerMode).isEqualTo(false)
@@ -162,15 +160,15 @@ internal class DefaultBatteryInfoProviderTest {
         whenever(mockBatteryManager.getIntProperty(BATTERY_PROPERTY_CAPACITY)) doReturn 75
 
         // nothing changes because we are within polling interval
-        assertThat(BatteryInfo.fromMap(testedProvider.getState()).batteryLevel).isEqualTo(0.5f)
+        assertThat(testedProvider.getState().batteryLevel).isEqualTo(0.5f)
         whenever(mockSystemClockWrapper.elapsedRealTime()) doReturn testSuiteStartTime + shortPollingInterval / 2
-        assertThat(BatteryInfo.fromMap(testedProvider.getState()).batteryLevel).isEqualTo(0.5f)
+        assertThat(testedProvider.getState().batteryLevel).isEqualTo(0.5f)
 
         // Then
         // after polling interval level should change
         whenever(mockSystemClockWrapper.elapsedRealTime()) doReturn testSuiteStartTime + shortPollingInterval
-        val batteryInfo = BatteryInfo.fromMap(testedProvider.getState())
-        assertThat(batteryInfo.batteryLevel).isEqualTo(0.8f) // Now 75
+        val batteryInfo = testedProvider.getState()
+        assertThat(batteryInfo.batteryLevel).isEqualTo(0.75f)
     }
 
     // endregion
@@ -186,7 +184,7 @@ internal class DefaultBatteryInfoProviderTest {
         initializeBatteryManager()
 
         // When
-        val batteryInfo = BatteryInfo.fromMap(testedProvider.getState())
+        val batteryInfo = testedProvider.getState()
 
         // Then
         assertThat(batteryInfo.batteryLevel).isNull()
@@ -202,7 +200,7 @@ internal class DefaultBatteryInfoProviderTest {
         initializeBatteryManager()
 
         // When
-        val batteryInfo = BatteryInfo.fromMap(testedProvider.getState())
+        val batteryInfo = testedProvider.getState()
 
         // Then
         assertThat(batteryInfo.batteryLevel).isNull()
