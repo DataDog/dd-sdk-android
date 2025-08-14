@@ -9,12 +9,15 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Button
 import android.widget.CheckBox
 import android.widget.CompoundButton
 import android.widget.ProgressBar
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProviders
+import com.datadog.android.rum.featureoperations.FailureReason
 import com.datadog.android.sample.R
+import com.google.android.material.textfield.TextInputEditText
 
 internal class VitalsFragment :
     Fragment(),
@@ -24,6 +27,8 @@ internal class VitalsFragment :
     private lateinit var viewModel: VitalsViewModel
     private lateinit var progressView: ProgressBar
     private lateinit var badView: BadView
+    private lateinit var operationName: TextInputEditText
+    private lateinit var operationKey: TextInputEditText
 
     // region Fragment
 
@@ -40,8 +45,15 @@ internal class VitalsFragment :
         rootView.findViewById<CheckBox>(R.id.vital_slow_frame_rate).setOnCheckedChangeListener(this)
         rootView.findViewById<CheckBox>(R.id.vital_memory).setOnCheckedChangeListener(this)
         rootView.findViewById<CheckBox>(R.id.vital_stress_test).setOnCheckedChangeListener(this)
+        rootView.findViewById<Button>(R.id.fo_start).setOnClickListener(this)
+        rootView.findViewById<Button>(R.id.fo_stop_successfully).setOnClickListener(this)
+        rootView.findViewById<Button>(R.id.fo_stop_unsuccessfully).setOnClickListener(this)
+
         badView = rootView.findViewById(R.id.vital_slow_view)
         progressView = rootView.findViewById(R.id.progress)
+
+        operationName = rootView.findViewById(R.id.fo_name_edit_text)
+        operationKey = rootView.findViewById(R.id.fo_operation_key_edit_text)
         return rootView
     }
 
@@ -65,9 +77,25 @@ internal class VitalsFragment :
     // region View.OnClickListener
 
     override fun onClick(v: View) {
+        val operationKey = operationKey.text.toString().ifEmpty { null }
         when (v.id) {
             R.id.vital_long_task -> viewModel.runLongTask()
             R.id.vital_frozen_frame -> viewModel.runFrozenFrame()
+            R.id.fo_start -> viewModel.startFeatureOperation(
+                operationName.text.toString(),
+                operationKey
+            )
+
+            R.id.fo_stop_successfully -> viewModel.stopFeatureOperation(
+                operationName.text.toString(),
+                operationKey
+            )
+
+            R.id.fo_stop_unsuccessfully -> viewModel.stopFeatureOperation(
+                operationName.text.toString(),
+                operationKey,
+                FailureReason.ERROR
+            )
         }
     }
 
