@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
+  ~ This product includes software developed at Datadog (https://www.datadoghq.com/).
+  ~ Copyright 2016-Present Datadog, Inc.
+  -->
+
+<resources>
+    <attr name="dividerViewStyle" format="reference"/>
+    <style name="DividerView">
+        <item name="dv_textOffset">24dp</item>
+        <item name="dv_lineOffset">4dp</item>
+        <item name="dv_textSize">14dp</item>
+    </style>
+</resources>

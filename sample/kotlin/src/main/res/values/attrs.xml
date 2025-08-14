@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
+  ~ This product includes software developed at Datadog (https://www.datadoghq.com/).
+  ~ Copyright 2016-Present Datadog, Inc.
+  -->
+
+<resources>
+    <declare-styleable name="DividerView">
+        <attr name="dv_text" format="string" />
+        <attr name="dv_color" format="color" />
+        <attr name="dv_textSize" format="dimension" />
+        <attr name="dv_lineOffset" format="dimension" />
+        <attr name="dv_textOffset" format="dimension" />
+        <attr name="dv_strokeWidth" format="dimension" />
+    </declare-styleable>
+</resources>
