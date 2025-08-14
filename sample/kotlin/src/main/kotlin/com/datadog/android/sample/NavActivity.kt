@@ -6,6 +6,7 @@
 
 package com.datadog.android.sample
 
+import android.annotation.SuppressLint
 import android.content.Intent
 import android.os.Bundle
 import android.view.Menu
@@ -51,6 +52,11 @@ class NavActivity : AppCompatActivity(), TrackingConsentChangeListener {
     override fun onRestart() {
         super.onRestart()
         Timber.d("onRestart")
+    }
+
+    @SuppressLint("GestureBackNavigation")
+    override fun onBackPressed() {
+        finish()
     }
 
     override fun onResume() {
