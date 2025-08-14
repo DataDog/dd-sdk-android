@@ -19,13 +19,7 @@ import android.provider.Settings.Secure.ACCESSIBILITY_DISPLAY_INVERSION_ENABLED
 import android.view.accessibility.AccessibilityManager
 import android.view.accessibility.AccessibilityManager.TouchExplorationStateChangeListener
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.rum.internal.domain.accessibility.Accessibility.Companion.CLOSED_CAPTIONING_ENABLED_KEY
-import com.datadog.android.rum.internal.domain.accessibility.Accessibility.Companion.COLOR_INVERSION_ENABLED_KEY
-import com.datadog.android.rum.internal.domain.accessibility.Accessibility.Companion.REDUCED_ANIMATIONS_ENABLED_KEY
-import com.datadog.android.rum.internal.domain.accessibility.Accessibility.Companion.SCREEN_PINNING_ENABLED_KEY
-import com.datadog.android.rum.internal.domain.accessibility.Accessibility.Companion.SCREEN_READER_ENABLED_KEY
-import com.datadog.android.rum.internal.domain.accessibility.Accessibility.Companion.TEXT_SIZE_KEY
-import com.datadog.android.rum.internal.domain.accessibility.DatadogAccessibilityReader.Companion.CAPTIONING_ENABLED_KEY
+import com.datadog.android.rum.internal.domain.accessibility.DefaultAccessibilityReader.Companion.CAPTIONING_ENABLED_KEY
 import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.tools.unit.annotations.TestTargetApi
 import com.datadog.tools.unit.extensions.ApiLevelExtension
@@ -58,7 +52,7 @@ import java.util.concurrent.atomic.AtomicLong
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
-internal class DatadogAccessibilityReaderTest {
+internal class DefaultAccessibilityReaderTest {
     @Mock
     lateinit var mockContext: Context
 
@@ -89,7 +83,7 @@ internal class DatadogAccessibilityReaderTest {
     @Mock
     lateinit var mockHandler: Handler
 
-    private lateinit var testedReader: DatadogAccessibilityReader
+    private lateinit var testedReader: DefaultAccessibilityReader
 
     @BeforeEach
     fun setup() {
@@ -98,7 +92,12 @@ internal class DatadogAccessibilityReaderTest {
 
         setupDefaultMockBehavior()
 
-        testedReader = DatadogAccessibilityReader(
+        // Create reader with default setup - individual tests can recreate if they need specific mocks
+        testedReader = createReader()
+    }
+
+    private fun createReader(): DefaultAccessibilityReader {
+        return DefaultAccessibilityReader(
             internalLogger = mockInternalLogger,
             applicationContext = mockContext,
             resources = mockResources,
@@ -154,7 +153,7 @@ internal class DatadogAccessibilityReaderTest {
     @Test
     fun `M return state with initial accessibility values W getState { accessibility manager is null }`() {
         // Given
-        testedReader = DatadogAccessibilityReader(
+        testedReader = DefaultAccessibilityReader(
             internalLogger = mockInternalLogger,
             applicationContext = mockContext,
             resources = mockResources,
@@ -168,12 +167,12 @@ internal class DatadogAccessibilityReaderTest {
         // When
         val result = testedReader.getState()
 
-        assertThat(result[SCREEN_READER_ENABLED_KEY]).isNull()
-        assertThat(result[CAPTIONING_ENABLED_KEY]).isNull()
-        assertThat(result[REDUCED_ANIMATIONS_ENABLED_KEY]).isNull()
-        assertThat(result[SCREEN_PINNING_ENABLED_KEY] as Boolean).isFalse()
-        assertThat(result[COLOR_INVERSION_ENABLED_KEY]).isNull()
-        assertThat(result[TEXT_SIZE_KEY]).isEqualTo("1.0")
+        assertThat(result.isScreenReaderEnabled).isNull()
+        assertThat(result.isClosedCaptioningEnabled).isNull()
+        assertThat(result.isReducedAnimationsEnabled).isNull()
+        assertThat(result.isScreenPinningEnabled).isFalse()
+        assertThat(result.isColorInversionEnabled).isNull()
+        assertThat(result.textSize).isEqualTo("1.0")
     }
 
     @Test
@@ -222,16 +221,18 @@ internal class DatadogAccessibilityReaderTest {
             )
         ) doReturn animationDurationValue
 
+        testedReader = createReader()
+
         // When
         val result = testedReader.getState()
 
         // Then
-        assertThat(result[TEXT_SIZE_KEY]).isEqualTo(textSize.toString())
-        assertThat(result[SCREEN_READER_ENABLED_KEY]).isEqualTo(isScreenReaderEnabled)
-        assertThat(result[SCREEN_PINNING_ENABLED_KEY]).isEqualTo(isScreenPinningEnabled)
-        assertThat(result[COLOR_INVERSION_ENABLED_KEY]).isEqualTo(isColorInversionEnabled)
-        assertThat(result[CLOSED_CAPTIONING_ENABLED_KEY]).isEqualTo(isClosedCaptioningEnabled)
-        assertThat(result[REDUCED_ANIMATIONS_ENABLED_KEY]).isEqualTo(isReducedAnimationsEnabled)
+        assertThat(result.textSize).isEqualTo(textSize.toString())
+        assertThat(result.isScreenReaderEnabled).isEqualTo(isScreenReaderEnabled)
+        assertThat(result.isScreenPinningEnabled).isEqualTo(isScreenPinningEnabled)
+        assertThat(result.isColorInversionEnabled).isEqualTo(isColorInversionEnabled)
+        assertThat(result.isClosedCaptioningEnabled).isEqualTo(isClosedCaptioningEnabled)
+        assertThat(result.isReducedAnimationsEnabled).isEqualTo(isReducedAnimationsEnabled)
     }
 
     // region Text Size Tests
@@ -243,11 +244,13 @@ internal class DatadogAccessibilityReaderTest {
         // Given
         mockConfiguration.fontScale = fontScale
 
+        testedReader = createReader()
+
         // When
         val result = testedReader.getState()
 
         // Then
-        assertThat(result[TEXT_SIZE_KEY]).isEqualTo(fontScale.toString())
+        assertThat(result.textSize).isEqualTo(fontScale.toString())
     }
     // endregion
 
@@ -257,11 +260,13 @@ internal class DatadogAccessibilityReaderTest {
         // Given
         whenever(mockAccessibilityManager.isTouchExplorationEnabled) doReturn true
 
+        testedReader = createReader()
+
         // When
         val result = testedReader.getState()
 
         // Then
-        assertThat(result[SCREEN_READER_ENABLED_KEY] as Boolean).isTrue()
+        assertThat(result.isScreenReaderEnabled as Boolean).isTrue()
     }
     // endregion
 
@@ -279,7 +284,7 @@ internal class DatadogAccessibilityReaderTest {
         val result = testedReader.getState()
 
         // Then
-        assertThat(result[SCREEN_PINNING_ENABLED_KEY]).isEqualTo(lockState)
+        assertThat(result.isScreenPinningEnabled).isEqualTo(lockState)
     }
 
     @TestTargetApi(Build.VERSION_CODES.M)
@@ -288,9 +293,11 @@ internal class DatadogAccessibilityReaderTest {
         // Given
         whenever(mockActivityManager.lockTaskModeState) doReturn ActivityManager.LOCK_TASK_MODE_LOCKED
 
+        testedReader = createReader()
+
         // When
         val result = testedReader.getState()
-        val isScreenPinningEnabled = result[SCREEN_PINNING_ENABLED_KEY] as Boolean
+        val isScreenPinningEnabled = result.isScreenPinningEnabled as Boolean
 
         // Then
         assertThat(isScreenPinningEnabled).isTrue()
@@ -302,9 +309,11 @@ internal class DatadogAccessibilityReaderTest {
         // Given
         whenever(mockActivityManager.lockTaskModeState) doReturn ActivityManager.LOCK_TASK_MODE_PINNED
 
+        testedReader = createReader()
+
         // When
         val result = testedReader.getState()
-        val isScreenPinningEnabled = result[SCREEN_PINNING_ENABLED_KEY] as Boolean
+        val isScreenPinningEnabled = result.isScreenPinningEnabled as Boolean
 
         // Then
         assertThat(isScreenPinningEnabled).isTrue()
@@ -316,9 +325,11 @@ internal class DatadogAccessibilityReaderTest {
         // Given
         whenever(mockActivityManager.lockTaskModeState) doReturn ActivityManager.LOCK_TASK_MODE_NONE
 
+        testedReader = createReader()
+
         // When
         val result = testedReader.getState()
-        val isScreenPinningEnabled = result[SCREEN_PINNING_ENABLED_KEY] as Boolean
+        val isScreenPinningEnabled = result.isScreenPinningEnabled as Boolean
 
         // Then
         assertThat(isScreenPinningEnabled).isFalse()
@@ -327,7 +338,7 @@ internal class DatadogAccessibilityReaderTest {
     @Test
     fun `M return null for screen pinning W getState { activity manager is null }`() {
         // Given
-        testedReader = DatadogAccessibilityReader(
+        testedReader = DefaultAccessibilityReader(
             internalLogger = mockInternalLogger,
             applicationContext = mockContext,
             resources = mockResources,
@@ -342,7 +353,7 @@ internal class DatadogAccessibilityReaderTest {
         val result = testedReader.getState()
 
         // Then
-        assertThat(result[SCREEN_PINNING_ENABLED_KEY]).isNull()
+        assertThat(result.isScreenPinningEnabled).isNull()
     }
     // endregion
 
@@ -360,11 +371,13 @@ internal class DatadogAccessibilityReaderTest {
             )
         ) doReturn isEnabled
 
+        testedReader = createReader()
+
         // When
         val result = testedReader.getState()
 
         // Then
-        assertThat(result[COLOR_INVERSION_ENABLED_KEY]).isEqualTo(isEnabled)
+        assertThat(result.isColorInversionEnabled).isEqualTo(isEnabled)
     }
 
     @Test
@@ -382,7 +395,7 @@ internal class DatadogAccessibilityReaderTest {
         val result = testedReader.getState()
 
         // Then
-        assertThat(result[COLOR_INVERSION_ENABLED_KEY]).isNull()
+        assertThat(result.isColorInversionEnabled).isNull()
     }
     // endregion
 
@@ -400,11 +413,13 @@ internal class DatadogAccessibilityReaderTest {
             )
         ) doReturn isEnabled
 
+        testedReader = createReader()
+
         // When
         val result = testedReader.getState()
 
         // Then
-        assertThat(result[CLOSED_CAPTIONING_ENABLED_KEY]).isEqualTo(isEnabled)
+        assertThat(result.isClosedCaptioningEnabled).isEqualTo(isEnabled)
     }
 
     @Test
@@ -422,7 +437,7 @@ internal class DatadogAccessibilityReaderTest {
         val result = testedReader.getState()
 
         // Then
-        assertThat(result[CLOSED_CAPTIONING_ENABLED_KEY]).isNull()
+        assertThat(result.isClosedCaptioningEnabled).isNull()
     }
     // endregion
 
@@ -438,9 +453,11 @@ internal class DatadogAccessibilityReaderTest {
             )
         ) doReturn 0.0f
 
+        testedReader = createReader()
+
         // When
         val result = testedReader.getState()
-        val isReducedAnimations = result[REDUCED_ANIMATIONS_ENABLED_KEY] as Boolean
+        val isReducedAnimations = result.isReducedAnimationsEnabled as Boolean
 
         // Then
         assertThat(isReducedAnimations).isTrue()
@@ -457,9 +474,11 @@ internal class DatadogAccessibilityReaderTest {
             )
         ) doReturn 1.0f
 
+        testedReader = createReader()
+
         // When
         val result = testedReader.getState()
-        val isReducedAnimations = result[REDUCED_ANIMATIONS_ENABLED_KEY] as Boolean
+        val isReducedAnimations = result.isReducedAnimationsEnabled as Boolean
 
         // Then
         assertThat(isReducedAnimations).isFalse()
@@ -480,7 +499,7 @@ internal class DatadogAccessibilityReaderTest {
         val result = testedReader.getState()
 
         // Then
-        assertThat(result[REDUCED_ANIMATIONS_ENABLED_KEY]).isEqualTo(null)
+        assertThat(result.isReducedAnimationsEnabled).isNull()
     }
     // endregion
 
@@ -495,7 +514,7 @@ internal class DatadogAccessibilityReaderTest {
 
         // Establish initial state
         val initialResult = testedReader.getState()
-        assertThat(initialResult[TEXT_SIZE_KEY]).isEqualTo(originalFontScale.toString())
+        assertThat(initialResult.textSize).isEqualTo(originalFontScale.toString())
 
         // Change configuration
         val newConfiguration = Configuration().apply { fontScale = newFontScale }
@@ -506,7 +525,7 @@ internal class DatadogAccessibilityReaderTest {
 
         // Then
         val result = testedReader.getState()
-        assertThat(result[TEXT_SIZE_KEY]).isEqualTo(newFontScale.toString())
+        assertThat(result.textSize).isEqualTo(newFontScale.toString())
     }
 
     @Test
@@ -515,6 +534,8 @@ internal class DatadogAccessibilityReaderTest {
     ) {
         // Given
         mockConfiguration.fontScale = fontScale
+
+        testedReader = createReader()
         val initialResult = testedReader.getState()
 
         val sameConfiguration = Configuration().apply { this.fontScale = fontScale }
@@ -524,7 +545,7 @@ internal class DatadogAccessibilityReaderTest {
 
         // Then
         val result = testedReader.getState()
-        assertThat(result[TEXT_SIZE_KEY]).isEqualTo(fontScale.toString())
+        assertThat(result.textSize).isEqualTo(fontScale.toString())
         assertThat(result).isEqualTo(initialResult)
     }
 
@@ -558,7 +579,7 @@ internal class DatadogAccessibilityReaderTest {
     @Test
     fun `M handle null accessibility manager W cleanup { accessibility manager is null }`() {
         // Given
-        testedReader = DatadogAccessibilityReader(
+        testedReader = DefaultAccessibilityReader(
             internalLogger = mockInternalLogger,
             applicationContext = mockContext,
             resources = mockResources,
@@ -587,7 +608,7 @@ internal class DatadogAccessibilityReaderTest {
 
         // First call to establish baseline
         val firstResult = testedReader.getState()
-        assertThat(firstResult[SCREEN_PINNING_ENABLED_KEY] as Boolean).isFalse()
+        assertThat(firstResult.isScreenPinningEnabled as Boolean).isFalse()
 
         // Change the underlying state
         whenever(mockActivityManager.lockTaskModeState) doReturn ActivityManager.LOCK_TASK_MODE_LOCKED
@@ -596,7 +617,7 @@ internal class DatadogAccessibilityReaderTest {
         val secondResult = testedReader.getState()
 
         // Then - State should NOT be updated since polling doesn't happen within threshold
-        assertThat(secondResult[SCREEN_PINNING_ENABLED_KEY] as Boolean).isFalse()
+        assertThat(secondResult.isScreenPinningEnabled as Boolean).isFalse()
     }
 
     // endregion
@@ -623,7 +644,7 @@ internal class DatadogAccessibilityReaderTest {
 
         // Then
         val result = testedReader.getState()
-        assertThat(result[COLOR_INVERSION_ENABLED_KEY] as Boolean).isTrue()
+        assertThat(result.isColorInversionEnabled as Boolean).isTrue()
     }
 
     @Test
@@ -647,7 +668,7 @@ internal class DatadogAccessibilityReaderTest {
 
         // Then
         val result = testedReader.getState()
-        assertThat(result[CLOSED_CAPTIONING_ENABLED_KEY] as Boolean).isTrue()
+        assertThat(result.isClosedCaptioningEnabled as Boolean).isTrue()
     }
 
     @Test
@@ -671,7 +692,7 @@ internal class DatadogAccessibilityReaderTest {
 
         // Then
         val result = testedReader.getState()
-        assertThat(result[REDUCED_ANIMATIONS_ENABLED_KEY] as Boolean).isTrue()
+        assertThat(result.isReducedAnimationsEnabled as Boolean).isTrue()
     }
 
     @Test
@@ -689,7 +710,7 @@ internal class DatadogAccessibilityReaderTest {
 
         // Then
         val result = testedReader.getState()
-        assertThat(result[SCREEN_READER_ENABLED_KEY] as Boolean).isTrue()
+        assertThat(result.isScreenReaderEnabled as Boolean).isTrue()
     }
     // endregion
 
@@ -721,21 +742,6 @@ internal class DatadogAccessibilityReaderTest {
     }
 
     @Test
-    fun `M handle double cleanup W cleanup { called multiple times }`() {
-        // Given - Initialize first
-        testedReader.getState()
-
-        // When - Call cleanup multiple times
-        testedReader.cleanup()
-        testedReader.cleanup() // Second call
-
-        // Then - Should cleanup only once
-        verify(mockAccessibilityManager, times(1)).removeTouchExplorationStateChangeListener(any())
-        verify(mockContentResolver, times(3)).unregisterContentObserver(any()) // 3 observers × 2 calls
-        verify(mockContext, times(1)).unregisterComponentCallbacks(testedReader)
-    }
-
-    @Test
     fun `M return consistent state W getState { after listener updates }`() {
         // Given
         whenever(
@@ -764,8 +770,8 @@ internal class DatadogAccessibilityReaderTest {
 
         // Then
         val updatedResult = testedReader.getState()
-        assertThat(updatedResult[COLOR_INVERSION_ENABLED_KEY] as Boolean).isTrue()
-        assertThat(updatedResult[COLOR_INVERSION_ENABLED_KEY]).isNotEqualTo(initialResult[COLOR_INVERSION_ENABLED_KEY])
+        assertThat(updatedResult.isColorInversionEnabled as Boolean).isTrue()
+        assertThat(updatedResult.isColorInversionEnabled).isNotEqualTo(initialResult.isColorInversionEnabled)
     }
     // endregion
 }

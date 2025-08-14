@@ -4,11 +4,11 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.rum.internal.domain.accessibility
+package com.datadog.android.rum.internal.domain
 
-import com.datadog.tools.annotation.NoOpImplementation
+internal interface InfoData
 
-@NoOpImplementation
-internal interface AccessibilitySnapshotManager {
-    fun latestSnapshot(): AccessibilityInfo
+internal interface InfoProvider<T : InfoData> {
+    fun getState(): T
+    fun cleanup()
 }

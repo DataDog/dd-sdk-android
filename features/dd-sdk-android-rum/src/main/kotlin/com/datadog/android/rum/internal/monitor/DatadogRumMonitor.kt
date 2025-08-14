@@ -37,10 +37,13 @@ import com.datadog.android.rum.internal.CombinedRumSessionListener
 import com.datadog.android.rum.internal.RumErrorSourceType
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.debug.RumDebugListener
+import com.datadog.android.rum.internal.domain.InfoProvider
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.domain.accessibility.AccessibilitySnapshotManager
 import com.datadog.android.rum.internal.domain.asTime
+import com.datadog.android.rum.internal.domain.battery.BatteryInfo
+import com.datadog.android.rum.internal.domain.display.DisplayInfo
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
 import com.datadog.android.rum.internal.domain.scope.RumApplicationScope
 import com.datadog.android.rum.internal.domain.scope.RumRawEvent
@@ -83,7 +86,9 @@ internal class DatadogRumMonitor(
     lastInteractionIdentifier: LastInteractionIdentifier?,
     slowFramesListener: SlowFramesListener?,
     rumSessionTypeOverride: RumSessionType?,
-    accessibilitySnapshotManager: AccessibilitySnapshotManager
+    accessibilitySnapshotManager: AccessibilitySnapshotManager,
+    batteryInfoProvider: InfoProvider<BatteryInfo>,
+    displayInfoProvider: InfoProvider<DisplayInfo>
 ) : RumMonitor, AdvancedRumMonitor {
 
     internal var rootScope: RumScope = RumApplicationScope(
@@ -102,7 +107,9 @@ internal class DatadogRumMonitor(
         lastInteractionIdentifier = lastInteractionIdentifier,
         slowFramesListener = slowFramesListener,
         rumSessionTypeOverride = rumSessionTypeOverride,
-        accessibilitySnapshotManager = accessibilitySnapshotManager
+        accessibilitySnapshotManager = accessibilitySnapshotManager,
+        batteryInfoProvider = batteryInfoProvider,
+        displayInfoProvider = displayInfoProvider
     )
 
     internal val keepAliveRunnable = Runnable {

@@ -6,9 +6,12 @@
 
 package com.datadog.android.rum.internal.domain.accessibility
 
-import com.datadog.tools.annotation.NoOpImplementation
+import com.datadog.android.rum.internal.domain.InfoProvider
 
-@NoOpImplementation
-internal interface AccessibilitySnapshotManager {
-    fun latestSnapshot(): AccessibilityInfo
+internal class NoOpAccessibilityReader : InfoProvider<AccessibilityInfo> {
+    override fun getState(): AccessibilityInfo {
+        return AccessibilityInfo()
+    }
+
+    override fun cleanup() {}
 }

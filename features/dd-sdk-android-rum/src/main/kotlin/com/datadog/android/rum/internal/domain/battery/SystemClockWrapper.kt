@@ -4,12 +4,12 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.rum.internal.domain.accessibility
+package com.datadog.android.rum.internal.domain.battery
 
-import com.datadog.tools.annotation.NoOpImplementation
+import android.os.SystemClock
 
-@NoOpImplementation
-internal interface AccessibilityReader {
-    fun getState(): Map<String, Any>
-    fun cleanup()
+internal class SystemClockWrapper {
+    fun elapsedRealTime(): Long {
+        return SystemClock.elapsedRealtime()
+    }
 }

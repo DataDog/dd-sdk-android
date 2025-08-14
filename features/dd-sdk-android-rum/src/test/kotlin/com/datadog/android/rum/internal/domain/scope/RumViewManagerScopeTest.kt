@@ -23,9 +23,12 @@ import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumSessionType
 import com.datadog.android.rum.internal.anr.ANRDetectorRunnable
 import com.datadog.android.rum.internal.anr.ANRException
+import com.datadog.android.rum.internal.domain.InfoProvider
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.domain.accessibility.AccessibilitySnapshotManager
+import com.datadog.android.rum.internal.domain.battery.BatteryInfo
+import com.datadog.android.rum.internal.domain.display.DisplayInfo
 import com.datadog.android.rum.internal.domain.state.ViewUIPerformanceReport
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
 import com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener
@@ -129,6 +132,12 @@ internal class RumViewManagerScopeTest {
     lateinit var mockAccessibilitySnapshotManager: AccessibilitySnapshotManager
 
     @Mock
+    lateinit var mockBatteryInfoProvider: InfoProvider<BatteryInfo>
+
+    @Mock
+    lateinit var mockDisplayInfoProvider: InfoProvider<DisplayInfo>
+
+    @Mock
     lateinit var mockLastInteractionIdentifier: LastInteractionIdentifier
 
     @Mock
@@ -173,7 +182,9 @@ internal class RumViewManagerScopeTest {
             lastInteractionIdentifier = mockLastInteractionIdentifier,
             slowFramesListener = mockSlowFramesListener,
             rumSessionTypeOverride = fakeRumSessionType,
-            accessibilitySnapshotManager = mockAccessibilitySnapshotManager
+            accessibilitySnapshotManager = mockAccessibilitySnapshotManager,
+            batteryInfoProvider = mockBatteryInfoProvider,
+            displayInfoProvider = mockDisplayInfoProvider
         )
     }
 
@@ -541,7 +552,9 @@ internal class RumViewManagerScopeTest {
             lastInteractionIdentifier = mockLastInteractionIdentifier,
             slowFramesListener = mockSlowFramesListener,
             rumSessionTypeOverride = fakeRumSessionType,
-            accessibilitySnapshotManager = mockAccessibilitySnapshotManager
+            accessibilitySnapshotManager = mockAccessibilitySnapshotManager,
+            batteryInfoProvider = mockBatteryInfoProvider,
+            displayInfoProvider = mockDisplayInfoProvider
         )
         testedScope.applicationDisplayed = true
         val fakeEvent = forge.validBackgroundEvent()
@@ -575,7 +588,9 @@ internal class RumViewManagerScopeTest {
             lastInteractionIdentifier = mockLastInteractionIdentifier,
             slowFramesListener = mockSlowFramesListener,
             rumSessionTypeOverride = fakeRumSessionType,
-            accessibilitySnapshotManager = mockAccessibilitySnapshotManager
+            accessibilitySnapshotManager = mockAccessibilitySnapshotManager,
+            batteryInfoProvider = mockBatteryInfoProvider,
+            displayInfoProvider = mockDisplayInfoProvider
         )
         testedScope.childrenScopes.add(mockChildScope)
         whenever(mockChildScope.isActive()) doReturn true
@@ -612,7 +627,9 @@ internal class RumViewManagerScopeTest {
             lastInteractionIdentifier = mockLastInteractionIdentifier,
             slowFramesListener = mockSlowFramesListener,
             rumSessionTypeOverride = fakeRumSessionType,
-            accessibilitySnapshotManager = mockAccessibilitySnapshotManager
+            accessibilitySnapshotManager = mockAccessibilitySnapshotManager,
+            batteryInfoProvider = mockBatteryInfoProvider,
+            displayInfoProvider = mockDisplayInfoProvider
         )
         testedScope.applicationDisplayed = true
         val fakeEvent = forge.validBackgroundEvent()
@@ -682,7 +699,9 @@ internal class RumViewManagerScopeTest {
             lastInteractionIdentifier = mockLastInteractionIdentifier,
             slowFramesListener = mockSlowFramesListener,
             rumSessionTypeOverride = fakeRumSessionType,
-            accessibilitySnapshotManager = mockAccessibilitySnapshotManager
+            accessibilitySnapshotManager = mockAccessibilitySnapshotManager,
+            batteryInfoProvider = mockBatteryInfoProvider,
+            displayInfoProvider = mockDisplayInfoProvider
         )
         testedScope.childrenScopes.add(mockChildScope)
         whenever(mockChildScope.isActive()) doReturn true
@@ -720,7 +739,9 @@ internal class RumViewManagerScopeTest {
             lastInteractionIdentifier = mockLastInteractionIdentifier,
             slowFramesListener = mockSlowFramesListener,
             rumSessionTypeOverride = fakeRumSessionType,
-            accessibilitySnapshotManager = mockAccessibilitySnapshotManager
+            accessibilitySnapshotManager = mockAccessibilitySnapshotManager,
+            batteryInfoProvider = mockBatteryInfoProvider,
+            displayInfoProvider = mockDisplayInfoProvider
         )
         testedScope.stopped = true
         val fakeEvent = forge.applicationStartedEvent()
