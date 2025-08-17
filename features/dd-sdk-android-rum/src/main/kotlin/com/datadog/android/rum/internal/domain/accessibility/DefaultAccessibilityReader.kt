@@ -149,11 +149,11 @@ internal class DefaultAccessibilityReader(
     }
 
     private fun isDisplayInversionEnabled(): Boolean? {
-        return getSecureInt(ACCESSIBILITY_DISPLAY_INVERSION_ENABLED)
+        return isSettingEnabled(ACCESSIBILITY_DISPLAY_INVERSION_ENABLED)
     }
 
     private fun isClosedCaptioningEnabled(): Boolean? {
-        return getSecureInt(CAPTIONING_ENABLED_KEY)
+        return isSettingEnabled(CAPTIONING_ENABLED_KEY)
     }
 
     private fun isLockToScreenEnabled(): Boolean? {
@@ -177,12 +177,14 @@ internal class DefaultAccessibilityReader(
         }
     }
 
-    private fun getSecureInt(key: String): Boolean? {
+    private fun isSettingEnabled(key: String): Boolean? {
         return secureWrapper.getInt(
             internalLogger = internalLogger,
             applicationContext = applicationContext,
             key = key
-        )
+        )?.let {
+            it == 1
+        }
     }
 
     private fun getTextSize(): String {

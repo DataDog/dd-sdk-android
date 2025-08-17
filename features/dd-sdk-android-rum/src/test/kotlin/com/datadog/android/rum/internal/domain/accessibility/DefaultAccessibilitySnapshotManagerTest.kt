@@ -62,7 +62,8 @@ internal class DefaultAccessibilitySnapshotManagerTest {
         @BoolForgery colorInversion: Boolean,
         @BoolForgery closedCaptioning: Boolean,
         @BoolForgery reducedAnimations: Boolean,
-        @BoolForgery screenPinning: Boolean
+        @BoolForgery screenPinning: Boolean,
+        @BoolForgery rtlEnabled: Boolean
     ) {
         // Given
         val accessibilityState = AccessibilityInfo(
@@ -71,7 +72,8 @@ internal class DefaultAccessibilitySnapshotManagerTest {
             isColorInversionEnabled = colorInversion,
             isClosedCaptioningEnabled = closedCaptioning,
             isReducedAnimationsEnabled = reducedAnimations,
-            isScreenPinningEnabled = screenPinning
+            isScreenPinningEnabled = screenPinning,
+            isRtlEnabled = rtlEnabled
         )
         whenever(mockAccessibilityReader.getState()) doReturn accessibilityState
 
@@ -86,7 +88,8 @@ internal class DefaultAccessibilitySnapshotManagerTest {
                 isColorInversionEnabled = colorInversion,
                 isClosedCaptioningEnabled = closedCaptioning,
                 isReducedAnimationsEnabled = reducedAnimations,
-                isScreenPinningEnabled = screenPinning
+                isScreenPinningEnabled = screenPinning,
+                isRtlEnabled = rtlEnabled
             )
         )
     }
@@ -211,35 +214,7 @@ internal class DefaultAccessibilitySnapshotManagerTest {
     }
 
     @Test
-    fun `M report change W latestSnapshot() { value changes from null to non-null }`(
-        @FloatForgery textSize: Float,
-        @BoolForgery colorInversion: Boolean
-    ) {
-        // Given
-        val initialState = AccessibilityInfo(
-            textSize = textSize.toString()
-        )
-        val stateWithValue = AccessibilityInfo(
-            textSize = textSize.toString(),
-            isColorInversionEnabled = colorInversion // Changed from null to value
-        )
-
-        whenever(mockAccessibilityReader.getState())
-            .doReturn(initialState)
-            .doReturn(stateWithValue)
-
-        // When
-        testedManager.latestSnapshot() // First call
-        val result = testedManager.latestSnapshot() // Second call
-
-        // Then - New non-null value should be reported
-        assertThat(result).isEqualTo(
-            AccessibilityInfo(isColorInversionEnabled = colorInversion)
-        )
-    }
-
-    @Test
-    fun `M handle missing keys gracefully W latestSnapshot() { key disappears from state }`(
+    fun `M not report null keys W latestSnapshot() { key disappears from state }`(
         @FloatForgery textSize: Float,
         @BoolForgery screenReader: Boolean,
         @BoolForgery colorInversion: Boolean

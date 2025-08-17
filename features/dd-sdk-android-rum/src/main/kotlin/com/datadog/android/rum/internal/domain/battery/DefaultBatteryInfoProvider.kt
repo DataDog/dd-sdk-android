@@ -125,7 +125,6 @@ internal class DefaultBatteryInfoProvider(
 
     private companion object {
         const val FULL_BATTERY_PCT = 100f
-        const val DECIMAL_SCALING = 10f
         const val BATTERY_POLL_INTERVAL_MS = 60_000 // 60 seconds
     }
 }

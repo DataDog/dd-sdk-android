@@ -16,6 +16,7 @@ import android.os.Build
 import android.os.Handler
 import android.provider.Settings
 import android.provider.Settings.Secure.ACCESSIBILITY_DISPLAY_INVERSION_ENABLED
+import android.view.View
 import android.view.accessibility.AccessibilityManager
 import android.view.accessibility.AccessibilityManager.TouchExplorationStateChangeListener
 import com.datadog.android.api.InternalLogger
@@ -173,6 +174,7 @@ internal class DefaultAccessibilityReaderTest {
         assertThat(result.isScreenPinningEnabled).isFalse()
         assertThat(result.isColorInversionEnabled).isNull()
         assertThat(result.textSize).isEqualTo("1.0")
+        assertThat(result.isRtlEnabled).isFalse()
     }
 
     @Test
@@ -182,7 +184,8 @@ internal class DefaultAccessibilityReaderTest {
         @BoolForgery isColorInversionEnabled: Boolean,
         @BoolForgery isClosedCaptioningEnabled: Boolean,
         @BoolForgery isReducedAnimationsEnabled: Boolean,
-        @BoolForgery isScreenPinningEnabled: Boolean
+        @BoolForgery isScreenPinningEnabled: Boolean,
+        @BoolForgery isRtlEnabled: Boolean
     ) {
         // Given
         mockConfiguration.fontScale = textSize
@@ -202,7 +205,7 @@ internal class DefaultAccessibilityReaderTest {
                 applicationContext = any(),
                 key = eq(ACCESSIBILITY_DISPLAY_INVERSION_ENABLED)
             )
-        ) doReturn isColorInversionEnabled
+        ) doReturn if (isColorInversionEnabled) 1 else 0
 
         whenever(
             mockSecureWrapper.getInt(
@@ -210,7 +213,10 @@ internal class DefaultAccessibilityReaderTest {
                 applicationContext = any(),
                 key = eq(CAPTIONING_ENABLED_KEY)
             )
-        ) doReturn isClosedCaptioningEnabled
+        ) doReturn if (isClosedCaptioningEnabled) 1 else 0
+
+        whenever(mockConfiguration.layoutDirection) doReturn
+            if (isRtlEnabled) View.LAYOUT_DIRECTION_RTL else View.LAYOUT_DIRECTION_LTR
 
         val animationDurationValue = if (isReducedAnimationsEnabled) 0.0f else 1.0f
         whenever(
@@ -233,6 +239,7 @@ internal class DefaultAccessibilityReaderTest {
         assertThat(result.isColorInversionEnabled).isEqualTo(isColorInversionEnabled)
         assertThat(result.isClosedCaptioningEnabled).isEqualTo(isClosedCaptioningEnabled)
         assertThat(result.isReducedAnimationsEnabled).isEqualTo(isReducedAnimationsEnabled)
+        assertThat(result.isRtlEnabled).isEqualTo(isRtlEnabled)
     }
 
     // region Text Size Tests
@@ -252,9 +259,11 @@ internal class DefaultAccessibilityReaderTest {
         // Then
         assertThat(result.textSize).isEqualTo(fontScale.toString())
     }
+
     // endregion
 
     // region Screen Reader Tests
+
     @Test
     fun `M return screen reader state W getState { touch exploration enabled }`() {
         // Given
@@ -268,9 +277,11 @@ internal class DefaultAccessibilityReaderTest {
         // Then
         assertThat(result.isScreenReaderEnabled as Boolean).isTrue()
     }
+
     // endregion
 
     // region Screen Pinning Tests
+
     @TestTargetApi(Build.VERSION_CODES.LOLLIPOP)
     @Test
     fun `M return screen pinning state W getState { api below 23 }`(
@@ -355,9 +366,11 @@ internal class DefaultAccessibilityReaderTest {
         // Then
         assertThat(result.isScreenPinningEnabled).isNull()
     }
+
     // endregion
 
     // region Color Inversion Tests
+
     @Test
     fun `M return color inversion state W getState { setting available }`(
         @BoolForgery isEnabled: Boolean
@@ -369,7 +382,7 @@ internal class DefaultAccessibilityReaderTest {
                 applicationContext = mockContext,
                 key = ACCESSIBILITY_DISPLAY_INVERSION_ENABLED
             )
-        ) doReturn isEnabled
+        ) doReturn if (isEnabled) 1 else 0
 
         testedReader = createReader()
 
@@ -397,9 +410,11 @@ internal class DefaultAccessibilityReaderTest {
         // Then
         assertThat(result.isColorInversionEnabled).isNull()
     }
+
     // endregion
 
     // region Closed Captioning Tests
+
     @Test
     fun `M return closed captioning state W getState { setting available }`(
         @BoolForgery isEnabled: Boolean
@@ -411,7 +426,7 @@ internal class DefaultAccessibilityReaderTest {
                 applicationContext = mockContext,
                 key = CAPTIONING_ENABLED_KEY
             )
-        ) doReturn isEnabled
+        ) doReturn if (isEnabled) 1 else 0
 
         testedReader = createReader()
 
@@ -442,6 +457,7 @@ internal class DefaultAccessibilityReaderTest {
     // endregion
 
     // region Reduced Animations Tests
+
     @Test
     fun `M return true for reduced animations W getState { enabled }`() {
         // Given
@@ -456,8 +472,7 @@ internal class DefaultAccessibilityReaderTest {
         testedReader = createReader()
 
         // When
-        val result = testedReader.getState()
-        val isReducedAnimations = result.isReducedAnimationsEnabled as Boolean
+        val isReducedAnimations = testedReader.getState().isReducedAnimationsEnabled as Boolean
 
         // Then
         assertThat(isReducedAnimations).isTrue()
@@ -477,8 +492,7 @@ internal class DefaultAccessibilityReaderTest {
         testedReader = createReader()
 
         // When
-        val result = testedReader.getState()
-        val isReducedAnimations = result.isReducedAnimationsEnabled as Boolean
+        val isReducedAnimations = testedReader.getState().isReducedAnimationsEnabled as Boolean
 
         // Then
         assertThat(isReducedAnimations).isFalse()
@@ -501,6 +515,42 @@ internal class DefaultAccessibilityReaderTest {
         // Then
         assertThat(result.isReducedAnimationsEnabled).isNull()
     }
+    // endregion
+
+    // region RTLEnabled Tests
+
+    @Test
+    fun `M return true for isRtlEnabled W getState { enabled }`() {
+        // Given
+        whenever(
+            mockConfiguration.layoutDirection
+        ) doReturn View.LAYOUT_DIRECTION_RTL
+
+        testedReader = createReader()
+
+        // When
+        val isRtlEnabled = testedReader.getState().isRtlEnabled as Boolean
+
+        // Then
+        assertThat(isRtlEnabled).isTrue()
+    }
+
+    @Test
+    fun `M return false for isRtlEnabled W getState { not enabled }`() {
+        // Given
+        whenever(
+            mockConfiguration.layoutDirection
+        ) doReturn View.LAYOUT_DIRECTION_LTR
+
+        testedReader = createReader()
+
+        // When
+        val isRtlEnabled = testedReader.getState().isRtlEnabled as Boolean
+
+        // Then
+        assertThat(isRtlEnabled).isFalse()
+    }
+
     // endregion
 
     // region ComponentCallbacks Tests
@@ -623,6 +673,7 @@ internal class DefaultAccessibilityReaderTest {
     // endregion
 
     // region Listener Tests
+
     @Test
     fun `M update state W displayInversionListener onChange { display inversion changes }`() {
         // Given
@@ -632,7 +683,7 @@ internal class DefaultAccessibilityReaderTest {
                 applicationContext = any(),
                 key = eq(ACCESSIBILITY_DISPLAY_INVERSION_ENABLED)
             )
-        ) doReturn true
+        ) doReturn 1
 
         testedReader.getState()
 
@@ -656,7 +707,7 @@ internal class DefaultAccessibilityReaderTest {
                 applicationContext = any(),
                 key = eq(CAPTIONING_ENABLED_KEY)
             )
-        ) doReturn true
+        ) doReturn 1
 
         testedReader.getState()
 
@@ -712,9 +763,11 @@ internal class DefaultAccessibilityReaderTest {
         val result = testedReader.getState()
         assertThat(result.isScreenReaderEnabled as Boolean).isTrue()
     }
+
     // endregion
 
     // region Polling Threshold Tests
+
     @Test
     fun `M update lastPollTime W getState { after threshold exceeded }`() {
         // Given
@@ -750,7 +803,7 @@ internal class DefaultAccessibilityReaderTest {
                 applicationContext = any(),
                 key = any()
             )
-        ) doReturn false
+        ) doReturn 0
 
         val initialResult = testedReader.getState()
 
@@ -760,7 +813,7 @@ internal class DefaultAccessibilityReaderTest {
                 applicationContext = any(),
                 key = eq(ACCESSIBILITY_DISPLAY_INVERSION_ENABLED)
             )
-        ) doReturn true
+        ) doReturn 1
 
         // When
         val listenerField = testedReader.javaClass.getDeclaredField("displayInversionListener")
@@ -773,5 +826,6 @@ internal class DefaultAccessibilityReaderTest {
         assertThat(updatedResult.isColorInversionEnabled as Boolean).isTrue()
         assertThat(updatedResult.isColorInversionEnabled).isNotEqualTo(initialResult.isColorInversionEnabled)
     }
+
     // endregion
 }

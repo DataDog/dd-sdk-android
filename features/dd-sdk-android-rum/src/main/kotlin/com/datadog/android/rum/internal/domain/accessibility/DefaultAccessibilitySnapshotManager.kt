@@ -18,8 +18,6 @@ internal class DefaultAccessibilitySnapshotManager(
     override fun latestSnapshot(): AccessibilityInfo {
         val newAccessibilitySnapshot = accessibilityReader.getState()
 
-        // Create delta by comparing new snapshot to last snapshot
-        // Only include properties that have changed (null for unchanged properties)
         val deltaSnapshot = AccessibilityInfo(
             textSize =
             if (newAccessibilitySnapshot.textSize != lastSnapshot.textSize) {
@@ -71,7 +69,6 @@ internal class DefaultAccessibilitySnapshotManager(
             }
         )
 
-        // Update last snapshot for future comparisons
         lastSnapshot = newAccessibilitySnapshot
 
         return deltaSnapshot
