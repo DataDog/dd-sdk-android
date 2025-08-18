@@ -138,7 +138,7 @@ class HeadBasedSamplingTest {
                     leastSignificantTraceId.toLong().toHexString().padStart(16, '0')
                 )
                 hasMostSignificant64BitsTraceId(mostSignificantTraceId)
-                hasSpanId(spanId.cleanDecimalFormat())
+                hasSpanId(spanId.toHexPaddedFromDecimalString())
                 hasVersion(stubSdkCore.getDatadogContext().version)
                 hasSource(stubSdkCore.getDatadogContext().source)
                 hasTracerVersion(stubSdkCore.getDatadogContext().sdkVersion)
@@ -367,8 +367,8 @@ class HeadBasedSamplingTest {
                     leastSignificantTraceId.toLong().toHexString().padStart(16, '0')
                 )
                 hasMostSignificant64BitsTraceId(mostSignificantTraceId)
-                hasSpanId(spanId.cleanDecimalFormat())
-                hasParentId(localSpanId.cleanHexFormat())
+                hasSpanId(spanId.toHexPaddedFromDecimalString())
+                hasParentId(localSpanId.toHexPaddedFromHexString())
                 hasVersion(stubSdkCore.getDatadogContext().version)
                 hasSource(stubSdkCore.getDatadogContext().source)
                 hasTracerVersion(stubSdkCore.getDatadogContext().sdkVersion)
@@ -464,8 +464,8 @@ class HeadBasedSamplingTest {
                     leastSignificantTraceId.toLong().toHexString().padStart(16, '0')
                 )
                 hasMostSignificant64BitsTraceId(mostSignificantTraceId)
-                hasSpanId(spanId.cleanDecimalFormat())
-                hasParentId(localSpanId.cleanHexFormat())
+                hasSpanId(spanId.toHexPaddedFromDecimalString())
+                hasParentId(localSpanId.toHexPaddedFromHexString())
                 hasVersion(stubSdkCore.getDatadogContext().version)
                 hasSource(stubSdkCore.getDatadogContext().source)
                 hasTracerVersion(stubSdkCore.getDatadogContext().sdkVersion)
@@ -612,8 +612,8 @@ class HeadBasedSamplingTest {
                     leastSignificantTraceId.toLong().toHexString().padStart(16, '0')
                 )
                 hasMostSignificant64BitsTraceId(mostSignificantTraceId)
-                hasSpanId(spanId.cleanDecimalFormat())
-                hasParentId(localSpanId.cleanHexFormat())
+                hasSpanId(spanId.toHexPaddedFromDecimalString())
+                hasParentId(localSpanId.toHexPaddedFromHexString())
                 hasVersion(stubSdkCore.getDatadogContext().version)
                 hasSource(stubSdkCore.getDatadogContext().source)
                 hasTracerVersion(stubSdkCore.getDatadogContext().sdkVersion)
@@ -657,12 +657,12 @@ class HeadBasedSamplingTest {
     private fun String.toTags(): Map<String, String> = split(",")
         .associate { it.split("=").let { it[0] to it[1] } }
 
-    private fun String.cleanHexFormat(): String = with(DatadogTracingToolkit.spanIdConverter) {
-        toHexStringPadded(fromHex(this@cleanHexFormat))
+    private fun String.toHexPaddedFromHexString(): String = with(DatadogTracingToolkit.spanIdConverter) {
+        toHexStringPadded(fromHex(this@toHexPaddedFromHexString))
     }
 
-    private fun String.cleanDecimalFormat(): String = with(DatadogTracingToolkit.spanIdConverter) {
-        toHexStringPadded(this@cleanDecimalFormat.toLong())
+    private fun String.toHexPaddedFromDecimalString(): String = with(DatadogTracingToolkit.spanIdConverter) {
+        toHexStringPadded(this@toHexPaddedFromDecimalString.toLong())
     }
 
     companion object {

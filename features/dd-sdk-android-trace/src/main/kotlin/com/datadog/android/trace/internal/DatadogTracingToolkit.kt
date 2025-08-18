@@ -6,6 +6,7 @@
 package com.datadog.android.trace.internal
 
 import com.datadog.android.lint.InternalApi
+import com.datadog.android.trace.api.span.DatadogSpan
 import com.datadog.android.trace.api.span.DatadogSpanContext
 import com.datadog.android.trace.api.tracer.DatadogTracerBuilder
 
@@ -56,5 +57,18 @@ object DatadogTracingToolkit {
     fun setSdkV2Compatible(builder: DatadogTracerBuilder): DatadogTracerBuilder {
         (builder as? DatadogTracerBuilderAdapter)?.setSdkV2Compatible()
         return builder
+    }
+
+    /**
+     * Associates a throwable with the current span, marking it as an error.
+     * Note that error flag will be set only if priority is higher than the current one.
+     *
+     * @param span The span to associate the throwable with.
+     * @param throwable The throwable to associate with the current span.
+     * @param errorPriority The priority level of the error, represented as a byte.
+     */
+    @JvmStatic // this method is called from OTel code, written in java
+    fun addThrowable(span: DatadogSpan, throwable: Throwable, errorPriority: Byte) {
+        (span as? DatadogSpanAdapter)?.addThrowable(throwable, errorPriority)
     }
 }

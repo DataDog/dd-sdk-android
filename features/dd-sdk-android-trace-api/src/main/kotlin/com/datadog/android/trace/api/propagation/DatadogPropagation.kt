@@ -9,7 +9,7 @@ import com.datadog.android.trace.api.span.DatadogSpanContext
 
 /**
  * Provides an interface for injecting and extracting span context to/from specified carriers.
- * Used for propagating context to http headers
+ * Used for propagating context to http headers.
  */
 interface DatadogPropagation {
 

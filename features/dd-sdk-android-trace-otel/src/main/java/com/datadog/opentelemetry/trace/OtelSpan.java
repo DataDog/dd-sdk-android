@@ -21,6 +21,7 @@ import com.datadog.android.trace.api.scope.DatadogScope;
 import com.datadog.android.trace.api.span.DatadogSpan;
 import com.datadog.android.trace.api.span.DatadogSpanContext;
 import com.datadog.android.trace.api.tracer.DatadogTracer;
+import com.datadog.android.trace.internal.DatadogTracingToolkit;
 
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -114,7 +115,7 @@ public class OtelSpan implements Span {
   public Span recordException(Throwable exception, Attributes additionalAttributes) {
     if (this.recording) {
       // Store exception as span tags as span events are not supported yet
-      this.delegate.addThrowable(exception, DatadogTracingConstants.ErrorPriorities.UNSET);
+      DatadogTracingToolkit.addThrowable(delegate, exception, DatadogTracingConstants.ErrorPriorities.UNSET);
     }
     return this;
   }

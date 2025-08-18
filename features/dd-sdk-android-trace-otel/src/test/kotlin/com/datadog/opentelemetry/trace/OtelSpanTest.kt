@@ -10,6 +10,7 @@ import com.datadog.android.trace.api.DatadogTracingConstants.DEFAULT_ASYNC_PROPA
 import com.datadog.android.trace.api.DatadogTracingConstants.ErrorPriorities
 import com.datadog.android.trace.api.span.DatadogSpan
 import com.datadog.android.trace.api.tracer.DatadogTracer
+import com.datadog.android.trace.internal.DatadogTracingToolkit
 import com.datadog.android.trace.opentelemetry.utils.forge.Configurator
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -28,6 +29,7 @@ import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.EnumSource
 import org.junit.jupiter.params.provider.MethodSource
 import org.mockito.Mock
+import org.mockito.Mockito
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
@@ -35,7 +37,6 @@ import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
-import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.verifyNoMoreInteractions
 import org.mockito.quality.Strictness
 
@@ -212,13 +213,19 @@ internal class OtelSpanTest {
     fun `M delegate to AgentSpan W recordException`(@Forgery fakeThrowable: Throwable) {
         // Given
         val mockAttributes: Attributes = mock()
-
-        // When
-        testedSpan.recordException(fakeThrowable, mockAttributes)
-
-        // Then
-        verify(mockAgentSpan).addThrowable(fakeThrowable, ErrorPriorities.UNSET)
-        verifyNoInteractions(mockAttributes)
+        Mockito.mockStatic(DatadogTracingToolkit::class.java).use { mockedStatic ->
+            // When
+            testedSpan.recordException(fakeThrowable, mockAttributes)
+            // Then
+            mockedStatic.verify {
+                DatadogTracingToolkit.addThrowable(
+                    mockAgentSpan,
+                    fakeThrowable,
+                    ErrorPriorities.UNSET
+                )
+            }
+            mockedStatic.verifyNoMoreInteractions()
+        }
     }
 
     @Test
@@ -226,13 +233,13 @@ internal class OtelSpanTest {
         // Given
         testedSpan.end()
         val mockAttributes: Attributes = mock()
+        Mockito.mockStatic(DatadogTracingToolkit::class.java).use { mockedStatic ->
+            // When
+            testedSpan.recordException(fakeThrowable, mockAttributes)
 
-        // When
-        testedSpan.recordException(fakeThrowable, mockAttributes)
-
-        // Then
-        verify(mockAgentSpan, never()).addThrowable(fakeThrowable, ErrorPriorities.UNSET)
-        verifyNoInteractions(mockAttributes)
+            // Then
+            mockedStatic.verifyNoMoreInteractions()
+        }
     }
 
     // endregion

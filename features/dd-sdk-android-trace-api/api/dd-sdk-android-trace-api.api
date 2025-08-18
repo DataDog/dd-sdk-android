@@ -84,7 +84,6 @@ public abstract interface class com/datadog/android/trace/api/scope/DatadogScope
 
 public abstract interface class com/datadog/android/trace/api/span/DatadogSpan {
 	public abstract fun addThrowable (Ljava/lang/Throwable;)V
-	public abstract fun addThrowable (Ljava/lang/Throwable;B)V
 	public abstract fun context ()Lcom/datadog/android/trace/api/span/DatadogSpanContext;
 	public abstract fun drop ()V
 	public abstract fun finish ()V

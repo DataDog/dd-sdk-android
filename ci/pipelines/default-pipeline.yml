@@ -554,7 +554,7 @@ publish:release-trace-internal:
   timeout: 30m
   script:
     - !reference [ .snippets, set-publishing-credentials ]
-    - ./gradlew :features:dd-sdk-android-trace-internal:publishToSonatype --stacktrace --no-daemon
+    - ./gradlew :features:dd-sdk-android-trace-internal:publishToSonatype closeSonatypeStagingRepository --stacktrace --no-daemon
   artifacts:
     when: on_success
     expire_in: 7 days

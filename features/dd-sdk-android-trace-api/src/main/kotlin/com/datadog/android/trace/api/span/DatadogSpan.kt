@@ -117,15 +117,6 @@ interface DatadogSpan {
     fun addThrowable(throwable: Throwable)
 
     /**
-     * Associates a throwable with the current span, marking it as an error
-     * and capturing the provided throwable for additional context with a specified error priority.
-     *
-     * @param throwable The throwable to associate with the current span.
-     * @param errorPriority The priority level of the error, represented as a byte.
-     */
-    fun addThrowable(throwable: Throwable, errorPriority: Byte)
-
-    /**
      * Associates a tag with the specified value for the current span.
      *
      * @param tag The name of the tag to associate with the span.

@@ -94,10 +94,6 @@ internal class DatadogSpanAdapter(
         delegate.addThrowable(throwable)
     }
 
-    override fun addThrowable(throwable: Throwable, errorPriority: Byte) {
-        delegate.addThrowable(throwable, errorPriority)
-    }
-
     override fun logThrowable(throwable: Throwable) {
         spanLogger.log(throwable, this)
     }
@@ -112,5 +108,9 @@ internal class DatadogSpanAdapter(
 
     override fun logAttributes(attributes: Map<String, Any>) {
         spanLogger.log(attributes, this)
+    }
+
+    internal fun addThrowable(throwable: Throwable, errorPriority: Byte) {
+        delegate.addThrowable(throwable, errorPriority)
     }
 }
