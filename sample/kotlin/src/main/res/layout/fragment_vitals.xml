@@ -26,6 +26,19 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintWidth_default="wrap" />
+        android:id="@+id/title"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:gravity="center_horizontal"
+        android:padding="16dp"
+        android:text="@string/title_vitals"
+        android:textAppearance="@style/TextAppearance.AppCompat.Title"
+        app:layout_constraintEnd_toStartOf="@id/progress"
+        app:layout_constraintHorizontal_chainStyle="packed"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintWidth_default="wrap" />
 
     <ProgressBar
         android:id="@+id/progress"
@@ -122,4 +135,85 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/vital_slow_frame_rate" />
+
+
+    <com.datadog.android.sample.widget.DividerView
+        android:id="@+id/divider"
+        style="@style/DividerView"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="24dp"
+        app:dv_text="@string/divider_feature_operations"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/vital_slow_view" />
+
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/fo_name"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        app:layout_constraintEnd_toStartOf="@id/fo_operation_key"
+        app:layout_constraintHorizontal_chainStyle="spread"
+        app:layout_constraintHorizontal_weight="1"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/divider">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/fo_name_edit_text"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:hint="@string/text_feature_operation_name_hint"
+            android:text="@string/text_feature_operation_name" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/fo_operation_key"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_weight="1"
+        app:layout_constraintStart_toEndOf="@id/fo_name"
+        app:layout_constraintTop_toTopOf="@id/fo_name">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/fo_operation_key_edit_text"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:hint="@string/text_feature_operation_key_hint" />
+
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <Button
+        android:id="@+id/fo_start"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:text="@string/button_fo_start"
+        app:layout_constraintEnd_toStartOf="@id/fo_stop_successfully"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/fo_name" />
+
+    <Button
+        android:id="@+id/fo_stop_successfully"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="4dp"
+        android:layout_marginEnd="4dp"
+        android:text="@string/button_fo_stop_successfully"
+        app:layout_constraintEnd_toStartOf="@id/fo_stop_unsuccessfully"
+        app:layout_constraintStart_toEndOf="@id/fo_start"
+        app:layout_constraintTop_toTopOf="@id/fo_start" />
+
+    <Button
+        android:id="@+id/fo_stop_unsuccessfully"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:text="@string/button_fo_stop_unsuccessfully"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@id/fo_stop_successfully"
+        app:layout_constraintTop_toTopOf="@id/fo_start" />
+
+
 </androidx.constraintlayout.widget.ConstraintLayout>
