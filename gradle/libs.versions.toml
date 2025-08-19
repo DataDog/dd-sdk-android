@@ -95,6 +95,7 @@ timber = "5.0.1"
 coroutines = "1.4.2"
 exoplayer = "2.19.1"
 newPipeExtractor = "v0.24.6"
+nav3Core = "1.0.0-alpha01"
 
 # Local Server
 ktor = "2.3.13"
@@ -260,6 +261,10 @@ exoplayer = { module = "com.google.android.exoplayer:exoplayer", version.ref = "
 exoplayerDataSource = { module = "com.google.android.exoplayer:exoplayer-datasource", version.ref = "exoplayer" }
 exoplayerOkHttp = { module = "com.google.android.exoplayer:extension-okhttp", version.ref = "exoplayer" }
 newPipeExtractor = { module = "com.github.TeamNewPipe.NewPipeExtractor:extractor", version.ref = "newPipeExtractor" }
+
+# Core Navigation 3 libraries
+androidx-navigation3-runtime = { module = "androidx.navigation3:navigation3-runtime", version.ref = "nav3Core" }
+androidx-navigation3-ui = { module = "androidx.navigation3:navigation3-ui", version.ref = "nav3Core" }
 
 # Local Server
 ktorCore = { module = "io.ktor:ktor", version.ref = "ktor" }
