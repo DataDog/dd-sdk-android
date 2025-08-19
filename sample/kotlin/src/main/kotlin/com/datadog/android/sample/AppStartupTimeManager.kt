@@ -48,6 +48,9 @@ class AppStartupTypeManager(
         (sdkCore as InternalSdkCore).appStartTimeNs
     }
 
+    private var numberOfActivities: Int = 0
+    private var isChangingConfigurations: Boolean = false
+
     private var appStartupSpan: Span = tracer.spanBuilder("app_startup")
         .apply {
             setStartTimestamp(epoch)
@@ -78,7 +81,8 @@ class AppStartupTypeManager(
     }
 
     override fun onActivityPreCreated(activity: Activity, savedInstanceState: Bundle?) {
-        if (!firstActivityDrawn) {
+        numberOfActivities++
+        if (numberOfActivities == 1 && !isChangingConfigurations) {
             activity.window.decorView.viewTreeObserver.addOnDrawListener(this)
             activityCreatedStartTime = relativeNow()
 
@@ -93,6 +97,7 @@ class AppStartupTypeManager(
         }
 
         Log.w("WAHAHA", "${activity::class.java.name} onActivityPreCreated")
+        isChangingConfigurations = false
     }
 
     override fun onActivityPreResumed(activity: Activity) {
@@ -113,6 +118,7 @@ class AppStartupTypeManager(
     }
 
     override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {
+        numberOfActivities++
         Log.w("WAHAHA", "${activity::class.java.name} onActivityCreated")
     }
 
@@ -130,6 +136,10 @@ class AppStartupTypeManager(
     }
 
     override fun onActivityDestroyed(activity: Activity) {
+        numberOfActivities--
+        if (numberOfActivities == 0) {
+            isChangingConfigurations = activity.isChangingConfigurations
+        }
         Log.w("WAHAHA", "${activity::class.java.name} onActivityDestroyed")
     }
 

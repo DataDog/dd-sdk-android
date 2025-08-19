@@ -49,6 +49,7 @@ import com.datadog.android.sample.picture.FrescoImageLoader
 import com.datadog.android.sample.picture.PicassoImageLoader
 import com.datadog.android.sample.start.AppInfoRepo
 import com.datadog.android.sample.start.StartupTimestamps
+import com.datadog.android.sample.start.snippets.AppStartupTypeManager2
 import com.datadog.android.sample.user.UserFragment
 import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.SessionReplay
@@ -126,6 +127,9 @@ class SampleApplication : Application() {
 
     @Keep
     private lateinit var appStartupTypeManager: AppStartupTypeManager
+
+    @Keep
+    private lateinit var appStartupTypeManager2: AppStartupTypeManager2
 
     @Keep
     private lateinit var betterAppStartupTimeManager: BetterAppStartupTimeManager
@@ -282,10 +286,16 @@ class SampleApplication : Application() {
             Datadog.getInstance()
         )
 
+        appStartupTypeManager2 = AppStartupTypeManager2(
+            this,
+            Datadog.getInstance() as InternalSdkCore
+        )
+
         betterAppStartupTimeManager = BetterAppStartupTimeManager(
             this,
             appStartTracer,
-            Datadog.getInstance()
+            Datadog.getInstance(),
+            GlobalRumMonitor.get(),
         )
         betterAppStartupTimeManager.launch()
     }
@@ -538,6 +548,7 @@ class SampleApplication : Application() {
 }
 
 fun attachTraceToRumView(span: Span, sdk: SdkCore) {
+    return
     val rumContext = (sdk as InternalSdkCore).getFeatureContext(Feature.RUM_FEATURE_NAME)
 
     val appLaunchViewId = rumContext["application_launch_view_id"] as? String

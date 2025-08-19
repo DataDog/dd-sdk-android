@@ -93,6 +93,12 @@ interface RumMonitor {
         attributes: Map<String, Any?>
     )
 
+    fun sendDurationVital(
+        startMs: Long,
+        durationMs: Long,
+        name: String,
+    )
+
     /**
      * Notifies that an action stopped, and update the action's type and name.
      * This is used to stop tracking long running actions (e.g.: scroll), started

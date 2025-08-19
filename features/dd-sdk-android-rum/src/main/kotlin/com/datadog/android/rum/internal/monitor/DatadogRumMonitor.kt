@@ -205,6 +205,13 @@ internal class DatadogRumMonitor(
         )
     }
 
+    override fun sendDurationVital(startMs: Long, durationMs: Long, name: String) {
+        val eventTime = getEventTime(emptyMap())
+        handleEvent(
+            RumRawEvent.Vital(startMs = startMs, durationMs = durationMs, eventTime = eventTime, attributes = emptyMap(), name = name)
+        )
+    }
+
     override fun stopAction(
         type: RumActionType,
         name: String,
