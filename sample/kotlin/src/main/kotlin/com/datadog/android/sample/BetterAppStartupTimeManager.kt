@@ -21,6 +21,7 @@ import android.view.View
 import android.view.ViewTreeObserver
 import android.view.Window
 import com.datadog.android.api.SdkCore
+import com.datadog.android.rum.RumMonitor
 import com.datadog.android.sample.NextDrawListener.Companion.onNextDraw
 import com.datadog.android.sample.WindowDelegateCallback.Companion.onDecorViewReady
 import io.opentelemetry.api.trace.Tracer
@@ -30,6 +31,7 @@ class BetterAppStartupTimeManager(
     private val context: Context,
     private val tracer: Tracer,
     private val sdkCore: SdkCore,
+    private val rumMonitor: RumMonitor,
 ) : Application.ActivityLifecycleCallbacks {
 
     var firstDraw = false
@@ -82,6 +84,12 @@ class BetterAppStartupTimeManager(
                     attachTraceToRumView(rootSpan, sdkCore)
 
                     rootSpan.end(epoch.plusMillis(startDurationMs))
+
+                    rumMonitor.sendDurationVital(
+                        startMs = System.currentTimeMillis() - startDurationMs,
+                        durationMs = startDurationMs,
+                        name = "TTID"
+                    )
 
                     Log.d(
                         "WAHAHA",

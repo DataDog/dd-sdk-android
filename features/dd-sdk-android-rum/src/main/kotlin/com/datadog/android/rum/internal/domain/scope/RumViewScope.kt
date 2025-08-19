@@ -6,6 +6,7 @@
 
 package com.datadog.android.rum.internal.domain.scope
 
+import android.util.Log
 import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.Feature
@@ -54,12 +55,31 @@ import com.datadog.android.rum.metric.networksettled.InitialResourceIdentifier
 import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
+import com.datadog.android.rum.model.RumVitalEvent
+import com.datadog.android.rum.model.RumVitalEvent.Account
+import com.datadog.android.rum.model.RumVitalEvent.Application
+import com.datadog.android.rum.model.RumVitalEvent.CiTest
+import com.datadog.android.rum.model.RumVitalEvent.Connectivity
+import com.datadog.android.rum.model.RumVitalEvent.Container
+import com.datadog.android.rum.model.RumVitalEvent.Context
+import com.datadog.android.rum.model.RumVitalEvent.Dd
+import com.datadog.android.rum.model.RumVitalEvent.Device
+import com.datadog.android.rum.model.RumVitalEvent.Display
+import com.datadog.android.rum.model.RumVitalEvent.Os
+import com.datadog.android.rum.model.RumVitalEvent.RumVitalEventSession
+import com.datadog.android.rum.model.RumVitalEvent.RumVitalEventSource
+import com.datadog.android.rum.model.RumVitalEvent.RumVitalEventView
+import com.datadog.android.rum.model.RumVitalEvent.RumVitalEventVital
+import com.datadog.android.rum.model.RumVitalEvent.Synthetics
+import com.datadog.android.rum.model.RumVitalEvent.Usr
 import com.datadog.android.rum.model.ViewEvent
 import java.util.Locale
 import java.util.UUID
 import java.util.concurrent.TimeUnit
 import kotlin.math.max
 import kotlin.math.min
+import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.ExperimentalTime
 
 @Suppress("TooManyFunctions", "LargeClass", "LongParameterList")
 internal open class RumViewScope(
@@ -223,6 +243,7 @@ internal open class RumViewScope(
             is RumRawEvent.UpdatePerformanceMetric -> onUpdatePerformanceMetric(event)
             is RumRawEvent.UpdateExternalRefreshRate -> onUpdateExternalRefreshRate(event)
             is RumRawEvent.AddViewLoadingTime -> onAddViewLoadingTime(event, writer)
+            is RumRawEvent.Vital -> onVital(event, writer)
 
             else -> delegateEventToChildren(event, writer)
         }
@@ -471,6 +492,79 @@ internal open class RumViewScope(
             rumSessionTypeOverride = rumSessionTypeOverride
         )
         pendingResourceCount++
+    }
+
+    @OptIn(ExperimentalTime::class)
+    private fun onVital(event: RumRawEvent.Vital, writer: DataWriter<Any>) {
+        sdkCore.newRumEventWriteOperation(writer, EventType.DEFAULT) { datadogContext ->
+            val rumContext = getRumContext()
+            val syntheticsAttribute = if (
+                rumContext.syntheticsTestId.isNullOrBlank() ||
+                rumContext.syntheticsResultId.isNullOrBlank()
+            ) {
+                null
+            } else {
+                RumVitalEvent.Synthetics(
+                    testId = rumContext.syntheticsTestId,
+                    resultId = rumContext.syntheticsResultId
+                )
+            }
+            val hasReplay = featuresContextResolver.resolveViewHasReplay(
+                datadogContext,
+                rumContext.viewId.orEmpty()
+            )
+
+            val sessionType = when {
+                rumSessionTypeOverride != null -> rumSessionTypeOverride.toVital()
+                syntheticsAttribute == null -> RumVitalEvent.RumVitalEventSessionType.USER
+                else -> RumVitalEvent.RumVitalEventSessionType.SYNTHETICS
+            }
+
+            val res = RumVitalEvent(
+                date = eventTimestamp,
+                context = Context(
+                    additionalProperties = addExtraAttributes(event.attributes)
+                ),
+                dd = RumVitalEvent.Dd(
+                    session = RumVitalEvent.DdSession(
+                        sessionPrecondition = rumContext.sessionStartReason.toVitalSessionPrecondition()
+                    ),
+                    configuration = RumVitalEvent.Configuration(sessionSampleRate = sampleRate)
+                ),
+                application = RumVitalEvent.Application(
+                    id = rumContext.applicationId,
+                    currentLocale = datadogContext.deviceInfo.localeInfo.currentLocale
+                ),
+                session = RumVitalEvent.RumVitalEventSession(
+                    id = rumContext.sessionId,
+                    type = sessionType,
+                    hasReplay = hasReplay
+                ),
+                view = RumVitalEvent.RumVitalEventView(
+                    id = rumContext.viewId.orEmpty(),
+                    name = rumContext.viewName,
+                    url = rumContext.viewUrl.orEmpty()
+                ),
+                vital = RumVitalEvent.RumVitalEventVital(
+                    description = "time to initial display",
+                    duration = event.durationMs.milliseconds.inWholeNanoseconds.toDouble(),
+                    id = UUID.randomUUID().toString(),
+                    name = event.name,
+                    stepType = null,
+                    failureReason = null,
+                    type = RumVitalEvent.RumVitalEventVitalType.DURATION
+                ),
+                ddtags = buildDDTagsString(datadogContext)
+            )
+            res
+        }.apply {
+            onSuccess {
+                Log.w("WAHAHA", "RumVitalEvent.success")
+            }
+            onError {
+                Log.w("WAHAHA", "RumVitalEvent.error")
+            }
+        }.submit()
     }
 
     @Suppress("ComplexMethod", "LongMethod")
@@ -1652,5 +1746,25 @@ internal open class RumViewScope(
         private fun invertValue(value: Double): Double {
             return if (value == 0.0) 0.0 else 1.0 / value
         }
+    }
+}
+
+internal fun RumSessionType.toVital(): RumVitalEvent.RumVitalEventSessionType {
+    return when (this) {
+        RumSessionType.SYNTHETICS -> RumVitalEvent.RumVitalEventSessionType.SYNTHETICS
+        RumSessionType.USER -> RumVitalEvent.RumVitalEventSessionType.USER
+    }
+}
+
+internal fun RumSessionScope.StartReason.toVitalSessionPrecondition(): RumVitalEvent.SessionPrecondition {
+    return when (this) {
+        RumSessionScope.StartReason.USER_APP_LAUNCH -> RumVitalEvent.SessionPrecondition.USER_APP_LAUNCH
+        RumSessionScope.StartReason.INACTIVITY_TIMEOUT -> RumVitalEvent.SessionPrecondition.INACTIVITY_TIMEOUT
+        RumSessionScope.StartReason.MAX_DURATION -> RumVitalEvent.SessionPrecondition.MAX_DURATION
+        RumSessionScope.StartReason.EXPLICIT_STOP -> RumVitalEvent.SessionPrecondition.EXPLICIT_STOP
+        RumSessionScope.StartReason.BACKGROUND_LAUNCH -> RumVitalEvent.SessionPrecondition.BACKGROUND_LAUNCH
+        RumSessionScope.StartReason.PREWARM -> RumVitalEvent.SessionPrecondition.PREWARM
+        RumSessionScope.StartReason.FROM_NON_INTERACTIVE_SESSION ->
+            RumVitalEvent.SessionPrecondition.FROM_NON_INTERACTIVE_SESSION
     }
 }

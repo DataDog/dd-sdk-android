@@ -245,4 +245,12 @@ internal sealed class RumRawEvent {
         val isAppInForeground: Boolean,
         override val eventTime: Time = Time()
     ) : RumRawEvent()
+
+    internal data class Vital(
+        val startMs: Long,
+        val durationMs: Long,
+        val attributes: Map<String, Any?>,
+        val name: String,
+        override val eventTime: Time = Time()
+    ): RumRawEvent()
 }

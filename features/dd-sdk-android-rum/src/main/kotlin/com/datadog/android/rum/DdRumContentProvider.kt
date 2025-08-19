@@ -64,10 +64,10 @@ class DdRumContentProvider : ContentProvider() {
         return 0
     }
 
-    internal companion object {
+    companion object {
         internal const val DEFAULT_IMPORTANCE: Int =
             ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND
-        internal var processImportance = 0
+        var processImportance = 0
 
         @Suppress("unused") // Used for instrumented tests
         @JvmStatic

@@ -55,7 +55,6 @@
         <activity
             android:name=".NavActivity"
             android:exported="true"
-            android:taskAffinity="com.example.task.one"
             android:label="@string/title_main">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -63,21 +62,9 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-
         <activity
             android:name=".compose.JetpackComposeActivity"
-            android:taskAffinity="com.example.task.two"
-            android:exported="true"
-            android:theme="@style/Sample.Theme.Compose" >
-
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-
-        </activity>
-
+            android:theme="@style/Sample.Theme.Compose" />
         <activity
             android:name="com.datadog.android.sample.compose.LegacyComposeActivity"
             android:theme="@style/Sample.Theme.Compose" />
