@@ -17,6 +17,7 @@ import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.model.ViewEvent
+import com.datadog.android.rum.model.ViewEvent.Accessibility
 import com.datadog.android.rum.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
@@ -36,6 +37,7 @@ import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.verify
@@ -252,7 +254,63 @@ internal class RumDataWriterTest {
 
     // endregion
 
-    private fun isAccessibilityPopulated(accessibility: ViewEvent.Accessibility?): Boolean {
+    // region accessibility
+
+    @Test
+    fun `M hasAccessibility false W write() { empty accessibility object }`(
+        forge: Forge
+    ) {
+        // Given
+        val viewEvent = forge.getForgery<ViewEvent>()
+        val newView = viewEvent.view.copy(
+            accessibility = Accessibility()
+        )
+        val newViewEvent = viewEvent.copy(
+            view = newView
+        )
+
+        whenever(mockSerializer.serialize(newViewEvent)) doReturn fakeSerializedEvent
+
+        // When
+        testedWriter.write(mockEventBatchWriter, newViewEvent, fakeEventType)
+
+        // Then
+        val captor = argumentCaptor<RumEventMeta.View>()
+        verify(mockEventMetaSerializer).serialize(captor.capture())
+        val metaData = captor.firstValue
+        assertThat(metaData.hasAccessibility).isFalse
+    }
+
+    @Test
+    fun `M hasAccessibility true W write() { populated accessibility object }`(
+        forge: Forge
+    ) {
+        // Given
+        val viewEvent = forge.getForgery<ViewEvent>()
+        val newView = viewEvent.view.copy(
+            accessibility = Accessibility(
+                textSize = "1.3"
+            )
+        )
+        val newViewEvent = viewEvent.copy(
+            view = newView
+        )
+
+        whenever(mockSerializer.serialize(newViewEvent)) doReturn fakeSerializedEvent
+
+        // When
+        testedWriter.write(mockEventBatchWriter, newViewEvent, fakeEventType)
+
+        // Then
+        val captor = argumentCaptor<RumEventMeta.View>()
+        verify(mockEventMetaSerializer).serialize(captor.capture())
+        val metaData = captor.firstValue
+        assertThat(metaData.hasAccessibility).isTrue
+    }
+
+    // endregion
+
+    private fun isAccessibilityPopulated(accessibility: Accessibility?): Boolean {
         if (accessibility == null) return false
         return setOf<Any?>(
             accessibility.textSize,

@@ -65,7 +65,7 @@ class ViewEventForgeryFactory : ForgeryFactory<ViewEvent> {
                 refreshRateAverage = forge.aNullable { aPositiveDouble() },
                 refreshRateMin = forge.aNullable { aPositiveDouble() },
                 frustration = forge.aNullable { ViewEvent.Frustration(aPositiveLong()) },
-                accessibility = forge.aNullable { forge.getForgery<Accessibility>() }
+                accessibility = forge.aNullable { getForgery<Accessibility>() }
             ),
             connectivity = forge.aNullable {
                 ViewEvent.Connectivity(
