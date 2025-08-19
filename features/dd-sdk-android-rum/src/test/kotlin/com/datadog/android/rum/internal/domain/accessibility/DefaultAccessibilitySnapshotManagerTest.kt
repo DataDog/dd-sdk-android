@@ -6,12 +6,7 @@
 
 package com.datadog.android.rum.internal.domain.accessibility
 
-import com.datadog.android.rum.internal.domain.accessibility.Accessibility.Companion.CLOSED_CAPTIONING_ENABLED_KEY
-import com.datadog.android.rum.internal.domain.accessibility.Accessibility.Companion.COLOR_INVERSION_ENABLED_KEY
-import com.datadog.android.rum.internal.domain.accessibility.Accessibility.Companion.REDUCED_ANIMATIONS_ENABLED_KEY
-import com.datadog.android.rum.internal.domain.accessibility.Accessibility.Companion.SCREEN_PINNING_ENABLED_KEY
-import com.datadog.android.rum.internal.domain.accessibility.Accessibility.Companion.SCREEN_READER_ENABLED_KEY
-import com.datadog.android.rum.internal.domain.accessibility.Accessibility.Companion.TEXT_SIZE_KEY
+import com.datadog.android.rum.internal.domain.InfoProvider
 import com.datadog.android.rum.utils.forge.Configurator
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.BoolForgery
@@ -39,7 +34,7 @@ import org.mockito.quality.Strictness
 internal class DefaultAccessibilitySnapshotManagerTest {
 
     @Mock
-    lateinit var mockAccessibilityReader: AccessibilityReader
+    lateinit var mockAccessibilityReader: InfoProvider<AccessibilityInfo>
 
     private lateinit var testedManager: DefaultAccessibilitySnapshotManager
 
@@ -51,13 +46,13 @@ internal class DefaultAccessibilitySnapshotManagerTest {
     @Test
     fun `M return empty accessibility W latestSnapshot() { no accessibility data }`() {
         // Given
-        whenever(mockAccessibilityReader.getState()) doReturn emptyMap()
+        whenever(mockAccessibilityReader.getState()) doReturn AccessibilityInfo()
 
         // When
         val result = testedManager.latestSnapshot()
 
         // Then
-        assertThat(result).isEqualTo(Accessibility())
+        assertThat(result).isEqualTo(AccessibilityInfo())
     }
 
     @Test
@@ -67,16 +62,18 @@ internal class DefaultAccessibilitySnapshotManagerTest {
         @BoolForgery colorInversion: Boolean,
         @BoolForgery closedCaptioning: Boolean,
         @BoolForgery reducedAnimations: Boolean,
-        @BoolForgery screenPinning: Boolean
+        @BoolForgery screenPinning: Boolean,
+        @BoolForgery rtlEnabled: Boolean
     ) {
         // Given
-        val accessibilityState = mapOf(
-            TEXT_SIZE_KEY to textSize.toString(),
-            SCREEN_READER_ENABLED_KEY to screenReader,
-            COLOR_INVERSION_ENABLED_KEY to colorInversion,
-            CLOSED_CAPTIONING_ENABLED_KEY to closedCaptioning,
-            REDUCED_ANIMATIONS_ENABLED_KEY to reducedAnimations,
-            SCREEN_PINNING_ENABLED_KEY to screenPinning
+        val accessibilityState = AccessibilityInfo(
+            textSize = textSize.toString(),
+            isScreenReaderEnabled = screenReader,
+            isColorInversionEnabled = colorInversion,
+            isClosedCaptioningEnabled = closedCaptioning,
+            isReducedAnimationsEnabled = reducedAnimations,
+            isScreenPinningEnabled = screenPinning,
+            isRtlEnabled = rtlEnabled
         )
         whenever(mockAccessibilityReader.getState()) doReturn accessibilityState
 
@@ -85,13 +82,14 @@ internal class DefaultAccessibilitySnapshotManagerTest {
 
         // Then
         assertThat(result).isEqualTo(
-            Accessibility(
+            AccessibilityInfo(
                 textSize = textSize.toString(),
                 isScreenReaderEnabled = screenReader,
                 isColorInversionEnabled = colorInversion,
                 isClosedCaptioningEnabled = closedCaptioning,
                 isReducedAnimationsEnabled = reducedAnimations,
-                isScreenPinningEnabled = screenPinning
+                isScreenPinningEnabled = screenPinning,
+                isRtlEnabled = rtlEnabled
             )
         )
     }
@@ -102,9 +100,9 @@ internal class DefaultAccessibilitySnapshotManagerTest {
         @BoolForgery screenReader: Boolean
     ) {
         // Given
-        val accessibilityState = mapOf(
-            TEXT_SIZE_KEY to textSize.toString(),
-            SCREEN_READER_ENABLED_KEY to screenReader
+        val accessibilityState = AccessibilityInfo(
+            textSize = textSize.toString(),
+            isScreenReaderEnabled = screenReader
         )
         whenever(mockAccessibilityReader.getState()) doReturn accessibilityState
 
@@ -115,7 +113,7 @@ internal class DefaultAccessibilitySnapshotManagerTest {
         val result = testedManager.latestSnapshot()
 
         // Then
-        assertThat(result).isEqualTo(Accessibility())
+        assertThat(result).isEqualTo(AccessibilityInfo())
     }
 
     @Test
@@ -126,18 +124,18 @@ internal class DefaultAccessibilitySnapshotManagerTest {
         @BoolForgery colorInversion: Boolean
     ) {
         // Given
-        val initialState = mapOf(
-            TEXT_SIZE_KEY to initialTextSize,
-            SCREEN_READER_ENABLED_KEY to screenReader,
-            COLOR_INVERSION_ENABLED_KEY to colorInversion
+        val initialState = AccessibilityInfo(
+            textSize = initialTextSize.toString(),
+            isScreenReaderEnabled = screenReader,
+            isColorInversionEnabled = colorInversion
         )
 
         val newTextSize = rerollFloat(initialTextSize, forge)
 
-        val changedState = mapOf(
-            TEXT_SIZE_KEY to newTextSize.toString(), // Changed
-            SCREEN_READER_ENABLED_KEY to screenReader, // Same
-            COLOR_INVERSION_ENABLED_KEY to colorInversion // Same
+        val changedState = AccessibilityInfo(
+            textSize = newTextSize.toString(), // Changed
+            isScreenReaderEnabled = screenReader, // Same
+            isColorInversionEnabled = colorInversion // Same
         )
 
         whenever(mockAccessibilityReader.getState())
@@ -150,7 +148,7 @@ internal class DefaultAccessibilitySnapshotManagerTest {
 
         // Then - Only changed value should be returned
         assertThat(result).isEqualTo(
-            Accessibility(textSize = newTextSize.toString())
+            AccessibilityInfo(textSize = newTextSize.toString())
         )
     }
 
@@ -161,13 +159,13 @@ internal class DefaultAccessibilitySnapshotManagerTest {
         @BoolForgery colorInversion: Boolean
     ) {
         // Given
-        val initialState = mapOf(
-            TEXT_SIZE_KEY to textSize.toString()
+        val initialState = AccessibilityInfo(
+            textSize = textSize.toString()
         )
-        val expandedState = mapOf(
-            TEXT_SIZE_KEY to textSize.toString(),
-            SCREEN_READER_ENABLED_KEY to screenReader,
-            COLOR_INVERSION_ENABLED_KEY to colorInversion
+        val expandedState = AccessibilityInfo(
+            textSize = textSize.toString(),
+            isScreenReaderEnabled = screenReader,
+            isColorInversionEnabled = colorInversion
         )
 
         whenever(mockAccessibilityReader.getState())
@@ -180,7 +178,7 @@ internal class DefaultAccessibilitySnapshotManagerTest {
 
         // Then - Only new values should be returned
         assertThat(result).isEqualTo(
-            Accessibility(
+            AccessibilityInfo(
                 isScreenReaderEnabled = screenReader,
                 isColorInversionEnabled = colorInversion
             )
@@ -193,14 +191,14 @@ internal class DefaultAccessibilitySnapshotManagerTest {
         @BoolForgery screenReader: Boolean
     ) {
         // Given
-        val initialState = mapOf(
-            TEXT_SIZE_KEY to textSize.toString(),
-            SCREEN_READER_ENABLED_KEY to screenReader,
-            COLOR_INVERSION_ENABLED_KEY to true
+        val initialState = AccessibilityInfo(
+            textSize = textSize.toString(),
+            isScreenReaderEnabled = screenReader,
+            isColorInversionEnabled = true
         )
-        val stateWithNull = mapOf(
-            TEXT_SIZE_KEY to textSize.toString(),
-            SCREEN_READER_ENABLED_KEY to screenReader
+        val stateWithNull = AccessibilityInfo(
+            textSize = textSize.toString(),
+            isScreenReaderEnabled = screenReader
         )
 
         whenever(mockAccessibilityReader.getState())
@@ -212,52 +210,24 @@ internal class DefaultAccessibilitySnapshotManagerTest {
         val result = testedManager.latestSnapshot() // Second call
 
         // Then - No changes should be reported (null values are filtered)
-        assertThat(result).isEqualTo(Accessibility())
+        assertThat(result).isEqualTo(AccessibilityInfo())
     }
 
     @Test
-    fun `M report change W latestSnapshot() { value changes from null to non-null }`(
-        @FloatForgery textSize: Float,
-        @BoolForgery colorInversion: Boolean
-    ) {
-        // Given
-        val initialState = mapOf(
-            TEXT_SIZE_KEY to textSize.toString()
-        )
-        val stateWithValue = mapOf(
-            TEXT_SIZE_KEY to textSize.toString(),
-            COLOR_INVERSION_ENABLED_KEY to colorInversion // Changed from null to value
-        )
-
-        whenever(mockAccessibilityReader.getState())
-            .doReturn(initialState)
-            .doReturn(stateWithValue)
-
-        // When
-        testedManager.latestSnapshot() // First call
-        val result = testedManager.latestSnapshot() // Second call
-
-        // Then - New non-null value should be reported
-        assertThat(result).isEqualTo(
-            Accessibility(isColorInversionEnabled = colorInversion)
-        )
-    }
-
-    @Test
-    fun `M handle missing keys gracefully W latestSnapshot() { key disappears from state }`(
+    fun `M not report null keys W latestSnapshot() { key disappears from state }`(
         @FloatForgery textSize: Float,
         @BoolForgery screenReader: Boolean,
         @BoolForgery colorInversion: Boolean
     ) {
         // Given
-        val completeState = mapOf(
-            TEXT_SIZE_KEY to textSize.toString(),
-            SCREEN_READER_ENABLED_KEY to screenReader,
-            COLOR_INVERSION_ENABLED_KEY to colorInversion
+        val completeState = AccessibilityInfo(
+            textSize = textSize.toString(),
+            isScreenReaderEnabled = screenReader,
+            isColorInversionEnabled = colorInversion
         )
-        val incompleteState = mapOf(
-            TEXT_SIZE_KEY to textSize.toString(),
-            SCREEN_READER_ENABLED_KEY to screenReader
+        val incompleteState = AccessibilityInfo(
+            textSize = textSize.toString(),
+            isScreenReaderEnabled = screenReader
             // COLOR_INVERSION_ENABLED_KEY missing
         )
 
@@ -270,7 +240,7 @@ internal class DefaultAccessibilitySnapshotManagerTest {
         val result = testedManager.latestSnapshot() // Second call
 
         // Then - No changes should be reported for missing keys (they become null)
-        assertThat(result).isEqualTo(Accessibility())
+        assertThat(result).isEqualTo(AccessibilityInfo())
     }
 
     @Test
@@ -282,10 +252,10 @@ internal class DefaultAccessibilitySnapshotManagerTest {
         val textSize2 = rerollFloat(textSize1, forge)
         val textSize3 = rerollFloat(textSize2, forge)
 
-        val state1 = mapOf(TEXT_SIZE_KEY to textSize1.toString())
-        val state2 = mapOf(TEXT_SIZE_KEY to textSize2.toString())
-        val state3 = mapOf(TEXT_SIZE_KEY to textSize2.toString()) // Same as state2
-        val state4 = mapOf(TEXT_SIZE_KEY to textSize3.toString())
+        val state1 = AccessibilityInfo(textSize = textSize1.toString())
+        val state2 = AccessibilityInfo(textSize = textSize2.toString())
+        val state3 = AccessibilityInfo(textSize = textSize2.toString()) // Same as state2
+        val state4 = AccessibilityInfo(textSize = textSize3.toString())
 
         whenever(mockAccessibilityReader.getState())
             .doReturn(state1)
@@ -301,7 +271,7 @@ internal class DefaultAccessibilitySnapshotManagerTest {
         assertThat(result2.textSize).isEqualTo(textSize2.toString())
 
         val result3 = testedManager.latestSnapshot()
-        assertThat(result3).isEqualTo(Accessibility()) // No change
+        assertThat(result3).isEqualTo(AccessibilityInfo()) // No change
 
         val result4 = testedManager.latestSnapshot()
         assertThat(result4.textSize).isEqualTo(textSize3.toString())

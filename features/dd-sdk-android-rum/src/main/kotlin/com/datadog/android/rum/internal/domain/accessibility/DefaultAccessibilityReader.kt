@@ -22,11 +22,11 @@ import android.view.View
 import android.view.accessibility.AccessibilityManager
 import android.view.accessibility.AccessibilityManager.TouchExplorationStateChangeListener
 import com.datadog.android.api.InternalLogger
-import java.util.concurrent.atomic.AtomicBoolean
+import com.datadog.android.rum.internal.domain.InfoProvider
 import java.util.concurrent.atomic.AtomicLong
 
 @Suppress("TooManyFunctions")
-internal class DatadogAccessibilityReader(
+internal class DefaultAccessibilityReader(
     private val internalLogger: InternalLogger,
     private val applicationContext: Context,
     private val resources: Resources = applicationContext.resources,
@@ -37,14 +37,7 @@ internal class DatadogAccessibilityReader(
     private val secureWrapper: SecureWrapper = SecureWrapper(),
     private val globalWrapper: GlobalWrapper = GlobalWrapper(),
     private val handler: Handler = Handler(Looper.getMainLooper())
-) : AccessibilityReader, ComponentCallbacks {
-
-    @Volatile
-    private var currentState = Accessibility()
-
-    private var lastPollTime: AtomicLong = AtomicLong(0)
-
-    private var isInitialized = AtomicBoolean(false)
+) : InfoProvider<AccessibilityInfo>, ComponentCallbacks {
 
     private val displayInversionListener = object : ContentObserver(handler) {
         override fun onChange(selfChange: Boolean, uri: Uri?) {
@@ -72,15 +65,22 @@ internal class DatadogAccessibilityReader(
         updateState { it.copy(isScreenReaderEnabled = newScreenReaderEnabled) }
     }
 
+    @Volatile
+    private var currentState = AccessibilityInfo()
+
+    private var lastPollTime: AtomicLong = AtomicLong(0)
+
+    init {
+        registerListeners()
+        buildInitialState()
+    }
+
     override fun cleanup() {
-        if (isInitialized.get()) {
-            accessibilityManager?.removeTouchExplorationStateChangeListener(touchListener)
-            applicationContext.contentResolver.unregisterContentObserver(animationDurationListener)
-            applicationContext.contentResolver.unregisterContentObserver(captioningListener)
-            applicationContext.contentResolver.unregisterContentObserver(displayInversionListener)
-            applicationContext.unregisterComponentCallbacks(this)
-            isInitialized.set(false)
-        }
+        accessibilityManager?.removeTouchExplorationStateChangeListener(touchListener)
+        applicationContext.contentResolver.unregisterContentObserver(animationDurationListener)
+        applicationContext.contentResolver.unregisterContentObserver(captioningListener)
+        applicationContext.contentResolver.unregisterContentObserver(displayInversionListener)
+        applicationContext.unregisterComponentCallbacks(this)
     }
 
     override fun onLowMemory() {
@@ -96,9 +96,7 @@ internal class DatadogAccessibilityReader(
     }
 
     @Synchronized
-    override fun getState(): Map<String, Any> {
-        ensureInitialized()
-
+    override fun getState(): AccessibilityInfo {
         val currentTime = System.currentTimeMillis()
         val shouldPoll = currentTime - lastPollTime.get() >= POLL_THRESHOLD
         if (shouldPoll) {
@@ -106,24 +104,16 @@ internal class DatadogAccessibilityReader(
             pollForAttributesWithoutListeners()
         }
 
-        return currentState.toMap()
+        return currentState
     }
 
     @Synchronized
-    private fun updateState(updater: (Accessibility) -> Accessibility) {
+    private fun updateState(updater: (AccessibilityInfo) -> AccessibilityInfo) {
         currentState = updater(currentState)
     }
 
-    private fun ensureInitialized() {
-        if (!isInitialized.get()) {
-            registerListeners()
-            currentState = buildInitialState()
-            isInitialized.set(true)
-        }
-    }
-
-    private fun buildInitialState(): Accessibility {
-        return Accessibility(
+    private fun buildInitialState() {
+        currentState = AccessibilityInfo(
             textSize = getTextSize(),
             isScreenReaderEnabled = isScreenReaderEnabled(accessibilityManager),
             isColorInversionEnabled = isDisplayInversionEnabled(),
@@ -159,11 +149,11 @@ internal class DatadogAccessibilityReader(
     }
 
     private fun isDisplayInversionEnabled(): Boolean? {
-        return getSecureInt(ACCESSIBILITY_DISPLAY_INVERSION_ENABLED)
+        return isSettingEnabled(ACCESSIBILITY_DISPLAY_INVERSION_ENABLED)
     }
 
     private fun isClosedCaptioningEnabled(): Boolean? {
-        return getSecureInt(CAPTIONING_ENABLED_KEY)
+        return isSettingEnabled(CAPTIONING_ENABLED_KEY)
     }
 
     private fun isLockToScreenEnabled(): Boolean? {
@@ -187,12 +177,14 @@ internal class DatadogAccessibilityReader(
         }
     }
 
-    private fun getSecureInt(key: String): Boolean? {
+    private fun isSettingEnabled(key: String): Boolean? {
         return secureWrapper.getInt(
             internalLogger = internalLogger,
             applicationContext = applicationContext,
             key = key
-        )
+        )?.let {
+            it == 1
+        }
     }
 
     private fun getTextSize(): String {

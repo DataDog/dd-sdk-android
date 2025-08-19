@@ -42,13 +42,20 @@ import com.datadog.android.rum.configuration.SlowFramesConfiguration
 import com.datadog.android.rum.configuration.VitalsUpdateFrequency
 import com.datadog.android.rum.internal.anr.ANRDetectorRunnable
 import com.datadog.android.rum.internal.debug.UiRumDebugListener
+import com.datadog.android.rum.internal.domain.InfoProvider
 import com.datadog.android.rum.internal.domain.RumDataWriter
-import com.datadog.android.rum.internal.domain.accessibility.AccessibilityReader
+import com.datadog.android.rum.internal.domain.accessibility.AccessibilityInfo
 import com.datadog.android.rum.internal.domain.accessibility.AccessibilitySnapshotManager
-import com.datadog.android.rum.internal.domain.accessibility.DatadogAccessibilityReader
+import com.datadog.android.rum.internal.domain.accessibility.DefaultAccessibilityReader
 import com.datadog.android.rum.internal.domain.accessibility.DefaultAccessibilitySnapshotManager
 import com.datadog.android.rum.internal.domain.accessibility.NoOpAccessibilityReader
 import com.datadog.android.rum.internal.domain.accessibility.NoOpAccessibilitySnapshotManager
+import com.datadog.android.rum.internal.domain.battery.BatteryInfo
+import com.datadog.android.rum.internal.domain.battery.DefaultBatteryInfoProvider
+import com.datadog.android.rum.internal.domain.battery.NoOpBatteryInfoProvider
+import com.datadog.android.rum.internal.domain.display.DefaultDisplayInfoProvider
+import com.datadog.android.rum.internal.domain.display.DisplayInfo
+import com.datadog.android.rum.internal.domain.display.NoOpDisplayInfoProvider
 import com.datadog.android.rum.internal.domain.event.RumEventMapper
 import com.datadog.android.rum.internal.domain.event.RumEventMetaDeserializer
 import com.datadog.android.rum.internal.domain.event.RumEventMetaSerializer
@@ -151,9 +158,11 @@ internal class RumFeature(
     internal var initialResourceIdentifier: InitialResourceIdentifier = NoOpInitialResourceIdentifier()
     internal var lastInteractionIdentifier: LastInteractionIdentifier? = NoOpLastInteractionIdentifier()
     internal var slowFramesListener: SlowFramesListener? = null
-    internal var accessibilityReader: AccessibilityReader = NoOpAccessibilityReader()
+    internal var accessibilityReader: InfoProvider<AccessibilityInfo> = NoOpAccessibilityReader()
     internal var accessibilitySnapshotManager: AccessibilitySnapshotManager =
         NoOpAccessibilitySnapshotManager()
+    internal var batteryInfoProvider: InfoProvider<BatteryInfo> = NoOpBatteryInfoProvider()
+    internal var displayInfoProvider: InfoProvider<DisplayInfo> = NoOpDisplayInfoProvider()
 
     private val lateCrashEventHandler by lazy { lateCrashReporterFactory(sdkCore as InternalSdkCore) }
 
@@ -166,8 +175,10 @@ internal class RumFeature(
         this.appContext = appContext
 
         if (configuration.collectAccessibility) {
-            accessibilityReader =
-                DatadogAccessibilityReader(applicationContext = appContext, internalLogger = sdkCore.internalLogger)
+            accessibilityReader = DefaultAccessibilityReader(
+                internalLogger = sdkCore.internalLogger,
+                applicationContext = appContext
+            )
             accessibilitySnapshotManager = DefaultAccessibilitySnapshotManager(accessibilityReader)
         }
 
@@ -193,6 +204,13 @@ internal class RumFeature(
         telemetryConfigurationSampleRate = configuration.telemetryConfigurationSampleRate
         backgroundEventTracking = configuration.backgroundEventTracking
         trackFrustrations = configuration.trackFrustrations
+        batteryInfoProvider = DefaultBatteryInfoProvider(
+            applicationContext = appContext
+        )
+        displayInfoProvider = DefaultDisplayInfoProvider(
+            applicationContext = appContext,
+            internalLogger = sdkCore.internalLogger
+        )
 
         configuration.viewTrackingStrategy?.let { viewTrackingStrategy = it }
         actionTrackingStrategy = if (configuration.userActionTracking) {
@@ -306,16 +324,25 @@ internal class RumFeature(
         vitalExecutorService = NoOpScheduledExecutorService()
         sessionListener = NoOpRumSessionListener()
 
+        cleanupInfoProviders()
+
+        GlobalRumMonitor.unregister(sdkCore)
+    }
+
+    // endregion
+
+    private fun cleanupInfoProviders() {
         if (configuration.collectAccessibility) {
             accessibilityReader.cleanup()
             accessibilityReader = NoOpAccessibilityReader()
             accessibilitySnapshotManager = NoOpAccessibilitySnapshotManager()
         }
 
-        GlobalRumMonitor.unregister(sdkCore)
+        batteryInfoProvider.cleanup()
+        batteryInfoProvider = NoOpBatteryInfoProvider()
+        displayInfoProvider.cleanup()
+        displayInfoProvider = NoOpDisplayInfoProvider()
     }
-
-    // endregion
 
     private fun createDataWriter(
         configuration: Configuration,

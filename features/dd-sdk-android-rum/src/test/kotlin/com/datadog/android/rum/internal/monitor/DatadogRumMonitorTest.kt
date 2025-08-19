@@ -31,8 +31,11 @@ import com.datadog.android.rum.RumSessionType
 import com.datadog.android.rum.internal.RumErrorSourceType
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.debug.RumDebugListener
+import com.datadog.android.rum.internal.domain.InfoProvider
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.accessibility.AccessibilitySnapshotManager
+import com.datadog.android.rum.internal.domain.battery.BatteryInfo
+import com.datadog.android.rum.internal.domain.display.DisplayInfo
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
 import com.datadog.android.rum.internal.domain.scope.RumActionScope
 import com.datadog.android.rum.internal.domain.scope.RumApplicationScope
@@ -123,6 +126,12 @@ internal class DatadogRumMonitorTest {
 
     @Mock
     lateinit var mockAccessibilitySnapshotManager: AccessibilitySnapshotManager
+
+    @Mock
+    lateinit var mockBatteryInfoProvider: InfoProvider<BatteryInfo>
+
+    @Mock
+    lateinit var mockDisplayInfoProvider: InfoProvider<DisplayInfo>
 
     @Mock
     lateinit var mockResolver: FirstPartyHostHeaderTypeResolver
@@ -223,7 +232,9 @@ internal class DatadogRumMonitorTest {
             lastInteractionIdentifier = mockLastInteractionIdentifier,
             slowFramesListener = mockSlowFramesListener,
             rumSessionTypeOverride = fakeRumSessionType,
-            accessibilitySnapshotManager = mockAccessibilitySnapshotManager
+            accessibilitySnapshotManager = mockAccessibilitySnapshotManager,
+            batteryInfoProvider = mockBatteryInfoProvider,
+            displayInfoProvider = mockDisplayInfoProvider
         )
         testedMonitor.rootScope = mockScope
     }
@@ -250,7 +261,9 @@ internal class DatadogRumMonitorTest {
             lastInteractionIdentifier = mockLastInteractionIdentifier,
             slowFramesListener = mockSlowFramesListener,
             rumSessionTypeOverride = fakeRumSessionType,
-            accessibilitySnapshotManager = mockAccessibilitySnapshotManager
+            accessibilitySnapshotManager = mockAccessibilitySnapshotManager,
+            batteryInfoProvider = mockBatteryInfoProvider,
+            displayInfoProvider = mockDisplayInfoProvider
         )
 
         val rootScope = testedMonitor.rootScope
@@ -314,7 +327,9 @@ internal class DatadogRumMonitorTest {
             lastInteractionIdentifier = mockLastInteractionIdentifier,
             slowFramesListener = mockSlowFramesListener,
             rumSessionTypeOverride = fakeRumSessionType,
-            accessibilitySnapshotManager = mockAccessibilitySnapshotManager
+            accessibilitySnapshotManager = mockAccessibilitySnapshotManager,
+            batteryInfoProvider = mockBatteryInfoProvider,
+            displayInfoProvider = mockDisplayInfoProvider
         )
         val completableFuture = CompletableFuture<String>()
         testedMonitor.start()
@@ -356,7 +371,9 @@ internal class DatadogRumMonitorTest {
             lastInteractionIdentifier = mockLastInteractionIdentifier,
             slowFramesListener = mockSlowFramesListener,
             rumSessionTypeOverride = fakeRumSessionType,
-            accessibilitySnapshotManager = mockAccessibilitySnapshotManager
+            accessibilitySnapshotManager = mockAccessibilitySnapshotManager,
+            batteryInfoProvider = mockBatteryInfoProvider,
+            displayInfoProvider = mockDisplayInfoProvider
         )
 
         val completableFuture = CompletableFuture<String>()
@@ -1705,7 +1722,9 @@ internal class DatadogRumMonitorTest {
             lastInteractionIdentifier = mockLastInteractionIdentifier,
             slowFramesListener = mockSlowFramesListener,
             rumSessionTypeOverride = fakeRumSessionType,
-            accessibilitySnapshotManager = mockAccessibilitySnapshotManager
+            accessibilitySnapshotManager = mockAccessibilitySnapshotManager,
+            batteryInfoProvider = mockBatteryInfoProvider,
+            displayInfoProvider = mockDisplayInfoProvider
         )
 
         // When
@@ -1755,7 +1774,9 @@ internal class DatadogRumMonitorTest {
             lastInteractionIdentifier = mockLastInteractionIdentifier,
             slowFramesListener = mockSlowFramesListener,
             rumSessionTypeOverride = fakeRumSessionType,
-            accessibilitySnapshotManager = mockAccessibilitySnapshotManager
+            accessibilitySnapshotManager = mockAccessibilitySnapshotManager,
+            batteryInfoProvider = mockBatteryInfoProvider,
+            displayInfoProvider = mockDisplayInfoProvider
         )
 
         // When
@@ -1792,6 +1813,8 @@ internal class DatadogRumMonitorTest {
             lastInteractionIdentifier = mockLastInteractionIdentifier,
             slowFramesListener = mockSlowFramesListener,
             accessibilitySnapshotManager = mockAccessibilitySnapshotManager,
+            batteryInfoProvider = mockBatteryInfoProvider,
+            displayInfoProvider = mockDisplayInfoProvider,
             rumSessionTypeOverride = null
         )
         whenever(mockExecutorService.isShutdown).thenReturn(true)
@@ -1990,7 +2013,9 @@ internal class DatadogRumMonitorTest {
             lastInteractionIdentifier = mockLastInteractionIdentifier,
             slowFramesListener = mockSlowFramesListener,
             rumSessionTypeOverride = fakeRumSessionType,
-            accessibilitySnapshotManager = mockAccessibilitySnapshotManager
+            accessibilitySnapshotManager = mockAccessibilitySnapshotManager,
+            batteryInfoProvider = mockBatteryInfoProvider,
+            displayInfoProvider = mockDisplayInfoProvider
         )
         testedMonitor.startView(key, name, attributes)
         // When

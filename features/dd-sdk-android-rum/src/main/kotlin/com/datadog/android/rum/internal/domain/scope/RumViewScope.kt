@@ -24,9 +24,12 @@ import com.datadog.android.rum.RumPerformanceMetric
 import com.datadog.android.rum.RumSessionType
 import com.datadog.android.rum.internal.FeaturesContextResolver
 import com.datadog.android.rum.internal.anr.ANRException
+import com.datadog.android.rum.internal.domain.InfoProvider
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.domain.accessibility.AccessibilitySnapshotManager
+import com.datadog.android.rum.internal.domain.battery.BatteryInfo
+import com.datadog.android.rum.internal.domain.display.DisplayInfo
 import com.datadog.android.rum.internal.metric.NoValueReason
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
 import com.datadog.android.rum.internal.metric.ViewEndedMetricDispatcher
@@ -80,7 +83,9 @@ internal open class RumViewScope(
     private val slowFramesListener: SlowFramesListener?,
     private val viewEndedMetricDispatcher: ViewMetricDispatcher,
     private val rumSessionTypeOverride: RumSessionType?,
-    private val accessibilitySnapshotManager: AccessibilitySnapshotManager
+    private val accessibilitySnapshotManager: AccessibilitySnapshotManager,
+    private val batteryInfoProvider: InfoProvider<BatteryInfo>,
+    private val displayInfoProvider: InfoProvider<DisplayInfo>
 ) : RumScope {
 
     internal val url = key.url.replace('.', '/')
@@ -271,7 +276,9 @@ internal open class RumViewScope(
             viewEndedMetricDispatcher = viewEndedMetricDispatcher,
             slowFramesListener = slowFramesListener,
             rumSessionTypeOverride = rumSessionTypeOverride,
-            accessibilitySnapshotManager = accessibilitySnapshotManager
+            accessibilitySnapshotManager = accessibilitySnapshotManager,
+            batteryInfoProvider = batteryInfoProvider,
+            displayInfoProvider = displayInfoProvider
         )
     }
 
@@ -495,6 +502,9 @@ internal open class RumViewScope(
         val eventFeatureFlags = featureFlags.toMutableMap()
         val eventType = if (isFatal) EventType.CRASH else EventType.DEFAULT
 
+        val batteryInfo = batteryInfoProvider.getState()
+        val displayInfo = displayInfoProvider.getState()
+
         sdkCore.newRumEventWriteOperation(writer, eventType) { datadogContext ->
 
             val user = datadogContext.userInfo
@@ -594,7 +604,10 @@ internal open class RumViewScope(
                     brand = datadogContext.deviceInfo.deviceBrand,
                     architecture = datadogContext.deviceInfo.architecture,
                     locales = datadogContext.deviceInfo.localeInfo.locales,
-                    timeZone = datadogContext.deviceInfo.localeInfo.timeZone
+                    timeZone = datadogContext.deviceInfo.localeInfo.timeZone,
+                    batteryLevel = batteryInfo.batteryLevel,
+                    powerSavingMode = batteryInfo.lowPowerMode,
+                    brightnessLevel = displayInfo.screenBrightness
                 ),
                 context = ErrorEvent.Context(additionalProperties = updatedAttributes),
                 dd = ErrorEvent.Dd(
@@ -995,6 +1008,9 @@ internal open class RumViewScope(
             rtlEnabled = accessibilityState.isRtlEnabled
         )
 
+        val batteryInfo = batteryInfoProvider.getState()
+        val displayInfo = displayInfoProvider.getState()
+
         val performance = (internalAttributes[RumAttributes.FLUTTER_FIRST_BUILD_COMPLETE] as? Number)?.let {
             ViewEvent.Performance(
                 fbc = ViewEvent.Fbc(
@@ -1121,7 +1137,10 @@ internal open class RumViewScope(
                     brand = datadogContext.deviceInfo.deviceBrand,
                     architecture = datadogContext.deviceInfo.architecture,
                     locales = datadogContext.deviceInfo.localeInfo.locales,
-                    timeZone = datadogContext.deviceInfo.localeInfo.timeZone
+                    timeZone = datadogContext.deviceInfo.localeInfo.timeZone,
+                    batteryLevel = batteryInfo.batteryLevel,
+                    powerSavingMode = batteryInfo.lowPowerMode,
+                    brightnessLevel = displayInfo.screenBrightness
                 ),
                 context = ViewEvent.Context(additionalProperties = eventAdditionalAttributes),
                 dd = ViewEvent.Dd(
@@ -1557,7 +1576,9 @@ internal open class RumViewScope(
             networkSettledResourceIdentifier: InitialResourceIdentifier,
             slowFramesListener: SlowFramesListener?,
             rumSessionTypeOverride: RumSessionType?,
-            accessibilitySnapshotManager: AccessibilitySnapshotManager
+            accessibilitySnapshotManager: AccessibilitySnapshotManager,
+            batteryInfoProvider: InfoProvider<BatteryInfo>,
+            displayInfoProvider: InfoProvider<DisplayInfo>
         ): RumViewScope {
             val networkSettledMetricResolver = NetworkSettledMetricResolver(
                 networkSettledResourceIdentifier,
@@ -1591,7 +1612,9 @@ internal open class RumViewScope(
                 viewEndedMetricDispatcher = viewEndedMetricDispatcher,
                 slowFramesListener = slowFramesListener,
                 rumSessionTypeOverride = rumSessionTypeOverride,
-                accessibilitySnapshotManager = accessibilitySnapshotManager
+                accessibilitySnapshotManager = accessibilitySnapshotManager,
+                batteryInfoProvider = batteryInfoProvider,
+                displayInfoProvider = displayInfoProvider
             )
         }
 
