@@ -70,7 +70,6 @@ interface com.datadog.android.trace.api.span.DatadogSpan
   fun drop()
   fun setErrorMessage(String?)
   fun addThrowable(Throwable)
-  fun addThrowable(Throwable, Byte)
   fun setTag(String?, String?)
   fun setTag(String?, Boolean)
   fun setTag(String?, Number?)
