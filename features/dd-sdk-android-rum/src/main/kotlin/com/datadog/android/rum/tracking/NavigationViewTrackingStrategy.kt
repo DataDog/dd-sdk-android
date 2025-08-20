@@ -8,8 +8,13 @@ package com.datadog.android.rum.tracking
 
 import android.app.Activity
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
+import android.view.View
+import android.view.ViewGroup
 import androidx.annotation.IdRes
 import androidx.annotation.MainThread
+import androidx.core.view.children
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
 import androidx.navigation.NavController
@@ -19,6 +24,7 @@ import androidx.navigation.fragment.NavHostFragment
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.internal.attributes.ViewScopeInstrumentationType
 import com.datadog.android.internal.attributes.enrichWithConstantAttribute
+import com.datadog.android.internal.utils.NextDrawListener.Companion.onNextDraw
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.NoOpRumMonitor
 import com.datadog.android.rum.internal.RumFeature
@@ -45,6 +51,8 @@ class NavigationViewTrackingStrategy(
     NavController.OnDestinationChangedListener {
 
     private var startedActivity: Activity? = null
+
+    private val handler = Handler(Looper.getMainLooper())
 
     private var lifecycleCallbackRefs =
         WeakHashMap<Activity, NavControllerFragmentLifecycleCallbacks>()
@@ -104,8 +112,19 @@ class NavigationViewTrackingStrategy(
 
             attributes.enrichWithConstantAttribute(ViewScopeInstrumentationType.FRAGMENT)
 
+
+
             val viewName = componentPredicate.resolveViewName(destination)
             rumMonitor?.startView(destination, viewName, attributes)
+            startedActivity?.findViewById<ViewGroup>(navigationViewId)?.let { v ->
+                v.children.forEach { child ->
+                    child.onNextDraw {
+                        handler.postAtFrontOfQueue {
+                            rumMonitor?.addTiming("FirstDraw")
+                        }
+                    }
+                }
+            }
         }
     }
 

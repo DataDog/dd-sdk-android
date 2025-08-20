@@ -20,6 +20,7 @@ import com.datadog.android.api.SdkCore
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import com.datadog.android.core.internal.utils.scheduleSafe
+import com.datadog.android.internal.utils.NextDrawListener.Companion.onNextDraw
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.utils.resolveViewName
@@ -97,6 +98,11 @@ internal class OreoFragmentLifecycleCallbacks(
             val viewName = componentPredicate.resolveViewName(f)
             @Suppress("UnsafeThirdPartyFunctionCall") // internal safe call
             rumMonitor.startView(it, viewName, argumentsProvider(it))
+            f.view?.let { v ->
+                v.onNextDraw {
+                    rumMonitor.addTiming("FirstDraw")
+                }
+            }
         }
     }
 

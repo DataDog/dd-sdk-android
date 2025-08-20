@@ -9,11 +9,15 @@ package com.datadog.android.rum.tracking
 import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import androidx.annotation.MainThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.internal.utils.scheduleSafe
 import com.datadog.android.internal.attributes.ViewScopeInstrumentationType
 import com.datadog.android.internal.attributes.enrichWithConstantAttribute
+import com.datadog.android.internal.utils.NextDrawListener.Companion.onNextDraw
+import com.datadog.android.internal.utils.onDecorViewReady
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.internal.utils.resolveViewName
@@ -45,6 +49,8 @@ constructor(
         )
     }
 
+    private val handler = Handler(Looper.getMainLooper())
+
     // region ActivityLifecycleTrackingStrategy
 
     @MainThread
@@ -58,6 +64,14 @@ constructor(
                 emptyMap()
             }
             getRumMonitor()?.startView(it, viewName, attributes)
+
+            activity.window.onDecorViewReady {
+                activity.window.decorView.onNextDraw {
+                    handler.postAtFrontOfQueue {
+                        getRumMonitor()?.addTiming("FirstDraw")
+                    }
+                }
+            }
         }
     }
 

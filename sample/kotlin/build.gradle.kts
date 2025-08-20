@@ -153,6 +153,7 @@ datadog {
 dependencies {
     // Datadog Libraries
     implementation(project(":features:dd-sdk-android-logs"))
+    implementation(project(":dd-sdk-android-internal"))
     implementation(project(":features:dd-sdk-android-rum"))
     implementation(project(":features:dd-sdk-android-trace"))
     implementation(project(":features:dd-sdk-android-trace-otel"))
