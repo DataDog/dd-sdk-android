@@ -6,6 +6,8 @@ class com.datadog.android.rum.DdRumContentProvider : android.content.ContentProv
   override fun insert(android.net.Uri, android.content.ContentValues?): android.net.Uri?
   override fun delete(android.net.Uri, String?, Array<String>?): Int
   override fun update(android.net.Uri, android.content.ContentValues?, String?, Array<String>?): Int
+  companion object 
+    var processImportance: Int
 annotation com.datadog.android.rum.ExperimentalRumApi
 typealias GlobalRum = GlobalRumMonitor
 object com.datadog.android.rum.GlobalRumMonitor
@@ -107,6 +109,7 @@ interface com.datadog.android.rum.RumMonitor
   fun stopView(Any, Map<String, Any?> = emptyMap())
   fun addAction(RumActionType, String, Map<String, Any?>)
   fun startAction(RumActionType, String, Map<String, Any?>)
+  fun sendDurationVital(Long, Long, String)
   fun stopAction(RumActionType, String, Map<String, Any?> = emptyMap())
   DEPRECATED fun startResource(String, String, String, Map<String, Any?> = emptyMap())
   fun startResource(String, RumResourceMethod, String, Map<String, Any?> = emptyMap())
@@ -1666,7 +1669,7 @@ data class com.datadog.android.rum.model.RumVitalEvent
       fun fromJson(kotlin.String): Container
       fun fromJsonObject(com.google.gson.JsonObject): Container
   data class RumVitalEventVital
-    constructor(RumVitalEventVitalType, kotlin.String, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.Number? = null, Custom? = null, StepType? = null, FailureReason? = null)
+    constructor(RumVitalEventVitalType, kotlin.String, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.Number? = null, StepType? = null, FailureReason? = null)
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): RumVitalEventVital
@@ -1707,12 +1710,6 @@ data class com.datadog.android.rum.model.RumVitalEvent
     companion object 
       fun fromJson(kotlin.String): ContainerView
       fun fromJsonObject(com.google.gson.JsonObject): ContainerView
-  data class Custom
-    constructor(kotlin.collections.Map<kotlin.String, kotlin.Number> = mapOf())
-    fun toJson(): com.google.gson.JsonElement
-    companion object 
-      fun fromJson(kotlin.String): Custom
-      fun fromJsonObject(com.google.gson.JsonObject): Custom
   enum RumVitalEventSource
     constructor(kotlin.String)
     - ANDROID
@@ -1780,7 +1777,7 @@ data class com.datadog.android.rum.model.RumVitalEvent
   enum RumVitalEventVitalType
     constructor(kotlin.String)
     - DURATION
-    - STEP
+    - OPERATION_STEP
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): RumVitalEventVitalType

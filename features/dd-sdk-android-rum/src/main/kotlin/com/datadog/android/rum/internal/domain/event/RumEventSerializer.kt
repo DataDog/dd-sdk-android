@@ -16,6 +16,7 @@ import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
+import com.datadog.android.rum.model.RumVitalEvent
 import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.telemetry.model.TelemetryConfigurationEvent
 import com.datadog.android.telemetry.model.TelemetryDebugEvent
@@ -61,6 +62,9 @@ internal class RumEventSerializer(
             }
             is JsonObject -> {
                 model.toString()
+            }
+            is RumVitalEvent -> {
+                model.toJson().toString()
             }
             else -> {
                 JsonObject().toString()

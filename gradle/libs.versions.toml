@@ -136,6 +136,7 @@ kotlin = { module = "org.jetbrains.kotlin:kotlin-stdlib", version.ref = "kotlin"
 kotlinxSerializationJson = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinxSerialization" }
 
 okHttp = { module = "com.squareup.okhttp3:okhttp", version.ref = "okHttp" }
+okHttp-logging = { module = "com.squareup.okhttp3:logging-interceptor", version.ref = "okHttp" }
 gson = { module = "com.google.code.gson:gson", version.ref = "gson" }
 kronosNTP = { module = "com.lyft.kronos:kronos-android", version.ref = "kronosNTP" }
 assertJ = { module = "org.assertj:assertj-core", version.ref = "assertJ" }
