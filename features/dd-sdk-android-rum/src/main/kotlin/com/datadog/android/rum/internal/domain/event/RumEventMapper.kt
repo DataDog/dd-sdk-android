@@ -6,6 +6,7 @@
 
 package com.datadog.android.rum.internal.domain.event
 
+import android.util.Log
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.event.EventMapper
 import com.datadog.android.event.NoOpEventMapper
@@ -13,6 +14,7 @@ import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
+import com.datadog.android.rum.model.RumVitalEvent
 import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.telemetry.model.TelemetryConfigurationEvent
 import com.datadog.android.telemetry.model.TelemetryDebugEvent
@@ -64,6 +66,7 @@ internal data class RumEventMapper(
             is TelemetryDebugEvent,
             is TelemetryUsageEvent,
             is TelemetryErrorEvent -> event
+            is RumVitalEvent -> event
             else -> {
                 internalLogger.log(
                     InternalLogger.Level.WARN,
@@ -84,6 +87,9 @@ internal data class RumEventMapper(
     private fun resolveEvent(
         event: Any
     ): Any? {
+        if (event is RumVitalEvent) {
+            Log.w("WAHAHA", "found it")
+        }
         val mappedEvent = mapRumEvent(event)
 
         // we need to check if the returned bundled mapped object is not null and same instance

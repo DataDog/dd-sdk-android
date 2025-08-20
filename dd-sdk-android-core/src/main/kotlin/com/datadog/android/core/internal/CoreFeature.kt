@@ -94,6 +94,7 @@ import okhttp3.ConnectionSpec
 import okhttp3.OkHttpClient
 import okhttp3.Protocol
 import okhttp3.TlsVersion
+import okhttp3.logging.HttpLoggingInterceptor
 import java.io.File
 import java.io.FileNotFoundException
 import java.lang.ref.WeakReference
@@ -604,6 +605,11 @@ internal class CoreFeature(
 
         @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
         builder.dns(RotatingDnsResolver())
+
+        val logging = HttpLoggingInterceptor().apply {
+            level = HttpLoggingInterceptor.Level.BODY
+        }
+        builder.addInterceptor(logging)
 
         okHttpClient = builder.build()
     }

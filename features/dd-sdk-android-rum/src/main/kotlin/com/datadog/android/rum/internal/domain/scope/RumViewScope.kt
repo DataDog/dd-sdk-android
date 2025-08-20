@@ -494,7 +494,6 @@ internal open class RumViewScope(
         pendingResourceCount++
     }
 
-    @OptIn(ExperimentalTime::class)
     private fun onVital(event: RumRawEvent.Vital, writer: DataWriter<Any>) {
         sdkCore.newRumEventWriteOperation(writer, EventType.DEFAULT) { datadogContext ->
             val rumContext = getRumContext()

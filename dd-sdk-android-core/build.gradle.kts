@@ -97,6 +97,7 @@ dependencies {
 
     // Network
     implementation(libs.okHttp)
+    implementation(libs.okHttp.logging)
     implementation(libs.gson)
     implementation(libs.kronosNTP)
 
