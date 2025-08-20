@@ -9,6 +9,7 @@ import android.annotation.SuppressLint
 import android.app.Application
 import android.content.Context
 import android.os.Build
+import android.os.Handler
 import android.os.Process
 import android.util.Log
 import androidx.annotation.Keep
@@ -82,6 +83,7 @@ import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import okhttp3.OkHttpClient
+import okhttp3.internal.http2.Http2Reader
 import retrofit2.Retrofit
 import retrofit2.adapter.rxjava3.RxJava3CallAdapterFactory
 import retrofit2.converter.gson.GsonConverterFactory
@@ -298,6 +300,10 @@ class SampleApplication : Application() {
             GlobalRumMonitor.get(),
         )
         betterAppStartupTimeManager.launch()
+
+        Handler(mainLooper).postDelayed({
+            GlobalRumMonitor.get().addTiming("TestTiming")
+        }, 10)
     }
 
     private fun initializeUserInfo(preferences: Preferences.DefaultPreferences) {
@@ -412,13 +418,13 @@ class SampleApplication : Application() {
                     useCustomEndpoint(BuildConfig.DD_OVERRIDE_RUM_URL)
                 }
             }
-            .useViewTrackingStrategy(
-                NavigationViewTrackingStrategy(
-                    R.id.nav_host_fragment,
-                    true,
-                    SampleNavigationPredicate()
-                )
-            )
+//            .useViewTrackingStrategy(
+//                NavigationViewTrackingStrategy(
+//                    R.id.nav_host_fragment,
+//                    true,
+//                    SampleNavigationPredicate()
+//                )
+//            )
             .setTelemetrySampleRate(100f)
             .trackUserInteractions()
             .trackLongTasks(250L)
@@ -548,6 +554,7 @@ class SampleApplication : Application() {
 }
 
 fun attachTraceToRumView(span: Span, sdk: SdkCore) {
+    return
     val rumContext = (sdk as InternalSdkCore).getFeatureContext(Feature.RUM_FEATURE_NAME)
 
     val appLaunchViewId = rumContext["application_launch_view_id"] as? String

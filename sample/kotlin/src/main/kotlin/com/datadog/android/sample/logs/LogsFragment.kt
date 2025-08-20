@@ -66,6 +66,11 @@ internal class LogsFragment :
         return rootView
     }
 
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        Log.w("WAHAHA", "onViewCreated")
+    }
+
     @Deprecated("Deprecated in parent Java class")
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         super.onActivityCreated(savedInstanceState)

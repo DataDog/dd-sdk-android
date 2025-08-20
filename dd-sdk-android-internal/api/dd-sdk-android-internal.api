@@ -231,10 +231,30 @@ public final class com/datadog/android/internal/utils/MapUtilsKt {
 	public static final fun getNULL_MAP_VALUE ()Ljava/lang/Object;
 }
 
+public final class com/datadog/android/internal/utils/NextDrawListener : android/view/ViewTreeObserver$OnDrawListener {
+	public static final field Companion Lcom/datadog/android/internal/utils/NextDrawListener$Companion;
+	public fun <init> (Landroid/view/View;Lkotlin/jvm/functions/Function0;)V
+	public final fun getHandler ()Landroid/os/Handler;
+	public final fun getInvoked ()Z
+	public final fun getOnDrawCallback ()Lkotlin/jvm/functions/Function0;
+	public final fun getView ()Landroid/view/View;
+	public fun onDraw ()V
+	public final fun setInvoked (Z)V
+}
+
+public final class com/datadog/android/internal/utils/NextDrawListener$Companion {
+	public final fun onNextDraw (Landroid/view/View;Lkotlin/jvm/functions/Function0;)V
+}
+
 public final class com/datadog/android/internal/utils/NumberExtKt {
 	public static final fun toHexString (I)Ljava/lang/String;
 	public static final fun toHexString (J)Ljava/lang/String;
 	public static final fun toHexString (Ljava/math/BigInteger;)Ljava/lang/String;
+}
+
+public final class com/datadog/android/internal/utils/OnDrawUtilsKt {
+	public static final fun onContentChanged (Landroid/view/Window;Lkotlin/jvm/functions/Function0;)V
+	public static final fun onDecorViewReady (Landroid/view/Window;Lkotlin/jvm/functions/Function0;)V
 }
 
 public final class com/datadog/android/internal/utils/StrictModeExtKt {
@@ -255,6 +275,34 @@ public final class com/datadog/android/internal/utils/ThreadExtKt {
 
 public final class com/datadog/android/internal/utils/ThrowableExtKt {
 	public static final fun loggableStackTrace (Ljava/lang/Throwable;)Ljava/lang/String;
+}
+
+public final class com/datadog/android/internal/utils/WindowDelegateCallback : android/view/Window$Callback {
+	public fun <init> (Landroid/view/Window$Callback;)V
+	public fun dispatchGenericMotionEvent (Landroid/view/MotionEvent;)Z
+	public fun dispatchKeyEvent (Landroid/view/KeyEvent;)Z
+	public fun dispatchKeyShortcutEvent (Landroid/view/KeyEvent;)Z
+	public fun dispatchPopulateAccessibilityEvent (Landroid/view/accessibility/AccessibilityEvent;)Z
+	public fun dispatchTouchEvent (Landroid/view/MotionEvent;)Z
+	public fun dispatchTrackballEvent (Landroid/view/MotionEvent;)Z
+	public final fun getOnContentChangedCallbacks ()Ljava/util/List;
+	public fun onActionModeFinished (Landroid/view/ActionMode;)V
+	public fun onActionModeStarted (Landroid/view/ActionMode;)V
+	public fun onAttachedToWindow ()V
+	public fun onContentChanged ()V
+	public fun onCreatePanelMenu (ILandroid/view/Menu;)Z
+	public fun onCreatePanelView (I)Landroid/view/View;
+	public fun onDetachedFromWindow ()V
+	public fun onMenuItemSelected (ILandroid/view/MenuItem;)Z
+	public fun onMenuOpened (ILandroid/view/Menu;)Z
+	public fun onPanelClosed (ILandroid/view/Menu;)V
+	public fun onPreparePanel (ILandroid/view/View;Landroid/view/Menu;)Z
+	public fun onSearchRequested ()Z
+	public fun onSearchRequested (Landroid/view/SearchEvent;)Z
+	public fun onWindowAttributesChanged (Landroid/view/WindowManager$LayoutParams;)V
+	public fun onWindowFocusChanged (Z)V
+	public fun onWindowStartingActionMode (Landroid/view/ActionMode$Callback;)Landroid/view/ActionMode;
+	public fun onWindowStartingActionMode (Landroid/view/ActionMode$Callback;I)Landroid/view/ActionMode;
 }
 
 public abstract interface annotation class com/datadog/tools/annotation/NoOpImplementation : java/lang/annotation/Annotation {

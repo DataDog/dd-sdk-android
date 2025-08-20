@@ -21,9 +21,9 @@ import android.view.View
 import android.view.ViewTreeObserver
 import android.view.Window
 import com.datadog.android.api.SdkCore
+import com.datadog.android.internal.utils.NextDrawListener.Companion.onNextDraw
+import com.datadog.android.internal.utils.onDecorViewReady
 import com.datadog.android.rum.RumMonitor
-import com.datadog.android.sample.NextDrawListener.Companion.onNextDraw
-import com.datadog.android.sample.WindowDelegateCallback.Companion.onDecorViewReady
 import io.opentelemetry.api.trace.Tracer
 import java.time.Instant
 
@@ -125,77 +125,6 @@ class BetterAppStartupTimeManager(
         
     }
 
-}
-
-class WindowDelegateCallback constructor(
-    private val delegate: Window.Callback
-) : Window.Callback by delegate {
-
-    val onContentChangedCallbacks = mutableListOf<() -> Boolean>()
-
-    override fun onContentChanged() {
-        onContentChangedCallbacks.removeAll { callback ->
-            !callback()
-        }
-        delegate.onContentChanged()
-    }
-
-    companion object {
-        fun Window.onDecorViewReady(callback: () -> Unit) {
-            if (peekDecorView() == null) {
-                onContentChanged {
-                    callback()
-                    return@onContentChanged false
-                }
-            } else {
-                callback()
-            }
-        }
-
-        fun Window.onContentChanged(block: () -> Boolean) {
-            val callback = wrapCallback()
-            callback.onContentChangedCallbacks += block
-        }
-
-        private fun Window.wrapCallback(): WindowDelegateCallback {
-            val currentCallback = callback
-            return if (currentCallback is WindowDelegateCallback) {
-                currentCallback
-            } else {
-                val newCallback = WindowDelegateCallback(currentCallback)
-                callback = newCallback
-                newCallback
-            }
-        }
-    }
-}
-
-class NextDrawListener(
-    val view: View,
-    val onDrawCallback: () -> Unit
-) : ViewTreeObserver.OnDrawListener {
-
-    val handler = Handler(Looper.getMainLooper())
-    var invoked = false
-
-    override fun onDraw() {
-        if (invoked) return
-        invoked = true
-        onDrawCallback()
-        handler.post {
-            if (view.viewTreeObserver.isAlive) {
-                view.viewTreeObserver.removeOnDrawListener(this)
-            }
-        }
-    }
-
-    companion object {
-        fun View.onNextDraw(onDrawCallback: () -> Unit) {
-            viewTreeObserver.addOnDrawListener(
-                NextDrawListener(this, onDrawCallback)
-            )
-        }
-    }
 }
 
 private fun isForegroundProcess(): Boolean {
