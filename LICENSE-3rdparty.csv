@@ -20,6 +20,7 @@ import,androidx.customview,Apache-2.0,Copyright 2018 The Android Open Source Pro
 import,androidx.documentfile,Apache-2.0,Copyright 2018 The Android Open Source Project
 import,androidx.drawerlayout,Apache-2.0,Copyright 2018 The Android Open Source Project
 import,androidx.fragment,Apache-2.0,Copyright 2018 The Android Open Source Project
+import,androidx.graphics,Apache-2.0,Copyright 2018 The Android Open Source Project
 import,androidx.interpolator,Apache-2.0,Copyright 2018 The Android Open Source Project
 import,androidx.leanback,Apache-2.0,Copyright 2018 The Android Open Source Project
 import,androidx.legacy,Apache-2.0,Copyright 2018 The Android Open Source Project
@@ -29,7 +30,9 @@ import,androidx.localbroadcastmanager,Apache-2.0,Copyright 2018 The Android Open
 import,androidx.media,Apache-2.0,Copyright 2018 The Android Open Source Project
 import,androidx.metrics,Apache-2.0,Copyright 2018 The Android Open Source Project
 import,androidx.multidex,Apache-2.0,Copyright 2018 The Android Open Source Project
+import,androidx.navigation3,Apache-2.0,Copyright 2018 The Android Open Source Project
 import,androidx.navigation,Apache-2.0,Copyright 2018 The Android Open Source Project
+import,androidx.navigationevent,Apache-2.0,Copyright 2018 The Android Open Source Project
 import,androidx.print,Apache-2.0,Copyright 2018 The Android Open Source Project
 import,androidx.recyclerview,Apache-2.0,Copyright 2018 The Android Open Source Project
 import,androidx.resourceinspection,Apache-2.0,Copyright 2018 The Android Open Source Project
@@ -68,6 +71,7 @@ import,io.reactivex.rxjava3.android,Apache-2.0,Copyright 2015 The RxAndroid auth
 import,org.jetbrains,Apache-2.0,Copyright 2010-2019 JetBrains s.r.o. and Kotlin Programming Language contributors
 import,org.jetbrains.kotlin,Apache-2.0,Copyright 2010-2019 JetBrains s.r.o. and Kotlin Programming Language contributors
 import,org.jetbrains.kotlinx,Apache-2.0,Copyright 2010-2019 JetBrains s.r.o. and Kotlin Programming Language contributors
+import,org.jspecify,Apache-2.0,Copyright 2021–present JSpecify contributors
 import,org.reactivestreams,CC0,Copyright 2014 Reactive Streams
 import(test),androidx.autofill,Apache-2.0,Copyright 2018 The Android Open Source Project
 import(test),androidx.concurrent,Apache-2.0,Copyright 2018 The Android Open Source Project

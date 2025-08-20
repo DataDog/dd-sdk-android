@@ -32,6 +32,7 @@ include(":integrations:dd-sdk-android-okhttp")
 include(":integrations:dd-sdk-android-okhttp-otel")
 include(":integrations:dd-sdk-android-rum-coroutines")
 include(":integrations:dd-sdk-android-trace-coroutines")
+include(":integrations:dd-sdk-android-navigation3")
 
 // TESTING UTILS
 include(":reliability:stub-core")

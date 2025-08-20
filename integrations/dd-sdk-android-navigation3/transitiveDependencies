@@ -1,0 +1,11 @@
+Dependencies List
+
+androidx.annotation:annotation-jvm:1.9.1                        :   59 Kb
+androidx.navigation3:navigation3-runtime-android:1.0.0-alpha01  :   70 Kb
+androidx.navigation3:navigation3-ui-android:1.0.0-alpha01       :  119 Kb
+androidx.navigationevent:navigationevent-android:1.0.0-alpha01  :   27 Kb
+org.jetbrains.kotlin:kotlin-stdlib:2.0.21                       : 1706 Kb
+org.jetbrains:annotations:23.0.0                                :   28 Kb
+
+Total transitive dependencies size                              : 2012 Kb
+
