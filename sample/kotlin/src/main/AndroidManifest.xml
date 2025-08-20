@@ -68,6 +68,9 @@
         <activity
             android:name="com.datadog.android.sample.compose.LegacyComposeActivity"
             android:theme="@style/Sample.Theme.Compose" />
+        <activity
+            android:name="com.datadog.android.sample.compose.Navigation3Activity"
+            android:theme="@style/Sample.Theme.Compose" />
 
         <service
             android:name=".service.LogsForegroundService"
