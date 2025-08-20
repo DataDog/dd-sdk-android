@@ -13,6 +13,7 @@ import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
+import com.datadog.android.rum.model.RumVitalEvent
 import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.telemetry.model.TelemetryConfigurationEvent
 import com.datadog.android.telemetry.model.TelemetryDebugEvent
@@ -26,6 +27,7 @@ internal data class RumEventMapper(
     val resourceEventMapper: EventMapper<ResourceEvent> = NoOpEventMapper(),
     val actionEventMapper: EventMapper<ActionEvent> = NoOpEventMapper(),
     val longTaskEventMapper: EventMapper<LongTaskEvent> = NoOpEventMapper(),
+    val vitalEventMapper: EventMapper<RumVitalEvent> = NoOpEventMapper(),
     val telemetryConfigurationMapper: EventMapper<TelemetryConfigurationEvent> = NoOpEventMapper(),
     private val internalLogger: InternalLogger
 ) : EventMapper<Any> {
@@ -60,6 +62,7 @@ internal data class RumEventMapper(
             }
             is ResourceEvent -> resourceEventMapper.map(event)
             is LongTaskEvent -> longTaskEventMapper.map(event)
+            is RumVitalEvent -> vitalEventMapper.map(event)
             is TelemetryConfigurationEvent -> telemetryConfigurationMapper.map(event)
             is TelemetryDebugEvent,
             is TelemetryUsageEvent,

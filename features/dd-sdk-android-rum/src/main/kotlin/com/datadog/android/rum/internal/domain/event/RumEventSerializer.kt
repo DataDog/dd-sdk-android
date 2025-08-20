@@ -16,6 +16,7 @@ import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
+import com.datadog.android.rum.model.RumVitalEvent
 import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.telemetry.model.TelemetryConfigurationEvent
 import com.datadog.android.telemetry.model.TelemetryDebugEvent
@@ -46,6 +47,9 @@ internal class RumEventSerializer(
             }
             is LongTaskEvent -> {
                 serializeLongTaskEvent(model)
+            }
+            is RumVitalEvent -> {
+                serializeVitalEvent(model)
             }
             is TelemetryDebugEvent -> {
                 model.toJson().toString()
@@ -178,6 +182,30 @@ internal class RumEventSerializer(
     }
 
     private fun serializeLongTaskEvent(model: LongTaskEvent): String {
+        val sanitizedUser = model.usr?.copy(
+            additionalProperties = validateUserAttributes(model.usr.additionalProperties)
+                .safeMapValuesToJson(internalLogger)
+                .toMutableMap()
+        )
+        val sanitizedAccount = model.account?.copy(
+            additionalProperties = validateAccountAttributes(model.account.additionalProperties)
+                .safeMapValuesToJson(internalLogger)
+                .toMutableMap()
+        )
+        val sanitizedContext = model.context?.copy(
+            additionalProperties = validateContextAttributes(model.context.additionalProperties)
+                .safeMapValuesToJson(internalLogger)
+                .toMutableMap()
+        )
+        val sanitizedModel = model.copy(
+            usr = sanitizedUser,
+            account = sanitizedAccount,
+            context = sanitizedContext
+        )
+        return extractKnownAttributes(sanitizedModel.toJson().asJsonObject).toString()
+    }
+
+    private fun serializeVitalEvent(model: RumVitalEvent): String {
         val sanitizedUser = model.usr?.copy(
             additionalProperties = validateUserAttributes(model.usr.additionalProperties)
                 .safeMapValuesToJson(internalLogger)

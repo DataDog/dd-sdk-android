@@ -90,6 +90,7 @@ import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
+import com.datadog.android.rum.model.RumVitalEvent
 import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.rum.tracking.ActionTrackingStrategy
 import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
@@ -329,6 +330,7 @@ internal class RumFeature(
                     resourceEventMapper = configuration.resourceEventMapper,
                     actionEventMapper = configuration.actionEventMapper,
                     longTaskEventMapper = configuration.longTaskEventMapper,
+                    vitalEventMapper = configuration.vitalEventMapper,
                     telemetryConfigurationMapper = configuration.telemetryConfigurationMapper,
                     internalLogger = sdkCore.internalLogger
                 ),
@@ -641,6 +643,7 @@ internal class RumFeature(
         val resourceEventMapper: EventMapper<ResourceEvent>,
         val actionEventMapper: EventMapper<ActionEvent>,
         val longTaskEventMapper: EventMapper<LongTaskEvent>,
+        val vitalEventMapper: EventMapper<RumVitalEvent>,
         val telemetryConfigurationMapper: EventMapper<TelemetryConfigurationEvent>,
         val backgroundEventTracking: Boolean,
         val trackFrustrations: Boolean,
@@ -692,6 +695,7 @@ internal class RumFeature(
             resourceEventMapper = NoOpEventMapper(),
             actionEventMapper = NoOpEventMapper(),
             longTaskEventMapper = NoOpEventMapper(),
+            vitalEventMapper = NoOpEventMapper(),
             telemetryConfigurationMapper = NoOpEventMapper(),
             backgroundEventTracking = false,
             trackFrustrations = true,
