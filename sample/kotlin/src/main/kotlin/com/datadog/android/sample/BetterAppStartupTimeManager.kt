@@ -90,6 +90,7 @@ class BetterAppStartupTimeManager(
                         durationMs = startDurationMs,
                         name = "TTID"
                     )
+                    rumMonitor.addTiming("TTID")
 
                     Log.d(
                         "WAHAHA",
