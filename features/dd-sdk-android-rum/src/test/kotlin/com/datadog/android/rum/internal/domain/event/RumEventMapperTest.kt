@@ -652,6 +652,7 @@ internal class RumEventMapperTest {
 
         )
     }
+
     @Test
     fun `M return null event W map returns a copy { RumVitalEvent }`(forge: Forge) {
         // GIVEN
