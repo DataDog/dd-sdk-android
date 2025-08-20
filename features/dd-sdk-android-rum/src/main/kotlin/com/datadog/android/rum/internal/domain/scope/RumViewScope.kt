@@ -520,7 +520,7 @@ internal open class RumViewScope(
             }
 
             val res = RumVitalEvent(
-                date = eventTimestamp,
+                date = event.startMs + serverTimeOffsetInMs,
                 context = Context(
                     additionalProperties = addExtraAttributes(event.attributes)
                 ),

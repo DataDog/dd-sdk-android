@@ -548,7 +548,6 @@ class SampleApplication : Application() {
 }
 
 fun attachTraceToRumView(span: Span, sdk: SdkCore) {
-    return
     val rumContext = (sdk as InternalSdkCore).getFeatureContext(Feature.RUM_FEATURE_NAME)
 
     val appLaunchViewId = rumContext["application_launch_view_id"] as? String
