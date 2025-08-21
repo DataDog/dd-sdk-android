@@ -1,0 +1,8 @@
+open class com.datadog.android.navigation3.AcceptAllNavKeyPredicate<T> : com.datadog.android.rum.tracking.ComponentPredicate<T>
+  override fun accept(T): Boolean
+  override fun getViewName(T): String?
+  override fun equals(Any?): Boolean
+  override fun hashCode(): Int
+interface com.datadog.android.navigation3.AttributesResolver<T>
+  fun resolveAttributes(T): Map<String, Any?>?
+fun <T> Navigation3TrackingEffect(List<T>, com.datadog.android.rum.tracking.ComponentPredicate<T> = AcceptAllNavKeyPredicate(), AttributesResolver<T>? = null, com.datadog.android.api.SdkCore = Datadog.getInstance())

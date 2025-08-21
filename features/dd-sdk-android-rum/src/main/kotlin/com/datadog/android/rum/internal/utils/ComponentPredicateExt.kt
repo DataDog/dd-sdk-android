@@ -17,7 +17,7 @@ import com.datadog.android.rum.tracking.ComponentPredicate
  * @param operation to be executed
  */
 @Suppress("TooGenericExceptionCaught")
-internal inline fun <reified T : Any> ComponentPredicate<T>.runIfValid(
+inline fun <reified T : Any> ComponentPredicate<T>.runIfValid(
     component: T,
     internalLogger: InternalLogger,
     operation: (T) -> Unit

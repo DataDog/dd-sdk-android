@@ -48,6 +48,19 @@ dependencies {
 
     implementation(libs.androidx.navigation3.ui)
     implementation(libs.androidx.navigation3.runtime)
+    implementation(libs.androidXComposeUi)
+    testImplementation(project(":tools:unit")) {
+        attributes {
+            attribute(
+                com.android.build.api.attributes.ProductFlavorAttr.of("platform"),
+                objects.named("jvm")
+            )
+        }
+    }
+    testImplementation(libs.bundles.jUnit5)
+    testImplementation(libs.bundles.testTools)
+    androidTestImplementation(libs.bundles.testTools)
+    androidTestImplementation(libs.bundles.jUnit5)
 }
 
 kotlinConfig(jvmBytecodeTarget = JvmTarget.JVM_11)
@@ -65,3 +78,9 @@ publishingConfig(
         " for Android applications."
 )
 detektCustomConfig()
+
+tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
+    kotlinOptions {
+        freeCompilerArgs += "-Xskip-metadata-version-check"
+    }
+}
