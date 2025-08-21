@@ -28,7 +28,6 @@ import com.datadog.tools.unit.extensions.config.MockTestConfiguration
 import com.datadog.tools.unit.forge.exhaustiveAttributes
 import com.lyft.kronos.KronosClock
 import fr.xgouchet.elmyr.Forge
-import okhttp3.OkHttpClient
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
@@ -56,8 +55,9 @@ internal class CoreFeatureTestConfiguration<T : Context>(
     lateinit var fakeBatchSize: BatchSize
     var fakeBuildId: String? = null
 
+    lateinit var callFactory: CoreFeature.OkHttpCallFactory
+
     lateinit var mockUploadExecutor: ScheduledThreadPoolExecutor
-    lateinit var mockOkHttpClient: OkHttpClient
     lateinit var mockPersistenceExecutor: FlushableExecutorService
     lateinit var mockKronosClock: KronosClock
     lateinit var mockContextRef: WeakReference<Context?>
@@ -112,7 +112,10 @@ internal class CoreFeatureTestConfiguration<T : Context>(
     private fun createMocks() {
         mockPersistenceExecutor = mock()
         mockUploadExecutor = mock()
-        mockOkHttpClient = mock()
+        callFactory = CoreFeature.OkHttpCallFactory {
+            mock()
+        }
+
         mockKronosClock = mock()
         // Mockito cannot mock WeakReference by some reason
         mockContextRef = WeakReference(appContext.mockInstance)
@@ -147,7 +150,7 @@ internal class CoreFeatureTestConfiguration<T : Context>(
 
         whenever(mockInstance.persistenceExecutorService) doReturn mockPersistenceExecutor
         whenever(mockInstance.uploadExecutorService) doReturn mockUploadExecutor
-        whenever(mockInstance.okHttpClient) doReturn mockOkHttpClient
+        whenever(mockInstance.callFactory) doReturn callFactory
         whenever(mockInstance.kronosClock) doReturn mockKronosClock
         whenever(mockInstance.contextRef) doReturn mockContextRef
         whenever(mockInstance.firstPartyHostHeaderTypeResolver) doReturn mockFirstPartyHostHeaderTypeResolver
