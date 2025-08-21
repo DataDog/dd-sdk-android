@@ -25,6 +25,7 @@ import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
+import com.datadog.android.rum.model.RumVitalEvent
 import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.rum.tracking.ActionTrackingStrategy
 import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
@@ -444,6 +445,24 @@ internal class RumConfigurationBuilderTest {
         assertThat(rumConfiguration.featureConfiguration).isEqualTo(
             RumFeature.DEFAULT_RUM_CONFIG.copy(
                 longTaskEventMapper = eventMapper
+            )
+        )
+    }
+
+    @Test
+    fun `M build config with RUM Vital eventMapper W seVitalEventMapper() & build()`() {
+        // Given
+        val eventMapper: EventMapper<RumVitalEvent> = mock()
+
+        // When
+        val rumConfiguration = testedBuilder
+            .setVitalEventMapper(eventMapper)
+            .build()
+
+        // Then
+        assertThat(rumConfiguration.featureConfiguration).isEqualTo(
+            RumFeature.DEFAULT_RUM_CONFIG.copy(
+                vitalEventMapper = eventMapper
             )
         )
     }

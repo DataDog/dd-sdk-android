@@ -14,6 +14,7 @@ import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
+import com.datadog.android.rum.model.RumVitalEvent
 import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.android.telemetry.model.TelemetryConfigurationEvent
@@ -373,6 +374,82 @@ internal class RumEventSerializerTest {
                 hasField("format_version", 2L)
             }
             .hasNullableField("service", event.service)
+
+        event.usr?.let { usr ->
+            assertThat(jsonObject).hasField("usr") {
+                hasNullableField("id", usr.id)
+                hasNullableField("name", usr.name)
+                hasNullableField("email", usr.email)
+                containsAttributes(usr.additionalProperties)
+            }
+        }
+        event.connectivity?.let { connectivity ->
+            assertThat(jsonObject).hasField("connectivity") {
+                hasNullableField("status", connectivity.status.name.lowercase(Locale.US))
+                hasNullableField(
+                    "interfaces",
+                    connectivity.interfaces?.map { it.name.lowercase(Locale.US) }
+                )
+                connectivity.cellular?.let { cellular ->
+                    hasField("cellular") {
+                        hasNullableField("technology", cellular.technology)
+                        hasNullableField("carrier_name", cellular.carrierName)
+                    }
+                }
+            }
+        }
+        event.context?.additionalProperties?.let {
+            assertThat(jsonObject).hasField("context") {
+                containsAttributes(it)
+            }
+        }
+    }
+
+    @RepeatedTest(8)
+    fun `M serialize RUM event W serialize() with RumVitalEvent`(
+        @Forgery event: RumVitalEvent
+    ) {
+        val serialized = testedSerializer.serialize(event)
+        val jsonObject = JsonParser.parseString(serialized).asJsonObject
+
+        assertThat(jsonObject)
+            .hasField("type", "vital")
+            .hasField("date", event.date)
+            .hasField("vital") {
+                hasField("type", event.vital.type.toJson())
+                event.vital.name?.let { hasField("name", it) }
+                event.vital.operationKey?.let { hasField("operation_key", it) }
+                event.vital.description?.let { hasField("description", it) }
+                event.vital.duration?.let { hasField("duration", it) }
+                event.vital.stepType?.let { hasField("step_type", it.toJson()) }
+                event.vital.failureReason?.let { hasField("failure_reason", it.toJson()) }
+            }
+            .hasField("application") {
+                hasField("id", event.application.id)
+            }
+            .hasField("session") {
+                hasField("id", event.session.id)
+                hasField("type", event.session.type.name.lowercase(Locale.US))
+                event.session.hasReplay?.let { hasField("has_replay", it) }
+            }
+            .hasField("view") {
+                hasField("id", event.view.id)
+                hasField("url", event.view.url)
+                event.view.referrer?.let { hasField("referrer", it) }
+                event.view.name?.let { hasField("name", it) }
+            }
+            .hasField("_dd") {
+                event.dd.browserSdkVersion?.let { hasField("browser_sdk_version", it) }
+            }
+            .hasNullableField("service", event.service)
+
+        event.device?.let { device ->
+            assertThat(jsonObject).hasField("device") {
+                device.architecture?.let { hasField("architecture", it) }
+                device.brand?.let { hasField("brand", it) }
+                device.model?.let { hasField("model", it) }
+            }
+        }
 
         event.usr?.let { usr ->
             assertThat(jsonObject).hasField("usr") {
@@ -1068,6 +1145,28 @@ internal class RumEventSerializerTest {
     }
 
     @Test
+    fun `M use the attributes group verbose name W validateAttributes { RumVitalEvent }`(
+        @Forgery fakeEvent: RumVitalEvent
+    ) {
+        // GIVEN
+        val mockedDataConstrains: DataConstraints = mock()
+        testedSerializer = RumEventSerializer(mockInternalLogger, mockedDataConstrains)
+
+        // WHEN
+        testedSerializer.serialize(fakeEvent)
+
+        // THEN
+        fakeEvent.usr?.let {
+            verify(mockedDataConstrains).validateAttributes(
+                it.additionalProperties,
+                RumEventSerializer.USER_ATTRIBUTE_PREFIX,
+                RumEventSerializer.USER_EXTRA_GROUP_VERBOSE_NAME,
+                RumEventSerializer.ignoredAttributes
+            )
+        }
+    }
+
+    @Test
     fun `M drop the internal reserved attributes W serialize { custom global attributes }`(
         forge: Forge
     ) {
@@ -1547,13 +1646,84 @@ internal class RumEventSerializerTest {
         }
     }
 
+    @Test
+    fun `M drop non-serializable attributes W serialize() with RumVitalEvent { bad usr#additionalProperties }`(
+        @Forgery event: RumVitalEvent,
+        forge: Forge
+    ) {
+        // Given
+        val faultyKey = forge.anAlphabeticalString()
+        val faultyObject = object {
+            override fun toString(): String {
+                throw forge.anException()
+            }
+        }
+        val faultyEvent = event.copy(
+            usr = event.usr?.copy(
+                additionalProperties = event.usr?.additionalProperties
+                    ?.toMutableMap()
+                    ?.apply { put(faultyKey, faultyObject) }
+                    .orEmpty()
+                    .toMutableMap()
+            )
+        )
+
+        // When
+        val serialized = testedSerializer.serialize(faultyEvent)
+
+        // Then
+        val jsonObject = JsonParser.parseString(serialized).asJsonObject
+        event.usr?.let { usr ->
+            assertThat(jsonObject).hasField("usr") {
+                hasNullableField("id", usr.id)
+                hasNullableField("name", usr.name)
+                hasNullableField("email", usr.email)
+                containsAttributes(usr.additionalProperties)
+            }
+        }
+    }
+
+    @Test
+    fun `M drop non-serializable attributes W serialize() with RumVitalEvent { bad context#additionalProperties }`(
+        @Forgery event: RumVitalEvent,
+        forge: Forge
+    ) {
+        // Given
+        val faultyKey = forge.anAlphabeticalString()
+        val faultyObject = object {
+            override fun toString(): String {
+                throw forge.anException()
+            }
+        }
+        val faultyEvent = event.copy(
+            context = event.context?.copy(
+                additionalProperties = event.context?.additionalProperties
+                    ?.toMutableMap()
+                    ?.apply { put(faultyKey, faultyObject) }
+                    .orEmpty()
+                    .toMutableMap()
+            )
+        )
+
+        // When
+        val serialized = testedSerializer.serialize(faultyEvent)
+
+        // Then
+        val jsonObject = JsonParser.parseString(serialized).asJsonObject
+        event.context?.additionalProperties?.let {
+            assertThat(jsonObject).hasField("context") {
+                containsAttributes(it)
+            }
+        }
+    }
+
     // region Internal
 
     private fun Forge.forgeRumEvent(
         attributes: MutableMap<String, Any?> = mutableMapOf(),
         userAttributes: MutableMap<String, Any?> = mutableMapOf()
     ): Any {
-        return when (this.anInt(min = 0, max = 5)) {
+        return when (this.anInt(min = 0, max = 6)) {
             1 -> this.getForgery(ViewEvent::class.java).let {
                 it.copy(
                     context = ViewEvent.Context(additionalProperties = attributes),
@@ -1579,6 +1749,14 @@ internal class RumEventSerializerTest {
                 it.copy(
                     context = ResourceEvent.Context(additionalProperties = attributes),
                     usr = (it.usr ?: ResourceEvent.Usr())
+                        .copy(additionalProperties = userAttributes)
+                )
+            }
+
+            5 -> this.getForgery(RumVitalEvent::class.java).let {
+                it.copy(
+                    context = RumVitalEvent.Context(additionalProperties = attributes),
+                    usr = (it.usr ?: RumVitalEvent.Usr())
                         .copy(additionalProperties = userAttributes)
                 )
             }
