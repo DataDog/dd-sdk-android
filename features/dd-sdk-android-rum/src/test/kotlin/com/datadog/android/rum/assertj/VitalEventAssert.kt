@@ -9,14 +9,14 @@ import com.datadog.android.rum.featureoperations.FailureReason
 import com.datadog.android.rum.internal.domain.scope.RumSessionScope
 import com.datadog.android.rum.internal.domain.scope.toSchemaFailureReason
 import com.datadog.android.rum.internal.domain.scope.toVitalSessionPrecondition
-import com.datadog.android.rum.model.RumVitalEvent
-import com.datadog.android.rum.model.RumVitalEvent.RumVitalEventSessionType
+import com.datadog.android.rum.model.VitalEvent
+import com.datadog.android.rum.model.VitalEvent.VitalEventSessionType
 import org.assertj.core.api.AbstractObjectAssert
 import org.assertj.core.api.Assertions.assertThat
 
-internal class RumVitalEventAssert(actual: RumVitalEvent) : AbstractObjectAssert<RumVitalEventAssert, RumVitalEvent>(
+internal class VitalEventAssert(actual: VitalEvent) : AbstractObjectAssert<VitalEventAssert, VitalEvent>(
     actual,
-    RumVitalEventAssert::class.java
+    VitalEventAssert::class.java
 ) {
 
     fun hasDate(expected: Long) = apply {
@@ -71,7 +71,7 @@ internal class RumVitalEventAssert(actual: RumVitalEvent) : AbstractObjectAssert
             .isEqualTo(expected)
     }
 
-    fun hasSessionType(expected: RumVitalEventSessionType) = apply {
+    fun hasSessionType(expected: VitalEventSessionType) = apply {
         assertThat(actual.session.type)
             .overridingErrorMessage(
                 "Expected event to have session.type:$expected but was ${actual.session.type}"
@@ -126,7 +126,7 @@ internal class RumVitalEventAssert(actual: RumVitalEvent) : AbstractObjectAssert
             .isEqualTo(expected)
     }
 
-    fun hasVitalStepType(expected: RumVitalEvent.StepType) = apply {
+    fun hasVitalStepType(expected: VitalEvent.StepType) = apply {
         assertThat(actual.vital.stepType)
             .overridingErrorMessage(
                 "Expected event data to have vital.operationKey $expected but was ${actual.vital.stepType}"
@@ -150,7 +150,7 @@ internal class RumVitalEventAssert(actual: RumVitalEvent) : AbstractObjectAssert
             .isNull()
     }
 
-    fun hasVitalType(expected: RumVitalEvent.RumVitalEventVitalType) = apply {
+    fun hasVitalType(expected: VitalEvent.VitalEventVitalType) = apply {
         assertThat(actual.vital.type)
             .overridingErrorMessage(
                 "Expected event data to have vital.type $expected but was ${actual.vital.type}"
@@ -159,6 +159,6 @@ internal class RumVitalEventAssert(actual: RumVitalEvent) : AbstractObjectAssert
     }
 
     companion object {
-        internal fun assertThat(actual: RumVitalEvent): RumVitalEventAssert = RumVitalEventAssert(actual)
+        internal fun assertThat(actual: VitalEvent): VitalEventAssert = VitalEventAssert(actual)
     }
 }

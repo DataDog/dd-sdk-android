@@ -22,8 +22,8 @@ import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
-import com.datadog.android.rum.model.RumVitalEvent
 import com.datadog.android.rum.model.ViewEvent
+import com.datadog.android.rum.model.VitalEvent
 import com.datadog.android.rum.tracking.ActionTrackingStrategy
 import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
 import com.datadog.android.rum.tracking.InteractionPredicate
@@ -221,12 +221,12 @@ data class RumConfiguration internal constructor(
         }
 
         /**
-         * Sets the [EventMapper] for the RUM [RumVitalEvent]. You can use this interface implementation
-         * to modify the [RumVitalEvent] attributes before serialisation.
+         * Sets the [EventMapper] for the RUM [VitalEvent]. You can use this interface implementation
+         * to modify the [VitalEvent] attributes before serialisation.
          *
          * @param eventMapper the [EventMapper] implementation.
          */
-        fun setVitalEventMapper(eventMapper: EventMapper<RumVitalEvent>): Builder {
+        fun setVitalEventMapper(eventMapper: EventMapper<VitalEvent>): Builder {
             rumConfig = rumConfig.copy(vitalEventMapper = eventMapper)
             return this
         }
