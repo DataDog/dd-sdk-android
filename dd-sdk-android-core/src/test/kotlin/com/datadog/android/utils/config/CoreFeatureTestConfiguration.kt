@@ -28,7 +28,6 @@ import com.datadog.tools.unit.extensions.config.MockTestConfiguration
 import com.datadog.tools.unit.forge.exhaustiveAttributes
 import com.lyft.kronos.KronosClock
 import fr.xgouchet.elmyr.Forge
-import okhttp3.OkHttpClient
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever

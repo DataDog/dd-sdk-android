@@ -115,7 +115,7 @@ internal class CoreFeature(
     private val scheduledExecutorServiceFactory: ScheduledExecutorServiceFactory
 ) {
 
-    internal class OkHttpCallFactory(factory: () -> OkHttpClient): Call.Factory {
+    internal class OkHttpCallFactory(factory: () -> OkHttpClient) : Call.Factory {
         val okhttpClient by lazy(factory)
 
         override fun newCall(request: Request): Call {
