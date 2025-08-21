@@ -6,6 +6,8 @@
 package com.datadog.android.sample.logs
 
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
@@ -15,7 +17,9 @@ import android.widget.EditText
 import android.widget.Spinner
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProviders
+import com.datadog.android.internal.utils.NextDrawListener.Companion.onNextDraw
 import com.datadog.android.log.Logger
+import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.sample.BuildConfig
 import com.datadog.android.sample.R
 
@@ -68,6 +72,13 @@ internal class LogsFragment :
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+
+        view.onNextDraw {
+            Handler(Looper.getMainLooper()).postAtFrontOfQueue {
+                GlobalRumMonitor.get().addTiming("onViewCreated")
+            }
+        }
+
         Log.w("WAHAHA", "onViewCreated")
     }
 

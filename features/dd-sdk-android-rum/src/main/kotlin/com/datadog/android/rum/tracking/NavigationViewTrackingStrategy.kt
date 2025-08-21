@@ -17,6 +17,7 @@ import androidx.annotation.MainThread
 import androidx.core.view.children
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
+import androidx.fragment.app.FragmentManager
 import androidx.navigation.NavController
 import androidx.navigation.NavDestination
 import androidx.navigation.Navigation
@@ -25,6 +26,7 @@ import com.datadog.android.api.feature.Feature
 import com.datadog.android.internal.attributes.ViewScopeInstrumentationType
 import com.datadog.android.internal.attributes.enrichWithConstantAttribute
 import com.datadog.android.internal.utils.NextDrawListener.Companion.onNextDraw
+import com.datadog.android.rum.ExperimentalRumApi
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.NoOpRumMonitor
 import com.datadog.android.rum.internal.RumFeature
@@ -117,11 +119,9 @@ class NavigationViewTrackingStrategy(
             val viewName = componentPredicate.resolveViewName(destination)
             rumMonitor?.startView(destination, viewName, attributes)
             startedActivity?.findViewById<ViewGroup>(navigationViewId)?.let { v ->
-                v.children.forEach { child ->
-                    child.onNextDraw {
-                        handler.postAtFrontOfQueue {
-                            rumMonitor?.addTiming("FirstDraw")
-                        }
+                v.onNextDraw {
+                    handler.postAtFrontOfQueue {
+                        rumMonitor?.addTiming("FirstDraw")
                     }
                 }
             }
@@ -220,6 +220,11 @@ class NavigationViewTrackingStrategy(
         return navHostFragment?.navController
     }
 
+    private fun Activity.getNavHost(): NavHostFragment? {
+        if (this !is FragmentActivity) return null
+        return supportFragmentManager.findFragmentById(navigationViewId) as? NavHostFragment
+    }
+
     // endregion
 
     // region Internal
@@ -237,8 +242,24 @@ class NavigationViewTrackingStrategy(
         rumMonitor = NoOpRumMonitor(),
         rumFeature = rumFeature
     ) {
+        private val handler = Handler(Looper.getMainLooper())
+
         override fun resolveKey(fragment: Fragment): Any {
             return navController.currentDestination ?: NO_DESTINATION_FOUND
+        }
+
+        @OptIn(ExperimentalRumApi::class)
+        override fun onFragmentViewCreated(fm: FragmentManager, f: Fragment, v: View, savedInstanceState: Bundle?) {
+            super.onFragmentViewCreated(fm, f, v, savedInstanceState)
+            val rumMonitor = GlobalRumMonitor.get()
+            v.onNextDraw {
+                handler.postAtFrontOfQueue {
+                    rumMonitor.addTiming("FirstDraw2")
+                }
+                handler.postDelayed({
+                    rumMonitor.addViewLoadingTime(true)
+                }, 2000)
+            }
         }
 
         companion object {

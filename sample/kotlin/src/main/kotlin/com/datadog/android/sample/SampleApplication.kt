@@ -418,13 +418,13 @@ class SampleApplication : Application() {
                     useCustomEndpoint(BuildConfig.DD_OVERRIDE_RUM_URL)
                 }
             }
-//            .useViewTrackingStrategy(
-//                NavigationViewTrackingStrategy(
-//                    R.id.nav_host_fragment,
-//                    true,
-//                    SampleNavigationPredicate()
-//                )
-//            )
+            .useViewTrackingStrategy(
+                NavigationViewTrackingStrategy(
+                    R.id.nav_host_fragment,
+                    true,
+                    SampleNavigationPredicate()
+                )
+            )
             .setTelemetrySampleRate(100f)
             .trackUserInteractions()
             .trackLongTasks(250L)

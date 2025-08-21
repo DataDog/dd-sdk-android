@@ -6,6 +6,8 @@
 package com.datadog.android.sample.home
 
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
@@ -17,6 +19,8 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProviders
 import androidx.navigation.NavController
 import androidx.navigation.fragment.NavHostFragment.Companion.findNavController
+import com.datadog.android.internal.utils.NextDrawListener.Companion.onNextDraw
+import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.sample.R
 
 internal class HomeFragment :
@@ -51,6 +55,11 @@ internal class HomeFragment :
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        view.onNextDraw {
+            Handler(Looper.getMainLooper()).postAtFrontOfQueue {
+                GlobalRumMonitor.get().addTiming("onViewCreated")
+            }
+        }
         Log.w("WAHAHA", "onViewCreated")
     }
 
