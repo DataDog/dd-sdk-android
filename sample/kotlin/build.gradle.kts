@@ -192,6 +192,10 @@ dependencies {
     implementation(libs.googleAccompanistPager)
     implementation(libs.googleAccompanistPagerIndicators)
     implementation(libs.googleMaterial)
+    implementation(libs.androidx.navigation3.ui)
+    implementation(libs.androidx.navigation3.runtime)
+    implementation(libs.kotlinx.serialization.core)
+    implementation(libs.androidx.lifecycle.viewmodel.navigation3)
     implementation("androidx.media:media:1.3.1")
     implementation("androidx.vectordrawable:vectordrawable:1.1.0")
     implementation("androidx.legacy:legacy-support-v4:1.0.0")
@@ -241,3 +245,10 @@ taskConfig<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
 junitConfig()
 javadocConfig()
 dependencyUpdateConfig()
+
+// TODO RUM-11399: Remove this when Kotlin is upgraded to 2.0 or later
+tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
+    kotlinOptions {
+        freeCompilerArgs += "-Xskip-metadata-version-check"
+    }
+}
