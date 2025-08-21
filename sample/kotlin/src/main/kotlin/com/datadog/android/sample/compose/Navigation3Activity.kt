@@ -14,6 +14,8 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
 import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.ui.NavDisplay
+import com.datadog.android.compose.AttributesResolver
+import com.datadog.android.compose.Navigation3TrackingEffect
 
 internal class Navigation3Activity : ComponentActivity() {
 
@@ -25,6 +27,7 @@ internal class Navigation3Activity : ComponentActivity() {
     }
 
     @Composable
+    @Suppress("StringLiteralDuplication")
     private fun NavDisplaySample() {
         val backStack = remember {
             mutableStateListOf<Nav3Page>(Nav3Page.Home)
@@ -35,6 +38,18 @@ internal class Navigation3Activity : ComponentActivity() {
         val onBack: () -> Unit = {
             backStack.removeLastOrNull()
         }
+        Navigation3TrackingEffect(
+            backStack = backStack,
+            attributesResolver = object : AttributesResolver<Nav3Page> {
+                override fun resolveAttributes(destination: Nav3Page): Map<String, Any?>? {
+                    return when (destination) {
+                        is Nav3Page.Home -> mapOf("userId" to "defaultUser")
+                        is Nav3Page.Discovery -> mapOf("userId" to destination.userId)
+                        is Nav3Page.Settings -> mapOf("userId" to destination.userId)
+                    }
+                }
+            }
+        )
         NavDisplay(
             backStack = backStack,
             onBack = { onBack.invoke() },
