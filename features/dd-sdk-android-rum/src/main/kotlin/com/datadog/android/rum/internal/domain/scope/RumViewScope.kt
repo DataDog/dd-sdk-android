@@ -53,8 +53,8 @@ import com.datadog.android.rum.metric.networksettled.InitialResourceIdentifier
 import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
-import com.datadog.android.rum.model.RumVitalEvent
 import com.datadog.android.rum.model.ViewEvent
+import com.datadog.android.rum.model.VitalEvent
 import java.util.Locale
 import java.util.UUID
 import java.util.concurrent.TimeUnit
@@ -244,7 +244,7 @@ internal open class RumViewScope(
                 datadogContext,
                 name = event.name,
                 operationKey = event.operationKey,
-                stepType = RumVitalEvent.StepType.START,
+                stepType = VitalEvent.StepType.START,
                 failureReason = null,
                 attributes = event.attributes
             )
@@ -258,7 +258,7 @@ internal open class RumViewScope(
                 datadogContext,
                 name = event.name,
                 operationKey = event.operationKey,
-                stepType = RumVitalEvent.StepType.END,
+                stepType = VitalEvent.StepType.END,
                 failureReason = event.failureReason?.toSchemaFailureReason(),
                 attributes = event.attributes
             )
@@ -271,10 +271,10 @@ internal open class RumViewScope(
         datadogContext: DatadogContext,
         name: String,
         operationKey: String?,
-        stepType: RumVitalEvent.StepType,
-        failureReason: RumVitalEvent.FailureReason?,
+        stepType: VitalEvent.StepType,
+        failureReason: VitalEvent.FailureReason?,
         attributes: Map<String, Any?>
-    ): RumVitalEvent {
+    ): VitalEvent {
         val rumContext = getRumContext()
         val syntheticsAttribute = if (
             rumContext.syntheticsTestId.isNullOrBlank() ||
@@ -282,7 +282,7 @@ internal open class RumViewScope(
         ) {
             null
         } else {
-            RumVitalEvent.Synthetics(
+            VitalEvent.Synthetics(
                 testId = rumContext.syntheticsTestId,
                 resultId = rumContext.syntheticsResultId
             )
@@ -294,42 +294,42 @@ internal open class RumViewScope(
 
         val sessionType = when {
             rumSessionTypeOverride != null -> rumSessionTypeOverride.toVital()
-            syntheticsAttribute == null -> RumVitalEvent.RumVitalEventSessionType.USER
-            else -> RumVitalEvent.RumVitalEventSessionType.SYNTHETICS
+            syntheticsAttribute == null -> VitalEvent.VitalEventSessionType.USER
+            else -> VitalEvent.VitalEventSessionType.SYNTHETICS
         }
 
-        return RumVitalEvent(
+        return VitalEvent(
             date = eventTimestamp,
-            context = RumVitalEvent.Context(
+            context = VitalEvent.Context(
                 additionalProperties = addExtraAttributes(attributes)
             ),
-            dd = RumVitalEvent.Dd(
-                session = RumVitalEvent.DdSession(
+            dd = VitalEvent.Dd(
+                session = VitalEvent.DdSession(
                     sessionPrecondition = rumContext.sessionStartReason.toVitalSessionPrecondition()
                 ),
-                configuration = RumVitalEvent.Configuration(sessionSampleRate = sampleRate)
+                configuration = VitalEvent.Configuration(sessionSampleRate = sampleRate)
             ),
-            application = RumVitalEvent.Application(
+            application = VitalEvent.Application(
                 id = rumContext.applicationId,
                 currentLocale = datadogContext.deviceInfo.localeInfo.currentLocale
             ),
-            session = RumVitalEvent.RumVitalEventSession(
+            session = VitalEvent.VitalEventSession(
                 id = rumContext.sessionId,
                 type = sessionType,
                 hasReplay = hasReplay
             ),
-            view = RumVitalEvent.RumVitalEventView(
+            view = VitalEvent.VitalEventView(
                 id = rumContext.viewId.orEmpty(),
                 name = rumContext.viewName,
                 url = rumContext.viewUrl.orEmpty()
             ),
-            vital = RumVitalEvent.RumVitalEventVital(
+            vital = VitalEvent.VitalEventVital(
                 id = UUID.randomUUID().toString(),
                 name = name,
                 operationKey = operationKey,
                 stepType = stepType,
                 failureReason = failureReason,
-                type = RumVitalEvent.RumVitalEventVitalType.OPERATION_STEP
+                type = VitalEvent.VitalEventVitalType.OPERATION_STEP
             )
         )
     }

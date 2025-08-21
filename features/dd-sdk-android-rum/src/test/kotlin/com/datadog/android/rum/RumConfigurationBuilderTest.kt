@@ -25,8 +25,8 @@ import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
-import com.datadog.android.rum.model.RumVitalEvent
 import com.datadog.android.rum.model.ViewEvent
+import com.datadog.android.rum.model.VitalEvent
 import com.datadog.android.rum.tracking.ActionTrackingStrategy
 import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
 import com.datadog.android.rum.tracking.InteractionPredicate
@@ -452,7 +452,7 @@ internal class RumConfigurationBuilderTest {
     @Test
     fun `M build config with RUM Vital eventMapper W seVitalEventMapper() & build()`() {
         // Given
-        val eventMapper: EventMapper<RumVitalEvent> = mock()
+        val eventMapper: EventMapper<VitalEvent> = mock()
 
         // When
         val rumConfiguration = testedBuilder

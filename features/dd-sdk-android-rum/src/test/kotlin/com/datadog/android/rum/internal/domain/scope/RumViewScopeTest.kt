@@ -29,8 +29,8 @@ import com.datadog.android.rum.RumSessionType
 import com.datadog.android.rum.assertj.ActionEventAssert.Companion.assertThat
 import com.datadog.android.rum.assertj.ErrorEventAssert.Companion.assertThat
 import com.datadog.android.rum.assertj.LongTaskEventAssert.Companion.assertThat
-import com.datadog.android.rum.assertj.RumVitalEventAssert
 import com.datadog.android.rum.assertj.ViewEventAssert.Companion.assertThat
+import com.datadog.android.rum.assertj.VitalEventAssert
 import com.datadog.android.rum.featureoperations.FailureReason
 import com.datadog.android.rum.internal.FeaturesContextResolver
 import com.datadog.android.rum.internal.RumErrorSourceType
@@ -65,8 +65,8 @@ import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
-import com.datadog.android.rum.model.RumVitalEvent
 import com.datadog.android.rum.model.ViewEvent
+import com.datadog.android.rum.model.VitalEvent
 import com.datadog.android.rum.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.android.rum.utils.verifyApiUsage
@@ -9657,7 +9657,7 @@ internal class RumViewScopeTest {
     }
 
     @Test
-    fun `M send RumVitalEvent W handleEvent { StartFeatureOperation }`(
+    fun `M send VitalEvent W handleEvent { StartFeatureOperation }`(
         @StringForgery key: String,
         @StringForgery fakeName: String,
         @LongForgery(min = 0) fakeDuration: Long,
@@ -9677,30 +9677,30 @@ internal class RumViewScopeTest {
         testedScope.handleEvent(event, mockWriter)
 
         // Then
-        argumentCaptor<RumVitalEvent> {
+        argumentCaptor<VitalEvent> {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
-            RumVitalEventAssert.assertThat(lastValue)
+            VitalEventAssert.assertThat(lastValue)
                 .hasDate(fakeEventTime.timestamp + fakeTimeInfoAtScopeStart.serverTimeOffsetMs)
                 .hasApplicationId(fakeParentContext.applicationId)
                 .containsExactlyContextAttributes(expectedAttributes)
                 .hasStartReason(fakeParentContext.sessionStartReason)
                 .hasSampleRate(fakeSampleRate)
                 .hasSessionId(fakeParentContext.sessionId)
-                .hasSessionType(fakeRumSessionType?.toVital() ?: RumVitalEvent.RumVitalEventSessionType.USER)
+                .hasSessionType(fakeRumSessionType?.toVital() ?: VitalEvent.VitalEventSessionType.USER)
                 .hasSessionReplay(fakeHasReplay)
                 .hasViewId(testedScope.viewId)
                 .hasName(fakeKey.name)
                 .hasUrl(fakeUrl)
                 .hasVitalName(fakeName)
                 .hasVitalOperationalKey(operationKey)
-                .hasVitalStepType(RumVitalEvent.StepType.START)
+                .hasVitalStepType(VitalEvent.StepType.START)
                 .hasNoVitalFailureReason()
-                .hasVitalType(RumVitalEvent.RumVitalEventVitalType.OPERATION_STEP)
+                .hasVitalType(VitalEvent.VitalEventVitalType.OPERATION_STEP)
         }
     }
 
     @Test
-    fun `M send RumVitalEvent W handleEvent { StopFeatureOperation, succeed }`(
+    fun `M send VitalEvent W handleEvent { StopFeatureOperation, succeed }`(
         @StringForgery key: String,
         @StringForgery fakeName: String,
         @LongForgery(min = 0) fakeDuration: Long,
@@ -9721,30 +9721,30 @@ internal class RumViewScopeTest {
         testedScope.handleEvent(event, mockWriter)
 
         // Then
-        argumentCaptor<RumVitalEvent> {
+        argumentCaptor<VitalEvent> {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
-            RumVitalEventAssert.assertThat(lastValue)
+            VitalEventAssert.assertThat(lastValue)
                 .hasDate(fakeEventTime.timestamp + fakeTimeInfoAtScopeStart.serverTimeOffsetMs)
                 .hasApplicationId(fakeParentContext.applicationId)
                 .containsExactlyContextAttributes(expectedAttributes)
                 .hasStartReason(fakeParentContext.sessionStartReason)
                 .hasSampleRate(fakeSampleRate)
                 .hasSessionId(fakeParentContext.sessionId)
-                .hasSessionType(fakeRumSessionType?.toVital() ?: RumVitalEvent.RumVitalEventSessionType.USER)
+                .hasSessionType(fakeRumSessionType?.toVital() ?: VitalEvent.VitalEventSessionType.USER)
                 .hasSessionReplay(fakeHasReplay)
                 .hasViewId(testedScope.viewId)
                 .hasName(fakeKey.name)
                 .hasUrl(fakeUrl)
                 .hasVitalName(fakeName)
                 .hasVitalOperationalKey(fakeOperationKey)
-                .hasVitalStepType(RumVitalEvent.StepType.END)
+                .hasVitalStepType(VitalEvent.StepType.END)
                 .hasNoVitalFailureReason()
-                .hasVitalType(RumVitalEvent.RumVitalEventVitalType.OPERATION_STEP)
+                .hasVitalType(VitalEvent.VitalEventVitalType.OPERATION_STEP)
         }
     }
 
     @Test
-    fun `M send RumVitalEvent W handleEvent { StopFeatureOperation, failed }`(
+    fun `M send VitalEvent W handleEvent { StopFeatureOperation, failed }`(
         @StringForgery key: String,
         @StringForgery fakeName: String,
         @LongForgery(min = 0) fakeDuration: Long,
@@ -9766,25 +9766,25 @@ internal class RumViewScopeTest {
         testedScope.handleEvent(event, mockWriter)
 
         // Then
-        argumentCaptor<RumVitalEvent> {
+        argumentCaptor<VitalEvent> {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
-            RumVitalEventAssert.assertThat(lastValue)
+            VitalEventAssert.assertThat(lastValue)
                 .hasDate(fakeEventTime.timestamp + fakeTimeInfoAtScopeStart.serverTimeOffsetMs)
                 .hasApplicationId(fakeParentContext.applicationId)
                 .containsExactlyContextAttributes(expectedAttributes)
                 .hasStartReason(fakeParentContext.sessionStartReason)
                 .hasSampleRate(fakeSampleRate)
                 .hasSessionId(fakeParentContext.sessionId)
-                .hasSessionType(fakeRumSessionType?.toVital() ?: RumVitalEvent.RumVitalEventSessionType.USER)
+                .hasSessionType(fakeRumSessionType?.toVital() ?: VitalEvent.VitalEventSessionType.USER)
                 .hasSessionReplay(fakeHasReplay)
                 .hasViewId(testedScope.viewId)
                 .hasName(fakeKey.name)
                 .hasUrl(fakeUrl)
                 .hasVitalName(fakeName)
                 .hasVitalOperationalKey(fakeOperationKey)
-                .hasVitalStepType(RumVitalEvent.StepType.END)
+                .hasVitalStepType(VitalEvent.StepType.END)
                 .hasVitalFailureReason(failureReason)
-                .hasVitalType(RumVitalEvent.RumVitalEventVitalType.OPERATION_STEP)
+                .hasVitalType(VitalEvent.VitalEventVitalType.OPERATION_STEP)
         }
     }
     //

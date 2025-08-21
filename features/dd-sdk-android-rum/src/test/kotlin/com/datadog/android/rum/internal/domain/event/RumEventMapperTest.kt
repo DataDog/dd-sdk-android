@@ -12,8 +12,8 @@ import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
-import com.datadog.android.rum.model.RumVitalEvent
 import com.datadog.android.rum.model.ViewEvent
+import com.datadog.android.rum.model.VitalEvent
 import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.android.rum.utils.forge.aRumEvent
 import com.datadog.android.rum.utils.verifyLog
@@ -66,7 +66,7 @@ internal class RumEventMapperTest {
     lateinit var mockLongTaskEventMapper: EventMapper<LongTaskEvent>
 
     @Mock
-    lateinit var mockVitalEventMapper: EventMapper<RumVitalEvent>
+    lateinit var mockVitalEventMapper: EventMapper<VitalEvent>
 
     @Mock
     lateinit var mockTelemetryConfigurationMapper: EventMapper<TelemetryConfigurationEvent>
@@ -178,9 +178,9 @@ internal class RumEventMapperTest {
     }
 
     @Test
-    fun `M map the bundled event W map { RumVitalEvent }`(forge: Forge) {
+    fun `M map the bundled event W map { VitalEvent }`(forge: Forge) {
         // GIVEN
-        val fakeRumEvent = forge.getForgery<RumVitalEvent>()
+        val fakeRumEvent = forge.getForgery<VitalEvent>()
         whenever(mockVitalEventMapper.map(fakeRumEvent)).thenReturn(fakeRumEvent)
 
         // WHEN
@@ -407,9 +407,9 @@ internal class RumEventMapperTest {
     }
 
     @Test
-    fun `M return null event W map returns null object { RumVitalEvent }`(forge: Forge) {
+    fun `M return null event W map returns null object { VitalEvent }`(forge: Forge) {
         // GIVEN
-        val fakeRumEvent = forge.getForgery<RumVitalEvent>()
+        val fakeRumEvent = forge.getForgery<VitalEvent>()
         whenever(mockVitalEventMapper.map(fakeRumEvent))
             .thenReturn(null)
 
@@ -531,9 +531,9 @@ internal class RumEventMapperTest {
     }
 
     @Test
-    fun `M return null event W map returns different object { RumVitalEvent }`(forge: Forge) {
+    fun `M return null event W map returns different object { VitalEvent }`(forge: Forge) {
         // GIVEN
-        val fakeRumEvent = forge.getForgery<RumVitalEvent>()
+        val fakeRumEvent = forge.getForgery<VitalEvent>()
         whenever(mockVitalEventMapper.map(fakeRumEvent))
             .thenReturn(forge.getForgery())
 
@@ -654,9 +654,9 @@ internal class RumEventMapperTest {
     }
 
     @Test
-    fun `M return null event W map returns a copy { RumVitalEvent }`(forge: Forge) {
+    fun `M return null event W map returns a copy { VitalEvent }`(forge: Forge) {
         // GIVEN
-        val fakeRumEvent = forge.getForgery<RumVitalEvent>()
+        val fakeRumEvent = forge.getForgery<VitalEvent>()
         whenever(mockVitalEventMapper.map(fakeRumEvent))
             .thenReturn(fakeRumEvent.copy())
 
