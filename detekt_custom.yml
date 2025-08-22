@@ -1276,6 +1276,7 @@ datadog:
       - "kotlin.Triple.constructor(kotlin.Nothing?, kotlin.Nothing?, kotlin.Nothing?)"
       # endregion
       # region Kotlin String
+      - "kotlin.Any?.takeIf(kotlin.Function1)"
       - "kotlin.CharSequence.isNullOrEmpty()"
       - "kotlin.String.all(kotlin.Function1)"
       - "kotlin.String.codePoints()"

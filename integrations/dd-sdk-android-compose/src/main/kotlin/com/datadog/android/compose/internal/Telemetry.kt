@@ -14,13 +14,15 @@ import com.datadog.android.api.feature.FeatureSdkCore
 internal fun sendTelemetry(
     autoInstrumented: Boolean = false,
     instrumentationType: InstrumentationType,
+    supportLibrary: SupportLibrary? = null,
     sdkCore: SdkCore = Datadog.getInstance()
 ) {
     val message = "$DATADOG_SEMANTICS_TELEMETRY_LOG: ${instrumentationType.value}"
     val attributes = mapOf(
         KEY_COMPOSE_INSTRUMENTATION to mapOf(
             KEY_ENABLED to autoInstrumented,
-            KEY_INSTRUMENTATION_TYPE to instrumentationType
+            KEY_INSTRUMENTATION_TYPE to instrumentationType,
+            KEY_SUPPORT_LIBRARY to supportLibrary
         )
     )
     (sdkCore as? FeatureSdkCore)?.internalLogger?.log(
@@ -37,9 +39,16 @@ internal enum class InstrumentationType(val value: String) {
     ViewTracking("ViewTracking")
 }
 
+internal enum class SupportLibrary(val value: String) {
+    Navigation("Navigation"),
+    Navigation3("Navigation3")
+}
+
 private const val KEY_COMPOSE_INSTRUMENTATION = "compose_instrumentation"
 
 private const val KEY_ENABLED = "enabled"
+
+private const val KEY_SUPPORT_LIBRARY = "support_library"
 
 private const val KEY_INSTRUMENTATION_TYPE = "instrumentation_type"
 
