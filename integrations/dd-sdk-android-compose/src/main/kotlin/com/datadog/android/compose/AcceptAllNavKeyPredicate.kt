@@ -9,13 +9,13 @@ package com.datadog.android.compose
 import com.datadog.android.rum.tracking.ComponentPredicate
 
 /**
- * A [ComponentPredicate] that accepts all keys of navigation backstack.
+ * A [ComponentPredicate] that accepts all keys of navigation back stack.
  *
  * This predicate is used when you want to track all navigation keys without any filtering.
  *
  * @param T the type of the component.
  */
-open class AcceptAllNavKeyPredicate<T> : ComponentPredicate<T> {
+open class AcceptAllNavKeyPredicate<T : Any> : ComponentPredicate<T> {
     override fun accept(component: T): Boolean {
         return true
     }

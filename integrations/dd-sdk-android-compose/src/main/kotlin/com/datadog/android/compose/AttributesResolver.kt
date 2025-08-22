@@ -11,7 +11,7 @@ package com.datadog.android.compose
  *
  * @param T the type of the key of navigation back stack.
  */
-interface AttributesResolver<T> {
+interface AttributesResolver<T : Any> {
 
     /**
      * Resolves attributes for the given backstack key.
