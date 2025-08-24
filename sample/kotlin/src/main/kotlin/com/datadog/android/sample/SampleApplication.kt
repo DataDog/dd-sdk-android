@@ -11,6 +11,7 @@ import android.content.Context
 import android.os.Build
 import android.os.Handler
 import android.os.Process
+import android.os.SystemClock
 import android.util.Log
 import androidx.annotation.Keep
 import androidx.annotation.RequiresApi
@@ -88,6 +89,8 @@ import retrofit2.converter.gson.GsonConverterFactory
 import timber.log.Timber
 import java.security.SecureRandom
 import java.time.Instant
+import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.nanoseconds
 
 /**
  * The main [Application] for the sample project.
@@ -225,6 +228,21 @@ class SampleApplication : Application() {
                     attachTraceToRumView(rootSpan, Datadog.getInstance())
 
                     rootSpan.end(relativeInstant(endTsFinal))
+
+                    ts.firstFrame?.let { firstFrameNanos ->
+                        val wallNow = System.currentTimeMillis()
+                        val start = Process.getStartUptimeMillis()
+                        val now = SystemClock.uptimeMillis()
+                        val startDurationMs = now - start
+
+                        val durationMillis = (firstFrameNanos.nanoseconds - start.milliseconds).inWholeMilliseconds
+
+                        GlobalRumMonitor.get().sendDurationVital(
+                            startMs = wallNow - startDurationMs,
+                            durationMs = durationMillis,
+                            name = "new_api_ttid"
+                        )
+                    }
                 }
         }
     }

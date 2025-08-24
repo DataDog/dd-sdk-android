@@ -196,6 +196,7 @@ internal class AppStartupTypeManager2(
     override fun onFrame(volatileFrameData: FrameData) {
         waitingForStart.updateAndGet { isWaiting ->
             if (isWaiting != null) {
+                val wallNow = System.currentTimeMillis()
                 val start = Process.getStartUptimeMillis()
                 val now = SystemClock.uptimeMillis()
                 val startDurationMs = now - start
@@ -203,9 +204,17 @@ internal class AppStartupTypeManager2(
                 val durationMillis = ((volatileFrameData.frameStartNanos + volatileFrameData.frameDurationUiNanos).nanoseconds - start.milliseconds).inWholeMilliseconds
 
                 GlobalRumMonitor.get(sdkCore).sendDurationVital(
-                    startMs = System.currentTimeMillis() - startDurationMs,
+                    startMs = wallNow - startDurationMs,
                     durationMs = durationMillis,
                     name = "${isWaiting}_jankstats_ttid"
+                )
+
+                val durationMillis2 = ((volatileFrameData.frameStartNanos).nanoseconds - start.milliseconds).inWholeMilliseconds
+
+                GlobalRumMonitor.get(sdkCore).sendDurationVital(
+                    startMs = wallNow - startDurationMs,
+                    durationMs = durationMillis2,
+                    name = "${isWaiting}_jankstats_frame_start"
                 )
             }
             null
