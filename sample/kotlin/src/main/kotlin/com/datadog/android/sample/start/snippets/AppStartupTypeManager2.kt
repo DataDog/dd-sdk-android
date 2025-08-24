@@ -52,7 +52,6 @@ class AppStartupTypeManager2(
 
     private val activityStates = mutableListOf<Pair<WeakReference<Activity>, Lifecycle.Event>>()
 
-    private val frameListeners = mutableListOf<Pair<WeakReference<Activity>, Window.OnFrameMetricsAvailableListener>>()
 
     private val processObserver = object: DefaultLifecycleObserver {
         override fun onCreate(owner: LifecycleOwner) {
@@ -86,6 +85,7 @@ class AppStartupTypeManager2(
         ProcessLifecycleOwner.get().lifecycle.addObserver(processObserver)
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     @SuppressLint("DatadogInternalApiUsage")
     override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {
         Log.w("AppStartupTypeManager2", "onActivityCreated $activity")
@@ -98,11 +98,14 @@ class AppStartupTypeManager2(
 
             if (isFirstActivityForProcess) {
                 if (!processStartedInForeground || gap > START_GAP_THRESHOLD) {
+                    subscribeToTTIDVitals(activity, "warm_3")
                     Log.w("AppStartupTypeManager2", "scenario 3")
                 } else {
+                    subscribeToTTIDVitals(activity, "cold")
                     Log.w("AppStartupTypeManager2", "scenario 1")
                 }
             } else {
+                subscribeToTTIDVitals(activity, "warm_4")
                 Log.w("AppStartupTypeManager2", "scenario 4")
             }
         }
@@ -144,10 +147,20 @@ class AppStartupTypeManager2(
 
         if (isInBackground) {
             if (resumedActivities.any { it.get() === activity }) {
+                subscribeToTTIDVitals(activity, "hot")
                 Log.w("AppStartupTypeManager2", "scenario 5")
             }
         }
 
+
+    }
+
+    override fun onActivityStopped(activity: Activity) {
+        Log.w("AppStartupTypeManager2", "onActivityStopped $activity")
+    }
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    private fun subscribeToTTIDVitals(activity: Activity, prefix: String) {
         subscribeToTTID(activity) { info ->
             val start = Process.getStartUptimeMillis()
             val now = SystemClock.uptimeMillis()
@@ -158,13 +171,17 @@ class AppStartupTypeManager2(
             GlobalRumMonitor.get(sdkCore).sendDurationVital(
                 startMs = System.currentTimeMillis() - startDurationMs,
                 durationMs = newDuration,
-                name = "frame_ttid"
+                name = "${prefix}_frame_ttid_intended_vsync"
+            )
+
+            val newDuration2 = ((info.vsyncTimeStampNanos + info.totalDurationNanos).nanoseconds - start.milliseconds).inWholeMilliseconds
+
+            GlobalRumMonitor.get(sdkCore).sendDurationVital(
+                startMs = System.currentTimeMillis() - startDurationMs,
+                durationMs = newDuration2,
+                name = "${prefix}_frame_ttid_vsync"
             )
         }
-    }
-
-    override fun onActivityStopped(activity: Activity) {
-        Log.w("AppStartupTypeManager2", "onActivityStopped $activity")
     }
 }
 

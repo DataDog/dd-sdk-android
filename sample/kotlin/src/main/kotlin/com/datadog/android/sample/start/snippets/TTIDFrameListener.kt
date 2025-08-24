@@ -16,6 +16,7 @@ import androidx.annotation.RequiresApi
 internal data class TTIDFrameData(
     val totalDurationNanos: Long,
     val intendedVsyncNanos: Long,
+    val vsyncTimeStampNanos: Long,
 )
 
 @RequiresApi(Build.VERSION_CODES.O)
@@ -32,11 +33,15 @@ internal fun subscribeToTTID(activity: Activity, block: (TTIDFrameData) -> Unit)
                 val isFirstFrame = frameMetrics.getMetric(FrameMetrics.FIRST_DRAW_FRAME)
 
                 if (isFirstFrame == 1L) {
+                    activity.window.removeOnFrameMetricsAvailableListener(this)
+
                     val result = TTIDFrameData(
                         totalDurationNanos = frameMetrics.getMetric(FrameMetrics.TOTAL_DURATION),
                         intendedVsyncNanos = frameMetrics.getMetric(FrameMetrics.INTENDED_VSYNC_TIMESTAMP),
+                        vsyncTimeStampNanos = frameMetrics.getMetric(FrameMetrics.VSYNC_TIMESTAMP),
                     )
                     block(result)
+
                 }
             }
         }
