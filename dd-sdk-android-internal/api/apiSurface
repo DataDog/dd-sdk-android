@@ -84,6 +84,15 @@ val NULL_MAP_VALUE: Object
 fun Int.toHexString(): String
 fun Long.toHexString(): String
 fun java.math.BigInteger.toHexString(): String
+class com.datadog.android.internal.utils.WindowDelegateCallback : android.view.Window.Callback
+  constructor(android.view.Window.Callback)
+fun android.view.Window.onDecorViewReady(() -> Unit)
+fun android.view.Window.onContentChanged(() -> Boolean)
+class com.datadog.android.internal.utils.NextDrawListener : android.view.ViewTreeObserver.OnDrawListener
+  constructor(android.view.View, () -> Unit)
+  override fun onDraw()
+  companion object 
+    fun android.view.View.onNextDraw(() -> Unit)
 fun <T> allowThreadDiskReads(() -> T): T
 fun <T> allowThreadDiskWrites(() -> T): T
 fun StringBuilder.appendIfNotEmpty(String)

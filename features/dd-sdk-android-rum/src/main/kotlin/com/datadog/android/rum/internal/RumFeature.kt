@@ -98,6 +98,7 @@ import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.model.ViewEvent
+import com.datadog.android.rum.startup.AppStartupTypeManager2
 import com.datadog.android.rum.tracking.ActionTrackingStrategy
 import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
 import com.datadog.android.rum.tracking.InteractionPredicate
@@ -166,6 +167,8 @@ internal class RumFeature(
 
     private val lateCrashEventHandler by lazy { lateCrashReporterFactory(sdkCore as InternalSdkCore) }
 
+    private var appStartupTypeManager2: AppStartupTypeManager2? = null
+
     // region Feature
 
     override val name: String = Feature.RUM_FEATURE_NAME
@@ -227,7 +230,13 @@ internal class RumFeature(
 
         val frequency = configuration.vitalsMonitorUpdateFrequency
         val slowFrameListenerConfiguration = configuration.slowFramesConfiguration
-        if (frequency != VitalsUpdateFrequency.NEVER || slowFrameListenerConfiguration != null) {
+
+        appStartupTypeManager2 = AppStartupTypeManager2(
+            context = appContext,
+            sdkCore = sdkCore,
+        )
+
+        if (frequency != VitalsUpdateFrequency.NEVER || slowFrameListenerConfiguration != null || appStartupTypeManager2 != null) {
             initializeVitalExecutorService(frequency)
             initializeCpuVitalMonitor(frequency)
             initializeMemoryVitalMonitor(frequency)
@@ -235,7 +244,8 @@ internal class RumFeature(
                 application = appContext as? Application,
                 listeners = listOfNotNull(
                     initializeSlowFrameListener(slowFrameListenerConfiguration),
-                    initializeFPSVitalMonitor(frequency)
+                    initializeFPSVitalMonitor(frequency),
+                    appStartupTypeManager2
                 )
             )
         }

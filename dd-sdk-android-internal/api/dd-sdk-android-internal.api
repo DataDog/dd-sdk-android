@@ -234,12 +234,9 @@ public final class com/datadog/android/internal/utils/MapUtilsKt {
 public final class com/datadog/android/internal/utils/NextDrawListener : android/view/ViewTreeObserver$OnDrawListener {
 	public static final field Companion Lcom/datadog/android/internal/utils/NextDrawListener$Companion;
 	public fun <init> (Landroid/view/View;Lkotlin/jvm/functions/Function0;)V
-	public final fun getHandler ()Landroid/os/Handler;
-	public final fun getInvoked ()Z
 	public final fun getOnDrawCallback ()Lkotlin/jvm/functions/Function0;
 	public final fun getView ()Landroid/view/View;
 	public fun onDraw ()V
-	public final fun setInvoked (Z)V
 }
 
 public final class com/datadog/android/internal/utils/NextDrawListener$Companion {
@@ -285,7 +282,6 @@ public final class com/datadog/android/internal/utils/WindowDelegateCallback : a
 	public fun dispatchPopulateAccessibilityEvent (Landroid/view/accessibility/AccessibilityEvent;)Z
 	public fun dispatchTouchEvent (Landroid/view/MotionEvent;)Z
 	public fun dispatchTrackballEvent (Landroid/view/MotionEvent;)Z
-	public final fun getOnContentChangedCallbacks ()Ljava/util/List;
 	public fun onActionModeFinished (Landroid/view/ActionMode;)V
 	public fun onActionModeStarted (Landroid/view/ActionMode;)V
 	public fun onAttachedToWindow ()V

@@ -50,7 +50,6 @@ import com.datadog.android.sample.picture.FrescoImageLoader
 import com.datadog.android.sample.picture.PicassoImageLoader
 import com.datadog.android.sample.start.AppInfoRepo
 import com.datadog.android.sample.start.StartupTimestamps
-import com.datadog.android.sample.start.snippets.AppStartupTypeManager2
 import com.datadog.android.sample.user.UserFragment
 import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.SessionReplay
@@ -83,7 +82,6 @@ import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import okhttp3.OkHttpClient
-import okhttp3.internal.http2.Http2Reader
 import retrofit2.Retrofit
 import retrofit2.adapter.rxjava3.RxJava3CallAdapterFactory
 import retrofit2.converter.gson.GsonConverterFactory
@@ -130,8 +128,8 @@ class SampleApplication : Application() {
     @Keep
     private lateinit var appStartupTypeManager: AppStartupTypeManager
 
-    @Keep
-    private lateinit var appStartupTypeManager2: AppStartupTypeManager2
+//    @Keep
+//    private lateinit var appStartupTypeManager2: AppStartupTypeManager2
 
     @Keep
     private lateinit var betterAppStartupTimeManager: BetterAppStartupTimeManager
@@ -288,10 +286,10 @@ class SampleApplication : Application() {
             Datadog.getInstance()
         )
 
-        appStartupTypeManager2 = AppStartupTypeManager2(
-            this,
-            Datadog.getInstance() as InternalSdkCore
-        )
+//        appStartupTypeManager2 = AppStartupTypeManager2(
+//            this,
+//            Datadog.getInstance() as InternalSdkCore
+//        )
 
         betterAppStartupTimeManager = BetterAppStartupTimeManager(
             this,
