@@ -206,6 +206,8 @@ dependencies {
         exclude(group = "io.opentracing")
     }
 
+    implementation(libs.androidXMetrics)
+
     // Image Loading Library
     implementation(libs.coil)
     implementation(libs.coilCompose)
