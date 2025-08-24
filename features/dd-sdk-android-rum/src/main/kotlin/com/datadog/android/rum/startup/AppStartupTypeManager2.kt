@@ -30,6 +30,7 @@ import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.internal.domain.FrameMetricsData
 import com.datadog.android.rum.internal.vitals.FrameStateListener
 import java.lang.ref.WeakReference
+import java.util.concurrent.atomic.AtomicReference
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.nanoseconds
 import kotlin.time.Duration.Companion.seconds
@@ -53,6 +54,8 @@ internal class AppStartupTypeManager2(
 
     private val activityStates = mutableListOf<Pair<WeakReference<Activity>, Lifecycle.Event>>()
 
+
+    private val waitingForStart = AtomicReference<String>(null)
 
     private val processObserver = object: DefaultLifecycleObserver {
         override fun onCreate(owner: LifecycleOwner) {
@@ -100,13 +103,16 @@ internal class AppStartupTypeManager2(
             if (isFirstActivityForProcess) {
                 if (!processStartedInForeground || gap > START_GAP_THRESHOLD) {
                     subscribeToTTIDVitals(activity, "warm_3")
+                    waitingForStart.updateAndGet { "warm_3" }
                     Log.w("AppStartupTypeManager2", "scenario 3")
                 } else {
                     subscribeToTTIDVitals(activity, "cold")
+                    waitingForStart.updateAndGet { "cold" }
                     Log.w("AppStartupTypeManager2", "scenario 1")
                 }
             } else {
                 subscribeToTTIDVitals(activity, "warm_4")
+                waitingForStart.updateAndGet { "warm_4" }
                 Log.w("AppStartupTypeManager2", "scenario 4")
             }
         }
@@ -149,6 +155,7 @@ internal class AppStartupTypeManager2(
         if (isInBackground) {
             if (resumedActivities.any { it.get() === activity }) {
                 subscribeToTTIDVitals(activity, "hot")
+                waitingForStart.updateAndGet { "hot" }
                 Log.w("AppStartupTypeManager2", "scenario 5")
             }
         }
@@ -185,7 +192,24 @@ internal class AppStartupTypeManager2(
         }
     }
 
+    @RequiresApi(Build.VERSION_CODES.N)
     override fun onFrame(volatileFrameData: FrameData) {
+        waitingForStart.updateAndGet { isWaiting ->
+            if (isWaiting != null) {
+                val start = Process.getStartUptimeMillis()
+                val now = SystemClock.uptimeMillis()
+                val startDurationMs = now - start
+
+                val durationMillis = ((volatileFrameData.frameStartNanos + volatileFrameData.frameDurationUiNanos).nanoseconds - start.milliseconds).inWholeMilliseconds
+
+                GlobalRumMonitor.get(sdkCore).sendDurationVital(
+                    startMs = System.currentTimeMillis() - startDurationMs,
+                    durationMs = durationMillis,
+                    name = "${isWaiting}_jankstats_ttid"
+                )
+            }
+            null
+        }
 
     }
 
