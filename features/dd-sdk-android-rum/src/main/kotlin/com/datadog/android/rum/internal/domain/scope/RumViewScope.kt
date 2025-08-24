@@ -519,8 +519,10 @@ internal open class RumViewScope(
                 else -> RumVitalEvent.RumVitalEventSessionType.SYNTHETICS
             }
 
+            val fixedDuration = event.durationMs - (eventTimestamp - (event.startMs + serverTimeOffsetInMs))
+
             val res = RumVitalEvent(
-                date = event.startMs + serverTimeOffsetInMs,
+                date = eventTimestamp,
                 context = Context(
                     additionalProperties = addExtraAttributes(event.attributes)
                 ),
@@ -546,7 +548,7 @@ internal open class RumViewScope(
                 ),
                 vital = RumVitalEvent.RumVitalEventVital(
                     description = "time to initial display",
-                    duration = event.durationMs.milliseconds.inWholeNanoseconds.toDouble(),
+                    duration = fixedDuration.milliseconds.inWholeNanoseconds.toDouble(),
                     id = UUID.randomUUID().toString(),
                     name = event.name,
                     stepType = null,
