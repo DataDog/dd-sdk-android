@@ -16,7 +16,7 @@ class WindowDelegateCallback constructor(
     private val delegate: Window.Callback
 ) : Window.Callback by delegate {
 
-    val onContentChangedCallbacks = mutableListOf<() -> Boolean>()
+    internal val onContentChangedCallbacks = mutableListOf<() -> Boolean>()
 
     override fun onContentChanged() {
         onContentChangedCallbacks.removeAll { callback ->
@@ -58,8 +58,8 @@ class NextDrawListener(
     val onDrawCallback: () -> Unit
 ) : ViewTreeObserver.OnDrawListener {
 
-    val handler = Handler(Looper.getMainLooper())
-    var invoked = false
+    private val handler = Handler(Looper.getMainLooper())
+    private var invoked = false
 
     override fun onDraw() {
         if (invoked) return

@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.sample.start.snippets
+package com.datadog.android.rum.startup
 
 import android.app.Activity
 import android.os.Build

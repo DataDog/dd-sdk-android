@@ -110,6 +110,7 @@ openTelemetry = "1.4.0"
 openTelemetryBenchmark = "1.40.0"
 re2j = "1.7"
 material3Android = "1.1.2"
+lifecycleProcess = "2.9.2"
 
 [libraries]
 
@@ -181,6 +182,7 @@ androidXComposeUi = { module = "androidx.compose.ui:ui" }
 androidXComposeUiTooling = { module = "androidx.compose.ui:ui-tooling" }
 androidXComposeMaterial = { module = "androidx.compose.material:material" }
 material3Android = { group = "androidx.compose.material3", name = "material3", version.ref = "material3Android" }
+androidXLifecycleProcess = { group = "androidx.lifecycle", name = "lifecycle-process", version.ref = "lifecycleProcess" }
 
 # DD-TRACE-OT
 openTracingApi = { module = "io.opentracing:opentracing-api", version.ref = "openTracing" }

@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.sample.start.snippets
+package com.datadog.android.rum.startup
 
 import android.annotation.SuppressLint
 import android.app.Activity
@@ -18,16 +18,17 @@ import android.os.Looper
 import android.os.Process
 import android.os.SystemClock
 import android.util.Log
-import android.view.FrameMetrics
-import android.view.Window
 import androidx.annotation.RequiresApi
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
+import androidx.metrics.performance.FrameData
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.rum.DdRumContentProvider
 import com.datadog.android.rum.GlobalRumMonitor
+import com.datadog.android.rum.internal.domain.FrameMetricsData
+import com.datadog.android.rum.internal.vitals.FrameStateListener
 import java.lang.ref.WeakReference
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.nanoseconds
@@ -35,10 +36,10 @@ import kotlin.time.Duration.Companion.seconds
 
 private val START_GAP_THRESHOLD = 5.seconds
 
-class AppStartupTypeManager2(
+internal class AppStartupTypeManager2(
     private val context: Context,
     private val sdkCore: InternalSdkCore,
-): Application.ActivityLifecycleCallbacks {
+): Application.ActivityLifecycleCallbacks, FrameStateListener {
 
     private var numberOfActivities: Int = 0
     private var isChangingConfigurations: Boolean = false
@@ -182,6 +183,14 @@ class AppStartupTypeManager2(
                 name = "${prefix}_frame_ttid_vsync"
             )
         }
+    }
+
+    override fun onFrame(volatileFrameData: FrameData) {
+
+    }
+
+    override fun onFrameMetricsData(data: FrameMetricsData) {
+
     }
 }
 
