@@ -45,6 +45,7 @@ android {
 
 dependencies {
     implementation(libs.kotlin)
+    implementation(libs.annotation.jvm)
 
     // Generate NoOp implementations
     ksp(project(":tools:noopfactory"))

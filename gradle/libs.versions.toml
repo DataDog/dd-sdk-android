@@ -111,6 +111,7 @@ openTelemetryBenchmark = "1.40.0"
 re2j = "1.7"
 material3Android = "1.1.2"
 lifecycleProcess = "2.9.2"
+annotationJvm = "1.9.1"
 
 [libraries]
 
@@ -293,6 +294,7 @@ openTelemetryApi = { module = "io.opentelemetry:opentelemetry-api", version.ref 
 openTelemetryApiBenchmark = { module = "io.opentelemetry:opentelemetry-api", version.ref = "openTelemetryBenchmark" }
 openTelemetrySdkBenchmark = { module = "io.opentelemetry:opentelemetry-sdk", version.ref = "openTelemetryBenchmark" }
 re2j = { module = "com.google.re2j:re2j", version.ref = "re2j" }
+annotation-jvm = { group = "androidx.annotation", name = "annotation-jvm", version.ref = "annotationJvm" }
 
 [bundles]
 

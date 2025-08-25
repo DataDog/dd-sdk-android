@@ -6,11 +6,16 @@
 
 package com.datadog.android.internal.utils
 
+import android.app.Activity
+import android.os.Build
 import android.os.Handler
 import android.os.Looper
+import android.os.Message
 import android.view.View
 import android.view.ViewTreeObserver
 import android.view.Window
+import androidx.annotation.RequiresApi
+import com.datadog.android.internal.utils.NextDrawListener.Companion.onNextDraw
 
 class WindowDelegateCallback constructor(
     private val delegate: Window.Callback
@@ -80,3 +85,19 @@ class NextDrawListener(
         }
     }
 }
+
+@RequiresApi(Build.VERSION_CODES.LOLLIPOP_MR1)
+fun subscribeToFirstDrawFinished(handler: Handler, activity: Activity, block: () -> Unit) {
+    val window = activity.window
+
+    window.onDecorViewReady {
+        window.decorView.onNextDraw {
+            handler.sendMessageAtFrontOfQueue(
+                Message.obtain(handler, block).apply {
+                    isAsynchronous = true
+                }
+            )
+        }
+    }
+}
+

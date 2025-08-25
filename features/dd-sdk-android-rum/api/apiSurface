@@ -238,6 +238,55 @@ class com.datadog.android.rum.resource.RumResourceInputStream : java.io.InputStr
   override fun mark(Int)
   override fun reset()
   override fun close()
+interface com.datadog.android.rum.startup.newapi.AppInfoRepo
+  fun streaming(): kotlinx.coroutines.flow.Flow<AppStartInfoBean>
+  fun subscribe((AppStartInfoBean) -> Unit)
+  companion object 
+    fun create(android.content.Context): AppInfoRepo
+object com.datadog.android.rum.startup.newapi.StubAppInfoRepo : AppInfoRepo
+  override fun streaming(): kotlinx.coroutines.flow.Flow<AppStartInfoBean>
+  override fun subscribe((AppStartInfoBean) -> Unit)
+fun getAppStartInfo(android.content.Context, (android.app.ApplicationStartInfo) -> Unit)
+data class com.datadog.android.rum.startup.newapi.AppStartInfoBean
+  constructor(StartType, StartupState, StartReason, LaunchMode, StartupTimestamps, Boolean)
+enum com.datadog.android.rum.startup.newapi.LaunchMode
+  - LAUNCH_MODE_UNKNOWN
+  - LAUNCH_MODE_SINGLE_INSTANCE
+  - LAUNCH_MODE_SINGLE_INSTANCE_PER_TASK
+  - LAUNCH_MODE_SINGLE_TASK
+  - LAUNCH_MODE_SINGLE_TOP
+  - LAUNCH_MODE_STANDARD
+enum com.datadog.android.rum.startup.newapi.StartupState
+  - STARTUP_STATE_UNKNOWN
+  - STARTUP_STATE_ERROR
+  - STARTUP_STATE_FIRST_FRAME_DRAWN
+  - STARTUP_STATE_STARTED
+enum com.datadog.android.rum.startup.newapi.StartReason
+  - START_REASON_UNKNOWN
+  - START_REASON_ALARM
+  - START_REASON_BACKUP
+  - START_REASON_BOOT_COMPLETE
+  - START_REASON_BROADCAST
+  - START_REASON_CONTENT_PROVIDER
+  - START_REASON_JOB
+  - START_REASON_LAUNCHER
+  - START_REASON_LAUNCHER_RECENTS
+  - START_REASON_OTHER
+  - START_REASON_PUSH
+  - START_REASON_SERVICE
+  - START_REASON_START_ACTIVITY
+enum com.datadog.android.rum.startup.newapi.StartType
+  - START_TYPE_UNKNOWN
+  - START_TYPE_COLD
+  - START_TYPE_HOT
+  - START_TYPE_UNSET
+  - START_TYPE_WARM
+data class com.datadog.android.rum.startup.newapi.StartupTimestamps
+  constructor(Long? = null, Long? = null, Long? = null, Long? = null, Long? = null, Long? = null, Long? = null, Long? = null, Long? = null, Long? = null, Long? = null)
+class com.datadog.android.rum.startup.newapi.ProdAppInfoRepo : AppInfoRepo
+  constructor(android.content.Context)
+  override fun streaming(): kotlinx.coroutines.flow.Flow<AppStartInfoBean>
+  override fun subscribe((AppStartInfoBean) -> Unit)
 open class com.datadog.android.rum.tracking.AcceptAllActivities : ComponentPredicate<android.app.Activity>
   override fun accept(android.app.Activity): Boolean
   override fun getViewName(android.app.Activity): String?

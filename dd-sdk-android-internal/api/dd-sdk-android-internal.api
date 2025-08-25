@@ -252,6 +252,7 @@ public final class com/datadog/android/internal/utils/NumberExtKt {
 public final class com/datadog/android/internal/utils/OnDrawUtilsKt {
 	public static final fun onContentChanged (Landroid/view/Window;Lkotlin/jvm/functions/Function0;)V
 	public static final fun onDecorViewReady (Landroid/view/Window;Lkotlin/jvm/functions/Function0;)V
+	public static final fun subscribeToFirstDrawFinished (Landroid/os/Handler;Landroid/app/Activity;Lkotlin/jvm/functions/Function0;)V
 }
 
 public final class com/datadog/android/internal/utils/StrictModeExtKt {

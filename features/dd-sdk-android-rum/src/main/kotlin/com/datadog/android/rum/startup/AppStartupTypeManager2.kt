@@ -24,6 +24,7 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
 import androidx.metrics.performance.FrameData
 import com.datadog.android.core.InternalSdkCore
+import com.datadog.android.internal.utils.subscribeToFirstDrawFinished
 import com.datadog.android.rum.DdRumContentProvider
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.internal.domain.FrameMetricsData
@@ -165,6 +166,9 @@ internal class AppStartupTypeManager2(
         waitingForStart.updateAndGet { type }
         startTrackingTTFD(activity)
         startTrackingWithNewApi(type)
+        subscribeToFirstDrawFinished(handler, activity) {
+            reportVitalNanos(System.nanoTime(), "${type}_handler_post_ttid")
+        }
     }
 
     @RequiresApi(Build.VERSION_CODES.N)

@@ -17,9 +17,6 @@ import android.os.Looper
 import android.os.Process
 import android.os.SystemClock
 import android.util.Log
-import android.view.View
-import android.view.ViewTreeObserver
-import android.view.Window
 import com.datadog.android.api.SdkCore
 import com.datadog.android.internal.utils.NextDrawListener.Companion.onNextDraw
 import com.datadog.android.internal.utils.onDecorViewReady
@@ -85,11 +82,11 @@ class BetterAppStartupTimeManager(
 
                     rootSpan.end(epoch.plusMillis(startDurationMs))
 
-                    rumMonitor.sendDurationVital(
-                        startMs = System.currentTimeMillis() - startDurationMs,
-                        durationMs = startDurationMs,
-                        name = "TTID"
-                    )
+//                    rumMonitor.sendDurationVital(
+//                        startMs = System.currentTimeMillis() - startDurationMs,
+//                        durationMs = startDurationMs,
+//                        name = "TTID"
+//                    )
                     rumMonitor.addTiming("TTID")
 
                     Log.d(
