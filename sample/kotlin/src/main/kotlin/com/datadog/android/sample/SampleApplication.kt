@@ -49,8 +49,8 @@ import com.datadog.android.sample.data.remote.RemoteDataSource
 import com.datadog.android.sample.picture.CoilImageLoader
 import com.datadog.android.sample.picture.FrescoImageLoader
 import com.datadog.android.sample.picture.PicassoImageLoader
-import com.datadog.android.sample.start.AppInfoRepo
-import com.datadog.android.sample.start.StartupTimestamps
+import com.datadog.android.rum.startup.newapi.AppInfoRepo
+import com.datadog.android.rum.startup.newapi.StartupTimestamps
 import com.datadog.android.sample.user.UserFragment
 import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.SessionReplay
@@ -152,9 +152,9 @@ class SampleApplication : Application() {
 
         localServer.init(this)
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            useNewAppStartApi()
-        }
+//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+//            useNewAppStartApi()
+//        }
     }
 
     override fun onLowMemory() {

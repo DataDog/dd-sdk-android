@@ -1,12 +1,14 @@
-package com.datadog.android.sample.start
+/*
+ * Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
+ * This product includes software developed at Datadog (https://www.datadoghq.com/).
+ * Copyright 2016-Present Datadog, Inc.
+ */
+
+package com.datadog.android.rum.startup.newapi
 
 import android.app.ApplicationStartInfo
 import android.os.Build
 import androidx.annotation.RequiresApi
-import com.datadog.android.sample.start.LaunchMode
-import com.datadog.android.sample.start.StartReason
-import com.datadog.android.sample.start.StartType
-import com.datadog.android.sample.start.StartupState
 
 
 @RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)

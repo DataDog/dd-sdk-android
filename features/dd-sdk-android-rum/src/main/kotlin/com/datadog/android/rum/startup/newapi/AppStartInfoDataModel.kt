@@ -1,4 +1,4 @@
-package com.datadog.android.sample.start
+package com.datadog.android.rum.startup.newapi
 
 data class AppStartInfoBean(
     val startType: StartType, // what is the starting point, e.g. hot/cold start

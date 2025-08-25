@@ -6859,6 +6859,134 @@ public final class com/datadog/android/rum/resource/RumResourceInputStream : jav
 	public fun skip (J)J
 }
 
+public abstract interface class com/datadog/android/rum/startup/newapi/AppInfoRepo {
+	public static final field Companion Lcom/datadog/android/rum/startup/newapi/AppInfoRepo$Companion;
+	public abstract fun streaming ()Lkotlinx/coroutines/flow/Flow;
+	public abstract fun subscribe (Lkotlin/jvm/functions/Function1;)V
+}
+
+public final class com/datadog/android/rum/startup/newapi/AppInfoRepo$Companion {
+	public final fun create (Landroid/content/Context;)Lcom/datadog/android/rum/startup/newapi/AppInfoRepo;
+}
+
+public final class com/datadog/android/rum/startup/newapi/AppStartInfoBean {
+	public fun <init> (Lcom/datadog/android/rum/startup/newapi/StartType;Lcom/datadog/android/rum/startup/newapi/StartupState;Lcom/datadog/android/rum/startup/newapi/StartReason;Lcom/datadog/android/rum/startup/newapi/LaunchMode;Lcom/datadog/android/rum/startup/newapi/StartupTimestamps;Z)V
+	public final fun component1 ()Lcom/datadog/android/rum/startup/newapi/StartType;
+	public final fun component2 ()Lcom/datadog/android/rum/startup/newapi/StartupState;
+	public final fun component3 ()Lcom/datadog/android/rum/startup/newapi/StartReason;
+	public final fun component4 ()Lcom/datadog/android/rum/startup/newapi/LaunchMode;
+	public final fun component5 ()Lcom/datadog/android/rum/startup/newapi/StartupTimestamps;
+	public final fun component6 ()Z
+	public final fun copy (Lcom/datadog/android/rum/startup/newapi/StartType;Lcom/datadog/android/rum/startup/newapi/StartupState;Lcom/datadog/android/rum/startup/newapi/StartReason;Lcom/datadog/android/rum/startup/newapi/LaunchMode;Lcom/datadog/android/rum/startup/newapi/StartupTimestamps;Z)Lcom/datadog/android/rum/startup/newapi/AppStartInfoBean;
+	public static synthetic fun copy$default (Lcom/datadog/android/rum/startup/newapi/AppStartInfoBean;Lcom/datadog/android/rum/startup/newapi/StartType;Lcom/datadog/android/rum/startup/newapi/StartupState;Lcom/datadog/android/rum/startup/newapi/StartReason;Lcom/datadog/android/rum/startup/newapi/LaunchMode;Lcom/datadog/android/rum/startup/newapi/StartupTimestamps;ZILjava/lang/Object;)Lcom/datadog/android/rum/startup/newapi/AppStartInfoBean;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getLaunchMode ()Lcom/datadog/android/rum/startup/newapi/LaunchMode;
+	public final fun getStartReason ()Lcom/datadog/android/rum/startup/newapi/StartReason;
+	public final fun getStartType ()Lcom/datadog/android/rum/startup/newapi/StartType;
+	public final fun getStartupState ()Lcom/datadog/android/rum/startup/newapi/StartupState;
+	public final fun getTimestamps ()Lcom/datadog/android/rum/startup/newapi/StartupTimestamps;
+	public final fun getWasForceStopped ()Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/rum/startup/newapi/AppStartKt {
+	public static final fun getAppStartInfo (Landroid/content/Context;Lkotlin/jvm/functions/Function1;)V
+}
+
+public final class com/datadog/android/rum/startup/newapi/LaunchMode : java/lang/Enum {
+	public static final field LAUNCH_MODE_SINGLE_INSTANCE Lcom/datadog/android/rum/startup/newapi/LaunchMode;
+	public static final field LAUNCH_MODE_SINGLE_INSTANCE_PER_TASK Lcom/datadog/android/rum/startup/newapi/LaunchMode;
+	public static final field LAUNCH_MODE_SINGLE_TASK Lcom/datadog/android/rum/startup/newapi/LaunchMode;
+	public static final field LAUNCH_MODE_SINGLE_TOP Lcom/datadog/android/rum/startup/newapi/LaunchMode;
+	public static final field LAUNCH_MODE_STANDARD Lcom/datadog/android/rum/startup/newapi/LaunchMode;
+	public static final field LAUNCH_MODE_UNKNOWN Lcom/datadog/android/rum/startup/newapi/LaunchMode;
+	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/startup/newapi/LaunchMode;
+	public static fun values ()[Lcom/datadog/android/rum/startup/newapi/LaunchMode;
+}
+
+public final class com/datadog/android/rum/startup/newapi/ProdAppInfoRepo : com/datadog/android/rum/startup/newapi/AppInfoRepo {
+	public fun <init> (Landroid/content/Context;)V
+	public fun streaming ()Lkotlinx/coroutines/flow/Flow;
+	public fun subscribe (Lkotlin/jvm/functions/Function1;)V
+}
+
+public final class com/datadog/android/rum/startup/newapi/StartReason : java/lang/Enum {
+	public static final field START_REASON_ALARM Lcom/datadog/android/rum/startup/newapi/StartReason;
+	public static final field START_REASON_BACKUP Lcom/datadog/android/rum/startup/newapi/StartReason;
+	public static final field START_REASON_BOOT_COMPLETE Lcom/datadog/android/rum/startup/newapi/StartReason;
+	public static final field START_REASON_BROADCAST Lcom/datadog/android/rum/startup/newapi/StartReason;
+	public static final field START_REASON_CONTENT_PROVIDER Lcom/datadog/android/rum/startup/newapi/StartReason;
+	public static final field START_REASON_JOB Lcom/datadog/android/rum/startup/newapi/StartReason;
+	public static final field START_REASON_LAUNCHER Lcom/datadog/android/rum/startup/newapi/StartReason;
+	public static final field START_REASON_LAUNCHER_RECENTS Lcom/datadog/android/rum/startup/newapi/StartReason;
+	public static final field START_REASON_OTHER Lcom/datadog/android/rum/startup/newapi/StartReason;
+	public static final field START_REASON_PUSH Lcom/datadog/android/rum/startup/newapi/StartReason;
+	public static final field START_REASON_SERVICE Lcom/datadog/android/rum/startup/newapi/StartReason;
+	public static final field START_REASON_START_ACTIVITY Lcom/datadog/android/rum/startup/newapi/StartReason;
+	public static final field START_REASON_UNKNOWN Lcom/datadog/android/rum/startup/newapi/StartReason;
+	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/startup/newapi/StartReason;
+	public static fun values ()[Lcom/datadog/android/rum/startup/newapi/StartReason;
+}
+
+public final class com/datadog/android/rum/startup/newapi/StartType : java/lang/Enum {
+	public static final field START_TYPE_COLD Lcom/datadog/android/rum/startup/newapi/StartType;
+	public static final field START_TYPE_HOT Lcom/datadog/android/rum/startup/newapi/StartType;
+	public static final field START_TYPE_UNKNOWN Lcom/datadog/android/rum/startup/newapi/StartType;
+	public static final field START_TYPE_UNSET Lcom/datadog/android/rum/startup/newapi/StartType;
+	public static final field START_TYPE_WARM Lcom/datadog/android/rum/startup/newapi/StartType;
+	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/startup/newapi/StartType;
+	public static fun values ()[Lcom/datadog/android/rum/startup/newapi/StartType;
+}
+
+public final class com/datadog/android/rum/startup/newapi/StartupState : java/lang/Enum {
+	public static final field STARTUP_STATE_ERROR Lcom/datadog/android/rum/startup/newapi/StartupState;
+	public static final field STARTUP_STATE_FIRST_FRAME_DRAWN Lcom/datadog/android/rum/startup/newapi/StartupState;
+	public static final field STARTUP_STATE_STARTED Lcom/datadog/android/rum/startup/newapi/StartupState;
+	public static final field STARTUP_STATE_UNKNOWN Lcom/datadog/android/rum/startup/newapi/StartupState;
+	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/startup/newapi/StartupState;
+	public static fun values ()[Lcom/datadog/android/rum/startup/newapi/StartupState;
+}
+
+public final class com/datadog/android/rum/startup/newapi/StartupTimestamps {
+	public fun <init> ()V
+	public fun <init> (Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;)V
+	public synthetic fun <init> (Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/Long;
+	public final fun component10 ()Ljava/lang/Long;
+	public final fun component11 ()Ljava/lang/Long;
+	public final fun component2 ()Ljava/lang/Long;
+	public final fun component3 ()Ljava/lang/Long;
+	public final fun component4 ()Ljava/lang/Long;
+	public final fun component5 ()Ljava/lang/Long;
+	public final fun component6 ()Ljava/lang/Long;
+	public final fun component7 ()Ljava/lang/Long;
+	public final fun component8 ()Ljava/lang/Long;
+	public final fun component9 ()Ljava/lang/Long;
+	public final fun copy (Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;)Lcom/datadog/android/rum/startup/newapi/StartupTimestamps;
+	public static synthetic fun copy$default (Lcom/datadog/android/rum/startup/newapi/StartupTimestamps;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/Long;ILjava/lang/Object;)Lcom/datadog/android/rum/startup/newapi/StartupTimestamps;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getApplicationOnCreate ()Ljava/lang/Long;
+	public final fun getBindApplication ()Ljava/lang/Long;
+	public final fun getFirstFrame ()Ljava/lang/Long;
+	public final fun getFork ()Ljava/lang/Long;
+	public final fun getFullyDrawn ()Ljava/lang/Long;
+	public final fun getInitialRenderThreadFrame ()Ljava/lang/Long;
+	public final fun getLaunch ()Ljava/lang/Long;
+	public final fun getPostOnCreate ()Ljava/lang/Long;
+	public final fun getPreOnCreate ()Ljava/lang/Long;
+	public final fun getReservedRangeSystem ()Ljava/lang/Long;
+	public final fun getSurfaceFlingerCompositionComplete ()Ljava/lang/Long;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/rum/startup/newapi/StubAppInfoRepo : com/datadog/android/rum/startup/newapi/AppInfoRepo {
+	public static final field INSTANCE Lcom/datadog/android/rum/startup/newapi/StubAppInfoRepo;
+	public fun streaming ()Lkotlinx/coroutines/flow/Flow;
+	public fun subscribe (Lkotlin/jvm/functions/Function1;)V
+}
+
 public class com/datadog/android/rum/tracking/AcceptAllActivities : com/datadog/android/rum/tracking/ComponentPredicate {
 	public fun <init> ()V
 	public fun accept (Landroid/app/Activity;)Z

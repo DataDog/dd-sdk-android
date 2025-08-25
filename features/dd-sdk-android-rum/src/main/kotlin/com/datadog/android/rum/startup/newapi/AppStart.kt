@@ -1,4 +1,4 @@
-package com.datadog.android.sample.start
+package com.datadog.android.rum.startup.newapi
 
 import android.app.ActivityManager
 import android.app.ApplicationStartInfo
