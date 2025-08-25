@@ -56,6 +56,17 @@ sealed class InternalTelemetryEvent {
             val noActiveView: Boolean,
             additionalProperties: MutableMap<String, Any?> = mutableMapOf()
         ) : ApiUsage(additionalProperties)
+
+        class AddOperationStepVital(
+            val actionType: ActionType,
+            additionalProperties: MutableMap<String, Any?> = mutableMapOf()
+        ) : ApiUsage(additionalProperties) {
+            enum class ActionType {
+                START,
+                SUCCEED,
+                FAIL
+            }
+        }
     }
 
     object InterceptorInstantiated : InternalTelemetryEvent()
