@@ -122,6 +122,11 @@
                   "description": "Whether long tasks are tracked",
                   "readOnly": false
                 },
+                "track_bfcache_views": {
+                  "type": "boolean",
+                  "description": "Whether views loaded from the bfcache are tracked",
+                  "readOnly": false
+                },
                 "use_cross_site_session_cookie": {
                   "type": "boolean",
                   "description": "Whether a secure cross-site session cookie is used (deprecated)"
@@ -279,6 +284,16 @@
                     "MixedViewTrackingStrategy",
                     "NavigationViewTrackingStrategy"
                   ]
+                },
+                "swiftui_view_tracking_enabled": {
+                  "type": "boolean",
+                  "description": "Whether SwiftUI view instrumentation is enabled",
+                  "readOnly": false
+                },
+                "swiftui_action_tracking_enabled": {
+                  "type": "boolean",
+                  "description": "Whether SwiftUI action instrumentation is enabled",
+                  "readOnly": false
                 },
                 "track_background_events": {
                   "type": "boolean",
@@ -439,6 +454,32 @@
                   "description": "Whether the anonymous users are tracked",
                   "readOnly": false,
                   "default": true
+                },
+                "use_allowed_tracking_origins": {
+                  "type": "boolean",
+                  "description": "Whether a list of allowed origins is used to control SDK execution in browser extension contexts. When enabled, the SDK will check if the current origin matches the allowed origins list before running.",
+                  "readOnly": false,
+                  "default": false
+                },
+                "sdk_version": {
+                  "type": "string",
+                  "description": "The version of the SDK that is running.",
+                  "readOnly": false
+                },
+                "source": {
+                  "type": "string",
+                  "description": "The source of the SDK, e.g., 'browser', 'ios', 'android', 'flutter', 'react-native', 'unity', 'kotlin-multiplatform'.",
+                  "readOnly": false
+                },
+                "variant": {
+                  "type": "string",
+                  "description": "The variant of the SDK build (e.g., standard, lite, etc.).",
+                  "readOnly": false
+                },
+                "remote_configuration_id": {
+                  "type": "string",
+                  "description": "The id of the remote configuration",
+                  "readOnly": false
                 }
               }
             }

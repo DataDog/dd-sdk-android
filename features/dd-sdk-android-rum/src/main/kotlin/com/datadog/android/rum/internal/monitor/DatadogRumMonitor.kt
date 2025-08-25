@@ -20,6 +20,7 @@ import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.utils.executeSafe
 import com.datadog.android.core.metrics.MethodCallSamplingRate
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
+import com.datadog.android.internal.telemetry.InternalTelemetryEvent.ApiUsage.AddOperationStepVital.ActionType
 import com.datadog.android.internal.thread.NamedRunnable
 import com.datadog.android.rum.DdRumContentProvider
 import com.datadog.android.rum.ExperimentalRumApi
@@ -676,6 +677,7 @@ internal class DatadogRumMonitor(
         sdkCore.internalLogger.logToUser(InternalLogger.Level.DEBUG) {
             "Feature Operation `$name` (operationKey `$operationKey`) started."
         }
+        sdkCore.internalLogger.reportFeatureOperationApiUsage(ActionType.START)
     }
 
     @ExperimentalRumApi
@@ -692,6 +694,7 @@ internal class DatadogRumMonitor(
         sdkCore.internalLogger.logToUser(InternalLogger.Level.DEBUG) {
             "Feature Operation `$name` (operationKey `$operationKey`) successfully ended."
         }
+        sdkCore.internalLogger.reportFeatureOperationApiUsage(ActionType.SUCCEED)
     }
 
     @ExperimentalRumApi
@@ -714,6 +717,7 @@ internal class DatadogRumMonitor(
             "Feature Operation `$name` (operationKey `$operationKey`) unsuccessfully ended" +
                 " with the following failure reason: $failureReason."
         }
+        sdkCore.internalLogger.reportFeatureOperationApiUsage(ActionType.FAIL)
     }
 
     // endregion
@@ -856,5 +860,9 @@ internal class DatadogRumMonitor(
             target = InternalLogger.Target.USER,
             messageBuilder = messageProvider
         )
+
+        private fun InternalLogger.reportFeatureOperationApiUsage(actionType: ActionType) = logApiUsage {
+            InternalTelemetryEvent.ApiUsage.AddOperationStepVital(actionType)
+        }
     }
 }
