@@ -188,7 +188,7 @@ internal class PendingTraceTest : PendingTraceTestBase() {
     }
 
     @Test
-    fun `do not drop root span when drop is called`() {
+    fun `do not drop root span when unregisterSpan is called`() {
         // Given
         val tracer = mock<CoreTracer>()
         val traceConfig = mock<CoreTracer.ConfigSnapshot>()

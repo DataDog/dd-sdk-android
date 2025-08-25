@@ -95,11 +95,12 @@ class DatadogSpanContextAdapterTest {
     fun `M return delegate#traceId W traceId is called`(forge: Forge) {
         // Given
         val ddTraceId = forge.getForgery<DDTraceId>()
-
-        // When
         whenever(mockAgentSpanContext.traceId).thenReturn(ddTraceId)
 
+        // When
+        val actualTraceId = testedAgentSpanContextAdapter.traceId
+
         // Then
-        assertThat(testedAgentSpanContextAdapter.traceId).isEqualTo(DatadogTraceIdAdapter(ddTraceId))
+        assertThat(actualTraceId).isEqualTo(DatadogTraceIdAdapter(ddTraceId))
     }
 }

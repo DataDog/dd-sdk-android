@@ -90,7 +90,7 @@ class DatadogTracingTest {
     }
 
     @Test
-    fun `M log a maintainer error W build { TracingFeature not implementing InternalCoreTracerWriterProvider }`() {
+    fun `M log a maintainer error W build { TracingFeature not implementing InternalCoreWriterProvider }`() {
         // Given
         whenever(mockTracingFeature.unwrap<Feature>()) doReturn mock()
 

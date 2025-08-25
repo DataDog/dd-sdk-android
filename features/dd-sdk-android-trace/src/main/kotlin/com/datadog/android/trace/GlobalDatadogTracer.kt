@@ -25,7 +25,6 @@ object GlobalDatadogTracer {
      * @param tracer The tracer to register as the global tracer.
      * @return `true` if the tracer was successfully registered, or `false` if a tracer was already registered.
      */
-    @Synchronized
     fun registerIfAbsent(tracer: DatadogTracer): Boolean {
         return instance.compareAndSet(null, tracer)
     }
@@ -52,7 +51,6 @@ object GlobalDatadogTracer {
      * removing any active tracer currently held in the global state.
      * The general purpose is to use it for test implementation.
      */
-    @Synchronized
     fun clear() {
         instance.set(null)
     }
