@@ -153,7 +153,7 @@ public class OtelSpan implements Span {
   }
 
   public DatadogScope activate() {
-    return agentTracer.activateSpan(this.delegate, DEFAULT_ASYNC_PROPAGATING);
+    return DatadogTracingToolkit.activateSpan(agentTracer, this.delegate, DEFAULT_ASYNC_PROPAGATING);
   }
 
   public DatadogSpan getDatadogSpan() {

@@ -43,17 +43,6 @@ interface DatadogTracer {
     fun activateSpan(span: DatadogSpan): DatadogScope?
 
     /**
-     * Activates the provided span within the current context of the tracer.
-     * If `asyncPropagating` is set to true, the span is propagated asynchronously.
-     * Once activated, the span becomes the currently active span until it is explicitly deactivated.
-     *
-     * @param span The span to be activated. Represents the logical unit of work being traced.
-     * @param asyncPropagating If true, this context will propagate across async boundaries.
-     * @return An instance of [DatadogScope] representing the activated scope.
-     */
-    fun activateSpan(span: DatadogSpan, asyncPropagating: Boolean): DatadogScope?
-
-    /**
      * Creates a new span builder instance with the specified span name.
      *
      * @param spanName The name of the span to be built. Represents the operation being performed.

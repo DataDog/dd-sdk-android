@@ -6,8 +6,10 @@
 package com.datadog.android.trace.internal
 
 import com.datadog.android.lint.InternalApi
+import com.datadog.android.trace.api.scope.DatadogScope
 import com.datadog.android.trace.api.span.DatadogSpan
 import com.datadog.android.trace.api.span.DatadogSpanContext
+import com.datadog.android.trace.api.tracer.DatadogTracer
 import com.datadog.android.trace.api.tracer.DatadogTracerBuilder
 
 /**
@@ -70,5 +72,20 @@ object DatadogTracingToolkit {
     @JvmStatic // this method is called from OTel code, written in java
     fun addThrowable(span: DatadogSpan, throwable: Throwable, errorPriority: Byte) {
         (span as? DatadogSpanAdapter)?.addThrowable(throwable, errorPriority)
+    }
+
+    /**
+     * Activates the provided span within the current context of the tracer.
+     * If `asyncPropagating` is set to true, the span is propagated asynchronously.
+     * Once activated, the span becomes the currently active span until it is explicitly deactivated.
+     *
+     * @param tracer The tracer instance to be used for activation.
+     * @param span The span to be activated. Represents the logical unit of work being traced.
+     * @param asyncPropagating If true, this context will propagate across async boundaries.
+     * @return An instance of [DatadogScope] representing the activated scope.
+     */
+    @JvmStatic // this method is called from OTel code, written in java
+    fun activateSpan(tracer: DatadogTracer, span: DatadogSpan, asyncPropagating: Boolean): DatadogScope? {
+        return (tracer as? DatadogTracerAdapter)?.activateSpan(span, asyncPropagating)
     }
 }

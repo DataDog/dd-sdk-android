@@ -67,13 +67,13 @@ internal class DatadogTracerAdapter(
         )
     }
 
-    override fun activateSpan(span: DatadogSpan, asyncPropagating: Boolean): DatadogScope? {
+    override fun propagate(): DatadogPropagation = DatadogPropagationAdapter(internalLogger, delegate.propagate())
+
+    internal fun activateSpan(span: DatadogSpan, asyncPropagating: Boolean): DatadogScope? {
         return (span as? DatadogSpanAdapter)?.let {
             DatadogScopeAdapter(
                 delegate.activateSpan(span.delegate, ScopeSource.INSTRUMENTATION, asyncPropagating) ?: return null
             )
         }
     }
-
-    override fun propagate(): DatadogPropagation = DatadogPropagationAdapter(internalLogger, delegate.propagate())
 }
