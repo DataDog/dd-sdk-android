@@ -42,5 +42,5 @@ internal class DatadogPropagationAdapter(
     }
 
     private fun constructErrorMessage(klass: KClass<*>) = "DatadogPropagationAdapter supports only" +
-        " DatadogSpanContextAdapter instancies for injection but ${klass.simpleName} is given"
+        " DatadogSpanContextAdapter instances for injection but ${klass.simpleName} is given"
 }

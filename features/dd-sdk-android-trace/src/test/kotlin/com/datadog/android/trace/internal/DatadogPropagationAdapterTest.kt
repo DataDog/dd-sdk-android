@@ -61,7 +61,7 @@ internal class DatadogPropagationAdapterTest {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.ERROR,
             InternalLogger.Target.USER,
-            "DatadogPropagationAdapter supports only DatadogSpanContextAdapter instancies for injection " +
+            "DatadogPropagationAdapter supports only DatadogSpanContextAdapter instances for injection " +
                 "but UnsupportedDatadogSpanContextImplementation is given"
         )
     }

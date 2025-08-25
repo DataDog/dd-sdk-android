@@ -248,14 +248,19 @@ internal class OtelSpanTest {
 
     @Test
     fun `M delegate to AgentSpan W activate`() {
-        // When
-        testedSpan.activate()
-
-        // Then
-        verify(mockAgentTracer).activateSpan(
-            mockAgentSpan,
-            DEFAULT_ASYNC_PROPAGATING
-        )
+        Mockito.mockStatic(DatadogTracingToolkit::class.java).use { mockedStatic ->
+            // When
+            testedSpan.activate()
+            // Then
+            mockedStatic.verify {
+                DatadogTracingToolkit.activateSpan(
+                    mockAgentTracer,
+                    mockAgentSpan,
+                    DEFAULT_ASYNC_PROPAGATING
+                )
+            }
+            mockedStatic.verifyNoMoreInteractions()
+        }
     }
 
     // endregion

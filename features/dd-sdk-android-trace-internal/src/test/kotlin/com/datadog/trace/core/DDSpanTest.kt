@@ -513,7 +513,7 @@ internal class DDSpanTest : DDCoreSpecification() {
     }
 
     @Test
-    fun `W drop T unregisterSpan is called`() {
+    fun `M call unregisterSpan W drop is called`() {
         val mockTrace = mock<PendingTrace> {
             on { rootSpan } doReturn mock()
         }

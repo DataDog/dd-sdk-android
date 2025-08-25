@@ -73,8 +73,8 @@ class SamplerTest {
         val actual = Sampler.Builder.forConfig(mockConfig, null)
 
         // Then
-        assertThat(actual).isInstanceOf(RateByServiceTraceSampler::class.java)
-        assertThat((actual as RateByServiceTraceSampler).sampleRate).isEqualTo(fakeSampleRate)
+        check(actual is RateByServiceTraceSampler)
+        assertThat(actual.sampleRate).isEqualTo(fakeSampleRate)
     }
 
     @Test
@@ -96,8 +96,8 @@ class SamplerTest {
         val actual = Sampler.Builder.forConfig(mockConfig, null)
 
         // Then
-        assertThat(actual).isInstanceOf(ForcePrioritySampler::class.java)
-        assertThat((actual as ForcePrioritySampler).prioritySampling).isEqualTo(PrioritySampling.SAMPLER_KEEP.toInt())
+        check(actual is ForcePrioritySampler)
+        assertThat(actual.prioritySampling).isEqualTo(PrioritySampling.SAMPLER_KEEP.toInt())
         assertThat(actual.samplingMechanism).isEqualTo(SamplingMechanism.DEFAULT.toInt())
     }
 
@@ -111,8 +111,8 @@ class SamplerTest {
         val actual = Sampler.Builder.forConfig(mockConfig, null)
 
         // Then
-        assertThat(actual).isInstanceOf(ForcePrioritySampler::class.java)
-        assertThat((actual as ForcePrioritySampler).prioritySampling).isEqualTo(PrioritySampling.SAMPLER_DROP.toInt())
+        check(actual is ForcePrioritySampler)
+        assertThat(actual.prioritySampling).isEqualTo(PrioritySampling.SAMPLER_DROP.toInt())
         assertThat(actual.samplingMechanism).isEqualTo(SamplingMechanism.DEFAULT.toInt())
     }
 

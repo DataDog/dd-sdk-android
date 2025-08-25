@@ -557,7 +557,7 @@ internal class OtelTracerBuilderProviderTest {
         val expectedSpanId = delegateSpan.context().spanId.toString()
 
         // When
-        val scope = delegatedTracer.activateSpan(delegateSpan, false)
+        val scope = delegatedTracer.activateSpan(delegateSpan)
         scope?.close()
         span.end()
 
@@ -594,7 +594,7 @@ internal class OtelTracerBuilderProviderTest {
 
         // When
         val delegateSpan: DatadogSpan = span.delegate
-        val scope = delegatedTracer.activateSpan(delegateSpan, false)
+        val scope = delegatedTracer.activateSpan(delegateSpan)
         scope?.close()
         span.end()
 
