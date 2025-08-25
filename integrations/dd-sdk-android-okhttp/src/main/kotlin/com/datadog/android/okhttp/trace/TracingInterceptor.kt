@@ -485,14 +485,16 @@ internal constructor(
             val spanId = span.context().spanId.toString()
             requestBuilder.addHeader(
                 W3C_TRACEPARENT_KEY,
-                @Suppress("UnsafeThirdPartyFunctionCall") // Format string is static
+                // TODO RUM-11445 InvalidStringFormat false alarm
+                @Suppress("UnsafeThirdPartyFunctionCall", "InvalidStringFormat") // Format string is static
                 W3C_TRACEPARENT_DROP_SAMPLING_DECISION.format(
                     traceId.padStart(length = W3C_TRACE_ID_LENGTH, padChar = '0'),
                     spanId.padStart(length = W3C_PARENT_ID_LENGTH, padChar = '0')
                 )
             )
             // TODO RUM-2121 3rd party vendor information will be erased
-            @Suppress("UnsafeThirdPartyFunctionCall") // Format string is static
+            // TODO RUM-11445 InvalidStringFormat false alarm
+            @Suppress("UnsafeThirdPartyFunctionCall", "InvalidStringFormat") // Format string is static
             var traceStateHeader = W3C_TRACESTATE_DROP_SAMPLING_DECISION
                 .format(spanId.padStart(length = W3C_PARENT_ID_LENGTH, padChar = '0'))
             if (traceOrigin != null) {
