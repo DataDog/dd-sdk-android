@@ -28,6 +28,7 @@ import com.datadog.android.rum.DdRumContentProvider
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.internal.domain.FrameMetricsData
 import com.datadog.android.rum.internal.vitals.FrameStateListener
+import com.datadog.android.rum.startup.newapi.AppInfoRepo
 import java.lang.ref.WeakReference
 import java.util.concurrent.atomic.AtomicReference
 import kotlin.time.Duration.Companion.milliseconds
@@ -52,6 +53,8 @@ internal class AppStartupTypeManager2(
     private val resumedActivities = mutableSetOf<WeakReference<Activity>>()
 
     private val waitingForStart = AtomicReference<String>(null)
+
+    private val appInfoRepo = AppInfoRepo.create(context)
 
     private val processObserver = object: DefaultLifecycleObserver {
         override fun onCreate(owner: LifecycleOwner) {
@@ -161,6 +164,7 @@ internal class AppStartupTypeManager2(
         subscribeToTTIDVitals(activity, type)
         waitingForStart.updateAndGet { type }
         startTrackingTTFD(activity)
+        startTrackingWithNewApi(type)
     }
 
     @RequiresApi(Build.VERSION_CODES.N)
@@ -172,6 +176,15 @@ internal class AppStartupTypeManager2(
         (activity as? androidx.activity.ComponentActivity)?.let { componentActivity ->
             componentActivity.fullyDrawnReporter.addOnReportDrawnListener {
                 reportVitalNanos(System.nanoTime(), "TTFD_VITAL")
+            }
+        }
+    }
+
+    @RequiresApi(Build.VERSION_CODES.N)
+    private fun startTrackingWithNewApi(type: String) {
+        appInfoRepo.subscribe {
+            it.timestamps.firstFrame?.let { firstFrame ->
+                reportVitalNanos(System.nanoTime(), "${it.startType.name}_${type}_new_api_ttid")
             }
         }
     }
