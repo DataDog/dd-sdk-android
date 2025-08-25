@@ -47,6 +47,8 @@ import com.datadog.android.rum.internal.domain.scope.RumViewScope
 import com.datadog.android.rum.internal.domain.state.ViewUIPerformanceReport
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
 import com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener
+import com.datadog.android.rum.internal.monitor.DatadogRumMonitor.Companion.FO_ERROR_INVALID_NAME
+import com.datadog.android.rum.internal.monitor.DatadogRumMonitor.Companion.FO_ERROR_INVALID_OPERATION_KEY
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.rum.metric.interactiontonextview.LastInteractionIdentifier
 import com.datadog.android.rum.metric.networksettled.InitialResourceIdentifier
@@ -2270,9 +2272,6 @@ internal class DatadogRumMonitorTest {
 
     @Test
     fun `M log warn message W debug = true() { no RUM feature registered }`() {
-        // Given
-        val mockInternalLogger = mock<InternalLogger>()
-        whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
         whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn null
 
         // When
@@ -2366,8 +2365,6 @@ internal class DatadogRumMonitorTest {
         forge: Forge
     ) {
         // Given
-        val mockInternalLogger = mock<InternalLogger>()
-        whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
         val operationKey = forge.aNullable { key }
         val attributes = fakeAttributes + (RumAttributes.INTERNAL_TIMESTAMP to fakeTimestamp)
 
@@ -2390,13 +2387,10 @@ internal class DatadogRumMonitorTest {
         forge: Forge
     ) {
         // Given
-        val mockInternalLogger = mock<InternalLogger>()
-        whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
         val operationKey = forge.aNullable { key }
-        val attributes = fakeAttributes + (RumAttributes.INTERNAL_TIMESTAMP to fakeTimestamp)
 
         // When
-        testedMonitor.succeedFeatureOperation(name, operationKey, attributes)
+        testedMonitor.succeedFeatureOperation(name, operationKey, fakeAttributes)
 
         // Then
         mockInternalLogger.verifyLog(
@@ -2414,14 +2408,11 @@ internal class DatadogRumMonitorTest {
         forge: Forge
     ) {
         // Given
-        val mockInternalLogger = mock<InternalLogger>()
-        whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
         val operationKey = forge.aNullable { key }
         val failureReason = forge.aValueFrom(FailureReason::class.java)
-        val attributes = fakeAttributes + (RumAttributes.INTERNAL_TIMESTAMP to fakeTimestamp)
 
         // When
-        testedMonitor.failFeatureOperation(name, operationKey, failureReason, attributes)
+        testedMonitor.failFeatureOperation(name, operationKey, failureReason, fakeAttributes)
 
         // Then
         mockInternalLogger.verifyLog(
@@ -2440,20 +2431,17 @@ internal class DatadogRumMonitorTest {
         forge: Forge
     ) {
         // Given
-        val mockInternalLogger = mock<InternalLogger>()
-        whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
         val operationKey = forge.aNullable { key }
-        val attributes = fakeAttributes + (RumAttributes.INTERNAL_TIMESTAMP to fakeTimestamp)
 
         // When
-        testedMonitor.startFeatureOperation(name, operationKey, attributes)
+        testedMonitor.startFeatureOperation(name, operationKey, fakeAttributes)
 
         // Then
         mockInternalLogger.verifyApiUsage(
             InternalTelemetryEvent.ApiUsage.AddOperationStepVital(
                 InternalTelemetryEvent.ApiUsage.AddOperationStepVital.ActionType.START
             ),
-            samplingRate = 15f
+            samplingRate = DEFAULT_API_USAGE_SAMPLING_RATE
         )
     }
 
@@ -2465,20 +2453,17 @@ internal class DatadogRumMonitorTest {
         forge: Forge
     ) {
         // Given
-        val mockInternalLogger = mock<InternalLogger>()
-        whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
         val operationKey = forge.aNullable { key }
-        val attributes = fakeAttributes + (RumAttributes.INTERNAL_TIMESTAMP to fakeTimestamp)
 
         // When
-        testedMonitor.succeedFeatureOperation(name, operationKey, attributes)
+        testedMonitor.succeedFeatureOperation(name, operationKey, fakeAttributes)
 
         // Then
         mockInternalLogger.verifyApiUsage(
             InternalTelemetryEvent.ApiUsage.AddOperationStepVital(
                 InternalTelemetryEvent.ApiUsage.AddOperationStepVital.ActionType.SUCCEED
             ),
-            samplingRate = 15f
+            samplingRate = DEFAULT_API_USAGE_SAMPLING_RATE
         )
     }
 
@@ -2490,22 +2475,142 @@ internal class DatadogRumMonitorTest {
         forge: Forge
     ) {
         // Given
-        val mockInternalLogger = mock<InternalLogger>()
-        whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
         val operationKey = forge.aNullable { key }
         val failureReason = forge.aValueFrom(FailureReason::class.java)
-        val attributes = fakeAttributes + (RumAttributes.INTERNAL_TIMESTAMP to fakeTimestamp)
 
         // When
-        testedMonitor.failFeatureOperation(name, operationKey, failureReason, attributes)
+        testedMonitor.failFeatureOperation(name, operationKey, failureReason, fakeAttributes)
 
         // Then
         mockInternalLogger.verifyApiUsage(
             InternalTelemetryEvent.ApiUsage.AddOperationStepVital(
                 InternalTelemetryEvent.ApiUsage.AddOperationStepVital.ActionType.FAIL
             ),
-            samplingRate = 15f
+            samplingRate = DEFAULT_API_USAGE_SAMPLING_RATE
         )
+    }
+
+    @OptIn(ExperimentalRumApi::class)
+    @Test
+    fun `M log user message W startFeatureOperation { operation name is blank }`(
+        @StringForgery(StringForgeryType.WHITESPACE) name: String
+    ) {
+        // When
+        testedMonitor.startFeatureOperation(name, null, fakeAttributes)
+
+        // Then
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.USER,
+            FO_ERROR_INVALID_NAME.format(Locale.US, name)
+        )
+
+        verifyNoInteractions(mockScope)
+        verifyNoMoreInteractions(mockInternalLogger)
+    }
+
+    @OptIn(ExperimentalRumApi::class)
+    @Test
+    fun `M log user message W startFeatureOperation { operation key is blank }`(
+        @StringForgery name: String,
+        @StringForgery(StringForgeryType.WHITESPACE) operationKey: String
+    ) {
+        // When
+        testedMonitor.startFeatureOperation(name, operationKey, fakeAttributes)
+
+        // Then
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.USER,
+            FO_ERROR_INVALID_OPERATION_KEY.format(Locale.US, operationKey)
+        )
+
+        verifyNoInteractions(mockScope)
+        verifyNoMoreInteractions(mockInternalLogger)
+    }
+
+    @OptIn(ExperimentalRumApi::class)
+    @Test
+    fun `M log user message W succeedFeatureOperation { operation name is blank }`(
+        @StringForgery(StringForgeryType.WHITESPACE) name: String
+    ) {
+        // When
+        testedMonitor.succeedFeatureOperation(name, null, fakeAttributes)
+
+        // Then
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.USER,
+            FO_ERROR_INVALID_NAME.format(Locale.US, name)
+        )
+
+        verifyNoInteractions(mockScope)
+        verifyNoMoreInteractions(mockInternalLogger)
+    }
+
+    @OptIn(ExperimentalRumApi::class)
+    @Test
+    fun `M log user message W succeedFeatureOperation { operation key is blank }`(
+        @StringForgery name: String,
+        @StringForgery(StringForgeryType.WHITESPACE) operationKey: String
+    ) {
+        // When
+        testedMonitor.succeedFeatureOperation(name, operationKey, fakeAttributes)
+
+        // Then
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.USER,
+            FO_ERROR_INVALID_OPERATION_KEY.format(Locale.US, operationKey)
+        )
+
+        verifyNoInteractions(mockScope)
+        verifyNoMoreInteractions(mockInternalLogger)
+    }
+
+    @OptIn(ExperimentalRumApi::class)
+    @Test
+    fun `M log user message W failFeatureOperation { operation name is blank }`(
+        @StringForgery(StringForgeryType.WHITESPACE) name: String,
+        forge: Forge
+    ) {
+        val failureReason = forge.aValueFrom(FailureReason::class.java)
+
+        // When
+        testedMonitor.failFeatureOperation(name, null, failureReason, fakeAttributes)
+
+        // Then
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.USER,
+            FO_ERROR_INVALID_NAME.format(Locale.US, name)
+        )
+
+        verifyNoInteractions(mockScope)
+        verifyNoMoreInteractions(mockInternalLogger)
+    }
+
+    @OptIn(ExperimentalRumApi::class)
+    @Test
+    fun `M log user message W failFeatureOperation { operation key is blank }`(
+        @StringForgery name: String,
+        @StringForgery(StringForgeryType.WHITESPACE) operationKey: String,
+        forge: Forge
+    ) {
+        val failureReason = forge.aValueFrom(FailureReason::class.java)
+
+        // When
+        testedMonitor.failFeatureOperation(name, operationKey, failureReason, fakeAttributes)
+
+        // Then
+        mockInternalLogger.verifyLog(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.USER,
+            FO_ERROR_INVALID_OPERATION_KEY.format(Locale.US, operationKey)
+        )
+
+        verifyNoInteractions(mockScope)
+        verifyNoMoreInteractions(mockInternalLogger)
     }
 
     private inline fun <reified T : RumRawEvent> assertMethodCallProducesValidEvent(
@@ -2529,5 +2634,6 @@ internal class DatadogRumMonitorTest {
         const val TIMESTAMP_MIN = 1000000000000
         const val TIMESTAMP_MAX = 2000000000000
         const val PROCESSING_DELAY = 100L
+        const val DEFAULT_API_USAGE_SAMPLING_RATE = 15f
     }
 }
