@@ -666,6 +666,8 @@ internal class DatadogRumMonitor(
 
     @ExperimentalRumApi
     override fun startFeatureOperation(name: String, operationKey: String?, attributes: Map<String, Any?>) {
+        if (!featureOperationArgumentsValid(name, operationKey)) return
+
         handleEvent(
             RumRawEvent.StartFeatureOperation(
                 name,
@@ -682,6 +684,8 @@ internal class DatadogRumMonitor(
 
     @ExperimentalRumApi
     override fun succeedFeatureOperation(name: String, operationKey: String?, attributes: Map<String, Any?>) {
+        if (!featureOperationArgumentsValid(name, operationKey)) return
+
         handleEvent(
             RumRawEvent.StopFeatureOperation(
                 name,
@@ -704,6 +708,8 @@ internal class DatadogRumMonitor(
         failureReason: FailureReason,
         attributes: Map<String, Any?>
     ) {
+        if (!featureOperationArgumentsValid(name, operationKey)) return
+
         handleEvent(
             RumRawEvent.StopFeatureOperation(
                 name,
@@ -718,6 +724,24 @@ internal class DatadogRumMonitor(
                 " with the following failure reason: $failureReason."
         }
         sdkCore.internalLogger.reportFeatureOperationApiUsage(ActionType.FAIL)
+    }
+
+    private fun featureOperationArgumentsValid(name: String, operationKey: String?) = when {
+        name.isBlank() -> {
+            sdkCore.internalLogger.logToUser(InternalLogger.Level.WARN) {
+                FO_ERROR_INVALID_NAME.format(Locale.US, name)
+            }
+            false
+        }
+
+        operationKey?.isBlank() == true -> {
+            sdkCore.internalLogger.logToUser(InternalLogger.Level.WARN) {
+                FO_ERROR_INVALID_OPERATION_KEY.format(Locale.US, operationKey)
+            }
+            false
+        }
+
+        else -> true
     }
 
     // endregion
@@ -851,6 +875,12 @@ internal class DatadogRumMonitor(
 
         internal const val RUM_DEBUG_RUM_NOT_ENABLED_WARNING =
             "Cannot switch RUM debugging, because RUM feature is not enabled."
+
+        internal const val FO_ERROR_INVALID_NAME =
+            "Feature operation name cannot be an empty or blank string but was \"%s\". Vital event won't be sent."
+
+        internal const val FO_ERROR_INVALID_OPERATION_KEY =
+            "Feature operation key cannot be an empty or blank string but was \"%s\". Vital event won't be sent."
 
         private fun InternalLogger.logToUser(
             level: InternalLogger.Level,
