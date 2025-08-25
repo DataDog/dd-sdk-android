@@ -206,7 +206,7 @@ internal class DatadogRumMonitorTest {
         whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
         whenever(mockSdkCore.time) doReturn fakeTimeInfo
         whenever(mockSlowFramesListener.resolveReport(any(), any(), any())) doReturn fakeViewUIPerformanceReport
-        whenever(mockAccessibilitySnapshotManager.latestSnapshot()) doReturn mock()
+        whenever(mockAccessibilitySnapshotManager.getIfChanged()) doReturn mock()
 
         fakeAttributes = forge.exhaustiveAttributes()
 

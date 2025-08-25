@@ -997,16 +997,17 @@ internal open class RumViewScope(
             )
         }
 
-        val accessibilityState = accessibilitySnapshotManager.latestSnapshot()
-        val accessibility = ViewEvent.Accessibility(
-            textSize = accessibilityState.textSize,
-            invertColorsEnabled = accessibilityState.isColorInversionEnabled,
-            singleAppModeEnabled = accessibilityState.isScreenPinningEnabled,
-            screenReaderEnabled = accessibilityState.isScreenReaderEnabled,
-            closedCaptioningEnabled = accessibilityState.isClosedCaptioningEnabled,
-            reducedAnimationsEnabled = accessibilityState.isReducedAnimationsEnabled,
-            rtlEnabled = accessibilityState.isRtlEnabled
-        )
+        val accessibility = accessibilitySnapshotManager.getIfChanged()?.let {
+            ViewEvent.Accessibility(
+                textSize = it.textSize,
+                invertColorsEnabled = it.isColorInversionEnabled,
+                singleAppModeEnabled = it.isScreenPinningEnabled,
+                screenReaderEnabled = it.isScreenReaderEnabled,
+                closedCaptioningEnabled = it.isClosedCaptioningEnabled,
+                reducedAnimationsEnabled = it.isReducedAnimationsEnabled,
+                rtlEnabled = it.isRtlEnabled
+            )
+        }
 
         val batteryInfo = batteryInfoProvider.getState()
         val displayInfo = displayInfoProvider.getState()

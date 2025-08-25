@@ -78,6 +78,7 @@ internal class DefaultBatteryInfoProviderTest {
     // region getBatteryState
 
     @Test
+    @TestTargetApi(Build.VERSION_CODES.Q) // needed or battery level 0 causes flakiness with retrieval code
     fun `M return complete battery info W getBatteryState() { all services available }`(
         @BoolForgery fakeLowPowerMode: Boolean,
         @IntForgery(0, 100) fakeBatteryLevel: Int

@@ -17,7 +17,6 @@ import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.model.ViewEvent
-import com.datadog.android.rum.model.ViewEvent.Accessibility
 import com.datadog.android.rum.utils.config.GlobalRumMonitorTestConfiguration
 import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
@@ -131,7 +130,7 @@ internal class RumDataWriterTest {
     ) {
         // Given
         whenever(mockSerializer.serialize(fakeViewEvent)) doReturn fakeSerializedEvent
-        val hasAccessibility = isAccessibilityPopulated(fakeViewEvent.view.accessibility)
+        val hasAccessibility = fakeViewEvent.view.accessibility != null
         val eventMeta = RumEventMeta.View(
             viewId = fakeViewEvent.view.id,
             documentVersion = fakeViewEvent.dd.documentVersion,
@@ -161,7 +160,7 @@ internal class RumDataWriterTest {
     ) {
         // Given
         whenever(mockSerializer.serialize(fakeViewEvent)) doReturn fakeSerializedEvent
-        val hasAccessibility = isAccessibilityPopulated(fakeViewEvent.view.accessibility)
+        val hasAccessibility = fakeViewEvent.view.accessibility != null
         val eventMeta = RumEventMeta.View(
             viewId = fakeViewEvent.view.id,
             documentVersion = fakeViewEvent.dd.documentVersion,
@@ -257,13 +256,13 @@ internal class RumDataWriterTest {
     // region accessibility
 
     @Test
-    fun `M hasAccessibility false W write() { empty accessibility object }`(
+    fun `M hasAccessibility false W write() { null accessibility }`(
         forge: Forge
     ) {
         // Given
         val viewEvent = forge.getForgery<ViewEvent>()
         val newView = viewEvent.view.copy(
-            accessibility = Accessibility()
+            accessibility = null
         )
         val newViewEvent = viewEvent.copy(
             view = newView
@@ -282,15 +281,13 @@ internal class RumDataWriterTest {
     }
 
     @Test
-    fun `M hasAccessibility true W write() { populated accessibility object }`(
+    fun `M hasAccessibility true W write() { non-null accessibility }`(
         forge: Forge
     ) {
         // Given
         val viewEvent = forge.getForgery<ViewEvent>()
         val newView = viewEvent.view.copy(
-            accessibility = Accessibility(
-                textSize = "1.3"
-            )
+            accessibility = forge.getForgery()
         )
         val newViewEvent = viewEvent.copy(
             view = newView
@@ -309,34 +306,6 @@ internal class RumDataWriterTest {
     }
 
     // endregion
-
-    private fun isAccessibilityPopulated(accessibility: Accessibility?): Boolean {
-        if (accessibility == null) return false
-        return setOf<Any?>(
-            accessibility.textSize,
-            accessibility.assistiveSwitchEnabled,
-            accessibility.assistiveTouchEnabled,
-            accessibility.boldTextEnabled,
-            accessibility.buttonShapesEnabled,
-            accessibility.closedCaptioningEnabled,
-            accessibility.grayscaleEnabled,
-            accessibility.increaseContrastEnabled,
-            accessibility.invertColorsEnabled,
-            accessibility.monoAudioEnabled,
-            accessibility.onOffSwitchLabelsEnabled,
-            accessibility.reduceMotionEnabled,
-            accessibility.reduceTransparencyEnabled,
-            accessibility.reducedAnimationsEnabled,
-            accessibility.rtlEnabled,
-            accessibility.screenReaderEnabled,
-            accessibility.shakeToUndoEnabled,
-            accessibility.shouldDifferentiateWithoutColor,
-            accessibility.singleAppModeEnabled,
-            accessibility.speakScreenEnabled,
-            accessibility.speakSelectionEnabled,
-            accessibility.videoAutoplayEnabled
-        ).any { it != null }
-    }
 
     companion object {
         val rumMonitor = GlobalRumMonitorTestConfiguration()

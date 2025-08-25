@@ -12,65 +12,47 @@ internal class DefaultAccessibilitySnapshotManager(
     private val accessibilityReader: InfoProvider<AccessibilityInfo>
 ) : AccessibilitySnapshotManager {
     @Volatile
-    private var lastSnapshot = AccessibilityInfo()
+    private var lastSnapshot: AccessibilityInfo? = null
 
     @Synchronized
-    override fun latestSnapshot(): AccessibilityInfo {
-        val newAccessibilitySnapshot = accessibilityReader.getState()
+    override fun getIfChanged(): AccessibilityInfo? {
+        val newSnapshot = accessibilityReader.getState()
+        if (newSnapshot == lastSnapshot) return null
 
-        val deltaSnapshot = AccessibilityInfo(
+        val deltaSnapshot = createDelta(newSnapshot, lastSnapshot)
+        lastSnapshot = newSnapshot
+
+        return if (deltaSnapshot.hasAnyNonNullValues()) deltaSnapshot else null
+    }
+
+    private fun createDelta(new: AccessibilityInfo, old: AccessibilityInfo?): AccessibilityInfo {
+        return AccessibilityInfo(
             textSize =
-            if (newAccessibilitySnapshot.textSize != lastSnapshot.textSize) {
-                newAccessibilitySnapshot.textSize
-            } else {
-                null
-            },
-
+            new.textSize.takeIf { it != old?.textSize },
             isScreenReaderEnabled =
-            if (newAccessibilitySnapshot.isScreenReaderEnabled != lastSnapshot.isScreenReaderEnabled) {
-                newAccessibilitySnapshot.isScreenReaderEnabled
-            } else {
-                null
-            },
-
+            new.isScreenReaderEnabled.takeIf { it != old?.isScreenReaderEnabled },
             isColorInversionEnabled =
-            if (newAccessibilitySnapshot.isColorInversionEnabled != lastSnapshot.isColorInversionEnabled) {
-                newAccessibilitySnapshot.isColorInversionEnabled
-            } else {
-                null
-            },
-
+            new.isColorInversionEnabled.takeIf { it != old?.isColorInversionEnabled },
             isClosedCaptioningEnabled =
-            if (newAccessibilitySnapshot.isClosedCaptioningEnabled != lastSnapshot.isClosedCaptioningEnabled) {
-                newAccessibilitySnapshot.isClosedCaptioningEnabled
-            } else {
-                null
-            },
-
+            new.isClosedCaptioningEnabled.takeIf { it != old?.isClosedCaptioningEnabled },
             isReducedAnimationsEnabled =
-            if (newAccessibilitySnapshot.isReducedAnimationsEnabled != lastSnapshot.isReducedAnimationsEnabled) {
-                newAccessibilitySnapshot.isReducedAnimationsEnabled
-            } else {
-                null
-            },
-
+            new.isReducedAnimationsEnabled.takeIf { it != old?.isReducedAnimationsEnabled },
             isScreenPinningEnabled =
-            if (newAccessibilitySnapshot.isScreenPinningEnabled != lastSnapshot.isScreenPinningEnabled) {
-                newAccessibilitySnapshot.isScreenPinningEnabled
-            } else {
-                null
-            },
-
+            new.isScreenPinningEnabled.takeIf { it != old?.isScreenPinningEnabled },
             isRtlEnabled =
-            if (newAccessibilitySnapshot.isRtlEnabled != lastSnapshot.isRtlEnabled) {
-                newAccessibilitySnapshot.isRtlEnabled
-            } else {
-                null
-            }
+            new.isRtlEnabled.takeIf { it != old?.isRtlEnabled }
         )
+    }
 
-        lastSnapshot = newAccessibilitySnapshot
-
-        return deltaSnapshot
+    private fun AccessibilityInfo.hasAnyNonNullValues(): Boolean {
+        return setOf<Any?>(
+            this.textSize,
+            this.isScreenReaderEnabled,
+            this.isRtlEnabled,
+            this.isScreenPinningEnabled,
+            this.isColorInversionEnabled,
+            this.isClosedCaptioningEnabled,
+            this.isReducedAnimationsEnabled
+        ).any { it != null }
     }
 }
