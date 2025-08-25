@@ -44,7 +44,35 @@ internal class DefaultAccessibilitySnapshotManagerTest {
     }
 
     @Test
-    fun `M return empty accessibility W latestSnapshot() { no accessibility data }`() {
+    fun `M return null W latestSnapshot() { new snapshot equals last snapshot }`(forge: Forge) {
+        // Given
+        whenever(mockAccessibilityReader.getState()) doReturn forge.getForgery()
+
+        // When
+        testedManager.latestSnapshot()
+        val result = testedManager.latestSnapshot()
+
+        // Then
+        assertThat(result).isNull()
+    }
+
+    @Test
+    fun `M return null W latestSnapshot() { new snapshot to null value }`(forge: Forge) {
+        // Given
+        whenever(mockAccessibilityReader.getState())
+            .thenReturn(forge.getForgery())
+            .thenReturn(AccessibilityInfo())
+
+        // When
+        testedManager.latestSnapshot()
+        val result = testedManager.latestSnapshot()
+
+        // Then
+        assertThat(result).isNull()
+    }
+
+    @Test
+    fun `M return null W latestSnapshot() { no accessibility data }`() {
         // Given
         whenever(mockAccessibilityReader.getState()) doReturn AccessibilityInfo()
 
@@ -52,7 +80,7 @@ internal class DefaultAccessibilitySnapshotManagerTest {
         val result = testedManager.latestSnapshot()
 
         // Then
-        assertThat(result).isEqualTo(AccessibilityInfo())
+        assertThat(result).isNull()
     }
 
     @Test
@@ -95,7 +123,7 @@ internal class DefaultAccessibilitySnapshotManagerTest {
     }
 
     @Test
-    fun `M return empty accessibility W latestSnapshot() { second call with same data }`(
+    fun `M return null W latestSnapshot() { second call with same data }`(
         @FloatForgery textSize: Float,
         @BoolForgery screenReader: Boolean
     ) {
@@ -106,14 +134,13 @@ internal class DefaultAccessibilitySnapshotManagerTest {
         )
         whenever(mockAccessibilityReader.getState()) doReturn accessibilityState
 
-        // When - First call
         testedManager.latestSnapshot()
 
-        // When - Second call with same data
+        // When (second call)
         val result = testedManager.latestSnapshot()
 
         // Then
-        assertThat(result).isEqualTo(AccessibilityInfo())
+        assertThat(result).isNull()
     }
 
     @Test
@@ -146,7 +173,7 @@ internal class DefaultAccessibilitySnapshotManagerTest {
         testedManager.latestSnapshot() // First call
         val result = testedManager.latestSnapshot() // Second call
 
-        // Then - Only changed value should be returned
+        // Then
         assertThat(result).isEqualTo(
             AccessibilityInfo(textSize = newTextSize.toString())
         )
@@ -176,7 +203,7 @@ internal class DefaultAccessibilitySnapshotManagerTest {
         testedManager.latestSnapshot() // First call
         val result = testedManager.latestSnapshot() // Second call
 
-        // Then - Only new values should be returned
+        // Then
         assertThat(result).isEqualTo(
             AccessibilityInfo(
                 isScreenReaderEnabled = screenReader,
@@ -209,8 +236,8 @@ internal class DefaultAccessibilitySnapshotManagerTest {
         testedManager.latestSnapshot() // First call
         val result = testedManager.latestSnapshot() // Second call
 
-        // Then - No changes should be reported (null values are filtered)
-        assertThat(result).isEqualTo(AccessibilityInfo())
+        // Then
+        assertThat(result).isNull()
     }
 
     @Test
@@ -239,8 +266,8 @@ internal class DefaultAccessibilitySnapshotManagerTest {
         testedManager.latestSnapshot() // First call
         val result = testedManager.latestSnapshot() // Second call
 
-        // Then - No changes should be reported for missing keys (they become null)
-        assertThat(result).isEqualTo(AccessibilityInfo())
+        // Then
+        assertThat(result).isNull()
     }
 
     @Test
@@ -265,16 +292,16 @@ internal class DefaultAccessibilitySnapshotManagerTest {
 
         // When & Then
         val result1 = testedManager.latestSnapshot()
-        assertThat(result1.textSize).isEqualTo(textSize1.toString())
+        assertThat(result1?.textSize).isEqualTo(textSize1.toString())
 
         val result2 = testedManager.latestSnapshot()
-        assertThat(result2.textSize).isEqualTo(textSize2.toString())
+        assertThat(result2?.textSize).isEqualTo(textSize2.toString())
 
         val result3 = testedManager.latestSnapshot()
-        assertThat(result3).isEqualTo(AccessibilityInfo()) // No change
+        assertThat(result3).isNull() // No change
 
         val result4 = testedManager.latestSnapshot()
-        assertThat(result4.textSize).isEqualTo(textSize3.toString())
+        assertThat(result4?.textSize).isEqualTo(textSize3.toString())
     }
 
     /**
