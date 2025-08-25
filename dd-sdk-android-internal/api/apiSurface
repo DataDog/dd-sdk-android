@@ -93,6 +93,7 @@ class com.datadog.android.internal.utils.NextDrawListener : android.view.ViewTre
   override fun onDraw()
   companion object 
     fun android.view.View.onNextDraw(() -> Unit)
+fun subscribeToFirstDrawFinished(android.os.Handler, android.app.Activity, () -> Unit)
 fun <T> allowThreadDiskReads(() -> T): T
 fun <T> allowThreadDiskWrites(() -> T): T
 fun StringBuilder.appendIfNotEmpty(String)
