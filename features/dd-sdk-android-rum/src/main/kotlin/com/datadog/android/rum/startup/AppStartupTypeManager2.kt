@@ -20,7 +20,6 @@ import android.os.SystemClock
 import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.lifecycle.DefaultLifecycleObserver
-import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
 import androidx.metrics.performance.FrameData
@@ -51,9 +50,6 @@ internal class AppStartupTypeManager2(
     private var isInBackground = true
 
     private val resumedActivities = mutableSetOf<WeakReference<Activity>>()
-
-    private val activityStates = mutableListOf<Pair<WeakReference<Activity>, Lifecycle.Event>>()
-
 
     private val waitingForStart = AtomicReference<String>(null)
 
@@ -102,17 +98,14 @@ internal class AppStartupTypeManager2(
 
             if (isFirstActivityForProcess) {
                 if (!processStartedInForeground || gap > START_GAP_THRESHOLD) {
-                    subscribeToTTIDVitals(activity, "warm_3")
-                    waitingForStart.updateAndGet { "warm_3" }
+                    startTrackingStart(activity, "warm_3")
                     Log.w("AppStartupTypeManager2", "scenario 3")
                 } else {
-                    subscribeToTTIDVitals(activity, "cold")
-                    waitingForStart.updateAndGet { "cold" }
+                    startTrackingStart(activity, "cold")
                     Log.w("AppStartupTypeManager2", "scenario 1")
                 }
             } else {
-                subscribeToTTIDVitals(activity, "warm_4")
-                waitingForStart.updateAndGet { "warm_4" }
+                startTrackingStart(activity, "warm_4")
                 Log.w("AppStartupTypeManager2", "scenario 4")
             }
         }
@@ -123,7 +116,6 @@ internal class AppStartupTypeManager2(
 
     override fun onActivityDestroyed(activity: Activity) {
         Log.w("AppStartupTypeManager2", "onActivityDestroyed $activity")
-        activityStates.removeIf { it.first.get() === activity }
 
         resumedActivities.removeIf { it.get() === activity }
 
@@ -154,13 +146,10 @@ internal class AppStartupTypeManager2(
 
         if (isInBackground) {
             if (resumedActivities.any { it.get() === activity }) {
-                subscribeToTTIDVitals(activity, "hot")
-                waitingForStart.updateAndGet { "hot" }
+                startTrackingStart(activity, "hot")
                 Log.w("AppStartupTypeManager2", "scenario 5")
             }
         }
-
-
     }
 
     override fun onActivityStopped(activity: Activity) {
@@ -168,27 +157,30 @@ internal class AppStartupTypeManager2(
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
+    private fun startTrackingStart(activity: Activity, type: String) {
+        subscribeToTTIDVitals(activity, type)
+        waitingForStart.updateAndGet { type }
+        startTrackingTTFD(activity)
+    }
+
+    @RequiresApi(Build.VERSION_CODES.N)
+    private fun startTrackingTTFD(activity: Activity) {
+        handler.postDelayed({
+            activity.reportFullyDrawn()
+        }, 2000)
+
+        (activity as? androidx.activity.ComponentActivity)?.let { componentActivity ->
+            componentActivity.fullyDrawnReporter.addOnReportDrawnListener {
+                reportVitalNanos(System.nanoTime(), "TTFD_VITAL")
+            }
+        }
+    }
+
+    @RequiresApi(Build.VERSION_CODES.O)
     private fun subscribeToTTIDVitals(activity: Activity, prefix: String) {
         subscribeToTTID(activity) { info ->
-            val start = Process.getStartUptimeMillis()
-            val now = SystemClock.uptimeMillis()
-            val startDurationMs = now - start
-
-            val newDuration = ((info.intendedVsyncNanos + info.totalDurationNanos).nanoseconds - start.milliseconds).inWholeMilliseconds
-
-            GlobalRumMonitor.get(sdkCore).sendDurationVital(
-                startMs = System.currentTimeMillis() - startDurationMs,
-                durationMs = newDuration,
-                name = "${prefix}_frame_ttid_intended_vsync"
-            )
-
-            val newDuration2 = ((info.vsyncTimeStampNanos + info.totalDurationNanos).nanoseconds - start.milliseconds).inWholeMilliseconds
-
-            GlobalRumMonitor.get(sdkCore).sendDurationVital(
-                startMs = System.currentTimeMillis() - startDurationMs,
-                durationMs = newDuration2,
-                name = "${prefix}_frame_ttid_vsync"
-            )
+            reportVitalNanos(info.intendedVsyncNanos + info.totalDurationNanos, "${prefix}_frame_ttid_intended_vsync")
+            reportVitalNanos(info.vsyncTimeStampNanos + info.totalDurationNanos, "${prefix}_frame_ttid_vsync")
         }
     }
 
@@ -196,34 +188,30 @@ internal class AppStartupTypeManager2(
     override fun onFrame(volatileFrameData: FrameData) {
         waitingForStart.updateAndGet { isWaiting ->
             if (isWaiting != null) {
-                val wallNow = System.currentTimeMillis()
-                val start = Process.getStartUptimeMillis()
-                val now = SystemClock.uptimeMillis()
-                val startDurationMs = now - start
-
-                val durationMillis = ((volatileFrameData.frameStartNanos + volatileFrameData.frameDurationUiNanos).nanoseconds - start.milliseconds).inWholeMilliseconds
-
-                GlobalRumMonitor.get(sdkCore).sendDurationVital(
-                    startMs = wallNow - startDurationMs,
-                    durationMs = durationMillis,
-                    name = "${isWaiting}_jankstats_ttid"
-                )
-
-                val durationMillis2 = ((volatileFrameData.frameStartNanos).nanoseconds - start.milliseconds).inWholeMilliseconds
-
-                GlobalRumMonitor.get(sdkCore).sendDurationVital(
-                    startMs = wallNow - startDurationMs,
-                    durationMs = durationMillis2,
-                    name = "${isWaiting}_jankstats_frame_start"
-                )
+                reportVitalNanos(volatileFrameData.frameStartNanos + volatileFrameData.frameDurationUiNanos, "${isWaiting}_jankstats_ttid")
+                reportVitalNanos(volatileFrameData.frameStartNanos, "${isWaiting}_jankstats_frame_start")
             }
             null
         }
-
     }
 
     override fun onFrameMetricsData(data: FrameMetricsData) {
 
     }
-}
 
+    @RequiresApi(Build.VERSION_CODES.N)
+    private fun reportVitalNanos(endNs: Long, name: String) {
+        val wallNow = System.currentTimeMillis()
+        val start = Process.getStartUptimeMillis()
+        val now = SystemClock.uptimeMillis()
+        val startDurationMs = now - start
+
+        val durationMillis = ((endNs).nanoseconds - start.milliseconds).inWholeMilliseconds
+
+        GlobalRumMonitor.get(sdkCore).sendDurationVital(
+            startMs = wallNow - startDurationMs,
+            durationMs = durationMillis,
+            name = name
+        )
+    }
+}
