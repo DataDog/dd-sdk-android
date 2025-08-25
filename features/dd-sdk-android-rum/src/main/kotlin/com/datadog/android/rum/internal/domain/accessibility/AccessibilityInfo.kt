@@ -27,4 +27,32 @@ internal data class AccessibilityInfo(
     val isReducedAnimationsEnabled: Boolean? = null,
     val isScreenPinningEnabled: Boolean? = null,
     val isRtlEnabled: Boolean? = null
-) : InfoData
+) : InfoData {
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as AccessibilityInfo
+
+        if (isScreenReaderEnabled != other.isScreenReaderEnabled) return false
+        if (isColorInversionEnabled != other.isColorInversionEnabled) return false
+        if (isClosedCaptioningEnabled != other.isClosedCaptioningEnabled) return false
+        if (isReducedAnimationsEnabled != other.isReducedAnimationsEnabled) return false
+        if (isScreenPinningEnabled != other.isScreenPinningEnabled) return false
+        if (isRtlEnabled != other.isRtlEnabled) return false
+        if (textSize != other.textSize) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = isScreenReaderEnabled?.hashCode() ?: 0
+        result = 31 * result + (isColorInversionEnabled?.hashCode() ?: 0)
+        result = 31 * result + (isClosedCaptioningEnabled?.hashCode() ?: 0)
+        result = 31 * result + (isReducedAnimationsEnabled?.hashCode() ?: 0)
+        result = 31 * result + (isScreenPinningEnabled?.hashCode() ?: 0)
+        result = 31 * result + (isRtlEnabled?.hashCode() ?: 0)
+        result = 31 * result + (textSize?.hashCode() ?: 0)
+        return result
+    }
+}

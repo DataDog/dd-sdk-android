@@ -36,6 +36,7 @@ import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.verify
@@ -129,7 +130,7 @@ internal class RumDataWriterTest {
     ) {
         // Given
         whenever(mockSerializer.serialize(fakeViewEvent)) doReturn fakeSerializedEvent
-        val hasAccessibility = isAccessibilityPopulated(fakeViewEvent.view.accessibility)
+        val hasAccessibility = fakeViewEvent.view.accessibility != null
         val eventMeta = RumEventMeta.View(
             viewId = fakeViewEvent.view.id,
             documentVersion = fakeViewEvent.dd.documentVersion,
@@ -159,7 +160,7 @@ internal class RumDataWriterTest {
     ) {
         // Given
         whenever(mockSerializer.serialize(fakeViewEvent)) doReturn fakeSerializedEvent
-        val hasAccessibility = isAccessibilityPopulated(fakeViewEvent.view.accessibility)
+        val hasAccessibility = fakeViewEvent.view.accessibility != null
         val eventMeta = RumEventMeta.View(
             viewId = fakeViewEvent.view.id,
             documentVersion = fakeViewEvent.dd.documentVersion,
@@ -252,33 +253,59 @@ internal class RumDataWriterTest {
 
     // endregion
 
-    private fun isAccessibilityPopulated(accessibility: ViewEvent.Accessibility?): Boolean {
-        if (accessibility == null) return false
-        return setOf<Any?>(
-            accessibility.textSize,
-            accessibility.assistiveSwitchEnabled,
-            accessibility.assistiveTouchEnabled,
-            accessibility.boldTextEnabled,
-            accessibility.buttonShapesEnabled,
-            accessibility.closedCaptioningEnabled,
-            accessibility.grayscaleEnabled,
-            accessibility.increaseContrastEnabled,
-            accessibility.invertColorsEnabled,
-            accessibility.monoAudioEnabled,
-            accessibility.onOffSwitchLabelsEnabled,
-            accessibility.reduceMotionEnabled,
-            accessibility.reduceTransparencyEnabled,
-            accessibility.reducedAnimationsEnabled,
-            accessibility.rtlEnabled,
-            accessibility.screenReaderEnabled,
-            accessibility.shakeToUndoEnabled,
-            accessibility.shouldDifferentiateWithoutColor,
-            accessibility.singleAppModeEnabled,
-            accessibility.speakScreenEnabled,
-            accessibility.speakSelectionEnabled,
-            accessibility.videoAutoplayEnabled
-        ).any { it != null }
+    // region accessibility
+
+    @Test
+    fun `M hasAccessibility false W write() { null accessibility }`(
+        forge: Forge
+    ) {
+        // Given
+        val viewEvent = forge.getForgery<ViewEvent>()
+        val newView = viewEvent.view.copy(
+            accessibility = null
+        )
+        val newViewEvent = viewEvent.copy(
+            view = newView
+        )
+
+        whenever(mockSerializer.serialize(newViewEvent)) doReturn fakeSerializedEvent
+
+        // When
+        testedWriter.write(mockEventBatchWriter, newViewEvent, fakeEventType)
+
+        // Then
+        val captor = argumentCaptor<RumEventMeta.View>()
+        verify(mockEventMetaSerializer).serialize(captor.capture())
+        val metaData = captor.firstValue
+        assertThat(metaData.hasAccessibility).isFalse
     }
+
+    @Test
+    fun `M hasAccessibility true W write() { non-null accessibility }`(
+        forge: Forge
+    ) {
+        // Given
+        val viewEvent = forge.getForgery<ViewEvent>()
+        val newView = viewEvent.view.copy(
+            accessibility = forge.getForgery()
+        )
+        val newViewEvent = viewEvent.copy(
+            view = newView
+        )
+
+        whenever(mockSerializer.serialize(newViewEvent)) doReturn fakeSerializedEvent
+
+        // When
+        testedWriter.write(mockEventBatchWriter, newViewEvent, fakeEventType)
+
+        // Then
+        val captor = argumentCaptor<RumEventMeta.View>()
+        verify(mockEventMetaSerializer).serialize(captor.capture())
+        val metaData = captor.firstValue
+        assertThat(metaData.hasAccessibility).isTrue
+    }
+
+    // endregion
 
     companion object {
         val rumMonitor = GlobalRumMonitorTestConfiguration()

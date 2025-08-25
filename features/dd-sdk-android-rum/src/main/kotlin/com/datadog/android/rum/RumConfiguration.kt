@@ -60,8 +60,7 @@ data class RumConfiguration internal constructor(
         }
 
         /**
-         * Whether to collect accessibility attributes inside the RUM view update event.
-         * This is disabled by default.
+         * Whether to collect accessibility attributes - this is disabled by default.
          *
          * @param enabled whether collecting accessibility attributes is enabled or not.
          */

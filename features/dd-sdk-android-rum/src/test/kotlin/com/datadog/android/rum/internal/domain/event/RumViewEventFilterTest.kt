@@ -158,11 +158,153 @@ internal class RumViewEventFilterTest {
         assertThat(result).containsExactlyElementsOf(expectedResult)
     }
 
+    // region accessibility
+
+    @Test
+    fun `M keep only max doc version W filterOutRedundantViewEvents() { mixed batch, no accessibility }`(
+        forge: Forge
+    ) {
+        // Given
+        val viewEventMetas = forge.aViewEventMetaList(hasAccessibility = false)
+        val viewEvents = viewEventMetas.map {
+            RawBatchEvent(
+                data = forge.aString().toByteArray(),
+                metadata = it.toBytes()
+            )
+        }
+        val nonViewEvents = forge.aList {
+            RawBatchEvent(
+                data = forge.aString().toByteArray(),
+                metadata = forge.aString().toByteArray()
+            )
+        }
+        val batch = forge.shuffle(nonViewEvents + viewEvents)
+        viewEventMetas.forEach {
+            whenever(mockEventMetaDeserializer.deserialize(it.toBytes())) doReturn it
+        }
+        val expectedViewMetasToKeep = viewEventMetas.groupBy { it.viewId }
+            .mapValues { element -> element.value.maxBy { it.documentVersion } }
+            .values
+        val expectedViewEventsToDrop = viewEvents
+            .filter { viewEvent ->
+                expectedViewMetasToKeep.none {
+                    it.toBytes().contentEquals(viewEvent.metadata)
+                }
+            }
+        val expectedResult = batch.filter { !expectedViewEventsToDrop.contains(it) }
+
+        // When
+        val result = testedFilter.filterOutRedundantViewEvents(batch)
+
+        // Then
+        assertThat(result).containsExactlyElementsOf(expectedResult)
+    }
+
+    @Test
+    fun `M all accessibility batches W filterOutRedundantViewEvents() { mixed batch, has accessibility }`(
+        forge: Forge
+    ) {
+        // Given
+        val viewEventMetas = forge.aViewEventMetaList(hasAccessibility = true)
+        val viewEvents = viewEventMetas.map {
+            RawBatchEvent(
+                data = forge.aString().toByteArray(),
+                metadata = it.toBytes()
+            )
+        }
+        val nonViewEvents = forge.aList {
+            RawBatchEvent(
+                data = forge.aString().toByteArray(),
+                metadata = forge.aString().toByteArray()
+            )
+        }
+        val batch = forge.shuffle(nonViewEvents + viewEvents)
+        viewEventMetas.forEach {
+            whenever(mockEventMetaDeserializer.deserialize(it.toBytes())) doReturn it
+        }
+
+        // When
+        val result = testedFilter.filterOutRedundantViewEvents(batch)
+
+        // Then
+        assertThat(result).containsExactlyElementsOf(batch)
+    }
+
+    @Test
+    fun `M keep only accessibility and maxDocVersion W filterOutRedundantViewEvents()`(
+        forge: Forge
+    ) {
+        // Given
+        val viewId = forge.aString()
+        val newMetaList = mutableListOf<RumEventMeta.View>()
+        // max doc version
+        val keptMaxDocEvent = RumEventMeta.View(
+            viewId = viewId,
+            documentVersion = Long.MAX_VALUE,
+            hasAccessibility = false
+        )
+        newMetaList.add(keptMaxDocEvent)
+
+        // accessibility true
+        val keptAccessibilityEvent = RumEventMeta.View(
+            viewId = viewId,
+            documentVersion = Long.MIN_VALUE,
+            hasAccessibility = true
+        )
+        newMetaList.add(keptAccessibilityEvent)
+
+        // some other doc version
+        val droppedEvent = RumEventMeta.View(
+            viewId = viewId,
+            documentVersion = forge.aLong(max = Long.MAX_VALUE - 1),
+            hasAccessibility = false
+        )
+        newMetaList.add(droppedEvent)
+
+        val viewEvents = newMetaList.map {
+            RawBatchEvent(
+                data = forge.aString().toByteArray(),
+                metadata = it.toBytes()
+            )
+        }
+        newMetaList.forEach {
+            whenever(mockEventMetaDeserializer.deserialize(it.toBytes())) doReturn it
+        }
+
+        val keptMaxDocEventRaw = viewEvents.find { it.metadata.contentEquals(keptMaxDocEvent.toBytes()) }!!
+        val keptAccessibilityEventRaw = viewEvents.find {
+            it.metadata.contentEquals(
+                keptAccessibilityEvent.toBytes()
+            )
+        }!!
+        val droppedEventRaw = viewEvents.find { it.metadata.contentEquals(droppedEvent.toBytes()) }!!
+
+        // When
+        val result = testedFilter.filterOutRedundantViewEvents(viewEvents)
+
+        // Then
+        assertThat(result).containsExactlyInAnyOrder(keptMaxDocEventRaw, keptAccessibilityEventRaw)
+        assertThat(result).doesNotContain(droppedEventRaw)
+    }
+
+    // endregion
+
     // region Internal
 
-    private fun Forge.aViewEventMetaList(viewIds: Set<String> = emptySet()): List<RumEventMeta.View> {
+    private fun Forge.aViewEventMetaList(
+        viewIds: Set<String> = emptySet(),
+        hasAccessibility: Boolean = false,
+        size: Int = -1
+    ): List<RumEventMeta.View> {
         return viewIds.ifEmpty { aList { getForgery<UUID>().toString() }.toSet() }
-            .flatMap { aList { getForgery<RumEventMeta.View>().copy(viewId = it, hasAccessibility = false) } }
+            .flatMap {
+                aList(size = size) {
+                    getForgery<RumEventMeta.View>().copy(
+                        viewId = it,
+                        hasAccessibility = hasAccessibility
+                    )
+                }
+            }
     }
 
     private fun RumEventMeta.View.toBytes() = toJson().toString().toByteArray()
