@@ -101,3 +101,22 @@ fun subscribeToFirstDrawFinished(handler: Handler, activity: Activity, block: ()
     }
 }
 
+@RequiresApi(Build.VERSION_CODES.Q)
+fun subscribeToFirstDrawFinishedFrameCallback(handler: Handler, activity: Activity, block: () -> Unit) {
+    val window = activity.window
+
+    window.onDecorViewReady {
+        window.decorView.onNextDraw {
+            val callback = object: Runnable {
+                override fun run() {
+                    block()
+                    handler.post {
+                        window.decorView.viewTreeObserver.unregisterFrameCommitCallback(this)
+                    }
+                }
+            }
+
+            window.decorView.viewTreeObserver.registerFrameCommitCallback(callback)
+        }
+    }
+}

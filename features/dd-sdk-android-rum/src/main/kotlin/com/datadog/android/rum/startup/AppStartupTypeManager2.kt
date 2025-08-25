@@ -25,6 +25,7 @@ import androidx.lifecycle.ProcessLifecycleOwner
 import androidx.metrics.performance.FrameData
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.internal.utils.subscribeToFirstDrawFinished
+import com.datadog.android.internal.utils.subscribeToFirstDrawFinishedFrameCallback
 import com.datadog.android.rum.DdRumContentProvider
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.internal.domain.FrameMetricsData
@@ -160,14 +161,21 @@ internal class AppStartupTypeManager2(
         Log.w("AppStartupTypeManager2", "onActivityStopped $activity")
     }
 
-    @RequiresApi(Build.VERSION_CODES.O)
+    @RequiresApi(Build.VERSION_CODES.N)
     private fun startTrackingStart(activity: Activity, type: String) {
-        subscribeToTTIDVitals(activity, type)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            subscribeToTTIDVitals(activity, type)
+        }
         waitingForStart.updateAndGet { type }
         startTrackingTTFD(activity)
         startTrackingWithNewApi(type)
         subscribeToFirstDrawFinished(handler, activity) {
             reportVitalNanos(System.nanoTime(), "${type}_handler_post_ttid")
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            subscribeToFirstDrawFinishedFrameCallback(handler, activity) {
+                reportVitalNanos(System.nanoTime(), "${type}_commit_callback_ttid")
+            }
         }
     }
 
@@ -195,7 +203,7 @@ internal class AppStartupTypeManager2(
 
     @RequiresApi(Build.VERSION_CODES.O)
     private fun subscribeToTTIDVitals(activity: Activity, prefix: String) {
-        subscribeToTTID(activity) { info ->
+        subscribeToTTID(handler, activity) { info ->
             reportVitalNanos(info.intendedVsyncNanos + info.totalDurationNanos, "${prefix}_frame_ttid_intended_vsync")
             reportVitalNanos(info.vsyncTimeStampNanos + info.totalDurationNanos, "${prefix}_frame_ttid_vsync")
         }

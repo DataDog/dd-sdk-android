@@ -20,9 +20,7 @@ internal data class TTIDFrameData(
 )
 
 @RequiresApi(Build.VERSION_CODES.O)
-internal fun subscribeToTTID(activity: Activity, block: (TTIDFrameData) -> Unit) {
-    val handler = Handler(activity.mainLooper)
-
+internal fun subscribeToTTID(handler: Handler, activity: Activity, block: (TTIDFrameData) -> Unit) {
     val listener = object : Window.OnFrameMetricsAvailableListener {
         override fun onFrameMetricsAvailable(
             window: Window?,
@@ -30,19 +28,16 @@ internal fun subscribeToTTID(activity: Activity, block: (TTIDFrameData) -> Unit)
             dropCountSinceLastInvocation: Int
         ) {
             if (frameMetrics != null) {
-                val isFirstFrame = frameMetrics.getMetric(FrameMetrics.FIRST_DRAW_FRAME)
+//                val isFirstFrame = frameMetrics.getMetric(FrameMetrics.FIRST_DRAW_FRAME)
 
-                if (isFirstFrame == 1L) {
-                    activity.window.removeOnFrameMetricsAvailableListener(this)
+                activity.window.removeOnFrameMetricsAvailableListener(this)
 
-                    val result = TTIDFrameData(
-                        totalDurationNanos = frameMetrics.getMetric(FrameMetrics.TOTAL_DURATION),
-                        intendedVsyncNanos = frameMetrics.getMetric(FrameMetrics.INTENDED_VSYNC_TIMESTAMP),
-                        vsyncTimeStampNanos = frameMetrics.getMetric(FrameMetrics.VSYNC_TIMESTAMP),
-                    )
-                    block(result)
-
-                }
+                val result = TTIDFrameData(
+                    totalDurationNanos = frameMetrics.getMetric(FrameMetrics.TOTAL_DURATION),
+                    intendedVsyncNanos = frameMetrics.getMetric(FrameMetrics.INTENDED_VSYNC_TIMESTAMP),
+                    vsyncTimeStampNanos = frameMetrics.getMetric(FrameMetrics.VSYNC_TIMESTAMP),
+                )
+                block(result)
             }
         }
     }
