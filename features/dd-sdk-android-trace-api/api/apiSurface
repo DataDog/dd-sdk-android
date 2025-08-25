@@ -1,0 +1,129 @@
+object com.datadog.android.trace.api.DatadogTracingConstants
+  const val DEFAULT_ASYNC_PROPAGATING: Boolean
+  object Tags
+    const val KEY_HTTP_URL: String
+    const val KEY_SPAN_KIND: String
+    const val KEY_HTTP_METHOD: String
+    const val KEY_HTTP_STATUS: String
+    const val KEY_ERROR_MSG: String
+    const val KEY_ERROR_TYPE: String
+    const val KEY_ERROR_STACK: String
+    const val VALUE_SPAN_KIND_CLIENT: String
+    const val VALUE_SPAN_KIND_SERVER: String
+    const val VALUE_SPAN_KIND_PRODUCER: String
+    const val VALUE_SPAN_KIND_CONSUMER: String
+    const val KEY_ANALYTICS_SAMPLE_RATE: String
+    const val RESOURCE_NAME: String
+    const val ERROR_MSG: String
+    const val ERROR_TYPE: String
+  object PrioritySampling
+    const val UNSET: Int
+    const val SAMPLER_DROP: Int
+    const val SAMPLER_KEEP: Int
+    const val USER_DROP: Int
+    const val USER_KEEP: Int
+  object TracerConfig
+    const val SPAN_TAGS: String
+    const val TRACE_RATE_LIMIT: String
+    const val PARTIAL_FLUSH_MIN_SPANS: String
+    const val TRACE_SAMPLE_RATE: String
+    const val PROPAGATION_STYLE_EXTRACT: String
+    const val PROPAGATION_STYLE_INJECT: String
+    const val SERVICE_NAME: String
+    const val SDK_V2_COMPATIBILITY_FLAG: String
+    const val URL_AS_RESOURCE_NAME: String
+    const val TAGS: String
+  object LogAttributes
+    const val ERROR_KIND: String
+    const val ERROR_OBJECT: String
+    const val EVENT: String
+    const val MESSAGE: String
+    const val STACK: String
+    const val STATUS: String
+  object ErrorPriorities
+    const val UNSET: Byte
+    const val HTTP_SERVER_DECORATOR: Byte
+    const val DEFAULT: Byte
+interface com.datadog.android.trace.api.propagation.DatadogPropagation
+  fun <C> inject(com.datadog.android.trace.api.span.DatadogSpanContext, C, (C) -> Unit)
+  fun <C> extract(C, (C) -> Unit): com.datadog.android.trace.api.span.DatadogSpanContext?
+class com.datadog.android.trace.api.propagation.NoOpDatadogPropagation : DatadogPropagation
+  override fun <C> inject(com.datadog.android.trace.api.span.DatadogSpanContext, C, (C) -> Unit)
+  override fun <C> extract(C, (C) -> Unit): com.datadog.android.trace.api.span.DatadogSpanContext?
+interface com.datadog.android.trace.api.scope.DatadogScope : java.io.Closeable
+  override fun close()
+interface com.datadog.android.trace.api.span.DatadogSpan
+  var isError: Boolean?
+  val isRootSpan: Boolean
+  val samplingPriority: Int?
+  val traceId: com.datadog.android.trace.api.trace.DatadogTraceId
+  val parentSpanId: Long?
+  var resourceName: String?
+  var serviceName: String
+  var operationName: String
+  val durationNano: Long
+  val startTimeNanos: Long
+  val localRootSpan: DatadogSpan?
+  fun context(): DatadogSpanContext
+  fun finish()
+  fun finish(Long)
+  fun drop()
+  fun setErrorMessage(String?)
+  fun addThrowable(Throwable)
+  fun setTag(String?, String?)
+  fun setTag(String?, Boolean)
+  fun setTag(String?, Number?)
+  fun setTag(String?, Any?)
+  fun getTag(String?): Any?
+  fun setMetric(String, Int)
+  fun logThrowable(Throwable)
+  fun logErrorMessage(String)
+  fun logMessage(String)
+  fun logAttributes(Map<String, Any>)
+interface com.datadog.android.trace.api.span.DatadogSpanBuilder
+  fun start(): DatadogSpan
+  fun withOrigin(String?): DatadogSpanBuilder
+  fun withTag(String, Double?): DatadogSpanBuilder
+  fun withTag(String, Long?): DatadogSpanBuilder
+  fun withTag(String, Any?): DatadogSpanBuilder
+  fun withResourceName(String?): DatadogSpanBuilder
+  fun withParentContext(DatadogSpanContext?): DatadogSpanBuilder
+  fun withParentSpan(DatadogSpan?): DatadogSpanBuilder
+  fun withStartTimestamp(Long): DatadogSpanBuilder
+  fun ignoreActiveSpan(): DatadogSpanBuilder
+  fun withLink(DatadogSpanLink): DatadogSpanBuilder
+interface com.datadog.android.trace.api.span.DatadogSpanContext
+  val traceId: com.datadog.android.trace.api.trace.DatadogTraceId
+  val spanId: Long
+  val samplingPriority: Int
+  val tags: Map<String, Any?>
+  fun setSamplingPriority(Int): Boolean
+  fun setMetric(CharSequence?, Double)
+interface com.datadog.android.trace.api.span.DatadogSpanLink
+  val spanId: Long
+  val sampled: Boolean
+  val traceId: com.datadog.android.trace.api.trace.DatadogTraceId
+  val traceStrace: String
+  val attributes: Map<String, String>?
+interface com.datadog.android.trace.api.span.DatadogSpanWriter
+interface com.datadog.android.trace.api.trace.DatadogTraceId
+  fun toHexStringPadded(Int): String
+  fun toHexString(): String
+  fun toLong(): Long
+  companion object 
+interface com.datadog.android.trace.api.tracer.DatadogTracer
+  fun activeSpan(): com.datadog.android.trace.api.span.DatadogSpan?
+  fun propagate(): com.datadog.android.trace.api.propagation.DatadogPropagation
+  fun activateSpan(com.datadog.android.trace.api.span.DatadogSpan): com.datadog.android.trace.api.scope.DatadogScope?
+  fun buildSpan(CharSequence): com.datadog.android.trace.api.span.DatadogSpanBuilder
+  fun buildSpan(String, CharSequence): com.datadog.android.trace.api.span.DatadogSpanBuilder
+  fun addScopeListener(com.datadog.android.trace.api.scope.DatadogScopeListener)
+interface com.datadog.android.trace.api.tracer.DatadogTracerBuilder
+  fun build(): DatadogTracer
+  fun withTracingHeadersTypes(Set<com.datadog.android.trace.TracingHeaderType>): DatadogTracerBuilder
+  fun withServiceName(String): DatadogTracerBuilder
+  fun withSampleRate(Double): DatadogTracerBuilder
+  fun withPartialFlushMinSpans(Int): DatadogTracerBuilder
+  fun withTag(String, String): DatadogTracerBuilder
+  fun setBundleWithRumEnabled(Boolean): DatadogTracerBuilder
+  fun setTraceRateLimit(Int): DatadogTracerBuilder

@@ -18,9 +18,6 @@ internal class Configurator : BaseConfigurator() {
         // Core
         forge.useCoreFactories()
 
-        // APM
-        forge.addFactory(DDSpanContextForgeryFactory())
-
         // MISC
         forge.addFactory(BigIntegerFactory())
     }

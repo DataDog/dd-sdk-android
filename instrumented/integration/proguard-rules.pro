@@ -11,9 +11,10 @@
     *;
 }
 
-# Required because we need access to GlobalTracer isRegistered property to reset it through reflection
--keepnames class io.opentracing.util.GlobalTracer {
-    private boolean isRegistered;
+# Required because we need access to GlobalDatadogTracer getOrNull method to reset it through reflection
+-keepnames class com.datadog.android.trace.GlobalDatadogTracer {
+    public com.datadog.android.trace.api.tracer.DatadogTracer getOrNull();
+    public static com.datadog.android.trace.GlobalDatadogTracer INSTANCE;
 }
 
 # Required because we need access to GlobalRumMonitor reset method to reset it through reflection

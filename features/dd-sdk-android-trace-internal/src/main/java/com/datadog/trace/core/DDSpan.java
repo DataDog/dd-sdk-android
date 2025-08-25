@@ -322,6 +322,11 @@ public class DDSpan
     return context.getTrace().getRootSpan();
   }
 
+  @Override
+  public void drop() {
+    context.getTrace().unregisterSpan(this);
+  }
+
   /**
    * Checks whether the span is also the local root span
    *
@@ -547,7 +552,7 @@ public class DDSpan
 
   @Override
   public boolean eligibleForDropping() {
-    int samplingPriority = context.getSamplingPriority();
+    int samplingPriority = context.getTraceSamplingPriority();
     return samplingPriority == USER_DROP || samplingPriority == SAMPLER_DROP;
   }
 
@@ -564,7 +569,7 @@ public class DDSpan
     if (rootSpan == null) {
       return null;
     }
-    return rootSpan.getSamplingPriority();
+    return rootSpan.getTraceSamplingPriority();
   }
 
   @Deprecated
@@ -669,8 +674,9 @@ public class DDSpan
   }
 
   @Override
-  public Integer getSamplingPriority() {
-    final int samplingPriority = context.getSamplingPriority();
+  @Nullable
+  public Integer getTraceSamplingPriority() {
+    final int samplingPriority = context.getTraceSamplingPriority();
     if (samplingPriority == PrioritySampling.UNSET) {
       return null;
     } else {
@@ -678,9 +684,8 @@ public class DDSpan
     }
   }
 
-  @Override
-  public int samplingPriority() {
-    return context.getSamplingPriority();
+  public int getSpanSamplingPriority() {
+    return context.getSpanSamplingPriority();
   }
 
   @Override

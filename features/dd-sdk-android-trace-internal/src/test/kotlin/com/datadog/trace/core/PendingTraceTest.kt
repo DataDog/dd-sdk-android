@@ -187,6 +187,37 @@ internal class PendingTraceTest : PendingTraceTestBase() {
         assertThat(trace.spans).containsExactlyInAnyOrder(unfinishedSpan, unfinishedSpan2)
     }
 
+    @Test
+    fun `do not drop root span when unregisterSpan is called`() {
+        // Given
+        val tracer = mock<CoreTracer>()
+        val traceConfig = mock<CoreTracer.ConfigSnapshot>()
+        val buffer = mock<PendingTraceBuffer>()
+        val healthMetrics = mock<HealthMetrics>()
+        whenever(tracer.captureTraceConfig()).thenReturn(traceConfig)
+        whenever(traceConfig.serviceMapping).thenReturn(emptyMap())
+        val trace = createInstanceWithoutTypeCheck(
+            PendingTrace::class.java,
+            tracer,
+            DDTraceId.from(0),
+            buffer,
+            mock<TimeSource>(),
+            mock<ConfigSnapshot>(),
+            false,
+            healthMetrics
+        )
+        rootSpan = createSimpleSpan(trace)
+        trace.registerSpan(rootSpan)
+
+        // When
+        trace.unregisterSpan(rootSpan)
+
+        // Then
+        assertThat(trace.pendingReferenceCount).isEqualTo(0)
+        assertThat(trace.spans).isEmpty()
+        assertThat(trace.rootSpan).isEqualTo(rootSpan)
+    }
+
     private fun createSimpleSpan(trace: PendingTrace): DDSpan {
         return createSimpleSpanWithID(trace, 1)
     }

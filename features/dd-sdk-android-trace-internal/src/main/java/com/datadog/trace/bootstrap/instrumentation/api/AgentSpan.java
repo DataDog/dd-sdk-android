@@ -1,3 +1,9 @@
+/*
+ * Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
+ * This product includes software developed at Datadog (https://www.datadoghq.com/).
+ * Copyright 2016-Present Datadog, Inc.
+ */
+
 package com.datadog.trace.bootstrap.instrumentation.api;
 
 import com.datadog.trace.api.DDTraceId;
@@ -173,7 +179,7 @@ public interface AgentSpan extends MutableSpan, IGSpanInfo {
      * @return The trace sampling priority of the span's trace, or {@link PrioritySampling#UNSET} if
      *     no priority has been set.
      */
-    int getSamplingPriority();
+    int getTraceSamplingPriority();
 
     Iterable<Map.Entry<String, String>> baggageItems();
 

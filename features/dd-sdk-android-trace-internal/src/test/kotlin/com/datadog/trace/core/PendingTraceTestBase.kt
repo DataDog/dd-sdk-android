@@ -144,7 +144,7 @@ internal abstract class PendingTraceTestBase : DDCoreSpecification() {
     @Test
     fun `partial flush`() {
         // Given
-        val quickTracer = tracerBuilder().writer(writer).partialFlushMinSpans(2).build()
+        val quickTracer = tracerBuilder().writer(writer).partialFlushMinSpans(1).build()
         val rootSpan = quickTracer.buildSpan(instrumentationName, "root").start() as DDSpan
         val trace = rootSpan.context().trace as PendingTrace
         val child1 = quickTracer.buildSpan(instrumentationName, "child1")
@@ -192,7 +192,7 @@ internal abstract class PendingTraceTestBase : DDCoreSpecification() {
     @Test
     fun `partial flush with root span closed last`() {
         // Given
-        val quickTracer = tracerBuilder().writer(writer).partialFlushMinSpans(2).build() as CoreTracer
+        val quickTracer = tracerBuilder().writer(writer).partialFlushMinSpans(1).build() as CoreTracer
         val rootSpan = quickTracer.buildSpan(instrumentationName, "root").start() as DDSpan
         val trace = rootSpan.context().trace
         val child1 = quickTracer
