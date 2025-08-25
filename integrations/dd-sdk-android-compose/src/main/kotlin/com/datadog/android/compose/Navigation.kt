@@ -37,7 +37,6 @@ import com.datadog.android.rum.tracking.ComponentPredicate
  * valid RUM View events.
  * @param sdkCore the SDK instance to use. If not provided, default instance will be used.
  */
-@ExperimentalTrackingApi
 @Composable
 @NonRestartableComposable
 fun NavigationViewTrackingEffect(
@@ -72,7 +71,6 @@ fun NavigationViewTrackingEffect(
  * valid RUM View events.
  * @param sdkCore the SDK instance to use. If not provided, default instance will be used.
  */
-@ExperimentalTrackingApi
 @Composable
 @NonRestartableComposable
 internal fun InstrumentedNavigationViewTrackingEffect(
