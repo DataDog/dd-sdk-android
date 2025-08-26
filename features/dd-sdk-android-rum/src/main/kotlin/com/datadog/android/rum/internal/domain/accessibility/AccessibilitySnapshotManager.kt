@@ -10,5 +10,5 @@ import com.datadog.tools.annotation.NoOpImplementation
 
 @NoOpImplementation
 internal interface AccessibilitySnapshotManager {
-    fun latestSnapshot(): AccessibilityInfo
+    fun getIfChanged(): AccessibilityInfo?
 }

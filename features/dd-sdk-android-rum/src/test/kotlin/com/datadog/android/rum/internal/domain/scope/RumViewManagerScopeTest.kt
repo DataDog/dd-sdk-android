@@ -161,7 +161,7 @@ internal class RumViewManagerScopeTest {
         whenever(mockChildScope.isActive()) doReturn true
         whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
         whenever(mockSlowFramesListener.resolveReport(any(), any(), any())) doReturn fakeViewUIPerformanceReport
-        whenever(mockAccessibilitySnapshotManager.latestSnapshot()) doReturn mock()
+        whenever(mockAccessibilitySnapshotManager.getIfChanged()) doReturn mock()
 
         fakeRumSessionType = forge.aNullable { aValueFrom(RumSessionType::class.java) }
 

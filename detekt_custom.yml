@@ -1203,6 +1203,7 @@ datadog:
       - "kotlin.Any.toString()"
       - "kotlin.Boolean.hashCode()"
       - "kotlin.Boolean.not()"
+      - "kotlin.Boolean.takeIf(kotlin.Function1)"
       - "kotlin.Byte.toInt()"
       - "kotlin.ByteArray.constructor(kotlin.Int)"
       - "kotlin.ByteArray.copyTo(kotlin.Int, kotlin.ByteArray, kotlin.Int, kotlin.Int, com.datadog.android.api.InternalLogger)"

@@ -279,7 +279,7 @@ internal class RumViewScopeTest {
         whenever(mockInteractionToNextViewMetricResolver.resolveMetric(any())) doReturn
             fakeInteractionToNextViewMetricValue
         val isValidSource = forge.aBool()
-        whenever(mockAccessibilitySnapshotManager.latestSnapshot()) doReturn mock()
+        whenever(mockAccessibilitySnapshotManager.getIfChanged()) doReturn mock()
 
         val fakeSource = if (isValidSource) {
             forge.anElementFrom(
