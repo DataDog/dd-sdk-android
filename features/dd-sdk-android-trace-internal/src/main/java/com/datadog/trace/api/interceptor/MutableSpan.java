@@ -27,7 +27,7 @@ public interface MutableSpan {
   MutableSpan setResourceName(final CharSequence resourceName);
 
   @Nullable
-  Integer getSamplingPriority();
+  Integer getTraceSamplingPriority();
 
   /**
    * @param newPriority
@@ -78,4 +78,6 @@ public interface MutableSpan {
    * @return The root span for the current trace fragment.
    */
   MutableSpan getLocalRootSpan();
+
+  void drop();
 }

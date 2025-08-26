@@ -3,4 +3,4 @@ fun <T> runBlockingTraced(String, kotlin.coroutines.CoroutineContext = EmptyCoro
 fun <T: Any?> kotlinx.coroutines.CoroutineScope.asyncTraced(String, kotlin.coroutines.CoroutineContext = EmptyCoroutineContext, kotlinx.coroutines.CoroutineStart = CoroutineStart.DEFAULT, CoroutineScopeSpan.() -> T): kotlinx.coroutines.Deferred<T>
 fun <T: Any?> kotlinx.coroutines.Deferred<T>.awaitTraced(String): T
 fun <T: Any?> withContextTraced(String, kotlin.coroutines.CoroutineContext, CoroutineScopeSpan.() -> T): T
-interface com.datadog.android.trace.coroutines.CoroutineScopeSpan : kotlinx.coroutines.CoroutineScope, io.opentracing.Span
+interface com.datadog.android.trace.coroutines.CoroutineScopeSpan : kotlinx.coroutines.CoroutineScope, com.datadog.android.trace.api.span.DatadogSpan

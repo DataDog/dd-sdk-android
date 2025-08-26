@@ -150,7 +150,7 @@ internal class CoreTracerTest : DDCoreSpecification() {
         writer.waitForTraces(1)
 
         // Then
-        assertThat(span.samplingPriority).isEqualTo(PrioritySampling.SAMPLER_KEEP.toInt())
+        assertThat(span.traceSamplingPriority).isEqualTo(PrioritySampling.SAMPLER_KEEP.toInt())
 
         // Tear down
         tracer.close()
@@ -168,15 +168,15 @@ internal class CoreTracerTest : DDCoreSpecification() {
         root.finish()
 
         // Then
-        assertThat(child.samplingPriority).isNull()
+        assertThat(child.traceSamplingPriority).isNull()
 
         // Tear down
         child.finish()
         writer.waitForTraces(1)
 
         // Then
-        assertThat(root.samplingPriority).isEqualTo(PrioritySampling.SAMPLER_KEEP.toInt())
-        assertThat(root.samplingPriority).isEqualTo(child.samplingPriority)
+        assertThat(root.traceSamplingPriority).isEqualTo(PrioritySampling.SAMPLER_KEEP.toInt())
+        assertThat(root.traceSamplingPriority).isEqualTo(child.traceSamplingPriority)
 
         // Tear down
         tracer.close()

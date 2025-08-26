@@ -55,12 +55,13 @@ android {
 }
 
 dependencies {
-    api(project(":dd-sdk-android-core"))
-    api(project(":features:dd-sdk-android-trace"))
-    implementation(project(":dd-sdk-android-internal"))
     api(libs.openTelemetryApi)
     implementation(libs.kotlin)
     implementation(libs.androidXAnnotation)
+
+    api(project(":dd-sdk-android-core"))
+    implementation(project(":dd-sdk-android-internal"))
+    implementation(project(":features:dd-sdk-android-trace"))
 
     testImplementation(project(":tools:unit")) {
         attributes {
@@ -71,6 +72,7 @@ dependencies {
         }
     }
     testImplementation(testFixtures(project(":dd-sdk-android-core")))
+    testImplementation(testFixtures(project(":features:dd-sdk-android-trace")))
     testImplementation(libs.bundles.jUnit5)
     testImplementation(libs.bundles.testTools)
     testImplementation(libs.systemStubsJupiter)

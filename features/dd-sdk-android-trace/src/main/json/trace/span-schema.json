@@ -16,17 +16,9 @@
     "error",
     "type",
     "meta",
-    "metrics",
-    "device",
-    "os"
+    "metrics"
   ],
   "properties": {
-    "device": {
-      "$ref": "_common-schema.json#/properties/device"
-    },
-    "os": {
-      "$ref": "_common-schema.json#/properties/os"
-    },
     "trace_id": {
       "type": "string",
       "description": "The id of the trace this Span belongs to",
@@ -260,6 +252,12 @@
             }
           },
           "readOnly": true
+        },
+        "device": {
+          "$ref": "_common-schema.json#/properties/device"
+        },
+        "os": {
+          "$ref": "_common-schema.json#/properties/os"
         }
       },
       "required": [

@@ -7,7 +7,6 @@ import static java.util.Arrays.asList;
 import java.util.BitSet;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
-import java.util.List;
 import java.util.Set;
 
 public final class ConfigDefaults {
@@ -67,10 +66,7 @@ public final class ConfigDefaults {
   static final int DEFAULT_SCOPE_ITERATION_KEEP_ALIVE = 30; // in seconds
   static final int DEFAULT_PARTIAL_FLUSH_MIN_SPANS = 1000;
   static final boolean DEFAULT_PROPAGATION_EXTRACT_LOG_HEADER_NAMES_ENABLED = false;
-  static final Set<TracePropagationStyle> DEFAULT_TRACE_PROPAGATION_STYLE =
-      new LinkedHashSet<>(asList(DATADOG, TRACECONTEXT));
-  static final Set<PropagationStyle> DEFAULT_PROPAGATION_STYLE =
-      new LinkedHashSet<>(asList(PropagationStyle.DATADOG));
+  static final Set<TracePropagationStyle> DEFAULT_TRACE_PROPAGATION_STYLE = new LinkedHashSet<>(asList(DATADOG, TRACECONTEXT));
   static final boolean DEFAULT_JMX_FETCH_ENABLED = true;
   static final boolean DEFAULT_TRACE_AGENT_V05_ENABLED = false;
 

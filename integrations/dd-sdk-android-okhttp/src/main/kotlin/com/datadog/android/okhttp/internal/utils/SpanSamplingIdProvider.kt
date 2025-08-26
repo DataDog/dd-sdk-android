@@ -7,23 +7,23 @@
 package com.datadog.android.okhttp.internal.utils
 
 import com.datadog.android.log.LogAttributes
-import com.datadog.opentracing.DDSpanContext
-import io.opentracing.Span
+import com.datadog.android.trace.api.span.DatadogSpan
+
+private const val HEX_RADIX = 16
 
 internal object SpanSamplingIdProvider {
 
-    fun provideId(span: Span): ULong {
+    fun provideId(span: DatadogSpan): ULong {
         val context = span.context()
-        val sessionId = (context as? DDSpanContext)?.tags?.get(LogAttributes.RUM_SESSION_ID) as? String
+        val sessionId = context.tags[LogAttributes.RUM_SESSION_ID] as? String
 
         // for a UUID with value aaaaaaaa-bbbb-Mccc-Nddd-1234567890ab
         // we use as the input id the last part : 0x1234567890ab
-        val sessionIdToken = sessionId?.split('-')?.lastOrNull()?.toLongOrNull(HEX_RADIX)?.toULong()
+        val sessionIdToken = sessionId?.split('-')
+            ?.lastOrNull()
+            ?.toLongOrNull(HEX_RADIX)
+            ?.toULong()
 
-        return if (sessionIdToken != null) {
-            sessionIdToken
-        } else {
-            context.toTraceId().toBigIntegerOrNull()?.toLong()?.toULong() ?: 0u
-        }
+        return sessionIdToken ?: context.traceId.toLong().toULong()
     }
 }

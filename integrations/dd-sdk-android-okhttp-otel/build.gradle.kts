@@ -42,11 +42,16 @@ android {
 }
 
 dependencies {
-    implementation(project(":integrations:dd-sdk-android-okhttp"))
-    implementation(project(":features:dd-sdk-android-trace-otel"))
     implementation(libs.okHttp)
     implementation(libs.kotlin)
 
+    implementation(project(":features:dd-sdk-android-trace"))
+    implementation(project(":integrations:dd-sdk-android-okhttp"))
+    implementation(project(":features:dd-sdk-android-trace-otel"))
+
+    testImplementation(libs.okHttpMock)
+    testImplementation(libs.bundles.jUnit5)
+    testImplementation(libs.bundles.testTools)
     testImplementation(project(":tools:unit")) {
         attributes {
             attribute(
@@ -55,9 +60,6 @@ dependencies {
             )
         }
     }
-    testImplementation(libs.bundles.jUnit5)
-    testImplementation(libs.bundles.testTools)
-    testImplementation(libs.okHttpMock)
 }
 
 kotlinConfig(jvmBytecodeTarget = JvmTarget.JVM_11)

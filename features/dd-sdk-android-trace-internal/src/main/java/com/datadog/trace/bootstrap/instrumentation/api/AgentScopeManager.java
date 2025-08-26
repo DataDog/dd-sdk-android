@@ -3,7 +3,7 @@ package com.datadog.trace.bootstrap.instrumentation.api;
 /**
  * Allows custom scope managers. See OTScopeManager, CustomScopeManager, and ContextualScopeManager
  */
-public interface AgentScopeManager extends ScopeStateAware {
+public interface AgentScopeManager {
 
   AgentScope activate(AgentSpan span, ScopeSource source);
 

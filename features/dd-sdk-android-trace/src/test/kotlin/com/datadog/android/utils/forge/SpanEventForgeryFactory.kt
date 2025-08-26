@@ -47,18 +47,6 @@ internal class SpanEventForgeryFactory : ForgeryFactory<SpanEvent> {
             error = errorFlag,
             duration = duration,
             start = startTime,
-            device = SpanEvent.Device(
-                type = resolveDeviceType(deviceInfo.deviceType),
-                name = deviceInfo.deviceName,
-                model = deviceInfo.deviceModel,
-                brand = deviceInfo.deviceBrand,
-                architecture = deviceInfo.architecture
-            ),
-            os = SpanEvent.Os(
-                name = deviceInfo.osName,
-                version = deviceInfo.osVersion,
-                versionMajor = deviceInfo.osMajorVersion
-            ),
             meta = SpanEvent.Meta(
                 version = appPackageVersion,
                 dd = SpanEvent.Dd(source = forge.aNullable { anAlphabeticalString() }),
@@ -84,6 +72,18 @@ internal class SpanEventForgeryFactory : ForgeryFactory<SpanEvent> {
                         downlinkKbps = networkInfo?.downKbps?.toString(),
                         connectivity = networkInfo?.connectivity?.toString().orEmpty()
                     )
+                ),
+                device = SpanEvent.Device(
+                    type = resolveDeviceType(deviceInfo.deviceType),
+                    name = deviceInfo.deviceName,
+                    model = deviceInfo.deviceModel,
+                    brand = deviceInfo.deviceBrand,
+                    architecture = deviceInfo.architecture
+                ),
+                os = SpanEvent.Os(
+                    name = deviceInfo.osName,
+                    version = deviceInfo.osVersion,
+                    versionMajor = deviceInfo.osMajorVersion
                 ),
                 additionalProperties = meta
             ),

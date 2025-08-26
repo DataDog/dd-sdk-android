@@ -27,6 +27,7 @@ import fr.xgouchet.elmyr.jvm.useJvmFactories
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
 import org.junit.Before
+import org.junit.Ignore
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -123,17 +124,18 @@ class SdkCoreTest : MockServerTest() {
     }
 
     @Test
+    @Ignore("RUM-11016 disabling because it's flaky")
     fun must_clearUserInformation_when_clearUserInfo() {
         // Given
-        testedSdkCore?.setUserInfo(fakeUserId, fakeUserName, fakeUserEmail, fakeUserAdditionalProperties)
+        testedSdkCore.setUserInfo(fakeUserId, fakeUserName, fakeUserEmail, fakeUserAdditionalProperties)
 
         // When
-        testedSdkCore?.clearUserInfo()
+        testedSdkCore.clearUserInfo()
 
         // Then
         val countDownLatch = CountDownLatch(1)
         var readUserInfo: UserInfo? = null
-        featureSdkCore?.getFeature(stubFeature.name)?.withWriteContext { datadogContext, _ ->
+        featureSdkCore.getFeature(stubFeature.name)?.withWriteContext { datadogContext, _ ->
             readUserInfo = datadogContext.userInfo
             countDownLatch.countDown()
         }

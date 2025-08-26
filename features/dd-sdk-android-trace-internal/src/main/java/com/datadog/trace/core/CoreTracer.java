@@ -5,10 +5,11 @@ import static com.datadog.trace.api.DDTags.PROFILING_CONTEXT_ENGINE;
 import static com.datadog.trace.util.AgentThreadFactory.AGENT_THREAD_GROUP;
 import static com.datadog.trace.util.CollectionUtils.tryMakeImmutableMap;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.annotation.VisibleForTesting;
 
 import com.datadog.android.api.InternalLogger;
@@ -16,7 +17,6 @@ import com.datadog.trace.api.Config;
 import com.datadog.trace.api.DDSpanId;
 import com.datadog.trace.api.DDTraceId;
 import com.datadog.trace.api.DynamicConfig;
-import com.datadog.trace.api.EndpointCheckpointer;
 import com.datadog.trace.api.EndpointCheckpointerHolder;
 import com.datadog.trace.api.EndpointTracker;
 import com.datadog.trace.api.IdGenerationStrategy;
@@ -40,7 +40,6 @@ import com.datadog.trace.bootstrap.instrumentation.api.AgentTracer;
 import com.datadog.trace.bootstrap.instrumentation.api.PathwayContext;
 import com.datadog.trace.bootstrap.instrumentation.api.ProfilingContextIntegration;
 import com.datadog.trace.bootstrap.instrumentation.api.ScopeSource;
-import com.datadog.trace.bootstrap.instrumentation.api.ScopeState;
 import com.datadog.trace.bootstrap.instrumentation.api.TagContext;
 import com.datadog.trace.common.metrics.MetricsAggregator;
 import com.datadog.trace.common.metrics.NoOpMetricsAggregator;
@@ -61,11 +60,10 @@ import com.datadog.trace.logger.Logger;
 import com.datadog.trace.logger.LoggerFactory;
 import com.datadog.trace.monitor.NoOpRecording;
 import com.datadog.trace.monitor.Recording;
-import com.datadog.trace.relocate.api.RatelimitedLogger;
 
 import java.io.IOException;
 import java.lang.ref.WeakReference;
-    import java.util.ArrayList;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -204,11 +202,6 @@ public class CoreTracer implements AgentTracer.TracerAPI {
     @Override
     public EndpointTracker onRootSpanStarted(AgentSpan root) {
         return endpointCheckpointer.onRootSpanStarted(root);
-    }
-
-    @Override
-    public ScopeState newScopeState() {
-        return scopeManager.newScopeState();
     }
 
     public static class CoreTracerBuilder {
@@ -407,7 +400,6 @@ public class CoreTracer implements AgentTracer.TracerAPI {
         assert baggageMapping != null;
 
         this.log = LoggerFactory.getLogger(CoreTracer.class.getSimpleName(), internalLogger);
-        this.rlLog = new RatelimitedLogger(log, 1, MINUTES);
         this.timeSource = timeSource == null ? SystemTimeSource.INSTANCE : timeSource;
         startTimeNano = this.timeSource.getCurrentTimeNanos();
         startNanoTicks = this.timeSource.getNanoTicks();
@@ -615,22 +607,6 @@ public class CoreTracer implements AgentTracer.TracerAPI {
     public AgentScope activateSpan(AgentSpan span, ScopeSource source, boolean isAsyncPropagating) {
         return scopeManager.activate(span, source, isAsyncPropagating);
     }
-
-    @Override
-    public AgentScope.Continuation captureSpan(final AgentSpan span) {
-        return scopeManager.captureSpan(span);
-    }
-
-    @Override
-    public void closePrevious(boolean finishSpan) {
-        scopeManager.closePrevious(finishSpan);
-    }
-
-    @Override
-    public AgentScope activateNext(AgentSpan span) {
-        return scopeManager.activateNext(span);
-    }
-
     public TagInterceptor getTagInterceptor() {
         return tagInterceptor;
     }
@@ -645,26 +621,9 @@ public class CoreTracer implements AgentTracer.TracerAPI {
     }
 
     @Override
-    public AgentScope activeScope() {
-        return scopeManager.active();
-    }
-
-    @Override
     public AgentPropagation propagate() {
         return this.propagation;
     }
-
-    @Override
-    public AgentSpan noopSpan() {
-        return AgentTracer.NoopAgentSpan.INSTANCE;
-    }
-
-    @Override
-    public Timer getTimer() {
-        return timer;
-    }
-
-    private final RatelimitedLogger rlLog;
 
     /**
      * We use the sampler to know if the trace has to be reported/written. The sampler is called on
@@ -715,12 +674,10 @@ public class CoreTracer implements AgentTracer.TracerAPI {
         return trace;
     }
 
-    @Override
     public String getTraceId() {
         return getTraceId(activeSpan());
     }
 
-    @Override
     public String getSpanId() {
         return getSpanId(activeSpan());
     }
@@ -756,16 +713,6 @@ public class CoreTracer implements AgentTracer.TracerAPI {
     }
 
     @Override
-    public void registerCheckpointer(EndpointCheckpointer implementation) {
-        endpointCheckpointer.register(implementation);
-    }
-
-    @Override
-    public void registerTimer(Timer timer) {
-        this.timer = timer;
-    }
-
-    @Override
     public void close() {
         pendingTraceBuffer.close();
         writer.close();
@@ -773,25 +720,13 @@ public class CoreTracer implements AgentTracer.TracerAPI {
         metricsAggregator.close();
     }
 
-    @Override
     public void flush() {
         pendingTraceBuffer.flush();
         writer.flush();
     }
 
-
-    @Override
-    public ProfilingContextIntegration getProfilingContext() {
-        return profilingContextIntegration;
-    }
-
-
     Recording writeTimer() {
         return traceWriteTimer.start();
-    }
-
-    private static String statsdTag(final String tagPrefix, final String tagValue) {
-        return tagPrefix + ":" + tagValue;
     }
 
     private static <K, V> Map<V, K> invertMap(Map<K, V> map) {
@@ -823,6 +758,7 @@ public class CoreTracer implements AgentTracer.TracerAPI {
         private Object builderRequestContextDataIast;
         private Object builderCiVisibilityContextData;
         private List<AgentSpanLink> links;
+        private String origin;
 
         CoreSpanBuilder(
                 final String instrumentationName, final CharSequence operationName, CoreTracer tracer) {
@@ -972,6 +908,13 @@ public class CoreTracer implements AgentTracer.TracerAPI {
             return this;
         }
 
+        @NonNull
+        @Override
+        public AgentTracer.SpanBuilder withOrigin(@Nullable String origin) {
+            this.origin = origin;
+            return this;
+        }
+
         /**
          * Build the SpanContext, if the actual span has a parent, the following attributes must be
          * propagated: - ServiceName - Baggage - Trace (a list of all spans related) - SpanType
@@ -1045,7 +988,7 @@ public class CoreTracer implements AgentTracer.TracerAPI {
                     final ExtractedContext extractedContext = (ExtractedContext) parentContext;
                     traceId = extractedContext.getTraceId();
                     parentSpanId = extractedContext.getSpanId();
-                    samplingPriority = extractedContext.getSamplingPriority();
+                    samplingPriority = extractedContext.getTraceSamplingPriority();
                     endToEndStartTime = extractedContext.getEndToEndStartTime();
                     propagationTags = extractedContext.getPropagationTags();
                 } else if (parentContext != null) {
@@ -1054,7 +997,7 @@ public class CoreTracer implements AgentTracer.TracerAPI {
                                     ? idGenerationStrategy.generateTraceId()
                                     : parentContext.getTraceId();
                     parentSpanId = parentContext.getSpanId();
-                    samplingPriority = parentContext.getSamplingPriority();
+                    samplingPriority = parentContext.getTraceSamplingPriority();
                     endToEndStartTime = 0;
                     propagationTags = propagationTagsFactory.empty();
                 } else {
@@ -1079,9 +1022,9 @@ public class CoreTracer implements AgentTracer.TracerAPI {
                     requestContextDataIast = tc.getRequestContextDataIast();
                     ciVisibilityContextData = tc.getCiVisibilityContextData();
                 } else {
+                    origin = this.origin;
                     traceConfig = null;
                     coreTags = null;
-                    origin = null;
                     baggage = null;
                     requestContextDataAppSec = null;
                     requestContextDataIast = null;

@@ -2,6 +2,9 @@ package com.datadog.trace.core.propagation;
 
 import static com.datadog.trace.api.TracePropagationStyle.TRACECONTEXT;
 
+import androidx.annotation.Nullable;
+
+import com.datadog.android.trace.internal.compat.function.Supplier;
 import com.datadog.trace.api.Config;
 import com.datadog.trace.api.DD128bTraceId;
 import com.datadog.trace.api.DD64bTraceId;
@@ -24,7 +27,6 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import com.datadog.android.trace.internal.compat.function.Supplier;
 
 public class HttpCodec {
 
@@ -66,6 +68,7 @@ public class HttpCodec {
      * @return {@code null} for failed context extraction, a {@link TagContext} instance for partial
      *     context extraction or an {@link ExtractedContext} for complete context extraction.
      */
+    @Nullable
     <C> TagContext extract(final C carrier, final AgentPropagation.ContextVisitor<C> getter);
 
     /**

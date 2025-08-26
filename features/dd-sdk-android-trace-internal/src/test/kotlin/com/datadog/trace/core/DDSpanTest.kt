@@ -30,6 +30,8 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
+import org.mockito.kotlin.any
+import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
@@ -93,18 +95,18 @@ internal class DDSpanTest : DDCoreSpecification() {
         // When
         span.setSamplingPriority(PrioritySampling.UNSET.toInt())
         // Then
-        assertThat(span.samplingPriority).isNull()
+        assertThat(span.traceSamplingPriority).isNull()
 
         // When
         span.setSamplingPriority(PrioritySampling.SAMPLER_KEEP.toInt())
         // Then
-        assertThat(span.samplingPriority).isEqualTo(PrioritySampling.SAMPLER_KEEP.toInt())
+        assertThat(span.traceSamplingPriority).isEqualTo(PrioritySampling.SAMPLER_KEEP.toInt())
 
         // When
         (span.context() as DDSpanContext).lockSamplingPriority()
         span.setSamplingPriority(PrioritySampling.USER_KEEP.toInt())
         // Then
-        assertThat(span.samplingPriority).isEqualTo(PrioritySampling.SAMPLER_KEEP.toInt())
+        assertThat(span.traceSamplingPriority).isEqualTo(PrioritySampling.SAMPLER_KEEP.toInt())
     }
 
     @Test
@@ -299,10 +301,10 @@ internal class DDSpanTest : DDCoreSpecification() {
         parent.finish()
 
         // Then
-        assertThat(parent.context().samplingPriority).isEqualTo(PrioritySampling.SAMPLER_KEEP.toInt())
-        assertThat(parent.samplingPriority).isEqualTo(PrioritySampling.SAMPLER_KEEP.toInt())
-        assertThat(child1.samplingPriority).isEqualTo(parent.samplingPriority)
-        assertThat(child2.samplingPriority).isEqualTo(parent.samplingPriority)
+        assertThat(parent.context().traceSamplingPriority).isEqualTo(PrioritySampling.SAMPLER_KEEP.toInt())
+        assertThat(parent.traceSamplingPriority).isEqualTo(PrioritySampling.SAMPLER_KEEP.toInt())
+        assertThat(child1.traceSamplingPriority).isEqualTo(parent.traceSamplingPriority)
+        assertThat(child2.traceSamplingPriority).isEqualTo(parent.traceSamplingPriority)
     }
 
     @ParameterizedTest
@@ -497,7 +499,7 @@ internal class DDSpanTest : DDCoreSpecification() {
 
         // Then
         val expectedLimit = if (limit == Int.MAX_VALUE) null else limit
-        assertThat(span.samplingPriority()).isEqualTo(PrioritySampling.UNSET.toInt())
+        assertThat(span.traceSamplingPriority).isNull()
 
         // When
         span.setSpanSamplingPriority(rate, limit)
@@ -507,7 +509,28 @@ internal class DDSpanTest : DDCoreSpecification() {
             .isEqualTo(SamplingMechanism.SPAN_SAMPLING_RATE)
         assertThat(span.getTag(DDSpanContext.SPAN_SAMPLING_RULE_RATE_TAG)).isEqualTo(rate)
         assertThat(span.getTag(DDSpanContext.SPAN_SAMPLING_MAX_PER_SECOND_TAG)).isEqualTo(expectedLimit)
-        assertThat(span.samplingPriority()).isEqualTo(PrioritySampling.UNSET.toInt())
+        assertThat(span.traceSamplingPriority).isNull()
+    }
+
+    @Test
+    fun `M call unregisterSpan W drop is called`() {
+        val mockTrace = mock<PendingTrace> {
+            on { rootSpan } doReturn mock()
+        }
+
+        val mockContext = mock<DDSpanContext> {
+            on { traceId } doReturn mock<DDTraceId>()
+            on { trace } doReturn mockTrace
+        }
+
+        val span = tracer
+            .buildSpan(instrumentationName, "testSpan")
+            .asChildOf(mockContext)
+            .start() as DDSpan
+
+        span.drop()
+
+        verify(mockTrace).unregisterSpan(any())
     }
 
     @Test
