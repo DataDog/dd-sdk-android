@@ -536,7 +536,10 @@ datadog:
       - "androidx.compose.runtime.DisposableEffect(kotlin.Any?, kotlin.Any?, kotlin.Function1)"
       - "androidx.compose.runtime.DisposableEffectScope.onDispose(kotlin.Function0)"
       - "androidx.compose.runtime.LaunchedEffect(kotlin.Any?, kotlin.coroutines.SuspendFunction1)"
+      - "androidx.compose.runtime.LaunchedEffect(kotlin.Any?, kotlin.Any?, kotlin.coroutines.SuspendFunction1)"
       - "androidx.compose.runtime.LaunchedEffect(kotlin.Any?, kotlin.Any?, kotlin.Any?, kotlin.coroutines.SuspendFunction1)"
+      - "androidx.compose.runtime.produceState(kotlin.Boolean, kotlin.Any?, kotlin.coroutines.SuspendFunction1)"
+      - "androidx.compose.runtime.ProduceStateScope.awaitDispose(kotlin.Function0)"
       - "androidx.compose.runtime.remember(kotlin.Any?, kotlin.Any?, kotlin.Function0)"
       - "androidx.compose.runtime.remember(kotlin.Function0)"
       - "androidx.compose.runtime.rememberUpdatedState(com.datadog.android.rum.tracking.ComponentPredicate)"
@@ -582,6 +585,8 @@ datadog:
       - "androidx.fragment.app.FragmentManager.unregisterFragmentLifecycleCallbacks(androidx.fragment.app.FragmentManager.FragmentLifecycleCallbacks)"
       - "androidx.lifecycle.Lifecycle.addObserver(androidx.lifecycle.LifecycleObserver)"
       - "androidx.lifecycle.Lifecycle.removeObserver(androidx.lifecycle.LifecycleObserver)"
+      - "androidx.lifecycle.Lifecycle.State.isAtLeast(androidx.lifecycle.Lifecycle.State)"
+      - "androidx.lifecycle.LifecycleEventObserver(kotlin.Function2)"
       - "androidx.navigation.NavController.addOnDestinationChangedListener(androidx.navigation.NavController.OnDestinationChangedListener)"
       - "androidx.navigation.NavController.removeOnDestinationChangedListener(androidx.navigation.NavController.OnDestinationChangedListener)"
       - "androidx.recyclerview.widget.RecyclerView.findContainingViewHolder(android.view.View)"
@@ -1277,7 +1282,7 @@ datadog:
       - "kotlin.Triple.constructor(kotlin.Nothing?, kotlin.Nothing?, kotlin.Nothing?)"
       # endregion
       # region Kotlin String
-      - "kotlin.Any?.takeIf(kotlin.Function1)"
+      - "kotlin.Any?.hashCode()"
       - "kotlin.CharSequence.isNullOrEmpty()"
       - "kotlin.String.all(kotlin.Function1)"
       - "kotlin.String.codePoints()"
