@@ -60,6 +60,16 @@ data class RumConfiguration internal constructor(
         }
 
         /**
+         * Whether to collect accessibility attributes - this is disabled by default.
+         *
+         * @param enabled whether collecting accessibility attributes is enabled or not.
+         */
+        fun collectAccessibility(enabled: Boolean): Builder {
+            rumConfig = rumConfig.copy(collectAccessibility = enabled)
+            return this
+        }
+
+        /**
          * Sets the sample rate for Internal Telemetry (info related to the work of the
          * SDK internals). Default value is 20.
          *
@@ -388,15 +398,5 @@ data class RumConfiguration internal constructor(
             rumConfig = rumConfig.copy(rumSessionTypeOverride = rumSessionTypeOverride)
             return this
         }
-
-        /**
-         * Sets a flag to collect accessibility settings inside the RUM view end event.
-         * By default these settings are not collected.
-         */
-        internal fun collectAccessibilitySettings(): Builder {
-            rumConfig = rumConfig.copy(collectAccessibilitySettings = true)
-            return this
-        }
-        // endregion
     }
 }

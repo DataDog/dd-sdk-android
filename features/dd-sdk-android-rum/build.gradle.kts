@@ -50,6 +50,10 @@ android {
     }
 
     namespace = "com.datadog.android.rum"
+
+    testFixtures {
+        enable = true
+    }
 }
 
 dependencies {
@@ -87,6 +91,22 @@ dependencies {
     testImplementation(testFixtures(project(":dd-sdk-android-internal")))
     testImplementation(testFixtures(project(":features:dd-sdk-android-trace")))
     unmock(libs.robolectric)
+
+    // Test Fixtures
+    testFixturesImplementation(testFixtures(project(":dd-sdk-android-core")))
+    testFixturesImplementation(testFixtures(project(":dd-sdk-android-internal")))
+    testFixturesImplementation(project(":tools:unit")) {
+        attributes {
+            attribute(
+                com.android.build.api.attributes.ProductFlavorAttr.of("platform"),
+                objects.named("jvm")
+            )
+        }
+    }
+    testFixturesImplementation(libs.kotlin)
+    testFixturesImplementation(libs.bundles.jUnit5)
+    testFixturesImplementation(libs.okHttp)
+    testFixturesImplementation(libs.bundles.testTools)
 }
 
 unMock {

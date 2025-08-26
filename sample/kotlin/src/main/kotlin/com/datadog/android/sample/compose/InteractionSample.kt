@@ -35,13 +35,11 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
-import com.datadog.android.compose.ExperimentalTrackingApi
 import com.datadog.android.compose.InteractionType
 import com.datadog.android.compose.TrackInteractionEffect
 import kotlin.math.roundToInt
 
 @Suppress("MagicNumber")
-@OptIn(ExperimentalTrackingApi::class)
 @Preview
 @Composable
 internal fun InteractionSampleView() {
@@ -63,7 +61,6 @@ internal fun InteractionSampleView() {
 }
 
 @Suppress("MagicNumber")
-@OptIn(ExperimentalTrackingApi::class)
 @Composable
 internal fun ItemRow(index: Int, onDismissed: () -> Unit) {
     val swipeableState = rememberSwipeableState(DragStates.VISIBLE)

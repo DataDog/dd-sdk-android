@@ -15,7 +15,6 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.SwipeableState
 import androidx.compose.runtime.State
-import com.datadog.android.compose.ExperimentalTrackingApi
 import com.datadog.android.compose.InteractionType
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumAttributes
@@ -65,7 +64,7 @@ import java.util.stream.Stream
 )
 @ForgeConfiguration(value = BaseConfigurator::class)
 @MockitoSettings(strictness = Strictness.LENIENT)
-@OptIn(ExperimentalMaterialApi::class, ExperimentalTrackingApi::class)
+@OptIn(ExperimentalMaterialApi::class)
 class SwipeAndScrollActionTrackerTest {
 
     @Mock

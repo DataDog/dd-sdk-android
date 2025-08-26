@@ -635,16 +635,16 @@ internal class RumConfigurationBuilderTest {
     }
 
     @Test
-    fun `M enable accessibility settings collection W collectAccessibilitySettings`() {
+    fun `M enable accessibility settings collection W collectAccessibility`() {
         // When
         val rumConfiguration = testedBuilder
-            .collectAccessibilitySettings()
+            .collectAccessibility(enabled = true)
             .build()
 
         // Then
         assertThat(rumConfiguration.featureConfiguration).isEqualTo(
             RumFeature.DEFAULT_RUM_CONFIG.copy(
-                collectAccessibilitySettings = true
+                collectAccessibility = true
             )
         )
     }

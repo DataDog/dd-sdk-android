@@ -379,7 +379,7 @@ internal class SdkFeature(
         return DataOkHttpUploader(
             requestFactory = requestFactory,
             internalLogger = internalLogger,
-            callFactory = coreFeature.okHttpClient,
+            callFactory = coreFeature.callFactory,
             sdkVersion = coreFeature.sdkVersion,
             androidInfoProvider = coreFeature.androidInfoProvider,
             executionTimer = GlobalBenchmark.createExecutionTimer(

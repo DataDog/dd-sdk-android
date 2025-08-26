@@ -26,7 +26,6 @@ import com.datadog.android.privacy.TrackingConsent
 import com.datadog.tools.unit.extensions.config.MockTestConfiguration
 import com.lyft.kronos.KronosClock
 import fr.xgouchet.elmyr.Forge
-import okhttp3.OkHttpClient
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
@@ -54,8 +53,9 @@ internal class CoreFeatureTestConfiguration<T : Context>(
     lateinit var fakeBatchSize: BatchSize
     var fakeBuildId: String? = null
 
+    lateinit var callFactory: CoreFeature.OkHttpCallFactory
+
     lateinit var mockUploadExecutor: ScheduledThreadPoolExecutor
-    lateinit var mockOkHttpClient: OkHttpClient
     lateinit var mockPersistenceExecutor: FlushableExecutorService
     lateinit var mockContextExecutorService: ThreadPoolExecutor
     lateinit var mockKronosClock: KronosClock
@@ -106,7 +106,10 @@ internal class CoreFeatureTestConfiguration<T : Context>(
         mockPersistenceExecutor = mock()
         mockContextExecutorService = mock()
         mockUploadExecutor = mock()
-        mockOkHttpClient = mock()
+        callFactory = CoreFeature.OkHttpCallFactory {
+            mock()
+        }
+
         mockKronosClock = mock()
         // Mockito cannot mock WeakReference by some reason
         mockContextRef = WeakReference(appContext.mockInstance)
@@ -139,7 +142,7 @@ internal class CoreFeatureTestConfiguration<T : Context>(
         whenever(mockInstance.persistenceExecutorService) doReturn mockPersistenceExecutor
         whenever(mockInstance.contextExecutorService) doReturn mockContextExecutorService
         whenever(mockInstance.uploadExecutorService) doReturn mockUploadExecutor
-        whenever(mockInstance.okHttpClient) doReturn mockOkHttpClient
+        whenever(mockInstance.callFactory) doReturn callFactory
         whenever(mockInstance.kronosClock) doReturn mockKronosClock
         whenever(mockInstance.contextRef) doReturn mockContextRef
         whenever(mockInstance.firstPartyHostHeaderTypeResolver) doReturn mockFirstPartyHostHeaderTypeResolver

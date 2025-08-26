@@ -12,6 +12,7 @@ import fr.xgouchet.elmyr.ForgeryFactory
 
 class InternalTelemetryEventForgeryFactory : ForgeryFactory<InternalTelemetryEvent> {
 
+    @Suppress("MagicNumber")
     override fun getForgery(forge: Forge): InternalTelemetryEvent {
         val random = forge.anInt(min = 0, max = 6)
         return when (random) {

@@ -62,7 +62,7 @@ dependencies {
         }
     }
     testImplementation(testFixtures(project(":dd-sdk-android-core")))
-    testImplementation(project(":features:dd-sdk-android-rum"))
+    testImplementation(testFixtures(project(":features:dd-sdk-android-rum")))
     testImplementation(libs.okHttp)
     testImplementation(libs.bundles.jUnit5)
     testImplementation(libs.bundles.testTools)

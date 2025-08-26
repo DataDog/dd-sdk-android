@@ -141,7 +141,9 @@ object Rum {
             lastInteractionIdentifier = rumFeature.lastInteractionIdentifier,
             slowFramesListener = rumFeature.slowFramesListener,
             rumSessionTypeOverride = rumFeature.configuration.rumSessionTypeOverride,
-            accessibilityReader = rumFeature.accessibilityReader
+            accessibilitySnapshotManager = rumFeature.accessibilitySnapshotManager,
+            batteryInfoProvider = rumFeature.batteryInfoProvider,
+            displayInfoProvider = rumFeature.displayInfoProvider
         )
     }
 
