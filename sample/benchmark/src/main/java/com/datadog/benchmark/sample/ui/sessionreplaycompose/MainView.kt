@@ -30,14 +30,12 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.datadog.android.BuildConfig
-import com.datadog.android.compose.ExperimentalTrackingApi
 
 @Composable
 internal fun MainView() {
     AppScaffold()
 }
 
-@OptIn(ExperimentalTrackingApi::class)
 @Composable
 internal fun AppScaffold() {
     val navController = rememberNavController()

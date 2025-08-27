@@ -33,9 +33,12 @@ internal class RumDataWriter(
         ) ?: return false
 
         val batchEvent = if (element is ViewEvent) {
+            val hasAccessibility = element.view.accessibility != null
+
             val eventMeta = RumEventMeta.View(
                 viewId = element.view.id,
-                documentVersion = element.dd.documentVersion
+                documentVersion = element.dd.documentVersion,
+                hasAccessibility = hasAccessibility
             )
             val serializedEventMeta =
                 eventMetaSerializer.serializeToByteArray(eventMeta, sdkCore.internalLogger)

@@ -36,6 +36,7 @@ import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.verify
@@ -125,14 +126,17 @@ internal class RumDataWriterTest {
     @Test
     fun `M write data with event meta W write() {View Event}`(
         @Forgery fakeViewEvent: ViewEvent,
-        @StringForgery fakeSerializedViewEventMeta: String
+        forge: Forge
     ) {
         // Given
         whenever(mockSerializer.serialize(fakeViewEvent)) doReturn fakeSerializedEvent
+        val hasAccessibility = fakeViewEvent.view.accessibility != null
         val eventMeta = RumEventMeta.View(
             viewId = fakeViewEvent.view.id,
-            documentVersion = fakeViewEvent.dd.documentVersion
+            documentVersion = fakeViewEvent.dd.documentVersion,
+            hasAccessibility = hasAccessibility
         )
+        val fakeSerializedViewEventMeta = forge.aString()
         whenever(mockEventMetaSerializer.serialize(eventMeta)) doReturn fakeSerializedViewEventMeta
 
         // When
@@ -142,7 +146,7 @@ internal class RumDataWriterTest {
         verify(mockEventBatchWriter).write(
             RawBatchEvent(
                 data = fakeSerializedData,
-                metadata = fakeSerializedViewEventMeta.toByteArray()
+                metadata = fakeSerializedViewEventMeta.toByteArray(Charsets.UTF_8)
             ),
             null,
             fakeEventType
@@ -156,9 +160,11 @@ internal class RumDataWriterTest {
     ) {
         // Given
         whenever(mockSerializer.serialize(fakeViewEvent)) doReturn fakeSerializedEvent
+        val hasAccessibility = fakeViewEvent.view.accessibility != null
         val eventMeta = RumEventMeta.View(
             viewId = fakeViewEvent.view.id,
-            documentVersion = fakeViewEvent.dd.documentVersion
+            documentVersion = fakeViewEvent.dd.documentVersion,
+            hasAccessibility = hasAccessibility
         )
         whenever(mockEventMetaSerializer.serialize(eventMeta)) doThrow forge.aThrowable()
 
@@ -186,7 +192,7 @@ internal class RumDataWriterTest {
             forge.getForgery(ErrorEvent::class.java)
         )
 
-        whenever(mockSerializer.serialize(fakeEvent)) doThrow forge.aThrowable()
+        whenever(mockSerializer.serialize(fakeEvent)) doReturn null
 
         // When
         val result = testedWriter.write(mockEventBatchWriter, fakeEvent, fakeEventType)
@@ -210,6 +216,7 @@ internal class RumDataWriterTest {
             forge.getForgery(ErrorEvent::class.java)
         )
 
+        whenever(mockSerializer.serialize(fakeEvent)) doReturn fakeSerializedEvent
         whenever(mockEventBatchWriter.write(RawBatchEvent(fakeSerializedData), null, fakeEventType)) doReturn false
 
         // When
@@ -242,6 +249,60 @@ internal class RumDataWriterTest {
         // Then
         verify(rumMonitor.mockSdkCore).writeLastViewEvent(fakeSerializedData)
         verifyNoInteractions(mockInternalLogger)
+    }
+
+    // endregion
+
+    // region accessibility
+
+    @Test
+    fun `M hasAccessibility false W write() { null accessibility }`(
+        forge: Forge
+    ) {
+        // Given
+        val viewEvent = forge.getForgery<ViewEvent>()
+        val newView = viewEvent.view.copy(
+            accessibility = null
+        )
+        val newViewEvent = viewEvent.copy(
+            view = newView
+        )
+
+        whenever(mockSerializer.serialize(newViewEvent)) doReturn fakeSerializedEvent
+
+        // When
+        testedWriter.write(mockEventBatchWriter, newViewEvent, fakeEventType)
+
+        // Then
+        val captor = argumentCaptor<RumEventMeta.View>()
+        verify(mockEventMetaSerializer).serialize(captor.capture())
+        val metaData = captor.firstValue
+        assertThat(metaData.hasAccessibility).isFalse
+    }
+
+    @Test
+    fun `M hasAccessibility true W write() { non-null accessibility }`(
+        forge: Forge
+    ) {
+        // Given
+        val viewEvent = forge.getForgery<ViewEvent>()
+        val newView = viewEvent.view.copy(
+            accessibility = forge.getForgery()
+        )
+        val newViewEvent = viewEvent.copy(
+            view = newView
+        )
+
+        whenever(mockSerializer.serialize(newViewEvent)) doReturn fakeSerializedEvent
+
+        // When
+        testedWriter.write(mockEventBatchWriter, newViewEvent, fakeEventType)
+
+        // Then
+        val captor = argumentCaptor<RumEventMeta.View>()
+        verify(mockEventMetaSerializer).serialize(captor.capture())
+        val metaData = captor.firstValue
+        assertThat(metaData.hasAccessibility).isTrue
     }
 
     // endregion
