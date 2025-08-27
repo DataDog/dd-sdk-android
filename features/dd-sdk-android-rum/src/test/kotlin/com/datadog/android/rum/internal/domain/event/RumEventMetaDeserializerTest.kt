@@ -103,7 +103,14 @@ internal class RumEventMetaDeserializerTest {
         val fakeMetaJson = JsonParser.parseString(serializer.serialize(fakeMeta))
             .asJsonObject
             .apply {
-                remove(forge.anElementFrom(keySet()))
+                // Only remove required properties that should cause deserialization to fail
+                // hasAccessibility is optional and has backward compatibility handling
+                val requiredKeys = listOf(
+                    RumEventMeta.TYPE_KEY,
+                    RumEventMeta.VIEW_ID_KEY,
+                    RumEventMeta.DOCUMENT_VERSION_KEY
+                )
+                remove(forge.anElementFrom(requiredKeys))
             }
 
         // When
@@ -117,6 +124,28 @@ internal class RumEventMetaDeserializerTest {
             RumEventMetaDeserializer.DESERIALIZATION_ERROR,
             JsonParseException::class.java
         )
+    }
+
+    @Test
+    fun `M deserialize metadata W deserialize() { missing optional hasAccessibility property }`(
+        @Forgery fakeMeta: RumEventMeta
+    ) {
+        // Given
+        val fakeMetaJson = JsonParser.parseString(serializer.serialize(fakeMeta))
+            .asJsonObject
+            .apply {
+                remove(RumEventMeta.HAS_ACCESSIBILITY_KEY)
+            }
+
+        // When
+        val result = testedDeserializer.deserialize(fakeMetaJson.toBytes())
+
+        // Then
+        assertThat(result).isNotNull()
+        if (result is RumEventMeta.View) {
+            // hasAccessibility should default to false for backward compatibility
+            assertThat(result.hasAccessibility).isEqualTo(false)
+        }
     }
 
     @Test

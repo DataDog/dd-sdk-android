@@ -42,10 +42,20 @@ import com.datadog.android.rum.configuration.SlowFramesConfiguration
 import com.datadog.android.rum.configuration.VitalsUpdateFrequency
 import com.datadog.android.rum.internal.anr.ANRDetectorRunnable
 import com.datadog.android.rum.internal.debug.UiRumDebugListener
+import com.datadog.android.rum.internal.domain.InfoProvider
 import com.datadog.android.rum.internal.domain.RumDataWriter
-import com.datadog.android.rum.internal.domain.accessibility.AccessibilityReader
-import com.datadog.android.rum.internal.domain.accessibility.DatadogAccessibilityReader
+import com.datadog.android.rum.internal.domain.accessibility.AccessibilityInfo
+import com.datadog.android.rum.internal.domain.accessibility.AccessibilitySnapshotManager
+import com.datadog.android.rum.internal.domain.accessibility.DefaultAccessibilityReader
+import com.datadog.android.rum.internal.domain.accessibility.DefaultAccessibilitySnapshotManager
 import com.datadog.android.rum.internal.domain.accessibility.NoOpAccessibilityReader
+import com.datadog.android.rum.internal.domain.accessibility.NoOpAccessibilitySnapshotManager
+import com.datadog.android.rum.internal.domain.battery.BatteryInfo
+import com.datadog.android.rum.internal.domain.battery.DefaultBatteryInfoProvider
+import com.datadog.android.rum.internal.domain.battery.NoOpBatteryInfoProvider
+import com.datadog.android.rum.internal.domain.display.DefaultDisplayInfoProvider
+import com.datadog.android.rum.internal.domain.display.DisplayInfo
+import com.datadog.android.rum.internal.domain.display.NoOpDisplayInfoProvider
 import com.datadog.android.rum.internal.domain.event.RumEventMapper
 import com.datadog.android.rum.internal.domain.event.RumEventMetaDeserializer
 import com.datadog.android.rum.internal.domain.event.RumEventMetaSerializer
@@ -148,7 +158,11 @@ internal class RumFeature(
     internal var initialResourceIdentifier: InitialResourceIdentifier = NoOpInitialResourceIdentifier()
     internal var lastInteractionIdentifier: LastInteractionIdentifier? = NoOpLastInteractionIdentifier()
     internal var slowFramesListener: SlowFramesListener? = null
-    internal var accessibilityReader: AccessibilityReader = NoOpAccessibilityReader()
+    internal var accessibilityReader: InfoProvider<AccessibilityInfo> = NoOpAccessibilityReader()
+    internal var accessibilitySnapshotManager: AccessibilitySnapshotManager =
+        NoOpAccessibilitySnapshotManager()
+    internal var batteryInfoProvider: InfoProvider<BatteryInfo> = NoOpBatteryInfoProvider()
+    internal var displayInfoProvider: InfoProvider<DisplayInfo> = NoOpDisplayInfoProvider()
 
     private val lateCrashEventHandler by lazy { lateCrashReporterFactory(sdkCore as InternalSdkCore) }
 
@@ -160,9 +174,12 @@ internal class RumFeature(
     override fun onInitialize(appContext: Context) {
         this.appContext = appContext
 
-        if (configuration.collectAccessibilitySettings) {
-            accessibilityReader =
-                DatadogAccessibilityReader(applicationContext = appContext, internalLogger = sdkCore.internalLogger)
+        if (configuration.collectAccessibility) {
+            accessibilityReader = DefaultAccessibilityReader(
+                internalLogger = sdkCore.internalLogger,
+                applicationContext = appContext
+            )
+            accessibilitySnapshotManager = DefaultAccessibilitySnapshotManager(accessibilityReader)
         }
 
         initialResourceIdentifier = configuration.initialResourceIdentifier
@@ -187,6 +204,13 @@ internal class RumFeature(
         telemetryConfigurationSampleRate = configuration.telemetryConfigurationSampleRate
         backgroundEventTracking = configuration.backgroundEventTracking
         trackFrustrations = configuration.trackFrustrations
+        batteryInfoProvider = DefaultBatteryInfoProvider(
+            applicationContext = appContext
+        )
+        displayInfoProvider = DefaultDisplayInfoProvider(
+            applicationContext = appContext,
+            internalLogger = sdkCore.internalLogger
+        )
 
         configuration.viewTrackingStrategy?.let { viewTrackingStrategy = it }
         actionTrackingStrategy = if (configuration.userActionTracking) {
@@ -299,12 +323,26 @@ internal class RumFeature(
         anrDetectorRunnable?.stop()
         vitalExecutorService = NoOpScheduledExecutorService()
         sessionListener = NoOpRumSessionListener()
-        accessibilityReader.cleanup()
+
+        cleanupInfoProviders()
 
         GlobalRumMonitor.unregister(sdkCore)
     }
 
     // endregion
+
+    private fun cleanupInfoProviders() {
+        if (configuration.collectAccessibility) {
+            accessibilityReader.cleanup()
+            accessibilityReader = NoOpAccessibilityReader()
+            accessibilitySnapshotManager = NoOpAccessibilitySnapshotManager()
+        }
+
+        batteryInfoProvider.cleanup()
+        batteryInfoProvider = NoOpBatteryInfoProvider()
+        displayInfoProvider.cleanup()
+        displayInfoProvider = NoOpDisplayInfoProvider()
+    }
 
     private fun createDataWriter(
         configuration: Configuration,
@@ -643,7 +681,7 @@ internal class RumFeature(
         val additionalConfig: Map<String, Any>,
         val trackAnonymousUser: Boolean,
         val rumSessionTypeOverride: RumSessionType?,
-        val collectAccessibilitySettings: Boolean
+        val collectAccessibility: Boolean
     )
 
     internal companion object {
@@ -694,7 +732,7 @@ internal class RumFeature(
             trackAnonymousUser = true,
             slowFramesConfiguration = null,
             rumSessionTypeOverride = null,
-            collectAccessibilitySettings = false
+            collectAccessibility = false
         )
 
         internal const val EVENT_MESSAGE_PROPERTY = "message"

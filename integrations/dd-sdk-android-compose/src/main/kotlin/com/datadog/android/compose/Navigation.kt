@@ -21,6 +21,7 @@ import com.datadog.android.Datadog
 import com.datadog.android.api.SdkCore
 import com.datadog.android.compose.internal.ComposeNavigationObserver
 import com.datadog.android.compose.internal.InstrumentationType
+import com.datadog.android.compose.internal.SupportLibrary
 import com.datadog.android.compose.internal.sendTelemetry
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.tracking.AcceptAllNavDestinations
@@ -36,7 +37,6 @@ import com.datadog.android.rum.tracking.ComponentPredicate
  * valid RUM View events.
  * @param sdkCore the SDK instance to use. If not provided, default instance will be used.
  */
-@ExperimentalTrackingApi
 @Composable
 @NonRestartableComposable
 fun NavigationViewTrackingEffect(
@@ -49,6 +49,7 @@ fun NavigationViewTrackingEffect(
         sendTelemetry(
             autoInstrumented = false,
             instrumentationType = InstrumentationType.ViewTracking,
+            supportLibrary = SupportLibrary.Navigation,
             sdkCore = sdkCore
         )
     }
@@ -70,7 +71,6 @@ fun NavigationViewTrackingEffect(
  * valid RUM View events.
  * @param sdkCore the SDK instance to use. If not provided, default instance will be used.
  */
-@ExperimentalTrackingApi
 @Composable
 @NonRestartableComposable
 internal fun InstrumentedNavigationViewTrackingEffect(
@@ -83,6 +83,7 @@ internal fun InstrumentedNavigationViewTrackingEffect(
         sendTelemetry(
             autoInstrumented = true,
             instrumentationType = InstrumentationType.ViewTracking,
+            supportLibrary = SupportLibrary.Navigation,
             sdkCore = sdkCore
         )
     }

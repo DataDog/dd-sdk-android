@@ -95,6 +95,9 @@ timber = "5.0.1"
 coroutines = "1.4.2"
 exoplayer = "2.19.1"
 newPipeExtractor = "v0.24.6"
+navigation3 = "1.0.0-alpha01"
+kotlinxSerializationCore = "1.8.1"
+lifecycleViewmodelNav3 = "1.0.0-alpha01"
 
 # Local Server
 ktor = "2.3.13"
@@ -260,6 +263,12 @@ exoplayer = { module = "com.google.android.exoplayer:exoplayer", version.ref = "
 exoplayerDataSource = { module = "com.google.android.exoplayer:exoplayer-datasource", version.ref = "exoplayer" }
 exoplayerOkHttp = { module = "com.google.android.exoplayer:extension-okhttp", version.ref = "exoplayer" }
 newPipeExtractor = { module = "com.github.TeamNewPipe.NewPipeExtractor:extractor", version.ref = "newPipeExtractor" }
+
+# Core Navigation 3 libraries
+androidx-navigation3-runtime = { module = "androidx.navigation3:navigation3-runtime", version.ref = "navigation3" }
+androidx-navigation3-ui = { module = "androidx.navigation3:navigation3-ui", version.ref = "navigation3" }
+kotlinx-serialization-core = { module = "org.jetbrains.kotlinx:kotlinx-serialization-core", version.ref = "kotlinxSerializationCore" }
+androidx-lifecycle-viewmodel-navigation3 = { module = "androidx.lifecycle:lifecycle-viewmodel-navigation3", version.ref = "lifecycleViewmodelNav3" }
 
 # Local Server
 ktorCore = { module = "io.ktor:ktor", version.ref = "ktor" }

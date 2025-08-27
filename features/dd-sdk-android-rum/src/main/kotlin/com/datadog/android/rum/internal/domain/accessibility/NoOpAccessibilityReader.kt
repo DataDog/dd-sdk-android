@@ -6,15 +6,12 @@
 
 package com.datadog.android.rum.internal.domain.accessibility
 
-import com.datadog.tools.annotation.NoOpImplementation
+import com.datadog.android.rum.internal.domain.InfoProvider
 
-@NoOpImplementation
-internal interface AccessibilityReader {
-    fun getState(): Map<String, Any>
-
-    fun cleanup()
-
-    companion object {
-        internal const val ACCESSIBILITY_KEY = "accessibility"
+internal class NoOpAccessibilityReader : InfoProvider<AccessibilityInfo> {
+    override fun getState(): AccessibilityInfo {
+        return AccessibilityInfo()
     }
+
+    override fun cleanup() {}
 }
