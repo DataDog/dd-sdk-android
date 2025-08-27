@@ -25,7 +25,6 @@ import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.event.RumEventDeserializer
 import com.datadog.android.rum.internal.domain.scope.toErrorSchemaType
 import com.datadog.android.rum.internal.domain.scope.tryFromSource
-import com.datadog.android.rum.internal.utils.buildDDTagsString
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.ViewEvent
 import com.google.gson.JsonObject
@@ -267,8 +266,7 @@ internal class DatadogLateCrashReporter(
                 },
                 timeSinceAppStart = timeSinceAppStartMs
             ),
-            version = viewEvent.version,
-            ddtags = buildDDTagsString(datadogContext)
+            version = viewEvent.version
         )
     }
 

@@ -27,7 +27,6 @@ import com.datadog.android.rum.internal.metric.networksettled.NetworkSettledMetr
 import com.datadog.android.rum.internal.monitor.StorageEvent
 import com.datadog.android.rum.internal.toError
 import com.datadog.android.rum.internal.toResource
-import com.datadog.android.rum.internal.utils.buildDDTagsString
 import com.datadog.android.rum.internal.utils.hasUserData
 import com.datadog.android.rum.internal.utils.newRumEventWriteOperation
 import com.datadog.android.rum.model.ErrorEvent
@@ -310,8 +309,7 @@ internal class RumResourceScope(
                     configuration = ResourceEvent.Configuration(sessionSampleRate = sampleRate)
                 ),
                 service = datadogContext.service,
-                version = datadogContext.version,
-                ddtags = buildDDTagsString(datadogContext)
+                version = datadogContext.version
             )
         }
             .onError {
@@ -466,8 +464,7 @@ internal class RumResourceScope(
                     configuration = ErrorEvent.Configuration(sessionSampleRate = sampleRate)
                 ),
                 service = datadogContext.service,
-                version = datadogContext.version,
-                ddtags = buildDDTagsString(datadogContext)
+                version = datadogContext.version
             )
         }
             .onError {
