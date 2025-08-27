@@ -44,7 +44,6 @@ import com.datadog.android.rum.internal.toAction
 import com.datadog.android.rum.internal.toError
 import com.datadog.android.rum.internal.toLongTask
 import com.datadog.android.rum.internal.toView
-import com.datadog.android.rum.internal.utils.buildDDTagsString
 import com.datadog.android.rum.internal.utils.hasUserData
 import com.datadog.android.rum.internal.utils.newRumEventWriteOperation
 import com.datadog.android.rum.internal.vitals.VitalInfo
@@ -617,8 +616,7 @@ internal open class RumViewScope(
                     configuration = ErrorEvent.Configuration(sessionSampleRate = sampleRate)
                 ),
                 service = datadogContext.service,
-                version = datadogContext.version,
-                ddtags = buildDDTagsString(datadogContext)
+                version = datadogContext.version
             )
         }
             .apply {
@@ -1154,8 +1152,7 @@ internal open class RumViewScope(
                 ),
                 connectivity = datadogContext.networkInfo.toViewConnectivity(),
                 service = datadogContext.service,
-                version = datadogContext.version,
-                ddtags = buildDDTagsString(datadogContext)
+                version = datadogContext.version
             ).apply {
                 sessionEndedMetricDispatcher.onViewTracked(sessionId, this)
             }
@@ -1329,8 +1326,7 @@ internal open class RumViewScope(
                 ),
                 connectivity = datadogContext.networkInfo.toActionConnectivity(),
                 service = datadogContext.service,
-                version = datadogContext.version,
-                ddtags = buildDDTagsString(datadogContext)
+                version = datadogContext.version
             )
         }
             .apply {
@@ -1445,8 +1441,7 @@ internal open class RumViewScope(
                     configuration = LongTaskEvent.Configuration(sessionSampleRate = sampleRate)
                 ),
                 service = datadogContext.service,
-                version = datadogContext.version,
-                ddtags = buildDDTagsString(datadogContext)
+                version = datadogContext.version
             )
         }
             .apply {

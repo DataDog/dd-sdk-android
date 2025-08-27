@@ -329,6 +329,11 @@ class RumConfigurationTest {
         val expectedSource = datadogContext.source
         val expectedSdkVersion = datadogContext.sdkVersion
         val expectedTags = listOf(
+            "service" to datadogContext.service,
+            "version" to datadogContext.version,
+            "sdk_version" to expectedSdkVersion,
+            "env" to datadogContext.env,
+            "variant" to datadogContext.variant,
             "retry_count" to fakeExecutionContext.previousResponseCode?.let { fakeExecutionContext.attemptNumber },
             "last_failure_status" to fakeExecutionContext.previousResponseCode
         )
@@ -352,15 +357,9 @@ class RumConfigurationTest {
 
         // Then
         checkNotNull(request)
-
-        val expectedUrl = buildString {
-            append("${expectedSite.intakeEndpoint}/api/v2/rum?ddsource=$expectedSource")
-            if (expectedTags.isNotEmpty()) {
-                append("&ddtags=$expectedTags")
-            }
-        }
-        assertThat(request.url).isEqualTo(expectedUrl)
-
+        assertThat(
+            request.url
+        ).isEqualTo("${expectedSite.intakeEndpoint}/api/v2/rum?ddsource=$expectedSource&ddtags=$expectedTags")
         assertThat(request.headers).containsEntry("DD-API-KEY", expectedClientToken)
         assertThat(request.headers).containsEntry("DD-EVP-ORIGIN", expectedSource)
         assertThat(request.headers).containsEntry("DD-EVP-ORIGIN-VERSION", expectedSdkVersion)
@@ -379,6 +378,11 @@ class RumConfigurationTest {
         val expectedSource = datadogContext.source
         val expectedSdkVersion = datadogContext.sdkVersion
         val expectedTags = listOf(
+            "service" to datadogContext.service,
+            "version" to datadogContext.version,
+            "sdk_version" to expectedSdkVersion,
+            "env" to datadogContext.env,
+            "variant" to datadogContext.variant,
             "retry_count" to fakeExecutionContext.previousResponseCode?.let { fakeExecutionContext.attemptNumber },
             "last_failure_status" to fakeExecutionContext.previousResponseCode
         )
@@ -403,15 +407,7 @@ class RumConfigurationTest {
 
         // Then
         checkNotNull(request)
-
-        val expectedUrl = buildString {
-            append("$fakeEndpoint/api/v2/rum?ddsource=$expectedSource")
-            if (expectedTags.isNotEmpty()) {
-                append("&ddtags=$expectedTags")
-            }
-        }
-        assertThat(request.url).isEqualTo(expectedUrl)
-
+        assertThat(request.url).isEqualTo("$fakeEndpoint/api/v2/rum?ddsource=$expectedSource&ddtags=$expectedTags")
         assertThat(request.headers).containsEntry("DD-API-KEY", expectedClientToken)
         assertThat(request.headers).containsEntry("DD-EVP-ORIGIN", expectedSource)
         assertThat(request.headers).containsEntry("DD-EVP-ORIGIN-VERSION", expectedSdkVersion)
