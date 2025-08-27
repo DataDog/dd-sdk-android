@@ -1,11 +1,27 @@
+# 2.26.0 / 2025-08-27
+
+* [FEATURE] RUM: Add battery and display attributes. See [#2815](https://github.com/DataDog/dd-sdk-android/pull/2815)
+* [FEATURE] RUM: Implement `Navigation 3` view tracking side effect. See [#2830](https://github.com/DataDog/dd-sdk-android/pull/2830)
+* [FEATURE] RUM: Make `Navigation 3` tracking listen to lifecycle. See [#2832](https://github.com/DataDog/dd-sdk-android/pull/2832)
+* [IMPROVEMENT] Session Replay: `DrawableUtils` performance improvement. See [#2808](https://github.com/DataDog/dd-sdk-android/pull/2808)
+* [IMPROVEMENT] RUM: Make accessibility send only mutations. See [#2806](https://github.com/DataDog/dd-sdk-android/pull/2806)
+* [IMPROVEMENT] RUM: Create `Navigation 3` demo screen in sample app. See [#2825](https://github.com/DataDog/dd-sdk-android/pull/2825)
+* [IMPROVEMENT] Move `OkHttp` client initialization to background thread. See [#2829](https://github.com/DataDog/dd-sdk-android/pull/2829)
+* [MAINTENANCE] Add Github action to close stale issues. See [#2826](https://github.com/DataDog/dd-sdk-android/pull/2826)
+* [MAINTENANCE] Add a schedule for the stale issues Github action. See [#2827](https://github.com/DataDog/dd-sdk-android/pull/2827)
+* [MAINTENANCE] Remove outdated experimental annotations. See [#2833](https://github.com/DataDog/dd-sdk-android/pull/2833)
+* [MAINTENANCE] Remove generation of models from internal schemas for RUM. See [#2834](https://github.com/DataDog/dd-sdk-android/pull/2834)
+* [MAINTENANCE] Some additional accessibility test coverage. See [#2823](https://github.com/DataDog/dd-sdk-android/pull/2823)
+
 # 2.25.0 / 2025-07-28
 
+* [FEATURE] RUM: Collect `Locale` attributes. See [#2797](https://github.com/DataDog/dd-sdk-android/pull/2797)
+* [FEATURE] RUM: Add accessibility attributes. See [#2787](https://github.com/DataDog/dd-sdk-android/pull/2787)
 * [BUGFIX] Fix `WindowCallbackWrapper` NPE. See [#2800](https://github.com/DataDog/dd-sdk-android/pull/2800)
 * [MAINTENANCE] Fix release checking script. See [#2799](https://github.com/DataDog/dd-sdk-android/pull/2799)
 * [MAINTENANCE] Next dev iteration. See [#2789](https://github.com/DataDog/dd-sdk-android/pull/2789)
 * [MAINTENANCE] Merge `release/2.24.0` branch into `develop` branch. See [#2792](https://github.com/DataDog/dd-sdk-android/pull/2792)
 * [MAINTENANCE] Update RUM schema. See [#2795](https://github.com/DataDog/dd-sdk-android/pull/2795)
-* [MAINTENANCE] Collect `Locale` attributes. See [#2797](https://github.com/DataDog/dd-sdk-android/pull/2797)
 
 # 2.24.0 / 2025-07-16
 
