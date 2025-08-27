@@ -66,7 +66,6 @@ internal class RumRequestFactory(
                 context.variant,
                 executionContext
             )
-
         )
 
         val intakeUrl = customEndpointUrl ?: (context.site.intakeEndpoint + "/api/v2/rum")
