@@ -33,8 +33,11 @@ import com.datadog.android.rum.RumSessionType
 import com.datadog.android.rum.internal.RumErrorSourceType
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.debug.RumDebugListener
+import com.datadog.android.rum.internal.domain.InfoProvider
 import com.datadog.android.rum.internal.domain.RumContext
-import com.datadog.android.rum.internal.domain.accessibility.AccessibilityReader
+import com.datadog.android.rum.internal.domain.accessibility.AccessibilitySnapshotManager
+import com.datadog.android.rum.internal.domain.battery.BatteryInfo
+import com.datadog.android.rum.internal.domain.display.DisplayInfo
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
 import com.datadog.android.rum.internal.domain.scope.RumApplicationScope
 import com.datadog.android.rum.internal.domain.scope.RumRawEvent
@@ -126,7 +129,13 @@ internal class DatadogRumMonitorTest {
     lateinit var mockHandler: Handler
 
     @Mock
-    lateinit var mockAccessibilityReader: AccessibilityReader
+    lateinit var mockAccessibilitySnapshotManager: AccessibilitySnapshotManager
+
+    @Mock
+    lateinit var mockBatteryInfoProvider: InfoProvider<BatteryInfo>
+
+    @Mock
+    lateinit var mockDisplayInfoProvider: InfoProvider<DisplayInfo>
 
     @Mock
     lateinit var mockResolver: FirstPartyHostHeaderTypeResolver
@@ -214,6 +223,7 @@ internal class DatadogRumMonitorTest {
         whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
         whenever(mockSdkCore.time) doReturn fakeTimeInfo
         whenever(mockSlowFramesListener.resolveReport(any(), any(), any())) doReturn fakeViewUIPerformanceReport
+        whenever(mockAccessibilitySnapshotManager.getIfChanged()) doReturn mock()
 
         whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumFeatureScope
 
@@ -251,7 +261,9 @@ internal class DatadogRumMonitorTest {
             lastInteractionIdentifier = mockLastInteractionIdentifier,
             slowFramesListener = mockSlowFramesListener,
             rumSessionTypeOverride = fakeRumSessionType,
-            accessibilityReader = mockAccessibilityReader
+            accessibilitySnapshotManager = mockAccessibilitySnapshotManager,
+            batteryInfoProvider = mockBatteryInfoProvider,
+            displayInfoProvider = mockDisplayInfoProvider
         )
         testedMonitor.rootScope = mockApplicationScope
     }
@@ -279,7 +291,9 @@ internal class DatadogRumMonitorTest {
             lastInteractionIdentifier = mockLastInteractionIdentifier,
             slowFramesListener = mockSlowFramesListener,
             rumSessionTypeOverride = fakeRumSessionType,
-            accessibilityReader = mockAccessibilityReader
+            accessibilitySnapshotManager = mockAccessibilitySnapshotManager,
+            batteryInfoProvider = mockBatteryInfoProvider,
+            displayInfoProvider = mockDisplayInfoProvider
         )
 
         // When
@@ -349,7 +363,9 @@ internal class DatadogRumMonitorTest {
             lastInteractionIdentifier = mockLastInteractionIdentifier,
             slowFramesListener = mockSlowFramesListener,
             rumSessionTypeOverride = fakeRumSessionType,
-            accessibilityReader = mockAccessibilityReader
+            accessibilitySnapshotManager = mockAccessibilitySnapshotManager,
+            batteryInfoProvider = mockBatteryInfoProvider,
+            displayInfoProvider = mockDisplayInfoProvider
         )
         testedMonitor.start()
         val mockCallback = mock<(String?) -> Unit>()
@@ -388,7 +404,9 @@ internal class DatadogRumMonitorTest {
             lastInteractionIdentifier = mockLastInteractionIdentifier,
             slowFramesListener = mockSlowFramesListener,
             rumSessionTypeOverride = fakeRumSessionType,
-            accessibilityReader = mockAccessibilityReader
+            accessibilitySnapshotManager = mockAccessibilitySnapshotManager,
+            batteryInfoProvider = mockBatteryInfoProvider,
+            displayInfoProvider = mockDisplayInfoProvider
         )
         testedMonitor.start()
         val mockCallback = mock<(String?) -> Unit>()
@@ -2002,7 +2020,9 @@ internal class DatadogRumMonitorTest {
             lastInteractionIdentifier = mockLastInteractionIdentifier,
             slowFramesListener = mockSlowFramesListener,
             rumSessionTypeOverride = fakeRumSessionType,
-            accessibilityReader = mockAccessibilityReader
+            accessibilitySnapshotManager = mockAccessibilitySnapshotManager,
+            batteryInfoProvider = mockBatteryInfoProvider,
+            displayInfoProvider = mockDisplayInfoProvider
         )
 
         // When
@@ -2038,7 +2058,9 @@ internal class DatadogRumMonitorTest {
             lastInteractionIdentifier = mockLastInteractionIdentifier,
             slowFramesListener = mockSlowFramesListener,
             rumSessionTypeOverride = fakeRumSessionType,
-            accessibilityReader = mockAccessibilityReader
+            accessibilitySnapshotManager = mockAccessibilitySnapshotManager,
+            batteryInfoProvider = mockBatteryInfoProvider,
+            displayInfoProvider = mockDisplayInfoProvider
         )
 
         // When
@@ -2074,7 +2096,9 @@ internal class DatadogRumMonitorTest {
             initialResourceIdentifier = mockNetworkSettledResourceIdentifier,
             lastInteractionIdentifier = mockLastInteractionIdentifier,
             slowFramesListener = mockSlowFramesListener,
-            accessibilityReader = mockAccessibilityReader,
+            accessibilitySnapshotManager = mockAccessibilitySnapshotManager,
+            batteryInfoProvider = mockBatteryInfoProvider,
+            displayInfoProvider = mockDisplayInfoProvider,
             rumSessionTypeOverride = null
         )
         whenever(mockExecutorService.isShutdown).thenReturn(true)
@@ -2244,7 +2268,9 @@ internal class DatadogRumMonitorTest {
             lastInteractionIdentifier = mockLastInteractionIdentifier,
             slowFramesListener = mockSlowFramesListener,
             rumSessionTypeOverride = fakeRumSessionType,
-            accessibilityReader = mockAccessibilityReader
+            accessibilitySnapshotManager = mockAccessibilitySnapshotManager,
+            batteryInfoProvider = mockBatteryInfoProvider,
+            displayInfoProvider = mockDisplayInfoProvider
         )
         testedMonitor.startView(key, name, attributes)
         // When

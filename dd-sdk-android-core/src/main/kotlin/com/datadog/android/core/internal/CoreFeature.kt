@@ -84,10 +84,12 @@ import com.datadog.android.security.Encryption
 import com.google.gson.JsonObject
 import com.lyft.kronos.AndroidClockFactory
 import com.lyft.kronos.KronosClock
+import okhttp3.Call
 import okhttp3.CipherSuite
 import okhttp3.ConnectionSpec
 import okhttp3.OkHttpClient
 import okhttp3.Protocol
+import okhttp3.Request
 import okhttp3.TlsVersion
 import java.io.File
 import java.io.FileNotFoundException
@@ -108,6 +110,14 @@ internal class CoreFeature(
     private val scheduledExecutorServiceFactory: ScheduledExecutorServiceFactory
 ) {
 
+    internal class OkHttpCallFactory(factory: () -> OkHttpClient) : Call.Factory {
+        val okhttpClient by lazy(factory)
+
+        override fun newCall(request: Request): Call {
+            return okhttpClient.newCall(request)
+        }
+    }
+
     internal val initialized = AtomicBoolean(false)
     internal var contextRef: WeakReference<Context?> = WeakReference(null)
 
@@ -123,7 +133,7 @@ internal class CoreFeature(
     internal var packageVersionProvider: AppVersionProvider = NoOpAppVersionProvider()
     internal var androidInfoProvider: AndroidInfoProvider = NoOpAndroidInfoProvider()
 
-    internal lateinit var okHttpClient: OkHttpClient
+    internal lateinit var callFactory: OkHttpCallFactory
     internal var kronosClock: KronosClock? = null
 
     @Volatile
@@ -551,37 +561,39 @@ internal class CoreFeature(
 
     @Suppress("SpreadOperator")
     private fun setupOkHttpClient(configuration: Configuration.Core) {
-        val connectionSpec = when {
-            configuration.needsClearTextHttp -> ConnectionSpec.CLEARTEXT
-            else -> ConnectionSpec.Builder(ConnectionSpec.RESTRICTED_TLS)
-                .tlsVersions(TlsVersion.TLS_1_2, TlsVersion.TLS_1_3)
-                .cipherSuites(*RESTRICTED_CIPHER_SUITES)
-                .build()
-        }
+        callFactory = OkHttpCallFactory {
+            val connectionSpec = when {
+                configuration.needsClearTextHttp -> ConnectionSpec.CLEARTEXT
+                else -> ConnectionSpec.Builder(ConnectionSpec.RESTRICTED_TLS)
+                    .tlsVersions(TlsVersion.TLS_1_2, TlsVersion.TLS_1_3)
+                    .cipherSuites(*RESTRICTED_CIPHER_SUITES)
+                    .build()
+            }
 
-        val builder = OkHttpClient.Builder()
-        builder.callTimeout(NETWORK_TIMEOUT_MS, TimeUnit.MILLISECONDS)
-            .writeTimeout(NETWORK_TIMEOUT_MS, TimeUnit.MILLISECONDS)
-            .protocols(listOf(Protocol.HTTP_2, Protocol.HTTP_1_1))
-            .connectionSpecs(listOf(connectionSpec))
+            val builder = OkHttpClient.Builder()
+            builder.callTimeout(NETWORK_TIMEOUT_MS, TimeUnit.MILLISECONDS)
+                .writeTimeout(NETWORK_TIMEOUT_MS, TimeUnit.MILLISECONDS)
+                .protocols(listOf(Protocol.HTTP_2, Protocol.HTTP_1_1))
+                .connectionSpecs(listOf(connectionSpec))
 
-        if (BuildConfig.DEBUG) {
+            if (BuildConfig.DEBUG) {
+                @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
+                builder.addNetworkInterceptor(CurlInterceptor())
+            } else {
+                @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
+                builder.addInterceptor(GzipRequestInterceptor(internalLogger))
+            }
+
+            if (configuration.proxy != null) {
+                builder.proxy(configuration.proxy)
+                builder.proxyAuthenticator(configuration.proxyAuth)
+            }
+
             @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
-            builder.addNetworkInterceptor(CurlInterceptor())
-        } else {
-            @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
-            builder.addInterceptor(GzipRequestInterceptor(internalLogger))
+            builder.dns(RotatingDnsResolver())
+
+            builder.build()
         }
-
-        if (configuration.proxy != null) {
-            builder.proxy(configuration.proxy)
-            builder.proxyAuthenticator(configuration.proxyAuth)
-        }
-
-        @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
-        builder.dns(RotatingDnsResolver())
-
-        okHttpClient = builder.build()
     }
 
     private fun setupExecutors() {

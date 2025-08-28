@@ -9,6 +9,8 @@ package com.datadog.android.sessionreplay.internal.utils
 import android.content.res.Resources
 import android.graphics.Bitmap
 import android.graphics.Canvas
+import android.graphics.Color
+import android.graphics.PorterDuff
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.Drawable.ConstantState
 import android.util.AndroidRuntimeException
@@ -38,6 +40,7 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
@@ -423,6 +426,25 @@ internal class DrawableUtilsTest {
             { it == "$DRAWABLE_DRAW_FINISHED_WITH_RUNTIME_EXCEPTION ${mockDrawable.javaClass.canonicalName}" },
             exceptionType
         )
+    }
+
+    @Test
+    fun `M use CLEAR mode W createBitmapOfApproxSizeFromDrawable() { when drawing on canvas }`() {
+        // Given
+        whenever(mockDrawable.intrinsicWidth).thenReturn(10)
+        whenever(mockDrawable.intrinsicHeight).thenReturn(10)
+
+        // When
+        testedDrawableUtils.createBitmapOfApproxSizeFromDrawable(
+            drawable = mockDrawable,
+            drawableWidth = mockDrawable.intrinsicWidth,
+            drawableHeight = mockDrawable.intrinsicHeight,
+            displayMetrics = mockDisplayMetrics,
+            bitmapCreationCallback = mockBitmapCreationCallback
+        )
+
+        // Then
+        verify(mockCanvas).drawColor(eq(Color.TRANSPARENT), eq(PorterDuff.Mode.CLEAR))
     }
 
     companion object {

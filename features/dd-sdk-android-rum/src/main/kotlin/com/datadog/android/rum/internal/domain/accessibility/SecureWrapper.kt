@@ -12,18 +12,19 @@ import android.provider.Settings.SettingNotFoundException
 import com.datadog.android.api.InternalLogger
 
 internal class SecureWrapper {
-    @Suppress("TooGenericExceptionCaught", "UnsafeThirdPartyFunctionCall") // exceptions caught
+    @Suppress("UnsafeThirdPartyFunctionCall")
     internal fun getInt(
         internalLogger: InternalLogger,
         applicationContext: Context,
         key: String
-    ): Boolean? {
+    ): Int? {
+        // returns -1 if unable to retrieve the key
         return try {
             Settings.Secure.getInt(
                 applicationContext.contentResolver,
                 key,
-                0
-            ) != 0
+                -1
+            )
         } catch (e: SettingNotFoundException) {
             internalLogger.log(
                 InternalLogger.Level.ERROR,
@@ -31,7 +32,7 @@ internal class SecureWrapper {
                 { "Setting cannot be found $key" },
                 e
             )
-            null
+            -1
         } catch (e: SecurityException) {
             internalLogger.log(
                 InternalLogger.Level.ERROR,
@@ -39,15 +40,7 @@ internal class SecureWrapper {
                 { "Security exception accessing $key" },
                 e
             )
-            null
-        } catch (e: RuntimeException) {
-            internalLogger.log(
-                InternalLogger.Level.ERROR,
-                listOf(InternalLogger.Target.MAINTAINER),
-                { "Runtime exception $key" },
-                e
-            )
-            null
+            -1
         }
     }
 }

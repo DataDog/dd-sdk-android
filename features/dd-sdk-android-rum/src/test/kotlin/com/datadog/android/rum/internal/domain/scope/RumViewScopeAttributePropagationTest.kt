@@ -26,9 +26,12 @@ import com.datadog.android.rum.assertj.ErrorEventAssert.Companion.assertThat
 import com.datadog.android.rum.assertj.LongTaskEventAssert.Companion.assertThat
 import com.datadog.android.rum.assertj.ViewEventAssert.Companion.assertThat
 import com.datadog.android.rum.internal.FeaturesContextResolver
+import com.datadog.android.rum.internal.domain.InfoProvider
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
-import com.datadog.android.rum.internal.domain.accessibility.AccessibilityReader
+import com.datadog.android.rum.internal.domain.accessibility.AccessibilitySnapshotManager
+import com.datadog.android.rum.internal.domain.battery.BatteryInfo
+import com.datadog.android.rum.internal.domain.display.DisplayInfo
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
 import com.datadog.android.rum.internal.metric.ViewEndedMetricDispatcher
 import com.datadog.android.rum.internal.metric.ViewInitializationMetricsState
@@ -97,7 +100,13 @@ internal class RumViewScopeAttributePropagationTest {
     lateinit var mockWriter: DataWriter<Any>
 
     @Mock
-    lateinit var mockAccessibilityReader: AccessibilityReader
+    lateinit var mockAccessibilitySnapshotManager: AccessibilitySnapshotManager
+
+    @Mock
+    lateinit var mockBatteryInfoProvider: InfoProvider<BatteryInfo>
+
+    @Mock
+    lateinit var mockDisplayInfoProvider: InfoProvider<DisplayInfo>
 
     @Mock
     lateinit var mockResolver: FirstPartyHostHeaderTypeResolver
@@ -190,6 +199,9 @@ internal class RumViewScopeAttributePropagationTest {
 
     @BeforeEach
     fun `set up`(forge: Forge) {
+        val fakeBrightness = forge.aFloat(0f, 255f)
+        val fakeBatteryLevel = forge.aFloat(0f, 100f)
+        val fakeLowPowerMode = forge.aBool()
         fakeNetworkSettledMetricValue = forge.aNullable { aPositiveLong() }
         fakeRumSessionType = forge.aNullable { aValueFrom(RumSessionType::class.java) }
         fakeInteractionToNextViewMetricValue = forge.aNullable { aPositiveLong() }
@@ -241,6 +253,13 @@ internal class RumViewScopeAttributePropagationTest {
             callback.invoke(mockEventBatchWriter)
         }
         whenever(mockWriter.write(eq(mockEventBatchWriter), any(), any())) doReturn true
+        whenever(mockBatteryInfoProvider.getState()) doReturn BatteryInfo(
+            batteryLevel = fakeBatteryLevel,
+            lowPowerMode = fakeLowPowerMode
+        )
+        whenever(mockDisplayInfoProvider.getState()) doReturn DisplayInfo(
+            screenBrightness = fakeBrightness
+        )
     }
 
     // region Propagate parent attributes in View Event
@@ -702,7 +721,9 @@ internal class RumViewScopeAttributePropagationTest {
         viewEndedMetricDispatcher: ViewMetricDispatcher = mockViewEndedMetricDispatcher,
         slowFramesListener: SlowFramesListener = mockSlowFramesListener,
         rumSessionType: RumSessionType? = fakeRumSessionType,
-        accessibilityReader: AccessibilityReader = mockAccessibilityReader
+        accessibilitySnapshotManager: AccessibilitySnapshotManager = mockAccessibilitySnapshotManager,
+        batteryInfoProvider: InfoProvider<BatteryInfo> = mockBatteryInfoProvider,
+        displayInfoProvider: InfoProvider<DisplayInfo> = mockDisplayInfoProvider
     ) = RumViewScope(
         parentScope = parentScope,
         sdkCore = sdkCore,
@@ -723,7 +744,9 @@ internal class RumViewScopeAttributePropagationTest {
         networkSettledMetricResolver = networkSettledMetricResolver,
         viewEndedMetricDispatcher = viewEndedMetricDispatcher,
         slowFramesListener = slowFramesListener,
-        accessibilityReader = accessibilityReader,
+        accessibilitySnapshotManager = accessibilitySnapshotManager,
+        batteryInfoProvider = batteryInfoProvider,
+        displayInfoProvider = displayInfoProvider,
         rumSessionTypeOverride = rumSessionType
     )
 

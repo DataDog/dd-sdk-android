@@ -16,6 +16,7 @@ internal class StubInternalLogger : InternalLogger {
 
     val telemetryEventsWritten = mutableListOf<StubTelemetryEvent>()
 
+    @Suppress("MagicNumber")
     override fun log(
         level: InternalLogger.Level,
         target: InternalLogger.Target,

@@ -562,6 +562,21 @@ internal class CoreFeatureTest {
     }
 
     @Test
+    fun `M initialize okhttp only once`() {
+        // When
+        testedFeature.initialize(
+            appContext.mockInstance,
+            fakeSdkInstanceId,
+            fakeConfig.copy(coreConfig = fakeConfig.coreConfig),
+            fakeConsent
+        )
+
+        // Then
+        val okHttpClient = testedFeature.callFactory.okhttpClient
+        assertThat(okHttpClient).isEqualTo(testedFeature.callFactory.okhttpClient)
+    }
+
+    @Test
     fun `M initialize okhttp with strict network policy W initialize()`() {
         // When
         testedFeature.initialize(
@@ -572,7 +587,7 @@ internal class CoreFeatureTest {
         )
 
         // Then
-        val okHttpClient = testedFeature.okHttpClient
+        val okHttpClient = testedFeature.callFactory.okhttpClient
         assertThat(okHttpClient.protocols)
             .containsExactly(Protocol.HTTP_2, Protocol.HTTP_1_1)
         assertThat(okHttpClient.callTimeoutMillis)
@@ -607,7 +622,7 @@ internal class CoreFeatureTest {
         )
 
         // Then
-        val okHttpClient = testedFeature.okHttpClient
+        val okHttpClient = testedFeature.callFactory.okhttpClient
         assertThat(okHttpClient.protocols)
             .containsExactly(Protocol.HTTP_2, Protocol.HTTP_1_1)
         assertThat(okHttpClient.callTimeoutMillis)
@@ -634,7 +649,7 @@ internal class CoreFeatureTest {
         )
 
         // Then
-        val okHttpClient = testedFeature.okHttpClient
+        val okHttpClient = testedFeature.callFactory.okhttpClient
         assertThat(okHttpClient.proxy).isSameAs(proxy)
         assertThat(okHttpClient.proxyAuthenticator).isSameAs(proxyAuth)
     }
@@ -650,7 +665,7 @@ internal class CoreFeatureTest {
         )
 
         // Then
-        val okHttpClient = testedFeature.okHttpClient
+        val okHttpClient = testedFeature.callFactory.okhttpClient
         assertThat(okHttpClient.proxy).isNull()
         assertThat(okHttpClient.proxyAuthenticator).isEqualTo(Authenticator.NONE)
     }

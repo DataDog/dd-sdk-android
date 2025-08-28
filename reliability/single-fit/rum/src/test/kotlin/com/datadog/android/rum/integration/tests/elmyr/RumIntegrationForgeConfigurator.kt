@@ -6,6 +6,7 @@
 
 package com.datadog.android.rum.integration.tests.elmyr
 
+import com.datadog.android.rum.utils.forge.useCommonRumFactories
 import com.datadog.android.tests.elmyr.useCoreFactories
 import com.datadog.tools.unit.forge.BaseConfigurator
 import fr.xgouchet.elmyr.Forge
@@ -17,12 +18,7 @@ class RumIntegrationForgeConfigurator : BaseConfigurator() {
         forge.useJvmFactories()
         forge.useCoreFactories()
 
-        forge.addFactory(ActionEventForgeryFactory())
-        forge.addFactory(ErrorEventForgeryFactory())
-        forge.addFactory(ResourceEventForgeryFactory())
-        forge.addFactory(ResourceTimingForgeryFactory())
-        forge.addFactory(LongTaskEventForgeryFactory())
-        forge.addFactory(ViewEventForgeryFactory())
+        forge.useCommonRumFactories()
 
         forge.addFactory(RumBatchEventForgeryFactory())
     }

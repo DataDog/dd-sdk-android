@@ -112,7 +112,7 @@ internal class DrawableUtils(
         } else {
             // erase the canvas
             // needed because overdrawing an already used bitmap causes unusual visual artifacts
-            canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.MULTIPLY)
+            canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR)
 
             drawable.setBounds(0, 0, canvas.width, canvas.height)
 
