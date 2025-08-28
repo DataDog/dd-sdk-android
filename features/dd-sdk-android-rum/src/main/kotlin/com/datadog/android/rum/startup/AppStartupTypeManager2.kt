@@ -39,6 +39,12 @@ import kotlin.time.Duration.Companion.seconds
 
 private val START_GAP_THRESHOLD = 5.seconds
 
+private enum class AppStartType {
+    COLD,
+    WARM,
+    HOT
+}
+
 internal class AppStartupTypeManager2(
     private val context: Context,
     private val sdkCore: InternalSdkCore,
@@ -90,6 +96,17 @@ internal class AppStartupTypeManager2(
         ProcessLifecycleOwner.get().lifecycle.addObserver(processObserver)
     }
 
+    private var initialPointNanos: Long = 0
+    private var appStartType: AppStartType? = null
+
+    override fun onActivityPreCreated(activity: Activity, savedInstanceState: Bundle?) {
+        initialPointNanos = System.nanoTime()
+    }
+
+    override fun onActivityPreStarted(activity: Activity) {
+        initialPointNanos = System.nanoTime()
+    }
+
     @RequiresApi(Build.VERSION_CODES.O)
     @SuppressLint("DatadogInternalApiUsage")
     override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {
@@ -103,13 +120,18 @@ internal class AppStartupTypeManager2(
 
             if (isFirstActivityForProcess) {
                 if (!processStartedInForeground || gap > START_GAP_THRESHOLD) {
+                    appStartType = AppStartType.WARM
                     startTrackingStart(activity, "warm_3")
+
                     Log.w("AppStartupTypeManager2", "scenario 3")
                 } else {
+                    appStartType = AppStartType.COLD
                     startTrackingStart(activity, "cold")
+
                     Log.w("AppStartupTypeManager2", "scenario 1")
                 }
             } else {
+                appStartType = AppStartType.WARM
                 startTrackingStart(activity, "warm_4")
                 Log.w("AppStartupTypeManager2", "scenario 4")
             }
@@ -151,6 +173,7 @@ internal class AppStartupTypeManager2(
 
         if (isInBackground) {
             if (resumedActivities.any { it.get() === activity }) {
+                appStartType = AppStartType.HOT
                 startTrackingStart(activity, "hot")
                 Log.w("AppStartupTypeManager2", "scenario 5")
             }
@@ -232,6 +255,15 @@ internal class AppStartupTypeManager2(
         val startDurationMs = now - start
 
         val durationMillis = ((endNs).nanoseconds - start.milliseconds).inWholeMilliseconds
+
+        val realDuration = when (appStartType) {
+            AppStartType.COLD -> durationMillis
+            AppStartType.WARM -> (endNs.nanoseconds - initialPointNanos.nanoseconds).inWholeMilliseconds
+            AppStartType.HOT -> (endNs.nanoseconds - initialPointNanos.nanoseconds).inWholeMilliseconds
+            null -> 0
+        }
+
+        Log.w("TTID_LOGGING", "$name $realDuration")
 
         GlobalRumMonitor.get(sdkCore).sendDurationVital(
             startMs = wallNow - startDurationMs,
