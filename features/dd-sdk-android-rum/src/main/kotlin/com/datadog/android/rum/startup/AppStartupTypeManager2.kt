@@ -99,6 +99,8 @@ internal class AppStartupTypeManager2(
     private var initialPointNanos: Long = 0
     private var appStartType: AppStartType? = null
 
+    private var saveInstanceStateExists: Boolean? = null
+
     override fun onActivityPreCreated(activity: Activity, savedInstanceState: Bundle?) {
         initialPointNanos = System.nanoTime()
     }
@@ -112,6 +114,7 @@ internal class AppStartupTypeManager2(
     override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {
         Log.w("AppStartupTypeManager2", "onActivityCreated $activity")
         numberOfActivities++
+        saveInstanceStateExists = savedInstanceState != null
 
         if (numberOfActivities == 1 && !isChangingConfigurations) {
             val processStartedInForeground = DdRumContentProvider.processImportance == IMPORTANCE_FOREGROUND
@@ -263,7 +266,14 @@ internal class AppStartupTypeManager2(
             null -> 0
         }
 
-        Log.w("TTID_LOGGING", "$name $realDuration")
+        val hasSavedInstanceState = when (appStartType) {
+            AppStartType.COLD,
+            AppStartType.WARM -> saveInstanceStateExists == true
+            AppStartType.HOT -> null
+            null -> null
+        }
+
+        Log.w("TTID_LOGGING", "$name $realDuration $hasSavedInstanceState")
 
         GlobalRumMonitor.get(sdkCore).sendDurationVital(
             startMs = wallNow - startDurationMs,

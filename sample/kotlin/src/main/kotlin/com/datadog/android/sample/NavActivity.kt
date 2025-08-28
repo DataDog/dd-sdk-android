@@ -136,6 +136,7 @@ class NavActivity : AppCompatActivity(), TrackingConsentChangeListener {
 
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
+        outState.putInt("mega_key", 42)
         Timber.d("onSaveInstanceState")
     }
 
