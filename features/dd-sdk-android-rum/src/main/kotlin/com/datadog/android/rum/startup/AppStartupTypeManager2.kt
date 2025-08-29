@@ -190,19 +190,19 @@ internal class AppStartupTypeManager2(
     @RequiresApi(Build.VERSION_CODES.N)
     private fun startTrackingStart(activity: Activity, type: String) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            subscribeToTTIDVitals(activity, type)
+//            subscribeToTTIDVitals(activity, type)
         }
         waitingForStart.updateAndGet { type }
-        startTrackingTTFD(activity)
+//        startTrackingTTFD(activity)
         startTrackingWithNewApi(type)
         subscribeToFirstDrawFinished(handler, activity) {
             reportVitalNanos(System.nanoTime(), "${type}_handler_post_ttid")
         }
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            subscribeToFirstDrawFinishedFrameCallback(handler, activity) {
-                reportVitalNanos(System.nanoTime(), "${type}_commit_callback_ttid")
-            }
-        }
+//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+//            subscribeToFirstDrawFinishedFrameCallback(handler, activity) {
+//                reportVitalNanos(System.nanoTime(), "${type}_commit_callback_ttid")
+//            }
+//        }
     }
 
     @RequiresApi(Build.VERSION_CODES.N)
@@ -239,8 +239,8 @@ internal class AppStartupTypeManager2(
     override fun onFrame(volatileFrameData: FrameData) {
         waitingForStart.updateAndGet { isWaiting ->
             if (isWaiting != null) {
-                reportVitalNanos(volatileFrameData.frameStartNanos + volatileFrameData.frameDurationUiNanos, "${isWaiting}_jankstats_ttid")
-                reportVitalNanos(volatileFrameData.frameStartNanos, "${isWaiting}_jankstats_frame_start")
+//                reportVitalNanos(volatileFrameData.frameStartNanos + volatileFrameData.frameDurationUiNanos, "${isWaiting}_jankstats_ttid")
+//                reportVitalNanos(volatileFrameData.frameStartNanos, "${isWaiting}_jankstats_frame_start")
             }
             null
         }
@@ -273,7 +273,9 @@ internal class AppStartupTypeManager2(
             null -> null
         }
 
-        Log.w("TTID_LOGGING", "$name $realDuration $hasSavedInstanceState")
+        val message = """{"type" : "$name", "realDuration" : $realDuration, "hasSavedInstanceState" : $hasSavedInstanceState}""".trimIndent()
+
+        Log.w("TTID_LOGGING", message)
 
         GlobalRumMonitor.get(sdkCore).sendDurationVital(
             startMs = wallNow - startDurationMs,
