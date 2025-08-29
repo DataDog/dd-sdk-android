@@ -13,7 +13,6 @@ import android.content.res.Configuration
 import android.content.res.Resources
 import android.database.ContentObserver
 import android.net.Uri
-import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.provider.Settings
@@ -159,12 +158,7 @@ internal class DefaultAccessibilityReader(
     private fun isLockToScreenEnabled(): Boolean? {
         val localManager = activityManager ?: return null
 
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            localManager.lockTaskModeState != ActivityManager.LOCK_TASK_MODE_NONE
-        } else {
-            @Suppress("DEPRECATION")
-            localManager.isInLockTaskMode
-        }
+        return localManager.lockTaskModeState != ActivityManager.LOCK_TASK_MODE_NONE
     }
 
     private fun isReducedAnimationsEnabled(): Boolean? {

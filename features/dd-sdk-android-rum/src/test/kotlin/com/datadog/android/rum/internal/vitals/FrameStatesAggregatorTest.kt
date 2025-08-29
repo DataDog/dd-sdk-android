@@ -389,7 +389,7 @@ internal class FrameStatesAggregatorTest {
 
     @Test
     fun `M not call addOnFrameMetricsAvailableListener() W onActivityStarted { ANDROID_SDK less than S } `(
-        @IntForgery(min = Build.VERSION_CODES.LOLLIPOP, max = Build.VERSION_CODES.S) apiVersion: Int
+        @IntForgery(min = Build.VERSION_CODES.M, max = Build.VERSION_CODES.S) apiVersion: Int
     ) {
         // There is a bug in AndroidFramework that could throw NPE, so we subscribing to the FrameMetrics only since S
         // https://github.com/DataDog/dd-sdk-android/issues/2556
@@ -429,7 +429,7 @@ internal class FrameStatesAggregatorTest {
 
     @Test
     fun `M not call addOnFrameMetricsAvailableListener() W onActivityDestroyed { ANDROID_SDK less than S } `(
-        @IntForgery(min = Build.VERSION_CODES.LOLLIPOP, max = Build.VERSION_CODES.S) apiVersion: Int
+        @IntForgery(min = Build.VERSION_CODES.M, max = Build.VERSION_CODES.S) apiVersion: Int
     ) {
         // There is a bug in AndroidFramework that could throw NPE, so we subscribing to the FrameMetrics only since S
         // https://github.com/DataDog/dd-sdk-android/issues/2556
