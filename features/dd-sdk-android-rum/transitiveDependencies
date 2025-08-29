@@ -23,7 +23,7 @@ androidx.lifecycle:lifecycle-viewmodel-ktx:2.6.2                :    4 Kb
 androidx.lifecycle:lifecycle-viewmodel-savedstate:2.6.2         :   38 Kb
 androidx.lifecycle:lifecycle-viewmodel:2.6.2                    :   38 Kb
 androidx.loader:loader:1.0.0                                    :   32 Kb
-androidx.metrics:metrics-performance:1.0.0-beta02               :   48 Kb
+androidx.metrics:metrics-performance:1.0.0-beta03               :   49 Kb
 androidx.navigation:navigation-common:2.7.7                     :  180 Kb
 androidx.navigation:navigation-fragment:2.7.7                   :   92 Kb
 androidx.navigation:navigation-runtime:2.7.7                    :  126 Kb
