@@ -46,7 +46,7 @@ import org.mockito.quality.Strictness
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(value = ForgeConfigurator::class)
-open class AndroidMDrawableToColorMapperTest() {
+open class AndroidMDrawableToColorMapperTest {
 
     lateinit var testedMapper: DrawableToColorMapper
 
