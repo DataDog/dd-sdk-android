@@ -16,7 +16,7 @@ android {
     }
 
     // Link the target app module
-    targetProjectPath = ":uitestapp"
+    targetProjectPath = ":uitestappxml"
 
     buildTypes {
         create("uitesting") {

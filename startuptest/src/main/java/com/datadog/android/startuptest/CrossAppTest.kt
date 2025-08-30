@@ -21,7 +21,7 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 
-private const val BASIC_SAMPLE_PACKAGE = "com.datadog.android.uitestapp"
+private const val BASIC_SAMPLE_PACKAGE = "com.datadog.android.uitestappxml"
 private const val LAUNCH_TIMEOUT = 5000L
 private const val STRING_TO_BE_TYPED = "UiAutomator"
 
