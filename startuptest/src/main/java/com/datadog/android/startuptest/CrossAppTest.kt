@@ -27,11 +27,11 @@ class CrossAppTest {
         device = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
         // Start your AUT explicitly
         val context = ApplicationProvider.getApplicationContext<Context>()
-        val intent = context.packageManager.getLaunchIntentForPackage("com.datadog.sample.android")!!.apply {
+        val intent = context.packageManager.getLaunchIntentForPackage("com.datadog.android.sample")!!.apply {
             addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK)
         }
         context.startActivity(intent)
-        device.wait(Until.hasObject(By.pkg("com.datadog.sample.android").depth(0)), 5_000)
+        device.wait(Until.hasObject(By.pkg("com.datadog.android.sample").depth(0)), 5_000)
     }
 
     @Test
