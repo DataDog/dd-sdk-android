@@ -1,5 +1,4 @@
 import com.datadog.gradle.config.AndroidConfig
-import com.datadog.gradle.config.configureFlavorForBenchmark
 import com.datadog.gradle.config.dependencyUpdateConfig
 import com.datadog.gradle.config.java17
 import com.datadog.gradle.config.junitConfig
@@ -33,7 +32,6 @@ android {
             buildConfig = true
         }
         vectorDrawables.useSupportLibrary = true
-        configureFlavorForBenchmark(project.rootDir)
     }
     compileOptions {
         java17()
@@ -41,21 +39,9 @@ android {
 
     buildFeatures {
         compose = true
-        viewBinding = true
     }
     composeOptions {
         kotlinCompilerExtensionVersion = libs.versions.androidXComposeRuntime.get()
-    }
-    val bmPassword = System.getenv("BM_STORE_PASSWD")
-    signingConfigs {
-        if (bmPassword != null) {
-            create("release") {
-                storeFile = File(project.rootDir, "sample-benchmark.keystore")
-                storePassword = bmPassword
-                keyAlias = "dd-sdk-android"
-                keyPassword = bmPassword
-            }
-        }
     }
 
     buildTypes {

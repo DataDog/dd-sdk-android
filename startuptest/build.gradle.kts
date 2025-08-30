@@ -1,5 +1,4 @@
-import com.datadog.gradle.androidTestImplementation
-import com.datadog.gradle.config.configureFlavorForSampleApp
+import com.datadog.gradle.config.AndroidConfig
 
 plugins {
     id("com.android.test")
@@ -8,23 +7,22 @@ plugins {
 
 android {
     namespace = "com.datadog.android.startuptest"
-    compileSdk = 36
+    compileSdk = AndroidConfig.TARGET_SDK
 
     defaultConfig {
-        minSdk = 23
-        targetSdk = 36
+        minSdk = AndroidConfig.MIN_SDK
+        targetSdk = AndroidConfig.TARGET_SDK
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     // Link the target app module
-    targetProjectPath = ":sample:kotlin"
-    flavorDimensions += listOf("site")
-    productFlavors {
-        val regions = arrayOf("us1")
-        regions.forEachIndexed { index, region ->
-            register(region) {
-                dimension = "site"
-            }
+    targetProjectPath = ":uitestapp"
+
+    buildTypes {
+        create("uitesting") {
+            isDebuggable = true
+            signingConfig = getByName("debug").signingConfig
+            matchingFallbacks += listOf("debug")
         }
     }
 
@@ -37,4 +35,12 @@ dependencies {
     implementation("androidx.test.ext:junit:1.3.0")
     implementation("androidx.test:rules:1.7.0")
     implementation("androidx.test.uiautomator:uiautomator:2.3.0")
+}
+
+androidComponents {
+    beforeVariants(selector().all()) {
+        if (it.buildType != "uitesting") {
+            it.enable = false
+        }
+    }
 }
