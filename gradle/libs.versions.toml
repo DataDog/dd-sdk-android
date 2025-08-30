@@ -31,7 +31,7 @@ androidXNavigation = "2.7.7"
 androidXRecyclerView = "1.3.2"
 androidXWorkManager = "2.8.1" # Next version will bring coroutines
 googleAccompanist = "0.20.2"
-googleMaterial = "1.3.0"
+googleMaterial = "1.12.0"
 dagger = "2.56.2"
 
 # DD-TRACE-OT
@@ -112,6 +112,9 @@ re2j = "1.7"
 material3Android = "1.1.2"
 lifecycleProcess = "2.9.2"
 annotationJvm = "1.9.1"
+agp = "8.9.1"
+kotlinVersion = "2.0.20"
+activity = "1.10.1"
 
 [libraries]
 
@@ -295,6 +298,7 @@ openTelemetryApiBenchmark = { module = "io.opentelemetry:opentelemetry-api", ver
 openTelemetrySdkBenchmark = { module = "io.opentelemetry:opentelemetry-sdk", version.ref = "openTelemetryBenchmark" }
 re2j = { module = "com.google.re2j:re2j", version.ref = "re2j" }
 annotation-jvm = { group = "androidx.annotation", name = "annotation-jvm", version.ref = "annotationJvm" }
+androidx-activity = { group = "androidx.activity", name = "activity", version.ref = "activity" }
 
 [bundles]
 
@@ -396,4 +400,5 @@ traceCore = [
 versionsGradlePlugin = { id = "com.github.ben-manes.versions", version.ref = "versionsGradlePlugin" }
 nexusPublishGradlePlugin = { id = "io.github.gradle-nexus.publish-plugin", version.ref = "nexusPublishGradlePlugin" }
 datadogGradlePlugin = { id = "com.datadoghq.dd-sdk-android-gradle-plugin-local", version.ref = "datadogPlugin" }
+
 
