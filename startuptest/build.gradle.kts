@@ -17,6 +17,7 @@ android {
 
     // Link the target app module
     targetProjectPath = ":uitestappxml"
+    experimentalProperties["android.experimental.self-instrumenting"] = true
 
     buildTypes {
         create("uitesting") {

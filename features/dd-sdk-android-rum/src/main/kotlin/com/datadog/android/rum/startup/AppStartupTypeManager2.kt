@@ -124,7 +124,7 @@ internal class AppStartupTypeManager2(
             if (isFirstActivityForProcess) {
                 if (!processStartedInForeground || gap > START_GAP_THRESHOLD) {
                     appStartType = AppStartType.WARM
-                    startTrackingStart(activity, "warm_3")
+                    startTrackingStart(activity, "warm_3_$processStartedInForeground")
 
                     Log.w("AppStartupTypeManager2", "scenario 3")
                 } else {

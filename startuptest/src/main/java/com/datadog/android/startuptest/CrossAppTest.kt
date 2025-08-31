@@ -47,7 +47,7 @@ class FirstTest {
         )
 
         // Launch the app
-        val context = ApplicationProvider.getApplicationContext<Context>()
+        val context = InstrumentationRegistry.getInstrumentation().context
         val intent = Intent().apply {
             component = ComponentName(BASIC_SAMPLE_PACKAGE, "$BASIC_SAMPLE_PACKAGE.MainActivity")
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
@@ -63,6 +63,6 @@ class FirstTest {
 
     @Test
     fun test1() {
-
+//        Thread.sleep(10000)
     }
 }

@@ -1,4 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.datadog.android.startuptest"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- Run the runner in the TEST APK's own process, not the app under test -->
+    <instrumentation
+        android:name="androidx.test.runner.AndroidJUnitRunner"
+        android:targetPackage="com.datadog.android.startuptest"
+        tools:node="replace" />
 
 </manifest>
