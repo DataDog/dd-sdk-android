@@ -52,6 +52,33 @@ fun ApplicationDefaultConfig.configureFlavorForBenchmark(
 }
 
 @Suppress("UnstableApiUsage")
+fun ApplicationDefaultConfig.configureFlavorForUiTest(
+    rootDir: File
+) {
+    val config = sampleAppConfig("${rootDir.absolutePath}/config/uitest.json")
+    buildConfigField(
+        "String",
+        "UITEST_RUM_APPLICATION_ID",
+        "\"${config.rumApplicationId}\""
+    )
+    buildConfigField(
+        "String",
+        "UITEST_CLIENT_TOKEN",
+        "\"${config.token}\""
+    )
+    buildConfigField(
+        "String",
+        "UITEST_API_KEY",
+        "\"${config.apiKey}\""
+    )
+    buildConfigField(
+        "String",
+        "UITEST_APPLICATION_KEY",
+        "\"${config.applicationKey}\""
+    )
+}
+
+@Suppress("UnstableApiUsage")
 fun configureFlavorForSampleApp(
     project: Project,
     flavor: ApplicationProductFlavor,

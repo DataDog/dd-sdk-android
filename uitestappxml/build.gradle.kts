@@ -1,4 +1,5 @@
 import com.datadog.gradle.config.AndroidConfig
+import com.datadog.gradle.config.configureFlavorForUiTest
 
 plugins {
     id("com.android.application")
@@ -16,6 +17,11 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        configureFlavorForUiTest(project.rootDir)
+    }
+
+    buildFeatures {
+        buildConfig = true
     }
 
     buildTypes {
@@ -43,4 +49,15 @@ dependencies {
     testImplementation(libs.jUnit4)
     androidTestImplementation(libs.androidXTestJUnitExt)
     androidTestImplementation(libs.androidXEspressoCore)
+
+    implementation(project(":features:dd-sdk-android-logs"))
+    implementation(project(":features:dd-sdk-android-rum"))
+    implementation(project(":features:dd-sdk-android-trace"))
+    implementation(project(":features:dd-sdk-android-trace-otel"))
+    implementation(project(":features:dd-sdk-android-ndk"))
+    implementation(project(":features:dd-sdk-android-webview"))
+    implementation(project(":features:dd-sdk-android-session-replay"))
+    implementation(project(":features:dd-sdk-android-session-replay-material"))
+    implementation(project(":integrations:dd-sdk-android-glide"))
+    implementation(project(":integrations:dd-sdk-android-okhttp"))
 }
