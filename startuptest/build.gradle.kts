@@ -32,8 +32,8 @@ android {
 }
 
 dependencies {
-    implementation("androidx.test.ext:junit:1.3.0")
-    implementation("androidx.test:rules:1.7.0")
+    implementation(libs.androidXTestJUnitExt)
+    implementation(libs.androidXTestRules)
     implementation("androidx.test.uiautomator:uiautomator:2.3.0")
 }
 
