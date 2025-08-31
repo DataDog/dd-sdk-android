@@ -265,6 +265,16 @@ datadog:
       # region Google Material
       - "com.google.android.material.tabs.TabLayout.TabView.getChildAt(kotlin.Int)"
       # endregion
+      # region Apollo Kotlin
+      - "com.apollographql.apollo.api.json.buildJsonString(kotlin.String?, kotlin.Function1)"
+      - "com.apollographql.apollo.api.Operation.composeJsonRequest(com.apollographql.apollo.api.json.JsonWriter, com.apollographql.apollo.api.CustomScalarAdapters)"
+      - "com.apollographql.apollo.api.Operation.document()"
+      - "com.apollographql.apollo.api.Operation.name()"
+      - "com.apollographql.apollo.api.ApolloRequest.newBuilder()"
+      - "com.apollographql.apollo.api.ApolloRequest.Builder.addHttpHeader(kotlin.String, kotlin.String)"
+      - "com.apollographql.apollo.api.ApolloRequest.Builder.build()"
+      - "com.apollographql.apollo.interceptor.ApolloInterceptorChain.proceed(com.apollographql.apollo.api.ApolloRequest)"
+      # endregion
       # region Glide
       - "com.bumptech.glide.GlideBuilder.setDiskCacheExecutor(com.bumptech.glide.load.engine.executor.GlideExecutor?)"
       - "com.bumptech.glide.GlideBuilder.setSourceExecutor(com.bumptech.glide.load.engine.executor.GlideExecutor?)"

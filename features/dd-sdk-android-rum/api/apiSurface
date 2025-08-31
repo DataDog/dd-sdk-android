@@ -34,10 +34,14 @@ object com.datadog.android.rum.RumAttributes
   const val SPAN_ID: String
   const val RULE_PSR: String
   const val RESOURCE_TIMINGS: String
-  const val GRAPHQL_OPERATION_TYPE: String
-  const val GRAPHQL_OPERATION_NAME: String
-  const val GRAPHQL_PAYLOAD: String
-  const val GRAPHQL_VARIABLES: String
+  const val CROSS_PLATFORM_GRAPHQL_OPERATION_TYPE: String
+  const val CROSS_PLATFORM_GRAPHQL_OPERATION_NAME: String
+  const val CROSS_PLATFORM_GRAPHQL_PAYLOAD: String
+  const val CROSS_PLATFORM_GRAPHQL_VARIABLES: String
+  const val APOLLO_GRAPHQL_OPERATION_NAME: String
+  const val APOLLO_GRAPHQL_VARIABLES: String
+  const val APOLLO_GRAPHQL_OPERATION_TYPE: String
+  const val APOLLO_GRAPHQL_PAYLOAD: String
   const val ERROR_RESOURCE_METHOD: String
   const val ERROR_RESOURCE_STATUS_CODE: String
   const val ERROR_RESOURCE_URL: String
@@ -90,6 +94,7 @@ data class com.datadog.android.rum.RumConfiguration
     fun setLastInteractionIdentifier(com.datadog.android.rum.metric.interactiontonextview.LastInteractionIdentifier?): Builder
     fun setSlowFramesConfiguration(com.datadog.android.rum.configuration.SlowFramesConfiguration?): Builder
     fun trackAnonymousUser(Boolean): Builder
+    fun captureGraphQLPayloads(Boolean): Builder
     fun build(): RumConfiguration
 enum com.datadog.android.rum.RumErrorSource
   - NETWORK

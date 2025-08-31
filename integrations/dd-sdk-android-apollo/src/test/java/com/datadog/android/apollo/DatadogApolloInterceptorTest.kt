@@ -1,0 +1,390 @@
+/*
+ * Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
+ * This product includes software developed at Datadog (https://www.datadoghq.com/).
+ * Copyright 2016-Present Datadog, Inc.
+ */
+
+package com.datadog.android.apollo
+
+import com.apollographql.apollo.api.ApolloRequest
+import com.apollographql.apollo.api.CustomScalarAdapters
+import com.apollographql.apollo.api.ExecutionContext
+import com.apollographql.apollo.api.Operation
+import com.apollographql.apollo.interceptor.ApolloInterceptorChain
+import com.datadog.android.apollo.DatadogApolloInterceptor.Companion.DD_GRAPHQL_NAME_HEADER
+import com.datadog.android.apollo.DatadogApolloInterceptor.Companion.DD_GRAPHQL_PAYLOAD_HEADER
+import com.datadog.android.apollo.DatadogApolloInterceptor.Companion.DD_GRAPHQL_TYPE_HEADER
+import com.datadog.android.apollo.DatadogApolloInterceptor.Companion.DD_GRAPHQL_VARIABLES_HEADER
+import fr.xgouchet.elmyr.junit5.ForgeExtension
+import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
+import org.junit.jupiter.api.extension.Extensions
+import org.mockito.Mock
+import org.mockito.junit.jupiter.MockitoExtension
+import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.any
+import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.atLeastOnce
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.verify
+import org.mockito.kotlin.whenever
+import org.mockito.quality.Strictness
+
+@Extensions(
+    ExtendWith(MockitoExtension::class),
+    ExtendWith(ForgeExtension::class)
+)
+@MockitoSettings(strictness = Strictness.LENIENT)
+@Suppress("UnusedFlow")
+internal class DatadogApolloInterceptorTest {
+
+    @Mock
+    private lateinit var mockScalarAdapters: CustomScalarAdapters
+
+    @Mock
+    private lateinit var mockExecutionContext: ExecutionContext
+
+    private val mockVariablesExtractor: (Operation<*>, CustomScalarAdapters) -> String? = { operation, _ ->
+        when (operation.name()) {
+            "GetUser" -> """{"userId": "123", "filters": ["active"]}"""
+            "SetUser" -> """{"userId": "123", "filters": ["active"]}"""
+            "CreateUser" -> """{"input": {"name": "John", "email": "john@example.com"}}"""
+            else -> "{}"
+        }
+    }
+
+    private var testedInterceptor: DatadogApolloInterceptor =
+        DatadogApolloInterceptor(mockVariablesExtractor)
+
+    // region header: name
+
+    @Test
+    fun `M add name header W intercept`() {
+        // Given
+        val (_, originalRequest, requestBuilder) = setupBasicMocks("GetUser", "query GetUser { user { id: name } }")
+        val chain = mock<ApolloInterceptorChain>()
+
+        // When
+        testedInterceptor.intercept(originalRequest, chain)
+
+        // Then
+        checkForHeader(requestBuilder, DD_GRAPHQL_NAME_HEADER, "GetUser")
+    }
+
+    // endregion
+
+    // region header: type
+
+    @Test
+    fun `M add type header W intercept { type query }`() {
+        // Given
+        val (_, originalRequest, requestBuilder) = setupBasicMocks("GetUser", "query GetUser { user { id: name } }")
+        val chain = mock<ApolloInterceptorChain>()
+
+        // When
+        testedInterceptor.intercept(originalRequest, chain)
+
+        // Then
+        checkForHeader(requestBuilder, DD_GRAPHQL_TYPE_HEADER, "query")
+    }
+
+    @Test
+    fun `M add type header W intercept { type mutation }`() {
+        // Given
+        val (_, originalRequest, requestBuilder) = setupBasicMocks("SetUser", "mutation SetUser { user { id: name } }")
+        val chain = mock<ApolloInterceptorChain>()
+
+        // When
+        testedInterceptor.intercept(originalRequest, chain)
+
+        // Then
+        checkForHeader(requestBuilder, DD_GRAPHQL_TYPE_HEADER, "mutation")
+    }
+
+    @Test
+    fun `M add type header W intercept { type subscription }`() {
+        // Given
+        val (_, originalRequest, requestBuilder) = setupBasicMocks(
+            "CreateUser",
+            "subscription CreateUser { user { id: name } }"
+        )
+        val chain = mock<ApolloInterceptorChain>()
+
+        // When
+        testedInterceptor.intercept(originalRequest, chain)
+
+        // Then
+        checkForHeader(requestBuilder, DD_GRAPHQL_TYPE_HEADER, "subscription")
+    }
+
+    @Test
+    fun `M not add type header W intercept { unknown type }`() {
+        // Given
+        val (_, originalRequest, requestBuilder) = setupBasicMocks(
+            "CreateUser",
+            "unknown CreateUser { user { id: name } }"
+        )
+        val chain = mock<ApolloInterceptorChain>()
+
+        // When
+        testedInterceptor.intercept(originalRequest, chain)
+
+        // Then
+        checkForHeader(requestBuilder, DD_GRAPHQL_TYPE_HEADER)
+    }
+
+    // endregion
+
+    // region header: variables
+
+    @Test
+    fun `M add variables header W intercept`() {
+        // Given
+        val (operation, originalRequest, requestBuilder) = setupBasicMocks(
+            "GetUser",
+            "query GetUser { user { id: name } }"
+        )
+        val chain = mock<ApolloInterceptorChain>()
+
+        // When
+        testedInterceptor.intercept(originalRequest, chain)
+
+        // Then
+        checkForHeader(
+            requestBuilder,
+            DD_GRAPHQL_VARIABLES_HEADER,
+            mockVariablesExtractor(operation, mockScalarAdapters)
+        )
+    }
+
+    // endregion
+
+    // region header: payload
+
+    @Test
+    fun `M add payload header W intercept`() {
+        // Given
+        val (_, originalRequest, requestBuilder) = setupBasicMocks("GetUser", "query GetUser { user { id: name } }")
+        val chain = mock<ApolloInterceptorChain>()
+
+        // When
+        testedInterceptor.intercept(originalRequest, chain)
+
+        // Then
+        val headerNameCaptor = argumentCaptor<String>()
+        val headerValueCaptor = argumentCaptor<String>()
+        verify(requestBuilder, atLeastOnce()).addHttpHeader(headerNameCaptor.capture(), headerValueCaptor.capture())
+
+        val payloadHeaderIndex = headerNameCaptor.allValues.indexOf(DD_GRAPHQL_PAYLOAD_HEADER)
+        assertThat(payloadHeaderIndex).isNotEqualTo(-1)
+        assertThat(headerValueCaptor.allValues[payloadHeaderIndex]).isNotNull()
+    }
+
+    // endregion
+
+    // region error handling
+
+    @Test
+    fun `M handle null variables W intercept { variables extractor returns null }`() {
+        // Given
+        val nullVariablesExtractor: (Operation<*>, CustomScalarAdapters) -> String? = { _, _ -> null }
+        val interceptor = DatadogApolloInterceptor(nullVariablesExtractor)
+
+        val (_, originalRequest, requestBuilder) = setupBasicMocks("GetUser", "query GetUser { user { id: name } }")
+        val chain = mock<ApolloInterceptorChain>()
+
+        // When
+        interceptor.intercept(originalRequest, chain)
+
+        // Then
+        checkForHeader(requestBuilder, DD_GRAPHQL_NAME_HEADER, "GetUser")
+        checkForHeader(requestBuilder, DD_GRAPHQL_TYPE_HEADER, "query")
+        checkForHeader(requestBuilder, DD_GRAPHQL_VARIABLES_HEADER)
+        val headerNameCaptor = argumentCaptor<String>()
+        verify(requestBuilder, atLeastOnce()).addHttpHeader(headerNameCaptor.capture(), any<String>())
+        assertThat(headerNameCaptor.allValues).contains(DD_GRAPHQL_PAYLOAD_HEADER)
+    }
+
+    @Test
+    fun `M handle empty variables W intercept { variables extractor returns empty string }`() {
+        // Given
+        val emptyVariablesExtractor: (Operation<*>, CustomScalarAdapters) -> String? = { _, _ -> "" }
+        val interceptor = DatadogApolloInterceptor(emptyVariablesExtractor)
+
+        val (_, originalRequest, requestBuilder) = setupBasicMocks("GetUser", "query GetUser { user { id: name } }")
+        val chain = mock<ApolloInterceptorChain>()
+
+        // When
+        interceptor.intercept(originalRequest, chain)
+
+        // Then
+        checkForHeader(requestBuilder, DD_GRAPHQL_NAME_HEADER, "GetUser")
+        checkForHeader(requestBuilder, DD_GRAPHQL_TYPE_HEADER, "query")
+        checkForHeader(requestBuilder, DD_GRAPHQL_VARIABLES_HEADER, "")
+        val headerNameCaptor = argumentCaptor<String>()
+        verify(requestBuilder, atLeastOnce()).addHttpHeader(headerNameCaptor.capture(), any<String>())
+        assertThat(headerNameCaptor.allValues).contains(DD_GRAPHQL_PAYLOAD_HEADER)
+    }
+
+    // endregion
+
+    // region edge cases
+
+    @Test
+    fun `M handle empty document W intercept { empty document }`() {
+        // Given
+        val (operation, originalRequest, requestBuilder) = setupBasicMocks("GetUser", "")
+        val chain = mock<ApolloInterceptorChain>()
+
+        // When
+        testedInterceptor.intercept(originalRequest, chain)
+
+        // Then
+        checkForHeader(requestBuilder, DD_GRAPHQL_NAME_HEADER, "GetUser")
+        checkForHeader(
+            requestBuilder,
+            DD_GRAPHQL_VARIABLES_HEADER,
+            mockVariablesExtractor(operation, mockScalarAdapters)
+        )
+        checkForHeader(requestBuilder, DD_GRAPHQL_TYPE_HEADER)
+        val headerNameCaptor = argumentCaptor<String>()
+        verify(requestBuilder, atLeastOnce()).addHttpHeader(headerNameCaptor.capture(), any<String>())
+        assertThat(headerNameCaptor.allValues).contains(DD_GRAPHQL_PAYLOAD_HEADER)
+    }
+
+    @Test
+    fun `M handle document with multiple operation types W intercept { query and mutation }`() {
+        // Given
+        val (operation, originalRequest, requestBuilder) = setupBasicMocks(
+            "ComplexOperation",
+            "query GetUser { user { id } } mutation SetUser { user { id } }"
+        )
+        val chain = mock<ApolloInterceptorChain>()
+
+        // When
+        testedInterceptor.intercept(originalRequest, chain)
+
+        // Then
+        checkForHeader(requestBuilder, DD_GRAPHQL_NAME_HEADER, "ComplexOperation")
+        checkForHeader(requestBuilder, DD_GRAPHQL_TYPE_HEADER, "mutation")
+        checkForHeader(
+            requestBuilder,
+            DD_GRAPHQL_VARIABLES_HEADER,
+            mockVariablesExtractor(operation, mockScalarAdapters)
+        )
+        val headerNameCaptor = argumentCaptor<String>()
+        verify(requestBuilder, atLeastOnce()).addHttpHeader(headerNameCaptor.capture(), any<String>())
+        assertThat(headerNameCaptor.allValues).contains(DD_GRAPHQL_PAYLOAD_HEADER)
+    }
+
+    // endregion
+
+    // region chain interaction
+
+    @Test
+    fun `M proceed with modified request W intercept { chain interaction }`() {
+        // Given
+        val (_, originalRequest, requestBuilder) = setupBasicMocks("GetUser", "query GetUser { user { id: name } }")
+
+        val modifiedRequest = mock<ApolloRequest<Operation.Data>>()
+        whenever(requestBuilder.build()).thenReturn(modifiedRequest)
+
+        val chain = mock<ApolloInterceptorChain>()
+
+        // When
+        testedInterceptor.intercept(originalRequest, chain)
+
+        // Then
+        verify(chain).proceed(modifiedRequest)
+    }
+
+    // endregion
+
+    // region constants verification
+
+    @Test
+    fun `M have correct header constants W companion object { expected values }`() {
+        // Then
+        assertThat(DD_GRAPHQL_NAME_HEADER).isEqualTo("_dd-custom-header-graph-ql-operation-name")
+        assertThat(DD_GRAPHQL_TYPE_HEADER).isEqualTo("_dd-custom-header-graph-ql-operation-type")
+        assertThat(DD_GRAPHQL_VARIABLES_HEADER).isEqualTo("_dd-custom-header-graph-ql-variables")
+        assertThat(DD_GRAPHQL_PAYLOAD_HEADER).isEqualTo("_dd-custom-header-graph-ql-payload")
+    }
+
+    // endregion
+
+    // region default variables extractor test
+
+    @Test
+    fun `M use default variables extractor W intercept { no custom extractor provided }`() {
+        // Given
+        val defaultInterceptor = DatadogApolloInterceptor()
+
+        val operation = mock<Operation<Operation.Data>>()
+        whenever(operation.name()).thenReturn("GetUser")
+        whenever(operation.document()).thenReturn("query GetUser { user { id: name } }")
+
+        val requestBuilder = mock<ApolloRequest.Builder<Operation.Data>>()
+        whenever(requestBuilder.addHttpHeader(any<String>(), any<String>())).thenReturn(requestBuilder)
+        whenever(requestBuilder.build()).thenReturn(mock())
+
+        whenever(mockExecutionContext[CustomScalarAdapters.Key]).thenReturn(mockScalarAdapters)
+
+        val originalRequest = mock<ApolloRequest<Operation.Data>>()
+        whenever(originalRequest.operation).thenReturn(operation)
+        whenever(originalRequest.newBuilder()).thenReturn(requestBuilder)
+        whenever(originalRequest.executionContext).thenReturn(mockExecutionContext)
+
+        val chain = mock<ApolloInterceptorChain>()
+
+        // When
+        defaultInterceptor.intercept(originalRequest, chain)
+
+        // Then
+        checkForHeader(requestBuilder, DD_GRAPHQL_NAME_HEADER, "GetUser")
+        checkForHeader(requestBuilder, DD_GRAPHQL_TYPE_HEADER, "query")
+    }
+
+    // endregion
+
+    // region helper methods
+
+    private fun setupBasicMocks(
+        operationName: String,
+        operationDocument: String
+    ): Triple<Operation<Operation.Data>, ApolloRequest<Operation.Data>, ApolloRequest.Builder<Operation.Data>> {
+        val operation = mock<Operation<Operation.Data>>()
+        whenever(operation.name()).thenReturn(operationName)
+        whenever(operation.document()).thenReturn(operationDocument)
+
+        val requestBuilder = mock<ApolloRequest.Builder<Operation.Data>>()
+        whenever(requestBuilder.addHttpHeader(any<String>(), any<String>())).thenReturn(requestBuilder)
+        whenever(requestBuilder.build()).thenReturn(mock())
+
+        whenever(mockExecutionContext[CustomScalarAdapters.Key]).thenReturn(mockScalarAdapters)
+
+        val originalRequest = mock<ApolloRequest<Operation.Data>>()
+        whenever(originalRequest.operation).thenReturn(operation)
+        whenever(originalRequest.newBuilder()).thenReturn(requestBuilder)
+        whenever(originalRequest.executionContext).thenReturn(mockExecutionContext)
+
+        return Triple(operation, originalRequest, requestBuilder)
+    }
+
+    private fun checkForHeader(
+        requestBuilder: ApolloRequest.Builder<Operation.Data>,
+        headerName: String,
+        headerValue: String? = null
+    ) {
+        val headerNameCaptor = argumentCaptor<String>()
+        val headerValueCaptor = argumentCaptor<String>()
+        verify(requestBuilder, atLeastOnce()).addHttpHeader(headerNameCaptor.capture(), headerValueCaptor.capture())
+        if (headerValue != null) {
+            val headerIdx = headerNameCaptor.allValues.indexOf(headerName)
+            assertThat(headerValueCaptor.allValues[headerIdx]).isEqualTo(headerValue)
+        } else {
+            assertThat(headerNameCaptor.allValues.contains(headerName)).isFalse
+        }
+    }
+}

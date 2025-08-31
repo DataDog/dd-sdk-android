@@ -10,6 +10,7 @@ import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.EventWriteScope
+import com.datadog.android.api.feature.Feature.Companion.RUM_FEATURE_NAME
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
@@ -20,6 +21,7 @@ import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.RumResourceMethod
 import com.datadog.android.rum.RumSessionType
 import com.datadog.android.rum.internal.FeaturesContextResolver
+import com.datadog.android.rum.internal.RumFeature.Companion.SEND_GRAPHQL_PAYLOADS_KEY
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
@@ -242,11 +244,48 @@ internal class RumResourceScope(
         val finalTiming = timing ?: extractResourceTiming(
             resourceAttributes.remove(RumAttributes.RESOURCE_TIMINGS) as? Map<String, Any?>
         )
+
+        val rumFeatureContext = sdkCore.getFeatureContext(RUM_FEATURE_NAME)
+        val shouldSendGraphQLPayloads = rumFeatureContext[SEND_GRAPHQL_PAYLOADS_KEY] as? Boolean ?: false
+        val hasCrossPlatformAttributes = resourceAttributes[RumAttributes.CROSS_PLATFORM_GRAPHQL_OPERATION_NAME] != null ||
+                resourceAttributes[RumAttributes.CROSS_PLATFORM_GRAPHQL_OPERATION_TYPE] != null ||
+                resourceAttributes[RumAttributes.CROSS_PLATFORM_GRAPHQL_VARIABLES] != null ||
+                resourceAttributes[RumAttributes.CROSS_PLATFORM_GRAPHQL_PAYLOAD] != null
+
+        val graphqlOperationName = extractGraphQLAttributeAsString(
+            hasCrossPlatformAttributes = hasCrossPlatformAttributes,
+            crossPlatformKey = RumAttributes.CROSS_PLATFORM_GRAPHQL_OPERATION_NAME,
+            apolloKey = RumAttributes.APOLLO_GRAPHQL_OPERATION_NAME
+        )
+
+        val graphqlOperationType = extractGraphQLAttributeAsString(
+            hasCrossPlatformAttributes = hasCrossPlatformAttributes,
+            crossPlatformKey = RumAttributes.CROSS_PLATFORM_GRAPHQL_OPERATION_TYPE,
+            apolloKey = RumAttributes.APOLLO_GRAPHQL_OPERATION_TYPE
+        )
+
+        val graphqlVariables = extractGraphQLAttributeAsString(
+            hasCrossPlatformAttributes = hasCrossPlatformAttributes,
+            crossPlatformKey = RumAttributes.CROSS_PLATFORM_GRAPHQL_VARIABLES,
+            apolloKey = RumAttributes.APOLLO_GRAPHQL_VARIABLES
+        )
+
+        // The decision whether to send payloads is determined by a feature flag in the RUM configuration
+        val graphqlPayload = if (shouldSendGraphQLPayloads) {
+            extractGraphQLAttributeAsString(
+                hasCrossPlatformAttributes = hasCrossPlatformAttributes,
+                crossPlatformKey = RumAttributes.CROSS_PLATFORM_GRAPHQL_PAYLOAD,
+                apolloKey = RumAttributes.APOLLO_GRAPHQL_PAYLOAD
+            )
+        } else {
+            null
+        }
+
         val graphql = resolveGraphQLAttributes(
-            resourceAttributes.remove(RumAttributes.GRAPHQL_OPERATION_TYPE) as? String?,
-            resourceAttributes.remove(RumAttributes.GRAPHQL_OPERATION_NAME) as? String?,
-            resourceAttributes.remove(RumAttributes.GRAPHQL_PAYLOAD) as? String?,
-            resourceAttributes.remove(RumAttributes.GRAPHQL_VARIABLES) as? String?
+            operationName = graphqlOperationName,
+            operationType = graphqlOperationType,
+            variables = graphqlVariables,
+            payload = graphqlPayload
         )
 
         sdkCore.newRumEventWriteOperation(datadogContext, writeScope, writer) {
@@ -366,6 +405,14 @@ internal class RumResourceScope(
             duration
         }
     }
+
+    private fun extractGraphQLAttributeAsString(
+        hasCrossPlatformAttributes: Boolean,
+        crossPlatformKey: String,
+        apolloKey: String
+    ): String? = resourceAttributes.remove(
+        if (hasCrossPlatformAttributes) crossPlatformKey else apolloKey
+    ) as? String
 
     private fun resolveResourceProvider(): ResourceEvent.Provider? {
         return if (firstPartyHostHeaderTypeResolver.isFirstPartyUrl(url)) {
@@ -533,15 +580,15 @@ internal class RumResourceScope(
     private fun resolveGraphQLAttributes(
         operationType: String?,
         operationName: String?,
-        payload: String?,
-        variables: String?
+        variables: String?,
+        payload: String?
     ): ResourceEvent.Graphql? {
         operationType?.toOperationType(sdkCore.internalLogger)?.let {
             return ResourceEvent.Graphql(
-                it,
-                operationName,
-                payload,
-                variables
+                operationType = it,
+                operationName = operationName,
+                variables = variables,
+                payload = payload
             )
         }
 
@@ -553,8 +600,8 @@ internal class RumResourceScope(
     companion object {
 
         internal const val NEGATIVE_DURATION_WARNING_MESSAGE = "The computed duration for your " +
-            "resource: %s was 0 or negative. In order to keep the resource event" +
-            " we forced it to 1ns."
+                "resource: %s was 0 or negative. In order to keep the resource event" +
+                " we forced it to 1ns."
 
         @Suppress("LongParameterList")
         fun fromEvent(

@@ -56,7 +56,15 @@ public final class com/datadog/android/rum/RumAttributes {
 	public static final field ACTION_TARGET_ROLE Ljava/lang/String;
 	public static final field ACTION_TARGET_SELECTED Ljava/lang/String;
 	public static final field ACTION_TARGET_TITLE Ljava/lang/String;
+	public static final field APOLLO_GRAPHQL_OPERATION_NAME Ljava/lang/String;
+	public static final field APOLLO_GRAPHQL_OPERATION_TYPE Ljava/lang/String;
+	public static final field APOLLO_GRAPHQL_PAYLOAD Ljava/lang/String;
+	public static final field APOLLO_GRAPHQL_VARIABLES Ljava/lang/String;
 	public static final field APPLICATION_VERSION Ljava/lang/String;
+	public static final field CROSS_PLATFORM_GRAPHQL_OPERATION_NAME Ljava/lang/String;
+	public static final field CROSS_PLATFORM_GRAPHQL_OPERATION_TYPE Ljava/lang/String;
+	public static final field CROSS_PLATFORM_GRAPHQL_PAYLOAD Ljava/lang/String;
+	public static final field CROSS_PLATFORM_GRAPHQL_VARIABLES Ljava/lang/String;
 	public static final field CUSTOM_INV_VALUE Ljava/lang/String;
 	public static final field ENV Ljava/lang/String;
 	public static final field ERROR_DATABASE_PATH Ljava/lang/String;
@@ -66,10 +74,6 @@ public final class com/datadog/android/rum/RumAttributes {
 	public static final field ERROR_RESOURCE_STATUS_CODE Ljava/lang/String;
 	public static final field ERROR_RESOURCE_URL Ljava/lang/String;
 	public static final field FLUTTER_FIRST_BUILD_COMPLETE Ljava/lang/String;
-	public static final field GRAPHQL_OPERATION_NAME Ljava/lang/String;
-	public static final field GRAPHQL_OPERATION_TYPE Ljava/lang/String;
-	public static final field GRAPHQL_PAYLOAD Ljava/lang/String;
-	public static final field GRAPHQL_VARIABLES Ljava/lang/String;
 	public static final field INSTANCE Lcom/datadog/android/rum/RumAttributes;
 	public static final field INTERNAL_ERROR_IS_CRASH Ljava/lang/String;
 	public static final field INTERNAL_ERROR_SOURCE_TYPE Ljava/lang/String;
@@ -104,6 +108,7 @@ public final class com/datadog/android/rum/RumConfiguration {
 public final class com/datadog/android/rum/RumConfiguration$Builder {
 	public fun <init> (Ljava/lang/String;)V
 	public final fun build ()Lcom/datadog/android/rum/RumConfiguration;
+	public final fun captureGraphQLPayloads (Z)Lcom/datadog/android/rum/RumConfiguration$Builder;
 	public final fun collectAccessibility (Z)Lcom/datadog/android/rum/RumConfiguration$Builder;
 	public final fun disableUserInteractionTracking ()Lcom/datadog/android/rum/RumConfiguration$Builder;
 	public final fun setActionEventMapper (Lcom/datadog/android/event/EventMapper;)Lcom/datadog/android/rum/RumConfiguration$Builder;

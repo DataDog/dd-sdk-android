@@ -18,6 +18,7 @@ import androidx.annotation.AnyThread
 import androidx.annotation.RequiresApi
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.Feature
+import com.datadog.android.api.feature.Feature.Companion.RUM_FEATURE_NAME
 import com.datadog.android.api.feature.FeatureContextUpdateReceiver
 import com.datadog.android.api.feature.FeatureEventReceiver
 import com.datadog.android.api.feature.FeatureSdkCore
@@ -212,6 +213,10 @@ internal class RumFeature(
             applicationContext = appContext,
             internalLogger = sdkCore.internalLogger
         )
+
+        sdkCore.updateFeatureContext(RUM_FEATURE_NAME) {
+            it[SEND_GRAPHQL_PAYLOADS_KEY] = configuration.captureGraphQLPayloads
+        }
 
         configuration.viewTrackingStrategy?.let { viewTrackingStrategy = it }
         actionTrackingStrategy = if (configuration.userActionTracking) {
@@ -690,7 +695,8 @@ internal class RumFeature(
         val additionalConfig: Map<String, Any>,
         val trackAnonymousUser: Boolean,
         val rumSessionTypeOverride: RumSessionType?,
-        val collectAccessibility: Boolean
+        val collectAccessibility: Boolean,
+        val captureGraphQLPayloads: Boolean
     )
 
     internal companion object {
@@ -741,7 +747,8 @@ internal class RumFeature(
             trackAnonymousUser = true,
             slowFramesConfiguration = null,
             rumSessionTypeOverride = null,
-            collectAccessibility = false
+            collectAccessibility = false,
+            captureGraphQLPayloads = false
         )
 
         internal const val EVENT_MESSAGE_PROPERTY = "message"
@@ -774,6 +781,9 @@ internal class RumFeature(
                 " SDK instance by calling SdkCore#registerFeature method."
         internal const val FAILED_TO_ENABLE_JANK_STATS_TRACKING_MANUALLY =
             "Manually enabling JankStats tracking threw an exception."
+
+        internal const val SEND_GRAPHQL_PAYLOADS_KEY =
+            "send_graphql_payloads"
 
         private fun provideUserTrackingStrategy(
             touchTargetExtraAttributesProviders: Array<ViewAttributesProvider>,

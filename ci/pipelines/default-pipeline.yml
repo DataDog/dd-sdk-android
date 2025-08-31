@@ -718,6 +718,23 @@ publish:release-webview:
 
 # region Publish integrations/*
 
+publish:release-apollo:
+  tags: [ "arch:amd64" ]
+  only:
+    - tags
+    - develop
+  image: $CI_IMAGE_DOCKER
+  stage: publish
+  timeout: 30m
+  script:
+    - !reference [.snippets, set-publishing-credentials]
+    - ./gradlew :integrations:dd-sdk-android-apollo:publishToSonatype closeSonatypeStagingRepository --stacktrace --no-daemon
+  artifacts:
+    when: on_success
+    expire_in: 7 days
+    paths:
+      - integrations/dd-sdk-android-apollo/verification-metadata.xml
+
 publish:release-coil:
   tags: [ "arch:amd64" ]
   only:

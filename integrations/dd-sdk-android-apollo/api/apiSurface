@@ -1,0 +1,9 @@
+class com.datadog.android.apollo.DatadogApolloInterceptor : com.apollographql.apollo.interceptor.ApolloInterceptor
+  constructor((com.apollographql.apollo.api.Operation<*>, com.apollographql.apollo.api.CustomScalarAdapters) -> String? = { operationToVariablesJson, adapters ->
+        try {
+            operationToVariablesJson.variablesJson(adapters)
+        } catch (_: IOException) {
+            null
+        }
+    })
+  override fun <D: com.apollographql.apollo.api.Operation.Data> intercept(com.apollographql.apollo.api.ApolloRequest<D>, com.apollographql.apollo.interceptor.ApolloInterceptorChain): kotlinx.coroutines.flow.Flow<com.apollographql.apollo.api.ApolloResponse<D>>
