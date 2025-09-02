@@ -7,14 +7,18 @@
 package com.datadog.android.startuptest
 
 import android.content.ComponentName
-import android.content.Context
 import android.content.Intent
-import androidx.test.core.app.ApplicationProvider
+import android.util.Log
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.uiautomator.By
 import androidx.test.uiautomator.UiDevice
 import androidx.test.uiautomator.Until
+import com.datadog.android.startuptest.utils.LogcatCollector
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.runBlocking
 import org.hamcrest.CoreMatchers.notNullValue
 import org.hamcrest.MatcherAssert.assertThat
 import org.junit.Before
@@ -63,6 +67,15 @@ class FirstTest {
 
     @Test
     fun test1() {
-//        Thread.sleep(10000)
+        runBlocking {
+            val joba = LogcatCollector(InstrumentationRegistry.getInstrumentation()).subscribe("logcat -s AppStartupTypeManager2")
+                .onEach {
+                    Log.w("WAHAHA_COPY", it)
+                }
+                .launchIn(this)
+
+            delay(10000)
+            joba.cancel()
+        }
     }
 }
