@@ -43,23 +43,20 @@ class LogsForegroundService : Service() {
                 rumMonitor.addError(
                     BACKGROUND_ERROR_KEY,
                     randomErrorSource(),
-                    randomThrowable(),
-                    emptyMap()
+                    randomThrowable()
                 )
             }
             SEND_RUM_ACTION -> {
                 rumMonitor.addAction(
                     RumActionType.CUSTOM,
-                    BACKGROUND_ACTION_KEY,
-                    emptyMap()
+                    BACKGROUND_ACTION_KEY
                 )
             }
             START_RUM_RESOURCE -> {
                 rumMonitor.startResource(
                     BACKGROUND_RESOURCE_URL,
                     RumResourceMethod.GET,
-                    BACKGROUND_RESOURCE_URL,
-                    emptyMap()
+                    BACKGROUND_RESOURCE_URL
                 )
             }
             STOP_RUM_RESOURCE -> {
@@ -67,8 +64,7 @@ class LogsForegroundService : Service() {
                     BACKGROUND_RESOURCE_URL,
                     200,
                     200,
-                    RumResourceKind.IMAGE,
-                    emptyMap()
+                    RumResourceKind.IMAGE
                 )
             }
             else -> {

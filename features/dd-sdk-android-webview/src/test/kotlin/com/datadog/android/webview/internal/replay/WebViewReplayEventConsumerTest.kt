@@ -8,6 +8,7 @@ package com.datadog.android.webview.internal.replay
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
+import com.datadog.android.api.feature.EventWriteScope
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.storage.DataWriter
@@ -36,6 +37,7 @@ import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
@@ -88,6 +90,9 @@ internal class WebViewReplayEventConsumerTest {
     @Mock
     lateinit var mockEventBatchWriter: EventBatchWriter
 
+    @Mock
+    lateinit var mockEventWriteScope: EventWriteScope
+
     @BeforeEach
     fun `set up`(forge: Forge) {
         fakeSessionReplayFeatureContext = forge.aMap {
@@ -113,9 +118,17 @@ internal class WebViewReplayEventConsumerTest {
         whenever(
             mockSdkCore.getFeature(WebViewReplayFeature.WEB_REPLAY_FEATURE_NAME)
         ) doReturn mockSessionReplayFeatureScope
-        whenever(mockSessionReplayFeatureScope.withWriteContext(any(), any())) doAnswer {
-            val callback = it.getArgument<(DatadogContext, EventBatchWriter) -> Unit>(1)
-            callback.invoke(fakeDatadogContext, mockEventBatchWriter)
+        whenever(mockEventWriteScope.invoke(any())) doAnswer {
+            val callback = it.getArgument<(EventBatchWriter) -> Unit>(0)
+            callback.invoke(mockEventBatchWriter)
+        }
+        whenever(
+            mockSessionReplayFeatureScope.withWriteContext(
+                eq(setOf(Feature.RUM_FEATURE_NAME, Feature.SESSION_REPLAY_FEATURE_NAME)), any()
+            )
+        ) doAnswer {
+            val callback = it.getArgument<(DatadogContext, EventWriteScope) -> Unit>(it.arguments.lastIndex)
+            callback.invoke(fakeDatadogContext, mockEventWriteScope)
         }
         whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
 

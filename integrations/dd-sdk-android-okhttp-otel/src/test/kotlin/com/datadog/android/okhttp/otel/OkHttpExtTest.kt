@@ -7,7 +7,7 @@
 package com.datadog.android.okhttp.otel
 
 import com.datadog.android.okhttp.TraceContext
-import com.datadog.legacy.trace.api.sampling.PrioritySampling
+import com.datadog.android.trace.api.DatadogTracingConstants
 import com.datadog.tools.unit.forge.BaseConfigurator
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -60,8 +60,11 @@ internal class OkHttpExtTest {
             on { traceId }.thenReturn(fakeTraceId)
             on { isSampled }.thenReturn(fakeIsSampled)
         }
-        expectedPrioritySampling =
-            if (fakeIsSampled) PrioritySampling.USER_KEEP else PrioritySampling.UNSET
+        expectedPrioritySampling = if (fakeIsSampled) {
+            DatadogTracingConstants.PrioritySampling.USER_KEEP
+        } else {
+            DatadogTracingConstants.PrioritySampling.UNSET
+        }
         whenever(mockSpan.spanContext).thenReturn(spanContext)
     }
 
@@ -71,8 +74,7 @@ internal class OkHttpExtTest {
         val request = Request.Builder().url(fakeUrl).addParentSpan(mockSpan).build()
 
         // Then
-        val taggedContext = request.tag(TraceContext::class.java)
-        checkNotNull(taggedContext)
+        val taggedContext = checkNotNull(request.tag(TraceContext::class.java))
         assertThat(taggedContext.spanId).isEqualTo(fakeSpanId)
         assertThat(taggedContext.traceId).isEqualTo(fakeTraceId)
         assertThat(taggedContext.samplingPriority).isEqualTo(expectedPrioritySampling)

@@ -9,6 +9,7 @@ import com.datadog.gradle.plugin.InstrumentationMode
 plugins {
     id("com.android.application")
     kotlin("android")
+    alias(libs.plugins.composeCompilerPlugin)
     kotlin("kapt")
     kotlin("plugin.serialization")
     id("kotlin-parcelize")
@@ -42,9 +43,6 @@ android {
     buildFeatures {
         compose = true
         viewBinding = true
-    }
-    composeOptions {
-        kotlinCompilerExtensionVersion = libs.versions.androidXComposeRuntime.get()
     }
     val bmPassword = System.getenv("BM_STORE_PASSWD")
     signingConfigs {

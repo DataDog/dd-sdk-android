@@ -35,11 +35,23 @@ data class com.datadog.android.log.LogsConfiguration
     fun setEventMapper(com.datadog.android.event.EventMapper<com.datadog.android.log.model.LogEvent>): Builder
     fun build(): LogsConfiguration
 data class com.datadog.android.log.model.LogEvent
-  constructor(Status, kotlin.String, kotlin.String, kotlin.String, Logger, Dd, Usr? = null, Account? = null, Network? = null, Error? = null, kotlin.String? = null, kotlin.String, kotlin.collections.MutableMap<kotlin.String, kotlin.Any?> = mutableMapOf())
+  constructor(LogEventDevice, Os, Status, kotlin.String, kotlin.String, kotlin.String, Logger, Dd, Usr? = null, Account? = null, Network? = null, Error? = null, kotlin.String? = null, kotlin.String, kotlin.collections.MutableMap<kotlin.String, kotlin.Any?> = mutableMapOf())
   fun toJson(): com.google.gson.JsonElement
   companion object 
     fun fromJson(kotlin.String): LogEvent
     fun fromJsonObject(com.google.gson.JsonObject): LogEvent
+  data class LogEventDevice
+    constructor(Type? = null, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.collections.List<kotlin.String>? = null, kotlin.String? = null, kotlin.Number? = null, kotlin.Boolean? = null, kotlin.Number? = null)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): LogEventDevice
+      fun fromJsonObject(com.google.gson.JsonObject): LogEventDevice
+  data class Os
+    constructor(kotlin.String, kotlin.String, kotlin.String? = null, kotlin.String)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Os
+      fun fromJsonObject(com.google.gson.JsonObject): Os
   data class Logger
     constructor(kotlin.String, kotlin.String? = null, kotlin.String)
     fun toJson(): com.google.gson.JsonElement
@@ -47,7 +59,7 @@ data class com.datadog.android.log.model.LogEvent
       fun fromJson(kotlin.String): Logger
       fun fromJsonObject(com.google.gson.JsonObject): Logger
   data class Dd
-    constructor(Device)
+    constructor(DdDevice)
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Dd
@@ -76,12 +88,12 @@ data class com.datadog.android.log.model.LogEvent
     companion object 
       fun fromJson(kotlin.String): Error
       fun fromJsonObject(com.google.gson.JsonObject): Error
-  data class Device
+  data class DdDevice
     constructor(kotlin.String)
     fun toJson(): com.google.gson.JsonElement
     companion object 
-      fun fromJson(kotlin.String): Device
-      fun fromJsonObject(com.google.gson.JsonObject): Device
+      fun fromJson(kotlin.String): DdDevice
+      fun fromJsonObject(com.google.gson.JsonObject): DdDevice
   data class Client
     constructor(SimCarrier? = null, kotlin.String? = null, kotlin.String? = null, kotlin.String? = null, kotlin.String)
     fun toJson(): com.google.gson.JsonElement
@@ -112,3 +124,15 @@ data class com.datadog.android.log.model.LogEvent
     fun toJson(): com.google.gson.JsonElement
     companion object 
       fun fromJson(kotlin.String): Status
+  enum Type
+    constructor(kotlin.String)
+    - MOBILE
+    - DESKTOP
+    - TABLET
+    - TV
+    - GAMING_CONSOLE
+    - BOT
+    - OTHER
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Type

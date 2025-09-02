@@ -7,13 +7,13 @@
 package com.datadog.android.sessionreplay.internal.resources
 
 import android.text.format.DateUtils
+import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.storage.datastore.DataStoreReadCallback
 import com.datadog.android.api.storage.datastore.DataStoreWriteCallback
 import com.datadog.android.core.internal.persistence.Deserializer
 import com.datadog.android.core.persistence.Serializer
 import com.datadog.android.core.persistence.datastore.DataStoreContent
-import com.datadog.android.sessionreplay.internal.ResourcesFeature.Companion.SESSION_REPLAY_RESOURCES_FEATURE_NAME
 import com.datadog.android.sessionreplay.model.ResourceHashesEntry
 import java.util.Collections
 import java.util.concurrent.ConcurrentHashMap
@@ -91,7 +91,7 @@ internal class ResourceDataStoreManager(
         )
 
         featureSdkCore.getFeature(
-            SESSION_REPLAY_RESOURCES_FEATURE_NAME
+            Feature.SESSION_REPLAY_RESOURCES_FEATURE_NAME
         )?.dataStore?.setValue(
             data = data,
             key = DATASTORE_HASHES_ENTRY_NAME,
@@ -104,7 +104,7 @@ internal class ResourceDataStoreManager(
         onFetchFailure: () -> Unit
     ) {
         featureSdkCore.getFeature(
-            SESSION_REPLAY_RESOURCES_FEATURE_NAME
+            Feature.SESSION_REPLAY_RESOURCES_FEATURE_NAME
         )?.dataStore?.value(
             key = DATASTORE_HASHES_ENTRY_NAME,
             deserializer = resourceHashesDeserializer,
@@ -122,7 +122,7 @@ internal class ResourceDataStoreManager(
 
     private fun deleteStoredHashesEntry(callback: DataStoreWriteCallback) =
         featureSdkCore.getFeature(
-            SESSION_REPLAY_RESOURCES_FEATURE_NAME
+            Feature.SESSION_REPLAY_RESOURCES_FEATURE_NAME
         )?.dataStore?.removeValue(
             key = DATASTORE_HASHES_ENTRY_NAME,
             callback = callback

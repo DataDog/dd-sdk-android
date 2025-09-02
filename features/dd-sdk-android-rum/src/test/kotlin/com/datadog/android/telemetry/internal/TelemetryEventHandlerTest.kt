@@ -9,6 +9,7 @@ package com.datadog.android.telemetry.internal
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.context.DeviceInfo
+import com.datadog.android.api.feature.EventWriteScope
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.storage.DataWriter
@@ -44,16 +45,15 @@ import com.datadog.android.telemetry.model.TelemetryConfigurationEvent
 import com.datadog.android.telemetry.model.TelemetryDebugEvent
 import com.datadog.android.telemetry.model.TelemetryErrorEvent
 import com.datadog.android.telemetry.model.TelemetryUsageEvent
+import com.datadog.android.trace.GlobalDatadogTracer
+import com.datadog.android.trace.api.tracer.DatadogTracer
 import com.datadog.tools.unit.forge.aThrowable
-import com.datadog.tools.unit.setStaticValue
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.FloatForgery
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
-import io.opentracing.Tracer
-import io.opentracing.util.GlobalTracer
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.within
 import org.junit.jupiter.api.AfterEach
@@ -116,6 +116,9 @@ internal class TelemetryEventHandlerTest {
 
     @Mock
     lateinit var mockEventBatchWriter: EventBatchWriter
+
+    @Mock
+    lateinit var mockEventWriteScope: EventWriteScope
 
     @Mock
     lateinit var mockDeviceInfo: DeviceInfo
@@ -192,9 +195,20 @@ internal class TelemetryEventHandlerTest {
         whenever(
             mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)
         ) doReturn mockRumFeatureScope
-        whenever(mockRumFeatureScope.withWriteContext(any(), any())) doAnswer {
-            val callback = it.getArgument<(DatadogContext, EventBatchWriter) -> Unit>(1)
-            callback.invoke(fakeDatadogContext, mockEventBatchWriter)
+
+        whenever(mockEventWriteScope.invoke(any())) doAnswer {
+            val callback = it.getArgument<(EventBatchWriter) -> Unit>(0)
+            callback.invoke(mockEventBatchWriter)
+        }
+
+        whenever(
+            mockRumFeatureScope.withWriteContext(
+                eq(setOf(Feature.SESSION_REPLAY_FEATURE_NAME, Feature.TRACING_FEATURE_NAME)),
+                any()
+            )
+        ) doAnswer {
+            val callback = it.getArgument<(DatadogContext, EventWriteScope) -> Unit>(it.arguments.lastIndex)
+            callback.invoke(fakeDatadogContext, mockEventWriteScope)
         }
         whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
 
@@ -209,7 +223,7 @@ internal class TelemetryEventHandlerTest {
 
     @AfterEach
     fun `tear down`() {
-        GlobalTracer::class.java.setStaticValue("isRegistered", false)
+        GlobalDatadogTracer.clear()
     }
 
     // region Debug Event
@@ -600,7 +614,7 @@ internal class TelemetryEventHandlerTest {
         if (useTracer) {
             whenever(mockSdkCore.getFeature(Feature.TRACING_FEATURE_NAME)) doReturn mock()
             if (tracerApi == TelemetryEventHandler.TracerApi.OpenTracing) {
-                GlobalTracer.registerIfAbsent(mock<Tracer>())
+                GlobalDatadogTracer.registerIfAbsent(mock<DatadogTracer>())
             } else if (tracerApi == TelemetryEventHandler.TracerApi.OpenTelemetry) {
                 fakeDatadogContext = fakeDatadogContext.copy(
                     featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {

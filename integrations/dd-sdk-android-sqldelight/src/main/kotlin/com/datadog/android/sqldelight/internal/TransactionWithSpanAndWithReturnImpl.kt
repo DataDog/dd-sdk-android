@@ -7,10 +7,10 @@
 package com.datadog.android.sqldelight.internal
 
 import com.datadog.android.sqldelight.TransactionWithSpanAndWithReturn
+import com.datadog.android.trace.api.span.DatadogSpan
 import com.squareup.sqldelight.TransactionWithReturn
-import io.opentracing.Span
 
 internal class TransactionWithSpanAndWithReturnImpl<R>(
-    private val span: Span,
+    private val span: DatadogSpan,
     private val transaction: TransactionWithReturn<R>
-) : TransactionWithSpanAndWithReturn<R>, Span by span, TransactionWithReturn<R> by transaction
+) : TransactionWithSpanAndWithReturn<R>, DatadogSpan by span, TransactionWithReturn<R> by transaction

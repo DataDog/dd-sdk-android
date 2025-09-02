@@ -12,7 +12,6 @@ public final class com/datadog/android/Datadog {
 	public static final field INSTANCE Lcom/datadog/android/Datadog;
 	public final fun _internalProxy (Ljava/lang/String;)Lcom/datadog/android/_InternalProxy;
 	public static synthetic fun _internalProxy$default (Lcom/datadog/android/Datadog;Ljava/lang/String;ILjava/lang/Object;)Lcom/datadog/android/_InternalProxy;
-	public static final fun addAccountExtraInfo ()V
 	public static final fun addAccountExtraInfo (Ljava/util/Map;)V
 	public static final fun addAccountExtraInfo (Ljava/util/Map;Lcom/datadog/android/api/SdkCore;)V
 	public static synthetic fun addAccountExtraInfo$default (Ljava/util/Map;Lcom/datadog/android/api/SdkCore;ILjava/lang/Object;)V
@@ -51,13 +50,6 @@ public final class com/datadog/android/Datadog {
 	public static final fun setUserInfo (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;)V
 	public static final fun setUserInfo (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;Lcom/datadog/android/api/SdkCore;)V
 	public static synthetic fun setUserInfo$default (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;Lcom/datadog/android/api/SdkCore;ILjava/lang/Object;)V
-	public static final fun setUserInfoDeprecated ()V
-	public static final fun setUserInfoDeprecated (Ljava/lang/String;)V
-	public static final fun setUserInfoDeprecated (Ljava/lang/String;Ljava/lang/String;)V
-	public static final fun setUserInfoDeprecated (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
-	public static final fun setUserInfoDeprecated (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;)V
-	public static final fun setUserInfoDeprecated (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;Lcom/datadog/android/api/SdkCore;)V
-	public static synthetic fun setUserInfoDeprecated$default (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;Lcom/datadog/android/api/SdkCore;ILjava/lang/Object;)V
 	public static final fun setVerbosity (I)V
 	public static final fun stopInstance ()V
 	public static final fun stopInstance (Ljava/lang/String;)V
@@ -149,7 +141,6 @@ public abstract interface class com/datadog/android/api/SdkCore {
 }
 
 public final class com/datadog/android/api/SdkCore$DefaultImpls {
-	public static synthetic fun addAccountExtraInfo$default (Lcom/datadog/android/api/SdkCore;Ljava/util/Map;ILjava/lang/Object;)V
 	public static synthetic fun setAccountInfo$default (Lcom/datadog/android/api/SdkCore;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;ILjava/lang/Object;)V
 	public static synthetic fun setUserInfo$default (Lcom/datadog/android/api/SdkCore;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;ILjava/lang/Object;)V
 }
@@ -399,13 +390,17 @@ public abstract interface class com/datadog/android/api/feature/FeatureEventRece
 
 public abstract interface class com/datadog/android/api/feature/FeatureScope {
 	public abstract fun getDataStore ()Lcom/datadog/android/api/storage/datastore/DataStoreHandler;
+	public abstract fun getWriteContextSync (Ljava/util/Set;)Lkotlin/Pair;
 	public abstract fun sendEvent (Ljava/lang/Object;)V
 	public abstract fun unwrap ()Lcom/datadog/android/api/feature/Feature;
-	public abstract fun withWriteContext (ZLkotlin/jvm/functions/Function2;)V
+	public abstract fun withContext (Ljava/util/Set;Lkotlin/jvm/functions/Function1;)V
+	public abstract fun withWriteContext (Ljava/util/Set;Lkotlin/jvm/functions/Function2;)V
 }
 
 public final class com/datadog/android/api/feature/FeatureScope$DefaultImpls {
-	public static synthetic fun withWriteContext$default (Lcom/datadog/android/api/feature/FeatureScope;ZLkotlin/jvm/functions/Function2;ILjava/lang/Object;)V
+	public static synthetic fun getWriteContextSync$default (Lcom/datadog/android/api/feature/FeatureScope;Ljava/util/Set;ILjava/lang/Object;)Lkotlin/Pair;
+	public static synthetic fun withContext$default (Lcom/datadog/android/api/feature/FeatureScope;Ljava/util/Set;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)V
+	public static synthetic fun withWriteContext$default (Lcom/datadog/android/api/feature/FeatureScope;Ljava/util/Set;Lkotlin/jvm/functions/Function2;ILjava/lang/Object;)V
 }
 
 public final class com/datadog/android/api/feature/FeatureScopeExtKt {
@@ -417,15 +412,20 @@ public abstract interface class com/datadog/android/api/feature/FeatureSdkCore :
 	public abstract fun createScheduledExecutorService (Ljava/lang/String;)Ljava/util/concurrent/ScheduledExecutorService;
 	public abstract fun createSingleThreadExecutorService (Ljava/lang/String;)Ljava/util/concurrent/ExecutorService;
 	public abstract fun getFeature (Ljava/lang/String;)Lcom/datadog/android/api/feature/FeatureScope;
-	public abstract fun getFeatureContext (Ljava/lang/String;)Ljava/util/Map;
+	public abstract fun getFeatureContext (Ljava/lang/String;Z)Ljava/util/Map;
 	public abstract fun getInternalLogger ()Lcom/datadog/android/api/InternalLogger;
 	public abstract fun registerFeature (Lcom/datadog/android/api/feature/Feature;)V
-	public abstract fun removeContextUpdateReceiver (Ljava/lang/String;Lcom/datadog/android/api/feature/FeatureContextUpdateReceiver;)V
+	public abstract fun removeContextUpdateReceiver (Lcom/datadog/android/api/feature/FeatureContextUpdateReceiver;)V
 	public abstract fun removeEventReceiver (Ljava/lang/String;)V
 	public abstract fun setAnonymousId (Ljava/util/UUID;)V
-	public abstract fun setContextUpdateReceiver (Ljava/lang/String;Lcom/datadog/android/api/feature/FeatureContextUpdateReceiver;)V
+	public abstract fun setContextUpdateReceiver (Lcom/datadog/android/api/feature/FeatureContextUpdateReceiver;)V
 	public abstract fun setEventReceiver (Ljava/lang/String;Lcom/datadog/android/api/feature/FeatureEventReceiver;)V
-	public abstract fun updateFeatureContext (Ljava/lang/String;Lkotlin/jvm/functions/Function1;)V
+	public abstract fun updateFeatureContext (Ljava/lang/String;ZLkotlin/jvm/functions/Function1;)V
+}
+
+public final class com/datadog/android/api/feature/FeatureSdkCore$DefaultImpls {
+	public static synthetic fun getFeatureContext$default (Lcom/datadog/android/api/feature/FeatureSdkCore;Ljava/lang/String;ZILjava/lang/Object;)Ljava/util/Map;
+	public static synthetic fun updateFeatureContext$default (Lcom/datadog/android/api/feature/FeatureSdkCore;Ljava/lang/String;ZLkotlin/jvm/functions/Function1;ILjava/lang/Object;)V
 }
 
 public abstract interface class com/datadog/android/api/feature/StorageBackedFeature : com/datadog/android/api/feature/Feature {
@@ -587,7 +587,7 @@ public abstract interface class com/datadog/android/core/InternalSdkCore : com/d
 	public abstract fun deleteLastViewEvent ()V
 	public abstract fun getAllFeatures ()Ljava/util/List;
 	public abstract fun getAppStartTimeNs ()J
-	public abstract fun getDatadogContext ()Lcom/datadog/android/api/context/DatadogContext;
+	public abstract fun getDatadogContext (Ljava/util/Set;)Lcom/datadog/android/api/context/DatadogContext;
 	public abstract fun getFirstPartyHostResolver ()Lcom/datadog/android/core/internal/net/FirstPartyHostHeaderTypeResolver;
 	public abstract fun getLastFatalAnrSent ()Ljava/lang/Long;
 	public abstract fun getLastViewEvent ()Lcom/google/gson/JsonObject;
@@ -598,6 +598,10 @@ public abstract interface class com/datadog/android/core/InternalSdkCore : com/d
 	public abstract fun isDeveloperModeEnabled ()Z
 	public abstract fun writeLastFatalAnrSent (J)V
 	public abstract fun writeLastViewEvent ([B)V
+}
+
+public final class com/datadog/android/core/InternalSdkCore$DefaultImpls {
+	public static synthetic fun getDatadogContext$default (Lcom/datadog/android/core/InternalSdkCore;Ljava/util/Set;ILjava/lang/Object;)Lcom/datadog/android/api/context/DatadogContext;
 }
 
 public final class com/datadog/android/core/SdkReference {
@@ -732,27 +736,6 @@ public abstract class com/datadog/android/core/feature/event/JvmCrash {
 	public abstract fun getThrowable ()Ljava/lang/Throwable;
 }
 
-public final class com/datadog/android/core/feature/event/JvmCrash$Logs : com/datadog/android/core/feature/event/JvmCrash {
-	public fun <init> (Ljava/lang/String;Ljava/lang/Throwable;JLjava/lang/String;Ljava/lang/String;Ljava/util/List;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun component2 ()Ljava/lang/Throwable;
-	public final fun component3 ()J
-	public final fun component4 ()Ljava/lang/String;
-	public final fun component5 ()Ljava/lang/String;
-	public final fun component6 ()Ljava/util/List;
-	public final fun copy (Ljava/lang/String;Ljava/lang/Throwable;JLjava/lang/String;Ljava/lang/String;Ljava/util/List;)Lcom/datadog/android/core/feature/event/JvmCrash$Logs;
-	public static synthetic fun copy$default (Lcom/datadog/android/core/feature/event/JvmCrash$Logs;Ljava/lang/String;Ljava/lang/Throwable;JLjava/lang/String;Ljava/lang/String;Ljava/util/List;ILjava/lang/Object;)Lcom/datadog/android/core/feature/event/JvmCrash$Logs;
-	public fun equals (Ljava/lang/Object;)Z
-	public final fun getLoggerName ()Ljava/lang/String;
-	public fun getMessage ()Ljava/lang/String;
-	public final fun getThreadName ()Ljava/lang/String;
-	public fun getThreads ()Ljava/util/List;
-	public fun getThrowable ()Ljava/lang/Throwable;
-	public final fun getTimestamp ()J
-	public fun hashCode ()I
-	public fun toString ()Ljava/lang/String;
-}
-
 public final class com/datadog/android/core/feature/event/JvmCrash$Rum : com/datadog/android/core/feature/event/JvmCrash {
 	public fun <init> (Ljava/lang/Throwable;Ljava/lang/String;Ljava/util/List;)V
 	public final fun component1 ()Ljava/lang/Throwable;
@@ -834,8 +817,10 @@ public final class com/datadog/android/core/internal/utils/ByteArrayExtKt {
 
 public final class com/datadog/android/core/internal/utils/ConcurrencyExtKt {
 	public static final fun executeSafe (Ljava/util/concurrent/Executor;Ljava/lang/String;Lcom/datadog/android/api/InternalLogger;Ljava/lang/Runnable;)V
+	public static final fun getSafe (Ljava/util/concurrent/Future;Ljava/lang/String;Lcom/datadog/android/api/InternalLogger;)Ljava/lang/Object;
 	public static final fun scheduleSafe (Ljava/util/concurrent/ScheduledExecutorService;Ljava/lang/String;JLjava/util/concurrent/TimeUnit;Lcom/datadog/android/api/InternalLogger;Ljava/lang/Runnable;)Ljava/util/concurrent/ScheduledFuture;
 	public static final fun submitSafe (Ljava/util/concurrent/ExecutorService;Ljava/lang/String;Lcom/datadog/android/api/InternalLogger;Ljava/lang/Runnable;)Ljava/util/concurrent/Future;
+	public static final fun submitSafe (Ljava/util/concurrent/ExecutorService;Ljava/lang/String;Lcom/datadog/android/api/InternalLogger;Ljava/util/concurrent/Callable;)Ljava/util/concurrent/Future;
 }
 
 public final class com/datadog/android/core/internal/utils/JsonSerializer {

@@ -36,8 +36,7 @@ fun <T> Flow<T>.sendErrorToDatadog(sdkCore: SdkCore = Datadog.getInstance()): Fl
                 .addError(
                     ERROR_FLOW,
                     RumErrorSource.SOURCE,
-                    e,
-                    emptyMap()
+                    e
                 )
             throw e
         }

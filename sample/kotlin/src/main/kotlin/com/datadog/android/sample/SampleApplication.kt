@@ -19,7 +19,6 @@ import com.datadog.android.core.configuration.BackPressureStrategy
 import com.datadog.android.core.configuration.BatchSize
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.UploadFrequency
-import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.log.Logger
 import com.datadog.android.log.Logs
 import com.datadog.android.log.LogsConfiguration
@@ -51,21 +50,17 @@ import com.datadog.android.sessionreplay.TouchPrivacy
 import com.datadog.android.sessionreplay.compose.ComposeExtensionSupport
 import com.datadog.android.sessionreplay.material.MaterialExtensionSupport
 import com.datadog.android.timber.DatadogTree
-import com.datadog.android.trace.AndroidTracer
+import com.datadog.android.trace.DatadogTracing
+import com.datadog.android.trace.GlobalDatadogTracer
 import com.datadog.android.trace.Trace
 import com.datadog.android.trace.TraceConfiguration
-import com.datadog.android.trace.opentelemetry.OtelTracerProvider
+import com.datadog.android.trace.opentelemetry.DatadogOpenTelemetry
 import com.datadog.android.vendor.sample.LocalServer
 import com.facebook.stetho.Stetho
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import io.opentelemetry.api.GlobalOpenTelemetry
-import io.opentelemetry.api.OpenTelemetry
-import io.opentelemetry.api.trace.TracerProvider
-import io.opentelemetry.context.propagation.ContextPropagators
-import io.opentracing.rxjava3.TracingRxJava3Utils
-import io.opentracing.util.GlobalTracer
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.adapter.rxjava3.RxJava3CallAdapterFactory
@@ -87,12 +82,10 @@ class SampleApplication : Application() {
     private val okHttpClient = OkHttpClient.Builder()
         .addInterceptor(
             DatadogInterceptor.Builder(tracedHosts)
-                .setTraceSampler(RateBasedSampler(100f))
                 .build()
         )
         .addNetworkInterceptor(
             TracingInterceptor.Builder(tracedHosts)
-                .setTraceSampler(RateBasedSampler(100f))
                 .build()
         )
         .eventListenerFactory(DatadogEventListener.Factory())
@@ -126,8 +119,7 @@ class SampleApplication : Application() {
         GlobalRumMonitor.get().addError(
             "Low Memory warning",
             RumErrorSource.SOURCE,
-            null,
-            emptyMap()
+            null
         )
     }
 
@@ -149,7 +141,6 @@ class SampleApplication : Application() {
 
     private fun initializeDatadog() {
         val preferences = Preferences.defaultPreferences(this)
-
         Datadog.setVerbosity(Log.VERBOSE)
         Datadog.initialize(
             this,
@@ -166,35 +157,14 @@ class SampleApplication : Application() {
         initializeUserInfo(preferences)
         initializeAccountInfo(preferences)
 
-        GlobalTracer.registerIfAbsent(
-            AndroidTracer.Builder()
-                .setService(BuildConfig.APPLICATION_ID)
-                .build()
-        )
+        Rum.enable(createRumConfiguration())
 
-        val rumConfig = createRumConfiguration()
-        Rum.enable(rumConfig)
-
-        GlobalOpenTelemetry.set(object : OpenTelemetry {
-            private val tracerProvider = OtelTracerProvider.Builder()
-                .setService(BuildConfig.APPLICATION_ID)
-                .build()
-
-            override fun getTracerProvider(): TracerProvider {
-                return tracerProvider
-            }
-
-            override fun getPropagators(): ContextPropagators {
-                return ContextPropagators.noop()
-            }
-        })
         GlobalRumMonitor.get().debug = true
-        TracingRxJava3Utils.enableTracing(GlobalTracer.get())
     }
 
     private fun initializeUserInfo(preferences: Preferences.DefaultPreferences) {
         Datadog.setUserInfo(
-            id = preferences.getUserId(),
+            id = preferences.getUserId() ?: "unknown",
             name = preferences.getUserName(),
             email = preferences.getUserEmail(),
             extraInfo = mapOf(
@@ -224,6 +194,16 @@ class SampleApplication : Application() {
             }
         }.build()
         Trace.enable(tracesConfig)
+
+        GlobalDatadogTracer.registerIfAbsent(
+            DatadogTracing.newTracerBuilder()
+                .withPartialFlushMinSpans(1)
+                .build()
+        )
+
+        GlobalOpenTelemetry.set(
+            DatadogOpenTelemetry(BuildConfig.APPLICATION_ID)
+        )
     }
 
     private fun initializeLogs() {

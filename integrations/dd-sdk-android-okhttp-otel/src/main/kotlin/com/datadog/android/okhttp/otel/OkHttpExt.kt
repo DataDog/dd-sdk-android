@@ -7,9 +7,9 @@
 package com.datadog.android.okhttp.otel
 
 import com.datadog.android.okhttp.TraceContext
-import com.datadog.legacy.trace.api.sampling.PrioritySampling
+import com.datadog.android.trace.api.DatadogTracingConstants
+import com.datadog.android.trace.internal.DatadogTracingToolkit
 import com.datadog.opentelemetry.trace.OtelSpan
-import com.datadog.trace.core.DDSpanContext
 import io.opentelemetry.api.trace.Span
 import okhttp3.Request
 
@@ -18,24 +18,27 @@ import okhttp3.Request
  * @param span the parent span to add to the request.
  * @return the modified Request.Builder instance
  */
-fun Request.Builder.addParentSpan(span: Span): Request.Builder {
+fun Request.Builder.addParentSpan(span: Span): Request.Builder = apply {
     // very fragile and assumes that Datadog Tracer is used
     // we need to trigger sampling decision at this point, because we are doing context propagation out of OpenTelemetry
-    if (span is OtelSpan) {
-        val agentSpanContext = span.agentSpanContext
-        if (agentSpanContext is DDSpanContext) {
-            agentSpanContext.trace.setSamplingPriorityIfNecessary()
-        }
-        @Suppress("UnsafeThirdPartyFunctionCall") // the context will always be a TraceContext
-        tag(
-            TraceContext::class.java,
-            TraceContext(span.spanContext.traceId, span.spanContext.spanId, agentSpanContext.samplingPriority)
+    val tracingContext = if (span is OtelSpan) {
+        DatadogTracingToolkit.setTracingSamplingPriorityIfNecessary(span.datadogSpanContext)
+        TraceContext(
+            span.spanContext.traceId,
+            span.spanContext.spanId,
+            span.datadogSpanContext.samplingPriority
         )
     } else {
-        val context = span.spanContext
-        val prioritySampling = if (context.isSampled) PrioritySampling.USER_KEEP else PrioritySampling.UNSET
-        @Suppress("UnsafeThirdPartyFunctionCall") // the context will always be a TraceContext
-        tag(TraceContext::class.java, TraceContext(context.traceId, context.spanId, prioritySampling))
+        TraceContext(
+            span.spanContext.traceId,
+            span.spanContext.spanId,
+            if (span.spanContext.isSampled) {
+                DatadogTracingConstants.PrioritySampling.USER_KEEP
+            } else {
+                DatadogTracingConstants.PrioritySampling.UNSET
+            }
+        )
     }
-    return this
+    @Suppress("UnsafeThirdPartyFunctionCall") // the context will always be a TraceContext
+    tag(TraceContext::class.java, tracingContext)
 }

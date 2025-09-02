@@ -8,7 +8,7 @@ package com.datadog.android.rum.internal.utils
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
-import com.datadog.android.api.feature.Feature
+import com.datadog.android.api.feature.EventWriteScope
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.api.storage.EventType
@@ -20,9 +20,11 @@ internal typealias EventOutcomeAction = (rumMonitor: AdvancedRumMonitor) -> Unit
 
 internal class WriteOperation(
     private val sdkCore: FeatureSdkCore,
+    private val datadogContext: DatadogContext,
+    private val writeScope: EventWriteScope,
     private val rumDataWriter: DataWriter<Any>,
     private val eventType: EventType,
-    private val eventSource: (DatadogContext) -> Any
+    private val eventSource: () -> Any
 ) {
     private val advancedRumMonitor = GlobalRumMonitor.get(sdkCore) as? AdvancedRumMonitor
     private var onError: EventOutcomeAction = NO_OP_EVENT_OUTCOME_ACTION
@@ -45,32 +47,30 @@ internal class WriteOperation(
     }
 
     fun submit() {
-        sdkCore.getFeature(Feature.RUM_FEATURE_NAME)
-            ?.withWriteContext { datadogContext, eventBatchWriter ->
-                if (rumDataWriter is NoOpDataWriter) {
-                    sdkCore.internalLogger.log(
-                        level = InternalLogger.Level.INFO,
-                        target = InternalLogger.Target.USER,
-                        messageBuilder = { WRITE_OPERATION_IGNORED }
-                    )
-                    advancedRumMonitor?.let { onError(it) }
-                } else {
-                    try {
-                        val event = eventSource(datadogContext)
-
-                        val isSuccess = rumDataWriter.write(eventBatchWriter, event, eventType)
-                        if (isSuccess) {
-                            advancedRumMonitor?.let {
-                                onSuccess(it)
-                            }
-                        } else {
-                            notifyEventWriteFailure()
+        writeScope {
+            if (rumDataWriter is NoOpDataWriter) {
+                sdkCore.internalLogger.log(
+                    level = InternalLogger.Level.INFO,
+                    target = InternalLogger.Target.USER,
+                    messageBuilder = { WRITE_OPERATION_IGNORED }
+                )
+                advancedRumMonitor?.let { onError(it) }
+            } else {
+                try {
+                    val event = eventSource()
+                    val isSuccess = rumDataWriter.write(it, event, eventType)
+                    if (isSuccess) {
+                        advancedRumMonitor?.let {
+                            onSuccess(it)
                         }
-                    } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
-                        notifyEventWriteFailure(e)
+                    } else {
+                        notifyEventWriteFailure()
                     }
+                } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+                    notifyEventWriteFailure(e)
                 }
             }
+        }
     }
 
     private fun notifyEventWriteFailure(exception: Exception? = null) {
@@ -108,9 +108,11 @@ internal class WriteOperation(
 }
 
 internal fun FeatureSdkCore.newRumEventWriteOperation(
+    datadogContext: DatadogContext,
+    writeScope: EventWriteScope,
     rumDataWriter: DataWriter<Any>,
     eventType: EventType = EventType.DEFAULT,
-    eventSource: (DatadogContext) -> Any
+    eventSource: () -> Any
 ): WriteOperation {
-    return WriteOperation(this, rumDataWriter, eventType, eventSource)
+    return WriteOperation(this, datadogContext, writeScope, rumDataWriter, eventType, eventSource)
 }

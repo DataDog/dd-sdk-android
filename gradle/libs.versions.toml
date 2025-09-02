@@ -1,7 +1,7 @@
 [versions]
 # Commons
-kotlin = "1.9.24"
-kotlinSP = "1.9.24-1.0.20"
+kotlin = "2.0.21"
+kotlinSP = "2.0.21-1.0.28"
 gson = "2.10.1"
 okHttp = "4.12.0"
 kronosNTP = "0.0.1-alpha11"
@@ -16,7 +16,6 @@ androidXAppCompat = "1.4.2" # Next version will bring coroutines
 androidXCar = "1.4.0"
 androidXCollection = "1.4.5"
 androidXComposeBom = "2023.10.01" # Next version will bring coroutines
-androidXComposeCompilerExtension = "1.5.14"
 androidXComposeNavigation = "2.6.0"
 androidXComposeRuntime = "1.5.14"
 androidXConstraintLayout = "2.0.4"
@@ -33,9 +32,6 @@ androidXWorkManager = "2.8.1" # Next version will bring coroutines
 googleAccompanist = "0.20.2"
 googleMaterial = "1.3.0"
 dagger = "2.56.2"
-
-# DD-TRACE-OT
-openTracing = "0.32.0"
 
 # JUnit
 jUnit4 = "4.13.2"
@@ -62,7 +58,7 @@ kspTesting = "1.5.0"
 
 # Tools
 detekt = "1.23.0"
-dokka = "1.8.20"
+dokka = "2.0.0"
 unmock = "0.9.0"
 robolectric = "4.4_r1-robolectric-r2"
 androidLint = "31.0.2"
@@ -105,9 +101,7 @@ ktorServer = "3.0.0-rc-1"
 
 # Otel
 jctools = "3.3.0"
-openTelemetry = "1.4.0"
-# Only for internal benchmark use
-openTelemetryBenchmark = "1.40.0"
+openTelemetry = "1.40.0"
 re2j = "1.7"
 material3Android = "1.1.2"
 
@@ -180,11 +174,6 @@ androidXComposeUi = { module = "androidx.compose.ui:ui" }
 androidXComposeUiTooling = { module = "androidx.compose.ui:ui-tooling" }
 androidXComposeMaterial = { module = "androidx.compose.material:material" }
 material3Android = { group = "androidx.compose.material3", name = "material3", version.ref = "material3Android" }
-
-# DD-TRACE-OT
-openTracingApi = { module = "io.opentracing:opentracing-api", version.ref = "openTracing" }
-openTracingNoOp = { module = "io.opentracing:opentracing-noop", version.ref = "openTracing" }
-openTracingUtil = { module = "io.opentracing:opentracing-util", version.ref = "openTracing" }
 
 # Junit 4 (for buildSrc)
 jUnit4 = { module = "junit:junit", version.ref = "jUnit4" }
@@ -287,8 +276,7 @@ ktorClientMock = { module = "io.ktor:ktor-client-mock", version.ref = "ktor" }
 # Otel
 jctools = { module = "org.jctools:jctools-core", version.ref = "jctools" }
 openTelemetryApi = { module = "io.opentelemetry:opentelemetry-api", version.ref = "openTelemetry" }
-openTelemetryApiBenchmark = { module = "io.opentelemetry:opentelemetry-api", version.ref = "openTelemetryBenchmark" }
-openTelemetrySdkBenchmark = { module = "io.opentelemetry:opentelemetry-sdk", version.ref = "openTelemetryBenchmark" }
+openTelemetrySdk = { module = "io.opentelemetry:opentelemetry-sdk", version.ref = "openTelemetry" }
 re2j = { module = "com.google.re2j:re2j", version.ref = "re2j" }
 
 [bundles]
@@ -327,12 +315,6 @@ androidXCompose = [
     "androidXComposeUi",
     "androidXComposeUiTooling",
     "androidXComposeMaterial",
-]
-
-openTracing = [
-    "openTracingApi",
-    "openTracingNoOp",
-    "openTracingUtil"
 ]
 
 integrationTests = [
@@ -391,4 +373,5 @@ traceCore = [
 versionsGradlePlugin = { id = "com.github.ben-manes.versions", version.ref = "versionsGradlePlugin" }
 nexusPublishGradlePlugin = { id = "io.github.gradle-nexus.publish-plugin", version.ref = "nexusPublishGradlePlugin" }
 datadogGradlePlugin = { id = "com.datadoghq.dd-sdk-android-gradle-plugin", version.ref = "datadogPlugin" }
+composeCompilerPlugin = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 

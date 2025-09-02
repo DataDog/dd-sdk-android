@@ -8,12 +8,11 @@ object com.datadog.android.Datadog
   fun getVerbosity(): Int
   fun setTrackingConsent(com.datadog.android.privacy.TrackingConsent, com.datadog.android.api.SdkCore = getInstance())
   fun setUserInfo(String, String? = null, String? = null, Map<String, Any?> = emptyMap(), com.datadog.android.api.SdkCore = getInstance())
-  DEPRECATED fun setUserInfo(String? = null, String? = null, String? = null, Map<String, Any?> = emptyMap(), com.datadog.android.api.SdkCore = getInstance())
   fun addUserProperties(Map<String, Any?>, com.datadog.android.api.SdkCore = getInstance())
   fun clearUserInfo(com.datadog.android.api.SdkCore = getInstance())
   fun clearAllData(com.datadog.android.api.SdkCore = getInstance())
   fun setAccountInfo(String, String? = null, Map<String, Any?> = emptyMap(), com.datadog.android.api.SdkCore = getInstance())
-  fun addAccountExtraInfo(Map<String, Any?> = emptyMap(), com.datadog.android.api.SdkCore = getInstance())
+  fun addAccountExtraInfo(Map<String, Any?>, com.datadog.android.api.SdkCore = getInstance())
   fun clearAccountInfo(com.datadog.android.api.SdkCore = getInstance())
   fun _internalProxy(String? = null): _InternalProxy
 enum com.datadog.android.DatadogSite
@@ -59,12 +58,12 @@ interface com.datadog.android.api.SdkCore
   val service: String
   fun isCoreActive(): Boolean
   fun setTrackingConsent(com.datadog.android.privacy.TrackingConsent)
-  fun setUserInfo(String? = null, String? = null, String? = null, Map<String, Any?> = emptyMap())
+  fun setUserInfo(String, String? = null, String? = null, Map<String, Any?> = emptyMap())
   fun addUserProperties(Map<String, Any?>)
   fun clearUserInfo()
   fun clearAllData()
   fun setAccountInfo(String, String? = null, Map<String, Any?> = emptyMap())
-  fun addAccountExtraInfo(Map<String, Any?> = emptyMap())
+  fun addAccountExtraInfo(Map<String, Any?>)
   fun clearAccountInfo()
 data class com.datadog.android.api.context.AccountInfo
   constructor(String, String? = null, Map<String, Any?> = emptyMap())
@@ -121,20 +120,23 @@ interface com.datadog.android.api.feature.FeatureEventReceiver
   fun onReceive(Any)
 interface com.datadog.android.api.feature.FeatureScope
   val dataStore: com.datadog.android.api.storage.datastore.DataStoreHandler
-  fun withWriteContext(Boolean = false, (com.datadog.android.api.context.DatadogContext, com.datadog.android.api.storage.EventBatchWriter) -> Unit)
+  fun withWriteContext(Set<String> = emptySet(), (com.datadog.android.api.context.DatadogContext) -> Unit)
+  fun withContext(Set<String> = emptySet(), (com.datadog.android.api.context.DatadogContext) -> Unit)
+  fun getWriteContextSync(Set<String> = emptySet()): Pair<com.datadog.android.api.context.DatadogContext, EventWriteScope>?
   fun sendEvent(Any)
   fun <T: Feature> unwrap(): T
+typealias EventWriteScope = ((com.datadog.android.api.storage.EventBatchWriter) -> Unit) -> Unit
 fun <R: Any?> com.datadog.android.api.InternalLogger.measureMethodCallPerf(Class<*>, String, Float = 100f, () -> R): R
 interface com.datadog.android.api.feature.FeatureSdkCore : com.datadog.android.api.SdkCore
   val internalLogger: com.datadog.android.api.InternalLogger
   fun registerFeature(Feature)
   fun getFeature(String): FeatureScope?
-  fun updateFeatureContext(String, (MutableMap<String, Any?>) -> Unit)
-  fun getFeatureContext(String): Map<String, Any?>
+  fun updateFeatureContext(String, Boolean = true, (MutableMap<String, Any?>) -> Unit)
+  fun getFeatureContext(String, Boolean = true): Map<String, Any?>
   fun setEventReceiver(String, FeatureEventReceiver)
-  fun setContextUpdateReceiver(String, FeatureContextUpdateReceiver)
-  fun removeContextUpdateReceiver(String, FeatureContextUpdateReceiver)
   fun removeEventReceiver(String)
+  fun setContextUpdateReceiver(FeatureContextUpdateReceiver)
+  fun removeContextUpdateReceiver(FeatureContextUpdateReceiver)
   fun createSingleThreadExecutorService(String): java.util.concurrent.ExecutorService
   fun createScheduledExecutorService(String): java.util.concurrent.ScheduledExecutorService
   fun setAnonymousId(java.util.UUID?)
@@ -201,7 +203,7 @@ interface com.datadog.android.core.InternalSdkCore : com.datadog.android.api.fea
   fun writeLastFatalAnrSent(Long)
   fun getPersistenceExecutorService(): java.util.concurrent.ExecutorService
   fun getAllFeatures(): List<com.datadog.android.api.feature.FeatureScope>
-  fun getDatadogContext(): com.datadog.android.api.context.DatadogContext?
+  fun getDatadogContext(Set<String> = emptySet()): com.datadog.android.api.context.DatadogContext?
 class com.datadog.android.core.SdkReference
   constructor(String? = null, (com.datadog.android.api.SdkCore) -> Unit = {})
   fun get(): com.datadog.android.api.SdkCore?
@@ -265,8 +267,6 @@ sealed class com.datadog.android.core.feature.event.JvmCrash
   abstract val throwable: Throwable
   abstract val message: String
   abstract val threads: List<ThreadDump>
-  data class Logs : JvmCrash
-    constructor(String, Throwable, Long, String, String, List<ThreadDump>)
   data class Rum : JvmCrash
     constructor(Throwable, String, List<ThreadDump>)
 data class com.datadog.android.core.feature.event.ThreadDump
@@ -301,6 +301,8 @@ fun Collection<ByteArray>.join(ByteArray, ByteArray = ByteArray(0), ByteArray = 
 fun java.util.concurrent.Executor.executeSafe(String, com.datadog.android.api.InternalLogger, Runnable)
 fun java.util.concurrent.ScheduledExecutorService.scheduleSafe(String, Long, java.util.concurrent.TimeUnit, com.datadog.android.api.InternalLogger, Runnable): java.util.concurrent.ScheduledFuture<*>?
 fun java.util.concurrent.ExecutorService.submitSafe(String, com.datadog.android.api.InternalLogger, Runnable): java.util.concurrent.Future<*>?
+fun <T> java.util.concurrent.ExecutorService.submitSafe(String, com.datadog.android.api.InternalLogger, java.util.concurrent.Callable<T>): java.util.concurrent.Future<T>?
+fun <T> java.util.concurrent.Future<T>?.getSafe(String, com.datadog.android.api.InternalLogger): T?
 object com.datadog.android.core.internal.utils.JsonSerializer
   fun toJsonElement(Any?): com.google.gson.JsonElement
   fun Map<String, Any?>.safeMapValuesToJson(com.datadog.android.api.InternalLogger): Map<String, com.google.gson.JsonElement>

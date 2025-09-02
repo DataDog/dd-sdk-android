@@ -581,7 +581,6 @@ internal class BatchMetricsDispatcherTest {
                 max(0, (batchClosedMetadata.lastTimeWasUsedInMs - file.name.toLong())),
             BatchMetricsDispatcher.UPLOADER_WINDOW_KEY to
                 fakeFilePersistenceConfig.recentDelayMs,
-            BatchMetricsDispatcher.FORCE_NEW_KEY to batchClosedMetadata.forcedNew,
             BatchMetricsDispatcher.BATCH_EVENTS_COUNT_KEY to batchClosedMetadata.eventsCount,
             BatchMetricsDispatcher.FILE_NAME to file.name,
             BatchMetricsDispatcher.THREAD_NAME to Thread.currentThread().name,

@@ -24,7 +24,7 @@ plugins {
     // Publish
     `maven-publish`
     signing
-    id("org.jetbrains.dokka")
+    id("org.jetbrains.dokka-javadoc")
 
     // Analysis tools
     id("com.github.ben-manes.versions")
@@ -79,7 +79,7 @@ unMock {
 }
 
 apply(from = "generate_log_models.gradle.kts")
-
+apply(from = "clone_common_schema.gradle.kts")
 kotlinConfig(jvmBytecodeTarget = JvmTarget.JVM_11)
 androidLibraryConfig()
 junitConfig()

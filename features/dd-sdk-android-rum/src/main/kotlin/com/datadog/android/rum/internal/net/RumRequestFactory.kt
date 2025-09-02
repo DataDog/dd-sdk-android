@@ -18,7 +18,6 @@ import com.datadog.android.rum.internal.domain.event.RumViewEventFilter
 import java.security.DigestException
 import java.security.MessageDigest
 import java.security.NoSuchAlgorithmException
-import java.util.Locale
 import java.util.UUID
 
 internal class RumRequestFactory(
@@ -65,13 +64,9 @@ internal class RumRequestFactory(
             }
         }
 
-        val intakeUrl = "%s/api/v2/rum".format(
-            Locale.US,
-            customEndpointUrl ?: context.site.intakeEndpoint
-        )
-
-        return intakeUrl + queryParams.map { "${it.key}=${it.value}" }
-            .joinToString("&", prefix = "?")
+        val intakeUrl = customEndpointUrl ?: (context.site.intakeEndpoint + "/api/v2/rum")
+        val queryParameters = queryParams.map { "${it.key}=${it.value}" }.joinToString("&", prefix = "?")
+        return intakeUrl + queryParameters
     }
 
     private fun buildHeaders(

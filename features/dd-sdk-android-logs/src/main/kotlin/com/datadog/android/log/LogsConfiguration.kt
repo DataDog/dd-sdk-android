@@ -27,6 +27,7 @@ data class LogsConfiguration internal constructor(
 
         /**
          * Let the Logs feature target a custom server.
+         * The provided url should be the full endpoint url, e.g.: https://example.com/logs/upload
          */
         fun useCustomEndpoint(endpoint: String): Builder {
             customEndpointUrl = endpoint

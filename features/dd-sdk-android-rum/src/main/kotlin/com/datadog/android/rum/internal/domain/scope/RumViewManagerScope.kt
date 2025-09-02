@@ -9,6 +9,8 @@ package com.datadog.android.rum.internal.domain.scope
 import android.app.ActivityManager
 import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.context.DatadogContext
+import com.datadog.android.api.feature.EventWriteScope
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
@@ -38,7 +40,7 @@ import java.util.concurrent.TimeUnit
 
 @Suppress("LongParameterList")
 internal class RumViewManagerScope(
-    private val parentScope: RumScope,
+    override val parentScope: RumScope,
     private val sdkCore: InternalSdkCore,
     private val sessionEndedMetricDispatcher: SessionMetricDispatcher,
     private val backgroundTrackingEnabled: Boolean,
@@ -66,32 +68,47 @@ internal class RumViewManagerScope(
         )
 
     internal val childrenScopes = mutableListOf<RumViewScope>()
+
+    internal val activeView: RumViewScope?
+        get() {
+            return if (isActive()) {
+                val activeViews = childrenScopes.filter { it.isActive() }
+                if (activeViews.size > 1) {
+                    sdkCore.internalLogger.log(
+                        InternalLogger.Level.ERROR,
+                        InternalLogger.Target.MAINTAINER,
+                        { "Multiple views are active at the same time, this shouldn't happen." }
+                    )
+                }
+                activeViews.lastOrNull()
+            } else {
+                null
+            }
+        }
     internal var stopped = false
     private var lastStoppedViewTime: Time? = null
 
     // region RumScope
-    fun renewViewScopes(eventTime: Time) {
-        val newChildScope = childrenScopes.map { rumViewScope ->
-            rumViewScope.renew(eventTime)
-        }
-        childrenScopes.clear()
-        childrenScopes.addAll(newChildScope)
-    }
 
     @WorkerThread
-    override fun handleEvent(event: RumRawEvent, writer: DataWriter<Any>): RumScope? {
+    override fun handleEvent(
+        event: RumRawEvent,
+        datadogContext: DatadogContext,
+        writeScope: EventWriteScope,
+        writer: DataWriter<Any>
+    ): RumScope? {
         if (event is RumRawEvent.ApplicationStarted &&
             !applicationDisplayed &&
             !stopped
         ) {
-            startApplicationLaunchView(event, writer)
+            startApplicationLaunchView(event, datadogContext, writeScope, writer)
             return this
         }
 
-        delegateToChildren(event, writer)
+        delegateToChildren(event, datadogContext, writeScope, writer)
 
         if (event is RumRawEvent.StartView && !stopped) {
-            startForegroundView(event, writer)
+            startForegroundView(event, datadogContext, writeScope, writer)
             lastStoppedViewTime?.let {
                 val gap = event.eventTime.nanoTime - it.nanoTime
                 if (gap in 1 until THREE_SECONDS_GAP_NS) {
@@ -112,7 +129,7 @@ internal class RumViewManagerScope(
         } else if (event is RumRawEvent.StopSession) {
             stopped = true
         } else if (childrenScopes.count { it.isActive() } == 0) {
-            handleOrphanEvent(event, writer)
+            handleOrphanEvent(event, datadogContext, writeScope, writer)
         }
 
         return if (isViewManagerComplete()) {
@@ -134,6 +151,14 @@ internal class RumViewManagerScope(
 
     // region Internal
 
+    internal fun renewViewScopes(eventTime: Time) {
+        val newChildScope = childrenScopes.map { rumViewScope ->
+            rumViewScope.renew(eventTime)
+        }
+        childrenScopes.clear()
+        childrenScopes.addAll(newChildScope)
+    }
+
     private fun isViewManagerComplete(): Boolean {
         return stopped && childrenScopes.isEmpty()
     }
@@ -141,17 +166,21 @@ internal class RumViewManagerScope(
     @WorkerThread
     private fun startApplicationLaunchView(
         event: RumRawEvent.ApplicationStarted,
+        datadogContext: DatadogContext,
+        writeScope: EventWriteScope,
         writer: DataWriter<Any>
     ) {
         val viewScope = createAppLaunchViewScope(event.eventTime)
         applicationDisplayed = true
-        viewScope.handleEvent(event, writer)
+        viewScope.handleEvent(event, datadogContext, writeScope, writer)
         childrenScopes.add(viewScope)
     }
 
     @WorkerThread
     private fun delegateToChildren(
         event: RumRawEvent,
+        datadogContext: DatadogContext,
+        writeScope: EventWriteScope,
         writer: DataWriter<Any>
     ) {
         val hasNoView = childrenScopes.isEmpty()
@@ -166,7 +195,7 @@ internal class RumViewManagerScope(
                     lastStoppedViewTime = event.eventTime
                 }
             }
-            val result = childScope.handleEvent(event, writer)
+            val result = childScope.handleEvent(event, datadogContext, writeScope, writer)
             if (result == null) {
                 iterator.remove()
             }
@@ -189,7 +218,12 @@ internal class RumViewManagerScope(
     }
 
     @WorkerThread
-    private fun handleOrphanEvent(event: RumRawEvent, writer: DataWriter<Any>) {
+    private fun handleOrphanEvent(
+        event: RumRawEvent,
+        datadogContext: DatadogContext,
+        writeScope: EventWriteScope,
+        writer: DataWriter<Any>
+    ) {
         val processFlag = DdRumContentProvider.processImportance
         val importanceForeground = ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND
         val isForegroundProcess = processFlag == importanceForeground
@@ -204,7 +238,7 @@ internal class RumViewManagerScope(
             // send the API usage telemetry
             return
         } else if (applicationDisplayed || !isForegroundProcess) {
-            handleBackgroundEvent(event, writer)
+            handleBackgroundEvent(event, datadogContext, writeScope, writer)
         } else {
             val isSilentOrphanEvent = event.javaClass in silentOrphanEventTypes
             if (!isSilentOrphanEvent) {
@@ -227,7 +261,12 @@ internal class RumViewManagerScope(
     }
 
     @WorkerThread
-    private fun startForegroundView(event: RumRawEvent.StartView, writer: DataWriter<Any>) {
+    private fun startForegroundView(
+        event: RumRawEvent.StartView,
+        datadogContext: DatadogContext,
+        writeScope: EventWriteScope,
+        writer: DataWriter<Any>
+    ) {
         val viewScope = RumViewScope.fromEvent(
             parentScope = this,
             sessionEndedMetricDispatcher = sessionEndedMetricDispatcher,
@@ -250,7 +289,7 @@ internal class RumViewManagerScope(
         )
         applicationDisplayed = true
         childrenScopes.add(viewScope)
-        viewScope.handleEvent(RumRawEvent.KeepAlive(), writer)
+        viewScope.handleEvent(RumRawEvent.KeepAlive(), datadogContext, writeScope, writer)
         viewChangedListener?.onViewChanged(
             RumViewInfo(
                 key = event.key,
@@ -263,6 +302,8 @@ internal class RumViewManagerScope(
     @WorkerThread
     private fun handleBackgroundEvent(
         event: RumRawEvent,
+        datadogContext: DatadogContext,
+        writeScope: EventWriteScope,
         writer: DataWriter<Any>
     ) {
         if (event is RumRawEvent.AddError && event.throwable is ANRException) {
@@ -277,7 +318,7 @@ internal class RumViewManagerScope(
             // is in background and we will create a special ViewScope (background)
             // to handle all the events.
             val viewScope = createBackgroundViewScope(event)
-            viewScope.handleEvent(event, writer)
+            viewScope.handleEvent(event, datadogContext, writeScope, writer)
             childrenScopes.add(viewScope)
             lastStoppedViewTime = null
         } else if (!isSilentOrphanEvent) {
@@ -424,6 +465,9 @@ internal class RumViewManagerScope(
 
         internal const val NO_ACTIVE_VIEW_FOR_LOADING_TIME_WARNING_MESSAGE =
             "No active view found to add the loading time."
+
+        internal const val MULTIPLE_ACTIVE_VIEWS_ERROR =
+            "Multiple views are active at the same time, this shouldn't happen."
 
         internal val THREE_SECONDS_GAP_NS = TimeUnit.SECONDS.toNanos(3)
     }

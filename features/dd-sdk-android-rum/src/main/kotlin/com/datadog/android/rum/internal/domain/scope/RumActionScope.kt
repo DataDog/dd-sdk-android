@@ -7,9 +7,10 @@
 package com.datadog.android.rum.internal.domain.scope
 
 import androidx.annotation.WorkerThread
+import com.datadog.android.api.context.DatadogContext
+import com.datadog.android.api.feature.EventWriteScope
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.core.InternalSdkCore
-import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumSessionType
 import com.datadog.android.rum.internal.FeaturesContextResolver
@@ -27,7 +28,7 @@ import java.util.concurrent.TimeUnit
 import kotlin.math.max
 
 internal class RumActionScope(
-    val parentScope: RumScope,
+    override val parentScope: RumScope,
     private val sdkCore: InternalSdkCore,
     val waitForStop: Boolean,
     eventTime: Time,
@@ -55,9 +56,7 @@ internal class RumActionScope(
     private var lastInteractionNanos: Long = startedNanos
     private val networkInfo = sdkCore.networkInfo
 
-    internal val attributes: MutableMap<String, Any?> = initialAttributes.toMutableMap().apply {
-        putAll(GlobalRumMonitor.get(sdkCore).getAttributes())
-    }
+    internal val actionAttributes: MutableMap<String, Any?> = initialAttributes.toMutableMap()
 
     private val ongoingResourceKeys = mutableListOf<WeakReference<Any>>()
 
@@ -72,7 +71,12 @@ internal class RumActionScope(
     // endregion
 
     @WorkerThread
-    override fun handleEvent(event: RumRawEvent, writer: DataWriter<Any>): RumScope? {
+    override fun handleEvent(
+        event: RumRawEvent,
+        datadogContext: DatadogContext,
+        writeScope: EventWriteScope,
+        writer: DataWriter<Any>
+    ): RumScope? {
         val now = event.eventTime.nanoTime
         val isInactive = now - lastInteractionNanos > inactivityThresholdNs
         val isLongDuration = now - startedNanos > maxDurationNs
@@ -81,16 +85,21 @@ internal class RumActionScope(
         val shouldStop = isInactive && ongoingResourceKeys.isEmpty() && !isOngoing
 
         when {
-            shouldStop -> sendAction(lastInteractionNanos, writer)
-            isLongDuration -> sendAction(now, writer)
-            event is RumRawEvent.SendCustomActionNow -> sendAction(lastInteractionNanos, writer)
-            event is RumRawEvent.StartView -> onStartView(now, writer)
-            event is RumRawEvent.StopView -> onStopView(now, writer)
-            event is RumRawEvent.StopSession -> onStopSession(now, writer)
+            shouldStop -> sendAction(lastInteractionNanos, datadogContext, writeScope, writer)
+            isLongDuration -> sendAction(now, datadogContext, writeScope, writer)
+            event is RumRawEvent.SendCustomActionNow -> sendAction(
+                lastInteractionNanos,
+                datadogContext,
+                writeScope,
+                writer
+            )
+            event is RumRawEvent.StartView -> onStartView(now, datadogContext, writeScope, writer)
+            event is RumRawEvent.StopView -> onStopView(now, datadogContext, writeScope, writer)
+            event is RumRawEvent.StopSession -> onStopSession(now, datadogContext, writeScope, writer)
             event is RumRawEvent.StopAction -> onStopAction(event, now)
             event is RumRawEvent.StartResource -> onStartResource(event, now)
             event is RumRawEvent.StopResource -> onStopResource(event, now)
-            event is RumRawEvent.AddError -> onError(event, now, writer)
+            event is RumRawEvent.AddError -> onError(event, now, datadogContext, writeScope, writer)
             event is RumRawEvent.StopResourceWithError -> onResourceError(event.key, now)
             event is RumRawEvent.StopResourceWithStackTrace -> onResourceError(event.key, now)
             event is RumRawEvent.AddLongTask -> onLongTask(now)
@@ -101,6 +110,10 @@ internal class RumActionScope(
 
     override fun getRumContext(): RumContext {
         return parentScope.getRumContext()
+    }
+
+    override fun getCustomAttributes(): Map<String, Any?> {
+        return parentScope.getCustomAttributes() + actionAttributes
     }
 
     override fun isActive(): Boolean {
@@ -114,29 +127,35 @@ internal class RumActionScope(
     @WorkerThread
     private fun onStartView(
         now: Long,
+        datadogContext: DatadogContext,
+        writeScope: EventWriteScope,
         writer: DataWriter<Any>
     ) {
         // another view starts, complete this action
         ongoingResourceKeys.clear()
-        sendAction(now, writer)
+        sendAction(now, datadogContext, writeScope, writer)
     }
 
     @WorkerThread
     private fun onStopView(
         now: Long,
+        datadogContext: DatadogContext,
+        writeScope: EventWriteScope,
         writer: DataWriter<Any>
     ) {
         ongoingResourceKeys.clear()
-        sendAction(now, writer)
+        sendAction(now, datadogContext, writeScope, writer)
     }
 
     @WorkerThread
     private fun onStopSession(
         now: Long,
+        datadogContext: DatadogContext,
+        writeScope: EventWriteScope,
         writer: DataWriter<Any>
     ) {
         ongoingResourceKeys.clear()
-        sendAction(now, writer)
+        sendAction(now, datadogContext, writeScope, writer)
     }
 
     private fun onStopAction(
@@ -145,7 +164,7 @@ internal class RumActionScope(
     ) {
         event.type?.let { type = it }
         event.name?.let { name = it }
-        attributes.putAll(event.attributes)
+        actionAttributes.putAll(event.attributes)
         stopped = true
         stoppedNanos = now
         lastInteractionNanos = now
@@ -175,6 +194,8 @@ internal class RumActionScope(
     private fun onError(
         event: RumRawEvent.AddError,
         now: Long,
+        datadogContext: DatadogContext,
+        writeScope: EventWriteScope,
         writer: DataWriter<Any>
     ) {
         lastInteractionNanos = now
@@ -182,7 +203,7 @@ internal class RumActionScope(
 
         if (event.isFatal) {
             crashCount++
-            sendAction(now, writer)
+            sendAction(now, datadogContext, writeScope, writer)
         }
     }
 
@@ -204,13 +225,13 @@ internal class RumActionScope(
     @Suppress("LongMethod", "ComplexMethod")
     private fun sendAction(
         endNanos: Long,
+        datadogContext: DatadogContext,
+        writeScope: EventWriteScope,
         writer: DataWriter<Any>
     ) {
         if (sent) return
 
         val actualType = type
-        attributes.putAll(GlobalRumMonitor.get(sdkCore).getAttributes())
-        val eventAttributes = attributes.toMutableMap()
         val rumContext = getRumContext()
 
         // make a copy so that closure captures at the state as of now
@@ -246,7 +267,7 @@ internal class RumActionScope(
             frustrations.add(ActionEvent.Type.ERROR_TAP)
         }
 
-        sdkCore.newRumEventWriteOperation(writer) { datadogContext ->
+        sdkCore.newRumEventWriteOperation(datadogContext, writeScope, writer) {
             val user = datadogContext.userInfo
             val hasReplay = featuresContextResolver.resolveViewHasReplay(
                 datadogContext,
@@ -321,7 +342,7 @@ internal class RumActionScope(
                     locales = datadogContext.deviceInfo.localeInfo.locales,
                     timeZone = datadogContext.deviceInfo.localeInfo.timeZone
                 ),
-                context = ActionEvent.Context(additionalProperties = eventAttributes),
+                context = ActionEvent.Context(additionalProperties = getCustomAttributes().toMutableMap()),
                 dd = ActionEvent.Dd(
                     session = ActionEvent.DdSession(
                         sessionPrecondition = rumContext.sessionStartReason.toActionSessionPrecondition()

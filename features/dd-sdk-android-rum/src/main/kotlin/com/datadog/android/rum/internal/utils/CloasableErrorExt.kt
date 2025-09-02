@@ -13,5 +13,5 @@ import com.datadog.android.rum.RumErrorSource
 internal const val CLOSABLE_ERROR_MESSAGE = "Error while using the closeable"
 
 internal fun handleClosableError(throwable: Throwable, sdkCore: SdkCore) {
-    GlobalRumMonitor.get(sdkCore).addError(CLOSABLE_ERROR_MESSAGE, RumErrorSource.SOURCE, throwable, emptyMap())
+    GlobalRumMonitor.get(sdkCore).addError(CLOSABLE_ERROR_MESSAGE, RumErrorSource.SOURCE, throwable)
 }
