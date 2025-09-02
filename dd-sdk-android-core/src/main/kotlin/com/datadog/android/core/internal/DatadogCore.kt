@@ -181,7 +181,9 @@ internal class DatadogCore(
     /** @inheritDoc */
     @AnyThread
     override fun clearUserInfo() {
-        coreFeature.userInfoProvider.clearUserInfo()
+        coreFeature.contextExecutorService.executeSafe("DatadogCore.clearUserInfo", internalLogger) {
+            coreFeature.userInfoProvider.clearUserInfo()
+        }
     }
 
     /** @inheritDoc */

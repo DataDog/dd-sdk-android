@@ -253,8 +253,11 @@ internal class DatadogCoreTest {
     ) {
         // Given
         val uuid = forge.getForgery<UUID>()
+        testedCore.coreFeature = mock()
+        whenever(testedCore.coreFeature.initialized).thenReturn(AtomicBoolean(true))
         val mockUserInfoProvider = mock<MutableUserInfoProvider>()
-        testedCore.coreFeature.userInfoProvider = mockUserInfoProvider
+        whenever(testedCore.coreFeature.userInfoProvider) doReturn mockUserInfoProvider
+        whenever(testedCore.coreFeature.contextExecutorService) doReturn mockContextExecutorService
 
         // When
         testedCore.setAnonymousId(uuid)
@@ -266,8 +269,11 @@ internal class DatadogCoreTest {
     @Test
     fun `M clear anonymousId W setAnonymousId(null)`() {
         // Given
+        testedCore.coreFeature = mock()
+        whenever(testedCore.coreFeature.initialized).thenReturn(AtomicBoolean(true))
         val mockUserInfoProvider = mock<MutableUserInfoProvider>()
-        testedCore.coreFeature.userInfoProvider = mockUserInfoProvider
+        whenever(testedCore.coreFeature.userInfoProvider) doReturn mockUserInfoProvider
+        whenever(testedCore.coreFeature.contextExecutorService) doReturn mockContextExecutorService
 
         // When
         testedCore.setAnonymousId(null)
@@ -314,10 +320,13 @@ internal class DatadogCoreTest {
     }
 
     @Test
-    fun `M clear user info W clearUserInfo() is called`() {
+    fun `M clear user info W clearUserInfo()`() {
         // Given
+        testedCore.coreFeature = mock()
+        whenever(testedCore.coreFeature.initialized).thenReturn(AtomicBoolean(true))
         val mockUserInfoProvider = mock<MutableUserInfoProvider>()
-        testedCore.coreFeature.userInfoProvider = mockUserInfoProvider
+        whenever(testedCore.coreFeature.userInfoProvider) doReturn mockUserInfoProvider
+        whenever(testedCore.coreFeature.contextExecutorService) doReturn mockContextExecutorService
 
         // When
         testedCore.clearUserInfo()
@@ -368,6 +377,22 @@ internal class DatadogCoreTest {
             emptyMap()
         )
         verify(mockAccountInfoProvider).addExtraInfo(extraInfo = fakeExtraProperties)
+    }
+
+    @Test
+    fun `M clear account info W clearAccountInfo()`() {
+        // Given
+        testedCore.coreFeature = mock()
+        whenever(testedCore.coreFeature.initialized).thenReturn(AtomicBoolean(true))
+        val mockAccountInfoProvider = mock<MutableAccountInfoProvider>()
+        whenever(testedCore.coreFeature.accountInfoProvider) doReturn mockAccountInfoProvider
+        whenever(testedCore.coreFeature.contextExecutorService) doReturn mockContextExecutorService
+
+        // When
+        testedCore.clearAccountInfo()
+
+        // Then
+        verify(mockAccountInfoProvider).clearAccountInfo()
     }
 
     // region update + read feature context
