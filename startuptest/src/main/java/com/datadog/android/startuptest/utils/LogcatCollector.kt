@@ -9,6 +9,7 @@ package com.datadog.android.startuptest.utils
 import android.app.Instrumentation
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.isActive
 import java.io.BufferedReader
 import java.io.FileInputStream
 import java.io.InputStreamReader
@@ -21,9 +22,7 @@ class LogcatCollector(private val inst: Instrumentation) {
                 val stdout = FileInputStream(fd.fileDescriptor)
                 BufferedReader(InputStreamReader(stdout)).useLines { lines ->
                     lines.forEach { line ->
-                        if (!line.contains("WAHAHA_COPY")) {
-                            emit(line)
-                        }
+                        emit(line)
                     }
                 }
             }

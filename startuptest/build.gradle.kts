@@ -38,6 +38,7 @@ dependencies {
     implementation("androidx.test.uiautomator:uiautomator:2.3.0")
     implementation(libs.jUnit4)
     implementation(kotlin("test"))
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.9.0")
 }
 
 androidComponents {

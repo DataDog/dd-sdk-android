@@ -17,21 +17,32 @@ import androidx.test.uiautomator.Until
 import com.datadog.android.startuptest.utils.LogcatCollector
 import junit.framework.Assert.assertEquals
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.async
+import kotlinx.coroutines.cancelChildren
+import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.flow.timeout
+import kotlinx.coroutines.job
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.withContext
 import org.hamcrest.CoreMatchers.notNullValue
 import org.hamcrest.MatcherAssert.assertThat
+import org.junit.Ignore
 import org.junit.Test
 import org.junit.runner.RunWith
 import kotlin.time.Duration.Companion.seconds
@@ -91,42 +102,34 @@ class FirstTest {
 //    }
 
     @Test
-    fun test_warm() = runBlocking(Dispatchers.IO) {
-        val logcatData = LogcatCollector(InstrumentationRegistry.getInstrumentation())
+    @Ignore
+    fun test_dummy() = runTest {
+        val logcatData =
+            MutableSharedFlow<String>(onBufferOverflow = BufferOverflow.DROP_OLDEST, extraBufferCapacity = 1024)
+
+        val logcatJob = LogcatCollector(InstrumentationRegistry.getInstrumentation())
             .subscribe("logcat -s AppStartupTypeManager2")
-            .shareIn(this, SharingStarted.Eagerly)
+            .flowOn(Dispatchers.IO)
+            .onEach { logcatData.tryEmit(it) }
+            .launchIn(this)
 
-        suspend fun executeAndWaitForLogcat(predicate: (String) -> Boolean, block: () -> Unit): Boolean = coroutineScope {
-            val logcatResultDeferred = async {
-                logcatData
-                    .onEach {
-                        Log.w("WAGAGA", it)
-                    }
-                    .filter(predicate)
-                    .map { Result.success(it) }
-                    .timeout(10.seconds)
-                    .catch { e ->
-                        if (e is TimeoutCancellationException) {
-                            emit(Result.failure(e))
-                        } else {
-                            throw e
-                        }
-                    }
-                    .first()
-            }
+        delay(1000)
+        logcatJob.cancel()
+    }
 
-            block()
+    @Test
+    fun test_warm() = runTest {
+        Log.w("WAGAGA", "1")
 
-            val logcatResult = logcatResultDeferred.await()
-
-            return@coroutineScope logcatResult.isSuccess
-        }
+        Log.w("WAGAGA", "2")
 
         // Initialize UiDevice instance
         device = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
+        Log.w("WAGAGA", "3")
 
         // Start from the home screen
         device.pressHome()
+        Log.w("WAGAGA", "4")
 
         // Wait for launcher
         val launcherPackage: String = device.launcherPackageName
@@ -135,6 +138,49 @@ class FirstTest {
             Until.hasObject(By.pkg(launcherPackage).depth(0)),
             LAUNCH_TIMEOUT
         )
+
+        Log.w("WAGAGA", "5")
+
+        val logcatData = MutableSharedFlow<String>(onBufferOverflow = BufferOverflow.DROP_OLDEST, extraBufferCapacity = 1024)
+
+        val logcatJob = LogcatCollector(InstrumentationRegistry.getInstrumentation())
+            .subscribe("logcat -s AppStartupTypeManager2")
+            .flowOn(Dispatchers.IO)
+            .onEach { logcatData.tryEmit(it) }
+            .launchIn(this)
+//
+        suspend fun executeAndWaitForLogcat(predicate: (String) -> Boolean, block: () -> Unit): Boolean = coroutineScope {
+            withContext(Dispatchers.IO) {
+                Log.w("WAGAGA", "8")
+                val logcatResultDeferred = async {
+                    logcatData
+                        .filter(predicate)
+                        .map {
+                            Result.success(it)
+                        }
+//                        .timeout(10.seconds)
+//                        .catch { e ->
+//                            if (e is TimeoutCancellationException) {
+//                                emit(Result.failure(e))
+//                            } else {
+//                                throw e
+//                            }
+//                        }
+                        .first()
+                }
+
+                delay(2.seconds)
+                block()
+
+                Log.w("WAGAGA", "9")
+
+                val logcatResult = logcatResultDeferred.await()
+
+                Log.w("WAGAGA", "10")
+
+                logcatResult.isSuccess
+            }
+        }
 
         // Launch the app
         val context = InstrumentationRegistry.getInstrumentation().context
@@ -145,9 +191,26 @@ class FirstTest {
 
         context.sendBroadcast(broadcastIntent)
 
+        Log.w("WAGAGA", "6")
+
         delay(10.seconds)
 
-        val result = executeAndWaitForLogcat({it.contains("warm_3")}) {
+        Log.w("WAGAGA", "7")
+
+        val intent = Intent().apply {
+            component = ComponentName(BASIC_SAMPLE_PACKAGE, "$BASIC_SAMPLE_PACKAGE.MainActivity")
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+
+        context.startActivity(intent)
+
+        // Wait for the app to appear
+        device.wait(
+            Until.hasObject(By.pkg(BASIC_SAMPLE_PACKAGE).depth(0)),
+            LAUNCH_TIMEOUT
+        )
+
+        val result = executeAndWaitForLogcat({it.contains("scenario 3")}) {
             val intent = Intent().apply {
                 component = ComponentName(BASIC_SAMPLE_PACKAGE, "$BASIC_SAMPLE_PACKAGE.MainActivity")
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
@@ -161,7 +224,29 @@ class FirstTest {
                 LAUNCH_TIMEOUT
             )
         }
-
+//
         assertEquals(result, true)
+        Log.w("WAGAGA", "12_1")
+        logcatJob.cancel()
+        Log.w("WAGAGA", "12_2")
+        coroutineContext.cancelChildren()
+        Log.w("WAGAGA", "12_3")
+        delay(1000)
+        Log.w("WAGAGA", "12_4")
+        val job = coroutineContext[Job]!!
+        Log.w("WAGAGA", "12_5")
+        val allChildren = job.allChildren().toList()
+        Log.w("WAGAGA", "children count: ${allChildren.size}")
+//        coroutineContext.cancelChildren()
+        Log.w("WAGAGA", "11")
+    }
+}
+
+private fun Job.allChildren(): Sequence<Job> {
+    return sequence {
+        job.children.forEach { chld ->
+            yield(chld)
+            yieldAll(chld.allChildren())
+        }
     }
 }
