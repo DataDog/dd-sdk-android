@@ -36,6 +36,8 @@ dependencies {
     implementation(libs.androidXTestJUnitExt)
     implementation(libs.androidXTestRules)
     implementation("androidx.test.uiautomator:uiautomator:2.3.0")
+    implementation(libs.jUnit4)
+    implementation(kotlin("test"))
 }
 
 androidComponents {

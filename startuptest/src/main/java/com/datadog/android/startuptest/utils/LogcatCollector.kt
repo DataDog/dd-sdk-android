@@ -14,6 +14,7 @@ import java.io.FileInputStream
 import java.io.InputStreamReader
 
 class LogcatCollector(private val inst: Instrumentation) {
+
     fun subscribe(command: String): Flow<String> {
         return flow {
             inst.uiAutomation.executeShellCommand(command).use { fd ->
