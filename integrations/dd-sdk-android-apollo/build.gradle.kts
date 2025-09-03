@@ -54,5 +54,5 @@ kotlinConfig(jvmBytecodeTarget = JvmTarget.JVM_11)
 junitConfig()
 androidLibraryConfig()
 publishingConfig(
-    projectDescription = "An interceptor for handling graphql requests"
+    projectDescription = "An Apollo interceptor for handling graphql requests"
 )

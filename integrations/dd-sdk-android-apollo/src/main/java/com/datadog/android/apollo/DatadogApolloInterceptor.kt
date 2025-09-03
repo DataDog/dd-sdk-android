@@ -83,9 +83,9 @@ class DatadogApolloInterceptor(
         }
 
     internal companion object {
-        const val DD_GRAPHQL_NAME_HEADER = "_dd-custom-header-graph-ql-operation-name"
-        const val DD_GRAPHQL_VARIABLES_HEADER = "_dd-custom-header-graph-ql-variables"
-        const val DD_GRAPHQL_TYPE_HEADER = "_dd-custom-header-graph-ql-operation-type"
-        const val DD_GRAPHQL_PAYLOAD_HEADER = "_dd-custom-header-graph-ql-payload"
+        const val DD_GRAPHQL_NAME_HEADER = "_dd.graphql.operation_name"
+        const val DD_GRAPHQL_VARIABLES_HEADER = "_dd.graphql.variables"
+        const val DD_GRAPHQL_TYPE_HEADER = "_dd.graphql.operation_type"
+        const val DD_GRAPHQL_PAYLOAD_HEADER = "_dd.graphql.payload"
     }
 }

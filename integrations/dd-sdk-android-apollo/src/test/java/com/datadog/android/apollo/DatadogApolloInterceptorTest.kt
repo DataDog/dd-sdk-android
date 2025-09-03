@@ -306,10 +306,10 @@ internal class DatadogApolloInterceptorTest {
     @Test
     fun `M have correct header constants W companion object { expected values }`() {
         // Then
-        assertThat(DD_GRAPHQL_NAME_HEADER).isEqualTo("_dd-custom-header-graph-ql-operation-name")
-        assertThat(DD_GRAPHQL_TYPE_HEADER).isEqualTo("_dd-custom-header-graph-ql-operation-type")
-        assertThat(DD_GRAPHQL_VARIABLES_HEADER).isEqualTo("_dd-custom-header-graph-ql-variables")
-        assertThat(DD_GRAPHQL_PAYLOAD_HEADER).isEqualTo("_dd-custom-header-graph-ql-payload")
+        assertThat(DD_GRAPHQL_NAME_HEADER).isEqualTo("_dd.graphql.operation_name")
+        assertThat(DD_GRAPHQL_TYPE_HEADER).isEqualTo("_dd.graphql.operation_type")
+        assertThat(DD_GRAPHQL_VARIABLES_HEADER).isEqualTo("_dd.graphql.variables")
+        assertThat(DD_GRAPHQL_PAYLOAD_HEADER).isEqualTo("_dd.graphql.payload")
     }
 
     // endregion

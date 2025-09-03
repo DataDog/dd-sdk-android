@@ -1,6 +1,6 @@
 # Datadog Integration for Apollo-Kotlin
 
-## Getting Started
+## Getting started
 
 Note that we support only Apollo version 4.
 
@@ -15,12 +15,12 @@ dependencies {
 }
 ```
 
-### Initial Setup
+### Initial setup
 
-1. Setup RUM monitoring, see the dedicated [Datadog Android RUM Collection documentation][2] to learn how.
-2. Setup OkHttp instrumentation with Datadog RUM SDK, see the [dedicated documentation][3] to learn how.
+1. Set up RUM monitoring with [Datadog Android RUM][2].
+2. Set up OkHttp instrumentation with the [Datadog RUM SDK][3].
 
-Add the Datadog interceptor to your apollo client setup:
+Add the Datadog interceptor to your Apollo Client setup:
  
 ```kotlin
 val apolloClient = ApolloClient.Builder()
@@ -33,9 +33,9 @@ val apolloClient = ApolloClient.Builder()
 This automatically adds Datadog headers to your GraphQL requests, allowing them to be tracked
 by Datadog. Note that while `query` and `mutation` type operations are tracked, `subscription` operations are not.
 
-#### Sending GraphQL Payloads
+#### Sending GraphQL payloads
 
-GraphQL payload capture is disabled by default, so if you want to use it you must set the `captureGraphQLPayloads` flag in the RumConfiguration as follows: 
+GraphQL payload capture is disabled by default. To use it, set the `captureGraphQLPayloads` flag in the RumConfiguration as follows: 
 
 ```kotlin
  val rumConfig = RumConfiguration.Builder(applicationId)

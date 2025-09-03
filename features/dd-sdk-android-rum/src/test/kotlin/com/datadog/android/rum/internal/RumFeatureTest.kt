@@ -15,7 +15,6 @@ import android.content.Context
 import android.content.res.Resources
 import android.os.Build
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.api.feature.Feature.Companion.RUM_FEATURE_NAME
 import com.datadog.android.api.feature.FeatureContextUpdateReceiver
 import com.datadog.android.api.storage.NoOpDataWriter
 import com.datadog.android.core.InternalSdkCore
@@ -1532,79 +1531,6 @@ internal class RumFeatureTest {
 
         // Then
         assertThat(testedFeature.displayInfoProvider).isInstanceOf(InfoProvider::class.java)
-    }
-
-    // endregion
-
-    // region captureGraphQLPayloads
-
-    @Test
-    fun `M set featureContext GraphQL payload flag to true W onInitialize() { captureGraphQLPayloads true }`() {
-        // Given
-        fakeConfiguration = fakeConfiguration.copy(captureGraphQLPayloads = true)
-        testedFeature = RumFeature(
-            mockSdkCore,
-            fakeApplicationId.toString(),
-            fakeConfiguration,
-            lateCrashReporterFactory = { mockLateCrashReporter }
-        )
-
-        // When
-        testedFeature.onInitialize(appContext.mockInstance)
-
-        // Then
-        argumentCaptor<(MutableMap<String, Any?>) -> Unit> {
-            verify(mockSdkCore).updateFeatureContext(eq(RUM_FEATURE_NAME), true, capture())
-
-            val featureContext = mutableMapOf<String, Any?>()
-            firstValue.invoke(featureContext)
-
-            assertThat(featureContext[RumFeature.SEND_GRAPHQL_PAYLOADS_KEY]).isEqualTo(true)
-        }
-    }
-
-    @Test
-    fun `M set featureContext GraphQL payload flag to false W onInitialize() { captureGraphQLPayloads false }`() {
-        // Given
-        fakeConfiguration = fakeConfiguration.copy(captureGraphQLPayloads = false)
-        testedFeature = RumFeature(
-            mockSdkCore,
-            fakeApplicationId.toString(),
-            fakeConfiguration,
-            lateCrashReporterFactory = { mockLateCrashReporter }
-        )
-
-        // When
-        testedFeature.onInitialize(appContext.mockInstance)
-
-        // Then
-        argumentCaptor<(MutableMap<String, Any?>) -> Unit> {
-            verify(mockSdkCore).updateFeatureContext(eq(RUM_FEATURE_NAME), true, capture())
-
-            val featureContext = mutableMapOf<String, Any?>()
-            firstValue.invoke(featureContext)
-
-            assertThat(featureContext[RumFeature.SEND_GRAPHQL_PAYLOADS_KEY]).isEqualTo(false)
-        }
-    }
-
-    @Test
-    fun `M set featureContext GraphQL payload flag to default W onInitialize() { captureGraphQLPayloads null }`() {
-        // When
-        testedFeature.onInitialize(appContext.mockInstance)
-
-        // Then
-        argumentCaptor<(MutableMap<String, Any?>) -> Unit> {
-            verify(mockSdkCore).updateFeatureContext(eq(RUM_FEATURE_NAME), true,capture())
-
-            val featureContext = mutableMapOf<String, Any?>()
-            firstValue.invoke(featureContext)
-
-            assertThat(featureContext).containsKey(RumFeature.SEND_GRAPHQL_PAYLOADS_KEY)
-            assertThat(
-                featureContext[RumFeature.SEND_GRAPHQL_PAYLOADS_KEY]
-            ).isEqualTo(fakeConfiguration.captureGraphQLPayloads)
-        }
     }
 
     // endregion

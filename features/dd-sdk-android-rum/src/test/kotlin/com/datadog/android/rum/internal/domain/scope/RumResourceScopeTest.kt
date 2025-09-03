@@ -28,6 +28,7 @@ import com.datadog.android.rum.internal.RumFeature.Companion.SEND_GRAPHQL_PAYLOA
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
+import com.datadog.android.rum.internal.domain.scope.RumResourceScope.Companion.MAX_GRAPHQL_PAYLOAD_SIZE
 import com.datadog.android.rum.internal.metric.networksettled.InternalResourceContext
 import com.datadog.android.rum.internal.metric.networksettled.NetworkSettledMetricResolver
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
@@ -51,6 +52,7 @@ import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.FloatForgery
 import fr.xgouchet.elmyr.annotation.Forgery
+import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.annotation.StringForgeryType
@@ -142,6 +144,9 @@ internal class RumResourceScopeTest {
     @Forgery
     lateinit var fakeNetworkInfoAtScopeStart: NetworkInfo
 
+    @BoolForgery
+    var fakeCaptureGraphQLPayloads: Boolean = false
+
     private var fakeServerOffset: Long = 0L
     private var fakeSampleRate: Float = 0.0f
 
@@ -224,7 +229,8 @@ internal class RumResourceScopeTest {
             featuresContextResolver = mockFeaturesContextResolver,
             sampleRate = fakeSampleRate,
             networkSettledMetricResolver = mockNetworkSettledMetricResolver,
-            rumSessionTypeOverride = fakeRumSessionType
+            rumSessionTypeOverride = fakeRumSessionType,
+            captureGraphQlPayloads = fakeCaptureGraphQLPayloads
         )
     }
 
@@ -422,7 +428,8 @@ internal class RumResourceScopeTest {
             featuresContextResolver = mockFeaturesContextResolver,
             sampleRate = fakeSampleRate,
             networkSettledMetricResolver = mockNetworkSettledMetricResolver,
-            rumSessionTypeOverride = fakeRumSessionType
+            rumSessionTypeOverride = fakeRumSessionType,
+            captureGraphQlPayloads = fakeCaptureGraphQLPayloads
         )
         doAnswer { true }.whenever(mockResolver).isFirstPartyUrl(brokenUrl)
         val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys)
@@ -666,7 +673,8 @@ internal class RumResourceScopeTest {
             featuresContextResolver = mockFeaturesContextResolver,
             sampleRate = fakeSampleRate,
             networkSettledMetricResolver = mockNetworkSettledMetricResolver,
-            rumSessionTypeOverride = fakeRumSessionType
+            rumSessionTypeOverride = fakeRumSessionType,
+            captureGraphQlPayloads = fakeCaptureGraphQLPayloads
         )
 
         // When
@@ -911,7 +919,8 @@ internal class RumResourceScopeTest {
             featuresContextResolver = mockFeaturesContextResolver,
             sampleRate = fakeSampleRate,
             networkSettledMetricResolver = mockNetworkSettledMetricResolver,
-            rumSessionTypeOverride = fakeRumSessionType
+            rumSessionTypeOverride = fakeRumSessionType,
+            captureGraphQlPayloads = fakeCaptureGraphQLPayloads
         )
         whenever(rumMonitor.mockInstance.getAttributes()) doReturn emptyMap()
 
@@ -1463,7 +1472,8 @@ internal class RumResourceScopeTest {
             featuresContextResolver = mockFeaturesContextResolver,
             sampleRate = fakeSampleRate,
             networkSettledMetricResolver = mockNetworkSettledMetricResolver,
-            rumSessionTypeOverride = fakeRumSessionType
+            rumSessionTypeOverride = fakeRumSessionType,
+            captureGraphQlPayloads = fakeCaptureGraphQLPayloads
         )
 
         // When
@@ -1562,7 +1572,8 @@ internal class RumResourceScopeTest {
             featuresContextResolver = mockFeaturesContextResolver,
             sampleRate = fakeSampleRate,
             networkSettledMetricResolver = mockNetworkSettledMetricResolver,
-            rumSessionTypeOverride = fakeRumSessionType
+            rumSessionTypeOverride = fakeRumSessionType,
+            captureGraphQlPayloads = fakeCaptureGraphQLPayloads
         )
 
         // When
@@ -1640,7 +1651,8 @@ internal class RumResourceScopeTest {
             featuresContextResolver = mockFeaturesContextResolver,
             sampleRate = fakeSampleRate,
             networkSettledMetricResolver = mockNetworkSettledMetricResolver,
-            rumSessionTypeOverride = fakeRumSessionType
+            rumSessionTypeOverride = fakeRumSessionType,
+            captureGraphQlPayloads = fakeCaptureGraphQLPayloads
         )
         doAnswer { true }.whenever(mockResolver).isFirstPartyUrl(brokenUrl)
         val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys)
@@ -1736,7 +1748,8 @@ internal class RumResourceScopeTest {
             featuresContextResolver = mockFeaturesContextResolver,
             sampleRate = fakeSampleRate,
             networkSettledMetricResolver = mockNetworkSettledMetricResolver,
-            rumSessionTypeOverride = fakeRumSessionType
+            rumSessionTypeOverride = fakeRumSessionType,
+            captureGraphQlPayloads = fakeCaptureGraphQLPayloads
         )
         doAnswer { true }.whenever(mockResolver).isFirstPartyUrl(brokenUrl)
         val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys)
@@ -2828,6 +2841,7 @@ internal class RumResourceScopeTest {
             )
 
         mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
+        val expectedPayload = if (!fakeCaptureGraphQLPayloads) null else payload
 
         // When
         testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
@@ -2835,7 +2849,7 @@ internal class RumResourceScopeTest {
         // Then
         argumentCaptor<ResourceEvent> {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
-            assertThat(firstValue).hasGraphql(operationType, operationName, payload, variables)
+            assertThat(firstValue).hasGraphql(operationType, operationName, expectedPayload, variables)
         }
     }
 
@@ -3029,252 +3043,6 @@ internal class RumResourceScopeTest {
 
     // region GraphQL
 
-    @Test
-    fun `M detect cross-platform context W handleEvent { any cross-platform attribute }`(
-        @Forgery kind: RumResourceKind,
-        @LongForgery(200, 600) statusCode: Long,
-        @LongForgery(0, 1024) size: Long,
-        forge: Forge
-    ) {
-        // Given
-        whenever(rumMonitor.mockSdkCore.getFeatureContext(RUM_FEATURE_NAME))
-            .thenReturn(mapOf(SEND_GRAPHQL_PAYLOADS_KEY to true))
-
-        val operationType = forge.aValueFrom(ResourceEvent.OperationType::class.java)
-        val operationName = forge.aNullable { aString() }
-        val payload = forge.aNullable { aString() }
-        val variables = forge.aNullable { aString() }
-
-        val apolloOperationType = forge.aValueFrom(ResourceEvent.OperationType::class.java)
-        val apolloOperationName = forge.aNullable { aString() }
-        val apolloPayload = forge.aNullable { aString() }
-        val apolloVariables = forge.aNullable { aString() }
-
-        val crossPlatformAttributeOptions = listOf(
-            RumAttributes.CROSS_PLATFORM_GRAPHQL_OPERATION_TYPE to operationType.toString(),
-            RumAttributes.CROSS_PLATFORM_GRAPHQL_OPERATION_NAME to operationName,
-            RumAttributes.CROSS_PLATFORM_GRAPHQL_PAYLOAD to payload,
-            RumAttributes.CROSS_PLATFORM_GRAPHQL_VARIABLES to variables
-        )
-        val selectedCrossPlatformAttributes = forge.aSubListOf(crossPlatformAttributeOptions)
-            .filterNot { it.second == null }
-            .let {
-                it.ifEmpty {
-                    listOf(RumAttributes.CROSS_PLATFORM_GRAPHQL_OPERATION_TYPE to operationType.toString())
-                }
-            }
-
-        val apolloAttributes = mapOf(
-            RumAttributes.APOLLO_GRAPHQL_OPERATION_TYPE to apolloOperationType.toString(),
-            RumAttributes.APOLLO_GRAPHQL_OPERATION_NAME to apolloOperationName,
-            RumAttributes.APOLLO_GRAPHQL_PAYLOAD to apolloPayload,
-            RumAttributes.APOLLO_GRAPHQL_VARIABLES to apolloVariables
-        )
-
-        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys) +
-            selectedCrossPlatformAttributes.toMap() + apolloAttributes
-
-        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
-
-        // When
-        testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
-
-        // Then
-        argumentCaptor<ResourceEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
-
-            val expectedOperationType = if (selectedCrossPlatformAttributes.any {
-                    it.first == RumAttributes.CROSS_PLATFORM_GRAPHQL_OPERATION_TYPE
-                }
-            ) {
-                operationType
-            } else {
-                null
-            }
-            val expectedOperationName = if (selectedCrossPlatformAttributes.any {
-                    it.first == RumAttributes.CROSS_PLATFORM_GRAPHQL_OPERATION_NAME
-                }
-            ) {
-                operationName
-            } else {
-                null
-            }
-            val expectedPayload = if (selectedCrossPlatformAttributes.any {
-                    it.first == RumAttributes.CROSS_PLATFORM_GRAPHQL_PAYLOAD
-                }
-            ) {
-                payload
-            } else {
-                null
-            }
-            val expectedVariables = if (selectedCrossPlatformAttributes.any {
-                    it.first == RumAttributes.CROSS_PLATFORM_GRAPHQL_VARIABLES
-                }
-            ) {
-                variables
-            } else {
-                null
-            }
-
-            if (expectedOperationType != null) {
-                assertThat(
-                    firstValue
-                ).hasGraphql(expectedOperationType, expectedOperationName, expectedPayload, expectedVariables)
-            } else {
-                assertThat(firstValue).hasNoGraphql()
-            }
-        }
-    }
-
-    @ParameterizedTest
-    @MethodSource("payloadFilteringTestCases")
-    fun `M handle payload based on feature flag W handleEvent { various contexts and flag combinations }`(
-        flagValue: Boolean?,
-        isApolloContext: Boolean,
-        @Forgery kind: RumResourceKind,
-        @LongForgery(200, 600) statusCode: Long,
-        @LongForgery(0, 1024) size: Long,
-        forge: Forge
-    ) {
-        // Given
-        val operationType = forge.aValueFrom(ResourceEvent.OperationType::class.java)
-        val operationName = forge.aNullable { aString() }
-        val payload = forge.aNullable { aString() }
-        val variables = forge.aNullable { aString() }
-
-        val featureContext = if (flagValue != null) {
-            mapOf(SEND_GRAPHQL_PAYLOADS_KEY to flagValue)
-        } else {
-            emptyMap()
-        }
-        whenever(rumMonitor.mockSdkCore.getFeatureContext(RUM_FEATURE_NAME))
-            .thenReturn(featureContext)
-
-        val attributes = if (isApolloContext) {
-            forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys) +
-                mapOf(
-                    RumAttributes.APOLLO_GRAPHQL_OPERATION_TYPE to operationType.toString(),
-                    RumAttributes.APOLLO_GRAPHQL_OPERATION_NAME to operationName,
-                    RumAttributes.APOLLO_GRAPHQL_PAYLOAD to payload,
-                    RumAttributes.APOLLO_GRAPHQL_VARIABLES to variables
-                )
-        } else {
-            forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys) +
-                mapOf(
-                    RumAttributes.CROSS_PLATFORM_GRAPHQL_OPERATION_TYPE to operationType.toString(),
-                    RumAttributes.CROSS_PLATFORM_GRAPHQL_OPERATION_NAME to operationName,
-                    RumAttributes.CROSS_PLATFORM_GRAPHQL_PAYLOAD to payload,
-                    RumAttributes.CROSS_PLATFORM_GRAPHQL_VARIABLES to variables
-                )
-        }
-
-        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
-
-        // When
-        testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
-
-        // Then
-        val expectedPayload = if (flagValue == true) payload else null
-        argumentCaptor<ResourceEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
-            assertThat(firstValue).hasGraphql(operationType, operationName, expectedPayload, variables)
-        }
-    }
-
-    @ParameterizedTest
-    @MethodSource("graphqlContextTestCases")
-    fun `M handle GraphQL attributes W handleEvent { various context scenarios }`(
-        testCase: GraphQLContextTestCase,
-        @Forgery kind: RumResourceKind,
-        @LongForgery(200, 600) statusCode: Long,
-        @LongForgery(0, 1024) size: Long,
-        forge: Forge
-    ) {
-        // Given
-        whenever(rumMonitor.mockSdkCore.getFeatureContext(RUM_FEATURE_NAME))
-            .thenReturn(mapOf(SEND_GRAPHQL_PAYLOADS_KEY to true))
-
-        val operationType = forge.aValueFrom(ResourceEvent.OperationType::class.java)
-        val operationName = forge.aNullable { aString() }
-        val payload = forge.aNullable { aString() }
-        val variables = forge.aNullable { aString() }
-
-        val apolloOperationType = forge.aValueFrom(ResourceEvent.OperationType::class.java)
-        val apolloOperationName = forge.aNullable { aString() }
-        val apolloPayload = forge.aNullable { aString() }
-        val apolloVariables = forge.aNullable { aString() }
-
-        val attributes = when (testCase) {
-            is GraphQLContextTestCase.CrossPlatformFullAttributes -> {
-                forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys) +
-                    mapOf(
-                        RumAttributes.CROSS_PLATFORM_GRAPHQL_OPERATION_TYPE to operationType.toString(),
-                        RumAttributes.CROSS_PLATFORM_GRAPHQL_OPERATION_NAME to operationName,
-                        RumAttributes.CROSS_PLATFORM_GRAPHQL_PAYLOAD to payload,
-                        RumAttributes.CROSS_PLATFORM_GRAPHQL_VARIABLES to variables,
-
-                        RumAttributes.APOLLO_GRAPHQL_OPERATION_TYPE to apolloOperationType.toString(),
-                        RumAttributes.APOLLO_GRAPHQL_OPERATION_NAME to apolloOperationName,
-                        RumAttributes.APOLLO_GRAPHQL_PAYLOAD to apolloPayload,
-                        RumAttributes.APOLLO_GRAPHQL_VARIABLES to apolloVariables
-                    )
-            }
-            is GraphQLContextTestCase.ApolloOnlyAttributes -> {
-                forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys) +
-                    mapOf(
-                        RumAttributes.APOLLO_GRAPHQL_OPERATION_TYPE to operationType.toString(),
-                        RumAttributes.APOLLO_GRAPHQL_OPERATION_NAME to operationName,
-                        RumAttributes.APOLLO_GRAPHQL_PAYLOAD to payload,
-                        RumAttributes.APOLLO_GRAPHQL_VARIABLES to variables
-                    )
-            }
-            is GraphQLContextTestCase.CrossPlatformPartialAttributes -> {
-                forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys) +
-                    mapOf(
-                        RumAttributes.CROSS_PLATFORM_GRAPHQL_OPERATION_TYPE to operationType.toString(),
-                        RumAttributes.CROSS_PLATFORM_GRAPHQL_OPERATION_NAME to operationName,
-
-                        RumAttributes.APOLLO_GRAPHQL_PAYLOAD to apolloPayload,
-                        RumAttributes.APOLLO_GRAPHQL_VARIABLES to apolloVariables
-                    )
-            }
-            is GraphQLContextTestCase.ApolloPartialAttributes -> {
-                forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys) +
-                    mapOf(
-                        RumAttributes.APOLLO_GRAPHQL_OPERATION_TYPE to operationType.toString(),
-                        RumAttributes.APOLLO_GRAPHQL_OPERATION_NAME to operationName
-                    )
-            }
-            is GraphQLContextTestCase.NoGraphQLAttributes -> {
-                forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys)
-            }
-        }
-
-        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
-
-        // When
-        testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
-
-        // Then
-        argumentCaptor<ResourceEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
-            when (testCase) {
-                is GraphQLContextTestCase.NoGraphQLAttributes -> {
-                    assertThat(firstValue).hasNoGraphql()
-                }
-                else -> {
-                    val expectedResults = testCase.getExpectedResults(operationType, operationName, payload, variables)
-                    assertThat(firstValue).hasGraphql(
-                        expectedResults.operationType,
-                        expectedResults.operationName,
-                        expectedResults.payload,
-                        expectedResults.variables
-                    )
-                }
-            }
-        }
-    }
-
     @ParameterizedTest
     @MethodSource("invalidOperationTypeTestCases")
     fun `M have no graphql data W handleEvent { invalid or null operation type }`(
@@ -3297,17 +3065,17 @@ internal class RumResourceScopeTest {
             forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys) +
                 buildMap {
                     if (operationTypeValue != null) {
-                        put(RumAttributes.CROSS_PLATFORM_GRAPHQL_OPERATION_TYPE, operationTypeValue)
+                        put(RumAttributes.GRAPHQL_OPERATION_TYPE, operationTypeValue)
                     }
-                    put(RumAttributes.CROSS_PLATFORM_GRAPHQL_OPERATION_NAME, operationName)
-                    put(RumAttributes.CROSS_PLATFORM_GRAPHQL_PAYLOAD, payload)
-                    put(RumAttributes.CROSS_PLATFORM_GRAPHQL_VARIABLES, variables)
+                    put(RumAttributes.GRAPHQL_OPERATION_NAME, operationName)
+                    put(RumAttributes.GRAPHQL_PAYLOAD, payload)
+                    put(RumAttributes.GRAPHQL_VARIABLES, variables)
                 }
         } else {
             forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys) +
                 buildMap {
                     if (operationTypeValue != null) {
-                        put(RumAttributes.CROSS_PLATFORM_GRAPHQL_OPERATION_TYPE, operationTypeValue)
+                        put(RumAttributes.GRAPHQL_OPERATION_TYPE, operationTypeValue)
                     }
                 }
         }
@@ -3324,73 +3092,332 @@ internal class RumResourceScopeTest {
         }
     }
 
-    // endregion
+    @ParameterizedTest
+    @MethodSource("graphqlPayloadFlagTestCases")
+    fun `M include graphql data based on payload flag W handleEvent { valid GraphQL operation }`(
+        sendPayloads: Boolean,
+        operationType: String,
+        @Forgery kind: RumResourceKind,
+        @LongForgery(200, 600) statusCode: Long,
+        @LongForgery(0, 1024) size: Long,
+        forge: Forge
+    ) {
+        // Given
+        testedScope = RumResourceScope(
+            parentScope = mockParentScope,
+            sdkCore = rumMonitor.mockSdkCore,
+            url = fakeUrl,
+            method = fakeMethod,
+            key = fakeKey,
+            eventTime = fakeEventTime,
+            initialAttributes = fakeResourceAttributes,
+            serverTimeOffsetInMs = fakeServerOffset,
+            firstPartyHostHeaderTypeResolver = mockResolver,
+            featuresContextResolver = mockFeaturesContextResolver,
+            sampleRate = fakeSampleRate,
+            networkSettledMetricResolver = mockNetworkSettledMetricResolver,
+            rumSessionTypeOverride = fakeRumSessionType,
+            captureGraphQlPayloads = sendPayloads
+        )
 
-    data class ExpectedGraphQLResults(
-        val operationType: ResourceEvent.OperationType,
-        val operationName: String?,
-        val payload: String?,
-        val variables: String?
-    )
+        val operationName = forge.aString()
+        val payload = forge.aString()
+        val variables = forge.aString()
 
-    sealed class GraphQLContextTestCase {
-        abstract fun getExpectedResults(
-            operationType: ResourceEvent.OperationType,
-            operationName: String?,
-            payload: String?,
-            variables: String?
-        ): ExpectedGraphQLResults
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys) +
+            buildMap {
+                put(RumAttributes.GRAPHQL_OPERATION_TYPE, operationType)
+                put(RumAttributes.GRAPHQL_OPERATION_NAME, operationName)
+                put(RumAttributes.GRAPHQL_PAYLOAD, payload)
+                put(RumAttributes.GRAPHQL_VARIABLES, variables)
+            }
 
-        object CrossPlatformFullAttributes : GraphQLContextTestCase() {
-            override fun getExpectedResults(
-                operationType: ResourceEvent.OperationType,
-                operationName: String?,
-                payload: String?,
-                variables: String?
-            ) = ExpectedGraphQLResults(operationType, operationName, payload, variables)
+        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
+
+        // When
+        testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        argumentCaptor<ResourceEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            if (sendPayloads) {
+                assertThat(firstValue).hasGraphql(
+                    operationType = ResourceEvent.OperationType.valueOf(operationType.uppercase()),
+                    operationName = operationName,
+                    payload = payload,
+                    variables = variables
+                )
+            } else {
+                assertThat(firstValue).hasGraphql(
+                    operationType = ResourceEvent.OperationType.valueOf(operationType.uppercase()),
+                    operationName = operationName,
+                    payload = null,
+                    variables = variables
+                )
+            }
         }
+    }
 
-        object ApolloOnlyAttributes : GraphQLContextTestCase() {
-            override fun getExpectedResults(
-                operationType: ResourceEvent.OperationType,
-                operationName: String?,
-                payload: String?,
-                variables: String?
-            ) = ExpectedGraphQLResults(operationType, operationName, payload, variables)
-        }
+    @Test
+    fun `M keep original payload W handleEvent { GraphQL payload under MAX_GRAPHQL_PAYLOAD_SIZE }`(
+        @Forgery kind: RumResourceKind,
+        @LongForgery(200, 600) statusCode: Long,
+        @LongForgery(0, 1024) size: Long,
+        @IntForgery(0, MAX_GRAPHQL_PAYLOAD_SIZE) fakePayloadSize: Int,
+        forge: Forge
+    ) {
+        // Given
+        testedScope = RumResourceScope(
+            parentScope = mockParentScope,
+            sdkCore = rumMonitor.mockSdkCore,
+            url = fakeUrl,
+            method = fakeMethod,
+            key = fakeKey,
+            eventTime = fakeEventTime,
+            initialAttributes = fakeResourceAttributes,
+            serverTimeOffsetInMs = fakeServerOffset,
+            firstPartyHostHeaderTypeResolver = mockResolver,
+            featuresContextResolver = mockFeaturesContextResolver,
+            sampleRate = fakeSampleRate,
+            networkSettledMetricResolver = mockNetworkSettledMetricResolver,
+            rumSessionTypeOverride = fakeRumSessionType,
+            captureGraphQlPayloads = true
+        )
 
-        object CrossPlatformPartialAttributes : GraphQLContextTestCase() {
-            override fun getExpectedResults(
-                operationType: ResourceEvent.OperationType,
-                operationName: String?,
-                payload: String?,
-                variables: String?
-            ) = ExpectedGraphQLResults(operationType, operationName, null, null) // Missing payload/variables
-        }
+        whenever(rumMonitor.mockSdkCore.getFeatureContext(RUM_FEATURE_NAME))
+            .thenReturn(mapOf(SEND_GRAPHQL_PAYLOADS_KEY to true))
 
-        object ApolloPartialAttributes : GraphQLContextTestCase() {
-            override fun getExpectedResults(
-                operationType: ResourceEvent.OperationType,
-                operationName: String?,
-                payload: String?,
-                variables: String?
-            ) = ExpectedGraphQLResults(operationType, operationName, null, null) // Missing payload/variables
-        }
+        val operationName = forge.aString()
+        val operationType = generateOperationType(forge)
+        val variables = forge.aString()
+        // Create a payload that's under MAX_GRAPHQL_PAYLOAD_SIZE
+        val smallPayload = "a".repeat(fakePayloadSize)
 
-        object NoGraphQLAttributes : GraphQLContextTestCase() {
-            override fun getExpectedResults(
-                operationType: ResourceEvent.OperationType,
-                operationName: String?,
-                payload: String?,
-                variables: String?
-            ) = ExpectedGraphQLResults(
-                operationType,
-                operationName,
-                payload,
-                variables
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys) +
+            buildMap {
+                put(RumAttributes.GRAPHQL_OPERATION_TYPE, operationType)
+                put(RumAttributes.GRAPHQL_OPERATION_NAME, operationName)
+                put(RumAttributes.GRAPHQL_PAYLOAD, smallPayload)
+                put(RumAttributes.GRAPHQL_VARIABLES, variables)
+            }
+
+        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
+
+        // When
+        testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        argumentCaptor<ResourceEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            assertThat(firstValue).hasGraphql(
+                operationType = ResourceEvent.OperationType.valueOf(operationType.uppercase()),
+                operationName = operationName,
+                payload = smallPayload,
+                variables = variables
             )
         }
     }
+
+    @Test
+    fun `M truncate payload W handleEvent { GraphQL payload over MAX_GRAPHQL_PAYLOAD_SIZE }`(
+        @Forgery kind: RumResourceKind,
+        @LongForgery(200, 600) statusCode: Long,
+        @LongForgery(0, 1024) size: Long,
+        @IntForgery(
+            MAX_GRAPHQL_PAYLOAD_SIZE + 1024,
+            MAX_GRAPHQL_PAYLOAD_SIZE + (100 * 1024)
+        ) fakePayloadSize: Int,
+        forge: Forge
+    ) {
+        // Given
+        testedScope = RumResourceScope(
+            parentScope = mockParentScope,
+            sdkCore = rumMonitor.mockSdkCore,
+            url = fakeUrl,
+            method = fakeMethod,
+            key = fakeKey,
+            eventTime = fakeEventTime,
+            initialAttributes = fakeResourceAttributes,
+            serverTimeOffsetInMs = fakeServerOffset,
+            firstPartyHostHeaderTypeResolver = mockResolver,
+            featuresContextResolver = mockFeaturesContextResolver,
+            sampleRate = fakeSampleRate,
+            networkSettledMetricResolver = mockNetworkSettledMetricResolver,
+            rumSessionTypeOverride = fakeRumSessionType,
+            captureGraphQlPayloads = true
+        )
+
+        whenever(rumMonitor.mockSdkCore.getFeatureContext(RUM_FEATURE_NAME))
+            .thenReturn(mapOf(SEND_GRAPHQL_PAYLOADS_KEY to true))
+
+        val operationName = forge.aString()
+        val operationType = generateOperationType(forge)
+        val variables = forge.aString()
+        // Create a payload that's over MAX_GRAPHQL_PAYLOAD_SIZE
+        val largePayload = "x".repeat(fakePayloadSize)
+        val expectedTruncatedSize = MAX_GRAPHQL_PAYLOAD_SIZE
+
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys) +
+            buildMap {
+                put(RumAttributes.GRAPHQL_OPERATION_TYPE, operationType)
+                put(RumAttributes.GRAPHQL_OPERATION_NAME, operationName)
+                put(RumAttributes.GRAPHQL_PAYLOAD, largePayload)
+                put(RumAttributes.GRAPHQL_VARIABLES, variables)
+            }
+
+        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
+
+        // When
+        testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        argumentCaptor<ResourceEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            val actualPayload = firstValue.resource.graphql?.payload
+
+            assertThat(actualPayload).isNotNull()
+            assertThat(actualPayload!!.toByteArray(Charsets.UTF_8)).hasSize(expectedTruncatedSize)
+            assertThat(actualPayload).isEqualTo("x".repeat(expectedTruncatedSize))
+
+            assertThat(firstValue).hasGraphql(
+                operationType = ResourceEvent.OperationType.valueOf(operationType.uppercase()),
+                operationName = operationName,
+                payload = actualPayload,
+                variables = variables
+            )
+        }
+    }
+
+    @Test
+    fun `M truncate payload exactly at boundary W handleEvent { GraphQL payload exactly MAX_GRAPHQL_PAYLOAD_SIZE }`(
+        @Forgery kind: RumResourceKind,
+        @LongForgery(200, 600) statusCode: Long,
+        @LongForgery(0, 1024) size: Long,
+        forge: Forge
+    ) {
+        // Given
+        testedScope = RumResourceScope(
+            parentScope = mockParentScope,
+            sdkCore = rumMonitor.mockSdkCore,
+            url = fakeUrl,
+            method = fakeMethod,
+            key = fakeKey,
+            eventTime = fakeEventTime,
+            initialAttributes = fakeResourceAttributes,
+            serverTimeOffsetInMs = fakeServerOffset,
+            firstPartyHostHeaderTypeResolver = mockResolver,
+            featuresContextResolver = mockFeaturesContextResolver,
+            sampleRate = fakeSampleRate,
+            networkSettledMetricResolver = mockNetworkSettledMetricResolver,
+            rumSessionTypeOverride = fakeRumSessionType,
+            captureGraphQlPayloads = true
+        )
+
+        whenever(rumMonitor.mockSdkCore.getFeatureContext(RUM_FEATURE_NAME))
+            .thenReturn(mapOf(SEND_GRAPHQL_PAYLOADS_KEY to true))
+
+        val operationName = forge.aString()
+        val operationType = generateOperationType(forge)
+        val variables = forge.aString()
+        // Create a payload that's exactly MAX_GRAPHQL_PAYLOAD_SIZE
+        val exactPayload = "z".repeat(MAX_GRAPHQL_PAYLOAD_SIZE)
+
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys) +
+            buildMap {
+                put(RumAttributes.GRAPHQL_OPERATION_TYPE, operationType)
+                put(RumAttributes.GRAPHQL_OPERATION_NAME, operationName)
+                put(RumAttributes.GRAPHQL_PAYLOAD, exactPayload)
+                put(RumAttributes.GRAPHQL_VARIABLES, variables)
+            }
+
+        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
+
+        // When
+        testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        argumentCaptor<ResourceEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            assertThat(firstValue).hasGraphql(
+                operationType = ResourceEvent.OperationType.valueOf(operationType.uppercase()),
+                operationName = operationName,
+                payload = exactPayload,
+                variables = variables
+            )
+        }
+    }
+
+    @Test
+    fun `M handle UTF-8 characters in truncated payload W handleEvent { payload over MAX_GRAPHQL_PAYLOAD_SIZE }`(
+        @Forgery kind: RumResourceKind,
+        @LongForgery(200, 600) statusCode: Long,
+        @LongForgery(0, 1024) size: Long,
+        forge: Forge
+    ) {
+        // Given
+        testedScope = RumResourceScope(
+            parentScope = mockParentScope,
+            sdkCore = rumMonitor.mockSdkCore,
+            url = fakeUrl,
+            method = fakeMethod,
+            key = fakeKey,
+            eventTime = fakeEventTime,
+            initialAttributes = fakeResourceAttributes,
+            serverTimeOffsetInMs = fakeServerOffset,
+            firstPartyHostHeaderTypeResolver = mockResolver,
+            featuresContextResolver = mockFeaturesContextResolver,
+            sampleRate = fakeSampleRate,
+            networkSettledMetricResolver = mockNetworkSettledMetricResolver,
+            rumSessionTypeOverride = fakeRumSessionType,
+            captureGraphQlPayloads = true
+        )
+
+        whenever(rumMonitor.mockSdkCore.getFeatureContext(RUM_FEATURE_NAME))
+            .thenReturn(mapOf(SEND_GRAPHQL_PAYLOADS_KEY to true))
+
+        val operationName = forge.aString()
+        val operationType = generateOperationType(forge)
+        val variables = forge.aString()
+        // Create a payload with UTF-8 characters that's over MAX_GRAPHQL_PAYLOAD_SIZE
+        val utf8Char = "🚀" // Multi-byte UTF-8 character
+        val basePayload = "a".repeat(MAX_GRAPHQL_PAYLOAD_SIZE - 100)
+        val largePayload = basePayload + utf8Char.repeat(50) // Add UTF-8 chars to go over MAX_GRAPHQL_PAYLOAD_SIZE
+
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys) +
+            buildMap {
+                put(RumAttributes.GRAPHQL_OPERATION_TYPE, operationType)
+                put(RumAttributes.GRAPHQL_OPERATION_NAME, operationName)
+                put(RumAttributes.GRAPHQL_PAYLOAD, largePayload)
+                put(RumAttributes.GRAPHQL_VARIABLES, variables)
+            }
+
+        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
+
+        // When
+        testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        argumentCaptor<ResourceEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            val actualPayload = firstValue.resource.graphql?.payload
+
+            assertThat(actualPayload).isNotNull()
+            assertThat(actualPayload!!.toByteArray(Charsets.UTF_8).size).isLessThanOrEqualTo(30 * 1024)
+
+            assertThat(actualPayload).doesNotContain("\uFFFD") // UTF-8 replacement character
+
+            assertThat(
+                firstValue.resource.graphql?.operationType
+            ).isEqualTo(ResourceEvent.OperationType.valueOf(operationType.uppercase()))
+            assertThat(firstValue.resource.graphql?.operationName).isEqualTo(operationName)
+            assertThat(firstValue.resource.graphql?.variables).isEqualTo(variables)
+        }
+    }
+
+    private fun generateOperationType(forge: Forge): String =
+        forge.anElementFrom("query", "mutation")
+
+    // endregion
 
     companion object {
         private const val RESOURCE_DURATION_MS = 50L
@@ -3404,26 +3431,6 @@ internal class RumResourceScopeTest {
         }
 
         @JvmStatic
-        fun payloadFilteringTestCases() = listOf(
-            // flagValue, isApolloContext
-            Arguments.of(false, false), // Cross-platform context, flag false
-            Arguments.of(null, false), // Cross-platform context, flag null
-            Arguments.of(true, false), // Cross-platform context, flag true
-            Arguments.of(false, true), // Apollo context, flag false
-            Arguments.of(null, true), // Apollo context, flag null
-            Arguments.of(true, true) // Apollo context, flag true
-        )
-
-        @JvmStatic
-        fun graphqlContextTestCases() = listOf(
-            Arguments.of(GraphQLContextTestCase.CrossPlatformFullAttributes),
-            Arguments.of(GraphQLContextTestCase.ApolloOnlyAttributes),
-            Arguments.of(GraphQLContextTestCase.CrossPlatformPartialAttributes),
-            Arguments.of(GraphQLContextTestCase.ApolloPartialAttributes),
-            Arguments.of(GraphQLContextTestCase.NoGraphQLAttributes)
-        )
-
-        @JvmStatic
         fun invalidOperationTypeTestCases() = listOf(
             // operationTypeValue, hasOtherAttributes
             Arguments.of(null, false), // Null operation type, no other attributes
@@ -3432,6 +3439,17 @@ internal class RumResourceScopeTest {
             Arguments.of("", true), // Empty operation type, with other attributes
             Arguments.of("invalid_operation", false), // Invalid operation type, no other attributes
             Arguments.of("invalid_operation", true) // Invalid operation type, with other attributes
+        )
+
+        @JvmStatic
+        fun graphqlPayloadFlagTestCases() = listOf(
+            // sendPayloads, operationType
+            Arguments.of(true, "query"), // Payloads enabled, query operation
+            Arguments.of(true, "mutation"), // Payloads enabled, mutation operation
+            Arguments.of(true, "subscription"), // Payloads enabled, subscription operation
+            Arguments.of(false, "query"), // Payloads disabled, query operation
+            Arguments.of(false, "mutation"), // Payloads disabled, mutation operation
+            Arguments.of(false, "subscription") // Payloads disabled, subscription operation
         )
     }
 }

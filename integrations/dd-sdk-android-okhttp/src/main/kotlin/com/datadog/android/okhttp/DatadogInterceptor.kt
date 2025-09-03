@@ -182,23 +182,17 @@ open class DatadogInterceptor internal constructor(
                 put(RumAttributes.SPAN_ID, span.context().spanId.toString())
                 put(RumAttributes.RULE_PSR, (traceSampler.getSampleRate() ?: ZERO_SAMPLE_RATE) / ALL_IN_SAMPLE_RATE)
 
-                request.headers[RumAttributes.APOLLO_GRAPHQL_OPERATION_NAME]?.let {
-                    put(RumAttributes.APOLLO_GRAPHQL_OPERATION_NAME, it)
+                request.headers[RumAttributes.GRAPHQL_OPERATION_NAME]?.let {
+                    put(RumAttributes.GRAPHQL_OPERATION_NAME, it)
                 }
-                request.headers[RumAttributes.APOLLO_GRAPHQL_OPERATION_TYPE]?.let {
-                    put(RumAttributes.APOLLO_GRAPHQL_OPERATION_TYPE, it)
+                request.headers[RumAttributes.GRAPHQL_OPERATION_TYPE]?.let {
+                    put(RumAttributes.GRAPHQL_OPERATION_TYPE, it)
                 }
-                request.headers[RumAttributes.APOLLO_GRAPHQL_VARIABLES]?.let {
-                    put(
-                        RumAttributes.APOLLO_GRAPHQL_VARIABLES,
-                        it
-                    )
+                request.headers[RumAttributes.GRAPHQL_VARIABLES]?.let {
+                    put(RumAttributes.GRAPHQL_VARIABLES, it)
                 }
-                request.headers[RumAttributes.APOLLO_GRAPHQL_PAYLOAD]?.let {
-                    put(
-                        RumAttributes.APOLLO_GRAPHQL_PAYLOAD,
-                        it
-                    )
+                request.headers[RumAttributes.GRAPHQL_PAYLOAD]?.let {
+                    put(RumAttributes.GRAPHQL_PAYLOAD, it)
                 }
             }
         }

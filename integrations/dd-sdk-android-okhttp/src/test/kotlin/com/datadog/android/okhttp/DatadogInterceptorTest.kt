@@ -353,6 +353,64 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
     }
 
     @Test
+    fun `M start and stop RUM Resource W intercept() {successful graphql request}`(
+        forge: Forge,
+        @IntForgery(min = 200, max = 300) statusCode: Int,
+        @StringForgery fakeGraphQLName: String,
+        @StringForgery fakeGraphQLType: String,
+        @StringForgery fakeGraphQLVariables: String,
+        @StringForgery fakeGraphQLPayload: String
+    ) {
+        // Given
+        fakeRequest = forgeRequest(forge) { builder ->
+            builder.addHeader(RumAttributes.GRAPHQL_OPERATION_NAME, fakeGraphQLName)
+            builder.addHeader(RumAttributes.GRAPHQL_OPERATION_TYPE, fakeGraphQLType)
+            builder.addHeader(RumAttributes.GRAPHQL_VARIABLES, fakeGraphQLVariables)
+            builder.addHeader(RumAttributes.GRAPHQL_PAYLOAD, fakeGraphQLPayload)
+        }
+        stubChain(mockChain, statusCode)
+
+        val expectedStartAttrs = emptyMap<String, Any?>()
+        val expectedStopAttrs = mapOf(
+            RumAttributes.TRACE_ID to fakeTraceIdAsString,
+            RumAttributes.SPAN_ID to fakeSpanId.toString(),
+            RumAttributes.RULE_PSR to fakeTracingSampleRate / 100,
+            RumAttributes.GRAPHQL_OPERATION_NAME to fakeGraphQLName,
+            RumAttributes.GRAPHQL_OPERATION_TYPE to fakeGraphQLType,
+            RumAttributes.GRAPHQL_VARIABLES to fakeGraphQLVariables,
+            RumAttributes.GRAPHQL_PAYLOAD to fakeGraphQLPayload
+        ) + fakeAttributes
+        val mimeType = fakeMediaType?.type
+        val kind = when {
+            mimeType != null -> RumResourceKind.fromMimeType(mimeType)
+            else -> RumResourceKind.NATIVE
+        }
+
+        // When
+        testedInterceptor.intercept(mockChain)
+
+        // Then
+        inOrder(rumMonitor.mockInstance) {
+            argumentCaptor<ResourceId> {
+                verify(rumMonitor.mockInstance).startResource(
+                    capture(),
+                    eq(fakeMethod),
+                    eq(fakeUrl),
+                    eq(expectedStartAttrs)
+                )
+                verify(rumMonitor.mockInstance).stopResource(
+                    capture(),
+                    eq(statusCode),
+                    eq(fakeResponseBody.toByteArray().size.toLong()),
+                    eq(kind),
+                    eq(expectedStopAttrs)
+                )
+                assertThat(firstValue).isEqualTo(secondValue)
+            }
+        }
+    }
+
+    @Test
     fun `M start and stop RUM Resource W intercept() {successful request, unknown method}`(
         @IntForgery(min = 200, max = 300) statusCode: Int,
         @StringForgery fakeMethod: String,
@@ -873,160 +931,6 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
                     eq(RumErrorSource.NETWORK),
                     eq(throwable),
                     eq(fakeAttributes)
-                )
-                assertThat(firstValue).isEqualTo(secondValue)
-            }
-        }
-    }
-
-    @Test
-    fun `M extract Apollo GraphQL headers W intercept() { all Apollo headers present }`(
-        @IntForgery(min = 200, max = 300) statusCode: Int,
-        forge: Forge
-    ) {
-        // Given
-        val apolloOperationName = forge.anAlphabeticalString()
-        val apolloOperationType = forge.anAlphabeticalString()
-        val apolloVariables = forge.anAlphabeticalString()
-        val apolloPayload = forge.anAlphabeticalString()
-
-        fakeRequest = forgeRequest(forge) { builder ->
-            builder.addHeader(RumAttributes.APOLLO_GRAPHQL_OPERATION_NAME, apolloOperationName)
-            builder.addHeader(RumAttributes.APOLLO_GRAPHQL_OPERATION_TYPE, apolloOperationType)
-            builder.addHeader(RumAttributes.APOLLO_GRAPHQL_VARIABLES, apolloVariables)
-            builder.addHeader(RumAttributes.APOLLO_GRAPHQL_PAYLOAD, apolloPayload)
-        }
-        stubChain(mockChain, statusCode)
-
-        val expectedStartAttrs = emptyMap<String, Any?>()
-        val expectedStopAttrs = mapOf(
-            RumAttributes.TRACE_ID to fakeTraceIdAsString,
-            RumAttributes.SPAN_ID to fakeSpanId,
-            RumAttributes.RULE_PSR to fakeTracingSampleRate / 100,
-            RumAttributes.APOLLO_GRAPHQL_OPERATION_NAME to apolloOperationName,
-            RumAttributes.APOLLO_GRAPHQL_OPERATION_TYPE to apolloOperationType,
-            RumAttributes.APOLLO_GRAPHQL_VARIABLES to apolloVariables,
-            RumAttributes.APOLLO_GRAPHQL_PAYLOAD to apolloPayload
-        ) + fakeAttributes
-        val mimeType = fakeMediaType?.type
-        val kind = when {
-            mimeType != null -> RumResourceKind.fromMimeType(mimeType)
-            else -> RumResourceKind.NATIVE
-        }
-
-        // When
-        testedInterceptor.intercept(mockChain)
-
-        // Then
-        inOrder(rumMonitor.mockInstance) {
-            argumentCaptor<ResourceId> {
-                verify(rumMonitor.mockInstance).startResource(
-                    capture(),
-                    eq(fakeMethod),
-                    eq(fakeUrl),
-                    eq(expectedStartAttrs)
-                )
-                verify(rumMonitor.mockInstance).stopResource(
-                    capture(),
-                    eq(statusCode),
-                    eq(fakeResponseBody.toByteArray().size.toLong()),
-                    eq(kind),
-                    eq(expectedStopAttrs)
-                )
-                assertThat(firstValue).isEqualTo(secondValue)
-            }
-        }
-    }
-
-    @Test
-    fun `M extract partial Apollo GraphQL headers W intercept() { some Apollo headers present }`(
-        @IntForgery(min = 200, max = 300) statusCode: Int,
-        forge: Forge
-    ) {
-        // Given
-        val apolloOperationName = forge.anAlphabeticalString()
-        val apolloVariables = forge.anAlphabeticalString()
-
-        fakeRequest = forgeRequest(forge) { builder ->
-            builder.addHeader(RumAttributes.APOLLO_GRAPHQL_OPERATION_NAME, apolloOperationName)
-            builder.addHeader(RumAttributes.APOLLO_GRAPHQL_VARIABLES, apolloVariables)
-        }
-        stubChain(mockChain, statusCode)
-
-        val expectedStartAttrs = emptyMap<String, Any?>()
-        val expectedStopAttrs = mapOf(
-            RumAttributes.TRACE_ID to fakeTraceIdAsString,
-            RumAttributes.SPAN_ID to fakeSpanId,
-            RumAttributes.RULE_PSR to fakeTracingSampleRate / 100,
-            RumAttributes.APOLLO_GRAPHQL_OPERATION_NAME to apolloOperationName,
-            RumAttributes.APOLLO_GRAPHQL_VARIABLES to apolloVariables
-        ) + fakeAttributes
-        val mimeType = fakeMediaType?.type
-        val kind = when {
-            mimeType != null -> RumResourceKind.fromMimeType(mimeType)
-            else -> RumResourceKind.NATIVE
-        }
-
-        // When
-        testedInterceptor.intercept(mockChain)
-
-        // Then
-        inOrder(rumMonitor.mockInstance) {
-            argumentCaptor<ResourceId> {
-                verify(rumMonitor.mockInstance).startResource(
-                    capture(),
-                    eq(fakeMethod),
-                    eq(fakeUrl),
-                    eq(expectedStartAttrs)
-                )
-                verify(rumMonitor.mockInstance).stopResource(
-                    capture(),
-                    eq(statusCode),
-                    eq(fakeResponseBody.toByteArray().size.toLong()),
-                    eq(kind),
-                    eq(expectedStopAttrs)
-                )
-                assertThat(firstValue).isEqualTo(secondValue)
-            }
-        }
-    }
-
-    @Test
-    fun `M not extract Apollo GraphQL headers W intercept() { no Apollo headers present }`(
-        @IntForgery(min = 200, max = 300) statusCode: Int
-    ) {
-        // Given
-        stubChain(mockChain, statusCode)
-        val expectedStartAttrs = emptyMap<String, Any?>()
-        val expectedStopAttrs = mapOf(
-            RumAttributes.TRACE_ID to fakeTraceIdAsString,
-            RumAttributes.SPAN_ID to fakeSpanId,
-            RumAttributes.RULE_PSR to fakeTracingSampleRate / 100
-        ) + fakeAttributes
-        val mimeType = fakeMediaType?.type
-        val kind = when {
-            mimeType != null -> RumResourceKind.fromMimeType(mimeType)
-            else -> RumResourceKind.NATIVE
-        }
-
-        // When
-        testedInterceptor.intercept(mockChain)
-
-        // Then
-        inOrder(rumMonitor.mockInstance) {
-            argumentCaptor<ResourceId> {
-                verify(rumMonitor.mockInstance).startResource(
-                    capture(),
-                    eq(fakeMethod),
-                    eq(fakeUrl),
-                    eq(expectedStartAttrs)
-                )
-                verify(rumMonitor.mockInstance).stopResource(
-                    capture(),
-                    eq(statusCode),
-                    eq(fakeResponseBody.toByteArray().size.toLong()),
-                    eq(kind),
-                    eq(expectedStopAttrs)
                 )
                 assertThat(firstValue).isEqualTo(secondValue)
             }

@@ -150,6 +150,9 @@ internal class RumApplicationScopeTest {
 
     private var fakeRumSessionType: RumSessionType? = null
 
+    @BoolForgery
+    var fakeCaptureGraphQLPayloads: Boolean = false
+
     @BeforeEach
     fun `set up`(forge: Forge) {
         whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumFeatureScope
@@ -178,7 +181,8 @@ internal class RumApplicationScopeTest {
             rumSessionTypeOverride = fakeRumSessionType,
             accessibilitySnapshotManager = mockAccessibilitySnapshotManager,
             batteryInfoProvider = mockBatteryInfoProvider,
-            displayInfoProvider = mockDisplayInfoProvider
+            displayInfoProvider = mockDisplayInfoProvider,
+            captureGraphQlPayloads = fakeCaptureGraphQLPayloads
         )
     }
 

@@ -56,7 +56,8 @@ internal class RumSessionScope(
     private val displayInfoProvider: InfoProvider<DisplayInfo>,
     private val sessionInactivityNanos: Long = DEFAULT_SESSION_INACTIVITY_NS,
     private val sessionMaxDurationNanos: Long = DEFAULT_SESSION_MAX_DURATION_NS,
-    rumSessionTypeOverride: RumSessionType?
+    rumSessionTypeOverride: RumSessionType?,
+    captureGraphQlPayloads: Boolean
 ) : RumScope {
 
     internal var sessionId = RumContext.NULL_UUID
@@ -91,7 +92,8 @@ internal class RumSessionScope(
         rumSessionTypeOverride = rumSessionTypeOverride,
         accessibilitySnapshotManager = accessibilitySnapshotManager,
         batteryInfoProvider = batteryInfoProvider,
-        displayInfoProvider = displayInfoProvider
+        displayInfoProvider = displayInfoProvider,
+        captureGraphQlPayloads = captureGraphQlPayloads
     )
 
     internal val activeView: RumViewScope?

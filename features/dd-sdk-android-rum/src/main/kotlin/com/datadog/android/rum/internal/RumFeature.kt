@@ -18,7 +18,6 @@ import androidx.annotation.AnyThread
 import androidx.annotation.RequiresApi
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.Feature
-import com.datadog.android.api.feature.Feature.Companion.RUM_FEATURE_NAME
 import com.datadog.android.api.feature.FeatureContextUpdateReceiver
 import com.datadog.android.api.feature.FeatureEventReceiver
 import com.datadog.android.api.feature.FeatureSdkCore
@@ -165,6 +164,7 @@ internal class RumFeature(
     internal var batteryInfoProvider: InfoProvider<BatteryInfo> = NoOpBatteryInfoProvider()
     internal var displayInfoProvider: InfoProvider<DisplayInfo> = NoOpDisplayInfoProvider()
     internal val rumContextUpdateReceivers = mutableSetOf<FeatureContextUpdateReceiver>()
+    internal var captureGraphQlPayloads: Boolean = false
 
     private val lateCrashEventHandler by lazy { lateCrashReporterFactory(sdkCore as InternalSdkCore) }
 
@@ -214,9 +214,7 @@ internal class RumFeature(
             internalLogger = sdkCore.internalLogger
         )
 
-        sdkCore.updateFeatureContext(RUM_FEATURE_NAME) {
-            it[SEND_GRAPHQL_PAYLOADS_KEY] = configuration.captureGraphQLPayloads
-        }
+        captureGraphQlPayloads = configuration.captureGraphQLPayloads
 
         configuration.viewTrackingStrategy?.let { viewTrackingStrategy = it }
         actionTrackingStrategy = if (configuration.userActionTracking) {

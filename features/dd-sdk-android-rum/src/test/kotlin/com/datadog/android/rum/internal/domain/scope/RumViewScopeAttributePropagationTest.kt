@@ -163,6 +163,9 @@ internal class RumViewScopeAttributePropagationTest {
     @BoolForgery
     var fakeHasReplay: Boolean = false
 
+    @BoolForgery
+    var fakeCaptureGraphQLPayloads: Boolean = false
+
     @Mock
     lateinit var mockFeaturesContextResolver: FeaturesContextResolver
 
@@ -747,7 +750,8 @@ internal class RumViewScopeAttributePropagationTest {
         accessibilitySnapshotManager = accessibilitySnapshotManager,
         batteryInfoProvider = batteryInfoProvider,
         displayInfoProvider = displayInfoProvider,
-        rumSessionTypeOverride = rumSessionType
+        rumSessionTypeOverride = rumSessionType,
+        captureGraphQlPayloads = fakeCaptureGraphQLPayloads
     )
 
     // endregion

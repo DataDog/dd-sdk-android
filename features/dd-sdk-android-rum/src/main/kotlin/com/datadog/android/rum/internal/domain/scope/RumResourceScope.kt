@@ -6,11 +6,11 @@
 
 package com.datadog.android.rum.internal.domain.scope
 
+import androidx.annotation.VisibleForTesting
 import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.EventWriteScope
-import com.datadog.android.api.feature.Feature.Companion.RUM_FEATURE_NAME
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
@@ -21,7 +21,6 @@ import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.RumResourceMethod
 import com.datadog.android.rum.RumSessionType
 import com.datadog.android.rum.internal.FeaturesContextResolver
-import com.datadog.android.rum.internal.RumFeature.Companion.SEND_GRAPHQL_PAYLOADS_KEY
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
@@ -39,7 +38,6 @@ import java.net.MalformedURLException
 import java.net.URL
 import java.util.Locale
 import java.util.UUID
-
 @Suppress("LongParameterList", "TooManyFunctions")
 internal class RumResourceScope(
     override val parentScope: RumScope,
@@ -54,7 +52,8 @@ internal class RumResourceScope(
     private val featuresContextResolver: FeaturesContextResolver,
     internal val sampleRate: Float,
     internal val networkSettledMetricResolver: NetworkSettledMetricResolver,
-    private val rumSessionTypeOverride: RumSessionType?
+    private val rumSessionTypeOverride: RumSessionType?,
+    private val captureGraphQlPayloads: Boolean
 ) : RumScope {
 
     internal val resourceId: String = UUID.randomUUID().toString()
@@ -245,38 +244,14 @@ internal class RumResourceScope(
             resourceAttributes.remove(RumAttributes.RESOURCE_TIMINGS) as? Map<String, Any?>
         )
 
-        val rumFeatureContext = sdkCore.getFeatureContext(RUM_FEATURE_NAME)
-        val shouldSendGraphQLPayloads = rumFeatureContext[SEND_GRAPHQL_PAYLOADS_KEY] as? Boolean ?: false
-        val hasCrossPlatformAttributes = resourceAttributes[RumAttributes.CROSS_PLATFORM_GRAPHQL_OPERATION_NAME] != null ||
-                resourceAttributes[RumAttributes.CROSS_PLATFORM_GRAPHQL_OPERATION_TYPE] != null ||
-                resourceAttributes[RumAttributes.CROSS_PLATFORM_GRAPHQL_VARIABLES] != null ||
-                resourceAttributes[RumAttributes.CROSS_PLATFORM_GRAPHQL_PAYLOAD] != null
-
-        val graphqlOperationName = extractGraphQLAttributeAsString(
-            hasCrossPlatformAttributes = hasCrossPlatformAttributes,
-            crossPlatformKey = RumAttributes.CROSS_PLATFORM_GRAPHQL_OPERATION_NAME,
-            apolloKey = RumAttributes.APOLLO_GRAPHQL_OPERATION_NAME
-        )
-
-        val graphqlOperationType = extractGraphQLAttributeAsString(
-            hasCrossPlatformAttributes = hasCrossPlatformAttributes,
-            crossPlatformKey = RumAttributes.CROSS_PLATFORM_GRAPHQL_OPERATION_TYPE,
-            apolloKey = RumAttributes.APOLLO_GRAPHQL_OPERATION_TYPE
-        )
-
-        val graphqlVariables = extractGraphQLAttributeAsString(
-            hasCrossPlatformAttributes = hasCrossPlatformAttributes,
-            crossPlatformKey = RumAttributes.CROSS_PLATFORM_GRAPHQL_VARIABLES,
-            apolloKey = RumAttributes.APOLLO_GRAPHQL_VARIABLES
-        )
+        val graphqlOperationName = resourceAttributes.remove(RumAttributes.GRAPHQL_OPERATION_NAME) as? String
+        val graphqlOperationType = resourceAttributes.remove(RumAttributes.GRAPHQL_OPERATION_TYPE) as? String
+        val graphqlVariables = resourceAttributes.remove(RumAttributes.GRAPHQL_VARIABLES) as? String
 
         // The decision whether to send payloads is determined by a feature flag in the RUM configuration
-        val graphqlPayload = if (shouldSendGraphQLPayloads) {
-            extractGraphQLAttributeAsString(
-                hasCrossPlatformAttributes = hasCrossPlatformAttributes,
-                crossPlatformKey = RumAttributes.CROSS_PLATFORM_GRAPHQL_PAYLOAD,
-                apolloKey = RumAttributes.APOLLO_GRAPHQL_PAYLOAD
-            )
+        val graphqlPayload = if (captureGraphQlPayloads) {
+            val rawPayload = resourceAttributes.remove(RumAttributes.GRAPHQL_PAYLOAD) as? String
+            rawPayload?.let { truncateGraphQLPayload(it) }
         } else {
             null
         }
@@ -405,14 +380,6 @@ internal class RumResourceScope(
             duration
         }
     }
-
-    private fun extractGraphQLAttributeAsString(
-        hasCrossPlatformAttributes: Boolean,
-        crossPlatformKey: String,
-        apolloKey: String
-    ): String? = resourceAttributes.remove(
-        if (hasCrossPlatformAttributes) crossPlatformKey else apolloKey
-    ) as? String
 
     private fun resolveResourceProvider(): ResourceEvent.Provider? {
         return if (firstPartyHostHeaderTypeResolver.isFirstPartyUrl(url)) {
@@ -595,13 +562,28 @@ internal class RumResourceScope(
         return null
     }
 
+    private fun truncateGraphQLPayload(payload: String): String {
+        val payloadBytes = payload.toByteArray(Charsets.UTF_8)
+
+        return if (payloadBytes.size <= MAX_GRAPHQL_PAYLOAD_SIZE) {
+            payload
+        } else {
+            // Truncate to MAX_GRAPHQL_PAYLOAD_SIZE and ensure we don't break UTF-8 encoding
+            val truncatedBytes = payloadBytes.copyOf(MAX_GRAPHQL_PAYLOAD_SIZE)
+            String(truncatedBytes, Charsets.UTF_8)
+        }
+    }
+
     // endregion
 
     companion object {
 
+        @VisibleForTesting
+        internal const val MAX_GRAPHQL_PAYLOAD_SIZE = 30 * 1024
+
         internal const val NEGATIVE_DURATION_WARNING_MESSAGE = "The computed duration for your " +
-                "resource: %s was 0 or negative. In order to keep the resource event" +
-                " we forced it to 1ns."
+            "resource: %s was 0 or negative. In order to keep the resource event" +
+            " we forced it to 1ns."
 
         @Suppress("LongParameterList")
         fun fromEvent(
@@ -613,7 +595,8 @@ internal class RumResourceScope(
             featuresContextResolver: FeaturesContextResolver,
             sampleRate: Float,
             networkSettledMetricResolver: NetworkSettledMetricResolver,
-            rumSessionTypeOverride: RumSessionType?
+            rumSessionTypeOverride: RumSessionType?,
+            captureGraphQlPayloads: Boolean
         ): RumScope {
             return RumResourceScope(
                 parentScope = parentScope,
@@ -628,7 +611,8 @@ internal class RumResourceScope(
                 featuresContextResolver = featuresContextResolver,
                 sampleRate = sampleRate,
                 networkSettledMetricResolver = networkSettledMetricResolver,
-                rumSessionTypeOverride = rumSessionTypeOverride
+                rumSessionTypeOverride = rumSessionTypeOverride,
+                captureGraphQlPayloads = captureGraphQlPayloads
             )
         }
     }

@@ -143,7 +143,8 @@ object Rum {
             rumSessionTypeOverride = rumFeature.configuration.rumSessionTypeOverride,
             accessibilitySnapshotManager = rumFeature.accessibilitySnapshotManager,
             batteryInfoProvider = rumFeature.batteryInfoProvider,
-            displayInfoProvider = rumFeature.displayInfoProvider
+            displayInfoProvider = rumFeature.displayInfoProvider,
+            captureGraphQlPayloads = rumFeature.configuration.captureGraphQLPayloads
         )
     }
 
