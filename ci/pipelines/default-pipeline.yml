@@ -206,7 +206,7 @@ test-pyramid:core-it-min-api:
   stage: test-pyramid
   timeout: 1h
   variables:
-    ANDROID_API: "21"
+    ANDROID_API: "23"
     ANDROID_EMULATOR_IMAGE: "system-images;android-$ANDROID_API;google_apis;${ANDROID_ARCH}"
     ANDROID_PLATFORM: "platforms;android-$ANDROID_API"
     ANDROID_BUILD_TOOLS: "build-tools;$ANDROID_API.0.0"
@@ -324,14 +324,14 @@ test-pyramid:single-fit-okhttp:
     reports:
       junit: "**/build/test-results/testReleaseUnitTest/*.xml"
 
-# RUN INSTRUMENTED TESTS ON MIN API (21), LATEST API (34) and MEDIAN API (28)
+# RUN INSTRUMENTED TESTS ON MIN API (23), LATEST API (34) and MEDIAN API (28)
 
 test-pyramid:legacy-integration-instrumented-min-api:
   tags: [ "macos:sonoma", "specific:true" ]
   stage: test-pyramid
   timeout: 1h
   variables:
-    ANDROID_API: "21"
+    ANDROID_API: "23"
     ANDROID_EMULATOR_IMAGE: "system-images;android-$ANDROID_API;google_apis;${ANDROID_ARCH}"
     ANDROID_PLATFORM: "platforms;android-$ANDROID_API"
     ANDROID_BUILD_TOOLS: "build-tools;$ANDROID_API.0.0"

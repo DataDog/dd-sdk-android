@@ -127,7 +127,7 @@ class LogsForegroundService : Service() {
             this,
             0,
             serviceIntent,
-            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) 0 else PendingIntent.FLAG_IMMUTABLE
+            PendingIntent.FLAG_IMMUTABLE
         )
     }
 
