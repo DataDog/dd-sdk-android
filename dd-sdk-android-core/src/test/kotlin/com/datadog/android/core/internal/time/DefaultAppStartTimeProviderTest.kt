@@ -48,7 +48,7 @@ class DefaultAppStartTimeProviderTest {
 
     @Test
     fun `M return rum load time W appStartTime { Legacy }`(
-        @IntForgery(min = Build.VERSION_CODES.LOLLIPOP, max = Build.VERSION_CODES.N) apiVersion: Int
+        @IntForgery(min = Build.VERSION_CODES.M, max = Build.VERSION_CODES.N) apiVersion: Int
     ) {
         // GIVEN
         val mockBuildSdkVersionProvider: BuildSdkVersionProvider = mock()

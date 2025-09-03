@@ -282,22 +282,6 @@ internal class DefaultAccessibilityReaderTest {
 
     // region Screen Pinning Tests
 
-    @TestTargetApi(Build.VERSION_CODES.LOLLIPOP)
-    @Test
-    fun `M return screen pinning state W getState { api below 23 }`(
-        @BoolForgery lockState: Boolean
-    ) {
-        // Given
-        @Suppress("DEPRECATION")
-        whenever(mockActivityManager.isInLockTaskMode) doReturn lockState
-
-        // When
-        val result = testedReader.getState()
-
-        // Then
-        assertThat(result.isScreenPinningEnabled).isEqualTo(lockState)
-    }
-
     @TestTargetApi(Build.VERSION_CODES.M)
     @Test
     fun `M return true for screen pinning W getState { lock task mode is LOCKED }`() {
