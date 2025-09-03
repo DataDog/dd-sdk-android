@@ -340,8 +340,8 @@ data class RumConfiguration internal constructor(
          *
          * By default the SDK will not collect these payloads.
          */
-        fun captureGraphQLPayloads(enabled: Boolean): Builder {
-            rumConfig = rumConfig.copy(captureGraphQLPayloads = enabled)
+        fun sendGraphQLPayloads(enabled: Boolean): Builder {
+            rumConfig = rumConfig.copy(sendGraphQLPayloads = enabled)
             return this
         }
 

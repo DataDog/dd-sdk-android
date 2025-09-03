@@ -164,7 +164,7 @@ internal class RumFeature(
     internal var batteryInfoProvider: InfoProvider<BatteryInfo> = NoOpBatteryInfoProvider()
     internal var displayInfoProvider: InfoProvider<DisplayInfo> = NoOpDisplayInfoProvider()
     internal val rumContextUpdateReceivers = mutableSetOf<FeatureContextUpdateReceiver>()
-    internal var captureGraphQlPayloads: Boolean = false
+    internal var sendGraphQlPayloads: Boolean = false
 
     private val lateCrashEventHandler by lazy { lateCrashReporterFactory(sdkCore as InternalSdkCore) }
 
@@ -214,7 +214,7 @@ internal class RumFeature(
             internalLogger = sdkCore.internalLogger
         )
 
-        captureGraphQlPayloads = configuration.captureGraphQLPayloads
+        sendGraphQlPayloads = configuration.sendGraphQLPayloads
 
         configuration.viewTrackingStrategy?.let { viewTrackingStrategy = it }
         actionTrackingStrategy = if (configuration.userActionTracking) {
@@ -694,7 +694,7 @@ internal class RumFeature(
         val trackAnonymousUser: Boolean,
         val rumSessionTypeOverride: RumSessionType?,
         val collectAccessibility: Boolean,
-        val captureGraphQLPayloads: Boolean
+        val sendGraphQLPayloads: Boolean
     )
 
     internal companion object {
@@ -746,7 +746,7 @@ internal class RumFeature(
             slowFramesConfiguration = null,
             rumSessionTypeOverride = null,
             collectAccessibility = false,
-            captureGraphQLPayloads = false
+            sendGraphQLPayloads = false
         )
 
         internal const val EVENT_MESSAGE_PROPERTY = "message"

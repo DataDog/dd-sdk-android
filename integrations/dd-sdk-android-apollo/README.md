@@ -35,11 +35,11 @@ by Datadog. Note that while `query` and `mutation` type operations are tracked, 
 
 #### Sending GraphQL payloads
 
-GraphQL payload capture is disabled by default. To use it, set the `captureGraphQLPayloads` flag in the RumConfiguration as follows: 
+GraphQL payload sending is disabled by default. To use it, set the `sendGraphQLPayloads` flag in the RumConfiguration as follows: 
 
 ```kotlin
  val rumConfig = RumConfiguration.Builder(applicationId)
-            .captureGraphQLPayloads(true)
+            .sendGraphQLPayloads(true)
             .build()
 ```
 

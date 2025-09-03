@@ -209,7 +209,7 @@ internal class DatadogRumMonitorTest {
     lateinit var fakeDatadogContext: DatadogContext
 
     @BoolForgery
-    var fakeCaptureGraphQLPayloads: Boolean = false
+    var fakeSendGraphQLPayloads: Boolean = false
 
     private var fakeRumSessionType: RumSessionType? = null
 
@@ -267,7 +267,7 @@ internal class DatadogRumMonitorTest {
             accessibilitySnapshotManager = mockAccessibilitySnapshotManager,
             batteryInfoProvider = mockBatteryInfoProvider,
             displayInfoProvider = mockDisplayInfoProvider,
-            captureGraphQlPayloads = fakeCaptureGraphQLPayloads
+            sendGraphQlPayloads = fakeSendGraphQLPayloads
         )
         testedMonitor.rootScope = mockApplicationScope
     }
@@ -298,7 +298,7 @@ internal class DatadogRumMonitorTest {
             accessibilitySnapshotManager = mockAccessibilitySnapshotManager,
             batteryInfoProvider = mockBatteryInfoProvider,
             displayInfoProvider = mockDisplayInfoProvider,
-            captureGraphQlPayloads = fakeCaptureGraphQLPayloads
+            sendGraphQlPayloads = fakeSendGraphQLPayloads
         )
 
         // When
@@ -371,7 +371,7 @@ internal class DatadogRumMonitorTest {
             accessibilitySnapshotManager = mockAccessibilitySnapshotManager,
             batteryInfoProvider = mockBatteryInfoProvider,
             displayInfoProvider = mockDisplayInfoProvider,
-            captureGraphQlPayloads = fakeCaptureGraphQLPayloads
+            sendGraphQlPayloads = fakeSendGraphQLPayloads
         )
         testedMonitor.start()
         val mockCallback = mock<(String?) -> Unit>()
@@ -413,7 +413,7 @@ internal class DatadogRumMonitorTest {
             accessibilitySnapshotManager = mockAccessibilitySnapshotManager,
             batteryInfoProvider = mockBatteryInfoProvider,
             displayInfoProvider = mockDisplayInfoProvider,
-            captureGraphQlPayloads = fakeCaptureGraphQLPayloads
+            sendGraphQlPayloads = fakeSendGraphQLPayloads
         )
         testedMonitor.start()
         val mockCallback = mock<(String?) -> Unit>()
@@ -2030,7 +2030,7 @@ internal class DatadogRumMonitorTest {
             accessibilitySnapshotManager = mockAccessibilitySnapshotManager,
             batteryInfoProvider = mockBatteryInfoProvider,
             displayInfoProvider = mockDisplayInfoProvider,
-            captureGraphQlPayloads = fakeCaptureGraphQLPayloads
+            sendGraphQlPayloads = fakeSendGraphQLPayloads
         )
 
         // When
@@ -2069,7 +2069,7 @@ internal class DatadogRumMonitorTest {
             accessibilitySnapshotManager = mockAccessibilitySnapshotManager,
             batteryInfoProvider = mockBatteryInfoProvider,
             displayInfoProvider = mockDisplayInfoProvider,
-            captureGraphQlPayloads = fakeCaptureGraphQLPayloads
+            sendGraphQlPayloads = fakeSendGraphQLPayloads
         )
 
         // When
@@ -2109,7 +2109,7 @@ internal class DatadogRumMonitorTest {
             batteryInfoProvider = mockBatteryInfoProvider,
             displayInfoProvider = mockDisplayInfoProvider,
             rumSessionTypeOverride = null,
-            captureGraphQlPayloads = fakeCaptureGraphQLPayloads
+            sendGraphQlPayloads = fakeSendGraphQLPayloads
         )
         whenever(mockExecutorService.isShutdown).thenReturn(true)
 
@@ -2281,7 +2281,7 @@ internal class DatadogRumMonitorTest {
             accessibilitySnapshotManager = mockAccessibilitySnapshotManager,
             batteryInfoProvider = mockBatteryInfoProvider,
             displayInfoProvider = mockDisplayInfoProvider,
-            captureGraphQlPayloads = fakeCaptureGraphQLPayloads
+            sendGraphQlPayloads = fakeSendGraphQLPayloads
         )
         testedMonitor.startView(key, name, attributes)
         // When

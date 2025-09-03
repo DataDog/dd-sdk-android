@@ -147,7 +147,7 @@ internal class RumViewManagerScopeTest {
     lateinit var mockDisplayInfoProvider: InfoProvider<DisplayInfo>
 
     @BoolForgery
-    var fakeCaptureGraphQLPayloads: Boolean = false
+    var fakeSendGraphQLPayloads: Boolean = false
 
     @BoolForgery
     var fakeTrackFrustrations: Boolean = true
@@ -191,7 +191,7 @@ internal class RumViewManagerScopeTest {
             accessibilitySnapshotManager = mockAccessibilitySnapshotManager,
             batteryInfoProvider = mockBatteryInfoProvider,
             displayInfoProvider = mockDisplayInfoProvider,
-            captureGraphQlPayloads = fakeCaptureGraphQLPayloads
+            sendGraphQlPayloads = fakeSendGraphQLPayloads
         )
     }
 
@@ -578,7 +578,7 @@ internal class RumViewManagerScopeTest {
             accessibilitySnapshotManager = mockAccessibilitySnapshotManager,
             batteryInfoProvider = mockBatteryInfoProvider,
             displayInfoProvider = mockDisplayInfoProvider,
-            captureGraphQlPayloads = fakeCaptureGraphQLPayloads
+            sendGraphQlPayloads = fakeSendGraphQLPayloads
         )
         testedScope.applicationDisplayed = true
         val fakeEvent = forge.validBackgroundEvent()
@@ -615,7 +615,7 @@ internal class RumViewManagerScopeTest {
             accessibilitySnapshotManager = mockAccessibilitySnapshotManager,
             batteryInfoProvider = mockBatteryInfoProvider,
             displayInfoProvider = mockDisplayInfoProvider,
-            captureGraphQlPayloads = fakeCaptureGraphQLPayloads
+            sendGraphQlPayloads = fakeSendGraphQLPayloads
         )
         testedScope.childrenScopes.add(mockChildScope)
         whenever(mockChildScope.isActive()) doReturn true
@@ -655,7 +655,7 @@ internal class RumViewManagerScopeTest {
             accessibilitySnapshotManager = mockAccessibilitySnapshotManager,
             batteryInfoProvider = mockBatteryInfoProvider,
             displayInfoProvider = mockDisplayInfoProvider,
-            captureGraphQlPayloads = fakeCaptureGraphQLPayloads
+            sendGraphQlPayloads = fakeSendGraphQLPayloads
         )
         testedScope.applicationDisplayed = true
         val fakeEvent = forge.validBackgroundEvent()
@@ -728,7 +728,7 @@ internal class RumViewManagerScopeTest {
             accessibilitySnapshotManager = mockAccessibilitySnapshotManager,
             batteryInfoProvider = mockBatteryInfoProvider,
             displayInfoProvider = mockDisplayInfoProvider,
-            captureGraphQlPayloads = fakeCaptureGraphQLPayloads
+            sendGraphQlPayloads = fakeSendGraphQLPayloads
         )
         testedScope.childrenScopes.add(mockChildScope)
         whenever(mockChildScope.isActive()) doReturn true
@@ -769,7 +769,7 @@ internal class RumViewManagerScopeTest {
             accessibilitySnapshotManager = mockAccessibilitySnapshotManager,
             batteryInfoProvider = mockBatteryInfoProvider,
             displayInfoProvider = mockDisplayInfoProvider,
-            captureGraphQlPayloads = fakeCaptureGraphQLPayloads
+            sendGraphQlPayloads = fakeSendGraphQLPayloads
         )
         testedScope.stopped = true
         val fakeEvent = forge.applicationStartedEvent()

@@ -87,7 +87,7 @@ internal open class RumViewScope(
     private val accessibilitySnapshotManager: AccessibilitySnapshotManager,
     private val batteryInfoProvider: InfoProvider<BatteryInfo>,
     private val displayInfoProvider: InfoProvider<DisplayInfo>,
-    private val captureGraphQlPayloads: Boolean
+    private val sendGraphQlPayloads: Boolean
 ) : RumScope {
 
     internal val url = key.url.replace('.', '/')
@@ -300,7 +300,7 @@ internal open class RumViewScope(
             accessibilitySnapshotManager = accessibilitySnapshotManager,
             batteryInfoProvider = batteryInfoProvider,
             displayInfoProvider = displayInfoProvider,
-            captureGraphQlPayloads = captureGraphQlPayloads
+            sendGraphQlPayloads = sendGraphQlPayloads
         )
     }
 
@@ -481,7 +481,7 @@ internal open class RumViewScope(
             sampleRate = sampleRate,
             networkSettledMetricResolver = networkSettledMetricResolver,
             rumSessionTypeOverride = rumSessionTypeOverride,
-            captureGraphQlPayloads = captureGraphQlPayloads
+            sendGraphQlPayloads = sendGraphQlPayloads
         )
         pendingResourceCount++
     }
@@ -1589,7 +1589,7 @@ internal open class RumViewScope(
             accessibilitySnapshotManager: AccessibilitySnapshotManager,
             batteryInfoProvider: InfoProvider<BatteryInfo>,
             displayInfoProvider: InfoProvider<DisplayInfo>,
-            captureGraphQlPayloads: Boolean
+            sendGraphQlPayloads: Boolean
         ): RumViewScope {
             val networkSettledMetricResolver = NetworkSettledMetricResolver(
                 networkSettledResourceIdentifier,
@@ -1626,7 +1626,7 @@ internal open class RumViewScope(
                 accessibilitySnapshotManager = accessibilitySnapshotManager,
                 batteryInfoProvider = batteryInfoProvider,
                 displayInfoProvider = displayInfoProvider,
-                captureGraphQlPayloads = captureGraphQlPayloads
+                sendGraphQlPayloads = sendGraphQlPayloads
             )
         }
 

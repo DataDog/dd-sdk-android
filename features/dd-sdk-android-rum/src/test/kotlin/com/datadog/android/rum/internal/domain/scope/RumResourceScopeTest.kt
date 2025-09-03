@@ -145,7 +145,7 @@ internal class RumResourceScopeTest {
     lateinit var fakeNetworkInfoAtScopeStart: NetworkInfo
 
     @BoolForgery
-    var fakeCaptureGraphQLPayloads: Boolean = false
+    var fakeSendGraphQLPayloads: Boolean = false
 
     private var fakeServerOffset: Long = 0L
     private var fakeSampleRate: Float = 0.0f
@@ -230,7 +230,7 @@ internal class RumResourceScopeTest {
             sampleRate = fakeSampleRate,
             networkSettledMetricResolver = mockNetworkSettledMetricResolver,
             rumSessionTypeOverride = fakeRumSessionType,
-            captureGraphQlPayloads = fakeCaptureGraphQLPayloads
+            sendGraphQlPayloads = fakeSendGraphQLPayloads
         )
     }
 
@@ -429,7 +429,7 @@ internal class RumResourceScopeTest {
             sampleRate = fakeSampleRate,
             networkSettledMetricResolver = mockNetworkSettledMetricResolver,
             rumSessionTypeOverride = fakeRumSessionType,
-            captureGraphQlPayloads = fakeCaptureGraphQLPayloads
+            sendGraphQlPayloads = fakeSendGraphQLPayloads
         )
         doAnswer { true }.whenever(mockResolver).isFirstPartyUrl(brokenUrl)
         val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys)
@@ -674,7 +674,7 @@ internal class RumResourceScopeTest {
             sampleRate = fakeSampleRate,
             networkSettledMetricResolver = mockNetworkSettledMetricResolver,
             rumSessionTypeOverride = fakeRumSessionType,
-            captureGraphQlPayloads = fakeCaptureGraphQLPayloads
+            sendGraphQlPayloads = fakeSendGraphQLPayloads
         )
 
         // When
@@ -920,7 +920,7 @@ internal class RumResourceScopeTest {
             sampleRate = fakeSampleRate,
             networkSettledMetricResolver = mockNetworkSettledMetricResolver,
             rumSessionTypeOverride = fakeRumSessionType,
-            captureGraphQlPayloads = fakeCaptureGraphQLPayloads
+            sendGraphQlPayloads = fakeSendGraphQLPayloads
         )
         whenever(rumMonitor.mockInstance.getAttributes()) doReturn emptyMap()
 
@@ -1473,7 +1473,7 @@ internal class RumResourceScopeTest {
             sampleRate = fakeSampleRate,
             networkSettledMetricResolver = mockNetworkSettledMetricResolver,
             rumSessionTypeOverride = fakeRumSessionType,
-            captureGraphQlPayloads = fakeCaptureGraphQLPayloads
+            sendGraphQlPayloads = fakeSendGraphQLPayloads
         )
 
         // When
@@ -1573,7 +1573,7 @@ internal class RumResourceScopeTest {
             sampleRate = fakeSampleRate,
             networkSettledMetricResolver = mockNetworkSettledMetricResolver,
             rumSessionTypeOverride = fakeRumSessionType,
-            captureGraphQlPayloads = fakeCaptureGraphQLPayloads
+            sendGraphQlPayloads = fakeSendGraphQLPayloads
         )
 
         // When
@@ -1652,7 +1652,7 @@ internal class RumResourceScopeTest {
             sampleRate = fakeSampleRate,
             networkSettledMetricResolver = mockNetworkSettledMetricResolver,
             rumSessionTypeOverride = fakeRumSessionType,
-            captureGraphQlPayloads = fakeCaptureGraphQLPayloads
+            sendGraphQlPayloads = fakeSendGraphQLPayloads
         )
         doAnswer { true }.whenever(mockResolver).isFirstPartyUrl(brokenUrl)
         val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys)
@@ -1749,7 +1749,7 @@ internal class RumResourceScopeTest {
             sampleRate = fakeSampleRate,
             networkSettledMetricResolver = mockNetworkSettledMetricResolver,
             rumSessionTypeOverride = fakeRumSessionType,
-            captureGraphQlPayloads = fakeCaptureGraphQLPayloads
+            sendGraphQlPayloads = fakeSendGraphQLPayloads
         )
         doAnswer { true }.whenever(mockResolver).isFirstPartyUrl(brokenUrl)
         val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys)
@@ -2841,7 +2841,7 @@ internal class RumResourceScopeTest {
             )
 
         mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
-        val expectedPayload = if (!fakeCaptureGraphQLPayloads) null else payload
+        val expectedPayload = if (!fakeSendGraphQLPayloads) null else payload
 
         // When
         testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
@@ -3117,7 +3117,7 @@ internal class RumResourceScopeTest {
             sampleRate = fakeSampleRate,
             networkSettledMetricResolver = mockNetworkSettledMetricResolver,
             rumSessionTypeOverride = fakeRumSessionType,
-            captureGraphQlPayloads = sendPayloads
+            sendGraphQlPayloads = sendPayloads
         )
 
         val operationName = forge.aString()
@@ -3181,7 +3181,7 @@ internal class RumResourceScopeTest {
             sampleRate = fakeSampleRate,
             networkSettledMetricResolver = mockNetworkSettledMetricResolver,
             rumSessionTypeOverride = fakeRumSessionType,
-            captureGraphQlPayloads = true
+            sendGraphQlPayloads = true
         )
 
         whenever(rumMonitor.mockSdkCore.getFeatureContext(RUM_FEATURE_NAME))
@@ -3244,7 +3244,7 @@ internal class RumResourceScopeTest {
             sampleRate = fakeSampleRate,
             networkSettledMetricResolver = mockNetworkSettledMetricResolver,
             rumSessionTypeOverride = fakeRumSessionType,
-            captureGraphQlPayloads = true
+            sendGraphQlPayloads = true
         )
 
         whenever(rumMonitor.mockSdkCore.getFeatureContext(RUM_FEATURE_NAME))
@@ -3310,7 +3310,7 @@ internal class RumResourceScopeTest {
             sampleRate = fakeSampleRate,
             networkSettledMetricResolver = mockNetworkSettledMetricResolver,
             rumSessionTypeOverride = fakeRumSessionType,
-            captureGraphQlPayloads = true
+            sendGraphQlPayloads = true
         )
 
         whenever(rumMonitor.mockSdkCore.getFeatureContext(RUM_FEATURE_NAME))
@@ -3369,7 +3369,7 @@ internal class RumResourceScopeTest {
             sampleRate = fakeSampleRate,
             networkSettledMetricResolver = mockNetworkSettledMetricResolver,
             rumSessionTypeOverride = fakeRumSessionType,
-            captureGraphQlPayloads = true
+            sendGraphQlPayloads = true
         )
 
         whenever(rumMonitor.mockSdkCore.getFeatureContext(RUM_FEATURE_NAME))

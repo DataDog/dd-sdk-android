@@ -139,7 +139,7 @@ internal class RumSessionScopeAttributePropagationTest {
     var fakeHasReplay: Boolean = false
 
     @BoolForgery
-    var fakeCaptureGraphQLPayloads: Boolean = false
+    var fakeSendGraphQLPayloads: Boolean = false
 
     @FloatForgery(min = 0f, max = 100f)
     var fakeSampleRate: Float = 0f
@@ -181,7 +181,7 @@ internal class RumSessionScopeAttributePropagationTest {
             accessibilitySnapshotManager = mockAccessibilitySnapshotManager,
             batteryInfoProvider = mockBatteryInfoProvider,
             displayInfoProvider = mockDisplayInfoProvider,
-            captureGraphQlPayloads = fakeCaptureGraphQLPayloads
+            sendGraphQlPayloads = fakeSendGraphQLPayloads
         )
     }
 

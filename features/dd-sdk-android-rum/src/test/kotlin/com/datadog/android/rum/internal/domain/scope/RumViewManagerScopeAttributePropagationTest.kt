@@ -143,7 +143,7 @@ internal class RumViewManagerScopeAttributePropagationTest {
     var fakeTrackFrustrations: Boolean = true
 
     @BoolForgery
-    var fakeCaptureGraphQLPayloads: Boolean = false
+    var fakeSendGraphQLPayloads: Boolean = false
 
     private var fakeRumSessionType: RumSessionType? = null
 
@@ -175,7 +175,7 @@ internal class RumViewManagerScopeAttributePropagationTest {
             batteryInfoProvider = mockBatteryInfoProvider,
             displayInfoProvider = mockDisplayInfoProvider,
             rumSessionTypeOverride = fakeRumSessionType,
-            captureGraphQlPayloads = fakeCaptureGraphQLPayloads
+            sendGraphQlPayloads = fakeSendGraphQLPayloads
         )
     }
 

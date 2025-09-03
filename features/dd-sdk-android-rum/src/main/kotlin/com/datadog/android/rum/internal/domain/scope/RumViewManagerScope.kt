@@ -59,7 +59,7 @@ internal class RumViewManagerScope(
     private val accessibilitySnapshotManager: AccessibilitySnapshotManager,
     private val batteryInfoProvider: InfoProvider<BatteryInfo>,
     private val displayInfoProvider: InfoProvider<DisplayInfo>,
-    private val captureGraphQlPayloads: Boolean
+    private val sendGraphQlPayloads: Boolean
 ) : RumScope {
 
     private val interactionToNextViewMetricResolver: InteractionToNextViewMetricResolver =
@@ -287,7 +287,7 @@ internal class RumViewManagerScope(
             accessibilitySnapshotManager = accessibilitySnapshotManager,
             batteryInfoProvider = batteryInfoProvider,
             displayInfoProvider = displayInfoProvider,
-            captureGraphQlPayloads = captureGraphQlPayloads
+            sendGraphQlPayloads = sendGraphQlPayloads
         )
         applicationDisplayed = true
         childrenScopes.add(viewScope)
@@ -371,7 +371,7 @@ internal class RumViewManagerScope(
             accessibilitySnapshotManager = accessibilitySnapshotManager,
             batteryInfoProvider = batteryInfoProvider,
             displayInfoProvider = displayInfoProvider,
-            captureGraphQlPayloads = captureGraphQlPayloads
+            sendGraphQlPayloads = sendGraphQlPayloads
         )
     }
 
@@ -414,7 +414,7 @@ internal class RumViewManagerScope(
             accessibilitySnapshotManager = accessibilitySnapshotManager,
             batteryInfoProvider = batteryInfoProvider,
             displayInfoProvider = displayInfoProvider,
-            captureGraphQlPayloads = captureGraphQlPayloads
+            sendGraphQlPayloads = sendGraphQlPayloads
         )
     }
 

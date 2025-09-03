@@ -70,7 +70,7 @@ internal class ConfigurationRumForgeryFactory :
             slowFramesConfiguration = forge.getForgery(),
             rumSessionTypeOverride = forge.aNullable { aValueFrom(RumSessionType::class.java) },
             collectAccessibility = forge.aBool(),
-            captureGraphQLPayloads = forge.aBool()
+            sendGraphQLPayloads = forge.aBool()
         )
     }
 }

@@ -151,7 +151,7 @@ internal class RumApplicationScopeTest {
     private var fakeRumSessionType: RumSessionType? = null
 
     @BoolForgery
-    var fakeCaptureGraphQLPayloads: Boolean = false
+    var fakeSendGraphQLPayloads: Boolean = false
 
     @BeforeEach
     fun `set up`(forge: Forge) {
@@ -182,7 +182,7 @@ internal class RumApplicationScopeTest {
             accessibilitySnapshotManager = mockAccessibilitySnapshotManager,
             batteryInfoProvider = mockBatteryInfoProvider,
             displayInfoProvider = mockDisplayInfoProvider,
-            captureGraphQlPayloads = fakeCaptureGraphQLPayloads
+            sendGraphQlPayloads = fakeSendGraphQLPayloads
         )
     }
 

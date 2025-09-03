@@ -144,7 +144,7 @@ object Rum {
             accessibilitySnapshotManager = rumFeature.accessibilitySnapshotManager,
             batteryInfoProvider = rumFeature.batteryInfoProvider,
             displayInfoProvider = rumFeature.displayInfoProvider,
-            captureGraphQlPayloads = rumFeature.configuration.captureGraphQLPayloads
+            sendGraphQlPayloads = rumFeature.configuration.sendGraphQLPayloads
         )
     }
 

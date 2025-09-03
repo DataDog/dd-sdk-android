@@ -104,9 +104,9 @@ public final class com/datadog/android/rum/RumConfiguration {
 public final class com/datadog/android/rum/RumConfiguration$Builder {
 	public fun <init> (Ljava/lang/String;)V
 	public final fun build ()Lcom/datadog/android/rum/RumConfiguration;
-	public final fun captureGraphQLPayloads (Z)Lcom/datadog/android/rum/RumConfiguration$Builder;
 	public final fun collectAccessibility (Z)Lcom/datadog/android/rum/RumConfiguration$Builder;
 	public final fun disableUserInteractionTracking ()Lcom/datadog/android/rum/RumConfiguration$Builder;
+	public final fun sendGraphQLPayloads (Z)Lcom/datadog/android/rum/RumConfiguration$Builder;
 	public final fun setActionEventMapper (Lcom/datadog/android/event/EventMapper;)Lcom/datadog/android/rum/RumConfiguration$Builder;
 	public final fun setErrorEventMapper (Lcom/datadog/android/event/EventMapper;)Lcom/datadog/android/rum/RumConfiguration$Builder;
 	public final fun setInitialResourceIdentifier (Lcom/datadog/android/rum/metric/networksettled/InitialResourceIdentifier;)Lcom/datadog/android/rum/RumConfiguration$Builder;

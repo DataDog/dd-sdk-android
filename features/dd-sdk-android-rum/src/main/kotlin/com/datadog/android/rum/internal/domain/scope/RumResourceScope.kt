@@ -53,7 +53,7 @@ internal class RumResourceScope(
     internal val sampleRate: Float,
     internal val networkSettledMetricResolver: NetworkSettledMetricResolver,
     private val rumSessionTypeOverride: RumSessionType?,
-    private val captureGraphQlPayloads: Boolean
+    private val sendGraphQlPayloads: Boolean
 ) : RumScope {
 
     internal val resourceId: String = UUID.randomUUID().toString()
@@ -249,7 +249,7 @@ internal class RumResourceScope(
         val graphqlVariables = resourceAttributes.remove(RumAttributes.GRAPHQL_VARIABLES) as? String
 
         // The decision whether to send payloads is determined by a feature flag in the RUM configuration
-        val graphqlPayload = if (captureGraphQlPayloads) {
+        val graphqlPayload = if (sendGraphQlPayloads) {
             val rawPayload = resourceAttributes.remove(RumAttributes.GRAPHQL_PAYLOAD) as? String
             rawPayload?.let { truncateGraphQLPayload(it) }
         } else {
@@ -596,7 +596,7 @@ internal class RumResourceScope(
             sampleRate: Float,
             networkSettledMetricResolver: NetworkSettledMetricResolver,
             rumSessionTypeOverride: RumSessionType?,
-            captureGraphQlPayloads: Boolean
+            sendGraphQlPayloads: Boolean
         ): RumScope {
             return RumResourceScope(
                 parentScope = parentScope,
@@ -612,7 +612,7 @@ internal class RumResourceScope(
                 sampleRate = sampleRate,
                 networkSettledMetricResolver = networkSettledMetricResolver,
                 rumSessionTypeOverride = rumSessionTypeOverride,
-                captureGraphQlPayloads = captureGraphQlPayloads
+                sendGraphQlPayloads = sendGraphQlPayloads
             )
         }
     }

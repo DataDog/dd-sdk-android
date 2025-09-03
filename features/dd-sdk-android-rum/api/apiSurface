@@ -90,7 +90,7 @@ data class com.datadog.android.rum.RumConfiguration
     fun setLastInteractionIdentifier(com.datadog.android.rum.metric.interactiontonextview.LastInteractionIdentifier?): Builder
     fun setSlowFramesConfiguration(com.datadog.android.rum.configuration.SlowFramesConfiguration?): Builder
     fun trackAnonymousUser(Boolean): Builder
-    fun captureGraphQLPayloads(Boolean): Builder
+    fun sendGraphQLPayloads(Boolean): Builder
     fun build(): RumConfiguration
 enum com.datadog.android.rum.RumErrorSource
   - NETWORK
