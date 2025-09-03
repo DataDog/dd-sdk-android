@@ -21,19 +21,7 @@ import okio.IOException
 /**
  * A Datadog Apollo interceptor for GraphQL operations.
  */
-class DatadogApolloInterceptor(
-    // wrap the extension function (for unit tests)
-    private val variablesExtractor: (
-        Operation<*>,
-        CustomScalarAdapters
-    ) -> String? = { operationToVariablesJson, adapters ->
-        try {
-            operationToVariablesJson.variablesJson(adapters)
-        } catch (_: IOException) {
-            null
-        }
-    }
-) : ApolloInterceptor {
+open class DatadogApolloInterceptor : ApolloInterceptor {
 
     override fun <D : Operation.Data> intercept(
         request: ApolloRequest<D>,
@@ -44,7 +32,7 @@ class DatadogApolloInterceptor(
 
         val operationName = operation.name()
         val operationType = extractType(operation)
-        val operationVariables = variablesExtractor(operation, adapters)
+        val operationVariables = extractVariables(operation, adapters)
         val operationPayload = extractPayload(operation, adapters)
 
         val requestBuilder = request.newBuilder()
@@ -76,6 +64,14 @@ class DatadogApolloInterceptor(
             operation.document().contains("query") -> "query"
             else -> null // failed to get type
         }
+
+    internal open fun extractVariables(operation: Operation<*>, adapters: CustomScalarAdapters): String? {
+        return try {
+            operation.variablesJson(adapters)
+        } catch (_: IOException) {
+            null
+        }
+    }
 
     private fun <D : Operation.Data> extractPayload(operation: Operation<D>, adapters: CustomScalarAdapters) =
         buildJsonString {

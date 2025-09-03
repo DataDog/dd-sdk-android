@@ -45,17 +45,16 @@ internal class DatadogApolloInterceptorTest {
     @Mock
     private lateinit var mockExecutionContext: ExecutionContext
 
-    private val mockVariablesExtractor: (Operation<*>, CustomScalarAdapters) -> String? = { operation, _ ->
-        when (operation.name()) {
-            "GetUser" -> """{"userId": "123", "filters": ["active"]}"""
-            "SetUser" -> """{"userId": "123", "filters": ["active"]}"""
-            "CreateUser" -> """{"input": {"name": "John", "email": "john@example.com"}}"""
-            else -> "{}"
+    private var testedInterceptor: DatadogApolloInterceptor = object : DatadogApolloInterceptor() {
+        override fun extractVariables(operation: Operation<*>, adapters: CustomScalarAdapters): String? {
+            return when (operation.name()) {
+                "GetUser" -> """{"userId": "123", "filters": ["active"]}"""
+                "SetUser" -> """{"userId": "123", "filters": ["active"]}"""
+                "CreateUser" -> """{"input": {"name": "John", "email": "john@example.com"}}"""
+                else -> "{}"
+            }
         }
     }
-
-    private var testedInterceptor: DatadogApolloInterceptor =
-        DatadogApolloInterceptor(mockVariablesExtractor)
 
     // region header: name
 
@@ -154,7 +153,7 @@ internal class DatadogApolloInterceptorTest {
         checkForHeader(
             requestBuilder,
             DD_GRAPHQL_VARIABLES_HEADER,
-            mockVariablesExtractor(operation, mockScalarAdapters)
+            testedInterceptor.extractVariables(operation, mockScalarAdapters)
         )
     }
 
@@ -188,8 +187,9 @@ internal class DatadogApolloInterceptorTest {
     @Test
     fun `M handle null variables W intercept { variables extractor returns null }`() {
         // Given
-        val nullVariablesExtractor: (Operation<*>, CustomScalarAdapters) -> String? = { _, _ -> null }
-        val interceptor = DatadogApolloInterceptor(nullVariablesExtractor)
+        val interceptor = object : DatadogApolloInterceptor() {
+            override fun extractVariables(operation: Operation<*>, adapters: CustomScalarAdapters): String? = null
+        }
 
         val (_, originalRequest, requestBuilder) = setupBasicMocks("GetUser", "query GetUser { user { id: name } }")
         val chain = mock<ApolloInterceptorChain>()
@@ -209,8 +209,9 @@ internal class DatadogApolloInterceptorTest {
     @Test
     fun `M handle empty variables W intercept { variables extractor returns empty string }`() {
         // Given
-        val emptyVariablesExtractor: (Operation<*>, CustomScalarAdapters) -> String? = { _, _ -> "" }
-        val interceptor = DatadogApolloInterceptor(emptyVariablesExtractor)
+        val interceptor = object : DatadogApolloInterceptor() {
+            override fun extractVariables(operation: Operation<*>, adapters: CustomScalarAdapters): String? = ""
+        }
 
         val (_, originalRequest, requestBuilder) = setupBasicMocks("GetUser", "query GetUser { user { id: name } }")
         val chain = mock<ApolloInterceptorChain>()
@@ -245,7 +246,7 @@ internal class DatadogApolloInterceptorTest {
         checkForHeader(
             requestBuilder,
             DD_GRAPHQL_VARIABLES_HEADER,
-            mockVariablesExtractor(operation, mockScalarAdapters)
+            testedInterceptor.extractVariables(operation, mockScalarAdapters)
         )
         checkForHeader(requestBuilder, DD_GRAPHQL_TYPE_HEADER)
         val headerNameCaptor = argumentCaptor<String>()
@@ -271,7 +272,7 @@ internal class DatadogApolloInterceptorTest {
         checkForHeader(
             requestBuilder,
             DD_GRAPHQL_VARIABLES_HEADER,
-            mockVariablesExtractor(operation, mockScalarAdapters)
+            testedInterceptor.extractVariables(operation, mockScalarAdapters)
         )
         val headerNameCaptor = argumentCaptor<String>()
         verify(requestBuilder, atLeastOnce()).addHttpHeader(headerNameCaptor.capture(), any<String>())
