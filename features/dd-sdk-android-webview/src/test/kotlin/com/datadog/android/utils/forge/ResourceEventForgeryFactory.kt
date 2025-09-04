@@ -4,14 +4,8 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.rum.utils.forge
+package com.datadog.android.utils.forge
 
-import com.datadog.android.rum.internal.domain.event.ResourceTiming
-import com.datadog.android.rum.internal.domain.scope.connect
-import com.datadog.android.rum.internal.domain.scope.dns
-import com.datadog.android.rum.internal.domain.scope.download
-import com.datadog.android.rum.internal.domain.scope.firstByte
-import com.datadog.android.rum.internal.domain.scope.ssl
 import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.tools.unit.forge.exhaustiveAttributes
 import fr.xgouchet.elmyr.Forge
@@ -20,10 +14,10 @@ import fr.xgouchet.elmyr.jvm.ext.aTimestamp
 import java.net.URL
 import java.util.UUID
 
-class ResourceEventForgeryFactory :
+// TODO RUMM-2949 Share forgeries/test configurations between modules
+internal class ResourceEventForgeryFactory :
     ForgeryFactory<ResourceEvent> {
     override fun getForgery(forge: Forge): ResourceEvent {
-        val timing = forge.aNullable<ResourceTiming>()
         return ResourceEvent(
             date = forge.aTimestamp(),
             resource = ResourceEvent.Resource(
@@ -34,11 +28,36 @@ class ResourceEventForgeryFactory :
                 method = forge.aNullable(),
                 statusCode = forge.aNullable { aLong(200, 600) },
                 size = forge.aNullable { aPositiveLong() },
-                dns = timing?.dns(),
-                connect = timing?.connect(),
-                ssl = timing?.ssl(),
-                firstByte = timing?.firstByte(),
-                download = timing?.download(),
+                dns = forge.aNullable {
+                    ResourceEvent.Dns(
+                        start = forge.aPositiveLong(),
+                        duration = forge.aPositiveLong()
+                    )
+                },
+                connect = forge.aNullable {
+                    ResourceEvent.Connect(
+                        start = forge.aPositiveLong(),
+                        duration = forge.aPositiveLong()
+                    )
+                },
+                ssl = forge.aNullable {
+                    ResourceEvent.Ssl(
+                        start = forge.aPositiveLong(),
+                        duration = forge.aPositiveLong()
+                    )
+                },
+                firstByte = forge.aNullable {
+                    ResourceEvent.FirstByte(
+                        start = forge.aPositiveLong(),
+                        duration = forge.aPositiveLong()
+                    )
+                },
+                download = forge.aNullable {
+                    ResourceEvent.Download(
+                        start = forge.aPositiveLong(),
+                        duration = forge.aPositiveLong()
+                    )
+                },
                 redirect = forge.aNullable {
                     ResourceEvent.Redirect(
                         aPositiveLong(),
@@ -50,14 +69,6 @@ class ResourceEventForgeryFactory :
                         domain = aNullable { aStringMatching("[a-z]+\\.[a-z]{3}") },
                         name = aNullable { anAlphabeticalString() },
                         type = aNullable()
-                    )
-                },
-                graphql = forge.aNullable {
-                    ResourceEvent.Graphql(
-                        operationType = aValueFrom(ResourceEvent.OperationType::class.java),
-                        operationName = aNullable { aString() },
-                        payload = aNullable { aString() },
-                        variables = aNullable { aString() }
                     )
                 }
             ),
@@ -110,18 +121,18 @@ class ResourceEventForgeryFactory :
             },
             os = forge.aNullable {
                 ResourceEvent.Os(
-                    name = forge.aString(),
-                    version = "${forge.aSmallInt()}.${forge.aSmallInt()}.${forge.aSmallInt()}",
-                    versionMajor = forge.aSmallInt().toString()
+                    name = anAlphaNumericalString(),
+                    version = anAlphaNumericalString(),
+                    versionMajor = anAlphaNumericalString()
                 )
             },
             device = forge.aNullable {
                 ResourceEvent.Device(
-                    name = forge.aString(),
-                    model = forge.aString(),
-                    brand = forge.aString(),
-                    type = forge.aValueFrom(ResourceEvent.DeviceType::class.java),
-                    architecture = forge.aString()
+                    name = anAlphaNumericalString(),
+                    model = anAlphaNumericalString(),
+                    brand = anAlphaNumericalString(),
+                    type = aValueFrom(ResourceEvent.DeviceType::class.java),
+                    architecture = anAlphaNumericalString()
                 )
             },
             context = forge.aNullable {
@@ -134,8 +145,7 @@ class ResourceEventForgeryFactory :
                 browserSdkVersion = forge.aNullable { aStringMatching("\\d+\\.\\d+\\.\\d+") },
                 spanId = forge.aNullable { aNumericalString() },
                 traceId = forge.aNullable { aNumericalString() }
-            ),
-            ddtags = forge.aNullable { ddTagsString() }
+            )
         )
     }
 }

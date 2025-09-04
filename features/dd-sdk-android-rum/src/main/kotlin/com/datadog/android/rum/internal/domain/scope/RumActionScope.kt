@@ -18,7 +18,6 @@ import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.monitor.StorageEvent
 import com.datadog.android.rum.internal.toAction
-import com.datadog.android.rum.internal.utils.buildDDTagsString
 import com.datadog.android.rum.internal.utils.hasUserData
 import com.datadog.android.rum.internal.utils.newRumEventWriteOperation
 import com.datadog.android.rum.model.ActionEvent
@@ -351,8 +350,7 @@ internal class RumActionScope(
                 ),
                 connectivity = networkInfo.toActionConnectivity(),
                 service = datadogContext.service,
-                version = datadogContext.version,
-                ddtags = buildDDTagsString(datadogContext)
+                version = datadogContext.version
             )
         }
             .apply {
