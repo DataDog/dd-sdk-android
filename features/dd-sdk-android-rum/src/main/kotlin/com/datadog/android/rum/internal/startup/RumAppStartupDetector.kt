@@ -7,6 +7,7 @@
 package com.datadog.android.rum.internal.startup
 
 import android.app.Activity
+import android.app.Application
 import android.content.Context
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.rum.DdRumContentProvider
@@ -23,9 +24,9 @@ internal interface RumAppStartupDetector {
     fun onStop()
 
     companion object {
-        fun create(context: Context, sdkCore: InternalSdkCore): RumAppStartupDetector {
+        fun create(application: Application, sdkCore: InternalSdkCore): RumAppStartupDetector {
             val impl = RumAppStartupDetectorImpl(
-                context = context,
+                application = application,
                 appStartupTimeProvider = { sdkCore.appStartTimeNs },
                 processImportanceProvider = { DdRumContentProvider.processImportance },
                 timeProviderNanos = { System.nanoTime() }

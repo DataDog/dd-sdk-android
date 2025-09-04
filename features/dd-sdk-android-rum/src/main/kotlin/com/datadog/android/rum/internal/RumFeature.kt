@@ -256,7 +256,7 @@ internal class RumFeature(
         sdkCore.setEventReceiver(name, this)
 
         val rumAppStartupDetector = RumAppStartupDetector.create(
-            context = appContext,
+            application = appContext as Application,
             sdkCore = sdkCore
         )
 

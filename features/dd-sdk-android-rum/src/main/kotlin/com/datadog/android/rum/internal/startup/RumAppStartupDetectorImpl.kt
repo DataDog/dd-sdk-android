@@ -9,7 +9,6 @@ package com.datadog.android.rum.internal.startup
 import android.app.Activity
 import android.app.ActivityManager
 import android.app.Application
-import android.content.Context
 import android.os.Build
 import android.os.Bundle
 import com.datadog.android.internal.utils.DDCoreSubscription
@@ -19,7 +18,7 @@ import kotlin.time.Duration.Companion.seconds
 private val START_GAP_THRESHOLD = 5.seconds
 
 internal class RumAppStartupDetectorImpl(
-    private val context: Context,
+    private val application: Application,
     private val appStartupTimeProvider: () -> Long,
     private val processImportanceProvider: () -> Int,
     private val timeProviderNanos: () -> Long,
@@ -32,7 +31,7 @@ internal class RumAppStartupDetectorImpl(
     private val subscription = DDCoreSubscription.Companion.create<RumAppStartupDetector.Listener>()
 
     init {
-        (context.applicationContext as? Application)?.registerActivityLifecycleCallbacks(this)
+        application.registerActivityLifecycleCallbacks(this)
     }
 
     override fun onActivityPreCreated(activity: Activity, savedInstanceState: Bundle?) {
@@ -122,7 +121,7 @@ internal class RumAppStartupDetectorImpl(
     }
 
     override fun onStop() {
-        (context.applicationContext as? Application)?.unregisterActivityLifecycleCallbacks(this)
+        application.unregisterActivityLifecycleCallbacks(this)
     }
 }
 
