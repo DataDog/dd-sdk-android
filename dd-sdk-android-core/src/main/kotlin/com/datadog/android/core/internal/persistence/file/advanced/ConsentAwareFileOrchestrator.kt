@@ -39,8 +39,8 @@ internal open class ConsentAwareFileOrchestrator(
     // region FileOrchestrator
 
     @WorkerThread
-    override fun getWritableFile(forceNewFile: Boolean): File? {
-        return delegateOrchestrator.getWritableFile(forceNewFile)
+    override fun getWritableFile(): File? {
+        return delegateOrchestrator.getWritableFile()
     }
 
     @WorkerThread

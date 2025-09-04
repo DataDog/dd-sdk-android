@@ -35,7 +35,6 @@ import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
-import org.assertj.core.data.Offset
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.RepeatedTest
@@ -58,9 +57,7 @@ import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.io.FileNotFoundException
 import java.io.IOException
-import java.util.concurrent.CountDownLatch
 import java.util.concurrent.ThreadPoolExecutor
-import java.util.concurrent.TimeUnit
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -124,264 +121,31 @@ internal class DatadogExceptionHandlerTest {
         Datadog.stopInstance()
     }
 
-    // region Forward to Logs
-
     @Test
-    fun `M log dev info W caught exception { no Logs feature registered }`() {
-        // Given
-        whenever(mockSdkCore.getFeature(Feature.LOGS_FEATURE_NAME)) doReturn null
-
-        Thread.setDefaultUncaughtExceptionHandler(null)
-        testedHandler.register()
-        val currentThread = Thread.currentThread()
-
-        // When
-        testedHandler.uncaughtException(currentThread, fakeThrowable)
-
-        // Then
-        mockInternalLogger.verifyLog(
-            InternalLogger.Level.INFO,
-            InternalLogger.Target.USER,
-            DatadogExceptionHandler.MISSING_LOGS_FEATURE_INFO
-        )
-    }
-
-    @Test
-    fun `M log exception W caught with no previous handler`() {
+    fun `M do not send exception to logs W uncaughtException() {no previous handler}`() {
         // Given
         Thread.setDefaultUncaughtExceptionHandler(null)
         testedHandler.register()
         val currentThread = Thread.currentThread()
-        val now = System.currentTimeMillis()
 
         // When
         testedHandler.uncaughtException(currentThread, fakeThrowable)
 
         // Then
-        argumentCaptor<Any> {
-            verify(mockLogsFeatureScope).sendEvent(capture())
-
-            assertThat(lastValue).isInstanceOf(JvmCrash.Logs::class.java)
-
-            val logEvent = lastValue as JvmCrash.Logs
-
-            assertThat(logEvent.timestamp).isCloseTo(now, Offset.offset(250))
-            assertThat(logEvent.threadName).isEqualTo(currentThread.name)
-            assertThat(logEvent.throwable).isSameAs(fakeThrowable)
-            assertThat(logEvent.message).isEqualTo(fakeThrowable.message)
-            assertThat(logEvent.loggerName).isEqualTo(DatadogExceptionHandler.LOGGER_NAME)
-            with(logEvent.threads) {
-                assertThat(this).isNotEmpty
-                assertThat(filter { it.crashed }).hasSize(1)
-                val crashedThread = first { it.crashed }
-                assertThat(crashedThread.name).isEqualTo(currentThread.name)
-                assertThat(crashedThread.stack).isEqualTo(fakeThrowable.loggableStackTrace())
-                val nonCrashedThreadNames = filterNot { it.crashed }.map { it.name }
-                assertThat(nonCrashedThreadNames).doesNotContain(crashedThread.name)
-            }
-        }
-        verifyNoInteractions(mockPreviousHandler)
+        verifyNoInteractions(mockLogsFeatureScope)
     }
 
     @Test
-    fun `M log exception W caught { exception with message }`() {
+    fun `M do not send exception to logs W uncaughtException() {previous handler}`() {
         // Given
         val currentThread = Thread.currentThread()
-        val now = System.currentTimeMillis()
 
         // When
         testedHandler.uncaughtException(currentThread, fakeThrowable)
 
         // Then
-        argumentCaptor<Any> {
-            verify(mockLogsFeatureScope).sendEvent(capture())
-
-            assertThat(lastValue).isInstanceOf(JvmCrash.Logs::class.java)
-
-            val logEvent = lastValue as JvmCrash.Logs
-
-            assertThat(logEvent.timestamp).isCloseTo(now, Offset.offset(250))
-            assertThat(logEvent.threadName).isEqualTo(currentThread.name)
-            assertThat(logEvent.throwable).isSameAs(fakeThrowable)
-            assertThat(logEvent.message).isEqualTo(fakeThrowable.message)
-            assertThat(logEvent.loggerName).isEqualTo(DatadogExceptionHandler.LOGGER_NAME)
-            with(logEvent.threads) {
-                assertThat(this).isNotEmpty
-                assertThat(filter { it.crashed }).hasSize(1)
-                val crashedThread = first { it.crashed }
-                assertThat(crashedThread.name).isEqualTo(currentThread.name)
-                assertThat(crashedThread.stack).isEqualTo(fakeThrowable.loggableStackTrace())
-                val nonCrashedThreadNames = filterNot { it.crashed }.map { it.name }
-                assertThat(nonCrashedThreadNames).isNotEmpty
-                assertThat(nonCrashedThreadNames).doesNotContain(crashedThread.name)
-            }
-        }
+        verifyNoInteractions(mockLogsFeatureScope)
         verify(mockPreviousHandler).uncaughtException(currentThread, fakeThrowable)
-    }
-
-    @RepeatedTest(2)
-    fun `M log exception W caught { exception without message }`(forge: Forge) {
-        // Given
-        val currentThread = Thread.currentThread()
-        val now = System.currentTimeMillis()
-        val throwable = forge.aThrowableWithoutMessage()
-
-        // When
-        testedHandler.uncaughtException(currentThread, throwable)
-
-        // Then
-        argumentCaptor<Any> {
-            verify(mockLogsFeatureScope).sendEvent(capture())
-
-            assertThat(lastValue).isInstanceOf(JvmCrash.Logs::class.java)
-
-            val logEvent = lastValue as JvmCrash.Logs
-
-            assertThat(logEvent.timestamp).isCloseTo(now, Offset.offset(250))
-            assertThat(logEvent.threadName).isEqualTo(currentThread.name)
-            assertThat(logEvent.throwable).isSameAs(throwable)
-            assertThat(logEvent.message)
-                .isEqualTo("Application crash detected: ${throwable.javaClass.canonicalName}")
-            assertThat(logEvent.loggerName).isEqualTo(DatadogExceptionHandler.LOGGER_NAME)
-            with(logEvent.threads) {
-                assertThat(this).isNotEmpty
-                assertThat(filter { it.crashed }).hasSize(1)
-                val crashedThread = first { it.crashed }
-                assertThat(crashedThread.name).isEqualTo(currentThread.name)
-                assertThat(crashedThread.stack).isEqualTo(throwable.loggableStackTrace())
-                val nonCrashedThreadNames = filterNot { it.crashed }.map { it.name }
-                assertThat(nonCrashedThreadNames).isNotEmpty
-                assertThat(nonCrashedThreadNames).doesNotContain(crashedThread.name)
-            }
-        }
-        verify(mockPreviousHandler).uncaughtException(currentThread, throwable)
-    }
-
-    @Test
-    fun `M log exception W caught { exception without message or class }`() {
-        // Given
-        val currentThread = Thread.currentThread()
-        val now = System.currentTimeMillis()
-        val throwable = object : RuntimeException() {}
-
-        // When
-        testedHandler.uncaughtException(currentThread, throwable)
-
-        // Then
-        argumentCaptor<Any> {
-            verify(mockLogsFeatureScope).sendEvent(capture())
-
-            assertThat(lastValue).isInstanceOf(JvmCrash.Logs::class.java)
-
-            val logEvent = lastValue as JvmCrash.Logs
-
-            assertThat(logEvent.timestamp).isCloseTo(now, Offset.offset(250))
-            assertThat(logEvent.threadName).isEqualTo(currentThread.name)
-            assertThat(logEvent.throwable).isSameAs(throwable)
-            assertThat(logEvent.message)
-                .isEqualTo("Application crash detected: ${throwable.javaClass.simpleName}")
-            assertThat(logEvent.loggerName).isEqualTo(DatadogExceptionHandler.LOGGER_NAME)
-            with(logEvent.threads) {
-                assertThat(this).isNotEmpty
-                assertThat(filter { it.crashed }).hasSize(1)
-                val crashedThread = first { it.crashed }
-                assertThat(crashedThread.name).isEqualTo(currentThread.name)
-                assertThat(crashedThread.stack).isEqualTo(throwable.loggableStackTrace())
-                val nonCrashedThreadNames = filterNot { it.crashed }.map { it.name }
-                assertThat(nonCrashedThreadNames).isNotEmpty
-                assertThat(nonCrashedThreadNames).doesNotContain(crashedThread.name)
-            }
-        }
-        verify(mockPreviousHandler).uncaughtException(currentThread, throwable)
-    }
-
-    @Test
-    fun `M log exception W caught on background thread`(forge: Forge) {
-        // Given
-        val latch = CountDownLatch(1)
-        val threadName = forge.anAlphabeticalString()
-
-        // When
-        val thread = Thread(
-            {
-                testedHandler.uncaughtException(Thread.currentThread(), fakeThrowable)
-                latch.countDown()
-            },
-            threadName
-        )
-
-        val now = System.currentTimeMillis()
-        thread.start()
-        latch.await(1, TimeUnit.SECONDS)
-
-        // Then
-        argumentCaptor<Any> {
-            verify(mockLogsFeatureScope).sendEvent(capture())
-
-            assertThat(lastValue).isInstanceOf(JvmCrash.Logs::class.java)
-
-            val logEvent = lastValue as JvmCrash.Logs
-
-            assertThat(logEvent.timestamp).isCloseTo(now, Offset.offset(250))
-            assertThat(logEvent.threadName).isEqualTo(thread.name)
-            assertThat(logEvent.throwable).isSameAs(fakeThrowable)
-            assertThat(logEvent.message).isEqualTo(fakeThrowable.message)
-            assertThat(logEvent.loggerName).isEqualTo(DatadogExceptionHandler.LOGGER_NAME)
-            with(logEvent.threads) {
-                assertThat(this).isNotEmpty
-                assertThat(filter { it.crashed }).hasSize(1)
-                val crashedThread = first { it.crashed }
-                assertThat(crashedThread.name).isEqualTo(thread.name)
-                assertThat(crashedThread.stack).isEqualTo(fakeThrowable.loggableStackTrace())
-                val nonCrashedThreadNames = filterNot { it.crashed }.map { it.name }
-                assertThat(nonCrashedThreadNames).isNotEmpty
-                assertThat(nonCrashedThreadNames).doesNotContain(crashedThread.name)
-            }
-        }
-        verify(mockPreviousHandler).uncaughtException(thread, fakeThrowable)
-    }
-
-    @Test
-    fun `M log exception with a crashed thread provided W caught`() {
-        // Given
-        val externalLock = CountDownLatch(1)
-        val internalLock = CountDownLatch(1)
-        val crashedThread = Thread {
-            externalLock.countDown()
-            internalLock.await()
-        }.apply { start() }
-        // need to wait here because thread is not necessarily running yet after `start()` call
-        externalLock.await()
-        val now = System.currentTimeMillis()
-
-        // When
-        testedHandler.uncaughtException(crashedThread, fakeThrowable)
-        internalLock.countDown()
-
-        // Then
-        argumentCaptor<Any> {
-            verify(mockLogsFeatureScope).sendEvent(capture())
-
-            assertThat(lastValue).isInstanceOf(JvmCrash.Logs::class.java)
-
-            val logEvent = lastValue as JvmCrash.Logs
-
-            assertThat(logEvent.timestamp).isCloseTo(now, Offset.offset(250))
-            assertThat(logEvent.threadName).isEqualTo(crashedThread.name)
-            assertThat(logEvent.throwable).isSameAs(fakeThrowable)
-            assertThat(logEvent.message).isEqualTo(fakeThrowable.message)
-            assertThat(logEvent.loggerName).isEqualTo(DatadogExceptionHandler.LOGGER_NAME)
-            with(logEvent.threads) {
-                assertThat(this).isNotEmpty
-                assertThat(filter { it.crashed }).hasSize(1)
-                assertThat(first { it.crashed }.name).isEqualTo(crashedThread.name)
-                assertThat(first { it.crashed }.stack).isEqualTo(fakeThrowable.loggableStackTrace())
-                val nonCrashedThreadNames = filterNot { it.crashed }.map { it.name }
-                assertThat(nonCrashedThreadNames).isNotEmpty
-                assertThat(nonCrashedThreadNames).doesNotContain(crashedThread.name)
-            }
-        }
-        verify(mockPreviousHandler).uncaughtException(crashedThread, fakeThrowable)
     }
 
     // endregion

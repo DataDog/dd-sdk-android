@@ -48,7 +48,9 @@ object WebViewTracking {
      * ```
      * webView.settings.javaScriptEnabled = true
      * ```
-     * - by default, navigation will happen outside of your application (in a browser or a different app). To prevent that and ensure Datadog can track the full WebView user journey, attach a [android.webkit.WebViewClient] to your WebView, as follow:
+     * - by default, navigation will happen outside of your application (in a browser or a different app). To prevent
+     * that and ensure Datadog can track the full WebView user journey, attach a [android.webkit.WebViewClient] to your
+     * WebView, as following:
      * ```
      * webView.webViewClient = WebViewClient()
      * ```
@@ -80,7 +82,8 @@ object WebViewTracking {
             )
         }
         val featureSdkCore = sdkCore as FeatureSdkCore
-        val featureContext = sdkCore.getFeatureContext(Feature.SESSION_REPLAY_FEATURE_NAME)
+        // see Session Replay feature initialization regarding useContextThread=false
+        val featureContext = sdkCore.getFeatureContext(Feature.SESSION_REPLAY_FEATURE_NAME, useContextThread = false)
         val privacyLevel = resolvePrivacy(featureContext)
         val webViewEventConsumer = buildWebViewEventConsumer(
             featureSdkCore,

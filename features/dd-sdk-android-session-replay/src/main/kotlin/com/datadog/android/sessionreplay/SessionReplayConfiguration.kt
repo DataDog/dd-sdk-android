@@ -99,6 +99,7 @@ data class SessionReplayConfiguration internal constructor(
 
         /**
          * Let the Session Replay target a custom server.
+         * The provided url should be the full endpoint url, e.g.: https://example.com/replay/upload
          */
         fun useCustomEndpoint(endpoint: String): Builder {
             customEndpointUrl = endpoint

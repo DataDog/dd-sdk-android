@@ -6,11 +6,11 @@
 
 package com.datadog.android.sessionreplay.internal.storage
 
+import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.storage.EventType
 import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.sessionreplay.internal.RecordCallback
-import com.datadog.android.sessionreplay.internal.SessionReplayFeature
 import com.datadog.android.sessionreplay.internal.processor.EnrichedRecord
 
 internal class SessionReplayRecordWriter(
@@ -18,18 +18,20 @@ internal class SessionReplayRecordWriter(
     private val recordCallback: RecordCallback
 ) : RecordWriter {
     override fun write(record: EnrichedRecord) {
-        sdkCore.getFeature(SessionReplayFeature.SESSION_REPLAY_FEATURE_NAME)
-            ?.withWriteContext { _, eventBatchWriter ->
-                val serializedRecord = record.toJson().toByteArray(Charsets.UTF_8)
-                val rawBatchEvent = RawBatchEvent(data = serializedRecord)
-                synchronized(this) {
-                    if (eventBatchWriter.write(
+        sdkCore.getFeature(Feature.SESSION_REPLAY_FEATURE_NAME)
+            ?.withWriteContext { _, writeScope ->
+                writeScope {
+                    val serializedRecord = record.toJson().toByteArray(Charsets.UTF_8)
+                    val rawBatchEvent = RawBatchEvent(data = serializedRecord)
+                    synchronized(this@SessionReplayRecordWriter) {
+                        val success = it.write(
                             event = rawBatchEvent,
                             batchMetadata = null,
                             eventType = EventType.DEFAULT
                         )
-                    ) {
-                        updateViewSent(record)
+                        if (success) {
+                            updateViewSent(record)
+                        }
                     }
                 }
             }

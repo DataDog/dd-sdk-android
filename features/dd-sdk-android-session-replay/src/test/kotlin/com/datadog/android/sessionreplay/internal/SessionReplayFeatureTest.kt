@@ -8,6 +8,8 @@ package com.datadog.android.sessionreplay.internal
 
 import android.app.Application
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.feature.Feature
+import com.datadog.android.api.feature.FeatureContextUpdateReceiver
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.core.sampling.Sampler
 import com.datadog.android.sessionreplay.NoOpSessionReplayInternalCallback
@@ -114,7 +116,7 @@ internal class SessionReplayFeatureTest {
             startRecordingImmediately = true,
             touchPrivacy = fakeConfiguration.touchPrivacy,
             rateBasedSampler = mockSampler
-        ) { _, _, _, _ -> mockRecorder }
+        ) { _, _, _, _, _ -> mockRecorder }
     }
 
     @Test
@@ -125,6 +127,15 @@ internal class SessionReplayFeatureTest {
         // Then
         assertThat(testedFeature.dataWriter)
             .isInstanceOf(SessionReplayRecordWriter::class.java)
+    }
+
+    @Test
+    fun `M set feature context update listener W initialize()`() {
+        // When
+        testedFeature.onInitialize(appContext.mockInstance)
+
+        // Then
+        verify(mockSdkCore).setContextUpdateReceiver(any())
     }
 
     @Test
@@ -182,7 +193,8 @@ internal class SessionReplayFeatureTest {
         argumentCaptor<(context: MutableMap<String, Any?>) -> Unit> {
             val updatedContext = mutableMapOf<String, Any?>()
             verify(mockSdkCore).updateFeatureContext(
-                eq(SessionReplayFeature.SESSION_REPLAY_FEATURE_NAME),
+                eq(Feature.SESSION_REPLAY_FEATURE_NAME),
+                eq(false),
                 capture()
             )
             firstValue.invoke(updatedContext)
@@ -211,14 +223,14 @@ internal class SessionReplayFeatureTest {
             startRecordingImmediately = true,
             touchPrivacy = fakeConfiguration.touchPrivacy,
             rateBasedSampler = mockSampler
-        ) { _, _, _, _ -> mockRecorder }
+        ) { _, _, _, _, _ -> mockRecorder }
 
         // When
         testedFeature.onInitialize(appContext.mockInstance)
 
         // Then
         verify(mockSdkCore).setEventReceiver(
-            SessionReplayFeature.SESSION_REPLAY_FEATURE_NAME,
+            Feature.SESSION_REPLAY_FEATURE_NAME,
             testedFeature
         )
     }
@@ -242,6 +254,22 @@ internal class SessionReplayFeatureTest {
 
         // Then
         verify(mockRecorder).unregisterCallbacks()
+    }
+
+    @Test
+    fun `M unregister the feature conttext listener W onStop()`() {
+        // Given
+        testedFeature.onInitialize(appContext.mockInstance)
+
+        // When
+        testedFeature.onStop()
+
+        // Then
+        argumentCaptor<FeatureContextUpdateReceiver> {
+            verify(mockSdkCore).setContextUpdateReceiver(capture())
+            verify(mockSdkCore).removeContextUpdateReceiver(capture())
+            assertThat(firstValue).isSameAs(lastValue)
+        }
     }
 
     @Test
@@ -296,7 +324,8 @@ internal class SessionReplayFeatureTest {
         argumentCaptor<(context: MutableMap<String, Any?>) -> Unit> {
             val updatedContext = mutableMapOf<String, Any?>()
             verify(mockSdkCore, times(3)).updateFeatureContext(
-                eq(SessionReplayFeature.SESSION_REPLAY_FEATURE_NAME),
+                eq(Feature.SESSION_REPLAY_FEATURE_NAME),
+                any(),
                 capture()
             )
             allValues.forEach { it.invoke(updatedContext) }
@@ -361,7 +390,8 @@ internal class SessionReplayFeatureTest {
         argumentCaptor<(context: MutableMap<String, Any?>) -> Unit> {
             val updatedContext = mutableMapOf<String, Any?>()
             verify(mockSdkCore, times(2)).updateFeatureContext(
-                eq(SessionReplayFeature.SESSION_REPLAY_FEATURE_NAME),
+                eq(Feature.SESSION_REPLAY_FEATURE_NAME),
+                any(),
                 capture()
             )
             allValues.forEach { it.invoke(updatedContext) }
@@ -817,7 +847,7 @@ internal class SessionReplayFeatureTest {
             touchPrivacy = fakeConfiguration.touchPrivacy,
             startRecordingImmediately = true,
             rateBasedSampler = mockSampler
-        ) { _, _, _, _ -> mockRecorder }
+        ) { _, _, _, _, _ -> mockRecorder }
         testedFeature.onInitialize(appContext.mockInstance)
         val rumSessionUpdateBusMessage1 = mapOf(
             SessionReplayFeature.SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY to
@@ -868,7 +898,7 @@ internal class SessionReplayFeatureTest {
             touchPrivacy = fakeConfiguration.touchPrivacy,
             startRecordingImmediately = false,
             rateBasedSampler = mockSampler
-        ) { _, _, _, _ -> mockRecorder }
+        ) { _, _, _, _, _ -> mockRecorder }
         testedFeature.onInitialize(appContext.mockInstance)
         val rumSessionUpdateBusMessage1 = mapOf(
             SessionReplayFeature.SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY to
@@ -1106,7 +1136,7 @@ internal class SessionReplayFeatureTest {
     fun `M provide session replay feature name W name()`() {
         // When+Then
         assertThat(testedFeature.name)
-            .isEqualTo(SessionReplayFeature.SESSION_REPLAY_FEATURE_NAME)
+            .isEqualTo(Feature.SESSION_REPLAY_FEATURE_NAME)
     }
 
     @Test
@@ -1151,7 +1181,7 @@ internal class SessionReplayFeatureTest {
             touchPrivacy = fakeConfiguration.touchPrivacy,
             startRecordingImmediately = scenario.startRecordingImmediately,
             rateBasedSampler = mockSampler
-        ) { _, _, _, _ -> mockRecorder }
+        ) { _, _, _, _, _ -> mockRecorder }
         testedFeature.onInitialize(fakeContext)
         testedFeature.onReceive(event)
 
@@ -1190,7 +1220,7 @@ internal class SessionReplayFeatureTest {
             touchPrivacy = fakeConfiguration.touchPrivacy,
             startRecordingImmediately = true,
             rateBasedSampler = mockSampler
-        ) { _, _, _, _ -> mockRecorder }
+        ) { _, _, _, _, _ -> mockRecorder }
         testedFeature.onInitialize(fakeContext)
         testedFeature.onReceive(event)
         testedFeature.onReceive(event)
@@ -1222,7 +1252,7 @@ internal class SessionReplayFeatureTest {
             touchPrivacy = fakeConfiguration.touchPrivacy,
             startRecordingImmediately = false,
             rateBasedSampler = mockSampler
-        ) { _, _, _, _ -> mockRecorder }
+        ) { _, _, _, _, _ -> mockRecorder }
         testedFeature.onInitialize(fakeContext)
         testedFeature.manuallyStartRecording()
         testedFeature.onReceive(event)
@@ -1256,7 +1286,7 @@ internal class SessionReplayFeatureTest {
             touchPrivacy = fakeConfiguration.touchPrivacy,
             startRecordingImmediately = true,
             rateBasedSampler = mockSampler
-        ) { _, _, _, _ -> mockRecorder }
+        ) { _, _, _, _, _ -> mockRecorder }
         testedFeature.onInitialize(fakeContext)
         testedFeature.onReceive(event)
         testedFeature.manuallyStopRecording()
@@ -1293,7 +1323,7 @@ internal class SessionReplayFeatureTest {
             touchPrivacy = fakeConfiguration.touchPrivacy,
             startRecordingImmediately = true,
             rateBasedSampler = mockSampler
-        ) { _, _, _, _ -> mockRecorder }
+        ) { _, _, _, _, _ -> mockRecorder }
         testedFeature.onInitialize(fakeContext)
         testedFeature.onReceive(event1)
 

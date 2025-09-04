@@ -11,7 +11,6 @@ import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProvider
 import android.content.Context
 import android.content.Intent
-import android.os.Build
 import android.widget.RemoteViews
 import com.datadog.android.sample.R
 
@@ -52,11 +51,7 @@ class DatadogWidgetsProvider : AppWidgetProvider() {
             R.layout.datadog_widget
         )
         val loadResourceIntent = buildLoadResourceIntent(context, appWidgetId)
-        val flags = if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
-            PendingIntent.FLAG_UPDATE_CURRENT
-        } else {
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        }
+        val flags = PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
 
         val pendingIntent = PendingIntent.getService(
             context.applicationContext,

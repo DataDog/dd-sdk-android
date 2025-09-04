@@ -23,7 +23,7 @@ androidx.lifecycle:lifecycle-viewmodel-ktx:2.6.2                :    4 Kb
 androidx.lifecycle:lifecycle-viewmodel-savedstate:2.6.2         :   38 Kb
 androidx.lifecycle:lifecycle-viewmodel:2.6.2                    :   38 Kb
 androidx.loader:loader:1.0.0                                    :   32 Kb
-androidx.metrics:metrics-performance:1.0.0-beta02               :   48 Kb
+androidx.metrics:metrics-performance:1.0.0-beta03               :   49 Kb
 androidx.navigation:navigation-common:2.7.7                     :  180 Kb
 androidx.navigation:navigation-fragment:2.7.7                   :   92 Kb
 androidx.navigation:navigation-runtime:2.7.7                    :  126 Kb
@@ -38,7 +38,7 @@ com.squareup.okhttp3:okhttp:4.12.0                              :  771 Kb
 com.squareup.okio:okio-jvm:3.6.0                                :  351 Kb
 org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.9.10                  :  959 b 
 org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.10                  :  965 b 
-org.jetbrains.kotlin:kotlin-stdlib:1.9.24                       : 1678 Kb
+org.jetbrains.kotlin:kotlin-stdlib:2.0.21                       : 1706 Kb
 org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.4          :   19 Kb
 org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.6.4         : 1442 Kb
 org.jetbrains:annotations:13.0                                  :   17 Kb

@@ -7,7 +7,6 @@
 package com.datadog.android.core.internal.user
 
 import com.datadog.android.api.context.UserInfo
-import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.tools.unit.forge.exhaustiveAttributes
 import fr.xgouchet.elmyr.Forge
@@ -22,9 +21,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
-import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoSettings
-import org.mockito.kotlin.verify
 import org.mockito.quality.Strictness
 
 @ExtendWith(ForgeExtension::class)
@@ -34,12 +31,9 @@ internal class DatadogUserInfoProviderTest {
 
     private lateinit var testedProvider: DatadogUserInfoProvider
 
-    @Mock
-    lateinit var mockWriter: DataWriter<UserInfo>
-
     @BeforeEach
     fun `set up`() {
-        testedProvider = DatadogUserInfoProvider(mockWriter)
+        testedProvider = DatadogUserInfoProvider()
     }
 
     @Test
@@ -53,36 +47,35 @@ internal class DatadogUserInfoProviderTest {
 
     @Test
     fun `M return saved userInfo W setUserInfo() and getUserInfo()`(
-        @Forgery userInfo: UserInfo
+        @Forgery userInfo: UserInfo,
+        @StringForgery userId: String
     ) {
+        // Given
+        val nonNullUserId = userInfo.id ?: userId
+        val validUserInfo = userInfo.copy(id = nonNullUserId)
+
         // When
-        testedProvider.setUserInfo(userInfo.id, userInfo.name, userInfo.email, userInfo.additionalProperties)
+        testedProvider.setUserInfo(nonNullUserId, userInfo.name, userInfo.email, userInfo.additionalProperties)
         val result = testedProvider.getUserInfo()
 
         // Then
-        assertThat(result).isEqualTo(userInfo)
-    }
-
-    @Test
-    fun `M delegate to persister W setUserInfo`(@Forgery userInfo: UserInfo) {
-        // When
-        testedProvider.setUserInfo(userInfo.id, userInfo.name, userInfo.email, userInfo.additionalProperties)
-
-        // Then
-        verify(mockWriter).write(userInfo)
+        assertThat(result).isEqualTo(validUserInfo)
     }
 
     @Test
     fun `M keep existing properties W addUserProperties() is called`(
         @Forgery userInfo: UserInfo,
-        @StringForgery forge: Forge
+        @StringForgery userId: String,
+        forge: Forge
     ) {
         // Given
         val customProperties = forge.exhaustiveAttributes()
-        testedProvider.setUserInfo(userInfo.id, userInfo.name, userInfo.email, customProperties)
+        val nonNullUserId = userInfo.id ?: userId
+        testedProvider.setUserInfo(nonNullUserId, userInfo.name, userInfo.email, customProperties)
 
         // When
         testedProvider.addUserProperties(customProperties)
+
         // Then
         assertThat(
             testedProvider.getUserInfo().additionalProperties
@@ -91,7 +84,7 @@ internal class DatadogUserInfoProviderTest {
 
     @Test
     fun `M use immutable properties W addUserProperties() is called { changing properties values }`(
-        @StringForgery forge: Forge
+        forge: Forge
     ) {
         // Given
         val fakeProperties = forge.exhaustiveAttributes()
@@ -112,7 +105,7 @@ internal class DatadogUserInfoProviderTest {
 
     @Test
     fun `M use immutable properties W addUserProperties() is called { adding properties }`(
-        @StringForgery forge: Forge
+        forge: Forge
     ) {
         // Given
         val fakeProperties = forge.exhaustiveAttributes()
@@ -133,7 +126,7 @@ internal class DatadogUserInfoProviderTest {
 
     @Test
     fun `M use immutable properties W addUserProperties() is called { removing properties }`(
-        @StringForgery forge: Forge
+        forge: Forge
     ) {
         // Given
         val fakeProperties = forge.exhaustiveAttributes()
@@ -155,12 +148,14 @@ internal class DatadogUserInfoProviderTest {
     @Test
     fun `M keep new property key W addUserProperties() is called and the key already exists`(
         @Forgery userInfo: UserInfo,
+        @StringForgery userId: String,
         @StringForgery key: String,
         @StringForgery value1: String,
         @StringForgery value2: String
     ) {
         // Given
-        testedProvider.setUserInfo(userInfo.id, userInfo.name, userInfo.email, mutableMapOf(key to value1))
+        val nonNullUserId = userInfo.id ?: userId
+        testedProvider.setUserInfo(nonNullUserId, userInfo.name, userInfo.email, mutableMapOf(key to value1))
 
         // When
         testedProvider.addUserProperties(mapOf(key to value2))
@@ -352,27 +347,5 @@ internal class DatadogUserInfoProviderTest {
 
         // Then
         assertThat(testedProvider.getUserInfo()).isEqualTo(UserInfo())
-    }
-
-    @Test
-    fun `M delegate to persister W clearUserInfo()`(
-        @StringForgery(type = StringForgeryType.HEXADECIMAL) id: String,
-        @StringForgery(type = StringForgeryType.HEXADECIMAL) anonymousId: String,
-        @StringForgery name: String,
-        @StringForgery(regex = "\\w+@\\w+") email: String,
-        @MapForgery(
-            key = AdvancedForgery(string = [StringForgery(StringForgeryType.ALPHA_NUMERICAL)]),
-            value = AdvancedForgery(string = [StringForgery(StringForgeryType.ALPHA_NUMERICAL)])
-        ) fakeUserProperties: Map<String, String>
-    ) {
-        // Given
-        testedProvider.setUserInfo(id, name, email, fakeUserProperties)
-        testedProvider.setAnonymousId(anonymousId)
-
-        // When
-        testedProvider.clearUserInfo()
-
-        // Then
-        verify(mockWriter).write(UserInfo(anonymousId))
     }
 }

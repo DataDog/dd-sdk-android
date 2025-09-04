@@ -18,6 +18,7 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProviders
 import com.datadog.android.sample.R
 import com.datadog.android.sample.SampleApplication
+import com.datadog.android.trace.withinSpan
 
 internal class TracesFragment : Fragment(), View.OnClickListener {
 
@@ -36,6 +37,7 @@ internal class TracesFragment : Fragment(), View.OnClickListener {
     ): View? {
         val rootView = inflater.inflate(R.layout.fragment_traces, container, false)
         rootView.findViewById<Button>(R.id.start_async_operation).setOnClickListener(this)
+        rootView.findViewById<Button>(R.id.send_span).setOnClickListener(this)
         rootView.findViewById<Button>(R.id.start_coroutine_operation).setOnClickListener(this)
         rootView.findViewById<Button>(R.id.start_request).setOnClickListener(this)
         rootView.findViewById<Button>(R.id.start_404_request).setOnClickListener(this)
@@ -87,6 +89,11 @@ internal class TracesFragment : Fragment(), View.OnClickListener {
                         progressBarAsync.visibility = View.INVISIBLE
                     }
                 )
+            }
+            R.id.send_span -> {
+                withinSpan(MANUAL_SPAN_MESSAGE) {
+                    // Do nothing
+                }
             }
             R.id.start_coroutine_operation -> {
                 progressBarCoroutine.visibility = View.VISIBLE
@@ -153,6 +160,7 @@ internal class TracesFragment : Fragment(), View.OnClickListener {
     // endregion
 
     companion object {
+        private const val MANUAL_SPAN_MESSAGE = "Manual span"
         fun newInstance(): TracesFragment {
             return TracesFragment()
         }

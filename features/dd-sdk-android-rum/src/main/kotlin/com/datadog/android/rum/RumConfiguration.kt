@@ -257,6 +257,7 @@ data class RumConfiguration internal constructor(
 
         /**
          * Let the RUM feature target a custom server.
+         * The provided url should be the full endpoint url, e.g.: https://example.com/rum/upload
          */
         fun useCustomEndpoint(endpoint: String): Builder {
             rumConfig = rumConfig.copy(customEndpointUrl = endpoint)

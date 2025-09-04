@@ -62,7 +62,7 @@ internal class TraceConfigurationBuilderTest {
 
     @Test
     fun `M build configuration with custom site W useCustomEndpoint() and build()`(
-        @StringForgery(regex = "https://[a-z]+\\.com") tracesEndpointUrl: String
+        @StringForgery(regex = "https://[a-z]+\\.com(/[a-z]+)+") tracesEndpointUrl: String
     ) {
         // When
         val traceConfiguration = testedBuilder.useCustomEndpoint(tracesEndpointUrl).build()

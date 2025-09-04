@@ -29,7 +29,7 @@ constructor(
 
     /** @inheritDoc */
     override fun accept(error: Throwable) {
-        GlobalRumMonitor.get(sdkCore).addError(REQUEST_ERROR_MESSAGE, RumErrorSource.SOURCE, error, emptyMap())
+        GlobalRumMonitor.get(sdkCore).addError(REQUEST_ERROR_MESSAGE, RumErrorSource.SOURCE, error)
     }
 
     internal companion object {

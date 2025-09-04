@@ -116,8 +116,11 @@ interface InternalSdkCore : FeatureSdkCore {
     fun getAllFeatures(): List<FeatureScope>
 
     /**
-     * @return the current DatadogContext, or null
+     * @param withFeatureContexts Feature contexts ([DatadogContext.featuresContext] property) to include
+     * in the [DatadogContext] provided. The value should be the feature names as declared by [Feature.name].
+     * Default is empty, meaning that no feature contexts will be included.
+     * @return the current [DatadogContext], or null
      */
     @InternalApi
-    fun getDatadogContext(): DatadogContext?
+    fun getDatadogContext(withFeatureContexts: Set<String> = emptySet()): DatadogContext?
 }

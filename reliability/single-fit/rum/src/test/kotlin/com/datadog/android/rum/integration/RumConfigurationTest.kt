@@ -81,8 +81,8 @@ class RumConfigurationTest {
         val rumMonitor = GlobalRumMonitor.get(stubSdkCore)
 
         // When
-        rumMonitor.startView(viewKey, viewName, emptyMap())
-        rumMonitor.stopView(viewKey, emptyMap())
+        rumMonitor.startView(viewKey, viewName)
+        rumMonitor.stopView(viewKey)
 
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
@@ -110,8 +110,8 @@ class RumConfigurationTest {
 
         // When
         repeat(repeatCount) {
-            rumMonitor.startView(viewKey, viewName, emptyMap())
-            rumMonitor.stopView(viewKey, emptyMap())
+            rumMonitor.startView(viewKey, viewName)
+            rumMonitor.stopView(viewKey)
             rumMonitor.stopSession()
         }
 
@@ -137,8 +137,8 @@ class RumConfigurationTest {
 
         // When
         repeat(repeatCount) {
-            rumMonitor.startView(viewKey, viewName, emptyMap())
-            rumMonitor.stopView(viewKey, emptyMap())
+            rumMonitor.startView(viewKey, viewName)
+            rumMonitor.stopView(viewKey)
             rumMonitor.stopSession()
         }
 
@@ -171,9 +171,9 @@ class RumConfigurationTest {
         val rumMonitor = GlobalRumMonitor.get(stubSdkCore)
 
         // When
-        rumMonitor.startView(viewKey, viewName, emptyMap())
-        rumMonitor.startResource(originalResourceUrl, resourceMethod, originalResourceUrl, emptyMap())
-        rumMonitor.stopResource(originalResourceUrl, statusCode, size, resourceKind, emptyMap())
+        rumMonitor.startView(viewKey, viewName)
+        rumMonitor.startResource(originalResourceUrl, resourceMethod, originalResourceUrl)
+        rumMonitor.stopResource(originalResourceUrl, statusCode, size, resourceKind)
 
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
@@ -207,8 +207,8 @@ class RumConfigurationTest {
         val rumMonitor = GlobalRumMonitor.get(stubSdkCore)
 
         // When
-        rumMonitor.startView(viewKey, viewName, emptyMap())
-        rumMonitor.addError(originalErrorMessage, errorSource, throwable, emptyMap())
+        rumMonitor.startView(viewKey, viewName)
+        rumMonitor.addError(originalErrorMessage, errorSource, throwable)
 
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
@@ -240,12 +240,12 @@ class RumConfigurationTest {
         val rumMonitor = GlobalRumMonitor.get(stubSdkCore)
 
         // When
-        rumMonitor.startView(viewKey, viewName, emptyMap())
-        rumMonitor.startAction(actionType, originalTargetName, emptyMap())
-        rumMonitor.stopAction(actionType, originalTargetName, emptyMap())
+        rumMonitor.startView(viewKey, viewName)
+        rumMonitor.startAction(actionType, originalTargetName)
+        rumMonitor.stopAction(actionType, originalTargetName)
         Thread.sleep(100)
         // Used to trigger the action event
-        rumMonitor.stopView(viewKey, emptyMap())
+        rumMonitor.stopView(viewKey)
 
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
@@ -275,7 +275,7 @@ class RumConfigurationTest {
         Rum.enable(fakeRumConfiguration, stubSdkCore)
 
         // When
-        GlobalRumMonitor.get(stubSdkCore).startView(originalViewUrl, originalViewName, emptyMap())
+        GlobalRumMonitor.get(stubSdkCore).startView(originalViewUrl, originalViewName)
 
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
@@ -307,7 +307,7 @@ class RumConfigurationTest {
         val rumMonitor = GlobalRumMonitor.get(stubSdkCore)
 
         // When
-        rumMonitor.startView(viewKey, viewName, emptyMap())
+        rumMonitor.startView(viewKey, viewName)
 
         // Then
         assertThat(sessionIdCallback).isNotNull()
@@ -407,7 +407,7 @@ class RumConfigurationTest {
 
         // Then
         checkNotNull(request)
-        assertThat(request.url).isEqualTo("$fakeEndpoint/api/v2/rum?ddsource=$expectedSource&ddtags=$expectedTags")
+        assertThat(request.url).isEqualTo("$fakeEndpoint?ddsource=$expectedSource&ddtags=$expectedTags")
         assertThat(request.headers).containsEntry("DD-API-KEY", expectedClientToken)
         assertThat(request.headers).containsEntry("DD-EVP-ORIGIN", expectedSource)
         assertThat(request.headers).containsEntry("DD-EVP-ORIGIN-VERSION", expectedSdkVersion)

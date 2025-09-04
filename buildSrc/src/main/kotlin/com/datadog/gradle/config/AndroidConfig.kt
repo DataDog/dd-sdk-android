@@ -16,12 +16,11 @@ import org.gradle.api.Project
 object AndroidConfig {
 
     const val TARGET_SDK = 36
-    const val MIN_SDK = 21
-    const val MIN_SDK_FOR_WEAR_AND_TV = 23
+    const val MIN_SDK = 23
     const val MIN_SDK_FOR_AUTO = 29
     const val BUILD_TOOLS_VERSION = "36.0.0"
 
-    val VERSION = Version(2, 26, 0, Version.Type.Release)
+    val VERSION = Version(3, 0, 0, Version.Type.Release)
 }
 
 // TODO RUM-628 Switch to Java 17 bytecode

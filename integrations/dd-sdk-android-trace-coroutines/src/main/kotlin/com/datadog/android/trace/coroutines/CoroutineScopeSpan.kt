@@ -6,10 +6,10 @@
 
 package com.datadog.android.trace.coroutines
 
-import io.opentracing.Span
+import com.datadog.android.trace.api.span.DatadogSpan
 import kotlinx.coroutines.CoroutineScope
 
 /**
- * An object that implements both [Span] and [CoroutineScope].
+ * An object that implements both [DatadogSpan] and [CoroutineScope].
  */
-interface CoroutineScopeSpan : CoroutineScope, Span
+interface CoroutineScopeSpan : CoroutineScope, DatadogSpan

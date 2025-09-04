@@ -194,7 +194,7 @@ internal class CoreTracerSpanToSpanEventMapperTest {
 
     private fun DDSpan.expectedMetrics(): Map<String, Number> {
         return tags.filterValues { it is Number }.mapValues { it.value as Number }.toMutableMap().apply {
-            this[DDSpanContext.PRIORITY_SAMPLING_KEY] = samplingPriority()
+            this[DDSpanContext.PRIORITY_SAMPLING_KEY] = spanSamplingPriority
         }
     }
 
