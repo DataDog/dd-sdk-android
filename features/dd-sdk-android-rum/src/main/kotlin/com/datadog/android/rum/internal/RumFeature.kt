@@ -35,6 +35,7 @@ import com.datadog.android.event.EventMapper
 import com.datadog.android.event.MapperSerializer
 import com.datadog.android.event.NoOpEventMapper
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
+import com.datadog.android.rum.DdRumContentProvider
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumSessionListener
@@ -72,6 +73,9 @@ import com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.internal.monitor.DatadogRumMonitor
 import com.datadog.android.rum.internal.net.RumRequestFactory
+import com.datadog.android.rum.internal.startup.RumAppStartupDetector
+import com.datadog.android.rum.internal.startup.RumAppStartupDetectorImpl
+import com.datadog.android.rum.internal.startup.RumTTIDReporter
 import com.datadog.android.rum.internal.thread.NoOpScheduledExecutorService
 import com.datadog.android.rum.internal.tracking.JetpackViewAttributesProvider
 import com.datadog.android.rum.internal.tracking.NoOpInteractionPredicate
@@ -167,6 +171,8 @@ internal class RumFeature(
 
     private val lateCrashEventHandler by lazy { lateCrashReporterFactory(sdkCore as InternalSdkCore) }
 
+    private var rumTTIDReporter: RumTTIDReporter? = null
+
     // region Feature
 
     override val name: String = Feature.RUM_FEATURE_NAME
@@ -250,6 +256,13 @@ internal class RumFeature(
         sessionListener = configuration.sessionListener
 
         sdkCore.setEventReceiver(name, this)
+
+        val rumAppStartupDetector = RumAppStartupDetector.create(
+            context = appContext,
+            sdkCore = sdkCore
+        )
+
+        rumTTIDReporter = RumTTIDReporter(rumAppStartupDetector)
 
         initialized.set(true)
     }

@@ -7,14 +7,12 @@
 package com.datadog.android.internal.utils
 
 import android.app.Activity
-import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.os.Message
 import android.view.View
 import android.view.ViewTreeObserver
 import android.view.Window
-import androidx.annotation.RequiresApi
 import com.datadog.android.internal.utils.NextDrawListener.Companion.onNextDraw
 
 class WindowDelegateCallback constructor(
