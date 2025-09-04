@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.utils.forge
+package com.datadog.android.rum.utils.forge
 
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.tools.unit.forge.exhaustiveAttributes
@@ -14,8 +14,7 @@ import fr.xgouchet.elmyr.jvm.ext.aTimestamp
 import java.net.URL
 import java.util.UUID
 
-// TODO RUMM-2949 Share forgeries/test configurations between modules
-internal class LongTaskEventForgeryFactory :
+class LongTaskEventForgeryFactory :
     ForgeryFactory<LongTaskEvent> {
     override fun getForgery(forge: Forge): LongTaskEvent {
         return LongTaskEvent(
@@ -74,18 +73,18 @@ internal class LongTaskEventForgeryFactory :
             },
             os = forge.aNullable {
                 LongTaskEvent.Os(
-                    name = anAlphaNumericalString(),
-                    version = anAlphaNumericalString(),
-                    versionMajor = anAlphaNumericalString()
+                    name = forge.aString(),
+                    version = "${forge.aSmallInt()}.${forge.aSmallInt()}.${forge.aSmallInt()}",
+                    versionMajor = forge.aSmallInt().toString()
                 )
             },
             device = forge.aNullable {
                 LongTaskEvent.Device(
-                    name = anAlphaNumericalString(),
-                    model = anAlphaNumericalString(),
-                    brand = anAlphaNumericalString(),
-                    type = aValueFrom(LongTaskEvent.DeviceType::class.java),
-                    architecture = anAlphaNumericalString()
+                    name = forge.aString(),
+                    model = forge.aString(),
+                    brand = forge.aString(),
+                    type = forge.aValueFrom(LongTaskEvent.DeviceType::class.java),
+                    architecture = forge.aString()
                 )
             },
             context = forge.aNullable {
@@ -94,9 +93,10 @@ internal class LongTaskEventForgeryFactory :
                 )
             },
             dd = LongTaskEvent.Dd(
-                session = forge.aNullable { LongTaskEvent.DdSession(aNullable { getForgery() }) },
+                session = forge.aNullable { LongTaskEvent.DdSession(getForgery()) },
                 browserSdkVersion = forge.aNullable { aStringMatching("\\d+\\.\\d+\\.\\d+") }
-            )
+            ),
+            ddtags = forge.aNullable { ddTagsString() }
         )
     }
 }
