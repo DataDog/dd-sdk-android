@@ -24,7 +24,7 @@ We replaced the `OpenTracing` classes with internal one. However we strongly enc
 #### Migrating tracing from `OpenTracing` to `OpenTelemetry` (recommended)
 
 > [!WARNING] 
-> Note that the `OpenTelemetry` specification library [requires](https://github.com/open-telemetry/opentelemetry-java?tab=readme-ov-file#requirements) desugaring to be enabled for projects that have a `minSdk` < 26. If this requirement cannot be met in your project see the following section.
+> Note that the `OpenTelemetry` specification library [requires](https://github.com/open-telemetry/opentelemetry-java?tab=readme-ov-file#requirements) desugaring to be enabled for projects with a `minSdk` < 26. If this requirement cannot be met in your project see the following section.
 
 
 1. Add the `OpenTelemetry` dependency to your `build.gradle.kts`:
@@ -111,13 +111,13 @@ For manual (custom) tracing use `com.datadog.android.trace.GlobalDatadogTracer.g
 For example: 
 ```kotlin
     val tracer = GlobalDatadogTracer.get()
-    
+
     val span = tracer
-        .buildSpan(operationName)
-        .start()
-
+     .buildSpan("Executing operation")
+     .start()
+    
     // Code that should be instrumented
-
+    
     span.finish()
 ```
 Refer to the Datadog [documentation](https://docs.datadoghq.com/tracing/trace_collection/automatic_instrumentation/dd_libraries/android?tab=kotlin) for more details.
