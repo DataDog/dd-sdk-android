@@ -6,9 +6,14 @@
 
 package com.datadog.android.rum.startup
 
+import android.app.Activity
+import android.app.ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND
 import android.app.Application
 import android.content.Context
 import android.net.ConnectivityManager
+import android.os.Build
+import com.datadog.android.core.internal.system.BuildSdkVersionProvider
+import com.datadog.android.rum.internal.startup.RumAppStartupDetector
 import com.datadog.android.rum.internal.startup.RumAppStartupDetectorImpl
 import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
@@ -28,6 +33,9 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoMoreInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.nanoseconds
+import kotlin.time.Duration.Companion.seconds
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -40,15 +48,30 @@ internal class RumAppStartupDetectorImplTest {
     @Test
     fun `first test 1`() {
         val application = mock<Application>()
+        var currentTime: Duration = 0.nanoseconds
+
+        val listener = mock<RumAppStartupDetector.Listener>()
+
+        val buildSdkVersionProvider = mock<BuildSdkVersionProvider>()
+        whenever(buildSdkVersionProvider.version) doReturn Build.VERSION_CODES.Q
 
         val rumAppStartupDetector = RumAppStartupDetectorImpl(
             application = application,
+            buildSdkVersionProvider = buildSdkVersionProvider,
             appStartupTimeProvider = { 0 },
-            processImportanceProvider = { 0 },
-            timeProviderNanos = { 0 }
+            processImportanceProvider = { IMPORTANCE_FOREGROUND },
+            timeProviderNanos = { currentTime.inWholeNanoseconds }
         )
+
+        rumAppStartupDetector.addListener(listener)
 
         verify(application).registerActivityLifecycleCallbacks(any())
         verifyNoMoreInteractions(application)
+
+        val activity = mock<Activity>()
+        currentTime += 3.seconds
+        rumAppStartupDetector.onActivityPreCreated(activity, null)
+
+        verify(listener).onAppStartupDetected(any())
     }
 }

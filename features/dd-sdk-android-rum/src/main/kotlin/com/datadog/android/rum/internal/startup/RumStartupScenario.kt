@@ -19,14 +19,17 @@ internal sealed interface RumStartupScenario {
         override val startTimeNanos: Long,
         override val hasSavedInstanceStateBundle: Boolean,
         override val activityName: String,
-        override val activity: Activity
+        override val activity: Activity,
+        val gapNanos: Long,
     ) : RumStartupScenario
 
     data class WarmFirstActivity(
         override val startTimeNanos: Long,
         override val hasSavedInstanceStateBundle: Boolean,
         override val activityName: String,
-        override val activity: Activity
+        override val activity: Activity,
+        val gapNanos: Long,
+        val processStartedInForeground: Boolean,
     ) : RumStartupScenario
 
     data class WarmAfterActivityDestroyed(

@@ -6,12 +6,10 @@
 
 package com.datadog.android.rum.internal.startup
 
-import android.app.Activity
 import android.app.Application
-import android.content.Context
 import com.datadog.android.core.InternalSdkCore
+import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import com.datadog.android.rum.DdRumContentProvider
-import kotlin.time.Duration.Companion.seconds
 
 internal interface RumAppStartupDetector {
     interface Listener {
@@ -21,12 +19,13 @@ internal interface RumAppStartupDetector {
     fun addListener(listener: Listener)
     fun removeListener(listener: Listener)
 
-    fun onStop()
+    fun destroy()
 
     companion object {
         fun create(application: Application, sdkCore: InternalSdkCore): RumAppStartupDetector {
             val impl = RumAppStartupDetectorImpl(
                 application = application,
+                buildSdkVersionProvider = BuildSdkVersionProvider.DEFAULT,
                 appStartupTimeProvider = { sdkCore.appStartTimeNs },
                 processImportanceProvider = { DdRumContentProvider.processImportance },
                 timeProviderNanos = { System.nanoTime() }

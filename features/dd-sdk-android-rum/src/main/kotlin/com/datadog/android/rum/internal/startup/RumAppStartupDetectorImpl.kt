@@ -11,6 +11,7 @@ import android.app.ActivityManager
 import android.app.Application
 import android.os.Build
 import android.os.Bundle
+import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import com.datadog.android.internal.utils.DDCoreSubscription
 import kotlin.time.Duration.Companion.nanoseconds
 import kotlin.time.Duration.Companion.seconds
@@ -19,6 +20,7 @@ private val START_GAP_THRESHOLD = 5.seconds
 
 internal class RumAppStartupDetectorImpl(
     private val application: Application,
+    private val buildSdkVersionProvider: BuildSdkVersionProvider,
     private val appStartupTimeProvider: () -> Long,
     private val processImportanceProvider: () -> Int,
     private val timeProviderNanos: () -> Long,
@@ -28,20 +30,20 @@ internal class RumAppStartupDetectorImpl(
     private var isChangingConfigurations: Boolean = false
     private var isFirstActivityForProcess = true
 
-    private val subscription = DDCoreSubscription.Companion.create<RumAppStartupDetector.Listener>()
+    private val subscription = DDCoreSubscription.create<RumAppStartupDetector.Listener>()
 
     init {
         application.registerActivityLifecycleCallbacks(this)
     }
 
     override fun onActivityPreCreated(activity: Activity, savedInstanceState: Bundle?) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+        if (buildSdkVersionProvider.version >= Build.VERSION_CODES.Q) {
             onBeforeActivityCreated(activity, savedInstanceState)
         }
     }
 
     override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+        if (buildSdkVersionProvider.version < Build.VERSION_CODES.Q) {
             onBeforeActivityCreated(activity, savedInstanceState)
         }
     }
@@ -86,14 +88,17 @@ internal class RumAppStartupDetectorImpl(
                         startTimeNanos = now,
                         hasSavedInstanceStateBundle = hasSavedInstanceStateBundle,
                         activityName = activity.extractName(),
-                        activity = activity
+                        activity = activity,
+                        gapNanos = gap.inWholeNanoseconds,
+                        processStartedInForeground = processStartedInForeground
                     )
                 } else {
                     RumStartupScenario.Cold(
                         startTimeNanos = processStartTime,
                         hasSavedInstanceStateBundle = hasSavedInstanceStateBundle,
                         activityName = activity.extractName(),
-                        activity = activity
+                        activity = activity,
+                        gapNanos = gap.inWholeNanoseconds
                     )
                 }
             } else {
@@ -120,7 +125,7 @@ internal class RumAppStartupDetectorImpl(
         subscription.removeListener(listener)
     }
 
-    override fun onStop() {
+    override fun destroy() {
         application.unregisterActivityLifecycleCallbacks(this)
     }
 }
