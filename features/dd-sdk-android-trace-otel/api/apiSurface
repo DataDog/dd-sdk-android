@@ -1,3 +1,7 @@
+class com.datadog.android.trace.opentelemetry.DatadogOpenTelemetry : io.opentelemetry.api.OpenTelemetry
+  constructor(String)
+  override fun getTracerProvider(): io.opentelemetry.api.trace.TracerProvider
+  override fun getPropagators(): io.opentelemetry.context.propagation.ContextPropagators
 class com.datadog.android.trace.opentelemetry.OtelTracerProvider : io.opentelemetry.api.trace.TracerProvider
   override fun get(String): io.opentelemetry.api.trace.Tracer
   override fun get(String, String): io.opentelemetry.api.trace.Tracer

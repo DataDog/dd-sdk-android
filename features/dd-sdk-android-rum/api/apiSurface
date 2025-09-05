@@ -7,7 +7,6 @@ class com.datadog.android.rum.DdRumContentProvider : android.content.ContentProv
   override fun delete(android.net.Uri, String?, Array<String>?): Int
   override fun update(android.net.Uri, android.content.ContentValues?, String?, Array<String>?): Int
 annotation com.datadog.android.rum.ExperimentalRumApi
-typealias GlobalRum = GlobalRumMonitor
 object com.datadog.android.rum.GlobalRumMonitor
   fun isRegistered(com.datadog.android.api.SdkCore = Datadog.getInstance()): Boolean
   fun get(com.datadog.android.api.SdkCore = Datadog.getInstance()): RumMonitor
@@ -105,16 +104,15 @@ interface com.datadog.android.rum.RumMonitor
   fun getCurrentSessionId((String?) -> Unit)
   fun startView(Any, String, Map<String, Any?> = emptyMap())
   fun stopView(Any, Map<String, Any?> = emptyMap())
-  fun addAction(RumActionType, String, Map<String, Any?>)
-  fun startAction(RumActionType, String, Map<String, Any?>)
+  fun addAction(RumActionType, String, Map<String, Any?> = emptyMap())
+  fun startAction(RumActionType, String, Map<String, Any?> = emptyMap())
   fun stopAction(RumActionType, String, Map<String, Any?> = emptyMap())
-  DEPRECATED fun startResource(String, String, String, Map<String, Any?> = emptyMap())
   fun startResource(String, RumResourceMethod, String, Map<String, Any?> = emptyMap())
-  fun stopResource(String, Int?, Long?, RumResourceKind, Map<String, Any?>)
+  fun stopResource(String, Int?, Long?, RumResourceKind, Map<String, Any?> = emptyMap())
   fun stopResourceWithError(String, Int?, String, RumErrorSource, Throwable, Map<String, Any?> = emptyMap())
   fun stopResourceWithError(String, Int?, String, RumErrorSource, String, String?, Map<String, Any?> = emptyMap())
-  fun addError(String, RumErrorSource, Throwable?, Map<String, Any?>)
-  fun addErrorWithStacktrace(String, RumErrorSource, String?, Map<String, Any?>)
+  fun addError(String, RumErrorSource, Throwable?, Map<String, Any?> = emptyMap())
+  fun addErrorWithStacktrace(String, RumErrorSource, String?, Map<String, Any?> = emptyMap())
   fun addTiming(String)
   fun addFeatureFlagEvaluation(String, Any)
   fun addFeatureFlagEvaluations(Map<String, Any>)
@@ -124,6 +122,8 @@ interface com.datadog.android.rum.RumMonitor
   fun clearAttributes()
   fun stopSession()
   fun addViewLoadingTime(Boolean)
+  fun addViewAttributes(Map<String, Any?>)
+  fun removeViewAttributes(Collection<String>)
   var debug: Boolean
   fun _getInternal(): _RumInternalProxy?
 enum com.datadog.android.rum.RumPerformanceMetric
@@ -194,7 +194,7 @@ interface com.datadog.android.rum.internal.monitor.AdvancedNetworkRumMonitor : c
   fun addResourceTiming(Any, com.datadog.android.rum.internal.domain.event.ResourceTiming)
   fun notifyInterceptorInstantiated()
   fun startResource(com.datadog.android.rum.resource.ResourceId, com.datadog.android.rum.RumResourceMethod, String, Map<String, Any?> = emptyMap())
-  fun stopResource(com.datadog.android.rum.resource.ResourceId, Int?, Long?, com.datadog.android.rum.RumResourceKind, Map<String, Any?>)
+  fun stopResource(com.datadog.android.rum.resource.ResourceId, Int?, Long?, com.datadog.android.rum.RumResourceKind, Map<String, Any?> = emptyMap())
   fun stopResourceWithError(com.datadog.android.rum.resource.ResourceId, Int?, String, com.datadog.android.rum.RumErrorSource, Throwable, Map<String, Any?> = emptyMap())
   fun stopResourceWithError(com.datadog.android.rum.resource.ResourceId, Int?, String, com.datadog.android.rum.RumErrorSource, String, String?, Map<String, Any?> = emptyMap())
 interface com.datadog.android.rum.metric.interactiontonextview.LastInteractionIdentifier

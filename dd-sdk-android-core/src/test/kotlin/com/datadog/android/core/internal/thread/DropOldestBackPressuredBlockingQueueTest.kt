@@ -396,7 +396,8 @@ class DropOldestBackPressuredBlockingQueueTest {
         // Then
         assertThat(testedQueue).hasSize(fakeBackPressureThreshold)
         assertThat(testedQueue).contains(fakeNewItem)
-        verifyNoInteractions(mockOnItemsDropped, mockOnThresholdReached, mockLogger)
+        verify(mockOnThresholdReached).invoke()
+        verifyNoInteractions(mockOnItemsDropped)
     }
 
     @Test
@@ -421,7 +422,8 @@ class DropOldestBackPressuredBlockingQueueTest {
         // Then
         assertThat(testedQueue).hasSize(fakeBackPressureThreshold)
         assertThat(testedQueue).contains(fakeNewItem)
-        verifyNoInteractions(mockOnItemsDropped, mockOnThresholdReached, mockLogger)
+        verify(mockOnThresholdReached).invoke()
+        verifyNoInteractions(mockOnItemsDropped)
     }
 
     // endregion

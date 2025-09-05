@@ -194,20 +194,20 @@ class RumSessionEndedIntegrationTelemetryTest {
         repeat(missedActionCount) {
             val actionType = forge.aValueFrom(RumActionType::class.java)
             val name = forge.aString()
-            rumMonitor.addAction(type = actionType, name = name, attributes = mapOf())
+            rumMonitor.addAction(type = actionType, name = name)
         }
 
         repeat(missedErrorCount) {
             val source = forge.aValueFrom(RumErrorSource::class.java)
             val message = forge.aString()
-            rumMonitor.addError(message = message, source = source, throwable = null, attributes = mapOf())
+            rumMonitor.addError(message = message, source = source, throwable = null)
         }
 
         repeat(missedResourceCount) {
             val key = forge.aString()
             val url = forge.aString()
             val method = forge.aValueFrom(RumResourceMethod::class.java)
-            rumMonitor.startResource(key = key, method = method, url = url, attributes = mapOf())
+            rumMonitor.startResource(key = key, method = method, url = url)
         }
         // Integration test for long task is skipped since we can not trigger long task of main thread in unit test.
 

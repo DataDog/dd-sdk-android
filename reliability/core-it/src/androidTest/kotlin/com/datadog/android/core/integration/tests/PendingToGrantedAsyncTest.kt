@@ -99,12 +99,14 @@ class PendingToGrantedAsyncTest(
         }.start()
         Thread {
             fakeBatchData.forEach { rawBatchEvent ->
-                featureScope.withWriteContext { _, eventBatchWriter ->
-                    eventBatchWriter.write(
-                        rawBatchEvent,
-                        fakeBatchMetadata,
-                        eventType
-                    )
+                featureScope.withWriteContext { _, writeScope ->
+                    writeScope {
+                        it.write(
+                            rawBatchEvent,
+                            fakeBatchMetadata,
+                            eventType
+                        )
+                    }
                 }
             }
             countDownLatch.countDown()

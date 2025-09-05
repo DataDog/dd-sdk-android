@@ -36,11 +36,11 @@ class WidgetIntentService : IntentService("WidgetIntentService") {
 
                 if (hasRumContext) {
                     GlobalRumMonitor.get()
-                        .startView(widgetId, widgetName ?: "DatadogWidget", emptyMap())
+                        .startView(widgetId, widgetName ?: "DatadogWidget")
                     val clickedTargetName = intent.getStringExtra(WIDGET_CLICKED_TARGET_NAME)
                     if (clickedTargetName != null) {
                         GlobalRumMonitor.get()
-                            .addAction(RumActionType.CLICK, clickedTargetName, emptyMap())
+                            .addAction(RumActionType.CLICK, clickedTargetName)
                     }
                 }
 

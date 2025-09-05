@@ -17,11 +17,12 @@ plugins {
     // Build
     id("com.android.library")
     kotlin("android")
+    alias(libs.plugins.composeCompilerPlugin)
 
     // Publish
     `maven-publish`
     signing
-    id("org.jetbrains.dokka")
+    id("org.jetbrains.dokka-javadoc")
 
     // Analysis tools
     id("com.github.ben-manes.versions")
@@ -46,9 +47,6 @@ android {
     }
     buildFeatures {
         compose = true
-    }
-    composeOptions {
-        kotlinCompilerExtensionVersion = libs.versions.androidXComposeCompilerExtension.get()
     }
 }
 

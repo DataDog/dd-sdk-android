@@ -18,6 +18,7 @@ import androidx.annotation.AnyThread
 import androidx.annotation.RequiresApi
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.Feature
+import com.datadog.android.api.feature.FeatureContextUpdateReceiver
 import com.datadog.android.api.feature.FeatureEventReceiver
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.feature.StorageBackedFeature
@@ -159,10 +160,10 @@ internal class RumFeature(
     internal var lastInteractionIdentifier: LastInteractionIdentifier? = NoOpLastInteractionIdentifier()
     internal var slowFramesListener: SlowFramesListener? = null
     internal var accessibilityReader: InfoProvider<AccessibilityInfo> = NoOpAccessibilityReader()
-    internal var accessibilitySnapshotManager: AccessibilitySnapshotManager =
-        NoOpAccessibilitySnapshotManager()
+    internal var accessibilitySnapshotManager: AccessibilitySnapshotManager = NoOpAccessibilitySnapshotManager()
     internal var batteryInfoProvider: InfoProvider<BatteryInfo> = NoOpBatteryInfoProvider()
     internal var displayInfoProvider: InfoProvider<DisplayInfo> = NoOpDisplayInfoProvider()
+    internal val rumContextUpdateReceivers = mutableSetOf<FeatureContextUpdateReceiver>()
 
     private val lateCrashEventHandler by lazy { lateCrashReporterFactory(sdkCore as InternalSdkCore) }
 
@@ -305,6 +306,11 @@ internal class RumFeature(
 
     override fun onStop() {
         sdkCore.removeEventReceiver(name)
+
+        rumContextUpdateReceivers.forEach {
+            sdkCore.removeContextUpdateReceiver(it)
+        }
+        rumContextUpdateReceivers.clear()
 
         unregisterTrackingStrategies(appContext)
 
@@ -569,7 +575,10 @@ internal class RumFeature(
             vitalObserver,
             vitalExecutorService,
             periodInMs
-        )
+        ).apply {
+            sdkCore.setContextUpdateReceiver(this)
+            rumContextUpdateReceivers += this
+        }
         vitalExecutorService.scheduleSafe(
             "Vitals monitoring",
             periodInMs,

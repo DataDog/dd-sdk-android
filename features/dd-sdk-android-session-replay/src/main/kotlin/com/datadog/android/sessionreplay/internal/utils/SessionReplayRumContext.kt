@@ -13,17 +13,16 @@ import java.util.UUID
  * @param applicationId the RUM application id
  * @param sessionId the current RUM session id
  * @param viewId the current RUM view id
+ * @param viewTimeOffsetMs the offset in ms of the current RUM view
  */
 internal data class SessionReplayRumContext(
     val applicationId: String = NULL_UUID,
     val sessionId: String = NULL_UUID,
-    val viewId: String = NULL_UUID
+    val viewId: String = NULL_UUID,
+    val viewTimeOffsetMs: Long = 0L
 ) {
 
-    internal fun isNotValid(): Boolean =
-        applicationId == NULL_UUID ||
-            sessionId == NULL_UUID ||
-            viewId == NULL_UUID
+    internal fun isNotValid(): Boolean = !isValid()
 
     internal fun isValid(): Boolean =
         applicationId != NULL_UUID &&

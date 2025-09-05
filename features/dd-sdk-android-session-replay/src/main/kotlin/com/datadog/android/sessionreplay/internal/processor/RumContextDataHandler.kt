@@ -20,10 +20,8 @@ internal class RumContextDataHandler(
 
     @MainThread
     internal fun createRumContextData(): RecordedQueuedItemContext? {
-        // we will make sure we get the timestamp on the UI thread to avoid time skewing
         val timestamp = timeProvider.getDeviceTimestamp()
 
-        // TODO RUM-836 Fetch the RumContext from the core SDKContext when available
         val newRumContext = rumContextProvider.getRumContext()
 
         if (newRumContext.isNotValid()) {
@@ -40,7 +38,7 @@ internal class RumContextDataHandler(
             return null
         }
 
-        return RecordedQueuedItemContext(timestamp, newRumContext.copy())
+        return RecordedQueuedItemContext(timestamp + newRumContext.viewTimeOffsetMs, newRumContext.copy())
     }
 
     companion object {

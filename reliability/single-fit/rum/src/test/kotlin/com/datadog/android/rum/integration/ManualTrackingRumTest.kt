@@ -96,7 +96,7 @@ class ManualTrackingRumTest {
         @StringForgery viewName: String
     ) {
         // When
-        GlobalRumMonitor.get(stubSdkCore).startView(viewKey, viewName, emptyMap())
+        GlobalRumMonitor.get(stubSdkCore).startView(viewKey, viewName)
 
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
@@ -122,8 +122,8 @@ class ManualTrackingRumTest {
         val rumMonitor = GlobalRumMonitor.get(stubSdkCore)
 
         // When
-        rumMonitor.startView(viewKey, viewName, emptyMap())
-        rumMonitor.stopView(viewKey, emptyMap())
+        rumMonitor.startView(viewKey, viewName)
+        rumMonitor.stopView(viewKey)
 
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
@@ -164,7 +164,7 @@ class ManualTrackingRumTest {
         val rumMonitor = GlobalRumMonitor.get(stubSdkCore)
 
         // When
-        rumMonitor.startView(viewKey, viewName, emptyMap())
+        rumMonitor.startView(viewKey, viewName)
         rumMonitor.addFeatureFlagEvaluation(ffKey, ffValue)
 
         // Then
@@ -206,11 +206,11 @@ class ManualTrackingRumTest {
         val rumMonitor = GlobalRumMonitor.get(stubSdkCore)
 
         // When
-        rumMonitor.startView(viewKey, viewName, emptyMap())
-        rumMonitor.addAction(RumActionType.CUSTOM, actionName, emptyMap())
+        rumMonitor.startView(viewKey, viewName)
+        rumMonitor.addAction(RumActionType.CUSTOM, actionName)
         Thread.sleep(100)
         // Used to trigger the action event
-        rumMonitor.stopView(viewKey, emptyMap())
+        rumMonitor.stopView(viewKey)
 
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
@@ -278,9 +278,9 @@ class ManualTrackingRumTest {
         val rumMonitor = GlobalRumMonitor.get(stubSdkCore)
 
         // When
-        rumMonitor.startView(viewKey, viewName, emptyMap())
-        rumMonitor.addError(errorMessage, errorSource, exception, emptyMap())
-        rumMonitor.stopView(viewKey, emptyMap())
+        rumMonitor.startView(viewKey, viewName)
+        rumMonitor.addError(errorMessage, errorSource, exception)
+        rumMonitor.stopView(viewKey)
 
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
@@ -345,11 +345,11 @@ class ManualTrackingRumTest {
         val rumMonitor = GlobalRumMonitor.get(stubSdkCore)
 
         // When
-        rumMonitor.startView(key, name, emptyMap())
+        rumMonitor.startView(key, name)
         rumMonitor.startResource(resourceKey, RumResourceMethod.GET, resourceUrl.toString())
         Thread.sleep(100)
-        rumMonitor.stopResource(resourceKey, resourceStatus, resourceSize, RumResourceKind.NATIVE, emptyMap())
-        rumMonitor.stopView(key, emptyMap())
+        rumMonitor.stopResource(resourceKey, resourceStatus, resourceSize, RumResourceKind.NATIVE)
+        rumMonitor.stopView(key)
 
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
@@ -416,11 +416,11 @@ class ManualTrackingRumTest {
         val resourceId = ResourceId(resourceKey, resourceUuid.toString())
 
         // When
-        rumMonitor.startView(key, name, emptyMap())
+        rumMonitor.startView(key, name)
         rumMonitor.startResource(resourceId, RumResourceMethod.GET, resourceUrl.toString())
         Thread.sleep(100)
-        rumMonitor.stopResource(resourceId, resourceStatus, resourceSize, RumResourceKind.NATIVE, emptyMap())
-        rumMonitor.stopView(key, emptyMap())
+        rumMonitor.stopResource(resourceId, resourceStatus, resourceSize, RumResourceKind.NATIVE)
+        rumMonitor.stopView(key)
 
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
@@ -486,7 +486,7 @@ class ManualTrackingRumTest {
         // Given
         val rumMonitor = GlobalRumMonitor.get(stubSdkCore)
         val startTime = System.nanoTime()
-        rumMonitor.startView(key, name, emptyMap())
+        rumMonitor.startView(key, name)
 
         // When
         val endTime = System.nanoTime()
@@ -534,8 +534,8 @@ class ManualTrackingRumTest {
     ) {
         // Given
         val rumMonitor = GlobalRumMonitor.get(stubSdkCore)
-        rumMonitor.startView(key, name, emptyMap())
-        rumMonitor.stopView(key, emptyMap())
+        rumMonitor.startView(key, name)
+        rumMonitor.stopView(key)
 
         // When
         rumMonitor.addViewLoadingTime(overwrite)
@@ -579,7 +579,7 @@ class ManualTrackingRumTest {
         // Given
         val rumMonitor = GlobalRumMonitor.get(stubSdkCore)
         val startTime = System.nanoTime()
-        rumMonitor.startView(key, name, emptyMap())
+        rumMonitor.startView(key, name)
         val intermediateTime = System.nanoTime()
         rumMonitor.addViewLoadingTime(overwrite)
 
@@ -646,7 +646,7 @@ class ManualTrackingRumTest {
         // Given
         val rumMonitor = GlobalRumMonitor.get(stubSdkCore)
         val startTime = System.nanoTime()
-        rumMonitor.startView(key, name, emptyMap())
+        rumMonitor.startView(key, name)
         val intermediateTime = System.nanoTime()
         rumMonitor.addViewLoadingTime(overwrite)
 
@@ -709,7 +709,7 @@ class ManualTrackingRumTest {
         )
 
         // When
-        rumMonitor.startView(key, name, emptyMap())
+        rumMonitor.startView(key, name)
 
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
@@ -751,7 +751,7 @@ class ManualTrackingRumTest {
         stubSdkCore.setAccountInfo(fakeAccountId, fakeAccountName, accountExtraInfo)
 
         // When
-        rumMonitor.startView(key, name, emptyMap())
+        rumMonitor.startView(key, name)
 
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)

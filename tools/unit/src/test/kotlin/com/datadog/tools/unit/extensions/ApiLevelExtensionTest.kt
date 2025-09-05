@@ -22,10 +22,10 @@ class ApiLevelExtensionTest {
     }
 
     @Test
-    @TestTargetApi(Build.VERSION_CODES.LOLLIPOP)
-    fun `sets API to Lollipop`() {
+    @TestTargetApi(Build.VERSION_CODES.M)
+    fun `sets API to M`() {
         assertThat(Build.VERSION.SDK_INT)
-            .isEqualTo(Build.VERSION_CODES.LOLLIPOP)
+            .isEqualTo(Build.VERSION_CODES.M)
     }
 
     @Test

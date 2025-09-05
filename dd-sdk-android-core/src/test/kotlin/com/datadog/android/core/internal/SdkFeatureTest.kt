@@ -10,11 +10,10 @@ import android.app.Application
 import android.content.Context
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
+import com.datadog.android.api.feature.EventWriteScope
 import com.datadog.android.api.feature.Feature
-import com.datadog.android.api.feature.FeatureContextUpdateReceiver
 import com.datadog.android.api.feature.FeatureEventReceiver
 import com.datadog.android.api.feature.StorageBackedFeature
-import com.datadog.android.api.storage.EventBatchWriter
 import com.datadog.android.api.storage.FeatureStorageConfiguration
 import com.datadog.android.api.storage.datastore.DataStoreHandler
 import com.datadog.android.core.configuration.BatchProcessingLevel
@@ -54,8 +53,8 @@ import com.datadog.android.utils.verifyLog
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
+import com.datadog.tools.unit.forge.aThrowable
 import fr.xgouchet.elmyr.Forge
-import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -75,6 +74,7 @@ import org.mockito.kotlin.argThat
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
@@ -82,6 +82,12 @@ import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.util.Locale
+import java.util.concurrent.Callable
+import java.util.concurrent.CancellationException
+import java.util.concurrent.ExecutionException
+import java.util.concurrent.Future
+import java.util.concurrent.RejectedExecutionException
+import java.util.concurrent.atomic.AtomicBoolean
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -108,6 +114,9 @@ internal class SdkFeatureTest {
 
     @Mock
     lateinit var mockBenchmarkSdkUploads: BenchmarkSdkUploads
+
+    @Mock
+    lateinit var mockContextProvider: ContextProvider
 
     @Forgery
     lateinit var fakeConsent: TrackingConsent
@@ -137,11 +146,16 @@ internal class SdkFeatureTest {
         whenever(coreFeature.mockInstance.batchProcessingLevel)
             .thenReturn(fakeCoreBatchProcessingLevel)
         whenever(coreFeature.mockTrackingConsentProvider.getConsent()) doReturn fakeConsent
+        whenever(coreFeature.mockInstance.initialized) doReturn AtomicBoolean(true)
         whenever(mockWrappedFeature.name) doReturn fakeFeatureName
         whenever(mockWrappedFeature.requestFactory) doReturn mock()
         whenever(mockWrappedFeature.storageConfiguration) doReturn fakeStorageConfiguration
+        whenever(coreFeature.mockContextExecutorService.execute(any())) doAnswer {
+            it.getArgument<Runnable>(0).run()
+        }
         testedFeature = SdkFeature(
             coreFeature = coreFeature.mockInstance,
+            contextProvider = mockContextProvider,
             wrappedFeature = mockWrappedFeature,
             internalLogger = mockInternalLogger
         )
@@ -257,6 +271,7 @@ internal class SdkFeatureTest {
         whenever(mockFeature.name).thenReturn(fakeFeatureName)
         testedFeature = SdkFeature(
             coreFeature.mockInstance,
+            mockContextProvider,
             mockFeature,
             internalLogger = mockInternalLogger
         )
@@ -277,6 +292,7 @@ internal class SdkFeatureTest {
         }
         testedFeature = SdkFeature(
             coreFeature = coreFeature.mockInstance,
+            mockContextProvider,
             wrappedFeature = mockSimpleFeature,
             internalLogger = mockInternalLogger
         )
@@ -344,6 +360,7 @@ internal class SdkFeatureTest {
             .isInstanceOf(NoOpFileOrchestrator::class.java)
         assertThat(testedFeature.processLifecycleMonitor).isNull()
         assertThat(testedFeature.metricsDispatcher).isInstanceOf(NoOpMetricsDispatcher::class.java)
+        assertThat(testedFeature.featureContext).isEmpty()
     }
 
     @Test
@@ -378,6 +395,7 @@ internal class SdkFeatureTest {
         }
         testedFeature = SdkFeature(
             coreFeature = coreFeature.mockInstance,
+            contextProvider = mockContextProvider,
             wrappedFeature = mockFeature,
             internalLogger = mockInternalLogger
         )
@@ -474,52 +492,170 @@ internal class SdkFeatureTest {
 
     @Test
     fun `M provide write context W withWriteContext(callback)`(
-        @BoolForgery forceNewBatch: Boolean,
         @Forgery fakeContext: DatadogContext,
-        @Mock mockBatchWriter: EventBatchWriter
+        @StringForgery fakeWithFeatureContexts: Set<String>,
+        @Mock mockEventWriteScope: EventWriteScope
     ) {
         // Given
         testedFeature.storage = mockStorage
-        val callback = mock<(DatadogContext, EventBatchWriter) -> Unit>()
-        whenever(coreFeature.mockInstance.contextProvider.context) doReturn fakeContext
+        val callback = mock<(DatadogContext, EventWriteScope) -> Unit>()
+        whenever(mockContextProvider.getContext(fakeWithFeatureContexts)) doReturn fakeContext
 
         whenever(
-            mockStorage.writeCurrentBatch(
-                eq(fakeContext),
-                eq(forceNewBatch),
-                any()
-            )
-        ) doAnswer {
-            val storageCallback = it.getArgument<(EventBatchWriter) -> Unit>(2)
-            storageCallback.invoke(mockBatchWriter)
-        }
+            mockStorage.getEventWriteScope(fakeContext)
+        ) doReturn mockEventWriteScope
 
         // When
-        testedFeature.withWriteContext(forceNewBatch, callback = callback)
+        testedFeature.withWriteContext(fakeWithFeatureContexts, callback = callback)
 
         // Then
         verify(callback).invoke(
             fakeContext,
-            mockBatchWriter
+            mockEventWriteScope
         )
     }
 
     @Test
-    fun `M do nothing W withWriteContext(callback) { no Datadog context }`(
-        @BoolForgery forceNewBatch: Boolean
+    fun `M not provide write context W withWriteContext(callback) { CoreFeature is not initialized }`(
+        @StringForgery fakeWithFeatureContexts: Set<String>
     ) {
         // Given
         testedFeature.storage = mockStorage
-        val callback = mock<(DatadogContext, EventBatchWriter) -> Unit>()
-
-        whenever(coreFeature.mockInstance.contextProvider) doReturn NoOpContextProvider()
+        val callback = mock<(DatadogContext, EventWriteScope) -> Unit>()
+        whenever(coreFeature.mockInstance.initialized) doReturn AtomicBoolean(false)
 
         // When
-        testedFeature.withWriteContext(forceNewBatch, callback = callback)
+        testedFeature.withWriteContext(fakeWithFeatureContexts, callback = callback)
 
         // Then
-        verifyNoInteractions(mockStorage)
-        verifyNoInteractions(callback)
+        verifyNoInteractions(callback, mockContextProvider, mockStorage)
+    }
+
+    @Test
+    fun `M provide Datadog context W withContext(callback)`(
+        @Forgery fakeContext: DatadogContext,
+        @StringForgery fakeWithFeatureContexts: Set<String>
+    ) {
+        // Given
+        testedFeature.storage = mockStorage
+        val callback = mock<(DatadogContext) -> Unit>()
+        whenever(mockContextProvider.getContext(fakeWithFeatureContexts)) doReturn fakeContext
+
+        // When
+        testedFeature.withContext(fakeWithFeatureContexts, callback = callback)
+
+        // Then
+        verify(callback).invoke(fakeContext)
+    }
+
+    @Test
+    fun `M not provide Datadog context W withContext(callback) { CoreFeature is not initialized }`(
+        @StringForgery fakeWithFeatureContexts: Set<String>
+    ) {
+        // Given
+        testedFeature.storage = mockStorage
+        val callback = mock<(DatadogContext) -> Unit>()
+        whenever(coreFeature.mockInstance.initialized) doReturn AtomicBoolean(false)
+
+        // When
+        testedFeature.withContext(fakeWithFeatureContexts, callback = callback)
+
+        // Then
+        verifyNoInteractions(callback, mockContextProvider)
+    }
+
+    @Test
+    fun `M provide write context W getWriteContextSync()`(
+        @Forgery fakeContext: DatadogContext,
+        @StringForgery fakeWithFeatureContexts: Set<String>,
+        @Mock mockEventWriteScope: EventWriteScope
+    ) {
+        // Given
+        testedFeature.storage = mockStorage
+        whenever(mockContextProvider.getContext(fakeWithFeatureContexts)) doReturn fakeContext
+        whenever(coreFeature.mockInstance.contextExecutorService.submit(any<Callable<*>>())) doAnswer {
+            val callable = it.getArgument<Callable<Pair<DatadogContext, EventWriteScope>>>(0)
+            mock<Future<*>>().apply {
+                whenever(get()) doAnswer { callable.call() }
+            }
+        }
+
+        whenever(
+            mockStorage.getEventWriteScope(fakeContext)
+        ) doReturn mockEventWriteScope
+
+        // When
+        val writeContext = testedFeature.getWriteContextSync(fakeWithFeatureContexts)
+
+        // Then
+        checkNotNull(writeContext)
+        assertThat(writeContext.first).isEqualTo(fakeContext)
+        assertThat(writeContext.second).isEqualTo(mockEventWriteScope)
+    }
+
+    @Test
+    fun `M provide null write context W getWriteContextSync() { task rejected }`(
+        @Forgery fakeContext: DatadogContext,
+        @Mock mockEventWriteScope: EventWriteScope
+    ) {
+        // Given
+        testedFeature.storage = mockStorage
+        whenever(
+            coreFeature.mockInstance.contextExecutorService.submit(any<Callable<*>>())
+        ) doThrow RejectedExecutionException()
+
+        whenever(
+            mockStorage.getEventWriteScope(fakeContext)
+        ) doReturn mockEventWriteScope
+
+        // When
+        val writeContext = testedFeature.getWriteContextSync()
+
+        // Then
+        assertThat(writeContext).isNull()
+    }
+
+    @Test
+    fun `M provide null write context W getWriteContextSync() { failed to get task result }`(
+        @Forgery fakeContext: DatadogContext,
+        @Mock mockEventWriteScope: EventWriteScope,
+        forge: Forge
+    ) {
+        // Given
+        testedFeature.storage = mockStorage
+        val throwable = forge.anElementFrom(
+            CancellationException(),
+            ExecutionException(forge.aThrowable()),
+            InterruptedException()
+        )
+        whenever(coreFeature.mockInstance.contextExecutorService.submit(any<Callable<*>>())) doAnswer {
+            mock<Future<*>>().apply {
+                whenever(get()) doThrow throwable
+            }
+        }
+
+        whenever(
+            mockStorage.getEventWriteScope(fakeContext)
+        ) doReturn mockEventWriteScope
+
+        // When
+        val writeContext = testedFeature.getWriteContextSync()
+
+        // Then
+        assertThat(writeContext).isNull()
+    }
+
+    @Test
+    fun `M provide null write context W getWriteContextSync() { CoreFeature is not initialized }`() {
+        // Given
+        whenever(coreFeature.mockInstance.initialized) doReturn AtomicBoolean(false)
+
+        // When
+        val writeContext = testedFeature.getWriteContextSync()
+
+        // Then
+        assertThat(writeContext).isNull()
+        verifyNoInteractions(mockContextProvider, mockStorage)
     }
 
     @Test
@@ -561,6 +697,7 @@ internal class SdkFeatureTest {
 
         testedFeature = SdkFeature(
             coreFeature = coreFeature.mockInstance,
+            contextProvider = mockContextProvider,
             wrappedFeature = fakeFeature,
             internalLogger = mockInternalLogger
         )
@@ -581,6 +718,7 @@ internal class SdkFeatureTest {
 
         testedFeature = SdkFeature(
             coreFeature = coreFeature.mockInstance,
+            contextProvider = mockContextProvider,
             wrappedFeature = fakeFeature,
             internalLogger = mockInternalLogger
         )
@@ -591,122 +729,6 @@ internal class SdkFeatureTest {
             // Kotlin compiler removing/optimizing code unused?
             @Suppress("UNUSED_VARIABLE")
             val result = testedFeature.unwrap<AnotherFakeFeature>()
-        }
-    }
-
-    // endregion
-
-    // region Context Update Listener
-
-    @Test
-    fun `M register listeners W setContextUpdateListener()`(forge: Forge) {
-        // Given
-        val mockListeners = forge.aList(size = forge.anInt(min = 1, max = 10)) { mock<FeatureContextUpdateReceiver>() }
-
-        // When
-        mockListeners.map {
-            Thread {
-                testedFeature.setContextUpdateListener(it)
-            }.apply { start() }
-        }.forEach { it.join(5000) }
-
-        // Then
-        assertThat(testedFeature.contextUpdateListeners.toTypedArray())
-            .containsExactlyInAnyOrderElementsOf(mockListeners)
-    }
-
-    fun `M register listener only once W setContextUpdateListener()`(forge: Forge) {
-        // Given
-        val mockListener = mock<FeatureContextUpdateReceiver>()
-        val mockListeners = forge.aList(size = forge.anInt(min = 1, max = 10)) { mockListener }
-
-        // When
-        mockListeners.map {
-            Thread {
-                testedFeature.setContextUpdateListener(it)
-            }.apply { start() }
-        }.forEach { it.join(5000) }
-
-        // Then
-        assertThat(testedFeature.contextUpdateListeners.toTypedArray())
-            .containsExactlyInAnyOrderElementsOf(listOf(mockListener))
-        mockInternalLogger.verifyLog(
-            InternalLogger.Level.WARN,
-            InternalLogger.Target.USER,
-            SdkFeature.CONTEXT_UPDATE_LISTENER_ALREADY_EXISTS.format(
-                Locale.US,
-                fakeFeatureName
-            )
-        )
-    }
-
-    @Test
-    fun `M not throw W concurrent access to FeatureContextUpdateListeners{()`(forge: Forge) {
-        // Given
-        val mockListeners = forge.aList(size = forge.anInt(min = 2, max = 10)) { mock<FeatureContextUpdateReceiver>() }
-        val removeListeners = mockListeners.take(forge.anInt(min = 1, max = mockListeners.size))
-        val fakeContext = forge.aMap { forge.anAlphabeticalString() to forge.anAlphabeticalString() }
-        val fakeFeatureName = forge.anAlphabeticalString()
-        val updateRepeats = forge.anInt(min = 1, max = 10)
-
-        // When
-        mockListeners.map {
-            Thread {
-                testedFeature.setContextUpdateListener(it)
-            }.apply { start() }
-        }.forEach { it.join(5000) }
-        removeListeners.map {
-            Thread {
-                testedFeature.removeContextUpdateListener(it)
-            }.apply { start() }
-        }.forEach { it.join(5000) }
-        repeat(updateRepeats) {
-            Thread {
-                assertDoesNotThrow {
-                    testedFeature.notifyContextUpdated(fakeFeatureName, fakeContext)
-                }
-            }.apply { start() }.join(5000)
-        }
-
-        // Then
-    }
-
-    @Test
-    fun `M remove listeners W removeContextUpdateListener()`(forge: Forge) {
-        // Given
-        val mockListeners = forge.aList(size = forge.anInt(min = 2, max = 10)) { mock<FeatureContextUpdateReceiver>() }
-        val removedListeners = mockListeners.take(forge.anInt(min = 1, max = mockListeners.size))
-        val remainingListeners = mockListeners - removedListeners.toSet()
-
-        // When
-        mockListeners.forEach {
-            testedFeature.setContextUpdateListener(it)
-        }
-        removedListeners.forEach {
-            testedFeature.removeContextUpdateListener(it)
-        }
-
-        // Then
-        assertThat(testedFeature.contextUpdateListeners.toTypedArray())
-            .containsExactlyInAnyOrderElementsOf(remainingListeners)
-    }
-
-    @Test
-    fun `M update registered listeners W notifyContextUpdated()`(forge: Forge) {
-        // Given
-        val mockListeners = forge.aList(size = forge.anInt(min = 1, max = 10)) { mock<FeatureContextUpdateReceiver>() }
-        val fakeContext = forge.aMap { forge.anAlphabeticalString() to forge.anAlphabeticalString() }
-        val fakeFeatureName = forge.anAlphabeticalString()
-        mockListeners.forEach {
-            testedFeature.setContextUpdateListener(it)
-        }
-
-        // When
-        testedFeature.notifyContextUpdated(fakeFeatureName, fakeContext)
-
-        // Then
-        mockListeners.forEach {
-            verify(it).onContextUpdate(fakeFeatureName, fakeContext)
         }
     }
 
@@ -771,6 +793,7 @@ internal class SdkFeatureTest {
 
         testedFeature = SdkFeature(
             coreFeature = coreFeature.mockInstance,
+            contextProvider = mockContextProvider,
             wrappedFeature = mockWrappedFeature,
             internalLogger = mockInternalLogger,
             benchmarkSdkUploads = mockBenchmarkSdkUploads

@@ -59,10 +59,6 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
     private val appContext: Application
     private val textAndInputPrivacy: TextAndInputPrivacy
     private val imagePrivacy: ImagePrivacy
-    private val touchPrivacyManager: TouchPrivacyManager
-    private val recordWriter: RecordWriter
-    private val timeProvider: TimeProvider
-    private val mappers: List<MapperTypeWrapper<*>>
     private val customOptionSelectorDetectors: List<OptionSelectorDetector>
     private val windowInspector: WindowInspector
     private val windowCallbackInterceptor: WindowCallbackInterceptor
@@ -70,8 +66,6 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
     private val recordedDataQueueHandler: RecordedDataQueueHandler
     private val viewOnDrawInterceptor: ViewOnDrawInterceptor
     private val internalLogger: InternalLogger
-    private val resourceDataStoreManager: ResourceDataStoreManager
-    private val internalCallback: SessionReplayInternalCallback
     private val uiHandler: Handler
     private var shouldRecord = false
 
@@ -111,10 +105,6 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
         this.appContext = appContext
         this.textAndInputPrivacy = textAndInputPrivacy
         this.imagePrivacy = imagePrivacy
-        this.touchPrivacyManager = touchPrivacyManager
-        this.recordWriter = recordWriter
-        this.timeProvider = timeProvider
-        this.mappers = mappers
         this.customOptionSelectorDetectors = customOptionSelectorDetectors
         this.windowInspector = windowInspector
         this.recordedDataQueueHandler = RecordedDataQueueHandler(
@@ -126,8 +116,6 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
             ),
             recordedDataQueue = ConcurrentLinkedQueue()
         )
-        this.resourceDataStoreManager = resourceDataStoreManager
-        this.internalCallback = internalCallback
 
         val viewIdentifierResolver: ViewIdentifierResolver = DefaultViewIdentifierResolver
         val colorStringFormatter: ColorStringFormatter = DefaultColorStringFormatter
@@ -200,6 +188,7 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
             recordedDataQueueHandler,
             viewOnDrawInterceptor,
             timeProvider,
+            rumContextProvider,
             internalLogger,
             imagePrivacy,
             textAndInputPrivacy,
@@ -223,28 +212,18 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
         appContext: Application,
         textAndInputPrivacy: TextAndInputPrivacy,
         imagePrivacy: ImagePrivacy,
-        touchPrivacyManager: TouchPrivacyManager,
-        recordWriter: RecordWriter,
-        timeProvider: TimeProvider,
-        mappers: List<MapperTypeWrapper<*>> = emptyList(),
         customOptionSelectorDetectors: List<OptionSelectorDetector>,
         windowInspector: WindowInspector = WindowInspector,
         windowCallbackInterceptor: WindowCallbackInterceptor,
         sessionReplayLifecycleCallback: LifecycleCallback,
         viewOnDrawInterceptor: ViewOnDrawInterceptor,
         recordedDataQueueHandler: RecordedDataQueueHandler,
-        resourceDataStoreManager: ResourceDataStoreManager,
         uiHandler: Handler,
-        internalLogger: InternalLogger,
-        internalCallback: SessionReplayInternalCallback
+        internalLogger: InternalLogger
     ) {
         this.appContext = appContext
         this.textAndInputPrivacy = textAndInputPrivacy
         this.imagePrivacy = imagePrivacy
-        this.touchPrivacyManager = touchPrivacyManager
-        this.recordWriter = recordWriter
-        this.timeProvider = timeProvider
-        this.mappers = mappers
         this.customOptionSelectorDetectors = customOptionSelectorDetectors
         this.windowInspector = windowInspector
         this.recordedDataQueueHandler = recordedDataQueueHandler
@@ -253,8 +232,6 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
         this.sessionReplayLifecycleCallback = sessionReplayLifecycleCallback
         this.uiHandler = uiHandler
         this.internalLogger = internalLogger
-        this.resourceDataStoreManager = resourceDataStoreManager
-        this.internalCallback = internalCallback
     }
 
     override fun stopProcessingRecords() {

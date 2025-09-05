@@ -18,9 +18,10 @@ import com.datadog.gradle.plugin.InstrumentationMode
 plugins {
     id("com.android.application")
     kotlin("android")
+    alias(libs.plugins.composeCompilerPlugin)
     kotlin("kapt")
     id("com.github.ben-manes.versions")
-    id("org.jetbrains.dokka")
+    id("org.jetbrains.dokka-javadoc")
     id("com.squareup.sqldelight")
     id("com.google.devtools.ksp")
     alias(libs.plugins.datadogGradlePlugin)
@@ -67,10 +68,6 @@ android {
 
     buildFeatures {
         compose = true
-    }
-
-    composeOptions {
-        kotlinCompilerExtensionVersion = libs.versions.androidXComposeRuntime.get()
     }
 
     testOptions {
@@ -201,9 +198,6 @@ dependencies {
     implementation("androidx.legacy:legacy-support-v4:1.0.0")
     implementation("androidx.lifecycle:lifecycle-extensions:2.2.0")
     implementation("androidx.preference:preference-ktx:1.1.1")
-    implementation("io.opentracing.contrib:opentracing-rxjava-3:0.1.4") {
-        exclude(group = "io.opentracing")
-    }
 
     // Image Loading Library
     implementation(libs.coil)
@@ -239,7 +233,7 @@ dependencies {
 kotlinConfig(evaluateWarningsAsErrors = false)
 taskConfig<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
     compilerOptions {
-        freeCompilerArgs.add("-opt-in=kotlin.RequiresOptIn")
+        optIn.add("kotlin.RequiresOptIn")
     }
 }
 junitConfig()

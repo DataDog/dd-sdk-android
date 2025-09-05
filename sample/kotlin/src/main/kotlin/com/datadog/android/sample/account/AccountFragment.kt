@@ -69,7 +69,7 @@ internal class AccountFragment : Fragment(), View.OnClickListener {
                     AGE_KEY to age
                 )
             )
-            log("Updated account info")
+            logMessage("Updated account info")
         }
         Snackbar.make(view ?: v.rootView, "Account info updated", Snackbar.LENGTH_SHORT).show()
     }
