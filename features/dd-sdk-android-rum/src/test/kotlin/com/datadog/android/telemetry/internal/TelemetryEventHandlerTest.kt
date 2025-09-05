@@ -203,7 +203,7 @@ internal class TelemetryEventHandlerTest {
 
         whenever(
             mockRumFeatureScope.withWriteContext(
-                eq(setOf(Feature.SESSION_REPLAY_FEATURE_NAME, Feature.TRACING_FEATURE_NAME)),
+                eq(setOf(Feature.SESSION_REPLAY_FEATURE_NAME, Feature.TRACING_FEATURE_NAME, Feature.RUM_FEATURE_NAME)),
                 any()
             )
         ) doAnswer {
