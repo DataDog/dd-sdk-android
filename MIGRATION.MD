@@ -4,9 +4,9 @@ The main changes introduced in SDK 3.0 compared to 2.x are:
 
 1. The minimum supported Android API version increased to `23`.
 
-We are following Google [policy](https://developer.android.com/jetpack/androidx/versions#version-table) for the
-libraries. This change allows us to use the most recent versions of the `AndroidX` libraries, such
-as [androidx.metrics:metrics-performance](https://developer.android.com/jetpack/androidx/releases/metrics).
+We now follow Google's [AndroidX library version policy](https://developer.android.com/jetpack/androidx/versions#version-table).
+ This update lets us use the latest `AndroidX` libraries, including
+[androidx.metrics:metrics-performance](https://developer.android.com/jetpack/androidx/releases/metrics).
 
 2. Fatal crashes are no longer automatically reported to the log feature.
 
