@@ -16,7 +16,7 @@ to enable crash reporting with RUM.
 
 3. The `OpenTracing` dependency was removed because it is obsolete.
 
-We replaced the `OpenTracing` classes with internal one. However we strongly encourage you to use the OTel version as the new tracing API standard.
+We replaced the `OpenTracing` classes with internal one. However we strongly encourage you to use the `OpenTelemetry` version as the new tracing API standard.
 
 
 ### Trace product changes
@@ -24,7 +24,7 @@ We replaced the `OpenTracing` classes with internal one. However we strongly enc
 #### Migrating tracing from `OpenTracing` to `OpenTelemetry` (recommended)
 
 > [!WARNING] 
-> Note that the `OpenTelemetry` specification library [requires](https://github.com/open-telemetry/opentelemetry-java?tab=readme-ov-file#requirements) desugaring to be enabled for with projects that have a `minSdk` < 26. If this requirement cannot be met in your project see the following section.
+> Note that the `OpenTelemetry` specification library [requires](https://github.com/open-telemetry/opentelemetry-java?tab=readme-ov-file#requirements) desugaring to be enabled for projects that have a `minSdk` < 26. If this requirement cannot be met in your project see the following section.
 
 
 1. Add the `OpenTelemetry` dependency to your `build.gradle.kts`:
@@ -90,14 +90,7 @@ Refer to the official `OpenTelemetry` [documentation](https://opentelemetry.io/d
 > [!WARNING]
 > This option has been added for compatibility and to simplify the transition from `OpenTracing` to `OpenTelemetry`, but it may not be available in future major releases. We recommend using `OpenTelemetry` as the standard for tracing tasks. However, if it is not possible to enable desugaring in your project for some reason, you can use this method.     
 
-1. Add the `DatadogTracing` dependency to your `build.gradle.kts`:
-
-```kotlin
-implementation(project("com.datadoghq:dd-sdk-android-trace-otel:x.x.x"))
-```
-
-
-2.Replace the `OpenTracing` configuration:
+Replace the `OpenTracing` configuration:
 ```kotlin
   GlobalTracer.registerIfAbsent(
             AndroidTracer.Builder()
@@ -113,7 +106,6 @@ with the `DatadogTracing` configuration:
                 .build()
         )
 ```
-
 
 For manual (custom) tracing use `com.datadog.android.trace.GlobalDatadogTracer.get()` instead of `io.opentracing.util.GlobalTracer.get()` to access the tracer object.
 For example: 
