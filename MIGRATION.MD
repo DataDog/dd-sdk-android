@@ -2,8 +2,19 @@
 
 The main changes introduced in SDK 3.0 compared to 2.x are:
 
-1. The `OpenTracing` dependency was removed because it is obsolete.
+1. The minimum supported Android API version increased to `23`.
 
+We are following Google's [policy](https://developer.android.com/jetpack/androidx/versions#version-table) for the
+libraries. This change allows us to use the most recent versions of the `AndroidX` libraries, such
+as [androidx.metrics:metrics-performance](https://developer.android.com/jetpack/androidx/releases/metrics).
+
+2. Fatal crashes are no longer automatically reported to the log feature.
+
+Follow
+these [instructions](https://docs.datadoghq.com/real_user_monitoring/mobile_and_tv_monitoring/android/error_tracking)
+to enable crash reporting with RUM.
+
+3. The `OpenTracing` dependency was removed because it is obsolete.
 
 We replaced the `OpenTracing` classes with internal one. However we strongly encourage you to use the OTel version as the new tracing API standard.
 
