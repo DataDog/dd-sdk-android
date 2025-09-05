@@ -232,6 +232,9 @@ internal class DatadogCore(
         useContextThread: Boolean,
         updateCallback: (context: MutableMap<String, Any?>) -> Unit
     ) {
+        if (featureName == Feature.RUM_FEATURE_NAME) {
+            Log.w("WAHAHA", "found it")
+        }
         val runnable = runnable@{
             val feature = features[featureName] ?: return@runnable
             feature.featureContextLock.writeLock().safeTryWithLock(1, TimeUnit.SECONDS) {

@@ -9,11 +9,13 @@ package com.datadog.android.rum.internal.startup
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.internal.utils.subscribeToFirstDrawFinished
 import kotlin.time.Duration.Companion.nanoseconds
 
 internal class RumTTIDReporter(
-    private val rumAppStartupDetector: RumAppStartupDetector
+    private val rumAppStartupDetector: RumAppStartupDetector,
+    private val internalLogger: InternalLogger,
 ): RumAppStartupDetector.Listener {
     private val handler = Handler(Looper.getMainLooper())
 
@@ -24,7 +26,17 @@ internal class RumTTIDReporter(
     override fun onAppStartupDetected(scenario: RumStartupScenario) {
         subscribeToFirstDrawFinished(handler, scenario.activity) {
             val duration = (System.nanoTime() - scenario.startTimeNanos).nanoseconds
-            Log.w("WAHAHA", "onAppStartupDetected ${scenario.javaClass.name} $duration")
+            Log.w("WAHAHA", "onAppStartupDetected ${scenario.name()} $duration")
+            internalLogger.logMetric(
+                messageBuilder = {
+                    "test_app_startup"
+                },
+                additionalProperties = mapOf(
+                    "scenario" to scenario.name(),
+                    "duration" to duration.inWholeNanoseconds.toDouble(),
+                ),
+                samplingRate = 100f,
+            )
         }
     }
 }

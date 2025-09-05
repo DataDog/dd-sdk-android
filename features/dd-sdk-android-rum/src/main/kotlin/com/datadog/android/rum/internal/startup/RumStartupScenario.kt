@@ -39,3 +39,11 @@ internal sealed interface RumStartupScenario {
         override val activity: Activity
     ) : RumStartupScenario
 }
+
+internal fun RumStartupScenario.name(): String {
+    return when (this) {
+        is RumStartupScenario.Cold -> "cold"
+        is RumStartupScenario.WarmFirstActivity -> "warm_first_activity"
+        is RumStartupScenario.WarmAfterActivityDestroyed -> "warm_after_activity_destroyed"
+    }
+}

@@ -260,7 +260,7 @@ internal class RumFeature(
             sdkCore = sdkCore
         )
 
-        rumTTIDReporter = RumTTIDReporter(rumAppStartupDetector)
+        rumTTIDReporter = RumTTIDReporter(rumAppStartupDetector, sdkCore.internalLogger)
 
         initialized.set(true)
     }
