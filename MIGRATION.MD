@@ -8,7 +8,7 @@ We now follow Google's [AndroidX library version policy](https://developer.andro
  This update lets us use the latest `AndroidX` libraries, including
 [androidx.metrics:metrics-performance](https://developer.android.com/jetpack/androidx/releases/metrics).
 
-2. Fatal crashes are no longer automatically reported to the log feature.
+2. Fatal crashes are no longer automatically reported to the Logs feature.
 
 Follow
 these [instructions](https://docs.datadoghq.com/real_user_monitoring/mobile_and_tv_monitoring/android/error_tracking)
