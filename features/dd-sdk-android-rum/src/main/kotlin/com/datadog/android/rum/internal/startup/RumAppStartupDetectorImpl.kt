@@ -32,6 +32,8 @@ internal class RumAppStartupDetectorImpl(
 
     private val subscription = DDCoreSubscription.create<RumAppStartupDetector.Listener>()
 
+    private var nStart: Int = 0
+
     init {
         application.registerActivityLifecycleCallbacks(this)
     }
@@ -90,7 +92,8 @@ internal class RumAppStartupDetectorImpl(
                         activityName = activity.extractName(),
                         activity = activity,
                         gapNanos = gap.inWholeNanoseconds,
-                        processStartedInForeground = processStartedInForeground
+                        processStartedInForeground = processStartedInForeground,
+                        nStart = nStart
                     )
                 } else {
                     RumStartupScenario.Cold(
@@ -98,7 +101,8 @@ internal class RumAppStartupDetectorImpl(
                         hasSavedInstanceStateBundle = hasSavedInstanceStateBundle,
                         activityName = activity.extractName(),
                         activity = activity,
-                        gapNanos = gap.inWholeNanoseconds
+                        gapNanos = gap.inWholeNanoseconds,
+                        nStart = nStart
                     )
                 }
             } else {
@@ -106,9 +110,12 @@ internal class RumAppStartupDetectorImpl(
                     startTimeNanos = now,
                     hasSavedInstanceStateBundle = hasSavedInstanceStateBundle,
                     activityName = activity.extractName(),
-                    activity = activity
+                    activity = activity,
+                    nStart = nStart
                 )
             }
+
+            nStart++
 
             subscription.notify { onAppStartupDetected(scenario) }
         }
