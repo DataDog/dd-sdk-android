@@ -230,7 +230,7 @@ public final class com/datadog/android/internal/utils/ByteArrayExtKt {
 public abstract interface class com/datadog/android/internal/utils/DDCoreSubscription {
 	public static final field Companion Lcom/datadog/android/internal/utils/DDCoreSubscription$Companion;
 	public abstract fun addListener (Ljava/lang/Object;)V
-	public abstract fun notify (Lkotlin/jvm/functions/Function1;)V
+	public abstract fun notifyListeners (Lkotlin/jvm/functions/Function1;)V
 	public abstract fun removeListener (Ljava/lang/Object;)V
 }
 

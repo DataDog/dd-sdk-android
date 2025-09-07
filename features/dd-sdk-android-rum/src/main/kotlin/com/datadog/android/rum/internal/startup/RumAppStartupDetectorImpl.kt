@@ -117,7 +117,7 @@ internal class RumAppStartupDetectorImpl(
 
             nStart++
 
-            subscription.notify { onAppStartupDetected(scenario) }
+            subscription.notifyListeners { onAppStartupDetected(scenario) }
         }
 
         isFirstActivityForProcess = false

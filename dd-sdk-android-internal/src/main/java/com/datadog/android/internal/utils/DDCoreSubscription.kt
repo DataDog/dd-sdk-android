@@ -6,11 +6,13 @@
 
 package com.datadog.android.internal.utils
 
+import java.util.concurrent.CopyOnWriteArraySet
+
 interface DDCoreSubscription<T> {
     fun addListener(listener: T)
     fun removeListener(listener: T)
 
-    fun notify(block: T.() -> Unit)
+    fun notifyListeners(block: T.() -> Unit)
 
     companion object {
         fun <T> create(): DDCoreSubscription<T> {
@@ -19,9 +21,8 @@ interface DDCoreSubscription<T> {
     }
 }
 
-// TODO WAHAHA
 private class DDCoreSubscriptionImpl<T>: DDCoreSubscription<T> {
-    private val listeners = mutableSetOf<T>()
+    private val listeners = CopyOnWriteArraySet<T>()
 
     override fun addListener(listener: T) {
         listeners.add(listener)
@@ -31,7 +32,7 @@ private class DDCoreSubscriptionImpl<T>: DDCoreSubscription<T> {
         listeners.remove(listener)
     }
 
-    override fun notify(block: T.() -> Unit) {
+    override fun notifyListeners(block: T.() -> Unit) {
         listeners.forEach { it.block() }
     }
 }
