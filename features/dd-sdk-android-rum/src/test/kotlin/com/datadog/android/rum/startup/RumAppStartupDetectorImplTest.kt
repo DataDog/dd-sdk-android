@@ -20,7 +20,6 @@ import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.BoolForgery
-import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -222,6 +221,52 @@ internal class RumAppStartupDetectorImplTest {
                 nStart = 1
             )
         )
+        verifyNoMoreInteractions(listener)
+    }
+
+    @Test
+    fun `M not detect any scenario W RumAppStartupDetectorImpl {after 1st Cold scenario and configuration change}`(
+        forge: Forge,
+        @BoolForgery hasSavedInstanceStateBundle: Boolean,
+    ) {
+        // Given
+        val detector = createDetector(
+            processImportance = IMPORTANCE_FOREGROUND,
+        )
+
+        currentTime += 3.seconds
+
+        // When
+        triggerBeforeCreated(
+            forge = forge,
+            detector = detector,
+            activity = activity,
+            hasSavedInstanceStateBundle = hasSavedInstanceStateBundle
+        )
+
+        // Then
+        listener.verifyScenarioDetected(
+            RumStartupScenario.Cold(
+                startTimeNanos = 0,
+                hasSavedInstanceStateBundle = hasSavedInstanceStateBundle,
+                activityName = activity.javaClass.canonicalName ?: activity.javaClass.name,
+                activity = activity,
+                gapNanos = 3.seconds.inWholeNanoseconds,
+                nStart = 0,
+            )
+        )
+        verifyNoMoreInteractions(listener)
+
+        whenever(activity.isChangingConfigurations) doReturn true
+        detector.onActivityDestroyed(activity)
+
+        triggerBeforeCreated(
+            forge = forge,
+            detector = detector,
+            activity = activity,
+            hasSavedInstanceStateBundle = hasSavedInstanceStateBundle
+        )
+
         verifyNoMoreInteractions(listener)
     }
 
