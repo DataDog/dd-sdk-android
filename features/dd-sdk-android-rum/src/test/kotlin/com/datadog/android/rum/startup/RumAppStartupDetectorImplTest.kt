@@ -30,7 +30,6 @@ import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
-import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoMoreInteractions
 import org.mockito.kotlin.whenever
@@ -75,8 +74,6 @@ internal class RumAppStartupDetectorImplTest {
         val detector = createDetector(
             processImportance = IMPORTANCE_FOREGROUND,
         )
-        verify(application).registerActivityLifecycleCallbacks(any())
-        verifyNoMoreInteractions(application)
 
         currentTime += 3.seconds
 
@@ -102,8 +99,6 @@ internal class RumAppStartupDetectorImplTest {
         val detector = createDetector(
             processImportance = IMPORTANCE_CACHED,
         )
-        verify(application).registerActivityLifecycleCallbacks(any())
-        verifyNoMoreInteractions(application)
 
         currentTime += 3.seconds
         triggerBeforeCreated(detector)
@@ -122,6 +117,29 @@ internal class RumAppStartupDetectorImplTest {
         verifyNoMoreInteractions(listener)
     }
 
+    @Test
+    fun `M detect WarmFirstActivity scenario W RumAppStartupDetectorImpl {IMPORTANCE_FOREGROUND and large gap}`() {
+        val detector = createDetector(
+            processImportance = IMPORTANCE_FOREGROUND,
+        )
+
+        currentTime += 6.seconds
+        triggerBeforeCreated(detector)
+
+        listener.verifyScenarioDetected(
+            RumStartupScenario.WarmFirstActivity(
+                startTimeNanos = currentTime.inWholeNanoseconds,
+                hasSavedInstanceStateBundle = false,
+                activityName = activity.javaClass.canonicalName ?: activity.javaClass.name,
+                activity = activity,
+                gapNanos = currentTime.inWholeNanoseconds,
+                nStart = 0,
+                processStartedInForeground = true
+            )
+        )
+        verifyNoMoreInteractions(listener)
+    }
+
     private fun createDetector(processImportance: Int): RumAppStartupDetectorImpl {
         whenever(buildSdkVersionProvider.version) doReturn fakeBuildSdkVersion
         val detector = RumAppStartupDetectorImpl(
@@ -132,6 +150,10 @@ internal class RumAppStartupDetectorImplTest {
             timeProviderNanos = { currentTime.inWholeNanoseconds }
         )
         detector.addListener(listener)
+
+        verify(application).registerActivityLifecycleCallbacks(any())
+        verifyNoMoreInteractions(application)
+
         return detector
     }
 
