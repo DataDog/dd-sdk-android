@@ -33,6 +33,7 @@ import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
+import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoMoreInteractions
 import org.mockito.kotlin.whenever
@@ -265,6 +266,121 @@ internal class RumAppStartupDetectorImplTest {
             detector = detector,
             activity = activity,
             hasSavedInstanceStateBundle = hasSavedInstanceStateBundle
+        )
+
+        verifyNoMoreInteractions(listener)
+    }
+
+    @Test
+    fun `M not detect any scenario W RumAppStartupDetectorImpl {after 1st Colds scenario, 1st activity stopped and another activity is created}`(
+        forge: Forge,
+        @BoolForgery hasSavedInstanceStateBundle: Boolean,
+        @BoolForgery hasSavedInstanceStateBundle2: Boolean
+    ) {
+        // Given
+        val detector = createDetector(
+            processImportance = IMPORTANCE_FOREGROUND,
+        )
+
+        currentTime += 3.seconds
+
+        // When
+        triggerBeforeCreated(
+            forge = forge,
+            detector = detector,
+            activity = activity,
+            hasSavedInstanceStateBundle = hasSavedInstanceStateBundle
+        )
+
+        // Then
+        listener.verifyScenarioDetected(
+            RumStartupScenario.Cold(
+                startTimeNanos = 0,
+                hasSavedInstanceStateBundle = hasSavedInstanceStateBundle,
+                activityName = activity.javaClass.canonicalName ?: activity.javaClass.name,
+                activity = activity,
+                gapNanos = 3.seconds.inWholeNanoseconds,
+                nStart = 0,
+            )
+        )
+        verifyNoMoreInteractions(listener)
+
+        detector.onActivityStarted(activity)
+        detector.onActivityResumed(activity)
+        detector.onActivityPaused(activity)
+        detector.onActivityStopped(activity)
+
+        val activity2 = mock<Activity>()
+
+        triggerBeforeCreated(
+            forge = forge,
+            detector = detector,
+            activity = activity2,
+            hasSavedInstanceStateBundle = hasSavedInstanceStateBundle2
+        )
+
+        verifyNoMoreInteractions(listener)
+    }
+
+    @Test
+    fun `M detect WarmAfterActivityDestroyed scenario W RumAppStartupDetectorImpl {after 1st Colds scenario, 1st activity destroyed and another activity is created}`(
+        forge: Forge,
+        @BoolForgery hasSavedInstanceStateBundle: Boolean,
+        @BoolForgery hasSavedInstanceStateBundle2: Boolean
+    ) {
+        // Given
+        val detector = createDetector(
+            processImportance = IMPORTANCE_FOREGROUND,
+        )
+
+        currentTime += 3.seconds
+
+        // When
+        triggerBeforeCreated(
+            forge = forge,
+            detector = detector,
+            activity = activity,
+            hasSavedInstanceStateBundle = hasSavedInstanceStateBundle
+        )
+
+        // Then
+        listener.verifyScenarioDetected(
+            RumStartupScenario.Cold(
+                startTimeNanos = 0,
+                hasSavedInstanceStateBundle = hasSavedInstanceStateBundle,
+                activityName = activity.javaClass.canonicalName ?: activity.javaClass.name,
+                activity = activity,
+                gapNanos = 3.seconds.inWholeNanoseconds,
+                nStart = 0,
+            )
+        )
+        verifyNoMoreInteractions(listener)
+
+        detector.onActivityStarted(activity)
+        detector.onActivityResumed(activity)
+        detector.onActivityPaused(activity)
+        detector.onActivityStopped(activity)
+        detector.onActivityDestroyed(activity)
+
+        currentTime += 30.seconds
+
+        val activity2 = mock<Activity>()
+
+        triggerBeforeCreated(
+            forge = forge,
+            detector = detector,
+            activity = activity2,
+            hasSavedInstanceStateBundle = hasSavedInstanceStateBundle2
+        )
+
+        listener.verifyScenarioDetected(
+            RumStartupScenario.WarmAfterActivityDestroyed(
+                startTimeNanos = currentTime.inWholeNanoseconds,
+                hasSavedInstanceStateBundle = hasSavedInstanceStateBundle2,
+                activityName = activity2.javaClass.canonicalName ?: activity2.javaClass.name,
+                activity = activity2,
+                nStart = 1
+            )
         )
 
         verifyNoMoreInteractions(listener)
