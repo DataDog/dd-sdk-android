@@ -24,6 +24,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
@@ -46,29 +47,33 @@ import kotlin.time.Duration.Companion.seconds
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
 internal class RumAppStartupDetectorImplTest {
+    @Mock
     private lateinit var application: Application
+
+    @Mock
     private lateinit var listener: RumAppStartupDetector.Listener
+
+    @IntForgery(min = Build.VERSION_CODES.M, max = Build.VERSION_CODES.BAKLAVA)
+    private var fakeBuildSdkVersion: Int = 0
+
+    @Mock
     private lateinit var buildSdkVersionProvider: BuildSdkVersionProvider
+
+    @Mock
     private lateinit var activity: Activity
+
     private var currentTime: Duration = 0.nanoseconds
 
     @BeforeEach
     fun `set up`() {
-        application = mock()
-        listener = mock()
-        buildSdkVersionProvider = mock()
-        activity = mock()
         currentTime = 0.nanoseconds
     }
 
     @Test
-    fun `M detect Cold scenario W RumAppStartupDetectorImpl {IMPORTANCE_FOREGROUND and small gap}`(
-        @IntForgery(min = Build.VERSION_CODES.M, max = Build.VERSION_CODES.BAKLAVA) fakeBuildSdkVersion: Int
-    ) {
+    fun `M detect Cold scenario W RumAppStartupDetectorImpl {IMPORTANCE_FOREGROUND and small gap}`() {
         // Given
         val detector = createDetector(
             processImportance = IMPORTANCE_FOREGROUND,
-            fakeBuildSdkVersion = fakeBuildSdkVersion
         )
         verify(application).registerActivityLifecycleCallbacks(any())
         verifyNoMoreInteractions(application)
@@ -76,7 +81,7 @@ internal class RumAppStartupDetectorImplTest {
         currentTime += 3.seconds
 
         // When
-        triggerBeforeCreated(detector, fakeBuildSdkVersion)
+        triggerBeforeCreated(detector)
 
         // Then
         listener.verifyScenarioDetected(
@@ -93,18 +98,15 @@ internal class RumAppStartupDetectorImplTest {
     }
 
     @Test
-    fun `M detect WarmFirstActivity scenario W RumAppStartupDetectorImpl {IMPORTANCE_CACHED and small gap}`(
-        @IntForgery(min = Build.VERSION_CODES.M, max = Build.VERSION_CODES.BAKLAVA) fakeBuildSdkVersion: Int
-    ) {
+    fun `M detect WarmFirstActivity scenario W RumAppStartupDetectorImpl {IMPORTANCE_CACHED and small gap}`() {
         val detector = createDetector(
             processImportance = IMPORTANCE_CACHED,
-            fakeBuildSdkVersion = fakeBuildSdkVersion
         )
         verify(application).registerActivityLifecycleCallbacks(any())
         verifyNoMoreInteractions(application)
 
         currentTime += 3.seconds
-        triggerBeforeCreated(detector, fakeBuildSdkVersion)
+        triggerBeforeCreated(detector)
 
         listener.verifyScenarioDetected(
             RumStartupScenario.WarmFirstActivity(
@@ -120,7 +122,7 @@ internal class RumAppStartupDetectorImplTest {
         verifyNoMoreInteractions(listener)
     }
 
-    private fun createDetector(processImportance: Int, fakeBuildSdkVersion: Int): RumAppStartupDetectorImpl {
+    private fun createDetector(processImportance: Int): RumAppStartupDetectorImpl {
         whenever(buildSdkVersionProvider.version) doReturn fakeBuildSdkVersion
         val detector = RumAppStartupDetectorImpl(
             application = application,
@@ -133,8 +135,8 @@ internal class RumAppStartupDetectorImplTest {
         return detector
     }
 
-    private fun triggerBeforeCreated(detector: RumAppStartupDetectorImpl, sdk: Int) {
-        if (sdk >= Build.VERSION_CODES.Q) {
+    private fun triggerBeforeCreated(detector: RumAppStartupDetectorImpl) {
+        if (fakeBuildSdkVersion >= Build.VERSION_CODES.Q) {
             detector.onActivityPreCreated(activity, null)
         } else {
             detector.onActivityCreated(activity, null)
