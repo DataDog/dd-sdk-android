@@ -336,16 +336,6 @@ data class RumConfiguration internal constructor(
         }
 
         /**
-         * Enable/Disable the collection of graphQL payloads.
-         *
-         * By default the SDK will not collect these payloads.
-         */
-        fun sendGraphQLPayloads(enabled: Boolean): Builder {
-            rumConfig = rumConfig.copy(sendGraphQLPayloads = enabled)
-            return this
-        }
-
-        /**
          * Builds a [RumConfiguration] based on the current state of this Builder.
          */
         fun build(): RumConfiguration {

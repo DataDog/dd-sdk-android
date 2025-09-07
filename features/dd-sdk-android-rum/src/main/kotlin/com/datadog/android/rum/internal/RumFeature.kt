@@ -164,7 +164,6 @@ internal class RumFeature(
     internal var batteryInfoProvider: InfoProvider<BatteryInfo> = NoOpBatteryInfoProvider()
     internal var displayInfoProvider: InfoProvider<DisplayInfo> = NoOpDisplayInfoProvider()
     internal val rumContextUpdateReceivers = mutableSetOf<FeatureContextUpdateReceiver>()
-    internal var sendGraphQlPayloads: Boolean = false
 
     private val lateCrashEventHandler by lazy { lateCrashReporterFactory(sdkCore as InternalSdkCore) }
 
@@ -213,8 +212,6 @@ internal class RumFeature(
             applicationContext = appContext,
             internalLogger = sdkCore.internalLogger
         )
-
-        sendGraphQlPayloads = configuration.sendGraphQLPayloads
 
         configuration.viewTrackingStrategy?.let { viewTrackingStrategy = it }
         actionTrackingStrategy = if (configuration.userActionTracking) {
@@ -693,8 +690,7 @@ internal class RumFeature(
         val additionalConfig: Map<String, Any>,
         val trackAnonymousUser: Boolean,
         val rumSessionTypeOverride: RumSessionType?,
-        val collectAccessibility: Boolean,
-        val sendGraphQLPayloads: Boolean
+        val collectAccessibility: Boolean
     )
 
     internal companion object {
@@ -745,8 +741,7 @@ internal class RumFeature(
             trackAnonymousUser = true,
             slowFramesConfiguration = null,
             rumSessionTypeOverride = null,
-            collectAccessibility = false,
-            sendGraphQLPayloads = false
+            collectAccessibility = false
         )
 
         internal const val EVENT_MESSAGE_PROPERTY = "message"
@@ -779,9 +774,6 @@ internal class RumFeature(
                 " SDK instance by calling SdkCore#registerFeature method."
         internal const val FAILED_TO_ENABLE_JANK_STATS_TRACKING_MANUALLY =
             "Manually enabling JankStats tracking threw an exception."
-
-        internal const val SEND_GRAPHQL_PAYLOADS_KEY =
-            "send_graphql_payloads"
 
         private fun provideUserTrackingStrategy(
             touchTargetExtraAttributesProviders: Array<ViewAttributesProvider>,

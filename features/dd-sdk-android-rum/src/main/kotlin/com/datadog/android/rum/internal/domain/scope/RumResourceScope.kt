@@ -52,8 +52,7 @@ internal class RumResourceScope(
     private val featuresContextResolver: FeaturesContextResolver,
     internal val sampleRate: Float,
     internal val networkSettledMetricResolver: NetworkSettledMetricResolver,
-    private val rumSessionTypeOverride: RumSessionType?,
-    private val sendGraphQlPayloads: Boolean
+    private val rumSessionTypeOverride: RumSessionType?
 ) : RumScope {
 
     internal val resourceId: String = UUID.randomUUID().toString()
@@ -248,17 +247,13 @@ internal class RumResourceScope(
         val graphqlOperationType = resourceAttributes.remove(RumAttributes.GRAPHQL_OPERATION_TYPE) as? String
         val graphqlVariables = resourceAttributes.remove(RumAttributes.GRAPHQL_VARIABLES) as? String
 
-        // The decision whether to send payloads is determined by a feature flag in the RUM configuration
-        val graphqlPayload = if (sendGraphQlPayloads) {
-            val rawPayload = resourceAttributes.remove(RumAttributes.GRAPHQL_PAYLOAD) as? String
-            rawPayload?.let { truncateGraphQLPayload(it) }
-        } else {
-            null
-        }
+        // The decision whether to send payloads is determined by a datadogInterceptor parameter
+        val rawPayload = resourceAttributes.remove(RumAttributes.GRAPHQL_PAYLOAD) as? String
+        val graphqlPayload = rawPayload?.let { truncateGraphQLPayload(it) }
 
         val graphql = resolveGraphQLAttributes(
-            operationName = graphqlOperationName,
             operationType = graphqlOperationType,
+            operationName = graphqlOperationName,
             variables = graphqlVariables,
             payload = graphqlPayload
         )
@@ -565,12 +560,33 @@ internal class RumResourceScope(
     private fun truncateGraphQLPayload(payload: String): String {
         val payloadBytes = payload.toByteArray(Charsets.UTF_8)
 
-        return if (payloadBytes.size <= MAX_GRAPHQL_PAYLOAD_SIZE) {
+        return if (payloadBytes.size <= MAX_GRAPHQL_PAYLOAD_SIZE_BYTES) {
             payload
         } else {
-            // Truncate to MAX_GRAPHQL_PAYLOAD_SIZE and ensure we don't break UTF-8 encoding
-            val truncatedBytes = payloadBytes.copyOf(MAX_GRAPHQL_PAYLOAD_SIZE)
-            String(truncatedBytes, Charsets.UTF_8)
+            // We know the string is too long, so work backwards from the end
+            // to find where to cut without breaking UTF-8 characters
+            val excessBytes = payloadBytes.size - MAX_GRAPHQL_PAYLOAD_SIZE_BYTES
+
+            // Start from the end and work backwards, checking only the characters
+            // that might be affected by the truncation
+            var bytesToRemove = 0
+            var charactersToRemove = 0
+
+            for (i in payload.length - 1 downTo 0) {
+                @Suppress("UnsafeThirdPartyFunctionCall") // indexOutOfBounds cant be thrown here
+                val charByteSize = payload.substring(i, i + 1).toByteArray(Charsets.UTF_8).size
+
+                bytesToRemove += charByteSize
+                charactersToRemove++
+
+                // Once we've removed enough bytes to fit within the limit, stop
+                if (bytesToRemove >= excessBytes) {
+                    break
+                }
+            }
+
+            @Suppress("UnsafeThirdPartyFunctionCall") // indexOutOfBounds cant be thrown here
+            payload.substring(0, payload.length - charactersToRemove)
         }
     }
 
@@ -579,7 +595,7 @@ internal class RumResourceScope(
     companion object {
 
         @VisibleForTesting
-        internal const val MAX_GRAPHQL_PAYLOAD_SIZE = 30 * 1024
+        internal const val MAX_GRAPHQL_PAYLOAD_SIZE_BYTES = 30 * 1024
 
         internal const val NEGATIVE_DURATION_WARNING_MESSAGE = "The computed duration for your " +
             "resource: %s was 0 or negative. In order to keep the resource event" +
@@ -595,8 +611,7 @@ internal class RumResourceScope(
             featuresContextResolver: FeaturesContextResolver,
             sampleRate: Float,
             networkSettledMetricResolver: NetworkSettledMetricResolver,
-            rumSessionTypeOverride: RumSessionType?,
-            sendGraphQlPayloads: Boolean
+            rumSessionTypeOverride: RumSessionType?
         ): RumScope {
             return RumResourceScope(
                 parentScope = parentScope,
@@ -611,8 +626,7 @@ internal class RumResourceScope(
                 featuresContextResolver = featuresContextResolver,
                 sampleRate = sampleRate,
                 networkSettledMetricResolver = networkSettledMetricResolver,
-                rumSessionTypeOverride = rumSessionTypeOverride,
-                sendGraphQlPayloads = sendGraphQlPayloads
+                rumSessionTypeOverride = rumSessionTypeOverride
             )
         }
     }

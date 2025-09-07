@@ -86,8 +86,7 @@ internal open class RumViewScope(
     private val rumSessionTypeOverride: RumSessionType?,
     private val accessibilitySnapshotManager: AccessibilitySnapshotManager,
     private val batteryInfoProvider: InfoProvider<BatteryInfo>,
-    private val displayInfoProvider: InfoProvider<DisplayInfo>,
-    private val sendGraphQlPayloads: Boolean
+    private val displayInfoProvider: InfoProvider<DisplayInfo>
 ) : RumScope {
 
     internal val url = key.url.replace('.', '/')
@@ -299,8 +298,7 @@ internal open class RumViewScope(
             rumSessionTypeOverride = rumSessionTypeOverride,
             accessibilitySnapshotManager = accessibilitySnapshotManager,
             batteryInfoProvider = batteryInfoProvider,
-            displayInfoProvider = displayInfoProvider,
-            sendGraphQlPayloads = sendGraphQlPayloads
+            displayInfoProvider = displayInfoProvider
         )
     }
 
@@ -480,8 +478,7 @@ internal open class RumViewScope(
             featuresContextResolver = featuresContextResolver,
             sampleRate = sampleRate,
             networkSettledMetricResolver = networkSettledMetricResolver,
-            rumSessionTypeOverride = rumSessionTypeOverride,
-            sendGraphQlPayloads = sendGraphQlPayloads
+            rumSessionTypeOverride = rumSessionTypeOverride
         )
         pendingResourceCount++
     }
@@ -1588,8 +1585,7 @@ internal open class RumViewScope(
             rumSessionTypeOverride: RumSessionType?,
             accessibilitySnapshotManager: AccessibilitySnapshotManager,
             batteryInfoProvider: InfoProvider<BatteryInfo>,
-            displayInfoProvider: InfoProvider<DisplayInfo>,
-            sendGraphQlPayloads: Boolean
+            displayInfoProvider: InfoProvider<DisplayInfo>
         ): RumViewScope {
             val networkSettledMetricResolver = NetworkSettledMetricResolver(
                 networkSettledResourceIdentifier,
@@ -1625,8 +1621,7 @@ internal open class RumViewScope(
                 rumSessionTypeOverride = rumSessionTypeOverride,
                 accessibilitySnapshotManager = accessibilitySnapshotManager,
                 batteryInfoProvider = batteryInfoProvider,
-                displayInfoProvider = displayInfoProvider,
-                sendGraphQlPayloads = sendGraphQlPayloads
+                displayInfoProvider = displayInfoProvider
             )
         }
 

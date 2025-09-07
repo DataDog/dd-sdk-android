@@ -137,9 +137,6 @@ internal class RumSessionScopeTest {
     @BoolForgery
     var fakeTrackFrustrations: Boolean = true
 
-    @BoolForgery
-    var fakeSendGraphQLPayloads: Boolean = false
-
     @Forgery
     lateinit var fakeTimeInfo: TimeInfo
 
@@ -1440,8 +1437,7 @@ internal class RumSessionScopeTest {
             rumSessionTypeOverride = fakeRumSessionType,
             accessibilitySnapshotManager = mockAccessibilitySnapshotManager,
             batteryInfoProvider = mockBatteryInfoProvider,
-            displayInfoProvider = mockDisplayInfoProvider,
-            sendGraphQlPayloads = fakeSendGraphQLPayloads
+            displayInfoProvider = mockDisplayInfoProvider
         )
 
         if (withMockChildScope) {

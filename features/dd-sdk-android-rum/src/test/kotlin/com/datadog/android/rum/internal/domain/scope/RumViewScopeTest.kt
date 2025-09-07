@@ -206,9 +206,6 @@ internal class RumViewScopeTest {
 
     @Forgery
     lateinit var fakeViewType: RumViewType
-
-    @BoolForgery
-    var fakeSendGraphQLPayloads: Boolean = false
     var fakeSourceViewEvent: ViewEvent.ViewEventSource? = null
     var fakeSourceErrorEvent: ErrorEvent.ErrorEventSource? = null
     var fakeSourceActionEvent: ActionEvent.ActionEventSource? = null
@@ -8681,8 +8678,7 @@ internal class RumViewScopeTest {
         rumSessionTypeOverride = fakeRumSessionType,
         accessibilitySnapshotManager = mockAccessibilitySnapshotManager,
         batteryInfoProvider = mockBatteryInfoProvider,
-        displayInfoProvider = mockDisplayInfoProvider,
-        sendGraphQlPayloads = fakeSendGraphQLPayloads
+        displayInfoProvider = mockDisplayInfoProvider
     )
 
     data class RumRawEventData(val event: RumRawEvent, val viewKey: RumScopeKey)

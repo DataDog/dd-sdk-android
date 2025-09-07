@@ -91,8 +91,7 @@ internal class DatadogRumMonitor(
     rumSessionTypeOverride: RumSessionType?,
     accessibilitySnapshotManager: AccessibilitySnapshotManager,
     batteryInfoProvider: InfoProvider<BatteryInfo>,
-    displayInfoProvider: InfoProvider<DisplayInfo>,
-    sendGraphQlPayloads: Boolean
+    displayInfoProvider: InfoProvider<DisplayInfo>
 ) : RumMonitor, AdvancedRumMonitor {
 
     internal var rootScope = RumApplicationScope(
@@ -113,8 +112,7 @@ internal class DatadogRumMonitor(
         rumSessionTypeOverride = rumSessionTypeOverride,
         accessibilitySnapshotManager = accessibilitySnapshotManager,
         batteryInfoProvider = batteryInfoProvider,
-        displayInfoProvider = displayInfoProvider,
-        sendGraphQlPayloads = sendGraphQlPayloads
+        displayInfoProvider = displayInfoProvider
     )
 
     internal val keepAliveRunnable = Runnable {

@@ -45,6 +45,9 @@ datadog:
       - "androidx.work.WorkManager.enqueueUniqueWork(kotlin.String, androidx.work.ExistingWorkPolicy, androidx.work.OneTimeWorkRequest):java.util.concurrent.RejectedExecutionException,java.lang.NullPointerException"
       - "androidx.work.Data.Builder.build():java.lang.IllegalStateException"
       # endregion
+      # region Apollo Kotlin
+      - "com.apollographql.apollo.api.Operation.variablesJson(com.apollographql.apollo.api.CustomScalarAdapters):java.io.IOException"
+      # endregion
       # region Java File
       - "java.io.ByteArrayOutputStream.write(kotlin.ByteArray, kotlin.Int, kotlin.Int):java.lang.IndexOutOfBoundsException"
       - "java.io.File.canRead():java.lang.SecurityException"

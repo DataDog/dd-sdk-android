@@ -21,7 +21,9 @@ import okio.IOException
 /**
  * A Datadog Apollo interceptor for GraphQL operations.
  */
-open class DatadogApolloInterceptor : ApolloInterceptor {
+open class DatadogApolloInterceptor(
+    private val sendGraphQLPayloads: Boolean = false
+) : ApolloInterceptor {
 
     override fun <D : Operation.Data> intercept(
         request: ApolloRequest<D>,
@@ -33,7 +35,6 @@ open class DatadogApolloInterceptor : ApolloInterceptor {
         val operationName = operation.name()
         val operationType = extractType(operation)
         val operationVariables = extractVariables(operation, adapters)
-        val operationPayload = extractPayload(operation, adapters)
 
         val requestBuilder = request.newBuilder()
         requestBuilder
@@ -47,8 +48,11 @@ open class DatadogApolloInterceptor : ApolloInterceptor {
             requestBuilder.addHttpHeader(DD_GRAPHQL_VARIABLES_HEADER, operationVariables)
         }
 
-        operationPayload.let {
-            requestBuilder.addHttpHeader(DD_GRAPHQL_PAYLOAD_HEADER, operationPayload)
+        if (sendGraphQLPayloads) {
+            val operationPayload = extractPayload(operation, adapters)
+            operationPayload.let {
+                requestBuilder.addHttpHeader(DD_GRAPHQL_PAYLOAD_HEADER, operationPayload)
+            }
         }
 
         val newRequest = requestBuilder.build()
@@ -79,9 +83,9 @@ open class DatadogApolloInterceptor : ApolloInterceptor {
         }
 
     internal companion object {
-        const val DD_GRAPHQL_NAME_HEADER = "_dd.graphql.operation_name"
-        const val DD_GRAPHQL_VARIABLES_HEADER = "_dd.graphql.variables"
-        const val DD_GRAPHQL_TYPE_HEADER = "_dd.graphql.operation_type"
-        const val DD_GRAPHQL_PAYLOAD_HEADER = "_dd.graphql.payload"
+        const val DD_GRAPHQL_NAME_HEADER = "_dd-custom-header-graph-ql-operation-name"
+        const val DD_GRAPHQL_VARIABLES_HEADER = "_dd-custom-header-graph-ql-variables"
+        const val DD_GRAPHQL_TYPE_HEADER = "_dd-custom-header-graph-ql-operation_type"
+        const val DD_GRAPHQL_PAYLOAD_HEADER = "_dd-custom-header-graph-ql-payload"
     }
 }

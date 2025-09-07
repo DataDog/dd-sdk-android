@@ -50,8 +50,7 @@ internal class RumApplicationScope(
     private val rumSessionTypeOverride: RumSessionType?,
     private val accessibilitySnapshotManager: AccessibilitySnapshotManager,
     private val batteryInfoProvider: InfoProvider<BatteryInfo>,
-    private val displayInfoProvider: InfoProvider<DisplayInfo>,
-    private val sendGraphQlPayloads: Boolean
+    private val displayInfoProvider: InfoProvider<DisplayInfo>
 ) : RumScope, RumViewChangedListener {
 
     override val parentScope: RumScope? = null
@@ -79,8 +78,7 @@ internal class RumApplicationScope(
             rumSessionTypeOverride = rumSessionTypeOverride,
             accessibilitySnapshotManager = accessibilitySnapshotManager,
             batteryInfoProvider = batteryInfoProvider,
-            displayInfoProvider = displayInfoProvider,
-            sendGraphQlPayloads = sendGraphQlPayloads
+            displayInfoProvider = displayInfoProvider
         )
     )
 
@@ -200,8 +198,7 @@ internal class RumApplicationScope(
             rumSessionTypeOverride = rumSessionTypeOverride,
             accessibilitySnapshotManager = accessibilitySnapshotManager,
             batteryInfoProvider = batteryInfoProvider,
-            displayInfoProvider = displayInfoProvider,
-            sendGraphQlPayloads = sendGraphQlPayloads
+            displayInfoProvider = displayInfoProvider
         )
         childScopes.add(newSession)
         if (event !is RumRawEvent.StartView) {

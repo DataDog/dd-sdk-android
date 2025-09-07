@@ -36,6 +36,7 @@ import fr.xgouchet.elmyr.junit5.ForgeExtension
 import okhttp3.MediaType
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.Protocol
+import okhttp3.Request
 import okhttp3.Response
 import okhttp3.ResponseBody
 import okhttp3.ResponseBody.Companion.toResponseBody
@@ -353,7 +354,45 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
     }
 
     @Test
-    fun `M start and stop RUM Resource W intercept() {successful graphql request}`(
+    fun `M remove all GraphQL headers W intercept() {request with GraphQL headers}`(
+        forge: Forge,
+        @StringForgery fakeGraphQLName: String,
+        @StringForgery fakeGraphQLType: String,
+        @StringForgery fakeGraphQLVariables: String,
+        @StringForgery fakeGraphQLPayload: String,
+        @StringForgery fakeUserAgent: String
+    ) {
+        // Given
+        fakeRequest = forgeRequest(forge) { builder ->
+            builder.addHeader("User-Agent", fakeUserAgent)
+            builder.addHeader(DatadogInterceptor.DD_GRAPHQL_NAME_HEADER, fakeGraphQLName)
+            builder.addHeader(DatadogInterceptor.DD_GRAPHQL_TYPE_HEADER, fakeGraphQLType)
+            builder.addHeader(DatadogInterceptor.DD_GRAPHQL_VARIABLES_HEADER, fakeGraphQLVariables)
+            builder.addHeader(DatadogInterceptor.DD_GRAPHQL_PAYLOAD_HEADER, fakeGraphQLPayload)
+        }
+        stubChain(mockChain, 200)
+
+        // When
+        testedInterceptor.intercept(mockChain)
+
+        // Then
+        val requestCaptor = argumentCaptor<Request>()
+        verify(mockChain).proceed(requestCaptor.capture())
+        val cleanedRequest = requestCaptor.firstValue
+
+        // Verify GraphQL headers are removed
+        assertThat(cleanedRequest.headers[DatadogInterceptor.DD_GRAPHQL_NAME_HEADER]).isNull()
+        assertThat(cleanedRequest.headers[DatadogInterceptor.DD_GRAPHQL_TYPE_HEADER]).isNull()
+        assertThat(cleanedRequest.headers[DatadogInterceptor.DD_GRAPHQL_VARIABLES_HEADER]).isNull()
+        assertThat(cleanedRequest.headers[DatadogInterceptor.DD_GRAPHQL_PAYLOAD_HEADER]).isNull()
+
+        // Verify other headers are preserved
+        assertThat(cleanedRequest.headers["User-Agent"]).isEqualTo(fakeUserAgent)
+        assertThat(cleanedRequest.url.toString()).isEqualTo(fakeRequest.url.toString())
+    }
+
+    @Test
+    fun `M pass GraphQL attributes to RUM W intercept() {request with GraphQL headers}`(
         forge: Forge,
         @IntForgery(min = 200, max = 300) statusCode: Int,
         @StringForgery fakeGraphQLName: String,
@@ -363,28 +402,12 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
     ) {
         // Given
         fakeRequest = forgeRequest(forge) { builder ->
-            builder.addHeader(RumAttributes.GRAPHQL_OPERATION_NAME, fakeGraphQLName)
-            builder.addHeader(RumAttributes.GRAPHQL_OPERATION_TYPE, fakeGraphQLType)
-            builder.addHeader(RumAttributes.GRAPHQL_VARIABLES, fakeGraphQLVariables)
-            builder.addHeader(RumAttributes.GRAPHQL_PAYLOAD, fakeGraphQLPayload)
+            builder.addHeader(DatadogInterceptor.DD_GRAPHQL_NAME_HEADER, fakeGraphQLName)
+            builder.addHeader(DatadogInterceptor.DD_GRAPHQL_TYPE_HEADER, fakeGraphQLType)
+            builder.addHeader(DatadogInterceptor.DD_GRAPHQL_VARIABLES_HEADER, fakeGraphQLVariables)
+            builder.addHeader(DatadogInterceptor.DD_GRAPHQL_PAYLOAD_HEADER, fakeGraphQLPayload)
         }
         stubChain(mockChain, statusCode)
-
-        val expectedStartAttrs = emptyMap<String, Any?>()
-        val expectedStopAttrs = mapOf(
-            RumAttributes.TRACE_ID to fakeTraceIdAsString,
-            RumAttributes.SPAN_ID to fakeSpanId.toString(),
-            RumAttributes.RULE_PSR to fakeTracingSampleRate / 100,
-            RumAttributes.GRAPHQL_OPERATION_NAME to fakeGraphQLName,
-            RumAttributes.GRAPHQL_OPERATION_TYPE to fakeGraphQLType,
-            RumAttributes.GRAPHQL_VARIABLES to fakeGraphQLVariables,
-            RumAttributes.GRAPHQL_PAYLOAD to fakeGraphQLPayload
-        ) + fakeAttributes
-        val mimeType = fakeMediaType?.type
-        val kind = when {
-            mimeType != null -> RumResourceKind.fromMimeType(mimeType)
-            else -> RumResourceKind.NATIVE
-        }
 
         // When
         testedInterceptor.intercept(mockChain)
@@ -396,15 +419,32 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
                     capture(),
                     eq(fakeMethod),
                     eq(fakeUrl),
-                    eq(expectedStartAttrs)
+                    eq(emptyMap())
                 )
+
+                // Capture the actual attributes passed to stopResource
+                val stopAttrsCaptor = argumentCaptor<Map<String, Any?>>()
                 verify(rumMonitor.mockInstance).stopResource(
                     capture(),
                     eq(statusCode),
                     eq(fakeResponseBody.toByteArray().size.toLong()),
-                    eq(kind),
-                    eq(expectedStopAttrs)
+                    any(),
+                    stopAttrsCaptor.capture()
                 )
+
+                val actualStopAttrs = stopAttrsCaptor.firstValue
+
+                // Verify GraphQL attributes are present
+                assertThat(actualStopAttrs[RumAttributes.GRAPHQL_OPERATION_NAME]).isEqualTo(fakeGraphQLName)
+                assertThat(actualStopAttrs[RumAttributes.GRAPHQL_OPERATION_TYPE]).isEqualTo(fakeGraphQLType)
+                assertThat(actualStopAttrs[RumAttributes.GRAPHQL_VARIABLES]).isEqualTo(fakeGraphQLVariables)
+                assertThat(actualStopAttrs[RumAttributes.GRAPHQL_PAYLOAD]).isEqualTo(fakeGraphQLPayload)
+
+                // Verify fakeAttributes are included
+                fakeAttributes.forEach { (key, value) ->
+                    assertThat(actualStopAttrs[key]).isEqualTo(value)
+                }
+
                 assertThat(firstValue).isEqualTo(secondValue)
             }
         }
@@ -936,4 +976,92 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
             }
         }
     }
+
+    // region graphQL headers
+
+    @Test
+    fun `M pass request unchanged W intercept() {request without GraphQL headers}`(
+        forge: Forge,
+        @StringForgery fakeUserAgent: String,
+        @StringForgery fakeCustomHeader: String
+    ) {
+        // Given
+        fakeRequest = forgeRequest(forge) { builder ->
+            builder.addHeader("User-Agent", fakeUserAgent)
+            builder.addHeader("Custom-Header", fakeCustomHeader)
+        }
+        stubChain(mockChain, 200)
+
+        // When
+        testedInterceptor.intercept(mockChain)
+
+        // Then
+        val requestCaptor = argumentCaptor<Request>()
+        verify(mockChain).proceed(requestCaptor.capture())
+        val passedRequest = requestCaptor.firstValue
+
+        assertThat(passedRequest.headers["User-Agent"]).isEqualTo(fakeUserAgent)
+        assertThat(passedRequest.headers["Custom-Header"]).isEqualTo(fakeCustomHeader)
+        assertThat(passedRequest.url.toString()).isEqualTo(fakeRequest.url.toString())
+    }
+
+    @Test
+    fun `M remove partial GraphQL headers W intercept() {request with some GraphQL headers}`(
+        forge: Forge,
+        @StringForgery fakeGraphQLName: String,
+        @StringForgery fakeUserAgent: String
+    ) {
+        // Given
+        fakeRequest = forgeRequest(forge) { builder ->
+            builder.addHeader("User-Agent", fakeUserAgent)
+            builder.addHeader(DatadogInterceptor.DD_GRAPHQL_NAME_HEADER, fakeGraphQLName)
+        }
+        stubChain(mockChain, 200)
+
+        // When
+        testedInterceptor.intercept(mockChain)
+
+        // Then
+        val requestCaptor = argumentCaptor<Request>()
+        verify(mockChain).proceed(requestCaptor.capture())
+        val cleanedRequest = requestCaptor.firstValue
+
+        assertThat(cleanedRequest.headers[DatadogInterceptor.DD_GRAPHQL_NAME_HEADER]).isNull()
+        assertThat(cleanedRequest.headers[DatadogInterceptor.DD_GRAPHQL_TYPE_HEADER]).isNull()
+        assertThat(cleanedRequest.headers[DatadogInterceptor.DD_GRAPHQL_VARIABLES_HEADER]).isNull()
+        assertThat(cleanedRequest.headers[DatadogInterceptor.DD_GRAPHQL_PAYLOAD_HEADER]).isNull()
+        assertThat(cleanedRequest.headers["User-Agent"]).isEqualTo(fakeUserAgent)
+        assertThat(cleanedRequest.url.toString()).isEqualTo(fakeRequest.url.toString())
+    }
+
+    @Test
+    fun `M remove GraphQL headers with empty values W intercept() {request with empty GraphQL headers}`(
+        forge: Forge,
+        @StringForgery fakeUserAgent: String
+    ) {
+        // Given
+        fakeRequest = forgeRequest(forge) { builder ->
+            builder.addHeader("User-Agent", fakeUserAgent)
+            builder.addHeader(DatadogInterceptor.DD_GRAPHQL_NAME_HEADER, "")
+            builder.addHeader(DatadogInterceptor.DD_GRAPHQL_TYPE_HEADER, "")
+        }
+        stubChain(mockChain, 200)
+
+        // When
+        testedInterceptor.intercept(mockChain)
+
+        // Then
+        val requestCaptor = argumentCaptor<Request>()
+        verify(mockChain).proceed(requestCaptor.capture())
+        val cleanedRequest = requestCaptor.firstValue
+
+        assertThat(cleanedRequest.headers[DatadogInterceptor.DD_GRAPHQL_NAME_HEADER]).isNull()
+        assertThat(cleanedRequest.headers[DatadogInterceptor.DD_GRAPHQL_TYPE_HEADER]).isNull()
+        assertThat(cleanedRequest.headers[DatadogInterceptor.DD_GRAPHQL_VARIABLES_HEADER]).isNull()
+        assertThat(cleanedRequest.headers[DatadogInterceptor.DD_GRAPHQL_PAYLOAD_HEADER]).isNull()
+        assertThat(cleanedRequest.headers["User-Agent"]).isEqualTo(fakeUserAgent)
+        assertThat(cleanedRequest.url.toString()).isEqualTo(fakeRequest.url.toString())
+    }
+
+    // endregion
 }

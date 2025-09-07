@@ -107,7 +107,7 @@ object RumAttributes {
     const val RESOURCE_TIMINGS: String = "_dd.resource_timings"
 
     /**
-     * GraphQL operation type K (String).
+     * GraphQL operation type (String).
      */
     const val GRAPHQL_OPERATION_TYPE: String = "_dd.graphql.operation_type"
 

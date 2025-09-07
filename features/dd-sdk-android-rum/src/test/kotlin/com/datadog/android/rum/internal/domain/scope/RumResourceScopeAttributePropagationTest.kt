@@ -143,9 +143,6 @@ internal class RumResourceScopeAttributePropagationTest {
     @BoolForgery
     var fakeHasReplay: Boolean = false
 
-    @BoolForgery
-    var fakeSendGraphQLPayloads: Boolean = false
-
     @FloatForgery(min = 0f, max = 100f)
     var fakeSampleRate: Float = 0f
 
@@ -195,8 +192,7 @@ internal class RumResourceScopeAttributePropagationTest {
             featuresContextResolver = mockFeaturesContextResolver,
             sampleRate = fakeSampleRate,
             networkSettledMetricResolver = mockNetworkSettledMetricResolver,
-            rumSessionTypeOverride = fakeRumSessionType,
-            sendGraphQlPayloads = fakeSendGraphQLPayloads
+            rumSessionTypeOverride = fakeRumSessionType
         )
     }
 
