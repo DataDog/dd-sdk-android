@@ -173,6 +173,7 @@ internal class RumAppStartupDetectorImplTest {
     fun `M detect WarmAfterActivityDestroyed scenario W RumAppStartupDetectorImpl {after 1st Cold scenario}`(
         forge: Forge,
         @BoolForgery hasSavedInstanceStateBundle: Boolean,
+        @BoolForgery hasSavedInstanceStateBundle2: Boolean,
     ) {
         // Given
         val detector = createDetector(
@@ -210,13 +211,13 @@ internal class RumAppStartupDetectorImplTest {
             forge = forge,
             detector = detector,
             activity = activity,
-            hasSavedInstanceStateBundle = hasSavedInstanceStateBundle
+            hasSavedInstanceStateBundle = hasSavedInstanceStateBundle2
         )
 
         listener.verifyScenarioDetected(
             RumStartupScenario.WarmAfterActivityDestroyed(
                 startTimeNanos = currentTime.inWholeNanoseconds,
-                hasSavedInstanceStateBundle = false,
+                hasSavedInstanceStateBundle = hasSavedInstanceStateBundle2,
                 activityName = activity.javaClass.canonicalName ?: activity.javaClass.name,
                 activity = activity,
                 nStart = 1
@@ -379,6 +380,91 @@ internal class RumAppStartupDetectorImplTest {
                 hasSavedInstanceStateBundle = hasSavedInstanceStateBundle2,
                 activityName = activity2.javaClass.canonicalName ?: activity2.javaClass.name,
                 activity = activity2,
+                nStart = 1
+            )
+        )
+
+        verifyNoMoreInteractions(listener)
+    }
+
+    @Test
+    fun `M detect WarmAfterActivityDestroyed scenario W RumAppStartupDetectorImpl {2 activities created, destroyed and the 3rd created}`(
+        forge: Forge,
+        @BoolForgery hasSavedInstanceStateBundle: Boolean,
+        @BoolForgery hasSavedInstanceStateBundle2: Boolean,
+        @BoolForgery hasSavedInstanceStateBundle3: Boolean,
+    ) {
+        // Given
+        val detector = createDetector(
+            processImportance = IMPORTANCE_FOREGROUND,
+        )
+
+        currentTime += 3.seconds
+
+        // When
+        triggerBeforeCreated(
+            forge = forge,
+            detector = detector,
+            activity = activity,
+            hasSavedInstanceStateBundle = hasSavedInstanceStateBundle
+        )
+
+        // Then
+        listener.verifyScenarioDetected(
+            RumStartupScenario.Cold(
+                startTimeNanos = 0,
+                hasSavedInstanceStateBundle = hasSavedInstanceStateBundle,
+                activityName = activity.javaClass.canonicalName ?: activity.javaClass.name,
+                activity = activity,
+                gapNanos = 3.seconds.inWholeNanoseconds,
+                nStart = 0,
+            )
+        )
+        verifyNoMoreInteractions(listener)
+
+        detector.onActivityStarted(activity)
+        detector.onActivityResumed(activity)
+        detector.onActivityPaused(activity)
+        detector.onActivityStopped(activity)
+
+        currentTime += 30.seconds
+
+        val activity2 = mock<Activity>()
+
+        triggerBeforeCreated(
+            forge = forge,
+            detector = detector,
+            activity = activity2,
+            hasSavedInstanceStateBundle = hasSavedInstanceStateBundle2
+        )
+
+        verifyNoMoreInteractions(listener)
+
+        detector.onActivityStarted(activity2)
+        detector.onActivityResumed(activity2)
+        detector.onActivityPaused(activity2)
+        detector.onActivityStopped(activity2)
+        detector.onActivityDestroyed(activity2)
+
+        detector.onActivityDestroyed(activity)
+
+        currentTime += 30.seconds
+
+        val activity3 = mock<Activity>()
+
+        triggerBeforeCreated(
+            forge = forge,
+            detector = detector,
+            activity = activity3,
+            hasSavedInstanceStateBundle = hasSavedInstanceStateBundle3
+        )
+
+        listener.verifyScenarioDetected(
+            RumStartupScenario.WarmAfterActivityDestroyed(
+                startTimeNanos = currentTime.inWholeNanoseconds,
+                hasSavedInstanceStateBundle = hasSavedInstanceStateBundle3,
+                activityName = activity3.javaClass.canonicalName ?: activity3.javaClass.name,
+                activity = activity3,
                 nStart = 1
             )
         )
