@@ -78,9 +78,24 @@ internal class RumAppStartupDetectorImplTest {
         forge: Forge,
         @BoolForgery hasSavedInstanceStateBundle: Boolean
     ) {
-        // Given
         val detector = createDetector(
             processImportance = IMPORTANCE_FOREGROUND,
+        )
+        launchColdAndVerify(
+            forge = forge,
+            detector = detector,
+            hasSavedInstanceStateBundle = hasSavedInstanceStateBundle
+        )
+    }
+
+    @Test
+    fun `M detect WarmFirstActivity scenario W RumAppStartupDetectorImpl {IMPORTANCE_CACHED and small gap}`(
+        forge: Forge,
+        @BoolForgery hasSavedInstanceStateBundle: Boolean
+    ) {
+        // Given
+        val detector = createDetector(
+            processImportance = IMPORTANCE_CACHED,
         )
 
         currentTime += 3.seconds
@@ -94,36 +109,6 @@ internal class RumAppStartupDetectorImplTest {
         )
 
         // Then
-        listener.verifyScenarioDetected(
-            RumStartupScenario.Cold(
-                startTimeNanos = 0,
-                hasSavedInstanceStateBundle = hasSavedInstanceStateBundle,
-                activityName = activity.javaClass.canonicalName ?: activity.javaClass.name,
-                activity = activity,
-                gapNanos = 3.seconds.inWholeNanoseconds,
-                nStart = 0,
-            )
-        )
-        verifyNoMoreInteractions(listener)
-    }
-
-    @Test
-    fun `M detect WarmFirstActivity scenario W RumAppStartupDetectorImpl {IMPORTANCE_CACHED and small gap}`(
-        forge: Forge,
-        @BoolForgery hasSavedInstanceStateBundle: Boolean
-    ) {
-        val detector = createDetector(
-            processImportance = IMPORTANCE_CACHED,
-        )
-
-        currentTime += 3.seconds
-        triggerBeforeCreated(
-            forge = forge,
-            detector = detector,
-            activity = activity,
-            hasSavedInstanceStateBundle = hasSavedInstanceStateBundle
-        )
-
         listener.verifyScenarioDetected(
             RumStartupScenario.WarmFirstActivity(
                 startTimeNanos = currentTime.inWholeNanoseconds,
@@ -180,29 +165,13 @@ internal class RumAppStartupDetectorImplTest {
             processImportance = IMPORTANCE_FOREGROUND,
         )
 
-        currentTime += 3.seconds
-
-        // When
-        triggerBeforeCreated(
+        launchColdAndVerify(
             forge = forge,
             detector = detector,
-            activity = activity,
             hasSavedInstanceStateBundle = hasSavedInstanceStateBundle
         )
 
-        // Then
-        listener.verifyScenarioDetected(
-            RumStartupScenario.Cold(
-                startTimeNanos = 0,
-                hasSavedInstanceStateBundle = hasSavedInstanceStateBundle,
-                activityName = activity.javaClass.canonicalName ?: activity.javaClass.name,
-                activity = activity,
-                gapNanos = 3.seconds.inWholeNanoseconds,
-                nStart = 0,
-            )
-        )
-        verifyNoMoreInteractions(listener)
-
+        // When
         detector.onActivityDestroyed(activity)
 
         currentTime += 30.seconds
@@ -214,6 +183,7 @@ internal class RumAppStartupDetectorImplTest {
             hasSavedInstanceStateBundle = hasSavedInstanceStateBundle2
         )
 
+        // Then
         listener.verifyScenarioDetected(
             RumStartupScenario.WarmAfterActivityDestroyed(
                 startTimeNanos = currentTime.inWholeNanoseconds,
@@ -236,30 +206,15 @@ internal class RumAppStartupDetectorImplTest {
             processImportance = IMPORTANCE_FOREGROUND,
         )
 
-        currentTime += 3.seconds
-
-        // When
-        triggerBeforeCreated(
+        launchColdAndVerify(
             forge = forge,
             detector = detector,
-            activity = activity,
             hasSavedInstanceStateBundle = hasSavedInstanceStateBundle
         )
 
-        // Then
-        listener.verifyScenarioDetected(
-            RumStartupScenario.Cold(
-                startTimeNanos = 0,
-                hasSavedInstanceStateBundle = hasSavedInstanceStateBundle,
-                activityName = activity.javaClass.canonicalName ?: activity.javaClass.name,
-                activity = activity,
-                gapNanos = 3.seconds.inWholeNanoseconds,
-                nStart = 0,
-            )
-        )
-        verifyNoMoreInteractions(listener)
-
         whenever(activity.isChangingConfigurations) doReturn true
+
+        // When
         detector.onActivityDestroyed(activity)
 
         triggerBeforeCreated(
@@ -269,6 +224,7 @@ internal class RumAppStartupDetectorImplTest {
             hasSavedInstanceStateBundle = hasSavedInstanceStateBundle
         )
 
+        // Then
         verifyNoMoreInteractions(listener)
     }
 
@@ -283,29 +239,13 @@ internal class RumAppStartupDetectorImplTest {
             processImportance = IMPORTANCE_FOREGROUND,
         )
 
-        currentTime += 3.seconds
-
-        // When
-        triggerBeforeCreated(
+        launchColdAndVerify(
             forge = forge,
             detector = detector,
-            activity = activity,
             hasSavedInstanceStateBundle = hasSavedInstanceStateBundle
         )
 
-        // Then
-        listener.verifyScenarioDetected(
-            RumStartupScenario.Cold(
-                startTimeNanos = 0,
-                hasSavedInstanceStateBundle = hasSavedInstanceStateBundle,
-                activityName = activity.javaClass.canonicalName ?: activity.javaClass.name,
-                activity = activity,
-                gapNanos = 3.seconds.inWholeNanoseconds,
-                nStart = 0,
-            )
-        )
-        verifyNoMoreInteractions(listener)
-
+        // When
         detector.onActivityStarted(activity)
         detector.onActivityResumed(activity)
         detector.onActivityPaused(activity)
@@ -320,6 +260,7 @@ internal class RumAppStartupDetectorImplTest {
             hasSavedInstanceStateBundle = hasSavedInstanceStateBundle2
         )
 
+        // Then
         verifyNoMoreInteractions(listener)
     }
 
@@ -334,29 +275,13 @@ internal class RumAppStartupDetectorImplTest {
             processImportance = IMPORTANCE_FOREGROUND,
         )
 
-        currentTime += 3.seconds
-
-        // When
-        triggerBeforeCreated(
+        launchColdAndVerify(
             forge = forge,
             detector = detector,
-            activity = activity,
             hasSavedInstanceStateBundle = hasSavedInstanceStateBundle
         )
 
-        // Then
-        listener.verifyScenarioDetected(
-            RumStartupScenario.Cold(
-                startTimeNanos = 0,
-                hasSavedInstanceStateBundle = hasSavedInstanceStateBundle,
-                activityName = activity.javaClass.canonicalName ?: activity.javaClass.name,
-                activity = activity,
-                gapNanos = 3.seconds.inWholeNanoseconds,
-                nStart = 0,
-            )
-        )
-        verifyNoMoreInteractions(listener)
-
+        // When
         detector.onActivityStarted(activity)
         detector.onActivityResumed(activity)
         detector.onActivityPaused(activity)
@@ -374,6 +299,7 @@ internal class RumAppStartupDetectorImplTest {
             hasSavedInstanceStateBundle = hasSavedInstanceStateBundle2
         )
 
+        // Then
         listener.verifyScenarioDetected(
             RumStartupScenario.WarmAfterActivityDestroyed(
                 startTimeNanos = currentTime.inWholeNanoseconds,
@@ -399,29 +325,13 @@ internal class RumAppStartupDetectorImplTest {
             processImportance = IMPORTANCE_FOREGROUND,
         )
 
-        currentTime += 3.seconds
-
-        // When
-        triggerBeforeCreated(
+        launchColdAndVerify(
             forge = forge,
             detector = detector,
-            activity = activity,
             hasSavedInstanceStateBundle = hasSavedInstanceStateBundle
         )
 
-        // Then
-        listener.verifyScenarioDetected(
-            RumStartupScenario.Cold(
-                startTimeNanos = 0,
-                hasSavedInstanceStateBundle = hasSavedInstanceStateBundle,
-                activityName = activity.javaClass.canonicalName ?: activity.javaClass.name,
-                activity = activity,
-                gapNanos = 3.seconds.inWholeNanoseconds,
-                nStart = 0,
-            )
-        )
-        verifyNoMoreInteractions(listener)
-
+        // When
         detector.onActivityStarted(activity)
         detector.onActivityResumed(activity)
         detector.onActivityPaused(activity)
@@ -459,6 +369,7 @@ internal class RumAppStartupDetectorImplTest {
             hasSavedInstanceStateBundle = hasSavedInstanceStateBundle3
         )
 
+        // Then
         listener.verifyScenarioDetected(
             RumStartupScenario.WarmAfterActivityDestroyed(
                 startTimeNanos = currentTime.inWholeNanoseconds,
@@ -469,6 +380,32 @@ internal class RumAppStartupDetectorImplTest {
             )
         )
 
+        verifyNoMoreInteractions(listener)
+    }
+
+    private fun launchColdAndVerify(forge: Forge, detector: RumAppStartupDetectorImpl, hasSavedInstanceStateBundle: Boolean) {
+        // Given
+        currentTime += 3.seconds
+
+        // When
+        triggerBeforeCreated(
+            forge = forge,
+            detector = detector,
+            activity = activity,
+            hasSavedInstanceStateBundle = hasSavedInstanceStateBundle
+        )
+
+        // Then
+        listener.verifyScenarioDetected(
+            RumStartupScenario.Cold(
+                startTimeNanos = 0,
+                hasSavedInstanceStateBundle = hasSavedInstanceStateBundle,
+                activityName = activity.javaClass.canonicalName ?: activity.javaClass.name,
+                activity = activity,
+                gapNanos = 3.seconds.inWholeNanoseconds,
+                nStart = 0,
+            )
+        )
         verifyNoMoreInteractions(listener)
     }
 
