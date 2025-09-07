@@ -11,12 +11,16 @@ import android.app.ActivityManager.RunningAppProcessInfo.IMPORTANCE_CACHED
 import android.app.ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND
 import android.app.Application
 import android.os.Build
+import android.os.Bundle
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import com.datadog.android.rum.internal.startup.RumAppStartupDetector
 import com.datadog.android.rum.internal.startup.RumAppStartupDetectorImpl
 import com.datadog.android.rum.internal.startup.RumStartupScenario
 import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
+import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.BoolForgery
+import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -66,10 +70,14 @@ internal class RumAppStartupDetectorImplTest {
     @BeforeEach
     fun `set up`() {
         currentTime = 0.nanoseconds
+        whenever(activity.isChangingConfigurations) doReturn false
     }
 
     @Test
-    fun `M detect Cold scenario W RumAppStartupDetectorImpl {IMPORTANCE_FOREGROUND and small gap}`() {
+    fun `M detect Cold scenario W RumAppStartupDetectorImpl {IMPORTANCE_FOREGROUND and small gap}`(
+        forge: Forge,
+        @BoolForgery hasSavedInstanceStateBundle: Boolean
+    ) {
         // Given
         val detector = createDetector(
             processImportance = IMPORTANCE_FOREGROUND,
@@ -78,13 +86,18 @@ internal class RumAppStartupDetectorImplTest {
         currentTime += 3.seconds
 
         // When
-        triggerBeforeCreated(detector)
+        triggerBeforeCreated(
+            forge = forge,
+            detector = detector,
+            activity = activity,
+            hasSavedInstanceStateBundle = hasSavedInstanceStateBundle
+        )
 
         // Then
         listener.verifyScenarioDetected(
             RumStartupScenario.Cold(
                 startTimeNanos = 0,
-                hasSavedInstanceStateBundle = false,
+                hasSavedInstanceStateBundle = hasSavedInstanceStateBundle,
                 activityName = activity.javaClass.canonicalName ?: activity.javaClass.name,
                 activity = activity,
                 gapNanos = 3.seconds.inWholeNanoseconds,
@@ -95,18 +108,26 @@ internal class RumAppStartupDetectorImplTest {
     }
 
     @Test
-    fun `M detect WarmFirstActivity scenario W RumAppStartupDetectorImpl {IMPORTANCE_CACHED and small gap}`() {
+    fun `M detect WarmFirstActivity scenario W RumAppStartupDetectorImpl {IMPORTANCE_CACHED and small gap}`(
+        forge: Forge,
+        @BoolForgery hasSavedInstanceStateBundle: Boolean
+    ) {
         val detector = createDetector(
             processImportance = IMPORTANCE_CACHED,
         )
 
         currentTime += 3.seconds
-        triggerBeforeCreated(detector)
+        triggerBeforeCreated(
+            forge = forge,
+            detector = detector,
+            activity = activity,
+            hasSavedInstanceStateBundle = hasSavedInstanceStateBundle
+        )
 
         listener.verifyScenarioDetected(
             RumStartupScenario.WarmFirstActivity(
                 startTimeNanos = currentTime.inWholeNanoseconds,
-                hasSavedInstanceStateBundle = false,
+                hasSavedInstanceStateBundle = hasSavedInstanceStateBundle,
                 activityName = activity.javaClass.canonicalName ?: activity.javaClass.name,
                 activity = activity,
                 gapNanos = currentTime.inWholeNanoseconds,
@@ -118,23 +139,87 @@ internal class RumAppStartupDetectorImplTest {
     }
 
     @Test
-    fun `M detect WarmFirstActivity scenario W RumAppStartupDetectorImpl {IMPORTANCE_FOREGROUND and large gap}`() {
+    fun `M detect WarmFirstActivity scenario W RumAppStartupDetectorImpl {IMPORTANCE_FOREGROUND and large gap}`(
+        forge: Forge,
+        @BoolForgery hasSavedInstanceStateBundle: Boolean
+    ) {
         val detector = createDetector(
             processImportance = IMPORTANCE_FOREGROUND,
         )
 
         currentTime += 6.seconds
-        triggerBeforeCreated(detector)
+        triggerBeforeCreated(
+            forge = forge,
+            detector = detector,
+            activity = activity,
+            hasSavedInstanceStateBundle = hasSavedInstanceStateBundle
+        )
 
         listener.verifyScenarioDetected(
             RumStartupScenario.WarmFirstActivity(
                 startTimeNanos = currentTime.inWholeNanoseconds,
-                hasSavedInstanceStateBundle = false,
+                hasSavedInstanceStateBundle = hasSavedInstanceStateBundle,
                 activityName = activity.javaClass.canonicalName ?: activity.javaClass.name,
                 activity = activity,
                 gapNanos = currentTime.inWholeNanoseconds,
                 nStart = 0,
                 processStartedInForeground = true
+            )
+        )
+        verifyNoMoreInteractions(listener)
+    }
+
+    @Test
+    fun `M detect WarmAfterActivityDestroyed scenario W RumAppStartupDetectorImpl {after 1st Cold scenario}`(
+        forge: Forge,
+        @BoolForgery hasSavedInstanceStateBundle: Boolean,
+    ) {
+        // Given
+        val detector = createDetector(
+            processImportance = IMPORTANCE_FOREGROUND,
+        )
+
+        currentTime += 3.seconds
+
+        // When
+        triggerBeforeCreated(
+            forge = forge,
+            detector = detector,
+            activity = activity,
+            hasSavedInstanceStateBundle = hasSavedInstanceStateBundle
+        )
+
+        // Then
+        listener.verifyScenarioDetected(
+            RumStartupScenario.Cold(
+                startTimeNanos = 0,
+                hasSavedInstanceStateBundle = hasSavedInstanceStateBundle,
+                activityName = activity.javaClass.canonicalName ?: activity.javaClass.name,
+                activity = activity,
+                gapNanos = 3.seconds.inWholeNanoseconds,
+                nStart = 0,
+            )
+        )
+        verifyNoMoreInteractions(listener)
+
+        detector.onActivityDestroyed(activity)
+
+        currentTime += 30.seconds
+
+        triggerBeforeCreated(
+            forge = forge,
+            detector = detector,
+            activity = activity,
+            hasSavedInstanceStateBundle = hasSavedInstanceStateBundle
+        )
+
+        listener.verifyScenarioDetected(
+            RumStartupScenario.WarmAfterActivityDestroyed(
+                startTimeNanos = currentTime.inWholeNanoseconds,
+                hasSavedInstanceStateBundle = false,
+                activityName = activity.javaClass.canonicalName ?: activity.javaClass.name,
+                activity = activity,
+                nStart = 1
             )
         )
         verifyNoMoreInteractions(listener)
@@ -157,11 +242,23 @@ internal class RumAppStartupDetectorImplTest {
         return detector
     }
 
-    private fun triggerBeforeCreated(detector: RumAppStartupDetectorImpl) {
-        if (fakeBuildSdkVersion >= Build.VERSION_CODES.Q) {
-            detector.onActivityPreCreated(activity, null)
+    private fun triggerBeforeCreated(
+        forge: Forge,
+        detector: RumAppStartupDetectorImpl,
+        activity: Activity,
+        hasSavedInstanceStateBundle: Boolean
+    ) {
+        val bundle = if (hasSavedInstanceStateBundle) {
+            Bundle().apply {
+                putString(forge.anAlphabeticalString(), forge.anAlphabeticalString())
+            }
         } else {
-            detector.onActivityCreated(activity, null)
+            null
+        }
+        if (fakeBuildSdkVersion >= Build.VERSION_CODES.Q) {
+            detector.onActivityPreCreated(activity, bundle)
+        } else {
+            detector.onActivityCreated(activity, bundle)
         }
     }
 
