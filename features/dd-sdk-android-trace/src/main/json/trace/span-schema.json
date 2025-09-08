@@ -254,10 +254,10 @@
           "readOnly": true
         },
         "device": {
-          "$ref": "_common-schema.json#/properties/device"
+          "$ref": "../../../../../dd-sdk-android-rum/src/main/json/rum/_common-schema.json#/properties/device"
         },
         "os": {
-          "$ref": "_common-schema.json#/properties/os"
+          "$ref": "../../../../../dd-sdk-android-rum/src/main/json/rum/_common-schema.json#/properties/os"
         }
       },
       "required": [
