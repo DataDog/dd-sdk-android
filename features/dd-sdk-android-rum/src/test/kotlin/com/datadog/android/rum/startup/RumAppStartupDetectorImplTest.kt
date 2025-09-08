@@ -416,9 +416,9 @@ internal class RumAppStartupDetectorImplTest {
             buildSdkVersionProvider = buildSdkVersionProvider,
             appStartupTimeProvider = { 0 },
             processImportanceProvider = { processImportance },
-            timeProviderNanos = { currentTime.inWholeNanoseconds }
+            timeProviderNanos = { currentTime.inWholeNanoseconds },
+            listener
         )
-        detector.addListener(listener)
 
         verify(application).registerActivityLifecycleCallbacks(any())
         verifyNoMoreInteractions(application)

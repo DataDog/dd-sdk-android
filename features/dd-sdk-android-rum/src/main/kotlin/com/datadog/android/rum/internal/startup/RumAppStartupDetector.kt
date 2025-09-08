@@ -16,19 +16,21 @@ internal interface RumAppStartupDetector {
         fun onAppStartupDetected(scenario: RumStartupScenario)
     }
 
-    fun addListener(listener: Listener)
-    fun removeListener(listener: Listener)
-
     fun destroy()
 
     companion object {
-        fun create(application: Application, sdkCore: InternalSdkCore): RumAppStartupDetector {
+        fun create(
+            application: Application,
+            sdkCore: InternalSdkCore,
+            listener: Listener
+        ): RumAppStartupDetector {
             val impl = RumAppStartupDetectorImpl(
                 application = application,
                 buildSdkVersionProvider = BuildSdkVersionProvider.DEFAULT,
                 appStartupTimeProvider = { sdkCore.appStartTimeNs },
                 processImportanceProvider = { DdRumContentProvider.processImportance },
-                timeProviderNanos = { System.nanoTime() }
+                timeProviderNanos = { System.nanoTime() },
+                listener
             )
             return impl
         }

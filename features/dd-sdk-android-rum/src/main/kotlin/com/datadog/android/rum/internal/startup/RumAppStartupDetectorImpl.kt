@@ -12,7 +12,6 @@ import android.app.Application
 import android.os.Build
 import android.os.Bundle
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
-import com.datadog.android.internal.utils.DDCoreSubscription
 import kotlin.time.Duration.Companion.nanoseconds
 import kotlin.time.Duration.Companion.seconds
 
@@ -24,13 +23,12 @@ internal class RumAppStartupDetectorImpl(
     private val appStartupTimeProvider: () -> Long,
     private val processImportanceProvider: () -> Int,
     private val timeProviderNanos: () -> Long,
+    private val listener: RumAppStartupDetector.Listener,
 ): RumAppStartupDetector, Application.ActivityLifecycleCallbacks {
 
     private var numberOfActivities: Int = 0
     private var isChangingConfigurations: Boolean = false
     private var isFirstActivityForProcess = true
-
-    private val subscription = DDCoreSubscription.create<RumAppStartupDetector.Listener>()
 
     private var nStart: Int = 0
 
@@ -117,19 +115,11 @@ internal class RumAppStartupDetectorImpl(
 
             nStart++
 
-            subscription.notifyListeners { onAppStartupDetected(scenario) }
+            listener.onAppStartupDetected(scenario)
         }
 
         isFirstActivityForProcess = false
         isChangingConfigurations = false
-    }
-
-    override fun addListener(listener: RumAppStartupDetector.Listener) {
-        subscription.addListener(listener)
-    }
-
-    override fun removeListener(listener: RumAppStartupDetector.Listener) {
-        subscription.removeListener(listener)
     }
 
     override fun destroy() {

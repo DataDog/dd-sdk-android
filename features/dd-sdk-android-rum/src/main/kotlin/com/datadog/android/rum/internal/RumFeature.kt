@@ -73,6 +73,7 @@ import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.internal.monitor.DatadogRumMonitor
 import com.datadog.android.rum.internal.net.RumRequestFactory
 import com.datadog.android.rum.internal.startup.RumAppStartupDetector
+import com.datadog.android.rum.internal.startup.RumStartupScenario
 import com.datadog.android.rum.internal.startup.RumTTIDReporter
 import com.datadog.android.rum.internal.thread.NoOpScheduledExecutorService
 import com.datadog.android.rum.internal.tracking.JetpackViewAttributesProvider
@@ -169,7 +170,7 @@ internal class RumFeature(
 
     private val lateCrashEventHandler by lazy { lateCrashReporterFactory(sdkCore as InternalSdkCore) }
 
-    private var rumTTIDReporter: RumTTIDReporter? = null
+    private var rumAppStartupDetector: RumAppStartupDetector? = null
 
     // region Feature
 
@@ -255,12 +256,17 @@ internal class RumFeature(
 
         sdkCore.setEventReceiver(name, this)
 
-        val rumAppStartupDetector = RumAppStartupDetector.create(
+        rumAppStartupDetector = RumAppStartupDetector.create(
             application = appContext as Application,
-            sdkCore = sdkCore
-        )
+            sdkCore = sdkCore,
+            listener = object : RumAppStartupDetector.Listener {
+                val rumTTIDReporter = RumTTIDReporter(sdkCore.internalLogger)
 
-        rumTTIDReporter = RumTTIDReporter(rumAppStartupDetector, sdkCore.internalLogger)
+                override fun onAppStartupDetected(scenario: RumStartupScenario) {
+                    rumTTIDReporter.onAppStartupDetected(scenario)
+                }
+            }
+        )
 
         initialized.set(true)
     }
