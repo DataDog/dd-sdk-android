@@ -19,7 +19,7 @@ internal class RumTTIDReporter(
 
     fun onAppStartupDetected(scenario: RumStartupScenario) {
         subscribeToFirstDrawFinished(handler, scenario.activity) {
-            val duration = (System.nanoTime() - scenario.startTimeNanos).nanoseconds
+            val duration = (System.nanoTime() - scenario.initialTimeNanos).nanoseconds
             internalLogger.logMetric(
                 messageBuilder = {
                     "test_app_startup"
@@ -27,7 +27,6 @@ internal class RumTTIDReporter(
                 additionalProperties = buildMap {
                     put("scenario", scenario.name())
                     put("duration", duration.inWholeNanoseconds.toDouble())
-                    put("n_start", scenario.nStart)
                 },
                 samplingRate = 100f,
             )

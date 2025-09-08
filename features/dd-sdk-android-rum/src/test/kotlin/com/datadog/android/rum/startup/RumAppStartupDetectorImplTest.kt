@@ -111,13 +111,9 @@ internal class RumAppStartupDetectorImplTest {
         // Then
         listener.verifyScenarioDetected(
             RumStartupScenario.WarmFirstActivity(
-                startTimeNanos = currentTime.inWholeNanoseconds,
+                initialTimeNanos = currentTime.inWholeNanoseconds,
                 hasSavedInstanceStateBundle = hasSavedInstanceStateBundle,
-                activityName = activity.javaClass.canonicalName ?: activity.javaClass.name,
-                activity = activity,
-                gapNanos = currentTime.inWholeNanoseconds,
-                nStart = 0,
-                processStartedInForeground = false
+                activity = activity
             )
         )
         verifyNoMoreInteractions(listener)
@@ -142,13 +138,9 @@ internal class RumAppStartupDetectorImplTest {
 
         listener.verifyScenarioDetected(
             RumStartupScenario.WarmFirstActivity(
-                startTimeNanos = currentTime.inWholeNanoseconds,
+                initialTimeNanos = currentTime.inWholeNanoseconds,
                 hasSavedInstanceStateBundle = hasSavedInstanceStateBundle,
-                activityName = activity.javaClass.canonicalName ?: activity.javaClass.name,
-                activity = activity,
-                gapNanos = currentTime.inWholeNanoseconds,
-                nStart = 0,
-                processStartedInForeground = true
+                activity = activity
             )
         )
         verifyNoMoreInteractions(listener)
@@ -186,11 +178,9 @@ internal class RumAppStartupDetectorImplTest {
         // Then
         listener.verifyScenarioDetected(
             RumStartupScenario.WarmAfterActivityDestroyed(
-                startTimeNanos = currentTime.inWholeNanoseconds,
+                initialTimeNanos = currentTime.inWholeNanoseconds,
                 hasSavedInstanceStateBundle = hasSavedInstanceStateBundle2,
-                activityName = activity.javaClass.canonicalName ?: activity.javaClass.name,
-                activity = activity,
-                nStart = 1
+                activity = activity
             )
         )
         verifyNoMoreInteractions(listener)
@@ -302,11 +292,9 @@ internal class RumAppStartupDetectorImplTest {
         // Then
         listener.verifyScenarioDetected(
             RumStartupScenario.WarmAfterActivityDestroyed(
-                startTimeNanos = currentTime.inWholeNanoseconds,
+                initialTimeNanos = currentTime.inWholeNanoseconds,
                 hasSavedInstanceStateBundle = hasSavedInstanceStateBundle2,
-                activityName = activity2.javaClass.canonicalName ?: activity2.javaClass.name,
-                activity = activity2,
-                nStart = 1
+                activity = activity2
             )
         )
 
@@ -372,11 +360,9 @@ internal class RumAppStartupDetectorImplTest {
         // Then
         listener.verifyScenarioDetected(
             RumStartupScenario.WarmAfterActivityDestroyed(
-                startTimeNanos = currentTime.inWholeNanoseconds,
+                initialTimeNanos = currentTime.inWholeNanoseconds,
                 hasSavedInstanceStateBundle = hasSavedInstanceStateBundle3,
-                activityName = activity3.javaClass.canonicalName ?: activity3.javaClass.name,
-                activity = activity3,
-                nStart = 1
+                activity = activity3
             )
         )
 
@@ -398,12 +384,9 @@ internal class RumAppStartupDetectorImplTest {
         // Then
         listener.verifyScenarioDetected(
             RumStartupScenario.Cold(
-                startTimeNanos = 0,
+                initialTimeNanos = 0,
                 hasSavedInstanceStateBundle = hasSavedInstanceStateBundle,
-                activityName = activity.javaClass.canonicalName ?: activity.javaClass.name,
-                activity = activity,
-                gapNanos = 3.seconds.inWholeNanoseconds,
-                nStart = 0,
+                activity = activity
             )
         )
         verifyNoMoreInteractions(listener)

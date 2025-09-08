@@ -30,8 +30,6 @@ internal class RumAppStartupDetectorImpl(
     private var isChangingConfigurations: Boolean = false
     private var isFirstActivityForProcess = true
 
-    private var nStart: Int = 0
-
     init {
         application.registerActivityLifecycleCallbacks(this)
     }
@@ -85,35 +83,24 @@ internal class RumAppStartupDetectorImpl(
             val scenario = if (isFirstActivityForProcess) {
                 if (!processStartedInForeground || gap > START_GAP_THRESHOLD) {
                     RumStartupScenario.WarmFirstActivity(
-                        startTimeNanos = now,
+                        initialTimeNanos = now,
                         hasSavedInstanceStateBundle = hasSavedInstanceStateBundle,
-                        activityName = activity.extractName(),
-                        activity = activity,
-                        gapNanos = gap.inWholeNanoseconds,
-                        processStartedInForeground = processStartedInForeground,
-                        nStart = nStart
+                        activity = activity
                     )
                 } else {
                     RumStartupScenario.Cold(
-                        startTimeNanos = processStartTime,
+                        initialTimeNanos = processStartTime,
                         hasSavedInstanceStateBundle = hasSavedInstanceStateBundle,
-                        activityName = activity.extractName(),
-                        activity = activity,
-                        gapNanos = gap.inWholeNanoseconds,
-                        nStart = nStart
+                        activity = activity
                     )
                 }
             } else {
                 RumStartupScenario.WarmAfterActivityDestroyed(
-                    startTimeNanos = now,
+                    initialTimeNanos = now,
                     hasSavedInstanceStateBundle = hasSavedInstanceStateBundle,
-                    activityName = activity.extractName(),
-                    activity = activity,
-                    nStart = nStart
+                    activity = activity
                 )
             }
-
-            nStart++
 
             listener.onAppStartupDetected(scenario)
         }
@@ -125,8 +112,4 @@ internal class RumAppStartupDetectorImpl(
     override fun destroy() {
         application.unregisterActivityLifecycleCallbacks(this)
     }
-}
-
-private fun Activity.extractName(): String {
-    return javaClass.canonicalName ?: javaClass.name
 }
