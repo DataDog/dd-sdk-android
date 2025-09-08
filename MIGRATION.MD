@@ -16,7 +16,7 @@ to enable crash reporting with RUM.
 
 3. The `OpenTracing` dependency was removed because it is obsolete.
 
-We replaced the `OpenTracing` classes with internal one. However we strongly encourage you to use the `OpenTelemetry` version as the new tracing API standard.
+We replaced the `OpenTracing` classes with internal ones. However we strongly encourage you to use the `OpenTelemetry` version as the new tracing API standard.
 
 
 ### Trace product changes
