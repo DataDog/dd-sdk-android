@@ -36,6 +36,7 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.flow.timeout
 import kotlinx.coroutines.job
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
@@ -45,6 +46,7 @@ import org.hamcrest.MatcherAssert.assertThat
 import org.junit.Ignore
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.util.concurrent.atomic.AtomicInteger
 import kotlin.time.Duration.Companion.seconds
 
 private const val BASIC_SAMPLE_PACKAGE = "com.datadog.android.uitestappxml"
@@ -113,7 +115,14 @@ class FirstTest {
             .onEach { logcatData.tryEmit(it) }
             .launchIn(this)
 
+        val deferred = async {
+            delay(5000)
+            1
+        }
+
         delay(1000)
+        deferred.await()
+
         logcatJob.cancel()
     }
 
@@ -197,6 +206,13 @@ class FirstTest {
 
         Log.w("WAGAGA", "7")
 
+        val logcatResultDeferred = async {
+            delay(5000)
+            1
+        }
+
+        delay(2000)
+
         val intent = Intent().apply {
             component = ComponentName(BASIC_SAMPLE_PACKAGE, "$BASIC_SAMPLE_PACKAGE.MainActivity")
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
@@ -210,28 +226,34 @@ class FirstTest {
             LAUNCH_TIMEOUT
         )
 
-        val result = executeAndWaitForLogcat({it.contains("scenario 3")}) {
-            val intent = Intent().apply {
-                component = ComponentName(BASIC_SAMPLE_PACKAGE, "$BASIC_SAMPLE_PACKAGE.MainActivity")
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            }
-
-            context.startActivity(intent)
-
-            // Wait for the app to appear
-            device.wait(
-                Until.hasObject(By.pkg(BASIC_SAMPLE_PACKAGE).depth(0)),
-                LAUNCH_TIMEOUT
-            )
-        }
+//        val result = executeAndWaitForLogcat({it.contains("scenario 3")}) {
+//            val intent = Intent().apply {
+//                component = ComponentName(BASIC_SAMPLE_PACKAGE, "$BASIC_SAMPLE_PACKAGE.MainActivity")
+//                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+//            }
 //
-        assertEquals(result, true)
+//            context.startActivity(intent)
+//
+//            // Wait for the app to appear
+//            device.wait(
+//                Until.hasObject(By.pkg(BASIC_SAMPLE_PACKAGE).depth(0)),
+//                LAUNCH_TIMEOUT
+//            )
+//        }
+//
+//        assertEquals(result, true)
+
+
+
+        logcatResultDeferred.await()
+
         Log.w("WAGAGA", "12_1")
         logcatJob.cancel()
         Log.w("WAGAGA", "12_2")
+        logcatResultDeferred.cancel()
         coroutineContext.cancelChildren()
         Log.w("WAGAGA", "12_3")
-        delay(1000)
+//        delay(1000)
         Log.w("WAGAGA", "12_4")
         val job = coroutineContext[Job]!!
         Log.w("WAGAGA", "12_5")

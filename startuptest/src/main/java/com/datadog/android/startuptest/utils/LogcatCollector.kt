@@ -7,9 +7,13 @@
 package com.datadog.android.startuptest.utils
 
 import android.app.Instrumentation
+import android.util.Log
+import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.isActive
+import kotlinx.coroutines.launch
 import java.io.BufferedReader
 import java.io.FileInputStream
 import java.io.InputStreamReader
@@ -17,14 +21,23 @@ import java.io.InputStreamReader
 class LogcatCollector(private val inst: Instrumentation) {
 
     fun subscribe(command: String): Flow<String> {
-        return flow {
-            inst.uiAutomation.executeShellCommand(command).use { fd ->
-                val stdout = FileInputStream(fd.fileDescriptor)
-                BufferedReader(InputStreamReader(stdout)).useLines { lines ->
+        return channelFlow {
+            val fd = inst.uiAutomation.executeShellCommand(command)
+            val stdout = FileInputStream(fd.fileDescriptor)
+            val bufferedReader = BufferedReader(InputStreamReader(stdout))
+
+            launch {
+                bufferedReader.useLines { lines ->
                     lines.forEach { line ->
-                        emit(line)
+                        send(line)
                     }
                 }
+            }
+            awaitClose {
+                Log.w("WAGAGA", "closing")
+                bufferedReader.close()
+                stdout.close()
+                fd.close()
             }
         }
     }
