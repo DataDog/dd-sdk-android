@@ -42,16 +42,30 @@ internal class LogEventSerializer(
                     .toMutableMap()
             )
         }
+        val account = log.account?.let {
+            val sanitizedAccountAttributes = dataConstraints.validateAttributes(
+                it.additionalProperties,
+                keyPrefix = LogAttributes.ACCOUNT_ATTRIBUTES_GROUP,
+                attributesGroupName = ACCOUNT_EXTRA_GROUP_VERBOSE_NAME
+            )
+            it.copy(
+                additionalProperties = sanitizedAccountAttributes
+                    .safeMapValuesToJson(internalLogger)
+                    .toMutableMap()
+            )
+        }
         return log.copy(
             ddtags = sanitizedTags,
             additionalProperties = sanitizedAttributes
                 .safeMapValuesToJson(internalLogger)
                 .toMutableMap(),
-            usr = usr
+            usr = usr,
+            account = account
         )
     }
 
     companion object {
         internal const val USER_EXTRA_GROUP_VERBOSE_NAME = "user extra information"
+        internal const val ACCOUNT_EXTRA_GROUP_VERBOSE_NAME = "account extra information"
     }
 }

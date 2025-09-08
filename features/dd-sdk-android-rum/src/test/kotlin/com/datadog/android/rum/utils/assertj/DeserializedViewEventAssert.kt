@@ -20,7 +20,7 @@ internal class DeserializedViewEventAssert(actual: ViewEvent) :
     fun isEqualTo(expected: ViewEvent): DeserializedViewEventAssert {
         assertThat(actual)
             .usingRecursiveComparison()
-            .ignoringFields("context", "usr", "view")
+            .ignoringFields("context", "usr", "account", "view", "device")
             .isEqualTo(expected)
         assertThat(actual.view)
             .usingRecursiveComparison()
@@ -44,13 +44,27 @@ internal class DeserializedViewEventAssert(actual: ViewEvent) :
             actual.view.cumulativeLayoutShift,
             expected.view.cumulativeLayoutShift
         )
+        assertThat(actual.device)
+            .usingRecursiveComparison()
+            .ignoringFields("batteryLevel", "brightnessLevel")
+            .isEqualTo(expected.device)
+        assertNumberFieldEquals(actual.device?.batteryLevel, expected.device?.batteryLevel)
+        assertNumberFieldEquals(actual.device?.brightnessLevel, expected.device?.brightnessLevel)
         assertThat(actual.usr)
             .usingRecursiveComparison()
             .ignoringFields("additionalProperties")
             .isEqualTo(expected.usr)
+        assertThat(actual.account)
+            .usingRecursiveComparison()
+            .ignoringFields("additionalProperties")
+            .isEqualTo(expected.account)
         assertPropertiesEquals(
             actual.usr?.additionalProperties,
             expected.usr?.additionalProperties
+        )
+        assertPropertiesEquals(
+            actual.account?.additionalProperties,
+            expected.account?.additionalProperties
         )
         assertThat(actual.context)
             .usingRecursiveComparison()

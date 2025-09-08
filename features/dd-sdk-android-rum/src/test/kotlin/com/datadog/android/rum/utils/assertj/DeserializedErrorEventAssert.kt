@@ -9,6 +9,7 @@ package com.datadog.android.rum.utils.assertj
 import com.datadog.android.rum.model.ErrorEvent
 import org.assertj.core.api.AbstractAssert
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.data.Offset
 
 internal class DeserializedErrorEventAssert(actual: ErrorEvent) :
     AbstractAssert<DeserializedErrorEventAssert, ErrorEvent>(
@@ -19,15 +20,29 @@ internal class DeserializedErrorEventAssert(actual: ErrorEvent) :
     fun isEqualTo(expected: ErrorEvent): DeserializedErrorEventAssert {
         assertThat(actual)
             .usingRecursiveComparison()
-            .ignoringFields("context", "usr")
+            .ignoringFields("context", "usr", "account", "device")
             .isEqualTo(expected)
+        assertThat(actual.device)
+            .usingRecursiveComparison()
+            .ignoringFields("batteryLevel", "brightnessLevel")
+            .isEqualTo(expected.device)
+        assertNumberFieldEquals(actual.device?.batteryLevel, expected.device?.batteryLevel)
+        assertNumberFieldEquals(actual.device?.brightnessLevel, expected.device?.brightnessLevel)
         assertThat(actual.usr)
             .usingRecursiveComparison()
             .ignoringFields("additionalProperties")
             .isEqualTo(expected.usr)
+        assertThat(actual.account)
+            .usingRecursiveComparison()
+            .ignoringFields("additionalProperties")
+            .isEqualTo(expected.account)
         assertProperties(
             actual.usr?.additionalProperties,
             expected.usr?.additionalProperties
+        )
+        assertProperties(
+            actual.account?.additionalProperties,
+            expected.account?.additionalProperties
         )
         assertThat(actual.context)
             .usingRecursiveComparison()
@@ -38,6 +53,16 @@ internal class DeserializedErrorEventAssert(actual: ErrorEvent) :
             expected.context?.additionalProperties
         )
         return this
+    }
+
+    private fun assertNumberFieldEquals(actual: Number?, expected: Number?) {
+        if (expected == null) {
+            assertThat(actual).isNull()
+        } else {
+            assertThat(actual).isNotNull()
+            assertThat(actual!!.toDouble())
+                .isCloseTo(expected.toDouble(), Offset.offset(0.0000001))
+        }
     }
 
     private fun assertProperties(actual: Map<String, Any?>?, expected: Map<String, Any?>?) {
