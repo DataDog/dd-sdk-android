@@ -6,10 +6,10 @@
   "description": "Structure holding information about a Log",
   "properties": {
     "device": {
-      "$ref": "_common-schema.json#/properties/device"
+      "$ref": "../../../../../dd-sdk-android-rum/src/main/json/rum/_common-schema.json#/properties/device"
     },
     "os": {
-      "$ref": "_common-schema.json#/properties/os"
+      "$ref": "../../../../../dd-sdk-android-rum/src/main/json/rum/_common-schema.json#/properties/os"
     },
     "status": {
       "type": "string",
