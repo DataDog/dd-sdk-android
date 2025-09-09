@@ -15,8 +15,6 @@ import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import kotlin.time.Duration.Companion.nanoseconds
 import kotlin.time.Duration.Companion.seconds
 
-private val START_GAP_THRESHOLD = 5.seconds
-
 internal class RumAppStartupDetectorImpl(
     private val application: Application,
     private val buildSdkVersionProvider: BuildSdkVersionProvider,
@@ -111,5 +109,9 @@ internal class RumAppStartupDetectorImpl(
 
     override fun destroy() {
         application.unregisterActivityLifecycleCallbacks(this)
+    }
+
+    companion object {
+        private val START_GAP_THRESHOLD = 5.seconds
     }
 }
