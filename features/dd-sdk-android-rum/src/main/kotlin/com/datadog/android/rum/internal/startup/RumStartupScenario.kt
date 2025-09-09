@@ -7,27 +7,28 @@
 package com.datadog.android.rum.internal.startup
 
 import android.app.Activity
+import java.lang.ref.WeakReference
 
 internal sealed interface RumStartupScenario {
     val initialTimeNanos: Long
     val hasSavedInstanceStateBundle: Boolean
-    val activity: Activity
+    val activity: WeakReference<Activity>
 
     data class Cold(
         override val initialTimeNanos: Long,
         override val hasSavedInstanceStateBundle: Boolean,
-        override val activity: Activity
+        override val activity: WeakReference<Activity>
     ) : RumStartupScenario
 
     data class WarmFirstActivity(
         override val initialTimeNanos: Long,
         override val hasSavedInstanceStateBundle: Boolean,
-        override val activity: Activity
+        override val activity: WeakReference<Activity>
     ) : RumStartupScenario
 
     data class WarmAfterActivityDestroyed(
         override val initialTimeNanos: Long,
         override val hasSavedInstanceStateBundle: Boolean,
-        override val activity: Activity
+        override val activity: WeakReference<Activity>
     ) : RumStartupScenario
 }
