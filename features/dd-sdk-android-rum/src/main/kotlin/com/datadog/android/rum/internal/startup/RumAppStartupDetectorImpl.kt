@@ -28,7 +28,7 @@ internal class RumAppStartupDetectorImpl(
 
     private var numberOfActivities: Int = 0
     private var isChangingConfigurations: Boolean = false
-    private var isFirstActivityForProcess = true
+    private var isFirstActivityForProcess: Boolean = true
 
     init {
         application.registerActivityLifecycleCallbacks(this)
@@ -107,7 +107,6 @@ internal class RumAppStartupDetectorImpl(
         }
 
         isFirstActivityForProcess = false
-        isChangingConfigurations = false
     }
 
     override fun destroy() {
