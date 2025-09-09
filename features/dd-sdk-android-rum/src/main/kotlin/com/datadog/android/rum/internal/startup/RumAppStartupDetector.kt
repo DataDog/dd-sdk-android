@@ -24,7 +24,7 @@ internal interface RumAppStartupDetector {
             sdkCore: InternalSdkCore,
             listener: Listener
         ): RumAppStartupDetector {
-            val impl = RumAppStartupDetectorImpl(
+            return RumAppStartupDetectorImpl(
                 application = application,
                 buildSdkVersionProvider = BuildSdkVersionProvider.DEFAULT,
                 appStartupTimeProvider = { sdkCore.appStartTimeNs },
@@ -32,7 +32,6 @@ internal interface RumAppStartupDetector {
                 timeProviderNanos = { System.nanoTime() },
                 listener
             )
-            return impl
         }
     }
 }
