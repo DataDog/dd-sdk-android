@@ -12,6 +12,7 @@ import android.app.Application
 import android.os.Build
 import android.os.Bundle
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
+import java.lang.ref.WeakReference
 import kotlin.time.Duration.Companion.nanoseconds
 import kotlin.time.Duration.Companion.seconds
 
@@ -78,26 +79,27 @@ internal class RumAppStartupDetectorImpl(
 
             val gap = (now - processStartTime).nanoseconds
             val hasSavedInstanceStateBundle = savedInstanceState != null
+            val weakActivity = WeakReference(activity)
 
             val scenario = if (isFirstActivityForProcess) {
                 if (!processStartedInForeground || gap > START_GAP_THRESHOLD) {
                     RumStartupScenario.WarmFirstActivity(
                         initialTimeNanos = now,
                         hasSavedInstanceStateBundle = hasSavedInstanceStateBundle,
-                        activity = activity
+                        activity = weakActivity
                     )
                 } else {
                     RumStartupScenario.Cold(
                         initialTimeNanos = processStartTime,
                         hasSavedInstanceStateBundle = hasSavedInstanceStateBundle,
-                        activity = activity
+                        activity = weakActivity
                     )
                 }
             } else {
                 RumStartupScenario.WarmAfterActivityDestroyed(
                     initialTimeNanos = now,
                     hasSavedInstanceStateBundle = hasSavedInstanceStateBundle,
-                    activity = activity
+                    activity = weakActivity
                 )
             }
 
