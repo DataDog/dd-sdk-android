@@ -92,7 +92,12 @@ fun Project.detektCustomConfig() {
 
         classpath = files("${rootDir.absolutePath}/detekt-cli-1.23.4-all.jar")
 
-        args("--config", "${rootDir.absolutePath}/detekt_custom.yml")
+        args(
+            "--config",
+            "${rootDir.absolutePath}/detekt_custom_general.yml," +
+                "${rootDir.absolutePath}/detekt_custom_safe_calls.yml," +
+                "${rootDir.absolutePath}/detekt_custom_unsafe_calls.yml"
+        )
         args("--plugins", "${rootDir.absolutePath}/tools/detekt/build/libs/detekt.jar")
         args("-i", projectDir.absolutePath)
         args("-ex", "**/*.kts")
