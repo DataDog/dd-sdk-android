@@ -5,6 +5,7 @@
  */
 @file:Suppress("StringLiteralDuplication")
 
+import com.datadog.gradle.config.AndroidConfig
 import com.datadog.gradle.config.androidLibraryConfig
 import com.datadog.gradle.config.dependencyUpdateConfig
 import com.datadog.gradle.config.detektCustomConfig
@@ -47,12 +48,26 @@ android {
             Paths.get(rootDir.path, "consumer-rules.pro").toString(),
             "consumer-rules.pro"
         )
+        buildConfigField(
+            "int",
+            "MIN_SDK",
+            "${AndroidConfig.MIN_SDK}"
+        )
+        buildConfigField(
+            "int",
+            "TARGET_SDK",
+            "${AndroidConfig.TARGET_SDK}"
+        )
     }
 
     namespace = "com.datadog.android.rum"
 
     testFixtures {
         enable = true
+    }
+
+    buildFeatures {
+        buildConfig = true
     }
 }
 
