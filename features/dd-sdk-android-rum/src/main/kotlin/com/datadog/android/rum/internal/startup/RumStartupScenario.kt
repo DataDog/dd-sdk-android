@@ -14,19 +14,19 @@ internal sealed interface RumStartupScenario {
     val hasSavedInstanceStateBundle: Boolean
     val activity: WeakReference<Activity>
 
-    data class Cold(
+    class Cold(
         override val initialTimeNanos: Long,
         override val hasSavedInstanceStateBundle: Boolean,
         override val activity: WeakReference<Activity>
     ) : RumStartupScenario
 
-    data class WarmFirstActivity(
+    class WarmFirstActivity(
         override val initialTimeNanos: Long,
         override val hasSavedInstanceStateBundle: Boolean,
         override val activity: WeakReference<Activity>
     ) : RumStartupScenario
 
-    data class WarmAfterActivityDestroyed(
+    class WarmAfterActivityDestroyed(
         override val initialTimeNanos: Long,
         override val hasSavedInstanceStateBundle: Boolean,
         override val activity: WeakReference<Activity>
