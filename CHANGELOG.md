@@ -1,3 +1,7 @@
+# 2.26.1 / 2025-09-11
+
+* [BUGFIX] RUM: Move session properties to `ddtags` over query parameters. See [#2812](https://github.com/DataDog/dd-sdk-android/pull/2812)
+
 # 2.26.0 / 2025-08-27
 
 * [FEATURE] RUM: Add battery and display attributes. See [#2815](https://github.com/DataDog/dd-sdk-android/pull/2815)
