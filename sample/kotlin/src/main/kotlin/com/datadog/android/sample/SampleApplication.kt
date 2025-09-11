@@ -19,6 +19,7 @@ import com.datadog.android.core.configuration.BackPressureStrategy
 import com.datadog.android.core.configuration.BatchSize
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.UploadFrequency
+import com.datadog.android.flags.FlagsFeature
 import com.datadog.android.log.Logger
 import com.datadog.android.log.Logs
 import com.datadog.android.log.LogsConfiguration
@@ -160,6 +161,8 @@ class SampleApplication : Application() {
         Rum.enable(createRumConfiguration())
 
         GlobalRumMonitor.get().debug = true
+
+        FlagsFeature().launch()
     }
 
     private fun initializeUserInfo(preferences: Preferences.DefaultPreferences) {
