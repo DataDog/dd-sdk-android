@@ -20,6 +20,7 @@ include(":features:dd-sdk-android-session-replay")
 include(":features:dd-sdk-android-session-replay-compose")
 include(":features:dd-sdk-android-session-replay-material")
 include(":features:dd-sdk-android-trace-otel")
+include(":features:dd-sdk-android-flags")
 
 // INTEGRATION LIBRARIES
 include(":integrations:dd-sdk-android-coil")
