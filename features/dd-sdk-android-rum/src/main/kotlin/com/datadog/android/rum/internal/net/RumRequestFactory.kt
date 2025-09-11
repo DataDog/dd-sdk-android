@@ -14,7 +14,6 @@ import com.datadog.android.api.net.RequestFactory
 import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.core.internal.utils.join
 import com.datadog.android.internal.utils.toHexString
-import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.internal.domain.event.RumViewEventFilter
 import java.security.DigestException
 import java.security.MessageDigest
@@ -57,18 +56,14 @@ internal class RumRequestFactory(
     }
 
     private fun buildUrl(context: DatadogContext, executionContext: RequestExecutionContext): String {
-        val queryParams = mapOf(
-            RequestFactory.QUERY_PARAM_SOURCE to context.source,
-            RequestFactory.QUERY_PARAM_TAGS to buildTags(
-                context.service,
-                context.version,
-                context.sdkVersion,
-                context.env,
-                context.variant,
-                executionContext
-            )
+        val queryParams = buildMap {
+            put(RequestFactory.QUERY_PARAM_SOURCE, context.source)
 
-        )
+            val tags = buildTags(executionContext)
+            if (tags.isNotEmpty()) {
+                put(RequestFactory.QUERY_PARAM_TAGS, tags)
+            }
+        }
 
         val intakeUrl = "%s/api/v2/rum".format(
             Locale.US,
@@ -97,24 +92,11 @@ internal class RumRequestFactory(
     }
 
     private fun buildTags(
-        serviceName: String,
-        version: String,
-        sdkVersion: String,
-        env: String,
-        variant: String,
         executionContext: RequestExecutionContext
     ) = buildString {
-        append("${RumAttributes.SERVICE_NAME}:$serviceName").append(",")
-            .append("${RumAttributes.APPLICATION_VERSION}:$version").append(",")
-            .append("${RumAttributes.SDK_VERSION}:$sdkVersion").append(",")
-            .append("${RumAttributes.ENV}:$env")
-
-        if (variant.isNotEmpty()) {
-            append(",").append("${RumAttributes.VARIANT}:$variant")
-        }
         if (executionContext.previousResponseCode != null) {
             // we had a previous failure
-            append(",").append("${RETRY_COUNT_KEY}:${executionContext.attemptNumber}")
+            append("${RETRY_COUNT_KEY}:${executionContext.attemptNumber}")
             append(",").append("${LAST_FAILURE_STATUS_KEY}:${executionContext.previousResponseCode}")
         }
     }

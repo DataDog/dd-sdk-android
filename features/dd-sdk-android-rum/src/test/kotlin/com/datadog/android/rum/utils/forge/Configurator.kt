@@ -30,17 +30,12 @@ internal class Configurator : BaseConfigurator() {
         forge.useCoreFactories()
 
         // RUM
+        forge.useCommonRumFactories()
         forge.addFactory(ConfigurationRumForgeryFactory())
         forge.addFactory(RumConfigurationForgeryFactory())
-        forge.addFactory(ActionEventForgeryFactory())
-        forge.addFactory(ErrorEventForgeryFactory())
-        forge.addFactory(LongTaskEventForgeryFactory())
         forge.addFactory(MotionEventForgeryFactory())
         forge.addFactory(RumEventMapperFactory())
         forge.addFactory(RumContextForgeryFactory())
-        forge.addFactory(ResourceEventForgeryFactory())
-        forge.addFactory(ResourceTimingForgeryFactory())
-        forge.addFactory(ViewEventForgeryFactory())
         forge.addFactory(VitalInfoForgeryFactory())
         forge.addFactory(RumEventMetaForgeryFactory())
         forge.addFactory(ViewEventMetaForgeryFactory())
@@ -55,8 +50,6 @@ internal class Configurator : BaseConfigurator() {
         forge.addFactory(FrameMetricDataForgeryFactory())
         forge.addFactory(ViewUIPerformanceReportForgeryFactory())
         forge.addFactory(SlowFramesConfigurationForgeryFactory())
-        forge.addFactory(AccessibilityForgeryFactory())
-        forge.addFactory(AccessibilityInfoForgeryFactory())
 
         // Telemetry schema models
         forge.addFactory(TelemetryDebugEventForgeryFactory())
