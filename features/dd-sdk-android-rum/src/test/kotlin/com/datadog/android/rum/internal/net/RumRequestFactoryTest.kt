@@ -12,7 +12,6 @@ import com.datadog.android.api.net.RequestExecutionContext
 import com.datadog.android.api.net.RequestFactory
 import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.core.internal.utils.join
-import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.internal.domain.event.RumViewEventFilter
 import com.datadog.android.rum.utils.forge.Configurator
 import fr.xgouchet.elmyr.Forge
@@ -158,22 +157,18 @@ internal class RumRequestFactoryTest {
     }
 
     private fun expectedUrl(endpointUrl: String): String {
-        val queryTags = mutableListOf(
-            "${RumAttributes.SERVICE_NAME}:${fakeDatadogContext.service}",
-            "${RumAttributes.APPLICATION_VERSION}:${fakeDatadogContext.version}",
-            "${RumAttributes.SDK_VERSION}:${fakeDatadogContext.sdkVersion}",
-            "${RumAttributes.ENV}:${fakeDatadogContext.env}"
-        )
+        val queryTags = mutableListOf<String>()
 
-        if (fakeDatadogContext.variant.isNotEmpty()) {
-            queryTags.add("${RumAttributes.VARIANT}:${fakeDatadogContext.variant}")
-        }
         if (fakeExecutionContext.previousResponseCode != null) {
             queryTags.add("${RumRequestFactory.RETRY_COUNT_KEY}:${fakeExecutionContext.attemptNumber}")
             queryTags.add("${RumRequestFactory.LAST_FAILURE_STATUS_KEY}:${fakeExecutionContext.previousResponseCode}")
         }
 
-        return "$endpointUrl/api/v2/rum?ddsource=${fakeDatadogContext.source}" +
-            "&ddtags=${queryTags.joinToString(",")}"
+        return buildString {
+            append("$endpointUrl/api/v2/rum?ddsource=${fakeDatadogContext.source}")
+            if (queryTags.isNotEmpty()) {
+                append("&ddtags=${queryTags.joinToString(",")}")
+            }
+        }
     }
 }

@@ -16,7 +16,7 @@ import fr.xgouchet.elmyr.jvm.ext.aTimestamp
 import java.net.URL
 import java.util.UUID
 
-internal class ErrorEventForgeryFactory : ForgeryFactory<ErrorEvent> {
+class ErrorEventForgeryFactory : ForgeryFactory<ErrorEvent> {
 
     override fun getForgery(forge: Forge): ErrorEvent {
         return ErrorEvent(
@@ -127,7 +127,8 @@ internal class ErrorEventForgeryFactory : ForgeryFactory<ErrorEvent> {
             dd = ErrorEvent.Dd(
                 session = forge.aNullable { ErrorEvent.DdSession(aNullable { getForgery() }) },
                 browserSdkVersion = forge.aNullable { aStringMatching("\\d+\\.\\d+\\.\\d+") }
-            )
+            ),
+            ddtags = forge.aNullable { ddTagsString() }
         )
     }
 }

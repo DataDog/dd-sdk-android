@@ -45,6 +45,7 @@ dependencies {
         }
     }
     testImplementation(testFixtures(project(":dd-sdk-android-core")))
+    testImplementation(testFixtures(project(":features:dd-sdk-android-rum")))
     testImplementation(project(":reliability:stub-core"))
     testImplementation(libs.bundles.androidXNavigation)
     testImplementation(libs.bundles.jUnit5)

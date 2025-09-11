@@ -10,7 +10,7 @@ import com.datadog.android.rum.internal.domain.event.ResourceTiming
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
 
-internal class ResourceTimingForgeryFactory :
+class ResourceTimingForgeryFactory :
     ForgeryFactory<ResourceTiming> {
     override fun getForgery(forge: Forge): ResourceTiming {
         return ResourceTiming(
