@@ -16,8 +16,8 @@ fun interface FeatureContextUpdateReceiver {
     /**
      * Called when the context for a feature is updated.
      * @param featureName the name of the feature
-     * @param event the updated context
+     * @param context the updated context
      */
     @AnyThread
-    fun onContextUpdate(featureName: String, event: Map<String, Any?>)
+    fun onContextUpdate(featureName: String, context: Map<String, Any?>)
 }

@@ -24,7 +24,7 @@ plugins {
     // Publish
     `maven-publish`
     signing
-    id("org.jetbrains.dokka")
+    id("org.jetbrains.dokka-javadoc")
 
     // Analysis tools
     id("com.github.ben-manes.versions")
@@ -81,13 +81,15 @@ dependencies {
             )
         }
     }
-    testImplementation(testFixtures(project(":dd-sdk-android-core")))
-    testImplementation(testFixtures(project(":dd-sdk-android-internal")))
+
     testImplementation(libs.bundles.jUnit5)
     testImplementation(libs.bundles.testTools)
     testImplementation(libs.okHttp)
     testImplementation(libs.okHttpMock)
-    testImplementation(libs.bundles.openTracing)
+    testImplementation(project(":features:dd-sdk-android-trace"))
+    testImplementation(testFixtures(project(":dd-sdk-android-core")))
+    testImplementation(testFixtures(project(":dd-sdk-android-internal")))
+    testImplementation(testFixtures(project(":features:dd-sdk-android-trace")))
     unmock(libs.robolectric)
 
     // Test Fixtures

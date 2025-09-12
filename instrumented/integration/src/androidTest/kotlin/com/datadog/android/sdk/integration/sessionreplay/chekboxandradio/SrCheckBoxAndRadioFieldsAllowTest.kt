@@ -6,6 +6,8 @@
 
 package com.datadog.android.sdk.integration.sessionreplay.chekboxandradio
 
+import android.os.Build
+import androidx.test.filters.SdkSuppress
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.sdk.integration.sessionreplay.BaseSessionReplayTest
 import com.datadog.android.sdk.integration.sessionreplay.SessionReplayRadioCheckboxFieldsActivity
@@ -27,11 +29,20 @@ internal class SrCheckBoxAndRadioFieldsAllowTest :
     )
 
     @Test
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.N)
     fun assessRecordedScreenPayload() {
         runInstrumentationScenario()
         assessSrPayload(EXPECTED_PAYLOAD_FILE_NAME, rule)
     }
+
+    @Test
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.M, maxSdkVersion = Build.VERSION_CODES.M)
+    fun assessRecordedScreenPayload23() {
+        runInstrumentationScenario()
+        assessSrPayload(EXPECTED_PAYLOAD_FILE_NAME_OS_23, rule)
+    }
     companion object {
         const val EXPECTED_PAYLOAD_FILE_NAME = "sr_checkbox_and_radio_fields_allow_payload.json"
+        const val EXPECTED_PAYLOAD_FILE_NAME_OS_23 = "sr_checkbox_and_radio_fields_allow_payload_23.json"
     }
 }

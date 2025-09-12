@@ -28,6 +28,7 @@ data class TraceConfiguration internal constructor(
 
         /**
          * Let the Tracing feature target a custom server.
+         * The provided url should be the full endpoint url, e.g.: https://example.com/trace/upload
          */
         fun useCustomEndpoint(endpoint: String): Builder {
             customEndpointUrl = endpoint

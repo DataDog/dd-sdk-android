@@ -13,8 +13,8 @@ import com.datadog.android.okhttp.DatadogInterceptor
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.rum.RumResourceAttributesProvider
 import com.datadog.android.sdk.integration.RuntimeConfig
+import com.datadog.android.sdk.okhttp.RecordingDispatcher
 import com.datadog.android.sdk.rules.HandledRequest
-import com.datadog.android.sdk.rules.MockServerActivityTestRule
 import com.datadog.android.sdk.rules.RumMockServerActivityTestRule
 import com.datadog.android.sdk.utils.exhaustiveAttributes
 import com.datadog.android.sdk.utils.isRumUrl
@@ -93,7 +93,7 @@ internal class ResourceTrackingTest {
     @Test
     fun verifyAttributesAreSentWhenRequestHasException() {
         val resourceUrl = mockServerRule.getConnectionUrl() +
-            MockServerActivityTestRule.CONNECTION_ISSUE_PATH
+            RecordingDispatcher.CONNECTION_ISSUE_PATH
 
         assertThrows(IOException::class.java) {
             okHttpClient.newCall(

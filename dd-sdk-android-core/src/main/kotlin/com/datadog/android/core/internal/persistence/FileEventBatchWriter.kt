@@ -11,6 +11,7 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.storage.EventBatchWriter
 import com.datadog.android.api.storage.EventType
 import com.datadog.android.api.storage.RawBatchEvent
+import com.datadog.android.core.internal.persistence.file.FileOrchestrator
 import com.datadog.android.core.internal.persistence.file.FilePersistenceConfig
 import com.datadog.android.core.internal.persistence.file.FileReaderWriter
 import com.datadog.android.core.internal.persistence.file.FileWriter
@@ -19,8 +20,7 @@ import java.io.File
 import java.util.Locale
 
 internal class FileEventBatchWriter(
-    private val batchFile: File,
-    private val metadataFile: File?,
+    private val fileOrchestrator: FileOrchestrator,
     private val eventsWriter: FileWriter<RawBatchEvent>,
     private val metadataReaderWriter: FileReaderWriter,
     private val filePersistenceConfig: FilePersistenceConfig,
@@ -28,11 +28,28 @@ internal class FileEventBatchWriter(
     private val internalLogger: InternalLogger
 ) : EventBatchWriter {
 
+    @get:WorkerThread
+    private val batchFile: File? by lazy {
+        @Suppress("ThreadSafety") // called in the worker context
+        fileOrchestrator.getWritableFile()
+    }
+
+    @get:WorkerThread
+    private val metadataFile: File?
+        get() = batchFile?.let {
+            @Suppress("ThreadSafety") // called in the worker context
+            fileOrchestrator.getMetadataFile(it)
+        }
+
     @WorkerThread
     override fun currentMetadata(): ByteArray? {
-        if (metadataFile == null || !metadataFile.existsSafe(internalLogger)) return null
-
-        return metadataReaderWriter.readData(metadataFile)
+        return with(metadataFile) {
+            if (this == null || !existsSafe(internalLogger)) {
+                null
+            } else {
+                metadataReaderWriter.readData(this)
+            }
+        }
     }
 
     @WorkerThread
@@ -41,6 +58,16 @@ internal class FileEventBatchWriter(
         batchMetadata: ByteArray?,
         eventType: EventType
     ): Boolean {
+        val (batchFile, metadataFile) = batchFile to metadataFile
+        if (batchFile == null) {
+            internalLogger.log(
+                InternalLogger.Level.ERROR,
+                targets = listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
+                { NO_BATCH_FILE_AVAILABLE }
+            )
+            return false
+        }
+
         // prevent useless operation for empty event
         return if (event.data.isEmpty()) {
             true
@@ -99,5 +126,6 @@ internal class FileEventBatchWriter(
     companion object {
         internal const val WARNING_METADATA_WRITE_FAILED = "Unable to write metadata file: %s"
         internal const val ERROR_LARGE_DATA = "Can't write data with size %d (max item size is %d)"
+        internal const val NO_BATCH_FILE_AVAILABLE = "No batch file available"
     }
 }

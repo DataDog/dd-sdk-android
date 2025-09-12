@@ -1,3 +1,188 @@
+# Migration from 2.x to 3.0
+
+The main changes introduced in SDK 3.0 compared to 2.x are:
+
+1. The minimum supported Android API version increased to `23`.
+
+We now follow Google's [AndroidX library version policy](https://developer.android.com/jetpack/androidx/versions#version-table).
+ This update lets us use the latest `AndroidX` libraries, including
+[androidx.metrics:metrics-performance](https://developer.android.com/jetpack/androidx/releases/metrics).
+
+2. Fatal crashes are no longer automatically reported to the Logs feature.
+
+Follow
+these [instructions](https://docs.datadoghq.com/real_user_monitoring/mobile_and_tv_monitoring/android/error_tracking)
+to enable crash reporting with RUM.
+
+3. The `OpenTracing` dependency was removed because it is obsolete.
+
+We replaced the `OpenTracing` classes with internal ones. However, we strongly encourage you to use the `OpenTelemetry` version as the new tracing API standard.
+
+
+### Trace product changes
+
+#### Migrating tracing from `OpenTracing` to `OpenTelemetry` (recommended)
+
+> [!WARNING] 
+> Note that the `OpenTelemetry` specification library [requires](https://github.com/open-telemetry/opentelemetry-java?tab=readme-ov-file#requirements) desugaring to be enabled for projects with a `minSdk` < 26. If this requirement cannot be met in your project see the following section.
+
+
+1. Add the `OpenTelemetry` dependency to your `build.gradle.kts`:
+
+```kotlin
+implementation(project("com.datadoghq:dd-sdk-android-trace-otel:x.x.x"))
+```
+
+2. Replace the `OpenTracing` configuration:
+```kotlin
+  GlobalTracer.registerIfAbsent(
+            AndroidTracer.Builder()
+                .setService(BuildConfig.APPLICATION_ID)
+                .build()
+        )
+```
+
+with the `OpenTelemetry` configuration:
+```kotlin
+  GlobalOpenTelemetry.set(object : OpenTelemetry {
+            private val tracerProvider = OtelTracerProvider.Builder()
+                .setService(BuildConfig.APPLICATION_ID)
+                .build()
+
+            override fun getTracerProvider(): TracerProvider {
+                return tracerProvider
+            }
+
+            override fun getPropagators(): ContextPropagators {
+                return ContextPropagators.noop()
+            }
+        })
+```
+
+> [!NOTE] 
+> You can use the default configuration to make it even shorter in case if don't provide any additional parameters:
+```kotlin
+    GlobalOpenTelemetry.set(
+            DatadogOpenTelemetry(BuildConfig.APPLICATION_ID)
+        )
+```
+
+To access the tracer object for manual (custom) tracing, use `io.opentelemetry.api.GlobalOpenTelemetry.get()` instead of `io.opentracing.util.GlobalTracer.get()`.
+For example: 
+```kotlin
+   val tracer: Tracer = GlobalOpenTelemetry
+            .get()
+            .getTracer("SampleApplicationTracer")
+    
+    val span = tracer
+            .spanBuilder("Executing operation")
+            .startSpan()
+
+    // Code that should be instrumented
+
+    span.end()
+```
+
+Refer to the official `OpenTelemetry` [documentation](https://opentelemetry.io/docs/) for more details.
+
+#### Migrating tracing from `OpenTracing` to `DatadogTracing` (transition period)
+
+> [!WARNING]
+> This option has been added for compatibility and to simplify the transition from `OpenTracing` to `OpenTelemetry`, but it may not be available in future major releases. We recommend using `OpenTelemetry` as the standard for tracing tasks. However, if it is not possible to enable desugaring in your project for some reason, you can use this method.     
+
+Replace the `OpenTracing` configuration:
+```kotlin
+  GlobalTracer.registerIfAbsent(
+            AndroidTracer.Builder()
+                .setService(BuildConfig.APPLICATION_ID)
+                .build()
+        )
+```
+
+with the `DatadogTracing` configuration:
+```kotlin
+   GlobalDatadogTracer.registerIfAbsent(
+            DatadogTracing.newTracerBuilder()
+                .build()
+        )
+```
+
+For manual (custom) tracing use `com.datadog.android.trace.GlobalDatadogTracer.get()` instead of `io.opentracing.util.GlobalTracer.get()` to access the tracer object.
+For example: 
+```kotlin
+    val tracer = GlobalDatadogTracer.get()
+
+    val span = tracer
+     .buildSpan("Executing operation")
+     .start()
+    
+    // Code that should be instrumented
+    
+    span.finish()
+```
+Refer to the Datadog [documentation](https://docs.datadoghq.com/tracing/trace_collection/automatic_instrumentation/dd_libraries/android?tab=kotlin) for more details.
+
+API changes:
+
+|`2.x`|`3.0` `OpenTelemetry`|`3.0` `DatadogTracing`|
+|---|---|---|
+|`io.opentracing.util.GlobalTracer`|`io.opentelemetry.api.GlobalOpenTelemetry`|`com.datadog.android.trace.GlobalDatadogTracer`|
+|`com.datadog.android.trace.AndroidTracer`|`io.opentelemetry.api.trace.Tracer`|`com.datadog.android.trace.api.tracer.DatadogTracer`|
+|`io.opentracing.Span`|`io.opentelemetry.api.trace.Span`|`com.datadog.android.trace.api.span.DatadogSpan`|
+|`io.opentracing.Scope`|`io.opentelemetry.context.Scope`|`com.datadog.android.trace.api.scope.DatadogScope`|
+|`io.opentracing.SpanContext`|`io.opentelemetry.api.trace.SpanContext`|`com.datadog.android.trace.api.span.DatadogSpanContext`|
+
+Replacement hints:
+
+|`2.x`|`3.0` `OpenTelemetry`|`3.0` `DatadogTracing`|
+|---|---|---|
+|`AndroidTracer.Builder().build()`||`DatadogTracing.newTracerBuilder().build()`|
+|`AndroidTracer#setPartialFlushThreshold(Int)`|`OtelTracerProvider#setPartialFlushThreshold()`|`DatadogTracerBuilder#withPartialFlushMinSpans()`|
+|`io.opentracing.SpanContext#toTraceId()`|`io.opentelemetry.api.trace.SpanContext#getTraceId()`|`DatadogSpanContext.traceId.toString()`|
+|`io.opentracing.Span#setError()`|`io.opentelemetry.api.trace#recordException()`|`DatadogSpan#addThrowable()`|
+
+### OkHttp instrumentation changes
+
+The OkHttp instrumentation (`com.datadoghq:dd-sdk-android-okhttp:x.x.x`) doesn't require desugaring support. However few migration actions may be necessary.
+
+
+API changes:
+
+|`2.x`|`3.0`|
+|--|--|
+|`TracingInterceptor(String, List<String>, TracedRequestListener,Sampler<Span>)`| Use `TracingInterceptor.Builder()` instead.|
+|`TracingInterceptor(String?,Map<String, Set<TracingHeaderType>>, TracedRequestListener, Sampler<Span>)`| Use `TracingInterceptor.Builder()` instead.|
+|`TracingInterceptor(String?,TracedRequestListener,Sampler<Span>)`|Use `TracingInterceptor.Builder()` instead.|
+|`DatadogInterceptor(String?, Map<String, Set<TracingHeaderType>>,TracedRequestListener, RumResourceAttributesProvider, Sampler<Span>)`|Use `DatadogInterceptor.Builder()` instead. |
+|`DatadogInterceptor(String?,List<String>,TracedRequestListener,RumResourceAttributesProvider,Sampler<Span>)`|Use `DatadogInterceptor.Builder()` instead.|
+| `DatadogInterceptor(String?,TracedRequestListener,RumResourceAttributesProvider,Sampler<Span>) ` | Use `DatadogInterceptor.Builder()` instead. |
+
+
+### Core product changes
+
+API changes:
+
+|`2.x`| `3.0`                                                            |
+|--|------------------------------------------------------------------|
+|`Datadog#setUserInfo(String?, ...)`| User info ID is now mandatory `Datadog.setUserInfo(String, ...)` |
+
+
+### RUM product changes
+
+API changes:
+
+|`2.x`| `3.0`                                                                               |
+|--|-------------------------------------------------------------------------------------|
+|`DatadogRumMonitor#startResource(String, String, String,Map<String, Any?>)`| Use `startResource` method which takes `RumHttpMethod` as `method` parameter instead |
+|`com.datadog.android.rum.GlobalRum`|`GlobalRum` object was renamed to `com.datadog.android.rum.GlobalRumMonitor`          |
+|`com.datadog.android.rum.RumMonitor#addAction()`| Parameter `attributes: Map<String, Any?>` is now optional                           |
+|`com.datadog.android.rum.RumMonitor#startAction()`| Parameter `attributes: Map<String, Any?>` is now optional                           |
+|`com.datadog.android.rum.RumMonitor#stopResource()`| Parameter `attributes: Map<String, Any?>` is now optional                           |
+|`com.datadog.android.rum.RumMonitor#addError()`| Parameter `attributes: Map<String, Any?>` is now optional                           |
+|`com.datadog.android.rum.RumMonitor#addErrorWithStacktrace()`| Parameter `attributes: Map<String, Any?>` is now optional                           |
+|`com.datadog.android.rum.internal.monitor.AdvancedNetworkRumMonitor#stopResource()`| Parameter `attributes: Map<String, Any?>` is now optional                           |
+|`com.datadog.android.rum.internal.monitor.AdvancedNetworkRumMonitor#stopResource()`| Parameter `attributes: Map<String, Any?>` is now optional                           |
+
 # Migration from 1.x to 2.0
 
 The main changes introduced in SDK 2.0 compared to 1.x are:

@@ -12,13 +12,12 @@ import androidx.annotation.AnyThread
 import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
+import com.datadog.android.api.feature.EventWriteScope
 import com.datadog.android.api.feature.Feature
-import com.datadog.android.api.feature.FeatureContextUpdateReceiver
 import com.datadog.android.api.feature.FeatureEventReceiver
 import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.feature.StorageBackedFeature
 import com.datadog.android.api.net.RequestFactory
-import com.datadog.android.api.storage.EventBatchWriter
 import com.datadog.android.api.storage.FeatureStorageConfiguration
 import com.datadog.android.api.storage.datastore.DataStoreHandler
 import com.datadog.android.core.configuration.UploadSchedulerStrategy
@@ -52,20 +51,25 @@ import com.datadog.android.core.internal.persistence.file.NoOpFileOrchestrator
 import com.datadog.android.core.internal.persistence.file.advanced.FeatureFileOrchestrator
 import com.datadog.android.core.internal.persistence.file.batch.BatchFileReaderWriter
 import com.datadog.android.core.internal.persistence.tlvformat.TLVBlockFileReader
+import com.datadog.android.core.internal.utils.executeSafe
+import com.datadog.android.core.internal.utils.getSafe
+import com.datadog.android.core.internal.utils.submitSafe
 import com.datadog.android.core.persistence.PersistenceStrategy
 import com.datadog.android.internal.profiler.BenchmarkSdkUploads
 import com.datadog.android.internal.profiler.GlobalBenchmark
 import com.datadog.android.privacy.TrackingConsentProviderCallback
 import com.datadog.android.security.Encryption
-import java.util.Collections
 import java.util.Locale
-import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.Callable
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
+import java.util.concurrent.locks.ReadWriteLock
+import java.util.concurrent.locks.ReentrantReadWriteLock
 
 @Suppress("TooManyFunctions")
 internal class SdkFeature(
     internal val coreFeature: CoreFeature,
+    internal val contextProvider: ContextProvider,
     internal val wrappedFeature: Feature,
     internal val internalLogger: InternalLogger,
     private val benchmarkSdkUploads: BenchmarkSdkUploads = GlobalBenchmark.getBenchmarkSdkUploads()
@@ -74,10 +78,6 @@ internal class SdkFeature(
     override var dataStore: DataStoreHandler = NoOpDataStoreHandler()
 
     internal val initialized = AtomicBoolean(false)
-
-    @Suppress("UnsafeThirdPartyFunctionCall") // the argument is always empty
-    internal val contextUpdateListeners =
-        Collections.newSetFromMap(ConcurrentHashMap<FeatureContextUpdateReceiver, Boolean>())
     internal val eventReceiver = AtomicReference<FeatureEventReceiver>(null)
     internal var storage: Storage = NoOpStorage()
     internal var uploader: DataUploader = NoOpDataUploader()
@@ -85,6 +85,8 @@ internal class SdkFeature(
     internal var fileOrchestrator: FileOrchestrator = NoOpFileOrchestrator()
     internal var metricsDispatcher: MetricsDispatcher = NoOpMetricsDispatcher()
     internal var processLifecycleMonitor: ProcessLifecycleMonitor? = null
+    internal val featureContextLock: ReadWriteLock = ReentrantReadWriteLock()
+    internal val featureContext: MutableMap<String, Any?> = mutableMapOf()
 
     // region SdkFeature
 
@@ -160,6 +162,7 @@ internal class SdkFeature(
             (coreFeature.contextRef.get() as? Application)
                 ?.unregisterActivityLifecycleCallbacks(processLifecycleMonitor)
             processLifecycleMonitor = null
+            featureContext.clear()
             initialized.set(false)
         }
     }
@@ -169,17 +172,46 @@ internal class SdkFeature(
     // region FeatureScope
 
     override fun withWriteContext(
-        forceNewBatch: Boolean,
-        callback: (DatadogContext, EventBatchWriter) -> Unit
+        withFeatureContexts: Set<String>,
+        callback: (DatadogContext, EventWriteScope) -> Unit
     ) {
-        // TODO RUM-1462 thread safety. Thread switch happens in Storage right now. Open questions:
-        // * what if caller wants to have a sync operation, without thread switch
-        // * should context read and write be on the dedicated thread? risk - time gap between
-        // caller and context
-        val contextProvider = coreFeature.contextProvider
-        if (contextProvider is NoOpContextProvider) return
-        val context = contextProvider.context
-        storage.writeCurrentBatch(context, forceNewBatch) { callback(context, it) }
+        coreFeature.contextExecutorService
+            .executeSafe("withWriteContext-${wrappedFeature.name}", internalLogger) {
+                if (coreFeature.initialized.get() == false) return@executeSafe
+                val context = contextProvider.getContext(withFeatureContexts)
+                val eventBatchWriteScope = storage.getEventWriteScope(context)
+                callback(context, eventBatchWriteScope)
+            }
+    }
+
+    override fun withContext(
+        withFeatureContexts: Set<String>,
+        callback: (datadogContext: DatadogContext) -> Unit
+    ) {
+        coreFeature.contextExecutorService
+            .executeSafe("withContext-${wrappedFeature.name}", internalLogger) {
+                if (coreFeature.initialized.get() == false) return@executeSafe
+                val context = contextProvider.getContext(withFeatureContexts)
+                callback(context)
+            }
+    }
+
+    override fun getWriteContextSync(
+        withFeatureContexts: Set<String>
+    ): Pair<DatadogContext, EventWriteScope>? {
+        val operationName = "getWriteContextSync-${wrappedFeature.name}"
+        return coreFeature.contextExecutorService
+            .submitSafe(
+                operationName,
+                internalLogger,
+                Callable {
+                    if (coreFeature.initialized.get() == false) return@Callable null
+                    val context = contextProvider.getContext(withFeatureContexts)
+                    val eventBatchWriteScope = storage.getEventWriteScope(context)
+                    context to eventBatchWriteScope
+                }
+            )
+            .getSafe(operationName, internalLogger)
     }
 
     override fun sendEvent(event: Any) {
@@ -199,39 +231,6 @@ internal class SdkFeature(
     // caught during our tests
     @Suppress("UNCHECKED_CAST")
     override fun <T : Feature> unwrap(): T = wrappedFeature as T
-
-    // endregion
-
-    // region Context Update Listener
-
-    internal fun notifyContextUpdated(featureName: String, context: Map<String, Any?>) {
-        contextUpdateListeners.forEach {
-            it.onContextUpdate(featureName, context)
-        }
-    }
-
-    internal fun setContextUpdateListener(listener: FeatureContextUpdateReceiver) {
-        synchronized(contextUpdateListeners) {
-            // the argument is always non - null, so we can suppress the warning
-            @Suppress("UnsafeThirdPartyFunctionCall")
-            if (contextUpdateListeners.contains(listener)) {
-                internalLogger.log(
-                    InternalLogger.Level.WARN,
-                    InternalLogger.Target.USER,
-                    { CONTEXT_UPDATE_LISTENER_ALREADY_EXISTS.format(Locale.US, wrappedFeature.name) }
-                )
-            }
-            contextUpdateListeners.add(listener)
-        }
-    }
-
-    internal fun removeContextUpdateListener(listener: FeatureContextUpdateReceiver) {
-        synchronized(contextUpdateListeners) {
-            @Suppress("UnsafeThirdPartyFunctionCall")
-            // the argument is always non - null, so we can suppress the warning
-            contextUpdateListeners.remove(listener)
-        }
-    }
 
     // endregion
 
@@ -284,7 +283,7 @@ internal class SdkFeature(
                 feature.name,
                 storage,
                 uploader,
-                coreFeature.contextProvider,
+                contextProvider,
                 coreFeature.networkInfoProvider,
                 coreFeature.systemInfoProvider,
                 uploadSchedulerStrategy,
@@ -372,7 +371,6 @@ internal class SdkFeature(
             internalLogger = internalLogger,
             filePersistenceConfig = filePersistenceConfig,
             metricsDispatcher = metricsDispatcher,
-            coreFeature.trackingConsentProvider,
             featureName
         )
     }
@@ -381,7 +379,7 @@ internal class SdkFeature(
         return DataOkHttpUploader(
             requestFactory = requestFactory,
             internalLogger = internalLogger,
-            callFactory = coreFeature.okHttpClient,
+            callFactory = coreFeature.callFactory,
             sdkVersion = coreFeature.sdkVersion,
             androidInfoProvider = coreFeature.androidInfoProvider,
             executionTimer = GlobalBenchmark.createExecutionTimer(
@@ -437,7 +435,7 @@ internal class SdkFeature(
     @WorkerThread
     internal fun flushStoredData() {
         val flusher = DataFlusher(
-            coreFeature.contextProvider,
+            contextProvider,
             fileOrchestrator,
             BatchFileReaderWriter.create(internalLogger, coreFeature.localDataEncryption),
             FileReaderWriter.create(internalLogger, coreFeature.localDataEncryption),
@@ -450,8 +448,6 @@ internal class SdkFeature(
     // endregion
 
     companion object {
-        internal const val CONTEXT_UPDATE_LISTENER_ALREADY_EXISTS =
-            "Feature \"%s\" already has this listener registered."
         const val NO_EVENT_RECEIVER =
             "Feature \"%s\" has no event receiver registered, ignoring event."
         internal const val TRACK_NAME = "track"

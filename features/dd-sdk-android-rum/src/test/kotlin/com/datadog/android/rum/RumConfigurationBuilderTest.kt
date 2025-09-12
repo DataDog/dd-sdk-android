@@ -133,7 +133,7 @@ internal class RumConfigurationBuilderTest {
 
     @Test
     fun `M build config with custom endpoint W useCustomEndpoint() and build()`(
-        @StringForgery(regex = "https://[a-z]+\\.com") rumUrl: String
+        @StringForgery(regex = "https://[a-z]+\\.com(/[a-z]+)+") rumUrl: String
     ) {
         // When
         val rumConfiguration = testedBuilder

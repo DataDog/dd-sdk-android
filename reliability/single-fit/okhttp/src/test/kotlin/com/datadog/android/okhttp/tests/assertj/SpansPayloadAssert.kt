@@ -108,6 +108,14 @@ internal class SpansPayloadAssert(actual: JsonObject) :
             return this
         }
 
+        fun hasType(type: String): SpanAssert {
+            val actualType = actualSpan.getString(TYPE_KEY)
+            assertThat(actualType).overridingErrorMessage(
+                "Expected type to be $type but was $actualType for index $index"
+            ).isEqualTo(type)
+            return this
+        }
+
         fun hasResource(resource: String): SpanAssert {
             val actualResource = actualSpan.getString(RESOURCE_KEY)
             assertThat(actualResource).overridingErrorMessage(
@@ -437,6 +445,7 @@ internal class SpansPayloadAssert(actual: JsonObject) :
         private const val SERVICE_KEY = "service"
         private const val ERROR_KEY = "error"
         private const val NAME_KEY = "name"
+        private const val TYPE_KEY = "type"
         private const val RESOURCE_KEY = "resource"
         private const val USR_KEY = "meta.usr"
         private const val USR_ID_KEY = "meta.usr.id"

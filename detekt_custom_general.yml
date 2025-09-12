@@ -1,0 +1,120 @@
+build:
+  maxIssues: 0
+  excludeCorrectable: false
+  weights:
+  # complexity: 2
+  # LongParameterList: 1
+  # style: 1
+  # comments: 1
+
+config:
+  validation: true
+  warningsAsErrors: true
+  checkExhaustiveness: false
+  # when writing own rules with new properties, exclude the property path e.g.: 'my_rule_set,.*>.*>[my_property]'
+  excludes: ''
+
+processors:
+  active: true
+  exclude:
+  # - 'DetektProgressListener'
+  # - 'FunctionCountProcessor'
+  # - 'PropertyCountProcessor'
+  # - 'ClassCountProcessor'
+  # - 'PackageCountProcessor'
+  # - 'KtFileCountProcessor'
+  # - 'ProjectComplexityProcessor'
+  # - 'ProjectCognitiveComplexityProcessor'
+  # - 'ProjectLLOCProcessor'
+  # - 'ProjectCLOCProcessor'
+  # - 'ProjectLOCProcessor'
+  # - 'ProjectSLOCProcessor'
+  # - 'LicenseHeaderLoaderExtension'
+
+console-reports:
+  active: true
+  exclude:
+  #  - 'ProjectStatisticsReport'
+  #  - 'ComplexityReport'
+  #  - 'NotificationReport'
+  #  - 'FindingsReport'
+  #  - 'FileBasedFindingsReport'
+  #  - 'BuildFailureReport'
+  #  - 'LiteFindingsReport'
+
+output-reports:
+  active: true
+  exclude:
+  # - 'TxtOutputReport'
+  # - 'XmlOutputReport'
+  # - 'HtmlOutputReport'
+  # - 'MdOutputReport'
+  # - 'SarifOutputReport'
+
+comments:
+  active: false
+
+complexity:
+  active: false
+
+coroutines:
+  active: false
+
+empty-blocks:
+  active: false
+
+exceptions:
+  active: false
+
+naming:
+  active: false
+
+potential-bugs:
+  active: false
+
+style:
+  active: false
+
+datadog:
+  active: true
+  excludes:
+    - '**/build/**'
+    - '**/test/**'
+    - '**/testDebug/**'
+    - '**/testRelease/**'
+    - '**/androidTest/**'
+    - '**/testFixtures/**'
+    - '**/buildSrc/**'
+    - '**/*.kts'
+    - '**/instrumented/**'
+    - '**/reliability/**'
+    - '**/sample/**'
+    - '**/tools/**'
+  ThreadSafety:
+    active: true
+    workerThreadSwitchingCalls:
+      - "com.datadog.android.core.internal.utils.submitSafe"
+      - "com.datadog.android.core.internal.utils.executeSafe"
+      - "com.datadog.android.core.internal.utils.scheduleSafe"
+      - "com.datadog.android.api.feature.FeatureScope.withWriteContext"
+      - "com.datadog.android.api.feature.EventWriteScope.invoke"
+    mainThreadSwitchingCalls:
+      - "android.widget.LinearLayout.post"
+  TodoWithoutTask:
+    active: true
+    deprecatedPrefixes:
+      - "RUMM"
+      - "REPLAY"
+  PackageNameVisibility:
+    active: true
+    withBreakingChanges: true
+    ignoredAnnotations:
+      - "com.datadog.android.lint.InternalApi"
+  UnsafeThirdPartyFunctionCall:
+    active: true
+    internalPackagePrefix: 'com.datadog'
+    treatUnknownFunctionAsThrowing: true
+    treatUnknownConstructorAsThrowing: true
+
+datadog-test-pyramid:
+  active: false

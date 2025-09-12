@@ -73,6 +73,6 @@ class NamedRunnableTest {
         val testedRunnable = NamedRunnable(originalStringBuilder.toString(), mockRunnable)
 
         // Then
-        assertThat(testedRunnable.sanitizedName).isEqualTo(expectedStringBuilder.toString())
+        assertThat(testedRunnable.name).isEqualTo(expectedStringBuilder.toString())
     }
 }

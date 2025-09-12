@@ -45,11 +45,16 @@ interface FeatureSdkCore : SdkCore {
      * provided [featureName], a new one will be created.
      *
      * @param featureName Feature name.
+     * @param useContextThread Whenever update of the context should happen on the context processing thread or not. It
+     * should be true for most of the cases related to the event processing. Be careful when setting it to false, valid
+     * use-case can be like updating/reading feature context on the same (or already on the context) thread.
+     * Defaults to true.
      * @param updateCallback Provides current feature context for the update. If there is no feature
      * with the given name registered, callback won't be called.
      */
     fun updateFeatureContext(
         featureName: String,
+        useContextThread: Boolean = true,
         updateCallback: (context: MutableMap<String, Any?>) -> Unit
     )
 
@@ -57,9 +62,13 @@ interface FeatureSdkCore : SdkCore {
      * Retrieves the context for the particular feature.
      *
      * @param featureName Feature name.
+     * @param useContextThread Whenever context read should happen on the context processing thread or not. It
+     * should be true for most of the cases related to the event processing. Be careful when setting it to false, valid
+     * use-case can be like updating/reading feature context on the same (or already on the context) thread.
+     * Defaults to true.
      * @return Context for the given feature or empty map if feature is not registered.
      */
-    fun getFeatureContext(featureName: String): Map<String, Any?>
+    fun getFeatureContext(featureName: String, useContextThread: Boolean = true): Map<String, Any?>
 
     /**
      * Sets event receiver for the given feature.
@@ -70,27 +79,26 @@ interface FeatureSdkCore : SdkCore {
     fun setEventReceiver(featureName: String, receiver: FeatureEventReceiver)
 
     /**
-     * Sets context update receiver for the given feature.
-     *
-     * @param featureName Feature name.
-     * @param listener Listener to remove.
-     */
-    fun setContextUpdateReceiver(featureName: String, listener: FeatureContextUpdateReceiver)
-
-    /**
-     * Removes context update listener for the given feature.
-     *
-     * @param featureName Feature name.
-     * @param listener Listener to remove.
-     */
-    fun removeContextUpdateReceiver(featureName: String, listener: FeatureContextUpdateReceiver)
-
-    /**
      * Removes events receive for the given feature.
      *
      * @param featureName Feature name.
      */
     fun removeEventReceiver(featureName: String)
+
+    /**
+     * Sets feature context update listener. Once subscribed, current context will be emitted
+     * immdediately if it exists.
+     *
+     * @param listener Listener to remove.
+     */
+    fun setContextUpdateReceiver(listener: FeatureContextUpdateReceiver)
+
+    /**
+     * Removes feature context update listener.
+     *
+     * @param listener Listener to remove.
+     */
+    fun removeContextUpdateReceiver(listener: FeatureContextUpdateReceiver)
 
     /**
      * Returns a new single thread [ExecutorService], set up with backpressure and internal monitoring.

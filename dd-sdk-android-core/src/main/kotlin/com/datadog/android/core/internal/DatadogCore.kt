@@ -35,20 +35,24 @@ import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import com.datadog.android.core.internal.time.DefaultAppStartTimeProvider
 import com.datadog.android.core.internal.utils.executeSafe
+import com.datadog.android.core.internal.utils.getSafe
 import com.datadog.android.core.internal.utils.scheduleSafe
+import com.datadog.android.core.internal.utils.submitSafe
 import com.datadog.android.core.thread.FlushableExecutorService
 import com.datadog.android.error.internal.CrashReportsFeature
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
-import com.datadog.android.ndk.internal.NdkCrashHandler
 import com.datadog.android.privacy.TrackingConsent
 import com.google.gson.JsonObject
 import java.io.File
+import java.util.Collections
 import java.util.Locale
 import java.util.UUID
+import java.util.concurrent.Callable
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.locks.Lock
 
 /**
  * Internal implementation of the [SdkCore] interface.
@@ -76,21 +80,18 @@ internal class DatadogCore(
 
     internal val features: MutableMap<String, SdkFeature> = ConcurrentHashMap()
 
-    internal val context: Context = context.applicationContext
+    internal val appContext: Context = context.applicationContext
 
-    internal val contextProvider: ContextProvider?
-        get() {
-            return if (coreFeature.initialized.get()) {
-                coreFeature.contextProvider
-            } else {
-                null
-            }
-        }
+    internal var contextProvider: ContextProvider = NoOpContextProvider()
 
     internal val isActive: Boolean
         get() = coreFeature.initialized.get()
 
     private var processLifecycleMonitor: ProcessLifecycleMonitor? = null
+
+    @Suppress("UnsafeThirdPartyFunctionCall") // the argument is always empty
+    internal val featureContextUpdateReceivers: MutableSet<FeatureContextUpdateReceiver> =
+        Collections.newSetFromMap(ConcurrentHashMap<FeatureContextUpdateReceiver, Boolean>())
 
     // region SdkCore
 
@@ -129,22 +130,15 @@ internal class DatadogCore(
     override fun registerFeature(feature: Feature) {
         val sdkFeature = SdkFeature(
             coreFeature,
+            contextProvider,
             feature,
             internalLogger
         )
         features[feature.name] = sdkFeature
-        sdkFeature.initialize(context, instanceId)
+        sdkFeature.initialize(appContext, instanceId)
 
-        when (feature.name) {
-            Feature.LOGS_FEATURE_NAME -> {
-                coreFeature.ndkCrashHandler
-                    .handleNdkCrash(this, NdkCrashHandler.ReportTarget.LOGS)
-            }
-
-            Feature.RUM_FEATURE_NAME -> {
-                coreFeature.ndkCrashHandler
-                    .handleNdkCrash(this, NdkCrashHandler.ReportTarget.RUM)
-            }
+        if (feature.name == Feature.RUM_FEATURE_NAME) {
+            coreFeature.ndkCrashHandler.handleNdkCrash(this)
         }
     }
 
@@ -156,41 +150,53 @@ internal class DatadogCore(
     /** @inheritDoc */
     @AnyThread
     override fun setTrackingConsent(consent: TrackingConsent) {
-        coreFeature.trackingConsentProvider.setConsent(consent)
+        coreFeature.contextExecutorService.executeSafe("DatadogCore.setTrackingConsent", internalLogger) {
+            coreFeature.trackingConsentProvider.setConsent(consent)
+        }
     }
 
     /** @inheritDoc */
     @AnyThread
     override fun setUserInfo(
-        id: String?,
+        id: String,
         name: String?,
         email: String?,
         extraInfo: Map<String, Any?>
     ) {
-        coreFeature.userInfoProvider.setUserInfo(id, name, email, extraInfo)
+        val extraInfoSnapshot = extraInfo.toMap()
+        coreFeature.contextExecutorService.executeSafe("DatadogCore.setUserInfo", internalLogger) {
+            coreFeature.userInfoProvider.setUserInfo(id, name, email, extraInfoSnapshot)
+        }
     }
 
     /** @inheritDoc */
     @AnyThread
     override fun addUserProperties(extraInfo: Map<String, Any?>) {
-        coreFeature.userInfoProvider.addUserProperties(extraInfo)
+        val extraInfoSnapshot = extraInfo.toMap()
+        coreFeature.contextExecutorService.executeSafe("DatadogCore.addUserProperties", internalLogger) {
+            coreFeature.userInfoProvider.addUserProperties(extraInfoSnapshot)
+        }
     }
 
     /** @inheritDoc */
     @AnyThread
     override fun clearUserInfo() {
-        coreFeature.userInfoProvider.clearUserInfo()
+        coreFeature.contextExecutorService.executeSafe("DatadogCore.clearUserInfo", internalLogger) {
+            coreFeature.userInfoProvider.clearUserInfo()
+        }
     }
 
     /** @inheritDoc */
     @AnyThread
     override fun clearAllData() {
-        features.values.forEach {
-            it.clearAllData()
-        }
-        getPersistenceExecutorService().executeSafe("Clear all data", internalLogger) {
-            coreFeature.deleteLastViewEvent()
-            coreFeature.deleteLastFatalAnrSent()
+        coreFeature.contextExecutorService.executeSafe("DatadogCore.clearAllData", internalLogger) {
+            features.values.forEach {
+                it.clearAllData()
+            }
+            getPersistenceExecutorService().executeSafe("Clear all data", internalLogger) {
+                coreFeature.deleteLastViewEvent()
+                coreFeature.deleteLastFatalAnrSent()
+            }
         }
     }
 
@@ -199,45 +205,80 @@ internal class DatadogCore(
         name: String?,
         extraInfo: Map<String, Any?>
     ) {
-        coreFeature.accountInfoProvider.setAccountInfo(id, name, extraInfo)
+        val extraInfoSnapshot = extraInfo.toMap()
+        coreFeature.contextExecutorService.executeSafe("DatadogCore.setAccountInfo", internalLogger) {
+            coreFeature.accountInfoProvider.setAccountInfo(id, name, extraInfoSnapshot)
+        }
     }
 
     override fun addAccountExtraInfo(
         extraInfo: Map<String, Any?>
     ) {
-        coreFeature.accountInfoProvider.addExtraInfo(extraInfo)
+        val extraInfoSnapshot = extraInfo.toMap()
+        coreFeature.contextExecutorService.executeSafe("DatadogCore.addAccountExtraInfo", internalLogger) {
+            coreFeature.accountInfoProvider.addExtraInfo(extraInfoSnapshot)
+        }
     }
 
     override fun clearAccountInfo() {
-        coreFeature.accountInfoProvider.clearAccountInfo()
+        coreFeature.contextExecutorService.executeSafe("DatadogCore.clearAccountInfo", internalLogger) {
+            coreFeature.accountInfoProvider.clearAccountInfo()
+        }
     }
 
     /** @inheritDoc */
     override fun updateFeatureContext(
         featureName: String,
+        useContextThread: Boolean,
         updateCallback: (context: MutableMap<String, Any?>) -> Unit
     ) {
-        val feature = features[featureName] ?: return
-        contextProvider?.let { currentContext ->
-            synchronized(feature) {
-                // Use HashMap instead of .toMutableMap() for faster init
-                @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
-                val mutableContext = HashMap(currentContext.getFeatureContext(featureName))
-                updateCallback(mutableContext)
-                currentContext.setFeatureContext(featureName, mutableContext)
-                // notify all the other features
-                features.forEach { (key, feature) ->
-                    if (key != featureName) {
-                        feature.notifyContextUpdated(featureName, mutableContext)
-                    }
+        val runnable = runnable@{
+            val feature = features[featureName] ?: return@runnable
+            feature.featureContextLock.writeLock().safeTryWithLock(1, TimeUnit.SECONDS) {
+                val currentContext = feature.featureContext
+                updateCallback(currentContext)
+                featureContextUpdateReceivers.forEach {
+                    it.onContextUpdate(featureName, currentContext)
                 }
             }
+        }
+        if (useContextThread) {
+            coreFeature.contextExecutorService.executeSafe(
+                "DatadogCore.updateFeatureContext-$featureName",
+                internalLogger,
+                runnable
+            )
+        } else {
+            runnable.invoke()
         }
     }
 
     /** @inheritDoc */
-    override fun getFeatureContext(featureName: String): Map<String, Any?> {
-        return contextProvider?.getFeatureContext(featureName) ?: emptyMap()
+    override fun getFeatureContext(featureName: String, useContextThread: Boolean): Map<String, Any?> {
+        val callable = Callable<Map<String, Any?>> {
+            val feature = features[featureName] ?: return@Callable emptyMap()
+            return@Callable feature.featureContextLock.readLock().safeWithLock {
+                // Creating copy here is VERY important - this will make
+                // independent snapshot of the features context which is not affected by the
+                // changes which can be made later by another thread.
+                // Use HashMap instead of .toMutableMap() for faster init
+                @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
+                HashMap(feature.featureContext)
+            }.orEmpty()
+        }
+        return if (useContextThread) {
+            return coreFeature.contextExecutorService
+                .submitSafe(
+                    "DatadogCore.getFeatureContext-$featureName",
+                    internalLogger,
+                    callable
+                )
+                .getSafe("DatadogCore.getFeatureContext-$featureName", internalLogger)
+                .orEmpty()
+        } else {
+            @Suppress("UnsafeThirdPartyFunctionCall") // not 3rd party
+            callable.call()
+        }
     }
 
     /** @inheritDoc */
@@ -261,21 +302,27 @@ internal class DatadogCore(
         }
     }
 
-    override fun setContextUpdateReceiver(featureName: String, listener: FeatureContextUpdateReceiver) {
-        val feature = features[featureName]
-        if (feature == null) {
+    override fun setContextUpdateReceiver(listener: FeatureContextUpdateReceiver) {
+        // the argument is always non - null, so we can suppress the warning
+        @Suppress("UnsafeThirdPartyFunctionCall")
+        if (featureContextUpdateReceivers.contains(listener)) {
             internalLogger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
-                { MISSING_FEATURE_FOR_CONTEXT_UPDATE_LISTENER.format(Locale.US, featureName) }
+                { CONTEXT_UPDATE_LISTENER_ALREADY_REGISTERED.format(Locale.US, listener) }
             )
-        } else {
-            feature.setContextUpdateListener(listener)
         }
+        features.forEach {
+            val currentContext = getFeatureContext(it.key, false)
+            if (currentContext.isNotEmpty()) {
+                listener.onContextUpdate(it.key, currentContext)
+            }
+        }
+        featureContextUpdateReceivers.add(listener)
     }
 
-    override fun removeContextUpdateReceiver(featureName: String, listener: FeatureContextUpdateReceiver) {
-        features[featureName]?.removeContextUpdateListener(listener)
+    override fun removeContextUpdateReceiver(listener: FeatureContextUpdateReceiver) {
+        featureContextUpdateReceivers.remove(listener)
     }
 
     /** @inheritDoc */
@@ -294,7 +341,9 @@ internal class DatadogCore(
     }
 
     override fun setAnonymousId(anonymousId: UUID?) {
-        coreFeature.userInfoProvider.setAnonymousId(anonymousId?.toString())
+        coreFeature.contextExecutorService.executeSafe("DatadogCore.setAnonymousId", internalLogger) {
+            coreFeature.userInfoProvider.setAnonymousId(anonymousId?.toString())
+        }
     }
 
     override fun isCoreActive(): Boolean = isActive
@@ -307,7 +356,15 @@ internal class DatadogCore(
         get() = coreFeature.networkInfoProvider.getLatestNetworkInfo()
 
     override val trackingConsent: TrackingConsent
-        get() = coreFeature.trackingConsentProvider.getConsent()
+        get() {
+            return coreFeature.contextExecutorService.submitSafe(
+                "getTrackingConsent",
+                internalLogger,
+                Callable<TrackingConsent> {
+                    coreFeature.trackingConsentProvider.getConsent()
+                }
+            ).getSafe("getTrackingConsent", internalLogger) ?: TrackingConsent.NOT_GRANTED
+        }
 
     override val rootStorageDir: File
         get() = coreFeature.storageDir
@@ -358,8 +415,16 @@ internal class DatadogCore(
         return features.values.toList()
     }
 
-    override fun getDatadogContext(): DatadogContext? {
-        return contextProvider?.context
+    override fun getDatadogContext(withFeatureContexts: Set<String>): DatadogContext? {
+        return coreFeature.contextExecutorService
+            .submitSafe(
+                "getDatadogContext",
+                internalLogger,
+                Callable {
+                    with(contextProvider) { if (this is NoOpContextProvider) null else getContext(withFeatureContexts) }
+                }
+            )
+            .getSafe("getDatadogContext", internalLogger)
     }
 
     // endregion
@@ -372,7 +437,7 @@ internal class DatadogCore(
             throw IllegalArgumentException(MESSAGE_ENV_NAME_NOT_VALID)
         }
 
-        val isDebug = isAppDebuggable(context)
+        val isDebug = isAppDebuggable(appContext)
 
         var mutableConfig = configuration
         if (isDebug and configuration.coreConfig.enableDeveloperModeWhenDebuggable) {
@@ -391,11 +456,16 @@ internal class DatadogCore(
             CoreFeature.DEFAULT_SCHEDULED_EXECUTOR_SERVICE_FACTORY
         )
         coreFeature.initialize(
-            context,
+            appContext,
             instanceId,
             mutableConfig,
             TrackingConsent.PENDING
         )
+
+        contextProvider = DatadogContextProvider(coreFeature) {
+            // useContextThread = false to infer the caller thread (caller is responsible for the thread selection)
+            getFeatureContext(it, false)
+        }
 
         applyAdditionalConfiguration(mutableConfig.additionalConfig)
 
@@ -403,7 +473,7 @@ internal class DatadogCore(
             initializeCrashReportFeature()
         }
 
-        setupLifecycleMonitorCallback(context)
+        setupLifecycleMonitorCallback(appContext)
 
         setupShutdownHook()
         sendCoreConfigurationTelemetryEvent(configuration)
@@ -557,19 +627,76 @@ internal class DatadogCore(
         )
     }
 
+    private fun Lock.safeTryWithLock(time: Long, unit: TimeUnit, block: () -> Unit) {
+        val locked = try {
+            // NullPointerException cannot happen, time unit is not null
+            @Suppress("UnsafeThirdPartyFunctionCall")
+            tryLock(time, unit)
+        } catch (e: InterruptedException) {
+            internalLogger.log(
+                InternalLogger.Level.ERROR,
+                listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
+                { "Couldn't acquire ${javaClass.simpleName} due to the exception thrown, aborting operation." },
+                e
+            )
+            return
+        }
+        if (!locked) {
+            internalLogger.log(
+                InternalLogger.Level.ERROR,
+                listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
+                {
+                    "Couldn't acquire ${javaClass.simpleName} due to" +
+                        " timeout ($time $unit), aborting operation."
+                }
+            )
+            return
+        }
+        try {
+            block()
+        } finally {
+            if (locked) {
+                // IllegalMonitorStateException cannot happen, we check locked flag
+                @Suppress("UnsafeThirdPartyFunctionCall")
+                unlock()
+            }
+        }
+    }
+
+    private fun <T> Lock.safeWithLock(block: () -> T): T? {
+        try {
+            lock()
+        } catch (e: InterruptedException) {
+            internalLogger.log(
+                InternalLogger.Level.ERROR,
+                listOf(InternalLogger.Target.USER, InternalLogger.Target.TELEMETRY),
+                { "Couldn't acquire ${javaClass.simpleName} lock due to the exception thrown, aborting operation." },
+                e
+            )
+            return null
+        }
+        return try {
+            block()
+        } finally {
+            // IllegalMonitorStateException cannot happen, lock() call above succeeded
+            @Suppress("UnsafeThirdPartyFunctionCall")
+            unlock()
+        }
+    }
+
     /**
      * Stops all process for this instance of the Datadog SDK.
      */
     internal fun stop() {
-        features.forEach {
-            it.value.stop()
-        }
-        features.clear()
-
-        if (context is Application && processLifecycleMonitor != null) {
-            context.unregisterActivityLifecycleCallbacks(processLifecycleMonitor)
+        features.keys.forEach {
+            features.remove(it)?.stop()
         }
 
+        if (appContext is Application && processLifecycleMonitor != null) {
+            appContext.unregisterActivityLifecycleCallbacks(processLifecycleMonitor)
+        }
+
+        contextProvider = NoOpContextProvider()
         coreFeature.stop()
         isDeveloperModeEnabled = false
 
@@ -611,6 +738,9 @@ internal class DatadogCore(
         internal const val NO_NEED_TO_WRITE_LAST_VIEW_EVENT =
             "No need to write last RUM view event: NDK" +
                 " crash reports feature is not enabled and API is below 30."
+
+        internal const val CONTEXT_UPDATE_LISTENER_ALREADY_REGISTERED =
+            "SDK core already has \"%s\" listener registered."
 
         internal val CONFIGURATION_TELEMETRY_DELAY_MS = TimeUnit.SECONDS.toMillis(5)
 

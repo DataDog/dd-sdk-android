@@ -11,6 +11,7 @@ import com.datadog.android.log.LogAttributes
 import com.datadog.android.trace.model.SpanEvent
 import com.datadog.trace.api.DDSpanId
 import com.datadog.trace.api.internal.util.LongStringUtils
+import com.datadog.trace.api.sampling.PrioritySampling
 import com.datadog.trace.bootstrap.instrumentation.api.AgentSpanLink
 import com.datadog.trace.core.DDSpan
 import com.datadog.trace.core.DDSpanContext
@@ -57,9 +58,15 @@ internal class CoreTracerSpanToSpanEventMapper(
         return DDSpanId.toHexStringPadded(model.parentId)
     }
 
-    private fun resolveMetrics(event: DDSpan): SpanEvent.Metrics {
+    // TODO RUM-10805 - make it back private and re-create objects in tests
+    internal fun resolveMetrics(event: DDSpan): SpanEvent.Metrics {
         val metrics = resolveMetricsFromSpanContext(event).apply {
-            this[DDSpanContext.PRIORITY_SAMPLING_KEY] = event.samplingPriority()
+            val spanSamplingPriority = event.spanSamplingPriority
+            if (spanSamplingPriority != PrioritySampling.UNSET.toInt()) {
+                // This required for backward compatibility with AndroidTracer that
+                // don't add the sampling priority if it not set for current span.
+                this[DDSpanContext.PRIORITY_SAMPLING_KEY] = spanSamplingPriority
+            }
         }
         return SpanEvent.Metrics(
             topLevel = if (event.parentId == 0L) 1 else null,
@@ -67,7 +74,8 @@ internal class CoreTracerSpanToSpanEventMapper(
         )
     }
 
-    private fun resolveMeta(datadogContext: DatadogContext, event: DDSpan): SpanEvent.Meta {
+    // TODO RUM-10805 - make it back private and re-create objects in tests
+    internal fun resolveMeta(datadogContext: DatadogContext, event: DDSpan): SpanEvent.Meta {
         val deviceInfo = resolveDeviceInfo(datadogContext.deviceInfo)
         val osInfo = resolveOsInfo(datadogContext.deviceInfo)
         val networkInfoMeta = if (networkInfoEnabled) resolveNetworkInfo(datadogContext.networkInfo) else null

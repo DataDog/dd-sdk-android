@@ -14,6 +14,9 @@ tasks.register(
     com.datadog.gradle.plugin.jsonschema.GenerateJsonSchemaTask::class.java
 ) {
     inputDirPath = "src/main/json/trace"
+    ignoredFiles = arrayOf(
+        "_common-schema.json"
+    )
     targetPackageName = "com.datadog.android.trace.model"
 }
 

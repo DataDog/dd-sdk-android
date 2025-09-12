@@ -71,7 +71,7 @@ internal class RecordedQueuedItemContextHandlerTest {
         val rumContextData = testedHandler.createRumContextData()
 
         // Then
-        assertThat(rumContextData?.timestamp).isEqualTo(fakeTime)
+        assertThat(rumContextData?.timestamp).isEqualTo(fakeTime + fakeRumContext.viewTimeOffsetMs)
         assertThat(rumContextData?.newRumContext).isEqualTo(fakeRumContext)
     }
 

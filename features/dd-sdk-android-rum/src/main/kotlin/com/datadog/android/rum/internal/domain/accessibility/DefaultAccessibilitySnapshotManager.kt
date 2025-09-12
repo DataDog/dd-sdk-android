@@ -6,29 +6,53 @@
 
 package com.datadog.android.rum.internal.domain.accessibility
 
+import com.datadog.android.rum.internal.domain.InfoProvider
+
 internal class DefaultAccessibilitySnapshotManager(
-    private val accessibilityReader: AccessibilityReader
+    private val accessibilityReader: InfoProvider<AccessibilityInfo>
 ) : AccessibilitySnapshotManager {
-    private val lastSnapshot = mutableMapOf<String, Any>()
+    @Volatile
+    private var lastSnapshot: AccessibilityInfo? = null
 
     @Synchronized
-    override fun latestSnapshot(): Accessibility {
-        val newAccessibilityState = accessibilityReader.getState()
-        val newSnapshot = mutableMapOf<String, Any>()
+    override fun getIfChanged(): AccessibilityInfo? {
+        val newSnapshot = accessibilityReader.getState()
+        if (newSnapshot == lastSnapshot) return null
 
-        // remove the ones we saw already
-        for (key in newAccessibilityState.keys) {
-            val newValue = newAccessibilityState[key]
-                ?: continue
+        val deltaSnapshot = createDelta(newSnapshot, lastSnapshot)
+        lastSnapshot = newSnapshot
 
-            val oldValue = lastSnapshot[key]
+        return if (deltaSnapshot.hasAnyNonNullValues()) deltaSnapshot else null
+    }
 
-            if (newValue != oldValue) {
-                newSnapshot[key] = newValue
-                lastSnapshot[key] = newValue
-            }
-        }
+    private fun createDelta(new: AccessibilityInfo, old: AccessibilityInfo?): AccessibilityInfo {
+        return AccessibilityInfo(
+            textSize =
+            new.textSize.takeIf { it != old?.textSize },
+            isScreenReaderEnabled =
+            new.isScreenReaderEnabled.takeIf { it != old?.isScreenReaderEnabled },
+            isColorInversionEnabled =
+            new.isColorInversionEnabled.takeIf { it != old?.isColorInversionEnabled },
+            isClosedCaptioningEnabled =
+            new.isClosedCaptioningEnabled.takeIf { it != old?.isClosedCaptioningEnabled },
+            isReducedAnimationsEnabled =
+            new.isReducedAnimationsEnabled.takeIf { it != old?.isReducedAnimationsEnabled },
+            isScreenPinningEnabled =
+            new.isScreenPinningEnabled.takeIf { it != old?.isScreenPinningEnabled },
+            isRtlEnabled =
+            new.isRtlEnabled.takeIf { it != old?.isRtlEnabled }
+        )
+    }
 
-        return Accessibility.fromMap(newSnapshot)
+    private fun AccessibilityInfo.hasAnyNonNullValues(): Boolean {
+        return setOf<Any?>(
+            this.textSize,
+            this.isScreenReaderEnabled,
+            this.isRtlEnabled,
+            this.isScreenPinningEnabled,
+            this.isColorInversionEnabled,
+            this.isClosedCaptioningEnabled,
+            this.isReducedAnimationsEnabled
+        ).any { it != null }
     }
 }
