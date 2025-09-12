@@ -85,7 +85,7 @@ fun ByteArray.toHexString(): String
 interface com.datadog.android.internal.utils.DDCoreSubscription<T>
   fun addListener(T)
   fun removeListener(T)
-  fun notify(T.() -> Unit)
+  fun notifyListeners(T.() -> Unit)
   companion object 
     fun <T> create(): DDCoreSubscription<T>
 object com.datadog.android.internal.utils.ImageViewUtils
@@ -98,10 +98,7 @@ val NULL_MAP_VALUE: Object
 fun Int.toHexString(): String
 fun Long.toHexString(): String
 fun java.math.BigInteger.toHexString(): String
-class com.datadog.android.internal.utils.WindowDelegateCallback : android.view.Window.Callback
-  constructor(android.view.Window.Callback)
 fun android.view.Window.onDecorViewReady(() -> Unit)
-fun android.view.Window.onContentChanged(() -> Boolean)
 class com.datadog.android.internal.utils.NextDrawListener : android.view.ViewTreeObserver.OnDrawListener
   constructor(android.view.View, () -> Unit)
   override fun onDraw()
@@ -116,5 +113,6 @@ fun Thread.safeGetThreadId(): Long
 fun Thread.State.asString(): String
 fun Array<StackTraceElement>.loggableStackTrace(): String
 fun Throwable.loggableStackTrace(): String
+fun android.view.Window.onContentChanged(() -> Boolean)
 annotation com.datadog.tools.annotation.NoOpImplementation
   constructor(Boolean = false)

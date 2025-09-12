@@ -15,20 +15,6 @@ import android.view.ViewTreeObserver
 import android.view.Window
 import com.datadog.android.internal.utils.NextDrawListener.Companion.onNextDraw
 
-class WindowDelegateCallback constructor(
-    private val delegate: Window.Callback
-) : Window.Callback by delegate {
-
-    internal val onContentChangedCallbacks = mutableListOf<() -> Boolean>()
-
-    override fun onContentChanged() {
-        onContentChangedCallbacks.removeAll { callback ->
-            !callback()
-        }
-        delegate.onContentChanged()
-    }
-}
-
 fun Window.onDecorViewReady(callback: () -> Unit) {
     if (peekDecorView() == null) {
         onContentChanged {
@@ -37,22 +23,6 @@ fun Window.onDecorViewReady(callback: () -> Unit) {
         }
     } else {
         callback()
-    }
-}
-
-fun Window.onContentChanged(block: () -> Boolean) {
-    val callback = wrapCallback()
-    callback.onContentChangedCallbacks += block
-}
-
-private fun Window.wrapCallback(): WindowDelegateCallback {
-    val currentCallback = callback
-    return if (currentCallback is WindowDelegateCallback) {
-        currentCallback
-    } else {
-        val newCallback = WindowDelegateCallback(currentCallback)
-        callback = newCallback
-        newCallback
     }
 }
 

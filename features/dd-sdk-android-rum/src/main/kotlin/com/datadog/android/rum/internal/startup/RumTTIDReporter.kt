@@ -8,6 +8,7 @@ package com.datadog.android.rum.internal.startup
 
 import android.os.Handler
 import android.os.Looper
+import android.view.Window
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.internal.utils.subscribeToFirstDrawFinished
 import kotlin.time.Duration.Companion.nanoseconds
@@ -16,6 +17,8 @@ internal class RumTTIDReporter(
     private val internalLogger: InternalLogger,
 ) {
     private val handler = Handler(Looper.getMainLooper())
+
+    private var windowCallback: Window.Callback? = null
 
     fun onAppStartupDetected(scenario: RumStartupScenario) {
         subscribeToFirstDrawFinished(handler, scenario.activity) {
