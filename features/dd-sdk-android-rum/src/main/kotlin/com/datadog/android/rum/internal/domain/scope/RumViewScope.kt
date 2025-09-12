@@ -262,6 +262,7 @@ internal open class RumViewScope(
     ) {
         sdkCore.newRumEventWriteOperation(datadogContext, writeScope, writer) {
             newVitalEvent(
+                event,
                 datadogContext,
                 name = event.name,
                 operationKey = event.operationKey,
@@ -281,6 +282,7 @@ internal open class RumViewScope(
     ) {
         sdkCore.newRumEventWriteOperation(datadogContext, writeScope, writer) {
             newVitalEvent(
+                event,
                 datadogContext,
                 name = event.name,
                 operationKey = event.operationKey,
@@ -294,6 +296,7 @@ internal open class RumViewScope(
 
     @Suppress("LongMethod")
     private fun newVitalEvent(
+        event: RumRawEvent,
         datadogContext: DatadogContext,
         name: String,
         operationKey: String?,
@@ -325,7 +328,7 @@ internal open class RumViewScope(
         }
 
         return VitalEvent(
-            date = eventTimestamp,
+            date = event.eventTime.timestamp + serverTimeOffsetInMs,
             context = VitalEvent.Context(
                 additionalProperties = getCustomAttributes().toMutableMap().also {
                     it.putAll(eventAttributes)

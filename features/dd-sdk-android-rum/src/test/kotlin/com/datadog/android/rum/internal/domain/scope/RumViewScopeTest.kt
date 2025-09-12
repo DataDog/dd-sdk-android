@@ -8685,7 +8685,7 @@ internal class RumViewScopeTest {
         argumentCaptor<VitalEvent> {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             VitalEventAssert.assertThat(lastValue)
-                .hasDate(fakeEventTime.timestamp + fakeTimeInfoAtScopeStart.serverTimeOffsetMs)
+                .hasDate(event.eventTime.timestamp + fakeTimeInfoAtScopeStart.serverTimeOffsetMs)
                 .hasApplicationId(fakeParentContext.applicationId)
                 .containsExactlyContextAttributes(expectedAttributes)
                 .hasStartReason(fakeParentContext.sessionStartReason)
@@ -8729,7 +8729,7 @@ internal class RumViewScopeTest {
         argumentCaptor<VitalEvent> {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             VitalEventAssert.assertThat(lastValue)
-                .hasDate(fakeEventTime.timestamp + fakeTimeInfoAtScopeStart.serverTimeOffsetMs)
+                .hasDate(event.eventTime.timestamp + fakeTimeInfoAtScopeStart.serverTimeOffsetMs)
                 .hasApplicationId(fakeParentContext.applicationId)
                 .containsExactlyContextAttributes(expectedAttributes)
                 .hasStartReason(fakeParentContext.sessionStartReason)
@@ -8774,7 +8774,7 @@ internal class RumViewScopeTest {
         argumentCaptor<VitalEvent> {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             VitalEventAssert.assertThat(lastValue)
-                .hasDate(fakeEventTime.timestamp + fakeTimeInfoAtScopeStart.serverTimeOffsetMs)
+                .hasDate(event.eventTime.timestamp + fakeTimeInfoAtScopeStart.serverTimeOffsetMs)
                 .hasApplicationId(fakeParentContext.applicationId)
                 .containsExactlyContextAttributes(expectedAttributes)
                 .hasStartReason(fakeParentContext.sessionStartReason)
