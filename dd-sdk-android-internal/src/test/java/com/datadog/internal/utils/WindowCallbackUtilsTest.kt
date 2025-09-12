@@ -15,6 +15,7 @@ import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.inOrder
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
@@ -42,7 +43,9 @@ class WindowCallbackUtilsTest {
 
         callback!!.onContentChanged()
 
-        verify(existingCallback).onContentChanged()
-        verify(onContentChanged).invoke()
+        inOrder(existingCallback, onContentChanged) {
+            verify(onContentChanged).invoke()
+            verify(existingCallback).onContentChanged()
+        }
     }
 }
