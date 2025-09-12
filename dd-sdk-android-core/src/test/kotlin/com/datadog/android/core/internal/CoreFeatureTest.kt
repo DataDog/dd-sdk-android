@@ -6,6 +6,7 @@
 
 package com.datadog.android.core.internal
 
+import android.annotation.SuppressLint
 import android.app.ActivityManager
 import android.app.Application
 import android.content.BroadcastReceiver
@@ -28,6 +29,7 @@ import com.datadog.android.core.internal.privacy.NoOpConsentProvider
 import com.datadog.android.core.internal.privacy.TrackingConsentProvider
 import com.datadog.android.core.internal.system.BroadcastReceiverSystemInfoProvider
 import com.datadog.android.core.internal.system.NoOpSystemInfoProvider
+import com.datadog.android.core.internal.thread.BackPressuredBlockingQueue
 import com.datadog.android.core.internal.time.AppStartTimeProvider
 import com.datadog.android.core.internal.time.KronosTimeProvider
 import com.datadog.android.core.internal.time.NoOpTimeProvider
@@ -50,11 +52,9 @@ import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.google.gson.JsonObject
 import fr.xgouchet.elmyr.Forge
-import fr.xgouchet.elmyr.annotation.AdvancedForgery
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.LongForgery
-import fr.xgouchet.elmyr.annotation.MapForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -97,6 +97,7 @@ import java.util.UUID
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.ScheduledThreadPoolExecutor
+import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 import kotlin.experimental.xor
 
@@ -209,6 +210,7 @@ internal class CoreFeatureTest {
             .isInstanceOf(BroadcastReceiverSystemInfoProvider::class.java)
     }
 
+    @SuppressLint("UnspecifiedRegisterReceiverFlag")
     @Test
     @Disabled // RUM-10684: ApiLevelExtension is not able to set API level property
     fun `M initialize network info provider W initialize`() {
@@ -231,6 +233,7 @@ internal class CoreFeatureTest {
         }
     }
 
+    @SuppressLint("UnspecifiedRegisterReceiverFlag")
     @Test
     @TestTargetApi(Build.VERSION_CODES.N)
     @Disabled // RUM-10684: ApiLevelExtension is not able to set API level property
@@ -290,21 +293,6 @@ internal class CoreFeatureTest {
     }
 
     @Test
-    fun `M initialise the datadog context provider W initialize`() {
-        // When
-        testedFeature.initialize(
-            appContext.mockInstance,
-            fakeSdkInstanceId,
-            fakeConfig,
-            fakeConsent
-        )
-
-        // Then
-        assertThat(testedFeature.contextProvider)
-            .isInstanceOf(DatadogContextProvider::class.java)
-    }
-
-    @Test
     fun `M initializes first party hosts resolver W initialize`() {
         // When
         testedFeature.initialize(
@@ -337,7 +325,6 @@ internal class CoreFeatureTest {
 
         // Then
         assertThat(testedFeature.clientToken).isEqualTo(fakeConfig.clientToken)
-        assertThat(testedFeature.packageName).isEqualTo(appContext.fakePackageName)
         assertThat(testedFeature.packageVersionProvider.version).isEqualTo(appContext.fakeVersionName)
         assertThat(testedFeature.serviceName).isEqualTo(fakeConfig.service)
         assertThat(testedFeature.envName).isEqualTo(fakeConfig.env)
@@ -360,7 +347,6 @@ internal class CoreFeatureTest {
 
         // Then
         assertThat(testedFeature.clientToken).isEqualTo(fakeConfig.clientToken)
-        assertThat(testedFeature.packageName).isEqualTo(appContext.fakePackageName)
         assertThat(testedFeature.packageVersionProvider.version)
             .isEqualTo(appContext.fakeVersionName)
         assertThat(testedFeature.serviceName).isEqualTo(fakeConfig.service)
@@ -383,7 +369,6 @@ internal class CoreFeatureTest {
 
         // Then
         assertThat(testedFeature.clientToken).isEqualTo(fakeConfig.clientToken)
-        assertThat(testedFeature.packageName).isEqualTo(appContext.fakePackageName)
         assertThat(testedFeature.packageVersionProvider.version)
             .isEqualTo(appContext.fakeVersionName)
         assertThat(testedFeature.serviceName).isEqualTo(appContext.fakePackageName)
@@ -411,7 +396,6 @@ internal class CoreFeatureTest {
 
         // Then
         assertThat(testedFeature.clientToken).isEqualTo(fakeConfig.clientToken)
-        assertThat(testedFeature.packageName).isEqualTo(appContext.fakePackageName)
         assertThat(testedFeature.packageVersionProvider.version)
             .isEqualTo(appContext.fakeVersionCode.toString())
         assertThat(testedFeature.serviceName).isEqualTo(fakeConfig.service)
@@ -441,7 +425,6 @@ internal class CoreFeatureTest {
 
         // Then
         assertThat(testedFeature.clientToken).isEqualTo(fakeConfig.clientToken)
-        assertThat(testedFeature.packageName).isEqualTo(appContext.fakePackageName)
         assertThat(testedFeature.packageVersionProvider.version)
             .isEqualTo(CoreFeature.DEFAULT_APP_VERSION)
         assertThat(testedFeature.serviceName).isEqualTo(fakeConfig.service)
@@ -476,7 +459,6 @@ internal class CoreFeatureTest {
 
         // Then
         assertThat(testedFeature.clientToken).isEqualTo(fakeConfig.clientToken)
-        assertThat(testedFeature.packageName).isEqualTo(appContext.fakePackageName)
         assertThat(testedFeature.packageVersionProvider.version).isEqualTo(
             CoreFeature.DEFAULT_APP_VERSION
         )
@@ -580,6 +562,21 @@ internal class CoreFeatureTest {
     }
 
     @Test
+    fun `M initialize okhttp only once`() {
+        // When
+        testedFeature.initialize(
+            appContext.mockInstance,
+            fakeSdkInstanceId,
+            fakeConfig.copy(coreConfig = fakeConfig.coreConfig),
+            fakeConsent
+        )
+
+        // Then
+        val okHttpClient = testedFeature.callFactory.okhttpClient
+        assertThat(okHttpClient).isEqualTo(testedFeature.callFactory.okhttpClient)
+    }
+
+    @Test
     fun `M initialize okhttp with strict network policy W initialize()`() {
         // When
         testedFeature.initialize(
@@ -590,7 +587,7 @@ internal class CoreFeatureTest {
         )
 
         // Then
-        val okHttpClient = testedFeature.okHttpClient
+        val okHttpClient = testedFeature.callFactory.okhttpClient
         assertThat(okHttpClient.protocols)
             .containsExactly(Protocol.HTTP_2, Protocol.HTTP_1_1)
         assertThat(okHttpClient.callTimeoutMillis)
@@ -625,7 +622,7 @@ internal class CoreFeatureTest {
         )
 
         // Then
-        val okHttpClient = testedFeature.okHttpClient
+        val okHttpClient = testedFeature.callFactory.okhttpClient
         assertThat(okHttpClient.protocols)
             .containsExactly(Protocol.HTTP_2, Protocol.HTTP_1_1)
         assertThat(okHttpClient.callTimeoutMillis)
@@ -652,7 +649,7 @@ internal class CoreFeatureTest {
         )
 
         // Then
-        val okHttpClient = testedFeature.okHttpClient
+        val okHttpClient = testedFeature.callFactory.okhttpClient
         assertThat(okHttpClient.proxy).isSameAs(proxy)
         assertThat(okHttpClient.proxyAuthenticator).isSameAs(proxyAuth)
     }
@@ -668,7 +665,7 @@ internal class CoreFeatureTest {
         )
 
         // Then
-        val okHttpClient = testedFeature.okHttpClient
+        val okHttpClient = testedFeature.callFactory.okhttpClient
         assertThat(okHttpClient.proxy).isNull()
         assertThat(okHttpClient.proxyAuthenticator).isEqualTo(Authenticator.NONE)
     }
@@ -686,6 +683,25 @@ internal class CoreFeatureTest {
         // Then
         assertThat(testedFeature.uploadExecutorService).isNotNull()
         assertThat(testedFeature.persistenceExecutorService).isNotNull()
+        assertThat(testedFeature.contextExecutorService).isNotNull()
+    }
+
+    @Test
+    fun `M initialize context executor with unbounded + observable queue W initialize()`() {
+        // When
+        testedFeature.initialize(
+            appContext.mockInstance,
+            fakeSdkInstanceId,
+            fakeConfig,
+            fakeConsent
+        )
+
+        // Then
+        assertThat(testedFeature.contextExecutorService).isNotNull()
+        with(testedFeature.contextExecutorService.queue) {
+            check(this is BackPressuredBlockingQueue)
+            assertThat(capacity).isEqualTo(Int.MAX_VALUE)
+        }
     }
 
     @Test
@@ -710,7 +726,6 @@ internal class CoreFeatureTest {
 
         // Then
         assertThat(testedFeature.clientToken).isEqualTo(fakeConfig.clientToken)
-        assertThat(testedFeature.packageName).isEqualTo(appContext.fakePackageName)
         assertThat(testedFeature.packageVersionProvider.version)
             .isEqualTo(appContext.fakeVersionName)
         assertThat(testedFeature.serviceName).isEqualTo(fakeConfig.service)
@@ -1266,7 +1281,6 @@ internal class CoreFeatureTest {
 
         // Then
         assertThat(testedFeature.clientToken).isEqualTo("")
-        assertThat(testedFeature.packageName).isEqualTo("")
         assertThat(testedFeature.packageVersionProvider.version).isEqualTo("")
         assertThat(testedFeature.serviceName).isEqualTo("")
         assertThat(testedFeature.envName).isEqualTo("")
@@ -1300,8 +1314,6 @@ internal class CoreFeatureTest {
             .isInstanceOf(NoOpConsentProvider::class.java)
         assertThat(testedFeature.userInfoProvider)
             .isInstanceOf(NoOpMutableUserInfoProvider::class.java)
-        assertThat(testedFeature.contextProvider)
-            .isInstanceOf(NoOpContextProvider::class.java)
     }
 
     @Test
@@ -1313,10 +1325,12 @@ internal class CoreFeatureTest {
             fakeConfig,
             fakeConsent
         )
-        val mockUploadExecutorService: ScheduledThreadPoolExecutor = mock()
+        val mockUploadExecutorService = mock<ScheduledThreadPoolExecutor>()
         testedFeature.uploadExecutorService = mockUploadExecutorService
-        val mockPersistenceExecutorService: FlushableExecutorService = mock()
+        val mockPersistenceExecutorService = mock<FlushableExecutorService>()
         testedFeature.persistenceExecutorService = mockPersistenceExecutorService
+        val mockContextExecutorService = mock<ThreadPoolExecutor>()
+        testedFeature.contextExecutorService = mockContextExecutorService
 
         // When
         testedFeature.stop()
@@ -1324,6 +1338,7 @@ internal class CoreFeatureTest {
         // Then
         verify(mockUploadExecutorService).shutdownNow()
         verify(mockPersistenceExecutorService).shutdownNow()
+        verify(mockContextExecutorService).shutdownNow()
     }
 
     @Test
@@ -1343,30 +1358,6 @@ internal class CoreFeatureTest {
 
         // Then
         verify(mockConsentProvider).unregisterAllCallbacks()
-    }
-
-    @Test
-    fun `M clean up feature context W stop()`(
-        @StringForgery feature: String,
-        @MapForgery(
-            key = AdvancedForgery(string = [StringForgery(StringForgeryType.ALPHABETICAL)]),
-            value = AdvancedForgery(string = [StringForgery(StringForgeryType.ALPHABETICAL)])
-        ) context: Map<String, String>
-    ) {
-        // Given
-        testedFeature.initialize(
-            appContext.mockInstance,
-            fakeSdkInstanceId,
-            fakeConfig,
-            fakeConsent
-        )
-        testedFeature.featuresContext[feature] = context
-
-        // When
-        testedFeature.stop()
-
-        // Then
-        assertThat(testedFeature.featuresContext).isEmpty()
     }
 
     @Test
@@ -1423,6 +1414,30 @@ internal class CoreFeatureTest {
     }
 
     @Test
+    fun `M drain the context executor queue W drainAndShutdownExecutors()`(forge: Forge) {
+        // Given
+        testedFeature.initialize(
+            appContext.mockInstance,
+            fakeSdkInstanceId,
+            fakeConfig,
+            fakeConsent
+        )
+
+        val blockingQueue = LinkedBlockingQueue<Runnable>(forge.aList { mock() })
+        val mockContextExecutor = mock<ThreadPoolExecutor>()
+        whenever(mockContextExecutor.queue).thenReturn(blockingQueue)
+        testedFeature.contextExecutorService = mockContextExecutor
+
+        // When
+        testedFeature.drainAndShutdownExecutors()
+
+        // Then
+        blockingQueue.forEach {
+            verify(it).run()
+        }
+    }
+
+    @Test
     fun `M shutdown with wait the persistence executor W drainAndShutdownExecutors()`() {
         // Given
         testedFeature.initialize(
@@ -1467,6 +1482,31 @@ internal class CoreFeatureTest {
         inOrder(mockUploadService) {
             verify(mockUploadService).shutdown()
             verify(mockUploadService).awaitTermination(10, TimeUnit.SECONDS)
+        }
+    }
+
+    @Test
+    fun `M shutdown with wait the context executor W drainAndShutdownExecutors()`() {
+        // Given
+        testedFeature.initialize(
+            appContext.mockInstance,
+            fakeSdkInstanceId,
+            fakeConfig,
+            fakeConsent
+        )
+
+        val blockingQueue = LinkedBlockingQueue<Runnable>()
+        val mockContextExecutor = mock<ThreadPoolExecutor>()
+        whenever(mockContextExecutor.queue).thenReturn(blockingQueue)
+        testedFeature.contextExecutorService = mockContextExecutor
+
+        // When
+        testedFeature.drainAndShutdownExecutors()
+
+        // Then
+        inOrder(mockContextExecutor) {
+            verify(mockContextExecutor).shutdown()
+            verify(mockContextExecutor).awaitTermination(10, TimeUnit.SECONDS)
         }
     }
 

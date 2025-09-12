@@ -12,7 +12,7 @@ import android.provider.Settings.SettingNotFoundException
 import com.datadog.android.api.InternalLogger
 
 internal class GlobalWrapper {
-    @Suppress("TooGenericExceptionCaught", "UnsafeThirdPartyFunctionCall") // exceptions caught
+    @Suppress("UnsafeThirdPartyFunctionCall")
     internal fun getFloat(
         internalLogger: InternalLogger,
         applicationContext: Context,
@@ -28,22 +28,6 @@ internal class GlobalWrapper {
                 InternalLogger.Level.ERROR,
                 listOf(InternalLogger.Target.MAINTAINER),
                 { "Setting not found $key" },
-                e
-            )
-            null
-        } catch (e: NumberFormatException) {
-            internalLogger.log(
-                InternalLogger.Level.ERROR,
-                listOf(InternalLogger.Target.MAINTAINER),
-                { "Number format exception getting $key" },
-                e
-            )
-            null
-        } catch (e: RuntimeException) {
-            internalLogger.log(
-                InternalLogger.Level.ERROR,
-                listOf(InternalLogger.Target.MAINTAINER),
-                { "Runtime exception getting $key" },
                 e
             )
             null

@@ -140,7 +140,7 @@ class LoggerTest {
 
         // Then
         checkNotNull(request)
-        assertThat(request.url).isEqualTo("$fakeEndpoint/api/v2/logs?ddsource=$expectedSource")
+        assertThat(request.url).isEqualTo("$fakeEndpoint?ddsource=$expectedSource")
         assertThat(request.headers).containsEntry("DD-API-KEY", expectedClientToken)
         assertThat(request.headers).containsEntry("DD-EVP-ORIGIN", expectedSource)
         assertThat(request.headers).containsEntry("DD-EVP-ORIGIN-VERSION", expectedSdkVersion)
@@ -391,13 +391,14 @@ class LoggerTest {
 
     @RepeatedTest(16)
     fun `M send log with custom user info W SDKCore#setUserInfo() + Logger#log()`(
+        @StringForgery fakeUserId: String,
         @StringForgery fakeMessage: String,
         @StringForgery fakeUserKey: String,
         @StringForgery fakeUserValue: String,
         @IntForgery(Log.VERBOSE, 10) fakeLevel: Int
     ) {
         // Given
-        stubSdkCore.setUserInfo(extraInfo = mapOf(fakeUserKey to fakeUserValue))
+        stubSdkCore.setUserInfo(id = fakeUserId, extraInfo = mapOf(fakeUserKey to fakeUserValue))
         val testedLogger = Logger.Builder(stubSdkCore).build()
 
         // When

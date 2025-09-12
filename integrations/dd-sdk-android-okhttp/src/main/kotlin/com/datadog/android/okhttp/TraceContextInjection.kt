@@ -16,7 +16,7 @@ enum class TraceContextInjection {
      * headers but the sampling priority will be `0`. This will mean that the client will dictate the sampling priority
      * on the server side and no trace will be created no matter the sampling rate at the server side.
      */
-    All,
+    ALL,
 
     /**
      * Injects trace context only into sampled requests.
@@ -25,5 +25,5 @@ enum class TraceContextInjection {
      * This will mean that if the server side sampling rate is higher than the client side sampling rate there will
      * be a chance that a trace will be created down the stream.
      */
-    Sampled
+    SAMPLED
 }

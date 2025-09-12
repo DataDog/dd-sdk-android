@@ -54,6 +54,13 @@ public final class com/datadog/android/internal/collections/EvictingQueue : java
 	public fun toArray ([Ljava/lang/Object;)[Ljava/lang/Object;
 }
 
+public final class com/datadog/android/internal/concurrent/CompletableFuture {
+	public fun <init> ()V
+	public final fun complete (Ljava/lang/Object;)V
+	public final fun getValue ()Ljava/lang/Object;
+	public final fun isComplete ()Z
+}
+
 public abstract interface class com/datadog/android/internal/profiler/BenchmarkCounter {
 	public abstract fun add (JLjava/util/Map;)V
 }
@@ -214,9 +221,19 @@ public final class com/datadog/android/internal/telemetry/TracingHeaderTypesSet 
 	public fun toString ()Ljava/lang/String;
 }
 
-public final class com/datadog/android/internal/thread/NamedRunnable : java/lang/Runnable {
+public final class com/datadog/android/internal/thread/NamedCallable : com/datadog/android/internal/thread/NamedExecutionUnit, java/util/concurrent/Callable {
+	public fun <init> (Ljava/lang/String;Ljava/util/concurrent/Callable;)V
+	public fun call ()Ljava/lang/Object;
+	public fun getName ()Ljava/lang/String;
+}
+
+public abstract interface class com/datadog/android/internal/thread/NamedExecutionUnit {
+	public abstract fun getName ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/internal/thread/NamedRunnable : com/datadog/android/internal/thread/NamedExecutionUnit, java/lang/Runnable {
 	public fun <init> (Ljava/lang/String;Ljava/lang/Runnable;)V
-	public final fun getSanitizedName ()Ljava/lang/String;
+	public fun getName ()Ljava/lang/String;
 	public fun run ()V
 }
 

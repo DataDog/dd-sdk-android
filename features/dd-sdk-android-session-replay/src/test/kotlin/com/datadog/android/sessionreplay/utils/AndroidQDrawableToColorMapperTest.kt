@@ -12,6 +12,7 @@ import android.graphics.Paint
 import android.graphics.drawable.GradientDrawable
 import android.os.Build
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
+import com.datadog.android.sessionreplay.utils.AndroidMDrawableToColorMapper.Companion.fillPaintField
 import com.datadog.tools.unit.annotations.TestTargetApi
 import com.datadog.tools.unit.extensions.ApiLevelExtension
 import fr.xgouchet.elmyr.Forge
@@ -67,7 +68,7 @@ class AndroidQDrawableToColorMapperTest : AndroidMDrawableToColorMapperTest() {
             whenever(this.colorFilter) doReturn mockColorFilter
         }
         val gradientDrawable = GradientDrawable().apply {
-            LegacyDrawableToColorMapper.fillPaintField?.set(this, mockFillPaint)
+            fillPaintField?.set(this, mockFillPaint)
         }
 
         // When
@@ -99,7 +100,7 @@ class AndroidQDrawableToColorMapperTest : AndroidMDrawableToColorMapperTest() {
             whenever(this.colorFilter) doReturn mockColorFilter
         }
         val gradientDrawable = GradientDrawable().apply {
-            LegacyDrawableToColorMapper.fillPaintField?.set(this, mockFillPaint)
+            fillPaintField?.set(this, mockFillPaint)
         }
 
         // When
@@ -132,7 +133,7 @@ class AndroidQDrawableToColorMapperTest : AndroidMDrawableToColorMapperTest() {
             whenever(this.colorFilter) doReturn mockColorFilter
         }
         val gradientDrawable = GradientDrawable().apply {
-            LegacyDrawableToColorMapper.fillPaintField?.set(this, mockFillPaint)
+            fillPaintField?.set(this, mockFillPaint)
         }
 
         // When
@@ -164,7 +165,7 @@ class AndroidQDrawableToColorMapperTest : AndroidMDrawableToColorMapperTest() {
             whenever(this.colorFilter) doReturn mockColorFilter
         }
         val gradientDrawable = GradientDrawable().apply {
-            LegacyDrawableToColorMapper.fillPaintField?.set(this, mockFillPaint)
+            fillPaintField?.set(this, mockFillPaint)
         }
 
         // When

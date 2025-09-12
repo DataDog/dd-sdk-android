@@ -63,7 +63,10 @@ import java.util.concurrent.TimeUnit
 class InternalSdkCoreTest : MockServerTest() {
 
     @get:Rule
-    var forge = ForgeRule().useJvmFactories().useToolsFactories().withFactory(ConfigurationCoreForgeryFactory())
+    var forge = ForgeRule()
+        .useJvmFactories()
+        .useToolsFactories()
+        .withFactory(ConfigurationCoreForgeryFactory())
 
     @StringForgery(type = StringForgeryType.ALPHABETICAL)
     lateinit var fakeUserId: String
@@ -172,14 +175,14 @@ class InternalSdkCoreTest : MockServerTest() {
     fun mustReturnTheUpdatedFeatureContext_getDatadogContext_featureContextWasSet() {
         // Given
         val fakeKeyValues = forge.aMap { forge.anAlphabeticalString() to forge.anAlphabeticalString() }
-        testedInternalSdkCore.updateFeatureContext(fakeFeatureName) {
+        testedInternalSdkCore.updateFeatureContext(fakeFeatureName, useContextThread = false) {
             fakeKeyValues.forEach { (key, value) ->
                 it[key] = value
             }
         }
 
         // When
-        val context = testedInternalSdkCore.getDatadogContext()
+        val context = testedInternalSdkCore.getDatadogContext(withFeatureContexts = setOf(fakeFeatureName))
 
         // Then
         checkNotNull(context)
@@ -199,7 +202,7 @@ class InternalSdkCoreTest : MockServerTest() {
         val expectedKeyValues = fakeKeyValues1 + fakeKeyValues2
 
         val updateAction = { newContext: Map<String, String> ->
-            testedInternalSdkCore.updateFeatureContext(fakeFeatureName) { featureContext ->
+            testedInternalSdkCore.updateFeatureContext(fakeFeatureName, useContextThread = false) { featureContext ->
                 newContext.forEach { (key, value) ->
                     featureContext[key] = value
                 }
@@ -216,7 +219,7 @@ class InternalSdkCoreTest : MockServerTest() {
             .forEach { it.join(SHORT_WAIT_MS) }
 
         // When
-        val context = testedInternalSdkCore.getDatadogContext()
+        val context = testedInternalSdkCore.getDatadogContext(withFeatureContexts = setOf(fakeFeatureName))
 
         // Then
         checkNotNull(context)
@@ -238,7 +241,7 @@ class InternalSdkCoreTest : MockServerTest() {
         val expectedKeyValues = fakeKeyValues1 + fakeModifiedValues
 
         val updateAction = { newContext: Map<String, String> ->
-            testedInternalSdkCore.updateFeatureContext(fakeFeatureName) { featureContext ->
+            testedInternalSdkCore.updateFeatureContext(fakeFeatureName, useContextThread = false) { featureContext ->
                 newContext.forEach { (key, value) ->
                     featureContext[key] = value
                 }
@@ -255,7 +258,7 @@ class InternalSdkCoreTest : MockServerTest() {
             .forEach { it.join(SHORT_WAIT_MS) }
 
         Thread {
-            testedInternalSdkCore.updateFeatureContext(fakeFeatureName) { featureContext ->
+            testedInternalSdkCore.updateFeatureContext(fakeFeatureName, useContextThread = false) { featureContext ->
                 fakeKeyValues2.forEach { (key, _) ->
                     featureContext[key] = fakeModifiedValues[key]
                 }
@@ -265,7 +268,7 @@ class InternalSdkCoreTest : MockServerTest() {
             .join(SHORT_WAIT_MS)
 
         // When
-        val context = testedInternalSdkCore.getDatadogContext()
+        val context = testedInternalSdkCore.getDatadogContext(withFeatureContexts = setOf(fakeFeatureName))
 
         // Then
         checkNotNull(context)
@@ -287,7 +290,7 @@ class InternalSdkCoreTest : MockServerTest() {
         val droppedKeyValues = expectedKeyValues.removeRandomEntries(forge)
 
         val updateAction = { newContext: Map<String, String> ->
-            testedInternalSdkCore.updateFeatureContext(fakeFeatureName) { featureContext ->
+            testedInternalSdkCore.updateFeatureContext(fakeFeatureName, useContextThread = false) { featureContext ->
                 newContext.forEach { (key, value) ->
                     featureContext[key] = value
                 }
@@ -304,7 +307,7 @@ class InternalSdkCoreTest : MockServerTest() {
             .forEach { it.join(SHORT_WAIT_MS) }
 
         Thread {
-            testedInternalSdkCore.updateFeatureContext(fakeFeatureName) { featureContext ->
+            testedInternalSdkCore.updateFeatureContext(fakeFeatureName, useContextThread = false) { featureContext ->
                 droppedKeyValues.forEach { (key, _) ->
                     featureContext.remove(key)
                 }
@@ -314,7 +317,7 @@ class InternalSdkCoreTest : MockServerTest() {
             .join(SHORT_WAIT_MS)
 
         // When
-        val context = testedInternalSdkCore.getDatadogContext()
+        val context = testedInternalSdkCore.getDatadogContext(withFeatureContexts = setOf(fakeFeatureName))
 
         // Then
         checkNotNull(context)

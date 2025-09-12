@@ -57,6 +57,13 @@ class LongTaskEventForgeryFactory :
                     additionalProperties = exhaustiveAttributes(excludedKeys = setOf("id", "name", "email"))
                 )
             },
+            account = forge.aNullable {
+                LongTaskEvent.Account(
+                    id = anHexadecimalString(),
+                    name = aNullable { aStringMatching("[A-Z][a-z]+ [A-Z]\\. [A-Z][a-z]+") },
+                    additionalProperties = exhaustiveAttributes(excludedKeys = setOf("id", "name"))
+                )
+            },
             action = forge.aNullable {
                 LongTaskEvent.Action(aList { getForgery<UUID>().toString() })
             },
@@ -75,7 +82,8 @@ class LongTaskEventForgeryFactory :
                 LongTaskEvent.Os(
                     name = forge.aString(),
                     version = "${forge.aSmallInt()}.${forge.aSmallInt()}.${forge.aSmallInt()}",
-                    versionMajor = forge.aSmallInt().toString()
+                    versionMajor = forge.aSmallInt().toString(),
+                    build = forge.aNullable { anAlphabeticalString() }
                 )
             },
             device = forge.aNullable {
@@ -84,7 +92,13 @@ class LongTaskEventForgeryFactory :
                     model = forge.aString(),
                     brand = forge.aString(),
                     type = forge.aValueFrom(LongTaskEvent.DeviceType::class.java),
-                    architecture = forge.aString()
+                    architecture = forge.aString(),
+                    locale = forge.aNullable { anAlphabeticalString() },
+                    locales = forge.aNullable { aList { anAlphabeticalString() } },
+                    timeZone = forge.aNullable { anAlphabeticalString() },
+                    batteryLevel = forge.aNullable { aDouble(min = 0.0, max = 100.0) },
+                    powerSavingMode = forge.aNullable { aBool() },
+                    brightnessLevel = forge.aNullable { aDouble(min = 0.0, max = 1.0) }
                 )
             },
             context = forge.aNullable {

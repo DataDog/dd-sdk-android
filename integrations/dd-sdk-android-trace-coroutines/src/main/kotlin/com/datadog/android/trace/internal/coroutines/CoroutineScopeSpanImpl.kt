@@ -6,13 +6,13 @@
 
 package com.datadog.android.trace.internal.coroutines
 
+import com.datadog.android.trace.api.span.DatadogSpan
 import com.datadog.android.trace.coroutines.CoroutineScopeSpan
-import io.opentracing.Span
 import kotlinx.coroutines.CoroutineScope
 
 internal class CoroutineScopeSpanImpl(
     private val scope: CoroutineScope,
-    private val span: Span
+    private val span: DatadogSpan
 ) : CoroutineScopeSpan,
     CoroutineScope by scope,
-    Span by span
+    DatadogSpan by span

@@ -43,8 +43,14 @@ internal class SpanEventSerializer(
 
     private fun sanitizeKeys(model: SpanEvent): SpanEvent {
         val newUserObject = sanitizeUserAttributes(model.meta.usr)
+        val newAccountObject = model.meta.account?.let {
+            sanitizeAccountAttributes(it)
+        }
         val newMetricsObject = sanitizeMetrics(model.metrics)
-        return model.copy(meta = model.meta.copy(usr = newUserObject), metrics = newMetricsObject)
+        return model.copy(
+            meta = model.meta.copy(usr = newUserObject, account = newAccountObject),
+            metrics = newMetricsObject
+        )
     }
 
     private fun sanitizeUserAttributes(usr: SpanEvent.Usr): SpanEvent.Usr {
@@ -52,28 +58,42 @@ internal class SpanEventSerializer(
             usr.additionalProperties,
             META_USR_KEY_PREFIX
         )
-            .mapValues {
-                try {
-                    toMetaString(it.value)
-                } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
-                    internalLogger.log(
-                        level = InternalLogger.Level.ERROR,
-                        targets = listOf(
-                            InternalLogger.Target.USER,
-                            InternalLogger.Target.TELEMETRY
-                        ),
-                        messageBuilder = {
-                            "Error converting value for key ${it.key} to meta string, it will be dropped."
-                        },
-                        throwable = e
-                    )
-                    null
-                }
-            }
+            .mapValues { it.valueToMetaStringOrNull() }
             .filterValues { it != null }
         return usr.copy(
             additionalProperties = transformedAttributes.toMutableMap()
         )
+    }
+
+    private fun sanitizeAccountAttributes(account: SpanEvent.Account): SpanEvent.Account {
+        val transformedAttributes = dataConstraints.validateAttributes(
+            account.additionalProperties,
+            META_ACCOUNT_KEY_PREFIX
+        )
+            .mapValues { it.valueToMetaStringOrNull() }
+            .filterValues { it != null }
+        return account.copy(
+            additionalProperties = transformedAttributes.toMutableMap()
+        )
+    }
+
+    private fun Map.Entry<String, Any?>.valueToMetaStringOrNull(): String? {
+        return try {
+            toMetaString(value)
+        } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+            internalLogger.log(
+                level = InternalLogger.Level.ERROR,
+                targets = listOf(
+                    InternalLogger.Target.USER,
+                    InternalLogger.Target.TELEMETRY
+                ),
+                messageBuilder = {
+                    "Error converting value for key $key to meta string, it will be dropped."
+                },
+                throwable = e
+            )
+            null
+        }
     }
 
     private fun sanitizeMetrics(metrics: SpanEvent.Metrics): SpanEvent.Metrics {
@@ -103,6 +123,7 @@ internal class SpanEventSerializer(
         internal const val TAG_SPANS = "spans"
         internal const val TAG_ENV = "env"
         internal const val META_USR_KEY_PREFIX = "meta.usr"
+        internal const val META_ACCOUNT_KEY_PREFIX = "meta.account"
         internal const val METRICS_KEY_PREFIX = "metrics"
     }
 }

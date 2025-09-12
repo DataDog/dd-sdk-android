@@ -33,26 +33,6 @@ internal class DatadogExceptionHandler(
 
     override fun uncaughtException(t: Thread, e: Throwable) {
         val threads = getThreadDumps(t, e)
-        // write the log immediately
-        val logsFeature = sdkCore.getFeature(Feature.LOGS_FEATURE_NAME)
-        if (logsFeature != null) {
-            logsFeature.sendEvent(
-                JvmCrash.Logs(
-                    threadName = t.name,
-                    throwable = e,
-                    timestamp = System.currentTimeMillis(),
-                    message = createCrashMessage(e),
-                    loggerName = LOGGER_NAME,
-                    threads = threads
-                )
-            )
-        } else {
-            sdkCore.internalLogger.log(
-                InternalLogger.Level.INFO,
-                InternalLogger.Target.USER,
-                { MISSING_LOGS_FEATURE_INFO }
-            )
-        }
 
         // write a RUM Error too
         val rumFeature = sdkCore.getFeature(Feature.RUM_FEATURE_NAME)

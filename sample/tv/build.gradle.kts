@@ -25,7 +25,7 @@ android {
     buildToolsVersion = AndroidConfig.BUILD_TOOLS_VERSION
 
     defaultConfig {
-        minSdk = AndroidConfig.MIN_SDK_FOR_WEAR_AND_TV
+        minSdk = AndroidConfig.MIN_SDK
         targetSdk = AndroidConfig.TARGET_SDK
         versionCode = AndroidConfig.VERSION.code
         versionName = AndroidConfig.VERSION.name
@@ -110,7 +110,7 @@ dependencies {
 kotlinConfig(evaluateWarningsAsErrors = false)
 taskConfig<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
     compilerOptions {
-        freeCompilerArgs.add("-opt-in=kotlin.RequiresOptIn")
+        optIn.add("kotlin.RequiresOptIn")
     }
 }
 junitConfig()

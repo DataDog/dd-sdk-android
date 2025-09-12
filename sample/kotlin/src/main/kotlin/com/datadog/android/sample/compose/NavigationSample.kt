@@ -32,13 +32,11 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import com.datadog.android.compose.ExperimentalTrackingApi
 import com.datadog.android.compose.NavigationViewTrackingEffect
 import com.datadog.android.compose.trackClick
 import com.datadog.android.rum.tracking.AcceptAllNavDestinations
 import kotlin.random.Random
 
-@OptIn(ExperimentalTrackingApi::class)
 @Composable
 internal fun NavigationSampleView() {
     val navController = rememberNavController().apply {
@@ -56,7 +54,6 @@ internal class SimpleViewIdPreviewProvider : PreviewParameterProvider<String> {
         get() = sequenceOf("one", "two", "three")
 }
 
-@OptIn(ExperimentalTrackingApi::class)
 @Preview
 @Composable
 internal fun SimpleView(

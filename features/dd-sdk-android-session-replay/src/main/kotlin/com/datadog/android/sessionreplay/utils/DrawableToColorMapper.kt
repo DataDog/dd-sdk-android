@@ -32,10 +32,8 @@ fun interface DrawableToColorMapper {
         fun getDefault(customDrawableMappers: List<DrawableToColorMapper> = emptyList()): DrawableToColorMapper {
             return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 AndroidQDrawableToColorMapper(customDrawableMappers)
-            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                AndroidMDrawableToColorMapper(customDrawableMappers)
             } else {
-                LegacyDrawableToColorMapper(customDrawableMappers)
+                AndroidMDrawableToColorMapper(customDrawableMappers)
             }
         }
     }

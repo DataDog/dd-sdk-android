@@ -13,7 +13,6 @@ import com.datadog.android.api.net.RequestExecutionContext
 import com.datadog.android.api.net.RequestFactory
 import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.core.internal.utils.join
-import java.util.Locale
 import java.util.UUID
 
 internal class TracesRequestFactory(
@@ -29,13 +28,11 @@ internal class TracesRequestFactory(
     ): Request? {
         val requestId = UUID.randomUUID().toString()
 
+        val baseUrl = customEndpointUrl ?: (context.site.intakeEndpoint + "/api/v2/spans")
         return Request(
             id = requestId,
             description = "Traces Request",
-            url = "%s/api/v2/spans".format(
-                Locale.US,
-                customEndpointUrl ?: context.site.intakeEndpoint
-            ),
+            url = baseUrl,
             headers = buildHeaders(
                 requestId,
                 context.clientToken,

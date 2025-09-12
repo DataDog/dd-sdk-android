@@ -7,6 +7,8 @@
 package com.datadog.android.rum.internal.domain.scope
 
 import androidx.annotation.WorkerThread
+import com.datadog.android.api.context.DatadogContext
+import com.datadog.android.api.feature.EventWriteScope
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.api.storage.NoOpDataWriter
@@ -14,9 +16,12 @@ import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.RumSessionType
+import com.datadog.android.rum.internal.domain.InfoProvider
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.domain.accessibility.AccessibilitySnapshotManager
+import com.datadog.android.rum.internal.domain.battery.BatteryInfo
+import com.datadog.android.rum.internal.domain.display.DisplayInfo
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
 import com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener
 import com.datadog.android.rum.internal.utils.percent
@@ -30,7 +35,7 @@ import java.util.concurrent.atomic.AtomicLong
 
 @Suppress("LongParameterList")
 internal class RumSessionScope(
-    private val parentScope: RumScope,
+    override val parentScope: RumScope,
     private val sdkCore: InternalSdkCore,
     private val sessionEndedMetricDispatcher: SessionMetricDispatcher,
     internal val sampleRate: Float,
@@ -47,6 +52,8 @@ internal class RumSessionScope(
     lastInteractionIdentifier: LastInteractionIdentifier?,
     slowFramesListener: SlowFramesListener?,
     private val accessibilitySnapshotManager: AccessibilitySnapshotManager,
+    private val batteryInfoProvider: InfoProvider<BatteryInfo>,
+    private val displayInfoProvider: InfoProvider<DisplayInfo>,
     private val sessionInactivityNanos: Long = DEFAULT_SESSION_INACTIVITY_NS,
     private val sessionMaxDurationNanos: Long = DEFAULT_SESSION_MAX_DURATION_NS,
     rumSessionTypeOverride: RumSessionType?
@@ -82,14 +89,17 @@ internal class RumSessionScope(
         slowFramesListener = slowFramesListener,
         lastInteractionIdentifier = lastInteractionIdentifier,
         rumSessionTypeOverride = rumSessionTypeOverride,
-        accessibilitySnapshotManager = accessibilitySnapshotManager
+        accessibilitySnapshotManager = accessibilitySnapshotManager,
+        batteryInfoProvider = batteryInfoProvider,
+        displayInfoProvider = displayInfoProvider
     )
 
-    init {
-        sdkCore.updateFeatureContext(Feature.RUM_FEATURE_NAME) {
-            it.putAll(getRumContext().toMap())
+    internal val activeView: RumViewScope?
+        get() = if (isActive() && childScope != null) {
+            childScope?.activeView
+        } else {
+            null
         }
-    }
 
     enum class State(val asString: String) {
         NOT_TRACKED("NOT_TRACKED"),
@@ -125,6 +135,8 @@ internal class RumSessionScope(
     @WorkerThread
     override fun handleEvent(
         event: RumRawEvent,
+        datadogContext: DatadogContext,
+        writeScope: EventWriteScope,
         writer: DataWriter<Any>
     ): RumScope? {
         if (event is RumRawEvent.ResetSession) {
@@ -138,7 +150,8 @@ internal class RumSessionScope(
         val actualWriter = if (sessionState == State.TRACKED) writer else noOpWriter
 
         if (event !is RumRawEvent.SdkInit) {
-            childScope = childScope?.handleEvent(event, actualWriter) as? RumViewManagerScope
+            childScope =
+                childScope?.handleEvent(event, datadogContext, writeScope, actualWriter) as? RumViewManagerScope
         }
 
         return if (isSessionComplete()) {

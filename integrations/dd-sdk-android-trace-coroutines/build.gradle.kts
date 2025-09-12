@@ -21,7 +21,7 @@ plugins {
     // Publish
     `maven-publish`
     signing
-    id("org.jetbrains.dokka")
+    id("org.jetbrains.dokka-javadoc")
 
     // Analysis tools
     id("com.github.ben-manes.versions")
@@ -41,9 +41,9 @@ android {
 }
 
 dependencies {
-    implementation(project(":features:dd-sdk-android-trace"))
     implementation(libs.kotlin)
     implementation(libs.coroutinesCore)
+    implementation(project(":features:dd-sdk-android-trace"))
 
     testImplementation(project(":tools:unit")) {
         attributes {
@@ -56,6 +56,7 @@ dependencies {
     testImplementation(libs.bundles.jUnit5)
     testImplementation(libs.bundles.testTools)
     testImplementation(libs.okHttpMock)
+    testImplementation(testFixtures(project(":features:dd-sdk-android-trace")))
 }
 
 kotlinConfig(jvmBytecodeTarget = JvmTarget.JVM_11)

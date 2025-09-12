@@ -37,7 +37,7 @@ class DatadogRUMUncaughtThrowableStrategy(
             val sdkCore = sdkReference.get()
             if (sdkCore != null) {
                 GlobalRumMonitor.get(sdkCore)
-                    .addError("Glide $name error", RumErrorSource.SOURCE, t, emptyMap())
+                    .addError("Glide $name error", RumErrorSource.SOURCE, t)
             } else {
                 val prefix = if (sdkInstanceName == null) {
                     "Default SDK instance"

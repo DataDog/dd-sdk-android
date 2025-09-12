@@ -22,7 +22,6 @@ import com.datadog.android.log.internal.logger.NoOpLogHandler
 import com.datadog.android.log.model.LogEvent
 import com.datadog.android.utils.forge.Configurator
 import fr.xgouchet.elmyr.Forge
-import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -126,7 +125,7 @@ internal class LoggerBuilderTest {
     }
 
     @Test
-    fun `builder can set a service name`(@Forgery forge: Forge) {
+    fun `builder can set a service name`(forge: Forge) {
         val serviceName = forge.anAlphabeticalString()
 
         val logger = Logger.Builder(mockSdkCore)
@@ -178,7 +177,7 @@ internal class LoggerBuilderTest {
 
     @Test
     fun `builder can enable only logcat logs`(
-        @Forgery forge: Forge
+        forge: Forge
     ) {
         val logcatLogsEnabled = true
         val fakeServiceName = forge.anAlphaNumericalString()
@@ -211,7 +210,7 @@ internal class LoggerBuilderTest {
     }
 
     @Test
-    fun `builder can set the logger name`(@Forgery forge: Forge) {
+    fun `builder can set the logger name`(forge: Forge) {
         val loggerName = forge.anAlphabeticalString()
 
         val logger = Logger.Builder(mockSdkCore)
@@ -243,7 +242,7 @@ internal class LoggerBuilderTest {
     }
 
     @Test
-    fun `builder can set a sample rate`(@Forgery forge: Forge) {
+    fun `builder can set a sample rate`(forge: Forge) {
         val expectedSampleRate = forge.aFloat(min = 0.0f, max = 100.0f)
 
         val logger = Logger.Builder(mockSdkCore).setRemoteSampleRate(expectedSampleRate).build()

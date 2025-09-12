@@ -73,7 +73,7 @@ interface RumMonitor {
     fun addAction(
         type: RumActionType,
         name: String,
-        attributes: Map<String, Any?>
+        attributes: Map<String, Any?> = emptyMap()
     )
 
     /**
@@ -91,7 +91,7 @@ interface RumMonitor {
     fun startAction(
         type: RumActionType,
         name: String,
-        attributes: Map<String, Any?>
+        attributes: Map<String, Any?> = emptyMap()
     )
 
     /**
@@ -108,28 +108,6 @@ interface RumMonitor {
     fun stopAction(
         type: RumActionType,
         name: String,
-        attributes: Map<String, Any?> = emptyMap()
-    )
-
-    /**
-     * Notify that a new Resource is being loaded, linked with the [key] instance.
-     * @param key the instance that represents the resource being loaded (usually your
-     * request or network call instance).
-     * @param method the method used to load the resource (E.g., for network: "GET" or "POST")
-     * @param url the url or local path of the resource being loaded
-     * @param attributes additional custom attributes to attach to the resource. Attributes can be
-     * nested up to 9 levels deep. Keys using more than 9 levels will be sanitized by SDK.
-     * @see [stopResource]
-     * @see [stopResourceWithError]
-     */
-    @Deprecated(
-        "This method is deprecated and will be removed in the future versions." +
-            " Use `startResource` method which takes `RumHttpMethod` as `method` parameter instead."
-    )
-    fun startResource(
-        key: String,
-        method: String,
-        url: String,
         attributes: Map<String, Any?> = emptyMap()
     )
 
@@ -168,7 +146,7 @@ interface RumMonitor {
         statusCode: Int?,
         size: Long?,
         kind: RumResourceKind,
-        attributes: Map<String, Any?>
+        attributes: Map<String, Any?> = emptyMap()
     )
 
     /**
@@ -239,7 +217,7 @@ interface RumMonitor {
         message: String,
         source: RumErrorSource,
         throwable: Throwable?,
-        attributes: Map<String, Any?>
+        attributes: Map<String, Any?> = emptyMap()
     )
 
     /**
@@ -260,7 +238,7 @@ interface RumMonitor {
         message: String,
         source: RumErrorSource,
         stacktrace: String?,
-        attributes: Map<String, Any?>
+        attributes: Map<String, Any?> = emptyMap()
     )
 
     /**
@@ -334,6 +312,20 @@ interface RumMonitor {
      */
     @ExperimentalRumApi
     fun addViewLoadingTime(overwrite: Boolean)
+
+    /**
+     * Adds attributes to the current active View. They will be propagated to all future RUM events within this View
+     * until it stops being active.
+     * @param attributes the attributes to add to the view
+     */
+    fun addViewAttributes(attributes: Map<String, Any?>)
+
+    /**
+     * Removes attributes from the current active View. Future RUM events within this view won't be having these
+     * attributes anymore.
+     * @param attributes the attribute keys to remove from the view
+     */
+    fun removeViewAttributes(attributes: Collection<String>)
 
     /**
      * Starts the [name] feature operation.

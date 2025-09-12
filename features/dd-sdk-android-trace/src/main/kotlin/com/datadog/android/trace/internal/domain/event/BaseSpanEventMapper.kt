@@ -38,6 +38,14 @@ internal abstract class BaseSpanEventMapper<T> : ContextAwareMapper<T, SpanEvent
         )
     }
 
+    protected fun resolveOsInfo(deviceInfo: DeviceInfo): SpanEvent.Os {
+        return SpanEvent.Os(
+            name = deviceInfo.osName,
+            version = deviceInfo.osVersion,
+            versionMajor = deviceInfo.osMajorVersion
+        )
+    }
+
     protected fun resolveNetworkInfo(networkInfo: NetworkInfo): SpanEvent.Network {
         val simCarrier = resolveSimCarrier(networkInfo)
         val networkInfoClient = SpanEvent.Client(
@@ -48,14 +56,6 @@ internal abstract class BaseSpanEventMapper<T> : ContextAwareMapper<T, SpanEvent
             connectivity = networkInfo.connectivity.toString()
         )
         return SpanEvent.Network(networkInfoClient)
-    }
-
-    protected fun resolveOsInfo(deviceInfo: DeviceInfo): SpanEvent.Os {
-        return SpanEvent.Os(
-            name = deviceInfo.osName,
-            version = deviceInfo.osVersion,
-            versionMajor = deviceInfo.osMajorVersion
-        )
     }
 
     private fun resolveSimCarrier(networkInfo: NetworkInfo): SpanEvent.SimCarrier? {

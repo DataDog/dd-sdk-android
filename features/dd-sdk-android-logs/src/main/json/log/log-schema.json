@@ -5,6 +5,12 @@
   "type": "object",
   "description": "Structure holding information about a Log",
   "properties": {
+    "device": {
+      "$ref": "../../../../../dd-sdk-android-rum/src/main/json/rum/_common-schema.json#/properties/device"
+    },
+    "os": {
+      "$ref": "../../../../../dd-sdk-android-rum/src/main/json/rum/_common-schema.json#/properties/os"
+    },
     "status": {
       "type": "string",
       "description": "The severity of this log",
@@ -259,7 +265,9 @@
     "service",
     "logger",
     "_dd",
-    "ddtags"
+    "ddtags",
+    "device",
+    "os"
   ],
   "additionalProperties": {
     "type": "object",

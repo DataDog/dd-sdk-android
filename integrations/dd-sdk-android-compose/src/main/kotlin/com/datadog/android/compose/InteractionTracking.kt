@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-@file:OptIn(ExperimentalMaterialApi::class, ExperimentalTrackingApi::class)
+@file:OptIn(ExperimentalMaterialApi::class)
 
 package com.datadog.android.compose
 
@@ -33,7 +33,6 @@ import kotlin.coroutines.CoroutineContext
  * @param sdkCore the SDK instance to use. If not provided, default instance will be used.
  * @param onClick Click listener.
  */
-@ExperimentalTrackingApi
 @Composable
 fun trackClick(
     targetName: String,
@@ -62,7 +61,6 @@ fun trackClick(
  * nested up to 9 levels deep. Keys using more than 9 levels will be sanitized by SDK.
  * @param sdkCore the SDK instance to use. If not provided, default instance will be used.
  */
-@ExperimentalTrackingApi
 @Composable
 fun TrackInteractionEffect(
     targetName: String,

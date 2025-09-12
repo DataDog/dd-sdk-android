@@ -108,6 +108,13 @@ internal class RumEventSerializerTest {
                 containsAttributes(usr.additionalProperties)
             }
         }
+        event.account?.let { account ->
+            assertThat(jsonObject).hasField("account") {
+                hasNullableField("id", account.id)
+                hasNullableField("name", account.name)
+                containsAttributes(account.additionalProperties)
+            }
+        }
         event.connectivity?.let { connectivity ->
             assertThat(jsonObject).hasField("connectivity") {
                 hasNullableField("status", connectivity.status.name.lowercase(Locale.US))
@@ -121,6 +128,29 @@ internal class RumEventSerializerTest {
                         hasNullableField("carrier_name", cellular.carrierName)
                     }
                 }
+            }
+        }
+        event.device?.let { device ->
+            assertThat(jsonObject).hasField("device") {
+                hasNullableField("name", device.name)
+                hasNullableField("model", device.model)
+                hasNullableField("brand", device.brand)
+                hasNullableField("type", device.type?.name?.lowercase(Locale.US))
+                hasNullableField("architecture", device.architecture)
+                hasNullableField("locale", device.locale)
+                hasNullableField("locales", device.locales)
+                hasNullableField("time_zone", device.timeZone)
+                hasNullableField("battery_level", device.batteryLevel)
+                hasNullableField("power_saving_mode", device.powerSavingMode)
+                hasNullableField("brightness_level", device.brightnessLevel)
+            }
+        }
+        event.os?.let { os ->
+            assertThat(jsonObject).hasField("os") {
+                hasNullableField("name", os.name)
+                hasNullableField("version", os.version)
+                hasNullableField("version_major", os.versionMajor)
+                hasNullableField("build", os.build)
             }
         }
         event.context?.additionalProperties?.let {
@@ -193,6 +223,13 @@ internal class RumEventSerializerTest {
                 containsAttributes(usr.additionalProperties)
             }
         }
+        event.account?.let { account ->
+            assertThat(jsonObject).hasField("account") {
+                hasNullableField("id", account.id)
+                hasNullableField("name", account.name)
+                containsAttributes(account.additionalProperties)
+            }
+        }
         event.connectivity?.let { connectivity ->
             assertThat(jsonObject).hasField("connectivity") {
                 hasNullableField("status", connectivity.status.name.lowercase(Locale.US))
@@ -206,6 +243,29 @@ internal class RumEventSerializerTest {
                         hasNullableField("carrier_name", cellular.carrierName)
                     }
                 }
+            }
+        }
+        event.device?.let { device ->
+            assertThat(jsonObject).hasField("device") {
+                hasNullableField("name", device.name)
+                hasNullableField("model", device.model)
+                hasNullableField("brand", device.brand)
+                hasNullableField("type", device.type?.name?.lowercase(Locale.US))
+                hasNullableField("architecture", device.architecture)
+                hasNullableField("locale", device.locale)
+                hasNullableField("locales", device.locales)
+                hasNullableField("time_zone", device.timeZone)
+                hasNullableField("battery_level", device.batteryLevel)
+                hasNullableField("power_saving_mode", device.powerSavingMode)
+                hasNullableField("brightness_level", device.brightnessLevel)
+            }
+        }
+        event.os?.let { os ->
+            assertThat(jsonObject).hasField("os") {
+                hasNullableField("name", os.name)
+                hasNullableField("version", os.version)
+                hasNullableField("version_major", os.versionMajor)
+                hasNullableField("build", os.build)
             }
         }
         event.context?.additionalProperties?.let {
@@ -261,6 +321,13 @@ internal class RumEventSerializerTest {
                 containsAttributes(usr.additionalProperties)
             }
         }
+        event.account?.let { account ->
+            assertThat(jsonObject).hasField("account") {
+                hasNullableField("id", account.id)
+                hasNullableField("name", account.name)
+                containsAttributes(account.additionalProperties)
+            }
+        }
         event.connectivity?.let { connectivity ->
             assertThat(jsonObject).hasField("connectivity") {
                 hasNullableField("status", connectivity.status.name.lowercase(Locale.US))
@@ -274,6 +341,29 @@ internal class RumEventSerializerTest {
                         hasNullableField("carrier_name", cellular.carrierName)
                     }
                 }
+            }
+        }
+        event.device?.let { device ->
+            assertThat(jsonObject).hasField("device") {
+                hasNullableField("name", device.name)
+                hasNullableField("model", device.model)
+                hasNullableField("brand", device.brand)
+                hasNullableField("type", device.type?.name?.lowercase(Locale.US))
+                hasNullableField("architecture", device.architecture)
+                hasNullableField("locale", device.locale)
+                hasNullableField("locales", device.locales)
+                hasNullableField("time_zone", device.timeZone)
+                hasNullableField("battery_level", device.batteryLevel)
+                hasNullableField("power_saving_mode", device.powerSavingMode)
+                hasNullableField("brightness_level", device.brightnessLevel)
+            }
+        }
+        event.os?.let { os ->
+            assertThat(jsonObject).hasField("os") {
+                hasNullableField("name", os.name)
+                hasNullableField("version", os.version)
+                hasNullableField("version_major", os.versionMajor)
+                hasNullableField("build", os.build)
             }
         }
         event.context?.additionalProperties?.let {
@@ -325,6 +415,13 @@ internal class RumEventSerializerTest {
                 containsAttributes(usr.additionalProperties)
             }
         }
+        event.account?.let { account ->
+            assertThat(jsonObject).hasField("account") {
+                hasNullableField("id", account.id)
+                hasNullableField("name", account.name)
+                containsAttributes(account.additionalProperties)
+            }
+        }
         event.connectivity?.let { connectivity ->
             assertThat(jsonObject).hasField("connectivity") {
                 hasNullableField("status", connectivity.status.name.lowercase(Locale.US))
@@ -338,6 +435,29 @@ internal class RumEventSerializerTest {
                         hasNullableField("carrier_name", cellular.carrierName)
                     }
                 }
+            }
+        }
+        event.device?.let { device ->
+            assertThat(jsonObject).hasField("device") {
+                hasNullableField("name", device.name)
+                hasNullableField("model", device.model)
+                hasNullableField("brand", device.brand)
+                hasNullableField("type", device.type?.name?.lowercase(Locale.US))
+                hasNullableField("architecture", device.architecture)
+                hasNullableField("locale", device.locale)
+                hasNullableField("locales", device.locales)
+                hasNullableField("time_zone", device.timeZone)
+                hasNullableField("battery_level", device.batteryLevel)
+                hasNullableField("power_saving_mode", device.powerSavingMode)
+                hasNullableField("brightness_level", device.brightnessLevel)
+            }
+        }
+        event.os?.let { os ->
+            assertThat(jsonObject).hasField("os") {
+                hasNullableField("name", os.name)
+                hasNullableField("version", os.version)
+                hasNullableField("version_major", os.versionMajor)
+                hasNullableField("build", os.build)
             }
         }
         event.context?.additionalProperties?.let {
@@ -383,6 +503,13 @@ internal class RumEventSerializerTest {
                 containsAttributes(usr.additionalProperties)
             }
         }
+        event.account?.let { account ->
+            assertThat(jsonObject).hasField("account") {
+                hasNullableField("id", account.id)
+                hasNullableField("name", account.name)
+                containsAttributes(account.additionalProperties)
+            }
+        }
         event.connectivity?.let { connectivity ->
             assertThat(jsonObject).hasField("connectivity") {
                 hasNullableField("status", connectivity.status.name.lowercase(Locale.US))
@@ -396,6 +523,29 @@ internal class RumEventSerializerTest {
                         hasNullableField("carrier_name", cellular.carrierName)
                     }
                 }
+            }
+        }
+        event.device?.let { device ->
+            assertThat(jsonObject).hasField("device") {
+                hasNullableField("name", device.name)
+                hasNullableField("model", device.model)
+                hasNullableField("brand", device.brand)
+                hasNullableField("type", device.type?.name?.lowercase(Locale.US))
+                hasNullableField("architecture", device.architecture)
+                hasNullableField("locale", device.locale)
+                hasNullableField("locales", device.locales)
+                hasNullableField("time_zone", device.timeZone)
+                hasNullableField("battery_level", device.batteryLevel)
+                hasNullableField("power_saving_mode", device.powerSavingMode)
+                hasNullableField("brightness_level", device.brightnessLevel)
+            }
+        }
+        event.os?.let { os ->
+            assertThat(jsonObject).hasField("os") {
+                hasNullableField("name", os.name)
+                hasNullableField("version", os.version)
+                hasNullableField("version_major", os.versionMajor)
+                hasNullableField("build", os.build)
             }
         }
         event.context?.additionalProperties?.let {
@@ -950,6 +1100,9 @@ internal class RumEventSerializerTest {
             .doesNotHaveField("session")
             .doesNotHaveField("view")
             .doesNotHaveField("usr")
+            .doesNotHaveField("account")
+            .doesNotHaveField("os")
+            .doesNotHaveField("device")
             .doesNotHaveField("_dd")
     }
 
@@ -1054,6 +1207,14 @@ internal class RumEventSerializerTest {
                 RumEventSerializer.ignoredAttributes
             )
         }
+        fakeEvent.account?.let {
+            verify(mockedDataConstrains).validateAttributes(
+                it.additionalProperties,
+                RumEventSerializer.ACCOUNT_ATTRIBUTE_PREFIX,
+                RumEventSerializer.ACCOUNT_EXTRA_GROUP_VERBOSE_NAME,
+                RumEventSerializer.ignoredAttributes
+            )
+        }
     }
 
     @Test
@@ -1073,6 +1234,14 @@ internal class RumEventSerializerTest {
                 it.additionalProperties,
                 RumEventSerializer.USER_ATTRIBUTE_PREFIX,
                 RumEventSerializer.USER_EXTRA_GROUP_VERBOSE_NAME,
+                RumEventSerializer.ignoredAttributes
+            )
+        }
+        fakeEvent.account?.let {
+            verify(mockedDataConstrains).validateAttributes(
+                it.additionalProperties,
+                RumEventSerializer.ACCOUNT_ATTRIBUTE_PREFIX,
+                RumEventSerializer.ACCOUNT_EXTRA_GROUP_VERBOSE_NAME,
                 RumEventSerializer.ignoredAttributes
             )
         }
@@ -1098,6 +1267,14 @@ internal class RumEventSerializerTest {
                 RumEventSerializer.ignoredAttributes
             )
         }
+        fakeEvent.account?.let {
+            verify(mockedDataConstrains).validateAttributes(
+                it.additionalProperties,
+                RumEventSerializer.ACCOUNT_ATTRIBUTE_PREFIX,
+                RumEventSerializer.ACCOUNT_EXTRA_GROUP_VERBOSE_NAME,
+                RumEventSerializer.ignoredAttributes
+            )
+        }
     }
 
     @Test
@@ -1120,6 +1297,14 @@ internal class RumEventSerializerTest {
                 RumEventSerializer.ignoredAttributes
             )
         }
+        fakeEvent.account?.let {
+            verify(mockedDataConstrains).validateAttributes(
+                it.additionalProperties,
+                RumEventSerializer.ACCOUNT_ATTRIBUTE_PREFIX,
+                RumEventSerializer.ACCOUNT_EXTRA_GROUP_VERBOSE_NAME,
+                RumEventSerializer.ignoredAttributes
+            )
+        }
     }
 
     @Test
@@ -1139,6 +1324,14 @@ internal class RumEventSerializerTest {
                 it.additionalProperties,
                 RumEventSerializer.USER_ATTRIBUTE_PREFIX,
                 RumEventSerializer.USER_EXTRA_GROUP_VERBOSE_NAME,
+                RumEventSerializer.ignoredAttributes
+            )
+        }
+        fakeEvent.account?.let {
+            verify(mockedDataConstrains).validateAttributes(
+                it.additionalProperties,
+                RumEventSerializer.ACCOUNT_ATTRIBUTE_PREFIX,
+                RumEventSerializer.ACCOUNT_EXTRA_GROUP_VERBOSE_NAME,
                 RumEventSerializer.ignoredAttributes
             )
         }
@@ -1329,6 +1522,42 @@ internal class RumEventSerializerTest {
     }
 
     @Test
+    fun `M drop non-serializable attributes W serialize() with ResourceEvent { account account#additionalProperties }`(
+        @Forgery event: ResourceEvent,
+        forge: Forge
+    ) {
+        // Given
+        val faultyKey = forge.anAlphabeticalString()
+        val faultyObject = object {
+            override fun toString(): String {
+                throw forge.anException()
+            }
+        }
+        val faultyEvent = event.copy(
+            account = event.account?.copy(
+                additionalProperties = event.account?.additionalProperties
+                    ?.toMutableMap()
+                    ?.apply { put(faultyKey, faultyObject) }
+                    .orEmpty()
+                    .toMutableMap()
+            )
+        )
+
+        // When
+        val serialized = testedSerializer.serialize(faultyEvent)
+
+        // Then
+        val jsonObject = JsonParser.parseString(serialized).asJsonObject
+        event.account?.let { account ->
+            assertThat(jsonObject).hasField("account") {
+                hasNullableField("id", account.id)
+                hasNullableField("name", account.name)
+                containsAttributes(account.additionalProperties)
+            }
+        }
+    }
+
+    @Test
     fun `M drop non-serializable attributes W serialize() with ResourceEvent { bad context#additionalProperties }`(
         @Forgery event: ResourceEvent,
         forge: Forge
@@ -1395,6 +1624,42 @@ internal class RumEventSerializerTest {
                 hasNullableField("name", usr.name)
                 hasNullableField("email", usr.email)
                 containsAttributes(usr.additionalProperties)
+            }
+        }
+    }
+
+    @Test
+    fun `M drop non-serializable attributes W serialize() with ActionEvent { bad account#additionalProperties }`(
+        @Forgery event: ActionEvent,
+        forge: Forge
+    ) {
+        // Given
+        val faultyKey = forge.anAlphabeticalString()
+        val faultyObject = object {
+            override fun toString(): String {
+                throw forge.anException()
+            }
+        }
+        val faultyEvent = event.copy(
+            account = event.account?.copy(
+                additionalProperties = event.account?.additionalProperties
+                    ?.toMutableMap()
+                    ?.apply { put(faultyKey, faultyObject) }
+                    .orEmpty()
+                    .toMutableMap()
+            )
+        )
+
+        // When
+        val serialized = testedSerializer.serialize(faultyEvent)
+
+        // Then
+        val jsonObject = JsonParser.parseString(serialized).asJsonObject
+        event.account?.let { account ->
+            assertThat(jsonObject).hasField("account") {
+                hasNullableField("id", account.id)
+                hasNullableField("name", account.name)
+                containsAttributes(account.additionalProperties)
             }
         }
     }
@@ -1471,6 +1736,42 @@ internal class RumEventSerializerTest {
     }
 
     @Test
+    fun `M drop non-serializable attributes W serialize() with ViewEvent { bad account#additionalProperties }`(
+        @Forgery event: ViewEvent,
+        forge: Forge
+    ) {
+        // Given
+        val faultyKey = forge.anAlphabeticalString()
+        val faultyObject = object {
+            override fun toString(): String {
+                throw forge.anException()
+            }
+        }
+        val faultyEvent = event.copy(
+            account = event.account?.copy(
+                additionalProperties = event.account?.additionalProperties
+                    ?.toMutableMap()
+                    ?.apply { put(faultyKey, faultyObject) }
+                    .orEmpty()
+                    .toMutableMap()
+            )
+        )
+
+        // When
+        val serialized = testedSerializer.serialize(faultyEvent)
+
+        // Then
+        val jsonObject = JsonParser.parseString(serialized).asJsonObject
+        event.account?.let { account ->
+            assertThat(jsonObject).hasField("account") {
+                hasNullableField("id", account.id)
+                hasNullableField("name", account.name)
+                containsAttributes(account.additionalProperties)
+            }
+        }
+    }
+
+    @Test
     fun `M drop non-serializable attributes W serialize() with ViewEvent { bad context#additionalProperties }`(
         @Forgery event: ViewEvent,
         forge: Forge
@@ -1542,6 +1843,42 @@ internal class RumEventSerializerTest {
     }
 
     @Test
+    fun `M drop non-serializable attributes W serialize() with ErrorEvent { bad account#additionalProperties }`(
+        @Forgery event: ErrorEvent,
+        forge: Forge
+    ) {
+        // Given
+        val faultyKey = forge.anAlphabeticalString()
+        val faultyObject = object {
+            override fun toString(): String {
+                throw forge.anException()
+            }
+        }
+        val faultyEvent = event.copy(
+            account = event.account?.copy(
+                additionalProperties = event.account?.additionalProperties
+                    ?.toMutableMap()
+                    ?.apply { put(faultyKey, faultyObject) }
+                    .orEmpty()
+                    .toMutableMap()
+            )
+        )
+
+        // When
+        val serialized = testedSerializer.serialize(faultyEvent)
+
+        // Then
+        val jsonObject = JsonParser.parseString(serialized).asJsonObject
+        event.account?.let { account ->
+            assertThat(jsonObject).hasField("account") {
+                hasNullableField("id", account.id)
+                hasNullableField("name", account.name)
+                containsAttributes(account.additionalProperties)
+            }
+        }
+    }
+
+    @Test
     fun `M drop non-serializable attributes W serialize() with ErrorEvent { bad context#additionalProperties }`(
         @Forgery event: ErrorEvent,
         forge: Forge
@@ -1608,6 +1945,42 @@ internal class RumEventSerializerTest {
                 hasNullableField("name", usr.name)
                 hasNullableField("email", usr.email)
                 containsAttributes(usr.additionalProperties)
+            }
+        }
+    }
+
+    @Test
+    fun `M drop non-serializable attributes W serialize() with LongTaskEvent { bad account#additionalProperties }`(
+        @Forgery event: LongTaskEvent,
+        forge: Forge
+    ) {
+        // Given
+        val faultyKey = forge.anAlphabeticalString()
+        val faultyObject = object {
+            override fun toString(): String {
+                throw forge.anException()
+            }
+        }
+        val faultyEvent = event.copy(
+            account = event.account?.copy(
+                additionalProperties = event.account?.additionalProperties
+                    ?.toMutableMap()
+                    ?.apply { put(faultyKey, faultyObject) }
+                    .orEmpty()
+                    .toMutableMap()
+            )
+        )
+
+        // When
+        val serialized = testedSerializer.serialize(faultyEvent)
+
+        // Then
+        val jsonObject = JsonParser.parseString(serialized).asJsonObject
+        event.account?.let { account ->
+            assertThat(jsonObject).hasField("account") {
+                hasNullableField("id", account.id)
+                hasNullableField("name", account.name)
+                containsAttributes(account.additionalProperties)
             }
         }
     }

@@ -16,7 +16,6 @@ import okhttp3.RequestBody
 import okio.Buffer
 import java.io.EOFException
 import java.io.IOException
-import java.util.Locale
 import java.util.UUID
 
 internal class ResourcesRequestFactory(
@@ -94,16 +93,10 @@ internal class ResourcesRequestFactory(
     }
 
     private fun buildUrl(datadogContext: DatadogContext): String {
-        return String.format(
-            Locale.US,
-            UPLOAD_URL,
-            customEndpointUrl ?: datadogContext.site.intakeEndpoint,
-            "replay"
-        )
+        return customEndpointUrl ?: (datadogContext.site.intakeEndpoint + "/api/v2/replay")
     }
 
     companion object {
-        private const val UPLOAD_URL = "%s/api/v2/%s"
         internal const val APPLICATION_ID = "application_id"
         internal const val UPLOAD_DESCRIPTION = "Session Replay Resource Upload Request"
         internal const val ERROR_CONVERTING_BODY_TO_BYTEARRAY = "Error converting request body to bytearray"

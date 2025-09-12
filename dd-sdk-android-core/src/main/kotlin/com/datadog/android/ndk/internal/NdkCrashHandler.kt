@@ -14,10 +14,5 @@ internal interface NdkCrashHandler {
 
     fun prepareData()
 
-    fun handleNdkCrash(sdkCore: FeatureSdkCore, reportTarget: ReportTarget)
-
-    enum class ReportTarget {
-        RUM,
-        LOGS
-    }
+    fun handleNdkCrash(sdkCore: FeatureSdkCore)
 }

@@ -13,13 +13,13 @@ import fr.xgouchet.elmyr.ForgeryFactory
 internal class AccessibilityForgeryFactory : ForgeryFactory<Accessibility> {
     override fun getForgery(forge: Forge): Accessibility {
         return Accessibility(
-            textSize = forge.aNullable { forge.aString() },
-            rtlEnabled = forge.aNullable { forge.aBool() },
-            screenReaderEnabled = forge.aNullable { forge.aBool() },
-            increaseContrastEnabled = forge.aNullable { forge.aBool() },
-            reducedAnimationsEnabled = forge.aNullable { forge.aBool() },
-            invertColorsEnabled = forge.aNullable { forge.aBool() },
-            singleAppModeEnabled = forge.aNullable { forge.aBool() }
+            textSize = forge.aNullable { aString() },
+            rtlEnabled = forge.aNullable { aBool() },
+            screenReaderEnabled = forge.aNullable { aBool() },
+            increaseContrastEnabled = forge.aNullable { aBool() },
+            reducedAnimationsEnabled = forge.aNullable { aBool() },
+            invertColorsEnabled = forge.aNullable { aBool() },
+            singleAppModeEnabled = forge.aNullable { aBool() }
         )
     }
 }

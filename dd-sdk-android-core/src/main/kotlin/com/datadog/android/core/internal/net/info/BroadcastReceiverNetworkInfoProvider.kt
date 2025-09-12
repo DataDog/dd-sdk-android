@@ -16,7 +16,6 @@ import android.net.ConnectivityManager
 import android.os.Build
 import android.telephony.TelephonyManager
 import com.datadog.android.api.context.NetworkInfo
-import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.receiver.ThreadSafeReceiver
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import android.net.NetworkInfo as AndroidNetworkInfo
@@ -24,18 +23,12 @@ import android.net.NetworkInfo as AndroidNetworkInfo
 @Suppress("DEPRECATION")
 @SuppressLint("InlinedApi")
 internal class BroadcastReceiverNetworkInfoProvider(
-    private val dataWriter: DataWriter<NetworkInfo>,
     private val buildSdkVersionProvider: BuildSdkVersionProvider = BuildSdkVersionProvider.DEFAULT
 ) :
     ThreadSafeReceiver(),
     NetworkInfoProvider {
 
     private var networkInfo: NetworkInfo = NetworkInfo()
-        set(value) {
-            field = value
-            @Suppress("ThreadSafety") // TODO RUM-3756 delegate to another thread
-            dataWriter.write(field)
-        }
 
     // region BroadcastReceiver
 

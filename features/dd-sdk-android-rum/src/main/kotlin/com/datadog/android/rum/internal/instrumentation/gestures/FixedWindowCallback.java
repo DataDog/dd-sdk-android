@@ -145,7 +145,6 @@ class FixedWindowCallback implements Window.Callback {
         return delegate.onSearchRequested();
     }
 
-    @RequiresApi(api = Build.VERSION_CODES.M)
     @Override
     public boolean onSearchRequested(SearchEvent searchEvent) {
         return delegate.onSearchRequested(searchEvent);
@@ -167,7 +166,6 @@ class FixedWindowCallback implements Window.Callback {
         return delegate.onWindowStartingActionMode(callback);
     }
 
-    @RequiresApi(api = Build.VERSION_CODES.M)
     @Nullable
     @Override
     public ActionMode onWindowStartingActionMode(ActionMode.Callback callback, int type) {

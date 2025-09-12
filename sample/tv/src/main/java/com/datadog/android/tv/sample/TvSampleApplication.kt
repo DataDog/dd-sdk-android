@@ -118,13 +118,15 @@ class TvSampleApplication : Application() {
 
     private fun initializeOkHttp() {
         okHttpClient = OkHttpClient.Builder()
-            .addInterceptor(DatadogInterceptor(traceSampler = RateBasedSampler(FULL_SAMPLING_RATE)))
+            .addInterceptor(
+                DatadogInterceptor.Builder(emptyMap())
+                    .setTraceSampler(RateBasedSampler(FULL_SAMPLING_RATE))
+                    .build()
+            )
             .addNetworkInterceptor(
-                TracingInterceptor(
-                    traceSampler = RateBasedSampler(
-                        FULL_SAMPLING_RATE
-                    )
-                )
+                TracingInterceptor.Builder(emptyMap())
+                    .setTraceSampler(RateBasedSampler(FULL_SAMPLING_RATE))
+                    .build()
             )
             .eventListenerFactory(DatadogEventListener.Factory())
             .build()

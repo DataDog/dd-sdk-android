@@ -27,6 +27,7 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
+import java.util.Locale
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -120,6 +121,41 @@ internal class LogEventSerializerTest {
     }
 
     @Test
+    fun `M sanitise the account extra info keys W level deeper than 8`(
+        @Forgery fakeLog: LogEvent,
+        forge: Forge
+    ) {
+        // GIVEN
+        // we generate the bad key with depth level = 9 as the `account` prefix will add 1 extra depth
+        val fakeBadKey =
+            forge.aList(size = 10) { forge.anAlphabeticalString() }.joinToString(".")
+        val lastDotIndex = fakeBadKey.lastIndexOf('.')
+        val expectedSanitisedKey =
+            fakeBadKey.replaceRange(lastDotIndex..lastDotIndex, "_")
+        val attributeValue = forge.anAlphabeticalString()
+        val fakeAccountInfo = LogEvent.Account(
+            additionalProperties = mutableMapOf(
+                fakeBadKey to attributeValue
+            )
+        )
+
+        // WHEN
+        val newFakeLog = fakeLog.copy(account = fakeAccountInfo)
+        val serializedEvent = testedSerializer.serialize(newFakeLog)
+        val jsonObject = JsonParser.parseString(serializedEvent).asJsonObject
+
+        // THEN
+        assertThat(jsonObject)
+            .hasField(KEY_ACCOUNT) {
+                hasField(
+                    expectedSanitisedKey,
+                    attributeValue
+                )
+                doesNotHaveField(fakeBadKey)
+            }
+    }
+
+    @Test
     fun `M not throw W serialize() { usr#additionalProperties serialization throws }`(
         @Forgery fakeLog: LogEvent,
         forge: Forge
@@ -134,6 +170,35 @@ internal class LogEventSerializerTest {
         val faultyLogEvent = fakeLog.copy(
             usr = fakeLog.usr?.copy(
                 additionalProperties = fakeLog.usr?.additionalProperties
+                    ?.toMutableMap()
+                    ?.apply { put(faultyKey, faultyObject) }
+                    .orEmpty()
+                    .toMutableMap()
+            )
+        )
+
+        // When
+        val serialized = testedSerializer.serialize(faultyLogEvent)
+
+        // Then
+        assertSerializedLogMatchesInputLog(serialized, fakeLog)
+    }
+
+    @Test
+    fun `M not throw W serialize() { account#additionalProperties serialization throws }`(
+        @Forgery fakeLog: LogEvent,
+        forge: Forge
+    ) {
+        // Given
+        val faultyKey = forge.anAlphabeticalString()
+        val faultyObject = object {
+            override fun toString(): String {
+                throw forge.anException()
+            }
+        }
+        val faultyLogEvent = fakeLog.copy(
+            account = fakeLog.account?.copy(
+                additionalProperties = fakeLog.account?.additionalProperties
                     ?.toMutableMap()
                     ?.apply { put(faultyKey, faultyObject) }
                     .orEmpty()
@@ -205,10 +270,21 @@ internal class LogEventSerializerTest {
                 hasUserInfo(it)
             }
         }
+        log.account?.let {
+            assertThat(jsonObject).hasField(KEY_ACCOUNT) {
+                hasAccountInfo(it)
+            }
+        }
         log.error?.let {
             assertThat(jsonObject).hasField(KEY_ERROR) {
                 hasErrorInfo(it)
             }
+        }
+        assertThat(jsonObject).hasField(KEY_OS) {
+            hasOsInfo(log.os)
+        }
+        assertThat(jsonObject).hasField(KEY_DEVICE) {
+            hasDeviceInfo(log.device)
         }
     }
 
@@ -293,6 +369,26 @@ internal class LogEventSerializerTest {
         )
     }
 
+    private fun JsonObjectAssert.hasAccountInfo(
+        accountInfo: LogEvent.Account
+    ) {
+        val accountName = accountInfo.name
+        val accountId = accountInfo.id
+        if (accountId != null) {
+            hasField(KEY_ACCOUNT_ID, accountId)
+        } else {
+            doesNotHaveField(KEY_ACCOUNT_ID)
+        }
+        if (accountName != null) {
+            hasField(KEY_ACCOUNT_NAME, accountName)
+        } else {
+            doesNotHaveField(KEY_ACCOUNT_NAME)
+        }
+        containsExtraAttributes(
+            accountInfo.additionalProperties.minus(LogEvent.Account.RESERVED_PROPERTIES)
+        )
+    }
+
     private fun JsonObjectAssert.hasLoggerInfo(loggerInfo: LogEvent.Logger) {
         val loggerName = loggerInfo.name
         val threadName = loggerInfo.threadName
@@ -333,6 +429,90 @@ internal class LogEventSerializerTest {
         }
     }
 
+    private fun JsonObjectAssert.hasOsInfo(osInfo: LogEvent.Os) {
+        val osName = osInfo.name
+        val osBuild = osInfo.build
+        val osVersion = osInfo.version
+        val osVersionMajor = osInfo.versionMajor
+        hasField(KEY_NAME, osName)
+        if (osBuild != null) {
+            hasField(KEY_BUILD, osBuild)
+        } else {
+            doesNotHaveField(KEY_BUILD)
+        }
+        hasField(KEY_VERSION, osVersion)
+        hasField(KEY_VERSION_MAJOR, osVersionMajor)
+    }
+
+    private fun JsonObjectAssert.hasDeviceInfo(deviceInfo: LogEvent.LogEventDevice) {
+        val deviceType = deviceInfo.type
+        val deviceName = deviceInfo.name
+        val deviceModel = deviceInfo.model
+        val deviceBrand = deviceInfo.brand
+        val deviceArhitecture = deviceInfo.architecture
+        val deviceLocale = deviceInfo.locale
+        val deviceLocales = deviceInfo.locales
+        val deviceTimezone = deviceInfo.timeZone
+        val deviceBatteryLevel = deviceInfo.batteryLevel
+        val devicePowerSavingMode = deviceInfo.powerSavingMode
+        val deviceBrightnessLevel = deviceInfo.brightnessLevel
+        if (deviceType != null) {
+            hasField(KEY_TYPE, deviceType.name.lowercase(Locale.US))
+        } else {
+            doesNotHaveField(KEY_TYPE)
+        }
+        if (deviceName != null) {
+            hasField(KEY_NAME, deviceName)
+        } else {
+            doesNotHaveField(KEY_NAME)
+        }
+        if (deviceModel != null) {
+            hasField(KEY_MODEL, deviceModel)
+        } else {
+            doesNotHaveField(KEY_MODEL)
+        }
+        if (deviceBrand != null) {
+            hasField(KEY_BRAND, deviceBrand)
+        } else {
+            doesNotHaveField(KEY_BRAND)
+        }
+        if (deviceArhitecture != null) {
+            hasField(KEY_ARCHITECTURE, deviceArhitecture)
+        } else {
+            doesNotHaveField(KEY_ARCHITECTURE)
+        }
+        if (deviceLocale != null) {
+            hasField(KEY_LOCALE, deviceLocale)
+        } else {
+            doesNotHaveField(KEY_LOCALE)
+        }
+        if (deviceLocales != null) {
+            hasField(KEY_LOCALES, deviceLocales)
+        } else {
+            doesNotHaveField(KEY_LOCALES)
+        }
+        if (deviceTimezone != null) {
+            hasField(KEY_TIME_ZONE, deviceTimezone)
+        } else {
+            doesNotHaveField(KEY_TIME_ZONE)
+        }
+        if (deviceBatteryLevel != null) {
+            hasField(KEY_BATTERY_LEVEL, deviceBatteryLevel)
+        } else {
+            doesNotHaveField(KEY_BATTERY_LEVEL)
+        }
+        if (devicePowerSavingMode != null) {
+            hasField(KEY_POWER_SAVING_MODE, devicePowerSavingMode)
+        } else {
+            doesNotHaveField(KEY_POWER_SAVING_MODE)
+        }
+        if (deviceBrightnessLevel != null) {
+            hasField(KEY_BRIGHTNESS_LEVEL, deviceBrightnessLevel)
+        } else {
+            doesNotHaveField(KEY_BRIGHTNESS_LEVEL)
+        }
+    }
+
     // endregion
 
     companion object {
@@ -357,11 +537,28 @@ internal class LogEventSerializerTest {
         private const val KEY_NETWORK_SIGNAL_STRENGTH: String = "signal_strength"
         private const val KEY_NETWORK_UP_KBPS: String = "uplink_kbps"
         private const val KEY_USR = "usr"
+        private const val KEY_ACCOUNT = "account"
         private const val KEY_NETWORK = "network"
         private const val KEY_CLIENT = "client"
         private const val KEY_USR_NAME = "name"
         private const val KEY_USR_EMAIL = "email"
         private const val KEY_USR_ID = "id"
+        private const val KEY_ACCOUNT_NAME = "name"
+        private const val KEY_ACCOUNT_ID = "id"
         private const val KEY_LOGGER = "logger"
+        private const val KEY_BUILD = "build"
+        private const val KEY_VERSION_MAJOR = "version_major"
+        private const val KEY_OS = "os"
+        private const val KEY_DEVICE = "device"
+        private const val KEY_TYPE = "type"
+        private const val KEY_MODEL = "model"
+        private const val KEY_BRAND = "brand"
+        private const val KEY_ARCHITECTURE = "architecture"
+        private const val KEY_LOCALE = "locale"
+        private const val KEY_LOCALES = "locales"
+        private const val KEY_TIME_ZONE = "time_zone"
+        private const val KEY_BATTERY_LEVEL = "battery_level"
+        private const val KEY_POWER_SAVING_MODE = "power_saving_mode"
+        private const val KEY_BRIGHTNESS_LEVEL = "brightness_level"
     }
 }
