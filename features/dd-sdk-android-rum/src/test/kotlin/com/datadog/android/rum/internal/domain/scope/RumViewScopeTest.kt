@@ -8619,7 +8619,7 @@ internal class RumViewScopeTest {
         )
 
         // When
-        testedScope.handleEvent(event, mockWriter)
+        testedScope.handleEvent(event, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
         argumentCaptor<ViewEvent> {
@@ -8649,7 +8649,7 @@ internal class RumViewScopeTest {
         )
 
         // When
-        testedScope.handleEvent(event, mockWriter)
+        testedScope.handleEvent(event, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
         argumentCaptor<ViewEvent> {
@@ -8670,7 +8670,7 @@ internal class RumViewScopeTest {
     ) {
         // Given
         val operationKey = forge.aNullable { key }
-        val (attributes, expectedAttributes) = withAttributesCheckingMergeWithGlobal(forge)
+        val (attributes, expectedAttributes) = withAttributesCheckingMergeWithViewAttributes(forge)
         val event = RumRawEvent.StartFeatureOperation(
             fakeName,
             operationKey = operationKey,
@@ -8679,7 +8679,7 @@ internal class RumViewScopeTest {
         )
 
         // When
-        testedScope.handleEvent(event, mockWriter)
+        testedScope.handleEvent(event, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
         argumentCaptor<VitalEvent> {
@@ -8713,7 +8713,7 @@ internal class RumViewScopeTest {
     ) {
         // Given
         val fakeOperationKey = forge.aNullable { key }
-        val (attributes, expectedAttributes) = withAttributesCheckingMergeWithGlobal(forge)
+        val (attributes, expectedAttributes) = withAttributesCheckingMergeWithViewAttributes(forge)
         val event = RumRawEvent.StopFeatureOperation(
             fakeName,
             operationKey = fakeOperationKey,
@@ -8723,7 +8723,7 @@ internal class RumViewScopeTest {
         )
 
         // When
-        testedScope.handleEvent(event, mockWriter)
+        testedScope.handleEvent(event, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
         argumentCaptor<VitalEvent> {
@@ -8757,7 +8757,7 @@ internal class RumViewScopeTest {
     ) {
         // Given
         val fakeOperationKey = forge.aNullable { key }
-        val (attributes, expectedAttributes) = withAttributesCheckingMergeWithGlobal(forge)
+        val (attributes, expectedAttributes) = withAttributesCheckingMergeWithViewAttributes(forge)
         val failureReason = forge.aValueFrom(FailureReason::class.java)
         val event = RumRawEvent.StopFeatureOperation(
             fakeName,
@@ -8768,7 +8768,7 @@ internal class RumViewScopeTest {
         )
 
         // When
-        testedScope.handleEvent(event, mockWriter)
+        testedScope.handleEvent(event, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
         argumentCaptor<VitalEvent> {
@@ -8795,14 +8795,13 @@ internal class RumViewScopeTest {
     //
 
     // region Internal
-    private fun withAttributesCheckingMergeWithGlobal(forge: Forge): Pair<Map<String, Any?>, Map<String, Any?>> {
-        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
-        val fakeGlobalAttributes = forgeGlobalAttributes(forge, attributes)
-        whenever(rumMonitor.mockInstance.getAttributes()) doReturn fakeGlobalAttributes
-
+    private fun withAttributesCheckingMergeWithViewAttributes(
+        forge: Forge
+    ): Pair<Map<String, Any?>, Map<String, Any?>> {
+        val attributes = forgeGlobalAttributes(forge, fakeAttributes)
         val expectedAttributes = buildMap {
+            putAll(fakeAttributes)
             putAll(attributes)
-            putAll(fakeGlobalAttributes)
         }
 
         return attributes to expectedAttributes

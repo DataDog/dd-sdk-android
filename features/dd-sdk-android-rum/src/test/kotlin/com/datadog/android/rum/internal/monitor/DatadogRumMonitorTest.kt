@@ -42,7 +42,6 @@ import com.datadog.android.rum.internal.domain.display.DisplayInfo
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
 import com.datadog.android.rum.internal.domain.scope.RumApplicationScope
 import com.datadog.android.rum.internal.domain.scope.RumRawEvent
-import com.datadog.android.rum.internal.domain.scope.RumScope
 import com.datadog.android.rum.internal.domain.scope.RumScopeKey
 import com.datadog.android.rum.internal.domain.scope.RumSessionScope
 import com.datadog.android.rum.internal.domain.scope.RumViewManagerScope
@@ -102,6 +101,7 @@ import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.verifyNoMoreInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
+import java.util.Locale
 import java.util.concurrent.Callable
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
@@ -119,9 +119,6 @@ import java.util.concurrent.TimeUnit
 internal class DatadogRumMonitorTest {
 
     private lateinit var testedMonitor: DatadogRumMonitor
-
-    @Mock
-    lateinit var mockScope: RumScope
 
     @Mock
     lateinit var mockApplicationScope: RumApplicationScope
@@ -2902,7 +2899,7 @@ internal class DatadogRumMonitorTest {
             FO_ERROR_INVALID_NAME.format(Locale.US, name)
         )
 
-        verifyNoInteractions(mockScope)
+        verifyNoInteractions(mockApplicationScope)
         verifyNoMoreInteractions(mockInternalLogger)
     }
 
@@ -2922,7 +2919,7 @@ internal class DatadogRumMonitorTest {
             FO_ERROR_INVALID_OPERATION_KEY.format(Locale.US, operationKey)
         )
 
-        verifyNoInteractions(mockScope)
+        verifyNoInteractions(mockApplicationScope)
         verifyNoMoreInteractions(mockInternalLogger)
     }
 
@@ -2941,7 +2938,7 @@ internal class DatadogRumMonitorTest {
             FO_ERROR_INVALID_NAME.format(Locale.US, name)
         )
 
-        verifyNoInteractions(mockScope)
+        verifyNoInteractions(mockApplicationScope)
         verifyNoMoreInteractions(mockInternalLogger)
     }
 
@@ -2961,7 +2958,7 @@ internal class DatadogRumMonitorTest {
             FO_ERROR_INVALID_OPERATION_KEY.format(Locale.US, operationKey)
         )
 
-        verifyNoInteractions(mockScope)
+        verifyNoInteractions(mockApplicationScope)
         verifyNoMoreInteractions(mockInternalLogger)
     }
 
@@ -2983,7 +2980,7 @@ internal class DatadogRumMonitorTest {
             FO_ERROR_INVALID_NAME.format(Locale.US, name)
         )
 
-        verifyNoInteractions(mockScope)
+        verifyNoInteractions(mockApplicationScope)
         verifyNoMoreInteractions(mockInternalLogger)
     }
 
@@ -3006,7 +3003,7 @@ internal class DatadogRumMonitorTest {
             FO_ERROR_INVALID_OPERATION_KEY.format(Locale.US, operationKey)
         )
 
-        verifyNoInteractions(mockScope)
+        verifyNoInteractions(mockApplicationScope)
         verifyNoMoreInteractions(mockInternalLogger)
     }
 
@@ -3018,13 +3015,18 @@ internal class DatadogRumMonitorTest {
         Thread.sleep(PROCESSING_DELAY)
 
         argumentCaptor<RumRawEvent> {
-            verify(mockScope).handleEvent(capture(), same(mockWriter))
+            verify(mockApplicationScope).handleEvent(
+                capture(),
+                eq(fakeDatadogContext),
+                eq(mockEventWriteScope),
+                same(mockWriter)
+            )
             val event = firstValue as T
             assertThat(event.eventTime.timestamp).isEqualTo(fakeTimestamp)
             then(event)
         }
 
-        verifyNoMoreInteractions(mockScope, mockWriter)
+        verifyNoMoreInteractions(mockWriter)
     }
 
     companion object {

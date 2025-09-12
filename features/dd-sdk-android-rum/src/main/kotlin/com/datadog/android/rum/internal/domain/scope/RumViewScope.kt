@@ -9,7 +9,6 @@ package com.datadog.android.rum.internal.domain.scope
 import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
-import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.EventWriteScope
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.storage.DataWriter
@@ -239,8 +238,8 @@ internal open class RumViewScope(
             is RumRawEvent.AddViewAttributes -> onAddViewAttributes(event)
             is RumRawEvent.RemoveViewAttributes -> onRemoveViewAttributes(event)
 
-            is RumRawEvent.StartFeatureOperation -> onStartFeatureOperation(event, writer)
-            is RumRawEvent.StopFeatureOperation -> onStopFeatureOperation(event, writer)
+            is RumRawEvent.StartFeatureOperation -> onStartFeatureOperation(event, datadogContext, writeScope, writer)
+            is RumRawEvent.StopFeatureOperation -> onStopFeatureOperation(event, datadogContext, writeScope, writer)
 
             else -> delegateEventToChildren(event, datadogContext, writeScope, writer)
         }
@@ -255,32 +254,42 @@ internal open class RumViewScope(
         }
     }
 
-    private fun onStartFeatureOperation(event: RumRawEvent.StartFeatureOperation, writer: DataWriter<Any>) {
-        sdkCore.newRumEventWriteOperation(writer) { datadogContext ->
+    private fun onStartFeatureOperation(
+        event: RumRawEvent.StartFeatureOperation,
+        datadogContext: DatadogContext,
+        writeScope: EventWriteScope,
+        writer: DataWriter<Any>
+    ) {
+        sdkCore.newRumEventWriteOperation(datadogContext, writeScope, writer) {
             newVitalEvent(
                 datadogContext,
                 name = event.name,
                 operationKey = event.operationKey,
                 stepType = VitalEvent.StepType.START,
                 failureReason = null,
-                attributes = event.attributes
+                eventAttributes = event.attributes
             )
         }.submit()
-        sendViewUpdate(event, writer)
+        sendViewUpdate(event, datadogContext, writeScope, writer)
     }
 
-    private fun onStopFeatureOperation(event: RumRawEvent.StopFeatureOperation, writer: DataWriter<Any>) {
-        sdkCore.newRumEventWriteOperation(writer) { datadogContext ->
+    private fun onStopFeatureOperation(
+        event: RumRawEvent.StopFeatureOperation,
+        datadogContext: DatadogContext,
+        writeScope: EventWriteScope,
+        writer: DataWriter<Any>
+    ) {
+        sdkCore.newRumEventWriteOperation(datadogContext, writeScope, writer) {
             newVitalEvent(
                 datadogContext,
                 name = event.name,
                 operationKey = event.operationKey,
                 stepType = VitalEvent.StepType.END,
                 failureReason = event.failureReason?.toSchemaFailureReason(),
-                attributes = event.attributes
+                eventAttributes = event.attributes
             )
         }.submit()
-        sendViewUpdate(event, writer)
+        sendViewUpdate(event, datadogContext, writeScope, writer)
     }
 
     @Suppress("LongMethod")
@@ -290,7 +299,7 @@ internal open class RumViewScope(
         operationKey: String?,
         stepType: VitalEvent.StepType,
         failureReason: VitalEvent.FailureReason?,
-        attributes: Map<String, Any?>
+        eventAttributes: Map<String, Any?>
     ): VitalEvent {
         val rumContext = getRumContext()
         val syntheticsAttribute = if (
@@ -318,7 +327,9 @@ internal open class RumViewScope(
         return VitalEvent(
             date = eventTimestamp,
             context = VitalEvent.Context(
-                additionalProperties = addExtraAttributes(attributes)
+                additionalProperties = getCustomAttributes().toMutableMap().also {
+                    it.putAll(eventAttributes)
+                }
             ),
             dd = VitalEvent.Dd(
                 session = VitalEvent.DdSession(
