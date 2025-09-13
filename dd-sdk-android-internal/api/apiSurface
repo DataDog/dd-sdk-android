@@ -26,6 +26,13 @@ class com.datadog.android.internal.concurrent.CompletableFuture<T: Any>
   var value: T
   fun isComplete(): Boolean
   fun complete(T)
+enum com.datadog.android.internal.network.GraphQLHeaders
+  constructor(String)
+  - DD_GRAPHQL_NAME_HEADER
+  - DD_GRAPHQL_VARIABLES_HEADER
+  - DD_GRAPHQL_TYPE_HEADER
+  - DD_GRAPHQL_PAYLOAD_HEADER
+  override fun toString(): String
 interface com.datadog.android.internal.profiler.BenchmarkCounter
   fun add(Long, Map<String, String>)
 interface com.datadog.android.internal.profiler.BenchmarkMeter

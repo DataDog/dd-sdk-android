@@ -9,6 +9,7 @@ package com.datadog.android.okhttp
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.SdkCore
 import com.datadog.android.api.feature.Feature
+import com.datadog.android.internal.network.GraphQLHeaders
 import com.datadog.android.okhttp.internal.rum.NoOpRumResourceAttributesProvider
 import com.datadog.android.okhttp.trace.DeterministicTraceSampler
 import com.datadog.android.okhttp.trace.NoOpTracedRequestListener
@@ -365,10 +366,10 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
         // Given
         fakeRequest = forgeRequest(forge) { builder ->
             builder.addHeader("User-Agent", fakeUserAgent)
-            builder.addHeader(DatadogInterceptor.DD_GRAPHQL_NAME_HEADER, fakeGraphQLName)
-            builder.addHeader(DatadogInterceptor.DD_GRAPHQL_TYPE_HEADER, fakeGraphQLType)
-            builder.addHeader(DatadogInterceptor.DD_GRAPHQL_VARIABLES_HEADER, fakeGraphQLVariables)
-            builder.addHeader(DatadogInterceptor.DD_GRAPHQL_PAYLOAD_HEADER, fakeGraphQLPayload)
+            builder.addHeader(GraphQLHeaders.DD_GRAPHQL_NAME_HEADER.headerValue, fakeGraphQLName)
+            builder.addHeader(GraphQLHeaders.DD_GRAPHQL_TYPE_HEADER.headerValue, fakeGraphQLType)
+            builder.addHeader(GraphQLHeaders.DD_GRAPHQL_VARIABLES_HEADER.headerValue, fakeGraphQLVariables)
+            builder.addHeader(GraphQLHeaders.DD_GRAPHQL_PAYLOAD_HEADER.headerValue, fakeGraphQLPayload)
         }
         stubChain(mockChain, 200)
 
@@ -381,10 +382,10 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
         val cleanedRequest = requestCaptor.firstValue
 
         // Verify GraphQL headers are removed
-        assertThat(cleanedRequest.headers[DatadogInterceptor.DD_GRAPHQL_NAME_HEADER]).isNull()
-        assertThat(cleanedRequest.headers[DatadogInterceptor.DD_GRAPHQL_TYPE_HEADER]).isNull()
-        assertThat(cleanedRequest.headers[DatadogInterceptor.DD_GRAPHQL_VARIABLES_HEADER]).isNull()
-        assertThat(cleanedRequest.headers[DatadogInterceptor.DD_GRAPHQL_PAYLOAD_HEADER]).isNull()
+        assertThat(cleanedRequest.headers[GraphQLHeaders.DD_GRAPHQL_NAME_HEADER.headerValue]).isNull()
+        assertThat(cleanedRequest.headers[GraphQLHeaders.DD_GRAPHQL_TYPE_HEADER.headerValue]).isNull()
+        assertThat(cleanedRequest.headers[GraphQLHeaders.DD_GRAPHQL_VARIABLES_HEADER.headerValue]).isNull()
+        assertThat(cleanedRequest.headers[GraphQLHeaders.DD_GRAPHQL_PAYLOAD_HEADER.headerValue]).isNull()
 
         // Verify other headers are preserved
         assertThat(cleanedRequest.headers["User-Agent"]).isEqualTo(fakeUserAgent)
@@ -402,10 +403,10 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
     ) {
         // Given
         fakeRequest = forgeRequest(forge) { builder ->
-            builder.addHeader(DatadogInterceptor.DD_GRAPHQL_NAME_HEADER, fakeGraphQLName)
-            builder.addHeader(DatadogInterceptor.DD_GRAPHQL_TYPE_HEADER, fakeGraphQLType)
-            builder.addHeader(DatadogInterceptor.DD_GRAPHQL_VARIABLES_HEADER, fakeGraphQLVariables)
-            builder.addHeader(DatadogInterceptor.DD_GRAPHQL_PAYLOAD_HEADER, fakeGraphQLPayload)
+            builder.addHeader(GraphQLHeaders.DD_GRAPHQL_NAME_HEADER.headerValue, fakeGraphQLName)
+            builder.addHeader(GraphQLHeaders.DD_GRAPHQL_TYPE_HEADER.headerValue, fakeGraphQLType)
+            builder.addHeader(GraphQLHeaders.DD_GRAPHQL_VARIABLES_HEADER.headerValue, fakeGraphQLVariables)
+            builder.addHeader(GraphQLHeaders.DD_GRAPHQL_PAYLOAD_HEADER.headerValue, fakeGraphQLPayload)
         }
         stubChain(mockChain, statusCode)
 
@@ -1014,7 +1015,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
         // Given
         fakeRequest = forgeRequest(forge) { builder ->
             builder.addHeader("User-Agent", fakeUserAgent)
-            builder.addHeader(DatadogInterceptor.DD_GRAPHQL_NAME_HEADER, fakeGraphQLName)
+            builder.addHeader(GraphQLHeaders.DD_GRAPHQL_NAME_HEADER.headerValue, fakeGraphQLName)
         }
         stubChain(mockChain, 200)
 
@@ -1026,10 +1027,10 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
         verify(mockChain).proceed(requestCaptor.capture())
         val cleanedRequest = requestCaptor.firstValue
 
-        assertThat(cleanedRequest.headers[DatadogInterceptor.DD_GRAPHQL_NAME_HEADER]).isNull()
-        assertThat(cleanedRequest.headers[DatadogInterceptor.DD_GRAPHQL_TYPE_HEADER]).isNull()
-        assertThat(cleanedRequest.headers[DatadogInterceptor.DD_GRAPHQL_VARIABLES_HEADER]).isNull()
-        assertThat(cleanedRequest.headers[DatadogInterceptor.DD_GRAPHQL_PAYLOAD_HEADER]).isNull()
+        assertThat(cleanedRequest.headers[GraphQLHeaders.DD_GRAPHQL_NAME_HEADER.headerValue]).isNull()
+        assertThat(cleanedRequest.headers[GraphQLHeaders.DD_GRAPHQL_TYPE_HEADER.headerValue]).isNull()
+        assertThat(cleanedRequest.headers[GraphQLHeaders.DD_GRAPHQL_VARIABLES_HEADER.headerValue]).isNull()
+        assertThat(cleanedRequest.headers[GraphQLHeaders.DD_GRAPHQL_PAYLOAD_HEADER.headerValue]).isNull()
         assertThat(cleanedRequest.headers["User-Agent"]).isEqualTo(fakeUserAgent)
         assertThat(cleanedRequest.url.toString()).isEqualTo(fakeRequest.url.toString())
     }
@@ -1042,8 +1043,8 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
         // Given
         fakeRequest = forgeRequest(forge) { builder ->
             builder.addHeader("User-Agent", fakeUserAgent)
-            builder.addHeader(DatadogInterceptor.DD_GRAPHQL_NAME_HEADER, "")
-            builder.addHeader(DatadogInterceptor.DD_GRAPHQL_TYPE_HEADER, "")
+            builder.addHeader(GraphQLHeaders.DD_GRAPHQL_NAME_HEADER.headerValue, "")
+            builder.addHeader(GraphQLHeaders.DD_GRAPHQL_TYPE_HEADER.headerValue, "")
         }
         stubChain(mockChain, 200)
 
@@ -1055,10 +1056,10 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
         verify(mockChain).proceed(requestCaptor.capture())
         val cleanedRequest = requestCaptor.firstValue
 
-        assertThat(cleanedRequest.headers[DatadogInterceptor.DD_GRAPHQL_NAME_HEADER]).isNull()
-        assertThat(cleanedRequest.headers[DatadogInterceptor.DD_GRAPHQL_TYPE_HEADER]).isNull()
-        assertThat(cleanedRequest.headers[DatadogInterceptor.DD_GRAPHQL_VARIABLES_HEADER]).isNull()
-        assertThat(cleanedRequest.headers[DatadogInterceptor.DD_GRAPHQL_PAYLOAD_HEADER]).isNull()
+        assertThat(cleanedRequest.headers[GraphQLHeaders.DD_GRAPHQL_NAME_HEADER.headerValue]).isNull()
+        assertThat(cleanedRequest.headers[GraphQLHeaders.DD_GRAPHQL_TYPE_HEADER.headerValue]).isNull()
+        assertThat(cleanedRequest.headers[GraphQLHeaders.DD_GRAPHQL_VARIABLES_HEADER.headerValue]).isNull()
+        assertThat(cleanedRequest.headers[GraphQLHeaders.DD_GRAPHQL_PAYLOAD_HEADER.headerValue]).isNull()
         assertThat(cleanedRequest.headers["User-Agent"]).isEqualTo(fakeUserAgent)
         assertThat(cleanedRequest.url.toString()).isEqualTo(fakeRequest.url.toString())
     }

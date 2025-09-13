@@ -15,11 +15,13 @@ import com.apollographql.apollo.api.json.buildJsonString
 import com.apollographql.apollo.api.variablesJson
 import com.apollographql.apollo.interceptor.ApolloInterceptor
 import com.apollographql.apollo.interceptor.ApolloInterceptorChain
+import com.datadog.android.internal.network.GraphQLHeaders
 import kotlinx.coroutines.flow.Flow
 import okio.IOException
 
 /**
  * A Datadog Apollo interceptor for GraphQL operations.
+ * @param sendGraphQLPayloads should graphQL payloads be reported. This is disabled by default.
  */
 open class DatadogApolloInterceptor(
     private val sendGraphQLPayloads: Boolean = false
@@ -38,20 +40,20 @@ open class DatadogApolloInterceptor(
 
         val requestBuilder = request.newBuilder()
         requestBuilder
-            .addHttpHeader(DD_GRAPHQL_NAME_HEADER, operationName)
+            .addHttpHeader(GraphQLHeaders.DD_GRAPHQL_NAME_HEADER.headerValue, operationName)
 
         operationType?.let {
-            requestBuilder.addHttpHeader(DD_GRAPHQL_TYPE_HEADER, operationType)
+            requestBuilder.addHttpHeader(GraphQLHeaders.DD_GRAPHQL_TYPE_HEADER.headerValue, operationType)
         }
 
         operationVariables?.let {
-            requestBuilder.addHttpHeader(DD_GRAPHQL_VARIABLES_HEADER, operationVariables)
+            requestBuilder.addHttpHeader(GraphQLHeaders.DD_GRAPHQL_VARIABLES_HEADER.headerValue, operationVariables)
         }
 
         if (sendGraphQLPayloads) {
             val operationPayload = extractPayload(operation, adapters)
             operationPayload.let {
-                requestBuilder.addHttpHeader(DD_GRAPHQL_PAYLOAD_HEADER, operationPayload)
+                requestBuilder.addHttpHeader(GraphQLHeaders.DD_GRAPHQL_PAYLOAD_HEADER.headerValue, operationPayload)
             }
         }
 
@@ -81,11 +83,4 @@ open class DatadogApolloInterceptor(
         buildJsonString {
             operation.composeJsonRequest(this, adapters)
         }
-
-    internal companion object {
-        const val DD_GRAPHQL_NAME_HEADER = "_dd-custom-header-graph-ql-operation-name"
-        const val DD_GRAPHQL_VARIABLES_HEADER = "_dd-custom-header-graph-ql-variables"
-        const val DD_GRAPHQL_TYPE_HEADER = "_dd-custom-header-graph-ql-operation_type"
-        const val DD_GRAPHQL_PAYLOAD_HEADER = "_dd-custom-header-graph-ql-payload"
-    }
 }

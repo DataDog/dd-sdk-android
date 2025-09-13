@@ -6,7 +6,6 @@
 
 package com.datadog.android.rum.internal.domain.scope
 
-import androidx.annotation.VisibleForTesting
 import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
@@ -38,6 +37,7 @@ import java.net.MalformedURLException
 import java.net.URL
 import java.util.Locale
 import java.util.UUID
+
 @Suppress("LongParameterList", "TooManyFunctions")
 internal class RumResourceScope(
     override val parentScope: RumScope,
@@ -247,7 +247,7 @@ internal class RumResourceScope(
         val graphqlOperationType = resourceAttributes.remove(RumAttributes.GRAPHQL_OPERATION_TYPE) as? String
         val graphqlVariables = resourceAttributes.remove(RumAttributes.GRAPHQL_VARIABLES) as? String
 
-        // The decision whether to send payloads is determined by a datadogInterceptor parameter
+        // The decision whether to send payloads is determined by a DatadogApolloInterceptor parameter
         val rawPayload = resourceAttributes.remove(RumAttributes.GRAPHQL_PAYLOAD) as? String
         val graphqlPayload = rawPayload?.let { truncateGraphQLPayload(it) }
 
@@ -593,8 +593,6 @@ internal class RumResourceScope(
     // endregion
 
     companion object {
-
-        @VisibleForTesting
         internal const val MAX_GRAPHQL_PAYLOAD_SIZE_BYTES = 30 * 1024
 
         internal const val NEGATIVE_DURATION_WARNING_MESSAGE = "The computed duration for your " +

@@ -32,8 +32,8 @@ android {
 }
 
 dependencies {
+    implementation(project(":dd-sdk-android-internal"))
     implementation(libs.apolloRuntime)
-
     implementation(libs.kotlin)
     implementation(libs.okHttp)
 
@@ -54,5 +54,6 @@ kotlinConfig(jvmBytecodeTarget = JvmTarget.JVM_11)
 junitConfig()
 androidLibraryConfig()
 publishingConfig(
-    projectDescription = "An Apollo interceptor for handling graphql requests"
+    projectDescription = "An Apollo interceptor for handling GraphQL requests to use with the " +
+        "Datadog monitoring library for Android applications."
 )

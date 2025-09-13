@@ -1,10 +1,10 @@
-# Datadog Integration for Apollo-Kotlin
+# Datadog Integration for Apollo Kotlin
 
 ## Getting started
 
 **Note:** The integration only supports Apollo version 4.
 
-To include the integration for [Apollo-Kotlin][1] in your project, add the
+To include the integration for [Apollo Kotlin][1] in your project, add the
 following to your application's `build.gradle` file.
 
 ```groovy
@@ -35,7 +35,7 @@ by Datadog. Note that while `query` and `mutation` type operations are tracked, 
 
 #### Sending GraphQL payloads
 
-GraphQL payload sending is disabled by default. To enable it, set the `sendGraphQLPayloads` flag in the DatadogApolloInterceptor constructor as follows:
+GraphQL payload sending is disabled by default. To enable it, set the `sendGraphQLPayloads` flag in the `DatadogApolloInterceptor` constructor as follows:
 
 ```kotlin
 DatadogApolloInterceptor(sendGraphQLPayloads = true)

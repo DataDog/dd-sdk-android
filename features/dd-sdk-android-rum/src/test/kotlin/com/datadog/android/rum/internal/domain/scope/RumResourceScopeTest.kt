@@ -2905,12 +2905,12 @@ internal class RumResourceScopeTest {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             val actualPayload = firstValue.resource.graphql?.payload
 
-            assertThat(actualPayload).isNotNull()
-            assertThat(actualPayload!!.length).isLessThan(originalPayload.length)
+            checkNotNull(actualPayload)
+            assertThat(actualPayload.length).isLessThan(originalPayload.length)
             assertThat(actualPayload.toByteArray(Charsets.UTF_8).size)
                 .isLessThanOrEqualTo(RumResourceScope.MAX_GRAPHQL_PAYLOAD_SIZE_BYTES)
 
-            assertThat(actualPayload).startsWith(originalPayload.take(10))
+            assertThat(originalPayload).startsWith(actualPayload)
 
             assertThat(firstValue).hasGraphql(operationType, operationName, actualPayload, variables)
         }

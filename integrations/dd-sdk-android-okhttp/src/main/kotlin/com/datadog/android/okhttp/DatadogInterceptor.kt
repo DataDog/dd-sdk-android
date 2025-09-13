@@ -13,6 +13,7 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.sampling.Sampler
+import com.datadog.android.internal.network.GraphQLHeaders
 import com.datadog.android.okhttp.internal.rum.NoOpRumResourceAttributesProvider
 import com.datadog.android.okhttp.internal.rum.buildResourceId
 import com.datadog.android.okhttp.trace.TracedRequestListener
@@ -191,16 +192,16 @@ open class DatadogInterceptor internal constructor(
                 put(RumAttributes.SPAN_ID, span.context().spanId.toString())
                 put(RumAttributes.RULE_PSR, (traceSampler.getSampleRate() ?: ZERO_SAMPLE_RATE) / ALL_IN_SAMPLE_RATE)
 
-                request.headers[DD_GRAPHQL_NAME_HEADER]?.let {
+                request.headers[GraphQLHeaders.DD_GRAPHQL_NAME_HEADER.headerValue]?.let {
                     put(RumAttributes.GRAPHQL_OPERATION_NAME, it)
                 }
-                request.headers[DD_GRAPHQL_TYPE_HEADER]?.let {
+                request.headers[GraphQLHeaders.DD_GRAPHQL_TYPE_HEADER.headerValue]?.let {
                     put(RumAttributes.GRAPHQL_OPERATION_TYPE, it)
                 }
-                request.headers[DD_GRAPHQL_VARIABLES_HEADER]?.let {
+                request.headers[GraphQLHeaders.DD_GRAPHQL_VARIABLES_HEADER.headerValue]?.let {
                     put(RumAttributes.GRAPHQL_VARIABLES, it)
                 }
-                request.headers[DD_GRAPHQL_PAYLOAD_HEADER]?.let {
+                request.headers[GraphQLHeaders.DD_GRAPHQL_PAYLOAD_HEADER.headerValue]?.let {
                     put(RumAttributes.GRAPHQL_PAYLOAD, it)
                 }
             }
@@ -252,10 +253,10 @@ open class DatadogInterceptor internal constructor(
     }
 
     private fun removeGraphQLHeaders(requestBuilder: Request.Builder) {
-        requestBuilder.removeHeader(DD_GRAPHQL_NAME_HEADER)
-        requestBuilder.removeHeader(DD_GRAPHQL_TYPE_HEADER)
-        requestBuilder.removeHeader(DD_GRAPHQL_VARIABLES_HEADER)
-        requestBuilder.removeHeader(DD_GRAPHQL_PAYLOAD_HEADER)
+        requestBuilder.removeHeader(GraphQLHeaders.DD_GRAPHQL_NAME_HEADER.headerValue)
+        requestBuilder.removeHeader(GraphQLHeaders.DD_GRAPHQL_TYPE_HEADER.headerValue)
+        requestBuilder.removeHeader(GraphQLHeaders.DD_GRAPHQL_VARIABLES_HEADER.headerValue)
+        requestBuilder.removeHeader(GraphQLHeaders.DD_GRAPHQL_PAYLOAD_HEADER.headerValue)
     }
 
     private fun handleThrowable(
@@ -344,10 +345,10 @@ open class DatadogInterceptor internal constructor(
     }
 
     private fun hasGraphQLHeaders(headers: Headers): Boolean {
-        return headers[DD_GRAPHQL_NAME_HEADER] != null ||
-            headers[DD_GRAPHQL_TYPE_HEADER] != null ||
-            headers[DD_GRAPHQL_VARIABLES_HEADER] != null ||
-            headers[DD_GRAPHQL_PAYLOAD_HEADER] != null
+        return headers[GraphQLHeaders.DD_GRAPHQL_NAME_HEADER.headerValue] != null ||
+            headers[GraphQLHeaders.DD_GRAPHQL_TYPE_HEADER.headerValue] != null ||
+            headers[GraphQLHeaders.DD_GRAPHQL_VARIABLES_HEADER.headerValue] != null ||
+            headers[GraphQLHeaders.DD_GRAPHQL_PAYLOAD_HEADER.headerValue] != null
     }
 
     private fun ResponseBody.contentLengthOrNull(): Long? {
@@ -419,12 +420,6 @@ open class DatadogInterceptor internal constructor(
     // endregion
 
     internal companion object {
-
-        internal const val DD_GRAPHQL_NAME_HEADER = "_dd-custom-header-graph-ql-operation-name"
-        internal const val DD_GRAPHQL_VARIABLES_HEADER = "_dd-custom-header-graph-ql-variables"
-        internal const val DD_GRAPHQL_TYPE_HEADER = "_dd-custom-header-graph-ql-operation_type"
-        internal const val DD_GRAPHQL_PAYLOAD_HEADER = "_dd-custom-header-graph-ql-payload"
-
         internal val STREAM_CONTENT_TYPES = setOf(
             "text/event-stream",
             "application/grpc",
@@ -440,7 +435,7 @@ open class DatadogInterceptor internal constructor(
                 "and that RUM features are enabled."
 
         internal const val ERROR_FAILED_BUILD_REQUEST =
-            "Failed to build interceptor chain after removing DD headers. Falling back to original chain"
+            "Failed to build interceptor chain after removing DD headers. Falling back to original chain."
 
         internal const val ERROR_NO_RESPONSE =
             "The request ended with no response nor any exception."
