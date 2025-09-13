@@ -23,9 +23,9 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
-import org.mockito.kotlin.argumentCaptor
-import org.mockito.kotlin.atLeastOnce
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
@@ -67,7 +67,7 @@ internal class DatadogApolloInterceptorTest {
         testedInterceptor.intercept(originalRequest, chain)
 
         // Then
-        checkForHeader(requestBuilder, GraphQLHeaders.DD_GRAPHQL_NAME_HEADER.headerValue, "GetUser")
+        checkHeaderWasAdded(requestBuilder, GraphQLHeaders.DD_GRAPHQL_NAME_HEADER.headerValue, "GetUser")
     }
 
     // endregion
@@ -84,7 +84,7 @@ internal class DatadogApolloInterceptorTest {
         testedInterceptor.intercept(originalRequest, chain)
 
         // Then
-        checkForHeader(requestBuilder, GraphQLHeaders.DD_GRAPHQL_TYPE_HEADER.headerValue, "query")
+        checkHeaderWasAdded(requestBuilder, GraphQLHeaders.DD_GRAPHQL_TYPE_HEADER.headerValue, "query")
     }
 
     @Test
@@ -97,7 +97,7 @@ internal class DatadogApolloInterceptorTest {
         testedInterceptor.intercept(originalRequest, chain)
 
         // Then
-        checkForHeader(requestBuilder, GraphQLHeaders.DD_GRAPHQL_TYPE_HEADER.headerValue, "mutation")
+        checkHeaderWasAdded(requestBuilder, GraphQLHeaders.DD_GRAPHQL_TYPE_HEADER.headerValue, "mutation")
     }
 
     @Test
@@ -113,7 +113,7 @@ internal class DatadogApolloInterceptorTest {
         testedInterceptor.intercept(originalRequest, chain)
 
         // Then
-        checkForHeader(requestBuilder, GraphQLHeaders.DD_GRAPHQL_TYPE_HEADER.headerValue, "subscription")
+        checkHeaderWasAdded(requestBuilder, GraphQLHeaders.DD_GRAPHQL_TYPE_HEADER.headerValue, "subscription")
     }
 
     @Test
@@ -129,7 +129,7 @@ internal class DatadogApolloInterceptorTest {
         testedInterceptor.intercept(originalRequest, chain)
 
         // Then
-        checkForHeader(requestBuilder, GraphQLHeaders.DD_GRAPHQL_TYPE_HEADER.headerValue)
+        checkHeaderWasNotAdded(requestBuilder, GraphQLHeaders.DD_GRAPHQL_TYPE_HEADER.headerValue)
     }
 
     // endregion
@@ -149,7 +149,7 @@ internal class DatadogApolloInterceptorTest {
         testedInterceptor.intercept(originalRequest, chain)
 
         // Then
-        checkForHeader(
+        checkHeaderWasAdded(
             requestBuilder,
             GraphQLHeaders.DD_GRAPHQL_VARIABLES_HEADER.headerValue,
             testedInterceptor.extractVariables(operation, mockScalarAdapters)
@@ -170,18 +170,7 @@ internal class DatadogApolloInterceptorTest {
         testedInterceptor.intercept(originalRequest, chain)
 
         // Then
-        val headerNameCaptor = argumentCaptor<String>()
-        val headerValueCaptor = argumentCaptor<String>()
-        verify(requestBuilder, atLeastOnce()).addHttpHeader(
-            headerNameCaptor.capture(),
-            headerValueCaptor.capture()
-        )
-
-        val payloadHeaderIndex = headerNameCaptor.allValues.indexOf(
-            GraphQLHeaders.DD_GRAPHQL_PAYLOAD_HEADER.headerValue
-        )
-        assertThat(payloadHeaderIndex).isNotEqualTo(-1)
-        assertThat(headerValueCaptor.allValues[payloadHeaderIndex]).isNotNull()
+        checkHeaderWasAdded(requestBuilder, GraphQLHeaders.DD_GRAPHQL_PAYLOAD_HEADER.headerValue)
     }
 
     // endregion
@@ -204,12 +193,10 @@ internal class DatadogApolloInterceptorTest {
         interceptor.intercept(originalRequest, chain)
 
         // Then
-        checkForHeader(requestBuilder, GraphQLHeaders.DD_GRAPHQL_NAME_HEADER.headerValue, "GetUser")
-        checkForHeader(requestBuilder, GraphQLHeaders.DD_GRAPHQL_TYPE_HEADER.headerValue, "query")
-        checkForHeader(requestBuilder, GraphQLHeaders.DD_GRAPHQL_VARIABLES_HEADER.headerValue)
-        val headerNameCaptor = argumentCaptor<String>()
-        verify(requestBuilder, atLeastOnce()).addHttpHeader(headerNameCaptor.capture(), any<String>())
-        assertThat(headerNameCaptor.allValues).contains(GraphQLHeaders.DD_GRAPHQL_PAYLOAD_HEADER.headerValue)
+        checkHeaderWasAdded(requestBuilder, GraphQLHeaders.DD_GRAPHQL_NAME_HEADER.headerValue, "GetUser")
+        checkHeaderWasAdded(requestBuilder, GraphQLHeaders.DD_GRAPHQL_TYPE_HEADER.headerValue, "query")
+        checkHeaderWasNotAdded(requestBuilder, GraphQLHeaders.DD_GRAPHQL_VARIABLES_HEADER.headerValue)
+        checkHeaderWasAdded(requestBuilder, GraphQLHeaders.DD_GRAPHQL_PAYLOAD_HEADER.headerValue)
     }
 
     @Test
@@ -228,12 +215,10 @@ internal class DatadogApolloInterceptorTest {
         interceptor.intercept(originalRequest, chain)
 
         // Then
-        checkForHeader(requestBuilder, GraphQLHeaders.DD_GRAPHQL_NAME_HEADER.headerValue, "GetUser")
-        checkForHeader(requestBuilder, GraphQLHeaders.DD_GRAPHQL_TYPE_HEADER.headerValue, "query")
-        checkForHeader(requestBuilder, GraphQLHeaders.DD_GRAPHQL_VARIABLES_HEADER.headerValue, "")
-        val headerNameCaptor = argumentCaptor<String>()
-        verify(requestBuilder, atLeastOnce()).addHttpHeader(headerNameCaptor.capture(), any<String>())
-        assertThat(headerNameCaptor.allValues).contains(GraphQLHeaders.DD_GRAPHQL_PAYLOAD_HEADER.headerValue)
+        checkHeaderWasAdded(requestBuilder, GraphQLHeaders.DD_GRAPHQL_NAME_HEADER.headerValue, "GetUser")
+        checkHeaderWasAdded(requestBuilder, GraphQLHeaders.DD_GRAPHQL_TYPE_HEADER.headerValue, "query")
+        checkHeaderWasAdded(requestBuilder, GraphQLHeaders.DD_GRAPHQL_VARIABLES_HEADER.headerValue, "")
+        checkHeaderWasAdded(requestBuilder, GraphQLHeaders.DD_GRAPHQL_PAYLOAD_HEADER.headerValue)
     }
 
     // endregion
@@ -250,16 +235,14 @@ internal class DatadogApolloInterceptorTest {
         testedInterceptor.intercept(originalRequest, chain)
 
         // Then
-        checkForHeader(requestBuilder, GraphQLHeaders.DD_GRAPHQL_NAME_HEADER.headerValue, "GetUser")
-        checkForHeader(
+        checkHeaderWasAdded(requestBuilder, GraphQLHeaders.DD_GRAPHQL_NAME_HEADER.headerValue, "GetUser")
+        checkHeaderWasAdded(
             requestBuilder,
             GraphQLHeaders.DD_GRAPHQL_VARIABLES_HEADER.headerValue,
             testedInterceptor.extractVariables(operation, mockScalarAdapters)
         )
-        checkForHeader(requestBuilder, GraphQLHeaders.DD_GRAPHQL_TYPE_HEADER.headerValue)
-        val headerNameCaptor = argumentCaptor<String>()
-        verify(requestBuilder, atLeastOnce()).addHttpHeader(headerNameCaptor.capture(), any<String>())
-        assertThat(headerNameCaptor.allValues).contains(GraphQLHeaders.DD_GRAPHQL_PAYLOAD_HEADER.headerValue)
+        checkHeaderWasNotAdded(requestBuilder, GraphQLHeaders.DD_GRAPHQL_TYPE_HEADER.headerValue)
+        checkHeaderWasAdded(requestBuilder, GraphQLHeaders.DD_GRAPHQL_PAYLOAD_HEADER.headerValue)
     }
 
     @Test
@@ -275,16 +258,14 @@ internal class DatadogApolloInterceptorTest {
         testedInterceptor.intercept(originalRequest, chain)
 
         // Then
-        checkForHeader(requestBuilder, GraphQLHeaders.DD_GRAPHQL_NAME_HEADER.headerValue, "ComplexOperation")
-        checkForHeader(requestBuilder, GraphQLHeaders.DD_GRAPHQL_TYPE_HEADER.headerValue, "mutation")
-        checkForHeader(
+        checkHeaderWasAdded(requestBuilder, GraphQLHeaders.DD_GRAPHQL_NAME_HEADER.headerValue, "ComplexOperation")
+        checkHeaderWasAdded(requestBuilder, GraphQLHeaders.DD_GRAPHQL_TYPE_HEADER.headerValue, "mutation")
+        checkHeaderWasAdded(
             requestBuilder,
             GraphQLHeaders.DD_GRAPHQL_VARIABLES_HEADER.headerValue,
             testedInterceptor.extractVariables(operation, mockScalarAdapters)
         )
-        val headerNameCaptor = argumentCaptor<String>()
-        verify(requestBuilder, atLeastOnce()).addHttpHeader(headerNameCaptor.capture(), any<String>())
-        assertThat(headerNameCaptor.allValues).contains(GraphQLHeaders.DD_GRAPHQL_PAYLOAD_HEADER.headerValue)
+        checkHeaderWasAdded(requestBuilder, GraphQLHeaders.DD_GRAPHQL_PAYLOAD_HEADER.headerValue)
     }
 
     @Test
@@ -298,7 +279,7 @@ internal class DatadogApolloInterceptorTest {
         testedInterceptor.intercept(originalRequest, chain)
 
         // Then
-        checkForHeader(requestBuilder, GraphQLHeaders.DD_GRAPHQL_PAYLOAD_HEADER.headerValue, null)
+        checkHeaderWasNotAdded(requestBuilder, GraphQLHeaders.DD_GRAPHQL_PAYLOAD_HEADER.headerValue)
     }
 
     // endregion
@@ -346,9 +327,9 @@ internal class DatadogApolloInterceptorTest {
         defaultInterceptor.intercept(originalRequest, chain)
 
         // Then
-        checkForHeader(requestBuilder, GraphQLHeaders.DD_GRAPHQL_NAME_HEADER.headerValue, "GetUser")
-        checkForHeader(requestBuilder, GraphQLHeaders.DD_GRAPHQL_TYPE_HEADER.headerValue, "query")
-        checkForHeader(requestBuilder, GraphQLHeaders.DD_GRAPHQL_PAYLOAD_HEADER.headerValue, null)
+        checkHeaderWasAdded(requestBuilder, GraphQLHeaders.DD_GRAPHQL_NAME_HEADER.headerValue, "GetUser")
+        checkHeaderWasAdded(requestBuilder, GraphQLHeaders.DD_GRAPHQL_TYPE_HEADER.headerValue, "query")
+        checkHeaderWasNotAdded(requestBuilder, GraphQLHeaders.DD_GRAPHQL_PAYLOAD_HEADER.headerValue)
     }
 
     @Test
@@ -362,7 +343,7 @@ internal class DatadogApolloInterceptorTest {
         defaultInterceptor.intercept(originalRequest, chain)
 
         // Then
-        checkForHeader(requestBuilder, GraphQLHeaders.DD_GRAPHQL_PAYLOAD_HEADER.headerValue, null)
+        checkHeaderWasNotAdded(requestBuilder, GraphQLHeaders.DD_GRAPHQL_PAYLOAD_HEADER.headerValue)
     }
 
     // region constructor tests
@@ -378,18 +359,7 @@ internal class DatadogApolloInterceptorTest {
         interceptor.intercept(originalRequest, chain)
 
         // Then
-        val headerNameCaptor = argumentCaptor<String>()
-        val headerValueCaptor = argumentCaptor<String>()
-        verify(requestBuilder, atLeastOnce()).addHttpHeader(
-            headerNameCaptor.capture(),
-            headerValueCaptor.capture()
-        )
-
-        val payloadHeaderIndex = headerNameCaptor.allValues.indexOf(
-            GraphQLHeaders.DD_GRAPHQL_PAYLOAD_HEADER.headerValue
-        )
-        assertThat(payloadHeaderIndex).isNotEqualTo(-1)
-        assertThat(headerValueCaptor.allValues[payloadHeaderIndex]).isNotNull()
+        checkHeaderWasAdded(requestBuilder, GraphQLHeaders.DD_GRAPHQL_PAYLOAD_HEADER.headerValue)
     }
 
     @Test
@@ -403,7 +373,7 @@ internal class DatadogApolloInterceptorTest {
         interceptor.intercept(originalRequest, chain)
 
         // Then
-        checkForHeader(requestBuilder, GraphQLHeaders.DD_GRAPHQL_PAYLOAD_HEADER.headerValue, null)
+        checkHeaderWasNotAdded(requestBuilder, GraphQLHeaders.DD_GRAPHQL_PAYLOAD_HEADER.headerValue)
     }
 
     // endregion
@@ -432,20 +402,23 @@ internal class DatadogApolloInterceptorTest {
         return Triple(operation, originalRequest, requestBuilder)
     }
 
-    private fun checkForHeader(
+    private fun checkHeaderWasAdded(
         requestBuilder: ApolloRequest.Builder<Operation.Data>,
         headerName: String,
-        headerValue: String? = null
+        expectedHeaderValue: String? = null
     ) {
-        val headerNameCaptor = argumentCaptor<String>()
-        val headerValueCaptor = argumentCaptor<String>()
-        verify(requestBuilder, atLeastOnce()).addHttpHeader(headerNameCaptor.capture(), headerValueCaptor.capture())
-        if (headerValue != null) {
-            val headerIdx = headerNameCaptor.allValues.indexOf(headerName)
-            assertThat(headerValueCaptor.allValues[headerIdx]).isEqualTo(headerValue)
+        if (expectedHeaderValue != null) {
+            verify(requestBuilder).addHttpHeader(eq(headerName), eq(expectedHeaderValue))
         } else {
-            assertThat(headerNameCaptor.allValues.contains(headerName)).isFalse
+            verify(requestBuilder).addHttpHeader(eq(headerName), any<String>())
         }
+    }
+
+    private fun checkHeaderWasNotAdded(
+        requestBuilder: ApolloRequest.Builder<Operation.Data>,
+        headerName: String
+    ) {
+        verify(requestBuilder, never()).addHttpHeader(eq(headerName), any<String>())
     }
 
     private fun setupApolloInterceptor(sendGraphQLPayloads: Boolean): DatadogApolloInterceptor =
