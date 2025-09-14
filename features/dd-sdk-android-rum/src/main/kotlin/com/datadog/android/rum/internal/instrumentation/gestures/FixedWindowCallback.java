@@ -34,11 +34,11 @@ import java.util.List;
  * To track the issue: https://issuetracker.google.com/issues/188568911
  */
 @InternalApi
-class FixedWindowCallback implements Window.Callback {
+public class FixedWindowCallback implements Window.Callback {
 
     private final Window.Callback delegate;
 
-    FixedWindowCallback(@NonNull Window.Callback delegate) {
+    public FixedWindowCallback(@NonNull Window.Callback delegate) {
         this.delegate = delegate;
     }
 
