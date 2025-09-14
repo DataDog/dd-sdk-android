@@ -58,6 +58,7 @@ class RumWindowCallbacksRegistryTest {
         callback!!.onContentChanged()
 
         verify(listener).onContentChanged()
-        verifyNoMoreInteractions(listener)
+        verify(existingCallback).onContentChanged()
+        verifyNoMoreInteractions(listener, existingCallback)
     }
 }

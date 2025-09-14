@@ -73,6 +73,8 @@ private class RumTTIDReportedWindowCallback(
     }
 
     override fun onContentChanged() {
+        super.onContentChanged()
+
         subscription.notifyListeners {
             this@notifyListeners.onContentChanged()
         }
