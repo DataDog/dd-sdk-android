@@ -14,6 +14,7 @@ import android.content.Context
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
+import android.util.Log
 import androidx.annotation.AnyThread
 import androidx.annotation.RequiresApi
 import com.datadog.android.api.InternalLogger
@@ -75,6 +76,9 @@ import com.datadog.android.rum.internal.net.RumRequestFactory
 import com.datadog.android.rum.internal.startup.RumAppStartupDetector
 import com.datadog.android.rum.internal.startup.RumStartupScenario
 import com.datadog.android.rum.internal.startup.RumTTIDReporter
+import com.datadog.android.rum.internal.startup.RumTTIDReporterImpl
+import com.datadog.android.rum.internal.startup.RumTTIDReporterListener
+import com.datadog.android.rum.internal.startup.name
 import com.datadog.android.rum.internal.thread.NoOpScheduledExecutorService
 import com.datadog.android.rum.internal.tracking.JetpackViewAttributesProvider
 import com.datadog.android.rum.internal.tracking.NoOpInteractionPredicate
@@ -260,7 +264,16 @@ internal class RumFeature(
             application = appContext as Application,
             sdkCore = sdkCore,
             listener = object : RumAppStartupDetector.Listener {
-                val rumTTIDReporter = RumTTIDReporter(sdkCore.internalLogger)
+                val rumTTIDReporter = RumTTIDReporter.create(
+                    object : RumTTIDReporterListener {
+                        override fun onTTID(
+                            scenario: RumStartupScenario,
+                            timestampNanos: Long
+                        ) {
+                            Log.w("WAHAHA", "onFirstFrame ${scenario.name()}, $timestampNanos")
+                        }
+                    }
+                )
 
                 override fun onAppStartupDetected(scenario: RumStartupScenario) {
                     rumTTIDReporter.onAppStartupDetected(scenario)

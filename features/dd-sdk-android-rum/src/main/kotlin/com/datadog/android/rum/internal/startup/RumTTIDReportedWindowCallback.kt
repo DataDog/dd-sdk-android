@@ -12,35 +12,19 @@ import com.datadog.android.internal.utils.DDCoreSubscription
 import com.datadog.android.rum.internal.instrumentation.gestures.FixedWindowCallback
 import java.util.WeakHashMap
 
-internal class RumTTIDReportedWindowCallback(
-    val wrapped: Window.Callback,
-) : FixedWindowCallback(wrapped) {
-
-    val subscription = DDCoreSubscription.create<RumWindowCallbackListener>()
-
-    fun addListener(listener: RumWindowCallbackListener) {
-        subscription.addListener(listener)
-    }
-
-    fun removeListener(listener: RumWindowCallbackListener) {
-        subscription.removeListener(listener)
-    }
-
-    override fun onContentChanged() {
-        subscription.notifyListeners {
-            this@notifyListeners.onContentChanged()
-        }
-    }
-}
-
 internal interface RumWindowCallbackListener {
     fun onContentChanged()
 }
 
-internal class RumTTIDReportedWindowCallbackRegistry {
+internal interface RumTTIDReportedWindowCallbackRegistry {
+    fun addListener(activity: Activity, listener: RumWindowCallbackListener)
+    fun removeListener(activity: Activity, listener: RumWindowCallbackListener)
+}
+
+internal class RumTTIDReportedWindowCallbackRegistryImpl: RumTTIDReportedWindowCallbackRegistry {
     private val callbacks = WeakHashMap<Activity, RumTTIDReportedWindowCallback>()
 
-    fun addListener(activity: Activity, listener: RumWindowCallbackListener) {
+    override fun addListener(activity: Activity, listener: RumWindowCallbackListener) {
         val callback = callbacks.getOrPut(activity) {
             activity.window.wrapCallback()
         }
@@ -48,7 +32,7 @@ internal class RumTTIDReportedWindowCallbackRegistry {
         callback.addListener(listener)
     }
 
-    fun removeListener(activity: Activity, listener: RumWindowCallbackListener) {
+    override fun removeListener(activity: Activity, listener: RumWindowCallbackListener) {
         callbacks[activity]?.let {
             it.removeListener(listener)
             if (it.subscription.size == 0) {
@@ -71,5 +55,26 @@ private fun Window.removeCallback() {
     val currentCallback = callback
     if (currentCallback is RumTTIDReportedWindowCallback) {
         callback = currentCallback.wrapped
+    }
+}
+
+private class RumTTIDReportedWindowCallback(
+    val wrapped: Window.Callback,
+) : FixedWindowCallback(wrapped) {
+
+    val subscription = DDCoreSubscription.create<RumWindowCallbackListener>()
+
+    fun addListener(listener: RumWindowCallbackListener) {
+        subscription.addListener(listener)
+    }
+
+    fun removeListener(listener: RumWindowCallbackListener) {
+        subscription.removeListener(listener)
+    }
+
+    override fun onContentChanged() {
+        subscription.notifyListeners {
+            this@notifyListeners.onContentChanged()
+        }
     }
 }

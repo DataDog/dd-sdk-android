@@ -10,24 +10,43 @@ import android.app.Activity
 import android.os.Handler
 import android.os.Looper
 import android.os.Message
-import android.util.Log
 import android.view.ViewTreeObserver
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.internal.utils.subscribeToFirstDrawFinished
+import com.datadog.android.api.SdkCore
+import com.datadog.android.core.InternalSdkCore
 import java.util.WeakHashMap
 import kotlin.time.Duration.Companion.nanoseconds
 
-internal class RumTTIDReporter(
-    private val internalLogger: InternalLogger,
-) {
-    private val handler = Handler(Looper.getMainLooper())
+internal interface RumTTIDReporterListener {
+    fun onTTID(scenario: RumStartupScenario, timestampNanos: Long)
+}
 
-    private val windowCallbacksRegistry = RumTTIDReportedWindowCallbackRegistry()
+internal interface RumTTIDReporter {
+    fun onAppStartupDetected(scenario: RumStartupScenario)
+
+    companion object {
+        fun create(listener: RumTTIDReporterListener): RumTTIDReporter {
+            return RumTTIDReporterImpl(
+                timeProviderNanos = { System.nanoTime() },
+                windowCallbacksRegistry = RumTTIDReportedWindowCallbackRegistryImpl(),
+                handler = Handler(Looper.getMainLooper()),
+                listener = listener
+            )
+        }
+    }
+}
+
+internal class RumTTIDReporterImpl(
+    private val timeProviderNanos: () -> Long,
+    private val windowCallbacksRegistry: RumTTIDReportedWindowCallbackRegistry,
+    private val handler: Handler,
+    private val listener: RumTTIDReporterListener,
+): RumTTIDReporter {
     private val windowCallbackListeners = WeakHashMap<Activity, RumWindowCallbackListener>()
 
     private val onDrawListeners = WeakHashMap<Activity, ViewTreeObserver.OnDrawListener>()
 
-    fun onAppStartupDetected(scenario: RumStartupScenario) {
+    override fun onAppStartupDetected(scenario: RumStartupScenario) {
         val listener = object : RumWindowCallbackListener {
             override fun onContentChanged() {
                 windowCallbackListeners.remove(scenario.activity)?.let {
@@ -70,10 +89,10 @@ internal class RumTTIDReporter(
     }
 
     private fun onFirstDraw(scenario: RumStartupScenario) {
-        val duration = (System.nanoTime() - scenario.initialTimeNanos).nanoseconds
+        val duration = (timeProviderNanos() - scenario.initialTimeNanos).nanoseconds
 
         val block = Runnable {
-            Log.w("WAHAHA", "onFirstDraw ${scenario.name()} $duration")
+            listener.onTTID(scenario, duration.inWholeNanoseconds)
         }
 
         handler.sendMessageAtFrontOfQueue(
