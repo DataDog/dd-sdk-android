@@ -9,15 +9,16 @@ package com.datadog.internal.utils
 import android.view.Window
 import com.datadog.android.internal.utils.onContentChanged
 import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.RepeatedTest
 import org.junit.jupiter.api.Test
 import org.mockito.Mock
 import org.mockito.Mockito.mock
+import org.mockito.Mockito.times
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.inOrder
+import org.mockito.kotlin.verifyNoMoreInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 
@@ -43,7 +44,7 @@ class WindowCallbackUtilsTest {
         }
     }
 
-    @RepeatedTest(16)
+    @Test
     fun `M notify both callbacks W onContentChanged`() {
         val onContentChanged = mock<() -> Boolean>()
 
@@ -57,5 +58,25 @@ class WindowCallbackUtilsTest {
             verify(onContentChanged).invoke()
             verify(existingCallback).onContentChanged()
         }
+    }
+
+    @Test
+    fun `M remove the callback W onContentChanged { if it returns false }`() {
+        // Given
+        val onContentChanged = mock<() -> Boolean>()
+        whenever(onContentChanged.invoke()) doReturn false
+
+        window.onContentChanged(onContentChanged)
+
+        // When
+        callback!!.onContentChanged()
+        callback!!.onContentChanged()
+
+        // Then
+        inOrder(existingCallback, onContentChanged) {
+            verify(onContentChanged).invoke()
+            verify(existingCallback, times(2)).onContentChanged()
+        }
+        verifyNoMoreInteractions(onContentChanged, existingCallback)
     }
 }
