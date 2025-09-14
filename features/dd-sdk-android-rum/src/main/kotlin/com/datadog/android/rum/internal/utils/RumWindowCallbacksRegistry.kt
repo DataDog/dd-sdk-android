@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.rum.internal.startup
+package com.datadog.android.rum.internal.utils
 
 import android.app.Activity
 import android.view.Window
@@ -16,12 +16,12 @@ internal interface RumWindowCallbackListener {
     fun onContentChanged()
 }
 
-internal interface RumTTIDReportedWindowCallbackRegistry {
+internal interface RumWindowCallbacksRegistry {
     fun addListener(activity: Activity, listener: RumWindowCallbackListener)
     fun removeListener(activity: Activity, listener: RumWindowCallbackListener)
 }
 
-internal class RumTTIDReportedWindowCallbackRegistryImpl: RumTTIDReportedWindowCallbackRegistry {
+internal class RumWindowCallbacksRegistryImpl: RumWindowCallbacksRegistry {
     private val callbacks = WeakHashMap<Activity, RumTTIDReportedWindowCallback>()
 
     override fun addListener(activity: Activity, listener: RumWindowCallbackListener) {
