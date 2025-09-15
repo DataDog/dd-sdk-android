@@ -22,7 +22,7 @@ internal interface RumWindowCallbacksRegistry {
 }
 
 internal class RumWindowCallbacksRegistryImpl: RumWindowCallbacksRegistry {
-    private val callbacks = WeakHashMap<Activity, RumTTIDReportedWindowCallback>()
+    private val callbacks = WeakHashMap<Activity, RumWindowCallback>()
 
     override fun addListener(activity: Activity, listener: RumWindowCallbackListener) {
         val callback = callbacks.getOrPut(activity) {
@@ -35,30 +35,30 @@ internal class RumWindowCallbacksRegistryImpl: RumWindowCallbacksRegistry {
     override fun removeListener(activity: Activity, listener: RumWindowCallbackListener) {
         callbacks[activity]?.let {
             it.removeListener(listener)
-            if (it.subscription.size == 0) {
-                activity.window.removeCallback()
+            if (it.subscription.listenersCount == 0) {
+                activity.window.tryToRemoveCallback()
             }
         }
     }
 }
 
-private fun Window.wrapCallback(): RumTTIDReportedWindowCallback {
+private fun Window.wrapCallback(): RumWindowCallback {
     val currentCallback = callback
-    val newCallback = RumTTIDReportedWindowCallback(
+    val newCallback = RumWindowCallback(
         wrapped = currentCallback,
     )
     callback = newCallback
     return newCallback
 }
 
-private fun Window.removeCallback() {
+private fun Window.tryToRemoveCallback() {
     val currentCallback = callback
-    if (currentCallback is RumTTIDReportedWindowCallback) {
+    if (currentCallback is RumWindowCallback) {
         callback = currentCallback.wrapped
     }
 }
 
-private class RumTTIDReportedWindowCallback(
+private class RumWindowCallback(
     val wrapped: Window.Callback,
 ) : FixedWindowCallback(wrapped) {
 

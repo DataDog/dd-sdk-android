@@ -14,7 +14,7 @@ interface DDCoreSubscription<T> {
 
     fun notifyListeners(block: T.() -> Unit)
 
-    val size: Int
+    val listenersCount: Int
 
     companion object {
         fun <T> create(): DDCoreSubscription<T> {
@@ -38,5 +38,5 @@ private class DDCoreSubscriptionImpl<T>: DDCoreSubscription<T> {
         listeners.forEach { it.block() }
     }
 
-    override val size: Int get() = listeners.size
+    override val listenersCount: Int get() = listeners.size
 }
