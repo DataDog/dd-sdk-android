@@ -1,0 +1,38 @@
+object com.datadog.android.flags.Flags
+  fun enable(FlagsConfiguration, com.datadog.android.api.SdkCore = Datadog.getInstance())
+data class com.datadog.android.flags.FlagsConfiguration
+  constructor(Configuration)
+  data class Configuration
+    constructor(Boolean)
+  class Builder
+    fun setEnableExposureLogging(Boolean): Builder
+    fun build(): FlagsConfiguration
+object com.datadog.android.flags.featureflags.FlagsClient
+  fun isRegistered(com.datadog.android.api.SdkCore = Datadog.getInstance()): Boolean
+  fun get(com.datadog.android.api.SdkCore = Datadog.getInstance()): FlagsProvider
+interface com.datadog.android.flags.featureflags.FlagsProvider
+  fun setContext(ProviderContext)
+  fun resolveBooleanValue(String, Boolean): Boolean
+  fun resolveStringValue(String, String): String
+  fun resolveNumberValue(String, Number): Number
+  fun resolveIntValue(String, Int): Int
+  fun resolveStructureValue(String, org.json.JSONObject): org.json.JSONObject
+class com.datadog.android.flags.featureflags.NoOpFlagsProvider : FlagsProvider
+  override fun setContext(ProviderContext)
+  override fun resolveBooleanValue(String, Boolean): Boolean
+  override fun resolveStringValue(String, String): String
+  override fun resolveNumberValue(String, Number): Number
+  override fun resolveIntValue(String, Int): Int
+  override fun resolveStructureValue(String, org.json.JSONObject): org.json.JSONObject
+data class com.datadog.android.flags.featureflags.ProviderContext
+  constructor(String, com.datadog.android.flags.featureflags.internal.model.FeatureFlagsUser)
+data class com.datadog.android.flags.featureflags.internal.model.FeatureFlagsUser
+  constructor(String, String)
+class com.datadog.android.flags.featureflags.internal.repository.NoOpFlagsRepository : FlagsRepository
+  override fun getBoolean(String, Boolean): Boolean
+  override fun getString(String, String): String
+  override fun getInt(String, Int): Int
+  override fun getDouble(String, Double): Double
+  override fun getJsonObject(String, org.json.JSONObject): org.json.JSONObject
+data class com.datadog.android.flags.internal.model.FlagsContext
+  constructor(String?, String, String, String, String)

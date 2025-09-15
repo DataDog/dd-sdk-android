@@ -19,6 +19,9 @@ import com.datadog.android.core.configuration.BackPressureStrategy
 import com.datadog.android.core.configuration.BatchSize
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.UploadFrequency
+import com.datadog.android.flags.Flags
+import com.datadog.android.flags.FlagsConfiguration
+import com.datadog.android.flags.featureflags.FlagsClient
 import com.datadog.android.log.Logger
 import com.datadog.android.log.Logs
 import com.datadog.android.log.LogsConfiguration
@@ -159,6 +162,8 @@ class SampleApplication : Application() {
 
         Rum.enable(createRumConfiguration())
 
+        initializeFlags()
+
         GlobalRumMonitor.get().debug = true
     }
 
@@ -204,6 +209,15 @@ class SampleApplication : Application() {
         GlobalOpenTelemetry.set(
             DatadogOpenTelemetry(BuildConfig.APPLICATION_ID)
         )
+    }
+
+    private fun initializeFlags() {
+        val flagsConfig = FlagsConfiguration.Builder().build()
+        Flags.enable(flagsConfig)
+        val result = FlagsClient.get().resolveBooleanValue(
+                flagKey = "pipeline-optimization-insights",
+                defaultValue = true
+            )
     }
 
     private fun initializeLogs() {
