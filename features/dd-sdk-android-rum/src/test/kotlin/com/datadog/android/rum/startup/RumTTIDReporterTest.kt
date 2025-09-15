@@ -29,10 +29,12 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
+import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.inOrder
+import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.verifyNoMoreInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
@@ -47,6 +49,7 @@ import kotlin.time.Duration.Companion.seconds
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
 class RumTTIDReporterTest {
+
     private var currentTime: Duration = 0.seconds
 
     @Mock
@@ -92,11 +95,6 @@ class RumTTIDReporterTest {
             argListener.onContentChanged()
         }
 
-        whenever(viewTreeObserver.addOnDrawListener(any())).doAnswer {
-            val argListener = it.getArgument<ViewTreeObserver.OnDrawListener>(0)
-            argListener.onDraw()
-        }
-
         whenever(viewTreeObserver.isAlive) doReturn true
 
         whenever(handler.post(any())).doAnswer {
@@ -112,7 +110,7 @@ class RumTTIDReporterTest {
     }
 
     @Test
-    fun `M call listener W RumTTIDReporter { when first draw happens }`() {
+    fun `M call onTTIDCalculated W RumTTIDReporter { decorView doesn't exist yet }`() {
         // Given
         val scenario = RumStartupScenario.Cold(
             initialTimeNanos = 0,
@@ -133,11 +131,70 @@ class RumTTIDReporterTest {
             verify(windowCallbackRegistry).addListener(eq(activity), any())
             verify(windowCallbackRegistry).removeListener(eq(activity), any())
             verify(viewTreeObserver).isAlive
-            verify(viewTreeObserver).addOnDrawListener(any())
+
+            argumentCaptor<ViewTreeObserver.OnDrawListener> {
+                verify(viewTreeObserver).addOnDrawListener(capture())
+                firstValue.onDraw()
+            }
+
             verify(listener).onTTIDCalculated(scenario, 1.seconds)
             verify(viewTreeObserver).isAlive
             verify(viewTreeObserver).removeOnDrawListener(any())
         }
         verifyNoMoreInteractions(*mocks)
+    }
+
+    @Test
+    fun `M call onTTIDCalculated W RumTTIDReporter { decorView exists }`() {
+        // Given
+        val scenario = RumStartupScenario.Cold(
+            initialTimeNanos = 0,
+            hasSavedInstanceStateBundle = true,
+            activity = activity,
+        )
+
+        whenever(window.peekDecorView()) doReturn decorView
+
+        currentTime += 1.seconds
+
+        // When
+        reporter.onAppStartupDetected(
+            scenario
+        )
+
+        // Then
+        inOrder(windowCallbackRegistry, listener, viewTreeObserver) {
+            verify(viewTreeObserver).isAlive
+
+            argumentCaptor<ViewTreeObserver.OnDrawListener> {
+                verify(viewTreeObserver).addOnDrawListener(capture())
+                firstValue.onDraw()
+            }
+
+            verify(listener).onTTIDCalculated(scenario, 1.seconds)
+            verify(viewTreeObserver).isAlive
+            verify(viewTreeObserver).removeOnDrawListener(any())
+            verifyNoMoreInteractions()
+        }
+    }
+
+    @Test
+    fun `M not call onTTIDCalculated W RumTTIDReporter { viewTreeObserver is not alive }`() {
+        // Given
+        val scenario = RumStartupScenario.Cold(
+            initialTimeNanos = 0,
+            hasSavedInstanceStateBundle = true,
+            activity = activity,
+        )
+
+        whenever(viewTreeObserver.isAlive) doReturn false
+
+        // When
+        reporter.onAppStartupDetected(
+            scenario
+        )
+
+        // Then
+        verifyNoInteractions(listener)
     }
 }
