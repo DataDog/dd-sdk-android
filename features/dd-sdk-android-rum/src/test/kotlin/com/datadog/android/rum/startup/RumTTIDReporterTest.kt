@@ -126,8 +126,7 @@ class RumTTIDReporterTest {
         )
 
         // Then
-        val mocks = arrayOf(windowCallbackRegistry, listener, viewTreeObserver)
-        inOrder(*mocks) {
+        inOrder(windowCallbackRegistry, listener, viewTreeObserver) {
             verify(windowCallbackRegistry).addListener(eq(activity), any())
             verify(windowCallbackRegistry).removeListener(eq(activity), any())
             verify(viewTreeObserver).isAlive
@@ -140,8 +139,8 @@ class RumTTIDReporterTest {
             verify(listener).onTTIDCalculated(scenario, 1.seconds)
             verify(viewTreeObserver).isAlive
             verify(viewTreeObserver).removeOnDrawListener(any())
+            verifyNoMoreInteractions()
         }
-        verifyNoMoreInteractions(*mocks)
     }
 
     @Test
@@ -196,5 +195,38 @@ class RumTTIDReporterTest {
 
         // Then
         verifyNoInteractions(listener)
+    }
+
+    @Test
+    fun `M call onTTIDCalculated only once W RumTTIDReporter { onDraw is called twice }`() {
+        // Given
+        val scenario = RumStartupScenario.Cold(
+            initialTimeNanos = 0,
+            hasSavedInstanceStateBundle = true,
+            activity = activity,
+        )
+
+        currentTime += 1.seconds
+
+        // When
+        reporter.onAppStartupDetected(
+            scenario
+        )
+
+        // Then
+        inOrder(listener, viewTreeObserver) {
+            verify(viewTreeObserver).isAlive
+
+            argumentCaptor<ViewTreeObserver.OnDrawListener> {
+                verify(viewTreeObserver).addOnDrawListener(capture())
+                firstValue.onDraw()
+                firstValue.onDraw()
+            }
+
+            verify(listener).onTTIDCalculated(scenario, 1.seconds)
+            verify(viewTreeObserver).isAlive
+            verify(viewTreeObserver).removeOnDrawListener(any())
+            verifyNoMoreInteractions()
+        }
     }
 }
