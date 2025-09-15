@@ -1,15 +1,15 @@
 public final class com/datadog/android/trace/DatadogTracing {
 	public static final field INSTANCE Lcom/datadog/android/trace/DatadogTracing;
-	public final fun newTracerBuilder (Lcom/datadog/android/api/SdkCore;)Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;
-	public static synthetic fun newTracerBuilder$default (Lcom/datadog/android/trace/DatadogTracing;Lcom/datadog/android/api/SdkCore;ILjava/lang/Object;)Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;
+	public static final fun newTracerBuilder (Lcom/datadog/android/api/SdkCore;)Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;
+	public static synthetic fun newTracerBuilder$default (Lcom/datadog/android/api/SdkCore;ILjava/lang/Object;)Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;
 }
 
 public final class com/datadog/android/trace/GlobalDatadogTracer {
 	public static final field INSTANCE Lcom/datadog/android/trace/GlobalDatadogTracer;
 	public final fun clear ()V
-	public final fun get ()Lcom/datadog/android/trace/api/tracer/DatadogTracer;
+	public static final fun get ()Lcom/datadog/android/trace/api/tracer/DatadogTracer;
 	public final fun getOrNull ()Lcom/datadog/android/trace/api/tracer/DatadogTracer;
-	public final fun registerIfAbsent (Lcom/datadog/android/trace/api/tracer/DatadogTracer;)Z
+	public static final fun registerIfAbsent (Lcom/datadog/android/trace/api/tracer/DatadogTracer;)Z
 }
 
 public abstract interface class com/datadog/android/trace/InternalCoreWriterProvider {
