@@ -1,3 +1,3 @@
-open class com.datadog.android.apollo.DatadogApolloInterceptor : com.apollographql.apollo.interceptor.ApolloInterceptor
+class com.datadog.android.apollo.DatadogApolloInterceptor : com.apollographql.apollo.interceptor.ApolloInterceptor
   constructor(Boolean = false)
   override fun <D: com.apollographql.apollo.api.Operation.Data> intercept(com.apollographql.apollo.api.ApolloRequest<D>, com.apollographql.apollo.interceptor.ApolloInterceptorChain): kotlinx.coroutines.flow.Flow<com.apollographql.apollo.api.ApolloResponse<D>>

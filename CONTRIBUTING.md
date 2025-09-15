@@ -36,6 +36,7 @@ This project hosts the following modules:
     - `features/dd-sdk-android-trace-otel`: an extension of Trace library to integrate with OpenTelemetry;
     - `features/dd-sdk-android-webview`: a library to forward logs and RUM events captured in a webview to be linked with the mobile session;
   - `integrations/***`: a set of libraries integrating Datadog products in third party libraries:
+    - `integrations/dd-sdk-android-apollo`: a lightweight library providing a bridge integration between Datadog SDK and [Apollo Kotlin](https://github.com/apollographql/apollo-kotlin)
     - `integrations/dd-sdk-android-coil`: a lightweight library providing a bridge integration between Datadog SDK and [Coil](https://coil-kt.github.io/coil/);
     - `integrations/dd-sdk-android-compose`: a lightweight library providing a bridge integration between Datadog SDK and [Jetpack Compose](https://developer.android.com/jetpack/compose);
     - `integrations/dd-sdk-android-fresco`: a lightweight library providing a bridge integration between Datadog SDK and [Fresco](https://frescolib.org/);

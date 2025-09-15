@@ -12,20 +12,34 @@ import com.apollographql.apollo.api.CustomScalarAdapters
 import com.apollographql.apollo.api.Operation
 import com.apollographql.apollo.api.composeJsonRequest
 import com.apollographql.apollo.api.json.buildJsonString
-import com.apollographql.apollo.api.variablesJson
 import com.apollographql.apollo.interceptor.ApolloInterceptor
 import com.apollographql.apollo.interceptor.ApolloInterceptorChain
+import com.datadog.android.apollo.internal.DefaultVariablesExtractor
+import com.datadog.android.apollo.internal.VariablesExtractor
 import com.datadog.android.internal.network.GraphQLHeaders
 import kotlinx.coroutines.flow.Flow
-import okio.IOException
 
 /**
  * A Datadog Apollo interceptor for GraphQL operations.
  * @param sendGraphQLPayloads should graphQL payloads be reported. This is disabled by default.
  */
-open class DatadogApolloInterceptor(
+class DatadogApolloInterceptor(
     private val sendGraphQLPayloads: Boolean = false
 ) : ApolloInterceptor {
+
+    private var variablesExtractor: VariablesExtractor = DefaultVariablesExtractor()
+
+    /**
+     * Internal constructor for testing purposes.
+     * @param sendGraphQLPayloads should graphQL payloads be reported. This is disabled by default.
+     * @param variablesExtractor custom variables extractor for testing
+     */
+    internal constructor(
+        sendGraphQLPayloads: Boolean = false,
+        variablesExtractor: VariablesExtractor
+    ) : this(sendGraphQLPayloads) {
+        this.variablesExtractor = variablesExtractor
+    }
 
     override fun <D : Operation.Data> intercept(
         request: ApolloRequest<D>,
@@ -36,7 +50,7 @@ open class DatadogApolloInterceptor(
 
         val operationName = operation.name()
         val operationType = extractType(operation)
-        val operationVariables = extractVariables(operation, adapters)
+        val operationVariables = variablesExtractor.extractVariables(operation, adapters)
 
         val requestBuilder = request.newBuilder()
         requestBuilder
@@ -70,14 +84,6 @@ open class DatadogApolloInterceptor(
             operation.document().contains("query") -> "query"
             else -> null // failed to get type
         }
-
-    internal open fun extractVariables(operation: Operation<*>, adapters: CustomScalarAdapters): String? {
-        return try {
-            operation.variablesJson(adapters)
-        } catch (_: IOException) {
-            null
-        }
-    }
 
     private fun <D : Operation.Data> extractPayload(operation: Operation<D>, adapters: CustomScalarAdapters) =
         buildJsonString {

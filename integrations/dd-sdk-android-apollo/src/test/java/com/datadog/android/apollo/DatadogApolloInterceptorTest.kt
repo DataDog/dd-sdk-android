@@ -11,11 +11,12 @@ import com.apollographql.apollo.api.CustomScalarAdapters
 import com.apollographql.apollo.api.ExecutionContext
 import com.apollographql.apollo.api.Operation
 import com.apollographql.apollo.interceptor.ApolloInterceptorChain
+import com.datadog.android.apollo.internal.VariablesExtractor
 import com.datadog.android.internal.network.GraphQLHeaders
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeExtension
-import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
@@ -44,6 +45,9 @@ internal class DatadogApolloInterceptorTest {
     @Mock
     private lateinit var mockExecutionContext: ExecutionContext
 
+    @Mock
+    private lateinit var mockVariablesExtractor: VariablesExtractor
+
     @StringForgery(type = StringForgeryType.ALPHABETICAL)
     lateinit var fakeUserId: String
 
@@ -53,7 +57,12 @@ internal class DatadogApolloInterceptorTest {
     @StringForgery(regex = "[a-z]+\\.[a-z]+@[a-z]+\\.[a-z]{3}")
     lateinit var fakeUserEmail: String
 
-    private var testedInterceptor: DatadogApolloInterceptor = setupApolloInterceptor(true)
+    private lateinit var testedInterceptor: DatadogApolloInterceptor
+
+    @BeforeEach
+    fun setUp() {
+        testedInterceptor = setupApolloInterceptor(true)
+    }
 
     // region header: name
 
@@ -139,7 +148,7 @@ internal class DatadogApolloInterceptorTest {
     @Test
     fun `M add variables header W intercept`() {
         // Given
-        val (operation, originalRequest, requestBuilder) = setupBasicMocks(
+        val (_, originalRequest, requestBuilder) = setupBasicMocks(
             "GetUser",
             "query GetUser { user { id: name } }"
         )
@@ -152,7 +161,7 @@ internal class DatadogApolloInterceptorTest {
         checkHeaderWasAdded(
             requestBuilder,
             GraphQLHeaders.DD_GRAPHQL_VARIABLES_HEADER.headerValue,
-            testedInterceptor.extractVariables(operation, mockScalarAdapters)
+            "{userId: $fakeUserId, filters: [active]}"
         )
     }
 
@@ -180,11 +189,13 @@ internal class DatadogApolloInterceptorTest {
     @Test
     fun `M handle null variables W intercept { variables extractor returns null }`() {
         // Given
-        val interceptor = object : DatadogApolloInterceptor(
-            sendGraphQLPayloads = true
-        ) {
-            override fun extractVariables(operation: Operation<*>, adapters: CustomScalarAdapters): String? = null
-        }
+        val nullVariablesExtractor = mock<VariablesExtractor>()
+        whenever(nullVariablesExtractor.extractVariables(any(), any())).thenReturn(null)
+
+        val interceptor = DatadogApolloInterceptor(
+            sendGraphQLPayloads = true,
+            variablesExtractor = nullVariablesExtractor
+        )
 
         val (_, originalRequest, requestBuilder) = setupBasicMocks("GetUser", "query GetUser { user { id: name } }")
         val chain = mock<ApolloInterceptorChain>()
@@ -202,11 +213,13 @@ internal class DatadogApolloInterceptorTest {
     @Test
     fun `M handle empty variables W intercept { variables extractor returns empty string }`() {
         // Given
-        val interceptor = object : DatadogApolloInterceptor(
-            sendGraphQLPayloads = true
-        ) {
-            override fun extractVariables(operation: Operation<*>, adapters: CustomScalarAdapters): String? = ""
-        }
+        val emptyVariablesExtractor = mock<VariablesExtractor>()
+        whenever(emptyVariablesExtractor.extractVariables(any(), any())).thenReturn("")
+
+        val interceptor = DatadogApolloInterceptor(
+            sendGraphQLPayloads = true,
+            variablesExtractor = emptyVariablesExtractor
+        )
 
         val (_, originalRequest, requestBuilder) = setupBasicMocks("GetUser", "query GetUser { user { id: name } }")
         val chain = mock<ApolloInterceptorChain>()
@@ -228,7 +241,7 @@ internal class DatadogApolloInterceptorTest {
     @Test
     fun `M handle empty document W intercept { empty document }`() {
         // Given
-        val (operation, originalRequest, requestBuilder) = setupBasicMocks("GetUser", "")
+        val (_, originalRequest, requestBuilder) = setupBasicMocks("GetUser", "")
         val chain = mock<ApolloInterceptorChain>()
 
         // When
@@ -239,7 +252,7 @@ internal class DatadogApolloInterceptorTest {
         checkHeaderWasAdded(
             requestBuilder,
             GraphQLHeaders.DD_GRAPHQL_VARIABLES_HEADER.headerValue,
-            testedInterceptor.extractVariables(operation, mockScalarAdapters)
+            "{userId: $fakeUserId, filters: [active]}"
         )
         checkHeaderWasNotAdded(requestBuilder, GraphQLHeaders.DD_GRAPHQL_TYPE_HEADER.headerValue)
         checkHeaderWasAdded(requestBuilder, GraphQLHeaders.DD_GRAPHQL_PAYLOAD_HEADER.headerValue)
@@ -248,7 +261,7 @@ internal class DatadogApolloInterceptorTest {
     @Test
     fun `M handle document with multiple operation types W intercept { query and mutation }`() {
         // Given
-        val (operation, originalRequest, requestBuilder) = setupBasicMocks(
+        val (_, originalRequest, requestBuilder) = setupBasicMocks(
             "ComplexOperation",
             "query GetUser { user { id } } mutation SetUser { user { id } }"
         )
@@ -263,7 +276,7 @@ internal class DatadogApolloInterceptorTest {
         checkHeaderWasAdded(
             requestBuilder,
             GraphQLHeaders.DD_GRAPHQL_VARIABLES_HEADER.headerValue,
-            testedInterceptor.extractVariables(operation, mockScalarAdapters)
+            "{userId: $fakeUserId, filters: [active]}"
         )
         checkHeaderWasAdded(requestBuilder, GraphQLHeaders.DD_GRAPHQL_PAYLOAD_HEADER.headerValue)
     }
@@ -421,17 +434,22 @@ internal class DatadogApolloInterceptorTest {
         verify(requestBuilder, never()).addHttpHeader(eq(headerName), any<String>())
     }
 
-    private fun setupApolloInterceptor(sendGraphQLPayloads: Boolean): DatadogApolloInterceptor =
-        object : DatadogApolloInterceptor(
-            sendGraphQLPayloads
-        ) {
-            override fun extractVariables(operation: Operation<*>, adapters: CustomScalarAdapters): String? {
-                return when (operation.name()) {
-                    "GetUser" -> "{userId: $fakeUserId, filters: [active]}"
-                    "SetUser" -> "{userId: $fakeUserId, filters: [active]}"
-                    "CreateUser" -> "{input: {name: $fakeUserName, email: $fakeUserEmail}}"
-                    else -> "{}"
-                }
+    private fun setupApolloInterceptor(sendGraphQLPayloads: Boolean): DatadogApolloInterceptor {
+        // Setup mock variables extractor to return predictable test data
+        whenever(mockVariablesExtractor.extractVariables(any(), any())).thenAnswer { invocation ->
+            val operation = invocation.getArgument<Operation<*>>(0)
+            when (operation.name()) {
+                "GetUser" -> "{userId: $fakeUserId, filters: [active]}"
+                "SetUser" -> "{userId: $fakeUserId, filters: [active]}"
+                "CreateUser" -> "{input: {name: $fakeUserName, email: $fakeUserEmail}}"
+                "ComplexOperation" -> "{userId: $fakeUserId, filters: [active]}"
+                else -> "{}"
             }
         }
+
+        return DatadogApolloInterceptor(
+            sendGraphQLPayloads = sendGraphQLPayloads,
+            variablesExtractor = mockVariablesExtractor
+        )
+    }
 }
