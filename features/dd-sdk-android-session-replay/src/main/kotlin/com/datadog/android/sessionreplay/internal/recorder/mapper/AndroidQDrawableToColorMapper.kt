@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.sessionreplay.utils
+package com.datadog.android.sessionreplay.internal.recorder.mapper
 
 //noinspection SuspiciousImport
 import android.graphics.BlendMode
@@ -15,13 +15,15 @@ import android.graphics.drawable.GradientDrawable
 import android.os.Build
 import androidx.annotation.RequiresApi
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.sessionreplay.utils.DrawableToColorMapper
+import com.datadog.android.sessionreplay.utils.MAX_ALPHA_VALUE
 
 /**
  * Drawable utility object needed in the Session Replay Wireframe Mappers.
  * This class is meant for internal usage so please use it carefully as it might change in time.
  */
 @RequiresApi(Build.VERSION_CODES.Q)
-open class AndroidQDrawableToColorMapper(
+internal open class AndroidQDrawableToColorMapper(
     extensionMappers: List<DrawableToColorMapper> = emptyList()
 ) : AndroidMDrawableToColorMapper(extensionMappers) {
 
