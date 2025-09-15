@@ -91,10 +91,13 @@ abstract class ActivityLifecycleTrackingStrategy :
     @MainThread
     override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {
         if (::sdkCore.isInitialized) {
-            GlobalRumMonitor
-                .get(sdkCore)
-                ._getInternal()
-                ?.setSyntheticsAttributeFromIntent(activity.intent)
+            val intent = activity.intent
+            if (intent != null) {
+                GlobalRumMonitor
+                    .get(sdkCore)
+                    ._getInternal()
+                    ?.setSyntheticsAttributeFromIntent(intent)
+            }
         }
     }
 
