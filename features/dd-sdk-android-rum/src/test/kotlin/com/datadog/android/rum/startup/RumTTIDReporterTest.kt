@@ -21,16 +21,19 @@ import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
-import org.mockito.Mockito.mock
+import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
-import org.mockito.kotlin.verify
+import org.mockito.kotlin.eq
+import org.mockito.kotlin.inOrder
+import org.mockito.kotlin.verifyNoMoreInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import kotlin.time.Duration
@@ -44,21 +47,38 @@ import kotlin.time.Duration.Companion.seconds
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
 class RumTTIDReporterTest {
-    @Test
-    fun testOne() {
-        var currentTime: Duration = 0.seconds
-        val windowCallbackRegistry = mock<RumWindowCallbacksRegistry>()
-        val handler = mock<Handler>()
-        val listener = mock<RumTTIDReporterListener>()
-        val activity = mock<Activity>()
-        val window = mock<Window>()
-        val decorView = mock<View>()
-        val viewTreeObserver = mock<ViewTreeObserver>()
+    private var currentTime: Duration = 0.seconds
 
-        val scenario1 = RumStartupScenario.Cold(
-            initialTimeNanos = 0,
-            hasSavedInstanceStateBundle = true,
-            activity = activity,
+    @Mock
+    private lateinit var windowCallbackRegistry: RumWindowCallbacksRegistry
+
+    @Mock
+    private lateinit var handler: Handler
+
+    @Mock
+    private lateinit var listener: RumTTIDReporterListener
+
+    @Mock
+    private lateinit var activity: Activity
+
+    @Mock
+    private lateinit var window: Window
+
+    @Mock
+    private lateinit var decorView: View
+
+    @Mock
+    private lateinit var viewTreeObserver: ViewTreeObserver
+
+    private lateinit var reporter: RumTTIDReporterImpl
+
+    @BeforeEach
+    fun `set up`() {
+        reporter = RumTTIDReporterImpl(
+            timeProviderNanos = { currentTime.inWholeNanoseconds },
+            windowCallbacksRegistry = windowCallbackRegistry,
+            handler = handler,
+            listener = listener
         )
 
         whenever(activity.window) doReturn window
@@ -89,20 +109,35 @@ class RumTTIDReporterTest {
             argMessage.callback.run()
             true
         }
+    }
 
-        val reporter = RumTTIDReporterImpl(
-            timeProviderNanos = { currentTime.inWholeNanoseconds },
-            windowCallbacksRegistry = windowCallbackRegistry,
-            handler = handler,
-            listener = listener
+    @Test
+    fun `M call listener W RumTTIDReporter { when first draw happens }`() {
+        // Given
+        val scenario = RumStartupScenario.Cold(
+            initialTimeNanos = 0,
+            hasSavedInstanceStateBundle = true,
+            activity = activity,
         )
 
         currentTime += 1.seconds
 
+        // When
         reporter.onAppStartupDetected(
-            scenario1
+            scenario
         )
 
-        verify(listener).onTTID(scenario1, 1.seconds.inWholeNanoseconds)
+        // Then
+        val mocks = arrayOf(windowCallbackRegistry, listener, viewTreeObserver)
+        inOrder(*mocks) {
+            verify(windowCallbackRegistry).addListener(eq(activity), any())
+            verify(windowCallbackRegistry).removeListener(eq(activity), any())
+            verify(viewTreeObserver).isAlive
+            verify(viewTreeObserver).addOnDrawListener(any())
+            verify(listener).onTTIDCalculated(scenario, 1.seconds)
+            verify(viewTreeObserver).isAlive
+            verify(viewTreeObserver).removeOnDrawListener(any())
+        }
+        verifyNoMoreInteractions(*mocks)
     }
 }

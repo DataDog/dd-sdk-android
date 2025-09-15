@@ -76,7 +76,6 @@ import com.datadog.android.rum.internal.net.RumRequestFactory
 import com.datadog.android.rum.internal.startup.RumAppStartupDetector
 import com.datadog.android.rum.internal.startup.RumStartupScenario
 import com.datadog.android.rum.internal.startup.RumTTIDReporter
-import com.datadog.android.rum.internal.startup.RumTTIDReporterImpl
 import com.datadog.android.rum.internal.startup.RumTTIDReporterListener
 import com.datadog.android.rum.internal.startup.name
 import com.datadog.android.rum.internal.thread.NoOpScheduledExecutorService
@@ -122,6 +121,7 @@ import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
+import kotlin.time.Duration
 
 /**
  * RUM feature class, which needs to be registered with Datadog SDK instance.
@@ -266,11 +266,11 @@ internal class RumFeature(
             listener = object : RumAppStartupDetector.Listener {
                 val rumTTIDReporter = RumTTIDReporter.create(
                     object : RumTTIDReporterListener {
-                        override fun onTTID(
+                        override fun onTTIDCalculated(
                             scenario: RumStartupScenario,
-                            timestampNanos: Long
+                            duration: Duration
                         ) {
-                            Log.w("WAHAHA", "onFirstFrame ${scenario.name()}, $timestampNanos")
+                            Log.w("WAHAHA", "onFirstFrame ${scenario.name()}, $duration")
                         }
                     }
                 )

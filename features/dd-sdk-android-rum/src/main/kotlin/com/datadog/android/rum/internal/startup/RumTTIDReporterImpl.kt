@@ -15,10 +15,11 @@ import com.datadog.android.rum.internal.utils.RumWindowCallbacksRegistry
 import com.datadog.android.rum.internal.utils.RumWindowCallbacksRegistryImpl
 import com.datadog.android.rum.internal.utils.RumWindowCallbackListener
 import java.util.WeakHashMap
+import kotlin.time.Duration
 import kotlin.time.Duration.Companion.nanoseconds
 
 internal interface RumTTIDReporterListener {
-    fun onTTID(scenario: RumStartupScenario, timestampNanos: Long)
+    fun onTTIDCalculated(scenario: RumStartupScenario, duration: Duration)
 }
 
 internal interface RumTTIDReporter {
@@ -54,14 +55,14 @@ internal class RumTTIDReporterImpl(
         if (decorView == null) {
             val listener = object : RumWindowCallbackListener {
                 override fun onContentChanged() {
-                    windowCallbackListeners.remove(scenario.activity)?.let {
-                        windowCallbacksRegistry.removeListener(scenario.activity, it)
+                    windowCallbackListeners.remove(activity)?.let {
+                        windowCallbacksRegistry.removeListener(activity, it)
                     }
                     onDecorViewReady(scenario)
                 }
             }
-            windowCallbacksRegistry.addListener(scenario.activity, listener)
-            windowCallbackListeners.put(scenario.activity, listener)
+            windowCallbackListeners.put(activity, listener)
+            windowCallbacksRegistry.addListener(activity, listener)
         } else {
             onDecorViewReady(scenario)
         }
@@ -100,7 +101,7 @@ internal class RumTTIDReporterImpl(
         val duration = (timeProviderNanos() - scenario.initialTimeNanos).nanoseconds
 
         val block = Runnable {
-            listener.onTTID(scenario, duration.inWholeNanoseconds)
+            listener.onTTIDCalculated(scenario, duration)
         }
 
         handler.sendMessageAtFrontOfQueue(
