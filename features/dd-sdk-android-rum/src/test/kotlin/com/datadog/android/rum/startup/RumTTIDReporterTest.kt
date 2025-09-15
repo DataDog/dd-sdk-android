@@ -97,10 +97,12 @@ class RumTTIDReporterTest {
             listener = listener
         )
 
+        currentTime += 1.seconds
+
         reporter.onAppStartupDetected(
             scenario1
         )
 
-        verify(listener).onTTID(scenario1, 0)
+        verify(listener).onTTID(scenario1, 1.seconds.inWholeNanoseconds)
     }
 }
