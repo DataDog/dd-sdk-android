@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.sessionreplay.utils
+package com.datadog.android.sessionreplay.internal.recorder.mapper
 
 //noinspection SuspiciousImport
 import android.R
@@ -19,7 +19,8 @@ import android.graphics.drawable.StateListDrawable
 import android.os.Build
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
-import com.datadog.android.sessionreplay.utils.AndroidMDrawableToColorMapper.Companion.fillPaintField
+import com.datadog.android.sessionreplay.internal.recorder.mapper.AndroidMDrawableToColorMapper.Companion.fillPaintField
+import com.datadog.android.sessionreplay.utils.DrawableToColorMapper
 import com.datadog.tools.unit.annotations.TestTargetApi
 import com.datadog.tools.unit.extensions.ApiLevelExtension
 import fr.xgouchet.elmyr.annotation.IntForgery

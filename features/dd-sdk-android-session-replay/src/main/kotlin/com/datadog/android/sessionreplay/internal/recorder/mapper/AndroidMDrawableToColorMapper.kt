@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.sessionreplay.utils
+package com.datadog.android.sessionreplay.internal.recorder.mapper
 
 //noinspection SuspiciousImport
 import android.R
@@ -22,12 +22,16 @@ import android.graphics.drawable.ShapeDrawable
 import android.graphics.drawable.StateListDrawable
 import android.graphics.drawable.VectorDrawable
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.sessionreplay.utils.ALPHA_SHIFT_ANDROID
+import com.datadog.android.sessionreplay.utils.DrawableToColorMapper
+import com.datadog.android.sessionreplay.utils.MASK_COLOR
+import com.datadog.android.sessionreplay.utils.MAX_ALPHA_VALUE
 
 /**
  * Drawable utility object needed in the Session Replay Wireframe Mappers.
  * This class is meant for internal usage so please use it carefully as it might change in time.
  */
-open class AndroidMDrawableToColorMapper(
+internal open class AndroidMDrawableToColorMapper(
     private val extensionMappers: List<DrawableToColorMapper> = emptyList()
 ) : DrawableToColorMapper {
 
