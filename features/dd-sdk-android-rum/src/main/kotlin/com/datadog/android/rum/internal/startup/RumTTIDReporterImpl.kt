@@ -47,16 +47,24 @@ internal class RumTTIDReporterImpl(
     private val onDrawListeners = WeakHashMap<Activity, ViewTreeObserver.OnDrawListener>()
 
     override fun onAppStartupDetected(scenario: RumStartupScenario) {
-        val listener = object : RumWindowCallbackListener {
-            override fun onContentChanged() {
-                windowCallbackListeners.remove(scenario.activity)?.let {
-                    windowCallbacksRegistry.removeListener(scenario.activity, it)
+        val activity = scenario.activity
+        val window = activity.window
+        val decorView = window.peekDecorView()
+
+        if (decorView == null) {
+            val listener = object : RumWindowCallbackListener {
+                override fun onContentChanged() {
+                    windowCallbackListeners.remove(scenario.activity)?.let {
+                        windowCallbacksRegistry.removeListener(scenario.activity, it)
+                    }
+                    onDecorViewReady(scenario)
                 }
-                onDecorViewReady(scenario)
             }
+            windowCallbacksRegistry.addListener(scenario.activity, listener)
+            windowCallbackListeners.put(scenario.activity, listener)
+        } else {
+            onDecorViewReady(scenario)
         }
-        windowCallbacksRegistry.addListener(scenario.activity, listener)
-        windowCallbackListeners.put(scenario.activity, listener)
     }
 
     private fun onDecorViewReady(scenario: RumStartupScenario) {
