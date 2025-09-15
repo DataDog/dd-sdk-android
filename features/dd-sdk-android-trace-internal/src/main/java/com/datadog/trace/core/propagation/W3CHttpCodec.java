@@ -8,6 +8,7 @@ import static com.datadog.trace.core.propagation.PropagationTags.HeaderType.W3C;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
+import com.datadog.android.trace.internal.compat.function.Supplier;
 import com.datadog.trace.api.Config;
 import com.datadog.trace.api.DD128bTraceId;
 import com.datadog.trace.api.DDSpanId;
@@ -26,7 +27,6 @@ import com.datadog.trace.logger.LoggerFactory;
 
 import java.util.Map;
 import java.util.TreeMap;
-import com.datadog.android.trace.internal.compat.function.Supplier;
 
 /**
  * A codec designed for HTTP transport via headers using W3C traceparent and tracestate headers
@@ -37,7 +37,6 @@ class W3CHttpCodec {
     public static final String TRACE_PARENT_KEY = "traceparent";
     public static final String TRACE_STATE_KEY = "tracestate";
     public static final String BAGGAGE_KEY = "baggage";
-    static final String RUM_SESSION_ID_BAGGAGE_KEY = "session.id";
     static final String OT_BAGGAGE_PREFIX = "ot-baggage-";
     private static final String E2E_START_KEY = OT_BAGGAGE_PREFIX + DDTags.TRACE_START_TIME;
 
@@ -106,9 +105,11 @@ class W3CHttpCodec {
                 header = header != null ? header : OT_BAGGAGE_PREFIX + entry.getKey();
                 setter.set(carrier, header, HttpCodec.encodeBaggage(entry.getValue()));
             }
-            final String sessionId = (String) context.getTags().get(HttpCodec.RUM_SESSION_ID_KEY);
-            if(sessionId != null) {
-                setter.set(carrier, BAGGAGE_KEY, RUM_SESSION_ID_BAGGAGE_KEY + "=" + sessionId);
+
+            // inject baggage
+            Baggage baggage = HttpCodec.composeBaggage(context);
+            if (!baggage.isEmpty()) {
+                setter.set(carrier, W3CHttpCodec.BAGGAGE_KEY, baggage.toString());
             }
         }
     }

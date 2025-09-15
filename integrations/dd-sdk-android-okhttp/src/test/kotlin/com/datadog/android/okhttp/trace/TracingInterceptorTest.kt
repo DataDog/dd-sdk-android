@@ -1572,6 +1572,72 @@ internal open class TracingInterceptorTest {
         verifyNoMoreInteractions(contextMock)
     }
 
+    @Test
+    fun `M keep existing BAGGAGE W intercept { new values != existing values }`(
+        @IntForgery(min = 200, max = 600) statusCode: Int,
+        @StringForgery existingBaggageKey: String,
+        @StringForgery existingBaggageValue: String,
+        @StringForgery uniqueString: String,
+        forge: Forge
+    ) {
+        // Given
+        // Ensure that the new values differ from the existing ones.
+        val newBaggageKey = "$existingBaggageKey$uniqueString"
+        val newBaggageValue = "$existingBaggageValue$uniqueString"
+
+        val existingBaggage = "$existingBaggageKey=$existingBaggageValue"
+        val newBaggage = "$newBaggageKey=$newBaggageValue"
+
+        fakeRequest = forgeRequest(forge) { it.addHeader(BAGGAGE_HEADER, existingBaggage) }
+        whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(true)
+        mockPropagation.wheneverInjectThenValueToHeaders(BAGGAGE_HEADER, newBaggage)
+        stubChain(mockChain, statusCode)
+
+        // When
+        testedInterceptor.intercept(mockChain)
+
+        // Then
+        argumentCaptor<Request> {
+            verify(mockChain).proceed(capture())
+            assertThat(firstValue.headers(BAGGAGE_HEADER)).containsAnyOf(
+                "$existingBaggage,$newBaggage",
+                "$newBaggage,$existingBaggage"
+            )
+        }
+    }
+
+    @Test
+    fun `M replace existing BAGGAGE W intercept { new values intersects existing values }`(
+        @IntForgery(min = 200, max = 600) statusCode: Int,
+        @StringForgery existingBaggageKey: String,
+        @StringForgery existingBaggageValue: String,
+        @StringForgery uniqueString: String,
+        forge: Forge
+    ) {
+        // Given
+        // Ensure that the new values differ from the existing ones.
+        val newBaggageValue = "$existingBaggageValue$uniqueString"
+
+        val existingBaggage = "$existingBaggageKey=$existingBaggageValue"
+        val newBaggage = "$existingBaggageKey=$newBaggageValue"
+
+        fakeRequest = forgeRequest(forge) {
+            it.addHeader(BAGGAGE_HEADER, existingBaggage)
+        }
+        whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(true)
+        mockPropagation.wheneverInjectThenValueToHeaders(BAGGAGE_HEADER, newBaggage)
+        stubChain(mockChain, statusCode)
+
+        // When
+        testedInterceptor.intercept(mockChain)
+
+        // Then
+        argumentCaptor<Request> {
+            verify(mockChain).proceed(capture())
+            assertThat(firstValue.headers(BAGGAGE_HEADER)).containsOnly(newBaggage)
+        }
+    }
+
     // region Internal
 
     internal fun stubChain(chain: Interceptor.Chain, statusCode: Int) {
@@ -1646,6 +1712,8 @@ internal open class TracingInterceptorTest {
                 "([A-Za-z]|[A-Za-z][A-Za-z0-9-]{1,2}[A-Za-z0-9])"
         val datadogCore = DatadogSingletonTestConfiguration()
         val rumMonitor = GlobalRumMonitorTestConfiguration(datadogCore)
+
+        private const val BAGGAGE_HEADER = "baggage"
 
         @TestConfigurationsProvider
         @JvmStatic
