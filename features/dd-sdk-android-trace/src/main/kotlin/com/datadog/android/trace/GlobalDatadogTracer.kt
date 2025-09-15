@@ -25,6 +25,7 @@ object GlobalDatadogTracer {
      * @param tracer The tracer to register as the global tracer.
      * @return `true` if the tracer was successfully registered, or `false` if a tracer was already registered.
      */
+    @JvmStatic
     fun registerIfAbsent(tracer: DatadogTracer): Boolean {
         return instance.compareAndSet(null, tracer)
     }
@@ -35,6 +36,7 @@ object GlobalDatadogTracer {
      * @return The current instance of [DatadogTracer] if available. Otherwise, an instance of
      * [NoOpDatadogTracer] that performs no operations.
      */
+    @JvmStatic
     fun get(): DatadogTracer = getOrNull() ?: NoOpDatadogTracer()
 
     /**
