@@ -62,4 +62,5 @@ fun Forge.useCommonRumFactories() {
     addFactory(ResourceTimingForgeryFactory())
     addFactory(AccessibilityForgeryFactory())
     addFactory(AccessibilityInfoForgeryFactory())
+    addFactory(VitalEventForgeryFactory())
 }

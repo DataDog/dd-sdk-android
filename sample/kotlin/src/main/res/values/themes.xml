@@ -12,6 +12,8 @@
 
         <item name="colorPrimary">@color/datadog_violet</item>
         <item name="colorPrimaryDark">@color/datadog_violet_dark</item>
+
+        <item name="dividerViewStyle">@style/DividerView</item>
     </style>
 
     <style name="Sample.Theme.Compose" parent="Theme.MaterialComponents.Light.NoActionBar">

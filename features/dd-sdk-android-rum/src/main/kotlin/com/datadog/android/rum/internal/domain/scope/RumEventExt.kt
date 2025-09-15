@@ -14,6 +14,7 @@ import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.RumResourceMethod
+import com.datadog.android.rum.featureoperations.FailureReason
 import com.datadog.android.rum.internal.RumErrorSourceType
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
 import com.datadog.android.rum.model.ActionEvent
@@ -21,6 +22,7 @@ import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.model.ViewEvent
+import com.datadog.android.rum.model.VitalEvent
 import java.util.Locale
 
 // region Resource.Method conversion
@@ -577,4 +579,28 @@ internal fun RumSessionScope.StartReason.toLongTaskSessionPrecondition(): LongTa
     }
 }
 
+// endregion
+
+// region FeatureOperation
+
+internal fun RumSessionScope.StartReason.toVitalSessionPrecondition(): VitalEvent.SessionPrecondition {
+    return when (this) {
+        RumSessionScope.StartReason.USER_APP_LAUNCH -> VitalEvent.SessionPrecondition.USER_APP_LAUNCH
+        RumSessionScope.StartReason.INACTIVITY_TIMEOUT -> VitalEvent.SessionPrecondition.INACTIVITY_TIMEOUT
+        RumSessionScope.StartReason.MAX_DURATION -> VitalEvent.SessionPrecondition.MAX_DURATION
+        RumSessionScope.StartReason.EXPLICIT_STOP -> VitalEvent.SessionPrecondition.EXPLICIT_STOP
+        RumSessionScope.StartReason.BACKGROUND_LAUNCH -> VitalEvent.SessionPrecondition.BACKGROUND_LAUNCH
+        RumSessionScope.StartReason.PREWARM -> VitalEvent.SessionPrecondition.PREWARM
+        RumSessionScope.StartReason.FROM_NON_INTERACTIVE_SESSION ->
+            VitalEvent.SessionPrecondition.FROM_NON_INTERACTIVE_SESSION
+    }
+}
+
+internal fun FailureReason.toSchemaFailureReason(): VitalEvent.FailureReason {
+    return when (this) {
+        FailureReason.ERROR -> VitalEvent.FailureReason.ERROR
+        FailureReason.ABANDONED -> VitalEvent.FailureReason.ABANDONED
+        FailureReason.OTHER -> VitalEvent.FailureReason.OTHER
+    }
+}
 // endregion
