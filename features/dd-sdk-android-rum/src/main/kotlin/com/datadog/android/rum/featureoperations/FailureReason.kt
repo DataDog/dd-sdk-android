@@ -7,13 +7,20 @@ package com.datadog.android.rum.featureoperations
 
 /**
  * Represents the possible reasons for a failed feature operation.
- *
- * [ERROR]: Represents a failure caused by an error during execution.
- * [ABANDONED]: Represents a failure caused by user or process abandonment.
- * [OTHER]: Represents a failure due to other unspecified reasons.
  */
 enum class FailureReason {
+    /**
+     * Represents a failure caused by an error during execution.
+     */
     ERROR,
+
+    /**
+     * Represents a failure caused by user or process abandonment.
+     */
     ABANDONED,
+
+    /**
+     * Represents a failure due to other unspecified reasons.
+     */
     OTHER
 }

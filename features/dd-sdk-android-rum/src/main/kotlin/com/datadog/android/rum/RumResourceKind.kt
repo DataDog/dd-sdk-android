@@ -14,19 +14,67 @@ import java.util.Locale
  */
 enum class RumResourceKind(internal val value: String) {
     // Specific kind of JS resources loading
+
+    /**
+     * Beacon type resource.
+     */
     BEACON("beacon"),
+
+    /**
+     * Fetch type resource.
+     */
     FETCH("fetch"),
+
+    /**
+     * XHR type resource.
+     */
     XHR("xhr"),
+
+    /**
+     * Document type resource.
+     */
     DOCUMENT("document"),
 
     // Common kinds
+
+    /**
+     * Native type resource.
+     */
     NATIVE("native"),
+
+    /**
+     * Unknown type resource.
+     */
     UNKNOWN("unknown"),
+
+    /**
+     * Image type resource.
+     */
     IMAGE("image"),
+
+    /**
+     * JS type resource.
+     */
     JS("js"),
+
+    /**
+     * Font type resource.
+     */
     FONT("font"),
+
+    /**
+     * CSS type resource.
+     */
     CSS("css"),
+
+    /**
+     * Media type resource.
+     */
     MEDIA("media"),
+
+    /**
+     * Other type resource.
+     */
     OTHER("other");
 
     companion object {

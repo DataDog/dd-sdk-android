@@ -127,17 +127,64 @@ data class NetworkInfo(
     enum class Connectivity(
         private val jsonValue: String
     ) {
+        /**
+         * The network is not connected.
+         */
         NETWORK_NOT_CONNECTED("network_not_connected"),
+
+        /**
+         * The network is connected using a Ethernet connection.
+         */
         NETWORK_ETHERNET("network_ethernet"),
+
+        /**
+         * The network is connected using a WiFi connection.
+         */
         NETWORK_WIFI("network_wifi"),
+
+        /**
+         * The network is connected using a WiMax connection.
+         */
         NETWORK_WIMAX("network_wimax"),
+
+        /**
+         * The network is connected using a Bluetooth connection.
+         */
         NETWORK_BLUETOOTH("network_bluetooth"),
+
+        /**
+         * The network is connected using a 2G connection.
+         */
         NETWORK_2G("network_2G"),
+
+        /**
+         * The network is connected using a 3G connection.
+         */
         NETWORK_3G("network_3G"),
+
+        /**
+         * The network is connected using a 4G connection.
+         */
         NETWORK_4G("network_4G"),
+
+        /**
+         * The network is connected using a 5G connection.
+         */
         NETWORK_5G("network_5G"),
+
+        /**
+         * The network is connected using a cellular connection with a unknown technology.
+         */
         NETWORK_MOBILE_OTHER("network_mobile_other"),
+
+        /**
+         * The network is connected using a cellular connection.
+         */
         NETWORK_CELLULAR("network_cellular"),
+
+        /**
+         * The network is connected using an other connection type.
+         */
         NETWORK_OTHER("network_other")
         ;
 
