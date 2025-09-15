@@ -239,10 +239,3 @@ taskConfig<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
 junitConfig()
 javadocConfig()
 dependencyUpdateConfig()
-
-// TODO RUM-11399: Remove this when Kotlin is upgraded to 2.0 or later
-tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
-    kotlinOptions {
-        freeCompilerArgs += "-Xskip-metadata-version-check"
-    }
-}
