@@ -48,16 +48,6 @@ android {
             Paths.get(rootDir.path, "consumer-rules.pro").toString(),
             "consumer-rules.pro"
         )
-        buildConfigField(
-            "int",
-            "MIN_SDK",
-            "${AndroidConfig.MIN_SDK}"
-        )
-        buildConfigField(
-            "int",
-            "TARGET_SDK",
-            "${AndroidConfig.TARGET_SDK}"
-        )
     }
 
     namespace = "com.datadog.android.rum"
@@ -66,8 +56,11 @@ android {
         enable = true
     }
 
-    buildFeatures {
-        buildConfig = true
+    testOptions {
+        unitTests.all {
+            it.systemProperty("RUM_MIN_SDK", "${AndroidConfig.MIN_SDK}")
+            it.systemProperty("RUM_TARGET_SDK", "${AndroidConfig.TARGET_SDK}")
+        }
     }
 }
 
