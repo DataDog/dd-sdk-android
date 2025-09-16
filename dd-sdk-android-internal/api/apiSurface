@@ -104,6 +104,13 @@ interface com.datadog.android.internal.time.TimeProvider
   fun getServerOffsetNanos(): Long
   fun getServerOffsetMillis(): Long
 fun ByteArray.toHexString(): String
+interface com.datadog.android.internal.utils.DDCoreSubscription<T: Any>
+  fun addListener(T)
+  fun removeListener(T)
+  fun notifyListeners(T.() -> Unit)
+  val listenersCount: Int
+  companion object 
+    fun <T: Any> create(): DDCoreSubscription<T>
 object com.datadog.android.internal.utils.ImageViewUtils
   fun resolveParentRectAbsPosition(android.view.View, Boolean = true): android.graphics.Rect
   fun calculateClipping(android.graphics.Rect, android.graphics.Rect, Float): android.graphics.Rect

@@ -266,6 +266,18 @@ public final class com/datadog/android/internal/utils/ByteArrayExtKt {
 	public static final fun toHexString ([B)Ljava/lang/String;
 }
 
+public abstract interface class com/datadog/android/internal/utils/DDCoreSubscription {
+	public static final field Companion Lcom/datadog/android/internal/utils/DDCoreSubscription$Companion;
+	public abstract fun addListener (Ljava/lang/Object;)V
+	public abstract fun getListenersCount ()I
+	public abstract fun notifyListeners (Lkotlin/jvm/functions/Function1;)V
+	public abstract fun removeListener (Ljava/lang/Object;)V
+}
+
+public final class com/datadog/android/internal/utils/DDCoreSubscription$Companion {
+	public final fun create ()Lcom/datadog/android/internal/utils/DDCoreSubscription;
+}
+
 public final class com/datadog/android/internal/utils/ImageViewUtils {
 	public static final field INSTANCE Lcom/datadog/android/internal/utils/ImageViewUtils;
 	public final fun calculateClipping (Landroid/graphics/Rect;Landroid/graphics/Rect;F)Landroid/graphics/Rect;
