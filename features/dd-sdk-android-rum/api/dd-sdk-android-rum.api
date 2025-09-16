@@ -1,12 +1,3 @@
-public final class com/datadog/android/rum/BuildConfig {
-	public static final field BUILD_TYPE Ljava/lang/String;
-	public static final field DEBUG Z
-	public static final field LIBRARY_PACKAGE_NAME Ljava/lang/String;
-	public static final field MIN_SDK I
-	public static final field TARGET_SDK I
-	public fun <init> ()V
-}
-
 public final class com/datadog/android/rum/CloseableExtKt {
 	public static final fun useMonitored (Ljava/io/Closeable;Lcom/datadog/android/api/SdkCore;Lkotlin/jvm/functions/Function1;)Ljava/lang/Object;
 	public static synthetic fun useMonitored$default (Ljava/io/Closeable;Lcom/datadog/android/api/SdkCore;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Ljava/lang/Object;

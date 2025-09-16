@@ -13,12 +13,10 @@ import android.app.Application
 import android.os.Build
 import android.os.Bundle
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
-import com.datadog.android.rum.BuildConfig
 import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.BoolForgery
-import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.junit.jupiter.api.BeforeEach
@@ -56,7 +54,6 @@ internal class RumAppStartupDetectorImplTest {
     @Mock
     private lateinit var listener: RumAppStartupDetector.Listener
 
-    @IntForgery(min = BuildConfig.MIN_SDK, max = BuildConfig.TARGET_SDK)
     private var fakeBuildSdkVersion: Int = 0
 
     @Mock
@@ -68,7 +65,11 @@ internal class RumAppStartupDetectorImplTest {
     private var currentTime: Duration = 0.nanoseconds
 
     @BeforeEach
-    fun `set up`() {
+    fun `set up`(forge: Forge) {
+        fakeBuildSdkVersion = forge.anInt(
+            min = System.getProperty("RUM_MIN_SDK")!!.toInt(),
+            max = System.getProperty("RUM_TARGET_SDK")!!.toInt() + 1
+        )
         whenever(activity.isChangingConfigurations) doReturn false
     }
 
