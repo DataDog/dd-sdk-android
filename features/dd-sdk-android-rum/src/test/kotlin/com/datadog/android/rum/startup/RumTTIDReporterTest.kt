@@ -13,8 +13,8 @@ import android.view.View
 import android.view.ViewTreeObserver
 import android.view.Window
 import com.datadog.android.rum.internal.startup.RumStartupScenario
+import com.datadog.android.rum.internal.startup.RumTTIDReporter
 import com.datadog.android.rum.internal.startup.RumTTIDReporterImpl
-import com.datadog.android.rum.internal.startup.RumTTIDReporterListener
 import com.datadog.android.rum.internal.utils.RumWindowCallbackListener
 import com.datadog.android.rum.internal.utils.RumWindowCallbacksRegistry
 import com.datadog.android.rum.utils.forge.Configurator
@@ -59,7 +59,7 @@ class RumTTIDReporterTest {
     private lateinit var handler: Handler
 
     @Mock
-    private lateinit var listener: RumTTIDReporterListener
+    private lateinit var listener: RumTTIDReporter.Listener
 
     @Mock
     private lateinit var activity: Activity

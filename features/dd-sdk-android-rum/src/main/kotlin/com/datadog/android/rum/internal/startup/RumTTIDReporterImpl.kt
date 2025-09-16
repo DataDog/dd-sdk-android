@@ -8,40 +8,18 @@ package com.datadog.android.rum.internal.startup
 
 import android.app.Activity
 import android.os.Handler
-import android.os.Looper
 import android.os.Message
 import android.view.ViewTreeObserver
-import com.datadog.android.rum.internal.utils.RumWindowCallbacksRegistry
-import com.datadog.android.rum.internal.utils.RumWindowCallbacksRegistryImpl
 import com.datadog.android.rum.internal.utils.RumWindowCallbackListener
+import com.datadog.android.rum.internal.utils.RumWindowCallbacksRegistry
 import java.util.WeakHashMap
-import kotlin.time.Duration
 import kotlin.time.Duration.Companion.nanoseconds
-
-internal interface RumTTIDReporterListener {
-    fun onTTIDCalculated(scenario: RumStartupScenario, duration: Duration)
-}
-
-internal interface RumTTIDReporter {
-    fun onAppStartupDetected(scenario: RumStartupScenario)
-
-    companion object {
-        fun create(listener: RumTTIDReporterListener): RumTTIDReporter {
-            return RumTTIDReporterImpl(
-                timeProviderNanos = { System.nanoTime() },
-                windowCallbacksRegistry = RumWindowCallbacksRegistryImpl(),
-                handler = Handler(Looper.getMainLooper()),
-                listener = listener
-            )
-        }
-    }
-}
 
 internal class RumTTIDReporterImpl(
     private val timeProviderNanos: () -> Long,
     private val windowCallbacksRegistry: RumWindowCallbacksRegistry,
     private val handler: Handler,
-    private val listener: RumTTIDReporterListener,
+    private val listener: RumTTIDReporter.Listener,
 ): RumTTIDReporter {
     private val windowCallbackListeners = WeakHashMap<Activity, RumWindowCallbackListener>()
 
