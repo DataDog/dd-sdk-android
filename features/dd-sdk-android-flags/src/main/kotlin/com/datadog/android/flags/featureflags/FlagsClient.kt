@@ -122,7 +122,7 @@ object FlagsClient {
 
     // region Constants
     internal const val NO_PROVIDER_REGISTERED_MESSAGE = "No FlagsProvider for the SDK instance with" +
-            " name %s found, returning no-op implementation."
+        " name %s found, returning no-op implementation."
 
     // endregion
 }

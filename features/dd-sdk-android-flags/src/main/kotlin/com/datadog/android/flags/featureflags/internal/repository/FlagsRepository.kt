@@ -6,12 +6,12 @@
 
 package com.datadog.android.flags.featureflags.internal.repository
 
-import org.json.JSONObject
+import com.datadog.android.flags.featureflags.ProviderContext
+import com.datadog.android.flags.featureflags.internal.model.PrecomputedFlag
+import com.datadog.tools.annotation.NoOpImplementation
 
+@NoOpImplementation
 internal interface FlagsRepository {
-    fun getBoolean(key: String, defaultValue: Boolean): Boolean
-    fun getString(key: String, defaultValue: String): String
-    fun getInt(key: String, defaultValue: Int): Int
-    fun getDouble(key: String, defaultValue: Double): Double
-    fun getJsonObject(key: String, defaultValue: JSONObject): JSONObject
+    fun getPrecomputedFlag(key: String): PrecomputedFlag?
+    fun updateProviderContext(newContext: ProviderContext)
 }

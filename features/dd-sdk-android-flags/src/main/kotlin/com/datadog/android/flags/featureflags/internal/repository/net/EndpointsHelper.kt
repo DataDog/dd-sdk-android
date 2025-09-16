@@ -14,37 +14,38 @@ internal class EndpointsHelper(
 ) {
 
     internal fun buildEndpointHost(site: String, customerDomain: String = "preview"): String {
-        if (site == DOMAIN_GOV) {
-            internalLogger.log(
-                level = InternalLogger.Level.ERROR,
-                target = InternalLogger.Target.MAINTAINER,
-                messageBuilder = { ERROR_GOV_NOT_SUPPORTED }
-            )
-            return ""
-        }
+        return when (site) {
+            DOMAIN_GOV -> {
+                internalLogger.log(
+                    level = InternalLogger.Level.ERROR,
+                    target = InternalLogger.Target.MAINTAINER,
+                    messageBuilder = { ERROR_GOV_NOT_SUPPORTED }
+                )
+                ""
+            }
+            DOMAIN_D0G -> {
+                "$customerDomain.ff-cdn.datad0g.com"
+            }
+            in siteConfig -> {
+                val config = siteConfig[site]!!
+                val dc = config.optString("dc", "")
+                val tld = config.optString("tld", "com")
 
-        if (site == DOMAIN_D0G) {
-            return "$customerDomain.ff-cdn.datad0g.com"
-        }
-
-        if (site in siteConfig) {
-            val config = siteConfig[site]!!
-            val dc = config.optString("dc", "")
-            val tld = config.optString("tld", "com")
-
-            // customer domain is for future use
-            // ff-cdn is the subdomain pointing to the CDN servers
-            // dc is the datacenter, if specified
-            // tld is the top level domain, changes for eu DCs
-            return "$customerDomain.ff-cdn.${if (dc.isNotEmpty()) "$dc." else ""}datadoghq.$tld"
-        } else {
-            val supportedSites = siteConfig.keys.joinToString(", ")
-            internalLogger.log(
-                level = InternalLogger.Level.ERROR,
-                target = InternalLogger.Target.MAINTAINER,
-                messageBuilder = { ERROR_UNSUPPORTED_SITE.format(site, supportedSites) }
-            )
-            return ""
+                // customer domain is for future use
+                // ff-cdn is the subdomain pointing to the CDN servers
+                // dc is the datacenter, if specified
+                // tld is the top level domain, changes for eu DCs
+                "$customerDomain.ff-cdn.${if (dc.isNotEmpty()) "$dc." else ""}datadoghq.$tld"
+            }
+            else -> {
+                val supportedSites = siteConfig.keys.joinToString(", ")
+                internalLogger.log(
+                    level = InternalLogger.Level.ERROR,
+                    target = InternalLogger.Target.MAINTAINER,
+                    messageBuilder = { ERROR_UNSUPPORTED_SITE.format(site, supportedSites) }
+                )
+                ""
+            }
         }
     }
 

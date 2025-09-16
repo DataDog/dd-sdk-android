@@ -7,6 +7,7 @@
 package com.datadog.android.flags.featureflags.internal.repository.net
 
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.flags.featureflags.ProviderContext
 import com.datadog.android.flags.internal.model.FlagsContext
 import okhttp3.Call
 import okhttp3.Headers
@@ -16,6 +17,8 @@ import okhttp3.Request
 import okhttp3.RequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
+import java.io.IOException
+import java.net.UnknownHostException
 import java.util.concurrent.TimeUnit
 
 internal class DefaultFlagsNetworkManager(
@@ -37,19 +40,66 @@ internal class DefaultFlagsNetworkManager(
         setupOkHttpClient()
     }
 
-    override fun downloadPrecomputedFlags(): String? {
+    override fun downloadPrecomputedFlags(context: ProviderContext): String? {
         val url = buildUrl() ?: return null
         val headers = buildHeaders()
         val body = buildRequestBody()
-        return performRequest(url = url, headers = headers, body = body.toRequestBody())
+        return download(url = url, headers = headers, body = body.toRequestBody())
     }
 
-    private fun performRequest(url: String, headers: Headers, body: RequestBody): String? {
-        val request = Request.Builder()
-            .url(url)
-            .headers(headers)
-            .post(body)
-            .build()
+    @Suppress("TooGenericExceptionCaught")
+    private fun download(
+        url: String,
+        headers: Headers,
+        body: RequestBody
+    ): String? {
+        val request = try {
+            Request.Builder()
+                .url(url)
+                .headers(headers)
+                .post(body)
+                .build()
+        } catch (e: Exception) {
+            internalLogger.log(
+                InternalLogger.Level.ERROR,
+                listOf(InternalLogger.Target.MAINTAINER),
+                { "Unable to create the request" },
+                e
+            )
+            return null
+        }
+
+        return try {
+            executeDownloadRequest(request)
+        } catch (e: UnknownHostException) {
+            internalLogger.log(
+                InternalLogger.Level.ERROR,
+                InternalLogger.Target.MAINTAINER,
+                { "Unable to find host for site ${flagsContext.site}; we will retry later." },
+                e
+            )
+            null
+        } catch (e: IOException) {
+            internalLogger.log(
+                InternalLogger.Level.ERROR,
+                InternalLogger.Target.MAINTAINER,
+                { "Unable to execute the request; we will retry later." },
+                e
+            )
+            null
+        } catch (e: Throwable) {
+            internalLogger.log(
+                InternalLogger.Level.ERROR,
+                InternalLogger.Target.MAINTAINER,
+                { "Unable to execute the request; we will retry later." },
+                e
+            )
+            null
+        }
+    }
+
+    @Suppress("TooGenericExceptionCaught")
+    private fun executeDownloadRequest(request: Request): String? {
         return try {
             callFactory.newCall(request).execute().use { response ->
                 if (response.isSuccessful) {
@@ -57,7 +107,7 @@ internal class DefaultFlagsNetworkManager(
                 } else {
                     internalLogger.log(
                         InternalLogger.Level.ERROR,
-                        InternalLogger.Target.USER,
+                        InternalLogger.Target.MAINTAINER,
                         { "Failed to download flags: ${response.code}" }
                     )
                     null
@@ -66,7 +116,7 @@ internal class DefaultFlagsNetworkManager(
         } catch (e: Exception) {
             internalLogger.log(
                 InternalLogger.Level.ERROR,
-                InternalLogger.Target.USER,
+                InternalLogger.Target.MAINTAINER,
                 { "Error downloading flags" },
                 e
             )
@@ -93,7 +143,7 @@ internal class DefaultFlagsNetworkManager(
         val headersBuilder = Headers.Builder()
 
         headersBuilder
-            .add(HEADER_CLIENT_TOKEN, "REPLACE_THIS") // TODO replace
+            .add(HEADER_CLIENT_TOKEN, flagsContext.clientToken)
             .add(HEADER_CONTENT_TYPE, CONTENT_TYPE_VND_JSON)
 
         flagsContext.applicationId?.let {

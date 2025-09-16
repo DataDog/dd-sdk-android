@@ -9,7 +9,7 @@ package com.datadog.android.flags.featureflags
 import org.json.JSONObject
 
 interface FlagsProvider {
-    fun setContext(providerContext: ProviderContext)
+    fun setContext(newContext: ProviderContext)
     fun resolveBooleanValue(flagKey: String, defaultValue: Boolean): Boolean
     fun resolveStringValue(flagKey: String, defaultValue: String): String
     fun resolveNumberValue(flagKey: String, defaultValue: Number): Number

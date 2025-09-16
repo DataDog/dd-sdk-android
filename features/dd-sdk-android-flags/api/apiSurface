@@ -1,9 +1,7 @@
 object com.datadog.android.flags.Flags
   fun enable(FlagsConfiguration, com.datadog.android.api.SdkCore = Datadog.getInstance())
 data class com.datadog.android.flags.FlagsConfiguration
-  constructor(Configuration)
-  data class Configuration
-    constructor(Boolean)
+  constructor(Boolean)
   class Builder
     fun setEnableExposureLogging(Boolean): Builder
     fun build(): FlagsConfiguration
@@ -28,11 +26,5 @@ data class com.datadog.android.flags.featureflags.ProviderContext
   constructor(String, com.datadog.android.flags.featureflags.internal.model.FeatureFlagsUser)
 data class com.datadog.android.flags.featureflags.internal.model.FeatureFlagsUser
   constructor(String, String)
-class com.datadog.android.flags.featureflags.internal.repository.NoOpFlagsRepository : FlagsRepository
-  override fun getBoolean(String, Boolean): Boolean
-  override fun getString(String, String): String
-  override fun getInt(String, Int): Int
-  override fun getDouble(String, Double): Double
-  override fun getJsonObject(String, org.json.JSONObject): org.json.JSONObject
 data class com.datadog.android.flags.internal.model.FlagsContext
   constructor(String?, String, String, String, String)

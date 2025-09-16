@@ -8,14 +8,9 @@ package com.datadog.android.flags.featureflags.internal.repository.store
 
 import com.datadog.android.flags.featureflags.internal.model.PrecomputedFlag
 import com.datadog.tools.annotation.NoOpImplementation
-import org.json.JSONObject
 
 @NoOpImplementation
 internal interface StoreManager {
-    fun getBooleanValue(key: String, defaultValue: Boolean): Boolean
-    fun getStringValue(key: String, defaultValue: String): String
-    fun getIntValue(key: String, defaultValue: Int): Int
-    fun getDoubleValue(key: String, defaultValue: Double): Double
-    fun getJsonObjectValue(key: String, defaultValue: JSONObject): JSONObject
+    fun getPrecomputedFlag(key: String): PrecomputedFlag?
     fun updateFlagsState(flags: Map<String, PrecomputedFlag>)
 }

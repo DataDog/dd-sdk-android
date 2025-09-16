@@ -8,8 +8,8 @@ package com.datadog.android.flags.featureflags
 
 import org.json.JSONObject
 
-class NoOpFlagsProvider: FlagsProvider {
-    override fun setContext(providerContext: ProviderContext) {}
+class NoOpFlagsProvider : FlagsProvider {
+    override fun setContext(newContext: ProviderContext) {}
 
     override fun resolveBooleanValue(flagKey: String, defaultValue: Boolean): Boolean {
         return defaultValue

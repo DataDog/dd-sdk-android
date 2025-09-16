@@ -9,6 +9,7 @@ package com.datadog.android.flags.featureflags.internal.repository
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.core.internal.utils.executeSafe
+import com.datadog.android.flags.featureflags.ProviderContext
 import com.datadog.android.flags.featureflags.internal.model.PrecomputedFlag
 import com.datadog.android.flags.featureflags.internal.repository.net.DefaultFlagsNetworkManager
 import com.datadog.android.flags.featureflags.internal.repository.net.FlagsNetworkManager
@@ -18,8 +19,8 @@ import com.datadog.android.flags.featureflags.internal.repository.store.FlagsSto
 import com.datadog.android.flags.featureflags.internal.repository.store.NoOpStoreManager
 import com.datadog.android.flags.featureflags.internal.repository.store.StoreManager
 import com.datadog.android.flags.internal.model.FlagsContext
-import org.json.JSONObject
 import java.util.concurrent.ExecutorService
+import java.util.concurrent.atomic.AtomicReference
 
 internal class DefaultFlagsRepository(
     private val featureSdkCore: FeatureSdkCore,
@@ -30,62 +31,55 @@ internal class DefaultFlagsRepository(
     private val precomputeMapper: PrecomputeMapper = PrecomputeMapper(
         internalLogger = internalLogger
     ),
-    private var flagsNetworkManager: FlagsNetworkManager = NoOpFlagsNetworkManager(),
+    private var flagsNetworkManager: FlagsNetworkManager = NoOpFlagsNetworkManager()
 ) : FlagsRepository {
+    private var currentProviderContext = AtomicReference<ProviderContext>(null)
+
     init {
-        flagsStoreManager = FlagsStoreManager(
-            internalLogger = internalLogger
-        )
+        flagsStoreManager = FlagsStoreManager()
 
         flagsNetworkManager = DefaultFlagsNetworkManager(
             internalLogger = internalLogger,
             flagsContext = flagsContext
         )
-
-        fetchFromRemote()
     }
 
-    override fun getBoolean(key: String, defaultValue: Boolean): Boolean {
-        return flagsStoreManager.getBooleanValue(key, defaultValue)
+    override fun updateProviderContext(newContext: ProviderContext) {
+        currentProviderContext.set(newContext)
+        fetchPrecomputedFlagsFromRemote()
     }
 
-    override fun getString(key: String, defaultValue: String): String {
-        return flagsStoreManager.getStringValue(key, defaultValue)
+    override fun getPrecomputedFlag(key: String): PrecomputedFlag? {
+        if (currentProviderContext.get() == null) {
+            featureSdkCore.internalLogger.log(
+                level = InternalLogger.Level.WARN,
+                target = InternalLogger.Target.MAINTAINER,
+                messageBuilder = { ERROR_CONTEXT_NOT_SET }
+            )
+            return null
+        }
+
+        val result = flagsStoreManager.getPrecomputedFlag(key)
+        return result
     }
 
-    override fun getInt(key: String, defaultValue: Int): Int {
-        return flagsStoreManager.getIntValue(key, defaultValue)
-    }
-
-    override fun getDouble(key: String, defaultValue: Double): Double {
-        return flagsStoreManager.getDoubleValue(key, defaultValue)
-    }
-
-    override fun getJsonObject(key: String, defaultValue: JSONObject): JSONObject {
-        return flagsStoreManager.getJsonObjectValue(key, defaultValue)
-    }
-
-    private fun fetchFromRemote() {
+    private fun fetchPrecomputedFlagsFromRemote() {
         executorService.executeSafe(
-            operationName = "Fetch precomputed flags",
+            operationName = FETCH_PRECOMPUTED_FLAGS_OPERATION_NAME,
             internalLogger = internalLogger
         ) {
-            val response = flagsNetworkManager.downloadPrecomputedFlags()
+            val response = flagsNetworkManager.downloadPrecomputedFlags(currentProviderContext.get())
             if (response != null) {
                 val flagsMap = precomputeMapper.map(response)
                 if (flagsMap.isNotEmpty()) {
                     flagsStoreManager.updateFlagsState(flagsMap)
-                    cacheToLocalStorage(flagsMap)
                 }
             }
         }
     }
 
-    private fun cacheToLocalStorage(flagsMap: Map<String, PrecomputedFlag>) {
-        // TODO Implement this
-    }
-
-    private fun readFromLocalStorage(): Map<String, PrecomputedFlag> {
-        return emptyMap() // TODO: implement this
+    private companion object {
+        const val FETCH_PRECOMPUTED_FLAGS_OPERATION_NAME = "Fetch precomputed flags"
+        const val ERROR_CONTEXT_NOT_SET = "You must call FlagsClient.get().setContext in order to have flags available"
     }
 }

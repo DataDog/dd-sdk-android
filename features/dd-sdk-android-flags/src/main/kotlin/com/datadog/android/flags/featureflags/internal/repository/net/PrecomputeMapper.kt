@@ -8,6 +8,7 @@ package com.datadog.android.flags.featureflags.internal.repository.net
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.flags.featureflags.internal.model.PrecomputedFlag
+import org.json.JSONException
 import org.json.JSONObject
 
 /**
@@ -49,7 +50,7 @@ internal class PrecomputeMapper(
             }
 
             flagsMap
-        } catch (e: Exception) {
+        } catch (e: JSONException) {
             internalLogger.log(
                 level = InternalLogger.Level.WARN,
                 target = InternalLogger.Target.MAINTAINER,

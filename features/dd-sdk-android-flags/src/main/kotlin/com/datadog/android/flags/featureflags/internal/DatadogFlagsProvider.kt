@@ -6,75 +6,89 @@
 
 package com.datadog.android.flags.featureflags.internal
 
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.FeatureSdkCore
-import com.datadog.android.flags.FlagsConfiguration
 import com.datadog.android.flags.featureflags.FlagsProvider
 import com.datadog.android.flags.featureflags.ProviderContext
 import com.datadog.android.flags.featureflags.internal.repository.DefaultFlagsRepository
 import com.datadog.android.flags.featureflags.internal.repository.FlagsRepository
 import com.datadog.android.flags.featureflags.internal.repository.NoOpFlagsRepository
 import com.datadog.android.flags.internal.model.FlagsContext
+import org.json.JSONException
 import org.json.JSONObject
 import java.util.concurrent.ExecutorService
 
 internal class DatadogFlagsProvider(
     private val executorService: ExecutorService,
-    private val configuration: FlagsConfiguration,
     private val featureSdkCore: FeatureSdkCore,
     private val flagsContext: FlagsContext,
     private var flagsRepository: FlagsRepository = NoOpFlagsRepository()
-): FlagsProvider {
+) : FlagsProvider {
 
     init {
-        flagsRepository = DefaultFlagsRepository(
-            featureSdkCore = featureSdkCore,
-            executorService = executorService,
-            flagsContext = flagsContext
-        )
+        if (flagsRepository is NoOpFlagsRepository) {
+            flagsRepository = DefaultFlagsRepository(
+                featureSdkCore = featureSdkCore,
+                executorService = executorService,
+                flagsContext = flagsContext
+            )
+        }
     }
 
-    override fun setContext(providerContext: ProviderContext) {
-        TODO("Not yet implemented")
+    override fun setContext(newContext: ProviderContext) {
+        flagsRepository.updateProviderContext(newContext)
     }
 
     override fun resolveBooleanValue(
         flagKey: String,
         defaultValue: Boolean
-    ): Boolean =
-        flagsRepository.getBoolean(flagKey, defaultValue)
+    ): Boolean {
+        val precomputedFlag = flagsRepository.getPrecomputedFlag(flagKey)
+        return precomputedFlag?.variationValue?.toBoolean() ?: defaultValue
+    }
 
     override fun resolveStringValue(
         flagKey: String,
         defaultValue: String
-    ): String =
-        flagsRepository.getString(flagKey, defaultValue)
+    ): String {
+        val precomputedData = flagsRepository.getPrecomputedFlag(flagKey)
+        return precomputedData?.variationValue ?: defaultValue
+    }
 
-    override fun resolveIntValue(flagKey: String, defaultValue: Int): Int =
-        flagsRepository.getInt(flagKey, defaultValue)
+    override fun resolveIntValue(flagKey: String, defaultValue: Int): Int {
+        val precomputedData = flagsRepository.getPrecomputedFlag(flagKey)
+        return precomputedData?.variationValue?.toIntOrNull() ?: defaultValue
+    }
 
     override fun resolveNumberValue(
         flagKey: String,
         defaultValue: Number
-    ): Number =
-        flagsRepository.getDouble(flagKey, defaultValue.toDouble())
+    ): Number {
+        val precomputedData = flagsRepository.getPrecomputedFlag(flagKey)
+        return precomputedData?.variationValue?.toDoubleOrNull() ?: defaultValue
+    }
 
     override fun resolveStructureValue(
         flagKey: String,
         defaultValue: JSONObject
-    ): JSONObject =
-        flagsRepository.getJsonObject(flagKey, defaultValue)
+    ): JSONObject {
+        val precomputedData = flagsRepository.getPrecomputedFlag(flagKey)
+        return precomputedData?.variationValue?.let {
+            try {
+                JSONObject(it)
+            } catch (e: JSONException) {
+                featureSdkCore.internalLogger.log(
+                    level = InternalLogger.Level.ERROR,
+                    target = InternalLogger.Target.MAINTAINER,
+                    messageBuilder = { ERROR_FAILED_PARSING_JSON.format(flagKey) },
+                    throwable = e
+                )
+                defaultValue
+            }
+        } ?: defaultValue
+    }
 
-    private fun notifyParameterExposed(flagKey: String) {
-//        val event = ExposureEvent(
-//            timeStamp = System.currentTimeMillis(),
-//            flagKey = flagKey,
-//            //TODO remaining params
-//        )
-
-//        featureSdkCore.getFeature(Feature.RUM_FEATURE_NAME)?.sendEvent(
-//            mapOf(
-//                "dd_exposure" to event
-//            )
-//        )
+    internal companion object {
+        const val ERROR_FAILED_PARSING_JSON = "Failed to parse JSON for key: %s"
     }
 }

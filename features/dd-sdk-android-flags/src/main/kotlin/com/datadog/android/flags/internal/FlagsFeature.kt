@@ -7,12 +7,9 @@
 package com.datadog.android.flags.internal
 
 import android.content.Context
-import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureContextUpdateReceiver
 import com.datadog.android.api.feature.FeatureSdkCore
-import com.datadog.android.core.InternalSdkCore
-import com.datadog.android.flags.FlagsConfiguration
 
 /**
  * An implementation of [Feature] for getting and reporting
@@ -20,12 +17,7 @@ import com.datadog.android.flags.FlagsConfiguration
  */
 internal class FlagsFeature(
     private val sdkCore: FeatureSdkCore,
-    private val configuration: FlagsConfiguration,
-    private val  datadogContext: DatadogContext? = (sdkCore as InternalSdkCore).getDatadogContext(),
-    internal var applicationId: String? = null,
-    internal val clientToken: String? = datadogContext?.clientToken,
-    internal val site: String? = datadogContext?.site?.name,
-    internal val env: String? = datadogContext?.env
+    internal var applicationId: String? = null
 ) : Feature, FeatureContextUpdateReceiver {
 
     override fun onContextUpdate(

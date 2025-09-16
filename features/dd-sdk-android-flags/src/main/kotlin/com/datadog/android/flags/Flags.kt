@@ -7,8 +7,10 @@
 package com.datadog.android.flags
 
 import com.datadog.android.Datadog
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.SdkCore
 import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.flags.featureflags.FlagsClient
 import com.datadog.android.flags.featureflags.FlagsProvider
 import com.datadog.android.flags.featureflags.internal.DatadogFlagsProvider
@@ -20,6 +22,9 @@ import com.datadog.android.flags.internal.model.FlagsContext
  */
 object Flags {
 
+    internal const val FLAGS_EXECUTOR_NAME = "flags-executor"
+    internal const val ERROR_MISSING_CONTEXT_PARAMS = "Missing required context parameters: %s"
+
     /**
      * Enables the Flags feature.
      *
@@ -30,18 +35,18 @@ object Flags {
      */
     @JvmOverloads
     @JvmStatic
+    @Suppress("UnusedPrivateMember") // todo: remove this when we start using the config
     fun enable(
         configuration: FlagsConfiguration,
         sdkCore: SdkCore = Datadog.getInstance()
     ) {
         val flagsFeature = FlagsFeature(
-            sdkCore as FeatureSdkCore,
-            configuration = configuration
+            sdkCore as FeatureSdkCore
         )
 
         sdkCore.registerFeature(flagsFeature)
 
-        createProvider(sdkCore, flagsFeature, configuration)?.let {
+        createProvider(sdkCore, flagsFeature)?.let {
             FlagsClient.registerIfAbsent(
                 provider = it,
                 sdkCore
@@ -51,20 +56,32 @@ object Flags {
 
     private fun createProvider(
         sdkCore: FeatureSdkCore,
-        flagsFeature: FlagsFeature,
-        configuration: FlagsConfiguration
+        flagsFeature: FlagsFeature
     ): FlagsProvider? {
         val executorService = sdkCore.createSingleThreadExecutorService(
-            executorContext = "flags-executor"
+            executorContext = FLAGS_EXECUTOR_NAME
         )
 
+        val datadogContext = (sdkCore as? InternalSdkCore)?.getDatadogContext()
+        val internalLogger = sdkCore.internalLogger
         val applicationId = flagsFeature.applicationId
-        val clientToken = flagsFeature.clientToken
-        val site = flagsFeature.site
-        val env = flagsFeature.env
+        val clientToken = datadogContext?.clientToken
+        val site = datadogContext?.site?.name
+        val env = datadogContext?.env
 
-        if (clientToken == null || site == null || env == null) {
-            // TODO: do something
+        if (clientToken == null || site == null || env == null) { // TODO how do we want to handle this?
+            val missingParams = buildList {
+                if (clientToken == null) add("clientToken")
+                if (site == null) add("site")
+                if (env == null) add("env")
+            }.joinToString(", ")
+
+            internalLogger.log(
+                InternalLogger.Level.ERROR,
+                InternalLogger.Target.MAINTAINER,
+                { ERROR_MISSING_CONTEXT_PARAMS.format(missingParams) }
+            )
+
             return null
         }
 
@@ -78,7 +95,6 @@ object Flags {
 
         return DatadogFlagsProvider(
             executorService = executorService,
-            configuration = configuration,
             featureSdkCore = sdkCore,
             flagsContext = flagsContext
         )
