@@ -47,11 +47,14 @@ dependencies {
     testImplementation(testFixtures(project(":dd-sdk-android-core")))
     testImplementation(testFixtures(project(":features:dd-sdk-android-trace")))
     testImplementation(project(":reliability:stub-core"))
+    testImplementation(project(":integrations:dd-sdk-android-apollo"))
+    testImplementation(project(":features:dd-sdk-android-rum"))
     testImplementation(libs.bundles.jUnit5)
     testImplementation(libs.bundles.testTools)
     testImplementation(libs.okHttp)
     testImplementation(libs.okHttpMock)
     testImplementation(libs.gson)
+    testImplementation(libs.apolloRuntime)
     unmock(libs.robolectric)
 }
 

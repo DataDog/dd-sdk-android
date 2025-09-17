@@ -558,41 +558,51 @@ internal class RumResourceScope(
     }
 
     private fun truncateGraphQLPayload(payload: String): String {
+        // Fast path: if string length is less than 7500 characters, it's definitely under 30KB
+        // UTF-16 uses max 2 code units per code point, and UTF-8 uses max 4 bytes per code point
+        // So if payload.length < 7500, then UTF-8 size < 7500 * 4 = 30KB
+        if (payload.length < MAX_GRAPHQL_PAYLOAD_SIZE_BYTES / UTF8_BYTES_PER_CODEPOINT) {
+            return payload
+        }
+
+        // Need to check actual byte size
         val payloadBytes = payload.toByteArray(Charsets.UTF_8)
 
         return if (payloadBytes.size <= MAX_GRAPHQL_PAYLOAD_SIZE_BYTES) {
             payload
         } else {
-            // We know the string is too long, so work backwards from the end
-            // to find where to cut without breaking UTF-8 characters
-            val excessBytes = payloadBytes.size - MAX_GRAPHQL_PAYLOAD_SIZE_BYTES
+            // Truncate efficiently using UTF-8 continuation byte detection
+            // Find the safe truncation point by looking for UTF-8 character boundaries
+            var truncateIndex = MAX_GRAPHQL_PAYLOAD_SIZE_BYTES
 
-            // Start from the end and work backwards, checking only the characters
-            // that might be affected by the truncation
-            var bytesToRemove = 0
-            var charactersToRemove = 0
-
-            for (i in payload.length - 1 downTo 0) {
-                @Suppress("UnsafeThirdPartyFunctionCall") // indexOutOfBounds cant be thrown here
-                val charByteSize = payload.substring(i, i + 1).toByteArray(Charsets.UTF_8).size
-
-                bytesToRemove += charByteSize
-                charactersToRemove++
-
-                // Once we've removed enough bytes to fit within the limit, stop
-                if (bytesToRemove >= excessBytes) {
-                    break
-                }
+            // If we're in the middle of a multi-byte character, we need to back up
+            // UTF-8 continuation bytes start with 10xxxxxx (0x80-0xBF)
+            // UTF-8 start bytes are either 0xxxxxxx or 11xxxxxx
+            // here we apply a mask with 11 to keep only the top two bits, and we compare
+            // these two bits to 10 to see if it's a continuation
+            while (truncateIndex > 0 &&
+                (payloadBytes[truncateIndex].toInt() and UTF8_LEADING_BYTE_MASK) == UTF8_CONTINUATION_BYTE
+            ) {
+                truncateIndex--
             }
 
-            @Suppress("UnsafeThirdPartyFunctionCall") // indexOutOfBounds cant be thrown here
-            payload.substring(0, payload.length - charactersToRemove)
+            // cannot throw IndexOutOfBounds as offset/length > 0 and offset <= length - bytes
+            @Suppress("UnsafeThirdPartyFunctionCall")
+            String(
+                bytes = payloadBytes,
+                offset = 0,
+                length = truncateIndex,
+                charset = Charsets.UTF_8
+            )
         }
     }
 
     // endregion
 
     companion object {
+        private const val UTF8_BYTES_PER_CODEPOINT = 4
+        private const val UTF8_CONTINUATION_BYTE = 0x80 // 10
+        private const val UTF8_LEADING_BYTE_MASK = 0xC0 // 11
         internal const val MAX_GRAPHQL_PAYLOAD_SIZE_BYTES = 30 * 1024
 
         internal const val NEGATIVE_DURATION_WARNING_MESSAGE = "The computed duration for your " +

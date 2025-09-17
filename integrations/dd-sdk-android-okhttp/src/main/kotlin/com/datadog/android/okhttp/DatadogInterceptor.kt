@@ -253,10 +253,7 @@ open class DatadogInterceptor internal constructor(
     }
 
     private fun removeGraphQLHeaders(requestBuilder: Request.Builder) {
-        requestBuilder.removeHeader(GraphQLHeaders.DD_GRAPHQL_NAME_HEADER.headerValue)
-        requestBuilder.removeHeader(GraphQLHeaders.DD_GRAPHQL_TYPE_HEADER.headerValue)
-        requestBuilder.removeHeader(GraphQLHeaders.DD_GRAPHQL_VARIABLES_HEADER.headerValue)
-        requestBuilder.removeHeader(GraphQLHeaders.DD_GRAPHQL_PAYLOAD_HEADER.headerValue)
+        GraphQLHeaders.values().forEach { requestBuilder.removeHeader(it.headerValue) }
     }
 
     private fun handleThrowable(
@@ -345,10 +342,7 @@ open class DatadogInterceptor internal constructor(
     }
 
     private fun hasGraphQLHeaders(headers: Headers): Boolean {
-        return headers[GraphQLHeaders.DD_GRAPHQL_NAME_HEADER.headerValue] != null ||
-            headers[GraphQLHeaders.DD_GRAPHQL_TYPE_HEADER.headerValue] != null ||
-            headers[GraphQLHeaders.DD_GRAPHQL_VARIABLES_HEADER.headerValue] != null ||
-            headers[GraphQLHeaders.DD_GRAPHQL_PAYLOAD_HEADER.headerValue] != null
+        return GraphQLHeaders.values().any { headers[it.headerValue] != null }
     }
 
     private fun ResponseBody.contentLengthOrNull(): Long? {

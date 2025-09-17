@@ -21,7 +21,7 @@ import kotlinx.coroutines.flow.Flow
 
 /**
  * A Datadog Apollo interceptor for GraphQL operations.
- * @param sendGraphQLPayloads should graphQL payloads be reported. This is disabled by default.
+ * @param sendGraphQLPayloads Should GraphQL payloads be reported or not. This is disabled by default.
  */
 class DatadogApolloInterceptor(
     private val sendGraphQLPayloads: Boolean = false

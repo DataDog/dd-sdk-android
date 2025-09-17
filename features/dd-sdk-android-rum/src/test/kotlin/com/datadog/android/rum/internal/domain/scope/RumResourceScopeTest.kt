@@ -2883,9 +2883,11 @@ internal class RumResourceScopeTest {
         val operationType = forge.aValueFrom(ResourceEvent.OperationType::class.java)
         val variables = forge.aNullable { aString() }
 
-        val minSize = RumResourceScope.MAX_GRAPHQL_PAYLOAD_SIZE_BYTES + 1
-        val maxSize = RumResourceScope.MAX_GRAPHQL_PAYLOAD_SIZE_BYTES + 10000
-        val originalPayload = forge.aString(size = forge.anInt(min = minSize, max = maxSize))
+        // Generate a payload that exceeds the byte limit
+        // Since forge.aString() generates character count, not byte count, we need to be careful
+        val minSizeChars = RumResourceScope.MAX_GRAPHQL_PAYLOAD_SIZE_BYTES + 1000 // Ensure we exceed byte limit
+        val maxSizeChars = RumResourceScope.MAX_GRAPHQL_PAYLOAD_SIZE_BYTES + 10000
+        val originalPayload = forge.aString(size = forge.anInt(min = minSizeChars, max = maxSizeChars))
 
         val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys) +
             mapOf(
@@ -2977,6 +2979,333 @@ internal class RumResourceScopeTest {
         // Then
         argumentCaptor<ResourceEvent> {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            assertThat(firstValue).hasGraphql(operationType, operationName, payload, variables)
+        }
+    }
+
+    @Test
+    fun `M use fast path W handleEvent { GraphQL payload under fast path threshold }`(
+        @Forgery kind: RumResourceKind,
+        @LongForgery(200, 600) statusCode: Long,
+        @LongForgery(0, 1024) size: Long,
+        forge: Forge
+    ) {
+        // Given
+        val operationType = forge.aValueFrom(ResourceEvent.OperationType::class.java)
+        val operationName = forge.aNullable { aString() }
+        val variables = forge.aNullable { aString() }
+
+        // Create payload just under the fast path threshold
+        // Fast path threshold is 7500 characters (30KB / 4 bytes per char)
+        val fastPathThresholdChars = RumResourceScope.MAX_GRAPHQL_PAYLOAD_SIZE_BYTES / 4
+        val payload = forge.aString(size = fastPathThresholdChars - 100)
+
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys) +
+            mapOf(
+                RumAttributes.GRAPHQL_OPERATION_TYPE to operationType.toString(),
+                RumAttributes.GRAPHQL_OPERATION_NAME to operationName,
+                RumAttributes.GRAPHQL_PAYLOAD to payload,
+                RumAttributes.GRAPHQL_VARIABLES to variables
+            )
+
+        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
+
+        // When
+        testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        argumentCaptor<ResourceEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            // Payload should pass through unchanged (fast path)
+            assertThat(firstValue).hasGraphql(operationType, operationName, payload, variables)
+        }
+    }
+
+    @Test
+    fun `M use slow path W handleEvent { GraphQL payload over fast path threshold but under limit }`(
+        @Forgery kind: RumResourceKind,
+        @LongForgery(200, 600) statusCode: Long,
+        @LongForgery(0, 1024) size: Long,
+        forge: Forge
+    ) {
+        // Given
+        val operationType = forge.aValueFrom(ResourceEvent.OperationType::class.java)
+        val operationName = forge.aNullable { aString() }
+        val variables = forge.aNullable { aString() }
+
+        // Create payload over fast path threshold but still under byte limit
+        // Fast path threshold is 7500 characters (30KB / 4 bytes per char)
+        val fastPathThresholdChars = RumResourceScope.MAX_GRAPHQL_PAYLOAD_SIZE_BYTES / 4
+        val payload = forge.aString(size = fastPathThresholdChars + 100)
+
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys) +
+            mapOf(
+                RumAttributes.GRAPHQL_OPERATION_TYPE to operationType.toString(),
+                RumAttributes.GRAPHQL_OPERATION_NAME to operationName,
+                RumAttributes.GRAPHQL_PAYLOAD to payload,
+                RumAttributes.GRAPHQL_VARIABLES to variables
+            )
+
+        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
+
+        // When
+        testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        argumentCaptor<ResourceEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            // Payload should pass through unchanged (slow path but under limit)
+            assertThat(firstValue).hasGraphql(operationType, operationName, payload, variables)
+        }
+    }
+
+    @Test
+    fun `M truncate at UTF-8 boundary W handleEvent { GraphQL payload with multi-byte characters }`(
+        @Forgery kind: RumResourceKind,
+        @LongForgery(200, 600) statusCode: Long,
+        @LongForgery(0, 1024) size: Long,
+        forge: Forge
+    ) {
+        // Given
+        val operationType = forge.aValueFrom(ResourceEvent.OperationType::class.java)
+        val operationName = forge.aNullable { aString() }
+        val variables = forge.aNullable { aString() }
+
+        // Create a payload with multi-byte UTF-8 characters that exceeds the limit
+        // Create base payload that's close to but under the byte limit (leave room for emojis)
+        val baseSizeBytes = RumResourceScope.MAX_GRAPHQL_PAYLOAD_SIZE_BYTES - 150
+        val basePayload = forge.aString(size = baseSizeBytes) // 1 byte per char in UTF-8
+        // Generate random 4-byte emoji characters (Miscellaneous Symbols and Pictographs block)
+        val emojiRangeStart = 0x1F300 // 🌀 (cyclone)
+        val emojiRangeEnd = 0x1F5FF // 🗿 (moai)
+        val remainingBytes = 150 // Space left after base payload
+        val emojiByteSize = 4 // Each emoji is 4 bytes in UTF-8
+        val emojiCount = (remainingBytes + 50) / emojiByteSize // Generate enough to exceed limit by ~50 bytes
+        val emojiSuffix = (1..emojiCount).joinToString("") {
+            val codePoint = forge.anInt(min = emojiRangeStart, max = emojiRangeEnd)
+            String(Character.toChars(codePoint))
+        }
+        val originalPayload = basePayload + emojiSuffix
+
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys) +
+            mapOf(
+                RumAttributes.GRAPHQL_OPERATION_TYPE to operationType.toString(),
+                RumAttributes.GRAPHQL_OPERATION_NAME to operationName,
+                RumAttributes.GRAPHQL_PAYLOAD to originalPayload,
+                RumAttributes.GRAPHQL_VARIABLES to variables
+            )
+
+        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
+
+        // When
+        testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        argumentCaptor<ResourceEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            val actualPayload = firstValue.resource.graphql?.payload
+
+            checkNotNull(actualPayload)
+
+            // Verify truncation occurred
+            assertThat(actualPayload.length).isLessThan(originalPayload.length)
+
+            // Verify UTF-8 byte size is within limit
+            assertThat(actualPayload.toByteArray(Charsets.UTF_8).size)
+                .isLessThanOrEqualTo(RumResourceScope.MAX_GRAPHQL_PAYLOAD_SIZE_BYTES)
+
+            // Verify the truncated string is valid UTF-8 (no broken multi-byte sequences)
+            assertThat(actualPayload.toByteArray(Charsets.UTF_8).toString(Charsets.UTF_8))
+                .isEqualTo(actualPayload)
+
+            // Verify original starts with truncated (proper prefix)
+            assertThat(originalPayload).startsWith(actualPayload)
+
+            assertThat(firstValue).hasGraphql(operationType, operationName, actualPayload, variables)
+        }
+    }
+
+    @Test
+    fun `M truncate at character boundary W handleEvent { GraphQL payload with accented characters }`(
+        @Forgery kind: RumResourceKind,
+        @LongForgery(200, 600) statusCode: Long,
+        @LongForgery(0, 1024) size: Long,
+        forge: Forge
+    ) {
+        // Given
+        val operationType = forge.aValueFrom(ResourceEvent.OperationType::class.java)
+        val operationName = forge.aNullable { aString() }
+        val variables = forge.aNullable { aString() }
+
+        // Create payload with 2-byte UTF-8 characters (accented characters)
+        // Create base payload that's close to but under the byte limit (leave room for accented chars)
+        val baseSizeBytes = RumResourceScope.MAX_GRAPHQL_PAYLOAD_SIZE_BYTES - 150
+        val basePayload = forge.aString(size = baseSizeBytes) // 1 byte per char in UTF-8
+        // Generate random 2-byte accented characters (Latin Extended-A block)
+        val accentedRangeStart = 0x0100 // Ā (Latin Capital Letter A with Macron)
+        val accentedRangeEnd = 0x017F // ſ (Latin Small Letter Long S)
+        val remainingBytes = 150 // Space left after base payload
+        val accentedByteSize = 2 // Each accented char is 2 bytes in UTF-8
+        val accentedCount = (remainingBytes + 80) / accentedByteSize // Generate enough to exceed limit by ~80 bytes
+        val accentedSuffix = (1..accentedCount).map {
+            val codePoint = forge.anInt(min = accentedRangeStart, max = accentedRangeEnd)
+            Char(codePoint)
+        }.joinToString("")
+        val originalPayload = basePayload + accentedSuffix
+
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys) +
+            mapOf(
+                RumAttributes.GRAPHQL_OPERATION_TYPE to operationType.toString(),
+                RumAttributes.GRAPHQL_OPERATION_NAME to operationName,
+                RumAttributes.GRAPHQL_PAYLOAD to originalPayload,
+                RumAttributes.GRAPHQL_VARIABLES to variables
+            )
+
+        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
+
+        // When
+        testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        argumentCaptor<ResourceEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            val actualPayload = firstValue.resource.graphql?.payload
+
+            checkNotNull(actualPayload)
+
+            // Verify truncation occurred
+            assertThat(actualPayload.length).isLessThan(originalPayload.length)
+
+            // Verify UTF-8 byte size is within limit
+            assertThat(actualPayload.toByteArray(Charsets.UTF_8).size)
+                .isLessThanOrEqualTo(RumResourceScope.MAX_GRAPHQL_PAYLOAD_SIZE_BYTES)
+
+            // Verify no broken UTF-8 sequences
+            assertThat(actualPayload.toByteArray(Charsets.UTF_8).toString(Charsets.UTF_8))
+                .isEqualTo(actualPayload)
+
+            // Verify proper prefix
+            assertThat(originalPayload).startsWith(actualPayload)
+
+            assertThat(firstValue).hasGraphql(operationType, operationName, actualPayload, variables)
+        }
+    }
+
+    @Test
+    fun `M truncate at safe boundary W handleEvent { GraphQL payload with mixed UTF-8 characters }`(
+        @Forgery kind: RumResourceKind,
+        @LongForgery(200, 600) statusCode: Long,
+        @LongForgery(0, 1024) size: Long,
+        forge: Forge
+    ) {
+        // Given
+        val operationType = forge.aValueFrom(ResourceEvent.OperationType::class.java)
+        val operationName = forge.aNullable { aString() }
+        val variables = forge.aNullable { aString() }
+
+        // Create payload mixing ASCII, 2-byte, 3-byte, and 4-byte UTF-8 characters
+        // Create base payload leaving room for mixed UTF-8 characters
+        val baseSizeBytes = RumResourceScope.MAX_GRAPHQL_PAYLOAD_SIZE_BYTES - 300
+        val basePayload = forge.aString(size = baseSizeBytes) // 1 byte per char in UTF-8
+        // Generate mixed UTF-8 characters with different byte lengths
+        val ascii = forge.aString(size = 5) // 1 byte per char
+
+        // Latin Extended-A block (2 bytes per char in UTF-8)
+        val accentedStart = 0x0100 // Ā
+        val accentedEnd = 0x017F // ſ
+        val accented = (1..5).map { Char(forge.anInt(min = accentedStart, max = accentedEnd)) }.joinToString("")
+
+        // CJK Unified Ideographs block (3 bytes per char in UTF-8)
+        val cjkStart = 0x4E00 // 一 (Chinese "one")
+        val cjkEnd = 0x9FFF // 鿿 (end of CJK block)
+        val cjk = (1..5).map { Char(forge.anInt(min = cjkStart, max = cjkEnd)) }.joinToString("")
+
+        // Miscellaneous Symbols and Pictographs block (4 bytes per char in UTF-8)
+        val emojiStart = 0x1F300 // 🌀
+        val emojiEnd = 0x1F5FF // 🗿
+        val emoji = (1..5).map {
+            String(
+                Character.toChars(forge.anInt(min = emojiStart, max = emojiEnd))
+            )
+        }.joinToString("")
+        val mixedSuffix = ascii + accented + cjk + emoji
+        val originalPayload = basePayload + mixedSuffix.repeat(10) // Repeat to ensure we exceed limit
+
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys) +
+            mapOf(
+                RumAttributes.GRAPHQL_OPERATION_TYPE to operationType.toString(),
+                RumAttributes.GRAPHQL_OPERATION_NAME to operationName,
+                RumAttributes.GRAPHQL_PAYLOAD to originalPayload,
+                RumAttributes.GRAPHQL_VARIABLES to variables
+            )
+
+        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
+
+        // When
+        testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        argumentCaptor<ResourceEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            val actualPayload = firstValue.resource.graphql?.payload
+
+            checkNotNull(actualPayload)
+
+            // Verify truncation occurred
+            assertThat(actualPayload.length).isLessThan(originalPayload.length)
+
+            // Verify UTF-8 byte size is within limit
+            val actualBytes = actualPayload.toByteArray(Charsets.UTF_8)
+            assertThat(actualBytes.size).isLessThanOrEqualTo(RumResourceScope.MAX_GRAPHQL_PAYLOAD_SIZE_BYTES)
+
+            // Verify no broken UTF-8 sequences by round-trip conversion
+            assertThat(String(actualBytes, Charsets.UTF_8)).isEqualTo(actualPayload)
+
+            // Verify proper prefix
+            assertThat(originalPayload).startsWith(actualPayload)
+
+            // Verify the last character is complete (not truncated mid-character)
+            val lastChar = actualPayload.last()
+            assertThat(lastChar).isNotEqualTo('\uFFFD') // Replacement character indicates broken UTF-8
+
+            assertThat(firstValue).hasGraphql(operationType, operationName, actualPayload, variables)
+        }
+    }
+
+    @Test
+    fun `M handle edge case W handleEvent { GraphQL payload exactly at fast path threshold }`(
+        @Forgery kind: RumResourceKind,
+        @LongForgery(200, 600) statusCode: Long,
+        @LongForgery(0, 1024) size: Long,
+        forge: Forge
+    ) {
+        // Given
+        val operationType = forge.aValueFrom(ResourceEvent.OperationType::class.java)
+        val operationName = forge.aNullable { aString() }
+        val variables = forge.aNullable { aString() }
+
+        // Create payload exactly at fast path threshold
+        // Fast path threshold is 7500 characters (30KB / 4 bytes per char)
+        val fastPathThresholdChars = RumResourceScope.MAX_GRAPHQL_PAYLOAD_SIZE_BYTES / 4
+        val payload = forge.aString(size = fastPathThresholdChars) // 1 byte per char in UTF-8
+
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys) +
+            mapOf(
+                RumAttributes.GRAPHQL_OPERATION_TYPE to operationType.toString(),
+                RumAttributes.GRAPHQL_OPERATION_NAME to operationName,
+                RumAttributes.GRAPHQL_PAYLOAD to payload,
+                RumAttributes.GRAPHQL_VARIABLES to variables
+            )
+
+        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
+
+        // When
+        testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        argumentCaptor<ResourceEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            // Payload should pass through unchanged (at threshold, should use slow path but still under limit)
             assertThat(firstValue).hasGraphql(operationType, operationName, payload, variables)
         }
     }
