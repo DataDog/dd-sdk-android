@@ -9,11 +9,11 @@ package com.datadog.android.flags.featureflags.internal
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.flags.featureflags.FlagsProvider
-import com.datadog.android.flags.featureflags.ProviderContext
+import com.datadog.android.flags.featureflags.internal.model.FlagsContext
 import com.datadog.android.flags.featureflags.internal.repository.DefaultFlagsRepository
 import com.datadog.android.flags.featureflags.internal.repository.FlagsRepository
 import com.datadog.android.flags.featureflags.internal.repository.NoOpFlagsRepository
-import com.datadog.android.flags.internal.model.FlagsContext
+import com.datadog.android.flags.featureflags.model.ProviderContext
 import org.json.JSONException
 import org.json.JSONObject
 import java.util.concurrent.ExecutorService
@@ -44,7 +44,7 @@ internal class DatadogFlagsProvider(
         defaultValue: Boolean
     ): Boolean {
         val precomputedFlag = flagsRepository.getPrecomputedFlag(flagKey)
-        return precomputedFlag?.variationValue?.toBoolean() ?: defaultValue
+        return precomputedFlag?.variationValue?.toBooleanStrictOrNull() ?: defaultValue
     }
 
     override fun resolveStringValue(
@@ -80,15 +80,11 @@ internal class DatadogFlagsProvider(
                 featureSdkCore.internalLogger.log(
                     level = InternalLogger.Level.ERROR,
                     target = InternalLogger.Target.MAINTAINER,
-                    messageBuilder = { ERROR_FAILED_PARSING_JSON.format(flagKey) },
+                    messageBuilder = { "Failed to parse JSON for key: $flagKey" },
                     throwable = e
                 )
                 defaultValue
             }
         } ?: defaultValue
-    }
-
-    internal companion object {
-        const val ERROR_FAILED_PARSING_JSON = "Failed to parse JSON for key: %s"
     }
 }

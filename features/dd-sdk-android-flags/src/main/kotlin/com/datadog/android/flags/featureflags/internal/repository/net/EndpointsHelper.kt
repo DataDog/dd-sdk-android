@@ -7,6 +7,7 @@
 package com.datadog.android.flags.featureflags.internal.repository.net
 
 import com.datadog.android.api.InternalLogger
+import org.json.JSONException
 import org.json.JSONObject
 
 internal class EndpointsHelper(
@@ -27,22 +28,33 @@ internal class EndpointsHelper(
                 "$customerDomain.ff-cdn.datad0g.com"
             }
             in siteConfig -> {
-                val config = siteConfig[site]!!
-                val dc = config.optString("dc", "")
-                val tld = config.optString("tld", "com")
+                val siteConfiguration = siteConfig[site]
+                if (siteConfiguration != null) {
+                    val dc = siteConfiguration.optString("dc", "")
+                    val tld = siteConfiguration.optString("tld", "com")
 
-                // customer domain is for future use
-                // ff-cdn is the subdomain pointing to the CDN servers
-                // dc is the datacenter, if specified
-                // tld is the top level domain, changes for eu DCs
-                "$customerDomain.ff-cdn.${if (dc.isNotEmpty()) "$dc." else ""}datadoghq.$tld"
+                    // customer domain is for future use
+                    // ff-cdn is the subdomain pointing to the CDN servers
+                    // dc is the datacenter, if specified
+                    // tld is the top level domain, changes for eu DCs
+                    "$customerDomain.ff-cdn.${if (dc.isNotEmpty()) "$dc." else ""}datadoghq.$tld"
+                } else {
+                    // This should never happen since we're in the 'in siteConfig' branch,
+                    // but handle it safely just in case
+                    internalLogger.log(
+                        level = InternalLogger.Level.ERROR,
+                        target = InternalLogger.Target.MAINTAINER,
+                        messageBuilder = { "Site configuration unexpectedly null for site: $site" }
+                    )
+                    ""
+                }
             }
             else -> {
                 val supportedSites = siteConfig.keys.joinToString(", ")
                 internalLogger.log(
                     level = InternalLogger.Level.ERROR,
                     target = InternalLogger.Target.MAINTAINER,
-                    messageBuilder = { ERROR_UNSUPPORTED_SITE.format(site, supportedSites) }
+                    messageBuilder = { "Unsupported site: $site. Supported sites: $supportedSites" }
                 )
                 ""
             }
@@ -59,16 +71,22 @@ internal class EndpointsHelper(
     )
 
     private fun createSiteConfigObject(dc: String? = null, tld: String? = null): JSONObject {
-        return JSONObject().apply {
-            dc?.let { put("dc", it) }
-            tld?.let { put("tld", it) }
+        return try {
+            JSONObject().apply {
+                dc?.let { put("dc", it) }
+                tld?.let { put("tld", it) }
+            }
+        } catch (_: JSONException) {
+            // should never happen
+            @Suppress("TodoWithoutTask")
+            // TODO log this?
+            JSONObject()
         }
     }
 
-    private companion object {
-        private const val DOMAIN_GOV = "ddog-gov.com"
-        private const val DOMAIN_D0G = "datad0g.com"
+    internal companion object {
+        internal const val DOMAIN_GOV = "ddog-gov.com"
+        internal const val DOMAIN_D0G = "datad0g.com"
         private const val ERROR_GOV_NOT_SUPPORTED = "ddog-gov.com is not supported for flagging endpoints"
-        private const val ERROR_UNSUPPORTED_SITE = "Unsupported site: %s. Supported sites: %s"
     }
 }

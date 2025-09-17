@@ -4,10 +4,13 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.flags.featureflags
+package com.datadog.android.flags.featureflags.model
 
-import com.datadog.android.flags.featureflags.internal.model.FeatureFlagsUser
-
+/**
+ * Context for the Flags provider.
+ * @param trackingKey TrackingKey to use.
+ * @param user User to use.
+ */
 data class ProviderContext(
     val trackingKey: String,
     val user: FeatureFlagsUser

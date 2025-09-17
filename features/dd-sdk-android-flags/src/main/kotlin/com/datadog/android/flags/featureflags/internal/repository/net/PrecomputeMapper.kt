@@ -12,11 +12,14 @@ import org.json.JSONException
 import org.json.JSONObject
 
 /**
- * Responsible for parsing network response to precompute objects
+ * Responsible for parsing network response to [PrecomputedFlag] objects.
  */
 internal class PrecomputeMapper(
     private val internalLogger: InternalLogger
 ) {
+    // JSONObject methods accept non-null String parameters despite Detekt's incorrect nullable interpretation
+    // All getJsonObject calls are wrapped in try-catch for JSONException which is the actual exception thrown
+    @Suppress("UnsafeThirdPartyFunctionCall")
     internal fun map(rawJson: String): Map<String, PrecomputedFlag> {
         return try {
             val jsonResponse = JSONObject(rawJson)

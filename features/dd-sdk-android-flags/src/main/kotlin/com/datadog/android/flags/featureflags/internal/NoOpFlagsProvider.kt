@@ -4,11 +4,13 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.flags.featureflags
+package com.datadog.android.flags.featureflags.internal
 
+import com.datadog.android.flags.featureflags.FlagsProvider
+import com.datadog.android.flags.featureflags.model.ProviderContext
 import org.json.JSONObject
 
-class NoOpFlagsProvider : FlagsProvider {
+internal class NoOpFlagsProvider : FlagsProvider {
     override fun setContext(newContext: ProviderContext) {}
 
     override fun resolveBooleanValue(flagKey: String, defaultValue: Boolean): Boolean {

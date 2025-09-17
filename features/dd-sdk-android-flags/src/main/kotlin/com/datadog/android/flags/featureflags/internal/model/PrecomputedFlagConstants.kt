@@ -37,4 +37,3 @@ internal object PrecomputedFlagConstants {
         val ALL_VALUES = listOf(DEFAULT, TARGETING_MATCH, RULE_MATCH, PREREQUISITE_FAILED, ERROR)
     }
 }
-

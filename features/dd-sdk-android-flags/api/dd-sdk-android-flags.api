@@ -38,38 +38,15 @@ public abstract interface class com/datadog/android/flags/featureflags/FlagsProv
 	public abstract fun resolveNumberValue (Ljava/lang/String;Ljava/lang/Number;)Ljava/lang/Number;
 	public abstract fun resolveStringValue (Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;
 	public abstract fun resolveStructureValue (Ljava/lang/String;Lorg/json/JSONObject;)Lorg/json/JSONObject;
-	public abstract fun setContext (Lcom/datadog/android/flags/featureflags/ProviderContext;)V
+	public abstract fun setContext (Lcom/datadog/android/flags/featureflags/model/ProviderContext;)V
 }
 
-public final class com/datadog/android/flags/featureflags/NoOpFlagsProvider : com/datadog/android/flags/featureflags/FlagsProvider {
-	public fun <init> ()V
-	public fun resolveBooleanValue (Ljava/lang/String;Z)Z
-	public fun resolveIntValue (Ljava/lang/String;I)I
-	public fun resolveNumberValue (Ljava/lang/String;Ljava/lang/Number;)Ljava/lang/Number;
-	public fun resolveStringValue (Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;
-	public fun resolveStructureValue (Ljava/lang/String;Lorg/json/JSONObject;)Lorg/json/JSONObject;
-	public fun setContext (Lcom/datadog/android/flags/featureflags/ProviderContext;)V
-}
-
-public final class com/datadog/android/flags/featureflags/ProviderContext {
-	public fun <init> (Ljava/lang/String;Lcom/datadog/android/flags/featureflags/internal/model/FeatureFlagsUser;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun component2 ()Lcom/datadog/android/flags/featureflags/internal/model/FeatureFlagsUser;
-	public final fun copy (Ljava/lang/String;Lcom/datadog/android/flags/featureflags/internal/model/FeatureFlagsUser;)Lcom/datadog/android/flags/featureflags/ProviderContext;
-	public static synthetic fun copy$default (Lcom/datadog/android/flags/featureflags/ProviderContext;Ljava/lang/String;Lcom/datadog/android/flags/featureflags/internal/model/FeatureFlagsUser;ILjava/lang/Object;)Lcom/datadog/android/flags/featureflags/ProviderContext;
-	public fun equals (Ljava/lang/Object;)Z
-	public final fun getTrackingKey ()Ljava/lang/String;
-	public final fun getUser ()Lcom/datadog/android/flags/featureflags/internal/model/FeatureFlagsUser;
-	public fun hashCode ()I
-	public fun toString ()Ljava/lang/String;
-}
-
-public final class com/datadog/android/flags/featureflags/internal/model/FeatureFlagsUser {
+public final class com/datadog/android/flags/featureflags/model/FeatureFlagsUser {
 	public fun <init> (Ljava/lang/String;Ljava/lang/String;)V
 	public final fun component1 ()Ljava/lang/String;
 	public final fun component2 ()Ljava/lang/String;
-	public final fun copy (Ljava/lang/String;Ljava/lang/String;)Lcom/datadog/android/flags/featureflags/internal/model/FeatureFlagsUser;
-	public static synthetic fun copy$default (Lcom/datadog/android/flags/featureflags/internal/model/FeatureFlagsUser;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lcom/datadog/android/flags/featureflags/internal/model/FeatureFlagsUser;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;)Lcom/datadog/android/flags/featureflags/model/FeatureFlagsUser;
+	public static synthetic fun copy$default (Lcom/datadog/android/flags/featureflags/model/FeatureFlagsUser;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lcom/datadog/android/flags/featureflags/model/FeatureFlagsUser;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getEmail ()Ljava/lang/String;
 	public final fun getId ()Ljava/lang/String;
@@ -77,21 +54,15 @@ public final class com/datadog/android/flags/featureflags/internal/model/Feature
 	public fun toString ()Ljava/lang/String;
 }
 
-public final class com/datadog/android/flags/internal/model/FlagsContext {
-	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
+public final class com/datadog/android/flags/featureflags/model/ProviderContext {
+	public fun <init> (Ljava/lang/String;Lcom/datadog/android/flags/featureflags/model/FeatureFlagsUser;)V
 	public final fun component1 ()Ljava/lang/String;
-	public final fun component2 ()Ljava/lang/String;
-	public final fun component3 ()Ljava/lang/String;
-	public final fun component4 ()Ljava/lang/String;
-	public final fun component5 ()Ljava/lang/String;
-	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Lcom/datadog/android/flags/internal/model/FlagsContext;
-	public static synthetic fun copy$default (Lcom/datadog/android/flags/internal/model/FlagsContext;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lcom/datadog/android/flags/internal/model/FlagsContext;
+	public final fun component2 ()Lcom/datadog/android/flags/featureflags/model/FeatureFlagsUser;
+	public final fun copy (Ljava/lang/String;Lcom/datadog/android/flags/featureflags/model/FeatureFlagsUser;)Lcom/datadog/android/flags/featureflags/model/ProviderContext;
+	public static synthetic fun copy$default (Lcom/datadog/android/flags/featureflags/model/ProviderContext;Ljava/lang/String;Lcom/datadog/android/flags/featureflags/model/FeatureFlagsUser;ILjava/lang/Object;)Lcom/datadog/android/flags/featureflags/model/ProviderContext;
 	public fun equals (Ljava/lang/Object;)Z
-	public final fun getApplicationId ()Ljava/lang/String;
-	public final fun getClientToken ()Ljava/lang/String;
-	public final fun getEnv ()Ljava/lang/String;
-	public final fun getSite ()Ljava/lang/String;
-	public final fun getTargetingKey ()Ljava/lang/String;
+	public final fun getTrackingKey ()Ljava/lang/String;
+	public final fun getUser ()Lcom/datadog/android/flags/featureflags/model/FeatureFlagsUser;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
 }

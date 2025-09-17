@@ -9,22 +9,13 @@ object com.datadog.android.flags.featureflags.FlagsClient
   fun isRegistered(com.datadog.android.api.SdkCore = Datadog.getInstance()): Boolean
   fun get(com.datadog.android.api.SdkCore = Datadog.getInstance()): FlagsProvider
 interface com.datadog.android.flags.featureflags.FlagsProvider
-  fun setContext(ProviderContext)
+  fun setContext(com.datadog.android.flags.featureflags.model.ProviderContext)
   fun resolveBooleanValue(String, Boolean): Boolean
   fun resolveStringValue(String, String): String
   fun resolveNumberValue(String, Number): Number
   fun resolveIntValue(String, Int): Int
   fun resolveStructureValue(String, org.json.JSONObject): org.json.JSONObject
-class com.datadog.android.flags.featureflags.NoOpFlagsProvider : FlagsProvider
-  override fun setContext(ProviderContext)
-  override fun resolveBooleanValue(String, Boolean): Boolean
-  override fun resolveStringValue(String, String): String
-  override fun resolveNumberValue(String, Number): Number
-  override fun resolveIntValue(String, Int): Int
-  override fun resolveStructureValue(String, org.json.JSONObject): org.json.JSONObject
-data class com.datadog.android.flags.featureflags.ProviderContext
-  constructor(String, com.datadog.android.flags.featureflags.internal.model.FeatureFlagsUser)
-data class com.datadog.android.flags.featureflags.internal.model.FeatureFlagsUser
+data class com.datadog.android.flags.featureflags.model.FeatureFlagsUser
   constructor(String, String)
-data class com.datadog.android.flags.internal.model.FlagsContext
-  constructor(String?, String, String, String, String)
+data class com.datadog.android.flags.featureflags.model.ProviderContext
+  constructor(String, FeatureFlagsUser)

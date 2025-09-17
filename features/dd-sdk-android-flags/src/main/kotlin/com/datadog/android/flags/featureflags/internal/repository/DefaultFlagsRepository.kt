@@ -9,7 +9,7 @@ package com.datadog.android.flags.featureflags.internal.repository
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.core.internal.utils.executeSafe
-import com.datadog.android.flags.featureflags.ProviderContext
+import com.datadog.android.flags.featureflags.internal.model.FlagsContext
 import com.datadog.android.flags.featureflags.internal.model.PrecomputedFlag
 import com.datadog.android.flags.featureflags.internal.repository.net.DefaultFlagsNetworkManager
 import com.datadog.android.flags.featureflags.internal.repository.net.FlagsNetworkManager
@@ -18,7 +18,7 @@ import com.datadog.android.flags.featureflags.internal.repository.net.Precompute
 import com.datadog.android.flags.featureflags.internal.repository.store.FlagsStoreManager
 import com.datadog.android.flags.featureflags.internal.repository.store.NoOpStoreManager
 import com.datadog.android.flags.featureflags.internal.repository.store.StoreManager
-import com.datadog.android.flags.internal.model.FlagsContext
+import com.datadog.android.flags.featureflags.model.ProviderContext
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.atomic.AtomicReference
 

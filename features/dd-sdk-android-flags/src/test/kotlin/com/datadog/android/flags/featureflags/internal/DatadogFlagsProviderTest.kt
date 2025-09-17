@@ -8,11 +8,10 @@ package com.datadog.android.flags.featureflags.internal
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.FeatureSdkCore
-import com.datadog.android.flags.featureflags.internal.DatadogFlagsProvider.Companion.ERROR_FAILED_PARSING_JSON
+import com.datadog.android.flags.featureflags.internal.model.FlagsContext
 import com.datadog.android.flags.featureflags.internal.model.PrecomputedFlag
 import com.datadog.android.flags.featureflags.internal.model.PrecomputedFlagConstants
 import com.datadog.android.flags.featureflags.internal.repository.FlagsRepository
-import com.datadog.android.flags.internal.model.FlagsContext
 import com.datadog.android.flags.utils.forge.ForgeConfigurator
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -337,7 +336,7 @@ internal class DatadogFlagsProviderTest {
                 eq(false),
                 eq(null)
             )
-            assertThat(lastValue()).isEqualTo(ERROR_FAILED_PARSING_JSON.format(fakeFlagKey))
+            assertThat(lastValue()).isEqualTo("Failed to parse JSON for key: $fakeFlagKey")
         }
     }
 
