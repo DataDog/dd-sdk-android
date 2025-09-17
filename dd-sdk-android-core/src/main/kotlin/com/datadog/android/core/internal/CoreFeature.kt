@@ -304,27 +304,31 @@ internal class CoreFeature(
     @Throws(UnsupportedOperationException::class, InterruptedException::class)
     @Suppress("UnsafeThirdPartyFunctionCall") // Used in Nightly tests only
     fun drainAndShutdownExecutors() {
-        val tasks = arrayListOf<Runnable>()
+        val contextTasks = arrayListOf<Runnable>()
+        contextExecutorService.queue.drainTo(contextTasks)
 
-        contextExecutorService.queue.drainTo(tasks)
-        persistenceExecutorService.drainTo(tasks)
-
-        uploadExecutorService
-            .queue
-            .drainTo(tasks)
+        contextExecutorService.shutdown()
+        contextExecutorService.awaitTermination(DRAIN_WAIT_SECONDS, TimeUnit.SECONDS)
+        contextTasks.forEach {
+            it.run()
+        }
 
         // we need to make sure we drain the runnable list in both executors first
         // then we shut them down by using the await termination method to make sure we block
         // the thread until the active task is finished.
-        contextExecutorService.shutdown()
+        val ioTasks = arrayListOf<Runnable>()
+        persistenceExecutorService.drainTo(ioTasks)
+
+        uploadExecutorService
+            .queue
+            .drainTo(ioTasks)
         persistenceExecutorService.shutdown()
         uploadExecutorService.shutdown()
 
-        contextExecutorService.awaitTermination(DRAIN_WAIT_SECONDS, TimeUnit.SECONDS)
         persistenceExecutorService.awaitTermination(DRAIN_WAIT_SECONDS, TimeUnit.SECONDS)
         uploadExecutorService.awaitTermination(DRAIN_WAIT_SECONDS, TimeUnit.SECONDS)
 
-        tasks.forEach {
+        ioTasks.forEach {
             it.run()
         }
     }
