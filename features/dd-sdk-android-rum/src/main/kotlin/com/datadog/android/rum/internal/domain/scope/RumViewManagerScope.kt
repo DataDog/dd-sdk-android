@@ -421,7 +421,9 @@ internal class RumViewManagerScope(
         internal val validBackgroundEventTypes = arrayOf<Class<*>>(
             RumRawEvent.AddError::class.java,
             RumRawEvent.StartAction::class.java,
-            RumRawEvent.StartResource::class.java
+            RumRawEvent.StartResource::class.java,
+            RumRawEvent.StartFeatureOperation::class.java,
+            RumRawEvent.StopFeatureOperation::class.java
         )
 
         internal val silentOrphanEventTypes = arrayOf<Class<*>>(
