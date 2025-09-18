@@ -14,31 +14,17 @@ import java.util.concurrent.CopyOnWriteArraySet
  * 2. It is possible to call [addListener] and [removeListener] inside a listener callback.
  * 3. Listeners are notified in the order [addListener] is called on them.
  */
+@Suppress("UndocumentedPublicFunction", "UndocumentedPublicProperty")
 interface DDCoreSubscription<T : Any> {
-    /**
-     * Add listener.
-     */
     fun addListener(listener: T)
 
-    /**
-     * Remove listener.
-     */
     fun removeListener(listener: T)
 
-    /**
-     * Notify all listeners.
-     */
     fun notifyListeners(block: T.() -> Unit)
 
-    /**
-     * Return current number of listeners.
-     */
     val listenersCount: Int
 
     companion object {
-        /**
-         * Creates an instance of [DDCoreSubscription].
-         */
         fun <T : Any> create(): DDCoreSubscription<T> {
             return DDCoreSubscriptionImpl()
         }

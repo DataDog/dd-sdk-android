@@ -57,7 +57,7 @@ class DDCoreSubscriptionTest {
         subscription.notifyListeners { onSomethingChanged() }
 
         // Then
-        assertThat(subscription.listenersCount).isEqualTo(0)
+        assertThat(subscription.listenersCount).isZero
         verifyNoInteractions(listener)
     }
 
