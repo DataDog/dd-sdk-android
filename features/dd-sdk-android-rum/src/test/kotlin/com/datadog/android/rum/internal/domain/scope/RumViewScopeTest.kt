@@ -8669,11 +8669,11 @@ internal class RumViewScopeTest {
         forge: Forge
     ) {
         // Given
-        val operationKey = forge.aNullable { key }
+        val fakeOperationKey = forge.aNullable { key }
         val (attributes, expectedAttributes) = withAttributesCheckingMergeWithViewAttributes(forge)
         val event = RumRawEvent.StartFeatureOperation(
             fakeName,
-            operationKey = operationKey,
+            operationKey = fakeOperationKey,
             attributes = attributes,
             eventTime = fakeEventTime + fakeDuration
         )
@@ -8697,7 +8697,56 @@ internal class RumViewScopeTest {
                 .hasName(fakeKey.name)
                 .hasUrl(fakeUrl)
                 .hasVitalName(fakeName)
-                .hasVitalOperationalKey(operationKey)
+                .hasVitalOperationalKey(fakeOperationKey)
+                .hasNoSyntheticsTest()
+                .hasVitalStepType(VitalEvent.StepType.START)
+                .hasNoVitalFailureReason()
+                .hasVitalType(VitalEvent.VitalEventVitalType.OPERATION_STEP)
+        }
+    }
+
+    @Test
+    fun `M send event with synthetics info W handleEvent(VitalEvent) { StartFeatureOperation }`(
+        @StringForgery fakeTestId: String,
+        @StringForgery fakeResultId: String,
+        forge: Forge
+    ) {
+        // Given
+        val fakeName = forge.anAlphabeticalString()
+        val fakeDuration: Long = forge.aLong(min = 0)
+        val fakeOperationKey = forge.aNullable { forge.anAlphabeticalString() }
+        val (attributes, expectedAttributes) = withAttributesCheckingMergeWithViewAttributes(forge)
+        val event = RumRawEvent.StartFeatureOperation(
+            fakeName,
+            operationKey = fakeOperationKey,
+            attributes = attributes,
+            eventTime = fakeEventTime + fakeDuration
+        )
+
+        fakeParentContext = fakeParentContext.copy(syntheticsTestId = fakeTestId, syntheticsResultId = fakeResultId)
+        whenever(mockParentScope.getRumContext()) doReturn fakeParentContext
+
+        // When
+        testedScope.handleEvent(event, fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        argumentCaptor<VitalEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            VitalEventAssert.assertThat(lastValue)
+                .hasDate(event.eventTime.timestamp + fakeTimeInfoAtScopeStart.serverTimeOffsetMs)
+                .hasApplicationId(fakeParentContext.applicationId)
+                .containsExactlyContextAttributes(expectedAttributes)
+                .hasStartReason(fakeParentContext.sessionStartReason)
+                .hasSampleRate(fakeSampleRate)
+                .hasSessionId(fakeParentContext.sessionId)
+                .hasSessionType(fakeRumSessionType?.toVital() ?: VitalEvent.VitalEventSessionType.SYNTHETICS)
+                .hasSessionReplay(fakeHasReplay)
+                .hasViewId(testedScope.viewId)
+                .hasName(fakeKey.name)
+                .hasUrl(fakeUrl)
+                .hasVitalName(fakeName)
+                .hasVitalOperationalKey(fakeOperationKey)
+                .hasSyntheticsTest(fakeTestId, fakeResultId)
                 .hasVitalStepType(VitalEvent.StepType.START)
                 .hasNoVitalFailureReason()
                 .hasVitalType(VitalEvent.VitalEventVitalType.OPERATION_STEP)
@@ -8737,8 +8786,57 @@ internal class RumViewScopeTest {
                 .hasSessionId(fakeParentContext.sessionId)
                 .hasSessionType(fakeRumSessionType?.toVital() ?: VitalEvent.VitalEventSessionType.USER)
                 .hasSessionReplay(fakeHasReplay)
+                .hasNoSyntheticsTest()
                 .hasViewId(testedScope.viewId)
                 .hasName(fakeKey.name)
+                .hasUrl(fakeUrl)
+                .hasVitalName(fakeName)
+                .hasVitalOperationalKey(fakeOperationKey)
+                .hasVitalStepType(VitalEvent.StepType.END)
+                .hasNoVitalFailureReason()
+                .hasVitalType(VitalEvent.VitalEventVitalType.OPERATION_STEP)
+        }
+    }
+
+    @Test
+    fun `M send event with synthetics info W handleEvent(VitalEvent) { StopFeatureOperation, succeed }`(
+        @StringForgery fakeTestId: String,
+        @StringForgery fakeResultId: String,
+        forge: Forge
+    ) {
+        // Given
+        val fakeName = forge.anAlphabeticalString()
+        val fakeDuration: Long = forge.aLong(min = 0)
+        val fakeOperationKey = forge.aNullable { forge.anAlphabeticalString() }
+        val (attributes, expectedAttributes) = withAttributesCheckingMergeWithViewAttributes(forge)
+        val event = RumRawEvent.StopFeatureOperation(
+            fakeName,
+            operationKey = fakeOperationKey,
+            attributes = attributes,
+            failureReason = null,
+            eventTime = fakeEventTime + fakeDuration
+        )
+        fakeParentContext = fakeParentContext.copy(syntheticsTestId = fakeTestId, syntheticsResultId = fakeResultId)
+        whenever(mockParentScope.getRumContext()) doReturn fakeParentContext
+
+        // When
+        testedScope.handleEvent(event, fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        argumentCaptor<VitalEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            VitalEventAssert.assertThat(lastValue)
+                .hasDate(event.eventTime.timestamp + fakeTimeInfoAtScopeStart.serverTimeOffsetMs)
+                .hasApplicationId(fakeParentContext.applicationId)
+                .containsExactlyContextAttributes(expectedAttributes)
+                .hasStartReason(fakeParentContext.sessionStartReason)
+                .hasSampleRate(fakeSampleRate)
+                .hasSessionId(fakeParentContext.sessionId)
+                .hasSessionType(fakeRumSessionType?.toVital() ?: VitalEvent.VitalEventSessionType.SYNTHETICS)
+                .hasSessionReplay(fakeHasReplay)
+                .hasViewId(testedScope.viewId)
+                .hasName(fakeKey.name)
+                .hasSyntheticsTest(fakeTestId, fakeResultId)
                 .hasUrl(fakeUrl)
                 .hasVitalName(fakeName)
                 .hasVitalOperationalKey(fakeOperationKey)
@@ -8781,6 +8879,57 @@ internal class RumViewScopeTest {
                 .hasSampleRate(fakeSampleRate)
                 .hasSessionId(fakeParentContext.sessionId)
                 .hasSessionType(fakeRumSessionType?.toVital() ?: VitalEvent.VitalEventSessionType.USER)
+                .hasSessionReplay(fakeHasReplay)
+                .hasViewId(testedScope.viewId)
+                .hasNoSyntheticsTest()
+                .hasName(fakeKey.name)
+                .hasUrl(fakeUrl)
+                .hasVitalName(fakeName)
+                .hasVitalOperationalKey(fakeOperationKey)
+                .hasVitalStepType(VitalEvent.StepType.END)
+                .hasVitalFailureReason(failureReason)
+                .hasVitalType(VitalEvent.VitalEventVitalType.OPERATION_STEP)
+        }
+    }
+
+    @Test
+    fun `M send event with synthetics info W handleEvent(VitalEvent) { StopFeatureOperation, failed }`(
+        @StringForgery fakeTestId: String,
+        @StringForgery fakeResultId: String,
+        forge: Forge
+    ) {
+        // Given
+        val fakeName = forge.anAlphabeticalString()
+        val fakeDuration: Long = forge.aLong(min = 0)
+        val fakeOperationKey = forge.aNullable { forge.anAlphabeticalString() }
+        val (attributes, expectedAttributes) = withAttributesCheckingMergeWithViewAttributes(forge)
+        val failureReason = forge.aValueFrom(FailureReason::class.java)
+        val event = RumRawEvent.StopFeatureOperation(
+            fakeName,
+            operationKey = fakeOperationKey,
+            attributes = attributes,
+            failureReason = failureReason,
+            eventTime = fakeEventTime + fakeDuration
+        )
+
+        fakeParentContext = fakeParentContext.copy(syntheticsTestId = fakeTestId, syntheticsResultId = fakeResultId)
+        whenever(mockParentScope.getRumContext()) doReturn fakeParentContext
+
+        // When
+        testedScope.handleEvent(event, fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        argumentCaptor<VitalEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            VitalEventAssert.assertThat(lastValue)
+                .hasDate(event.eventTime.timestamp + fakeTimeInfoAtScopeStart.serverTimeOffsetMs)
+                .hasApplicationId(fakeParentContext.applicationId)
+                .containsExactlyContextAttributes(expectedAttributes)
+                .hasStartReason(fakeParentContext.sessionStartReason)
+                .hasSampleRate(fakeSampleRate)
+                .hasSyntheticsTest(fakeTestId, fakeResultId)
+                .hasSessionId(fakeParentContext.sessionId)
+                .hasSessionType(fakeRumSessionType?.toVital() ?: VitalEvent.VitalEventSessionType.SYNTHETICS)
                 .hasSessionReplay(fakeHasReplay)
                 .hasViewId(testedScope.viewId)
                 .hasName(fakeKey.name)

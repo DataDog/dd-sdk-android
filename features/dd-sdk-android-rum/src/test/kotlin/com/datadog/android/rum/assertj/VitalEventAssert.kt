@@ -158,6 +158,28 @@ internal class VitalEventAssert(actual: VitalEvent) : AbstractObjectAssert<Vital
             .isEqualTo(expected)
     }
 
+    fun hasNoSyntheticsTest() = apply {
+        assertThat(actual.synthetics?.testId)
+            .overridingErrorMessage(
+                "Expected event to have no synthetics.testId but was ${actual.synthetics?.testId}"
+            ).isNull()
+        assertThat(actual.synthetics?.resultId)
+            .overridingErrorMessage(
+                "Expected event to have no synthetics.resultId but was ${actual.synthetics?.resultId}"
+            ).isNull()
+    }
+
+    fun hasSyntheticsTest(testId: String, resultId: String) = apply {
+        assertThat(actual.synthetics?.testId)
+            .overridingErrorMessage(
+                "Expected event to have synthetics.testId $testId but was ${actual.synthetics?.testId}"
+            ).isEqualTo(testId)
+        assertThat(actual.synthetics?.resultId)
+            .overridingErrorMessage(
+                "Expected event to have synthetics.resultId $resultId but was ${actual.synthetics?.resultId}"
+            ).isEqualTo(resultId)
+    }
+
     companion object {
         internal fun assertThat(actual: VitalEvent): VitalEventAssert = VitalEventAssert(actual)
     }
