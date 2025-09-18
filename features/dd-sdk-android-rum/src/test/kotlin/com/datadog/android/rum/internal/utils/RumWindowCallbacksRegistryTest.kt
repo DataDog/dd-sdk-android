@@ -46,7 +46,7 @@ class RumWindowCallbacksRegistryTest {
     @Mock
     private lateinit var listener: RumWindowCallbackListener
 
-    private var callback: Window.Callback? = null
+    private lateinit var callback: Window.Callback
 
     private val registry = RumWindowCallbacksRegistryImpl()
 
@@ -65,13 +65,13 @@ class RumWindowCallbacksRegistryTest {
     }
 
     @Test
-    fun `M call existing callback and listener W RumWindowCallbacksRegistry { onContentChanged called }`() {
+    fun `M call existing callback and listener W addListener { onContentChanged called }`() {
         // Given
         registry.addListener(activity, listener)
         val callbackAfterListener1 = window.callback
 
         // When
-        callback!!.onContentChanged()
+        callback.onContentChanged()
 
         // Then
         inOrder(listener, existingCallback) {
@@ -95,7 +95,7 @@ class RumWindowCallbacksRegistryTest {
     }
 
     @Test
-    fun `M call both listeners and use the same WindowCallback W RumWindowCallbacksRegistry`() {
+    fun `M call both listeners and use the same WindowCallback W addListener`() {
         // Given
         registry.addListener(activity, listener)
         val callbackAfterListener1 = window.callback
@@ -104,7 +104,7 @@ class RumWindowCallbacksRegistryTest {
         registry.addListener(activity, listener2)
 
         // When
-        callback!!.onContentChanged()
+        callback.onContentChanged()
 
         // Then
         inOrder(listener, listener2, existingCallback) {
