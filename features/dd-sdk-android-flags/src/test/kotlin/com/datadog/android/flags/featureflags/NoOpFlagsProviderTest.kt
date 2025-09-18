@@ -6,7 +6,9 @@
 
 package com.datadog.android.flags.featureflags
 
-import com.datadog.android.flags.featureflags.internal.model.FeatureFlagsUser
+import com.datadog.android.flags.featureflags.internal.NoOpFlagsProvider
+import com.datadog.android.flags.featureflags.model.FeatureFlagsUser
+import com.datadog.android.flags.featureflags.model.ProviderContext
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat

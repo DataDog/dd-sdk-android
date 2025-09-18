@@ -8,6 +8,8 @@ package com.datadog.android.flags.featureflags.internal.net
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.flags.featureflags.internal.repository.net.EndpointsHelper
+import com.datadog.android.flags.featureflags.internal.repository.net.EndpointsHelper.Companion.DOMAIN_D0G
+import com.datadog.android.flags.featureflags.internal.repository.net.EndpointsHelper.Companion.DOMAIN_GOV
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -119,7 +121,7 @@ internal class EndpointsHelperTest {
         @StringForgery fakeCustomerDomain: String
     ) {
         // When
-        val result = testedHelper.buildEndpointHost("datad0g.com", fakeCustomerDomain)
+        val result = testedHelper.buildEndpointHost(DOMAIN_D0G, fakeCustomerDomain)
 
         // Then
         assertThat(result).isEqualTo("$fakeCustomerDomain.ff-cdn.datad0g.com")
@@ -128,7 +130,7 @@ internal class EndpointsHelperTest {
     @Test
     fun `M build datad0g endpoint with default customer domain W buildEndpointHost() { datad0g site }`() {
         // When
-        val result = testedHelper.buildEndpointHost("datad0g.com")
+        val result = testedHelper.buildEndpointHost(DOMAIN_D0G)
 
         // Then
         assertThat(result).isEqualTo("preview.ff-cdn.datad0g.com")
@@ -143,7 +145,7 @@ internal class EndpointsHelperTest {
         @StringForgery fakeCustomerDomain: String
     ) {
         // When
-        val result = testedHelper.buildEndpointHost("ddog-gov.com", fakeCustomerDomain)
+        val result = testedHelper.buildEndpointHost(DOMAIN_GOV, fakeCustomerDomain)
 
         // Then
         assertThat(result).isEmpty()

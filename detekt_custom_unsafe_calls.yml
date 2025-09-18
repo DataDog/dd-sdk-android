@@ -197,20 +197,21 @@ datadog:
       # region OkHttp
       - "okhttp3.Call.execute():java.io.IOException"
       - "okhttp3.Dns.lookup(kotlin.String):java.net.UnknownHostException"
+      - "okhttp3.Headers.Builder.add(kotlin.String, kotlin.String):java.lang.IllegalArgumentException"
       - "okhttp3.HttpUrl.toUrl():java.lang.RuntimeException"
       - "okhttp3.MultipartBody.Builder.build():java.lang.IllegalStateException"
       - "okhttp3.MultipartBody.Builder.setType(okhttp3.MediaType):java.lang.IllegalArgumentException"
-      - "okhttp3.Response.peekBody(kotlin.Long):java.io.IOException,java.lang.IllegalArgumentException,java.lang.IllegalStateException"
-      - "okhttp3.RequestBody.writeTo(okio.BufferedSink):java.io.IOException"
-      - "okhttp3.Response.close():java.lang.IllegalStateException"
       - "okhttp3.Request.Builder.build():java.lang.IllegalStateException"
-      - "okhttp3.Request.Builder.url(kotlin.String):java.lang.NullPointerException,java.lang.IllegalArgumentException"
       - "okhttp3.Request.Builder.post(okhttp3.RequestBody):java.lang.NullPointerException,java.lang.IllegalArgumentException"
       - "okhttp3.Request.Builder.method(kotlin.String, okhttp3.RequestBody?):java.lang.NullPointerException,java.lang.IllegalArgumentException"
       - "okhttp3.Request.Builder.tag(java.lang.Class, com.datadog.android.okhttp.TraceContext?):java.lang.ClassCastException"
       - "okhttp3.Request.Builder.url(kotlin.String):java.lang.NullPointerException,java.lang.IllegalArgumentException"
+      - "okhttp3.RequestBody.writeTo(okio.BufferedSink):java.io.IOException"
       - "okhttp3.Interceptor.Chain.proceed(okhttp3.Request):java.io.IOException"
       - "okhttp3.RequestBody.writeTo(okio.BufferedSink):java.io.IOException"
+      - "okhttp3.Response.close():java.lang.IllegalStateException"
+      - "okhttp3.Response.peekBody(kotlin.Long):java.io.IOException,java.lang.IllegalArgumentException,java.lang.IllegalStateException"
+      - "okhttp3.ResponseBody.string():java.io.IOException"
       - "okhttp3.OkHttpClient.Builder.addInterceptor(okhttp3.Interceptor):java.lang.IllegalArgumentException"
       - "okhttp3.OkHttpClient.Builder.addNetworkInterceptor(okhttp3.Interceptor):java.lang.IllegalArgumentException"
       - "okhttp3.OkHttpClient.Builder.dns(okhttp3.Dns):java.lang.IllegalArgumentException"
@@ -222,6 +223,8 @@ datadog:
       # endregion
       # region org.json
       - "org.json.JSONArray.get(kotlin.Int):org.json.JSONException"
+      - "org.json.JSONObject.constructor(kotlin.String?):org.json.JSONException"
+      - "org.json.JSONObject.put(kotlin.String?, kotlin.Any?):org.json.JSONException"
       - "org.json.JSONObject.get(kotlin.String):org.json.JSONException"
       # endregion
       # region Gson

@@ -7,8 +7,8 @@
 package com.datadog.android.flags.featureflags.internal.repository.net
 
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.flags.featureflags.ProviderContext
-import com.datadog.android.flags.internal.model.FlagsContext
+import com.datadog.android.flags.featureflags.internal.model.FlagsContext
+import com.datadog.android.flags.featureflags.model.ProviderContext
 import okhttp3.Call
 import okhttp3.Headers
 import okhttp3.OkHttpClient
@@ -16,6 +16,8 @@ import okhttp3.Protocol
 import okhttp3.Request
 import okhttp3.RequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
+import okhttp3.Response
+import org.json.JSONException
 import org.json.JSONObject
 import java.io.IOException
 import java.net.UnknownHostException
@@ -40,11 +42,12 @@ internal class DefaultFlagsNetworkManager(
         setupOkHttpClient()
     }
 
+    @Suppress("ReturnCount")
     override fun downloadPrecomputedFlags(context: ProviderContext): String? {
         val url = buildUrl() ?: return null
         val headers = buildHeaders()
-        val body = buildRequestBody()
-        return download(url = url, headers = headers, body = body.toRequestBody())
+        val body = buildRequestBody() ?: return null
+        return download(url = url, headers = headers, body = body)
     }
 
     @Suppress("TooGenericExceptionCaught")
@@ -101,18 +104,9 @@ internal class DefaultFlagsNetworkManager(
     @Suppress("TooGenericExceptionCaught")
     private fun executeDownloadRequest(request: Request): String? {
         return try {
-            callFactory.newCall(request).execute().use { response ->
-                if (response.isSuccessful) {
-                    response.body?.string()
-                } else {
-                    internalLogger.log(
-                        InternalLogger.Level.ERROR,
-                        InternalLogger.Target.MAINTAINER,
-                        { "Failed to download flags: ${response.code}" }
-                    )
-                    null
-                }
-            }
+            val response = callFactory.newCall(request).execute()
+            @Suppress("UnsafeThirdPartyFunctionCall") // wrapped in try/catch
+            handleResponse(response)
         } catch (e: Exception) {
             internalLogger.log(
                 InternalLogger.Level.ERROR,
@@ -120,6 +114,28 @@ internal class DefaultFlagsNetworkManager(
                 { "Error downloading flags" },
                 e
             )
+            null
+        }
+    }
+
+    @Suppress("UnsafeThirdPartyFunctionCall") // wrapped in try/catch
+    private fun handleResponse(response: Response): String? {
+        return if (response.isSuccessful) {
+            val body = response.body
+            var responseBodyToReturn: String? = null
+
+            if (body != null) {
+                responseBodyToReturn = body.string()
+            }
+
+            responseBodyToReturn
+        } else {
+            internalLogger.log(
+                InternalLogger.Level.ERROR,
+                InternalLogger.Target.MAINTAINER,
+                { "Failed to download flags: ${response.code}" }
+            )
+
             null
         }
     }
@@ -142,50 +158,72 @@ internal class DefaultFlagsNetworkManager(
     private fun buildHeaders(): Headers {
         val headersBuilder = Headers.Builder()
 
-        headersBuilder
-            .add(HEADER_CLIENT_TOKEN, flagsContext.clientToken)
-            .add(HEADER_CONTENT_TYPE, CONTENT_TYPE_VND_JSON)
+        try {
+            headersBuilder
+                .add(HEADER_CLIENT_TOKEN, flagsContext.clientToken)
+                .add(HEADER_CONTENT_TYPE, CONTENT_TYPE_VND_JSON)
 
-        flagsContext.applicationId?.let {
-            headersBuilder.add(HEADER_APPLICATION_ID, it)
+            flagsContext.applicationId?.let {
+                headersBuilder.add(HEADER_APPLICATION_ID, it)
+            }
+        } catch (e: IllegalArgumentException) {
+            internalLogger.log(
+                InternalLogger.Level.ERROR,
+                InternalLogger.Target.MAINTAINER,
+                { "Failed to build HTTP headers: invalid header values" },
+                e
+            )
         }
-
-        headersBuilder.build()
 
         return headersBuilder.build()
     }
 
-    private fun buildRequestBody(): String {
-        val stringifiedContext = buildStringifiedContext()
+    @Suppress("TodoWithoutTask")
+    // TODO modify to real fields
+    private fun buildRequestBody(): RequestBody? {
+        return try {
+            val stringifiedContext = buildStringifiedContext()
 
-        val subject = JSONObject()
-            .put("targeting_key", flagsContext.targetingKey)
-            .put("targeting_attributes", stringifiedContext)
-        val env = buildEnvPayload()
-        val attributes = JSONObject()
-            .put("env", env)
-            .put("subject", subject)
-        val data = JSONObject()
-            .put("type", "precompute-assignments-request")
-            .put("attributes", attributes)
-        val body = JSONObject()
-            .put("data", data)
-        return body.toString()
+            val subject = JSONObject()
+                .put("targeting_key", flagsContext.targetingKey)
+                .put("targeting_attributes", stringifiedContext)
+            val env = buildEnvPayload()
+            val attributes = JSONObject()
+                .put("env", env)
+                .put("subject", subject)
+            val data = JSONObject()
+                .put("type", "precompute-assignments-request")
+                .put("attributes", attributes)
+            val body = JSONObject()
+                .put("data", data)
+
+            // String.toRequestBody() can internally throw IOException/ArrayIndexOutOfBoundsException,
+            // but not in this context with a valid JSON string from JSONObject.toString()
+            @Suppress("UnsafeThirdPartyFunctionCall")
+            body.toString().toRequestBody()
+        } catch (e: JSONException) {
+            internalLogger.log(
+                InternalLogger.Level.ERROR,
+                InternalLogger.Target.MAINTAINER,
+                { "Failed to create request body: JSON error" },
+                e
+            )
+            null
+        }
     }
 
-    private fun buildStringifiedContext(): JSONObject {
-        // TODO replace
-        return JSONObject()
-            .put("attr1", "value1")
-            .put("companyId", "1")
-    }
+    @Suppress("TodoWithoutTask", "UnsafeThirdPartyFunctionCall") // call wrapped in try/catch
+    // TODO replace content
+    private fun buildStringifiedContext(): JSONObject = JSONObject()
+        .put("attr1", "value1")
+        .put("companyId", "1")
 
-    private fun buildEnvPayload(): JSONObject {
-        val payload = JSONObject()
-        payload.put("name", "prod")
-        payload.put("dd_env", "prod")
-        return payload
-    }
+    @Suppress("TodoWithoutTask", "UnsafeThirdPartyFunctionCall") // call wrapped in try/catch
+    // TODO replace content
+    private fun buildEnvPayload(): JSONObject =
+        JSONObject()
+            .put("name", "prod")
+            .put("dd_env", "prod")
 
     private fun setupOkHttpClient() {
         callFactory = OkHttpCallFactory {

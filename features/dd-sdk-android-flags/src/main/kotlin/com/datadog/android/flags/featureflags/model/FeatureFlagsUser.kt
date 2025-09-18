@@ -4,12 +4,14 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.flags.internal.model
+package com.datadog.android.flags.featureflags.model
 
-data class FlagsContext(
-    val applicationId: String?,
-    val clientToken: String,
-    val site: String,
-    val env: String,
-    val targetingKey: String
+/**
+ * Feature Flags user for the context.
+ * @param id ID of the user.
+ * @param email email of the user.
+ */
+data class FeatureFlagsUser(
+    val id: String,
+    val email: String
 )

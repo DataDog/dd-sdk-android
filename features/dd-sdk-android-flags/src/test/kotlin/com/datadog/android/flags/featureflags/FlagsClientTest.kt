@@ -8,6 +8,7 @@ package com.datadog.android.flags.featureflags
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.flags.featureflags.internal.NoOpFlagsProvider
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat

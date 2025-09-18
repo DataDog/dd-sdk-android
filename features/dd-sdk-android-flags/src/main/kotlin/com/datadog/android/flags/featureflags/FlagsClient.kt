@@ -11,7 +11,7 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.SdkCore
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.flags.featureflags.FlagsClient.get
-import java.util.Locale
+import com.datadog.android.flags.featureflags.internal.NoOpFlagsProvider
 
 /**
  * Client for querying feature flags.
@@ -52,12 +52,14 @@ object FlagsClient {
         return synchronized(registeredProviders) {
             val provider = registeredProviders[sdkCore]
             if (provider == null) {
+                val errorMsg = "No FlagsProvider for the SDK instance with name ${sdkCore.name} " +
+                    "found, returning no-op implementation."
                 (sdkCore as? FeatureSdkCore)
                     ?.internalLogger
                     ?.log(
                         InternalLogger.Level.WARN,
                         InternalLogger.Target.USER,
-                        { NO_PROVIDER_REGISTERED_MESSAGE.format(Locale.US, sdkCore.name) }
+                        { errorMsg }
                     )
                 NoOpFlagsProvider()
             } else {
@@ -121,8 +123,6 @@ object FlagsClient {
     // endregion
 
     // region Constants
-    internal const val NO_PROVIDER_REGISTERED_MESSAGE = "No FlagsProvider for the SDK instance with" +
-        " name %s found, returning no-op implementation."
-
+    // Constants can be added here if needed
     // endregion
 }

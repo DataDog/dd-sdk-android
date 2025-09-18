@@ -14,16 +14,15 @@ import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.flags.featureflags.FlagsClient
 import com.datadog.android.flags.featureflags.FlagsProvider
 import com.datadog.android.flags.featureflags.internal.DatadogFlagsProvider
+import com.datadog.android.flags.featureflags.internal.model.FlagsContext
 import com.datadog.android.flags.internal.FlagsFeature
-import com.datadog.android.flags.internal.model.FlagsContext
 
 /**
- * Entry point for the Flags feature
+ * Entry point for the Flags feature.
  */
 object Flags {
 
     internal const val FLAGS_EXECUTOR_NAME = "flags-executor"
-    internal const val ERROR_MISSING_CONTEXT_PARAMS = "Missing required context parameters: %s"
 
     /**
      * Enables the Flags feature.
@@ -35,9 +34,9 @@ object Flags {
      */
     @JvmOverloads
     @JvmStatic
-    @Suppress("UnusedPrivateMember") // todo: remove this when we start using the config
     fun enable(
-        configuration: FlagsConfiguration,
+        @Suppress("UNUSED_PARAMETER") configuration: FlagsConfiguration,
+        @Suppress("TodoWithoutTask") // TODO remove suppression when we start using config
         sdkCore: SdkCore = Datadog.getInstance()
     ) {
         val flagsFeature = FlagsFeature(
@@ -69,28 +68,30 @@ object Flags {
         val site = datadogContext?.site?.name
         val env = datadogContext?.env
 
-        if (clientToken == null || site == null || env == null) { // TODO how do we want to handle this?
-            val missingParams = buildList {
-                if (clientToken == null) add("clientToken")
-                if (site == null) add("site")
-                if (env == null) add("env")
-            }.joinToString(", ")
+        @Suppress("TodoWithoutTask") // TODO how do we want to handle this?
+        if (clientToken == null || site == null || env == null) {
+            val missingParams = listOfNotNull(
+                "clientToken".takeIf { clientToken == null },
+                "site".takeIf { site == null },
+                "env".takeIf { env == null }
+            ).joinToString(", ")
 
             internalLogger.log(
                 InternalLogger.Level.ERROR,
                 InternalLogger.Target.MAINTAINER,
-                { ERROR_MISSING_CONTEXT_PARAMS.format(missingParams) }
+                { "Missing required context parameters: $missingParams" }
             )
 
             return null
         }
 
+        @Suppress("TodoWithoutTask") // TODO replace targetingKey later
         val flagsContext = FlagsContext(
             applicationId = applicationId,
             clientToken = clientToken,
             site = site,
             env = env,
-            targetingKey = "test_subject" // todo replace later
+            targetingKey = "test_subject"
         )
 
         return DatadogFlagsProvider(
