@@ -24,7 +24,6 @@ internal class RumTTIDReporterImpl(
     private val handler: Handler,
     private val listener: RumTTIDReporter.Listener
 ) : RumTTIDReporter {
-    private val windowCallbackListeners = WeakHashMap<Activity, RumWindowCallbackListener>()
 
     private val onDrawListeners = WeakHashMap<Activity, ViewTreeObserver.OnDrawListener>()
 
@@ -36,13 +35,10 @@ internal class RumTTIDReporterImpl(
         if (decorView == null) {
             val listener = object : RumWindowCallbackListener {
                 override fun onContentChanged() {
-                    windowCallbackListeners.remove(activity)?.let {
-                        windowCallbacksRegistry.removeListener(activity, it)
-                    }
+                    windowCallbacksRegistry.removeListener(activity, this)
                     onDecorViewReady(scenario)
                 }
             }
-            windowCallbackListeners.put(activity, listener)
             windowCallbacksRegistry.addListener(activity, listener)
         } else {
             onDecorViewReady(scenario)
