@@ -344,6 +344,7 @@ internal open class RumViewScope(
                 id = rumContext.applicationId,
                 currentLocale = datadogContext.deviceInfo.localeInfo.currentLocale
             ),
+            synthetics = syntheticsAttribute,
             session = VitalEvent.VitalEventSession(
                 id = rumContext.sessionId,
                 type = sessionType,
