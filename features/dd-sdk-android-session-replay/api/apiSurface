@@ -113,19 +113,6 @@ class com.datadog.android.sessionreplay.recorder.wrappers.BitmapWrapper
 class com.datadog.android.sessionreplay.recorder.wrappers.CanvasWrapper
   constructor(com.datadog.android.api.InternalLogger)
   fun createCanvas(android.graphics.Bitmap): android.graphics.Canvas?
-open class com.datadog.android.sessionreplay.utils.AndroidMDrawableToColorMapper : DrawableToColorMapper
-  constructor(List<DrawableToColorMapper> = emptyList())
-  override fun mapDrawableToColor(android.graphics.drawable.Drawable, com.datadog.android.api.InternalLogger): Int?
-  protected open fun resolveShapeDrawable(android.graphics.drawable.ShapeDrawable, com.datadog.android.api.InternalLogger): Int
-  protected open fun resolveColorDrawable(android.graphics.drawable.ColorDrawable): Int?
-  protected open fun resolveLayerDrawable(android.graphics.drawable.LayerDrawable, com.datadog.android.api.InternalLogger, (Int, android.graphics.drawable.Drawable) -> Boolean = { _, _ -> true }): Int?
-  protected open fun resolveGradientDrawable(android.graphics.drawable.GradientDrawable, com.datadog.android.api.InternalLogger): Int?
-  protected fun mergeColorAndAlpha(Int, Int): Int
-  companion object 
-open class com.datadog.android.sessionreplay.utils.AndroidQDrawableToColorMapper : AndroidMDrawableToColorMapper
-  constructor(List<DrawableToColorMapper> = emptyList())
-  override fun resolveGradientDrawable(android.graphics.drawable.GradientDrawable, com.datadog.android.api.InternalLogger): Int?
-  companion object 
 interface com.datadog.android.sessionreplay.utils.AsyncJobStatusCallback
   fun jobStarted()
   fun jobFinished()

@@ -2,10 +2,21 @@
 
 The main changes introduced in SDK 3.0 compared to 2.x are:
 
-1. The `OpenTracing` dependency was removed because it is obsolete.
+1. The minimum supported Android API version increased to `23`.
 
+We now follow Google's [AndroidX library version policy](https://developer.android.com/jetpack/androidx/versions#version-table).
+ This update lets us use the latest `AndroidX` libraries, including
+[androidx.metrics:metrics-performance](https://developer.android.com/jetpack/androidx/releases/metrics).
 
-We replaced the `OpenTracing` classes with internal one. However we strongly encourage you to use the OTel version as the new tracing API standard.
+2. Fatal crashes are no longer automatically reported to the Logs feature.
+
+Follow
+these [instructions](https://docs.datadoghq.com/real_user_monitoring/mobile_and_tv_monitoring/android/error_tracking)
+to enable crash reporting with RUM.
+
+3. The `OpenTracing` dependency was removed because it is obsolete.
+
+We replaced the `OpenTracing` classes with internal ones. However, we strongly encourage you to use the `OpenTelemetry` version as the new tracing API standard.
 
 
 ### Trace product changes
@@ -13,7 +24,7 @@ We replaced the `OpenTracing` classes with internal one. However we strongly enc
 #### Migrating tracing from `OpenTracing` to `OpenTelemetry` (recommended)
 
 > [!WARNING] 
-> Note that the `OpenTelemetry` specification library [requires](https://github.com/open-telemetry/opentelemetry-java?tab=readme-ov-file#requirements) desugaring to be enabled for with projects that have a `minSdk` < 26. If this requirement cannot be met in your project see the following section.
+> Note that the `OpenTelemetry` specification library [requires](https://github.com/open-telemetry/opentelemetry-java?tab=readme-ov-file#requirements) desugaring to be enabled for projects with a `minSdk` < 26. If this requirement cannot be met in your project see the following section.
 
 
 1. Add the `OpenTelemetry` dependency to your `build.gradle.kts`:
@@ -79,14 +90,7 @@ Refer to the official `OpenTelemetry` [documentation](https://opentelemetry.io/d
 > [!WARNING]
 > This option has been added for compatibility and to simplify the transition from `OpenTracing` to `OpenTelemetry`, but it may not be available in future major releases. We recommend using `OpenTelemetry` as the standard for tracing tasks. However, if it is not possible to enable desugaring in your project for some reason, you can use this method.     
 
-1. Add the `DatadogTracing` dependency to your `build.gradle.kts`:
-
-```kotlin
-implementation(project("com.datadoghq:dd-sdk-android-trace-otel:x.x.x"))
-```
-
-
-2.Replace the `OpenTracing` configuration:
+Replace the `OpenTracing` configuration:
 ```kotlin
   GlobalTracer.registerIfAbsent(
             AndroidTracer.Builder()
@@ -103,18 +107,17 @@ with the `DatadogTracing` configuration:
         )
 ```
 
-
 For manual (custom) tracing use `com.datadog.android.trace.GlobalDatadogTracer.get()` instead of `io.opentracing.util.GlobalTracer.get()` to access the tracer object.
 For example: 
 ```kotlin
     val tracer = GlobalDatadogTracer.get()
-    
+
     val span = tracer
-        .buildSpan(operationName)
-        .start()
-
+     .buildSpan("Executing operation")
+     .start()
+    
     // Code that should be instrumented
-
+    
     span.finish()
 ```
 Refer to the Datadog [documentation](https://docs.datadoghq.com/tracing/trace_collection/automatic_instrumentation/dd_libraries/android?tab=kotlin) for more details.

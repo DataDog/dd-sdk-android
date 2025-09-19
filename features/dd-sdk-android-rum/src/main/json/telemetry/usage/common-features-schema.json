@@ -111,12 +111,67 @@
     },
     {
       "required": ["feature"],
+      "title": "GetGlobalContext",
+      "properties": {
+        "feature": {
+          "type": "string",
+          "description": "getGlobalContext API",
+          "const": "get-global-context"
+        }
+      }
+    },
+    {
+      "required": ["feature"],
       "title": "SetGlobalContext",
       "properties": {
         "feature": {
           "type": "string",
-          "description": "setGlobalContext, setGlobalContextProperty, addAttribute APIs",
+          "description": "setGlobalContext, addAttribute APIs",
           "const": "set-global-context"
+        }
+      }
+    },
+    {
+      "required": ["feature"],
+      "title": "SetGlobalContextProperty",
+      "properties": {
+        "feature": {
+          "type": "string",
+          "description": "setGlobalContextProperty API",
+          "const": "set-global-context-property"
+        }
+      }
+    },
+    {
+      "required": ["feature"],
+      "title": "RemoveGlobalContextProperty",
+      "properties": {
+        "feature": {
+          "type": "string",
+          "description": "removeGlobalContextProperty API",
+          "const": "remove-global-context-property"
+        }
+      }
+    },
+    {
+      "required": ["feature"],
+      "title": "ClearGlobalContext",
+      "properties": {
+        "feature": {
+          "type": "string",
+          "description": "clearGlobalContext API",
+          "const": "clear-global-context"
+        }
+      }
+    },
+    {
+      "required": ["feature"],
+      "title": "GetUser",
+      "properties": {
+        "feature": {
+          "type": "string",
+          "description": "getUser API",
+          "const": "get-user"
         }
       }
     },
@@ -126,8 +181,52 @@
       "properties": {
         "feature": {
           "type": "string",
-          "description": "setUser, setUserProperty, setUserInfo APIs",
+          "description": "setUser, setUserInfo APIs",
           "const": "set-user"
+        }
+      }
+    },
+    {
+      "required": ["feature"],
+      "title": "SetUserProperty",
+      "properties": {
+        "feature": {
+          "type": "string",
+          "description": "setUserProperty API",
+          "const": "set-user-property"
+        }
+      }
+    },
+    {
+      "required": ["feature"],
+      "title": "RemoveUserProperty",
+      "properties": {
+        "feature": {
+          "type": "string",
+          "description": "removeUserProperty API",
+          "const": "remove-user-property"
+        }
+      }
+    },
+    {
+      "required": ["feature"],
+      "title": "ClearUser",
+      "properties": {
+        "feature": {
+          "type": "string",
+          "description": "clearUser API",
+          "const": "clear-user"
+        }
+      }
+    },
+    {
+      "required": ["feature"],
+      "title": "GetAccount",
+      "properties": {
+        "feature": {
+          "type": "string",
+          "description": "getAccount API",
+          "const": "get-account"
         }
       }
     },
@@ -144,12 +243,61 @@
     },
     {
       "required": ["feature"],
+      "title": "SetAccountProperty",
+      "properties": {
+        "feature": {
+          "type": "string",
+          "description": "setAccountProperty API",
+          "const": "set-account-property"
+        }
+      }
+    },
+    {
+      "required": ["feature"],
+      "title": "RemoveAccountProperty",
+      "properties": {
+        "feature": {
+          "type": "string",
+          "description": "removeAccountProperty API",
+          "const": "remove-account-property"
+        }
+      }
+    },
+    {
+      "required": ["feature"],
+      "title": "ClearAccount",
+      "properties": {
+        "feature": {
+          "type": "string",
+          "description": "clearAccount API",
+          "const": "clear-account"
+        }
+      }
+    },
+    {
+      "required": ["feature"],
       "title": "AddFeatureFlagEvaluation",
       "properties": {
         "feature": {
           "type": "string",
           "description": "addFeatureFlagEvaluation API",
           "const": "add-feature-flag-evaluation"
+        }
+      }
+    },
+    {
+      "required": ["feature", "action_type"],
+      "title": "AddOperationStepVital",
+      "properties": {
+        "feature": {
+          "type": "string",
+          "description": "addOperationStepVital API",
+          "const": "add-operation-step-vital"
+        },
+        "action_type": {
+          "type": "string",
+          "description": "Feature operations action type",
+          "enum": ["start", "succeed", "fail"]
         }
       }
     }

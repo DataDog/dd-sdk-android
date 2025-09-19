@@ -1542,34 +1542,6 @@ public final class com/datadog/android/sessionreplay/recorder/wrappers/CanvasWra
 	public final fun createCanvas (Landroid/graphics/Bitmap;)Landroid/graphics/Canvas;
 }
 
-public class com/datadog/android/sessionreplay/utils/AndroidMDrawableToColorMapper : com/datadog/android/sessionreplay/utils/DrawableToColorMapper {
-	public static final field Companion Lcom/datadog/android/sessionreplay/utils/AndroidMDrawableToColorMapper$Companion;
-	public fun <init> ()V
-	public fun <init> (Ljava/util/List;)V
-	public synthetic fun <init> (Ljava/util/List;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public fun mapDrawableToColor (Landroid/graphics/drawable/Drawable;Lcom/datadog/android/api/InternalLogger;)Ljava/lang/Integer;
-	protected final fun mergeColorAndAlpha (II)I
-	protected fun resolveColorDrawable (Landroid/graphics/drawable/ColorDrawable;)Ljava/lang/Integer;
-	protected fun resolveGradientDrawable (Landroid/graphics/drawable/GradientDrawable;Lcom/datadog/android/api/InternalLogger;)Ljava/lang/Integer;
-	protected fun resolveLayerDrawable (Landroid/graphics/drawable/LayerDrawable;Lcom/datadog/android/api/InternalLogger;Lkotlin/jvm/functions/Function2;)Ljava/lang/Integer;
-	public static synthetic fun resolveLayerDrawable$default (Lcom/datadog/android/sessionreplay/utils/AndroidMDrawableToColorMapper;Landroid/graphics/drawable/LayerDrawable;Lcom/datadog/android/api/InternalLogger;Lkotlin/jvm/functions/Function2;ILjava/lang/Object;)Ljava/lang/Integer;
-	protected fun resolveShapeDrawable (Landroid/graphics/drawable/ShapeDrawable;Lcom/datadog/android/api/InternalLogger;)I
-}
-
-public final class com/datadog/android/sessionreplay/utils/AndroidMDrawableToColorMapper$Companion {
-}
-
-public class com/datadog/android/sessionreplay/utils/AndroidQDrawableToColorMapper : com/datadog/android/sessionreplay/utils/AndroidMDrawableToColorMapper {
-	public static final field Companion Lcom/datadog/android/sessionreplay/utils/AndroidQDrawableToColorMapper$Companion;
-	public fun <init> ()V
-	public fun <init> (Ljava/util/List;)V
-	public synthetic fun <init> (Ljava/util/List;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	protected fun resolveGradientDrawable (Landroid/graphics/drawable/GradientDrawable;Lcom/datadog/android/api/InternalLogger;)Ljava/lang/Integer;
-}
-
-public final class com/datadog/android/sessionreplay/utils/AndroidQDrawableToColorMapper$Companion {
-}
-
 public abstract interface class com/datadog/android/sessionreplay/utils/AsyncJobStatusCallback {
 	public abstract fun jobFinished ()V
 	public abstract fun jobStarted ()V

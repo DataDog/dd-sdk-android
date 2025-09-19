@@ -24,6 +24,7 @@ import com.datadog.android.core.internal.utils.getSafe
 import com.datadog.android.core.internal.utils.submitSafe
 import com.datadog.android.core.metrics.MethodCallSamplingRate
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
+import com.datadog.android.internal.telemetry.InternalTelemetryEvent.ApiUsage.AddOperationStepVital.ActionType
 import com.datadog.android.internal.thread.NamedCallable
 import com.datadog.android.rum.DdRumContentProvider
 import com.datadog.android.rum.ExperimentalRumApi
@@ -37,6 +38,7 @@ import com.datadog.android.rum.RumResourceMethod
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.RumSessionType
 import com.datadog.android.rum._RumInternalProxy
+import com.datadog.android.rum.featureoperations.FailureReason
 import com.datadog.android.rum.internal.CombinedRumSessionListener
 import com.datadog.android.rum.internal.RumErrorSourceType
 import com.datadog.android.rum.internal.RumFeature
@@ -68,7 +70,7 @@ import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 
-@Suppress("LongParameterList", "LargeClass")
+@Suppress("LongParameterList", "LargeClass", "TooManyFunctions")
 internal class DatadogRumMonitor(
     applicationId: String,
     private val sdkCore: InternalSdkCore,
@@ -163,11 +165,7 @@ internal class DatadogRumMonitor(
             val rumFeatureScope = sdkCore.getFeature(Feature.RUM_FEATURE_NAME)
                 ?.unwrap<RumFeature>()
             if (rumFeatureScope == null) {
-                sdkCore.internalLogger.log(
-                    InternalLogger.Level.WARN,
-                    InternalLogger.Target.USER,
-                    { RUM_DEBUG_RUM_NOT_ENABLED_WARNING }
-                )
+                sdkCore.internalLogger.logToUser(InternalLogger.Level.WARN) { RUM_DEBUG_RUM_NOT_ENABLED_WARNING }
                 return
             }
 
@@ -651,6 +649,90 @@ internal class DatadogRumMonitor(
 
     // endregion
 
+    // region Feature Operations
+
+    @ExperimentalRumApi
+    override fun startFeatureOperation(name: String, operationKey: String?, attributes: Map<String, Any?>) {
+        if (!featureOperationArgumentsValid(name, operationKey)) return
+
+        handleEvent(
+            RumRawEvent.StartFeatureOperation(
+                name,
+                operationKey,
+                attributes.toMap(),
+                eventTime = getEventTime(attributes)
+            )
+        )
+        sdkCore.internalLogger.logToUser(InternalLogger.Level.DEBUG) {
+            "Feature Operation `$name` (operationKey `$operationKey`) started."
+        }
+        sdkCore.internalLogger.reportFeatureOperationApiUsage(ActionType.START)
+    }
+
+    @ExperimentalRumApi
+    override fun succeedFeatureOperation(name: String, operationKey: String?, attributes: Map<String, Any?>) {
+        if (!featureOperationArgumentsValid(name, operationKey)) return
+
+        handleEvent(
+            RumRawEvent.StopFeatureOperation(
+                name,
+                operationKey,
+                attributes.toMap(),
+                failureReason = null,
+                eventTime = getEventTime(attributes)
+            )
+        )
+        sdkCore.internalLogger.logToUser(InternalLogger.Level.DEBUG) {
+            "Feature Operation `$name` (operationKey `$operationKey`) successfully ended."
+        }
+        sdkCore.internalLogger.reportFeatureOperationApiUsage(ActionType.SUCCEED)
+    }
+
+    @ExperimentalRumApi
+    override fun failFeatureOperation(
+        name: String,
+        operationKey: String?,
+        failureReason: FailureReason,
+        attributes: Map<String, Any?>
+    ) {
+        if (!featureOperationArgumentsValid(name, operationKey)) return
+
+        handleEvent(
+            RumRawEvent.StopFeatureOperation(
+                name,
+                operationKey,
+                attributes.toMap(),
+                failureReason = failureReason,
+                eventTime = getEventTime(attributes)
+            )
+        )
+        sdkCore.internalLogger.logToUser(InternalLogger.Level.DEBUG) {
+            "Feature Operation `$name` (operationKey `$operationKey`) unsuccessfully ended" +
+                " with the following failure reason: $failureReason."
+        }
+        sdkCore.internalLogger.reportFeatureOperationApiUsage(ActionType.FAIL)
+    }
+
+    private fun featureOperationArgumentsValid(name: String, operationKey: String?) = when {
+        name.isBlank() -> {
+            sdkCore.internalLogger.logToUser(InternalLogger.Level.WARN) {
+                FO_ERROR_INVALID_NAME.format(Locale.US, name)
+            }
+            false
+        }
+
+        operationKey?.isBlank() == true -> {
+            sdkCore.internalLogger.logToUser(InternalLogger.Level.WARN) {
+                FO_ERROR_INVALID_OPERATION_KEY.format(Locale.US, operationKey)
+            }
+            false
+        }
+
+        else -> true
+    }
+
+    // endregion
+
     // region Internal
 
     @Throws(UnsupportedOperationException::class, InterruptedException::class)
@@ -826,5 +908,24 @@ internal class DatadogRumMonitor(
 
         internal const val CANNOT_WRITE_CRASH_WRITE_CONTEXT_IS_NOT_AVAILABLE =
             "Cannot write JVM crash, because write context is not available."
+
+        internal const val FO_ERROR_INVALID_NAME =
+            "Feature operation name cannot be an empty or blank string but was \"%s\". Vital event won't be sent."
+
+        internal const val FO_ERROR_INVALID_OPERATION_KEY =
+            "Feature operation key cannot be an empty or blank string but was \"%s\". Vital event won't be sent."
+
+        private fun InternalLogger.logToUser(
+            level: InternalLogger.Level,
+            messageProvider: () -> String
+        ) = log(
+            level = level,
+            target = InternalLogger.Target.USER,
+            messageBuilder = messageProvider
+        )
+
+        private fun InternalLogger.reportFeatureOperationApiUsage(actionType: ActionType) = logApiUsage {
+            InternalTelemetryEvent.ApiUsage.AddOperationStepVital(actionType)
+        }
     }
 }

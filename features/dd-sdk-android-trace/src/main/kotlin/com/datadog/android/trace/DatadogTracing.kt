@@ -33,6 +33,7 @@ object DatadogTracing {
      * @return A configured instance of [DatadogTracerBuilder], or a no-operation implementation if the necessary
      * configurations or features are unavailable.
      */
+    @JvmStatic
     fun newTracerBuilder(sdkCore: SdkCore = Datadog.getInstance()): DatadogTracerBuilder = when {
         DatadogTracingToolkit.testBuilderProvider != null -> {
             DatadogTracingToolkit.testBuilderProvider as DatadogTracerBuilder

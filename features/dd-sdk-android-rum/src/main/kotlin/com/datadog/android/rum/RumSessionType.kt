@@ -13,6 +13,13 @@ import com.datadog.android.lint.InternalApi
  */
 @InternalApi
 enum class RumSessionType {
+    /**
+     * Synthetic session type.
+     */
     SYNTHETICS,
+
+    /**
+     * User session type.
+     */
     USER
 }

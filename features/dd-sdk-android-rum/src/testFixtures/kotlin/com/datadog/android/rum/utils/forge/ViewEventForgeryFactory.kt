@@ -4,9 +4,10 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.utils.forge
+package com.datadog.android.rum.utils.forge
 
 import com.datadog.android.rum.model.ViewEvent
+import com.datadog.android.rum.model.ViewEvent.Accessibility
 import com.datadog.tools.unit.forge.exhaustiveAttributes
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
@@ -14,8 +15,7 @@ import fr.xgouchet.elmyr.jvm.ext.aTimestamp
 import java.net.URL
 import java.util.UUID
 
-// TODO RUMM-2949 Share forgeries/test configurations between modules
-internal class ViewEventForgeryFactory : ForgeryFactory<ViewEvent> {
+class ViewEventForgeryFactory : ForgeryFactory<ViewEvent> {
 
     override fun getForgery(forge: Forge): ViewEvent {
         return ViewEvent(
@@ -64,7 +64,8 @@ internal class ViewEventForgeryFactory : ForgeryFactory<ViewEvent> {
                 cpuTicksPerSecond = forge.aNullable { aPositiveDouble() },
                 refreshRateAverage = forge.aNullable { aPositiveDouble() },
                 refreshRateMin = forge.aNullable { aPositiveDouble() },
-                frustration = forge.aNullable { ViewEvent.Frustration(aPositiveLong()) }
+                frustration = forge.aNullable { ViewEvent.Frustration(aPositiveLong()) },
+                accessibility = forge.aNullable { getForgery<Accessibility>() }
             ),
             connectivity = forge.aNullable {
                 ViewEvent.Connectivity(
@@ -93,6 +94,13 @@ internal class ViewEventForgeryFactory : ForgeryFactory<ViewEvent> {
                     additionalProperties = exhaustiveAttributes(excludedKeys = setOf("id", "name", "email"))
                 )
             },
+            account = forge.aNullable {
+                ViewEvent.Account(
+                    id = anHexadecimalString(),
+                    name = aNullable { aStringMatching("[A-Z][a-z]+ [A-Z]\\. [A-Z][a-z]+") },
+                    additionalProperties = exhaustiveAttributes(excludedKeys = setOf("id", "name"))
+                )
+            },
             application = ViewEvent.Application(forge.getForgery<UUID>().toString()),
             service = forge.aNullable { anAlphabeticalString() },
             session = ViewEvent.ViewEventSession(
@@ -106,18 +114,25 @@ internal class ViewEventForgeryFactory : ForgeryFactory<ViewEvent> {
             },
             os = forge.aNullable {
                 ViewEvent.Os(
-                    name = anAlphaNumericalString(),
-                    version = anAlphaNumericalString(),
-                    versionMajor = anAlphaNumericalString()
+                    name = forge.aString(),
+                    version = "${forge.aSmallInt()}.${forge.aSmallInt()}.${forge.aSmallInt()}",
+                    versionMajor = forge.aSmallInt().toString(),
+                    build = forge.aNullable { anAlphabeticalString() }
                 )
             },
             device = forge.aNullable {
                 ViewEvent.Device(
-                    name = anAlphaNumericalString(),
-                    model = anAlphaNumericalString(),
-                    brand = anAlphaNumericalString(),
-                    type = aValueFrom(ViewEvent.DeviceType::class.java),
-                    architecture = anAlphaNumericalString()
+                    name = forge.aString(),
+                    model = forge.aString(),
+                    brand = forge.aString(),
+                    type = forge.aValueFrom(ViewEvent.DeviceType::class.java),
+                    architecture = forge.aString(),
+                    locale = forge.aNullable { anAlphabeticalString() },
+                    locales = forge.aNullable { aList { anAlphabeticalString() } },
+                    timeZone = forge.aNullable { anAlphabeticalString() },
+                    batteryLevel = forge.aNullable { aDouble(min = 0.0, max = 100.0) },
+                    powerSavingMode = forge.aNullable { aBool() },
+                    brightnessLevel = forge.aNullable { aDouble(min = 0.0, max = 1.0) }
                 )
             },
             context = forge.aNullable {
@@ -126,17 +141,11 @@ internal class ViewEventForgeryFactory : ForgeryFactory<ViewEvent> {
                 )
             },
             dd = ViewEvent.Dd(
-                session = forge.aNullable { ViewEvent.DdSession(null, getForgery()) },
+                session = forge.aNullable { ViewEvent.DdSession(aNullable { getForgery() }) },
                 browserSdkVersion = forge.aNullable { aStringMatching("\\d+\\.\\d+\\.\\d+") },
-                documentVersion = forge.aPositiveLong(strict = true),
-                replayStats = forge.aNullable {
-                    ViewEvent.ReplayStats(
-                        recordsCount = aLong(0),
-                        segmentsCount = aLong(0),
-                        segmentsTotalRawSize = aLong(0)
-                    )
-                }
-            )
+                documentVersion = forge.aPositiveLong(strict = true)
+            ),
+            ddtags = forge.aNullable { ddTagsString() }
         )
     }
 }

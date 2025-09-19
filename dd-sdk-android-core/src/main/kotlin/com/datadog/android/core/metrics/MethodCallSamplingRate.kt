@@ -11,10 +11,33 @@ package com.datadog.android.core.metrics
  * @param rate the rate to sample at (between 0 and 100).
  */
 enum class MethodCallSamplingRate(val rate: Float) {
+    /**
+     * Sample all.
+     */
     ALL(rate = 100.0f),
+
+    /**
+     * Sample 10% of the time.
+     */
     HIGH(rate = 10.0f),
+
+    /**
+     * Sample 1% of the time.
+     */
     MEDIUM(rate = 1.0f),
+
+    /**
+     * Sample 0.1% of the time.
+     */
     LOW(rate = 0.1f),
+
+    /**
+     * Sample 0.01% of the time.
+     */
     REDUCED(rate = 0.01f),
+
+    /**
+     * Sample 0.001% of the time.
+     */
     RARE(rate = 0.001f)
 }

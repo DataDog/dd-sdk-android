@@ -36,6 +36,7 @@ import com.datadog.android.telemetry.model.TelemetryConfigurationEvent
 import com.datadog.android.telemetry.model.TelemetryDebugEvent
 import com.datadog.android.telemetry.model.TelemetryErrorEvent
 import com.datadog.android.telemetry.model.TelemetryUsageEvent
+import com.datadog.android.telemetry.model.TelemetryUsageEvent.ActionType
 import java.util.Locale
 import com.datadog.android.telemetry.model.TelemetryConfigurationEvent.ViewTrackingStrategy as VTS
 
@@ -71,7 +72,11 @@ internal class TelemetryEventHandler(
         eventIDsSeenInCurrentSession.add(event.identity)
         totalEventsSeenInCurrentSession++
         sdkCore.getFeature(Feature.RUM_FEATURE_NAME)?.withWriteContext(
-            withFeatureContexts = setOf(Feature.SESSION_REPLAY_FEATURE_NAME, Feature.TRACING_FEATURE_NAME)
+            withFeatureContexts = setOf(
+                Feature.SESSION_REPLAY_FEATURE_NAME,
+                Feature.TRACING_FEATURE_NAME,
+                Feature.RUM_FEATURE_NAME
+            )
         ) { datadogContext, writeScope ->
             val timestamp = wrappedEvent.eventTime.timestamp + datadogContext.time.serverTimeOffsetMs
             val telemetryEvent: Any? = when (event) {
@@ -393,46 +398,56 @@ internal class TelemetryEventHandler(
         effectiveSampleRate: Float
     ): TelemetryUsageEvent {
         val rumContext = datadogContext.rumContext()
-        return when (event) {
+        val resolvedAdditionalProperties = event.additionalProperties
+            .cleanUpInternalAttributes()
+        val usage = when (event) {
+            is InternalTelemetryEvent.ApiUsage.AddOperationStepVital -> {
+                TelemetryUsageEvent.Usage.AddOperationStepVital(
+                    actionType = when (event.actionType) {
+                        InternalTelemetryEvent.ApiUsage.AddOperationStepVital.ActionType.START -> ActionType.START
+                        InternalTelemetryEvent.ApiUsage.AddOperationStepVital.ActionType.SUCCEED -> ActionType.SUCCEED
+                        InternalTelemetryEvent.ApiUsage.AddOperationStepVital.ActionType.FAIL -> ActionType.FAIL
+                    }
+                )
+            }
             is InternalTelemetryEvent.ApiUsage.AddViewLoadingTime -> {
-                val resolvedAdditionalProperties = event.additionalProperties
-                    .cleanUpInternalAttributes()
-
-                TelemetryUsageEvent(
-                    dd = TelemetryUsageEvent.Dd(),
-                    date = timestamp,
-                    source = TelemetryUsageEvent.Source.tryFromSource(
-                        datadogContext.source,
-                        sdkCore.internalLogger
-                    ) ?: TelemetryUsageEvent.Source.ANDROID,
-                    service = TELEMETRY_SERVICE_NAME,
-                    version = datadogContext.sdkVersion,
-                    application = TelemetryUsageEvent.Application(rumContext.applicationId),
-                    session = TelemetryUsageEvent.Session(rumContext.sessionId),
-                    view = rumContext.viewId?.let { TelemetryUsageEvent.View(it) },
-                    action = rumContext.actionId?.let { TelemetryUsageEvent.Action(it) },
-                    effectiveSampleRate = effectiveSampleRate,
-                    telemetry = TelemetryUsageEvent.Telemetry(
-                        additionalProperties = resolvedAdditionalProperties,
-                        device = TelemetryUsageEvent.Device(
-                            architecture = datadogContext.deviceInfo.architecture,
-                            brand = datadogContext.deviceInfo.deviceBrand,
-                            model = datadogContext.deviceInfo.deviceModel
-                        ),
-                        os = TelemetryUsageEvent.Os(
-                            build = datadogContext.deviceInfo.deviceBuildId,
-                            version = datadogContext.deviceInfo.osVersion,
-                            name = datadogContext.deviceInfo.osName
-                        ),
-                        usage = TelemetryUsageEvent.Usage.AddViewLoadingTime(
-                            overwritten = event.overwrite,
-                            noView = event.noView,
-                            noActiveView = event.noActiveView
-                        )
-                    )
+                TelemetryUsageEvent.Usage.AddViewLoadingTime(
+                    overwritten = event.overwrite,
+                    noView = event.noView,
+                    noActiveView = event.noActiveView
                 )
             }
         }
+
+        return TelemetryUsageEvent(
+            dd = TelemetryUsageEvent.Dd(),
+            date = timestamp,
+            source = TelemetryUsageEvent.Source.tryFromSource(
+                datadogContext.source,
+                sdkCore.internalLogger
+            ) ?: TelemetryUsageEvent.Source.ANDROID,
+            service = TELEMETRY_SERVICE_NAME,
+            version = datadogContext.sdkVersion,
+            application = TelemetryUsageEvent.Application(rumContext.applicationId),
+            session = TelemetryUsageEvent.Session(rumContext.sessionId),
+            view = rumContext.viewId?.let { TelemetryUsageEvent.View(it) },
+            action = rumContext.actionId?.let { TelemetryUsageEvent.Action(it) },
+            effectiveSampleRate = effectiveSampleRate,
+            telemetry = TelemetryUsageEvent.Telemetry(
+                additionalProperties = resolvedAdditionalProperties,
+                device = TelemetryUsageEvent.Device(
+                    architecture = datadogContext.deviceInfo.architecture,
+                    brand = datadogContext.deviceInfo.deviceBrand,
+                    model = datadogContext.deviceInfo.deviceModel
+                ),
+                os = TelemetryUsageEvent.Os(
+                    build = datadogContext.deviceInfo.deviceBuildId,
+                    version = datadogContext.deviceInfo.osVersion,
+                    name = datadogContext.deviceInfo.osName
+                ),
+                usage = usage
+            )
+        )
     }
 
     private fun isGlobalTracerRegistered(): Boolean {

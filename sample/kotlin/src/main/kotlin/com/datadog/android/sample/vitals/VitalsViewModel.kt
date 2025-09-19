@@ -10,8 +10,10 @@ import android.graphics.Bitmap
 import android.os.Handler
 import android.os.Looper
 import androidx.lifecycle.ViewModel
+import com.datadog.android.rum.ExperimentalRumApi
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumActionType
+import com.datadog.android.rum.featureoperations.FailureReason
 import timber.log.Timber
 import java.security.SecureRandom
 
@@ -136,5 +138,19 @@ internal class VitalsViewModel : ViewModel() {
                 Thread.sleep(1)
             }
         }.start()
+    }
+
+    @OptIn(ExperimentalRumApi::class)
+    fun startFeatureOperation(name: String, operationKey: String?) {
+        GlobalRumMonitor.get().startFeatureOperation(name, operationKey)
+    }
+
+    @OptIn(ExperimentalRumApi::class)
+    fun stopFeatureOperation(name: String, operationKey: String?, reason: FailureReason? = null) {
+        if (reason != null) {
+            GlobalRumMonitor.get().failFeatureOperation(name, operationKey, reason)
+        } else {
+            GlobalRumMonitor.get().succeedFeatureOperation(name, operationKey)
+        }
     }
 }

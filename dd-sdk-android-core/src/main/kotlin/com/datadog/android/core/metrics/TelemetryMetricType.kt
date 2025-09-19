@@ -10,5 +10,8 @@ package com.datadog.android.core.metrics
  * Types of performance metrics.
  */
 enum class TelemetryMetricType {
+    /**
+     * "method called" performance metric.
+     */
     MethodCalled
 }

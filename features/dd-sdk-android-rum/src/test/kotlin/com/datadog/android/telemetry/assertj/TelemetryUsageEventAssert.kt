@@ -169,6 +169,27 @@ internal class TelemetryUsageEventAssert(actual: TelemetryUsageEvent) :
                     .hasOverwritten(actualUsage.overwritten)
                     .hasNoActiveView(expected.noActiveView)
             }
+
+            is InternalTelemetryEvent.ApiUsage.AddOperationStepVital -> {
+                val actualUsage = actual.telemetry.usage as TelemetryUsageEvent.Usage.AddOperationStepVital
+                assertThat(actualUsage)
+                    .hasActionType(expected.actionType)
+            }
+        }
+    }
+
+    private class OperationStepVitalEventAssert(actual: TelemetryUsageEvent.Usage.AddOperationStepVital) :
+        AbstractObjectAssert<OperationStepVitalEventAssert, TelemetryUsageEvent.Usage.AddOperationStepVital>(
+            actual,
+            OperationStepVitalEventAssert::class.java
+        ) {
+        fun hasActionType(expected: InternalTelemetryEvent.ApiUsage.AddOperationStepVital.ActionType) = apply {
+            assertThat(actual.actionType.name)
+                .overridingErrorMessage(
+                    "Expected operationStepVitalUsage event to have actionType $expected " +
+                        "but was ${actual.actionType.name}"
+                )
+                .isEqualTo(expected.name)
         }
     }
 
@@ -178,40 +199,41 @@ internal class TelemetryUsageEventAssert(actual: TelemetryUsageEvent) :
             ViewLoadingTimeEventAssert::class.java
         ) {
 
-        fun hasNoView(expected: Boolean): ViewLoadingTimeEventAssert {
+        fun hasNoView(expected: Boolean) = apply {
             assertThat(actual.noView)
                 .overridingErrorMessage(
                     "Expected viewLoadingTimeUsage event to" +
                         " have noView $expected but was ${actual.noView}"
                 )
                 .isEqualTo(expected)
-            return this
         }
 
-        fun hasNoActiveView(expected: Boolean): ViewLoadingTimeEventAssert {
+        fun hasNoActiveView(expected: Boolean) = apply {
             assertThat(actual.noActiveView)
                 .overridingErrorMessage(
                     "Expected viewLoadingTimeUsage event to have" +
                         " noActiveView $expected but was ${actual.noActiveView}"
                 )
                 .isEqualTo(expected)
-            return this
         }
 
-        fun hasOverwritten(expected: Boolean): ViewLoadingTimeEventAssert {
+        fun hasOverwritten(expected: Boolean) = apply {
             assertThat(actual.overwritten)
                 .overridingErrorMessage(
                     "Expected viewLoadingTimeUsage event to have" +
                         " overwritten $expected but was ${actual.overwritten}"
                 )
                 .isEqualTo(expected)
-            return this
         }
     }
 
     companion object {
         fun assertThat(actual: TelemetryUsageEvent) = TelemetryUsageEventAssert(actual)
+
         private fun assertThat(actual: TelemetryUsageEvent.Usage.AddViewLoadingTime) =
             ViewLoadingTimeEventAssert(actual)
+
+        private fun assertThat(actual: TelemetryUsageEvent.Usage.AddOperationStepVital) =
+            OperationStepVitalEventAssert(actual)
     }
 }

@@ -67,6 +67,12 @@ sealed class com.datadog.android.internal.telemetry.InternalTelemetryEvent
     constructor(MutableMap<String, Any?> = mutableMapOf())
     class AddViewLoadingTime : ApiUsage
       constructor(Boolean, Boolean, Boolean, MutableMap<String, Any?> = mutableMapOf())
+    class AddOperationStepVital : ApiUsage
+      constructor(ActionType, MutableMap<String, Any?> = mutableMapOf())
+      enum ActionType
+        - START
+        - SUCCEED
+        - FAIL
   object InterceptorInstantiated : InternalTelemetryEvent
 enum com.datadog.android.internal.telemetry.TracingHeaderType
   - DATADOG

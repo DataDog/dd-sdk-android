@@ -45,6 +45,8 @@ import com.datadog.android.rum.internal.toAction
 import com.datadog.android.rum.internal.toError
 import com.datadog.android.rum.internal.toLongTask
 import com.datadog.android.rum.internal.toView
+import com.datadog.android.rum.internal.toVital
+import com.datadog.android.rum.internal.utils.buildDDTagsString
 import com.datadog.android.rum.internal.utils.hasUserData
 import com.datadog.android.rum.internal.utils.newRumEventWriteOperation
 import com.datadog.android.rum.internal.vitals.VitalInfo
@@ -55,6 +57,7 @@ import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ViewEvent
+import com.datadog.android.rum.model.VitalEvent
 import java.util.Locale
 import java.util.UUID
 import java.util.concurrent.TimeUnit
@@ -235,6 +238,9 @@ internal open class RumViewScope(
             is RumRawEvent.AddViewAttributes -> onAddViewAttributes(event)
             is RumRawEvent.RemoveViewAttributes -> onRemoveViewAttributes(event)
 
+            is RumRawEvent.StartFeatureOperation -> onStartFeatureOperation(event, datadogContext, writeScope, writer)
+            is RumRawEvent.StopFeatureOperation -> onStopFeatureOperation(event, datadogContext, writeScope, writer)
+
             else -> delegateEventToChildren(event, datadogContext, writeScope, writer)
         }
 
@@ -246,6 +252,118 @@ internal open class RumViewScope(
         } else {
             this
         }
+    }
+
+    private fun onStartFeatureOperation(
+        event: RumRawEvent.StartFeatureOperation,
+        datadogContext: DatadogContext,
+        writeScope: EventWriteScope,
+        writer: DataWriter<Any>
+    ) {
+        sdkCore.newRumEventWriteOperation(datadogContext, writeScope, writer) {
+            newVitalEvent(
+                event,
+                datadogContext,
+                name = event.name,
+                operationKey = event.operationKey,
+                stepType = VitalEvent.StepType.START,
+                failureReason = null,
+                eventAttributes = event.attributes
+            )
+        }.submit()
+        sendViewUpdate(event, datadogContext, writeScope, writer)
+    }
+
+    private fun onStopFeatureOperation(
+        event: RumRawEvent.StopFeatureOperation,
+        datadogContext: DatadogContext,
+        writeScope: EventWriteScope,
+        writer: DataWriter<Any>
+    ) {
+        sdkCore.newRumEventWriteOperation(datadogContext, writeScope, writer) {
+            newVitalEvent(
+                event,
+                datadogContext,
+                name = event.name,
+                operationKey = event.operationKey,
+                stepType = VitalEvent.StepType.END,
+                failureReason = event.failureReason?.toSchemaFailureReason(),
+                eventAttributes = event.attributes
+            )
+        }.submit()
+        sendViewUpdate(event, datadogContext, writeScope, writer)
+    }
+
+    @Suppress("LongMethod")
+    private fun newVitalEvent(
+        event: RumRawEvent,
+        datadogContext: DatadogContext,
+        name: String,
+        operationKey: String?,
+        stepType: VitalEvent.StepType,
+        failureReason: VitalEvent.FailureReason?,
+        eventAttributes: Map<String, Any?>
+    ): VitalEvent {
+        val rumContext = getRumContext()
+        val syntheticsAttribute = if (
+            rumContext.syntheticsTestId.isNullOrBlank() ||
+            rumContext.syntheticsResultId.isNullOrBlank()
+        ) {
+            null
+        } else {
+            VitalEvent.Synthetics(
+                testId = rumContext.syntheticsTestId,
+                resultId = rumContext.syntheticsResultId
+            )
+        }
+        val hasReplay = featuresContextResolver.resolveViewHasReplay(
+            datadogContext,
+            rumContext.viewId.orEmpty()
+        )
+
+        val sessionType = when {
+            rumSessionTypeOverride != null -> rumSessionTypeOverride.toVital()
+            syntheticsAttribute == null -> VitalEvent.VitalEventSessionType.USER
+            else -> VitalEvent.VitalEventSessionType.SYNTHETICS
+        }
+
+        return VitalEvent(
+            date = event.eventTime.timestamp + serverTimeOffsetInMs,
+            context = VitalEvent.Context(
+                additionalProperties = getCustomAttributes().toMutableMap().also {
+                    it.putAll(eventAttributes)
+                }
+            ),
+            dd = VitalEvent.Dd(
+                session = VitalEvent.DdSession(
+                    sessionPrecondition = rumContext.sessionStartReason.toVitalSessionPrecondition()
+                ),
+                configuration = VitalEvent.Configuration(sessionSampleRate = sampleRate)
+            ),
+            application = VitalEvent.Application(
+                id = rumContext.applicationId,
+                currentLocale = datadogContext.deviceInfo.localeInfo.currentLocale
+            ),
+            synthetics = syntheticsAttribute,
+            session = VitalEvent.VitalEventSession(
+                id = rumContext.sessionId,
+                type = sessionType,
+                hasReplay = hasReplay
+            ),
+            view = VitalEvent.VitalEventView(
+                id = rumContext.viewId.orEmpty(),
+                name = rumContext.viewName,
+                url = rumContext.viewUrl.orEmpty()
+            ),
+            vital = VitalEvent.VitalEventVital(
+                id = UUID.randomUUID().toString(),
+                name = name,
+                operationKey = operationKey,
+                stepType = stepType,
+                failureReason = failureReason,
+                type = VitalEvent.VitalEventVitalType.OPERATION_STEP
+            )
+        )
     }
 
     override fun getRumContext(): RumContext {
@@ -628,7 +746,8 @@ internal open class RumViewScope(
                     configuration = ErrorEvent.Configuration(sessionSampleRate = sampleRate)
                 ),
                 service = datadogContext.service,
-                version = datadogContext.version
+                version = datadogContext.version,
+                ddtags = buildDDTagsString(datadogContext)
             )
         }
             .apply {
@@ -1170,7 +1289,8 @@ internal open class RumViewScope(
                 ),
                 connectivity = datadogContext.networkInfo.toViewConnectivity(),
                 service = datadogContext.service,
-                version = datadogContext.version
+                version = datadogContext.version,
+                ddtags = buildDDTagsString(datadogContext)
             ).apply {
                 sessionEndedMetricDispatcher.onViewTracked(sessionId, this)
             }
@@ -1330,7 +1450,8 @@ internal open class RumViewScope(
                 ),
                 connectivity = datadogContext.networkInfo.toActionConnectivity(),
                 service = datadogContext.service,
-                version = datadogContext.version
+                version = datadogContext.version,
+                ddtags = buildDDTagsString(datadogContext)
             )
         }
             .apply {
@@ -1450,7 +1571,8 @@ internal open class RumViewScope(
                     configuration = LongTaskEvent.Configuration(sessionSampleRate = sampleRate)
                 ),
                 service = datadogContext.service,
-                version = datadogContext.version
+                version = datadogContext.version,
+                ddtags = buildDDTagsString(datadogContext)
             )
         }
             .apply {
