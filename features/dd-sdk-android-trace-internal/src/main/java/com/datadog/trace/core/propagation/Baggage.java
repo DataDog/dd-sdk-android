@@ -22,10 +22,9 @@ public final class Baggage {
     private static final char KEY_VALUE_SEPARATOR = '=';
     private static final PercentEscaper UTF_ESCAPER = PercentEscaper.create();
 
-    private final HashMap<String, String> values;
+    private final HashMap<String, String> values = new HashMap<>();
 
     public Baggage() {
-        this.values = new HashMap<>();
     }
 
     public boolean isEmpty() {
@@ -83,8 +82,8 @@ public final class Baggage {
             if (kvSeparatorInd > end) {
                 return new Baggage();
             }
-            String key = decode(input.substring(start, kvSeparatorInd).trim());
-            String value = decode(input.substring(kvSeparatorInd + 1, end).trim());
+            String key = urlDecode(input.substring(start, kvSeparatorInd).trim());
+            String value = urlDecode(input.substring(kvSeparatorInd + 1, end).trim());
             if (key.isEmpty() || value.isEmpty()) {
                 return new Baggage();
             }
@@ -99,7 +98,7 @@ public final class Baggage {
         return baggage;
     }
 
-    private static String decode(final String value) {
+    private static String urlDecode(final String value) {
         String decoded = value;
         try {
             // Suppressing decode(String s, Charset charset) because it requires minSdk = 33.

@@ -17,7 +17,7 @@ internal class BaggageTest {
     fun `M return empty W from { invalid header value }`(
         headerValue: String?
     ) {
-        assertThat(Baggage.from(headerValue).asMap()).isEqualTo(emptyMap<String, String>())
+        assertThat(Baggage.from(headerValue).asMap()).isEmpty()
     }
 
     @ParameterizedTest
