@@ -7,8 +7,6 @@
 package com.datadog.android.flags.featureflags
 
 import com.datadog.android.flags.featureflags.internal.NoOpFlagsProvider
-import com.datadog.android.flags.featureflags.model.FeatureFlagsUser
-import com.datadog.android.flags.featureflags.model.ProviderContext
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -32,16 +30,15 @@ internal class NoOpFlagsProviderTest {
     @Test
     fun `M do nothing W setContext()`(forge: Forge) {
         // Given
-        val fakeProviderContext = ProviderContext(
-            trackingKey = forge.anAlphabeticalString(),
-            user = FeatureFlagsUser(
-                id = forge.anAlphabeticalString(),
-                email = forge.anAlphabeticalString()
-            )
+        val fakeTargetingKey = forge.anAlphabeticalString()
+        val fakeAttributes = mapOf(
+            "user_id" to forge.anAlphabeticalString(),
+            "user_email" to forge.anAlphabeticalString(),
+            "plan" to "premium"
         )
 
         // When
-        testedProvider.setContext(fakeProviderContext)
+        testedProvider.setContext(fakeTargetingKey, fakeAttributes)
 
         // Then
         // No exception should be thrown, method should be no-op

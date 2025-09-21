@@ -38,9 +38,7 @@ internal class EndpointsHelperTest {
     // region buildEndpointHost - Supported sites
 
     @Test
-    fun `M build US1 endpoint W buildEndpointHost() { US1 site }`(
-        @StringForgery fakeCustomerDomain: String
-    ) {
+    fun `M build US1 endpoint W buildEndpointHost() { US1 site }`(@StringForgery fakeCustomerDomain: String) {
         // When
         val result = testedHelper.buildEndpointHost("US1", fakeCustomerDomain)
 
@@ -58,9 +56,7 @@ internal class EndpointsHelperTest {
     }
 
     @Test
-    fun `M build US3 endpoint W buildEndpointHost() { US3 site }`(
-        @StringForgery fakeCustomerDomain: String
-    ) {
+    fun `M build US3 endpoint W buildEndpointHost() { US3 site }`(@StringForgery fakeCustomerDomain: String) {
         // When
         val result = testedHelper.buildEndpointHost("US3", fakeCustomerDomain)
 
@@ -69,9 +65,7 @@ internal class EndpointsHelperTest {
     }
 
     @Test
-    fun `M build US5 endpoint W buildEndpointHost() { US5 site }`(
-        @StringForgery fakeCustomerDomain: String
-    ) {
+    fun `M build US5 endpoint W buildEndpointHost() { US5 site }`(@StringForgery fakeCustomerDomain: String) {
         // When
         val result = testedHelper.buildEndpointHost("US5", fakeCustomerDomain)
 
@@ -80,9 +74,7 @@ internal class EndpointsHelperTest {
     }
 
     @Test
-    fun `M build AP1 endpoint W buildEndpointHost() { AP1 site }`(
-        @StringForgery fakeCustomerDomain: String
-    ) {
+    fun `M build AP1 endpoint W buildEndpointHost() { AP1 site }`(@StringForgery fakeCustomerDomain: String) {
         // When
         val result = testedHelper.buildEndpointHost("AP1", fakeCustomerDomain)
 
@@ -91,9 +83,7 @@ internal class EndpointsHelperTest {
     }
 
     @Test
-    fun `M build AP2 endpoint W buildEndpointHost() { AP2 site }`(
-        @StringForgery fakeCustomerDomain: String
-    ) {
+    fun `M build AP2 endpoint W buildEndpointHost() { AP2 site }`(@StringForgery fakeCustomerDomain: String) {
         // When
         val result = testedHelper.buildEndpointHost("AP2", fakeCustomerDomain)
 
@@ -102,9 +92,7 @@ internal class EndpointsHelperTest {
     }
 
     @Test
-    fun `M build EU endpoint W buildEndpointHost() { EU site }`(
-        @StringForgery fakeCustomerDomain: String
-    ) {
+    fun `M build EU endpoint W buildEndpointHost() { EU site }`(@StringForgery fakeCustomerDomain: String) {
         // When
         val result = testedHelper.buildEndpointHost("EU", fakeCustomerDomain)
 
@@ -117,9 +105,7 @@ internal class EndpointsHelperTest {
     // region buildEndpointHost - Special domains
 
     @Test
-    fun `M build datad0g endpoint W buildEndpointHost() { datad0g site }`(
-        @StringForgery fakeCustomerDomain: String
-    ) {
+    fun `M build datad0g endpoint W buildEndpointHost() { datad0g site }`(@StringForgery fakeCustomerDomain: String) {
         // When
         val result = testedHelper.buildEndpointHost(DOMAIN_D0G, fakeCustomerDomain)
 
@@ -164,9 +150,7 @@ internal class EndpointsHelperTest {
     }
 
     @Test
-    fun `M handle empty site W buildEndpointHost() { empty site }`(
-        @StringForgery fakeCustomerDomain: String
-    ) {
+    fun `M handle empty site W buildEndpointHost() { empty site }`(@StringForgery fakeCustomerDomain: String) {
         // When
         val result = testedHelper.buildEndpointHost("", fakeCustomerDomain)
 
@@ -188,9 +172,7 @@ internal class EndpointsHelperTest {
     }
 
     @Test
-    fun `M be case sensitive W buildEndpointHost() { lowercase site }`(
-        @StringForgery fakeCustomerDomain: String
-    ) {
+    fun `M be case sensitive W buildEndpointHost() { lowercase site }`(@StringForgery fakeCustomerDomain: String) {
         // When
         val result = testedHelper.buildEndpointHost("us1", fakeCustomerDomain)
 

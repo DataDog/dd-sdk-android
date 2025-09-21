@@ -11,7 +11,4 @@ package com.datadog.android.flags.featureflags.model
  * @param id ID of the user.
  * @param email email of the user.
  */
-data class FeatureFlagsUser(
-    val id: String,
-    val email: String
-)
+data class FeatureFlagsUser(val id: String, val email: String)

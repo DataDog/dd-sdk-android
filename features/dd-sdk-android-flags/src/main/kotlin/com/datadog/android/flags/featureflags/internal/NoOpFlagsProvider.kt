@@ -7,29 +7,18 @@
 package com.datadog.android.flags.featureflags.internal
 
 import com.datadog.android.flags.featureflags.FlagsProvider
-import com.datadog.android.flags.featureflags.model.ProviderContext
 import org.json.JSONObject
 
 internal class NoOpFlagsProvider : FlagsProvider {
-    override fun setContext(newContext: ProviderContext) {}
+    override fun setContext(targetingKey: String, attributes: Map<String, Any>) {}
 
-    override fun resolveBooleanValue(flagKey: String, defaultValue: Boolean): Boolean {
-        return defaultValue
-    }
+    override fun resolveBooleanValue(flagKey: String, defaultValue: Boolean): Boolean = defaultValue
 
-    override fun resolveStringValue(flagKey: String, defaultValue: String): String {
-        return defaultValue
-    }
+    override fun resolveStringValue(flagKey: String, defaultValue: String): String = defaultValue
 
-    override fun resolveNumberValue(flagKey: String, defaultValue: Number): Number {
-        return defaultValue
-    }
+    override fun resolveNumberValue(flagKey: String, defaultValue: Number): Number = defaultValue
 
-    override fun resolveIntValue(flagKey: String, defaultValue: Int): Int {
-        return defaultValue
-    }
+    override fun resolveIntValue(flagKey: String, defaultValue: Int): Int = defaultValue
 
-    override fun resolveStructureValue(flagKey: String, defaultValue: JSONObject): JSONObject {
-        return defaultValue
-    }
+    override fun resolveStructureValue(flagKey: String, defaultValue: JSONObject): JSONObject = defaultValue
 }

@@ -15,15 +15,11 @@ import com.datadog.android.api.feature.FeatureSdkCore
  * An implementation of [Feature] for getting and reporting
  * feature flags to the RUM dashboard.
  */
-internal class FlagsFeature(
-    private val sdkCore: FeatureSdkCore,
-    internal var applicationId: String? = null
-) : Feature, FeatureContextUpdateReceiver {
+internal class FlagsFeature(private val sdkCore: FeatureSdkCore, internal var applicationId: String? = null) :
+    Feature,
+    FeatureContextUpdateReceiver {
 
-    override fun onContextUpdate(
-        featureName: String,
-        context: Map<String, Any?>
-    ) {
+    override fun onContextUpdate(featureName: String, context: Map<String, Any?>) {
         if (featureName == Feature.RUM_FEATURE_NAME) {
             applicationId = context["application_id"].toString()
         }

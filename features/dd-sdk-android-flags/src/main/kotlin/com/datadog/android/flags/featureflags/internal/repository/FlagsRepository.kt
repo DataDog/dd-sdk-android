@@ -7,11 +7,13 @@
 package com.datadog.android.flags.featureflags.internal.repository
 
 import com.datadog.android.flags.featureflags.internal.model.PrecomputedFlag
-import com.datadog.android.flags.featureflags.model.ProviderContext
+import com.datadog.android.flags.featureflags.model.EvaluationContext
 import com.datadog.tools.annotation.NoOpImplementation
 
 @NoOpImplementation
 internal interface FlagsRepository {
     fun getPrecomputedFlag(key: String): PrecomputedFlag?
-    fun updateProviderContext(newContext: ProviderContext)
+    fun getEvaluationContext(): EvaluationContext?
+    fun setFlagsAndContext(context: EvaluationContext, flags: Map<String, PrecomputedFlag>)
+    fun getPrecomputedFlagWithContext(key: String): Pair<PrecomputedFlag, EvaluationContext>?
 }

@@ -8,78 +8,58 @@ package com.datadog.android.flags.featureflags.internal.repository
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.FeatureSdkCore
-import com.datadog.android.core.internal.utils.executeSafe
-import com.datadog.android.flags.featureflags.internal.model.FlagsContext
 import com.datadog.android.flags.featureflags.internal.model.PrecomputedFlag
-import com.datadog.android.flags.featureflags.internal.repository.net.DefaultFlagsNetworkManager
-import com.datadog.android.flags.featureflags.internal.repository.net.FlagsNetworkManager
-import com.datadog.android.flags.featureflags.internal.repository.net.NoOpFlagsNetworkManager
-import com.datadog.android.flags.featureflags.internal.repository.net.PrecomputeMapper
-import com.datadog.android.flags.featureflags.internal.repository.store.FlagsStoreManager
-import com.datadog.android.flags.featureflags.internal.repository.store.NoOpStoreManager
-import com.datadog.android.flags.featureflags.internal.repository.store.StoreManager
-import com.datadog.android.flags.featureflags.model.ProviderContext
-import java.util.concurrent.ExecutorService
+import com.datadog.android.flags.featureflags.model.EvaluationContext
 import java.util.concurrent.atomic.AtomicReference
 
 internal class DefaultFlagsRepository(
     private val featureSdkCore: FeatureSdkCore,
-    private val executorService: ExecutorService,
-    private val flagsContext: FlagsContext,
-    private val internalLogger: InternalLogger = featureSdkCore.internalLogger,
-    private var flagsStoreManager: StoreManager = NoOpStoreManager(),
-    private val precomputeMapper: PrecomputeMapper = PrecomputeMapper(
-        internalLogger = internalLogger
-    ),
-    private var flagsNetworkManager: FlagsNetworkManager = NoOpFlagsNetworkManager()
+    private val internalLogger: InternalLogger = featureSdkCore.internalLogger
 ) : FlagsRepository {
-    private var currentProviderContext = AtomicReference<ProviderContext>(null)
+    // Atomic state - ensures context and flags are always consistent
+    private data class FlagsState(val context: EvaluationContext, val flags: Map<String, PrecomputedFlag>)
+    private val atomicState = AtomicReference<FlagsState?>(null)
 
-    init {
-        flagsStoreManager = FlagsStoreManager()
+    override fun setFlagsAndContext(context: EvaluationContext, flags: Map<String, PrecomputedFlag>) {
+        val newState = FlagsState(context, flags)
+        atomicState.set(newState)
 
-        flagsNetworkManager = DefaultFlagsNetworkManager(
-            internalLogger = internalLogger,
-            flagsContext = flagsContext
+        internalLogger.log(
+            InternalLogger.Level.DEBUG,
+            InternalLogger.Target.MAINTAINER,
+            { "Set flags and context: ${flags.size} flags for context: ${context.targetingKey}" }
         )
     }
 
-    override fun updateProviderContext(newContext: ProviderContext) {
-        currentProviderContext.set(newContext)
-        fetchPrecomputedFlagsFromRemote()
-    }
-
     override fun getPrecomputedFlag(key: String): PrecomputedFlag? {
-        if (currentProviderContext.get() == null) {
-            featureSdkCore.internalLogger.log(
-                level = InternalLogger.Level.WARN,
-                target = InternalLogger.Target.MAINTAINER,
-                messageBuilder = { ERROR_CONTEXT_NOT_SET }
-            )
-            return null
+        // Check atomic state first
+        val state = atomicState.get()
+        if (state != null) {
+            return state.flags[key]
         }
-
-        val result = flagsStoreManager.getPrecomputedFlag(key)
-        return result
+        // Log that no flag state and no context is available
+        internalLogger.log(
+            InternalLogger.Level.WARN,
+            InternalLogger.Target.MAINTAINER,
+            { WARN_CONTEXT_NOT_SET }
+        )
+        return null
     }
 
-    private fun fetchPrecomputedFlagsFromRemote() {
-        executorService.executeSafe(
-            operationName = FETCH_PRECOMPUTED_FLAGS_OPERATION_NAME,
-            internalLogger = internalLogger
-        ) {
-            val response = flagsNetworkManager.downloadPrecomputedFlags(currentProviderContext.get())
-            if (response != null) {
-                val flagsMap = precomputeMapper.map(response)
-                if (flagsMap.isNotEmpty()) {
-                    flagsStoreManager.updateFlagsState(flagsMap)
-                }
+    override fun getEvaluationContext(): EvaluationContext? = atomicState.get()?.context
+
+    override fun getPrecomputedFlagWithContext(key: String): Pair<PrecomputedFlag, EvaluationContext>? {
+        val state = atomicState.get()
+        if (state != null) {
+            val flag = state.flags[key]
+            if (flag != null) {
+                return flag to state.context
             }
         }
+        return null
     }
 
-    private companion object {
-        const val FETCH_PRECOMPUTED_FLAGS_OPERATION_NAME = "Fetch precomputed flags"
-        const val ERROR_CONTEXT_NOT_SET = "You must call FlagsClient.get().setContext in order to have flags available"
+    companion object {
+        const val WARN_CONTEXT_NOT_SET = "You must call FlagsClient.get().setContext in order to have flags available"
     }
 }
