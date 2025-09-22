@@ -37,6 +37,7 @@ This project hosts the following modules:
     - `features/dd-sdk-android-trace-internal`: a library containing internal classes for the Trace library;
     - `features/dd-sdk-android-trace-otel`: an extension of Trace library to integrate with [OpenTelemetry](https://opentelemetry.io/);
     - `features/dd-sdk-android-webview`: a library to forward logs and RUM events captured in a webview to be linked with the mobile session;
+    - `features/dd-sdk-android-profiling`: a library to record application performance profiles;
   - `integrations/***`: a set of libraries integrating Datadog products in third party libraries:
     - `integrations/dd-sdk-android-coil`: a lightweight library providing a bridge integration between Datadog SDK and [Coil](https://coil-kt.github.io/coil/);
     - `integrations/dd-sdk-android-compose`: a lightweight library providing a bridge integration between Datadog SDK and [Jetpack Compose](https://developer.android.com/jetpack/compose);

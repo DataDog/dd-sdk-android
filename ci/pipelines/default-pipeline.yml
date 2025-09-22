@@ -112,6 +112,7 @@ analysis:detekt-custom:
     - ./gradlew :features:dd-sdk-android-trace:customDetektRules
     - ./gradlew :features:dd-sdk-android-trace-otel:customDetektRules
     - ./gradlew :features:dd-sdk-android-webview:customDetektRules
+    - ./gradlew :features:dd-sdk-android-profiling:customDetektRules
     - ./gradlew :integrations:dd-sdk-android-coil:customDetektRules
     - ./gradlew :integrations:dd-sdk-android-compose:customDetektRules
     - ./gradlew :integrations:dd-sdk-android-fresco:customDetektRules
@@ -714,6 +715,22 @@ publish:release-webview:
     paths:
       - features/dd-sdk-android-webview/verification-metadata.xml
 
+publish:release-profiling:
+  tags: [ "arch:amd64" ]
+  only:
+    - tags
+    - develop
+  image: $CI_IMAGE_DOCKER
+  stage: publish
+  timeout: 30m
+  script:
+    - !reference [.snippets, set-publishing-credentials]
+    - ./gradlew :features:dd-sdk-android-profiling:publishToSonatype closeSonatypeStagingRepository --stacktrace --no-daemon
+  artifacts:
+    when: on_success
+    expire_in: 7 days
+    paths:
+      - features/dd-sdk-android-profiling/verification-metadata.xml
 # endregion
 
 # region Publish integrations/*
@@ -1051,6 +1068,7 @@ notify:merge-verification-metadata:
     - publish:release-session-replay-material
     - publish:release-session-replay-compose
     - publish:release-webview
+    - publish:release-profiling
     - publish:release-coil
     - publish:release-compose
     - publish:release-fresco
