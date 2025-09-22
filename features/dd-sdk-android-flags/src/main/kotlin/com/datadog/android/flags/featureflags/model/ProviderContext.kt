@@ -11,7 +11,4 @@ package com.datadog.android.flags.featureflags.model
  * @param trackingKey TrackingKey to use.
  * @param user User to use.
  */
-data class ProviderContext(
-    val trackingKey: String,
-    val user: FeatureFlagsUser
-)
+data class ProviderContext(val trackingKey: String, val user: FeatureFlagsUser)

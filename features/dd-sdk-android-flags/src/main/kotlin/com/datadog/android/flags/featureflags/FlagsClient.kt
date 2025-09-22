@@ -32,10 +32,8 @@ object FlagsClient {
      */
     @JvmOverloads
     @JvmStatic
-    fun isRegistered(sdkCore: SdkCore = Datadog.getInstance()): Boolean {
-        return synchronized(registeredProviders) {
-            registeredProviders.containsKey(sdkCore)
-        }
+    fun isRegistered(sdkCore: SdkCore = Datadog.getInstance()): Boolean = synchronized(registeredProviders) {
+        registeredProviders.containsKey(sdkCore)
     }
 
     /**
@@ -48,23 +46,21 @@ object FlagsClient {
      */
     @JvmOverloads
     @JvmStatic
-    fun get(sdkCore: SdkCore = Datadog.getInstance()): FlagsProvider {
-        return synchronized(registeredProviders) {
-            val provider = registeredProviders[sdkCore]
-            if (provider == null) {
-                val errorMsg = "No FlagsProvider for the SDK instance with name ${sdkCore.name} " +
-                    "found, returning no-op implementation."
-                (sdkCore as? FeatureSdkCore)
-                    ?.internalLogger
-                    ?.log(
-                        InternalLogger.Level.WARN,
-                        InternalLogger.Target.USER,
-                        { errorMsg }
-                    )
-                NoOpFlagsProvider()
-            } else {
-                provider
-            }
+    fun get(sdkCore: SdkCore = Datadog.getInstance()): FlagsProvider = synchronized(registeredProviders) {
+        val provider = registeredProviders[sdkCore]
+        if (provider == null) {
+            val errorMsg = "No FlagsProvider for the SDK instance with name ${sdkCore.name} " +
+                "found, returning no-op implementation."
+            (sdkCore as? FeatureSdkCore)
+                ?.internalLogger
+                ?.log(
+                    InternalLogger.Level.WARN,
+                    InternalLogger.Target.USER,
+                    { errorMsg }
+                )
+            NoOpFlagsProvider()
+        } else {
+            provider
         }
     }
 
@@ -84,8 +80,8 @@ object FlagsClient {
      * instance will be used.
      * @return `true` if the provider was registered as a result of this call, `false` otherwise.
      */
-    internal fun registerIfAbsent(provider: FlagsProvider, sdkCore: SdkCore = Datadog.getInstance()): Boolean {
-        return synchronized(registeredProviders) {
+    internal fun registerIfAbsent(provider: FlagsProvider, sdkCore: SdkCore = Datadog.getInstance()): Boolean =
+        synchronized(registeredProviders) {
             if (registeredProviders.containsKey(sdkCore)) {
                 (sdkCore as FeatureSdkCore).internalLogger.log(
                     InternalLogger.Level.WARN,
@@ -99,7 +95,6 @@ object FlagsClient {
                 true
             }
         }
-    }
 
     internal fun unregister(sdkCore: SdkCore = Datadog.getInstance()) {
         synchronized(registeredProviders) {

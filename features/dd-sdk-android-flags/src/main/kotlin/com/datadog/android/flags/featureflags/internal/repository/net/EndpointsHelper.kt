@@ -10,54 +10,50 @@ import com.datadog.android.api.InternalLogger
 import org.json.JSONException
 import org.json.JSONObject
 
-internal class EndpointsHelper(
-    private val internalLogger: InternalLogger
-) {
+internal class EndpointsHelper(private val internalLogger: InternalLogger) {
 
-    internal fun buildEndpointHost(site: String, customerDomain: String = "preview"): String {
-        return when (site) {
-            DOMAIN_GOV -> {
+    internal fun buildEndpointHost(site: String, customerDomain: String = "preview"): String = when (site) {
+        DOMAIN_GOV -> {
+            internalLogger.log(
+                level = InternalLogger.Level.ERROR,
+                target = InternalLogger.Target.MAINTAINER,
+                messageBuilder = { ERROR_GOV_NOT_SUPPORTED }
+            )
+            ""
+        }
+        DOMAIN_D0G -> {
+            "$customerDomain.ff-cdn.datad0g.com"
+        }
+        in siteConfig -> {
+            val siteConfiguration = siteConfig[site]
+            if (siteConfiguration != null) {
+                val dc = siteConfiguration.optString("dc", "")
+                val tld = siteConfiguration.optString("tld", "com")
+
+                // customer domain is for future use
+                // ff-cdn is the subdomain pointing to the CDN servers
+                // dc is the datacenter, if specified
+                // tld is the top level domain, changes for eu DCs
+                "$customerDomain.ff-cdn.${if (dc.isNotEmpty()) "$dc." else ""}datadoghq.$tld"
+            } else {
+                // This should never happen since we're in the 'in siteConfig' branch,
+                // but handle it safely just in case
                 internalLogger.log(
                     level = InternalLogger.Level.ERROR,
                     target = InternalLogger.Target.MAINTAINER,
-                    messageBuilder = { ERROR_GOV_NOT_SUPPORTED }
+                    messageBuilder = { "Site configuration unexpectedly null for site: $site" }
                 )
                 ""
             }
-            DOMAIN_D0G -> {
-                "$customerDomain.ff-cdn.datad0g.com"
-            }
-            in siteConfig -> {
-                val siteConfiguration = siteConfig[site]
-                if (siteConfiguration != null) {
-                    val dc = siteConfiguration.optString("dc", "")
-                    val tld = siteConfiguration.optString("tld", "com")
-
-                    // customer domain is for future use
-                    // ff-cdn is the subdomain pointing to the CDN servers
-                    // dc is the datacenter, if specified
-                    // tld is the top level domain, changes for eu DCs
-                    "$customerDomain.ff-cdn.${if (dc.isNotEmpty()) "$dc." else ""}datadoghq.$tld"
-                } else {
-                    // This should never happen since we're in the 'in siteConfig' branch,
-                    // but handle it safely just in case
-                    internalLogger.log(
-                        level = InternalLogger.Level.ERROR,
-                        target = InternalLogger.Target.MAINTAINER,
-                        messageBuilder = { "Site configuration unexpectedly null for site: $site" }
-                    )
-                    ""
-                }
-            }
-            else -> {
-                val supportedSites = siteConfig.keys.joinToString(", ")
-                internalLogger.log(
-                    level = InternalLogger.Level.ERROR,
-                    target = InternalLogger.Target.MAINTAINER,
-                    messageBuilder = { "Unsupported site: $site. Supported sites: $supportedSites" }
-                )
-                ""
-            }
+        }
+        else -> {
+            val supportedSites = siteConfig.keys.joinToString(", ")
+            internalLogger.log(
+                level = InternalLogger.Level.ERROR,
+                target = InternalLogger.Target.MAINTAINER,
+                messageBuilder = { "Unsupported site: $site. Supported sites: $supportedSites" }
+            )
+            ""
         }
     }
 
@@ -70,18 +66,16 @@ internal class EndpointsHelper(
         "EU" to createSiteConfigObject(tld = "eu")
     )
 
-    private fun createSiteConfigObject(dc: String? = null, tld: String? = null): JSONObject {
-        return try {
-            JSONObject().apply {
-                dc?.let { put("dc", it) }
-                tld?.let { put("tld", it) }
-            }
-        } catch (_: JSONException) {
-            // should never happen
-            @Suppress("TodoWithoutTask")
-            // TODO log this?
-            JSONObject()
+    private fun createSiteConfigObject(dc: String? = null, tld: String? = null): JSONObject = try {
+        JSONObject().apply {
+            dc?.let { put("dc", it) }
+            tld?.let { put("tld", it) }
         }
+    } catch (_: JSONException) {
+        // should never happen
+        @Suppress("TodoWithoutTask")
+        // TODO log this?
+        JSONObject()
     }
 
     internal companion object {

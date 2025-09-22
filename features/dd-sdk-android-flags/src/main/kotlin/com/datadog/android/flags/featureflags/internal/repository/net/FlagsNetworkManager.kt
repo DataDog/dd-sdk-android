@@ -6,10 +6,10 @@
 
 package com.datadog.android.flags.featureflags.internal.repository.net
 
-import com.datadog.android.flags.featureflags.model.ProviderContext
+import com.datadog.android.flags.featureflags.model.EvaluationContext
 import com.datadog.tools.annotation.NoOpImplementation
 
 @NoOpImplementation
 internal interface FlagsNetworkManager {
-    fun downloadPrecomputedFlags(context: ProviderContext): String?
+    fun downloadPrecomputedFlags(context: EvaluationContext): String?
 }

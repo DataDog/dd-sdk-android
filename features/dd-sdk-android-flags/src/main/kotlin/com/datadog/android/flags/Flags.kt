@@ -53,10 +53,7 @@ object Flags {
         }
     }
 
-    private fun createProvider(
-        sdkCore: FeatureSdkCore,
-        flagsFeature: FlagsFeature
-    ): FlagsProvider? {
+    private fun createProvider(sdkCore: FeatureSdkCore, flagsFeature: FlagsFeature): FlagsProvider? {
         val executorService = sdkCore.createSingleThreadExecutorService(
             executorContext = FLAGS_EXECUTOR_NAME
         )
@@ -85,13 +82,11 @@ object Flags {
             return null
         }
 
-        @Suppress("TodoWithoutTask") // TODO replace targetingKey later
         val flagsContext = FlagsContext(
             applicationId = applicationId,
             clientToken = clientToken,
             site = site,
-            env = env,
-            targetingKey = "test_subject"
+            env = env
         )
 
         return DatadogFlagsProvider(

@@ -28,6 +28,7 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
+import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
@@ -410,6 +411,188 @@ internal class DatadogFlagsProviderTest {
         assertThat(result).isEqualTo(fakeFlagValue)
 
         verify(customRepository).getPrecomputedFlag(fakeFlagKey)
+    }
+
+    // endregion
+
+    // region setContext()
+
+    @Test
+    fun `M create evaluation context W setContext() { valid attributes }`(forge: Forge) {
+        // Given
+        val fakeTargetingKey = forge.anAlphabeticalString()
+        val fakeAttributes = mapOf(
+            "plan" to forge.anElementFrom("free", "premium", "enterprise"),
+            "region" to forge.anElementFrom("us-east-1", "eu-west-1"),
+            "user_id" to forge.anInt(),
+            "is_beta" to forge.aBool(),
+            "score" to forge.aDouble()
+        )
+
+        // When
+        testedProvider.setContext(fakeTargetingKey, fakeAttributes)
+
+        // Then
+        // Since orchestrator runs async, we can't directly verify the EvaluationContext
+        // But we can verify that the method completes without throwing
+        // Integration tests would verify the full flow
+    }
+
+    @Test
+    fun `M filter unsupported attribute types W setContext() { mixed valid and invalid types }`(forge: Forge) {
+        // Given
+        val fakeTargetingKey = forge.anAlphabeticalString()
+        val validAttributes = mapOf(
+            "string_attr" to forge.anAlphabeticalString(),
+            "number_attr" to forge.anInt(),
+            "boolean_attr" to forge.aBool()
+        )
+        val invalidAttributes = mapOf(
+            "invalid_list" to listOf(1, 2, 3),
+            "invalid_array" to arrayOf("a", "b"),
+            "invalid_map" to mapOf("not" to "supported") // Maps no longer supported
+        )
+        val allAttributes = validAttributes + invalidAttributes
+
+        // When
+        testedProvider.setContext(fakeTargetingKey, allAttributes)
+
+        // Then
+        // addAll() now calls addAttribute() which filters, so warnings should be logged
+        verify(mockInternalLogger, times(3)).log(
+            eq(InternalLogger.Level.WARN),
+            eq(InternalLogger.Target.USER),
+            any(),
+            eq(null),
+            eq(false),
+            eq(null)
+        )
+    }
+
+    @Test
+    fun `M handle empty attributes W setContext() { empty map }`(forge: Forge) {
+        // Given
+        val fakeTargetingKey = forge.anAlphabeticalString()
+        val emptyAttributes = emptyMap<String, Any>()
+
+        // When
+        testedProvider.setContext(fakeTargetingKey, emptyAttributes)
+
+        // Then
+        // Should complete without errors and not log any warnings
+        verify(mockInternalLogger, times(0)).log(
+            eq(InternalLogger.Level.WARN),
+            eq(InternalLogger.Target.USER),
+            any(),
+            any(),
+            any(),
+            any()
+        )
+    }
+
+    @Test
+    fun `M preserve targeting key exactly W setContext() { special characters }`() {
+        // Given
+        val specialTargetingKey = "user@domain.com-123_test.key"
+        val fakeAttributes = mapOf("test" to "value")
+
+        // When
+        testedProvider.setContext(specialTargetingKey, fakeAttributes)
+
+        // Then
+        // Method should complete without throwing for special characters
+        // The targeting key preservation is tested in EvaluationContext tests
+    }
+
+    @Test
+    fun `M handle filtered attributes W setContext() { valid attributes only }`(forge: Forge) {
+        // Given
+        val fakeTargetingKey = forge.anAlphabeticalString()
+        val validAttributes = mapOf(
+            "valid_string" to forge.anAlphabeticalString(),
+            "valid_number" to forge.anInt()
+        )
+
+        // When
+        testedProvider.setContext(fakeTargetingKey, validAttributes)
+
+        // Then
+        // Should handle gracefully without warnings
+        verify(mockInternalLogger, times(0)).log(
+            eq(InternalLogger.Level.WARN),
+            eq(InternalLogger.Target.USER),
+            any(),
+            any(),
+            any(),
+            any()
+        )
+    }
+
+    @Test
+    fun `M not throw exception W setContext() { all supported attribute types }`(forge: Forge) {
+        // Given
+        val fakeTargetingKey = forge.anAlphabeticalString()
+        val supportedAttributes = mapOf(
+            "string_type" to forge.anAlphabeticalString(),
+            "int_type" to forge.anInt(),
+            "long_type" to forge.aLong(),
+            "double_type" to forge.aDouble(),
+            "float_type" to forge.aFloat(),
+            "boolean_type" to forge.aBool()
+        )
+
+        // When & Then
+        // Should not throw any exceptions
+        testedProvider.setContext(fakeTargetingKey, supportedAttributes)
+    }
+
+    @Test
+    fun `M log error and not crash W setContext() { blank targeting key }`() {
+        // Given
+        val blankTargetingKey = ""
+        val fakeAttributes = mapOf("test" to "value")
+
+        // When
+        testedProvider.setContext(blankTargetingKey, fakeAttributes)
+
+        // Then
+        argumentCaptor<() -> String> {
+            verify(mockInternalLogger).log(
+                eq(InternalLogger.Level.ERROR),
+                eq(InternalLogger.Target.USER),
+                capture(),
+                any<IllegalArgumentException>(),
+                eq(false),
+                eq(null)
+            )
+            val message = lastValue()
+            assertThat(message).contains("Failed to set context")
+            assertThat(message).contains("Targeting key cannot be blank")
+        }
+    }
+
+    @Test
+    fun `M log error and not crash W setContext() { whitespace-only targeting key }`() {
+        // Given
+        val whitespaceTargetingKey = "   "
+        val fakeAttributes = mapOf("test" to "value")
+
+        // When
+        testedProvider.setContext(whitespaceTargetingKey, fakeAttributes)
+
+        // Then
+        argumentCaptor<() -> String> {
+            verify(mockInternalLogger).log(
+                eq(InternalLogger.Level.ERROR),
+                eq(InternalLogger.Target.USER),
+                capture(),
+                any<IllegalArgumentException>(),
+                eq(false),
+                eq(null)
+            )
+            assertThat(lastValue()).contains("Failed to set context")
+            assertThat(lastValue()).contains("Targeting key cannot be blank")
+        }
     }
 
     // endregion

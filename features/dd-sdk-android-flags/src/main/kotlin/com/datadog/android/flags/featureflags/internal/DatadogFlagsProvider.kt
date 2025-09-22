@@ -9,11 +9,14 @@ package com.datadog.android.flags.featureflags.internal
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.flags.featureflags.FlagsProvider
+import com.datadog.android.flags.featureflags.internal.evaluation.EvaluationsManager
 import com.datadog.android.flags.featureflags.internal.model.FlagsContext
 import com.datadog.android.flags.featureflags.internal.repository.DefaultFlagsRepository
 import com.datadog.android.flags.featureflags.internal.repository.FlagsRepository
 import com.datadog.android.flags.featureflags.internal.repository.NoOpFlagsRepository
-import com.datadog.android.flags.featureflags.model.ProviderContext
+import com.datadog.android.flags.featureflags.internal.repository.net.DefaultFlagsNetworkManager
+import com.datadog.android.flags.featureflags.internal.repository.net.PrecomputeMapper
+import com.datadog.android.flags.featureflags.model.EvaluationContext
 import org.json.JSONException
 import org.json.JSONObject
 import java.util.concurrent.ExecutorService
@@ -25,32 +28,58 @@ internal class DatadogFlagsProvider(
     private var flagsRepository: FlagsRepository = NoOpFlagsRepository()
 ) : FlagsProvider {
 
+    private val flagsOrchestrator: EvaluationsManager
+
     init {
         if (flagsRepository is NoOpFlagsRepository) {
             flagsRepository = DefaultFlagsRepository(
-                featureSdkCore = featureSdkCore,
-                executorService = executorService,
-                flagsContext = flagsContext
+                featureSdkCore = featureSdkCore
+            )
+        }
+
+        // Create orchestrator with network manager and dependencies
+        val flagsNetworkManager = DefaultFlagsNetworkManager(
+            internalLogger = featureSdkCore.internalLogger,
+            flagsContext = flagsContext
+        )
+
+        val precomputeMapper = PrecomputeMapper(featureSdkCore.internalLogger)
+
+        // The orchestrator handles taking the EvaluationContext and setting new evaluations into the FlagRepository
+        flagsOrchestrator = EvaluationsManager(
+            executorService = executorService,
+            internalLogger = featureSdkCore.internalLogger,
+            flagsRepository = flagsRepository,
+            flagsNetworkManager = flagsNetworkManager,
+            precomputeMapper = precomputeMapper
+        )
+    }
+
+    override fun setContext(targetingKey: String, attributes: Map<String, Any>) {
+        try {
+            // Create evaluation context with attribute filtering
+            val evaluationContext = EvaluationContext.builder(targetingKey, featureSdkCore.internalLogger)
+                .addAll(attributes)
+                .build()
+
+            // Pass to orchestrator to handle network request and atomic storage
+            flagsOrchestrator.updateEvaluationsForContext(evaluationContext)
+        } catch (e: IllegalArgumentException) {
+            featureSdkCore.internalLogger.log(
+                level = InternalLogger.Level.ERROR,
+                target = InternalLogger.Target.USER,
+                messageBuilder = { "Failed to set context: ${e.message}" },
+                throwable = e
             )
         }
     }
 
-    override fun setContext(newContext: ProviderContext) {
-        flagsRepository.updateProviderContext(newContext)
-    }
-
-    override fun resolveBooleanValue(
-        flagKey: String,
-        defaultValue: Boolean
-    ): Boolean {
+    override fun resolveBooleanValue(flagKey: String, defaultValue: Boolean): Boolean {
         val precomputedFlag = flagsRepository.getPrecomputedFlag(flagKey)
         return precomputedFlag?.variationValue?.toBooleanStrictOrNull() ?: defaultValue
     }
 
-    override fun resolveStringValue(
-        flagKey: String,
-        defaultValue: String
-    ): String {
+    override fun resolveStringValue(flagKey: String, defaultValue: String): String {
         val precomputedData = flagsRepository.getPrecomputedFlag(flagKey)
         return precomputedData?.variationValue ?: defaultValue
     }
@@ -60,18 +89,12 @@ internal class DatadogFlagsProvider(
         return precomputedData?.variationValue?.toIntOrNull() ?: defaultValue
     }
 
-    override fun resolveNumberValue(
-        flagKey: String,
-        defaultValue: Number
-    ): Number {
+    override fun resolveNumberValue(flagKey: String, defaultValue: Number): Number {
         val precomputedData = flagsRepository.getPrecomputedFlag(flagKey)
         return precomputedData?.variationValue?.toDoubleOrNull() ?: defaultValue
     }
 
-    override fun resolveStructureValue(
-        flagKey: String,
-        defaultValue: JSONObject
-    ): JSONObject {
+    override fun resolveStructureValue(flagKey: String, defaultValue: JSONObject): JSONObject {
         val precomputedData = flagsRepository.getPrecomputedFlag(flagKey)
         return precomputedData?.variationValue?.let {
             try {

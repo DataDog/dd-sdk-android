@@ -6,7 +6,6 @@
 
 package com.datadog.android.flags.featureflags
 
-import com.datadog.android.flags.featureflags.model.ProviderContext
 import org.json.JSONObject
 
 /**
@@ -15,9 +14,10 @@ import org.json.JSONObject
 interface FlagsProvider {
     /**
      * Set the context for the provider.
-     * @param newContext The new context to use for the provider.
+     * @param targetingKey The targeting key to use for flag evaluation.
+     * @param attributes The attributes to use for targeting.
      */
-    fun setContext(newContext: ProviderContext)
+    fun setContext(targetingKey: String, attributes: Map<String, Any>)
 
     /**
      * Resolve a Boolean flag value.
