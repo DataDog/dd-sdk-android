@@ -12,6 +12,7 @@ import com.datadog.android.flags.featureflags.internal.model.FlagsContext
 import com.datadog.android.flags.featureflags.internal.model.PrecomputedFlag
 import com.datadog.android.flags.featureflags.internal.model.PrecomputedFlagConstants
 import com.datadog.android.flags.featureflags.internal.repository.FlagsRepository
+import com.datadog.android.flags.featureflags.model.EvaluationContext
 import com.datadog.android.flags.utils.forge.ForgeConfigurator
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -430,7 +431,7 @@ internal class DatadogFlagsProviderTest {
         )
 
         // When
-        testedProvider.setContext(fakeTargetingKey, fakeAttributes)
+        testedProvider.setContext(EvaluationContext(fakeTargetingKey, fakeAttributes))
 
         // Then
         // Since orchestrator runs async, we can't directly verify the EvaluationContext
@@ -455,7 +456,10 @@ internal class DatadogFlagsProviderTest {
         val allAttributes = validAttributes + invalidAttributes
 
         // When
-        testedProvider.setContext(fakeTargetingKey, allAttributes)
+        val evaluationContext = EvaluationContext.builder(fakeTargetingKey, mockInternalLogger)
+            .addAll(allAttributes)
+            .build()
+        testedProvider.setContext(evaluationContext)
 
         // Then
         // addAll() now calls addAttribute() which filters, so warnings should be logged
@@ -476,7 +480,7 @@ internal class DatadogFlagsProviderTest {
         val emptyAttributes = emptyMap<String, Any>()
 
         // When
-        testedProvider.setContext(fakeTargetingKey, emptyAttributes)
+        testedProvider.setContext(EvaluationContext(fakeTargetingKey, emptyAttributes))
 
         // Then
         // Should complete without errors and not log any warnings
@@ -497,7 +501,7 @@ internal class DatadogFlagsProviderTest {
         val fakeAttributes = mapOf("test" to "value")
 
         // When
-        testedProvider.setContext(specialTargetingKey, fakeAttributes)
+        testedProvider.setContext(EvaluationContext(specialTargetingKey, fakeAttributes))
 
         // Then
         // Method should complete without throwing for special characters
@@ -514,7 +518,7 @@ internal class DatadogFlagsProviderTest {
         )
 
         // When
-        testedProvider.setContext(fakeTargetingKey, validAttributes)
+        testedProvider.setContext(EvaluationContext(fakeTargetingKey, validAttributes))
 
         // Then
         // Should handle gracefully without warnings
@@ -543,17 +547,18 @@ internal class DatadogFlagsProviderTest {
 
         // When & Then
         // Should not throw any exceptions
-        testedProvider.setContext(fakeTargetingKey, supportedAttributes)
+        testedProvider.setContext(EvaluationContext(fakeTargetingKey, supportedAttributes))
     }
 
     @Test
-    fun `M log error and not crash W setContext() { blank targeting key }`() {
+    fun `M log error and not update context W setContext() { blank targeting key }`() {
         // Given
         val blankTargetingKey = ""
         val fakeAttributes = mapOf("test" to "value")
+        val evaluationContext = EvaluationContext(blankTargetingKey, fakeAttributes)
 
         // When
-        testedProvider.setContext(blankTargetingKey, fakeAttributes)
+        testedProvider.setContext(evaluationContext)
 
         // Then
         argumentCaptor<() -> String> {
@@ -561,24 +566,23 @@ internal class DatadogFlagsProviderTest {
                 eq(InternalLogger.Level.ERROR),
                 eq(InternalLogger.Target.USER),
                 capture(),
-                any<IllegalArgumentException>(),
+                eq(null),
                 eq(false),
                 eq(null)
             )
-            val message = lastValue()
-            assertThat(message).contains("Failed to set context")
-            assertThat(message).contains("Targeting key cannot be blank")
+            assertThat(firstValue.invoke()).contains("Cannot set context: targeting key cannot be blank")
         }
     }
 
     @Test
-    fun `M log error and not crash W setContext() { whitespace-only targeting key }`() {
+    fun `M log error and not update context W setContext() { whitespace-only targeting key }`() {
         // Given
         val whitespaceTargetingKey = "   "
         val fakeAttributes = mapOf("test" to "value")
+        val evaluationContext = EvaluationContext(whitespaceTargetingKey, fakeAttributes)
 
         // When
-        testedProvider.setContext(whitespaceTargetingKey, fakeAttributes)
+        testedProvider.setContext(evaluationContext)
 
         // Then
         argumentCaptor<() -> String> {
@@ -586,12 +590,11 @@ internal class DatadogFlagsProviderTest {
                 eq(InternalLogger.Level.ERROR),
                 eq(InternalLogger.Target.USER),
                 capture(),
-                any<IllegalArgumentException>(),
+                eq(null),
                 eq(false),
                 eq(null)
             )
-            assertThat(lastValue()).contains("Failed to set context")
-            assertThat(lastValue()).contains("Targeting key cannot be blank")
+            assertThat(firstValue.invoke()).contains("Cannot set context: targeting key cannot be blank")
         }
     }
 

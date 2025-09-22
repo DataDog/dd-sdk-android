@@ -6,6 +6,7 @@
 
 package com.datadog.android.flags.featureflags
 
+import com.datadog.android.flags.featureflags.model.EvaluationContext
 import org.json.JSONObject
 
 /**
@@ -13,11 +14,10 @@ import org.json.JSONObject
  */
 interface FlagsProvider {
     /**
-     * Set the context for the provider.
-     * @param targetingKey The targeting key to use for flag evaluation.
-     * @param attributes The attributes to use for targeting.
+     * Set the evaluation context for the provider.
+     * @param evaluationContext The evaluation context to use for flag evaluation.
      */
-    fun setContext(targetingKey: String, attributes: Map<String, Any>)
+    fun setContext(evaluationContext: EvaluationContext)
 
     /**
      * Resolve a Boolean flag value.

@@ -55,16 +55,21 @@ internal class DatadogFlagsProvider(
         )
     }
 
-    override fun setContext(targetingKey: String, attributes: Map<String, Any>) {
-        try {
-            // Create evaluation context with attribute filtering
-            val evaluationContext = EvaluationContext.builder(targetingKey, featureSdkCore.internalLogger)
-                .addAll(attributes)
-                .build()
+    override fun setContext(evaluationContext: EvaluationContext) {
+        // Validate targeting key before proceeding
+        if (evaluationContext.targetingKey.isBlank()) {
+            featureSdkCore.internalLogger.log(
+                level = InternalLogger.Level.ERROR,
+                target = InternalLogger.Target.USER,
+                messageBuilder = { "Cannot set context: targeting key cannot be blank" }
+            )
+            return
+        }
 
+        try {
             // Pass to orchestrator to handle network request and atomic storage
             flagsOrchestrator.updateEvaluationsForContext(evaluationContext)
-        } catch (e: IllegalArgumentException) {
+        } catch (e: Exception) {
             featureSdkCore.internalLogger.log(
                 level = InternalLogger.Level.ERROR,
                 target = InternalLogger.Target.USER,
