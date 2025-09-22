@@ -17,7 +17,10 @@ import com.datadog.android.rum.featureoperations.FailureReason
 import com.datadog.android.rum.internal.RumErrorSourceType
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
+import com.datadog.android.rum.internal.startup.RumStartupScenario
+import com.datadog.android.rum.internal.startup.RumTTIDInfo
 import com.datadog.android.rum.model.ActionEvent
+import kotlin.time.Duration
 
 internal sealed class RumRawEvent {
 
@@ -270,5 +273,10 @@ internal sealed class RumRawEvent {
         val attributes: Map<String, Any?>,
         val failureReason: FailureReason? = null,
         override val eventTime: Time = Time()
+    ) : RumRawEvent()
+
+    internal class AppLaunchTTIDEvent(
+        override val eventTime: Time,
+        val info: RumTTIDInfo
     ) : RumRawEvent()
 }

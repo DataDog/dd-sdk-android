@@ -57,6 +57,8 @@ import com.datadog.android.rum.internal.domain.scope.RumScopeKey
 import com.datadog.android.rum.internal.domain.scope.RumSessionScope
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
 import com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener
+import com.datadog.android.rum.internal.startup.RumAppStartupTelemetryReporter
+import com.datadog.android.rum.internal.startup.RumTTIDInfo
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.rum.metric.interactiontonextview.LastInteractionIdentifier
 import com.datadog.android.rum.metric.networksettled.InitialResourceIdentifier
@@ -93,7 +95,8 @@ internal class DatadogRumMonitor(
     rumSessionTypeOverride: RumSessionType?,
     accessibilitySnapshotManager: AccessibilitySnapshotManager,
     batteryInfoProvider: InfoProvider<BatteryInfo>,
-    displayInfoProvider: InfoProvider<DisplayInfo>
+    displayInfoProvider: InfoProvider<DisplayInfo>,
+    rumAppStartupTelemetryReporter: RumAppStartupTelemetryReporter
 ) : RumMonitor, AdvancedRumMonitor {
 
     internal var rootScope = RumApplicationScope(
@@ -114,7 +117,8 @@ internal class DatadogRumMonitor(
         rumSessionTypeOverride = rumSessionTypeOverride,
         accessibilitySnapshotManager = accessibilitySnapshotManager,
         batteryInfoProvider = batteryInfoProvider,
-        displayInfoProvider = displayInfoProvider
+        displayInfoProvider = displayInfoProvider,
+        rumAppStartupTelemetryReporter = rumAppStartupTelemetryReporter
     )
 
     internal val keepAliveRunnable = Runnable {
@@ -645,6 +649,17 @@ internal class DatadogRumMonitor(
         sdkCore.getFeature(Feature.RUM_FEATURE_NAME)
             ?.unwrap<RumFeature>()
             ?.enableJankStatsTracking(activity)
+    }
+
+    override fun sendTTIDEvent(
+        info: RumTTIDInfo
+    ) {
+        handleEvent(
+            RumRawEvent.AppLaunchTTIDEvent(
+                eventTime = Time(),
+                info = info
+            )
+        )
     }
 
     // endregion

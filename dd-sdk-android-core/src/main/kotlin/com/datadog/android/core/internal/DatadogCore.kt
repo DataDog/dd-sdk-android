@@ -720,6 +720,9 @@ internal class DatadogCore(
     // endregion
 
     companion object {
+        init {
+            println("WAHAHA")
+        }
         internal const val SHUTDOWN_THREAD_NAME = "datadog_shutdown"
 
         internal const val ENV_NAME_VALIDATION_REG_EX = "[a-zA-Z0-9_:./-]{0,195}[a-zA-Z0-9_./-]"

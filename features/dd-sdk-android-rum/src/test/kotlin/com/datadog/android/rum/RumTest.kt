@@ -6,6 +6,7 @@
 
 package com.datadog.android.rum
 
+import android.app.Application
 import android.os.Looper
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.Feature
@@ -79,7 +80,7 @@ internal class RumTest {
             verify(mockSdkCore).registerFeature(capture())
 
             lastValue.onInitialize(
-                appContext = mock {
+                appContext = mock<Application> {
                     whenever(it.packageName) doReturn fakePackageName
                     whenever(it.resources) doReturn mock()
                     whenever(it.contentResolver) doReturn mock()
@@ -130,7 +131,7 @@ internal class RumTest {
         whenever(mockSdkCore.registerFeature(any())) doAnswer {
             val feature = it.getArgument<RumFeature>(0)
             feature.onInitialize(
-                appContext = mock {
+                appContext = mock<Application> {
                     whenever(it.packageName) doReturn fakePackageName
                     whenever(it.resources) doReturn mock()
                     whenever(it.contentResolver) doReturn mock()

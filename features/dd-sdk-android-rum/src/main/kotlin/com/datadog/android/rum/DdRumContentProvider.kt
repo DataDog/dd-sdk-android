@@ -68,6 +68,7 @@ class DdRumContentProvider : ContentProvider() {
         internal const val DEFAULT_IMPORTANCE: Int =
             ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND
         internal var processImportance = 0
+        internal val creationTimeNs: Long = System.nanoTime()
 
         @Suppress("unused") // Used for instrumented tests
         @JvmStatic

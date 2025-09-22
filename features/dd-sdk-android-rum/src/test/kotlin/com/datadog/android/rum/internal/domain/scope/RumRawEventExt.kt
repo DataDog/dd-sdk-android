@@ -11,6 +11,7 @@ import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.RumResourceMethod
 import com.datadog.android.rum.internal.domain.Time
+import com.datadog.android.rum.internal.startup.RumTTIDInfo
 import com.datadog.android.rum.model.ActionEvent
 import com.datadog.tools.unit.forge.aThrowable
 import com.datadog.tools.unit.forge.exhaustiveAttributes

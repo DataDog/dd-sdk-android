@@ -107,7 +107,8 @@ internal class RumAppStartupDetectorImplTest {
             RumStartupScenario.Cold(
                 initialTimeNanos = 0,
                 hasSavedInstanceStateBundle = hasSavedInstanceStateBundle,
-                activity = activity.wrapWeak()
+                activity = activity.wrapWeak(),
+                gap = 3.seconds
             )
         )
         verifyNoMoreInteractions(listener)
@@ -138,7 +139,8 @@ internal class RumAppStartupDetectorImplTest {
             RumStartupScenario.WarmFirstActivity(
                 initialTimeNanos = currentTime.inWholeNanoseconds,
                 hasSavedInstanceStateBundle = hasSavedInstanceStateBundle,
-                activity = activity.wrapWeak()
+                activity = activity.wrapWeak(),
+                gap = 3.seconds
             )
         )
         verifyNoMoreInteractions(listener)
@@ -165,7 +167,8 @@ internal class RumAppStartupDetectorImplTest {
             RumStartupScenario.WarmFirstActivity(
                 initialTimeNanos = currentTime.inWholeNanoseconds,
                 hasSavedInstanceStateBundle = hasSavedInstanceStateBundle,
-                activity = activity.wrapWeak()
+                activity = activity.wrapWeak(),
+                gap = 6.seconds
             )
         )
         verifyNoMoreInteractions(listener)
@@ -209,7 +212,8 @@ internal class RumAppStartupDetectorImplTest {
                 RumStartupScenario.Cold(
                     initialTimeNanos = 0,
                     hasSavedInstanceStateBundle = hasSavedInstanceStateBundle,
-                    activity = activity.wrapWeak()
+                    activity = activity.wrapWeak(),
+                    gap = 30.seconds
                 )
             )
 
@@ -260,7 +264,8 @@ internal class RumAppStartupDetectorImplTest {
             RumStartupScenario.Cold(
                 initialTimeNanos = 0,
                 hasSavedInstanceStateBundle = hasSavedInstanceStateBundle,
-                activity = activity.wrapWeak()
+                activity = activity.wrapWeak(),
+                gap = 3.seconds
             )
         )
         verifyNoMoreInteractions(listener)
@@ -306,7 +311,8 @@ internal class RumAppStartupDetectorImplTest {
             RumStartupScenario.Cold(
                 initialTimeNanos = 0,
                 hasSavedInstanceStateBundle = hasSavedInstanceStateBundle,
-                activity = activity.wrapWeak()
+                activity = activity.wrapWeak(),
+                gap = 3.seconds
             )
         )
         verifyNoMoreInteractions(listener)
@@ -356,7 +362,8 @@ internal class RumAppStartupDetectorImplTest {
                 RumStartupScenario.Cold(
                     initialTimeNanos = 0,
                     hasSavedInstanceStateBundle = hasSavedInstanceStateBundle,
-                    activity = activity.wrapWeak()
+                    activity = activity.wrapWeak(),
+                    gap = 30.seconds
                 )
             )
             listener.verifyScenarioDetected(
@@ -434,7 +441,8 @@ internal class RumAppStartupDetectorImplTest {
                 RumStartupScenario.Cold(
                     initialTimeNanos = 0,
                     hasSavedInstanceStateBundle = hasSavedInstanceStateBundle,
-                    activity = activity.wrapWeak()
+                    activity = activity.wrapWeak(),
+                    gap = 30.seconds
                 )
             )
 
