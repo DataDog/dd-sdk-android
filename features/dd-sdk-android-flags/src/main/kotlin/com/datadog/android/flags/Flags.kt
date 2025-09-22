@@ -26,19 +26,33 @@ object Flags {
     internal const val FLAGS_EXECUTOR_NAME = "flags-executor"
 
     /**
-     * Enables the Flags feature.
-     *
-     * @param configuration configuration to use with feature flags and experiments. If not provided, a default
-     * configuration will be used.
-     * @param sdkCore SDK instance to register feature in. If not provided, a default SDK instance
-     * will be used.
+     * Enables the Flags feature with default configuration.
      */
-    @JvmOverloads
+    @JvmStatic
+    fun enable() {
+        enable(FlagsConfiguration.DEFAULT_FEATURE_FLAGS_CONFIG, Datadog.getInstance())
+    }
+
+    /**
+     * Enables the Flags feature with custom configuration.
+     *
+     * @param configuration configuration to use with feature flags and experiments.
+     */
+    @JvmStatic
+    fun enable(configuration: FlagsConfiguration) {
+        enable(configuration, Datadog.getInstance())
+    }
+
+    /**
+     * Enables the Flags feature with custom configuration and SDK core.
+     *
+     * @param configuration configuration to use with feature flags and experiments.
+     * @param sdkCore SDK instance to register feature in.
+     */
     @JvmStatic
     fun enable(
-        @Suppress("UNUSED_PARAMETER") configuration: FlagsConfiguration,
-        @Suppress("TodoWithoutTask") // TODO remove suppression when we start using config
-        sdkCore: SdkCore = Datadog.getInstance()
+        configuration: FlagsConfiguration,
+        sdkCore: SdkCore
     ) {
         val flagsFeature = FlagsFeature(
             sdkCore as FeatureSdkCore
@@ -46,7 +60,7 @@ object Flags {
 
         sdkCore.registerFeature(flagsFeature)
 
-        createProvider(sdkCore, flagsFeature)?.let {
+        createProvider(configuration, sdkCore, flagsFeature)?.let {
             FlagsClientManager.registerIfAbsent(
                 client = it,
                 sdkCore
@@ -54,7 +68,7 @@ object Flags {
         }
     }
 
-    private fun createProvider(sdkCore: FeatureSdkCore, flagsFeature: FlagsFeature): FlagsClient? {
+    private fun createProvider(configuration: FlagsConfiguration, sdkCore: FeatureSdkCore, flagsFeature: FlagsFeature): FlagsClient? {
         val executorService = sdkCore.createSingleThreadExecutorService(
             executorContext = FLAGS_EXECUTOR_NAME
         )
@@ -87,7 +101,9 @@ object Flags {
             applicationId = applicationId,
             clientToken = clientToken,
             site = site,
-            env = env
+            env = env,
+            customExposureEndpoint = configuration.customExposureEndpoint,
+            flaggingProxy = configuration.flaggingProxy
         )
 
         return DatadogFlagsClient(

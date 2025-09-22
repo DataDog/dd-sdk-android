@@ -6,4 +6,11 @@
 
 package com.datadog.android.flags.featureflags.internal.model
 
-internal data class FlagsContext(val applicationId: String?, val clientToken: String, val site: String, val env: String)
+internal data class FlagsContext(
+    val applicationId: String?,
+    val clientToken: String,
+    val site: String,
+    val env: String,
+    val customExposureEndpoint: String? = null,
+    val flaggingProxy: String? = null
+)

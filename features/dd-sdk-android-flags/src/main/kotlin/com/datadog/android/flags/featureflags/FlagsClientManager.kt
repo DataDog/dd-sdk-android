@@ -147,7 +147,9 @@ object FlagsClientManager {
             applicationId = "", // TODO: Pass applicationId from FlagsFeature when integrating
             clientToken = clientToken,
             site = site,
-            env = env
+            env = env,
+            customExposureEndpoint = null, // Client-level creation doesn't have feature config access
+            flaggingProxy = null
         )
 
         return DatadogFlagsClient(
