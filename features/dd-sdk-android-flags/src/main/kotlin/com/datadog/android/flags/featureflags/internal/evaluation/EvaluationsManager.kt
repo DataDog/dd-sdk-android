@@ -15,7 +15,7 @@ import com.datadog.android.flags.featureflags.model.EvaluationContext
 import java.util.concurrent.ExecutorService
 
 /**
- * Orchestrates the flow from FlagsProvider to FlagsRepository.
+ * Orchestrates the flow from FlagsClient to FlagsRepository.
  * Takes evaluation context, fetches precomputed flags via network,
  * and atomically stores both context and flags in the repository.
  */

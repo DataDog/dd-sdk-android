@@ -11,9 +11,9 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.SdkCore
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.core.InternalSdkCore
+import com.datadog.android.flags.featureflags.FlagsClientManager
 import com.datadog.android.flags.featureflags.FlagsClient
-import com.datadog.android.flags.featureflags.FlagsProvider
-import com.datadog.android.flags.featureflags.internal.DatadogFlagsProvider
+import com.datadog.android.flags.featureflags.internal.DatadogFlagsClient
 import com.datadog.android.flags.featureflags.internal.model.FlagsContext
 import com.datadog.android.flags.internal.FlagsFeature
 
@@ -46,14 +46,14 @@ object Flags {
         sdkCore.registerFeature(flagsFeature)
 
         createProvider(sdkCore, flagsFeature)?.let {
-            FlagsClient.registerIfAbsent(
-                provider = it,
+            FlagsClientManager.registerIfAbsent(
+                client = it,
                 sdkCore
             )
         }
     }
 
-    private fun createProvider(sdkCore: FeatureSdkCore, flagsFeature: FlagsFeature): FlagsProvider? {
+    private fun createProvider(sdkCore: FeatureSdkCore, flagsFeature: FlagsFeature): FlagsClient? {
         val executorService = sdkCore.createSingleThreadExecutorService(
             executorContext = FLAGS_EXECUTOR_NAME
         )
@@ -89,7 +89,7 @@ object Flags {
             env = env
         )
 
-        return DatadogFlagsProvider(
+        return DatadogFlagsClient(
             executorService = executorService,
             featureSdkCore = sdkCore,
             flagsContext = flagsContext

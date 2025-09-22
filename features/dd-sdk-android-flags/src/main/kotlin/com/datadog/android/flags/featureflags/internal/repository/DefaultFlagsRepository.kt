@@ -60,6 +60,6 @@ internal class DefaultFlagsRepository(
     }
 
     companion object {
-        const val WARN_CONTEXT_NOT_SET = "You must call FlagsClient.get().setContext in order to have flags available"
+        const val WARN_CONTEXT_NOT_SET = "You must call FlagsClientManager.get().setContext in order to have flags available"
     }
 }

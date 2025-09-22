@@ -6,11 +6,11 @@
 
 package com.datadog.android.flags.featureflags.internal
 
-import com.datadog.android.flags.featureflags.FlagsProvider
+import com.datadog.android.flags.featureflags.FlagsClient
 import com.datadog.android.flags.featureflags.model.EvaluationContext
 import org.json.JSONObject
 
-internal class NoOpFlagsProvider : FlagsProvider {
+internal class NoOpFlagsClient : FlagsClient {
     override fun setContext(evaluationContext: EvaluationContext) {}
 
     override fun resolveBooleanValue(flagKey: String, defaultValue: Boolean): Boolean = defaultValue
