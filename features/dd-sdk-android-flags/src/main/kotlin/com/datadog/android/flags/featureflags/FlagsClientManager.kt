@@ -12,6 +12,10 @@ import com.datadog.android.api.SdkCore
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.flags.featureflags.FlagsClientManager.get
 import com.datadog.android.flags.featureflags.internal.NoOpFlagsClient
+import com.datadog.android.flags.featureflags.internal.DatadogFlagsClient
+import com.datadog.android.flags.featureflags.internal.model.FlagsContext
+import com.datadog.android.core.InternalSdkCore
+import com.datadog.android.flags.Flags.FLAGS_EXECUTOR_NAME
 
 /**
  * Manager for Flags client instances.
@@ -19,6 +23,7 @@ import com.datadog.android.flags.featureflags.internal.NoOpFlagsClient
 object FlagsClientManager {
 
     private val registeredProviders: MutableMap<SdkCore, FlagsClient> = mutableMapOf()
+    private val clientInstances: MutableMap<String, FlagsClient> = mutableMapOf()
 
     /**
      * Identify whether a [FlagsClient] has previously been registered for the given SDK instance.
@@ -62,6 +67,95 @@ object FlagsClientManager {
         } else {
             client
         }
+    }
+
+    /**
+     * Creates a new FlagsClient instance with the specified configuration.
+     *
+     * @param configuration Configuration for the client instance. If not provided, default configuration is used.
+     * @param sdkCore SDK instance to create the client for. If not provided, default instance will be used.
+     * @return A new FlagsClient instance, or null if the SDK is not properly configured.
+     */
+    @JvmOverloads
+    @JvmStatic
+    fun create(
+        configuration: FlagsClientConfiguration = FlagsClientConfiguration.DEFAULT,
+        sdkCore: SdkCore = Datadog.getInstance()
+    ): FlagsClient? = synchronized(clientInstances) {
+        val clientKey = generateClientKey(configuration, sdkCore)
+
+        // Return existing client if already created with same configuration
+        clientInstances[clientKey]?.let { return it }
+
+        // Create new client instance
+        val newClient = createClientInstance(configuration, sdkCore as FeatureSdkCore)
+        if (newClient != null) {
+            clientInstances[clientKey] = newClient
+        }
+
+        return newClient
+    }
+
+    /**
+     * Gets an existing FlagsClient instance by configuration.
+     *
+     * @param configuration Configuration that was used to create the client.
+     * @param sdkCore SDK instance the client was created for.
+     * @return The existing FlagsClient instance, or null if not found.
+     */
+    @JvmOverloads
+    @JvmStatic
+    fun getClient(
+        configuration: FlagsClientConfiguration = FlagsClientConfiguration.DEFAULT,
+        sdkCore: SdkCore = Datadog.getInstance()
+    ): FlagsClient? = synchronized(clientInstances) {
+        val clientKey = generateClientKey(configuration, sdkCore)
+        return clientInstances[clientKey]
+    }
+
+    private fun generateClientKey(configuration: FlagsClientConfiguration, sdkCore: SdkCore): String {
+        return "${sdkCore.name}:${configuration.clientKey}"
+    }
+
+    private fun createClientInstance(configuration: FlagsClientConfiguration, sdkCore: FeatureSdkCore): FlagsClient? {
+        val executorService = sdkCore.createSingleThreadExecutorService(
+            executorContext = FLAGS_EXECUTOR_NAME
+        )
+
+        val datadogContext = (sdkCore as? InternalSdkCore)?.getDatadogContext()
+        val internalLogger = sdkCore.internalLogger
+        val clientToken = datadogContext?.clientToken
+        val site = datadogContext?.site?.name
+        val env = datadogContext?.env
+
+        if (clientToken == null || site == null || env == null) {
+            val missingParams = listOfNotNull(
+                "clientToken".takeIf { clientToken == null },
+                "site".takeIf { site == null },
+                "env".takeIf { env == null }
+            ).joinToString(", ")
+
+            internalLogger.log(
+                InternalLogger.Level.ERROR,
+                InternalLogger.Target.MAINTAINER,
+                { "Cannot create FlagsClient: Missing required context parameters: $missingParams" }
+            )
+            return null
+        }
+
+        val flagsContext = FlagsContext(
+            applicationId = "", // TODO: Pass applicationId from FlagsFeature when integrating
+            clientToken = clientToken,
+            site = site,
+            env = env
+        )
+
+        return DatadogFlagsClient(
+            executorService = executorService,
+            featureSdkCore = sdkCore,
+            flagsContext = flagsContext,
+            configuration = configuration
+        )
     }
 
     // region Internal

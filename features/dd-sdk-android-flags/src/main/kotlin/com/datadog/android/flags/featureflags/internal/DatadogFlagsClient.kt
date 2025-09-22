@@ -9,6 +9,7 @@ package com.datadog.android.flags.featureflags.internal
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.flags.featureflags.FlagsClient
+import com.datadog.android.flags.featureflags.FlagsClientConfiguration
 import com.datadog.android.flags.featureflags.internal.evaluation.EvaluationsManager
 import com.datadog.android.flags.featureflags.internal.model.FlagsContext
 import com.datadog.android.flags.featureflags.internal.repository.DefaultFlagsRepository
@@ -25,6 +26,7 @@ internal class DatadogFlagsClient(
     private val executorService: ExecutorService,
     private val featureSdkCore: FeatureSdkCore,
     private val flagsContext: FlagsContext,
+    private val configuration: FlagsClientConfiguration = FlagsClientConfiguration.DEFAULT,
     private var flagsRepository: FlagsRepository = NoOpFlagsRepository()
 ) : FlagsClient {
 

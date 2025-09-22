@@ -13,6 +13,7 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.flags.featureflags.FlagsClientManager
 import com.datadog.android.flags.featureflags.FlagsClient
+import com.datadog.android.flags.featureflags.FlagsClientConfiguration
 import com.datadog.android.flags.featureflags.internal.DatadogFlagsClient
 import com.datadog.android.flags.featureflags.internal.model.FlagsContext
 import com.datadog.android.flags.internal.FlagsFeature
@@ -92,7 +93,8 @@ object Flags {
         return DatadogFlagsClient(
             executorService = executorService,
             featureSdkCore = sdkCore,
-            flagsContext = flagsContext
+            flagsContext = flagsContext,
+            configuration = FlagsClientConfiguration.DEFAULT
         )
     }
 }
