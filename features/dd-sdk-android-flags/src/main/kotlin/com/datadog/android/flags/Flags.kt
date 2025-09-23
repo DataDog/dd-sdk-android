@@ -36,7 +36,6 @@ object Flags {
     @JvmStatic
     fun enable(
         @Suppress("UNUSED_PARAMETER") configuration: FlagsConfiguration,
-        @Suppress("TodoWithoutTask") // TODO remove suppression when we start using config
         sdkCore: SdkCore = Datadog.getInstance()
     ) {
         val flagsFeature = FlagsFeature(
