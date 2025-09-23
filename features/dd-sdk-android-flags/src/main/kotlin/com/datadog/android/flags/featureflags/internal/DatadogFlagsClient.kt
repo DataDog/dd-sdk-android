@@ -10,6 +10,7 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.flags.featureflags.FlagsClient
 import com.datadog.android.flags.featureflags.FlagsClientConfiguration
+import com.datadog.android.flags.featureflags.model.EvaluationDetails
 import com.datadog.android.flags.featureflags.internal.evaluation.EvaluationsManager
 import com.datadog.android.flags.featureflags.internal.model.FlagsContext
 import com.datadog.android.flags.featureflags.internal.repository.DefaultFlagsRepository
@@ -30,7 +31,7 @@ internal class DatadogFlagsClient(
     private var flagsRepository: FlagsRepository = NoOpFlagsRepository()
 ) : FlagsClient {
 
-    private val flagsOrchestrator: EvaluationsManager
+    private val evaluationsManager: EvaluationsManager
 
     init {
         if (flagsRepository is NoOpFlagsRepository) {
@@ -48,7 +49,7 @@ internal class DatadogFlagsClient(
         val precomputeMapper = PrecomputeMapper(featureSdkCore.internalLogger)
 
         // The orchestrator handles taking the EvaluationContext and setting new evaluations into the FlagRepository
-        flagsOrchestrator = EvaluationsManager(
+        evaluationsManager = EvaluationsManager(
             executorService = executorService,
             internalLogger = featureSdkCore.internalLogger,
             flagsRepository = flagsRepository,
@@ -57,7 +58,7 @@ internal class DatadogFlagsClient(
         )
     }
 
-    override fun setContext(evaluationContext: EvaluationContext) {
+    override fun setEvaluationContext(evaluationContext: EvaluationContext) {
         // Validate targeting key before proceeding
         if (evaluationContext.targetingKey.isBlank()) {
             featureSdkCore.internalLogger.log(
@@ -70,7 +71,7 @@ internal class DatadogFlagsClient(
 
         try {
             // Pass to orchestrator to handle network request and atomic storage
-            flagsOrchestrator.updateEvaluationsForContext(evaluationContext)
+            evaluationsManager.updateEvaluationsForContext(evaluationContext)
         } catch (e: Exception) {
             featureSdkCore.internalLogger.log(
                 level = InternalLogger.Level.ERROR,
@@ -81,27 +82,27 @@ internal class DatadogFlagsClient(
         }
     }
 
-    override fun resolveBooleanValue(flagKey: String, defaultValue: Boolean): Boolean {
+    override fun getBooleanValue(flagKey: String, defaultValue: Boolean): Boolean {
         val precomputedFlag = flagsRepository.getPrecomputedFlag(flagKey)
         return precomputedFlag?.variationValue?.toBooleanStrictOrNull() ?: defaultValue
     }
 
-    override fun resolveStringValue(flagKey: String, defaultValue: String): String {
+    override fun getStringValue(flagKey: String, defaultValue: String): String {
         val precomputedData = flagsRepository.getPrecomputedFlag(flagKey)
         return precomputedData?.variationValue ?: defaultValue
     }
 
-    override fun resolveIntValue(flagKey: String, defaultValue: Int): Int {
+    override fun getIntValue(flagKey: String, defaultValue: Int): Int {
         val precomputedData = flagsRepository.getPrecomputedFlag(flagKey)
         return precomputedData?.variationValue?.toIntOrNull() ?: defaultValue
     }
 
-    override fun resolveNumberValue(flagKey: String, defaultValue: Number): Number {
+    override fun getNumberValue(flagKey: String, defaultValue: Number): Number {
         val precomputedData = flagsRepository.getPrecomputedFlag(flagKey)
         return precomputedData?.variationValue?.toDoubleOrNull() ?: defaultValue
     }
 
-    override fun resolveStructureValue(flagKey: String, defaultValue: JSONObject): JSONObject {
+    override fun getStructureValue(flagKey: String, defaultValue: JSONObject): JSONObject {
         val precomputedData = flagsRepository.getPrecomputedFlag(flagKey)
         return precomputedData?.variationValue?.let {
             try {
@@ -116,5 +117,30 @@ internal class DatadogFlagsClient(
                 defaultValue
             }
         } ?: defaultValue
+    }
+
+    override fun getBooleanDetails(flagKey: String, defaultValue: Boolean): EvaluationDetails {
+        return flagsRepository.getPrecomputedFlag(flagKey)?.asEvaluationDetails(flagKey)
+            ?: EvaluationDetails.defaultValue(flagKey, defaultValue)
+    }
+
+    override fun getStringDetails(flagKey: String, defaultValue: String): EvaluationDetails {
+        return flagsRepository.getPrecomputedFlag(flagKey)?.asEvaluationDetails(flagKey)
+            ?: EvaluationDetails.defaultValue(flagKey, defaultValue)
+    }
+
+    override fun getNumberDetails(flagKey: String, defaultValue: Number): EvaluationDetails {
+        return flagsRepository.getPrecomputedFlag(flagKey)?.asEvaluationDetails(flagKey)
+            ?: EvaluationDetails.defaultValue(flagKey, defaultValue)
+    }
+
+    override fun getIntDetails(flagKey: String, defaultValue: Int): EvaluationDetails {
+        return flagsRepository.getPrecomputedFlag(flagKey)?.asEvaluationDetails(flagKey)
+            ?: EvaluationDetails.defaultValue(flagKey, defaultValue)
+    }
+
+    override fun getStructureDetails(flagKey: String, defaultValue: JSONObject): EvaluationDetails {
+        return flagsRepository.getPrecomputedFlag(flagKey)?.asEvaluationDetails(flagKey)
+            ?: EvaluationDetails.defaultValue(flagKey, defaultValue)
     }
 }

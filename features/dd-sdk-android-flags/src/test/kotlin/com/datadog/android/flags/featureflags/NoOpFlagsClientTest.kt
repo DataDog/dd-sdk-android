@@ -27,10 +27,10 @@ internal class NoOpFlagsClientTest {
         testedClient = NoOpFlagsClient()
     }
 
-    // region setContext()
+    // region setEvaluationContext()
 
     @Test
-    fun `M do nothing W setContext()`(forge: Forge) {
+    fun `M do nothing W setEvaluationContext()`(forge: Forge) {
         // Given
         val fakeEvaluationContext = EvaluationContext(
             targetingKey = forge.anAlphabeticalString(),
@@ -42,7 +42,7 @@ internal class NoOpFlagsClientTest {
         )
 
         // When
-        testedClient.setContext(fakeEvaluationContext)
+        testedClient.setEvaluationContext(fakeEvaluationContext)
 
         // Then
         // No exception should be thrown, method should be no-op
@@ -50,29 +50,29 @@ internal class NoOpFlagsClientTest {
 
     // endregion
 
-    // region resolveBooleanValue()
+    // region getBooleanValue()
 
     @Test
-    fun `M return default value W resolveBooleanValue() {true default}`(forge: Forge) {
+    fun `M return default value W getBooleanValue() {true default}`(forge: Forge) {
         // Given
         val fakeFlagKey = forge.anAlphabeticalString()
         val fakeDefaultValue = true
 
         // When
-        val result = testedClient.resolveBooleanValue(fakeFlagKey, fakeDefaultValue)
+        val result = testedClient.getBooleanValue(fakeFlagKey, fakeDefaultValue)
 
         // Then
         assertThat(result).isEqualTo(fakeDefaultValue)
     }
 
     @Test
-    fun `M return default value W resolveBooleanValue() {false default}`(forge: Forge) {
+    fun `M return default value W getBooleanValue() {false default}`(forge: Forge) {
         // Given
         val fakeFlagKey = forge.anAlphabeticalString()
         val fakeDefaultValue = false
 
         // When
-        val result = testedClient.resolveBooleanValue(fakeFlagKey, fakeDefaultValue)
+        val result = testedClient.getBooleanValue(fakeFlagKey, fakeDefaultValue)
 
         // Then
         assertThat(result).isEqualTo(fakeDefaultValue)
@@ -80,29 +80,29 @@ internal class NoOpFlagsClientTest {
 
     // endregion
 
-    // region resolveStringValue()
+    // region getStringValue()
 
     @Test
-    fun `M return default value W resolveStringValue()`(forge: Forge) {
+    fun `M return default value W getStringValue()`(forge: Forge) {
         // Given
         val fakeFlagKey = forge.anAlphabeticalString()
         val fakeDefaultValue = forge.anAlphabeticalString()
 
         // When
-        val result = testedClient.resolveStringValue(fakeFlagKey, fakeDefaultValue)
+        val result = testedClient.getStringValue(fakeFlagKey, fakeDefaultValue)
 
         // Then
         assertThat(result).isEqualTo(fakeDefaultValue)
     }
 
     @Test
-    fun `M return default value W resolveStringValue() {empty string default}`(forge: Forge) {
+    fun `M return default value W getStringValue() {empty string default}`(forge: Forge) {
         // Given
         val fakeFlagKey = forge.anAlphabeticalString()
         val fakeDefaultValue = ""
 
         // When
-        val result = testedClient.resolveStringValue(fakeFlagKey, fakeDefaultValue)
+        val result = testedClient.getStringValue(fakeFlagKey, fakeDefaultValue)
 
         // Then
         assertThat(result).isEqualTo(fakeDefaultValue)
@@ -110,42 +110,42 @@ internal class NoOpFlagsClientTest {
 
     // endregion
 
-    // region resolveNumberValue()
+    // region getNumberValue()
 
     @Test
-    fun `M return default value W resolveNumberValue() {double}`(forge: Forge) {
+    fun `M return default value W getNumberValue() {double}`(forge: Forge) {
         // Given
         val fakeFlagKey = forge.anAlphabeticalString()
         val fakeDefaultValue = forge.aDouble()
 
         // When
-        val result = testedClient.resolveNumberValue(fakeFlagKey, fakeDefaultValue)
+        val result = testedClient.getNumberValue(fakeFlagKey, fakeDefaultValue)
 
         // Then
         assertThat(result).isEqualTo(fakeDefaultValue)
     }
 
     @Test
-    fun `M return default value W resolveNumberValue() {float}`(forge: Forge) {
+    fun `M return default value W getNumberValue() {float}`(forge: Forge) {
         // Given
         val fakeFlagKey = forge.anAlphabeticalString()
         val fakeDefaultValue = forge.aFloat()
 
         // When
-        val result = testedClient.resolveNumberValue(fakeFlagKey, fakeDefaultValue)
+        val result = testedClient.getNumberValue(fakeFlagKey, fakeDefaultValue)
 
         // Then
         assertThat(result).isEqualTo(fakeDefaultValue)
     }
 
     @Test
-    fun `M return default value W resolveNumberValue() {long}`(forge: Forge) {
+    fun `M return default value W getNumberValue() {long}`(forge: Forge) {
         // Given
         val fakeFlagKey = forge.anAlphabeticalString()
         val fakeDefaultValue = forge.aLong()
 
         // When
-        val result = testedClient.resolveNumberValue(fakeFlagKey, fakeDefaultValue)
+        val result = testedClient.getNumberValue(fakeFlagKey, fakeDefaultValue)
 
         // Then
         assertThat(result).isEqualTo(fakeDefaultValue)
@@ -153,42 +153,42 @@ internal class NoOpFlagsClientTest {
 
     // endregion
 
-    // region resolveIntValue()
+    // region getIntValue()
 
     @Test
-    fun `M return default value W resolveIntValue()`(forge: Forge) {
+    fun `M return default value W getIntValue()`(forge: Forge) {
         // Given
         val fakeFlagKey = forge.anAlphabeticalString()
         val fakeDefaultValue = forge.anInt()
 
         // When
-        val result = testedClient.resolveIntValue(fakeFlagKey, fakeDefaultValue)
+        val result = testedClient.getIntValue(fakeFlagKey, fakeDefaultValue)
 
         // Then
         assertThat(result).isEqualTo(fakeDefaultValue)
     }
 
     @Test
-    fun `M return default value W resolveIntValue() {zero default}`(forge: Forge) {
+    fun `M return default value W getIntValue() {zero default}`(forge: Forge) {
         // Given
         val fakeFlagKey = forge.anAlphabeticalString()
         val fakeDefaultValue = 0
 
         // When
-        val result = testedClient.resolveIntValue(fakeFlagKey, fakeDefaultValue)
+        val result = testedClient.getIntValue(fakeFlagKey, fakeDefaultValue)
 
         // Then
         assertThat(result).isEqualTo(fakeDefaultValue)
     }
 
     @Test
-    fun `M return default value W resolveIntValue() {negative default}`(forge: Forge) {
+    fun `M return default value W getIntValue() {negative default}`(forge: Forge) {
         // Given
         val fakeFlagKey = forge.anAlphabeticalString()
         val fakeDefaultValue = -forge.anInt(min = 1)
 
         // When
-        val result = testedClient.resolveIntValue(fakeFlagKey, fakeDefaultValue)
+        val result = testedClient.getIntValue(fakeFlagKey, fakeDefaultValue)
 
         // Then
         assertThat(result).isEqualTo(fakeDefaultValue)
@@ -196,10 +196,10 @@ internal class NoOpFlagsClientTest {
 
     // endregion
 
-    // region resolveStructureValue()
+    // region getStructureValue()
 
     @Test
-    fun `M return default value W resolveStructureValue()`(forge: Forge) {
+    fun `M return default value W getStructureValue()`(forge: Forge) {
         // Given
         val fakeFlagKey = forge.anAlphabeticalString()
         val fakeDefaultValue = JSONObject().apply {
@@ -209,7 +209,7 @@ internal class NoOpFlagsClientTest {
         }
 
         // When
-        val result = testedClient.resolveStructureValue(fakeFlagKey, fakeDefaultValue)
+        val result = testedClient.getStructureValue(fakeFlagKey, fakeDefaultValue)
 
         // Then
         assertThat(result).isEqualTo(fakeDefaultValue)
@@ -217,16 +217,124 @@ internal class NoOpFlagsClientTest {
     }
 
     @Test
-    fun `M return default value W resolveStructureValue() {empty JSON default}`(forge: Forge) {
+    fun `M return default value W getStructureValue() {empty JSON default}`(forge: Forge) {
         // Given
         val fakeFlagKey = forge.anAlphabeticalString()
         val fakeDefaultValue = JSONObject()
 
         // When
-        val result = testedClient.resolveStructureValue(fakeFlagKey, fakeDefaultValue)
+        val result = testedClient.getStructureValue(fakeFlagKey, fakeDefaultValue)
 
         // Then
         assertThat(result).isEqualTo(fakeDefaultValue)
+    }
+
+    // endregion
+
+    // region getBooleanDetails()
+
+    @Test
+    fun `M return default evaluation details W getBooleanDetails()`(forge: Forge) {
+        // Given
+        val fakeFlagKey = forge.anAlphabeticalString()
+        val fakeDefaultValue = forge.aBool()
+
+        // When
+        val result = testedClient.getBooleanDetails(fakeFlagKey, fakeDefaultValue)
+
+        // Then
+        assertThat(result).isNotNull()
+        assertThat(result.flagKey).isEqualTo(fakeFlagKey)
+        assertThat(result.value).isEqualTo(fakeDefaultValue.toString())
+        assertThat(result.reason).isEqualTo("DEFAULT")
+        assertThat(result.variationKey).isEqualTo("default")
+    }
+
+    // endregion
+
+    // region getStringDetails()
+
+    @Test
+    fun `M return default evaluation details W getStringDetails()`(forge: Forge) {
+        // Given
+        val fakeFlagKey = forge.anAlphabeticalString()
+        val fakeDefaultValue = forge.anAlphabeticalString()
+
+        // When
+        val result = testedClient.getStringDetails(fakeFlagKey, fakeDefaultValue)
+
+        // Then
+        assertThat(result).isNotNull()
+        assertThat(result.flagKey).isEqualTo(fakeFlagKey)
+        assertThat(result.value).isEqualTo(fakeDefaultValue.toString())
+        assertThat(result.reason).isEqualTo("DEFAULT")
+        assertThat(result.variationKey).isEqualTo("default")
+    }
+
+    // endregion
+
+    // region getNumberDetails()
+
+    @Test
+    fun `M return default evaluation details W getNumberDetails()`(forge: Forge) {
+        // Given
+        val fakeFlagKey = forge.anAlphabeticalString()
+        val fakeDefaultValue = forge.aDouble()
+
+        // When
+        val result = testedClient.getNumberDetails(fakeFlagKey, fakeDefaultValue)
+
+        // Then
+        assertThat(result).isNotNull()
+        assertThat(result.flagKey).isEqualTo(fakeFlagKey)
+        assertThat(result.value).isEqualTo(fakeDefaultValue.toString())
+        assertThat(result.reason).isEqualTo("DEFAULT")
+        assertThat(result.variationKey).isEqualTo("default")
+    }
+
+    // endregion
+
+    // region getIntDetails()
+
+    @Test
+    fun `M return default evaluation details W getIntDetails()`(forge: Forge) {
+        // Given
+        val fakeFlagKey = forge.anAlphabeticalString()
+        val fakeDefaultValue = forge.anInt()
+
+        // When
+        val result = testedClient.getIntDetails(fakeFlagKey, fakeDefaultValue)
+
+        // Then
+        assertThat(result).isNotNull()
+        assertThat(result.flagKey).isEqualTo(fakeFlagKey)
+        assertThat(result.value).isEqualTo(fakeDefaultValue.toString())
+        assertThat(result.reason).isEqualTo("DEFAULT")
+        assertThat(result.variationKey).isEqualTo("default")
+    }
+
+    // endregion
+
+    // region getStructureDetails()
+
+    @Test
+    fun `M return default evaluation details W getStructureDetails()`(forge: Forge) {
+        // Given
+        val fakeFlagKey = forge.anAlphabeticalString()
+        val fakeDefaultValue = JSONObject().apply {
+            put("key1", forge.anAlphabeticalString())
+            put("key2", forge.anInt())
+        }
+
+        // When
+        val result = testedClient.getStructureDetails(fakeFlagKey, fakeDefaultValue)
+
+        // Then
+        assertThat(result).isNotNull()
+        assertThat(result.flagKey).isEqualTo(fakeFlagKey)
+        assertThat(result.value).isEqualTo(fakeDefaultValue.toString())
+        assertThat(result.reason).isEqualTo("DEFAULT")
+        assertThat(result.variationKey).isEqualTo("default")
     }
 
     // endregion

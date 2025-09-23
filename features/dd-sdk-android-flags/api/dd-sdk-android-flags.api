@@ -30,12 +30,17 @@ public final class com/datadog/android/flags/FlagsConfiguration$Builder {
 }
 
 public abstract interface class com/datadog/android/flags/featureflags/FlagsClient {
-	public abstract fun resolveBooleanValue (Ljava/lang/String;Z)Z
-	public abstract fun resolveIntValue (Ljava/lang/String;I)I
-	public abstract fun resolveNumberValue (Ljava/lang/String;Ljava/lang/Number;)Ljava/lang/Number;
-	public abstract fun resolveStringValue (Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;
-	public abstract fun resolveStructureValue (Ljava/lang/String;Lorg/json/JSONObject;)Lorg/json/JSONObject;
-	public abstract fun setContext (Lcom/datadog/android/flags/featureflags/model/EvaluationContext;)V
+	public abstract fun getBooleanDetails (Ljava/lang/String;Z)Lcom/datadog/android/flags/featureflags/model/EvaluationDetails;
+	public abstract fun getBooleanValue (Ljava/lang/String;Z)Z
+	public abstract fun getIntDetails (Ljava/lang/String;I)Lcom/datadog/android/flags/featureflags/model/EvaluationDetails;
+	public abstract fun getIntValue (Ljava/lang/String;I)I
+	public abstract fun getNumberDetails (Ljava/lang/String;Ljava/lang/Number;)Lcom/datadog/android/flags/featureflags/model/EvaluationDetails;
+	public abstract fun getNumberValue (Ljava/lang/String;Ljava/lang/Number;)Ljava/lang/Number;
+	public abstract fun getStringDetails (Ljava/lang/String;Ljava/lang/String;)Lcom/datadog/android/flags/featureflags/model/EvaluationDetails;
+	public abstract fun getStringValue (Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;
+	public abstract fun getStructureDetails (Ljava/lang/String;Lorg/json/JSONObject;)Lcom/datadog/android/flags/featureflags/model/EvaluationDetails;
+	public abstract fun getStructureValue (Ljava/lang/String;Lorg/json/JSONObject;)Lorg/json/JSONObject;
+	public abstract fun setEvaluationContext (Lcom/datadog/android/flags/featureflags/model/EvaluationContext;)V
 }
 
 public final class com/datadog/android/flags/featureflags/FlagsClientConfiguration {
@@ -84,6 +89,30 @@ public final class com/datadog/android/flags/featureflags/FlagsClientManager {
 	public static synthetic fun isRegistered$default (Lcom/datadog/android/api/SdkCore;ILjava/lang/Object;)Z
 }
 
+public final class com/datadog/android/flags/featureflags/internal/model/PrecomputedFlag {
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;ZLjava/lang/String;Ljava/lang/String;Lorg/json/JSONObject;Ljava/lang/String;)V
+	public final fun asEvaluationDetails (Ljava/lang/String;)Lcom/datadog/android/flags/featureflags/model/EvaluationDetails;
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Z
+	public final fun component4 ()Ljava/lang/String;
+	public final fun component5 ()Ljava/lang/String;
+	public final fun component6 ()Lorg/json/JSONObject;
+	public final fun component7 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;ZLjava/lang/String;Ljava/lang/String;Lorg/json/JSONObject;Ljava/lang/String;)Lcom/datadog/android/flags/featureflags/internal/model/PrecomputedFlag;
+	public static synthetic fun copy$default (Lcom/datadog/android/flags/featureflags/internal/model/PrecomputedFlag;Ljava/lang/String;Ljava/lang/String;ZLjava/lang/String;Ljava/lang/String;Lorg/json/JSONObject;Ljava/lang/String;ILjava/lang/Object;)Lcom/datadog/android/flags/featureflags/internal/model/PrecomputedFlag;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getAllocationKey ()Ljava/lang/String;
+	public final fun getDoLog ()Z
+	public final fun getExtraLogging ()Lorg/json/JSONObject;
+	public final fun getReason ()Ljava/lang/String;
+	public final fun getVariationKey ()Ljava/lang/String;
+	public final fun getVariationType ()Ljava/lang/String;
+	public final fun getVariationValue ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
 public final class com/datadog/android/flags/featureflags/model/EvaluationContext {
 	public static final field Companion Lcom/datadog/android/flags/featureflags/model/EvaluationContext$Companion;
 	public fun <init> (Ljava/lang/String;Ljava/util/Map;)V
@@ -111,6 +140,40 @@ public final class com/datadog/android/flags/featureflags/model/EvaluationContex
 
 public final class com/datadog/android/flags/featureflags/model/EvaluationContext$Companion {
 	public final fun builder (Ljava/lang/String;Lcom/datadog/android/api/InternalLogger;)Lcom/datadog/android/flags/featureflags/model/EvaluationContext$Builder;
+}
+
+public final class com/datadog/android/flags/featureflags/model/EvaluationDetails {
+	public static final field Companion Lcom/datadog/android/flags/featureflags/model/EvaluationDetails$Companion;
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Ljava/lang/String;
+	public final fun component4 ()Ljava/lang/String;
+	public final fun component5 ()Ljava/util/Map;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;)Lcom/datadog/android/flags/featureflags/model/EvaluationDetails;
+	public static synthetic fun copy$default (Lcom/datadog/android/flags/featureflags/model/EvaluationDetails;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;ILjava/lang/Object;)Lcom/datadog/android/flags/featureflags/model/EvaluationDetails;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getFlagKey ()Ljava/lang/String;
+	public final fun getMetadata ()Ljava/util/Map;
+	public final fun getReason ()Ljava/lang/String;
+	public final fun getValue ()Ljava/lang/String;
+	public final fun getVariationKey ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/flags/featureflags/model/EvaluationDetails$Companion {
+	public final fun defaultValue (Ljava/lang/String;Ljava/lang/Object;)Lcom/datadog/android/flags/featureflags/model/EvaluationDetails;
+}
+
+public final class com/datadog/android/flags/featureflags/model/EvaluationDetails$Companion$Reason {
+	public static final field DEFAULT Ljava/lang/String;
+	public static final field DISABLED Ljava/lang/String;
+	public static final field ERROR Ljava/lang/String;
+	public static final field INSTANCE Lcom/datadog/android/flags/featureflags/model/EvaluationDetails$Companion$Reason;
+	public static final field SPLIT Ljava/lang/String;
+	public static final field TARGETING_MATCH Ljava/lang/String;
 }
 
 public final class com/datadog/android/flags/featureflags/model/FeatureFlagsUser {

@@ -7,6 +7,7 @@
 package com.datadog.android.flags.featureflags
 
 import com.datadog.android.flags.featureflags.model.EvaluationContext
+import com.datadog.android.flags.featureflags.model.EvaluationDetails
 import org.json.JSONObject
 
 /**
@@ -17,45 +18,85 @@ interface FlagsClient {
      * Set the evaluation context for the client.
      * @param evaluationContext The evaluation context to use for flag evaluation.
      */
-    fun setContext(evaluationContext: EvaluationContext)
+    fun setEvaluationContext(evaluationContext: EvaluationContext)
 
     /**
-     * Resolve a Boolean flag value.
+     * Get a Boolean flag value.
      * @param flagKey The name of the key to query.
      * @param defaultValue The value to return if the key cannot be retrieved.
      * @return The value of the flag, or the default value if it cannot be retrieved.
      */
-    fun resolveBooleanValue(flagKey: String, defaultValue: Boolean): Boolean
+    fun getBooleanValue(flagKey: String, defaultValue: Boolean): Boolean
 
     /**
-     * Resolve a String flag value.
+     * Get a String flag value.
      * @param flagKey The name of the key to query.
      * @param defaultValue The value to return if the key cannot be retrieved.
      * @return The value of the flag, or the default value if it cannot be retrieved.
      */
-    fun resolveStringValue(flagKey: String, defaultValue: String): String
+    fun getStringValue(flagKey: String, defaultValue: String): String
 
     /**
-     * Resolve a Number flag value.
+     * Get a Number flag value.
      * @param flagKey The name of the key to query.
      * @param defaultValue The value to return if the key cannot be retrieved.
      * @return The value of the flag, or the default value if it cannot be retrieved.
      */
-    fun resolveNumberValue(flagKey: String, defaultValue: Number): Number
+    fun getNumberValue(flagKey: String, defaultValue: Number): Number
 
     /**
-     * Resolve a Int flag value.
+     * Get an Int flag value.
      * @param flagKey The name of the key to query.
      * @param defaultValue The value to return if the key cannot be retrieved.
      * @return The value of the flag, or the default value if it cannot be retrieved.
      */
-    fun resolveIntValue(flagKey: String, defaultValue: Int): Int
+    fun getIntValue(flagKey: String, defaultValue: Int): Int
 
     /**
-     * Resolve a Structure flag value.
+     * Get a Structure flag value.
      * @param flagKey The name of the key to query.
      * @param defaultValue The value to return if the key cannot be retrieved.
      * @return The value of the flag, or the default value if it cannot be retrieved.
      */
-    fun resolveStructureValue(flagKey: String, defaultValue: JSONObject): JSONObject
+    fun getStructureValue(flagKey: String, defaultValue: JSONObject): JSONObject
+
+    /**
+     * Get a Boolean flag value with evaluation details.
+     * @param flagKey The name of the key to query.
+     * @param defaultValue The value to return if the key cannot be retrieved.
+     * @return The evaluation details, including flag value or default value with reason.
+     */
+    fun getBooleanDetails(flagKey: String, defaultValue: Boolean): EvaluationDetails
+
+    /**
+     * Get a String flag value with evaluation details.
+     * @param flagKey The name of the key to query.
+     * @param defaultValue The value to return if the key cannot be retrieved.
+     * @return The evaluation details, including flag value or default value with reason.
+     */
+    fun getStringDetails(flagKey: String, defaultValue: String): EvaluationDetails
+
+    /**
+     * Get a Number flag value with evaluation details.
+     * @param flagKey The name of the key to query.
+     * @param defaultValue The value to return if the key cannot be retrieved.
+     * @return The evaluation details, including flag value or default value with reason.
+     */
+    fun getNumberDetails(flagKey: String, defaultValue: Number): EvaluationDetails
+
+    /**
+     * Get an Int flag value with evaluation details.
+     * @param flagKey The name of the key to query.
+     * @param defaultValue The value to return if the key cannot be retrieved.
+     * @return The evaluation details, including flag value or default value with reason.
+     */
+    fun getIntDetails(flagKey: String, defaultValue: Int): EvaluationDetails
+
+    /**
+     * Get a Structure flag value with evaluation details.
+     * @param flagKey The name of the key to query.
+     * @param defaultValue The value to return if the key cannot be retrieved.
+     * @return The evaluation details, including flag value or default value with reason.
+     */
+    fun getStructureDetails(flagKey: String, defaultValue: JSONObject): EvaluationDetails
 }

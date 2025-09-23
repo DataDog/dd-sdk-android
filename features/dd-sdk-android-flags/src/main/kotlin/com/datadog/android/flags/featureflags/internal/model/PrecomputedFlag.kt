@@ -6,9 +6,10 @@
 
 package com.datadog.android.flags.featureflags.internal.model
 
+import com.datadog.android.flags.featureflags.model.EvaluationDetails
 import org.json.JSONObject
 
-internal data class PrecomputedFlag(
+data class PrecomputedFlag(
     val variationType: String,
     val variationValue: String,
     val doLog: Boolean,
@@ -16,4 +17,35 @@ internal data class PrecomputedFlag(
     val variationKey: String,
     val extraLogging: JSONObject,
     val reason: String
-)
+) {
+    /**
+     * Converts this PrecomputedFlag to an EvaluationDetails for external API use.
+     *
+     * @param flagKey The key of the flag that was evaluated.
+     * @return EvaluationDetails containing the public evaluation information.
+     */
+    fun asEvaluationDetails(flagKey: String): EvaluationDetails {
+        val metadata = mutableMapOf<String, Any>()
+
+        // Add allocation key if available
+        if (allocationKey.isNotEmpty()) {
+            metadata["allocationKey"] = allocationKey
+        }
+
+        // Add extra logging data if available
+        if (extraLogging.length() > 0) {
+            metadata["extraLogging"] = extraLogging
+        }
+
+        // Add variation type
+        metadata["variationType"] = variationType
+
+        return EvaluationDetails(
+            value = variationValue,
+            variationKey = variationKey,
+            reason = reason,
+            flagKey = flagKey,
+            metadata = metadata
+        )
+    }
+}

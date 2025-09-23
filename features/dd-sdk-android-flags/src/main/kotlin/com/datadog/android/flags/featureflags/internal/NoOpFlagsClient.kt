@@ -8,18 +8,34 @@ package com.datadog.android.flags.featureflags.internal
 
 import com.datadog.android.flags.featureflags.FlagsClient
 import com.datadog.android.flags.featureflags.model.EvaluationContext
+import com.datadog.android.flags.featureflags.model.EvaluationDetails
 import org.json.JSONObject
 
 internal class NoOpFlagsClient : FlagsClient {
-    override fun setContext(evaluationContext: EvaluationContext) {}
+    override fun setEvaluationContext(evaluationContext: EvaluationContext) {}
 
-    override fun resolveBooleanValue(flagKey: String, defaultValue: Boolean): Boolean = defaultValue
+    override fun getBooleanValue(flagKey: String, defaultValue: Boolean): Boolean = defaultValue
 
-    override fun resolveStringValue(flagKey: String, defaultValue: String): String = defaultValue
+    override fun getStringValue(flagKey: String, defaultValue: String): String = defaultValue
 
-    override fun resolveNumberValue(flagKey: String, defaultValue: Number): Number = defaultValue
+    override fun getNumberValue(flagKey: String, defaultValue: Number): Number = defaultValue
 
-    override fun resolveIntValue(flagKey: String, defaultValue: Int): Int = defaultValue
+    override fun getIntValue(flagKey: String, defaultValue: Int): Int = defaultValue
 
-    override fun resolveStructureValue(flagKey: String, defaultValue: JSONObject): JSONObject = defaultValue
+    override fun getStructureValue(flagKey: String, defaultValue: JSONObject): JSONObject = defaultValue
+
+    override fun getBooleanDetails(flagKey: String, defaultValue: Boolean): EvaluationDetails =
+        EvaluationDetails.defaultValue(flagKey, defaultValue)
+
+    override fun getStringDetails(flagKey: String, defaultValue: String): EvaluationDetails =
+        EvaluationDetails.defaultValue(flagKey, defaultValue)
+
+    override fun getNumberDetails(flagKey: String, defaultValue: Number): EvaluationDetails =
+        EvaluationDetails.defaultValue(flagKey, defaultValue)
+
+    override fun getIntDetails(flagKey: String, defaultValue: Int): EvaluationDetails =
+        EvaluationDetails.defaultValue(flagKey, defaultValue)
+
+    override fun getStructureDetails(flagKey: String, defaultValue: JSONObject): EvaluationDetails =
+        EvaluationDetails.defaultValue(flagKey, defaultValue)
 }
