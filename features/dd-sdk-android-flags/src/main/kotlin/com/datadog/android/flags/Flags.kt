@@ -68,7 +68,11 @@ object Flags {
         }
     }
 
-    private fun createProvider(configuration: FlagsConfiguration, sdkCore: FeatureSdkCore, flagsFeature: FlagsFeature): FlagsClient? {
+    private fun createProvider(
+        configuration: FlagsConfiguration,
+        sdkCore: FeatureSdkCore,
+        flagsFeature: FlagsFeature
+    ): FlagsClient? {
         val executorService = sdkCore.createSingleThreadExecutorService(
             executorContext = FLAGS_EXECUTOR_NAME
         )

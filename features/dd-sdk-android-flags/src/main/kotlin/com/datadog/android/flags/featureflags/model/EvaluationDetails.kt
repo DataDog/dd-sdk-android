@@ -35,11 +35,11 @@ data class EvaluationDetails(
          * Evaluation reason constants aligned with OpenFeature specification.
          */
         object Reason {
-            const val DEFAULT = "DEFAULT"
-            const val TARGETING_MATCH = "TARGETING_MATCH"
-            const val SPLIT = "SPLIT"
-            const val DISABLED = "DISABLED"
-            const val ERROR = "ERROR"
+            const val DEFAULT: String = "DEFAULT"
+            const val TARGETING_MATCH: String = "TARGETING_MATCH"
+            const val SPLIT: String = "SPLIT"
+            const val DISABLED: String = "DISABLED"
+            const val ERROR: String = "ERROR"
         }
 
         /**

@@ -13,6 +13,7 @@ import org.json.JSONObject
 /**
  * An interface for defining Flags clients.
  */
+@Suppress("TooManyFunctions") // Required by mobile API spec
 interface FlagsClient {
     /**
      * Set the evaluation context for the client.

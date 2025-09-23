@@ -1,20 +1,42 @@
 object com.datadog.android.flags.Flags
-  fun enable(FlagsConfiguration, com.datadog.android.api.SdkCore = Datadog.getInstance())
+  fun enable()
+  fun enable(FlagsConfiguration)
+  fun enable(FlagsConfiguration, com.datadog.android.api.SdkCore)
 data class com.datadog.android.flags.FlagsConfiguration
-  constructor(Boolean)
+  constructor(Boolean, String? = null, String? = null)
   class Builder
     fun setEnableExposureLogging(Boolean): Builder
+    fun setCustomExposureEndpoint(String?): Builder
+    fun setFlaggingProxy(String?): Builder
     fun build(): FlagsConfiguration
-object com.datadog.android.flags.featureflags.FlagsClient
+interface com.datadog.android.flags.featureflags.FlagsClient
+  fun setEvaluationContext(com.datadog.android.flags.featureflags.model.EvaluationContext)
+  fun getBooleanValue(String, Boolean): Boolean
+  fun getStringValue(String, String): String
+  fun getNumberValue(String, Number): Number
+  fun getIntValue(String, Int): Int
+  fun getStructureValue(String, org.json.JSONObject): org.json.JSONObject
+  fun getBooleanDetails(String, Boolean): com.datadog.android.flags.featureflags.model.EvaluationDetails
+  fun getStringDetails(String, String): com.datadog.android.flags.featureflags.model.EvaluationDetails
+  fun getNumberDetails(String, Number): com.datadog.android.flags.featureflags.model.EvaluationDetails
+  fun getIntDetails(String, Int): com.datadog.android.flags.featureflags.model.EvaluationDetails
+  fun getStructureDetails(String, org.json.JSONObject): com.datadog.android.flags.featureflags.model.EvaluationDetails
+data class com.datadog.android.flags.featureflags.FlagsClientConfiguration
+  constructor(String = DEFAULT_CLIENT_KEY)
+  class Builder
+    fun setClientKey(String): Builder
+    fun build(): FlagsClientConfiguration
+  companion object 
+    const val DEFAULT_CLIENT_KEY: String
+    val DEFAULT: FlagsClientConfiguration
+object com.datadog.android.flags.featureflags.FlagsClientManager
   fun isRegistered(com.datadog.android.api.SdkCore = Datadog.getInstance()): Boolean
-  fun get(com.datadog.android.api.SdkCore = Datadog.getInstance()): FlagsProvider
-interface com.datadog.android.flags.featureflags.FlagsProvider
-  fun setContext(String, Map<String, Any>)
-  fun resolveBooleanValue(String, Boolean): Boolean
-  fun resolveStringValue(String, String): String
-  fun resolveNumberValue(String, Number): Number
-  fun resolveIntValue(String, Int): Int
-  fun resolveStructureValue(String, org.json.JSONObject): org.json.JSONObject
+  fun get(com.datadog.android.api.SdkCore = Datadog.getInstance()): FlagsClient
+  fun create(FlagsClientConfiguration = FlagsClientConfiguration.DEFAULT, com.datadog.android.api.SdkCore = Datadog.getInstance()): FlagsClient?
+  fun getClient(FlagsClientConfiguration = FlagsClientConfiguration.DEFAULT, com.datadog.android.api.SdkCore = Datadog.getInstance()): FlagsClient?
+data class com.datadog.android.flags.featureflags.internal.model.PrecomputedFlag
+  constructor(String, String, Boolean, String, String, org.json.JSONObject, String)
+  fun asEvaluationDetails(String): com.datadog.android.flags.featureflags.model.EvaluationDetails
 data class com.datadog.android.flags.featureflags.model.EvaluationContext
   constructor(String, Map<String, Any> = emptyMap())
   class Builder
@@ -27,6 +49,16 @@ data class com.datadog.android.flags.featureflags.model.EvaluationContext
     fun build(): EvaluationContext
   companion object 
     fun builder(String, com.datadog.android.api.InternalLogger)
+data class com.datadog.android.flags.featureflags.model.EvaluationDetails
+  constructor(String, String, String, String, Map<String, Any> = emptyMap())
+  companion object 
+    object Reason
+      const val DEFAULT: String
+      const val TARGETING_MATCH: String
+      const val SPLIT: String
+      const val DISABLED: String
+      const val ERROR: String
+    fun defaultValue(String, Any): EvaluationDetails
 data class com.datadog.android.flags.featureflags.model.FeatureFlagsUser
   constructor(String, String)
 data class com.datadog.android.flags.featureflags.model.ProviderContext

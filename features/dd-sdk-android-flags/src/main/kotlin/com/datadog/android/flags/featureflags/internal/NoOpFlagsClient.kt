@@ -11,8 +11,11 @@ import com.datadog.android.flags.featureflags.model.EvaluationContext
 import com.datadog.android.flags.featureflags.model.EvaluationDetails
 import org.json.JSONObject
 
+@Suppress("TooManyFunctions") // Required by mobile API spec
 internal class NoOpFlagsClient : FlagsClient {
-    override fun setEvaluationContext(evaluationContext: EvaluationContext) {}
+    override fun setEvaluationContext(evaluationContext: EvaluationContext) {
+        // No-op implementation - context is ignored
+    }
 
     override fun getBooleanValue(flagKey: String, defaultValue: Boolean): Boolean = defaultValue
 

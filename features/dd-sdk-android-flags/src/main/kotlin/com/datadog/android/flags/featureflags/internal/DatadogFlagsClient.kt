@@ -23,10 +23,12 @@ import org.json.JSONException
 import org.json.JSONObject
 import java.util.concurrent.ExecutorService
 
+@Suppress("TooManyFunctions") // Required by mobile API spec
 internal class DatadogFlagsClient(
     private val executorService: ExecutorService,
     private val featureSdkCore: FeatureSdkCore,
     private val flagsContext: FlagsContext,
+    @Suppress("UnusedPrivateProperty") // Will be used for client-level configuration features
     private val configuration: FlagsClientConfiguration = FlagsClientConfiguration.DEFAULT,
     private var flagsRepository: FlagsRepository = NoOpFlagsRepository()
 ) : FlagsClient {
@@ -58,6 +60,7 @@ internal class DatadogFlagsClient(
         )
     }
 
+    @Suppress("TooGenericExceptionCaught") // Need to catch any runtime exception from network/storage
     override fun setEvaluationContext(evaluationContext: EvaluationContext) {
         // Validate targeting key before proceeding
         if (evaluationContext.targetingKey.isBlank()) {
@@ -72,7 +75,7 @@ internal class DatadogFlagsClient(
         try {
             // Pass to orchestrator to handle network request and atomic storage
             evaluationsManager.updateEvaluationsForContext(evaluationContext)
-        } catch (e: Exception) {
+        } catch (e: RuntimeException) {
             featureSdkCore.internalLogger.log(
                 level = InternalLogger.Level.ERROR,
                 target = InternalLogger.Target.USER,

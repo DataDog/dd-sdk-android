@@ -144,7 +144,7 @@ object FlagsClientManager {
         }
 
         val flagsContext = FlagsContext(
-            applicationId = "", // TODO: Pass applicationId from FlagsFeature when integrating
+            applicationId = "", // Will be updated when integrating with FlagsFeature
             clientToken = clientToken,
             site = site,
             env = env,
