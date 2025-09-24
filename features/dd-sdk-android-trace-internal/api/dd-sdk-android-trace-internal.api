@@ -3070,6 +3070,16 @@ public class com/datadog/trace/core/propagation/B3TraceId : com/datadog/trace/ap
 	public fun toString ()Ljava/lang/String;
 }
 
+public final class com/datadog/trace/core/propagation/Baggage {
+	public fun <init> ()V
+	public fun asMap ()Ljava/util/Map;
+	public static fun from (Ljava/lang/String;)Lcom/datadog/trace/core/propagation/Baggage;
+	public fun isEmpty ()Z
+	public fun mergeWith (Lcom/datadog/trace/core/propagation/Baggage;)Lcom/datadog/trace/core/propagation/Baggage;
+	public fun put (Ljava/lang/String;Ljava/lang/String;)Lcom/datadog/trace/core/propagation/Baggage;
+	public fun toString ()Ljava/lang/String;
+}
+
 public abstract class com/datadog/trace/core/propagation/ContextInterpreter : com/datadog/trace/bootstrap/instrumentation/api/AgentPropagation$KeyClassifier {
 	protected static final field LOG_EXTRACT_HEADER_NAMES Z
 	protected field baggage Ljava/util/Map;
@@ -3537,6 +3547,22 @@ public final class com/datadog/trace/util/CollectionUtils {
 	public static fun tryMakeImmutableList (Ljava/util/Collection;)Ljava/util/List;
 	public static fun tryMakeImmutableMap (Ljava/util/Map;)Ljava/util/Map;
 	public static fun tryMakeImmutableSet (Ljava/util/Collection;)Ljava/util/Set;
+}
+
+public final class com/datadog/trace/util/PercentEscaper {
+	public fun <init> ()V
+	public static fun create ()Lcom/datadog/trace/util/PercentEscaper;
+	public fun escape (Ljava/lang/String;[Z)Lcom/datadog/trace/util/PercentEscaper$Escaped;
+	public fun escapeKey (Ljava/lang/String;)Lcom/datadog/trace/util/PercentEscaper$Escaped;
+	public fun escapeValue (Ljava/lang/String;)Lcom/datadog/trace/util/PercentEscaper$Escaped;
+	public fun keyNeedsEncoding (Ljava/lang/String;)Z
+	public fun valNeedsEncoding (Ljava/lang/String;)Z
+}
+
+public class com/datadog/trace/util/PercentEscaper$Escaped {
+	public field data Ljava/lang/String;
+	public field size I
+	public fun <init> (Ljava/lang/String;I)V
 }
 
 public final class com/datadog/trace/util/PidHelper {

@@ -552,40 +552,60 @@ internal constructor(
                 span.context(),
                 tracedRequestBuilder
             ) { carrier: Request.Builder, key: String, value: String ->
-                carrier.removeHeader(key)
                 when (key) {
                     DATADOG_SAMPLING_PRIORITY_HEADER,
                     DATADOG_LEAST_SIGNIFICANT_64_BITS_TRACE_ID_HEADER,
                     DATADOG_TAGS_HEADER,
                     DATADOG_SPAN_ID_HEADER,
                     DATADOG_ORIGIN_HEADER -> if (tracingHeaderTypes.contains(TracingHeaderType.DATADOG)) {
-                        carrier.addHeader(key, value)
+                        carrier.replaceHeader(key, value)
+                    } else {
+                        carrier.removeHeader(key)
                     }
 
                     B3_HEADER_KEY -> if (tracingHeaderTypes.contains(TracingHeaderType.B3)) {
-                        carrier.addHeader(key, value)
+                        carrier.replaceHeader(key, value)
+                    } else {
+                        carrier.removeHeader(key)
                     }
 
                     B3M_SPAN_ID_KEY,
                     B3M_TRACE_ID_KEY,
-                    B3M_SAMPLING_PRIORITY_KEY -> if (tracingHeaderTypes.contains(
-                            TracingHeaderType.B3MULTI
-                        )
-                    ) {
-                        carrier.addHeader(key, value)
+                    B3M_SAMPLING_PRIORITY_KEY -> if (tracingHeaderTypes.contains(TracingHeaderType.B3MULTI)) {
+                        carrier.replaceHeader(key, value)
+                    } else {
+                        carrier.removeHeader(key)
                     }
+
+                    W3C_BAGGAGE_KEY -> carrier.replaceHeader(
+                        key,
+                        DatadogTracingToolkit.mergeBaggage(
+                            resolveExistingBaggageHeaderValue(carrier),
+                            value
+                        )
+                    )
 
                     W3C_TRACEPARENT_KEY,
                     W3C_TRACESTATE_KEY -> if (tracingHeaderTypes.contains(TracingHeaderType.TRACECONTEXT)) {
-                        carrier.addHeader(key, value)
+                        carrier.replaceHeader(key, value)
+                    } else {
+                        carrier.removeHeader(key)
                     }
 
-                    else -> carrier.addHeader(key, value)
+                    else -> carrier.replaceHeader(key, value)
                 }
             }
         }
 
         return tracedRequestBuilder
+    }
+
+    private fun resolveExistingBaggageHeaderValue(carrier: Request.Builder): String? {
+        return try {
+            carrier.build().headers[W3C_BAGGAGE_KEY]
+        } catch (_: IllegalStateException) {
+            null
+        }
     }
 
     private fun handleResponse(
@@ -856,6 +876,7 @@ internal constructor(
         // taken from W3CHttpCodec
         internal const val W3C_TRACEPARENT_KEY = "traceparent"
         internal const val W3C_TRACESTATE_KEY = "tracestate"
+        internal const val W3C_BAGGAGE_KEY = "baggage"
 
         // https://www.w3.org/TR/trace-context/#traceparent-header
         internal const val W3C_TRACEPARENT_DROP_SAMPLING_DECISION = "00-%s-%s-00"
@@ -876,5 +897,10 @@ internal constructor(
                     .withSampleRate(ALL_IN_SAMPLE_RATE)
                     .build()
             }
+
+        private fun Request.Builder.replaceHeader(key: String, value: String) = apply {
+            removeHeader(key)
+            addHeader(key, value)
+        }
     }
 }

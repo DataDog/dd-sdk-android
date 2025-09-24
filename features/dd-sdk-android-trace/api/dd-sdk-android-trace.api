@@ -68,6 +68,7 @@ public final class com/datadog/android/trace/internal/DatadogTracingToolkit {
 	public static final fun activateSpan (Lcom/datadog/android/trace/api/tracer/DatadogTracer;Lcom/datadog/android/trace/api/span/DatadogSpan;Z)Lcom/datadog/android/trace/api/scope/DatadogScope;
 	public static final fun addThrowable (Lcom/datadog/android/trace/api/span/DatadogSpan;Ljava/lang/Throwable;B)V
 	public final fun getPropagationHelper ()Lcom/datadog/android/trace/internal/DatadogPropagationHelper;
+	public final fun mergeBaggage (Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;
 	public final fun setSdkV2Compatible (Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;)Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;
 	public final fun setTraceId128BitGenerationEnabled (Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;)Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;
 	public final fun setTracingSamplingPriorityIfNecessary (Lcom/datadog/android/trace/api/span/DatadogSpanContext;)V
