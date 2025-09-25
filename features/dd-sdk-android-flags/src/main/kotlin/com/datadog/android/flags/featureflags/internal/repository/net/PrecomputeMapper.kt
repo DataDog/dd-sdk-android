@@ -7,6 +7,7 @@
 package com.datadog.android.flags.featureflags.internal.repository.net
 
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.flags.featureflags.internal.model.JsonKeys
 import com.datadog.android.flags.featureflags.internal.model.PrecomputedFlag
 import org.json.JSONException
 import org.json.JSONObject
@@ -32,18 +33,18 @@ internal class PrecomputeMapper(private val internalLogger: InternalLogger) {
             val flagData = flags.getJSONObject(flagName)
 
             val precomputedFlag = PrecomputedFlag(
-                variationType = flagData.getString("variationType"),
-                variationValue = when (val value = flagData.get("variationValue")) {
+                variationType = flagData.getString(JsonKeys.VARIATION_TYPE.value),
+                variationValue = when (val value = flagData.get(JsonKeys.VARIATION_VALUE.value)) {
                     is Boolean -> value.toString()
                     is String -> value
                     is Number -> value.toString()
                     else -> value.toString()
                 },
-                doLog = flagData.getBoolean("doLog"),
-                allocationKey = flagData.getString("allocationKey"),
-                variationKey = flagData.getString("variationKey"),
-                extraLogging = flagData.optJSONObject("extraLogging") ?: JSONObject(),
-                reason = flagData.getString("reason")
+                doLog = flagData.getBoolean(JsonKeys.DO_LOG.value),
+                allocationKey = flagData.getString(JsonKeys.ALLOCATION_KEY.value),
+                variationKey = flagData.getString(JsonKeys.VARIATION_KEY.value),
+                extraLogging = flagData.optJSONObject(JsonKeys.EXTRA_LOGGING.value) ?: JSONObject(),
+                reason = flagData.getString(JsonKeys.REASON.value)
             )
 
             flagsMap[flagName] = precomputedFlag

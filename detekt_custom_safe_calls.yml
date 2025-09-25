@@ -1122,6 +1122,7 @@ datadog:
       - "org.json.JSONArray.length()"
       - "org.json.JSONArray.toJsonArray()"
       - "org.json.JSONObject.constructor()"
+      - "org.json.JSONObject.optLong(kotlin.String?, kotlin.Long)"
       - "org.json.JSONObject.optString(kotlin.String?, kotlin.String?)"
       - "org.json.JSONObject.keys()"
       - "org.json.JSONObject.toJsonObject()"

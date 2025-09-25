@@ -1,0 +1,227 @@
+/*
+ * Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
+ * This product includes software developed at Datadog (https://www.datadoghq.com/).
+ * Copyright 2016-Present Datadog, Inc.
+ */
+
+package com.datadog.android.flags.featureflags.internal.persistence
+
+import com.datadog.android.api.InternalLogger
+import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.junit5.ForgeExtension
+import org.assertj.core.api.Assertions.assertThat
+import org.json.JSONObject
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
+import org.mockito.Mock
+import org.mockito.junit.jupiter.MockitoExtension
+import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.quality.Strictness
+
+@ExtendWith(MockitoExtension::class, ForgeExtension::class)
+@MockitoSettings(strictness = Strictness.LENIENT)
+internal class FlagsStateDeserializerTest {
+
+    @Mock
+    lateinit var mockInternalLogger: InternalLogger
+
+    private lateinit var testedDeserializer: FlagsStateDeserializer
+
+    @BeforeEach
+    fun `set up`() {
+        testedDeserializer = FlagsStateDeserializer(mockInternalLogger)
+    }
+
+    @Test
+    fun `M deserialize flags state W deserialize() { valid JSON }`(forge: Forge) {
+        // Given
+        val targetingKey = forge.anAlphabeticalString()
+        val stringAttr = forge.anAlphabeticalString()
+        val numberAttr = forge.anInt()
+        val booleanAttr = forge.aBool()
+        val timestamp = System.currentTimeMillis()
+
+        val json = JSONObject().apply {
+            put(
+                "evaluationContext",
+                JSONObject().apply {
+                    put("targetingKey", targetingKey)
+                    put(
+                        "attributes",
+                        JSONObject().apply {
+                            put("string_attr", stringAttr)
+                            put("number_attr", numberAttr)
+                            put("boolean_attr", booleanAttr)
+                        }
+                    )
+                }
+            )
+            put(
+                "flags",
+                JSONObject().apply {
+                    put(
+                        "flag1",
+                        JSONObject().apply {
+                            put("variationType", "boolean")
+                            put("variationValue", "true")
+                            put("doLog", true)
+                            put("allocationKey", "allocation1")
+                            put("variationKey", "variation1")
+                            put("extraLogging", JSONObject())
+                            put("reason", "TARGETING_MATCH")
+                        }
+                    )
+                }
+            )
+            put("lastUpdateTimestamp", timestamp)
+        }
+
+        // When
+        val result = testedDeserializer.deserialize(json.toString())
+
+        // Then
+        assertThat(result).isNotNull()
+        assertThat(result!!.evaluationContext.targetingKey).isEqualTo(targetingKey)
+        assertThat(result.evaluationContext.attributes).hasSize(3)
+        assertThat(result.evaluationContext.attributes["string_attr"]).isEqualTo(stringAttr)
+        assertThat(result.evaluationContext.attributes["number_attr"]).isEqualTo(numberAttr)
+        assertThat(result.evaluationContext.attributes["boolean_attr"]).isEqualTo(booleanAttr)
+
+        assertThat(result.flags).hasSize(1)
+        assertThat(result.flags["flag1"]).isNotNull()
+        assertThat(result.flags["flag1"]!!.variationType).isEqualTo("boolean")
+        assertThat(result.flags["flag1"]!!.variationValue).isEqualTo("true")
+        assertThat(result.flags["flag1"]!!.doLog).isTrue()
+
+        assertThat(result.lastUpdateTimestamp).isEqualTo(timestamp)
+    }
+
+    @Test
+    fun `M deserialize empty state W deserialize() { valid JSON with empty data }`(forge: Forge) {
+        // Given
+        val targetingKey = forge.anAlphabeticalString()
+        val timestamp = System.currentTimeMillis()
+
+        val json = JSONObject().apply {
+            put(
+                "evaluationContext",
+                JSONObject().apply {
+                    put("targetingKey", targetingKey)
+                    put("attributes", JSONObject())
+                }
+            )
+            put("flags", JSONObject())
+            put("lastUpdateTimestamp", timestamp)
+        }
+
+        // When
+        val result = testedDeserializer.deserialize(json.toString())
+
+        // Then
+        assertThat(result).isNotNull()
+        assertThat(result!!.evaluationContext.targetingKey).isEqualTo(targetingKey)
+        assertThat(result.evaluationContext.attributes).isEmpty()
+        assertThat(result.flags).isEmpty()
+        assertThat(result.lastUpdateTimestamp).isEqualTo(timestamp)
+    }
+
+    @Test
+    fun `M return null W deserialize() { invalid JSON }`() {
+        // Given
+        val invalidJson = "{ invalid json"
+
+        // When
+        val result = testedDeserializer.deserialize(invalidJson)
+
+        // Then
+        assertThat(result).isNull()
+    }
+
+    @Test
+    fun `M return null W deserialize() { missing required fields }`() {
+        // Given
+        val incompleteJson = JSONObject().apply {
+            put(
+                "evaluationContext",
+                JSONObject().apply {
+                    put("targetingKey", "key")
+                }
+            )
+            // Missing flags field
+        }.toString()
+
+        // When
+        val result = testedDeserializer.deserialize(incompleteJson)
+
+        // Then
+        assertThat(result).isNull()
+    }
+
+    @Test
+    fun `M filter unsupported attributes W deserialize() { mixed attribute types }`(forge: Forge) {
+        // Given
+        val targetingKey = forge.anAlphabeticalString()
+        val validString = forge.anAlphabeticalString()
+        val validNumber = forge.anInt()
+        val validBoolean = forge.aBool()
+
+        val json = JSONObject().apply {
+            put(
+                "evaluationContext",
+                JSONObject().apply {
+                    put("targetingKey", targetingKey)
+                    put(
+                        "attributes",
+                        JSONObject().apply {
+                            put("valid_string", validString)
+                            put("valid_number", validNumber)
+                            put("valid_boolean", validBoolean)
+                            // Note: When JSONObject.put() is called with complex objects like lists/maps,
+                            // they get converted to JSONArray/JSONObject, which are not supported types
+                            // in our EvaluationContext validation, so they should be filtered out
+                        }
+                    )
+                }
+            )
+            put("flags", JSONObject())
+            put("lastUpdateTimestamp", System.currentTimeMillis())
+        }
+
+        // When
+        val result = testedDeserializer.deserialize(json.toString())
+
+        // Then
+        assertThat(result).isNotNull()
+        assertThat(result!!.evaluationContext.attributes).hasSize(3)
+        assertThat(result.evaluationContext.attributes["valid_string"]).isEqualTo(validString)
+        assertThat(result.evaluationContext.attributes["valid_number"]).isEqualTo(validNumber)
+        assertThat(result.evaluationContext.attributes["valid_boolean"]).isEqualTo(validBoolean)
+    }
+
+    @Test
+    fun `M use current timestamp W deserialize() { missing timestamp }`(forge: Forge) {
+        // Given
+        val targetingKey = forge.anAlphabeticalString()
+        val json = JSONObject().apply {
+            put(
+                "evaluationContext",
+                JSONObject().apply {
+                    put("targetingKey", targetingKey)
+                    put("attributes", JSONObject())
+                }
+            )
+            put("flags", JSONObject())
+            // Missing lastUpdateTimestamp
+        }
+
+        // When
+        val beforeDeserialize = System.currentTimeMillis()
+        val result = testedDeserializer.deserialize(json.toString())
+        val afterDeserialize = System.currentTimeMillis()
+
+        // Then
+        assertThat(result).isNotNull()
+        assertThat(result!!.lastUpdateTimestamp).isBetween(beforeDeserialize, afterDeserialize)
+    }
+}

@@ -101,7 +101,8 @@ object Flags {
         )
 
         val flagsRepository = DefaultFlagsRepository(
-            featureSdkCore = sdkCore
+            featureSdkCore = sdkCore,
+            instanceName = "default"
         )
 
         val flagsNetworkManager = DefaultFlagsNetworkManager(
