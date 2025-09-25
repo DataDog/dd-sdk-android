@@ -13,6 +13,7 @@ import com.datadog.android.flags.featureflags.model.EvaluationContext
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -176,7 +177,13 @@ internal class FlagsClientTest {
     @Test
     fun `M do nothing W unregister() {no client registered for SDK core}`() {
         // When / Then - should not throw
-        FlagsClient.unregister(mockSdkCore)
+        assertDoesNotThrow {
+            FlagsClient.unregister(mockSdkCore)
+        }
+
+        // Verify operation completed without affecting other state
+        val client = FlagsClient.instance(mockSdkCore)
+        assertThat(client).isInstanceOf(NoOpFlagsClient::class.java)
     }
 
     @Test
@@ -217,7 +224,13 @@ internal class FlagsClientTest {
     @Test
     fun `M do nothing W clear() {no clients registered across any SDK cores}`() {
         // When / Then - should not throw
-        FlagsClient.clear()
+        assertDoesNotThrow {
+            FlagsClient.clear()
+        }
+
+        // Verify operation completed - should still return no-op clients
+        val client = FlagsClient.instance(mockSdkCore)
+        assertThat(client).isInstanceOf(NoOpFlagsClient::class.java)
     }
 
     // endregion
