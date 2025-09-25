@@ -12,8 +12,8 @@ import com.datadog.android.api.SdkCore
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.flags.featureflags.FlagsClient
-import com.datadog.android.flags.featureflags.FlagsProvider
-import com.datadog.android.flags.featureflags.internal.DatadogFlagsProvider
+import com.datadog.android.flags.featureflags.FlagsClientMap
+import com.datadog.android.flags.featureflags.internal.DatadogFlagsClient
 import com.datadog.android.flags.featureflags.internal.evaluation.EvaluationsManager
 import com.datadog.android.flags.featureflags.internal.model.FlagsContext
 import com.datadog.android.flags.featureflags.internal.repository.DefaultFlagsRepository
@@ -48,15 +48,27 @@ object Flags {
 
         sdkCore.registerFeature(flagsFeature)
 
-        createProvider(sdkCore, flagsFeature)?.let {
-            FlagsClient.registerIfAbsent(
-                provider = it,
+        createClient(sdkCore, flagsFeature)?.let {
+            FlagsClientMap.registerIfAbsent(
+                client = it,
                 sdkCore
             )
         }
     }
 
-    private fun createProvider(sdkCore: FeatureSdkCore, flagsFeature: FlagsFeature): FlagsProvider? {
+    /**
+     * Creates and configures a DatadogFlagsClient instance.
+     *
+     * This method performs complex initialization including validation of required context
+     * parameters (clientToken, site, env) and creation of all necessary dependencies.
+     * If any required parameters are missing, an error is logged and null is returned.
+     *
+     * @param sdkCore the [FeatureSdkCore] instance to use for client creation
+     * @param flagsFeature the [FlagsFeature] instance containing application configuration
+     * @return a configured [DatadogFlagsClient] instance, or null if required context
+     * parameters are missing (clientToken, site, or env)
+     */
+    private fun createClient(sdkCore: FeatureSdkCore, flagsFeature: FlagsFeature): FlagsClient? {
         val executorService = sdkCore.createSingleThreadExecutorService(
             executorContext = FLAGS_EXECUTOR_NAME
         )
@@ -114,7 +126,7 @@ object Flags {
             precomputeMapper = precomputeMapper
         )
 
-        return DatadogFlagsProvider(
+        return DatadogFlagsClient(
             featureSdkCore = sdkCore,
             evaluationsManager = evaluationsManager,
             flagsRepository = flagsRepository

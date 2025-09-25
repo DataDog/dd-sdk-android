@@ -15,9 +15,17 @@ import com.datadog.android.flags.featureflags.internal.repository.net.Precompute
 import java.util.concurrent.ExecutorService
 
 /**
- * Orchestrates the flow from FlagsProvider to FlagsRepository.
- * Takes evaluation context, fetches precomputed flags via network,
- * and atomically stores both context and flags in the repository.
+ * Orchestrates evaluations for a given context and stores the results in the repository.
+ *
+ * This class coordinates between network operations, data transformation, and local storage
+ * to provide atomic updates of flag evaluations. All operations are performed asynchronously
+ * on a dedicated executor to avoid blocking the calling thread.
+ *
+ * @param executorService dedicated executor for background operations
+ * @param internalLogger logger for debug and error messages
+ * @param flagsRepository local storage for flag data and evaluation context
+ * @param flagsNetworkManager handles network requests to the Datadog service
+ * @param precomputeMapper transforms network responses into internal flag format
  */
 internal class EvaluationsManager(
     private val executorService: ExecutorService,
@@ -32,7 +40,15 @@ internal class EvaluationsManager(
     /**
      * Processes a new evaluation context by fetching flags and storing atomically.
      *
-     * @param context The evaluation context to process
+     * This method asynchronously fetches precomputed flag evaluations for the given context
+     * and atomically updates both the context and flag data in the repository. Network failures
+     * result in an empty flag set being stored with the context, allowing graceful degradation.
+     *
+     * The operation is performed on the configured executor service and will not block the
+     * calling thread. Errors are logged but do not propagate to the caller.
+     *
+     * @param context The evaluation context to process. Must be non-null and contain
+     * a valid targeting key.
      */
     fun updateEvaluationsForContext(context: DatadogEvaluationContext) {
         executorService.executeSafe(

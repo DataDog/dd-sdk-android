@@ -6,118 +6,56 @@
 
 package com.datadog.android.flags.featureflags
 
-import com.datadog.android.Datadog
-import com.datadog.android.api.InternalLogger
-import com.datadog.android.api.SdkCore
-import com.datadog.android.api.feature.FeatureSdkCore
-import com.datadog.android.flags.featureflags.FlagsClient.get
-import com.datadog.android.flags.featureflags.internal.NoOpFlagsProvider
+import com.datadog.android.flags.featureflags.model.EvaluationContext
+import org.json.JSONObject
 
 /**
- * Client for querying feature flags.
+ * An interface for defining Flags clients.
  */
-object FlagsClient {
-
-    private val registeredProviders: MutableMap<SdkCore, FlagsProvider> = mutableMapOf()
+interface FlagsClient {
+    /**
+     * Set the context for the client.
+     * @param context The evaluation context containing targeting key and attributes.
+     */
+    fun setContext(context: EvaluationContext)
 
     /**
-     * Identify whether a [FlagsProvider] has previously been registered for the given SDK instance.
-     *
-     * This check is useful in scenarios where more than one component may be responsible
-     * for registering a provider.
-     *
-     * @param sdkCore the [SdkCore] instance to check against. If not provided, default instance
-     * will be checked.
-     * @return whether a provider has been registered
+     * Resolve a Boolean flag value.
+     * @param flagKey The name of the key to query.
+     * @param defaultValue The value to return if the key cannot be retrieved.
+     * @return The value of the flag, or the default value if it cannot be retrieved.
      */
-    @JvmOverloads
-    @JvmStatic
-    fun isRegistered(sdkCore: SdkCore = Datadog.getInstance()): Boolean = synchronized(registeredProviders) {
-        registeredProviders.containsKey(sdkCore)
-    }
+    fun resolveBooleanValue(flagKey: String, defaultValue: Boolean): Boolean
 
     /**
-     * Returns the constant [FlagsProvider] instance.
-     *
-     * Until a Flags feature is enabled, a no-op implementation is returned.
-     *
-     * @return The provider associated with the instance given instance, or a no-op provider. If SDK
-     * instance is not provided, default instance will be used.
+     * Resolve a String flag value.
+     * @param flagKey The name of the key to query.
+     * @param defaultValue The value to return if the key cannot be retrieved.
+     * @return The value of the flag, or the default value if it cannot be retrieved.
      */
-    @JvmOverloads
-    @JvmStatic
-    fun get(sdkCore: SdkCore = Datadog.getInstance()): FlagsProvider = synchronized(registeredProviders) {
-        val provider = registeredProviders[sdkCore]
-        if (provider == null) {
-            val errorMsg = "No FlagsProvider for the SDK instance with name ${sdkCore.name} " +
-                "found, returning no-op implementation."
-            (sdkCore as? FeatureSdkCore)
-                ?.internalLogger
-                ?.log(
-                    InternalLogger.Level.WARN,
-                    InternalLogger.Target.USER,
-                    { errorMsg }
-                )
-            NoOpFlagsProvider()
-        } else {
-            provider
-        }
-    }
-
-    // region Internal
+    fun resolveStringValue(flagKey: String, defaultValue: String): String
 
     /**
-     * Register a [FlagsProvider] with an [SdkCore] to back the behaviour of the [get] function.
-     *
-     * Registration is a one-time operation. Once a provider has been registered, all attempts at re-registering
-     * will return `false`.
-     *
-     * Every application intending to use the global FlagsClient is responsible for registering it once
-     * during its initialization.
-     *
-     * @param provider the provider to use as global provider.
-     * @param sdkCore the instance to register the given provider with. If not provided, default
-     * instance will be used.
-     * @return `true` if the provider was registered as a result of this call, `false` otherwise.
+     * Resolve a Number flag value.
+     * @param flagKey The name of the key to query.
+     * @param defaultValue The value to return if the key cannot be retrieved.
+     * @return The value of the flag, or the default value if it cannot be retrieved.
      */
-    internal fun registerIfAbsent(provider: FlagsProvider, sdkCore: SdkCore = Datadog.getInstance()): Boolean =
-        synchronized(registeredProviders) {
-            if (registeredProviders.containsKey(sdkCore)) {
-                (sdkCore as FeatureSdkCore).internalLogger.log(
-                    InternalLogger.Level.WARN,
-                    InternalLogger.Target.USER,
-                    { "A FlagsProvider has already been registered for this SDK instance" }
-                )
-                false
-            } else {
-                @Suppress("UnsafeThirdPartyFunctionCall") // User provided callable, let it throw
-                registeredProviders[sdkCore] = provider
-                true
-            }
-        }
+    fun resolveNumberValue(flagKey: String, defaultValue: Number): Number
 
-    internal fun unregister(sdkCore: SdkCore = Datadog.getInstance()) {
-        synchronized(registeredProviders) {
-            registeredProviders.remove(sdkCore)
-        }
-    }
+    /**
+     * Resolve a Int flag value.
+     * @param flagKey The name of the key to query.
+     * @param defaultValue The value to return if the key cannot be retrieved.
+     * @return The value of the flag, or the default value if it cannot be retrieved.
+     */
+    fun resolveIntValue(flagKey: String, defaultValue: Int): Int
 
-    internal fun clear() {
-        synchronized(registeredProviders) {
-            registeredProviders.clear()
-        }
-    }
-
-    // This method is mainly for test purposes.
-    @Suppress("unused")
-    @JvmStatic
-    private fun reset() {
-        clear()
-    }
-
-    // endregion
-
-    // region Constants
-    // Constants can be added here if needed
-    // endregion
+    /**
+     * Resolve a Structure flag value.
+     * @param flagKey The name of the key to query.
+     * @param defaultValue The value to return if the key cannot be retrieved.
+     * @return The value of the flag, or the default value if it cannot be retrieved.
+     */
+    fun resolveStructureValue(flagKey: String, defaultValue: JSONObject): JSONObject
 }
