@@ -10,7 +10,6 @@ object com.datadog.android.flags.featureflags.FlagsClient
   fun get(com.datadog.android.api.SdkCore = Datadog.getInstance()): FlagsProvider
 interface com.datadog.android.flags.featureflags.FlagsProvider
   fun setContext(com.datadog.android.flags.featureflags.model.EvaluationContext)
-  fun setContext(String, Map<String, Any?> = emptyMap())
   fun resolveBooleanValue(String, Boolean): Boolean
   fun resolveStringValue(String, String): String
   fun resolveNumberValue(String, Number): Number

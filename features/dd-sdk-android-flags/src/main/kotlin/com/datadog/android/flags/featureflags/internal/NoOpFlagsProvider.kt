@@ -13,8 +13,6 @@ import org.json.JSONObject
 internal class NoOpFlagsProvider : FlagsProvider {
     override fun setContext(context: EvaluationContext) {}
 
-    override fun setContext(targetingKey: String, attributes: Map<String, Any?>) {}
-
     override fun resolveBooleanValue(flagKey: String, defaultValue: Boolean): Boolean = defaultValue
 
     override fun resolveStringValue(flagKey: String, defaultValue: String): String = defaultValue

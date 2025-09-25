@@ -241,12 +241,13 @@ internal class DatadogEvaluationContextTest {
     @Test
     fun `M return true W isValid() { valid context }`() {
         // Given
-        val context = DatadogEvaluationContext("user123", mapOf("plan" to "premium"), mockInternalLogger)
+        val context = DatadogEvaluationContext("user123", mapOf("plan" to "premium"))
 
         // When
         val isValid = context?.isValid()
 
         // Then
+        assertThat(context).isNotNull
         assertThat(isValid).isTrue()
     }
 
@@ -309,6 +310,7 @@ internal class DatadogEvaluationContextTest {
         val isValid = context?.isValid()
 
         // Then
+        assertThat(context).isNotNull
         assertThat(isValid).isTrue()
     }
 }

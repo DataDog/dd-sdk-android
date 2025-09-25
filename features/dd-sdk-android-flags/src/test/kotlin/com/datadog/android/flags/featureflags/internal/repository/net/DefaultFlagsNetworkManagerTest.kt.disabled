@@ -20,7 +20,9 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
+
 import org.mockito.Mock
+
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
@@ -140,7 +142,9 @@ internal class DefaultFlagsNetworkManagerTest {
         assertThat(recordedRequest?.getHeader("Content-Type")).isEqualTo("application/vnd.api+json")
 
         // Verify request body contains our context
-        val requestBody = recordedRequest?.body.readUtf8()
+        val requestBody = recordedRequest?.body?.readUtf8()
+        assertThat(requestBody).isNotNull()
+
         assertThat(requestBody).contains(fakeTargetingKey)
         assertThat(requestBody).contains(fakeAttributeKey)
         assertThat(requestBody).contains(fakeAttributeValue)

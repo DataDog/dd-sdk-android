@@ -39,11 +39,6 @@ public abstract interface class com/datadog/android/flags/featureflags/FlagsProv
 	public abstract fun resolveStringValue (Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;
 	public abstract fun resolveStructureValue (Ljava/lang/String;Lorg/json/JSONObject;)Lorg/json/JSONObject;
 	public abstract fun setContext (Lcom/datadog/android/flags/featureflags/model/EvaluationContext;)V
-	public abstract fun setContext (Ljava/lang/String;Ljava/util/Map;)V
-}
-
-public final class com/datadog/android/flags/featureflags/FlagsProvider$DefaultImpls {
-	public static synthetic fun setContext$default (Lcom/datadog/android/flags/featureflags/FlagsProvider;Ljava/lang/String;Ljava/util/Map;ILjava/lang/Object;)V
 }
 
 public final class com/datadog/android/flags/featureflags/model/EvaluationContext {

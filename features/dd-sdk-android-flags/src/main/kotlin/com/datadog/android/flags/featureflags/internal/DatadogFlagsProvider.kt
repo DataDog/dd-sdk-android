@@ -33,11 +33,6 @@ internal class DatadogFlagsProvider(
         // If null, validation failed and was already logged
     }
 
-    override fun setContext(targetingKey: String, attributes: Map<String, Any?>) {
-        val context = EvaluationContext(targetingKey, attributes)
-        setContext(context)
-    }
-
     override fun resolveBooleanValue(flagKey: String, defaultValue: Boolean): Boolean {
         val precomputedFlag = flagsRepository.getPrecomputedFlag(flagKey)
         return precomputedFlag?.variationValue?.toBooleanStrictOrNull() ?: defaultValue

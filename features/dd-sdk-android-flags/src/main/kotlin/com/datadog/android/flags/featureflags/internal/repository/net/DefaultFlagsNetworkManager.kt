@@ -30,7 +30,7 @@ internal class DefaultFlagsNetworkManager(
 ) : FlagsNetworkManager {
     internal lateinit var callFactory: OkHttpCallFactory
 
-    internal class OkHttpCallFactory(factory: () -> OkHttpClient) : Call.Factory {
+    internal open class OkHttpCallFactory(factory: () -> OkHttpClient) : Call.Factory {
         val okhttpClient by lazy(factory)
 
         override fun newCall(request: Request): Call = okhttpClient.newCall(request)

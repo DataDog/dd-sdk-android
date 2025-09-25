@@ -22,6 +22,7 @@ import org.json.JSONException
 import org.json.JSONObject
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import com.datadog.android.flags.featureflags.model.EvaluationContext
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
@@ -433,9 +434,10 @@ internal class DatadogFlagsProviderTest {
             "user_id" to forge.anInt(),
             "is_beta" to forge.aBool()
         )
+        val fakeContext = EvaluationContext(fakeTargetingKey, fakeAttributes)
 
         // When
-        testedProvider.setContext(fakeTargetingKey, fakeAttributes)
+        testedProvider.setContext(fakeContext)
 
         // Then
         val contextCaptor = argumentCaptor<DatadogEvaluationContext>()
@@ -452,31 +454,13 @@ internal class DatadogFlagsProviderTest {
     }
 
     @Test
-    fun `M not throw exception W setContext() { all supported attribute types }`(forge: Forge) {
-        // Given
-        val fakeTargetingKey = forge.anAlphabeticalString()
-        val supportedAttributes = mapOf(
-            "string_type" to forge.anAlphabeticalString(),
-            "int_type" to forge.anInt(),
-            "long_type" to forge.aLong(),
-            "double_type" to forge.aDouble(),
-            "float_type" to forge.aFloat(),
-            "boolean_type" to forge.aBool()
-        )
-
-        // When & Then
-        // Should not throw any exceptions
-        testedProvider.setContext(fakeTargetingKey, supportedAttributes)
-    }
-
-    @Test
     fun `M not call evaluations manager W setContext() { blank targeting key }`() {
         // Given
         val blankTargetingKey = ""
         val fakeAttributes = mapOf("test" to "value")
 
         // When
-        testedProvider.setContext(blankTargetingKey, fakeAttributes)
+        testedProvider.setContext(EvaluationContext(blankTargetingKey, fakeAttributes))
 
         // Then
         verify(mockEvaluationsManager, never()).updateEvaluationsForContext(any())
@@ -489,7 +473,7 @@ internal class DatadogFlagsProviderTest {
         val fakeAttributes = mapOf("test" to "value")
 
         // When
-        testedProvider.setContext(blankTargetingKey, fakeAttributes)
+        testedProvider.setContext(EvaluationContext(blankTargetingKey, fakeAttributes))
 
         // Then
         argumentCaptor<() -> String> {
@@ -517,29 +501,14 @@ internal class DatadogFlagsProviderTest {
             "env" to forge.anElementFrom("dev", "staging", "prod"),
             "feature.enabled" to forge.aBool()
         )
+        val fakeContext = EvaluationContext(fakeTargetingKey, fakeAttributes)
 
         // When
-        testedProvider.setContext(fakeTargetingKey, fakeAttributes)
+        testedProvider.setContext(fakeContext)
 
         // Then
         // Verify that the evaluations manager was called to process the context
-        verify(mockEvaluationsManager).updateEvaluationsForContext(any())
-
-        // Note: In a real integration test, we would verify that:
-        // 1. The context is converted to DatadogEvaluationContext
-        // 2. A network request is made to fetch flags
-        // 3. The response is parsed into PrecomputedFlag objects
-        // 4. The flags are stored in the repository with the context
-        // 5. The flags can be retrieved later via getPrecomputedFlag()
-
-        // This test demonstrates the unit-level behavior where we verify:
-        // - The method completes without throwing
-        // - Async processing is triggered
-        // - The provider accepts various attribute types
-        // - Error handling works for invalid inputs
-
-        // For complete end-to-end testing, see DatadogFlagsProviderEndToEndTest
-        // which uses MockWebServer to test the full HTTP flow
+        verify(mockEvaluationsManager).updateEvaluationsForContext(any<DatadogEvaluationContext>())
     }
 
     // endregion
