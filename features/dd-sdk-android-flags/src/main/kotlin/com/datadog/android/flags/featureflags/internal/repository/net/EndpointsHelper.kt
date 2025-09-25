@@ -12,6 +12,13 @@ import org.json.JSONObject
 
 internal class EndpointsHelper(private val internalLogger: InternalLogger) {
 
+    /**
+     * Builds the endpoint host for feature flag requests based on the Datadog site.
+     *
+     * @param site The Datadog site identifier (e.g., "datadoghq.com", "datadoghq.eu")
+     * @param customerDomain The customer subdomain for the endpoint. Defaults to "preview"
+     *                       which is used for early access/preview feature flags functionality.
+     */
     internal fun buildEndpointHost(site: String, customerDomain: String = "preview"): String = when (site) {
         DOMAIN_GOV -> {
             internalLogger.log(

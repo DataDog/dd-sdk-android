@@ -9,25 +9,12 @@ object com.datadog.android.flags.featureflags.FlagsClient
   fun isRegistered(com.datadog.android.api.SdkCore = Datadog.getInstance()): Boolean
   fun get(com.datadog.android.api.SdkCore = Datadog.getInstance()): FlagsProvider
 interface com.datadog.android.flags.featureflags.FlagsProvider
-  fun setContext(String, Map<String, Any>)
+  fun setContext(com.datadog.android.flags.featureflags.model.EvaluationContext)
+  fun setContext(String, Map<String, Any?> = emptyMap())
   fun resolveBooleanValue(String, Boolean): Boolean
   fun resolveStringValue(String, String): String
   fun resolveNumberValue(String, Number): Number
   fun resolveIntValue(String, Int): Int
   fun resolveStructureValue(String, org.json.JSONObject): org.json.JSONObject
 data class com.datadog.android.flags.featureflags.model.EvaluationContext
-  constructor(String, Map<String, Any> = emptyMap())
-  class Builder
-    constructor(String, com.datadog.android.api.InternalLogger)
-    fun addAttribute(String, String): Builder
-    fun addAttribute(String, Number): Builder
-    fun addAttribute(String, Boolean): Builder
-    fun addAttribute(String, Any): Builder
-    fun addAll(Map<String, Any>): Builder
-    fun build(): EvaluationContext
-  companion object 
-    fun builder(String, com.datadog.android.api.InternalLogger)
-data class com.datadog.android.flags.featureflags.model.FeatureFlagsUser
-  constructor(String, String)
-data class com.datadog.android.flags.featureflags.model.ProviderContext
-  constructor(String, FeatureFlagsUser)
+  constructor(String, Map<String, Any?> = emptyMap())

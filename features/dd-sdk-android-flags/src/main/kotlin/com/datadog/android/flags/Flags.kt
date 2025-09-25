@@ -14,7 +14,11 @@ import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.flags.featureflags.FlagsClient
 import com.datadog.android.flags.featureflags.FlagsProvider
 import com.datadog.android.flags.featureflags.internal.DatadogFlagsProvider
+import com.datadog.android.flags.featureflags.internal.evaluation.EvaluationsManager
 import com.datadog.android.flags.featureflags.internal.model.FlagsContext
+import com.datadog.android.flags.featureflags.internal.repository.DefaultFlagsRepository
+import com.datadog.android.flags.featureflags.internal.repository.net.DefaultFlagsNetworkManager
+import com.datadog.android.flags.featureflags.internal.repository.net.PrecomputeMapper
 import com.datadog.android.flags.internal.FlagsFeature
 
 /**
@@ -88,10 +92,32 @@ object Flags {
             env = env
         )
 
-        return DatadogFlagsProvider(
-            executorService = executorService,
-            featureSdkCore = sdkCore,
+        // Create repository
+        val flagsRepository = DefaultFlagsRepository(
+            featureSdkCore = sdkCore
+        )
+
+        // Create network manager and dependencies
+        val flagsNetworkManager = DefaultFlagsNetworkManager(
+            internalLogger = sdkCore.internalLogger,
             flagsContext = flagsContext
+        )
+
+        val precomputeMapper = PrecomputeMapper(sdkCore.internalLogger)
+
+        // Create evaluations manager
+        val evaluationsManager = EvaluationsManager(
+            executorService = executorService,
+            internalLogger = sdkCore.internalLogger,
+            flagsRepository = flagsRepository,
+            flagsNetworkManager = flagsNetworkManager,
+            precomputeMapper = precomputeMapper
+        )
+
+        return DatadogFlagsProvider(
+            featureSdkCore = sdkCore,
+            evaluationsManager = evaluationsManager,
+            flagsRepository = flagsRepository
         )
     }
 }

@@ -8,8 +8,8 @@ package com.datadog.android.flags.featureflags.internal.repository
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.flags.featureflags.internal.model.DatadogEvaluationContext
 import com.datadog.android.flags.featureflags.internal.model.PrecomputedFlag
-import com.datadog.android.flags.featureflags.model.EvaluationContext
 import java.util.concurrent.atomic.AtomicReference
 
 internal class DefaultFlagsRepository(
@@ -17,10 +17,10 @@ internal class DefaultFlagsRepository(
     private val internalLogger: InternalLogger = featureSdkCore.internalLogger
 ) : FlagsRepository {
     // Atomic state - ensures context and flags are always consistent
-    private data class FlagsState(val context: EvaluationContext, val flags: Map<String, PrecomputedFlag>)
+    private data class FlagsState(val context: DatadogEvaluationContext, val flags: Map<String, PrecomputedFlag>)
     private val atomicState = AtomicReference<FlagsState?>(null)
 
-    override fun setFlagsAndContext(context: EvaluationContext, flags: Map<String, PrecomputedFlag>) {
+    override fun setFlagsAndContext(context: DatadogEvaluationContext, flags: Map<String, PrecomputedFlag>) {
         val newState = FlagsState(context, flags)
         atomicState.set(newState)
 
@@ -46,9 +46,9 @@ internal class DefaultFlagsRepository(
         return null
     }
 
-    override fun getEvaluationContext(): EvaluationContext? = atomicState.get()?.context
+    override fun getEvaluationContext(): DatadogEvaluationContext? = atomicState.get()?.context
 
-    override fun getPrecomputedFlagWithContext(key: String): Pair<PrecomputedFlag, EvaluationContext>? {
+    override fun getPrecomputedFlagWithContext(key: String): Pair<PrecomputedFlag, DatadogEvaluationContext>? {
         val state = atomicState.get()
         if (state != null) {
             val flag = state.flags[key]

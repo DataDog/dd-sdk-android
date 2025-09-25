@@ -7,8 +7,8 @@
 package com.datadog.android.flags.featureflags.internal.repository.net
 
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.flags.featureflags.internal.model.DatadogEvaluationContext
 import com.datadog.android.flags.featureflags.internal.model.FlagsContext
-import com.datadog.android.flags.featureflags.model.EvaluationContext
 import okhttp3.Call
 import okhttp3.Headers
 import okhttp3.OkHttpClient
@@ -41,7 +41,7 @@ internal class DefaultFlagsNetworkManager(
     }
 
     @Suppress("ReturnCount")
-    override fun downloadPrecomputedFlags(context: EvaluationContext): String? {
+    override fun downloadPrecomputedFlags(context: DatadogEvaluationContext): String? {
         val url = buildUrl() ?: return null
         val headers = buildHeaders()
         val body = buildRequestBody(context) ?: return null
@@ -170,7 +170,7 @@ internal class DefaultFlagsNetworkManager(
 
     @Suppress("TodoWithoutTask")
     // TODO modify to real fields
-    private fun buildRequestBody(context: EvaluationContext): RequestBody? = try {
+    private fun buildRequestBody(context: DatadogEvaluationContext): RequestBody? = try {
         val attributeObj = buildStringifiedAttributes(context)
 
         val subject = JSONObject()
@@ -201,10 +201,10 @@ internal class DefaultFlagsNetworkManager(
     }
 
     @Suppress("UnsafeThirdPartyFunctionCall") // call wrapped in try/catch
-    private fun buildStringifiedAttributes(context: EvaluationContext): JSONObject {
+    private fun buildStringifiedAttributes(context: DatadogEvaluationContext): JSONObject {
         val contextJson = JSONObject()
         context.attributes.forEach { (key, value) ->
-            contextJson.put(key, value.toString())
+            contextJson.put(key, value)
         }
         return contextJson
     }

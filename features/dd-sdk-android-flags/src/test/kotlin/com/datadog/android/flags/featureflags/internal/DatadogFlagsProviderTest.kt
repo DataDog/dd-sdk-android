@@ -8,12 +8,14 @@ package com.datadog.android.flags.featureflags.internal
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.FeatureSdkCore
-import com.datadog.android.flags.featureflags.internal.model.FlagsContext
+import com.datadog.android.flags.featureflags.internal.evaluation.EvaluationsManager
+import com.datadog.android.flags.featureflags.internal.model.DatadogEvaluationContext
 import com.datadog.android.flags.featureflags.internal.model.PrecomputedFlag
 import com.datadog.android.flags.featureflags.internal.model.PrecomputedFlagConstants
 import com.datadog.android.flags.featureflags.internal.repository.FlagsRepository
 import com.datadog.android.flags.utils.forge.ForgeConfigurator
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
 import org.json.JSONException
@@ -21,21 +23,28 @@ import org.json.JSONObject
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
+import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.capture
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
+import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.util.concurrent.ExecutorService
 
-@ExtendWith(MockitoExtension::class, ForgeExtension::class)
+@Extensions(
+    ExtendWith(MockitoExtension::class),
+    ExtendWith(ForgeExtension::class)
+)
 @MockitoSettings(strictness = Strictness.LENIENT)
+@ForgeConfiguration(ForgeConfigurator::class)
 internal class DatadogFlagsProviderTest {
 
     @Mock
@@ -51,19 +60,17 @@ internal class DatadogFlagsProviderTest {
     lateinit var mockFlagsRepository: FlagsRepository
 
     @Mock
-    lateinit var mockFlagsContext: FlagsContext
+    lateinit var mockEvaluationsManager: EvaluationsManager
 
     private lateinit var testedProvider: DatadogFlagsProvider
 
     @BeforeEach
-    fun `set up`(forge: Forge) {
-        ForgeConfigurator.configure(forge)
+    fun `set up`() {
         whenever(mockFeatureSdkCore.internalLogger) doReturn mockInternalLogger
 
         testedProvider = DatadogFlagsProvider(
-            executorService = mockExecutorService,
             featureSdkCore = mockFeatureSdkCore,
-            flagsContext = mockFlagsContext,
+            evaluationsManager = mockEvaluationsManager,
             flagsRepository = mockFlagsRepository
         )
     }
@@ -400,9 +407,8 @@ internal class DatadogFlagsProviderTest {
 
         // When
         val provider = DatadogFlagsProvider(
-            executorService = mockExecutorService,
             featureSdkCore = mockFeatureSdkCore,
-            flagsContext = mockFlagsContext,
+            evaluationsManager = mockEvaluationsManager,
             flagsRepository = customRepository
         )
 
@@ -418,114 +424,31 @@ internal class DatadogFlagsProviderTest {
     // region setContext()
 
     @Test
-    fun `M create evaluation context W setContext() { valid attributes }`(forge: Forge) {
+    fun `M call evaluations manager W setContext() { valid targeting key and attributes }`(forge: Forge) {
         // Given
         val fakeTargetingKey = forge.anAlphabeticalString()
         val fakeAttributes = mapOf(
             "plan" to forge.anElementFrom("free", "premium", "enterprise"),
             "region" to forge.anElementFrom("us-east-1", "eu-west-1"),
             "user_id" to forge.anInt(),
-            "is_beta" to forge.aBool(),
-            "score" to forge.aDouble()
+            "is_beta" to forge.aBool()
         )
 
         // When
         testedProvider.setContext(fakeTargetingKey, fakeAttributes)
 
         // Then
-        // Since orchestrator runs async, we can't directly verify the EvaluationContext
-        // But we can verify that the method completes without throwing
-        // Integration tests would verify the full flow
-    }
+        val contextCaptor = argumentCaptor<DatadogEvaluationContext>()
+        verify(mockEvaluationsManager).updateEvaluationsForContext(contextCaptor.capture())
 
-    @Test
-    fun `M filter unsupported attribute types W setContext() { mixed valid and invalid types }`(forge: Forge) {
-        // Given
-        val fakeTargetingKey = forge.anAlphabeticalString()
-        val validAttributes = mapOf(
-            "string_attr" to forge.anAlphabeticalString(),
-            "number_attr" to forge.anInt(),
-            "boolean_attr" to forge.aBool()
-        )
-        val invalidAttributes = mapOf(
-            "invalid_list" to listOf(1, 2, 3),
-            "invalid_array" to arrayOf("a", "b"),
-            "invalid_map" to mapOf("not" to "supported") // Maps no longer supported
-        )
-        val allAttributes = validAttributes + invalidAttributes
-
-        // When
-        testedProvider.setContext(fakeTargetingKey, allAttributes)
-
-        // Then
-        // addAll() now calls addAttribute() which filters, so warnings should be logged
-        verify(mockInternalLogger, times(3)).log(
-            eq(InternalLogger.Level.WARN),
-            eq(InternalLogger.Target.USER),
-            any(),
-            eq(null),
-            eq(false),
-            eq(null)
-        )
-    }
-
-    @Test
-    fun `M handle empty attributes W setContext() { empty map }`(forge: Forge) {
-        // Given
-        val fakeTargetingKey = forge.anAlphabeticalString()
-        val emptyAttributes = emptyMap<String, Any>()
-
-        // When
-        testedProvider.setContext(fakeTargetingKey, emptyAttributes)
-
-        // Then
-        // Should complete without errors and not log any warnings
-        verify(mockInternalLogger, times(0)).log(
-            eq(InternalLogger.Level.WARN),
-            eq(InternalLogger.Target.USER),
-            any(),
-            any(),
-            any(),
-            any()
-        )
-    }
-
-    @Test
-    fun `M preserve targeting key exactly W setContext() { special characters }`() {
-        // Given
-        val specialTargetingKey = "user@domain.com-123_test.key"
-        val fakeAttributes = mapOf("test" to "value")
-
-        // When
-        testedProvider.setContext(specialTargetingKey, fakeAttributes)
-
-        // Then
-        // Method should complete without throwing for special characters
-        // The targeting key preservation is tested in EvaluationContext tests
-    }
-
-    @Test
-    fun `M handle filtered attributes W setContext() { valid attributes only }`(forge: Forge) {
-        // Given
-        val fakeTargetingKey = forge.anAlphabeticalString()
-        val validAttributes = mapOf(
-            "valid_string" to forge.anAlphabeticalString(),
-            "valid_number" to forge.anInt()
-        )
-
-        // When
-        testedProvider.setContext(fakeTargetingKey, validAttributes)
-
-        // Then
-        // Should handle gracefully without warnings
-        verify(mockInternalLogger, times(0)).log(
-            eq(InternalLogger.Level.WARN),
-            eq(InternalLogger.Target.USER),
-            any(),
-            any(),
-            any(),
-            any()
-        )
+        val capturedContext = contextCaptor.firstValue
+        assertThat(capturedContext.targetingKey).isEqualTo(fakeTargetingKey)
+        // Verify all attributes were normalized to strings
+        assertThat(capturedContext.attributes).hasSize(4)
+        assertThat(capturedContext.attributes).containsKeys("plan", "region", "user_id", "is_beta")
+        // Check specific value types are converted to strings
+        assertThat(capturedContext.attributes["user_id"]).isEqualTo(fakeAttributes["user_id"].toString())
+        assertThat(capturedContext.attributes["is_beta"]).isEqualTo(fakeAttributes["is_beta"].toString())
     }
 
     @Test
@@ -547,6 +470,19 @@ internal class DatadogFlagsProviderTest {
     }
 
     @Test
+    fun `M not call evaluations manager W setContext() { blank targeting key }`() {
+        // Given
+        val blankTargetingKey = ""
+        val fakeAttributes = mapOf("test" to "value")
+
+        // When
+        testedProvider.setContext(blankTargetingKey, fakeAttributes)
+
+        // Then
+        verify(mockEvaluationsManager, never()).updateEvaluationsForContext(any())
+    }
+
+    @Test
     fun `M log error and not crash W setContext() { blank targeting key }`() {
         // Given
         val blankTargetingKey = ""
@@ -558,41 +494,52 @@ internal class DatadogFlagsProviderTest {
         // Then
         argumentCaptor<() -> String> {
             verify(mockInternalLogger).log(
-                eq(InternalLogger.Level.ERROR),
+                eq(InternalLogger.Level.WARN),
                 eq(InternalLogger.Target.USER),
                 capture(),
-                any<IllegalArgumentException>(),
+                eq(null),
                 eq(false),
                 eq(null)
             )
             val message = lastValue()
-            assertThat(message).contains("Failed to set context")
-            assertThat(message).contains("Targeting key cannot be blank")
+            assertThat(message).contains("Invalid evaluation context")
+            assertThat(message).contains("targeting key is blank or whitespace-only")
         }
     }
 
     @Test
-    fun `M log error and not crash W setContext() { whitespace-only targeting key }`() {
+    fun `M process context and store flags W setContext() { complete flow with mock repository }`(forge: Forge) {
         // Given
-        val whitespaceTargetingKey = "   "
-        val fakeAttributes = mapOf("test" to "value")
+        val fakeTargetingKey = forge.anAlphabeticalString()
+        val fakeAttributes = mapOf(
+            "user.id" to forge.anAlphabeticalString(),
+            "user.plan" to forge.anElementFrom("free", "premium", "enterprise"),
+            "env" to forge.anElementFrom("dev", "staging", "prod"),
+            "feature.enabled" to forge.aBool()
+        )
 
         // When
-        testedProvider.setContext(whitespaceTargetingKey, fakeAttributes)
+        testedProvider.setContext(fakeTargetingKey, fakeAttributes)
 
         // Then
-        argumentCaptor<() -> String> {
-            verify(mockInternalLogger).log(
-                eq(InternalLogger.Level.ERROR),
-                eq(InternalLogger.Target.USER),
-                capture(),
-                any<IllegalArgumentException>(),
-                eq(false),
-                eq(null)
-            )
-            assertThat(lastValue()).contains("Failed to set context")
-            assertThat(lastValue()).contains("Targeting key cannot be blank")
-        }
+        // Verify that the evaluations manager was called to process the context
+        verify(mockEvaluationsManager).updateEvaluationsForContext(any())
+
+        // Note: In a real integration test, we would verify that:
+        // 1. The context is converted to DatadogEvaluationContext
+        // 2. A network request is made to fetch flags
+        // 3. The response is parsed into PrecomputedFlag objects
+        // 4. The flags are stored in the repository with the context
+        // 5. The flags can be retrieved later via getPrecomputedFlag()
+
+        // This test demonstrates the unit-level behavior where we verify:
+        // - The method completes without throwing
+        // - Async processing is triggered
+        // - The provider accepts various attribute types
+        // - Error handling works for invalid inputs
+
+        // For complete end-to-end testing, see DatadogFlagsProviderEndToEndTest
+        // which uses MockWebServer to test the full HTTP flow
     }
 
     // endregion

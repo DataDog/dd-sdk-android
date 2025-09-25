@@ -6,6 +6,7 @@
 
 package com.datadog.android.flags.featureflags
 
+import com.datadog.android.flags.featureflags.model.EvaluationContext
 import org.json.JSONObject
 
 /**
@@ -14,10 +15,23 @@ import org.json.JSONObject
 interface FlagsProvider {
     /**
      * Set the context for the provider.
-     * @param targetingKey The targeting key to use for flag evaluation.
-     * @param attributes The attributes to use for targeting.
+     * @param context The evaluation context containing targeting key and attributes.
      */
-    fun setContext(targetingKey: String, attributes: Map<String, Any>)
+    fun setContext(context: EvaluationContext)
+
+    /**
+     * Set the context for the provider.
+     * @param targetingKey The unique identifier used to determine which flag variants to return.
+     *                     This is typically a user ID, session ID, or other unique identifier that
+     *                     allows the feature flag system to consistently return the same flag values
+     *                     for the same entity across requests. Must not be blank.
+     * @param attributes Additional attributes used for targeting rules and segmentation.
+     *                   These can include user properties (e.g., plan type, region),
+     *                   device characteristics, or any other contextual information that
+     *                   your flag targeting rules reference. Supports String, Number, Boolean,
+     *                   and null values.
+     */
+    fun setContext(targetingKey: String, attributes: Map<String, Any?> = emptyMap())
 
     /**
      * Resolve a Boolean flag value.
