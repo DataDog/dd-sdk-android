@@ -12,6 +12,7 @@ import com.datadog.android.flags.featureflags.internal.repository.FlagsRepositor
 import com.datadog.android.flags.featureflags.internal.repository.net.FlagsNetworkManager
 import com.datadog.android.flags.featureflags.internal.repository.net.PrecomputeMapper
 import com.datadog.android.flags.featureflags.model.EvaluationContext
+import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import okhttp3.mockwebserver.MockWebServer
@@ -21,6 +22,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.Mock
+import org.mockito.Mockito.doThrow
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
@@ -218,4 +220,155 @@ internal class EvaluationsManagerTest {
 
         assertThat(logCaptor.firstValue.invoke()).contains("Processing evaluation context: $fakeTargetingKey")
     }
+
+    // region updateEvaluationsForContext
+
+    @Test
+    fun `M execute on executor service W updateEvaluationsForContext()`(forge: Forge) {
+        // Given
+        val fakeContext = EvaluationContext(
+            targetingKey = fakeTargetingKey,
+            attributes = mapOf("user_id" to forge.anAlphabeticalString())
+        )
+
+        // When
+        evaluationsManager.updateEvaluationsForContext(fakeContext)
+
+        // Then
+        verify(mockExecutorService).execute(any())
+    }
+
+    @Test
+    fun `M fetch and store flags W updateEvaluationsForContext() { successful network request }`(forge: Forge) {
+        // Given
+        val fakeContext = EvaluationContext(
+            targetingKey = fakeTargetingKey,
+            attributes = mapOf("user_id" to forge.anAlphabeticalString())
+        )
+        val fakeNetworkResponse = forge.anAlphabeticalString()
+        val fakeFlagsMap = mapOf(
+            forge.anAlphabeticalString() to forge.getForgery<PrecomputedFlag>(),
+            forge.anAlphabeticalString() to forge.getForgery<PrecomputedFlag>()
+        )
+
+        // Setup mocks to execute the lambda immediately for testing
+        whenever(mockExecutorService.execute(any())).thenAnswer { invocation ->
+            (invocation.arguments[0] as Runnable).run()
+        }
+        whenever(mockFlagsNetworkManager.downloadPrecomputedFlags(fakeContext)).thenReturn(fakeNetworkResponse)
+        whenever(mockPrecomputeMapper.map(fakeNetworkResponse)).thenReturn(fakeFlagsMap)
+
+        // When
+        evaluationsManager.updateEvaluationsForContext(fakeContext)
+
+        // Then
+        verify(mockFlagsNetworkManager).downloadPrecomputedFlags(fakeContext)
+        verify(mockPrecomputeMapper).map(fakeNetworkResponse)
+        verify(mockFlagsRepository).setFlagsAndContext(fakeContext, fakeFlagsMap)
+    }
+
+    @Test
+    fun `M store empty flags W updateEvaluationsForContext() { network request fails }`(forge: Forge) {
+        // Given
+        val fakeContext = EvaluationContext(
+            targetingKey = fakeTargetingKey,
+            attributes = mapOf("user_id" to forge.anAlphabeticalString())
+        )
+
+        // Setup mocks to execute the lambda immediately and return null from network
+        whenever(mockExecutorService.execute(any())).thenAnswer { invocation ->
+            (invocation.arguments[0] as Runnable).run()
+        }
+        whenever(mockFlagsNetworkManager.downloadPrecomputedFlags(fakeContext)).thenReturn(null)
+
+        // When
+        evaluationsManager.updateEvaluationsForContext(fakeContext)
+
+        // Then
+        verify(mockFlagsNetworkManager).downloadPrecomputedFlags(fakeContext)
+        verify(mockFlagsRepository).setFlagsAndContext(fakeContext, emptyMap())
+    }
+
+    @Test
+    fun `M handle exception and store empty flags W updateEvaluationsForContext() { network throws exception }`(
+        forge: Forge
+    ) {
+        // Given
+        val fakeContext = EvaluationContext(
+            targetingKey = fakeTargetingKey,
+            attributes = mapOf("user_id" to forge.anAlphabeticalString())
+        )
+        val fakeException = RuntimeException("Network error")
+
+        // Setup mocks to execute the lambda immediately and throw exception
+        whenever(mockExecutorService.execute(any())).thenAnswer { invocation ->
+            (invocation.arguments[0] as Runnable).run()
+        }
+        whenever(mockFlagsNetworkManager.downloadPrecomputedFlags(fakeContext)).thenThrow(fakeException)
+
+        // When
+        evaluationsManager.updateEvaluationsForContext(fakeContext)
+
+        // Then
+        verify(mockFlagsNetworkManager).downloadPrecomputedFlags(fakeContext)
+        verify(mockFlagsRepository).setFlagsAndContext(fakeContext, emptyMap())
+    }
+
+    @Test
+    fun `M handle exception and store empty flags W updateEvaluationsForContext() { mapper throws exception }`(
+        forge: Forge
+    ) {
+        // Given
+        val fakeContext = EvaluationContext(
+            targetingKey = fakeTargetingKey,
+            attributes = mapOf("user_id" to forge.anAlphabeticalString())
+        )
+        val fakeNetworkResponse = forge.anAlphabeticalString()
+        val fakeException = RuntimeException("Mapping error")
+
+        // Setup mocks to execute the lambda immediately
+        whenever(mockExecutorService.execute(any())).thenAnswer { invocation ->
+            (invocation.arguments[0] as Runnable).run()
+        }
+        whenever(mockFlagsNetworkManager.downloadPrecomputedFlags(fakeContext)).thenReturn(fakeNetworkResponse)
+        whenever(mockPrecomputeMapper.map(fakeNetworkResponse)).thenThrow(fakeException)
+
+        // When
+        evaluationsManager.updateEvaluationsForContext(fakeContext)
+
+        // Then
+        verify(mockFlagsNetworkManager).downloadPrecomputedFlags(fakeContext)
+        verify(mockPrecomputeMapper).map(fakeNetworkResponse)
+        verify(mockFlagsRepository).setFlagsAndContext(fakeContext, emptyMap())
+    }
+
+    @Test
+    fun `M handle storage exception W updateEvaluationsForContext() { repository storage fails after exception }`(
+        forge: Forge
+    ) {
+        // Given
+        val fakeContext = EvaluationContext(
+            targetingKey = fakeTargetingKey,
+            attributes = mapOf("user_id" to forge.anAlphabeticalString())
+        )
+        val fakeNetworkException = RuntimeException("Network error")
+        val fakeStorageException = RuntimeException("Storage error")
+
+        // Setup mocks to execute the lambda immediately
+        whenever(mockExecutorService.execute(any())).thenAnswer { invocation ->
+            (invocation.arguments[0] as Runnable).run()
+        }
+        whenever(mockFlagsNetworkManager.downloadPrecomputedFlags(fakeContext)).thenThrow(fakeNetworkException)
+        doThrow(fakeStorageException).whenever(mockFlagsRepository).setFlagsAndContext(fakeContext, emptyMap())
+
+        // When
+        evaluationsManager.updateEvaluationsForContext(fakeContext)
+
+        // Then
+        // Should not throw exception - gracefully handles storage failure
+        verify(mockFlagsNetworkManager).downloadPrecomputedFlags(fakeContext)
+        verify(mockFlagsRepository).setFlagsAndContext(fakeContext, emptyMap())
+    }
+
+    // endregion
 }

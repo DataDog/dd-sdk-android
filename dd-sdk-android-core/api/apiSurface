@@ -110,6 +110,7 @@ interface com.datadog.android.api.feature.Feature
   companion object 
     const val LOGS_FEATURE_NAME: String
     const val RUM_FEATURE_NAME: String
+    const val FLAGS_FEATURE_NAME: String
     const val TRACING_FEATURE_NAME: String
     const val SESSION_REPLAY_FEATURE_NAME: String
     const val SESSION_REPLAY_RESOURCES_FEATURE_NAME: String

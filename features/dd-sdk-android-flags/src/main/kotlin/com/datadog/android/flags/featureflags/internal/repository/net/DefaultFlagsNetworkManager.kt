@@ -209,7 +209,9 @@ internal class DefaultFlagsNetworkManager(
         return contextJson
     }
 
-    @Suppress("UnsafeThirdPartyFunctionCall") // call wrapped in try/catch
+    // call wrapped in try/catch
+    @Suppress("UnsafeThirdPartyFunctionCall", "TodoWithoutTask")
+    // TODO replace the environment
     private fun buildEnvPayload(): JSONObject =
         JSONObject()
             .put("dd_env", "prod")
