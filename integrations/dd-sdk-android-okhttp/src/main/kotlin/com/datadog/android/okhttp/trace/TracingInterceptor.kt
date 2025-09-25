@@ -31,6 +31,7 @@ import com.datadog.android.trace.api.span.DatadogSpan
 import com.datadog.android.trace.api.span.DatadogSpanContext
 import com.datadog.android.trace.api.tracer.DatadogTracer
 import com.datadog.android.trace.internal.DatadogTracingToolkit
+import com.datadog.android.trace.internal.RumContextHelper.extractRumContextFeature
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -207,7 +208,7 @@ internal constructor(
         tracer: DatadogTracer
     ): Response {
         val span = buildSpan(tracer, request)
-        val isSampled = span.sample(request)
+        val isSampled = span.extractRumContextFeature(sdkCore.internalLogger).sample(request)
 
         if (span.isRootSpan) {
             val samplingPriority = if (isSampled) {
@@ -549,7 +550,7 @@ internal constructor(
             setSampledOutHeaders(tracedRequestBuilder, tracingHeaderTypes, span, tracer)
         } else {
             tracer.propagate().inject(
-                span.context(),
+                span.extractRumContextFeature(sdkCore.internalLogger).context(),
                 tracedRequestBuilder
             ) { carrier: Request.Builder, key: String, value: String ->
                 when (key) {

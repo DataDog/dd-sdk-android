@@ -913,12 +913,18 @@ public final class com/datadog/android/core/persistence/datastore/DataStoreConte
 }
 
 public class com/datadog/android/core/sampling/DeterministicSampler : com/datadog/android/core/sampling/Sampler {
+	public static final field Companion Lcom/datadog/android/core/sampling/DeterministicSampler$Companion;
+	public static final field MAX_ID J
+	public static final field SAMPLER_HASHER J
 	public static final field SAMPLE_ALL_RATE F
 	public fun <init> (Lkotlin/jvm/functions/Function1;D)V
 	public fun <init> (Lkotlin/jvm/functions/Function1;F)V
 	public fun <init> (Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function0;)V
 	public fun getSampleRate ()Ljava/lang/Float;
 	public fun sample (Ljava/lang/Object;)Z
+}
+
+public final class com/datadog/android/core/sampling/DeterministicSampler$Companion {
 }
 
 public class com/datadog/android/core/sampling/RateBasedSampler : com/datadog/android/core/sampling/Sampler {

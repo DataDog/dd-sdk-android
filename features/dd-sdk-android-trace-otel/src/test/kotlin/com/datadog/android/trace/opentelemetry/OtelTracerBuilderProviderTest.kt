@@ -24,7 +24,7 @@ import com.datadog.android.trace.api.span.DatadogSpanContext
 import com.datadog.android.trace.api.span.DatadogSpanWriter
 import com.datadog.android.trace.api.tracer.DatadogTracer
 import com.datadog.android.trace.api.tracer.DatadogTracerBuilder
-import com.datadog.android.trace.internal.SpanAttributes
+import com.datadog.android.trace.internal.RumContextHelper
 import com.datadog.android.trace.opentelemetry.utils.forge.Configurator
 import com.datadog.android.trace.opentelemetry.utils.verifyLog
 import com.datadog.opentelemetry.trace.OtelSpan
@@ -486,8 +486,8 @@ internal class OtelTracerBuilderProviderTest {
         span.end()
 
         // Then
-        assertThat(context.tags).containsKey(SpanAttributes.DATADOG_INITIAL_CONTEXT)
-        val lazyContext = context.tags[SpanAttributes.DATADOG_INITIAL_CONTEXT] as CompletableFuture<DatadogContext>
+        assertThat(context.tags).containsKey(RumContextHelper.DATADOG_INITIAL_CONTEXT)
+        val lazyContext = context.tags[RumContextHelper.DATADOG_INITIAL_CONTEXT] as CompletableFuture<DatadogContext>
         assertThat(lazyContext.value).isEqualTo(fakeInitialDatadogContext)
     }
 
@@ -504,12 +504,12 @@ internal class OtelTracerBuilderProviderTest {
         val span = tracer
             .spanBuilder(fakeOperationName)
             .startSpan()
-        val delegateSpan: DatadogSpan = span.delegate
-        val context = delegateSpan.context()
+
+        val context = span.delegate.context()
         span.end()
 
         // Then
-        assertThat(context.tags).doesNotContainKey(SpanAttributes.DATADOG_INITIAL_CONTEXT)
+        assertThat(context.tags).doesNotContainKey(RumContextHelper.DATADOG_INITIAL_CONTEXT)
         verify(mockSdkCore, never()).getFeature(Feature.RUM_FEATURE_NAME)
     }
 
@@ -531,7 +531,7 @@ internal class OtelTracerBuilderProviderTest {
         span.end()
 
         // Then
-        assertThat(context.tags).doesNotContainKey(SpanAttributes.DATADOG_INITIAL_CONTEXT)
+        assertThat(context.tags).doesNotContainKey(RumContextHelper.DATADOG_INITIAL_CONTEXT)
     }
 
     // endregion

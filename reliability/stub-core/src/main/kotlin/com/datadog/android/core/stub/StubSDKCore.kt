@@ -38,12 +38,11 @@ import org.mockito.kotlin.mock as kmock
 class StubSDKCore(
     private val forge: Forge,
     private val mockContext: Application = mock(),
-    private val mockSdkCore: InternalSdkCore = kmock { on { name } doReturn toString() }
+    private val mockSdkCore: InternalSdkCore = kmock { on { name } doReturn toString() },
+    private var datadogContext: DatadogContext = forge.getForgery<DatadogContext>().copy(source = "android")
 ) : InternalSdkCore by mockSdkCore {
 
     private val featureScopes = mutableMapOf<String, StubFeatureScope>()
-
-    private var datadogContext = forge.getForgery<DatadogContext>().copy(source = "android")
 
     init {
         val mockResources = mock<Resources>()

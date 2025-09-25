@@ -74,9 +74,11 @@ public final class com/datadog/android/trace/internal/DatadogTracingToolkit {
 	public final fun setTracingSamplingPriorityIfNecessary (Lcom/datadog/android/trace/api/span/DatadogSpanContext;)V
 }
 
-public final class com/datadog/android/trace/internal/SpanAttributes {
+public final class com/datadog/android/trace/internal/RumContextHelper {
 	public static final field DATADOG_INITIAL_CONTEXT Ljava/lang/String;
-	public static final field INSTANCE Lcom/datadog/android/trace/internal/SpanAttributes;
+	public static final field INSTANCE Lcom/datadog/android/trace/internal/RumContextHelper;
+	public final fun extractRumContextFeature (Lcom/datadog/android/trace/api/span/DatadogSpan;Lcom/datadog/android/api/InternalLogger;)Lcom/datadog/android/trace/api/span/DatadogSpan;
+	public final fun injectRumContextFeature (Lcom/datadog/android/trace/api/span/DatadogSpanBuilder;Lcom/datadog/android/api/feature/FeatureScope;)Lcom/datadog/android/trace/api/span/DatadogSpanBuilder;
 }
 
 public final class com/datadog/android/trace/model/SpanEvent {

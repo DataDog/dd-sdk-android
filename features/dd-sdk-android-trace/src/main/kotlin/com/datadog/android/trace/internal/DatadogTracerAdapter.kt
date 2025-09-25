@@ -5,17 +5,15 @@
  */
 package com.datadog.android.trace.internal
 
-import com.datadog.android.api.InternalLogger
-import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
-import com.datadog.android.internal.concurrent.CompletableFuture
 import com.datadog.android.trace.api.propagation.DatadogPropagation
 import com.datadog.android.trace.api.scope.DatadogScope
 import com.datadog.android.trace.api.scope.DatadogScopeListener
 import com.datadog.android.trace.api.span.DatadogSpan
 import com.datadog.android.trace.api.span.DatadogSpanBuilder
 import com.datadog.android.trace.api.tracer.DatadogTracer
+import com.datadog.android.trace.internal.RumContextHelper.injectRumContextFeature
 import com.datadog.trace.bootstrap.instrumentation.api.AgentTracer
 import com.datadog.trace.bootstrap.instrumentation.api.ScopeSource
 
@@ -26,38 +24,21 @@ internal class DatadogTracerAdapter(
     private val spanLogger: DatadogSpanLogger
 ) : DatadogTracer {
 
-    private val internalLogger: InternalLogger
-        get() = sdkCore.internalLogger
-
     override fun buildSpan(instrumentationName: String, spanName: CharSequence): DatadogSpanBuilder = wrapSpan(
         delegate.buildSpan(instrumentationName, spanName)
     )
 
-    override fun buildSpan(spanName: CharSequence): DatadogSpanBuilder = wrapSpan(
-        @Suppress("DEPRECATION")
-        delegate.buildSpan(spanName)
-    )
-
-    private fun wrapSpan(span: AgentTracer.SpanBuilder) =
-        DatadogSpanBuilderAdapter(span, spanLogger)
-            .withRumContextIfNeeded()
-
-    private fun DatadogSpanBuilder.withRumContextIfNeeded() = apply {
-        if (bundleWithRumEnabled) {
-            val rumFeature = sdkCore.getFeature(Feature.RUM_FEATURE_NAME)
-            if (rumFeature != null) {
-                val lazyContext = CompletableFuture<DatadogContext>()
-                rumFeature.withContext(withFeatureContexts = setOf(Feature.RUM_FEATURE_NAME)) {
-                    lazyContext.complete(it)
-                }
-                withTag(SpanAttributes.DATADOG_INITIAL_CONTEXT, lazyContext)
-            }
-        }
-    }
+    @Suppress("DEPRECATION")
+    override fun buildSpan(spanName: CharSequence): DatadogSpanBuilder = wrapSpan(delegate.buildSpan(spanName))
 
     override fun addScopeListener(scopeListener: DatadogScopeListener) {
         delegate.addScopeListener(DatadogScopeListenerAdapter(scopeListener))
     }
+
+    override fun propagate(): DatadogPropagation = DatadogPropagationAdapter(
+        internalLogger = sdkCore.internalLogger,
+        delegate = delegate.propagate()
+    )
 
     override fun activeSpan(): DatadogSpan? = delegate.activeSpan()?.let { DatadogSpanAdapter(it, spanLogger) }
 
@@ -67,13 +48,21 @@ internal class DatadogTracerAdapter(
         )
     }
 
-    override fun propagate(): DatadogPropagation = DatadogPropagationAdapter(internalLogger, delegate.propagate())
-
     internal fun activateSpan(span: DatadogSpan, asyncPropagating: Boolean): DatadogScope? {
-        return (span as? DatadogSpanAdapter)?.let {
-            DatadogScopeAdapter(
-                delegate.activateSpan(span.delegate, ScopeSource.INSTRUMENTATION, asyncPropagating) ?: return null
-            )
+        return (span as? DatadogSpanAdapter)
+            ?.let { delegate.activateSpan(it.delegate, ScopeSource.INSTRUMENTATION, asyncPropagating) }
+            ?.let { DatadogScopeAdapter(it) }
+    }
+
+    private fun wrapSpan(span: AgentTracer.SpanBuilder) =
+        DatadogSpanBuilderAdapter(span, spanLogger)
+            .withRumContextIfNeeded()
+
+    private fun DatadogSpanBuilder.withRumContextIfNeeded() = apply {
+        if (bundleWithRumEnabled) {
+            sdkCore.getFeature(Feature.RUM_FEATURE_NAME)?.let {
+                injectRumContextFeature(it)
+            }
         }
     }
 }
