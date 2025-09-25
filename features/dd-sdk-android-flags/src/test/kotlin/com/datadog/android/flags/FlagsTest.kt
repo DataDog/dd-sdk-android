@@ -11,7 +11,7 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.flags.Flags.FLAGS_EXECUTOR_NAME
-import com.datadog.android.flags.featureflags.FlagsClientMap
+import com.datadog.android.flags.featureflags.FlagsClient
 import com.datadog.android.flags.featureflags.internal.NoOpFlagsClient
 import com.datadog.android.flags.internal.FlagsFeature
 import com.datadog.android.flags.internal.FlagsFeature.Companion.FLAGS_FEATURE_NAME
@@ -103,7 +103,9 @@ internal class FlagsTest {
         Flags.enable(fakeConfiguration, mockSdkCore)
 
         // Then
-        assertThat(FlagsClientMap.instance(mockSdkCore)).isNotInstanceOf(NoOpFlagsClient::class.java)
+        // Verify that a real client was registered by checking it's not a no-op
+        val client = FlagsClient.instance(mockSdkCore)
+        assertThat(client).isNotInstanceOf(NoOpFlagsClient::class.java)
     }
 
     @Test
@@ -119,7 +121,9 @@ internal class FlagsTest {
         Flags.enable(fakeConfiguration, mockSdkCore)
 
         // Then
-        assertThat(FlagsClientMap.instance(mockSdkCore)).isInstanceOf(NoOpFlagsClient::class.java)
+        // Verify that no real client was registered by checking it's a no-op
+        val client = FlagsClient.instance(mockSdkCore)
+        assertThat(client).isInstanceOf(NoOpFlagsClient::class.java)
     }
 
     @Test

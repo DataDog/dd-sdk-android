@@ -12,7 +12,6 @@ import com.datadog.android.api.SdkCore
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.flags.featureflags.FlagsClient
-import com.datadog.android.flags.featureflags.FlagsClientMap
 import com.datadog.android.flags.featureflags.internal.DatadogFlagsClient
 import com.datadog.android.flags.featureflags.internal.evaluation.EvaluationsManager
 import com.datadog.android.flags.featureflags.internal.model.FlagsContext
@@ -49,7 +48,7 @@ object Flags {
         sdkCore.registerFeature(flagsFeature)
 
         createClient(sdkCore, flagsFeature)?.let {
-            FlagsClientMap.registerIfAbsent(
+            FlagsClient.registerIfAbsent(
                 client = it,
                 sdkCore
             )

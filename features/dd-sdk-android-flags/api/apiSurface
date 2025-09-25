@@ -12,7 +12,7 @@ interface com.datadog.android.flags.featureflags.FlagsClient
   fun resolveNumberValue(String, Number): Number
   fun resolveIntValue(String, Int): Int
   fun resolveStructureValue(String, org.json.JSONObject): org.json.JSONObject
-object com.datadog.android.flags.featureflags.FlagsClientMap
-  fun instance(com.datadog.android.api.SdkCore = Datadog.getInstance()): FlagsClient
+  companion object 
+    fun instance(com.datadog.android.api.SdkCore = Datadog.getInstance()): FlagsClient
 data class com.datadog.android.flags.featureflags.model.EvaluationContext
   constructor(String, Map<String, Any?> = emptyMap())
