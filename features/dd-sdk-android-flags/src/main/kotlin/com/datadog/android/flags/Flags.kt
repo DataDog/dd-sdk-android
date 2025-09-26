@@ -73,14 +73,16 @@ object Flags {
             executorContext = FLAGS_EXECUTOR_NAME
         )
 
-        val datadogContext = (sdkCore as? InternalSdkCore)?.getDatadogContext()
         val internalLogger = sdkCore.internalLogger
+        val datadogContext = (sdkCore as? InternalSdkCore)?.getDatadogContext()
         val applicationId = flagsFeature.applicationId
+
+        // Get required context parameters
         val clientToken = datadogContext?.clientToken
         val site = datadogContext?.site?.name
         val env = datadogContext?.env
 
-        @Suppress("TodoWithoutTask") // TODO how do we want to handle this?
+        // Validate required parameters
         if (clientToken == null || site == null || env == null) {
             val missingParams = listOfNotNull(
                 "clientToken".takeIf { clientToken == null },
@@ -97,12 +99,8 @@ object Flags {
             return null
         }
 
-        val flagsContext = FlagsContext(
-            applicationId = applicationId,
-            clientToken = clientToken,
-            site = site,
-            env = env
-        )
+        // Create FlagsContext combining core SDK context with feature configuration
+        val flagsContext = FlagsContext.create(datadogContext, applicationId, flagsFeature.flagsConfiguration)
 
         // Create repository
         val flagsRepository = DefaultFlagsRepository(

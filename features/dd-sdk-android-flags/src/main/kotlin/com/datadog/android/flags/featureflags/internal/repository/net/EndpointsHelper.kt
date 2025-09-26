@@ -7,10 +7,35 @@
 package com.datadog.android.flags.featureflags.internal.repository.net
 
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.flags.featureflags.internal.model.FlagsContext
 import org.json.JSONException
 import org.json.JSONObject
 
-internal class EndpointsHelper(private val internalLogger: InternalLogger) {
+internal class EndpointsHelper(private val flagsContext: FlagsContext, private val internalLogger: InternalLogger) {
+
+    /**
+     * Gets the endpoint URL for feature flag requests.
+     * Uses the configured flagging proxy URL if provided, otherwise builds from the Datadog site.
+     *
+     * @return The complete endpoint URL for flagging requests
+     */
+    internal fun getFlaggingEndpoint(): String {
+        // Use flagging proxy URL if provided, otherwise build from site
+        return flagsContext.flaggingProxyUrl
+            ?: "https://${buildEndpointHost(flagsContext.site)}/api/unstable/flags"
+    }
+
+    /**
+     * Gets the endpoint URL for exposure logging.
+     * Uses the configured custom endpoint URL if provided, otherwise builds from the Datadog site.
+     *
+     * @return The complete endpoint URL for exposure events
+     */
+    internal fun getExposureEndpoint(): String {
+        // Use custom endpoint URL if provided, otherwise build from site
+        return flagsContext.customEndpointUrl
+            ?: "https://${flagsContext.site}/api/v2/logs"
+    }
 
     /**
      * Builds the endpoint host for feature flag requests based on the Datadog site.

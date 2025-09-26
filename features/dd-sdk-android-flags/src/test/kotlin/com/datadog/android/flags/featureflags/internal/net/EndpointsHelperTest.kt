@@ -7,6 +7,7 @@
 package com.datadog.android.flags.featureflags.internal.net
 
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.flags.featureflags.internal.model.FlagsContext
 import com.datadog.android.flags.featureflags.internal.repository.net.EndpointsHelper
 import com.datadog.android.flags.featureflags.internal.repository.net.EndpointsHelper.Companion.DOMAIN_D0G
 import com.datadog.android.flags.featureflags.internal.repository.net.EndpointsHelper.Companion.DOMAIN_GOV
@@ -32,7 +33,13 @@ internal class EndpointsHelperTest {
 
     @BeforeEach
     fun `set up`() {
-        testedHelper = EndpointsHelper(mockInternalLogger)
+        val mockFlagsContext = FlagsContext(
+            applicationId = "test-app-id",
+            clientToken = "test-token",
+            site = "US1",
+            env = "test"
+        )
+        testedHelper = EndpointsHelper(mockFlagsContext, mockInternalLogger)
     }
 
     // region buildEndpointHost - Supported sites

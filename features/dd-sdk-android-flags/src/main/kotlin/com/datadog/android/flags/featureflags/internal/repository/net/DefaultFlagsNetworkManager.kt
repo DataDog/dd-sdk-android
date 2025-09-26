@@ -26,7 +26,7 @@ import java.util.concurrent.TimeUnit
 internal class DefaultFlagsNetworkManager(
     private val internalLogger: InternalLogger,
     private val flagsContext: FlagsContext,
-    private val endpointsHelper: EndpointsHelper = EndpointsHelper(internalLogger)
+    private val endpointsHelper: EndpointsHelper = EndpointsHelper(flagsContext, internalLogger)
 ) : FlagsNetworkManager {
     internal lateinit var callFactory: OkHttpCallFactory
 
@@ -130,19 +130,26 @@ internal class DefaultFlagsNetworkManager(
         null
     }
 
-    private fun buildUrl(): String? {
-        val baseUrl = endpointsHelper.buildEndpointHost(site = flagsContext.site)
-        return if (baseUrl.isNotEmpty()) {
-            "https://$baseUrl$FLAGS_ENDPOINT"
+    private fun buildUrl(): String? = try {
+        val endpoint = endpointsHelper.getFlaggingEndpoint()
+        if (endpoint.isNotEmpty()) {
+            "$endpoint$FLAGS_ENDPOINT"
         } else {
             internalLogger.log(
                 level = InternalLogger.Level.ERROR,
                 target = InternalLogger.Target.MAINTAINER,
                 messageBuilder = { ERROR_FAILURE_BUILDING_URL }
             )
-
             null
         }
+    } catch (e: Exception) {
+        internalLogger.log(
+            level = InternalLogger.Level.ERROR,
+            target = InternalLogger.Target.MAINTAINER,
+            messageBuilder = { ERROR_FAILURE_BUILDING_URL },
+            throwable = e
+        )
+        null
     }
 
     private fun buildHeaders(): Headers {

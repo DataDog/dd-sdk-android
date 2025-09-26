@@ -69,11 +69,7 @@ data class FlagsConfiguration(
          * Creates a [FlagsConfiguration] with default settings.
          * @return a new [FlagsConfiguration] instance with default configuration values.
          */
-        fun defaultConfiguration(): FlagsConfiguration = FlagsConfiguration(
-            enableExposureLogging = false,
-            customEndpointUrl = null,
-            flaggingProxyUrl = null
-        )
+        fun defaultConfiguration(): FlagsConfiguration = DEFAULT_FEATURE_FLAGS_CONFIG
 
         internal val DEFAULT_FEATURE_FLAGS_CONFIG = FlagsConfiguration(
             enableExposureLogging = false,

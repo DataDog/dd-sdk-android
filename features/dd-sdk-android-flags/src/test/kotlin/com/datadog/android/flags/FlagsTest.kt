@@ -114,8 +114,6 @@ internal class FlagsTest {
             assertThat(lastValue.flagsConfiguration.enableExposureLogging).isTrue()
             assertThat(lastValue.flagsConfiguration.customEndpointUrl).isEqualTo(fakeCustomEndpoint)
             assertThat(lastValue.flagsConfiguration.flaggingProxyUrl).isEqualTo(fakeFlaggingProxy)
-            assertThat(lastValue.customEndpointUrl).isEqualTo(fakeCustomEndpoint)
-            assertThat(lastValue.flaggingProxyUrl).isEqualTo(fakeFlaggingProxy)
         }
     }
 
@@ -130,8 +128,6 @@ internal class FlagsTest {
             assertThat(lastValue.flagsConfiguration.enableExposureLogging).isFalse()
             assertThat(lastValue.flagsConfiguration.customEndpointUrl).isNull()
             assertThat(lastValue.flagsConfiguration.flaggingProxyUrl).isNull()
-            assertThat(lastValue.customEndpointUrl).isNull()
-            assertThat(lastValue.flaggingProxyUrl).isNull()
         }
     }
 
@@ -273,8 +269,65 @@ internal class FlagsTest {
             assertThat(lastValue.flagsConfiguration.enableExposureLogging).isFalse()
             assertThat(lastValue.flagsConfiguration.customEndpointUrl).isNull()
             assertThat(lastValue.flagsConfiguration.flaggingProxyUrl).isNull()
-            assertThat(lastValue.customEndpointUrl).isNull()
-            assertThat(lastValue.flaggingProxyUrl).isNull()
+        }
+    }
+
+    @Test
+    fun `M create FlagsContext with proxy configuration W enable() { custom proxy }`(
+        @StringForgery(regex = "https://[a-z]+\\.com(/[a-z]+)+") fakeProxyUrl: String
+    ) {
+        // Given
+        val fakeConfiguration = FlagsConfiguration.Builder()
+            .useFlaggingProxy(fakeProxyUrl)
+            .build()
+
+        // When
+        Flags.enable(fakeConfiguration, mockSdkCore)
+
+        // Then
+        argumentCaptor<FlagsFeature> {
+            verify(mockSdkCore).registerFeature(capture())
+
+            // Simulate RUM context update to trigger FlagsContext creation
+            lastValue.onContextUpdate("rum", mapOf("application_id" to "test-app-id"))
+
+            val flagsContext = lastValue.flagsContext
+            assertThat(flagsContext?.flaggingProxyUrl).isEqualTo(fakeProxyUrl)
+            assertThat(flagsContext?.clientToken).isEqualTo(fakeClientToken)
+            assertThat(flagsContext?.site).isEqualTo(fakeSite)
+            assertThat(flagsContext?.env).isEqualTo(fakeEnv)
+        }
+    }
+
+    @Test
+    fun `M create FlagsContext with all configuration W enable() { complete config }`(
+        @StringForgery(regex = "https://[a-z]+\\.com(/[a-z]+)+") fakeCustomEndpoint: String,
+        @StringForgery(regex = "https://[a-z]+\\.com(/[a-z]+)+") fakeProxyUrl: String
+    ) {
+        // Given
+        val fakeConfiguration = FlagsConfiguration.Builder()
+            .setEnableExposureLogging(true)
+            .useCustomEndpoint(fakeCustomEndpoint)
+            .useFlaggingProxy(fakeProxyUrl)
+            .build()
+
+        // When
+        Flags.enable(fakeConfiguration, mockSdkCore)
+
+        // Then
+        argumentCaptor<FlagsFeature> {
+            verify(mockSdkCore).registerFeature(capture())
+
+            // Simulate RUM context update to trigger FlagsContext creation
+            lastValue.onContextUpdate("rum", mapOf("application_id" to "test-app-id"))
+
+            val flagsContext = lastValue.flagsContext
+            assertThat(flagsContext?.enableExposureLogging).isTrue()
+            assertThat(flagsContext?.customEndpointUrl).isEqualTo(fakeCustomEndpoint)
+            assertThat(flagsContext?.flaggingProxyUrl).isEqualTo(fakeProxyUrl)
+            assertThat(flagsContext?.clientToken).isEqualTo(fakeClientToken)
+            assertThat(flagsContext?.site).isEqualTo(fakeSite)
+            assertThat(flagsContext?.env).isEqualTo(fakeEnv)
         }
     }
 

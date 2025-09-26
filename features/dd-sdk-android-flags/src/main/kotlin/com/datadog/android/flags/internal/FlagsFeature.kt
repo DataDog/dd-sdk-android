@@ -10,7 +10,9 @@ import android.content.Context
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureContextUpdateReceiver
 import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.flags.FlagsConfiguration
+import com.datadog.android.flags.featureflags.internal.model.FlagsContext
 
 /**
  * An implementation of [Feature] for getting and reporting
@@ -22,11 +24,31 @@ internal class FlagsFeature(private val sdkCore: FeatureSdkCore, internal var fl
 
     internal var applicationId: String? = null
 
+    /**
+     * The complete internal configuration context for the Flags feature.
+     * This combines core SDK parameters with feature-level configuration.
+     * Will be null until the core SDK context is available.
+     */
+    internal var flagsContext: FlagsContext? = null
+        private set
+
     // region Context Receiver
 
     override fun onContextUpdate(featureName: String, context: Map<String, Any?>) {
         if (featureName == Feature.RUM_FEATURE_NAME) {
             applicationId = context["application_id"].toString()
+            updateFlagsContext()
+        }
+    }
+
+    /**
+     * Updates the FlagsContext when SDK context becomes available or changes.
+     * This method creates the unified configuration object that other components will use.
+     */
+    private fun updateFlagsContext() {
+        val datadogContext = (sdkCore as? InternalSdkCore)?.getDatadogContext()
+        if (datadogContext != null) {
+            flagsContext = FlagsContext.create(datadogContext, applicationId, flagsConfiguration)
         }
     }
 
@@ -42,15 +64,21 @@ internal class FlagsFeature(private val sdkCore: FeatureSdkCore, internal var fl
 
     override fun onInitialize(appContext: Context) {
         sdkCore.setContextUpdateReceiver(this)
+        // Try to initialize FlagsContext immediately if SDK context is available
+        tryInitializeFlagsContext()
     }
 
-    // TODO: create a ReqestFactory here
-    @Suppress("unused") // This will be used for exposure logging
-    val customEndpointUrl: String? = flagsConfiguration.customEndpointUrl
-
-    // TODO: create a ReqestFactory here
-    @Suppress("unused") // This will be used to fetch flags.
-    val flaggingProxyUrl: String? = flagsConfiguration.flaggingProxyUrl
+    /**
+     * Attempts to initialize FlagsContext immediately if all required context is available.
+     * This handles the case where the SDK context is already available when the feature is initialized.
+     */
+    private fun tryInitializeFlagsContext() {
+        val datadogContext = (sdkCore as? InternalSdkCore)?.getDatadogContext()
+        if (datadogContext != null) {
+            // For initial setup, applicationId might still be null (will be updated via RUM context later)
+            flagsContext = FlagsContext.create(datadogContext, applicationId, flagsConfiguration)
+        }
+    }
 
     // endregion
 
