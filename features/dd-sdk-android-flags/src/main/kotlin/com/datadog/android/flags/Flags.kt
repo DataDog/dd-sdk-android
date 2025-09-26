@@ -30,7 +30,7 @@ object Flags {
     /**
      * Enables the Flags feature.
      *
-     * @param configuration configuration to use with feature flags and experiments. If not provided, a default
+     * @param configuration configuration to use with feature flags and experiments. If not provided, the default
      * configuration will be used.
      * @param sdkCore SDK instance to register feature in. If not provided, a default SDK instance
      * will be used.
@@ -38,11 +38,12 @@ object Flags {
     @JvmOverloads
     @JvmStatic
     fun enable(
-        @Suppress("UNUSED_PARAMETER") configuration: FlagsConfiguration,
+        configuration: FlagsConfiguration = FlagsConfiguration.defaultConfiguration(),
         sdkCore: SdkCore = Datadog.getInstance()
     ) {
         val flagsFeature = FlagsFeature(
-            sdkCore as FeatureSdkCore
+            sdkCore as FeatureSdkCore,
+            flagsConfiguration = configuration
         )
 
         sdkCore.registerFeature(flagsFeature)

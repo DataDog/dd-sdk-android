@@ -9,8 +9,14 @@ package com.datadog.android.flags
 /**
  * Describes configuration to be used for the Flags feature.
  * @param enableExposureLogging Log exposure events to RUM.
+ * @param customEndpointUrl Custom endpoint URL for uploading exposure events. If null, the default endpoint will be used.
+ * @param flaggingProxyUrl Custom endpoint URL for proxying precomputed assignment requests. If null, the default endpoint will be used.
  */
-data class FlagsConfiguration(val enableExposureLogging: Boolean) {
+data class FlagsConfiguration(
+    val enableExposureLogging: Boolean,
+    val customEndpointUrl: String? = null,
+    val flaggingProxyUrl: String? = null
+) {
     /**
      * A Builder class for a [FlagsConfiguration].
      */
@@ -27,17 +33,52 @@ data class FlagsConfiguration(val enableExposureLogging: Boolean) {
         }
 
         /**
+         * Sets a custom endpoint URL for uploading exposure events.
+         * @param endpointUrl The custom endpoint URL. If null, the default endpoint will be used.
+         */
+        fun useCustomEndpoint(endpointUrl: String?): Builder {
+            flagsConfig = flagsConfig.copy(customEndpointUrl = endpointUrl)
+            return this
+        }
+
+        /**
+         * Sets a custom endpoint URL for proxying precomputed assignment requests.
+         * @param proxyUrl The custom proxy URL. If null, the default endpoint will be used.
+         */
+        fun useFlaggingProxy(proxyUrl: String?): Builder {
+            flagsConfig = flagsConfig.copy(flaggingProxyUrl = proxyUrl)
+            return this
+        }
+
+        /**
          * Builds a [FlagsConfiguration] based on the current state of this Builder.
          * @return a new [FlagsConfiguration] instance.
          */
         fun build(): FlagsConfiguration = FlagsConfiguration(
-            enableExposureLogging = flagsConfig.enableExposureLogging
+            enableExposureLogging = flagsConfig.enableExposureLogging,
+            customEndpointUrl = flagsConfig.customEndpointUrl,
+            flaggingProxyUrl = flagsConfig.flaggingProxyUrl
         )
     }
 
-    internal companion object {
+    /**
+     * Companion object that provides factory methods for creating [FlagsConfiguration] instances.
+     */
+    companion object {
+        /**
+         * Creates a [FlagsConfiguration] with default settings.
+         * @return a new [FlagsConfiguration] instance with default configuration values.
+         */
+        fun defaultConfiguration(): FlagsConfiguration = FlagsConfiguration(
+            enableExposureLogging = false,
+            customEndpointUrl = null,
+            flaggingProxyUrl = null
+        )
+
         internal val DEFAULT_FEATURE_FLAGS_CONFIG = FlagsConfiguration(
-            enableExposureLogging = false
+            enableExposureLogging = false,
+            customEndpointUrl = null,
+            flaggingProxyUrl = null
         )
     }
 }

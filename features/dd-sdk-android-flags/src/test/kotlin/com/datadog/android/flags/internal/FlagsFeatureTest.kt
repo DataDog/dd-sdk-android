@@ -9,6 +9,7 @@ package com.datadog.android.flags.internal
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.core.InternalSdkCore
+import com.datadog.android.flags.FlagsConfiguration
 import com.datadog.android.flags.internal.FlagsFeature.Companion.FLAGS_FEATURE_NAME
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -49,7 +50,8 @@ internal class FlagsFeatureTest {
         whenever(mockSdkCore.getDatadogContext()) doReturn mockDatadogContext
 
         testedFeature = FlagsFeature(
-            sdkCore = mockSdkCore
+            sdkCore = mockSdkCore,
+            flagsConfiguration = FlagsConfiguration.Builder().build()
         )
     }
 
