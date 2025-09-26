@@ -139,7 +139,7 @@ internal class DatadogEvaluationContextTest {
         )
 
         // Warning should be logged for null value
-        verify(mockInternalLogger, times(1)).log(
+        verify(mockInternalLogger).log(
             eq(InternalLogger.Level.WARN),
             eq(InternalLogger.Target.USER),
             any<() -> String>(),
@@ -244,7 +244,7 @@ internal class DatadogEvaluationContextTest {
         val context = DatadogEvaluationContext("user123", mapOf("plan" to "premium"))
 
         // When
-        val isValid = context?.isValid()
+        val isValid = context.isValid()
 
         // Then
         assertThat(context).isNotNull
