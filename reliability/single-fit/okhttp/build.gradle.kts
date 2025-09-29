@@ -21,6 +21,7 @@ plugins {
 
     // Tests
     id("de.mobilej.unmock")
+    id("com.apollographql.apollo") version "4.3.3"
 }
 
 android {
@@ -56,6 +57,18 @@ dependencies {
     testImplementation(libs.gson)
     testImplementation(libs.apolloRuntime)
     unmock(libs.robolectric)
+}
+
+apollo {
+    service("testService") {
+        srcDir("src/test/graphql")
+        packageName.set("com.datadog.android.testgraphql")
+        schemaFiles.from("src/test/graphql/schema.graphqls")
+
+        outputDirConnection {
+            connectToKotlinSourceSet("test")
+        }
+    }
 }
 
 unMock {

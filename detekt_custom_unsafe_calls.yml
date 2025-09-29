@@ -84,6 +84,7 @@ datadog:
       - "java.nio.ByteBuffer.putShort(kotlin.Short):java.nio.BufferOverflowException,java.nio.ReadOnlyBufferException"
       - "java.nio.channels.FileChannel.lock():java.io.IOException,java.lang.IllegalStateException"
       - "java.nio.channels.FileLock.release():java.io.IOException"
+      - "java.nio.charset.CharsetEncoder.encode(java.nio.CharBuffer?, java.nio.ByteBuffer?, kotlin.Boolean):java.lang.IllegalStateException,java.nio.charset.CoderMalfunctionError,java.lang.NullPointerException"
       # endregion
       # region Java Concurrency
       - "java.lang.Thread.constructor(java.lang.Runnable?, kotlin.String?):java.lang.NullPointerException,java.lang.SecurityException,java.lang.IllegalArgumentException"

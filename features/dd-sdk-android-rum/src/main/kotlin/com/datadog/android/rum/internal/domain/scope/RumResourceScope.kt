@@ -35,6 +35,10 @@ import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.ResourceEvent
 import java.net.MalformedURLException
 import java.net.URL
+import java.nio.ByteBuffer
+import java.nio.CharBuffer
+import java.nio.charset.CoderMalfunctionError
+import java.nio.charset.StandardCharsets
 import java.util.Locale
 import java.util.UUID
 
@@ -249,7 +253,7 @@ internal class RumResourceScope(
 
         // The decision whether to send payloads is determined by a DatadogApolloInterceptor parameter
         val rawPayload = resourceAttributes.remove(RumAttributes.GRAPHQL_PAYLOAD) as? String
-        val graphqlPayload = rawPayload?.let { truncateGraphQLPayload(it) }
+        val graphqlPayload = rawPayload?.truncateToUtf8Bytes(MAX_GRAPHQL_PAYLOAD_SIZE_BYTES)
 
         val graphql = resolveGraphQLAttributes(
             operationType = graphqlOperationType,
@@ -534,7 +538,7 @@ internal class RumResourceScope(
     private fun resolveDomain(url: String): String {
         return try {
             URL(url).host
-        } catch (e: MalformedURLException) {
+        } catch (_: MalformedURLException) {
             url
         }
     }
@@ -557,52 +561,55 @@ internal class RumResourceScope(
         return null
     }
 
-    private fun truncateGraphQLPayload(payload: String): String {
-        // Fast path: if string length is less than 7500 characters, it's definitely under 30KB
-        // UTF-16 uses max 2 code units per code point, and UTF-8 uses max 4 bytes per code point
-        // So if payload.length < 7500, then UTF-8 size < 7500 * 4 = 30KB
-        if (payload.length < MAX_GRAPHQL_PAYLOAD_SIZE_BYTES / UTF8_BYTES_PER_CODEPOINT) {
-            return payload
-        }
-
-        // Need to check actual byte size
-        val payloadBytes = payload.toByteArray(Charsets.UTF_8)
-
-        return if (payloadBytes.size <= MAX_GRAPHQL_PAYLOAD_SIZE_BYTES) {
-            payload
-        } else {
-            // Truncate efficiently using UTF-8 continuation byte detection
-            // Find the safe truncation point by looking for UTF-8 character boundaries
-            var truncateIndex = MAX_GRAPHQL_PAYLOAD_SIZE_BYTES
-
-            // If we're in the middle of a multi-byte character, we need to back up
-            // UTF-8 continuation bytes start with 10xxxxxx (0x80-0xBF)
-            // UTF-8 start bytes are either 0xxxxxxx or 11xxxxxx
-            // here we apply a mask with 11 to keep only the top two bits, and we compare
-            // these two bits to 10 to see if it's a continuation
-            while (truncateIndex > 0 &&
-                (payloadBytes[truncateIndex].toInt() and UTF8_LEADING_BYTE_MASK) == UTF8_CONTINUATION_BYTE
-            ) {
-                truncateIndex--
-            }
-
-            // cannot throw IndexOutOfBounds as offset/length > 0 and offset <= length - bytes
+    @Suppress("ReturnCount", "SwallowedException")
+    private fun String.truncateToUtf8Bytes(maxBytes: Int): String {
+        val encoder =
+            // will not throw UnsupportedOperationException
             @Suppress("UnsafeThirdPartyFunctionCall")
-            String(
-                bytes = payloadBytes,
-                offset = 0,
-                length = truncateIndex,
-                charset = Charsets.UTF_8
-            )
+            StandardCharsets.UTF_8.newEncoder()
+
+        // will not throw IllegalArgumentException
+        @Suppress("UnsafeThirdPartyFunctionCall")
+        val dst = ByteBuffer.allocate(maxBytes)
+
+        // will not throw IndexOutOfBoundsException
+        @Suppress("UnsafeThirdPartyFunctionCall")
+        val src = CharBuffer.wrap(this)
+
+        @Suppress("TooGenericExceptionCaught")
+        try {
+            // Encode as much as fits. The encoder will not consume a character
+            // if doing so would overflow the byte buffer.
+            encoder.encode(src, dst, true)
+        } catch (e: IllegalStateException) {
+            logPayloadTruncationFailure(e)
+            return ""
+        } catch (e: CoderMalfunctionError) {
+            logPayloadTruncationFailure(e)
+            return ""
+        } catch (e: NullPointerException) {
+            logPayloadTruncationFailure(e)
+            return ""
         }
+
+        // will not throw IndexOutOfBoundsException
+        @Suppress("UnsafeThirdPartyFunctionCall")
+        return substring(0, src.position())
+    }
+
+    private fun logPayloadTruncationFailure(e: Throwable) {
+        val logger = sdkCore.internalLogger
+        logger.log(
+            level = InternalLogger.Level.ERROR,
+            target = InternalLogger.Target.MAINTAINER,
+            messageBuilder = { "Failed to truncate payload" },
+            throwable = e
+        )
     }
 
     // endregion
 
     companion object {
-        private const val UTF8_BYTES_PER_CODEPOINT = 4
-        private const val UTF8_CONTINUATION_BYTE = 0x80 // 10
-        private const val UTF8_LEADING_BYTE_MASK = 0xC0 // 11
         internal const val MAX_GRAPHQL_PAYLOAD_SIZE_BYTES = 30 * 1024
 
         internal const val NEGATIVE_DURATION_WARNING_MESSAGE = "The computed duration for your " +

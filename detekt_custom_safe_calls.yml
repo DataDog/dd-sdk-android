@@ -512,6 +512,7 @@ datadog:
       - "java.math.BigInteger.toHexString()"
       - "java.math.BigInteger.toLong()"
       - "java.nio.charset.Charset.defaultCharset()"
+      - "java.nio.CharBuffer.position()"
       - "java.security.MessageDigest.digest()"
       - "java.security.MessageDigest.update(kotlin.ByteArray?)"
       - "java.security.SecureRandom.constructor()"

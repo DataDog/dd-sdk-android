@@ -6,32 +6,33 @@
 
 package com.datadog.android.okhttp
 
-import com.datadog.android.Datadog
-import com.datadog.android.api.SdkCore
+import com.apollographql.apollo.ApolloClient
+import com.apollographql.apollo.api.Optional
+import com.apollographql.apollo.network.okHttpClient
 import com.datadog.android.api.feature.Feature
-import com.datadog.android.api.feature.FeatureScope
-import com.datadog.android.core.InternalSdkCore
+import com.datadog.android.apollo.DatadogApolloInterceptor
 import com.datadog.android.core.stub.StubSDKCore
 import com.datadog.android.internal.network.GraphQLHeaders
 import com.datadog.android.okhttp.tests.elmyr.OkHttpConfigurator
+import com.datadog.android.okhttp.tests.utils.MainLooperTestConfiguration
 import com.datadog.android.okhttp.trace.TracingInterceptor
-import com.datadog.android.rum.GlobalRumMonitor
-import com.datadog.android.rum.RumAttributes
-import com.datadog.android.rum.RumMonitor
-import com.datadog.android.rum.RumResourceKind
-import com.datadog.android.rum.RumResourceMethod
-import com.datadog.android.rum.internal.monitor.AdvancedNetworkRumMonitor
-import com.datadog.android.rum.resource.ResourceId
+import com.datadog.android.rum.Rum
+import com.datadog.android.rum.RumConfiguration
+import com.datadog.android.testgraphql.FakeMutation
+import com.datadog.android.testgraphql.FakeQuery
+import com.datadog.android.testgraphql.type.UserInput
+import com.datadog.android.trace.DatadogTracing
+import com.datadog.android.trace.GlobalDatadogTracer
 import com.datadog.android.trace.Trace
 import com.datadog.android.trace.TraceConfiguration
-import com.datadog.android.trace.TracingHeaderType
+import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
-import com.datadog.tools.unit.getFieldValue
-import com.datadog.tools.unit.getStaticValue
+import com.datadog.tools.unit.extensions.config.TestConfiguration
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import kotlinx.coroutines.runBlocking
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.mockwebserver.MockResponse
@@ -42,20 +43,9 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
-import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
-import org.mockito.kotlin.any
-import org.mockito.kotlin.argThat
-import org.mockito.kotlin.argumentCaptor
-import org.mockito.kotlin.doReturn
-import org.mockito.kotlin.eq
-import org.mockito.kotlin.inOrder
-import org.mockito.kotlin.mock
-import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
-import kotlin.reflect.full.declaredFunctions
-import kotlin.reflect.jvm.isAccessible
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -64,96 +54,111 @@ import kotlin.reflect.jvm.isAccessible
 )
 @ForgeConfiguration(OkHttpConfigurator::class)
 @MockitoSettings(strictness = Strictness.LENIENT)
-class ApolloDatadogIntegrationTest {
+class ApolloIntegrationTest {
 
-    @Mock
-    internal lateinit var mockRumMonitor: FakeRumMonitor
+    @StringForgery
+    lateinit var fakeUserId: String
+
+    @StringForgery
+    lateinit var fakeUserName: String
+
+    @StringForgery
+    lateinit var fakeUserEmail: String
+
+    @StringForgery
+    lateinit var fakeFilter1: String
+
+    @StringForgery
+    lateinit var fakeFilter2: String
+
+    @StringForgery
+    lateinit var fakeOperationName: String
+
+    @StringForgery
+    lateinit var fakeHeaderName: String
+
+    @StringForgery
+    lateinit var fakeHeaderValue: String
+
+    @StringForgery
+    lateinit var fakeResponseBody: String
 
     private lateinit var stubSdkCore: StubSDKCore
     private lateinit var mockServer: MockWebServer
+    private lateinit var apolloClient: ApolloClient
 
     @BeforeEach
     fun `set up`(forge: Forge) {
+        mockServer = MockWebServer()
+
+        val fakeApplicationId = forge.anAlphabeticalString()
         stubSdkCore = StubSDKCore(forge)
-        val registry: Any = Datadog::class.java.getStaticValue("registry")
-        val instances: MutableMap<String, SdkCore> = registry.getFieldValue("instances")
-        instances += stubSdkCore.name to stubSdkCore
 
-        // Setup RUM and Trace features using reflection to access private fields
-        val mockSdkCoreField = StubSDKCore::class.java.getDeclaredField("mockSdkCore")
-        mockSdkCoreField.isAccessible = true
-        val mockSdkCore = mockSdkCoreField.get(stubSdkCore) as InternalSdkCore
+        val rumConfiguration = RumConfiguration.Builder(fakeApplicationId)
+            .trackNonFatalAnrs(false)
+            .build()
+        Rum.enable(rumConfiguration, stubSdkCore)
 
-        val featureScopesField = StubSDKCore::class.java.getDeclaredField("featureScopes")
-        featureScopesField.isAccessible = true
-        @Suppress("UNCHECKED_CAST")
-        val featureScopes = featureScopesField.get(stubSdkCore) as MutableMap<String, Any>
-
-        // Mock the RUM feature in both places
-        val mockFeatureScope = mock<FeatureScope>()
-        whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockFeatureScope
-        featureScopes[Feature.RUM_FEATURE_NAME] = mockFeatureScope
         val fakeTraceConfiguration = TraceConfiguration.Builder().build()
         Trace.enable(fakeTraceConfiguration, stubSdkCore)
 
-        // Setup GlobalRumMonitor mock
-        GlobalRumMonitor::class.declaredFunctions.first { it.name == "registerIfAbsent" }.apply {
-            isAccessible = true
-            call(GlobalRumMonitor::class.objectInstance, mockRumMonitor, stubSdkCore)
-        }
+        val tracingInterceptor = createTracingInterceptor()
+        val datadogInterceptor = createDatadogInterceptor()
+        val okHttpClient = OkHttpClient.Builder()
+            .addInterceptor(datadogInterceptor)
+            .addInterceptor(tracingInterceptor)
+            .build()
 
-        mockServer = MockWebServer()
-        mockServer.start()
+        apolloClient = ApolloClient
+            .Builder()
+            .addInterceptor(DatadogApolloInterceptor(sendGraphQLPayloads = true))
+            .serverUrl(mockServer.url("/").toString())
+            .okHttpClient(okHttpClient)
+            .build()
+
+        mockServer.enqueue(MockResponse().setResponseCode(200).setBody(fakeResponseBody))
+    }
+
+    private fun createDatadogInterceptor(): DatadogInterceptor {
+        return DatadogInterceptor.Builder(tracedHosts = listOf(mockServer.hostName)).build()
+    }
+
+    private fun createTracingInterceptor(): TracingInterceptor {
+        return TracingInterceptor.Builder(tracedHosts = listOf(mockServer.hostName)).build()
     }
 
     @AfterEach
     fun `tear down`() {
-        Datadog.stopInstance(stubSdkCore.name)
+        GlobalDatadogTracer.clear()
         mockServer.shutdown()
-
-        // Reset GlobalRumMonitor
-        GlobalRumMonitor::class.java.getDeclaredMethod("reset").apply {
-            isAccessible = true
-            invoke(null)
-        }
     }
 
     // region graphQL headers
 
     @Test
-    fun `M remove GraphQL headers from outgoing requests W DatadogInterceptor { with all GraphQL headers }`(
-        @StringForgery fakeOperationName: String,
-        @StringForgery fakeOperationType: String,
-        @StringForgery fakeVariables: String,
-        @StringForgery fakePayload: String
-    ) {
-        // Given
-        mockServer.enqueue(MockResponse().setResponseCode(200))
-
-        val okHttpClient = OkHttpClient.Builder()
-            .addInterceptor(
-                DatadogInterceptor.Builder(
-                    tracedHostsWithHeaderType = mapOf(mockServer.hostName to setOf(TracingHeaderType.DATADOG))
-                )
-                    .setSdkInstanceName(stubSdkCore.name)
-                    .setTraceContextInjection(TraceContextInjection.ALL)
-                    .build()
-            )
-            .build()
-
-        // Simulate what Apollo interceptor would do - add GraphQL headers
-        val requestWithGraphQLHeaders = Request.Builder()
-            .url(mockServer.url("/graphql"))
-            .addHeader(GraphQLHeaders.DD_GRAPHQL_NAME_HEADER.headerValue, fakeOperationName)
-            .addHeader(GraphQLHeaders.DD_GRAPHQL_TYPE_HEADER.headerValue, fakeOperationType)
-            .addHeader(GraphQLHeaders.DD_GRAPHQL_VARIABLES_HEADER.headerValue, fakeVariables)
-            .addHeader(GraphQLHeaders.DD_GRAPHQL_PAYLOAD_HEADER.headerValue, fakePayload)
-            .build()
-
+    fun `M remove GraphQL headers W DatadogInterceptor { with query and Apollo headers }`() = runBlocking {
         // When
-        okHttpClient.newCall(requestWithGraphQLHeaders).execute()
+        apolloClient.query(
+            FakeQuery(
+                userId = fakeUserId,
+                filters = Optional.present(listOf(fakeFilter1, fakeFilter2))
+            )
+        ).execute()
 
-        // Then - Verify headers are removed from outgoing request
+        // Then
+        val requestSent = mockServer.takeRequest()
+        assertThat(requestSent.getHeader(GraphQLHeaders.DD_GRAPHQL_NAME_HEADER.headerValue)).isNull()
+        assertThat(requestSent.getHeader(GraphQLHeaders.DD_GRAPHQL_TYPE_HEADER.headerValue)).isNull()
+        assertThat(requestSent.getHeader(GraphQLHeaders.DD_GRAPHQL_VARIABLES_HEADER.headerValue)).isNull()
+        assertThat(requestSent.getHeader(GraphQLHeaders.DD_GRAPHQL_PAYLOAD_HEADER.headerValue)).isNull()
+    }
+
+    @Test
+    fun `M remove GraphQL headers W DatadogInterceptor { with mutation and Apollo headers }`() = runBlocking {
+        // When
+        apolloClient.mutation(FakeMutation(input = UserInput(name = fakeUserName, email = fakeUserEmail))).execute()
+
+        // Then
         val requestSent = mockServer.takeRequest()
         assertThat(requestSent.getHeader(GraphQLHeaders.DD_GRAPHQL_NAME_HEADER.headerValue)).isNull()
         assertThat(requestSent.getHeader(GraphQLHeaders.DD_GRAPHQL_TYPE_HEADER.headerValue)).isNull()
@@ -164,208 +169,48 @@ class ApolloDatadogIntegrationTest {
     @Test
     fun `M not affect regular requests W DatadogInterceptor { without GraphQL headers }`() {
         // Given
-        mockServer.enqueue(MockResponse().setResponseCode(200))
-
         val okHttpClient = OkHttpClient.Builder()
-            .addInterceptor(
-                DatadogInterceptor.Builder(
-                    tracedHostsWithHeaderType = mapOf(mockServer.hostName to setOf(TracingHeaderType.DATADOG))
-                )
-                    .setSdkInstanceName(stubSdkCore.name)
-                    .setTraceContextInjection(TraceContextInjection.ALL)
-                    .build()
-            )
+            .addInterceptor(createDatadogInterceptor())
             .build()
 
         val regularRequest = Request.Builder()
             .url(mockServer.url("/api/users"))
-            .addHeader("X-Custom-Header", "test-value")
+            .addHeader(fakeHeaderName, fakeHeaderValue)
             .build()
 
         // When
         okHttpClient.newCall(regularRequest).execute()
 
-        // Then - Verify custom headers are preserved
+        // Then
         val requestSent = mockServer.takeRequest()
-        assertThat(requestSent.getHeader("X-Custom-Header")).isEqualTo("test-value")
-
-        // Verify GraphQL headers are not present (they weren't added)
-        assertThat(requestSent.getHeader(GraphQLHeaders.DD_GRAPHQL_NAME_HEADER.headerValue)).isNull()
-        assertThat(requestSent.getHeader(GraphQLHeaders.DD_GRAPHQL_TYPE_HEADER.headerValue)).isNull()
-        assertThat(requestSent.getHeader(GraphQLHeaders.DD_GRAPHQL_VARIABLES_HEADER.headerValue)).isNull()
-        assertThat(requestSent.getHeader(GraphQLHeaders.DD_GRAPHQL_PAYLOAD_HEADER.headerValue)).isNull()
+        assertThat(requestSent.getHeader(fakeHeaderName)).isEqualTo(fakeHeaderValue)
     }
 
     @Test
-    fun `M remove partial GraphQL headers W DatadogInterceptor { with only some GraphQL headers }`(
-        @StringForgery fakeOperationName: String
-    ) {
+    fun `M remove partial GraphQL headers W DatadogInterceptor { query, some GraphQL headers }`() = runBlocking {
         // Given
-        mockServer.enqueue(MockResponse().setResponseCode(200))
-
         val okHttpClient = OkHttpClient.Builder()
-            .addInterceptor(
-                DatadogInterceptor.Builder(
-                    tracedHostsWithHeaderType = mapOf(mockServer.hostName to setOf(TracingHeaderType.DATADOG))
-                )
-                    .setSdkInstanceName(stubSdkCore.name)
-                    .setTraceContextInjection(TraceContextInjection.ALL)
-                    .build()
-            )
+            .addInterceptor(createDatadogInterceptor())
             .build()
 
-        // Simulate partial GraphQL headers (only operation name)
-        val requestWithPartialHeaders = Request.Builder()
-            .url(mockServer.url("/graphql"))
-            .addHeader(GraphQLHeaders.DD_GRAPHQL_NAME_HEADER.headerValue, fakeOperationName)
-            .addHeader("X-Custom-Header", "should-remain")
+        val partialHeadersApolloClient = ApolloClient
+            .Builder()
+            .addInterceptor(DatadogApolloInterceptor(sendGraphQLPayloads = false))
+            .serverUrl(mockServer.url("/").toString())
+            .okHttpClient(okHttpClient)
             .build()
 
         // When
-        okHttpClient.newCall(requestWithPartialHeaders).execute()
+        partialHeadersApolloClient.query(
+            FakeQuery(userId = fakeUserId, filters = Optional.present(listOf(fakeFilter1)))
+        ).execute()
 
-        // Then - Verify GraphQL headers are removed but other headers remain
+        // Then
         val requestSent = mockServer.takeRequest()
         assertThat(requestSent.getHeader(GraphQLHeaders.DD_GRAPHQL_NAME_HEADER.headerValue)).isNull()
         assertThat(requestSent.getHeader(GraphQLHeaders.DD_GRAPHQL_TYPE_HEADER.headerValue)).isNull()
         assertThat(requestSent.getHeader(GraphQLHeaders.DD_GRAPHQL_VARIABLES_HEADER.headerValue)).isNull()
         assertThat(requestSent.getHeader(GraphQLHeaders.DD_GRAPHQL_PAYLOAD_HEADER.headerValue)).isNull()
-        assertThat(requestSent.getHeader("X-Custom-Header")).isEqualTo("should-remain")
-    }
-
-    // endregion
-
-    // region RumMonitor
-
-    @Test
-    fun `M call RumMonitor with GraphQL attributes W DatadogInterceptor { with GraphQL headers }`(
-        @StringForgery fakeOperationName: String,
-        @StringForgery fakeOperationType: String,
-        @StringForgery fakeVariables: String,
-        @StringForgery fakePayload: String
-    ) {
-        // Given
-        mockServer.enqueue(MockResponse().setResponseCode(200).setBody("response"))
-
-        val okHttpClient = OkHttpClient.Builder()
-            .addInterceptor(
-                DatadogInterceptor.Builder(
-                    tracedHostsWithHeaderType = mapOf(mockServer.hostName to setOf(TracingHeaderType.DATADOG))
-                )
-                    .setSdkInstanceName(stubSdkCore.name)
-                    .setTraceContextInjection(TraceContextInjection.ALL)
-                    .build()
-            )
-            .build()
-
-        // Simulate what Apollo interceptor would do - add GraphQL headers
-        val requestWithGraphQLHeaders = Request.Builder()
-            .url(mockServer.url("/graphql"))
-            .addHeader(GraphQLHeaders.DD_GRAPHQL_NAME_HEADER.headerValue, fakeOperationName)
-            .addHeader(GraphQLHeaders.DD_GRAPHQL_TYPE_HEADER.headerValue, fakeOperationType)
-            .addHeader(GraphQLHeaders.DD_GRAPHQL_VARIABLES_HEADER.headerValue, fakeVariables)
-            .addHeader(GraphQLHeaders.DD_GRAPHQL_PAYLOAD_HEADER.headerValue, fakePayload)
-            .build()
-
-        // When
-        okHttpClient.newCall(requestWithGraphQLHeaders).execute()
-
-        // Then - Verify RumMonitor calls with GraphQL attributes
-        inOrder(mockRumMonitor) {
-            argumentCaptor<ResourceId> {
-                verify(mockRumMonitor).startResource(
-                    capture(),
-                    eq(RumResourceMethod.GET),
-                    eq(mockServer.url("/graphql").toString()),
-                    eq(emptyMap())
-                )
-
-                // Capture the actual attributes passed to stopResource
-                val stopAttrsCaptor = argumentCaptor<Map<String, Any?>>()
-                verify(mockRumMonitor).stopResource(
-                    capture(),
-                    eq(200),
-                    eq(8L), // "response".length
-                    any(),
-                    stopAttrsCaptor.capture()
-                )
-
-                val actualStopAttrs = stopAttrsCaptor.firstValue
-
-                // Verify GraphQL attributes are present in RUM
-                assertThat(actualStopAttrs[RumAttributes.GRAPHQL_OPERATION_NAME]).isEqualTo(fakeOperationName)
-                assertThat(actualStopAttrs[RumAttributes.GRAPHQL_OPERATION_TYPE]).isEqualTo(fakeOperationType)
-                assertThat(actualStopAttrs[RumAttributes.GRAPHQL_VARIABLES]).isEqualTo(fakeVariables)
-                assertThat(actualStopAttrs[RumAttributes.GRAPHQL_PAYLOAD]).isEqualTo(fakePayload)
-
-                // Verify resource IDs match
-                assertThat(firstValue).isEqualTo(secondValue)
-            }
-        }
-
-        // Also verify headers are removed from outgoing request
-        val requestSent = mockServer.takeRequest()
-        assertThat(requestSent.getHeader(GraphQLHeaders.DD_GRAPHQL_NAME_HEADER.headerValue)).isNull()
-        assertThat(requestSent.getHeader(GraphQLHeaders.DD_GRAPHQL_TYPE_HEADER.headerValue)).isNull()
-        assertThat(requestSent.getHeader(GraphQLHeaders.DD_GRAPHQL_VARIABLES_HEADER.headerValue)).isNull()
-        assertThat(requestSent.getHeader(GraphQLHeaders.DD_GRAPHQL_PAYLOAD_HEADER.headerValue)).isNull()
-    }
-
-    @Test
-    fun `M call RumMonitor without GraphQL attributes W DatadogInterceptor { without GraphQL headers }`() {
-        // Given
-        mockServer.enqueue(MockResponse().setResponseCode(200).setBody("response"))
-
-        val okHttpClient = OkHttpClient.Builder()
-            .addInterceptor(
-                DatadogInterceptor.Builder(
-                    tracedHostsWithHeaderType = mapOf(mockServer.hostName to setOf(TracingHeaderType.DATADOG))
-                )
-                    .setSdkInstanceName(stubSdkCore.name)
-                    .setTraceContextInjection(TraceContextInjection.ALL)
-                    .build()
-            )
-            .build()
-
-        val regularRequest = Request.Builder()
-            .url(mockServer.url("/api/users"))
-            .build()
-
-        // When
-        okHttpClient.newCall(regularRequest).execute()
-
-        // Then - Verify RumMonitor calls without GraphQL attributes
-        inOrder(mockRumMonitor) {
-            argumentCaptor<ResourceId> {
-                verify(mockRumMonitor).startResource(
-                    capture(),
-                    eq(RumResourceMethod.GET),
-                    eq(mockServer.url("/api/users").toString()),
-                    eq(emptyMap())
-                )
-
-                // Capture the actual attributes passed to stopResource
-                val stopAttrsCaptor = argumentCaptor<Map<String, Any?>>()
-                verify(mockRumMonitor).stopResource(
-                    capture(),
-                    eq(200),
-                    eq(8L), // "response".length
-                    any(),
-                    stopAttrsCaptor.capture()
-                )
-
-                val actualStopAttrs = stopAttrsCaptor.firstValue
-
-                // Verify no GraphQL attributes are present in RUM
-                assertThat(actualStopAttrs).doesNotContainKey(RumAttributes.GRAPHQL_OPERATION_NAME)
-                assertThat(actualStopAttrs).doesNotContainKey(RumAttributes.GRAPHQL_OPERATION_TYPE)
-                assertThat(actualStopAttrs).doesNotContainKey(RumAttributes.GRAPHQL_VARIABLES)
-                assertThat(actualStopAttrs).doesNotContainKey(RumAttributes.GRAPHQL_PAYLOAD)
-
-                // Verify resource IDs match
-                assertThat(firstValue).isEqualTo(secondValue)
-            }
-        }
     }
 
     // endregion
@@ -373,65 +218,40 @@ class ApolloDatadogIntegrationTest {
     // region TracingInterceptor
 
     @Test
-    fun `M preserve trace context headers and preserve GraphQL headers W TracingInterceptor { with GraphQL headers }`(
-        @StringForgery fakeOperationName: String,
-        @StringForgery fakeOperationType: String,
-        @StringForgery fakeVariables: String,
-        @StringForgery fakePayload: String
-    ) {
+    fun `M preserve trace headers and GraphQL headers W TracingInterceptor { with GraphQL headers }`() = runBlocking {
         // Given
-        mockServer.enqueue(MockResponse().setResponseCode(200).setBody("response"))
-
         val okHttpClient = OkHttpClient.Builder()
-            .addInterceptor(
-                TracingInterceptor.Builder(
-                    tracedHostsWithHeaderType = mapOf(mockServer.hostName to setOf(TracingHeaderType.DATADOG))
-                )
-                    .setTraceContextInjection(TraceContextInjection.ALL)
-                    .setSdkInstanceName(stubSdkCore.name)
-                    .setTraceSampleRate(100f)
-                    .build()
-            )
+            .addInterceptor(createTracingInterceptor())
             .build()
 
-        // Simulate what Apollo interceptor would do - add GraphQL headers
-        val requestWithGraphQLHeaders = Request.Builder()
-            .url(mockServer.url("/graphql"))
-            .addHeader(GraphQLHeaders.DD_GRAPHQL_NAME_HEADER.headerValue, fakeOperationName)
-            .addHeader(GraphQLHeaders.DD_GRAPHQL_TYPE_HEADER.headerValue, fakeOperationType)
-            .addHeader(GraphQLHeaders.DD_GRAPHQL_VARIABLES_HEADER.headerValue, fakeVariables)
-            .addHeader(GraphQLHeaders.DD_GRAPHQL_PAYLOAD_HEADER.headerValue, fakePayload)
-            .addHeader("X-Custom-Header", "should-remain")
+        val apolloClientWithHeaders = ApolloClient
+            .Builder()
+            .addInterceptor(DatadogApolloInterceptor(sendGraphQLPayloads = true))
+            .serverUrl(mockServer.url("/").toString())
+            .okHttpClient(okHttpClient)
             .build()
 
         // When
-        okHttpClient.newCall(requestWithGraphQLHeaders).execute()
+        apolloClientWithHeaders.query(
+            FakeQuery(
+                userId = fakeUserId,
+                filters = Optional.present(listOf(fakeFilter1, fakeFilter2))
+            )
+        ).execute()
 
-        // Then - Verify trace context headers are present and GraphQL headers are preserved
+        // Then
         val requestSent = mockServer.takeRequest()
 
-        // Trace context headers should be present
-        assertThat(requestSent.getHeader(DATADOG_TRACE_ID_HEADER)).isNotNull()
-        assertThat(requestSent.getHeader(DATADOG_SPAN_ID_HEADER)).isNotNull()
-        assertThat(requestSent.getHeader(DATADOG_SAMPLING_PRIORITY_HEADER)).isNotNull()
-        assertThat(requestSent.getHeader(DATADOG_TAGS_HEADER)).isNotNull()
+        assertThat(requestSent.getHeader("x-datadog-trace-id")).isNotNull()
+        assertThat(requestSent.getHeader("x-datadog-parent-id")).isNotNull()
+        assertThat(requestSent.getHeader("x-datadog-sampling-priority")).isNotNull()
+        assertThat(requestSent.getHeader("x-datadog-tags")).isNotNull()
 
-        // GraphQL headers should be preserved (TracingInterceptor does NOT remove them)
-        assertThat(
-            requestSent.getHeader(GraphQLHeaders.DD_GRAPHQL_NAME_HEADER.headerValue)
-        ).isEqualTo(fakeOperationName)
-        assertThat(
-            requestSent.getHeader(GraphQLHeaders.DD_GRAPHQL_TYPE_HEADER.headerValue)
-        ).isEqualTo(fakeOperationType)
-        assertThat(
-            requestSent.getHeader(GraphQLHeaders.DD_GRAPHQL_VARIABLES_HEADER.headerValue)
-        ).isEqualTo(fakeVariables)
-        assertThat(requestSent.getHeader(GraphQLHeaders.DD_GRAPHQL_PAYLOAD_HEADER.headerValue)).isEqualTo(fakePayload)
+        assertThat(requestSent.getHeader(GraphQLHeaders.DD_GRAPHQL_NAME_HEADER.headerValue)).isNotNull()
+        assertThat(requestSent.getHeader(GraphQLHeaders.DD_GRAPHQL_TYPE_HEADER.headerValue)).isNotNull()
+        assertThat(requestSent.getHeader(GraphQLHeaders.DD_GRAPHQL_VARIABLES_HEADER.headerValue)).isNotNull()
+        assertThat(requestSent.getHeader(GraphQLHeaders.DD_GRAPHQL_PAYLOAD_HEADER.headerValue)).isNotNull()
 
-        // Other headers should remain
-        assertThat(requestSent.getHeader("X-Custom-Header")).isEqualTo("should-remain")
-
-        // Verify tracing events are written
         val eventsWritten = stubSdkCore.eventsWritten(Feature.TRACING_FEATURE_NAME)
         assertThat(eventsWritten).hasSize(1)
     }
@@ -439,149 +259,52 @@ class ApolloDatadogIntegrationTest {
     @Test
     fun `M preserve trace context headers W TracingInterceptor { without GraphQL headers }`() {
         // Given
-        mockServer.enqueue(MockResponse().setResponseCode(200).setBody("response"))
-
         val okHttpClient = OkHttpClient.Builder()
-            .addInterceptor(
-                TracingInterceptor.Builder(
-                    tracedHostsWithHeaderType = mapOf(mockServer.hostName to setOf(TracingHeaderType.DATADOG))
-                )
-                    .setTraceContextInjection(TraceContextInjection.ALL)
-                    .setSdkInstanceName(stubSdkCore.name)
-                    .setTraceSampleRate(100f)
-                    .build()
-            )
+            .addInterceptor(createTracingInterceptor())
             .build()
 
+        val tracer = DatadogTracing.newTracerBuilder(stubSdkCore).build()
+        GlobalDatadogTracer.registerIfAbsent(tracer)
+
+        val span = tracer.buildSpan(fakeOperationName).start()
         val regularRequest = Request.Builder()
             .url(mockServer.url("/api/users"))
-            .addHeader("X-Custom-Header", "should-remain")
+            .addHeader(fakeHeaderName, fakeHeaderValue)
+            .apply {
+                tracer.propagate().inject(span.context(), this) { builder, key, value ->
+                    builder.addHeader(key, value)
+                }
+            }
             .build()
 
         // When
         okHttpClient.newCall(regularRequest).execute()
+        span.finish()
 
-        // Then - Verify trace context headers are present
+        // Then
         val requestSent = mockServer.takeRequest()
 
-        // Trace context headers should be present
-        assertThat(requestSent.getHeader(DATADOG_TRACE_ID_HEADER)).isNotNull()
-        assertThat(requestSent.getHeader(DATADOG_SPAN_ID_HEADER)).isNotNull()
-        assertThat(requestSent.getHeader(DATADOG_SAMPLING_PRIORITY_HEADER)).isNotNull()
-        assertThat(requestSent.getHeader(DATADOG_TAGS_HEADER)).isNotNull()
+        assertThat(requestSent.getHeader("x-datadog-trace-id")).isNotNull()
+        assertThat(requestSent.getHeader("x-datadog-parent-id")).isNotNull()
+        assertThat(requestSent.getHeader("x-datadog-sampling-priority")).isNotNull()
+        assertThat(requestSent.getHeader("x-datadog-tags")).isNotNull()
 
-        // Other headers should remain
-        assertThat(requestSent.getHeader("X-Custom-Header")).isEqualTo("should-remain")
+        assertThat(requestSent.getHeader(fakeHeaderName)).isEqualTo(fakeHeaderValue)
 
-        // Verify tracing events are written
         val eventsWritten = stubSdkCore.eventsWritten(Feature.TRACING_FEATURE_NAME)
         assertThat(eventsWritten).hasSize(1)
-    }
-
-    @Test
-    @Suppress("MaxLineLength", "ktlint:standard:max-line-length")
-    fun `M combine TracingInterceptor and DatadogInterceptor W both interceptors { GraphQL headers removed, trace headers preserved, RUM tracked }`(
-        @StringForgery fakeOperationName: String,
-        @StringForgery fakeOperationType: String,
-        @StringForgery fakeVariables: String,
-        @StringForgery fakePayload: String
-    ) {
-        // Given
-        mockServer.enqueue(MockResponse().setResponseCode(200).setBody("response"))
-
-        val okHttpClient = OkHttpClient.Builder()
-            // Add TracingInterceptor first
-            .addInterceptor(
-                TracingInterceptor.Builder(
-                    tracedHostsWithHeaderType = mapOf(mockServer.hostName to setOf(TracingHeaderType.DATADOG))
-                )
-                    .setTraceContextInjection(TraceContextInjection.ALL)
-                    .setSdkInstanceName(stubSdkCore.name)
-                    .setTraceSampleRate(100f)
-                    .build()
-            )
-            // Add DatadogInterceptor second
-            .addInterceptor(
-                DatadogInterceptor.Builder(
-                    tracedHostsWithHeaderType = mapOf(mockServer.hostName to setOf(TracingHeaderType.DATADOG))
-                )
-                    .setSdkInstanceName(stubSdkCore.name)
-                    .setTraceContextInjection(TraceContextInjection.ALL)
-                    .build()
-            )
-            .build()
-
-        // Simulate what Apollo interceptor would do - add GraphQL headers
-        val requestWithGraphQLHeaders = Request.Builder()
-            .url(mockServer.url("/graphql"))
-            .addHeader(GraphQLHeaders.DD_GRAPHQL_NAME_HEADER.headerValue, fakeOperationName)
-            .addHeader(GraphQLHeaders.DD_GRAPHQL_TYPE_HEADER.headerValue, fakeOperationType)
-            .addHeader(GraphQLHeaders.DD_GRAPHQL_VARIABLES_HEADER.headerValue, fakeVariables)
-            .addHeader(GraphQLHeaders.DD_GRAPHQL_PAYLOAD_HEADER.headerValue, fakePayload)
-            .addHeader("X-Custom-Header", "should-remain")
-            .build()
-
-        // When
-        okHttpClient.newCall(requestWithGraphQLHeaders).execute()
-
-        // Then - Verify trace context headers are present and GraphQL headers are removed
-        val requestSent = mockServer.takeRequest()
-
-        // Trace context headers should be present (from TracingInterceptor)
-        assertThat(requestSent.getHeader(DATADOG_TRACE_ID_HEADER)).isNotNull()
-        assertThat(requestSent.getHeader(DATADOG_SPAN_ID_HEADER)).isNotNull()
-        assertThat(requestSent.getHeader(DATADOG_SAMPLING_PRIORITY_HEADER)).isNotNull()
-        assertThat(requestSent.getHeader(DATADOG_TAGS_HEADER)).isNotNull()
-
-        // GraphQL headers should be removed (by DatadogInterceptor)
-        assertThat(requestSent.getHeader(GraphQLHeaders.DD_GRAPHQL_NAME_HEADER.headerValue)).isNull()
-        assertThat(requestSent.getHeader(GraphQLHeaders.DD_GRAPHQL_TYPE_HEADER.headerValue)).isNull()
-        assertThat(requestSent.getHeader(GraphQLHeaders.DD_GRAPHQL_VARIABLES_HEADER.headerValue)).isNull()
-        assertThat(requestSent.getHeader(GraphQLHeaders.DD_GRAPHQL_PAYLOAD_HEADER.headerValue)).isNull()
-
-        // Other headers should remain
-        assertThat(requestSent.getHeader("X-Custom-Header")).isEqualTo("should-remain")
-
-        // Verify both tracing and RUM events are written
-        val tracingEvents = stubSdkCore.eventsWritten(Feature.TRACING_FEATURE_NAME)
-        assertThat(tracingEvents).hasSize(1)
-
-        // Verify RumMonitor was called - TracingInterceptor does not extract GraphQL attributes
-        // Only DatadogInterceptor extracts GraphQL headers into RUM attributes
-        inOrder(mockRumMonitor) {
-            argumentCaptor<ResourceId> {
-                verify(mockRumMonitor).startResource(
-                    capture(),
-                    eq(RumResourceMethod.GET),
-                    eq(mockServer.url("/graphql").toString()),
-                    eq(emptyMap()) // TracingInterceptor doesn't extract GraphQL attributes
-                )
-                // stopResource is called with trace attributes (from DatadogInterceptor)
-                verify(mockRumMonitor).stopResource(
-                    eq(firstValue),
-                    eq(200),
-                    any(), // size
-                    eq(RumResourceKind.NATIVE),
-                    argThat { attributes ->
-                        // Verify that GraphQL attributes are present in stopResource (from DatadogInterceptor)
-                        attributes[RumAttributes.GRAPHQL_OPERATION_NAME] == fakeOperationName &&
-                            attributes[RumAttributes.GRAPHQL_OPERATION_TYPE] == fakeOperationType &&
-                            attributes[RumAttributes.GRAPHQL_VARIABLES] == fakeVariables &&
-                            attributes[RumAttributes.GRAPHQL_PAYLOAD] == fakePayload
-                    }
-                )
-            }
-        }
     }
 
     // endregion
 
     companion object {
-        private const val DATADOG_TAGS_HEADER = "x-datadog-tags"
-        private const val DATADOG_TRACE_ID_HEADER = "x-datadog-trace-id"
-        private const val DATADOG_SPAN_ID_HEADER = "x-datadog-parent-id"
-        private const val DATADOG_SAMPLING_PRIORITY_HEADER = "x-datadog-sampling-priority"
+        private val mainLooper = MainLooperTestConfiguration()
+
+        @TestConfigurationsProvider
+        @JvmStatic
+        @Suppress("Unused")
+        fun getTestConfigurations(): List<TestConfiguration> {
+            return listOf(mainLooper)
+        }
     }
 }
-
-internal interface FakeRumMonitor : RumMonitor, AdvancedNetworkRumMonitor

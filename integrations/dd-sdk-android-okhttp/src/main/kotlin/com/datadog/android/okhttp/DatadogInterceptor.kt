@@ -221,31 +221,31 @@ open class DatadogInterceptor internal constructor(
         originalChain: Interceptor.Chain
     ): Interceptor.Chain {
         return if (hasGraphQLHeaders(originalChain.request().headers)) {
-            try {
-                object : Interceptor.Chain by originalChain {
-                    override fun proceed(request: Request): Response {
+            object : Interceptor.Chain by originalChain {
+                override fun proceed(request: Request): Response {
+                    return try {
                         val cleanedRequest = request.newBuilder().apply {
                             removeGraphQLHeaders(this)
                         }.build()
                         return originalChain.proceed(cleanedRequest)
+                    } catch (e: IllegalStateException) {
+                        internalLogger.log(
+                            level = InternalLogger.Level.WARN,
+                            target = InternalLogger.Target.MAINTAINER,
+                            messageBuilder = { ERROR_FAILED_BUILD_REQUEST },
+                            throwable = e
+                        )
+                        originalChain.proceed(request) // fallback to the original request
+                    } catch (e: IOException) {
+                        internalLogger.log(
+                            level = InternalLogger.Level.WARN,
+                            target = InternalLogger.Target.MAINTAINER,
+                            messageBuilder = { ERROR_FAILED_BUILD_REQUEST },
+                            throwable = e
+                        )
+                        originalChain.proceed(request) // fallback to the original request
                     }
                 }
-            } catch (e: IllegalStateException) {
-                internalLogger.log(
-                    level = InternalLogger.Level.WARN,
-                    target = InternalLogger.Target.MAINTAINER,
-                    messageBuilder = { ERROR_FAILED_BUILD_REQUEST },
-                    throwable = e
-                )
-                originalChain // fallback to the original request
-            } catch (e: IOException) {
-                internalLogger.log(
-                    level = InternalLogger.Level.WARN,
-                    target = InternalLogger.Target.MAINTAINER,
-                    messageBuilder = { ERROR_FAILED_BUILD_REQUEST },
-                    throwable = e
-                )
-                originalChain // fallback to the original request
             }
         } else {
             originalChain
