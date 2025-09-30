@@ -4,9 +4,13 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.core.internal.time
+package com.datadog.android.internal.time
 
-internal class NoOpTimeProvider : TimeProvider {
+/**
+ * A [TimeProvider] implementation that provides the current device time as both device and server time.
+ * The offsets are always 0.
+ */
+class DefaultTimeProvider : TimeProvider {
     override fun getDeviceTimestamp(): Long = System.currentTimeMillis()
 
     override fun getServerTimestamp(): Long = System.currentTimeMillis()

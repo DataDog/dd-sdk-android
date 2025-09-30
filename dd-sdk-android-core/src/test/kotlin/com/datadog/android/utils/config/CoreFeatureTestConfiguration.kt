@@ -19,9 +19,9 @@ import com.datadog.android.core.internal.privacy.ConsentProvider
 import com.datadog.android.core.internal.system.AndroidInfoProvider
 import com.datadog.android.core.internal.system.AppVersionProvider
 import com.datadog.android.core.internal.system.SystemInfoProvider
-import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.core.internal.user.MutableUserInfoProvider
 import com.datadog.android.core.thread.FlushableExecutorService
+import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.tools.unit.extensions.config.MockTestConfiguration
 import com.lyft.kronos.KronosClock

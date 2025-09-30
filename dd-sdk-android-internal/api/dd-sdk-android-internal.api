@@ -247,6 +247,21 @@ public final class com/datadog/android/internal/thread/NamedRunnable : com/datad
 	public fun run ()V
 }
 
+public final class com/datadog/android/internal/time/DefaultTimeProvider : com/datadog/android/internal/time/TimeProvider {
+	public fun <init> ()V
+	public fun getDeviceTimestamp ()J
+	public fun getServerOffsetMillis ()J
+	public fun getServerOffsetNanos ()J
+	public fun getServerTimestamp ()J
+}
+
+public abstract interface class com/datadog/android/internal/time/TimeProvider {
+	public abstract fun getDeviceTimestamp ()J
+	public abstract fun getServerOffsetMillis ()J
+	public abstract fun getServerOffsetNanos ()J
+	public abstract fun getServerTimestamp ()J
+}
+
 public final class com/datadog/android/internal/utils/ByteArrayExtKt {
 	public static final fun toHexString ([B)Ljava/lang/String;
 }
