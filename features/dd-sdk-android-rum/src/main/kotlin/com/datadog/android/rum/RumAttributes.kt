@@ -107,22 +107,22 @@ object RumAttributes {
     const val RESOURCE_TIMINGS: String = "_dd.resource_timings"
 
     /**
-     * GraphQL operation type coming from cross-platform SDK (String).
+     * GraphQL operation type (String).
      */
     const val GRAPHQL_OPERATION_TYPE: String = "_dd.graphql.operation_type"
 
     /**
-     * GraphQL operation name coming from cross-platform SDK (String).
+     * GraphQL operation name (String).
      */
     const val GRAPHQL_OPERATION_NAME: String = "_dd.graphql.operation_name"
 
     /**
-     * JSON representation of GraphQL payload coming from cross-platform SDK (String).
+     * JSON representation of GraphQL payload (String).
      */
     const val GRAPHQL_PAYLOAD: String = "_dd.graphql.payload"
 
     /**
-     * JSON representation of GraphQL variables type coming from cross-platform SDK (String).
+     * JSON representation of GraphQL variables (String).
      */
     const val GRAPHQL_VARIABLES: String = "_dd.graphql.variables"
 

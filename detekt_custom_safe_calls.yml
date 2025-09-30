@@ -265,6 +265,16 @@ datadog:
       # region Google Material
       - "com.google.android.material.tabs.TabLayout.TabView.getChildAt(kotlin.Int)"
       # endregion
+      # region Apollo Kotlin
+      - "com.apollographql.apollo.api.json.buildJsonString(kotlin.String?, kotlin.Function1)"
+      - "com.apollographql.apollo.api.ApolloRequest.newBuilder()"
+      - "com.apollographql.apollo.api.ApolloRequest.Builder.addHttpHeader(kotlin.String, kotlin.String)"
+      - "com.apollographql.apollo.api.ApolloRequest.Builder.build()"
+      - "com.apollographql.apollo.api.Operation.composeJsonRequest(com.apollographql.apollo.api.json.JsonWriter, com.apollographql.apollo.api.CustomScalarAdapters)"
+      - "com.apollographql.apollo.api.Operation.document()"
+      - "com.apollographql.apollo.api.Operation.name()"
+      - "com.apollographql.apollo.interceptor.ApolloInterceptorChain.proceed(com.apollographql.apollo.api.ApolloRequest)"
+      # endregion
       # region Glide
       - "com.bumptech.glide.GlideBuilder.setDiskCacheExecutor(com.bumptech.glide.load.engine.executor.GlideExecutor?)"
       - "com.bumptech.glide.GlideBuilder.setSourceExecutor(com.bumptech.glide.load.engine.executor.GlideExecutor?)"
@@ -502,6 +512,7 @@ datadog:
       - "java.math.BigInteger.toHexString()"
       - "java.math.BigInteger.toLong()"
       - "java.nio.charset.Charset.defaultCharset()"
+      - "java.nio.CharBuffer.position()"
       - "java.security.MessageDigest.digest()"
       - "java.security.MessageDigest.update(kotlin.ByteArray?)"
       - "java.security.SecureRandom.constructor()"
@@ -544,6 +555,7 @@ datadog:
       # endregion
       # region Kotlin Collections
       - "kotlin.Array.all(kotlin.Function1)"
+      - "kotlin.Array.any(kotlin.Function1)"
       - "kotlin.Array.associateWith(kotlin.Function1)"
       - "kotlin.Array.associateBy(kotlin.Function1)"
       - "kotlin.Array.constructor(kotlin.Int, kotlin.Function1)"
