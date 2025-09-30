@@ -34,7 +34,7 @@ internal class FlagsRequestFactory(
             url = baseUrl,
             headers = buildHeaders(
                 requestId,
-                context.clientToken, // for testing replace
+                context.clientToken, // replace when testing
                 context.source,
                 context.sdkVersion
             ),

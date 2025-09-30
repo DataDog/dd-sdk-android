@@ -12,23 +12,33 @@ import com.datadog.android.flags.internal.model.ExposureEvent
 import com.datadog.android.flags.internal.model.Identifier
 import com.datadog.android.flags.internal.model.Subject
 import com.datadog.android.flags.internal.storage.RecordWriter
+import java.util.concurrent.ConcurrentHashMap
 
 internal class ExposureEventsProcessor(
     private val writer: RecordWriter
 ) : EventsProcessor {
-    private val exposuresSentCache = mutableSetOf<String>()
+
+    private data class CacheKey(
+        val targetingKey: String,
+        val flagName: String,
+        val allocationKey: String,
+        val variationKey: String
+    )
+
+    private val exposuresSentCache = ConcurrentHashMap<CacheKey, Unit>()
 
     override fun processEvent(flagName: String, context: EvaluationContext, data: PrecomputedFlag) {
-        val cacheKey = buildCacheKey(
+        val cacheKey = CacheKey(
             targetingKey = context.targetingKey,
             flagName = flagName,
-            data = data
+            allocationKey = data.allocationKey,
+            variationKey = data.variationKey
         )
 
-        if (!exposuresSentCache.contains(cacheKey)) {
+        @Suppress("UnsafeThirdPartyFunctionCall") // cache key cannot be null
+        if (exposuresSentCache.putIfAbsent(cacheKey, Unit) == null) {
             val event = buildExposureEvent(flagName, context, data)
             writeExposureEvent(event)
-            exposuresSentCache.add(cacheKey)
         }
     }
 
@@ -56,13 +66,5 @@ internal class ExposureEventsProcessor(
 
     private fun writeExposureEvent(record: ExposureEvent) {
         writer.write(record)
-    }
-
-    private fun buildCacheKey(targetingKey: String, flagName: String, data: PrecomputedFlag): String =
-        listOf(targetingKey, flagName, data.allocationKey, data.variationKey)
-            .joinToString(SEPARATOR)
-
-    private companion object {
-        private const val SEPARATOR = "|"
     }
 }

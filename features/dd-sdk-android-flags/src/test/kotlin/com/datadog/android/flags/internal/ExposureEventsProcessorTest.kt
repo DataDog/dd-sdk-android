@@ -23,6 +23,8 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.atLeast
+import org.mockito.kotlin.atMost
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 
@@ -101,7 +103,6 @@ internal class ExposureEventsProcessorTest {
         testedProcessor.processEvent(fakeFlagName, fakeContext, fakeFlag) // Duplicate
 
         // Then
-        // Should only write once due to deduplication
         verify(mockRecordWriter, times(1)).write(any())
     }
 
@@ -119,7 +120,6 @@ internal class ExposureEventsProcessorTest {
         testedProcessor.processEvent(anotherFlagName, fakeContext, fakeFlag)
 
         // Then
-        // Should write both since they have different flag names
         verify(mockRecordWriter, times(2)).write(any())
     }
 
@@ -137,7 +137,7 @@ internal class ExposureEventsProcessorTest {
 
         val capturedEvent = eventCaptor.firstValue
         assertThat(capturedEvent.subject.id).isEqualTo(fakeTargetingKey)
-        assertThat(capturedEvent.subject.attributes).isEmpty() // No attributes
+        assertThat(capturedEvent.subject.attributes).isEmpty()
     }
 
     @Test
@@ -157,7 +157,6 @@ internal class ExposureEventsProcessorTest {
         testedProcessor.processEvent(fakeFlagName, fakeContext2, fakeFlag)
 
         // Then
-        // Should write both since they have different targeting keys
         verify(mockRecordWriter, times(2)).write(any())
     }
 
@@ -175,7 +174,6 @@ internal class ExposureEventsProcessorTest {
         testedProcessor.processEvent(fakeFlagName, fakeContext, fakeFlag2)
 
         // Then
-        // Should write both since they have different allocation keys
         verify(mockRecordWriter, times(2)).write(any())
     }
 
@@ -193,7 +191,6 @@ internal class ExposureEventsProcessorTest {
         testedProcessor.processEvent(fakeFlagName, fakeContext, fakeFlag2)
 
         // Then
-        // Should write both since they have different variation keys
         verify(mockRecordWriter, times(2)).write(any())
     }
 
@@ -218,37 +215,10 @@ internal class ExposureEventsProcessorTest {
         verify(mockRecordWriter).write(eventCaptor.capture())
 
         val capturedEvent = eventCaptor.firstValue
-        // Verify all attribute values are converted to strings
         capturedEvent.subject.attributes.values.forEach { value ->
             assertThat(value).isInstanceOf(String::class.java)
         }
         assertThat(capturedEvent.subject.attributes).hasSize(4)
-    }
-
-    @Test
-    fun `M handle special characters in cache key W processEvent() { keys with separator character }`(forge: Forge) {
-        // Given
-        val flagNameWithSeparator = "flag|name"
-        val targetingKeyWithSeparator = "user|123"
-        val allocationKeyWithSeparator = "allocation|key"
-        val variationKeyWithSeparator = "variation|key"
-
-        val fakeContext = EvaluationContext(
-            targetingKey = targetingKeyWithSeparator,
-            attributes = mapOf("user_id" to forge.anAlphabeticalString())
-        )
-        val flagWithSeparators = fakeFlag.copy(
-            allocationKey = allocationKeyWithSeparator,
-            variationKey = variationKeyWithSeparator
-        )
-
-        // When
-        testedProcessor.processEvent(flagNameWithSeparator, fakeContext, flagWithSeparators)
-        testedProcessor.processEvent(flagNameWithSeparator, fakeContext, flagWithSeparators) // Duplicate
-
-        // Then
-        // Should only write once - deduplication should still work with separator characters
-        verify(mockRecordWriter, times(1)).write(any())
     }
 
     @Test
@@ -295,8 +265,6 @@ internal class ExposureEventsProcessorTest {
         testedProcessor.processEvent(fakeFlagName, context2, fakeFlag)
 
         // Then
-        // Should only write once since cache key doesn't depend on attribute order
-        // (cache key only uses targetingKey, flagName, allocationKey, variationKey)
         verify(mockRecordWriter, times(1)).write(any())
     }
 
@@ -328,6 +296,367 @@ internal class ExposureEventsProcessorTest {
         capturedEvents.forEach { event ->
             assertThat(event.timeStamp).isBetween(beforeTime, afterTime)
         }
+    }
+
+    // endregion
+
+    // region Cache Key Collision Prevention
+
+    @Test
+    fun `M prevent cache collision W processEvent() { components with separator characters }`(forge: Forge) {
+        // Given
+        val targetingKey1 = "user|123"
+        val flagName1 = "feature"
+        val allocationKey1 = "allocation"
+        val variationKey1 = "variation"
+
+        val targetingKey2 = "user"
+        val flagName2 = "123|feature"
+        val allocationKey2 = "allocation"
+        val variationKey2 = "variation"
+
+        val context1 = EvaluationContext(targetingKey = targetingKey1)
+        val context2 = EvaluationContext(targetingKey = targetingKey2)
+
+        val flag1 = PrecomputedFlag(
+            variationType = forge.anAlphabeticalString(),
+            variationValue = forge.anAlphabeticalString(),
+            doLog = forge.aBool(),
+            allocationKey = allocationKey1,
+            variationKey = variationKey1,
+            extraLogging = org.json.JSONObject(),
+            reason = forge.anAlphabeticalString()
+        )
+
+        val flag2 = PrecomputedFlag(
+            variationType = forge.anAlphabeticalString(),
+            variationValue = forge.anAlphabeticalString(),
+            doLog = forge.aBool(),
+            allocationKey = allocationKey2,
+            variationKey = variationKey2,
+            extraLogging = org.json.JSONObject(),
+            reason = forge.anAlphabeticalString()
+        )
+
+        // When
+        testedProcessor.processEvent(flagName1, context1, flag1)
+        testedProcessor.processEvent(flagName2, context2, flag2)
+
+        // Then
+        verify(mockRecordWriter, times(2)).write(any())
+    }
+
+    @Test
+    fun `M prevent cache collision W processEvent() { boundary ambiguity scenarios }`(forge: Forge) {
+        // Given
+        val scenario1Context = EvaluationContext(targetingKey = "a")
+        val scenario1Flag = PrecomputedFlag(
+            variationType = forge.anAlphabeticalString(),
+            variationValue = forge.anAlphabeticalString(),
+            doLog = forge.aBool(),
+            allocationKey = "b",
+            variationKey = "c",
+            extraLogging = org.json.JSONObject(),
+            reason = forge.anAlphabeticalString()
+        )
+
+        val scenario2Context = EvaluationContext(targetingKey = "ab")
+        val scenario2Flag = PrecomputedFlag(
+            variationType = forge.anAlphabeticalString(),
+            variationValue = forge.anAlphabeticalString(),
+            doLog = forge.aBool(),
+            allocationKey = "",
+            variationKey = "c",
+            extraLogging = org.json.JSONObject(),
+            reason = forge.anAlphabeticalString()
+        )
+
+        // When
+        testedProcessor.processEvent("flag", scenario1Context, scenario1Flag)
+        testedProcessor.processEvent("flag", scenario2Context, scenario2Flag)
+
+        // Then
+        verify(mockRecordWriter, times(2)).write(any())
+    }
+
+    @Test
+    fun `M distinguish similar cache keys W processEvent() { minimal differences }`(forge: Forge) {
+        // Given
+        val baseContext = EvaluationContext(targetingKey = "user123")
+        val baseFlag = PrecomputedFlag(
+            variationType = forge.anAlphabeticalString(),
+            variationValue = forge.anAlphabeticalString(),
+            doLog = forge.aBool(),
+            allocationKey = "alloc",
+            variationKey = "var",
+            extraLogging = org.json.JSONObject(),
+            reason = forge.anAlphabeticalString()
+        )
+
+        val flag1 = baseFlag.copy(allocationKey = "alloc1")
+        val flag2 = baseFlag.copy(variationKey = "var1")
+        val context2 = EvaluationContext(targetingKey = "user124")
+
+        // When
+        testedProcessor.processEvent("flag", baseContext, flag1)
+        testedProcessor.processEvent("flag", baseContext, flag2)
+        testedProcessor.processEvent("flag", context2, baseFlag)
+
+        // Then
+        verify(mockRecordWriter, times(3)).write(any())
+    }
+
+    @Test
+    fun `M maintain cache consistency W processEvent() { mixed scenarios }`(forge: Forge) {
+        // Given
+        val context1 = EvaluationContext(targetingKey = "user1")
+        val context2 = EvaluationContext(targetingKey = "user2")
+
+        val flag1 = PrecomputedFlag(
+            variationType = forge.anAlphabeticalString(),
+            variationValue = forge.anAlphabeticalString(),
+            doLog = forge.aBool(),
+            allocationKey = "alloc1",
+            variationKey = "var1",
+            extraLogging = org.json.JSONObject(),
+            reason = forge.anAlphabeticalString()
+        )
+
+        val flag2 = PrecomputedFlag(
+            variationType = forge.anAlphabeticalString(),
+            variationValue = forge.anAlphabeticalString(),
+            doLog = forge.aBool(),
+            allocationKey = "alloc2",
+            variationKey = "var2",
+            extraLogging = org.json.JSONObject(),
+            reason = forge.anAlphabeticalString()
+        )
+
+        // When
+        testedProcessor.processEvent("flag1", context1, flag1) // New
+        testedProcessor.processEvent("flag1", context1, flag1) // Duplicate
+        testedProcessor.processEvent("flag1", context2, flag1) // Different context
+        testedProcessor.processEvent("flag2", context1, flag1) // Different flag name
+        testedProcessor.processEvent("flag1", context1, flag2) // Different flag data
+        testedProcessor.processEvent("flag1", context1, flag1) // Duplicate again
+
+        // Then
+        verify(mockRecordWriter, times(4)).write(any())
+    }
+
+    // endregion
+
+    // region Concurrency Tests
+
+    @Test
+    fun `M handle concurrent access W processEvent() { multiple threads same cache key }`() {
+        // Given
+        val context = EvaluationContext(targetingKey = fakeTargetingKey)
+        val flag = fakeFlag.copy(
+            allocationKey = fakeAllocationKey,
+            variationKey = fakeVariationKey
+        )
+        val threadCount = 10
+        val executionsPerThread = 100
+
+        // When
+        val threads = (1..threadCount).map {
+            Thread {
+                repeat(executionsPerThread) {
+                    testedProcessor.processEvent(fakeFlagName, context, flag)
+                }
+            }
+        }
+
+        threads.forEach { it.start() }
+        threads.forEach { it.join() }
+
+        // Then
+        verify(mockRecordWriter, times(1)).write(any())
+    }
+
+    @Test
+    fun `M handle concurrent access W processEvent() { multiple threads different cache keys }`() {
+        // Given
+        val threadCount = 10
+        val executionsPerThread = 50
+        val totalExpectedWrites = threadCount * executionsPerThread
+
+        // When
+        val threads = (1..threadCount).map { threadIndex ->
+            Thread {
+                repeat(executionsPerThread) { executionIndex ->
+                    val uniqueContext = EvaluationContext(
+                        targetingKey = "thread-$threadIndex-execution-$executionIndex"
+                    )
+                    val uniqueFlag = fakeFlag.copy(
+                        allocationKey = "alloc-$threadIndex-$executionIndex",
+                        variationKey = "var-$threadIndex-$executionIndex"
+                    )
+                    testedProcessor.processEvent(
+                        "flag-$threadIndex-$executionIndex",
+                        uniqueContext,
+                        uniqueFlag
+                    )
+                }
+            }
+        }
+
+        threads.forEach { it.start() }
+        threads.forEach { it.join() }
+
+        // Then
+        verify(mockRecordWriter, times(totalExpectedWrites)).write(any())
+    }
+
+    @Test
+    fun `M handle concurrent cache operations W processEvent and clearExposureCache() { mixed operations }`() {
+        // Given
+        val context = EvaluationContext(targetingKey = fakeTargetingKey)
+        val flag = fakeFlag.copy(
+            allocationKey = fakeAllocationKey,
+            variationKey = fakeVariationKey
+        )
+        val processingThreadCount = 5
+        val clearThreadCount = 2
+        val executionsPerThread = 100
+
+        // When
+        val processingThreads = (1..processingThreadCount).map {
+            Thread {
+                repeat(executionsPerThread) {
+                    testedProcessor.processEvent(fakeFlagName, context, flag)
+                }
+            }
+        }
+
+        val clearThreads = (1..clearThreadCount).map {
+            Thread {
+                repeat(10) {
+                    Thread.sleep(5)
+                    testedProcessor.clearExposureCache()
+                }
+            }
+        }
+
+        val allThreads = processingThreads + clearThreads
+        allThreads.forEach { it.start() }
+        allThreads.forEach { it.join() }
+
+        // Then
+        verify(mockRecordWriter, atLeast(1)).write(any())
+        verify(mockRecordWriter, atMost(processingThreadCount * executionsPerThread)).write(any())
+    }
+
+    @Test
+    fun `M maintain cache consistency W processEvent() { high contention scenario }`() {
+        // Given
+        val sharedContext = EvaluationContext(targetingKey = "shared-user")
+        val sharedFlag = fakeFlag.copy(
+            allocationKey = "shared-allocation",
+            variationKey = "shared-variation"
+        )
+        val threadCount = 20
+        val executionsPerThread = 200
+
+        // When
+        val threads = (1..threadCount).map {
+            Thread {
+                repeat(executionsPerThread) {
+                    testedProcessor.processEvent("shared-flag", sharedContext, sharedFlag)
+                }
+            }
+        }
+
+        threads.forEach { it.start() }
+        threads.forEach { it.join() }
+
+        // Then
+        verify(mockRecordWriter, times(1)).write(any())
+    }
+
+    @Test
+    fun `M handle concurrent different flags W processEvent() { stress test }`() {
+        // Given
+        val threadCount = 15
+        val flagsPerThread = 20
+        val executionsPerFlag = 10
+        val totalExpectedWrites = threadCount * flagsPerThread
+
+        // When
+        val threads = (1..threadCount).map { threadIndex ->
+            Thread {
+                repeat(flagsPerThread) { flagIndex ->
+                    val context = EvaluationContext(targetingKey = "user-$threadIndex")
+                    val flag = fakeFlag.copy(
+                        allocationKey = "alloc-$threadIndex-$flagIndex",
+                        variationKey = "var-$threadIndex-$flagIndex"
+                    )
+
+                    repeat(executionsPerFlag) {
+                        testedProcessor.processEvent(
+                            "flag-$threadIndex-$flagIndex",
+                            context,
+                            flag
+                        )
+                    }
+                }
+            }
+        }
+
+        threads.forEach { it.start() }
+        threads.forEach { it.join() }
+
+        // Then
+        verify(mockRecordWriter, times(totalExpectedWrites)).write(any())
+    }
+
+    @Test
+    fun `M preserve cache state W processEvent() { verify no data corruption }`() {
+        // Given
+        val knownContext = EvaluationContext(targetingKey = "known-user")
+        val knownFlag = fakeFlag.copy(
+            allocationKey = "known-allocation",
+            variationKey = "known-variation"
+        )
+
+        testedProcessor.processEvent("known-flag", knownContext, knownFlag)
+        verify(mockRecordWriter, times(1)).write(any())
+
+        val threadCount = 10
+        val executionsPerThread = 100
+
+        // When
+        val threads = (1..threadCount).map { threadIndex ->
+            Thread {
+                repeat(executionsPerThread) { executionIndex ->
+                    if (executionIndex % 2 == 0) {
+                        testedProcessor.processEvent("known-flag", knownContext, knownFlag)
+                    } else {
+                        val uniqueContext = EvaluationContext(
+                            targetingKey = "user-$threadIndex-$executionIndex"
+                        )
+                        val uniqueFlag = fakeFlag.copy(
+                            allocationKey = "alloc-$threadIndex-$executionIndex",
+                            variationKey = "var-$threadIndex-$executionIndex"
+                        )
+                        testedProcessor.processEvent(
+                            "flag-$threadIndex-$executionIndex",
+                            uniqueContext,
+                            uniqueFlag
+                        )
+                    }
+                }
+            }
+        }
+
+        threads.forEach { it.start() }
+        threads.forEach { it.join() }
+
+        // Then
+        val uniqueWrites = threadCount * (executionsPerThread / 2)
+        val totalExpectedWrites = 1 + uniqueWrites
+        verify(mockRecordWriter, times(totalExpectedWrites)).write(any())
     }
 
     // endregion

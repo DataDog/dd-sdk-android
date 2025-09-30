@@ -363,6 +363,7 @@ datadog:
       - "java.util.Queue.isNotEmpty()"
       - "java.util.Queue.poll()"
       - "java.util.concurrent.Callable(kotlin.Function0)"
+      - "java.util.concurrent.ConcurrentHashMap.clear()"
       - "java.util.concurrent.ConcurrentHashMap.constructor()"
       - "java.util.concurrent.ConcurrentHashMap.getOrPut(kotlin.String?, kotlin.Function0)"
       - "java.util.concurrent.ConcurrentHashMap.putIfAbsent(kotlin.String, com.datadog.android.rum.internal.metric.slowframes.DefaultUISlownessMetricDispatcher.SlowFramesTelemetry)"
