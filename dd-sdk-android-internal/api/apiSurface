@@ -26,6 +26,12 @@ class com.datadog.android.internal.concurrent.CompletableFuture<T: Any>
   var value: T
   fun isComplete(): Boolean
   fun complete(T)
+enum com.datadog.android.internal.network.GraphQLHeaders
+  constructor(String)
+  - DD_GRAPHQL_NAME_HEADER
+  - DD_GRAPHQL_VARIABLES_HEADER
+  - DD_GRAPHQL_TYPE_HEADER
+  - DD_GRAPHQL_PAYLOAD_HEADER
 interface com.datadog.android.internal.profiler.BenchmarkCounter
   fun add(Long, Map<String, String>)
 interface com.datadog.android.internal.profiler.BenchmarkMeter
@@ -87,6 +93,16 @@ class com.datadog.android.internal.thread.NamedRunnable : NamedExecutionUnit, Ru
   constructor(String, Runnable)
 class com.datadog.android.internal.thread.NamedCallable<V> : NamedExecutionUnit, java.util.concurrent.Callable<V>
   constructor(String, java.util.concurrent.Callable<V>)
+class com.datadog.android.internal.time.DefaultTimeProvider : TimeProvider
+  override fun getDeviceTimestamp(): Long
+  override fun getServerTimestamp(): Long
+  override fun getServerOffsetNanos(): Long
+  override fun getServerOffsetMillis(): Long
+interface com.datadog.android.internal.time.TimeProvider
+  fun getDeviceTimestamp(): Long
+  fun getServerTimestamp(): Long
+  fun getServerOffsetNanos(): Long
+  fun getServerOffsetMillis(): Long
 fun ByteArray.toHexString(): String
 object com.datadog.android.internal.utils.ImageViewUtils
   fun resolveParentRectAbsPosition(android.view.View, Boolean = true): android.graphics.Rect

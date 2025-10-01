@@ -9,6 +9,7 @@ package com.datadog.android.okhttp
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.SdkCore
 import com.datadog.android.api.feature.Feature
+import com.datadog.android.internal.network.GraphQLHeaders
 import com.datadog.android.okhttp.internal.rum.NoOpRumResourceAttributesProvider
 import com.datadog.android.okhttp.trace.DeterministicTraceSampler
 import com.datadog.android.okhttp.trace.NoOpTracedRequestListener
@@ -36,6 +37,7 @@ import fr.xgouchet.elmyr.junit5.ForgeExtension
 import okhttp3.MediaType
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.Protocol
+import okhttp3.Request
 import okhttp3.Response
 import okhttp3.ResponseBody
 import okhttp3.ResponseBody.Companion.toResponseBody
@@ -347,6 +349,103 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
                     eq(kind),
                     eq(expectedStopAttrs)
                 )
+                assertThat(firstValue).isEqualTo(secondValue)
+            }
+        }
+    }
+
+    @Test
+    fun `M remove all GraphQL headers W intercept() {request with GraphQL headers}`(
+        forge: Forge,
+        @StringForgery fakeGraphQLName: String,
+        @StringForgery fakeGraphQLType: String,
+        @StringForgery fakeGraphQLVariables: String,
+        @StringForgery fakeGraphQLPayload: String,
+        @StringForgery fakeUserAgent: String
+    ) {
+        // Given
+        fakeRequest = forgeRequest(forge) { builder ->
+            builder.addHeader("User-Agent", fakeUserAgent)
+            builder.addHeader(GraphQLHeaders.DD_GRAPHQL_NAME_HEADER.headerValue, fakeGraphQLName)
+            builder.addHeader(GraphQLHeaders.DD_GRAPHQL_TYPE_HEADER.headerValue, fakeGraphQLType)
+            builder.addHeader(GraphQLHeaders.DD_GRAPHQL_VARIABLES_HEADER.headerValue, fakeGraphQLVariables)
+            builder.addHeader(GraphQLHeaders.DD_GRAPHQL_PAYLOAD_HEADER.headerValue, fakeGraphQLPayload)
+        }
+        stubChain(mockChain, 200)
+
+        // When
+        testedInterceptor.intercept(mockChain)
+
+        // Then
+        val requestCaptor = argumentCaptor<Request>()
+        verify(mockChain).proceed(requestCaptor.capture())
+        val cleanedRequest = requestCaptor.firstValue
+
+        // Verify GraphQL headers are removed
+        assertThat(cleanedRequest.headers[GraphQLHeaders.DD_GRAPHQL_NAME_HEADER.headerValue]).isNull()
+        assertThat(cleanedRequest.headers[GraphQLHeaders.DD_GRAPHQL_TYPE_HEADER.headerValue]).isNull()
+        assertThat(cleanedRequest.headers[GraphQLHeaders.DD_GRAPHQL_VARIABLES_HEADER.headerValue]).isNull()
+        assertThat(cleanedRequest.headers[GraphQLHeaders.DD_GRAPHQL_PAYLOAD_HEADER.headerValue]).isNull()
+
+        // Verify other headers are preserved
+        assertThat(cleanedRequest.headers["User-Agent"]).isEqualTo(fakeUserAgent)
+        assertThat(cleanedRequest.url.toString()).isEqualTo(fakeRequest.url.toString())
+    }
+
+    @Test
+    fun `M pass GraphQL attributes to RUM W intercept() {request with GraphQL headers}`(
+        forge: Forge,
+        @IntForgery(min = 200, max = 300) statusCode: Int,
+        @StringForgery fakeGraphQLName: String,
+        @StringForgery fakeGraphQLType: String,
+        @StringForgery fakeGraphQLVariables: String,
+        @StringForgery fakeGraphQLPayload: String
+    ) {
+        // Given
+        fakeRequest = forgeRequest(forge) { builder ->
+            builder.addHeader(GraphQLHeaders.DD_GRAPHQL_NAME_HEADER.headerValue, fakeGraphQLName)
+            builder.addHeader(GraphQLHeaders.DD_GRAPHQL_TYPE_HEADER.headerValue, fakeGraphQLType)
+            builder.addHeader(GraphQLHeaders.DD_GRAPHQL_VARIABLES_HEADER.headerValue, fakeGraphQLVariables)
+            builder.addHeader(GraphQLHeaders.DD_GRAPHQL_PAYLOAD_HEADER.headerValue, fakeGraphQLPayload)
+        }
+        stubChain(mockChain, statusCode)
+
+        // When
+        testedInterceptor.intercept(mockChain)
+
+        // Then
+        inOrder(rumMonitor.mockInstance) {
+            argumentCaptor<ResourceId> {
+                verify(rumMonitor.mockInstance).startResource(
+                    capture(),
+                    eq(fakeMethod),
+                    eq(fakeUrl),
+                    eq(emptyMap())
+                )
+
+                // Capture the actual attributes passed to stopResource
+                val stopAttrsCaptor = argumentCaptor<Map<String, Any?>>()
+                verify(rumMonitor.mockInstance).stopResource(
+                    capture(),
+                    eq(statusCode),
+                    eq(fakeResponseBody.toByteArray().size.toLong()),
+                    any(),
+                    stopAttrsCaptor.capture()
+                )
+
+                val actualStopAttrs = stopAttrsCaptor.firstValue
+
+                // Verify GraphQL attributes are present
+                assertThat(actualStopAttrs[RumAttributes.GRAPHQL_OPERATION_NAME]).isEqualTo(fakeGraphQLName)
+                assertThat(actualStopAttrs[RumAttributes.GRAPHQL_OPERATION_TYPE]).isEqualTo(fakeGraphQLType)
+                assertThat(actualStopAttrs[RumAttributes.GRAPHQL_VARIABLES]).isEqualTo(fakeGraphQLVariables)
+                assertThat(actualStopAttrs[RumAttributes.GRAPHQL_PAYLOAD]).isEqualTo(fakeGraphQLPayload)
+
+                // Verify fakeAttributes are included
+                fakeAttributes.forEach { (key, value) ->
+                    assertThat(actualStopAttrs[key]).isEqualTo(value)
+                }
+
                 assertThat(firstValue).isEqualTo(secondValue)
             }
         }
@@ -878,4 +977,92 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
             }
         }
     }
+
+    // region graphQL headers
+
+    @Test
+    fun `M pass request unchanged W intercept() {request without GraphQL headers}`(
+        forge: Forge,
+        @StringForgery fakeUserAgent: String,
+        @StringForgery fakeCustomHeader: String
+    ) {
+        // Given
+        fakeRequest = forgeRequest(forge) { builder ->
+            builder.addHeader("User-Agent", fakeUserAgent)
+            builder.addHeader("Custom-Header", fakeCustomHeader)
+        }
+        stubChain(mockChain, 200)
+
+        // When
+        testedInterceptor.intercept(mockChain)
+
+        // Then
+        val requestCaptor = argumentCaptor<Request>()
+        verify(mockChain).proceed(requestCaptor.capture())
+        val passedRequest = requestCaptor.firstValue
+
+        assertThat(passedRequest.headers["User-Agent"]).isEqualTo(fakeUserAgent)
+        assertThat(passedRequest.headers["Custom-Header"]).isEqualTo(fakeCustomHeader)
+        assertThat(passedRequest.url.toString()).isEqualTo(fakeRequest.url.toString())
+    }
+
+    @Test
+    fun `M remove partial GraphQL headers W intercept() {request with some GraphQL headers}`(
+        forge: Forge,
+        @StringForgery fakeGraphQLName: String,
+        @StringForgery fakeUserAgent: String
+    ) {
+        // Given
+        fakeRequest = forgeRequest(forge) { builder ->
+            builder.addHeader("User-Agent", fakeUserAgent)
+            builder.addHeader(GraphQLHeaders.DD_GRAPHQL_NAME_HEADER.headerValue, fakeGraphQLName)
+        }
+        stubChain(mockChain, 200)
+
+        // When
+        testedInterceptor.intercept(mockChain)
+
+        // Then
+        val requestCaptor = argumentCaptor<Request>()
+        verify(mockChain).proceed(requestCaptor.capture())
+        val cleanedRequest = requestCaptor.firstValue
+
+        assertThat(cleanedRequest.headers[GraphQLHeaders.DD_GRAPHQL_NAME_HEADER.headerValue]).isNull()
+        assertThat(cleanedRequest.headers[GraphQLHeaders.DD_GRAPHQL_TYPE_HEADER.headerValue]).isNull()
+        assertThat(cleanedRequest.headers[GraphQLHeaders.DD_GRAPHQL_VARIABLES_HEADER.headerValue]).isNull()
+        assertThat(cleanedRequest.headers[GraphQLHeaders.DD_GRAPHQL_PAYLOAD_HEADER.headerValue]).isNull()
+        assertThat(cleanedRequest.headers["User-Agent"]).isEqualTo(fakeUserAgent)
+        assertThat(cleanedRequest.url.toString()).isEqualTo(fakeRequest.url.toString())
+    }
+
+    @Test
+    fun `M remove GraphQL headers with empty values W intercept() {request with empty GraphQL headers}`(
+        forge: Forge,
+        @StringForgery fakeUserAgent: String
+    ) {
+        // Given
+        fakeRequest = forgeRequest(forge) { builder ->
+            builder.addHeader("User-Agent", fakeUserAgent)
+            builder.addHeader(GraphQLHeaders.DD_GRAPHQL_NAME_HEADER.headerValue, "")
+            builder.addHeader(GraphQLHeaders.DD_GRAPHQL_TYPE_HEADER.headerValue, "")
+        }
+        stubChain(mockChain, 200)
+
+        // When
+        testedInterceptor.intercept(mockChain)
+
+        // Then
+        val requestCaptor = argumentCaptor<Request>()
+        verify(mockChain).proceed(requestCaptor.capture())
+        val cleanedRequest = requestCaptor.firstValue
+
+        assertThat(cleanedRequest.headers[GraphQLHeaders.DD_GRAPHQL_NAME_HEADER.headerValue]).isNull()
+        assertThat(cleanedRequest.headers[GraphQLHeaders.DD_GRAPHQL_TYPE_HEADER.headerValue]).isNull()
+        assertThat(cleanedRequest.headers[GraphQLHeaders.DD_GRAPHQL_VARIABLES_HEADER.headerValue]).isNull()
+        assertThat(cleanedRequest.headers[GraphQLHeaders.DD_GRAPHQL_PAYLOAD_HEADER.headerValue]).isNull()
+        assertThat(cleanedRequest.headers["User-Agent"]).isEqualTo(fakeUserAgent)
+        assertThat(cleanedRequest.url.toString()).isEqualTo(fakeRequest.url.toString())
+    }
+
+    // endregion
 }

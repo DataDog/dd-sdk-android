@@ -2,6 +2,7 @@ package com.datadog.trace.core.propagation;
 
 import static com.datadog.trace.api.TracePropagationStyle.TRACECONTEXT;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import com.datadog.android.trace.internal.compat.function.Supplier;
@@ -49,6 +50,7 @@ public class HttpCodec {
   static final String FASTLY_CLIENT_IP_KEY = "fastly-client-ip";
   static final String CF_CONNECTING_IP_KEY = "cf-connecting-ip";
   static final String CF_CONNECTING_IP_V6_KEY = "cf-connecting-ipv6";
+  static final String RUM_SESSION_ID_BAGGAGE_KEY = "session.id";
 
   public static final String RUM_SESSION_ID_KEY = "session_id";
 
@@ -362,5 +364,17 @@ public class HttpCodec {
 
     int firstComma = value.indexOf(',');
     return firstComma == -1 ? value : value.substring(0, firstComma).trim();
+  }
+
+  @NonNull
+  static Baggage composeBaggage(@NonNull DDSpanContext context) {
+    Baggage baggage = new Baggage();
+    final String sessionId = (String) context.getTags().get(RUM_SESSION_ID_KEY);
+
+    if (sessionId != null) {
+      baggage.put(RUM_SESSION_ID_BAGGAGE_KEY, sessionId);
+    }
+
+    return baggage;
   }
 }

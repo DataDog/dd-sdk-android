@@ -6,6 +6,7 @@
 
 package com.datadog.android.core.internal.time
 
+import com.datadog.android.internal.time.TimeProvider
 import com.lyft.kronos.Clock
 import java.util.concurrent.TimeUnit
 

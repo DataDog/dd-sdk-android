@@ -10,7 +10,10 @@ import org.gradle.api.DefaultTask
 import org.gradle.api.artifacts.Configuration
 import org.gradle.api.artifacts.component.ProjectComponentIdentifier
 import org.gradle.api.tasks.Input
+import org.gradle.api.tasks.InputFile
 import org.gradle.api.tasks.OutputFile
+import org.gradle.api.tasks.PathSensitive
+import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.TaskAction
 import java.io.File
 
@@ -21,6 +24,11 @@ open class GenerateTransitiveDependenciesTask : DefaultTask() {
 
     @get:Input
     var sortByName: Boolean = true
+
+    @get:InputFile
+    @get:PathSensitive(PathSensitivity.RELATIVE)
+    val libsVersionCatalog: File
+        get() = project.rootProject.layout.projectDirectory.file("gradle/libs.versions.toml").asFile
 
     @get: OutputFile
     lateinit var dependenciesFile: File

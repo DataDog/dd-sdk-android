@@ -26,10 +26,10 @@ import com.datadog.android.core.internal.net.DefaultFirstPartyHostHeaderTypeReso
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.privacy.ConsentProvider
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
-import com.datadog.android.core.internal.time.NoOpTimeProvider
-import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.core.internal.user.MutableUserInfoProvider
 import com.datadog.android.core.thread.FlushableExecutorService
+import com.datadog.android.internal.time.DefaultTimeProvider
+import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.ndk.internal.NdkCrashHandler
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.utils.config.ApplicationContextTestConfiguration
@@ -1019,7 +1019,7 @@ internal class DatadogCoreTest {
         // Given
         testedCore.coreFeature = mock()
         whenever(testedCore.coreFeature.initialized).thenReturn(AtomicBoolean())
-        whenever(testedCore.coreFeature.timeProvider) doReturn NoOpTimeProvider()
+        whenever(testedCore.coreFeature.timeProvider) doReturn DefaultTimeProvider()
 
         // When
         val time = testedCore.time

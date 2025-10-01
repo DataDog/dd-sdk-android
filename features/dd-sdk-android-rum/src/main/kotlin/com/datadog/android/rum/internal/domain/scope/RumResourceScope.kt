@@ -35,6 +35,10 @@ import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.ResourceEvent
 import java.net.MalformedURLException
 import java.net.URL
+import java.nio.ByteBuffer
+import java.nio.CharBuffer
+import java.nio.charset.CoderMalfunctionError
+import java.nio.charset.StandardCharsets
 import java.util.Locale
 import java.util.UUID
 
@@ -242,11 +246,20 @@ internal class RumResourceScope(
         val finalTiming = timing ?: extractResourceTiming(
             resourceAttributes.remove(RumAttributes.RESOURCE_TIMINGS) as? Map<String, Any?>
         )
+
+        val graphqlOperationName = resourceAttributes.remove(RumAttributes.GRAPHQL_OPERATION_NAME) as? String
+        val graphqlOperationType = resourceAttributes.remove(RumAttributes.GRAPHQL_OPERATION_TYPE) as? String
+        val graphqlVariables = resourceAttributes.remove(RumAttributes.GRAPHQL_VARIABLES) as? String
+
+        // The decision whether to send payloads is determined by a DatadogApolloInterceptor parameter
+        val rawPayload = resourceAttributes.remove(RumAttributes.GRAPHQL_PAYLOAD) as? String
+        val graphqlPayload = rawPayload?.truncateToUtf8Bytes(MAX_GRAPHQL_PAYLOAD_SIZE_BYTES)
+
         val graphql = resolveGraphQLAttributes(
-            resourceAttributes.remove(RumAttributes.GRAPHQL_OPERATION_TYPE) as? String?,
-            resourceAttributes.remove(RumAttributes.GRAPHQL_OPERATION_NAME) as? String?,
-            resourceAttributes.remove(RumAttributes.GRAPHQL_PAYLOAD) as? String?,
-            resourceAttributes.remove(RumAttributes.GRAPHQL_VARIABLES) as? String?
+            operationType = graphqlOperationType,
+            operationName = graphqlOperationName,
+            variables = graphqlVariables,
+            payload = graphqlPayload
         )
 
         sdkCore.newRumEventWriteOperation(datadogContext, writeScope, writer) {
@@ -525,7 +538,7 @@ internal class RumResourceScope(
     private fun resolveDomain(url: String): String {
         return try {
             URL(url).host
-        } catch (e: MalformedURLException) {
+        } catch (_: MalformedURLException) {
             url
         }
     }
@@ -533,24 +546,71 @@ internal class RumResourceScope(
     private fun resolveGraphQLAttributes(
         operationType: String?,
         operationName: String?,
-        payload: String?,
-        variables: String?
+        variables: String?,
+        payload: String?
     ): ResourceEvent.Graphql? {
         operationType?.toOperationType(sdkCore.internalLogger)?.let {
             return ResourceEvent.Graphql(
-                it,
-                operationName,
-                payload,
-                variables
+                operationType = it,
+                operationName = operationName,
+                variables = variables,
+                payload = payload
             )
         }
 
         return null
     }
 
+    @Suppress("ReturnCount", "SwallowedException")
+    private fun String.truncateToUtf8Bytes(maxBytes: Int): String {
+        val encoder =
+            // will not throw UnsupportedOperationException
+            @Suppress("UnsafeThirdPartyFunctionCall")
+            StandardCharsets.UTF_8.newEncoder()
+
+        // will not throw IllegalArgumentException
+        @Suppress("UnsafeThirdPartyFunctionCall")
+        val dst = ByteBuffer.allocate(maxBytes)
+
+        // will not throw IndexOutOfBoundsException
+        @Suppress("UnsafeThirdPartyFunctionCall")
+        val src = CharBuffer.wrap(this)
+
+        @Suppress("TooGenericExceptionCaught")
+        try {
+            // Encode as much as fits. The encoder will not consume a character
+            // if doing so would overflow the byte buffer.
+            encoder.encode(src, dst, true)
+        } catch (e: IllegalStateException) {
+            logPayloadTruncationFailure(e)
+            return ""
+        } catch (e: CoderMalfunctionError) {
+            logPayloadTruncationFailure(e)
+            return ""
+        } catch (e: NullPointerException) {
+            logPayloadTruncationFailure(e)
+            return ""
+        }
+
+        // will not throw IndexOutOfBoundsException
+        @Suppress("UnsafeThirdPartyFunctionCall")
+        return substring(0, src.position())
+    }
+
+    private fun logPayloadTruncationFailure(e: Throwable) {
+        val logger = sdkCore.internalLogger
+        logger.log(
+            level = InternalLogger.Level.ERROR,
+            target = InternalLogger.Target.MAINTAINER,
+            messageBuilder = { "Failed to truncate payload" },
+            throwable = e
+        )
+    }
+
     // endregion
 
     companion object {
+        internal const val MAX_GRAPHQL_PAYLOAD_SIZE_BYTES = 30 * 1024
 
         internal const val NEGATIVE_DURATION_WARNING_MESSAGE = "The computed duration for your " +
             "resource: %s was 0 or negative. In order to keep the resource event" +

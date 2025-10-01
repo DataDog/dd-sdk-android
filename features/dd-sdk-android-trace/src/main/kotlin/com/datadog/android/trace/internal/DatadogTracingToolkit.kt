@@ -11,6 +11,7 @@ import com.datadog.android.trace.api.span.DatadogSpan
 import com.datadog.android.trace.api.span.DatadogSpanContext
 import com.datadog.android.trace.api.tracer.DatadogTracer
 import com.datadog.android.trace.api.tracer.DatadogTracerBuilder
+import com.datadog.trace.core.propagation.Baggage
 
 /**
  * For library usage only.
@@ -87,5 +88,20 @@ object DatadogTracingToolkit {
     @JvmStatic // this method is called from OTel code, written in java
     fun activateSpan(tracer: DatadogTracer, span: DatadogSpan, asyncPropagating: Boolean): DatadogScope? {
         return (tracer as? DatadogTracerAdapter)?.activateSpan(span, asyncPropagating)
+    }
+
+    /**
+     * Merges two baggage headers into a single string representation. The [oldHeader] represents the
+     * previously existing baggage header, and the [newHeader] represents the new baggage information
+     * to be merged with the old one.
+     *
+     * @param oldHeader The existing baggage header, which may be null.
+     * @param newHeader The new baggage header to be merged, must not be null.
+     * @return A string representation of the merged baggage.
+     */
+    fun mergeBaggage(oldHeader: String?, newHeader: String): String {
+        return Baggage.from(oldHeader)
+            .mergeWith(Baggage.from(newHeader))
+            .toString()
     }
 }
