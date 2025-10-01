@@ -27,8 +27,8 @@ public abstract interface class com/datadog/android/flags/featureflags/FlagsClie
 	public static fun instance ()Lcom/datadog/android/flags/featureflags/FlagsClient;
 	public static fun instance (Lcom/datadog/android/api/SdkCore;)Lcom/datadog/android/flags/featureflags/FlagsClient;
 	public abstract fun resolveBooleanValue (Ljava/lang/String;Z)Z
+	public abstract fun resolveDoubleValue (Ljava/lang/String;D)D
 	public abstract fun resolveIntValue (Ljava/lang/String;I)I
-	public abstract fun resolveNumberValue (Ljava/lang/String;Ljava/lang/Number;)Ljava/lang/Number;
 	public abstract fun resolveStringValue (Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;
 	public abstract fun resolveStructureValue (Ljava/lang/String;Lorg/json/JSONObject;)Lorg/json/JSONObject;
 	public abstract fun setContext (Lcom/datadog/android/flags/featureflags/model/EvaluationContext;)V

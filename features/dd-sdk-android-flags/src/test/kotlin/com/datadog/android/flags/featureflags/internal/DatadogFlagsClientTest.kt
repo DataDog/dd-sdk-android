@@ -221,10 +221,10 @@ internal class DatadogFlagsClientTest {
 
     // endregion
 
-    // region resolveNumberValue()
+    // region resolveDoubleValue()
 
     @Test
-    fun `M return flag value W resolveNumberValue() { flag exists with string double value }`(forge: Forge) {
+    fun `M return flag value W resolveDoubleValue() { flag exists with string double value }`(forge: Forge) {
         // Given
         val fakeFlagKey = forge.anAlphabeticalString()
         val fakeFlagValue = forge.aDouble()
@@ -236,21 +236,21 @@ internal class DatadogFlagsClientTest {
         whenever(mockFlagsRepository.getPrecomputedFlag(fakeFlagKey)) doReturn fakeFlag
 
         // When
-        val result = testedClient.resolveNumberValue(fakeFlagKey, fakeDefaultValue)
+        val result = testedClient.resolveDoubleValue(fakeFlagKey, fakeDefaultValue)
 
         // Then
         assertThat(result).isEqualTo(fakeFlagValue)
     }
 
     @Test
-    fun `M return default value W resolveNumberValue() {flag does not exist}`(forge: Forge) {
+    fun `M return default value W resolveDoubleValue() {flag does not exist}`(forge: Forge) {
         // Given
         val fakeFlagKey = forge.anAlphabeticalString()
         val fakeDefaultValue = forge.aDouble()
         whenever(mockFlagsRepository.getPrecomputedFlag(fakeFlagKey)) doReturn null
 
         // When
-        val result = testedClient.resolveNumberValue(fakeFlagKey, fakeDefaultValue)
+        val result = testedClient.resolveDoubleValue(fakeFlagKey, fakeDefaultValue)
 
         // Then
         assertThat(result).isEqualTo(fakeDefaultValue)

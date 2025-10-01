@@ -22,9 +22,9 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
-import org.mockito.quality.Strictness
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import org.mockito.quality.Strictness
 
 @ExtendWith(MockitoExtension::class, ForgeExtension::class)
 @MockitoSettings(strictness = Strictness.LENIENT)

@@ -14,7 +14,6 @@ import com.datadog.android.flags.featureflags.internal.NoOpFlagsClient
 import com.datadog.android.flags.featureflags.model.EvaluationContext
 import org.json.JSONObject
 
-
 /**
  * Client interface for evaluating feature flags and experiments.
  *
@@ -52,13 +51,13 @@ interface FlagsClient {
     fun resolveStringValue(flagKey: String, defaultValue: String): String
 
     /**
-     * Resolves a numeric flag value.
+     * Resolves a double flag value.
      *
      * @param flagKey The unique identifier of the flag to resolve.
      * @param defaultValue The value to return if the flag cannot be retrieved or parsed.
-     * @return The numeric value of the flag, or the default value if unavailable.
+     * @return The double value of the flag, or the default value if unavailable.
      */
-    fun resolveNumberValue(flagKey: String, defaultValue: Number): Number
+    fun resolveDoubleValue(flagKey: String, defaultValue: Double): Double
 
     /**
      * Resolves an integer flag value.
@@ -147,7 +146,6 @@ interface FlagsClient {
                     )
                     false
                 } else {
-                    @Suppress("UnsafeThirdPartyFunctionCall") // User provided callable, let it throw
                     registeredClients[sdkCore] = client
                     true
                 }

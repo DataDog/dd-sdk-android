@@ -9,7 +9,7 @@ interface com.datadog.android.flags.featureflags.FlagsClient
   fun setContext(com.datadog.android.flags.featureflags.model.EvaluationContext)
   fun resolveBooleanValue(String, Boolean): Boolean
   fun resolveStringValue(String, String): String
-  fun resolveNumberValue(String, Number): Number
+  fun resolveDoubleValue(String, Double): Double
   fun resolveIntValue(String, Int): Int
   fun resolveStructureValue(String, org.json.JSONObject): org.json.JSONObject
   companion object 
