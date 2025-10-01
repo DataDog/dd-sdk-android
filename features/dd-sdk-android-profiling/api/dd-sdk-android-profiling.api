@@ -1,0 +1,4 @@
+public final class com/datadog/android/profiling/Profiling {
+	public static final field INSTANCE Lcom/datadog/android/profiling/Profiling;
+}
+

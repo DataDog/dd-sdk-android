@@ -39,7 +39,10 @@ android {
 
 dependencies {
     api(project(":dd-sdk-android-core"))
+    implementation(project(":dd-sdk-android-internal"))
     implementation(libs.kotlin)
+    implementation(libs.androidXCore)
+    implementation(libs.androidXCoreKtx)
 
     // Generate NoOp implementations
     ksp(project(":tools:noopfactory"))
