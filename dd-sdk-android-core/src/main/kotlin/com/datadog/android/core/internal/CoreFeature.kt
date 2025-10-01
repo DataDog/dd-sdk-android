@@ -65,8 +65,6 @@ import com.datadog.android.core.internal.time.AppStartTimeProvider
 import com.datadog.android.core.internal.time.DatadogNtpEndpoint
 import com.datadog.android.core.internal.time.KronosTimeProvider
 import com.datadog.android.core.internal.time.LoggingSyncListener
-import com.datadog.android.core.internal.time.NoOpTimeProvider
-import com.datadog.android.core.internal.time.TimeProvider
 import com.datadog.android.core.internal.user.DatadogUserInfoProvider
 import com.datadog.android.core.internal.user.MutableUserInfoProvider
 import com.datadog.android.core.internal.user.NoOpMutableUserInfoProvider
@@ -74,6 +72,8 @@ import com.datadog.android.core.internal.utils.executeSafe
 import com.datadog.android.core.internal.utils.unboundInternalLogger
 import com.datadog.android.core.persistence.PersistenceStrategy
 import com.datadog.android.core.thread.FlushableExecutorService
+import com.datadog.android.internal.time.DefaultTimeProvider
+import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.internal.utils.allowThreadDiskReads
 import com.datadog.android.ndk.internal.DatadogNdkCrashHandler
 import com.datadog.android.ndk.internal.NdkCrashHandler
@@ -125,7 +125,7 @@ internal class CoreFeature(
         DefaultFirstPartyHostHeaderTypeResolver(emptyMap())
     internal var networkInfoProvider: NetworkInfoProvider = NoOpNetworkInfoProvider()
     internal var systemInfoProvider: SystemInfoProvider = NoOpSystemInfoProvider()
-    internal var timeProvider: TimeProvider = NoOpTimeProvider()
+    internal var timeProvider: TimeProvider = DefaultTimeProvider()
     internal var trackingConsentProvider: ConsentProvider = NoOpConsentProvider()
     internal var userInfoProvider: MutableUserInfoProvider = NoOpMutableUserInfoProvider()
     internal var accountInfoProvider: MutableAccountInfoProvider = NoOpMutableAccountInfoProvider()
@@ -696,7 +696,7 @@ internal class CoreFeature(
         firstPartyHostHeaderTypeResolver = DefaultFirstPartyHostHeaderTypeResolver(emptyMap())
         networkInfoProvider = NoOpNetworkInfoProvider()
         systemInfoProvider = NoOpSystemInfoProvider()
-        timeProvider = NoOpTimeProvider()
+        timeProvider = DefaultTimeProvider()
         trackingConsentProvider = NoOpConsentProvider()
         userInfoProvider = NoOpMutableUserInfoProvider()
         androidInfoProvider = NoOpAndroidInfoProvider()
