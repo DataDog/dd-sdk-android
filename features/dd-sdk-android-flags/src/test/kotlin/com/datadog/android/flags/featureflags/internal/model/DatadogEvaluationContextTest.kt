@@ -56,12 +56,12 @@ internal class DatadogEvaluationContextTest {
         )
 
         // When
-        val datadogContext = DatadogEvaluationContext.from(publicContext, mockInternalLogger)
+        val ddEvalContext = DatadogEvaluationContext.from(publicContext, mockInternalLogger)
 
         // Then
-        assertThat(datadogContext).isNotNull
-        assertThat(datadogContext?.targetingKey).isEqualTo(targetingKey)
-        assertThat(datadogContext?.attributes).isEqualTo(
+        checkNotNull(ddEvalContext)
+        assertThat(ddEvalContext.targetingKey).isEqualTo(targetingKey)
+        assertThat(ddEvalContext.attributes).isEqualTo(
             mapOf(
                 "stringAttr" to stringValue,
                 "numberAttr" to numberValue.toString(),
@@ -91,11 +91,12 @@ internal class DatadogEvaluationContextTest {
         )
 
         // When
-        val datadogContext = DatadogEvaluationContext.from(publicContext, mockInternalLogger)
+        val ddEvalContext = DatadogEvaluationContext.from(publicContext, mockInternalLogger)
 
         // Then
         // Only valid attributes should be present
-        assertThat(datadogContext?.attributes).isEqualTo(
+        checkNotNull(ddEvalContext)
+        assertThat(ddEvalContext.attributes).isEqualTo(
             mapOf(
                 "validString" to validStringValue,
                 "validNumber" to validNumberValue.toString()
@@ -128,11 +129,12 @@ internal class DatadogEvaluationContextTest {
         )
 
         // When
-        val datadogContext = DatadogEvaluationContext.from(publicContext, mockInternalLogger)
+        val ddEvalContext = DatadogEvaluationContext.from(publicContext, mockInternalLogger)
 
         // Then
         // Only non-null attributes should be present
-        assertThat(datadogContext?.attributes).isEqualTo(
+        checkNotNull(ddEvalContext)
+        assertThat(ddEvalContext.attributes).isEqualTo(
             mapOf(
                 "validAttr" to validValue
             )
@@ -156,11 +158,12 @@ internal class DatadogEvaluationContextTest {
         val publicContext = EvaluationContext(targetingKey, emptyMap())
 
         // When
-        val datadogContext = DatadogEvaluationContext.from(publicContext, mockInternalLogger)
+        val ddEvalContext = DatadogEvaluationContext.from(publicContext, mockInternalLogger)
 
         // Then
-        assertThat(datadogContext?.targetingKey).isEqualTo(targetingKey)
-        assertThat(datadogContext?.attributes).isEmpty()
+        checkNotNull(ddEvalContext)
+        assertThat(ddEvalContext.targetingKey).isEqualTo(targetingKey)
+        assertThat(ddEvalContext.attributes).isEmpty()
         verifyNoInteractions(mockInternalLogger)
     }
 
@@ -184,11 +187,12 @@ internal class DatadogEvaluationContextTest {
         )
 
         // When
-        val datadogContext = DatadogEvaluationContext.from(publicContext, mockInternalLogger)
+        val ddEvalContext = DatadogEvaluationContext.from(publicContext, mockInternalLogger)
 
         // Then
-        assertThat(datadogContext).isNotNull
-        assertThat(datadogContext?.attributes).isEqualTo(
+        checkNotNull(ddEvalContext)
+        assertThat(ddEvalContext).isNotNull
+        assertThat(ddEvalContext?.attributes).isEqualTo(
             mapOf(
                 "intAttr" to intValue.toString(),
                 "doubleAttr" to doubleValue.toString(),
@@ -206,10 +210,10 @@ internal class DatadogEvaluationContextTest {
         val publicContext = EvaluationContext(blankTargetingKey, emptyMap())
 
         // When
-        val result = DatadogEvaluationContext.from(publicContext, mockInternalLogger)
+        val ddEvalContext = DatadogEvaluationContext.from(publicContext, mockInternalLogger)
 
         // Then
-        assertThat(result).isNull()
+        assertThat(ddEvalContext).isNull()
     }
 
     @Test
@@ -219,10 +223,10 @@ internal class DatadogEvaluationContextTest {
         val publicContext = EvaluationContext(whitespaceTargetingKey, emptyMap())
 
         // When
-        val result = DatadogEvaluationContext.from(publicContext, mockInternalLogger)
+        val ddEvalContext = DatadogEvaluationContext.from(publicContext, mockInternalLogger)
 
         // Then
-        assertThat(result).isNull()
+        assertThat(ddEvalContext).isNull()
     }
 
     @Test
@@ -232,23 +236,19 @@ internal class DatadogEvaluationContextTest {
         val publicContext = EvaluationContext(tabTargetingKey, emptyMap())
 
         // When
-        val result = DatadogEvaluationContext.from(publicContext, mockInternalLogger)
+        val ddEvalContext = DatadogEvaluationContext.from(publicContext, mockInternalLogger)
 
         // Then
-        assertThat(result).isNull()
+        assertThat(ddEvalContext).isNull()
     }
 
     @Test
     fun `M return true W isValid() { valid context }`() {
-        // Given
-        val context = DatadogEvaluationContext("user123", mapOf("plan" to "premium"))
-
-        // When
-        val isValid = context.isValid()
+        // Given When
+        val ddEvalContext = DatadogEvaluationContext("user123", mapOf("plan" to "premium"))
 
         // Then
-        assertThat(context).isNotNull
-        assertThat(isValid).isTrue()
+        assertThat(ddEvalContext!!.isValid()).isTrue()
     }
 
     @Test
@@ -257,10 +257,10 @@ internal class DatadogEvaluationContextTest {
         val publicContext = EvaluationContext("", mapOf("plan" to "premium"))
 
         // When
-        val context = DatadogEvaluationContext.from(publicContext, mockInternalLogger)
+        val ddEvalContext = DatadogEvaluationContext.from(publicContext, mockInternalLogger)
 
         // Then
-        assertThat(context).isNull()
+        assertThat(ddEvalContext).isNull()
         verify(mockInternalLogger).log(
             eq(InternalLogger.Level.WARN),
             eq(InternalLogger.Target.USER),
@@ -277,10 +277,10 @@ internal class DatadogEvaluationContextTest {
         val publicContext = EvaluationContext("   ", mapOf("plan" to "premium"))
 
         // When
-        val context = DatadogEvaluationContext.from(publicContext, mockInternalLogger)
+        val ddEvalContext = DatadogEvaluationContext.from(publicContext, mockInternalLogger)
 
         // Then
-        assertThat(context).isNull()
+        assertThat(ddEvalContext).isNull()
         verify(mockInternalLogger).log(
             eq(InternalLogger.Level.WARN),
             eq(InternalLogger.Target.USER),
@@ -293,8 +293,8 @@ internal class DatadogEvaluationContextTest {
 
     @Test
     fun `M return true W isValid() { valid context with multiple attributes }`() {
-        // Given
-        val context = DatadogEvaluationContext.from(
+        // Given When
+        val ddEvalContext = DatadogEvaluationContext.from(
             EvaluationContext(
                 "user123",
                 mapOf(
@@ -306,11 +306,7 @@ internal class DatadogEvaluationContextTest {
             mockInternalLogger
         )
 
-        // When
-        val isValid = context?.isValid()
-
         // Then
-        assertThat(context).isNotNull
-        assertThat(isValid).isTrue()
+        assertThat(ddEvalContext!!.isValid()).isTrue()
     }
 }

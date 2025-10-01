@@ -30,7 +30,7 @@ internal class DefaultFlagsNetworkManager(
 ) : FlagsNetworkManager {
     internal lateinit var callFactory: OkHttpCallFactory
 
-    internal open class OkHttpCallFactory(factory: () -> OkHttpClient) : Call.Factory {
+    internal class OkHttpCallFactory(factory: () -> OkHttpClient) : Call.Factory {
         val okhttpClient by lazy(factory)
 
         override fun newCall(request: Request): Call = okhttpClient.newCall(request)
@@ -72,7 +72,7 @@ internal class DefaultFlagsNetworkManager(
             internalLogger.log(
                 InternalLogger.Level.ERROR,
                 InternalLogger.Target.MAINTAINER,
-                { "Unable to find host for site ${flagsContext.site}; we will retry later." },
+                { "Unable to find host for site ${flagsContext.site.name}; we will retry later." },
                 e
             )
             null
