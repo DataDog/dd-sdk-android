@@ -72,6 +72,7 @@ internal class EvaluationsManager(
 
     companion object {
         private const val FETCH_AND_STORE_OPERATION_NAME = "Fetch and store flags for evaluation context"
-        private const val NETWORK_REQUEST_FAILED_USER_MESSAGE = "Unable to fetch feature flags. Some features may not work as expected. Please check your network connection."
+        private const val NETWORK_REQUEST_FAILED_USER_MESSAGE =
+            "Unable to fetch feature flags. Please check your network connection."
     }
 }
