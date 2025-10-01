@@ -19,11 +19,6 @@ internal class KioskTrackingActivityTestRule<T : Activity>(
 
     override fun beforeActivityLaunched() {
         super.beforeActivityLaunched()
-        DdRumContentProvider::class.java.declaredMethods.firstOrNull() {
-            it.name == "overrideProcessImportance"
-        }?.apply {
-            isAccessible = true
-            invoke(null, ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND)
-        }
+        DdRumContentProvider.processImportance = ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND
     }
 }
