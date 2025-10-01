@@ -59,14 +59,17 @@ internal class FlagsClientTest {
     // region Static Flag Resolution Methods
 
     @Test
-    fun `M return no-op default W instance() + resolveBooleanValue() {no client registered for SDK core}`() {
+    fun `M return no-op default W instance() + resolveBooleanValue() {no client registered for SDK core}`(
+      @StringForgery fakeFlagName: String,
+      @BooleanForgery fakeFlagDefaultValue: Boolean
+    ) {
         // When
         val client = FlagsClient.instance(mockSdkCore)
-        val result = client.resolveBooleanValue("test-flag", true)
+        val result = client.resolveBooleanValue(fakeFlagName, fakeFlagDefaultValue)
 
         // Then
         assertThat(client).isInstanceOf(NoOpFlagsClient::class.java)
-        assertThat(result).isTrue() // No-op returns default
+        assertThat(result).isEqualTo(fakeFlagDefaultValue)
     }
 
     @Test
