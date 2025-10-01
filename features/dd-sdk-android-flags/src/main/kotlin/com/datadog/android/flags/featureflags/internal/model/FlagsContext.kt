@@ -6,6 +6,8 @@
 
 package com.datadog.android.flags.featureflags.internal.model
 
+import com.datadog.android.DatadogSite
+
 /**
  * Internal context containing Datadog configuration needed for feature flag requests.
  *
@@ -15,4 +17,9 @@ package com.datadog.android.flags.featureflags.internal.model
  * @param site The Datadog site (e.g., US1, EU1) for routing requests
  * @param env The environment name (e.g., prod, staging) for context
  */
-internal data class FlagsContext(val applicationId: String?, val clientToken: String, val site: String, val env: String)
+internal data class FlagsContext(
+    val applicationId: String?,
+    val clientToken: String,
+    val site: DatadogSite,
+    val env: String
+)

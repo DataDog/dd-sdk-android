@@ -76,7 +76,7 @@ object Flags {
         val internalLogger = sdkCore.internalLogger
         val applicationId = flagsFeature.applicationId
         val clientToken = datadogContext?.clientToken
-        val site = datadogContext?.site?.name
+        val site = datadogContext?.site
         val env = datadogContext?.env
 
         @Suppress("TodoWithoutTask") // TODO how do we want to handle this?
@@ -103,12 +103,10 @@ object Flags {
             env = env
         )
 
-        // Create repository
         val flagsRepository = DefaultFlagsRepository(
             featureSdkCore = sdkCore
         )
 
-        // Create network manager and dependencies
         val flagsNetworkManager = DefaultFlagsNetworkManager(
             internalLogger = sdkCore.internalLogger,
             flagsContext = flagsContext
@@ -116,7 +114,6 @@ object Flags {
 
         val precomputeMapper = PrecomputeMapper(sdkCore.internalLogger)
 
-        // Create evaluations manager
         val evaluationsManager = EvaluationsManager(
             executorService = executorService,
             internalLogger = sdkCore.internalLogger,

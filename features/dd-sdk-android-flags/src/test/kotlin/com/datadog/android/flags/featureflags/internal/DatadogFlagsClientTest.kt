@@ -445,7 +445,7 @@ internal class DatadogFlagsClientTest {
         assertThat(capturedContext.targetingKey).isEqualTo(fakeTargetingKey)
         // Verify all attributes were normalized to strings
         assertThat(capturedContext.attributes).hasSize(4)
-        assertThat(capturedContext.attributes).containsKeys("plan", "region", "user_id", "is_beta")
+        assertThat(capturedContext.attributes).containsOnlyKeys("plan", "region", "user_id", "is_beta")
         // Check specific value types are converted to strings
         assertThat(capturedContext.attributes["user_id"]).isEqualTo(fakeAttributes["user_id"].toString())
         assertThat(capturedContext.attributes["is_beta"]).isEqualTo(fakeAttributes["is_beta"].toString())

@@ -49,11 +49,11 @@ internal class DatadogFlagsClient(
      */
     override fun setContext(context: EvaluationContext) {
         // Convert public context to internal normalized context
-        val datadogContext = DatadogEvaluationContext.from(context, featureSdkCore.internalLogger)
+        val ddEvalContext = DatadogEvaluationContext.from(context, featureSdkCore.internalLogger)
 
-        if (datadogContext != null) {
+        if (ddEvalContext != null) {
             // Pass to manager to handle network request and atomic storage
-            evaluationsManager.updateEvaluationsForContext(datadogContext)
+            evaluationsManager.updateEvaluationsForContext(ddEvalContext)
         }
         // If null, validation failed and was already logged
     }
