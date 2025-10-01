@@ -10,6 +10,8 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.flags.featureflags.internal.NoOpFlagsClient
 import com.datadog.android.flags.featureflags.model.EvaluationContext
+import fr.xgouchet.elmyr.annotation.BoolForgery
+import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
@@ -20,9 +22,9 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.quality.Strictness
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
-import org.mockito.quality.Strictness
 
 @ExtendWith(MockitoExtension::class, ForgeExtension::class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -60,8 +62,8 @@ internal class FlagsClientTest {
 
     @Test
     fun `M return no-op default W instance() + resolveBooleanValue() {no client registered for SDK core}`(
-      @StringForgery fakeFlagName: String,
-      @BooleanForgery fakeFlagDefaultValue: Boolean
+        @StringForgery fakeFlagName: String,
+        @BoolForgery fakeFlagDefaultValue: Boolean
     ) {
         // When
         val client = FlagsClient.instance(mockSdkCore)
