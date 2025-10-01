@@ -95,12 +95,12 @@ interface FlagsClient {
          *
          * @param sdkCore the [SdkCore] instance to retrieve the client for. If not provided,
          * the default Datadog SDK instance will be used.
-         * @return the [FlagsClient] associated with the given SDK core, or a [NoOpFlagsClient]
+         * @return the [FlagsClient] associated with the given SDK core, or a no-op client.
          * if no client is registered for this SDK core.
          */
         @JvmOverloads
         @JvmStatic
-        fun instance(sdkCore: SdkCore = Datadog.getInstance()): FlagsClient = synchronized(registeredClients) {
+        fun get(sdkCore: SdkCore = Datadog.getInstance()): FlagsClient = synchronized(registeredClients) {
             val client = registeredClients[sdkCore]
             if (client == null) {
                 val errorMsg = "No FlagsClient for the SDK instance with name \${sdkCore.name} " +
@@ -121,7 +121,7 @@ interface FlagsClient {
         // region Internal
 
         /**
-         * Register a [FlagsClient] with an [SdkCore] to back the behaviour of the [instance] function.
+         * Register a [FlagsClient] with an [SdkCore] to back the behaviour of the [get] function.
          *
          * This method is thread-safe and implements a one-time registration pattern. Once a client
          * has been registered for a specific SDK core, all subsequent registration attempts for that

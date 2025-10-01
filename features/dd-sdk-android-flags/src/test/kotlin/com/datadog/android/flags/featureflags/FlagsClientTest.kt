@@ -61,12 +61,12 @@ internal class FlagsClientTest {
     // region Static Flag Resolution Methods
 
     @Test
-    fun `M return no-op default W instance() + resolveBooleanValue() {no client registered for SDK core}`(
+    fun `M return no-op default W get() + resolveBooleanValue() {no client registered for SDK core}`(
         @StringForgery fakeFlagName: String,
         @BoolForgery fakeFlagDefaultValue: Boolean
     ) {
         // When
-        val client = FlagsClient.instance(mockSdkCore)
+        val client = FlagsClient.get(mockSdkCore)
         val result = client.resolveBooleanValue(fakeFlagName, fakeFlagDefaultValue)
 
         // Then
@@ -75,13 +75,13 @@ internal class FlagsClientTest {
     }
 
     @Test
-    fun `M delegate to registered client W instance() + resolveBooleanValue() {client registered for SDK core}`() {
+    fun `M delegate to registered client W get() + resolveBooleanValue() {client registered for SDK core}`() {
         // Given
         whenever(mockFlagsClient.resolveBooleanValue("test-flag", false)).thenReturn(true)
         FlagsClient.registerIfAbsent(mockFlagsClient, mockSdkCore)
 
         // When
-        val client = FlagsClient.instance(mockSdkCore)
+        val client = FlagsClient.get(mockSdkCore)
         val result = client.resolveBooleanValue("test-flag", false)
 
         // Then
@@ -99,8 +99,8 @@ internal class FlagsClientTest {
         FlagsClient.registerIfAbsent(mockSecondFlagsClient, mockSecondSdkCore)
 
         // When
-        val firstClient = FlagsClient.instance(mockSdkCore)
-        val secondClient = FlagsClient.instance(mockSecondSdkCore)
+        val firstClient = FlagsClient.get(mockSdkCore)
+        val secondClient = FlagsClient.get(mockSecondSdkCore)
         val firstResult = firstClient.resolveBooleanValue("test-flag", false)
         val secondResult = secondClient.resolveBooleanValue("test-flag", false)
 
@@ -120,7 +120,7 @@ internal class FlagsClientTest {
         FlagsClient.registerIfAbsent(mockFlagsClient, mockSdkCore)
 
         // When
-        val client = FlagsClient.instance(mockSdkCore)
+        val client = FlagsClient.get(mockSdkCore)
         client.setContext(fakeContext)
 
         // Then
@@ -174,7 +174,7 @@ internal class FlagsClientTest {
 
         // Then
         // Verify client was removed by checking no-op behavior
-        val client = FlagsClient.instance(mockSdkCore)
+        val client = FlagsClient.get(mockSdkCore)
         assertThat(client).isInstanceOf(NoOpFlagsClient::class.java)
         assertThat(client.resolveBooleanValue("test", false)).isFalse()
     }
@@ -187,7 +187,7 @@ internal class FlagsClientTest {
         }
 
         // Verify operation completed without affecting other state
-        val client = FlagsClient.instance(mockSdkCore)
+        val client = FlagsClient.get(mockSdkCore)
         assertThat(client).isInstanceOf(NoOpFlagsClient::class.java)
     }
 
@@ -202,7 +202,7 @@ internal class FlagsClientTest {
 
         // Then
         // First should be no-op, second should still be registered
-        val firstClient = FlagsClient.instance(mockSdkCore)
+        val firstClient = FlagsClient.get(mockSdkCore)
         assertThat(firstClient).isInstanceOf(NoOpFlagsClient::class.java)
         assertThat(firstClient.resolveBooleanValue("test", false)).isFalse()
     }
@@ -218,8 +218,8 @@ internal class FlagsClientTest {
 
         // Then
         // Both should now be no-op
-        val firstClient = FlagsClient.instance(mockSdkCore)
-        val secondClient = FlagsClient.instance(mockSecondSdkCore)
+        val firstClient = FlagsClient.get(mockSdkCore)
+        val secondClient = FlagsClient.get(mockSecondSdkCore)
         assertThat(firstClient).isInstanceOf(NoOpFlagsClient::class.java)
         assertThat(secondClient).isInstanceOf(NoOpFlagsClient::class.java)
         assertThat(firstClient.resolveBooleanValue("test", false)).isFalse()
@@ -234,7 +234,7 @@ internal class FlagsClientTest {
         }
 
         // Verify operation completed - should still return no-op clients
-        val client = FlagsClient.instance(mockSdkCore)
+        val client = FlagsClient.get(mockSdkCore)
         assertThat(client).isInstanceOf(NoOpFlagsClient::class.java)
     }
 

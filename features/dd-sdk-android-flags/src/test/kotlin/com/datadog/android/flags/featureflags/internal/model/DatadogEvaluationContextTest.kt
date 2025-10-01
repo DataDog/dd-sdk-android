@@ -192,7 +192,7 @@ internal class DatadogEvaluationContextTest {
         // Then
         checkNotNull(ddEvalContext)
         assertThat(ddEvalContext).isNotNull
-        assertThat(ddEvalContext?.attributes).isEqualTo(
+        assertThat(ddEvalContext.attributes).isEqualTo(
             mapOf(
                 "intAttr" to intValue.toString(),
                 "doubleAttr" to doubleValue.toString(),
@@ -248,7 +248,7 @@ internal class DatadogEvaluationContextTest {
         val ddEvalContext = DatadogEvaluationContext("user123", mapOf("plan" to "premium"))
 
         // Then
-        assertThat(ddEvalContext!!.isValid()).isTrue()
+        assertThat(ddEvalContext.isValid()).isTrue()
     }
 
     @Test

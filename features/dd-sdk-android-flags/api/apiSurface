@@ -13,7 +13,7 @@ interface com.datadog.android.flags.featureflags.FlagsClient
   fun resolveIntValue(String, Int): Int
   fun resolveStructureValue(String, org.json.JSONObject): org.json.JSONObject
   companion object 
-    fun instance(com.datadog.android.api.SdkCore = Datadog.getInstance()): FlagsClient
+    fun get(com.datadog.android.api.SdkCore = Datadog.getInstance()): FlagsClient
 interface com.datadog.android.flags.featureflags.FlagsProvider
   fun setContext(com.datadog.android.flags.featureflags.model.EvaluationContext)
   fun resolveBooleanValue(String, Boolean): Boolean

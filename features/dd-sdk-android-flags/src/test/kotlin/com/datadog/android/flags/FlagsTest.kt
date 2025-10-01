@@ -97,7 +97,7 @@ internal class FlagsTest {
 
         // Then
         // Verify that a real client was registered by checking it's not a no-op
-        val client = FlagsClient.instance(mockSdkCore)
+        val client = FlagsClient.get(mockSdkCore)
         assertThat(client).isNotInstanceOf(NoOpFlagsClient::class.java)
     }
 
@@ -115,7 +115,7 @@ internal class FlagsTest {
 
         // Then
         // Verify that no real client was registered by checking it's a no-op
-        val client = FlagsClient.instance(mockSdkCore)
+        val client = FlagsClient.get(mockSdkCore)
         assertThat(client).isInstanceOf(NoOpFlagsClient::class.java)
     }
 
