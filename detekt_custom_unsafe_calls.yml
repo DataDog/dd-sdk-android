@@ -45,6 +45,9 @@ datadog:
       - "androidx.work.WorkManager.enqueueUniqueWork(kotlin.String, androidx.work.ExistingWorkPolicy, androidx.work.OneTimeWorkRequest):java.util.concurrent.RejectedExecutionException,java.lang.NullPointerException"
       - "androidx.work.Data.Builder.build():java.lang.IllegalStateException"
       # endregion
+      # region Apollo Kotlin
+      - "com.apollographql.apollo.api.Operation.variablesJson(com.apollographql.apollo.api.CustomScalarAdapters):java.io.IOException"
+      # endregion
       # region Java File
       - "java.io.ByteArrayOutputStream.write(kotlin.ByteArray, kotlin.Int, kotlin.Int):java.lang.IndexOutOfBoundsException"
       - "java.io.File.canRead():java.lang.SecurityException"
@@ -81,6 +84,7 @@ datadog:
       - "java.nio.ByteBuffer.putShort(kotlin.Short):java.nio.BufferOverflowException,java.nio.ReadOnlyBufferException"
       - "java.nio.channels.FileChannel.lock():java.io.IOException,java.lang.IllegalStateException"
       - "java.nio.channels.FileLock.release():java.io.IOException"
+      - "java.nio.charset.CharsetEncoder.encode(java.nio.CharBuffer?, java.nio.ByteBuffer?, kotlin.Boolean):java.lang.IllegalStateException,java.nio.charset.CoderMalfunctionError,java.lang.NullPointerException"
       # endregion
       # region Java Concurrency
       - "java.lang.Thread.constructor(java.lang.Runnable?, kotlin.String?):java.lang.NullPointerException,java.lang.SecurityException,java.lang.IllegalArgumentException"

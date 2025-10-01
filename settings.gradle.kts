@@ -23,6 +23,7 @@ include(":features:dd-sdk-android-trace-otel")
 include(":features:dd-sdk-android-profiling")
 
 // INTEGRATION LIBRARIES
+include(":integrations:dd-sdk-android-apollo")
 include(":integrations:dd-sdk-android-coil")
 include(":integrations:dd-sdk-android-compose")
 include(":integrations:dd-sdk-android-fresco")

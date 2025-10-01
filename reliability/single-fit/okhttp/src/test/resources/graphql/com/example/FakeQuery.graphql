@@ -1,0 +1,7 @@
+query FakeQuery($userId: ID!, $filters: [String!]) {
+  user(id: $userId, filters: $filters) {
+    id
+    name
+    email
+  }
+}

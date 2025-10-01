@@ -210,7 +210,6 @@ internal class RumViewScopeTest {
 
     @Forgery
     lateinit var fakeViewType: RumViewType
-
     var fakeSourceViewEvent: ViewEvent.ViewEventSource? = null
     var fakeSourceErrorEvent: ErrorEvent.ErrorEventSource? = null
     var fakeSourceActionEvent: ActionEvent.ActionEventSource? = null

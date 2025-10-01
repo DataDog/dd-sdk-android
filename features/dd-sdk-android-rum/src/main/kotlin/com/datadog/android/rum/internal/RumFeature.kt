@@ -334,6 +334,7 @@ internal class RumFeature(
         cleanupInfoProviders()
 
         GlobalRumMonitor.unregister(sdkCore)
+        initialized.set(false)
     }
 
     // endregion
