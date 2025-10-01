@@ -309,4 +309,28 @@ internal class DatadogEvaluationContextTest {
         // Then
         assertThat(ddEvalContext!!.isValid()).isTrue()
     }
+
+    @Test
+    fun `M return false W isValid() { context with blank targeting key }`() {
+        // Given
+        val invalidContext = DatadogEvaluationContext("", mapOf("plan" to "premium"))
+
+        // When
+        val isValid = invalidContext.isValid()
+
+        // Then
+        assertThat(isValid).isFalse()
+    }
+
+    @Test
+    fun `M return false W isValid() { context with whitespace targeting key }`() {
+        // Given
+        val invalidContext = DatadogEvaluationContext("   ", mapOf("plan" to "premium"))
+
+        // When
+        val isValid = invalidContext.isValid()
+
+        // Then
+        assertThat(isValid).isFalse()
+    }
 }

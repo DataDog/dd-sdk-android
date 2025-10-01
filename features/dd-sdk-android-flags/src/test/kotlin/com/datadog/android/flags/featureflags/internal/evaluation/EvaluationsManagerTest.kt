@@ -170,6 +170,14 @@ internal class EvaluationsManagerTest {
         )
         verify(mockInternalLogger).log(
             eq(InternalLogger.Level.WARN),
+            eq(InternalLogger.Target.USER),
+            any<() -> String>(),
+            anyOrNull<Throwable>(),
+            any<Boolean>(),
+            anyOrNull<Map<String, Any?>>()
+        )
+        verify(mockInternalLogger).log(
+            eq(InternalLogger.Level.ERROR),
             eq(InternalLogger.Target.MAINTAINER),
             any<() -> String>(),
             anyOrNull<Throwable>(),
