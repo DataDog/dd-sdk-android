@@ -3,16 +3,6 @@ public final class com/datadog/android/rum/CloseableExtKt {
 	public static synthetic fun useMonitored$default (Ljava/io/Closeable;Lcom/datadog/android/api/SdkCore;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Ljava/lang/Object;
 }
 
-public final class com/datadog/android/rum/DdRumContentProvider : android/content/ContentProvider {
-	public fun <init> ()V
-	public fun delete (Landroid/net/Uri;Ljava/lang/String;[Ljava/lang/String;)I
-	public fun getType (Landroid/net/Uri;)Ljava/lang/String;
-	public fun insert (Landroid/net/Uri;Landroid/content/ContentValues;)Landroid/net/Uri;
-	public fun onCreate ()Z
-	public fun query (Landroid/net/Uri;[Ljava/lang/String;Ljava/lang/String;[Ljava/lang/String;Ljava/lang/String;)Landroid/database/Cursor;
-	public fun update (Landroid/net/Uri;Landroid/content/ContentValues;Ljava/lang/String;[Ljava/lang/String;)I
-}
-
 public abstract interface annotation class com/datadog/android/rum/ExperimentalRumApi : java/lang/annotation/Annotation {
 }
 

@@ -325,6 +325,23 @@ public final class com/datadog/android/internal/utils/ThrowableExtKt {
 	public static final fun loggableStackTrace (Ljava/lang/Throwable;)Ljava/lang/String;
 }
 
+public final class com/datadog/android/rum/DdRumContentProvider : android/content/ContentProvider {
+	public static final field Companion Lcom/datadog/android/rum/DdRumContentProvider$Companion;
+	public fun <init> ()V
+	public fun delete (Landroid/net/Uri;Ljava/lang/String;[Ljava/lang/String;)I
+	public fun getType (Landroid/net/Uri;)Ljava/lang/String;
+	public fun insert (Landroid/net/Uri;Landroid/content/ContentValues;)Landroid/net/Uri;
+	public fun onCreate ()Z
+	public fun query (Landroid/net/Uri;[Ljava/lang/String;Ljava/lang/String;[Ljava/lang/String;Ljava/lang/String;)Landroid/database/Cursor;
+	public fun update (Landroid/net/Uri;Landroid/content/ContentValues;Ljava/lang/String;[Ljava/lang/String;)I
+}
+
+public final class com/datadog/android/rum/DdRumContentProvider$Companion {
+	public final fun getCreateTimeNs ()J
+	public final fun getProcessImportance ()I
+	public final fun setProcessImportance (I)V
+}
+
 public abstract interface annotation class com/datadog/tools/annotation/NoOpImplementation : java/lang/annotation/Annotation {
 	public abstract fun publicNoOpImplementation ()Z
 }
