@@ -34,11 +34,9 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.inOrder
-import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
-import java.lang.IllegalStateException
 import java.lang.ref.WeakReference
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
@@ -89,14 +87,15 @@ class RumTTIDReporterImplTest {
         weakActivity = WeakReference(activity)
 
         scenario = RumStartupScenario.Cold(
-            initialTimeNanos = 0,
+            initialTimeNs = 0,
             hasSavedInstanceStateBundle = true,
-            activity = weakActivity
+            activity = weakActivity,
+            appStartActivityOnCreateGapNs = 0.seconds.inWholeNanoseconds
         )
 
         reporter = RumTTIDReporterImpl(
             internalLogger = internalLogger,
-            timeProviderNanos = { currentTime.inWholeNanoseconds },
+            timeProviderNs = { currentTime.inWholeNanoseconds },
             windowCallbacksRegistry = windowCallbackRegistry,
             handler = handler,
             listener = listener
@@ -148,7 +147,9 @@ class RumTTIDReporterImplTest {
                 firstValue.onDraw()
             }
 
-            verify(listener).onTTIDCalculated(scenario, 1.seconds)
+            verify(
+                listener
+            ).onTTIDCalculated(RumTTIDInfo(scenario = scenario, durationNs = 1.seconds.inWholeNanoseconds))
             verify(viewTreeObserver).isAlive
             verify(viewTreeObserver).removeOnDrawListener(any())
             verifyNoMoreInteractions()
@@ -176,7 +177,9 @@ class RumTTIDReporterImplTest {
                 firstValue.onDraw()
             }
 
-            verify(listener).onTTIDCalculated(scenario, 1.seconds)
+            verify(
+                listener
+            ).onTTIDCalculated(RumTTIDInfo(scenario = scenario, durationNs = 1.seconds.inWholeNanoseconds))
             verify(viewTreeObserver).isAlive
             verify(viewTreeObserver).removeOnDrawListener(any())
             verifyNoMoreInteractions()
@@ -217,7 +220,9 @@ class RumTTIDReporterImplTest {
                 firstValue.onDraw()
             }
 
-            verify(listener).onTTIDCalculated(scenario, 1.seconds)
+            verify(
+                listener
+            ).onTTIDCalculated(RumTTIDInfo(scenario = scenario, durationNs = 1.seconds.inWholeNanoseconds))
             verify(viewTreeObserver).isAlive
             verify(viewTreeObserver).removeOnDrawListener(any())
             verifyNoMoreInteractions()
@@ -279,7 +284,9 @@ class RumTTIDReporterImplTest {
                 firstValue.onDraw()
             }
 
-            verify(listener).onTTIDCalculated(scenario, 1.seconds)
+            verify(
+                listener
+            ).onTTIDCalculated(RumTTIDInfo(scenario = scenario, durationNs = 1.seconds.inWholeNanoseconds))
 
             verify(viewTreeObserver).isAlive
             verify(viewTreeObserver).removeOnDrawListener(any())

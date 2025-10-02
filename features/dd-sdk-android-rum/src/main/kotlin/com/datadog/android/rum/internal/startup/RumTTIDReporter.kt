@@ -10,11 +10,10 @@ import android.os.Handler
 import android.os.Looper
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.rum.internal.utils.window.RumWindowCallbacksRegistryImpl
-import kotlin.time.Duration
 
 internal interface RumTTIDReporter {
     interface Listener {
-        fun onTTIDCalculated(scenario: RumStartupScenario, duration: Duration)
+        fun onTTIDCalculated(info: RumTTIDInfo)
     }
 
     fun onAppStartupDetected(scenario: RumStartupScenario)
@@ -23,7 +22,7 @@ internal interface RumTTIDReporter {
         fun create(sdkCore: InternalSdkCore, listener: Listener): RumTTIDReporter {
             return RumTTIDReporterImpl(
                 internalLogger = sdkCore.internalLogger,
-                timeProviderNanos = { System.nanoTime() },
+                timeProviderNs = { System.nanoTime() },
                 windowCallbacksRegistry = RumWindowCallbacksRegistryImpl(),
                 handler = Handler(Looper.getMainLooper()),
                 listener = listener

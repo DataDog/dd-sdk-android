@@ -27,9 +27,9 @@ internal interface RumAppStartupDetector {
             return RumAppStartupDetectorImpl(
                 application = application,
                 buildSdkVersionProvider = BuildSdkVersionProvider.DEFAULT,
-                appStartupTimeProvider = { sdkCore.appStartTimeNs },
+                appStartupTimeProviderNs = { sdkCore.appStartTimeNs },
                 processImportanceProvider = { DdRumContentProvider.processImportance },
-                timeProviderNanos = { System.nanoTime() },
+                timeProviderNs = { System.nanoTime() },
                 listener
             )
         }
