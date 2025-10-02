@@ -303,12 +303,12 @@ interface RumMonitor {
     fun stopSession()
 
     /**
-     * Adds view loading time RUM active view based on the time elapsed since the view was started.
+     * Adds view loading time to the active view based on the time elapsed since the view was started.
      * The view loading time is automatically calculated as the difference between the current time
      * and the start time of the view.
      * This method should be called only once per view.
      * If no view is started or active, this method does nothing.
-     * @param overwrite which controls if the method overwrites the previously calculated view loading time.
+     * @param overwrite controls if the method overwrites the previously calculated view loading time.
      */
     @ExperimentalRumApi
     fun addViewLoadingTime(overwrite: Boolean)
