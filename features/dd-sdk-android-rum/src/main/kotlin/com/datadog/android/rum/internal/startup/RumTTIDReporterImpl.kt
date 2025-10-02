@@ -95,10 +95,13 @@ internal class RumTTIDReporterImpl(
     }
 
     private fun onFirstDraw(scenario: RumStartupScenario) {
-        val duration = (timeProviderNanos() - scenario.initialTimeNanos).nanoseconds
+        val now = timeProviderNanos()
+        val duration = (now - scenario.initialTimeNanos).nanoseconds
 
         val block = Runnable {
-            listener.onTTIDCalculated(scenario, duration)
+            listener.onTTIDCalculated(
+                RumTTIDInfo(scenario = scenario, duration = duration)
+            )
         }
 
         handler.sendMessageAtFrontOfQueue(

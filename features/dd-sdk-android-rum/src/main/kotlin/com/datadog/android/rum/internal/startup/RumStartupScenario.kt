@@ -8,6 +8,7 @@ package com.datadog.android.rum.internal.startup
 
 import android.app.Activity
 import java.lang.ref.WeakReference
+import kotlin.time.Duration
 
 internal sealed interface RumStartupScenario {
     val initialTimeNanos: Long
@@ -17,13 +18,15 @@ internal sealed interface RumStartupScenario {
     class Cold(
         override val initialTimeNanos: Long,
         override val hasSavedInstanceStateBundle: Boolean,
-        override val activity: WeakReference<Activity>
+        override val activity: WeakReference<Activity>,
+        val gap: Duration
     ) : RumStartupScenario
 
     class WarmFirstActivity(
         override val initialTimeNanos: Long,
         override val hasSavedInstanceStateBundle: Boolean,
-        override val activity: WeakReference<Activity>
+        override val activity: WeakReference<Activity>,
+        val gap: Duration
     ) : RumStartupScenario
 
     class WarmAfterActivityDestroyed(
@@ -31,4 +34,16 @@ internal sealed interface RumStartupScenario {
         override val hasSavedInstanceStateBundle: Boolean,
         override val activity: WeakReference<Activity>
     ) : RumStartupScenario
+}
+
+internal val RumStartupScenario.name: String get() = when (this) {
+    is RumStartupScenario.Cold -> "cold"
+    is RumStartupScenario.WarmAfterActivityDestroyed -> "warm_after_activity_destroyed"
+    is RumStartupScenario.WarmFirstActivity -> "warm_first_activity"
+}
+
+internal val RumStartupScenario.gap: Duration? get() = when (this) {
+    is RumStartupScenario.Cold -> gap
+    is RumStartupScenario.WarmFirstActivity -> gap
+    is RumStartupScenario.WarmAfterActivityDestroyed -> null
 }

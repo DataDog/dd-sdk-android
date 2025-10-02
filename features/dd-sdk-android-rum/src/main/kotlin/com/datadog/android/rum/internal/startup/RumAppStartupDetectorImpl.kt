@@ -86,13 +86,15 @@ internal class RumAppStartupDetectorImpl(
                     RumStartupScenario.WarmFirstActivity(
                         initialTimeNanos = now,
                         hasSavedInstanceStateBundle = hasSavedInstanceStateBundle,
-                        activity = weakActivity
+                        activity = weakActivity,
+                        gap = gap
                     )
                 } else {
                     RumStartupScenario.Cold(
                         initialTimeNanos = processStartTime,
                         hasSavedInstanceStateBundle = hasSavedInstanceStateBundle,
-                        activity = weakActivity
+                        activity = weakActivity,
+                        gap = gap
                     )
                 }
             } else {
