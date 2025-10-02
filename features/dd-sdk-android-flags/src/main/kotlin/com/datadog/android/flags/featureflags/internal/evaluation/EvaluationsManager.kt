@@ -46,17 +46,11 @@ internal class EvaluationsManager(
             val flagsMap = if (response != null) {
                 precomputeMapper.map(response)
             } else {
-                // Log warning to user - actionable information about feature flag availability
+                // Log warning to both user and maintainer about network failure
                 internalLogger.log(
                     InternalLogger.Level.WARN,
-                    InternalLogger.Target.USER,
-                    { NETWORK_REQUEST_FAILED_USER_MESSAGE }
-                )
-                // Log error to maintainer - technical details for debugging
-                internalLogger.log(
-                    InternalLogger.Level.ERROR,
-                    InternalLogger.Target.MAINTAINER,
-                    { "Network request failed for context ${context.targetingKey}, using empty flags" }
+                    targets = listOf(InternalLogger.Target.USER, InternalLogger.Target.MAINTAINER),
+                    { NETWORK_REQUEST_FAILED_MESSAGE }
                 )
                 emptyMap()
             }
@@ -72,7 +66,7 @@ internal class EvaluationsManager(
 
     companion object {
         private const val FETCH_AND_STORE_OPERATION_NAME = "Fetch and store flags for evaluation context"
-        private const val NETWORK_REQUEST_FAILED_USER_MESSAGE =
+        private const val NETWORK_REQUEST_FAILED_MESSAGE =
             "Unable to fetch feature flags. Please check your network connection."
     }
 }
