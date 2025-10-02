@@ -96,7 +96,7 @@ interface FlagsClient {
         /**
          * Composite key for storing multiple named clients per SDK core.
          */
-        internal data class ClientKey(val sdkCore: SdkCore, val name: String)
+        private data class ClientKey(val sdkCore: SdkCore, val name: String)
 
         private const val DEFAULT_CLIENT_NAME = "default"
 
