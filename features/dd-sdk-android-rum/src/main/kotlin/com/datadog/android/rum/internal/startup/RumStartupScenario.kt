@@ -10,25 +10,39 @@ import android.app.Activity
 import java.lang.ref.WeakReference
 
 internal sealed interface RumStartupScenario {
-    val initialTimeNanos: Long
+    val initialTimeNs: Long
     val hasSavedInstanceStateBundle: Boolean
     val activity: WeakReference<Activity>
 
     class Cold(
-        override val initialTimeNanos: Long,
+        override val initialTimeNs: Long,
         override val hasSavedInstanceStateBundle: Boolean,
-        override val activity: WeakReference<Activity>
+        override val activity: WeakReference<Activity>,
+        val appStartActivityOnCreateGapNs: Long
     ) : RumStartupScenario
 
     class WarmFirstActivity(
-        override val initialTimeNanos: Long,
+        override val initialTimeNs: Long,
         override val hasSavedInstanceStateBundle: Boolean,
-        override val activity: WeakReference<Activity>
+        override val activity: WeakReference<Activity>,
+        val appStartActivityOnCreateGapNs: Long
     ) : RumStartupScenario
 
     class WarmAfterActivityDestroyed(
-        override val initialTimeNanos: Long,
+        override val initialTimeNs: Long,
         override val hasSavedInstanceStateBundle: Boolean,
         override val activity: WeakReference<Activity>
     ) : RumStartupScenario
+}
+
+internal val RumStartupScenario.name: String get() = when (this) {
+    is RumStartupScenario.Cold -> "cold"
+    is RumStartupScenario.WarmAfterActivityDestroyed -> "warm_after_activity_destroyed"
+    is RumStartupScenario.WarmFirstActivity -> "warm_first_activity"
+}
+
+internal val RumStartupScenario.appStartActivityOnCreateGapNs: Long? get() = when (this) {
+    is RumStartupScenario.Cold -> appStartActivityOnCreateGapNs
+    is RumStartupScenario.WarmFirstActivity -> appStartActivityOnCreateGapNs
+    is RumStartupScenario.WarmAfterActivityDestroyed -> null
 }

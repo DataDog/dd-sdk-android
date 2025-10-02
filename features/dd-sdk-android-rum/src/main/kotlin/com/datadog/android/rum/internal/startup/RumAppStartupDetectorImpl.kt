@@ -13,15 +13,14 @@ import android.os.Build
 import android.os.Bundle
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import java.lang.ref.WeakReference
-import kotlin.time.Duration.Companion.nanoseconds
 import kotlin.time.Duration.Companion.seconds
 
 internal class RumAppStartupDetectorImpl(
     private val application: Application,
     private val buildSdkVersionProvider: BuildSdkVersionProvider,
-    private val appStartupTimeProvider: () -> Long,
+    private val appStartupTimeProviderNs: () -> Long,
     private val processImportanceProvider: () -> Int,
-    private val timeProviderNanos: () -> Long,
+    private val timeProviderNs: () -> Long,
     private val listener: RumAppStartupDetector.Listener
 ) : RumAppStartupDetector, Application.ActivityLifecycleCallbacks {
 
@@ -69,35 +68,37 @@ internal class RumAppStartupDetectorImpl(
 
     private fun onBeforeActivityCreated(activity: Activity, savedInstanceState: Bundle?) {
         numberOfActivities++
-        val now = timeProviderNanos()
+        val nowNs = timeProviderNs()
 
         if (numberOfActivities == 1 && !isChangingConfigurations) {
-            val processStartTime = appStartupTimeProvider()
+            val processStartTimeNs = appStartupTimeProviderNs()
 
             val processStartedInForeground =
                 processImportanceProvider() == ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND
 
-            val gap = (now - processStartTime).nanoseconds
+            val gapNs = nowNs - processStartTimeNs
             val hasSavedInstanceStateBundle = savedInstanceState != null
             val weakActivity = WeakReference(activity)
 
             val scenario = if (isFirstActivityForProcess) {
-                if (!processStartedInForeground || gap > START_GAP_THRESHOLD) {
+                if (!processStartedInForeground || gapNs > START_GAP_THRESHOLD_NS) {
                     RumStartupScenario.WarmFirstActivity(
-                        initialTimeNanos = now,
+                        initialTimeNs = nowNs,
                         hasSavedInstanceStateBundle = hasSavedInstanceStateBundle,
-                        activity = weakActivity
+                        activity = weakActivity,
+                        appStartActivityOnCreateGapNs = gapNs
                     )
                 } else {
                     RumStartupScenario.Cold(
-                        initialTimeNanos = processStartTime,
+                        initialTimeNs = processStartTimeNs,
                         hasSavedInstanceStateBundle = hasSavedInstanceStateBundle,
-                        activity = weakActivity
+                        activity = weakActivity,
+                        appStartActivityOnCreateGapNs = gapNs
                     )
                 }
             } else {
                 RumStartupScenario.WarmAfterActivityDestroyed(
-                    initialTimeNanos = now,
+                    initialTimeNs = nowNs,
                     hasSavedInstanceStateBundle = hasSavedInstanceStateBundle,
                     activity = weakActivity
                 )
@@ -114,6 +115,6 @@ internal class RumAppStartupDetectorImpl(
     }
 
     companion object {
-        private val START_GAP_THRESHOLD = 5.seconds
+        private val START_GAP_THRESHOLD_NS = 5.seconds.inWholeNanoseconds
     }
 }
