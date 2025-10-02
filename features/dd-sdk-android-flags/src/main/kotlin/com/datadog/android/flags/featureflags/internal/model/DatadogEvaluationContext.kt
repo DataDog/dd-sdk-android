@@ -13,8 +13,8 @@ import com.datadog.android.flags.featureflags.model.EvaluationContext
  * Internal representation of evaluation context that contains only normalized
  * attributes that Datadog's targeting system can parse and use in evaluation rules.
  *
- * This class handles the conversion from the flexible public EvaluationContext
- * to the strictly typed format required by the API (Map<String, String>).
+ * This class handles the conversion from the flexible public [EvaluationContext]
+ * to the strictly typed format required by the API (`Map<String, String>`).
  *
  * Key features:
  * - Validates targeting key is not blank/whitespace-only
@@ -25,10 +25,10 @@ import com.datadog.android.flags.featureflags.model.EvaluationContext
  * @param targetingKey The identifier used for bucketing and targeting. Must remain consistent
  *                     for the same entity to ensure consistent flag evaluation across requests.
  *                     Must not be blank or whitespace-only.
- * @param attributes Map of normalized attributes where all values are String representations
- *                   of the original attribute values from the public EvaluationContext.
+ * @param attributes Map of normalized attributes where all values are [String] representations
+ *                   of the original attribute values from the public [EvaluationContext].
  */
-internal class DatadogEvaluationContext internal constructor(
+internal class DatadogEvaluationContext constructor(
     /** The identifier used for bucketing and targeting in flag evaluation. */
     val targetingKey: String,
     val attributes: Map<String, String>
@@ -48,12 +48,12 @@ internal class DatadogEvaluationContext internal constructor(
             "Null attribute value for key '%s'. Attribute skipped."
 
         /**
-         * Creates a DatadogEvaluationContext from a public EvaluationContext,
-         * normalizing all attributes to String key-value pairs that the API can handle.
+         * Creates a [DatadogEvaluationContext] from a public [EvaluationContext],
+         * normalizing all attributes to [String] key-value pairs that the API can handle.
          *
          * This method performs validation and normalization:
          * - Validates that the targeting key is not blank or whitespace-only
-         * - Converts all attribute values to String representations
+         * - Converts all attribute values to [String] representations
          * - Filters out null values and unsupported types (logs warnings)
          * - Returns null for invalid contexts (blank targeting keys)
          *

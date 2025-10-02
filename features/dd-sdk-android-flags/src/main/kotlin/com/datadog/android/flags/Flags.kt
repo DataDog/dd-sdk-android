@@ -79,7 +79,7 @@ object Flags {
 
         // Get required context parameters
         val clientToken = datadogContext?.clientToken
-        val site = datadogContext?.site?.name
+        val site = datadogContext?.site
         val env = datadogContext?.env
 
         // Validate required parameters
@@ -102,12 +102,10 @@ object Flags {
         // Create FlagsContext combining core SDK context with feature configuration
         val flagsContext = FlagsContext.create(datadogContext, applicationId, flagsFeature.flagsConfiguration)
 
-        // Create repository
         val flagsRepository = DefaultFlagsRepository(
             featureSdkCore = sdkCore
         )
 
-        // Create network manager and dependencies
         val flagsNetworkManager = DefaultFlagsNetworkManager(
             internalLogger = sdkCore.internalLogger,
             flagsContext = flagsContext
@@ -115,7 +113,6 @@ object Flags {
 
         val precomputeMapper = PrecomputeMapper(sdkCore.internalLogger)
 
-        // Create evaluations manager
         val evaluationsManager = EvaluationsManager(
             executorService = executorService,
             internalLogger = sdkCore.internalLogger,

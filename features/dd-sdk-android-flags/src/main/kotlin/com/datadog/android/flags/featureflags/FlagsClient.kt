@@ -15,52 +15,65 @@ import com.datadog.android.flags.featureflags.model.EvaluationContext
 import org.json.JSONObject
 
 /**
- * An interface for defining Flags clients.
+ * Client interface for evaluating feature flags and experiments.
+ *
+ * This interface defines the public API that applications use to retrieve feature flag values.
+ * It follows the OpenFeature specification closely, to simplify implementing the OpenFeature
+ * Provider API on top.
  */
 interface FlagsClient {
     /**
-     * Set the context for the client.
-     * @param context The evaluation context containing targeting key and attributes.
+     * Sets the [EvaluationContext] for flag resolution.
+     *
+     * The context is used to determine which flag values to return based on user targeting
+     * rules. This method triggers a background fetch of updated flag evaluations.
+     *
+     * @param context The [EvaluationContext] containing targeting key and attributes.
      */
     fun setContext(context: EvaluationContext)
 
     /**
-     * Resolve a Boolean flag value.
-     * @param flagKey The name of the key to query.
-     * @param defaultValue The value to return if the key cannot be retrieved.
-     * @return The value of the flag, or the default value if it cannot be retrieved.
+     * Resolves a boolean flag value.
+     *
+     * @param flagKey The unique identifier of the flag to resolve.
+     * @param defaultValue The value to return if the flag cannot be retrieved or parsed.
+     * @return The boolean value of the flag, or the default value if unavailable.
      */
     fun resolveBooleanValue(flagKey: String, defaultValue: Boolean): Boolean
 
     /**
-     * Resolve a String flag value.
-     * @param flagKey The name of the key to query.
-     * @param defaultValue The value to return if the key cannot be retrieved.
-     * @return The value of the flag, or the default value if it cannot be retrieved.
+     * Resolves a string flag value.
+     *
+     * @param flagKey The unique identifier of the flag to resolve.
+     * @param defaultValue The value to return if the flag cannot be retrieved or parsed.
+     * @return The string value of the flag, or the default value if unavailable.
      */
     fun resolveStringValue(flagKey: String, defaultValue: String): String
 
     /**
-     * Resolve a Number flag value.
-     * @param flagKey The name of the key to query.
-     * @param defaultValue The value to return if the key cannot be retrieved.
-     * @return The value of the flag, or the default value if it cannot be retrieved.
+     * Resolves a double flag value.
+     *
+     * @param flagKey The unique identifier of the flag to resolve.
+     * @param defaultValue The value to return if the flag cannot be retrieved or parsed.
+     * @return The double value of the flag, or the default value if unavailable.
      */
-    fun resolveNumberValue(flagKey: String, defaultValue: Number): Number
+    fun resolveDoubleValue(flagKey: String, defaultValue: Double): Double
 
     /**
-     * Resolve a Int flag value.
-     * @param flagKey The name of the key to query.
-     * @param defaultValue The value to return if the key cannot be retrieved.
-     * @return The value of the flag, or the default value if it cannot be retrieved.
+     * Resolves an integer flag value.
+     *
+     * @param flagKey The unique identifier of the flag to resolve.
+     * @param defaultValue The value to return if the flag cannot be retrieved or parsed.
+     * @return The integer value of the flag, or the default value if unavailable.
      */
     fun resolveIntValue(flagKey: String, defaultValue: Int): Int
 
     /**
-     * Resolve a Structure flag value.
-     * @param flagKey The name of the key to query.
-     * @param defaultValue The value to return if the key cannot be retrieved.
-     * @return The value of the flag, or the default value if it cannot be retrieved.
+     * Resolves a structured flag value as a JSON object.
+     *
+     * @param flagKey The unique identifier of the flag to resolve.
+     * @param defaultValue The value to return if the flag cannot be retrieved or parsed.
+     * @return The JSON object value of the flag, or the default value if unavailable.
      */
     fun resolveStructureValue(flagKey: String, defaultValue: JSONObject): JSONObject
 
@@ -82,12 +95,12 @@ interface FlagsClient {
          *
          * @param sdkCore the [SdkCore] instance to retrieve the client for. If not provided,
          * the default Datadog SDK instance will be used.
-         * @return the [FlagsClient] associated with the given SDK core, or a [NoOpFlagsClient]
+         * @return the [FlagsClient] associated with the given SDK core, or a no-op client.
          * if no client is registered for this SDK core.
          */
         @JvmOverloads
         @JvmStatic
-        fun instance(sdkCore: SdkCore = Datadog.getInstance()): FlagsClient = synchronized(registeredClients) {
+        fun get(sdkCore: SdkCore = Datadog.getInstance()): FlagsClient = synchronized(registeredClients) {
             val client = registeredClients[sdkCore]
             if (client == null) {
                 val errorMsg = "No FlagsClient for the SDK instance with name \${sdkCore.name} " +
@@ -108,7 +121,7 @@ interface FlagsClient {
         // region Internal
 
         /**
-         * Register a [FlagsClient] with an [SdkCore] to back the behaviour of the [instance] function.
+         * Register a [FlagsClient] with an [SdkCore] to back the behaviour of the [get] function.
          *
          * This method is thread-safe and implements a one-time registration pattern. Once a client
          * has been registered for a specific SDK core, all subsequent registration attempts for that
@@ -133,7 +146,6 @@ interface FlagsClient {
                     )
                     false
                 } else {
-                    @Suppress("UnsafeThirdPartyFunctionCall") // User provided callable, let it throw
                     registeredClients[sdkCore] = client
                     true
                 }

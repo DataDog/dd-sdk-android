@@ -108,45 +108,45 @@ internal class NoOpFlagsClientTest {
 
     // endregion
 
-    // region resolveNumberValue()
+    // region resolveDoubleValue()
 
     @Test
-    fun `M return default value W resolveNumberValue() {double}`(forge: Forge) {
+    fun `M return default value W resolveDoubleValue() {double}`(forge: Forge) {
         // Given
         val fakeFlagKey = forge.anAlphabeticalString()
         val fakeDefaultValue = forge.aDouble()
 
         // When
-        val result = testedClient.resolveNumberValue(fakeFlagKey, fakeDefaultValue)
+        val result = testedClient.resolveDoubleValue(fakeFlagKey, fakeDefaultValue.toDouble())
 
         // Then
         assertThat(result).isEqualTo(fakeDefaultValue)
     }
 
     @Test
-    fun `M return default value W resolveNumberValue() {float}`(forge: Forge) {
+    fun `M return default value W resolveDoubleValue() {float}`(forge: Forge) {
         // Given
         val fakeFlagKey = forge.anAlphabeticalString()
         val fakeDefaultValue = forge.aFloat()
 
         // When
-        val result = testedClient.resolveNumberValue(fakeFlagKey, fakeDefaultValue)
+        val result = testedClient.resolveDoubleValue(fakeFlagKey, fakeDefaultValue.toDouble())
 
         // Then
-        assertThat(result).isEqualTo(fakeDefaultValue)
+        assertThat(result).isEqualTo(fakeDefaultValue.toDouble())
     }
 
     @Test
-    fun `M return default value W resolveNumberValue() {long}`(forge: Forge) {
+    fun `M return default value W resolveDoubleValue() {long}`(forge: Forge) {
         // Given
         val fakeFlagKey = forge.anAlphabeticalString()
         val fakeDefaultValue = forge.aLong()
 
         // When
-        val result = testedClient.resolveNumberValue(fakeFlagKey, fakeDefaultValue)
+        val result = testedClient.resolveDoubleValue(fakeFlagKey, fakeDefaultValue.toDouble())
 
         // Then
-        assertThat(result).isEqualTo(fakeDefaultValue)
+        assertThat(result).isEqualTo(fakeDefaultValue.toDouble())
     }
 
     // endregion

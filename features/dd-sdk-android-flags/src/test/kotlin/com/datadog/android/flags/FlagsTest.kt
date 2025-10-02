@@ -49,14 +49,8 @@ internal class FlagsTest {
     @Mock
     lateinit var mockDatadogContext: DatadogContext
 
-    @Mock
-    lateinit var mockDatadogSite: DatadogSite
-
     @StringForgery
     lateinit var fakeClientToken: String
-
-    @StringForgery
-    lateinit var fakeSite: String
 
     @StringForgery
     lateinit var fakeEnv: String
@@ -67,8 +61,7 @@ internal class FlagsTest {
         whenever(mockSdkCore.createSingleThreadExecutorService(FLAGS_EXECUTOR_NAME)) doReturn mockExecutorService
 
         whenever(mockDatadogContext.clientToken) doReturn fakeClientToken
-        whenever(mockDatadogContext.site) doReturn mockDatadogSite
-        whenever(mockDatadogSite.name) doReturn fakeSite
+        whenever(mockDatadogContext.site) doReturn DatadogSite.US1
         whenever(mockDatadogContext.env) doReturn fakeEnv
         whenever(mockSdkCore.getDatadogContext()) doReturn mockDatadogContext
     }
@@ -160,7 +153,7 @@ internal class FlagsTest {
 
         // Then
         // Verify that a real client was registered by checking it's not a no-op
-        val client = FlagsClient.instance(mockSdkCore)
+        val client = FlagsClient.get(mockSdkCore)
         assertThat(client).isNotInstanceOf(NoOpFlagsClient::class.java)
     }
 
@@ -178,7 +171,7 @@ internal class FlagsTest {
 
         // Then
         // Verify that no real client was registered by checking it's a no-op
-        val client = FlagsClient.instance(mockSdkCore)
+        val client = FlagsClient.get(mockSdkCore)
         assertThat(client).isInstanceOf(NoOpFlagsClient::class.java)
     }
 

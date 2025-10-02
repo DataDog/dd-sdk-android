@@ -48,7 +48,7 @@ internal class NoOpFlagsClient : FlagsClient {
      * @param defaultValue The value to return.
      * @return The provided default value.
      */
-    override fun resolveNumberValue(flagKey: String, defaultValue: Number): Number = defaultValue
+    override fun resolveDoubleValue(flagKey: String, defaultValue: Double): Double = defaultValue
 
     /**
      * Returns the provided default value without any flag evaluation.

@@ -6,9 +6,6 @@
 
 package com.datadog.android.flags.featureflags.internal.model
 
-import com.datadog.android.api.context.DatadogContext
-import com.datadog.android.flags.FlagsConfiguration
-
 /**
  * Internal context containing all configuration needed for the Flags feature.
  *
@@ -26,7 +23,7 @@ import com.datadog.android.flags.FlagsConfiguration
 internal data class FlagsContext(
     val applicationId: String?,
     val clientToken: String,
-    val site: String,
+    val site: DatadogSite,
     val env: String,
     val enableExposureLogging: Boolean = false,
     val customEndpointUrl: String? = null,
@@ -48,7 +45,7 @@ internal data class FlagsContext(
         ): FlagsContext = FlagsContext(
             applicationId = applicationId,
             clientToken = datadogContext.clientToken,
-            site = datadogContext.site?.name ?: "",
+            site = datadogContext.site ?: DatadogSite.US1,
             env = datadogContext.env ?: "",
             enableExposureLogging = flagsConfiguration.enableExposureLogging,
             customEndpointUrl = flagsConfiguration.customEndpointUrl,

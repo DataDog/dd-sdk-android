@@ -49,11 +49,11 @@ internal class DatadogFlagsClient(
      */
     override fun setContext(context: EvaluationContext) {
         // Convert public context to internal normalized context
-        val datadogContext = DatadogEvaluationContext.from(context, featureSdkCore.internalLogger)
+        val ddEvalContext = DatadogEvaluationContext.from(context, featureSdkCore.internalLogger)
 
-        if (datadogContext != null) {
+        if (ddEvalContext != null) {
             // Pass to manager to handle network request and atomic storage
-            evaluationsManager.updateEvaluationsForContext(datadogContext)
+            evaluationsManager.updateEvaluationsForContext(ddEvalContext)
         }
         // If null, validation failed and was already logged
     }
@@ -108,7 +108,7 @@ internal class DatadogFlagsClient(
     }
 
     /**
-     * Resolves a numeric flag value from the local repository.
+     * Resolves a double flag value from the local repository.
      *
      * This method attempts to parse the stored string value as a double.
      * If parsing fails, the default value is returned. This method is thread-safe
@@ -116,9 +116,9 @@ internal class DatadogFlagsClient(
      *
      * @param flagKey The name of the flag to query. Cannot be null.
      * @param defaultValue The value to return if the flag cannot be retrieved or parsed.
-     * @return The numeric value of the flag as a Number, or the default value if unavailable or unparseable.
+     * @return The double value of the flag, or the default value if unavailable or unparseable.
      */
-    override fun resolveNumberValue(flagKey: String, defaultValue: Number): Number {
+    override fun resolveDoubleValue(flagKey: String, defaultValue: Double): Double {
         val precomputedData = flagsRepository.getPrecomputedFlag(flagKey)
         return precomputedData?.variationValue?.toDoubleOrNull() ?: defaultValue
     }
