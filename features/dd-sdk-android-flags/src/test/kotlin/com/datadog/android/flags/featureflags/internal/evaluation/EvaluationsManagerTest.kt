@@ -7,7 +7,6 @@
 package com.datadog.android.flags.featureflags.internal.evaluation
 
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.flags.featureflags.internal.model.DatadogEvaluationContext
 import com.datadog.android.flags.featureflags.internal.model.PrecomputedFlag
 import com.datadog.android.flags.featureflags.internal.repository.FlagsRepository
 import com.datadog.android.flags.featureflags.internal.repository.net.FlagsNetworkManager
@@ -95,7 +94,7 @@ internal class EvaluationsManagerTest {
     fun `M process context successfully W updateEvaluationsForContext() { valid response }`() {
         // Given
         val publicContext = EvaluationContext(fakeTargetingKey, mapOf(fakeAttributeKey to fakeAttributeValue))
-        val context = DatadogEvaluationContext.from(publicContext, mockInternalLogger)!!
+        val context = publicContext
 
         val mockResponse = """
         {
@@ -151,7 +150,7 @@ internal class EvaluationsManagerTest {
     fun `M handle network failure gracefully W updateEvaluationsForContext() { network error }`() {
         // Given
         val publicContext = EvaluationContext(fakeTargetingKey, emptyMap())
-        val context = DatadogEvaluationContext.from(publicContext, mockInternalLogger)!!
+        val context = publicContext
 
         whenever(mockFlagsNetworkManager.downloadPrecomputedFlags(context)).thenReturn(null)
 
@@ -182,7 +181,7 @@ internal class EvaluationsManagerTest {
     fun `M handle parsing failure gracefully W updateEvaluationsForContext() { invalid JSON }`() {
         // Given
         val publicContext = EvaluationContext(fakeTargetingKey, emptyMap())
-        val context = DatadogEvaluationContext.from(publicContext, mockInternalLogger)!!
+        val context = publicContext
 
         val invalidResponse = "{ invalid json }"
         whenever(mockFlagsNetworkManager.downloadPrecomputedFlags(context)).thenReturn(invalidResponse)
@@ -199,7 +198,7 @@ internal class EvaluationsManagerTest {
     fun `M log processing start W updateEvaluationsForContext() { any context }`() {
         // Given
         val publicContext = EvaluationContext(fakeTargetingKey, emptyMap())
-        val context = DatadogEvaluationContext.from(publicContext, mockInternalLogger)!!
+        val context = publicContext
 
         whenever(mockFlagsNetworkManager.downloadPrecomputedFlags(context)).thenReturn(null)
 

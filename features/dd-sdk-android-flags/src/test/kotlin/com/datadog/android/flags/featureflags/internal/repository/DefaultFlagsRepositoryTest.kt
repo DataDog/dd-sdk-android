@@ -8,8 +8,8 @@ package com.datadog.android.flags.featureflags.internal.repository
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.FeatureSdkCore
-import com.datadog.android.flags.featureflags.internal.model.DatadogEvaluationContext
 import com.datadog.android.flags.featureflags.internal.model.PrecomputedFlag
+import com.datadog.android.flags.featureflags.model.EvaluationContext
 import com.datadog.android.flags.utils.forge.ForgeConfigurator
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -55,7 +55,7 @@ internal class DefaultFlagsRepositoryTest {
     @Test
     fun `M store flags and context W setFlagsAndContext() { valid input }`(forge: Forge) {
         // Given
-        val context = DatadogEvaluationContext(
+        val context = EvaluationContext(
             targetingKey = forge.anAlphabeticalString(),
             attributes = mapOf("plan" to "premium")
         )
@@ -88,7 +88,7 @@ internal class DefaultFlagsRepositoryTest {
     @Test
     fun `M return stored context W getEvaluationContext() { after setting context }`(forge: Forge) {
         // Given
-        val context = DatadogEvaluationContext(
+        val context = EvaluationContext(
             targetingKey = forge.anAlphabeticalString(),
             attributes = mapOf("env" to "test")
         )

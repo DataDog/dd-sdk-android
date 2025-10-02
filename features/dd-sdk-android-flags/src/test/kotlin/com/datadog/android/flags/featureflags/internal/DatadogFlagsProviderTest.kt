@@ -9,7 +9,6 @@ package com.datadog.android.flags.featureflags.internal
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.flags.featureflags.internal.evaluation.EvaluationsManager
-import com.datadog.android.flags.featureflags.internal.model.DatadogEvaluationContext
 import com.datadog.android.flags.featureflags.internal.model.PrecomputedFlag
 import com.datadog.android.flags.featureflags.internal.model.PrecomputedFlagConstants
 import com.datadog.android.flags.featureflags.internal.repository.FlagsRepository
@@ -431,8 +430,8 @@ internal class DatadogFlagsProviderTest {
         val fakeAttributes = mapOf(
             "plan" to forge.anElementFrom("free", "premium", "enterprise"),
             "region" to forge.anElementFrom("us-east-1", "eu-west-1"),
-            "user_id" to forge.anInt(),
-            "is_beta" to forge.aBool()
+            "user_id" to forge.anInt().toString(),
+            "is_beta" to forge.aBool().toString()
         )
         val fakeContext = EvaluationContext(fakeTargetingKey, fakeAttributes)
 
@@ -440,17 +439,15 @@ internal class DatadogFlagsProviderTest {
         testedProvider.setContext(fakeContext)
 
         // Then
-        val contextCaptor = argumentCaptor<DatadogEvaluationContext>()
+        val contextCaptor = argumentCaptor<EvaluationContext>()
         verify(mockEvaluationsManager).updateEvaluationsForContext(contextCaptor.capture())
 
         val capturedContext = contextCaptor.firstValue
         assertThat(capturedContext.targetingKey).isEqualTo(fakeTargetingKey)
-        // Verify all attributes were normalized to strings
         assertThat(capturedContext.attributes).hasSize(4)
         assertThat(capturedContext.attributes).containsOnlyKeys("plan", "region", "user_id", "is_beta")
-        // Check specific value types are converted to strings
-        assertThat(capturedContext.attributes["user_id"]).isEqualTo(fakeAttributes["user_id"].toString())
-        assertThat(capturedContext.attributes["is_beta"]).isEqualTo(fakeAttributes["is_beta"].toString())
+        assertThat(capturedContext.attributes["user_id"]).isEqualTo(fakeAttributes["user_id"])
+        assertThat(capturedContext.attributes["is_beta"]).isEqualTo(fakeAttributes["is_beta"])
     }
 
     @Test
@@ -487,7 +484,7 @@ internal class DatadogFlagsProviderTest {
             )
             val message = lastValue()
             assertThat(message).contains("Invalid evaluation context")
-            assertThat(message).contains("targeting key is blank or whitespace-only")
+            assertThat(message).contains("targeting key cannot be blank")
         }
     }
 
@@ -499,7 +496,7 @@ internal class DatadogFlagsProviderTest {
             "user.id" to forge.anAlphabeticalString(),
             "user.plan" to forge.anElementFrom("free", "premium", "enterprise"),
             "env" to forge.anElementFrom("dev", "staging", "prod"),
-            "feature.enabled" to forge.aBool()
+            "feature.enabled" to forge.aBool().toString()
         )
         val fakeContext = EvaluationContext(fakeTargetingKey, fakeAttributes)
 
@@ -508,7 +505,7 @@ internal class DatadogFlagsProviderTest {
 
         // Then
         // Verify that the evaluations manager was called to process the context
-        verify(mockEvaluationsManager).updateEvaluationsForContext(any<DatadogEvaluationContext>())
+        verify(mockEvaluationsManager).updateEvaluationsForContext(any<EvaluationContext>())
     }
 
     // endregion

@@ -8,10 +8,10 @@ package com.datadog.android.flags.featureflags.internal.evaluation
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.internal.utils.executeSafe
-import com.datadog.android.flags.featureflags.internal.model.DatadogEvaluationContext
 import com.datadog.android.flags.featureflags.internal.repository.FlagsRepository
 import com.datadog.android.flags.featureflags.internal.repository.net.FlagsNetworkManager
 import com.datadog.android.flags.featureflags.internal.repository.net.PrecomputeMapper
+import com.datadog.android.flags.featureflags.model.EvaluationContext
 import java.util.concurrent.ExecutorService
 
 /**
@@ -31,7 +31,7 @@ internal class EvaluationsManager(
      *
      * @param context The evaluation context to process
      */
-    fun updateEvaluationsForContext(context: DatadogEvaluationContext) {
+    fun updateEvaluationsForContext(context: EvaluationContext) {
         executorService.executeSafe(
             operationName = FETCH_AND_STORE_OPERATION_NAME,
             internalLogger = internalLogger

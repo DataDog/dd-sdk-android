@@ -8,8 +8,8 @@ package com.datadog.android.flags.featureflags.internal.repository.net
 
 import com.datadog.android.DatadogSite
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.flags.featureflags.internal.model.DatadogEvaluationContext
 import com.datadog.android.flags.featureflags.internal.model.FlagsContext
+import com.datadog.android.flags.featureflags.model.EvaluationContext
 import com.datadog.android.flags.utils.forge.ForgeConfigurator
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -55,7 +55,7 @@ internal class DefaultFlagsNetworkManagerTest {
     @Test
     fun `M not throw exception W downloadPrecomputedFlags() { valid context }`(forge: Forge) {
         // Given
-        val context = DatadogEvaluationContext(
+        val context = EvaluationContext(
             targetingKey = forge.anAlphabeticalString(),
             attributes = mapOf("plan" to "premium")
         )
@@ -69,7 +69,7 @@ internal class DefaultFlagsNetworkManagerTest {
     @Test
     fun `M handle empty attributes W downloadPrecomputedFlags() { context with no attributes }`(forge: Forge) {
         // Given
-        val context = DatadogEvaluationContext(
+        val context = EvaluationContext(
             targetingKey = forge.anAlphabeticalString(),
             attributes = emptyMap()
         )
