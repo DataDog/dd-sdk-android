@@ -16,7 +16,6 @@ import com.datadog.android.flags.internal.FlagsFeature
  */
 object Flags {
 
-
     /**
      * Enables the Flags feature.
      *

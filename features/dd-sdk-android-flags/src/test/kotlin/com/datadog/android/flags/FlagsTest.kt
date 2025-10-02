@@ -12,7 +12,6 @@ import com.datadog.android.flags.internal.FlagsFeature.Companion.FLAGS_FEATURE_N
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.Mock
@@ -28,10 +27,6 @@ internal class FlagsTest {
 
     @Mock
     lateinit var mockSdkCore: FeatureSdkCore
-
-    @BeforeEach
-    fun `set up`() {
-    }
 
     // region enable()
 

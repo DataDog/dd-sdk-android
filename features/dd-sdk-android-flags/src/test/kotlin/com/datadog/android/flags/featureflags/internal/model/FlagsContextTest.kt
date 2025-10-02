@@ -119,5 +119,4 @@ internal class FlagsContextTest {
         assertThat(flagsContext.site).isEqualTo(mockDatadogSite)
         assertThat(flagsContext.env).isEqualTo(fakeEnv)
     }
-
 }

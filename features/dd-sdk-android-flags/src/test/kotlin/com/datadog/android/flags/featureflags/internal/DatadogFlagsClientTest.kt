@@ -419,10 +419,10 @@ internal class DatadogFlagsClientTest {
 
     // endregion
 
-    // region setContext()
+    // region setEvaluationContext()
 
     @Test
-    fun `M call evaluations manager W setContext() { valid targeting key and attributes }`(forge: Forge) {
+    fun `M call evaluations manager W setEvaluationContext() { valid targeting key and attributes }`(forge: Forge) {
         // Given
         val fakeTargetingKey = forge.anAlphabeticalString()
         val fakeAttributes = mapOf(
@@ -434,7 +434,7 @@ internal class DatadogFlagsClientTest {
         val fakeContext = EvaluationContext(fakeTargetingKey, fakeAttributes)
 
         // When
-        testedClient.setContext(fakeContext)
+        testedClient.setEvaluationContext(fakeContext)
 
         // Then
         val contextCaptor = argumentCaptor<EvaluationContext>()
@@ -449,26 +449,26 @@ internal class DatadogFlagsClientTest {
     }
 
     @Test
-    fun `M not call evaluations manager W setContext() { blank targeting key }`() {
+    fun `M not call evaluations manager W setEvaluationContext() { blank targeting key }`() {
         // Given
         val blankTargetingKey = ""
         val fakeAttributes = mapOf("test" to "value")
 
         // When
-        testedClient.setContext(EvaluationContext(blankTargetingKey, fakeAttributes))
+        testedClient.setEvaluationContext(EvaluationContext(blankTargetingKey, fakeAttributes))
 
         // Then
         verify(mockEvaluationsManager, never()).updateEvaluationsForContext(any())
     }
 
     @Test
-    fun `M log error and not crash W setContext() { blank targeting key }`() {
+    fun `M log error and not crash W setEvaluationContext() { blank targeting key }`() {
         // Given
         val blankTargetingKey = ""
         val fakeAttributes = mapOf("test" to "value")
 
         // When
-        testedClient.setContext(EvaluationContext(blankTargetingKey, fakeAttributes))
+        testedClient.setEvaluationContext(EvaluationContext(blankTargetingKey, fakeAttributes))
 
         // Then
         argumentCaptor<() -> String> {
@@ -487,7 +487,9 @@ internal class DatadogFlagsClientTest {
     }
 
     @Test
-    fun `M process context and store flags W setContext() { complete flow with mock repository }`(forge: Forge) {
+    fun `M process context and store flags W setEvaluationContext() { complete flow with mock repository }`(
+        forge: Forge
+    ) {
         // Given
         val fakeTargetingKey = forge.anAlphabeticalString()
         val fakeAttributes = mapOf(
@@ -499,7 +501,7 @@ internal class DatadogFlagsClientTest {
         val fakeContext = EvaluationContext(fakeTargetingKey, fakeAttributes)
 
         // When
-        testedClient.setContext(fakeContext)
+        testedClient.setEvaluationContext(fakeContext)
 
         // Then
         // Verify that the evaluations manager was called to process the context

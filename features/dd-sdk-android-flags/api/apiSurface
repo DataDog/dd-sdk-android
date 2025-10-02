@@ -10,14 +10,15 @@ data class com.datadog.android.flags.FlagsConfiguration
   companion object 
     fun defaultConfiguration(): FlagsConfiguration
 interface com.datadog.android.flags.featureflags.FlagsClient
-  fun setContext(com.datadog.android.flags.featureflags.model.EvaluationContext)
+  fun setEvaluationContext(com.datadog.android.flags.featureflags.model.EvaluationContext)
   fun resolveBooleanValue(String, Boolean): Boolean
   fun resolveStringValue(String, String): String
   fun resolveDoubleValue(String, Double): Double
   fun resolveIntValue(String, Int): Int
   fun resolveStructureValue(String, org.json.JSONObject): org.json.JSONObject
   companion object 
-    fun get(com.datadog.android.api.SdkCore = Datadog.getInstance()): FlagsClient
+    fun get(String = DEFAULT_CLIENT_NAME, com.datadog.android.api.SdkCore = Datadog.getInstance()): FlagsClient
+    fun create(String = DEFAULT_CLIENT_NAME, com.datadog.android.api.SdkCore = Datadog.getInstance()): FlagsClient
 interface com.datadog.android.flags.featureflags.FlagsProvider
   fun setContext(com.datadog.android.flags.featureflags.model.EvaluationContext)
   fun resolveBooleanValue(String, Boolean): Boolean

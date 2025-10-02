@@ -26,10 +26,10 @@ internal class NoOpFlagsClientTest {
         testedClient = NoOpFlagsClient()
     }
 
-    // region setContext()
+    // region setEvaluationContext()
 
     @Test
-    fun `M do nothing W setContext()`(forge: Forge) {
+    fun `M do nothing W setEvaluationContext()`(forge: Forge) {
         // Given
         val fakeTargetingKey = forge.anAlphabeticalString()
         val fakeAttributes = mapOf(
@@ -40,7 +40,7 @@ internal class NoOpFlagsClientTest {
         val fakeContext = EvaluationContext(fakeTargetingKey, fakeAttributes)
 
         // When
-        testedClient.setContext(fakeContext)
+        testedClient.setEvaluationContext(fakeContext)
 
         // Then
         // No exception should be thrown, method should be no-op

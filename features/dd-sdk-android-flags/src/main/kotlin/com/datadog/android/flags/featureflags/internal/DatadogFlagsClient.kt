@@ -46,7 +46,7 @@ internal class DatadogFlagsClient(
      * @param context The evaluation context containing targeting key and attributes.
      * Must contain a valid targeting key; invalid contexts are logged and ignored.
      */
-    override fun setContext(context: EvaluationContext) {
+    override fun setEvaluationContext(context: EvaluationContext) {
         // Validate targeting key is not blank
         if (context.targetingKey.isBlank()) {
             featureSdkCore.internalLogger.log(

@@ -142,7 +142,7 @@ internal class DefaultFlagsNetworkManager(
             )
             null
         }
-    } catch (e: Exception) {
+    } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
         internalLogger.log(
             level = InternalLogger.Level.ERROR,
             target = InternalLogger.Target.MAINTAINER,
