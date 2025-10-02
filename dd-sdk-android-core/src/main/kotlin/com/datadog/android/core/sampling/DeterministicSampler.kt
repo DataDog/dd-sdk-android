@@ -90,7 +90,7 @@ open class DeterministicSampler<T : Any>(
 
         /**
          * A constant value used as a multiplier for generating deterministic hash values
-         * within the `DeterministicSampler` implementation. This value is a good number for
+         * within the [DeterministicSampler] implementation. This value is a good number for
          * Knuth hashing (large, prime, fit in 64 bit long).
          */
         const val SAMPLER_HASHER: ULong = 1111111111111111111u
