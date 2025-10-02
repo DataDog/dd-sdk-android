@@ -35,7 +35,7 @@ internal class EndpointsHelperTest {
         val mockFlagsContext = FlagsContext(
             applicationId = "test-app-id",
             clientToken = "test-token",
-            site = "US1",
+            site = DatadogSite.US1,
             env = "test"
         )
         testedHelper = EndpointsHelper(mockFlagsContext, mockInternalLogger)

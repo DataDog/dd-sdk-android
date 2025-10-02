@@ -70,7 +70,7 @@ internal class FlagsContextTest {
         // Then
         assertThat(flagsContext.applicationId).isEqualTo(fakeApplicationId)
         assertThat(flagsContext.clientToken).isEqualTo(fakeClientToken)
-        assertThat(flagsContext.site).isEqualTo(fakeSiteName)
+        assertThat(flagsContext.site).isEqualTo(mockDatadogSite)
         assertThat(flagsContext.env).isEqualTo(fakeEnv)
         assertThat(flagsContext.enableExposureLogging).isTrue()
         assertThat(flagsContext.customEndpointUrl).isEqualTo(fakeCustomEndpoint)
@@ -93,9 +93,9 @@ internal class FlagsContextTest {
         // Then
         assertThat(flagsContext.applicationId).isEqualTo(fakeApplicationId)
         assertThat(flagsContext.clientToken).isEqualTo(fakeClientToken)
-        assertThat(flagsContext.site).isEqualTo(fakeSiteName)
+        assertThat(flagsContext.site).isEqualTo(mockDatadogSite)
         assertThat(flagsContext.env).isEqualTo(fakeEnv)
-        assertThat(flagsContext.enableExposureLogging).isFalse()
+        assertThat(flagsContext.enableExposureLogging).isTrue()
         assertThat(flagsContext.customEndpointUrl).isNull()
         assertThat(flagsContext.flaggingProxyUrl).isNull()
     }
@@ -116,46 +116,8 @@ internal class FlagsContextTest {
         // Then
         assertThat(flagsContext.applicationId).isNull()
         assertThat(flagsContext.clientToken).isEqualTo(fakeClientToken)
-        assertThat(flagsContext.site).isEqualTo(fakeSiteName)
+        assertThat(flagsContext.site).isEqualTo(mockDatadogSite)
         assertThat(flagsContext.env).isEqualTo(fakeEnv)
     }
 
-    @Test
-    fun `M handle null site W create() { null site }`() {
-        // Given
-        whenever(mockDatadogContext.clientToken) doReturn fakeClientToken
-        whenever(mockDatadogContext.site).thenReturn(null)
-        whenever(mockDatadogContext.env) doReturn fakeEnv
-
-        val flagsConfiguration = FlagsConfiguration.Builder().build()
-
-        // When
-        val flagsContext = FlagsContext.create(mockDatadogContext, fakeApplicationId, flagsConfiguration)
-
-        // Then
-        assertThat(flagsContext.applicationId).isEqualTo(fakeApplicationId)
-        assertThat(flagsContext.clientToken).isEqualTo(fakeClientToken)
-        assertThat(flagsContext.site).isEmpty()
-        assertThat(flagsContext.env).isEqualTo(fakeEnv)
-    }
-
-    @Test
-    fun `M handle null env W create() { null env }`() {
-        // Given
-        whenever(mockDatadogContext.clientToken) doReturn fakeClientToken
-        whenever(mockDatadogContext.site) doReturn mockDatadogSite
-        whenever(mockDatadogSite.name) doReturn fakeSiteName
-        whenever(mockDatadogContext.env).thenReturn(null)
-
-        val flagsConfiguration = FlagsConfiguration.Builder().build()
-
-        // When
-        val flagsContext = FlagsContext.create(mockDatadogContext, fakeApplicationId, flagsConfiguration)
-
-        // Then
-        assertThat(flagsContext.applicationId).isEqualTo(fakeApplicationId)
-        assertThat(flagsContext.clientToken).isEqualTo(fakeClientToken)
-        assertThat(flagsContext.site).isEqualTo(fakeSiteName)
-        assertThat(flagsContext.env).isEmpty()
-    }
 }

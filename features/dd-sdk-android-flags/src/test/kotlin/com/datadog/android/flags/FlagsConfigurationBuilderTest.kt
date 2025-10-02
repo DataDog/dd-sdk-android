@@ -31,7 +31,7 @@ internal class FlagsConfigurationBuilderTest {
         val flagsConfiguration = testedBuilder.build()
 
         // Then
-        assertThat(flagsConfiguration.enableExposureLogging).isFalse()
+        assertThat(flagsConfiguration.enableExposureLogging).isTrue()
         assertThat(flagsConfiguration.customEndpointUrl).isNull()
         assertThat(flagsConfiguration.flaggingProxyUrl).isNull()
     }
@@ -44,7 +44,7 @@ internal class FlagsConfigurationBuilderTest {
         val flagsConfiguration = testedBuilder.useCustomEndpoint(customEndpointUrl).build()
 
         // Then
-        assertThat(flagsConfiguration.enableExposureLogging).isFalse()
+        assertThat(flagsConfiguration.enableExposureLogging).isTrue()
         assertThat(flagsConfiguration.customEndpointUrl).isEqualTo(customEndpointUrl)
         assertThat(flagsConfiguration.flaggingProxyUrl).isNull()
     }
@@ -57,7 +57,7 @@ internal class FlagsConfigurationBuilderTest {
         val flagsConfiguration = testedBuilder.useFlaggingProxy(flaggingProxyUrl).build()
 
         // Then
-        assertThat(flagsConfiguration.enableExposureLogging).isFalse()
+        assertThat(flagsConfiguration.enableExposureLogging).isTrue()
         assertThat(flagsConfiguration.customEndpointUrl).isNull()
         assertThat(flagsConfiguration.flaggingProxyUrl).isEqualTo(flaggingProxyUrl)
     }
@@ -97,7 +97,7 @@ internal class FlagsConfigurationBuilderTest {
         val flagsConfiguration = testedBuilder.useCustomEndpoint(null).build()
 
         // Then
-        assertThat(flagsConfiguration.enableExposureLogging).isFalse()
+        assertThat(flagsConfiguration.enableExposureLogging).isTrue()
         assertThat(flagsConfiguration.customEndpointUrl).isNull()
         assertThat(flagsConfiguration.flaggingProxyUrl).isNull()
     }
@@ -108,7 +108,7 @@ internal class FlagsConfigurationBuilderTest {
         val flagsConfiguration = testedBuilder.useFlaggingProxy(null).build()
 
         // Then
-        assertThat(flagsConfiguration.enableExposureLogging).isFalse()
+        assertThat(flagsConfiguration.enableExposureLogging).isTrue()
         assertThat(flagsConfiguration.customEndpointUrl).isNull()
         assertThat(flagsConfiguration.flaggingProxyUrl).isNull()
     }

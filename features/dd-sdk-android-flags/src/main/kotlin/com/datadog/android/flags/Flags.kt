@@ -7,17 +7,8 @@
 package com.datadog.android.flags
 
 import com.datadog.android.Datadog
-import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.SdkCore
 import com.datadog.android.api.feature.FeatureSdkCore
-import com.datadog.android.core.InternalSdkCore
-import com.datadog.android.flags.featureflags.FlagsClient
-import com.datadog.android.flags.featureflags.internal.DatadogFlagsClient
-import com.datadog.android.flags.featureflags.internal.evaluation.EvaluationsManager
-import com.datadog.android.flags.featureflags.internal.model.FlagsContext
-import com.datadog.android.flags.featureflags.internal.repository.DefaultFlagsRepository
-import com.datadog.android.flags.featureflags.internal.repository.net.DefaultFlagsNetworkManager
-import com.datadog.android.flags.featureflags.internal.repository.net.PrecomputeMapper
 import com.datadog.android.flags.internal.FlagsFeature
 
 /**
@@ -25,7 +16,6 @@ import com.datadog.android.flags.internal.FlagsFeature
  */
 object Flags {
 
-    internal const val FLAGS_EXECUTOR_NAME = "flags-executor"
 
     /**
      * Enables the Flags feature.
@@ -41,90 +31,12 @@ object Flags {
         configuration: FlagsConfiguration = FlagsConfiguration.defaultConfiguration(),
         sdkCore: SdkCore = Datadog.getInstance()
     ) {
+        val featureSdkCore = sdkCore as FeatureSdkCore
         val flagsFeature = FlagsFeature(
-            sdkCore as FeatureSdkCore,
+            featureSdkCore,
             flagsConfiguration = configuration
         )
 
-        sdkCore.registerFeature(flagsFeature)
-
-        createClient(sdkCore, flagsFeature)?.let {
-            FlagsClient.registerIfAbsent(
-                client = it,
-                sdkCore
-            )
-        }
-    }
-
-    /**
-     * Creates and configures a DatadogFlagsClient instance.
-     *
-     * This method performs complex initialization including validation of required context
-     * parameters (clientToken, site, env) and creation of all necessary dependencies.
-     * If any required parameters are missing, an error is logged and null is returned.
-     *
-     * @param sdkCore the [FeatureSdkCore] instance to use for client creation
-     * @param flagsFeature the [FlagsFeature] instance containing application configuration
-     * @return a configured [DatadogFlagsClient] instance, or null if required context
-     * parameters are missing (clientToken, site, or env)
-     */
-    private fun createClient(sdkCore: FeatureSdkCore, flagsFeature: FlagsFeature): FlagsClient? {
-        val executorService = sdkCore.createSingleThreadExecutorService(
-            executorContext = FLAGS_EXECUTOR_NAME
-        )
-
-        val internalLogger = sdkCore.internalLogger
-        val datadogContext = (sdkCore as? InternalSdkCore)?.getDatadogContext()
-        val applicationId = flagsFeature.applicationId
-
-        // Get required context parameters
-        val clientToken = datadogContext?.clientToken
-        val site = datadogContext?.site
-        val env = datadogContext?.env
-
-        // Validate required parameters
-        if (clientToken == null || site == null || env == null) {
-            val missingParams = listOfNotNull(
-                "clientToken".takeIf { clientToken == null },
-                "site".takeIf { site == null },
-                "env".takeIf { env == null }
-            ).joinToString(", ")
-
-            internalLogger.log(
-                InternalLogger.Level.ERROR,
-                InternalLogger.Target.MAINTAINER,
-                { "Missing required context parameters: $missingParams" }
-            )
-
-            return null
-        }
-
-        // Create FlagsContext combining core SDK context with feature configuration
-        val flagsContext = FlagsContext.create(datadogContext, applicationId, flagsFeature.flagsConfiguration)
-
-        val flagsRepository = DefaultFlagsRepository(
-            featureSdkCore = sdkCore
-        )
-
-        val flagsNetworkManager = DefaultFlagsNetworkManager(
-            internalLogger = sdkCore.internalLogger,
-            flagsContext = flagsContext
-        )
-
-        val precomputeMapper = PrecomputeMapper(sdkCore.internalLogger)
-
-        val evaluationsManager = EvaluationsManager(
-            executorService = executorService,
-            internalLogger = sdkCore.internalLogger,
-            flagsRepository = flagsRepository,
-            flagsNetworkManager = flagsNetworkManager,
-            precomputeMapper = precomputeMapper
-        )
-
-        return DatadogFlagsClient(
-            featureSdkCore = sdkCore,
-            evaluationsManager = evaluationsManager,
-            flagsRepository = flagsRepository
-        )
+        featureSdkCore.registerFeature(flagsFeature)
     }
 }
