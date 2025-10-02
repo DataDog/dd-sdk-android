@@ -10,7 +10,6 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.flags.featureflags.FlagsProvider
 import com.datadog.android.flags.featureflags.internal.evaluation.EvaluationsManager
-import com.datadog.android.flags.featureflags.internal.model.DatadogEvaluationContext
 import com.datadog.android.flags.featureflags.internal.repository.FlagsRepository
 import com.datadog.android.flags.featureflags.model.EvaluationContext
 import org.json.JSONException
@@ -23,14 +22,18 @@ internal class DatadogFlagsProvider(
 ) : FlagsProvider {
 
     override fun setContext(context: EvaluationContext) {
-        // Convert public context to internal normalized context
-        val ddEvalContext = DatadogEvaluationContext.from(context, featureSdkCore.internalLogger)
-
-        if (ddEvalContext != null) {
-            // Pass to manager to handle network request and atomic storage
-            evaluationsManager.updateEvaluationsForContext(ddEvalContext)
+        // Validate targeting key is not blank
+        if (context.targetingKey.isBlank()) {
+            featureSdkCore.internalLogger.log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.USER,
+                { "Invalid evaluation context: targeting key cannot be blank or whitespace-only" }
+            )
+            return
         }
-        // If null, validation failed and was already logged
+
+        // Pass to manager to handle network request and atomic storage
+        evaluationsManager.updateEvaluationsForContext(context)
     }
 
     override fun resolveBooleanValue(flagKey: String, defaultValue: Boolean): Boolean {
