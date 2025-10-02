@@ -62,7 +62,7 @@ data class FlagsConfiguration(
     }
 
     /**
-     * Companion object that provides factory methods for creating [FlagsConfiguration] instances.
+     * Companion object that provides factory methods for creating the default [FlagsConfiguration] instance.
      */
     companion object {
         /**
@@ -72,7 +72,7 @@ data class FlagsConfiguration(
         fun defaultConfiguration(): FlagsConfiguration = DEFAULT_FEATURE_FLAGS_CONFIG
 
         internal val DEFAULT_FEATURE_FLAGS_CONFIG = FlagsConfiguration(
-            enableExposureLogging = false,
+            enableExposureLogging = true,
             customEndpointUrl = null,
             flaggingProxyUrl = null
         )
