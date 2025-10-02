@@ -11,6 +11,7 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.SdkCore
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.core.InternalSdkCore
+import com.datadog.android.flags.FlagsConfiguration
 import com.datadog.android.flags.featureflags.internal.DatadogFlagsClient
 import com.datadog.android.flags.featureflags.internal.NoOpFlagsClient
 import com.datadog.android.flags.featureflags.internal.evaluation.EvaluationsManager
@@ -124,7 +125,7 @@ interface FlagsClient {
 
                 // If requesting default client and it doesn't exist, create it
                 if (client == null && name == DEFAULT_CLIENT_NAME) {
-                    client = createInternal(sdkCore)
+                    client = createInternal(sdkCore = sdkCore)
                     registerIfAbsent(client, key)
                 } else if (client == null) {
                     // Custom name not found, return NOP
@@ -145,7 +146,7 @@ interface FlagsClient {
 
         // region Internal
 
-        internal fun registerIfAbsent(client: FlagsClient, clientKey: ClientKey) = synchronized(registeredClients) {
+        private fun registerIfAbsent(client: FlagsClient, clientKey: ClientKey) = synchronized(registeredClients) {
             if (registeredClients.containsKey(clientKey)) {
                 (clientKey.sdkCore as FeatureSdkCore).internalLogger.log(
                     InternalLogger.Level.WARN,
@@ -189,7 +190,11 @@ interface FlagsClient {
          */
         @JvmOverloads
         @JvmStatic
-        fun create(name: String = DEFAULT_CLIENT_NAME, sdkCore: SdkCore = Datadog.getInstance()): FlagsClient {
+        fun create(
+            name: String = DEFAULT_CLIENT_NAME,
+            flagsConfiguration: FlagsConfiguration? = null,
+            sdkCore: SdkCore = Datadog.getInstance()
+        ): FlagsClient {
             val key = ClientKey(sdkCore, name)
 
             synchronized(registeredClients) {
@@ -209,13 +214,13 @@ interface FlagsClient {
                 }
 
                 // Create new client
-                val newClient = createInternal(sdkCore)
+                val newClient = createInternal(flagsConfiguration, sdkCore)
                 registerIfAbsent(newClient, key)
                 return newClient
             }
         }
 
-        internal fun createInternal(sdkCore: SdkCore): FlagsClient {
+        internal fun createInternal(flagsConfiguration: FlagsConfiguration? = null, sdkCore: SdkCore): FlagsClient {
             val flagsFeature = (sdkCore as FeatureSdkCore).getFeature(FLAGS_FEATURE_NAME)?.unwrap<FlagsFeature>()
 
             if (flagsFeature == null) {
@@ -226,10 +231,14 @@ interface FlagsClient {
                 )
                 return NoOpFlagsClient(sdkCore.internalLogger)
             }
-            return createInternal(sdkCore, flagsFeature)
+            return createInternal(flagsConfiguration, sdkCore, flagsFeature)
         }
 
-        internal fun createInternal(sdkCore: FeatureSdkCore, flagsFeature: FlagsFeature): FlagsClient {
+        internal fun createInternal(
+            flagsConfiguration: FlagsConfiguration? = null,
+            sdkCore: FeatureSdkCore,
+            flagsFeature: FlagsFeature
+        ): FlagsClient {
             val executorService = sdkCore.createSingleThreadExecutorService(
                 executorContext = FLAGS_CLIENT_EXECUTOR_NAME
             )
@@ -263,7 +272,7 @@ interface FlagsClient {
                 val flagsContext = FlagsContext.create(
                     datadogContext,
                     applicationId,
-                    flagsFeature.flagsConfiguration
+                    flagsConfiguration ?: flagsFeature.flagsConfiguration
                 )
 
                 val flagsRepository = DefaultFlagsRepository(
