@@ -15,11 +15,10 @@ import com.datadog.android.rum.internal.utils.window.RumWindowCallbackListener
 import com.datadog.android.rum.internal.utils.window.RumWindowCallbacksRegistry
 import java.lang.IllegalStateException
 import java.util.WeakHashMap
-import kotlin.time.Duration.Companion.nanoseconds
 
 internal class RumTTIDReporterImpl(
     private val internalLogger: InternalLogger,
-    private val timeProviderNanos: () -> Long,
+    private val timeProviderNs: () -> Long,
     private val windowCallbacksRegistry: RumWindowCallbacksRegistry,
     private val handler: Handler,
     private val listener: RumTTIDReporter.Listener
@@ -95,10 +94,13 @@ internal class RumTTIDReporterImpl(
     }
 
     private fun onFirstDraw(scenario: RumStartupScenario) {
-        val duration = (timeProviderNanos() - scenario.initialTimeNanos).nanoseconds
+        val nowNs = timeProviderNs()
+        val durationNs = nowNs - scenario.initialTimeNs
 
         val block = Runnable {
-            listener.onTTIDCalculated(scenario, duration)
+            listener.onTTIDCalculated(
+                RumTTIDInfo(scenario = scenario, durationNs = durationNs)
+            )
         }
 
         handler.sendMessageAtFrontOfQueue(
