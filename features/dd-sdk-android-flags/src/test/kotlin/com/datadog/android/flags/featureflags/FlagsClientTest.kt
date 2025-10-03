@@ -239,18 +239,18 @@ internal class FlagsClientTest {
     }
 
     @Test
-    fun `M log critical error W Builder#build() {client already exists}`() {
+    fun `M log warning W Builder#build() {client already exists}`() {
         // Given
         FlagsClient.registerIfAbsent(mockFlagsClient, mockSdkCore, "default")
 
         // When
         val client = FlagsClient.Builder(mockSdkCore).build()
 
-        // Then - should return existing client and log critical error
+        // Then - should return existing client and log warning
         assertThat(client).isEqualTo(mockFlagsClient)
         verify(mockInternalLogger).log(
-            eq(InternalLogger.Level.ERROR),
-            eq(listOf(InternalLogger.Target.USER, InternalLogger.Target.MAINTAINER)),
+            eq(InternalLogger.Level.WARN),
+            eq(InternalLogger.Target.USER),
             any(),
             eq(null),
             eq(false),

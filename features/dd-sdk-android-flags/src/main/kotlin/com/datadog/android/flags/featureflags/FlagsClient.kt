@@ -43,7 +43,7 @@ import org.json.JSONObject
  *
  * // With custom configuration
  * val client = FlagsClient.Builder("analytics")
- *     .setEnableExposureLogging(true)
+ *     .useCustomEndpoint("https://custom.endpoint.com")
  *     .build()
  * ```
  *
@@ -209,7 +209,7 @@ interface FlagsClient {
          * 4. Returns the created client or [NoOpFlagsClient] on failure
          *
          * If a [FlagsClient] with the same name already exists for this [SdkCore]:
-         * - Logs a critical error (ERROR level, USER + MAINTAINER targets)
+         * - Logs a warning (WARN level, USER target)
          * - Returns the existing [FlagsClient]
          *
          * @return the created [FlagsClient], existing client, or [NoOpFlagsClient].
@@ -221,10 +221,10 @@ interface FlagsClient {
                 // Check for existing client
                 val existingClient = Companion.registeredClients[key]
                 if (existingClient != null) {
-                    logCriticalError(
+                    logWarning(
                         sdkCore,
-                        "A FlagsClient with name '$name' already exists for SDK instance '${sdkCore.name}'. " +
-                            "Returning existing client. Each client name must be unique within an SDK instance."
+                        "Attempted to create a FlagsClient named '$name', but one already exists. " +
+                            "Existing client will be used, and new configuration will be ignored."
                     )
                     return existingClient
                 }
@@ -260,10 +260,10 @@ interface FlagsClient {
             }
         }
 
-        private fun logCriticalError(sdkCore: SdkCore, message: String) {
+        private fun logWarning(sdkCore: SdkCore, message: String) {
             (sdkCore as? FeatureSdkCore)?.internalLogger?.log(
-                InternalLogger.Level.ERROR,
-                listOf(InternalLogger.Target.USER, InternalLogger.Target.MAINTAINER),
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.USER,
                 { message }
             )
         }
