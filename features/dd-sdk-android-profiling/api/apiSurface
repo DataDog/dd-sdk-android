@@ -1,1 +1,7 @@
 object com.datadog.android.profiling.Profiling
+data class com.datadog.android.profiling.model.ProfilingEvent
+  constructor(kotlin.collections.List<kotlin.String>, kotlin.String, kotlin.String, kotlin.String, kotlin.String, kotlin.String)
+  fun toJson(): com.google.gson.JsonElement
+  companion object 
+    fun fromJson(kotlin.String): ProfilingEvent
+    fun fromJsonObject(com.google.gson.JsonObject): ProfilingEvent

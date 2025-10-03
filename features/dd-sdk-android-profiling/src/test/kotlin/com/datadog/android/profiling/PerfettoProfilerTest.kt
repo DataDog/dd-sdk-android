@@ -14,6 +14,7 @@ import android.os.ProfilingResult
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.profiling.internal.PerfettoProfiler
+import com.datadog.android.profiling.internal.PerfettoResult
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -35,6 +36,7 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoMoreInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
+import java.util.concurrent.ExecutorService
 import java.util.function.Consumer
 
 @Extensions(
@@ -53,6 +55,12 @@ class PerfettoProfilerTest {
     @Mock
     private lateinit var mockInternalLogger: InternalLogger
 
+    @Mock
+    private lateinit var mockExecutorService: ExecutorService
+
+    @Mock
+    private lateinit var mockOnPerfettoResult: (PerfettoResult) -> Unit
+
     private val stubTimeProvider: StubTimeProvider = StubTimeProvider()
 
     private lateinit var testedProfiler: PerfettoProfiler
@@ -60,15 +68,24 @@ class PerfettoProfilerTest {
     @BeforeEach
     fun `set up`() {
         whenever(mockContext.getSystemService(ProfilingManager::class.java)).doReturn(mockService)
-        testedProfiler = PerfettoProfiler(mockInternalLogger, stubTimeProvider)
+        testedProfiler = PerfettoProfiler(
+            internalLogger = mockInternalLogger,
+            timeProvider = stubTimeProvider,
+            profilingExecutor = mockExecutorService,
+            onProfilingSuccess = mockOnPerfettoResult
+        )
     }
 
     @Test
-    fun `M request profiling stack sampling W start()`() {
+    fun `M request profiling stack sampling W start()`(
+        @StringForgery fakePath: String
+    ) {
         // When
         testedProfiler.start(mockContext)
 
         // Then
+        val resultCallbackCaptor = argumentCaptor<Consumer<ProfilingResult>>()
+
         verify(mockService)
             .requestProfiling(
                 eq(ProfilingManager.PROFILING_TYPE_STACK_SAMPLING),
@@ -76,7 +93,7 @@ class PerfettoProfilerTest {
                 any<String>(),
                 any<CancellationSignal>(),
                 any(),
-                any()
+                resultCallbackCaptor.capture()
             )
 
         val messageCaptor = argumentCaptor<() -> String>()
@@ -94,6 +111,19 @@ class PerfettoProfilerTest {
                 eq(true),
                 eq(expectedProps)
             )
+        val successResult = mock<ProfilingResult> {
+            on { errorCode } doReturn ProfilingResult.ERROR_NONE
+            on { resultFilePath } doReturn fakePath
+        }
+        resultCallbackCaptor.firstValue.accept(successResult)
+        val captor = argumentCaptor<PerfettoResult>()
+        verify(mockOnPerfettoResult).invoke(captor.capture())
+
+        val result = captor.firstValue
+        assertEquals(stubTimeProvider.startTime, result.start)
+        assertEquals(stubTimeProvider.endTime, result.end)
+        assertEquals(fakePath, result.resultFilePath)
+
         assertEquals("Profiling started.", messageCaptor.firstValue.invoke())
     }
 

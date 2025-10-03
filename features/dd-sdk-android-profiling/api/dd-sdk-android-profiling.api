@@ -2,3 +2,35 @@ public final class com/datadog/android/profiling/Profiling {
 	public static final field INSTANCE Lcom/datadog/android/profiling/Profiling;
 }
 
+public final class com/datadog/android/profiling/model/ProfilingEvent {
+	public static final field Companion Lcom/datadog/android/profiling/model/ProfilingEvent$Companion;
+	public fun <init> (Ljava/util/List;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
+	public final fun component1 ()Ljava/util/List;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Ljava/lang/String;
+	public final fun component4 ()Ljava/lang/String;
+	public final fun component5 ()Ljava/lang/String;
+	public final fun component6 ()Ljava/lang/String;
+	public final fun copy (Ljava/util/List;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Lcom/datadog/android/profiling/model/ProfilingEvent;
+	public static synthetic fun copy$default (Lcom/datadog/android/profiling/model/ProfilingEvent;Ljava/util/List;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lcom/datadog/android/profiling/model/ProfilingEvent;
+	public fun equals (Ljava/lang/Object;)Z
+	public static final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/profiling/model/ProfilingEvent;
+	public static final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/profiling/model/ProfilingEvent;
+	public final fun getAttachments ()Ljava/util/List;
+	public final fun getEnd ()Ljava/lang/String;
+	public final fun getFamily ()Ljava/lang/String;
+	public final fun getStart ()Ljava/lang/String;
+	public final fun getTagsProfiler ()Ljava/lang/String;
+	public final fun getVersion ()Ljava/lang/String;
+	public fun hashCode ()I
+	public final fun setAttachments (Ljava/util/List;)V
+	public final fun setTagsProfiler (Ljava/lang/String;)V
+	public final fun toJson ()Lcom/google/gson/JsonElement;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/profiling/model/ProfilingEvent$Companion {
+	public final fun fromJson (Ljava/lang/String;)Lcom/datadog/android/profiling/model/ProfilingEvent;
+	public final fun fromJsonObject (Lcom/google/gson/JsonObject;)Lcom/datadog/android/profiling/model/ProfilingEvent;
+}
+

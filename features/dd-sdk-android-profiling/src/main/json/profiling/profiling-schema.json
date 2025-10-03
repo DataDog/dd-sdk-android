@@ -1,0 +1,52 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "$id": "profiling-schema.json",
+  "title": "ProfilingEvent",
+  "type": "object",
+  "description": "Structure holding information about a Profiling event",
+  "properties": {
+    "attachments": {
+      "type": "array",
+      "description": "List of profiling data attachments",
+      "items": {
+        "type": "string",
+        "description": "Profile file name",
+        "readOnly": true
+      },
+      "readOnly": false
+    },
+    "start": {
+      "type": "string",
+      "description": "The profile start time in ISO 8601 UTC format (yyyy-MM-dd'T'HH:mm:ss'Z')",
+      "readOnly": true
+    },
+    "end": {
+      "type": "string",
+      "description": " The profile end time in ISO 8601 UTC format (yyyy-MM-dd'T'HH:mm:ss'Z')",
+      "readOnly": true
+    },
+    "family": {
+      "type": "string",
+      "description": "Profile family used by the backend to identify the profile type. For Perfetto, use \"android\".",
+      "readOnly": true
+    },
+    "version": {
+      "type": "string",
+      "description": "Schema version of the event, only `4` is supported",
+      "readOnly": true
+    },
+    "tags_profiler": {
+      "type": "string",
+      "description": "The list of tags joined into a String and divided by ',' ",
+      "readOnly": false
+    }
+  },
+  "required": [
+    "attachments",
+    "start",
+    "end",
+    "family",
+    "version",
+    "tags_profiler"
+  ]
+}
