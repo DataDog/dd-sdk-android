@@ -214,7 +214,21 @@ interface FlagsClient {
          *
          * @return the created [FlagsClient], existing client, or [NoOpFlagsClient].
          */
+        @Suppress("ReturnCount")
         fun build(): FlagsClient {
+            // Validate that the Flags feature is enabled
+            val flagsFeature = (sdkCore as? FeatureSdkCore)
+                ?.getFeature(FLAGS_FEATURE_NAME)
+                ?.unwrap<FlagsFeature>()
+
+            if (flagsFeature == null) {
+                return NoOpFlagsClient(
+                    name = name,
+                    reason = "Flags feature not enabled",
+                    logger = (sdkCore as? FeatureSdkCore)?.internalLogger
+                )
+            }
+
             val key = Companion.ClientKey(sdkCore, name)
 
             synchronized(Companion.registeredClients) {
@@ -227,19 +241,6 @@ interface FlagsClient {
                             "Existing client will be used, and new configuration will be ignored."
                     )
                     return existingClient
-                }
-
-                // Get FlagsFeature
-                val flagsFeature = (sdkCore as? FeatureSdkCore)
-                    ?.getFeature(FLAGS_FEATURE_NAME)
-                    ?.unwrap<FlagsFeature>()
-
-                if (flagsFeature == null) {
-                    return NoOpFlagsClient(
-                        name = name,
-                        reason = "Flags feature not enabled",
-                        logger = (sdkCore as? FeatureSdkCore)?.internalLogger
-                    )
                 }
 
                 // Merge configuration (selective override)
