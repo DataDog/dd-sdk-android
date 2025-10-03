@@ -141,7 +141,7 @@ internal class FlagsTest {
                 eq(false),
                 eq(null)
             )
-            assertThat(lastValue()).isEqualTo("Missing required context parameters: clientToken, site, env")
+            assertThat(lastValue()).isEqualTo("Missing required configuration parameters: clientToken, site, env")
         }
     }
 
@@ -170,7 +170,7 @@ internal class FlagsTest {
                 eq(false),
                 eq(null)
             )
-            assertThat(lastValue()).isEqualTo("Missing required context parameters: clientToken, site")
+            assertThat(lastValue()).isEqualTo("Missing required configuration parameters: clientToken, site")
         }
     }
 

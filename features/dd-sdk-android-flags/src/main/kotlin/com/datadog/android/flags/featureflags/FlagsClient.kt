@@ -51,11 +51,11 @@ interface FlagsClient {
     fun resolveStringValue(flagKey: String, defaultValue: String): String
 
     /**
-     * Resolves a double flag value.
+     * Resolves a numeric flag value.
      *
      * @param flagKey The unique identifier of the flag to resolve.
      * @param defaultValue The value to return if the flag cannot be retrieved or parsed.
-     * @return The double value of the flag, or the default value if unavailable.
+     * @return The numeric value of the flag as a double, or the default value if unavailable.
      */
     fun resolveDoubleValue(flagKey: String, defaultValue: Double): Double
 
