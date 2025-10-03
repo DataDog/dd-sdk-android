@@ -16,8 +16,14 @@ interface com.datadog.android.flags.featureflags.FlagsClient
   fun resolveDoubleValue(String, Double): Double
   fun resolveIntValue(String, Int): Int
   fun resolveStructureValue(String, org.json.JSONObject): org.json.JSONObject
+  class Builder
+    constructor(com.datadog.android.api.SdkCore = Datadog.getInstance())
+    constructor(String, com.datadog.android.api.SdkCore = Datadog.getInstance())
+    fun setEnableExposureLogging(Boolean): Builder
+    fun useCustomEndpoint(String?): Builder
+    fun useFlaggingProxy(String?): Builder
+    fun build(): FlagsClient
   companion object 
     fun get(String = DEFAULT_CLIENT_NAME, com.datadog.android.api.SdkCore = Datadog.getInstance()): FlagsClient
-    fun create(String = DEFAULT_CLIENT_NAME, com.datadog.android.flags.FlagsConfiguration? = null, com.datadog.android.api.SdkCore = Datadog.getInstance()): FlagsClient
 data class com.datadog.android.flags.featureflags.model.EvaluationContext
   constructor(String, Map<String, String> = emptyMap())

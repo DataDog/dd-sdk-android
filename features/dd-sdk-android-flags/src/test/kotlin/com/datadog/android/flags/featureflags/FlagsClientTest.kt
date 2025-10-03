@@ -22,6 +22,8 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.any
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
@@ -208,55 +210,63 @@ internal class FlagsClientTest {
 
     // endregion
 
-    // region create() API Tests
+    // region Builder API Tests
 
     @Test
-    fun `M return existing client W create() {client already exists with default name}`() {
+    fun `M return existing client W Builder#build() {client already exists with default name}`() {
         // Given
         FlagsClient.registerIfAbsent(mockFlagsClient, mockSdkCore, "default")
 
-        // When - second create with same name
-        val client = FlagsClient.create(sdkCore = mockSdkCore)
+        // When - second build with same name
+        val client = FlagsClient.Builder(mockSdkCore).build()
 
         // Then - should return existing client, NOT NOPClient
         assertThat(client).isEqualTo(mockFlagsClient)
     }
 
     @Test
-    fun `M return existing client W create(name) {client already exists with custom name}`(
+    fun `M return existing client W Builder#build() {client already exists with custom name}`(
         @StringForgery fakeClientName: String
     ) {
         // Given
         FlagsClient.registerIfAbsent(mockFlagsClient, mockSdkCore, fakeClientName)
 
-        // When - second create with same custom name
-        val client = FlagsClient.create(name = fakeClientName, sdkCore = mockSdkCore)
+        // When - second build with same custom name
+        val client = FlagsClient.Builder(fakeClientName, mockSdkCore).build()
 
         // Then - should return existing client, NOT NOPClient
         assertThat(client).isEqualTo(mockFlagsClient)
     }
 
     @Test
-    fun `M log warning W create() {client already exists}`() {
+    fun `M log critical error W Builder#build() {client already exists}`() {
         // Given
         FlagsClient.registerIfAbsent(mockFlagsClient, mockSdkCore, "default")
 
         // When
-        val client = FlagsClient.create(sdkCore = mockSdkCore)
+        val client = FlagsClient.Builder(mockSdkCore).build()
 
-        // Then - should return existing client and log warning
+        // Then - should return existing client and log critical error
         assertThat(client).isEqualTo(mockFlagsClient)
+        verify(mockInternalLogger).log(
+            eq(InternalLogger.Level.ERROR),
+            eq(listOf(InternalLogger.Target.USER, InternalLogger.Target.MAINTAINER)),
+            any(),
+            eq(null),
+            eq(false),
+            eq(null)
+        )
     }
 
     @Test
-    fun `M create different clients W create(name) {different names}`(
+    fun `M create different clients W Builder#build() {different names}`(
         @StringForgery fakeName1: String,
         @StringForgery fakeName2: String
     ) {
         // Given
         FlagsClient.registerIfAbsent(mockFlagsClient, mockSdkCore, fakeName1)
 
-        // When - create with different name
+        // When - build with different names
         val client1 = FlagsClient.get(name = fakeName1, sdkCore = mockSdkCore)
         val client2 = FlagsClient.get(name = fakeName2, sdkCore = mockSdkCore)
 
@@ -265,18 +275,43 @@ internal class FlagsClientTest {
         assertThat(client2).isInstanceOf(NoOpFlagsClient::class.java)
     }
 
+    @Test
+    fun `M return NoOpClient W Builder#build() {flags feature not enabled}`() {
+        // When - build when feature is not enabled
+        val client = FlagsClient.Builder(mockSdkCore).build()
+
+        // Then - should return NoOpClient
+        assertThat(client).isInstanceOf(NoOpFlagsClient::class.java)
+    }
+
     // endregion
 
     // region get() API Tests
 
     @Test
-    fun `M auto-create default client W get() {default client doesn't exist}`() {
+    fun `M return NoOpClient W get() {default client doesn't exist}`() {
         // When - get default client when it doesn't exist
         val client = FlagsClient.get(sdkCore = mockSdkCore)
 
-        // Then - should auto-create and return it (not NOPClient)
-        // Note: Since we don't have Flags enabled, it will return NOPClient due to missing feature
+        // Then - should return NoOpClient (no auto-creation)
         assertThat(client).isInstanceOf(NoOpFlagsClient::class.java)
+    }
+
+    @Test
+    fun `M log critical error W get() {client doesn't exist}`() {
+        // When - get default client when it doesn't exist
+        val client = FlagsClient.get(sdkCore = mockSdkCore)
+
+        // Then - should log critical error
+        assertThat(client).isInstanceOf(NoOpFlagsClient::class.java)
+        verify(mockInternalLogger).log(
+            eq(InternalLogger.Level.ERROR),
+            eq(listOf(InternalLogger.Target.USER, InternalLogger.Target.MAINTAINER)),
+            any(),
+            eq(null),
+            eq(false),
+            eq(null)
+        )
     }
 
     @Test
@@ -292,11 +327,11 @@ internal class FlagsClientTest {
     }
 
     @Test
-    fun `M return NOPClient W get(name) {custom name doesn't exist}`(@StringForgery fakeClientName: String) {
+    fun `M return NoOpClient W get(name) {custom name doesn't exist}`(@StringForgery fakeClientName: String) {
         // When - get custom-named client when it doesn't exist
         val client = FlagsClient.get(name = fakeClientName, sdkCore = mockSdkCore)
 
-        // Then - should return NOPClient (custom names don't auto-create)
+        // Then - should return NoOpClient (no auto-creation)
         assertThat(client).isInstanceOf(NoOpFlagsClient::class.java)
     }
 

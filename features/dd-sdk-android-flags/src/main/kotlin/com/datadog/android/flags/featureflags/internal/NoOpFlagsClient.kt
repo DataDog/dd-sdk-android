@@ -19,17 +19,25 @@ import org.json.JSONObject
  * any operations. The [setEvaluationContext] method silently ignores context updates.
  * This implementation is thread-safe and designed for graceful degradation scenarios.
  *
- * @param logger Optional logger for warning messages and debug assertions.
+ * Per spec: "In production, a non-functioning client is preferred over an app crash."
+ * This implementation logs critical errors but never throws exceptions.
+ *
+ * @param name The client name this NoOpClient represents.
+ * @param reason The reason why this client is a NoOp (e.g., "Flags feature not enabled").
+ * @param logger Optional logger for critical error messages.
  */
-internal class NoOpFlagsClient(private val logger: InternalLogger? = null) : FlagsClient {
+internal class NoOpFlagsClient(
+    private val name: String,
+    private val reason: String,
+    private val logger: InternalLogger? = null
+) : FlagsClient {
 
     /**
-     * No-op implementation that ignores context updates.
+     * No-op implementation that ignores context updates and logs a critical error.
      * @param context Ignored evaluation context.
      */
     override fun setEvaluationContext(context: EvaluationContext) {
-        logWarning("setContext called on NoOpFlagsClient")
-        assertDebug { "setContext called on NoOpFlagsClient - ensure FlagsClient.create() was called successfully" }
+        logCriticalError("setEvaluationContext")
     }
 
     /**
@@ -39,10 +47,7 @@ internal class NoOpFlagsClient(private val logger: InternalLogger? = null) : Fla
      * @return The provided default value.
      */
     override fun resolveBooleanValue(flagKey: String, defaultValue: Boolean): Boolean {
-        logWarning("resolveBooleanValue called on NoOpFlagsClient for flag '$flagKey'")
-        assertDebug {
-            "resolveBooleanValue called on NoOpFlagsClient - ensure FlagsClient.create() was called successfully"
-        }
+        logCriticalError("resolveBooleanValue for flag '$flagKey'")
         return defaultValue
     }
 
@@ -53,10 +58,7 @@ internal class NoOpFlagsClient(private val logger: InternalLogger? = null) : Fla
      * @return The provided default value.
      */
     override fun resolveStringValue(flagKey: String, defaultValue: String): String {
-        logWarning("resolveStringValue called on NoOpFlagsClient for flag '$flagKey'")
-        assertDebug {
-            "resolveStringValue called on NoOpFlagsClient - ensure FlagsClient.create() was called successfully"
-        }
+        logCriticalError("resolveStringValue for flag '$flagKey'")
         return defaultValue
     }
 
@@ -67,10 +69,7 @@ internal class NoOpFlagsClient(private val logger: InternalLogger? = null) : Fla
      * @return The provided default value.
      */
     override fun resolveDoubleValue(flagKey: String, defaultValue: Double): Double {
-        logWarning("resolveDoubleValue called on NoOpFlagsClient for flag '$flagKey'")
-        assertDebug {
-            "resolveDoubleValue called on NoOpFlagsClient - ensure FlagsClient.create() was called successfully"
-        }
+        logCriticalError("resolveDoubleValue for flag '$flagKey'")
         return defaultValue
     }
 
@@ -81,10 +80,7 @@ internal class NoOpFlagsClient(private val logger: InternalLogger? = null) : Fla
      * @return The provided default value.
      */
     override fun resolveIntValue(flagKey: String, defaultValue: Int): Int {
-        logWarning("resolveIntValue called on NoOpFlagsClient for flag '$flagKey'")
-        assertDebug {
-            "resolveIntValue called on NoOpFlagsClient - ensure FlagsClient.create() was called successfully"
-        }
+        logCriticalError("resolveIntValue for flag '$flagKey'")
         return defaultValue
     }
 
@@ -95,32 +91,25 @@ internal class NoOpFlagsClient(private val logger: InternalLogger? = null) : Fla
      * @return The provided default value.
      */
     override fun resolveStructureValue(flagKey: String, defaultValue: JSONObject): JSONObject {
-        logWarning("resolveStructureValue called on NoOpFlagsClient for flag '$flagKey'")
-        assertDebug {
-            "resolveStructureValue called on NoOpFlagsClient - ensure FlagsClient.create() was called successfully"
-        }
+        logCriticalError("resolveStructureValue for flag '$flagKey'")
         return defaultValue
     }
 
-    private fun logWarning(message: String) {
+    /**
+     * Logs a critical error with both USER and MAINTAINER targets.
+     * This ensures visibility in both debug builds (MAINTAINER) and production (USER, if verbosity allows).
+     *
+     * @param operation The operation being called (e.g., "resolveBooleanValue for flag 'my-flag'")
+     */
+    private fun logCriticalError(operation: String) {
         logger?.log(
-            InternalLogger.Level.WARN,
-            InternalLogger.Target.USER,
-            { message }
+            InternalLogger.Level.ERROR,
+            listOf(InternalLogger.Target.USER, InternalLogger.Target.MAINTAINER),
+            {
+                "$operation called on NoOpFlagsClient for client '$name' " +
+                    "(reason: $reason). NoOpFlagsClient always returns default values. " +
+                    "Ensure FlagsClient.Builder(...).build() was called successfully."
+            }
         )
-    }
-
-    private inline fun assertDebug(crossinline lazyMessage: () -> String) {
-        // In Android, assertions are typically checked using BuildConfig.DEBUG
-        // Since we don't have direct access to BuildConfig here, we rely on the fact that
-        // InternalLogger implementations may choose to throw exceptions or trigger breakpoints
-        // in debug builds when logging at ERROR level with TELEMETRY target
-        if (logger != null) {
-            logger.log(
-                InternalLogger.Level.ERROR,
-                InternalLogger.Target.TELEMETRY,
-                { "DEBUG ASSERTION: ${lazyMessage()}" }
-            )
-        }
     }
 }

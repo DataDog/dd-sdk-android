@@ -6,24 +6,47 @@
 
 package com.datadog.android.flags.featureflags
 
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.flags.featureflags.internal.NoOpFlagsClient
 import com.datadog.android.flags.featureflags.model.EvaluationContext
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
 import org.json.JSONObject
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
+import org.mockito.Mock
+import org.mockito.junit.jupiter.MockitoExtension
+import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.any
+import org.mockito.kotlin.eq
+import org.mockito.kotlin.verify
+import org.mockito.quality.Strictness
 
-@ExtendWith(ForgeExtension::class)
+@ExtendWith(MockitoExtension::class, ForgeExtension::class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 internal class NoOpFlagsClientTest {
+
+    @Mock
+    lateinit var mockInternalLogger: InternalLogger
 
     private lateinit var testedClient: NoOpFlagsClient
 
+    @StringForgery
+    private lateinit var fakeClientName: String
+
+    @StringForgery
+    private lateinit var fakeReason: String
+
     @BeforeEach
     fun `set up`() {
-        testedClient = NoOpFlagsClient()
+        testedClient = NoOpFlagsClient(
+            name = fakeClientName,
+            reason = fakeReason,
+            logger = mockInternalLogger
+        )
     }
 
     // region setEvaluationContext()
@@ -44,6 +67,25 @@ internal class NoOpFlagsClientTest {
 
         // Then
         // No exception should be thrown, method should be no-op
+    }
+
+    @Test
+    fun `M log critical error W setEvaluationContext()`(forge: Forge) {
+        // Given
+        val fakeContext = EvaluationContext(forge.anAlphabeticalString(), emptyMap())
+
+        // When
+        testedClient.setEvaluationContext(fakeContext)
+
+        // Then
+        verify(mockInternalLogger).log(
+            eq(InternalLogger.Level.ERROR),
+            eq(listOf(InternalLogger.Target.USER, InternalLogger.Target.MAINTAINER)),
+            any(),
+            eq(null),
+            eq(false),
+            eq(null)
+        )
     }
 
     // endregion
@@ -76,6 +118,25 @@ internal class NoOpFlagsClientTest {
         assertThat(result).isEqualTo(fakeDefaultValue)
     }
 
+    @Test
+    fun `M log critical error W resolveBooleanValue()`(forge: Forge) {
+        // Given
+        val fakeFlagKey = forge.anAlphabeticalString()
+
+        // When
+        testedClient.resolveBooleanValue(fakeFlagKey, true)
+
+        // Then
+        verify(mockInternalLogger).log(
+            eq(InternalLogger.Level.ERROR),
+            eq(listOf(InternalLogger.Target.USER, InternalLogger.Target.MAINTAINER)),
+            any(),
+            eq(null),
+            eq(false),
+            eq(null)
+        )
+    }
+
     // endregion
 
     // region resolveStringValue()
@@ -104,6 +165,25 @@ internal class NoOpFlagsClientTest {
 
         // Then
         assertThat(result).isEqualTo(fakeDefaultValue)
+    }
+
+    @Test
+    fun `M log critical error W resolveStringValue()`(forge: Forge) {
+        // Given
+        val fakeFlagKey = forge.anAlphabeticalString()
+
+        // When
+        testedClient.resolveStringValue(fakeFlagKey, "default")
+
+        // Then
+        verify(mockInternalLogger).log(
+            eq(InternalLogger.Level.ERROR),
+            eq(listOf(InternalLogger.Target.USER, InternalLogger.Target.MAINTAINER)),
+            any(),
+            eq(null),
+            eq(false),
+            eq(null)
+        )
     }
 
     // endregion
@@ -149,6 +229,25 @@ internal class NoOpFlagsClientTest {
         assertThat(result).isEqualTo(fakeDefaultValue.toDouble())
     }
 
+    @Test
+    fun `M log critical error W resolveDoubleValue()`(forge: Forge) {
+        // Given
+        val fakeFlagKey = forge.anAlphabeticalString()
+
+        // When
+        testedClient.resolveDoubleValue(fakeFlagKey, 0.0)
+
+        // Then
+        verify(mockInternalLogger).log(
+            eq(InternalLogger.Level.ERROR),
+            eq(listOf(InternalLogger.Target.USER, InternalLogger.Target.MAINTAINER)),
+            any(),
+            eq(null),
+            eq(false),
+            eq(null)
+        )
+    }
+
     // endregion
 
     // region resolveIntValue()
@@ -192,6 +291,25 @@ internal class NoOpFlagsClientTest {
         assertThat(result).isEqualTo(fakeDefaultValue)
     }
 
+    @Test
+    fun `M log critical error W resolveIntValue()`(forge: Forge) {
+        // Given
+        val fakeFlagKey = forge.anAlphabeticalString()
+
+        // When
+        testedClient.resolveIntValue(fakeFlagKey, 0)
+
+        // Then
+        verify(mockInternalLogger).log(
+            eq(InternalLogger.Level.ERROR),
+            eq(listOf(InternalLogger.Target.USER, InternalLogger.Target.MAINTAINER)),
+            any(),
+            eq(null),
+            eq(false),
+            eq(null)
+        )
+    }
+
     // endregion
 
     // region resolveStructureValue()
@@ -225,6 +343,25 @@ internal class NoOpFlagsClientTest {
 
         // Then
         assertThat(result).isEqualTo(fakeDefaultValue)
+    }
+
+    @Test
+    fun `M log critical error W resolveStructureValue()`(forge: Forge) {
+        // Given
+        val fakeFlagKey = forge.anAlphabeticalString()
+
+        // When
+        testedClient.resolveStructureValue(fakeFlagKey, JSONObject())
+
+        // Then
+        verify(mockInternalLogger).log(
+            eq(InternalLogger.Level.ERROR),
+            eq(listOf(InternalLogger.Target.USER, InternalLogger.Target.MAINTAINER)),
+            any(),
+            eq(null),
+            eq(false),
+            eq(null)
+        )
     }
 
     // endregion
