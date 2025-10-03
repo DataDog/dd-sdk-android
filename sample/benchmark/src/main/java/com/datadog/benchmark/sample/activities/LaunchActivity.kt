@@ -12,6 +12,8 @@ import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import coil.Coil
 import coil.ImageLoader
+import com.datadog.android.api.SdkCore
+import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.benchmark.sample.BenchmarkConfigHolder
 import com.datadog.benchmark.sample.DatadogFeaturesInitializer
 import com.datadog.benchmark.sample.activities.scenarios.DefaultScenarioActivity
@@ -35,6 +37,9 @@ internal class LaunchActivity : AppCompatActivity() {
     @Inject
     internal lateinit var okHttpClient: dagger.Lazy<OkHttpClient>
 
+    @Inject
+    internal lateinit var sdkCore: dagger.Lazy<SdkCore>
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -50,6 +55,16 @@ internal class LaunchActivity : AppCompatActivity() {
          * It is derived from intent extras.
          */
         benchmarkFeaturesInitializer.initialize(config)
+
+        /**
+         * We have to set synthetic attributes here, because the default implementation sets them only
+         * in [com.datadog.android.rum.tracking.ActivityLifecycleTrackingStrategy.onActivityCreated].
+         * And activity there will already have a different intent.
+         */
+        GlobalRumMonitor
+            .get(sdkCore.get())
+            ._getInternal()
+            ?.setSyntheticsAttributeFromIntent(intent)
 
         initializeCoil()
 
