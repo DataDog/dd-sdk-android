@@ -72,7 +72,7 @@ internal class DefaultFlagsNetworkManager(
             internalLogger.log(
                 InternalLogger.Level.ERROR,
                 InternalLogger.Target.MAINTAINER,
-                { "Unable to find host for site ${flagsContext.site}; we will retry later." },
+                { "Unable to find host ${flagsContext.site.intakeEndpoint}; we will retry later." },
                 e
             )
             null
@@ -204,7 +204,7 @@ internal class DefaultFlagsNetworkManager(
     private fun buildStringifiedAttributes(context: EvaluationContext): JSONObject {
         val contextJson = JSONObject()
         context.attributes.forEach { (key, value) ->
-            contextJson.put(key, value.toString())
+            contextJson.put(key, value)
         }
         return contextJson
     }

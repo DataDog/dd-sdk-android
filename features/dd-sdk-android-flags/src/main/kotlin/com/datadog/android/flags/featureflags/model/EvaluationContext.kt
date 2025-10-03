@@ -6,136 +6,42 @@
 
 package com.datadog.android.flags.featureflags.model
 
-import com.datadog.android.api.InternalLogger
-
 /**
  * Represents the context used for evaluating feature flags.
- * Contains a targeting key and attributes that are used to determine
- * which flag values should be returned for a given user or session.
  *
- * @param targetingKey The unique identifier used for targeting (e.g., user ID, session ID)
- * @param attributes Additional attributes for targeting (e.g., user properties, device info)
+ * This context contains a targeting key and optional attributes that determine which flag values
+ * should be returned for a given user or session. The targeting key ensures consistent flag
+ * evaluation across requests for the same entity.
+ *
+ * @param targetingKey The unique identifier used for targeting and bucketing. This key is critical
+ *   for consistent flag evaluation - an inconsistent targeting key will lead to inconsistent
+ *   bucketing for that user. Common examples include user ID (consistent treatment per user),
+ *   company ID (consistent treatment for entire company), or device ID (consistent treatment
+ *   per device). The targeting key may also be used in targeting rules for flag evaluation.
+ *   Must not be blank or whitespace-only.
+ * @param attributes Additional attributes used for targeting flag evaluation. All values must be
+ *   strings - you are responsible for converting numbers, booleans, and other types to their
+ *   string representation before passing them to the context. Examples:
+ *   `mapOf("email" to "user@example.com", "age" to "25", "premium" to "true")`.
+ *   These attributes provide additional context for flag evaluation rules and can include
+ *   user properties, device information, or any other relevant contextual data.
  */
 data class EvaluationContext(
-    /** The unique identifier used for targeting flag evaluation. */
+    /**
+     * The unique identifier used for targeting and bucketing flag evaluation.
+     *
+     * Must be consistent for the same entity to ensure consistent flag behavior across requests.
+     * Must not be blank or whitespace-only.
+     * Examples: user ID, company ID, device ID.
+     */
     val targetingKey: String,
-    /** Additional attributes used for targeting flag evaluation. */
-    val attributes: Map<String, Any> = emptyMap()
-) {
-
     /**
-     * Builder class for creating EvaluationContext instances with validation.
-     * Ensures that only supported attribute types are added and validates the targeting key.
+     * Additional attributes used for targeting flag evaluation.
+     *
+     * All values must be strings. You are responsible for converting numbers, booleans,
+     * and other types to strings before passing them to the context.
+     *
+     * Example: `mapOf("email" to "user@example.com", "age" to "25", "premium" to "true")`
      */
-    class Builder(private val targetingKey: String, private val internalLogger: InternalLogger) {
-        private val attributes = mutableMapOf<String, Any>()
-
-        /**
-         * Adds a string attribute to the evaluation context.
-         *
-         * @param key The attribute key
-         * @param value The string value
-         * @return This builder instance for method chaining
-         */
-        fun addAttribute(key: String, value: String): Builder {
-            attributes[key] = value
-            return this
-        }
-
-        /**
-         * Adds a numeric attribute to the evaluation context.
-         *
-         * @param key The attribute key
-         * @param value The numeric value
-         * @return This builder instance for method chaining
-         */
-        fun addAttribute(key: String, value: Number): Builder {
-            attributes[key] = value
-            return this
-        }
-
-        /**
-         * Adds a boolean attribute to the evaluation context.
-         *
-         * @param key The attribute key
-         * @param value The boolean value
-         * @return This builder instance for method chaining
-         */
-        fun addAttribute(key: String, value: Boolean): Builder {
-            attributes[key] = value
-            return this
-        }
-
-        /**
-         * Generic addAttribute method for Any type with validation.
-         * Only String, Number, and Boolean values are supported.
-         * Unsupported types will be logged as warnings and omitted.
-         *
-         * @param key The attribute key
-         * @param value The attribute value (must be String, Number, or Boolean)
-         * @return This builder instance for method chaining
-         */
-        fun addAttribute(key: String, value: Any): Builder {
-            if (isSupportedAttributeType(value)) {
-                attributes[key] = value
-            } else {
-                internalLogger.log(
-                    InternalLogger.Level.WARN,
-                    InternalLogger.Target.USER,
-                    { UNSUPPORTED_ATTRIBUTE_WARNING.format(key, value::class.simpleName) }
-                )
-            }
-            return this
-        }
-
-        /**
-         * Adds multiple attributes to the evaluation context.
-         * Each attribute is validated individually - only String, Number, and Boolean
-         * values are supported. Unsupported types will be logged as warnings and omitted.
-         *
-         * @param contextAttributes Map of attributes to add
-         * @return This builder instance for method chaining
-         */
-        fun addAll(contextAttributes: Map<String, Any>): Builder {
-            // filter out invalid types.
-            contextAttributes.forEach {
-                addAttribute(it.key, it.value)
-            }
-            return this
-        }
-
-        /**
-         * Builds the EvaluationContext with the configured targeting key and attributes.
-         * Validates that the targeting key is not blank.
-         *
-         * @return A new EvaluationContext instance
-         * @throws IllegalArgumentException if the targeting key is blank
-         */
-        fun build(): EvaluationContext {
-            require(targetingKey.isNotBlank()) { TARGETING_KEY_BLANK_ERROR }
-            return EvaluationContext(targetingKey, attributes.toMap())
-        }
-    }
-
-    /**
-     * Companion object containing utility functions and constants for EvaluationContext.
-     */
-    companion object {
-        private const val UNSUPPORTED_ATTRIBUTE_WARNING =
-            "Unsupported attribute type for key '%s': %s." +
-                "Only String, Number, and Boolean are supported. Attribute omitted."
-        private const val TARGETING_KEY_BLANK_ERROR = "Targeting key cannot be blank"
-
-        /**
-         * Creates a new Builder instance for constructing an EvaluationContext.
-         *
-         * @param targetingKey The targeting key for the context
-         * @param internalLogger Logger for validation warnings
-         * @return A new Builder instance
-         */
-        fun builder(targetingKey: String, internalLogger: InternalLogger) = Builder(targetingKey, internalLogger)
-
-        internal fun isSupportedAttributeType(value: Any): Boolean =
-            value is String || value is Number || value is Boolean
-    }
-}
+    val attributes: Map<String, String> = emptyMap()
+)

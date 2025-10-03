@@ -6,14 +6,15 @@
 
 package com.datadog.android.flags.featureflags.internal.repository.net
 
+import com.datadog.android.DatadogSite
 import com.datadog.android.api.InternalLogger
 import org.json.JSONException
 import org.json.JSONObject
 
 internal class EndpointsHelper(private val internalLogger: InternalLogger) {
 
-    internal fun buildEndpointHost(site: String, customerDomain: String = "preview"): String = when (site) {
-        DOMAIN_GOV -> {
+    internal fun buildEndpointHost(site: DatadogSite, customerDomain: String = "preview"): String = when (site) {
+        DatadogSite.US1_FED -> {
             internalLogger.log(
                 level = InternalLogger.Level.ERROR,
                 target = InternalLogger.Target.MAINTAINER,
@@ -21,7 +22,7 @@ internal class EndpointsHelper(private val internalLogger: InternalLogger) {
             )
             ""
         }
-        DOMAIN_D0G -> {
+        DatadogSite.STAGING -> {
             "$customerDomain.ff-cdn.datad0g.com"
         }
         in siteConfig -> {
@@ -57,13 +58,13 @@ internal class EndpointsHelper(private val internalLogger: InternalLogger) {
         }
     }
 
-    private val siteConfig: Map<String, JSONObject> = mapOf(
-        "US1" to JSONObject(),
-        "US3" to createSiteConfigObject(dc = "us3"),
-        "US5" to createSiteConfigObject(dc = "us5"),
-        "AP1" to createSiteConfigObject(dc = "ap1"),
-        "AP2" to createSiteConfigObject(dc = "ap2"),
-        "EU" to createSiteConfigObject(tld = "eu")
+    private val siteConfig: Map<DatadogSite, JSONObject> = mapOf(
+        DatadogSite.US1 to JSONObject(), // us1 host is customer-domain.ff-cdn.datadoghq.com, so no for a DC param.
+        DatadogSite.US3 to createSiteConfigObject(dc = "us3"),
+        DatadogSite.US5 to createSiteConfigObject(dc = "us5"),
+        DatadogSite.AP1 to createSiteConfigObject(dc = "ap1"),
+        DatadogSite.AP2 to createSiteConfigObject(dc = "ap2"),
+        DatadogSite.EU1 to createSiteConfigObject(tld = "eu")
     )
 
     private fun createSiteConfigObject(dc: String? = null, tld: String? = null): JSONObject = try {
@@ -79,8 +80,6 @@ internal class EndpointsHelper(private val internalLogger: InternalLogger) {
     }
 
     internal companion object {
-        internal const val DOMAIN_GOV = "ddog-gov.com"
-        internal const val DOMAIN_D0G = "datad0g.com"
         private const val ERROR_GOV_NOT_SUPPORTED = "ddog-gov.com is not supported for flagging endpoints"
     }
 }

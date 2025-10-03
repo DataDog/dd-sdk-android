@@ -49,14 +49,8 @@ internal class FlagsTest {
     @Mock
     lateinit var mockDatadogContext: DatadogContext
 
-    @Mock
-    lateinit var mockDatadogSite: DatadogSite
-
     @StringForgery
     lateinit var fakeClientToken: String
-
-    @StringForgery
-    lateinit var fakeSite: String
 
     @StringForgery
     lateinit var fakeEnv: String
@@ -67,8 +61,7 @@ internal class FlagsTest {
         whenever(mockSdkCore.createSingleThreadExecutorService(FLAGS_EXECUTOR_NAME)) doReturn mockExecutorService
 
         whenever(mockDatadogContext.clientToken) doReturn fakeClientToken
-        whenever(mockDatadogContext.site) doReturn mockDatadogSite
-        whenever(mockDatadogSite.name) doReturn fakeSite
+        whenever(mockDatadogContext.site) doReturn DatadogSite.US1
         whenever(mockDatadogContext.env) doReturn fakeEnv
         whenever(mockSdkCore.getDatadogContext()) doReturn mockDatadogContext
     }

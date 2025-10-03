@@ -14,7 +14,11 @@ import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.flags.featureflags.FlagsClient
 import com.datadog.android.flags.featureflags.FlagsProvider
 import com.datadog.android.flags.featureflags.internal.DatadogFlagsProvider
+import com.datadog.android.flags.featureflags.internal.evaluation.EvaluationsManager
 import com.datadog.android.flags.featureflags.internal.model.FlagsContext
+import com.datadog.android.flags.featureflags.internal.repository.DefaultFlagsRepository
+import com.datadog.android.flags.featureflags.internal.repository.net.DefaultFlagsNetworkManager
+import com.datadog.android.flags.featureflags.internal.repository.net.PrecomputeMapper
 import com.datadog.android.flags.internal.FlagsFeature
 
 /**
@@ -36,7 +40,6 @@ object Flags {
     @JvmStatic
     fun enable(
         @Suppress("UNUSED_PARAMETER") configuration: FlagsConfiguration,
-        @Suppress("TodoWithoutTask") // TODO remove suppression when we start using config
         sdkCore: SdkCore = Datadog.getInstance()
     ) {
         val flagsFeature = FlagsFeature(
@@ -62,7 +65,7 @@ object Flags {
         val internalLogger = sdkCore.internalLogger
         val applicationId = flagsFeature.applicationId
         val clientToken = datadogContext?.clientToken
-        val site = datadogContext?.site?.name
+        val site = datadogContext?.site
         val env = datadogContext?.env
 
         @Suppress("TodoWithoutTask") // TODO how do we want to handle this?
@@ -89,10 +92,29 @@ object Flags {
             env = env
         )
 
-        return DatadogFlagsProvider(
-            executorService = executorService,
-            featureSdkCore = sdkCore,
+        val flagsRepository = DefaultFlagsRepository(
+            featureSdkCore = sdkCore
+        )
+
+        val flagsNetworkManager = DefaultFlagsNetworkManager(
+            internalLogger = sdkCore.internalLogger,
             flagsContext = flagsContext
+        )
+
+        val precomputeMapper = PrecomputeMapper(sdkCore.internalLogger)
+
+        val evaluationsManager = EvaluationsManager(
+            executorService = executorService,
+            internalLogger = sdkCore.internalLogger,
+            flagsRepository = flagsRepository,
+            flagsNetworkManager = flagsNetworkManager,
+            precomputeMapper = precomputeMapper
+        )
+
+        return DatadogFlagsProvider(
+            featureSdkCore = sdkCore,
+            evaluationsManager = evaluationsManager,
+            flagsRepository = flagsRepository
         )
     }
 }

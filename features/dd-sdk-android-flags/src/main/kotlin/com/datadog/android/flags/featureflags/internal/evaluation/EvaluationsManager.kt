@@ -26,7 +26,6 @@ internal class EvaluationsManager(
     private val flagsNetworkManager: FlagsNetworkManager,
     private val precomputeMapper: PrecomputeMapper
 ) {
-
     /**
      * Processes a new evaluation context by fetching flags and storing atomically.
      *
@@ -37,62 +36,37 @@ internal class EvaluationsManager(
             operationName = FETCH_AND_STORE_OPERATION_NAME,
             internalLogger = internalLogger
         ) {
-            try {
+            internalLogger.log(
+                InternalLogger.Level.DEBUG,
+                InternalLogger.Target.MAINTAINER,
+                { "Processing evaluation context: ${context.targetingKey}" }
+            )
+
+            val response = flagsNetworkManager.downloadPrecomputedFlags(context)
+            val flagsMap = if (response != null) {
+                precomputeMapper.map(response)
+            } else {
+                // Log warning to both user and maintainer about network failure
                 internalLogger.log(
-                    InternalLogger.Level.DEBUG,
-                    InternalLogger.Target.MAINTAINER,
-                    { "Processing evaluation context: ${context.targetingKey}" }
+                    InternalLogger.Level.WARN,
+                    targets = listOf(InternalLogger.Target.USER, InternalLogger.Target.MAINTAINER),
+                    { NETWORK_REQUEST_FAILED_MESSAGE }
                 )
-
-                // Make network request to fetch precomputed flags
-                val response = flagsNetworkManager.downloadPrecomputedFlags(context)
-
-                if (response != null) {
-                    // Parse the response into flags map
-                    val flagsMap = precomputeMapper.map(response)
-
-                    // Atomically store context and flags together
-                    flagsRepository.setFlagsAndContext(context, flagsMap)
-
-                    internalLogger.log(
-                        InternalLogger.Level.DEBUG,
-                        InternalLogger.Target.MAINTAINER,
-                        { "Successfully processed context ${context.targetingKey} with ${flagsMap.size} flags" }
-                    )
-                } else {
-                    // Network request failed, store context with empty flags
-                    flagsRepository.setFlagsAndContext(context, emptyMap())
-
-                    internalLogger.log(
-                        InternalLogger.Level.WARN,
-                        InternalLogger.Target.MAINTAINER,
-                        { "Network request failed for context ${context.targetingKey}, stored with empty flags" }
-                    )
-                }
-            } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
-                internalLogger.log(
-                    InternalLogger.Level.ERROR,
-                    InternalLogger.Target.MAINTAINER,
-                    { "Error processing evaluation context: ${context.targetingKey}" },
-                    e
-                )
-
-                // On error, still store the context with empty flags to maintain state
-                try {
-                    flagsRepository.setFlagsAndContext(context, emptyMap())
-                } catch (@Suppress("TooGenericExceptionCaught") storageException: Exception) {
-                    internalLogger.log(
-                        InternalLogger.Level.ERROR,
-                        InternalLogger.Target.MAINTAINER,
-                        { "Failed to store context after error: ${context.targetingKey}" },
-                        storageException
-                    )
-                }
+                emptyMap()
             }
+
+            flagsRepository.setFlagsAndContext(context, flagsMap)
+            internalLogger.log(
+                InternalLogger.Level.DEBUG,
+                InternalLogger.Target.MAINTAINER,
+                { "Successfully processed context ${context.targetingKey} with ${flagsMap.size} flags" }
+            )
         }
     }
 
     companion object {
         private const val FETCH_AND_STORE_OPERATION_NAME = "Fetch and store flags for evaluation context"
+        private const val NETWORK_REQUEST_FAILED_MESSAGE =
+            "Unable to fetch feature flags. Please check your network connection."
     }
 }

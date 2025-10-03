@@ -48,15 +48,11 @@ internal class DefaultFlagsRepository(
 
     override fun getEvaluationContext(): EvaluationContext? = atomicState.get()?.context
 
+    @Suppress("ReturnCount")
     override fun getPrecomputedFlagWithContext(key: String): Pair<PrecomputedFlag, EvaluationContext>? {
-        val state = atomicState.get()
-        if (state != null) {
-            val flag = state.flags[key]
-            if (flag != null) {
-                return flag to state.context
-            }
-        }
-        return null
+        val state = atomicState.get() ?: return null
+        val flag = state.flags[key] ?: return null
+        return flag to state.context
     }
 
     companion object {

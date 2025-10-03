@@ -10,68 +10,30 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.flags.featureflags.FlagsProvider
 import com.datadog.android.flags.featureflags.internal.evaluation.EvaluationsManager
-import com.datadog.android.flags.featureflags.internal.model.FlagsContext
-import com.datadog.android.flags.featureflags.internal.repository.DefaultFlagsRepository
 import com.datadog.android.flags.featureflags.internal.repository.FlagsRepository
-import com.datadog.android.flags.featureflags.internal.repository.NoOpFlagsRepository
-import com.datadog.android.flags.featureflags.internal.repository.net.DefaultFlagsNetworkManager
-import com.datadog.android.flags.featureflags.internal.repository.net.PrecomputeMapper
 import com.datadog.android.flags.featureflags.model.EvaluationContext
 import org.json.JSONException
 import org.json.JSONObject
-import java.util.concurrent.ExecutorService
 
 internal class DatadogFlagsProvider(
-    private val executorService: ExecutorService,
     private val featureSdkCore: FeatureSdkCore,
-    private val flagsContext: FlagsContext,
-    private var flagsRepository: FlagsRepository = NoOpFlagsRepository()
+    private val evaluationsManager: EvaluationsManager,
+    private val flagsRepository: FlagsRepository
 ) : FlagsProvider {
 
-    private val flagsOrchestrator: EvaluationsManager
-
-    init {
-        if (flagsRepository is NoOpFlagsRepository) {
-            flagsRepository = DefaultFlagsRepository(
-                featureSdkCore = featureSdkCore
-            )
-        }
-
-        // Create orchestrator with network manager and dependencies
-        val flagsNetworkManager = DefaultFlagsNetworkManager(
-            internalLogger = featureSdkCore.internalLogger,
-            flagsContext = flagsContext
-        )
-
-        val precomputeMapper = PrecomputeMapper(featureSdkCore.internalLogger)
-
-        // The orchestrator handles taking the EvaluationContext and setting new evaluations into the FlagRepository
-        flagsOrchestrator = EvaluationsManager(
-            executorService = executorService,
-            internalLogger = featureSdkCore.internalLogger,
-            flagsRepository = flagsRepository,
-            flagsNetworkManager = flagsNetworkManager,
-            precomputeMapper = precomputeMapper
-        )
-    }
-
-    override fun setContext(targetingKey: String, attributes: Map<String, Any>) {
-        try {
-            // Create evaluation context with attribute filtering
-            val evaluationContext = EvaluationContext.builder(targetingKey, featureSdkCore.internalLogger)
-                .addAll(attributes)
-                .build()
-
-            // Pass to orchestrator to handle network request and atomic storage
-            flagsOrchestrator.updateEvaluationsForContext(evaluationContext)
-        } catch (e: IllegalArgumentException) {
+    override fun setContext(context: EvaluationContext) {
+        // Validate targeting key is not blank
+        if (context.targetingKey.isBlank()) {
             featureSdkCore.internalLogger.log(
-                level = InternalLogger.Level.ERROR,
-                target = InternalLogger.Target.USER,
-                messageBuilder = { "Failed to set context: ${e.message}" },
-                throwable = e
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.USER,
+                { "Invalid evaluation context: targeting key cannot be blank or whitespace-only" }
             )
+            return
         }
+
+        // Pass to manager to handle network request and atomic storage
+        evaluationsManager.updateEvaluationsForContext(context)
     }
 
     override fun resolveBooleanValue(flagKey: String, defaultValue: Boolean): Boolean {
