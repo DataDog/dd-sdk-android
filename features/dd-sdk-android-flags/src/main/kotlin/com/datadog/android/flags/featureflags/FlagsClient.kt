@@ -61,11 +61,11 @@ interface FlagsClient {
     fun resolveStringValue(flagKey: String, defaultValue: String): String
 
     /**
-     * Resolves a double flag value.
+     * Resolves a numeric flag value.
      *
      * @param flagKey The unique identifier of the flag to resolve.
      * @param defaultValue The value to return if the flag cannot be retrieved or parsed.
-     * @return The double value of the flag, or the default value if unavailable.
+     * @return The numeric value of the flag as a double, or the default value if unavailable.
      */
     fun resolveDoubleValue(flagKey: String, defaultValue: Double): Double
 
@@ -185,6 +185,7 @@ interface FlagsClient {
          * If creation fails, a NOPClient is returned.
          *
          * @param name the client name. Defaults to "default".
+         * @param flagsConfiguration the flags configuration to use. If null, uses the configuration from the feature.
          * @param sdkCore the SDK instance. Defaults to the default Datadog instance.
          * @return the created or existing [FlagsClient], or a NOPClient if creation fails.
          */

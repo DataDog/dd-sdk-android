@@ -149,6 +149,12 @@ internal class DatadogFlagsClient(
                     messageBuilder = { "Failed to parse JSON for key: $flagKey" },
                     throwable = e
                 )
+                featureSdkCore.internalLogger.log(
+                    level = InternalLogger.Level.WARN,
+                    target = InternalLogger.Target.USER,
+                    messageBuilder = { "Failed to parse feature flag" },
+                    throwable = e
+                )
                 defaultValue
             }
         } ?: defaultValue

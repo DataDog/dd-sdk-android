@@ -38,72 +38,58 @@ internal class EndpointsHelper(private val flagsContext: FlagsContext, private v
             ?: "https://${flagsContext.site}/api/v2/logs"
     }
 
-    internal fun buildEndpointHost(site: DatadogSite, customerDomain: String = "preview"): String {
-        val siteName = when (site) {
-            DatadogSite.US1 -> "us1"
-            DatadogSite.US3 -> "us3"
-            DatadogSite.US5 -> "us5"
-            DatadogSite.EU1 -> "eu1"
-            DatadogSite.AP1 -> "ap1"
-            DatadogSite.AP2 -> "ap2"
-            DatadogSite.US1_FED -> DOMAIN_GOV
-            DatadogSite.STAGING -> DOMAIN_D0G
+    internal fun buildEndpointHost(site: DatadogSite, customerDomain: String = "preview"): String = when (site) {
+        DatadogSite.US1_FED -> {
+            internalLogger.log(
+                level = InternalLogger.Level.ERROR,
+                target = InternalLogger.Target.MAINTAINER,
+                messageBuilder = { ERROR_GOV_NOT_SUPPORTED }
+            )
+            ""
         }
-        return when (siteName) {
-            DOMAIN_GOV -> {
-                internalLogger.log(
-                    level = InternalLogger.Level.ERROR,
-                    target = InternalLogger.Target.MAINTAINER,
-                    messageBuilder = { ERROR_GOV_NOT_SUPPORTED }
-                )
-                ""
-            }
-            DOMAIN_D0G -> {
-                "$customerDomain.ff-cdn.datad0g.com"
-            }
-            in siteConfig -> {
-                val siteConfiguration = siteConfig[siteName]
-                if (siteConfiguration != null) {
-                    val dc = siteConfiguration.optString("dc", "")
-                    val tld = siteConfiguration.optString("tld", "com")
+        DatadogSite.STAGING -> {
+            "$customerDomain.ff-cdn.datad0g.com"
+        }
+        in siteConfig -> {
+            val siteConfiguration = siteConfig[site]
+            if (siteConfiguration != null) {
+                val dc = siteConfiguration.optString("dc", "")
+                val tld = siteConfiguration.optString("tld", "com")
 
-                    // customer domain is for future use
-                    // ff-cdn is the subdomain pointing to the CDN servers
-                    // dc is the datacenter, if specified
-                    // tld is the top level domain, changes for eu DCs
-                    "$customerDomain.ff-cdn.${if (dc.isNotEmpty()) "$dc." else ""}datadoghq.$tld"
-                } else {
-                    // This should never happen since we're in the 'in siteConfig' branch,
-                    // but handle it safely just in case
-                    internalLogger.log(
-                        level = InternalLogger.Level.ERROR,
-                        target = InternalLogger.Target.MAINTAINER,
-                        messageBuilder = { "Site configuration unexpectedly null for site: $siteName" }
-                    )
-                    ""
-                }
-            }
-            else -> {
-                val supportedSites = siteConfig.keys.joinToString(", ")
+                // customer domain is for future use
+                // ff-cdn is the subdomain pointing to the CDN servers
+                // dc is the datacenter, if specified
+                // tld is the top level domain, changes for eu DCs
+                "$customerDomain.ff-cdn.${if (dc.isNotEmpty()) "$dc." else ""}datadoghq.$tld"
+            } else {
+                // This should never happen since we're in the 'in siteConfig' branch,
+                // but handle it safely just in case
                 internalLogger.log(
                     level = InternalLogger.Level.ERROR,
                     target = InternalLogger.Target.MAINTAINER,
-                    messageBuilder = { "Unsupported site: $siteName. Supported sites: $supportedSites" }
+                    messageBuilder = { "Site configuration unexpectedly null for site: $site" }
                 )
                 ""
             }
+        }
+        else -> {
+            val supportedSites = siteConfig.keys.joinToString(", ")
+            internalLogger.log(
+                level = InternalLogger.Level.ERROR,
+                target = InternalLogger.Target.MAINTAINER,
+                messageBuilder = { "Unsupported site: $site. Supported sites: $supportedSites" }
+            )
+            ""
         }
     }
 
-    private val siteConfig: Map<String, JSONObject> = mapOf(
-        "us1" to JSONObject(),
-        "us3" to createSiteConfigObject(dc = "us3"),
-        "us5" to createSiteConfigObject(dc = "us5"),
-        "ap1" to createSiteConfigObject(dc = "ap1"),
-        "ap2" to createSiteConfigObject(dc = "ap2"),
-        "eu1" to createSiteConfigObject(tld = "eu"),
-        "us1_fed" to createSiteConfigObject(tld = "com"),
-        "staging" to createSiteConfigObject(tld = "com")
+    private val siteConfig: Map<DatadogSite, JSONObject> = mapOf(
+        DatadogSite.US1 to JSONObject(), // us1 host is customer-domain.ff-cdn.datadoghq.com, so no for a DC param.
+        DatadogSite.US3 to createSiteConfigObject(dc = "us3"),
+        DatadogSite.US5 to createSiteConfigObject(dc = "us5"),
+        DatadogSite.AP1 to createSiteConfigObject(dc = "ap1"),
+        DatadogSite.AP2 to createSiteConfigObject(dc = "ap2"),
+        DatadogSite.EU1 to createSiteConfigObject(tld = "eu")
     )
 
     private fun createSiteConfigObject(dc: String? = null, tld: String? = null): JSONObject = try {
@@ -119,8 +105,6 @@ internal class EndpointsHelper(private val flagsContext: FlagsContext, private v
     }
 
     internal companion object {
-        internal const val DOMAIN_GOV = "ddog-gov.com"
-        internal const val DOMAIN_D0G = "datad0g.com"
         private const val ERROR_GOV_NOT_SUPPORTED = "ddog-gov.com is not supported for flagging endpoints"
     }
 }

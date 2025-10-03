@@ -72,7 +72,7 @@ internal class DefaultFlagsNetworkManager(
             internalLogger.log(
                 InternalLogger.Level.ERROR,
                 InternalLogger.Target.MAINTAINER,
-                { "Unable to find host for site ${flagsContext.site.name}; we will retry later." },
+                { "Unable to find host ${flagsContext.site.intakeEndpoint}; we will retry later." },
                 e
             )
             null
