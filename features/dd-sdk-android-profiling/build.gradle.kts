@@ -1,3 +1,9 @@
+/*
+ * Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
+ * This product includes software developed at Datadog (https://www.datadoghq.com/).
+ * Copyright 2016-Present Datadog, Inc.
+ */
+
 import com.datadog.gradle.config.androidLibraryConfig
 import com.datadog.gradle.config.dependencyUpdateConfig
 import com.datadog.gradle.config.detektCustomConfig
@@ -43,6 +49,7 @@ dependencies {
     implementation(libs.kotlin)
     implementation(libs.androidXCore)
     implementation(libs.androidXCoreKtx)
+    implementation(libs.gson)
 
     // Generate NoOp implementations
     ksp(project(":tools:noopfactory"))
@@ -82,6 +89,7 @@ unMock {
     keepStartingWith("org.json")
 }
 
+apply(from = "generate_profiling_models.gradle.kts")
 kotlinConfig(jvmBytecodeTarget = JvmTarget.JVM_11)
 androidLibraryConfig()
 junitConfig()

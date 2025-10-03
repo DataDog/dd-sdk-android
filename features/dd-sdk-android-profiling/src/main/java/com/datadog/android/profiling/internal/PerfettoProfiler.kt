@@ -27,12 +27,14 @@ import java.util.function.Consumer
  * @param internalLogger the logger instance to use for logging.
  * @param timeProvider The time provider to use to get the current time.
  * @param profilingExecutor the executor service to run the profiling task on.
+ * @param onProfilingSuccess a callback to be invoked when profiling completes successfully.
  */
 @RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
 internal class PerfettoProfiler(
     private val internalLogger: InternalLogger,
     private val timeProvider: TimeProvider,
-    private val profilingExecutor: ExecutorService = Executors.newSingleThreadExecutor()
+    private val profilingExecutor: ExecutorService = Executors.newSingleThreadExecutor(),
+    private val onProfilingSuccess: (PerfettoResult) -> Unit
 ) : Profiler {
 
     private val requestBuilder: StackSamplingRequestBuilder
@@ -54,9 +56,18 @@ internal class PerfettoProfiler(
             .setDurationMs(PROFILING_MAX_DURATION_MS)
 
         resultCallback = Consumer<ProfilingResult> { result ->
-            val duration = timeProvider.getDeviceTimestamp() - profilingStartTime
+            val endTime = timeProvider.getDeviceTimestamp()
+            val duration = endTime - profilingStartTime
             if (result.errorCode == ProfilingResult.ERROR_NONE) {
-                // TODO RUM-11853: Implement the upload logic of profiling result.
+                result.resultFilePath?.let {
+                    onProfilingSuccess(
+                        PerfettoResult(
+                            start = profilingStartTime,
+                            end = endTime,
+                            resultFilePath = it
+                        )
+                    )
+                }
             }
             sendProfilingEndTelemetry(result = result, duration = duration)
         }

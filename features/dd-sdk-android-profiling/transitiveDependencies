@@ -10,6 +10,7 @@ androidx.core:core:1.17.0                                       : 1376 Kb
 androidx.lifecycle:lifecycle-common:2.6.2                       :   51 Kb
 androidx.lifecycle:lifecycle-runtime:2.6.2                      :   21 Kb
 androidx.versionedparcelable:versionedparcelable:1.1.1          :   30 Kb
+com.google.code.gson:gson:2.10.1                                :  276 Kb
 com.google.guava:listenablefuture:1.0                           :    3 Kb
 org.jetbrains.kotlin:kotlin-stdlib:2.0.21                       : 1706 Kb
 org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1          :   19 Kb
