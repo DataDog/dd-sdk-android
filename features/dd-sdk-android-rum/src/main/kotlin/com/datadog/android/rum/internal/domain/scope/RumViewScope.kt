@@ -355,13 +355,12 @@ internal open class RumViewScope(
                 name = rumContext.viewName,
                 url = rumContext.viewUrl.orEmpty()
             ),
-            vital = VitalEvent.VitalEventVital(
+            vital = VitalEvent.Vital.FeatureOperationProperties(
                 id = UUID.randomUUID().toString(),
                 name = name,
                 operationKey = operationKey,
                 stepType = stepType,
-                failureReason = failureReason,
-                type = VitalEvent.VitalEventVitalType.OPERATION_STEP
+                failureReason = failureReason
             )
         )
     }

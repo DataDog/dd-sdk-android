@@ -4,7 +4,7 @@
   "title": "CommonProperties",
   "type": "object",
   "description": "Schema of common properties of RUM events",
-  "required": ["date", "application", "session", "view", "_dd"],
+  "required": ["date", "application", "session", "_dd"],
   "properties": {
     "date": {
       "type": "integer",
@@ -440,6 +440,19 @@
       "type": "object",
       "description": "User provided context",
       "additionalProperties": true
+    },
+    "stream": {
+      "type": "object",
+      "description": "Stream properties",
+      "required": ["id"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "UUID of the stream",
+          "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$",
+          "readOnly": true
+        }
+      }
     }
   }
 }
