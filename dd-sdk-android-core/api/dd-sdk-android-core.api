@@ -404,6 +404,8 @@ public final class com/datadog/android/api/feature/FeatureScope$DefaultImpls {
 }
 
 public final class com/datadog/android/api/feature/FeatureScopeExtKt {
+	public static final fun getContextFuture (Lcom/datadog/android/api/feature/FeatureScope;Ljava/util/Set;)Ljava/util/concurrent/Future;
+	public static synthetic fun getContextFuture$default (Lcom/datadog/android/api/feature/FeatureScope;Ljava/util/Set;ILjava/lang/Object;)Ljava/util/concurrent/Future;
 	public static final fun measureMethodCallPerf (Lcom/datadog/android/api/InternalLogger;Ljava/lang/Class;Ljava/lang/String;FLkotlin/jvm/functions/Function0;)Ljava/lang/Object;
 	public static synthetic fun measureMethodCallPerf$default (Lcom/datadog/android/api/InternalLogger;Ljava/lang/Class;Ljava/lang/String;FLkotlin/jvm/functions/Function0;ILjava/lang/Object;)Ljava/lang/Object;
 }

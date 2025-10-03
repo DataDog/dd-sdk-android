@@ -42,7 +42,7 @@ class StubSDKCore(
     private var datadogContext: DatadogContext = forge.getForgery<DatadogContext>().copy(source = "android")
 ) : InternalSdkCore by mockSdkCore {
 
-    private val featureScopes = mutableMapOf<String, StubFeatureScope>()
+    private val featureScopes = mutableMapOf<String, FeatureScope>()
 
     init {
         val mockResources = mock<Resources>()
@@ -62,7 +62,7 @@ class StubSDKCore(
      * @return a list of [StubEvent]
      */
     fun eventsWritten(featureName: String): List<StubEvent> {
-        return featureScopes[featureName]?.eventsWritten() ?: emptyList()
+        return (featureScopes[featureName] as? StubFeatureScope)?.eventsWritten() ?: emptyList()
     }
 
     /**
@@ -79,7 +79,7 @@ class StubSDKCore(
      * @return a list of objects
      */
     fun eventsReceived(featureName: String): List<Any> {
-        return featureScopes[featureName]?.eventsReceived() ?: emptyList()
+        return (featureScopes[featureName] as? StubFeatureScope)?.eventsReceived() ?: emptyList()
     }
 
     /**
@@ -122,6 +122,22 @@ class StubSDKCore(
         )
     }
 
+    /**
+     * Stubs a feature and its corresponding feature scope with a mock.
+     *
+     * @param feature The Datadog feature being used in core.
+     * @param featureScope The feature scope that will be returned by the [getFeature] method.
+     */
+    fun stubFeatureScope(feature: Feature, featureScope: FeatureScope) {
+        // Stop previous registered
+        featureScopes[feature.name]?.unwrap<Feature>()?.onStop()
+
+        featureScopes[feature.name] = featureScope
+
+        feature.onInitialize(mockContext)
+        mockSdkCore.registerFeature(feature)
+    }
+
     // endregion
 
     // region InternalSdkCore
@@ -143,12 +159,7 @@ class StubSDKCore(
     override val internalLogger: InternalLogger = StubInternalLogger()
 
     override fun registerFeature(feature: Feature) {
-        // Stop previous registered
-        featureScopes[feature.name]?.unwrap<Feature>()?.onStop()
-
-        featureScopes[feature.name] = StubFeatureScope(feature, { datadogContext })
-        feature.onInitialize(mockContext)
-        mockSdkCore.registerFeature(feature)
+        stubFeatureScope(feature, StubFeatureScope(feature, { datadogContext }))
     }
 
     override fun getFeature(featureName: String): FeatureScope? {

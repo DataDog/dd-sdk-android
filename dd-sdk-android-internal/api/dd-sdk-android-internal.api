@@ -54,13 +54,6 @@ public final class com/datadog/android/internal/collections/EvictingQueue : java
 	public fun toArray ([Ljava/lang/Object;)[Ljava/lang/Object;
 }
 
-public final class com/datadog/android/internal/concurrent/CompletableFuture {
-	public fun <init> ()V
-	public final fun complete (Ljava/lang/Object;)V
-	public final fun getValue ()Ljava/lang/Object;
-	public final fun isComplete ()Z
-}
-
 public final class com/datadog/android/internal/network/GraphQLHeaders : java/lang/Enum {
 	public static final field DD_GRAPHQL_NAME_HEADER Lcom/datadog/android/internal/network/GraphQLHeaders;
 	public static final field DD_GRAPHQL_PAYLOAD_HEADER Lcom/datadog/android/internal/network/GraphQLHeaders;

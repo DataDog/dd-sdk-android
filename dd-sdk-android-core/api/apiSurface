@@ -127,6 +127,7 @@ interface com.datadog.android.api.feature.FeatureScope
   fun <T: Feature> unwrap(): T
 typealias EventWriteScope = ((com.datadog.android.api.storage.EventBatchWriter) -> Unit) -> Unit
 fun <R: Any?> com.datadog.android.api.InternalLogger.measureMethodCallPerf(Class<*>, String, Float = 100f, () -> R): R
+fun FeatureScope.getContextFuture(Set<String> = emptySet()): java.util.concurrent.Future<com.datadog.android.api.context.DatadogContext?>?
 interface com.datadog.android.api.feature.FeatureSdkCore : com.datadog.android.api.SdkCore
   val internalLogger: com.datadog.android.api.InternalLogger
   fun registerFeature(Feature)

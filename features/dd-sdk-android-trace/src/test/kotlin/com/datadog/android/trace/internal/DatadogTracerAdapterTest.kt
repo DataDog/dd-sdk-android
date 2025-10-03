@@ -8,13 +8,12 @@ package com.datadog.android.trace.internal
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureScope
-import com.datadog.android.api.feature.FeatureSdkCore
-import com.datadog.android.internal.concurrent.CompletableFuture
+import com.datadog.android.api.feature.SdkFeatureMock
+import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.trace.api.scope.DatadogScopeListener
 import com.datadog.android.trace.api.span.DatadogSpanBuilder
 import com.datadog.android.trace.utils.RumContextTestsUtils.aDatadogContextWithRumContext
 import com.datadog.android.trace.utils.RumContextTestsUtils.aRumContext
-import com.datadog.android.trace.utils.RumContextTestsUtils.thenReturnContext
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.trace.bootstrap.instrumentation.api.AgentScope
 import com.datadog.trace.bootstrap.instrumentation.api.AgentSpan
@@ -43,6 +42,7 @@ import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.verifyNoMoreInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
+import java.util.concurrent.Future
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -54,7 +54,7 @@ internal class DatadogTracerAdapterTest {
     private lateinit var testedTracer: DatadogTracerAdapter
 
     @Mock
-    lateinit var mockSdkCore: FeatureSdkCore
+    lateinit var mockSdkCore: InternalSdkCore
 
     @Mock
     lateinit var mockTracerDelegate: AgentTracer.TracerAPI
@@ -68,7 +68,6 @@ internal class DatadogTracerAdapterTest {
     @Mock
     lateinit var mockDatadogSpan: DatadogSpanAdapter
 
-    @Mock
     lateinit var mockRumFeatureScope: FeatureScope
 
     @Mock
@@ -85,15 +84,23 @@ internal class DatadogTracerAdapterTest {
 
     lateinit var fakeRumContext: Map<String, Any?>
 
+    @Mock
+    private lateinit var mockContextFuture: Future<DatadogContext?>
+
     @BeforeEach
     fun `set up`(forge: Forge) {
         fakeRumContext = forge.aRumContext()
-        whenever(mockRumFeatureScope.withContext(eq(setOf(Feature.RUM_FEATURE_NAME)), any()))
-            .thenReturnContext(forge.aDatadogContextWithRumContext(fakeRumContext))
+        mockRumFeatureScope = SdkFeatureMock.create(mockContextFuture)
+        whenever(mockContextFuture.get()) doReturn forge.aDatadogContextWithRumContext(fakeRumContext)
 
         whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumFeatureScope
         whenever(mockSdkCore.internalLogger).thenReturn(mock())
-        testedTracer = DatadogTracerAdapter(mockSdkCore, mockTracerDelegate, true, mockSpanLogger)
+        testedTracer = DatadogTracerAdapter(
+            sdkCore = mockSdkCore,
+            delegate = mockTracerDelegate,
+            bundleWithRumEnabled = true,
+            spanLogger = mockSpanLogger
+        )
         whenever(mockDatadogSpan.delegate).thenReturn(mockSpan)
         whenever(mockTracerDelegate.propagate()).thenReturn(mock())
         @Suppress("DEPRECATION")
@@ -189,8 +196,8 @@ internal class DatadogTracerAdapterTest {
 
         // Then
         verify(mockSpanBuilderDelegate).withTag(
-            eq(RumContextHelper.DATADOG_INITIAL_CONTEXT),
-            any<CompletableFuture<DatadogContext>>()
+            eq(RumContextPropagator.DATADOG_INITIAL_CONTEXT),
+            any<Future<DatadogContext>>()
         )
 
         verifyNoMoreInteractions(mockSpanBuilderDelegate)

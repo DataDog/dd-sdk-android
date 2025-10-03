@@ -16,7 +16,8 @@ import com.datadog.android.api.storage.EventType
 import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.event.EventMapper
 import com.datadog.android.event.NoOpEventMapper
-import com.datadog.android.trace.internal.RumContextHelper.extractRumContextFeature
+import com.datadog.android.trace.internal.RumContextPropagator
+import com.datadog.android.trace.internal.RumContextPropagator.Companion.extractRumContext
 import com.datadog.android.trace.internal.domain.event.ContextAwareMapper
 import com.datadog.android.trace.internal.storage.ContextAwareSerializer
 import com.datadog.android.trace.model.SpanEvent
@@ -30,7 +31,8 @@ internal class CoreTraceWriter(
     internal val ddSpanToSpanEventMapper: ContextAwareMapper<DDSpan, SpanEvent>,
     internal val eventMapper: EventMapper<SpanEvent> = NoOpEventMapper(),
     private val serializer: ContextAwareSerializer<SpanEvent>,
-    private val internalLogger: InternalLogger
+    private val internalLogger: InternalLogger,
+    private val rumContextPropagator: RumContextPropagator = RumContextPropagator { sdkCore }
 ) : Writer {
 
     // region Writer
@@ -44,7 +46,7 @@ internal class CoreTraceWriter(
             ?.withWriteContext { datadogContext, writeScope ->
                 val writeSpans = trace
                     .filter { it.getTraceSamplingPriority() !in DROP_SAMPLING_PRIORITIES }
-                    .map { it.extractRumContextFeature(sdkCore.internalLogger) }
+                    .map { it.extractRumContext(rumContextPropagator) }
                 // TODO RUM-4092 Add the capability in the serializer to handle multiple spans in one payload
                 writeScope {
                     writeSpans

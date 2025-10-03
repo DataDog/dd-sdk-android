@@ -34,10 +34,10 @@ object com.datadog.android.trace.internal.DatadogTracingToolkit
   fun addThrowable(com.datadog.android.trace.api.span.DatadogSpan, Throwable, Byte)
   fun activateSpan(com.datadog.android.trace.api.tracer.DatadogTracer, com.datadog.android.trace.api.span.DatadogSpan, Boolean): com.datadog.android.trace.api.scope.DatadogScope?
   fun mergeBaggage(String?, String): String
-object com.datadog.android.trace.internal.RumContextHelper
-  const val DATADOG_INITIAL_CONTEXT: String
-  fun com.datadog.android.trace.api.span.DatadogSpanBuilder.injectRumContextFeature(com.datadog.android.api.feature.FeatureScope)
-  fun com.datadog.android.trace.api.span.DatadogSpan.extractRumContextFeature(com.datadog.android.api.InternalLogger)
+class com.datadog.android.trace.internal.RumContextPropagator
+  constructor(() -> com.datadog.android.api.feature.FeatureSdkCore?)
+  companion object 
+    fun com.datadog.android.trace.api.span.DatadogSpan.extractRumContext(RumContextPropagator, Boolean = false)
 fun <T> android.database.sqlite.SQLiteDatabase.transactionTraced(String, Boolean = true, com.datadog.android.trace.api.span.DatadogSpan.(android.database.sqlite.SQLiteDatabase) -> T): T
 data class com.datadog.android.trace.model.SpanEvent
   constructor(kotlin.String, kotlin.String, kotlin.String, kotlin.String, kotlin.String, kotlin.String, kotlin.Long, kotlin.Long, kotlin.Long = 0L, Metrics, Meta)

@@ -10,9 +10,11 @@ import com.datadog.android.Datadog
 import com.datadog.android.api.SdkCore
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.Feature
+import com.datadog.android.api.feature.SdkFeatureMock
 import com.datadog.android.core.sampling.DeterministicSampler.Companion.MAX_ID
 import com.datadog.android.core.sampling.DeterministicSampler.Companion.SAMPLER_HASHER
 import com.datadog.android.core.stub.StubSDKCore
+import com.datadog.android.okhttp.RumContextPropagationTest.Companion.SAMPLING_THRESHOLD
 import com.datadog.android.okhttp.tests.elmyr.OkHttpConfigurator
 import com.datadog.android.okhttp.trace.TracingInterceptor
 import com.datadog.android.trace.DatadogTracing
@@ -23,6 +25,7 @@ import com.datadog.android.trace.TracingHeaderType
 import com.datadog.android.trace.api.TestIdGenerationStrategy
 import com.datadog.android.trace.api.setTestIdGenerationStrategy
 import com.datadog.android.trace.api.tracer.DatadogTracerBuilder
+import com.datadog.tools.unit.completedFutureMock
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.getFieldValue
 import com.datadog.tools.unit.getStaticValue
@@ -49,7 +52,7 @@ import org.mockito.quality.Strictness
     ExtendWith(ForgeExtension::class),
     ExtendWith(TestConfigurationExtension::class)
 )
-@ForgeConfiguration(OkHttpConfigurator::class, 0x5495256c5a50)
+@ForgeConfiguration(OkHttpConfigurator::class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 class RumContextPropagationTest {
     private lateinit var mockServer: MockWebServer
@@ -251,7 +254,10 @@ class RumContextPropagationTest {
                 .getFieldValue<MutableMap<String, SdkCore>, Any>("instances")
                 .also { instances -> instances += sdkCoreStub.name to sdkCoreStub }
 
-            sdkCoreStub.registerFeature(StubRumFeature)
+            sdkCoreStub.stubFeatureScope(
+                StubRumFeature,
+                SdkFeatureMock.create(completedFutureMock(datadogContext))
+            )
 
             return sdkCoreStub
         }

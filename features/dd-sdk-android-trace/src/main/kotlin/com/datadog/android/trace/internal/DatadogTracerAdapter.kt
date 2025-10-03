@@ -5,7 +5,6 @@
  */
 package com.datadog.android.trace.internal
 
-import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.trace.api.propagation.DatadogPropagation
 import com.datadog.android.trace.api.scope.DatadogScope
@@ -13,7 +12,7 @@ import com.datadog.android.trace.api.scope.DatadogScopeListener
 import com.datadog.android.trace.api.span.DatadogSpan
 import com.datadog.android.trace.api.span.DatadogSpanBuilder
 import com.datadog.android.trace.api.tracer.DatadogTracer
-import com.datadog.android.trace.internal.RumContextHelper.injectRumContextFeature
+import com.datadog.android.trace.internal.RumContextPropagator.Companion.injectRumContext
 import com.datadog.trace.bootstrap.instrumentation.api.AgentTracer
 import com.datadog.trace.bootstrap.instrumentation.api.ScopeSource
 
@@ -21,7 +20,8 @@ internal class DatadogTracerAdapter(
     internal val sdkCore: FeatureSdkCore,
     internal val delegate: AgentTracer.TracerAPI,
     internal val bundleWithRumEnabled: Boolean,
-    private val spanLogger: DatadogSpanLogger
+    private val spanLogger: DatadogSpanLogger,
+    private val rumContextPropagator: RumContextPropagator = RumContextPropagator { sdkCore }
 ) : DatadogTracer {
 
     override fun buildSpan(instrumentationName: String, spanName: CharSequence): DatadogSpanBuilder = wrapSpan(
@@ -59,10 +59,6 @@ internal class DatadogTracerAdapter(
             .withRumContextIfNeeded()
 
     private fun DatadogSpanBuilder.withRumContextIfNeeded() = apply {
-        if (bundleWithRumEnabled) {
-            sdkCore.getFeature(Feature.RUM_FEATURE_NAME)?.let {
-                injectRumContextFeature(it)
-            }
-        }
+        if (bundleWithRumEnabled) injectRumContext(rumContextPropagator)
     }
 }
