@@ -8,7 +8,9 @@ package com.datadog.android.okhttp
 import android.content.Context
 import com.datadog.android.Datadog
 import com.datadog.android.api.SdkCore
+import com.datadog.android.api.context.AccountInfo
 import com.datadog.android.api.context.DatadogContext
+import com.datadog.android.api.context.UserInfo
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.SdkFeatureMock
 import com.datadog.android.core.sampling.DeterministicSampler.Companion.MAX_ID
@@ -23,8 +25,11 @@ import com.datadog.android.trace.Trace
 import com.datadog.android.trace.TraceConfiguration
 import com.datadog.android.trace.TracingHeaderType
 import com.datadog.android.trace.api.TestIdGenerationStrategy
+import com.datadog.android.trace.api.replace
 import com.datadog.android.trace.api.setTestIdGenerationStrategy
 import com.datadog.android.trace.api.tracer.DatadogTracerBuilder
+import com.datadog.android.trace.utils.RumContextTestsUtils.aDatadogContextWithRumContext
+import com.datadog.android.trace.utils.RumContextTestsUtils.aRumContext
 import com.datadog.tools.unit.completedFutureMock
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.getFieldValue
@@ -76,11 +81,14 @@ class RumContextPropagationTest {
     @Test
     fun `M send rum sessionId in baggage header W call is made`(forge: Forge) {
         // Given
-        val fakeRumContext = forge.createRumContext(SAMPLED_IDS.random())
-        stubSdkCore = forge.prepareStubSdkCore(fakeRumContext)
+        val rumContext = forge.aRumContext(SAMPLED_IDS.random())
+        val accountInfo = forge.getForgery<AccountInfo>()
+        val userInfo = forge.getForgery<UserInfo>()
+        val datadogContext = forge.aDatadogContextWithRumContext(rumContext, accountInfo, userInfo)
+        stubSdkCore = forge.prepareStubSdkCore(datadogContext)
         Trace.enable(TraceConfiguration.Builder().build(), stubSdkCore)
         testedClient = prepareClient(stubSdkCore)
-        registerTracer(createTracer(stubSdkCore))
+        GlobalDatadogTracer.replace(createTracer(stubSdkCore))
 
         // When
         testedClient.makeNetworkCall()
@@ -88,7 +96,9 @@ class RumContextPropagationTest {
         // Then
         assertSentRequest {
             assertThat(getHeader(HEADER_BAGGAGE)).isEqualTo(
-                "session.id=${fakeRumContext[RUM_CONTEXT_SESSION_ID]}"
+                "account.id=${accountInfo.id}," +
+                    userInfo.id?.let { "user.id=$it," }.orEmpty() +
+                    "session.id=${rumContext[RUM_CONTEXT_SESSION_ID]}"
             )
         }
     }
@@ -100,11 +110,12 @@ class RumContextPropagationTest {
         forge: Forge
     ) {
         // Given
-        val rumContext = forge.createRumContext(sessionId = SAMPLED_IDS.random())
-        stubSdkCore = forge.prepareStubSdkCore(rumContext)
+        val rumContext = forge.aRumContext(sessionId = SAMPLED_IDS.random())
+        val datadogContext = forge.aDatadogContextWithRumContext(rumContext)
+        stubSdkCore = forge.prepareStubSdkCore(datadogContext)
         Trace.enable(TraceConfiguration.Builder().build(), stubSdkCore)
         testedClient = prepareClient(stubSdkCore)
-        registerTracer(createTracer(stubSdkCore))
+        GlobalDatadogTracer.replace(createTracer(stubSdkCore))
 
         // When
         testedClient.makeNetworkCall()
@@ -120,11 +131,12 @@ class RumContextPropagationTest {
         forge: Forge
     ) {
         // Given
-        val rumContext = forge.createRumContext(sessionId = DROPPED_IDS.random())
-        stubSdkCore = forge.prepareStubSdkCore(rumContext)
+        val rumContext = forge.aRumContext(sessionId = DROPPED_IDS.random())
+        val datadogContext = forge.aDatadogContextWithRumContext(rumContext)
+        stubSdkCore = forge.prepareStubSdkCore(datadogContext)
         Trace.enable(TraceConfiguration.Builder().build(), stubSdkCore)
         testedClient = prepareClient(stubSdkCore)
-        registerTracer(createTracer(stubSdkCore))
+        GlobalDatadogTracer.replace(createTracer(stubSdkCore))
 
         // When
         testedClient.makeNetworkCall()
@@ -141,11 +153,12 @@ class RumContextPropagationTest {
         forge: Forge
     ) {
         // Given
-        val rumContext = forge.createRumContext(sessionId = null)
-        stubSdkCore = forge.prepareStubSdkCore(rumContext)
+        val rumContext = forge.aRumContext(sessionId = null)
+        val datadogContext = forge.aDatadogContextWithRumContext(rumContext)
+        stubSdkCore = forge.prepareStubSdkCore(datadogContext)
         Trace.enable(TraceConfiguration.Builder().build(), stubSdkCore)
         testedClient = prepareClient(stubSdkCore)
-        registerTracer(createTracer(stubSdkCore).withTraceIdsFrom(DROPPED_IDS))
+        GlobalDatadogTracer.replace(createTracer(stubSdkCore).withTraceIdsFrom(DROPPED_IDS))
 
         // When
         testedClient.makeNetworkCall()
@@ -162,11 +175,12 @@ class RumContextPropagationTest {
         forge: Forge
     ) {
         // Given
-        val rumContext = forge.createRumContext(sessionId = null)
-        stubSdkCore = forge.prepareStubSdkCore(rumContext)
+        val rumContext = forge.aRumContext(sessionId = null)
+        val datadogContext = forge.aDatadogContextWithRumContext(rumContext)
+        stubSdkCore = forge.prepareStubSdkCore(datadogContext)
         Trace.enable(TraceConfiguration.Builder().build(), stubSdkCore)
         testedClient = prepareClient(stubSdkCore)
-        registerTracer(createTracer(stubSdkCore).withTraceIdsFrom(SAMPLED_IDS))
+        GlobalDatadogTracer.replace(createTracer(stubSdkCore).withTraceIdsFrom(SAMPLED_IDS))
 
         // When
         testedClient.makeNetworkCall()
@@ -228,25 +242,7 @@ class RumContextPropagationTest {
             block(mockServer.takeRequest())
         }
 
-        private fun Forge.createRumContext(sessionId: Long?): Map<String, String> =
-            buildMap {
-                put("view_id", anAlphabeticalString())
-                put("action_id", anAlphabeticalString())
-                put("application_id", anAlphabeticalString())
-                sessionId?.let {
-                    put(
-                        RUM_CONTEXT_SESSION_ID,
-                        "aaaaaaaa-bbbb-Mccc-Nddd-${(sessionId).toULong().toString(16)}"
-                    )
-                }
-            }
-
-        private fun Forge.prepareStubSdkCore(rumContext: Map<String, Any?>): StubSDKCore {
-            val datadogContext = getForgery<DatadogContext>().copy(
-                source = "android",
-                featuresContext = mapOf(Feature.RUM_FEATURE_NAME to rumContext)
-            )
-
+        private fun Forge.prepareStubSdkCore(datadogContext: DatadogContext): StubSDKCore {
             val sdkCoreStub = StubSDKCore(this, datadogContext = datadogContext)
 
             Datadog::class.java
@@ -260,13 +256,6 @@ class RumContextPropagationTest {
             )
 
             return sdkCoreStub
-        }
-
-        private fun registerTracer(
-            builder: DatadogTracerBuilder
-        ) {
-            GlobalDatadogTracer.clear()
-            GlobalDatadogTracer.registerIfAbsent(builder.build())
         }
 
         private fun createTracer(sdkCore: SdkCore) = DatadogTracing.newTracerBuilder(sdkCore)

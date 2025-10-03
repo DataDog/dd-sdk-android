@@ -6,7 +6,9 @@
 
 package com.datadog.android.trace.utils
 
+import com.datadog.android.api.context.AccountInfo
 import com.datadog.android.api.context.DatadogContext
+import com.datadog.android.api.context.UserInfo
 import com.datadog.android.api.feature.Feature
 import fr.xgouchet.elmyr.Forge
 import java.util.UUID
@@ -17,15 +19,29 @@ object RumContextTestsUtils {
     const val RUM_CONTEXT_SESSION_ID = "session_id"
     const val RUM_CONTEXT_APPLICATION_ID = "application_id"
 
-    fun Forge.aRumContext() = mapOf(
-        RUM_CONTEXT_VIEW_ID to getForgery<UUID>().toString(),
-        RUM_CONTEXT_ACTION_ID to getForgery<UUID>().toString(),
-        RUM_CONTEXT_SESSION_ID to getForgery<UUID>().toString(),
-        RUM_CONTEXT_APPLICATION_ID to getForgery<UUID>().toString()
-    )
+    private const val HEX = 16
 
-    fun Forge.aDatadogContextWithRumContext(rumContext: Map<String, Any?>): DatadogContext =
-        getForgery<DatadogContext>().let {
-            it.copy(featuresContext = it.featuresContext + mapOf(Feature.Companion.RUM_FEATURE_NAME to rumContext))
+    fun Forge.aRumContext(sessionId: Long? = null) = buildMap {
+        put(RUM_CONTEXT_VIEW_ID, getForgery<UUID>().toString())
+        put(RUM_CONTEXT_ACTION_ID, getForgery<UUID>().toString())
+        put(RUM_CONTEXT_APPLICATION_ID, getForgery<UUID>().toString())
+        sessionId?.let {
+            put(
+                RUM_CONTEXT_SESSION_ID,
+                "aaaaaaaa-bbbb-Mccc-Nddd-${(sessionId).toULong().toString(HEX)}"
+            )
         }
+    }
+
+    fun Forge.aDatadogContextWithRumContext(
+        rumContext: Map<String, Any?>,
+        accountInfo: AccountInfo? = null,
+        userInfo: UserInfo = UserInfo()
+    ): DatadogContext = getForgery<DatadogContext>().let {
+        it.copy(
+            featuresContext = it.featuresContext + mapOf(Feature.Companion.RUM_FEATURE_NAME to rumContext),
+            accountInfo = accountInfo,
+            userInfo = userInfo
+        )
+    }
 }
