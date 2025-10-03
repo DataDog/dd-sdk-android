@@ -16,6 +16,7 @@ import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.RumSessionType
+import com.datadog.android.rum.internal.FeaturesContextResolver
 import com.datadog.android.rum.internal.domain.InfoProvider
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
@@ -25,10 +26,15 @@ import com.datadog.android.rum.internal.domain.display.DisplayInfo
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
 import com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener
 import com.datadog.android.rum.internal.startup.RumAppStartupTelemetryReporter
+import com.datadog.android.rum.internal.startup.RumStartupScenario
+import com.datadog.android.rum.internal.toVital
+import com.datadog.android.rum.internal.utils.newRumEventWriteOperation
 import com.datadog.android.rum.internal.utils.percent
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.rum.metric.interactiontonextview.LastInteractionIdentifier
 import com.datadog.android.rum.metric.networksettled.InitialResourceIdentifier
+import com.datadog.android.rum.model.VitalEvent
+import com.datadog.android.rum.model.VitalEvent.StartupType
 import java.security.SecureRandom
 import java.util.UUID
 import java.util.concurrent.TimeUnit
@@ -57,9 +63,11 @@ internal class RumSessionScope(
     private val displayInfoProvider: InfoProvider<DisplayInfo>,
     private val sessionInactivityNanos: Long = DEFAULT_SESSION_INACTIVITY_NS,
     private val sessionMaxDurationNanos: Long = DEFAULT_SESSION_MAX_DURATION_NS,
-    rumSessionTypeOverride: RumSessionType?,
+    private val rumSessionTypeOverride: RumSessionType?,
     private val rumAppStartupTelemetryReporter: RumAppStartupTelemetryReporter
 ) : RumScope {
+
+    private val featuresContextResolver = FeaturesContextResolver()
 
     internal var sessionId = RumContext.NULL_UUID
     internal var sessionState: State = State.NOT_TRACKED
@@ -156,6 +164,12 @@ internal class RumSessionScope(
         when (event) {
             is RumRawEvent.AppStartTTIDEvent -> {
                 if (sessionState == State.TRACKED) {
+                    sentTTIDVital(
+                        event = event,
+                        datadogContext = datadogContext,
+                        writeScope = writeScope,
+                        writer = actualWriter
+                    )
                     rumAppStartupTelemetryReporter.reportTTID(
                         info = event.info,
                         indexInSession = appStartIndex
@@ -279,6 +293,72 @@ internal class RumSessionScope(
                 RUM_SESSION_ID_BUS_MESSAGE_KEY to sessionId
             )
         )
+    }
+
+    private fun sentTTIDVital(
+        event: RumRawEvent.AppStartTTIDEvent,
+        datadogContext: DatadogContext,
+        writeScope: EventWriteScope,
+        writer: DataWriter<Any>
+    ) {
+        sdkCore.newRumEventWriteOperation(datadogContext, writeScope, writer) {
+            val rumContext = getRumContext()
+
+            val syntheticsAttribute = if (
+                rumContext.syntheticsTestId.isNullOrBlank() ||
+                rumContext.syntheticsResultId.isNullOrBlank()
+            ) {
+                null
+            } else {
+                VitalEvent.Synthetics(
+                    testId = rumContext.syntheticsTestId,
+                    resultId = rumContext.syntheticsResultId
+                )
+            }
+
+            val sessionType = when {
+                rumSessionTypeOverride != null -> rumSessionTypeOverride.toVital()
+                syntheticsAttribute == null -> VitalEvent.VitalEventSessionType.USER
+                else -> VitalEvent.VitalEventSessionType.SYNTHETICS
+            }
+            VitalEvent(
+                date = event.eventTime.timestamp + sdkCore.time.serverTimeOffsetMs,
+                context = VitalEvent.Context(
+                    additionalProperties = getCustomAttributes().toMutableMap()
+                ),
+                dd = VitalEvent.Dd(
+                    session = VitalEvent.DdSession(
+                        sessionPrecondition = rumContext.sessionStartReason.toVitalSessionPrecondition()
+                    ),
+                    configuration = VitalEvent.Configuration(sessionSampleRate = sampleRate)
+                ),
+                application = VitalEvent.Application(
+                    id = rumContext.applicationId,
+                    currentLocale = datadogContext.deviceInfo.localeInfo.currentLocale
+                ),
+                synthetics = syntheticsAttribute,
+                session = VitalEvent.VitalEventSession(
+                    id = rumContext.sessionId,
+                    type = sessionType,
+                    hasReplay = false
+                ),
+                view = null,
+                vital = VitalEvent.Vital.AppLaunchProperties(
+                    id = UUID.randomUUID().toString(),
+                    name = null,
+                    description = null,
+                    appLaunchMetric = VitalEvent.AppLaunchMetric.TTID,
+                    duration = event.info.duration.inWholeNanoseconds,
+                    startupType = when (event.info.scenario) {
+                        is RumStartupScenario.Cold -> StartupType.COLD_START
+                        is RumStartupScenario.WarmAfterActivityDestroyed,
+                        is RumStartupScenario.WarmFirstActivity -> StartupType.WARM_START
+                    },
+                    isPrewarmed = null,
+                    hasSavedInstanceStateBundle = event.info.scenario.hasSavedInstanceStateBundle
+                )
+            )
+        }.submit()
     }
 
     // endregion
