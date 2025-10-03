@@ -90,7 +90,13 @@ object Flags {
             internalLogger.log(
                 InternalLogger.Level.ERROR,
                 InternalLogger.Target.MAINTAINER,
-                { "Missing required context parameters: $missingParams" }
+                { "Missing required configuration parameters: $missingParams" }
+            )
+
+            internalLogger.log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.USER,
+                { "Missing required configuration parameters: $missingParams" }
             )
 
             return null
