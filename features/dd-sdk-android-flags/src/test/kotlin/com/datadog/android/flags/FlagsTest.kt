@@ -34,7 +34,6 @@ internal class FlagsTest {
     fun `M register FlagsFeature W enable()`() {
         // Given
         val fakeConfiguration = FlagsConfiguration.Builder()
-            .setEnableExposureLogging(true)
             .build()
 
         // When
@@ -54,7 +53,6 @@ internal class FlagsTest {
     ) {
         // Given
         val fakeConfiguration = FlagsConfiguration.Builder()
-            .setEnableExposureLogging(true)
             .useCustomEndpoint(fakeCustomEndpoint)
             .useFlaggingProxy(fakeFlaggingProxy)
             .build()
@@ -66,7 +64,6 @@ internal class FlagsTest {
         argumentCaptor<FlagsFeature> {
             verify(mockSdkCore).registerFeature(capture())
             assertThat(lastValue.name).isEqualTo(FLAGS_FEATURE_NAME)
-            assertThat(lastValue.flagsConfiguration.enableExposureLogging).isTrue()
             assertThat(lastValue.flagsConfiguration.customEndpointUrl).isEqualTo(fakeCustomEndpoint)
             assertThat(lastValue.flagsConfiguration.flaggingProxyUrl).isEqualTo(fakeFlaggingProxy)
         }
@@ -80,7 +77,6 @@ internal class FlagsTest {
         // Then
         argumentCaptor<FlagsFeature> {
             verify(mockSdkCore).registerFeature(capture())
-            assertThat(lastValue.flagsConfiguration.enableExposureLogging).isTrue()
             assertThat(lastValue.flagsConfiguration.customEndpointUrl).isNull()
             assertThat(lastValue.flagsConfiguration.flaggingProxyUrl).isNull()
         }
@@ -97,7 +93,6 @@ internal class FlagsTest {
         // Then
         argumentCaptor<FlagsFeature> {
             verify(mockSdkCore).registerFeature(capture())
-            assertThat(lastValue.flagsConfiguration.enableExposureLogging).isTrue()
             assertThat(lastValue.flagsConfiguration.customEndpointUrl).isNull()
             assertThat(lastValue.flagsConfiguration.flaggingProxyUrl).isNull()
         }
@@ -107,7 +102,6 @@ internal class FlagsTest {
     fun `M handle null configuration values W enable() { custom config with nulls }`() {
         // Given
         val fakeConfiguration = FlagsConfiguration.Builder()
-            .setEnableExposureLogging(false)
             .useCustomEndpoint(null)
             .useFlaggingProxy(null)
             .build()
@@ -118,26 +112,8 @@ internal class FlagsTest {
         // Then
         argumentCaptor<FlagsFeature> {
             verify(mockSdkCore).registerFeature(capture())
-            assertThat(lastValue.flagsConfiguration.enableExposureLogging).isFalse()
             assertThat(lastValue.flagsConfiguration.customEndpointUrl).isNull()
             assertThat(lastValue.flagsConfiguration.flaggingProxyUrl).isNull()
-        }
-    }
-
-    @Test
-    fun `M register FlagsFeature with exposure logging disabled W enable() { disabled }`() {
-        // Given
-        val fakeConfiguration = FlagsConfiguration.Builder()
-            .setEnableExposureLogging(false)
-            .build()
-
-        // When
-        Flags.enable(fakeConfiguration, mockSdkCore)
-
-        // Then
-        argumentCaptor<FlagsFeature> {
-            verify(mockSdkCore).registerFeature(capture())
-            assertThat(lastValue.flagsConfiguration.enableExposureLogging).isFalse()
         }
     }
 

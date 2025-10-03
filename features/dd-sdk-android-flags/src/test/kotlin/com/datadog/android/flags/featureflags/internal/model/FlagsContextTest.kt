@@ -59,7 +59,6 @@ internal class FlagsContextTest {
         whenever(mockDatadogContext.env) doReturn fakeEnv
 
         val flagsConfiguration = FlagsConfiguration.Builder()
-            .setEnableExposureLogging(true)
             .useCustomEndpoint(fakeCustomEndpoint)
             .useFlaggingProxy(fakeProxyUrl)
             .build()
@@ -72,7 +71,6 @@ internal class FlagsContextTest {
         assertThat(flagsContext.clientToken).isEqualTo(fakeClientToken)
         assertThat(flagsContext.site).isEqualTo(mockDatadogSite)
         assertThat(flagsContext.env).isEqualTo(fakeEnv)
-        assertThat(flagsContext.enableExposureLogging).isTrue()
         assertThat(flagsContext.customEndpointUrl).isEqualTo(fakeCustomEndpoint)
         assertThat(flagsContext.flaggingProxyUrl).isEqualTo(fakeProxyUrl)
     }
@@ -95,7 +93,6 @@ internal class FlagsContextTest {
         assertThat(flagsContext.clientToken).isEqualTo(fakeClientToken)
         assertThat(flagsContext.site).isEqualTo(mockDatadogSite)
         assertThat(flagsContext.env).isEqualTo(fakeEnv)
-        assertThat(flagsContext.enableExposureLogging).isTrue()
         assertThat(flagsContext.customEndpointUrl).isNull()
         assertThat(flagsContext.flaggingProxyUrl).isNull()
     }

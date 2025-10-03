@@ -8,12 +8,10 @@ package com.datadog.android.flags
 
 /**
  * Describes configuration to be used for the Flags feature.
- * @param enableExposureLogging Log exposure events to RUM.
  * @param customEndpointUrl Custom endpoint URL for uploading exposure events. If null, the default endpoint will be used.
  * @param flaggingProxyUrl Custom endpoint URL for proxying precomputed assignment requests. If null, the default endpoint will be used.
  */
 data class FlagsConfiguration(
-    val enableExposureLogging: Boolean,
     val customEndpointUrl: String? = null,
     val flaggingProxyUrl: String? = null
 ) {
@@ -22,15 +20,6 @@ data class FlagsConfiguration(
      */
     class Builder {
         private var flagsConfig = DEFAULT_FEATURE_FLAGS_CONFIG
-
-        /**
-         * Sets whether exposures should be logged to RUM. This is disabled by default.
-         * @param enabled Whether to enable exposure logging.
-         */
-        fun setEnableExposureLogging(enabled: Boolean): Builder {
-            flagsConfig = flagsConfig.copy(enableExposureLogging = enabled)
-            return this
-        }
 
         /**
          * Sets a custom endpoint URL for uploading exposure events.
@@ -55,7 +44,6 @@ data class FlagsConfiguration(
          * @return a new [FlagsConfiguration] instance.
          */
         fun build(): FlagsConfiguration = FlagsConfiguration(
-            enableExposureLogging = flagsConfig.enableExposureLogging,
             customEndpointUrl = flagsConfig.customEndpointUrl,
             flaggingProxyUrl = flagsConfig.flaggingProxyUrl
         )
@@ -72,7 +60,6 @@ data class FlagsConfiguration(
         fun defaultConfiguration(): FlagsConfiguration = DEFAULT_FEATURE_FLAGS_CONFIG
 
         internal val DEFAULT_FEATURE_FLAGS_CONFIG = FlagsConfiguration(
-            enableExposureLogging = true,
             customEndpointUrl = null,
             flaggingProxyUrl = null
         )

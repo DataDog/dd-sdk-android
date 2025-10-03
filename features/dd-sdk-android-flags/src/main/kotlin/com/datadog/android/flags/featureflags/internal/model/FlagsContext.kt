@@ -20,7 +20,6 @@ import com.datadog.android.flags.FlagsConfiguration
  * @param clientToken The client token for authenticating requests to Datadog
  * @param site The Datadog site (e.g., US1, EU1) for routing requests
  * @param env The environment name (e.g., prod, staging) for context
- * @param enableExposureLogging Whether exposure events should be logged to RUM
  * @param customEndpointUrl Custom endpoint URL for uploading exposure events. If null, the default endpoint will be used.
  * @param flaggingProxyUrl Custom endpoint URL for proxying precomputed assignment requests. If null, the default endpoint will be used.
  */
@@ -29,7 +28,6 @@ internal data class FlagsContext(
     val clientToken: String,
     val site: DatadogSite,
     val env: String,
-    val enableExposureLogging: Boolean = false,
     val customEndpointUrl: String? = null,
     val flaggingProxyUrl: String? = null
 ) {
@@ -51,7 +49,6 @@ internal data class FlagsContext(
             clientToken = datadogContext.clientToken,
             site = datadogContext.site,
             env = datadogContext.env,
-            enableExposureLogging = flagsConfiguration.enableExposureLogging,
             customEndpointUrl = flagsConfiguration.customEndpointUrl,
             flaggingProxyUrl = flagsConfiguration.flaggingProxyUrl
         )

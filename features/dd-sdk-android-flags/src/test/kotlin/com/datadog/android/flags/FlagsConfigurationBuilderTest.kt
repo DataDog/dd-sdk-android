@@ -31,7 +31,6 @@ internal class FlagsConfigurationBuilderTest {
         val flagsConfiguration = testedBuilder.build()
 
         // Then
-        assertThat(flagsConfiguration.enableExposureLogging).isTrue()
         assertThat(flagsConfiguration.customEndpointUrl).isNull()
         assertThat(flagsConfiguration.flaggingProxyUrl).isNull()
     }
@@ -44,7 +43,6 @@ internal class FlagsConfigurationBuilderTest {
         val flagsConfiguration = testedBuilder.useCustomEndpoint(customEndpointUrl).build()
 
         // Then
-        assertThat(flagsConfiguration.enableExposureLogging).isTrue()
         assertThat(flagsConfiguration.customEndpointUrl).isEqualTo(customEndpointUrl)
         assertThat(flagsConfiguration.flaggingProxyUrl).isNull()
     }
@@ -57,20 +55,8 @@ internal class FlagsConfigurationBuilderTest {
         val flagsConfiguration = testedBuilder.useFlaggingProxy(flaggingProxyUrl).build()
 
         // Then
-        assertThat(flagsConfiguration.enableExposureLogging).isTrue()
         assertThat(flagsConfiguration.customEndpointUrl).isNull()
         assertThat(flagsConfiguration.flaggingProxyUrl).isEqualTo(flaggingProxyUrl)
-    }
-
-    @Test
-    fun `M build configuration with exposure logging W setEnableExposureLogging() and build()`() {
-        // When
-        val flagsConfiguration = testedBuilder.setEnableExposureLogging(true).build()
-
-        // Then
-        assertThat(flagsConfiguration.enableExposureLogging).isTrue()
-        assertThat(flagsConfiguration.customEndpointUrl).isNull()
-        assertThat(flagsConfiguration.flaggingProxyUrl).isNull()
     }
 
     @Test
@@ -80,13 +66,11 @@ internal class FlagsConfigurationBuilderTest {
     ) {
         // When
         val flagsConfiguration = testedBuilder
-            .setEnableExposureLogging(true)
             .useCustomEndpoint(customEndpointUrl)
             .useFlaggingProxy(flaggingProxyUrl)
             .build()
 
         // Then
-        assertThat(flagsConfiguration.enableExposureLogging).isTrue()
         assertThat(flagsConfiguration.customEndpointUrl).isEqualTo(customEndpointUrl)
         assertThat(flagsConfiguration.flaggingProxyUrl).isEqualTo(flaggingProxyUrl)
     }
@@ -97,7 +81,6 @@ internal class FlagsConfigurationBuilderTest {
         val flagsConfiguration = testedBuilder.useCustomEndpoint(null).build()
 
         // Then
-        assertThat(flagsConfiguration.enableExposureLogging).isTrue()
         assertThat(flagsConfiguration.customEndpointUrl).isNull()
         assertThat(flagsConfiguration.flaggingProxyUrl).isNull()
     }
@@ -108,7 +91,6 @@ internal class FlagsConfigurationBuilderTest {
         val flagsConfiguration = testedBuilder.useFlaggingProxy(null).build()
 
         // Then
-        assertThat(flagsConfiguration.enableExposureLogging).isTrue()
         assertThat(flagsConfiguration.customEndpointUrl).isNull()
         assertThat(flagsConfiguration.flaggingProxyUrl).isNull()
     }

@@ -33,7 +33,7 @@ import org.json.JSONObject
  *
  * ## Usage
  *
- * To create a client, use the [Builder]:
+ * To create a [FlagsClient], use the [Builder]:
  * ```
  * // Default client
  * val client = FlagsClient.Builder().build()
@@ -47,7 +47,7 @@ import org.json.JSONObject
  *     .build()
  * ```
  *
- * To retrieve an existing client, use [get]:
+ * To retrieve an existing [FlagsClient], use [get]:
  * ```
  * val client = FlagsClient.get("analytics")
  * ```
@@ -117,12 +117,12 @@ interface FlagsClient {
      *
      * ## Usage Examples
      *
-     * Default client:
+     * Default [FlagsClient]:
      * ```
      * val client = FlagsClient.Builder().build()
      * ```
      *
-     * Named client:
+     * Named [FlagsClient]:
      * ```
      * val client = FlagsClient.Builder("analytics").build()
      * ```
@@ -130,15 +130,14 @@ interface FlagsClient {
      * With custom configuration:
      * ```
      * val client = FlagsClient.Builder("analytics")
-     *     .setEnableExposureLogging(true)
      *     .useCustomEndpoint("https://custom.endpoint.com")
      *     .build()
      * ```
      *
      * With custom SDK core:
      * ```
-     * val client = FlagsClient.Builder("analytics", customCore)
-     *     .setEnableExposureLogging(true)
+     * val client = FlagsClient.Builder(name = "analytics", sdkCore = customCore)
+     *     .useFlaggingProxy("https://proxy.example.com")
      *     .build()
      * ```
      */
@@ -147,14 +146,13 @@ interface FlagsClient {
         private val sdkCore: SdkCore
 
         // Optional configuration overrides (null = use feature default)
-        private var explicitEnableExposureLogging: Boolean? = null
         private var explicitCustomEndpoint: String? = null
         private var explicitFlaggingProxy: String? = null
 
         /**
-         * Creates a builder for the default client.
+         * Creates a builder for the default [FlagsClient].
          *
-         * @param sdkCore the SDK instance to associate with this client. Defaults to main instance.
+         * @param sdkCore the SDK instance to associate with this [FlagsClient]. Defaults to main instance.
          */
         constructor(sdkCore: SdkCore = Datadog.getInstance()) {
             this.name = Companion.DEFAULT_CLIENT_NAME
@@ -162,10 +160,10 @@ interface FlagsClient {
         }
 
         /**
-         * Creates a builder for a named client.
+         * Creates a builder for a named [FlagsClient].
          *
-         * The name is used to identify and retrieve this client later via [get].
-         * Multiple clients with different names can coexist within the same [SdkCore].
+         * The name is used to identify and retrieve this [FlagsClient] later via [get].
+         * Multiple [FlagsClient] instances with different names can coexist within the same [SdkCore].
          *
          * @param name the client name. Must be non-empty.
          * @param sdkCore the SDK instance to associate with this client. Defaults to main instance.
@@ -173,19 +171,6 @@ interface FlagsClient {
         constructor(name: String, sdkCore: SdkCore = Datadog.getInstance()) {
             this.name = name
             this.sdkCore = sdkCore
-        }
-
-        /**
-         * Sets whether exposure events should be logged to RUM.
-         *
-         * If not called, uses the default from [FlagsFeature] configuration.
-         *
-         * @param enabled whether to enable exposure logging.
-         * @return this Builder instance for chaining.
-         */
-        fun setEnableExposureLogging(enabled: Boolean): Builder {
-            this.explicitEnableExposureLogging = enabled
-            return this
         }
 
         /**
@@ -223,9 +208,9 @@ interface FlagsClient {
          * 3. Creates and registers the client
          * 4. Returns the created client or [NoOpFlagsClient] on failure
          *
-         * If a client with the same name already exists for this [SdkCore]:
+         * If a [FlagsClient] with the same name already exists for this [SdkCore]:
          * - Logs a critical error (ERROR level, USER + MAINTAINER targets)
-         * - Returns the existing client
+         * - Returns the existing [FlagsClient]
          *
          * @return the created [FlagsClient], existing client, or [NoOpFlagsClient].
          */
@@ -260,8 +245,6 @@ interface FlagsClient {
                 // Merge configuration (selective override)
                 val featureConfig = flagsFeature.flagsConfiguration
                 val mergedConfig = FlagsConfiguration(
-                    enableExposureLogging = explicitEnableExposureLogging
-                        ?: featureConfig.enableExposureLogging,
                     customEndpointUrl = explicitCustomEndpoint
                         ?: featureConfig.customEndpointUrl,
                     flaggingProxyUrl = explicitFlaggingProxy
@@ -303,18 +286,12 @@ interface FlagsClient {
         private val registeredClients: MutableMap<ClientKey, FlagsClient> = mutableMapOf()
 
         /**
-         * Gets the client with the specified name from the SDK core.
+         * Gets the [FlagsClient] with the specified name from the SDK core.
          *
-         * **BREAKING CHANGE**: This method no longer auto-creates clients.
-         * If no client exists with the given name, returns a [NoOpFlagsClient] that
-         * logs critical errors but never crashes.
-         *
-         * To create a client, use [Builder]:
-         * ```
-         * val client = FlagsClient.Builder("analytics").build()
-         * ```
-         *
-         * @param name the client name. Defaults to "default".
+         * If no [FlagsClient] exists with the given name, returns a [NoOpFlagsClient] that logs
+         * critical errors but never crashes.
+         * 
+         * @param name the [FlagsClient] name. Defaults to "default".
          * @param sdkCore the SDK instance. Defaults to the default Datadog instance.
          * @return the [FlagsClient] with the specified name, or [NoOpFlagsClient] if not found.
          */

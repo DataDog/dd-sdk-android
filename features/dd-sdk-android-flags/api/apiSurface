@@ -1,9 +1,8 @@
 object com.datadog.android.flags.Flags
   fun enable(FlagsConfiguration = FlagsConfiguration.defaultConfiguration(), com.datadog.android.api.SdkCore = Datadog.getInstance())
 data class com.datadog.android.flags.FlagsConfiguration
-  constructor(Boolean, String? = null, String? = null)
+  constructor(String? = null, String? = null)
   class Builder
-    fun setEnableExposureLogging(Boolean): Builder
     fun useCustomEndpoint(String?): Builder
     fun useFlaggingProxy(String?): Builder
     fun build(): FlagsConfiguration
@@ -19,7 +18,6 @@ interface com.datadog.android.flags.featureflags.FlagsClient
   class Builder
     constructor(com.datadog.android.api.SdkCore = Datadog.getInstance())
     constructor(String, com.datadog.android.api.SdkCore = Datadog.getInstance())
-    fun setEnableExposureLogging(Boolean): Builder
     fun useCustomEndpoint(String?): Builder
     fun useFlaggingProxy(String?): Builder
     fun build(): FlagsClient
