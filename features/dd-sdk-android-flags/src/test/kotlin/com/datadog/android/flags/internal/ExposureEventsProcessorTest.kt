@@ -69,7 +69,7 @@ internal class ExposureEventsProcessorTest {
             attributes = mapOf(
                 "user_id" to forge.anAlphabeticalString(),
                 "plan" to "premium",
-                "age" to forge.anInt(min = 18, max = 99)
+                "age" to forge.anInt(min = 18, max = 99).toString()
             )
         )
 
@@ -201,9 +201,9 @@ internal class ExposureEventsProcessorTest {
             targetingKey = fakeTargetingKey,
             attributes = mapOf(
                 "string_attr" to forge.anAlphabeticalString(),
-                "int_attr" to forge.anInt(),
-                "bool_attr" to forge.aBool(),
-                "double_attr" to forge.aDouble()
+                "int_attr" to forge.anInt().toString(),
+                "bool_attr" to forge.aBool().toString(),
+                "double_attr" to forge.aDouble().toString()
             )
         )
 
