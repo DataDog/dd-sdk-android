@@ -27,9 +27,9 @@ import org.mockito.junit.jupiter.MockitoExtension
 
 @ExtendWith(MockitoExtension::class, ForgeExtension::class)
 @ForgeConfiguration(ForgeConfigurator::class)
-internal class FlagsRequestFactoryTest {
+internal class ExposuresRequestFactoryTest {
 
-    private lateinit var testedFactory: FlagsRequestFactory
+    private lateinit var testedFactory: ExposuresRequestFactory
 
     @Forgery
     lateinit var fakeDatadogContext: DatadogContext
@@ -39,7 +39,7 @@ internal class FlagsRequestFactoryTest {
 
     @BeforeEach
     fun `set up`() {
-        testedFactory = FlagsRequestFactory(
+        testedFactory = ExposuresRequestFactory(
             internalLogger = mockInternalLogger
         )
     }

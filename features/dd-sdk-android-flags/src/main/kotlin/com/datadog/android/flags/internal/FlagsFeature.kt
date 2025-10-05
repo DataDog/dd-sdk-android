@@ -13,7 +13,7 @@ import com.datadog.android.api.feature.FeatureContextUpdateReceiver
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.feature.StorageBackedFeature
 import com.datadog.android.api.storage.FeatureStorageConfiguration
-import com.datadog.android.flags.internal.net.FlagsRequestFactory
+import com.datadog.android.flags.internal.net.ExposuresRequestFactory
 import com.datadog.android.flags.internal.storage.ExposureEventRecordWriter
 import com.datadog.android.flags.internal.storage.NoOpRecordWriter
 import com.datadog.android.flags.internal.storage.RecordWriter
@@ -55,7 +55,7 @@ internal class FlagsFeature(
     }
 
     override val requestFactory =
-        FlagsRequestFactory(
+        ExposuresRequestFactory(
             internalLogger = sdkCore.internalLogger
         )
 

@@ -15,7 +15,7 @@ import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.core.internal.utils.join
 import java.util.UUID
 
-internal class FlagsRequestFactory(
+internal class ExposuresRequestFactory(
     private val internalLogger: InternalLogger
 ) : RequestFactory {
 
