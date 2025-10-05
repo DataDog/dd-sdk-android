@@ -28,8 +28,16 @@ internal class EndpointsHelper(private val internalLogger: InternalLogger) {
         in siteConfig -> {
             val siteConfiguration = siteConfig[site]
             if (siteConfiguration != null) {
-                val dc = siteConfiguration.optString("dc", "")
-                val tld = siteConfiguration.optString("tld", "com")
+                val dc = try {
+                    siteConfiguration.getString("dc")
+                } catch (_: JSONException) {
+                    ""
+                }
+                val tld = try {
+                    siteConfiguration.getString("tld")
+                } catch (_: JSONException) {
+                    "com"
+                }
 
                 // customer domain is for future use
                 // ff-cdn is the subdomain pointing to the CDN servers

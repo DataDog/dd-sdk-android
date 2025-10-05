@@ -8,42 +8,36 @@ package com.datadog.android.flags.featureflags.internal.repository
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.api.storage.datastore.DataStoreHandler
 import com.datadog.android.flags.featureflags.internal.model.PrecomputedFlag
 import com.datadog.android.flags.featureflags.internal.persistence.FlagsPersistenceManager
 import com.datadog.android.flags.featureflags.model.EvaluationContext
-import com.datadog.android.flags.internal.FlagsFeature.Companion.FLAGS_FEATURE_NAME
-import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
 
 internal class DefaultFlagsRepository(
     private val featureSdkCore: FeatureSdkCore,
     private val instanceName: String,
+    private val dataStore: DataStoreHandler,
     private val internalLogger: InternalLogger = featureSdkCore.internalLogger
 ) : FlagsRepository {
     private data class FlagsState(val context: EvaluationContext, val flags: Map<String, PrecomputedFlag>)
     private val atomicState = AtomicReference<FlagsState?>(null)
 
-    private val isInitialized = AtomicBoolean(false)
-
     private val persistenceManager = FlagsPersistenceManager(
-        dataStore = featureSdkCore.getFeature(FLAGS_FEATURE_NAME)?.dataStore,
+        dataStore = dataStore,
         instanceName = instanceName,
         internalLogger = internalLogger
     ) { persistedState ->
         persistedState?.let {
             val loadedState = FlagsState(it.evaluationContext, it.flags)
-            atomicState.set(loadedState)
+            atomicState.compareAndSet(null, loadedState)
         }
-        isInitialized.set(true)
     }
 
     override fun setFlagsAndContext(context: EvaluationContext, flags: Map<String, PrecomputedFlag>) {
         val newState = FlagsState(context, flags)
         atomicState.set(newState)
-
-        if (isInitialized.get()) {
-            persistenceManager.saveFlagsState(context, flags)
-        }
+        persistenceManager.saveFlagsState(context, flags)
     }
 
     override fun getPrecomputedFlag(key: String): PrecomputedFlag? {

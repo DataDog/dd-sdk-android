@@ -16,9 +16,11 @@ import com.datadog.android.flags.featureflags.internal.DatadogFlagsClient
 import com.datadog.android.flags.featureflags.internal.evaluation.EvaluationsManager
 import com.datadog.android.flags.featureflags.internal.model.FlagsContext
 import com.datadog.android.flags.featureflags.internal.repository.DefaultFlagsRepository
+import com.datadog.android.flags.featureflags.internal.repository.NoOpFlagsRepository
 import com.datadog.android.flags.featureflags.internal.repository.net.DefaultFlagsNetworkManager
 import com.datadog.android.flags.featureflags.internal.repository.net.PrecomputeMapper
 import com.datadog.android.flags.internal.FlagsFeature
+import com.datadog.android.flags.internal.FlagsFeature.Companion.FLAGS_FEATURE_NAME
 
 /**
  * Entry point for the Flags feature.
@@ -100,10 +102,17 @@ object Flags {
             env = env
         )
 
-        val flagsRepository = DefaultFlagsRepository(
-            featureSdkCore = sdkCore,
-            instanceName = "default"
-        )
+        val datastore = (sdkCore as? FeatureSdkCore)?.getFeature(FLAGS_FEATURE_NAME)
+            ?.dataStore
+        val flagsRepository = if (datastore != null) {
+            DefaultFlagsRepository(
+                featureSdkCore = sdkCore,
+                dataStore = datastore,
+                instanceName = "default"
+            )
+        } else {
+            NoOpFlagsRepository()
+        }
 
         val flagsNetworkManager = DefaultFlagsNetworkManager(
             internalLogger = sdkCore.internalLogger,

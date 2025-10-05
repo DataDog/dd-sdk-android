@@ -38,8 +38,8 @@ internal class FlagsStateDeserializerTest {
         // Given
         val targetingKey = forge.anAlphabeticalString()
         val stringAttr = forge.anAlphabeticalString()
-        val numberAttr = forge.anInt()
-        val booleanAttr = forge.aBool()
+        val numberAttr = forge.anInt().toString()
+        val booleanAttr = forge.aBool().toString()
         val timestamp = System.currentTimeMillis()
 
         val json = JSONObject().apply {
@@ -163,8 +163,8 @@ internal class FlagsStateDeserializerTest {
         // Given
         val targetingKey = forge.anAlphabeticalString()
         val validString = forge.anAlphabeticalString()
-        val validNumber = forge.anInt()
-        val validBoolean = forge.aBool()
+        val validNumber = forge.anInt().toString()
+        val validBoolean = forge.aBool().toString()
 
         val json = JSONObject().apply {
             put(

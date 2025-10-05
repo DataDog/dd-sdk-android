@@ -48,7 +48,7 @@ internal class FlagsStateSerializer(
                 { "Failed to serialize FlagsStateEntry to JSON" },
                 e
             )
-            "{}"
+            ""
         }
     }
 

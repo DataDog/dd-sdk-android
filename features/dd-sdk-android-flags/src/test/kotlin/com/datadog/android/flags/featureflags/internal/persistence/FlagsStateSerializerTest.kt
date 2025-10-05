@@ -39,8 +39,8 @@ internal class FlagsStateSerializerTest {
         val targetingKey = forge.anAlphabeticalString()
         val attributes = mapOf(
             "string_attr" to forge.anAlphabeticalString(),
-            "number_attr" to forge.anInt(),
-            "boolean_attr" to forge.aBool()
+            "number_attr" to forge.anInt().toString(),
+            "boolean_attr" to forge.aBool().toString()
         )
         val evaluationContext = EvaluationContext(targetingKey, attributes)
 

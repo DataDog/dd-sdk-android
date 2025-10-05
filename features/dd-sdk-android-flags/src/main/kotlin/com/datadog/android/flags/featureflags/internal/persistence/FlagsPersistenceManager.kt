@@ -16,7 +16,7 @@ import com.datadog.android.flags.featureflags.internal.model.PrecomputedFlag
 import com.datadog.android.flags.featureflags.model.EvaluationContext
 
 internal class FlagsPersistenceManager(
-    private val dataStore: DataStoreHandler?,
+    private val dataStore: DataStoreHandler,
     private val instanceName: String,
     private val internalLogger: InternalLogger,
     onStateLoaded: (FlagsStateEntry?) -> Unit
@@ -41,23 +41,16 @@ internal class FlagsPersistenceManager(
             lastUpdateTimestamp = System.currentTimeMillis()
         )
 
-        dataStore?.setValue(
+        dataStore.setValue(
             key = getFlagsStateKey(),
             data = entry,
             serializer = serializer,
             callback = callback
-        ) ?: run {
-            internalLogger.log(
-                InternalLogger.Level.ERROR,
-                InternalLogger.Target.MAINTAINER,
-                { "Unable to access flags feature datastore for saving state" }
-            )
-            callback?.onFailure()
-        }
+        )
     }
 
     private fun loadFlagsState(onStateLoaded: (FlagsStateEntry?) -> Unit) {
-        dataStore?.value(
+        dataStore.value(
             key = getFlagsStateKey(),
             deserializer = deserializer,
             callback = object : DataStoreReadCallback<FlagsStateEntry> {
@@ -75,14 +68,7 @@ internal class FlagsPersistenceManager(
                     onStateLoaded(null)
                 }
             }
-        ) ?: run {
-            internalLogger.log(
-                InternalLogger.Level.WARN,
-                InternalLogger.Target.MAINTAINER,
-                { "Unable to access flags feature datastore for loading state" }
-            )
-            onStateLoaded(null)
-        }
+        )
     }
 
     companion object {

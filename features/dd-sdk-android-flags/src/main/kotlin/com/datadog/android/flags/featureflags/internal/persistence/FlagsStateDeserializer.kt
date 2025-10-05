@@ -31,7 +31,12 @@ internal class FlagsStateDeserializer(
             val flagsJson = json.getJSONObject(JsonKeys.FLAGS.value)
             val flags = deserializeFlags(flagsJson)
 
-            val timestamp = json.optLong(JsonKeys.LAST_UPDATE_TIMESTAMP.value, System.currentTimeMillis())
+            @Suppress("UnsafeThirdPartyFunctionCall") // JSONObject operations wrapped in try-catch
+            val timestamp = try {
+                json.getLong(JsonKeys.LAST_UPDATE_TIMESTAMP.value)
+            } catch (_: JSONException) {
+                System.currentTimeMillis()
+            }
 
             FlagsStateEntry(
                 evaluationContext = evaluationContext,
@@ -52,22 +57,26 @@ internal class FlagsStateDeserializer(
     @Suppress("UnsafeThirdPartyFunctionCall") // JSONObject operations wrapped in try-catch
     private fun deserializeEvaluationContext(contextJson: JSONObject): EvaluationContext {
         val targetingKey = contextJson.getString(JsonKeys.TARGETING_KEY.value)
-        val attributesJson = contextJson.optJSONObject(JsonKeys.ATTRIBUTES.value)
+        val attributesJson = try {
+            contextJson.getJSONObject(JsonKeys.ATTRIBUTES.value)
+        } catch (_: JSONException) {
+            null
+        }
         val attributes = deserializeAttributes(attributesJson)
 
         return EvaluationContext(targetingKey, attributes)
     }
 
     @Suppress("UnsafeThirdPartyFunctionCall") // JSONObject operations wrapped in try-catch
-    private fun deserializeAttributes(attributesJson: JSONObject?): Map<String, Any> {
+    private fun deserializeAttributes(attributesJson: JSONObject?): Map<String, String> {
         if (attributesJson == null) return emptyMap()
 
-        val attributes = mutableMapOf<String, Any>()
+        val attributes = mutableMapOf<String, String>()
         val keys = attributesJson.keys()
 
         while (keys.hasNext()) {
             val key = keys.next()
-            val value = attributesJson.get(key)
+            val value = attributesJson.get(key).toString()
             attributes[key] = value
         }
 
@@ -105,7 +114,7 @@ internal class FlagsStateDeserializer(
             )
         } catch (e: JSONException) {
             internalLogger.log(
-                InternalLogger.Level.WARN,
+                InternalLogger.Level.ERROR,
                 InternalLogger.Target.MAINTAINER,
                 { "Failed to deserialize precomputed flag, skipping" },
                 e

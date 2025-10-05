@@ -43,7 +43,7 @@ internal class PrecomputeMapper(private val internalLogger: InternalLogger) {
                 doLog = flagData.getBoolean(JsonKeys.DO_LOG.value),
                 allocationKey = flagData.getString(JsonKeys.ALLOCATION_KEY.value),
                 variationKey = flagData.getString(JsonKeys.VARIATION_KEY.value),
-                extraLogging = flagData.optJSONObject(JsonKeys.EXTRA_LOGGING.value) ?: JSONObject(),
+                extraLogging = flagData.getJSONObject(JsonKeys.EXTRA_LOGGING.value),
                 reason = flagData.getString(JsonKeys.REASON.value)
             )
 
