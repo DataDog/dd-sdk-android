@@ -15,9 +15,9 @@ public final class com/datadog/android/flags/FlagsConfiguration {
 	public final fun copy (Ljava/lang/String;Ljava/lang/String;Z)Lcom/datadog/android/flags/FlagsConfiguration;
 	public static synthetic fun copy$default (Lcom/datadog/android/flags/FlagsConfiguration;Ljava/lang/String;Ljava/lang/String;ZILjava/lang/Object;)Lcom/datadog/android/flags/FlagsConfiguration;
 	public fun equals (Ljava/lang/Object;)Z
+	public final fun getCustomExposureEndpoint ()Ljava/lang/String;
+	public final fun getCustomFlagEndpoint ()Ljava/lang/String;
 	public final fun getEnableExposureLogging ()Z
-	public final fun getExposureProxyEndpoint ()Ljava/lang/String;
-	public final fun getFlaggingProxyEndpoint ()Ljava/lang/String;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
 }
@@ -26,8 +26,8 @@ public final class com/datadog/android/flags/FlagsConfiguration$Builder {
 	public fun <init> ()V
 	public final fun build ()Lcom/datadog/android/flags/FlagsConfiguration;
 	public final fun enableExposureLogging (Z)Lcom/datadog/android/flags/FlagsConfiguration$Builder;
-	public final fun useExposureEndpoint (Ljava/lang/String;)Lcom/datadog/android/flags/FlagsConfiguration$Builder;
-	public final fun useFlagEndpoint (Ljava/lang/String;)Lcom/datadog/android/flags/FlagsConfiguration$Builder;
+	public final fun useCustomExposureEndpoint (Ljava/lang/String;)Lcom/datadog/android/flags/FlagsConfiguration$Builder;
+	public final fun useCustomFlagEndpoint (Ljava/lang/String;)Lcom/datadog/android/flags/FlagsConfiguration$Builder;
 }
 
 public final class com/datadog/android/flags/FlagsConfiguration$Companion {
@@ -53,8 +53,8 @@ public final class com/datadog/android/flags/featureflags/FlagsClient$Builder {
 	public fun <init> (Ljava/lang/String;Lcom/datadog/android/api/SdkCore;)V
 	public synthetic fun <init> (Ljava/lang/String;Lcom/datadog/android/api/SdkCore;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun build ()Lcom/datadog/android/flags/featureflags/FlagsClient;
-	public final fun useCustomEndpoint (Ljava/lang/String;)Lcom/datadog/android/flags/featureflags/FlagsClient$Builder;
-	public final fun useFlaggingProxy (Ljava/lang/String;)Lcom/datadog/android/flags/featureflags/FlagsClient$Builder;
+	public final fun useCustomExposureEndpoint (Ljava/lang/String;)Lcom/datadog/android/flags/featureflags/FlagsClient$Builder;
+	public final fun useCustomFlagEndpoint (Ljava/lang/String;)Lcom/datadog/android/flags/featureflags/FlagsClient$Builder;
 }
 
 public final class com/datadog/android/flags/featureflags/FlagsClient$Companion {

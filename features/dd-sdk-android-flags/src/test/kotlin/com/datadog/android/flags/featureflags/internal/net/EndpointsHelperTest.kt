@@ -180,7 +180,7 @@ internal class EndpointsHelperTest {
             clientToken = fakeClientToken,
             site = DatadogSite.US1,
             env = fakeEnv,
-            flaggingProxyUrl = fakeProxyUrl
+            customFlagEndpoint = fakeProxyUrl
         )
         val helper = EndpointsHelper(context, mockInternalLogger)
 
@@ -203,7 +203,7 @@ internal class EndpointsHelperTest {
             clientToken = fakeClientToken,
             site = DatadogSite.US1,
             env = fakeEnv,
-            flaggingProxyUrl = null
+            customFlagEndpoint = null
         )
         val helper = EndpointsHelper(context, mockInternalLogger)
 
@@ -226,7 +226,7 @@ internal class EndpointsHelperTest {
             clientToken = fakeClientToken,
             site = DatadogSite.US1_FED,
             env = fakeEnv,
-            flaggingProxyUrl = null
+            customFlagEndpoint = null
         )
         val helper = EndpointsHelper(context, mockInternalLogger)
 

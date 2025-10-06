@@ -8,38 +8,44 @@ package com.datadog.android.flags
 
 /**
  * Describes configuration to be used for the Flags feature.
- * @param exposureProxyEndpoint Custom endpoint URL for uploading exposure events. If null, the default endpoint will be used.
- * @param flaggingProxyEndpoint Custom endpoint URL for proxying precomputed assignment requests. If null, the default endpoint will be used.
+ * @param customExposureEndpoint Custom endpoint URL for uploading exposure events. If null, the default endpoint will be used.
+ * @param customFlagEndpoint Custom endpoint URL for proxying precomputed flag assignment requests. If null, the default endpoint will be used.
  * @param enableExposureLogging Whether to enable exposure event logging. Defaults to false.
  */
 data class FlagsConfiguration internal constructor(
-    val exposureProxyEndpoint: String? = null,
-    val flaggingProxyEndpoint: String? = null,
+    val customExposureEndpoint: String? = null,
+    val customFlagEndpoint: String? = null,
     val enableExposureLogging: Boolean = false
 ) {
     /**
      * A Builder class for a [FlagsConfiguration].
      */
     class Builder {
-        private var exposureProxyEndpoint: String? = null
-        private var flaggingProxyEndpoint: String? = null
+        private var customExposureEndpoint: String? = null
+        private var customFlagEndpoint: String? = null
         private var enableExposureLogging: Boolean = false
 
         /**
-         * Sets a custom endpoint URL for uploading exposure events.
-         * @param endpointUrl The custom endpoint URL. If null, the default endpoint will be used.
+         * Sets a custom endpoint URL for uploading exposure events (flag evaluations).
+         * If not called, exposure events will be sent to Datadog's default intake endpoint.
+         *
+         * @param endpoint The full endpoint URL, e.g., https://example.com/exposure/upload.
+         *                 If null, the default endpoint will be used.
          */
-        fun useExposureEndpoint(endpointUrl: String?): Builder {
-            exposureProxyEndpoint = endpointUrl
+        fun useCustomExposureEndpoint(endpoint: String?): Builder {
+            customExposureEndpoint = endpoint
             return this
         }
 
         /**
-         * Sets a custom endpoint URL for proxying precomputed assignment requests.
-         * @param proxyUrl The custom proxy URL. If null, the default endpoint will be used.
+         * Sets a custom endpoint URL for fetching precomputed flag assignments (flagging proxy).
+         * If not called, flag assignments will be fetched from Datadog's default endpoint.
+         *
+         * @param endpoint The full proxy endpoint URL, e.g., https://proxy.example.com/flags.
+         *                 If null, the default endpoint will be used.
          */
-        fun useFlagEndpoint(proxyUrl: String?): Builder {
-            flaggingProxyEndpoint = proxyUrl
+        fun useCustomFlagEndpoint(endpoint: String?): Builder {
+            customFlagEndpoint = endpoint
             return this
         }
 
@@ -57,8 +63,8 @@ data class FlagsConfiguration internal constructor(
          * @return a new [FlagsConfiguration] instance.
          */
         fun build(): FlagsConfiguration = FlagsConfiguration(
-            exposureProxyEndpoint = exposureProxyEndpoint,
-            flaggingProxyEndpoint = flaggingProxyEndpoint,
+            customExposureEndpoint = customExposureEndpoint,
+            customFlagEndpoint = customFlagEndpoint,
             enableExposureLogging = enableExposureLogging
         )
     }
@@ -74,8 +80,8 @@ data class FlagsConfiguration internal constructor(
         fun defaultConfiguration(): FlagsConfiguration = DEFAULT_FEATURE_FLAGS_CONFIG
 
         internal val DEFAULT_FEATURE_FLAGS_CONFIG = FlagsConfiguration(
-            exposureProxyEndpoint = null,
-            flaggingProxyEndpoint = null,
+            customExposureEndpoint = null,
+            customFlagEndpoint = null,
             enableExposureLogging = false
         )
     }

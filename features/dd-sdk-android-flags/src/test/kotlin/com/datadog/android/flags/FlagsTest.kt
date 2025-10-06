@@ -53,8 +53,8 @@ internal class FlagsTest {
     ) {
         // Given
         val fakeConfiguration = FlagsConfiguration.Builder()
-            .useExposureEndpoint(fakeCustomEndpoint)
-            .useFlagEndpoint(fakeFlaggingProxy)
+            .useCustomExposureEndpoint(fakeCustomEndpoint)
+            .useCustomFlagEndpoint(fakeFlaggingProxy)
             .build()
 
         // When
@@ -64,8 +64,8 @@ internal class FlagsTest {
         argumentCaptor<FlagsFeature> {
             verify(mockSdkCore).registerFeature(capture())
             assertThat(lastValue.name).isEqualTo(FLAGS_FEATURE_NAME)
-            assertThat(lastValue.flagsConfiguration.exposureProxyEndpoint).isEqualTo(fakeCustomEndpoint)
-            assertThat(lastValue.flagsConfiguration.flaggingProxyEndpoint).isEqualTo(fakeFlaggingProxy)
+            assertThat(lastValue.flagsConfiguration.customExposureEndpoint).isEqualTo(fakeCustomEndpoint)
+            assertThat(lastValue.flagsConfiguration.customFlagEndpoint).isEqualTo(fakeFlaggingProxy)
         }
     }
 
@@ -77,8 +77,8 @@ internal class FlagsTest {
         // Then
         argumentCaptor<FlagsFeature> {
             verify(mockSdkCore).registerFeature(capture())
-            assertThat(lastValue.flagsConfiguration.exposureProxyEndpoint).isNull()
-            assertThat(lastValue.flagsConfiguration.flaggingProxyEndpoint).isNull()
+            assertThat(lastValue.flagsConfiguration.customExposureEndpoint).isNull()
+            assertThat(lastValue.flagsConfiguration.customFlagEndpoint).isNull()
         }
     }
 
@@ -93,8 +93,8 @@ internal class FlagsTest {
         // Then
         argumentCaptor<FlagsFeature> {
             verify(mockSdkCore).registerFeature(capture())
-            assertThat(lastValue.flagsConfiguration.exposureProxyEndpoint).isNull()
-            assertThat(lastValue.flagsConfiguration.flaggingProxyEndpoint).isNull()
+            assertThat(lastValue.flagsConfiguration.customExposureEndpoint).isNull()
+            assertThat(lastValue.flagsConfiguration.customFlagEndpoint).isNull()
         }
     }
 
@@ -102,8 +102,8 @@ internal class FlagsTest {
     fun `M handle null configuration values W enable() { custom config with nulls }`() {
         // Given
         val fakeConfiguration = FlagsConfiguration.Builder()
-            .useExposureEndpoint(null)
-            .useFlagEndpoint(null)
+            .useCustomExposureEndpoint(null)
+            .useCustomFlagEndpoint(null)
             .build()
 
         // When
@@ -112,8 +112,8 @@ internal class FlagsTest {
         // Then
         argumentCaptor<FlagsFeature> {
             verify(mockSdkCore).registerFeature(capture())
-            assertThat(lastValue.flagsConfiguration.exposureProxyEndpoint).isNull()
-            assertThat(lastValue.flagsConfiguration.flaggingProxyEndpoint).isNull()
+            assertThat(lastValue.flagsConfiguration.customExposureEndpoint).isNull()
+            assertThat(lastValue.flagsConfiguration.customFlagEndpoint).isNull()
         }
     }
 
@@ -123,7 +123,7 @@ internal class FlagsTest {
     ) {
         // Given
         val fakeConfiguration = FlagsConfiguration.Builder()
-            .useExposureEndpoint(fakeCustomEndpoint)
+            .useCustomExposureEndpoint(fakeCustomEndpoint)
             .build()
 
         // When
@@ -132,7 +132,7 @@ internal class FlagsTest {
         // Then
         argumentCaptor<FlagsFeature> {
             verify(mockSdkCore).registerFeature(capture())
-            assertThat(lastValue.flagsConfiguration.exposureProxyEndpoint).isEqualTo(fakeCustomEndpoint)
+            assertThat(lastValue.flagsConfiguration.customExposureEndpoint).isEqualTo(fakeCustomEndpoint)
         }
     }
 
@@ -142,7 +142,7 @@ internal class FlagsTest {
     ) {
         // Given
         val fakeConfiguration = FlagsConfiguration.Builder()
-            .useFlagEndpoint(fakeFlaggingProxy)
+            .useCustomFlagEndpoint(fakeFlaggingProxy)
             .build()
 
         // When
@@ -151,7 +151,7 @@ internal class FlagsTest {
         // Then
         argumentCaptor<FlagsFeature> {
             verify(mockSdkCore).registerFeature(capture())
-            assertThat(lastValue.flagsConfiguration.flaggingProxyEndpoint).isEqualTo(fakeFlaggingProxy)
+            assertThat(lastValue.flagsConfiguration.customFlagEndpoint).isEqualTo(fakeFlaggingProxy)
         }
     }
 

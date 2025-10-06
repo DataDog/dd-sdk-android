@@ -16,13 +16,13 @@ internal class EndpointsHelper(private val flagsContext: FlagsContext, private v
 
     /**
      * Gets the endpoint URL for feature flag requests.
-     * Uses the configured flagging proxy URL if provided, otherwise builds from the Datadog site.
+     * Uses the configured custom flag endpoint if provided, otherwise builds from the Datadog site.
      *
      * @return The complete endpoint URL for flagging requests, or null if the endpoint cannot be built.
      */
     internal fun getFlaggingEndpoint(): String? {
-        // Use flagging proxy URL if provided, otherwise build from site
-        return flagsContext.flaggingProxyUrl
+        // Use custom flag endpoint if provided, otherwise build from site
+        return flagsContext.customFlagEndpoint
             ?: buildEndpointHost(flagsContext.site)?.let {
                 "https://$it$FLAGS_ENDPOINT"
             }

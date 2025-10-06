@@ -23,8 +23,8 @@ internal class FlagsConfigurationTest {
         val config = FlagsConfiguration.defaultConfiguration()
 
         // Then
-        assertThat(config.exposureProxyEndpoint).isNull()
-        assertThat(config.flaggingProxyEndpoint).isNull()
+        assertThat(config.customExposureEndpoint).isNull()
+        assertThat(config.customFlagEndpoint).isNull()
         assertThat(config.enableExposureLogging).isFalse()
     }
 
@@ -49,13 +49,13 @@ internal class FlagsConfigurationTest {
     ) {
         // Given
         val config1 = FlagsConfiguration.Builder()
-            .useExposureEndpoint(fakeExposureEndpoint)
-            .useFlagEndpoint(fakeFlaggingEndpoint)
+            .useCustomExposureEndpoint(fakeExposureEndpoint)
+            .useCustomFlagEndpoint(fakeFlaggingEndpoint)
             .build()
 
         val config2 = FlagsConfiguration.Builder()
-            .useExposureEndpoint(fakeExposureEndpoint)
-            .useFlagEndpoint(fakeFlaggingEndpoint)
+            .useCustomExposureEndpoint(fakeExposureEndpoint)
+            .useCustomFlagEndpoint(fakeFlaggingEndpoint)
             .build()
 
         // Then
@@ -70,11 +70,11 @@ internal class FlagsConfigurationTest {
     ) {
         // Given
         val config1 = FlagsConfiguration.Builder()
-            .useExposureEndpoint(fakeExposureEndpoint1)
+            .useCustomExposureEndpoint(fakeExposureEndpoint1)
             .build()
 
         val config2 = FlagsConfiguration.Builder()
-            .useExposureEndpoint(fakeExposureEndpoint2)
+            .useCustomExposureEndpoint(fakeExposureEndpoint2)
             .build()
 
         // Then
@@ -92,23 +92,23 @@ internal class FlagsConfigurationTest {
     ) {
         // Given
         val builder = FlagsConfiguration.Builder()
-            .useExposureEndpoint(fakeEndpoint1)
+            .useCustomExposureEndpoint(fakeEndpoint1)
 
         // When
         val config1 = builder.build()
 
         // Then - first build succeeds
-        assertThat(config1.exposureProxyEndpoint).isEqualTo(fakeEndpoint1)
+        assertThat(config1.customExposureEndpoint).isEqualTo(fakeEndpoint1)
 
         // When - modify and build again
         val config2 = builder
-            .useExposureEndpoint(fakeEndpoint2)
+            .useCustomExposureEndpoint(fakeEndpoint2)
             .build()
 
         // Then - second build succeeds with new value
-        assertThat(config2.exposureProxyEndpoint).isEqualTo(fakeEndpoint2)
+        assertThat(config2.customExposureEndpoint).isEqualTo(fakeEndpoint2)
         // And first config is unchanged (immutability)
-        assertThat(config1.exposureProxyEndpoint).isEqualTo(fakeEndpoint1)
+        assertThat(config1.customExposureEndpoint).isEqualTo(fakeEndpoint1)
     }
 
     @Test
@@ -118,12 +118,12 @@ internal class FlagsConfigurationTest {
     ) {
         // When
         val config = FlagsConfiguration.Builder()
-            .useExposureEndpoint(fakeEndpoint1)
-            .useExposureEndpoint(fakeEndpoint2)
+            .useCustomExposureEndpoint(fakeEndpoint1)
+            .useCustomExposureEndpoint(fakeEndpoint2)
             .build()
 
         // Then - last value wins
-        assertThat(config.exposureProxyEndpoint).isEqualTo(fakeEndpoint2)
+        assertThat(config.customExposureEndpoint).isEqualTo(fakeEndpoint2)
     }
 
     @Test
@@ -133,14 +133,14 @@ internal class FlagsConfigurationTest {
     ) {
         // When
         val config = FlagsConfiguration.Builder()
-            .useExposureEndpoint(fakeExposureEndpoint)
-            .useFlagEndpoint(fakeFlaggingEndpoint)
+            .useCustomExposureEndpoint(fakeExposureEndpoint)
+            .useCustomFlagEndpoint(fakeFlaggingEndpoint)
             .enableExposureLogging(true)
             .build()
 
         // Then
-        assertThat(config.exposureProxyEndpoint).isEqualTo(fakeExposureEndpoint)
-        assertThat(config.flaggingProxyEndpoint).isEqualTo(fakeFlaggingEndpoint)
+        assertThat(config.customExposureEndpoint).isEqualTo(fakeExposureEndpoint)
+        assertThat(config.customFlagEndpoint).isEqualTo(fakeFlaggingEndpoint)
         assertThat(config.enableExposureLogging).isTrue()
     }
 
@@ -185,12 +185,12 @@ internal class FlagsConfigurationTest {
     ) {
         // Given
         val config1 = FlagsConfiguration.Builder()
-            .useExposureEndpoint(fakeExposureEndpoint)
+            .useCustomExposureEndpoint(fakeExposureEndpoint)
             .enableExposureLogging(true)
             .build()
 
         val config2 = FlagsConfiguration.Builder()
-            .useExposureEndpoint(fakeExposureEndpoint)
+            .useCustomExposureEndpoint(fakeExposureEndpoint)
             .enableExposureLogging(false)
             .build()
 

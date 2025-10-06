@@ -43,7 +43,7 @@ import org.json.JSONObject
  *
  * // With custom configuration
  * val client = FlagsClient.Builder("analytics")
- *     .useCustomEndpoint("https://custom.endpoint.com")
+ *     .useCustomExposureEndpoint("https://custom.endpoint.com/exposure")
  *     .build()
  * ```
  *
@@ -174,28 +174,28 @@ interface FlagsClient {
         }
 
         /**
-         * Sets a custom endpoint URL for uploading exposure events.
-         *
+         * Sets a custom endpoint URL for uploading exposure events (flag evaluations).
          * If not called, uses the default from [FlagsFeature] configuration.
          *
-         * @param endpointUrl the custom endpoint URL, or null to use default.
+         * @param endpoint The full endpoint URL, e.g., https://example.com/exposure/upload.
+         *                 If null, uses the default from feature configuration.
          * @return this Builder instance for chaining.
          */
-        fun useCustomEndpoint(endpointUrl: String?): Builder {
-            this.explicitCustomEndpoint = endpointUrl
+        fun useCustomExposureEndpoint(endpoint: String?): Builder {
+            this.explicitCustomEndpoint = endpoint
             return this
         }
 
         /**
-         * Sets a custom endpoint URL for proxying precomputed assignment requests.
-         *
+         * Sets a custom endpoint URL for fetching precomputed flag assignments (flagging proxy).
          * If not called, uses the default from [FlagsFeature] configuration.
          *
-         * @param proxyUrl the custom proxy URL, or null to use default.
+         * @param endpoint The full proxy endpoint URL, e.g., https://proxy.example.com/flags.
+         *                 If null, uses the default from feature configuration.
          * @return this Builder instance for chaining.
          */
-        fun useFlaggingProxy(proxyUrl: String?): Builder {
-            this.explicitFlaggingProxy = proxyUrl
+        fun useCustomFlagEndpoint(endpoint: String?): Builder {
+            this.explicitFlaggingProxy = endpoint
             return this
         }
 
@@ -246,10 +246,10 @@ interface FlagsClient {
                 // Merge configuration (selective override)
                 val featureConfig = flagsFeature.flagsConfiguration
                 val mergedConfig = FlagsConfiguration(
-                    exposureProxyEndpoint = explicitCustomEndpoint
-                        ?: featureConfig.exposureProxyEndpoint,
-                    flaggingProxyEndpoint = explicitFlaggingProxy
-                        ?: featureConfig.flaggingProxyEndpoint
+                    customExposureEndpoint = explicitCustomEndpoint
+                        ?: featureConfig.customExposureEndpoint,
+                    customFlagEndpoint = explicitFlaggingProxy
+                        ?: featureConfig.customFlagEndpoint
                 )
 
                 // Create and register client
