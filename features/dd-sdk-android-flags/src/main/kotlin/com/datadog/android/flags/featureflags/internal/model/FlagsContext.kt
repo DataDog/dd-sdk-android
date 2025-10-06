@@ -49,8 +49,8 @@ internal data class FlagsContext(
             clientToken = datadogContext.clientToken,
             site = datadogContext.site,
             env = datadogContext.env,
-            customEndpointUrl = flagsConfiguration.customEndpointUrl,
-            flaggingProxyUrl = flagsConfiguration.flaggingProxyUrl
+            customEndpointUrl = flagsConfiguration.exposureProxyEndpoint,
+            flaggingProxyUrl = flagsConfiguration.flaggingProxyEndpoint
         )
     }
 }

@@ -8,10 +8,10 @@ package com.datadog.android.flags
 
 /**
  * Describes configuration to be used for the Flags feature.
- * @param customEndpointUrl Custom endpoint URL for uploading exposure events. If null, the default endpoint will be used.
- * @param flaggingProxyUrl Custom endpoint URL for proxying precomputed assignment requests. If null, the default endpoint will be used.
+ * @param exposureProxyEndpoint Custom endpoint URL for uploading exposure events. If null, the default endpoint will be used.
+ * @param flaggingProxyEndpoint Custom endpoint URL for proxying precomputed assignment requests. If null, the default endpoint will be used.
  */
-data class FlagsConfiguration(val customEndpointUrl: String? = null, val flaggingProxyUrl: String? = null) {
+data class FlagsConfiguration(val exposureProxyEndpoint: String? = null, val flaggingProxyEndpoint: String? = null) {
     /**
      * A Builder class for a [FlagsConfiguration].
      */
@@ -22,8 +22,8 @@ data class FlagsConfiguration(val customEndpointUrl: String? = null, val flaggin
          * Sets a custom endpoint URL for uploading exposure events.
          * @param endpointUrl The custom endpoint URL. If null, the default endpoint will be used.
          */
-        fun useCustomEndpoint(endpointUrl: String?): Builder {
-            flagsConfig = flagsConfig.copy(customEndpointUrl = endpointUrl)
+        fun useExposureEndpoint(endpointUrl: String?): Builder {
+            flagsConfig = flagsConfig.copy(exposureProxyEndpoint = endpointUrl)
             return this
         }
 
@@ -31,8 +31,8 @@ data class FlagsConfiguration(val customEndpointUrl: String? = null, val flaggin
          * Sets a custom endpoint URL for proxying precomputed assignment requests.
          * @param proxyUrl The custom proxy URL. If null, the default endpoint will be used.
          */
-        fun useFlaggingProxy(proxyUrl: String?): Builder {
-            flagsConfig = flagsConfig.copy(flaggingProxyUrl = proxyUrl)
+        fun useFlagEndpoint(proxyUrl: String?): Builder {
+            flagsConfig = flagsConfig.copy(flaggingProxyEndpoint = proxyUrl)
             return this
         }
 
@@ -41,8 +41,8 @@ data class FlagsConfiguration(val customEndpointUrl: String? = null, val flaggin
          * @return a new [FlagsConfiguration] instance.
          */
         fun build(): FlagsConfiguration = FlagsConfiguration(
-            customEndpointUrl = flagsConfig.customEndpointUrl,
-            flaggingProxyUrl = flagsConfig.flaggingProxyUrl
+            exposureProxyEndpoint = flagsConfig.exposureProxyEndpoint,
+            flaggingProxyEndpoint = flagsConfig.flaggingProxyEndpoint
         )
     }
 
@@ -57,8 +57,8 @@ data class FlagsConfiguration(val customEndpointUrl: String? = null, val flaggin
         fun defaultConfiguration(): FlagsConfiguration = DEFAULT_FEATURE_FLAGS_CONFIG
 
         internal val DEFAULT_FEATURE_FLAGS_CONFIG = FlagsConfiguration(
-            customEndpointUrl = null,
-            flaggingProxyUrl = null
+            exposureProxyEndpoint = null,
+            flaggingProxyEndpoint = null
         )
     }
 }

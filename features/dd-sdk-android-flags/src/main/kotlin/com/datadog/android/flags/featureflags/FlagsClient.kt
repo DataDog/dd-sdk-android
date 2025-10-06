@@ -246,10 +246,10 @@ interface FlagsClient {
                 // Merge configuration (selective override)
                 val featureConfig = flagsFeature.flagsConfiguration
                 val mergedConfig = FlagsConfiguration(
-                    customEndpointUrl = explicitCustomEndpoint
-                        ?: featureConfig.customEndpointUrl,
-                    flaggingProxyUrl = explicitFlaggingProxy
-                        ?: featureConfig.flaggingProxyUrl
+                    exposureProxyEndpoint = explicitCustomEndpoint
+                        ?: featureConfig.exposureProxyEndpoint,
+                    flaggingProxyEndpoint = explicitFlaggingProxy
+                        ?: featureConfig.flaggingProxyEndpoint
                 )
 
                 // Create and register client

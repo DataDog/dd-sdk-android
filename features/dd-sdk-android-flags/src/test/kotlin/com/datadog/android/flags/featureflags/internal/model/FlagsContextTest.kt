@@ -59,8 +59,8 @@ internal class FlagsContextTest {
         whenever(mockDatadogContext.env) doReturn fakeEnv
 
         val flagsConfiguration = FlagsConfiguration.Builder()
-            .useCustomEndpoint(fakeCustomEndpoint)
-            .useFlaggingProxy(fakeProxyUrl)
+            .useExposureEndpoint(fakeCustomEndpoint)
+            .useFlagEndpoint(fakeProxyUrl)
             .build()
 
         // When
