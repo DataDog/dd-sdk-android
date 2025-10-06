@@ -18,34 +18,24 @@ internal class EndpointsHelper(private val flagsContext: FlagsContext, private v
      * Gets the endpoint URL for feature flag requests.
      * Uses the configured flagging proxy URL if provided, otherwise builds from the Datadog site.
      *
-     * @return The complete endpoint URL for flagging requests
+     * @return The complete endpoint URL for flagging requests, or null if the endpoint cannot be built.
      */
-    internal fun getFlaggingEndpoint(): String {
+    internal fun getFlaggingEndpoint(): String? {
         // Use flagging proxy URL if provided, otherwise build from site
         return flagsContext.flaggingProxyUrl
-            ?: "https://${buildEndpointHost(flagsContext.site)}/api/unstable/flags"
+            ?: buildEndpointHost(flagsContext.site)?.let { it ->
+                "https://$it$FLAGS_ENDPOINT"
+            }
     }
 
-    /**
-     * Gets the endpoint URL for exposure logging.
-     * Uses the configured custom endpoint URL if provided, otherwise builds from the Datadog site.
-     *
-     * @return The complete endpoint URL for exposure events
-     */
-    internal fun getExposureEndpoint(): String {
-        // Use custom endpoint URL if provided, otherwise build from site
-        return flagsContext.customEndpointUrl
-            ?: "https://${flagsContext.site}/api/v2/logs"
-    }
-
-    internal fun buildEndpointHost(site: DatadogSite, customerDomain: String = "preview"): String = when (site) {
+    internal fun buildEndpointHost(site: DatadogSite, customerDomain: String = "preview"): String? = when (site) {
         DatadogSite.US1_FED -> {
             internalLogger.log(
                 level = InternalLogger.Level.ERROR,
                 target = InternalLogger.Target.MAINTAINER,
                 messageBuilder = { ERROR_GOV_NOT_SUPPORTED }
             )
-            ""
+            null
         }
         DatadogSite.STAGING -> {
             "$customerDomain.ff-cdn.datad0g.com"
@@ -69,7 +59,7 @@ internal class EndpointsHelper(private val flagsContext: FlagsContext, private v
                     target = InternalLogger.Target.MAINTAINER,
                     messageBuilder = { "Site configuration unexpectedly null for site: $site" }
                 )
-                ""
+                null
             }
         }
         else -> {
@@ -79,7 +69,7 @@ internal class EndpointsHelper(private val flagsContext: FlagsContext, private v
                 target = InternalLogger.Target.MAINTAINER,
                 messageBuilder = { "Unsupported site: $site. Supported sites: $supportedSites" }
             )
-            ""
+            null
         }
     }
 
@@ -106,5 +96,6 @@ internal class EndpointsHelper(private val flagsContext: FlagsContext, private v
 
     internal companion object {
         private const val ERROR_GOV_NOT_SUPPORTED = "ddog-gov.com is not supported for flagging endpoints"
+        private const val FLAGS_ENDPOINT = "/precompute-assignments"
     }
 }

@@ -42,7 +42,7 @@ internal class DefaultFlagsNetworkManager(
 
     @Suppress("ReturnCount")
     override fun downloadPrecomputedFlags(context: EvaluationContext): String? {
-        val url = buildUrl() ?: return null
+        val url = endpointsHelper.getFlaggingEndpoint() ?: return null
         val headers = buildHeaders()
         val body = buildRequestBody(context) ?: return null
         return download(url = url, headers = headers, body = body)
@@ -110,7 +110,6 @@ internal class DefaultFlagsNetworkManager(
         null
     }
 
-    @Suppress("UnsafeThirdPartyFunctionCall") // wrapped in try/catch
     private fun handleResponse(response: Response): String? = if (response.isSuccessful) {
         val body = response.body
         var responseBodyToReturn: String? = null
@@ -127,28 +126,6 @@ internal class DefaultFlagsNetworkManager(
             { "Failed to download flags: ${response.code}" }
         )
 
-        null
-    }
-
-    private fun buildUrl(): String? = try {
-        val endpoint = endpointsHelper.getFlaggingEndpoint()
-        if (endpoint.isNotEmpty()) {
-            "$endpoint$FLAGS_ENDPOINT"
-        } else {
-            internalLogger.log(
-                level = InternalLogger.Level.ERROR,
-                target = InternalLogger.Target.MAINTAINER,
-                messageBuilder = { ERROR_FAILURE_BUILDING_URL }
-            )
-            null
-        }
-    } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
-        internalLogger.log(
-            level = InternalLogger.Level.ERROR,
-            target = InternalLogger.Target.MAINTAINER,
-            messageBuilder = { ERROR_FAILURE_BUILDING_URL },
-            throwable = e
-        )
         null
     }
 
@@ -237,8 +214,6 @@ internal class DefaultFlagsNetworkManager(
         private const val HEADER_CLIENT_TOKEN = "dd-client-token"
         private const val HEADER_CONTENT_TYPE = "Content-Type"
         private const val CONTENT_TYPE_VND_JSON = "application/vnd.api+json"
-        private const val FLAGS_ENDPOINT = "/precompute-assignments"
         private val NETWORK_TIMEOUT_MS = TimeUnit.SECONDS.toMillis(45)
-        private const val ERROR_FAILURE_BUILDING_URL = "Failed to build url"
     }
 }

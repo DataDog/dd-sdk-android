@@ -19,9 +19,6 @@ import org.json.JSONObject
  * any operations. The [setEvaluationContext] method silently ignores context updates.
  * This implementation is thread-safe and designed for graceful degradation scenarios.
  *
- * Per spec: "In production, a non-functioning client is preferred over an app crash."
- * This implementation logs critical errors but never throws exceptions.
- *
  * @param name The client name this NoOpClient represents.
  * @param reason The reason why this client is a NoOp (e.g., "Flags feature not enabled").
  * @param logger Optional logger for critical error messages.

@@ -8,6 +8,7 @@ package com.datadog.android.flags.featureflags
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.flags.Flags
 import com.datadog.android.flags.featureflags.internal.NoOpFlagsClient
 import com.datadog.android.flags.featureflags.model.EvaluationContext
 import fr.xgouchet.elmyr.annotation.BoolForgery
@@ -23,7 +24,9 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
+import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.eq
+import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
@@ -53,6 +56,21 @@ internal class FlagsClientTest {
         whenever(mockSecondSdkCore.internalLogger).thenReturn(mockInternalLogger)
         whenever(mockSdkCore.name).thenReturn("test-sdk")
         whenever(mockSecondSdkCore.name).thenReturn("test-sdk-2")
+
+        // Enable the Flags Feature
+        Flags.enable(sdkCore = mockSdkCore)
+
+        // Capture the registered feature and mock getFeature() to return a FeatureScope wrapping it
+        argumentCaptor<com.datadog.android.api.feature.Feature> {
+            verify(mockSdkCore).registerFeature(capture())
+            val capturedFeature = lastValue as com.datadog.android.flags.internal.FlagsFeature
+            val mockFeatureScope = mock<com.datadog.android.api.feature.FeatureScope>()
+            whenever(
+                mockFeatureScope.unwrap<com.datadog.android.flags.internal.FlagsFeature>()
+            ).thenReturn(capturedFeature)
+            whenever(mockSdkCore.getFeature(com.datadog.android.flags.internal.FlagsFeature.FLAGS_FEATURE_NAME))
+                .thenReturn(mockFeatureScope)
+        }
     }
 
     @AfterEach

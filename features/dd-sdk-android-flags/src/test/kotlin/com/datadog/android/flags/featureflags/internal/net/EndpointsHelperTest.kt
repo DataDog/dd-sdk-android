@@ -133,14 +133,12 @@ internal class EndpointsHelperTest {
     // region buildEndpointHost - Error cases
 
     @Test
-    fun `M return empty string and log error W buildEndpointHost() { gov site }`(
-        @StringForgery fakeCustomerDomain: String
-    ) {
+    fun `M return null and log error W buildEndpointHost() { gov site }`(@StringForgery fakeCustomerDomain: String) {
         // When
         val result = testedHelper.buildEndpointHost(DatadogSite.US1_FED, fakeCustomerDomain)
 
         // Then
-        assertThat(result).isEmpty()
+        assertThat(result).isNull()
     }
 
     // endregion
@@ -163,6 +161,67 @@ internal class EndpointsHelperTest {
 
         // Then
         assertThat(result).isEqualTo("test-domain_123.ff-cdn.datadoghq.com")
+    }
+
+    // endregion
+
+    // region getFlaggingEndpoint
+
+    @Test
+    fun `M return proxy URL W getFlaggingEndpoint() {flagging proxy configured}`(@StringForgery fakeProxyUrl: String) {
+        // Given
+        val context = FlagsContext(
+            applicationId = "test-app",
+            clientToken = "token",
+            site = DatadogSite.US1,
+            env = "prod",
+            flaggingProxyUrl = fakeProxyUrl
+        )
+        val helper = EndpointsHelper(context, mockInternalLogger)
+
+        // When
+        val result = helper.getFlaggingEndpoint()
+
+        // Then
+        assertThat(result).isEqualTo(fakeProxyUrl)
+    }
+
+    @Test
+    fun `M build from site W getFlaggingEndpoint() {no proxy configured}`() {
+        // Given
+        val context = FlagsContext(
+            applicationId = "test-app",
+            clientToken = "token",
+            site = DatadogSite.US1,
+            env = "prod",
+            flaggingProxyUrl = null
+        )
+        val helper = EndpointsHelper(context, mockInternalLogger)
+
+        // When
+        val result = helper.getFlaggingEndpoint()
+
+        // Then
+        assertThat(result).isEqualTo("https://preview.ff-cdn.datadoghq.com/precompute-assignments")
+    }
+
+    @Test
+    fun `M return null W getFlaggingEndpoint() {unsupported site and no proxy}`() {
+        // Given
+        val context = FlagsContext(
+            applicationId = "test-app",
+            clientToken = "token",
+            site = DatadogSite.US1_FED,
+            env = "prod",
+            flaggingProxyUrl = null
+        )
+        val helper = EndpointsHelper(context, mockInternalLogger)
+
+        // When
+        val result = helper.getFlaggingEndpoint()
+
+        // Then
+        assertThat(result).isNull()
     }
 
     // endregion
