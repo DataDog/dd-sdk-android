@@ -53,6 +53,7 @@ class StubSDKCore(
         whenever(mockContext.resources) doReturn mockResources
         whenever(mockResources.configuration) doReturn mockConfiguration
         whenever(mockContext.contentResolver) doReturn mockContentResolver
+        whenever(mockContext.applicationContext) doReturn mockContext
     }
 
     // region Stub
