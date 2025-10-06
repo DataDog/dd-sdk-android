@@ -52,6 +52,7 @@ dependencies {
     implementation(libs.kotlin)
     implementation(libs.okHttp)
     implementation(libs.androidXAnnotation)
+    implementation(libs.androidXCollection)
 
     // Generate NoOp implementations
     ksp(project(":tools:noopfactory"))

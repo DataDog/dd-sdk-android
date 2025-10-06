@@ -9,6 +9,7 @@ package com.datadog.android.flags.internal
 import android.content.Context
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.Feature.Companion.FLAGS_FEATURE_NAME
+import com.datadog.android.api.feature.Feature.Companion.RUM_FEATURE_NAME
 import com.datadog.android.api.feature.FeatureContextUpdateReceiver
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.feature.StorageBackedFeature
@@ -25,12 +26,26 @@ import com.datadog.android.log.LogAttributes.RUM_APPLICATION_ID
  */
 internal class FlagsFeature(
     private val sdkCore: FeatureSdkCore,
-    internal var applicationId: String? = null,
+    @Volatile internal var applicationId: String? = null,
     internal var processor: EventsProcessor = NoOpEventsProcessor(),
     internal var dataWriter: RecordWriter = NoOpRecordWriter()
 ) :
     StorageBackedFeature,
     FeatureContextUpdateReceiver {
+
+    /**
+     * This is the same as the default configuration except
+     * that we limit to 50 items per batch, the same as the JS library does.
+     */
+    override val storageConfiguration =
+        FeatureStorageConfiguration.DEFAULT.copy(
+            maxItemsPerBatch = MAX_ITEMS_PER_BATCH
+        )
+
+    override val requestFactory =
+        ExposuresRequestFactory(
+            internalLogger = sdkCore.internalLogger
+        )
 
     override val name: String = FLAGS_FEATURE_NAME
 
@@ -38,7 +53,7 @@ internal class FlagsFeature(
         featureName: String,
         context: Map<String, Any?>
     ) {
-        if (applicationId == null) {
+        if (featureName == RUM_FEATURE_NAME && applicationId == null) {
             applicationId = context[RUM_APPLICATION_ID]?.toString()
         }
     }
@@ -54,27 +69,11 @@ internal class FlagsFeature(
         dataWriter = NoOpRecordWriter()
     }
 
-    override val requestFactory =
-        ExposuresRequestFactory(
-            internalLogger = sdkCore.internalLogger
-        )
-
-    override val storageConfiguration =
-        FeatureStorageConfiguration(
-            maxItemSize = MAX_ITEM_SIZE,
-            maxItemsPerBatch = MAX_ITEMS_PER_BATCH,
-            maxBatchSize = MAX_BATCH_SIZE,
-            oldBatchThreshold = OLD_BATCH_THRESHOLD
-        )
-
     private fun createDataWriter(): RecordWriter {
         return ExposureEventRecordWriter(sdkCore)
     }
 
     internal companion object {
-        const val MAX_BATCH_SIZE = 4L * 1024 * 1024 // 4 MB
-        const val OLD_BATCH_THRESHOLD = 18L * 60L * 60L * 1000L // 18 hours
         const val MAX_ITEMS_PER_BATCH = 50
-        const val MAX_ITEM_SIZE = 512L * 1024 // 512 kb
     }
 }

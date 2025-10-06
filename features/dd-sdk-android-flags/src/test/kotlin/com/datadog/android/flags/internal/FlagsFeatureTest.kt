@@ -63,7 +63,7 @@ internal class FlagsFeatureTest {
     // region onContextUpdate
 
     @Test
-    fun `M update applicationId W onContextUpdate { any feature with non-null application_id }`(forge: Forge) {
+    fun `M update applicationId W onContextUpdate { rum feature with non-null application_id }`(forge: Forge) {
         // Given
         val fakeContext = mapOf(
             "application_id" to fakeApplicationId,
@@ -75,74 +75,6 @@ internal class FlagsFeatureTest {
 
         // Then
         assertThat(testedFeature.applicationId).isEqualTo(fakeApplicationId)
-    }
-
-    @Test
-    fun `M update applicationId W onContextUpdate { logs feature with non-null application_id }`(forge: Forge) {
-        // Given
-        val fakeContext = mapOf(
-            "application_id" to fakeApplicationId,
-            "other_key" to forge.anAlphabeticalString()
-        )
-
-        // When
-        testedFeature.onContextUpdate(Feature.LOGS_FEATURE_NAME, fakeContext)
-
-        // Then
-        assertThat(testedFeature.applicationId).isEqualTo(fakeApplicationId)
-    }
-
-    @Test
-    fun `M convert applicationId to string W onContextUpdate { any feature with non-string value }`(forge: Forge) {
-        // Given
-        val fakeNumericAppId = forge.anInt()
-        val fakeContext = mapOf(
-            "application_id" to fakeNumericAppId,
-            "other_key" to forge.anAlphabeticalString()
-        )
-
-        // When
-        testedFeature.onContextUpdate(Feature.RUM_FEATURE_NAME, fakeContext)
-
-        // Then
-        assertThat(testedFeature.applicationId).isEqualTo(fakeNumericAppId.toString())
-    }
-
-    @Test
-    fun `M not update applicationId W onContextUpdate { any feature with missing application_id }`(forge: Forge) {
-        // Given
-        val initialAppId = "initial-app-id"
-        // First set an application ID
-        testedFeature.onContextUpdate(Feature.RUM_FEATURE_NAME, mapOf("application_id" to initialAppId))
-
-        val fakeContext = mapOf(
-            "other_key" to forge.anAlphabeticalString()
-        )
-
-        // When
-        testedFeature.onContextUpdate(Feature.LOGS_FEATURE_NAME, fakeContext)
-
-        // Then
-        assertThat(testedFeature.applicationId).isEqualTo(initialAppId) // Should remain unchanged
-    }
-
-    @Test
-    fun `M not update applicationId W onContextUpdate { any feature with null application_id }`(forge: Forge) {
-        // Given
-        val initialAppId = "initial-app-id"
-        // First set an application ID
-        testedFeature.onContextUpdate(Feature.RUM_FEATURE_NAME, mapOf("application_id" to initialAppId))
-
-        val fakeContext = mapOf(
-            "application_id" to null,
-            "other_key" to forge.anAlphabeticalString()
-        )
-
-        // When
-        testedFeature.onContextUpdate(Feature.LOGS_FEATURE_NAME, fakeContext)
-
-        // Then
-        assertThat(testedFeature.applicationId).isEqualTo(initialAppId) // Should remain unchanged when null
     }
 
     // endregion

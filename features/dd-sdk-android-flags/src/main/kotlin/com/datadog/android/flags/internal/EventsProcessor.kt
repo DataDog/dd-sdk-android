@@ -13,5 +13,4 @@ import com.datadog.tools.annotation.NoOpImplementation
 @NoOpImplementation
 internal interface EventsProcessor {
     fun processEvent(flagName: String, context: EvaluationContext, data: PrecomputedFlag)
-    fun clearExposureCache()
 }

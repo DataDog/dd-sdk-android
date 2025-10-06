@@ -7,11 +7,14 @@
 package com.datadog.android.flags.featureflags.internal
 
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.feature.Feature.Companion.FLAGS_FEATURE_NAME
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.flags.featureflags.FlagsClient
 import com.datadog.android.flags.featureflags.internal.evaluation.EvaluationsManager
+import com.datadog.android.flags.featureflags.internal.model.PrecomputedFlag
 import com.datadog.android.flags.featureflags.internal.repository.FlagsRepository
 import com.datadog.android.flags.featureflags.model.EvaluationContext
+import com.datadog.android.flags.internal.FlagsFeature
 import org.json.JSONException
 import org.json.JSONObject
 
@@ -73,8 +76,7 @@ internal class DatadogFlagsClient(
      * @return The boolean value of the flag, or the default value if unavailable or unparseable.
      */
     override fun resolveBooleanValue(flagKey: String, defaultValue: Boolean): Boolean {
-        val precomputedFlag = flagsRepository.getPrecomputedFlag(flagKey)
-        return precomputedFlag?.variationValue?.toBooleanStrictOrNull() ?: defaultValue
+        return getValue(flagKey, defaultValue) { it.toBooleanStrictOrNull() }
     }
 
     /**
@@ -88,8 +90,7 @@ internal class DatadogFlagsClient(
      * @return The string value of the flag, or the default value if unavailable.
      */
     override fun resolveStringValue(flagKey: String, defaultValue: String): String {
-        val precomputedData = flagsRepository.getPrecomputedFlag(flagKey)
-        return precomputedData?.variationValue ?: defaultValue
+        return getValue(flagKey, defaultValue) { it }
     }
 
     /**
@@ -104,8 +105,7 @@ internal class DatadogFlagsClient(
      * @return The integer value of the flag, or the default value if unavailable or unparseable.
      */
     override fun resolveIntValue(flagKey: String, defaultValue: Int): Int {
-        val precomputedData = flagsRepository.getPrecomputedFlag(flagKey)
-        return precomputedData?.variationValue?.toIntOrNull() ?: defaultValue
+        return getValue(flagKey, defaultValue) { it.toIntOrNull() }
     }
 
     /**
@@ -120,8 +120,7 @@ internal class DatadogFlagsClient(
      * @return The double value of the flag, or the default value if unavailable or unparseable.
      */
     override fun resolveDoubleValue(flagKey: String, defaultValue: Double): Double {
-        val precomputedData = flagsRepository.getPrecomputedFlag(flagKey)
-        return precomputedData?.variationValue?.toDoubleOrNull() ?: defaultValue
+        return getValue(flagKey, defaultValue) { it.toDoubleOrNull() }
     }
 
     /**
@@ -136,10 +135,9 @@ internal class DatadogFlagsClient(
      * @return The JSON object value of the flag, or the default value if unavailable or unparseable.
      */
     override fun resolveStructureValue(flagKey: String, defaultValue: JSONObject): JSONObject {
-        val precomputedData = flagsRepository.getPrecomputedFlag(flagKey)
-        return precomputedData?.variationValue?.let {
+        return getValue(flagKey, defaultValue) { stringValue ->
             try {
-                JSONObject(it)
+                JSONObject(stringValue)
             } catch (e: JSONException) {
                 featureSdkCore.internalLogger.log(
                     level = InternalLogger.Level.ERROR,
@@ -155,6 +153,34 @@ internal class DatadogFlagsClient(
                 )
                 defaultValue
             }
-        } ?: defaultValue
+        }
+    }
+
+    private fun <T> getValue(
+        flagKey: String,
+        defaultValue: T,
+        converter: (String) -> T?
+    ): T {
+        val precomputedFlag = flagsRepository.getPrecomputedFlag(flagKey)
+        val convertedValue = precomputedFlag?.variationValue?.let(converter)
+
+        if (convertedValue != null) {
+            writeExposureEvent(flagKey, precomputedFlag)
+        }
+
+        return convertedValue ?: defaultValue
+    }
+
+    private fun writeExposureEvent(name: String, data: PrecomputedFlag) {
+        val context = flagsRepository.getEvaluationContext()
+        if (context != null) {
+            featureSdkCore
+                .getFeature(FLAGS_FEATURE_NAME)
+                ?.unwrap<FlagsFeature>()?.processor?.processEvent(
+                    flagName = name,
+                    context = context,
+                    data = data
+                )
+        }
     }
 }

@@ -6,13 +6,13 @@
 
 package com.datadog.android.flags.internal
 
+import androidx.collection.LruCache
 import com.datadog.android.flags.featureflags.internal.model.PrecomputedFlag
 import com.datadog.android.flags.featureflags.model.EvaluationContext
 import com.datadog.android.flags.internal.model.ExposureEvent
 import com.datadog.android.flags.internal.model.Identifier
 import com.datadog.android.flags.internal.model.Subject
 import com.datadog.android.flags.internal.storage.RecordWriter
-import java.util.concurrent.ConcurrentHashMap
 
 internal class ExposureEventsProcessor(
     private val writer: RecordWriter
@@ -25,7 +25,8 @@ internal class ExposureEventsProcessor(
         val variationKey: String
     )
 
-    private val exposuresSentCache = ConcurrentHashMap<CacheKey, Unit>()
+    @Suppress("UnsafeThirdPartyFunctionCall") // maxSize > 0
+    private val exposuresSentCache = LruCache<CacheKey, Boolean>(MAX_CACHE_SIZE)
 
     override fun processEvent(flagName: String, context: EvaluationContext, data: PrecomputedFlag) {
         val cacheKey = CacheKey(
@@ -35,15 +36,15 @@ internal class ExposureEventsProcessor(
             variationKey = data.variationKey
         )
 
-        @Suppress("UnsafeThirdPartyFunctionCall") // cache key cannot be null
-        if (exposuresSentCache.putIfAbsent(cacheKey, Unit) == null) {
+        @Suppress("UnsafeThirdPartyFunctionCall") // LruCache.get() is safe with non-null key
+        val alreadySent = exposuresSentCache[cacheKey]
+
+        if (alreadySent == null) {
+            @Suppress("UnsafeThirdPartyFunctionCall") // LruCache.put() is safe with non-null key
+            exposuresSentCache.put(cacheKey, true)
             val event = buildExposureEvent(flagName, context, data)
             writeExposureEvent(event)
         }
-    }
-
-    override fun clearExposureCache() {
-        exposuresSentCache.clear()
     }
 
     private fun buildExposureEvent(
@@ -59,12 +60,16 @@ internal class ExposureEventsProcessor(
             variant = Identifier(data.variationKey),
             subject = Subject(
                 id = context.targetingKey,
-                attributes = context.attributes.mapValues { it.value.toString() }
+                attributes = context.attributes.mapValues { it.value }
             )
         )
     }
 
     private fun writeExposureEvent(record: ExposureEvent) {
         writer.write(record)
+    }
+
+    companion object {
+        private const val MAX_CACHE_SIZE = 100
     }
 }

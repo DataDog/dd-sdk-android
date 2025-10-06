@@ -534,7 +534,7 @@ internal class ExposureEventsProcessorTest {
             Thread {
                 repeat(10) {
                     Thread.sleep(5)
-                    testedProcessor.clearExposureCache()
+                    testedProcessor = ExposureEventsProcessor(mockRecordWriter)
                 }
             }
         }
@@ -577,9 +577,9 @@ internal class ExposureEventsProcessorTest {
 
     @Test
     fun `M handle concurrent different flags W processEvent() { stress test }`() {
-        // Given
-        val threadCount = 15
-        val flagsPerThread = 20
+        // Given - stay within LRU cache size of 100
+        val threadCount = 10
+        val flagsPerThread = 9 // 10 * 9 = 90 unique entries, safely under 100
         val executionsPerFlag = 10
         val totalExpectedWrites = threadCount * flagsPerThread
 

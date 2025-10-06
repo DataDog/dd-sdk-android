@@ -10,8 +10,8 @@ package com.datadog.android.flags
  * Describes configuration to be used for the Flags feature.
  * @param enableExposureLogging Log exposure events to RUM.
  */
-data class FlagsConfiguration(
-    val enableExposureLogging: Boolean
+data class FlagsConfiguration internal constructor(
+    internal val enableExposureLogging: Boolean
 ) {
     /**
      * A Builder class for a [FlagsConfiguration].
