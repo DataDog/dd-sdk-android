@@ -63,5 +63,10 @@ interface Feature {
          * NDK Crash Reports feature name.
          */
         const val NDK_CRASH_REPORTS_FEATURE_NAME: String = "ndk-crash-reporting"
+
+        /**
+         * Profiling feature name.
+         */
+        const val PROFILING_FEATURE_NAME: String = "profiling"
     }
 }

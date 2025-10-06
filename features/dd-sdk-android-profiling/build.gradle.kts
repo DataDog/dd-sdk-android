@@ -50,6 +50,7 @@ dependencies {
     implementation(libs.androidXCore)
     implementation(libs.androidXCoreKtx)
     implementation(libs.gson)
+    implementation(libs.okHttp)
 
     // Generate NoOp implementations
     ksp(project(":tools:noopfactory"))
@@ -63,6 +64,7 @@ dependencies {
         }
     }
 
+    testImplementation(testFixtures(project(":dd-sdk-android-core")))
     testImplementation(libs.bundles.jUnit5)
     testImplementation(libs.bundles.testTools)
     unmock(libs.robolectric)

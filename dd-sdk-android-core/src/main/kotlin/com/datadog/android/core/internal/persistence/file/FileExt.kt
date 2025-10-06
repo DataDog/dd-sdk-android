@@ -172,7 +172,11 @@ fun File.readTextSafe(charset: Charset = Charsets.UTF_8, internalLogger: Interna
     }
 }
 
-internal fun File.readBytesSafe(internalLogger: InternalLogger): ByteArray? {
+/**
+ * Non-throwing version of [File.readBytes]. If exception happens, null is returned.
+ */
+@InternalApi
+fun File.readBytesSafe(internalLogger: InternalLogger): ByteArray? {
     return if (existsSafe(internalLogger) && canReadSafe(internalLogger)) {
         safeCall(default = null, internalLogger) {
             @Suppress("UnsafeThirdPartyFunctionCall")

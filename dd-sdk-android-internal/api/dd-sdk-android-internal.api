@@ -313,6 +313,10 @@ public final class com/datadog/android/internal/utils/ThrowableExtKt {
 	public static final fun loggableStackTrace (Ljava/lang/Throwable;)Ljava/lang/String;
 }
 
+public final class com/datadog/android/internal/utils/TimeExtKt {
+	public static final fun formatIsoUtc (J)Ljava/lang/String;
+}
+
 public abstract interface annotation class com/datadog/tools/annotation/NoOpImplementation : java/lang/annotation/Annotation {
 	public abstract fun publicNoOpImplementation ()Z
 }

@@ -122,5 +122,6 @@ fun Thread.safeGetThreadId(): Long
 fun Thread.State.asString(): String
 fun Array<StackTraceElement>.loggableStackTrace(): String
 fun Throwable.loggableStackTrace(): String
+fun formatIsoUtc(Long): String
 annotation com.datadog.tools.annotation.NoOpImplementation
   constructor(Boolean = false)
