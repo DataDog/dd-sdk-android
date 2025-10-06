@@ -10,10 +10,12 @@ package com.datadog.android.flags
  * Describes configuration to be used for the Flags feature.
  * @param exposureProxyEndpoint Custom endpoint URL for uploading exposure events. If null, the default endpoint will be used.
  * @param flaggingProxyEndpoint Custom endpoint URL for proxying precomputed assignment requests. If null, the default endpoint will be used.
+ * @param enableExposureLogging Whether to enable exposure event logging. Defaults to false.
  */
 data class FlagsConfiguration internal constructor(
     val exposureProxyEndpoint: String? = null,
-    val flaggingProxyEndpoint: String? = null
+    val flaggingProxyEndpoint: String? = null,
+    val enableExposureLogging: Boolean = false
 ) {
     /**
      * A Builder class for a [FlagsConfiguration].
@@ -21,6 +23,7 @@ data class FlagsConfiguration internal constructor(
     class Builder {
         private var exposureProxyEndpoint: String? = null
         private var flaggingProxyEndpoint: String? = null
+        private var enableExposureLogging: Boolean = false
 
         /**
          * Sets a custom endpoint URL for uploading exposure events.
@@ -41,12 +44,22 @@ data class FlagsConfiguration internal constructor(
         }
 
         /**
+         * Enables or disables exposure event tracking (via exposures event track)
+         * @param enabled Whether to enable exposure event logging. Defaults to false.
+         */
+        fun enableExposureLogging(enabled: Boolean): Builder {
+            enableExposureLogging = enabled
+            return this
+        }
+
+        /**
          * Builds a [FlagsConfiguration] based on the current state of this Builder.
          * @return a new [FlagsConfiguration] instance.
          */
         fun build(): FlagsConfiguration = FlagsConfiguration(
             exposureProxyEndpoint = exposureProxyEndpoint,
-            flaggingProxyEndpoint = flaggingProxyEndpoint
+            flaggingProxyEndpoint = flaggingProxyEndpoint,
+            enableExposureLogging = enableExposureLogging
         )
     }
 
@@ -62,7 +75,8 @@ data class FlagsConfiguration internal constructor(
 
         internal val DEFAULT_FEATURE_FLAGS_CONFIG = FlagsConfiguration(
             exposureProxyEndpoint = null,
-            flaggingProxyEndpoint = null
+            flaggingProxyEndpoint = null,
+            enableExposureLogging = false
         )
     }
 }

@@ -4,6 +4,7 @@ data class com.datadog.android.flags.FlagsConfiguration
   class Builder
     fun useExposureEndpoint(String?): Builder
     fun useFlagEndpoint(String?): Builder
+    fun enableExposureLogging(Boolean): Builder
     fun build(): FlagsConfiguration
   companion object 
     fun defaultConfiguration(): FlagsConfiguration
