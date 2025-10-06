@@ -25,7 +25,7 @@ internal class FlagsConfigurationTest {
         // Then
         assertThat(config.customExposureEndpoint).isNull()
         assertThat(config.customFlagEndpoint).isNull()
-        assertThat(config.enableExposureLogging).isFalse()
+        assertThat(config.enableExposureLogging).isTrue()
     }
 
     @Test
@@ -167,12 +167,12 @@ internal class FlagsConfigurationTest {
     }
 
     @Test
-    fun `M default to false W Builder#build() {enableExposureLogging not set}`() {
+    fun `M default to true W Builder#build() {enableExposureLogging not set}`() {
         // When
         val config = FlagsConfiguration.Builder().build()
 
         // Then
-        assertThat(config.enableExposureLogging).isFalse()
+        assertThat(config.enableExposureLogging).isTrue()
     }
 
     // endregion

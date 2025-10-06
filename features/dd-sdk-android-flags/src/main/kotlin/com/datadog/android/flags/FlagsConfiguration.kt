@@ -10,12 +10,12 @@ package com.datadog.android.flags
  * Describes configuration to be used for the Flags feature.
  * @param customExposureEndpoint Custom endpoint URL for uploading exposure events. If null, the default endpoint will be used.
  * @param customFlagEndpoint Custom endpoint URL for proxying precomputed flag assignment requests. If null, the default endpoint will be used.
- * @param enableExposureLogging Whether to enable exposure event logging. Defaults to false.
+ * @param enableExposureLogging Whether to enable exposure event logging. Defaults to true.
  */
 data class FlagsConfiguration internal constructor(
     val customExposureEndpoint: String? = null,
     val customFlagEndpoint: String? = null,
-    val enableExposureLogging: Boolean = false
+    val enableExposureLogging: Boolean = true
 ) {
     /**
      * A Builder class for a [FlagsConfiguration].
@@ -23,11 +23,11 @@ data class FlagsConfiguration internal constructor(
     class Builder {
         private var customExposureEndpoint: String? = null
         private var customFlagEndpoint: String? = null
-        private var enableExposureLogging: Boolean = false
+        private var enableExposureLogging: Boolean = true
 
         /**
          * Sets a custom endpoint URL for uploading exposure events (flag evaluations).
-         * If not called, exposure events will be sent to Datadog's default intake endpoint.
+         * If not called, exposure events will be sent to Datadog's default intake endpoint for the configured site.
          *
          * @param endpoint The full endpoint URL, e.g., https://example.com/exposure/upload.
          *                 If null, the default endpoint will be used.
@@ -51,7 +51,7 @@ data class FlagsConfiguration internal constructor(
 
         /**
          * Enables or disables exposure event tracking (via exposures event track).
-         * @param enabled Whether to enable exposure event logging. Defaults to false.
+         * @param enabled Whether to enable exposure event logging. Defaults to true.
          */
         fun enableExposureLogging(enabled: Boolean): Builder {
             enableExposureLogging = enabled
@@ -82,7 +82,7 @@ data class FlagsConfiguration internal constructor(
         internal val DEFAULT_FEATURE_FLAGS_CONFIG = FlagsConfiguration(
             customExposureEndpoint = null,
             customFlagEndpoint = null,
-            enableExposureLogging = false
+            enableExposureLogging = true
         )
     }
 }
