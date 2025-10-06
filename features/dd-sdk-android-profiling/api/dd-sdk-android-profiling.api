@@ -1,5 +1,28 @@
 public final class com/datadog/android/profiling/Profiling {
 	public static final field INSTANCE Lcom/datadog/android/profiling/Profiling;
+	public static final fun enable ()V
+	public static final fun enable (Lcom/datadog/android/profiling/ProfilingConfiguration;)V
+	public static final fun enable (Lcom/datadog/android/profiling/ProfilingConfiguration;Lcom/datadog/android/api/SdkCore;)V
+	public static synthetic fun enable$default (Lcom/datadog/android/profiling/ProfilingConfiguration;Lcom/datadog/android/api/SdkCore;ILjava/lang/Object;)V
+}
+
+public final class com/datadog/android/profiling/ProfilingConfiguration {
+	public static final field Companion Lcom/datadog/android/profiling/ProfilingConfiguration$Companion;
+	public final fun copy (Ljava/lang/String;)Lcom/datadog/android/profiling/ProfilingConfiguration;
+	public static synthetic fun copy$default (Lcom/datadog/android/profiling/ProfilingConfiguration;Ljava/lang/String;ILjava/lang/Object;)Lcom/datadog/android/profiling/ProfilingConfiguration;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/profiling/ProfilingConfiguration$Builder {
+	public fun <init> ()V
+	public final fun build ()Lcom/datadog/android/profiling/ProfilingConfiguration;
+	public final fun useCustomEndpoint (Ljava/lang/String;)Lcom/datadog/android/profiling/ProfilingConfiguration$Builder;
+}
+
+public final class com/datadog/android/profiling/ProfilingConfiguration$Companion {
+	public final fun getDEFAULT ()Lcom/datadog/android/profiling/ProfilingConfiguration;
 }
 
 public final class com/datadog/android/profiling/model/ProfilingEvent {
