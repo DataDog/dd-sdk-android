@@ -44,7 +44,7 @@ data class FlagsConfiguration internal constructor(
         }
 
         /**
-         * Enables or disables exposure event tracking (via exposures event track)
+         * Enables or disables exposure event tracking (via exposures event track).
          * @param enabled Whether to enable exposure event logging. Defaults to false.
          */
         fun enableExposureLogging(enabled: Boolean): Builder {
