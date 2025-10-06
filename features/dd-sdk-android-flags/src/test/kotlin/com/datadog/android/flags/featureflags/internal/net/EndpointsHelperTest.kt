@@ -168,13 +168,18 @@ internal class EndpointsHelperTest {
     // region getFlaggingEndpoint
 
     @Test
-    fun `M return proxy URL W getFlaggingEndpoint() {flagging proxy configured}`(@StringForgery fakeProxyUrl: String) {
+    fun `M return proxy URL W getFlaggingEndpoint() {flagging proxy configured}`(
+        @StringForgery fakeApplicationId: String,
+        @StringForgery fakeClientToken: String,
+        @StringForgery fakeEnv: String,
+        @StringForgery fakeProxyUrl: String
+    ) {
         // Given
         val context = FlagsContext(
-            applicationId = "test-app",
-            clientToken = "token",
+            applicationId = fakeApplicationId,
+            clientToken = fakeClientToken,
             site = DatadogSite.US1,
-            env = "prod",
+            env = fakeEnv,
             flaggingProxyUrl = fakeProxyUrl
         )
         val helper = EndpointsHelper(context, mockInternalLogger)
@@ -187,13 +192,17 @@ internal class EndpointsHelperTest {
     }
 
     @Test
-    fun `M build from site W getFlaggingEndpoint() {no proxy configured}`() {
+    fun `M build from site W getFlaggingEndpoint() {no proxy configured}`(
+        @StringForgery fakeApplicationId: String,
+        @StringForgery fakeClientToken: String,
+        @StringForgery fakeEnv: String
+    ) {
         // Given
         val context = FlagsContext(
-            applicationId = "test-app",
-            clientToken = "token",
+            applicationId = fakeApplicationId,
+            clientToken = fakeClientToken,
             site = DatadogSite.US1,
-            env = "prod",
+            env = fakeEnv,
             flaggingProxyUrl = null
         )
         val helper = EndpointsHelper(context, mockInternalLogger)
@@ -206,13 +215,17 @@ internal class EndpointsHelperTest {
     }
 
     @Test
-    fun `M return null W getFlaggingEndpoint() {unsupported site and no proxy}`() {
+    fun `M return null W getFlaggingEndpoint() {unsupported site and no proxy}`(
+        @StringForgery fakeApplicationId: String,
+        @StringForgery fakeClientToken: String,
+        @StringForgery fakeEnv: String
+    ) {
         // Given
         val context = FlagsContext(
-            applicationId = "test-app",
-            clientToken = "token",
+            applicationId = fakeApplicationId,
+            clientToken = fakeClientToken,
             site = DatadogSite.US1_FED,
-            env = "prod",
+            env = fakeEnv,
             flaggingProxyUrl = null
         )
         val helper = EndpointsHelper(context, mockInternalLogger)

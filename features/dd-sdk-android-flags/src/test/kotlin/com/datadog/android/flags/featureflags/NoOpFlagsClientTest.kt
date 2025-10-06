@@ -58,7 +58,7 @@ internal class NoOpFlagsClientTest {
         val fakeAttributes = mapOf(
             "user_id" to forge.anAlphabeticalString(),
             "user_email" to forge.anAlphabeticalString(),
-            "plan" to "premium"
+            "plan" to forge.anAlphabeticalString()
         )
         val fakeContext = EvaluationContext(fakeTargetingKey, fakeAttributes)
 
@@ -96,7 +96,7 @@ internal class NoOpFlagsClientTest {
     fun `M return default value W resolveBooleanValue() {true default}`(forge: Forge) {
         // Given
         val fakeFlagKey = forge.anAlphabeticalString()
-        val fakeDefaultValue = true
+        val fakeDefaultValue = forge.aBool()
 
         // When
         val result = testedClient.resolveBooleanValue(fakeFlagKey, fakeDefaultValue)
@@ -109,7 +109,7 @@ internal class NoOpFlagsClientTest {
     fun `M return default value W resolveBooleanValue() {false default}`(forge: Forge) {
         // Given
         val fakeFlagKey = forge.anAlphabeticalString()
-        val fakeDefaultValue = false
+        val fakeDefaultValue = forge.aBool()
 
         // When
         val result = testedClient.resolveBooleanValue(fakeFlagKey, fakeDefaultValue)
@@ -122,9 +122,10 @@ internal class NoOpFlagsClientTest {
     fun `M log critical error W resolveBooleanValue()`(forge: Forge) {
         // Given
         val fakeFlagKey = forge.anAlphabeticalString()
+        val fakeDefaultValue = forge.aBool()
 
         // When
-        testedClient.resolveBooleanValue(fakeFlagKey, true)
+        testedClient.resolveBooleanValue(fakeFlagKey, fakeDefaultValue)
 
         // Then
         verify(mockInternalLogger).log(
@@ -171,9 +172,10 @@ internal class NoOpFlagsClientTest {
     fun `M log critical error W resolveStringValue()`(forge: Forge) {
         // Given
         val fakeFlagKey = forge.anAlphabeticalString()
+        val fakeDefaultValue = forge.anAlphabeticalString()
 
         // When
-        testedClient.resolveStringValue(fakeFlagKey, "default")
+        testedClient.resolveStringValue(fakeFlagKey, fakeDefaultValue)
 
         // Then
         verify(mockInternalLogger).log(
@@ -233,9 +235,10 @@ internal class NoOpFlagsClientTest {
     fun `M log critical error W resolveDoubleValue()`(forge: Forge) {
         // Given
         val fakeFlagKey = forge.anAlphabeticalString()
+        val fakeDefaultValue = forge.aDouble()
 
         // When
-        testedClient.resolveDoubleValue(fakeFlagKey, 0.0)
+        testedClient.resolveDoubleValue(fakeFlagKey, fakeDefaultValue)
 
         // Then
         verify(mockInternalLogger).log(
@@ -295,9 +298,10 @@ internal class NoOpFlagsClientTest {
     fun `M log critical error W resolveIntValue()`(forge: Forge) {
         // Given
         val fakeFlagKey = forge.anAlphabeticalString()
+        val fakeDefaultValue = forge.anInt()
 
         // When
-        testedClient.resolveIntValue(fakeFlagKey, 0)
+        testedClient.resolveIntValue(fakeFlagKey, fakeDefaultValue)
 
         // Then
         verify(mockInternalLogger).log(

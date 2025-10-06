@@ -11,19 +11,23 @@ package com.datadog.android.flags
  * @param exposureProxyEndpoint Custom endpoint URL for uploading exposure events. If null, the default endpoint will be used.
  * @param flaggingProxyEndpoint Custom endpoint URL for proxying precomputed assignment requests. If null, the default endpoint will be used.
  */
-data class FlagsConfiguration(val exposureProxyEndpoint: String? = null, val flaggingProxyEndpoint: String? = null) {
+data class FlagsConfiguration internal constructor(
+    val exposureProxyEndpoint: String? = null,
+    val flaggingProxyEndpoint: String? = null
+) {
     /**
      * A Builder class for a [FlagsConfiguration].
      */
     class Builder {
-        private var flagsConfig = DEFAULT_FEATURE_FLAGS_CONFIG
+        private var exposureProxyEndpoint: String? = null
+        private var flaggingProxyEndpoint: String? = null
 
         /**
          * Sets a custom endpoint URL for uploading exposure events.
          * @param endpointUrl The custom endpoint URL. If null, the default endpoint will be used.
          */
         fun useExposureEndpoint(endpointUrl: String?): Builder {
-            flagsConfig = flagsConfig.copy(exposureProxyEndpoint = endpointUrl)
+            exposureProxyEndpoint = endpointUrl
             return this
         }
 
@@ -32,7 +36,7 @@ data class FlagsConfiguration(val exposureProxyEndpoint: String? = null, val fla
          * @param proxyUrl The custom proxy URL. If null, the default endpoint will be used.
          */
         fun useFlagEndpoint(proxyUrl: String?): Builder {
-            flagsConfig = flagsConfig.copy(flaggingProxyEndpoint = proxyUrl)
+            flaggingProxyEndpoint = proxyUrl
             return this
         }
 
@@ -41,8 +45,8 @@ data class FlagsConfiguration(val exposureProxyEndpoint: String? = null, val fla
          * @return a new [FlagsConfiguration] instance.
          */
         fun build(): FlagsConfiguration = FlagsConfiguration(
-            exposureProxyEndpoint = flagsConfig.exposureProxyEndpoint,
-            flaggingProxyEndpoint = flagsConfig.flaggingProxyEndpoint
+            exposureProxyEndpoint = exposureProxyEndpoint,
+            flaggingProxyEndpoint = flaggingProxyEndpoint
         )
     }
 
