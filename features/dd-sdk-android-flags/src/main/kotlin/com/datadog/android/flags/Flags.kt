@@ -79,7 +79,6 @@ object Flags {
         val site = datadogContext?.site
         val env = datadogContext?.env
 
-        @Suppress("TodoWithoutTask") // TODO how do we want to handle this?
         if (clientToken == null || site == null || env == null) {
             val missingParams = listOfNotNull(
                 "clientToken".takeIf { clientToken == null },

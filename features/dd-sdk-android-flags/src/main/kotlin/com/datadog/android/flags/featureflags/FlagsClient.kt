@@ -180,17 +180,6 @@ interface FlagsClient {
             }
         }
 
-        /**
-         * Resets the internal state by clearing all registered clients.
-         *
-         * This method is intended for testing purposes only and should not be used
-         * in production code. It delegates to [clear] to remove all client registrations.
-         */
-        @Suppress("unused")
-        private fun reset() {
-            clear()
-        }
-
         // endregion
     }
 }
