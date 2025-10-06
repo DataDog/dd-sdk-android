@@ -291,7 +291,7 @@ interface FlagsClient {
          *
          * If no [FlagsClient] exists with the given name, returns a [NoOpFlagsClient] that logs
          * critical errors but never crashes.
-         * 
+         *
          * @param name the [FlagsClient] name. Defaults to "default".
          * @param sdkCore the SDK instance. Defaults to the default Datadog instance.
          * @return the [FlagsClient] with the specified name, or [NoOpFlagsClient] if not found.

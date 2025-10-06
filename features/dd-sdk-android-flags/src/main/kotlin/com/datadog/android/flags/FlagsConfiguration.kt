@@ -11,10 +11,7 @@ package com.datadog.android.flags
  * @param customEndpointUrl Custom endpoint URL for uploading exposure events. If null, the default endpoint will be used.
  * @param flaggingProxyUrl Custom endpoint URL for proxying precomputed assignment requests. If null, the default endpoint will be used.
  */
-data class FlagsConfiguration(
-    val customEndpointUrl: String? = null,
-    val flaggingProxyUrl: String? = null
-) {
+data class FlagsConfiguration(val customEndpointUrl: String? = null, val flaggingProxyUrl: String? = null) {
     /**
      * A Builder class for a [FlagsConfiguration].
      */
