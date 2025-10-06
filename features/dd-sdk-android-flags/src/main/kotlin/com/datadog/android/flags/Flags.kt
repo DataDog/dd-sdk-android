@@ -56,7 +56,7 @@ object Flags {
     }
 
     /**
-     * Creates and configures a DatadogFlagsClient instance.
+     * Creates and configures a [DatadogFlagsClient] instance.
      *
      * This method performs complex initialization including validation of required context
      * parameters (clientToken, site, env) and creation of all necessary dependencies.

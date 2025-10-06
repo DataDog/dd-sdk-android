@@ -103,7 +103,7 @@ interface FlagsClient {
         fun get(sdkCore: SdkCore = Datadog.getInstance()): FlagsClient = synchronized(registeredClients) {
             val client = registeredClients[sdkCore]
             if (client == null) {
-                val errorMsg = "No FlagsClient for the SDK instance with name \${sdkCore.name} " +
+                val errorMsg = "No FlagsClient for the SDK instance with name ${sdkCore.name} " +
                     "found, returning no-op implementation."
                 (sdkCore as? FeatureSdkCore)
                     ?.internalLogger
