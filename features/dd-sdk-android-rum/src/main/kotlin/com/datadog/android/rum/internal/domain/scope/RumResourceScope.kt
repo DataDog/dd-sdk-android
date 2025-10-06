@@ -55,7 +55,7 @@ internal class RumResourceScope(
     internal val firstPartyHostHeaderTypeResolver: FirstPartyHostHeaderTypeResolver,
     private val featuresContextResolver: FeaturesContextResolver,
     internal val sampleRate: Float,
-    internal val networkSettledMetricResolver: NetworkSettledMetricResolver,
+    networkSettledMetricResolver: NetworkSettledMetricResolver,
     private val rumSessionTypeOverride: RumSessionType?
 ) : RumScope {
 
