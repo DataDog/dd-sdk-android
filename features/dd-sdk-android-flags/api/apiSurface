@@ -3,8 +3,8 @@ object com.datadog.android.flags.Flags
 data class com.datadog.android.flags.FlagsConfiguration
   constructor(String? = null, String? = null)
   class Builder
-    fun useCustomEndpoint(String?): Builder
-    fun useFlaggingProxy(String?): Builder
+    fun useExposureEndpoint(String?): Builder
+    fun useFlagEndpoint(String?): Builder
     fun build(): FlagsConfiguration
   companion object 
     fun defaultConfiguration(): FlagsConfiguration

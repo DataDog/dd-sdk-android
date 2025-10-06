@@ -23,7 +23,7 @@ internal class EndpointsHelper(private val flagsContext: FlagsContext, private v
     internal fun getFlaggingEndpoint(): String? {
         // Use flagging proxy URL if provided, otherwise build from site
         return flagsContext.flaggingProxyUrl
-            ?: buildEndpointHost(flagsContext.site)?.let { it ->
+            ?: buildEndpointHost(flagsContext.site)?.let {
                 "https://$it$FLAGS_ENDPOINT"
             }
     }
