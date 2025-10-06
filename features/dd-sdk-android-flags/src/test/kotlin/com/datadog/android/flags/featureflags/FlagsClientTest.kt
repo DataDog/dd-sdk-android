@@ -180,7 +180,7 @@ internal class FlagsClientTest {
     }
 
     @Test
-    fun `M only remove specific client W unregister() {multiple clients registered for different SDK cores}`() {
+    fun `M only remove specific client W unregister() {multiple clients registered, should not affect other SDK cores}`() {
         // Given
         FlagsClient.registerIfAbsent(mockFlagsClient, mockSdkCore, "default")
         FlagsClient.registerIfAbsent(mockSecondFlagsClient, mockSecondSdkCore, "default")

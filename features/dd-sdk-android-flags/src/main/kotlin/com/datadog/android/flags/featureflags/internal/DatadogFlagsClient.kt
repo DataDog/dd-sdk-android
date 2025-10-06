@@ -19,8 +19,11 @@ import org.json.JSONObject
  * Production implementation of [FlagsClient] that integrates with Datadog's flag evaluation system.
  *
  * This implementation fetches precomputed flag values from the local repository and handles
- * type conversion with appropriate fallback to default values. All methods are thread-safe
- * and designed for high-frequency usage in mobile applications.
+ * type conversion with appropriate fallback to default values.
+ *
+ * Thread safety: All resolve methods are thread-safe read operations with no synchronization
+ * overhead, designed for high-frequency usage. The [setEvaluationContext] method is thread-safe
+ * but triggers asynchronous background operations for fetching updated flag evaluations.
  *
  * @param featureSdkCore the SDK core for logging and internal operations
  * @param evaluationsManager manages flag evaluations and network requests
