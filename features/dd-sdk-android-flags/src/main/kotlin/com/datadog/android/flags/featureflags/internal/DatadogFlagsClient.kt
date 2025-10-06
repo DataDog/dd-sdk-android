@@ -60,7 +60,6 @@ internal class DatadogFlagsClient(
             return
         }
 
-        // Pass to manager to handle network request and atomic storage
         evaluationsManager.updateEvaluationsForContext(context)
     }
 
