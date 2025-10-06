@@ -302,6 +302,75 @@ internal class FlagsClientTest {
         assertThat(client).isInstanceOf(NoOpFlagsClient::class.java)
     }
 
+    @Test
+    fun `M return Builder W useCustomExposureEndpoint() {for method chaining}`(
+        @StringForgery fakeEndpoint: String
+    ) {
+        // Given
+        val builder = FlagsClient.Builder(mockSdkCore)
+
+        // When
+        val result = builder.useCustomExposureEndpoint(fakeEndpoint)
+
+        // Then - should return builder for chaining
+        assertThat(result).isSameAs(builder)
+    }
+
+    @Test
+    fun `M return Builder W useCustomFlagEndpoint() {for method chaining}`(
+        @StringForgery fakeEndpoint: String
+    ) {
+        // Given
+        val builder = FlagsClient.Builder(mockSdkCore)
+
+        // When
+        val result = builder.useCustomFlagEndpoint(fakeEndpoint)
+
+        // Then - should return builder for chaining
+        assertThat(result).isSameAs(builder)
+    }
+
+    @Test
+    fun `M return Builder W setEnableExposureLogging() {for method chaining}`(
+        @BoolForgery fakeEnabled: Boolean
+    ) {
+        // Given
+        val builder = FlagsClient.Builder(mockSdkCore)
+
+        // When
+        val result = builder.setEnableExposureLogging(fakeEnabled)
+
+        // Then - should return builder for chaining
+        assertThat(result).isSameAs(builder)
+    }
+
+    @Test
+    fun `M accept null values W Builder {endpoint configuration methods}`() {
+        // When - set null values explicitly
+        val builder = FlagsClient.Builder(mockSdkCore)
+            .useCustomExposureEndpoint(null)
+            .useCustomFlagEndpoint(null)
+
+        // Then - should not throw
+        assertThat(builder).isNotNull
+    }
+
+    @Test
+    fun `M support method chaining W Builder {all configuration methods}`(
+        @StringForgery fakeExposureEndpoint: String,
+        @StringForgery fakeFlagEndpoint: String,
+        @BoolForgery fakeEnabled: Boolean
+    ) {
+        // When - chain all configuration methods
+        val builder = FlagsClient.Builder(mockSdkCore)
+            .useCustomExposureEndpoint(fakeExposureEndpoint)
+            .useCustomFlagEndpoint(fakeFlagEndpoint)
+            .setEnableExposureLogging(fakeEnabled)
+
+        // Then - all methods should support chaining
+        assertThat(builder).isNotNull
+    }
+
     // endregion
 
     // region get() API Tests

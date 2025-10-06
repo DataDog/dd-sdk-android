@@ -20,6 +20,7 @@ interface com.datadog.android.flags.featureflags.FlagsClient
     constructor(String, com.datadog.android.api.SdkCore = Datadog.getInstance())
     fun useCustomExposureEndpoint(String?): Builder
     fun useCustomFlagEndpoint(String?): Builder
+    fun setEnableExposureLogging(Boolean): Builder
     fun build(): FlagsClient
   companion object 
     fun get(String = DEFAULT_CLIENT_NAME, com.datadog.android.api.SdkCore = Datadog.getInstance()): FlagsClient

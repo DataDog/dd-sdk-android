@@ -148,6 +148,7 @@ interface FlagsClient {
         // Optional configuration overrides (null = use feature default)
         private var explicitCustomEndpoint: String? = null
         private var explicitFlaggingProxy: String? = null
+        private var explicitEnableExposureLogging: Boolean? = null
 
         /**
          * Creates a builder for the default [FlagsClient].
@@ -200,6 +201,19 @@ interface FlagsClient {
         }
 
         /**
+         * Sets whether exposure events should be tracked.
+         *
+         * If not called, uses the default from [FlagsFeature] configuration.
+         *
+         * @param enabled whether to enable exposure tracking.
+         * @return this Builder instance for chaining.
+         */
+        fun setEnableExposureLogging(enabled: Boolean): Builder {
+            this.explicitEnableExposureLogging = enabled
+            return this
+        }
+
+        /**
          * Builds and registers a [FlagsClient] instance.
          *
          * This method:
@@ -243,13 +257,12 @@ interface FlagsClient {
                     return existingClient
                 }
 
-                // Merge configuration (selective override)
+                // Merge configuration (selective override using data class copy)
                 val featureConfig = flagsFeature.flagsConfiguration
                 val mergedConfig = FlagsConfiguration(
-                    customExposureEndpoint = explicitCustomEndpoint
-                        ?: featureConfig.customExposureEndpoint,
-                    customFlagEndpoint = explicitFlaggingProxy
-                        ?: featureConfig.customFlagEndpoint
+                    customExposureEndpoint =explicitCustomEndpoint ?: featureConfig.customExposureEndpoint,
+                    customFlagEndpoint = explicitFlaggingProxy ?: featureConfig.customFlagEndpoint,
+                    enableExposureLogging = explicitEnableExposureLogging ?: flagsFeature.flagsConfiguration.enableExposureLogging
                 )
 
                 // Create and register client
