@@ -90,13 +90,14 @@ internal class PrecomputedAssignmentsDownloaderTest {
 
     @Test
     fun `M return response body W downloadPrecomputedFlags() { successful request }`(
-        @StringForgery fakeResponseBody: String
+        @StringForgery fakeResponseBody: String,
+        @StringForgery(regex = "https://[a-z]+\\.(com|net)/[a-z]+") fakeUrl: String
     ) {
         // Given
         val fakeRequest = Request.Builder()
-            .url("https://example.com/test")
+            .url(fakeUrl)
             .build()
-        val fakeResponse = createSuccessfulResponse(fakeResponseBody)
+        val fakeResponse = createSuccessfulResponse(fakeResponseBody, fakeUrl)
 
         whenever(mockRequestFactory.create(fakeEvaluationContext, fakeFlagsContext))
             .doReturn(fakeRequest)
@@ -112,12 +113,15 @@ internal class PrecomputedAssignmentsDownloaderTest {
     }
 
     @Test
-    fun `M call factory with correct parameters W downloadPrecomputedFlags()`(@StringForgery fakeResponseBody: String) {
+    fun `M call factory with correct parameters W downloadPrecomputedFlags()`(
+        @StringForgery fakeResponseBody: String,
+        @StringForgery(regex = "https://[a-z]+\\.(com|net)/[a-z]+") fakeUrl: String
+    ) {
         // Given
         val fakeRequest = Request.Builder()
-            .url("https://example.com/test")
+            .url(fakeUrl)
             .build()
-        val fakeResponse = createSuccessfulResponse(fakeResponseBody)
+        val fakeResponse = createSuccessfulResponse(fakeResponseBody, fakeUrl)
 
         whenever(mockRequestFactory.create(fakeEvaluationContext, fakeFlagsContext))
             .doReturn(fakeRequest)
@@ -164,12 +168,15 @@ internal class PrecomputedAssignmentsDownloaderTest {
     // region downloadPrecomputedFlags() - Network errors
 
     @Test
-    fun `M return null and log error W downloadPrecomputedFlags() { UnknownHostException }`() {
+    fun `M return null and log error W downloadPrecomputedFlags() { UnknownHostException }`(
+        @StringForgery(regex = "https://[a-z]+\\.(com|net)/[a-z]+") fakeUrl: String,
+        @StringForgery fakeExceptionMessage: String
+    ) {
         // Given
         val fakeRequest = Request.Builder()
-            .url("https://example.com/test")
+            .url(fakeUrl)
             .build()
-        val exception = UnknownHostException("Host not found")
+        val exception = UnknownHostException(fakeExceptionMessage)
 
         whenever(mockRequestFactory.create(fakeEvaluationContext, fakeFlagsContext))
             .doReturn(fakeRequest)
@@ -195,12 +202,15 @@ internal class PrecomputedAssignmentsDownloaderTest {
     }
 
     @Test
-    fun `M return null and log error W downloadPrecomputedFlags() { IOException }`() {
+    fun `M return null and log error W downloadPrecomputedFlags() { IOException }`(
+        @StringForgery(regex = "https://[a-z]+\\.(com|net)/[a-z]+") fakeUrl: String,
+        @StringForgery fakeExceptionMessage: String
+    ) {
         // Given
         val fakeRequest = Request.Builder()
-            .url("https://example.com/test")
+            .url(fakeUrl)
             .build()
-        val exception = IOException("Network error")
+        val exception = IOException(fakeExceptionMessage)
 
         whenever(mockRequestFactory.create(fakeEvaluationContext, fakeFlagsContext))
             .doReturn(fakeRequest)
@@ -226,12 +236,15 @@ internal class PrecomputedAssignmentsDownloaderTest {
     }
 
     @Test
-    fun `M return null and log error W downloadPrecomputedFlags() { SecurityException }`() {
+    fun `M return null and log error W downloadPrecomputedFlags() { SecurityException }`(
+        @StringForgery(regex = "https://[a-z]+\\.(com|net)/[a-z]+") fakeUrl: String,
+        @StringForgery fakeExceptionMessage: String
+    ) {
         // Given
         val fakeRequest = Request.Builder()
-            .url("https://example.com/test")
+            .url(fakeUrl)
             .build()
-        val exception = SecurityException("Missing network permissions")
+        val exception = SecurityException(fakeExceptionMessage)
 
         whenever(mockRequestFactory.create(fakeEvaluationContext, fakeFlagsContext))
             .doReturn(fakeRequest)
@@ -257,12 +270,15 @@ internal class PrecomputedAssignmentsDownloaderTest {
     }
 
     @Test
-    fun `M return null and log error W downloadPrecomputedFlags() { generic exception }`() {
+    fun `M return null and log error W downloadPrecomputedFlags() { generic exception }`(
+        @StringForgery(regex = "https://[a-z]+\\.(com|net)/[a-z]+") fakeUrl: String,
+        @StringForgery fakeExceptionMessage: String
+    ) {
         // Given
         val fakeRequest = Request.Builder()
-            .url("https://example.com/test")
+            .url(fakeUrl)
             .build()
-        val exception = RuntimeException("Unexpected error")
+        val exception = RuntimeException(fakeExceptionMessage)
 
         whenever(mockRequestFactory.create(fakeEvaluationContext, fakeFlagsContext))
             .doReturn(fakeRequest)
@@ -292,12 +308,14 @@ internal class PrecomputedAssignmentsDownloaderTest {
     // region downloadPrecomputedFlags() - Response handling
 
     @Test
-    fun `M return null and log error W downloadPrecomputedFlags() { unsuccessful response }`() {
+    fun `M return null and log error W downloadPrecomputedFlags() { unsuccessful response }`(
+        @StringForgery(regex = "https://[a-z]+\\.(com|net)/[a-z]+") fakeUrl: String
+    ) {
         // Given
         val fakeRequest = Request.Builder()
-            .url("https://example.com/test")
+            .url(fakeUrl)
             .build()
-        val fakeResponse = createUnsuccessfulResponse(404)
+        val fakeResponse = createUnsuccessfulResponse(404, fakeUrl)
 
         whenever(mockRequestFactory.create(fakeEvaluationContext, fakeFlagsContext))
             .doReturn(fakeRequest)
@@ -320,12 +338,14 @@ internal class PrecomputedAssignmentsDownloaderTest {
     }
 
     @Test
-    fun `M return null W downloadPrecomputedFlags() { null response body }`() {
+    fun `M return null W downloadPrecomputedFlags() { null response body }`(
+        @StringForgery(regex = "https://[a-z]+\\.(com|net)/[a-z]+") fakeUrl: String
+    ) {
         // Given
         val fakeRequest = Request.Builder()
-            .url("https://example.com/test")
+            .url(fakeUrl)
             .build()
-        val fakeResponse = createSuccessfulResponseWithNullBody()
+        val fakeResponse = createSuccessfulResponseWithNullBody(fakeUrl)
 
         whenever(mockRequestFactory.create(fakeEvaluationContext, fakeFlagsContext))
             .doReturn(fakeRequest)
@@ -343,24 +363,24 @@ internal class PrecomputedAssignmentsDownloaderTest {
 
     // region Helper methods
 
-    private fun createSuccessfulResponse(body: String): Response = Response.Builder()
-        .request(Request.Builder().url("https://example.com").build())
+    private fun createSuccessfulResponse(body: String, url: String): Response = Response.Builder()
+        .request(Request.Builder().url(url).build())
         .protocol(Protocol.HTTP_1_1)
         .code(200)
         .message("OK")
         .body(body.toResponseBody("application/json".toMediaType()))
         .build()
 
-    private fun createSuccessfulResponseWithNullBody(): Response = Response.Builder()
-        .request(Request.Builder().url("https://example.com").build())
+    private fun createSuccessfulResponseWithNullBody(url: String): Response = Response.Builder()
+        .request(Request.Builder().url(url).build())
         .protocol(Protocol.HTTP_1_1)
         .code(200)
         .message("OK")
         .body(null)
         .build()
 
-    private fun createUnsuccessfulResponse(code: Int): Response = Response.Builder()
-        .request(Request.Builder().url("https://example.com").build())
+    private fun createUnsuccessfulResponse(code: Int, url: String): Response = Response.Builder()
+        .request(Request.Builder().url(url).build())
         .protocol(Protocol.HTTP_1_1)
         .code(code)
         .message("Error")

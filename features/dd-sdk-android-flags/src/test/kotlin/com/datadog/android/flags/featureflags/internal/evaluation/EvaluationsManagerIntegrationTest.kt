@@ -34,16 +34,6 @@ import org.mockito.kotlin.verify
 import org.mockito.quality.Strictness
 import java.util.concurrent.Executors
 
-/**
- * Integration test for EvaluationsManager that tests the full request flow
- * through the Factory + Downloader architecture with a real MockWebServer.
- *
- * This test verifies that:
- * - PrecomputedAssignmentsRequestFactory correctly builds requests
- * - PrecomputedAssignmentsDownloader executes requests
- * - Custom flagging endpoints work correctly
- * - The full integration from EvaluationsManager to network works
- */
 @ExtendWith(MockitoExtension::class, ForgeExtension::class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 internal class EvaluationsManagerIntegrationTest {

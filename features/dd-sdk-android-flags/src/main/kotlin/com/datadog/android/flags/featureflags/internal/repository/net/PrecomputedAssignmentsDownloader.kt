@@ -14,13 +14,10 @@ import okhttp3.OkHttpClient
 import okhttp3.Protocol
 import okhttp3.Request
 import okhttp3.Response
+import java.util.concurrent.TimeUnit
 
 /**
  * Downloads precomputed flag assignments from Datadog Feature Flags service.
- *
- * This class follows the Factory + Executor pattern used by DataOkHttpUploader:
- * - Request construction is delegated to PrecomputedAssignmentsRequestFactory
- * - This class focuses solely on request execution and response handling
  *
  * @param internalLogger Logger for error and debug messages
  * @param flagsContext Context containing SDK configuration and authentication

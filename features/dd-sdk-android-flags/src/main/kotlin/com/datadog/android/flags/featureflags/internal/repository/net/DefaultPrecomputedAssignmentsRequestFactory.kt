@@ -30,16 +30,12 @@ internal class DefaultPrecomputedAssignmentsRequestFactory(private val internalL
 
     @Suppress("ReturnCount", "TooGenericExceptionCaught")
     override fun create(context: EvaluationContext, flagsContext: FlagsContext): Request? {
-        // Step 1: Determine endpoint URL
         val url = EndpointsHelper.getFlaggingEndpoint(flagsContext, internalLogger) ?: return null
 
-        // Step 2: Build headers
         val headers = buildHeaders(flagsContext)
 
-        // Step 3: Build request body
         val body = buildRequestBody(context, flagsContext) ?: return null
 
-        // Step 4: Construct OkHttp Request
         return try {
             Request.Builder()
                 .url(url)
