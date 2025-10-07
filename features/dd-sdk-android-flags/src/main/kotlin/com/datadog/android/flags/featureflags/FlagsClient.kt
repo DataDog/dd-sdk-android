@@ -260,9 +260,10 @@ interface FlagsClient {
                 // Merge configuration (selective override using data class copy)
                 val featureConfig = flagsFeature.flagsConfiguration
                 val mergedConfig = FlagsConfiguration(
-                    customExposureEndpoint =explicitCustomEndpoint ?: featureConfig.customExposureEndpoint,
+                    customExposureEndpoint = explicitCustomEndpoint ?: featureConfig.customExposureEndpoint,
                     customFlagEndpoint = explicitFlaggingProxy ?: featureConfig.customFlagEndpoint,
-                    enableExposureLogging = explicitEnableExposureLogging ?: flagsFeature.flagsConfiguration.enableExposureLogging
+                    enableExposureLogging =
+                    explicitEnableExposureLogging ?: flagsFeature.flagsConfiguration.enableExposureLogging
                 )
 
                 // Create and register client

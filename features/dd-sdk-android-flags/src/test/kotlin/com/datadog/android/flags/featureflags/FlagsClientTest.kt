@@ -303,9 +303,7 @@ internal class FlagsClientTest {
     }
 
     @Test
-    fun `M return Builder W useCustomExposureEndpoint() {for method chaining}`(
-        @StringForgery fakeEndpoint: String
-    ) {
+    fun `M return Builder W useCustomExposureEndpoint() {for method chaining}`(@StringForgery fakeEndpoint: String) {
         // Given
         val builder = FlagsClient.Builder(mockSdkCore)
 
@@ -317,9 +315,7 @@ internal class FlagsClientTest {
     }
 
     @Test
-    fun `M return Builder W useCustomFlagEndpoint() {for method chaining}`(
-        @StringForgery fakeEndpoint: String
-    ) {
+    fun `M return Builder W useCustomFlagEndpoint() {for method chaining}`(@StringForgery fakeEndpoint: String) {
         // Given
         val builder = FlagsClient.Builder(mockSdkCore)
 
@@ -331,9 +327,7 @@ internal class FlagsClientTest {
     }
 
     @Test
-    fun `M return Builder W setEnableExposureLogging() {for method chaining}`(
-        @BoolForgery fakeEnabled: Boolean
-    ) {
+    fun `M return Builder W setEnableExposureLogging() {for method chaining}`(@BoolForgery fakeEnabled: Boolean) {
         // Given
         val builder = FlagsClient.Builder(mockSdkCore)
 
