@@ -4,6 +4,8 @@ import static java.lang.Long.MAX_VALUE;
 
 import android.os.Build;
 
+import androidx.annotation.VisibleForTesting;
+
 import java.security.SecureRandom;
 import java.util.Locale;
 import java.util.concurrent.ThreadLocalRandom;
@@ -18,7 +20,8 @@ import java.util.concurrent.atomic.AtomicLong;
 public abstract class IdGenerationStrategy {
   protected final boolean traceId128BitGenerationEnabled;
 
-  private IdGenerationStrategy(boolean traceId128BitGenerationEnabled) {
+  @VisibleForTesting
+  public IdGenerationStrategy(boolean traceId128BitGenerationEnabled) {
     this.traceId128BitGenerationEnabled = traceId128BitGenerationEnabled;
   }
 

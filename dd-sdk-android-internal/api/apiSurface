@@ -22,10 +22,6 @@ class com.datadog.android.internal.collections.EvictingQueue<T> : java.util.Queu
   override fun add(T): Boolean
   override fun offer(T): Boolean
   override fun addAll(Collection<T>): Boolean
-class com.datadog.android.internal.concurrent.CompletableFuture<T: Any>
-  var value: T
-  fun isComplete(): Boolean
-  fun complete(T)
 enum com.datadog.android.internal.network.GraphQLHeaders
   constructor(String)
   - DD_GRAPHQL_NAME_HEADER

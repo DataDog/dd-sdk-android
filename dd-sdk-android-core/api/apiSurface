@@ -127,6 +127,7 @@ interface com.datadog.android.api.feature.FeatureScope
   fun <T: Feature> unwrap(): T
 typealias EventWriteScope = ((com.datadog.android.api.storage.EventBatchWriter) -> Unit) -> Unit
 fun <R: Any?> com.datadog.android.api.InternalLogger.measureMethodCallPerf(Class<*>, String, Float = 100f, () -> R): R
+fun FeatureScope.getContextFuture(Set<String> = emptySet()): java.util.concurrent.Future<com.datadog.android.api.context.DatadogContext?>?
 interface com.datadog.android.api.feature.FeatureSdkCore : com.datadog.android.api.SdkCore
   val internalLogger: com.datadog.android.api.InternalLogger
   fun registerFeature(Feature)
@@ -344,6 +345,10 @@ open class com.datadog.android.core.sampling.DeterministicSampler<T: Any> : Samp
   constructor((T) -> ULong, Double)
   override fun sample(T): Boolean
   override fun getSampleRate(): Float
+  companion object 
+    const val SAMPLE_ALL_RATE: Float
+    const val SAMPLER_HASHER: ULong
+    const val MAX_ID: ULong
 open class com.datadog.android.core.sampling.RateBasedSampler<T: Any> : Sampler<T>
   constructor(() -> Float)
   constructor(Float)

@@ -66,14 +66,17 @@ class SpanExtIntegrationTest {
     private fun registerTracer(
         sampleRate: Double? = null,
         partialFlushMinSpans: Int? = null
-    ) = GlobalDatadogTracer.registerIfAbsent(
-        DatadogTracing.newTracerBuilder(stubSdkCore)
-            .also {
-                if (sampleRate != null) it.withSampleRate(sampleRate)
-                if (partialFlushMinSpans != null) it.withPartialFlushMinSpans(partialFlushMinSpans)
-            }
-            .build()
-    )
+    ): Boolean {
+        GlobalDatadogTracer.clear()
+        return GlobalDatadogTracer.registerIfAbsent(
+            DatadogTracing.newTracerBuilder(stubSdkCore)
+                .also {
+                    if (sampleRate != null) it.withSampleRate(sampleRate)
+                    if (partialFlushMinSpans != null) it.withPartialFlushMinSpans(partialFlushMinSpans)
+                }
+                .build()
+        )
+    }
 
     @BeforeEach
     fun `set up`(forge: Forge) {
