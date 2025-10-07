@@ -6,26 +6,26 @@
 
 package com.datadog.android.rum.internal.startup
 
+import android.app.Activity
 import android.os.Handler
 import android.os.Looper
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.rum.internal.utils.window.RumWindowCallbacksRegistryImpl
 
-internal interface RumTTIDReporter {
-    interface Listener {
-        fun onTTIDCalculated(info: RumTTIDInfo)
+internal interface RumFirstDrawTimeReporter {
+    interface Callback {
+        fun onFirstFrameDrawn(timestampNs: Long)
     }
 
-    fun onAppStartupDetected(scenario: RumStartupScenario)
+    fun subscribeToFirstFrameDrawn(activity: Activity, callback: Callback)
 
     companion object {
-        fun create(sdkCore: InternalSdkCore, listener: Listener): RumTTIDReporter {
-            return RumTTIDReporterImpl(
+        fun create(sdkCore: InternalSdkCore): RumFirstDrawTimeReporter {
+            return RumFirstDrawTimeReporterImpl(
                 internalLogger = sdkCore.internalLogger,
                 timeProviderNs = { System.nanoTime() },
                 windowCallbacksRegistry = RumWindowCallbacksRegistryImpl(),
-                handler = Handler(Looper.getMainLooper()),
-                listener = listener
+                handler = Handler(Looper.getMainLooper())
             )
         }
     }
