@@ -529,6 +529,7 @@ datadog:
       - "java.security.SecureRandom.nextFloat()"
       - "java.security.SecureRandom.nextInt()"
       - "java.security.SecureRandom.nextLong()"
+      - "java.util.Date.constructor(kotlin.Long)"
       - "java.util.function.Consumer(kotlin.Function1)"
       - "java.util.HashMap.clear()"
       - "java.util.HashMap.orEmpty()"

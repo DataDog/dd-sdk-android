@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.profiling
+package com.datadog.android.profiling.internal
 
 import android.content.Context
 import android.os.Bundle
@@ -13,8 +13,6 @@ import android.os.ProfilingManager
 import android.os.ProfilingResult
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.internal.time.TimeProvider
-import com.datadog.android.profiling.internal.PerfettoProfiler
-import com.datadog.android.profiling.internal.PerfettoResult
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeExtension

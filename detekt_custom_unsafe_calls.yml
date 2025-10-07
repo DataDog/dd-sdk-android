@@ -140,11 +140,11 @@ datadog:
       - "java.net.URL.constructor(kotlin.String?):java.net.MalformedURLException"
       - "java.security.MessageDigest.digest(kotlin.ByteArray?):java.security.DigestException,java.lang.NullPointerException,java.lang.IllegalArgumentException"
       - "java.security.MessageDigest.getInstance(kotlin.String?):java.security.NoSuchAlgorithmException"
-      - "java.text.SimpleDateFormat.constructor(kotlin.String, java.util.Locale):java.lang.NullPointerException"
-      - "java.text.SimpleDateFormat.format(java.util.Date):java.lang.NullPointerException"
+      - "java.text.SimpleDateFormat.constructor(kotlin.String?, java.util.Locale?):java.lang.NullPointerException"
+      - "java.text.SimpleDateFormat.format(java.util.Date?):java.lang.NullPointerException"
       - "java.text.SimpleDateFormat.format(kotlin.Any):java.lang.IllegalArgumentException,java.lang.NullPointerException"
       - "java.text.SimpleDateFormat.parse(kotlin.String):java.text.ParseException,java.lang.NullPointerException"
-      - "java.util.TimeZone.getTimeZone(kotlin.String):java.lang.NullPointerException"
+      - "java.util.TimeZone.getTimeZone(kotlin.String?):java.lang.NullPointerException"
       # endregion
       # region Java Collections
       - "java.util.Collections.newSetFromMap(kotlin.collections.MutableMap?):java.lang.IllegalArgumentException"

@@ -12,11 +12,15 @@ androidx.lifecycle:lifecycle-runtime:2.6.2                      :   21 Kb
 androidx.versionedparcelable:versionedparcelable:1.1.1          :   30 Kb
 com.google.code.gson:gson:2.10.1                                :  276 Kb
 com.google.guava:listenablefuture:1.0                           :    3 Kb
+com.squareup.okhttp3:okhttp:4.12.0                              :  771 Kb
+com.squareup.okio:okio-jvm:3.6.0                                :  351 Kb
+org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.9.10                  :  959 b 
+org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.10                  :  965 b 
 org.jetbrains.kotlin:kotlin-stdlib:2.0.21                       : 1706 Kb
 org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1          :   19 Kb
 org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.8.1         : 1510 Kb
 org.jetbrains:annotations:23.0.0                                :   28 Kb
 org.jspecify:jspecify:1.0.0                                     :    3 Kb
 
-Total transitive dependencies size                              :    5 Mb
+Total transitive dependencies size                              :    7 Mb
 
