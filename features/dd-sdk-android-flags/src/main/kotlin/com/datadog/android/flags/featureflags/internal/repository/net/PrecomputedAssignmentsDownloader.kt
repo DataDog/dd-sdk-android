@@ -7,6 +7,8 @@
 package com.datadog.android.flags.featureflags.internal.repository.net
 
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.SdkCore
+import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.flags.featureflags.internal.model.FlagsContext
 import com.datadog.android.flags.featureflags.model.EvaluationContext
 import okhttp3.Call
@@ -26,16 +28,11 @@ import java.util.concurrent.TimeUnit
 internal class PrecomputedAssignmentsDownloader(
     private val internalLogger: InternalLogger,
     private val flagsContext: FlagsContext,
-    private val requestFactory: PrecomputedAssignmentsRequestFactory
+    private val requestFactory: PrecomputedAssignmentsRequestFactory,
+    private val sdkCore: InternalSdkCore
 ) : FlagsNetworkManager {
 
-    internal lateinit var callFactory: OkHttpCallFactory
-
-    internal class OkHttpCallFactory(factory: () -> OkHttpClient) : Call.Factory {
-        val okhttpClient by lazy(factory)
-
-        override fun newCall(request: Request): Call = okhttpClient.newCall(request)
-    }
+    internal lateinit var callFactory: Call.Factory
 
     init {
         setupOkHttpClient()
@@ -100,13 +97,10 @@ internal class PrecomputedAssignmentsDownloader(
     }
 
     private fun setupOkHttpClient() {
-        callFactory = OkHttpCallFactory {
-            val builder = OkHttpClient.Builder()
-            builder.callTimeout(NETWORK_TIMEOUT_MS, TimeUnit.MILLISECONDS)
+        callFactory = sdkCore.createOkHttpCallFactory {
+            callTimeout(NETWORK_TIMEOUT_MS, TimeUnit.MILLISECONDS)
                 .writeTimeout(NETWORK_TIMEOUT_MS, TimeUnit.MILLISECONDS)
                 .protocols(listOf(Protocol.HTTP_2, Protocol.HTTP_1_1))
-
-            builder.build()
         }
     }
 

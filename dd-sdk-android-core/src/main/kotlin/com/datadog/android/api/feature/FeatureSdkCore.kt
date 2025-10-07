@@ -8,6 +8,9 @@ package com.datadog.android.api.feature
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.SdkCore
+import com.datadog.android.core.internal.CoreFeature
+import okhttp3.Call
+import okhttp3.OkHttpClient
 import java.util.UUID
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.ScheduledExecutorService
@@ -114,6 +117,8 @@ interface FeatureSdkCore : SdkCore {
      * @param executorContext Context to be used for logging and naming threads running on this executor.
      */
     fun createScheduledExecutorService(executorContext: String): ScheduledExecutorService
+
+    fun createOkHttpCallFactory(block: OkHttpClient.Builder.() -> Unit): Call.Factory
 
     /**
      * Allows the given feature to set the anonymous ID for the SDK.

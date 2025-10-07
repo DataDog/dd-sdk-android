@@ -110,6 +110,10 @@ internal class CoreFeature(
     private val scheduledExecutorServiceFactory: ScheduledExecutorServiceFactory
 ) {
 
+    private val lazySharedOkHttpClient: OkHttpClient by lazy {
+        OkHttpClient()
+    }
+
     internal class OkHttpCallFactory(factory: () -> OkHttpClient) : Call.Factory {
         val okhttpClient by lazy(factory)
 
@@ -299,6 +303,20 @@ internal class CoreFeature(
 
     fun createScheduledExecutorService(executorContext: String): ScheduledExecutorService {
         return scheduledExecutorServiceFactory.create(internalLogger, executorContext, backpressureStrategy)
+    }
+
+    fun createOkHttpCallFactory(block: OkHttpClient.Builder.() -> Unit): Call.Factory {
+        return object : Call.Factory {
+            val client = lazySharedOkHttpClient.newBuilder()
+                .apply {
+                    block()
+                }
+                .build()
+
+            override fun newCall(request: Request): Call {
+                return client.newCall(request)
+            }
+        }
     }
 
     @Throws(UnsupportedOperationException::class, InterruptedException::class)
@@ -570,7 +588,7 @@ internal class CoreFeature(
                     .build()
             }
 
-            val builder = OkHttpClient.Builder()
+            val builder = lazySharedOkHttpClient.newBuilder()
             builder.callTimeout(NETWORK_TIMEOUT_MS, TimeUnit.MILLISECONDS)
                 .writeTimeout(NETWORK_TIMEOUT_MS, TimeUnit.MILLISECONDS)
                 .protocols(listOf(Protocol.HTTP_2, Protocol.HTTP_1_1))

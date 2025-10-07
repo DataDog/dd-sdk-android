@@ -435,7 +435,8 @@ interface FlagsClient {
                 val flagsNetworkManager = PrecomputedAssignmentsDownloader(
                     internalLogger = sdkCore.internalLogger,
                     flagsContext = flagsContext,
-                    requestFactory = precomputedRequestFactory
+                    requestFactory = precomputedRequestFactory,
+                    sdkCore = sdkCore
                 )
 
                 val precomputeMapper = PrecomputeMapper(sdkCore.internalLogger)
