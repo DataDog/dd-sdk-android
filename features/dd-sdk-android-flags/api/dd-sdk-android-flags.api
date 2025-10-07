@@ -9,6 +9,8 @@ public final class com/datadog/android/flags/Flags {
 public final class com/datadog/android/flags/FlagsConfiguration {
 	public static final field Companion Lcom/datadog/android/flags/FlagsConfiguration$Companion;
 	public fun <init> ()V
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Z)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;ZILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Ljava/lang/String;
 	public final fun component2 ()Ljava/lang/String;
 	public final fun component3 ()Z
@@ -25,7 +27,7 @@ public final class com/datadog/android/flags/FlagsConfiguration {
 public final class com/datadog/android/flags/FlagsConfiguration$Builder {
 	public fun <init> ()V
 	public final fun build ()Lcom/datadog/android/flags/FlagsConfiguration;
-	public final fun enableExposureLogging (Z)Lcom/datadog/android/flags/FlagsConfiguration$Builder;
+	public final fun setExposureLoggingEnabled (Z)Lcom/datadog/android/flags/FlagsConfiguration$Builder;
 	public final fun useCustomExposureEndpoint (Ljava/lang/String;)Lcom/datadog/android/flags/FlagsConfiguration$Builder;
 	public final fun useCustomFlagEndpoint (Ljava/lang/String;)Lcom/datadog/android/flags/FlagsConfiguration$Builder;
 }
@@ -53,9 +55,6 @@ public final class com/datadog/android/flags/featureflags/FlagsClient$Builder {
 	public fun <init> (Ljava/lang/String;Lcom/datadog/android/api/SdkCore;)V
 	public synthetic fun <init> (Ljava/lang/String;Lcom/datadog/android/api/SdkCore;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun build ()Lcom/datadog/android/flags/featureflags/FlagsClient;
-	public final fun setEnableExposureLogging (Z)Lcom/datadog/android/flags/featureflags/FlagsClient$Builder;
-	public final fun useCustomExposureEndpoint (Ljava/lang/String;)Lcom/datadog/android/flags/featureflags/FlagsClient$Builder;
-	public final fun useCustomFlagEndpoint (Ljava/lang/String;)Lcom/datadog/android/flags/featureflags/FlagsClient$Builder;
 }
 
 public final class com/datadog/android/flags/featureflags/FlagsClient$Companion {

@@ -135,7 +135,7 @@ internal class FlagsConfigurationTest {
         val config = FlagsConfiguration.Builder()
             .useCustomExposureEndpoint(fakeExposureEndpoint)
             .useCustomFlagEndpoint(fakeFlaggingEndpoint)
-            .enableExposureLogging(true)
+            .setExposureLoggingEnabled(true)
             .build()
 
         // Then
@@ -148,7 +148,7 @@ internal class FlagsConfigurationTest {
     fun `M set enableExposureLogging to true W Builder#enableExposureLogging() {true}`() {
         // When
         val config = FlagsConfiguration.Builder()
-            .enableExposureLogging(true)
+            .setExposureLoggingEnabled(true)
             .build()
 
         // Then
@@ -159,7 +159,7 @@ internal class FlagsConfigurationTest {
     fun `M set enableExposureLogging to false W Builder#enableExposureLogging() {false}`() {
         // When
         val config = FlagsConfiguration.Builder()
-            .enableExposureLogging(false)
+            .setExposureLoggingEnabled(false)
             .build()
 
         // Then
@@ -186,12 +186,12 @@ internal class FlagsConfigurationTest {
         // Given
         val config1 = FlagsConfiguration.Builder()
             .useCustomExposureEndpoint(fakeExposureEndpoint)
-            .enableExposureLogging(true)
+            .setExposureLoggingEnabled(true)
             .build()
 
         val config2 = FlagsConfiguration.Builder()
             .useCustomExposureEndpoint(fakeExposureEndpoint)
-            .enableExposureLogging(false)
+            .setExposureLoggingEnabled(false)
             .build()
 
         // Then

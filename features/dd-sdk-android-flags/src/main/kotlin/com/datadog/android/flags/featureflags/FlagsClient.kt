@@ -9,6 +9,7 @@ package com.datadog.android.flags.featureflags
 import com.datadog.android.Datadog
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.SdkCore
+import com.datadog.android.api.feature.Feature.Companion.FLAGS_FEATURE_NAME
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.flags.FlagsConfiguration
@@ -21,7 +22,6 @@ import com.datadog.android.flags.featureflags.internal.repository.net.DefaultFla
 import com.datadog.android.flags.featureflags.internal.repository.net.PrecomputeMapper
 import com.datadog.android.flags.featureflags.model.EvaluationContext
 import com.datadog.android.flags.internal.FlagsFeature
-import com.datadog.android.flags.internal.FlagsFeature.Companion.FLAGS_FEATURE_NAME
 import org.json.JSONObject
 
 /**
@@ -127,28 +127,15 @@ interface FlagsClient {
      * val client = FlagsClient.Builder("analytics").build()
      * ```
      *
-     * With custom configuration:
-     * ```
-     * val client = FlagsClient.Builder("analytics")
-     *     .useCustomEndpoint("https://custom.endpoint.com")
-     *     .build()
-     * ```
-     *
      * With custom SDK core:
      * ```
      * val client = FlagsClient.Builder(name = "analytics", sdkCore = customCore)
-     *     .useFlaggingProxy("https://proxy.example.com")
      *     .build()
      * ```
      */
     class Builder {
         private val name: String
-        private val sdkCore: SdkCore
-
-        // Optional configuration overrides (null = use feature default)
-        private var explicitCustomEndpoint: String? = null
-        private var explicitFlaggingProxy: String? = null
-        private var explicitEnableExposureLogging: Boolean? = null
+        private val sdkCore: FeatureSdkCore
 
         /**
          * Creates a builder for the default [FlagsClient].
@@ -156,8 +143,8 @@ interface FlagsClient {
          * @param sdkCore the SDK instance to associate with this [FlagsClient]. Defaults to main instance.
          */
         constructor(sdkCore: SdkCore = Datadog.getInstance()) {
-            this.name = Companion.DEFAULT_CLIENT_NAME
-            this.sdkCore = sdkCore
+            this.name = DEFAULT_CLIENT_NAME
+            this.sdkCore = sdkCore as FeatureSdkCore
         }
 
         /**
@@ -171,46 +158,7 @@ interface FlagsClient {
          */
         constructor(name: String, sdkCore: SdkCore = Datadog.getInstance()) {
             this.name = name
-            this.sdkCore = sdkCore
-        }
-
-        /**
-         * Sets a custom endpoint URL for uploading exposure events (flag evaluations).
-         * If not called, uses the default from [FlagsFeature] configuration.
-         *
-         * @param endpoint The full endpoint URL, e.g., https://example.com/exposure/upload.
-         *                 If null, uses the default from feature configuration.
-         * @return this Builder instance for chaining.
-         */
-        fun useCustomExposureEndpoint(endpoint: String?): Builder {
-            this.explicitCustomEndpoint = endpoint
-            return this
-        }
-
-        /**
-         * Sets a custom endpoint URL for fetching precomputed flag assignments (flagging proxy).
-         * If not called, uses the default from [FlagsFeature] configuration.
-         *
-         * @param endpoint The full proxy endpoint URL, e.g., https://proxy.example.com/flags.
-         *                 If null, uses the default from feature configuration.
-         * @return this Builder instance for chaining.
-         */
-        fun useCustomFlagEndpoint(endpoint: String?): Builder {
-            this.explicitFlaggingProxy = endpoint
-            return this
-        }
-
-        /**
-         * Sets whether exposure events should be tracked.
-         *
-         * If not called, uses the default from [FlagsFeature] configuration.
-         *
-         * @param enabled whether to enable exposure tracking.
-         * @return this Builder instance for chaining.
-         */
-        fun setEnableExposureLogging(enabled: Boolean): Builder {
-            this.explicitEnableExposureLogging = enabled
-            return this
+            this.sdkCore = sdkCore as FeatureSdkCore
         }
 
         /**
@@ -218,9 +166,8 @@ interface FlagsClient {
          *
          * This method:
          * 1. Validates the [FlagsFeature] is enabled
-         * 2. Merges builder config with feature defaults (selective override)
-         * 3. Creates and registers the client
-         * 4. Returns the created client or [NoOpFlagsClient] on failure
+         * 2. Creates and registers the client
+         * 3. Returns the created client or [NoOpFlagsClient] on failure
          *
          * If a [FlagsClient] with the same name already exists for this [SdkCore]:
          * - Logs a warning (WARN level, USER target)
@@ -231,23 +178,23 @@ interface FlagsClient {
         @Suppress("ReturnCount")
         fun build(): FlagsClient {
             // Validate that the Flags feature is enabled
-            val flagsFeature = (sdkCore as? FeatureSdkCore)
-                ?.getFeature(FLAGS_FEATURE_NAME)
+            val flagsFeature = sdkCore
+                .getFeature(FLAGS_FEATURE_NAME)
                 ?.unwrap<FlagsFeature>()
 
             if (flagsFeature == null) {
                 return NoOpFlagsClient(
                     name = name,
                     reason = "Flags feature not enabled",
-                    logger = (sdkCore as? FeatureSdkCore)?.internalLogger
+                    logger = sdkCore.internalLogger
                 )
             }
 
-            val key = Companion.ClientKey(sdkCore, name)
+            val key = ClientKey(sdkCore, name)
 
-            synchronized(Companion.registeredClients) {
+            synchronized(registeredClients) {
                 // Check for existing client
-                val existingClient = Companion.registeredClients[key]
+                val existingClient = registeredClients[key]
                 if (existingClient != null) {
                     logWarning(
                         sdkCore,
@@ -257,17 +204,8 @@ interface FlagsClient {
                     return existingClient
                 }
 
-                // Merge configuration (selective override using data class copy)
-                val featureConfig = flagsFeature.flagsConfiguration
-                val mergedConfig = FlagsConfiguration(
-                    customExposureEndpoint = explicitCustomEndpoint ?: featureConfig.customExposureEndpoint,
-                    customFlagEndpoint = explicitFlaggingProxy ?: featureConfig.customFlagEndpoint,
-                    enableExposureLogging =
-                    explicitEnableExposureLogging ?: flagsFeature.flagsConfiguration.enableExposureLogging
-                )
-
                 // Create and register client
-                val newClient = Companion.createInternal(mergedConfig, sdkCore as FeatureSdkCore, flagsFeature)
+                val newClient = createInternal(flagsFeature.flagsConfiguration, sdkCore, flagsFeature)
                 if (newClient !is NoOpFlagsClient) {
                     Companion.registeredClients[key] = newClient
                 }
