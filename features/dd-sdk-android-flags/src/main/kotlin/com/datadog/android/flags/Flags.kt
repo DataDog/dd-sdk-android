@@ -12,8 +12,7 @@ import com.datadog.android.api.SdkCore
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.flags.featureflags.FlagsClient
-import com.datadog.android.flags.featureflags.FlagsProvider
-import com.datadog.android.flags.featureflags.internal.DatadogFlagsProvider
+import com.datadog.android.flags.featureflags.internal.DatadogFlagsClient
 import com.datadog.android.flags.featureflags.internal.evaluation.EvaluationsManager
 import com.datadog.android.flags.featureflags.internal.model.FlagsContext
 import com.datadog.android.flags.featureflags.internal.repository.DefaultFlagsRepository
@@ -48,15 +47,27 @@ object Flags {
 
         sdkCore.registerFeature(flagsFeature)
 
-        createProvider(sdkCore, flagsFeature)?.let {
+        createClient(sdkCore, flagsFeature)?.let {
             FlagsClient.registerIfAbsent(
-                provider = it,
+                client = it,
                 sdkCore
             )
         }
     }
 
-    private fun createProvider(sdkCore: FeatureSdkCore, flagsFeature: FlagsFeature): FlagsProvider? {
+    /**
+     * Creates and configures a [DatadogFlagsClient] instance.
+     *
+     * This method performs complex initialization including validation of required context
+     * parameters (clientToken, site, env) and creation of all necessary dependencies.
+     * If any required parameters are missing, an error is logged and null is returned.
+     *
+     * @param sdkCore the [FeatureSdkCore] instance to use for client creation
+     * @param flagsFeature the [FlagsFeature] instance containing application configuration
+     * @return a configured [DatadogFlagsClient] instance, or null if required context
+     * parameters are missing (clientToken, site, or env)
+     */
+    private fun createClient(sdkCore: FeatureSdkCore, flagsFeature: FlagsFeature): FlagsClient? {
         val executorService = sdkCore.createSingleThreadExecutorService(
             executorContext = FLAGS_EXECUTOR_NAME
         )
@@ -68,7 +79,6 @@ object Flags {
         val site = datadogContext?.site
         val env = datadogContext?.env
 
-        @Suppress("TodoWithoutTask") // TODO how do we want to handle this?
         if (clientToken == null || site == null || env == null) {
             val missingParams = listOfNotNull(
                 "clientToken".takeIf { clientToken == null },
@@ -79,7 +89,13 @@ object Flags {
             internalLogger.log(
                 InternalLogger.Level.ERROR,
                 InternalLogger.Target.MAINTAINER,
-                { "Missing required context parameters: $missingParams" }
+                { "Missing required configuration parameters: $missingParams" }
+            )
+
+            internalLogger.log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.USER,
+                { "Missing required configuration parameters: $missingParams" }
             )
 
             return null
@@ -111,7 +127,7 @@ object Flags {
             precomputeMapper = precomputeMapper
         )
 
-        return DatadogFlagsProvider(
+        return DatadogFlagsClient(
             featureSdkCore = sdkCore,
             evaluationsManager = evaluationsManager,
             flagsRepository = flagsRepository

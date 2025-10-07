@@ -12,7 +12,7 @@ import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.flags.Flags.FLAGS_EXECUTOR_NAME
 import com.datadog.android.flags.featureflags.FlagsClient
-import com.datadog.android.flags.featureflags.internal.NoOpFlagsProvider
+import com.datadog.android.flags.featureflags.internal.NoOpFlagsClient
 import com.datadog.android.flags.internal.FlagsFeature
 import com.datadog.android.flags.internal.FlagsFeature.Companion.FLAGS_FEATURE_NAME
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -86,7 +86,7 @@ internal class FlagsTest {
     }
 
     @Test
-    fun `M register FlagsProvider W enable() { valid context }`() {
+    fun `M register FlagsClient W enable() { valid context }`() {
         // Given
         val fakeConfiguration = FlagsConfiguration.Builder()
             .setEnableExposureLogging(false)
@@ -96,12 +96,13 @@ internal class FlagsTest {
         Flags.enable(fakeConfiguration, mockSdkCore)
 
         // Then
-        assertThat(FlagsClient.isRegistered(mockSdkCore)).isTrue()
-        assertThat(FlagsClient.get(mockSdkCore)).isNotInstanceOf(NoOpFlagsProvider::class.java)
+        // Verify that a real client was registered by checking it's not a no-op
+        val client = FlagsClient.get(mockSdkCore)
+        assertThat(client).isNotInstanceOf(NoOpFlagsClient::class.java)
     }
 
     @Test
-    fun `M not register FlagsProvider W enable() { missing context }`() {
+    fun `M not register FlagsClient W enable() { missing context }`() {
         // Given
         val fakeConfiguration = FlagsConfiguration.Builder()
             .setEnableExposureLogging(false)
@@ -113,7 +114,9 @@ internal class FlagsTest {
         Flags.enable(fakeConfiguration, mockSdkCore)
 
         // Then
-        assertThat(FlagsClient.isRegistered(mockSdkCore)).isFalse()
+        // Verify that no real client was registered by checking it's a no-op
+        val client = FlagsClient.get(mockSdkCore)
+        assertThat(client).isInstanceOf(NoOpFlagsClient::class.java)
     }
 
     @Test
@@ -138,7 +141,7 @@ internal class FlagsTest {
                 eq(false),
                 eq(null)
             )
-            assertThat(lastValue()).isEqualTo("Missing required context parameters: clientToken, site, env")
+            assertThat(lastValue()).isEqualTo("Missing required configuration parameters: clientToken, site, env")
         }
     }
 
@@ -167,7 +170,7 @@ internal class FlagsTest {
                 eq(false),
                 eq(null)
             )
-            assertThat(lastValue()).isEqualTo("Missing required context parameters: clientToken, site")
+            assertThat(lastValue()).isEqualTo("Missing required configuration parameters: clientToken, site")
         }
     }
 

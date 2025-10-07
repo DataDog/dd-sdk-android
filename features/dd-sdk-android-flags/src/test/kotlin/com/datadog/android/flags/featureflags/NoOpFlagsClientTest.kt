@@ -6,7 +6,7 @@
 
 package com.datadog.android.flags.featureflags
 
-import com.datadog.android.flags.featureflags.internal.NoOpFlagsProvider
+import com.datadog.android.flags.featureflags.internal.NoOpFlagsClient
 import com.datadog.android.flags.featureflags.model.EvaluationContext
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -17,13 +17,13 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 
 @ExtendWith(ForgeExtension::class)
-internal class NoOpFlagsProviderTest {
+internal class NoOpFlagsClientTest {
 
-    private lateinit var testedProvider: NoOpFlagsProvider
+    private lateinit var testedClient: NoOpFlagsClient
 
     @BeforeEach
     fun `set up`() {
-        testedProvider = NoOpFlagsProvider()
+        testedClient = NoOpFlagsClient()
     }
 
     // region setContext()
@@ -40,7 +40,7 @@ internal class NoOpFlagsProviderTest {
         val fakeContext = EvaluationContext(fakeTargetingKey, fakeAttributes)
 
         // When
-        testedProvider.setContext(fakeContext)
+        testedClient.setContext(fakeContext)
 
         // Then
         // No exception should be thrown, method should be no-op
@@ -57,7 +57,7 @@ internal class NoOpFlagsProviderTest {
         val fakeDefaultValue = true
 
         // When
-        val result = testedProvider.resolveBooleanValue(fakeFlagKey, fakeDefaultValue)
+        val result = testedClient.resolveBooleanValue(fakeFlagKey, fakeDefaultValue)
 
         // Then
         assertThat(result).isEqualTo(fakeDefaultValue)
@@ -70,7 +70,7 @@ internal class NoOpFlagsProviderTest {
         val fakeDefaultValue = false
 
         // When
-        val result = testedProvider.resolveBooleanValue(fakeFlagKey, fakeDefaultValue)
+        val result = testedClient.resolveBooleanValue(fakeFlagKey, fakeDefaultValue)
 
         // Then
         assertThat(result).isEqualTo(fakeDefaultValue)
@@ -87,7 +87,7 @@ internal class NoOpFlagsProviderTest {
         val fakeDefaultValue = forge.anAlphabeticalString()
 
         // When
-        val result = testedProvider.resolveStringValue(fakeFlagKey, fakeDefaultValue)
+        val result = testedClient.resolveStringValue(fakeFlagKey, fakeDefaultValue)
 
         // Then
         assertThat(result).isEqualTo(fakeDefaultValue)
@@ -100,7 +100,7 @@ internal class NoOpFlagsProviderTest {
         val fakeDefaultValue = ""
 
         // When
-        val result = testedProvider.resolveStringValue(fakeFlagKey, fakeDefaultValue)
+        val result = testedClient.resolveStringValue(fakeFlagKey, fakeDefaultValue)
 
         // Then
         assertThat(result).isEqualTo(fakeDefaultValue)
@@ -108,45 +108,45 @@ internal class NoOpFlagsProviderTest {
 
     // endregion
 
-    // region resolveNumberValue()
+    // region resolveDoubleValue()
 
     @Test
-    fun `M return default value W resolveNumberValue() {double}`(forge: Forge) {
+    fun `M return default value W resolveDoubleValue() {double}`(forge: Forge) {
         // Given
         val fakeFlagKey = forge.anAlphabeticalString()
         val fakeDefaultValue = forge.aDouble()
 
         // When
-        val result = testedProvider.resolveNumberValue(fakeFlagKey, fakeDefaultValue)
+        val result = testedClient.resolveDoubleValue(fakeFlagKey, fakeDefaultValue.toDouble())
 
         // Then
         assertThat(result).isEqualTo(fakeDefaultValue)
     }
 
     @Test
-    fun `M return default value W resolveNumberValue() {float}`(forge: Forge) {
+    fun `M return default value W resolveDoubleValue() {float}`(forge: Forge) {
         // Given
         val fakeFlagKey = forge.anAlphabeticalString()
         val fakeDefaultValue = forge.aFloat()
 
         // When
-        val result = testedProvider.resolveNumberValue(fakeFlagKey, fakeDefaultValue)
+        val result = testedClient.resolveDoubleValue(fakeFlagKey, fakeDefaultValue.toDouble())
 
         // Then
-        assertThat(result).isEqualTo(fakeDefaultValue)
+        assertThat(result).isEqualTo(fakeDefaultValue.toDouble())
     }
 
     @Test
-    fun `M return default value W resolveNumberValue() {long}`(forge: Forge) {
+    fun `M return default value W resolveDoubleValue() {long}`(forge: Forge) {
         // Given
         val fakeFlagKey = forge.anAlphabeticalString()
         val fakeDefaultValue = forge.aLong()
 
         // When
-        val result = testedProvider.resolveNumberValue(fakeFlagKey, fakeDefaultValue)
+        val result = testedClient.resolveDoubleValue(fakeFlagKey, fakeDefaultValue.toDouble())
 
         // Then
-        assertThat(result).isEqualTo(fakeDefaultValue)
+        assertThat(result).isEqualTo(fakeDefaultValue.toDouble())
     }
 
     // endregion
@@ -160,7 +160,7 @@ internal class NoOpFlagsProviderTest {
         val fakeDefaultValue = forge.anInt()
 
         // When
-        val result = testedProvider.resolveIntValue(fakeFlagKey, fakeDefaultValue)
+        val result = testedClient.resolveIntValue(fakeFlagKey, fakeDefaultValue)
 
         // Then
         assertThat(result).isEqualTo(fakeDefaultValue)
@@ -173,7 +173,7 @@ internal class NoOpFlagsProviderTest {
         val fakeDefaultValue = 0
 
         // When
-        val result = testedProvider.resolveIntValue(fakeFlagKey, fakeDefaultValue)
+        val result = testedClient.resolveIntValue(fakeFlagKey, fakeDefaultValue)
 
         // Then
         assertThat(result).isEqualTo(fakeDefaultValue)
@@ -186,7 +186,7 @@ internal class NoOpFlagsProviderTest {
         val fakeDefaultValue = -forge.anInt(min = 1)
 
         // When
-        val result = testedProvider.resolveIntValue(fakeFlagKey, fakeDefaultValue)
+        val result = testedClient.resolveIntValue(fakeFlagKey, fakeDefaultValue)
 
         // Then
         assertThat(result).isEqualTo(fakeDefaultValue)
@@ -207,7 +207,7 @@ internal class NoOpFlagsProviderTest {
         }
 
         // When
-        val result = testedProvider.resolveStructureValue(fakeFlagKey, fakeDefaultValue)
+        val result = testedClient.resolveStructureValue(fakeFlagKey, fakeDefaultValue)
 
         // Then
         assertThat(result).isEqualTo(fakeDefaultValue)
@@ -221,7 +221,7 @@ internal class NoOpFlagsProviderTest {
         val fakeDefaultValue = JSONObject()
 
         // When
-        val result = testedProvider.resolveStructureValue(fakeFlagKey, fakeDefaultValue)
+        val result = testedClient.resolveStructureValue(fakeFlagKey, fakeDefaultValue)
 
         // Then
         assertThat(result).isEqualTo(fakeDefaultValue)

@@ -10,114 +10,176 @@ import com.datadog.android.Datadog
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.SdkCore
 import com.datadog.android.api.feature.FeatureSdkCore
-import com.datadog.android.flags.featureflags.FlagsClient.get
-import com.datadog.android.flags.featureflags.internal.NoOpFlagsProvider
+import com.datadog.android.flags.featureflags.internal.NoOpFlagsClient
+import com.datadog.android.flags.featureflags.model.EvaluationContext
+import org.json.JSONObject
 
 /**
- * Client for querying feature flags.
+ * Client interface for evaluating feature flags and experiments.
+ *
+ * This interface defines the public API that applications use to retrieve feature flag values.
+ * It follows the OpenFeature specification closely, to simplify implementing the OpenFeature
+ * Provider API on top.
  */
-object FlagsClient {
-
-    private val registeredProviders: MutableMap<SdkCore, FlagsProvider> = mutableMapOf()
+interface FlagsClient {
+    /**
+     * Sets the [EvaluationContext] for flag resolution.
+     *
+     * The context is used to determine which flag values to return based on user targeting
+     * rules. This method triggers a background fetch of updated flag evaluations.
+     *
+     * @param context The [EvaluationContext] containing targeting key and attributes.
+     */
+    fun setContext(context: EvaluationContext)
 
     /**
-     * Identify whether a [FlagsProvider] has previously been registered for the given SDK instance.
+     * Resolves a boolean flag value.
      *
-     * This check is useful in scenarios where more than one component may be responsible
-     * for registering a provider.
-     *
-     * @param sdkCore the [SdkCore] instance to check against. If not provided, default instance
-     * will be checked.
-     * @return whether a provider has been registered
+     * @param flagKey The unique identifier of the flag to resolve.
+     * @param defaultValue The value to return if the flag cannot be retrieved or parsed.
+     * @return The boolean value of the flag, or the default value if unavailable.
      */
-    @JvmOverloads
-    @JvmStatic
-    fun isRegistered(sdkCore: SdkCore = Datadog.getInstance()): Boolean = synchronized(registeredProviders) {
-        registeredProviders.containsKey(sdkCore)
-    }
+    fun resolveBooleanValue(flagKey: String, defaultValue: Boolean): Boolean
 
     /**
-     * Returns the constant [FlagsProvider] instance.
+     * Resolves a string flag value.
      *
-     * Until a Flags feature is enabled, a no-op implementation is returned.
-     *
-     * @return The provider associated with the instance given instance, or a no-op provider. If SDK
-     * instance is not provided, default instance will be used.
+     * @param flagKey The unique identifier of the flag to resolve.
+     * @param defaultValue The value to return if the flag cannot be retrieved or parsed.
+     * @return The string value of the flag, or the default value if unavailable.
      */
-    @JvmOverloads
-    @JvmStatic
-    fun get(sdkCore: SdkCore = Datadog.getInstance()): FlagsProvider = synchronized(registeredProviders) {
-        val provider = registeredProviders[sdkCore]
-        if (provider == null) {
-            val errorMsg = "No FlagsProvider for the SDK instance with name ${sdkCore.name} " +
-                "found, returning no-op implementation."
-            (sdkCore as? FeatureSdkCore)
-                ?.internalLogger
-                ?.log(
-                    InternalLogger.Level.WARN,
-                    InternalLogger.Target.USER,
-                    { errorMsg }
-                )
-            NoOpFlagsProvider()
-        } else {
-            provider
-        }
-    }
-
-    // region Internal
+    fun resolveStringValue(flagKey: String, defaultValue: String): String
 
     /**
-     * Register a [FlagsProvider] with an [SdkCore] to back the behaviour of the [get] function.
+     * Resolves a numeric flag value.
      *
-     * Registration is a one-time operation. Once a provider has been registered, all attempts at re-registering
-     * will return `false`.
-     *
-     * Every application intending to use the global FlagsClient is responsible for registering it once
-     * during its initialization.
-     *
-     * @param provider the provider to use as global provider.
-     * @param sdkCore the instance to register the given provider with. If not provided, default
-     * instance will be used.
-     * @return `true` if the provider was registered as a result of this call, `false` otherwise.
+     * @param flagKey The unique identifier of the flag to resolve.
+     * @param defaultValue The value to return if the flag cannot be retrieved or parsed.
+     * @return The numeric value of the flag as a double, or the default value if unavailable.
      */
-    internal fun registerIfAbsent(provider: FlagsProvider, sdkCore: SdkCore = Datadog.getInstance()): Boolean =
-        synchronized(registeredProviders) {
-            if (registeredProviders.containsKey(sdkCore)) {
-                (sdkCore as FeatureSdkCore).internalLogger.log(
-                    InternalLogger.Level.WARN,
-                    InternalLogger.Target.USER,
-                    { "A FlagsProvider has already been registered for this SDK instance" }
-                )
-                false
+    fun resolveDoubleValue(flagKey: String, defaultValue: Double): Double
+
+    /**
+     * Resolves an integer flag value.
+     *
+     * @param flagKey The unique identifier of the flag to resolve.
+     * @param defaultValue The value to return if the flag cannot be retrieved or parsed.
+     * @return The integer value of the flag, or the default value if unavailable.
+     */
+    fun resolveIntValue(flagKey: String, defaultValue: Int): Int
+
+    /**
+     * Resolves a structured flag value as a JSON object.
+     *
+     * @param flagKey The unique identifier of the flag to resolve.
+     * @param defaultValue The value to return if the flag cannot be retrieved or parsed.
+     * @return The JSON object value of the flag, or the default value if unavailable.
+     */
+    fun resolveStructureValue(flagKey: String, defaultValue: JSONObject): JSONObject
+
+    /**
+     * Companion object providing static access to [FlagsClient] instances.
+     *
+     * This companion manages the registration and retrieval of [FlagsClient] instances
+     * per SDK core, ensuring thread-safe access and proper lifecycle management.
+     */
+    companion object {
+        private val registeredClients: MutableMap<SdkCore, FlagsClient> = mutableMapOf()
+
+        /**
+         * Returns the [FlagsClient] instance for the given SDK core.
+         *
+         * This method is thread-safe and will return the same client instance for the same SDK core
+         * across multiple calls. If no client has been registered for the given SDK core, a no-op
+         * implementation will be returned instead.
+         *
+         * @param sdkCore the [SdkCore] instance to retrieve the client for. If not provided,
+         * the default Datadog SDK instance will be used.
+         * @return the [FlagsClient] associated with the given SDK core, or a no-op client.
+         * if no client is registered for this SDK core.
+         */
+        @JvmOverloads
+        @JvmStatic
+        fun get(sdkCore: SdkCore = Datadog.getInstance()): FlagsClient = synchronized(registeredClients) {
+            val client = registeredClients[sdkCore]
+            if (client == null) {
+                val errorMsg = "No FlagsClient for the SDK instance with name ${sdkCore.name} " +
+                    "found, returning no-op implementation."
+                (sdkCore as? FeatureSdkCore)
+                    ?.internalLogger
+                    ?.log(
+                        InternalLogger.Level.WARN,
+                        InternalLogger.Target.USER,
+                        { errorMsg }
+                    )
+                NoOpFlagsClient()
             } else {
-                @Suppress("UnsafeThirdPartyFunctionCall") // User provided callable, let it throw
-                registeredProviders[sdkCore] = provider
-                true
+                client
             }
         }
 
-    internal fun unregister(sdkCore: SdkCore = Datadog.getInstance()) {
-        synchronized(registeredProviders) {
-            registeredProviders.remove(sdkCore)
+        // region Internal
+
+        /**
+         * Register a [FlagsClient] with an [SdkCore] to back the behaviour of the [get] function.
+         *
+         * This method is thread-safe and implements a one-time registration pattern. Once a client
+         * has been registered for a specific SDK core, all subsequent registration attempts for that
+         * same core will be rejected and logged as a warning.
+         *
+         * Applications using the Datadog Flags feature must call this method once during initialization
+         * for each SDK core they intend to use.
+         *
+         * @param client the [FlagsClient] to register for the given SDK core
+         * @param sdkCore the [SdkCore] instance to associate with the client. If not provided,
+         * the default Datadog SDK instance will be used.
+         * @return `true` if the client was successfully registered, `false` if a client was
+         * already registered for this SDK core (in which case a warning will be logged).
+         */
+        internal fun registerIfAbsent(client: FlagsClient, sdkCore: SdkCore = Datadog.getInstance()): Boolean =
+            synchronized(registeredClients) {
+                if (registeredClients.containsKey(sdkCore)) {
+                    (sdkCore as FeatureSdkCore).internalLogger.log(
+                        InternalLogger.Level.WARN,
+                        InternalLogger.Target.USER,
+                        { "A FlagsClient has already been registered for this SDK instance" }
+                    )
+                    false
+                } else {
+                    registeredClients[sdkCore] = client
+                    true
+                }
+            }
+
+        /**
+         * Unregisters the [FlagsClient] associated with the given SDK core.
+         *
+         * After calling this method, subsequent calls to [instance] for the same SDK core
+         * will return a [NoOpFlagsClient]. This method is thread-safe and will silently
+         * do nothing if no client was registered for the given SDK core.
+         *
+         * @param sdkCore the [SdkCore] instance to unregister the client for. If not provided,
+         * the default Datadog SDK instance will be used.
+         */
+        internal fun unregister(sdkCore: SdkCore = Datadog.getInstance()) {
+            synchronized(registeredClients) {
+                registeredClients.remove(sdkCore)
+            }
         }
-    }
 
-    internal fun clear() {
-        synchronized(registeredProviders) {
-            registeredProviders.clear()
+        /**
+         * Removes all registered [FlagsClient] instances from all SDK cores.
+         *
+         * After calling this method, all subsequent calls to [instance] will return
+         * [NoOpFlagsClient] instances regardless of the SDK core. This method is thread-safe
+         * and is primarily intended for testing purposes or SDK shutdown scenarios.
+         */
+        internal fun clear() {
+            synchronized(registeredClients) {
+                registeredClients.clear()
+            }
         }
+
+        // endregion
     }
-
-    // This method is mainly for test purposes.
-    @Suppress("unused")
-    @JvmStatic
-    private fun reset() {
-        clear()
-    }
-
-    // endregion
-
-    // region Constants
-    // Constants can be added here if needed
-    // endregion
 }

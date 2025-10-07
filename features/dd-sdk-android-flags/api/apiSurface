@@ -5,15 +5,14 @@ data class com.datadog.android.flags.FlagsConfiguration
   class Builder
     fun setEnableExposureLogging(Boolean): Builder
     fun build(): FlagsConfiguration
-object com.datadog.android.flags.featureflags.FlagsClient
-  fun isRegistered(com.datadog.android.api.SdkCore = Datadog.getInstance()): Boolean
-  fun get(com.datadog.android.api.SdkCore = Datadog.getInstance()): FlagsProvider
-interface com.datadog.android.flags.featureflags.FlagsProvider
+interface com.datadog.android.flags.featureflags.FlagsClient
   fun setContext(com.datadog.android.flags.featureflags.model.EvaluationContext)
   fun resolveBooleanValue(String, Boolean): Boolean
   fun resolveStringValue(String, String): String
-  fun resolveNumberValue(String, Number): Number
+  fun resolveDoubleValue(String, Double): Double
   fun resolveIntValue(String, Int): Int
   fun resolveStructureValue(String, org.json.JSONObject): org.json.JSONObject
+  companion object 
+    fun get(com.datadog.android.api.SdkCore = Datadog.getInstance()): FlagsClient
 data class com.datadog.android.flags.featureflags.model.EvaluationContext
   constructor(String, Map<String, String> = emptyMap())

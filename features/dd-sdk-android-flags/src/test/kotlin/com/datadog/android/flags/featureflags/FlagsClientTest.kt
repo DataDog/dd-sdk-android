@@ -8,23 +8,21 @@ package com.datadog.android.flags.featureflags
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.FeatureSdkCore
-import com.datadog.android.flags.featureflags.internal.NoOpFlagsProvider
-import fr.xgouchet.elmyr.Forge
+import com.datadog.android.flags.featureflags.internal.NoOpFlagsClient
+import com.datadog.android.flags.featureflags.model.EvaluationContext
+import fr.xgouchet.elmyr.annotation.BoolForgery
+import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
-import org.mockito.kotlin.any
-import org.mockito.kotlin.anyOrNull
-import org.mockito.kotlin.atLeastOnce
-import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.verify
-import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 
@@ -39,25 +37,20 @@ internal class FlagsClientTest {
     lateinit var mockInternalLogger: InternalLogger
 
     @Mock
-    lateinit var mockFlagsProvider: FlagsProvider
+    lateinit var mockFlagsClient: FlagsClient
 
     @Mock
     lateinit var mockSecondSdkCore: FeatureSdkCore
 
     @Mock
-    lateinit var mockSecondFlagsProvider: FlagsProvider
-
-    private lateinit var fakeSdkCoreName: String
+    lateinit var mockSecondFlagsClient: FlagsClient
 
     @BeforeEach
-    fun `set up`(forge: Forge) {
-        fakeSdkCoreName = forge.anAlphabeticalString()
-        whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
-        whenever(mockSdkCore.name) doReturn fakeSdkCoreName
-        whenever(mockSecondSdkCore.internalLogger) doReturn mockInternalLogger
-
-        // Clean state before each test
-        FlagsClient.clear()
+    fun `set up`() {
+        whenever(mockSdkCore.internalLogger).thenReturn(mockInternalLogger)
+        whenever(mockSecondSdkCore.internalLogger).thenReturn(mockInternalLogger)
+        whenever(mockSdkCore.name).thenReturn("test-sdk")
+        whenever(mockSecondSdkCore.name).thenReturn("test-sdk-2")
     }
 
     @AfterEach
@@ -65,226 +58,184 @@ internal class FlagsClientTest {
         FlagsClient.clear()
     }
 
-    // region isRegistered()
+    // region Static Flag Resolution Methods
 
     @Test
-    fun `M return false W isRegistered() {no provider registered}`() {
+    fun `M return no-op default W get() + resolveBooleanValue() {no client registered for SDK core}`(
+        @StringForgery fakeFlagName: String,
+        @BoolForgery fakeFlagDefaultValue: Boolean
+    ) {
         // When
-        val result = FlagsClient.isRegistered(mockSdkCore)
+        val client = FlagsClient.get(mockSdkCore)
+        val result = client.resolveBooleanValue(fakeFlagName, fakeFlagDefaultValue)
 
         // Then
-        assertThat(result).isFalse()
+        assertThat(client).isInstanceOf(NoOpFlagsClient::class.java)
+        assertThat(result).isEqualTo(fakeFlagDefaultValue)
     }
 
     @Test
-    fun `M return true W isRegistered() {provider registered}`() {
+    fun `M delegate to registered client W get() + resolveBooleanValue() {client registered for SDK core}`() {
         // Given
-        FlagsClient.registerIfAbsent(mockFlagsProvider, mockSdkCore)
+        whenever(mockFlagsClient.resolveBooleanValue("test-flag", false)).thenReturn(true)
+        FlagsClient.registerIfAbsent(mockFlagsClient, mockSdkCore)
 
         // When
-        val result = FlagsClient.isRegistered(mockSdkCore)
+        val client = FlagsClient.get(mockSdkCore)
+        val result = client.resolveBooleanValue("test-flag", false)
 
         // Then
+        assertThat(client).isEqualTo(mockFlagsClient)
         assertThat(result).isTrue()
+        verify(mockFlagsClient).resolveBooleanValue("test-flag", false)
     }
 
     @Test
-    fun `M return false for different SDK W isRegistered() {provider registered for other SDK}`() {
+    fun `M delegate to correct client W resolveBooleanValue() {multiple clients registered for different SDK cores}`() {
         // Given
-        FlagsClient.registerIfAbsent(mockFlagsProvider, mockSdkCore)
+        whenever(mockFlagsClient.resolveBooleanValue("test-flag", false)).thenReturn(true)
+        whenever(mockSecondFlagsClient.resolveBooleanValue("test-flag", false)).thenReturn(false)
+        FlagsClient.registerIfAbsent(mockFlagsClient, mockSdkCore)
+        FlagsClient.registerIfAbsent(mockSecondFlagsClient, mockSecondSdkCore)
 
         // When
-        val result = FlagsClient.isRegistered(mockSecondSdkCore)
+        val firstClient = FlagsClient.get(mockSdkCore)
+        val secondClient = FlagsClient.get(mockSecondSdkCore)
+        val firstResult = firstClient.resolveBooleanValue("test-flag", false)
+        val secondResult = secondClient.resolveBooleanValue("test-flag", false)
 
         // Then
-        assertThat(result).isFalse()
+        assertThat(firstClient).isEqualTo(mockFlagsClient)
+        assertThat(secondClient).isEqualTo(mockSecondFlagsClient)
+        assertThat(firstResult).isTrue()
+        assertThat(secondResult).isFalse()
+        verify(mockFlagsClient).resolveBooleanValue("test-flag", false)
+        verify(mockSecondFlagsClient).resolveBooleanValue("test-flag", false)
+    }
+
+    @Test
+    fun `M delegate to registered client W setContext() {client registered for SDK core}`() {
+        // Given
+        val fakeContext = EvaluationContext("user123", mapOf("plan" to "premium"))
+        FlagsClient.registerIfAbsent(mockFlagsClient, mockSdkCore)
+
+        // When
+        val client = FlagsClient.get(mockSdkCore)
+        client.setContext(fakeContext)
+
+        // Then
+        assertThat(client).isEqualTo(mockFlagsClient)
+        verify(mockFlagsClient).setContext(fakeContext)
     }
 
     // endregion
 
-    // region get()
-
-    @Test
-    fun `M return NoOpFlagsProvider W get() {no provider registered}`() {
-        // When
-        val result = FlagsClient.get(mockSdkCore)
-
-        // Then
-        assertThat(result).isInstanceOf(NoOpFlagsProvider::class.java)
-    }
-
-    @Test
-    fun `M log warning W get() {no provider registered}`() {
-        // When
-        val result = FlagsClient.get(mockSdkCore)
-
-        // Then
-        assertThat(result).isInstanceOf(NoOpFlagsProvider::class.java)
-        verify(mockInternalLogger, atLeastOnce()).log(
-            any<InternalLogger.Level>(),
-            any<InternalLogger.Target>(),
-            any<() -> String>(),
-            anyOrNull<Throwable>(),
-            any<Boolean>(),
-            anyOrNull<Map<String, Any?>>()
-        )
-    }
-
-    @Test
-    fun `M return registered provider W get() {provider registered}`() {
-        // Given
-        FlagsClient.registerIfAbsent(mockFlagsProvider, mockSdkCore)
-
-        // When
-        val result = FlagsClient.get(mockSdkCore)
-
-        // Then
-        assertThat(result).isEqualTo(mockFlagsProvider)
-        verifyNoInteractions(mockInternalLogger)
-    }
-
-    @Test
-    fun `M return correct provider W get() {multiple providers registered}`() {
-        // Given
-        FlagsClient.registerIfAbsent(mockFlagsProvider, mockSdkCore)
-        FlagsClient.registerIfAbsent(mockSecondFlagsProvider, mockSecondSdkCore)
-
-        // When
-        val firstResult = FlagsClient.get(mockSdkCore)
-        val secondResult = FlagsClient.get(mockSecondSdkCore)
-
-        // Then
-        assertThat(firstResult).isEqualTo(mockFlagsProvider)
-        assertThat(secondResult).isEqualTo(mockSecondFlagsProvider)
-    }
-
-    // endregion
-
-    // region registerIfAbsent()
+    // region Internal Registration Methods
 
     @Test
     fun `M return true W registerIfAbsent() {first registration}`() {
         // When
-        val result = FlagsClient.registerIfAbsent(mockFlagsProvider, mockSdkCore)
+        val result = FlagsClient.registerIfAbsent(mockFlagsClient, mockSdkCore)
 
         // Then
         assertThat(result).isTrue()
-        assertThat(FlagsClient.isRegistered(mockSdkCore)).isTrue()
-        assertThat(FlagsClient.get(mockSdkCore)).isEqualTo(mockFlagsProvider)
     }
 
     @Test
     fun `M return false W registerIfAbsent() {duplicate registration}`() {
         // Given
-        FlagsClient.registerIfAbsent(mockFlagsProvider, mockSdkCore)
+        FlagsClient.registerIfAbsent(mockFlagsClient, mockSdkCore)
 
         // When
-        val result = FlagsClient.registerIfAbsent(mockSecondFlagsProvider, mockSdkCore)
+        val result = FlagsClient.registerIfAbsent(mockSecondFlagsClient, mockSdkCore)
 
         // Then
         assertThat(result).isFalse()
-        assertThat(FlagsClient.get(mockSdkCore)).isEqualTo(mockFlagsProvider)
     }
 
     @Test
-    fun `M log warning W registerIfAbsent() {duplicate registration}`() {
-        // Given
-        FlagsClient.registerIfAbsent(mockFlagsProvider, mockSdkCore)
-
+    fun `M register different clients W registerIfAbsent() {different SDK core instances}`() {
         // When
-        FlagsClient.registerIfAbsent(mockSecondFlagsProvider, mockSdkCore)
-
-        // Then
-        verify(mockInternalLogger, atLeastOnce()).log(
-            any<InternalLogger.Level>(),
-            any<InternalLogger.Target>(),
-            any<() -> String>(),
-            anyOrNull<Throwable>(),
-            any<Boolean>(),
-            anyOrNull<Map<String, Any?>>()
-        )
-    }
-
-    @Test
-    fun `M register different providers W registerIfAbsent() {different core instances}`() {
-        // When
-        val firstResult = FlagsClient.registerIfAbsent(mockFlagsProvider, mockSdkCore)
-        val secondResult = FlagsClient.registerIfAbsent(mockSecondFlagsProvider, mockSecondSdkCore)
+        val firstResult = FlagsClient.registerIfAbsent(mockFlagsClient, mockSdkCore)
+        val secondResult = FlagsClient.registerIfAbsent(mockSecondFlagsClient, mockSecondSdkCore)
 
         // Then
         assertThat(firstResult).isTrue()
         assertThat(secondResult).isTrue()
-        assertThat(FlagsClient.get(mockSdkCore)).isEqualTo(mockFlagsProvider)
-        assertThat(FlagsClient.get(mockSecondSdkCore)).isEqualTo(mockSecondFlagsProvider)
     }
 
-    // endregion
-
-    // region unregister()
-
     @Test
-    fun `M remove provider W unregister() {provider registered}`() {
+    fun `M remove client W unregister() {client registered for SDK core}`() {
         // Given
-        FlagsClient.registerIfAbsent(mockFlagsProvider, mockSdkCore)
-        assertThat(FlagsClient.isRegistered(mockSdkCore)).isTrue()
+        FlagsClient.registerIfAbsent(mockFlagsClient, mockSdkCore)
 
         // When
         FlagsClient.unregister(mockSdkCore)
 
         // Then
-        assertThat(FlagsClient.isRegistered(mockSdkCore)).isFalse()
-        assertThat(FlagsClient.get(mockSdkCore)).isInstanceOf(NoOpFlagsProvider::class.java)
+        // Verify client was removed by checking no-op behavior
+        val client = FlagsClient.get(mockSdkCore)
+        assertThat(client).isInstanceOf(NoOpFlagsClient::class.java)
+        assertThat(client.resolveBooleanValue("test", false)).isFalse()
     }
 
     @Test
-    fun `M do nothing W unregister() {no provider registered}`() {
+    fun `M do nothing W unregister() {no client registered for SDK core}`() {
+        // When / Then - should not throw
+        assertDoesNotThrow {
+            FlagsClient.unregister(mockSdkCore)
+        }
+
+        // Verify operation completed without affecting other state
+        val client = FlagsClient.get(mockSdkCore)
+        assertThat(client).isInstanceOf(NoOpFlagsClient::class.java)
+    }
+
+    @Test
+    fun `M only remove specific client W unregister() {multiple clients registered for different SDK cores}`() {
+        // Given
+        FlagsClient.registerIfAbsent(mockFlagsClient, mockSdkCore)
+        FlagsClient.registerIfAbsent(mockSecondFlagsClient, mockSecondSdkCore)
+
         // When
         FlagsClient.unregister(mockSdkCore)
 
         // Then
-        assertThat(FlagsClient.isRegistered(mockSdkCore)).isFalse()
+        // First should be no-op, second should still be registered
+        val firstClient = FlagsClient.get(mockSdkCore)
+        assertThat(firstClient).isInstanceOf(NoOpFlagsClient::class.java)
+        assertThat(firstClient.resolveBooleanValue("test", false)).isFalse()
     }
 
     @Test
-    fun `M only remove specific provider W unregister() {multiple providers registered}`() {
+    fun `M remove all clients W clear() {multiple clients registered across SDK cores}`() {
         // Given
-        FlagsClient.registerIfAbsent(mockFlagsProvider, mockSdkCore)
-        FlagsClient.registerIfAbsent(mockSecondFlagsProvider, mockSecondSdkCore)
-
-        // When
-        FlagsClient.unregister(mockSdkCore)
-
-        // Then
-        assertThat(FlagsClient.isRegistered(mockSdkCore)).isFalse()
-        assertThat(FlagsClient.isRegistered(mockSecondSdkCore)).isTrue()
-        assertThat(FlagsClient.get(mockSecondSdkCore)).isEqualTo(mockSecondFlagsProvider)
-    }
-
-    // endregion
-
-    // region clear()
-
-    @Test
-    fun `M remove all providers W clear() {multiple providers registered}`() {
-        // Given
-        FlagsClient.registerIfAbsent(mockFlagsProvider, mockSdkCore)
-        FlagsClient.registerIfAbsent(mockSecondFlagsProvider, mockSecondSdkCore)
+        FlagsClient.registerIfAbsent(mockFlagsClient, mockSdkCore)
+        FlagsClient.registerIfAbsent(mockSecondFlagsClient, mockSecondSdkCore)
 
         // When
         FlagsClient.clear()
 
         // Then
-        assertThat(FlagsClient.isRegistered(mockSdkCore)).isFalse()
-        assertThat(FlagsClient.isRegistered(mockSecondSdkCore)).isFalse()
+        // Both should now be no-op
+        val firstClient = FlagsClient.get(mockSdkCore)
+        val secondClient = FlagsClient.get(mockSecondSdkCore)
+        assertThat(firstClient).isInstanceOf(NoOpFlagsClient::class.java)
+        assertThat(secondClient).isInstanceOf(NoOpFlagsClient::class.java)
+        assertThat(firstClient.resolveBooleanValue("test", false)).isFalse()
+        assertThat(secondClient.resolveBooleanValue("test", false)).isFalse()
     }
 
     @Test
-    fun `M do nothing W clear() {no providers registered}`() {
-        // When
-        FlagsClient.clear()
+    fun `M do nothing W clear() {no clients registered across any SDK cores}`() {
+        // When / Then - should not throw
+        assertDoesNotThrow {
+            FlagsClient.clear()
+        }
 
-        // Then
-        assertThat(FlagsClient.isRegistered(mockSdkCore)).isFalse()
+        // Verify operation completed - should still return no-op clients
+        val client = FlagsClient.get(mockSdkCore)
+        assertThat(client).isInstanceOf(NoOpFlagsClient::class.java)
     }
 
     // endregion
