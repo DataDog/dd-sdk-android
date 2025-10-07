@@ -308,7 +308,8 @@ internal class EvaluationsManagerIntegrationTest {
     fun `M send correct request structure W updateEvaluationsForContext() { empty attributes }`(
         @StringForgery fakeClientToken: String,
         @StringForgery fakeApplicationId: String,
-        @StringForgery fakeTargetingKey: String
+        @StringForgery fakeTargetingKey: String,
+        @StringForgery fakeEnv: String
     ) {
         // Given
         val customEndpoint = mockWebServer.url("/precompute-assignments").toString()
@@ -316,7 +317,7 @@ internal class EvaluationsManagerIntegrationTest {
             clientToken = fakeClientToken,
             applicationId = fakeApplicationId,
             site = DatadogSite.US1,
-            env = "test",
+            env = fakeEnv,
             customFlagEndpoint = customEndpoint
         )
 
@@ -370,6 +371,6 @@ internal class EvaluationsManagerIntegrationTest {
         assertThat(subject.getJSONObject("targeting_attributes").length()).isEqualTo(0)
 
         val env = attributes.getJSONObject("env")
-        assertThat(env.getString("dd_env")).isEqualTo("prod")
+        assertThat(env.getString("dd_env")).isEqualTo(fakeEnv)
     }
 }

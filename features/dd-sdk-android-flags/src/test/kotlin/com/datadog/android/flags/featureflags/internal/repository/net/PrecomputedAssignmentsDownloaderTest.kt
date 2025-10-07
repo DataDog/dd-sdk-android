@@ -226,6 +226,37 @@ internal class PrecomputedAssignmentsDownloaderTest {
     }
 
     @Test
+    fun `M return null and log error W downloadPrecomputedFlags() { SecurityException }`() {
+        // Given
+        val fakeRequest = Request.Builder()
+            .url("https://example.com/test")
+            .build()
+        val exception = SecurityException("Missing network permissions")
+
+        whenever(mockRequestFactory.create(fakeEvaluationContext, fakeFlagsContext))
+            .doReturn(fakeRequest)
+        whenever(mockCallFactory.newCall(fakeRequest)).doReturn(mockCall)
+        whenever(mockCall.execute()).doThrow(exception)
+
+        // When
+        val result = testedDownloader.downloadPrecomputedFlags(fakeEvaluationContext)
+
+        // Then
+        assertThat(result).isNull()
+        argumentCaptor<Throwable> {
+            verify(mockInternalLogger).log(
+                eq(InternalLogger.Level.ERROR),
+                eq(InternalLogger.Target.MAINTAINER),
+                any(),
+                capture(),
+                eq(false),
+                eq(null)
+            )
+            assertThat(lastValue).isInstanceOf(SecurityException::class.java)
+        }
+    }
+
+    @Test
     fun `M return null and log error W downloadPrecomputedFlags() { generic exception }`() {
         // Given
         val fakeRequest = Request.Builder()

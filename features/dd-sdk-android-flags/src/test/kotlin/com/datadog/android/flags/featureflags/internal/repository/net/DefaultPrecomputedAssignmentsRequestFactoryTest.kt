@@ -274,7 +274,7 @@ internal class DefaultPrecomputedAssignmentsRequestFactoryTest {
 
         // Validate env
         val env = attributes.getJSONObject("env")
-        assertThat(env.getString("dd_env")).isEqualTo("prod")
+        assertThat(env.getString("dd_env")).isEqualTo(fakeEnv)
     }
 
     @Test

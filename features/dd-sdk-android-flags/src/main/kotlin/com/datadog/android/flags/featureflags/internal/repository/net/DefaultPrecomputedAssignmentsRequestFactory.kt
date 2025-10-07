@@ -37,7 +37,7 @@ internal class DefaultPrecomputedAssignmentsRequestFactory(private val internalL
         val headers = buildHeaders(flagsContext)
 
         // Step 3: Build request body
-        val body = buildRequestBody(context) ?: return null
+        val body = buildRequestBody(context, flagsContext) ?: return null
 
         // Step 4: Construct OkHttp Request
         return try {
@@ -80,15 +80,13 @@ internal class DefaultPrecomputedAssignmentsRequestFactory(private val internalL
         return headersBuilder.build()
     }
 
-    @Suppress("TodoWithoutTask")
-    // TODO modify to real fields
-    private fun buildRequestBody(context: EvaluationContext): RequestBody? = try {
+    private fun buildRequestBody(context: EvaluationContext, flagsContext: FlagsContext): RequestBody? = try {
         val attributeObj = buildStringifiedAttributes(context)
 
         val subject = JSONObject()
             .put("targeting_key", context.targetingKey)
             .put("targeting_attributes", attributeObj)
-        val env = buildEnvPayload()
+        val env = buildEnvPayload(flagsContext)
         val attributes = JSONObject()
             .put("env", env)
             .put("subject", subject)
@@ -122,9 +120,9 @@ internal class DefaultPrecomputedAssignmentsRequestFactory(private val internalL
     }
 
     @Suppress("UnsafeThirdPartyFunctionCall") // call wrapped in try/catch
-    private fun buildEnvPayload(): JSONObject =
+    private fun buildEnvPayload(flagsContext: FlagsContext): JSONObject =
         JSONObject()
-            .put("dd_env", "prod")
+            .put("dd_env", flagsContext.env)
 
     companion object {
         private const val HEADER_APPLICATION_ID = "dd-application-id"

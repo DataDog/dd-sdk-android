@@ -14,9 +14,6 @@ import okhttp3.OkHttpClient
 import okhttp3.Protocol
 import okhttp3.Request
 import okhttp3.Response
-import java.io.IOException
-import java.net.UnknownHostException
-import java.util.concurrent.TimeUnit
 
 /**
  * Downloads precomputed flag assignments from Datadog Feature Flags service.
@@ -47,19 +44,8 @@ internal class PrecomputedAssignmentsDownloader(
         setupOkHttpClient()
     }
 
-    /**
-     * Downloads precomputed flag assignments for the given evaluation context.
-     *
-     * This method follows the Factory + Executor pattern:
-     * 1. Create request using factory (handles request building)
-     * 2. Execute request (handles network operations)
-     *
-     * @param context The evaluation context for flag evaluation
-     * @return The response body as a string, or null if download fails
-     */
     @Suppress("ReturnCount", "TooGenericExceptionCaught")
     override fun downloadPrecomputedFlags(context: EvaluationContext): String? {
-        // Step 1: Create request using factory
         val request = requestFactory.create(context, flagsContext) ?: run {
             internalLogger.log(
                 InternalLogger.Level.ERROR,
@@ -69,60 +55,43 @@ internal class PrecomputedAssignmentsDownloader(
             return null
         }
 
-        // Step 2: Execute request with proper error handling
         return try {
             executeDownloadRequest(request)
-        } catch (e: UnknownHostException) {
-            internalLogger.log(
-                InternalLogger.Level.ERROR,
-                InternalLogger.Target.MAINTAINER,
-                { "Unable to find host ${flagsContext.site.intakeEndpoint}; we will retry later." },
-                e
-            )
-            null
-        } catch (e: IOException) {
-            internalLogger.log(
-                InternalLogger.Level.ERROR,
-                InternalLogger.Target.MAINTAINER,
-                { "Unable to execute the request; we will retry later." },
-                e
-            )
-            null
         } catch (e: Throwable) {
             internalLogger.log(
                 InternalLogger.Level.ERROR,
                 InternalLogger.Target.MAINTAINER,
-                { "Unable to execute the request; we will retry later." },
+                { "Unexpected error executing request." },
                 e
             )
             null
         }
     }
 
-    @Suppress("TooGenericExceptionCaught")
     private fun executeDownloadRequest(request: Request): String? = try {
         val response = callFactory.newCall(request).execute()
         @Suppress("UnsafeThirdPartyFunctionCall") // wrapped in try/catch
         handleResponse(response)
-    } catch (e: Exception) {
+    } catch (e: IllegalStateException) {
         internalLogger.log(
             InternalLogger.Level.ERROR,
             InternalLogger.Target.MAINTAINER,
-            { "Error downloading flags" },
+            { "Invalid state while downloading flags" },
+            e
+        )
+        null
+    } catch (e: IllegalArgumentException) {
+        internalLogger.log(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.MAINTAINER,
+            { "Invalid argument while downloading flags" },
             e
         )
         null
     }
 
     private fun handleResponse(response: Response): String? = if (response.isSuccessful) {
-        val body = response.body
-        var responseBodyToReturn: String? = null
-
-        if (body != null) {
-            responseBodyToReturn = body.string()
-        }
-
-        responseBodyToReturn
+        response.body?.string()
     } else {
         internalLogger.log(
             InternalLogger.Level.ERROR,
