@@ -48,7 +48,7 @@ import kotlin.time.Duration.Companion.seconds
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
-class RumTTIDReporterImplTest {
+class RumFirstDrawTimeReporterTest {
 
     private var currentTime: Duration = 0.seconds
 
@@ -59,7 +59,7 @@ class RumTTIDReporterImplTest {
     private lateinit var handler: Handler
 
     @Mock
-    private lateinit var listener: RumTTIDReporter.Listener
+    private lateinit var callback: RumFirstDrawTimeReporter.Callback
 
     @Mock
     private lateinit var activity: Activity
@@ -76,7 +76,7 @@ class RumTTIDReporterImplTest {
     @Mock
     private lateinit var internalLogger: InternalLogger
 
-    private lateinit var reporter: RumTTIDReporterImpl
+    private lateinit var reporter: RumFirstDrawTimeReporterImpl
 
     private lateinit var weakActivity: WeakReference<Activity>
 
@@ -93,12 +93,11 @@ class RumTTIDReporterImplTest {
             appStartActivityOnCreateGapNs = 0.seconds.inWholeNanoseconds
         )
 
-        reporter = RumTTIDReporterImpl(
+        reporter = RumFirstDrawTimeReporterImpl(
             internalLogger = internalLogger,
             timeProviderNs = { currentTime.inWholeNanoseconds },
             windowCallbacksRegistry = windowCallbackRegistry,
-            handler = handler,
-            listener = listener
+            handler = handler
         )
 
         whenever(activity.window) doReturn window
@@ -124,6 +123,7 @@ class RumTTIDReporterImplTest {
             argMessage.callback.run()
             true
         }
+        whenever(decorView.isAttachedToWindow) doReturn true
     }
 
     @Test
@@ -132,12 +132,10 @@ class RumTTIDReporterImplTest {
         currentTime += 1.seconds
 
         // When
-        reporter.onAppStartupDetected(
-            scenario
-        )
+        reporter.subscribeToFirstFrameDrawn(activity, callback)
 
         // Then
-        inOrder(windowCallbackRegistry, listener, viewTreeObserver) {
+        inOrder(windowCallbackRegistry, callback, viewTreeObserver) {
             verify(windowCallbackRegistry).addListener(eq(activity), any())
             verify(windowCallbackRegistry).removeListener(eq(activity), any())
             verify(viewTreeObserver).isAlive
@@ -148,8 +146,8 @@ class RumTTIDReporterImplTest {
             }
 
             verify(
-                listener
-            ).onTTIDCalculated(RumTTIDInfo(scenario = scenario, durationNs = 1.seconds.inWholeNanoseconds))
+                callback
+            ).onFirstFrameDrawn(1.seconds.inWholeNanoseconds)
             verify(viewTreeObserver).isAlive
             verify(viewTreeObserver).removeOnDrawListener(any())
             verifyNoMoreInteractions()
@@ -164,12 +162,10 @@ class RumTTIDReporterImplTest {
         currentTime += 1.seconds
 
         // When
-        reporter.onAppStartupDetected(
-            scenario
-        )
+        reporter.subscribeToFirstFrameDrawn(activity, callback)
 
         // Then
-        inOrder(windowCallbackRegistry, listener, viewTreeObserver) {
+        inOrder(windowCallbackRegistry, callback, viewTreeObserver) {
             verify(viewTreeObserver).isAlive
 
             argumentCaptor<ViewTreeObserver.OnDrawListener> {
@@ -178,8 +174,42 @@ class RumTTIDReporterImplTest {
             }
 
             verify(
-                listener
-            ).onTTIDCalculated(RumTTIDInfo(scenario = scenario, durationNs = 1.seconds.inWholeNanoseconds))
+                callback
+            ).onFirstFrameDrawn(1.seconds.inWholeNanoseconds)
+            verify(viewTreeObserver).isAlive
+            verify(viewTreeObserver).removeOnDrawListener(any())
+            verifyNoMoreInteractions()
+        }
+    }
+
+    @Test
+    fun `M call onTTIDCalculated W RumTTIDReporter { decorView exists but not attached to window }`() {
+        // Given
+        whenever(window.peekDecorView()) doReturn decorView
+        whenever(decorView.isAttachedToWindow) doReturn false
+
+        currentTime += 1.seconds
+
+        // When
+        reporter.subscribeToFirstFrameDrawn(activity, callback)
+
+        // Then
+        inOrder(windowCallbackRegistry, callback, viewTreeObserver, decorView) {
+            argumentCaptor<View.OnAttachStateChangeListener> {
+                verify(decorView).addOnAttachStateChangeListener(capture())
+                firstValue.onViewAttachedToWindow(decorView)
+            }
+
+            verify(viewTreeObserver).isAlive
+
+            argumentCaptor<ViewTreeObserver.OnDrawListener> {
+                verify(viewTreeObserver).addOnDrawListener(capture())
+                firstValue.onDraw()
+            }
+
+            verify(
+                callback
+            ).onFirstFrameDrawn(1.seconds.inWholeNanoseconds)
             verify(viewTreeObserver).isAlive
             verify(viewTreeObserver).removeOnDrawListener(any())
             verifyNoMoreInteractions()
@@ -192,12 +222,10 @@ class RumTTIDReporterImplTest {
         whenever(viewTreeObserver.isAlive) doReturn false
 
         // When
-        reporter.onAppStartupDetected(
-            scenario
-        )
+        reporter.subscribeToFirstFrameDrawn(activity, callback)
 
         // Then
-        verifyNoInteractions(listener)
+        verifyNoInteractions(callback)
     }
 
     @Test
@@ -206,12 +234,10 @@ class RumTTIDReporterImplTest {
         currentTime += 1.seconds
 
         // When
-        reporter.onAppStartupDetected(
-            scenario
-        )
+        reporter.subscribeToFirstFrameDrawn(activity, callback)
 
         // Then
-        inOrder(listener, viewTreeObserver) {
+        inOrder(callback, viewTreeObserver) {
             verify(viewTreeObserver).isAlive
 
             argumentCaptor<ViewTreeObserver.OnDrawListener> {
@@ -221,8 +247,8 @@ class RumTTIDReporterImplTest {
             }
 
             verify(
-                listener
-            ).onTTIDCalculated(RumTTIDInfo(scenario = scenario, durationNs = 1.seconds.inWholeNanoseconds))
+                callback
+            ).onFirstFrameDrawn(1.seconds.inWholeNanoseconds)
             verify(viewTreeObserver).isAlive
             verify(viewTreeObserver).removeOnDrawListener(any())
             verifyNoMoreInteractions()
@@ -236,12 +262,10 @@ class RumTTIDReporterImplTest {
         whenever(viewTreeObserver.addOnDrawListener(any())) doThrow illegalStateException
 
         // When
-        reporter.onAppStartupDetected(
-            scenario
-        )
+        reporter.subscribeToFirstFrameDrawn(activity, callback)
 
         // Then
-        verifyNoInteractions(listener)
+        verifyNoInteractions(callback)
 
         inOrder(viewTreeObserver, internalLogger) {
             verify(viewTreeObserver).isAlive
@@ -269,14 +293,12 @@ class RumTTIDReporterImplTest {
         currentTime += 1.seconds
 
         // When
-        reporter.onAppStartupDetected(
-            scenario
-        )
+        reporter.subscribeToFirstFrameDrawn(activity, callback)
 
         // Then
-        verifyNoInteractions(listener)
+        verifyNoInteractions(callback)
 
-        inOrder(listener, viewTreeObserver, internalLogger) {
+        inOrder(callback, viewTreeObserver, internalLogger) {
             verify(viewTreeObserver).isAlive
 
             argumentCaptor<ViewTreeObserver.OnDrawListener> {
@@ -285,8 +307,8 @@ class RumTTIDReporterImplTest {
             }
 
             verify(
-                listener
-            ).onTTIDCalculated(RumTTIDInfo(scenario = scenario, durationNs = 1.seconds.inWholeNanoseconds))
+                callback
+            ).onFirstFrameDrawn(1.seconds.inWholeNanoseconds)
 
             verify(viewTreeObserver).isAlive
             verify(viewTreeObserver).removeOnDrawListener(any())

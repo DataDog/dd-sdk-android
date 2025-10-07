@@ -9,25 +9,23 @@ package com.datadog.android.rum.internal.startup
 import android.app.Activity
 import android.os.Handler
 import android.os.Message
+import android.view.View
 import android.view.ViewTreeObserver
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.rum.internal.utils.window.RumWindowCallbackListener
 import com.datadog.android.rum.internal.utils.window.RumWindowCallbacksRegistry
-import java.lang.IllegalStateException
-import java.util.WeakHashMap
 
-internal class RumTTIDReporterImpl(
+internal class RumFirstDrawTimeReporterImpl(
     private val internalLogger: InternalLogger,
     private val timeProviderNs: () -> Long,
     private val windowCallbacksRegistry: RumWindowCallbacksRegistry,
-    private val handler: Handler,
-    private val listener: RumTTIDReporter.Listener
-) : RumTTIDReporter {
+    private val handler: Handler
+) : RumFirstDrawTimeReporter {
 
-    private val onDrawListeners = WeakHashMap<Activity, ViewTreeObserver.OnDrawListener>()
-
-    override fun onAppStartupDetected(scenario: RumStartupScenario) {
-        val activity = scenario.activity.get() ?: return
+    override fun subscribeToFirstFrameDrawn(
+        activity: Activity,
+        callback: RumFirstDrawTimeReporter.Callback
+    ) {
         val window = activity.window
         val decorView = window.peekDecorView()
 
@@ -35,20 +33,48 @@ internal class RumTTIDReporterImpl(
             val listener = object : RumWindowCallbackListener {
                 override fun onContentChanged() {
                     windowCallbacksRegistry.removeListener(activity, this)
-                    onDecorViewReady(scenario)
+                    onDecorViewReady(activity, callback)
                 }
             }
             windowCallbacksRegistry.addListener(activity, listener)
         } else {
-            onDecorViewReady(scenario)
+            onDecorViewReady(activity, callback)
         }
     }
 
-    private fun onDecorViewReady(scenario: RumStartupScenario) {
-        val activity = scenario.activity.get() ?: return
+    private fun onDecorViewReady(
+        activity: Activity,
+        callback: RumFirstDrawTimeReporter.Callback
+    ) {
         val window = activity.window
         val decorView = window.decorView
 
+        if (decorView.isAttachedToWindow) {
+            registerOnDrawListener(
+                decorView = decorView,
+                callback = callback
+            )
+        } else {
+            val attachListener = object : View.OnAttachStateChangeListener {
+                override fun onViewAttachedToWindow(v: View) {
+                    registerOnDrawListener(
+                        decorView = decorView,
+                        callback = callback
+                    )
+                    decorView.removeOnAttachStateChangeListener(this)
+                }
+
+                override fun onViewDetachedFromWindow(v: View) {
+                }
+            }
+            decorView.addOnAttachStateChangeListener(attachListener)
+        }
+    }
+
+    private fun registerOnDrawListener(
+        decorView: View,
+        callback: RumFirstDrawTimeReporter.Callback
+    ) {
         val listener = object : ViewTreeObserver.OnDrawListener {
             private var invoked = false
 
@@ -57,11 +83,9 @@ internal class RumTTIDReporterImpl(
                     return
                 }
                 invoked = true
-                onFirstDraw(scenario)
+                onFirstDraw(callback)
 
                 handler.post {
-                    onDrawListeners.remove(activity)
-
                     if (decorView.viewTreeObserver.isAlive) {
                         try {
                             decorView.viewTreeObserver.removeOnDrawListener(this)
@@ -81,26 +105,22 @@ internal class RumTTIDReporterImpl(
         if (decorView.viewTreeObserver.isAlive) {
             try {
                 decorView.viewTreeObserver.addOnDrawListener(listener)
-                onDrawListeners.put(activity, listener)
             } catch (e: IllegalStateException) {
                 internalLogger.log(
                     InternalLogger.Level.WARN,
                     InternalLogger.Target.TELEMETRY,
-                    { "RumTTIDReporterImpl unable to add onDrawListener onto viewTreeObserver" },
+                    { "RumFirstDrawTimeReporterImpl unable to add onDrawListener onto viewTreeObserver" },
                     e
                 )
             }
         }
     }
 
-    private fun onFirstDraw(scenario: RumStartupScenario) {
+    private fun onFirstDraw(callback: RumFirstDrawTimeReporter.Callback) {
         val nowNs = timeProviderNs()
-        val durationNs = nowNs - scenario.initialTimeNs
 
         val block = Runnable {
-            listener.onTTIDCalculated(
-                RumTTIDInfo(scenario = scenario, durationNs = durationNs)
-            )
+            callback.onFirstFrameDrawn(nowNs)
         }
 
         handler.sendMessageAtFrontOfQueue(
