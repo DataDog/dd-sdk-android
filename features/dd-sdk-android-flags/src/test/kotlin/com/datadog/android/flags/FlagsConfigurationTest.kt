@@ -20,7 +20,7 @@ internal class FlagsConfigurationTest {
     @Test
     fun `M return default config W defaultConfiguration()`() {
         // When
-        val config = FlagsConfiguration.defaultConfiguration()
+        val config = FlagsConfiguration.default()
 
         // Then
         assertThat(config.customExposureEndpoint).isNull()
@@ -31,8 +31,8 @@ internal class FlagsConfigurationTest {
     @Test
     fun `M return same instance W defaultConfiguration() {called multiple times}`() {
         // When
-        val config1 = FlagsConfiguration.defaultConfiguration()
-        val config2 = FlagsConfiguration.defaultConfiguration()
+        val config1 = FlagsConfiguration.default()
+        val config2 = FlagsConfiguration.default()
 
         // Then
         assertThat(config1).isSameAs(config2)

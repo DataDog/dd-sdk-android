@@ -85,7 +85,7 @@ internal class FlagsTest {
     @Test
     fun `M pass default configuration to FlagsFeature W enable() { default config }`() {
         // Given
-        val defaultConfiguration = FlagsConfiguration.defaultConfiguration()
+        val defaultConfiguration = FlagsConfiguration.default()
 
         // When
         Flags.enable(defaultConfiguration, mockSdkCore)

@@ -11,15 +11,9 @@ public final class com/datadog/android/flags/FlagsConfiguration {
 	public fun <init> ()V
 	public fun <init> (Ljava/lang/String;Ljava/lang/String;Z)V
 	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;ZILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun component2 ()Ljava/lang/String;
-	public final fun component3 ()Z
 	public final fun copy (Ljava/lang/String;Ljava/lang/String;Z)Lcom/datadog/android/flags/FlagsConfiguration;
 	public static synthetic fun copy$default (Lcom/datadog/android/flags/FlagsConfiguration;Ljava/lang/String;Ljava/lang/String;ZILjava/lang/Object;)Lcom/datadog/android/flags/FlagsConfiguration;
 	public fun equals (Ljava/lang/Object;)Z
-	public final fun getCustomExposureEndpoint ()Ljava/lang/String;
-	public final fun getCustomFlagEndpoint ()Ljava/lang/String;
-	public final fun getEnableExposureLogging ()Z
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
 }
@@ -33,7 +27,7 @@ public final class com/datadog/android/flags/FlagsConfiguration$Builder {
 }
 
 public final class com/datadog/android/flags/FlagsConfiguration$Companion {
-	public final fun defaultConfiguration ()Lcom/datadog/android/flags/FlagsConfiguration;
+	public final fun default ()Lcom/datadog/android/flags/FlagsConfiguration;
 }
 
 public abstract interface class com/datadog/android/flags/featureflags/FlagsClient {

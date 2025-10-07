@@ -101,7 +101,7 @@ internal class NoOpFlagsClient(
     private fun logCriticalError(operation: String) {
         logger?.log(
             InternalLogger.Level.ERROR,
-            listOf(InternalLogger.Target.USER, InternalLogger.Target.MAINTAINER),
+            InternalLogger.Target.MAINTAINER,
             {
                 "$operation called on NoOpFlagsClient for client '$name' " +
                     "(reason: $reason). NoOpFlagsClient always returns default values. " +

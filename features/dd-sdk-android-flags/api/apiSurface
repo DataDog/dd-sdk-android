@@ -1,5 +1,5 @@
 object com.datadog.android.flags.Flags
-  fun enable(FlagsConfiguration = FlagsConfiguration.defaultConfiguration(), com.datadog.android.api.SdkCore = Datadog.getInstance())
+  fun enable(FlagsConfiguration = FlagsConfiguration.default(), com.datadog.android.api.SdkCore = Datadog.getInstance())
 data class com.datadog.android.flags.FlagsConfiguration
   constructor(String? = null, String? = null, Boolean = true)
   class Builder
@@ -8,7 +8,7 @@ data class com.datadog.android.flags.FlagsConfiguration
     fun setExposureLoggingEnabled(Boolean): Builder
     fun build(): FlagsConfiguration
   companion object 
-    fun defaultConfiguration(): FlagsConfiguration
+    fun default(): FlagsConfiguration
 interface com.datadog.android.flags.featureflags.FlagsClient
   fun setEvaluationContext(com.datadog.android.flags.featureflags.model.EvaluationContext)
   fun resolveBooleanValue(String, Boolean): Boolean

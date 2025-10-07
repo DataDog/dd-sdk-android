@@ -27,7 +27,7 @@ object Flags {
     @JvmOverloads
     @JvmStatic
     fun enable(
-        configuration: FlagsConfiguration = FlagsConfiguration.defaultConfiguration(),
+        configuration: FlagsConfiguration = FlagsConfiguration.default(),
         sdkCore: SdkCore = Datadog.getInstance()
     ) {
         val featureSdkCore = sdkCore as FeatureSdkCore
