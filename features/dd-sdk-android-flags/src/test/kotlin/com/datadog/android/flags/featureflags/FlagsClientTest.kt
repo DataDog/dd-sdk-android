@@ -58,7 +58,7 @@ internal class FlagsClientTest {
         whenever(mockSdkCore.name).thenReturn("test-sdk")
         whenever(mockSecondSdkCore.name).thenReturn("test-sdk-2")
 
-        // Enable the Flags Feature
+        // Enable the Flags Feature for first SDK core
         Flags.enable(sdkCore = mockSdkCore)
 
         // Capture the registered feature and mock getFeature() to return a FeatureScope wrapping it
@@ -72,11 +72,46 @@ internal class FlagsClientTest {
             whenever(mockSdkCore.getFeature(FLAGS_FEATURE_NAME))
                 .thenReturn(mockFeatureScope)
         }
+
+        // Enable the Flags Feature for second SDK core
+        Flags.enable(sdkCore = mockSecondSdkCore)
+
+        // Capture the second registered feature
+        argumentCaptor<com.datadog.android.api.feature.Feature> {
+            verify(mockSecondSdkCore).registerFeature(capture())
+            val capturedFeature = lastValue as com.datadog.android.flags.internal.FlagsFeature
+            val mockFeatureScope = mock<com.datadog.android.api.feature.FeatureScope>()
+            whenever(
+                mockFeatureScope.unwrap<com.datadog.android.flags.internal.FlagsFeature>()
+            ).thenReturn(capturedFeature)
+            whenever(mockSecondSdkCore.getFeature(FLAGS_FEATURE_NAME))
+                .thenReturn(mockFeatureScope)
+        }
     }
 
     @AfterEach
     fun `tear down`() {
-        FlagsClient.clear()
+        clearRegisteredClients(mockSdkCore)
+        clearRegisteredClients(mockSecondSdkCore)
+    }
+
+    // Helper methods for test setup
+    private fun registerClient(client: FlagsClient, sdkCore: FeatureSdkCore, name: String) {
+        val flagsFeature = sdkCore.getFeature(FLAGS_FEATURE_NAME)
+            ?.unwrap<com.datadog.android.flags.internal.FlagsFeature>()
+        flagsFeature?.registeredClients?.put(name, client)
+    }
+
+    private fun unregisterClient(name: String, sdkCore: FeatureSdkCore) {
+        val flagsFeature = sdkCore.getFeature(FLAGS_FEATURE_NAME)
+            ?.unwrap<com.datadog.android.flags.internal.FlagsFeature>()
+        flagsFeature?.registeredClients?.remove(name)
+    }
+
+    private fun clearRegisteredClients(sdkCore: FeatureSdkCore) {
+        val flagsFeature = sdkCore.getFeature(FLAGS_FEATURE_NAME)
+            ?.unwrap<com.datadog.android.flags.internal.FlagsFeature>()
+        flagsFeature?.registeredClients?.clear()
     }
 
     // region Static Flag Resolution Methods
@@ -99,7 +134,7 @@ internal class FlagsClientTest {
     fun `M delegate to registered client W get() + resolveBooleanValue() {client registered for SDK core}`() {
         // Given
         whenever(mockFlagsClient.resolveBooleanValue("test-flag", false)).thenReturn(true)
-        FlagsClient.registerIfAbsent(mockFlagsClient, mockSdkCore, "default")
+        registerClient(mockFlagsClient, mockSdkCore, "default")
 
         // When
         val client = FlagsClient.get(sdkCore = mockSdkCore)
@@ -116,8 +151,8 @@ internal class FlagsClientTest {
         // Given
         whenever(mockFlagsClient.resolveBooleanValue("test-flag", false)).thenReturn(true)
         whenever(mockSecondFlagsClient.resolveBooleanValue("test-flag", false)).thenReturn(false)
-        FlagsClient.registerIfAbsent(mockFlagsClient, mockSdkCore, "default")
-        FlagsClient.registerIfAbsent(mockSecondFlagsClient, mockSecondSdkCore, "default")
+        registerClient(mockFlagsClient, mockSdkCore, "default")
+        registerClient(mockSecondFlagsClient, mockSecondSdkCore, "default")
 
         // When
         val firstClient = FlagsClient.get(sdkCore = mockSdkCore)
@@ -138,7 +173,7 @@ internal class FlagsClientTest {
     fun `M delegate to registered client W setEvaluationContext() {client registered for SDK core}`() {
         // Given
         val fakeContext = EvaluationContext("user123", mapOf("plan" to "premium"))
-        FlagsClient.registerIfAbsent(mockFlagsClient, mockSdkCore, "default")
+        registerClient(mockFlagsClient, mockSdkCore, "default")
 
         // When
         val client = FlagsClient.get(sdkCore = mockSdkCore)
@@ -156,10 +191,10 @@ internal class FlagsClientTest {
     @Test
     fun `M remove client W unregister() {client registered for SDK core}`() {
         // Given
-        FlagsClient.registerIfAbsent(mockFlagsClient, mockSdkCore, "default")
+        registerClient(mockFlagsClient, mockSdkCore, "default")
 
         // When
-        FlagsClient.unregister(mockSdkCore)
+        unregisterClient("default", mockSdkCore)
 
         // Then
         // Verify client was removed by checking no-op behavior
@@ -172,7 +207,7 @@ internal class FlagsClientTest {
     fun `M do nothing W unregister() {no client registered for SDK core}`() {
         // When / Then - should not throw
         assertDoesNotThrow {
-            FlagsClient.unregister(mockSdkCore)
+            unregisterClient("default", mockSdkCore)
         }
 
         // Verify operation completed without affecting other state
@@ -183,27 +218,32 @@ internal class FlagsClientTest {
     @Test
     fun `M only remove specific client W unregister() {multiple clients registered, other cores unaffected}`() {
         // Given
-        FlagsClient.registerIfAbsent(mockFlagsClient, mockSdkCore, "default")
-        FlagsClient.registerIfAbsent(mockSecondFlagsClient, mockSecondSdkCore, "default")
+        registerClient(mockFlagsClient, mockSdkCore, "default")
+        registerClient(mockSecondFlagsClient, mockSecondSdkCore, "default")
 
         // When
-        FlagsClient.unregister(mockSdkCore)
+        unregisterClient("default", mockSdkCore)
 
         // Then
         // First should be no-op, second should still be registered
         val firstClient = FlagsClient.get(sdkCore = mockSdkCore)
         assertThat(firstClient).isInstanceOf(NoOpFlagsClient::class.java)
         assertThat(firstClient.resolveBooleanValue("test", false)).isFalse()
+
+        // Second client should still be registered
+        val secondClient = FlagsClient.get(sdkCore = mockSecondSdkCore)
+        assertThat(secondClient).isEqualTo(mockSecondFlagsClient)
     }
 
     @Test
     fun `M remove all clients W clear() {multiple clients registered across SDK cores}`() {
         // Given
-        FlagsClient.registerIfAbsent(mockFlagsClient, mockSdkCore, "default")
-        FlagsClient.registerIfAbsent(mockSecondFlagsClient, mockSecondSdkCore, "default")
+        registerClient(mockFlagsClient, mockSdkCore, "default")
+        registerClient(mockSecondFlagsClient, mockSecondSdkCore, "default")
 
         // When
-        FlagsClient.clear()
+        clearRegisteredClients(mockSdkCore)
+        clearRegisteredClients(mockSecondSdkCore)
 
         // Then
         // Both should now be no-op
@@ -219,7 +259,7 @@ internal class FlagsClientTest {
     fun `M do nothing W clear() {no clients registered across any SDK cores}`() {
         // When / Then - should not throw
         assertDoesNotThrow {
-            FlagsClient.clear()
+            clearRegisteredClients(mockSdkCore)
         }
 
         // Verify operation completed - should still return no-op clients
@@ -234,7 +274,7 @@ internal class FlagsClientTest {
     @Test
     fun `M return existing client W Builder#build() {client already exists with default name}`() {
         // Given
-        FlagsClient.registerIfAbsent(mockFlagsClient, mockSdkCore, "default")
+        registerClient(mockFlagsClient, mockSdkCore, "default")
 
         // When - second build with same name
         val client = FlagsClient.Builder(sdkCore = mockSdkCore).build()
@@ -248,7 +288,7 @@ internal class FlagsClientTest {
         @StringForgery fakeClientName: String
     ) {
         // Given
-        FlagsClient.registerIfAbsent(mockFlagsClient, mockSdkCore, fakeClientName)
+        registerClient(mockFlagsClient, mockSdkCore, fakeClientName)
 
         // When - second build with same custom name
         val client = FlagsClient.Builder(fakeClientName, mockSdkCore).build()
@@ -260,7 +300,7 @@ internal class FlagsClientTest {
     @Test
     fun `M log warning W Builder#build() {client already exists}`() {
         // Given
-        FlagsClient.registerIfAbsent(mockFlagsClient, mockSdkCore, "default")
+        registerClient(mockFlagsClient, mockSdkCore, "default")
 
         // When
         val client = FlagsClient.Builder(sdkCore = mockSdkCore).build()
@@ -283,7 +323,7 @@ internal class FlagsClientTest {
         @StringForgery fakeName2: String
     ) {
         // Given
-        FlagsClient.registerIfAbsent(mockFlagsClient, mockSdkCore, fakeName1)
+        registerClient(mockFlagsClient, mockSdkCore, fakeName1)
 
         // When - build with different names
         val client1 = FlagsClient.get(name = fakeName1, sdkCore = mockSdkCore)
@@ -336,7 +376,7 @@ internal class FlagsClientTest {
     @Test
     fun `M return existing client W get() {default client exists}`() {
         // Given
-        FlagsClient.registerIfAbsent(mockFlagsClient, mockSdkCore, "default")
+        registerClient(mockFlagsClient, mockSdkCore, "default")
 
         // When
         val client = FlagsClient.get(sdkCore = mockSdkCore)

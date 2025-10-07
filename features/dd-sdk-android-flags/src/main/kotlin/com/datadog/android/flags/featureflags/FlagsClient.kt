@@ -165,7 +165,6 @@ interface FlagsClient {
          *
          * @return the created [FlagsClient], existing client, or [NoOpFlagsClient].
          */
-        @Suppress("ReturnCount")
         fun build(): FlagsClient {
             // Validate that the Flags feature is enabled
             val flagsFeature = sdkCore
@@ -180,52 +179,20 @@ interface FlagsClient {
                 )
             }
 
-            val key = ClientKey(sdkCore, name)
-
-            synchronized(registeredClients) {
-                // Check for existing client
-                val existingClient = registeredClients[key]
-                if (existingClient != null) {
-                    logWarning(
-                        "Attempted to create a FlagsClient named '$name', but one already exists. " +
-                            "Existing client will be used, and new configuration will be ignored."
-                    )
-                    return existingClient
-                }
-
-                // Create and register client
-                val newClient = createInternal(flagsFeature.flagsConfiguration, sdkCore, flagsFeature)
-                if (newClient !is NoOpFlagsClient) {
-                    registeredClients[key] = newClient
-                }
-                return newClient
+            return flagsFeature.getOrRegisterNewClient(name) {
+                createInternal(flagsFeature.getFlagsConfiguration(), sdkCore, flagsFeature)
             }
-        }
-
-        private fun logWarning(message: String) {
-            sdkCore.internalLogger.log(
-                InternalLogger.Level.WARN,
-                InternalLogger.Target.USER,
-                { message }
-            )
         }
     }
 
     /**
      * Companion object providing static access to [FlagsClient] instances.
      *
-     * This companion manages the registration and retrieval of [FlagsClient] instances
-     * per SDK core, ensuring thread-safe access and proper lifecycle management.
+     * This companion manages the retrieval of [FlagsClient] instances from the [FlagsFeature],
+     * ensuring thread-safe access and proper lifecycle management.
      */
     companion object {
-        /**
-         * Composite key for storing multiple named clients per SDK core.
-         */
-        private data class ClientKey(val sdkCore: SdkCore, val name: String)
-
         private const val DEFAULT_CLIENT_NAME = "default"
-
-        private val registeredClients: MutableMap<ClientKey, FlagsClient> = mutableMapOf()
 
         /**
          * Gets the [FlagsClient] with the specified name from the SDK core.
@@ -239,70 +206,58 @@ interface FlagsClient {
          */
         @JvmOverloads
         @JvmStatic
-        fun get(name: String = DEFAULT_CLIENT_NAME, sdkCore: SdkCore = Datadog.getInstance()): FlagsClient {
-            val key = ClientKey(sdkCore, name)
+        fun get(
+            name: String = DEFAULT_CLIENT_NAME,
+            sdkCore: FeatureSdkCore = Datadog.getInstance() as FeatureSdkCore
+        ): FlagsClient {
+            val logger = sdkCore.internalLogger
 
-            synchronized(registeredClients) {
-                val client = registeredClients[key]
+            val flagsFeature = sdkCore.getFeature(FLAGS_FEATURE_NAME)?.unwrap<FlagsFeature>()
 
-                if (client == null) {
-                    val logger = (sdkCore as FeatureSdkCore).internalLogger
+            if (flagsFeature == null) {
+                logger.log(
+                    InternalLogger.Level.ERROR,
+                    listOf(InternalLogger.Target.USER, InternalLogger.Target.MAINTAINER),
+                    {
+                        "Flags feature is not enabled. Returning NoOpFlagsClient which always returns default values."
+                    }
+                )
 
-                    // Log at get() level for visibility
-                    logger.log(
-                        InternalLogger.Level.ERROR,
-                        listOf(InternalLogger.Target.USER, InternalLogger.Target.MAINTAINER),
-                        {
-                            "No FlagsClient with name '$name' exists for SDK instance '${sdkCore.name}'. " +
-                                if (name == DEFAULT_CLIENT_NAME) {
-                                    "Create a client first using: FlagsClient.Builder().build(). "
-                                } else {
-                                    "Create a client first using: FlagsClient.Builder(\"$name\").build(). "
-                                } +
-                                "Returning NoOpFlagsClient which always returns default values."
-                        }
-                    )
-
-                    return NoOpFlagsClient(
-                        name = name,
-                        reason = "Client '$name' not found - get() called before build()",
-                        logger = logger
-                    )
-                }
-
-                return client
+                return NoOpFlagsClient(
+                    name = name,
+                    reason = "Flags feature not enabled",
+                    logger = logger
+                )
             }
+
+            var client = flagsFeature.getClient(name)
+
+            if (client == null) {
+                logger.log(
+                    InternalLogger.Level.ERROR,
+                    listOf(InternalLogger.Target.USER, InternalLogger.Target.MAINTAINER),
+                    {
+                        "No FlagsClient with name '$name' exists for SDK instance '${sdkCore.name}'. " +
+                            if (name == DEFAULT_CLIENT_NAME) {
+                                "Create a client first using: FlagsClient.Builder().build(). "
+                            } else {
+                                "Create a client first using: FlagsClient.Builder(\"$name\").build(). "
+                            } +
+                            "Returning NoOpFlagsClient which always returns default values."
+                    }
+                )
+
+                client = NoOpFlagsClient(
+                    name = name,
+                    reason = "Client '$name' not found - get() called before build()",
+                    logger = logger
+                )
+            }
+
+            return client
         }
 
         // region Internal
-
-        internal fun registerIfAbsent(client: FlagsClient, sdkCore: FeatureSdkCore, clientName: String) {
-            val clientKey = ClientKey(sdkCore, clientName)
-            synchronized(registeredClients) {
-                if (registeredClients.containsKey(clientKey)) {
-                    sdkCore.internalLogger.log(
-                        InternalLogger.Level.WARN,
-                        InternalLogger.Target.USER,
-                        { "A FlagsClient has already been registered for this SDK instance" }
-                    )
-                } else {
-                    registeredClients[clientKey] = client
-                }
-            }
-        }
-
-        internal fun unregister(sdkCore: SdkCore = Datadog.getInstance()) {
-            synchronized(registeredClients) {
-                val key = ClientKey(sdkCore, DEFAULT_CLIENT_NAME)
-                registeredClients.remove(key)
-            }
-        }
-
-        internal fun clear() {
-            synchronized(registeredClients) {
-                registeredClients.clear()
-            }
-        }
 
         internal const val FLAGS_CLIENT_EXECUTOR_NAME = "flags-client-executor"
 
@@ -379,7 +334,5 @@ interface FlagsClient {
         }
 
         // endregion
-
-        internal const val FLAGS_NOT_ENABLED_MESSAGE = "Flags feature is not enabled"
     }
 }
