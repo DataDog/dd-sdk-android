@@ -17,8 +17,8 @@ import com.datadog.android.flags.featureflags.internal.NoOpFlagsClient
 import com.datadog.android.flags.featureflags.internal.evaluation.EvaluationsManager
 import com.datadog.android.flags.featureflags.internal.model.FlagsContext
 import com.datadog.android.flags.featureflags.internal.repository.DefaultFlagsRepository
-import com.datadog.android.flags.featureflags.internal.repository.net.DefaultFlagsNetworkManager
 import com.datadog.android.flags.featureflags.internal.repository.net.PrecomputeMapper
+import com.datadog.android.flags.featureflags.internal.repository.net.PrecomputedAssignmentsDownloader
 import com.datadog.android.flags.featureflags.model.EvaluationContext
 import com.datadog.android.flags.internal.FlagsFeature
 import com.datadog.android.flags.internal.FlagsFeature.Companion.FLAGS_FEATURE_NAME
@@ -428,9 +428,14 @@ interface FlagsClient {
                     featureSdkCore = sdkCore
                 )
 
-                val flagsNetworkManager = DefaultFlagsNetworkManager(
+                // Get request factory from feature (shared across clients)
+                val precomputedRequestFactory = flagsFeature.precomputedRequestFactory
+
+                // Create downloader with factory
+                val flagsNetworkManager = PrecomputedAssignmentsDownloader(
                     internalLogger = sdkCore.internalLogger,
-                    flagsContext = flagsContext
+                    flagsContext = flagsContext,
+                    requestFactory = precomputedRequestFactory
                 )
 
                 val precomputeMapper = PrecomputeMapper(sdkCore.internalLogger)
