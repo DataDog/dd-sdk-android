@@ -11,6 +11,7 @@ import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureContextUpdateReceiver
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.flags.FlagsConfiguration
+import com.datadog.android.flags.featureflags.internal.repository.net.DefaultPrecomputedAssignmentsRequestFactory
 
 /**
  * An implementation of [Feature] for getting and reporting
@@ -21,6 +22,8 @@ internal class FlagsFeature(private val sdkCore: FeatureSdkCore, internal var fl
     FeatureContextUpdateReceiver {
 
     internal var applicationId: String? = null
+
+    internal val precomputedRequestFactory = DefaultPrecomputedAssignmentsRequestFactory(sdkCore.internalLogger)
 
     // region Context Receiver
 

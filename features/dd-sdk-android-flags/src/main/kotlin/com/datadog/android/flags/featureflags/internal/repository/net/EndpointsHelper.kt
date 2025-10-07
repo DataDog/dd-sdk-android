@@ -12,23 +12,29 @@ import com.datadog.android.flags.featureflags.internal.model.FlagsContext
 import org.json.JSONException
 import org.json.JSONObject
 
-internal class EndpointsHelper(private val flagsContext: FlagsContext, private val internalLogger: InternalLogger) {
+internal object EndpointsHelper {
 
     /**
      * Gets the endpoint URL for feature flag requests.
      * Uses the configured custom flag endpoint if provided, otherwise builds from the Datadog site.
      *
+     * @param flagsContext The flags context containing site and custom endpoint configuration
+     * @param internalLogger The logger for error reporting
      * @return The complete endpoint URL for flagging requests, or null if the endpoint cannot be built.
      */
-    internal fun getFlaggingEndpoint(): String? {
+    internal fun getFlaggingEndpoint(flagsContext: FlagsContext, internalLogger: InternalLogger): String? {
         // Use custom flag endpoint if provided, otherwise build from site
         return flagsContext.customFlagEndpoint
-            ?: buildEndpointHost(flagsContext.site)?.let {
+            ?: buildEndpointHost(flagsContext.site, internalLogger)?.let {
                 "https://$it$FLAGS_ENDPOINT"
             }
     }
 
-    internal fun buildEndpointHost(site: DatadogSite, customerDomain: String = "preview"): String? = when (site) {
+    internal fun buildEndpointHost(
+        site: DatadogSite,
+        internalLogger: InternalLogger,
+        customerDomain: String = "preview"
+    ): String? = when (site) {
         DatadogSite.US1_FED -> {
             internalLogger.log(
                 level = InternalLogger.Level.ERROR,
@@ -94,8 +100,6 @@ internal class EndpointsHelper(private val flagsContext: FlagsContext, private v
         JSONObject()
     }
 
-    internal companion object {
-        private const val ERROR_GOV_NOT_SUPPORTED = "ddog-gov.com is not supported for flagging endpoints"
-        private const val FLAGS_ENDPOINT = "/precompute-assignments"
-    }
+    private const val ERROR_GOV_NOT_SUPPORTED = "ddog-gov.com is not supported for flagging endpoints"
+    private const val FLAGS_ENDPOINT = "/precompute-assignments"
 }

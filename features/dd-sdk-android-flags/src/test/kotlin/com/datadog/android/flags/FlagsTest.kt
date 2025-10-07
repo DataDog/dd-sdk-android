@@ -6,12 +6,14 @@
 
 package com.datadog.android.flags
 
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.flags.internal.FlagsFeature
 import com.datadog.android.flags.internal.FlagsFeature.Companion.FLAGS_FEATURE_NAME
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.Mock
@@ -19,6 +21,7 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.verify
+import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 
 @ExtendWith(MockitoExtension::class, ForgeExtension::class)
@@ -27,6 +30,14 @@ internal class FlagsTest {
 
     @Mock
     lateinit var mockSdkCore: FeatureSdkCore
+
+    @Mock
+    lateinit var mockInternalLogger: InternalLogger
+
+    @BeforeEach
+    fun `set up`() {
+        whenever(mockSdkCore.internalLogger).thenReturn(mockInternalLogger)
+    }
 
     // region enable()
 

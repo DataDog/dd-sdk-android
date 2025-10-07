@@ -25,8 +25,7 @@ import java.util.concurrent.TimeUnit
 
 internal class DefaultFlagsNetworkManager(
     private val internalLogger: InternalLogger,
-    private val flagsContext: FlagsContext,
-    private val endpointsHelper: EndpointsHelper = EndpointsHelper(flagsContext, internalLogger)
+    private val flagsContext: FlagsContext
 ) : FlagsNetworkManager {
     internal lateinit var callFactory: OkHttpCallFactory
 
@@ -42,7 +41,7 @@ internal class DefaultFlagsNetworkManager(
 
     @Suppress("ReturnCount")
     override fun downloadPrecomputedFlags(context: EvaluationContext): String? {
-        val url = endpointsHelper.getFlaggingEndpoint() ?: return null
+        val url = EndpointsHelper.getFlaggingEndpoint(flagsContext, internalLogger) ?: return null
         val headers = buildHeaders()
         val body = buildRequestBody(context) ?: return null
         return download(url = url, headers = headers, body = body)
