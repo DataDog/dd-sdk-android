@@ -140,6 +140,15 @@ internal object NoOpInternalSdkCore : InternalSdkCore {
         return NoOpScheduledExecutorService()
     }
 
+    override fun createOkHttpCallFactory(block: okhttp3.OkHttpClient.Builder.() -> Unit): okhttp3.Call.Factory {
+        return okhttp3.Call.Factory { request ->
+            okhttp3.OkHttpClient.Builder()
+                .apply(block)
+                .build()
+                .newCall(request)
+        }
+    }
+
     override fun setAnonymousId(anonymousId: UUID?) = Unit
 
     // endregion

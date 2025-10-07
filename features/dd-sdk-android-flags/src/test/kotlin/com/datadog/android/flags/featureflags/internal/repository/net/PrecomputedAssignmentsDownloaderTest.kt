@@ -8,6 +8,7 @@ package com.datadog.android.flags.featureflags.internal.repository.net
 
 import com.datadog.android.DatadogSite
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.flags.featureflags.internal.model.FlagsContext
 import com.datadog.android.flags.featureflags.model.EvaluationContext
 import com.datadog.android.flags.utils.forge.ForgeConfigurator
@@ -52,10 +53,13 @@ internal class PrecomputedAssignmentsDownloaderTest {
     lateinit var mockInternalLogger: InternalLogger
 
     @Mock
+    lateinit var mockSdkCore: InternalSdkCore
+
+    @Mock
     lateinit var mockRequestFactory: PrecomputedAssignmentsRequestFactory
 
     @Mock
-    lateinit var mockCallFactory: PrecomputedAssignmentsDownloader.OkHttpCallFactory
+    lateinit var mockCallFactory: Call.Factory
 
     @Mock
     lateinit var mockCall: Call
@@ -78,12 +82,15 @@ internal class PrecomputedAssignmentsDownloaderTest {
             attributes = mapOf("plan" to "premium")
         )
 
+        // Mock the createOkHttpCallFactory to return our mock Call.Factory
+        whenever(mockSdkCore.createOkHttpCallFactory(any())).doReturn(mockCallFactory)
+
         testedDownloader = PrecomputedAssignmentsDownloader(
+            sdkCore = mockSdkCore,
             internalLogger = mockInternalLogger,
             flagsContext = fakeFlagsContext,
             requestFactory = mockRequestFactory
         )
-        testedDownloader.callFactory = mockCallFactory
     }
 
     // region downloadPrecomputedFlags() - Success cases

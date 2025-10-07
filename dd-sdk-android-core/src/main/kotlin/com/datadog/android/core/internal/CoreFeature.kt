@@ -110,6 +110,17 @@ internal class CoreFeature(
     private val scheduledExecutorServiceFactory: ScheduledExecutorServiceFactory
 ) {
 
+    /**
+     * Lazy-initialized shared OkHttpClient instance.
+     * This base client is used as the foundation for all HTTP clients in the SDK.
+     * When creating new clients via newBuilder(), the new clients will share the
+     * dispatcher (thread pool) and connection pool with this base client, reducing
+     * resource consumption across the SDK.
+     */
+    private val lazySharedOkHttpClient: OkHttpClient by lazy {
+        OkHttpClient.Builder().build()
+    }
+
     internal class OkHttpCallFactory(factory: () -> OkHttpClient) : Call.Factory {
         val okhttpClient by lazy(factory)
 
@@ -299,6 +310,19 @@ internal class CoreFeature(
 
     fun createScheduledExecutorService(executorContext: String): ScheduledExecutorService {
         return scheduledExecutorServiceFactory.create(internalLogger, executorContext, backpressureStrategy)
+    }
+
+    fun createOkHttpCallFactory(block: OkHttpClient.Builder.() -> Unit): Call.Factory {
+        return object : Call.Factory {
+            // Create a new client that shares pools with the base client
+            private val client = lazySharedOkHttpClient.newBuilder()
+                .apply(block)
+                .build()
+
+            override fun newCall(request: Request): Call {
+                return client.newCall(request)
+            }
+        }
     }
 
     @Throws(UnsupportedOperationException::class, InterruptedException::class)
@@ -570,7 +594,8 @@ internal class CoreFeature(
                     .build()
             }
 
-            val builder = OkHttpClient.Builder()
+            // Use shared base client to share thread pool and connection pool
+            val builder = lazySharedOkHttpClient.newBuilder()
             builder.callTimeout(NETWORK_TIMEOUT_MS, TimeUnit.MILLISECONDS)
                 .writeTimeout(NETWORK_TIMEOUT_MS, TimeUnit.MILLISECONDS)
                 .protocols(listOf(Protocol.HTTP_2, Protocol.HTTP_1_1))

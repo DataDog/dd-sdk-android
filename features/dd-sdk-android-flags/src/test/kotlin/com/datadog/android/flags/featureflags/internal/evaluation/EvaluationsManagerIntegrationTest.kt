@@ -8,6 +8,7 @@ package com.datadog.android.flags.featureflags.internal.evaluation
 
 import com.datadog.android.DatadogSite
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.flags.featureflags.internal.model.FlagsContext
 import com.datadog.android.flags.featureflags.internal.model.PrecomputedFlag
 import com.datadog.android.flags.featureflags.internal.repository.FlagsRepository
@@ -28,9 +29,12 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.verify
+import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.util.concurrent.Executors
 
@@ -40,6 +44,9 @@ internal class EvaluationsManagerIntegrationTest {
 
     @Mock
     lateinit var mockInternalLogger: InternalLogger
+
+    @Mock
+    lateinit var mockSdkCore: InternalSdkCore
 
     @Mock
     lateinit var mockFlagsRepository: FlagsRepository
@@ -55,6 +62,17 @@ internal class EvaluationsManagerIntegrationTest {
     fun setUp() {
         mockWebServer = MockWebServer()
         mockWebServer.start()
+
+        // Mock the createOkHttpCallFactory to return a real OkHttpClient for integration testing
+        whenever(mockSdkCore.createOkHttpCallFactory(any())).thenAnswer { invocation ->
+            val block = invocation.getArgument<okhttp3.OkHttpClient.Builder.() -> Unit>(0)
+            okhttp3.Call.Factory { request ->
+                okhttp3.OkHttpClient.Builder()
+                    .apply(block)
+                    .build()
+                    .newCall(request)
+            }
+        }
 
         // Create real instances for integration testing
         requestFactory = DefaultPrecomputedAssignmentsRequestFactory(mockInternalLogger)
@@ -85,6 +103,7 @@ internal class EvaluationsManagerIntegrationTest {
 
         // Create real downloader with real factory
         downloader = PrecomputedAssignmentsDownloader(
+            sdkCore = mockSdkCore,
             internalLogger = mockInternalLogger,
             flagsContext = flagsContext,
             requestFactory = requestFactory
@@ -207,6 +226,7 @@ internal class EvaluationsManagerIntegrationTest {
         )
 
         downloader = PrecomputedAssignmentsDownloader(
+            sdkCore = mockSdkCore,
             internalLogger = mockInternalLogger,
             flagsContext = flagsContext,
             requestFactory = requestFactory
@@ -263,6 +283,7 @@ internal class EvaluationsManagerIntegrationTest {
         )
 
         downloader = PrecomputedAssignmentsDownloader(
+            sdkCore = mockSdkCore,
             internalLogger = mockInternalLogger,
             flagsContext = flagsContext,
             requestFactory = requestFactory
@@ -312,6 +333,7 @@ internal class EvaluationsManagerIntegrationTest {
         )
 
         downloader = PrecomputedAssignmentsDownloader(
+            sdkCore = mockSdkCore,
             internalLogger = mockInternalLogger,
             flagsContext = flagsContext,
             requestFactory = requestFactory

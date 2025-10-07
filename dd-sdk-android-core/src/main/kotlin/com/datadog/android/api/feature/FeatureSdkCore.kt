@@ -116,6 +116,28 @@ interface FeatureSdkCore : SdkCore {
     fun createScheduledExecutorService(executorContext: String): ScheduledExecutorService
 
     /**
+     * Creates an OkHttp [okhttp3.Call.Factory] with custom configuration that shares the SDK's
+     * underlying thread pool and connection pool.
+     *
+     * This method allows features to configure their HTTP client while efficiently
+     * sharing resources (dispatcher thread pool, connection pool) across the entire SDK.
+     * Using a shared base client reduces resource consumption and improves performance
+     * through better connection reuse.
+     *
+     * Example:
+     * ```
+     * val callFactory = sdkCore.createOkHttpCallFactory {
+     *     callTimeout(45, TimeUnit.SECONDS)
+     *     writeTimeout(30, TimeUnit.SECONDS)
+     * }
+     * ```
+     *
+     * @param block Configuration block to customize the [okhttp3.OkHttpClient.Builder]
+     * @return A [okhttp3.Call.Factory] instance configured with shared resources
+     */
+    fun createOkHttpCallFactory(block: okhttp3.OkHttpClient.Builder.() -> Unit): okhttp3.Call.Factory
+
+    /**
      * Allows the given feature to set the anonymous ID for the SDK.
      *
      * @param anonymousId Anonymous ID to set. Can be null if feature is disabled.

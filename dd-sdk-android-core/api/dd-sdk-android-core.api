@@ -409,6 +409,7 @@ public final class com/datadog/android/api/feature/FeatureScopeExtKt {
 }
 
 public abstract interface class com/datadog/android/api/feature/FeatureSdkCore : com/datadog/android/api/SdkCore {
+	public abstract fun createOkHttpCallFactory (Lkotlin/jvm/functions/Function1;)Lokhttp3/Call$Factory;
 	public abstract fun createScheduledExecutorService (Ljava/lang/String;)Ljava/util/concurrent/ScheduledExecutorService;
 	public abstract fun createSingleThreadExecutorService (Ljava/lang/String;)Ljava/util/concurrent/ExecutorService;
 	public abstract fun getFeature (Ljava/lang/String;)Lcom/datadog/android/api/feature/FeatureScope;

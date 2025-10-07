@@ -19,26 +19,22 @@ import java.util.concurrent.TimeUnit
 /**
  * Downloads precomputed flag assignments from Datadog Feature Flags service.
  *
+ * @param sdkCore SDK core for accessing shared HTTP client infrastructure
  * @param internalLogger Logger for error and debug messages
  * @param flagsContext Context containing SDK configuration and authentication
  * @param requestFactory Factory for creating precomputed assignments requests
  */
 internal class PrecomputedAssignmentsDownloader(
+    sdkCore: com.datadog.android.core.InternalSdkCore,
     private val internalLogger: InternalLogger,
     private val flagsContext: FlagsContext,
     private val requestFactory: PrecomputedAssignmentsRequestFactory
 ) : FlagsNetworkManager {
 
-    internal lateinit var callFactory: OkHttpCallFactory
-
-    internal class OkHttpCallFactory(factory: () -> OkHttpClient) : Call.Factory {
-        val okhttpClient by lazy(factory)
-
-        override fun newCall(request: Request): Call = okhttpClient.newCall(request)
-    }
-
-    init {
-        setupOkHttpClient()
+    private val callFactory: Call.Factory = sdkCore.createOkHttpCallFactory {
+        callTimeout(NETWORK_TIMEOUT_MS, TimeUnit.MILLISECONDS)
+        writeTimeout(NETWORK_TIMEOUT_MS, TimeUnit.MILLISECONDS)
+        protocols(listOf(Protocol.HTTP_2, Protocol.HTTP_1_1))
     }
 
     @Suppress("ReturnCount", "TooGenericExceptionCaught")
@@ -97,17 +93,6 @@ internal class PrecomputedAssignmentsDownloader(
         )
 
         null
-    }
-
-    private fun setupOkHttpClient() {
-        callFactory = OkHttpCallFactory {
-            val builder = OkHttpClient.Builder()
-            builder.callTimeout(NETWORK_TIMEOUT_MS, TimeUnit.MILLISECONDS)
-                .writeTimeout(NETWORK_TIMEOUT_MS, TimeUnit.MILLISECONDS)
-                .protocols(listOf(Protocol.HTTP_2, Protocol.HTTP_1_1))
-
-            builder.build()
-        }
     }
 
     companion object {

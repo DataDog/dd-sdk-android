@@ -433,6 +433,7 @@ interface FlagsClient {
 
                 // Create downloader with factory
                 val flagsNetworkManager = PrecomputedAssignmentsDownloader(
+                    sdkCore = sdkCore as InternalSdkCore,
                     internalLogger = sdkCore.internalLogger,
                     flagsContext = flagsContext,
                     requestFactory = precomputedRequestFactory

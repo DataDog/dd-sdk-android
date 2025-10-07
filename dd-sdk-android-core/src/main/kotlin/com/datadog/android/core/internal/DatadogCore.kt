@@ -340,6 +340,11 @@ internal class DatadogCore(
         return coreFeature.createScheduledExecutorService(executorContext)
     }
 
+    /** @inheritDoc */
+    override fun createOkHttpCallFactory(block: okhttp3.OkHttpClient.Builder.() -> Unit): okhttp3.Call.Factory {
+        return coreFeature.createOkHttpCallFactory(block)
+    }
+
     override fun setAnonymousId(anonymousId: UUID?) {
         coreFeature.contextExecutorService.executeSafe("DatadogCore.setAnonymousId", internalLogger) {
             coreFeature.userInfoProvider.setAnonymousId(anonymousId?.toString())
