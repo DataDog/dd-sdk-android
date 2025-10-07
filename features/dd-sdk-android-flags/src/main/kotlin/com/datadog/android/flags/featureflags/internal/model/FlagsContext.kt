@@ -33,12 +33,12 @@ internal data class FlagsContext(
 ) {
     companion object {
         /**
-         * Creates a FlagsContext from core SDK context and feature configuration.
+         * Creates a [FlagsContext] from core SDK context and feature configuration.
          *
          * @param datadogContext The core SDK context containing authentication and routing info
          * @param applicationId The application ID (may be null if RUM context not yet available)
          * @param flagsConfiguration The feature-level configuration from user
-         * @return A complete FlagsContext combining core and feature configuration
+         * @return A complete [FlagsContext] combining core and feature configuration
          */
         fun create(
             datadogContext: DatadogContext,
