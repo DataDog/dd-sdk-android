@@ -237,7 +237,7 @@ internal class FlagsClientTest {
         FlagsClient.registerIfAbsent(mockFlagsClient, mockSdkCore, "default")
 
         // When - second build with same name
-        val client = FlagsClient.Builder(mockSdkCore).build()
+        val client = FlagsClient.Builder(sdkCore = mockSdkCore).build()
 
         // Then - should return existing client, NOT NOPClient
         assertThat(client).isEqualTo(mockFlagsClient)
@@ -263,7 +263,7 @@ internal class FlagsClientTest {
         FlagsClient.registerIfAbsent(mockFlagsClient, mockSdkCore, "default")
 
         // When
-        val client = FlagsClient.Builder(mockSdkCore).build()
+        val client = FlagsClient.Builder(sdkCore = mockSdkCore).build()
 
         // Then - should return existing client and log warning
         assertThat(client).isEqualTo(mockFlagsClient)
@@ -297,7 +297,7 @@ internal class FlagsClientTest {
     @Test
     fun `M return NoOpClient W Builder#build() {flags feature not enabled}`() {
         // When - build when feature is not enabled
-        val client = FlagsClient.Builder(mockSdkCore).build()
+        val client = FlagsClient.Builder(sdkCore = mockSdkCore).build()
 
         // Then - should return NoOpClient
         assertThat(client).isInstanceOf(NoOpFlagsClient::class.java)

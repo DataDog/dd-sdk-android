@@ -50,8 +50,6 @@ public abstract interface class com/datadog/android/flags/featureflags/FlagsClie
 }
 
 public final class com/datadog/android/flags/featureflags/FlagsClient$Builder {
-	public fun <init> (Lcom/datadog/android/api/SdkCore;)V
-	public synthetic fun <init> (Lcom/datadog/android/api/SdkCore;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public fun <init> (Ljava/lang/String;Lcom/datadog/android/api/SdkCore;)V
 	public synthetic fun <init> (Ljava/lang/String;Lcom/datadog/android/api/SdkCore;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun build ()Lcom/datadog/android/flags/featureflags/FlagsClient;

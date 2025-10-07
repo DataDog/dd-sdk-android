@@ -129,23 +129,13 @@ interface FlagsClient {
      *
      * With custom SDK core:
      * ```
-     * val client = FlagsClient.Builder(name = "analytics", sdkCore = customCore)
+     * val client = FlagsClient.Builder(sdkCore = customCore)
      *     .build()
      * ```
      */
     class Builder {
         private val name: String
         private val sdkCore: FeatureSdkCore
-
-        /**
-         * Creates a builder for the default [FlagsClient].
-         *
-         * @param sdkCore the SDK instance to associate with this [FlagsClient]. Defaults to main instance.
-         */
-        constructor(sdkCore: SdkCore = Datadog.getInstance()) {
-            this.name = DEFAULT_CLIENT_NAME
-            this.sdkCore = sdkCore as FeatureSdkCore
-        }
 
         /**
          * Creates a builder for a named [FlagsClient].
@@ -156,7 +146,7 @@ interface FlagsClient {
          * @param name the client name. Must be non-empty.
          * @param sdkCore the SDK instance to associate with this client. Defaults to main instance.
          */
-        constructor(name: String, sdkCore: SdkCore = Datadog.getInstance()) {
+        constructor(name: String = DEFAULT_CLIENT_NAME, sdkCore: SdkCore = Datadog.getInstance()) {
             this.name = name
             this.sdkCore = sdkCore as FeatureSdkCore
         }
@@ -197,7 +187,6 @@ interface FlagsClient {
                 val existingClient = registeredClients[key]
                 if (existingClient != null) {
                     logWarning(
-                        sdkCore,
                         "Attempted to create a FlagsClient named '$name', but one already exists. " +
                             "Existing client will be used, and new configuration will be ignored."
                     )
@@ -207,14 +196,14 @@ interface FlagsClient {
                 // Create and register client
                 val newClient = createInternal(flagsFeature.flagsConfiguration, sdkCore, flagsFeature)
                 if (newClient !is NoOpFlagsClient) {
-                    Companion.registeredClients[key] = newClient
+                    registeredClients[key] = newClient
                 }
                 return newClient
             }
         }
 
-        private fun logWarning(sdkCore: SdkCore, message: String) {
-            (sdkCore as? FeatureSdkCore)?.internalLogger?.log(
+        private fun logWarning(message: String) {
+            sdkCore.internalLogger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.USER,
                 { message }
@@ -257,10 +246,10 @@ interface FlagsClient {
                 val client = registeredClients[key]
 
                 if (client == null) {
-                    val logger = (sdkCore as? FeatureSdkCore)?.internalLogger
+                    val logger = (sdkCore as FeatureSdkCore).internalLogger
 
                     // Log at get() level for visibility
-                    logger?.log(
+                    logger.log(
                         InternalLogger.Level.ERROR,
                         listOf(InternalLogger.Target.USER, InternalLogger.Target.MAINTAINER),
                         {
