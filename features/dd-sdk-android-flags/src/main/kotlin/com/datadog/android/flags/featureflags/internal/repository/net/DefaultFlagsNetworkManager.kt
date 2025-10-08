@@ -29,6 +29,7 @@ internal class DefaultFlagsNetworkManager(
     private val flagsContext: FlagsContext
 ) : FlagsNetworkManager {
     internal lateinit var callFactory: OkHttpCallFactory
+    private val endpointUrl: String?
 
     internal class OkHttpCallFactory(factory: () -> OkHttpClient) : Call.Factory {
         val okhttpClient by lazy(factory)
@@ -37,13 +38,13 @@ internal class DefaultFlagsNetworkManager(
     }
 
     init {
+        endpointUrl = flagsContext.site.getFlagsEndpoint(flagsContext.customerDomain)
         setupOkHttpClient()
     }
 
     @Suppress("ReturnCount")
     override fun downloadPrecomputedFlags(context: EvaluationContext): String? {
-        val url = flagsContext.site.getFlagsEndpoint(flagsContext.customerDomain, internalLogger)
-            ?: return null
+        val url = endpointUrl ?: return null
         val headers = buildHeaders()
         val body = buildRequestBody(context) ?: return null
         return download(url = url, headers = headers, body = body)
@@ -154,8 +155,6 @@ internal class DefaultFlagsNetworkManager(
         return headersBuilder.build()
     }
 
-    @Suppress("TodoWithoutTask")
-    // TODO modify to real fields
     private fun buildRequestBody(context: EvaluationContext): RequestBody? = try {
         val attributeObj = buildStringifiedAttributes(context)
 

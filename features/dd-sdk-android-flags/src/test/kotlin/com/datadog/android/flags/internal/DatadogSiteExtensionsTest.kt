@@ -7,7 +7,6 @@
 package com.datadog.android.flags.internal
 
 import com.datadog.android.DatadogSite
-import com.datadog.android.api.InternalLogger
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -16,19 +15,9 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
-import org.mockito.Mock
-import org.mockito.junit.jupiter.MockitoExtension
-import org.mockito.junit.jupiter.MockitoSettings
-import org.mockito.kotlin.eq
-import org.mockito.kotlin.verify
-import org.mockito.quality.Strictness
 
-@ExtendWith(MockitoExtension::class, ForgeExtension::class)
-@MockitoSettings(strictness = Strictness.LENIENT)
+@ExtendWith(ForgeExtension::class)
 internal class DatadogSiteExtensionsTest {
-
-    @Mock
-    lateinit var mockInternalLogger: InternalLogger
 
     // region getFlagsEndpoint - With Custom Domain
 
@@ -40,7 +29,7 @@ internal class DatadogSiteExtensionsTest {
         @StringForgery customerDomain: String
     ) {
         // When
-        val result = site.getFlagsEndpoint(customerDomain, mockInternalLogger)
+        val result = site.getFlagsEndpoint(customerDomain)
 
         // Then
         assertThat(result).isEqualTo("https://$customerDomain.$expectedHostSuffix/precompute-assignments")
@@ -52,12 +41,12 @@ internal class DatadogSiteExtensionsTest {
 
     @ParameterizedTest
     @MethodSource("supportedSitesWithDefaultDomain")
-    fun `M build flags endpoint W getFlagsEndpoint() { supported sites with default domain }`(
+    fun `M build flags endpoint W getFlagsEndpoint() { supported sites with preview domain }`(
         site: DatadogSite,
         expectedHost: String
     ) {
         // When
-        val result = site.getFlagsEndpoint(internalLogger = mockInternalLogger)
+        val result = site.getFlagsEndpoint("preview")
 
         // Then
         assertThat(result).isEqualTo("https://$expectedHost/precompute-assignments")
@@ -65,24 +54,15 @@ internal class DatadogSiteExtensionsTest {
 
     // endregion
 
-    // region getFlagsEndpoint - Error Case
+    // region getFlagsEndpoint - Error Cases
 
     @Test
-    fun `M return null and log error W getFlagsEndpoint() { unsupported site }`(@StringForgery customerDomain: String) {
+    fun `M return null W getFlagsEndpoint() { unsupported site }`(@StringForgery customerDomain: String) {
         // When
-        val result =
-            DatadogSite.US1_FED.getFlagsEndpoint(customerDomain, mockInternalLogger)
+        val result = DatadogSite.US1_FED.getFlagsEndpoint(customerDomain)
 
         // Then
         assertThat(result).isNull()
-        verify(mockInternalLogger).log(
-            eq(InternalLogger.Level.ERROR),
-            eq(InternalLogger.Target.MAINTAINER),
-            org.mockito.kotlin.any(),
-            org.mockito.kotlin.anyOrNull(),
-            org.mockito.kotlin.any(),
-            org.mockito.kotlin.anyOrNull()
-        )
     }
 
     // endregion
@@ -97,7 +77,7 @@ internal class DatadogSiteExtensionsTest {
         expectedHost: String
     ) {
         // When
-        val result = site.getFlagsEndpoint(customerDomain, mockInternalLogger)
+        val result = site.getFlagsEndpoint(customerDomain)
 
         // Then
         assertThat(result).isEqualTo("https://$expectedHost/precompute-assignments")
