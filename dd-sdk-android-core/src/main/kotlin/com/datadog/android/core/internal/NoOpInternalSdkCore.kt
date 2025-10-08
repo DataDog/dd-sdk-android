@@ -141,12 +141,7 @@ internal object NoOpInternalSdkCore : InternalSdkCore {
     }
 
     override fun createOkHttpCallFactory(block: okhttp3.OkHttpClient.Builder.() -> Unit): okhttp3.Call.Factory {
-        return okhttp3.Call.Factory { request ->
-            okhttp3.OkHttpClient.Builder()
-                .apply(block)
-                .build()
-                .newCall(request)
-        }
+        return NoOpCallFactory
     }
 
     override fun setAnonymousId(anonymousId: UUID?) = Unit
@@ -298,6 +293,47 @@ internal object NoOpInternalSdkCore : InternalSdkCore {
 
         override fun get(timeout: Long, unit: TimeUnit?): O {
             throw ExecutionException("Unsupported", UnsupportedOperationException())
+        }
+    }
+
+    object NoOpCallFactory : okhttp3.Call.Factory {
+        override fun newCall(request: okhttp3.Request): okhttp3.Call {
+            return NoOpCall(request)
+        }
+    }
+
+    class NoOpCall(private val originalRequest: okhttp3.Request) : okhttp3.Call {
+        override fun cancel() = Unit
+
+        override fun clone(): okhttp3.Call {
+            return NoOpCall(originalRequest)
+        }
+
+        override fun enqueue(responseCallback: okhttp3.Callback) = Unit
+
+        override fun execute(): okhttp3.Response {
+            return okhttp3.Response.Builder()
+                .request(originalRequest)
+                .protocol(okhttp3.Protocol.HTTP_1_1)
+                .code(200)
+                .message("OK")
+                .build()
+        }
+
+        override fun isCanceled(): Boolean {
+            return false
+        }
+
+        override fun isExecuted(): Boolean {
+            return false
+        }
+
+        override fun request(): okhttp3.Request {
+            return originalRequest
+        }
+
+        override fun timeout(): okio.Timeout {
+            return okio.Timeout.NONE
         }
     }
 }

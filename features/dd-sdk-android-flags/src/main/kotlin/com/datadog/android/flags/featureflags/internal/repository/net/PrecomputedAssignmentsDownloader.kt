@@ -30,14 +30,7 @@ internal class PrecomputedAssignmentsDownloader(
 
     @Suppress("ReturnCount", "TooGenericExceptionCaught")
     override fun readPrecomputedFlags(context: EvaluationContext): String? {
-        val request = requestFactory.create(context, flagsContext) ?: run {
-            internalLogger.log(
-                InternalLogger.Level.ERROR,
-                InternalLogger.Target.MAINTAINER,
-                { "Unable to create the request for precomputed flags" }
-            )
-            return null
-        }
+        val request = requestFactory.create(context, flagsContext) ?: return null
 
         return try {
             executeDownloadRequest(request)

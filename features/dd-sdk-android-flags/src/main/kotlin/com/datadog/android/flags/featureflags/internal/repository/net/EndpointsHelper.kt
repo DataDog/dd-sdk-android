@@ -9,10 +9,18 @@ package com.datadog.android.flags.featureflags.internal.repository.net
 import com.datadog.android.DatadogSite
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.flags.featureflags.internal.model.FlagsContext
-import org.json.JSONException
-import org.json.JSONObject
 
 internal object EndpointsHelper {
+
+    /**
+     * Configuration for a Datadog site endpoint.
+     * @param dc The datacenter identifier (e.g., "us3", "ap1"), null if not needed
+     * @param tld The top-level domain (e.g., "com", "eu"), defaults to "com"
+     */
+    internal data class SiteConfig(
+        val dc: String? = null,
+        val tld: String = "com"
+    )
 
     /**
      * Gets the endpoint URL for feature flag requests.
@@ -49,8 +57,8 @@ internal object EndpointsHelper {
         in siteConfig -> {
             val siteConfiguration = siteConfig[site]
             if (siteConfiguration != null) {
-                val dc = siteConfiguration.optString("dc", "")
-                val tld = siteConfiguration.optString("tld", "com")
+                val dc = siteConfiguration.dc ?: ""
+                val tld = siteConfiguration.tld
 
                 // customer domain is for future use
                 // ff-cdn is the subdomain pointing to the CDN servers
@@ -79,26 +87,14 @@ internal object EndpointsHelper {
         }
     }
 
-    private val siteConfig: Map<DatadogSite, JSONObject> = mapOf(
-        DatadogSite.US1 to JSONObject(), // us1 host is customer-domain.ff-cdn.datadoghq.com, so no for a DC param.
-        DatadogSite.US3 to createSiteConfigObject(dc = "us3"),
-        DatadogSite.US5 to createSiteConfigObject(dc = "us5"),
-        DatadogSite.AP1 to createSiteConfigObject(dc = "ap1"),
-        DatadogSite.AP2 to createSiteConfigObject(dc = "ap2"),
-        DatadogSite.EU1 to createSiteConfigObject(tld = "eu")
+    private val siteConfig: Map<DatadogSite, SiteConfig> = mapOf(
+        DatadogSite.US1 to SiteConfig(), // us1 host is customer-domain.ff-cdn.datadoghq.com, so no DC param needed
+        DatadogSite.US3 to SiteConfig(dc = "us3"),
+        DatadogSite.US5 to SiteConfig(dc = "us5"),
+        DatadogSite.AP1 to SiteConfig(dc = "ap1"),
+        DatadogSite.AP2 to SiteConfig(dc = "ap2"),
+        DatadogSite.EU1 to SiteConfig(tld = "eu")
     )
-
-    private fun createSiteConfigObject(dc: String? = null, tld: String? = null): JSONObject = try {
-        JSONObject().apply {
-            dc?.let { put("dc", it) }
-            tld?.let { put("tld", it) }
-        }
-    } catch (_: JSONException) {
-        // should never happen
-        @Suppress("TodoWithoutTask")
-        // TODO log this?
-        JSONObject()
-    }
 
     private const val ERROR_GOV_NOT_SUPPORTED = "ddog-gov.com is not supported for flagging endpoints"
     private const val FLAGS_ENDPOINT = "/precompute-assignments"

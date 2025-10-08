@@ -143,7 +143,7 @@ internal class PrecomputedAssignmentsDownloaderTest {
     // region readPrecomputedFlags() - Factory errors
 
     @Test
-    fun `M return null and log error W readPrecomputedFlags() { factory returns null }`() {
+    fun `M return null W readPrecomputedFlags() { factory returns null }`() {
         // Given
         whenever(mockRequestFactory.create(fakeEvaluationContext, fakeFlagsContext))
             .doReturn(null)
@@ -153,14 +153,6 @@ internal class PrecomputedAssignmentsDownloaderTest {
 
         // Then
         assertThat(result).isNull()
-        verify(mockInternalLogger).log(
-            eq(InternalLogger.Level.ERROR),
-            eq(InternalLogger.Target.MAINTAINER),
-            any(),
-            eq(null),
-            eq(false),
-            eq(null)
-        )
     }
 
     // endregion
