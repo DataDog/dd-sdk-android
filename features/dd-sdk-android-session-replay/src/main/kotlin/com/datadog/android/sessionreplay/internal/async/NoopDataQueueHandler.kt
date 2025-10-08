@@ -12,7 +12,8 @@ import com.datadog.android.sessionreplay.recorder.SystemInformation
 internal class NoopDataQueueHandler : DataQueueHandler {
     override fun addResourceItem(
         identifier: String,
-        resourceData: ByteArray
+        resourceData: ByteArray,
+        mimeType: String?
     ): ResourceRecordedDataQueueItem? = null
 
     override fun addTouchEventItem(

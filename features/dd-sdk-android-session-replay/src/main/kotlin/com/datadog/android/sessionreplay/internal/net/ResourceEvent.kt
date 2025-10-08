@@ -9,7 +9,8 @@ package com.datadog.android.sessionreplay.internal.net
 internal data class ResourceEvent(
     val applicationId: String,
     val identifier: String,
-    val resourceData: ByteArray
+    val resourceData: ByteArray,
+    val mimeType: String? = null
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
