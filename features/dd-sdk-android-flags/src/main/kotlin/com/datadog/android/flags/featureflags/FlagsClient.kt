@@ -273,16 +273,12 @@ interface FlagsClient {
                 executorContext = FLAGS_CLIENT_EXECUTOR_NAME
             )
 
-            val internalLogger = sdkCore.internalLogger
             val datadogContext = (sdkCore as? InternalSdkCore)?.getDatadogContext()
-            val applicationId = flagsFeature.applicationId
 
-            // Get required context parameters
             val clientToken = datadogContext?.clientToken
             val site = datadogContext?.site
             val env = datadogContext?.env
 
-            // Validate required parameters
             if (clientToken == null || site == null || env == null) {
                 val missingParams = listOfNotNull(
                     "clientToken".takeIf { clientToken == null },
@@ -290,22 +286,20 @@ interface FlagsClient {
                     "env".takeIf { env == null }
                 ).joinToString(", ")
 
-                internalLogger.log(
+                sdkCore.internalLogger.log(
                     InternalLogger.Level.ERROR,
                     InternalLogger.Target.MAINTAINER,
                     { "Missing required context parameters: $missingParams" }
                 )
-
                 return NoOpFlagsClient(
                     name = "unknown",
                     reason = "Failed to create client - missing SDK context parameters: $missingParams",
-                    logger = internalLogger
+                    logger = sdkCore.internalLogger
                 )
             } else {
-                // Create FlagsContext combining core SDK context with feature configuration
                 val flagsContext = FlagsContext.create(
                     datadogContext,
-                    applicationId,
+                    flagsFeature.applicationId,
                     flagsConfiguration
                 )
 
@@ -313,22 +307,17 @@ interface FlagsClient {
                     featureSdkCore = sdkCore
                 )
 
-                // Get request factory from feature (shared across clients)
-                val precomputedRequestFactory = flagsFeature.precomputedRequestFactory
-
-                // Create call factory with custom configuration for flag downloads
                 val callFactory = sdkCore.createOkHttpCallFactory {
                     callTimeout(NETWORK_TIMEOUT_MS, TimeUnit.MILLISECONDS)
                     writeTimeout(NETWORK_TIMEOUT_MS, TimeUnit.MILLISECONDS)
                     protocols(listOf(Protocol.HTTP_2, Protocol.HTTP_1_1))
                 }
 
-                // Create downloader with factory
                 val assignmentsDownloader = PrecomputedAssignmentsDownloader(
                     callFactory = callFactory,
                     internalLogger = sdkCore.internalLogger,
                     flagsContext = flagsContext,
-                    requestFactory = precomputedRequestFactory
+                    requestFactory = flagsFeature.precomputedRequestFactory
                 )
 
                 val precomputeMapper = PrecomputeMapper(sdkCore.internalLogger)

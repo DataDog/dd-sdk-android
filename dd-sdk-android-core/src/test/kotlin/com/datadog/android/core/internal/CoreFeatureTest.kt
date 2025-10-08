@@ -705,9 +705,7 @@ internal class CoreFeatureTest {
     }
 
     @Test
-    fun `M initialize only once W initialize() twice`(
-        @Forgery otherConfig: Configuration
-    ) {
+    fun `M initialize only once W initialize() twice`(@Forgery otherConfig: Configuration) {
         // Given
         testedFeature.initialize(
             appContext.mockInstance,
@@ -737,9 +735,7 @@ internal class CoreFeatureTest {
     }
 
     @Test
-    fun `M detect current process W initialize() {main process}`(
-        @StringForgery otherProcessName: String
-    ) {
+    fun `M detect current process W initialize() {main process}`(@StringForgery otherProcessName: String) {
         // Given
         val mockActivityManager = mock<ActivityManager>()
         whenever(appContext.mockInstance.getSystemService(Context.ACTIVITY_SERVICE)).thenReturn(
@@ -769,9 +765,7 @@ internal class CoreFeatureTest {
     }
 
     @Test
-    fun `M detect current process W initialize() {secondary process}`(
-        @StringForgery otherProcessName: String
-    ) {
+    fun `M detect current process W initialize() {secondary process}`(@StringForgery otherProcessName: String) {
         // Given
         val mockActivityManager = mock<ActivityManager>()
         whenever(appContext.mockInstance.getSystemService(Context.ACTIVITY_SERVICE)).thenReturn(
@@ -803,9 +797,7 @@ internal class CoreFeatureTest {
     }
 
     @Test
-    fun `M detect current process W initialize() {unknown process}`(
-        @StringForgery otherProcessName: String
-    ) {
+    fun `M detect current process W initialize() {unknown process}`(@StringForgery otherProcessName: String) {
         // Given
         val mockActivityManager = mock<ActivityManager>()
         whenever(appContext.mockInstance.getSystemService(Context.ACTIVITY_SERVICE)).thenReturn(
@@ -966,9 +958,7 @@ internal class CoreFeatureTest {
     }
 
     @Test
-    fun `M initialize storage directory W initialize()`(
-        @TempDir tempDir: File
-    ) {
+    fun `M initialize storage directory W initialize()`(@TempDir tempDir: File) {
         // Given
         whenever(appContext.mockInstance.cacheDir) doReturn tempDir
 
@@ -990,9 +980,7 @@ internal class CoreFeatureTest {
     }
 
     @Test
-    fun `M initialise encryption W initialize`(
-        @IntForgery(-128, 128) fakeByte: Int
-    ) {
+    fun `M initialise encryption W initialize`(@IntForgery(-128, 128) fakeByte: Int) {
         // Given
         val mockEncryption = mock<Encryption>()
         whenever(mockEncryption.encrypt(any())) doAnswer { invocation ->
@@ -1062,9 +1050,7 @@ internal class CoreFeatureTest {
     }
 
     @Test
-    fun `M return null W lastFatalAnrSent { no file }`(
-        @TempDir tempDir: File
-    ) {
+    fun `M return null W lastFatalAnrSent { no file }`(@TempDir tempDir: File) {
         // Given
         testedFeature.storageDir = tempDir
 
@@ -1110,10 +1096,7 @@ internal class CoreFeatureTest {
     }
 
     @Test
-    fun `M write last view event W writeLastViewEvent`(
-        @TempDir tempDir: File,
-        @StringForgery viewEvent: String
-    ) {
+    fun `M write last view event W writeLastViewEvent`(@TempDir tempDir: File, @StringForgery viewEvent: String) {
         // Given
         val fakeViewEvent = viewEvent.toByteArray()
 
@@ -1137,10 +1120,7 @@ internal class CoreFeatureTest {
     }
 
     @Test
-    fun `M delete last view event W deleteLastViewEvent`(
-        @TempDir tempDir: File,
-        @StringForgery fakeViewEvent: String
-    ) {
+    fun `M delete last view event W deleteLastViewEvent`(@TempDir tempDir: File, @StringForgery fakeViewEvent: String) {
         // Given
         testedFeature.storageDir = tempDir
         File(tempDir, CoreFeature.LAST_RUM_VIEW_EVENT_FILE_NAME)
@@ -1175,9 +1155,7 @@ internal class CoreFeatureTest {
     }
 
     @Test
-    fun `M return null W lastViewEvent { no last view event written }`(
-        @TempDir tempDir: File
-    ) {
+    fun `M return null W lastViewEvent { no last view event written }`(@TempDir tempDir: File) {
         // Given
         testedFeature.storageDir = tempDir
 
@@ -1189,10 +1167,7 @@ internal class CoreFeatureTest {
     }
 
     @Test
-    fun `M return last view event W lastViewEvent`(
-        @TempDir tempDir: File,
-        @Forgery fakeViewEvent: JsonObject
-    ) {
+    fun `M return last view event W lastViewEvent`(@TempDir tempDir: File, @Forgery fakeViewEvent: JsonObject) {
         // Given
         testedFeature.storageDir = tempDir
         testedFeature.writeLastViewEvent(fakeViewEvent.toString().toByteArray())
@@ -1234,9 +1209,7 @@ internal class CoreFeatureTest {
     }
 
     @Test
-    fun `M return app start time W appStartTimeNs`(
-        @LongForgery(min = 0L) fakeAppStartTimeNs: Long
-    ) {
+    fun `M return app start time W appStartTimeNs`(@LongForgery(min = 0L) fakeAppStartTimeNs: Long) {
         // Given
         whenever(mockAppStartTimeProvider.appStartTimeNs) doReturn fakeAppStartTimeNs
 
@@ -1527,9 +1500,12 @@ internal class CoreFeatureTest {
 
         // Then
         assertThat(callFactory).isNotNull()
+
+        // Verify the factory can create calls
         val request = okhttp3.Request.Builder().url("https://example.com").build()
         val call = callFactory.newCall(request)
         assertThat(call).isNotNull()
+        assertThat(call.request()).isEqualTo(request)
     }
 
     @Test
@@ -1551,9 +1527,15 @@ internal class CoreFeatureTest {
 
         // Then
         assertThat(callFactory).isNotNull()
+
+        // Verify the factory can create calls
         val request = okhttp3.Request.Builder().url("https://example.com").build()
         val call = callFactory.newCall(request)
         assertThat(call).isNotNull()
+        assertThat(call.request()).isEqualTo(request)
+
+        // Verify custom timeout was applied
+        assertThat(call.timeout().timeoutNanos()).isGreaterThan(0)
     }
 
     @Test
@@ -1578,21 +1560,26 @@ internal class CoreFeatureTest {
         assertThat(callFactory1).isNotNull()
         assertThat(callFactory2).isNotNull()
         assertThat(callFactory1).isNotSameAs(callFactory2)
+
+        // Verify both factories can create calls independently
+        val request = okhttp3.Request.Builder().url("https://example.com").build()
+        val call1 = callFactory1.newCall(request)
+        val call2 = callFactory2.newCall(request)
+        assertThat(call1).isNotNull()
+        assertThat(call2).isNotNull()
+        assertThat(call1.request()).isEqualTo(request)
+        assertThat(call2.request()).isEqualTo(request)
     }
 
     // endregion
 
     // region Internal
 
-    private fun forgeAppProcessInfo(
-        processId: Int,
-        processName: String
-    ): ActivityManager.RunningAppProcessInfo {
-        return ActivityManager.RunningAppProcessInfo().apply {
+    private fun forgeAppProcessInfo(processId: Int, processName: String): ActivityManager.RunningAppProcessInfo =
+        ActivityManager.RunningAppProcessInfo().apply {
             this.processName = processName
             this.pid = processId
         }
-    }
 
     // endregion
 
@@ -1601,8 +1588,6 @@ internal class CoreFeatureTest {
 
         @TestConfigurationsProvider
         @JvmStatic
-        fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(appContext)
-        }
+        fun getTestConfigurations(): List<TestConfiguration> = listOf(appContext)
     }
 }
