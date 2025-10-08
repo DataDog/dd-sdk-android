@@ -9,8 +9,8 @@ package com.datadog.android.flags.featureflags.internal.evaluation
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.flags.featureflags.internal.model.PrecomputedFlag
 import com.datadog.android.flags.featureflags.internal.repository.FlagsRepository
-import com.datadog.android.flags.featureflags.internal.repository.net.FlagsNetworkManager
 import com.datadog.android.flags.featureflags.internal.repository.net.PrecomputeMapper
+import com.datadog.android.flags.featureflags.internal.repository.net.PrecomputedAssignmentsReader
 import com.datadog.android.flags.featureflags.model.EvaluationContext
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -48,7 +48,7 @@ internal class EvaluationsManagerTest {
     lateinit var mockFlagsRepository: FlagsRepository
 
     @Mock
-    lateinit var mockFlagsNetworkManager: FlagsNetworkManager
+    lateinit var mockAssignmentsDownloader: PrecomputedAssignmentsReader
 
     @Mock
     lateinit var mockPrecomputeMapper: PrecomputeMapper
@@ -74,7 +74,7 @@ internal class EvaluationsManagerTest {
             executorService = mockExecutorService,
             internalLogger = mockInternalLogger,
             flagsRepository = mockFlagsRepository,
-            flagsNetworkManager = mockFlagsNetworkManager,
+            assignmentsDownloader = mockAssignmentsDownloader,
             precomputeMapper = mockPrecomputeMapper
         )
 
@@ -128,7 +128,7 @@ internal class EvaluationsManagerTest {
             )
         )
 
-        whenever(mockFlagsNetworkManager.downloadPrecomputedFlags(context)).thenReturn(mockResponse)
+        whenever(mockAssignmentsDownloader.readPrecomputedFlags(context)).thenReturn(mockResponse)
         whenever(mockPrecomputeMapper.map(mockResponse)).thenReturn(expectedFlags)
 
         // When
@@ -152,7 +152,7 @@ internal class EvaluationsManagerTest {
         val publicContext = EvaluationContext(fakeTargetingKey, emptyMap())
         val context = publicContext
 
-        whenever(mockFlagsNetworkManager.downloadPrecomputedFlags(context)).thenReturn(null)
+        whenever(mockAssignmentsDownloader.readPrecomputedFlags(context)).thenReturn(null)
 
         // When
         evaluationsManager.updateEvaluationsForContext(context)
@@ -184,7 +184,7 @@ internal class EvaluationsManagerTest {
         val context = publicContext
 
         val invalidResponse = "{ invalid json }"
-        whenever(mockFlagsNetworkManager.downloadPrecomputedFlags(context)).thenReturn(invalidResponse)
+        whenever(mockAssignmentsDownloader.readPrecomputedFlags(context)).thenReturn(invalidResponse)
         whenever(mockPrecomputeMapper.map(invalidResponse)).thenReturn(emptyMap())
 
         // When
@@ -200,7 +200,7 @@ internal class EvaluationsManagerTest {
         val publicContext = EvaluationContext(fakeTargetingKey, emptyMap())
         val context = publicContext
 
-        whenever(mockFlagsNetworkManager.downloadPrecomputedFlags(context)).thenReturn(null)
+        whenever(mockAssignmentsDownloader.readPrecomputedFlags(context)).thenReturn(null)
 
         // When
         evaluationsManager.updateEvaluationsForContext(context)

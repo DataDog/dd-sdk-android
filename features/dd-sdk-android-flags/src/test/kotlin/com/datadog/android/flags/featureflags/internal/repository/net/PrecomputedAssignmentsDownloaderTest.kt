@@ -8,7 +8,6 @@ package com.datadog.android.flags.featureflags.internal.repository.net
 
 import com.datadog.android.DatadogSite
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.flags.featureflags.internal.model.FlagsContext
 import com.datadog.android.flags.featureflags.model.EvaluationContext
 import com.datadog.android.flags.utils.forge.ForgeConfigurator
@@ -53,9 +52,6 @@ internal class PrecomputedAssignmentsDownloaderTest {
     lateinit var mockInternalLogger: InternalLogger
 
     @Mock
-    lateinit var mockSdkCore: InternalSdkCore
-
-    @Mock
     lateinit var mockRequestFactory: PrecomputedAssignmentsRequestFactory
 
     @Mock
@@ -82,21 +78,18 @@ internal class PrecomputedAssignmentsDownloaderTest {
             attributes = mapOf("plan" to "premium")
         )
 
-        // Mock the createOkHttpCallFactory to return our mock Call.Factory
-        whenever(mockSdkCore.createOkHttpCallFactory(any())).doReturn(mockCallFactory)
-
         testedDownloader = PrecomputedAssignmentsDownloader(
-            sdkCore = mockSdkCore,
+            callFactory = mockCallFactory,
             internalLogger = mockInternalLogger,
             flagsContext = fakeFlagsContext,
             requestFactory = mockRequestFactory
         )
     }
 
-    // region downloadPrecomputedFlags() - Success cases
+    // region readPrecomputedFlags() - Success cases
 
     @Test
-    fun `M return response body W downloadPrecomputedFlags() { successful request }`(
+    fun `M return response body W readPrecomputedFlags() { successful request }`(
         @StringForgery fakeResponseBody: String,
         @StringForgery(regex = "https://[a-z]+\\.(com|net)/[a-z]+") fakeUrl: String
     ) {
@@ -112,7 +105,7 @@ internal class PrecomputedAssignmentsDownloaderTest {
         whenever(mockCall.execute()).doReturn(fakeResponse)
 
         // When
-        val result = testedDownloader.downloadPrecomputedFlags(fakeEvaluationContext)
+        val result = testedDownloader.readPrecomputedFlags(fakeEvaluationContext)
 
         // Then
         assertThat(result).isEqualTo(fakeResponseBody)
@@ -120,7 +113,7 @@ internal class PrecomputedAssignmentsDownloaderTest {
     }
 
     @Test
-    fun `M call factory with correct parameters W downloadPrecomputedFlags()`(
+    fun `M call factory with correct parameters W readPrecomputedFlags()`(
         @StringForgery fakeResponseBody: String,
         @StringForgery(regex = "https://[a-z]+\\.(com|net)/[a-z]+") fakeUrl: String
     ) {
@@ -136,7 +129,7 @@ internal class PrecomputedAssignmentsDownloaderTest {
         whenever(mockCall.execute()).doReturn(fakeResponse)
 
         // When
-        testedDownloader.downloadPrecomputedFlags(fakeEvaluationContext)
+        testedDownloader.readPrecomputedFlags(fakeEvaluationContext)
 
         // Then
         argumentCaptor<EvaluationContext> {
@@ -147,16 +140,16 @@ internal class PrecomputedAssignmentsDownloaderTest {
 
     // endregion
 
-    // region downloadPrecomputedFlags() - Factory errors
+    // region readPrecomputedFlags() - Factory errors
 
     @Test
-    fun `M return null and log error W downloadPrecomputedFlags() { factory returns null }`() {
+    fun `M return null and log error W readPrecomputedFlags() { factory returns null }`() {
         // Given
         whenever(mockRequestFactory.create(fakeEvaluationContext, fakeFlagsContext))
             .doReturn(null)
 
         // When
-        val result = testedDownloader.downloadPrecomputedFlags(fakeEvaluationContext)
+        val result = testedDownloader.readPrecomputedFlags(fakeEvaluationContext)
 
         // Then
         assertThat(result).isNull()
@@ -172,10 +165,10 @@ internal class PrecomputedAssignmentsDownloaderTest {
 
     // endregion
 
-    // region downloadPrecomputedFlags() - Network errors
+    // region readPrecomputedFlags() - Network errors
 
     @Test
-    fun `M return null and log error W downloadPrecomputedFlags() { UnknownHostException }`(
+    fun `M return null and log error W readPrecomputedFlags() { UnknownHostException }`(
         @StringForgery(regex = "https://[a-z]+\\.(com|net)/[a-z]+") fakeUrl: String,
         @StringForgery fakeExceptionMessage: String
     ) {
@@ -191,7 +184,7 @@ internal class PrecomputedAssignmentsDownloaderTest {
         whenever(mockCall.execute()).doThrow(exception)
 
         // When
-        val result = testedDownloader.downloadPrecomputedFlags(fakeEvaluationContext)
+        val result = testedDownloader.readPrecomputedFlags(fakeEvaluationContext)
 
         // Then
         assertThat(result).isNull()
@@ -209,7 +202,7 @@ internal class PrecomputedAssignmentsDownloaderTest {
     }
 
     @Test
-    fun `M return null and log error W downloadPrecomputedFlags() { IOException }`(
+    fun `M return null and log error W readPrecomputedFlags() { IOException }`(
         @StringForgery(regex = "https://[a-z]+\\.(com|net)/[a-z]+") fakeUrl: String,
         @StringForgery fakeExceptionMessage: String
     ) {
@@ -225,7 +218,7 @@ internal class PrecomputedAssignmentsDownloaderTest {
         whenever(mockCall.execute()).doThrow(exception)
 
         // When
-        val result = testedDownloader.downloadPrecomputedFlags(fakeEvaluationContext)
+        val result = testedDownloader.readPrecomputedFlags(fakeEvaluationContext)
 
         // Then
         assertThat(result).isNull()
@@ -243,7 +236,7 @@ internal class PrecomputedAssignmentsDownloaderTest {
     }
 
     @Test
-    fun `M return null and log error W downloadPrecomputedFlags() { SecurityException }`(
+    fun `M return null and log error W readPrecomputedFlags() { SecurityException }`(
         @StringForgery(regex = "https://[a-z]+\\.(com|net)/[a-z]+") fakeUrl: String,
         @StringForgery fakeExceptionMessage: String
     ) {
@@ -259,7 +252,7 @@ internal class PrecomputedAssignmentsDownloaderTest {
         whenever(mockCall.execute()).doThrow(exception)
 
         // When
-        val result = testedDownloader.downloadPrecomputedFlags(fakeEvaluationContext)
+        val result = testedDownloader.readPrecomputedFlags(fakeEvaluationContext)
 
         // Then
         assertThat(result).isNull()
@@ -277,7 +270,7 @@ internal class PrecomputedAssignmentsDownloaderTest {
     }
 
     @Test
-    fun `M return null and log error W downloadPrecomputedFlags() { generic exception }`(
+    fun `M return null and log error W readPrecomputedFlags() { generic exception }`(
         @StringForgery(regex = "https://[a-z]+\\.(com|net)/[a-z]+") fakeUrl: String,
         @StringForgery fakeExceptionMessage: String
     ) {
@@ -293,7 +286,7 @@ internal class PrecomputedAssignmentsDownloaderTest {
         whenever(mockCall.execute()).doThrow(exception)
 
         // When
-        val result = testedDownloader.downloadPrecomputedFlags(fakeEvaluationContext)
+        val result = testedDownloader.readPrecomputedFlags(fakeEvaluationContext)
 
         // Then
         assertThat(result).isNull()
@@ -312,10 +305,10 @@ internal class PrecomputedAssignmentsDownloaderTest {
 
     // endregion
 
-    // region downloadPrecomputedFlags() - Response handling
+    // region readPrecomputedFlags() - Response handling
 
     @Test
-    fun `M return null and log error W downloadPrecomputedFlags() { unsuccessful response }`(
+    fun `M return null and log error W readPrecomputedFlags() { unsuccessful response }`(
         @StringForgery(regex = "https://[a-z]+\\.(com|net)/[a-z]+") fakeUrl: String
     ) {
         // Given
@@ -330,7 +323,7 @@ internal class PrecomputedAssignmentsDownloaderTest {
         whenever(mockCall.execute()).doReturn(fakeResponse)
 
         // When
-        val result = testedDownloader.downloadPrecomputedFlags(fakeEvaluationContext)
+        val result = testedDownloader.readPrecomputedFlags(fakeEvaluationContext)
 
         // Then
         assertThat(result).isNull()
@@ -345,7 +338,7 @@ internal class PrecomputedAssignmentsDownloaderTest {
     }
 
     @Test
-    fun `M return null W downloadPrecomputedFlags() { null response body }`(
+    fun `M return null W readPrecomputedFlags() { null response body }`(
         @StringForgery(regex = "https://[a-z]+\\.(com|net)/[a-z]+") fakeUrl: String
     ) {
         // Given
@@ -360,7 +353,7 @@ internal class PrecomputedAssignmentsDownloaderTest {
         whenever(mockCall.execute()).doReturn(fakeResponse)
 
         // When
-        val result = testedDownloader.downloadPrecomputedFlags(fakeEvaluationContext)
+        val result = testedDownloader.readPrecomputedFlags(fakeEvaluationContext)
 
         // Then
         assertThat(result).isNull()

@@ -9,8 +9,8 @@ package com.datadog.android.flags.featureflags.internal.evaluation
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.internal.utils.executeSafe
 import com.datadog.android.flags.featureflags.internal.repository.FlagsRepository
-import com.datadog.android.flags.featureflags.internal.repository.net.FlagsNetworkManager
 import com.datadog.android.flags.featureflags.internal.repository.net.PrecomputeMapper
+import com.datadog.android.flags.featureflags.internal.repository.net.PrecomputedAssignmentsReader
 import com.datadog.android.flags.featureflags.model.EvaluationContext
 import java.util.concurrent.ExecutorService
 
@@ -24,14 +24,14 @@ import java.util.concurrent.ExecutorService
  * @param executorService dedicated executor for background operations
  * @param internalLogger logger for debug and error messages
  * @param flagsRepository local storage for flag data and evaluation context
- * @param flagsNetworkManager handles network requests to the Datadog service
+ * @param assignmentsDownloader handles network requests to the Datadog service
  * @param precomputeMapper transforms network responses into internal flag format
  */
 internal class EvaluationsManager(
     private val executorService: ExecutorService,
     private val internalLogger: InternalLogger,
     private val flagsRepository: FlagsRepository,
-    private val flagsNetworkManager: FlagsNetworkManager,
+    private val assignmentsDownloader: PrecomputedAssignmentsReader,
     private val precomputeMapper: PrecomputeMapper
 ) {
     /**
@@ -58,7 +58,7 @@ internal class EvaluationsManager(
                 { "Processing evaluation context: ${context.targetingKey}" }
             )
 
-            val response = flagsNetworkManager.downloadPrecomputedFlags(context)
+            val response = assignmentsDownloader.readPrecomputedFlags(context)
             val flagsMap = if (response != null) {
                 precomputeMapper.map(response)
             } else {

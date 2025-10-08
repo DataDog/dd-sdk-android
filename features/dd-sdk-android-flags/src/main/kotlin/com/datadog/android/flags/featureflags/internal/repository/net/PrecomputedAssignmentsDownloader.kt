@@ -10,34 +10,26 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.flags.featureflags.internal.model.FlagsContext
 import com.datadog.android.flags.featureflags.model.EvaluationContext
 import okhttp3.Call
-import okhttp3.Protocol
 import okhttp3.Request
 import okhttp3.Response
-import java.util.concurrent.TimeUnit
 
 /**
  * Downloads precomputed flag assignments from Datadog Feature Flags service.
  *
- * @param sdkCore SDK core for accessing shared HTTP client infrastructure
+ * @param callFactory Factory for creating HTTP calls
  * @param internalLogger Logger for error and debug messages
  * @param flagsContext Context containing SDK configuration and authentication
  * @param requestFactory Factory for creating precomputed assignments requests
  */
 internal class PrecomputedAssignmentsDownloader(
-    sdkCore: com.datadog.android.core.InternalSdkCore,
+    private val callFactory: Call.Factory,
     private val internalLogger: InternalLogger,
     private val flagsContext: FlagsContext,
     private val requestFactory: PrecomputedAssignmentsRequestFactory
-) : FlagsNetworkManager {
-
-    private val callFactory: Call.Factory = sdkCore.createOkHttpCallFactory {
-        callTimeout(NETWORK_TIMEOUT_MS, TimeUnit.MILLISECONDS)
-        writeTimeout(NETWORK_TIMEOUT_MS, TimeUnit.MILLISECONDS)
-        protocols(listOf(Protocol.HTTP_2, Protocol.HTTP_1_1))
-    }
+) : PrecomputedAssignmentsReader {
 
     @Suppress("ReturnCount", "TooGenericExceptionCaught")
-    override fun downloadPrecomputedFlags(context: EvaluationContext): String? {
+    override fun readPrecomputedFlags(context: EvaluationContext): String? {
         val request = requestFactory.create(context, flagsContext) ?: run {
             internalLogger.log(
                 InternalLogger.Level.ERROR,
@@ -92,9 +84,5 @@ internal class PrecomputedAssignmentsDownloader(
         )
 
         null
-    }
-
-    companion object {
-        private val NETWORK_TIMEOUT_MS = TimeUnit.SECONDS.toMillis(45)
     }
 }

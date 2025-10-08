@@ -8,7 +8,6 @@ package com.datadog.android.flags.featureflags.internal.evaluation
 
 import com.datadog.android.DatadogSite
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.flags.featureflags.internal.model.FlagsContext
 import com.datadog.android.flags.featureflags.internal.model.PrecomputedFlag
 import com.datadog.android.flags.featureflags.internal.repository.FlagsRepository
@@ -29,11 +28,9 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
-import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.verify
-import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.util.concurrent.Executors
 
@@ -45,9 +42,6 @@ internal class EvaluationsManagerIntegrationTest {
     lateinit var mockInternalLogger: InternalLogger
 
     @Mock
-    lateinit var mockSdkCore: InternalSdkCore
-
-    @Mock
     lateinit var mockFlagsRepository: FlagsRepository
 
     private lateinit var mockWebServer: MockWebServer
@@ -55,6 +49,7 @@ internal class EvaluationsManagerIntegrationTest {
     private lateinit var requestFactory: DefaultPrecomputedAssignmentsRequestFactory
     private lateinit var downloader: PrecomputedAssignmentsDownloader
     private lateinit var mapper: PrecomputeMapper
+    private lateinit var callFactory: okhttp3.Call.Factory
     private val executorService = Executors.newSingleThreadExecutor()
 
     @BeforeEach
@@ -62,15 +57,14 @@ internal class EvaluationsManagerIntegrationTest {
         mockWebServer = MockWebServer()
         mockWebServer.start()
 
-        // Mock the createOkHttpCallFactory to return a real OkHttpClient for integration testing
-        whenever(mockSdkCore.createOkHttpCallFactory(any())).thenAnswer { invocation ->
-            val block = invocation.getArgument<okhttp3.OkHttpClient.Builder.() -> Unit>(0)
-            okhttp3.Call.Factory { request ->
-                okhttp3.OkHttpClient.Builder()
-                    .apply(block)
-                    .build()
-                    .newCall(request)
-            }
+        // Create real call factory for integration testing
+        callFactory = okhttp3.Call.Factory { request ->
+            okhttp3.OkHttpClient.Builder()
+                .callTimeout(45, java.util.concurrent.TimeUnit.SECONDS)
+                .writeTimeout(45, java.util.concurrent.TimeUnit.SECONDS)
+                .protocols(listOf(okhttp3.Protocol.HTTP_2, okhttp3.Protocol.HTTP_1_1))
+                .build()
+                .newCall(request)
         }
 
         // Create real instances for integration testing
@@ -102,7 +96,7 @@ internal class EvaluationsManagerIntegrationTest {
 
         // Create real downloader with real factory
         downloader = PrecomputedAssignmentsDownloader(
-            sdkCore = mockSdkCore,
+            callFactory = callFactory,
             internalLogger = mockInternalLogger,
             flagsContext = flagsContext,
             requestFactory = requestFactory
@@ -113,7 +107,7 @@ internal class EvaluationsManagerIntegrationTest {
             executorService = executorService,
             internalLogger = mockInternalLogger,
             flagsRepository = mockFlagsRepository,
-            flagsNetworkManager = downloader,
+            assignmentsDownloader = downloader,
             precomputeMapper = mapper
         )
 
@@ -225,7 +219,7 @@ internal class EvaluationsManagerIntegrationTest {
         )
 
         downloader = PrecomputedAssignmentsDownloader(
-            sdkCore = mockSdkCore,
+            callFactory = callFactory,
             internalLogger = mockInternalLogger,
             flagsContext = flagsContext,
             requestFactory = requestFactory
@@ -235,7 +229,7 @@ internal class EvaluationsManagerIntegrationTest {
             executorService = executorService,
             internalLogger = mockInternalLogger,
             flagsRepository = mockFlagsRepository,
-            flagsNetworkManager = downloader,
+            assignmentsDownloader = downloader,
             precomputeMapper = mapper
         )
 
@@ -282,7 +276,7 @@ internal class EvaluationsManagerIntegrationTest {
         )
 
         downloader = PrecomputedAssignmentsDownloader(
-            sdkCore = mockSdkCore,
+            callFactory = callFactory,
             internalLogger = mockInternalLogger,
             flagsContext = flagsContext,
             requestFactory = requestFactory
@@ -292,7 +286,7 @@ internal class EvaluationsManagerIntegrationTest {
             executorService = executorService,
             internalLogger = mockInternalLogger,
             flagsRepository = mockFlagsRepository,
-            flagsNetworkManager = downloader,
+            assignmentsDownloader = downloader,
             precomputeMapper = mapper
         )
 
@@ -332,7 +326,7 @@ internal class EvaluationsManagerIntegrationTest {
         )
 
         downloader = PrecomputedAssignmentsDownloader(
-            sdkCore = mockSdkCore,
+            callFactory = callFactory,
             internalLogger = mockInternalLogger,
             flagsContext = flagsContext,
             requestFactory = requestFactory
@@ -342,7 +336,7 @@ internal class EvaluationsManagerIntegrationTest {
             executorService = executorService,
             internalLogger = mockInternalLogger,
             flagsRepository = mockFlagsRepository,
-            flagsNetworkManager = downloader,
+            assignmentsDownloader = downloader,
             precomputeMapper = mapper
         )
 

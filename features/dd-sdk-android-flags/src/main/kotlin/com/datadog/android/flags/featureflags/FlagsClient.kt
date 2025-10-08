@@ -22,7 +22,9 @@ import com.datadog.android.flags.featureflags.internal.repository.net.Precompute
 import com.datadog.android.flags.featureflags.internal.repository.net.PrecomputedAssignmentsDownloader
 import com.datadog.android.flags.featureflags.model.EvaluationContext
 import com.datadog.android.flags.internal.FlagsFeature
+import okhttp3.Protocol
 import org.json.JSONObject
+import java.util.concurrent.TimeUnit
 
 /**
  * Client interface for evaluating feature flags and experiments.
@@ -260,6 +262,7 @@ interface FlagsClient {
         // region Internal
 
         internal const val FLAGS_CLIENT_EXECUTOR_NAME = "flags-client-executor"
+        private val NETWORK_TIMEOUT_MS = TimeUnit.SECONDS.toMillis(45)
 
         internal fun createInternal(
             flagsConfiguration: FlagsConfiguration,
@@ -313,9 +316,16 @@ interface FlagsClient {
                 // Get request factory from feature (shared across clients)
                 val precomputedRequestFactory = flagsFeature.precomputedRequestFactory
 
+                // Create call factory with custom configuration for flag downloads
+                val callFactory = sdkCore.createOkHttpCallFactory {
+                    callTimeout(NETWORK_TIMEOUT_MS, TimeUnit.MILLISECONDS)
+                    writeTimeout(NETWORK_TIMEOUT_MS, TimeUnit.MILLISECONDS)
+                    protocols(listOf(Protocol.HTTP_2, Protocol.HTTP_1_1))
+                }
+
                 // Create downloader with factory
-                val flagsNetworkManager = PrecomputedAssignmentsDownloader(
-                    sdkCore = sdkCore,
+                val assignmentsDownloader = PrecomputedAssignmentsDownloader(
+                    callFactory = callFactory,
                     internalLogger = sdkCore.internalLogger,
                     flagsContext = flagsContext,
                     requestFactory = precomputedRequestFactory
@@ -327,7 +337,7 @@ interface FlagsClient {
                     executorService = executorService,
                     internalLogger = sdkCore.internalLogger,
                     flagsRepository = flagsRepository,
-                    flagsNetworkManager = flagsNetworkManager,
+                    assignmentsDownloader = assignmentsDownloader,
                     precomputeMapper = precomputeMapper
                 )
 
