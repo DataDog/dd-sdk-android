@@ -138,7 +138,7 @@ internal class FlagsTest {
 
     @Test
     fun `M register FlagsFeature with flagging proxy W enable() { flagging proxy }`(
-        @StringForgery(regex = "https://[a-z]+\\.com(/[a-z]+)+") fakeFlaggingProxy: String
+        @StringForgery(regex = "https://[a-z]+\\.com(/[a-z]+)+") fakeCustomFlagEndpoint: String
     ) {
         // Given
         val fakeConfiguration = FlagsConfiguration.Builder()

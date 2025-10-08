@@ -62,12 +62,12 @@ internal class FlagsClientTest {
         Flags.enable(sdkCore = mockSdkCore)
 
         // Capture the registered feature and mock getFeature() to return a FeatureScope wrapping it
-        argumentCaptor<com.datadog.android.api.feature.Feature> {
+        argumentCaptor<Feature> {
             verify(mockSdkCore).registerFeature(capture())
-            val capturedFeature = lastValue as com.datadog.android.flags.internal.FlagsFeature
-            val mockFeatureScope = mock<com.datadog.android.api.feature.FeatureScope>()
+            val capturedFeature = lastValue as FlagsFeature
+            val mockFeatureScope = mock<FeatureScope>()
             whenever(
-                mockFeatureScope.unwrap<com.datadog.android.flags.internal.FlagsFeature>()
+                mockFeatureScope.unwrap<FlagsFeature>()
             ).thenReturn(capturedFeature)
             whenever(mockSdkCore.getFeature(FLAGS_FEATURE_NAME))
                 .thenReturn(mockFeatureScope)

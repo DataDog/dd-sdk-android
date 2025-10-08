@@ -208,7 +208,7 @@ interface FlagsClient {
         @JvmStatic
         fun get(
             name: String = DEFAULT_CLIENT_NAME,
-            sdkCore: FeatureSdkCore = Datadog.getInstance() as FeatureSdkCore
+            sdkCore: SdkCore = Datadog.getInstance()
         ): FlagsClient {
             val logger = sdkCore.internalLogger
 

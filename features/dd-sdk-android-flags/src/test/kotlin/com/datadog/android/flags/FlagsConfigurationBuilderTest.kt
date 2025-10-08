@@ -36,7 +36,7 @@ internal class FlagsConfigurationBuilderTest {
     }
 
     @Test
-    fun `M build configuration with custom endpoint W useCustomEndpoint() and build()`(
+    fun `M build configuration with custom endpoint W useCustomExposureEndpoint() and build()`(
         @StringForgery(regex = "https://[a-z]+\\.com(/[a-z]+)+") customEndpointUrl: String
     ) {
         // When
@@ -48,7 +48,7 @@ internal class FlagsConfigurationBuilderTest {
     }
 
     @Test
-    fun `M build configuration with flagging proxy W useFlaggingProxy() and build()`(
+    fun `M build configuration with flagging proxy W useCustomFlagEndpoint() and build()`(
         @StringForgery(regex = "https://[a-z]+\\.com(/[a-z]+)+") flaggingProxyUrl: String
     ) {
         // When
@@ -76,7 +76,7 @@ internal class FlagsConfigurationBuilderTest {
     }
 
     @Test
-    fun `M build configuration with null custom endpoint W useCustomEndpoint(null) and build()`() {
+    fun `M build configuration with null custom endpoint W useCustomExposureEndpoint(null) and build()`() {
         // When
         val flagsConfiguration = testedBuilder.useCustomExposureEndpoint(null).build()
 
@@ -86,7 +86,7 @@ internal class FlagsConfigurationBuilderTest {
     }
 
     @Test
-    fun `M build configuration with null flagging proxy W useFlaggingProxy(null) and build()`() {
+    fun `M build configuration with null flagging proxy W useCustomFlagEndpoint(null) and build()`() {
         // When
         val flagsConfiguration = testedBuilder.useCustomFlagEndpoint(null).build()
 
