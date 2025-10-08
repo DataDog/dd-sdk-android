@@ -167,7 +167,7 @@ internal class DatadogFlagsClient(
         val precomputedFlag = flagsRepository.getPrecomputedFlag(flagKey)
         val convertedValue = precomputedFlag?.variationValue?.let(converter)
 
-        if (convertedValue != null && flagsConfiguration.enableExposureLogging) {
+        if (convertedValue != null && flagsConfiguration.trackExposures) {
             writeExposureEvent(flagKey, precomputedFlag)
         }
 

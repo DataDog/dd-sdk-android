@@ -36,7 +36,6 @@ import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
-import java.util.concurrent.ExecutorService
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -45,10 +44,6 @@ import java.util.concurrent.ExecutorService
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(ForgeConfigurator::class)
 internal class DatadogFlagsClientTest {
-
-    @Mock
-    lateinit var mockExecutorService: ExecutorService
-
     @Mock
     lateinit var mockFeatureSdkCore: FeatureSdkCore
 
@@ -71,7 +66,7 @@ internal class DatadogFlagsClientTest {
             featureSdkCore = mockFeatureSdkCore,
             evaluationsManager = mockEvaluationsManager,
             flagsRepository = mockFlagsRepository,
-            flagsConfiguration = FlagsConfiguration.Builder().setEnableExposureLogging(true).build()
+            flagsConfiguration = FlagsConfiguration.Builder().setTrackExposures(true).build()
         )
     }
 
@@ -410,7 +405,7 @@ internal class DatadogFlagsClientTest {
             featureSdkCore = mockFeatureSdkCore,
             evaluationsManager = mockEvaluationsManager,
             flagsRepository = customRepository,
-            flagsConfiguration = FlagsConfiguration.Builder().setEnableExposureLogging(true).build()
+            flagsConfiguration = FlagsConfiguration.Builder().setTrackExposures(true).build()
         )
 
         // Then
@@ -514,7 +509,7 @@ internal class DatadogFlagsClientTest {
     // region exposure logging configuration
 
     @Test
-    fun `M not write exposure event W resolveBooleanValue() { enableExposureLogging is false }`(forge: Forge) {
+    fun `M not write exposure event W resolveBooleanValue() { trackExposures is false }`(forge: Forge) {
         // Given
         val fakeFlagKey = forge.anAlphabeticalString()
         val fakeFlagValue = forge.aBool()
@@ -536,7 +531,7 @@ internal class DatadogFlagsClientTest {
             featureSdkCore = mockFeatureSdkCore,
             evaluationsManager = mockEvaluationsManager,
             flagsRepository = mockFlagsRepository,
-            flagsConfiguration = FlagsConfiguration.Builder().setEnableExposureLogging(false).build()
+            flagsConfiguration = FlagsConfiguration.Builder().setTrackExposures(false).build()
         )
 
         // When
@@ -549,7 +544,7 @@ internal class DatadogFlagsClientTest {
     }
 
     @Test
-    fun `M write exposure event W resolveBooleanValue() { enableExposureLogging is true }`(forge: Forge) {
+    fun `M write exposure event W resolveBooleanValue() { trackExposures is true }`(forge: Forge) {
         // Given
         val fakeFlagKey = forge.anAlphabeticalString()
         val fakeFlagValue = forge.aBool()
@@ -566,8 +561,6 @@ internal class DatadogFlagsClientTest {
         whenever(mockFlagsRepository.getPrecomputedFlag(fakeFlagKey)) doReturn fakeFlag
         whenever(mockFlagsRepository.getEvaluationContext()) doReturn fakeContext
         whenever(mockFeatureSdkCore.getFeature(any())) doReturn null
-
-        // Note: testedClient is configured with enableExposureLogging = true in setUp()
 
         // When
         val result = testedClient.resolveBooleanValue(fakeFlagKey, fakeDefaultValue)

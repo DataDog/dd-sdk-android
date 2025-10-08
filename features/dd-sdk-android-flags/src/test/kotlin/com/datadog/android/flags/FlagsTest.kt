@@ -72,7 +72,7 @@ internal class FlagsTest {
     fun `M register FlagsFeature W enable()`() {
         // Given
         val fakeConfiguration = FlagsConfiguration.Builder()
-            .setEnableExposureLogging(true)
+            .setTrackExposures(true)
             .build()
 
         // When
@@ -89,7 +89,7 @@ internal class FlagsTest {
     fun `M register FlagsClient W enable() { valid context }`() {
         // Given
         val fakeConfiguration = FlagsConfiguration.Builder()
-            .setEnableExposureLogging(false)
+            .setTrackExposures(false)
             .build()
 
         // When
@@ -105,7 +105,7 @@ internal class FlagsTest {
     fun `M not register FlagsClient W enable() { missing context }`() {
         // Given
         val fakeConfiguration = FlagsConfiguration.Builder()
-            .setEnableExposureLogging(false)
+            .setTrackExposures(false)
             .build()
 
         whenever(mockSdkCore.getDatadogContext()) doReturn null
@@ -123,7 +123,7 @@ internal class FlagsTest {
     fun `M log error W enable() { missing all context parameters }`() {
         // Given
         val fakeConfiguration = FlagsConfiguration.Builder()
-            .setEnableExposureLogging(false)
+            .setTrackExposures(false)
             .build()
 
         whenever(mockSdkCore.getDatadogContext()) doReturn null
@@ -149,7 +149,7 @@ internal class FlagsTest {
     fun `M log error W enable() { missing clientToken and site }`() {
         // Given
         val fakeConfiguration = FlagsConfiguration.Builder()
-            .setEnableExposureLogging(false)
+            .setTrackExposures(false)
             .build()
 
         whenever(mockDatadogContext.clientToken).thenReturn(null)
@@ -178,7 +178,7 @@ internal class FlagsTest {
     fun `M create executor service W enable()`() {
         // Given
         val fakeConfiguration = FlagsConfiguration.Builder()
-            .setEnableExposureLogging(false)
+            .setTrackExposures(false)
             .build()
 
         // When

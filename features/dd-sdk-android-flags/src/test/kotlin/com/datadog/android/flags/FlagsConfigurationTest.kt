@@ -16,7 +16,7 @@ import org.junit.jupiter.api.extension.ExtendWith
 internal class FlagsConfigurationTest {
 
     @BoolForgery
-    var fakeExposureLogging: Boolean = false
+    var fakeTrackExposures: Boolean = false
 
     // region Data Class Tests
 
@@ -24,11 +24,11 @@ internal class FlagsConfigurationTest {
     fun `M create FlagsConfiguration W constructor { with all parameters }`() {
         // When
         val configuration = FlagsConfiguration(
-            enableExposureLogging = fakeExposureLogging
+            trackExposures = fakeTrackExposures
         )
 
         // Then
-        assertThat(configuration.enableExposureLogging).isEqualTo(fakeExposureLogging)
+        assertThat(configuration.trackExposures).isEqualTo(fakeTrackExposures)
     }
 
     // region Builder Tests
@@ -40,64 +40,64 @@ internal class FlagsConfigurationTest {
         val configuration = builder.build()
 
         // Then
-        assertThat(configuration.enableExposureLogging).isFalse()
+        assertThat(configuration.trackExposures).isTrue()
     }
 
     @Test
-    fun `M set exposure logging enabled W Builder { setEnableExposureLogging true }`() {
+    fun `M set exposure logging enabled W Builder { setTrackExposures true }`() {
         // Given
         val builder = FlagsConfiguration.Builder()
 
         // When
-        val result = builder.setEnableExposureLogging(true)
+        val result = builder.setTrackExposures(true)
         val configuration = builder.build()
 
         // Then
         assertThat(result).isSameAs(builder) // Fluent interface
-        assertThat(configuration.enableExposureLogging).isTrue()
+        assertThat(configuration.trackExposures).isTrue()
     }
 
     @Test
-    fun `M set exposure logging disabled W Builder { setEnableExposureLogging false }`() {
+    fun `M set exposure logging disabled W Builder { setTrackExposures false }`() {
         // Given
         val builder = FlagsConfiguration.Builder()
 
         // When
-        val result = builder.setEnableExposureLogging(false)
+        val result = builder.setTrackExposures(false)
         val configuration = builder.build()
 
         // Then
         assertThat(result).isSameAs(builder) // Fluent interface
-        assertThat(configuration.enableExposureLogging).isFalse()
+        assertThat(configuration.trackExposures).isFalse()
     }
 
     @Test
     fun `M build configuration with all options W Builder { fluent chaining }`() {
         // When
         val configuration = FlagsConfiguration.Builder()
-            .setEnableExposureLogging(true)
+            .setTrackExposures(true)
             .build()
 
         // Then
-        assertThat(configuration.enableExposureLogging).isTrue()
+        assertThat(configuration.trackExposures).isTrue()
     }
 
     @Test
     fun `M build configuration with all options W Builder { reverse chaining order }`() {
         // When
         val configuration = FlagsConfiguration.Builder()
-            .setEnableExposureLogging(true)
+            .setTrackExposures(true)
             .build()
 
         // Then
-        assertThat(configuration.enableExposureLogging).isTrue()
+        assertThat(configuration.trackExposures).isTrue()
     }
 
     @Test
     fun `M create multiple configurations W Builder { reusable builder }`() {
         // Given
         val builder = FlagsConfiguration.Builder()
-            .setEnableExposureLogging(true)
+            .setTrackExposures(true)
 
         // When
         val configuration1 = builder.build()
@@ -112,17 +112,17 @@ internal class FlagsConfigurationTest {
     fun `M modify builder after build W Builder { builder state preserved }`() {
         // Given
         val builder = FlagsConfiguration.Builder()
-            .setEnableExposureLogging(true)
+            .setTrackExposures(true)
 
         val firstConfiguration = builder.build()
 
         // When
-        builder.setEnableExposureLogging(false)
+        builder.setTrackExposures(false)
         val secondConfiguration = builder.build()
 
         // Then
-        assertThat(firstConfiguration.enableExposureLogging).isTrue()
-        assertThat(secondConfiguration.enableExposureLogging).isFalse()
+        assertThat(firstConfiguration.trackExposures).isTrue()
+        assertThat(secondConfiguration.trackExposures).isFalse()
     }
 
     // endregion
