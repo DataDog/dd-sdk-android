@@ -1,4 +1,11 @@
 object com.datadog.android.profiling.Profiling
+  fun enable(ProfilingConfiguration = ProfilingConfiguration.DEFAULT, com.datadog.android.api.SdkCore = Datadog.getInstance())
+data class com.datadog.android.profiling.ProfilingConfiguration
+  class Builder
+    fun useCustomEndpoint(String): Builder
+    fun build(): ProfilingConfiguration
+  companion object 
+    val DEFAULT: ProfilingConfiguration
 data class com.datadog.android.profiling.model.ProfilingEvent
   constructor(kotlin.collections.List<kotlin.String>, kotlin.String, kotlin.String, kotlin.String, kotlin.String, kotlin.String)
   fun toJson(): com.google.gson.JsonElement

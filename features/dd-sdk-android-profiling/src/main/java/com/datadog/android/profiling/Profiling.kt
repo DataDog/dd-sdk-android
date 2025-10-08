@@ -6,9 +6,38 @@
 
 package com.datadog.android.profiling
 
+import android.os.Build
+import androidx.annotation.RequiresApi
+import com.datadog.android.Datadog
+import com.datadog.android.api.SdkCore
+import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.profiling.internal.ProfilingFeature
+
 /**
  * An entry point to Datadog Profiling feature.
  */
 object Profiling {
-    // TODO RUM-11831: Integrate Perfetto Profiling Manager API
+
+    /**
+     * Enables the Perfetto based profiler to start recording callstack samples during application
+     * launch.
+     *
+     * @param configuration Configuration to use for the feature.
+     * @param sdkCore SDK instance to register feature in. If not provided, default SDK instance
+     * will be used.
+     */
+    @JvmStatic
+    @JvmOverloads
+    @RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
+    fun enable(
+        configuration: ProfilingConfiguration = ProfilingConfiguration.DEFAULT,
+        sdkCore: SdkCore = Datadog.getInstance()
+    ) {
+        val featureSdkCore = sdkCore as FeatureSdkCore
+        val profilingFeature = ProfilingFeature(
+            sdkCore = featureSdkCore,
+            configuration = configuration
+        )
+        featureSdkCore.registerFeature(profilingFeature)
+    }
 }
