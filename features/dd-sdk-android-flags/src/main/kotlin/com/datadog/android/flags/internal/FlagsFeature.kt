@@ -33,7 +33,7 @@ internal class FlagsFeature(private val sdkCore: FeatureSdkCore, private val fla
      * Registry of [FlagsClient] instances by name.
      * This map stores all clients created for this feature instance.
      */
-    internal val registeredClients: MutableMap<String, FlagsClient> = mutableMapOf()
+    private val registeredClients: MutableMap<String, FlagsClient> = mutableMapOf()
 
     /**
      * Gets a registered [FlagsClient] by name.
@@ -41,7 +41,7 @@ internal class FlagsFeature(private val sdkCore: FeatureSdkCore, private val fla
      * @param name The client name to lookup
      * @return The registered [FlagsClient], or null if not found
      */
-    internal fun getClient(name: String): FlagsClient? = registeredClients[name]
+    internal fun getClient(name: String): FlagsClient? = synchronized(registeredClients) { registeredClients[name] }
 
     internal fun getOrRegisterNewClient(name: String, newClientFactory: () -> FlagsClient): FlagsClient {
         synchronized(registeredClients) {

@@ -210,9 +210,10 @@ interface FlagsClient {
             name: String = DEFAULT_CLIENT_NAME,
             sdkCore: SdkCore = Datadog.getInstance()
         ): FlagsClient {
-            val logger = sdkCore.internalLogger
+            val featureCore = sdkCore as FeatureSdkCore
+            val logger = featureCore.internalLogger
 
-            val flagsFeature = sdkCore.getFeature(FLAGS_FEATURE_NAME)?.unwrap<FlagsFeature>()
+            val flagsFeature = featureCore.getFeature(FLAGS_FEATURE_NAME)?.unwrap<FlagsFeature>()
 
             if (flagsFeature == null) {
                 logger.log(
@@ -233,16 +234,17 @@ interface FlagsClient {
             var client = flagsFeature.getClient(name)
 
             if (client == null) {
+                val buildHint: String = if (name == DEFAULT_CLIENT_NAME) {
+                    "Create a client first using: FlagsClient.Builder().build(). "
+                } else {
+                    "Create a client first using: FlagsClient.Builder(\"$name\").build(). "
+                }
                 logger.log(
                     InternalLogger.Level.ERROR,
                     listOf(InternalLogger.Target.USER, InternalLogger.Target.MAINTAINER),
                     {
                         "No FlagsClient with name '$name' exists for SDK instance '${sdkCore.name}'. " +
-                            if (name == DEFAULT_CLIENT_NAME) {
-                                "Create a client first using: FlagsClient.Builder().build(). "
-                            } else {
-                                "Create a client first using: FlagsClient.Builder(\"$name\").build(). "
-                            } +
+                                buildHint +
                             "Returning NoOpFlagsClient which always returns default values."
                     }
                 )
