@@ -105,6 +105,7 @@ datadog:
       - "android.view.Window.peekDecorView()"
       - "android.view.inspector.WindowInspector.getGlobalWindowViews()"
       - "androidx.collection.LruCache.maxSize()"
+      - "androidx.collection.LruCache.put(com.datadog.android.flags.internal.ExposureEventsProcessor.CacheKey, kotlin.Boolean)"
       - "androidx.collection.LruCache.size()"
       - "androidx.collection.LruCache.hitCount()"
       - "androidx.collection.LruCache.missCount()"

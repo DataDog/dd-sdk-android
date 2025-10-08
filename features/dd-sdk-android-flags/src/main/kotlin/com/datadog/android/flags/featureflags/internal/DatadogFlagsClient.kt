@@ -9,6 +9,7 @@ package com.datadog.android.flags.featureflags.internal
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.Feature.Companion.FLAGS_FEATURE_NAME
 import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.flags.FlagsConfiguration
 import com.datadog.android.flags.featureflags.FlagsClient
 import com.datadog.android.flags.featureflags.internal.evaluation.EvaluationsManager
 import com.datadog.android.flags.featureflags.internal.model.PrecomputedFlag
@@ -28,11 +29,13 @@ import org.json.JSONObject
  * @param featureSdkCore the SDK core for logging and internal operations
  * @param evaluationsManager manages flag evaluations and network requests
  * @param flagsRepository local storage for precomputed flag values
+ * @param flagsConfiguration configuration for the flags feature
  */
 internal class DatadogFlagsClient(
     private val featureSdkCore: FeatureSdkCore,
     private val evaluationsManager: EvaluationsManager,
-    private val flagsRepository: FlagsRepository
+    private val flagsRepository: FlagsRepository,
+    private val flagsConfiguration: FlagsConfiguration
 ) : FlagsClient {
 
     /**
@@ -164,7 +167,7 @@ internal class DatadogFlagsClient(
         val precomputedFlag = flagsRepository.getPrecomputedFlag(flagKey)
         val convertedValue = precomputedFlag?.variationValue?.let(converter)
 
-        if (convertedValue != null) {
+        if (convertedValue != null && flagsConfiguration.enableExposureLogging) {
             writeExposureEvent(flagKey, precomputedFlag)
         }
 

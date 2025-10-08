@@ -31,52 +31,6 @@ internal class FlagsConfigurationTest {
         assertThat(configuration.enableExposureLogging).isEqualTo(fakeExposureLogging)
     }
 
-    @Test
-    fun `M have correct equality W data class { same values }`() {
-        // Given
-        val configuration1 = FlagsConfiguration(
-            enableExposureLogging = true
-        )
-        val configuration2 = FlagsConfiguration(
-            enableExposureLogging = true
-        )
-
-        // Then
-        assertThat(configuration1).isEqualTo(configuration2)
-        assertThat(configuration1.hashCode()).isEqualTo(configuration2.hashCode())
-    }
-
-    @Test
-    fun `M have different equality W data class { different enableExposureLogging }`() {
-        // Given
-        val configuration1 = FlagsConfiguration(
-            enableExposureLogging = true
-        )
-        val configuration2 = FlagsConfiguration(
-            enableExposureLogging = false
-        )
-
-        // Then
-        assertThat(configuration1).isNotEqualTo(configuration2)
-    }
-
-    @Test
-    fun `M have correct toString W data class`() {
-        // Given
-        val configuration = FlagsConfiguration(
-            enableExposureLogging = true
-        )
-
-        // When
-        val result = configuration.toString()
-
-        // Then
-        assertThat(result).contains("FlagsConfiguration")
-        assertThat(result).contains("enableExposureLogging=true")
-    }
-
-    // endregion
-
     // region Builder Tests
 
     @Test

@@ -8,6 +8,7 @@ package com.datadog.android.flags.featureflags.internal
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.flags.FlagsConfiguration
 import com.datadog.android.flags.featureflags.internal.evaluation.EvaluationsManager
 import com.datadog.android.flags.featureflags.internal.model.PrecomputedFlag
 import com.datadog.android.flags.featureflags.internal.model.PrecomputedFlagConstants
@@ -69,7 +70,8 @@ internal class DatadogFlagsClientTest {
         testedClient = DatadogFlagsClient(
             featureSdkCore = mockFeatureSdkCore,
             evaluationsManager = mockEvaluationsManager,
-            flagsRepository = mockFlagsRepository
+            flagsRepository = mockFlagsRepository,
+            flagsConfiguration = FlagsConfiguration.Builder().setEnableExposureLogging(true).build()
         )
     }
 
@@ -407,7 +409,8 @@ internal class DatadogFlagsClientTest {
         val client = DatadogFlagsClient(
             featureSdkCore = mockFeatureSdkCore,
             evaluationsManager = mockEvaluationsManager,
-            flagsRepository = customRepository
+            flagsRepository = customRepository,
+            flagsConfiguration = FlagsConfiguration.Builder().setEnableExposureLogging(true).build()
         )
 
         // Then
@@ -504,6 +507,75 @@ internal class DatadogFlagsClientTest {
         // Then
         // Verify that the evaluations manager was called to process the context
         verify(mockEvaluationsManager).updateEvaluationsForContext(any<EvaluationContext>())
+    }
+
+    // endregion
+
+    // region exposure logging configuration
+
+    @Test
+    fun `M not write exposure event W resolveBooleanValue() { enableExposureLogging is false }`(forge: Forge) {
+        // Given
+        val fakeFlagKey = forge.anAlphabeticalString()
+        val fakeFlagValue = forge.aBool()
+        val fakeDefaultValue = !fakeFlagValue
+        val fakeFlag = forge.getForgery<PrecomputedFlag>().copy(
+            variationType = PrecomputedFlagConstants.VariationType.BOOLEAN,
+            variationValue = fakeFlagValue.toString()
+        )
+        val fakeContext = EvaluationContext(
+            targetingKey = forge.anAlphabeticalString(),
+            attributes = emptyMap()
+        )
+
+        whenever(mockFlagsRepository.getPrecomputedFlag(fakeFlagKey)) doReturn fakeFlag
+        whenever(mockFlagsRepository.getEvaluationContext()) doReturn fakeContext
+        whenever(mockFeatureSdkCore.getFeature(any())) doReturn null
+
+        val clientWithLoggingDisabled = DatadogFlagsClient(
+            featureSdkCore = mockFeatureSdkCore,
+            evaluationsManager = mockEvaluationsManager,
+            flagsRepository = mockFlagsRepository,
+            flagsConfiguration = FlagsConfiguration.Builder().setEnableExposureLogging(false).build()
+        )
+
+        // When
+        val result = clientWithLoggingDisabled.resolveBooleanValue(fakeFlagKey, fakeDefaultValue)
+
+        // Then
+        assertThat(result).isEqualTo(fakeFlagValue)
+        // Verify that getFeature was never called since exposure logging is disabled
+        verify(mockFeatureSdkCore, never()).getFeature(any())
+    }
+
+    @Test
+    fun `M write exposure event W resolveBooleanValue() { enableExposureLogging is true }`(forge: Forge) {
+        // Given
+        val fakeFlagKey = forge.anAlphabeticalString()
+        val fakeFlagValue = forge.aBool()
+        val fakeDefaultValue = !fakeFlagValue
+        val fakeFlag = forge.getForgery<PrecomputedFlag>().copy(
+            variationType = PrecomputedFlagConstants.VariationType.BOOLEAN,
+            variationValue = fakeFlagValue.toString()
+        )
+        val fakeContext = EvaluationContext(
+            targetingKey = forge.anAlphabeticalString(),
+            attributes = emptyMap()
+        )
+
+        whenever(mockFlagsRepository.getPrecomputedFlag(fakeFlagKey)) doReturn fakeFlag
+        whenever(mockFlagsRepository.getEvaluationContext()) doReturn fakeContext
+        whenever(mockFeatureSdkCore.getFeature(any())) doReturn null
+
+        // Note: testedClient is configured with enableExposureLogging = true in setUp()
+
+        // When
+        val result = testedClient.resolveBooleanValue(fakeFlagKey, fakeDefaultValue)
+
+        // Then
+        assertThat(result).isEqualTo(fakeFlagValue)
+        // Verify that getFeature was called to attempt writing exposure event
+        verify(mockFeatureSdkCore).getFeature(any())
     }
 
     // endregion

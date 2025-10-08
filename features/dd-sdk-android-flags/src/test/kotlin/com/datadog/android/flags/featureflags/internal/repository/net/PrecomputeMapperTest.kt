@@ -23,6 +23,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
+import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.verify
@@ -84,8 +85,8 @@ internal class PrecomputeMapperTest {
         // Then
         assertThat(result).hasSize(1)
         val flag = result[fakeFlagName]
-        assertThat(flag).isNotNull
-        assertThat(flag!!.variationType).isEqualTo(PrecomputedFlagConstants.VariationType.STRING)
+        checkNotNull(flag)
+        assertThat(flag.variationType).isEqualTo(PrecomputedFlagConstants.VariationType.STRING)
         assertThat(flag.variationValue).isEqualTo(fakeStringValue)
         assertThat(flag.doLog).isEqualTo(fakeDoLog)
         assertThat(flag.allocationKey).isEqualTo(fakeAllocationKey)
@@ -113,8 +114,8 @@ internal class PrecomputeMapperTest {
         // Then
         assertThat(result).hasSize(1)
         val flag = result[fakeFlagName]
-        assertThat(flag).isNotNull
-        assertThat(flag!!.variationType).isEqualTo(PrecomputedFlagConstants.VariationType.BOOLEAN)
+        checkNotNull(flag)
+        assertThat(flag.variationType).isEqualTo(PrecomputedFlagConstants.VariationType.BOOLEAN)
         assertThat(flag.variationValue).isEqualTo("true")
         verifyNoInteractions(mockInternalLogger)
     }
@@ -137,8 +138,8 @@ internal class PrecomputeMapperTest {
         // Then
         assertThat(result).hasSize(1)
         val flag = result[fakeFlagName]
-        assertThat(flag).isNotNull
-        assertThat(flag!!.variationType).isEqualTo(PrecomputedFlagConstants.VariationType.BOOLEAN)
+        checkNotNull(flag)
+        assertThat(flag.variationType).isEqualTo(PrecomputedFlagConstants.VariationType.BOOLEAN)
         assertThat(flag.variationValue).isEqualTo("false")
         verifyNoInteractions(mockInternalLogger)
     }
@@ -161,8 +162,8 @@ internal class PrecomputeMapperTest {
         // Then
         assertThat(result).hasSize(1)
         val flag = result[fakeFlagName]
-        assertThat(flag).isNotNull
-        assertThat(flag!!.variationType).isEqualTo(PrecomputedFlagConstants.VariationType.INTEGER)
+        checkNotNull(flag)
+        assertThat(flag.variationType).isEqualTo(PrecomputedFlagConstants.VariationType.INTEGER)
         assertThat(flag.variationValue).isEqualTo(fakeIntValue.toString())
         verifyNoInteractions(mockInternalLogger)
     }
@@ -185,8 +186,8 @@ internal class PrecomputeMapperTest {
         // Then
         assertThat(result).hasSize(1)
         val flag = result[fakeFlagName]
-        assertThat(flag).isNotNull
-        assertThat(flag!!.variationType).isEqualTo(PrecomputedFlagConstants.VariationType.DOUBLE)
+        checkNotNull(flag)
+        assertThat(flag.variationType).isEqualTo(PrecomputedFlagConstants.VariationType.DOUBLE)
         assertThat(flag.variationValue).isEqualTo(fakeDoubleValue.toString())
         verifyNoInteractions(mockInternalLogger)
     }
@@ -213,8 +214,8 @@ internal class PrecomputeMapperTest {
         // Then
         assertThat(result).hasSize(1)
         val flag = result[fakeFlagName]
-        assertThat(flag).isNotNull
-        assertThat(flag!!.variationType).isEqualTo(PrecomputedFlagConstants.VariationType.JSON)
+        checkNotNull(flag)
+        assertThat(flag.variationType).isEqualTo(PrecomputedFlagConstants.VariationType.JSON)
         assertThat(flag.variationValue).isEqualTo(jsonValue.toString())
         verifyNoInteractions(mockInternalLogger)
     }
@@ -242,8 +243,8 @@ internal class PrecomputeMapperTest {
         // Then
         assertThat(result).hasSize(1)
         val flag = result[fakeFlagName]
-        assertThat(flag).isNotNull
-        assertThat(flag!!.extraLogging.toString()).isEqualTo(extraLogging.toString())
+        checkNotNull(flag)
+        assertThat(flag.extraLogging.toString()).isEqualTo(extraLogging.toString())
         verifyNoInteractions(mockInternalLogger)
     }
 
@@ -323,7 +324,7 @@ internal class PrecomputeMapperTest {
             eq(InternalLogger.Level.WARN),
             eq(InternalLogger.Target.MAINTAINER),
             messageCaptor.capture(),
-            org.mockito.kotlin.any(),
+            any(),
             eq(false),
             eq(null)
         )
@@ -348,7 +349,7 @@ internal class PrecomputeMapperTest {
             eq(InternalLogger.Level.WARN),
             eq(InternalLogger.Target.MAINTAINER),
             messageCaptor.capture(),
-            org.mockito.kotlin.any(),
+            any(),
             eq(false),
             eq(null)
         )
@@ -378,7 +379,7 @@ internal class PrecomputeMapperTest {
             eq(InternalLogger.Level.WARN),
             eq(InternalLogger.Target.MAINTAINER),
             messageCaptor.capture(),
-            org.mockito.kotlin.any(),
+            any(),
             eq(false),
             eq(null)
         )
@@ -413,7 +414,7 @@ internal class PrecomputeMapperTest {
             eq(InternalLogger.Level.WARN),
             eq(InternalLogger.Target.MAINTAINER),
             messageCaptor.capture(),
-            org.mockito.kotlin.any(),
+            any(),
             eq(false),
             eq(null)
         )
@@ -459,7 +460,7 @@ internal class PrecomputeMapperTest {
             eq(InternalLogger.Level.WARN),
             eq(InternalLogger.Target.MAINTAINER),
             messageCaptor.capture(),
-            org.mockito.kotlin.any(),
+            any(),
             eq(false),
             eq(null)
         )
@@ -482,7 +483,7 @@ internal class PrecomputeMapperTest {
             eq(InternalLogger.Level.WARN),
             eq(InternalLogger.Target.MAINTAINER),
             messageCaptor.capture(),
-            org.mockito.kotlin.any(),
+            any(),
             eq(false),
             eq(null)
         )
@@ -527,8 +528,8 @@ internal class PrecomputeMapperTest {
         // Then
         assertThat(result).hasSize(1)
         val flag = result[fakeFlagName]
-        assertThat(flag).isNotNull
-        assertThat(flag!!.variationValue).isEqualTo("null")
+        checkNotNull(flag)
+        assertThat(flag.variationValue).isEqualTo("null")
         verifyNoInteractions(mockInternalLogger)
     }
 

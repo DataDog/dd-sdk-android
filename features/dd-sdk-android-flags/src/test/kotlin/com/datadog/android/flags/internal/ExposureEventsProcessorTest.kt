@@ -576,11 +576,15 @@ internal class ExposureEventsProcessorTest {
     }
 
     @Test
-    fun `M handle concurrent different flags W processEvent() { stress test }`() {
-        // Given - stay within LRU cache size of 100
+    fun `M handle concurrent different flags W processEvent() { many threads with repeated accesses }`(forge: Forge) {
+        // Given - testing thread-safe duplicate detection with moderate concurrency
+        // flagsPerThread: min 10 provides sufficient distinct entries to test concurrency,
+        // max 50 keeps test runtime reasonable (10 threads * 50 flags = 500 unique entries)
+        // executionsPerFlag: min 5 ensures duplicate detection is exercised under concurrent load,
+        // max 20 balances thorough testing with reasonable test runtime
         val threadCount = 10
-        val flagsPerThread = 9 // 10 * 9 = 90 unique entries, safely under 100
-        val executionsPerFlag = 10
+        val flagsPerThread = forge.anInt(min = 10, max = 50)
+        val executionsPerFlag = forge.anInt(min = 5, max = 20)
         val totalExpectedWrites = threadCount * flagsPerThread
 
         // When
@@ -607,7 +611,7 @@ internal class ExposureEventsProcessorTest {
         threads.forEach { it.start() }
         threads.forEach { it.join() }
 
-        // Then
+        // Then - each unique entry should be written exactly once
         verify(mockRecordWriter, times(totalExpectedWrites)).write(any())
     }
 
