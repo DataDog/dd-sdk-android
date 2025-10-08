@@ -28,7 +28,7 @@ internal class FlagsPersistenceManager(
         loadFlagsState(onStateLoaded)
     }
 
-    private fun getFlagsStateKey(): String = "$FLAGS_STATE_KEY_PREFIX-$instanceName"
+    private val flagsStateKey: String = "$FLAGS_STATE_KEY_PREFIX-$instanceName"
 
     internal fun saveFlagsState(
         context: EvaluationContext,
@@ -42,7 +42,7 @@ internal class FlagsPersistenceManager(
         )
 
         dataStore.setValue(
-            key = getFlagsStateKey(),
+            key = flagsStateKey,
             data = entry,
             serializer = serializer,
             callback = callback
@@ -51,7 +51,7 @@ internal class FlagsPersistenceManager(
 
     private fun loadFlagsState(onStateLoaded: (FlagsStateEntry?) -> Unit) {
         dataStore.value(
-            key = getFlagsStateKey(),
+            key = flagsStateKey,
             deserializer = deserializer,
             callback = object : DataStoreReadCallback<FlagsStateEntry> {
                 override fun onSuccess(dataStoreContent: DataStoreContent<FlagsStateEntry>?) {

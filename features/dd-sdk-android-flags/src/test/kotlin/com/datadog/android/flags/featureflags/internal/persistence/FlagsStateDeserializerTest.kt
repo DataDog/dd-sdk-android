@@ -192,36 +192,10 @@ internal class FlagsStateDeserializerTest {
         val result = testedDeserializer.deserialize(json.toString())
 
         // Then
-        assertThat(result).isNotNull()
-        assertThat(result!!.evaluationContext.attributes).hasSize(3)
+        checkNotNull(result)
+        assertThat(result.evaluationContext.attributes).hasSize(3)
         assertThat(result.evaluationContext.attributes["valid_string"]).isEqualTo(validString)
         assertThat(result.evaluationContext.attributes["valid_number"]).isEqualTo(validNumber)
         assertThat(result.evaluationContext.attributes["valid_boolean"]).isEqualTo(validBoolean)
-    }
-
-    @Test
-    fun `M use current timestamp W deserialize() { missing timestamp }`(forge: Forge) {
-        // Given
-        val targetingKey = forge.anAlphabeticalString()
-        val json = JSONObject().apply {
-            put(
-                "evaluationContext",
-                JSONObject().apply {
-                    put("targetingKey", targetingKey)
-                    put("attributes", JSONObject())
-                }
-            )
-            put("flags", JSONObject())
-            // Missing lastUpdateTimestamp
-        }
-
-        // When
-        val beforeDeserialize = System.currentTimeMillis()
-        val result = testedDeserializer.deserialize(json.toString())
-        val afterDeserialize = System.currentTimeMillis()
-
-        // Then
-        assertThat(result).isNotNull()
-        assertThat(result!!.lastUpdateTimestamp).isBetween(beforeDeserialize, afterDeserialize)
     }
 }

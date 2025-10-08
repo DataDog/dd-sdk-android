@@ -74,19 +74,11 @@ internal class FlagsStateSerializerTest {
         // Then
         assertThat(serialized).isNotEmpty()
 
-        val json = JSONObject(serialized)
-        assertThat(json.has("evaluationContext")).isTrue()
-        assertThat(json.has("flags")).isTrue()
-        assertThat(json.has("lastUpdateTimestamp")).isTrue()
-
-        val contextJson = json.getJSONObject("evaluationContext")
-        assertThat(contextJson.getString("targetingKey")).isEqualTo(targetingKey)
-
-        val flagsJson = json.getJSONObject("flags")
-        assertThat(flagsJson.has("flag1")).isTrue()
-        assertThat(flagsJson.has("flag2")).isTrue()
-
-        assertThat(json.getLong("lastUpdateTimestamp")).isEqualTo(timestamp)
+        SerializedFlagsStateAssert.assertThatSerializedFlagsState(serialized)
+            .hasTargetingKey(targetingKey)
+            .hasFlag("flag1")
+            .hasFlag("flag2")
+            .hasTimestamp(timestamp)
     }
 
     @Test
@@ -102,13 +94,8 @@ internal class FlagsStateSerializerTest {
         // Then
         assertThat(serialized).isNotEmpty()
 
-        val json = JSONObject(serialized)
-        assertThat(json.has("evaluationContext")).isTrue()
-        assertThat(json.has("flags")).isTrue()
-        assertThat(json.has("lastUpdateTimestamp")).isTrue()
-
-        val flagsJson = json.getJSONObject("flags")
-        assertThat(flagsJson.length()).isEqualTo(0)
+        SerializedFlagsStateAssert.assertThatSerializedFlagsState(serialized)
+            .hasEmptyFlags()
     }
 
     @Test
@@ -124,9 +111,7 @@ internal class FlagsStateSerializerTest {
         // Then
         assertThat(serialized).isNotEmpty()
         // Should still produce valid JSON even in edge cases
-        val json = JSONObject(serialized)
-        assertThat(json.has("evaluationContext")).isTrue()
-        assertThat(json.has("flags")).isTrue()
-        assertThat(json.has("lastUpdateTimestamp")).isTrue()
+        SerializedFlagsStateAssert.assertThatSerializedFlagsState(serialized)
+            .hasEmptyFlags()
     }
 }

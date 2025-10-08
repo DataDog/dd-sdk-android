@@ -418,7 +418,7 @@ internal class DatadogFlagsClientTest {
 
         // Then
         val result = client.resolveStringValue(fakeFlagKey, fakeDefaultValue)
-        
+
         assertThat(result).isEqualTo(fakeFlagValue)
 
         verify(customRepository).getPrecomputedFlag(fakeFlagKey)

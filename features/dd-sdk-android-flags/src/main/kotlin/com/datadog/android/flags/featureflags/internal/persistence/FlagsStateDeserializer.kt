@@ -32,11 +32,7 @@ internal class FlagsStateDeserializer(
             val flags = deserializeFlags(flagsJson)
 
             @Suppress("UnsafeThirdPartyFunctionCall") // JSONObject operations wrapped in try-catch
-            val timestamp = try {
-                json.getLong(JsonKeys.LAST_UPDATE_TIMESTAMP.value)
-            } catch (_: JSONException) {
-                System.currentTimeMillis()
-            }
+            val timestamp = json.getLong(JsonKeys.LAST_UPDATE_TIMESTAMP.value)
 
             FlagsStateEntry(
                 evaluationContext = evaluationContext,

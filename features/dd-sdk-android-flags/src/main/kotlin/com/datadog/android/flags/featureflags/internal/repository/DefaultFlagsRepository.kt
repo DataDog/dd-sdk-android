@@ -9,6 +9,7 @@ package com.datadog.android.flags.featureflags.internal.repository
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.storage.datastore.DataStoreHandler
+import com.datadog.android.api.storage.datastore.DataStoreWriteCallback
 import com.datadog.android.flags.featureflags.internal.model.PrecomputedFlag
 import com.datadog.android.flags.featureflags.internal.persistence.FlagsPersistenceManager
 import com.datadog.android.flags.featureflags.model.EvaluationContext
@@ -37,7 +38,22 @@ internal class DefaultFlagsRepository(
     override fun setFlagsAndContext(context: EvaluationContext, flags: Map<String, PrecomputedFlag>) {
         val newState = FlagsState(context, flags)
         atomicState.set(newState)
-        persistenceManager.saveFlagsState(context, flags)
+        persistenceManager.saveFlagsState(
+            context = context,
+            flags = flags,
+            object : DataStoreWriteCallback {
+                override fun onSuccess() {
+                }
+
+                override fun onFailure() {
+                    internalLogger.log(
+                        target = InternalLogger.Target.MAINTAINER,
+                        level = InternalLogger.Level.WARN,
+                        messageBuilder = { ERROR_SAVING_FLAGS_STATE }
+                    )
+                }
+            }
+        )
     }
 
     override fun getPrecomputedFlag(key: String): PrecomputedFlag? {
@@ -65,5 +81,6 @@ internal class DefaultFlagsRepository(
     companion object {
         const val WARN_CONTEXT_NOT_SET = "You must call FlagsClientManager.get().setEvaluationContext " +
             "in order to have flags available"
+        const val ERROR_SAVING_FLAGS_STATE = "Failed to save flags state to persistent storage"
     }
 }
