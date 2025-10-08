@@ -11,17 +11,6 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.flags.featureflags.internal.model.FlagsContext
 
 internal object EndpointsHelper {
-
-    /**
-     * Configuration for a Datadog site endpoint.
-     * @param dc The datacenter identifier (e.g., "us3", "ap1"), null if not needed
-     * @param tld The top-level domain (e.g., "com", "eu"), defaults to "com"
-     */
-    internal data class SiteConfig(
-        val dc: String? = null,
-        val tld: String = "com"
-    )
-
     /**
      * Gets the endpoint URL for feature flag requests.
      * Uses the configured custom flag endpoint if provided, otherwise builds from the Datadog site.
@@ -54,48 +43,28 @@ internal object EndpointsHelper {
         DatadogSite.STAGING -> {
             "$customerDomain.ff-cdn.datad0g.com"
         }
-        in siteConfig -> {
-            val siteConfiguration = siteConfig[site]
-            if (siteConfiguration != null) {
-                val dc = siteConfiguration.dc ?: ""
-                val tld = siteConfiguration.tld
-
-                // customer domain is for future use
-                // ff-cdn is the subdomain pointing to the CDN servers
-                // dc is the datacenter, if specified
-                // tld is the top level domain, changes for eu DCs
-                "$customerDomain.ff-cdn.${if (dc.isNotEmpty()) "$dc." else ""}datadoghq.$tld"
-            } else {
-                // This should never happen since we're in the 'in siteConfig' branch,
-                // but handle it safely just in case
-                internalLogger.log(
-                    level = InternalLogger.Level.ERROR,
-                    target = InternalLogger.Target.MAINTAINER,
-                    messageBuilder = { "Site configuration unexpectedly null for site: $site" }
-                )
-                null
-            }
+        DatadogSite.EU1 -> {
+            buildHost(customerDomain, "", "eu")
         }
-        else -> {
-            val supportedSites = siteConfig.keys.joinToString(", ")
-            internalLogger.log(
-                level = InternalLogger.Level.ERROR,
-                target = InternalLogger.Target.MAINTAINER,
-                messageBuilder = { "Unsupported site: $site. Supported sites: $supportedSites" }
-            )
-            null
+        DatadogSite.US1 -> {
+            buildHost(customerDomain, "", "com")
+        }
+        DatadogSite.US3 -> {
+            buildHost(customerDomain, "us3", "com")
+        }
+        DatadogSite.US5 -> {
+            buildHost(customerDomain, "us5", "com")
+        }
+        DatadogSite.AP1 -> {
+            buildHost(customerDomain, "ap1", "com")
+        }
+        DatadogSite.AP2 -> {
+            buildHost(customerDomain, "ap2", "com")
         }
     }
+    private fun buildHost(customerDomain: String, dc: String?, tld: String = "com"): String 
+        = "$customerDomain.ff-cdn.${if (dc?.isNotEmpty() == true) "$dc." else ""}datadoghq.$tld"
 
-    private val siteConfig: Map<DatadogSite, SiteConfig> = mapOf(
-        DatadogSite.US1 to SiteConfig(), // us1 host is customer-domain.ff-cdn.datadoghq.com, so no DC param needed
-        DatadogSite.US3 to SiteConfig(dc = "us3"),
-        DatadogSite.US5 to SiteConfig(dc = "us5"),
-        DatadogSite.AP1 to SiteConfig(dc = "ap1"),
-        DatadogSite.AP2 to SiteConfig(dc = "ap2"),
-        DatadogSite.EU1 to SiteConfig(tld = "eu")
-    )
-
-    private const val ERROR_GOV_NOT_SUPPORTED = "ddog-gov.com is not supported for flagging endpoints"
+    private const val ERROR_GOV_NOT_SUPPORTED = "US1_FED is not yet supported for flagging endpoints"
     private const val FLAGS_ENDPOINT = "/precompute-assignments"
 }
