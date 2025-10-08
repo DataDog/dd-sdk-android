@@ -35,6 +35,11 @@ interface Feature {
         // names of main features to have a single place where they are defined
 
         /**
+         * Flags feature name.
+         */
+        const val FLAGS_FEATURE_NAME: String = "flags"
+
+        /**
          * Logs feature name.
          */
         const val LOGS_FEATURE_NAME: String = "logs"

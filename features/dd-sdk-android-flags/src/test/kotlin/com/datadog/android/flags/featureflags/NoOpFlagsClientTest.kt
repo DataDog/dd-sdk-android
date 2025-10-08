@@ -80,7 +80,7 @@ internal class NoOpFlagsClientTest {
         // Then
         verify(mockInternalLogger).log(
             eq(InternalLogger.Level.ERROR),
-            eq(listOf(InternalLogger.Target.USER, InternalLogger.Target.MAINTAINER)),
+            eq(InternalLogger.Target.MAINTAINER),
             any(),
             eq(null),
             eq(false),
@@ -130,7 +130,7 @@ internal class NoOpFlagsClientTest {
         // Then
         verify(mockInternalLogger).log(
             eq(InternalLogger.Level.ERROR),
-            eq(listOf(InternalLogger.Target.USER, InternalLogger.Target.MAINTAINER)),
+            eq(InternalLogger.Target.MAINTAINER),
             any(),
             eq(null),
             eq(false),
@@ -180,7 +180,7 @@ internal class NoOpFlagsClientTest {
         // Then
         verify(mockInternalLogger).log(
             eq(InternalLogger.Level.ERROR),
-            eq(listOf(InternalLogger.Target.USER, InternalLogger.Target.MAINTAINER)),
+            eq(InternalLogger.Target.MAINTAINER),
             any(),
             eq(null),
             eq(false),
@@ -243,7 +243,7 @@ internal class NoOpFlagsClientTest {
         // Then
         verify(mockInternalLogger).log(
             eq(InternalLogger.Level.ERROR),
-            eq(listOf(InternalLogger.Target.USER, InternalLogger.Target.MAINTAINER)),
+            eq(InternalLogger.Target.MAINTAINER),
             any(),
             eq(null),
             eq(false),
@@ -306,7 +306,7 @@ internal class NoOpFlagsClientTest {
         // Then
         verify(mockInternalLogger).log(
             eq(InternalLogger.Level.ERROR),
-            eq(listOf(InternalLogger.Target.USER, InternalLogger.Target.MAINTAINER)),
+            eq(InternalLogger.Target.MAINTAINER),
             any(),
             eq(null),
             eq(false),
@@ -360,7 +360,7 @@ internal class NoOpFlagsClientTest {
         // Then
         verify(mockInternalLogger).log(
             eq(InternalLogger.Level.ERROR),
-            eq(listOf(InternalLogger.Target.USER, InternalLogger.Target.MAINTAINER)),
+            eq(InternalLogger.Target.MAINTAINER),
             any(),
             eq(null),
             eq(false),

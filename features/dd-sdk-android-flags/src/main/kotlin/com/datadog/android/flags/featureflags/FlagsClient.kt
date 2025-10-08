@@ -9,6 +9,7 @@ package com.datadog.android.flags.featureflags
 import com.datadog.android.Datadog
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.SdkCore
+import com.datadog.android.api.feature.Feature.Companion.FLAGS_FEATURE_NAME
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.flags.FlagsConfiguration
@@ -21,7 +22,6 @@ import com.datadog.android.flags.featureflags.internal.repository.net.Precompute
 import com.datadog.android.flags.featureflags.internal.repository.net.PrecomputedAssignmentsDownloader
 import com.datadog.android.flags.featureflags.model.EvaluationContext
 import com.datadog.android.flags.internal.FlagsFeature
-import com.datadog.android.flags.internal.FlagsFeature.Companion.FLAGS_FEATURE_NAME
 import org.json.JSONObject
 
 /**
@@ -127,38 +127,15 @@ interface FlagsClient {
      * val client = FlagsClient.Builder("analytics").build()
      * ```
      *
-     * With custom configuration:
-     * ```
-     * val client = FlagsClient.Builder("analytics")
-     *     .useCustomEndpoint("https://custom.endpoint.com")
-     *     .build()
-     * ```
-     *
      * With custom SDK core:
      * ```
-     * val client = FlagsClient.Builder(name = "analytics", sdkCore = customCore)
-     *     .useFlaggingProxy("https://proxy.example.com")
+     * val client = FlagsClient.Builder(sdkCore = customCore)
      *     .build()
      * ```
      */
     class Builder {
         private val name: String
-        private val sdkCore: SdkCore
-
-        // Optional configuration overrides (null = use feature default)
-        private var explicitCustomEndpoint: String? = null
-        private var explicitFlaggingProxy: String? = null
-        private var explicitEnableExposureLogging: Boolean? = null
-
-        /**
-         * Creates a builder for the default [FlagsClient].
-         *
-         * @param sdkCore the SDK instance to associate with this [FlagsClient]. Defaults to main instance.
-         */
-        constructor(sdkCore: SdkCore = Datadog.getInstance()) {
-            this.name = Companion.DEFAULT_CLIENT_NAME
-            this.sdkCore = sdkCore
-        }
+        private val sdkCore: FeatureSdkCore
 
         /**
          * Creates a builder for a named [FlagsClient].
@@ -169,48 +146,9 @@ interface FlagsClient {
          * @param name the client name. Must be non-empty.
          * @param sdkCore the SDK instance to associate with this client. Defaults to main instance.
          */
-        constructor(name: String, sdkCore: SdkCore = Datadog.getInstance()) {
+        constructor(name: String = DEFAULT_CLIENT_NAME, sdkCore: SdkCore = Datadog.getInstance()) {
             this.name = name
-            this.sdkCore = sdkCore
-        }
-
-        /**
-         * Sets a custom endpoint URL for uploading exposure events (flag evaluations).
-         * If not called, uses the default from [FlagsFeature] configuration.
-         *
-         * @param endpoint The full endpoint URL, e.g., https://example.com/exposure/upload.
-         *                 If null, uses the default from feature configuration.
-         * @return this Builder instance for chaining.
-         */
-        fun useCustomExposureEndpoint(endpoint: String?): Builder {
-            this.explicitCustomEndpoint = endpoint
-            return this
-        }
-
-        /**
-         * Sets a custom endpoint URL for fetching precomputed flag assignments (flagging proxy).
-         * If not called, uses the default from [FlagsFeature] configuration.
-         *
-         * @param endpoint The full proxy endpoint URL, e.g., https://proxy.example.com/flags.
-         *                 If null, uses the default from feature configuration.
-         * @return this Builder instance for chaining.
-         */
-        fun useCustomFlagEndpoint(endpoint: String?): Builder {
-            this.explicitFlaggingProxy = endpoint
-            return this
-        }
-
-        /**
-         * Sets whether exposure events should be tracked.
-         *
-         * If not called, uses the default from [FlagsFeature] configuration.
-         *
-         * @param enabled whether to enable exposure tracking.
-         * @return this Builder instance for chaining.
-         */
-        fun setEnableExposureLogging(enabled: Boolean): Builder {
-            this.explicitEnableExposureLogging = enabled
-            return this
+            this.sdkCore = sdkCore as FeatureSdkCore
         }
 
         /**
@@ -218,9 +156,8 @@ interface FlagsClient {
          *
          * This method:
          * 1. Validates the [FlagsFeature] is enabled
-         * 2. Merges builder config with feature defaults (selective override)
-         * 3. Creates and registers the client
-         * 4. Returns the created client or [NoOpFlagsClient] on failure
+         * 2. Creates and registers the client
+         * 3. Returns the created client or [NoOpFlagsClient] on failure
          *
          * If a [FlagsClient] with the same name already exists for this [SdkCore]:
          * - Logs a warning (WARN level, USER target)
@@ -228,77 +165,34 @@ interface FlagsClient {
          *
          * @return the created [FlagsClient], existing client, or [NoOpFlagsClient].
          */
-        @Suppress("ReturnCount")
         fun build(): FlagsClient {
             // Validate that the Flags feature is enabled
-            val flagsFeature = (sdkCore as? FeatureSdkCore)
-                ?.getFeature(FLAGS_FEATURE_NAME)
+            val flagsFeature = sdkCore
+                .getFeature(FLAGS_FEATURE_NAME)
                 ?.unwrap<FlagsFeature>()
 
             if (flagsFeature == null) {
                 return NoOpFlagsClient(
                     name = name,
                     reason = "Flags feature not enabled",
-                    logger = (sdkCore as? FeatureSdkCore)?.internalLogger
+                    logger = sdkCore.internalLogger
                 )
             }
 
-            val key = Companion.ClientKey(sdkCore, name)
-
-            synchronized(Companion.registeredClients) {
-                // Check for existing client
-                val existingClient = Companion.registeredClients[key]
-                if (existingClient != null) {
-                    logWarning(
-                        sdkCore,
-                        "Attempted to create a FlagsClient named '$name', but one already exists. " +
-                            "Existing client will be used, and new configuration will be ignored."
-                    )
-                    return existingClient
-                }
-
-                // Merge configuration (selective override using data class copy)
-                val featureConfig = flagsFeature.flagsConfiguration
-                val mergedConfig = FlagsConfiguration(
-                    customExposureEndpoint = explicitCustomEndpoint ?: featureConfig.customExposureEndpoint,
-                    customFlagEndpoint = explicitFlaggingProxy ?: featureConfig.customFlagEndpoint,
-                    enableExposureLogging =
-                    explicitEnableExposureLogging ?: flagsFeature.flagsConfiguration.enableExposureLogging
-                )
-
-                // Create and register client
-                val newClient = Companion.createInternal(mergedConfig, sdkCore as FeatureSdkCore, flagsFeature)
-                if (newClient !is NoOpFlagsClient) {
-                    Companion.registeredClients[key] = newClient
-                }
-                return newClient
+            return flagsFeature.getOrRegisterNewClient(name) {
+                createInternal(flagsFeature.getFlagsConfiguration(), sdkCore, flagsFeature)
             }
-        }
-
-        private fun logWarning(sdkCore: SdkCore, message: String) {
-            (sdkCore as? FeatureSdkCore)?.internalLogger?.log(
-                InternalLogger.Level.WARN,
-                InternalLogger.Target.USER,
-                { message }
-            )
         }
     }
 
     /**
      * Companion object providing static access to [FlagsClient] instances.
      *
-     * This companion manages the registration and retrieval of [FlagsClient] instances
-     * per SDK core, ensuring thread-safe access and proper lifecycle management.
+     * This companion manages the retrieval of [FlagsClient] instances from the [FlagsFeature],
+     * ensuring thread-safe access and proper lifecycle management.
      */
     companion object {
-        /**
-         * Composite key for storing multiple named clients per SDK core.
-         */
-        private data class ClientKey(val sdkCore: SdkCore, val name: String)
-
         private const val DEFAULT_CLIENT_NAME = "default"
-
-        private val registeredClients: MutableMap<ClientKey, FlagsClient> = mutableMapOf()
 
         /**
          * Gets the [FlagsClient] with the specified name from the SDK core.
@@ -312,70 +206,58 @@ interface FlagsClient {
          */
         @JvmOverloads
         @JvmStatic
-        fun get(name: String = DEFAULT_CLIENT_NAME, sdkCore: SdkCore = Datadog.getInstance()): FlagsClient {
-            val key = ClientKey(sdkCore, name)
+        fun get(
+            name: String = DEFAULT_CLIENT_NAME,
+            sdkCore: FeatureSdkCore = Datadog.getInstance() as FeatureSdkCore
+        ): FlagsClient {
+            val logger = sdkCore.internalLogger
 
-            synchronized(registeredClients) {
-                val client = registeredClients[key]
+            val flagsFeature = sdkCore.getFeature(FLAGS_FEATURE_NAME)?.unwrap<FlagsFeature>()
 
-                if (client == null) {
-                    val logger = (sdkCore as? FeatureSdkCore)?.internalLogger
+            if (flagsFeature == null) {
+                logger.log(
+                    InternalLogger.Level.ERROR,
+                    listOf(InternalLogger.Target.USER, InternalLogger.Target.MAINTAINER),
+                    {
+                        "Flags feature is not enabled. Returning NoOpFlagsClient which always returns default values."
+                    }
+                )
 
-                    // Log at get() level for visibility
-                    logger?.log(
-                        InternalLogger.Level.ERROR,
-                        listOf(InternalLogger.Target.USER, InternalLogger.Target.MAINTAINER),
-                        {
-                            "No FlagsClient with name '$name' exists for SDK instance '${sdkCore.name}'. " +
-                                if (name == DEFAULT_CLIENT_NAME) {
-                                    "Create a client first using: FlagsClient.Builder().build(). "
-                                } else {
-                                    "Create a client first using: FlagsClient.Builder(\"$name\").build(). "
-                                } +
-                                "Returning NoOpFlagsClient which always returns default values."
-                        }
-                    )
-
-                    return NoOpFlagsClient(
-                        name = name,
-                        reason = "Client '$name' not found - get() called before build()",
-                        logger = logger
-                    )
-                }
-
-                return client
+                return NoOpFlagsClient(
+                    name = name,
+                    reason = "Flags feature not enabled",
+                    logger = logger
+                )
             }
+
+            var client = flagsFeature.getClient(name)
+
+            if (client == null) {
+                logger.log(
+                    InternalLogger.Level.ERROR,
+                    listOf(InternalLogger.Target.USER, InternalLogger.Target.MAINTAINER),
+                    {
+                        "No FlagsClient with name '$name' exists for SDK instance '${sdkCore.name}'. " +
+                            if (name == DEFAULT_CLIENT_NAME) {
+                                "Create a client first using: FlagsClient.Builder().build(). "
+                            } else {
+                                "Create a client first using: FlagsClient.Builder(\"$name\").build(). "
+                            } +
+                            "Returning NoOpFlagsClient which always returns default values."
+                    }
+                )
+
+                client = NoOpFlagsClient(
+                    name = name,
+                    reason = "Client '$name' not found - get() called before build()",
+                    logger = logger
+                )
+            }
+
+            return client
         }
 
         // region Internal
-
-        internal fun registerIfAbsent(client: FlagsClient, sdkCore: FeatureSdkCore, clientName: String) {
-            val clientKey = ClientKey(sdkCore, clientName)
-            synchronized(registeredClients) {
-                if (registeredClients.containsKey(clientKey)) {
-                    sdkCore.internalLogger.log(
-                        InternalLogger.Level.WARN,
-                        InternalLogger.Target.USER,
-                        { "A FlagsClient has already been registered for this SDK instance" }
-                    )
-                } else {
-                    registeredClients[clientKey] = client
-                }
-            }
-        }
-
-        internal fun unregister(sdkCore: SdkCore = Datadog.getInstance()) {
-            synchronized(registeredClients) {
-                val key = ClientKey(sdkCore, DEFAULT_CLIENT_NAME)
-                registeredClients.remove(key)
-            }
-        }
-
-        internal fun clear() {
-            synchronized(registeredClients) {
-                registeredClients.clear()
-            }
-        }
 
         internal const val FLAGS_CLIENT_EXECUTOR_NAME = "flags-client-executor"
 
@@ -433,7 +315,7 @@ interface FlagsClient {
 
                 // Create downloader with factory
                 val flagsNetworkManager = PrecomputedAssignmentsDownloader(
-                    sdkCore = sdkCore as InternalSdkCore,
+                    sdkCore = sdkCore,
                     internalLogger = sdkCore.internalLogger,
                     flagsContext = flagsContext,
                     requestFactory = precomputedRequestFactory
@@ -458,7 +340,5 @@ interface FlagsClient {
         }
 
         // endregion
-
-        internal const val FLAGS_NOT_ENABLED_MESSAGE = "Flags feature is not enabled"
     }
 }

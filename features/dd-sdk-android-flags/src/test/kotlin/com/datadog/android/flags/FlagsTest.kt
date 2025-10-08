@@ -7,9 +7,9 @@
 package com.datadog.android.flags
 
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.feature.Feature.Companion.FLAGS_FEATURE_NAME
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.flags.internal.FlagsFeature
-import com.datadog.android.flags.internal.FlagsFeature.Companion.FLAGS_FEATURE_NAME
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -75,8 +75,8 @@ internal class FlagsTest {
         argumentCaptor<FlagsFeature> {
             verify(mockSdkCore).registerFeature(capture())
             assertThat(lastValue.name).isEqualTo(FLAGS_FEATURE_NAME)
-            assertThat(lastValue.flagsConfiguration.customExposureEndpoint).isEqualTo(fakeCustomEndpoint)
-            assertThat(lastValue.flagsConfiguration.customFlagEndpoint).isEqualTo(fakeFlaggingProxy)
+            assertThat(lastValue.getFlagsConfiguration().customExposureEndpoint).isEqualTo(fakeCustomEndpoint)
+            assertThat(lastValue.getFlagsConfiguration().customFlagEndpoint).isEqualTo(fakeFlaggingProxy)
         }
     }
 
@@ -88,15 +88,15 @@ internal class FlagsTest {
         // Then
         argumentCaptor<FlagsFeature> {
             verify(mockSdkCore).registerFeature(capture())
-            assertThat(lastValue.flagsConfiguration.customExposureEndpoint).isNull()
-            assertThat(lastValue.flagsConfiguration.customFlagEndpoint).isNull()
+            assertThat(lastValue.getFlagsConfiguration().customExposureEndpoint).isNull()
+            assertThat(lastValue.getFlagsConfiguration().customFlagEndpoint).isNull()
         }
     }
 
     @Test
     fun `M pass default configuration to FlagsFeature W enable() { default config }`() {
         // Given
-        val defaultConfiguration = FlagsConfiguration.defaultConfiguration()
+        val defaultConfiguration = FlagsConfiguration.default()
 
         // When
         Flags.enable(defaultConfiguration, mockSdkCore)
@@ -104,8 +104,8 @@ internal class FlagsTest {
         // Then
         argumentCaptor<FlagsFeature> {
             verify(mockSdkCore).registerFeature(capture())
-            assertThat(lastValue.flagsConfiguration.customExposureEndpoint).isNull()
-            assertThat(lastValue.flagsConfiguration.customFlagEndpoint).isNull()
+            assertThat(lastValue.getFlagsConfiguration().customExposureEndpoint).isNull()
+            assertThat(lastValue.getFlagsConfiguration().customFlagEndpoint).isNull()
         }
     }
 
@@ -123,8 +123,8 @@ internal class FlagsTest {
         // Then
         argumentCaptor<FlagsFeature> {
             verify(mockSdkCore).registerFeature(capture())
-            assertThat(lastValue.flagsConfiguration.customExposureEndpoint).isNull()
-            assertThat(lastValue.flagsConfiguration.customFlagEndpoint).isNull()
+            assertThat(lastValue.getFlagsConfiguration().customExposureEndpoint).isNull()
+            assertThat(lastValue.getFlagsConfiguration().customFlagEndpoint).isNull()
         }
     }
 
@@ -143,7 +143,7 @@ internal class FlagsTest {
         // Then
         argumentCaptor<FlagsFeature> {
             verify(mockSdkCore).registerFeature(capture())
-            assertThat(lastValue.flagsConfiguration.customExposureEndpoint).isEqualTo(fakeCustomEndpoint)
+            assertThat(lastValue.getFlagsConfiguration().customExposureEndpoint).isEqualTo(fakeCustomEndpoint)
         }
     }
 
@@ -162,7 +162,7 @@ internal class FlagsTest {
         // Then
         argumentCaptor<FlagsFeature> {
             verify(mockSdkCore).registerFeature(capture())
-            assertThat(lastValue.flagsConfiguration.customFlagEndpoint).isEqualTo(fakeFlaggingProxy)
+            assertThat(lastValue.getFlagsConfiguration().customFlagEndpoint).isEqualTo(fakeFlaggingProxy)
         }
     }
 

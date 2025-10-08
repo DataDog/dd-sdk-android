@@ -1461,6 +1461,39 @@ internal class DatadogCoreTest {
         assertThat(isActive).isTrue()
     }
 
+    @Test
+    fun `M delegate to core feature W createOkHttpCallFactory()`() {
+        // Given
+        testedCore.initialize(fakeConfiguration)
+
+        // When
+        val callFactory = testedCore.createOkHttpCallFactory {
+            callTimeout(45, TimeUnit.SECONDS)
+            writeTimeout(30, TimeUnit.SECONDS)
+        }
+
+        // Then
+        assertThat(callFactory).isNotNull()
+        val request = okhttp3.Request.Builder().url("https://example.com").build()
+        val call = callFactory.newCall(request)
+        assertThat(call).isNotNull()
+    }
+
+    @Test
+    fun `M create call factory with custom config W createOkHttpCallFactory() { with builder block }`() {
+        // Given
+        testedCore.initialize(fakeConfiguration)
+        val customTimeout = 60_000L
+
+        // When
+        val callFactory = testedCore.createOkHttpCallFactory {
+            callTimeout(customTimeout, TimeUnit.MILLISECONDS)
+        }
+
+        // Then
+        assertThat(callFactory).isNotNull()
+    }
+
     class ErrorRecordingRunnable(
         private val collector: MutableList<Throwable>,
         private val delegate: Runnable

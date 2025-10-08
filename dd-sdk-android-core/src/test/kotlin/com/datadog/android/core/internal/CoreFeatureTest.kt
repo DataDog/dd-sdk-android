@@ -1510,6 +1510,76 @@ internal class CoreFeatureTest {
         }
     }
 
+    @Test
+    fun `M create call factory W createOkHttpCallFactory()`() {
+        // Given
+        testedFeature.initialize(
+            appContext.mockInstance,
+            fakeSdkInstanceId,
+            fakeConfig,
+            fakeConsent
+        )
+
+        // When
+        val callFactory = testedFeature.createOkHttpCallFactory {
+            // Empty configuration block
+        }
+
+        // Then
+        assertThat(callFactory).isNotNull()
+        val request = okhttp3.Request.Builder().url("https://example.com").build()
+        val call = callFactory.newCall(request)
+        assertThat(call).isNotNull()
+    }
+
+    @Test
+    fun `M apply custom configuration W createOkHttpCallFactory() { with custom timeouts }`() {
+        // Given
+        testedFeature.initialize(
+            appContext.mockInstance,
+            fakeSdkInstanceId,
+            fakeConfig,
+            fakeConsent
+        )
+        val customTimeout = 30_000L
+
+        // When
+        val callFactory = testedFeature.createOkHttpCallFactory {
+            callTimeout(customTimeout, TimeUnit.MILLISECONDS)
+            writeTimeout(customTimeout, TimeUnit.MILLISECONDS)
+        }
+
+        // Then
+        assertThat(callFactory).isNotNull()
+        val request = okhttp3.Request.Builder().url("https://example.com").build()
+        val call = callFactory.newCall(request)
+        assertThat(call).isNotNull()
+    }
+
+    @Test
+    fun `M create independent instances W createOkHttpCallFactory() { multiple calls }`() {
+        // Given
+        testedFeature.initialize(
+            appContext.mockInstance,
+            fakeSdkInstanceId,
+            fakeConfig,
+            fakeConsent
+        )
+
+        // When
+        val callFactory1 = testedFeature.createOkHttpCallFactory {
+            callTimeout(30, TimeUnit.SECONDS)
+        }
+        val callFactory2 = testedFeature.createOkHttpCallFactory {
+            callTimeout(45, TimeUnit.SECONDS)
+        }
+
+        // Then
+        assertThat(callFactory1).isNotNull()
+        assertThat(callFactory2).isNotNull()
+        assertThat(callFactory1).isNotSameAs(callFactory2)
+    }
+
     // endregion
 
     // region Internal

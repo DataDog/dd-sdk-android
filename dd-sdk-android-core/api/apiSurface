@@ -108,6 +108,7 @@ interface com.datadog.android.api.feature.Feature
   fun onInitialize(android.content.Context)
   fun onStop()
   companion object 
+    const val FLAGS_FEATURE_NAME: String
     const val LOGS_FEATURE_NAME: String
     const val RUM_FEATURE_NAME: String
     const val TRACING_FEATURE_NAME: String

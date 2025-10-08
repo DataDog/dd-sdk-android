@@ -12,10 +12,10 @@ package com.datadog.android.flags
  * @param customFlagEndpoint Custom endpoint URL for proxying precomputed flag assignment requests. If null, the default endpoint will be used.
  * @param enableExposureLogging Whether to enable exposure event logging. Defaults to true.
  */
-data class FlagsConfiguration internal constructor(
-    val customExposureEndpoint: String? = null,
-    val customFlagEndpoint: String? = null,
-    val enableExposureLogging: Boolean = true
+data class FlagsConfiguration(
+    internal val customExposureEndpoint: String? = null,
+    internal val customFlagEndpoint: String? = null,
+    internal val enableExposureLogging: Boolean = true
 ) {
     /**
      * A Builder class for a [FlagsConfiguration].
@@ -53,7 +53,7 @@ data class FlagsConfiguration internal constructor(
          * Enables or disables exposure event tracking (via exposures event track).
          * @param enabled Whether to enable exposure event logging. Defaults to true.
          */
-        fun enableExposureLogging(enabled: Boolean): Builder {
+        fun setExposureLoggingEnabled(enabled: Boolean): Builder {
             enableExposureLogging = enabled
             return this
         }
@@ -77,9 +77,9 @@ data class FlagsConfiguration internal constructor(
          * Creates a [FlagsConfiguration] with default settings.
          * @return a new [FlagsConfiguration] instance with default configuration values.
          */
-        fun defaultConfiguration(): FlagsConfiguration = DEFAULT_FEATURE_FLAGS_CONFIG
+        fun default(): FlagsConfiguration = DEFAULT_FEATURE_FLAGS_CONFIG
 
-        internal val DEFAULT_FEATURE_FLAGS_CONFIG = FlagsConfiguration(
+        private val DEFAULT_FEATURE_FLAGS_CONFIG = FlagsConfiguration(
             customExposureEndpoint = null,
             customFlagEndpoint = null,
             enableExposureLogging = true
