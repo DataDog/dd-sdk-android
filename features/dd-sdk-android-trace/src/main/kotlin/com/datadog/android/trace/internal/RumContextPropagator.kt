@@ -15,6 +15,7 @@ import com.datadog.android.log.LogAttributes
 import com.datadog.android.trace.api.span.DatadogSpan
 import com.datadog.android.trace.api.span.DatadogSpanBuilder
 import com.datadog.trace.core.DDSpan
+import com.datadog.trace.core.propagation.HttpCodec
 import java.util.concurrent.Future
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
@@ -61,6 +62,8 @@ class RumContextPropagator(private val sdkCoreProvider: () -> FeatureSdkCore?) {
                 instance.setTag(LogAttributes.RUM_SESSION_ID, rumContext["session_id"])
                 instance.setTag(LogAttributes.RUM_VIEW_ID, rumContext["view_id"])
                 instance.setTag(LogAttributes.RUM_ACTION_ID, rumContext["action_id"])
+                instance.setTag(HttpCodec.RUM_KEY_USER_ID, datadogContext.userInfo.id)
+                instance.setTag(HttpCodec.RUM_KEY_ACCOUNT_ID, datadogContext.accountInfo?.id)
             }
             instance.setTag(DATADOG_INITIAL_CONTEXT, null)
         }

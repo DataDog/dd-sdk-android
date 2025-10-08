@@ -6,7 +6,9 @@
 package com.datadog.android.trace.internal
 
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.context.AccountInfo
 import com.datadog.android.api.context.DatadogContext
+import com.datadog.android.api.context.UserInfo
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.feature.SdkFeatureMock
@@ -32,6 +34,7 @@ import com.datadog.tools.unit.completedWithErrorFutureMock
 import com.datadog.tools.unit.forge.anException
 import com.datadog.tools.unit.incompleteFutureMock
 import com.datadog.trace.core.DDSpan
+import com.datadog.trace.core.propagation.HttpCodec
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
@@ -76,6 +79,9 @@ class RumContextPropagatorTest {
     @Mock
     private lateinit var mockInternalLogger: InternalLogger
 
+    private lateinit var fakeUserInfo: UserInfo
+    private var fakeAccountInfo: AccountInfo? = null
+
     @Forgery
     private lateinit var fakeDatadogContext: DatadogContext
     private lateinit var fakeRumContext: Map<String, Any?>
@@ -89,9 +95,11 @@ class RumContextPropagatorTest {
 
     @BeforeEach
     fun `set up`(forge: Forge) {
+        fakeAccountInfo = forge.aNullable { AccountInfo(id = forge.aString()) }
+        fakeUserInfo = UserInfo(id = forge.aString())
         mockRumFeatureScope = SdkFeatureMock.create()
         fakeRumContext = forge.aRumContext()
-        fakeDatadogContext = forge.aDatadogContextWithRumContext(fakeRumContext)
+        fakeDatadogContext = forge.aDatadogContextWithRumContext(fakeRumContext, fakeAccountInfo, fakeUserInfo)
     }
 
     @Test
@@ -123,7 +131,7 @@ class RumContextPropagatorTest {
     @Test
     fun `M not block W extractRumContext {DDSpan, isDone=true, block=False}`() {
         // Given
-        val futureMock = completedFutureMock<DatadogContext>(mock())
+        val futureMock = completedFutureMock<DatadogContext?>(null)
         val span = newDDSpanWithLazyDatadogContext(futureMock)
 
         // When
@@ -140,7 +148,7 @@ class RumContextPropagatorTest {
     @Test
     fun `M not block W extractRumContext {DatadogSpan, isDone=true, block=False}`() {
         // Given
-        val futureMock = completedFutureMock<DatadogContext>(mock())
+        val futureMock = completedFutureMock<DatadogContext?>(null)
         val span = newDatadogSpanWithLazyDatadogContext(futureMock)
 
         // When
@@ -285,6 +293,8 @@ class RumContextPropagatorTest {
         verify(span).setTag(LogAttributes.RUM_SESSION_ID, fakeRumContext[RUM_CONTEXT_SESSION_ID])
         verify(span).setTag(LogAttributes.RUM_VIEW_ID, fakeRumContext[RUM_CONTEXT_VIEW_ID])
         verify(span).setTag(LogAttributes.RUM_ACTION_ID, fakeRumContext[RUM_CONTEXT_ACTION_ID])
+        verify(span).setTag(HttpCodec.RUM_KEY_ACCOUNT_ID, fakeDatadogContext.accountInfo?.id as? Any)
+        verify(span).setTag(HttpCodec.RUM_KEY_USER_ID, fakeDatadogContext.userInfo.id as? Any)
         verify(span).setTag(DATADOG_INITIAL_CONTEXT, null as Any?)
 
         verifyNoMoreInteractions(span)
@@ -307,6 +317,8 @@ class RumContextPropagatorTest {
         verify(span).setTag(LogAttributes.RUM_SESSION_ID, fakeRumContext[RUM_CONTEXT_SESSION_ID])
         verify(span).setTag(LogAttributes.RUM_VIEW_ID, fakeRumContext[RUM_CONTEXT_VIEW_ID])
         verify(span).setTag(LogAttributes.RUM_ACTION_ID, fakeRumContext[RUM_CONTEXT_ACTION_ID])
+        verify(span).setTag(HttpCodec.RUM_KEY_ACCOUNT_ID, fakeDatadogContext.accountInfo?.id as? Any)
+        verify(span).setTag(HttpCodec.RUM_KEY_USER_ID, fakeDatadogContext.userInfo.id as? Any)
         verify(span).setTag(DATADOG_INITIAL_CONTEXT, null as Any?)
 
         verifyNoMoreInteractions(span)
@@ -327,6 +339,8 @@ class RumContextPropagatorTest {
         verify(span).setTag(LogAttributes.RUM_SESSION_ID, null as Any?)
         verify(span).setTag(LogAttributes.RUM_VIEW_ID, null as Any?)
         verify(span).setTag(LogAttributes.RUM_ACTION_ID, null as Any?)
+        verify(span).setTag(HttpCodec.RUM_KEY_ACCOUNT_ID, null as Any?)
+        verify(span).setTag(HttpCodec.RUM_KEY_USER_ID, null as Any?)
         verify(span).setTag(DATADOG_INITIAL_CONTEXT, null as Any?)
 
         verifyNoMoreInteractions(span)
@@ -348,6 +362,8 @@ class RumContextPropagatorTest {
         verify(span).setTag(LogAttributes.RUM_SESSION_ID, null as Any?)
         verify(span).setTag(LogAttributes.RUM_VIEW_ID, null as Any?)
         verify(span).setTag(LogAttributes.RUM_ACTION_ID, null as Any?)
+        verify(span).setTag(HttpCodec.RUM_KEY_ACCOUNT_ID, null as Any?)
+        verify(span).setTag(HttpCodec.RUM_KEY_USER_ID, null as Any?)
         verify(span).setTag(DATADOG_INITIAL_CONTEXT, null as Any?)
 
         verifyNoMoreInteractions(span)

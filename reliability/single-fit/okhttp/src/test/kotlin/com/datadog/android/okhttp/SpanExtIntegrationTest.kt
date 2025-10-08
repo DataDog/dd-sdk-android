@@ -16,6 +16,7 @@ import com.datadog.android.trace.DatadogTracing
 import com.datadog.android.trace.GlobalDatadogTracer
 import com.datadog.android.trace.Trace
 import com.datadog.android.trace.TraceConfiguration
+import com.datadog.android.trace.api.replace
 import com.datadog.android.trace.api.span.DatadogSpan
 import com.datadog.android.trace.internal.DatadogTracingToolkit
 import com.datadog.android.trace.withinSpan
@@ -67,14 +68,12 @@ class SpanExtIntegrationTest {
         sampleRate: Double? = null,
         partialFlushMinSpans: Int? = null
     ): Boolean {
-        GlobalDatadogTracer.clear()
-        return GlobalDatadogTracer.registerIfAbsent(
+        return GlobalDatadogTracer.replace(
             DatadogTracing.newTracerBuilder(stubSdkCore)
                 .also {
                     if (sampleRate != null) it.withSampleRate(sampleRate)
                     if (partialFlushMinSpans != null) it.withPartialFlushMinSpans(partialFlushMinSpans)
                 }
-                .build()
         )
     }
 
