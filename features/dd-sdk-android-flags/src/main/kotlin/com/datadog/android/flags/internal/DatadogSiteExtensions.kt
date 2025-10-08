@@ -11,20 +11,30 @@ import com.datadog.android.api.InternalLogger
 
 /**
  * Gets the complete flags endpoint URL.
- * @param customerDomain Customer domain prefix (default: "preview")
+ * @param customerDomain The customer-specific subdomain prefix for the flags CDN (default: "preview").
+ * This is used to construct the full host in the format: `<customerDomain>.ff-cdn.<site>.<tld>`
  * @param internalLogger Logger for errors
- * @return Complete flags endpoint URL or null if site not supported
+ * @return Complete flags endpoint URL or null if site not supported or customerDomain is empty
  */
+@Suppress("ReturnCount")
 internal fun DatadogSite.getFlagsEndpoint(customerDomain: String = "preview", internalLogger: InternalLogger): String? {
+    if (customerDomain.isBlank()) {
+        internalLogger.log(
+            level = InternalLogger.Level.ERROR,
+            target = InternalLogger.Target.MAINTAINER,
+            messageBuilder = { "Customer domain cannot be empty for flags endpoint" }
+        )
+        return null
+    }
     val host = flagsHost(customerDomain, internalLogger) ?: return null
     return "https://$host$FLAGS_PATH"
 }
 
 /**
  * Extension function that returns the flags CDN host for this Datadog site.
- * @param customerDomain Customer domain prefix
+ * @param customerDomain The customer-specific subdomain prefix for the flags CDN
  * @param internalLogger Logger for errors
- * @return Flags host string or null if not supported
+ * @return Flags host string in format `<customerDomain>.ff-cdn.<site>.<tld>`, or null if site not supported
  */
 private fun DatadogSite.flagsHost(customerDomain: String, internalLogger: InternalLogger): String? = when (this) {
     DatadogSite.US1_FED -> {
@@ -46,9 +56,6 @@ private fun DatadogSite.flagsHost(customerDomain: String, internalLogger: Intern
     DatadogSite.AP2 -> buildFlagsHostString(customerDomain, "ap2", "com")
 }
 
-/**
- * Constructs the full flags host string from components.
- */
 private fun buildFlagsHostString(customerDomain: String, dc: String? = null, tld: String = "com"): String {
     val dcPiece = if (dc?.isNotEmpty() == true) {
         "$dc."

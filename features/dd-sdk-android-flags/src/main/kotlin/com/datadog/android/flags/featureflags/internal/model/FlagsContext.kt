@@ -16,10 +16,12 @@ import com.datadog.android.DatadogSite
  * @param clientToken The client token for authenticating requests to Datadog
  * @param site The Datadog site (e.g., US1, EU1) for routing requests
  * @param env The environment name (e.g., prod, staging) for context
+ * @param customerDomain The customer domain prefix for the flags endpoint (defaults to "preview")
  */
 internal data class FlagsContext(
     val applicationId: String?,
     val clientToken: String,
     val site: DatadogSite,
-    val env: String
+    val env: String,
+    val customerDomain: String = "preview"
 )

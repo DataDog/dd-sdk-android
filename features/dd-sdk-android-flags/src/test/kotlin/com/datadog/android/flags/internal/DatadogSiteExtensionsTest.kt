@@ -25,7 +25,7 @@ import org.mockito.quality.Strictness
 
 @ExtendWith(MockitoExtension::class, ForgeExtension::class)
 @MockitoSettings(strictness = Strictness.LENIENT)
-internal class DatadogSiteExtensionTest {
+internal class DatadogSiteExtensionsTest {
 
     @Mock
     lateinit var mockInternalLogger: InternalLogger
@@ -36,14 +36,14 @@ internal class DatadogSiteExtensionTest {
     @MethodSource("supportedSitesWithCustomDomain")
     fun `M build flags endpoint W getFlagsEndpoint() { supported sites with custom domain }`(
         site: DatadogSite,
-        customerDomain: String,
-        expectedHost: String
+        expectedHostSuffix: String,
+        @StringForgery customerDomain: String
     ) {
         // When
         val result = site.getFlagsEndpoint(customerDomain, mockInternalLogger)
 
         // Then
-        assertThat(result).isEqualTo("https://$expectedHost/precompute-assignments")
+        assertThat(result).isEqualTo("https://$customerDomain.$expectedHostSuffix/precompute-assignments")
     }
 
     // endregion
@@ -65,20 +65,13 @@ internal class DatadogSiteExtensionTest {
 
     // endregion
 
-    // region getFlagsEndpoint - Error Cases
+    // region getFlagsEndpoint - Error Case
 
-    @ParameterizedTest
-    @MethodSource("unsupportedSitesTestCases")
-    fun `M return null and log error W getFlagsEndpoint() { unsupported site }`(
-        site: DatadogSite,
-        customerDomain: String?
-    ) {
+    @Test
+    fun `M return null and log error W getFlagsEndpoint() { unsupported site }`(@StringForgery customerDomain: String) {
         // When
-        val result = if (customerDomain != null) {
-            site.getFlagsEndpoint(customerDomain, mockInternalLogger)
-        } else {
-            site.getFlagsEndpoint(internalLogger = mockInternalLogger)
-        }
+        val result =
+            DatadogSite.US1_FED.getFlagsEndpoint(customerDomain, mockInternalLogger)
 
         // Then
         assertThat(result).isNull()
@@ -96,31 +89,18 @@ internal class DatadogSiteExtensionTest {
 
     // region getFlagsEndpoint - Edge Cases
 
-    @Test
-    fun `M handle empty customer domain W getFlagsEndpoint() { empty customer domain }`() {
+    @ParameterizedTest
+    @MethodSource("edgeCaseCustomerDomains")
+    fun `M handle edge case customer domains W getFlagsEndpoint() { various edge cases }`(
+        site: DatadogSite,
+        customerDomain: String,
+        expectedHost: String
+    ) {
         // When
-        val result = DatadogSite.US1.getFlagsEndpoint("", mockInternalLogger)
+        val result = site.getFlagsEndpoint(customerDomain, mockInternalLogger)
 
         // Then
-        assertThat(result).isEqualTo("https://.ff-cdn.datadoghq.com/precompute-assignments")
-    }
-
-    @Test
-    fun `M handle special characters in customer domain W getFlagsEndpoint() { special characters }`() {
-        // When
-        val result = DatadogSite.US1.getFlagsEndpoint("test-domain_123", mockInternalLogger)
-
-        // Then
-        assertThat(result).isEqualTo("https://test-domain_123.ff-cdn.datadoghq.com/precompute-assignments")
-    }
-
-    @Test
-    fun `M handle numeric customer domain W getFlagsEndpoint() { numeric domain }`() {
-        // When
-        val result = DatadogSite.US3.getFlagsEndpoint("12345", mockInternalLogger)
-
-        // Then
-        assertThat(result).isEqualTo("https://12345.ff-cdn.us3.datadoghq.com/precompute-assignments")
+        assertThat(result).isEqualTo("https://$expectedHost/precompute-assignments")
     }
 
     // endregion
@@ -129,13 +109,13 @@ internal class DatadogSiteExtensionTest {
         @Suppress("unused")
         @JvmStatic
         fun supportedSitesWithCustomDomain(): List<Arguments> = listOf(
-            Arguments.of(DatadogSite.US1, "test", "test.ff-cdn.datadoghq.com"),
-            Arguments.of(DatadogSite.US3, "test", "test.ff-cdn.us3.datadoghq.com"),
-            Arguments.of(DatadogSite.US5, "test", "test.ff-cdn.us5.datadoghq.com"),
-            Arguments.of(DatadogSite.AP1, "test", "test.ff-cdn.ap1.datadoghq.com"),
-            Arguments.of(DatadogSite.AP2, "test", "test.ff-cdn.ap2.datadoghq.com"),
-            Arguments.of(DatadogSite.EU1, "test", "test.ff-cdn.datadoghq.eu"),
-            Arguments.of(DatadogSite.STAGING, "test", "test.ff-cdn.datad0g.com")
+            Arguments.of(DatadogSite.US1, "ff-cdn.datadoghq.com"),
+            Arguments.of(DatadogSite.US3, "ff-cdn.us3.datadoghq.com"),
+            Arguments.of(DatadogSite.US5, "ff-cdn.us5.datadoghq.com"),
+            Arguments.of(DatadogSite.AP1, "ff-cdn.ap1.datadoghq.com"),
+            Arguments.of(DatadogSite.AP2, "ff-cdn.ap2.datadoghq.com"),
+            Arguments.of(DatadogSite.EU1, "ff-cdn.datadoghq.eu"),
+            Arguments.of(DatadogSite.STAGING, "ff-cdn.datad0g.com")
         )
 
         @Suppress("unused")
@@ -148,9 +128,13 @@ internal class DatadogSiteExtensionTest {
 
         @Suppress("unused")
         @JvmStatic
-        fun unsupportedSitesTestCases(): List<Arguments> = listOf(
-            Arguments.of(DatadogSite.US1_FED, "test"),
-            Arguments.of(DatadogSite.US1_FED, null)
+        fun edgeCaseCustomerDomains(): List<Arguments> = listOf(
+            // Domain with hyphens and underscores (special characters)
+            Arguments.of(DatadogSite.US1, "test-domain_123", "test-domain_123.ff-cdn.datadoghq.com"),
+            // Numeric-only domain
+            Arguments.of(DatadogSite.US3, "12345", "12345.ff-cdn.us3.datadoghq.com"),
+            // Domain with dots (subdomain-like)
+            Arguments.of(DatadogSite.EU1, "my.customer.domain", "my.customer.domain.ff-cdn.datadoghq.eu")
         )
     }
 }
