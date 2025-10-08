@@ -9,7 +9,7 @@
     <application>
 
         <provider
-            android:name=".DdRumContentProvider"
+            android:name="com.datadog.android.rum.DdRumContentProvider"
             android:authorities="${applicationId}.provider.datadog.rum"
             android:exported="false" />
 

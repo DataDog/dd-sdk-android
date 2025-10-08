@@ -100,6 +100,13 @@ interface com.datadog.android.internal.time.TimeProvider
   fun getServerOffsetNanos(): Long
   fun getServerOffsetMillis(): Long
 fun ByteArray.toHexString(): String
+interface com.datadog.android.internal.utils.DDCoreSubscription<T: Any>
+  fun addListener(T)
+  fun removeListener(T)
+  fun notifyListeners(T.() -> Unit)
+  val listenersCount: Int
+  companion object 
+    fun <T: Any> create(): DDCoreSubscription<T>
 object com.datadog.android.internal.utils.ImageViewUtils
   fun resolveParentRectAbsPosition(android.view.View, Boolean = true): android.graphics.Rect
   fun calculateClipping(android.graphics.Rect, android.graphics.Rect, Float): android.graphics.Rect
@@ -118,5 +125,15 @@ fun Thread.safeGetThreadId(): Long
 fun Thread.State.asString(): String
 fun Array<StackTraceElement>.loggableStackTrace(): String
 fun Throwable.loggableStackTrace(): String
+class com.datadog.android.rum.DdRumContentProvider : android.content.ContentProvider
+  override fun onCreate(): Boolean
+  override fun query(android.net.Uri, Array<String>?, String?, Array<String>?, String?): android.database.Cursor?
+  override fun getType(android.net.Uri): String?
+  override fun insert(android.net.Uri, android.content.ContentValues?): android.net.Uri?
+  override fun delete(android.net.Uri, String?, Array<String>?): Int
+  override fun update(android.net.Uri, android.content.ContentValues?, String?, Array<String>?): Int
+  companion object 
+    var processImportance: Int
+    val createTimeNs: Long
 annotation com.datadog.tools.annotation.NoOpImplementation
   constructor(Boolean = false)

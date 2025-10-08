@@ -3,16 +3,6 @@ public final class com/datadog/android/rum/CloseableExtKt {
 	public static synthetic fun useMonitored$default (Ljava/io/Closeable;Lcom/datadog/android/api/SdkCore;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Ljava/lang/Object;
 }
 
-public final class com/datadog/android/rum/DdRumContentProvider : android/content/ContentProvider {
-	public fun <init> ()V
-	public fun delete (Landroid/net/Uri;Ljava/lang/String;[Ljava/lang/String;)I
-	public fun getType (Landroid/net/Uri;)Ljava/lang/String;
-	public fun insert (Landroid/net/Uri;Landroid/content/ContentValues;)Landroid/net/Uri;
-	public fun onCreate ()Z
-	public fun query (Landroid/net/Uri;[Ljava/lang/String;Ljava/lang/String;[Ljava/lang/String;Ljava/lang/String;)Landroid/database/Cursor;
-	public fun update (Landroid/net/Uri;Landroid/content/ContentValues;Ljava/lang/String;[Ljava/lang/String;)I
-}
-
 public abstract interface annotation class com/datadog/android/rum/ExperimentalRumApi : java/lang/annotation/Annotation {
 }
 
@@ -307,6 +297,35 @@ public final class com/datadog/android/rum/featureoperations/FailureReason : jav
 	public static final field OTHER Lcom/datadog/android/rum/featureoperations/FailureReason;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/rum/featureoperations/FailureReason;
 	public static fun values ()[Lcom/datadog/android/rum/featureoperations/FailureReason;
+}
+
+public class com/datadog/android/rum/internal/FixedWindowCallback : android/view/Window$Callback {
+	public fun <init> (Landroid/view/Window$Callback;)V
+	public fun dispatchGenericMotionEvent (Landroid/view/MotionEvent;)Z
+	public fun dispatchKeyEvent (Landroid/view/KeyEvent;)Z
+	public fun dispatchKeyShortcutEvent (Landroid/view/KeyEvent;)Z
+	public fun dispatchPopulateAccessibilityEvent (Landroid/view/accessibility/AccessibilityEvent;)Z
+	public fun dispatchTouchEvent (Landroid/view/MotionEvent;)Z
+	public fun dispatchTrackballEvent (Landroid/view/MotionEvent;)Z
+	public fun onActionModeFinished (Landroid/view/ActionMode;)V
+	public fun onActionModeStarted (Landroid/view/ActionMode;)V
+	public fun onAttachedToWindow ()V
+	public fun onContentChanged ()V
+	public fun onCreatePanelMenu (ILandroid/view/Menu;)Z
+	public fun onCreatePanelView (I)Landroid/view/View;
+	public fun onDetachedFromWindow ()V
+	public fun onMenuItemSelected (ILandroid/view/MenuItem;)Z
+	public fun onMenuOpened (ILandroid/view/Menu;)Z
+	public fun onPanelClosed (ILandroid/view/Menu;)V
+	public fun onPointerCaptureChanged (Z)V
+	public fun onPreparePanel (ILandroid/view/View;Landroid/view/Menu;)Z
+	public fun onProvideKeyboardShortcuts (Ljava/util/List;Landroid/view/Menu;I)V
+	public fun onSearchRequested ()Z
+	public fun onSearchRequested (Landroid/view/SearchEvent;)Z
+	public fun onWindowAttributesChanged (Landroid/view/WindowManager$LayoutParams;)V
+	public fun onWindowFocusChanged (Z)V
+	public fun onWindowStartingActionMode (Landroid/view/ActionMode$Callback;)Landroid/view/ActionMode;
+	public fun onWindowStartingActionMode (Landroid/view/ActionMode$Callback;I)Landroid/view/ActionMode;
 }
 
 public final class com/datadog/android/rum/internal/domain/event/ResourceTiming {

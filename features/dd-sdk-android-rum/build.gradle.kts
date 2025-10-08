@@ -5,6 +5,7 @@
  */
 @file:Suppress("StringLiteralDuplication")
 
+import com.datadog.gradle.config.AndroidConfig
 import com.datadog.gradle.config.androidLibraryConfig
 import com.datadog.gradle.config.dependencyUpdateConfig
 import com.datadog.gradle.config.detektCustomConfig
@@ -53,6 +54,13 @@ android {
 
     testFixtures {
         enable = true
+    }
+
+    testOptions {
+        unitTests.all {
+            it.systemProperty("RUM_MIN_SDK", "${AndroidConfig.MIN_SDK}")
+            it.systemProperty("RUM_TARGET_SDK", "${AndroidConfig.TARGET_SDK}")
+        }
     }
 }
 

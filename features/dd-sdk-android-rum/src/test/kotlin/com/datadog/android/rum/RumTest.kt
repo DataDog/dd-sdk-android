@@ -6,6 +6,7 @@
 
 package com.datadog.android.rum
 
+import android.app.Application
 import android.os.Looper
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.Feature
@@ -78,13 +79,17 @@ internal class RumTest {
         argumentCaptor<RumFeature> {
             verify(mockSdkCore).registerFeature(capture())
 
+            val mockApplication = mock<Application> {
+                whenever(it.packageName) doReturn fakePackageName
+                whenever(it.resources) doReturn mock()
+                whenever(it.contentResolver) doReturn mock()
+                whenever(it.resources.configuration) doReturn mock()
+            }
+
+            whenever(mockApplication.applicationContext) doReturn mockApplication
+
             lastValue.onInitialize(
-                appContext = mock {
-                    whenever(it.packageName) doReturn fakePackageName
-                    whenever(it.resources) doReturn mock()
-                    whenever(it.contentResolver) doReturn mock()
-                    whenever(it.resources.configuration) doReturn mock()
-                }
+                appContext = mockApplication
             )
             assertThat(lastValue.sampleRate)
                 .isEqualTo(fakeRumConfiguration.featureConfiguration.sampleRate)
@@ -129,13 +134,17 @@ internal class RumTest {
         // Given
         whenever(mockSdkCore.registerFeature(any())) doAnswer {
             val feature = it.getArgument<RumFeature>(0)
+
+            val mockApplication = mock<Application> {
+                whenever(it.packageName) doReturn fakePackageName
+                whenever(it.resources) doReturn mock()
+                whenever(it.contentResolver) doReturn mock()
+                whenever(it.resources.configuration) doReturn mock()
+            }
+            whenever(mockApplication.applicationContext) doReturn mockApplication
+
             feature.onInitialize(
-                appContext = mock {
-                    whenever(it.packageName) doReturn fakePackageName
-                    whenever(it.resources) doReturn mock()
-                    whenever(it.contentResolver) doReturn mock()
-                    whenever(it.resources.configuration) doReturn mock()
-                }
+                appContext = mockApplication
             )
         }
         // When
