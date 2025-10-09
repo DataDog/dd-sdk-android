@@ -9,13 +9,16 @@ package com.datadog.android.flags
 import com.datadog.android.DatadogSite
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
+import com.datadog.android.api.feature.Feature.Companion.FLAGS_FEATURE_NAME
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.flags.Flags.FLAGS_EXECUTOR_NAME
 import com.datadog.android.flags.featureflags.FlagsClient
 import com.datadog.android.flags.featureflags.internal.NoOpFlagsClient
 import com.datadog.android.flags.internal.FlagsFeature
-import com.datadog.android.flags.internal.FlagsFeature.Companion.FLAGS_FEATURE_NAME
+import com.datadog.android.flags.utils.forge.ForgeConfigurator
+import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
+import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -35,6 +38,7 @@ import java.util.concurrent.ExecutorService
 
 @ExtendWith(MockitoExtension::class, ForgeExtension::class)
 @MockitoSettings(strictness = Strictness.LENIENT)
+@ForgeConfiguration(ForgeConfigurator::class)
 internal class FlagsTest {
 
     @Mock
@@ -55,6 +59,9 @@ internal class FlagsTest {
     @StringForgery
     lateinit var fakeEnv: String
 
+    @Forgery
+    lateinit var fakeConfiguration: FlagsConfiguration
+
     @BeforeEach
     fun `set up`() {
         whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
@@ -70,11 +77,6 @@ internal class FlagsTest {
 
     @Test
     fun `M register FlagsFeature W enable()`() {
-        // Given
-        val fakeConfiguration = FlagsConfiguration.Builder()
-            .setEnableExposureLogging(true)
-            .build()
-
         // When
         Flags.enable(fakeConfiguration, mockSdkCore)
 
@@ -87,11 +89,6 @@ internal class FlagsTest {
 
     @Test
     fun `M register FlagsClient W enable() { valid context }`() {
-        // Given
-        val fakeConfiguration = FlagsConfiguration.Builder()
-            .setEnableExposureLogging(false)
-            .build()
-
         // When
         Flags.enable(fakeConfiguration, mockSdkCore)
 
@@ -104,10 +101,6 @@ internal class FlagsTest {
     @Test
     fun `M not register FlagsClient W enable() { missing context }`() {
         // Given
-        val fakeConfiguration = FlagsConfiguration.Builder()
-            .setEnableExposureLogging(false)
-            .build()
-
         whenever(mockSdkCore.getDatadogContext()) doReturn null
 
         // When
@@ -122,10 +115,6 @@ internal class FlagsTest {
     @Test
     fun `M log error W enable() { missing all context parameters }`() {
         // Given
-        val fakeConfiguration = FlagsConfiguration.Builder()
-            .setEnableExposureLogging(false)
-            .build()
-
         whenever(mockSdkCore.getDatadogContext()) doReturn null
 
         // When
@@ -148,10 +137,6 @@ internal class FlagsTest {
     @Test
     fun `M log error W enable() { missing clientToken and site }`() {
         // Given
-        val fakeConfiguration = FlagsConfiguration.Builder()
-            .setEnableExposureLogging(false)
-            .build()
-
         whenever(mockDatadogContext.clientToken).thenReturn(null)
         whenever(mockDatadogContext.site).thenReturn(null)
         whenever(mockDatadogContext.env) doReturn fakeEnv
@@ -176,11 +161,6 @@ internal class FlagsTest {
 
     @Test
     fun `M create executor service W enable()`() {
-        // Given
-        val fakeConfiguration = FlagsConfiguration.Builder()
-            .setEnableExposureLogging(false)
-            .build()
-
         // When
         Flags.enable(fakeConfiguration, mockSdkCore)
 

@@ -38,16 +38,16 @@ object Flags {
     @JvmOverloads
     @JvmStatic
     fun enable(
-        @Suppress("UNUSED_PARAMETER") configuration: FlagsConfiguration,
+        configuration: FlagsConfiguration,
         sdkCore: SdkCore = Datadog.getInstance()
     ) {
         val flagsFeature = FlagsFeature(
-            sdkCore as FeatureSdkCore
+            sdkCore = sdkCore as FeatureSdkCore
         )
 
         sdkCore.registerFeature(flagsFeature)
 
-        createClient(sdkCore, flagsFeature)?.let {
+        createClient(configuration, sdkCore, flagsFeature)?.let {
             FlagsClient.registerIfAbsent(
                 client = it,
                 sdkCore
@@ -55,19 +55,11 @@ object Flags {
         }
     }
 
-    /**
-     * Creates and configures a [DatadogFlagsClient] instance.
-     *
-     * This method performs complex initialization including validation of required context
-     * parameters (clientToken, site, env) and creation of all necessary dependencies.
-     * If any required parameters are missing, an error is logged and null is returned.
-     *
-     * @param sdkCore the [FeatureSdkCore] instance to use for client creation
-     * @param flagsFeature the [FlagsFeature] instance containing application configuration
-     * @return a configured [DatadogFlagsClient] instance, or null if required context
-     * parameters are missing (clientToken, site, or env)
-     */
-    private fun createClient(sdkCore: FeatureSdkCore, flagsFeature: FlagsFeature): FlagsClient? {
+    private fun createClient(
+        configuration: FlagsConfiguration,
+        sdkCore: FeatureSdkCore,
+        flagsFeature: FlagsFeature
+    ): FlagsClient? {
         val executorService = sdkCore.createSingleThreadExecutorService(
             executorContext = FLAGS_EXECUTOR_NAME
         )
@@ -130,7 +122,8 @@ object Flags {
         return DatadogFlagsClient(
             featureSdkCore = sdkCore,
             evaluationsManager = evaluationsManager,
-            flagsRepository = flagsRepository
+            flagsRepository = flagsRepository,
+            flagsConfiguration = configuration
         )
     }
 }

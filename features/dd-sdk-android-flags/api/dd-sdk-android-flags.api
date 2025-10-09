@@ -6,12 +6,9 @@ public final class com/datadog/android/flags/Flags {
 }
 
 public final class com/datadog/android/flags/FlagsConfiguration {
-	public fun <init> (Z)V
-	public final fun component1 ()Z
 	public final fun copy (Z)Lcom/datadog/android/flags/FlagsConfiguration;
 	public static synthetic fun copy$default (Lcom/datadog/android/flags/FlagsConfiguration;ZILjava/lang/Object;)Lcom/datadog/android/flags/FlagsConfiguration;
 	public fun equals (Ljava/lang/Object;)Z
-	public final fun getEnableExposureLogging ()Z
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
 }
@@ -19,7 +16,7 @@ public final class com/datadog/android/flags/FlagsConfiguration {
 public final class com/datadog/android/flags/FlagsConfiguration$Builder {
 	public fun <init> ()V
 	public final fun build ()Lcom/datadog/android/flags/FlagsConfiguration;
-	public final fun setEnableExposureLogging (Z)Lcom/datadog/android/flags/FlagsConfiguration$Builder;
+	public final fun trackExposures (Z)Lcom/datadog/android/flags/FlagsConfiguration$Builder;
 }
 
 public abstract interface class com/datadog/android/flags/featureflags/FlagsClient {

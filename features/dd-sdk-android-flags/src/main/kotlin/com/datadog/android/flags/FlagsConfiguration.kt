@@ -8,21 +8,22 @@ package com.datadog.android.flags
 
 /**
  * Describes configuration to be used for the Flags feature.
- * @param enableExposureLogging Log exposure events to RUM.
  */
-data class FlagsConfiguration(val enableExposureLogging: Boolean) {
+data class FlagsConfiguration internal constructor(
+    internal val trackExposures: Boolean
+) {
     /**
      * A Builder class for a [FlagsConfiguration].
      */
     class Builder {
-        private var flagsConfig = DEFAULT_FEATURE_FLAGS_CONFIG
+        private var trackExposures: Boolean = true
 
         /**
-         * Sets whether exposures should be logged to RUM. This is disabled by default.
+         * Sets whether exposures should be logged to the dedicated exposures intake endpoint. This is enabled by default.
          * @param enabled Whether to enable exposure logging.
          */
-        fun setEnableExposureLogging(enabled: Boolean): Builder {
-            flagsConfig = flagsConfig.copy(enableExposureLogging = enabled)
+        fun trackExposures(enabled: Boolean): Builder {
+            trackExposures = enabled
             return this
         }
 
@@ -31,13 +32,7 @@ data class FlagsConfiguration(val enableExposureLogging: Boolean) {
          * @return a new [FlagsConfiguration] instance.
          */
         fun build(): FlagsConfiguration = FlagsConfiguration(
-            enableExposureLogging = flagsConfig.enableExposureLogging
-        )
-    }
-
-    internal companion object {
-        internal val DEFAULT_FEATURE_FLAGS_CONFIG = FlagsConfiguration(
-            enableExposureLogging = false
+            trackExposures = trackExposures
         )
     }
 }

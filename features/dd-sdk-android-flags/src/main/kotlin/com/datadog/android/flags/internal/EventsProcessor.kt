@@ -1,0 +1,16 @@
+/*
+ * Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
+ * This product includes software developed at Datadog (https://www.datadoghq.com/).
+ * Copyright 2016-Present Datadog, Inc.
+ */
+
+package com.datadog.android.flags.internal
+
+import com.datadog.android.flags.featureflags.internal.model.PrecomputedFlag
+import com.datadog.android.flags.featureflags.model.EvaluationContext
+import com.datadog.tools.annotation.NoOpImplementation
+
+@NoOpImplementation
+internal interface EventsProcessor {
+    fun processEvent(flagName: String, context: EvaluationContext, data: PrecomputedFlag)
+}
