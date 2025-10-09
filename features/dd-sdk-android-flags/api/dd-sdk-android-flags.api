@@ -34,7 +34,7 @@ public abstract interface class com/datadog/android/flags/featureflags/FlagsClie
 	public static final field Companion Lcom/datadog/android/flags/featureflags/FlagsClient$Companion;
 	public static fun get ()Lcom/datadog/android/flags/featureflags/FlagsClient;
 	public static fun get (Ljava/lang/String;)Lcom/datadog/android/flags/featureflags/FlagsClient;
-	public static fun get (Ljava/lang/String;Lcom/datadog/android/api/feature/FeatureSdkCore;)Lcom/datadog/android/flags/featureflags/FlagsClient;
+	public static fun get (Ljava/lang/String;Lcom/datadog/android/api/SdkCore;)Lcom/datadog/android/flags/featureflags/FlagsClient;
 	public abstract fun resolveBooleanValue (Ljava/lang/String;Z)Z
 	public abstract fun resolveDoubleValue (Ljava/lang/String;D)D
 	public abstract fun resolveIntValue (Ljava/lang/String;I)I
@@ -52,8 +52,8 @@ public final class com/datadog/android/flags/featureflags/FlagsClient$Builder {
 public final class com/datadog/android/flags/featureflags/FlagsClient$Companion {
 	public final fun get ()Lcom/datadog/android/flags/featureflags/FlagsClient;
 	public final fun get (Ljava/lang/String;)Lcom/datadog/android/flags/featureflags/FlagsClient;
-	public final fun get (Ljava/lang/String;Lcom/datadog/android/api/feature/FeatureSdkCore;)Lcom/datadog/android/flags/featureflags/FlagsClient;
-	public static synthetic fun get$default (Lcom/datadog/android/flags/featureflags/FlagsClient$Companion;Ljava/lang/String;Lcom/datadog/android/api/feature/FeatureSdkCore;ILjava/lang/Object;)Lcom/datadog/android/flags/featureflags/FlagsClient;
+	public final fun get (Ljava/lang/String;Lcom/datadog/android/api/SdkCore;)Lcom/datadog/android/flags/featureflags/FlagsClient;
+	public static synthetic fun get$default (Lcom/datadog/android/flags/featureflags/FlagsClient$Companion;Ljava/lang/String;Lcom/datadog/android/api/SdkCore;ILjava/lang/Object;)Lcom/datadog/android/flags/featureflags/FlagsClient;
 }
 
 public final class com/datadog/android/flags/featureflags/model/EvaluationContext {

@@ -65,7 +65,7 @@ internal class EvaluationsManager(
                 // Log warning to both user and maintainer about network failure
                 internalLogger.log(
                     InternalLogger.Level.WARN,
-                    targets = listOf(InternalLogger.Target.USER, InternalLogger.Target.MAINTAINER),
+                    InternalLogger.Target.MAINTAINER,
                     { NETWORK_REQUEST_FAILED_MESSAGE }
                 )
                 emptyMap()

@@ -20,14 +20,12 @@ import com.datadog.android.flags.featureflags.internal.NoOpFlagsClient
  * An implementation of [Feature] for getting and reporting
  * feature flags to the RUM dashboard.
  */
-internal class FlagsFeature(private val sdkCore: FeatureSdkCore, private val flagsConfiguration: FlagsConfiguration) :
+internal class FlagsFeature(private val sdkCore: FeatureSdkCore, internal val flagsConfiguration: FlagsConfiguration) :
     Feature,
     FeatureContextUpdateReceiver {
     @Volatile
     internal var applicationId: String? = null
         private set
-
-    internal fun getFlagsConfiguration(): FlagsConfiguration = flagsConfiguration
 
     /**
      * Registry of [FlagsClient] instances by name.
@@ -67,6 +65,10 @@ internal class FlagsFeature(private val sdkCore: FeatureSdkCore, private val fla
             return newClient
         }
     }
+
+    internal fun unregisterClient(name: String) = registeredClients.remove(name)
+
+    internal fun clearClients() = registeredClients.clear()
 
     // region Context Receiver
 
