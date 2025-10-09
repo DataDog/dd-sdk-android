@@ -18,6 +18,7 @@ import com.datadog.android.flags.featureflags.model.EvaluationContext
 import com.datadog.android.flags.internal.FlagsFeature
 import org.json.JSONException
 import org.json.JSONObject
+import java.util.Locale
 
 /**
  * Production implementation of [FlagsClient] that integrates with Datadog's flag evaluation system.
@@ -79,7 +80,7 @@ internal class DatadogFlagsClient(
      * @return The boolean value of the flag, or the default value if unavailable or unparseable.
      */
     override fun resolveBooleanValue(flagKey: String, defaultValue: Boolean): Boolean {
-        return getValue(flagKey, defaultValue) { it.lowercase().toBooleanStrictOrNull() }
+        return getValue(flagKey, defaultValue) { it.lowercase(locale = Locale.US).toBooleanStrictOrNull() }
     }
 
     /**

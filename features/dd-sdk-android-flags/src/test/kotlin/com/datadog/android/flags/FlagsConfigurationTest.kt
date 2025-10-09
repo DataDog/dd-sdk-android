@@ -15,8 +15,6 @@ import org.junit.jupiter.api.extension.ExtendWith
 @ExtendWith(ForgeExtension::class)
 internal class FlagsConfigurationTest {
 
-    // region Data Class Tests
-
     // region Builder Tests
 
     @Test

@@ -103,8 +103,7 @@ internal class ExposureEventRecordWriterTest {
             )
         )
             .thenAnswer { invocation ->
-                @Suppress("UNCHECKED_CAST")
-                val callback = invocation.arguments[1] as (DatadogContext, EventWriteScope) -> Unit
+                val callback = invocation.getArgument<(DatadogContext, EventWriteScope) -> Unit>(1)
                 val mockContext = mock<DatadogContext>()
                 callback.invoke(mockContext) { writerScope ->
                     writerScope.invoke(mockEventBatchWriter)

@@ -16,7 +16,7 @@ import com.datadog.android.flags.featureflags.FlagsClient
 import com.datadog.android.flags.featureflags.internal.NoOpFlagsClient
 import com.datadog.android.flags.internal.FlagsFeature
 import com.datadog.android.flags.utils.forge.ForgeConfigurator
-import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -59,10 +59,11 @@ internal class FlagsTest {
     @StringForgery
     lateinit var fakeEnv: String
 
+    @Forgery
     lateinit var fakeConfiguration: FlagsConfiguration
 
     @BeforeEach
-    fun `set up`(forge: Forge) {
+    fun `set up`() {
         whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
         whenever(mockSdkCore.createSingleThreadExecutorService(FLAGS_EXECUTOR_NAME)) doReturn mockExecutorService
 
@@ -70,8 +71,6 @@ internal class FlagsTest {
         whenever(mockDatadogContext.site) doReturn DatadogSite.US1
         whenever(mockDatadogContext.env) doReturn fakeEnv
         whenever(mockSdkCore.getDatadogContext()) doReturn mockDatadogContext
-
-        fakeConfiguration = forge.getForgery<FlagsConfiguration>()
     }
 
     // region enable()
