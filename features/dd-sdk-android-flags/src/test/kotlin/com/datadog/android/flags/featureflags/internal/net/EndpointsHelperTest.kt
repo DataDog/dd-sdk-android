@@ -168,7 +168,7 @@ internal class EndpointsHelperTest {
     // region getFlaggingEndpoint
 
     @Test
-    fun `M return proxy URL W getFlaggingEndpoint() {flagging proxy configured}`(
+    fun `M return proxy URL W getFlaggingEndpoint() {flagging endpoint configured}`(
         @StringForgery fakeApplicationId: String,
         @StringForgery fakeClientToken: String,
         @StringForgery fakeEnv: String,

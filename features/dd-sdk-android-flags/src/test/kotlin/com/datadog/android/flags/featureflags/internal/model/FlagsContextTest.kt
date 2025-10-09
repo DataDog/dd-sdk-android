@@ -49,8 +49,8 @@ internal class FlagsContextTest {
 
     @Test
     fun `M create FlagsContext with all parameters W create() { complete configuration }`(
-        @StringForgery(regex = "https://[a-z]+\\.com(/[a-z]+)+") fakeCustomEndpoint: String,
-        @StringForgery(regex = "https://[a-z]+\\.com(/[a-z]+)+") fakeProxyUrl: String
+        @StringForgery(regex = "https://[a-z]+\\.com(/[a-z]+)+") fakeExposureEndpoint: String,
+        @StringForgery(regex = "https://[a-z]+\\.com(/[a-z]+)+") fakeFlagEndpoint: String
     ) {
         // Given
         whenever(mockDatadogContext.clientToken) doReturn fakeClientToken

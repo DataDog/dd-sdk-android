@@ -276,10 +276,10 @@ internal class FlagsClientTest {
         // Given
         registerClient(mockFlagsClient, mockSdkCore, "default")
 
-        // When - second build with same name
+        // When
         val client = FlagsClient.Builder(sdkCore = mockSdkCore).build()
 
-        // Then - should return existing client, NOT NOPClient
+        // Then
         assertThat(client).isEqualTo(mockFlagsClient)
     }
 
