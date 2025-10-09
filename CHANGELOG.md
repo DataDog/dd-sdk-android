@@ -1,3 +1,7 @@
+# 2.26.2 / 2025-10-09
+
+* [IMPROVEMENT] Extend resource handling to support multiple MIME types in RN. See [#2914](https://github.com/DataDog/dd-sdk-android/pull/2914)
+
 # 2.26.1 / 2025-09-11
 
 * [BUGFIX] RUM: Move session properties to `ddtags` over query parameters. See [#2812](https://github.com/DataDog/dd-sdk-android/pull/2812)
