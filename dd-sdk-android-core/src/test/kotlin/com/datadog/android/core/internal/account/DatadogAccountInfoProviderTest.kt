@@ -288,7 +288,8 @@ internal class DatadogAccountInfoProviderTest {
                 messageBuilder = capture(),
                 throwable = isNull(),
                 onlyOnce = any(),
-                additionalProperties = isNull()
+                additionalProperties = isNull(),
+                force = eq(false)
             )
             allValues.forEach {
                 assertThat(it()).isEqualTo(MSG_ACCOUNT_NULL)

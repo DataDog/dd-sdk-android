@@ -16,6 +16,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.mockito.ArgumentMatchers.eq
 import org.mockito.Mock
 import org.mockito.Mockito.mock
 import org.mockito.junit.jupiter.MockitoExtension
@@ -105,7 +106,8 @@ internal class InvocationUtilsTest {
             captor.capture(),
             anyOrNull(),
             anyOrNull(),
-            anyOrNull()
+            anyOrNull(),
+            eq(false)
         )
         assertThat(captor.firstValue()).isEqualTo(fakeMessage)
     }

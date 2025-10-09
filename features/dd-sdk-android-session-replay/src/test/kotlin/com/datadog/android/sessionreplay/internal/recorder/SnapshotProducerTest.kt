@@ -471,7 +471,8 @@ internal class SnapshotProducerTest {
                 capture(),
                 any(),
                 eq(false),
-                eq(null)
+                eq(null),
+                eq(false)
             )
             assertThat(lastValue.invoke()).isEqualTo(INVALID_PRIVACY_LEVEL_ERROR)
         }

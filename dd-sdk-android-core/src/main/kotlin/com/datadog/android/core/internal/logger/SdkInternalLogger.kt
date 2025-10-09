@@ -61,15 +61,23 @@ internal class SdkInternalLogger(
         messageBuilder: () -> String,
         throwable: Throwable?,
         onlyOnce: Boolean,
-        additionalProperties: Map<String, Any?>?
+        additionalProperties: Map<String, Any?>?,
+        force: Boolean
     ) {
         when (target) {
-            InternalLogger.Target.USER -> logToUser(level, messageBuilder, throwable, onlyOnce)
+            InternalLogger.Target.USER -> logToUser(
+                level = level,
+                messageBuilder = messageBuilder,
+                error = throwable,
+                onlyOnce = onlyOnce,
+                force = force
+            )
             InternalLogger.Target.MAINTAINER -> logToMaintainer(
-                level,
-                messageBuilder,
-                throwable,
-                onlyOnce
+                level = level,
+                messageBuilder = messageBuilder,
+                error = throwable,
+                onlyOnce = onlyOnce,
+                force = force
             )
 
             InternalLogger.Target.TELEMETRY -> logToTelemetry(
@@ -77,7 +85,7 @@ internal class SdkInternalLogger(
                 messageBuilder,
                 throwable,
                 onlyOnce,
-                additionalProperties
+                additionalProperties,
             )
         }
     }
@@ -88,10 +96,19 @@ internal class SdkInternalLogger(
         messageBuilder: () -> String,
         throwable: Throwable?,
         onlyOnce: Boolean,
-        additionalProperties: Map<String, Any?>?
+        additionalProperties: Map<String, Any?>?,
+        force: Boolean
     ) {
         targets.forEach {
-            log(level, it, messageBuilder, throwable, onlyOnce, additionalProperties)
+            log(
+                level = level,
+                target = it,
+                messageBuilder = messageBuilder,
+                throwable = throwable,
+                onlyOnce = onlyOnce,
+                additionalProperties = additionalProperties,
+                force = force
+            )
         }
     }
 
@@ -168,15 +185,17 @@ internal class SdkInternalLogger(
         level: InternalLogger.Level,
         messageBuilder: () -> String,
         error: Throwable?,
-        onlyOnce: Boolean
+        onlyOnce: Boolean,
+        force: Boolean
     ) {
         sendToLogHandler(
-            userLogger,
-            level,
-            messageBuilder,
-            error,
-            onlyOnce,
-            onlyOnceUserMessages
+            handler = userLogger,
+            level = level,
+            messageBuilder = messageBuilder,
+            error = error,
+            onlyOnce = onlyOnce,
+            knownSingleMessages = onlyOnceUserMessages,
+            force = force
         )
     }
 
@@ -184,16 +203,18 @@ internal class SdkInternalLogger(
         level: InternalLogger.Level,
         messageBuilder: () -> String,
         error: Throwable?,
-        onlyOnce: Boolean
+        onlyOnce: Boolean,
+        force: Boolean
     ) {
         maintainerLogger?.let {
             sendToLogHandler(
-                it,
-                level,
-                messageBuilder,
-                error,
-                onlyOnce,
-                onlyOnceMaintainerMessages
+                handler = it,
+                level = level,
+                messageBuilder = messageBuilder,
+                error = error,
+                onlyOnce = onlyOnce,
+                knownSingleMessages = onlyOnceMaintainerMessages,
+                force = force
             )
         }
     }
@@ -204,9 +225,10 @@ internal class SdkInternalLogger(
         messageBuilder: () -> String,
         error: Throwable?,
         onlyOnce: Boolean,
-        knownSingleMessages: MutableSet<String>
+        knownSingleMessages: MutableSet<String>,
+        force: Boolean
     ) {
-        if (!handler.canLog(level.toLogLevel())) return
+        if (!force && !handler.canLog(level.toLogLevel())) return
         val message = messageBuilder().withSdkName()
         if (onlyOnce) {
             if (knownSingleMessages.contains(message)) {

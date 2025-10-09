@@ -112,6 +112,7 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.isA
+import org.mockito.kotlin.isNull
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.times
@@ -8939,6 +8940,38 @@ internal class RumViewScopeTest {
                 .hasVitalFailureReason(failureReason)
                 .hasVitalType(VitalEvent.VitalEventVitalType.OPERATION_STEP)
         }
+    }
+
+    @Test
+    fun `M force log to USER target W RumViewScope constructor { there is a synthetic test}`(
+        @StringForgery fakeTestId: String
+    ) {
+        whenever(mockParentScope.getRumContext())
+            .doReturn(fakeParentContext.copy(syntheticsTestId = fakeTestId))
+
+        testedScope = newRumViewScope(trackFrustrations = true)
+
+        argumentCaptor<() -> String> {
+            verify(mockInternalLogger, times(3)).log(
+                level = eq(InternalLogger.Level.INFO),
+                target = eq(InternalLogger.Target.USER),
+                messageBuilder = capture(),
+                throwable = isNull(),
+                onlyOnce = eq(false),
+                additionalProperties = isNull(),
+                force = eq(true)
+            )
+            val messages = allValues.map { it.invoke() }
+            assertThat(messages).isEqualTo(
+                listOf(
+                    "_dd.application.id=${fakeParentContext.applicationId}",
+                    "_dd.session.id=${fakeParentContext.sessionId}",
+                    "_dd.view.id=${testedScope.viewId}"
+                )
+            )
+        }
+
+        verifyNoMoreInteractions(mockInternalLogger)
     }
     //
 

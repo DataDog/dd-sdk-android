@@ -118,7 +118,8 @@ internal class ViewEndedMetricDispatcherTest {
             messageBuilder = any(),
             throwable = eq(null),
             onlyOnce = eq(false),
-            additionalProperties = eq(null)
+            additionalProperties = eq(null),
+            force = eq(false)
         )
         verifyNoMoreInteractions(mockInternalLogger)
     }

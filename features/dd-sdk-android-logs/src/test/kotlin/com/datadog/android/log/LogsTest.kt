@@ -114,7 +114,8 @@ internal class LogsTest {
                 capture(),
                 isNull(),
                 eq(false),
-                eq(null)
+                eq(null),
+                eq(false)
             )
             assertThat(lastValue()).isEqualTo(Logs.LOGS_NOT_ENABLED_MESSAGE)
         }
@@ -138,7 +139,8 @@ internal class LogsTest {
                 capture(),
                 isNull(),
                 eq(false),
-                eq(null)
+                eq(null),
+                eq(false)
             )
             assertThat(lastValue()).isEqualTo(Logs.LOGS_NOT_ENABLED_MESSAGE)
         }

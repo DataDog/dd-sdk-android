@@ -128,8 +128,6 @@ internal class BackPressuredBlockingQueue<E : Any> : ObservableLinkedBlockingQue
             level = InternalLogger.Level.WARN,
             targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
             messageBuilder = { "BackPressuredBlockingQueue reached capacity:$notifyThreshold" },
-            throwable = null,
-            onlyOnce = false,
             additionalProperties = mapOf(
                 "backpressure" to backPressureMap,
                 "executor.context" to executorContext

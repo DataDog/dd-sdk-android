@@ -1306,29 +1306,25 @@ internal open class RumViewScope(
                 // This is a legitimate empty duration, no-op
             } else {
                 sdkCore.internalLogger.log(
-                    InternalLogger.Level.WARN,
-                    listOf(
+                    level = InternalLogger.Level.WARN,
+                    targets = listOf(
                         InternalLogger.Target.USER,
                         InternalLogger.Target.TELEMETRY
                     ),
-                    { ZERO_DURATION_WARNING_MESSAGE.format(Locale.US, key.name) },
-                    null,
-                    false,
-                    mapOf("view.name" to key.name)
+                    messageBuilder = { ZERO_DURATION_WARNING_MESSAGE.format(Locale.US, key.name) },
+                    additionalProperties = mapOf("view.name" to key.name)
                 )
             }
             stoppedNanos = startedNanos + 1
         } else if (duration < 0) {
             sdkCore.internalLogger.log(
-                InternalLogger.Level.WARN,
-                listOf(
+                level = InternalLogger.Level.WARN,
+                targets = listOf(
                     InternalLogger.Target.USER,
                     InternalLogger.Target.TELEMETRY
                 ),
-                { NEGATIVE_DURATION_WARNING_MESSAGE.format(Locale.US, key.name) },
-                null,
-                false,
-                mapOf(
+                messageBuilder = { NEGATIVE_DURATION_WARNING_MESSAGE.format(Locale.US, key.name) },
+                additionalProperties = mapOf(
                     "view.start_ns" to startedNanos,
                     "view.end_ns" to event.eventTime.nanoTime,
                     "view.name" to key.name
@@ -1660,7 +1656,8 @@ internal open class RumViewScope(
         sdkCore.internalLogger.log(
             level = InternalLogger.Level.INFO,
             target = InternalLogger.Target.USER,
-            messageBuilder = { "$key=$value" }
+            messageBuilder = { "$key=$value" },
+            force = true
         )
     }
 

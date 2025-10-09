@@ -397,7 +397,8 @@ internal class DatadogDataConstraintsTest {
                 capture(),
                 isNull(),
                 eq(false),
-                eq(null)
+                eq(null),
+                eq(false)
             )
 
             assertThat(allValues.map { it() })

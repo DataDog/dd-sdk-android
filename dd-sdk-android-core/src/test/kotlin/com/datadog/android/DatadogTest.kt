@@ -410,7 +410,8 @@ internal class DatadogTest {
                 capture(),
                 isNull(),
                 eq(false),
-                eq(null)
+                eq(null),
+                eq(false)
             )
             val actualMessage = firstValue()
             val filteredActualMessage = actualMessage

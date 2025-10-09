@@ -74,7 +74,8 @@ internal class MobileSegmentExtTest {
                 messageBuilder = capture(),
                 throwable = isA<NoSuchElementException>(),
                 onlyOnce = eq(false),
-                additionalProperties = isNull()
+                additionalProperties = isNull(),
+                force = eq(false)
             )
 
             assertThat(firstValue()).isEqualTo(

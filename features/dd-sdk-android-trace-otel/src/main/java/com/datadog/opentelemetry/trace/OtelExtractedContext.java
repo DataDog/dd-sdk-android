@@ -53,7 +53,7 @@ public class OtelExtractedContext implements DatadogSpanContext {
                                 "{%1s} and span id = {%2s}", spanContext.getSpanId(), spanContext.getTraceId()),
                         null,
                         false,
-                        null);
+                        null, false);
 
             }
         }

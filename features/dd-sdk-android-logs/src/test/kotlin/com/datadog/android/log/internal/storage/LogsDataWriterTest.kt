@@ -155,7 +155,8 @@ internal class LogsDataWriterTest {
                 capture(),
                 eq(fakeThrowable),
                 eq(false),
-                eq(null)
+                eq(null),
+                eq(false)
             )
             assertThat(firstValue()).isEqualTo("Error serializing LogEvent model")
         }

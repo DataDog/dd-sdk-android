@@ -16,6 +16,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.mockito.ArgumentMatchers.eq
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
@@ -82,7 +83,8 @@ internal class LayerDrawableExtTest {
             captor.capture(),
             anyOrNull(),
             anyOrNull(),
-            anyOrNull()
+            anyOrNull(),
+            eq(false)
         )
         assertThat(captor.firstValue.invoke())
             .startsWith("Failed to get drawable from layer - invalid index passed")
@@ -111,7 +113,8 @@ internal class LayerDrawableExtTest {
             captor.capture(),
             anyOrNull(),
             anyOrNull(),
-            anyOrNull()
+            anyOrNull(),
+            eq(false)
         )
         assertThat(captor.firstValue.invoke())
             .startsWith("Failed to get drawable from layer - invalid index passed")

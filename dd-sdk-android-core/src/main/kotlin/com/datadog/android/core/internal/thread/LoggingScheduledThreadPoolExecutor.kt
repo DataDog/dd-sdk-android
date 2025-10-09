@@ -35,8 +35,6 @@ internal class LoggingScheduledThreadPoolExecutor(
                 level = InternalLogger.Level.ERROR,
                 targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
                 messageBuilder = { "Dropped scheduled item in LoggingScheduledThreadPoolExecutor queue: $r" },
-                throwable = null,
-                onlyOnce = false,
                 additionalProperties = mapOf("executor.context" to executorContext)
             )
             backPressureStrategy.onItemDropped(r)

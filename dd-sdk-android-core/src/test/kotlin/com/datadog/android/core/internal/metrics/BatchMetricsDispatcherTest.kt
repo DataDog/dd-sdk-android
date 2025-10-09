@@ -284,7 +284,8 @@ internal class BatchMetricsDispatcherTest {
             },
             eq(null),
             eq(false),
-            eq(null)
+            eq(null),
+            eq(false)
         )
         verifyNoMoreInteractions(mockInternalLogger)
     }
@@ -504,7 +505,8 @@ internal class BatchMetricsDispatcherTest {
             },
             eq(null),
             eq(false),
-            eq(null)
+            eq(null),
+            eq(false)
         )
         verifyNoMoreInteractions(mockInternalLogger)
     }

@@ -54,8 +54,8 @@ public class DatadogCoreTracerLogger implements Logger {
                 () -> bundleMessageWithTitle(loggerName, msg),
                 null,
                 false,
-                null
-        );
+                null,
+                false);
     }
 
     @Override
@@ -66,8 +66,8 @@ public class DatadogCoreTracerLogger implements Logger {
                 () -> generateLogMessage(loggerName, format, arg),
                 null,
                 false,
-                null
-        );
+                null,
+                false);
     }
 
     @Override
@@ -78,8 +78,8 @@ public class DatadogCoreTracerLogger implements Logger {
                 () -> generateLogMessage(loggerName, format, arg1, arg2),
                 null,
                 false,
-                null
-        );
+                null,
+                false);
     }
 
     @Override
@@ -90,8 +90,8 @@ public class DatadogCoreTracerLogger implements Logger {
                 () -> generateLogMessage(loggerName, format, arguments),
                 null,
                 false,
-                null
-        );
+                null,
+                false);
     }
 
     @Override
@@ -102,8 +102,8 @@ public class DatadogCoreTracerLogger implements Logger {
                 () -> bundleMessageWithTitle(loggerName, msg),
                 t,
                 false,
-                null
-        );
+                null,
+                false);
     }
 
     @Override
@@ -119,8 +119,8 @@ public class DatadogCoreTracerLogger implements Logger {
                 () -> bundleMessageWithTitle(loggerName, msg),
                 null,
                 false,
-                null
-        );
+                null,
+                false);
     }
 
     @Override
@@ -131,8 +131,8 @@ public class DatadogCoreTracerLogger implements Logger {
                 () -> generateLogMessage(loggerName, format, arg),
                 null,
                 false,
-                null
-        );
+                null,
+                false);
     }
 
     @Override
@@ -143,8 +143,8 @@ public class DatadogCoreTracerLogger implements Logger {
                 () -> generateLogMessage(loggerName, format, arg1, arg2),
                 null,
                 false,
-                null
-        );
+                null,
+                false);
     }
 
     @Override
@@ -155,8 +155,8 @@ public class DatadogCoreTracerLogger implements Logger {
                 () -> generateLogMessage(loggerName, format, arguments),
                 null,
                 false,
-                null
-        );
+                null,
+                false);
     }
 
     @Override
@@ -167,8 +167,8 @@ public class DatadogCoreTracerLogger implements Logger {
                 () -> bundleMessageWithTitle(loggerName, msg),
                 t,
                 false,
-                null
-        );
+                null,
+                false);
     }
 
     @Override
@@ -184,8 +184,8 @@ public class DatadogCoreTracerLogger implements Logger {
                 () -> bundleMessageWithTitle(loggerName, msg),
                 null,
                 false,
-                null
-        );
+                null,
+                false);
     }
 
     @Override
@@ -196,8 +196,8 @@ public class DatadogCoreTracerLogger implements Logger {
                 () -> generateLogMessage(loggerName, format, arg),
                 null,
                 false,
-                null
-        );
+                null,
+                false);
     }
 
     @Override
@@ -208,8 +208,8 @@ public class DatadogCoreTracerLogger implements Logger {
                 () -> generateLogMessage(loggerName, format, arg1, arg2),
                 null,
                 false,
-                null
-        );
+                null,
+                false);
     }
 
     @Override
@@ -220,8 +220,8 @@ public class DatadogCoreTracerLogger implements Logger {
                 () -> generateLogMessage(loggerName, format, arguments),
                 null,
                 false,
-                null
-        );
+                null,
+                false);
     }
 
     @Override
@@ -232,8 +232,8 @@ public class DatadogCoreTracerLogger implements Logger {
                 () -> bundleMessageWithTitle(loggerName, msg),
                 t,
                 false,
-                null
-        );
+                null,
+                false);
     }
 
     @Override
@@ -244,8 +244,8 @@ public class DatadogCoreTracerLogger implements Logger {
                 () -> bundleMessageWithTitle(loggerName, msg),
                 null,
                 false,
-                null
-        );
+                null,
+                false);
     }
 
     @Override
@@ -256,8 +256,8 @@ public class DatadogCoreTracerLogger implements Logger {
                 () -> generateLogMessage(loggerName, format, arg),
                 null,
                 false,
-                null
-        );
+                null,
+                false);
     }
 
     @Override
@@ -268,8 +268,8 @@ public class DatadogCoreTracerLogger implements Logger {
                 () -> generateLogMessage(loggerName, format, arg1, arg2),
                 null,
                 false,
-                null
-        );
+                null,
+                false);
     }
 
     @Override
@@ -280,8 +280,8 @@ public class DatadogCoreTracerLogger implements Logger {
                 () -> generateLogMessage(loggerName, format, arguments),
                 null,
                 false,
-                null
-        );
+                null,
+                false);
     }
 
     @Override
@@ -292,8 +292,8 @@ public class DatadogCoreTracerLogger implements Logger {
                 () -> bundleMessageWithTitle(loggerName, msg),
                 t,
                 false,
-                null
-        );
+                null,
+                false);
     }
 
     // endregion

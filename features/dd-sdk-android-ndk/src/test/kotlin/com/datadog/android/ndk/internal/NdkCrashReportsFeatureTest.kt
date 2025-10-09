@@ -152,7 +152,8 @@ class NdkCrashReportsFeatureTest {
                     capture(),
                     isNull(),
                     eq(false),
-                    eq(null)
+                    eq(null),
+                    eq(false)
                 )
             assertThat(lastValue()).isEqualTo(NdkCrashReportsFeature.NO_SDK_ROOT_DIR_MESSAGE)
         }

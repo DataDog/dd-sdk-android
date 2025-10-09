@@ -648,7 +648,8 @@ internal class MutationResolverTest {
                 capture(),
                 eq(null),
                 eq(false),
-                eq(null)
+                eq(null),
+                eq(false)
             )
         }
         mutationTestData.prevSnapshot.forEachIndexed { index, wireframe ->

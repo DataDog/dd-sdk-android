@@ -23,7 +23,8 @@ class FakeInternalLogger : InternalLogger {
         messageBuilder: () -> String,
         throwable: Throwable?,
         onlyOnce: Boolean,
-        additionalProperties: Map<String, Any?>?
+        additionalProperties: Map<String, Any?>?,
+        force: Boolean
     ) {
         errorLog = messageBuilder()
     }
@@ -34,7 +35,8 @@ class FakeInternalLogger : InternalLogger {
         messageBuilder: () -> String,
         throwable: Throwable?,
         onlyOnce: Boolean,
-        additionalProperties: Map<String, Any?>?
+        additionalProperties: Map<String, Any?>?,
+        force: Boolean
     ) {
         // do nothing
     }

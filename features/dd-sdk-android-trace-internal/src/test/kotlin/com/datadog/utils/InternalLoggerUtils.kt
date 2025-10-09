@@ -31,7 +31,8 @@ fun InternalLogger.verifyLog(
             capture(),
             same(throwable),
             eq(onlyOnce),
-            eq(additionalProperties)
+            eq(additionalProperties),
+            eq(false)
         )
         allValues.forEach {
             assertThat(it()).isEqualTo(message)
@@ -55,7 +56,8 @@ fun InternalLogger.verifyLog(
             capture(),
             same(throwable),
             eq(onlyOnce),
-            eq(additionalProperties)
+            eq(additionalProperties),
+            eq(false)
         )
         assertThat(firstValue()).isEqualTo(message)
     }

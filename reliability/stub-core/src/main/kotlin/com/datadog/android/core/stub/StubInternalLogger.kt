@@ -48,7 +48,8 @@ internal class StubInternalLogger : InternalLogger {
         messageBuilder: () -> String,
         throwable: Throwable?,
         onlyOnce: Boolean,
-        additionalProperties: Map<String, Any?>?
+        additionalProperties: Map<String, Any?>?,
+        force: Boolean
     ) {
         val message = messageBuilder()
         println("${level.name.first()} [${targets.joinToString { it.name.first().toString() }}]: $message")

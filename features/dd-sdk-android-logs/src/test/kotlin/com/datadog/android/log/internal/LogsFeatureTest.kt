@@ -306,7 +306,8 @@ internal class LogsFeatureTest {
                 capture(),
                 isNull(),
                 eq(false),
-                eq(null)
+                eq(null),
+                eq(false)
             )
             assertThat(firstValue()).isEqualTo(
                 LogsFeature.UNSUPPORTED_EVENT_TYPE.format(
@@ -340,7 +341,8 @@ internal class LogsFeatureTest {
                 capture(),
                 isNull(),
                 eq(false),
-                eq(null)
+                eq(null),
+                eq(false)
             )
             assertThat(firstValue()).isEqualTo(
                 LogsFeature.UNKNOWN_EVENT_TYPE_PROPERTY_VALUE.format(Locale.US, event["type"])
@@ -400,7 +402,8 @@ internal class LogsFeatureTest {
                 capture(),
                 isNull(),
                 eq(false),
-                eq(null)
+                eq(null),
+                eq(false)
             )
             assertThat(firstValue()).isEqualTo(
                 LogsFeature.SPAN_LOG_EVENT_MISSING_MANDATORY_FIELDS_WARNING

@@ -45,7 +45,7 @@ interface com.datadog.android.api.InternalLogger
     - USER
     - MAINTAINER
     - TELEMETRY
-  fun log(Level, Target, () -> String, Throwable? = null, Boolean = false, Map<String, Any?>? = null)
+  fun log(Level, Target, () -> String, Throwable? = null, Boolean = false, Map<String, Any?>? = null, Boolean = false)
   fun log(Level, List<Target>, () -> String, Throwable? = null, Boolean = false, Map<String, Any?>? = null)
   fun logMetric(() -> String, Map<String, Any?>, Float, Float? = null)
   fun startPerformanceMeasure(String, com.datadog.android.core.metrics.TelemetryMetricType, Float, String): com.datadog.android.core.metrics.PerformanceMetric?

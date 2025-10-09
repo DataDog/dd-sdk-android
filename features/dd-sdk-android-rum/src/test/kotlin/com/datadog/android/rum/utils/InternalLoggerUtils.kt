@@ -47,7 +47,8 @@ fun InternalLogger.verifyLog(
             capture(),
             same(throwable),
             eq(onlyOnce),
-            eq(additionalProperties)
+            eq(additionalProperties),
+            eq(false)
         )
         assertThat(allValues).isNotEmpty()
         assertThat(allValues.any { it() == message })
@@ -72,7 +73,8 @@ fun <T : Throwable> InternalLogger.verifyLog(
             capture(),
             isA(throwableClass),
             eq(onlyOnce),
-            eq(additionalProperties)
+            eq(additionalProperties),
+            eq(false)
         )
         allValues.forEach {
             assertThat(it()).isEqualTo(message)
@@ -96,7 +98,8 @@ fun InternalLogger.verifyLog(
             capture(),
             same(throwable),
             eq(onlyOnce),
-            eq(additionalProperties)
+            eq(additionalProperties),
+            eq(false)
         )
         assertThat(firstValue()).isEqualTo(message)
     }
@@ -118,7 +121,8 @@ fun <T : Throwable> InternalLogger.verifyLog(
             capture(),
             isA(throwableClass),
             eq(onlyOnce),
-            eq(additionalProperties)
+            eq(additionalProperties),
+            eq(false)
         )
         assertThat(firstValue()).isEqualTo(message)
     }
@@ -140,7 +144,8 @@ fun InternalLogger.verifyLog(
             capture(),
             same(throwable),
             eq(onlyOnce),
-            eq(additionalProperties)
+            eq(additionalProperties),
+            eq(false)
         )
         allValues.forEach {
             assertThat(firstValue()).matches(messageMatcher)
@@ -164,7 +169,8 @@ fun <T : Throwable> InternalLogger.verifyLog(
             capture(),
             isA(throwableClass),
             eq(onlyOnce),
-            eq(additionalProperties)
+            eq(additionalProperties),
+            eq(false)
         )
         allValues.forEach {
             assertThat(firstValue()).matches(messageMatcher)
@@ -188,7 +194,8 @@ fun InternalLogger.verifyLog(
             capture(),
             same(throwable),
             eq(onlyOnce),
-            eq(additionalProperties)
+            eq(additionalProperties),
+            eq(false)
         )
         allValues.forEach {
             assertThat(it()).matches(messageMatcher)
@@ -212,7 +219,8 @@ fun <T : Throwable> InternalLogger.verifyLog(
             capture(),
             isA(throwableClass),
             eq(onlyOnce),
-            eq(additionalProperties)
+            eq(additionalProperties),
+            eq(false)
         )
         assertThat(firstValue()).matches(messageMatcher)
     }

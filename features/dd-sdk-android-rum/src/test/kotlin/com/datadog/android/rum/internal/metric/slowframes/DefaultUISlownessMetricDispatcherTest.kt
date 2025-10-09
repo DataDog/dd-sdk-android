@@ -178,7 +178,8 @@ internal class DefaultUISlownessMetricDispatcherTest {
             messageBuilder = argThat { invoke() == "No telemetry found for viewId=$fakeViewId" },
             throwable = eq(null),
             onlyOnce = eq(false),
-            additionalProperties = eq(null)
+            additionalProperties = eq(null),
+            force = eq(false)
         )
     }
 

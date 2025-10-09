@@ -100,7 +100,8 @@ internal class LoggerBuilderTest {
                 capture(),
                 isNull(),
                 eq(false),
-                eq(null)
+                eq(null),
+                eq(false)
             )
             assertThat(firstValue()).isEqualTo(Logger.SDK_NOT_INITIALIZED_WARNING_MESSAGE)
         }

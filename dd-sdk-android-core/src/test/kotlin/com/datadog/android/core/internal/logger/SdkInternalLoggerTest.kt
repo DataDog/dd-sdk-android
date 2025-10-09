@@ -41,10 +41,12 @@ import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.mockingDetails
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyNoMoreInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 
@@ -813,6 +815,60 @@ internal class SdkInternalLoggerTest {
         // Then
         val margin = (repeatCount / 8) // Allow a 12.5% margin of error
         assertThat(sampleCount).isCloseTo(expectedSampledCount, offset(margin))
+    }
+
+    @Test
+    fun `M log to USER with any Datadog verbosity W log() { force = true }`(
+        forge: Forge
+    ) {
+        // Given
+        val fakeLevel = forge.aValueFrom(InternalLogger.Level::class.java)
+        val fakeMessage = forge.aString()
+        val fakeThrowable = forge.aNullable { forge.aThrowable() }
+
+        // When
+        testedInternalLogger.log(
+            level = fakeLevel,
+            target = InternalLogger.Target.USER,
+            messageBuilder = { fakeMessage },
+            throwable = fakeThrowable,
+            force = true
+        )
+
+        // Then
+        verify(mockUserLogHandler).log(
+            fakeLevel.toLogLevel(),
+            "[$fakeInstanceName]: $fakeMessage",
+            fakeThrowable
+        )
+        verifyNoMoreInteractions(mockUserLogHandler)
+    }
+
+    @Test
+    fun `M log to MAINTAINER with any Datadog verbosity W log() { force = true }`(
+        forge: Forge
+    ) {
+        // Given
+        val fakeLevel = forge.aValueFrom(InternalLogger.Level::class.java)
+        val fakeMessage = forge.aString()
+        val fakeThrowable = forge.aNullable { forge.aThrowable() }
+
+        // When
+        testedInternalLogger.log(
+            level = fakeLevel,
+            target = InternalLogger.Target.MAINTAINER,
+            messageBuilder = { fakeMessage },
+            throwable = fakeThrowable,
+            force = true
+        )
+
+        // Then
+        verify(mockMaintainerLogHandler).log(
+            fakeLevel.toLogLevel(),
+            "[$fakeInstanceName]: $fakeMessage",
+            fakeThrowable
+        )
+        verifyNoMoreInteractions(mockMaintainerLogHandler)
     }
 
     private fun InternalLogger.Level.toLogLevel(): Int {

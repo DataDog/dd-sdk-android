@@ -137,7 +137,8 @@ internal class HostsSanitizerTest {
                 capture(),
                 isNull(),
                 eq(false),
-                eq(null)
+                eq(null),
+                eq(false)
             )
             assertThat(allValues.map { it() })
                 .containsExactlyInAnyOrderElementsOf(expectedMessages)
@@ -173,7 +174,8 @@ internal class HostsSanitizerTest {
                 capture(),
                 isNull(),
                 eq(false),
-                eq(null)
+                eq(null),
+                eq(false)
             )
             assertThat(allValues.map { it() })
                 .containsExactlyInAnyOrderElementsOf(expectedMessages)
@@ -259,7 +261,8 @@ internal class HostsSanitizerTest {
                 capture(),
                 isNull(),
                 eq(false),
-                eq(null)
+                eq(null),
+                eq(false)
             )
             assertThat(allValues.map { it() })
                 .containsExactlyInAnyOrderElementsOf(expectedMessages)
@@ -293,7 +296,8 @@ internal class HostsSanitizerTest {
                 capture(),
                 any<MalformedURLException>(),
                 eq(false),
-                eq(null)
+                eq(null),
+                eq(false)
             )
             assertThat(allValues.map { it() })
                 .containsExactlyInAnyOrderElementsOf(expectedMessages)

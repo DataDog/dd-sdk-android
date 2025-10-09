@@ -108,7 +108,8 @@ internal class TLVBlockFileReaderTest {
             captor.capture(),
             anyOrNull(),
             anyOrNull(),
-            anyOrNull()
+            anyOrNull(),
+            eq(false)
         )
         assertThat(captor.firstValue.invoke())
             .startsWith(expectedMessage)

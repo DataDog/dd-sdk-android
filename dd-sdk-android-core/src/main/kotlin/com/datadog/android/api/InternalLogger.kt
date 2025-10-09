@@ -109,7 +109,8 @@ interface InternalLogger {
         messageBuilder: () -> String,
         throwable: Throwable? = null,
         onlyOnce: Boolean = false,
-        additionalProperties: Map<String, Any?>? = null
+        additionalProperties: Map<String, Any?>? = null,
+        force: Boolean = false
     )
 
     /**
@@ -128,7 +129,8 @@ interface InternalLogger {
         messageBuilder: () -> String,
         throwable: Throwable? = null,
         onlyOnce: Boolean = false,
-        additionalProperties: Map<String, Any?>? = null
+        additionalProperties: Map<String, Any?>? = null,
+        force: Boolean = false
     )
 
     /**

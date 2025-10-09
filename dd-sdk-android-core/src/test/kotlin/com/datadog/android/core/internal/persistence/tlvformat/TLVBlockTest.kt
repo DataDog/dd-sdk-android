@@ -117,7 +117,8 @@ internal class TLVBlockTest {
             stringCaptor.capture(),
             anyOrNull(),
             anyOrNull(),
-            anyOrNull()
+            anyOrNull(),
+            eq(false)
         )
         assertThat(stringCaptor.firstValue.invoke()).startsWith("DataBlock length exceeds limit")
     }

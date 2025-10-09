@@ -81,7 +81,8 @@ internal class ResourceHashesEntryDeserializerTest {
             messageCaptor.capture(),
             isNull(),
             eq(false),
-            isNull()
+            isNull(),
+            eq(false)
         )
 
         assertThat(messageCaptor.firstValue()).startsWith("Error while trying to deserialize the ResourceHashesEntry")

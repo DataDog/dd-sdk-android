@@ -277,7 +277,8 @@ class RumFirstDrawTimeReporterTest {
                 messageBuilder = any(),
                 throwable = eq(illegalStateException),
                 onlyOnce = eq(false),
-                additionalProperties = anyOrNull()
+                additionalProperties = anyOrNull(),
+                force = eq(false)
             )
 
             verifyNoMoreInteractions()
@@ -319,7 +320,8 @@ class RumFirstDrawTimeReporterTest {
                 messageBuilder = any(),
                 throwable = eq(illegalStateException),
                 onlyOnce = eq(false),
-                additionalProperties = anyOrNull()
+                additionalProperties = anyOrNull(),
+                force = eq(false)
             )
 
             verifyNoMoreInteractions()
