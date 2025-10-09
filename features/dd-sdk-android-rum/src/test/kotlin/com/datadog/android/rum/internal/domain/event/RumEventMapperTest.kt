@@ -16,7 +16,7 @@ import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.rum.model.VitalEvent
 import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.android.rum.utils.forge.aRumEvent
-import com.datadog.android.rum.utils.verifyLog
+import com.datadog.android.api.verifyLog
 import com.datadog.android.telemetry.model.TelemetryConfigurationEvent
 import com.datadog.android.telemetry.model.TelemetryDebugEvent
 import com.datadog.android.telemetry.model.TelemetryErrorEvent

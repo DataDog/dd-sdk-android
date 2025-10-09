@@ -8,7 +8,7 @@ package com.datadog.android.rum.internal.domain.event
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.rum.utils.forge.Configurator
-import com.datadog.android.rum.utils.verifyLog
+import com.datadog.android.api.verifyLog
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.JsonParseException
