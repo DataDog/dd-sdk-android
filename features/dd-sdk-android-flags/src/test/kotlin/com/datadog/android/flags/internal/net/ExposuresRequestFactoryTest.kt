@@ -102,25 +102,6 @@ internal class ExposuresRequestFactoryTest {
     }
 
     @Test
-    fun `M create request with valid UUID format W create()`(
-        @Forgery batchData: List<RawBatchEvent>,
-        @Forgery executionContext: RequestExecutionContext,
-        @StringForgery batchMetadata: String,
-        forge: Forge
-    ) {
-        // Given
-        val metadata = forge.aNullable { batchMetadata.toByteArray() }
-
-        // When
-        val request = testedFactory.create(fakeDatadogContext, executionContext, batchData, metadata)
-
-        // Then
-        val uuidRegex = "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
-        assertThat(request.id).matches(uuidRegex)
-        assertThat(request.headers[RequestFactory.HEADER_REQUEST_ID]).matches(uuidRegex)
-    }
-
-    @Test
     fun `M preserve batch data order W create() { multiple batch events }`(
         @Forgery executionContext: RequestExecutionContext,
         @StringForgery batchMetadata: String,

@@ -68,8 +68,8 @@ internal class DatadogFlagsClient(
     /**
      * Resolves a boolean flag value from the local repository.
      *
-     * This method performs strict boolean parsing of the stored flag value.
-     * Only "true" and "false" (case-sensitive) string values will be converted;
+     * This method performs boolean parsing of the stored flag value.
+     * Only "true" and "false" (case-insensitive) string values will be converted;
      * all other values result in the default being returned.
      *
      * This method is thread-safe and performs no network operations.
@@ -79,7 +79,7 @@ internal class DatadogFlagsClient(
      * @return The boolean value of the flag, or the default value if unavailable or unparseable.
      */
     override fun resolveBooleanValue(flagKey: String, defaultValue: Boolean): Boolean {
-        return getValue(flagKey, defaultValue) { it.toBooleanStrictOrNull() }
+        return getValue(flagKey, defaultValue) { it.lowercase().toBooleanStrictOrNull() }
     }
 
     /**

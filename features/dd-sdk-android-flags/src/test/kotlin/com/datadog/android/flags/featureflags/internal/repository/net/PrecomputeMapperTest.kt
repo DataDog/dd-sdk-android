@@ -359,13 +359,8 @@ internal class PrecomputeMapperTest {
     @Test
     fun `M return empty map and log error W map() { missing attributes field }`() {
         // Given
-        val jsonWithoutAttributes = JSONObject().apply {
-            put(
-                "data",
-                JSONObject().apply {
-                    put("notAttributes", JSONObject())
-                }
-            )
+        val jsonWithoutAttributes = JSONObject().data {
+            put("notAttributes", JSONObject())
         }.toString()
 
         // When
@@ -389,18 +384,10 @@ internal class PrecomputeMapperTest {
     @Test
     fun `M return empty map and log error W map() { missing flags field }`() {
         // Given
-        val jsonWithoutFlags = JSONObject().apply {
-            put(
-                "data",
-                JSONObject().apply {
-                    put(
-                        "attributes",
-                        JSONObject().apply {
-                            put("notFlags", JSONObject())
-                        }
-                    )
-                }
-            )
+        val jsonWithoutFlags = JSONObject().data {
+            attributes {
+                put("notFlags", JSONObject())
+            }
         }.toString()
 
         // When
@@ -424,29 +411,15 @@ internal class PrecomputeMapperTest {
     @Test
     fun `M return empty map and log error W map() { missing required flag fields }`() {
         // Given
-        val jsonWithIncompleteFlag = JSONObject().apply {
-            put(
-                "data",
-                JSONObject().apply {
-                    put(
-                        "attributes",
-                        JSONObject().apply {
-                            put(
-                                "flags",
-                                JSONObject().apply {
-                                    put(
-                                        fakeFlagName,
-                                        JSONObject().apply {
-                                            put("variationType", PrecomputedFlagConstants.VariationType.STRING)
-                                            // Missing other required fields
-                                        }
-                                    )
-                                }
-                            )
-                        }
-                    )
+        val jsonWithIncompleteFlag = JSONObject().data {
+            attributes {
+                flags {
+                    flag(fakeFlagName) {
+                        put("variationType", PrecomputedFlagConstants.VariationType.STRING)
+                        // Missing other required fields
+                    }
                 }
-            )
+            }
         }.toString()
 
         // When
@@ -493,33 +466,19 @@ internal class PrecomputeMapperTest {
     @Test
     fun `M handle null variation value W map() { null variationValue }`() {
         // Given
-        val json = JSONObject().apply {
-            put(
-                "data",
-                JSONObject().apply {
-                    put(
-                        "attributes",
-                        JSONObject().apply {
-                            put(
-                                "flags",
-                                JSONObject().apply {
-                                    put(
-                                        fakeFlagName,
-                                        JSONObject().apply {
-                                            put("variationType", PrecomputedFlagConstants.VariationType.STRING)
-                                            put("variationValue", JSONObject.NULL)
-                                            put("doLog", fakeDoLog)
-                                            put("allocationKey", fakeAllocationKey)
-                                            put("variationKey", fakeVariationKey)
-                                            put("reason", fakeReason)
-                                        }
-                                    )
-                                }
-                            )
-                        }
-                    )
+        val json = JSONObject().data {
+            attributes {
+                flags {
+                    flag(fakeFlagName) {
+                        put("variationType", PrecomputedFlagConstants.VariationType.STRING)
+                        put("variationValue", JSONObject.NULL)
+                        put("doLog", fakeDoLog)
+                        put("allocationKey", fakeAllocationKey)
+                        put("variationKey", fakeVariationKey)
+                        put("reason", fakeReason)
+                    }
                 }
-            )
+            }
         }.toString()
 
         // When
@@ -538,25 +497,14 @@ internal class PrecomputeMapperTest {
     // region Helper Methods
 
     private fun buildValidJson(flags: Map<String, JSONObject>): String {
-        return JSONObject().apply {
-            put(
-                "data",
-                JSONObject().apply {
-                    put(
-                        "attributes",
-                        JSONObject().apply {
-                            put(
-                                "flags",
-                                JSONObject().apply {
-                                    flags.forEach { (name, flagData) ->
-                                        put(name, flagData)
-                                    }
-                                }
-                            )
-                        }
-                    )
+        return JSONObject().data {
+            attributes {
+                flags {
+                    flags.forEach { (name, flagData) ->
+                        put(name, flagData)
+                    }
                 }
-            )
+            }
         }.toString()
     }
 
@@ -592,6 +540,34 @@ internal class PrecomputeMapperTest {
             put("reason", fakeReason)
             put("extraLogging", extraLogging)
         }
+    }
+
+    // endregion
+
+    // region JSON Builder Extensions
+
+    private fun JSONObject.data(block: JSONObject.() -> Unit): JSONObject {
+        val dataObject = JSONObject().apply(block)
+        put("data", dataObject)
+        return this
+    }
+
+    private fun JSONObject.attributes(block: JSONObject.() -> Unit): JSONObject {
+        val attributesObject = JSONObject().apply(block)
+        put("attributes", attributesObject)
+        return this
+    }
+
+    private fun JSONObject.flags(block: JSONObject.() -> Unit): JSONObject {
+        val flagsObject = JSONObject().apply(block)
+        put("flags", flagsObject)
+        return this
+    }
+
+    private fun JSONObject.flag(name: String, block: JSONObject.() -> Unit): JSONObject {
+        val flagObject = JSONObject().apply(block)
+        put(name, flagObject)
+        return this
     }
 
     // endregion

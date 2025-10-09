@@ -7,6 +7,7 @@
 package com.datadog.android.flags.internal.storage
 
 import com.datadog.android.api.context.DatadogContext
+import com.datadog.android.api.feature.EventWriteScope
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.feature.FeatureSdkCore
@@ -22,6 +23,7 @@ import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -32,8 +34,8 @@ import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.isNull
 import org.mockito.kotlin.mock
-import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 
 @ExtendWith(MockitoExtension::class, ForgeExtension::class)
@@ -97,17 +99,12 @@ internal class ExposureEventRecordWriterTest {
         whenever(
             mockFeature.withWriteContext(
                 any(),
-                any<
-                    (
-                        DatadogContext,
-                        ((EventBatchWriter) -> Unit) -> Unit
-                    ) -> Unit
-                    >()
+                any()
             )
         )
             .thenAnswer { invocation ->
                 @Suppress("UNCHECKED_CAST")
-                val callback = invocation.arguments[1] as (DatadogContext, ((EventBatchWriter) -> Unit) -> Unit) -> Unit
+                val callback = invocation.arguments[1] as (DatadogContext, EventWriteScope) -> Unit
                 val mockContext = mock<DatadogContext>()
                 callback.invoke(mockContext) { writerScope ->
                     writerScope.invoke(mockEventBatchWriter)
@@ -126,7 +123,7 @@ internal class ExposureEventRecordWriterTest {
         )
 
         val capturedEvent = eventCaptor.firstValue
-        assert(capturedEvent.data.contentEquals(expectedBytes))
+        assertThat(capturedEvent.data).isEqualTo(expectedBytes)
     }
 
     @Test
@@ -147,7 +144,7 @@ internal class ExposureEventRecordWriterTest {
         testedWriter.write(fakeEvent)
 
         // Then
-        verify(mockEventBatchWriter, never()).write(any(), any(), any())
+        verifyNoInteractions(mockEventBatchWriter)
     }
 
     @Test
@@ -172,12 +169,7 @@ internal class ExposureEventRecordWriterTest {
         whenever(
             mockFeature.withWriteContext(
                 any(),
-                any<
-                    (
-                        DatadogContext,
-                        ((EventBatchWriter) -> Unit) -> Unit
-                    ) -> Unit
-                    >()
+                any()
             )
         )
             .thenAnswer { invocation ->
@@ -203,16 +195,14 @@ internal class ExposureEventRecordWriterTest {
         val capturedEvent = eventCaptor.firstValue
         val serializedData = String(capturedEvent.data, Charsets.UTF_8)
 
-        // Verify JSON contains expected structure and values
-        assert(serializedData.contains("\"timestamp\":$fakeTimestamp"))
-        assert(serializedData.contains("\"key\":\"$fakeAllocationKey\""))
-        assert(serializedData.contains("\"key\":\"$fakeFlagKey\""))
-        assert(serializedData.contains("\"key\":\"$fakeVariantKey\""))
-        assert(serializedData.contains("\"id\":\"$fakeSubjectId\""))
+        assertThat(serializedData).contains("\"timestamp\":$fakeTimestamp")
+        assertThat(serializedData).contains("\"key\":\"$fakeAllocationKey\"")
+        assertThat(serializedData).contains("\"key\":\"$fakeFlagKey\"")
+        assertThat(serializedData).contains("\"key\":\"$fakeVariantKey\"")
+        assertThat(serializedData).contains("\"id\":\"$fakeSubjectId\"")
 
-        // Verify all attributes are present in the serialized data
         complexAttributes.forEach { (key, value) ->
-            assert(serializedData.contains("\"$key\":\"$value\""))
+            assertThat(serializedData).contains("\"$key\":\"$value\"")
         }
     }
 
@@ -231,12 +221,7 @@ internal class ExposureEventRecordWriterTest {
         whenever(
             mockFeature.withWriteContext(
                 any(),
-                any<
-                    (
-                        DatadogContext,
-                        ((EventBatchWriter) -> Unit) -> Unit
-                    ) -> Unit
-                    >()
+                any()
             )
         )
             .thenAnswer { invocation ->
@@ -263,8 +248,8 @@ internal class ExposureEventRecordWriterTest {
         val serializedData = String(capturedEvent.data, Charsets.UTF_8)
 
         // Verify basic structure is present even with empty attributes
-        assert(serializedData.contains("\"timestamp\":$fakeTimestamp"))
-        assert(serializedData.contains("\"attributes\":{}"))
+        assertThat(serializedData).contains("\"timestamp\":$fakeTimestamp")
+        assertThat(serializedData).contains("\"attributes\":{}")
     }
 
     @Test
@@ -283,12 +268,7 @@ internal class ExposureEventRecordWriterTest {
         whenever(
             mockFeature.withWriteContext(
                 any(),
-                any<
-                    (
-                        DatadogContext,
-                        ((EventBatchWriter) -> Unit) -> Unit
-                    ) -> Unit
-                    >()
+                any()
             )
         )
             .thenAnswer { invocation ->
@@ -307,12 +287,7 @@ internal class ExposureEventRecordWriterTest {
         verify(mockSdkCore).getFeature(Feature.FLAGS_FEATURE_NAME)
         verify(mockFeature).withWriteContext(
             any(),
-            any<
-                (
-                    DatadogContext,
-                    ((EventBatchWriter) -> Unit) -> Unit
-                ) -> Unit
-                >()
+            any()
         )
         verify(mockEventBatchWriter).write(
             event = any<RawBatchEvent>(),

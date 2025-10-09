@@ -59,14 +59,14 @@ internal class DatadogFlagsClientTest {
     private lateinit var testedClient: DatadogFlagsClient
 
     @BeforeEach
-    fun `set up`() {
+    fun `set up`(forge: Forge) {
         whenever(mockFeatureSdkCore.internalLogger) doReturn mockInternalLogger
 
         testedClient = DatadogFlagsClient(
             featureSdkCore = mockFeatureSdkCore,
             evaluationsManager = mockEvaluationsManager,
             flagsRepository = mockFlagsRepository,
-            flagsConfiguration = FlagsConfiguration.Builder().setTrackExposures(true).build()
+            flagsConfiguration = forge.getForgery<FlagsConfiguration>().copy(trackExposures = true)
         )
     }
 
@@ -405,7 +405,7 @@ internal class DatadogFlagsClientTest {
             featureSdkCore = mockFeatureSdkCore,
             evaluationsManager = mockEvaluationsManager,
             flagsRepository = customRepository,
-            flagsConfiguration = FlagsConfiguration.Builder().setTrackExposures(true).build()
+            flagsConfiguration = forge.getForgery()
         )
 
         // Then
@@ -531,7 +531,7 @@ internal class DatadogFlagsClientTest {
             featureSdkCore = mockFeatureSdkCore,
             evaluationsManager = mockEvaluationsManager,
             flagsRepository = mockFlagsRepository,
-            flagsConfiguration = FlagsConfiguration.Builder().setTrackExposures(false).build()
+            flagsConfiguration = forge.getForgery<FlagsConfiguration>().copy(trackExposures = false)
         )
 
         // When

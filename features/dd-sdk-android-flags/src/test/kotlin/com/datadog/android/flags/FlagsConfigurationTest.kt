@@ -15,21 +15,7 @@ import org.junit.jupiter.api.extension.ExtendWith
 @ExtendWith(ForgeExtension::class)
 internal class FlagsConfigurationTest {
 
-    @BoolForgery
-    var fakeTrackExposures: Boolean = false
-
     // region Data Class Tests
-
-    @Test
-    fun `M create FlagsConfiguration W constructor { with all parameters }`() {
-        // When
-        val configuration = FlagsConfiguration(
-            trackExposures = fakeTrackExposures
-        )
-
-        // Then
-        assertThat(configuration.trackExposures).isEqualTo(fakeTrackExposures)
-    }
 
     // region Builder Tests
 
@@ -44,60 +30,25 @@ internal class FlagsConfigurationTest {
     }
 
     @Test
-    fun `M set exposure logging enabled W Builder { setTrackExposures true }`() {
+    fun `M set exposure logging W Builder`(
+        @BoolForgery fakeTrackExposuresState: Boolean
+    ) {
         // Given
         val builder = FlagsConfiguration.Builder()
 
         // When
-        val result = builder.setTrackExposures(true)
+        builder.trackExposures(fakeTrackExposuresState)
         val configuration = builder.build()
 
         // Then
-        assertThat(result).isSameAs(builder) // Fluent interface
-        assertThat(configuration.trackExposures).isTrue()
-    }
-
-    @Test
-    fun `M set exposure logging disabled W Builder { setTrackExposures false }`() {
-        // Given
-        val builder = FlagsConfiguration.Builder()
-
-        // When
-        val result = builder.setTrackExposures(false)
-        val configuration = builder.build()
-
-        // Then
-        assertThat(result).isSameAs(builder) // Fluent interface
-        assertThat(configuration.trackExposures).isFalse()
-    }
-
-    @Test
-    fun `M build configuration with all options W Builder { fluent chaining }`() {
-        // When
-        val configuration = FlagsConfiguration.Builder()
-            .setTrackExposures(true)
-            .build()
-
-        // Then
-        assertThat(configuration.trackExposures).isTrue()
-    }
-
-    @Test
-    fun `M build configuration with all options W Builder { reverse chaining order }`() {
-        // When
-        val configuration = FlagsConfiguration.Builder()
-            .setTrackExposures(true)
-            .build()
-
-        // Then
-        assertThat(configuration.trackExposures).isTrue()
+        assertThat(configuration.trackExposures).isEqualTo(fakeTrackExposuresState)
     }
 
     @Test
     fun `M create multiple configurations W Builder { reusable builder }`() {
         // Given
         val builder = FlagsConfiguration.Builder()
-            .setTrackExposures(true)
+            .trackExposures(true)
 
         // When
         val configuration1 = builder.build()
@@ -112,12 +63,12 @@ internal class FlagsConfigurationTest {
     fun `M modify builder after build W Builder { builder state preserved }`() {
         // Given
         val builder = FlagsConfiguration.Builder()
-            .setTrackExposures(true)
+            .trackExposures(true)
 
         val firstConfiguration = builder.build()
 
         // When
-        builder.setTrackExposures(false)
+        builder.trackExposures(false)
         val secondConfiguration = builder.build()
 
         // Then

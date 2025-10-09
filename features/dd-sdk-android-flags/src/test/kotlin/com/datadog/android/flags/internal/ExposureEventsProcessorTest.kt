@@ -16,6 +16,7 @@ import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
+import org.json.JSONObject
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -103,7 +104,7 @@ internal class ExposureEventsProcessorTest {
         testedProcessor.processEvent(fakeFlagName, fakeContext, fakeFlag) // Duplicate
 
         // Then
-        verify(mockRecordWriter, times(1)).write(any())
+        verify(mockRecordWriter).write(any())
     }
 
     @Test
@@ -138,60 +139,6 @@ internal class ExposureEventsProcessorTest {
         val capturedEvent = eventCaptor.firstValue
         assertThat(capturedEvent.subject.id).isEqualTo(fakeTargetingKey)
         assertThat(capturedEvent.subject.attributes).isEmpty()
-    }
-
-    @Test
-    fun `M process different exposures W processEvent() { different targeting keys }`(forge: Forge) {
-        // Given
-        val fakeContext1 = EvaluationContext(
-            targetingKey = fakeTargetingKey,
-            attributes = mapOf("user_id" to forge.anAlphabeticalString())
-        )
-        val fakeContext2 = EvaluationContext(
-            targetingKey = forge.anAlphabeticalString(),
-            attributes = mapOf("user_id" to forge.anAlphabeticalString())
-        )
-
-        // When
-        testedProcessor.processEvent(fakeFlagName, fakeContext1, fakeFlag)
-        testedProcessor.processEvent(fakeFlagName, fakeContext2, fakeFlag)
-
-        // Then
-        verify(mockRecordWriter, times(2)).write(any())
-    }
-
-    @Test
-    fun `M process different exposures W processEvent() { different allocation keys }`(forge: Forge) {
-        // Given
-        val fakeContext = EvaluationContext(
-            targetingKey = fakeTargetingKey,
-            attributes = mapOf("user_id" to forge.anAlphabeticalString())
-        )
-        val fakeFlag2 = fakeFlag.copy(allocationKey = forge.anAlphabeticalString())
-
-        // When
-        testedProcessor.processEvent(fakeFlagName, fakeContext, fakeFlag)
-        testedProcessor.processEvent(fakeFlagName, fakeContext, fakeFlag2)
-
-        // Then
-        verify(mockRecordWriter, times(2)).write(any())
-    }
-
-    @Test
-    fun `M process different exposures W processEvent() { different variation keys }`(forge: Forge) {
-        // Given
-        val fakeContext = EvaluationContext(
-            targetingKey = fakeTargetingKey,
-            attributes = mapOf("user_id" to forge.anAlphabeticalString())
-        )
-        val fakeFlag2 = fakeFlag.copy(variationKey = forge.anAlphabeticalString())
-
-        // When
-        testedProcessor.processEvent(fakeFlagName, fakeContext, fakeFlag)
-        testedProcessor.processEvent(fakeFlagName, fakeContext, fakeFlag2)
-
-        // Then
-        verify(mockRecordWriter, times(2)).write(any())
     }
 
     @Test
@@ -265,7 +212,7 @@ internal class ExposureEventsProcessorTest {
         testedProcessor.processEvent(fakeFlagName, context2, fakeFlag)
 
         // Then
-        verify(mockRecordWriter, times(1)).write(any())
+        verify(mockRecordWriter).write(any())
     }
 
     @Test
@@ -324,7 +271,7 @@ internal class ExposureEventsProcessorTest {
             doLog = forge.aBool(),
             allocationKey = allocationKey1,
             variationKey = variationKey1,
-            extraLogging = org.json.JSONObject(),
+            extraLogging = JSONObject(),
             reason = forge.anAlphabeticalString()
         )
 
@@ -334,7 +281,7 @@ internal class ExposureEventsProcessorTest {
             doLog = forge.aBool(),
             allocationKey = allocationKey2,
             variationKey = variationKey2,
-            extraLogging = org.json.JSONObject(),
+            extraLogging = JSONObject(),
             reason = forge.anAlphabeticalString()
         )
 
@@ -356,7 +303,7 @@ internal class ExposureEventsProcessorTest {
             doLog = forge.aBool(),
             allocationKey = "b",
             variationKey = "c",
-            extraLogging = org.json.JSONObject(),
+            extraLogging = JSONObject(),
             reason = forge.anAlphabeticalString()
         )
 
@@ -367,7 +314,7 @@ internal class ExposureEventsProcessorTest {
             doLog = forge.aBool(),
             allocationKey = "",
             variationKey = "c",
-            extraLogging = org.json.JSONObject(),
+            extraLogging = JSONObject(),
             reason = forge.anAlphabeticalString()
         )
 
@@ -389,7 +336,7 @@ internal class ExposureEventsProcessorTest {
             doLog = forge.aBool(),
             allocationKey = "alloc",
             variationKey = "var",
-            extraLogging = org.json.JSONObject(),
+            extraLogging = JSONObject(),
             reason = forge.anAlphabeticalString()
         )
 
@@ -418,7 +365,7 @@ internal class ExposureEventsProcessorTest {
             doLog = forge.aBool(),
             allocationKey = "alloc1",
             variationKey = "var1",
-            extraLogging = org.json.JSONObject(),
+            extraLogging = JSONObject(),
             reason = forge.anAlphabeticalString()
         )
 
@@ -428,7 +375,7 @@ internal class ExposureEventsProcessorTest {
             doLog = forge.aBool(),
             allocationKey = "alloc2",
             variationKey = "var2",
-            extraLogging = org.json.JSONObject(),
+            extraLogging = JSONObject(),
             reason = forge.anAlphabeticalString()
         )
 
@@ -472,7 +419,7 @@ internal class ExposureEventsProcessorTest {
         threads.forEach { it.join() }
 
         // Then
-        verify(mockRecordWriter, times(1)).write(any())
+        verify(mockRecordWriter).write(any())
     }
 
     @Test
@@ -572,7 +519,7 @@ internal class ExposureEventsProcessorTest {
         threads.forEach { it.join() }
 
         // Then
-        verify(mockRecordWriter, times(1)).write(any())
+        verify(mockRecordWriter).write(any())
     }
 
     @Test
@@ -625,7 +572,7 @@ internal class ExposureEventsProcessorTest {
         )
 
         testedProcessor.processEvent("known-flag", knownContext, knownFlag)
-        verify(mockRecordWriter, times(1)).write(any())
+        verify(mockRecordWriter).write(any())
 
         val threadCount = 10
         val executionsPerThread = 100

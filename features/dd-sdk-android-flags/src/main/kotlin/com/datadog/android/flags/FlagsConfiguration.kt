@@ -22,7 +22,7 @@ data class FlagsConfiguration internal constructor(
          * Sets whether exposures should be logged to the dedicated exposures intake endpoint. This is enabled by default.
          * @param enabled Whether to enable exposure logging.
          */
-        fun setTrackExposures(enabled: Boolean): Builder {
+        fun trackExposures(enabled: Boolean): Builder {
             trackExposures = enabled
             return this
         }

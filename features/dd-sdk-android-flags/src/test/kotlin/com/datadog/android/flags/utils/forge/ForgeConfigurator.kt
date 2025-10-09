@@ -18,6 +18,7 @@ internal class ForgeConfigurator : BaseConfigurator() {
         // so that we can forge DatadogContext
         forge.useCoreFactories()
 
+        forge.addFactory(FlagsConfigurationForgeryFactory())
         forge.addFactory(PrecomputedFlagForgeryFactory())
     }
 }
