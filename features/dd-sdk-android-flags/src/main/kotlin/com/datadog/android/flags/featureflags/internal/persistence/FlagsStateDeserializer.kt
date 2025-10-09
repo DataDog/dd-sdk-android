@@ -53,20 +53,18 @@ internal class FlagsStateDeserializer(
     @Suppress("UnsafeThirdPartyFunctionCall") // JSONObject operations wrapped in try-catch
     private fun deserializeEvaluationContext(contextJson: JSONObject): EvaluationContext {
         val targetingKey = contextJson.getString(JsonKeys.TARGETING_KEY.value)
-        val attributesJson = try {
-            contextJson.getJSONObject(JsonKeys.ATTRIBUTES.value)
+
+        val attributes = try {
+            deserializeAttributes(contextJson.getJSONObject(JsonKeys.ATTRIBUTES.value))
         } catch (_: JSONException) {
-            null
+            emptyMap()
         }
-        val attributes = deserializeAttributes(attributesJson)
 
         return EvaluationContext(targetingKey, attributes)
     }
 
     @Suppress("UnsafeThirdPartyFunctionCall") // JSONObject operations wrapped in try-catch
-    private fun deserializeAttributes(attributesJson: JSONObject?): Map<String, String> {
-        if (attributesJson == null) return emptyMap()
-
+    private fun deserializeAttributes(attributesJson: JSONObject): Map<String, String> {
         val attributes = mutableMapOf<String, String>()
         val keys = attributesJson.keys()
 

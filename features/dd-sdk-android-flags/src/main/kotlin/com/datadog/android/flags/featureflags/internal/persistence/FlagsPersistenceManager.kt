@@ -17,18 +17,17 @@ import com.datadog.android.flags.featureflags.model.EvaluationContext
 
 internal class FlagsPersistenceManager(
     private val dataStore: DataStoreHandler,
-    private val instanceName: String,
+    instanceName: String,
     private val internalLogger: InternalLogger,
     onStateLoaded: (FlagsStateEntry?) -> Unit
 ) {
     private val serializer = FlagsStateSerializer(internalLogger)
     private val deserializer = FlagsStateDeserializer(internalLogger)
+    private val flagsStateKey: String = "$FLAGS_STATE_KEY_PREFIX-$instanceName"
 
     init {
         loadFlagsState(onStateLoaded)
     }
-
-    private val flagsStateKey: String = "$FLAGS_STATE_KEY_PREFIX-$instanceName"
 
     internal fun saveFlagsState(
         context: EvaluationContext,

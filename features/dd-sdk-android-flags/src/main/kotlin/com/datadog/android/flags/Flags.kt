@@ -57,6 +57,7 @@ object Flags {
         }
     }
 
+    @Suppress("LongMethod")
     private fun createClient(
         configuration: FlagsConfiguration,
         sdkCore: FeatureSdkCore,

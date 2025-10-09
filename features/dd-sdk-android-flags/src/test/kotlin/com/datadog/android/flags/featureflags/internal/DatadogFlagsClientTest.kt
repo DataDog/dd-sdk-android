@@ -524,7 +524,7 @@ internal class DatadogFlagsClientTest {
         val fakeFlagValue = forge.aBool()
         val fakeDefaultValue = !fakeFlagValue
         val fakeFlag = forge.getForgery<PrecomputedFlag>().copy(
-            variationType = PrecomputedFlagConstants.VariationType.BOOLEAN,
+            variationType = VariationType.BOOLEAN.value,
             variationValue = fakeFlagValue.toString()
         )
         val fakeContext = EvaluationContext(
@@ -559,7 +559,7 @@ internal class DatadogFlagsClientTest {
         val fakeFlagValue = forge.aBool()
         val fakeDefaultValue = !fakeFlagValue
         val fakeFlag = forge.getForgery<PrecomputedFlag>().copy(
-            variationType = PrecomputedFlagConstants.VariationType.BOOLEAN,
+            variationType = VariationType.BOOLEAN.value,
             variationValue = fakeFlagValue.toString()
         )
         val fakeContext = EvaluationContext(

@@ -81,18 +81,19 @@ internal class FlagsStateDeserializerTest {
         val result = testedDeserializer.deserialize(json.toString())
 
         // Then
-        assertThat(result).isNotNull()
-        assertThat(result!!.evaluationContext.targetingKey).isEqualTo(targetingKey)
+        checkNotNull(result)
+        assertThat(result.evaluationContext.targetingKey).isEqualTo(targetingKey)
         assertThat(result.evaluationContext.attributes).hasSize(3)
         assertThat(result.evaluationContext.attributes["string_attr"]).isEqualTo(stringAttr)
         assertThat(result.evaluationContext.attributes["number_attr"]).isEqualTo(numberAttr)
         assertThat(result.evaluationContext.attributes["boolean_attr"]).isEqualTo(booleanAttr)
 
         assertThat(result.flags).hasSize(1)
-        assertThat(result.flags["flag1"]).isNotNull()
-        assertThat(result.flags["flag1"]!!.variationType).isEqualTo("boolean")
-        assertThat(result.flags["flag1"]!!.variationValue).isEqualTo("true")
-        assertThat(result.flags["flag1"]!!.doLog).isTrue()
+        val flag1 = result.flags["flag1"]
+        checkNotNull(flag1)
+        assertThat(flag1.variationType).isEqualTo("boolean")
+        assertThat(flag1.variationValue).isEqualTo("true")
+        assertThat(flag1.doLog).isTrue()
 
         assertThat(result.lastUpdateTimestamp).isEqualTo(timestamp)
     }
@@ -119,8 +120,8 @@ internal class FlagsStateDeserializerTest {
         val result = testedDeserializer.deserialize(json.toString())
 
         // Then
-        assertThat(result).isNotNull()
-        assertThat(result!!.evaluationContext.targetingKey).isEqualTo(targetingKey)
+        checkNotNull(result)
+        assertThat(result.evaluationContext.targetingKey).isEqualTo(targetingKey)
         assertThat(result.evaluationContext.attributes).isEmpty()
         assertThat(result.flags).isEmpty()
         assertThat(result.lastUpdateTimestamp).isEqualTo(timestamp)
