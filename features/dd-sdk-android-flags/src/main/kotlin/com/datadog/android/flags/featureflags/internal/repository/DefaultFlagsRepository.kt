@@ -8,36 +8,59 @@ package com.datadog.android.flags.featureflags.internal.repository
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.api.storage.datastore.DataStoreHandler
+import com.datadog.android.api.storage.datastore.DataStoreWriteCallback
 import com.datadog.android.flags.featureflags.internal.model.PrecomputedFlag
+import com.datadog.android.flags.featureflags.internal.persistence.FlagsPersistenceManager
 import com.datadog.android.flags.featureflags.model.EvaluationContext
 import java.util.concurrent.atomic.AtomicReference
 
 internal class DefaultFlagsRepository(
     private val featureSdkCore: FeatureSdkCore,
+    private val instanceName: String,
+    private val dataStore: DataStoreHandler,
     private val internalLogger: InternalLogger = featureSdkCore.internalLogger
 ) : FlagsRepository {
-    // Atomic state - ensures context and flags are always consistent
     private data class FlagsState(val context: EvaluationContext, val flags: Map<String, PrecomputedFlag>)
     private val atomicState = AtomicReference<FlagsState?>(null)
+
+    private val persistenceManager = FlagsPersistenceManager(
+        dataStore = dataStore,
+        instanceName = instanceName,
+        internalLogger = internalLogger
+    ) { persistedState ->
+        persistedState?.let {
+            val loadedState = FlagsState(it.evaluationContext, it.flags)
+            atomicState.compareAndSet(null, loadedState)
+        }
+    }
 
     override fun setFlagsAndContext(context: EvaluationContext, flags: Map<String, PrecomputedFlag>) {
         val newState = FlagsState(context, flags)
         atomicState.set(newState)
+        persistenceManager.saveFlagsState(
+            context = context,
+            flags = flags,
+            object : DataStoreWriteCallback {
+                override fun onSuccess() {
+                }
 
-        internalLogger.log(
-            InternalLogger.Level.DEBUG,
-            InternalLogger.Target.MAINTAINER,
-            { "Set flags and context: ${flags.size} flags for context: ${context.targetingKey}" }
+                override fun onFailure() {
+                    internalLogger.log(
+                        target = InternalLogger.Target.MAINTAINER,
+                        level = InternalLogger.Level.WARN,
+                        messageBuilder = { ERROR_SAVING_FLAGS_STATE }
+                    )
+                }
+            }
         )
     }
 
     override fun getPrecomputedFlag(key: String): PrecomputedFlag? {
-        // Check atomic state first
         val state = atomicState.get()
         if (state != null) {
             return state.flags[key]
         }
-        // Log that no flag state and no context is available
         internalLogger.log(
             InternalLogger.Level.WARN,
             InternalLogger.Target.MAINTAINER,
@@ -56,6 +79,8 @@ internal class DefaultFlagsRepository(
     }
 
     companion object {
-        const val WARN_CONTEXT_NOT_SET = "You must call FlagsClient.get().setContext in order to have flags available"
+        const val WARN_CONTEXT_NOT_SET = "You must call FlagsClientManager.get().setEvaluationContext " +
+            "in order to have flags available"
+        const val ERROR_SAVING_FLAGS_STATE = "Failed to save flags state to persistent storage"
     }
 }
