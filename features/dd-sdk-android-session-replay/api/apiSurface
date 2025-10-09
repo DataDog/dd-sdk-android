@@ -38,6 +38,10 @@ data class com.datadog.android.sessionreplay.SessionReplayConfiguration
     fun build(): SessionReplayConfiguration
 interface com.datadog.android.sessionreplay.SessionReplayInternalCallback
   fun getCurrentActivity(): android.app.Activity?
+  fun addResourceItem(String, ByteArray, String? = null)
+  fun setResourceQueue(SessionReplayInternalResourceQueue)
+interface com.datadog.android.sessionreplay.SessionReplayInternalResourceQueue
+  fun addResourceItem(String, ByteArray, String? = null)
 enum com.datadog.android.sessionreplay.SessionReplayPrivacy
   - ALLOW
   - MASK
