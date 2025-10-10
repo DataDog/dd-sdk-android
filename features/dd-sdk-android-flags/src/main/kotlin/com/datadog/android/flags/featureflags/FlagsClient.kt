@@ -261,6 +261,7 @@ interface FlagsClient {
 
         internal const val FLAGS_CLIENT_EXECUTOR_NAME = "flags-client-executor"
 
+        @Suppress("LongMethod")
         internal fun createInternal(
             configuration: FlagsConfiguration,
             sdkCore: FeatureSdkCore,
