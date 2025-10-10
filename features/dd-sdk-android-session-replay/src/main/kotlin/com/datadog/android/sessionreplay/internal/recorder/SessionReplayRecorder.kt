@@ -24,6 +24,7 @@ import com.datadog.android.sessionreplay.internal.TouchPrivacyManager
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueHandler
 import com.datadog.android.sessionreplay.internal.processor.MutationResolver
 import com.datadog.android.sessionreplay.internal.processor.RecordedDataProcessor
+import com.datadog.android.sessionreplay.internal.processor.ResourceQueueImpl
 import com.datadog.android.sessionreplay.internal.processor.RumContextDataHandler
 import com.datadog.android.sessionreplay.internal.recorder.callback.OnWindowRefreshedCallback
 import com.datadog.android.sessionreplay.internal.recorder.mapper.DecorViewMapper
@@ -201,6 +202,9 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
             sessionReplayLifecycleCallback.setCurrentWindow(it)
             sessionReplayLifecycleCallback.registerFragmentLifecycleCallbacks(it)
         }
+
+        // Expose this object so it can be used to dynamically add resources
+        internalCallback.setResourceQueue(ResourceQueueImpl(this.recordedDataQueueHandler))
 
         this.uiHandler = Handler(Looper.getMainLooper())
         this.internalLogger = internalLogger

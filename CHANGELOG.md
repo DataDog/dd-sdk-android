@@ -75,6 +75,14 @@ This is the first official production version of SDK v3 containing the new archi
 * [MAINTENANCE] Bump Kotlin version used to `2.0.21`. See [#2766](https://github.com/DataDog/dd-sdk-android/pull/2766)
 * [MAINTENANCE] Bump `minSdk` version to 23. See [#2844](https://github.com/DataDog/dd-sdk-android/pull/2844)
 
+# 2.26.2 / 2025-10-09
+
+* [IMPROVEMENT] Extend resource handling to support multiple MIME types in RN. See [#2914](https://github.com/DataDog/dd-sdk-android/pull/2914)
+
+# 2.26.1 / 2025-09-11
+
+* [BUGFIX] RUM: Move session properties to `ddtags` over query parameters. See [#2812](https://github.com/DataDog/dd-sdk-android/pull/2812)
+
 # 2.26.0 / 2025-08-27
 
 * [FEATURE] RUM: Add battery and display attributes. See [#2815](https://github.com/DataDog/dd-sdk-android/pull/2815)
