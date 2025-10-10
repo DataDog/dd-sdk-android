@@ -9,6 +9,7 @@ package com.datadog.android.flags.featureflags.internal.repository.net
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.flags.featureflags.internal.model.FlagsContext
 import com.datadog.android.flags.featureflags.model.EvaluationContext
+import com.datadog.android.flags.internal.getFlagsEndpoint
 import okhttp3.Call
 import okhttp3.Headers
 import okhttp3.OkHttpClient
@@ -25,10 +26,10 @@ import java.util.concurrent.TimeUnit
 
 internal class DefaultFlagsNetworkManager(
     private val internalLogger: InternalLogger,
-    private val flagsContext: FlagsContext,
-    private val endpointsHelper: EndpointsHelper = EndpointsHelper(internalLogger)
+    private val flagsContext: FlagsContext
 ) : FlagsNetworkManager {
     internal lateinit var callFactory: OkHttpCallFactory
+    private val endpointUrl: String?
 
     internal class OkHttpCallFactory(factory: () -> OkHttpClient) : Call.Factory {
         val okhttpClient by lazy(factory)
@@ -37,12 +38,13 @@ internal class DefaultFlagsNetworkManager(
     }
 
     init {
+        endpointUrl = flagsContext.site.getFlagsEndpoint(flagsContext.customerDomain)
         setupOkHttpClient()
     }
 
     @Suppress("ReturnCount")
     override fun downloadPrecomputedFlags(context: EvaluationContext): String? {
-        val url = buildUrl() ?: return null
+        val url = endpointUrl ?: return null
         val headers = buildHeaders()
         val body = buildRequestBody(context) ?: return null
         return download(url = url, headers = headers, body = body)
@@ -130,21 +132,6 @@ internal class DefaultFlagsNetworkManager(
         null
     }
 
-    private fun buildUrl(): String? {
-        val baseUrl = endpointsHelper.buildEndpointHost(site = flagsContext.site)
-        return if (baseUrl.isNotEmpty()) {
-            "https://$baseUrl$FLAGS_ENDPOINT"
-        } else {
-            internalLogger.log(
-                level = InternalLogger.Level.ERROR,
-                target = InternalLogger.Target.MAINTAINER,
-                messageBuilder = { ERROR_FAILURE_BUILDING_URL }
-            )
-
-            null
-        }
-    }
-
     private fun buildHeaders(): Headers {
         val headersBuilder = Headers.Builder()
 
@@ -168,8 +155,6 @@ internal class DefaultFlagsNetworkManager(
         return headersBuilder.build()
     }
 
-    @Suppress("TodoWithoutTask")
-    // TODO modify to real fields
     private fun buildRequestBody(context: EvaluationContext): RequestBody? = try {
         val attributeObj = buildStringifiedAttributes(context)
 
@@ -214,7 +199,7 @@ internal class DefaultFlagsNetworkManager(
     // TODO replace the environment
     private fun buildEnvPayload(): JSONObject =
         JSONObject()
-            .put("dd_env", "prod")
+            .put("dd_env", flagsContext.env)
 
     private fun setupOkHttpClient() {
         callFactory = OkHttpCallFactory {
@@ -232,8 +217,6 @@ internal class DefaultFlagsNetworkManager(
         private const val HEADER_CLIENT_TOKEN = "dd-client-token"
         private const val HEADER_CONTENT_TYPE = "Content-Type"
         private const val CONTENT_TYPE_VND_JSON = "application/vnd.api+json"
-        private const val FLAGS_ENDPOINT = "/precompute-assignments"
         private val NETWORK_TIMEOUT_MS = TimeUnit.SECONDS.toMillis(45)
-        private const val ERROR_FAILURE_BUILDING_URL = "Failed to build url"
     }
 }
