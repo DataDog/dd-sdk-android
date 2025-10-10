@@ -497,40 +497,51 @@ internal class PrecomputeMapperTest {
 
     // region Helper Methods
 
-    private fun buildValidJson(flags: Map<String, JSONObject>): String = JSONObject().data {
-        attributes {
-            flags {
-                flags.forEach { (name, flagData) ->
-                    put(name, flagData)
+    private fun buildValidJson(flags: Map<String, JSONObject>): String {
+        return JSONObject().data {
+            attributes {
+                flags {
+                    flags.forEach { (name, flagData) ->
+                        put(name, flagData)
+                    }
                 }
             }
+        }.toString()
+    }
+
+    private fun buildValidJsonWithExtraLogging(flags: Map<String, JSONObject>): String {
+        return buildValidJson(flags)
+    }
+
+    private fun buildFlagJson(
+        variationType: String,
+        variationValue: Any
+    ): JSONObject {
+        return JSONObject().apply {
+            put("variationType", variationType)
+            put("variationValue", variationValue)
+            put("doLog", fakeDoLog)
+            put("allocationKey", fakeAllocationKey)
+            put("variationKey", fakeVariationKey)
+            put("extraLogging", JSONObject())
+            put("reason", fakeReason)
         }
-    }.toString()
-
-    private fun buildValidJsonWithExtraLogging(flags: Map<String, JSONObject>): String = buildValidJson(flags)
-
-    private fun buildFlagJson(variationType: String, variationValue: Any): JSONObject = JSONObject().apply {
-        put("variationType", variationType)
-        put("variationValue", variationValue)
-        put("doLog", fakeDoLog)
-        put("allocationKey", fakeAllocationKey)
-        put("variationKey", fakeVariationKey)
-        put("extraLogging", JSONObject())
-        put("reason", fakeReason)
     }
 
     private fun buildFlagJsonWithExtraLogging(
         variationType: String,
         variationValue: Any,
         extraLogging: JSONObject
-    ): JSONObject = JSONObject().apply {
-        put("variationType", variationType)
-        put("variationValue", variationValue)
-        put("doLog", fakeDoLog)
-        put("allocationKey", fakeAllocationKey)
-        put("variationKey", fakeVariationKey)
-        put("reason", fakeReason)
-        put("extraLogging", extraLogging)
+    ): JSONObject {
+        return JSONObject().apply {
+            put("variationType", variationType)
+            put("variationValue", variationValue)
+            put("doLog", fakeDoLog)
+            put("allocationKey", fakeAllocationKey)
+            put("variationKey", fakeVariationKey)
+            put("reason", fakeReason)
+            put("extraLogging", extraLogging)
+        }
     }
 
     // endregion

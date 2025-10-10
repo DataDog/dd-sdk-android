@@ -29,7 +29,9 @@ internal data class ExposureEvent(
     }
 }
 
-internal data class Identifier(val key: String) {
+internal data class Identifier(
+    val key: String
+) {
     internal fun toJson(): JsonElement {
         val json = JsonObject()
         json.addProperty("key", key)

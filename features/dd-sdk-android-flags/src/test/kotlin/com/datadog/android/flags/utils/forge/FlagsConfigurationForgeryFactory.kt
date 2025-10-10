@@ -11,7 +11,9 @@ import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
 
 internal class FlagsConfigurationForgeryFactory : ForgeryFactory<FlagsConfiguration> {
-    override fun getForgery(forge: Forge): FlagsConfiguration = FlagsConfiguration.Builder()
-        .trackExposures(forge.aBool())
-        .build()
+    override fun getForgery(forge: Forge): FlagsConfiguration {
+        return FlagsConfiguration.Builder()
+            .trackExposures(forge.aBool())
+            .build()
+    }
 }

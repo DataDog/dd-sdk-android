@@ -14,7 +14,9 @@ import com.datadog.android.flags.internal.model.Identifier
 import com.datadog.android.flags.internal.model.Subject
 import com.datadog.android.flags.internal.storage.RecordWriter
 
-internal class ExposureEventsProcessor(private val writer: RecordWriter) : EventsProcessor {
+internal class ExposureEventsProcessor(
+    private val writer: RecordWriter
+) : EventsProcessor {
 
     private data class CacheKey(
         val targetingKey: String,
@@ -66,7 +68,11 @@ internal class ExposureEventsProcessor(private val writer: RecordWriter) : Event
         }
     }
 
-    private fun buildExposureEvent(flagName: String, context: EvaluationContext, data: PrecomputedFlag): ExposureEvent {
+    private fun buildExposureEvent(
+        flagName: String,
+        context: EvaluationContext,
+        data: PrecomputedFlag
+    ): ExposureEvent {
         val now = System.currentTimeMillis()
         return ExposureEvent(
             timeStamp = now,

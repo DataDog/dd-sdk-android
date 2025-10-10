@@ -15,7 +15,9 @@ import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.core.internal.utils.join
 import java.util.UUID
 
-internal class ExposuresRequestFactory(private val internalLogger: InternalLogger) : RequestFactory {
+internal class ExposuresRequestFactory(
+    private val internalLogger: InternalLogger
+) : RequestFactory {
 
     override fun create(
         context: DatadogContext,
@@ -50,12 +52,14 @@ internal class ExposuresRequestFactory(private val internalLogger: InternalLogge
         clientToken: String,
         source: String,
         sdkVersion: String
-    ): Map<String, String> = mapOf(
-        RequestFactory.HEADER_API_KEY to clientToken,
-        RequestFactory.HEADER_EVP_ORIGIN to source,
-        RequestFactory.HEADER_EVP_ORIGIN_VERSION to sdkVersion,
-        RequestFactory.HEADER_REQUEST_ID to requestId
-    )
+    ): Map<String, String> {
+        return mapOf(
+            RequestFactory.HEADER_API_KEY to clientToken,
+            RequestFactory.HEADER_EVP_ORIGIN to source,
+            RequestFactory.HEADER_EVP_ORIGIN_VERSION to sdkVersion,
+            RequestFactory.HEADER_REQUEST_ID to requestId
+        )
+    }
 
     private companion object {
         private val PAYLOAD_SEPARATOR = "\n".toByteArray(Charsets.UTF_8)
