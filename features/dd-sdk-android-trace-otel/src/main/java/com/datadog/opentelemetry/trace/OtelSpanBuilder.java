@@ -18,14 +18,11 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import com.datadog.android.api.InternalLogger;
-import com.datadog.android.api.context.DatadogContext;
-import com.datadog.android.internal.concurrent.CompletableFuture;
 import com.datadog.android.trace.api.DatadogTracingConstants;
 import com.datadog.android.trace.api.span.DatadogSpan;
 import com.datadog.android.trace.api.span.DatadogSpanBuilder;
 import com.datadog.android.trace.api.span.DatadogSpanContext;
 import com.datadog.android.trace.api.tracer.DatadogTracer;
-import com.datadog.android.trace.internal.SpanAttributes;
 
 import java.util.List;
 import java.util.concurrent.TimeUnit;

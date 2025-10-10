@@ -95,6 +95,7 @@ dependencies {
     implementation(project(":features:dd-sdk-android-logs"))
     implementation(project(":features:dd-sdk-android-trace"))
     implementation(project(":features:dd-sdk-android-rum"))
+    implementation(project(":dd-sdk-android-internal"))
     implementation(project(":integrations:dd-sdk-android-okhttp"))
 
     implementation(libs.gson)

@@ -12,7 +12,7 @@ import android.content.ContentValues
 import android.content.Context
 import android.net.Uri
 import android.os.Process
-import com.datadog.android.rum.utils.forge.Configurator
+import com.datadog.android.internal.forge.Configurator
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.setFieldValue
 import fr.xgouchet.elmyr.Forge

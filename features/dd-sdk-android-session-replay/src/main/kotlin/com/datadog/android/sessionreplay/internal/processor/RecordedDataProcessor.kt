@@ -50,7 +50,8 @@ internal class RecordedDataProcessor(
 
             val enrichedResource = EnrichedResource(
                 resource = item.resourceData,
-                filename = resourceHash
+                filename = resourceHash,
+                mimeType = item.mimeType
             )
 
             resourcesWriter.write(enrichedResource)

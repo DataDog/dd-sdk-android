@@ -368,6 +368,7 @@ public final class com/datadog/trace/api/Functions$LowerCase : com/datadog/andro
 
 public abstract class com/datadog/trace/api/IdGenerationStrategy {
 	protected final field traceId128BitGenerationEnabled Z
+	public fun <init> (Z)V
 	public static fun fromName (Ljava/lang/String;)Lcom/datadog/trace/api/IdGenerationStrategy;
 	public static fun fromName (Ljava/lang/String;Z)Lcom/datadog/trace/api/IdGenerationStrategy;
 	protected fun generateHighOrderBits ()J
@@ -3134,7 +3135,8 @@ public class com/datadog/trace/core/propagation/ExtractedContext : com/datadog/t
 }
 
 public class com/datadog/trace/core/propagation/HttpCodec {
-	public static final field RUM_SESSION_ID_KEY Ljava/lang/String;
+	public static final field RUM_KEY_ACCOUNT_ID Ljava/lang/String;
+	public static final field RUM_KEY_USER_ID Ljava/lang/String;
 	public fun <init> ()V
 	public static fun allInjectorsFor (Lcom/datadog/trace/api/Config;Ljava/util/Map;)Ljava/util/Map;
 	public static fun createExtractor (Lcom/datadog/trace/api/Config;Lcom/datadog/android/trace/internal/compat/function/Supplier;)Lcom/datadog/trace/core/propagation/HttpCodec$Extractor;

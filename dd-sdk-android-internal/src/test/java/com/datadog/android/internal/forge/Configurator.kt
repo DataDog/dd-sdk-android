@@ -9,11 +9,13 @@ package com.datadog.android.internal.forge
 import com.datadog.android.internal.tests.elmyr.InternalTelemetryErrorLogForgeryFactory
 import com.datadog.tools.unit.forge.BaseConfigurator
 import fr.xgouchet.elmyr.Forge
+import fr.xgouchet.elmyr.jvm.useJvmFactories
 
 internal class Configurator :
     BaseConfigurator() {
     override fun configure(forge: Forge) {
         super.configure(forge)
+        forge.useJvmFactories()
         forge.addFactory(InternalTelemetryErrorLogForgeryFactory())
     }
 }

@@ -31,6 +31,8 @@ import com.datadog.android.trace.api.span.DatadogSpan
 import com.datadog.android.trace.api.span.DatadogSpanContext
 import com.datadog.android.trace.api.tracer.DatadogTracer
 import com.datadog.android.trace.internal.DatadogTracingToolkit
+import com.datadog.android.trace.internal.RumContextPropagator
+import com.datadog.android.trace.internal.RumContextPropagator.Companion.extractRumContext
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -94,6 +96,8 @@ internal constructor(
     internal val sdkCoreReference = SdkReference(sdkInstanceName) {
         onSdkInstanceReady(it as InternalSdkCore)
     }
+
+    private val rumContextPropagator = RumContextPropagator { sdkCoreReference.get() as? FeatureSdkCore }
 
     init {
         val sdkCore = sdkCoreReference.get() as? FeatureSdkCore
@@ -207,7 +211,7 @@ internal constructor(
         tracer: DatadogTracer
     ): Response {
         val span = buildSpan(tracer, request)
-        val isSampled = span.sample(request)
+        val isSampled = span.extractRumContext(rumContextPropagator, block = true).sample(request)
 
         if (span.isRootSpan) {
             val samplingPriority = if (isSampled) {
