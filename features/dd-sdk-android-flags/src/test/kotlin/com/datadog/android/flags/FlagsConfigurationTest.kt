@@ -6,6 +6,7 @@
 
 package com.datadog.android.flags
 
+import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -15,121 +16,80 @@ import org.junit.jupiter.api.extension.ExtendWith
 @ExtendWith(ForgeExtension::class)
 internal class FlagsConfigurationTest {
 
-    // region default()
+    // region Builder Tests
 
     @Test
-    fun `M return default config W default()`() {
+    fun `M have default values W Builder { constructor }`() {
         // When
-        val config = FlagsConfiguration.default()
+        val builder = FlagsConfiguration.Builder()
+        val configuration = builder.build()
 
         // Then
-        assertThat(config.customExposureEndpoint).isNull()
-        assertThat(config.customFlagEndpoint).isNull()
-        assertThat(config.enableExposureLogging).isTrue()
+        assertThat(configuration.trackExposures).isTrue()
+        assertThat(configuration.customExposureEndpoint).isNull()
     }
 
     @Test
-    fun `M return same instance W default() {called multiple times}`() {
+    fun `M set track exposures W Builder`(@BoolForgery fakeTrackExposuresState: Boolean) {
+        // Given
+        val builder = FlagsConfiguration.Builder()
+
         // When
-        val config1 = FlagsConfiguration.default()
-        val config2 = FlagsConfiguration.default()
+        builder.trackExposures(fakeTrackExposuresState)
+        val configuration = builder.build()
 
         // Then
-        assertThat(config1).isSameAs(config2)
+        assertThat(configuration.trackExposures).isEqualTo(fakeTrackExposuresState)
+        assertThat(configuration.customExposureEndpoint).isNull()
     }
 
-    // endregion
+    @Test
+    fun `M set custom exposure endpoint W Builder`(@StringForgery fakeCustomExposureEndpoint: String) {
+        // Given
+        val builder = FlagsConfiguration.Builder()
 
-    // region Builder behavior
+        // When
+        builder.useCustomExposureEndpoint(fakeCustomExposureEndpoint)
+        val configuration = builder.build()
+
+        // Then
+        assertThat(configuration.trackExposures).isTrue()
+        assertThat(configuration.customExposureEndpoint).isEqualTo(fakeCustomExposureEndpoint)
+    }
 
     @Test
-    fun `M allow builder reuse W Builder {build multiple times}`(
-        @StringForgery fakeEndpoint1: String,
-        @StringForgery fakeEndpoint2: String
+    fun `M create multiple configurations W Builder { reusable builder }`(
+        @StringForgery(regex = "https://[a-z]+\\.com(/[a-z]+)+") fakeCustomExposureEndpoint: String
     ) {
         // Given
         val builder = FlagsConfiguration.Builder()
-            .useCustomExposureEndpoint(fakeEndpoint1)
+            .trackExposures(true)
+            .useCustomExposureEndpoint(fakeCustomExposureEndpoint)
 
         // When
-        val config1 = builder.build()
-
-        // Then - first build succeeds
-        assertThat(config1.customExposureEndpoint).isEqualTo(fakeEndpoint1)
-
-        // When - modify and build again
-        val config2 = builder
-            .useCustomExposureEndpoint(fakeEndpoint2)
-            .build()
-
-        // Then - second build succeeds with new value
-        assertThat(config2.customExposureEndpoint).isEqualTo(fakeEndpoint2)
-        // And first config is unchanged (immutability)
-        assertThat(config1.customExposureEndpoint).isEqualTo(fakeEndpoint1)
-    }
-
-    @Test
-    fun `M override previous value W Builder {same setter called twice}`(
-        @StringForgery fakeEndpoint1: String,
-        @StringForgery fakeEndpoint2: String
-    ) {
-        // When
-        val config = FlagsConfiguration.Builder()
-            .useCustomExposureEndpoint(fakeEndpoint1)
-            .useCustomExposureEndpoint(fakeEndpoint2)
-            .build()
-
-        // Then - last value wins
-        assertThat(config.customExposureEndpoint).isEqualTo(fakeEndpoint2)
-    }
-
-    @Test
-    fun `M maintain independent fields W Builder {set different fields}`(
-        @StringForgery fakeExposureEndpoint: String,
-        @StringForgery fakeFlaggingEndpoint: String
-    ) {
-        // When
-        val config = FlagsConfiguration.Builder()
-            .useCustomExposureEndpoint(fakeExposureEndpoint)
-            .useCustomFlagEndpoint(fakeFlaggingEndpoint)
-            .setExposureLoggingEnabled(true)
-            .build()
+        val configuration1 = builder.build()
+        val configuration2 = builder.build()
 
         // Then
-        assertThat(config.customExposureEndpoint).isEqualTo(fakeExposureEndpoint)
-        assertThat(config.customFlagEndpoint).isEqualTo(fakeFlaggingEndpoint)
-        assertThat(config.enableExposureLogging).isTrue()
+        assertThat(configuration1).isEqualTo(configuration2)
+        assertThat(configuration1).isNotSameAs(configuration2) // Different instances
     }
 
     @Test
-    fun `M set enableExposureLogging to true W Builder#enableExposureLogging() {true}`() {
+    fun `M modify builder after build W Builder { builder state preserved }`() {
+        // Given
+        val builder = FlagsConfiguration.Builder()
+            .trackExposures(true)
+
+        val firstConfiguration = builder.build()
+
         // When
-        val config = FlagsConfiguration.Builder()
-            .setExposureLoggingEnabled(true)
-            .build()
+        builder.trackExposures(false)
+        val secondConfiguration = builder.build()
 
         // Then
-        assertThat(config.enableExposureLogging).isTrue()
-    }
-
-    @Test
-    fun `M set enableExposureLogging to false W Builder#enableExposureLogging() {false}`() {
-        // When
-        val config = FlagsConfiguration.Builder()
-            .setExposureLoggingEnabled(false)
-            .build()
-
-        // Then
-        assertThat(config.enableExposureLogging).isFalse()
-    }
-
-    @Test
-    fun `M default to true W Builder#build() {enableExposureLogging not set}`() {
-        // When
-        val config = FlagsConfiguration.Builder().build()
-
-        // Then
-        assertThat(config.enableExposureLogging).isTrue()
+        assertThat(firstConfiguration.trackExposures).isTrue()
+        assertThat(secondConfiguration.trackExposures).isFalse()
     }
 
     // endregion

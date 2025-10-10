@@ -168,30 +168,6 @@ internal class EndpointsHelperTest {
     // region getFlaggingEndpoint
 
     @Test
-    fun `M return custom flag endpoint URL W getFlaggingEndpoint() {flagging endpoint configured}`(
-        @StringForgery fakeApplicationId: String,
-        @StringForgery fakeClientToken: String,
-        @StringForgery fakeEnv: String,
-        @StringForgery fakeFlagEndpoint: String
-    ) {
-        // Given
-        val context = FlagsContext(
-            applicationId = fakeApplicationId,
-            clientToken = fakeClientToken,
-            site = DatadogSite.US1,
-            env = fakeEnv,
-            customFlagEndpoint = fakeFlagEndpoint
-        )
-        val helper = EndpointsHelper(context, mockInternalLogger)
-
-        // When
-        val result = helper.getFlaggingEndpoint()
-
-        // Then
-        assertThat(result).isEqualTo(fakeFlagEndpoint)
-    }
-
-    @Test
     fun `M build from site W getFlaggingEndpoint() {no flag endpoint configured}`(
         @StringForgery fakeApplicationId: String,
         @StringForgery fakeClientToken: String,
@@ -202,8 +178,7 @@ internal class EndpointsHelperTest {
             applicationId = fakeApplicationId,
             clientToken = fakeClientToken,
             site = DatadogSite.US1,
-            env = fakeEnv,
-            customFlagEndpoint = null
+            env = fakeEnv
         )
         val helper = EndpointsHelper(context, mockInternalLogger)
 
@@ -225,8 +200,7 @@ internal class EndpointsHelperTest {
             applicationId = fakeApplicationId,
             clientToken = fakeClientToken,
             site = DatadogSite.US1_FED,
-            env = fakeEnv,
-            customFlagEndpoint = null
+            env = fakeEnv
         )
         val helper = EndpointsHelper(context, mockInternalLogger)
 

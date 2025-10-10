@@ -49,8 +49,7 @@ internal class FlagsContextTest {
 
     @Test
     fun `M create FlagsContext with all parameters W create() { complete configuration }`(
-        @StringForgery(regex = "https://[a-z]+\\.com(/[a-z]+)+") fakeExposureEndpoint: String,
-        @StringForgery(regex = "https://[a-z]+\\.com(/[a-z]+)+") fakeFlagEndpoint: String
+        @StringForgery(regex = "https://[a-z]+\\.com(/[a-z]+)+") fakeExposureEndpoint: String
     ) {
         // Given
         whenever(mockDatadogContext.clientToken) doReturn fakeClientToken
@@ -60,7 +59,6 @@ internal class FlagsContextTest {
 
         val flagsConfiguration = FlagsConfiguration.Builder()
             .useCustomExposureEndpoint(fakeExposureEndpoint)
-            .useCustomFlagEndpoint(fakeFlagEndpoint)
             .build()
 
         // When
@@ -72,7 +70,6 @@ internal class FlagsContextTest {
         assertThat(flagsContext.site).isEqualTo(mockDatadogSite)
         assertThat(flagsContext.env).isEqualTo(fakeEnv)
         assertThat(flagsContext.customExposureEndpoint).isEqualTo(fakeExposureEndpoint)
-        assertThat(flagsContext.customFlagEndpoint).isEqualTo(fakeFlagEndpoint)
     }
 
     @Test
@@ -94,7 +91,6 @@ internal class FlagsContextTest {
         assertThat(flagsContext.site).isEqualTo(mockDatadogSite)
         assertThat(flagsContext.env).isEqualTo(fakeEnv)
         assertThat(flagsContext.customExposureEndpoint).isNull()
-        assertThat(flagsContext.customFlagEndpoint).isNull()
     }
 
     @Test

@@ -6,25 +6,44 @@
 
 package com.datadog.android.flags.utils.forge
 
+import com.datadog.android.flags.featureflags.internal.model.FlagReason
 import com.datadog.android.flags.featureflags.internal.model.PrecomputedFlag
-import com.datadog.android.flags.featureflags.internal.model.PrecomputedFlagConstants
+import com.datadog.android.flags.featureflags.internal.model.VariationType
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
 import org.json.JSONObject
 
 internal class PrecomputedFlagForgeryFactory : ForgeryFactory<PrecomputedFlag> {
     override fun getForgery(forge: Forge): PrecomputedFlag {
-        val variationType = forge.anElementFrom(PrecomputedFlagConstants.VariationType.ALL_VALUES)
-        val variationValue = when (variationType) {
-            PrecomputedFlagConstants.VariationType.BOOLEAN -> forge.aBool().toString()
-            PrecomputedFlagConstants.VariationType.STRING -> forge.anAlphabeticalString()
-            PrecomputedFlagConstants.VariationType.INTEGER -> forge.anInt().toString()
-            PrecomputedFlagConstants.VariationType.DOUBLE -> forge.aDouble().toString()
-            PrecomputedFlagConstants.VariationType.JSON -> JSONObject().put(
+        val variationTypeEnum = forge.anElementFrom(*VariationType.values())
+
+        // Use the same pattern as DatadogFlagsProviderTest
+        val variationType = when (variationTypeEnum) {
+            VariationType.BOOLEAN -> VariationType.BOOLEAN.value
+            VariationType.STRING -> VariationType.STRING.value
+            VariationType.INTEGER -> VariationType.INTEGER.value
+            VariationType.DOUBLE -> VariationType.DOUBLE.value
+            VariationType.JSON -> VariationType.JSON.value
+        }
+
+        val variationValue = when (variationTypeEnum) {
+            VariationType.BOOLEAN -> forge.aBool().toString()
+            VariationType.STRING -> forge.anAlphabeticalString()
+            VariationType.INTEGER -> forge.anInt().toString()
+            VariationType.DOUBLE -> forge.aDouble().toString()
+            VariationType.JSON -> JSONObject().put(
                 "key",
                 forge.anAlphabeticalString()
             ).toString()
-            else -> forge.anAlphabeticalString()
+        }
+
+        val reasonEnum = forge.anElementFrom(*FlagReason.values())
+        val reason = when (reasonEnum) {
+            FlagReason.DEFAULT -> FlagReason.DEFAULT.value
+            FlagReason.TARGETING_MATCH -> FlagReason.TARGETING_MATCH.value
+            FlagReason.RULE_MATCH -> FlagReason.RULE_MATCH.value
+            FlagReason.PREREQUISITE_FAILED -> FlagReason.PREREQUISITE_FAILED.value
+            FlagReason.ERROR -> FlagReason.ERROR.value
         }
 
         return PrecomputedFlag(
@@ -40,7 +59,7 @@ internal class PrecomputedFlagForgeryFactory : ForgeryFactory<PrecomputedFlag> {
                     }
                 }
             } ?: JSONObject(),
-            reason = forge.anElementFrom(PrecomputedFlagConstants.Reason.ALL_VALUES)
+            reason = reason
         )
     }
 }

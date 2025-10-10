@@ -224,8 +224,10 @@ datadog:
       # region org.json
       - "org.json.JSONArray.get(kotlin.Int):org.json.JSONException"
       - "org.json.JSONObject.constructor(kotlin.String?):org.json.JSONException"
-      - "org.json.JSONObject.put(kotlin.String?, kotlin.Any?):org.json.JSONException"
       - "org.json.JSONObject.get(kotlin.String):org.json.JSONException"
+      - "org.json.JSONObject.getString(kotlin.String?):org.json.JSONException"
+      - "org.json.JSONObject.put(kotlin.String?, kotlin.Any?):org.json.JSONException"
+      - "org.json.JSONObject.put(kotlin.String?, kotlin.Long):org.json.JSONException"
       # endregion
       # region Gson
       - "com.google.gson.JsonParser.parseString(kotlin.String?):com.google.gson.JsonParseException"

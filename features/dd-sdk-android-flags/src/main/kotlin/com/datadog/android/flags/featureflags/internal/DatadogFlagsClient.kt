@@ -7,13 +7,18 @@
 package com.datadog.android.flags.featureflags.internal
 
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.feature.Feature.Companion.FLAGS_FEATURE_NAME
 import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.flags.FlagsConfiguration
 import com.datadog.android.flags.featureflags.FlagsClient
 import com.datadog.android.flags.featureflags.internal.evaluation.EvaluationsManager
+import com.datadog.android.flags.featureflags.internal.model.PrecomputedFlag
 import com.datadog.android.flags.featureflags.internal.repository.FlagsRepository
 import com.datadog.android.flags.featureflags.model.EvaluationContext
+import com.datadog.android.flags.internal.FlagsFeature
 import org.json.JSONException
 import org.json.JSONObject
+import java.util.Locale
 
 /**
  * Production implementation of [FlagsClient] that integrates with Datadog's flag evaluation system.
@@ -28,11 +33,13 @@ import org.json.JSONObject
  * @param featureSdkCore the SDK core for logging and internal operations
  * @param evaluationsManager manages flag evaluations and network requests
  * @param flagsRepository local storage for precomputed flag values
+ * @param flagsConfiguration configuration for the flags feature
  */
 internal class DatadogFlagsClient(
     private val featureSdkCore: FeatureSdkCore,
     private val evaluationsManager: EvaluationsManager,
-    private val flagsRepository: FlagsRepository
+    private val flagsRepository: FlagsRepository,
+    private val flagsConfiguration: FlagsConfiguration
 ) : FlagsClient {
 
     /**
@@ -65,8 +72,8 @@ internal class DatadogFlagsClient(
     /**
      * Resolves a boolean flag value from the local repository.
      *
-     * This method performs strict boolean parsing of the stored flag value.
-     * Only "true" and "false" (case-sensitive) string values will be converted;
+     * This method performs boolean parsing of the stored flag value.
+     * Only "true" and "false" (case-insensitive) string values will be converted;
      * all other values result in the default being returned.
      *
      * This method is thread-safe and performs no network operations.
@@ -75,10 +82,8 @@ internal class DatadogFlagsClient(
      * @param defaultValue The value to return if the flag cannot be retrieved or parsed.
      * @return The boolean value of the flag, or the default value if unavailable or unparseable.
      */
-    override fun resolveBooleanValue(flagKey: String, defaultValue: Boolean): Boolean {
-        val precomputedFlag = flagsRepository.getPrecomputedFlag(flagKey)
-        return precomputedFlag?.variationValue?.toBooleanStrictOrNull() ?: defaultValue
-    }
+    override fun resolveBooleanValue(flagKey: String, defaultValue: Boolean): Boolean =
+        getValue(flagKey, defaultValue) { it.lowercase(locale = Locale.US).toBooleanStrictOrNull() }
 
     /**
      * Resolves a string flag value from the local repository.
@@ -90,10 +95,8 @@ internal class DatadogFlagsClient(
      * @param defaultValue The value to return if the flag cannot be retrieved.
      * @return The string value of the flag, or the default value if unavailable.
      */
-    override fun resolveStringValue(flagKey: String, defaultValue: String): String {
-        val precomputedData = flagsRepository.getPrecomputedFlag(flagKey)
-        return precomputedData?.variationValue ?: defaultValue
-    }
+    override fun resolveStringValue(flagKey: String, defaultValue: String): String =
+        getValue(flagKey, defaultValue) { it }
 
     /**
      * Resolves an integer flag value from the local repository.
@@ -106,10 +109,8 @@ internal class DatadogFlagsClient(
      * @param defaultValue The value to return if the flag cannot be retrieved or parsed.
      * @return The integer value of the flag, or the default value if unavailable or unparseable.
      */
-    override fun resolveIntValue(flagKey: String, defaultValue: Int): Int {
-        val precomputedData = flagsRepository.getPrecomputedFlag(flagKey)
-        return precomputedData?.variationValue?.toIntOrNull() ?: defaultValue
-    }
+    override fun resolveIntValue(flagKey: String, defaultValue: Int): Int =
+        getValue(flagKey, defaultValue) { it.toIntOrNull() }
 
     /**
      * Resolves a double flag value from the local repository.
@@ -122,10 +123,8 @@ internal class DatadogFlagsClient(
      * @param defaultValue The value to return if the flag cannot be retrieved or parsed.
      * @return The double value of the flag, or the default value if unavailable or unparseable.
      */
-    override fun resolveDoubleValue(flagKey: String, defaultValue: Double): Double {
-        val precomputedData = flagsRepository.getPrecomputedFlag(flagKey)
-        return precomputedData?.variationValue?.toDoubleOrNull() ?: defaultValue
-    }
+    override fun resolveDoubleValue(flagKey: String, defaultValue: Double): Double =
+        getValue(flagKey, defaultValue) { it.toDoubleOrNull() }
 
     /**
      * Resolves a structured flag value from the local repository.
@@ -138,11 +137,10 @@ internal class DatadogFlagsClient(
      * @param defaultValue The value to return if the flag cannot be retrieved or parsed.
      * @return The JSON object value of the flag, or the default value if unavailable or unparseable.
      */
-    override fun resolveStructureValue(flagKey: String, defaultValue: JSONObject): JSONObject {
-        val precomputedData = flagsRepository.getPrecomputedFlag(flagKey)
-        return precomputedData?.variationValue?.let {
+    override fun resolveStructureValue(flagKey: String, defaultValue: JSONObject): JSONObject =
+        getValue(flagKey, defaultValue) { stringValue ->
             try {
-                JSONObject(it)
+                JSONObject(stringValue)
             } catch (e: JSONException) {
                 featureSdkCore.internalLogger.log(
                     level = InternalLogger.Level.ERROR,
@@ -152,6 +150,29 @@ internal class DatadogFlagsClient(
                 )
                 defaultValue
             }
-        } ?: defaultValue
+        }
+
+    private fun <T> getValue(flagKey: String, defaultValue: T, converter: (String) -> T?): T {
+        val precomputedFlag = flagsRepository.getPrecomputedFlag(flagKey)
+        val convertedValue = precomputedFlag?.variationValue?.let(converter)
+
+        if (convertedValue != null && flagsConfiguration.trackExposures) {
+            writeExposureEvent(flagKey, precomputedFlag)
+        }
+
+        return convertedValue ?: defaultValue
+    }
+
+    private fun writeExposureEvent(name: String, data: PrecomputedFlag) {
+        val context = flagsRepository.getEvaluationContext()
+        if (context != null) {
+            featureSdkCore
+                .getFeature(FLAGS_FEATURE_NAME)
+                ?.unwrap<FlagsFeature>()?.processor?.processEvent(
+                    flagName = name,
+                    context = context,
+                    data = data
+                )
+        }
     }
 }

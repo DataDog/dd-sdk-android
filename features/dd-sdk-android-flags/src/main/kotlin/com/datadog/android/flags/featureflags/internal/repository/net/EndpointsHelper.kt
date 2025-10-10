@@ -20,12 +20,8 @@ internal class EndpointsHelper(private val flagsContext: FlagsContext, private v
      *
      * @return The complete endpoint URL for flagging requests, or null if the endpoint cannot be built.
      */
-    internal fun getFlaggingEndpoint(): String? {
-        // Use custom flag endpoint if provided, otherwise build from site
-        return flagsContext.customFlagEndpoint
-            ?: buildEndpointHost(flagsContext.site)?.let {
-                "https://$it$FLAGS_ENDPOINT"
-            }
+    internal fun getFlaggingEndpoint(): String? = buildEndpointHost(flagsContext.site)?.let {
+        "https://$it$FLAGS_ENDPOINT"
     }
 
     internal fun buildEndpointHost(site: DatadogSite, customerDomain: String = "preview"): String? = when (site) {

@@ -32,7 +32,6 @@ internal class FlagsConfigurationBuilderTest {
 
         // Then
         assertThat(flagsConfiguration.customExposureEndpoint).isNull()
-        assertThat(flagsConfiguration.customFlagEndpoint).isNull()
     }
 
     @Test
@@ -44,38 +43,5 @@ internal class FlagsConfigurationBuilderTest {
 
         // Then
         assertThat(flagsConfiguration.customExposureEndpoint).isEqualTo(customEndpointUrl)
-        assertThat(flagsConfiguration.customFlagEndpoint).isNull()
-    }
-
-    @Test
-    fun `M build configuration with custom flag endpoint W useCustomFlagEndpoint() and build()`(
-        @StringForgery(regex = "https://[a-z]+\\.com(/[a-z]+)+") customFlagEndpoint: String
-    ) {
-        // When
-        val flagsConfiguration = testedBuilder.useCustomFlagEndpoint(customFlagEndpoint).build()
-
-        // Then
-        assertThat(flagsConfiguration.customExposureEndpoint).isNull()
-        assertThat(flagsConfiguration.customFlagEndpoint).isEqualTo(customFlagEndpoint)
-    }
-
-    @Test
-    fun `M build configuration with null custom exposure endpoint W useCustomExposureEndpoint(null) and build()`() {
-        // When
-        val flagsConfiguration = testedBuilder.useCustomExposureEndpoint(null).build()
-
-        // Then
-        assertThat(flagsConfiguration.customExposureEndpoint).isNull()
-        assertThat(flagsConfiguration.customFlagEndpoint).isNull()
-    }
-
-    @Test
-    fun `M build configuration with null custom flag endpoint W useCustomFlagEndpoint(null) and build()`() {
-        // When
-        val flagsConfiguration = testedBuilder.useCustomFlagEndpoint(null).build()
-
-        // Then
-        assertThat(flagsConfiguration.customExposureEndpoint).isNull()
-        assertThat(flagsConfiguration.customFlagEndpoint).isNull()
     }
 }

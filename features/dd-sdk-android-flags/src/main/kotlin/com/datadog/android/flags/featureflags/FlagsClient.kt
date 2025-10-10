@@ -18,6 +18,7 @@ import com.datadog.android.flags.featureflags.internal.NoOpFlagsClient
 import com.datadog.android.flags.featureflags.internal.evaluation.EvaluationsManager
 import com.datadog.android.flags.featureflags.internal.model.FlagsContext
 import com.datadog.android.flags.featureflags.internal.repository.DefaultFlagsRepository
+import com.datadog.android.flags.featureflags.internal.repository.NoOpFlagsRepository
 import com.datadog.android.flags.featureflags.internal.repository.net.DefaultFlagsNetworkManager
 import com.datadog.android.flags.featureflags.internal.repository.net.PrecomputeMapper
 import com.datadog.android.flags.featureflags.model.EvaluationContext
@@ -261,7 +262,7 @@ interface FlagsClient {
         internal const val FLAGS_CLIENT_EXECUTOR_NAME = "flags-client-executor"
 
         internal fun createInternal(
-            flagsConfiguration: FlagsConfiguration,
+            configuration: FlagsConfiguration,
             sdkCore: FeatureSdkCore,
             flagsFeature: FlagsFeature
         ): FlagsClient {
@@ -269,14 +270,14 @@ interface FlagsClient {
                 executorContext = FLAGS_CLIENT_EXECUTOR_NAME
             )
 
-            val internalLogger = sdkCore.internalLogger
             val datadogContext = (sdkCore as? InternalSdkCore)?.getDatadogContext()
-            val applicationId = flagsFeature.applicationId
+            val internalLogger = sdkCore.internalLogger
 
             // Get required context parameters
             val clientToken = datadogContext?.clientToken
             val site = datadogContext?.site
             val env = datadogContext?.env
+            val applicationId = flagsFeature.applicationId
 
             // Validate required parameters
             if (clientToken == null || site == null || env == null) {
@@ -299,15 +300,24 @@ interface FlagsClient {
                 )
             } else {
                 // Create FlagsContext combining core SDK context with feature configuration
-                val flagsContext = FlagsContext.create(
-                    datadogContext,
-                    applicationId,
-                    flagsConfiguration
+                val flagsContext = FlagsContext(
+                    applicationId = applicationId,
+                    clientToken = clientToken,
+                    site = site,
+                    env = env
                 )
 
-                val flagsRepository = DefaultFlagsRepository(
-                    featureSdkCore = sdkCore
-                )
+                val datastore = (sdkCore as FeatureSdkCore).getFeature(FLAGS_FEATURE_NAME)
+                    ?.dataStore
+                val flagsRepository = if (datastore != null) {
+                    DefaultFlagsRepository(
+                        featureSdkCore = sdkCore,
+                        dataStore = datastore,
+                        instanceName = "default"
+                    )
+                } else {
+                    NoOpFlagsRepository()
+                }
 
                 val flagsNetworkManager = DefaultFlagsNetworkManager(
                     internalLogger = sdkCore.internalLogger,
@@ -327,7 +337,8 @@ interface FlagsClient {
                 return DatadogFlagsClient(
                     featureSdkCore = sdkCore,
                     evaluationsManager = evaluationsManager,
-                    flagsRepository = flagsRepository
+                    flagsRepository = flagsRepository,
+                    flagsConfiguration = configuration
                 )
             }
         }

@@ -10,22 +10,72 @@ import android.content.Context
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.Feature.Companion.FLAGS_FEATURE_NAME
+import com.datadog.android.api.feature.Feature.Companion.RUM_FEATURE_NAME
 import com.datadog.android.api.feature.FeatureContextUpdateReceiver
 import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.api.feature.StorageBackedFeature
+import com.datadog.android.api.storage.FeatureStorageConfiguration
 import com.datadog.android.flags.FlagsConfiguration
 import com.datadog.android.flags.featureflags.FlagsClient
 import com.datadog.android.flags.featureflags.internal.NoOpFlagsClient
+import com.datadog.android.flags.internal.net.ExposuresRequestFactory
+import com.datadog.android.flags.internal.storage.ExposureEventRecordWriter
+import com.datadog.android.flags.internal.storage.NoOpRecordWriter
+import com.datadog.android.flags.internal.storage.RecordWriter
+import com.datadog.android.log.LogAttributes.RUM_APPLICATION_ID
 
 /**
  * An implementation of [Feature] for getting and reporting
  * feature flags to the RUM dashboard.
  */
-internal class FlagsFeature(private val sdkCore: FeatureSdkCore, internal val flagsConfiguration: FlagsConfiguration) :
-    Feature,
+internal class FlagsFeature(
+    private val sdkCore: FeatureSdkCore,
+    internal val flagsConfiguration: FlagsConfiguration,
+    @Volatile internal var applicationId: String? = null,
+    internal var processor: EventsProcessor = NoOpEventsProcessor(),
+    internal var dataWriter: RecordWriter = NoOpRecordWriter()
+) : StorageBackedFeature,
     FeatureContextUpdateReceiver {
-    @Volatile
-    internal var applicationId: String? = null
-        private set
+
+    /**
+     * This is the same as the default configuration except
+     * that we limit to 50 items per batch, the same as the JS library does.
+     */
+    override val storageConfiguration =
+        FeatureStorageConfiguration.DEFAULT.copy(
+            maxItemsPerBatch = MAX_ITEMS_PER_BATCH
+        )
+
+    override val requestFactory =
+        ExposuresRequestFactory(
+            internalLogger = sdkCore.internalLogger
+        )
+
+    override val name: String = FLAGS_FEATURE_NAME
+
+    override fun onContextUpdate(featureName: String, context: Map<String, Any?>) {
+        if (featureName == RUM_FEATURE_NAME && applicationId == null) {
+            applicationId = context[RUM_APPLICATION_ID]?.toString()
+        }
+    }
+
+    override fun onInitialize(appContext: Context) {
+        sdkCore.setContextUpdateReceiver(this)
+        dataWriter = createDataWriter()
+        processor = ExposureEventsProcessor(dataWriter)
+    }
+
+    override fun onStop() {
+        sdkCore.removeContextUpdateReceiver(this)
+        dataWriter = NoOpRecordWriter()
+        synchronized(registeredClients) {
+            registeredClients.clear()
+        }
+    }
+
+    private fun createDataWriter(): RecordWriter = ExposureEventRecordWriter(sdkCore)
+
+    //region FlagsClient Management
 
     /**
      * Registry of [FlagsClient] instances by name.
@@ -70,30 +120,9 @@ internal class FlagsFeature(private val sdkCore: FeatureSdkCore, internal val fl
 
     internal fun clearClients() = registeredClients.clear()
 
-    // region Context Receiver
+    //endregion
 
-    override fun onContextUpdate(featureName: String, context: Map<String, Any?>) {
-        if (featureName == Feature.RUM_FEATURE_NAME) {
-            applicationId = context["application_id"].toString()
-        }
+    internal companion object {
+        const val MAX_ITEMS_PER_BATCH = 50
     }
-
-    override fun onStop() {
-        synchronized(registeredClients) {
-            registeredClients.clear()
-        }
-        sdkCore.removeContextUpdateReceiver(this)
-    }
-
-    // endregion
-
-    // region Feature
-
-    override val name: String = FLAGS_FEATURE_NAME
-
-    override fun onInitialize(appContext: Context) {
-        sdkCore.setContextUpdateReceiver(this)
-    }
-
-    // endregion
 }
