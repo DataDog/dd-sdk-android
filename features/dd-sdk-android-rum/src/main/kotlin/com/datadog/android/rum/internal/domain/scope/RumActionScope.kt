@@ -403,7 +403,8 @@ internal class RumActionScope(
                 featuresContextResolver = featuresContextResolver,
                 trackFrustrations = trackFrustrations,
                 sampleRate = sampleRate,
-                rumSessionTypeOverride = rumSessionTypeOverride
+                rumSessionTypeOverride = rumSessionTypeOverride,
+                insightsCollector = insightsCollector
             )
         }
     }

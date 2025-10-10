@@ -645,7 +645,8 @@ internal class RumResourceScope(
                 featuresContextResolver = featuresContextResolver,
                 sampleRate = sampleRate,
                 networkSettledMetricResolver = networkSettledMetricResolver,
-                insightsCollector: InsightsCollector
+                rumSessionTypeOverride = rumSessionTypeOverride,
+                insightsCollector = insightsCollector
             )
         }
     }

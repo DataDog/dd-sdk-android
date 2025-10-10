@@ -3,16 +3,21 @@ class com.datadog.android.insights.DefaultInsightsCollector : com.datadog.androi
   override var maxSize: Int
   override var updateIntervalMs: Long
   override fun onAction()
-  override fun onNewView(String)
+  override fun onNewView(String, String)
   override fun onSlowFrame(Long, Long)
   override fun onLongTask(Long, Long)
   override fun onNetworkRequest(Long, Long)
   override fun addUpdateListener(com.datadog.android.rum.internal.instrumentation.insights.InsightsUpdatesListener)
   override fun removeUpdateListener(com.datadog.android.rum.internal.instrumentation.insights.InsightsUpdatesListener)
+  override fun onMemoryVital(Double?)
+  override fun onCpuVital(Double?)
+  override fun onSlowFrameRate(Double?)
+  companion object 
 class com.datadog.android.insights.LocalInsightOverlay : com.datadog.android.rum.internal.instrumentation.insights.InsightsUpdatesListener
   fun attach(android.app.Activity)
   fun detach(android.app.Activity)
   override fun onDataUpdated()
+  companion object 
 fun <T: java.io.Closeable, R> T.useMonitored(com.datadog.android.api.SdkCore = Datadog.getInstance(), (T) -> R): R
 annotation com.datadog.android.rum.ExperimentalRumApi
 object com.datadog.android.rum.GlobalRumMonitor
@@ -209,13 +214,16 @@ data class com.datadog.android.rum.internal.domain.event.ResourceTiming
 interface com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector
   var maxSize: Int
   var updateIntervalMs: Long
-  fun onAction()
-  fun onNewView(String)
-  fun onLongTask(Long, Long)
   fun addUpdateListener(InsightsUpdatesListener)
-  fun onSlowFrame(Long, Long)
   fun removeUpdateListener(InsightsUpdatesListener)
+  fun onNewView(String, String)
+  fun onAction()
+  fun onLongTask(Long, Long)
+  fun onSlowFrame(Long, Long)
   fun onNetworkRequest(Long, Long)
+  fun onCpuVital(Double?)
+  fun onMemoryVital(Double?)
+  fun onSlowFrameRate(Double?)
 interface com.datadog.android.rum.internal.instrumentation.insights.InsightsUpdatesListener
   fun onDataUpdated()
 interface com.datadog.android.rum.internal.monitor.AdvancedNetworkRumMonitor : com.datadog.android.rum.RumMonitor
