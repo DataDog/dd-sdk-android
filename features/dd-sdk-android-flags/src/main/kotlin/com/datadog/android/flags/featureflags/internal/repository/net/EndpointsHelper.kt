@@ -32,7 +32,7 @@ internal class EndpointsHelper(private val flagsContext: FlagsContext, private v
         DatadogSite.US1_FED -> {
             internalLogger.log(
                 level = InternalLogger.Level.ERROR,
-                target = InternalLogger.Target.MAINTAINER,
+                target = InternalLogger.Target.USER,
                 messageBuilder = { ERROR_GOV_NOT_SUPPORTED }
             )
             null
@@ -56,7 +56,7 @@ internal class EndpointsHelper(private val flagsContext: FlagsContext, private v
                 // but handle it safely just in case
                 internalLogger.log(
                     level = InternalLogger.Level.ERROR,
-                    target = InternalLogger.Target.MAINTAINER,
+                    target = InternalLogger.Target.USER,
                     messageBuilder = { "Site configuration unexpectedly null for site: $site" }
                 )
                 null
@@ -66,7 +66,7 @@ internal class EndpointsHelper(private val flagsContext: FlagsContext, private v
             val supportedSites = siteConfig.keys.joinToString(", ")
             internalLogger.log(
                 level = InternalLogger.Level.ERROR,
-                target = InternalLogger.Target.MAINTAINER,
+                target = InternalLogger.Target.USER,
                 messageBuilder = { "Unsupported site: $site. Supported sites: $supportedSites" }
             )
             null

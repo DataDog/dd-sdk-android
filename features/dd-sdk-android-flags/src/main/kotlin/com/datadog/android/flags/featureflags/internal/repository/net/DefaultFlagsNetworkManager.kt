@@ -19,7 +19,6 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
 import org.json.JSONException
 import org.json.JSONObject
-import java.io.IOException
 import java.net.UnknownHostException
 import java.util.concurrent.TimeUnit
 
@@ -59,7 +58,7 @@ internal class DefaultFlagsNetworkManager(
         } catch (e: Exception) {
             internalLogger.log(
                 InternalLogger.Level.ERROR,
-                listOf(InternalLogger.Target.MAINTAINER),
+                InternalLogger.Target.USER,
                 { "Unable to create the request" },
                 e
             )
@@ -71,24 +70,16 @@ internal class DefaultFlagsNetworkManager(
         } catch (e: UnknownHostException) {
             internalLogger.log(
                 InternalLogger.Level.ERROR,
-                InternalLogger.Target.MAINTAINER,
-                { "Unable to find host ${flagsContext.site.intakeEndpoint}; we will retry later." },
-                e
-            )
-            null
-        } catch (e: IOException) {
-            internalLogger.log(
-                InternalLogger.Level.ERROR,
-                InternalLogger.Target.MAINTAINER,
-                { "Unable to execute the request; we will retry later." },
+                InternalLogger.Target.USER,
+                { "Unable to find host ${flagsContext.site.intakeEndpoint}." },
                 e
             )
             null
         } catch (e: Throwable) {
             internalLogger.log(
                 InternalLogger.Level.ERROR,
-                InternalLogger.Target.MAINTAINER,
-                { "Unable to execute the request; we will retry later." },
+                InternalLogger.Target.USER,
+                { "Unable to execute the request." },
                 e
             )
             null
@@ -103,7 +94,7 @@ internal class DefaultFlagsNetworkManager(
     } catch (e: Exception) {
         internalLogger.log(
             InternalLogger.Level.ERROR,
-            InternalLogger.Target.MAINTAINER,
+            InternalLogger.Target.USER,
             { "Error downloading flags" },
             e
         )
@@ -122,7 +113,7 @@ internal class DefaultFlagsNetworkManager(
     } else {
         internalLogger.log(
             InternalLogger.Level.ERROR,
-            InternalLogger.Target.MAINTAINER,
+            InternalLogger.Target.USER,
             { "Failed to download flags: ${response.code}" }
         )
 
@@ -143,7 +134,7 @@ internal class DefaultFlagsNetworkManager(
         } catch (e: IllegalArgumentException) {
             internalLogger.log(
                 InternalLogger.Level.ERROR,
-                InternalLogger.Target.MAINTAINER,
+                InternalLogger.Target.USER,
                 { "Failed to build HTTP headers: invalid header values" },
                 e
             )

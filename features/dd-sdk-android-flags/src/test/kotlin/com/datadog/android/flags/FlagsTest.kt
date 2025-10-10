@@ -49,12 +49,12 @@ internal class FlagsTest {
     @Test
     fun `M pass configuration to FlagsFeature W enable() { with custom config }`(
         @StringForgery(regex = "https://[a-z]+\\.com(/[a-z]+)+") fakeCustomEndpoint: String,
-        @StringForgery(regex = "https://[a-z]+\\.com(/[a-z]+)+") fakeFlaggingProxy: String
+        @StringForgery(regex = "https://[a-z]+\\.com(/[a-z]+)+") fakeFlagEndpoint: String
     ) {
         // Given
         val fakeConfiguration = FlagsConfiguration.Builder()
             .useCustomExposureEndpoint(fakeCustomEndpoint)
-            .useCustomFlagEndpoint(fakeFlaggingProxy)
+            .useCustomFlagEndpoint(fakeFlagEndpoint)
             .build()
 
         // When
@@ -65,7 +65,7 @@ internal class FlagsTest {
             verify(mockSdkCore).registerFeature(capture())
             assertThat(lastValue.name).isEqualTo(FLAGS_FEATURE_NAME)
             assertThat(lastValue.flagsConfiguration.customExposureEndpoint).isEqualTo(fakeCustomEndpoint)
-            assertThat(lastValue.flagsConfiguration.customFlagEndpoint).isEqualTo(fakeFlaggingProxy)
+            assertThat(lastValue.flagsConfiguration.customFlagEndpoint).isEqualTo(fakeFlagEndpoint)
         }
     }
 
@@ -137,12 +137,12 @@ internal class FlagsTest {
     }
 
     @Test
-    fun `M register FlagsFeature with flagging proxy W enable() { flagging proxy }`(
-        @StringForgery(regex = "https://[a-z]+\\.com(/[a-z]+)+") fakeCustomFlagEndpoint: String
+    fun `M register FlagsFeature with flag endpoint W enable() { flag endpoint }`(
+        @StringForgery(regex = "https://[a-z]+\\.com(/[a-z]+)+") fakeFlagEndpoint: String
     ) {
         // Given
         val fakeConfiguration = FlagsConfiguration.Builder()
-            .useCustomFlagEndpoint(fakeCustomFlagEndpoint)
+            .useCustomFlagEndpoint(fakeFlagEndpoint)
             .build()
 
         // When
@@ -151,7 +151,7 @@ internal class FlagsTest {
         // Then
         argumentCaptor<FlagsFeature> {
             verify(mockSdkCore).registerFeature(capture())
-            assertThat(lastValue.flagsConfiguration.customFlagEndpoint).isEqualTo(fakeCustomFlagEndpoint)
+            assertThat(lastValue.flagsConfiguration.customFlagEndpoint).isEqualTo(fakeFlagEndpoint)
         }
     }
 

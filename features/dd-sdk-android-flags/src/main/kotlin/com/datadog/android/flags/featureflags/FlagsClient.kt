@@ -288,7 +288,7 @@ interface FlagsClient {
 
                 internalLogger.log(
                     InternalLogger.Level.ERROR,
-                    InternalLogger.Target.MAINTAINER,
+                    InternalLogger.Target.USER,
                     { "Missing required context parameters: $missingParams" }
                 )
 

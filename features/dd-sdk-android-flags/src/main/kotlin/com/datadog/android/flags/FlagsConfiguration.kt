@@ -12,7 +12,7 @@ package com.datadog.android.flags
  * @param customFlagEndpoint Custom endpoint URL for proxying precomputed flag assignment requests. If null, the default endpoint will be used.
  * @param enableExposureLogging Whether to enable exposure event logging. Defaults to true.
  */
-data class FlagsConfiguration(
+class FlagsConfiguration private constructor(
     internal val customExposureEndpoint: String? = null,
     internal val customFlagEndpoint: String? = null,
     internal val enableExposureLogging: Boolean = true
@@ -38,10 +38,10 @@ data class FlagsConfiguration(
         }
 
         /**
-         * Sets a custom endpoint URL for fetching precomputed flag assignments (flagging proxy).
+         * Sets a custom endpoint URL for fetching precomputed flag assignments.
          * If not called, flag assignments will be fetched from Datadog's default endpoint.
          *
-         * @param endpoint The full proxy endpoint URL, e.g., https://proxy.example.com/flags.
+         * @param endpoint The full endpoint URL, e.g., https://dd-flags-proxy.example.com/flags.
          *                 If null, the default endpoint will be used.
          */
         fun useCustomFlagEndpoint(endpoint: String?): Builder {
