@@ -16,6 +16,7 @@ import com.datadog.trace.api.IdGenerationStrategy
 import com.datadog.trace.core.CoreTracer
 import java.util.Properties
 
+@Suppress("TooManyFunctions")
 internal class DatadogTracerBuilderAdapter(
     private val sdkCore: FeatureSdkCore,
     private var serviceName: String,
@@ -82,12 +83,15 @@ internal class DatadogTracerBuilderAdapter(
         this.traceRateLimit = traceRateLimit
     }
 
-    internal fun setTraceId128BitGenerationEnabled(traceId128BitGenerationEnabled: Boolean) = apply {
-        delegate.idGenerationStrategy(IdGenerationStrategy.fromName("SECURE_RANDOM", traceId128BitGenerationEnabled))
-    }
+    internal fun setTraceId128BitGenerationEnabled(traceId128BitGenerationEnabled: Boolean) =
+        setCustomIdGenerationStrategy(IdGenerationStrategy.fromName("SECURE_RANDOM", traceId128BitGenerationEnabled))
 
     internal fun setSdkV2Compatible() {
         sdkV2OTelCompatible = true
+    }
+
+    internal fun setCustomIdGenerationStrategy(strategy: IdGenerationStrategy) = apply {
+        delegate.idGenerationStrategy(strategy)
     }
 
     @VisibleForTesting

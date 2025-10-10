@@ -24,6 +24,7 @@ import com.datadog.android.rum.internal.domain.battery.BatteryInfo
 import com.datadog.android.rum.internal.domain.display.DisplayInfo
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
 import com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener
+import com.datadog.android.rum.internal.startup.RumAppStartupTelemetryReporter
 import com.datadog.android.rum.internal.utils.percent
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.rum.metric.interactiontonextview.LastInteractionIdentifier
@@ -40,7 +41,7 @@ internal class RumSessionScope(
     private val sessionEndedMetricDispatcher: SessionMetricDispatcher,
     internal val sampleRate: Float,
     internal val backgroundTrackingEnabled: Boolean,
-    internal val trackFrustrations: Boolean,
+    trackFrustrations: Boolean,
     viewChangedListener: RumViewChangedListener?,
     internal val firstPartyHostHeaderTypeResolver: FirstPartyHostHeaderTypeResolver,
     cpuVitalMonitor: VitalMonitor,
@@ -51,12 +52,13 @@ internal class RumSessionScope(
     networkSettledResourceIdentifier: InitialResourceIdentifier,
     lastInteractionIdentifier: LastInteractionIdentifier?,
     slowFramesListener: SlowFramesListener?,
-    private val accessibilitySnapshotManager: AccessibilitySnapshotManager,
-    private val batteryInfoProvider: InfoProvider<BatteryInfo>,
-    private val displayInfoProvider: InfoProvider<DisplayInfo>,
+    accessibilitySnapshotManager: AccessibilitySnapshotManager,
+    batteryInfoProvider: InfoProvider<BatteryInfo>,
+    displayInfoProvider: InfoProvider<DisplayInfo>,
     private val sessionInactivityNanos: Long = DEFAULT_SESSION_INACTIVITY_NS,
     private val sessionMaxDurationNanos: Long = DEFAULT_SESSION_MAX_DURATION_NS,
-    rumSessionTypeOverride: RumSessionType?
+    rumSessionTypeOverride: RumSessionType?,
+    private val rumAppStartupTelemetryReporter: RumAppStartupTelemetryReporter
 ) : RumScope {
 
     internal var sessionId = RumContext.NULL_UUID
@@ -70,6 +72,8 @@ internal class RumSessionScope(
     private val random = SecureRandom()
 
     private val noOpWriter = NoOpDataWriter<Any>()
+
+    private var appStartIndex: Int = 0
 
     @Suppress("LongParameterList")
     internal var childScope: RumViewManagerScope? = RumViewManagerScope(
@@ -149,9 +153,21 @@ internal class RumSessionScope(
 
         val actualWriter = if (sessionState == State.TRACKED) writer else noOpWriter
 
-        if (event !is RumRawEvent.SdkInit) {
-            childScope =
-                childScope?.handleEvent(event, datadogContext, writeScope, actualWriter) as? RumViewManagerScope
+        when (event) {
+            is RumRawEvent.AppStartTTIDEvent -> {
+                if (sessionState == State.TRACKED) {
+                    rumAppStartupTelemetryReporter.reportTTID(
+                        info = event.info,
+                        indexInSession = appStartIndex
+                    )
+                    appStartIndex++
+                }
+            }
+            is RumRawEvent.SdkInit -> {}
+            else -> {
+                childScope =
+                    childScope?.handleEvent(event, datadogContext, writeScope, actualWriter) as? RumViewManagerScope
+            }
         }
 
         return if (isSessionComplete()) {
@@ -202,13 +218,14 @@ internal class RumSessionScope(
         val isBackgroundEvent = event.javaClass in RumViewManagerScope.validBackgroundEventTypes
         val isSdkInitInForeground = event is RumRawEvent.SdkInit && event.isAppInForeground
         val isSdkInitInBackground = event is RumRawEvent.SdkInit && !event.isAppInForeground
+        val isAppStartEvent = event is RumRawEvent.AppStartTTIDEvent
 
         // When the session is expired, time-out or stopSession API is called, session ended metric should be sent
         if (isExpired || isTimedOut || isActive.not()) {
             sessionEndedMetricDispatcher.endMetric(sessionId, sdkCore.time.serverTimeOffsetMs)
         }
 
-        if (isInteraction || isSdkInitInForeground) {
+        if (isInteraction || isSdkInitInForeground || isAppStartEvent) {
             if (isNewSession || isExpired || isTimedOut) {
                 val reason = if (isNewSession) {
                     StartReason.USER_APP_LAUNCH
@@ -240,6 +257,7 @@ internal class RumSessionScope(
         sessionState = if (keepSession) State.TRACKED else State.NOT_TRACKED
         sessionId = UUID.randomUUID().toString()
         sessionStartNs.set(time.nanoTime)
+        appStartIndex = 0
         childScope?.renewViewScopes(time)
         if (keepSession) {
             sessionEndedMetricDispatcher.startMetric(

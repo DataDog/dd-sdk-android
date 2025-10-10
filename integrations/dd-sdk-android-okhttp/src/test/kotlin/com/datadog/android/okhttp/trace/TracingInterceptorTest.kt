@@ -7,6 +7,7 @@ package com.datadog.android.okhttp.trace
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.SdkCore
+import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.core.internal.net.DefaultFirstPartyHostHeaderTypeResolver
 import com.datadog.android.core.sampling.Sampler
@@ -83,6 +84,7 @@ import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.util.Locale
 import java.util.concurrent.CountDownLatch
+import java.util.concurrent.Future
 import java.util.concurrent.TimeUnit
 
 @Extensions(
@@ -1638,6 +1640,25 @@ internal open class TracingInterceptorTest {
         }
     }
 
+    @Test
+    fun `M blocks on DatadogContext future W intercept { new values intersects existing values }`(
+        @IntForgery(min = 200, max = 600) statusCode: Int,
+        forge: Forge
+    ) {
+        // Given
+        val mockFuture = mock<Future<DatadogContext>>()
+        fakeRequest = forgeRequest(forge)
+        whenever(mockSpan.getTag(DATADOG_INITIAL_CONTEXT)).thenReturn(mockFuture)
+        whenever(mockResolver.isFirstPartyUrl(fakeUrl.toHttpUrl())).thenReturn(true)
+        stubChain(mockChain, statusCode)
+
+        // When
+        testedInterceptor.intercept(mockChain)
+
+        // Then
+        verify(mockFuture).get(1, TimeUnit.SECONDS)
+    }
+
     // region Internal
 
     internal fun stubChain(chain: Interceptor.Chain, statusCode: Int) {
@@ -1707,6 +1728,7 @@ internal open class TracingInterceptorTest {
     // endregion
 
     companion object {
+        private const val DATADOG_INITIAL_CONTEXT: String = "_dd.datadog_initial_context"
         const val HOSTNAME_PATTERN =
             "(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\\-]{1,4}[a-zA-Z0-9]{2,3})\\.)+" +
                 "([A-Za-z]|[A-Za-z][A-Za-z0-9-]{1,2}[A-Za-z0-9])"

@@ -18,7 +18,7 @@ internal class SnapshotRecordedDataQueueItem(
     @Volatile internal var nodes = emptyList<Node>()
 
     @Volatile internal var isFinishedTraversal = false
-    internal var pendingJobs = AtomicInteger(0)
+    internal val pendingJobs = AtomicInteger(0)
 
     override fun isValid(): Boolean {
         if (!isFinishedTraversal) {

@@ -64,19 +64,19 @@ class DdRumContentProvider : ContentProvider() {
         return 0
     }
 
-    internal companion object {
+    companion object {
         internal const val DEFAULT_IMPORTANCE: Int =
             ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND
-        internal var processImportance = 0
 
-        @Suppress("unused") // Used for instrumented tests
-        @JvmStatic
-        private fun overrideProcessImportance(importance: Int) {
-            Log.w(
-                "DdRumContentProvider",
-                "override processImportance: $processImportance -> $importance"
-            )
-            processImportance = importance
-        }
+        /**
+         * Process importance at the moment of creating [DdRumContentProvider]
+         * Should be set from the outside only in tests.
+         */
+        var processImportance: Int = 0
+
+        /**
+         * fallback for APIs below Android N, see [DefaultAppStartTimeProvider].
+         */
+        val createTimeNs: Long = System.nanoTime()
     }
 }

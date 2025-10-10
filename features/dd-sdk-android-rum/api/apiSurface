@@ -1,11 +1,4 @@
 fun <T: java.io.Closeable, R> T.useMonitored(com.datadog.android.api.SdkCore = Datadog.getInstance(), (T) -> R): R
-class com.datadog.android.rum.DdRumContentProvider : android.content.ContentProvider
-  override fun onCreate(): Boolean
-  override fun query(android.net.Uri, Array<String>?, String?, Array<String>?, String?): android.database.Cursor?
-  override fun getType(android.net.Uri): String?
-  override fun insert(android.net.Uri, android.content.ContentValues?): android.net.Uri?
-  override fun delete(android.net.Uri, String?, Array<String>?): Int
-  override fun update(android.net.Uri, android.content.ContentValues?, String?, Array<String>?): Int
 annotation com.datadog.android.rum.ExperimentalRumApi
 object com.datadog.android.rum.GlobalRumMonitor
   fun isRegistered(com.datadog.android.api.SdkCore = Datadog.getInstance()): Boolean

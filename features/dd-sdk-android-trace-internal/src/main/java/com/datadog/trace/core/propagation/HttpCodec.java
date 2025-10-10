@@ -50,9 +50,14 @@ public class HttpCodec {
   static final String FASTLY_CLIENT_IP_KEY = "fastly-client-ip";
   static final String CF_CONNECTING_IP_KEY = "cf-connecting-ip";
   static final String CF_CONNECTING_IP_V6_KEY = "cf-connecting-ipv6";
-  static final String RUM_SESSION_ID_BAGGAGE_KEY = "session.id";
 
-  public static final String RUM_SESSION_ID_KEY = "session_id";
+  static final String BAGGAGE_SESSION_ID = "session.id";
+  static final String BAGGAGE_USER_ID = "user.id";
+  static final String BAGGAGE_ACCOUNT_ID = "account.id";
+
+  static final String RUM_KEY_SESSION_ID = "session_id";
+  public static final String RUM_KEY_USER_ID = "user_id";
+  public static final String RUM_KEY_ACCOUNT_ID = "account_id";
 
   public interface Injector {
     <C> void inject(
@@ -192,7 +197,7 @@ public class HttpCodec {
         final DDSpanContext context, final C carrier, final AgentPropagation.Setter<C> setter) {
       log.debug("Inject context {}", context);
       // Update session ide before injecting propagation tags
-      final String sessionId = (String) context.getTags().get(RUM_SESSION_ID_KEY);
+      final String sessionId = (String) context.getTags().get(RUM_KEY_SESSION_ID);
       if (sessionId != null) {
         context.getPropagationTags().updateRumSessionId(sessionId);
       }
@@ -369,10 +374,20 @@ public class HttpCodec {
   @NonNull
   static Baggage composeBaggage(@NonNull DDSpanContext context) {
     Baggage baggage = new Baggage();
-    final String sessionId = (String) context.getTags().get(RUM_SESSION_ID_KEY);
 
+    final String sessionId = (String) context.getTags().get(RUM_KEY_SESSION_ID);
     if (sessionId != null) {
-      baggage.put(RUM_SESSION_ID_BAGGAGE_KEY, sessionId);
+      baggage.put(BAGGAGE_SESSION_ID, sessionId);
+    }
+
+    final String userId = (String) context.getTags().get(RUM_KEY_USER_ID);
+    if (userId != null) {
+      baggage.put(BAGGAGE_USER_ID, userId);
+    }
+
+    final String accountId = (String) context.getTags().get(RUM_KEY_ACCOUNT_ID);
+    if (accountId != null) {
+      baggage.put(BAGGAGE_ACCOUNT_ID, accountId);
     }
 
     return baggage;

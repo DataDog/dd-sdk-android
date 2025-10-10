@@ -12,7 +12,8 @@ import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.feature.FeatureSdkCore
-import com.datadog.android.internal.concurrent.CompletableFuture
+import com.datadog.android.api.feature.SdkFeatureMock
+import com.datadog.android.api.feature.getContextFuture
 import com.datadog.android.trace.InternalCoreWriterProvider
 import com.datadog.android.trace.api.DatadogTracingConstants
 import com.datadog.android.trace.api.forceSamplingDecision
@@ -24,11 +25,11 @@ import com.datadog.android.trace.api.span.DatadogSpanContext
 import com.datadog.android.trace.api.span.DatadogSpanWriter
 import com.datadog.android.trace.api.tracer.DatadogTracer
 import com.datadog.android.trace.api.tracer.DatadogTracerBuilder
-import com.datadog.android.trace.internal.SpanAttributes
 import com.datadog.android.trace.opentelemetry.utils.forge.Configurator
 import com.datadog.android.trace.opentelemetry.utils.verifyLog
 import com.datadog.opentelemetry.trace.OtelSpan
 import com.datadog.opentelemetry.trace.OtelSpanContext
+import com.datadog.tools.unit.completedFutureMock
 import com.datadog.tools.unit.getFieldValue
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.DoubleForgery
@@ -40,7 +41,6 @@ import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.api.trace.Tracer
-import io.opentelemetry.api.trace.TracerProvider
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.data.Offset
 import org.junit.jupiter.api.BeforeEach
@@ -52,7 +52,6 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
-import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
@@ -471,11 +470,14 @@ internal class OtelTracerBuilderProviderTest {
             .build()
             .tracerBuilder(fakeInstrumentationName)
             .build()
-        val mockRumFeatureScope = mock<FeatureScope>()
-        whenever(mockRumFeatureScope.withContext(eq(setOf(Feature.RUM_FEATURE_NAME)), any())) doAnswer {
-            it.getArgument<(DatadogContext) -> Unit>(it.arguments.lastIndex).invoke(fakeInitialDatadogContext)
-        }
-        whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumFeatureScope
+
+        val mockContextFuture = completedFutureMock(fakeInitialDatadogContext)
+
+        val mockRumFeatureScope = SdkFeatureMock.create()
+        whenever(mockRumFeatureScope.getContextFuture(setOf(Feature.RUM_FEATURE_NAME)))
+            .thenReturn(mockContextFuture)
+        whenever(mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME))
+            .thenReturn(mockRumFeatureScope)
 
         // When
         val span = tracer
@@ -486,9 +488,7 @@ internal class OtelTracerBuilderProviderTest {
         span.end()
 
         // Then
-        assertThat(context.tags).containsKey(SpanAttributes.DATADOG_INITIAL_CONTEXT)
-        val lazyContext = context.tags[SpanAttributes.DATADOG_INITIAL_CONTEXT] as CompletableFuture<DatadogContext>
-        assertThat(lazyContext.value).isEqualTo(fakeInitialDatadogContext)
+        assertThat(context.tags).containsEntry(DATADOG_INITIAL_CONTEXT, mockContextFuture)
     }
 
     @Test
@@ -504,12 +504,12 @@ internal class OtelTracerBuilderProviderTest {
         val span = tracer
             .spanBuilder(fakeOperationName)
             .startSpan()
-        val delegateSpan: DatadogSpan = span.delegate
-        val context = delegateSpan.context()
+
+        val context = span.delegate.context()
         span.end()
 
         // Then
-        assertThat(context.tags).doesNotContainKey(SpanAttributes.DATADOG_INITIAL_CONTEXT)
+        assertThat(context.tags).doesNotContainKey(DATADOG_INITIAL_CONTEXT)
         verify(mockSdkCore, never()).getFeature(Feature.RUM_FEATURE_NAME)
     }
 
@@ -531,7 +531,7 @@ internal class OtelTracerBuilderProviderTest {
         span.end()
 
         // Then
-        assertThat(context.tags).doesNotContainKey(SpanAttributes.DATADOG_INITIAL_CONTEXT)
+        assertThat(context.tags).doesNotContainKey(DATADOG_INITIAL_CONTEXT)
     }
 
     // endregion
@@ -650,40 +650,12 @@ internal class OtelTracerBuilderProviderTest {
 
     companion object {
 
-        private val forge = Forge()
+        private const val DATADOG_INITIAL_CONTEXT: String = "_dd.datadog_initial_context"
 
         private val Tracer.delegate: DatadogTracer
             get() = getFieldValue("tracer")
 
         private val Span.delegate: DatadogSpan
             get() = getFieldValue("delegate")
-
-        private val TracerProvider.delegate: DatadogTracer
-            get() = getFieldValue("datadogTracer")
-
-        @JvmStatic
-        fun brokenRumContextProvider(): List<Map<String, String>> {
-            return listOf(
-                mapOf(),
-                mapOf(
-                    OtelTracerProvider.RUM_SESSION_ID_KEY to forge.anAlphabeticalString(),
-                    OtelTracerProvider.RUM_VIEW_ID_KEY to forge.anAlphabeticalString(),
-                    OtelTracerProvider.RUM_ACTION_ID_KEY to forge.anAlphabeticalString()
-                ),
-                mapOf(
-                    OtelTracerProvider.RUM_APPLICATION_ID_KEY to forge.anAlphabeticalString(),
-                    OtelTracerProvider.RUM_VIEW_ID_KEY to forge.anAlphabeticalString(),
-                    OtelTracerProvider.RUM_ACTION_ID_KEY to forge.anAlphabeticalString()
-                ),
-                mapOf(
-                    OtelTracerProvider.RUM_APPLICATION_ID_KEY to forge.anAlphabeticalString(),
-                    OtelTracerProvider.RUM_SESSION_ID_KEY to forge.anAlphabeticalString(),
-                    OtelTracerProvider.RUM_ACTION_ID_KEY to forge.anAlphabeticalString()
-                ),
-                mapOf(
-                    OtelTracerProvider.RUM_ACTION_ID_KEY to forge.anAlphabeticalString()
-                )
-            )
-        }
     }
 }

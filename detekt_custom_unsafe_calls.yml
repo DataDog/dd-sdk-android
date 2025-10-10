@@ -107,6 +107,7 @@ datadog:
       - "java.util.concurrent.ExecutorService.execute(java.lang.Runnable?):java.util.concurrent.RejectedExecutionException,java.lang.NullPointerException"
       - "java.util.concurrent.ExecutorService.submit(java.lang.Runnable?):java.util.concurrent.RejectedExecutionException,java.lang.NullPointerException"
       - "java.util.concurrent.Future.get():java.lang.InterruptedException,java.util.concurrent.CancellationException,java.util.concurrent.ExecutionException"
+      - "java.util.concurrent.Future.get(kotlin.Long, java.util.concurrent.TimeUnit?):java.lang.InterruptedException,java.util.concurrent.CancellationException,java.util.concurrent.ExecutionException"
       - "java.util.concurrent.LinkedBlockingQueue.offer(kotlin.Any?):java.lang.NullPointerException"
       - "java.util.concurrent.LinkedBlockingQueue.offer(kotlin.Any?, kotlin.Long, java.util.concurrent.TimeUnit?):java.lang.NullPointerException"
       - "java.util.concurrent.ScheduledExecutorService.schedule(java.lang.Runnable, kotlin.Long, java.util.concurrent.TimeUnit):java.util.concurrent.RejectedExecutionException,java.lang.NullPointerException"

@@ -41,11 +41,6 @@ internal class GesturesTrackingActivityTestRule<T : Activity>(
             .useViewTrackingStrategy(ActivityViewTrackingStrategy(false))
             .build()
         Rum.enable(rumConfig, sdkCore)
-        DdRumContentProvider::class.java.declaredMethods.firstOrNull() {
-            it.name == "overrideProcessImportance"
-        }?.apply {
-            isAccessible = true
-            invoke(null, ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND)
-        }
+        DdRumContentProvider.processImportance = ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND
     }
 }

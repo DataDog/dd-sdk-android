@@ -406,6 +406,8 @@ public final class com/datadog/android/api/feature/FeatureScope$DefaultImpls {
 }
 
 public final class com/datadog/android/api/feature/FeatureScopeExtKt {
+	public static final fun getContextFuture (Lcom/datadog/android/api/feature/FeatureScope;Ljava/util/Set;)Ljava/util/concurrent/Future;
+	public static synthetic fun getContextFuture$default (Lcom/datadog/android/api/feature/FeatureScope;Ljava/util/Set;ILjava/lang/Object;)Ljava/util/concurrent/Future;
 	public static final fun measureMethodCallPerf (Lcom/datadog/android/api/InternalLogger;Ljava/lang/Class;Ljava/lang/String;FLkotlin/jvm/functions/Function0;)Ljava/lang/Object;
 	public static synthetic fun measureMethodCallPerf$default (Lcom/datadog/android/api/InternalLogger;Ljava/lang/Class;Ljava/lang/String;FLkotlin/jvm/functions/Function0;ILjava/lang/Object;)Ljava/lang/Object;
 }
@@ -916,12 +918,18 @@ public final class com/datadog/android/core/persistence/datastore/DataStoreConte
 }
 
 public class com/datadog/android/core/sampling/DeterministicSampler : com/datadog/android/core/sampling/Sampler {
+	public static final field Companion Lcom/datadog/android/core/sampling/DeterministicSampler$Companion;
+	public static final field MAX_ID J
+	public static final field SAMPLER_HASHER J
 	public static final field SAMPLE_ALL_RATE F
 	public fun <init> (Lkotlin/jvm/functions/Function1;D)V
 	public fun <init> (Lkotlin/jvm/functions/Function1;F)V
 	public fun <init> (Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function0;)V
 	public fun getSampleRate ()Ljava/lang/Float;
 	public fun sample (Ljava/lang/Object;)Z
+}
+
+public final class com/datadog/android/core/sampling/DeterministicSampler$Companion {
 }
 
 public class com/datadog/android/core/sampling/RateBasedSampler : com/datadog/android/core/sampling/Sampler {
