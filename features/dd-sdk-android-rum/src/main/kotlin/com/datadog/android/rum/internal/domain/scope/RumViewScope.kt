@@ -326,6 +326,9 @@ internal open class RumViewScope(
             syntheticsAttribute == null -> VitalEvent.VitalEventSessionType.USER
             else -> VitalEvent.VitalEventSessionType.SYNTHETICS
         }
+        val batteryInfo = batteryInfoProvider.getState()
+        val displayInfo = displayInfoProvider.getState()
+        val user = datadogContext.userInfo
 
         return VitalEvent(
             date = event.eventTime.timestamp + serverTimeOffsetInMs,
@@ -355,6 +358,49 @@ internal open class RumViewScope(
                 name = rumContext.viewName,
                 url = rumContext.viewUrl.orEmpty()
             ),
+            source = VitalEvent.VitalEventSource.tryFromSource(
+                source = datadogContext.source,
+                internalLogger = sdkCore.internalLogger
+            ),
+            account = datadogContext.accountInfo?.let {
+                VitalEvent.Account(
+                    id = it.id,
+                    name = it.name,
+                    additionalProperties = it.extraInfo.toMutableMap()
+                )
+            },
+            usr = if (user.hasUserData()) {
+                VitalEvent.Usr(
+                    id = user.id,
+                    name = user.name,
+                    email = user.email,
+                    anonymousId = user.anonymousId,
+                    additionalProperties = user.additionalProperties.toMutableMap()
+                )
+            } else {
+                null
+            },
+            device = VitalEvent.Device(
+                type = datadogContext.deviceInfo.deviceType.toVitalSchemaType(),
+                name = datadogContext.deviceInfo.deviceName,
+                model = datadogContext.deviceInfo.deviceModel,
+                brand = datadogContext.deviceInfo.deviceBrand,
+                architecture = datadogContext.deviceInfo.architecture,
+                locales = datadogContext.deviceInfo.localeInfo.locales,
+                timeZone = datadogContext.deviceInfo.localeInfo.timeZone,
+                batteryLevel = batteryInfo.batteryLevel,
+                powerSavingMode = batteryInfo.lowPowerMode,
+                brightnessLevel = displayInfo.screenBrightness
+            ),
+            os = VitalEvent.Os(
+                name = datadogContext.deviceInfo.osName,
+                version = datadogContext.deviceInfo.osVersion,
+                versionMajor = datadogContext.deviceInfo.osMajorVersion
+            ),
+            connectivity = datadogContext.networkInfo.toVitalConnectivity(),
+            version = datadogContext.version,
+            service = datadogContext.service,
+            ddtags = buildDDTagsString(datadogContext),
             vital = VitalEvent.VitalEventVital(
                 id = UUID.randomUUID().toString(),
                 name = name,
