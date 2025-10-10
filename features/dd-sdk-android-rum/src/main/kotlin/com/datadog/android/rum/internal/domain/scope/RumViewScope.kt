@@ -47,6 +47,7 @@ import com.datadog.android.rum.internal.toLongTask
 import com.datadog.android.rum.internal.toView
 import com.datadog.android.rum.internal.toVital
 import com.datadog.android.rum.internal.utils.buildDDTagsString
+import com.datadog.android.rum.internal.utils.buildDDTagsString
 import com.datadog.android.rum.internal.utils.hasUserData
 import com.datadog.android.rum.internal.utils.newRumEventWriteOperation
 import com.datadog.android.rum.internal.vitals.VitalInfo

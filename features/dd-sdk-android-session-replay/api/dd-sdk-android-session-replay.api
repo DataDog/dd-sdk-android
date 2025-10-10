@@ -70,7 +70,21 @@ public final class com/datadog/android/sessionreplay/SessionReplayConfiguration$
 }
 
 public abstract interface class com/datadog/android/sessionreplay/SessionReplayInternalCallback {
+	public abstract fun addResourceItem (Ljava/lang/String;[BLjava/lang/String;)V
 	public abstract fun getCurrentActivity ()Landroid/app/Activity;
+	public abstract fun setResourceQueue (Lcom/datadog/android/sessionreplay/SessionReplayInternalResourceQueue;)V
+}
+
+public final class com/datadog/android/sessionreplay/SessionReplayInternalCallback$DefaultImpls {
+	public static synthetic fun addResourceItem$default (Lcom/datadog/android/sessionreplay/SessionReplayInternalCallback;Ljava/lang/String;[BLjava/lang/String;ILjava/lang/Object;)V
+}
+
+public abstract interface class com/datadog/android/sessionreplay/SessionReplayInternalResourceQueue {
+	public abstract fun addResourceItem (Ljava/lang/String;[BLjava/lang/String;)V
+}
+
+public final class com/datadog/android/sessionreplay/SessionReplayInternalResourceQueue$DefaultImpls {
+	public static synthetic fun addResourceItem$default (Lcom/datadog/android/sessionreplay/SessionReplayInternalResourceQueue;Ljava/lang/String;[BLjava/lang/String;ILjava/lang/Object;)V
 }
 
 public final class com/datadog/android/sessionreplay/SessionReplayPrivacy : java/lang/Enum {

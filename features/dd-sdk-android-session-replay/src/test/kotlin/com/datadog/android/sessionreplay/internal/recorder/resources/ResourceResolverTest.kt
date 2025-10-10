@@ -932,7 +932,8 @@ internal class ResourceResolverTest {
 
         verify(mockRecordedDataQueueHandler, times(1)).addResourceItem(
             identifier = eq(fakeResourceId),
-            resourceData = eq(fakeByteArray)
+            resourceData = eq(fakeByteArray),
+            mimeType = anyOrNull()
         )
 
         // second time
@@ -950,7 +951,8 @@ internal class ResourceResolverTest {
 
         verify(mockRecordedDataQueueHandler, times(1)).addResourceItem(
             identifier = eq(fakeResourceId),
-            resourceData = eq(fakeByteArray)
+            resourceData = eq(fakeByteArray),
+            mimeType = anyOrNull()
         )
     }
 
