@@ -33,7 +33,7 @@ internal class BatchFileOrchestrator(
     internal val config: FilePersistenceConfig,
     private val internalLogger: InternalLogger,
     private val metricsDispatcher: MetricsDispatcher,
-    private var pendingFiles: AtomicInteger = AtomicInteger(0)
+    private val pendingFiles: AtomicInteger = AtomicInteger(0)
 ) : FileOrchestrator {
 
     private val fileFilter = BatchFileFilter()
@@ -55,7 +55,7 @@ internal class BatchFileOrchestrator(
     // region FileOrchestrator
 
     @WorkerThread
-    override fun getWritableFile(forceNewFile: Boolean): File? {
+    override fun getWritableFile(): File? {
         if (!isRootDirValid()) {
             return null
         }
@@ -67,11 +67,7 @@ internal class BatchFileOrchestrator(
             lastCleanupTimestamp = System.currentTimeMillis()
         }
 
-        return if (!forceNewFile) {
-            getReusableWritableFile() ?: createNewFile()
-        } else {
-            createNewFile(true)
-        }
+        return getReusableWritableFile() ?: createNewFile()
     }
 
     @WorkerThread
@@ -205,7 +201,7 @@ internal class BatchFileOrchestrator(
         }
     }
 
-    private fun createNewFile(wasForced: Boolean = false): File {
+    private fun createNewFile(): File {
         val newFileName = System.currentTimeMillis().toString()
         val newFile = File(rootDir, newFileName)
         val closedFile = previousFile
@@ -215,8 +211,7 @@ internal class BatchFileOrchestrator(
                 closedFile,
                 BatchClosedMetadata(
                     lastTimeWasUsedInMs = closedFileLastAccessTimestamp,
-                    eventsCount = previousFileItemCount,
-                    forcedNew = wasForced
+                    eventsCount = previousFileItemCount
                 )
             )
         }

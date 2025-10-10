@@ -17,9 +17,9 @@ import androidx.fragment.app.FragmentManager
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureScope
-import com.datadog.android.core.internal.attributes.ViewScopeInstrumentationType
-import com.datadog.android.core.internal.attributes.enrichWithConstantAttribute
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
+import com.datadog.android.internal.attributes.ViewScopeInstrumentationType
+import com.datadog.android.internal.attributes.enrichWithConstantAttribute
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.tracking.AndroidXFragmentLifecycleCallbacks
 import com.datadog.android.rum.internal.tracking.OreoFragmentLifecycleCallbacks
@@ -113,7 +113,7 @@ internal class FragmentViewTrackingStrategyTest : ObjectTest<FragmentViewTrackin
             rumMonitor.mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)
         ) doReturn mockRumFeatureScope
         whenever(rumMonitor.mockSdkCore.internalLogger) doReturn mockInternalLogger
-        whenever(mockBuildSdkVersionProvider.version) doReturn Build.VERSION_CODES.LOLLIPOP
+        whenever(mockBuildSdkVersionProvider.version) doReturn Build.VERSION_CODES.M
         whenever(rumMonitor.mockSdkCore.createScheduledExecutorService(any())) doReturn mockScheduledExecutorService
         whenever(
             mockScheduledExecutorService.schedule(

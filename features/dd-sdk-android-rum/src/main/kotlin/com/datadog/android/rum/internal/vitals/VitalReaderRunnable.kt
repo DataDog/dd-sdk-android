@@ -7,6 +7,7 @@
 package com.datadog.android.rum.internal.vitals
 
 import com.datadog.android.api.feature.Feature
+import com.datadog.android.api.feature.FeatureContextUpdateReceiver
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.core.internal.utils.scheduleSafe
 import com.datadog.android.rum.internal.domain.RumContext
@@ -16,16 +17,17 @@ import java.util.concurrent.TimeUnit
 
 internal class VitalReaderRunnable(
     val sdkCore: FeatureSdkCore,
-    val reader: VitalReader,
+    private val reader: VitalReader,
     val observer: VitalObserver,
     val executor: ScheduledExecutorService,
-    val periodMs: Long
-) : Runnable {
+    private val periodMs: Long
+) : Runnable, FeatureContextUpdateReceiver {
+
+    @Volatile
+    internal var currentRumContext: RumContext? = null
 
     override fun run() {
-        val rumContext =
-            RumContext.fromFeatureContext(sdkCore.getFeatureContext(Feature.RUM_FEATURE_NAME))
-        val rumViewType = rumContext.viewType
+        val rumViewType = currentRumContext?.viewType
         if (rumViewType == RumViewType.FOREGROUND) {
             val data = reader.readVitalData()
             if (data != null) {
@@ -39,5 +41,11 @@ internal class VitalReaderRunnable(
             sdkCore.internalLogger,
             this
         )
+    }
+
+    override fun onContextUpdate(featureName: String, context: Map<String, Any?>) {
+        if (featureName == Feature.RUM_FEATURE_NAME) {
+            currentRumContext = RumContext.fromFeatureContext(context)
+        }
     }
 }

@@ -24,36 +24,56 @@ In addition, to be able to run the static analysis tools locally, you should run
 This project hosts the following modules:
 
   - `dd-sdk-android-core`: the main library implementing the core functionality of SDK (storage and upload of data, core APIs);
+  - `dd-sdk-android-internal`: a library providing internal APIs, classes and utilities shared by the SDK modules;
   - `features/***`: a set of libraries implementing Datadog products: 
     - `features/dd-sdk-android-logs`: a library to send logs to Datadog;
     - `features/dd-sdk-android-rum`: a library to track user navigation and interaction;
     - `features/dd-sdk-android-ndk`: a lightweight library to track crashes from NDK libraries;
     - `features/dd-sdk-android-session-replay`: a library to capture the window content;
+    - `features/dd-sdk-android-session-replay-compose`: an extension for Session Replay to integrate with the Jetpack Compose;
     - `features/dd-sdk-android-session-replay-material`: an extension for Session Replay to integrate with the Material Design library;
-    - `features/dd-sdk-android-session-trace`: a library to measure performance of operations locally;
-    - `features/dd-sdk-android-session-webview`: a library to forward logs and RUM events captured in a webview to be linked with the mobile session;
+    - `features/dd-sdk-android-trace`: a library to measure performance of operations locally;
+    - `features/dd-sdk-android-trace-api`: a library containing API definitions for the Trace library;
+    - `features/dd-sdk-android-trace-internal`: a library containing internal classes for the Trace library;
+    - `features/dd-sdk-android-trace-otel`: an extension of Trace library to integrate with [OpenTelemetry](https://opentelemetry.io/);
+    - `features/dd-sdk-android-webview`: a library to forward logs and RUM events captured in a webview to be linked with the mobile session;
   - `integrations/***`: a set of libraries integrating Datadog products in third party libraries:
+    - `integrations/dd-sdk-android-apollo`: a lightweight library providing a bridge integration between Datadog SDK and [Apollo Kotlin](https://github.com/apollographql/apollo-kotlin)
     - `integrations/dd-sdk-android-coil`: a lightweight library providing a bridge integration between Datadog SDK and [Coil](https://coil-kt.github.io/coil/);
     - `integrations/dd-sdk-android-compose`: a lightweight library providing a bridge integration between Datadog SDK and [Jetpack Compose](https://developer.android.com/jetpack/compose);
     - `integrations/dd-sdk-android-fresco`: a lightweight library providing a bridge integration between Datadog SDK and [Fresco](https://frescolib.org/);
+    - `integrations/dd-sdk-android-glide`: a lightweight library providing a bridge integration between Datadog SDK and [Glide](https://bumptech.github.io/glide/);
     - `integrations/dd-sdk-android-okhttp`: a lightweight library providing an instrumentation for [OkHttp](https://square.github.io/okhttp/);
+    - `integrations/dd-sdk-android-okhttp-otel`: a lightweight library providing a support of [OpenTelemetry](https://opentelemetry.io/) for the [OkHttp](https://square.github.io/okhttp/) instrumentation;
+    - `integrations/dd-sdk-android-rum-coroutines`: a set of extensions for Kotlin Coroutines to ease the work with the RUM library;
     - `integrations/dd-sdk-android-rx`: a lightweight library providing a bridge integration between Datadog SDK and [RxJava](https://github.com/ReactiveX/RxJava);
     - `integrations/dd-sdk-android-sqldelight`: a lightweight library providing a bridge integration between Datadog SDK and [SQLDelight](https://cashapp.github.io/sqldelight/);
-    - `integrations/dd-sdk-android-tv`: a lightweight library providing extensions for [Android TV](https://www.android.com/tv/)
-    - `integrations/dd-sdk-android-ktx`: a set of Kotlin extensions to make the Datadog SDK more Kotlin friendly;
-    - `integrations/dd-sdk-android-glide`: a lightweight library providing a bridge integration between Datadog SDK and [Glide](https://bumptech.github.io/glide/);
     - `integrations/dd-sdk-android-timber`: a lightweight library providing a bridge integration between Datadog SDK and [Timber](https://github.com/JakeWharton/timber);
+    - `integrations/dd-sdk-android-tv`: a lightweight library providing extensions for [Android TV](https://www.android.com/tv/)
+    - `integrations/dd-sdk-android-trace-coroutines`: a set of extensions for Kotlin Coroutines to ease the work with the Trace library;
   - `instrumented/***`: a set of modules used to run instrumented tests:
     - `instrumented/integration`: a test module with integration tests using Espresso;
-  - `tools/*`: a set of modules used to extend the tools we use in our workflow:
+  - `reliability/***`: a set of modules used to run integration tests:
+    - `reliability/core-it`: a set of integration tests for the Datadog SDK core library;
+    - `reliability/single-fit/logs`: a set of integration tests for the Logs library;
+    - `reliability/single-fit/okhttp`: a set of integration tests for [OkHttp](https://square.github.io/okhttp/) instrumentation;
+    - `reliability/single-fit/rum`: a set of integration tests for the RUM library;
+    - `reliability/single-fit/trace`: a set of integration tests for the Trace library;
+    - `reliability/stub-core`: a set of stubs for Datadog SDK core;
+    - `reliability/stub-feature`: a set of stubs for Datadog SDK feature APIs;
+  - `tools/***`: a set of modules used to extend the tools we use in our workflow:
+    - `tools/benchmark`: a code to benchmark SDK performance;
     - `tools/detekt`: a few custom [Detekt](https://github.com/arturbosch/detekt) static analysis rules;
     - `tools/lint`: a custom [Lint](https://developer.android.com/studio/write/lint) static analysis rule;
     - `tools/noopfactory`: an annotation processor generating no-op implementation of interfaces;
     - `tools/unit`: a utility library with code to help writing unit tests;
   - `sample/***`: a few sample applications showcasing how to use the library features in production code;
     - `sample/kotlin`: a sample mobile application;
-    - `sample/vendor-lib`: a sample android library, to showcase vendors using Datadog in a host app also using Datadog;
-    - `sample/wear`: a sample watch application;
+    - `sample/vendor-lib`: a sample Android library, to showcase vendors using Datadog in a host app also using Datadog;
+    - `sample/wear`: a sample Wear OS application;
+    - `sample/automotive`: a sample Automotive OS application;
+    - `sample/tv`: a sample Android TV OS application;
+    - `sample/benchmark`: a sample application to collect SDK performance metrics;
 
 ### Building the SDK
 

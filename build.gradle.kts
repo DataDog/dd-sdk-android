@@ -34,6 +34,7 @@ buildscript {
         classpath(libs.unmockGradlePlugin)
         classpath(libs.sqlDelightGradlePlugin)
         classpath(libs.binaryCompatibilityGradlePlugin)
+        classpath(libs.kotlinxSerializationPlugin)
     }
 }
 
@@ -48,17 +49,23 @@ allprojects {
 nexusPublishing {
     this.repositories {
         sonatype {
-            val sonatypeUsername = System.getenv("OSSRH_USERNAME")
-            val sonatypePassword = System.getenv("OSSRH_PASSWORD")
-            stagingProfileId.set("378eecbbe2cf9")
+            stagingProfileId = "378eecbbe2cf9"
+            val sonatypeUsername = System.getenv("CENTRAL_PUBLISHER_USERNAME")
+            val sonatypePassword = System.getenv("CENTRAL_PUBLISHER_PASSWORD")
             if (sonatypeUsername != null) username.set(sonatypeUsername)
             if (sonatypePassword != null) password.set(sonatypePassword)
+            // see https://github.com/gradle-nexus/publish-plugin#publishing-to-maven-central-via-sonatype-central
+            // For official documentation:
+            // staging repo publishing https://central.sonatype.org/publish/publish-portal-ossrh-staging-api/#configuration
+            // snapshot publishing https://central.sonatype.org/publish/publish-portal-snapshots/#publishing-via-other-methods
+            nexusUrl.set(uri("https://ossrh-staging-api.central.sonatype.com/service/local/"))
+            snapshotRepositoryUrl.set(uri("https://central.sonatype.com/repository/maven-snapshots/"))
         }
     }
 }
 
 task<Delete>("clean") {
-    delete(rootProject.buildDir)
+    delete(rootProject.layout.buildDirectory)
 }
 
 tasks.register("checkAll") {
@@ -88,12 +95,19 @@ registerSubModuleAggregationTask(
     ":features:"
 )
 registerSubModuleAggregationTask("unitTestDebugIntegrations", "testDebugUnitTest", ":integrations:")
+tasks.register("unitTestDebugSamples") {
+    dependsOn(
+        ":sample:benchmark:testDebugUnitTest"
+    )
+}
 
 tasks.register("assembleSampleRelease") {
     dependsOn(
         ":sample:kotlin:assembleUs1Release",
         ":sample:wear:assembleUs1Release",
-        ":sample:vendor-lib:assembleRelease"
+        ":sample:vendor-lib:assembleRelease",
+        ":sample:automotive:assembleRelease",
+        ":sample:tv:assembleRelease"
     )
 }
 
@@ -102,7 +116,8 @@ tasks.register("unitTestTools") {
         ":tools:unit:testJvmReleaseUnitTest",
         ":tools:detekt:test",
         ":tools:lint:test",
-        ":tools:noopfactory:test"
+        ":tools:noopfactory:test",
+        ":tools:benchmark:test"
     )
 }
 
@@ -219,5 +234,23 @@ tasks.register("printSdkDebugRuntimeClasspath") {
         }
 
         File("sdk_classpath").writeText(result.joinToString(File.pathSeparator) { it.absolutePath })
+    }
+}
+
+tasks.register("listAllPublishedArtifactIds") {
+    doLast {
+        val artifactIds = rootProject.subprojects.flatMap { subproject ->
+            val publishing = subproject.extensions.findByType<PublishingExtension>()
+            publishing?.publications?.mapNotNull { publication ->
+                if (publication is MavenPublication) {
+                    publication.artifactId
+                } else {
+                    null
+                }
+            }.orEmpty()
+        }
+        artifactIds.forEach {
+            println(it)
+        }
     }
 }

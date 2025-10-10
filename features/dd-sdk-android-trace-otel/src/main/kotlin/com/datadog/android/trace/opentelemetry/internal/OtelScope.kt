@@ -6,10 +6,10 @@
 
 package com.datadog.android.trace.opentelemetry.internal
 
-import com.datadog.trace.bootstrap.instrumentation.api.AgentScope
+import com.datadog.android.trace.api.scope.DatadogScope
 import io.opentelemetry.context.Scope
 
-internal class OtelScope(internal val scope: Scope, internal val delegate: AgentScope) : Scope {
+internal class OtelScope(internal val scope: Scope, internal val delegate: DatadogScope) : Scope {
     override fun close() {
         delegate.close()
         scope.close()

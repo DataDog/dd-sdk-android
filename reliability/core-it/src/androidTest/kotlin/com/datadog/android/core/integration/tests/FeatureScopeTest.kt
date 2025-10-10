@@ -31,6 +31,8 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 
 /**
  * Instrumentation tests for the feature scope.
@@ -101,13 +103,15 @@ class FeatureScopeTest : MockServerTest() {
 
         // When
         checkNotNull(featureScope)
-        featureScope.withWriteContext { _, eventBatchWriter ->
+        featureScope.withWriteContext { _, writeScope ->
             fakeBatchData.forEach { rawBatchEvent ->
-                eventBatchWriter.write(
-                    rawBatchEvent,
-                    fakeBatchMetadata,
-                    eventType
-                )
+                writeScope {
+                    it.write(
+                        rawBatchEvent,
+                        fakeBatchMetadata,
+                        eventType
+                    )
+                }
             }
         }
 
@@ -118,7 +122,7 @@ class FeatureScopeTest : MockServerTest() {
                 .withTrackingConsent(trackingConsent)
                 .receivedData(fakeBatchData, fakeBatchMetadata)
             true
-        }.doWait(LONG_WAIT_MS)
+        }.doWait(MEDIUM_WAIT_MS)
     }
 
     @Test
@@ -133,13 +137,15 @@ class FeatureScopeTest : MockServerTest() {
         testedInternalSdkCore.registerFeature(stubFeature)
         val featureScope = testedInternalSdkCore.getFeature(fakeFeatureName)
         checkNotNull(featureScope)
-        featureScope.withWriteContext { _, eventBatchWriter ->
+        featureScope.withWriteContext { _, writeScope ->
             fakeBatchData.forEach { rawBatchEvent ->
-                eventBatchWriter.write(
-                    rawBatchEvent,
-                    fakeBatchMetadata,
-                    eventType
-                )
+                writeScope {
+                    it.write(
+                        rawBatchEvent,
+                        fakeBatchMetadata,
+                        eventType
+                    )
+                }
             }
         }
 
@@ -153,7 +159,7 @@ class FeatureScopeTest : MockServerTest() {
                 .withTrackingConsent(trackingConsent)
                 .receivedData(fakeBatchData, fakeBatchMetadata)
             true
-        }.doWait(LONG_WAIT_MS)
+        }.doWait(MEDIUM_WAIT_MS)
     }
 
     @Test
@@ -170,13 +176,15 @@ class FeatureScopeTest : MockServerTest() {
 
         // When
         checkNotNull(featureScope)
-        featureScope.withWriteContext { _, eventBatchWriter ->
+        featureScope.withWriteContext { _, writeScope ->
             fakeBatchData.forEach { rawBatchEvent ->
-                eventBatchWriter.write(
-                    rawBatchEvent,
-                    null,
-                    eventType
-                )
+                writeScope {
+                    it.write(
+                        rawBatchEvent,
+                        null,
+                        eventType
+                    )
+                }
             }
         }
 
@@ -187,7 +195,7 @@ class FeatureScopeTest : MockServerTest() {
                 .withTrackingConsent(trackingConsent)
                 .receivedData(fakeBatchData, null)
             true
-        }.doWait(LONG_WAIT_MS)
+        }.doWait(MEDIUM_WAIT_MS)
     }
 
     // endregion
@@ -205,25 +213,32 @@ class FeatureScopeTest : MockServerTest() {
         ) as InternalSdkCore
         testedInternalSdkCore.registerFeature(stubFeature)
         val featureScope = testedInternalSdkCore.getFeature(fakeFeatureName)
+        val countDownLatch = CountDownLatch(fakeBatchData.size)
 
         // When
         checkNotNull(featureScope)
-        featureScope.withWriteContext { _, eventBatchWriter ->
+        featureScope.withWriteContext { _, writeScope ->
             fakeBatchData.forEach { rawBatchEvent ->
-                eventBatchWriter.write(
-                    rawBatchEvent,
-                    fakeBatchMetadata,
-                    eventType
-                )
+                writeScope {
+                    it.write(
+                        rawBatchEvent,
+                        fakeBatchMetadata,
+                        eventType
+                    )
+                    countDownLatch.countDown()
+                }
             }
         }
 
         // Then
-        Thread.sleep(MEDIUM_WAIT_MS)
-        MockWebServerAssert.assertThat(getMockServerWrapper())
-            .withConfiguration(fakeConfiguration)
-            .withTrackingConsent(trackingConsent)
-            .didNotReceiveData(fakeBatchData, fakeBatchMetadata)
+        countDownLatch.await(MEDIUM_WAIT_MS, TimeUnit.MILLISECONDS)
+        ConditionWatcher {
+            MockWebServerAssert.assertThat(getMockServerWrapper())
+                .withConfiguration(fakeConfiguration)
+                .withTrackingConsent(trackingConsent)
+                .didNotReceiveData(fakeBatchData, fakeBatchMetadata)
+            true
+        }.doWait(MEDIUM_WAIT_MS)
     }
 
     // endregion
@@ -241,25 +256,32 @@ class FeatureScopeTest : MockServerTest() {
         ) as InternalSdkCore
         testedInternalSdkCore.registerFeature(stubFeature)
         val featureScope = testedInternalSdkCore.getFeature(fakeFeatureName)
+        val countDownLatch = CountDownLatch(fakeBatchData.size)
 
         // When
         checkNotNull(featureScope)
-        featureScope.withWriteContext { _, eventBatchWriter ->
+        featureScope.withWriteContext { _, writeScope ->
             fakeBatchData.forEach { rawBatchEvent ->
-                eventBatchWriter.write(
-                    rawBatchEvent,
-                    fakeBatchMetadata,
-                    eventType
-                )
+                writeScope {
+                    it.write(
+                        rawBatchEvent,
+                        fakeBatchMetadata,
+                        eventType
+                    )
+                    countDownLatch.countDown()
+                }
             }
         }
 
         // Then
-        Thread.sleep(MEDIUM_WAIT_MS)
-        MockWebServerAssert.assertThat(getMockServerWrapper())
-            .withConfiguration(fakeConfiguration)
-            .withTrackingConsent(trackingConsent)
-            .didNotReceiveData(fakeBatchData, fakeBatchMetadata)
+        countDownLatch.await(MEDIUM_WAIT_MS, TimeUnit.MILLISECONDS)
+        ConditionWatcher {
+            MockWebServerAssert.assertThat(getMockServerWrapper())
+                .withConfiguration(fakeConfiguration)
+                .withTrackingConsent(trackingConsent)
+                .didNotReceiveData(fakeBatchData, fakeBatchMetadata)
+            true
+        }.doWait(MEDIUM_WAIT_MS)
     }
 
     @Test
@@ -274,13 +296,17 @@ class FeatureScopeTest : MockServerTest() {
         testedInternalSdkCore.registerFeature(stubFeature)
         val featureScope = testedInternalSdkCore.getFeature(fakeFeatureName)
         checkNotNull(featureScope)
-        featureScope.withWriteContext { _, eventBatchWriter ->
+        val countDownLatch = CountDownLatch(fakeBatchData.size)
+        featureScope.withWriteContext { _, writeScope ->
             fakeBatchData.forEach { rawBatchEvent ->
-                eventBatchWriter.write(
-                    rawBatchEvent,
-                    fakeBatchMetadata,
-                    eventType
-                )
+                writeScope {
+                    it.write(
+                        rawBatchEvent,
+                        fakeBatchMetadata,
+                        eventType
+                    )
+                    countDownLatch.countDown()
+                }
             }
         }
 
@@ -288,11 +314,18 @@ class FeatureScopeTest : MockServerTest() {
         Datadog.setTrackingConsent(TrackingConsent.NOT_GRANTED)
 
         // Then
-        Thread.sleep(MEDIUM_WAIT_MS)
-        MockWebServerAssert.assertThat(getMockServerWrapper())
-            .withConfiguration(fakeConfiguration)
-            .withTrackingConsent(trackingConsent)
-            .didNotReceiveData(fakeBatchData, fakeBatchMetadata)
+        countDownLatch.await(MEDIUM_WAIT_MS, TimeUnit.MILLISECONDS)
+        with(testedInternalSdkCore.getPersistenceExecutorService()) {
+            shutdown()
+            awaitTermination(MEDIUM_WAIT_MS, TimeUnit.MILLISECONDS)
+        }
+        ConditionWatcher {
+            MockWebServerAssert.assertThat(getMockServerWrapper())
+                .withConfiguration(fakeConfiguration)
+                .withTrackingConsent(trackingConsent)
+                .didNotReceiveData(fakeBatchData, fakeBatchMetadata)
+            true
+        }.doWait(MEDIUM_WAIT_MS)
     }
 
     // endregion
@@ -311,13 +344,17 @@ class FeatureScopeTest : MockServerTest() {
         testedInternalSdkCore.registerFeature(stubFeature)
         val featureScope = testedInternalSdkCore.getFeature(fakeFeatureName)
         checkNotNull(featureScope)
-        featureScope.withWriteContext { _, eventBatchWriter ->
+        val countDownLatch = CountDownLatch(fakeBatchData.size)
+        featureScope.withWriteContext { _, writeScope ->
             fakeBatchData.forEach { rawBatchEvent ->
-                eventBatchWriter.write(
-                    rawBatchEvent,
-                    fakeBatchMetadata,
-                    eventType
-                )
+                writeScope {
+                    it.write(
+                        rawBatchEvent,
+                        fakeBatchMetadata,
+                        eventType
+                    )
+                    countDownLatch.countDown()
+                }
             }
         }
 
@@ -326,11 +363,18 @@ class FeatureScopeTest : MockServerTest() {
         Datadog.setTrackingConsent(TrackingConsent.GRANTED)
 
         // Then
-        Thread.sleep(MEDIUM_WAIT_MS)
-        MockWebServerAssert.assertThat(getMockServerWrapper())
-            .withConfiguration(fakeConfiguration)
-            .withTrackingConsent(trackingConsent)
-            .didNotReceiveData(fakeBatchData, fakeBatchMetadata)
+        countDownLatch.await(MEDIUM_WAIT_MS, TimeUnit.MILLISECONDS)
+        with(testedInternalSdkCore.getPersistenceExecutorService()) {
+            shutdown()
+            awaitTermination(MEDIUM_WAIT_MS, TimeUnit.MILLISECONDS)
+        }
+        ConditionWatcher {
+            MockWebServerAssert.assertThat(getMockServerWrapper())
+                .withConfiguration(fakeConfiguration)
+                .withTrackingConsent(trackingConsent)
+                .didNotReceiveData(fakeBatchData, fakeBatchMetadata)
+            true
+        }.doWait(MEDIUM_WAIT_MS)
     }
 
     // endregion
@@ -350,24 +394,31 @@ class FeatureScopeTest : MockServerTest() {
         val featureScope = testedInternalSdkCore.getFeature(fakeFeatureName)
         checkNotNull(featureScope)
         Datadog.stopInstance()
+        val countDownLatch = CountDownLatch(fakeBatchData.size)
 
         // When
-        featureScope.withWriteContext { _, eventBatchWriter ->
+        featureScope.withWriteContext { _, writeScope ->
             fakeBatchData.forEach { rawBatchEvent ->
-                eventBatchWriter.write(
-                    rawBatchEvent,
-                    fakeBatchMetadata,
-                    eventType
-                )
+                writeScope {
+                    it.write(
+                        rawBatchEvent,
+                        fakeBatchMetadata,
+                        eventType
+                    )
+                    countDownLatch.countDown()
+                }
             }
         }
 
         // Then
-        Thread.sleep(MEDIUM_WAIT_MS)
-        MockWebServerAssert.assertThat(getMockServerWrapper())
-            .withConfiguration(fakeConfiguration)
-            .withTrackingConsent(trackingConsent)
-            .didNotReceiveData(fakeBatchData, fakeBatchMetadata)
+        countDownLatch.await(MEDIUM_WAIT_MS, TimeUnit.MILLISECONDS)
+        ConditionWatcher {
+            MockWebServerAssert.assertThat(getMockServerWrapper())
+                .withConfiguration(fakeConfiguration)
+                .withTrackingConsent(trackingConsent)
+                .didNotReceiveData(fakeBatchData, fakeBatchMetadata)
+            true
+        }.doWait(MEDIUM_WAIT_MS)
     }
 
     // endregion

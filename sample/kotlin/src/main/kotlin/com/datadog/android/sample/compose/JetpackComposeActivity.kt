@@ -21,7 +21,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.rememberNavController
-import com.datadog.android.compose.ExperimentalTrackingApi
 import com.datadog.android.compose.NavigationViewTrackingEffect
 import com.datadog.android.rum.tracking.AcceptAllNavDestinations
 import com.datadog.android.insights.LocalInsightOverlay
@@ -64,7 +63,6 @@ class JetpackComposeActivity : AppCompatActivity() {
     }
 
     @Composable
-    @OptIn(ExperimentalTrackingApi::class)
     private fun AppContent(modifier: Modifier = Modifier) {
         val navController = rememberNavController()
         NavigationViewTrackingEffect(

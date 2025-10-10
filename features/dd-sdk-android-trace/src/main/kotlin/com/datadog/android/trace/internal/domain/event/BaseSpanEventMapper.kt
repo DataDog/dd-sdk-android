@@ -6,6 +6,7 @@
 
 package com.datadog.android.trace.internal.domain.event
 
+import com.datadog.android.api.context.AccountInfo
 import com.datadog.android.api.context.DeviceInfo
 import com.datadog.android.api.context.DeviceType
 import com.datadog.android.api.context.NetworkInfo
@@ -21,6 +22,12 @@ internal abstract class BaseSpanEventMapper<T> : ContextAwareMapper<T, SpanEvent
         additionalProperties = userInfo.additionalProperties.toMutableMap()
     )
 
+    protected fun resolveAccountInfo(accountInfo: AccountInfo) = SpanEvent.Account(
+        id = accountInfo.id,
+        name = accountInfo.name,
+        additionalProperties = accountInfo.extraInfo.toMutableMap()
+    )
+
     protected fun resolveDeviceInfo(deviceInfo: DeviceInfo): SpanEvent.Device {
         return SpanEvent.Device(
             type = resolveDeviceType(deviceInfo.deviceType),
@@ -28,6 +35,14 @@ internal abstract class BaseSpanEventMapper<T> : ContextAwareMapper<T, SpanEvent
             model = deviceInfo.deviceModel,
             brand = deviceInfo.deviceBrand,
             architecture = deviceInfo.architecture
+        )
+    }
+
+    protected fun resolveOsInfo(deviceInfo: DeviceInfo): SpanEvent.Os {
+        return SpanEvent.Os(
+            name = deviceInfo.osName,
+            version = deviceInfo.osVersion,
+            versionMajor = deviceInfo.osMajorVersion
         )
     }
 
@@ -41,14 +56,6 @@ internal abstract class BaseSpanEventMapper<T> : ContextAwareMapper<T, SpanEvent
             connectivity = networkInfo.connectivity.toString()
         )
         return SpanEvent.Network(networkInfoClient)
-    }
-
-    protected fun resolveOsInfo(deviceInfo: DeviceInfo): SpanEvent.Os {
-        return SpanEvent.Os(
-            name = deviceInfo.osName,
-            version = deviceInfo.osVersion,
-            versionMajor = deviceInfo.osMajorVersion
-        )
     }
 
     private fun resolveSimCarrier(networkInfo: NetworkInfo): SpanEvent.SimCarrier? {

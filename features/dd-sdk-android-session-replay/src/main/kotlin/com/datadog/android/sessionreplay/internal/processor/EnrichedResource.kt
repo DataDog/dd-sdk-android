@@ -10,8 +10,8 @@ import com.google.gson.JsonObject
 
 internal data class EnrichedResource(
     internal val resource: ByteArray,
-    internal val applicationId: String,
-    internal val filename: String
+    internal val filename: String,
+    internal val mimeType: String? = null
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -20,13 +20,11 @@ internal data class EnrichedResource(
         other as EnrichedResource
 
         if (!resource.contentEquals(other.resource)) return false
-        if (applicationId != other.applicationId) return false
         return filename == other.filename
     }
 
     override fun hashCode(): Int {
         var result = resource.contentHashCode()
-        result = 31 * result + applicationId.hashCode()
         result = 31 * result + filename.hashCode()
         return result
     }
@@ -36,14 +34,17 @@ internal data class EnrichedResource(
         internal const val APPLICATION_KEY = "application"
         internal const val ID_KEY = "id"
         internal const val FILENAME_KEY = "filename"
+        internal const val MIME_TYPE = "mimeType"
     }
 }
 
-internal fun EnrichedResource.asBinaryMetadata(): ByteArray {
-    val applicationId = this.applicationId
+internal fun EnrichedResource.asBinaryMetadata(rumApplicationId: String): ByteArray {
     val filename = this.filename
     val jsonObject = JsonObject()
-    jsonObject.addProperty(EnrichedResource.APPLICATION_ID_KEY, applicationId)
+    jsonObject.addProperty(EnrichedResource.APPLICATION_ID_KEY, rumApplicationId)
     jsonObject.addProperty(EnrichedResource.FILENAME_KEY, filename)
+    if (this.mimeType != null) {
+        jsonObject.addProperty(EnrichedResource.MIME_TYPE, this.mimeType)
+    }
     return jsonObject.toString().toByteArray(Charsets.UTF_8)
 }

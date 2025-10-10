@@ -9,6 +9,7 @@ package com.datadog.android
 import android.content.Context
 import androidx.annotation.AnyThread
 import androidx.annotation.WorkerThread
+import com.datadog.android.Datadog.clearAccountInfo
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.SdkCore
 import com.datadog.android.api.context.UserInfo
@@ -93,8 +94,10 @@ object Datadog {
                 sdkInstanceName
             ).apply {
                 initialize(configuration)
+                // not pushing to the context thread to have it set already at the
+                // moment Datadog.initialize is completed
+                coreFeature.trackingConsentProvider.setConsent(trackingConsent)
             }
-            sdkCore.setTrackingConsent(trackingConsent)
             registry.register(sdkInstanceName, sdkCore)
 
             return sdkCore
@@ -260,31 +263,6 @@ object Datadog {
     }
 
     /**
-     * Sets the user information.
-     *
-     * @param id (nullable) a unique user identifier (relevant to your business domain)
-     * @param name (nullable) the user name or alias
-     * @param email (nullable) the user email
-     * @param extraInfo additional information. An extra information can be
-     * nested up to 8 levels deep. Keys using more than 8 levels will be sanitized by SDK.
-     * @param sdkCore SDK instance to set user info in. If not provided, default SDK instance
-     * will be used.
-     */
-    @JvmStatic
-    @JvmOverloads
-    @Deprecated("UserInfo id property is now mandatory.")
-    @JvmName("setUserInfoDeprecated")
-    fun setUserInfo(
-        id: String? = null,
-        name: String? = null,
-        email: String? = null,
-        extraInfo: Map<String, Any?> = emptyMap(),
-        sdkCore: SdkCore = getInstance()
-    ) {
-        sdkCore.setUserInfo(id, name, email, extraInfo)
-    }
-
-    /**
      * Sets additional information on the [UserInfo] object
      *
      * If properties had originally been set with [SdkCore.setUserInfo], they will be preserved.
@@ -302,6 +280,32 @@ object Datadog {
     }
 
     /**
+     * Clear the current user information.
+     *
+     * User information will be set to null.
+     * After calling this api, Logs, Traces, RUM Events will not include the user information anymore.
+     *
+     * Any active RUM Session, active RUM View at the time of call will have their `usr` attribute cleared.
+     *
+     * If you want to retain the current `usr` on the active RUM session,
+     * you need to stop the session first by using `GlobalRumMonitor.get().stopSession()`
+     *
+     * If you want to retain the current `usr` on the active RUM views,
+     * you need to stop the view first by using `GlobalRumMonitor.get().stopView()`.
+     *
+     * @param sdkCore SDK instance to clear user info. If not provided,
+     * default SDK instance will be used.
+     */
+    @JvmStatic
+    @JvmOverloads
+    @AnyThread
+    fun clearUserInfo(
+        sdkCore: SdkCore = getInstance()
+    ) {
+        sdkCore.clearUserInfo()
+    }
+
+    /**
      * Clears all unsent data in all registered features.
      *
      * @param sdkCore SDK instance to clear the data. If not provided, default SDK instance
@@ -312,6 +316,81 @@ object Datadog {
     @AnyThread
     fun clearAllData(sdkCore: SdkCore = getInstance()) {
         sdkCore.clearAllData()
+    }
+
+    /**
+     * Sets the account information that the user is currently logged into.
+     *
+     * This API should be used to assign an identifier for the user's account which represents a
+     * contextual identity within the app, typically tied to business or tenant logic. The
+     * information set here will be added to logs, traces and RUM events.
+     *
+     * This value should be set when user logs in with his account, and cleared by calling
+     * [clearAccountInfo] when he logs out.
+     *
+     * @param id Account ID.
+     * @param name representing the account, if exists.
+     * @param extraInfo Account custom attributes, if exists.
+     * @param sdkCore SDK instance to set account information. If not provided, default SDK
+     * instance will be used.
+     */
+    @JvmStatic
+    @JvmOverloads
+    fun setAccountInfo(
+        id: String,
+        name: String? = null,
+        extraInfo: Map<String, Any?> = emptyMap(),
+        sdkCore: SdkCore = getInstance()
+    ) {
+        sdkCore.setAccountInfo(
+            id = id,
+            name = name,
+            extraInfo = extraInfo
+        )
+    }
+
+    /**
+     * Add custom attributes to the current account information.
+     *
+     * This extra info will be added to already existing extra info that is added
+     * to Logs, Traces and RUM events automatically.
+     *
+     * @param extraInfo Account additional custom attributes.
+     * @param sdkCore SDK instance to add extra account information. If not provided, default SDK
+     * instance will be used.
+     */
+    @JvmStatic
+    @JvmOverloads
+    fun addAccountExtraInfo(
+        extraInfo: Map<String, Any?>,
+        sdkCore: SdkCore = getInstance()
+    ) {
+        sdkCore.addAccountExtraInfo(extraInfo)
+    }
+
+    /**
+     * Clear the current account information.
+     *
+     * Account information will be set to null.
+     * Following Logs, Traces, RUM Events will not include the account information anymore.
+     *
+     * Any active RUM Session, active RUM View at the time of call will have their `account` attribute cleared.
+     *
+     * If you want to retain the current `account` on the active RUM session,
+     * you need to stop the session first by using `GlobalRumMonitor.get().stopSession()`.
+     *
+     * If you want to retain the current `account` on the active RUM views,
+     * you need to stop the view first by using `GlobalRumMonitor.get().stopView()`.
+     *
+     * @param sdkCore SDK instance to clear account information. If not provided, default SDK
+     * instance will be used.
+     */
+    @JvmStatic
+    @JvmOverloads
+    fun clearAccountInfo(
+        sdkCore: SdkCore = getInstance()
+    ) {
+        sdkCore.clearAccountInfo()
     }
 
     // Executes all the pending queues in the upload/persistence executors.

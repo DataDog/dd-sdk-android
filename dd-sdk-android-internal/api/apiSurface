@@ -1,11 +1,42 @@
+interface com.datadog.android.internal.attributes.LocalAttribute
+  enum Key
+    constructor(String)
+    - CREATION_SAMPLING_RATE
+    - REPORTING_SAMPLING_RATE
+    - VIEW_SCOPE_INSTRUMENTATION_TYPE
+    override fun toString(): String
+  interface Constant
+    val key: Key
+fun MutableMap<String, Any?>.enrichWithConstantAttribute(LocalAttribute.Constant)
+fun MutableMap<String, Any?>.enrichWithNonNullAttribute(LocalAttribute.Key, Any?)
+fun MutableMap<String, Any?>.enrichWithLocalAttribute(LocalAttribute.Key, Any?)
+enum com.datadog.android.internal.attributes.ViewScopeInstrumentationType : LocalAttribute.Constant
+  - MANUAL
+  - COMPOSE
+  - ACTIVITY
+  - FRAGMENT
+  override val key: LocalAttribute.Key
 class com.datadog.android.internal.collections.EvictingQueue<T> : java.util.Queue<T>
   constructor(Int = Int.MAX_VALUE)
   override val size: Int
   override fun add(T): Boolean
   override fun offer(T): Boolean
   override fun addAll(Collection<T>): Boolean
+enum com.datadog.android.internal.network.GraphQLHeaders
+  constructor(String)
+  - DD_GRAPHQL_NAME_HEADER
+  - DD_GRAPHQL_VARIABLES_HEADER
+  - DD_GRAPHQL_TYPE_HEADER
+  - DD_GRAPHQL_PAYLOAD_HEADER
+interface com.datadog.android.internal.profiler.BenchmarkCounter
+  fun add(Long, Map<String, String>)
+interface com.datadog.android.internal.profiler.BenchmarkMeter
+  fun getCounter(String): BenchmarkCounter
+  fun createObservableGauge(String, Map<String, String>, () -> Double)
 interface com.datadog.android.internal.profiler.BenchmarkProfiler
   fun getTracer(String): BenchmarkTracer
+interface com.datadog.android.internal.profiler.BenchmarkSdkUploads
+  fun getMeter(String): BenchmarkMeter
 interface com.datadog.android.internal.profiler.BenchmarkSpan
   fun stop()
 interface com.datadog.android.internal.profiler.BenchmarkSpanBuilder
@@ -13,9 +44,14 @@ interface com.datadog.android.internal.profiler.BenchmarkSpanBuilder
 fun <T: Any?> withinBenchmarkSpan(String, Map<String, String> = emptyMap(), BenchmarkSpan.() -> T): T
 interface com.datadog.android.internal.profiler.BenchmarkTracer
   fun spanBuilder(String, Map<String, String> = emptyMap()): BenchmarkSpanBuilder
+interface com.datadog.android.internal.profiler.ExecutionTimer
+  fun <T> measure(() -> T): T
 object com.datadog.android.internal.profiler.GlobalBenchmark
   fun register(BenchmarkProfiler)
-  fun get(): BenchmarkProfiler
+  fun register(BenchmarkSdkUploads)
+  fun getProfiler(): BenchmarkProfiler
+  fun getBenchmarkSdkUploads(): BenchmarkSdkUploads
+  fun createExecutionTimer(String): ExecutionTimer
 sealed class com.datadog.android.internal.telemetry.InternalTelemetryEvent
   sealed class Log : InternalTelemetryEvent
     constructor(String, Map<String, Any?>?)
@@ -33,6 +69,12 @@ sealed class com.datadog.android.internal.telemetry.InternalTelemetryEvent
     constructor(MutableMap<String, Any?> = mutableMapOf())
     class AddViewLoadingTime : ApiUsage
       constructor(Boolean, Boolean, Boolean, MutableMap<String, Any?> = mutableMapOf())
+    class AddOperationStepVital : ApiUsage
+      constructor(ActionType, MutableMap<String, Any?> = mutableMapOf())
+      enum ActionType
+        - START
+        - SUCCEED
+        - FAIL
   object InterceptorInstantiated : InternalTelemetryEvent
 enum com.datadog.android.internal.telemetry.TracingHeaderType
   - DATADOG
@@ -41,15 +83,57 @@ enum com.datadog.android.internal.telemetry.TracingHeaderType
   - TRACECONTEXT
 data class com.datadog.android.internal.telemetry.TracingHeaderTypesSet
   constructor(Set<TracingHeaderType>)
+interface com.datadog.android.internal.thread.NamedExecutionUnit
+  val name: String
+class com.datadog.android.internal.thread.NamedRunnable : NamedExecutionUnit, Runnable
+  constructor(String, Runnable)
+class com.datadog.android.internal.thread.NamedCallable<V> : NamedExecutionUnit, java.util.concurrent.Callable<V>
+  constructor(String, java.util.concurrent.Callable<V>)
+class com.datadog.android.internal.time.DefaultTimeProvider : TimeProvider
+  override fun getDeviceTimestamp(): Long
+  override fun getServerTimestamp(): Long
+  override fun getServerOffsetNanos(): Long
+  override fun getServerOffsetMillis(): Long
+interface com.datadog.android.internal.time.TimeProvider
+  fun getDeviceTimestamp(): Long
+  fun getServerTimestamp(): Long
+  fun getServerOffsetNanos(): Long
+  fun getServerOffsetMillis(): Long
 fun ByteArray.toHexString(): String
+interface com.datadog.android.internal.utils.DDCoreSubscription<T: Any>
+  fun addListener(T)
+  fun removeListener(T)
+  fun notifyListeners(T.() -> Unit)
+  val listenersCount: Int
+  companion object 
+    fun <T: Any> create(): DDCoreSubscription<T>
 object com.datadog.android.internal.utils.ImageViewUtils
   fun resolveParentRectAbsPosition(android.view.View, Boolean = true): android.graphics.Rect
   fun calculateClipping(android.graphics.Rect, android.graphics.Rect, Float): android.graphics.Rect
   fun resolveContentRectWithScaling(android.widget.ImageView, android.graphics.drawable.Drawable, android.widget.ImageView.ScaleType? = null): android.graphics.Rect
 fun Int.densityNormalized(Float): Int
 fun Long.densityNormalized(Float): Long
+val NULL_MAP_VALUE: Object
+fun Int.toHexString(): String
+fun Long.toHexString(): String
+fun java.math.BigInteger.toHexString(): String
+fun <T> allowThreadDiskReads(() -> T): T
+fun <T> allowThreadDiskWrites(() -> T): T
 fun StringBuilder.appendIfNotEmpty(String)
 fun StringBuilder.appendIfNotEmpty(Char)
+fun Thread.safeGetThreadId(): Long
+fun Thread.State.asString(): String
+fun Array<StackTraceElement>.loggableStackTrace(): String
 fun Throwable.loggableStackTrace(): String
+class com.datadog.android.rum.DdRumContentProvider : android.content.ContentProvider
+  override fun onCreate(): Boolean
+  override fun query(android.net.Uri, Array<String>?, String?, Array<String>?, String?): android.database.Cursor?
+  override fun getType(android.net.Uri): String?
+  override fun insert(android.net.Uri, android.content.ContentValues?): android.net.Uri?
+  override fun delete(android.net.Uri, String?, Array<String>?): Int
+  override fun update(android.net.Uri, android.content.ContentValues?, String?, Array<String>?): Int
+  companion object 
+    var processImportance: Int
+    val createTimeNs: Long
 annotation com.datadog.tools.annotation.NoOpImplementation
   constructor(Boolean = false)

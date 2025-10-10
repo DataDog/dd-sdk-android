@@ -6,13 +6,19 @@
 
 package com.datadog.gradle.plugin.transdeps
 
-import com.datadog.gradle.utils.execShell
-import org.gradle.api.DefaultTask
+import com.datadog.gradle.plugin.CheckGeneratedFileTask
 import org.gradle.api.tasks.InputFile
 import org.gradle.api.tasks.TaskAction
+import org.gradle.process.ExecOperations
 import java.io.File
+import javax.inject.Inject
 
-open class CheckTransitiveDependenciesTask : DefaultTask() {
+open class CheckTransitiveDependenciesTask @Inject constructor(
+    execOperations: ExecOperations
+) : CheckGeneratedFileTask(
+    genTaskName = TransitiveDependenciesPlugin.TASK_GEN_TRANSITIVE_DEPS,
+    execOperations
+) {
 
     @InputFile
     lateinit var dependenciesFile: File
@@ -26,27 +32,7 @@ open class CheckTransitiveDependenciesTask : DefaultTask() {
 
     @TaskAction
     fun applyTask() {
-        val lines = project.execShell(
-            "git",
-            "diff",
-            "--color=never",
-            "HEAD",
-            "--",
-            dependenciesFile.absolutePath
-        )
-
-        val additions = lines.filter { it.matches(Regex("^\\+[^+].*$")) }
-        val removals = lines.filter { it.matches(Regex("^-[^-].*$")) }
-
-        if (additions.isNotEmpty() || removals.isNotEmpty()) {
-            error(
-                "Make sure you run the ${TransitiveDependenciesPlugin.TASK_GEN_TRANSITIVE_DEPS} task" +
-                    " before you push your PR.\n" +
-                    additions.joinToString("\n") +
-                    "\n" +
-                    removals.joinToString("\n")
-            )
-        }
+        verifyGeneratedFileExists(dependenciesFile)
     }
 
     @InputFile

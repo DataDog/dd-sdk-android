@@ -99,12 +99,14 @@ class PendingToGrantedAsyncTest(
         }.start()
         Thread {
             fakeBatchData.forEach { rawBatchEvent ->
-                featureScope.withWriteContext { _, eventBatchWriter ->
-                    eventBatchWriter.write(
-                        rawBatchEvent,
-                        fakeBatchMetadata,
-                        eventType
-                    )
+                featureScope.withWriteContext { _, writeScope ->
+                    writeScope {
+                        it.write(
+                            rawBatchEvent,
+                            fakeBatchMetadata,
+                            eventType
+                        )
+                    }
                 }
             }
             countDownLatch.countDown()
@@ -118,7 +120,7 @@ class PendingToGrantedAsyncTest(
                 .withTrackingConsent(TrackingConsent.GRANTED)
                 .receivedData(fakeBatchData, fakeBatchMetadata)
             true
-        }.doWait(LONG_WAIT_MS)
+        }.doWait(MEDIUM_WAIT_MS)
     }
 
     // region Internal

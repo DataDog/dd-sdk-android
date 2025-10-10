@@ -8,6 +8,7 @@ package com.datadog.gradle.config
 
 import com.android.build.gradle.LibraryExtension
 import org.gradle.api.Project
+import org.gradle.api.artifacts.ProjectDependency
 import org.gradle.api.file.FileCollection
 import org.gradle.api.file.FileTree
 import org.gradle.api.internal.file.UnionFileTree
@@ -17,9 +18,7 @@ import org.gradle.api.tasks.JavaExec
 import java.io.File
 import java.util.Properties
 
-fun Project.detektCustomConfig(
-    vararg moduleDependencies: String
-) {
+fun Project.detektCustomConfig() {
     val ext = extensions.findByType(LibraryExtension::class.java)
 
     tasks.register("printDetektClasspath") {
@@ -93,11 +92,33 @@ fun Project.detektCustomConfig(
 
         classpath = files("${rootDir.absolutePath}/detekt-cli-1.23.4-all.jar")
 
-        args("--config", "${rootDir.absolutePath}/detekt_custom.yml")
+        args(
+            "--config",
+            "${rootDir.absolutePath}/detekt_custom_general.yml," +
+                "${rootDir.absolutePath}/detekt_custom_safe_calls.yml," +
+                "${rootDir.absolutePath}/detekt_custom_unsafe_calls.yml"
+        )
         args("--plugins", "${rootDir.absolutePath}/tools/detekt/build/libs/detekt.jar")
         args("-i", projectDir.absolutePath)
         args("-ex", "**/*.kts")
         args("--jvm-target", "11")
+
+        val moduleDependencies = configurations
+            .filter { it.name == "implementation" || it.name == "api" }
+            .flatMap { it.dependencies.filterIsInstance<ProjectDependency>() }
+            .map { it.path }
+            .toSet()
+            .let {
+                // api configurations have canBeResolved=false, so we cannot go inside them to see transitive
+                // module dependencies, so including common modules
+                if (project.path == ":dd-sdk-android-internal") {
+                    it
+                } else if (project.path == ":dd-sdk-android-core") {
+                    it + ":dd-sdk-android-internal"
+                } else {
+                    it + setOf(":dd-sdk-android-core", ":dd-sdk-android-internal")
+                }
+            }
 
         val externalDependencies = File("${projectDir.absolutePath}/detekt_classpath").readText()
         val moduleDependenciesClasses = moduleDependencies.map {

@@ -32,7 +32,7 @@ internal class UserFragment : Fragment(), View.OnClickListener {
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View? {
+    ): View {
         val rootView: View = inflater.inflate(R.layout.fragment_user, container, false)
         idField = rootView.findViewById(R.id.user_id)
         nameField = rootView.findViewById(R.id.user_name)
@@ -40,6 +40,7 @@ internal class UserFragment : Fragment(), View.OnClickListener {
         userGenderField = rootView.findViewById(R.id.user_gender)
         userAgeField = rootView.findViewById(R.id.user_age)
         rootView.findViewById<View>(R.id.save_user).setOnClickListener(this)
+        rootView.findViewById<View>(R.id.clear_user).setOnClickListener(this)
         return rootView
     }
 
@@ -58,24 +59,44 @@ internal class UserFragment : Fragment(), View.OnClickListener {
     // region View.OnClickListener
 
     override fun onClick(v: View) {
-        withinSpan("updateUserInfo") {
-            val id: String = idField.text.toString()
-            val name: String = nameField.text.toString()
-            val email: String = emailField.text.toString()
-            val gender: String = userGenderField.text.toString()
-            val age: Int = Integer.valueOf(userAgeField.text.toString())
-            Preferences.defaultPreferences(requireContext())
-                .setUserCredentials(id, name, email, gender, age)
-            Datadog.setUserInfo(id, name, email, emptyMap())
-            Datadog.addUserProperties(
-                mapOf<String, Any>(
-                    GENDER_KEY to gender,
-                    AGE_KEY to age
-                )
-            )
-            log("Updated user info")
+        when (v.id) {
+            R.id.save_user -> {
+                withinSpan("updateUserInfo") {
+                    val id: String = idField.text.toString()
+                    val name: String = nameField.text.toString()
+                    val email: String = emailField.text.toString()
+                    val gender: String = userGenderField.text.toString()
+                    val age: Int = Integer.valueOf(userAgeField.text.toString())
+                    Preferences.defaultPreferences(requireContext())
+                        .setUserCredentials(id, name, email, gender, age)
+                    Datadog.setUserInfo(id, name, email, emptyMap())
+                    Datadog.addUserProperties(
+                        mapOf<String, Any>(
+                            GENDER_KEY to gender,
+                            AGE_KEY to age
+                        )
+                    )
+                    logMessage("Updated user info")
+                }
+                Snackbar.make(view ?: v.rootView, "User info updated", Snackbar.LENGTH_SHORT).show()
+            }
+            R.id.clear_user -> {
+                withinSpan("clearUserInfo") {
+                    // Clear preferences
+                    Preferences.defaultPreferences(requireContext()).clearUserCredentials()
+                    // Clear Datadog user info
+                    Datadog.clearUserInfo()
+                    // Clear UI fields
+                    idField.text.clear()
+                    nameField.text.clear()
+                    emailField.text.clear()
+                    userGenderField.text.clear()
+                    userAgeField.text.clear()
+                    logMessage("Cleared user info")
+                }
+                Snackbar.make(view ?: v.rootView, "User info cleared", Snackbar.LENGTH_SHORT).show()
+            }
         }
-        Snackbar.make(view ?: v.rootView, "User info updated", Snackbar.LENGTH_SHORT).show()
     }
 
     // endregion

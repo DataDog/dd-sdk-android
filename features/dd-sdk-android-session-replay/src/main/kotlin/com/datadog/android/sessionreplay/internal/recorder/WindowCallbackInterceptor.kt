@@ -9,19 +9,21 @@ package com.datadog.android.sessionreplay.internal.recorder
 import android.content.Context
 import android.view.Window
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.internal.TouchPrivacyManager
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueHandler
 import com.datadog.android.sessionreplay.internal.recorder.callback.NoOpWindowCallback
 import com.datadog.android.sessionreplay.internal.recorder.callback.RecorderWindowCallback
-import com.datadog.android.sessionreplay.internal.utils.TimeProvider
+import com.datadog.android.sessionreplay.internal.utils.RumContextProvider
 import java.util.WeakHashMap
 
 internal class WindowCallbackInterceptor(
     private val recordedDataQueueHandler: RecordedDataQueueHandler,
     private val viewOnDrawInterceptor: ViewOnDrawInterceptor,
     private val timeProvider: TimeProvider,
+    private val rumContextProvider: RumContextProvider,
     private val internalLogger: InternalLogger,
     private val imagePrivacy: ImagePrivacy,
     private val textAndInputPrivacy: TextAndInputPrivacy,
@@ -57,6 +59,7 @@ internal class WindowCallbackInterceptor(
             recordedDataQueueHandler,
             toWrap,
             timeProvider,
+            rumContextProvider,
             viewOnDrawInterceptor,
             internalLogger,
             textAndInputPrivacy,

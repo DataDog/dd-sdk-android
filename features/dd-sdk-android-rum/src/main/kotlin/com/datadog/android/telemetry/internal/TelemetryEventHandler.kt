@@ -13,9 +13,9 @@ import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.api.storage.EventType
 import com.datadog.android.core.InternalSdkCore
-import com.datadog.android.core.internal.attributes.LocalAttribute
 import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.core.sampling.Sampler
+import com.datadog.android.internal.attributes.LocalAttribute
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.internal.telemetry.TracingHeaderTypesSet
 import com.datadog.android.rum.RumSessionListener
@@ -36,6 +36,7 @@ import com.datadog.android.telemetry.model.TelemetryConfigurationEvent
 import com.datadog.android.telemetry.model.TelemetryDebugEvent
 import com.datadog.android.telemetry.model.TelemetryErrorEvent
 import com.datadog.android.telemetry.model.TelemetryUsageEvent
+import com.datadog.android.telemetry.model.TelemetryUsageEvent.ActionType
 import java.util.Locale
 import com.datadog.android.telemetry.model.TelemetryConfigurationEvent.ViewTrackingStrategy as VTS
 
@@ -70,7 +71,13 @@ internal class TelemetryEventHandler(
 
         eventIDsSeenInCurrentSession.add(event.identity)
         totalEventsSeenInCurrentSession++
-        sdkCore.getFeature(Feature.RUM_FEATURE_NAME)?.withWriteContext { datadogContext, eventBatchWriter ->
+        sdkCore.getFeature(Feature.RUM_FEATURE_NAME)?.withWriteContext(
+            withFeatureContexts = setOf(
+                Feature.SESSION_REPLAY_FEATURE_NAME,
+                Feature.TRACING_FEATURE_NAME,
+                Feature.RUM_FEATURE_NAME
+            )
+        ) { datadogContext, writeScope ->
             val timestamp = wrappedEvent.eventTime.timestamp + datadogContext.time.serverTimeOffsetMs
             val telemetryEvent: Any? = when (event) {
                 is InternalTelemetryEvent.Log.Debug -> {
@@ -135,7 +142,9 @@ internal class TelemetryEventHandler(
                 }
             }
             if (telemetryEvent != null) {
-                writer.write(eventBatchWriter, telemetryEvent, EventType.TELEMETRY)
+                writeScope {
+                    writer.write(it, telemetryEvent, EventType.TELEMETRY)
+                }
             }
         }
     }
@@ -389,63 +398,74 @@ internal class TelemetryEventHandler(
         effectiveSampleRate: Float
     ): TelemetryUsageEvent {
         val rumContext = datadogContext.rumContext()
-        return when (event) {
+        val resolvedAdditionalProperties = event.additionalProperties
+            .cleanUpInternalAttributes()
+        val usage = when (event) {
+            is InternalTelemetryEvent.ApiUsage.AddOperationStepVital -> {
+                TelemetryUsageEvent.Usage.AddOperationStepVital(
+                    actionType = when (event.actionType) {
+                        InternalTelemetryEvent.ApiUsage.AddOperationStepVital.ActionType.START -> ActionType.START
+                        InternalTelemetryEvent.ApiUsage.AddOperationStepVital.ActionType.SUCCEED -> ActionType.SUCCEED
+                        InternalTelemetryEvent.ApiUsage.AddOperationStepVital.ActionType.FAIL -> ActionType.FAIL
+                    }
+                )
+            }
             is InternalTelemetryEvent.ApiUsage.AddViewLoadingTime -> {
-                val resolvedAdditionalProperties = event.additionalProperties
-                    .cleanUpInternalAttributes()
-
-                TelemetryUsageEvent(
-                    dd = TelemetryUsageEvent.Dd(),
-                    date = timestamp,
-                    source = TelemetryUsageEvent.Source.tryFromSource(
-                        datadogContext.source,
-                        sdkCore.internalLogger
-                    ) ?: TelemetryUsageEvent.Source.ANDROID,
-                    service = TELEMETRY_SERVICE_NAME,
-                    version = datadogContext.sdkVersion,
-                    application = TelemetryUsageEvent.Application(rumContext.applicationId),
-                    session = TelemetryUsageEvent.Session(rumContext.sessionId),
-                    view = rumContext.viewId?.let { TelemetryUsageEvent.View(it) },
-                    action = rumContext.actionId?.let { TelemetryUsageEvent.Action(it) },
-                    effectiveSampleRate = effectiveSampleRate,
-                    telemetry = TelemetryUsageEvent.Telemetry(
-                        additionalProperties = resolvedAdditionalProperties,
-                        device = TelemetryUsageEvent.Device(
-                            architecture = datadogContext.deviceInfo.architecture,
-                            brand = datadogContext.deviceInfo.deviceBrand,
-                            model = datadogContext.deviceInfo.deviceModel
-                        ),
-                        os = TelemetryUsageEvent.Os(
-                            build = datadogContext.deviceInfo.deviceBuildId,
-                            version = datadogContext.deviceInfo.osVersion,
-                            name = datadogContext.deviceInfo.osName
-                        ),
-                        usage = TelemetryUsageEvent.Usage.AddViewLoadingTime(
-                            overwritten = event.overwrite,
-                            noView = event.noView,
-                            noActiveView = event.noActiveView
-                        )
-                    )
+                TelemetryUsageEvent.Usage.AddViewLoadingTime(
+                    overwritten = event.overwrite,
+                    noView = event.noView,
+                    noActiveView = event.noActiveView
                 )
             }
         }
+
+        return TelemetryUsageEvent(
+            dd = TelemetryUsageEvent.Dd(),
+            date = timestamp,
+            source = TelemetryUsageEvent.Source.tryFromSource(
+                datadogContext.source,
+                sdkCore.internalLogger
+            ) ?: TelemetryUsageEvent.Source.ANDROID,
+            service = TELEMETRY_SERVICE_NAME,
+            version = datadogContext.sdkVersion,
+            application = TelemetryUsageEvent.Application(rumContext.applicationId),
+            session = TelemetryUsageEvent.Session(rumContext.sessionId),
+            view = rumContext.viewId?.let { TelemetryUsageEvent.View(it) },
+            action = rumContext.actionId?.let { TelemetryUsageEvent.Action(it) },
+            effectiveSampleRate = effectiveSampleRate,
+            telemetry = TelemetryUsageEvent.Telemetry(
+                additionalProperties = resolvedAdditionalProperties,
+                device = TelemetryUsageEvent.Device(
+                    architecture = datadogContext.deviceInfo.architecture,
+                    brand = datadogContext.deviceInfo.deviceBrand,
+                    model = datadogContext.deviceInfo.deviceModel
+                ),
+                os = TelemetryUsageEvent.Os(
+                    build = datadogContext.deviceInfo.deviceBuildId,
+                    version = datadogContext.deviceInfo.osVersion,
+                    name = datadogContext.deviceInfo.osName
+                ),
+                usage = usage
+            )
+        )
     }
 
     private fun isGlobalTracerRegistered(): Boolean {
-        // We don't reference io.opentracing from RUM directly, so using reflection for this.
-        // Would be nice to add the test with the flavor which is has no io.opentracing and test
+        // We don't reference com.datadog.android.trace from RUM directly, so using reflection for this.
+        // Would be nice to add the test with the flavor which is has no com.datadog.android.trace and test
         // for obfuscation enabled case.
         return try {
-            val globalTracerClass = Class.forName("io.opentracing.util.GlobalTracer")
+            val globalDatadogTracer =
+                Class.forName("com.datadog.android.trace.GlobalDatadogTracer")
             return try {
-                globalTracerClass.getMethod("isRegistered")
-                    .invoke(null) as Boolean
+                val holderInstance = globalDatadogTracer.getDeclaredField("INSTANCE").get(null)
+                globalDatadogTracer.getDeclaredMethod("getOrNull").invoke(holderInstance) != null
             } catch (@Suppress("TooGenericExceptionCaught") t: Throwable) {
                 sdkCore.internalLogger.log(
                     InternalLogger.Level.ERROR,
                     InternalLogger.Target.TELEMETRY,
                     {
-                        "GlobalTracer class exists in the runtime classpath, " +
+                        "GlobalDatadogTracer class exists in the runtime classpath, " +
                             "but there is an error invoking isRegistered method"
                     },
                     t

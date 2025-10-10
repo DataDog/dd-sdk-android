@@ -32,8 +32,12 @@ internal class ViewUtilsInternal {
         return view.id in systemViewIds || view is ViewStub || view is ActionBarContextView
     }
 
-    internal fun isOnSecondaryDisplay(view: View): Boolean =
-        view.display.displayId != Display.DEFAULT_DISPLAY
+    internal fun isOnSecondaryDisplay(view: View): Boolean {
+        val display = view.display
+        return display != null &&
+            display.displayId != Display.DEFAULT_DISPLAY &&
+            display.displayId != Display.INVALID_DISPLAY
+    }
 
     @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
     internal fun isToolbar(view: View): Boolean {

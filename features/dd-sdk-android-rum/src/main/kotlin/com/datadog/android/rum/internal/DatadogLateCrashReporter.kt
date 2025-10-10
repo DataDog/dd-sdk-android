@@ -25,6 +25,7 @@ import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.event.RumEventDeserializer
 import com.datadog.android.rum.internal.domain.scope.toErrorSchemaType
 import com.datadog.android.rum.internal.domain.scope.tryFromSource
+import com.datadog.android.rum.internal.utils.buildDDTagsString
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.ViewEvent
 import com.google.gson.JsonObject
@@ -77,7 +78,7 @@ internal class DatadogLateCrashReporter(
             return
         }
 
-        rumFeature.withWriteContext { datadogContext, eventBatchWriter ->
+        rumFeature.withWriteContext { datadogContext, writeScope ->
             val toSendErrorEvent = resolveErrorEventFromViewEvent(
                 datadogContext,
                 ErrorEvent.SourceType.tryFromSource(sourceType),
@@ -90,10 +91,12 @@ internal class DatadogLateCrashReporter(
                 null,
                 lastViewEvent
             )
-            rumWriter.write(eventBatchWriter, toSendErrorEvent, EventType.CRASH)
-            if (lastViewEvent.isWithinSessionAvailability) {
-                val updatedViewEvent = updateViewEvent(lastViewEvent)
-                rumWriter.write(eventBatchWriter, updatedViewEvent, EventType.CRASH)
+            writeScope {
+                rumWriter.write(it, toSendErrorEvent, EventType.CRASH)
+                if (lastViewEvent.isWithinSessionAvailability) {
+                    val updatedViewEvent = updateViewEvent(lastViewEvent)
+                    rumWriter.write(it, updatedViewEvent, EventType.CRASH)
+                }
             }
         }
     }
@@ -121,7 +124,9 @@ internal class DatadogLateCrashReporter(
                 return
             }
 
-            rumFeature.withWriteContext { datadogContext, eventBatchWriter ->
+            rumFeature.withWriteContext(
+                withFeatureContexts = setOf(Feature.RUM_FEATURE_NAME)
+            ) { datadogContext, writeScope ->
                 // means we are too late, last view event belongs to the ongoing session
                 if (lastViewEvent.session.id == datadogContext.rumSessionId) return@withWriteContext
 
@@ -144,12 +149,14 @@ internal class DatadogLateCrashReporter(
                     threadDumps,
                     lastViewEvent
                 )
-                rumWriter.write(eventBatchWriter, toSendErrorEvent, EventType.CRASH)
-                if (lastViewEvent.isWithinSessionAvailability) {
-                    val updatedViewEvent = updateViewEvent(lastViewEvent)
-                    rumWriter.write(eventBatchWriter, updatedViewEvent, EventType.CRASH)
+                writeScope {
+                    rumWriter.write(it, toSendErrorEvent, EventType.CRASH)
+                    if (lastViewEvent.isWithinSessionAvailability) {
+                        val updatedViewEvent = updateViewEvent(lastViewEvent)
+                        rumWriter.write(it, updatedViewEvent, EventType.CRASH)
+                    }
+                    sdkCore.writeLastFatalAnrSent(anrExitInfo.timestamp)
                 }
-                sdkCore.writeLastFatalAnrSent(anrExitInfo.timestamp)
             }
         }
     }
@@ -187,6 +194,7 @@ internal class DatadogLateCrashReporter(
         val user = viewEvent.usr
         val hasUserInfo = user?.id != null || user?.name != null ||
             user?.email != null || additionalUserProperties.isNotEmpty()
+        val account = viewEvent.account
         val deviceInfo = datadogContext.deviceInfo
 
         return ErrorEvent(
@@ -220,6 +228,13 @@ internal class DatadogLateCrashReporter(
                     user?.email,
                     user?.anonymousId,
                     additionalUserProperties
+                )
+            },
+            account = account?.let {
+                ErrorEvent.Account(
+                    id = it.id,
+                    name = it.name,
+                    additionalProperties = it.additionalProperties
                 )
             },
             connectivity = connectivity,
@@ -258,7 +273,8 @@ internal class DatadogLateCrashReporter(
                 },
                 timeSinceAppStart = timeSinceAppStartMs
             ),
-            version = viewEvent.version
+            version = viewEvent.version,
+            ddtags = buildDDTagsString(datadogContext)
         )
     }
 

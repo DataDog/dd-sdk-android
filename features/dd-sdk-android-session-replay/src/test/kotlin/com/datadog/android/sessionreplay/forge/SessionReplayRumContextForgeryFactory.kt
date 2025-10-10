@@ -16,7 +16,8 @@ internal class SessionReplayRumContextForgeryFactory : ForgeryFactory<SessionRep
         return SessionReplayRumContext(
             applicationId = forge.getForgery<UUID>().toString(),
             sessionId = forge.getForgery<UUID>().toString(),
-            viewId = forge.getForgery<UUID>().toString()
+            viewId = forge.getForgery<UUID>().toString(),
+            viewTimeOffsetMs = forge.aLong(-10000, 10000)
         )
     }
 }

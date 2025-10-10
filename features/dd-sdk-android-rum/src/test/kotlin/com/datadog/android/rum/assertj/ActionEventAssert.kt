@@ -6,6 +6,7 @@
 
 package com.datadog.android.rum.assertj
 
+import com.datadog.android.api.context.AccountInfo
 import com.datadog.android.api.context.NetworkInfo
 import com.datadog.android.api.context.UserInfo
 import com.datadog.android.rum.RumActionType
@@ -226,6 +227,29 @@ internal class ActionEventAssert(actual: ActionEvent) :
         return this
     }
 
+    fun hasAccountInfo(expected: AccountInfo?): ActionEventAssert {
+        assertThat(actual.account?.id)
+            .overridingErrorMessage(
+                "Expected RUM event to have account.id ${expected?.id} " +
+                    "but was ${actual.account?.id}"
+            )
+            .isEqualTo(expected?.id)
+        assertThat(actual.account?.name)
+            .overridingErrorMessage(
+                "Expected RUM event to have account.name ${expected?.name} " +
+                    "but was ${actual.account?.name}"
+            )
+            .isEqualTo(expected?.name)
+        assertThat(actual.account?.additionalProperties)
+            .overridingErrorMessage(
+                "Expected event to have account additional " +
+                    "properties ${expected?.extraInfo} " +
+                    "but was ${actual.account?.additionalProperties}"
+            )
+            .containsExactlyInAnyOrderEntriesOf(expected?.extraInfo)
+        return this
+    }
+
     fun containsExactlyContextAttributes(expected: Map<String, Any?>) {
         assertThat(actual.context?.additionalProperties)
             .overridingErrorMessage(
@@ -254,19 +278,11 @@ internal class ActionEventAssert(actual: ActionEvent) :
         return this
     }
 
-    fun hasUserSession(): ActionEventAssert {
+    fun hasSessionType(expected: ActionEvent.ActionEventSessionType): ActionEventAssert {
         assertThat(actual.session.type)
-            .overridingErrorMessage(
-                "Expected event to have session.type:user but was ${actual.session.type}"
-            ).isEqualTo(ActionEvent.ActionEventSessionType.USER)
-        return this
-    }
-
-    fun hasSyntheticsSession(): ActionEventAssert {
-        assertThat(actual.session.type)
-            .overridingErrorMessage(
-                "Expected event to have session.type:synthetics but was ${actual.session.type}"
-            ).isEqualTo(ActionEvent.ActionEventSessionType.SYNTHETICS)
+            .overridingErrorMessage {
+                "Expected event to have session.type:$expected but was ${actual.session.type}"
+            }.isEqualTo(expected)
         return this
     }
 

@@ -15,9 +15,8 @@ import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.feature.event.JvmCrash
 import com.datadog.android.core.feature.event.ThreadDump
 import com.datadog.android.core.internal.thread.waitToIdle
-import com.datadog.android.core.internal.utils.asString
-import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.core.internal.utils.triggerUploadWorker
+import com.datadog.android.internal.utils.asString
 import com.datadog.android.internal.utils.loggableStackTrace
 import java.lang.ref.WeakReference
 import java.util.concurrent.ThreadPoolExecutor
@@ -34,26 +33,6 @@ internal class DatadogExceptionHandler(
 
     override fun uncaughtException(t: Thread, e: Throwable) {
         val threads = getThreadDumps(t, e)
-        // write the log immediately
-        val logsFeature = sdkCore.getFeature(Feature.LOGS_FEATURE_NAME)
-        if (logsFeature != null) {
-            logsFeature.sendEvent(
-                JvmCrash.Logs(
-                    threadName = t.name,
-                    throwable = e,
-                    timestamp = System.currentTimeMillis(),
-                    message = createCrashMessage(e),
-                    loggerName = LOGGER_NAME,
-                    threads = threads
-                )
-            )
-        } else {
-            sdkCore.internalLogger.log(
-                InternalLogger.Level.INFO,
-                InternalLogger.Target.USER,
-                { MISSING_LOGS_FEATURE_INFO }
-            )
-        }
 
         // write a RUM Error too
         val rumFeature = sdkCore.getFeature(Feature.RUM_FEATURE_NAME)

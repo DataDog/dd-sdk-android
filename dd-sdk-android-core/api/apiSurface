@@ -8,9 +8,12 @@ object com.datadog.android.Datadog
   fun getVerbosity(): Int
   fun setTrackingConsent(com.datadog.android.privacy.TrackingConsent, com.datadog.android.api.SdkCore = getInstance())
   fun setUserInfo(String, String? = null, String? = null, Map<String, Any?> = emptyMap(), com.datadog.android.api.SdkCore = getInstance())
-  DEPRECATED fun setUserInfo(String? = null, String? = null, String? = null, Map<String, Any?> = emptyMap(), com.datadog.android.api.SdkCore = getInstance())
   fun addUserProperties(Map<String, Any?>, com.datadog.android.api.SdkCore = getInstance())
+  fun clearUserInfo(com.datadog.android.api.SdkCore = getInstance())
   fun clearAllData(com.datadog.android.api.SdkCore = getInstance())
+  fun setAccountInfo(String, String? = null, Map<String, Any?> = emptyMap(), com.datadog.android.api.SdkCore = getInstance())
+  fun addAccountExtraInfo(Map<String, Any?>, com.datadog.android.api.SdkCore = getInstance())
+  fun clearAccountInfo(com.datadog.android.api.SdkCore = getInstance())
   fun _internalProxy(String? = null): _InternalProxy
 enum com.datadog.android.DatadogSite
   - US1
@@ -18,6 +21,7 @@ enum com.datadog.android.DatadogSite
   - US5
   - EU1
   - AP1
+  - AP2
   - US1_FED
   - STAGING
   val intakeEndpoint: String
@@ -54,13 +58,19 @@ interface com.datadog.android.api.SdkCore
   val service: String
   fun isCoreActive(): Boolean
   fun setTrackingConsent(com.datadog.android.privacy.TrackingConsent)
-  fun setUserInfo(String? = null, String? = null, String? = null, Map<String, Any?> = emptyMap())
+  fun setUserInfo(String, String? = null, String? = null, Map<String, Any?> = emptyMap())
   fun addUserProperties(Map<String, Any?>)
+  fun clearUserInfo()
   fun clearAllData()
+  fun setAccountInfo(String, String? = null, Map<String, Any?> = emptyMap())
+  fun addAccountExtraInfo(Map<String, Any?>)
+  fun clearAccountInfo()
+data class com.datadog.android.api.context.AccountInfo
+  constructor(String, String? = null, Map<String, Any?> = emptyMap())
 data class com.datadog.android.api.context.DatadogContext
-  constructor(com.datadog.android.DatadogSite, String, String, String, String, String, String, String, TimeInfo, ProcessInfo, NetworkInfo, DeviceInfo, UserInfo, com.datadog.android.privacy.TrackingConsent, String?, Map<String, Map<String, Any?>>)
+  constructor(com.datadog.android.DatadogSite, String, String, String, String, String, String, String, TimeInfo, ProcessInfo, NetworkInfo, DeviceInfo, UserInfo, AccountInfo?, com.datadog.android.privacy.TrackingConsent, String?, Map<String, Map<String, Any?>>)
 data class com.datadog.android.api.context.DeviceInfo
-  constructor(String, String, String, DeviceType, String, String, String, String, String, Int?)
+  constructor(String, String, String, DeviceType, String, String, String, String, String, Int?, LocaleInfo)
 enum com.datadog.android.api.context.DeviceType
   - MOBILE
   - TABLET
@@ -69,6 +79,8 @@ enum com.datadog.android.api.context.DeviceType
   - GAMING_CONSOLE
   - BOT
   - OTHER
+data class com.datadog.android.api.context.LocaleInfo
+  constructor(List<String>, String, String)
 data class com.datadog.android.api.context.NetworkInfo
   constructor(Connectivity = Connectivity.NETWORK_NOT_CONNECTED, kotlin.String? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.Long? = null, kotlin.String? = null)
   enum Connectivity
@@ -108,20 +120,24 @@ interface com.datadog.android.api.feature.FeatureEventReceiver
   fun onReceive(Any)
 interface com.datadog.android.api.feature.FeatureScope
   val dataStore: com.datadog.android.api.storage.datastore.DataStoreHandler
-  fun withWriteContext(Boolean = false, (com.datadog.android.api.context.DatadogContext, com.datadog.android.api.storage.EventBatchWriter) -> Unit)
+  fun withWriteContext(Set<String> = emptySet(), (com.datadog.android.api.context.DatadogContext) -> Unit)
+  fun withContext(Set<String> = emptySet(), (com.datadog.android.api.context.DatadogContext) -> Unit)
+  fun getWriteContextSync(Set<String> = emptySet()): Pair<com.datadog.android.api.context.DatadogContext, EventWriteScope>?
   fun sendEvent(Any)
   fun <T: Feature> unwrap(): T
+typealias EventWriteScope = ((com.datadog.android.api.storage.EventBatchWriter) -> Unit) -> Unit
 fun <R: Any?> com.datadog.android.api.InternalLogger.measureMethodCallPerf(Class<*>, String, Float = 100f, () -> R): R
+fun FeatureScope.getContextFuture(Set<String> = emptySet()): java.util.concurrent.Future<com.datadog.android.api.context.DatadogContext?>?
 interface com.datadog.android.api.feature.FeatureSdkCore : com.datadog.android.api.SdkCore
   val internalLogger: com.datadog.android.api.InternalLogger
   fun registerFeature(Feature)
   fun getFeature(String): FeatureScope?
-  fun updateFeatureContext(String, (MutableMap<String, Any?>) -> Unit)
-  fun getFeatureContext(String): Map<String, Any?>
+  fun updateFeatureContext(String, Boolean = true, (MutableMap<String, Any?>) -> Unit)
+  fun getFeatureContext(String, Boolean = true): Map<String, Any?>
   fun setEventReceiver(String, FeatureEventReceiver)
-  fun setContextUpdateReceiver(String, FeatureContextUpdateReceiver)
-  fun removeContextUpdateReceiver(String, FeatureContextUpdateReceiver)
   fun removeEventReceiver(String)
+  fun setContextUpdateReceiver(FeatureContextUpdateReceiver)
+  fun removeContextUpdateReceiver(FeatureContextUpdateReceiver)
   fun createSingleThreadExecutorService(String): java.util.concurrent.ExecutorService
   fun createScheduledExecutorService(String): java.util.concurrent.ScheduledExecutorService
   fun setAnonymousId(java.util.UUID?)
@@ -188,12 +204,10 @@ interface com.datadog.android.core.InternalSdkCore : com.datadog.android.api.fea
   fun writeLastFatalAnrSent(Long)
   fun getPersistenceExecutorService(): java.util.concurrent.ExecutorService
   fun getAllFeatures(): List<com.datadog.android.api.feature.FeatureScope>
-  fun getDatadogContext(): com.datadog.android.api.context.DatadogContext?
+  fun getDatadogContext(Set<String> = emptySet()): com.datadog.android.api.context.DatadogContext?
 class com.datadog.android.core.SdkReference
   constructor(String? = null, (com.datadog.android.api.SdkCore) -> Unit = {})
   fun get(): com.datadog.android.api.SdkCore?
-fun <T> allowThreadDiskReads(() -> T): T
-fun <T> allowThreadDiskWrites(() -> T): T
 class com.datadog.android.core.UploadWorker : androidx.work.Worker
   constructor(android.content.Context, androidx.work.WorkerParameters)
   override fun doWork(): Result
@@ -254,30 +268,10 @@ sealed class com.datadog.android.core.feature.event.JvmCrash
   abstract val throwable: Throwable
   abstract val message: String
   abstract val threads: List<ThreadDump>
-  data class Logs : JvmCrash
-    constructor(String, Throwable, Long, String, String, List<ThreadDump>)
   data class Rum : JvmCrash
     constructor(Throwable, String, List<ThreadDump>)
 data class com.datadog.android.core.feature.event.ThreadDump
   constructor(String, String, String, Boolean)
-interface com.datadog.android.core.internal.attributes.LocalAttribute
-  enum Key
-    constructor(String)
-    - CREATION_SAMPLING_RATE
-    - REPORTING_SAMPLING_RATE
-    - VIEW_SCOPE_INSTRUMENTATION_TYPE
-    override fun toString(): String
-  interface Constant
-    val key: Key
-fun MutableMap<String, Any?>.enrichWithConstantAttribute(LocalAttribute.Constant)
-fun MutableMap<String, Any?>.enrichWithNonNullAttribute(LocalAttribute.Key, Any?)
-fun MutableMap<String, Any?>.enrichWithLocalAttribute(LocalAttribute.Key, Any?)
-enum com.datadog.android.core.internal.attributes.ViewScopeInstrumentationType : LocalAttribute.Constant
-  - MANUAL
-  - COMPOSE
-  - ACTIVITY
-  - FRAGMENT
-  override val key: LocalAttribute.Key
 class com.datadog.android.core.internal.net.DefaultFirstPartyHostHeaderTypeResolver : FirstPartyHostHeaderTypeResolver
   constructor(Map<String, Set<com.datadog.android.trace.TracingHeaderType>>)
   override fun isFirstPartyUrl(okhttp3.HttpUrl): Boolean
@@ -308,15 +302,11 @@ fun Collection<ByteArray>.join(ByteArray, ByteArray = ByteArray(0), ByteArray = 
 fun java.util.concurrent.Executor.executeSafe(String, com.datadog.android.api.InternalLogger, Runnable)
 fun java.util.concurrent.ScheduledExecutorService.scheduleSafe(String, Long, java.util.concurrent.TimeUnit, com.datadog.android.api.InternalLogger, Runnable): java.util.concurrent.ScheduledFuture<*>?
 fun java.util.concurrent.ExecutorService.submitSafe(String, com.datadog.android.api.InternalLogger, Runnable): java.util.concurrent.Future<*>?
-val NULL_MAP_VALUE: Object
+fun <T> java.util.concurrent.ExecutorService.submitSafe(String, com.datadog.android.api.InternalLogger, java.util.concurrent.Callable<T>): java.util.concurrent.Future<T>?
+fun <T> java.util.concurrent.Future<T>?.getSafe(String, com.datadog.android.api.InternalLogger): T?
 object com.datadog.android.core.internal.utils.JsonSerializer
   fun toJsonElement(Any?): com.google.gson.JsonElement
   fun Map<String, Any?>.safeMapValuesToJson(com.datadog.android.api.InternalLogger): Map<String, com.google.gson.JsonElement>
-fun Int.toHexString(): String
-fun Long.toHexString(): String
-fun java.math.BigInteger.toHexString(): String
-fun Thread.State.asString(): String
-fun Array<StackTraceElement>.loggableStackTrace(): String
 enum com.datadog.android.core.metrics.MethodCallSamplingRate
   constructor(Float)
   - ALL
@@ -355,6 +345,10 @@ open class com.datadog.android.core.sampling.DeterministicSampler<T: Any> : Samp
   constructor((T) -> ULong, Double)
   override fun sample(T): Boolean
   override fun getSampleRate(): Float
+  companion object 
+    const val SAMPLE_ALL_RATE: Float
+    const val SAMPLER_HASHER: ULong
+    const val MAX_ID: ULong
 open class com.datadog.android.core.sampling.RateBasedSampler<T: Any> : Sampler<T>
   constructor(() -> Float)
   constructor(Float)
@@ -426,6 +420,9 @@ object com.datadog.android.log.LogAttributes
   const val USR_EMAIL: String
   const val USR_ID: String
   const val USR_NAME: String
+  const val ACCOUNT_ATTRIBUTES_GROUP: String
+  const val ACCOUNT_ID: String
+  const val ACCOUNT_NAME: String
   const val VARIANT: String
   const val SOURCE_TYPE: String
   const val ERROR_FINGERPRINT: String

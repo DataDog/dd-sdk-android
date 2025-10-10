@@ -93,7 +93,7 @@ internal class LogsRequestFactoryTest {
     @Suppress("NAME_SHADOWING")
     @Test
     fun `M create a proper request W create() { custom endpoint }`(
-        @StringForgery(regex = "https://[a-z]+\\.com") fakeEndpoint: String,
+        @StringForgery(regex = "https://[a-z]+\\.com(/[a-z]+)+") fakeEndpoint: String,
         @Forgery batchData: List<RawBatchEvent>,
         @StringForgery batchMetadata: String,
         @Forgery executionContext: RequestExecutionContext,
@@ -111,10 +111,7 @@ internal class LogsRequestFactoryTest {
 
         // Then
         requireNotNull(request)
-        assertThat(request.url).isEqualTo(
-            "$fakeEndpoint/api/v2/logs?" +
-                "ddsource=${fakeDatadogContext.source}"
-        )
+        assertThat(request.url).isEqualTo("$fakeEndpoint?ddsource=${fakeDatadogContext.source}")
         assertThat(request.contentType).isEqualTo(RequestFactory.CONTENT_TYPE_JSON)
         assertThat(request.headers.minus(RequestFactory.HEADER_REQUEST_ID)).isEqualTo(
             mapOf(

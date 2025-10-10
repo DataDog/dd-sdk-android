@@ -25,12 +25,17 @@ import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
+import com.datadog.android.rum.model.ViewEvent
+import com.datadog.android.rum.model.VitalEvent
+import com.datadog.android.rum.tracking.ActionTrackingStrategy
 import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
 import com.datadog.android.rum.tracking.InteractionPredicate
+import com.datadog.android.rum.tracking.NoOpActionTrackingStrategy
 import com.datadog.android.rum.tracking.ViewAttributesProvider
 import com.datadog.android.rum.tracking.ViewTrackingStrategy
 import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.android.telemetry.model.TelemetryConfigurationEvent
+import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.FloatForgery
 import fr.xgouchet.elmyr.annotation.Forgery
@@ -78,39 +83,43 @@ internal class RumConfigurationBuilderTest {
         val rumConfiguration = testedBuilder.build()
 
         // Then
-        assertThat(rumConfiguration.featureConfiguration).isEqualTo(
-            RumFeature.Configuration(
-                customEndpointUrl = null,
-                sampleRate = RumFeature.DEFAULT_SAMPLE_RATE,
-                telemetrySampleRate = RumFeature.DEFAULT_TELEMETRY_SAMPLE_RATE,
-                telemetryConfigurationSampleRate = RumFeature.DEFAULT_TELEMETRY_CONFIGURATION_SAMPLE_RATE,
-                userActionTracking = true,
-                touchTargetExtraAttributesProviders = emptyList(),
-                interactionPredicate = NoOpInteractionPredicate(),
-                viewTrackingStrategy = ActivityViewTrackingStrategy(false),
-                viewEventMapper = NoOpEventMapper(),
-                errorEventMapper = NoOpEventMapper(),
-                actionEventMapper = NoOpEventMapper(),
-                resourceEventMapper = NoOpEventMapper(),
-                longTaskEventMapper = NoOpEventMapper(),
-                telemetryConfigurationMapper = NoOpEventMapper(),
-                longTaskTrackingStrategy = MainLooperLongTaskStrategy(100L),
-                backgroundEventTracking = false,
-                trackFrustrations = true,
-                // on Android R+ this should be false, but since default value is static property
-                // RumFeature.DEFAULT_RUM_CONFIG, it is evaluated at the static() block during class
-                // loading, so we are not able to set Build API version at this point. We will test
-                // it through a helper method in RumFeature.Companion
-                trackNonFatalAnrs = true,
-                vitalsMonitorUpdateFrequency = VitalsUpdateFrequency.AVERAGE,
-                sessionListener = NoOpRumSessionListener(),
-                additionalConfig = emptyMap(),
-                initialResourceIdentifier = TimeBasedInitialResourceIdentifier(),
-                lastInteractionIdentifier = TimeBasedInteractionIdentifier(),
-                trackAnonymousUser = true,
-                slowFramesConfiguration = null
-            )
-        )
+        with(rumConfiguration.featureConfiguration) {
+            assertThat(customEndpointUrl).isEqualTo(null)
+            assertThat(sampleRate).isEqualTo(RumFeature.DEFAULT_SAMPLE_RATE)
+            assertThat(telemetrySampleRate).isEqualTo(RumFeature.DEFAULT_TELEMETRY_SAMPLE_RATE)
+            assertThat(telemetryConfigurationSampleRate)
+                .isEqualTo(RumFeature.DEFAULT_TELEMETRY_CONFIGURATION_SAMPLE_RATE)
+            assertThat(userActionTracking).isTrue()
+            assertThat(touchTargetExtraAttributesProviders)
+                .isEqualTo(emptyList<ViewAttributesProvider>())
+            assertThat(interactionPredicate).isEqualTo(NoOpInteractionPredicate())
+            assertThat(viewTrackingStrategy)
+                .isEqualTo(ActivityViewTrackingStrategy(false))
+            assertThat(viewEventMapper).isEqualTo(NoOpEventMapper<ViewEvent>())
+            assertThat(errorEventMapper).isEqualTo(NoOpEventMapper<ErrorEvent>())
+            assertThat(actionEventMapper).isEqualTo(NoOpEventMapper<ActionEvent>())
+            assertThat(resourceEventMapper).isEqualTo(NoOpEventMapper<ResourceEvent>())
+            assertThat(longTaskEventMapper).isEqualTo(NoOpEventMapper<LongTaskEvent>())
+            assertThat(telemetryConfigurationMapper)
+                .isEqualTo(NoOpEventMapper<TelemetryConfigurationEvent>())
+            assertThat(longTaskTrackingStrategy)
+                .isEqualTo(MainLooperLongTaskStrategy(100L))
+            assertThat(backgroundEventTracking).isFalse()
+            assertThat(trackFrustrations).isTrue()
+            // on Android R+ this should be false, but since default value is static property
+            // RumFeature.DEFAULT_RUM_CONFIG, it is evaluated at the static() block during class
+            // loading, so we are not able to set Build API version at this point. We will test
+            // it through a helper method in RumFeature.Companion
+            assertThat(trackNonFatalAnrs).isTrue()
+            assertThat(vitalsMonitorUpdateFrequency).isEqualTo(VitalsUpdateFrequency.AVERAGE)
+            assertThat(sessionListener).isEqualTo(NoOpRumSessionListener())
+            assertThat(additionalConfig).isEqualTo(emptyMap<String, Any>())
+            assertThat(initialResourceIdentifier).isEqualTo(TimeBasedInitialResourceIdentifier())
+            assertThat(lastInteractionIdentifier).isEqualTo(TimeBasedInteractionIdentifier())
+            assertThat(composeActionTrackingStrategy)
+                .isInstanceOf(NoOpActionTrackingStrategy::class.java)
+            assertThat(slowFramesConfiguration).isNull()
+        }
     }
 
     @Test
@@ -124,7 +133,7 @@ internal class RumConfigurationBuilderTest {
 
     @Test
     fun `M build config with custom endpoint W useCustomEndpoint() and build()`(
-        @StringForgery(regex = "https://[a-z]+\\.com") rumUrl: String
+        @StringForgery(regex = "https://[a-z]+\\.com(/[a-z]+)+") rumUrl: String
     ) {
         // When
         val rumConfiguration = testedBuilder
@@ -441,6 +450,24 @@ internal class RumConfigurationBuilderTest {
     }
 
     @Test
+    fun `M build config with RUM Vital eventMapper W seVitalEventMapper() & build()`() {
+        // Given
+        val eventMapper: EventMapper<VitalEvent> = mock()
+
+        // When
+        val rumConfiguration = testedBuilder
+            .setVitalEventMapper(eventMapper)
+            .build()
+
+        // Then
+        assertThat(rumConfiguration.featureConfiguration).isEqualTo(
+            RumFeature.DEFAULT_RUM_CONFIG.copy(
+                vitalEventMapper = eventMapper
+            )
+        )
+    }
+
+    @Test
     fun `M use the given frequency W setVitalsMonitorUpdateFrequency`(
         @Forgery fakeFrequency: VitalsUpdateFrequency
     ) {
@@ -593,5 +620,51 @@ internal class RumConfigurationBuilderTest {
         // Then
         assertThat(rumConfiguration.featureConfiguration.slowFramesConfiguration)
             .isSameAs(slowFramesConfiguration)
+    }
+
+    @Test
+    fun `M use a custom ActionTrackingStrategy W setComposeActionTrackingStrategy()`() {
+        // Given
+        val mockActionTrackingStrategy = mock<ActionTrackingStrategy>()
+
+        // When
+        val rumConfiguration = testedBuilder
+            .setComposeActionTrackingStrategy(mockActionTrackingStrategy)
+            .build()
+
+        // Then
+        assertThat(rumConfiguration.featureConfiguration.composeActionTrackingStrategy)
+            .isSameAs(mockActionTrackingStrategy)
+    }
+
+    @Test
+    fun `M set rumSessionTypeOverride W setRumSessionTypeOverride()`(
+        forge: Forge
+    ) {
+        // Given
+        val rumSessionTypeOverride = forge.aValueFrom(RumSessionType::class.java)
+
+        // When
+        _RumInternalProxy.setRumSessionTypeOverride(testedBuilder, rumSessionTypeOverride)
+        val rumConfiguration = testedBuilder.build()
+
+        // Then
+        assertThat(rumConfiguration.featureConfiguration.rumSessionTypeOverride)
+            .isEqualTo(rumSessionTypeOverride)
+    }
+
+    @Test
+    fun `M enable accessibility settings collection W collectAccessibility`() {
+        // When
+        val rumConfiguration = testedBuilder
+            .collectAccessibility(enabled = true)
+            .build()
+
+        // Then
+        assertThat(rumConfiguration.featureConfiguration).isEqualTo(
+            RumFeature.DEFAULT_RUM_CONFIG.copy(
+                collectAccessibility = true
+            )
+        )
     }
 }

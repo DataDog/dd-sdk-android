@@ -24,11 +24,19 @@ internal object ComposeReflection {
 
     val LayoutNodeClass = getClassSafe("androidx.compose.ui.node.LayoutNode")
     val GetInteropViewMethod = LayoutNodeClass?.getDeclaredMethodSafe("getInteropView")
+    val NodesFieldOfLayoutNode = LayoutNodeClass?.getDeclaredFieldSafe("nodes")
+    val NodeChainClass = getClassSafe("androidx.compose.ui.node.NodeChain")
+    val HeadFieldOfNodeChain = NodeChainClass?.getDeclaredFieldSafe("head")
+    val ModifierNodeClass = getClassSafe("androidx.compose.ui.Modifier\$Node")
+    val ChildFieldOfModifierNode = ModifierNodeClass?.getDeclaredFieldSafe("child")
 
     val SemanticsNodeClass = getClassSafe("androidx.compose.ui.semantics.SemanticsNode")
     val LayoutNodeField = SemanticsNodeClass?.getDeclaredFieldSafe("layoutNode")
 
-    val GetInnerLayerCoordinatorMethod = LayoutNodeClass?.getDeclaredMethodSafe("getInnerLayerCoordinator")
+    val GetInnerLayerCoordinatorMethod = LayoutNodeClass?.getDeclaredMethodSafe(
+        "getInnerLayerCoordinator",
+        isCritical = false
+    )
 
     val AndroidComposeViewClass = getClassSafe("androidx.compose.ui.platform.AndroidComposeView")
     val SemanticsOwner = AndroidComposeViewClass?.getDeclaredFieldSafe("semanticsOwner")
@@ -41,8 +49,8 @@ internal object ComposeReflection {
     val ShapeField = BackgroundElementClass?.getDeclaredFieldSafe("shape")
 
     val DrawBehindElementClass = getClassSafe("androidx.compose.ui.draw.DrawBehindElement")
-    val CheckboxKtClass = getClassSafe("androidx.compose.material.CheckboxKt\$CheckboxImpl\$1\$1")
-    val RadioButtonKtClass = getClassSafe("androidx.compose.material.RadioButtonKt\$RadioButton\$2\$1")
+    val CheckboxKtClass = getClassSafe("androidx.compose.material.CheckboxKt\$CheckboxImpl\$1\$1", false)
+    val RadioButtonKtClass = getClassSafe("androidx.compose.material.RadioButtonKt\$RadioButton\$2\$1", false)
     val CheckDrawingCacheClass = getClassSafe("androidx.compose.material.CheckDrawingCache")
 
     val BorderColorField = CheckboxKtClass?.getDeclaredFieldSafe("\$borderColor\$delegate")
@@ -80,22 +88,59 @@ internal object ComposeReflection {
     val AndroidImageBitmapClass = getClassSafe("androidx.compose.ui.graphics.AndroidImageBitmap")
     val BitmapField = AndroidImageBitmapClass?.getDeclaredFieldSafe("bitmap")
 
-    val ContentPainterModifierClass = getClassSafe("coil.compose.ContentPainterModifier")
+    // Region of Coil
+
+    val ContentPainterModifierClass = getClassSafe(
+        "coil.compose.ContentPainterModifier",
+        isCritical = false
+    )
     val PainterFieldOfContentPainterModifier =
-        ContentPainterModifierClass?.getDeclaredFieldSafe("painter")
+        ContentPainterModifierClass?.getDeclaredFieldSafe(
+            "painter",
+            isCritical = false
+        )
 
     val ContentPainterElementClass = getClassSafe(
         "coil.compose.ContentPainterElement",
         isCritical = false
     )
     val PainterFieldOfContentPainterElement =
-        ContentPainterElementClass?.getDeclaredFieldSafe("painter")
+        ContentPainterElementClass?.getDeclaredFieldSafe(
+            "painter",
+            isCritical = false
+        )
 
     val AsyncImagePainterClass = getClassSafe(
         "coil.compose.AsyncImagePainter",
         isCritical = false
     )
     val PainterFieldOfAsyncImagePainter = AsyncImagePainterClass?.getDeclaredFieldSafe("_painter")
+
+    // End region of Coil
+
+    // Region of Coil3
+
+    val PainterNodeClass = getClassSafe(
+        "coil3.compose.internal.ContentPainterNode",
+        isCritical = false
+    )
+
+    val PainterFieldOfPainterNode = PainterNodeClass?.getDeclaredFieldSafe(
+        "painter",
+        isCritical = false
+    )
+
+    val AsyncImagePainter3Class = getClassSafe(
+        "coil3.compose.AsyncImagePainter",
+        isCritical = false
+    )
+    val PainterMethodOfAsync3ImagePainter =
+        AsyncImagePainter3Class?.getDeclaredMethodSafe(
+            "getPainter",
+            isCritical = false
+        )
+
+    // End region of Coil3
 
     // Region of MultiParagraph text
     val ParagraphInfoListField = MultiParagraph::class.java.getDeclaredFieldSafe(

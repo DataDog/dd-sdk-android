@@ -20,6 +20,7 @@ import com.datadog.android.rum.internal.RumAnonymousIdentifierManager
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.metric.SessionEndedMetricDispatcher
 import com.datadog.android.rum.internal.monitor.DatadogRumMonitor
+import com.datadog.android.rum.internal.startup.RumAppStartupTelemetryReporter
 import com.datadog.android.telemetry.internal.TelemetryEventHandler
 
 /**
@@ -109,7 +110,11 @@ object Rum {
         sdkCore: InternalSdkCore,
         rumFeature: RumFeature
     ): DatadogRumMonitor {
-        val sessionEndedMetricDispatcher = SessionEndedMetricDispatcher(internalLogger = sdkCore.internalLogger)
+        val sessionEndedMetricDispatcher = SessionEndedMetricDispatcher(
+            internalLogger = sdkCore.internalLogger,
+            sessionSamplingRate = rumFeature.configuration.sampleRate
+        )
+
         return DatadogRumMonitor(
             applicationId = rumFeature.applicationId,
             sdkCore = sdkCore,
@@ -136,6 +141,11 @@ object Rum {
             initialResourceIdentifier = rumFeature.initialResourceIdentifier,
             lastInteractionIdentifier = rumFeature.lastInteractionIdentifier,
             slowFramesListener = rumFeature.slowFramesListener,
+            rumSessionTypeOverride = rumFeature.configuration.rumSessionTypeOverride,
+            accessibilitySnapshotManager = rumFeature.accessibilitySnapshotManager,
+            batteryInfoProvider = rumFeature.batteryInfoProvider,
+            displayInfoProvider = rumFeature.displayInfoProvider,
+            rumAppStartupTelemetryReporter = RumAppStartupTelemetryReporter.create(sdkCore),
             insightsCollector = rumFeature.insightsCollector
         )
     }

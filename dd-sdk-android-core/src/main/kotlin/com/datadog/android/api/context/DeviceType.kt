@@ -10,11 +10,38 @@ package com.datadog.android.api.context
  * Device type.
  */
 enum class DeviceType {
+    /**
+     * Mobile device type.
+     */
     MOBILE,
+
+    /**
+     * Tablet device type.
+     */
     TABLET,
+
+    /**
+     * TV device type.
+     */
     TV,
+
+    /**
+     * Desktop device type.
+     */
     DESKTOP,
+
+    /**
+     * Gaming console device type.
+     */
     GAMING_CONSOLE,
+
+    /**
+     * Bot type.
+     */
     BOT,
+
+    /**
+     * Other device type.
+     */
     OTHER
 }

@@ -1,3 +1,35 @@
+public abstract interface class com/datadog/android/internal/attributes/LocalAttribute {
+}
+
+public abstract interface class com/datadog/android/internal/attributes/LocalAttribute$Constant {
+	public abstract fun getKey ()Lcom/datadog/android/internal/attributes/LocalAttribute$Key;
+}
+
+public final class com/datadog/android/internal/attributes/LocalAttribute$Key : java/lang/Enum {
+	public static final field CREATION_SAMPLING_RATE Lcom/datadog/android/internal/attributes/LocalAttribute$Key;
+	public static final field REPORTING_SAMPLING_RATE Lcom/datadog/android/internal/attributes/LocalAttribute$Key;
+	public static final field VIEW_SCOPE_INSTRUMENTATION_TYPE Lcom/datadog/android/internal/attributes/LocalAttribute$Key;
+	public fun toString ()Ljava/lang/String;
+	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/internal/attributes/LocalAttribute$Key;
+	public static fun values ()[Lcom/datadog/android/internal/attributes/LocalAttribute$Key;
+}
+
+public final class com/datadog/android/internal/attributes/LocalAttributeKt {
+	public static final fun enrichWithConstantAttribute (Ljava/util/Map;Lcom/datadog/android/internal/attributes/LocalAttribute$Constant;)Ljava/util/Map;
+	public static final fun enrichWithLocalAttribute (Ljava/util/Map;Lcom/datadog/android/internal/attributes/LocalAttribute$Key;Ljava/lang/Object;)Ljava/util/Map;
+	public static final fun enrichWithNonNullAttribute (Ljava/util/Map;Lcom/datadog/android/internal/attributes/LocalAttribute$Key;Ljava/lang/Object;)Ljava/util/Map;
+}
+
+public final class com/datadog/android/internal/attributes/ViewScopeInstrumentationType : java/lang/Enum, com/datadog/android/internal/attributes/LocalAttribute$Constant {
+	public static final field ACTIVITY Lcom/datadog/android/internal/attributes/ViewScopeInstrumentationType;
+	public static final field COMPOSE Lcom/datadog/android/internal/attributes/ViewScopeInstrumentationType;
+	public static final field FRAGMENT Lcom/datadog/android/internal/attributes/ViewScopeInstrumentationType;
+	public static final field MANUAL Lcom/datadog/android/internal/attributes/ViewScopeInstrumentationType;
+	public fun getKey ()Lcom/datadog/android/internal/attributes/LocalAttribute$Key;
+	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/internal/attributes/ViewScopeInstrumentationType;
+	public static fun values ()[Lcom/datadog/android/internal/attributes/ViewScopeInstrumentationType;
+}
+
 public final class com/datadog/android/internal/collections/EvictingQueue : java/util/Queue {
 	public fun <init> (I)V
 	public synthetic fun <init> (IILkotlin/jvm/internal/DefaultConstructorMarker;)V
@@ -22,8 +54,31 @@ public final class com/datadog/android/internal/collections/EvictingQueue : java
 	public fun toArray ([Ljava/lang/Object;)[Ljava/lang/Object;
 }
 
+public final class com/datadog/android/internal/network/GraphQLHeaders : java/lang/Enum {
+	public static final field DD_GRAPHQL_NAME_HEADER Lcom/datadog/android/internal/network/GraphQLHeaders;
+	public static final field DD_GRAPHQL_PAYLOAD_HEADER Lcom/datadog/android/internal/network/GraphQLHeaders;
+	public static final field DD_GRAPHQL_TYPE_HEADER Lcom/datadog/android/internal/network/GraphQLHeaders;
+	public static final field DD_GRAPHQL_VARIABLES_HEADER Lcom/datadog/android/internal/network/GraphQLHeaders;
+	public final fun getHeaderValue ()Ljava/lang/String;
+	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/internal/network/GraphQLHeaders;
+	public static fun values ()[Lcom/datadog/android/internal/network/GraphQLHeaders;
+}
+
+public abstract interface class com/datadog/android/internal/profiler/BenchmarkCounter {
+	public abstract fun add (JLjava/util/Map;)V
+}
+
+public abstract interface class com/datadog/android/internal/profiler/BenchmarkMeter {
+	public abstract fun createObservableGauge (Ljava/lang/String;Ljava/util/Map;Lkotlin/jvm/functions/Function0;)V
+	public abstract fun getCounter (Ljava/lang/String;)Lcom/datadog/android/internal/profiler/BenchmarkCounter;
+}
+
 public abstract interface class com/datadog/android/internal/profiler/BenchmarkProfiler {
 	public abstract fun getTracer (Ljava/lang/String;)Lcom/datadog/android/internal/profiler/BenchmarkTracer;
+}
+
+public abstract interface class com/datadog/android/internal/profiler/BenchmarkSdkUploads {
+	public abstract fun getMeter (Ljava/lang/String;)Lcom/datadog/android/internal/profiler/BenchmarkMeter;
 }
 
 public abstract interface class com/datadog/android/internal/profiler/BenchmarkSpan {
@@ -47,10 +102,17 @@ public final class com/datadog/android/internal/profiler/BenchmarkTracer$Default
 	public static synthetic fun spanBuilder$default (Lcom/datadog/android/internal/profiler/BenchmarkTracer;Ljava/lang/String;Ljava/util/Map;ILjava/lang/Object;)Lcom/datadog/android/internal/profiler/BenchmarkSpanBuilder;
 }
 
+public abstract interface class com/datadog/android/internal/profiler/ExecutionTimer {
+	public abstract fun measure (Lkotlin/jvm/functions/Function0;)Ljava/lang/Object;
+}
+
 public final class com/datadog/android/internal/profiler/GlobalBenchmark {
 	public static final field INSTANCE Lcom/datadog/android/internal/profiler/GlobalBenchmark;
-	public final fun get ()Lcom/datadog/android/internal/profiler/BenchmarkProfiler;
+	public final fun createExecutionTimer (Ljava/lang/String;)Lcom/datadog/android/internal/profiler/ExecutionTimer;
+	public final fun getBenchmarkSdkUploads ()Lcom/datadog/android/internal/profiler/BenchmarkSdkUploads;
+	public final fun getProfiler ()Lcom/datadog/android/internal/profiler/BenchmarkProfiler;
 	public final fun register (Lcom/datadog/android/internal/profiler/BenchmarkProfiler;)V
+	public final fun register (Lcom/datadog/android/internal/profiler/BenchmarkSdkUploads;)V
 }
 
 public abstract class com/datadog/android/internal/telemetry/InternalTelemetryEvent {
@@ -60,6 +122,20 @@ public abstract class com/datadog/android/internal/telemetry/InternalTelemetryEv
 	public synthetic fun <init> (Ljava/util/Map;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public synthetic fun <init> (Ljava/util/Map;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun getAdditionalProperties ()Ljava/util/Map;
+}
+
+public final class com/datadog/android/internal/telemetry/InternalTelemetryEvent$ApiUsage$AddOperationStepVital : com/datadog/android/internal/telemetry/InternalTelemetryEvent$ApiUsage {
+	public fun <init> (Lcom/datadog/android/internal/telemetry/InternalTelemetryEvent$ApiUsage$AddOperationStepVital$ActionType;Ljava/util/Map;)V
+	public synthetic fun <init> (Lcom/datadog/android/internal/telemetry/InternalTelemetryEvent$ApiUsage$AddOperationStepVital$ActionType;Ljava/util/Map;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun getActionType ()Lcom/datadog/android/internal/telemetry/InternalTelemetryEvent$ApiUsage$AddOperationStepVital$ActionType;
+}
+
+public final class com/datadog/android/internal/telemetry/InternalTelemetryEvent$ApiUsage$AddOperationStepVital$ActionType : java/lang/Enum {
+	public static final field FAIL Lcom/datadog/android/internal/telemetry/InternalTelemetryEvent$ApiUsage$AddOperationStepVital$ActionType;
+	public static final field START Lcom/datadog/android/internal/telemetry/InternalTelemetryEvent$ApiUsage$AddOperationStepVital$ActionType;
+	public static final field SUCCEED Lcom/datadog/android/internal/telemetry/InternalTelemetryEvent$ApiUsage$AddOperationStepVital$ActionType;
+	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/internal/telemetry/InternalTelemetryEvent$ApiUsage$AddOperationStepVital$ActionType;
+	public static fun values ()[Lcom/datadog/android/internal/telemetry/InternalTelemetryEvent$ApiUsage$AddOperationStepVital$ActionType;
 }
 
 public final class com/datadog/android/internal/telemetry/InternalTelemetryEvent$ApiUsage$AddViewLoadingTime : com/datadog/android/internal/telemetry/InternalTelemetryEvent$ApiUsage {
@@ -148,8 +224,51 @@ public final class com/datadog/android/internal/telemetry/TracingHeaderTypesSet 
 	public fun toString ()Ljava/lang/String;
 }
 
+public final class com/datadog/android/internal/thread/NamedCallable : com/datadog/android/internal/thread/NamedExecutionUnit, java/util/concurrent/Callable {
+	public fun <init> (Ljava/lang/String;Ljava/util/concurrent/Callable;)V
+	public fun call ()Ljava/lang/Object;
+	public fun getName ()Ljava/lang/String;
+}
+
+public abstract interface class com/datadog/android/internal/thread/NamedExecutionUnit {
+	public abstract fun getName ()Ljava/lang/String;
+}
+
+public final class com/datadog/android/internal/thread/NamedRunnable : com/datadog/android/internal/thread/NamedExecutionUnit, java/lang/Runnable {
+	public fun <init> (Ljava/lang/String;Ljava/lang/Runnable;)V
+	public fun getName ()Ljava/lang/String;
+	public fun run ()V
+}
+
+public final class com/datadog/android/internal/time/DefaultTimeProvider : com/datadog/android/internal/time/TimeProvider {
+	public fun <init> ()V
+	public fun getDeviceTimestamp ()J
+	public fun getServerOffsetMillis ()J
+	public fun getServerOffsetNanos ()J
+	public fun getServerTimestamp ()J
+}
+
+public abstract interface class com/datadog/android/internal/time/TimeProvider {
+	public abstract fun getDeviceTimestamp ()J
+	public abstract fun getServerOffsetMillis ()J
+	public abstract fun getServerOffsetNanos ()J
+	public abstract fun getServerTimestamp ()J
+}
+
 public final class com/datadog/android/internal/utils/ByteArrayExtKt {
 	public static final fun toHexString ([B)Ljava/lang/String;
+}
+
+public abstract interface class com/datadog/android/internal/utils/DDCoreSubscription {
+	public static final field Companion Lcom/datadog/android/internal/utils/DDCoreSubscription$Companion;
+	public abstract fun addListener (Ljava/lang/Object;)V
+	public abstract fun getListenersCount ()I
+	public abstract fun notifyListeners (Lkotlin/jvm/functions/Function1;)V
+	public abstract fun removeListener (Ljava/lang/Object;)V
+}
+
+public final class com/datadog/android/internal/utils/DDCoreSubscription$Companion {
+	public final fun create ()Lcom/datadog/android/internal/utils/DDCoreSubscription;
 }
 
 public final class com/datadog/android/internal/utils/ImageViewUtils {
@@ -169,13 +288,51 @@ public final class com/datadog/android/internal/utils/LongExtKt {
 	public static final fun densityNormalized (JF)J
 }
 
+public final class com/datadog/android/internal/utils/MapUtilsKt {
+	public static final fun getNULL_MAP_VALUE ()Ljava/lang/Object;
+}
+
+public final class com/datadog/android/internal/utils/NumberExtKt {
+	public static final fun toHexString (I)Ljava/lang/String;
+	public static final fun toHexString (J)Ljava/lang/String;
+	public static final fun toHexString (Ljava/math/BigInteger;)Ljava/lang/String;
+}
+
+public final class com/datadog/android/internal/utils/StrictModeExtKt {
+	public static final fun allowThreadDiskReads (Lkotlin/jvm/functions/Function0;)Ljava/lang/Object;
+	public static final fun allowThreadDiskWrites (Lkotlin/jvm/functions/Function0;)Ljava/lang/Object;
+}
+
 public final class com/datadog/android/internal/utils/StringBuilderExtKt {
 	public static final fun appendIfNotEmpty (Ljava/lang/StringBuilder;C)Ljava/lang/StringBuilder;
 	public static final fun appendIfNotEmpty (Ljava/lang/StringBuilder;Ljava/lang/String;)Ljava/lang/StringBuilder;
 }
 
+public final class com/datadog/android/internal/utils/ThreadExtKt {
+	public static final fun asString (Ljava/lang/Thread$State;)Ljava/lang/String;
+	public static final fun loggableStackTrace ([Ljava/lang/StackTraceElement;)Ljava/lang/String;
+	public static final fun safeGetThreadId (Ljava/lang/Thread;)J
+}
+
 public final class com/datadog/android/internal/utils/ThrowableExtKt {
 	public static final fun loggableStackTrace (Ljava/lang/Throwable;)Ljava/lang/String;
+}
+
+public final class com/datadog/android/rum/DdRumContentProvider : android/content/ContentProvider {
+	public static final field Companion Lcom/datadog/android/rum/DdRumContentProvider$Companion;
+	public fun <init> ()V
+	public fun delete (Landroid/net/Uri;Ljava/lang/String;[Ljava/lang/String;)I
+	public fun getType (Landroid/net/Uri;)Ljava/lang/String;
+	public fun insert (Landroid/net/Uri;Landroid/content/ContentValues;)Landroid/net/Uri;
+	public fun onCreate ()Z
+	public fun query (Landroid/net/Uri;[Ljava/lang/String;Ljava/lang/String;[Ljava/lang/String;Ljava/lang/String;)Landroid/database/Cursor;
+	public fun update (Landroid/net/Uri;Landroid/content/ContentValues;Ljava/lang/String;[Ljava/lang/String;)I
+}
+
+public final class com/datadog/android/rum/DdRumContentProvider$Companion {
+	public final fun getCreateTimeNs ()J
+	public final fun getProcessImportance ()I
+	public final fun setProcessImportance (I)V
 }
 
 public abstract interface annotation class com/datadog/tools/annotation/NoOpImplementation : java/lang/annotation/Annotation {

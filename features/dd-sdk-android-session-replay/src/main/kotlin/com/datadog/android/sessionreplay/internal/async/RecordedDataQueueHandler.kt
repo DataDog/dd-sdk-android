@@ -11,6 +11,7 @@ import androidx.annotation.VisibleForTesting
 import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.internal.utils.executeSafe
+import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.sessionreplay.internal.processor.RecordedDataProcessor
 import com.datadog.android.sessionreplay.internal.processor.RumContextDataHandler
 import com.datadog.android.sessionreplay.model.MobileSegment
@@ -25,11 +26,13 @@ import java.util.concurrent.ExecutorService
  * The items are added to the queue from the main thread and processed on a background thread.
  */
 internal class RecordedDataQueueHandler(
-    private var processor: RecordedDataProcessor,
-    private var rumContextDataHandler: RumContextDataHandler,
+    private val processor: RecordedDataProcessor,
+    private val rumContextDataHandler: RumContextDataHandler,
     private val internalLogger: InternalLogger,
     private val executorService: ExecutorService,
-    internal val recordedDataQueue: Queue<RecordedDataQueueItem>
+    internal val recordedDataQueue: Queue<RecordedDataQueueItem>,
+    private val telemetrySampleRate: Float = TELEMETRY_SAMPLE_RATE_PERCENT,
+    private val sampler: RateBasedSampler<Unit> = RateBasedSampler(telemetrySampleRate)
 ) : DataQueueHandler {
 
     @Synchronized
@@ -41,8 +44,8 @@ internal class RecordedDataQueueHandler(
     @MainThread
     override fun addResourceItem(
         identifier: String,
-        applicationId: String,
-        resourceData: ByteArray
+        resourceData: ByteArray,
+        mimeType: String?
     ): ResourceRecordedDataQueueItem? {
         val rumContextData = rumContextDataHandler.createRumContextData()
             ?: return null
@@ -50,8 +53,8 @@ internal class RecordedDataQueueHandler(
         val item = ResourceRecordedDataQueueItem(
             recordedQueuedItemContext = rumContextData,
             identifier = identifier,
-            applicationId = applicationId,
-            resourceData = resourceData
+            resourceData = resourceData,
+            mimeType
         )
 
         insertIntoRecordedDataQueue(item)
@@ -98,7 +101,6 @@ internal class RecordedDataQueueHandler(
      * for example if a snapshot failed to traverse the tree).
      * If neither of the previous conditions occurs, the loop breaks.
      */
-    @MainThread
     override fun tryToConsumeItems() {
         // no need to create a thread if the queue is empty
         if (recordedDataQueue.isEmpty()) {
@@ -115,6 +117,7 @@ internal class RecordedDataQueueHandler(
      * This makes it implicitly synchronised so we should never have any multithreading issues
      * where one thread peeks while another removes the element.
      */
+    @Suppress("NestedBlockDepth")
     @WorkerThread
     @Synchronized
     private fun triggerProcessingLoop() {
@@ -127,24 +130,14 @@ internal class RecordedDataQueueHandler(
             if (nextItem != null) {
                 val nextItemAgeInNs = System.nanoTime() - nextItem.creationTimeStampInNs
                 if (!nextItem.isValid()) {
-                    internalLogger.log(
-                        InternalLogger.Level.WARN,
-                        listOf(
-                            InternalLogger.Target.MAINTAINER,
-                            InternalLogger.Target.TELEMETRY
-                        ),
-                        { ITEM_DROPPED_INVALID_MESSAGE.format(Locale.US, nextItem.javaClass.simpleName) }
-                    )
+                    if (sampler.sample(Unit)) {
+                        logInvalidQueueItemException(nextItem)
+                    }
                     recordedDataQueue.poll()
                 } else if (nextItemAgeInNs > MAX_DELAY_NS) {
-                    internalLogger.log(
-                        InternalLogger.Level.WARN,
-                        listOf(
-                            InternalLogger.Target.MAINTAINER,
-                            InternalLogger.Target.TELEMETRY
-                        ),
-                        { ITEM_DROPPED_EXPIRED_MESSAGE.format(Locale.US, nextItemAgeInNs) }
-                    )
+                    if (sampler.sample(Unit)) {
+                        logExpiredItemException(nextItemAgeInNs)
+                    }
                     recordedDataQueue.poll()
                 } else if (nextItem.isReady()) {
                     processItem(recordedDataQueue.poll())
@@ -197,12 +190,34 @@ internal class RecordedDataQueueHandler(
         }
     }
 
+    private fun logInvalidQueueItemException(item: RecordedDataQueueItem) {
+        internalLogger.log(
+            InternalLogger.Level.WARN,
+            listOf(
+                InternalLogger.Target.MAINTAINER,
+                InternalLogger.Target.TELEMETRY
+            ),
+            { ITEM_DROPPED_INVALID_MESSAGE.format(Locale.US, item.javaClass.simpleName) }
+        )
+    }
+
     private fun logAddToQueueException(e: Exception) {
         internalLogger.log(
             InternalLogger.Level.ERROR,
             InternalLogger.Target.MAINTAINER,
             { FAILED_TO_ADD_RECORDS_TO_QUEUE_ERROR_MESSAGE },
             e
+        )
+    }
+
+    private fun logExpiredItemException(nextItemAgeInNs: Long) {
+        internalLogger.log(
+            InternalLogger.Level.WARN,
+            listOf(
+                InternalLogger.Target.MAINTAINER,
+                InternalLogger.Target.TELEMETRY
+            ),
+            { ITEM_DROPPED_EXPIRED_MESSAGE.format(Locale.US, nextItemAgeInNs) }
         )
     }
 
@@ -222,5 +237,8 @@ internal class RecordedDataQueueHandler(
         @VisibleForTesting
         internal const val ITEM_DROPPED_EXPIRED_MESSAGE =
             "SR RecordedDataQueueHandler: dropped item from the queue. age=%d ns"
+
+        private const val TELEMETRY_SAMPLE_RATE_PERCENT =
+            1f // 1% of the items will be logged
     }
 }

@@ -18,11 +18,12 @@ plugins {
     // Build
     id("com.android.library")
     kotlin("android")
+    alias(libs.plugins.composeCompilerPlugin)
 
     // Publish
     `maven-publish`
     signing
-    id("org.jetbrains.dokka")
+    id("org.jetbrains.dokka-javadoc")
 
     // Analysis tools
     id("com.github.ben-manes.versions")
@@ -35,19 +36,21 @@ plugins {
     id("com.datadoghq.dependency-license")
     id("apiSurface")
     id("transitiveDependencies")
+    id("verificationXml")
 }
 
 android {
     namespace = "com.datadog.android.compose"
+    defaultConfig {
+        consumerProguardFiles("consumer-rules.pro")
+    }
     buildFeatures {
         compose = true
-    }
-    composeOptions {
-        kotlinCompilerExtensionVersion = libs.versions.androidXComposeCompilerExtension.get()
     }
 }
 
 dependencies {
+    implementation(project(":dd-sdk-android-internal"))
     implementation(project(":features:dd-sdk-android-rum"))
     implementation(libs.kotlin)
 
@@ -80,7 +83,7 @@ kotlinConfig(jvmBytecodeTarget = JvmTarget.JVM_11)
 androidLibraryConfig()
 taskConfig<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
     compilerOptions {
-        freeCompilerArgs.add("-opt-in=kotlin.RequiresOptIn")
+        optIn.add("kotlin.RequiresOptIn")
     }
 }
 junitConfig()
@@ -90,4 +93,4 @@ publishingConfig(
     "A Jetpack Compose integration to use with the Datadog monitoring library" +
         " for Android applications."
 )
-detektCustomConfig(":dd-sdk-android-core", ":dd-sdk-android-internal", ":features:dd-sdk-android-rum")
+detektCustomConfig()

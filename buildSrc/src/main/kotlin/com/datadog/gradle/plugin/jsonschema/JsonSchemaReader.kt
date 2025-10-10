@@ -62,7 +62,9 @@ class JsonSchemaReader(
             return loadDefinitionFromFileRef(path, localRef, fromFile)
         }
 
-        val name = REF_DEFINITION_REGEX.matchEntire(ref)?.groupValues?.get(1)
+        val fieldGroups = REF_NAME_REGEX.matchEntire(ref)?.groupValues
+        val type = fieldGroups?.get(1)
+        val name = fieldGroups?.get(2)
         val id = REF_ID_REGEX.matchEntire(ref)?.groupValues?.get(0)
         if (name == null && id == null) return null
 
@@ -73,7 +75,10 @@ class JsonSchemaReader(
         }
 
         val match = knownSchemas[fromFile]
-            ?.definitions
+            ?.let {
+                // only explicit properties lookup supported
+                if (type == REF_TYPE_PROPERTIES) it.properties else it.definitions
+            }
             ?.entries
             ?.firstOrNull { matcher(it.key, it.value) } ?: return null
 
@@ -417,8 +422,10 @@ class JsonSchemaReader(
     // endregion
 
     companion object {
+        private const val REF_TYPE_PROPERTIES = "properties"
+        private const val REF_TYPE_DEFINITIONS = "definitions"
 
-        private val REF_DEFINITION_REGEX = Regex("#/definitions/([\\w]+)")
+        private val REF_NAME_REGEX = Regex("#/($REF_TYPE_DEFINITIONS|$REF_TYPE_PROPERTIES)/([\\w]+)")
         private val REF_ID_REGEX = Regex("#[\\w]+")
         private val REF_FILE_REGEX = Regex("(file:)?(([^/]+/)*([^/]+)\\.json)(#(.*))?")
     }

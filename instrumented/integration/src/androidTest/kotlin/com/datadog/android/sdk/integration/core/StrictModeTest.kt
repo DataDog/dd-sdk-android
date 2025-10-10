@@ -10,8 +10,8 @@ import android.os.StrictMode
 import android.os.StrictMode.ThreadPolicy
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.MediumTest
-import com.datadog.android.core.allowThreadDiskReads
-import com.datadog.android.core.allowThreadDiskWrites
+import com.datadog.android.internal.utils.allowThreadDiskReads
+import com.datadog.android.internal.utils.allowThreadDiskWrites
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
 import org.junit.Test

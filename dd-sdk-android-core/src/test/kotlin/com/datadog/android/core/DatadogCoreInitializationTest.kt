@@ -16,6 +16,7 @@ import com.datadog.android.core.configuration.BatchSize
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.configuration.UploadFrequency
 import com.datadog.android.core.internal.CoreFeature
+import com.datadog.android.core.internal.DatadogContextProvider
 import com.datadog.android.core.internal.DatadogCore
 import com.datadog.android.core.internal.SdkFeature
 import com.datadog.android.core.thread.FlushableExecutorService
@@ -92,10 +93,6 @@ internal class DatadogCoreInitializationTest {
         whenever(mockPersistenceExecutorService.execute(any())) doAnswer {
             it.getArgument<Runnable>(0).run()
         }
-        whenever(mockPersistenceExecutorService.submit(any())) doAnswer {
-            it.getArgument<Runnable>(0).run()
-            mock()
-        }
     }
 
     @AfterEach
@@ -122,7 +119,7 @@ internal class DatadogCoreInitializationTest {
         // Then
         assertThat(testedCore.coreFeature.initialized.get()).isTrue
         assertThat(testedCore.isActive).isTrue
-        assertThat(testedCore.contextProvider).isNotNull
+        assertThat(testedCore.contextProvider).isInstanceOf(DatadogContextProvider::class.java)
 
         assertThat(testedCore.getFeature(CrashReportsFeature.CRASH_FEATURE_NAME)).let {
             if (crashReportsEnabled) {

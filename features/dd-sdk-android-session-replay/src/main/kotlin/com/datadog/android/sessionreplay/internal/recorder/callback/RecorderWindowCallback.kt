@@ -12,6 +12,7 @@ import android.view.MotionEvent
 import android.view.Window
 import androidx.annotation.MainThread
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.internal.utils.densityNormalized
 import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
@@ -19,7 +20,7 @@ import com.datadog.android.sessionreplay.internal.TouchPrivacyManager
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueHandler
 import com.datadog.android.sessionreplay.internal.recorder.ViewOnDrawInterceptor
 import com.datadog.android.sessionreplay.internal.recorder.WindowInspector
-import com.datadog.android.sessionreplay.internal.utils.TimeProvider
+import com.datadog.android.sessionreplay.internal.utils.RumContextProvider
 import com.datadog.android.sessionreplay.model.MobileSegment
 import java.util.LinkedList
 import java.util.concurrent.TimeUnit
@@ -30,6 +31,7 @@ internal class RecorderWindowCallback(
     private val recordedDataQueueHandler: RecordedDataQueueHandler,
     internal val wrappedCallback: Window.Callback,
     private val timeProvider: TimeProvider,
+    private val rumContextProvider: RumContextProvider,
     private val viewOnDrawInterceptor: ViewOnDrawInterceptor,
     private val internalLogger: InternalLogger,
     private val privacy: TextAndInputPrivacy,
@@ -45,7 +47,7 @@ internal class RecorderWindowCallback(
     private val windowInspector: WindowInspector = WindowInspector
 ) : Window.Callback by wrappedCallback {
     private val pixelsDensity = appContext.resources.displayMetrics.density
-    internal var pointerInteractions: MutableList<MobileSegment.MobileRecord> = LinkedList()
+    internal val pointerInteractions: MutableList<MobileSegment.MobileRecord> = LinkedList()
     private var lastOnMoveUpdateTimeInNs: Long = 0L
     private var lastPerformedFlushTimeInNs: Long = System.nanoTime()
     private var shouldRecordMotion: Boolean = false
@@ -131,7 +133,7 @@ internal class RecorderWindowCallback(
             val pointerAbsoluteY = motionEventUtils.getPointerAbsoluteY(event, pointerIndex)
             pointerInteractions.add(
                 MobileSegment.MobileRecord.MobileIncrementalSnapshotRecord(
-                    timestamp = timeProvider.getDeviceTimestamp(),
+                    timestamp = timeProvider.getDeviceTimestamp() + rumContextProvider.getRumContext().viewTimeOffsetMs,
                     data = MobileSegment.MobileIncrementalData.PointerInteractionData(
                         pointerEventType = eventType,
                         pointerType = MobileSegment.PointerType.TOUCH,

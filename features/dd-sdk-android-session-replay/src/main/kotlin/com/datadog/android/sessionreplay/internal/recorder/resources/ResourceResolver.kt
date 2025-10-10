@@ -36,10 +36,8 @@ internal class ResourceResolver(
     private val logger: InternalLogger,
     private val md5HashGenerator: MD5HashGenerator,
     private val recordedDataQueueHandler: DataQueueHandler,
-    private val applicationId: String,
     private val resourceItemCreationHandler: ResourceItemCreationHandler = ResourceItemCreationHandler(
-        recordedDataQueueHandler = recordedDataQueueHandler,
-        applicationId = applicationId
+        recordedDataQueueHandler = recordedDataQueueHandler
     )
 ) {
 
@@ -139,21 +137,24 @@ internal class ResourceResolver(
             return
         }
 
-        val copiedDrawable = drawableCopier.copy(originalDrawable, resources)
-        if (copiedDrawable == null) {
-            resourceResolverCallback.onFailure()
-            return
-        }
-
-        val bitmapFromDrawable =
-            if (copiedDrawable is BitmapDrawable && shouldUseDrawableBitmap(copiedDrawable)) {
-                copiedDrawable.bitmap // cannot be null - we already checked in shouldUseDrawableBitmap
-            } else {
-                null
-            }
-
         // do in the background
         threadPoolExecutor.executeSafe(RESOURCE_RESOLVER_ALIAS, logger) {
+            // Copy the drawable on work thread in order to avoid the new MaterialShapeDrawable
+            // instance to reuse the singleton of `ShapeAppearancePathProvider` from main thread,
+            // causing UI thread drawing crash.
+            val copiedDrawable = drawableCopier.copy(originalDrawable, resources)
+            if (copiedDrawable == null) {
+                resourceResolverCallback.onFailure()
+                return@executeSafe
+            }
+
+            val bitmapFromDrawable =
+                if (copiedDrawable is BitmapDrawable && shouldUseDrawableBitmap(copiedDrawable)) {
+                    copiedDrawable.bitmap // cannot be null - we already checked in shouldUseDrawableBitmap
+                } else {
+                    null
+                }
+
             createBitmapFromDrawable(
                 drawable = originalDrawable,
                 copiedDrawable = copiedDrawable,

@@ -13,9 +13,11 @@ import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumPerformanceMetric
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.RumResourceMethod
+import com.datadog.android.rum.featureoperations.FailureReason
 import com.datadog.android.rum.internal.RumErrorSourceType
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
+import com.datadog.android.rum.internal.startup.RumTTIDInfo
 import com.datadog.android.rum.model.ActionEvent
 
 internal sealed class RumRawEvent {
@@ -186,6 +188,16 @@ internal sealed class RumRawEvent {
         override val eventTime: Time = Time()
     ) : RumRawEvent()
 
+    internal data class AddViewAttributes(
+        val attributes: Map<String, Any?>,
+        override val eventTime: Time = Time()
+    ) : RumRawEvent()
+
+    internal data class RemoveViewAttributes(
+        val attributes: Collection<String>,
+        override val eventTime: Time = Time()
+    ) : RumRawEvent()
+
     internal data class AddLongTask(
         val durationNs: Long,
         val target: String,
@@ -217,6 +229,11 @@ internal sealed class RumRawEvent {
         override val eventTime: Time = Time()
     ) : RumRawEvent()
 
+    internal data class UpdateExternalRefreshRate(
+        val frameTimeSeconds: Double,
+        override val eventTime: Time = Time()
+    ) : RumRawEvent()
+
     internal data class SetInternalViewAttribute(
         val key: String,
         val value: Any?,
@@ -239,5 +256,25 @@ internal sealed class RumRawEvent {
     internal data class SdkInit(
         val isAppInForeground: Boolean,
         override val eventTime: Time = Time()
+    ) : RumRawEvent()
+
+    internal data class StartFeatureOperation(
+        val name: String,
+        val operationKey: String?,
+        val attributes: Map<String, Any?>,
+        override val eventTime: Time = Time()
+    ) : RumRawEvent()
+
+    internal data class StopFeatureOperation(
+        val name: String,
+        val operationKey: String?,
+        val attributes: Map<String, Any?>,
+        val failureReason: FailureReason? = null,
+        override val eventTime: Time = Time()
+    ) : RumRawEvent()
+
+    internal class AppStartTTIDEvent(
+        override val eventTime: Time = Time(),
+        val info: RumTTIDInfo
     ) : RumRawEvent()
 }

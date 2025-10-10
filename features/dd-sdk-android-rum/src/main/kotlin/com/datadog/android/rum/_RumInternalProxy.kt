@@ -10,7 +10,9 @@ import android.app.Activity
 import android.content.Intent
 import com.datadog.android.event.EventMapper
 import com.datadog.android.lint.InternalApi
+import com.datadog.android.rum.RumConfiguration.Builder
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
+import com.datadog.android.rum.tracking.ActionTrackingStrategy
 import com.datadog.android.telemetry.model.TelemetryConfigurationEvent
 
 /**
@@ -41,6 +43,10 @@ class _RumInternalProxy internal constructor(private val rumMonitor: AdvancedRum
 
     fun updatePerformanceMetric(metric: RumPerformanceMetric, value: Double) {
         rumMonitor.updatePerformanceMetric(metric, value)
+    }
+
+    fun updateExternalRefreshRate(frameTimeSeconds: Double) {
+        rumMonitor.updateExternalRefreshRate(frameTimeSeconds)
     }
 
     fun setInternalViewAttribute(key: String, value: Any?) {
@@ -82,18 +88,32 @@ class _RumInternalProxy internal constructor(private val rumMonitor: AdvancedRum
 
         @Suppress("FunctionMaxLength")
         fun setTelemetryConfigurationEventMapper(
-            builder: RumConfiguration.Builder,
+            builder: Builder,
             eventMapper: EventMapper<TelemetryConfigurationEvent>
-        ): RumConfiguration.Builder {
+        ): Builder {
             return builder.setTelemetryConfigurationEventMapper(eventMapper)
         }
 
         @Suppress("unused")
         fun setAdditionalConfiguration(
-            builder: RumConfiguration.Builder,
+            builder: Builder,
             additionalConfig: Map<String, Any>
-        ): RumConfiguration.Builder {
+        ): Builder {
             return builder.setAdditionalConfiguration(additionalConfig)
+        }
+
+        fun setComposeActionTrackingStrategy(
+            builder: Builder,
+            composeActionTrackingStrategy: ActionTrackingStrategy
+        ): Builder {
+            return builder.setComposeActionTrackingStrategy(composeActionTrackingStrategy)
+        }
+
+        fun setRumSessionTypeOverride(
+            builder: Builder,
+            rumSessionTypeOverride: RumSessionType
+        ): Builder {
+            return builder.setRumSessionTypeOverride(rumSessionTypeOverride)
         }
     }
 }

@@ -1,0 +1,7 @@
+mutation FakeMutation($input: UserInput!) {
+  createUser(input: $input) {
+    id
+    name
+    email
+  }
+}

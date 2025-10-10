@@ -16,10 +16,12 @@ import com.google.devtools.ksp.processing.Resolver
 import com.google.devtools.ksp.processing.SymbolProcessor
 import com.google.devtools.ksp.symbol.ClassKind
 import com.google.devtools.ksp.symbol.KSAnnotated
+import com.google.devtools.ksp.symbol.KSCallableReference
 import com.google.devtools.ksp.symbol.KSClassDeclaration
 import com.google.devtools.ksp.symbol.KSFunctionDeclaration
 import com.google.devtools.ksp.symbol.KSPropertyDeclaration
 import com.google.devtools.ksp.symbol.KSType
+import com.google.devtools.ksp.symbol.KSTypeAlias
 import com.google.devtools.ksp.symbol.KSValueParameter
 import com.squareup.kotlinpoet.AnnotationSpec
 import com.squareup.kotlinpoet.BOOLEAN
@@ -39,6 +41,7 @@ import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.SET
 import com.squareup.kotlinpoet.STRING
+import com.squareup.kotlinpoet.TypeName
 import com.squareup.kotlinpoet.TypeSpec
 import com.squareup.kotlinpoet.TypeVariableName
 import com.squareup.kotlinpoet.UNIT
@@ -476,7 +479,7 @@ class NoOpFactorySymbolProcessor(
                 }
             }
 
-            returnClassKind == ClassKind.INTERFACE -> {
+            returnClassKind == ClassKind.INTERFACE && !returnType.isFunctionType -> {
                 val packageName = returnClassDeclaration.qualifiedName
                     ?.asString()
                     ?.substringBeforeLast('.')
@@ -485,6 +488,18 @@ class NoOpFactorySymbolProcessor(
                     "NoOp${returnClassDeclaration.simpleName.getShortName()}"
                 )
                 funSpecBuilder.addStatement("return %T()", noOpReturnType)
+            }
+
+            returnType.isFunctionType -> {
+                val funcReturnTypeName = returnType.returnTypeNameOfFunctionType(typeParamResolver)
+                if (funcReturnTypeName == UNIT) {
+                    funSpecBuilder.addStatement("return {}")
+                } else {
+                    logger.error(
+                        "Unable to generate return lambda for" +
+                            " function type ${returnType.declaration.simpleName.asString()}"
+                    )
+                }
             }
 
             else -> {
@@ -592,6 +607,23 @@ class NoOpFactorySymbolProcessor(
             val name = it.name?.asString() ?: "?"
             val type = it.type.resolve().toTypeName(typeParamResolver)
             "$name:$type"
+        }
+    }
+
+    private fun KSType.returnTypeNameOfFunctionType(
+        typeParamResolver: TypeParameterResolver
+    ): TypeName? {
+        return if (declaration is KSClassDeclaration) {
+            (toTypeName(typeParamResolver) as ParameterizedTypeName)
+                .typeArguments
+                .first()
+        } else if (declaration is KSTypeAlias) {
+            val refElement = (declaration as KSTypeAlias)
+                .type
+                .element as? KSCallableReference
+            refElement?.returnType?.toTypeName(typeParamResolver)
+        } else {
+            null
         }
     }
 

@@ -4,6 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
+import com.datadog.gradle.androidTestImplementation
 import com.datadog.gradle.config.AndroidConfig
 import com.datadog.gradle.config.java17
 import com.datadog.gradle.config.kotlinConfig
@@ -94,6 +95,7 @@ dependencies {
     implementation(project(":features:dd-sdk-android-logs"))
     implementation(project(":features:dd-sdk-android-trace"))
     implementation(project(":features:dd-sdk-android-rum"))
+    implementation(project(":dd-sdk-android-internal"))
     implementation(project(":integrations:dd-sdk-android-okhttp"))
 
     implementation(libs.gson)
@@ -102,6 +104,7 @@ dependencies {
     implementation(libs.androidXMultidex)
     implementation(libs.elmyr)
 
+    androidTestImplementation(project(":dd-sdk-android-internal"))
     androidTestImplementation(project(":tools:unit")) {
         attributes {
             attribute(
@@ -113,7 +116,8 @@ dependencies {
     androidTestImplementation(libs.assertJ)
     androidTestImplementation(libs.bundles.integrationTests)
     androidTestImplementation(libs.okHttpMock)
-
+    androidTestImplementation(project(":features:dd-sdk-android-trace-internal"))
+    androidTestImplementation(testFixtures(project(":features:dd-sdk-android-trace")))
     if (project.hasProperty(com.datadog.gradle.Properties.USE_API21_JAVA_BACKPORT)) {
         // this is needed to make AssertJ working on APIs <24
         androidTestImplementation(project(":tools:javabackport"))

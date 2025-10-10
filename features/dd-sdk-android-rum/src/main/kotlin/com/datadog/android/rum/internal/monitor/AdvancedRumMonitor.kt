@@ -13,6 +13,7 @@ import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.RumPerformanceMetric
 import com.datadog.android.rum.internal.debug.RumDebugListener
+import com.datadog.android.rum.internal.startup.RumTTIDInfo
 import com.datadog.tools.annotation.NoOpImplementation
 
 /**
@@ -49,9 +50,13 @@ internal interface AdvancedRumMonitor : RumMonitor, AdvancedNetworkRumMonitor {
 
     fun updatePerformanceMetric(metric: RumPerformanceMetric, value: Double)
 
+    fun updateExternalRefreshRate(frameTimeSeconds: Double)
+
     fun setInternalViewAttribute(key: String, value: Any?)
 
     fun setSyntheticsAttribute(testId: String, resultId: String)
 
     fun enableJankStatsTracking(activity: Activity)
+
+    fun sendTTIDEvent(info: RumTTIDInfo)
 }

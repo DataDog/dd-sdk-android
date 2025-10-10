@@ -13,10 +13,13 @@ import android.content.res.Configuration
 import android.content.res.Resources
 import android.hardware.display.DisplayManager
 import android.os.Build
+import android.os.LocaleList
 import android.telephony.TelephonyManager
 import android.view.Display
 import com.datadog.android.api.context.DeviceType
 import com.datadog.android.utils.forge.Configurator
+import com.datadog.tools.unit.annotations.TestTargetApi
+import com.datadog.tools.unit.extensions.ApiLevelExtension
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -31,6 +34,7 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.MethodSource
+import org.mockito.ArgumentMatchers.eq
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
@@ -42,7 +46,8 @@ import java.util.Locale
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
-    ExtendWith(ForgeExtension::class)
+    ExtendWith(ForgeExtension::class),
+    ExtendWith(ApiLevelExtension::class)
 )
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(Configurator::class)
@@ -68,6 +73,9 @@ internal class DefaultAndroidInfoProviderTest {
     @Mock
     lateinit var mockResources: Resources
 
+    @Mock
+    lateinit var mockConfiguration: Configuration
+
     @StringForgery
     lateinit var fakeDeviceBrand: String
 
@@ -87,7 +95,7 @@ internal class DefaultAndroidInfoProviderTest {
         whenever(mockSdkVersionProvider.version) doReturn forge.anInt(min = Build.VERSION_CODES.BASE)
         whenever(mockContext.packageManager) doReturn mockPackageManager
         whenever(mockContext.resources) doReturn mockResources
-        whenever(mockResources.configuration) doReturn Configuration()
+        whenever(mockResources.configuration) doReturn mockConfiguration
 
         fakeDeviceModel = ""
     }
@@ -389,7 +397,7 @@ internal class DefaultAndroidInfoProviderTest {
 
     companion object {
 
-        @Suppress("unused")
+        @Suppress("unused", "DEPRECATION")
         @JvmStatic
         fun phoneTypesWithDescription(): List<PhoneType> {
             return listOf(
@@ -462,6 +470,113 @@ internal class DefaultAndroidInfoProviderTest {
 
         // Then
         assertThat(numberOfDisplays).isNull()
+    }
+
+    // endregion
+
+    // region locale tests
+
+    @TestTargetApi(Build.VERSION_CODES.N)
+    @Test
+    fun `M return locales list W locales { API level 24+ }`(
+        forge: Forge
+    ) {
+        // Given
+        val collectionSize = (1..10).random()
+        val fakeLocales = mutableListOf<Locale>()
+        val mockLocaleList: LocaleList = mock()
+
+        for (i in 0 until collectionSize) {
+            val fakeLanguage = forge.aStringMatching("[a-z][a-z]{1}")
+            val fakeRegion = forge.aStringMatching("[a-z][a-z]{1}")
+            fakeLocales.add(
+                Locale.Builder().setLanguage(fakeLanguage).setRegion(fakeRegion).build()
+            )
+        }
+
+        val expectedLanguageTags = fakeLocales.map {
+            it.toLanguageTag()
+        }
+
+        for (i in fakeLocales.indices) {
+            whenever(mockLocaleList.get(eq(i))).thenReturn(fakeLocales[i])
+        }
+
+        whenever(mockLocaleList.size()) doReturn fakeLocales.size
+
+        whenever(mockConfiguration.locales) doReturn mockLocaleList
+
+        testedProvider = createProvider()
+
+        // When
+        val result = testedProvider.locales
+
+        // Then
+        assertThat(result).isEqualTo(expectedLanguageTags)
+    }
+
+    @TestTargetApi(Build.VERSION_CODES.M)
+    @Test
+    fun `M return single locale W locales { API level below 24 }`(
+        @StringForgery(regex = "[a-z][a-z]{1}") fakeLanguage: String,
+        @StringForgery(regex = "[a-z][a-z]{1}") fakeRegion: String
+    ) {
+        // Given
+        val fakeLocale = Locale.Builder().setLanguage(fakeLanguage).setRegion(fakeRegion).build()
+        @Suppress("DEPRECATION")
+        mockConfiguration.locale = fakeLocale
+
+        testedProvider = createProvider()
+
+        // When
+        val result = testedProvider.locales
+
+        // Then
+        assertThat(result).containsExactly(fakeLocale.toLanguageTag())
+    }
+
+    @TestTargetApi(Build.VERSION_CODES.N)
+    @Test
+    fun `M return current locale W currentLocale { API level 24+ }`(
+        @StringForgery(regex = "[a-z][a-z]{1}") fakeLanguage: String,
+        @StringForgery(regex = "[a-z][a-z]{1}") fakeRegion: String
+    ) {
+        // Given
+        val fakeLocale = Locale.Builder().setLanguage(fakeLanguage).setRegion(fakeRegion).build()
+        val mockLocaleList = mock<LocaleList>()
+        whenever(mockLocaleList.get(0)) doReturn fakeLocale
+        whenever(mockLocaleList.size()) doReturn 1
+
+        whenever(mockConfiguration.locales) doReturn mockLocaleList
+
+        testedProvider = createProvider()
+
+        // When
+        val result = testedProvider.currentLocale
+
+        // Then
+        assertThat(result).isEqualTo(fakeLocale.toLanguageTag())
+    }
+
+    @Test
+    @TestTargetApi(Build.VERSION_CODES.M)
+    fun `M return current locale W currentLocale { API level below 24 }`(
+        @StringForgery(regex = "[a-z][a-z]{1}") fakeLanguage: String,
+        @StringForgery(regex = "[a-z][a-z]{1}") fakeRegion: String
+    ) {
+        // Given
+        val fakeLocale = Locale.Builder().setLanguage(fakeLanguage).setRegion(fakeRegion).build()
+
+        @Suppress("DEPRECATION")
+        mockConfiguration.locale = fakeLocale
+
+        testedProvider = createProvider()
+
+        // When
+        val result = testedProvider.currentLocale
+
+        // Then
+        assertThat(result).isEqualTo(fakeLocale.toLanguageTag())
     }
 
     // endregion

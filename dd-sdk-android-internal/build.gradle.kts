@@ -16,18 +16,20 @@ plugins {
     // Publish
     `maven-publish`
     signing
-    id("org.jetbrains.dokka")
+    id("org.jetbrains.dokka-javadoc")
 
     // Analysis tools
     id("com.github.ben-manes.versions")
 
     // Tests
+    id("de.mobilej.unmock")
     id("org.jetbrains.kotlinx.kover")
 
     // Internal Generation
     id("com.datadoghq.dependency-license")
     id("apiSurface")
     id("transitiveDependencies")
+    id("verificationXml")
     id("binary-compatibility-validator")
 }
 
@@ -68,6 +70,7 @@ dependencies {
             )
         }
     }
+    unmock(libs.robolectric)
 }
 
 kotlinConfig(jvmBytecodeTarget = JvmTarget.JVM_11)
@@ -79,3 +82,24 @@ publishingConfig(
     "Internal library to be used by the Datadog SDK modules."
 )
 detektCustomConfig()
+
+unMock {
+    keep("android.os.BaseBundle")
+    keep("android.os.Bundle")
+    keep("android.os.Parcel")
+    keepStartingWith("com.android.internal.util.")
+    keepStartingWith("android.util.")
+    keep("android.content.ComponentName")
+    keep("android.content.ContentProvider")
+    keep("android.content.IContentProvider")
+    keep("android.content.ContentProviderNative")
+    keep("android.net.Uri")
+    keep("android.os.Handler")
+    keep("android.os.IMessenger")
+    keep("android.os.Looper")
+    keep("android.os.Message")
+    keep("android.os.MessageQueue")
+    keep("android.os.SystemProperties")
+    keep("android.view.DisplayEventReceiver")
+    keepStartingWith("org.json")
+}

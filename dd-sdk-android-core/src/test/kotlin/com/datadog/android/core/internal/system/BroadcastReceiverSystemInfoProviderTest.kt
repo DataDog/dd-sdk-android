@@ -13,6 +13,7 @@ import android.os.PowerManager
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.utils.assertj.SystemInfoAssert.Companion.assertThat
 import com.datadog.android.utils.forge.Configurator
+import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.IntForgery
@@ -22,6 +23,7 @@ import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.RepeatedTest
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.junit.jupiter.params.ParameterizedTest
@@ -32,6 +34,7 @@ import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.same
@@ -51,7 +54,7 @@ import kotlin.math.roundToInt
 @ForgeConfiguration(value = Configurator::class)
 internal class BroadcastReceiverSystemInfoProviderTest {
 
-    lateinit var testedProvider: BroadcastReceiverSystemInfoProvider
+    private lateinit var testedProvider: BroadcastReceiverSystemInfoProvider
 
     @Mock
     lateinit var mockContext: Context
@@ -442,11 +445,39 @@ internal class BroadcastReceiverSystemInfoProviderTest {
         assertThat(systemInfo).hasOnExternalPowerSource(false)
     }
 
+    @Test
+    fun `M log error W onReceive { exception during intent processing }`(
+        forge: Forge
+    ) {
+        // Given
+        val intent = mock<Intent>()
+        val intentType = forge.anElementFrom(
+            Intent.ACTION_BATTERY_CHANGED,
+            PowerManager.ACTION_POWER_SAVE_MODE_CHANGED
+        )
+        whenever(intent.action) doReturn intentType
+        when (intentType) {
+            Intent.ACTION_BATTERY_CHANGED -> {
+                whenever(intent.getIntExtra(any(), any())) doThrow RuntimeException()
+            }
+            PowerManager.ACTION_POWER_SAVE_MODE_CHANGED -> {
+                val mockPowerManager = mock<PowerManager>()
+                whenever(mockContext.getSystemService(Context.POWER_SERVICE)) doReturn mockPowerManager
+                whenever(mockPowerManager.isPowerSaveMode) doThrow RuntimeException()
+            }
+        }
+
+        // When + Then
+        assertDoesNotThrow {
+            testedProvider.onReceive(mockContext, intent)
+        }
+    }
+
     // endregion
 
     // region Internal
 
-    fun SystemInfo.BatteryStatus.androidStatus(): Int {
+    private fun SystemInfo.BatteryStatus.androidStatus(): Int {
         return when (this) {
             SystemInfo.BatteryStatus.UNKNOWN -> BatteryManager.BATTERY_STATUS_UNKNOWN
             SystemInfo.BatteryStatus.CHARGING -> BatteryManager.BATTERY_STATUS_CHARGING

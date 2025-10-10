@@ -21,7 +21,6 @@ import com.datadog.android.sessionreplay.internal.utils.DrawableUtils
 import com.datadog.android.sessionreplay.internal.utils.PathUtils
 import com.datadog.android.sessionreplay.recorder.resources.DrawableCopier
 import fr.xgouchet.elmyr.Forge
-import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -44,7 +43,6 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
-import java.util.UUID
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Future
@@ -115,9 +113,6 @@ internal class ResourceResolverTest {
     private var fakeBitmapWidth: Int = 1
 
     private var fakeBitmapHeight: Int = 1
-
-    @Forgery
-    lateinit var fakeApplicationid: UUID
 
     @StringForgery
     lateinit var fakeResourceKey: String
@@ -395,7 +390,6 @@ internal class ResourceResolverTest {
         // When
         val instance1 = ResourceResolver(
             recordedDataQueueHandler = mockRecordedDataQueueHandler,
-            applicationId = fakeApplicationid.toString(),
             webPImageCompression = mockWebPImageCompression,
             drawableUtils = mockDrawableUtils,
             logger = mockLogger,
@@ -405,7 +399,6 @@ internal class ResourceResolverTest {
         )
         val instance2 = ResourceResolver(
             recordedDataQueueHandler = mockRecordedDataQueueHandler,
-            applicationId = fakeApplicationid.toString(),
             webPImageCompression = mockWebPImageCompression,
             drawableUtils = mockDrawableUtils,
             logger = mockLogger,
@@ -939,8 +932,8 @@ internal class ResourceResolverTest {
 
         verify(mockRecordedDataQueueHandler, times(1)).addResourceItem(
             identifier = eq(fakeResourceId),
-            applicationId = eq(fakeApplicationid.toString()),
-            resourceData = eq(fakeByteArray)
+            resourceData = eq(fakeByteArray),
+            mimeType = anyOrNull()
         )
 
         // second time
@@ -958,8 +951,8 @@ internal class ResourceResolverTest {
 
         verify(mockRecordedDataQueueHandler, times(1)).addResourceItem(
             identifier = eq(fakeResourceId),
-            applicationId = eq(fakeApplicationid.toString()),
-            resourceData = eq(fakeByteArray)
+            resourceData = eq(fakeByteArray),
+            mimeType = anyOrNull()
         )
     }
 
@@ -1041,7 +1034,6 @@ internal class ResourceResolverTest {
         webPImageCompression = mockWebPImageCompression,
         md5HashGenerator = mockMD5HashGenerator,
         recordedDataQueueHandler = mockRecordedDataQueueHandler,
-        applicationId = fakeApplicationid.toString(),
         bitmapCachesManager = mockBitmapCachesManager
     )
 
@@ -1099,5 +1091,60 @@ internal class ResourceResolverTest {
             config = any(),
             bitmapCreationCallback = any()
         )
+    }
+
+    @Test
+    fun `M only copy the drawable in work thread W resolveResourceIdFromDrawable`() {
+        // Given
+        whenever(
+            mockExecutorService.execute(
+                any()
+            )
+        ).then {
+            // do nothing to simulate that work thread doesn't execute the task.
+            mock<Future<Boolean>>()
+        }
+
+        // When
+        testedResourceResolver.resolveResourceIdFromDrawable(
+            resources = mockResources,
+            applicationContext = mockApplicationContext,
+            displayMetrics = mockDisplayMetrics,
+            originalDrawable = mockDrawable,
+            drawableCopier = mockDrawableCopier,
+            drawableWidth = mockDrawable.intrinsicWidth,
+            drawableHeight = mockDrawable.intrinsicHeight,
+            customResourceIdCacheKey = null,
+            resourceResolverCallback = mockSerializerCallback
+        )
+
+        // Then
+        verifyNoInteractions(mockDrawableCopier)
+
+        // Given
+        whenever(
+            mockExecutorService.execute(
+                any()
+            )
+        ).then {
+            (it.arguments[0] as Runnable).run()
+            mock<Future<Boolean>>()
+        }
+
+        // When
+        testedResourceResolver.resolveResourceIdFromDrawable(
+            resources = mockResources,
+            applicationContext = mockApplicationContext,
+            displayMetrics = mockDisplayMetrics,
+            originalDrawable = mockDrawable,
+            drawableCopier = mockDrawableCopier,
+            drawableWidth = mockDrawable.intrinsicWidth,
+            drawableHeight = mockDrawable.intrinsicHeight,
+            customResourceIdCacheKey = null,
+            resourceResolverCallback = mockSerializerCallback
+        )
+
+        // Then
+        verify(mockDrawableCopier).copy(mockDrawable, mockResources)
     }
 }

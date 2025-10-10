@@ -13,6 +13,7 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.Window
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
@@ -21,7 +22,8 @@ import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueHandler
 import com.datadog.android.sessionreplay.internal.async.TouchEventRecordedDataQueueItem
 import com.datadog.android.sessionreplay.internal.recorder.ViewOnDrawInterceptor
 import com.datadog.android.sessionreplay.internal.recorder.WindowInspector
-import com.datadog.android.sessionreplay.internal.utils.TimeProvider
+import com.datadog.android.sessionreplay.internal.utils.RumContextProvider
+import com.datadog.android.sessionreplay.internal.utils.SessionReplayRumContext
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.model.MobileSegment.MobileIncrementalData
 import com.datadog.android.sessionreplay.model.MobileSegment.MobileRecord
@@ -80,16 +82,22 @@ internal class RecorderWindowCallbackTest {
     lateinit var mockTimeProvider: TimeProvider
 
     @Mock
+    lateinit var mockRumContextProvider: RumContextProvider
+
+    @Mock
     lateinit var mockWindowInspector: WindowInspector
 
     @Mock
     lateinit var mockContext: Context
 
-    @Forgery
-    lateinit var fakeTouchEventRecordedDataQueueItem: TouchEventRecordedDataQueueItem
+    @Mock
+    lateinit var mockEventUtils: MotionEventUtils
 
     @Mock
     lateinit var mockInternalLogger: InternalLogger
+
+    @Forgery
+    lateinit var fakeTouchEventRecordedDataQueueItem: TouchEventRecordedDataQueueItem
 
     @LongForgery(min = 0)
     var fakeTimestamp: Long = 0L
@@ -101,11 +109,11 @@ internal class RecorderWindowCallbackTest {
     @IntForgery(min = 1, max = 10)
     var fakeDensity: Int = 1
 
-    @Mock
-    lateinit var mockEventUtils: MotionEventUtils
-
     @Forgery
     lateinit var fakeTextAndInputPrivacy: TextAndInputPrivacy
+
+    @Forgery
+    lateinit var fakeRumContext: SessionReplayRumContext
 
     @BeforeEach
     fun `set up`() {
@@ -117,6 +125,7 @@ internal class RecorderWindowCallbackTest {
             .thenReturn(fakeTouchEventRecordedDataQueueItem)
         whenever(mockContext.resources).thenReturn(mockResources)
         whenever(mockTimeProvider.getDeviceTimestamp()).thenReturn(fakeTimestamp)
+        whenever(mockRumContextProvider.getRumContext()).thenReturn(fakeRumContext)
         whenever(mockTouchPrivacyManager.shouldRecordTouch(any()))
             .thenReturn(true)
         testedWindowCallback = RecorderWindowCallback(
@@ -124,6 +133,7 @@ internal class RecorderWindowCallbackTest {
             recordedDataQueueHandler = mockRecordedDataQueueHandler,
             wrappedCallback = mockWrappedCallback,
             timeProvider = mockTimeProvider,
+            rumContextProvider = mockRumContextProvider,
             viewOnDrawInterceptor = mockViewOnDrawInterceptor,
             internalLogger = mockInternalLogger,
             imagePrivacy = ImagePrivacy.MASK_NONE,
@@ -473,6 +483,7 @@ internal class RecorderWindowCallbackTest {
             recordedDataQueueHandler = mockRecordedDataQueueHandler,
             wrappedCallback = mockWrappedCallback,
             timeProvider = mockTimeProvider,
+            rumContextProvider = mockRumContextProvider,
             viewOnDrawInterceptor = mockViewOnDrawInterceptor,
             internalLogger = mockInternalLogger,
             privacy = fakeTextAndInputPrivacy,
@@ -516,6 +527,7 @@ internal class RecorderWindowCallbackTest {
             recordedDataQueueHandler = mockRecordedDataQueueHandler,
             wrappedCallback = mockWrappedCallback,
             timeProvider = mockTimeProvider,
+            rumContextProvider = mockRumContextProvider,
             viewOnDrawInterceptor = mockViewOnDrawInterceptor,
             internalLogger = mockInternalLogger,
             privacy = fakeTextAndInputPrivacy,
@@ -559,7 +571,7 @@ internal class RecorderWindowCallbackTest {
             }
             .map {
                 MobileRecord.MobileIncrementalSnapshotRecord(
-                    timestamp = fakeTimestamp,
+                    timestamp = fakeTimestamp + fakeRumContext.viewTimeOffsetMs,
                     data = it
                 )
             }

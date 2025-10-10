@@ -6,9 +6,13 @@
 
 package com.datadog.android.api.feature
 
+import androidx.annotation.AnyThread
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.context.DatadogContext
+import com.datadog.android.core.internal.SdkFeature
 import com.datadog.android.core.metrics.TelemetryMetricType
 import com.datadog.android.lint.InternalApi
+import java.util.concurrent.Future
 
 /**
  * Measures the execution time for the given block and report it as a MethodCall telemetry metric.
@@ -38,4 +42,23 @@ fun <R : Any?> InternalLogger.measureMethodCallPerf(
     metric?.stopAndSend(isSuccessful)
 
     return result
+}
+
+/**
+ * Utility to read current [DatadogContext], asynchronously.
+ * @param withFeatureContexts Feature contexts ([DatadogContext.featuresContext] property) to include
+ * in the [DatadogContext] provided. The value should be the feature names as declared by [Feature.name].
+ * Default is empty, meaning that no feature contexts will be included.
+ *
+ * Returns future that will contain [DatadogContext] in the state that it has at the moment of call.
+ */
+@AnyThread
+@InternalApi
+fun FeatureScope.getContextFuture(
+    withFeatureContexts: Set<String> = emptySet()
+): Future<DatadogContext?>? {
+    return when (this) {
+        is SdkFeature -> getContextFuture(withFeatureContexts)
+        else -> null
+    }
 }

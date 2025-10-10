@@ -7,10 +7,10 @@
 package com.datadog.android.sessionreplay.internal.processor
 
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.utils.RumContextProvider
 import com.datadog.android.sessionreplay.internal.utils.SessionReplayRumContext
-import com.datadog.android.sessionreplay.internal.utils.TimeProvider
 import com.datadog.android.utils.verifyLog
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.LongForgery
@@ -71,7 +71,7 @@ internal class RecordedQueuedItemContextHandlerTest {
         val rumContextData = testedHandler.createRumContextData()
 
         // Then
-        assertThat(rumContextData?.timestamp).isEqualTo(fakeTime)
+        assertThat(rumContextData?.timestamp).isEqualTo(fakeTime + fakeRumContext.viewTimeOffsetMs)
         assertThat(rumContextData?.newRumContext).isEqualTo(fakeRumContext)
     }
 

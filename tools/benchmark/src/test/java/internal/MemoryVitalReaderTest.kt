@@ -98,10 +98,10 @@ internal class MemoryVitalReaderTest {
 
         // When
         vmRssValuesKb.forEach { vmRss ->
-            // Set a Longer
-            Thread.sleep(memoryUpdateIntervalMs)
             fakeFile.writeText(generateStatusContent(vmRss))
+            Thread.sleep(memoryUpdateIntervalMs)
         }
+
         val result = testedReader.readVitalData()
 
         // Then

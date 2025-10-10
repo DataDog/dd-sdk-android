@@ -17,11 +17,12 @@ plugins {
     // Build
     id("com.android.library")
     kotlin("android")
+    alias(libs.plugins.composeCompilerPlugin)
 
     // Publish
     `maven-publish`
     signing
-    id("org.jetbrains.dokka")
+    id("org.jetbrains.dokka-javadoc")
 
     // Analysis tools
     id("com.github.ben-manes.versions")
@@ -34,6 +35,7 @@ plugins {
     id("com.datadoghq.dependency-license")
     id("apiSurface")
     id("transitiveDependencies")
+    id("verificationXml")
     id("binary-compatibility-validator")
 }
 
@@ -45,14 +47,6 @@ android {
     }
     buildFeatures {
         compose = true
-    }
-    composeOptions {
-        kotlinCompilerExtensionVersion = libs.versions.androidXComposeCompilerExtension.get()
-    }
-
-    sourceSets.named("test") {
-        // Required because AGP doesn't support kotlin test fixtures :/
-        java.srcDirs("${project.rootDir.path}/dd-sdk-android-core/src/testFixtures/kotlin")
     }
 }
 
@@ -92,8 +86,4 @@ dependencyUpdateConfig()
 publishingConfig(
     "Session Replay Extension Support for Jetpack Compose."
 )
-detektCustomConfig(
-    ":dd-sdk-android-core",
-    ":dd-sdk-android-internal",
-    ":features:dd-sdk-android-session-replay"
-)
+detektCustomConfig()

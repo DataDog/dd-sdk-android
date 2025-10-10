@@ -21,7 +21,10 @@ import com.datadog.android.api.context.DeviceType
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.stub.StubStorageBackedFeature
 import com.datadog.android.core.InternalSdkCore
+import com.datadog.android.core.configuration.BatchProcessingLevel
+import com.datadog.android.core.configuration.BatchSize
 import com.datadog.android.core.configuration.Configuration
+import com.datadog.android.core.configuration.UploadFrequency
 import com.datadog.android.core.integration.tests.forge.factories.ConfigurationCoreForgeryFactory
 import com.datadog.android.core.integration.tests.utils.clientToken
 import com.datadog.android.core.integration.tests.utils.env
@@ -60,7 +63,10 @@ import java.util.concurrent.TimeUnit
 class InternalSdkCoreTest : MockServerTest() {
 
     @get:Rule
-    var forge = ForgeRule().useJvmFactories().useToolsFactories().withFactory(ConfigurationCoreForgeryFactory())
+    var forge = ForgeRule()
+        .useJvmFactories()
+        .useToolsFactories()
+        .withFactory(ConfigurationCoreForgeryFactory())
 
     @StringForgery(type = StringForgeryType.ALPHABETICAL)
     lateinit var fakeUserId: String
@@ -71,6 +77,15 @@ class InternalSdkCoreTest : MockServerTest() {
     @StringForgery(regex = "[a-z]+\\.[a-z]+@[a-z]+\\.[a-z]{3}")
     lateinit var fakeUserEmail: String
     private var fakeUserAdditionalProperties: Map<String, Any?> = emptyMap()
+
+    @StringForgery(type = StringForgeryType.ALPHABETICAL)
+    lateinit var fakeAccountId: String
+
+    @StringForgery(regex = "[A-Z][a-z]+ [A-Z]\\. [A-Z][a-z]+")
+    lateinit var fakeAccountName: String
+
+    private var fakeAccountExtraInfo: Map<String, Any?> = emptyMap()
+
     private lateinit var stubFeature: Feature
 
     @StringForgery(type = StringForgeryType.ALPHABETICAL)
@@ -94,12 +109,14 @@ class InternalSdkCoreTest : MockServerTest() {
         )
         fakeTrackingConsent = forge.aValueFrom(TrackingConsent::class.java)
         fakeUserAdditionalProperties = forge.exhaustiveAttributes(excludedKeys = setOf("id", "name", "email"))
+        fakeAccountExtraInfo = forge.exhaustiveAttributes(excludedKeys = setOf("id", "name"))
         testedInternalSdkCore = Datadog.initialize(
             ApplicationProvider.getApplicationContext(),
             fakeConfiguration,
             fakeTrackingConsent
         ) as InternalSdkCore
         Datadog.setUserInfo(fakeUserId, fakeUserName, fakeUserEmail, fakeUserAdditionalProperties)
+        Datadog.setAccountInfo(fakeAccountId, fakeAccountName, fakeAccountExtraInfo)
         testedInternalSdkCore.registerFeature(stubFeature)
     }
 
@@ -147,6 +164,10 @@ class InternalSdkCoreTest : MockServerTest() {
         assertThat(context.userInfo.email).isEqualTo(fakeUserEmail)
         assertThat(context.userInfo.additionalProperties)
             .containsExactlyInAnyOrderEntriesOf(fakeUserAdditionalProperties)
+        assertThat(context.accountInfo?.id).isEqualTo(fakeAccountId)
+        assertThat(context.accountInfo?.name).isEqualTo(fakeAccountName)
+        assertThat(context.accountInfo?.extraInfo)
+            .containsExactlyInAnyOrderEntriesOf(fakeAccountExtraInfo)
         assertThat(context.featuresContext).isEmpty()
     }
 
@@ -154,14 +175,14 @@ class InternalSdkCoreTest : MockServerTest() {
     fun mustReturnTheUpdatedFeatureContext_getDatadogContext_featureContextWasSet() {
         // Given
         val fakeKeyValues = forge.aMap { forge.anAlphabeticalString() to forge.anAlphabeticalString() }
-        testedInternalSdkCore.updateFeatureContext(fakeFeatureName) {
+        testedInternalSdkCore.updateFeatureContext(fakeFeatureName, useContextThread = false) {
             fakeKeyValues.forEach { (key, value) ->
                 it[key] = value
             }
         }
 
         // When
-        val context = testedInternalSdkCore.getDatadogContext()
+        val context = testedInternalSdkCore.getDatadogContext(withFeatureContexts = setOf(fakeFeatureName))
 
         // Then
         checkNotNull(context)
@@ -181,7 +202,7 @@ class InternalSdkCoreTest : MockServerTest() {
         val expectedKeyValues = fakeKeyValues1 + fakeKeyValues2
 
         val updateAction = { newContext: Map<String, String> ->
-            testedInternalSdkCore.updateFeatureContext(fakeFeatureName) { featureContext ->
+            testedInternalSdkCore.updateFeatureContext(fakeFeatureName, useContextThread = false) { featureContext ->
                 newContext.forEach { (key, value) ->
                     featureContext[key] = value
                 }
@@ -198,7 +219,7 @@ class InternalSdkCoreTest : MockServerTest() {
             .forEach { it.join(SHORT_WAIT_MS) }
 
         // When
-        val context = testedInternalSdkCore.getDatadogContext()
+        val context = testedInternalSdkCore.getDatadogContext(withFeatureContexts = setOf(fakeFeatureName))
 
         // Then
         checkNotNull(context)
@@ -220,7 +241,7 @@ class InternalSdkCoreTest : MockServerTest() {
         val expectedKeyValues = fakeKeyValues1 + fakeModifiedValues
 
         val updateAction = { newContext: Map<String, String> ->
-            testedInternalSdkCore.updateFeatureContext(fakeFeatureName) { featureContext ->
+            testedInternalSdkCore.updateFeatureContext(fakeFeatureName, useContextThread = false) { featureContext ->
                 newContext.forEach { (key, value) ->
                     featureContext[key] = value
                 }
@@ -237,7 +258,7 @@ class InternalSdkCoreTest : MockServerTest() {
             .forEach { it.join(SHORT_WAIT_MS) }
 
         Thread {
-            testedInternalSdkCore.updateFeatureContext(fakeFeatureName) { featureContext ->
+            testedInternalSdkCore.updateFeatureContext(fakeFeatureName, useContextThread = false) { featureContext ->
                 fakeKeyValues2.forEach { (key, _) ->
                     featureContext[key] = fakeModifiedValues[key]
                 }
@@ -247,7 +268,7 @@ class InternalSdkCoreTest : MockServerTest() {
             .join(SHORT_WAIT_MS)
 
         // When
-        val context = testedInternalSdkCore.getDatadogContext()
+        val context = testedInternalSdkCore.getDatadogContext(withFeatureContexts = setOf(fakeFeatureName))
 
         // Then
         checkNotNull(context)
@@ -269,7 +290,7 @@ class InternalSdkCoreTest : MockServerTest() {
         val droppedKeyValues = expectedKeyValues.removeRandomEntries(forge)
 
         val updateAction = { newContext: Map<String, String> ->
-            testedInternalSdkCore.updateFeatureContext(fakeFeatureName) { featureContext ->
+            testedInternalSdkCore.updateFeatureContext(fakeFeatureName, useContextThread = false) { featureContext ->
                 newContext.forEach { (key, value) ->
                     featureContext[key] = value
                 }
@@ -286,7 +307,7 @@ class InternalSdkCoreTest : MockServerTest() {
             .forEach { it.join(SHORT_WAIT_MS) }
 
         Thread {
-            testedInternalSdkCore.updateFeatureContext(fakeFeatureName) { featureContext ->
+            testedInternalSdkCore.updateFeatureContext(fakeFeatureName, useContextThread = false) { featureContext ->
                 droppedKeyValues.forEach { (key, _) ->
                     featureContext.remove(key)
                 }
@@ -296,7 +317,7 @@ class InternalSdkCoreTest : MockServerTest() {
             .join(SHORT_WAIT_MS)
 
         // When
-        val context = testedInternalSdkCore.getDatadogContext()
+        val context = testedInternalSdkCore.getDatadogContext(withFeatureContexts = setOf(fakeFeatureName))
 
         // Then
         checkNotNull(context)
@@ -406,8 +427,9 @@ class InternalSdkCoreTest : MockServerTest() {
             .apply {
                 _InternalProxy.allowClearTextHttp(this)
             }
-            .setBatchSize(forge.getForgery())
-            .setUploadFrequency(forge.getForgery())
+            .setBatchSize(BatchSize.SMALL)
+            .setUploadFrequency(UploadFrequency.FREQUENT)
+            .setBatchProcessingLevel(BatchProcessingLevel.HIGH)
             .useSite(forge.aValueFrom(DatadogSite::class.java))
             .build()
 

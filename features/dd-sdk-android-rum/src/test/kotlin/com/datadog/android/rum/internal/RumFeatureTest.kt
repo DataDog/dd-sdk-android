@@ -10,9 +10,12 @@ import android.app.Activity
 import android.app.ActivityManager
 import android.app.Application
 import android.app.ApplicationExitInfo
+import android.content.ContentResolver
 import android.content.Context
+import android.content.res.Resources
 import android.os.Build
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.feature.FeatureContextUpdateReceiver
 import com.datadog.android.api.storage.NoOpDataWriter
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.feature.event.JvmCrash
@@ -27,7 +30,14 @@ import com.datadog.android.rum.assertj.RumFeatureAssert
 import com.datadog.android.rum.configuration.VitalsUpdateFrequency
 import com.datadog.android.rum.internal.RumFeature.Companion.SLOW_FRAMES_MONITORING_DISABLED_MESSAGE
 import com.datadog.android.rum.internal.RumFeature.Companion.SLOW_FRAMES_MONITORING_ENABLED_MESSAGE
+import com.datadog.android.rum.internal.domain.InfoProvider
 import com.datadog.android.rum.internal.domain.RumDataWriter
+import com.datadog.android.rum.internal.domain.accessibility.DefaultAccessibilityReader
+import com.datadog.android.rum.internal.domain.accessibility.DefaultAccessibilitySnapshotManager
+import com.datadog.android.rum.internal.domain.accessibility.NoOpAccessibilityReader
+import com.datadog.android.rum.internal.domain.accessibility.NoOpAccessibilitySnapshotManager
+import com.datadog.android.rum.internal.domain.battery.DefaultBatteryInfoProvider
+import com.datadog.android.rum.internal.domain.display.DefaultDisplayInfoProvider
 import com.datadog.android.rum.internal.domain.event.RumEventMapper
 import com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
@@ -84,6 +94,7 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.atLeastOnce
 import org.mockito.kotlin.doAnswer
+import org.mockito.kotlin.doNothing
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
@@ -140,6 +151,15 @@ internal class RumFeatureTest {
         whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
         whenever(mockSdkCore.createScheduledExecutorService(any())) doReturn mockScheduledExecutorService
 
+        val mockContentResolver = mock<ContentResolver>()
+        whenever(appContext.mockInstance.contentResolver) doReturn mockContentResolver
+        doNothing().whenever(appContext.mockInstance).registerComponentCallbacks(any())
+        doNothing().whenever(appContext.mockInstance).unregisterComponentCallbacks(any())
+
+        val mockResources = mock<Resources>()
+        whenever(appContext.mockInstance.resources) doReturn mockResources
+        whenever(mockResources.configuration) doReturn mock()
+
         testedFeature = RumFeature(
             mockSdkCore,
             fakeApplicationId.toString(),
@@ -162,6 +182,15 @@ internal class RumFeatureTest {
         // Then
         assertThat(testedFeature.dataWriter)
             .isInstanceOf(RumDataWriter::class.java)
+    }
+
+    @Test
+    fun `M allow 24h storage W init()`() {
+        // When
+        val config = testedFeature.storageConfiguration
+
+        // Then
+        assertThat(config.oldBatchThreshold).isEqualTo(24L * 60L * 60L * 1000L)
     }
 
     @Test
@@ -640,6 +669,12 @@ internal class RumFeatureTest {
         verifyFrameStateAggregatorInitialized(
             anyMatchPredicate = { it is FPSVitalListener }
         )
+        argumentCaptor<FeatureContextUpdateReceiver> {
+            verify(mockSdkCore, times(2))
+                .setContextUpdateReceiver(capture())
+            assertThat(testedFeature.rumContextUpdateReceivers).hasSize(allValues.size)
+            assertThat(testedFeature.rumContextUpdateReceivers).isEqualTo(allValues.toSet())
+        }
     }
 
     @Test
@@ -733,6 +768,21 @@ internal class RumFeatureTest {
         verify(mockActionTrackingStrategy).unregister(appContext.mockInstance)
         verify(mockViewTrackingStrategy).unregister(appContext.mockInstance)
         verify(mockLongTaskTrackingStrategy).unregister(appContext.mockInstance)
+    }
+
+    fun `M clean up all RUM context update receivers W onStop()`() {
+        // Given
+        testedFeature.onInitialize(appContext.mockInstance)
+        val rumContextUpdateReceivers = testedFeature.rumContextUpdateReceivers.toSet()
+
+        // When
+        testedFeature.onStop()
+
+        // Then
+        rumContextUpdateReceivers.forEach {
+            verify(mockSdkCore.removeContextUpdateReceiver(it))
+        }
+        assertThat(testedFeature.rumContextUpdateReceivers).isEmpty()
     }
 
     @Test
@@ -1368,6 +1418,150 @@ internal class RumFeatureTest {
 
     // endregion
 
+    // region infoProviders
+
+    @Test
+    fun `M have noop accessibility classes W onInitialize { collectAccessibility not set or explicit false }`() {
+        // Given
+        val configWithoutAccessibility = fakeConfiguration.copy(
+            collectAccessibility = false
+        )
+        testedFeature = RumFeature(
+            mockSdkCore,
+            fakeApplicationId.toString(),
+            configWithoutAccessibility,
+            lateCrashReporterFactory = { mockLateCrashReporter }
+        )
+
+        // When
+        testedFeature.onInitialize(appContext.mockInstance)
+
+        // Then
+        assertThat(testedFeature.accessibilityReader).isInstanceOf(NoOpAccessibilityReader::class.java)
+        assertThat(
+            testedFeature.accessibilitySnapshotManager
+        ).isInstanceOf(NoOpAccessibilitySnapshotManager::class.java)
+    }
+
+    @Test
+    fun `M set accessibility classes to implementation W onInitialize { collectAccessibility set true }`() {
+        // Given
+        val configWithAccessibility = fakeConfiguration.copy(
+            collectAccessibility = true
+        )
+        testedFeature = RumFeature(
+            mockSdkCore,
+            fakeApplicationId.toString(),
+            configWithAccessibility,
+            lateCrashReporterFactory = { mockLateCrashReporter }
+        )
+
+        // When
+        testedFeature.onInitialize(appContext.mockInstance)
+
+        // Then
+        assertThat(testedFeature.accessibilityReader).isInstanceOf(DefaultAccessibilityReader::class.java)
+        assertThat(
+            testedFeature.accessibilitySnapshotManager
+        ).isInstanceOf(DefaultAccessibilitySnapshotManager::class.java)
+    }
+
+    @Test
+    fun `M cleanup accessibility classes W onStop`() {
+        // Given
+        val configWithoutAccessibility = fakeConfiguration.copy(
+            collectAccessibility = true
+        )
+        testedFeature = RumFeature(
+            mockSdkCore,
+            fakeApplicationId.toString(),
+            configWithoutAccessibility,
+            lateCrashReporterFactory = { mockLateCrashReporter }
+        )
+
+        testedFeature.onInitialize(appContext.mockInstance)
+
+        // When
+        testedFeature.onStop()
+
+        // Then
+        assertThat(testedFeature.accessibilityReader).isInstanceOf(NoOpAccessibilityReader::class.java)
+        assertThat(
+            testedFeature.accessibilitySnapshotManager
+        ).isInstanceOf(NoOpAccessibilitySnapshotManager::class.java)
+    }
+
+    @Test
+    fun `M setup BatteryInfoProvider W onInitialize`() {
+        // When
+        testedFeature.onInitialize(appContext.mockInstance)
+
+        // Then
+        assertThat(testedFeature.batteryInfoProvider).isInstanceOf(DefaultBatteryInfoProvider::class.java)
+    }
+
+    @Test
+    fun `M cleanup BatteryInfoProvider W onStop`() {
+        // Given
+        testedFeature.onInitialize(appContext.mockInstance)
+
+        // When
+        testedFeature.onStop()
+
+        // Then
+        assertThat(testedFeature.batteryInfoProvider).isInstanceOf(InfoProvider::class.java)
+    }
+
+    @Test
+    fun `M setup DisplayInfoProvider W onInitialize`() {
+        // When
+        testedFeature.onInitialize(appContext.mockInstance)
+
+        // Then
+        assertThat(testedFeature.displayInfoProvider).isInstanceOf(DefaultDisplayInfoProvider::class.java)
+    }
+
+    @Test
+    fun `M cleanup DisplayInfoProvider W onStop`() {
+        // Given
+        testedFeature.onInitialize(appContext.mockInstance)
+
+        // When
+        testedFeature.onStop()
+
+        // Then
+        assertThat(testedFeature.displayInfoProvider).isInstanceOf(InfoProvider::class.java)
+    }
+
+    @Test
+    fun `M set initialized to true W onInitialize`() {
+        // Before
+        assertThat(testedFeature.initialized).isFalse()
+
+        // When
+        testedFeature.onInitialize(appContext.mockInstance)
+
+        // Then
+        assertThat(testedFeature.initialized).isTrue()
+    }
+
+    @Test
+    fun `M set initialized to false W onStop`() {
+        // When
+        testedFeature.onInitialize(appContext.mockInstance)
+
+        // Then
+        assertThat(testedFeature.initialized).isTrue()
+
+        // When
+        testedFeature.onStop()
+
+        // Then
+        assertThat(testedFeature.initialized).isFalse()
+    }
+
+    // endregion
+
     private fun verifyFrameStateAggregatorInitialized(
         anyMatchPredicate: Predicate<FrameStateListener> = Predicate { true },
         noneMatchPredicate: Predicate<FrameStateListener> = Predicate { false }
@@ -1428,9 +1622,8 @@ internal class RumFeatureTest {
 
     private fun mockSameThreadExecutorService(): ExecutorService {
         return mock<ExecutorService>().apply {
-            whenever(submit(any())) doAnswer {
+            whenever(execute(any())) doAnswer {
                 it.getArgument<Runnable>(0).run()
-                mock()
             }
         }
     }

@@ -13,11 +13,9 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.configuration.Configuration
 import com.datadog.android.core.sampling.Sampler
+import com.datadog.android.internal.network.GraphQLHeaders
 import com.datadog.android.okhttp.internal.rum.NoOpRumResourceAttributesProvider
 import com.datadog.android.okhttp.internal.rum.buildResourceId
-import com.datadog.android.okhttp.internal.utils.traceIdAsHexString
-import com.datadog.android.okhttp.trace.DeterministicTraceSampler
-import com.datadog.android.okhttp.trace.NoOpTracedRequestListener
 import com.datadog.android.okhttp.trace.TracedRequestListener
 import com.datadog.android.okhttp.trace.TracingInterceptor
 import com.datadog.android.rum.GlobalRumMonitor
@@ -29,10 +27,10 @@ import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.RumResourceMethod
 import com.datadog.android.rum.internal.monitor.AdvancedNetworkRumMonitor
 import com.datadog.android.rum.tracking.ViewTrackingStrategy
-import com.datadog.android.trace.AndroidTracer
 import com.datadog.android.trace.TracingHeaderType
-import io.opentracing.Span
-import io.opentracing.Tracer
+import com.datadog.android.trace.api.span.DatadogSpan
+import com.datadog.android.trace.api.tracer.DatadogTracer
+import okhttp3.Headers
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -77,10 +75,11 @@ open class DatadogInterceptor internal constructor(
     tracedHosts: Map<String, Set<TracingHeaderType>>,
     tracedRequestListener: TracedRequestListener,
     internal val rumResourceAttributesProvider: RumResourceAttributesProvider,
-    traceSampler: Sampler<Span>,
+    traceSampler: Sampler<DatadogSpan>,
     traceContextInjection: TraceContextInjection,
     redacted404ResourceName: Boolean,
-    localTracerFactory: (SdkCore, Set<TracingHeaderType>) -> Tracer
+    localTracerFactory: (SdkCore, Set<TracingHeaderType>) -> DatadogTracer,
+    globalTracerProvider: () -> DatadogTracer?
 ) : TracingInterceptor(
     sdkInstanceName,
     tracedHosts,
@@ -89,155 +88,9 @@ open class DatadogInterceptor internal constructor(
     traceSampler,
     traceContextInjection,
     redacted404ResourceName,
-    localTracerFactory
+    localTracerFactory,
+    globalTracerProvider
 ) {
-
-    /**
-     * Creates a [TracingInterceptor] to automatically create a trace around OkHttp [Request]s, and
-     * track RUM Resources.
-     *
-     * @param sdkInstanceName SDK instance name to bind to, or null to check the default instance.
-     * Instrumentation won't be working until SDK instance is ready.
-     * @param firstPartyHostsWithHeaderType the list of all the hosts and header types that you want to
-     * be automatically tracked by this interceptor.
-     * Requests made to a URL with any one of these hosts (or any subdomain) will:
-     * - be considered a first party RUM Resource and categorised as such in your RUM dashboard;
-     * - be wrapped in a Span and have trace id injected to get a full flame-graph in APM.
-     * If no host provided (via this argument, global configuration [Configuration.Builder.setFirstPartyHosts]
-     * or [Configuration.Builder.setFirstPartyHostsWithHeaderType])
-     * the interceptor won't trace any OkHttp [Request], nor propagate tracing
-     * information to the backend, but RUM Resource events will still be sent for each request.
-     * @param tracedRequestListener which listens on the intercepted [okhttp3.Request] and offers
-     * the possibility to modify the created [io.opentracing.Span].
-     * @param rumResourceAttributesProvider which listens on the intercepted [okhttp3.Request]
-     * and offers the possibility to add custom attributes to the RUM resource events.
-     * @param traceSampler Sampler controlling the sampling of APM traces created for
-     * auto-instrumented requests. By default it is [DeterministicTraceSampler], which either can accept
-     * fixed sample rate or can get it dynamically from the provider. Value between `0.0` and
-     * `100.0`. A value of `0.0` means no trace will be kept, `100.0` means all traces will
-     * be kept (default value is `20.0`).
-     */
-    @JvmOverloads
-    @Deprecated(
-        message = "This constructor is not going to be accessible anymore in future versions. " +
-            "Please use the Builder instead.",
-        replaceWith = ReplaceWith("DatadogInterceptor.Builder(tracedHosts).build()")
-    )
-    constructor(
-        sdkInstanceName: String? = null,
-        firstPartyHostsWithHeaderType: Map<String, Set<TracingHeaderType>>,
-        tracedRequestListener: TracedRequestListener = NoOpTracedRequestListener(),
-        rumResourceAttributesProvider: RumResourceAttributesProvider =
-            NoOpRumResourceAttributesProvider(),
-        traceSampler: Sampler<Span> = DeterministicTraceSampler(DEFAULT_TRACE_SAMPLE_RATE)
-    ) : this(
-        sdkInstanceName = sdkInstanceName,
-        tracedHosts = firstPartyHostsWithHeaderType,
-        tracedRequestListener = tracedRequestListener,
-        rumResourceAttributesProvider = rumResourceAttributesProvider,
-        traceSampler = traceSampler,
-        traceContextInjection = TraceContextInjection.All,
-        redacted404ResourceName = true,
-        localTracerFactory = { sdkCore, tracingHeaderTypes ->
-            AndroidTracer.Builder(sdkCore).setTracingHeaderTypes(tracingHeaderTypes).build()
-        }
-    )
-
-    /**
-     * Creates a [DatadogInterceptor] to automatically create a trace around OkHttp [Request]s, and
-     * track RUM Resources.
-     *
-     * @param sdkInstanceName SDK instance name to bind to, or null to check the default instance.
-     * Instrumentation won't be working until SDK instance is ready.
-     * @param firstPartyHosts the list of first party hosts.
-     * Requests made to a URL with any one of these hosts (or any subdomain) will:
-     * - be considered a first party RUM Resource and categorised as such in your RUM dashboard;
-     * - be wrapped in a Span and have trace id injected to get a full flame-graph in APM.
-     * If no host provided (via this argument, global configuration [Configuration.Builder.setFirstPartyHosts]
-     * or [Configuration.Builder.setFirstPartyHostsWithHeaderType])
-     * the interceptor won't trace any OkHttp [Request], nor propagate tracing
-     * information to the backend, but RUM Resource events will still be sent for each request.
-     * @param tracedRequestListener which listens on the intercepted [okhttp3.Request] and offers
-     * the possibility to modify the created [io.opentracing.Span].
-     * @param rumResourceAttributesProvider which listens on the intercepted [okhttp3.Request]
-     * and offers the possibility to add custom attributes to the RUM resource events.
-     * @param traceSampler Sampler controlling the sampling of APM traces created for
-     * auto-instrumented requests. By default it is [DeterministicTraceSampler], which either can accept
-     * fixed sample rate or can get it dynamically from the provider. Value between `0.0` and
-     * `100.0`. A value of `0.0` means no trace will be kept, `100.0` means all traces will
-     * be kept (default value is `20.0`).
-     */
-    @JvmOverloads
-    @Deprecated(
-        message = "This constructor is not going to be accessible anymore in future versions. " +
-            "Please use the Builder instead.",
-        replaceWith = ReplaceWith("DatadogInterceptor.Builder(tracedHosts).build()")
-    )
-    constructor(
-        sdkInstanceName: String? = null,
-        firstPartyHosts: List<String>,
-        tracedRequestListener: TracedRequestListener = NoOpTracedRequestListener(),
-        rumResourceAttributesProvider: RumResourceAttributesProvider =
-            NoOpRumResourceAttributesProvider(),
-        traceSampler: Sampler<Span> = DeterministicTraceSampler(DEFAULT_TRACE_SAMPLE_RATE)
-    ) : this(
-        sdkInstanceName = sdkInstanceName,
-        tracedHosts = firstPartyHosts.associateWith {
-            setOf(
-                TracingHeaderType.DATADOG,
-                TracingHeaderType.TRACECONTEXT
-            )
-        },
-        tracedRequestListener = tracedRequestListener,
-        rumResourceAttributesProvider = rumResourceAttributesProvider,
-        traceSampler = traceSampler,
-        traceContextInjection = TraceContextInjection.All,
-        redacted404ResourceName = true,
-        localTracerFactory = { sdkCore, tracingHeaderTypes ->
-            AndroidTracer.Builder(sdkCore).setTracingHeaderTypes(tracingHeaderTypes).build()
-        }
-    )
-
-    /**
-     * Creates a [TracingInterceptor] to automatically create a trace around OkHttp [Request]s, and
-     * track RUM Resources.
-     *
-     * @param sdkInstanceName SDK instance name to bind to, or null to check the default instance.
-     * Instrumentation won't be working until SDK instance is ready.
-     * @param tracedRequestListener which listens on the intercepted [okhttp3.Request] and offers
-     * the possibility to modify the created [io.opentracing.Span].
-     * @param rumResourceAttributesProvider which listens on the intercepted [okhttp3.Request]
-     * and offers the possibility to add custom attributes to the RUM resource events.
-     * @param traceSampler Sampler controlling the sampling of APM traces created for
-     * auto-instrumented requests. By default it is [DeterministicTraceSampler], which either can accept
-     * fixed sample rate or can get it dynamically from the provider. Value between `0.0` and
-     * `100.0`. A value of `0.0` means no trace will be kept, `100.0` means all traces will
-     * be kept (default value is `20.0`).
-     */
-    @JvmOverloads
-    @Deprecated(
-        message = "This constructor is not going to be accessible anymore in future versions. " +
-            "Please use the Builder instead.",
-        replaceWith = ReplaceWith("DatadogInterceptor.Builder(tracedHosts).build()")
-    )
-    constructor(
-        sdkInstanceName: String? = null,
-        tracedRequestListener: TracedRequestListener = NoOpTracedRequestListener(),
-        rumResourceAttributesProvider: RumResourceAttributesProvider =
-            NoOpRumResourceAttributesProvider(),
-        traceSampler: Sampler<Span> = DeterministicTraceSampler(DEFAULT_TRACE_SAMPLE_RATE)
-    ) : this(
-        sdkInstanceName = sdkInstanceName,
-        tracedHosts = emptyMap(),
-        tracedRequestListener = tracedRequestListener,
-        rumResourceAttributesProvider = rumResourceAttributesProvider,
-        traceSampler = traceSampler,
-        traceContextInjection = TraceContextInjection.All,
-        redacted404ResourceName = true,
-        localTracerFactory = { sdkCore, tracingHeaderTypes ->
-            AndroidTracer.Builder(sdkCore).setTracingHeaderTypes(tracingHeaderTypes).build()
-        }
-    )
 
     // region Interceptor
 
@@ -245,6 +98,7 @@ open class DatadogInterceptor internal constructor(
     override fun intercept(chain: Interceptor.Chain): Response {
         val sdkCore = sdkCoreReference.get() as? FeatureSdkCore
         val rumFeature = sdkCore?.getFeature(Feature.RUM_FEATURE_NAME)
+
         if (rumFeature != null) {
             val request = chain.request()
             val url = request.url.toString()
@@ -264,7 +118,14 @@ open class DatadogInterceptor internal constructor(
                 { WARN_RUM_DISABLED.format(Locale.US, prefix) }
             )
         }
-        return super.intercept(chain)
+
+        val internalLogger = (sdkCore?.internalLogger ?: InternalLogger.UNBOUND)
+        val localChain = chainWithoutDDHeaders(
+            internalLogger = internalLogger,
+            originalChain = chain
+        )
+
+        return super.intercept(localChain)
     }
 
     // endregion
@@ -275,7 +136,7 @@ open class DatadogInterceptor internal constructor(
     override fun onRequestIntercepted(
         sdkCore: FeatureSdkCore,
         request: Request,
-        span: Span?,
+        span: DatadogSpan?,
         response: Response?,
         throwable: Throwable?
     ) {
@@ -314,7 +175,7 @@ open class DatadogInterceptor internal constructor(
         sdkCore: FeatureSdkCore,
         request: Request,
         response: Response,
-        span: Span?,
+        span: DatadogSpan?,
         isSampled: Boolean
     ) {
         val requestId = request.buildResourceId(generateUuid = false)
@@ -326,12 +187,26 @@ open class DatadogInterceptor internal constructor(
         val attributes = if (!isSampled || span == null) {
             emptyMap<String, Any?>()
         } else {
-            mapOf(
-                RumAttributes.TRACE_ID to span.context().traceIdAsHexString(),
-                RumAttributes.SPAN_ID to span.context().toSpanId(),
-                RumAttributes.RULE_PSR to (traceSampler.getSampleRate() ?: ZERO_SAMPLE_RATE) / ALL_IN_SAMPLE_RATE
-            )
+            buildMap {
+                put(RumAttributes.TRACE_ID, span.context().traceId.toHexString())
+                put(RumAttributes.SPAN_ID, span.context().spanId.toString())
+                put(RumAttributes.RULE_PSR, (traceSampler.getSampleRate() ?: ZERO_SAMPLE_RATE) / ALL_IN_SAMPLE_RATE)
+
+                request.headers[GraphQLHeaders.DD_GRAPHQL_NAME_HEADER.headerValue]?.let {
+                    put(RumAttributes.GRAPHQL_OPERATION_NAME, it)
+                }
+                request.headers[GraphQLHeaders.DD_GRAPHQL_TYPE_HEADER.headerValue]?.let {
+                    put(RumAttributes.GRAPHQL_OPERATION_TYPE, it)
+                }
+                request.headers[GraphQLHeaders.DD_GRAPHQL_VARIABLES_HEADER.headerValue]?.let {
+                    put(RumAttributes.GRAPHQL_VARIABLES, it)
+                }
+                request.headers[GraphQLHeaders.DD_GRAPHQL_PAYLOAD_HEADER.headerValue]?.let {
+                    put(RumAttributes.GRAPHQL_PAYLOAD, it)
+                }
+            }
         }
+
         (GlobalRumMonitor.get(sdkCore) as? AdvancedNetworkRumMonitor)?.stopResource(
             requestId,
             statusCode,
@@ -339,6 +214,46 @@ open class DatadogInterceptor internal constructor(
             kind,
             attributes + rumResourceAttributesProvider.onProvideAttributes(request, response, null)
         )
+    }
+
+    private fun chainWithoutDDHeaders(
+        internalLogger: InternalLogger,
+        originalChain: Interceptor.Chain
+    ): Interceptor.Chain {
+        return if (hasGraphQLHeaders(originalChain.request().headers)) {
+            object : Interceptor.Chain by originalChain {
+                override fun proceed(request: Request): Response {
+                    return try {
+                        val cleanedRequest = request.newBuilder().apply {
+                            removeGraphQLHeaders(this)
+                        }.build()
+                        return originalChain.proceed(cleanedRequest)
+                    } catch (e: IllegalStateException) {
+                        internalLogger.log(
+                            level = InternalLogger.Level.WARN,
+                            target = InternalLogger.Target.MAINTAINER,
+                            messageBuilder = { ERROR_FAILED_BUILD_REQUEST },
+                            throwable = e
+                        )
+                        originalChain.proceed(request) // fallback to the original request
+                    } catch (e: IOException) {
+                        internalLogger.log(
+                            level = InternalLogger.Level.WARN,
+                            target = InternalLogger.Target.MAINTAINER,
+                            messageBuilder = { ERROR_FAILED_BUILD_REQUEST },
+                            throwable = e
+                        )
+                        originalChain.proceed(request) // fallback to the original request
+                    }
+                }
+            }
+        } else {
+            originalChain
+        }
+    }
+
+    private fun removeGraphQLHeaders(requestBuilder: Request.Builder) {
+        GraphQLHeaders.values().forEach { requestBuilder.removeHeader(it.headerValue) }
     }
 
     private fun handleThrowable(
@@ -426,20 +341,25 @@ open class DatadogInterceptor internal constructor(
         }
     }
 
+    private fun hasGraphQLHeaders(headers: Headers): Boolean {
+        return GraphQLHeaders.values().any { headers[it.headerValue] != null }
+    }
+
     private fun ResponseBody.contentLengthOrNull(): Long? {
         return contentLength().let {
-            if (it <= 0L) null else it
+            if (it < 0L) null else it
         }
     }
 
     // endregion
 
     // region Builder
+
     /**
      * A Builder for the [DatadogInterceptor].
      * @param tracedHostsWithHeaderType a list of all the hosts and header types that you want to
-     * be automatically tracked by this interceptor. If registering a [io.opentracing.util.GlobalTracer],
-     * the tracer must be configured with [AndroidTracer.Builder.setTracingHeaderTypes] containing all the necessary
+     * be automatically tracked by this interceptor. If registering a [com.datadog.android.trace.GlobalDatadogTracer],
+     * the tracer must be configured with [com.datadog.android.trace.api.tracer.DatadogTracerBuilder.withTracingHeadersTypes] containing all the necessary
      * header types configured for OkHttp tracking.
      * If no hosts are provided (via this argument or global configuration
      * [Configuration.Builder.setFirstPartyHosts] or [Configuration.Builder.setFirstPartyHostsWithHeaderType] )
@@ -475,7 +395,8 @@ open class DatadogInterceptor internal constructor(
                 traceSampler,
                 traceContextInjection,
                 redacted404ResourceName,
-                localTracerFactory
+                localTracerFactory,
+                globalTracerProvider
             )
         }
 
@@ -493,7 +414,6 @@ open class DatadogInterceptor internal constructor(
     // endregion
 
     internal companion object {
-
         internal val STREAM_CONTENT_TYPES = setOf(
             "text/event-stream",
             "application/grpc",
@@ -507,6 +427,9 @@ open class DatadogInterceptor internal constructor(
             "You set up a DatadogInterceptor for %s, but RUM features are disabled. " +
                 "Make sure you initialized the Datadog SDK with a valid Application Id, " +
                 "and that RUM features are enabled."
+
+        internal const val ERROR_FAILED_BUILD_REQUEST =
+            "Failed to build interceptor chain after removing DD headers. Falling back to original chain."
 
         internal const val ERROR_NO_RESPONSE =
             "The request ended with no response nor any exception."

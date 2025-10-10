@@ -6,6 +6,9 @@
 
 package com.datadog.android.utils.forge
 
+import com.datadog.android.api.context.AccountInfo
+import com.datadog.android.api.context.DeviceInfo
+import com.datadog.android.api.context.DeviceType
 import com.datadog.android.api.context.NetworkInfo
 import com.datadog.android.api.context.UserInfo
 import com.datadog.android.log.model.LogEvent
@@ -17,14 +20,15 @@ import java.util.UUID
 
 internal class LogEventForgeryFactory : ForgeryFactory<LogEvent> {
     override fun getForgery(forge: Forge): LogEvent {
-        val networkInfo: NetworkInfo? = forge.aNullable()
-        val userInfo: UserInfo? = forge.aNullable()
+        val networkInfo = forge.aNullable<NetworkInfo>()
+        val userInfo = forge.aNullable<UserInfo>()
+        val accountInfo = forge.aNullable<AccountInfo>()
         val reservedKeysAsSet = mutableSetOf<String>().apply {
             LogEvent.RESERVED_PROPERTIES.forEach {
                 this.add(it)
             }
         }
-
+        val deviceInfo: DeviceInfo = forge.getForgery()
         return LogEvent(
             service = forge.anAlphabeticalString(),
             status = forge.aValueFrom(LogEvent.Status::class.java),
@@ -64,6 +68,13 @@ internal class LogEventForgeryFactory : ForgeryFactory<LogEvent> {
 
                 )
             },
+            account = accountInfo?.let {
+                LogEvent.Account(
+                    id = it.id,
+                    name = it.name,
+                    additionalProperties = it.extraInfo.toMutableMap()
+                )
+            },
             network = forge.aNullable {
                 LogEvent.Network(
                     client = LogEvent.Client(
@@ -85,12 +96,39 @@ internal class LogEventForgeryFactory : ForgeryFactory<LogEvent> {
                 version = forge.aStringMatching("[0-9]\\.[0-9]\\.[0-9]"),
                 threadName = forge.aNullable { forge.anAlphabeticalString() }
             ),
+            device = LogEvent.LogEventDevice(
+                type = resolveDeviceType(deviceInfo.deviceType),
+                name = deviceInfo.deviceName,
+                model = deviceInfo.deviceModel,
+                brand = deviceInfo.deviceBrand,
+                architecture = deviceInfo.architecture,
+                locale = forge.aNullable { anAlphabeticalString() },
+                locales = forge.aNullable { aList { anAlphabeticalString() } },
+                timeZone = forge.aNullable { anAlphabeticalString() },
+                powerSavingMode = forge.aNullable { aBool() }
+            ),
             dd = LogEvent.Dd(
-                device = LogEvent.Device(
-                    architecture = forge.anAlphaNumericalString()
+                device = LogEvent.DdDevice(
+                    architecture = deviceInfo.architecture
                 )
+            ),
+            os = LogEvent.Os(
+                name = deviceInfo.osName,
+                version = deviceInfo.osVersion,
+                versionMajor = deviceInfo.osMajorVersion,
+                build = forge.aNullable { anAlphabeticalString() }
             )
         )
+    }
+
+    private fun resolveDeviceType(deviceType: DeviceType): LogEvent.Type {
+        return when (deviceType) {
+            DeviceType.MOBILE -> LogEvent.Type.MOBILE
+            DeviceType.TABLET -> LogEvent.Type.TABLET
+            DeviceType.TV -> LogEvent.Type.TV
+            DeviceType.DESKTOP -> LogEvent.Type.DESKTOP
+            else -> LogEvent.Type.OTHER
+        }
     }
 
     private fun Forge.exhaustiveTags(): List<String> {

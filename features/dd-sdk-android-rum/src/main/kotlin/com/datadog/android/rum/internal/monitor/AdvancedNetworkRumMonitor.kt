@@ -68,7 +68,7 @@ interface AdvancedNetworkRumMonitor : RumMonitor {
         statusCode: Int?,
         size: Long?,
         kind: RumResourceKind,
-        attributes: Map<String, Any?>
+        attributes: Map<String, Any?> = emptyMap()
     )
 
     /**

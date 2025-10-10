@@ -9,6 +9,7 @@ package com.datadog.android.okhttp
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.SdkCore
 import com.datadog.android.api.feature.Feature
+import com.datadog.android.internal.network.GraphQLHeaders
 import com.datadog.android.okhttp.internal.rum.NoOpRumResourceAttributesProvider
 import com.datadog.android.okhttp.trace.DeterministicTraceSampler
 import com.datadog.android.okhttp.trace.NoOpTracedRequestListener
@@ -22,6 +23,7 @@ import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.RumResourceMethod
 import com.datadog.android.rum.resource.ResourceId
 import com.datadog.android.trace.TracingHeaderType
+import com.datadog.android.trace.api.tracer.DatadogTracer
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.forge.BaseConfigurator
 import com.datadog.tools.unit.forge.exhaustiveAttributes
@@ -32,10 +34,10 @@ import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
-import io.opentracing.Tracer
 import okhttp3.MediaType
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.Protocol
+import okhttp3.Request
 import okhttp3.Response
 import okhttp3.ResponseBody
 import okhttp3.ResponseBody.Companion.toResponseBody
@@ -84,7 +86,8 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
 
     override fun instantiateTestedInterceptor(
         tracedHosts: Map<String, Set<TracingHeaderType>>,
-        factory: (SdkCore, Set<TracingHeaderType>) -> Tracer
+        globalTracerProvider: () -> DatadogTracer?,
+        localTracerFactory: (SdkCore, Set<TracingHeaderType>) -> DatadogTracer
     ): TracingInterceptor {
         whenever(rumMonitor.mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mock()
         whenever(rumMonitor.mockSdkCore.firstPartyHostResolver) doReturn mockResolver
@@ -94,9 +97,10 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
             tracedRequestListener = mockRequestListener,
             rumResourceAttributesProvider = mockRumAttributesProvider,
             traceSampler = mockTraceSampler,
-            traceContextInjection = TraceContextInjection.All,
+            traceContextInjection = TraceContextInjection.ALL,
             redacted404ResourceName = fakeRedacted404Resources,
-            localTracerFactory = factory
+            localTracerFactory = localTracerFactory,
+            globalTracerProvider = globalTracerProvider
         )
     }
 
@@ -188,7 +192,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
         val expectedStartAttrs = emptyMap<String, Any?>()
         val expectedStopAttrs = mapOf(
             RumAttributes.TRACE_ID to fakeTraceIdAsString,
-            RumAttributes.SPAN_ID to fakeSpanId,
+            RumAttributes.SPAN_ID to fakeSpanId.toString(),
             RumAttributes.RULE_PSR to fakeTracingSampleRate / 100
         ) + fakeAttributes
         val mimeType = fakeMediaType?.type
@@ -222,6 +226,49 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
     }
 
     @Test
+    fun `M start and stop RUM Resource W intercept() {successful request, empty response}`(
+        @IntForgery(min = 200, max = 300) statusCode: Int
+    ) {
+        // Given
+        fakeResponseBody = ""
+        stubChain(mockChain, statusCode)
+        val expectedStartAttrs = emptyMap<String, Any?>()
+        val expectedStopAttrs = mapOf(
+            RumAttributes.TRACE_ID to fakeTraceIdAsString,
+            RumAttributes.SPAN_ID to fakeSpanId.toString(),
+            RumAttributes.RULE_PSR to fakeTracingSampleRate / 100
+        ) + fakeAttributes
+        val mimeType = fakeMediaType?.type
+        val kind = when {
+            mimeType != null -> RumResourceKind.fromMimeType(mimeType)
+            else -> RumResourceKind.NATIVE
+        }
+
+        // When
+        testedInterceptor.intercept(mockChain)
+
+        // Then
+        inOrder(rumMonitor.mockInstance) {
+            argumentCaptor<ResourceId> {
+                verify(rumMonitor.mockInstance).startResource(
+                    capture(),
+                    eq(fakeMethod),
+                    eq(fakeUrl),
+                    eq(expectedStartAttrs)
+                )
+                verify(rumMonitor.mockInstance).stopResource(
+                    capture(),
+                    eq(statusCode),
+                    eq(0L),
+                    eq(kind),
+                    eq(expectedStopAttrs)
+                )
+                assertThat(firstValue).isEqualTo(secondValue)
+            }
+        }
+    }
+
+    @Test
     fun `M start and stop RUM Resource W intercept() {successful streaming request}`(
         @IntForgery(min = 200, max = 300) statusCode: Int,
         forge: Forge
@@ -233,7 +280,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
         val expectedStartAttrs = emptyMap<String, Any?>()
         val expectedStopAttrs = mapOf(
             RumAttributes.TRACE_ID to fakeTraceIdAsString,
-            RumAttributes.SPAN_ID to fakeSpanId,
+            RumAttributes.SPAN_ID to fakeSpanId.toString(),
             RumAttributes.RULE_PSR to fakeTracingSampleRate / 100
         ) + fakeAttributes
         val kind = RumResourceKind.NATIVE
@@ -274,7 +321,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
         val expectedStartAttrs = emptyMap<String, Any?>()
         val expectedStopAttrs = mapOf(
             RumAttributes.TRACE_ID to fakeTraceIdAsString,
-            RumAttributes.SPAN_ID to fakeSpanId,
+            RumAttributes.SPAN_ID to fakeSpanId.toString(),
             RumAttributes.RULE_PSR to fakeTracingSampleRate / 100
         ) + fakeAttributes
         val mimeType = fakeMediaType?.type
@@ -308,6 +355,103 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
     }
 
     @Test
+    fun `M remove all GraphQL headers W intercept() {request with GraphQL headers}`(
+        forge: Forge,
+        @StringForgery fakeGraphQLName: String,
+        @StringForgery fakeGraphQLType: String,
+        @StringForgery fakeGraphQLVariables: String,
+        @StringForgery fakeGraphQLPayload: String,
+        @StringForgery fakeUserAgent: String
+    ) {
+        // Given
+        fakeRequest = forgeRequest(forge) { builder ->
+            builder.addHeader("User-Agent", fakeUserAgent)
+            builder.addHeader(GraphQLHeaders.DD_GRAPHQL_NAME_HEADER.headerValue, fakeGraphQLName)
+            builder.addHeader(GraphQLHeaders.DD_GRAPHQL_TYPE_HEADER.headerValue, fakeGraphQLType)
+            builder.addHeader(GraphQLHeaders.DD_GRAPHQL_VARIABLES_HEADER.headerValue, fakeGraphQLVariables)
+            builder.addHeader(GraphQLHeaders.DD_GRAPHQL_PAYLOAD_HEADER.headerValue, fakeGraphQLPayload)
+        }
+        stubChain(mockChain, 200)
+
+        // When
+        testedInterceptor.intercept(mockChain)
+
+        // Then
+        val requestCaptor = argumentCaptor<Request>()
+        verify(mockChain).proceed(requestCaptor.capture())
+        val cleanedRequest = requestCaptor.firstValue
+
+        // Verify GraphQL headers are removed
+        assertThat(cleanedRequest.headers[GraphQLHeaders.DD_GRAPHQL_NAME_HEADER.headerValue]).isNull()
+        assertThat(cleanedRequest.headers[GraphQLHeaders.DD_GRAPHQL_TYPE_HEADER.headerValue]).isNull()
+        assertThat(cleanedRequest.headers[GraphQLHeaders.DD_GRAPHQL_VARIABLES_HEADER.headerValue]).isNull()
+        assertThat(cleanedRequest.headers[GraphQLHeaders.DD_GRAPHQL_PAYLOAD_HEADER.headerValue]).isNull()
+
+        // Verify other headers are preserved
+        assertThat(cleanedRequest.headers["User-Agent"]).isEqualTo(fakeUserAgent)
+        assertThat(cleanedRequest.url.toString()).isEqualTo(fakeRequest.url.toString())
+    }
+
+    @Test
+    fun `M pass GraphQL attributes to RUM W intercept() {request with GraphQL headers}`(
+        forge: Forge,
+        @IntForgery(min = 200, max = 300) statusCode: Int,
+        @StringForgery fakeGraphQLName: String,
+        @StringForgery fakeGraphQLType: String,
+        @StringForgery fakeGraphQLVariables: String,
+        @StringForgery fakeGraphQLPayload: String
+    ) {
+        // Given
+        fakeRequest = forgeRequest(forge) { builder ->
+            builder.addHeader(GraphQLHeaders.DD_GRAPHQL_NAME_HEADER.headerValue, fakeGraphQLName)
+            builder.addHeader(GraphQLHeaders.DD_GRAPHQL_TYPE_HEADER.headerValue, fakeGraphQLType)
+            builder.addHeader(GraphQLHeaders.DD_GRAPHQL_VARIABLES_HEADER.headerValue, fakeGraphQLVariables)
+            builder.addHeader(GraphQLHeaders.DD_GRAPHQL_PAYLOAD_HEADER.headerValue, fakeGraphQLPayload)
+        }
+        stubChain(mockChain, statusCode)
+
+        // When
+        testedInterceptor.intercept(mockChain)
+
+        // Then
+        inOrder(rumMonitor.mockInstance) {
+            argumentCaptor<ResourceId> {
+                verify(rumMonitor.mockInstance).startResource(
+                    capture(),
+                    eq(fakeMethod),
+                    eq(fakeUrl),
+                    eq(emptyMap())
+                )
+
+                // Capture the actual attributes passed to stopResource
+                val stopAttrsCaptor = argumentCaptor<Map<String, Any?>>()
+                verify(rumMonitor.mockInstance).stopResource(
+                    capture(),
+                    eq(statusCode),
+                    eq(fakeResponseBody.toByteArray().size.toLong()),
+                    any(),
+                    stopAttrsCaptor.capture()
+                )
+
+                val actualStopAttrs = stopAttrsCaptor.firstValue
+
+                // Verify GraphQL attributes are present
+                assertThat(actualStopAttrs[RumAttributes.GRAPHQL_OPERATION_NAME]).isEqualTo(fakeGraphQLName)
+                assertThat(actualStopAttrs[RumAttributes.GRAPHQL_OPERATION_TYPE]).isEqualTo(fakeGraphQLType)
+                assertThat(actualStopAttrs[RumAttributes.GRAPHQL_VARIABLES]).isEqualTo(fakeGraphQLVariables)
+                assertThat(actualStopAttrs[RumAttributes.GRAPHQL_PAYLOAD]).isEqualTo(fakeGraphQLPayload)
+
+                // Verify fakeAttributes are included
+                fakeAttributes.forEach { (key, value) ->
+                    assertThat(actualStopAttrs[key]).isEqualTo(value)
+                }
+
+                assertThat(firstValue).isEqualTo(secondValue)
+            }
+        }
+    }
+
+    @Test
     fun `M start and stop RUM Resource W intercept() {successful request, unknown method}`(
         @IntForgery(min = 200, max = 300) statusCode: Int,
         @StringForgery fakeMethod: String,
@@ -321,7 +465,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
         val expectedStartAttrs = emptyMap<String, Any?>()
         val expectedStopAttrs = mapOf(
             RumAttributes.TRACE_ID to fakeTraceIdAsString,
-            RumAttributes.SPAN_ID to fakeSpanId,
+            RumAttributes.SPAN_ID to fakeSpanId.toString(),
             RumAttributes.RULE_PSR to fakeTracingSampleRate / 100
         ) + fakeAttributes
         val mimeType = fakeMediaType?.type
@@ -417,7 +561,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
         }
         val expectedStopAttrs = mapOf(
             RumAttributes.TRACE_ID to fakeTraceIdAsString,
-            RumAttributes.SPAN_ID to fakeSpanId,
+            RumAttributes.SPAN_ID to fakeSpanId.toString(),
             RumAttributes.RULE_PSR to fakeTracingSampleRate / 100
         ) + fakeAttributes
         val mimeType = fakeMediaType?.type
@@ -441,7 +585,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
                 verify(rumMonitor.mockInstance).stopResource(
                     capture(),
                     eq(statusCode),
-                    eq(null),
+                    eq(0L),
                     eq(kind),
                     eq(expectedStopAttrs)
                 )
@@ -466,7 +610,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
         }
         val expectedStopAttrs = mapOf(
             RumAttributes.TRACE_ID to fakeTraceIdAsString,
-            RumAttributes.SPAN_ID to fakeSpanId,
+            RumAttributes.SPAN_ID to fakeSpanId.toString(),
             RumAttributes.RULE_PSR to fakeTracingSampleRate / 100
         ) + fakeAttributes
         val mimeType = fakeMediaType?.type
@@ -538,7 +682,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
                 verify(rumMonitor.mockInstance).stopResource(
                     capture(),
                     eq(statusCode),
-                    eq(null),
+                    eq(0L),
                     eq(kind),
                     eq(expectedStopAttrs)
                 )
@@ -596,8 +740,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
 
     @Test
     fun `M start and stop RUM Resource W intercept() {successful request throwing response}`(
-        @IntForgery(min = 200, max = 300) statusCode: Int,
-        forge: Forge
+        @IntForgery(min = 200, max = 300) statusCode: Int
     ) {
         // Given
         stubChain(mockChain) {
@@ -610,7 +753,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
                 .body(object : ResponseBody() {
                     override fun contentType(): MediaType? = fakeMediaType
 
-                    override fun contentLength(): Long = forge.anElementFrom(0, -1)
+                    override fun contentLength(): Long = -1L
 
                     override fun source(): BufferedSource {
                         val buffer = Buffer()
@@ -624,7 +767,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
         val expectedStartAttrs = emptyMap<String, Any?>()
         val expectedStopAttrs = mapOf(
             RumAttributes.TRACE_ID to fakeTraceIdAsString,
-            RumAttributes.SPAN_ID to fakeSpanId,
+            RumAttributes.SPAN_ID to fakeSpanId.toString(),
             RumAttributes.RULE_PSR to fakeTracingSampleRate / 100
         ) + fakeAttributes
         val mimeType = fakeMediaType?.type
@@ -659,8 +802,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
 
     @Test
     fun `M start and stop RUM Resource W intercept() {success request throwing response + !smp}`(
-        @IntForgery(min = 200, max = 300) statusCode: Int,
-        forge: Forge
+        @IntForgery(min = 200, max = 300) statusCode: Int
     ) {
         // Given
         whenever(mockTraceSampler.sample(any())).thenReturn(false)
@@ -674,7 +816,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
                 .body(object : ResponseBody() {
                     override fun contentType(): MediaType? = fakeMediaType
 
-                    override fun contentLength(): Long = forge.anElementFrom(0, -1)
+                    override fun contentLength(): Long = -1
 
                     override fun source(): BufferedSource {
                         val buffer = Buffer()
@@ -727,7 +869,7 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
         val expectedStartAttrs = emptyMap<String, Any?>()
         val expectedStopAttrs = mapOf(
             RumAttributes.TRACE_ID to fakeTraceIdAsString,
-            RumAttributes.SPAN_ID to fakeSpanId,
+            RumAttributes.SPAN_ID to fakeSpanId.toString(),
             RumAttributes.RULE_PSR to fakeTracingSampleRate / 100
         ) + fakeAttributes
         val mimeType = fakeMediaType?.type
@@ -835,4 +977,92 @@ internal class DatadogInterceptorTest : TracingInterceptorNotSendingSpanTest() {
             }
         }
     }
+
+    // region graphQL headers
+
+    @Test
+    fun `M pass request unchanged W intercept() {request without GraphQL headers}`(
+        forge: Forge,
+        @StringForgery fakeUserAgent: String,
+        @StringForgery fakeCustomHeader: String
+    ) {
+        // Given
+        fakeRequest = forgeRequest(forge) { builder ->
+            builder.addHeader("User-Agent", fakeUserAgent)
+            builder.addHeader("Custom-Header", fakeCustomHeader)
+        }
+        stubChain(mockChain, 200)
+
+        // When
+        testedInterceptor.intercept(mockChain)
+
+        // Then
+        val requestCaptor = argumentCaptor<Request>()
+        verify(mockChain).proceed(requestCaptor.capture())
+        val passedRequest = requestCaptor.firstValue
+
+        assertThat(passedRequest.headers["User-Agent"]).isEqualTo(fakeUserAgent)
+        assertThat(passedRequest.headers["Custom-Header"]).isEqualTo(fakeCustomHeader)
+        assertThat(passedRequest.url.toString()).isEqualTo(fakeRequest.url.toString())
+    }
+
+    @Test
+    fun `M remove partial GraphQL headers W intercept() {request with some GraphQL headers}`(
+        forge: Forge,
+        @StringForgery fakeGraphQLName: String,
+        @StringForgery fakeUserAgent: String
+    ) {
+        // Given
+        fakeRequest = forgeRequest(forge) { builder ->
+            builder.addHeader("User-Agent", fakeUserAgent)
+            builder.addHeader(GraphQLHeaders.DD_GRAPHQL_NAME_HEADER.headerValue, fakeGraphQLName)
+        }
+        stubChain(mockChain, 200)
+
+        // When
+        testedInterceptor.intercept(mockChain)
+
+        // Then
+        val requestCaptor = argumentCaptor<Request>()
+        verify(mockChain).proceed(requestCaptor.capture())
+        val cleanedRequest = requestCaptor.firstValue
+
+        assertThat(cleanedRequest.headers[GraphQLHeaders.DD_GRAPHQL_NAME_HEADER.headerValue]).isNull()
+        assertThat(cleanedRequest.headers[GraphQLHeaders.DD_GRAPHQL_TYPE_HEADER.headerValue]).isNull()
+        assertThat(cleanedRequest.headers[GraphQLHeaders.DD_GRAPHQL_VARIABLES_HEADER.headerValue]).isNull()
+        assertThat(cleanedRequest.headers[GraphQLHeaders.DD_GRAPHQL_PAYLOAD_HEADER.headerValue]).isNull()
+        assertThat(cleanedRequest.headers["User-Agent"]).isEqualTo(fakeUserAgent)
+        assertThat(cleanedRequest.url.toString()).isEqualTo(fakeRequest.url.toString())
+    }
+
+    @Test
+    fun `M remove GraphQL headers with empty values W intercept() {request with empty GraphQL headers}`(
+        forge: Forge,
+        @StringForgery fakeUserAgent: String
+    ) {
+        // Given
+        fakeRequest = forgeRequest(forge) { builder ->
+            builder.addHeader("User-Agent", fakeUserAgent)
+            builder.addHeader(GraphQLHeaders.DD_GRAPHQL_NAME_HEADER.headerValue, "")
+            builder.addHeader(GraphQLHeaders.DD_GRAPHQL_TYPE_HEADER.headerValue, "")
+        }
+        stubChain(mockChain, 200)
+
+        // When
+        testedInterceptor.intercept(mockChain)
+
+        // Then
+        val requestCaptor = argumentCaptor<Request>()
+        verify(mockChain).proceed(requestCaptor.capture())
+        val cleanedRequest = requestCaptor.firstValue
+
+        assertThat(cleanedRequest.headers[GraphQLHeaders.DD_GRAPHQL_NAME_HEADER.headerValue]).isNull()
+        assertThat(cleanedRequest.headers[GraphQLHeaders.DD_GRAPHQL_TYPE_HEADER.headerValue]).isNull()
+        assertThat(cleanedRequest.headers[GraphQLHeaders.DD_GRAPHQL_VARIABLES_HEADER.headerValue]).isNull()
+        assertThat(cleanedRequest.headers[GraphQLHeaders.DD_GRAPHQL_PAYLOAD_HEADER.headerValue]).isNull()
+        assertThat(cleanedRequest.headers["User-Agent"]).isEqualTo(fakeUserAgent)
+        assertThat(cleanedRequest.url.toString()).isEqualTo(fakeRequest.url.toString())
+    }
+
+    // endregion
 }

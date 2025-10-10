@@ -8,7 +8,6 @@ package com.datadog.android.sessionreplay.internal.recorder.mapper
 
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.DrawableContainer
-import android.os.Build
 import android.widget.CompoundButton
 import androidx.annotation.UiThread
 import com.datadog.android.api.InternalLogger
@@ -40,12 +39,9 @@ internal abstract class CheckableCompoundButtonMapper<T : CompoundButton>(
     @UiThread
     override fun resolveCheckableBounds(view: T, pixelsDensity: Float): GlobalBounds {
         val viewGlobalBounds = viewBoundsResolver.resolveViewGlobalBounds(view, pixelsDensity)
-        val checkBoxHeight = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            view.buttonDrawable?.intrinsicHeight?.toLong()?.densityNormalized(pixelsDensity)
-                ?: DEFAULT_CHECKABLE_HEIGHT_IN_DP
-        } else {
-            DEFAULT_CHECKABLE_HEIGHT_IN_DP
-        }
+        val checkBoxHeight = view.buttonDrawable?.intrinsicHeight?.toLong()?.densityNormalized(pixelsDensity)
+            ?: DEFAULT_CHECKABLE_HEIGHT_IN_DP
+
         return GlobalBounds(
             x = viewGlobalBounds.x,
             y = viewGlobalBounds.y + (viewGlobalBounds.height - checkBoxHeight) / 2,
@@ -55,56 +51,33 @@ internal abstract class CheckableCompoundButtonMapper<T : CompoundButton>(
     }
 
     override fun getCheckableDrawable(view: T): Drawable? {
-        val originCheckableDrawable = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            // drawable from [CompoundButton] can not be retrieved according to the state,
-            // so here two hardcoded indexes are used to retrieve "checked" and "not checked" drawables.
-            val checkableDrawableIndex = if (view.isChecked) {
-                CHECK_BOX_CHECKED_DRAWABLE_INDEX
-            } else {
-                CHECK_BOX_NOT_CHECKED_DRAWABLE_INDEX
-            }
-            view.buttonDrawable?.let {
-                (it.constantState as? DrawableContainer.DrawableContainerState)?.getChild(
-                    checkableDrawableIndex
-                )
-            } ?: kotlin.run {
-                internalLogger.log(
-                    level = InternalLogger.Level.ERROR,
-                    targets = listOf(
-                        InternalLogger.Target.MAINTAINER,
-                        InternalLogger.Target.TELEMETRY
-                    ),
-                    messageBuilder = { NULL_BUTTON_DRAWABLE_MSG },
-                    additionalProperties = mapOf(
-                        "replay.compound.view" to view.javaClass.canonicalName
-                    )
-                )
-                null
-            }
+        // drawable from [CompoundButton] can not be retrieved according to the state,
+        // so here two hardcoded indexes are used to retrieve "checked" and "not checked" drawables.
+        val checkableDrawableIndex = if (view.isChecked) {
+            CHECK_BOX_CHECKED_DRAWABLE_INDEX
         } else {
-            // view.buttonDrawable is not available below API 23, so reflection is used to retrieve it.
-            try {
-                @Suppress("UnsafeThirdPartyFunctionCall")
-                // Exceptions have been caught.
-                mButtonDrawableField?.get(view) as? Drawable
-            } catch (e: IllegalAccessException) {
-                internalLogger.log(
-                    level = InternalLogger.Level.ERROR,
-                    targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-                    messageBuilder = { GET_DRAWABLE_FAIL_MESSAGE },
-                    throwable = e
-                )
-                null
-            } catch (e: IllegalArgumentException) {
-                internalLogger.log(
-                    level = InternalLogger.Level.ERROR,
-                    targets = listOf(InternalLogger.Target.MAINTAINER, InternalLogger.Target.TELEMETRY),
-                    messageBuilder = { GET_DRAWABLE_FAIL_MESSAGE },
-                    throwable = e
-                )
-                null
-            }
+            CHECK_BOX_NOT_CHECKED_DRAWABLE_INDEX
         }
+
+        val originCheckableDrawable = view.buttonDrawable?.let {
+            (it.constantState as? DrawableContainer.DrawableContainerState)?.getChild(
+                checkableDrawableIndex
+            )
+        } ?: kotlin.run {
+            internalLogger.log(
+                level = InternalLogger.Level.ERROR,
+                targets = listOf(
+                    InternalLogger.Target.MAINTAINER,
+                    InternalLogger.Target.TELEMETRY
+                ),
+                messageBuilder = { NULL_BUTTON_DRAWABLE_MSG },
+                additionalProperties = mapOf(
+                    "replay.compound.view" to view.javaClass.canonicalName
+                )
+            )
+            null
+        }
+
         return originCheckableDrawable
     }
 

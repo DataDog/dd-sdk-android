@@ -1,0 +1,4 @@
+object com.datadog.android.trace.internal.domain.event.BigIntegerUtils
+  fun leastSignificant64BitsAsHex(java.math.BigInteger): String
+  fun leastSignificant64BitsAsDecimal(java.math.BigInteger): String
+  fun mostSignificant64BitsAsHex(java.math.BigInteger): String

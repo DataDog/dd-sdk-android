@@ -23,6 +23,12 @@ class InternalApiUsageEventAssert(actual: InternalTelemetryEvent.ApiUsage) :
                     .isEqualTo(expected as InternalTelemetryEvent.ApiUsage.AddViewLoadingTime)
             }
 
+            is InternalTelemetryEvent.ApiUsage.AddOperationStepVital -> {
+                InternalAddOperationStepVitalAssert
+                    .assertThat(actual as InternalTelemetryEvent.ApiUsage.AddOperationStepVital)
+                    .isEqualTo(expected as InternalTelemetryEvent.ApiUsage.AddOperationStepVital)
+            }
+
             else -> {
                 failWithMessage("Unknown event type: ${actual::class.java.simpleName}")
             }

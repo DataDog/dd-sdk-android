@@ -7,6 +7,7 @@
 package com.datadog.android.core.internal.utils
 
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.internal.utils.NULL_MAP_VALUE
 import com.datadog.android.lint.InternalApi
 import com.google.gson.JsonArray
 import com.google.gson.JsonElement

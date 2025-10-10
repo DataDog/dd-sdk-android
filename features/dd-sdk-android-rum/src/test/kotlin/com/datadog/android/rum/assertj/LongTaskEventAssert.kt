@@ -6,6 +6,7 @@
 
 package com.datadog.android.rum.assertj
 
+import com.datadog.android.api.context.AccountInfo
 import com.datadog.android.api.context.NetworkInfo
 import com.datadog.android.api.context.UserInfo
 import com.datadog.android.rum.internal.domain.scope.RumSessionScope
@@ -83,6 +84,29 @@ internal class LongTaskEventAssert(actual: LongTaskEvent) :
         return this
     }
 
+    fun hasAccountInfo(expected: AccountInfo?): LongTaskEventAssert {
+        assertThat(actual.account?.id)
+            .overridingErrorMessage(
+                "Expected RUM event to have account.id ${expected?.id} " +
+                    "but was ${actual.account?.id}"
+            )
+            .isEqualTo(expected?.id)
+        assertThat(actual.account?.name)
+            .overridingErrorMessage(
+                "Expected RUM event to have account.name ${expected?.name} " +
+                    "but was ${actual.account?.name}"
+            )
+            .isEqualTo(expected?.name)
+        assertThat(actual.account?.additionalProperties)
+            .overridingErrorMessage(
+                "Expected event to have account additional " +
+                    "properties ${expected?.extraInfo} " +
+                    "but was ${actual.account?.additionalProperties}"
+            )
+            .containsExactlyInAnyOrderEntriesOf(expected?.extraInfo)
+        return this
+    }
+
     fun containsExactlyContextAttributes(expected: Map<String, Any?>) {
         assertThat(actual.context?.additionalProperties)
             .overridingErrorMessage(
@@ -95,9 +119,9 @@ internal class LongTaskEventAssert(actual: LongTaskEvent) :
 
     fun hasConnectivityInfo(expected: NetworkInfo?): LongTaskEventAssert {
         val expectedStatus = if (expected?.isConnected() == true) {
-            LongTaskEvent.Status.CONNECTED
+            LongTaskEvent.ConnectivityStatus.CONNECTED
         } else {
-            LongTaskEvent.Status.NOT_CONNECTED
+            LongTaskEvent.ConnectivityStatus.NOT_CONNECTED
         }
         val expectedInterfaces = when (expected?.connectivity) {
             NetworkInfo.Connectivity.NETWORK_ETHERNET -> listOf(LongTaskEvent.Interface.ETHERNET)
@@ -181,19 +205,11 @@ internal class LongTaskEventAssert(actual: LongTaskEvent) :
         return this
     }
 
-    fun hasUserSession(): LongTaskEventAssert {
+    fun hasSessionType(expected: LongTaskEvent.LongTaskEventSessionType): LongTaskEventAssert {
         assertThat(actual.session.type)
             .overridingErrorMessage(
-                "Expected event to have session.type:user but was ${actual.session.type}"
-            ).isEqualTo(LongTaskEvent.LongTaskEventSessionType.USER)
-        return this
-    }
-
-    fun hasSyntheticsSession(): LongTaskEventAssert {
-        assertThat(actual.session.type)
-            .overridingErrorMessage(
-                "Expected event to have session.type:synthetics but was ${actual.session.type}"
-            ).isEqualTo(LongTaskEvent.LongTaskEventSessionType.SYNTHETICS)
+                "Expected event to have session.type:$expected but was ${actual.session.type}"
+            ).isEqualTo(expected)
         return this
     }
 

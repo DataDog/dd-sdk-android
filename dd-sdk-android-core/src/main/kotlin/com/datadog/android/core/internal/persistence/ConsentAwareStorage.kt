@@ -10,7 +10,9 @@ import androidx.annotation.AnyThread
 import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
-import com.datadog.android.api.storage.EventBatchWriter
+import com.datadog.android.api.feature.EventWriteScope
+import com.datadog.android.core.internal.data.upload.DataOkHttpUploader.Companion.HTTP_ACCEPTED
+import com.datadog.android.core.internal.metrics.BenchmarkUploads
 import com.datadog.android.core.internal.metrics.MetricsDispatcher
 import com.datadog.android.core.internal.metrics.RemovalReason
 import com.datadog.android.core.internal.persistence.file.FileMover
@@ -19,10 +21,8 @@ import com.datadog.android.core.internal.persistence.file.FilePersistenceConfig
 import com.datadog.android.core.internal.persistence.file.FileReaderWriter
 import com.datadog.android.core.internal.persistence.file.batch.BatchFileReaderWriter
 import com.datadog.android.core.internal.persistence.file.existsSafe
-import com.datadog.android.core.internal.privacy.ConsentProvider
-import com.datadog.android.core.internal.utils.submitSafe
-import com.datadog.android.core.metrics.MethodCallSamplingRate
-import com.datadog.android.core.metrics.TelemetryMetricType
+import com.datadog.android.core.internal.persistence.file.lengthSafe
+import com.datadog.android.core.internal.utils.executeSafe
 import com.datadog.android.privacy.TrackingConsent
 import java.io.File
 import java.util.Locale
@@ -38,71 +38,47 @@ internal class ConsentAwareStorage(
     private val internalLogger: InternalLogger,
     internal val filePersistenceConfig: FilePersistenceConfig,
     private val metricsDispatcher: MetricsDispatcher,
-    private val consentProvider: ConsentProvider,
-    private val featureName: String
-) : Storage {
+    private val featureName: String,
+    private val benchmarkUploads: BenchmarkUploads = BenchmarkUploads()
+) : Storage, BatchWriteEventListener {
 
     /**
      * Keeps track of files currently being read.
      */
-    private val lockedBatches: MutableSet<Batch> = mutableSetOf()
+    private val lockedReadBatches: MutableSet<Batch> = mutableSetOf()
 
     private val writeLock = Any()
 
     /** @inheritdoc */
-    @WorkerThread
-    override fun writeCurrentBatch(
-        datadogContext: DatadogContext,
-        forceNewBatch: Boolean,
-        callback: (EventBatchWriter) -> Unit
-    ) {
-        val metric = internalLogger.startPerformanceMeasure(
-            callerClass = ConsentAwareStorage::class.java.name,
-            metric = TelemetryMetricType.MethodCalled,
-            samplingRate = MethodCallSamplingRate.RARE.rate,
-            operationName = "writeCurrentBatch[$featureName]"
-        )
-        executorService.submitSafe("Data write", internalLogger) {
-            val orchestrator = resolveOrchestrator()
-            if (orchestrator == null) {
-                callback.invoke(NoOpEventBatchWriter())
-                metric?.stopAndSend(false)
-                return@submitSafe
-            }
-            synchronized(writeLock) {
-                val batchFile = orchestrator.getWritableFile(forceNewBatch)
-                val metadataFile = if (batchFile != null) {
-                    orchestrator.getMetadataFile(batchFile)
-                } else {
-                    null
-                }
-                val writer = if (batchFile == null) {
-                    NoOpEventBatchWriter()
-                } else {
-                    FileEventBatchWriter(
-                        batchFile = batchFile,
-                        metadataFile = metadataFile,
-                        eventsWriter = batchEventsReaderWriter,
-                        metadataReaderWriter = batchMetadataReaderWriter,
-                        filePersistenceConfig = filePersistenceConfig,
-                        internalLogger = internalLogger
-                    )
-                }
-                callback.invoke(writer)
-                metric?.stopAndSend(writer !is NoOpEventBatchWriter)
-            }
+    @AnyThread
+    override fun getEventWriteScope(
+        datadogContext: DatadogContext
+    ): EventWriteScope {
+        val orchestrator = resolveOrchestrator(datadogContext)
+        // TODO RUM-9712 Put performance metric for event processing + event write measurement
+        if (orchestrator == null) {
+            return AsyncEventWriteScope(executorService, NoOpEventBatchWriter(), writeLock, featureName, internalLogger)
         }
+        val writer = FileEventBatchWriter(
+            fileOrchestrator = orchestrator,
+            eventsWriter = batchEventsReaderWriter,
+            metadataReaderWriter = batchMetadataReaderWriter,
+            filePersistenceConfig = filePersistenceConfig,
+            batchWriteEventListener = this,
+            internalLogger = internalLogger
+        )
+        return AsyncEventWriteScope(executorService, writer, writeLock, featureName, internalLogger)
     }
 
     /** @inheritdoc */
     @WorkerThread
     override fun readNextBatch(): BatchData? {
-        val (batchFile, metaFile) = synchronized(lockedBatches) {
+        val (batchFile, metaFile) = synchronized(lockedReadBatches) {
             val batchFile = grantedOrchestrator
-                .getReadableFile(lockedBatches.map { it.file }.toSet()) ?: return null
+                .getReadableFile(lockedReadBatches.map { it.file }.toSet()) ?: return null
 
             val metaFile = grantedOrchestrator.getMetadataFile(batchFile)
-            lockedBatches.add(Batch(batchFile, metaFile))
+            lockedReadBatches.add(Batch(batchFile, metaFile))
             batchFile to metaFile
         }
 
@@ -124,27 +100,27 @@ internal class ConsentAwareStorage(
         removalReason: RemovalReason,
         deleteBatch: Boolean
     ) {
-        val batch = synchronized(lockedBatches) {
-            lockedBatches.firstOrNull { batchId.matchesFile(it.file) }
+        val batch = synchronized(lockedReadBatches) {
+            lockedReadBatches.firstOrNull { batchId.matchesFile(it.file) }
         } ?: return
 
         if (deleteBatch) {
             deleteBatch(batch, removalReason)
         }
-        synchronized(lockedBatches) {
-            lockedBatches.remove(batch)
+        synchronized(lockedReadBatches) {
+            lockedReadBatches.remove(batch)
         }
     }
 
     /** @inheritdoc */
     @AnyThread
     override fun dropAll() {
-        executorService.submitSafe("ConsentAwareStorage.dropAll", internalLogger) {
-            synchronized(lockedBatches) {
-                lockedBatches.forEach {
+        executorService.executeSafe("ConsentAwareStorage.dropAll", internalLogger) {
+            synchronized(lockedReadBatches) {
+                lockedReadBatches.forEach {
                     deleteBatch(it, RemovalReason.Flushed)
                 }
-                lockedBatches.clear()
+                lockedReadBatches.clear()
             }
             arrayOf(pendingOrchestrator, grantedOrchestrator).forEach { orchestrator ->
                 orchestrator.getAllFiles().forEach {
@@ -155,10 +131,16 @@ internal class ConsentAwareStorage(
         }
     }
 
-    @WorkerThread
-    private fun resolveOrchestrator(): FileOrchestrator? {
-        val consent = consentProvider.getConsent()
-        return when (consent) {
+    override fun onWriteEvent(bytes: Long) {
+        benchmarkUploads.sendBenchmarkBytesWritten(
+            featureName = featureName,
+            value = bytes
+        )
+    }
+
+    @AnyThread
+    private fun resolveOrchestrator(datadogContext: DatadogContext): FileOrchestrator? {
+        return when (datadogContext.trackingConsent) {
             TrackingConsent.GRANTED -> grantedOrchestrator
             TrackingConsent.PENDING -> pendingOrchestrator
             TrackingConsent.NOT_GRANTED -> null
@@ -180,10 +162,19 @@ internal class ConsentAwareStorage(
 
     @WorkerThread
     private fun deleteBatchFile(batchFile: File, reason: RemovalReason) {
+        val fileSizeBeforeDeletion = batchFile.lengthSafe(internalLogger)
+
         val result = fileMover.delete(batchFile)
         if (result) {
             val numPendingFiles = grantedOrchestrator.decrementAndGetPendingFilesCount()
             metricsDispatcher.sendBatchDeletedMetric(batchFile, reason, numPendingFiles)
+
+            if (reason == RemovalReason.IntakeCode(HTTP_ACCEPTED) && fileSizeBeforeDeletion > 0) {
+                benchmarkUploads.sendBenchmarkBytesDeleted(
+                    featureName = featureName,
+                    value = fileSizeBeforeDeletion
+                )
+            }
         } else {
             internalLogger.log(
                 InternalLogger.Level.WARN,

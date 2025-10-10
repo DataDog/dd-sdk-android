@@ -7,6 +7,7 @@
 package com.datadog.android.sessionreplay.compose.internal.utils
 
 import android.graphics.Bitmap
+import android.os.Build
 import android.view.View
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.Modifier
@@ -28,6 +29,7 @@ import androidx.compose.ui.unit.Density
 import com.datadog.android.Datadog
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.core.sampling.RateBasedSampler
 import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.TextAndInputPrivacy
 import com.datadog.android.sessionreplay.TouchPrivacy
@@ -36,11 +38,16 @@ import com.datadog.android.sessionreplay.compose.SessionReplayHidePropertyKey
 import com.datadog.android.sessionreplay.compose.TextInputSemanticsPropertyKey
 import com.datadog.android.sessionreplay.compose.TouchSemanticsPropertyKey
 import com.datadog.android.sessionreplay.compose.internal.data.BitmapInfo
+import com.datadog.android.sessionreplay.compose.internal.isLeafNode
+import com.datadog.android.sessionreplay.compose.internal.isPositionedAtOrigin
 import com.datadog.android.sessionreplay.compose.internal.mappers.semantics.TextLayoutInfo
 import com.datadog.android.sessionreplay.utils.GlobalBounds
 
 @Suppress("TooManyFunctions")
-internal class SemanticsUtils(private val reflectionUtils: ReflectionUtils = ReflectionUtils()) {
+internal class SemanticsUtils(
+    private val reflectionUtils: ReflectionUtils = ReflectionUtils(),
+    private val sampler: RateBasedSampler<Unit> = RateBasedSampler(BITMAP_TELEMETRY_SAMPLE_RATE)
+) {
 
     internal fun findRootSemanticsNode(view: View): SemanticsNode? {
         reflectionUtils.apply {
@@ -247,14 +254,20 @@ internal class SemanticsUtils(private val reflectionUtils: ReflectionUtils = Ref
     ): BitmapInfo? {
         var isContextualImage = false
         var painter = reflectionUtils.getLocalImagePainter(semanticsNode)
+
+        // Try to resolve Coil AsyncImagePainter.
         if (painter == null) {
             isContextualImage = true
             painter = reflectionUtils.getAsyncImagePainter(semanticsNode)
         }
-        // TODO RUM-6535: support more painters.
+        // In some versions of Coil, bitmap painter is nested in `AsyncImagePainter`
         if (painter != null && reflectionUtils.isAsyncImagePainter(painter)) {
             isContextualImage = true
             painter = reflectionUtils.getNestedPainter(painter)
+        }
+        // Try to resolve Coil3 painter if is still null.
+        if (painter == null) {
+            painter = reflectionUtils.getCoil3AsyncImagePainter(semanticsNode)
         }
         val bitmap = when (painter) {
             is BitmapPainter -> reflectionUtils.getBitmapInBitmapPainter(painter)
@@ -265,12 +278,39 @@ internal class SemanticsUtils(private val reflectionUtils: ReflectionUtils = Ref
             }
         }
 
+        // Send telemetry about the original bitmap before copying it.
+        bitmap?.let {
+            sendBitmapInfoTelemetry(it, isContextualImage)
+        }
+
+        // Avoid copying hardware bitmap because it is slow and may violate [StrictMode#noteSlowCall]
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && bitmap?.config == Bitmap.Config.HARDWARE) {
+            return BitmapInfo(bitmap, isContextualImage)
+        }
         val newBitmap = bitmap?.let {
             @Suppress("UnsafeThirdPartyFunctionCall") // isMutable is always false
             it.copy(Bitmap.Config.ARGB_8888, false)
         }
         return newBitmap?.let {
             BitmapInfo(it, isContextualImage)
+        }
+    }
+
+    private fun sendBitmapInfoTelemetry(bitmap: Bitmap, isContextual: Boolean) {
+        if (sampler.sample(Unit)) {
+            (Datadog.getInstance() as? FeatureSdkCore)?.internalLogger?.log(
+                level = InternalLogger.Level.INFO,
+                target = InternalLogger.Target.TELEMETRY,
+                messageBuilder = { "Resolved the bitmap from semantics node with id:${bitmap.generationId}" },
+                additionalProperties = mapOf(
+                    "bitmap.id" to bitmap.generationId,
+                    "bitmap.byteCount" to bitmap.byteCount,
+                    "bitmap.width" to bitmap.width,
+                    "bitmap.height" to bitmap.height,
+                    "bitmap.config" to bitmap.config,
+                    "bitmap.isContextual" to isContextual
+                )
+            )
         }
     }
 
@@ -329,6 +369,10 @@ internal class SemanticsUtils(private val reflectionUtils: ReflectionUtils = Ref
         return semanticsNode.config.getOrNull(SessionReplayHidePropertyKey) ?: false
     }
 
+    internal fun isNodePositionUnavailable(semanticsNode: SemanticsNode): Boolean {
+        return semanticsNode.isLeafNode() && semanticsNode.isPositionedAtOrigin()
+    }
+
     internal fun getInteropView(semanticsNode: SemanticsNode): View? {
         return reflectionUtils.getInteropView(semanticsNode)
     }
@@ -378,6 +422,7 @@ internal class SemanticsUtils(private val reflectionUtils: ReflectionUtils = Ref
         }
         internal const val DEFAULT_COLOR_BLACK = "#000000FF"
         internal const val DEFAULT_COLOR_WHITE = "#FFFFFFFF"
+        private const val BITMAP_TELEMETRY_SAMPLE_RATE = 1f
     }
 
     internal fun getProgressBarRangeInfo(semanticsNode: SemanticsNode): ProgressBarRangeInfo? {

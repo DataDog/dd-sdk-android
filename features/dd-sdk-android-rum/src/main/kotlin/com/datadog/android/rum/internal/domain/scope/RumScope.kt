@@ -7,12 +7,14 @@
 package com.datadog.android.rum.internal.domain.scope
 
 import androidx.annotation.WorkerThread
+import com.datadog.android.api.context.DatadogContext
+import com.datadog.android.api.feature.EventWriteScope
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.rum.internal.domain.RumContext
-import com.datadog.tools.annotation.NoOpImplementation
 
-@NoOpImplementation
 internal interface RumScope {
+
+    val parentScope: RumScope?
 
     /**
      * Handles an incoming event.
@@ -23,6 +25,8 @@ internal interface RumScope {
     @WorkerThread
     fun handleEvent(
         event: RumRawEvent,
+        datadogContext: DatadogContext,
+        writeScope: EventWriteScope,
         writer: DataWriter<Any>
     ): RumScope?
 
@@ -37,7 +41,12 @@ internal interface RumScope {
      */
     fun getRumContext(): RumContext
 
-    companion object {
-        internal const val SYNTHETICS_LOGCAT_TAG = "DatadogSynthetics"
+    /**
+     * @return the custom attributes for this scope (including the parent's scope current attributes)
+     * A given scope's attribute can override a parent scope's attribute.
+     */
+    fun getCustomAttributes(): Map<String, Any?> {
+        // Default implementation, simply returns the parent's attributes
+        return parentScope?.getCustomAttributes() ?: emptyMap()
     }
 }

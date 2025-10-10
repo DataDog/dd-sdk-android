@@ -79,7 +79,7 @@ internal class SessionReplayConfigurationBuilderTest {
 
     @Test
     fun `M build config with custom site W useCustomEndpoint() and build()`(
-        @StringForgery(regex = "https://[a-z]+\\.com") sessionReplayUrl: String
+        @StringForgery(regex = "https://[a-z]+\\.com(/[a-z]+)+") sessionReplayUrl: String
     ) {
         // When
         testedBuilder = SessionReplayConfiguration.Builder(fakeSampleRate)

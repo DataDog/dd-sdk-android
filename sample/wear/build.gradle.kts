@@ -19,7 +19,7 @@ android {
 
     defaultConfig {
         applicationId = "com.datadog.android.wear.sample"
-        minSdk = AndroidConfig.MIN_SDK_FOR_WEAR
+        minSdk = AndroidConfig.MIN_SDK
         targetSdk = AndroidConfig.TARGET_SDK
         versionCode = AndroidConfig.VERSION.code
         versionName = AndroidConfig.VERSION.name
@@ -38,7 +38,7 @@ android {
 
     flavorDimensions += listOf("site")
     productFlavors {
-        val regions = arrayOf("us1", "us3", "us5", "us1_fed", "eu1", "ap1", "staging")
+        val regions = arrayOf("us1", "us3", "us5", "us1_fed", "eu1", "ap1", "ap2", "staging")
 
         regions.forEachIndexed { index, region ->
             register(region) {
@@ -64,16 +64,18 @@ android {
 }
 
 dependencies {
+    implementation(libs.timber)
+    coreLibraryDesugaring(libs.androidDesugaringSdk)
+
     implementation(project(":features:dd-sdk-android-ndk"))
-    implementation(project(":features:dd-sdk-android-trace"))
-    implementation(project(":features:dd-sdk-android-trace-otel"))
     implementation(project(":features:dd-sdk-android-rum"))
     implementation(project(":features:dd-sdk-android-logs"))
-    coreLibraryDesugaring(libs.androidDesugaringSdk)
-    implementation(libs.timber)
+    implementation(project(":features:dd-sdk-android-trace"))
+    implementation(project(":features:dd-sdk-android-trace-otel"))
+
+    implementation("androidx.wear:wear:1.2.0")
     implementation("androidx.core:core-ktx:1.7.0")
-    implementation("com.google.android.gms:play-services-wearable:17.1.0")
     implementation("androidx.legacy:legacy-support-v4:1.0.0")
     implementation("androidx.recyclerview:recyclerview:1.3.0")
-    implementation("androidx.wear:wear:1.2.0")
+    implementation("com.google.android.gms:play-services-wearable:17.1.0")
 }

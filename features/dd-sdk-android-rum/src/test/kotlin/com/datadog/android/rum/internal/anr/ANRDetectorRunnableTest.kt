@@ -6,17 +6,13 @@
 
 package com.datadog.android.rum.internal.anr
 
-import android.content.Context
 import android.os.Handler
 import android.os.Looper
 import com.datadog.android.core.feature.event.ThreadDump
-import com.datadog.android.core.internal.utils.loggableStackTrace
 import com.datadog.android.internal.utils.loggableStackTrace
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
-import com.datadog.android.rum.utils.config.ApplicationContextTestConfiguration
 import com.datadog.android.rum.utils.config.GlobalRumMonitorTestConfiguration
-import com.datadog.android.rum.utils.config.MainLooperTestConfiguration
 import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.tools.unit.annotations.TestConfigurationsProvider
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
@@ -211,14 +207,12 @@ internal class ANRDetectorRunnableTest {
         private const val TEST_ANR_THRESHOLD_MS = 500L
         private const val TEST_ANR_TEST_DELAY_MS = 50L
 
-        val appContext = ApplicationContextTestConfiguration(Context::class.java)
         val rumMonitor = GlobalRumMonitorTestConfiguration()
-        val mainLooper = MainLooperTestConfiguration()
 
         @TestConfigurationsProvider
         @JvmStatic
         fun getTestConfigurations(): List<TestConfiguration> {
-            return listOf(appContext, rumMonitor, mainLooper)
+            return listOf(rumMonitor)
         }
     }
 }

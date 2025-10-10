@@ -9,8 +9,8 @@ package com.datadog.android.core.internal.time
 import android.os.Build
 import android.os.Process
 import android.os.SystemClock
-import com.datadog.android.core.internal.DatadogCore
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
+import com.datadog.android.rum.DdRumContentProvider
 import fr.xgouchet.elmyr.annotation.IntForgery
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -47,13 +47,13 @@ class DefaultAppStartTimeProviderTest {
     }
 
     @Test
-    fun `M return rum load time W appStartTime { Legacy }`(
-        @IntForgery(min = Build.VERSION_CODES.LOLLIPOP, max = Build.VERSION_CODES.N) apiVersion: Int
+    fun `M return content provider load time W appStartTime { Legacy }`(
+        @IntForgery(min = Build.VERSION_CODES.M, max = Build.VERSION_CODES.N) apiVersion: Int
     ) {
         // GIVEN
         val mockBuildSdkVersionProvider: BuildSdkVersionProvider = mock()
         whenever(mockBuildSdkVersionProvider.version) doReturn apiVersion
-        val startTimeNs = DatadogCore.startupTimeNs
+        val startTimeNs = DdRumContentProvider.createTimeNs
 
         // WHEN
         val timeProvider = DefaultAppStartTimeProvider(mockBuildSdkVersionProvider)

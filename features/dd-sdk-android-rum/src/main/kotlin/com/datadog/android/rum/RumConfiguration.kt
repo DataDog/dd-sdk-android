@@ -24,6 +24,8 @@ import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.model.ViewEvent
+import com.datadog.android.rum.model.VitalEvent
+import com.datadog.android.rum.tracking.ActionTrackingStrategy
 import com.datadog.android.rum.tracking.ActivityViewTrackingStrategy
 import com.datadog.android.rum.tracking.InteractionPredicate
 import com.datadog.android.rum.tracking.ViewAttributesProvider
@@ -56,6 +58,16 @@ data class RumConfiguration internal constructor(
          */
         fun setSessionSampleRate(@FloatRange(from = 0.0, to = 100.0) sampleRate: Float): Builder {
             rumConfig = rumConfig.copy(sampleRate = sampleRate)
+            return this
+        }
+
+        /**
+         * Whether to collect accessibility attributes - this is disabled by default.
+         *
+         * @param enabled whether collecting accessibility attributes is enabled or not.
+         */
+        fun collectAccessibility(enabled: Boolean): Builder {
+            rumConfig = rumConfig.copy(collectAccessibility = enabled)
             return this
         }
 
@@ -209,6 +221,17 @@ data class RumConfiguration internal constructor(
         }
 
         /**
+         * Sets the [EventMapper] for the RUM [VitalEvent]. You can use this interface implementation
+         * to modify the [VitalEvent] attributes before serialisation.
+         *
+         * @param eventMapper the [EventMapper] implementation.
+         */
+        fun setVitalEventMapper(eventMapper: EventMapper<VitalEvent>): Builder {
+            rumConfig = rumConfig.copy(vitalEventMapper = eventMapper)
+            return this
+        }
+
+        /**
          * Enables/Disables tracking RUM event when no Activity is in foreground.
          *
          * By default, background events are not tracked. Enabling this feature might increase the
@@ -247,6 +270,7 @@ data class RumConfiguration internal constructor(
 
         /**
          * Let the RUM feature target a custom server.
+         * The provided url should be the full endpoint url, e.g.: https://example.com/rum/upload
          */
         fun useCustomEndpoint(endpoint: String): Builder {
             rumConfig = rumConfig.copy(customEndpointUrl = endpoint)
@@ -374,6 +398,26 @@ data class RumConfiguration internal constructor(
             return this
         }
 
-        // endregion
+        /**
+         * Set custom [ActionTrackingStrategy] RUM actions tracking.
+         *
+         * @param composeActionTrackingStrategy custom actions tracking strategy.
+         */
+        internal fun setComposeActionTrackingStrategy(
+            composeActionTrackingStrategy: ActionTrackingStrategy
+        ): Builder {
+            rumConfig =
+                rumConfig.copy(composeActionTrackingStrategy = composeActionTrackingStrategy)
+            return this
+        }
+
+        /**
+         * Set RUM session type that will be propagated to all RUM events and used regardless of
+         * whether the session is happening inside a synthetic test or not.
+         */
+        internal fun setRumSessionTypeOverride(rumSessionTypeOverride: RumSessionType): Builder {
+            rumConfig = rumConfig.copy(rumSessionTypeOverride = rumSessionTypeOverride)
+            return this
+        }
     }
 }

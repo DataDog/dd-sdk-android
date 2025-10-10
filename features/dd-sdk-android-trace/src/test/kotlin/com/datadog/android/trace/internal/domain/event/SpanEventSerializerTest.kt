@@ -8,7 +8,7 @@ package com.datadog.android.trace.internal.domain.event
 
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.core.constraints.DatadogDataConstraints
-import com.datadog.android.core.internal.utils.NULL_MAP_VALUE
+import com.datadog.android.internal.utils.NULL_MAP_VALUE
 import com.datadog.android.trace.model.SpanEvent
 import com.datadog.android.utils.forge.Configurator
 import com.datadog.tools.unit.assertj.JsonObjectAssert
@@ -34,6 +34,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.util.Date
+import java.util.Locale
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -111,6 +112,46 @@ internal class SpanEventSerializerTest {
     }
 
     @Test
+    fun `M sanitise with the right prefix the account extra info keys W serialize`(
+        forge: Forge
+    ) {
+        // GIVEN
+        val fakeAccountAttributes = forge.exhaustiveAttributes()
+        val fakeSpanEvent = forge.getForgery<SpanEvent>().let {
+            it.copy(
+                meta = it.meta.copy(
+                    account = SpanEvent.Account(
+                        id = forge.anAlphabeticalString(),
+                        name = forge.anAlphabeticalString(),
+                        additionalProperties = fakeAccountAttributes
+                    )
+                )
+            )
+        }
+        val fakeSanitizedAttributes = forge.exhaustiveAttributes(setOf(KEY_ACCOUNT_ID, KEY_ACCOUNT_NAME))
+        whenever(
+            mockDatadogConstraints
+                .validateAttributes(
+                    fakeAccountAttributes,
+                    SpanEventSerializer.META_ACCOUNT_KEY_PREFIX,
+                    reservedKeys = emptySet()
+                )
+        ).thenReturn(fakeSanitizedAttributes)
+
+        // WHEN
+        val serialized = testedSerializer.serialize(fakeDatadogContext, fakeSpanEvent)
+
+        // THEN
+        val jsonObject = JsonParser.parseString(serialized).asJsonObject
+        val spanObject = jsonObject.getAsJsonArray(KEY_SPANS).first() as JsonObject
+        JsonObjectAssert.assertThat(spanObject).hasField(KEY_META) {
+            hasField(KEY_ACCOUNT) {
+                containsExtraAttributesMappedToMetaStrings(fakeSanitizedAttributes)
+            }
+        }
+    }
+
+    @Test
     fun `M sanitise with the right prefix then span metrics keys W serialize`(
         @Forgery fakeSpanEvent: SpanEvent,
         forge: Forge
@@ -172,6 +213,40 @@ internal class SpanEventSerializerTest {
         Assertions.assertThat(jsonObject.get(KEY_ENV).asString).isEqualTo(fakeDatadogContext.env)
     }
 
+    @Test
+    fun `M not throw W serialize() { account#additionalProperties serialization throws }`(
+        @Forgery fakeSpanEvent: SpanEvent,
+        forge: Forge
+    ) {
+        // GIVEN
+        val faultyKey = forge.anAlphabeticalString()
+        val faultyObject = object {
+            override fun toString(): String {
+                throw forge.anException()
+            }
+        }
+        val faultySpanEvent = fakeSpanEvent.copy(
+            meta = fakeSpanEvent.meta.copy(
+                account = fakeSpanEvent.meta.account?.copy(
+                    additionalProperties = fakeSpanEvent.meta.account
+                        ?.additionalProperties
+                        .orEmpty()
+                        .toMutableMap()
+                        .apply { put(faultyKey, faultyObject) }
+                )
+            )
+        )
+
+        // WHEN
+        val serialized = testedSerializer.serialize(fakeDatadogContext, faultySpanEvent)
+
+        // THEN
+        val jsonObject = JsonParser.parseString(serialized).asJsonObject
+        val spanObject = jsonObject.getAsJsonArray(KEY_SPANS).first() as JsonObject
+        assertJsonMatchesInputSpan(spanObject, fakeSpanEvent)
+        Assertions.assertThat(jsonObject.get(KEY_ENV).asString).isEqualTo(fakeDatadogContext.env)
+    }
+
     // endregion
 
     // region Internal
@@ -214,6 +289,19 @@ internal class SpanEventSerializerTest {
                 }
                 hasField(KEY_USR) {
                     hasUserInfo(span)
+                }
+                if (span.meta.account != null) {
+                    hasField(KEY_ACCOUNT) {
+                        hasAccountInfo(span)
+                    }
+                } else {
+                    doesNotHaveField(KEY_ACCOUNT)
+                }
+                hasField(KEY_OS) {
+                    hasOsInfo(span)
+                }
+                hasField(KEY_DEVICE) {
+                    hasDeviceInfo(span)
                 }
                 containsExtraAttributesMappedToMetaStrings(span.meta.additionalProperties)
             }
@@ -334,6 +422,112 @@ internal class SpanEventSerializerTest {
         )
     }
 
+    private fun JsonObjectAssert.hasAccountInfo(
+        spanEvent: SpanEvent
+    ) {
+        val accountName = spanEvent.meta.account?.name
+        val accountId = spanEvent.meta.account?.id
+        if (accountId != null) {
+            hasField(KEY_ACCOUNT_ID, accountId)
+        } else {
+            doesNotHaveField(KEY_ACCOUNT_ID)
+        }
+        if (accountName != null) {
+            hasField(KEY_ACCOUNT_NAME, accountName)
+        } else {
+            doesNotHaveField(KEY_ACCOUNT_NAME)
+        }
+        spanEvent.meta.account?.let {
+            containsExtraAttributesMappedToStrings(
+                it.additionalProperties
+            )
+        }
+    }
+
+    private fun JsonObjectAssert.hasOsInfo(spanEvent: SpanEvent) {
+        val osName = spanEvent.meta.os.name
+        val osBuild = spanEvent.meta.os.build
+        val osVersion = spanEvent.meta.os.version
+        val osVersionMajor = spanEvent.meta.os.versionMajor
+        hasField(KEY_NAME, osName)
+        if (osBuild != null) {
+            hasField(KEY_BUILD, osBuild)
+        } else {
+            doesNotHaveField(KEY_BUILD)
+        }
+        hasField(KEY_VERSION, osVersion)
+        hasField(KEY_VERSION_MAJOR, osVersionMajor)
+    }
+
+    private fun JsonObjectAssert.hasDeviceInfo(spanEvent: SpanEvent) {
+        val deviceType = spanEvent.meta.device.type
+        val deviceName = spanEvent.meta.device.name
+        val deviceModel = spanEvent.meta.device.model
+        val deviceBrand = spanEvent.meta.device.brand
+        val deviceArhitecture = spanEvent.meta.device.architecture
+        val deviceLocale = spanEvent.meta.device.locale
+        val deviceLocales = spanEvent.meta.device.locales
+        val deviceTimezone = spanEvent.meta.device.timeZone
+        val deviceBatteryLevel = spanEvent.meta.device.batteryLevel
+        val devicePowerSavingMode = spanEvent.meta.device.powerSavingMode
+        val deviceBrightnessLevel = spanEvent.meta.device.brightnessLevel
+        if (deviceType != null) {
+            hasField(KEY_TYPE, deviceType.name.lowercase(Locale.US))
+        } else {
+            doesNotHaveField(KEY_TYPE)
+        }
+        if (deviceName != null) {
+            hasField(KEY_NAME, deviceName)
+        } else {
+            doesNotHaveField(KEY_NAME)
+        }
+        if (deviceModel != null) {
+            hasField(KEY_MODEL, deviceModel)
+        } else {
+            doesNotHaveField(KEY_MODEL)
+        }
+        if (deviceBrand != null) {
+            hasField(KEY_BRAND, deviceBrand)
+        } else {
+            doesNotHaveField(KEY_BRAND)
+        }
+        if (deviceArhitecture != null) {
+            hasField(KEY_ARCHITECTURE, deviceArhitecture)
+        } else {
+            doesNotHaveField(KEY_ARCHITECTURE)
+        }
+        if (deviceLocale != null) {
+            hasField(KEY_LOCALE, deviceLocale)
+        } else {
+            doesNotHaveField(KEY_LOCALE)
+        }
+        if (deviceLocales != null) {
+            hasField(KEY_LOCALES, deviceLocales)
+        } else {
+            doesNotHaveField(KEY_LOCALES)
+        }
+        if (deviceTimezone != null) {
+            hasField(KEY_TIME_ZONE, deviceTimezone)
+        } else {
+            doesNotHaveField(KEY_TIME_ZONE)
+        }
+        if (deviceBatteryLevel != null) {
+            hasField(KEY_BATTERY_LEVEL, deviceBatteryLevel)
+        } else {
+            doesNotHaveField(KEY_BATTERY_LEVEL)
+        }
+        if (devicePowerSavingMode != null) {
+            hasField(KEY_POWER_SAVING_MODE, devicePowerSavingMode)
+        } else {
+            doesNotHaveField(KEY_POWER_SAVING_MODE)
+        }
+        if (deviceBrightnessLevel != null) {
+            hasField(KEY_BRIGHTNESS_LEVEL, deviceBrightnessLevel)
+        } else {
+            doesNotHaveField(KEY_BRIGHTNESS_LEVEL)
+        }
+    }
+
     private fun JsonObjectAssert.containsExtraAttributesMappedToStrings(
         attributes: Map<String, Any?>,
         keyNamePrefix: String = ""
@@ -356,47 +550,63 @@ internal class SpanEventSerializerTest {
 
     companion object {
 
-        internal const val DD_SOURCE_ANDROID = "android"
-        internal const val KIND_CLIENT = "client"
+        private const val KIND_CLIENT = "client"
 
         // PAYLOAD TAGS
-        internal const val KEY_SPANS = "spans"
-        internal const val KEY_ENV = "env"
+        private const val KEY_SPANS = "spans"
+        private const val KEY_ENV = "env"
 
         // SPAN TAGS
-        internal const val KEY_START_TIMESTAMP = "start"
-        internal const val KEY_DURATION = "duration"
-        internal const val KEY_SERVICE_NAME = "service"
-        internal const val KEY_APPLICATION_VERSION = "version"
-        internal const val KEY_TRACE_ID = "trace_id"
-        internal const val KEY_SPAN_ID = "span_id"
-        internal const val KEY_PARENT_ID = "parent_id"
-        internal const val KEY_RESOURCE = "resource"
-        internal const val KEY_OPERATION_NAME = "name"
-        internal const val KEY_ERROR = "error"
-        internal const val KEY_TYPE = "type"
-        internal const val KEY_META = "meta"
-        internal const val KEY_NETWORK = "network"
-        internal const val KEY_CLIENT = "client"
-        internal const val KEY_METRICS = "metrics"
-        internal const val KEY_METRICS_TOP_LEVEL = "_top_level"
-        internal const val KEY_DD = "_dd"
-        internal const val KEY_SOURCE = "source"
-        internal const val KEY_SPAN = "span"
-        internal const val KEY_KIND = "kind"
-        internal const val KEY_TRACER = "tracer"
-        internal const val KEY_VERSION = "version"
-        internal const val TYPE_CUSTOM = "custom"
-        internal const val KEY_SIM_CARRIER = "sim_carrier"
-        internal const val KEY_NETWORK_CARRIER_ID: String = "id"
-        internal const val KEY_NETWORK_CARRIER_NAME: String = "name"
-        internal const val KEY_NETWORK_CONNECTIVITY: String = "connectivity"
-        internal const val KEY_NETWORK_DOWN_KBPS: String = "downlink_kbps"
-        internal const val KEY_NETWORK_SIGNAL_STRENGTH: String = "signal_strength"
-        internal const val KEY_NETWORK_UP_KBPS: String = "uplink_kbps"
-        internal const val KEY_USR = "usr"
-        internal const val KEY_USR_NAME = "name"
-        internal const val KEY_USR_EMAIL = "email"
-        internal const val KEY_USR_ID = "id"
+        private const val KEY_START_TIMESTAMP = "start"
+        private const val KEY_DURATION = "duration"
+        private const val KEY_SERVICE_NAME = "service"
+        private const val KEY_APPLICATION_VERSION = "version"
+        private const val KEY_TRACE_ID = "trace_id"
+        private const val KEY_SPAN_ID = "span_id"
+        private const val KEY_PARENT_ID = "parent_id"
+        private const val KEY_RESOURCE = "resource"
+        private const val KEY_OPERATION_NAME = "name"
+        private const val KEY_ERROR = "error"
+        private const val KEY_TYPE = "type"
+        private const val KEY_META = "meta"
+        private const val KEY_NETWORK = "network"
+        private const val KEY_CLIENT = "client"
+        private const val KEY_METRICS = "metrics"
+        private const val KEY_METRICS_TOP_LEVEL = "_top_level"
+        private const val KEY_DD = "_dd"
+        private const val KEY_SOURCE = "source"
+        private const val KEY_SPAN = "span"
+        private const val KEY_KIND = "kind"
+        private const val KEY_TRACER = "tracer"
+        private const val KEY_VERSION = "version"
+        private const val TYPE_CUSTOM = "custom"
+        private const val KEY_SIM_CARRIER = "sim_carrier"
+        private const val KEY_NETWORK_CARRIER_ID: String = "id"
+        private const val KEY_NETWORK_CARRIER_NAME: String = "name"
+        private const val KEY_NETWORK_CONNECTIVITY: String = "connectivity"
+        private const val KEY_NETWORK_DOWN_KBPS: String = "downlink_kbps"
+        private const val KEY_NETWORK_SIGNAL_STRENGTH: String = "signal_strength"
+        private const val KEY_NETWORK_UP_KBPS: String = "uplink_kbps"
+        private const val KEY_USR = "usr"
+        private const val KEY_USR_NAME = "name"
+        private const val KEY_USR_EMAIL = "email"
+        private const val KEY_USR_ID = "id"
+        private const val KEY_ACCOUNT = "account"
+        private const val KEY_ACCOUNT_NAME = "name"
+        private const val KEY_ACCOUNT_ID = "id"
+        private const val KEY_BUILD = "build"
+        private const val KEY_VERSION_MAJOR = "version_major"
+        private const val KEY_OS = "os"
+        private const val KEY_DEVICE = "device"
+        private const val KEY_MODEL = "model"
+        private const val KEY_BRAND = "brand"
+        private const val KEY_ARCHITECTURE = "architecture"
+        private const val KEY_LOCALE = "locale"
+        private const val KEY_LOCALES = "locales"
+        private const val KEY_TIME_ZONE = "time_zone"
+        private const val KEY_BATTERY_LEVEL = "battery_level"
+        private const val KEY_POWER_SAVING_MODE = "power_saving_mode"
+        private const val KEY_BRIGHTNESS_LEVEL = "brightness_level"
+        private const val KEY_NAME = "name"
     }
 }

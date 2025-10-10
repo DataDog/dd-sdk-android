@@ -19,14 +19,19 @@ tasks.register(
         "_common-schema.json",
         "_action-child-schema.json",
         "_perf-metric-schema.json",
-        "_view-container-schema.json"
+        "_profiling-internal-context-schema.json",
+        "_rect-schema.json",
+        "_view-container-schema.json",
+        "_view-accessibility-schema.json",
+        "_view-performance-schema.json"
     )
     inputNameMapping = mapOf(
         "action-schema.json" to "ActionEvent",
         "error-schema.json" to "ErrorEvent",
         "resource-schema.json" to "ResourceEvent",
         "view-schema.json" to "ViewEvent",
-        "long_task-schema.json" to "LongTaskEvent"
+        "long_task-schema.json" to "LongTaskEvent",
+        "vital-schema.json" to "VitalEvent"
     )
 }
 

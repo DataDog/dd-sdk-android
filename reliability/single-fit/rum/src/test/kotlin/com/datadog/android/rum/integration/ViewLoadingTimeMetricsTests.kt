@@ -112,12 +112,12 @@ class ViewLoadingTimeMetricsTests {
 
         // When
         val startViewTime = System.nanoTime()
-        monitor.startView(viewKey, viewName, emptyMap())
-        monitor.startResource(resourceKey, rumResourceMethod, resourceUrl, emptyMap())
+        monitor.startView(viewKey, viewName)
+        monitor.startResource(resourceKey, rumResourceMethod, resourceUrl)
         Thread.sleep(100)
         val stopResourceTime = System.nanoTime()
-        monitor.stopResource(resourceKey, resourceStatus, resourceSize, rumResourceKind, emptyMap())
-        monitor.stopView(viewKey, emptyMap())
+        monitor.stopResource(resourceKey, resourceStatus, resourceSize, rumResourceKind)
+        monitor.stopView(viewKey)
         val appExpectedTtnsTime = (stopResourceTime - startViewTime)
 
         // Then
@@ -185,15 +185,15 @@ class ViewLoadingTimeMetricsTests {
 
         // When
         val startViewTime = System.nanoTime()
-        monitor.startView(viewKey, viewName, emptyMap())
-        monitor.startResource(resourceKey, rumResourceMethod, resourceUrl, emptyMap())
+        monitor.startView(viewKey, viewName)
+        monitor.startResource(resourceKey, rumResourceMethod, resourceUrl)
         Thread.sleep(100)
         val stopResourceTime = System.nanoTime()
-        monitor.stopResource(resourceKey, resourceStatus, resourceSize, rumResourceKind, emptyMap())
+        monitor.stopResource(resourceKey, resourceStatus, resourceSize, rumResourceKind)
         monitor.addTiming(forge.anAlphabeticalString())
         Thread.sleep(100)
         monitor.addTiming(forge.anAlphabeticalString())
-        monitor.stopView(viewKey, emptyMap())
+        monitor.stopView(viewKey)
         val appExpectedTtnsTime = (stopResourceTime - startViewTime)
 
         // Then
@@ -287,12 +287,12 @@ class ViewLoadingTimeMetricsTests {
 
         // When
         val startViewTime = System.nanoTime()
-        monitor.startView(viewKey, viewName, emptyMap())
-        monitor.startResource(resourceKey, rumResourceMethod, resourceUrl, emptyMap())
+        monitor.startView(viewKey, viewName)
+        monitor.startResource(resourceKey, rumResourceMethod, resourceUrl)
         Thread.sleep(100)
         val stopResourceTime = System.nanoTime()
-        monitor.stopResourceWithError(resourceKey, resourceStatus, errorMessage, errorSource, throwable, emptyMap())
-        monitor.stopView(viewKey, emptyMap())
+        monitor.stopResourceWithError(resourceKey, resourceStatus, errorMessage, errorSource, throwable)
+        monitor.stopView(viewKey)
         val appExpectedTtnsTime = (stopResourceTime - startViewTime)
 
         // Then
@@ -363,11 +363,11 @@ class ViewLoadingTimeMetricsTests {
         val monitor = GlobalRumMonitor.get(stubSdkCore)
 
         // When
-        monitor.startView(viewKey, viewName, emptyMap())
-        monitor.startResource(resourceKey, rumResourceMethod, resourceUrl, emptyMap())
+        monitor.startView(viewKey, viewName)
+        monitor.startResource(resourceKey, rumResourceMethod, resourceUrl)
         Thread.sleep(100)
-        monitor.stopResourceWithError(resourceKey, resourceStatus, errorMessage, errorSource, throwable, emptyMap())
-        monitor.stopView(viewKey, emptyMap())
+        monitor.stopResourceWithError(resourceKey, resourceStatus, errorMessage, errorSource, throwable)
+        monitor.stopView(viewKey)
 
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
@@ -410,11 +410,11 @@ class ViewLoadingTimeMetricsTests {
         val monitor = GlobalRumMonitor.get(stubSdkCore)
 
         // When
-        monitor.startView(viewKey, viewName, emptyMap())
-        monitor.startResource(resourceKey, rumResourceMethod, resourceUrl, emptyMap())
+        monitor.startView(viewKey, viewName)
+        monitor.startResource(resourceKey, rumResourceMethod, resourceUrl)
         Thread.sleep(100)
-        monitor.stopResource(resourceKey, resourceStatus, resourceSize, rumResourceKind, emptyMap())
-        monitor.stopView(viewKey, emptyMap())
+        monitor.stopResource(resourceKey, resourceStatus, resourceSize, rumResourceKind)
+        monitor.stopView(viewKey)
 
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
@@ -456,13 +456,13 @@ class ViewLoadingTimeMetricsTests {
         val monitor = GlobalRumMonitor.get(stubSdkCore)
 
         // When
-        monitor.startView(viewKey, viewName, emptyMap())
+        monitor.startView(viewKey, viewName)
         // wait for more than the default threshold in the default identifier (100ms)
         Thread.sleep(100 + 10)
-        monitor.startResource(resourceKey, rumResourceMethod, resourceUrl, emptyMap())
+        monitor.startResource(resourceKey, rumResourceMethod, resourceUrl)
         Thread.sleep(100)
-        monitor.stopResource(resourceKey, resourceStatus, resourceSize, rumResourceKind, emptyMap())
-        monitor.stopView(viewKey, emptyMap())
+        monitor.stopResource(resourceKey, resourceStatus, resourceSize, rumResourceKind)
+        monitor.stopView(viewKey)
 
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
@@ -529,13 +529,13 @@ class ViewLoadingTimeMetricsTests {
         val monitor = GlobalRumMonitor.get(stubSdkCore)
 
         // When
-        monitor.startView(viewKey, viewName, emptyMap())
+        monitor.startView(viewKey, viewName)
         // wait for more than the custom threshold
         Thread.sleep(resourceIdentifierThresholdMs + 10)
-        monitor.startResource(resourceKey, rumResourceMethod, resourceUrl, emptyMap())
+        monitor.startResource(resourceKey, rumResourceMethod, resourceUrl)
         Thread.sleep(100)
-        monitor.stopResource(resourceKey, resourceStatus, resourceSize, rumResourceKind, emptyMap())
-        monitor.stopView(viewKey, emptyMap())
+        monitor.stopResource(resourceKey, resourceStatus, resourceSize, rumResourceKind)
+        monitor.stopView(viewKey)
 
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
@@ -604,11 +604,11 @@ class ViewLoadingTimeMetricsTests {
         val monitor = GlobalRumMonitor.get(stubSdkCore)
 
         // When
-        monitor.startView(viewKey, viewName, emptyMap())
-        monitor.startResource(resourceKey, rumResourceMethod, resourceUrl, emptyMap())
+        monitor.startView(viewKey, viewName)
+        monitor.startResource(resourceKey, rumResourceMethod, resourceUrl)
         Thread.sleep(100)
-        monitor.stopResource(resourceKey, resourceStatus, resourceSize, rumResourceKind, emptyMap())
-        monitor.stopView(viewKey, emptyMap())
+        monitor.stopResource(resourceKey, resourceStatus, resourceSize, rumResourceKind)
+        monitor.stopView(viewKey)
 
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
@@ -1194,16 +1194,16 @@ class ViewLoadingTimeMetricsTests {
         val monitor = GlobalRumMonitor.get(stubSdkCore)
 
         // When
-        monitor.startView(previousViewKey, previousViewName, emptyMap())
-        monitor.startAction(validActionType, lastInteractionName, emptyMap())
+        monitor.startView(previousViewKey, previousViewName)
+        monitor.startAction(validActionType, lastInteractionName)
         Thread.sleep(100)
-        monitor.stopAction(validActionType, lastInteractionName, emptyMap())
-        monitor.stopView(previousViewKey, emptyMap())
+        monitor.stopAction(validActionType, lastInteractionName)
+        monitor.stopView(previousViewKey)
         // Wait for more than the default threshold in the default identifier (3000ms)
         Thread.sleep(3000 + 10)
-        monitor.startView(viewKey, viewName, emptyMap())
+        monitor.startView(viewKey, viewName)
         Thread.sleep(100)
-        monitor.stopView(viewKey, emptyMap())
+        monitor.stopView(viewKey)
 
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
@@ -1293,16 +1293,16 @@ class ViewLoadingTimeMetricsTests {
         val monitor = GlobalRumMonitor.get(stubSdkCore)
 
         // When
-        monitor.startView(previousViewKey, previousViewName, emptyMap())
-        monitor.startAction(validActionType, lastInteractionName, emptyMap())
+        monitor.startView(previousViewKey, previousViewName)
+        monitor.startAction(validActionType, lastInteractionName)
         Thread.sleep(100)
-        monitor.stopAction(validActionType, lastInteractionName, emptyMap())
-        monitor.stopView(previousViewKey, emptyMap())
+        monitor.stopAction(validActionType, lastInteractionName)
+        monitor.stopView(previousViewKey)
         // Wait for more than the custom threshold
         Thread.sleep(customThreshold + 10)
-        monitor.startView(viewKey, viewName, emptyMap())
+        monitor.startView(viewKey, viewName)
         Thread.sleep(100)
-        monitor.stopView(viewKey, emptyMap())
+        monitor.stopView(viewKey)
 
         // Then
         val eventsWritten = stubSdkCore.eventsWritten(Feature.RUM_FEATURE_NAME)
@@ -1387,28 +1387,28 @@ class ViewLoadingTimeMetricsTests {
     }
 
     private fun runSuccessfulItnvTestScenario(monitor: RumMonitor, rumActionType: RumActionType): Long {
-        monitor.startView(previousViewKey, previousViewName, emptyMap())
-        monitor.startAction(rumActionType, lastInteractionName, emptyMap())
+        monitor.startView(previousViewKey, previousViewName)
+        monitor.startAction(rumActionType, lastInteractionName)
         Thread.sleep(100)
         val stopActionTime = System.nanoTime()
-        monitor.stopAction(rumActionType, lastInteractionName, emptyMap())
-        monitor.stopView(previousViewKey, emptyMap())
+        monitor.stopAction(rumActionType, lastInteractionName)
+        monitor.stopView(previousViewKey)
         val startViewTime = System.nanoTime()
-        monitor.startView(viewKey, viewName, emptyMap())
+        monitor.startView(viewKey, viewName)
         Thread.sleep(100)
-        monitor.stopView(viewKey, emptyMap())
+        monitor.stopView(viewKey)
         return (startViewTime - stopActionTime)
     }
 
     private fun runUnsuccessfulItnvTestScenario(monitor: RumMonitor, rumActionType: RumActionType) {
-        monitor.startView(previousViewKey, previousViewName, emptyMap())
-        monitor.startAction(rumActionType, lastInteractionName, emptyMap())
+        monitor.startView(previousViewKey, previousViewName)
+        monitor.startAction(rumActionType, lastInteractionName)
         Thread.sleep(100)
-        monitor.stopAction(rumActionType, lastInteractionName, emptyMap())
-        monitor.stopView(previousViewKey, emptyMap())
-        monitor.startView(viewKey, viewName, emptyMap())
+        monitor.stopAction(rumActionType, lastInteractionName)
+        monitor.stopView(previousViewKey)
+        monitor.startView(viewKey, viewName)
         Thread.sleep(100)
-        monitor.stopView(viewKey, emptyMap())
+        monitor.stopView(viewKey)
     }
 
     private fun configurationBuilder() = RumConfiguration.Builder(fakeApplicationId)

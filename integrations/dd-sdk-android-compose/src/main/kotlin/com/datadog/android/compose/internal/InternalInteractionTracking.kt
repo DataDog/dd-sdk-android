@@ -39,7 +39,7 @@ internal suspend fun trackSwipe(
                 @Suppress("UnsafeThirdPartyFunctionCall")
                 interactionType.offset.roundToInt()
             )
-            rumMonitor.startAction(RumActionType.SWIPE, targetName, emptyMap())
+            rumMonitor.startAction(RumActionType.SWIPE, targetName)
         },
         onStopOrCancel = { startProps ->
             reportSwipeInteraction(
@@ -70,7 +70,7 @@ internal suspend fun trackScroll(
                 ScrollStartProps(
                     interactionType.scrollableState.currentPosition
                 )
-            rumMonitor.startAction(RumActionType.SCROLL, targetName, emptyMap())
+            rumMonitor.startAction(RumActionType.SCROLL, targetName)
         },
         onStopOrCancel = { startProps ->
             reportScrollInteraction(

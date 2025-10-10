@@ -1,4 +1,17 @@
+open class com.datadog.android.compose.AcceptAllNavKeyPredicate<T: Any> : com.datadog.android.rum.tracking.ComponentPredicate<T>
+  override fun accept(T): Boolean
+  override fun getViewName(T): String?
+  override fun equals(Any?): Boolean
+  override fun hashCode(): Int
+interface com.datadog.android.compose.AttributesResolver<T: Any>
+  fun resolveAttributes(T): Map<String, Any?>?
+interface com.datadog.android.compose.BackStackKeyResolver<T: Any>
+  fun getStableKey(T): String
+annotation com.datadog.android.compose.ComposeInstrumentation
+fun androidx.compose.ui.Modifier.datadog(String, Boolean = false): androidx.compose.ui.Modifier
 annotation com.datadog.android.compose.ExperimentalTrackingApi
+class com.datadog.android.compose.HashcodeBackStackKeyResolver<T: Any> : BackStackKeyResolver<T>
+  override fun getStableKey(T): String
 fun trackClick(String, Map<String, Any?> = remember { emptyMap() }, com.datadog.android.api.SdkCore = Datadog.getInstance(), () -> Unit): () -> Unit
 fun TrackInteractionEffect(String, androidx.compose.foundation.interaction.InteractionSource, InteractionType, Map<String, Any?> = emptyMap(), com.datadog.android.api.SdkCore = Datadog.getInstance())
 sealed class com.datadog.android.compose.InteractionType
@@ -7,3 +20,5 @@ sealed class com.datadog.android.compose.InteractionType
   class Scroll : InteractionType
     constructor(androidx.compose.foundation.gestures.ScrollableState, androidx.compose.foundation.gestures.Orientation, Boolean = false)
 fun NavigationViewTrackingEffect(androidx.navigation.NavController, Boolean = true, com.datadog.android.rum.tracking.ComponentPredicate<androidx.navigation.NavDestination> = AcceptAllNavDestinations(), com.datadog.android.api.SdkCore = Datadog.getInstance())
+fun <T: Any> Navigation3TrackingEffect(List<T>, com.datadog.android.rum.tracking.ComponentPredicate<T> = AcceptAllNavKeyPredicate(), BackStackKeyResolver<T> = HashcodeBackStackKeyResolver(), AttributesResolver<T>? = null, com.datadog.android.api.SdkCore = Datadog.getInstance())
+fun com.datadog.android.rum.RumConfiguration.Builder.enableComposeActionTracking(): com.datadog.android.rum.RumConfiguration.Builder

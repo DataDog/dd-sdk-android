@@ -10,7 +10,7 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.core.internal.configuration.DataUploadConfiguration
 import com.datadog.android.core.internal.persistence.file.FilePersistenceConfig
-import com.datadog.android.core.internal.time.TimeProvider
+import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.utils.forge.Configurator
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
@@ -581,7 +581,6 @@ internal class BatchMetricsDispatcherTest {
                 max(0, (batchClosedMetadata.lastTimeWasUsedInMs - file.name.toLong())),
             BatchMetricsDispatcher.UPLOADER_WINDOW_KEY to
                 fakeFilePersistenceConfig.recentDelayMs,
-            BatchMetricsDispatcher.FORCE_NEW_KEY to batchClosedMetadata.forcedNew,
             BatchMetricsDispatcher.BATCH_EVENTS_COUNT_KEY to batchClosedMetadata.eventsCount,
             BatchMetricsDispatcher.FILE_NAME to file.name,
             BatchMetricsDispatcher.THREAD_NAME to Thread.currentThread().name,

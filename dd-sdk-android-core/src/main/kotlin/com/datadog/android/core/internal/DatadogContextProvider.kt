@@ -8,75 +8,76 @@ package com.datadog.android.core.internal
 
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.context.DeviceInfo
+import com.datadog.android.api.context.LocaleInfo
 import com.datadog.android.api.context.ProcessInfo
 import com.datadog.android.api.context.TimeInfo
 import java.util.concurrent.TimeUnit
 
-internal class DatadogContextProvider(val coreFeature: CoreFeature) : ContextProvider {
-    override val context: DatadogContext
-        get() {
-            // IMPORTANT All properties should be immutable and be frozen at the state
-            // of the context construction moment
-            return DatadogContext(
-                site = coreFeature.site,
-                clientToken = coreFeature.clientToken,
-                service = coreFeature.serviceName,
-                env = coreFeature.envName,
-                version = coreFeature.packageVersionProvider.version,
-                variant = coreFeature.variant,
-                sdkVersion = coreFeature.sdkVersion,
-                source = coreFeature.sourceName,
-                time = with(coreFeature.timeProvider) {
-                    val deviceTimeMs = getDeviceTimestamp()
-                    val serverTimeMs = getServerTimestamp()
-                    TimeInfo(
-                        deviceTimeNs = TimeUnit.MILLISECONDS.toNanos(deviceTimeMs),
-                        serverTimeNs = TimeUnit.MILLISECONDS.toNanos(serverTimeMs),
-                        serverTimeOffsetNs = TimeUnit.MILLISECONDS
-                            .toNanos(serverTimeMs - deviceTimeMs),
-                        serverTimeOffsetMs = serverTimeMs - deviceTimeMs
-                    )
-                },
-                processInfo = ProcessInfo(
-                    isMainProcess = coreFeature.isMainProcess
-                ),
-                networkInfo = coreFeature.networkInfoProvider.getLatestNetworkInfo(),
-                deviceInfo = with(coreFeature.androidInfoProvider) {
-                    DeviceInfo(
-                        deviceName = deviceName,
-                        deviceBrand = deviceBrand,
-                        deviceType = deviceType,
-                        deviceModel = deviceModel,
-                        deviceBuildId = deviceBuildId,
-                        osName = osName,
-                        osVersion = osVersion,
-                        osMajorVersion = osMajorVersion,
-                        architecture = architecture,
-                        numberOfDisplays = numberOfDisplays
-                    )
-                },
-                userInfo = coreFeature.userInfoProvider.getUserInfo(),
-                trackingConsent = coreFeature.trackingConsentProvider.getConsent(),
-                appBuildId = coreFeature.appBuildId,
-                // toMap call here (and in getFeatureContext) is VERY important - this will make
-                // independent snapshot of the features context which is not affected by the
-                // changes which can be made later by another thread.
-                // Values at the top 2 levels are frozen: feature-name key,
-                // and feature-specific-name key.
-                featuresContext = mutableMapOf<String, Map<String, Any?>>().apply {
-                    val source = coreFeature.featuresContext
-                    source.forEach { (key, value) ->
-                        this[key] = value.toMap()
+internal class DatadogContextProvider(
+    private val coreFeature: CoreFeature,
+    private val featureContextProvider: FeatureContextProvider
+) : ContextProvider {
+    @Suppress("LongMethod")
+    override fun getContext(withFeatureContexts: Set<String>): DatadogContext {
+        // IMPORTANT All properties should be immutable and be frozen at the state
+        // of the context construction moment
+        return DatadogContext(
+            site = coreFeature.site,
+            clientToken = coreFeature.clientToken,
+            service = coreFeature.serviceName,
+            env = coreFeature.envName,
+            version = coreFeature.packageVersionProvider.version,
+            variant = coreFeature.variant,
+            sdkVersion = coreFeature.sdkVersion,
+            source = coreFeature.sourceName,
+            time = with(coreFeature.timeProvider) {
+                val deviceTimeMs = getDeviceTimestamp()
+                val serverTimeMs = getServerTimestamp()
+                TimeInfo(
+                    deviceTimeNs = TimeUnit.MILLISECONDS.toNanos(deviceTimeMs),
+                    serverTimeNs = TimeUnit.MILLISECONDS.toNanos(serverTimeMs),
+                    serverTimeOffsetNs = TimeUnit.MILLISECONDS
+                        .toNanos(serverTimeMs - deviceTimeMs),
+                    serverTimeOffsetMs = serverTimeMs - deviceTimeMs
+                )
+            },
+            processInfo = ProcessInfo(
+                isMainProcess = coreFeature.isMainProcess
+            ),
+            networkInfo = coreFeature.networkInfoProvider.getLatestNetworkInfo(),
+            deviceInfo = with(coreFeature.androidInfoProvider) {
+                DeviceInfo(
+                    deviceName = deviceName,
+                    deviceBrand = deviceBrand,
+                    deviceType = deviceType,
+                    deviceModel = deviceModel,
+                    deviceBuildId = deviceBuildId,
+                    osName = osName,
+                    osVersion = osVersion,
+                    osMajorVersion = osMajorVersion,
+                    architecture = architecture,
+                    numberOfDisplays = numberOfDisplays,
+                    localeInfo = with(coreFeature.androidInfoProvider) {
+                        LocaleInfo(
+                            locales = locales,
+                            currentLocale = currentLocale,
+                            timeZone = timeZone
+                        )
+                    }
+                )
+            },
+            userInfo = coreFeature.userInfoProvider.getUserInfo(),
+            accountInfo = coreFeature.accountInfoProvider.getAccountInfo(),
+            trackingConsent = coreFeature.trackingConsentProvider.getConsent(),
+            appBuildId = coreFeature.appBuildId,
+            featuresContext = mutableMapOf<String, Map<String, Any?>>().apply {
+                withFeatureContexts.forEach {
+                    val featureContext = featureContextProvider.getFeatureContext(it)
+                    if (featureContext.isNotEmpty()) {
+                        this[it] = featureContext
                     }
                 }
-            )
-        }
-
-    override fun setFeatureContext(feature: String, context: Map<String, Any?>) {
-        coreFeature.featuresContext[feature] = context
-    }
-
-    override fun getFeatureContext(feature: String): Map<String, Any?> {
-        return coreFeature.featuresContext[feature] ?: emptyMap()
+            }
+        )
     }
 }

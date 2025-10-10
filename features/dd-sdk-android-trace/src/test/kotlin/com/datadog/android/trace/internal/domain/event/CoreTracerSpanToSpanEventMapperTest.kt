@@ -94,6 +94,7 @@ internal class CoreTracerSpanToSpanEventMapperTest {
             .hasDeviceInfo(fakeDatadogContext.deviceInfo)
             .hasOsInfo(fakeDatadogContext.deviceInfo)
             .hasUserInfo(fakeDatadogContext.userInfo)
+            .hasAccountInfo(fakeDatadogContext.accountInfo)
             .hasVariant(fakeDatadogContext.variant)
             .hasMeta(expectedMeta)
             .hasMetrics(expectedMetrics)
@@ -150,6 +151,7 @@ internal class CoreTracerSpanToSpanEventMapperTest {
                     doesntHaveNetworkInfo()
                 }
             }.hasUserInfo(fakeDatadogContext.userInfo)
+            .hasAccountInfo(fakeDatadogContext.accountInfo)
             .hasDeviceInfo(fakeDatadogContext.deviceInfo)
             .hasOsInfo(fakeDatadogContext.deviceInfo)
             .hasVariant(fakeDatadogContext.variant)
@@ -192,7 +194,7 @@ internal class CoreTracerSpanToSpanEventMapperTest {
 
     private fun DDSpan.expectedMetrics(): Map<String, Number> {
         return tags.filterValues { it is Number }.mapValues { it.value as Number }.toMutableMap().apply {
-            this[DDSpanContext.PRIORITY_SAMPLING_KEY] = samplingPriority()
+            this[DDSpanContext.PRIORITY_SAMPLING_KEY] = spanSamplingPriority
         }
     }
 

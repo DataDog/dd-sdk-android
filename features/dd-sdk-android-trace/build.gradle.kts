@@ -23,7 +23,7 @@ plugins {
     // Publish
     `maven-publish`
     signing
-    id("org.jetbrains.dokka")
+    id("org.jetbrains.dokka-javadoc")
 
     // Analysis tools
     id("com.github.ben-manes.versions")
@@ -36,6 +36,7 @@ plugins {
     id("com.datadoghq.dependency-license")
     id("apiSurface")
     id("transitiveDependencies")
+    id("verificationXml")
     id("binary-compatibility-validator")
 }
 
@@ -44,11 +45,17 @@ android {
         consumerProguardFiles("consumer-rules.pro")
     }
     namespace = "com.datadog.android.trace"
+
+    testFixtures {
+        enable = true
+    }
 }
 
 dependencies {
     api(project(":dd-sdk-android-core"))
+    api(project(":features:dd-sdk-android-trace-api"))
     implementation(project(":dd-sdk-android-internal"))
+    implementation(project(":features:dd-sdk-android-trace-internal"))
     implementation(libs.kotlin)
     implementation(libs.gson)
     implementation(libs.androidXAnnotation)
@@ -57,9 +64,11 @@ dependencies {
     // Generate NoOp implementations
     ksp(project(":tools:noopfactory"))
 
-    // OpenTracing
-    api(libs.bundles.openTracing)
-
+    testImplementation(testFixtures(project(":dd-sdk-android-core")))
+    testImplementation(libs.okHttp)
+    testImplementation(libs.bundles.jUnit5)
+    testImplementation(libs.bundles.testTools)
+    testImplementation(libs.systemStubsJupiter)
     testImplementation(project(":tools:unit")) {
         attributes {
             attribute(
@@ -68,20 +77,22 @@ dependencies {
             )
         }
     }
-    testImplementation(testFixtures(project(":dd-sdk-android-core")))
-    testImplementation(libs.okHttp)
-    testImplementation(libs.bundles.jUnit5)
-    testImplementation(libs.bundles.testTools)
-    testImplementation(libs.systemStubsJupiter)
 
     unmock(libs.robolectric)
+
+    // Test Fixtures
+    testFixturesImplementation(libs.gson)
+    testFixturesImplementation(libs.kotlin)
+    testFixturesImplementation(libs.okHttp)
+    testFixturesImplementation(libs.bundles.jUnit5)
+    testFixturesImplementation(libs.bundles.testTools)
+    testFixturesImplementation(project(":features:dd-sdk-android-trace-internal"))
 }
 
 unMock {
     keepStartingWith("org.json")
 }
 
-apply(from = "clone_dd_trace.gradle.kts")
 apply(from = "generate_trace_models.gradle.kts")
 
 kotlinConfig(jvmBytecodeTarget = JvmTarget.JVM_11)
@@ -93,4 +104,4 @@ publishingConfig(
     "The Tracing feature to use with the Datadog monitoring " +
         "library for Android applications."
 )
-detektCustomConfig(":dd-sdk-android-core", ":dd-sdk-android-internal")
+detektCustomConfig()

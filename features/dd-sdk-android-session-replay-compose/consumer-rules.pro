@@ -32,6 +32,19 @@
 -keep class androidx.compose.ui.node.LayoutNode {
      *;
 }
+-keep class androidx.compose.ui.node.NodeChain {
+    <fields>;
+}
+-keep class androidx.compose.ui.Modifier$Node{
+    <fields>;
+}
+-keep class coil3.compose.internal.ContentPainterNode{
+    <fields>;
+}
+-keep class coil3.compose.AsyncImagePainter{
+    <methods>;
+}
+
 -keep class androidx.compose.ui.semantics.SemanticsNode {
      <fields>;
 }

@@ -5,6 +5,12 @@
   "type": "object",
   "description": "Structure holding information about a Log",
   "properties": {
+    "device": {
+      "$ref": "../../../../../dd-sdk-android-rum/src/main/json/rum/_common-schema.json#/properties/device"
+    },
+    "os": {
+      "$ref": "../../../../../dd-sdk-android-rum/src/main/json/rum/_common-schema.json#/properties/os"
+    },
     "status": {
       "type": "string",
       "description": "The severity of this log",
@@ -102,6 +108,26 @@
         "email": {
           "type": "string",
           "description": "Email of the user",
+          "readOnly": true
+        }
+      },
+      "additionalProperties": {
+        "type": "object"
+      },
+      "readOnly": true
+    },
+    "account": {
+      "type": "object",
+      "description": "Account properties",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Identifier of the account",
+          "readOnly": true
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the account",
           "readOnly": true
         }
       },
@@ -239,7 +265,9 @@
     "service",
     "logger",
     "_dd",
-    "ddtags"
+    "ddtags",
+    "device",
+    "os"
   ],
   "additionalProperties": {
     "type": "object",

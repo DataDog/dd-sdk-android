@@ -9,6 +9,8 @@ include(":dd-sdk-android-core")
 include(":dd-sdk-android-internal")
 
 // MAIN FEATURE LIBRARIES
+include(":features:dd-sdk-android-trace-api")
+include(":features:dd-sdk-android-trace-internal")
 include(":features:dd-sdk-android-rum")
 include(":features:dd-sdk-android-logs")
 include(":features:dd-sdk-android-ndk")
@@ -20,6 +22,7 @@ include(":features:dd-sdk-android-session-replay-material")
 include(":features:dd-sdk-android-trace-otel")
 
 // INTEGRATION LIBRARIES
+include(":integrations:dd-sdk-android-apollo")
 include(":integrations:dd-sdk-android-coil")
 include(":integrations:dd-sdk-android-compose")
 include(":integrations:dd-sdk-android-fresco")
@@ -51,9 +54,11 @@ include(":instrumented:integration")
 
 // SAMPLE PROJECTS
 include(":sample:kotlin")
+include(":sample:tv")
 include(":sample:wear")
 include(":sample:vendor-lib")
 include(":sample:benchmark")
+include(":sample:automotive")
 
 // TOOLCHAIN
 include(":tools:detekt")

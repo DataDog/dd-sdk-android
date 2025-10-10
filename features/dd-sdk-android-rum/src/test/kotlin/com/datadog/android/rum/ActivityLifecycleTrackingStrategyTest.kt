@@ -171,6 +171,21 @@ internal abstract class ActivityLifecycleTrackingStrategyTest<T> : ObjectTest<T>
     }
 
     @Test
+    fun `M do nothing W onActivityCreated() { intent is null }`() {
+        // Given
+        testedStrategy.register(rumMonitor.mockSdkCore, mockAppContext)
+        val mockActivity = mock<Activity>()
+        whenever(mockActivity.intent) doReturn null
+
+        // When
+        testedStrategy.onActivityCreated(mockActivity, null)
+
+        // verify
+        val mockRumMonitor = rumMonitor.mockInstance as AdvancedRumMonitor
+        verify(mockRumMonitor, never()).setSyntheticsAttribute(any(), any())
+    }
+
+    @Test
     fun `M do nothing W onActivityCreated() { no synthetics extra }`() {
         // Given
         testedStrategy.register(rumMonitor.mockSdkCore, mockAppContext)

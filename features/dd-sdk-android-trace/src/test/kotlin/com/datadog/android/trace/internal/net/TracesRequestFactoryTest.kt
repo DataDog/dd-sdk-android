@@ -87,7 +87,7 @@ internal class TracesRequestFactoryTest {
     @Suppress("NAME_SHADOWING")
     @Test
     fun `M create a proper request W create() { custom endpoint }`(
-        @StringForgery(regex = "https://[a-z]+\\.com") fakeEndpoint: String,
+        @StringForgery(regex = "https://[a-z]+\\.com(/[a-z]+)+") fakeEndpoint: String,
         @Forgery batchData: List<RawBatchEvent>,
         @StringForgery batchMetadata: String,
         @Forgery executionContext: RequestExecutionContext,
@@ -102,7 +102,7 @@ internal class TracesRequestFactoryTest {
 
         // Then
         requireNotNull(request)
-        assertThat(request.url).isEqualTo("$fakeEndpoint/api/v2/spans")
+        assertThat(request.url).isEqualTo(fakeEndpoint)
         assertThat(request.contentType).isEqualTo(RequestFactory.CONTENT_TYPE_TEXT_UTF8)
         assertThat(request.headers.minus(RequestFactory.HEADER_REQUEST_ID)).isEqualTo(
             mapOf(

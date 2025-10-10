@@ -21,7 +21,7 @@ plugins {
     // Publish
     `maven-publish`
     signing
-    id("org.jetbrains.dokka")
+    id("org.jetbrains.dokka-javadoc")
 
     // Analysis tools
     id("com.github.ben-manes.versions")
@@ -33,6 +33,7 @@ plugins {
     id("com.datadoghq.dependency-license")
     id("apiSurface")
     id("transitiveDependencies")
+    id("verificationXml")
     id("binary-compatibility-validator")
 }
 
@@ -41,11 +42,16 @@ android {
 }
 
 dependencies {
-    implementation(project(":integrations:dd-sdk-android-okhttp"))
-    implementation(project(":features:dd-sdk-android-trace-otel"))
     implementation(libs.okHttp)
     implementation(libs.kotlin)
 
+    implementation(project(":features:dd-sdk-android-trace"))
+    implementation(project(":integrations:dd-sdk-android-okhttp"))
+    implementation(project(":features:dd-sdk-android-trace-otel"))
+
+    testImplementation(libs.okHttpMock)
+    testImplementation(libs.bundles.jUnit5)
+    testImplementation(libs.bundles.testTools)
     testImplementation(project(":tools:unit")) {
         attributes {
             attribute(
@@ -54,9 +60,6 @@ dependencies {
             )
         }
     }
-    testImplementation(libs.bundles.jUnit5)
-    testImplementation(libs.bundles.testTools)
-    testImplementation(libs.okHttpMock)
 }
 
 kotlinConfig(jvmBytecodeTarget = JvmTarget.JVM_11)
@@ -67,9 +70,4 @@ dependencyUpdateConfig()
 publishingConfig(
     "An OkHttp collection of extensions to be used in conjunction with OpenTelemetry Datadog SDK."
 )
-detektCustomConfig(
-    ":dd-sdk-android-core",
-    ":dd-sdk-android-internal",
-    ":features:dd-sdk-android-trace-otel",
-    ":integrations:dd-sdk-android-okhttp"
-)
+detektCustomConfig()

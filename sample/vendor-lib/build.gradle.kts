@@ -7,7 +7,6 @@
 import com.datadog.gradle.config.AndroidConfig
 import com.datadog.gradle.config.dependencyUpdateConfig
 import com.datadog.gradle.config.java17
-import com.datadog.gradle.config.javadocConfig
 import com.datadog.gradle.config.junitConfig
 import com.datadog.gradle.config.kotlinConfig
 import com.datadog.gradle.config.sampleAppConfig
@@ -26,7 +25,6 @@ android {
 
     defaultConfig {
         minSdk = AndroidConfig.MIN_SDK
-        targetSdk = AndroidConfig.TARGET_SDK
         multiDexEnabled = true
 
         buildFeatures {
@@ -87,9 +85,8 @@ dependencies {
 kotlinConfig(evaluateWarningsAsErrors = false)
 taskConfig<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
     compilerOptions {
-        freeCompilerArgs.add("-opt-in=kotlin.RequiresOptIn")
+        optIn.add("kotlin.RequiresOptIn")
     }
 }
 junitConfig()
-javadocConfig()
 dependencyUpdateConfig()

@@ -7,6 +7,7 @@
 package com.datadog.android.core.internal
 
 import android.app.Application
+import com.datadog.android.api.context.AccountInfo
 import com.datadog.android.api.context.NetworkInfo
 import com.datadog.android.api.context.UserInfo
 import com.datadog.android.core.internal.system.AndroidInfoProvider
@@ -19,12 +20,8 @@ import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.extensions.config.TestConfiguration
 import com.datadog.tools.unit.forge.exhaustiveAttributes
 import fr.xgouchet.elmyr.Forge
-import fr.xgouchet.elmyr.annotation.AdvancedForgery
 import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.LongForgery
-import fr.xgouchet.elmyr.annotation.MapForgery
-import fr.xgouchet.elmyr.annotation.StringForgery
-import fr.xgouchet.elmyr.annotation.StringForgeryType
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -32,8 +29,11 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.any
+import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
@@ -57,6 +57,9 @@ internal class DatadogContextProviderTest {
     lateinit var fakeUserInfo: UserInfo
 
     @Forgery
+    lateinit var fakeAccountInfo: AccountInfo
+
+    @Forgery
     lateinit var fakeAndroidInfo: AndroidInfoProvider
 
     @LongForgery(min = 0L)
@@ -68,11 +71,17 @@ internal class DatadogContextProviderTest {
     @Forgery
     lateinit var fakeTrackingConsent: TrackingConsent
 
+    lateinit var fakeFeaturesContext: Map<String, Map<String, Any?>>
+
+    @Mock
+    lateinit var mockFeatureContextProvider: FeatureContextProvider
+
     @BeforeEach
-    fun setUp() {
-        testedProvider = DatadogContextProvider(coreFeature.mockInstance)
+    fun setUp(forge: Forge) {
+        testedProvider = DatadogContextProvider(coreFeature.mockInstance, mockFeatureContextProvider)
 
         whenever(coreFeature.mockInstance.userInfoProvider.getUserInfo()) doReturn fakeUserInfo
+        whenever(coreFeature.mockInstance.accountInfoProvider.getAccountInfo()) doReturn fakeAccountInfo
         whenever(
             coreFeature.mockInstance.networkInfoProvider.getLatestNetworkInfo()
         ) doReturn fakeNetworkInfo
@@ -86,12 +95,23 @@ internal class DatadogContextProviderTest {
 
         whenever(coreFeature.mockInstance.trackingConsentProvider.getConsent()) doReturn
             fakeTrackingConsent
+        // building nested maps with default size slows down tests quite a lot, so will use
+        // an explicit small size
+        fakeFeaturesContext = forge.aMap(size = 2) {
+            forge.anAlphabeticalString() to forge.exhaustiveAttributes()
+        }
+        whenever(
+            mockFeatureContextProvider.getFeatureContext(any())
+        ) doAnswer {
+            val featureName = it.getArgument<String>(0)
+            fakeFeaturesContext[featureName]
+        }
     }
 
     @Test
-    fun `M create a context W context`() {
+    fun `M create a context W getContext()`() {
         // When
-        val context = testedProvider.context
+        val context = testedProvider.getContext(fakeFeaturesContext.keys)
 
         // Then
         assertThat(context.site).isEqualTo(coreFeature.mockInstance.site)
@@ -143,6 +163,13 @@ internal class DatadogContextProviderTest {
         assertThat(context.deviceInfo.osName).isEqualTo(fakeAndroidInfo.osName)
         assertThat(context.deviceInfo.osVersion).isEqualTo(fakeAndroidInfo.osVersion)
         assertThat(context.deviceInfo.osMajorVersion).isEqualTo(fakeAndroidInfo.osMajorVersion)
+        assertThat(context.deviceInfo.architecture).isEqualTo(fakeAndroidInfo.architecture)
+        assertThat(context.deviceInfo.numberOfDisplays).isEqualTo(fakeAndroidInfo.numberOfDisplays)
+
+        // locale info
+        assertThat(context.deviceInfo.localeInfo.locales).isEqualTo(fakeAndroidInfo.locales)
+        assertThat(context.deviceInfo.localeInfo.currentLocale).isEqualTo(fakeAndroidInfo.currentLocale)
+        assertThat(context.deviceInfo.localeInfo.timeZone).isEqualTo(fakeAndroidInfo.timeZone)
 
         // user info
         assertThat(context.userInfo.id).isEqualTo(fakeUserInfo.id)
@@ -151,68 +178,18 @@ internal class DatadogContextProviderTest {
         assertThat(context.userInfo.additionalProperties)
             .isEqualTo(fakeUserInfo.additionalProperties)
 
+        // account info
+        assertThat(context.accountInfo).isNotNull
+        context.accountInfo?.let {
+            assertThat(it.id).isEqualTo(fakeAccountInfo.id)
+            assertThat(it.name).isEqualTo(fakeAccountInfo.name)
+            assertThat(it.extraInfo).isEqualTo(fakeAccountInfo.extraInfo)
+        }
+
         assertThat(context.appBuildId).isEqualTo(coreFeature.mockInstance.appBuildId)
         assertThat(context.trackingConsent).isEqualTo(fakeTrackingConsent)
 
-        assertThat(context.featuresContext).isEqualTo(coreFeature.mockInstance.featuresContext)
-    }
-
-    @Test
-    fun `M create a frozen feature context W context {feature context is changed after context creation}`(
-        forge: Forge
-    ) {
-        // Given
-        val mapSize = forge.anInt(4, 20)
-        val mutableFeaturesContext = forge.aMap<String, Map<String, Any?>>(mapSize) {
-            aString() to forge.exhaustiveAttributes()
-        }.toMutableMap()
-
-        // create it explicitly, without relying on the same .toMap code as in the source
-        val featuresContextSnapshot = mutableMapOf<String, Map<String, Any?>>()
-        mutableFeaturesContext.forEach { (key, value) ->
-            val featureSnapshot = mutableMapOf<String, Any?>()
-            featuresContextSnapshot[key] = featureSnapshot.apply {
-                value.forEach { (innerKey, innerValue) ->
-                    this[innerKey] = innerValue
-                }
-            }
-        }
-
-        whenever(coreFeature.mockInstance.featuresContext) doReturn mutableFeaturesContext
-
-        val context = testedProvider.context
-
-        // When
-        mutableFeaturesContext.values.forEach { innerMap ->
-            val keysToRemove = innerMap.keys.take(forge.anInt(min = 0, max = innerMap.keys.size))
-            keysToRemove.forEach {
-                (innerMap as MutableMap<*, *>).remove(it)
-            }
-        }
-        val keysToRemove = mutableFeaturesContext.keys
-            .take(forge.anInt(min = 1, max = mutableFeaturesContext.keys.size))
-        keysToRemove.forEach {
-            mutableFeaturesContext.remove(it)
-        }
-
-        // Then
-        assertThat(mutableFeaturesContext).isNotEqualTo(featuresContextSnapshot)
-        assertThat(context.featuresContext).isEqualTo(featuresContextSnapshot)
-    }
-
-    @Test
-    fun `M set feature context W setFeatureContext()`(
-        @StringForgery feature: String,
-        @MapForgery(
-            key = AdvancedForgery(string = [StringForgery(StringForgeryType.ALPHABETICAL)]),
-            value = AdvancedForgery(string = [StringForgery(StringForgeryType.ALPHABETICAL)])
-        ) context: Map<String, String>
-    ) {
-        // When
-        testedProvider.setFeatureContext(feature, context)
-
-        // Then
-        assertThat(coreFeature.mockInstance.featuresContext[feature]).isEqualTo(context)
+        assertThat(context.featuresContext).isEqualTo(fakeFeaturesContext)
     }
 
     companion object {

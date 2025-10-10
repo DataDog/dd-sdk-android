@@ -6,7 +6,6 @@
 
 import com.datadog.gradle.config.androidLibraryConfig
 import com.datadog.gradle.config.dependencyUpdateConfig
-import com.datadog.gradle.config.javadocConfig
 import com.datadog.gradle.config.junitConfig
 import com.datadog.gradle.config.kotlinConfig
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
@@ -22,6 +21,7 @@ plugins {
 
     // Tests
     id("de.mobilej.unmock")
+    alias(libs.plugins.apolloPlugin)
 }
 
 android {
@@ -44,14 +44,31 @@ dependencies {
             )
         }
     }
+    testImplementation(project(":dd-sdk-android-internal"))
     testImplementation(testFixtures(project(":dd-sdk-android-core")))
+    testImplementation(testFixtures(project(":features:dd-sdk-android-trace")))
     testImplementation(project(":reliability:stub-core"))
+    testImplementation(project(":integrations:dd-sdk-android-apollo"))
+    testImplementation(project(":features:dd-sdk-android-rum"))
     testImplementation(libs.bundles.jUnit5)
     testImplementation(libs.bundles.testTools)
     testImplementation(libs.okHttp)
     testImplementation(libs.okHttpMock)
     testImplementation(libs.gson)
+    testImplementation(libs.apolloRuntime)
     unmock(libs.robolectric)
+}
+
+apollo {
+    service("testService") {
+        srcDir("src/test/resources/graphql")
+        packageName.set("com.datadog.android.testgraphql")
+        schemaFiles.from("src/test/resources/graphql/schema.graphqls")
+
+        outputDirConnection {
+            connectToKotlinSourceSet("test")
+        }
+    }
 }
 
 unMock {
@@ -66,5 +83,4 @@ unMock {
 androidLibraryConfig()
 kotlinConfig(jvmBytecodeTarget = JvmTarget.JVM_11)
 junitConfig()
-javadocConfig()
 dependencyUpdateConfig()

@@ -80,7 +80,7 @@ internal object NoOpInternalSdkCore : InternalSdkCore {
     override fun setTrackingConsent(consent: TrackingConsent) = Unit
 
     override fun setUserInfo(
-        id: String?,
+        id: String,
         name: String?,
         email: String?,
         extraInfo: Map<String, Any?>
@@ -88,7 +88,19 @@ internal object NoOpInternalSdkCore : InternalSdkCore {
 
     override fun addUserProperties(extraInfo: Map<String, Any?>) = Unit
 
+    override fun clearUserInfo() = Unit
+
     override fun clearAllData() = Unit
+
+    override fun setAccountInfo(
+        id: String,
+        name: String?,
+        extraInfo: Map<String, Any?>
+    ) = Unit
+
+    override fun addAccountExtraInfo(extraInfo: Map<String, Any?>) = Unit
+
+    override fun clearAccountInfo() = Unit
 
     override fun isCoreActive(): Boolean = false
 
@@ -102,22 +114,21 @@ internal object NoOpInternalSdkCore : InternalSdkCore {
 
     override fun updateFeatureContext(
         featureName: String,
+        useContextThread: Boolean,
         updateCallback: (MutableMap<String, Any?>) -> Unit
     ) = Unit
 
-    override fun getFeatureContext(featureName: String): Map<String, Any?> = emptyMap()
+    override fun getFeatureContext(featureName: String, useContextThread: Boolean): Map<String, Any?> = emptyMap()
 
     override fun setEventReceiver(featureName: String, `receiver`: FeatureEventReceiver) = Unit
 
     override fun removeEventReceiver(featureName: String) = Unit
 
     override fun setContextUpdateReceiver(
-        featureName: String,
         listener: FeatureContextUpdateReceiver
     ) = Unit
 
     override fun removeContextUpdateReceiver(
-        featureName: String,
         listener: FeatureContextUpdateReceiver
     ) = Unit
 
@@ -145,7 +156,7 @@ internal object NoOpInternalSdkCore : InternalSdkCore {
 
     override fun getAllFeatures(): List<FeatureScope> = emptyList()
 
-    override fun getDatadogContext(): DatadogContext? = null
+    override fun getDatadogContext(withFeatureContexts: Set<String>): DatadogContext? = null
 
     // endregion
 

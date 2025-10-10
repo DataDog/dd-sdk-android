@@ -6,7 +6,6 @@
 
 import com.datadog.gradle.config.androidLibraryConfig
 import com.datadog.gradle.config.dependencyUpdateConfig
-import com.datadog.gradle.config.javadocConfig
 import com.datadog.gradle.config.junitConfig
 import com.datadog.gradle.config.kotlinConfig
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
@@ -45,6 +44,7 @@ dependencies {
         }
     }
     testImplementation(testFixtures(project(":dd-sdk-android-core")))
+    testImplementation(testFixtures(project(":features:dd-sdk-android-rum")))
     testImplementation(project(":reliability:stub-core"))
     testImplementation(libs.bundles.androidXNavigation)
     testImplementation(libs.bundles.jUnit5)
@@ -62,5 +62,4 @@ unMock {
 androidLibraryConfig()
 kotlinConfig(jvmBytecodeTarget = JvmTarget.JVM_11)
 junitConfig()
-javadocConfig()
 dependencyUpdateConfig()

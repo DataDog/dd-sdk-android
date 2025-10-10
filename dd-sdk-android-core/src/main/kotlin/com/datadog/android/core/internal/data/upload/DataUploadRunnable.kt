@@ -13,6 +13,7 @@ import com.datadog.android.api.context.NetworkInfo
 import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.core.configuration.UploadSchedulerStrategy
 import com.datadog.android.core.internal.ContextProvider
+import com.datadog.android.core.internal.metrics.BenchmarkUploads
 import com.datadog.android.core.internal.metrics.RemovalReason
 import com.datadog.android.core.internal.net.info.NetworkInfoProvider
 import com.datadog.android.core.internal.persistence.BatchId
@@ -32,7 +33,8 @@ internal class DataUploadRunnable(
     private val systemInfoProvider: SystemInfoProvider,
     internal val uploadSchedulerStrategy: UploadSchedulerStrategy,
     internal val maxBatchesPerJob: Int,
-    private val internalLogger: InternalLogger
+    private val internalLogger: InternalLogger,
+    private val benchmarkUploads: BenchmarkUploads = BenchmarkUploads()
 ) : UploadRunnable {
 
     //  region Runnable
@@ -42,9 +44,12 @@ internal class DataUploadRunnable(
         var uploadAttempts = 0
         var lastBatchUploadStatus: UploadStatus? = null
         if (isNetworkAvailable() && isSystemReady()) {
-            val context = contextProvider.context
+            val context = contextProvider.getContext(withFeatureContexts = emptySet())
             var batchConsumerAvailableAttempts = maxBatchesPerJob
             do {
+                benchmarkUploads.incrementBenchmarkUploadsCount(
+                    featureName = featureName
+                )
                 batchConsumerAvailableAttempts--
                 lastBatchUploadStatus = handleNextBatch(context)
                 if (lastBatchUploadStatus != null) {
@@ -116,6 +121,15 @@ internal class DataUploadRunnable(
         batchMeta: ByteArray?
     ): UploadStatus {
         val status = dataUploader.upload(context, batch, batchMeta, batchId)
+
+        if (status is UploadStatus.Success) {
+            val uploadedBytes = batch.sumOf { it.data.size }
+            benchmarkUploads.sendBenchmarkBytesUploaded(
+                featureName = featureName,
+                value = uploadedBytes.toLong()
+            )
+        }
+
         val removalReason = if (status is UploadStatus.RequestCreationError) {
             RemovalReason.Invalid
         } else {

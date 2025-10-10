@@ -14,6 +14,7 @@ import androidx.annotation.MainThread
 import androidx.annotation.VisibleForTesting
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.MapperTypeWrapper
 import com.datadog.android.sessionreplay.SessionReplayInternalCallback
@@ -24,6 +25,7 @@ import com.datadog.android.sessionreplay.internal.TouchPrivacyManager
 import com.datadog.android.sessionreplay.internal.async.RecordedDataQueueHandler
 import com.datadog.android.sessionreplay.internal.processor.MutationResolver
 import com.datadog.android.sessionreplay.internal.processor.RecordedDataProcessor
+import com.datadog.android.sessionreplay.internal.processor.ResourceQueueImpl
 import com.datadog.android.sessionreplay.internal.processor.RumContextDataHandler
 import com.datadog.android.sessionreplay.internal.recorder.callback.OnWindowRefreshedCallback
 import com.datadog.android.sessionreplay.internal.recorder.mapper.DecorViewMapper
@@ -43,7 +45,6 @@ import com.datadog.android.sessionreplay.internal.storage.ResourcesWriter
 import com.datadog.android.sessionreplay.internal.utils.DrawableUtils
 import com.datadog.android.sessionreplay.internal.utils.PathUtils
 import com.datadog.android.sessionreplay.internal.utils.RumContextProvider
-import com.datadog.android.sessionreplay.internal.utils.TimeProvider
 import com.datadog.android.sessionreplay.recorder.OptionSelectorDetector
 import com.datadog.android.sessionreplay.utils.ColorStringFormatter
 import com.datadog.android.sessionreplay.utils.DefaultColorStringFormatter
@@ -57,13 +58,8 @@ import java.util.concurrent.ConcurrentLinkedQueue
 internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
 
     private val appContext: Application
-    private val rumContextProvider: RumContextProvider
     private val textAndInputPrivacy: TextAndInputPrivacy
     private val imagePrivacy: ImagePrivacy
-    private val touchPrivacyManager: TouchPrivacyManager
-    private val recordWriter: RecordWriter
-    private val timeProvider: TimeProvider
-    private val mappers: List<MapperTypeWrapper<*>>
     private val customOptionSelectorDetectors: List<OptionSelectorDetector>
     private val windowInspector: WindowInspector
     private val windowCallbackInterceptor: WindowCallbackInterceptor
@@ -71,8 +67,6 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
     private val recordedDataQueueHandler: RecordedDataQueueHandler
     private val viewOnDrawInterceptor: ViewOnDrawInterceptor
     private val internalLogger: InternalLogger
-    private val resourceDataStoreManager: ResourceDataStoreManager
-    private val internalCallback: SessionReplayInternalCallback
     private val uiHandler: Handler
     private var shouldRecord = false
 
@@ -109,16 +103,9 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
             MutationResolver(internalLogger)
         )
 
-        val applicationId = rumContextProvider.getRumContext().applicationId
-
         this.appContext = appContext
-        this.rumContextProvider = rumContextProvider
         this.textAndInputPrivacy = textAndInputPrivacy
         this.imagePrivacy = imagePrivacy
-        this.touchPrivacyManager = touchPrivacyManager
-        this.recordWriter = recordWriter
-        this.timeProvider = timeProvider
-        this.mappers = mappers
         this.customOptionSelectorDetectors = customOptionSelectorDetectors
         this.windowInspector = windowInspector
         this.recordedDataQueueHandler = RecordedDataQueueHandler(
@@ -130,8 +117,6 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
             ),
             recordedDataQueue = ConcurrentLinkedQueue()
         )
-        this.resourceDataStoreManager = resourceDataStoreManager
-        this.internalCallback = internalCallback
 
         val viewIdentifierResolver: ViewIdentifierResolver = DefaultViewIdentifierResolver
         val colorStringFormatter: ColorStringFormatter = DefaultColorStringFormatter
@@ -153,7 +138,6 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
         )
 
         val resourceResolver = ResourceResolver(
-            applicationId = applicationId,
             recordedDataQueueHandler = recordedDataQueueHandler,
             pathUtils = PathUtils(internalLogger, bitmapCachesManager),
             bitmapCachesManager = bitmapCachesManager,
@@ -205,6 +189,7 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
             recordedDataQueueHandler,
             viewOnDrawInterceptor,
             timeProvider,
+            rumContextProvider,
             internalLogger,
             imagePrivacy,
             textAndInputPrivacy,
@@ -218,6 +203,9 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
             sessionReplayLifecycleCallback.registerFragmentLifecycleCallbacks(it)
         }
 
+        // Expose this object so it can be used to dynamically add resources
+        internalCallback.setResourceQueue(ResourceQueueImpl(this.recordedDataQueueHandler))
+
         this.uiHandler = Handler(Looper.getMainLooper())
         this.internalLogger = internalLogger
     }
@@ -226,32 +214,20 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
     @Suppress("LongParameterList")
     constructor(
         appContext: Application,
-        rumContextProvider: RumContextProvider,
         textAndInputPrivacy: TextAndInputPrivacy,
         imagePrivacy: ImagePrivacy,
-        touchPrivacyManager: TouchPrivacyManager,
-        recordWriter: RecordWriter,
-        timeProvider: TimeProvider,
-        mappers: List<MapperTypeWrapper<*>> = emptyList(),
         customOptionSelectorDetectors: List<OptionSelectorDetector>,
         windowInspector: WindowInspector = WindowInspector,
         windowCallbackInterceptor: WindowCallbackInterceptor,
         sessionReplayLifecycleCallback: LifecycleCallback,
         viewOnDrawInterceptor: ViewOnDrawInterceptor,
         recordedDataQueueHandler: RecordedDataQueueHandler,
-        resourceDataStoreManager: ResourceDataStoreManager,
         uiHandler: Handler,
-        internalLogger: InternalLogger,
-        internalCallback: SessionReplayInternalCallback
+        internalLogger: InternalLogger
     ) {
         this.appContext = appContext
-        this.rumContextProvider = rumContextProvider
         this.textAndInputPrivacy = textAndInputPrivacy
         this.imagePrivacy = imagePrivacy
-        this.touchPrivacyManager = touchPrivacyManager
-        this.recordWriter = recordWriter
-        this.timeProvider = timeProvider
-        this.mappers = mappers
         this.customOptionSelectorDetectors = customOptionSelectorDetectors
         this.windowInspector = windowInspector
         this.recordedDataQueueHandler = recordedDataQueueHandler
@@ -260,8 +236,6 @@ internal class SessionReplayRecorder : OnWindowRefreshedCallback, Recorder {
         this.sessionReplayLifecycleCallback = sessionReplayLifecycleCallback
         this.uiHandler = uiHandler
         this.internalLogger = internalLogger
-        this.resourceDataStoreManager = resourceDataStoreManager
-        this.internalCallback = internalCallback
     }
 
     override fun stopProcessingRecords() {

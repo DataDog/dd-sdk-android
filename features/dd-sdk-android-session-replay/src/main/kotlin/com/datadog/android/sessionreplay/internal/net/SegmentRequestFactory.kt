@@ -14,7 +14,6 @@ import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.sessionreplay.internal.exception.InvalidPayloadFormatException
 import okhttp3.RequestBody
 import okio.Buffer
-import java.util.Locale
 import java.util.UUID
 
 internal class SegmentRequestFactory(
@@ -42,12 +41,7 @@ internal class SegmentRequestFactory(
     }
 
     private fun buildUrl(datadogContext: DatadogContext): String {
-        return String.format(
-            Locale.US,
-            UPLOAD_URL,
-            customEndpointUrl ?: datadogContext.site.intakeEndpoint,
-            "replay"
-        )
+        return customEndpointUrl ?: (datadogContext.site.intakeEndpoint + "/api/v2/replay")
     }
 
     private fun resolveHeaders(datadogContext: DatadogContext, requestId: String): Map<String, String> {
@@ -85,8 +79,4 @@ internal class SegmentRequestFactory(
     }
 
     // endregion
-
-    companion object {
-        private const val UPLOAD_URL = "%s/api/v2/%s"
-    }
 }

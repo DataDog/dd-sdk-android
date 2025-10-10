@@ -7,7 +7,7 @@
 package com.datadog.android.sessionreplay
 
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.api.feature.Feature.Companion.SESSION_REPLAY_FEATURE_NAME
+import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.sessionreplay.SessionReplay.IS_ALREADY_REGISTERED_WARNING
@@ -94,7 +94,7 @@ internal class SessionReplayTest {
         @Mock mockSessionReplayFeature: SessionReplayFeature
     ) {
         // Given
-        whenever(mockSdkCore.getFeature(SESSION_REPLAY_FEATURE_NAME))
+        whenever(mockSdkCore.getFeature(Feature.SESSION_REPLAY_FEATURE_NAME))
             .thenReturn(mockFeatureScope)
 
         whenever(mockFeatureScope.unwrap<SessionReplayFeature>()) doReturn mockSessionReplayFeature
@@ -112,7 +112,7 @@ internal class SessionReplayTest {
         @Mock mockSessionReplayFeature: SessionReplayFeature
     ) {
         // Given
-        whenever(mockSdkCore.getFeature(SESSION_REPLAY_FEATURE_NAME))
+        whenever(mockSdkCore.getFeature(Feature.SESSION_REPLAY_FEATURE_NAME))
             .thenReturn(mockFeatureScope)
 
         whenever(mockFeatureScope.unwrap<SessionReplayFeature>()) doReturn mockSessionReplayFeature

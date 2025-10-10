@@ -14,7 +14,6 @@ import java.util.UUID
 internal class EnrichedResourceForgeryFactory : ForgeryFactory<EnrichedResource> {
     override fun getForgery(forge: Forge): EnrichedResource {
         return EnrichedResource(
-            applicationId = forge.getForgery<UUID>().toString(),
             filename = forge.getForgery<UUID>().toString(),
             resource = forge.getForgery<UUID>().toString().toByteArray()
         )

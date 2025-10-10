@@ -11,8 +11,8 @@ import com.datadog.android.sessionreplay.internal.processor.RecordedQueuedItemCo
 internal class ResourceRecordedDataQueueItem(
     recordedQueuedItemContext: RecordedQueuedItemContext,
     val identifier: String,
-    val applicationId: String,
-    val resourceData: ByteArray
+    val resourceData: ByteArray,
+    val mimeType: String? = null
 ) : RecordedDataQueueItem(recordedQueuedItemContext) {
 
     override fun isValid(): Boolean {

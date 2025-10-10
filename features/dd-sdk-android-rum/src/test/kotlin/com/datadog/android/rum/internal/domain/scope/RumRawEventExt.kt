@@ -10,6 +10,7 @@ import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.RumResourceMethod
+import com.datadog.android.rum.featureoperations.FailureReason
 import com.datadog.android.rum.internal.domain.Time
 import com.datadog.android.rum.model.ActionEvent
 import com.datadog.tools.unit.forge.aThrowable
@@ -73,6 +74,23 @@ internal fun Forge.stopResourceEvent(): RumRawEvent.StopResource {
         statusCode = aNullable { aLong(100, 600) },
         size = aNullable { aPositiveLong() },
         kind = aValueFrom(RumResourceKind::class.java),
+        attributes = exhaustiveAttributes()
+    )
+}
+
+internal fun Forge.startFeatureOperationEvent(): RumRawEvent.StartFeatureOperation {
+    return RumRawEvent.StartFeatureOperation(
+        name = anAlphabeticalString(),
+        operationKey = aNullable { anAlphabeticalString() },
+        attributes = exhaustiveAttributes()
+    )
+}
+
+internal fun Forge.stopFeatureOperationEvent(): RumRawEvent.StopFeatureOperation {
+    return RumRawEvent.StopFeatureOperation(
+        name = anAlphabeticalString(),
+        operationKey = aNullable { anAlphabeticalString() },
+        failureReason = aNullable { aValueFrom(FailureReason::class.java) },
         attributes = exhaustiveAttributes()
     )
 }
@@ -150,6 +168,14 @@ internal fun Forge.updatePerformanceMetricEvent(): RumRawEvent.UpdatePerformance
     )
 }
 
+internal fun Forge.updateExternalRefreshRateEvent(): RumRawEvent.UpdateExternalRefreshRate {
+    val time = Time()
+    return RumRawEvent.UpdateExternalRefreshRate(
+        frameTimeSeconds = aDouble(),
+        eventTime = time
+    )
+}
+
 internal fun Forge.addFeatureFlagEvaluationEvent(): RumRawEvent.AddFeatureFlagEvaluation {
     val time = Time()
     return RumRawEvent.AddFeatureFlagEvaluation(
@@ -172,7 +198,9 @@ internal fun Forge.validBackgroundEvent(): RumRawEvent {
         listOf(
             { startActionEvent() },
             { addErrorEvent() },
-            { startResourceEvent() }
+            { startResourceEvent() },
+            { startFeatureOperationEvent() },
+            { stopFeatureOperationEvent() }
         )
     ).invoke()
 }
@@ -206,6 +234,7 @@ internal fun Forge.anyRumEvent(excluding: List<KClass<out RumRawEvent>> = listOf
         strictSameTypePair(RumRawEvent.AddFeatureFlagEvaluation::class, { addFeatureFlagEvaluationEvent() }),
         strictSameTypePair(RumRawEvent.AddCustomTiming::class, { addCustomTimingEvent() }),
         strictSameTypePair(RumRawEvent.UpdatePerformanceMetric::class, { updatePerformanceMetricEvent() }),
+        strictSameTypePair(RumRawEvent.UpdateExternalRefreshRate::class, { updateExternalRefreshRateEvent() }),
         strictSameTypePair(RumRawEvent.AddViewLoadingTime::class, { addViewLoadingTimeEvent() })
     )
     return this.anElementFrom(

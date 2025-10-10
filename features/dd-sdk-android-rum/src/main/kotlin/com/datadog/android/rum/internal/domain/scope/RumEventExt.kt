@@ -14,6 +14,7 @@ import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.RumResourceMethod
+import com.datadog.android.rum.featureoperations.FailureReason
 import com.datadog.android.rum.internal.RumErrorSourceType
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
 import com.datadog.android.rum.model.ActionEvent
@@ -21,6 +22,7 @@ import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.model.ViewEvent
+import com.datadog.android.rum.model.VitalEvent
 import java.util.Locale
 
 // region Resource.Method conversion
@@ -239,9 +241,9 @@ internal fun NetworkInfo.toErrorConnectivity(): ErrorEvent.Connectivity {
 
 internal fun NetworkInfo.toLongTaskConnectivity(): LongTaskEvent.Connectivity {
     val status = if (isConnected()) {
-        LongTaskEvent.Status.CONNECTED
+        LongTaskEvent.ConnectivityStatus.CONNECTED
     } else {
-        LongTaskEvent.Status.NOT_CONNECTED
+        LongTaskEvent.ConnectivityStatus.NOT_CONNECTED
     }
     val interfaces = when (connectivity) {
         NetworkInfo.Connectivity.NETWORK_ETHERNET -> listOf(LongTaskEvent.Interface.ETHERNET)
@@ -276,9 +278,9 @@ internal fun NetworkInfo.toLongTaskConnectivity(): LongTaskEvent.Connectivity {
 
 internal fun NetworkInfo.toViewConnectivity(): ViewEvent.Connectivity {
     val status = if (isConnected()) {
-        ViewEvent.Status.CONNECTED
+        ViewEvent.ConnectivityStatus.CONNECTED
     } else {
-        ViewEvent.Status.NOT_CONNECTED
+        ViewEvent.ConnectivityStatus.NOT_CONNECTED
     }
     val interfaces = when (connectivity) {
         NetworkInfo.Connectivity.NETWORK_ETHERNET -> listOf(ViewEvent.Interface.ETHERNET)
@@ -342,6 +344,43 @@ internal fun NetworkInfo.toActionConnectivity(): ActionEvent.Connectivity {
         null
     }
     return ActionEvent.Connectivity(
+        status,
+        interfaces,
+        cellular = cellular
+    )
+}
+
+internal fun NetworkInfo.toVitalConnectivity(): VitalEvent.Connectivity {
+    val status = if (isConnected()) {
+        VitalEvent.Status.CONNECTED
+    } else {
+        VitalEvent.Status.NOT_CONNECTED
+    }
+    val interfaces = when (connectivity) {
+        NetworkInfo.Connectivity.NETWORK_ETHERNET -> listOf(VitalEvent.Interface.ETHERNET)
+        NetworkInfo.Connectivity.NETWORK_WIFI -> listOf(VitalEvent.Interface.WIFI)
+        NetworkInfo.Connectivity.NETWORK_WIMAX -> listOf(VitalEvent.Interface.WIMAX)
+        NetworkInfo.Connectivity.NETWORK_BLUETOOTH -> listOf(VitalEvent.Interface.BLUETOOTH)
+        NetworkInfo.Connectivity.NETWORK_2G,
+        NetworkInfo.Connectivity.NETWORK_3G,
+        NetworkInfo.Connectivity.NETWORK_4G,
+        NetworkInfo.Connectivity.NETWORK_5G,
+        NetworkInfo.Connectivity.NETWORK_MOBILE_OTHER,
+        NetworkInfo.Connectivity.NETWORK_CELLULAR -> listOf(VitalEvent.Interface.CELLULAR)
+
+        NetworkInfo.Connectivity.NETWORK_OTHER -> listOf(VitalEvent.Interface.OTHER)
+        NetworkInfo.Connectivity.NETWORK_NOT_CONNECTED -> emptyList()
+    }
+
+    val cellular = if (cellularTechnology != null || carrierName != null) {
+        VitalEvent.Cellular(
+            technology = cellularTechnology,
+            carrierName = carrierName
+        )
+    } else {
+        null
+    }
+    return VitalEvent.Connectivity(
         status,
         interfaces,
         cellular = cellular
@@ -413,6 +452,18 @@ internal fun DeviceType.toErrorSchemaType(): ErrorEvent.DeviceType {
         DeviceType.GAMING_CONSOLE -> ErrorEvent.DeviceType.GAMING_CONSOLE
         DeviceType.BOT -> ErrorEvent.DeviceType.BOT
         DeviceType.OTHER -> ErrorEvent.DeviceType.OTHER
+    }
+}
+
+internal fun DeviceType.toVitalSchemaType(): VitalEvent.DeviceType {
+    return when (this) {
+        DeviceType.MOBILE -> VitalEvent.DeviceType.MOBILE
+        DeviceType.TABLET -> VitalEvent.DeviceType.TABLET
+        DeviceType.TV -> VitalEvent.DeviceType.TV
+        DeviceType.DESKTOP -> VitalEvent.DeviceType.DESKTOP
+        DeviceType.GAMING_CONSOLE -> VitalEvent.DeviceType.GAMING_CONSOLE
+        DeviceType.BOT -> VitalEvent.DeviceType.BOT
+        DeviceType.OTHER -> VitalEvent.DeviceType.OTHER
     }
 }
 
@@ -505,6 +556,23 @@ internal fun ResourceEvent.ResourceEventSource.Companion.tryFromSource(
     }
 }
 
+internal fun VitalEvent.VitalEventSource.Companion.tryFromSource(
+    source: String,
+    internalLogger: InternalLogger
+): VitalEvent.VitalEventSource? {
+    return try {
+        fromJson(source)
+    } catch (e: NoSuchElementException) {
+        internalLogger.log(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.USER,
+            { UNKNOWN_SOURCE_WARNING_MESSAGE_FORMAT.format(Locale.US, source) },
+            e
+        )
+        null
+    }
+}
+
 internal const val UNKNOWN_SOURCE_WARNING_MESSAGE_FORMAT = "You are using an unknown " +
     "source %s for your events"
 
@@ -577,4 +645,28 @@ internal fun RumSessionScope.StartReason.toLongTaskSessionPrecondition(): LongTa
     }
 }
 
+// endregion
+
+// region FeatureOperation
+
+internal fun RumSessionScope.StartReason.toVitalSessionPrecondition(): VitalEvent.SessionPrecondition {
+    return when (this) {
+        RumSessionScope.StartReason.USER_APP_LAUNCH -> VitalEvent.SessionPrecondition.USER_APP_LAUNCH
+        RumSessionScope.StartReason.INACTIVITY_TIMEOUT -> VitalEvent.SessionPrecondition.INACTIVITY_TIMEOUT
+        RumSessionScope.StartReason.MAX_DURATION -> VitalEvent.SessionPrecondition.MAX_DURATION
+        RumSessionScope.StartReason.EXPLICIT_STOP -> VitalEvent.SessionPrecondition.EXPLICIT_STOP
+        RumSessionScope.StartReason.BACKGROUND_LAUNCH -> VitalEvent.SessionPrecondition.BACKGROUND_LAUNCH
+        RumSessionScope.StartReason.PREWARM -> VitalEvent.SessionPrecondition.PREWARM
+        RumSessionScope.StartReason.FROM_NON_INTERACTIVE_SESSION ->
+            VitalEvent.SessionPrecondition.FROM_NON_INTERACTIVE_SESSION
+    }
+}
+
+internal fun FailureReason.toSchemaFailureReason(): VitalEvent.FailureReason {
+    return when (this) {
+        FailureReason.ERROR -> VitalEvent.FailureReason.ERROR
+        FailureReason.ABANDONED -> VitalEvent.FailureReason.ABANDONED
+        FailureReason.OTHER -> VitalEvent.FailureReason.OTHER
+    }
+}
 // endregion

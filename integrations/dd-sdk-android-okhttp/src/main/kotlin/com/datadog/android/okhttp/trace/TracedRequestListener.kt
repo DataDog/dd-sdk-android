@@ -6,8 +6,8 @@
 
 package com.datadog.android.okhttp.trace
 
+import com.datadog.android.trace.api.span.DatadogSpan
 import com.datadog.tools.annotation.NoOpImplementation
-import io.opentracing.Span
 import okhttp3.Request
 import okhttp3.Response
 
@@ -29,7 +29,7 @@ interface TracedRequestListener {
      */
     fun onRequestIntercepted(
         request: Request,
-        span: Span,
+        span: DatadogSpan,
         response: Response?,
         throwable: Throwable?
     )

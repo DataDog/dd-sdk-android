@@ -7,20 +7,18 @@
 package com.datadog.android.core.internal.net.info
 
 import android.annotation.SuppressLint
-import android.annotation.TargetApi
 import android.content.Context
 import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
 import android.os.Build
+import androidx.annotation.RequiresApi
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.NetworkInfo
-import com.datadog.android.core.internal.persistence.DataWriter
 import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 
-@TargetApi(Build.VERSION_CODES.N)
+@RequiresApi(Build.VERSION_CODES.N)
 internal class CallbackNetworkInfoProvider(
-    private val dataWriter: DataWriter<NetworkInfo>,
     private val buildSdkVersionProvider: BuildSdkVersionProvider = BuildSdkVersionProvider.DEFAULT,
     private val internalLogger: InternalLogger
 ) :
@@ -28,11 +26,6 @@ internal class CallbackNetworkInfoProvider(
     NetworkInfoProvider {
 
     private var lastNetworkInfo: NetworkInfo = NetworkInfo()
-        set(value) {
-            field = value
-            @Suppress("ThreadSafety") // TODO RUM-3756 delegate to another thread
-            dataWriter.write(field)
-        }
 
     // region NetworkCallback
 

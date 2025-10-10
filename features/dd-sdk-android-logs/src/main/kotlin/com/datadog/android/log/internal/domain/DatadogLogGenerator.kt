@@ -6,7 +6,10 @@
 
 package com.datadog.android.log.internal.domain
 
+import com.datadog.android.api.context.AccountInfo
 import com.datadog.android.api.context.DatadogContext
+import com.datadog.android.api.context.DeviceInfo
+import com.datadog.android.api.context.DeviceType
 import com.datadog.android.api.context.NetworkInfo
 import com.datadog.android.api.context.UserInfo
 import com.datadog.android.api.feature.Feature
@@ -41,6 +44,7 @@ internal class DatadogLogGenerator(
         bundleWithTraces: Boolean,
         bundleWithRum: Boolean,
         userInfo: UserInfo?,
+        accountInfo: AccountInfo?,
         networkInfo: NetworkInfo?,
         threads: List<ThreadDump>
     ): LogEvent {
@@ -77,6 +81,7 @@ internal class DatadogLogGenerator(
             bundleWithTraces,
             bundleWithRum,
             userInfo,
+            accountInfo,
             networkInfo
         )
     }
@@ -97,6 +102,7 @@ internal class DatadogLogGenerator(
         bundleWithTraces: Boolean,
         bundleWithRum: Boolean,
         userInfo: UserInfo?,
+        accountInfo: AccountInfo?,
         networkInfo: NetworkInfo?
     ): LogEvent {
         val mutableAttributes = attributes.toMutableMap()
@@ -127,6 +133,7 @@ internal class DatadogLogGenerator(
             bundleWithTraces,
             bundleWithRum,
             userInfo,
+            accountInfo,
             networkInfo
         )
     }
@@ -148,6 +155,7 @@ internal class DatadogLogGenerator(
         bundleWithTraces: Boolean,
         bundleWithRum: Boolean,
         userInfo: UserInfo?,
+        accountInfo: AccountInfo?,
         networkInfo: NetworkInfo?
     ): LogEvent {
         val resolvedTimestamp = timestamp + datadogContext.time.serverTimeOffsetMs
@@ -162,8 +170,10 @@ internal class DatadogLogGenerator(
             @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
             simpleDateFormat.format(Date(resolvedTimestamp))
         }
+        val deviceInfo = datadogContext.deviceInfo
         val combinedTags = resolveTags(datadogContext, tags)
         val usr = resolveUserInfo(datadogContext, userInfo)
+        val account = resolveAccountInfo(datadogContext, accountInfo)
         val network = if (networkInfo != null || attachNetworkInfo) {
             resolveNetworkInfo(datadogContext, networkInfo)
         } else {
@@ -185,15 +195,42 @@ internal class DatadogLogGenerator(
             error = error,
             logger = loggerInfo,
             dd = LogEvent.Dd(
-                device = LogEvent.Device(
-                    architecture = datadogContext.deviceInfo.architecture
+                device = LogEvent.DdDevice(
+                    architecture = deviceInfo.architecture
                 )
             ),
             usr = usr,
+            account = account,
             network = network,
             ddtags = combinedTags.joinToString(separator = ","),
-            additionalProperties = combinedAttributes
+            additionalProperties = combinedAttributes,
+            os = resolveOsInfo(deviceInfo),
+            device = resolveDeviceInfo(deviceInfo)
         )
+    }
+
+    private fun resolveOsInfo(deviceInfo: DeviceInfo) = LogEvent.Os(
+        name = deviceInfo.osName,
+        version = deviceInfo.osVersion,
+        versionMajor = deviceInfo.osMajorVersion
+    )
+
+    private fun resolveDeviceInfo(deviceInfo: DeviceInfo) = LogEvent.LogEventDevice(
+        type = resolveDeviceType(deviceInfo.deviceType),
+        name = deviceInfo.deviceName,
+        model = deviceInfo.deviceModel,
+        brand = deviceInfo.deviceBrand,
+        architecture = deviceInfo.architecture
+    )
+
+    private fun resolveDeviceType(deviceType: DeviceType): LogEvent.Type = when (deviceType) {
+        DeviceType.MOBILE -> LogEvent.Type.MOBILE
+        DeviceType.TABLET -> LogEvent.Type.TABLET
+        DeviceType.TV -> LogEvent.Type.TV
+        DeviceType.DESKTOP -> LogEvent.Type.DESKTOP
+        DeviceType.GAMING_CONSOLE -> LogEvent.Type.GAMING_CONSOLE
+        DeviceType.BOT -> LogEvent.Type.BOT
+        DeviceType.OTHER -> LogEvent.Type.OTHER
     }
 
     private fun envTag(datadogContext: DatadogContext): String? {
@@ -247,6 +284,19 @@ internal class DatadogLogGenerator(
                 email = email,
                 id = id,
                 additionalProperties = additionalProperties.toMutableMap()
+            )
+        }
+    }
+
+    private fun resolveAccountInfo(
+        datadogContext: DatadogContext,
+        accountInfo: AccountInfo?
+    ): LogEvent.Account? {
+        return (accountInfo ?: datadogContext.accountInfo)?.let {
+            LogEvent.Account(
+                id = it.id,
+                name = it.name,
+                additionalProperties = it.extraInfo.toMutableMap()
             )
         }
     }

@@ -17,6 +17,7 @@ import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.model.ViewEvent
+import com.datadog.android.rum.model.VitalEvent
 import com.datadog.android.telemetry.model.TelemetryConfigurationEvent
 import com.datadog.android.telemetry.model.TelemetryDebugEvent
 import com.datadog.android.telemetry.model.TelemetryErrorEvent
@@ -46,6 +47,9 @@ internal class RumEventSerializer(
             }
             is LongTaskEvent -> {
                 serializeLongTaskEvent(model)
+            }
+            is VitalEvent -> {
+                serializeVitalEvent(model)
             }
             is TelemetryDebugEvent -> {
                 model.toJson().toString()
@@ -78,6 +82,11 @@ internal class RumEventSerializer(
                 .safeMapValuesToJson(internalLogger)
                 .toMutableMap()
         )
+        val sanitizedAccount = model.account?.copy(
+            additionalProperties = validateAccountAttributes(model.account.additionalProperties)
+                .safeMapValuesToJson(internalLogger)
+                .toMutableMap()
+        )
         val sanitizedContext = model.context?.copy(
             additionalProperties = validateContextAttributes(model.context.additionalProperties)
                 .safeMapValuesToJson(internalLogger)
@@ -92,6 +101,7 @@ internal class RumEventSerializer(
         )
         val sanitizedModel = model.copy(
             usr = sanitizedUser,
+            account = sanitizedAccount,
             context = sanitizedContext,
             view = sanitizedView
         )
@@ -105,6 +115,11 @@ internal class RumEventSerializer(
                 .safeMapValuesToJson(internalLogger)
                 .toMutableMap()
         )
+        val sanitizedAccount = model.account?.copy(
+            additionalProperties = validateAccountAttributes(model.account.additionalProperties)
+                .safeMapValuesToJson(internalLogger)
+                .toMutableMap()
+        )
         val sanitizedContext = model.context?.copy(
             additionalProperties = validateContextAttributes(model.context.additionalProperties)
                 .safeMapValuesToJson(internalLogger)
@@ -112,6 +127,7 @@ internal class RumEventSerializer(
         )
         val sanitizedModel = model.copy(
             usr = sanitizedUser,
+            account = sanitizedAccount,
             context = sanitizedContext
         )
         return extractKnownAttributes(sanitizedModel.toJson().asJsonObject).toString()
@@ -123,6 +139,11 @@ internal class RumEventSerializer(
                 .safeMapValuesToJson(internalLogger)
                 .toMutableMap()
         )
+        val sanitizedAccount = model.account?.copy(
+            additionalProperties = validateAccountAttributes(model.account.additionalProperties)
+                .safeMapValuesToJson(internalLogger)
+                .toMutableMap()
+        )
         val sanitizedContext = model.context?.copy(
             additionalProperties = validateContextAttributes(model.context.additionalProperties)
                 .safeMapValuesToJson(internalLogger)
@@ -130,6 +151,7 @@ internal class RumEventSerializer(
         )
         val sanitizedModel = model.copy(
             usr = sanitizedUser,
+            account = sanitizedAccount,
             context = sanitizedContext
         )
         return extractKnownAttributes(sanitizedModel.toJson().asJsonObject).toString()
@@ -141,6 +163,11 @@ internal class RumEventSerializer(
                 .safeMapValuesToJson(internalLogger)
                 .toMutableMap()
         )
+        val sanitizedAccount = model.account?.copy(
+            additionalProperties = validateAccountAttributes(model.account.additionalProperties)
+                .safeMapValuesToJson(internalLogger)
+                .toMutableMap()
+        )
         val sanitizedContext = model.context?.copy(
             additionalProperties = validateContextAttributes(model.context.additionalProperties)
                 .safeMapValuesToJson(internalLogger)
@@ -148,6 +175,7 @@ internal class RumEventSerializer(
         )
         val sanitizedModel = model.copy(
             usr = sanitizedUser,
+            account = sanitizedAccount,
             context = sanitizedContext
         )
         return extractKnownAttributes(sanitizedModel.toJson().asJsonObject).toString()
@@ -159,6 +187,11 @@ internal class RumEventSerializer(
                 .safeMapValuesToJson(internalLogger)
                 .toMutableMap()
         )
+        val sanitizedAccount = model.account?.copy(
+            additionalProperties = validateAccountAttributes(model.account.additionalProperties)
+                .safeMapValuesToJson(internalLogger)
+                .toMutableMap()
+        )
         val sanitizedContext = model.context?.copy(
             additionalProperties = validateContextAttributes(model.context.additionalProperties)
                 .safeMapValuesToJson(internalLogger)
@@ -166,6 +199,31 @@ internal class RumEventSerializer(
         )
         val sanitizedModel = model.copy(
             usr = sanitizedUser,
+            account = sanitizedAccount,
+            context = sanitizedContext
+        )
+        return extractKnownAttributes(sanitizedModel.toJson().asJsonObject).toString()
+    }
+
+    private fun serializeVitalEvent(model: VitalEvent): String {
+        val sanitizedUser = model.usr?.copy(
+            additionalProperties = validateUserAttributes(model.usr.additionalProperties)
+                .safeMapValuesToJson(internalLogger)
+                .toMutableMap()
+        )
+        val sanitizedAccount = model.account?.copy(
+            additionalProperties = validateAccountAttributes(model.account.additionalProperties)
+                .safeMapValuesToJson(internalLogger)
+                .toMutableMap()
+        )
+        val sanitizedContext = model.context?.copy(
+            additionalProperties = validateContextAttributes(model.context.additionalProperties)
+                .safeMapValuesToJson(internalLogger)
+                .toMutableMap()
+        )
+        val sanitizedModel = model.copy(
+            usr = sanitizedUser,
+            account = sanitizedAccount,
             context = sanitizedContext
         )
         return extractKnownAttributes(sanitizedModel.toJson().asJsonObject).toString()
@@ -177,6 +235,15 @@ internal class RumEventSerializer(
                 it !in crossPlatformTransitAttributes
             },
             keyPrefix = GLOBAL_ATTRIBUTE_PREFIX,
+            reservedKeys = ignoredAttributes
+        )
+    }
+
+    private fun validateAccountAttributes(attributes: Map<String, Any?>): MutableMap<String, Any?> {
+        return dataConstraints.validateAttributes(
+            attributes,
+            keyPrefix = ACCOUNT_ATTRIBUTE_PREFIX,
+            attributesGroupName = ACCOUNT_EXTRA_GROUP_VERBOSE_NAME,
             reservedKeys = ignoredAttributes
         )
     }
@@ -215,6 +282,8 @@ internal class RumEventSerializer(
             RumAttributes.ACTION_TARGET_CLASS_NAME,
             RumAttributes.ACTION_TARGET_RESOURCE_ID,
             RumAttributes.ACTION_TARGET_TITLE,
+            RumAttributes.ACTION_TARGET_SELECTED,
+            RumAttributes.ACTION_TARGET_ROLE,
             RumAttributes.ERROR_RESOURCE_METHOD,
             RumAttributes.ERROR_RESOURCE_STATUS_CODE,
             RumAttributes.ERROR_RESOURCE_URL
@@ -238,6 +307,8 @@ internal class RumEventSerializer(
 
         internal const val GLOBAL_ATTRIBUTE_PREFIX: String = "context"
         internal const val USER_ATTRIBUTE_PREFIX: String = "usr"
+        internal const val ACCOUNT_ATTRIBUTE_PREFIX: String = "account"
         internal const val USER_EXTRA_GROUP_VERBOSE_NAME = "user extra information"
+        internal const val ACCOUNT_EXTRA_GROUP_VERBOSE_NAME = "account extra information"
     }
 }

@@ -24,7 +24,7 @@ plugins {
     // Publish
     `maven-publish`
     signing
-    id("org.jetbrains.dokka")
+    id("org.jetbrains.dokka-javadoc")
 
     // Analysis tools
     id("com.github.ben-manes.versions")
@@ -37,6 +37,7 @@ plugins {
     id("com.datadoghq.dependency-license")
     id("apiSurface")
     id("transitiveDependencies")
+    id("verificationXml")
     id("binary-compatibility-validator")
 }
 
@@ -45,14 +46,12 @@ android {
 }
 
 dependencies {
-    implementation(project(":features:dd-sdk-android-trace"))
-    implementation(project(":features:dd-sdk-android-rum"))
-    implementation(project(":dd-sdk-android-internal"))
     implementation(libs.kotlin)
     implementation(libs.okHttp)
     implementation(libs.androidXAnnotation)
-    api(libs.openTracingApi)
-
+    implementation(project(":dd-sdk-android-internal"))
+    implementation(project(":features:dd-sdk-android-rum"))
+    implementation(project(":features:dd-sdk-android-trace"))
     // Generate NoOp implementations
     ksp(project(":tools:noopfactory"))
 
@@ -66,6 +65,7 @@ dependencies {
     }
     testImplementation(testFixtures(project(":dd-sdk-android-core")))
     testImplementation(testFixtures(project(":dd-sdk-android-internal")))
+    testImplementation(testFixtures(project(":features:dd-sdk-android-trace")))
     testImplementation(libs.bundles.jUnit5)
     testImplementation(libs.bundles.testTools)
     testImplementation(libs.okHttpMock)
@@ -84,9 +84,4 @@ dependencyUpdateConfig()
 publishingConfig(
     "An OkHttp monitoring integration to use with the Datadog monitoring library for Android applications."
 )
-detektCustomConfig(
-    ":dd-sdk-android-core",
-    ":dd-sdk-android-internal",
-    ":features:dd-sdk-android-rum",
-    ":features:dd-sdk-android-trace"
-)
+detektCustomConfig()

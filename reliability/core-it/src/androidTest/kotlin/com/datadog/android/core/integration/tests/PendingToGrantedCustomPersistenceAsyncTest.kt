@@ -109,12 +109,14 @@ class PendingToGrantedCustomPersistenceAsyncTest(
         }.start()
         Thread {
             fakeBatchData.forEach { rawBatchEvent ->
-                featureScope.withWriteContext { _, eventBatchWriter ->
-                    eventBatchWriter.write(
-                        rawBatchEvent,
-                        fakeBatchMetadata,
-                        eventType
-                    )
+                featureScope.withWriteContext { _, writeScope ->
+                    writeScope {
+                        it.write(
+                            rawBatchEvent,
+                            fakeBatchMetadata,
+                            eventType
+                        )
+                    }
                 }
             }
             countDownLatch.countDown()
@@ -128,7 +130,7 @@ class PendingToGrantedCustomPersistenceAsyncTest(
                 .withTrackingConsent(TrackingConsent.GRANTED)
                 .receivedData(fakeBatchData, fakeBatchMetadata)
             true
-        }.doWait(LONG_WAIT_MS)
+        }.doWait(MEDIUM_WAIT_MS)
     }
 
     // region Internal
@@ -169,9 +171,9 @@ class PendingToGrantedCustomPersistenceAsyncTest(
                 .apply {
                     _InternalProxy.allowClearTextHttp(this)
                 }
-                .setBatchSize(aValueFrom(BatchSize::class.java))
-                .setUploadFrequency(aValueFrom(UploadFrequency::class.java))
-                .setBatchProcessingLevel(aValueFrom(BatchProcessingLevel::class.java))
+                .setBatchSize(BatchSize.SMALL)
+                .setUploadFrequency(UploadFrequency.FREQUENT)
+                .setBatchProcessingLevel(BatchProcessingLevel.HIGH)
                 .setPersistenceStrategyFactory(object : PersistenceStrategy.Factory {
                     override fun create(
                         identifier: String,

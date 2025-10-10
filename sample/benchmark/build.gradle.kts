@@ -4,11 +4,17 @@ import com.datadog.gradle.config.dependencyUpdateConfig
 import com.datadog.gradle.config.java17
 import com.datadog.gradle.config.junitConfig
 import com.datadog.gradle.config.kotlinConfig
+import com.datadog.gradle.plugin.InstrumentationMode
 
 plugins {
     id("com.android.application")
     kotlin("android")
+    alias(libs.plugins.composeCompilerPlugin)
     kotlin("kapt")
+    kotlin("plugin.serialization")
+    id("kotlin-parcelize")
+    alias(libs.plugins.datadogGradlePlugin)
+    id("transitiveDependencies")
 }
 
 @Suppress("StringLiteralDuplication")
@@ -36,9 +42,7 @@ android {
 
     buildFeatures {
         compose = true
-    }
-    composeOptions {
-        kotlinCompilerExtensionVersion = libs.versions.androidXComposeRuntime.get()
+        viewBinding = true
     }
     val bmPassword = System.getenv("BM_STORE_PASSWD")
     signingConfigs {
@@ -72,21 +76,34 @@ android {
     }
 }
 
+datadog {
+    composeInstrumentation = InstrumentationMode.AUTO
+}
+
 dependencies {
 
     implementation(libs.kotlin)
 
     // Android dependencies
+    implementation(libs.adapterDelegatesViewBinding)
     implementation(libs.androidXMultidex)
     implementation(libs.bundles.androidXNavigation)
     implementation(libs.androidXAppCompat)
     implementation(libs.androidXConstraintLayout)
+    implementation(libs.androidXLifecycleCompose)
     implementation(libs.googleMaterial)
-    implementation(libs.glideCore)
+    implementation(libs.bundles.glide)
     implementation(libs.timber)
     implementation(platform(libs.androidXComposeBom))
+    implementation(libs.material3Android)
     implementation(libs.bundles.androidXCompose)
     implementation(libs.coilCompose)
+    implementation(libs.daggerLib)
+    kapt(libs.daggerCompiler)
+    kapt(libs.glideCompiler)
+    implementation(libs.coroutinesCore)
+    implementation(libs.bundles.ktorClient)
+    implementation(libs.kotlinxSerializationJson)
     implementation(project(":features:dd-sdk-android-logs"))
     implementation(project(":features:dd-sdk-android-rum"))
     implementation(project(":features:dd-sdk-android-trace"))
@@ -97,11 +114,14 @@ dependencies {
     implementation(project(":features:dd-sdk-android-session-replay-material"))
     implementation(project(":features:dd-sdk-android-session-replay-compose"))
     implementation(project(":integrations:dd-sdk-android-compose"))
+    implementation(project(":integrations:dd-sdk-android-glide"))
+    implementation(project(":integrations:dd-sdk-android-okhttp"))
     implementation(project(":tools:benchmark"))
 
     testImplementation(libs.bundles.jUnit5)
     testImplementation(libs.bundles.testTools)
     testImplementation(libs.systemStubsJupiter)
+    testImplementation(libs.ktorClientMock)
 }
 
 kotlinConfig()

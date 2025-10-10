@@ -9,8 +9,7 @@ package com.datadog.android.rum.internal.domain.scope
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.context.NetworkInfo
-import com.datadog.android.api.feature.Feature
-import com.datadog.android.api.feature.FeatureScope
+import com.datadog.android.api.feature.EventWriteScope
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.api.storage.EventBatchWriter
 import com.datadog.android.api.storage.EventType
@@ -20,6 +19,7 @@ import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.RumResourceMethod
+import com.datadog.android.rum.RumSessionType
 import com.datadog.android.rum.assertj.ErrorEventAssert.Companion.assertThat
 import com.datadog.android.rum.assertj.ResourceEventAssert.Companion.assertThat
 import com.datadog.android.rum.internal.FeaturesContextResolver
@@ -30,6 +30,8 @@ import com.datadog.android.rum.internal.metric.networksettled.InternalResourceCo
 import com.datadog.android.rum.internal.metric.networksettled.NetworkSettledMetricResolver
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.internal.monitor.StorageEvent
+import com.datadog.android.rum.internal.toError
+import com.datadog.android.rum.internal.toResource
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.resource.ResourceId
@@ -57,6 +59,9 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.Arguments
+import org.junit.jupiter.params.provider.MethodSource
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
@@ -105,10 +110,16 @@ internal class RumResourceScopeTest {
     lateinit var mockInternalLogger: InternalLogger
 
     @Mock
-    lateinit var mockRumFeatureScope: FeatureScope
+    lateinit var mockEventBatchWriter: EventBatchWriter
 
     @Mock
-    lateinit var mockEventBatchWriter: EventBatchWriter
+    lateinit var mockEventWriteScope: EventWriteScope
+
+    @Mock
+    lateinit var mockFeaturesContextResolver: FeaturesContextResolver
+
+    @Mock
+    lateinit var mockNetworkSettledMetricResolver: NetworkSettledMetricResolver
 
     @StringForgery(regex = "http(s?)://[a-z]+\\.com/[a-z]+")
     lateinit var fakeUrl: String
@@ -118,7 +129,7 @@ internal class RumResourceScopeTest {
 
     @Forgery
     lateinit var fakeMethod: RumResourceMethod
-    lateinit var fakeAttributes: Map<String, Any?>
+    lateinit var fakeResourceAttributes: Map<String, Any?>
 
     @Forgery
     lateinit var fakeParentContext: RumContext
@@ -129,21 +140,17 @@ internal class RumResourceScopeTest {
     @Forgery
     lateinit var fakeNetworkInfoAtScopeStart: NetworkInfo
 
-    var fakeServerOffset: Long = 0L
-    var fakeSampleRate: Float = 0.0f
+    private var fakeServerOffset: Long = 0L
+    private var fakeSampleRate: Float = 0.0f
 
     private lateinit var fakeEventTime: Time
-    var fakeSourceResourceEvent: ResourceEvent.ResourceEventSource? = null
-    var fakeSourceErrorEvent: ErrorEvent.ErrorEventSource? = null
+    private var fakeSourceResourceEvent: ResourceEvent.ResourceEventSource? = null
+    private var fakeSourceErrorEvent: ErrorEvent.ErrorEventSource? = null
 
     @BoolForgery
     var fakeHasReplay: Boolean = false
 
-    @Mock
-    lateinit var mockFeaturesContextResolver: FeaturesContextResolver
-
-    @Mock
-    lateinit var mockNetworkSettledMetricResolver: NetworkSettledMetricResolver
+    private var fakeRumSessionType: RumSessionType? = null
 
     @BeforeEach
     fun `set up`(forge: Forge) {
@@ -180,7 +187,7 @@ internal class RumResourceScopeTest {
         val minLimit = -fakeEventTime.timestamp
         fakeServerOffset =
             forge.aLong(min = minLimit, max = maxLimit)
-        fakeAttributes = forge.exhaustiveAttributes()
+        fakeResourceAttributes = forge.exhaustiveAttributes()
         mockEvent = mockEvent()
         fakeSampleRate = forge.aFloat(min = 0.0f, max = 100.0f)
 
@@ -194,26 +201,28 @@ internal class RumResourceScopeTest {
                 fakeParentContext.viewId.orEmpty()
             )
         ).thenReturn(fakeHasReplay)
-        whenever(rumMonitor.mockSdkCore.getFeature(Feature.RUM_FEATURE_NAME)) doReturn mockRumFeatureScope
-        whenever(mockRumFeatureScope.withWriteContext(any(), any())) doAnswer {
-            val callback = it.getArgument<(DatadogContext, EventBatchWriter) -> Unit>(1)
-            callback.invoke(fakeDatadogContext, mockEventBatchWriter)
+        whenever(mockEventWriteScope.invoke(any())) doAnswer {
+            val callback = it.getArgument<(EventBatchWriter) -> Unit>(0)
+            callback.invoke(mockEventBatchWriter)
         }
         whenever(mockWriter.write(eq(mockEventBatchWriter), any(), eq(EventType.DEFAULT))) doReturn true
 
+        fakeRumSessionType = forge.aNullable { aValueFrom(RumSessionType::class.java) }
+
         testedScope = RumResourceScope(
-            mockParentScope,
-            rumMonitor.mockSdkCore,
-            fakeUrl,
-            fakeMethod,
-            fakeKey,
-            fakeEventTime,
-            fakeAttributes,
-            fakeServerOffset,
-            mockResolver,
-            mockFeaturesContextResolver,
-            fakeSampleRate,
-            mockNetworkSettledMetricResolver
+            parentScope = mockParentScope,
+            sdkCore = rumMonitor.mockSdkCore,
+            url = fakeUrl,
+            method = fakeMethod,
+            key = fakeKey,
+            eventTime = fakeEventTime,
+            initialAttributes = fakeResourceAttributes,
+            serverTimeOffsetInMs = fakeServerOffset,
+            firstPartyHostHeaderTypeResolver = mockResolver,
+            featuresContextResolver = mockFeaturesContextResolver,
+            sampleRate = fakeSampleRate,
+            networkSettledMetricResolver = mockNetworkSettledMetricResolver,
+            rumSessionTypeOverride = fakeRumSessionType
         )
     }
 
@@ -257,15 +266,15 @@ internal class RumResourceScopeTest {
         forge: Forge
     ) {
         // Given
-        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys)
         val expectedAttributes = mutableMapOf<String, Any?>()
-        expectedAttributes.putAll(fakeAttributes)
+        expectedAttributes.putAll(fakeResourceAttributes)
         expectedAttributes.putAll(attributes)
 
         // When
         Thread.sleep(RESOURCE_DURATION_MS)
         mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
-        val result = testedScope.handleEvent(mockEvent, mockWriter)
+        val result = testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
         argumentCaptor<ResourceEvent> {
@@ -280,6 +289,7 @@ internal class RumResourceScopeTest {
                     hasStatusCode(statusCode)
                     hasDurationGreaterThan(TimeUnit.MILLISECONDS.toNanos(RESOURCE_DURATION_MS))
                     hasUserInfo(fakeDatadogContext.userInfo)
+                    hasAccountInfo(fakeDatadogContext.accountInfo)
                     hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
@@ -290,7 +300,7 @@ internal class RumResourceScopeTest {
                     hasReplay(fakeHasReplay)
                     hasRulePsr(null)
                     doesNotHaveAResourceProvider()
-                    hasUserSession()
+                    hasSessionType(fakeRumSessionType?.toResource() ?: ResourceEvent.ResourceEventSessionType.USER)
                     hasNoSyntheticsTest()
                     hasStartReason(fakeParentContext.sessionStartReason)
                     containsExactlyContextAttributes(expectedAttributes)
@@ -312,7 +322,7 @@ internal class RumResourceScopeTest {
                     hasSampleRate(fakeSampleRate)
                 }
         }
-        verify(mockParentScope, never()).handleEvent(any(), any())
+        verify(mockParentScope, never()).handleEvent(any(), any(), any(), any())
         verifyNoMoreInteractions(mockWriter)
         assertThat(result).isEqualTo(null)
     }
@@ -326,15 +336,15 @@ internal class RumResourceScopeTest {
     ) {
         // Given
         doAnswer { true }.whenever(mockResolver).isFirstPartyUrl(fakeUrl)
-        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys)
         val expectedAttributes = mutableMapOf<String, Any?>()
-        expectedAttributes.putAll(fakeAttributes)
+        expectedAttributes.putAll(fakeResourceAttributes)
         expectedAttributes.putAll(attributes)
 
         // When
         Thread.sleep(RESOURCE_DURATION_MS)
         mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
-        val result = testedScope.handleEvent(mockEvent, mockWriter)
+        val result = testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
         argumentCaptor<ResourceEvent> {
@@ -349,6 +359,7 @@ internal class RumResourceScopeTest {
                     hasStatusCode(statusCode)
                     hasDurationGreaterThan(TimeUnit.MILLISECONDS.toNanos(RESOURCE_DURATION_MS))
                     hasUserInfo(fakeDatadogContext.userInfo)
+                    hasAccountInfo(fakeDatadogContext.accountInfo)
                     hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
@@ -361,7 +372,7 @@ internal class RumResourceScopeTest {
                     hasProviderType(ResourceEvent.ProviderType.FIRST_PARTY)
                     hasProviderDomain(URL(fakeUrl).host)
                     hasStartReason(fakeParentContext.sessionStartReason)
-                    hasUserSession()
+                    hasSessionType(fakeRumSessionType?.toResource() ?: ResourceEvent.ResourceEventSessionType.USER)
                     hasNoSyntheticsTest()
                     containsExactlyContextAttributes(expectedAttributes)
                     hasSource(fakeSourceResourceEvent)
@@ -382,7 +393,7 @@ internal class RumResourceScopeTest {
                     hasSampleRate(fakeSampleRate)
                 }
         }
-        verify(mockParentScope, never()).handleEvent(any(), any())
+        verify(mockParentScope, never()).handleEvent(any(), any(), any(), any())
         verifyNoMoreInteractions(mockWriter)
         assertThat(result).isEqualTo(null)
     }
@@ -397,29 +408,30 @@ internal class RumResourceScopeTest {
         // Given
         val brokenUrl = forge.aStringMatching("[a-z]+.com/[a-z]+")
         testedScope = RumResourceScope(
-            mockParentScope,
-            rumMonitor.mockSdkCore,
-            brokenUrl,
-            fakeMethod,
-            fakeKey,
-            fakeEventTime,
-            fakeAttributes,
-            fakeServerOffset,
-            mockResolver,
-            mockFeaturesContextResolver,
-            fakeSampleRate,
-            mockNetworkSettledMetricResolver
+            parentScope = mockParentScope,
+            sdkCore = rumMonitor.mockSdkCore,
+            url = brokenUrl,
+            method = fakeMethod,
+            key = fakeKey,
+            eventTime = fakeEventTime,
+            initialAttributes = fakeResourceAttributes,
+            serverTimeOffsetInMs = fakeServerOffset,
+            firstPartyHostHeaderTypeResolver = mockResolver,
+            featuresContextResolver = mockFeaturesContextResolver,
+            sampleRate = fakeSampleRate,
+            networkSettledMetricResolver = mockNetworkSettledMetricResolver,
+            rumSessionTypeOverride = fakeRumSessionType
         )
         doAnswer { true }.whenever(mockResolver).isFirstPartyUrl(brokenUrl)
-        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys)
         val expectedAttributes = mutableMapOf<String, Any?>()
-        expectedAttributes.putAll(fakeAttributes)
+        expectedAttributes.putAll(fakeResourceAttributes)
         expectedAttributes.putAll(attributes)
 
         // When
         Thread.sleep(RESOURCE_DURATION_MS)
         mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
-        val result = testedScope.handleEvent(mockEvent, mockWriter)
+        val result = testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
         argumentCaptor<ResourceEvent> {
@@ -434,6 +446,7 @@ internal class RumResourceScopeTest {
                     hasStatusCode(statusCode)
                     hasDurationGreaterThan(TimeUnit.MILLISECONDS.toNanos(RESOURCE_DURATION_MS))
                     hasUserInfo(fakeDatadogContext.userInfo)
+                    hasAccountInfo(fakeDatadogContext.accountInfo)
                     hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
@@ -446,7 +459,7 @@ internal class RumResourceScopeTest {
                     hasProviderType(ResourceEvent.ProviderType.FIRST_PARTY)
                     hasProviderDomain(brokenUrl)
                     hasStartReason(fakeParentContext.sessionStartReason)
-                    hasUserSession()
+                    hasSessionType(fakeRumSessionType?.toResource() ?: ResourceEvent.ResourceEventSessionType.USER)
                     hasNoSyntheticsTest()
                     containsExactlyContextAttributes(expectedAttributes)
                     hasSource(fakeSourceResourceEvent)
@@ -467,7 +480,7 @@ internal class RumResourceScopeTest {
                     hasSampleRate(fakeSampleRate)
                 }
         }
-        verify(mockParentScope, never()).handleEvent(any(), any())
+        verify(mockParentScope, never()).handleEvent(any(), any(), any(), any())
         verifyNoMoreInteractions(mockWriter)
         assertThat(result).isEqualTo(null)
     }
@@ -483,10 +496,10 @@ internal class RumResourceScopeTest {
         forge: Forge
     ) {
         // Given
-        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys)
             .toMutableMap()
         val expectedAttributes = mutableMapOf<String, Any?>()
-        expectedAttributes.putAll(fakeAttributes)
+        expectedAttributes.putAll(fakeResourceAttributes)
         expectedAttributes.putAll(attributes)
         attributes[RumAttributes.TRACE_ID] = fakeTraceId
         attributes[RumAttributes.SPAN_ID] = fakeSpanId
@@ -495,7 +508,7 @@ internal class RumResourceScopeTest {
         // When
         Thread.sleep(RESOURCE_DURATION_MS)
         mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
-        val result = testedScope.handleEvent(mockEvent, mockWriter)
+        val result = testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
         argumentCaptor<ResourceEvent> {
@@ -510,6 +523,7 @@ internal class RumResourceScopeTest {
                     hasStatusCode(statusCode)
                     hasDurationGreaterThan(TimeUnit.MILLISECONDS.toNanos(RESOURCE_DURATION_MS))
                     hasUserInfo(fakeDatadogContext.userInfo)
+                    hasAccountInfo(fakeDatadogContext.accountInfo)
                     hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
@@ -520,7 +534,7 @@ internal class RumResourceScopeTest {
                     hasReplay(fakeHasReplay)
                     hasRulePsr(fakeRulePsr)
                     doesNotHaveAResourceProvider()
-                    hasUserSession()
+                    hasSessionType(fakeRumSessionType?.toResource() ?: ResourceEvent.ResourceEventSessionType.USER)
                     hasNoSyntheticsTest()
                     hasStartReason(fakeParentContext.sessionStartReason)
                     containsExactlyContextAttributes(expectedAttributes)
@@ -542,7 +556,7 @@ internal class RumResourceScopeTest {
                     hasSampleRate(fakeSampleRate)
                 }
         }
-        verify(mockParentScope, never()).handleEvent(any(), any())
+        verify(mockParentScope, never()).handleEvent(any(), any(), any(), any())
         verifyNoMoreInteractions(mockWriter)
         assertThat(result).isEqualTo(null)
     }
@@ -556,16 +570,16 @@ internal class RumResourceScopeTest {
         forge: Forge
     ) {
         // Given
-        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys)
         val expectedAttributes = mutableMapOf<String, Any?>()
-        expectedAttributes.putAll(fakeAttributes)
+        expectedAttributes.putAll(fakeResourceAttributes)
         expectedAttributes.putAll(attributes)
         whenever(mockParentScope.getRumContext()) doReturn context
 
         // When
         Thread.sleep(RESOURCE_DURATION_MS)
         mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
-        val result = testedScope.handleEvent(mockEvent, mockWriter)
+        val result = testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
         argumentCaptor<ResourceEvent> {
@@ -580,6 +594,7 @@ internal class RumResourceScopeTest {
                     hasStatusCode(statusCode)
                     hasDurationGreaterThan(TimeUnit.MILLISECONDS.toNanos(RESOURCE_DURATION_MS))
                     hasUserInfo(fakeDatadogContext.userInfo)
+                    hasAccountInfo(fakeDatadogContext.accountInfo)
                     hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
@@ -590,7 +605,7 @@ internal class RumResourceScopeTest {
                     hasReplay(fakeHasReplay)
                     hasRulePsr(null)
                     doesNotHaveAResourceProvider()
-                    hasUserSession()
+                    hasSessionType(fakeRumSessionType?.toResource() ?: ResourceEvent.ResourceEventSessionType.USER)
                     hasNoSyntheticsTest()
                     hasStartReason(fakeParentContext.sessionStartReason)
                     containsExactlyContextAttributes(expectedAttributes)
@@ -612,7 +627,7 @@ internal class RumResourceScopeTest {
                     hasSampleRate(fakeSampleRate)
                 }
         }
-        verify(mockParentScope, never()).handleEvent(any(), any())
+        verify(mockParentScope, never()).handleEvent(any(), any(), any(), any())
         verifyNoMoreInteractions(mockWriter)
         assertThat(result).isEqualTo(null)
     }
@@ -627,9 +642,9 @@ internal class RumResourceScopeTest {
         forge: Forge
     ) {
         // Given
-        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys)
         val expectedAttributes = mutableMapOf<String, Any?>()
-        expectedAttributes.putAll(fakeAttributes)
+        expectedAttributes.putAll(fakeResourceAttributes)
         expectedAttributes.putAll(attributes)
         fakeParentContext = fakeParentContext.copy(
             syntheticsTestId = fakeTestId,
@@ -637,24 +652,25 @@ internal class RumResourceScopeTest {
         )
         whenever(mockParentScope.getRumContext()) doReturn fakeParentContext
         testedScope = RumResourceScope(
-            mockParentScope,
-            rumMonitor.mockSdkCore,
-            fakeUrl,
-            fakeMethod,
-            fakeKey,
-            fakeEventTime,
-            fakeAttributes,
-            fakeServerOffset,
-            mockResolver,
-            mockFeaturesContextResolver,
-            fakeSampleRate,
-            mockNetworkSettledMetricResolver
+            parentScope = mockParentScope,
+            sdkCore = rumMonitor.mockSdkCore,
+            url = fakeUrl,
+            method = fakeMethod,
+            key = fakeKey,
+            eventTime = fakeEventTime,
+            initialAttributes = fakeResourceAttributes,
+            serverTimeOffsetInMs = fakeServerOffset,
+            firstPartyHostHeaderTypeResolver = mockResolver,
+            featuresContextResolver = mockFeaturesContextResolver,
+            sampleRate = fakeSampleRate,
+            networkSettledMetricResolver = mockNetworkSettledMetricResolver,
+            rumSessionTypeOverride = fakeRumSessionType
         )
 
         // When
         Thread.sleep(RESOURCE_DURATION_MS)
         mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
-        val result = testedScope.handleEvent(mockEvent, mockWriter)
+        val result = testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
         argumentCaptor<ResourceEvent> {
@@ -669,6 +685,7 @@ internal class RumResourceScopeTest {
                     hasStatusCode(statusCode)
                     hasDurationGreaterThan(TimeUnit.MILLISECONDS.toNanos(RESOURCE_DURATION_MS))
                     hasUserInfo(fakeDatadogContext.userInfo)
+                    hasAccountInfo(fakeDatadogContext.accountInfo)
                     hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
@@ -679,7 +696,9 @@ internal class RumResourceScopeTest {
                     hasReplay(fakeHasReplay)
                     hasRulePsr(null)
                     doesNotHaveAResourceProvider()
-                    hasSyntheticsSession()
+                    hasSessionType(
+                        fakeRumSessionType?.toResource() ?: ResourceEvent.ResourceEventSessionType.SYNTHETICS
+                    )
                     hasSyntheticsTest(fakeTestId, fakeResultId)
                     hasStartReason(fakeParentContext.sessionStartReason)
                     containsExactlyContextAttributes(expectedAttributes)
@@ -701,7 +720,7 @@ internal class RumResourceScopeTest {
                     hasSampleRate(fakeSampleRate)
                 }
         }
-        verify(mockParentScope, never()).handleEvent(any(), any())
+        verify(mockParentScope, never()).handleEvent(any(), any(), any(), any())
         verifyNoMoreInteractions(mockWriter)
         assertThat(result).isEqualTo(null)
     }
@@ -715,7 +734,7 @@ internal class RumResourceScopeTest {
         // When
         Thread.sleep(RESOURCE_DURATION_MS)
         mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, emptyMap())
-        val result = testedScope.handleEvent(mockEvent, mockWriter)
+        val result = testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
         argumentCaptor<ResourceEvent> {
@@ -730,6 +749,7 @@ internal class RumResourceScopeTest {
                     hasStatusCode(statusCode)
                     hasDurationGreaterThan(TimeUnit.MILLISECONDS.toNanos(RESOURCE_DURATION_MS))
                     hasUserInfo(fakeDatadogContext.userInfo)
+                    hasAccountInfo(fakeDatadogContext.accountInfo)
                     hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
@@ -740,10 +760,10 @@ internal class RumResourceScopeTest {
                     hasReplay(fakeHasReplay)
                     hasRulePsr(null)
                     doesNotHaveAResourceProvider()
-                    hasUserSession()
+                    hasSessionType(fakeRumSessionType?.toResource() ?: ResourceEvent.ResourceEventSessionType.USER)
                     hasNoSyntheticsTest()
                     hasStartReason(fakeParentContext.sessionStartReason)
-                    containsExactlyContextAttributes(fakeAttributes)
+                    containsExactlyContextAttributes(fakeResourceAttributes)
                     hasSource(fakeSourceResourceEvent)
                     hasDeviceInfo(
                         fakeDatadogContext.deviceInfo.deviceName,
@@ -762,7 +782,7 @@ internal class RumResourceScopeTest {
                     hasSampleRate(fakeSampleRate)
                 }
         }
-        verify(mockParentScope, never()).handleEvent(any(), any())
+        verify(mockParentScope, never()).handleEvent(any(), any(), any(), any())
         verifyNoMoreInteractions(mockWriter)
         assertThat(result).isEqualTo(null)
     }
@@ -776,7 +796,7 @@ internal class RumResourceScopeTest {
         // When
         Thread.sleep(RESOURCE_DURATION_MS)
         mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, emptyMap())
-        val result = testedScope.handleEvent(mockEvent, mockWriter)
+        val result = testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
         argumentCaptor<ResourceEvent> {
@@ -786,16 +806,17 @@ internal class RumResourceScopeTest {
                     hasKind(kind)
                     hasStatusCode(statusCode)
                     hasUserInfo(fakeDatadogContext.userInfo)
+                    hasAccountInfo(fakeDatadogContext.accountInfo)
                     hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasActionId(fakeParentContext.actionId)
                     hasStartReason(fakeParentContext.sessionStartReason)
-                    hasUserSession()
+                    hasSessionType(fakeRumSessionType?.toResource() ?: ResourceEvent.ResourceEventSessionType.USER)
                     hasNoSyntheticsTest()
                     hasReplay(fakeHasReplay)
-                    containsExactlyContextAttributes(fakeAttributes)
+                    containsExactlyContextAttributes(fakeResourceAttributes)
                     hasSource(fakeSourceResourceEvent)
                     hasDeviceInfo(
                         fakeDatadogContext.deviceInfo.deviceName,
@@ -814,7 +835,7 @@ internal class RumResourceScopeTest {
                     hasSampleRate(fakeSampleRate)
                 }
         }
-        verify(mockParentScope, never()).handleEvent(any(), any())
+        verify(mockParentScope, never()).handleEvent(any(), any(), any(), any())
         verifyNoMoreInteractions(mockWriter)
         assertThat(result).isEqualTo(null)
     }
@@ -828,14 +849,14 @@ internal class RumResourceScopeTest {
         // When
         Thread.sleep(RESOURCE_DURATION_MS)
         mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, emptyMap())
-        val result = testedScope.handleEvent(mockEvent, mockWriter)
+        val result = testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
         argumentCaptor<Any> {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(lastValue).isNotInstanceOf(ErrorEvent::class.java)
         }
-        verify(mockParentScope, never()).handleEvent(any(), any())
+        verify(mockParentScope, never()).handleEvent(any(), any(), any(), any())
         verifyNoMoreInteractions(mockWriter)
         assertThat(result).isEqualTo(null)
     }
@@ -848,14 +869,14 @@ internal class RumResourceScopeTest {
         // When
         Thread.sleep(RESOURCE_DURATION_MS)
         mockEvent = RumRawEvent.StopResource(fakeKey, null, size, kind, emptyMap())
-        val result = testedScope.handleEvent(mockEvent, mockWriter)
+        val result = testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
         argumentCaptor<Any> {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             assertThat(lastValue).isNotInstanceOf(ErrorEvent::class.java)
         }
-        verify(mockParentScope, never()).handleEvent(any(), any())
+        verify(mockParentScope, never()).handleEvent(any(), any(), any(), any())
         verifyNoMoreInteractions(mockWriter)
         assertThat(result).isEqualTo(null)
     }
@@ -868,33 +889,34 @@ internal class RumResourceScopeTest {
         forge: Forge
     ) {
         // Given
-        val fakeGlobalAttributes = forge.aFilteredMap(excludedKeys = fakeAttributes.keys) {
+        val fakeParentAttributes = forge.aFilteredMap(excludedKeys = fakeResourceAttributes.keys) {
             anHexadecimalString() to anAsciiString()
         }
         val expectedAttributes = mutableMapOf<String, Any?>()
-        expectedAttributes.putAll(fakeAttributes)
-        expectedAttributes.putAll(fakeGlobalAttributes)
-        whenever(rumMonitor.mockInstance.getAttributes()) doReturn fakeGlobalAttributes
+        expectedAttributes.putAll(fakeResourceAttributes)
+        expectedAttributes.putAll(fakeParentAttributes)
+        whenever(mockParentScope.getCustomAttributes()) doReturn fakeParentAttributes
         testedScope = RumResourceScope(
-            mockParentScope,
-            rumMonitor.mockSdkCore,
-            fakeUrl,
-            fakeMethod,
-            fakeKey,
-            fakeEventTime,
-            fakeAttributes,
-            fakeServerOffset,
-            mockResolver,
-            mockFeaturesContextResolver,
-            fakeSampleRate,
-            mockNetworkSettledMetricResolver
+            parentScope = mockParentScope,
+            sdkCore = rumMonitor.mockSdkCore,
+            url = fakeUrl,
+            method = fakeMethod,
+            key = fakeKey,
+            eventTime = fakeEventTime,
+            initialAttributes = fakeResourceAttributes,
+            serverTimeOffsetInMs = fakeServerOffset,
+            firstPartyHostHeaderTypeResolver = mockResolver,
+            featuresContextResolver = mockFeaturesContextResolver,
+            sampleRate = fakeSampleRate,
+            networkSettledMetricResolver = mockNetworkSettledMetricResolver,
+            rumSessionTypeOverride = fakeRumSessionType
         )
         whenever(rumMonitor.mockInstance.getAttributes()) doReturn emptyMap()
 
         // When
         Thread.sleep(RESOURCE_DURATION_MS)
         mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, emptyMap())
-        val result = testedScope.handleEvent(mockEvent, mockWriter)
+        val result = testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
         argumentCaptor<ResourceEvent> {
@@ -909,6 +931,7 @@ internal class RumResourceScopeTest {
                     hasStatusCode(statusCode)
                     hasDurationGreaterThan(TimeUnit.MILLISECONDS.toNanos(RESOURCE_DURATION_MS))
                     hasUserInfo(fakeDatadogContext.userInfo)
+                    hasAccountInfo(fakeDatadogContext.accountInfo)
                     hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
@@ -919,7 +942,7 @@ internal class RumResourceScopeTest {
                     hasReplay(fakeHasReplay)
                     hasRulePsr(null)
                     doesNotHaveAResourceProvider()
-                    hasUserSession()
+                    hasSessionType(fakeRumSessionType?.toResource() ?: ResourceEvent.ResourceEventSessionType.USER)
                     hasNoSyntheticsTest()
                     hasStartReason(fakeParentContext.sessionStartReason)
                     containsExactlyContextAttributes(expectedAttributes)
@@ -941,7 +964,7 @@ internal class RumResourceScopeTest {
                     hasSampleRate(fakeSampleRate)
                 }
         }
-        verify(mockParentScope, never()).handleEvent(any(), any())
+        verify(mockParentScope, never()).handleEvent(any(), any(), any(), any())
         verifyNoMoreInteractions(mockWriter)
         assertThat(result).isEqualTo(null)
     }
@@ -954,18 +977,18 @@ internal class RumResourceScopeTest {
         forge: Forge
     ) {
         // Given
-        val fakeGlobalAttributes = forge.aFilteredMap(excludedKeys = fakeAttributes.keys) {
+        val fakeParentAttributes = forge.aFilteredMap(excludedKeys = fakeResourceAttributes.keys) {
             anHexadecimalString() to anAsciiString()
         }
         val expectedAttributes = mutableMapOf<String, Any?>()
-        expectedAttributes.putAll(fakeAttributes)
-        expectedAttributes.putAll(fakeGlobalAttributes)
-        whenever(rumMonitor.mockInstance.getAttributes()) doReturn fakeGlobalAttributes
+        expectedAttributes.putAll(fakeParentAttributes)
+        expectedAttributes.putAll(fakeResourceAttributes)
+        whenever(mockParentScope.getCustomAttributes()) doReturn fakeParentAttributes
 
         // When
         Thread.sleep(RESOURCE_DURATION_MS)
         mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, emptyMap())
-        val result = testedScope.handleEvent(mockEvent, mockWriter)
+        val result = testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
         argumentCaptor<ResourceEvent> {
@@ -980,6 +1003,7 @@ internal class RumResourceScopeTest {
                     hasStatusCode(statusCode)
                     hasDurationGreaterThan(TimeUnit.MILLISECONDS.toNanos(RESOURCE_DURATION_MS))
                     hasUserInfo(fakeDatadogContext.userInfo)
+                    hasAccountInfo(fakeDatadogContext.accountInfo)
                     hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
@@ -990,7 +1014,7 @@ internal class RumResourceScopeTest {
                     hasReplay(fakeHasReplay)
                     hasRulePsr(null)
                     doesNotHaveAResourceProvider()
-                    hasUserSession()
+                    hasSessionType(fakeRumSessionType?.toResource() ?: ResourceEvent.ResourceEventSessionType.USER)
                     hasNoSyntheticsTest()
                     hasStartReason(fakeParentContext.sessionStartReason)
                     containsExactlyContextAttributes(expectedAttributes)
@@ -1012,7 +1036,7 @@ internal class RumResourceScopeTest {
                     hasSampleRate(fakeSampleRate)
                 }
         }
-        verify(mockParentScope, never()).handleEvent(any(), any())
+        verify(mockParentScope, never()).handleEvent(any(), any(), any(), any())
         verifyNoMoreInteractions(mockWriter)
         assertThat(result).isEqualTo(null)
     }
@@ -1026,17 +1050,17 @@ internal class RumResourceScopeTest {
         forge: Forge
     ) {
         // Given
-        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys)
         val expectedAttributes = mutableMapOf<String, Any?>()
-        expectedAttributes.putAll(fakeAttributes)
+        expectedAttributes.putAll(fakeResourceAttributes)
         expectedAttributes.putAll(attributes)
 
         // When
         mockEvent = RumRawEvent.AddResourceTiming(fakeKey, timing)
-        val resultTiming = testedScope.handleEvent(mockEvent, mockWriter)
+        val resultTiming = testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
         Thread.sleep(RESOURCE_DURATION_MS)
         mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
-        val result = testedScope.handleEvent(mockEvent, mockWriter)
+        val result = testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
         argumentCaptor<ResourceEvent> {
@@ -1052,6 +1076,7 @@ internal class RumResourceScopeTest {
                     hasDurationGreaterThan(TimeUnit.MILLISECONDS.toNanos(RESOURCE_DURATION_MS))
                     hasTiming(timing)
                     hasUserInfo(fakeDatadogContext.userInfo)
+                    hasAccountInfo(fakeDatadogContext.accountInfo)
                     hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
@@ -1062,7 +1087,7 @@ internal class RumResourceScopeTest {
                     hasReplay(fakeHasReplay)
                     hasRulePsr(null)
                     doesNotHaveAResourceProvider()
-                    hasUserSession()
+                    hasSessionType(fakeRumSessionType?.toResource() ?: ResourceEvent.ResourceEventSessionType.USER)
                     hasNoSyntheticsTest()
                     hasStartReason(fakeParentContext.sessionStartReason)
                     containsExactlyContextAttributes(expectedAttributes)
@@ -1084,7 +1109,7 @@ internal class RumResourceScopeTest {
                     hasSampleRate(fakeSampleRate)
                 }
         }
-        verify(mockParentScope, never()).handleEvent(any(), any())
+        verify(mockParentScope, never()).handleEvent(any(), any(), any(), any())
         verifyNoMoreInteractions(mockWriter)
         assertThat(resultTiming).isEqualTo(testedScope)
         assertThat(result).isEqualTo(null)
@@ -1099,17 +1124,17 @@ internal class RumResourceScopeTest {
         forge: Forge
     ) {
         // Given
-        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys)
         val expectedAttributes = mutableMapOf<String, Any?>()
-        expectedAttributes.putAll(fakeAttributes)
+        expectedAttributes.putAll(fakeResourceAttributes)
         expectedAttributes.putAll(attributes)
 
         // When
         mockEvent = RumRawEvent.AddResourceTiming("not_the_$fakeKey", timing)
-        val resultTiming = testedScope.handleEvent(mockEvent, mockWriter)
+        val resultTiming = testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
         Thread.sleep(RESOURCE_DURATION_MS)
         mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
-        val result = testedScope.handleEvent(mockEvent, mockWriter)
+        val result = testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
         argumentCaptor<ResourceEvent> {
@@ -1125,6 +1150,7 @@ internal class RumResourceScopeTest {
                     hasDurationGreaterThan(TimeUnit.MILLISECONDS.toNanos(RESOURCE_DURATION_MS))
                     hasNoTiming()
                     hasUserInfo(fakeDatadogContext.userInfo)
+                    hasAccountInfo(fakeDatadogContext.accountInfo)
                     hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
@@ -1135,7 +1161,7 @@ internal class RumResourceScopeTest {
                     hasReplay(fakeHasReplay)
                     hasRulePsr(null)
                     doesNotHaveAResourceProvider()
-                    hasUserSession()
+                    hasSessionType(fakeRumSessionType?.toResource() ?: ResourceEvent.ResourceEventSessionType.USER)
                     hasNoSyntheticsTest()
                     hasStartReason(fakeParentContext.sessionStartReason)
                     containsExactlyContextAttributes(expectedAttributes)
@@ -1157,7 +1183,7 @@ internal class RumResourceScopeTest {
                     hasSampleRate(fakeSampleRate)
                 }
         }
-        verify(mockParentScope, never()).handleEvent(any(), any())
+        verify(mockParentScope, never()).handleEvent(any(), any(), any(), any())
         verifyNoMoreInteractions(mockWriter)
         assertThat(resultTiming).isEqualTo(testedScope)
         assertThat(result).isEqualTo(null)
@@ -1171,9 +1197,9 @@ internal class RumResourceScopeTest {
         forge: Forge
     ) {
         // Given
-        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys)
         val expectedAttributes = mutableMapOf<String, Any?>()
-        expectedAttributes.putAll(fakeAttributes)
+        expectedAttributes.putAll(fakeResourceAttributes)
         expectedAttributes.putAll(attributes)
 
         mockEvent = RumRawEvent.StopResourceWithError(
@@ -1187,7 +1213,7 @@ internal class RumResourceScopeTest {
 
         // When
         Thread.sleep(RESOURCE_DURATION_MS)
-        val result = testedScope.handleEvent(mockEvent, mockWriter)
+        val result = testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
         argumentCaptor<ErrorEvent> {
@@ -1200,6 +1226,7 @@ internal class RumResourceScopeTest {
                     isCrash(false)
                     hasResource(fakeUrl, fakeMethod, 0L)
                     hasUserInfo(fakeDatadogContext.userInfo)
+                    hasAccountInfo(fakeDatadogContext.accountInfo)
                     hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
@@ -1209,7 +1236,7 @@ internal class RumResourceScopeTest {
                     hasErrorSourceType(ErrorEvent.SourceType.ANDROID)
                     hasErrorCategory(ErrorEvent.Category.EXCEPTION)
                     hasTimeSinceAppStart(null)
-                    hasUserSession()
+                    hasSessionType(fakeRumSessionType?.toError() ?: ErrorEvent.ErrorEventSessionType.USER)
                     hasNoSyntheticsTest()
                     hasStartReason(fakeParentContext.sessionStartReason)
                     hasReplay(fakeHasReplay)
@@ -1233,7 +1260,7 @@ internal class RumResourceScopeTest {
                     hasBuildId(fakeDatadogContext.appBuildId)
                 }
         }
-        verify(mockParentScope, never()).handleEvent(any(), any())
+        verify(mockParentScope, never()).handleEvent(any(), any(), any(), any())
         verifyNoMoreInteractions(mockWriter)
         assertThat(result).isEqualTo(null)
     }
@@ -1247,10 +1274,10 @@ internal class RumResourceScopeTest {
         forge: Forge
     ) {
         // Given
-        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys)
 
         val expectedAttributes = mutableMapOf<String, Any?>()
-        expectedAttributes.putAll(fakeAttributes)
+        expectedAttributes.putAll(fakeResourceAttributes)
         expectedAttributes.putAll(attributes)
 
         // Expected attributes should not have the ERROR_FINGERPRINT attribute so add it after
@@ -1267,7 +1294,7 @@ internal class RumResourceScopeTest {
 
         // When
         Thread.sleep(RESOURCE_DURATION_MS)
-        val result = testedScope.handleEvent(mockEvent, mockWriter)
+        val result = testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
         argumentCaptor<ErrorEvent> {
@@ -1280,6 +1307,7 @@ internal class RumResourceScopeTest {
                     isCrash(false)
                     hasResource(fakeUrl, fakeMethod, 0L)
                     hasUserInfo(fakeDatadogContext.userInfo)
+                    hasAccountInfo(fakeDatadogContext.accountInfo)
                     hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
@@ -1287,7 +1315,7 @@ internal class RumResourceScopeTest {
                     hasActionId(fakeParentContext.actionId)
                     hasErrorType(throwable.javaClass.canonicalName)
                     hasErrorSourceType(ErrorEvent.SourceType.ANDROID)
-                    hasUserSession()
+                    hasSessionType(fakeRumSessionType?.toError() ?: ErrorEvent.ErrorEventSessionType.USER)
                     hasErrorFingerprint(fakeFingerprint)
                     hasNoSyntheticsTest()
                     hasStartReason(fakeParentContext.sessionStartReason)
@@ -1311,7 +1339,7 @@ internal class RumResourceScopeTest {
                     hasSampleRate(fakeSampleRate)
                 }
         }
-        verify(mockParentScope, never()).handleEvent(any(), any())
+        verify(mockParentScope, never()).handleEvent(any(), any(), any(), any())
         verifyNoMoreInteractions(mockWriter)
         assertThat(result).isEqualTo(null)
     }
@@ -1325,9 +1353,9 @@ internal class RumResourceScopeTest {
     ) {
         // Given
         val errorType = forge.aNullable { anAlphabeticalString() }
-        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys)
         val expectedAttributes = mutableMapOf<String, Any?>()
-        expectedAttributes.putAll(fakeAttributes)
+        expectedAttributes.putAll(fakeResourceAttributes)
         expectedAttributes.putAll(attributes)
 
         mockEvent = RumRawEvent.StopResourceWithStackTrace(
@@ -1342,7 +1370,7 @@ internal class RumResourceScopeTest {
 
         // When
         Thread.sleep(RESOURCE_DURATION_MS)
-        val result = testedScope.handleEvent(mockEvent, mockWriter)
+        val result = testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
         argumentCaptor<ErrorEvent> {
@@ -1355,6 +1383,7 @@ internal class RumResourceScopeTest {
                     isCrash(false)
                     hasResource(fakeUrl, fakeMethod, 0L)
                     hasUserInfo(fakeDatadogContext.userInfo)
+                    hasAccountInfo(fakeDatadogContext.accountInfo)
                     hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
@@ -1364,7 +1393,7 @@ internal class RumResourceScopeTest {
                     hasErrorSourceType(ErrorEvent.SourceType.ANDROID)
                     hasErrorCategory(ErrorEvent.Category.EXCEPTION)
                     hasTimeSinceAppStart(null)
-                    hasUserSession()
+                    hasSessionType(fakeRumSessionType?.toError() ?: ErrorEvent.ErrorEventSessionType.USER)
                     hasNoSyntheticsTest()
                     hasStartReason(fakeParentContext.sessionStartReason)
                     hasReplay(fakeHasReplay)
@@ -1387,7 +1416,7 @@ internal class RumResourceScopeTest {
                     hasBuildId(fakeDatadogContext.appBuildId)
                 }
         }
-        verify(mockParentScope, never()).handleEvent(any(), any())
+        verify(mockParentScope, never()).handleEvent(any(), any(), any(), any())
         verifyNoMoreInteractions(mockWriter)
         assertThat(result).isEqualTo(null)
     }
@@ -1402,9 +1431,9 @@ internal class RumResourceScopeTest {
         forge: Forge
     ) {
         // Given
-        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys)
         val expectedAttributes = mutableMapOf<String, Any?>()
-        expectedAttributes.putAll(fakeAttributes)
+        expectedAttributes.putAll(fakeResourceAttributes)
         expectedAttributes.putAll(attributes)
         mockEvent = RumRawEvent.StopResourceWithError(
             fakeKey,
@@ -1420,23 +1449,24 @@ internal class RumResourceScopeTest {
         )
         whenever(mockParentScope.getRumContext()) doReturn fakeParentContext
         testedScope = RumResourceScope(
-            mockParentScope,
-            rumMonitor.mockSdkCore,
-            fakeUrl,
-            fakeMethod,
-            fakeKey,
-            fakeEventTime,
-            fakeAttributes,
-            fakeServerOffset,
-            mockResolver,
-            mockFeaturesContextResolver,
-            fakeSampleRate,
-            mockNetworkSettledMetricResolver
+            parentScope = mockParentScope,
+            sdkCore = rumMonitor.mockSdkCore,
+            url = fakeUrl,
+            method = fakeMethod,
+            key = fakeKey,
+            eventTime = fakeEventTime,
+            initialAttributes = fakeResourceAttributes,
+            serverTimeOffsetInMs = fakeServerOffset,
+            firstPartyHostHeaderTypeResolver = mockResolver,
+            featuresContextResolver = mockFeaturesContextResolver,
+            sampleRate = fakeSampleRate,
+            networkSettledMetricResolver = mockNetworkSettledMetricResolver,
+            rumSessionTypeOverride = fakeRumSessionType
         )
 
         // When
         Thread.sleep(RESOURCE_DURATION_MS)
-        val result = testedScope.handleEvent(mockEvent, mockWriter)
+        val result = testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
         argumentCaptor<ErrorEvent> {
@@ -1449,6 +1479,7 @@ internal class RumResourceScopeTest {
                     isCrash(false)
                     hasResource(fakeUrl, fakeMethod, 0L)
                     hasUserInfo(fakeDatadogContext.userInfo)
+                    hasAccountInfo(fakeDatadogContext.accountInfo)
                     hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
@@ -1458,7 +1489,7 @@ internal class RumResourceScopeTest {
                     hasErrorSourceType(ErrorEvent.SourceType.ANDROID)
                     hasErrorCategory(ErrorEvent.Category.EXCEPTION)
                     hasTimeSinceAppStart(null)
-                    hasSyntheticsSession()
+                    hasSessionType(fakeRumSessionType?.toError() ?: ErrorEvent.ErrorEventSessionType.SYNTHETICS)
                     hasSyntheticsTest(fakeTestId, fakeResultId)
                     hasStartReason(fakeParentContext.sessionStartReason)
                     hasReplay(fakeHasReplay)
@@ -1482,7 +1513,7 @@ internal class RumResourceScopeTest {
                     hasBuildId(fakeDatadogContext.appBuildId)
                 }
         }
-        verify(mockParentScope, never()).handleEvent(any(), any())
+        verify(mockParentScope, never()).handleEvent(any(), any(), any(), any())
         verifyNoMoreInteractions(mockWriter)
         assertThat(result).isEqualTo(null)
     }
@@ -1498,9 +1529,9 @@ internal class RumResourceScopeTest {
     ) {
         // Given
         val errorType = forge.aNullable { anAlphabeticalString() }
-        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys)
         val expectedAttributes = mutableMapOf<String, Any?>()
-        expectedAttributes.putAll(fakeAttributes)
+        expectedAttributes.putAll(fakeResourceAttributes)
         expectedAttributes.putAll(attributes)
         fakeParentContext = fakeParentContext.copy(
             syntheticsTestId = fakeTestId,
@@ -1517,23 +1548,24 @@ internal class RumResourceScopeTest {
             attributes
         )
         testedScope = RumResourceScope(
-            mockParentScope,
-            rumMonitor.mockSdkCore,
-            fakeUrl,
-            fakeMethod,
-            fakeKey,
-            fakeEventTime,
-            fakeAttributes,
-            fakeServerOffset,
-            mockResolver,
-            mockFeaturesContextResolver,
-            fakeSampleRate,
-            mockNetworkSettledMetricResolver
+            parentScope = mockParentScope,
+            sdkCore = rumMonitor.mockSdkCore,
+            url = fakeUrl,
+            method = fakeMethod,
+            key = fakeKey,
+            eventTime = fakeEventTime,
+            initialAttributes = fakeResourceAttributes,
+            serverTimeOffsetInMs = fakeServerOffset,
+            firstPartyHostHeaderTypeResolver = mockResolver,
+            featuresContextResolver = mockFeaturesContextResolver,
+            sampleRate = fakeSampleRate,
+            networkSettledMetricResolver = mockNetworkSettledMetricResolver,
+            rumSessionTypeOverride = fakeRumSessionType
         )
 
         // When
         Thread.sleep(RESOURCE_DURATION_MS)
-        val result = testedScope.handleEvent(mockEvent, mockWriter)
+        val result = testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
         argumentCaptor<ErrorEvent> {
@@ -1546,6 +1578,7 @@ internal class RumResourceScopeTest {
                     isCrash(false)
                     hasResource(fakeUrl, fakeMethod, 0L)
                     hasUserInfo(fakeDatadogContext.userInfo)
+                    hasAccountInfo(fakeDatadogContext.accountInfo)
                     hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
@@ -1555,7 +1588,7 @@ internal class RumResourceScopeTest {
                     hasErrorSourceType(ErrorEvent.SourceType.ANDROID)
                     hasErrorCategory(ErrorEvent.Category.EXCEPTION)
                     hasTimeSinceAppStart(null)
-                    hasSyntheticsSession()
+                    hasSessionType(fakeRumSessionType?.toError() ?: ErrorEvent.ErrorEventSessionType.SYNTHETICS)
                     hasSyntheticsTest(fakeTestId, fakeResultId)
                     hasStartReason(fakeParentContext.sessionStartReason)
                     hasReplay(fakeHasReplay)
@@ -1578,7 +1611,7 @@ internal class RumResourceScopeTest {
                     hasBuildId(fakeDatadogContext.appBuildId)
                 }
         }
-        verify(mockParentScope, never()).handleEvent(any(), any())
+        verify(mockParentScope, never()).handleEvent(any(), any(), any(), any())
         verifyNoMoreInteractions(mockWriter)
         assertThat(result).isEqualTo(null)
     }
@@ -1593,23 +1626,24 @@ internal class RumResourceScopeTest {
         // Given
         val brokenUrl = forge.aStringMatching("[a-z]+.com/[a-z]+")
         testedScope = RumResourceScope(
-            mockParentScope,
-            rumMonitor.mockSdkCore,
-            brokenUrl,
-            fakeMethod,
-            fakeKey,
-            fakeEventTime,
-            fakeAttributes,
-            fakeServerOffset,
-            mockResolver,
-            mockFeaturesContextResolver,
-            fakeSampleRate,
-            mockNetworkSettledMetricResolver
+            parentScope = mockParentScope,
+            sdkCore = rumMonitor.mockSdkCore,
+            url = brokenUrl,
+            method = fakeMethod,
+            key = fakeKey,
+            eventTime = fakeEventTime,
+            initialAttributes = fakeResourceAttributes,
+            serverTimeOffsetInMs = fakeServerOffset,
+            firstPartyHostHeaderTypeResolver = mockResolver,
+            featuresContextResolver = mockFeaturesContextResolver,
+            sampleRate = fakeSampleRate,
+            networkSettledMetricResolver = mockNetworkSettledMetricResolver,
+            rumSessionTypeOverride = fakeRumSessionType
         )
         doAnswer { true }.whenever(mockResolver).isFirstPartyUrl(brokenUrl)
-        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys)
         val expectedAttributes = mutableMapOf<String, Any?>()
-        expectedAttributes.putAll(fakeAttributes)
+        expectedAttributes.putAll(fakeResourceAttributes)
         expectedAttributes.putAll(attributes)
 
         mockEvent = RumRawEvent.StopResourceWithError(
@@ -1623,7 +1657,7 @@ internal class RumResourceScopeTest {
 
         // When
         Thread.sleep(RESOURCE_DURATION_MS)
-        val result = testedScope.handleEvent(mockEvent, mockWriter)
+        val result = testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
         argumentCaptor<ErrorEvent> {
@@ -1636,6 +1670,7 @@ internal class RumResourceScopeTest {
                     isCrash(false)
                     hasResource(brokenUrl, fakeMethod, 0L)
                     hasUserInfo(fakeDatadogContext.userInfo)
+                    hasAccountInfo(fakeDatadogContext.accountInfo)
                     hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
@@ -1647,7 +1682,7 @@ internal class RumResourceScopeTest {
                     hasErrorSourceType(ErrorEvent.SourceType.ANDROID)
                     hasErrorCategory(ErrorEvent.Category.EXCEPTION)
                     hasTimeSinceAppStart(null)
-                    hasUserSession()
+                    hasSessionType(fakeRumSessionType?.toError() ?: ErrorEvent.ErrorEventSessionType.USER)
                     hasNoSyntheticsTest()
                     hasStartReason(fakeParentContext.sessionStartReason)
                     hasReplay(fakeHasReplay)
@@ -1671,7 +1706,7 @@ internal class RumResourceScopeTest {
                     hasBuildId(fakeDatadogContext.appBuildId)
                 }
         }
-        verify(mockParentScope, never()).handleEvent(any(), any())
+        verify(mockParentScope, never()).handleEvent(any(), any(), any(), any())
         verifyNoMoreInteractions(mockWriter)
         assertThat(result).isEqualTo(null)
     }
@@ -1687,23 +1722,24 @@ internal class RumResourceScopeTest {
         val errorType = forge.aNullable { anAlphabeticalString() }
         val brokenUrl = forge.aStringMatching("[a-z]+.com/[a-z]+")
         testedScope = RumResourceScope(
-            mockParentScope,
-            rumMonitor.mockSdkCore,
-            brokenUrl,
-            fakeMethod,
-            fakeKey,
-            fakeEventTime,
-            fakeAttributes,
-            fakeServerOffset,
-            mockResolver,
-            mockFeaturesContextResolver,
-            fakeSampleRate,
-            mockNetworkSettledMetricResolver
+            parentScope = mockParentScope,
+            sdkCore = rumMonitor.mockSdkCore,
+            url = brokenUrl,
+            method = fakeMethod,
+            key = fakeKey,
+            eventTime = fakeEventTime,
+            initialAttributes = fakeResourceAttributes,
+            serverTimeOffsetInMs = fakeServerOffset,
+            firstPartyHostHeaderTypeResolver = mockResolver,
+            featuresContextResolver = mockFeaturesContextResolver,
+            sampleRate = fakeSampleRate,
+            networkSettledMetricResolver = mockNetworkSettledMetricResolver,
+            rumSessionTypeOverride = fakeRumSessionType
         )
         doAnswer { true }.whenever(mockResolver).isFirstPartyUrl(brokenUrl)
-        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys)
         val expectedAttributes = mutableMapOf<String, Any?>()
-        expectedAttributes.putAll(fakeAttributes)
+        expectedAttributes.putAll(fakeResourceAttributes)
         expectedAttributes.putAll(attributes)
 
         mockEvent = RumRawEvent.StopResourceWithStackTrace(
@@ -1718,7 +1754,7 @@ internal class RumResourceScopeTest {
 
         // When
         Thread.sleep(RESOURCE_DURATION_MS)
-        val result = testedScope.handleEvent(mockEvent, mockWriter)
+        val result = testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
         argumentCaptor<ErrorEvent> {
@@ -1731,6 +1767,7 @@ internal class RumResourceScopeTest {
                     isCrash(false)
                     hasResource(brokenUrl, fakeMethod, 0L)
                     hasUserInfo(fakeDatadogContext.userInfo)
+                    hasAccountInfo(fakeDatadogContext.accountInfo)
                     hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
@@ -1742,7 +1779,7 @@ internal class RumResourceScopeTest {
                     hasErrorSourceType(ErrorEvent.SourceType.ANDROID)
                     hasErrorCategory(ErrorEvent.Category.EXCEPTION)
                     hasTimeSinceAppStart(null)
-                    hasUserSession()
+                    hasSessionType(fakeRumSessionType?.toError() ?: ErrorEvent.ErrorEventSessionType.USER)
                     hasNoSyntheticsTest()
                     hasStartReason(fakeParentContext.sessionStartReason)
                     hasReplay(fakeHasReplay)
@@ -1765,7 +1802,7 @@ internal class RumResourceScopeTest {
                     hasBuildId(fakeDatadogContext.appBuildId)
                 }
         }
-        verify(mockParentScope, never()).handleEvent(any(), any())
+        verify(mockParentScope, never()).handleEvent(any(), any(), any(), any())
         verifyNoMoreInteractions(mockWriter)
         assertThat(result).isEqualTo(null)
     }
@@ -1780,9 +1817,9 @@ internal class RumResourceScopeTest {
         // Given
         doAnswer { true }.whenever(mockResolver).isFirstPartyUrl(fakeUrl)
 
-        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys)
         val expectedAttributes = mutableMapOf<String, Any?>()
-        expectedAttributes.putAll(fakeAttributes)
+        expectedAttributes.putAll(fakeResourceAttributes)
         expectedAttributes.putAll(attributes)
 
         mockEvent = RumRawEvent.StopResourceWithError(
@@ -1796,7 +1833,7 @@ internal class RumResourceScopeTest {
 
         // When
         Thread.sleep(RESOURCE_DURATION_MS)
-        val result = testedScope.handleEvent(mockEvent, mockWriter)
+        val result = testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
         argumentCaptor<ErrorEvent> {
@@ -1809,6 +1846,7 @@ internal class RumResourceScopeTest {
                     isCrash(false)
                     hasResource(fakeUrl, fakeMethod, 0L)
                     hasUserInfo(fakeDatadogContext.userInfo)
+                    hasAccountInfo(fakeDatadogContext.accountInfo)
                     hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
@@ -1820,7 +1858,7 @@ internal class RumResourceScopeTest {
                     hasErrorSourceType(ErrorEvent.SourceType.ANDROID)
                     hasErrorCategory(ErrorEvent.Category.EXCEPTION)
                     hasTimeSinceAppStart(null)
-                    hasUserSession()
+                    hasSessionType(fakeRumSessionType?.toError() ?: ErrorEvent.ErrorEventSessionType.USER)
                     hasNoSyntheticsTest()
                     hasStartReason(fakeParentContext.sessionStartReason)
                     hasReplay(fakeHasReplay)
@@ -1844,7 +1882,7 @@ internal class RumResourceScopeTest {
                     hasBuildId(fakeDatadogContext.appBuildId)
                 }
         }
-        verify(mockParentScope, never()).handleEvent(any(), any())
+        verify(mockParentScope, never()).handleEvent(any(), any(), any(), any())
         verifyNoMoreInteractions(mockWriter)
         assertThat(result).isEqualTo(null)
     }
@@ -1859,9 +1897,9 @@ internal class RumResourceScopeTest {
         // Given
         doAnswer { true }.whenever(mockResolver).isFirstPartyUrl(fakeUrl)
         val errorType = forge.aNullable { anAlphabeticalString() }
-        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys)
         val expectedAttributes = mutableMapOf<String, Any?>()
-        expectedAttributes.putAll(fakeAttributes)
+        expectedAttributes.putAll(fakeResourceAttributes)
         expectedAttributes.putAll(attributes)
 
         mockEvent = RumRawEvent.StopResourceWithStackTrace(
@@ -1876,7 +1914,7 @@ internal class RumResourceScopeTest {
 
         // When
         Thread.sleep(RESOURCE_DURATION_MS)
-        val result = testedScope.handleEvent(mockEvent, mockWriter)
+        val result = testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
         argumentCaptor<ErrorEvent> {
@@ -1889,6 +1927,7 @@ internal class RumResourceScopeTest {
                     isCrash(false)
                     hasResource(fakeUrl, fakeMethod, 0L)
                     hasUserInfo(fakeDatadogContext.userInfo)
+                    hasAccountInfo(fakeDatadogContext.accountInfo)
                     hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
@@ -1900,7 +1939,7 @@ internal class RumResourceScopeTest {
                     hasErrorSourceType(ErrorEvent.SourceType.ANDROID)
                     hasErrorCategory(ErrorEvent.Category.EXCEPTION)
                     hasTimeSinceAppStart(null)
-                    hasUserSession()
+                    hasSessionType(fakeRumSessionType?.toError() ?: ErrorEvent.ErrorEventSessionType.USER)
                     hasNoSyntheticsTest()
                     hasStartReason(fakeParentContext.sessionStartReason)
                     hasReplay(fakeHasReplay)
@@ -1923,7 +1962,7 @@ internal class RumResourceScopeTest {
                     hasBuildId(fakeDatadogContext.appBuildId)
                 }
         }
-        verify(mockParentScope, never()).handleEvent(any(), any())
+        verify(mockParentScope, never()).handleEvent(any(), any(), any(), any())
         verifyNoMoreInteractions(mockWriter)
         assertThat(result).isEqualTo(null)
     }
@@ -1937,9 +1976,9 @@ internal class RumResourceScopeTest {
         forge: Forge
     ) {
         // Given
-        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys)
         val expectedAttributes = mutableMapOf<String, Any?>()
-        expectedAttributes.putAll(fakeAttributes)
+        expectedAttributes.putAll(fakeResourceAttributes)
         expectedAttributes.putAll(attributes)
 
         mockEvent = RumRawEvent.StopResourceWithError(
@@ -1954,7 +1993,7 @@ internal class RumResourceScopeTest {
 
         // When
         Thread.sleep(RESOURCE_DURATION_MS)
-        val result = testedScope.handleEvent(mockEvent, mockWriter)
+        val result = testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
         argumentCaptor<ErrorEvent> {
@@ -1967,6 +2006,7 @@ internal class RumResourceScopeTest {
                     isCrash(false)
                     hasResource(fakeUrl, fakeMethod, 0L)
                     hasUserInfo(fakeDatadogContext.userInfo)
+                    hasAccountInfo(fakeDatadogContext.accountInfo)
                     hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
@@ -1976,7 +2016,7 @@ internal class RumResourceScopeTest {
                     hasErrorSourceType(ErrorEvent.SourceType.ANDROID)
                     hasErrorCategory(ErrorEvent.Category.EXCEPTION)
                     hasTimeSinceAppStart(null)
-                    hasUserSession()
+                    hasSessionType(fakeRumSessionType?.toError() ?: ErrorEvent.ErrorEventSessionType.USER)
                     hasNoSyntheticsTest()
                     doesNotHaveAResourceProvider()
                     hasStartReason(fakeParentContext.sessionStartReason)
@@ -2001,7 +2041,7 @@ internal class RumResourceScopeTest {
                     hasBuildId(fakeDatadogContext.appBuildId)
                 }
         }
-        verify(mockParentScope, never()).handleEvent(any(), any())
+        verify(mockParentScope, never()).handleEvent(any(), any(), any(), any())
         verifyNoMoreInteractions(mockWriter)
         assertThat(result).isEqualTo(null)
     }
@@ -2016,9 +2056,9 @@ internal class RumResourceScopeTest {
     ) {
         // Given
         val errorType = forge.aNullable { anAlphabeticalString() }
-        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys)
         val expectedAttributes = mutableMapOf<String, Any?>()
-        expectedAttributes.putAll(fakeAttributes)
+        expectedAttributes.putAll(fakeResourceAttributes)
         expectedAttributes.putAll(attributes)
 
         mockEvent = RumRawEvent.StopResourceWithStackTrace(
@@ -2034,7 +2074,7 @@ internal class RumResourceScopeTest {
 
         // When
         Thread.sleep(RESOURCE_DURATION_MS)
-        val result = testedScope.handleEvent(mockEvent, mockWriter)
+        val result = testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
         argumentCaptor<ErrorEvent> {
@@ -2047,6 +2087,7 @@ internal class RumResourceScopeTest {
                     isCrash(false)
                     hasResource(fakeUrl, fakeMethod, 0L)
                     hasUserInfo(fakeDatadogContext.userInfo)
+                    hasAccountInfo(fakeDatadogContext.accountInfo)
                     hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
@@ -2056,7 +2097,7 @@ internal class RumResourceScopeTest {
                     hasErrorSourceType(ErrorEvent.SourceType.ANDROID)
                     hasErrorCategory(ErrorEvent.Category.EXCEPTION)
                     hasTimeSinceAppStart(null)
-                    hasUserSession()
+                    hasSessionType(fakeRumSessionType?.toError() ?: ErrorEvent.ErrorEventSessionType.USER)
                     hasNoSyntheticsTest()
                     doesNotHaveAResourceProvider()
                     hasStartReason(fakeParentContext.sessionStartReason)
@@ -2080,7 +2121,7 @@ internal class RumResourceScopeTest {
                     hasBuildId(fakeDatadogContext.appBuildId)
                 }
         }
-        verify(mockParentScope, never()).handleEvent(any(), any())
+        verify(mockParentScope, never()).handleEvent(any(), any(), any(), any())
         verifyNoMoreInteractions(mockWriter)
         assertThat(result).isEqualTo(null)
     }
@@ -2094,18 +2135,17 @@ internal class RumResourceScopeTest {
         forge: Forge
     ) {
         // Given
-        val attributes = forge.aFilteredMap(excludedKeys = fakeAttributes.keys) {
+        val fakeParentAttributes = forge.aFilteredMap(excludedKeys = fakeResourceAttributes.keys) {
             anHexadecimalString() to anAsciiString()
         }
         val errorAttributes = forge.exhaustiveAttributes(
-            excludedKeys = fakeAttributes.keys + attributes.keys
+            excludedKeys = fakeResourceAttributes.keys + fakeParentAttributes.keys
         )
         val expectedAttributes = mutableMapOf<String, Any?>()
-        expectedAttributes.putAll(fakeAttributes)
-        expectedAttributes.putAll(attributes)
+        expectedAttributes.putAll(fakeParentAttributes)
+        expectedAttributes.putAll(fakeResourceAttributes)
         expectedAttributes.putAll(errorAttributes)
-
-        whenever(rumMonitor.mockInstance.getAttributes()) doReturn attributes
+        whenever(mockParentScope.getCustomAttributes()) doReturn fakeParentAttributes
         mockEvent = RumRawEvent.StopResourceWithError(
             fakeKey,
             statusCode,
@@ -2117,7 +2157,7 @@ internal class RumResourceScopeTest {
 
         // When
         Thread.sleep(RESOURCE_DURATION_MS)
-        val result = testedScope.handleEvent(mockEvent, mockWriter)
+        val result = testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
         argumentCaptor<ErrorEvent> {
@@ -2130,6 +2170,7 @@ internal class RumResourceScopeTest {
                     isCrash(false)
                     hasResource(fakeUrl, fakeMethod, statusCode)
                     hasUserInfo(fakeDatadogContext.userInfo)
+                    hasAccountInfo(fakeDatadogContext.accountInfo)
                     hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
@@ -2139,7 +2180,7 @@ internal class RumResourceScopeTest {
                     hasErrorSourceType(ErrorEvent.SourceType.ANDROID)
                     hasErrorCategory(ErrorEvent.Category.EXCEPTION)
                     hasTimeSinceAppStart(null)
-                    hasUserSession()
+                    hasSessionType(fakeRumSessionType?.toError() ?: ErrorEvent.ErrorEventSessionType.USER)
                     hasNoSyntheticsTest()
                     doesNotHaveAResourceProvider()
                     hasStartReason(fakeParentContext.sessionStartReason)
@@ -2164,7 +2205,7 @@ internal class RumResourceScopeTest {
                     hasBuildId(fakeDatadogContext.appBuildId)
                 }
         }
-        verify(mockParentScope, never()).handleEvent(any(), any())
+        verify(mockParentScope, never()).handleEvent(any(), any(), any(), any())
         verifyNoMoreInteractions(mockWriter)
         assertThat(result).isEqualTo(null)
     }
@@ -2179,17 +2220,17 @@ internal class RumResourceScopeTest {
     ) {
         // Given
         val errorType = forge.aNullable { anAlphabeticalString() }
-        val attributes = forge.aFilteredMap(excludedKeys = fakeAttributes.keys) {
+        val fakeParentAttributes = forge.aFilteredMap(excludedKeys = fakeResourceAttributes.keys) {
             anHexadecimalString() to anAsciiString()
         }
         val errorAttributes = forge.exhaustiveAttributes(
-            excludedKeys = fakeAttributes.keys + attributes.keys
+            excludedKeys = fakeResourceAttributes.keys + fakeParentAttributes.keys
         )
         val expectedAttributes = mutableMapOf<String, Any?>()
-        expectedAttributes.putAll(fakeAttributes)
-        expectedAttributes.putAll(attributes)
+        expectedAttributes.putAll(fakeParentAttributes)
+        expectedAttributes.putAll(fakeResourceAttributes)
         expectedAttributes.putAll(errorAttributes)
-        whenever(rumMonitor.mockInstance.getAttributes()) doReturn attributes
+        whenever(mockParentScope.getCustomAttributes()) doReturn fakeParentAttributes
         mockEvent = RumRawEvent.StopResourceWithStackTrace(
             fakeKey,
             statusCode,
@@ -2202,7 +2243,7 @@ internal class RumResourceScopeTest {
 
         // When
         Thread.sleep(RESOURCE_DURATION_MS)
-        val result = testedScope.handleEvent(mockEvent, mockWriter)
+        val result = testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
         argumentCaptor<ErrorEvent> {
@@ -2215,6 +2256,7 @@ internal class RumResourceScopeTest {
                     isCrash(false)
                     hasResource(fakeUrl, fakeMethod, statusCode)
                     hasUserInfo(fakeDatadogContext.userInfo)
+                    hasAccountInfo(fakeDatadogContext.accountInfo)
                     hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
@@ -2224,7 +2266,7 @@ internal class RumResourceScopeTest {
                     hasErrorSourceType(ErrorEvent.SourceType.ANDROID)
                     hasErrorCategory(ErrorEvent.Category.EXCEPTION)
                     hasTimeSinceAppStart(null)
-                    hasUserSession()
+                    hasSessionType(fakeRumSessionType?.toError() ?: ErrorEvent.ErrorEventSessionType.USER)
                     hasNoSyntheticsTest()
                     doesNotHaveAResourceProvider()
                     hasStartReason(fakeParentContext.sessionStartReason)
@@ -2248,7 +2290,7 @@ internal class RumResourceScopeTest {
                     hasBuildId(fakeDatadogContext.appBuildId)
                 }
         }
-        verify(mockParentScope, never()).handleEvent(any(), any())
+        verify(mockParentScope, never()).handleEvent(any(), any(), any(), any())
         verifyNoMoreInteractions(mockWriter)
         assertThat(result).isEqualTo(null)
     }
@@ -2260,14 +2302,14 @@ internal class RumResourceScopeTest {
         @LongForgery(0, 1024) size: Long,
         forge: Forge
     ) {
-        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys)
         val expectedAttributes = mutableMapOf<String, Any?>()
-        expectedAttributes.putAll(fakeAttributes)
+        expectedAttributes.putAll(fakeResourceAttributes)
         expectedAttributes.putAll(attributes)
         mockEvent = RumRawEvent.StopResource("not_the_$fakeKey", statusCode, size, kind, attributes)
 
         Thread.sleep(RESOURCE_DURATION_MS)
-        val result = testedScope.handleEvent(mockEvent, mockWriter)
+        val result = testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         verify(mockParentScope, atMost(1)).getRumContext()
         verifyNoMoreInteractions(mockWriter, mockParentScope)
@@ -2294,7 +2336,7 @@ internal class RumResourceScopeTest {
         )
 
         Thread.sleep(RESOURCE_DURATION_MS)
-        val result = testedScope.handleEvent(mockEvent, mockWriter)
+        val result = testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         verify(mockParentScope, atMost(1)).getRumContext()
         verifyNoMoreInteractions(mockWriter, mockParentScope)
@@ -2324,7 +2366,7 @@ internal class RumResourceScopeTest {
         )
 
         Thread.sleep(RESOURCE_DURATION_MS)
-        val result = testedScope.handleEvent(mockEvent, mockWriter)
+        val result = testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         verify(mockParentScope, atMost(1)).getRumContext()
         verifyNoMoreInteractions(mockWriter, mockParentScope)
@@ -2341,16 +2383,17 @@ internal class RumResourceScopeTest {
         @LongForgery(0, 1024) size: Long,
         forge: Forge
     ) {
-        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys)
         val expectedAttributes = mutableMapOf<String, Any?>()
-        expectedAttributes.putAll(fakeAttributes)
+        expectedAttributes.putAll(fakeResourceAttributes)
         expectedAttributes.putAll(attributes)
 
         mockEvent = RumRawEvent.WaitForResourceTiming(fakeKey)
-        val resultWaitForTiming = testedScope.handleEvent(mockEvent, mockWriter)
+        val resultWaitForTiming =
+            testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
         Thread.sleep(RESOURCE_DURATION_MS)
         mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
-        val resultStop = testedScope.handleEvent(mockEvent, mockWriter)
+        val resultStop = testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         verify(mockParentScope, atMost(1)).getRumContext()
         verifyNoMoreInteractions(mockWriter, mockParentScope)
@@ -2368,16 +2411,17 @@ internal class RumResourceScopeTest {
         @LongForgery(0, 1024) size: Long,
         forge: Forge
     ) {
-        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys)
         val expectedAttributes = mutableMapOf<String, Any?>()
-        expectedAttributes.putAll(fakeAttributes)
+        expectedAttributes.putAll(fakeResourceAttributes)
         expectedAttributes.putAll(attributes)
 
         mockEvent = RumRawEvent.WaitForResourceTiming("not_the_$fakeKey")
-        val resultWaitForTiming = testedScope.handleEvent(mockEvent, mockWriter)
+        val resultWaitForTiming =
+            testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
         Thread.sleep(RESOURCE_DURATION_MS)
         mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
-        val resultStop = testedScope.handleEvent(mockEvent, mockWriter)
+        val resultStop = testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         argumentCaptor<ResourceEvent> {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
@@ -2390,13 +2434,14 @@ internal class RumResourceScopeTest {
                     hasStatusCode(statusCode)
                     hasDurationGreaterThan(TimeUnit.MILLISECONDS.toNanos(RESOURCE_DURATION_MS))
                     hasUserInfo(fakeDatadogContext.userInfo)
+                    hasAccountInfo(fakeDatadogContext.accountInfo)
                     hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasActionId(fakeParentContext.actionId)
                     doesNotHaveAResourceProvider()
-                    hasUserSession()
+                    hasSessionType(fakeRumSessionType?.toResource() ?: ResourceEvent.ResourceEventSessionType.USER)
                     hasNoSyntheticsTest()
                     hasStartReason(fakeParentContext.sessionStartReason)
                     hasReplay(fakeHasReplay)
@@ -2420,7 +2465,7 @@ internal class RumResourceScopeTest {
                 }
         }
         verifyNoMoreInteractions(mockWriter)
-        verify(mockParentScope, never()).handleEvent(any(), any())
+        verify(mockParentScope, never()).handleEvent(any(), any(), any(), any())
         assertThat(resultWaitForTiming).isSameAs(testedScope)
         assertThat(resultStop).isEqualTo(null)
     }
@@ -2433,18 +2478,19 @@ internal class RumResourceScopeTest {
         @Forgery timing: ResourceTiming,
         forge: Forge
     ) {
-        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys)
         val expectedAttributes = mutableMapOf<String, Any?>()
-        expectedAttributes.putAll(fakeAttributes)
+        expectedAttributes.putAll(fakeResourceAttributes)
         expectedAttributes.putAll(attributes)
 
         mockEvent = RumRawEvent.WaitForResourceTiming(fakeKey)
-        val resultWaitForTiming = testedScope.handleEvent(mockEvent, mockWriter)
+        val resultWaitForTiming =
+            testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
         mockEvent = RumRawEvent.AddResourceTiming(fakeKey, timing)
-        val resultTiming = testedScope.handleEvent(mockEvent, mockWriter)
+        val resultTiming = testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
         Thread.sleep(RESOURCE_DURATION_MS)
         mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
-        val resultStop = testedScope.handleEvent(mockEvent, mockWriter)
+        val resultStop = testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         argumentCaptor<ResourceEvent> {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
@@ -2457,13 +2503,14 @@ internal class RumResourceScopeTest {
                     hasStatusCode(statusCode)
                     hasDurationGreaterThan(TimeUnit.MILLISECONDS.toNanos(RESOURCE_DURATION_MS))
                     hasUserInfo(fakeDatadogContext.userInfo)
+                    hasAccountInfo(fakeDatadogContext.accountInfo)
                     hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasActionId(fakeParentContext.actionId)
                     doesNotHaveAResourceProvider()
-                    hasUserSession()
+                    hasSessionType(fakeRumSessionType?.toResource() ?: ResourceEvent.ResourceEventSessionType.USER)
                     hasNoSyntheticsTest()
                     hasStartReason(fakeParentContext.sessionStartReason)
                     hasReplay(fakeHasReplay)
@@ -2487,7 +2534,7 @@ internal class RumResourceScopeTest {
                 }
         }
         verifyNoMoreInteractions(mockWriter)
-        verify(mockParentScope, never()).handleEvent(any(), any())
+        verify(mockParentScope, never()).handleEvent(any(), any(), any(), any())
         assertThat(resultWaitForTiming).isEqualTo(testedScope)
         assertThat(resultTiming).isEqualTo(testedScope)
         assertThat(resultStop).isEqualTo(null)
@@ -2501,18 +2548,19 @@ internal class RumResourceScopeTest {
         @Forgery timing: ResourceTiming,
         forge: Forge
     ) {
-        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys)
         val expectedAttributes = mutableMapOf<String, Any?>()
-        expectedAttributes.putAll(fakeAttributes)
+        expectedAttributes.putAll(fakeResourceAttributes)
         expectedAttributes.putAll(attributes)
 
         mockEvent = RumRawEvent.WaitForResourceTiming(fakeKey)
-        val resultWaitForTiming = testedScope.handleEvent(mockEvent, mockWriter)
+        val resultWaitForTiming =
+            testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
         mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
-        val resultStop = testedScope.handleEvent(mockEvent, mockWriter)
+        val resultStop = testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
         Thread.sleep(RESOURCE_DURATION_MS)
         mockEvent = RumRawEvent.AddResourceTiming(fakeKey, timing)
-        val resultTiming = testedScope.handleEvent(mockEvent, mockWriter)
+        val resultTiming = testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         argumentCaptor<ResourceEvent> {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
@@ -2526,13 +2574,14 @@ internal class RumResourceScopeTest {
                     hasDurationGreaterThan(TimeUnit.MILLISECONDS.toNanos(RESOURCE_DURATION_MS))
                     hasTiming(timing)
                     hasUserInfo(fakeDatadogContext.userInfo)
+                    hasAccountInfo(fakeDatadogContext.accountInfo)
                     hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasActionId(fakeParentContext.actionId)
                     doesNotHaveAResourceProvider()
-                    hasUserSession()
+                    hasSessionType(fakeRumSessionType?.toResource() ?: ResourceEvent.ResourceEventSessionType.USER)
                     hasNoSyntheticsTest()
                     hasStartReason(fakeParentContext.sessionStartReason)
                     hasReplay(fakeHasReplay)
@@ -2556,7 +2605,7 @@ internal class RumResourceScopeTest {
                 }
         }
         verifyNoMoreInteractions(mockWriter)
-        verify(mockParentScope, never()).handleEvent(any(), any())
+        verify(mockParentScope, never()).handleEvent(any(), any(), any(), any())
         assertThat(resultWaitForTiming).isEqualTo(testedScope)
         assertThat(resultStop).isEqualTo(testedScope)
         assertThat(resultTiming).isEqualTo(null)
@@ -2571,7 +2620,7 @@ internal class RumResourceScopeTest {
         forge: Forge
     ) {
         // Given
-        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys) +
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys) +
             mapOf(
                 "_dd.resource_timings"
                     to forge.getForgery(ResourceTiming::class.java).asTimingsPayload()
@@ -2581,8 +2630,13 @@ internal class RumResourceScopeTest {
 
         // When
         testedScope
-            .handleEvent(RumRawEvent.AddResourceTiming(fakeKey, timing = timing), mockWriter)
-            ?.handleEvent(mockEvent, mockWriter)
+            .handleEvent(
+                RumRawEvent.AddResourceTiming(fakeKey, timing = timing),
+                fakeDatadogContext,
+                mockEventWriteScope,
+                mockWriter
+            )
+            ?.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
         argumentCaptor<ResourceEvent> {
@@ -2600,13 +2654,13 @@ internal class RumResourceScopeTest {
         forge: Forge
     ) {
         // Given
-        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys) +
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys) +
             mapOf("_dd.resource_timings" to timing.asTimingsPayload())
 
         mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
 
         // When
-        testedScope.handleEvent(mockEvent, mockWriter)
+        testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
         argumentCaptor<ResourceEvent> {
@@ -2631,7 +2685,7 @@ internal class RumResourceScopeTest {
             Time(0, 0)
         )
         // Given
-        val result = testedScope.handleEvent(fakeStopEvent, mockWriter)
+        val result = testedScope.handleEvent(fakeStopEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
         argumentCaptor<ResourceEvent> {
@@ -2644,13 +2698,14 @@ internal class RumResourceScopeTest {
                     hasUrl(fakeUrl)
                     hasMethod(fakeMethod)
                     hasUserInfo(fakeDatadogContext.userInfo)
+                    hasAccountInfo(fakeDatadogContext.accountInfo)
                     hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasActionId(fakeParentContext.actionId)
                     doesNotHaveAResourceProvider()
-                    hasUserSession()
+                    hasSessionType(fakeRumSessionType?.toResource() ?: ResourceEvent.ResourceEventSessionType.USER)
                     hasNoSyntheticsTest()
                     hasStartReason(fakeParentContext.sessionStartReason)
                     hasReplay(fakeHasReplay)
@@ -2672,7 +2727,7 @@ internal class RumResourceScopeTest {
                     hasSampleRate(fakeSampleRate)
                 }
         }
-        verify(mockParentScope, never()).handleEvent(any(), any())
+        verify(mockParentScope, never()).handleEvent(any(), any(), any(), any())
         mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
             InternalLogger.Target.USER,
@@ -2698,7 +2753,7 @@ internal class RumResourceScopeTest {
             fakeEventTime
         )
         // Given
-        val result = testedScope.handleEvent(fakeStopEvent, mockWriter)
+        val result = testedScope.handleEvent(fakeStopEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
         argumentCaptor<ResourceEvent> {
@@ -2711,13 +2766,14 @@ internal class RumResourceScopeTest {
                     hasUrl(fakeUrl)
                     hasMethod(fakeMethod)
                     hasUserInfo(fakeDatadogContext.userInfo)
+                    hasAccountInfo(fakeDatadogContext.accountInfo)
                     hasConnectivityInfo(fakeNetworkInfoAtScopeStart)
                     hasView(fakeParentContext)
                     hasApplicationId(fakeParentContext.applicationId)
                     hasSessionId(fakeParentContext.sessionId)
                     hasActionId(fakeParentContext.actionId)
                     doesNotHaveAResourceProvider()
-                    hasUserSession()
+                    hasSessionType(fakeRumSessionType?.toResource() ?: ResourceEvent.ResourceEventSessionType.USER)
                     hasNoSyntheticsTest()
                     hasStartReason(fakeParentContext.sessionStartReason)
                     hasReplay(fakeHasReplay)
@@ -2739,7 +2795,7 @@ internal class RumResourceScopeTest {
                     hasSampleRate(fakeSampleRate)
                 }
         }
-        verify(mockParentScope, never()).handleEvent(any(), any())
+        verify(mockParentScope, never()).handleEvent(any(), any(), any(), any())
         mockInternalLogger.verifyLog(
             InternalLogger.Level.WARN,
             InternalLogger.Target.USER,
@@ -2761,22 +2817,495 @@ internal class RumResourceScopeTest {
         val operationName = forge.aNullable { aString() }
         val payload = forge.aNullable { aString() }
         val variables = forge.aNullable { aString() }
-        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys) +
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys) +
             mapOf(
-                "_dd.graphql.operation_type" to operationType.toString(),
-                "_dd.graphql.operation_name" to operationName,
-                "_dd.graphql.payload" to payload,
-                "_dd.graphql.variables" to variables
+                RumAttributes.GRAPHQL_OPERATION_TYPE to operationType.toString(),
+                RumAttributes.GRAPHQL_OPERATION_NAME to operationName,
+                RumAttributes.GRAPHQL_PAYLOAD to payload,
+                RumAttributes.GRAPHQL_VARIABLES to variables
             )
 
         mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
 
         // When
-        testedScope.handleEvent(mockEvent, mockWriter)
+        testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
         argumentCaptor<ResourceEvent> {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            assertThat(firstValue).hasGraphql(operationType, operationName, payload, variables)
+        }
+    }
+
+    @Test
+    fun `M truncate GraphQL payload W handleEvent { small GraphQL payload under size limit }`(
+        @Forgery kind: RumResourceKind,
+        @LongForgery(200, 600) statusCode: Long,
+        @LongForgery(0, 1024) size: Long,
+        forge: Forge
+    ) {
+        // Given
+        val operationType = forge.aValueFrom(ResourceEvent.OperationType::class.java)
+        val operationName = forge.aNullable { aString() }
+        val variables = forge.aNullable { aString() }
+
+        val payload = forge.aString()
+
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys) +
+            mapOf(
+                RumAttributes.GRAPHQL_OPERATION_TYPE to operationType.toString(),
+                RumAttributes.GRAPHQL_OPERATION_NAME to operationName,
+                RumAttributes.GRAPHQL_PAYLOAD to payload,
+                RumAttributes.GRAPHQL_VARIABLES to variables
+            )
+
+        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
+
+        // When
+        testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        argumentCaptor<ResourceEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            assertThat(firstValue).hasGraphql(operationType, operationName, payload, variables)
+        }
+    }
+
+    @Test
+    fun `M truncate GraphQL payload W handleEvent { large GraphQL payload over size limit }`(
+        @Forgery kind: RumResourceKind,
+        @LongForgery(200, 600) statusCode: Long,
+        @LongForgery(0, 1024) size: Long,
+        forge: Forge
+    ) {
+        // Given
+        val operationName = forge.aNullable { aString() }
+        val operationType = forge.aValueFrom(ResourceEvent.OperationType::class.java)
+        val variables = forge.aNullable { aString() }
+
+        // Generate a payload that exceeds the byte limit
+        // Since forge.aString() generates character count, not byte count, we need to be careful
+        val minSizeChars = RumResourceScope.MAX_GRAPHQL_PAYLOAD_SIZE_BYTES + 1000 // Ensure we exceed byte limit
+        val maxSizeChars = RumResourceScope.MAX_GRAPHQL_PAYLOAD_SIZE_BYTES + 10000
+        val originalPayload = forge.aString(size = forge.anInt(min = minSizeChars, max = maxSizeChars))
+
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys) +
+            mapOf(
+                RumAttributes.GRAPHQL_OPERATION_NAME to operationName,
+                RumAttributes.GRAPHQL_OPERATION_TYPE to operationType.toString(),
+                RumAttributes.GRAPHQL_VARIABLES to variables,
+                RumAttributes.GRAPHQL_PAYLOAD to originalPayload
+            )
+
+        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
+
+        // When
+        testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        argumentCaptor<ResourceEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            val actualPayload = firstValue.resource.graphql?.payload
+
+            checkNotNull(actualPayload)
+            assertThat(actualPayload.length).isLessThan(originalPayload.length)
+            assertThat(actualPayload.toByteArray(Charsets.UTF_8).size)
+                .isLessThanOrEqualTo(RumResourceScope.MAX_GRAPHQL_PAYLOAD_SIZE_BYTES)
+
+            assertThat(originalPayload).startsWith(actualPayload)
+
+            assertThat(firstValue).hasGraphql(operationType, operationName, actualPayload, variables)
+        }
+    }
+
+    @Test
+    fun `M handle null GraphQL payload W handleEvent { payload is null }`(
+        @Forgery kind: RumResourceKind,
+        @LongForgery(200, 600) statusCode: Long,
+        @LongForgery(0, 1024) size: Long,
+        forge: Forge
+    ) {
+        // Given
+        val operationType = forge.aValueFrom(ResourceEvent.OperationType::class.java)
+        val operationName = forge.aNullable { aString() }
+        val variables = forge.aNullable { aString() }
+
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys) +
+            mapOf(
+                RumAttributes.GRAPHQL_OPERATION_TYPE to operationType.toString(),
+                RumAttributes.GRAPHQL_OPERATION_NAME to operationName,
+                RumAttributes.GRAPHQL_PAYLOAD to null, // Explicitly null
+                RumAttributes.GRAPHQL_VARIABLES to variables
+            )
+
+        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
+
+        // When
+        testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        argumentCaptor<ResourceEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            assertThat(firstValue).hasGraphql(operationType, operationName, null, variables)
+        }
+    }
+
+    @Test
+    fun `M handle empty GraphQL payload W handleEvent { payload is empty string }`(
+        @Forgery kind: RumResourceKind,
+        @LongForgery(200, 600) statusCode: Long,
+        @LongForgery(0, 1024) size: Long,
+        forge: Forge
+    ) {
+        // Given
+        val operationType = forge.aValueFrom(ResourceEvent.OperationType::class.java)
+        val operationName = forge.aNullable { aString() }
+        val variables = forge.aNullable { aString() }
+        val payload = ""
+
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys) +
+            mapOf(
+                RumAttributes.GRAPHQL_OPERATION_TYPE to operationType.toString(),
+                RumAttributes.GRAPHQL_OPERATION_NAME to operationName,
+                RumAttributes.GRAPHQL_PAYLOAD to payload,
+                RumAttributes.GRAPHQL_VARIABLES to variables
+            )
+
+        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
+
+        // When
+        testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        argumentCaptor<ResourceEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            assertThat(firstValue).hasGraphql(operationType, operationName, payload, variables)
+        }
+    }
+
+    @Test
+    fun `M use fast path W handleEvent { GraphQL payload under fast path threshold }`(
+        @Forgery kind: RumResourceKind,
+        @LongForgery(200, 600) statusCode: Long,
+        @LongForgery(0, 1024) size: Long,
+        forge: Forge
+    ) {
+        // Given
+        val operationType = forge.aValueFrom(ResourceEvent.OperationType::class.java)
+        val operationName = forge.aNullable { aString() }
+        val variables = forge.aNullable { aString() }
+
+        // Create payload just under the fast path threshold
+        // Fast path threshold is 7500 characters (30KB / 4 bytes per char)
+        val fastPathThresholdChars = RumResourceScope.MAX_GRAPHQL_PAYLOAD_SIZE_BYTES / 4
+        val payload = forge.aString(size = fastPathThresholdChars - 100)
+
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys) +
+            mapOf(
+                RumAttributes.GRAPHQL_OPERATION_TYPE to operationType.toString(),
+                RumAttributes.GRAPHQL_OPERATION_NAME to operationName,
+                RumAttributes.GRAPHQL_PAYLOAD to payload,
+                RumAttributes.GRAPHQL_VARIABLES to variables
+            )
+
+        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
+
+        // When
+        testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        argumentCaptor<ResourceEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            // Payload should pass through unchanged (fast path)
+            assertThat(firstValue).hasGraphql(operationType, operationName, payload, variables)
+        }
+    }
+
+    @Test
+    fun `M use slow path W handleEvent { GraphQL payload over fast path threshold but under limit }`(
+        @Forgery kind: RumResourceKind,
+        @LongForgery(200, 600) statusCode: Long,
+        @LongForgery(0, 1024) size: Long,
+        forge: Forge
+    ) {
+        // Given
+        val operationType = forge.aValueFrom(ResourceEvent.OperationType::class.java)
+        val operationName = forge.aNullable { aString() }
+        val variables = forge.aNullable { aString() }
+
+        // Create payload over fast path threshold but still under byte limit
+        // Fast path threshold is 7500 characters (30KB / 4 bytes per char)
+        val fastPathThresholdChars = RumResourceScope.MAX_GRAPHQL_PAYLOAD_SIZE_BYTES / 4
+        val payload = forge.aString(size = fastPathThresholdChars + 100)
+
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys) +
+            mapOf(
+                RumAttributes.GRAPHQL_OPERATION_TYPE to operationType.toString(),
+                RumAttributes.GRAPHQL_OPERATION_NAME to operationName,
+                RumAttributes.GRAPHQL_PAYLOAD to payload,
+                RumAttributes.GRAPHQL_VARIABLES to variables
+            )
+
+        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
+
+        // When
+        testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        argumentCaptor<ResourceEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            // Payload should pass through unchanged (slow path but under limit)
+            assertThat(firstValue).hasGraphql(operationType, operationName, payload, variables)
+        }
+    }
+
+    @Test
+    fun `M truncate at UTF-8 boundary W handleEvent { GraphQL payload with multi-byte characters }`(
+        @Forgery kind: RumResourceKind,
+        @LongForgery(200, 600) statusCode: Long,
+        @LongForgery(0, 1024) size: Long,
+        forge: Forge
+    ) {
+        // Given
+        val operationType = forge.aValueFrom(ResourceEvent.OperationType::class.java)
+        val operationName = forge.aNullable { aString() }
+        val variables = forge.aNullable { aString() }
+
+        // Create a payload with multi-byte UTF-8 characters that exceeds the limit
+        // Create base payload that's close to but under the byte limit (leave room for emojis)
+        val baseSizeBytes = RumResourceScope.MAX_GRAPHQL_PAYLOAD_SIZE_BYTES - 150
+        val basePayload = forge.aString(size = baseSizeBytes) // 1 byte per char in UTF-8
+        // Generate random 4-byte emoji characters (Miscellaneous Symbols and Pictographs block)
+        val emojiRangeStart = 0x1F300 // 🌀 (cyclone)
+        val emojiRangeEnd = 0x1F5FF // 🗿 (moai)
+        val remainingBytes = 150 // Space left after base payload
+        val emojiByteSize = 4 // Each emoji is 4 bytes in UTF-8
+        val emojiCount = (remainingBytes + 50) / emojiByteSize // Generate enough to exceed limit by ~50 bytes
+        val emojiSuffix = (1..emojiCount).joinToString("") {
+            val codePoint = forge.anInt(min = emojiRangeStart, max = emojiRangeEnd)
+            String(Character.toChars(codePoint))
+        }
+        val originalPayload = basePayload + emojiSuffix
+
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys) +
+            mapOf(
+                RumAttributes.GRAPHQL_OPERATION_TYPE to operationType.toString(),
+                RumAttributes.GRAPHQL_OPERATION_NAME to operationName,
+                RumAttributes.GRAPHQL_PAYLOAD to originalPayload,
+                RumAttributes.GRAPHQL_VARIABLES to variables
+            )
+
+        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
+
+        // When
+        testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        argumentCaptor<ResourceEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            val actualPayload = firstValue.resource.graphql?.payload
+
+            checkNotNull(actualPayload)
+
+            // Verify truncation occurred
+            assertThat(actualPayload.length).isLessThan(originalPayload.length)
+
+            // Verify UTF-8 byte size is within limit
+            assertThat(actualPayload.toByteArray(Charsets.UTF_8).size)
+                .isLessThanOrEqualTo(RumResourceScope.MAX_GRAPHQL_PAYLOAD_SIZE_BYTES)
+
+            // Verify the truncated string is valid UTF-8 (no broken multi-byte sequences)
+            assertThat(actualPayload.toByteArray(Charsets.UTF_8).toString(Charsets.UTF_8))
+                .isEqualTo(actualPayload)
+
+            // Verify original starts with truncated (proper prefix)
+            assertThat(originalPayload).startsWith(actualPayload)
+
+            assertThat(firstValue).hasGraphql(operationType, operationName, actualPayload, variables)
+        }
+    }
+
+    @Test
+    fun `M truncate at character boundary W handleEvent { GraphQL payload with accented characters }`(
+        @Forgery kind: RumResourceKind,
+        @LongForgery(200, 600) statusCode: Long,
+        @LongForgery(0, 1024) size: Long,
+        forge: Forge
+    ) {
+        // Given
+        val operationType = forge.aValueFrom(ResourceEvent.OperationType::class.java)
+        val operationName = forge.aNullable { aString() }
+        val variables = forge.aNullable { aString() }
+
+        // Create payload with 2-byte UTF-8 characters (accented characters)
+        // Create base payload that's close to but under the byte limit (leave room for accented chars)
+        val baseSizeBytes = RumResourceScope.MAX_GRAPHQL_PAYLOAD_SIZE_BYTES - 150
+        val basePayload = forge.aString(size = baseSizeBytes) // 1 byte per char in UTF-8
+        // Generate random 2-byte accented characters (Latin Extended-A block)
+        val accentedRangeStart = 0x0100 // Ā (Latin Capital Letter A with Macron)
+        val accentedRangeEnd = 0x017F // ſ (Latin Small Letter Long S)
+        val remainingBytes = 150 // Space left after base payload
+        val accentedByteSize = 2 // Each accented char is 2 bytes in UTF-8
+        val accentedCount = (remainingBytes + 80) / accentedByteSize // Generate enough to exceed limit by ~80 bytes
+        val accentedSuffix = (1..accentedCount).map {
+            val codePoint = forge.anInt(min = accentedRangeStart, max = accentedRangeEnd)
+            Char(codePoint)
+        }.joinToString("")
+        val originalPayload = basePayload + accentedSuffix
+
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys) +
+            mapOf(
+                RumAttributes.GRAPHQL_OPERATION_TYPE to operationType.toString(),
+                RumAttributes.GRAPHQL_OPERATION_NAME to operationName,
+                RumAttributes.GRAPHQL_PAYLOAD to originalPayload,
+                RumAttributes.GRAPHQL_VARIABLES to variables
+            )
+
+        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
+
+        // When
+        testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        argumentCaptor<ResourceEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            val actualPayload = firstValue.resource.graphql?.payload
+
+            checkNotNull(actualPayload)
+
+            // Verify truncation occurred
+            assertThat(actualPayload.length).isLessThan(originalPayload.length)
+
+            // Verify UTF-8 byte size is within limit
+            assertThat(actualPayload.toByteArray(Charsets.UTF_8).size)
+                .isLessThanOrEqualTo(RumResourceScope.MAX_GRAPHQL_PAYLOAD_SIZE_BYTES)
+
+            // Verify no broken UTF-8 sequences
+            assertThat(actualPayload.toByteArray(Charsets.UTF_8).toString(Charsets.UTF_8))
+                .isEqualTo(actualPayload)
+
+            // Verify proper prefix
+            assertThat(originalPayload).startsWith(actualPayload)
+
+            assertThat(firstValue).hasGraphql(operationType, operationName, actualPayload, variables)
+        }
+    }
+
+    @Test
+    fun `M truncate at safe boundary W handleEvent { GraphQL payload with mixed UTF-8 characters }`(
+        @Forgery kind: RumResourceKind,
+        @LongForgery(200, 600) statusCode: Long,
+        @LongForgery(0, 1024) size: Long,
+        forge: Forge
+    ) {
+        // Given
+        val operationType = forge.aValueFrom(ResourceEvent.OperationType::class.java)
+        val operationName = forge.aNullable { aString() }
+        val variables = forge.aNullable { aString() }
+
+        // Create payload mixing ASCII, 2-byte, 3-byte, and 4-byte UTF-8 characters
+        // Create base payload leaving room for mixed UTF-8 characters
+        val baseSizeBytes = RumResourceScope.MAX_GRAPHQL_PAYLOAD_SIZE_BYTES - 300
+        val basePayload = forge.aString(size = baseSizeBytes) // 1 byte per char in UTF-8
+        // Generate mixed UTF-8 characters with different byte lengths
+        val ascii = forge.aString(size = 5) // 1 byte per char
+
+        // Latin Extended-A block (2 bytes per char in UTF-8)
+        val accentedStart = 0x0100 // Ā
+        val accentedEnd = 0x017F // ſ
+        val accented = (1..5).map { Char(forge.anInt(min = accentedStart, max = accentedEnd)) }.joinToString("")
+
+        // CJK Unified Ideographs block (3 bytes per char in UTF-8)
+        val cjkStart = 0x4E00 // 一 (Chinese "one")
+        val cjkEnd = 0x9FFF // 鿿 (end of CJK block)
+        val cjk = (1..5).map { Char(forge.anInt(min = cjkStart, max = cjkEnd)) }.joinToString("")
+
+        // Miscellaneous Symbols and Pictographs block (4 bytes per char in UTF-8)
+        val emojiStart = 0x1F300 // 🌀
+        val emojiEnd = 0x1F5FF // 🗿
+        val emoji = (1..5).map {
+            String(
+                Character.toChars(forge.anInt(min = emojiStart, max = emojiEnd))
+            )
+        }.joinToString("")
+        val mixedSuffix = ascii + accented + cjk + emoji
+        val originalPayload = basePayload + mixedSuffix.repeat(10) // Repeat to ensure we exceed limit
+
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys) +
+            mapOf(
+                RumAttributes.GRAPHQL_OPERATION_TYPE to operationType.toString(),
+                RumAttributes.GRAPHQL_OPERATION_NAME to operationName,
+                RumAttributes.GRAPHQL_PAYLOAD to originalPayload,
+                RumAttributes.GRAPHQL_VARIABLES to variables
+            )
+
+        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
+
+        // When
+        testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        argumentCaptor<ResourceEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            val actualPayload = firstValue.resource.graphql?.payload
+
+            checkNotNull(actualPayload)
+
+            // Verify truncation occurred
+            assertThat(actualPayload.length).isLessThan(originalPayload.length)
+
+            // Verify UTF-8 byte size is within limit
+            val actualBytes = actualPayload.toByteArray(Charsets.UTF_8)
+            assertThat(actualBytes.size).isLessThanOrEqualTo(RumResourceScope.MAX_GRAPHQL_PAYLOAD_SIZE_BYTES)
+
+            // Verify no broken UTF-8 sequences by round-trip conversion
+            assertThat(String(actualBytes, Charsets.UTF_8)).isEqualTo(actualPayload)
+
+            // Verify proper prefix
+            assertThat(originalPayload).startsWith(actualPayload)
+
+            // Verify the last character is complete (not truncated mid-character)
+            val lastChar = actualPayload.last()
+            assertThat(lastChar).isNotEqualTo('\uFFFD') // Replacement character indicates broken UTF-8
+
+            assertThat(firstValue).hasGraphql(operationType, operationName, actualPayload, variables)
+        }
+    }
+
+    @Test
+    fun `M handle edge case W handleEvent { GraphQL payload exactly at fast path threshold }`(
+        @Forgery kind: RumResourceKind,
+        @LongForgery(200, 600) statusCode: Long,
+        @LongForgery(0, 1024) size: Long,
+        forge: Forge
+    ) {
+        // Given
+        val operationType = forge.aValueFrom(ResourceEvent.OperationType::class.java)
+        val operationName = forge.aNullable { aString() }
+        val variables = forge.aNullable { aString() }
+
+        // Create payload exactly at fast path threshold
+        // Fast path threshold is 7500 characters (30KB / 4 bytes per char)
+        val fastPathThresholdChars = RumResourceScope.MAX_GRAPHQL_PAYLOAD_SIZE_BYTES / 4
+        val payload = forge.aString(size = fastPathThresholdChars) // 1 byte per char in UTF-8
+
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys) +
+            mapOf(
+                RumAttributes.GRAPHQL_OPERATION_TYPE to operationType.toString(),
+                RumAttributes.GRAPHQL_OPERATION_NAME to operationName,
+                RumAttributes.GRAPHQL_PAYLOAD to payload,
+                RumAttributes.GRAPHQL_VARIABLES to variables
+            )
+
+        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
+
+        // When
+        testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        argumentCaptor<ResourceEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            // Payload should pass through unchanged (at threshold, should use slow path but still under limit)
             assertThat(firstValue).hasGraphql(operationType, operationName, payload, variables)
         }
     }
@@ -2791,12 +3320,12 @@ internal class RumResourceScopeTest {
         forge: Forge
     ) {
         // Given
-        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys)
 
         // When
         Thread.sleep(RESOURCE_DURATION_MS)
         mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
-        testedScope.handleEvent(mockEvent, mockWriter)
+        testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
         verify(rumMonitor.mockInstance as AdvancedRumMonitor)
@@ -2814,13 +3343,13 @@ internal class RumResourceScopeTest {
         forge: Forge
     ) {
         // Given
-        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys)
         whenever(mockWriter.write(eq(mockEventBatchWriter), isA<ResourceEvent>(), eq(EventType.DEFAULT))) doReturn false
 
         // When
         Thread.sleep(RESOURCE_DURATION_MS)
         mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
-        testedScope.handleEvent(mockEvent, mockWriter)
+        testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
         verify(rumMonitor.mockInstance as AdvancedRumMonitor)
@@ -2838,7 +3367,7 @@ internal class RumResourceScopeTest {
         forge: Forge
     ) {
         // Given
-        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys)
         whenever(
             mockWriter.write(eq(mockEventBatchWriter), isA<ResourceEvent>(), eq(EventType.DEFAULT))
         ) doThrow forge.anException()
@@ -2846,7 +3375,7 @@ internal class RumResourceScopeTest {
         // When
         Thread.sleep(RESOURCE_DURATION_MS)
         mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
-        testedScope.handleEvent(mockEvent, mockWriter)
+        testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
         verify(rumMonitor.mockInstance as AdvancedRumMonitor)
@@ -2864,7 +3393,7 @@ internal class RumResourceScopeTest {
         forge: Forge
     ) {
         // Given
-        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys)
 
         mockEvent = RumRawEvent.StopResourceWithError(
             fakeKey,
@@ -2877,7 +3406,7 @@ internal class RumResourceScopeTest {
 
         // When
         Thread.sleep(RESOURCE_DURATION_MS)
-        testedScope.handleEvent(mockEvent, mockWriter)
+        testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
         verify(rumMonitor.mockInstance as AdvancedRumMonitor)
@@ -2895,7 +3424,7 @@ internal class RumResourceScopeTest {
         forge: Forge
     ) {
         // Given
-        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys)
         whenever(mockWriter.write(eq(mockEventBatchWriter), isA<ErrorEvent>(), eq(EventType.DEFAULT))) doReturn false
 
         mockEvent = RumRawEvent.StopResourceWithError(
@@ -2909,7 +3438,7 @@ internal class RumResourceScopeTest {
 
         // When
         Thread.sleep(RESOURCE_DURATION_MS)
-        testedScope.handleEvent(mockEvent, mockWriter)
+        testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
         verify(rumMonitor.mockInstance as AdvancedRumMonitor)
@@ -2927,7 +3456,7 @@ internal class RumResourceScopeTest {
         forge: Forge
     ) {
         // Given
-        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeAttributes.keys)
+        val attributes = forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys)
         whenever(
             mockWriter.write(eq(mockEventBatchWriter), isA<ErrorEvent>(), eq(EventType.DEFAULT))
         ) doThrow forge.anException()
@@ -2943,7 +3472,7 @@ internal class RumResourceScopeTest {
 
         // When
         Thread.sleep(RESOURCE_DURATION_MS)
-        testedScope.handleEvent(mockEvent, mockWriter)
+        testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
 
         // Then
         verify(rumMonitor.mockInstance as AdvancedRumMonitor)
@@ -2969,6 +3498,56 @@ internal class RumResourceScopeTest {
 
     // endregion
 
+    // region GraphQL
+
+    @ParameterizedTest
+    @MethodSource("invalidOperationTypeTestCases")
+    fun `M have no graphql data W handleEvent { invalid or null operation type }`(
+        operationTypeValue: String?,
+        hasOtherAttributes: Boolean,
+        @Forgery kind: RumResourceKind,
+        @LongForgery(200, 600) statusCode: Long,
+        @LongForgery(0, 1024) size: Long,
+        forge: Forge
+    ) {
+        // Given
+        val operationName = forge.aNullable { aString() }
+        val payload = forge.aNullable { aString() }
+        val variables = forge.aNullable { aString() }
+
+        val attributes = if (hasOtherAttributes) {
+            forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys) +
+                buildMap {
+                    if (operationTypeValue != null) {
+                        put(RumAttributes.GRAPHQL_OPERATION_TYPE, operationTypeValue)
+                    }
+                    put(RumAttributes.GRAPHQL_OPERATION_NAME, operationName)
+                    put(RumAttributes.GRAPHQL_PAYLOAD, payload)
+                    put(RumAttributes.GRAPHQL_VARIABLES, variables)
+                }
+        } else {
+            forge.exhaustiveAttributes(excludedKeys = fakeResourceAttributes.keys) +
+                buildMap {
+                    if (operationTypeValue != null) {
+                        put(RumAttributes.GRAPHQL_OPERATION_TYPE, operationTypeValue)
+                    }
+                }
+        }
+
+        mockEvent = RumRawEvent.StopResource(fakeKey, statusCode, size, kind, attributes)
+
+        // When
+        testedScope.handleEvent(mockEvent, fakeDatadogContext, mockEventWriteScope, mockWriter)
+
+        // Then
+        argumentCaptor<ResourceEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            assertThat(firstValue).hasNoGraphql()
+        }
+    }
+
+    // endregion
+
     companion object {
         private const val RESOURCE_DURATION_MS = 50L
 
@@ -2979,5 +3558,16 @@ internal class RumResourceScopeTest {
         fun getTestConfigurations(): List<TestConfiguration> {
             return listOf(rumMonitor)
         }
+
+        @JvmStatic
+        fun invalidOperationTypeTestCases() = listOf(
+            // operationTypeValue, hasOtherAttributes
+            Arguments.of(null, false), // Null operation type, no other attributes
+            Arguments.of(null, true), // Null operation type, with other attributes
+            Arguments.of("", false), // Empty operation type, no other attributes
+            Arguments.of("", true), // Empty operation type, with other attributes
+            Arguments.of("invalid_operation", false), // Invalid operation type, no other attributes
+            Arguments.of("invalid_operation", true) // Invalid operation type, with other attributes
+        )
     }
 }

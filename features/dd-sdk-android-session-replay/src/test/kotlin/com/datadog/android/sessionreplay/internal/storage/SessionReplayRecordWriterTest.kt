@@ -7,6 +7,8 @@
 package com.datadog.android.sessionreplay.internal.storage
 
 import com.datadog.android.api.context.DatadogContext
+import com.datadog.android.api.feature.EventWriteScope
+import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.storage.EventBatchWriter
@@ -14,7 +16,6 @@ import com.datadog.android.api.storage.EventType
 import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.RecordCallback
-import com.datadog.android.sessionreplay.internal.SessionReplayFeature
 import com.datadog.android.sessionreplay.internal.processor.EnrichedRecord
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery
@@ -61,12 +62,15 @@ internal class SessionReplayRecordWriterTest {
     @Mock
     lateinit var mockEventBatchWriter: EventBatchWriter
 
+    @Mock
+    lateinit var mockEventWriteScope: EventWriteScope
+
     @BeforeEach
     fun `set up`() {
         whenever(mockEventBatchWriter.write(anyOrNull(), anyOrNull(), any()))
             .thenReturn(true)
 
-        whenever(mockSdkCore.getFeature(SessionReplayFeature.SESSION_REPLAY_FEATURE_NAME))
+        whenever(mockSdkCore.getFeature(Feature.SESSION_REPLAY_FEATURE_NAME))
             .thenReturn(mockSessionReplayFeature)
 
         testedWriter = SessionReplayRecordWriter(mockSdkCore, mockRecordCallback)
@@ -76,9 +80,13 @@ internal class SessionReplayRecordWriterTest {
     fun `M write the record in a batch W write`(forge: Forge) {
         // Given
         val fakeRecord = forge.forgeEnrichedRecord()
-        whenever(mockSessionReplayFeature.withWriteContext(eq(false), any())) doAnswer {
-            val callback = it.getArgument<(DatadogContext, EventBatchWriter) -> Unit>(1)
-            callback.invoke(fakeDatadogContext, mockEventBatchWriter)
+        whenever(mockEventWriteScope.invoke(any())) doAnswer {
+            val callback = it.getArgument<(EventBatchWriter) -> Unit>(0)
+            callback.invoke(mockEventBatchWriter)
+        }
+        whenever(mockSessionReplayFeature.withWriteContext(eq(emptySet()), any())) doAnswer {
+            val callback = it.getArgument<(DatadogContext, EventWriteScope) -> Unit>(it.arguments.lastIndex)
+            callback.invoke(fakeDatadogContext, mockEventWriteScope)
         }
 
         // When
@@ -100,7 +108,7 @@ internal class SessionReplayRecordWriterTest {
     fun `M do nothing W write { feature not properly initialized }`(forge: Forge) {
         // Given
         val fakeRecord = forge.forgeEnrichedRecord()
-        whenever(mockSdkCore.getFeature(SessionReplayFeature.SESSION_REPLAY_FEATURE_NAME))
+        whenever(mockSdkCore.getFeature(Feature.SESSION_REPLAY_FEATURE_NAME))
             .thenReturn(null)
 
         // When
@@ -118,9 +126,13 @@ internal class SessionReplayRecordWriterTest {
             .thenReturn(false)
 
         val fakeRecord = forge.forgeEnrichedRecord()
-        whenever(mockSessionReplayFeature.withWriteContext(eq(false), any())) doAnswer {
-            val callback = it.getArgument<(DatadogContext, EventBatchWriter) -> Unit>(1)
-            callback.invoke(fakeDatadogContext, mockEventBatchWriter)
+        whenever(mockEventWriteScope.invoke(any())) doAnswer {
+            val callback = it.getArgument<(EventBatchWriter) -> Unit>(0)
+            callback.invoke(mockEventBatchWriter)
+        }
+        whenever(mockSessionReplayFeature.withWriteContext(any(), any())) doAnswer {
+            val callback = it.getArgument<(DatadogContext, EventWriteScope) -> Unit>(it.arguments.lastIndex)
+            callback.invoke(fakeDatadogContext, mockEventWriteScope)
         }
 
         // When

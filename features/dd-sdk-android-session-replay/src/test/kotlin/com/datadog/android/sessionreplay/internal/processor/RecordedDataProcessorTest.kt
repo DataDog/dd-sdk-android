@@ -7,6 +7,7 @@
 package com.datadog.android.sessionreplay.internal.processor
 
 import android.content.res.Configuration
+import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.sessionreplay.forge.ForgeConfigurator
 import com.datadog.android.sessionreplay.internal.ResourcesFeature
 import com.datadog.android.sessionreplay.internal.async.ResourceRecordedDataQueueItem
@@ -17,7 +18,6 @@ import com.datadog.android.sessionreplay.internal.resources.ResourceDataStoreMan
 import com.datadog.android.sessionreplay.internal.storage.RecordWriter
 import com.datadog.android.sessionreplay.internal.storage.ResourcesWriter
 import com.datadog.android.sessionreplay.internal.utils.SessionReplayRumContext
-import com.datadog.android.sessionreplay.internal.utils.TimeProvider
 import com.datadog.android.sessionreplay.model.MobileSegment
 import com.datadog.android.sessionreplay.model.MobileSegment.MobileIncrementalData
 import com.datadog.android.sessionreplay.recorder.SystemInformation
@@ -1235,7 +1235,7 @@ internal class RecordedDataProcessorTest {
         val capturedResource = captor.allValues[0]
 
         assertThat(capturedResource.resource).isEqualTo(fakeByteArray)
-        val jsonString = capturedResource.asBinaryMetadata().toString(Charsets.UTF_8)
+        val jsonString = capturedResource.asBinaryMetadata(fakeRumContext.applicationId).toString(Charsets.UTF_8)
         val metadataJson = JsonParser.parseString(jsonString).asJsonObject
         val itemApplicationId = metadataJson.get(EnrichedResource.APPLICATION_ID_KEY).asString
         val itemFilename = metadataJson.get(EnrichedResource.FILENAME_KEY).asString
@@ -1316,7 +1316,6 @@ internal class RecordedDataProcessorTest {
     ): ResourceRecordedDataQueueItem = ResourceRecordedDataQueueItem(
         recordedQueuedItemContext = usedContext,
         resourceData = resourceData,
-        applicationId = fakeRumContext.applicationId,
         identifier = fakeIdentifier
     )
 

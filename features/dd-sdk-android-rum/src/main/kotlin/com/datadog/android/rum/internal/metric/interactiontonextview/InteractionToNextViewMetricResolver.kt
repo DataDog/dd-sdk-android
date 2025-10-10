@@ -68,15 +68,6 @@ internal class InteractionToNextViewMetricResolver(
                 return null
             }
         }
-        // in case there are no previous interactions for this view and there's only one view created
-        // we are probably in the first view of the app (AppLaunch) and we can't calculate the metric
-        if (lastViewCreatedTimestamps.size > 1) {
-            internalLogger.log(
-                InternalLogger.Level.WARN,
-                InternalLogger.Target.MAINTAINER,
-                { "[ViewNetworkSettledMetric] No previous interaction found for this viewId:$viewId" }
-            )
-        }
         return null
     }
 

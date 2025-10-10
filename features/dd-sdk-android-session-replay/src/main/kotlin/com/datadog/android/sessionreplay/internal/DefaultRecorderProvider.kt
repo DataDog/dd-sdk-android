@@ -22,6 +22,7 @@ import android.widget.TextView
 import androidx.appcompat.widget.ActionBarContainer
 import androidx.appcompat.widget.SwitchCompat
 import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.internal.time.DefaultTimeProvider
 import com.datadog.android.internal.utils.ImageViewUtils
 import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.MapperTypeWrapper
@@ -42,7 +43,7 @@ import com.datadog.android.sessionreplay.internal.recorder.mapper.WebViewWirefra
 import com.datadog.android.sessionreplay.internal.resources.ResourceDataStoreManager
 import com.datadog.android.sessionreplay.internal.storage.RecordWriter
 import com.datadog.android.sessionreplay.internal.storage.ResourcesWriter
-import com.datadog.android.sessionreplay.internal.time.SessionReplayTimeProvider
+import com.datadog.android.sessionreplay.internal.utils.RumContextProvider
 import com.datadog.android.sessionreplay.recorder.OptionSelectorDetector
 import com.datadog.android.sessionreplay.recorder.mapper.EditTextMapper
 import com.datadog.android.sessionreplay.recorder.mapper.ImageViewMapper
@@ -73,18 +74,19 @@ internal class DefaultRecorderProvider(
         resourceDataStoreManager: ResourceDataStoreManager,
         resourceWriter: ResourcesWriter,
         recordWriter: RecordWriter,
+        rumContextProvider: RumContextProvider,
         application: Application
     ): Recorder {
         return SessionReplayRecorder(
             application,
             resourceDataStoreManager = resourceDataStoreManager,
             resourcesWriter = resourceWriter,
-            rumContextProvider = SessionReplayRumContextProvider(sdkCore),
+            rumContextProvider = rumContextProvider,
             imagePrivacy = imagePrivacy,
             touchPrivacyManager = touchPrivacyManager,
             textAndInputPrivacy = textAndInputPrivacy,
             recordWriter = recordWriter,
-            timeProvider = SessionReplayTimeProvider(sdkCore),
+            timeProvider = DefaultTimeProvider(),
             mappers = customMappers + builtInMappers(),
             customOptionSelectorDetectors = customOptionSelectorDetectors,
             customDrawableMappers = customDrawableMappers,

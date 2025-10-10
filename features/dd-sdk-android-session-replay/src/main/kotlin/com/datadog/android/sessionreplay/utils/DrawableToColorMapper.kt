@@ -9,6 +9,8 @@ package com.datadog.android.sessionreplay.utils
 import android.graphics.drawable.Drawable
 import android.os.Build
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.sessionreplay.internal.recorder.mapper.AndroidMDrawableToColorMapper
+import com.datadog.android.sessionreplay.internal.recorder.mapper.AndroidQDrawableToColorMapper
 
 /**
  * A utility interface to convert a [Drawable] to a meaningful color.
@@ -32,10 +34,8 @@ fun interface DrawableToColorMapper {
         fun getDefault(customDrawableMappers: List<DrawableToColorMapper> = emptyList()): DrawableToColorMapper {
             return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 AndroidQDrawableToColorMapper(customDrawableMappers)
-            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                AndroidMDrawableToColorMapper(customDrawableMappers)
             } else {
-                LegacyDrawableToColorMapper(customDrawableMappers)
+                AndroidMDrawableToColorMapper(customDrawableMappers)
             }
         }
     }

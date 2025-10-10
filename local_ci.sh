@@ -102,6 +102,7 @@ if [[ $CLEANUP == 1 ]]; then
   rm -rf features/dd-sdk-android-ndk/build/
   rm -rf features/dd-sdk-android-rum/build/
   rm -rf features/dd-sdk-android-session-replay/build/
+  rm -rf features/dd-sdk-android-session-replay-compose/build/
   rm -rf features/dd-sdk-android-session-replay-material/build/
   rm -rf features/dd-sdk-android-trace/build/
   rm -rf features/dd-sdk-android-trace-otel/build/
@@ -157,7 +158,7 @@ if [[ $ANALYSIS == 1 ]]; then
 
     # TODO RUM-628 Switch to Java 17 bytecode
     echo "------ Detekt custom rules"
-    detekt --config detekt_custom.yml --plugins tools/detekt/build/libs/detekt.jar -cp "$classpath" --jvm-target 11 -ex "**/*.kts"
+    detekt --config detekt_custom_general.yml,detekt_custom_safe_calls.yml,detekt_custom_unsafe_calls.yml --plugins tools/detekt/build/libs/detekt.jar -cp "$classpath" --jvm-target 11 -ex "**/*.kts"
 
     echo "------ Detekt test pyramid rules"
     rm apiSurface.log apiUsage.log

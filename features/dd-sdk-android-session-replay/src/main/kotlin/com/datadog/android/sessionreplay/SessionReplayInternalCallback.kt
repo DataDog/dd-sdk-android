@@ -21,4 +21,22 @@ interface SessionReplayInternalCallback {
      * that were missed because the client was initialized after the `Application.onCreate` phase.
      */
     fun getCurrentActivity(): Activity?
+
+    /**
+     * Adds a resource item to the current resource queue.
+     *
+     * @param identifier A unique identifier for the resource.
+     * @param resourceData The raw content of the resource.
+     * @param mimeType Optional MIME type describing the resource data (e.g. `"image/png"` or `"image/svg+xml"`).
+     */
+    fun addResourceItem(identifier: String, resourceData: ByteArray, mimeType: String? = null)
+
+    /**
+     * Sets the resource queue used by this callback. This allows resource management to also be handled
+     * on a platform-specific level.
+     *
+     * @param resourceQueue The [SessionReplayInternalResourceQueue] instance that will
+     * collect and manage resource items submitted through [addResourceItem].
+     */
+    fun setResourceQueue(resourceQueue: SessionReplayInternalResourceQueue)
 }

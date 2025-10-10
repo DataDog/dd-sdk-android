@@ -23,6 +23,7 @@
     <string name="title_foreground_service">Foreground service</string>
     <string name="title_picture">Picture loading</string>
     <string name="title_user_info">User Info</string>
+    <string name="title_account_info">Account Info</string>
     <string name="title_vitals">Mobile Vitals</string>
     <string name="title_about">About…</string>
     <string name="title_gdpr">GDPR</string>
@@ -60,15 +61,25 @@
     <string name="button_async_operation">Async Operation</string>
     <string name="button_network_request">Network Request</string>
     <string name="button_start">Start</string>
+    <string name="button_send_span">Send manual span</string>
     <string name="button_start_sse">Start Server Sent Event Request</string>
     <string name="button_start_404">Start 404 Request</string>
     <string name="button_save">Save</string>
+    <string name="button_clear">Clear</string>
     <string name="button_long_task">Long Task</string>
     <string name="button_frozen_frame">Frozen Frame</string>
     <string name="button_slow_frame_rate">Slow frame rate</string>
     <string name="button_high_cpu_usage">High CPU usage</string>
     <string name="button_high_memory_usage">High RAM usage</string>
     <string name="button_stress_test_events">Stress Test Events</string>
+    <string name="button_fo_start">Start</string>
+    <string name="button_fo_stop_successfully">Success</string>
+    <string name="button_fo_stop_unsuccessfully">Fail</string>
+    <string name="divider_feature_operations">Feature Operations</string>
+    <string name="divider_performance_degradation">Performance degradation</string>
+    <string name="text_feature_operation_name">Test</string>
+    <string name="text_feature_operation_name_hint">Operation name</string>
+    <string name="text_feature_operation_key_hint">Operation key</string>
 
     <string name="group_image_loader">Image Loader</string>
     <string name="group_data_source">Data Source</string>
@@ -105,6 +116,11 @@
     <string name="hint_user_gender">Gender</string>
     <string name="hint_user_age">Age</string>
     <string name="hint_message">Message</string>
+
+    <string name="hint_account_id">Account ID</string>
+    <string name="hint_account_name">Account name</string>
+    <string name="hint_account_role">Role</string>
+    <string name="hint_account_age">Age</string>
 
     <string name="load_picture">Load picture</string>
     <string name="widget_description">Datadog Sample Widget</string>

@@ -6,11 +6,12 @@
 
 package com.datadog.android.utils.forge
 
+import com.datadog.android.api.context.AccountInfo
 import com.datadog.android.api.context.DeviceInfo
 import com.datadog.android.api.context.DeviceType
 import com.datadog.android.api.context.NetworkInfo
 import com.datadog.android.api.context.UserInfo
-import com.datadog.android.core.internal.utils.toHexString
+import com.datadog.android.internal.utils.toHexString
 import com.datadog.android.trace.model.SpanEvent
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
@@ -33,9 +34,10 @@ internal class SpanEventForgeryFactory : ForgeryFactory<SpanEvent> {
         val startTime = TimeUnit.SECONDS.toNanos(System.currentTimeMillis())
         val appPackageVersion = forge.aStringMatching("[0-9]\\.[0-9]\\.[0-9]")
         val tracerVersion = forge.aStringMatching("[0-9]\\.[0-9]\\.[0-9]")
-        val userInfo: UserInfo? = forge.aNullable()
-        val networkInfo: NetworkInfo? = forge.aNullable()
-        val deviceInfo: DeviceInfo = forge.getForgery()
+        val userInfo = forge.aNullable<UserInfo>()
+        val accountInfo = forge.aNullable<AccountInfo>()
+        val networkInfo = forge.aNullable<NetworkInfo>()
+        val deviceInfo = forge.getForgery<DeviceInfo>()
 
         return SpanEvent(
             spanId = spanId,
@@ -59,6 +61,13 @@ internal class SpanEventForgeryFactory : ForgeryFactory<SpanEvent> {
                     additionalProperties = userInfo?.additionalProperties?.toMutableMap()
                         ?: mutableMapOf()
                 ),
+                account = accountInfo?.let {
+                    SpanEvent.Account(
+                        id = it.id,
+                        name = it.name,
+                        additionalProperties = it.extraInfo.toMutableMap()
+                    )
+                },
                 network = SpanEvent.Network(
                     SpanEvent.Client(
                         simCarrier = forge.aNullable {
@@ -78,12 +87,17 @@ internal class SpanEventForgeryFactory : ForgeryFactory<SpanEvent> {
                     name = deviceInfo.deviceName,
                     model = deviceInfo.deviceModel,
                     brand = deviceInfo.deviceBrand,
-                    architecture = deviceInfo.architecture
+                    architecture = deviceInfo.architecture,
+                    locale = forge.aNullable { anAlphabeticalString() },
+                    locales = forge.aNullable { aList { anAlphabeticalString() } },
+                    timeZone = forge.aNullable { anAlphabeticalString() },
+                    powerSavingMode = forge.aNullable { aBool() }
                 ),
                 os = SpanEvent.Os(
                     name = deviceInfo.osName,
                     version = deviceInfo.osVersion,
-                    versionMajor = deviceInfo.osMajorVersion
+                    versionMajor = deviceInfo.osMajorVersion,
+                    build = forge.aNullable { anAlphabeticalString() }
                 ),
                 additionalProperties = meta
             ),

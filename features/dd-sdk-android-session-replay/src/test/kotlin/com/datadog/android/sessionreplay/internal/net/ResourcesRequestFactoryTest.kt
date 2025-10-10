@@ -127,12 +127,12 @@ internal class ResourcesRequestFactoryTest {
         assertThat(requestBody).isEqualTo(mockRequestBody.toByteArray())
 
         assertThat(request.description).isEqualTo(UPLOAD_DESCRIPTION)
-        assertThat(request.url).isEqualTo(expectedUrl(fakeDatadogContext.site.intakeEndpoint))
+        assertThat(request.url).isEqualTo("${fakeDatadogContext.site.intakeEndpoint}/api/v2/replay")
     }
 
     @Test
     fun `M  return valid request W create() { custom endpoint }`(
-        @StringForgery(regex = "https://[a-z]+\\.com") fakeEndpoint: String
+        @StringForgery(regex = "https://[a-z]+\\.com(/[a-z]+)+") fakeEndpoint: String
     ) {
         // Given
         testedRequestFactory = ResourcesRequestFactory(
@@ -151,14 +151,10 @@ internal class ResourcesRequestFactoryTest {
 
         // Then
         requireNotNull(request)
-        assertThat(request.url).isEqualTo(expectedUrl(fakeEndpoint))
+        assertThat(request.url).isEqualTo(fakeEndpoint)
         assertThat(request.id).isEqualTo(request.headers[RequestFactory.HEADER_REQUEST_ID])
         assertThat(request.description).isEqualTo(UPLOAD_DESCRIPTION)
         assertThat(request.body).isEqualTo(mockRequestBody.toByteArray())
-    }
-
-    private fun expectedUrl(endpointUrl: String): String {
-        return "$endpointUrl/api/v2/replay"
     }
 
     private fun RequestBody.toByteArray(): ByteArray {

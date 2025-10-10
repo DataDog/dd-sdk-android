@@ -10,13 +10,14 @@ import androidx.annotation.AnyThread
 import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
+import com.datadog.android.api.feature.EventWriteScope
 import com.datadog.android.api.storage.EventBatchWriter
 import com.datadog.android.api.storage.EventType
 import com.datadog.android.api.storage.FeatureStorageConfiguration
 import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.core.internal.metrics.RemovalReason
 import com.datadog.android.core.internal.privacy.ConsentProvider
-import com.datadog.android.core.internal.utils.submitSafe
+import com.datadog.android.core.internal.utils.executeSafe
 import com.datadog.android.core.persistence.NoOpPersistenceStrategy
 import com.datadog.android.core.persistence.PersistenceStrategy
 import com.datadog.android.privacy.TrackingConsent
@@ -30,7 +31,7 @@ internal class AbstractStorage(
     private val executorService: ExecutorService,
     private val internalLogger: InternalLogger,
     internal val storageConfiguration: FeatureStorageConfiguration,
-    private val consentProvider: ConsentProvider
+    consentProvider: ConsentProvider
 ) : Storage, TrackingConsentProviderCallback {
 
     private val grantedPersistenceStrategy: PersistenceStrategy by lazy {
@@ -49,6 +50,8 @@ internal class AbstractStorage(
         )
     }
 
+    private val writeLock = Any()
+
     private val notGrantedPersistenceStrategy: PersistenceStrategy = NoOpPersistenceStrategy()
 
     init {
@@ -59,31 +62,28 @@ internal class AbstractStorage(
     // region Storage
 
     @AnyThread
-    override fun writeCurrentBatch(
-        datadogContext: DatadogContext,
-        forceNewBatch: Boolean,
-        callback: (EventBatchWriter) -> Unit
-    ) {
-        executorService.submitSafe("Data write", internalLogger) {
-            val strategy = resolvePersistenceStrategy()
-            val writer = object : EventBatchWriter {
-                @WorkerThread
-                override fun currentMetadata(): ByteArray? {
-                    return strategy.currentMetadata()
-                }
-
-                @WorkerThread
-                override fun write(event: RawBatchEvent, batchMetadata: ByteArray?, eventType: EventType): Boolean {
-                    return strategy.write(event, batchMetadata, eventType)
-                }
+    override fun getEventWriteScope(
+        datadogContext: DatadogContext
+    ): EventWriteScope {
+        val strategy = resolvePersistenceStrategy(datadogContext)
+        val writer = object : EventBatchWriter {
+            @WorkerThread
+            override fun currentMetadata(): ByteArray? {
+                return strategy.currentMetadata()
             }
-            callback.invoke(writer)
+
+            @WorkerThread
+            override fun write(event: RawBatchEvent, batchMetadata: ByteArray?, eventType: EventType): Boolean {
+                return strategy.write(event, batchMetadata, eventType)
+            }
         }
+        // although we don't know what storage is backed by the persistence strategy, so maybe writing in a concurrent
+        // way is fine there and lock is not needed, but taking precautions
+        return AsyncEventWriteScope(executorService, writer, writeLock, featureName, internalLogger)
     }
 
-    @WorkerThread
-    private fun resolvePersistenceStrategy() =
-        when (consentProvider.getConsent()) {
+    private fun resolvePersistenceStrategy(datadogContext: DatadogContext) =
+        when (datadogContext.trackingConsent) {
             TrackingConsent.GRANTED -> grantedPersistenceStrategy
             TrackingConsent.PENDING -> pendingPersistenceStrategy
             TrackingConsent.NOT_GRANTED -> notGrantedPersistenceStrategy
@@ -115,7 +115,7 @@ internal class AbstractStorage(
 
     @AnyThread
     override fun dropAll() {
-        executorService.submitSafe("Data drop", internalLogger) {
+        executorService.executeSafe("Data drop", internalLogger) {
             grantedPersistenceStrategy.dropAll()
             pendingPersistenceStrategy.dropAll()
         }
@@ -129,7 +129,7 @@ internal class AbstractStorage(
         previousConsent: TrackingConsent,
         newConsent: TrackingConsent
     ) {
-        executorService.submitSafe("Data migration", internalLogger) {
+        executorService.executeSafe("Data migration", internalLogger) {
             if (previousConsent == TrackingConsent.PENDING) {
                 when (newConsent) {
                     TrackingConsent.GRANTED -> pendingPersistenceStrategy.migrateData(grantedPersistenceStrategy)

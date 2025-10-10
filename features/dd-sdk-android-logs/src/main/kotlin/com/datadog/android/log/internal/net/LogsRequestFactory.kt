@@ -57,10 +57,11 @@ internal class LogsRequestFactory(
     }
 
     private fun buildUrl(source: String, context: DatadogContext): String {
-        return "%s/api/v2/logs?%s=%s"
+        val baseUrl = customEndpointUrl ?: (context.site.intakeEndpoint + "/api/v2/logs")
+        return "%s?%s=%s"
             .format(
                 Locale.US,
-                customEndpointUrl ?: context.site.intakeEndpoint,
+                baseUrl,
                 RequestFactory.QUERY_PARAM_SOURCE,
                 source
             )

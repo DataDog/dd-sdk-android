@@ -145,10 +145,10 @@ internal class NetworkSettledMetricResolver(
         }
 
         private class Diagnostic(
-            var started: AtomicInteger = AtomicInteger(0),
-            var initial: AtomicInteger = AtomicInteger(0),
-            var stopped: AtomicInteger = AtomicInteger(0),
-            var dropped: AtomicInteger = AtomicInteger(0)
+            val started: AtomicInteger = AtomicInteger(0),
+            val initial: AtomicInteger = AtomicInteger(0),
+            val stopped: AtomicInteger = AtomicInteger(0),
+            val dropped: AtomicInteger = AtomicInteger(0)
         ) {
             fun resolveNoValueReason(): NoValueReason.TimeToNetworkSettle {
                 val started = started.get()

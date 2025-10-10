@@ -5,6 +5,7 @@
  */
 @file:Suppress("StringLiteralDuplication")
 
+import com.datadog.gradle.config.AndroidConfig
 import com.datadog.gradle.config.androidLibraryConfig
 import com.datadog.gradle.config.dependencyUpdateConfig
 import com.datadog.gradle.config.detektCustomConfig
@@ -24,7 +25,7 @@ plugins {
     // Publish
     `maven-publish`
     signing
-    id("org.jetbrains.dokka")
+    id("org.jetbrains.dokka-javadoc")
 
     // Analysis tools
     id("com.github.ben-manes.versions")
@@ -37,15 +38,30 @@ plugins {
     id("com.datadoghq.dependency-license")
     id("apiSurface")
     id("transitiveDependencies")
+    id("verificationXml")
     id("binary-compatibility-validator")
 }
 
 android {
     defaultConfig {
-        consumerProguardFiles(Paths.get(rootDir.path, "consumer-rules.pro").toString())
+        consumerProguardFiles(
+            Paths.get(rootDir.path, "consumer-rules.pro").toString(),
+            "consumer-rules.pro"
+        )
     }
 
     namespace = "com.datadog.android.rum"
+
+    testFixtures {
+        enable = true
+    }
+
+    testOptions {
+        unitTests.all {
+            it.systemProperty("RUM_MIN_SDK", "${AndroidConfig.MIN_SDK}")
+            it.systemProperty("RUM_TARGET_SDK", "${AndroidConfig.TARGET_SDK}")
+        }
+    }
 }
 
 dependencies {
@@ -73,14 +89,32 @@ dependencies {
             )
         }
     }
-    testImplementation(testFixtures(project(":dd-sdk-android-core")))
-    testImplementation(testFixtures(project(":dd-sdk-android-internal")))
+
     testImplementation(libs.bundles.jUnit5)
     testImplementation(libs.bundles.testTools)
     testImplementation(libs.okHttp)
     testImplementation(libs.okHttpMock)
-    testImplementation(libs.bundles.openTracing)
+    testImplementation(project(":features:dd-sdk-android-trace"))
+    testImplementation(testFixtures(project(":dd-sdk-android-core")))
+    testImplementation(testFixtures(project(":dd-sdk-android-internal")))
+    testImplementation(testFixtures(project(":features:dd-sdk-android-trace")))
     unmock(libs.robolectric)
+
+    // Test Fixtures
+    testFixturesImplementation(testFixtures(project(":dd-sdk-android-core")))
+    testFixturesImplementation(testFixtures(project(":dd-sdk-android-internal")))
+    testFixturesImplementation(project(":tools:unit")) {
+        attributes {
+            attribute(
+                com.android.build.api.attributes.ProductFlavorAttr.of("platform"),
+                objects.named("jvm")
+            )
+        }
+    }
+    testFixturesImplementation(libs.kotlin)
+    testFixturesImplementation(libs.bundles.jUnit5)
+    testFixturesImplementation(libs.okHttp)
+    testFixturesImplementation(libs.bundles.testTools)
 }
 
 unMock {
@@ -118,4 +152,4 @@ publishingConfig(
     "The RUM feature to use with the Datadog monitoring " +
         "library for Android applications."
 )
-detektCustomConfig(":dd-sdk-android-core", ":dd-sdk-android-internal")
+detektCustomConfig()

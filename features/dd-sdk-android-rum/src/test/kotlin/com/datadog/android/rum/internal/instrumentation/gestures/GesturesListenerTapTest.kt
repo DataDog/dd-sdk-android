@@ -14,16 +14,21 @@ import android.view.ViewGroup
 import android.view.Window
 import androidx.compose.ui.platform.ComposeView
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.core.internal.utils.toHexString
+import com.datadog.android.internal.utils.toHexString
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumAttributes
+import com.datadog.android.rum.internal.instrumentation.gestures.GesturesListenerScrollSwipeTest.ScrollableListView
+import com.datadog.android.rum.tracking.ActionTrackingStrategy
 import com.datadog.android.rum.tracking.InteractionPredicate
+import com.datadog.android.rum.tracking.Node
 import com.datadog.android.rum.tracking.ViewAttributesProvider
+import com.datadog.android.rum.tracking.ViewTarget
 import com.datadog.android.rum.utils.forge.Configurator
 import com.datadog.android.rum.utils.verifyLog
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
@@ -46,6 +51,24 @@ import java.lang.ref.WeakReference
 @ForgeConfiguration(Configurator::class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
+
+    @Test
+    fun `M return true W call onSingleTap()`(forge: Forge) {
+        // Given
+        val mockEvent: MotionEvent = forge.getForgery()
+        testedListener = GesturesListener(
+            rumMonitor.mockSdkCore,
+            WeakReference(mockWindow),
+            contextRef = WeakReference(mockAppContext),
+            internalLogger = mockInternalLogger
+        )
+
+        // When
+        val result = testedListener.onSingleTapUp(mockEvent)
+
+        // Then
+        assertThat(result).isTrue()
+    }
 
     @Test
     fun `onTap sends the right target when the ViewGroup and its child are both clickable`(
@@ -311,13 +334,13 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
         mockInternalLogger.verifyLog(
             InternalLogger.Level.INFO,
             InternalLogger.Target.USER,
-            GesturesListener.MSG_NO_TARGET_TAP
+            GesturesListener.MSG_NO_TARGET_ACTION
         )
         verifyNoInteractions(rumMonitor.mockInstance)
     }
 
     @Test
-    fun `onTap does nothing and no log triggered if no target found { target inside ComposeView } `(
+    fun `onTap send Action for Compose View { target inside ComposeView } `(
         forge: Forge
     ) {
         // Given
@@ -337,11 +360,19 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
             whenever(it.childCount).thenReturn(1)
             whenever(it.getChildAt(0)).thenReturn(composeView)
         }
+        val targetName = forge.anAlphabeticalString()
+        val x = mockEvent.x
+        val y = mockEvent.y
+        val mockComposeActionTrackingStrategy: ActionTrackingStrategy = mock {
+            whenever(it.findTargetForTap(composeView, x, y))
+                .thenReturn(ViewTarget(WeakReference(null), Node(name = targetName)))
+        }
         testedListener = GesturesListener(
             rumMonitor.mockSdkCore,
             WeakReference(mockWindow),
             contextRef = WeakReference(mockAppContext),
-            internalLogger = mockInternalLogger
+            internalLogger = mockInternalLogger,
+            composeActionTrackingStrategy = mockComposeActionTrackingStrategy
         )
 
         // When
@@ -349,7 +380,11 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
 
         // Then
         verifyNoInteractions(mockInternalLogger)
-        verifyNoInteractions(rumMonitor.mockInstance)
+        verify(rumMonitor.mockInstance).addAction(
+            eq(RumActionType.TAP),
+            eq(targetName),
+            eq(emptyMap())
+        )
     }
 
     @Test
@@ -703,6 +738,132 @@ internal class GesturesListenerTapTest : AbstractGesturesListenerTest() {
             RumActionType.TAP,
             "",
             expectedAttributes
+        )
+    }
+
+    @Test
+    fun `M find target with both strategies W tap`(forge: Forge) {
+        val startDownEvent: MotionEvent = forge.getForgery()
+        val tapEvent: MotionEvent = forge.getForgery()
+        val targetId = forge.anInt()
+        val endUpEvent: MotionEvent = forge.getForgery()
+        val scrollingTarget: ScrollableListView = mockView(
+            id = targetId,
+            forEvent = startDownEvent,
+            hitTest = true,
+            forge = forge
+        )
+        val mockInteractionPredicate: InteractionPredicate = mock {
+            whenever(it.getTargetName(scrollingTarget)).thenReturn(null)
+        }
+        mockDecorView = mockDecorView<ViewGroup>(
+            id = forge.anInt(),
+            forEvent = startDownEvent,
+            hitTest = true,
+            forge = forge
+        ) {
+            whenever(it.childCount).thenReturn(1)
+            whenever(it.getChildAt(0)).thenReturn(scrollingTarget)
+        }
+        val expectedResourceName = forge.anAlphabeticalString()
+        mockResourcesForTarget(scrollingTarget, expectedResourceName)
+        val mockAndroidActionTrackingStrategy = mock<AndroidActionTrackingStrategy>()
+        val mockComposeActionTrackingStrategy = mock<ActionTrackingStrategy>()
+        testedListener = GesturesListener(
+            rumMonitor.mockSdkCore,
+            WeakReference(mockWindow),
+            interactionPredicate = mockInteractionPredicate,
+            contextRef = WeakReference(mockAppContext),
+            androidActionTrackingStrategy = mockAndroidActionTrackingStrategy,
+            composeActionTrackingStrategy = mockComposeActionTrackingStrategy,
+            internalLogger = mockInternalLogger
+        )
+
+        // When
+        testedListener.onDown(startDownEvent)
+        testedListener.onSingleTapUp(tapEvent)
+        testedListener.onUp(endUpEvent)
+
+        // Then
+        verify(mockAndroidActionTrackingStrategy).findTargetForTap(
+            mockDecorView,
+            startDownEvent.x,
+            startDownEvent.y
+        )
+        verify(mockComposeActionTrackingStrategy).findTargetForTap(
+            mockDecorView,
+            startDownEvent.x,
+            startDownEvent.y
+        )
+    }
+
+    @Test
+    fun `M add compose node attributes W send Tap action`(forge: Forge) {
+        val mockEvent: MotionEvent = forge.getForgery()
+        val targetId = forge.anInt()
+        val fakeCustomTargetName = forge.anAlphabeticalString()
+        val validTarget: View = mockView(
+            id = targetId,
+            forEvent = mockEvent,
+            hitTest = true,
+            forge = forge,
+            clickable = true
+        )
+        val fakeAttributes = mapOf(
+            RumAttributes.ACTION_TARGET_ROLE to forge.aString(),
+            RumAttributes.ACTION_TARGET_SELECTED to forge.aString()
+        )
+        val mockInteractionPredicate: InteractionPredicate = mock {
+            whenever(it.getTargetName(validTarget)).thenReturn(fakeCustomTargetName)
+        }
+        val mockComposeActionTrackingStrategy = mock<ActionTrackingStrategy>()
+        val mockAndroidActionTrackingStrategy = mock<ActionTrackingStrategy>()
+        mockDecorView = mockDecorView<ViewGroup>(
+            id = forge.anInt(),
+            forEvent = mockEvent,
+            hitTest = false,
+            forge = forge
+        ) {
+            whenever(it.childCount).thenReturn(1)
+            whenever(it.getChildAt(0)).thenReturn(validTarget)
+        }
+        val expectedResourceName = forge.anAlphabeticalString()
+        mockResourcesForTarget(validTarget, expectedResourceName)
+
+        testedListener = GesturesListener(
+            rumMonitor.mockSdkCore,
+            WeakReference(mockWindow),
+            interactionPredicate = mockInteractionPredicate,
+            contextRef = WeakReference(mockAppContext),
+            internalLogger = mockInternalLogger,
+            androidActionTrackingStrategy = mockAndroidActionTrackingStrategy,
+            composeActionTrackingStrategy = mockComposeActionTrackingStrategy
+        )
+
+        whenever(
+            mockAndroidActionTrackingStrategy.findTargetForTap(
+                mockDecorView,
+                mockEvent.x,
+                mockEvent.y
+            )
+        ).thenReturn(ViewTarget(viewRef = WeakReference<View?>(null)))
+
+        whenever(
+            mockComposeActionTrackingStrategy.findTargetForTap(
+                mockDecorView,
+                mockEvent.x,
+                mockEvent.y
+            )
+        ).thenReturn(ViewTarget(node = Node(fakeCustomTargetName, fakeAttributes)))
+
+        // When
+        testedListener.onSingleTapUp(mockEvent)
+
+        // Then
+        verify(rumMonitor.mockInstance).addAction(
+            RumActionType.TAP,
+            fakeCustomTargetName,
+            fakeAttributes
         )
     }
 

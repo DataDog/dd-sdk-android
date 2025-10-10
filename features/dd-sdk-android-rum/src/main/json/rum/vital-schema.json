@@ -28,12 +28,18 @@
             "type": {
               "type": "string",
               "description": "Type of the vital",
-              "enum": ["duration"],
+              "enum": ["duration", "operation_step"],
               "readOnly": true
             },
             "id": {
               "type": "string",
               "description": "UUID of the vital",
+              "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$",
+              "readOnly": true
+            },
+            "operation_key": {
+              "type": "string",
+              "description": "UUID for distinguishing the active operations in parallel, if applicable",
               "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$",
               "readOnly": true
             },
@@ -52,14 +58,16 @@
               "description": "Duration of the vital in nanoseconds",
               "readOnly": true
             },
-            "custom": {
-              "type": "object",
-              "description": "User custom vital.",
-              "additionalProperties": {
-                "type": "number",
-                "minimum": 0,
-                "readOnly": true
-              },
+            "step_type": {
+              "type": "string",
+              "description": "Type of the step that triggered the vital, if applicable",
+              "enum": ["start", "update", "retry", "end"],
+              "readOnly": true
+            },
+            "failure_reason": {
+              "type": "string",
+              "description": "Reason for the failure of the step, if applicable",
+              "enum": ["error", "abandoned", "other"],
               "readOnly": true
             }
           },

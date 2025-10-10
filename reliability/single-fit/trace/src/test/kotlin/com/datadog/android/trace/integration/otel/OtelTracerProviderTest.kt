@@ -7,15 +7,17 @@
 package com.datadog.android.trace.integration.otel
 
 import com.datadog.android.api.feature.Feature
+import com.datadog.android.api.feature.SdkFeatureMock
 import com.datadog.android.core.stub.StubSDKCore
 import com.datadog.android.tests.ktx.getInt
 import com.datadog.android.trace.Trace
 import com.datadog.android.trace.TraceConfiguration
-import com.datadog.android.trace.integration.opentracing.AndroidTracerTest
 import com.datadog.android.trace.integration.tests.assertj.SpansPayloadAssert
 import com.datadog.android.trace.integration.tests.elmyr.TraceIntegrationForgeConfigurator
+import com.datadog.android.trace.integration.tests.utils.BlockingWriterWrapper
 import com.datadog.android.trace.opentelemetry.OtelTracerProvider
 import com.datadog.opentelemetry.trace.OtelConventions
+import com.datadog.tools.unit.completedFutureMock
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.trace.api.sampling.PrioritySampling
 import com.datadog.trace.bootstrap.instrumentation.api.Tags
@@ -41,6 +43,8 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.mock
 import org.mockito.quality.Strictness
 import java.time.Instant
 import java.util.concurrent.TimeUnit
@@ -56,12 +60,14 @@ import kotlin.system.measureNanoTime
 internal class OtelTracerProviderTest {
 
     private lateinit var stubSdkCore: StubSDKCore
+    private lateinit var blockingWriterWrapper: BlockingWriterWrapper
 
     @BeforeEach
     fun `set up`(forge: Forge) {
         stubSdkCore = StubSDKCore(forge)
         val fakeTraceConfiguration = TraceConfiguration.Builder().build()
         Trace.enable(fakeTraceConfiguration, stubSdkCore)
+        blockingWriterWrapper = checkNotNull(stubSdkCore.getFeature(Feature.TRACING_FEATURE_NAME)).useBlockingWriter()
     }
 
     // region Span attributes
@@ -75,7 +81,6 @@ internal class OtelTracerProviderTest {
         // Given
         val testedProvider = OtelTracerProvider.Builder(stubSdkCore).setService(fakeService).build()
         val tracer = testedProvider.tracerBuilder(fakeInstrumentationName).build()
-        val blockingWriterWrapper = tracer.useBlockingWriter()
 
         // When
         var leastSignificantTraceId: String
@@ -126,7 +131,6 @@ internal class OtelTracerProviderTest {
             .addTag(fakeGlobalTagKey, fakeGlobalTagValue)
             .build()
         val tracer = testedProvider.tracerBuilder(fakeInstrumentationName).build()
-        val blockingWriterWrapper = tracer.useBlockingWriter()
 
         // When
         var leastSignificantTraceId: String
@@ -183,7 +187,6 @@ internal class OtelTracerProviderTest {
         val fakeBooleanAttributeValue = forge.aBool()
         val testedProvider = OtelTracerProvider.Builder(stubSdkCore).build()
         val tracer = testedProvider.tracerBuilder(fakeInstrumentationName).build()
-        val blockingWriterWrapper = tracer.useBlockingWriter()
 
         // When
         var leastSignificantTraceId: String
@@ -248,7 +251,6 @@ internal class OtelTracerProviderTest {
         val fakeBooleanAttributeValue = forge.aBool()
         val testedProvider = OtelTracerProvider.Builder(stubSdkCore).build()
         val tracer = testedProvider.tracerBuilder(fakeInstrumentationName).build()
-        val blockingWriterWrapper = tracer.useBlockingWriter()
 
         // When
         var leastSignificantTraceId: String
@@ -309,7 +311,6 @@ internal class OtelTracerProviderTest {
         // Given
         val testedProvider = OtelTracerProvider.Builder(stubSdkCore).build()
         val tracer = testedProvider.tracerBuilder(fakeInstrumentationName).build()
-        val blockingWriterWrapper = tracer.useBlockingWriter()
         var leastSignificantParentSpanTraceId: String
         var mostSignficantParentSpanTraceId: String
         var parentSpanId: String
@@ -389,7 +390,6 @@ internal class OtelTracerProviderTest {
         // Given
         val testedProvider = OtelTracerProvider.Builder(stubSdkCore).build()
         val tracer = testedProvider.tracerBuilder(fakeInstrumentationName).build()
-        val blockingWriterWrapper = tracer.useBlockingWriter()
         val spanKind = forge.aValueFrom(SpanKind::class.java)
 
         // When
@@ -451,7 +451,6 @@ internal class OtelTracerProviderTest {
         val fakeStartTimestamp = System.currentTimeMillis() - forge.aPositiveLong()
         val testedProvider = OtelTracerProvider.Builder(stubSdkCore).build()
         val tracer = testedProvider.tracerBuilder(fakeInstrumentationName).build()
-        val blockingWriterWrapper = tracer.useBlockingWriter()
 
         // When
         var leastSignificantTraceId: String
@@ -512,7 +511,6 @@ internal class OtelTracerProviderTest {
         val fakeStringArray = forge.aList { forge.aString() }
         val testedProvider = OtelTracerProvider.Builder(stubSdkCore).build()
         val tracer = testedProvider.tracerBuilder(fakeInstrumentationName).build()
-        val blockingWriterWrapper = tracer.useBlockingWriter()
         val attributes = Attributes.builder()
             .put(fakeStringKey, fakeStringAttribute)
             .put(fakeLongKey, fakeLongAttribute)
@@ -575,7 +573,6 @@ internal class OtelTracerProviderTest {
         // Given
         val testedProvider = OtelTracerProvider.Builder(stubSdkCore).build()
         val tracer = testedProvider.tracerBuilder(fakeInstrumentationName).build()
-        val blockingWriterWrapper = tracer.useBlockingWriter()
 
         // When
         val parentSpan = tracer.spanBuilder(fakeParentSpanName).startSpan()
@@ -639,7 +636,6 @@ internal class OtelTracerProviderTest {
         // Given
         val testedProvider = OtelTracerProvider.Builder(stubSdkCore).build()
         val tracer = testedProvider.tracerBuilder(fakeInstrumentationName).build()
-        val blockingWriterWrapper = tracer.useBlockingWriter()
 
         // When
         val parentSpan = tracer.spanBuilder(fakeParentSpanName).startSpan()
@@ -712,7 +708,6 @@ internal class OtelTracerProviderTest {
         // Given
         val testedProvider = OtelTracerProvider.Builder(stubSdkCore).setSampleRate(100.0).build()
         val tracer = testedProvider.tracerBuilder(fakeInstrumentationName).build()
-        val blockingWriterWrapper = tracer.useBlockingWriter()
 
         // When
         val span = tracer
@@ -756,7 +751,6 @@ internal class OtelTracerProviderTest {
         // Given
         val testedProvider = OtelTracerProvider.Builder(stubSdkCore).setSampleRate(0.0).build()
         val tracer = testedProvider.tracerBuilder(fakeInstrumentationName).build()
-        val blockingWriterWrapper = tracer.useBlockingWriter()
 
         // When
         val span = tracer
@@ -779,7 +773,6 @@ internal class OtelTracerProviderTest {
         // Given
         val testedProvider = OtelTracerProvider.Builder(stubSdkCore).build()
         val tracer = testedProvider.tracerBuilder(fakeInstrumentationName).build()
-        val blockingWriterWrapper = tracer.useBlockingWriter()
 
         // When
         val span = tracer
@@ -824,7 +817,6 @@ internal class OtelTracerProviderTest {
         // Given
         val testedProvider = OtelTracerProvider.Builder(stubSdkCore).setSampleRate(sampleRate).build()
         val tracer = testedProvider.tracerBuilder(fakeInstrumentationName).build()
-        val blockingWriterWrapper = tracer.useBlockingWriter()
         val numberOfSpans = 300
         val normalizedSampleRate = sampleRate / 100.0
         val expectedKeptSpans = (numberOfSpans * normalizedSampleRate).toInt()
@@ -874,7 +866,6 @@ internal class OtelTracerProviderTest {
             .setSampleRate(100.0)
             .build()
         val tracer = testedProvider.tracerBuilder(fakeInstrumentationName).build()
-        val blockingWriterWrapper = tracer.useBlockingWriter()
 
         // When
         val startNanos = System.nanoTime()
@@ -914,7 +905,6 @@ internal class OtelTracerProviderTest {
             .setTraceRateLimit(traceLimit)
             .build()
         val tracer = testedProvider.tracerBuilder(fakeInstrumentationName).build()
-        val blockingWriterWrapper = tracer.useBlockingWriter()
 
         // When
         val startNanos = System.nanoTime()
@@ -951,7 +941,6 @@ internal class OtelTracerProviderTest {
         // Given
         val testedProvider = OtelTracerProvider.Builder(stubSdkCore).setTraceRateLimit(1).build()
         val tracer = testedProvider.tracerBuilder(fakeInstrumentationName).build()
-        val blockingWriterWrapper = tracer.useBlockingWriter()
 
         // When
         val startNanos = System.nanoTime()
@@ -1000,7 +989,6 @@ internal class OtelTracerProviderTest {
             .setSampleRate(100.0)
             .build()
         val tracer = testedProvider.tracerBuilder(fakeInstrumentationName).build()
-        val blockingWriterWrapper = tracer.useBlockingWriter()
 
         // When
         repeat(numberOfSpans) {
@@ -1049,13 +1037,26 @@ internal class OtelTracerProviderTest {
         @StringForgery fakeOperationName: String
     ) {
         // Given
-        stubSdkCore.stubFeature(Feature.RUM_FEATURE_NAME)
-        stubSdkCore.updateFeatureContext(Feature.RUM_FEATURE_NAME) {
-            it["application_id"] = fakeRumApplicationId
-            it["session_id"] = fakeRumSessionId
-            it["view_id"] = fakeRumViewId
-            it["action_id"] = fakeRumActionId
+        val rumContext = mapOf(
+            "application_id" to fakeRumApplicationId,
+            "session_id" to fakeRumSessionId,
+            "view_id" to fakeRumViewId,
+            "action_id" to fakeRumActionId
+        )
+
+        val datadogContext = stubSdkCore.getDatadogContext().let { datadogContext ->
+            datadogContext.copy(
+                featuresContext = datadogContext.featuresContext.toMutableMap().apply {
+                    put(Feature.RUM_FEATURE_NAME, rumContext)
+                }
+            )
         }
+
+        val rumFeature = mock<Feature> {
+            on { name } doReturn Feature.RUM_FEATURE_NAME
+        }
+
+        stubSdkCore.stubFeatureScope(rumFeature, SdkFeatureMock.create(completedFutureMock(datadogContext)))
         val testedProvider = OtelTracerProvider.Builder(stubSdkCore).setBundleWithRumEnabled(true).build()
         val tracer = testedProvider.tracerBuilder(fakeInstrumentationName).build()
 
@@ -1068,7 +1069,7 @@ internal class OtelTracerProviderTest {
             leastSignificantTraceId = span.leastSignificant64BitsTraceIdAsHex()
             mostSignificantTraceId = span.mostSignificant64BitsTraceIdAsHex()
             spanId = span.spanIdAsHex()
-            Thread.sleep(AndroidTracerTest.OP_DURATION_MS)
+            Thread.sleep(OP_DURATION_MS)
             span.end()
         }
 
@@ -1077,21 +1078,21 @@ internal class OtelTracerProviderTest {
         assertThat(eventsWritten).hasSize(1)
         val payload0 = JsonParser.parseString(eventsWritten[0].eventData) as JsonObject
         SpansPayloadAssert.assertThat(payload0)
-            .hasEnv(stubSdkCore.getDatadogContext().env)
+            .hasEnv(datadogContext.env)
             .hasSpanAtIndexWith(0) {
                 hasLeastSignificant64BitsTraceId(leastSignificantTraceId)
                 hasMostSignificant64BitsTraceId(mostSignificantTraceId)
                 hasValidMostSignificant64BitsTraceId()
                 hasValidLeastSignificant64BitsTraceId()
                 hasSpanId(spanId)
-                hasService(stubSdkCore.getDatadogContext().service)
-                hasVersion(stubSdkCore.getDatadogContext().version)
-                hasSource(stubSdkCore.getDatadogContext().source)
-                hasTracerVersion(stubSdkCore.getDatadogContext().sdkVersion)
+                hasService(datadogContext.service)
+                hasVersion(datadogContext.version)
+                hasSource(datadogContext.source)
+                hasTracerVersion(datadogContext.sdkVersion)
                 hasError(0)
                 hasName(DEFAULT_SPAN_NAME)
                 hasResource(fakeOperationName)
-                hasDurationBetween(AndroidTracerTest.OP_DURATION_NS, fullDuration)
+                hasDurationBetween(OP_DURATION_NS, fullDuration)
                 hasApplicationId(fakeRumApplicationId)
                 hasSessionId(fakeRumSessionId)
                 hasViewId(fakeRumViewId)
@@ -1124,7 +1125,7 @@ internal class OtelTracerProviderTest {
             leastSignificantTraceId = span.leastSignificant64BitsTraceIdAsHex()
             mostSignificantTraceId = span.mostSignificant64BitsTraceIdAsHex()
             spanId = span.spanIdAsHex()
-            Thread.sleep(AndroidTracerTest.OP_DURATION_MS)
+            Thread.sleep(OP_DURATION_MS)
             span.end()
         }
 
@@ -1147,7 +1148,7 @@ internal class OtelTracerProviderTest {
                 hasError(0)
                 hasName(DEFAULT_SPAN_NAME)
                 hasResource(fakeOperationName)
-                hasDurationBetween(AndroidTracerTest.OP_DURATION_NS, fullDuration)
+                hasDurationBetween(OP_DURATION_NS, fullDuration)
                 hasUserId(fakeUserId)
                 hasUserName(fakeUserName)
                 hasUserEmail(fakeUserEmail)
@@ -1156,13 +1157,14 @@ internal class OtelTracerProviderTest {
 
     @RepeatedTest(10)
     fun `M send trace with custom user info W SDKCore#setUserInfo() + buildSpan() + start() + finish()`(
+        @StringForgery fakeUserId: String,
         @StringForgery fakeInstrumentationName: String,
         @StringForgery fakeOperation: String,
         @StringForgery fakeUserKey: String,
         @StringForgery fakeUserValue: String
     ) {
         // Given
-        stubSdkCore.setUserInfo(extraInfo = mapOf(fakeUserKey to fakeUserValue))
+        stubSdkCore.setUserInfo(id = fakeUserId, extraInfo = mapOf(fakeUserKey to fakeUserValue))
         val testedProvider = OtelTracerProvider.Builder(stubSdkCore).setBundleWithRumEnabled(true).build()
         val tracer = testedProvider.tracerBuilder(fakeInstrumentationName).build()
 
@@ -1175,7 +1177,7 @@ internal class OtelTracerProviderTest {
             leastSignificantTraceId = span.leastSignificant64BitsTraceIdAsHex()
             mostSignificantTraceId = span.mostSignificant64BitsTraceIdAsHex()
             spanId = span.spanIdAsHex()
-            Thread.sleep(AndroidTracerTest.OP_DURATION_MS)
+            Thread.sleep(OP_DURATION_MS)
             span.end()
         }
 
@@ -1198,8 +1200,113 @@ internal class OtelTracerProviderTest {
                 hasError(0)
                 hasName(DEFAULT_SPAN_NAME)
                 hasResource(fakeOperation)
-                hasDurationBetween(AndroidTracerTest.OP_DURATION_NS, fullDuration)
+                hasDurationBetween(OP_DURATION_NS, fullDuration)
                 hasGenericMetaValue("usr.$fakeUserKey", fakeUserValue)
+            }
+    }
+
+    @Test
+    fun `M send trace with base account info W SDKCore#setAccountInfo() + buildSpan() + start() + finish()`(
+        @StringForgery fakeInstrumentationName: String,
+        @StringForgery fakeOperationName: String,
+        @StringForgery fakeAccountId: String,
+        @StringForgery fakeAccountName: String
+    ) {
+        // Given
+        stubSdkCore.setAccountInfo(fakeAccountId, fakeAccountName)
+        val testedProvider =
+            OtelTracerProvider.Builder(stubSdkCore).setBundleWithRumEnabled(true).build()
+        val tracer = testedProvider.tracerBuilder(fakeInstrumentationName).build()
+
+        // When
+        var leastSignificantTraceId: String
+        var mostSignificantTraceId: String
+        var spanId: String
+        val fullDuration = measureNanoTime {
+            val span = tracer.spanBuilder(fakeOperationName).startSpan()
+            leastSignificantTraceId = span.leastSignificant64BitsTraceIdAsHex()
+            mostSignificantTraceId = span.mostSignificant64BitsTraceIdAsHex()
+            spanId = span.spanIdAsHex()
+            Thread.sleep(OP_DURATION_MS)
+            span.end()
+        }
+
+        // Then
+        val eventsWritten = stubSdkCore.eventsWritten(Feature.TRACING_FEATURE_NAME)
+        assertThat(eventsWritten).hasSize(1)
+        val payload0 = JsonParser.parseString(eventsWritten[0].eventData) as JsonObject
+        SpansPayloadAssert.assertThat(payload0)
+            .hasEnv(stubSdkCore.getDatadogContext().env)
+            .hasSpanAtIndexWith(0) {
+                hasLeastSignificant64BitsTraceId(leastSignificantTraceId)
+                hasMostSignificant64BitsTraceId(mostSignificantTraceId)
+                hasValidMostSignificant64BitsTraceId()
+                hasValidLeastSignificant64BitsTraceId()
+                hasSpanId(spanId)
+                hasService(stubSdkCore.getDatadogContext().service)
+                hasVersion(stubSdkCore.getDatadogContext().version)
+                hasSource(stubSdkCore.getDatadogContext().source)
+                hasTracerVersion(stubSdkCore.getDatadogContext().sdkVersion)
+                hasError(0)
+                hasName(DEFAULT_SPAN_NAME)
+                hasResource(fakeOperationName)
+                hasDurationBetween(OP_DURATION_NS, fullDuration)
+                hasGenericMetaValue("account.id", fakeAccountId)
+                hasGenericMetaValue("account.name", fakeAccountName)
+            }
+    }
+
+    @Test
+    fun `M send trace with custom account info W SDKCore#setAccountInfo() + buildSpan() + start() + finish()`(
+        @StringForgery fakeInstrumentationName: String,
+        @StringForgery fakeOperation: String,
+        @StringForgery fakeAccountId: String,
+        @StringForgery fakeAccountKey: String,
+        @StringForgery fakeAccountValue: String
+    ) {
+        // Given
+        stubSdkCore.setAccountInfo(
+            id = fakeAccountId,
+            extraInfo = mapOf(fakeAccountKey to fakeAccountValue)
+        )
+        val testedProvider =
+            OtelTracerProvider.Builder(stubSdkCore).setBundleWithRumEnabled(true).build()
+        val tracer = testedProvider.tracerBuilder(fakeInstrumentationName).build()
+
+        // When
+        var leastSignificantTraceId: String
+        var mostSignificantTraceId: String
+        var spanId: String
+        val fullDuration = measureNanoTime {
+            val span = tracer.spanBuilder(fakeOperation).startSpan()
+            leastSignificantTraceId = span.leastSignificant64BitsTraceIdAsHex()
+            mostSignificantTraceId = span.mostSignificant64BitsTraceIdAsHex()
+            spanId = span.spanIdAsHex()
+            Thread.sleep(OP_DURATION_MS)
+            span.end()
+        }
+
+        // Then
+        val eventsWritten = stubSdkCore.eventsWritten(Feature.TRACING_FEATURE_NAME)
+        assertThat(eventsWritten).hasSize(1)
+        val payload0 = JsonParser.parseString(eventsWritten[0].eventData) as JsonObject
+        SpansPayloadAssert.assertThat(payload0)
+            .hasEnv(stubSdkCore.getDatadogContext().env)
+            .hasSpanAtIndexWith(0) {
+                hasLeastSignificant64BitsTraceId(leastSignificantTraceId)
+                hasMostSignificant64BitsTraceId(mostSignificantTraceId)
+                hasValidMostSignificant64BitsTraceId()
+                hasValidLeastSignificant64BitsTraceId()
+                hasSpanId(spanId)
+                hasService(stubSdkCore.getDatadogContext().service)
+                hasVersion(stubSdkCore.getDatadogContext().version)
+                hasSource(stubSdkCore.getDatadogContext().source)
+                hasTracerVersion(stubSdkCore.getDatadogContext().sdkVersion)
+                hasError(0)
+                hasName(DEFAULT_SPAN_NAME)
+                hasResource(fakeOperation)
+                hasDurationBetween(OP_DURATION_NS, fullDuration)
+                hasGenericMetaValue("account.$fakeAccountKey", fakeAccountValue)
             }
     }
 

@@ -32,8 +32,7 @@ internal class FrescoImageLoader : ImageLoader {
             GlobalRumMonitor.get(Datadog.getInstance()).addError(
                 "Unable to load Fresco image in non Drawee View",
                 RumErrorSource.SOURCE,
-                null,
-                emptyMap()
+                null
             )
         }
     }

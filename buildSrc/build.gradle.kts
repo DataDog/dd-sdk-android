@@ -32,7 +32,6 @@ dependencies {
     implementation(libs.kotlinGradlePlugin)
     implementation(libs.androidToolsGradlePlugin)
     implementation(libs.versionsGradlePlugin)
-    implementation(libs.fuzzyWuzzy)
     implementation(libs.dokkaGradlePlugin)
     implementation(libs.dependencyLicenseGradlePlugin)
     implementation(libs.kover)
@@ -44,6 +43,9 @@ dependencies {
     // JsonSchema 2 Poko
     implementation(libs.gson)
     implementation(libs.kotlinPoet)
+
+    // Verification Metadata XML
+    implementation(libs.kotlinXmlBuilder)
 
     // Tests
     testImplementation(libs.jUnit4)
@@ -70,6 +72,10 @@ gradlePlugin {
         register("transitiveDependencies") {
             id = "transitiveDependencies" // the alias
             implementationClass = "com.datadog.gradle.plugin.transdeps.TransitiveDependenciesPlugin"
+        }
+        register("verificationXml") {
+            id = "verificationXml" // the alias
+            implementationClass = "com.datadog.gradle.plugin.verification.VerificationXmlPlugin"
         }
     }
 }

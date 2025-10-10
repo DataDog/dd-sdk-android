@@ -44,9 +44,9 @@ internal class ConfigurationCoreForgeryFactory :
             .apply {
                 _InternalProxy.allowClearTextHttp(this)
             }
-            .setBatchSize(forge.aValueFrom(BatchSize::class.java))
-            .setUploadFrequency(forge.aValueFrom(UploadFrequency::class.java))
-            .setBatchProcessingLevel(forge.aValueFrom(BatchProcessingLevel::class.java))
+            .setBatchSize(BatchSize.SMALL)
+            .setUploadFrequency(UploadFrequency.FREQUENT)
+            .setBatchProcessingLevel(BatchProcessingLevel.HIGH)
             .build()
     }
 }

@@ -8,15 +8,17 @@ package com.datadog.android.rum.internal.domain.scope
 
 import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.context.DatadogContext
+import com.datadog.android.api.feature.EventWriteScope
 import com.datadog.android.api.storage.DataWriter
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.internal.utils.loggableStackTrace
-import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumAttributes
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumResourceKind
 import com.datadog.android.rum.RumResourceMethod
+import com.datadog.android.rum.RumSessionType
 import com.datadog.android.rum.internal.FeaturesContextResolver
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
@@ -25,18 +27,25 @@ import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollect
 import com.datadog.android.rum.internal.metric.networksettled.InternalResourceContext
 import com.datadog.android.rum.internal.metric.networksettled.NetworkSettledMetricResolver
 import com.datadog.android.rum.internal.monitor.StorageEvent
+import com.datadog.android.rum.internal.toError
+import com.datadog.android.rum.internal.toResource
+import com.datadog.android.rum.internal.utils.buildDDTagsString
 import com.datadog.android.rum.internal.utils.hasUserData
 import com.datadog.android.rum.internal.utils.newRumEventWriteOperation
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.ResourceEvent
 import java.net.MalformedURLException
 import java.net.URL
+import java.nio.ByteBuffer
+import java.nio.CharBuffer
+import java.nio.charset.CoderMalfunctionError
+import java.nio.charset.StandardCharsets
 import java.util.Locale
 import java.util.UUID
 
 @Suppress("LongParameterList", "TooManyFunctions")
 internal class RumResourceScope(
-    internal val parentScope: RumScope,
+    override val parentScope: RumScope,
     internal val sdkCore: InternalSdkCore,
     internal val url: String,
     internal val method: RumResourceMethod,
@@ -47,14 +56,14 @@ internal class RumResourceScope(
     internal val firstPartyHostHeaderTypeResolver: FirstPartyHostHeaderTypeResolver,
     private val featuresContextResolver: FeaturesContextResolver,
     internal val sampleRate: Float,
-    internal val networkSettledMetricResolver: NetworkSettledMetricResolver,
+    networkSettledMetricResolver: NetworkSettledMetricResolver,
+    private val rumSessionTypeOverride: RumSessionType?,
     internal val insightsCollector: InsightsCollector
 ) : RumScope {
 
     internal val resourceId: String = UUID.randomUUID().toString()
-    internal val attributes: MutableMap<String, Any?> = initialAttributes.toMutableMap().apply {
-        putAll(GlobalRumMonitor.get(sdkCore).getAttributes())
-    }
+    internal val resourceAttributes: MutableMap<String, Any?> = initialAttributes.toMutableMap()
+
     private var timing: ResourceTiming? = null
     private val initialContext = parentScope.getRumContext()
 
@@ -78,13 +87,24 @@ internal class RumResourceScope(
     // region RumScope
 
     @WorkerThread
-    override fun handleEvent(event: RumRawEvent, writer: DataWriter<Any>): RumScope? {
+    override fun handleEvent(
+        event: RumRawEvent,
+        datadogContext: DatadogContext,
+        writeScope: EventWriteScope,
+        writer: DataWriter<Any>
+    ): RumScope? {
         when (event) {
             is RumRawEvent.WaitForResourceTiming -> if (key == event.key) waitForTiming = true
-            is RumRawEvent.AddResourceTiming -> onAddResourceTiming(event, writer)
-            is RumRawEvent.StopResource -> onStopResource(event, writer)
-            is RumRawEvent.StopResourceWithError -> onStopResourceWithError(event, writer)
-            is RumRawEvent.StopResourceWithStackTrace -> onStopResourceWithStackTrace(event, writer)
+            is RumRawEvent.AddResourceTiming -> onAddResourceTiming(event, datadogContext, writeScope, writer)
+            is RumRawEvent.StopResource -> onStopResource(event, datadogContext, writeScope, writer)
+            is RumRawEvent.StopResourceWithError -> onStopResourceWithError(event, datadogContext, writeScope, writer)
+            is RumRawEvent.StopResourceWithStackTrace -> onStopResourceWithStackTrace(
+                event,
+                datadogContext,
+                writeScope,
+                writer
+            )
+
             else -> {
                 // Other events are not relevant for RumResourceScope
             }
@@ -95,6 +115,10 @@ internal class RumResourceScope(
 
     override fun getRumContext(): RumContext {
         return initialContext
+    }
+
+    override fun getCustomAttributes(): Map<String, Any?> {
+        return parentScope.getCustomAttributes() + resourceAttributes
     }
 
     override fun isActive(): Boolean {
@@ -108,39 +132,45 @@ internal class RumResourceScope(
     @WorkerThread
     private fun onStopResource(
         event: RumRawEvent.StopResource,
+        datadogContext: DatadogContext,
+        writeScope: EventWriteScope,
         writer: DataWriter<Any>
     ) {
         if (key != event.key) return
         stopped = true
-        attributes.putAll(event.attributes)
+        resourceAttributes.putAll(event.attributes)
         kind = event.kind
         statusCode = event.statusCode
         size = event.size
 
         if (!(waitForTiming && timing == null)) {
-            sendResource(kind, event.statusCode, event.size, event.eventTime, writer)
+            sendResource(kind, event.statusCode, event.size, event.eventTime, datadogContext, writeScope, writer)
         }
     }
 
     @WorkerThread
     private fun onAddResourceTiming(
         event: RumRawEvent.AddResourceTiming,
+        datadogContext: DatadogContext,
+        writeScope: EventWriteScope,
         writer: DataWriter<Any>
     ) {
         if (key != event.key) return
         timing = event.timing
         if (stopped && !sent) {
-            sendResource(kind, statusCode, size, event.eventTime, writer)
+            sendResource(kind, statusCode, size, event.eventTime, datadogContext, writeScope, writer)
         }
     }
 
     @WorkerThread
     private fun onStopResourceWithError(
         event: RumRawEvent.StopResourceWithError,
+        datadogContext: DatadogContext,
+        writeScope: EventWriteScope,
         writer: DataWriter<Any>
     ) {
         if (key != event.key) return
-        attributes.putAll(event.attributes)
+        resourceAttributes.putAll(event.attributes)
         sendError(
             event.message,
             event.source,
@@ -148,6 +178,8 @@ internal class RumResourceScope(
             event.throwable.loggableStackTrace(),
             event.throwable.javaClass.canonicalName,
             ErrorEvent.Category.EXCEPTION,
+            datadogContext,
+            writeScope,
             writer,
             event.eventTime.nanoTime
         )
@@ -156,10 +188,12 @@ internal class RumResourceScope(
     @WorkerThread
     private fun onStopResourceWithStackTrace(
         event: RumRawEvent.StopResourceWithStackTrace,
+        datadogContext: DatadogContext,
+        writeScope: EventWriteScope,
         writer: DataWriter<Any>
     ) {
         if (key != event.key) return
-        attributes.putAll(event.attributes)
+        resourceAttributes.putAll(event.attributes)
 
         val errorCategory =
             if (event.stackTrace.isNotEmpty()) ErrorEvent.Category.EXCEPTION else null
@@ -171,6 +205,8 @@ internal class RumResourceScope(
             event.stackTrace,
             event.errorType,
             errorCategory,
+            datadogContext,
+            writeScope,
             writer,
             event.eventTime.nanoTime
         )
@@ -182,12 +218,13 @@ internal class RumResourceScope(
         statusCode: Long?,
         size: Long?,
         eventTime: Time,
+        datadogContext: DatadogContext,
+        writeScope: EventWriteScope,
         writer: DataWriter<Any>
     ) {
-        attributes.putAll(GlobalRumMonitor.get(sdkCore).getAttributes())
-        val traceId = attributes.remove(RumAttributes.TRACE_ID)?.toString()
-        val spanId = attributes.remove(RumAttributes.SPAN_ID)?.toString()
-        val rulePsr = attributes.remove(RumAttributes.RULE_PSR) as? Number
+        val traceId = resourceAttributes.remove(RumAttributes.TRACE_ID)?.toString()
+        val spanId = resourceAttributes.remove(RumAttributes.SPAN_ID)?.toString()
+        val rulePsr = resourceAttributes.remove(RumAttributes.RULE_PSR) as? Number
 
         val rumContext = getRumContext()
         val syntheticsAttribute = if (
@@ -201,24 +238,33 @@ internal class RumResourceScope(
                 resultId = rumContext.syntheticsResultId
             )
         }
-        val sessionType = if (syntheticsAttribute == null) {
-            ResourceEvent.ResourceEventSessionType.USER
-        } else {
-            ResourceEvent.ResourceEventSessionType.SYNTHETICS
+        val sessionType = when {
+            rumSessionTypeOverride != null -> rumSessionTypeOverride.toResource()
+            syntheticsAttribute == null -> ResourceEvent.ResourceEventSessionType.USER
+            else -> ResourceEvent.ResourceEventSessionType.SYNTHETICS
         }
 
         @Suppress("UNCHECKED_CAST")
         val finalTiming = timing ?: extractResourceTiming(
-            attributes.remove(RumAttributes.RESOURCE_TIMINGS) as? Map<String, Any?>
+            resourceAttributes.remove(RumAttributes.RESOURCE_TIMINGS) as? Map<String, Any?>
         )
+
+        val graphqlOperationName = resourceAttributes.remove(RumAttributes.GRAPHQL_OPERATION_NAME) as? String
+        val graphqlOperationType = resourceAttributes.remove(RumAttributes.GRAPHQL_OPERATION_TYPE) as? String
+        val graphqlVariables = resourceAttributes.remove(RumAttributes.GRAPHQL_VARIABLES) as? String
+
+        // The decision whether to send payloads is determined by a DatadogApolloInterceptor parameter
+        val rawPayload = resourceAttributes.remove(RumAttributes.GRAPHQL_PAYLOAD) as? String
+        val graphqlPayload = rawPayload?.truncateToUtf8Bytes(MAX_GRAPHQL_PAYLOAD_SIZE_BYTES)
+
         val graphql = resolveGraphQLAttributes(
-            attributes.remove(RumAttributes.GRAPHQL_OPERATION_TYPE) as? String?,
-            attributes.remove(RumAttributes.GRAPHQL_OPERATION_NAME) as? String?,
-            attributes.remove(RumAttributes.GRAPHQL_PAYLOAD) as? String?,
-            attributes.remove(RumAttributes.GRAPHQL_VARIABLES) as? String?
+            operationType = graphqlOperationType,
+            operationName = graphqlOperationName,
+            variables = graphqlVariables,
+            payload = graphqlPayload
         )
-        val eventAttributes = attributes.toMutableMap()
-        sdkCore.newRumEventWriteOperation(writer) { datadogContext ->
+
+        sdkCore.newRumEventWriteOperation(datadogContext, writeScope, writer) {
             val user = datadogContext.userInfo
             val hasReplay = featuresContextResolver.resolveViewHasReplay(
                 datadogContext,
@@ -261,8 +307,18 @@ internal class RumResourceScope(
                 } else {
                     null
                 },
+                account = datadogContext.accountInfo?.let {
+                    ResourceEvent.Account(
+                        id = it.id,
+                        name = it.name,
+                        additionalProperties = it.extraInfo.toMutableMap()
+                    )
+                },
                 connectivity = networkInfo.toResourceConnectivity(),
-                application = ResourceEvent.Application(rumContext.applicationId),
+                application = ResourceEvent.Application(
+                    id = rumContext.applicationId,
+                    currentLocale = datadogContext.deviceInfo.localeInfo.currentLocale
+                ),
                 session = ResourceEvent.ResourceEventSession(
                     id = rumContext.sessionId,
                     type = sessionType,
@@ -283,9 +339,11 @@ internal class RumResourceScope(
                     name = datadogContext.deviceInfo.deviceName,
                     model = datadogContext.deviceInfo.deviceModel,
                     brand = datadogContext.deviceInfo.deviceBrand,
-                    architecture = datadogContext.deviceInfo.architecture
+                    architecture = datadogContext.deviceInfo.architecture,
+                    locales = datadogContext.deviceInfo.localeInfo.locales,
+                    timeZone = datadogContext.deviceInfo.localeInfo.timeZone
                 ),
-                context = ResourceEvent.Context(additionalProperties = eventAttributes),
+                context = ResourceEvent.Context(additionalProperties = getCustomAttributes().toMutableMap()),
                 dd = ResourceEvent.Dd(
                     traceId = traceId,
                     spanId = spanId,
@@ -296,7 +354,8 @@ internal class RumResourceScope(
                     configuration = ResourceEvent.Configuration(sessionSampleRate = sampleRate)
                 ),
                 service = datadogContext.service,
-                version = datadogContext.version
+                version = datadogContext.version,
+                ddtags = buildDDTagsString(datadogContext)
             )
         }
             .onError {
@@ -343,15 +402,14 @@ internal class RumResourceScope(
         stackTrace: String?,
         errorType: String?,
         errorCategory: ErrorEvent.Category?,
+        datadogContext: DatadogContext,
+        writeScope: EventWriteScope,
         writer: DataWriter<Any>,
         resourceStopTimestampInNanos: Long
     ) {
-        attributes.putAll(GlobalRumMonitor.get(sdkCore).getAttributes())
-        val errorFingerprint = attributes.remove(RumAttributes.ERROR_FINGERPRINT) as? String
-
+        val errorFingerprint = resourceAttributes.remove(RumAttributes.ERROR_FINGERPRINT) as? String
         val rumContext = getRumContext()
 
-        val eventAttributes = attributes.toMutableMap()
         val syntheticsAttribute = if (
             rumContext.syntheticsTestId.isNullOrBlank() ||
             rumContext.syntheticsResultId.isNullOrBlank()
@@ -363,12 +421,14 @@ internal class RumResourceScope(
                 resultId = rumContext.syntheticsResultId
             )
         }
-        val sessionType = if (syntheticsAttribute == null) {
-            ErrorEvent.ErrorEventSessionType.USER
-        } else {
-            ErrorEvent.ErrorEventSessionType.SYNTHETICS
+
+        val sessionType = when {
+            rumSessionTypeOverride != null -> rumSessionTypeOverride.toError()
+            syntheticsAttribute == null -> ErrorEvent.ErrorEventSessionType.USER
+            else -> ErrorEvent.ErrorEventSessionType.SYNTHETICS
         }
-        sdkCore.newRumEventWriteOperation(writer) { datadogContext ->
+
+        sdkCore.newRumEventWriteOperation(datadogContext, writeScope, writer) {
             val user = datadogContext.userInfo
             val hasReplay = featuresContextResolver.resolveViewHasReplay(
                 datadogContext,
@@ -410,6 +470,13 @@ internal class RumResourceScope(
                 } else {
                     null
                 },
+                account = datadogContext.accountInfo?.let {
+                    ErrorEvent.Account(
+                        id = it.id,
+                        name = it.name,
+                        additionalProperties = it.extraInfo.toMutableMap()
+                    )
+                },
                 connectivity = networkInfo.toErrorConnectivity(),
                 application = ErrorEvent.Application(rumContext.applicationId),
                 session = ErrorEvent.ErrorEventSession(
@@ -434,7 +501,7 @@ internal class RumResourceScope(
                     brand = datadogContext.deviceInfo.deviceBrand,
                     architecture = datadogContext.deviceInfo.architecture
                 ),
-                context = ErrorEvent.Context(additionalProperties = eventAttributes),
+                context = ErrorEvent.Context(additionalProperties = getCustomAttributes().toMutableMap()),
                 dd = ErrorEvent.Dd(
                     session = ErrorEvent.DdSession(
                         sessionPrecondition = rumContext.sessionStartReason.toErrorSessionPrecondition()
@@ -442,7 +509,8 @@ internal class RumResourceScope(
                     configuration = ErrorEvent.Configuration(sessionSampleRate = sampleRate)
                 ),
                 service = datadogContext.service,
-                version = datadogContext.version
+                version = datadogContext.version,
+                ddtags = buildDDTagsString(datadogContext)
             )
         }
             .onError {
@@ -473,7 +541,7 @@ internal class RumResourceScope(
     private fun resolveDomain(url: String): String {
         return try {
             URL(url).host
-        } catch (e: MalformedURLException) {
+        } catch (_: MalformedURLException) {
             url
         }
     }
@@ -481,24 +549,71 @@ internal class RumResourceScope(
     private fun resolveGraphQLAttributes(
         operationType: String?,
         operationName: String?,
-        payload: String?,
-        variables: String?
+        variables: String?,
+        payload: String?
     ): ResourceEvent.Graphql? {
         operationType?.toOperationType(sdkCore.internalLogger)?.let {
             return ResourceEvent.Graphql(
-                it,
-                operationName,
-                payload,
-                variables
+                operationType = it,
+                operationName = operationName,
+                variables = variables,
+                payload = payload
             )
         }
 
         return null
     }
 
+    @Suppress("ReturnCount", "SwallowedException")
+    private fun String.truncateToUtf8Bytes(maxBytes: Int): String {
+        val encoder =
+            // will not throw UnsupportedOperationException
+            @Suppress("UnsafeThirdPartyFunctionCall")
+            StandardCharsets.UTF_8.newEncoder()
+
+        // will not throw IllegalArgumentException
+        @Suppress("UnsafeThirdPartyFunctionCall")
+        val dst = ByteBuffer.allocate(maxBytes)
+
+        // will not throw IndexOutOfBoundsException
+        @Suppress("UnsafeThirdPartyFunctionCall")
+        val src = CharBuffer.wrap(this)
+
+        @Suppress("TooGenericExceptionCaught")
+        try {
+            // Encode as much as fits. The encoder will not consume a character
+            // if doing so would overflow the byte buffer.
+            encoder.encode(src, dst, true)
+        } catch (e: IllegalStateException) {
+            logPayloadTruncationFailure(e)
+            return ""
+        } catch (e: CoderMalfunctionError) {
+            logPayloadTruncationFailure(e)
+            return ""
+        } catch (e: NullPointerException) {
+            logPayloadTruncationFailure(e)
+            return ""
+        }
+
+        // will not throw IndexOutOfBoundsException
+        @Suppress("UnsafeThirdPartyFunctionCall")
+        return substring(0, src.position())
+    }
+
+    private fun logPayloadTruncationFailure(e: Throwable) {
+        val logger = sdkCore.internalLogger
+        logger.log(
+            level = InternalLogger.Level.ERROR,
+            target = InternalLogger.Target.MAINTAINER,
+            messageBuilder = { "Failed to truncate payload" },
+            throwable = e
+        )
+    }
+
     // endregion
 
     companion object {
+        internal const val MAX_GRAPHQL_PAYLOAD_SIZE_BYTES = 30 * 1024
 
         internal const val NEGATIVE_DURATION_WARNING_MESSAGE = "The computed duration for your " +
             "resource: %s was 0 or negative. In order to keep the resource event" +
@@ -514,6 +629,7 @@ internal class RumResourceScope(
             featuresContextResolver: FeaturesContextResolver,
             sampleRate: Float,
             networkSettledMetricResolver: NetworkSettledMetricResolver,
+            rumSessionTypeOverride: RumSessionType?,
             insightsCollector: InsightsCollector
         ): RumScope {
             return RumResourceScope(
@@ -529,7 +645,7 @@ internal class RumResourceScope(
                 featuresContextResolver = featuresContextResolver,
                 sampleRate = sampleRate,
                 networkSettledMetricResolver = networkSettledMetricResolver,
-                insightsCollector = insightsCollector
+                insightsCollector: InsightsCollector
             )
         }
     }
