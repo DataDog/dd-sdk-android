@@ -35,7 +35,6 @@ import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
-import java.util.concurrent.ExecutorService
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -44,9 +43,6 @@ import java.util.concurrent.ExecutorService
 @MockitoSettings(strictness = Strictness.LENIENT)
 @ForgeConfiguration(ForgeConfigurator::class)
 internal class DatadogFlagsClientTest {
-
-    @Mock
-    lateinit var mockExecutorService: ExecutorService
 
     @Mock
     lateinit var mockFeatureSdkCore: FeatureSdkCore
@@ -493,9 +489,7 @@ internal class DatadogFlagsClientTest {
         // Given
         val fakeTargetingKey = forge.anAlphabeticalString()
         val fakeAttributes = mapOf(
-            "user.id" to forge.anAlphabeticalString(),
             "user.plan" to forge.anElementFrom("free", "premium", "enterprise"),
-            "env" to forge.anElementFrom("dev", "staging", "prod"),
             "feature.enabled" to forge.aBool().toString()
         )
         val fakeContext = EvaluationContext(fakeTargetingKey, fakeAttributes)
@@ -505,7 +499,7 @@ internal class DatadogFlagsClientTest {
 
         // Then
         // Verify that the evaluations manager was called to process the context
-        verify(mockEvaluationsManager).updateEvaluationsForContext(any<EvaluationContext>())
+        verify(mockEvaluationsManager).updateEvaluationsForContext(fakeContext)
     }
 
     // endregion

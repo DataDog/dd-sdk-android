@@ -167,7 +167,7 @@ internal class FlagsTest {
         argumentCaptor<FlagsFeature> {
             verify(mockSdkCore).registerFeature(capture())
             // Verify the feature was created (implicit by successful registration)
-            assertThat(lastValue).isNotNull
+            assertThat(lastValue.name).isEqualTo("flags")
         }
     }
 
