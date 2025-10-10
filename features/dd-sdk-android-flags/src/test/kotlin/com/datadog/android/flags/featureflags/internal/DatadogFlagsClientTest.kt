@@ -483,7 +483,7 @@ internal class DatadogFlagsClientTest {
     }
 
     @Test
-    fun `M process context and store flags W setEvaluationContext() { complete flow with mock repository }`(
+    fun `M process context and store flags W setEvaluationContext() { complete flow }`(
         forge: Forge
     ) {
         // Given

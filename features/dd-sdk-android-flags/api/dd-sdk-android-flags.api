@@ -8,7 +8,12 @@ public final class com/datadog/android/flags/Flags {
 
 public final class com/datadog/android/flags/FlagsConfiguration {
 	public static final field Companion Lcom/datadog/android/flags/FlagsConfiguration$Companion;
-	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;ZLkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> ()V
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Z)Lcom/datadog/android/flags/FlagsConfiguration;
+	public static synthetic fun copy$default (Lcom/datadog/android/flags/FlagsConfiguration;Ljava/lang/String;Ljava/lang/String;ZILjava/lang/Object;)Lcom/datadog/android/flags/FlagsConfiguration;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
 }
 
 public final class com/datadog/android/flags/FlagsConfiguration$Builder {
