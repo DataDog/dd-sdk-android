@@ -12,7 +12,8 @@ package com.datadog.android.flags
 data class FlagsConfiguration internal constructor(
     internal val trackExposures: Boolean = true,
     internal val customExposureEndpoint: String? = null,
-    internal val customFlagEndpoint: String? = null
+    internal val customFlagEndpoint: String? = null,
+    internal val rumIntegrationEnabled: Boolean = true
 ) {
     /**
      * A Builder class for a [FlagsConfiguration].
@@ -21,9 +22,11 @@ data class FlagsConfiguration internal constructor(
         private var trackExposures: Boolean = true
         private var customExposureEndpoint: String? = null
         private var customFlagEndpoint: String? = null
+        private var rumIntegrationEnabled: Boolean = true
 
         /**
-         * Sets whether exposures should be logged to the dedicated exposures intake endpoint. This is enabled by default.
+         * Sets whether exposures should be logged to the dedicated exposures intake endpoint.
+         * This is enabled by default.
          * @param enabled Whether to enable exposure logging.
          */
         fun trackExposures(enabled: Boolean): Builder {
@@ -58,13 +61,24 @@ data class FlagsConfiguration internal constructor(
         }
 
         /**
+         * Sets whether exposure logging via RUM integration is enabled.
+         * This is enabled by default.
+         * @param enabled whether flag evaluation events are logged as RUM actions for correlation with user sessions.
+         */
+        fun rumIntegrationEnabled(enabled: Boolean): Builder {
+            rumIntegrationEnabled = enabled
+            return this
+        }
+
+        /**
          * Builds a [FlagsConfiguration] based on the current state of this Builder.
          * @return a new [FlagsConfiguration] instance.
          */
         fun build(): FlagsConfiguration = FlagsConfiguration(
             trackExposures = trackExposures,
             customExposureEndpoint = customExposureEndpoint,
-            customFlagEndpoint = customFlagEndpoint
+            customFlagEndpoint = customFlagEndpoint,
+            rumIntegrationEnabled = rumIntegrationEnabled
         )
     }
 

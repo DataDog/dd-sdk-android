@@ -26,6 +26,10 @@ class com.datadog.android.internal.concurrent.CompletableFuture<T: Any>
   var value: T
   fun isComplete(): Boolean
   fun complete(T)
+data class com.datadog.android.internal.flags.RumFlagEvaluationMessage
+  constructor(String, Any)
+data class com.datadog.android.internal.flags.RumFlagExposureMessage
+  constructor(Long, String, String, String, String, String, Map<String, Any>)
 interface com.datadog.android.internal.profiler.BenchmarkCounter
   fun add(Long, Map<String, String>)
 interface com.datadog.android.internal.profiler.BenchmarkMeter

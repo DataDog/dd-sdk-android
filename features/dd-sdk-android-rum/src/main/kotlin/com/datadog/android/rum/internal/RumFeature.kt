@@ -34,8 +34,11 @@ import com.datadog.android.core.internal.utils.scheduleSafe
 import com.datadog.android.event.EventMapper
 import com.datadog.android.event.MapperSerializer
 import com.datadog.android.event.NoOpEventMapper
+import com.datadog.android.internal.flags.RumFlagEvaluationMessage
+import com.datadog.android.internal.flags.RumFlagExposureMessage
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.rum.GlobalRumMonitor
+import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.RumSessionType
@@ -381,6 +384,8 @@ internal class RumFeature(
             is Map<*, *> -> handleMapLikeEvent(event)
             is JvmCrash.Rum -> addJvmCrash(event)
             is InternalTelemetryEvent -> handleTelemetryEvent(event)
+            is RumFlagExposureMessage -> handleFlagExposureEvent(event)
+            is RumFlagEvaluationMessage -> handleFlagEvaluationEvent(event)
             else -> {
                 sdkCore.internalLogger.log(
                     InternalLogger.Level.WARN,
@@ -394,6 +399,28 @@ internal class RumFeature(
     // endregion
 
     // region Internal
+    private fun handleFlagEvaluationEvent(event: RumFlagEvaluationMessage) {
+        (GlobalRumMonitor.get(sdkCore) as? AdvancedRumMonitor)?.addFeatureFlagEvaluation(
+            name = event.flagKey,
+            value = event.value
+        )
+    }
+
+    private fun handleFlagExposureEvent(event: RumFlagExposureMessage) {
+        (GlobalRumMonitor.get(sdkCore) as? AdvancedRumMonitor)?.addAction(
+            type = RumActionType.CUSTOM,
+            name = "__dd_exposure",
+            attributes = mapOf(
+                "timestamp" to event.timestamp,
+                "flag_key" to event.flagKey,
+                "allocation_key" to event.allocationKey,
+                "exposure_key" to event.exposureKey,
+                "subject_key" to event.subjectKey,
+                "variant_key" to event.variantKey,
+                "subject_attributes" to event.subjectAttributes
+            )
+        )
+    }
 
     private fun handleMapLikeEvent(event: Map<*, *>) {
         when (event["type"]) {

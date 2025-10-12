@@ -7,6 +7,7 @@
 package com.datadog.android.flags.featureflags.internal
 
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.feature.Feature.Companion.RUM_FEATURE_NAME
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.flags.FlagsConfiguration
 import com.datadog.android.flags.featureflags.internal.evaluation.EvaluationsManager
@@ -27,6 +28,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
+import org.mockito.Mockito.mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
@@ -35,6 +37,7 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 
@@ -58,6 +61,9 @@ internal class DatadogFlagsClientTest {
     @Mock
     lateinit var mockEvaluationsManager: EvaluationsManager
 
+    @Mock
+    lateinit var mockRumExposureLogger: RumExposureLogger
+
     private lateinit var testedClient: DatadogFlagsClient
 
     @StringForgery
@@ -69,12 +75,17 @@ internal class DatadogFlagsClientTest {
     @BeforeEach
     fun `set up`(forge: Forge) {
         whenever(mockFeatureSdkCore.internalLogger) doReturn mockInternalLogger
+        whenever(mockFeatureSdkCore.getFeature(RUM_FEATURE_NAME)) doReturn mock()
 
         testedClient = DatadogFlagsClient(
             featureSdkCore = mockFeatureSdkCore,
             evaluationsManager = mockEvaluationsManager,
             flagsRepository = mockFlagsRepository,
-            flagsConfiguration = forge.getForgery<FlagsConfiguration>().copy(trackExposures = true)
+            flagsConfiguration = forge.getForgery<FlagsConfiguration>().copy(
+                trackExposures = true,
+                rumIntegrationEnabled = true
+            ),
+            rumExposureLogger = mockRumExposureLogger
         )
     }
 
@@ -129,6 +140,97 @@ internal class DatadogFlagsClientTest {
 
         // Then
         assertThat(result).isEqualTo(fakeDefaultValue)
+    }
+
+    @Test
+    fun `M log exposure W resolveBooleanValue() { flag exists with valid boolean and context exists }`(forge: Forge) {
+        // Given
+        val fakeFlagKey = forge.anAlphabeticalString()
+        val fakeFlagValue = forge.aBool()
+        val fakeDefaultValue = !fakeFlagValue
+        val fakeFlag = forge.getForgery<PrecomputedFlag>().copy(
+            variationType = VariationType.BOOLEAN.value,
+            variationValue = fakeFlagValue.toString()
+        )
+        val fakeEvaluationContext = EvaluationContext(
+            targetingKey = forge.anAlphabeticalString(),
+            attributes = emptyMap()
+        )
+        whenever(mockFlagsRepository.getPrecomputedFlag(fakeFlagKey)) doReturn fakeFlag
+        whenever(mockFlagsRepository.getEvaluationContext()) doReturn fakeEvaluationContext
+
+        // When
+        testedClient.resolveBooleanValue(fakeFlagKey, fakeDefaultValue)
+
+        // Then
+        verify(mockRumExposureLogger).logExposure(
+            flagKey = fakeFlagKey,
+            value = fakeFlagValue,
+            assignment = fakeFlag,
+            evaluationContext = fakeEvaluationContext
+        )
+    }
+
+    @Test
+    fun `M not log exposure W resolveBooleanValue() { flag does not exist }`(forge: Forge) {
+        // Given
+        val fakeFlagKey = forge.anAlphabeticalString()
+        val fakeDefaultValue = forge.aBool()
+        val fakeEvaluationContext = EvaluationContext(
+            targetingKey = forge.anAlphabeticalString(),
+            attributes = emptyMap()
+        )
+        whenever(mockFlagsRepository.getPrecomputedFlag(fakeFlagKey)) doReturn null
+        whenever(mockFlagsRepository.getEvaluationContext()) doReturn fakeEvaluationContext
+
+        // When
+        testedClient.resolveBooleanValue(fakeFlagKey, fakeDefaultValue)
+
+        // Then
+        verify(mockRumExposureLogger, never()).logExposure(any(), any(), any(), any())
+    }
+
+    @Test
+    fun `M not log exposure W resolveBooleanValue() { flag has invalid boolean value }`(forge: Forge) {
+        // Given
+        val fakeFlagKey = forge.anAlphabeticalString()
+        val fakeDefaultValue = forge.aBool()
+        val fakeFlag = forge.getForgery<PrecomputedFlag>().copy(
+            variationType = VariationType.BOOLEAN.value,
+            variationValue = "not-a-boolean"
+        )
+        val fakeEvaluationContext = EvaluationContext(
+            targetingKey = forge.anAlphabeticalString(),
+            attributes = emptyMap()
+        )
+        whenever(mockFlagsRepository.getPrecomputedFlag(fakeFlagKey)) doReturn fakeFlag
+        whenever(mockFlagsRepository.getEvaluationContext()) doReturn fakeEvaluationContext
+
+        // When
+        testedClient.resolveBooleanValue(fakeFlagKey, fakeDefaultValue)
+
+        // Then
+        verify(mockRumExposureLogger, never()).logExposure(any(), any(), any(), any())
+    }
+
+    @Test
+    fun `M not log exposure W resolveBooleanValue() { evaluation context is null }`(forge: Forge) {
+        // Given
+        val fakeFlagKey = forge.anAlphabeticalString()
+        val fakeFlagValue = forge.aBool()
+        val fakeDefaultValue = !fakeFlagValue
+        val fakeFlag = forge.getForgery<PrecomputedFlag>().copy(
+            variationType = VariationType.BOOLEAN.value,
+            variationValue = fakeFlagValue.toString()
+        )
+        whenever(mockFlagsRepository.getPrecomputedFlag(fakeFlagKey)) doReturn fakeFlag
+        whenever(mockFlagsRepository.getEvaluationContext()) doReturn null
+
+        // When
+        testedClient.resolveBooleanValue(fakeFlagKey, fakeDefaultValue)
+
+        // Then
+        verify(mockRumExposureLogger, never()).logExposure(any(), any(), any(), any())
     }
 
     // endregion
@@ -408,16 +510,18 @@ internal class DatadogFlagsClientTest {
         )
         whenever(customRepository.getPrecomputedFlag(fakeFlagKey)) doReturn fakeFlag
 
-        // When
-        val client = DatadogFlagsClient(
+        testedClient = DatadogFlagsClient(
             featureSdkCore = mockFeatureSdkCore,
             evaluationsManager = mockEvaluationsManager,
             flagsRepository = customRepository,
-            flagsConfiguration = forge.getForgery()
+            flagsConfiguration = forge.getForgery(),
+            rumExposureLogger = mockRumExposureLogger
         )
 
+        // When
+        val result = testedClient.resolveStringValue(fakeFlagKey, fakeDefaultValue)
+
         // Then
-        val result = client.resolveStringValue(fakeFlagKey, fakeDefaultValue)
 
         assertThat(result).isEqualTo(fakeFlagValue)
 
@@ -534,19 +638,22 @@ internal class DatadogFlagsClientTest {
         whenever(mockFlagsRepository.getEvaluationContext()) doReturn fakeContext
         whenever(mockFeatureSdkCore.getFeature(any())) doReturn null
 
-        val clientWithLoggingDisabled = DatadogFlagsClient(
+        testedClient = DatadogFlagsClient(
             featureSdkCore = mockFeatureSdkCore,
             evaluationsManager = mockEvaluationsManager,
             flagsRepository = mockFlagsRepository,
-            flagsConfiguration = forge.getForgery<FlagsConfiguration>().copy(trackExposures = false)
+            flagsConfiguration = forge.getForgery<FlagsConfiguration>().copy(
+                trackExposures = false,
+                rumIntegrationEnabled = false
+            ),
+            rumExposureLogger = mockRumExposureLogger
         )
 
         // When
-        val result = clientWithLoggingDisabled.resolveBooleanValue(fakeFlagKey, fakeDefaultValue)
+        val result = testedClient.resolveBooleanValue(fakeFlagKey, fakeDefaultValue)
 
         // Then
         assertThat(result).isEqualTo(fakeFlagValue)
-        // Verify that getFeature was never called since exposure logging is disabled
         verify(mockFeatureSdkCore, never()).getFeature(any())
     }
 
@@ -576,6 +683,78 @@ internal class DatadogFlagsClientTest {
         assertThat(result).isEqualTo(fakeFlagValue)
         // Verify that getFeature was called to attempt writing exposure event
         verify(mockFeatureSdkCore).getFeature(any())
+    }
+
+    // endregion
+
+    // region rumIntegrationEnabled flag
+
+    @Test
+    fun `M log RUM exposure W resolveBooleanValue() { rumIntegrationEnabled is true }`(forge: Forge) {
+        // Given
+        val fakeFlagKey = forge.anAlphabeticalString()
+        val fakeFlagValue = forge.aBool()
+        val fakeDefaultValue = !fakeFlagValue
+        val fakeFlag = forge.getForgery<PrecomputedFlag>().copy(
+            variationType = VariationType.BOOLEAN.value,
+            variationValue = fakeFlagValue.toString()
+        )
+        val fakeContext = EvaluationContext(
+            targetingKey = forge.anAlphabeticalString(),
+            attributes = emptyMap()
+        )
+
+        whenever(mockFlagsRepository.getPrecomputedFlag(fakeFlagKey)) doReturn fakeFlag
+        whenever(mockFlagsRepository.getEvaluationContext()) doReturn fakeContext
+
+        // When
+        val result = testedClient.resolveBooleanValue(fakeFlagKey, fakeDefaultValue)
+
+        // Then
+        assertThat(result).isEqualTo(fakeFlagValue)
+        verify(mockRumExposureLogger).logExposure(
+            flagKey = eq(fakeFlagKey),
+            value = eq(fakeFlagValue),
+            assignment = eq(fakeFlag),
+            evaluationContext = eq(fakeContext)
+        )
+    }
+
+    @Test
+    fun `M not log RUM exposure W resolveBooleanValue() { rumIntegrationEnabled is false }`(forge: Forge) {
+        // Given
+        val fakeFlagKey = forge.anAlphabeticalString()
+        val fakeFlagValue = forge.aBool()
+        val fakeDefaultValue = !fakeFlagValue
+        val fakeFlag = forge.getForgery<PrecomputedFlag>().copy(
+            variationType = VariationType.BOOLEAN.value,
+            variationValue = fakeFlagValue.toString()
+        )
+        val fakeContext = EvaluationContext(
+            targetingKey = forge.anAlphabeticalString(),
+            attributes = emptyMap()
+        )
+
+        whenever(mockFlagsRepository.getPrecomputedFlag(fakeFlagKey)) doReturn fakeFlag
+        whenever(mockFlagsRepository.getEvaluationContext()) doReturn fakeContext
+
+        testedClient = DatadogFlagsClient(
+            featureSdkCore = mockFeatureSdkCore,
+            evaluationsManager = mockEvaluationsManager,
+            flagsRepository = mockFlagsRepository,
+            flagsConfiguration = forge.getForgery<FlagsConfiguration>().copy(
+                trackExposures = true,
+                rumIntegrationEnabled = false
+            ),
+            rumExposureLogger = mockRumExposureLogger
+        )
+
+        // When
+        val result = testedClient.resolveBooleanValue(fakeFlagKey, fakeDefaultValue)
+
+        // Then
+        assertThat(result).isEqualTo(fakeFlagValue)
+        verifyNoInteractions(mockRumExposureLogger)
     }
 
     // endregion
