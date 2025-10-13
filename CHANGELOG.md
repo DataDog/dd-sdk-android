@@ -1,10 +1,10 @@
 # 3.2.0 / 2025-10-13
 
-* [FEATURE] Support apollo graphql. See [#2845](https://github.com/DataDog/dd-sdk-android/pull/2845)
-* [FEATURE] Trace: Account id and User id propagation support via `baggage` header. See [#2911](https://github.com/DataDog/dd-sdk-android/pull/2911)
-* [FEATURE] TTID telemetry reporting support. See [#2921](https://github.com/DataDog/dd-sdk-android/pull/2921)
-* [BUGFIX] Fix tags were missed in vital event reported for Feature Operations. See [#2928](https://github.com/DataDog/dd-sdk-android/pull/2928)
-* [BUGFIX] Fix RUM `sessionId` was missed for automatic http tracing via `baggage` header. See [#2904](https://github.com/DataDog/dd-sdk-android/pull/2904)
+* [FEATURE] Support Apollo GraphQL. See [#2845](https://github.com/DataDog/dd-sdk-android/pull/2845)
+* [FEATURE] Trace: Account ID and User ID propagation support via `baggage` header. See [#2911](https://github.com/DataDog/dd-sdk-android/pull/2911)
+* [FEATURE] TTID (Time To Initial Display) reporting support. See [#2921](https://github.com/DataDog/dd-sdk-android/pull/2921)
+* [BUGFIX] Fix tags which were missing in Vital event reported for Feature Operations. See [#2928](https://github.com/DataDog/dd-sdk-android/pull/2928)
+* [BUGFIX] Fix RUM `sessionId` which was missing for automatic HTTP tracing via `baggage` header. See [#2904](https://github.com/DataDog/dd-sdk-android/pull/2904)
 * [IMPROVEMENT] Move session properties to `ddtags` over query parameters. See [#2866](https://github.com/DataDog/dd-sdk-android/pull/2866)
 * [IMPROVEMENT] Trace: Support `baggage` header updates. See [#2881](https://github.com/DataDog/dd-sdk-android/pull/2881)
 * [IMPROVEMENT] Mute some Compose Reflection telemetry errors in Session Replay. See [#2901](https://github.com/DataDog/dd-sdk-android/pull/2901)
@@ -13,7 +13,7 @@
 * [IMPROVEMENT] Minor code improvements. See [#2913](https://github.com/DataDog/dd-sdk-android/pull/2913)
 * [IMPROVEMENT] Session Replay: Extend resource handling to support multiple MIME types. See [#2914](https://github.com/DataDog/dd-sdk-android/pull/2914)
 * [MAINTENANCE] Add `libs.versions.toml` in `GenerateTransitiveDependenciesTask` as input. See [#2905](https://github.com/DataDog/dd-sdk-android/pull/2905)
-* [MAINTENANCE] Move TimeProvider into `dd-sdk-android-internal`. See [#2906](https://github.com/DataDog/dd-sdk-android/pull/2906)
+* [MAINTENANCE] Move `TimeProvider` into `dd-sdk-android-internal`. See [#2906](https://github.com/DataDog/dd-sdk-android/pull/2906)
 * [MAINTENANCE] Bump `dd-trace-java` version to `1.54.0`. See [#2916](https://github.com/DataDog/dd-sdk-android/pull/2916)
 * [MAINTENANCE] Enhancing check last release script. See [#2927](https://github.com/DataDog/dd-sdk-android/pull/2927)
 
