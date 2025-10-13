@@ -13,6 +13,7 @@ import com.datadog.android.api.storage.EventType
 import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.core.internal.persistence.file.readBytesSafe
 import com.datadog.android.internal.utils.formatIsoUtc
+import com.datadog.android.profiling.internal.perfetto.PerfettoResult
 import com.datadog.android.profiling.model.ProfilingEvent
 import java.io.File
 

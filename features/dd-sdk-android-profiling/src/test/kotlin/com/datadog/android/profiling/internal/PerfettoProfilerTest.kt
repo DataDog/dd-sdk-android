@@ -13,6 +13,8 @@ import android.os.ProfilingManager
 import android.os.ProfilingResult
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.internal.time.TimeProvider
+import com.datadog.android.profiling.internal.perfetto.PerfettoProfiler
+import com.datadog.android.profiling.internal.perfetto.PerfettoResult
 import fr.xgouchet.elmyr.annotation.LongForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeExtension

@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.profiling.internal
+package com.datadog.android.profiling.internal.perfetto
 
 /**
  * Result of a profiling request made through [androidx.core.os.requestProfiling].
