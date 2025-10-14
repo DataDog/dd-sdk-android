@@ -151,10 +151,7 @@ public class OtelSpanBuilder implements SpanBuilder {
                 }
                 break;
             case STRING:
-                if (!handleReservedAttribute(key.getKey(), (String) value)) {
-                    this.delegate.withTag(key.getKey(), value);
-                }
-                break;
+                return setAttribute(key.getKey(), (String) value);
             default:
                 this.delegate.withTag(key.getKey(), value);
                 break;
