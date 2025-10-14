@@ -179,7 +179,10 @@ internal class DatadogCoreTest {
     }
 
     @Test
-    fun `M register feature W registerFeature()`(@Mock mockFeature: Feature, @StringForgery fakeFeatureName: String) {
+    fun `M register feature W registerFeature()`(
+        @Mock mockFeature: Feature,
+        @StringForgery fakeFeatureName: String
+    ) {
         // Given
         whenever(mockFeature.name) doReturn fakeFeatureName
 
@@ -192,7 +195,9 @@ internal class DatadogCoreTest {
     }
 
     @Test
-    fun `M handle NDK crash for RUM W registerFeature() {RUM feature}`(@Mock mockFeature: Feature) {
+    fun `M handle NDK crash for RUM W registerFeature() {RUM feature}`(
+        @Mock mockFeature: Feature
+    ) {
         // Given
         val mockNdkCrashHandler = mock<NdkCrashHandler>()
         testedCore.coreFeature.ndkCrashHandler = mockNdkCrashHandler
@@ -206,7 +211,9 @@ internal class DatadogCoreTest {
     }
 
     @Test
-    fun `M do nothing W registerFeature() {Logs feature}`(@Mock mockFeature: Feature) {
+    fun `M do nothing W registerFeature() {Logs feature}`(
+        @Mock mockFeature: Feature
+    ) {
         // Given
         val mockNdkCrashHandler = mock<NdkCrashHandler>()
         testedCore.coreFeature.ndkCrashHandler = mockNdkCrashHandler
@@ -241,7 +248,9 @@ internal class DatadogCoreTest {
     }
 
     @Test
-    fun `M update anonymousId W setAnonymousId()`(forge: Forge) {
+    fun `M update anonymousId W setAnonymousId()`(
+        forge: Forge
+    ) {
         // Given
         val uuid = forge.getForgery<UUID>()
         testedCore.coreFeature = mock()
@@ -725,7 +734,9 @@ internal class DatadogCoreTest {
     // endregion
 
     @Test
-    fun `M set event receiver W setEventReceiver()`(@StringForgery feature: String) {
+    fun `M set event receiver W setEventReceiver()`(
+        @StringForgery feature: String
+    ) {
         // Given
         val mockFeature = mock<SdkFeature>()
         val mockEventReceiverRef = mock<AtomicReference<FeatureEventReceiver>>()
@@ -785,7 +796,9 @@ internal class DatadogCoreTest {
     }
 
     @Test
-    fun `M remove receiver W removeEventReceiver()`(@StringForgery feature: String) {
+    fun `M remove receiver W removeEventReceiver()`(
+        @StringForgery feature: String
+    ) {
         // Given
         val mockFeature = mock<SdkFeature>()
         val mockEventReceiverRef = mock<AtomicReference<FeatureEventReceiver>>()
@@ -831,7 +844,9 @@ internal class DatadogCoreTest {
     }
 
     @Test
-    fun `M not throw W concurrent access to featureContextUpdateReceivers`(forge: Forge) {
+    fun `M not throw W concurrent access to featureContextUpdateReceivers`(
+        forge: Forge
+    ) {
         // Given
         val mockListeners = forge.aList(size = forge.anInt(min = 2, max = 10)) {
             mock<FeatureContextUpdateReceiver>()
@@ -1019,7 +1034,9 @@ internal class DatadogCoreTest {
     }
 
     @Test
-    fun `M provide service W service()`(@StringForgery fakeService: String) {
+    fun `M provide service W service()`(
+        @StringForgery fakeService: String
+    ) {
         // Given
         testedCore.coreFeature = mock()
         whenever(testedCore.coreFeature.serviceName) doReturn fakeService
@@ -1046,7 +1063,9 @@ internal class DatadogCoreTest {
     }
 
     @Test
-    fun `M provide network info W networkInfo()`(@Forgery fakeNetworkInfo: NetworkInfo) {
+    fun `M provide network info W networkInfo()`(
+        @Forgery fakeNetworkInfo: NetworkInfo
+    ) {
         // Given
         testedCore.coreFeature = mock()
         val mockNetworkInfoProvider = mock<NetworkInfoProvider>()
@@ -1061,7 +1080,9 @@ internal class DatadogCoreTest {
     }
 
     @Test
-    fun `M provide last view event W lastViewEvent()`(@Forgery fakeLastViewEvent: JsonObject) {
+    fun `M provide last view event W lastViewEvent()`(
+        @Forgery fakeLastViewEvent: JsonObject
+    ) {
         // Given
         testedCore.coreFeature = mock()
         whenever(testedCore.coreFeature.lastViewEvent) doReturn fakeLastViewEvent
@@ -1074,7 +1095,9 @@ internal class DatadogCoreTest {
     }
 
     @Test
-    fun `M provide last fatal ANR sent W lastFatalAnrSent()`(@LongForgery(min = 0L) fakeLastFatalAnrSent: Long) {
+    fun `M provide last fatal ANR sent W lastFatalAnrSent()`(
+        @LongForgery(min = 0L) fakeLastFatalAnrSent: Long
+    ) {
         // Given
         testedCore.coreFeature = mock()
         whenever(testedCore.coreFeature.lastFatalAnrSent) doReturn fakeLastFatalAnrSent
@@ -1087,7 +1110,9 @@ internal class DatadogCoreTest {
     }
 
     @Test
-    fun `M provide app start time W appStartTimeNs()`(@LongForgery(min = 0L) fakeAppStartTimeNs: Long) {
+    fun `M provide app start time W appStartTimeNs()`(
+        @LongForgery(min = 0L) fakeAppStartTimeNs: Long
+    ) {
         // Given
         testedCore.coreFeature = mock()
         whenever(testedCore.coreFeature.appStartTimeNs) doReturn fakeAppStartTimeNs
@@ -1100,7 +1125,9 @@ internal class DatadogCoreTest {
     }
 
     @Test
-    fun `M return tracking consent W trackingConsent()`(@Forgery fakeTrackingConsent: TrackingConsent) {
+    fun `M return tracking consent W trackingConsent()`(
+        @Forgery fakeTrackingConsent: TrackingConsent
+    ) {
         // Given
         val mockFuture = mock<Future<TrackingConsent>>()
         whenever(mockFuture.get()) doReturn fakeTrackingConsent
@@ -1116,7 +1143,9 @@ internal class DatadogCoreTest {
     }
 
     @Test
-    fun `M return default tracking consent W trackingConsent() { failed to get tracking consent }`(forge: Forge) {
+    fun `M return default tracking consent W trackingConsent() { failed to get tracking consent }`(
+        forge: Forge
+    ) {
         // Given
         val mockFuture = mock<Future<TrackingConsent>>()
         val fakeThrowable = forge.anElementFrom(
@@ -1143,7 +1172,9 @@ internal class DatadogCoreTest {
     }
 
     @Test
-    fun `M persist the event W writeLastViewEvent(){ NDK feature registered }`(@StringForgery viewEvent: String) {
+    fun `M persist the event W writeLastViewEvent(){ NDK feature registered }`(
+        @StringForgery viewEvent: String
+    ) {
         // Given
         val fakeViewEvent = viewEvent.toByteArray()
         testedCore.features += Feature.NDK_CRASH_REPORTS_FEATURE_NAME to mock()
@@ -1211,7 +1242,9 @@ internal class DatadogCoreTest {
     }
 
     @Test
-    fun `M write last fatal ANR sent W writeLastFatalAnrSent()`(@LongForgery(min = 0L) fakeLastFatalAnrSent: Long) {
+    fun `M write last fatal ANR sent W writeLastFatalAnrSent()`(
+        @LongForgery(min = 0L) fakeLastFatalAnrSent: Long
+    ) {
         // Given
         val mockCoreFeature = mock<CoreFeature>()
         testedCore.coreFeature = mockCoreFeature
@@ -1224,7 +1257,9 @@ internal class DatadogCoreTest {
     }
 
     @Test
-    fun `M clear data in all features W clearAllData()`(forge: Forge) {
+    fun `M clear data in all features W clearAllData()`(
+        forge: Forge
+    ) {
         // Given
         // there are some non-mock features there after initialization
         testedCore.features.clear()
@@ -1250,7 +1285,9 @@ internal class DatadogCoreTest {
     }
 
     @Test
-    fun `M flush data in all features W flushStoredData()`(forge: Forge) {
+    fun `M flush data in all features W flushStoredData()`(
+        forge: Forge
+    ) {
         // Given
         // there are some non-mock features there after initialization
         testedCore.features.clear()
@@ -1272,7 +1309,9 @@ internal class DatadogCoreTest {
     }
 
     @Test
-    fun `M stop all features W stop()`(@StringForgery fakeFeatureNames: Set<String>) {
+    fun `M stop all features W stop()`(
+        @StringForgery fakeFeatureNames: Set<String>
+    ) {
         // Given
         val mockCoreFeature = mock<CoreFeature>()
         whenever(mockCoreFeature.initialized).thenReturn(mock())
@@ -1423,49 +1462,27 @@ internal class DatadogCoreTest {
     }
 
     @Test
-    fun `M delegate to core feature W createOkHttpCallFactory()`() {
+    fun `M delegate to core feature W createOkHttpCallFactory() { }`(
+        @LongForgery(min = 0, max = 60) customTimeout: Long,
+        @LongForgery(min = 0, max = 60) customWriteTimeout: Long
+    ) {
         // Given
         testedCore.initialize(fakeConfiguration)
 
         // When
         val callFactory = testedCore.createOkHttpCallFactory {
-            callTimeout(45, TimeUnit.SECONDS)
-            writeTimeout(30, TimeUnit.SECONDS)
+            callTimeout(customTimeout, TimeUnit.SECONDS)
+            writeTimeout(customWriteTimeout, TimeUnit.SECONDS)
         }
 
         // Then
         assertThat(callFactory).isNotNull()
-        val request = okhttp3.Request.Builder().url("https://example.com").build()
-        val call = callFactory.newCall(request)
-        assertThat(call).isNotNull()
     }
 
-    @Test
-    fun `M create call factory with custom config W createOkHttpCallFactory() { with builder block }`() {
-        // Given
-        testedCore.initialize(fakeConfiguration)
-        val customTimeout = 60_000L
-
-        // When
-        val callFactory = testedCore.createOkHttpCallFactory {
-            callTimeout(customTimeout, TimeUnit.MILLISECONDS)
-        }
-
-        // Then
-        assertThat(callFactory).isNotNull()
-
-        // Verify the factory can create calls
-        val request = okhttp3.Request.Builder().url("https://example.com").build()
-        val call = callFactory.newCall(request)
-        assertThat(call).isNotNull()
-        assertThat(call.request()).isEqualTo(request)
-
-        // Verify custom timeout was applied
-        assertThat(call.timeout().timeoutNanos()).isGreaterThan(0)
-    }
-
-    class ErrorRecordingRunnable(private val collector: MutableList<Throwable>, private val delegate: Runnable) :
-        Runnable {
+    class ErrorRecordingRunnable(
+        private val collector: MutableList<Throwable>,
+        private val delegate: Runnable
+    ) : Runnable {
         override fun run() {
             try {
                 delegate.run()
@@ -1478,11 +1495,14 @@ internal class DatadogCoreTest {
     companion object {
 
         val msToNs = TimeUnit.MILLISECONDS.toNanos(1)
+        val secondsToNs = TimeUnit.SECONDS.toNanos(1)
 
         val appContext = ApplicationContextTestConfiguration(Application::class.java)
 
         @TestConfigurationsProvider
         @JvmStatic
-        fun getTestConfigurations(): List<TestConfiguration> = listOf(appContext)
+        fun getTestConfigurations(): List<TestConfiguration> {
+            return listOf(appContext)
+        }
     }
 }

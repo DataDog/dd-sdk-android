@@ -113,9 +113,8 @@ internal class FlagsFeatureTest {
     }
 
     @Test
-    fun `M initialize precomputedRequestFactory W onInitialize`() {
+    fun `M initialize precomputedRequestFactory W constructor`() {
         // When
-        testedFeature.onInitialize(mockContext)
 
         // Then
         assertThat(

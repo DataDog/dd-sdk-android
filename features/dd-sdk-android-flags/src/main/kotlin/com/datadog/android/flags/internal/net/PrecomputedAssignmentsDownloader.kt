@@ -36,7 +36,6 @@ internal class PrecomputedAssignmentsDownloader(
     @Suppress("TooGenericExceptionCaught")
     private fun executeDownloadRequest(request: Request): String? = try {
         val response = callFactory.newCall(request).execute()
-        @Suppress("UnsafeThirdPartyFunctionCall") // wrapped in try/catch
         handleResponse(response)
     } catch (e: IllegalStateException) {
         internalLogger.log(

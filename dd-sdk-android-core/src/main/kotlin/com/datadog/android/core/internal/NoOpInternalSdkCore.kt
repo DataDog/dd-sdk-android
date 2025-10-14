@@ -23,10 +23,11 @@ import com.datadog.android.privacy.TrackingConsent
 import com.google.gson.JsonObject
 import okhttp3.Call
 import okhttp3.OkHttpClient
+import okhttp3.Protocol
 import okhttp3.Request
 import okhttp3.Response
+import okio.Timeout
 import java.io.File
-import java.net.HttpURLConnection
 import java.util.UUID
 import java.util.concurrent.Callable
 import java.util.concurrent.Delayed
@@ -322,8 +323,7 @@ internal object NoOpInternalSdkCore : InternalSdkCore {
             // to be set, otherwise it throws IllegalStateException
             return Response.Builder()
                 .request(originalRequest)
-                .protocol(okhttp3.Protocol.HTTP_1_1)
-                .code(HttpURLConnection.HTTP_OK)
+                .protocol(Protocol.HTTP_1_1)
                 .message("OK")
                 .build()
         }
@@ -340,8 +340,8 @@ internal object NoOpInternalSdkCore : InternalSdkCore {
             return originalRequest
         }
 
-        override fun timeout(): okio.Timeout {
-            return okio.Timeout.NONE
+        override fun timeout(): Timeout {
+            return Timeout.NONE
         }
     }
 }

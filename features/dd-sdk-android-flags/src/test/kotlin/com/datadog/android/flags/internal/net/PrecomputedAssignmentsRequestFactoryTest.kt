@@ -63,12 +63,12 @@ internal class PrecomputedAssignmentsRequestFactoryTest {
         val request = testedFactory.create(context, flagsContext)
 
         // Then
-        assertThat(request).isNotNull
-        assertThat(request?.url?.toString()).isEqualTo("https://preview.ff-cdn.datadoghq.com/precompute-assignments")
-        assertThat(request?.method).isEqualTo("POST")
-        assertThat(request?.header("dd-client-token")).isEqualTo(fakeClientToken)
-        assertThat(request?.header("dd-application-id")).isEqualTo(fakeApplicationId)
-        assertThat(request?.header("Content-Type")).isEqualTo("application/vnd.api+json")
+        checkNotNull(request)
+        assertThat(request.url.toString()).isEqualTo("https://preview.ff-cdn.datadoghq.com/precompute-assignments")
+        assertThat(request.method).isEqualTo("POST")
+        assertThat(request.header("dd-client-token")).isEqualTo(fakeClientToken)
+        assertThat(request.header("dd-application-id")).isEqualTo(fakeApplicationId)
+        assertThat(request.header("Content-Type")).isEqualTo("application/vnd.api+json")
     }
 
     @Test
@@ -93,10 +93,10 @@ internal class PrecomputedAssignmentsRequestFactoryTest {
         val request = testedFactory.create(context, flagsContext)
 
         // Then
-        assertThat(request).isNotNull
-        assertThat(request?.header("dd-client-token")).isEqualTo(fakeClientToken)
-        assertThat(request?.header("dd-application-id")).isNull()
-        assertThat(request?.header("Content-Type")).isEqualTo("application/vnd.api+json")
+        checkNotNull(request)
+        assertThat(request.header("dd-client-token")).isEqualTo(fakeClientToken)
+        assertThat(request.header("dd-application-id")).isNull()
+        assertThat(request.header("Content-Type")).isEqualTo("application/vnd.api+json")
     }
 
     @Test
@@ -123,9 +123,8 @@ internal class PrecomputedAssignmentsRequestFactoryTest {
         // When
         val request = testedFactory.create(context, flagsContext)
 
-        // Then
-        assertThat(request).isNotNull
-        assertThat(request?.url?.toString()).isEqualTo(fakeCustomEndpoint)
+        checkNotNull(request)
+        assertThat(request.url.toString()).isEqualTo(fakeCustomEndpoint)
     }
 
     // endregion

@@ -8,6 +8,8 @@ package com.datadog.android.api.feature
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.SdkCore
+import okhttp3.Call
+import okhttp3.OkHttpClient
 import java.util.UUID
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.ScheduledExecutorService
@@ -132,10 +134,10 @@ interface FeatureSdkCore : SdkCore {
      * }
      * ```
      *
-     * @param block Configuration block to customize the [okhttp3.OkHttpClient.Builder]
-     * @return A [okhttp3.Call.Factory] instance configured with shared resources
+     * @param block Configuration block to customize the [OkHttpClient.Builder]
+     * @return A [Call.Factory] instance configured with shared resources
      */
-    fun createOkHttpCallFactory(block: okhttp3.OkHttpClient.Builder.() -> Unit): okhttp3.Call.Factory
+    fun createOkHttpCallFactory(block: OkHttpClient.Builder.() -> Unit): Call.Factory
 
     /**
      * Allows the given feature to set the anonymous ID for the SDK.

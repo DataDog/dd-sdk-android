@@ -38,7 +38,7 @@ internal class FlagsFeature(
 ) : StorageBackedFeature,
     FeatureContextUpdateReceiver {
 
-    // Region Domain Objects
+    // region Domain Objects
 
     /**
      * This is the same as the default configuration except
@@ -59,10 +59,11 @@ internal class FlagsFeature(
             internalLogger = sdkCore.internalLogger
         )
 
-    // Endregion
+    // endregion
 
     override val name: String = FLAGS_FEATURE_NAME
 
+    // region Context Listener
     override fun onContextUpdate(featureName: String, context: Map<String, Any?>) {
         if (featureName == RUM_FEATURE_NAME && applicationId == null) {
             applicationId = context[RUM_APPLICATION_ID]?.toString()
@@ -83,9 +84,11 @@ internal class FlagsFeature(
         }
     }
 
+    // endregion
+
     private fun createDataWriter(): RecordWriter = ExposureEventRecordWriter(sdkCore)
 
-    //region FlagsClient Management
+    // region FlagsClient Management
 
     /**
      * Registry of [FlagsClient] instances by name.
@@ -130,7 +133,7 @@ internal class FlagsFeature(
 
     internal fun clearClients() = registeredClients.clear()
 
-    //endregion
+    // endregion
 
     internal companion object {
         const val MAX_ITEMS_PER_BATCH = 50
