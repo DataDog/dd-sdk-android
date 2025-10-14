@@ -33,6 +33,7 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.eq
+import org.mockito.kotlin.isA
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
@@ -63,30 +64,41 @@ internal class MainLooperLongTaskStrategyTest : ObjectTest<MainLooperLongTaskStr
 
     @AfterEach
     fun `tear down`() {
+        MainLooperLongTaskStrategy.CompositePrinter.registeredPrinters.clear()
+        MainLooperLongTaskStrategy.CompositePrinter.isRegistered.set(false)
         Looper::class.java.setStaticValue("sMainLooper", null)
         Looper::class.java.getStaticValue<Looper, ThreadLocal<Looper>>("sThreadLocal").set(null)
     }
 
     @Test
-    fun `M set printer on main looper W register()`() {
-        // Given
-        val mockLooper = mock<Looper>()
-        Looper::class.java.setStaticValue("sMainLooper", mockLooper)
+    fun `M set composite printer once W register()`() {
+        // When
+        testedPrinter.register(rumMonitor.mockSdkCore, mock())
+        testedPrinter.register(rumMonitor.mockSdkCore, mock())
 
+        // Then
+        verify(mockMainLooper).setMessageLogging(isA<MainLooperLongTaskStrategy.CompositePrinter>())
+    }
+
+    @Test
+    fun `M add printer to composite printer looper W register()`() {
         // When
         testedPrinter.register(rumMonitor.mockSdkCore, mock())
 
         // Then
-        verify(mockLooper).setMessageLogging(testedPrinter)
+        assertThat(MainLooperLongTaskStrategy.CompositePrinter.registeredPrinters).containsOnly(testedPrinter)
     }
 
     @Test
-    fun `M unset printer on main looper W unregister()`() {
+    fun `M remove printer from composite printer W unregister()`() {
+        // Given
+        testedPrinter.register(rumMonitor.mockSdkCore, mock())
+
         // When
         testedPrinter.unregister(mock())
 
         // Then
-        verify(mockMainLooper).setMessageLogging(testedPrinter)
+        assertThat(MainLooperLongTaskStrategy.CompositePrinter.registeredPrinters).isEmpty()
     }
 
     @Test

@@ -9,9 +9,5 @@
     "contact": {
       "$ref": "subfolder/external_description_proxy.json#/definitions/contact"
     }
-  },
-  "required": [
-    "item",
-    "destination"
-  ]
+  }
 }
