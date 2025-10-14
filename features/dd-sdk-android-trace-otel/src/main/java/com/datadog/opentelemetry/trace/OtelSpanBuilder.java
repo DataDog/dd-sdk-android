@@ -101,14 +101,8 @@ public class OtelSpanBuilder implements SpanBuilder {
 
     @Override
     public SpanBuilder setAttribute(@NonNull String key, @Nullable String value) {
-        // Check reserved attributes
-        if (OPERATION_NAME_SPECIFIC_ATTRIBUTE.equals(key) && value != null) {
-            this.overriddenOperationName = value.toLowerCase(ROOT);
-            return this;
-        } else if (ANALYTICS_EVENT_SPECIFIC_ATTRIBUTES.equals(key) && value != null) {
-            this.overriddenAnalyticsSampleRate = parseBoolean(value) ? 1 : 0;
-            return this;
-        }
+        if (handleReservedAttribute(key, value)) return this;
+
         // Store as object to prevent delegate to remove tag when value is empty
         this.delegate.withTag(key, value);
         return this;
@@ -156,6 +150,11 @@ public class OtelSpanBuilder implements SpanBuilder {
                     }
                 }
                 break;
+            case STRING:
+                if (!handleReservedAttribute(key.getKey(), (String) value)) {
+                    this.delegate.withTag(key.getKey(), value);
+                }
+                break;
             default:
                 this.delegate.withTag(key.getKey(), value);
                 break;
@@ -193,5 +192,17 @@ public class OtelSpanBuilder implements SpanBuilder {
             delegate.setMetric(DatadogTracingConstants.Tags.KEY_ANALYTICS_SAMPLE_RATE, this.overriddenAnalyticsSampleRate);
         }
         return new OtelSpan(delegate, agentTracer);
+    }
+
+    private boolean handleReservedAttribute(String key, String value) {
+        if (OPERATION_NAME_SPECIFIC_ATTRIBUTE.equals(key) && value != null) {
+            this.overriddenOperationName = value.toLowerCase(ROOT);
+            return true;
+        } else if (ANALYTICS_EVENT_SPECIFIC_ATTRIBUTES.equals(key) && value != null) {
+            this.overriddenAnalyticsSampleRate = parseBoolean(value) ? 1 : 0;
+            return true;
+        }
+
+        return false;
     }
 }
