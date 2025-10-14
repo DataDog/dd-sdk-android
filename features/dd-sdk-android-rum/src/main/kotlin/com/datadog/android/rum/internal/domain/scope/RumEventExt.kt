@@ -350,6 +350,43 @@ internal fun NetworkInfo.toActionConnectivity(): ActionEvent.Connectivity {
     )
 }
 
+internal fun NetworkInfo.toVitalConnectivity(): VitalEvent.Connectivity {
+    val status = if (isConnected()) {
+        VitalEvent.ConnectivityStatus.CONNECTED
+    } else {
+        VitalEvent.ConnectivityStatus.NOT_CONNECTED
+    }
+    val interfaces = when (connectivity) {
+        NetworkInfo.Connectivity.NETWORK_ETHERNET -> listOf(VitalEvent.Interface.ETHERNET)
+        NetworkInfo.Connectivity.NETWORK_WIFI -> listOf(VitalEvent.Interface.WIFI)
+        NetworkInfo.Connectivity.NETWORK_WIMAX -> listOf(VitalEvent.Interface.WIMAX)
+        NetworkInfo.Connectivity.NETWORK_BLUETOOTH -> listOf(VitalEvent.Interface.BLUETOOTH)
+        NetworkInfo.Connectivity.NETWORK_2G,
+        NetworkInfo.Connectivity.NETWORK_3G,
+        NetworkInfo.Connectivity.NETWORK_4G,
+        NetworkInfo.Connectivity.NETWORK_5G,
+        NetworkInfo.Connectivity.NETWORK_MOBILE_OTHER,
+        NetworkInfo.Connectivity.NETWORK_CELLULAR -> listOf(VitalEvent.Interface.CELLULAR)
+
+        NetworkInfo.Connectivity.NETWORK_OTHER -> listOf(VitalEvent.Interface.OTHER)
+        NetworkInfo.Connectivity.NETWORK_NOT_CONNECTED -> emptyList()
+    }
+
+    val cellular = if (cellularTechnology != null || carrierName != null) {
+        VitalEvent.Cellular(
+            technology = cellularTechnology,
+            carrierName = carrierName
+        )
+    } else {
+        null
+    }
+    return VitalEvent.Connectivity(
+        status,
+        interfaces,
+        cellular = cellular
+    )
+}
+
 internal fun NetworkInfo.isConnected(): Boolean {
     return connectivity != NetworkInfo.Connectivity.NETWORK_NOT_CONNECTED
 }
@@ -415,6 +452,18 @@ internal fun DeviceType.toErrorSchemaType(): ErrorEvent.DeviceType {
         DeviceType.GAMING_CONSOLE -> ErrorEvent.DeviceType.GAMING_CONSOLE
         DeviceType.BOT -> ErrorEvent.DeviceType.BOT
         DeviceType.OTHER -> ErrorEvent.DeviceType.OTHER
+    }
+}
+
+internal fun DeviceType.toVitalSchemaType(): VitalEvent.DeviceType {
+    return when (this) {
+        DeviceType.MOBILE -> VitalEvent.DeviceType.MOBILE
+        DeviceType.TABLET -> VitalEvent.DeviceType.TABLET
+        DeviceType.TV -> VitalEvent.DeviceType.TV
+        DeviceType.DESKTOP -> VitalEvent.DeviceType.DESKTOP
+        DeviceType.GAMING_CONSOLE -> VitalEvent.DeviceType.GAMING_CONSOLE
+        DeviceType.BOT -> VitalEvent.DeviceType.BOT
+        DeviceType.OTHER -> VitalEvent.DeviceType.OTHER
     }
 }
 
@@ -494,6 +543,23 @@ internal fun ResourceEvent.ResourceEventSource.Companion.tryFromSource(
     source: String,
     internalLogger: InternalLogger
 ): ResourceEvent.ResourceEventSource? {
+    return try {
+        fromJson(source)
+    } catch (e: NoSuchElementException) {
+        internalLogger.log(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.USER,
+            { UNKNOWN_SOURCE_WARNING_MESSAGE_FORMAT.format(Locale.US, source) },
+            e
+        )
+        null
+    }
+}
+
+internal fun VitalEvent.VitalEventSource.Companion.tryFromSource(
+    source: String,
+    internalLogger: InternalLogger
+): VitalEvent.VitalEventSource? {
     return try {
         fromJson(source)
     } catch (e: NoSuchElementException) {

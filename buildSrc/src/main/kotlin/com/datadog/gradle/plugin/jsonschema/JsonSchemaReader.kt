@@ -172,7 +172,6 @@ class JsonSchemaReader(
                     TypeProperty(
                         name = "",
                         type = typeDef,
-                        optional = true,
                         readOnly = readOnly ?: false,
                         defaultValue = null
                     )
@@ -185,7 +184,6 @@ class JsonSchemaReader(
                     TypeProperty(
                         name = "",
                         type = typeDef,
-                        optional = true,
                         readOnly = false,
                         defaultValue = null
                     )
@@ -358,7 +356,11 @@ class JsonSchemaReader(
         allOf: List<JsonDefinition>,
         fromFile: File
     ): TypeDefinition {
-        var mergedType: TypeDefinition = TypeDefinition.Class(typeName, emptyList())
+        var mergedType: TypeDefinition = TypeDefinition.Class(
+            name = typeName,
+            properties = emptyList(),
+            required = emptySet()
+        )
 
         allOf.forEach {
             val type = transform(it, typeName, fromFile)
@@ -374,7 +376,6 @@ class JsonSchemaReader(
     ): TypeDefinition {
         val properties = mutableListOf<TypeProperty>()
         definition.properties?.forEach { (name, property) ->
-            val required = (definition.required != null) && (name in definition.required)
             val readOnly = (property.readOnly == null) || (property.readOnly)
             val propertyType = transform(
                 property,
@@ -385,7 +386,6 @@ class JsonSchemaReader(
                 TypeProperty(
                     name,
                     propertyType,
-                    !required,
                     readOnly,
                     property.default
                 )
@@ -397,7 +397,8 @@ class JsonSchemaReader(
             name = typeName,
             description = definition.description.orEmpty(),
             properties = properties,
-            additionalProperties = additional
+            additionalProperties = additional,
+            required = definition.required.orEmpty().toSet()
         )
     }
 

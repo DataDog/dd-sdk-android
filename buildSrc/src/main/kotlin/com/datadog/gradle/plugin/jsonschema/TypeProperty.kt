@@ -9,7 +9,6 @@ package com.datadog.gradle.plugin.jsonschema
 data class TypeProperty(
     val name: String,
     val type: TypeDefinition,
-    val optional: Boolean,
     val readOnly: Boolean = true,
     val defaultValue: Any? = null
 ) {
@@ -18,9 +17,8 @@ data class TypeProperty(
             this
         } else {
             TypeProperty(
-                name,
-                type.mergedWith(other.type),
-                optional && other.optional
+                name = name,
+                type = type.mergedWith(other.type)
             )
         }
     }

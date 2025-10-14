@@ -566,13 +566,18 @@ internal class RumEventSerializerTest {
             .hasField("type", "vital")
             .hasField("date", event.date)
             .hasField("vital") {
-                hasField("type", event.vital.type.toJson())
-                event.vital.name?.let { hasField("name", it) }
-                event.vital.operationKey?.let { hasField("operation_key", it) }
-                event.vital.description?.let { hasField("description", it) }
-                event.vital.duration?.let { hasField("duration", it) }
-                event.vital.stepType?.let { hasField("step_type", it.toJson()) }
-                event.vital.failureReason?.let { hasField("failure_reason", it.toJson()) }
+                when (val vital = event.vital) {
+                    is VitalEvent.Vital.FeatureOperationProperties -> {
+                        hasField("type", vital.type)
+                        vital.name?.let { hasField("name", it) }
+                        vital.operationKey?.let { hasField("operation_key", it) }
+                        vital.description?.let { hasField("description", it) }
+                        vital.stepType?.let { hasField("step_type", it.toJson()) }
+                        vital.failureReason?.let { hasField("failure_reason", it.toJson()) }
+                    }
+                    is VitalEvent.Vital.DurationProperties,
+                    is VitalEvent.Vital.AppLaunchProperties -> TODO("SDK doesn't support this vital type yet")
+                }
             }
             .hasField("application") {
                 hasField("id", event.application.id)
@@ -583,10 +588,11 @@ internal class RumEventSerializerTest {
                 event.session.hasReplay?.let { hasField("has_replay", it) }
             }
             .hasField("view") {
-                hasField("id", event.view.id)
-                hasField("url", event.view.url)
-                event.view.referrer?.let { hasField("referrer", it) }
-                event.view.name?.let { hasField("name", it) }
+                val view = checkNotNull(event.view)
+                hasField("id", view.id)
+                hasField("url", view.url)
+                view.referrer?.let { hasField("referrer", it) }
+                view.name?.let { hasField("name", it) }
             }
             .hasField("_dd") {
                 event.dd.browserSdkVersion?.let { hasField("browser_sdk_version", it) }
