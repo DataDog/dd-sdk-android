@@ -401,13 +401,12 @@ internal open class RumViewScope(
             version = datadogContext.version,
             service = datadogContext.service,
             ddtags = buildDDTagsString(datadogContext),
-            vital = VitalEvent.VitalEventVital(
+            vital = VitalEvent.Vital.FeatureOperationProperties(
                 id = UUID.randomUUID().toString(),
                 name = name,
                 operationKey = operationKey,
                 stepType = stepType,
-                failureReason = failureReason,
-                type = VitalEvent.VitalEventVitalType.OPERATION_STEP
+                failureReason = failureReason
             )
         )
     }

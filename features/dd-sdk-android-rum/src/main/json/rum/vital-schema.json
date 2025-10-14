@@ -21,56 +21,17 @@
           "readOnly": true
         },
         "vital": {
-          "type": "object",
-          "description": "Vital properties",
-          "required": ["id", "type"],
-          "properties": {
-            "type": {
-              "type": "string",
-              "description": "Type of the vital",
-              "enum": ["duration", "operation_step"],
-              "readOnly": true
+          "oneOf": [
+            {
+              "$ref": "vital-duration-schema.json"
             },
-            "id": {
-              "type": "string",
-              "description": "UUID of the vital",
-              "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$",
-              "readOnly": true
+            {
+              "$ref": "vital-app-launch-schema.json"
             },
-            "operation_key": {
-              "type": "string",
-              "description": "UUID for distinguishing the active operations in parallel, if applicable",
-              "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$",
-              "readOnly": true
-            },
-            "name": {
-              "type": "string",
-              "description": "Name of the vital, as it is also used as facet path for its value, it must contain only letters, digits, or the characters - _ . @ $",
-              "readOnly": true
-            },
-            "description": {
-              "type": "string",
-              "description": "Description of the vital. It can be used as a secondary identifier (URL, React component name...)",
-              "readOnly": true
-            },
-            "duration": {
-              "type": "number",
-              "description": "Duration of the vital in nanoseconds",
-              "readOnly": true
-            },
-            "step_type": {
-              "type": "string",
-              "description": "Type of the step that triggered the vital, if applicable",
-              "enum": ["start", "update", "retry", "end"],
-              "readOnly": true
-            },
-            "failure_reason": {
-              "type": "string",
-              "description": "Reason for the failure of the step, if applicable",
-              "enum": ["error", "abandoned", "other"],
-              "readOnly": true
+            {
+              "$ref": "vital-feature-operation-schema.json"
             }
-          },
+          ],
           "readOnly": true
         },
         "_dd": {
@@ -88,6 +49,11 @@
                 }
               },
               "readOnly": true
+            },
+            "profiling": {
+              "type": "object",
+              "description": "Profiling context",
+              "allOf": [{ "$ref": "./_profiling-internal-context-schema.json" }]
             }
           },
           "readOnly": true

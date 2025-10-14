@@ -66,7 +66,7 @@ class ClassJsonElementDeserializerGenerator(
                 propertyType = p.type,
                 assignee = "val ${p.name.variableName()}",
                 getter = "${Identifier.PARAM_JSON_OBJ}.get(\"${p.name}\")",
-                nullable = p.optional,
+                nullable = !definition.required.contains(p.name),
                 rootTypeName = rootTypeName
             )
         }
@@ -80,7 +80,7 @@ class ClassJsonElementDeserializerGenerator(
 
         definition.properties
             .filter { it.type is TypeDefinition.Constant }
-            .forEach { appendConstantPropertyCheck(it) }
+            .forEach { appendConstantPropertyCheck(property = it, isRequired = definition.required.contains(it.name)) }
 
         val nonConstantProperties = definition.properties
             .filter { it.type !is TypeDefinition.Constant }
@@ -91,11 +91,11 @@ class ClassJsonElementDeserializerGenerator(
         addStatement("return %L($constructorArguments)", definition.name)
     }
 
-    private fun FunSpec.Builder.appendConstantPropertyCheck(property: TypeProperty) {
+    private fun FunSpec.Builder.appendConstantPropertyCheck(property: TypeProperty, isRequired: Boolean) {
         val constant = property.type as TypeDefinition.Constant
         val variableName = property.name.variableName()
 
-        if (property.optional) {
+        if (!isRequired) {
             beginControlFlow("if (%L != null)", variableName)
         }
 
@@ -113,7 +113,7 @@ class ClassJsonElementDeserializerGenerator(
             JsonType.ARRAY -> TODO()
             null -> TODO()
         }
-        if (property.optional) {
+        if (!isRequired) {
             endControlFlow()
         }
     }

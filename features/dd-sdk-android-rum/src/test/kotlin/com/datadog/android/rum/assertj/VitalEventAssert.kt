@@ -8,10 +8,8 @@ package com.datadog.android.rum.assertj
 import com.datadog.android.api.context.AccountInfo
 import com.datadog.android.api.context.NetworkInfo
 import com.datadog.android.api.context.UserInfo
-import com.datadog.android.rum.featureoperations.FailureReason
 import com.datadog.android.rum.internal.domain.scope.RumSessionScope
 import com.datadog.android.rum.internal.domain.scope.isConnected
-import com.datadog.android.rum.internal.domain.scope.toSchemaFailureReason
 import com.datadog.android.rum.internal.domain.scope.toVitalSessionPrecondition
 import com.datadog.android.rum.model.VitalEvent
 import com.datadog.android.rum.model.VitalEvent.VitalEventSessionType
@@ -91,73 +89,25 @@ internal class VitalEventAssert(actual: VitalEvent) : AbstractObjectAssert<Vital
     }
 
     fun hasViewId(expectedId: String) = apply {
-        assertThat(actual.view.id)
+        assertThat(actual.view?.id)
             .overridingErrorMessage(
-                "Expected event data to have view.id $expectedId but was ${actual.view.id}"
+                "Expected event data to have view.id $expectedId but was ${actual.view?.id}"
             )
             .isEqualTo(expectedId)
     }
 
     fun hasName(expected: String) = apply {
-        assertThat(actual.view.name)
+        assertThat(actual.view?.name)
             .overridingErrorMessage(
-                "Expected event data to have view.name $expected but was ${actual.view.name}"
+                "Expected event data to have view.name $expected but was ${actual.view?.name}"
             )
             .isEqualTo(expected)
     }
 
     fun hasUrl(expected: String) = apply {
-        assertThat(actual.view.url)
+        assertThat(actual.view?.url)
             .overridingErrorMessage(
-                "Expected event data to have view.url $expected but was ${actual.view.url}"
-            )
-            .isEqualTo(expected)
-    }
-
-    fun hasVitalName(expected: String) = apply {
-        assertThat(actual.vital.name)
-            .overridingErrorMessage(
-                "Expected event data to have vital.name $expected but was ${actual.vital.name}"
-            )
-            .isEqualTo(expected)
-    }
-
-    fun hasVitalOperationalKey(expected: String?) = apply {
-        assertThat(actual.vital.operationKey)
-            .overridingErrorMessage(
-                "Expected event data to have vital.operationKey $expected but was ${actual.vital.operationKey}"
-            )
-            .isEqualTo(expected)
-    }
-
-    fun hasVitalStepType(expected: VitalEvent.StepType) = apply {
-        assertThat(actual.vital.stepType)
-            .overridingErrorMessage(
-                "Expected event data to have vital.operationKey $expected but was ${actual.vital.stepType}"
-            )
-            .isEqualTo(expected)
-    }
-
-    fun hasVitalFailureReason(expected: FailureReason) = apply {
-        assertThat(actual.vital.failureReason)
-            .overridingErrorMessage(
-                "Expected event data to have vital.failureReason $expected but was ${actual.vital.failureReason}"
-            )
-            .isEqualTo(expected.toSchemaFailureReason())
-    }
-
-    fun hasNoVitalFailureReason() = apply {
-        assertThat(actual.vital.failureReason)
-            .overridingErrorMessage(
-                "Expected event data to have vital.failureReason to be null but was ${actual.vital.failureReason}"
-            )
-            .isNull()
-    }
-
-    fun hasVitalType(expected: VitalEvent.VitalEventVitalType) = apply {
-        assertThat(actual.vital.type)
-            .overridingErrorMessage(
-                "Expected event data to have vital.type $expected but was ${actual.vital.type}"
+                "Expected event data to have view.url $expected but was ${actual.view?.url}"
             )
             .isEqualTo(expected)
     }
@@ -306,9 +256,9 @@ internal class VitalEventAssert(actual: VitalEvent) : AbstractObjectAssert<Vital
 
     fun hasConnectivityInfo(expected: NetworkInfo?) = apply {
         val expectedStatus = if (expected?.isConnected() == true) {
-            VitalEvent.Status.CONNECTED
+            VitalEvent.ConnectivityStatus.CONNECTED
         } else {
-            VitalEvent.Status.NOT_CONNECTED
+            VitalEvent.ConnectivityStatus.NOT_CONNECTED
         }
         val expectedInterfaces = when (expected?.connectivity) {
             NetworkInfo.Connectivity.NETWORK_ETHERNET -> listOf(VitalEvent.Interface.ETHERNET)

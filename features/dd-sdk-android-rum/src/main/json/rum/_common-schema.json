@@ -4,7 +4,7 @@
   "title": "CommonProperties",
   "type": "object",
   "description": "Schema of common properties of RUM events",
-  "required": ["date", "application", "session", "view", "_dd"],
+  "required": ["date", "application", "session", "_dd"],
   "properties": {
     "date": {
       "type": "integer",

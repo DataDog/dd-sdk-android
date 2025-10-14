@@ -31,6 +31,7 @@ import com.datadog.android.rum.assertj.ErrorEventAssert.Companion.assertThat
 import com.datadog.android.rum.assertj.LongTaskEventAssert.Companion.assertThat
 import com.datadog.android.rum.assertj.ViewEventAssert.Companion.assertThat
 import com.datadog.android.rum.assertj.VitalEventAssert
+import com.datadog.android.rum.assertj.VitalFeatureOperationPropertiesAssert
 import com.datadog.android.rum.featureoperations.FailureReason
 import com.datadog.android.rum.internal.FeaturesContextResolver
 import com.datadog.android.rum.internal.RumErrorSourceType
@@ -8702,12 +8703,7 @@ internal class RumViewScopeTest {
                 .hasViewId(testedScope.viewId)
                 .hasName(fakeKey.name)
                 .hasUrl(fakeUrl)
-                .hasVitalName(fakeName)
-                .hasVitalOperationalKey(fakeOperationKey)
                 .hasNoSyntheticsTest()
-                .hasVitalStepType(VitalEvent.StepType.START)
-                .hasNoVitalFailureReason()
-                .hasVitalType(VitalEvent.VitalEventVitalType.OPERATION_STEP)
                 .hasSource(fakeVitalSourceEvent)
                 .hasAccountInfo(fakeDatadogContext.accountInfo)
                 .hasUserInfo(fakeDatadogContext.userInfo)
@@ -8727,6 +8723,16 @@ internal class RumViewScopeTest {
                 .hasVersion(fakeDatadogContext.version)
                 .hasServiceName(fakeDatadogContext.service)
                 .hasDDTags(buildDDTagsString(fakeDatadogContext))
+
+            val featureOperationsProps = lastValue.vital
+
+            check(featureOperationsProps is VitalEvent.Vital.FeatureOperationProperties)
+
+            VitalFeatureOperationPropertiesAssert.assertThat(featureOperationsProps)
+                .hasVitalName(fakeName)
+                .hasVitalOperationalKey(fakeOperationKey)
+                .hasVitalStepType(VitalEvent.StepType.START)
+                .hasNoVitalFailureReason()
         }
     }
 
@@ -8769,12 +8775,7 @@ internal class RumViewScopeTest {
                 .hasViewId(testedScope.viewId)
                 .hasName(fakeKey.name)
                 .hasUrl(fakeUrl)
-                .hasVitalName(fakeName)
-                .hasVitalOperationalKey(fakeOperationKey)
                 .hasSyntheticsTest(fakeTestId, fakeResultId)
-                .hasVitalStepType(VitalEvent.StepType.START)
-                .hasNoVitalFailureReason()
-                .hasVitalType(VitalEvent.VitalEventVitalType.OPERATION_STEP)
                 .hasSource(fakeVitalSourceEvent)
                 .hasAccountInfo(fakeDatadogContext.accountInfo)
                 .hasUserInfo(fakeDatadogContext.userInfo)
@@ -8794,6 +8795,16 @@ internal class RumViewScopeTest {
                 .hasVersion(fakeDatadogContext.version)
                 .hasServiceName(fakeDatadogContext.service)
                 .hasDDTags(buildDDTagsString(fakeDatadogContext))
+
+            val featureOperationsProps = lastValue.vital
+
+            check(featureOperationsProps is VitalEvent.Vital.FeatureOperationProperties)
+
+            VitalFeatureOperationPropertiesAssert.assertThat(featureOperationsProps)
+                .hasVitalName(fakeName)
+                .hasVitalOperationalKey(fakeOperationKey)
+                .hasVitalStepType(VitalEvent.StepType.START)
+                .hasNoVitalFailureReason()
         }
     }
 
@@ -8834,11 +8845,6 @@ internal class RumViewScopeTest {
                 .hasViewId(testedScope.viewId)
                 .hasName(fakeKey.name)
                 .hasUrl(fakeUrl)
-                .hasVitalName(fakeName)
-                .hasVitalOperationalKey(fakeOperationKey)
-                .hasVitalStepType(VitalEvent.StepType.END)
-                .hasNoVitalFailureReason()
-                .hasVitalType(VitalEvent.VitalEventVitalType.OPERATION_STEP)
                 .hasSource(fakeVitalSourceEvent)
                 .hasAccountInfo(fakeDatadogContext.accountInfo)
                 .hasUserInfo(fakeDatadogContext.userInfo)
@@ -8858,6 +8864,16 @@ internal class RumViewScopeTest {
                 .hasVersion(fakeDatadogContext.version)
                 .hasServiceName(fakeDatadogContext.service)
                 .hasDDTags(buildDDTagsString(fakeDatadogContext))
+
+            val featureOperationsProps = lastValue.vital
+
+            check(featureOperationsProps is VitalEvent.Vital.FeatureOperationProperties)
+
+            VitalFeatureOperationPropertiesAssert.assertThat(featureOperationsProps)
+                .hasVitalName(fakeName)
+                .hasVitalOperationalKey(fakeOperationKey)
+                .hasVitalStepType(VitalEvent.StepType.END)
+                .hasNoVitalFailureReason()
         }
     }
 
@@ -8901,11 +8917,6 @@ internal class RumViewScopeTest {
                 .hasName(fakeKey.name)
                 .hasSyntheticsTest(fakeTestId, fakeResultId)
                 .hasUrl(fakeUrl)
-                .hasVitalName(fakeName)
-                .hasVitalOperationalKey(fakeOperationKey)
-                .hasVitalStepType(VitalEvent.StepType.END)
-                .hasNoVitalFailureReason()
-                .hasVitalType(VitalEvent.VitalEventVitalType.OPERATION_STEP)
                 .hasSource(fakeVitalSourceEvent)
                 .hasAccountInfo(fakeDatadogContext.accountInfo)
                 .hasUserInfo(fakeDatadogContext.userInfo)
@@ -8925,6 +8936,16 @@ internal class RumViewScopeTest {
                 .hasVersion(fakeDatadogContext.version)
                 .hasServiceName(fakeDatadogContext.service)
                 .hasDDTags(buildDDTagsString(fakeDatadogContext))
+
+            val featureOperationsProps = lastValue.vital
+
+            check(featureOperationsProps is VitalEvent.Vital.FeatureOperationProperties)
+
+            VitalFeatureOperationPropertiesAssert.assertThat(featureOperationsProps)
+                .hasVitalName(fakeName)
+                .hasVitalOperationalKey(fakeOperationKey)
+                .hasVitalStepType(VitalEvent.StepType.END)
+                .hasNoVitalFailureReason()
         }
     }
 
@@ -8966,11 +8987,6 @@ internal class RumViewScopeTest {
                 .hasNoSyntheticsTest()
                 .hasName(fakeKey.name)
                 .hasUrl(fakeUrl)
-                .hasVitalName(fakeName)
-                .hasVitalOperationalKey(fakeOperationKey)
-                .hasVitalStepType(VitalEvent.StepType.END)
-                .hasVitalFailureReason(failureReason)
-                .hasVitalType(VitalEvent.VitalEventVitalType.OPERATION_STEP)
                 .hasSource(fakeVitalSourceEvent)
                 .hasAccountInfo(fakeDatadogContext.accountInfo)
                 .hasUserInfo(fakeDatadogContext.userInfo)
@@ -8990,6 +9006,16 @@ internal class RumViewScopeTest {
                 .hasVersion(fakeDatadogContext.version)
                 .hasServiceName(fakeDatadogContext.service)
                 .hasDDTags(buildDDTagsString(fakeDatadogContext))
+
+            val featureOperationsProps = lastValue.vital
+
+            check(featureOperationsProps is VitalEvent.Vital.FeatureOperationProperties)
+
+            VitalFeatureOperationPropertiesAssert.assertThat(featureOperationsProps)
+                .hasVitalName(fakeName)
+                .hasVitalOperationalKey(fakeOperationKey)
+                .hasVitalStepType(VitalEvent.StepType.END)
+                .hasVitalFailureReason(failureReason)
         }
     }
 
@@ -9035,11 +9061,6 @@ internal class RumViewScopeTest {
                 .hasViewId(testedScope.viewId)
                 .hasName(fakeKey.name)
                 .hasUrl(fakeUrl)
-                .hasVitalName(fakeName)
-                .hasVitalOperationalKey(fakeOperationKey)
-                .hasVitalStepType(VitalEvent.StepType.END)
-                .hasVitalFailureReason(failureReason)
-                .hasVitalType(VitalEvent.VitalEventVitalType.OPERATION_STEP)
                 .hasSource(fakeVitalSourceEvent)
                 .hasAccountInfo(fakeDatadogContext.accountInfo)
                 .hasUserInfo(fakeDatadogContext.userInfo)
@@ -9059,6 +9080,16 @@ internal class RumViewScopeTest {
                 .hasVersion(fakeDatadogContext.version)
                 .hasServiceName(fakeDatadogContext.service)
                 .hasDDTags(buildDDTagsString(fakeDatadogContext))
+
+            val featureOperationsProps = lastValue.vital
+
+            check(featureOperationsProps is VitalEvent.Vital.FeatureOperationProperties)
+
+            VitalFeatureOperationPropertiesAssert.assertThat(featureOperationsProps)
+                .hasVitalName(fakeName)
+                .hasVitalOperationalKey(fakeOperationKey)
+                .hasVitalStepType(VitalEvent.StepType.END)
+                .hasVitalFailureReason(failureReason)
         }
     }
     // endregion
