@@ -64,9 +64,8 @@ class VitalEventForgeryFactory : ForgeryFactory<VitalEvent> {
                 url = forge.aStringMatching("https://[a-z]+.[a-z]{3}/[a-z0-9_/]+"),
                 name = forge.aNullable { anAlphabeticalString() }
             ),
-            vital = VitalEvent.VitalEventVital(
+            vital = VitalEvent.Vital.FeatureOperationProperties(
                 id = forge.aString(),
-                type = forge.aValueFrom(VitalEvent.VitalEventVitalType::class.java),
                 operationKey = forge.aNullable { aString() },
                 name = forge.anAlphabeticalString(),
                 stepType = forge.aValueFrom(StepType::class.java),

@@ -86,7 +86,8 @@ class JsonSchemaReaderTest(
                 arrayOf("all_of_merged", UserMerged),
                 arrayOf("constant_number", Version),
                 arrayOf("sets", Video),
-                arrayOf("one_of_nested", WeirdCombo)
+                arrayOf("one_of_nested", WeirdCombo),
+                arrayOf("required_for_other_all_of", RequiredForOtherAllOf)
             )
         }
     }

@@ -101,6 +101,7 @@ sealed class TypeDefinition {
     data class Class(
         val name: String,
         val properties: List<TypeProperty>,
+        val required: Set<String>,
         override val description: String = "",
         val additionalProperties: TypeProperty? = null,
         val parentType: OneOfClass? = null
@@ -135,18 +136,22 @@ sealed class TypeDefinition {
                     additionalProperties.mergedWith(other.additionalProperties)
                 }
 
+            val mergedRequired = this.required + other.required
+
             return Class(
-                name,
-                mergedFields,
-                "$description\n${other.description}".trim(),
-                mergedAdditionalProperties
+                name = name,
+                properties = mergedFields,
+                required = mergedRequired,
+                description = "$description\n${other.description}".trim(),
+                additionalProperties = mergedAdditionalProperties
             )
         }
 
         override fun matches(other: TypeDefinition): Boolean {
             return (other is Class) &&
                 (other.properties == properties) &&
-                (other.additionalProperties == additionalProperties)
+                (other.additionalProperties == additionalProperties) &&
+                (other.required == required)
         }
 
         fun isConstantClass(): Boolean {

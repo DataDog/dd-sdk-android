@@ -352,9 +352,9 @@ internal fun NetworkInfo.toActionConnectivity(): ActionEvent.Connectivity {
 
 internal fun NetworkInfo.toVitalConnectivity(): VitalEvent.Connectivity {
     val status = if (isConnected()) {
-        VitalEvent.Status.CONNECTED
+        VitalEvent.ConnectivityStatus.CONNECTED
     } else {
-        VitalEvent.Status.NOT_CONNECTED
+        VitalEvent.ConnectivityStatus.NOT_CONNECTED
     }
     val interfaces = when (connectivity) {
         NetworkInfo.Connectivity.NETWORK_ETHERNET -> listOf(VitalEvent.Interface.ETHERNET)
