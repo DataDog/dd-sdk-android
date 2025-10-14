@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.profiling.internal
+package com.datadog.android.profiling.internal.perfetto
 
 import android.content.Context
 import android.os.Build
@@ -15,6 +15,7 @@ import androidx.core.os.StackSamplingRequestBuilder
 import androidx.core.os.requestProfiling
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.internal.time.TimeProvider
+import com.datadog.android.profiling.internal.Profiler
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
@@ -22,7 +23,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 import java.util.function.Consumer
 
 /**
- * Profiler based on Android's [androidx.core.os.requestProfiling] API to record callstack samples during application launch.
+ * Profiler based on Android's [requestProfiling] API to record callstack samples during application launch.
  *
  * @param internalLogger the logger instance to use for logging.
  * @param timeProvider The time provider to use to get the current time.

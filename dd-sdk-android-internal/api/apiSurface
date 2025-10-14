@@ -136,5 +136,7 @@ class com.datadog.android.rum.DdRumContentProvider : android.content.ContentProv
   companion object 
     var processImportance: Int
     val createTimeNs: Long
+data class com.datadog.android.rum.TTIDEvent
+  constructor(Long)
 annotation com.datadog.tools.annotation.NoOpImplementation
   constructor(Boolean = false)

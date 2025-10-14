@@ -9,6 +9,7 @@ package com.datadog.android.profiling.internal
 import android.content.Context
 import android.os.Build
 import androidx.annotation.RequiresApi
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureEventReceiver
 import com.datadog.android.api.feature.FeatureSdkCore
@@ -17,14 +18,17 @@ import com.datadog.android.api.net.RequestFactory
 import com.datadog.android.api.storage.FeatureStorageConfiguration
 import com.datadog.android.internal.time.DefaultTimeProvider
 import com.datadog.android.profiling.ProfilingConfiguration
+import com.datadog.android.rum.TTIDEvent
+import java.util.Locale
 
 @RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
 internal class ProfilingFeature(
     private val sdkCore: FeatureSdkCore,
-    configuration: ProfilingConfiguration
+    configuration: ProfilingConfiguration,
+    private val profilerProvider: ProfilerProvider
 ) : StorageBackedFeature, FeatureEventReceiver {
 
-    private var perfettoProfiler: Profiler = NoOpProfiler()
+    private var profiler: Profiler = NoOpProfiler()
 
     private var dataWriter: ProfilingWriter = NoOpProfilingWriter()
 
@@ -40,7 +44,7 @@ internal class ProfilingFeature(
         get() = Feature.Companion.PROFILING_FEATURE_NAME
 
     override fun onInitialize(appContext: Context) {
-        perfettoProfiler = PerfettoProfiler(
+        profiler = profilerProvider.provide(
             internalLogger = sdkCore.internalLogger,
             timeProvider = DefaultTimeProvider(),
             profilingExecutor = sdkCore.createSingleThreadExecutorService(
@@ -59,12 +63,25 @@ internal class ProfilingFeature(
     }
 
     override fun onStop() {
-        perfettoProfiler.stop()
+        profiler.stop()
         sdkCore.removeEventReceiver(name)
     }
 
     override fun onReceive(event: Any) {
-        // TODO RUM-11887: Receive TTID event and stop profiling.
+        if (event !is TTIDEvent) {
+            sdkCore.internalLogger.log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.MAINTAINER,
+                { UNSUPPORTED_EVENT_TYPE.format(Locale.US, event::class.java.canonicalName) }
+            )
+            return
+        }
+        profiler.stop()
+        sdkCore.internalLogger.log(
+            InternalLogger.Level.INFO,
+            InternalLogger.Target.USER,
+            { "Profiling stopped with TTID=${event.value}" }
+        )
     }
 
     private fun createDataWriter(sdkCore: FeatureSdkCore): ProfilingDataWriter {
@@ -72,6 +89,9 @@ internal class ProfilingFeature(
     }
 
     companion object {
+        internal const val RUM_TTID_BUS_MESSAGE_KEY = "rum_ttid"
         private const val PROFILING_EXECUTOR_SERVICE_NAME = "profiling"
+        private const val UNSUPPORTED_EVENT_TYPE =
+            "Profiling feature receive an event of unsupported type=%s."
     }
 }

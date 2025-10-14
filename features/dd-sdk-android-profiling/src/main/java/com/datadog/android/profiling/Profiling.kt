@@ -12,6 +12,7 @@ import com.datadog.android.Datadog
 import com.datadog.android.api.SdkCore
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.profiling.internal.ProfilingFeature
+import com.datadog.android.profiling.internal.perfetto.PerfettoProfilerProvider
 
 /**
  * An entry point to Datadog Profiling feature.
@@ -36,7 +37,8 @@ object Profiling {
         val featureSdkCore = sdkCore as FeatureSdkCore
         val profilingFeature = ProfilingFeature(
             sdkCore = featureSdkCore,
-            configuration = configuration
+            configuration = configuration,
+            profilerProvider = PerfettoProfilerProvider()
         )
         featureSdkCore.registerFeature(profilingFeature)
     }

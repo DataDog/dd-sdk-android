@@ -17,6 +17,7 @@ import com.datadog.android.api.storage.EventType
 import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.internal.utils.formatIsoUtc
 import com.datadog.android.profiling.forge.Configurator
+import com.datadog.android.profiling.internal.perfetto.PerfettoResult
 import com.datadog.android.profiling.model.ProfilingEvent
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.Forgery

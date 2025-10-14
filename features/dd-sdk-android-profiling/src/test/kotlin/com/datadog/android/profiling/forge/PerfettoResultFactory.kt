@@ -6,7 +6,7 @@
 
 package com.datadog.android.profiling.forge
 
-import com.datadog.android.profiling.internal.PerfettoResult
+import com.datadog.android.profiling.internal.perfetto.PerfettoResult
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
 

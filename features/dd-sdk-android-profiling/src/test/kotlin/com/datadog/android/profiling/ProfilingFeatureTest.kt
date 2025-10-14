@@ -10,10 +10,17 @@ import android.content.Context
 import android.os.ProfilingManager
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.InternalSdkCore
+import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.profiling.forge.Configurator
+import com.datadog.android.profiling.internal.Profiler
+import com.datadog.android.profiling.internal.ProfilerProvider
 import com.datadog.android.profiling.internal.ProfilingFeature
 import com.datadog.android.profiling.internal.ProfilingRequestFactory
+import com.datadog.android.profiling.internal.perfetto.PerfettoResult
+import com.datadog.android.rum.TTIDEvent
 import fr.xgouchet.elmyr.annotation.Forgery
+import fr.xgouchet.elmyr.annotation.LongForgery
+import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
@@ -25,7 +32,12 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
+import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.eq
+import org.mockito.kotlin.isNull
+import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyNoMoreInteractions
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.util.concurrent.ExecutorService
@@ -55,6 +67,9 @@ class ProfilingFeatureTest {
     @Mock
     private lateinit var mockService: ProfilingManager
 
+    @Mock
+    private lateinit var mockProfiler: Profiler
+
     @Forgery
     private lateinit var fakeConfiguration: ProfilingConfiguration
 
@@ -63,7 +78,18 @@ class ProfilingFeatureTest {
         whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
         whenever(mockSdkCore.createSingleThreadExecutorService(any())) doReturn mockProfilingExecutor
         whenever(mockContext.getSystemService(ProfilingManager::class.java)).doReturn(mockService)
-        testedFeature = ProfilingFeature(mockSdkCore, fakeConfiguration)
+        val mockProfilerProvider = object : ProfilerProvider {
+            override fun provide(
+                internalLogger: InternalLogger,
+                timeProvider: TimeProvider,
+                profilingExecutor: ExecutorService,
+                onProfilingSuccess: (PerfettoResult) -> Unit
+            ): Profiler {
+                return mockProfiler
+            }
+        }
+        testedFeature = ProfilingFeature(mockSdkCore, fakeConfiguration, mockProfilerProvider)
+        testedFeature.onInitialize(mockContext)
     }
 
     @Test
@@ -82,5 +108,39 @@ class ProfilingFeatureTest {
 
         // Then
         assertThat(testedFeature.requestFactory).isInstanceOf(ProfilingRequestFactory::class.java)
+    }
+
+    @Test
+    fun `M stop Profiling W receive TTID event`(@LongForgery fakeTtid: Long) {
+        verify(mockProfiler).start(mockContext)
+
+        // When
+        testedFeature.onReceive(TTIDEvent(fakeTtid))
+
+        // Then
+        verify(mockProfiler).stop()
+        verifyNoMoreInteractions(mockProfiler)
+    }
+
+    @Test
+    fun `M not stop Profiling W receive illegal event`(@StringForgery fakeIllegalValue: String) {
+        verify(mockProfiler).start(mockContext)
+
+        // When
+        testedFeature.onReceive(fakeIllegalValue)
+
+        // Then
+        val argumentCaptor = argumentCaptor<() -> String>()
+        verify(mockInternalLogger).log(
+            eq(InternalLogger.Level.WARN),
+            eq(InternalLogger.Target.MAINTAINER),
+            argumentCaptor.capture(),
+            isNull(),
+            eq(false),
+            isNull()
+        )
+        assertThat(argumentCaptor.firstValue.invoke())
+            .isEqualTo("Profiling feature receive an event of unsupported type=${String::class.java.canonicalName}.")
+        verifyNoMoreInteractions(mockProfiler)
     }
 }
