@@ -17,10 +17,5 @@ import com.datadog.android.rum.DdRumContentProvider
  * is in the foreground.
  */
 fun overrideProcessImportance() {
-    DdRumContentProvider::class.java.declaredMethods.firstOrNull() {
-        it.name == "overrideProcessImportance"
-    }?.apply {
-        isAccessible = true
-        invoke(null, ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND)
-    }
+    DdRumContentProvider.processImportance = ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND
 }

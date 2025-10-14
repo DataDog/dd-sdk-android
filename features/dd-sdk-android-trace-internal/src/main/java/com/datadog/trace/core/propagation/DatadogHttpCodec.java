@@ -2,12 +2,12 @@ package com.datadog.trace.core.propagation;
 
 import static com.datadog.trace.api.TracePropagationStyle.DATADOG;
 import static com.datadog.trace.core.propagation.HttpCodec.firstHeaderValue;
-import static com.datadog.trace.core.propagation.W3CHttpCodec.RUM_SESSION_ID_BAGGAGE_KEY;
 import static com.datadog.trace.core.propagation.XRayHttpCodec.XRayContextInterpreter.handleXRayTraceHeader;
 import static com.datadog.trace.core.propagation.XRayHttpCodec.X_AMZN_TRACE_ID;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
+import com.datadog.android.trace.internal.compat.function.Supplier;
 import com.datadog.trace.api.Config;
 import com.datadog.trace.api.DD128bTraceId;
 import com.datadog.trace.api.DDSpanId;
@@ -24,7 +24,6 @@ import com.datadog.trace.logger.LoggerFactory;
 
 import java.util.Map;
 import java.util.TreeMap;
-import com.datadog.android.trace.internal.compat.function.Supplier;
 
 /** A codec designed for HTTP transport via headers using Datadog headers */
 class DatadogHttpCodec {
@@ -85,10 +84,10 @@ class DatadogHttpCodec {
         setter.set(carrier, DATADOG_TAGS_KEY, datadogTags);
       }
 
-      // inject session id
-      final String sessionId = (String) context.getTags().get(HttpCodec.RUM_SESSION_ID_KEY);
-      if(sessionId != null) {
-        setter.set(carrier, W3CHttpCodec.BAGGAGE_KEY, RUM_SESSION_ID_BAGGAGE_KEY + '='+sessionId);
+      // inject baggage
+      Baggage baggage = HttpCodec.composeBaggage(context);
+      if (!baggage.isEmpty()) {
+        setter.set(carrier, W3CHttpCodec.BAGGAGE_KEY, baggage.toString());
       }
     }
   }

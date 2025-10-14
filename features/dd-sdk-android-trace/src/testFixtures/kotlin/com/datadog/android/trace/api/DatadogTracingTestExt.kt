@@ -7,6 +7,7 @@
 package com.datadog.android.trace.api
 
 import com.datadog.android.api.context.DatadogContext
+import com.datadog.android.trace.GlobalDatadogTracer
 import com.datadog.android.trace.api.span.DatadogSpan
 import com.datadog.android.trace.api.span.DatadogSpanContext
 import com.datadog.android.trace.api.trace.DatadogTraceId
@@ -17,6 +18,7 @@ import com.datadog.android.trace.internal.DatadogSpanAdapter
 import com.datadog.android.trace.internal.DatadogSpanContextAdapter
 import com.datadog.android.trace.internal.DatadogTraceIdAdapter
 import com.datadog.android.trace.internal.DatadogTracerAdapter
+import com.datadog.android.trace.internal.DatadogTracerBuilderAdapter
 import com.datadog.android.trace.internal.DatadogTracingToolkit
 import com.datadog.android.trace.internal.domain.event.CoreTracerSpanToSpanEventMapper
 import com.datadog.trace.api.DDTraceId
@@ -80,6 +82,17 @@ fun DatadogTracingToolkit.withMockPropagationHelper(
     } finally {
         propagationHelper = helper
     }
+}
+
+fun DatadogTracerBuilder.setTestIdGenerationStrategy(strategy: TestIdGenerationStrategy) = apply {
+    (this as? DatadogTracerBuilderAdapter)?.setCustomIdGenerationStrategy(strategy)
+}
+
+fun GlobalDatadogTracer.replace(
+    builder: DatadogTracerBuilder
+): Boolean {
+    clear()
+    return registerIfAbsent(builder.build())
 }
 
 private val DatadogSpanContext.ddSpanContext: DDSpanContext?

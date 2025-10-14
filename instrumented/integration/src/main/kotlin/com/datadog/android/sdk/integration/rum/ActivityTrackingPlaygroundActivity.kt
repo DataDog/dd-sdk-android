@@ -33,12 +33,7 @@ internal class ActivityTrackingPlaygroundActivity : AppCompatActivity() {
         val sdkCore = Datadog.initialize(this, config, trackingConsent)
         checkNotNull(sdkCore)
 
-        DdRumContentProvider::class.java.declaredMethods.firstOrNull() {
-            it.name == "overrideProcessImportance"
-        }?.apply {
-            isAccessible = true
-            invoke(null, ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND)
-        }
+        DdRumContentProvider.processImportance = ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND
 
         val rumConfig = RuntimeConfig.rumConfigBuilder()
             .trackUserInteractions()

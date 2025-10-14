@@ -24,6 +24,7 @@ import com.datadog.android.rum.internal.domain.battery.BatteryInfo
 import com.datadog.android.rum.internal.domain.display.DisplayInfo
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
 import com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener
+import com.datadog.android.rum.internal.startup.RumAppStartupTelemetryReporter
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.rum.metric.interactiontonextview.LastInteractionIdentifier
 import com.datadog.android.rum.metric.networksettled.InitialResourceIdentifier
@@ -122,6 +123,9 @@ internal class RumApplicationScopeAttributePropagationTest {
     lateinit var mockDisplayInfoProvider: InfoProvider<DisplayInfo>
 
     @Mock
+    lateinit var mockRumAppStartupTelemetryReporter: RumAppStartupTelemetryReporter
+
+    @Mock
     lateinit var mockSlowFramesListener: SlowFramesListener
 
     lateinit var fakeEventTime: Time
@@ -202,8 +206,8 @@ internal class RumApplicationScopeAttributePropagationTest {
             rumSessionTypeOverride = fakeRumSessionType,
             accessibilitySnapshotManager = mockAccessibilitySnapshotManager,
             batteryInfoProvider = mockBatteryInfoProvider,
-            displayInfoProvider = mockDisplayInfoProvider
-
+            displayInfoProvider = mockDisplayInfoProvider,
+            rumAppStartupTelemetryReporter = mockRumAppStartupTelemetryReporter
         )
     }
 

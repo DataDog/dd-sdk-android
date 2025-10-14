@@ -86,10 +86,12 @@ datadog:
       - "android.view.MotionEvent.getRawX(kotlin.Int)"
       - "android.view.MotionEvent.getRawY(kotlin.Int)"
       - "android.view.MotionEvent.recycle()"
+      - "android.view.View.addOnAttachStateChangeListener(android.view.View.OnAttachStateChangeListener?)"
       - "android.view.View.getChildAt(kotlin.Int)"
       - "android.view.View.getTag(kotlin.Int)"
       - "android.view.View.hashCode()"
       - "android.view.View.post(java.lang.Runnable?)"
+      - "android.view.View.removeOnAttachStateChangeListener(android.view.View.OnAttachStateChangeListener?)"
       - "android.view.View.takeIf(kotlin.Function1)"
       - "android.view.View.setTag(kotlin.Int, kotlin.Any?)"
       - "android.view.ViewGroup.findViewById(kotlin.Int)"
@@ -177,6 +179,8 @@ datadog:
       - "android.graphics.RectF.width()"
       - "android.graphics.RectF.height()"
       - "android.graphics.RectF.toRect()"
+      - "android.os.Handler.sendMessageAtFrontOfQueue(android.os.Message)"
+      - "android.os.Message.obtain(android.os.Handler?, java.lang.Runnable?)"
       # endregion
       # region Androidx APIs
       - "androidx.appcompat.widget.DatadogActionBarContainerAccessor.constructor(androidx.appcompat.widget.ActionBarContainer)"
@@ -264,6 +268,16 @@ datadog:
       # endregion
       # region Google Material
       - "com.google.android.material.tabs.TabLayout.TabView.getChildAt(kotlin.Int)"
+      # endregion
+      # region Apollo Kotlin
+      - "com.apollographql.apollo.api.json.buildJsonString(kotlin.String?, kotlin.Function1)"
+      - "com.apollographql.apollo.api.ApolloRequest.newBuilder()"
+      - "com.apollographql.apollo.api.ApolloRequest.Builder.addHttpHeader(kotlin.String, kotlin.String)"
+      - "com.apollographql.apollo.api.ApolloRequest.Builder.build()"
+      - "com.apollographql.apollo.api.Operation.composeJsonRequest(com.apollographql.apollo.api.json.JsonWriter, com.apollographql.apollo.api.CustomScalarAdapters)"
+      - "com.apollographql.apollo.api.Operation.document()"
+      - "com.apollographql.apollo.api.Operation.name()"
+      - "com.apollographql.apollo.interceptor.ApolloInterceptorChain.proceed(com.apollographql.apollo.api.ApolloRequest)"
       # endregion
       # region Glide
       - "com.bumptech.glide.GlideBuilder.setDiskCacheExecutor(com.bumptech.glide.load.engine.executor.GlideExecutor?)"
@@ -372,8 +386,11 @@ datadog:
       - "java.util.concurrent.ConcurrentLinkedQueue.isNotEmpty()"
       - "java.util.concurrent.ConcurrentLinkedQueue.peek()"
       - "java.util.concurrent.ConcurrentLinkedQueue.poll()"
+      - "java.util.concurrent.CopyOnWriteArraySet.add(kotlin.Any?)"
       - "java.util.concurrent.CopyOnWriteArraySet.add(kotlin.String?)"
       - "java.util.concurrent.CopyOnWriteArraySet.constructor()"
+      - "java.util.concurrent.CopyOnWriteArraySet.forEach(kotlin.Function1)"
+      - "java.util.concurrent.CopyOnWriteArraySet.remove(kotlin.Any?)"
       - "java.util.concurrent.CopyOnWriteArraySet.remove(kotlin.String?)"
       - "java.util.concurrent.CopyOnWriteArraySet.toTypedArray()"
       - "java.util.concurrent.CountDownLatch.countDown()"
@@ -502,6 +519,7 @@ datadog:
       - "java.math.BigInteger.toHexString()"
       - "java.math.BigInteger.toLong()"
       - "java.nio.charset.Charset.defaultCharset()"
+      - "java.nio.CharBuffer.position()"
       - "java.security.MessageDigest.digest()"
       - "java.security.MessageDigest.update(kotlin.ByteArray?)"
       - "java.security.SecureRandom.constructor()"
@@ -523,6 +541,9 @@ datadog:
       - "java.util.WeakHashMap.clear()"
       - "java.util.WeakHashMap.constructor()"
       - "java.util.WeakHashMap.containsKey(android.view.Window?)"
+      - "java.util.WeakHashMap.getOrPut(android.app.Activity?, kotlin.Function0)"
+      - "java.util.WeakHashMap.put(android.app.Activity?, android.view.ViewTreeObserver.OnDrawListener?)"
+      - "java.util.WeakHashMap.put(android.app.Activity?, com.datadog.android.rum.internal.utils.window.RumWindowCallbackListener?)"
       - "java.util.WeakHashMap.remove(android.app.Activity?)"
       - "java.util.WeakHashMap.remove(android.view.View?)"
       - "java.util.WeakHashMap.remove(android.view.Window?)"
@@ -544,6 +565,7 @@ datadog:
       # endregion
       # region Kotlin Collections
       - "kotlin.Array.all(kotlin.Function1)"
+      - "kotlin.Array.any(kotlin.Function1)"
       - "kotlin.Array.associateWith(kotlin.Function1)"
       - "kotlin.Array.associateBy(kotlin.Function1)"
       - "kotlin.Array.constructor(kotlin.Int, kotlin.Function1)"
@@ -823,6 +845,7 @@ datadog:
       - "kotlin.collections.listOf(com.datadog.android.rum.model.LongTaskEvent.Interface)"
       - "kotlin.collections.listOf(com.datadog.android.rum.model.ResourceEvent.Interface)"
       - "kotlin.collections.listOf(com.datadog.android.rum.model.ViewEvent.Interface)"
+      - "kotlin.collections.listOf(com.datadog.android.rum.model.VitalEvent.Interface)"
       - "kotlin.collections.listOf(com.datadog.android.sessionreplay.MapperTypeWrapper)"
       - "kotlin.collections.listOf(com.datadog.android.sessionreplay.internal.recorder.DefaultOptionSelectorDetector)"
       - "kotlin.collections.listOf(com.datadog.android.sessionreplay.material.internal.MaterialDrawableToColorMapper)"

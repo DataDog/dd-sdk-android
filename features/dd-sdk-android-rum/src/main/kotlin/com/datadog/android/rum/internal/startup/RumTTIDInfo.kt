@@ -4,13 +4,9 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.sessionreplay.internal.utils
+package com.datadog.android.rum.internal.startup
 
-/**
- * Provides the current device timestamp.
- * Meant for internal usage.
- */
-internal fun interface TimeProvider {
-
-    fun getDeviceTimestamp(): Long
-}
+internal data class RumTTIDInfo(
+    val scenario: RumStartupScenario,
+    val durationNs: Long
+)

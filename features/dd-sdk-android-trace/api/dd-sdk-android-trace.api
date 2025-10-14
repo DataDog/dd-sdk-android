@@ -68,14 +68,20 @@ public final class com/datadog/android/trace/internal/DatadogTracingToolkit {
 	public static final fun activateSpan (Lcom/datadog/android/trace/api/tracer/DatadogTracer;Lcom/datadog/android/trace/api/span/DatadogSpan;Z)Lcom/datadog/android/trace/api/scope/DatadogScope;
 	public static final fun addThrowable (Lcom/datadog/android/trace/api/span/DatadogSpan;Ljava/lang/Throwable;B)V
 	public final fun getPropagationHelper ()Lcom/datadog/android/trace/internal/DatadogPropagationHelper;
+	public final fun mergeBaggage (Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;
 	public final fun setSdkV2Compatible (Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;)Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;
 	public final fun setTraceId128BitGenerationEnabled (Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;)Lcom/datadog/android/trace/api/tracer/DatadogTracerBuilder;
 	public final fun setTracingSamplingPriorityIfNecessary (Lcom/datadog/android/trace/api/span/DatadogSpanContext;)V
 }
 
-public final class com/datadog/android/trace/internal/SpanAttributes {
-	public static final field DATADOG_INITIAL_CONTEXT Ljava/lang/String;
-	public static final field INSTANCE Lcom/datadog/android/trace/internal/SpanAttributes;
+public final class com/datadog/android/trace/internal/RumContextPropagator {
+	public static final field Companion Lcom/datadog/android/trace/internal/RumContextPropagator$Companion;
+	public fun <init> (Lkotlin/jvm/functions/Function0;)V
+}
+
+public final class com/datadog/android/trace/internal/RumContextPropagator$Companion {
+	public final fun extractRumContext (Lcom/datadog/android/trace/api/span/DatadogSpan;Lcom/datadog/android/trace/internal/RumContextPropagator;Z)Lcom/datadog/android/trace/api/span/DatadogSpan;
+	public static synthetic fun extractRumContext$default (Lcom/datadog/android/trace/internal/RumContextPropagator$Companion;Lcom/datadog/android/trace/api/span/DatadogSpan;Lcom/datadog/android/trace/internal/RumContextPropagator;ZILjava/lang/Object;)Lcom/datadog/android/trace/api/span/DatadogSpan;
 }
 
 public final class com/datadog/android/trace/model/SpanEvent {

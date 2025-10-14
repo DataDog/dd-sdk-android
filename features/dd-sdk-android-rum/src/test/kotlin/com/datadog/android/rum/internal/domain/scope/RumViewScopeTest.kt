@@ -62,6 +62,7 @@ import com.datadog.android.rum.internal.toError
 import com.datadog.android.rum.internal.toLongTask
 import com.datadog.android.rum.internal.toView
 import com.datadog.android.rum.internal.toVital
+import com.datadog.android.rum.internal.utils.buildDDTagsString
 import com.datadog.android.rum.internal.vitals.VitalInfo
 import com.datadog.android.rum.internal.vitals.VitalListener
 import com.datadog.android.rum.internal.vitals.VitalMonitor
@@ -210,11 +211,11 @@ internal class RumViewScopeTest {
 
     @Forgery
     lateinit var fakeViewType: RumViewType
-
     var fakeSourceViewEvent: ViewEvent.ViewEventSource? = null
     var fakeSourceErrorEvent: ErrorEvent.ErrorEventSource? = null
     var fakeSourceActionEvent: ActionEvent.ActionEventSource? = null
     var fakeSourceLongTaskEvent: LongTaskEvent.LongTaskEventSource? = null
+    var fakeVitalSourceEvent: VitalEvent.VitalEventSource? = null
 
     @BoolForgery
     var fakeHasReplay: Boolean = false
@@ -312,6 +313,11 @@ internal class RumViewScopeTest {
         }
         fakeSourceLongTaskEvent = if (isValidSource) {
             LongTaskEvent.LongTaskEventSource.fromJson(fakeSource)
+        } else {
+            null
+        }
+        fakeVitalSourceEvent = if (isValidSource) {
+            VitalEvent.VitalEventSource.fromJson(fakeSource)
         } else {
             null
         }
@@ -8702,6 +8708,25 @@ internal class RumViewScopeTest {
                 .hasVitalStepType(VitalEvent.StepType.START)
                 .hasNoVitalFailureReason()
                 .hasVitalType(VitalEvent.VitalEventVitalType.OPERATION_STEP)
+                .hasSource(fakeVitalSourceEvent)
+                .hasAccountInfo(fakeDatadogContext.accountInfo)
+                .hasUserInfo(fakeDatadogContext.userInfo)
+                .hasDeviceInfo(
+                    fakeDatadogContext.deviceInfo.deviceName,
+                    fakeDatadogContext.deviceInfo.deviceModel,
+                    fakeDatadogContext.deviceInfo.deviceBrand,
+                    fakeDatadogContext.deviceInfo.deviceType.toVitalSchemaType(),
+                    fakeDatadogContext.deviceInfo.architecture
+                )
+                .hasOsInfo(
+                    fakeDatadogContext.deviceInfo.osName,
+                    fakeDatadogContext.deviceInfo.osVersion,
+                    fakeDatadogContext.deviceInfo.osMajorVersion
+                )
+                .hasConnectivityInfo(fakeDatadogContext.networkInfo)
+                .hasVersion(fakeDatadogContext.version)
+                .hasServiceName(fakeDatadogContext.service)
+                .hasDDTags(buildDDTagsString(fakeDatadogContext))
         }
     }
 
@@ -8750,6 +8775,25 @@ internal class RumViewScopeTest {
                 .hasVitalStepType(VitalEvent.StepType.START)
                 .hasNoVitalFailureReason()
                 .hasVitalType(VitalEvent.VitalEventVitalType.OPERATION_STEP)
+                .hasSource(fakeVitalSourceEvent)
+                .hasAccountInfo(fakeDatadogContext.accountInfo)
+                .hasUserInfo(fakeDatadogContext.userInfo)
+                .hasDeviceInfo(
+                    fakeDatadogContext.deviceInfo.deviceName,
+                    fakeDatadogContext.deviceInfo.deviceModel,
+                    fakeDatadogContext.deviceInfo.deviceBrand,
+                    fakeDatadogContext.deviceInfo.deviceType.toVitalSchemaType(),
+                    fakeDatadogContext.deviceInfo.architecture
+                )
+                .hasOsInfo(
+                    fakeDatadogContext.deviceInfo.osName,
+                    fakeDatadogContext.deviceInfo.osVersion,
+                    fakeDatadogContext.deviceInfo.osMajorVersion
+                )
+                .hasConnectivityInfo(fakeDatadogContext.networkInfo)
+                .hasVersion(fakeDatadogContext.version)
+                .hasServiceName(fakeDatadogContext.service)
+                .hasDDTags(buildDDTagsString(fakeDatadogContext))
         }
     }
 
@@ -8795,6 +8839,25 @@ internal class RumViewScopeTest {
                 .hasVitalStepType(VitalEvent.StepType.END)
                 .hasNoVitalFailureReason()
                 .hasVitalType(VitalEvent.VitalEventVitalType.OPERATION_STEP)
+                .hasSource(fakeVitalSourceEvent)
+                .hasAccountInfo(fakeDatadogContext.accountInfo)
+                .hasUserInfo(fakeDatadogContext.userInfo)
+                .hasDeviceInfo(
+                    fakeDatadogContext.deviceInfo.deviceName,
+                    fakeDatadogContext.deviceInfo.deviceModel,
+                    fakeDatadogContext.deviceInfo.deviceBrand,
+                    fakeDatadogContext.deviceInfo.deviceType.toVitalSchemaType(),
+                    fakeDatadogContext.deviceInfo.architecture
+                )
+                .hasOsInfo(
+                    fakeDatadogContext.deviceInfo.osName,
+                    fakeDatadogContext.deviceInfo.osVersion,
+                    fakeDatadogContext.deviceInfo.osMajorVersion
+                )
+                .hasConnectivityInfo(fakeDatadogContext.networkInfo)
+                .hasVersion(fakeDatadogContext.version)
+                .hasServiceName(fakeDatadogContext.service)
+                .hasDDTags(buildDDTagsString(fakeDatadogContext))
         }
     }
 
@@ -8843,6 +8906,25 @@ internal class RumViewScopeTest {
                 .hasVitalStepType(VitalEvent.StepType.END)
                 .hasNoVitalFailureReason()
                 .hasVitalType(VitalEvent.VitalEventVitalType.OPERATION_STEP)
+                .hasSource(fakeVitalSourceEvent)
+                .hasAccountInfo(fakeDatadogContext.accountInfo)
+                .hasUserInfo(fakeDatadogContext.userInfo)
+                .hasDeviceInfo(
+                    fakeDatadogContext.deviceInfo.deviceName,
+                    fakeDatadogContext.deviceInfo.deviceModel,
+                    fakeDatadogContext.deviceInfo.deviceBrand,
+                    fakeDatadogContext.deviceInfo.deviceType.toVitalSchemaType(),
+                    fakeDatadogContext.deviceInfo.architecture
+                )
+                .hasOsInfo(
+                    fakeDatadogContext.deviceInfo.osName,
+                    fakeDatadogContext.deviceInfo.osVersion,
+                    fakeDatadogContext.deviceInfo.osMajorVersion
+                )
+                .hasConnectivityInfo(fakeDatadogContext.networkInfo)
+                .hasVersion(fakeDatadogContext.version)
+                .hasServiceName(fakeDatadogContext.service)
+                .hasDDTags(buildDDTagsString(fakeDatadogContext))
         }
     }
 
@@ -8889,6 +8971,25 @@ internal class RumViewScopeTest {
                 .hasVitalStepType(VitalEvent.StepType.END)
                 .hasVitalFailureReason(failureReason)
                 .hasVitalType(VitalEvent.VitalEventVitalType.OPERATION_STEP)
+                .hasSource(fakeVitalSourceEvent)
+                .hasAccountInfo(fakeDatadogContext.accountInfo)
+                .hasUserInfo(fakeDatadogContext.userInfo)
+                .hasDeviceInfo(
+                    fakeDatadogContext.deviceInfo.deviceName,
+                    fakeDatadogContext.deviceInfo.deviceModel,
+                    fakeDatadogContext.deviceInfo.deviceBrand,
+                    fakeDatadogContext.deviceInfo.deviceType.toVitalSchemaType(),
+                    fakeDatadogContext.deviceInfo.architecture
+                )
+                .hasOsInfo(
+                    fakeDatadogContext.deviceInfo.osName,
+                    fakeDatadogContext.deviceInfo.osVersion,
+                    fakeDatadogContext.deviceInfo.osMajorVersion
+                )
+                .hasConnectivityInfo(fakeDatadogContext.networkInfo)
+                .hasVersion(fakeDatadogContext.version)
+                .hasServiceName(fakeDatadogContext.service)
+                .hasDDTags(buildDDTagsString(fakeDatadogContext))
         }
     }
 
@@ -8939,9 +9040,28 @@ internal class RumViewScopeTest {
                 .hasVitalStepType(VitalEvent.StepType.END)
                 .hasVitalFailureReason(failureReason)
                 .hasVitalType(VitalEvent.VitalEventVitalType.OPERATION_STEP)
+                .hasSource(fakeVitalSourceEvent)
+                .hasAccountInfo(fakeDatadogContext.accountInfo)
+                .hasUserInfo(fakeDatadogContext.userInfo)
+                .hasDeviceInfo(
+                    fakeDatadogContext.deviceInfo.deviceName,
+                    fakeDatadogContext.deviceInfo.deviceModel,
+                    fakeDatadogContext.deviceInfo.deviceBrand,
+                    fakeDatadogContext.deviceInfo.deviceType.toVitalSchemaType(),
+                    fakeDatadogContext.deviceInfo.architecture
+                )
+                .hasOsInfo(
+                    fakeDatadogContext.deviceInfo.osName,
+                    fakeDatadogContext.deviceInfo.osVersion,
+                    fakeDatadogContext.deviceInfo.osMajorVersion
+                )
+                .hasConnectivityInfo(fakeDatadogContext.networkInfo)
+                .hasVersion(fakeDatadogContext.version)
+                .hasServiceName(fakeDatadogContext.service)
+                .hasDDTags(buildDDTagsString(fakeDatadogContext))
         }
     }
-    //
+    // endregion
 
     // region Internal
     private fun withAttributesCheckingMergeWithViewAttributes(

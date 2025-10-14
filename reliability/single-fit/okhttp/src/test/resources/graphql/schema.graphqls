@@ -1,0 +1,25 @@
+schema {
+  query: Query
+  mutation: Mutation
+}
+
+type Query {
+  user(id: ID!, filters: [String!]): User
+  _placeholder: Boolean
+}
+
+type Mutation {
+  createUser(input: UserInput!): User
+  _placeholder: Boolean
+}
+
+type User {
+  id: ID!
+  name: String!
+  email: String!
+}
+
+input UserInput {
+  name: String!
+  email: String!
+}

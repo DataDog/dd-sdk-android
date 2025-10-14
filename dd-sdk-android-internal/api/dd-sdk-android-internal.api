@@ -54,11 +54,14 @@ public final class com/datadog/android/internal/collections/EvictingQueue : java
 	public fun toArray ([Ljava/lang/Object;)[Ljava/lang/Object;
 }
 
-public final class com/datadog/android/internal/concurrent/CompletableFuture {
-	public fun <init> ()V
-	public final fun complete (Ljava/lang/Object;)V
-	public final fun getValue ()Ljava/lang/Object;
-	public final fun isComplete ()Z
+public final class com/datadog/android/internal/network/GraphQLHeaders : java/lang/Enum {
+	public static final field DD_GRAPHQL_NAME_HEADER Lcom/datadog/android/internal/network/GraphQLHeaders;
+	public static final field DD_GRAPHQL_PAYLOAD_HEADER Lcom/datadog/android/internal/network/GraphQLHeaders;
+	public static final field DD_GRAPHQL_TYPE_HEADER Lcom/datadog/android/internal/network/GraphQLHeaders;
+	public static final field DD_GRAPHQL_VARIABLES_HEADER Lcom/datadog/android/internal/network/GraphQLHeaders;
+	public final fun getHeaderValue ()Ljava/lang/String;
+	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/internal/network/GraphQLHeaders;
+	public static fun values ()[Lcom/datadog/android/internal/network/GraphQLHeaders;
 }
 
 public abstract interface class com/datadog/android/internal/profiler/BenchmarkCounter {
@@ -237,8 +240,35 @@ public final class com/datadog/android/internal/thread/NamedRunnable : com/datad
 	public fun run ()V
 }
 
+public final class com/datadog/android/internal/time/DefaultTimeProvider : com/datadog/android/internal/time/TimeProvider {
+	public fun <init> ()V
+	public fun getDeviceTimestamp ()J
+	public fun getServerOffsetMillis ()J
+	public fun getServerOffsetNanos ()J
+	public fun getServerTimestamp ()J
+}
+
+public abstract interface class com/datadog/android/internal/time/TimeProvider {
+	public abstract fun getDeviceTimestamp ()J
+	public abstract fun getServerOffsetMillis ()J
+	public abstract fun getServerOffsetNanos ()J
+	public abstract fun getServerTimestamp ()J
+}
+
 public final class com/datadog/android/internal/utils/ByteArrayExtKt {
 	public static final fun toHexString ([B)Ljava/lang/String;
+}
+
+public abstract interface class com/datadog/android/internal/utils/DDCoreSubscription {
+	public static final field Companion Lcom/datadog/android/internal/utils/DDCoreSubscription$Companion;
+	public abstract fun addListener (Ljava/lang/Object;)V
+	public abstract fun getListenersCount ()I
+	public abstract fun notifyListeners (Lkotlin/jvm/functions/Function1;)V
+	public abstract fun removeListener (Ljava/lang/Object;)V
+}
+
+public final class com/datadog/android/internal/utils/DDCoreSubscription$Companion {
+	public final fun create ()Lcom/datadog/android/internal/utils/DDCoreSubscription;
 }
 
 public final class com/datadog/android/internal/utils/ImageViewUtils {
@@ -286,6 +316,23 @@ public final class com/datadog/android/internal/utils/ThreadExtKt {
 
 public final class com/datadog/android/internal/utils/ThrowableExtKt {
 	public static final fun loggableStackTrace (Ljava/lang/Throwable;)Ljava/lang/String;
+}
+
+public final class com/datadog/android/rum/DdRumContentProvider : android/content/ContentProvider {
+	public static final field Companion Lcom/datadog/android/rum/DdRumContentProvider$Companion;
+	public fun <init> ()V
+	public fun delete (Landroid/net/Uri;Ljava/lang/String;[Ljava/lang/String;)I
+	public fun getType (Landroid/net/Uri;)Ljava/lang/String;
+	public fun insert (Landroid/net/Uri;Landroid/content/ContentValues;)Landroid/net/Uri;
+	public fun onCreate ()Z
+	public fun query (Landroid/net/Uri;[Ljava/lang/String;Ljava/lang/String;[Ljava/lang/String;Ljava/lang/String;)Landroid/database/Cursor;
+	public fun update (Landroid/net/Uri;Landroid/content/ContentValues;Ljava/lang/String;[Ljava/lang/String;)I
+}
+
+public final class com/datadog/android/rum/DdRumContentProvider$Companion {
+	public final fun getCreateTimeNs ()J
+	public final fun getProcessImportance ()I
+	public final fun setProcessImportance (I)V
 }
 
 public abstract interface annotation class com/datadog/tools/annotation/NoOpImplementation : java/lang/annotation/Annotation {

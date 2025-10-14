@@ -82,12 +82,22 @@ open class DeterministicSampler<T : Any>(
         }
     }
 
-    private companion object {
-        const val SAMPLE_ALL_RATE = 100f
+    companion object {
+        /**
+         * Represents the maximum allowable sample rate in the sampling process.
+         */
+        const val SAMPLE_ALL_RATE: Float = 100f
 
-        // Good number for Knuth hashing (large, prime, fit in 64 bit long)
-        private const val SAMPLER_HASHER: ULong = 1111111111111111111u
+        /**
+         * A constant value used as a multiplier for generating deterministic hash values
+         * within the [DeterministicSampler] implementation. This value is a good number for
+         * Knuth hashing (large, prime, fit in 64 bit long).
+         */
+        const val SAMPLER_HASHER: ULong = 1111111111111111111u
 
-        private const val MAX_ID: ULong = 0xFFFFFFFFFFFFFFFFUL
+        /**
+         * The maximum value used as an upper limit for computing hash-based sampling thresholds.
+         */
+        const val MAX_ID: ULong = 0xFFFFFFFFFFFFFFFFUL
     }
 }
