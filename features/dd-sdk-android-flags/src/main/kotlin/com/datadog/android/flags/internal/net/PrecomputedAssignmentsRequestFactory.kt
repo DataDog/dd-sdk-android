@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.flags.featureflags.internal.repository.net
+package com.datadog.android.flags.internal.net
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.flags.featureflags.internal.model.FlagsContext
@@ -17,40 +17,38 @@ import org.json.JSONException
 import org.json.JSONObject
 
 /**
- * Default implementation of [PrecomputedAssignmentsRequestFactory].
- *
- * This factory builds HTTP POST requests for fetching precomputed flag assignments
- * from the Datadog Feature Flags service. It handles endpoint resolution, authentication
- * headers, and JSON request body construction.
- *
- * @param internalLogger Logger for error and debug messages
+ * Factory for creating HTTP requests to fetch precomputed flag assignments.
  */
-internal class DefaultPrecomputedAssignmentsRequestFactory(private val internalLogger: InternalLogger) :
-    PrecomputedAssignmentsRequestFactory {
+internal class PrecomputedAssignmentsRequestFactory(private val internalLogger: InternalLogger) {
 
-    @Suppress("ReturnCount", "TooGenericExceptionCaught")
-    override fun create(context: EvaluationContext, flagsContext: FlagsContext): Request? {
-        val url = EndpointsHelper.getFlaggingEndpoint(flagsContext, internalLogger) ?: return null
+    /**
+     * Creates an OkHttp Request for fetching precomputed flag assignments.
+     *
+     * This method constructs a complete HTTP POST request including:
+     * - URL (endpoint) determination based on site or custom configuration
+     * - Headers (authentication, content-type, etc.)
+     * - Request body (evaluation context data)
+     *
+     * @param context The evaluation context containing targeting key and custom attributes
+     *                for flag evaluation
+     * @param flagsContext The flags context containing SDK configuration, authentication,
+     *                     site information, and custom endpoint settings
+     * @return A fully-formed OkHttp Request ready for execution, or null if the request
+     *         cannot be constructed (e.g., invalid endpoint, JSON serialization error)
+     */
+    @Suppress("ReturnCount")
+    fun create(context: EvaluationContext, flagsContext: FlagsContext): Request? {
+        val url = flagsContext.flagEndpoint ?: return null
 
         val headers = buildHeaders(flagsContext)
 
         val body = buildRequestBody(context, flagsContext) ?: return null
 
-        return try {
-            Request.Builder()
-                .url(url)
-                .headers(headers)
-                .post(body)
-                .build()
-        } catch (e: Exception) {
-            internalLogger.log(
-                InternalLogger.Level.ERROR,
-                InternalLogger.Target.MAINTAINER,
-                { "Unable to create precomputed assignments request" },
-                e
-            )
-            null
-        }
+        return Request.Builder()
+            .url(url)
+            .headers(headers)
+            .post(body)
+            .build()
     }
 
     private fun buildHeaders(flagsContext: FlagsContext): Headers {

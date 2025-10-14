@@ -6,34 +6,38 @@
 
 package com.datadog.android.flags.featureflags.internal.model
 
-/**
- * Constants for PrecomputedFlag field values.
- */
-internal object PrecomputedFlagConstants {
+internal enum class JsonKeys(val value: String) {
+    // EvaluationContext keys
+    EVALUATION_CONTEXT("evaluationContext"),
+    TARGETING_KEY("targetingKey"),
+    ATTRIBUTES("attributes"),
 
-    /**
-     * Valid variation type values.
-     */
-    object VariationType {
-        const val BOOLEAN = "boolean"
-        const val STRING = "string"
-        const val INTEGER = "integer"
-        const val DOUBLE = "double"
-        const val JSON = "json"
+    // FlagsStateEntry keys
+    FLAGS("flags"),
+    LAST_UPDATE_TIMESTAMP("lastUpdateTimestamp"),
 
-        val ALL_VALUES = listOf(BOOLEAN, STRING, INTEGER, DOUBLE, JSON)
-    }
+    // PrecomputedFlag keys
+    VARIATION_TYPE("variationType"),
+    VARIATION_VALUE("variationValue"),
+    DO_LOG("doLog"),
+    ALLOCATION_KEY("allocationKey"),
+    VARIATION_KEY("variationKey"),
+    EXTRA_LOGGING("extraLogging"),
+    REASON("reason")
+}
 
-    /**
-     * Valid reason values.
-     */
-    object Reason {
-        const val DEFAULT = "DEFAULT"
-        const val TARGETING_MATCH = "TARGETING_MATCH"
-        const val RULE_MATCH = "RULE_MATCH"
-        const val PREREQUISITE_FAILED = "PREREQUISITE_FAILED"
-        const val ERROR = "ERROR"
+internal enum class VariationType(val value: String) {
+    BOOLEAN("boolean"),
+    STRING("string"),
+    INTEGER("integer"),
+    DOUBLE("double"),
+    JSON("json")
+}
 
-        val ALL_VALUES = listOf(DEFAULT, TARGETING_MATCH, RULE_MATCH, PREREQUISITE_FAILED, ERROR)
-    }
+internal enum class FlagReason(val value: String) {
+    DEFAULT("DEFAULT"),
+    TARGETING_MATCH("TARGETING_MATCH"),
+    RULE_MATCH("RULE_MATCH"),
+    PREREQUISITE_FAILED("PREREQUISITE_FAILED"),
+    ERROR("ERROR")
 }

@@ -6,12 +6,10 @@
 
 package com.datadog.android.flags.featureflags.internal.model
 
-internal data class ExposureEvent(
-    val timeStamp: Long,
-    val flagKey: String,
-    val allocationKey: String,
-    val exposureKey: String,
-    val subjectKey: String,
-    val subjectAttributes: Any,
-    val variantKey: String
+import com.datadog.android.flags.featureflags.model.EvaluationContext
+
+internal data class FlagsStateEntry(
+    val evaluationContext: EvaluationContext,
+    val flags: Map<String, PrecomputedFlag>,
+    val lastUpdateTimestamp: Long = System.currentTimeMillis()
 )

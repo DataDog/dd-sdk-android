@@ -8,19 +8,23 @@ public final class com/datadog/android/flags/Flags {
 
 public final class com/datadog/android/flags/FlagsConfiguration {
 	public static final field Companion Lcom/datadog/android/flags/FlagsConfiguration$Companion;
-	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;ZLkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> ()V
+	public final fun copy (ZLjava/lang/String;Ljava/lang/String;)Lcom/datadog/android/flags/FlagsConfiguration;
+	public static synthetic fun copy$default (Lcom/datadog/android/flags/FlagsConfiguration;ZLjava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lcom/datadog/android/flags/FlagsConfiguration;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
 }
 
 public final class com/datadog/android/flags/FlagsConfiguration$Builder {
 	public fun <init> ()V
 	public final fun build ()Lcom/datadog/android/flags/FlagsConfiguration;
-	public final fun setExposureLoggingEnabled (Z)Lcom/datadog/android/flags/FlagsConfiguration$Builder;
+	public final fun trackExposures (Z)Lcom/datadog/android/flags/FlagsConfiguration$Builder;
 	public final fun useCustomExposureEndpoint (Ljava/lang/String;)Lcom/datadog/android/flags/FlagsConfiguration$Builder;
 	public final fun useCustomFlagEndpoint (Ljava/lang/String;)Lcom/datadog/android/flags/FlagsConfiguration$Builder;
 }
 
 public final class com/datadog/android/flags/FlagsConfiguration$Companion {
-	public final fun default ()Lcom/datadog/android/flags/FlagsConfiguration;
 }
 
 public abstract interface class com/datadog/android/flags/featureflags/FlagsClient {

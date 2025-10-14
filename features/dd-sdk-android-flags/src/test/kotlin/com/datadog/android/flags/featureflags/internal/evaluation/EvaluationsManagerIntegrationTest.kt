@@ -11,10 +11,10 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.flags.featureflags.internal.model.FlagsContext
 import com.datadog.android.flags.featureflags.internal.model.PrecomputedFlag
 import com.datadog.android.flags.featureflags.internal.repository.FlagsRepository
-import com.datadog.android.flags.featureflags.internal.repository.net.DefaultPrecomputedAssignmentsRequestFactory
 import com.datadog.android.flags.featureflags.internal.repository.net.PrecomputeMapper
-import com.datadog.android.flags.featureflags.internal.repository.net.PrecomputedAssignmentsDownloader
 import com.datadog.android.flags.featureflags.model.EvaluationContext
+import com.datadog.android.flags.internal.net.PrecomputedAssignmentsDownloader
+import com.datadog.android.flags.internal.net.PrecomputedAssignmentsRequestFactory
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import okhttp3.mockwebserver.MockResponse
@@ -46,7 +46,7 @@ internal class EvaluationsManagerIntegrationTest {
 
     private lateinit var mockWebServer: MockWebServer
     private lateinit var evaluationsManager: EvaluationsManager
-    private lateinit var requestFactory: DefaultPrecomputedAssignmentsRequestFactory
+    private lateinit var requestFactory: PrecomputedAssignmentsRequestFactory
     private lateinit var downloader: PrecomputedAssignmentsDownloader
     private lateinit var mapper: PrecomputeMapper
     private lateinit var callFactory: okhttp3.Call.Factory
@@ -57,7 +57,6 @@ internal class EvaluationsManagerIntegrationTest {
         mockWebServer = MockWebServer()
         mockWebServer.start()
 
-        // Create real call factory for integration testing
         callFactory = okhttp3.Call.Factory { request ->
             okhttp3.OkHttpClient.Builder()
                 .callTimeout(45, java.util.concurrent.TimeUnit.SECONDS)
@@ -67,8 +66,7 @@ internal class EvaluationsManagerIntegrationTest {
                 .newCall(request)
         }
 
-        // Create real instances for integration testing
-        requestFactory = DefaultPrecomputedAssignmentsRequestFactory(mockInternalLogger)
+        requestFactory = PrecomputedAssignmentsRequestFactory(mockInternalLogger)
         mapper = PrecomputeMapper(mockInternalLogger)
     }
 
@@ -91,7 +89,7 @@ internal class EvaluationsManagerIntegrationTest {
             applicationId = fakeApplicationId,
             site = DatadogSite.US1,
             env = "test",
-            customFlagEndpoint = customEndpoint
+            flagEndpoint = customEndpoint
         )
 
         // Create real downloader with real factory
@@ -107,7 +105,7 @@ internal class EvaluationsManagerIntegrationTest {
             executorService = executorService,
             internalLogger = mockInternalLogger,
             flagsRepository = mockFlagsRepository,
-            assignmentsDownloader = downloader,
+            assignmentsReader = downloader,
             precomputeMapper = mapper
         )
 
@@ -215,7 +213,7 @@ internal class EvaluationsManagerIntegrationTest {
             applicationId = fakeApplicationId,
             site = DatadogSite.US1,
             env = "test",
-            customFlagEndpoint = customEndpoint
+            flagEndpoint = customEndpoint
         )
 
         downloader = PrecomputedAssignmentsDownloader(
@@ -229,7 +227,7 @@ internal class EvaluationsManagerIntegrationTest {
             executorService = executorService,
             internalLogger = mockInternalLogger,
             flagsRepository = mockFlagsRepository,
-            assignmentsDownloader = downloader,
+            assignmentsReader = downloader,
             precomputeMapper = mapper
         )
 
@@ -271,7 +269,7 @@ internal class EvaluationsManagerIntegrationTest {
             applicationId = fakeApplicationId,
             site = DatadogSite.US1,
             env = "test",
-            customFlagEndpoint = customEndpoint
+            flagEndpoint = customEndpoint
         )
 
         downloader = PrecomputedAssignmentsDownloader(
@@ -285,7 +283,7 @@ internal class EvaluationsManagerIntegrationTest {
             executorService = executorService,
             internalLogger = mockInternalLogger,
             flagsRepository = mockFlagsRepository,
-            assignmentsDownloader = downloader,
+            assignmentsReader = downloader,
             precomputeMapper = mapper
         )
 
@@ -320,7 +318,7 @@ internal class EvaluationsManagerIntegrationTest {
             applicationId = fakeApplicationId,
             site = DatadogSite.US1,
             env = fakeEnv,
-            customFlagEndpoint = customEndpoint
+            flagEndpoint = customEndpoint
         )
 
         downloader = PrecomputedAssignmentsDownloader(
@@ -334,7 +332,7 @@ internal class EvaluationsManagerIntegrationTest {
             executorService = executorService,
             internalLogger = mockInternalLogger,
             flagsRepository = mockFlagsRepository,
-            assignmentsDownloader = downloader,
+            assignmentsReader = downloader,
             precomputeMapper = mapper
         )
 

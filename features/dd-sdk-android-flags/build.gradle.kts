@@ -44,11 +44,15 @@ android {
 }
 
 dependencies {
+    // datadog
     api(project(":dd-sdk-android-core"))
     implementation(project(":dd-sdk-android-internal"))
+
+    implementation(libs.gson)
     implementation(libs.kotlin)
     implementation(libs.okHttp)
     implementation(libs.androidXAnnotation)
+    implementation(libs.androidXCollection)
 
     // Generate NoOp implementations
     ksp(project(":tools:noopfactory"))

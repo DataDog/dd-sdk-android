@@ -6,11 +6,17 @@
 
 package com.datadog.android.flags
 
+import com.datadog.android.DatadogSite
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.Feature.Companion.FLAGS_FEATURE_NAME
-import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.core.InternalSdkCore
+import com.datadog.android.flags.featureflags.FlagsClient.Companion.FLAGS_CLIENT_EXECUTOR_NAME
 import com.datadog.android.flags.internal.FlagsFeature
+import com.datadog.android.flags.utils.forge.ForgeConfigurator
+import fr.xgouchet.elmyr.annotation.Forgery
 import fr.xgouchet.elmyr.annotation.StringForgery
+import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -20,23 +26,48 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
+import java.util.concurrent.ExecutorService
 
 @ExtendWith(MockitoExtension::class, ForgeExtension::class)
 @MockitoSettings(strictness = Strictness.LENIENT)
+@ForgeConfiguration(ForgeConfigurator::class)
 internal class FlagsTest {
 
     @Mock
-    lateinit var mockSdkCore: FeatureSdkCore
+    lateinit var mockSdkCore: InternalSdkCore
+
+    @Mock
+    lateinit var mockExecutorService: ExecutorService
 
     @Mock
     lateinit var mockInternalLogger: InternalLogger
 
+    @Mock
+    lateinit var mockDatadogContext: DatadogContext
+
+    @StringForgery
+    lateinit var fakeClientToken: String
+
+    @StringForgery
+    lateinit var fakeEnv: String
+
+    @Forgery
+    lateinit var fakeConfiguration: FlagsConfiguration
+
     @BeforeEach
     fun `set up`() {
-        whenever(mockSdkCore.internalLogger).thenReturn(mockInternalLogger)
+        whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
+        whenever(mockSdkCore.createSingleThreadExecutorService(FLAGS_CLIENT_EXECUTOR_NAME)) doReturn
+            mockExecutorService
+
+        whenever(mockDatadogContext.clientToken) doReturn fakeClientToken
+        whenever(mockDatadogContext.site) doReturn DatadogSite.US1
+        whenever(mockDatadogContext.env) doReturn fakeEnv
+        whenever(mockSdkCore.getDatadogContext()) doReturn mockDatadogContext
     }
 
     // region enable()
@@ -44,39 +75,15 @@ internal class FlagsTest {
     @Test
     fun `M register FlagsFeature W enable()`() {
         // Given
-        val fakeConfiguration = FlagsConfiguration.Builder()
-            .build()
+        val config = FlagsConfiguration.Builder().trackExposures(false).build()
 
         // When
-        Flags.enable(fakeConfiguration, mockSdkCore)
+        Flags.enable(config, mockSdkCore)
 
         // Then
         argumentCaptor<FlagsFeature> {
             verify(mockSdkCore).registerFeature(capture())
             assertThat(lastValue.name).isEqualTo(FLAGS_FEATURE_NAME)
-        }
-    }
-
-    @Test
-    fun `M pass configuration to FlagsFeature W enable() { with custom config }`(
-        @StringForgery(regex = "https://[a-z]+\\.com(/[a-z]+)+") fakeCustomEndpoint: String,
-        @StringForgery(regex = "https://[a-z]+\\.com(/[a-z]+)+") fakeFlagEndpoint: String
-    ) {
-        // Given
-        val fakeConfiguration = FlagsConfiguration.Builder()
-            .useCustomExposureEndpoint(fakeCustomEndpoint)
-            .useCustomFlagEndpoint(fakeFlagEndpoint)
-            .build()
-
-        // When
-        Flags.enable(fakeConfiguration, mockSdkCore)
-
-        // Then
-        argumentCaptor<FlagsFeature> {
-            verify(mockSdkCore).registerFeature(capture())
-            assertThat(lastValue.name).isEqualTo(FLAGS_FEATURE_NAME)
-            assertThat(lastValue.flagsConfiguration.customExposureEndpoint).isEqualTo(fakeCustomEndpoint)
-            assertThat(lastValue.flagsConfiguration.customFlagEndpoint).isEqualTo(fakeFlagEndpoint)
         }
     }
 
@@ -88,15 +95,16 @@ internal class FlagsTest {
         // Then
         argumentCaptor<FlagsFeature> {
             verify(mockSdkCore).registerFeature(capture())
+            assertThat(lastValue.flagsConfiguration.trackExposures).isTrue()
             assertThat(lastValue.flagsConfiguration.customExposureEndpoint).isNull()
-            assertThat(lastValue.flagsConfiguration.customFlagEndpoint).isNull()
+            assertThat(lastValue.flagsConfiguration).isEqualTo(FlagsConfiguration.default)
         }
     }
 
     @Test
     fun `M pass default configuration to FlagsFeature W enable() { default config }`() {
         // Given
-        val defaultConfiguration = FlagsConfiguration.default()
+        val defaultConfiguration = FlagsConfiguration.default
 
         // When
         Flags.enable(defaultConfiguration, mockSdkCore)
@@ -104,37 +112,22 @@ internal class FlagsTest {
         // Then
         argumentCaptor<FlagsFeature> {
             verify(mockSdkCore).registerFeature(capture())
+            assertThat(lastValue.flagsConfiguration.trackExposures).isTrue()
             assertThat(lastValue.flagsConfiguration.customExposureEndpoint).isNull()
             assertThat(lastValue.flagsConfiguration.customFlagEndpoint).isNull()
+            assertThat(lastValue.flagsConfiguration).isEqualTo(FlagsConfiguration.default)
         }
     }
 
     @Test
-    fun `M handle null configuration values W enable() { custom config with nulls }`() {
-        // Given
-        val fakeConfiguration = FlagsConfiguration.Builder()
-            .useCustomExposureEndpoint(null)
-            .useCustomFlagEndpoint(null)
-            .build()
-
-        // When
-        Flags.enable(fakeConfiguration, mockSdkCore)
-
-        // Then
-        argumentCaptor<FlagsFeature> {
-            verify(mockSdkCore).registerFeature(capture())
-            assertThat(lastValue.flagsConfiguration.customExposureEndpoint).isNull()
-            assertThat(lastValue.flagsConfiguration.customFlagEndpoint).isNull()
-        }
-    }
-
-    @Test
-    fun `M register FlagsFeature with custom endpoint W enable() { custom endpoint }`(
-        @StringForgery(regex = "https://[a-z]+\\.com(/[a-z]+)+") fakeCustomEndpoint: String
+    fun `M pass configuration to FlagsFeature W enable() { with custom config }`(
+        @StringForgery(regex = "https://[a-z]+\\.com(/[a-z]+)+") fakeCustomEndpoint: String,
+        @StringForgery(regex = "https://[a-z]+\\.com(/[a-z]+)+") fakeCustomFlagEndpoint: String
     ) {
         // Given
         val fakeConfiguration = FlagsConfiguration.Builder()
             .useCustomExposureEndpoint(fakeCustomEndpoint)
+            .useCustomFlagEndpoint(fakeCustomFlagEndpoint)
             .build()
 
         // When
@@ -143,42 +136,9 @@ internal class FlagsTest {
         // Then
         argumentCaptor<FlagsFeature> {
             verify(mockSdkCore).registerFeature(capture())
+            assertThat(lastValue.name).isEqualTo(FLAGS_FEATURE_NAME)
             assertThat(lastValue.flagsConfiguration.customExposureEndpoint).isEqualTo(fakeCustomEndpoint)
-        }
-    }
-
-    @Test
-    fun `M register FlagsFeature with flag endpoint W enable() { flag endpoint }`(
-        @StringForgery(regex = "https://[a-z]+\\.com(/[a-z]+)+") fakeFlagEndpoint: String
-    ) {
-        // Given
-        val fakeConfiguration = FlagsConfiguration.Builder()
-            .useCustomFlagEndpoint(fakeFlagEndpoint)
-            .build()
-
-        // When
-        Flags.enable(fakeConfiguration, mockSdkCore)
-
-        // Then
-        argumentCaptor<FlagsFeature> {
-            verify(mockSdkCore).registerFeature(capture())
-            assertThat(lastValue.flagsConfiguration.customFlagEndpoint).isEqualTo(fakeFlagEndpoint)
-        }
-    }
-
-    @Test
-    fun `M create FlagsFeature with correct sdkCore W enable()`() {
-        // Given
-        val fakeConfiguration = FlagsConfiguration.Builder().build()
-
-        // When
-        Flags.enable(fakeConfiguration, mockSdkCore)
-
-        // Then
-        argumentCaptor<FlagsFeature> {
-            verify(mockSdkCore).registerFeature(capture())
-            // Verify the feature was created (implicit by successful registration)
-            assertThat(lastValue).isNotNull
+            assertThat(lastValue.flagsConfiguration.customFlagEndpoint).isEqualTo(fakeCustomFlagEndpoint)
         }
     }
 

@@ -9,6 +9,7 @@ package com.datadog.android.flags.featureflags.internal.model
 import com.datadog.android.DatadogSite
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.flags.FlagsConfiguration
+import com.datadog.android.flags.internal.getFlagsEndpoint
 
 /**
  * Internal context containing all configuration needed for the Flags feature.
@@ -21,7 +22,7 @@ import com.datadog.android.flags.FlagsConfiguration
  * @param site The Datadog site (e.g., US1, EU1) for routing requests
  * @param env The environment name (e.g., prod, staging) for context
  * @param customExposureEndpoint Custom endpoint URL for uploading exposure events. If null, the default endpoint will be used.
- * @param customFlagEndpoint Custom endpoint URL for proxying precomputed flag assignment requests. If null, the default endpoint will be used.
+ * @param flagEndpoint Custom endpoint URL for fetching flag assignments. If null, the endpoint will be derived from the site.
  */
 internal data class FlagsContext(
     val applicationId: String?,
@@ -29,9 +30,11 @@ internal data class FlagsContext(
     val site: DatadogSite,
     val env: String,
     val customExposureEndpoint: String? = null,
-    val customFlagEndpoint: String? = null
+    val flagEndpoint: String? = site.getFlagsEndpoint(PREVIEW_CUSTOMER_DOMAIN)
 ) {
     companion object {
+        private const val PREVIEW_CUSTOMER_DOMAIN = "preview"
+
         /**
          * Creates a [FlagsContext] from core SDK context and feature configuration.
          *
@@ -50,7 +53,8 @@ internal data class FlagsContext(
             site = datadogContext.site,
             env = datadogContext.env,
             customExposureEndpoint = flagsConfiguration.customExposureEndpoint,
-            customFlagEndpoint = flagsConfiguration.customFlagEndpoint
+            flagEndpoint =
+            flagsConfiguration.customFlagEndpoint
         )
     }
 }

@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.flags.featureflags.internal.repository.net
+package com.datadog.android.flags.internal.net
 
 import com.datadog.android.DatadogSite
 import com.datadog.android.api.InternalLogger
@@ -13,6 +13,7 @@ import com.datadog.android.flags.featureflags.model.EvaluationContext
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import okhttp3.Request
+import okio.Buffer
 import org.assertj.core.api.Assertions.assertThat
 import org.json.JSONObject
 import org.junit.jupiter.api.BeforeEach
@@ -25,16 +26,16 @@ import org.mockito.quality.Strictness
 
 @ExtendWith(MockitoExtension::class, ForgeExtension::class)
 @MockitoSettings(strictness = Strictness.LENIENT)
-internal class DefaultPrecomputedAssignmentsRequestFactoryTest {
+internal class PrecomputedAssignmentsRequestFactoryTest {
 
     @Mock
     lateinit var mockInternalLogger: InternalLogger
 
-    private lateinit var testedFactory: DefaultPrecomputedAssignmentsRequestFactory
+    private lateinit var testedFactory: PrecomputedAssignmentsRequestFactory
 
     @BeforeEach
     fun `set up`() {
-        testedFactory = DefaultPrecomputedAssignmentsRequestFactory(mockInternalLogger)
+        testedFactory = PrecomputedAssignmentsRequestFactory(mockInternalLogger)
     }
 
     // region create() - Success cases
@@ -55,8 +56,7 @@ internal class DefaultPrecomputedAssignmentsRequestFactoryTest {
             applicationId = fakeApplicationId,
             clientToken = fakeClientToken,
             site = DatadogSite.US1,
-            env = fakeEnv,
-            customFlagEndpoint = null
+            env = fakeEnv
         )
 
         // When
@@ -86,8 +86,7 @@ internal class DefaultPrecomputedAssignmentsRequestFactoryTest {
             applicationId = null,
             clientToken = fakeClientToken,
             site = DatadogSite.US1,
-            env = fakeEnv,
-            customFlagEndpoint = null
+            env = fakeEnv
         )
 
         // When
@@ -118,7 +117,7 @@ internal class DefaultPrecomputedAssignmentsRequestFactoryTest {
             clientToken = fakeClientToken,
             site = DatadogSite.US1,
             env = fakeEnv,
-            customFlagEndpoint = fakeCustomEndpoint
+            flagEndpoint = fakeCustomEndpoint
         )
 
         // When
@@ -127,92 +126,6 @@ internal class DefaultPrecomputedAssignmentsRequestFactoryTest {
         // Then
         assertThat(request).isNotNull
         assertThat(request?.url?.toString()).isEqualTo(fakeCustomEndpoint)
-    }
-
-    @Test
-    fun `M create request for EU site W create() { EU site configured }`(
-        @StringForgery fakeApplicationId: String,
-        @StringForgery fakeClientToken: String,
-        @StringForgery fakeEnv: String,
-        @StringForgery fakeTargetingKey: String
-    ) {
-        // Given
-        val context = EvaluationContext(
-            targetingKey = fakeTargetingKey,
-            attributes = emptyMap()
-        )
-        val flagsContext = FlagsContext(
-            applicationId = fakeApplicationId,
-            clientToken = fakeClientToken,
-            site = DatadogSite.EU1,
-            env = fakeEnv,
-            customFlagEndpoint = null
-        )
-
-        // When
-        val request = testedFactory.create(context, flagsContext)
-
-        // Then
-        assertThat(request).isNotNull
-        assertThat(request?.url?.toString()).isEqualTo("https://preview.ff-cdn.datadoghq.eu/precompute-assignments")
-    }
-
-    @Test
-    fun `M create request for US3 site W create() { US3 site configured }`(
-        @StringForgery fakeApplicationId: String,
-        @StringForgery fakeClientToken: String,
-        @StringForgery fakeEnv: String,
-        @StringForgery fakeTargetingKey: String
-    ) {
-        // Given
-        val context = EvaluationContext(
-            targetingKey = fakeTargetingKey,
-            attributes = emptyMap()
-        )
-        val flagsContext = FlagsContext(
-            applicationId = fakeApplicationId,
-            clientToken = fakeClientToken,
-            site = DatadogSite.US3,
-            env = fakeEnv,
-            customFlagEndpoint = null
-        )
-
-        // When
-        val request = testedFactory.create(context, flagsContext)
-
-        // Then
-        assertThat(request).isNotNull
-        assertThat(
-            request?.url?.toString()
-        ).isEqualTo("https://preview.ff-cdn.us3.datadoghq.com/precompute-assignments")
-    }
-
-    @Test
-    fun `M create request for STAGING site W create() { STAGING site configured }`(
-        @StringForgery fakeApplicationId: String,
-        @StringForgery fakeClientToken: String,
-        @StringForgery fakeEnv: String,
-        @StringForgery fakeTargetingKey: String
-    ) {
-        // Given
-        val context = EvaluationContext(
-            targetingKey = fakeTargetingKey,
-            attributes = emptyMap()
-        )
-        val flagsContext = FlagsContext(
-            applicationId = fakeApplicationId,
-            clientToken = fakeClientToken,
-            site = DatadogSite.STAGING,
-            env = fakeEnv,
-            customFlagEndpoint = null
-        )
-
-        // When
-        val request = testedFactory.create(context, flagsContext)
-
-        // Then
-        assertThat(request).isNotNull
-        assertThat(request?.url?.toString()).isEqualTo("https://preview.ff-cdn.datad0g.com/precompute-assignments")
     }
 
     // endregion
@@ -239,8 +152,7 @@ internal class DefaultPrecomputedAssignmentsRequestFactoryTest {
             applicationId = fakeApplicationId,
             clientToken = fakeClientToken,
             site = DatadogSite.US1,
-            env = fakeEnv,
-            customFlagEndpoint = null
+            env = fakeEnv
         )
 
         // When
@@ -293,8 +205,7 @@ internal class DefaultPrecomputedAssignmentsRequestFactoryTest {
             applicationId = fakeApplicationId,
             clientToken = fakeClientToken,
             site = DatadogSite.US1,
-            env = fakeEnv,
-            customFlagEndpoint = null
+            env = fakeEnv
         )
 
         // When
@@ -335,8 +246,7 @@ internal class DefaultPrecomputedAssignmentsRequestFactoryTest {
             applicationId = fakeApplicationId,
             clientToken = fakeClientToken,
             site = DatadogSite.US1,
-            env = fakeEnv,
-            customFlagEndpoint = null
+            env = fakeEnv
         )
 
         // When
@@ -379,8 +289,7 @@ internal class DefaultPrecomputedAssignmentsRequestFactoryTest {
             applicationId = fakeApplicationId,
             clientToken = fakeClientToken,
             site = DatadogSite.US1_FED,
-            env = fakeEnv,
-            customFlagEndpoint = null
+            env = fakeEnv
         )
 
         // When
@@ -395,7 +304,7 @@ internal class DefaultPrecomputedAssignmentsRequestFactoryTest {
     // region Helper methods
 
     private fun extractRequestBodyAsString(request: Request): String {
-        val buffer = okio.Buffer()
+        val buffer = Buffer()
         request.body?.writeTo(buffer)
         return buffer.readUtf8()
     }

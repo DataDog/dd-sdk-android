@@ -10,8 +10,8 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.flags.featureflags.internal.model.PrecomputedFlag
 import com.datadog.android.flags.featureflags.internal.repository.FlagsRepository
 import com.datadog.android.flags.featureflags.internal.repository.net.PrecomputeMapper
-import com.datadog.android.flags.featureflags.internal.repository.net.PrecomputedAssignmentsReader
 import com.datadog.android.flags.featureflags.model.EvaluationContext
+import com.datadog.android.flags.internal.net.PrecomputedAssignmentsReader
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import okhttp3.mockwebserver.MockWebServer
@@ -73,7 +73,7 @@ internal class EvaluationsManagerTest {
             executorService = mockExecutorService,
             internalLogger = mockInternalLogger,
             flagsRepository = mockFlagsRepository,
-            assignmentsDownloader = mockAssignmentsDownloader,
+            assignmentsReader = mockAssignmentsDownloader,
             precomputeMapper = mockPrecomputeMapper
         )
 
@@ -161,6 +161,14 @@ internal class EvaluationsManagerTest {
         verify(mockInternalLogger, times(2)).log(
             eq(InternalLogger.Level.DEBUG),
             eq(InternalLogger.Target.MAINTAINER),
+            any<() -> String>(),
+            anyOrNull<Throwable>(),
+            any<Boolean>(),
+            anyOrNull<Map<String, Any?>>()
+        )
+        verify(mockInternalLogger).log(
+            eq(InternalLogger.Level.WARN),
+            eq(InternalLogger.Target.USER),
             any<() -> String>(),
             anyOrNull<Throwable>(),
             any<Boolean>(),

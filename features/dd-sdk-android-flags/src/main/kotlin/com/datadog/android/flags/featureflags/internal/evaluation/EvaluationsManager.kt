@@ -10,8 +10,8 @@ import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.internal.utils.executeSafe
 import com.datadog.android.flags.featureflags.internal.repository.FlagsRepository
 import com.datadog.android.flags.featureflags.internal.repository.net.PrecomputeMapper
-import com.datadog.android.flags.featureflags.internal.repository.net.PrecomputedAssignmentsReader
 import com.datadog.android.flags.featureflags.model.EvaluationContext
+import com.datadog.android.flags.internal.net.PrecomputedAssignmentsReader
 import java.util.concurrent.ExecutorService
 
 /**
@@ -24,14 +24,14 @@ import java.util.concurrent.ExecutorService
  * @param executorService dedicated executor for background operations
  * @param internalLogger logger for debug and error messages
  * @param flagsRepository local storage for flag data and evaluation context
- * @param assignmentsDownloader handles network requests to the Datadog service
+ * @param assignmentsReader handles reading assignments for the context.
  * @param precomputeMapper transforms network responses into internal flag format
  */
 internal class EvaluationsManager(
     private val executorService: ExecutorService,
     private val internalLogger: InternalLogger,
     private val flagsRepository: FlagsRepository,
-    private val assignmentsDownloader: PrecomputedAssignmentsReader,
+    private val assignmentsReader: PrecomputedAssignmentsReader,
     private val precomputeMapper: PrecomputeMapper
 ) {
     /**
@@ -58,28 +58,30 @@ internal class EvaluationsManager(
                 { "Processing evaluation context: ${context.targetingKey}" }
             )
 
-            val response = assignmentsDownloader.readPrecomputedFlags(context)
-            if (response != null) {
-                val flagsMap = precomputeMapper.map(response)
-
-                flagsRepository.setFlagsAndContext(context, flagsMap)
-                internalLogger.log(
-                    InternalLogger.Level.DEBUG,
-                    InternalLogger.Target.MAINTAINER,
-                    { "Successfully processed context ${context.targetingKey} with ${flagsMap.size} flags" }
-                )
+            val response = assignmentsReader.readPrecomputedFlags(context)
+            val flagsMap = if (response != null) {
+                precomputeMapper.map(response)
             } else {
                 internalLogger.log(
-                    InternalLogger.Level.DEBUG,
-                    InternalLogger.Target.MAINTAINER,
-                    { DEBUG_DID_NOT_UPDATE_FLAGS }
+                    InternalLogger.Level.WARN,
+                    InternalLogger.Target.USER,
+                    { NETWORK_REQUEST_FAILED_MESSAGE }
                 )
+                emptyMap()
             }
+
+            flagsRepository.setFlagsAndContext(context, flagsMap)
+            internalLogger.log(
+                InternalLogger.Level.DEBUG,
+                InternalLogger.Target.MAINTAINER,
+                { "Successfully processed context ${context.targetingKey} with ${flagsMap.size} flags" }
+            )
         }
     }
 
     companion object {
         private const val FETCH_AND_STORE_OPERATION_NAME = "Fetch and store flags for evaluation context"
-        private const val DEBUG_DID_NOT_UPDATE_FLAGS = "Did not update flags"
+        private const val NETWORK_REQUEST_FAILED_MESSAGE =
+            "Unable to fetch feature flags. Please check your network connection."
     }
 }

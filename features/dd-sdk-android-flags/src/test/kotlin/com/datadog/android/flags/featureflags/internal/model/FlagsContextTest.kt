@@ -72,7 +72,7 @@ internal class FlagsContextTest {
         assertThat(flagsContext.site).isEqualTo(mockDatadogSite)
         assertThat(flagsContext.env).isEqualTo(fakeEnv)
         assertThat(flagsContext.customExposureEndpoint).isEqualTo(fakeExposureEndpoint)
-        assertThat(flagsContext.customFlagEndpoint).isEqualTo(fakeFlagEndpoint)
+        assertThat(flagsContext.flagEndpoint).isEqualTo(fakeFlagEndpoint)
     }
 
     @Test
@@ -94,7 +94,6 @@ internal class FlagsContextTest {
         assertThat(flagsContext.site).isEqualTo(mockDatadogSite)
         assertThat(flagsContext.env).isEqualTo(fakeEnv)
         assertThat(flagsContext.customExposureEndpoint).isNull()
-        assertThat(flagsContext.customFlagEndpoint).isNull()
     }
 
     @Test

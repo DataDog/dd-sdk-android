@@ -4,7 +4,7 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.flags.featureflags.internal.repository.net
+package com.datadog.android.flags.internal.net
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.flags.featureflags.internal.model.FlagsContext
