@@ -58,7 +58,8 @@ internal class SerializedFlagsStateAssert(actual: JSONObject) :
     }
 
     companion object {
-        fun assertThatSerializedFlagsState(json: String): SerializedFlagsStateAssert =
-            SerializedFlagsStateAssert(JSONObject(json))
+        fun assertThatSerializedFlagsState(json: String): SerializedFlagsStateAssert {
+            return SerializedFlagsStateAssert(JSONObject(json))
+        }
     }
 }

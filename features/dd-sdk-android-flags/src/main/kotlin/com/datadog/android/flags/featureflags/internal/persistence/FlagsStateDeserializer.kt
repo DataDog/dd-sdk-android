@@ -15,36 +15,39 @@ import com.datadog.android.flags.featureflags.model.EvaluationContext
 import org.json.JSONException
 import org.json.JSONObject
 
-internal class FlagsStateDeserializer(private val internalLogger: InternalLogger) :
-    Deserializer<String, FlagsStateEntry> {
+internal class FlagsStateDeserializer(
+    private val internalLogger: InternalLogger
+) : Deserializer<String, FlagsStateEntry> {
 
-    override fun deserialize(model: String): FlagsStateEntry? = try {
-        val json = JSONObject(model)
+    override fun deserialize(model: String): FlagsStateEntry? {
+        return try {
+            val json = JSONObject(model)
 
-        @Suppress("UnsafeThirdPartyFunctionCall") // JSONObject operations wrapped in try-catch
-        val contextJson = json.getJSONObject(JsonKeys.EVALUATION_CONTEXT.value)
-        val evaluationContext = deserializeEvaluationContext(contextJson)
+            @Suppress("UnsafeThirdPartyFunctionCall") // JSONObject operations wrapped in try-catch
+            val contextJson = json.getJSONObject(JsonKeys.EVALUATION_CONTEXT.value)
+            val evaluationContext = deserializeEvaluationContext(contextJson)
 
-        @Suppress("UnsafeThirdPartyFunctionCall") // JSONObject operations wrapped in try-catch
-        val flagsJson = json.getJSONObject(JsonKeys.FLAGS.value)
-        val flags = deserializeFlags(flagsJson)
+            @Suppress("UnsafeThirdPartyFunctionCall") // JSONObject operations wrapped in try-catch
+            val flagsJson = json.getJSONObject(JsonKeys.FLAGS.value)
+            val flags = deserializeFlags(flagsJson)
 
-        @Suppress("UnsafeThirdPartyFunctionCall") // JSONObject operations wrapped in try-catch
-        val timestamp = json.getLong(JsonKeys.LAST_UPDATE_TIMESTAMP.value)
+            @Suppress("UnsafeThirdPartyFunctionCall") // JSONObject operations wrapped in try-catch
+            val timestamp = json.getLong(JsonKeys.LAST_UPDATE_TIMESTAMP.value)
 
-        FlagsStateEntry(
-            evaluationContext = evaluationContext,
-            flags = flags,
-            lastUpdateTimestamp = timestamp
-        )
-    } catch (e: JSONException) {
-        internalLogger.log(
-            InternalLogger.Level.ERROR,
-            InternalLogger.Target.MAINTAINER,
-            { "Failed to deserialize FlagsStateEntry from JSON" },
-            e
-        )
-        null
+            FlagsStateEntry(
+                evaluationContext = evaluationContext,
+                flags = flags,
+                lastUpdateTimestamp = timestamp
+            )
+        } catch (e: JSONException) {
+            internalLogger.log(
+                InternalLogger.Level.ERROR,
+                InternalLogger.Target.MAINTAINER,
+                { "Failed to deserialize FlagsStateEntry from JSON" },
+                e
+            )
+            null
+        }
     }
 
     @Suppress("UnsafeThirdPartyFunctionCall") // JSONObject operations wrapped in try-catch
@@ -92,23 +95,25 @@ internal class FlagsStateDeserializer(private val internalLogger: InternalLogger
     }
 
     @Suppress("UnsafeThirdPartyFunctionCall") // JSONObject operations wrapped in try-catch
-    private fun deserializePrecomputedFlag(flagJson: JSONObject): PrecomputedFlag? = try {
-        PrecomputedFlag(
-            variationType = flagJson.getString(JsonKeys.VARIATION_TYPE.value),
-            variationValue = flagJson.getString(JsonKeys.VARIATION_VALUE.value),
-            doLog = flagJson.getBoolean(JsonKeys.DO_LOG.value),
-            allocationKey = flagJson.getString(JsonKeys.ALLOCATION_KEY.value),
-            variationKey = flagJson.getString(JsonKeys.VARIATION_KEY.value),
-            extraLogging = flagJson.getJSONObject(JsonKeys.EXTRA_LOGGING.value),
-            reason = flagJson.getString(JsonKeys.REASON.value)
-        )
-    } catch (e: JSONException) {
-        internalLogger.log(
-            InternalLogger.Level.ERROR,
-            InternalLogger.Target.MAINTAINER,
-            { "Failed to deserialize precomputed flag, skipping" },
-            e
-        )
-        null
+    private fun deserializePrecomputedFlag(flagJson: JSONObject): PrecomputedFlag? {
+        return try {
+            PrecomputedFlag(
+                variationType = flagJson.getString(JsonKeys.VARIATION_TYPE.value),
+                variationValue = flagJson.getString(JsonKeys.VARIATION_VALUE.value),
+                doLog = flagJson.getBoolean(JsonKeys.DO_LOG.value),
+                allocationKey = flagJson.getString(JsonKeys.ALLOCATION_KEY.value),
+                variationKey = flagJson.getString(JsonKeys.VARIATION_KEY.value),
+                extraLogging = flagJson.getJSONObject(JsonKeys.EXTRA_LOGGING.value),
+                reason = flagJson.getString(JsonKeys.REASON.value)
+            )
+        } catch (e: JSONException) {
+            internalLogger.log(
+                InternalLogger.Level.ERROR,
+                InternalLogger.Target.MAINTAINER,
+                { "Failed to deserialize precomputed flag, skipping" },
+                e
+            )
+            null
+        }
     }
 }
