@@ -182,7 +182,7 @@ interface FlagsClient {
             }
 
             return flagsFeature.getOrRegisterNewClient(name) {
-                createInternal(flagsFeature.getFlagsConfiguration(), sdkCore, flagsFeature)
+                createInternal(flagsFeature.flagsConfiguration, sdkCore, flagsFeature)
             }
         }
     }
@@ -208,18 +208,16 @@ interface FlagsClient {
          */
         @JvmOverloads
         @JvmStatic
-        fun get(
-            name: String = DEFAULT_CLIENT_NAME,
-            sdkCore: FeatureSdkCore = Datadog.getInstance() as FeatureSdkCore
-        ): FlagsClient {
-            val logger = sdkCore.internalLogger
+        fun get(name: String = DEFAULT_CLIENT_NAME, sdkCore: SdkCore = Datadog.getInstance()): FlagsClient {
+            val featureCore = sdkCore as FeatureSdkCore
+            val logger = featureCore.internalLogger
 
-            val flagsFeature = sdkCore.getFeature(FLAGS_FEATURE_NAME)?.unwrap<FlagsFeature>()
+            val flagsFeature = featureCore.getFeature(FLAGS_FEATURE_NAME)?.unwrap<FlagsFeature>()
 
             if (flagsFeature == null) {
                 logger.log(
                     InternalLogger.Level.ERROR,
-                    listOf(InternalLogger.Target.USER, InternalLogger.Target.MAINTAINER),
+                    InternalLogger.Target.USER,
                     {
                         "Flags feature is not enabled. Returning NoOpFlagsClient which always returns default values."
                     }
@@ -235,16 +233,17 @@ interface FlagsClient {
             var client = flagsFeature.getClient(name)
 
             if (client == null) {
+                val buildHint: String = if (name == DEFAULT_CLIENT_NAME) {
+                    "Create a client first using: FlagsClient.Builder().build(). "
+                } else {
+                    "Create a client first using: FlagsClient.Builder(\"$name\").build(). "
+                }
                 logger.log(
                     InternalLogger.Level.ERROR,
-                    listOf(InternalLogger.Target.USER, InternalLogger.Target.MAINTAINER),
+                    InternalLogger.Target.USER,
                     {
                         "No FlagsClient with name '$name' exists for SDK instance '${sdkCore.name}'. " +
-                            if (name == DEFAULT_CLIENT_NAME) {
-                                "Create a client first using: FlagsClient.Builder().build(). "
-                            } else {
-                                "Create a client first using: FlagsClient.Builder(\"$name\").build(). "
-                            } +
+                            buildHint +
                             "Returning NoOpFlagsClient which always returns default values."
                     }
                 )
@@ -288,7 +287,7 @@ interface FlagsClient {
 
                 sdkCore.internalLogger.log(
                     InternalLogger.Level.ERROR,
-                    InternalLogger.Target.MAINTAINER,
+                    InternalLogger.Target.USER,
                     { "Missing required context parameters: $missingParams" }
                 )
                 return NoOpFlagsClient(

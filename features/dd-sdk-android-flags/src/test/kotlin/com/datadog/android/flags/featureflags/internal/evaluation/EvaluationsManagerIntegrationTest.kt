@@ -255,8 +255,7 @@ internal class EvaluationsManagerIntegrationTest {
         val recordedRequest = mockWebServer.takeRequest()
         assertThat(recordedRequest.method).isEqualTo("POST")
 
-        // Verify repository was updated with empty flags (graceful degradation)
-        verify(mockFlagsRepository).setFlagsAndContext(eq(evaluationContext), eq(emptyMap()))
+        // When response fails, repository is not updated - error is logged by downloader
     }
 
     @Test
@@ -304,8 +303,7 @@ internal class EvaluationsManagerIntegrationTest {
         // Wait for async execution to complete
         Thread.sleep(500)
 
-        // Then - Verify repository was updated with empty flags (graceful degradation)
-        verify(mockFlagsRepository).setFlagsAndContext(eq(evaluationContext), eq(emptyMap()))
+        // Then - When network fails, repository is not updated - error is logged by downloader
     }
 
     @Test

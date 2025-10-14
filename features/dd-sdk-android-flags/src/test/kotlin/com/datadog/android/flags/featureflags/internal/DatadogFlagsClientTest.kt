@@ -305,7 +305,7 @@ internal class DatadogFlagsClientTest {
         assertThat(result).isEqualTo(fakeDefaultValue)
         verify(mockInternalLogger).log(
             eq(InternalLogger.Level.ERROR),
-            eq(InternalLogger.Target.MAINTAINER),
+            eq(InternalLogger.Target.USER),
             any(),
             any<JSONException>(),
             eq(false),
@@ -336,7 +336,7 @@ internal class DatadogFlagsClientTest {
         argumentCaptor<() -> String> {
             verify(mockInternalLogger).log(
                 eq(InternalLogger.Level.ERROR),
-                eq(InternalLogger.Target.MAINTAINER),
+                eq(InternalLogger.Target.USER),
                 capture(),
                 any<JSONException>(),
                 eq(false),
@@ -364,7 +364,7 @@ internal class DatadogFlagsClientTest {
         assertThat(result).isEqualTo(fakeDefaultValue)
         verify(mockInternalLogger).log(
             eq(InternalLogger.Level.ERROR),
-            eq(InternalLogger.Target.MAINTAINER),
+            eq(InternalLogger.Target.USER),
             any(),
             any<JSONException>(),
             eq(false),

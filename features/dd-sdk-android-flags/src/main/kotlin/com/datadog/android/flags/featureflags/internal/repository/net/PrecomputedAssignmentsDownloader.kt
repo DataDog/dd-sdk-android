@@ -27,24 +27,13 @@ internal class PrecomputedAssignmentsDownloader(
     private val flagsContext: FlagsContext,
     private val requestFactory: PrecomputedAssignmentsRequestFactory
 ) : PrecomputedAssignmentsReader {
-
-    @Suppress("ReturnCount", "TooGenericExceptionCaught")
     override fun readPrecomputedFlags(context: EvaluationContext): String? {
         val request = requestFactory.create(context, flagsContext) ?: return null
 
-        return try {
-            executeDownloadRequest(request)
-        } catch (e: Throwable) {
-            internalLogger.log(
-                InternalLogger.Level.ERROR,
-                InternalLogger.Target.MAINTAINER,
-                { "Unexpected error executing request." },
-                e
-            )
-            null
-        }
+        return executeDownloadRequest(request)
     }
 
+    @Suppress("TooGenericExceptionCaught")
     private fun executeDownloadRequest(request: Request): String? = try {
         val response = callFactory.newCall(request).execute()
         @Suppress("UnsafeThirdPartyFunctionCall") // wrapped in try/catch
@@ -62,6 +51,14 @@ internal class PrecomputedAssignmentsDownloader(
             InternalLogger.Level.ERROR,
             InternalLogger.Target.MAINTAINER,
             { "Invalid argument while downloading flags" },
+            e
+        )
+        null
+    } catch (e: Throwable) {
+        internalLogger.log(
+            InternalLogger.Level.ERROR,
+            InternalLogger.Target.MAINTAINER,
+            { "Unexpected error while downloading flags" },
             e
         )
         null

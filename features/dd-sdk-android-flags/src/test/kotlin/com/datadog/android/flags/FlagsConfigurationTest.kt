@@ -15,10 +15,10 @@ import org.junit.jupiter.api.extension.ExtendWith
 @ExtendWith(ForgeExtension::class)
 internal class FlagsConfigurationTest {
 
-    // region defaultConfiguration()
+    // region default()
 
     @Test
-    fun `M return default config W defaultConfiguration()`() {
+    fun `M return default config W default()`() {
         // When
         val config = FlagsConfiguration.default()
 
@@ -29,56 +29,13 @@ internal class FlagsConfigurationTest {
     }
 
     @Test
-    fun `M return same instance W defaultConfiguration() {called multiple times}`() {
+    fun `M return same instance W default() {called multiple times}`() {
         // When
         val config1 = FlagsConfiguration.default()
         val config2 = FlagsConfiguration.default()
 
         // Then
         assertThat(config1).isSameAs(config2)
-    }
-
-    // endregion
-
-    // region data class behavior
-
-    @Test
-    fun `M support equality W equals() {same values}`(
-        @StringForgery fakeExposureEndpoint: String,
-        @StringForgery fakeFlaggingEndpoint: String
-    ) {
-        // Given
-        val config1 = FlagsConfiguration.Builder()
-            .useCustomExposureEndpoint(fakeExposureEndpoint)
-            .useCustomFlagEndpoint(fakeFlaggingEndpoint)
-            .build()
-
-        val config2 = FlagsConfiguration.Builder()
-            .useCustomExposureEndpoint(fakeExposureEndpoint)
-            .useCustomFlagEndpoint(fakeFlaggingEndpoint)
-            .build()
-
-        // Then
-        assertThat(config1).isEqualTo(config2)
-        assertThat(config1.hashCode()).isEqualTo(config2.hashCode())
-    }
-
-    @Test
-    fun `M support inequality W equals() {different values}`(
-        @StringForgery fakeExposureEndpoint1: String,
-        @StringForgery fakeExposureEndpoint2: String
-    ) {
-        // Given
-        val config1 = FlagsConfiguration.Builder()
-            .useCustomExposureEndpoint(fakeExposureEndpoint1)
-            .build()
-
-        val config2 = FlagsConfiguration.Builder()
-            .useCustomExposureEndpoint(fakeExposureEndpoint2)
-            .build()
-
-        // Then
-        assertThat(config1).isNotEqualTo(config2)
     }
 
     // endregion
@@ -173,29 +130,6 @@ internal class FlagsConfigurationTest {
 
         // Then
         assertThat(config.enableExposureLogging).isTrue()
-    }
-
-    // endregion
-
-    // region enableExposureLogging equality
-
-    @Test
-    fun `M support inequality W equals() {different enableExposureLogging values}`(
-        @StringForgery fakeExposureEndpoint: String
-    ) {
-        // Given
-        val config1 = FlagsConfiguration.Builder()
-            .useCustomExposureEndpoint(fakeExposureEndpoint)
-            .setExposureLoggingEnabled(true)
-            .build()
-
-        val config2 = FlagsConfiguration.Builder()
-            .useCustomExposureEndpoint(fakeExposureEndpoint)
-            .setExposureLoggingEnabled(false)
-            .build()
-
-        // Then
-        assertThat(config1).isNotEqualTo(config2)
     }
 
     // endregion

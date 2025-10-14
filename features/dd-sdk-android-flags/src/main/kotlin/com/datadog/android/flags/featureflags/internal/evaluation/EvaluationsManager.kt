@@ -59,30 +59,27 @@ internal class EvaluationsManager(
             )
 
             val response = assignmentsDownloader.readPrecomputedFlags(context)
-            val flagsMap = if (response != null) {
-                precomputeMapper.map(response)
-            } else {
-                // Log warning to both user and maintainer about network failure
-                internalLogger.log(
-                    InternalLogger.Level.WARN,
-                    targets = listOf(InternalLogger.Target.USER, InternalLogger.Target.MAINTAINER),
-                    { NETWORK_REQUEST_FAILED_MESSAGE }
-                )
-                emptyMap()
-            }
+            if (response != null) {
+                val flagsMap = precomputeMapper.map(response)
 
-            flagsRepository.setFlagsAndContext(context, flagsMap)
-            internalLogger.log(
-                InternalLogger.Level.DEBUG,
-                InternalLogger.Target.MAINTAINER,
-                { "Successfully processed context ${context.targetingKey} with ${flagsMap.size} flags" }
-            )
+                flagsRepository.setFlagsAndContext(context, flagsMap)
+                internalLogger.log(
+                    InternalLogger.Level.DEBUG,
+                    InternalLogger.Target.MAINTAINER,
+                    { "Successfully processed context ${context.targetingKey} with ${flagsMap.size} flags" }
+                )
+            } else {
+                internalLogger.log(
+                    InternalLogger.Level.DEBUG,
+                    InternalLogger.Target.MAINTAINER,
+                    { DEBUG_DID_NOT_UPDATE_FLAGS }
+                )
+            }
         }
     }
 
     companion object {
         private const val FETCH_AND_STORE_OPERATION_NAME = "Fetch and store flags for evaluation context"
-        private const val NETWORK_REQUEST_FAILED_MESSAGE =
-            "Unable to fetch feature flags. Please check your network connection."
+        private const val DEBUG_DID_NOT_UPDATE_FLAGS = "Did not update flags"
     }
 }

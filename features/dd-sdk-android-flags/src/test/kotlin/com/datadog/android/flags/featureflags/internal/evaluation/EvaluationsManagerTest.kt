@@ -26,7 +26,6 @@ import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argumentCaptor
-import org.mockito.kotlin.atLeastOnce
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
@@ -158,18 +157,10 @@ internal class EvaluationsManagerTest {
         evaluationsManager.updateEvaluationsForContext(context)
 
         // Then
-        verify(mockFlagsRepository).setFlagsAndContext(context, emptyMap())
-        verify(mockInternalLogger, atLeastOnce()).log(
+        // When response is null, flags are not updated - only debug log is emitted
+        verify(mockInternalLogger, times(2)).log(
             eq(InternalLogger.Level.DEBUG),
             eq(InternalLogger.Target.MAINTAINER),
-            any<() -> String>(),
-            anyOrNull<Throwable>(),
-            any<Boolean>(),
-            anyOrNull<Map<String, Any?>>()
-        )
-        verify(mockInternalLogger).log(
-            eq(InternalLogger.Level.WARN),
-            eq(listOf(InternalLogger.Target.USER, InternalLogger.Target.MAINTAINER)),
             any<() -> String>(),
             anyOrNull<Throwable>(),
             any<Boolean>(),

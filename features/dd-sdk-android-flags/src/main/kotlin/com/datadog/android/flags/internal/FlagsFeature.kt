@@ -21,7 +21,7 @@ import com.datadog.android.flags.featureflags.internal.repository.net.DefaultPre
  * An implementation of [Feature] for getting and reporting
  * feature flags to the RUM dashboard.
  */
-internal class FlagsFeature(private val sdkCore: FeatureSdkCore, private val flagsConfiguration: FlagsConfiguration) :
+internal class FlagsFeature(private val sdkCore: FeatureSdkCore, internal val flagsConfiguration: FlagsConfiguration) :
     Feature,
     FeatureContextUpdateReceiver {
     @Volatile
@@ -30,13 +30,11 @@ internal class FlagsFeature(private val sdkCore: FeatureSdkCore, private val fla
 
     internal val precomputedRequestFactory = DefaultPrecomputedAssignmentsRequestFactory(sdkCore.internalLogger)
 
-    internal fun getFlagsConfiguration(): FlagsConfiguration = flagsConfiguration
-
     /**
      * Registry of [FlagsClient] instances by name.
      * This map stores all clients created for this feature instance.
      */
-    internal val registeredClients: MutableMap<String, FlagsClient> = mutableMapOf()
+    private val registeredClients: MutableMap<String, FlagsClient> = mutableMapOf()
 
     /**
      * Gets a registered [FlagsClient] by name.
@@ -44,7 +42,7 @@ internal class FlagsFeature(private val sdkCore: FeatureSdkCore, private val fla
      * @param name The client name to lookup
      * @return The registered [FlagsClient], or null if not found
      */
-    internal fun getClient(name: String): FlagsClient? = registeredClients[name]
+    internal fun getClient(name: String): FlagsClient? = synchronized(registeredClients) { registeredClients[name] }
 
     internal fun getOrRegisterNewClient(name: String, newClientFactory: () -> FlagsClient): FlagsClient {
         synchronized(registeredClients) {
@@ -70,6 +68,10 @@ internal class FlagsFeature(private val sdkCore: FeatureSdkCore, private val fla
             return newClient
         }
     }
+
+    internal fun unregisterClient(name: String) = registeredClients.remove(name)
+
+    internal fun clearClients() = registeredClients.clear()
 
     // region Context Receiver
 

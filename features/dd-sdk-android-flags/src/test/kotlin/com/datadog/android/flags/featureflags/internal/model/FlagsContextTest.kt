@@ -49,8 +49,8 @@ internal class FlagsContextTest {
 
     @Test
     fun `M create FlagsContext with all parameters W create() { complete configuration }`(
-        @StringForgery(regex = "https://[a-z]+\\.com(/[a-z]+)+") fakeCustomEndpoint: String,
-        @StringForgery(regex = "https://[a-z]+\\.com(/[a-z]+)+") fakeProxyUrl: String
+        @StringForgery(regex = "https://[a-z]+\\.com(/[a-z]+)+") fakeExposureEndpoint: String,
+        @StringForgery(regex = "https://[a-z]+\\.com(/[a-z]+)+") fakeFlagEndpoint: String
     ) {
         // Given
         whenever(mockDatadogContext.clientToken) doReturn fakeClientToken
@@ -59,8 +59,8 @@ internal class FlagsContextTest {
         whenever(mockDatadogContext.env) doReturn fakeEnv
 
         val flagsConfiguration = FlagsConfiguration.Builder()
-            .useCustomExposureEndpoint(fakeCustomEndpoint)
-            .useCustomFlagEndpoint(fakeProxyUrl)
+            .useCustomExposureEndpoint(fakeExposureEndpoint)
+            .useCustomFlagEndpoint(fakeFlagEndpoint)
             .build()
 
         // When
@@ -71,8 +71,8 @@ internal class FlagsContextTest {
         assertThat(flagsContext.clientToken).isEqualTo(fakeClientToken)
         assertThat(flagsContext.site).isEqualTo(mockDatadogSite)
         assertThat(flagsContext.env).isEqualTo(fakeEnv)
-        assertThat(flagsContext.customExposureEndpoint).isEqualTo(fakeCustomEndpoint)
-        assertThat(flagsContext.customFlagEndpoint).isEqualTo(fakeProxyUrl)
+        assertThat(flagsContext.customExposureEndpoint).isEqualTo(fakeExposureEndpoint)
+        assertThat(flagsContext.customFlagEndpoint).isEqualTo(fakeFlagEndpoint)
     }
 
     @Test

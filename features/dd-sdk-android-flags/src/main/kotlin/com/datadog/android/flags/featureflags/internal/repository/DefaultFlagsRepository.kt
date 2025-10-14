@@ -40,7 +40,7 @@ internal class DefaultFlagsRepository(
         // Log that no flag state and no context is available
         internalLogger.log(
             InternalLogger.Level.WARN,
-            InternalLogger.Target.MAINTAINER,
+            InternalLogger.Target.USER,
             { WARN_CONTEXT_NOT_SET }
         )
         return null

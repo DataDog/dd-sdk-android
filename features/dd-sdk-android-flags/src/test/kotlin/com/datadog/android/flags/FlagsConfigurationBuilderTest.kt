@@ -26,7 +26,7 @@ internal class FlagsConfigurationBuilderTest {
     private val testedBuilder: FlagsConfiguration.Builder = FlagsConfiguration.Builder()
 
     @Test
-    fun `M use sensible defaults W build()`() {
+    fun `M use defaults W build()`() {
         // When
         val flagsConfiguration = testedBuilder.build()
 
@@ -36,7 +36,7 @@ internal class FlagsConfigurationBuilderTest {
     }
 
     @Test
-    fun `M build configuration with custom endpoint W useCustomEndpoint() and build()`(
+    fun `M build configuration with custom exposure endpoint W useCustomExposureEndpoint() and build()`(
         @StringForgery(regex = "https://[a-z]+\\.com(/[a-z]+)+") customEndpointUrl: String
     ) {
         // When
@@ -48,35 +48,19 @@ internal class FlagsConfigurationBuilderTest {
     }
 
     @Test
-    fun `M build configuration with flagging proxy W useFlaggingProxy() and build()`(
-        @StringForgery(regex = "https://[a-z]+\\.com(/[a-z]+)+") flaggingProxyUrl: String
+    fun `M build configuration with custom flag endpoint W useCustomFlagEndpoint() and build()`(
+        @StringForgery(regex = "https://[a-z]+\\.com(/[a-z]+)+") customFlagEndpoint: String
     ) {
         // When
-        val flagsConfiguration = testedBuilder.useCustomFlagEndpoint(flaggingProxyUrl).build()
+        val flagsConfiguration = testedBuilder.useCustomFlagEndpoint(customFlagEndpoint).build()
 
         // Then
         assertThat(flagsConfiguration.customExposureEndpoint).isNull()
-        assertThat(flagsConfiguration.customFlagEndpoint).isEqualTo(flaggingProxyUrl)
+        assertThat(flagsConfiguration.customFlagEndpoint).isEqualTo(customFlagEndpoint)
     }
 
     @Test
-    fun `M build configuration with all options W setAll() and build()`(
-        @StringForgery(regex = "https://[a-z]+\\.com(/[a-z]+)+") customEndpointUrl: String,
-        @StringForgery(regex = "https://[a-z]+\\.com(/[a-z]+)+") flaggingProxyUrl: String
-    ) {
-        // When
-        val flagsConfiguration = testedBuilder
-            .useCustomExposureEndpoint(customEndpointUrl)
-            .useCustomFlagEndpoint(flaggingProxyUrl)
-            .build()
-
-        // Then
-        assertThat(flagsConfiguration.customExposureEndpoint).isEqualTo(customEndpointUrl)
-        assertThat(flagsConfiguration.customFlagEndpoint).isEqualTo(flaggingProxyUrl)
-    }
-
-    @Test
-    fun `M build configuration with null custom endpoint W useCustomEndpoint(null) and build()`() {
+    fun `M build configuration with null custom exposure endpoint W useCustomExposureEndpoint(null) and build()`() {
         // When
         val flagsConfiguration = testedBuilder.useCustomExposureEndpoint(null).build()
 
@@ -86,7 +70,7 @@ internal class FlagsConfigurationBuilderTest {
     }
 
     @Test
-    fun `M build configuration with null flagging proxy W useFlaggingProxy(null) and build()`() {
+    fun `M build configuration with null custom flag endpoint W useCustomFlagEndpoint(null) and build()`() {
         // When
         val flagsConfiguration = testedBuilder.useCustomFlagEndpoint(null).build()
 

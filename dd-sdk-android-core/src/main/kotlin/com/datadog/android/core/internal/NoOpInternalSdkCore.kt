@@ -21,7 +21,12 @@ import com.datadog.android.core.internal.net.DefaultFirstPartyHostHeaderTypeReso
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.privacy.TrackingConsent
 import com.google.gson.JsonObject
+import okhttp3.Call
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.Response
 import java.io.File
+import java.net.HttpURLConnection
 import java.util.UUID
 import java.util.concurrent.Callable
 import java.util.concurrent.Delayed
@@ -140,7 +145,7 @@ internal object NoOpInternalSdkCore : InternalSdkCore {
         return NoOpScheduledExecutorService()
     }
 
-    override fun createOkHttpCallFactory(block: okhttp3.OkHttpClient.Builder.() -> Unit): okhttp3.Call.Factory {
+    override fun createOkHttpCallFactory(block: OkHttpClient.Builder.() -> Unit): Call.Factory {
         return NoOpCallFactory
     }
 
@@ -296,26 +301,29 @@ internal object NoOpInternalSdkCore : InternalSdkCore {
         }
     }
 
-    object NoOpCallFactory : okhttp3.Call.Factory {
-        override fun newCall(request: okhttp3.Request): okhttp3.Call {
+    object NoOpCallFactory : Call.Factory {
+        override fun newCall(request: Request): Call {
             return NoOpCall(request)
         }
     }
 
-    class NoOpCall(private val originalRequest: okhttp3.Request) : okhttp3.Call {
+    class NoOpCall(private val originalRequest: Request) : Call {
         override fun cancel() = Unit
 
-        override fun clone(): okhttp3.Call {
+        override fun clone(): Call {
             return NoOpCall(originalRequest)
         }
 
         override fun enqueue(responseCallback: okhttp3.Callback) = Unit
 
-        override fun execute(): okhttp3.Response {
-            return okhttp3.Response.Builder()
+        @Suppress("UnsafeThirdPartyFunctionCall") // All required fields are set, won't throw
+        override fun execute(): Response {
+            // Response.Builder.build() requires: request, protocol, code, and message
+            // to be set, otherwise it throws IllegalStateException
+            return Response.Builder()
                 .request(originalRequest)
                 .protocol(okhttp3.Protocol.HTTP_1_1)
-                .code(200)
+                .code(HttpURLConnection.HTTP_OK)
                 .message("OK")
                 .build()
         }
@@ -328,7 +336,7 @@ internal object NoOpInternalSdkCore : InternalSdkCore {
             return false
         }
 
-        override fun request(): okhttp3.Request {
+        override fun request(): Request {
             return originalRequest
         }
 

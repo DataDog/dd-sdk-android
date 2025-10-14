@@ -62,8 +62,8 @@ internal object EndpointsHelper {
             buildHost(customerDomain, "ap2", "com")
         }
     }
-    private fun buildHost(customerDomain: String, dc: String?, tld: String = "com"): String 
-        = "$customerDomain.ff-cdn.${if (dc?.isNotEmpty() == true) "$dc." else ""}datadoghq.$tld"
+    private fun buildHost(customerDomain: String, dc: String?, tld: String = "com"): String =
+        "$customerDomain.ff-cdn.${if (dc?.isNotEmpty() == true) "$dc." else ""}datadoghq.$tld"
 
     private const val ERROR_GOV_NOT_SUPPORTED = "US1_FED is not yet supported for flagging endpoints"
     private const val FLAGS_ENDPOINT = "/precompute-assignments"

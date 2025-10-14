@@ -154,11 +154,11 @@ internal class EndpointsHelperTest {
     // region getFlaggingEndpoint
 
     @Test
-    fun `M return proxy URL W getFlaggingEndpoint() {flagging proxy configured}`(
+    fun `M return custom flag endpoint URL W getFlaggingEndpoint() {flagging endpoint configured}`(
         @StringForgery fakeApplicationId: String,
         @StringForgery fakeClientToken: String,
         @StringForgery fakeEnv: String,
-        @StringForgery fakeProxyUrl: String
+        @StringForgery fakeFlagEndpoint: String
     ) {
         // Given
         val context = FlagsContext(
@@ -166,18 +166,18 @@ internal class EndpointsHelperTest {
             clientToken = fakeClientToken,
             site = DatadogSite.US1,
             env = fakeEnv,
-            customFlagEndpoint = fakeProxyUrl
+            customFlagEndpoint = fakeFlagEndpoint
         )
 
         // When
         val result = EndpointsHelper.getFlaggingEndpoint(context, mockInternalLogger)
 
         // Then
-        assertThat(result).isEqualTo(fakeProxyUrl)
+        assertThat(result).isEqualTo(fakeFlagEndpoint)
     }
 
     @Test
-    fun `M build from site W getFlaggingEndpoint() {no proxy configured}`(
+    fun `M build from site W getFlaggingEndpoint() {no flag endpoint configured}`(
         @StringForgery fakeApplicationId: String,
         @StringForgery fakeClientToken: String,
         @StringForgery fakeEnv: String
@@ -199,7 +199,7 @@ internal class EndpointsHelperTest {
     }
 
     @Test
-    fun `M return null W getFlaggingEndpoint() {unsupported site and no proxy}`(
+    fun `M return null W getFlaggingEndpoint() {unsupported site and no flag endpoint}`(
         @StringForgery fakeApplicationId: String,
         @StringForgery fakeClientToken: String,
         @StringForgery fakeEnv: String

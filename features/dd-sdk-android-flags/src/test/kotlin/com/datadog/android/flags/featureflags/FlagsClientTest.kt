@@ -7,11 +7,14 @@
 package com.datadog.android.flags.featureflags
 
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.Feature.Companion.FLAGS_FEATURE_NAME
+import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.flags.Flags
 import com.datadog.android.flags.featureflags.internal.NoOpFlagsClient
 import com.datadog.android.flags.featureflags.model.EvaluationContext
+import com.datadog.android.flags.internal.FlagsFeature
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -62,12 +65,12 @@ internal class FlagsClientTest {
         Flags.enable(sdkCore = mockSdkCore)
 
         // Capture the registered feature and mock getFeature() to return a FeatureScope wrapping it
-        argumentCaptor<com.datadog.android.api.feature.Feature> {
+        argumentCaptor<Feature> {
             verify(mockSdkCore).registerFeature(capture())
-            val capturedFeature = lastValue as com.datadog.android.flags.internal.FlagsFeature
-            val mockFeatureScope = mock<com.datadog.android.api.feature.FeatureScope>()
+            val capturedFeature = lastValue as FlagsFeature
+            val mockFeatureScope = mock<FeatureScope>()
             whenever(
-                mockFeatureScope.unwrap<com.datadog.android.flags.internal.FlagsFeature>()
+                mockFeatureScope.unwrap<FlagsFeature>()
             ).thenReturn(capturedFeature)
             whenever(mockSdkCore.getFeature(FLAGS_FEATURE_NAME))
                 .thenReturn(mockFeatureScope)
@@ -77,12 +80,12 @@ internal class FlagsClientTest {
         Flags.enable(sdkCore = mockSecondSdkCore)
 
         // Capture the second registered feature
-        argumentCaptor<com.datadog.android.api.feature.Feature> {
+        argumentCaptor<Feature> {
             verify(mockSecondSdkCore).registerFeature(capture())
-            val capturedFeature = lastValue as com.datadog.android.flags.internal.FlagsFeature
-            val mockFeatureScope = mock<com.datadog.android.api.feature.FeatureScope>()
+            val capturedFeature = lastValue as FlagsFeature
+            val mockFeatureScope = mock<FeatureScope>()
             whenever(
-                mockFeatureScope.unwrap<com.datadog.android.flags.internal.FlagsFeature>()
+                mockFeatureScope.unwrap<FlagsFeature>()
             ).thenReturn(capturedFeature)
             whenever(mockSecondSdkCore.getFeature(FLAGS_FEATURE_NAME))
                 .thenReturn(mockFeatureScope)
@@ -98,20 +101,20 @@ internal class FlagsClientTest {
     // Helper methods for test setup
     private fun registerClient(client: FlagsClient, sdkCore: FeatureSdkCore, name: String) {
         val flagsFeature = sdkCore.getFeature(FLAGS_FEATURE_NAME)
-            ?.unwrap<com.datadog.android.flags.internal.FlagsFeature>()
-        flagsFeature?.registeredClients?.put(name, client)
+            ?.unwrap<FlagsFeature>()
+        flagsFeature?.getOrRegisterNewClient(name) { client }
     }
 
     private fun unregisterClient(name: String, sdkCore: FeatureSdkCore) {
         val flagsFeature = sdkCore.getFeature(FLAGS_FEATURE_NAME)
-            ?.unwrap<com.datadog.android.flags.internal.FlagsFeature>()
-        flagsFeature?.registeredClients?.remove(name)
+            ?.unwrap<FlagsFeature>()
+        flagsFeature?.unregisterClient(name)
     }
 
     private fun clearRegisteredClients(sdkCore: FeatureSdkCore) {
         val flagsFeature = sdkCore.getFeature(FLAGS_FEATURE_NAME)
-            ?.unwrap<com.datadog.android.flags.internal.FlagsFeature>()
-        flagsFeature?.registeredClients?.clear()
+            ?.unwrap<FlagsFeature>()
+        flagsFeature?.clearClients()
     }
 
     // region Static Flag Resolution Methods
@@ -276,10 +279,10 @@ internal class FlagsClientTest {
         // Given
         registerClient(mockFlagsClient, mockSdkCore, "default")
 
-        // When - second build with same name
+        // When
         val client = FlagsClient.Builder(sdkCore = mockSdkCore).build()
 
-        // Then - should return existing client, NOT NOPClient
+        // Then
         assertThat(client).isEqualTo(mockFlagsClient)
     }
 
@@ -365,7 +368,7 @@ internal class FlagsClientTest {
         assertThat(client).isInstanceOf(NoOpFlagsClient::class.java)
         verify(mockInternalLogger).log(
             eq(InternalLogger.Level.ERROR),
-            eq(listOf(InternalLogger.Target.USER, InternalLogger.Target.MAINTAINER)),
+            eq(InternalLogger.Target.USER),
             any(),
             eq(null),
             eq(false),
