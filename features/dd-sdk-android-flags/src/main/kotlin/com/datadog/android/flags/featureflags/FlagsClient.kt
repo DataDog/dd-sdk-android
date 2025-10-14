@@ -9,9 +9,20 @@ package com.datadog.android.flags.featureflags
 import com.datadog.android.Datadog
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.SdkCore
+import com.datadog.android.api.feature.Feature.Companion.FLAGS_FEATURE_NAME
 import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.core.InternalSdkCore
+import com.datadog.android.flags.FlagsConfiguration
+import com.datadog.android.flags.featureflags.internal.DatadogFlagsClient
 import com.datadog.android.flags.featureflags.internal.NoOpFlagsClient
+import com.datadog.android.flags.featureflags.internal.evaluation.EvaluationsManager
+import com.datadog.android.flags.featureflags.internal.model.FlagsContext
+import com.datadog.android.flags.featureflags.internal.repository.DefaultFlagsRepository
+import com.datadog.android.flags.featureflags.internal.repository.NoOpFlagsRepository
+import com.datadog.android.flags.featureflags.internal.repository.net.DefaultFlagsNetworkManager
+import com.datadog.android.flags.featureflags.internal.repository.net.PrecomputeMapper
 import com.datadog.android.flags.featureflags.model.EvaluationContext
+import com.datadog.android.flags.internal.FlagsFeature
 import org.json.JSONObject
 
 /**
@@ -20,6 +31,27 @@ import org.json.JSONObject
  * This interface defines the public API that applications use to retrieve feature flag values.
  * It follows the OpenFeature specification closely, to simplify implementing the OpenFeature
  * Provider API on top.
+ *
+ * ## Usage
+ *
+ * To create a [FlagsClient], use the [Builder]:
+ * ```
+ * // Default client
+ * val client = FlagsClient.Builder().build()
+ *
+ * // Named client
+ * val client = FlagsClient.Builder("analytics").build()
+ *
+ * // With custom configuration
+ * val client = FlagsClient.Builder("analytics")
+ *     .useCustomExposureEndpoint("https://custom.endpoint.com/exposure")
+ *     .build()
+ * ```
+ *
+ * To retrieve an existing [FlagsClient], use [get]:
+ * ```
+ * val client = FlagsClient.get("analytics")
+ * ```
  */
 interface FlagsClient {
     /**
@@ -30,7 +62,7 @@ interface FlagsClient {
      *
      * @param context The [EvaluationContext] containing targeting key and attributes.
      */
-    fun setContext(context: EvaluationContext)
+    fun setEvaluationContext(context: EvaluationContext)
 
     /**
      * Resolves a boolean flag value.
@@ -78,105 +110,237 @@ interface FlagsClient {
     fun resolveStructureValue(flagKey: String, defaultValue: JSONObject): JSONObject
 
     /**
-     * Companion object providing static access to [FlagsClient] instances.
+     * Builder for creating [FlagsClient] instances with custom configuration.
      *
-     * This companion manages the registration and retrieval of [FlagsClient] instances
-     * per SDK core, ensuring thread-safe access and proper lifecycle management.
+     * The builder uses a selective override pattern: configuration fields set explicitly
+     * on the builder override the defaults from [FlagsFeature]. Fields not set on the
+     * builder use the feature-level defaults.
+     *
+     * ## Usage Examples
+     *
+     * Default [FlagsClient]:
+     * ```
+     * val client = FlagsClient.Builder().build()
+     * ```
+     *
+     * Named [FlagsClient]:
+     * ```
+     * val client = FlagsClient.Builder("analytics").build()
+     * ```
+     *
+     * With custom SDK core:
+     * ```
+     * val client = FlagsClient.Builder(sdkCore = customCore)
+     *     .build()
+     * ```
      */
-    companion object {
-        private val registeredClients: MutableMap<SdkCore, FlagsClient> = mutableMapOf()
+    class Builder {
+        private val name: String
+        private val sdkCore: FeatureSdkCore
 
         /**
-         * Returns the [FlagsClient] instance for the given SDK core.
+         * Creates a builder for a named [FlagsClient].
          *
-         * This method is thread-safe and will return the same client instance for the same SDK core
-         * across multiple calls. If no client has been registered for the given SDK core, a no-op
-         * implementation will be returned instead.
+         * The name is used to identify and retrieve this [FlagsClient] later via [get].
+         * Multiple [FlagsClient] instances with different names can coexist within the same [SdkCore].
          *
-         * @param sdkCore the [SdkCore] instance to retrieve the client for. If not provided,
-         * the default Datadog SDK instance will be used.
-         * @return the [FlagsClient] associated with the given SDK core, or a no-op client.
-         * if no client is registered for this SDK core.
+         * @param name the client name. Must be non-empty.
+         * @param sdkCore the SDK instance to associate with this client. Defaults to main instance.
+         */
+        constructor(name: String = DEFAULT_CLIENT_NAME, sdkCore: SdkCore = Datadog.getInstance()) {
+            this.name = name
+            this.sdkCore = sdkCore as FeatureSdkCore
+        }
+
+        /**
+         * Builds and registers a [FlagsClient] instance.
+         *
+         * This method:
+         * 1. Validates the [FlagsFeature] is enabled
+         * 2. Creates and registers the client
+         * 3. Returns the created client or [NoOpFlagsClient] on failure
+         *
+         * If a [FlagsClient] with the same name already exists for this [SdkCore]:
+         * - Logs a warning (WARN level, USER target)
+         * - Returns the existing [FlagsClient]
+         *
+         * @return the created [FlagsClient], existing client, or [NoOpFlagsClient].
+         */
+        fun build(): FlagsClient {
+            // Validate that the Flags feature is enabled
+            val flagsFeature = sdkCore
+                .getFeature(FLAGS_FEATURE_NAME)
+                ?.unwrap<FlagsFeature>()
+
+            if (flagsFeature == null) {
+                return NoOpFlagsClient(
+                    name = name,
+                    reason = "Flags feature not enabled",
+                    logger = sdkCore.internalLogger
+                )
+            }
+
+            return flagsFeature.getOrRegisterNewClient(name) {
+                createInternal(flagsFeature.flagsConfiguration, sdkCore, flagsFeature)
+            }
+        }
+    }
+
+    /**
+     * Companion object providing static access to [FlagsClient] instances.
+     *
+     * This companion manages the retrieval of [FlagsClient] instances from the [FlagsFeature],
+     * ensuring thread-safe access and proper lifecycle management.
+     */
+    companion object {
+        private const val DEFAULT_CLIENT_NAME = "default"
+
+        /**
+         * Gets the [FlagsClient] with the specified name from the SDK core.
+         *
+         * If no [FlagsClient] exists with the given name, returns a [NoOpFlagsClient] that logs
+         * critical errors but never crashes.
+         *
+         * @param name the [FlagsClient] name. Defaults to "default".
+         * @param sdkCore the SDK instance. Defaults to the default Datadog instance.
+         * @return the [FlagsClient] with the specified name, or [NoOpFlagsClient] if not found.
          */
         @JvmOverloads
         @JvmStatic
-        fun get(sdkCore: SdkCore = Datadog.getInstance()): FlagsClient = synchronized(registeredClients) {
-            val client = registeredClients[sdkCore]
-            if (client == null) {
-                val errorMsg = "No FlagsClient for the SDK instance with name ${sdkCore.name} " +
-                    "found, returning no-op implementation."
-                (sdkCore as? FeatureSdkCore)
-                    ?.internalLogger
-                    ?.log(
-                        InternalLogger.Level.WARN,
-                        InternalLogger.Target.USER,
-                        { errorMsg }
-                    )
-                NoOpFlagsClient()
-            } else {
-                client
+        fun get(name: String = DEFAULT_CLIENT_NAME, sdkCore: SdkCore = Datadog.getInstance()): FlagsClient {
+            val featureCore = sdkCore as FeatureSdkCore
+            val logger = featureCore.internalLogger
+
+            val flagsFeature = featureCore.getFeature(FLAGS_FEATURE_NAME)?.unwrap<FlagsFeature>()
+
+            if (flagsFeature == null) {
+                logger.log(
+                    InternalLogger.Level.ERROR,
+                    InternalLogger.Target.USER,
+                    {
+                        "Flags feature is not enabled. Returning NoOpFlagsClient which always returns default values."
+                    }
+                )
+
+                return NoOpFlagsClient(
+                    name = name,
+                    reason = "Flags feature not enabled",
+                    logger = logger
+                )
             }
+
+            var client = flagsFeature.getClient(name)
+
+            if (client == null) {
+                val buildHint: String = if (name == DEFAULT_CLIENT_NAME) {
+                    "Create a client first using: FlagsClient.Builder().build(). "
+                } else {
+                    "Create a client first using: FlagsClient.Builder(\"$name\").build(). "
+                }
+                logger.log(
+                    InternalLogger.Level.ERROR,
+                    InternalLogger.Target.USER,
+                    {
+                        "No FlagsClient with name '$name' exists for SDK instance '${sdkCore.name}'. " +
+                            buildHint +
+                            "Returning NoOpFlagsClient which always returns default values."
+                    }
+                )
+
+                client = NoOpFlagsClient(
+                    name = name,
+                    reason = "Client '$name' not found - get() called before build()",
+                    logger = logger
+                )
+            }
+
+            return client
         }
 
         // region Internal
 
-        /**
-         * Register a [FlagsClient] with an [SdkCore] to back the behaviour of the [get] function.
-         *
-         * This method is thread-safe and implements a one-time registration pattern. Once a client
-         * has been registered for a specific SDK core, all subsequent registration attempts for that
-         * same core will be rejected and logged as a warning.
-         *
-         * Applications using the Datadog Flags feature must call this method once during initialization
-         * for each SDK core they intend to use.
-         *
-         * @param client the [FlagsClient] to register for the given SDK core
-         * @param sdkCore the [SdkCore] instance to associate with the client. If not provided,
-         * the default Datadog SDK instance will be used.
-         * @return `true` if the client was successfully registered, `false` if a client was
-         * already registered for this SDK core (in which case a warning will be logged).
-         */
-        internal fun registerIfAbsent(client: FlagsClient, sdkCore: SdkCore = Datadog.getInstance()): Boolean =
-            synchronized(registeredClients) {
-                if (registeredClients.containsKey(sdkCore)) {
-                    (sdkCore as FeatureSdkCore).internalLogger.log(
-                        InternalLogger.Level.WARN,
-                        InternalLogger.Target.USER,
-                        { "A FlagsClient has already been registered for this SDK instance" }
+        internal const val FLAGS_CLIENT_EXECUTOR_NAME = "flags-client-executor"
+
+        @Suppress("LongMethod")
+        internal fun createInternal(
+            configuration: FlagsConfiguration,
+            sdkCore: FeatureSdkCore,
+            flagsFeature: FlagsFeature
+        ): FlagsClient {
+            val executorService = sdkCore.createSingleThreadExecutorService(
+                executorContext = FLAGS_CLIENT_EXECUTOR_NAME
+            )
+
+            val datadogContext = (sdkCore as? InternalSdkCore)?.getDatadogContext()
+            val internalLogger = sdkCore.internalLogger
+
+            // Get required context parameters
+            val clientToken = datadogContext?.clientToken
+            val site = datadogContext?.site
+            val env = datadogContext?.env
+            val applicationId = flagsFeature.applicationId
+
+            // Validate required parameters
+            if (clientToken == null || site == null || env == null) {
+                val missingParams = listOfNotNull(
+                    "clientToken".takeIf { clientToken == null },
+                    "site".takeIf { site == null },
+                    "env".takeIf { env == null }
+                ).joinToString(", ")
+
+                internalLogger.log(
+                    InternalLogger.Level.ERROR,
+                    InternalLogger.Target.USER,
+                    { "Missing required context parameters: $missingParams" }
+                )
+
+                return NoOpFlagsClient(
+                    name = "unknown",
+                    reason = "Failed to create client - missing SDK context parameters: $missingParams",
+                    logger = internalLogger
+                )
+            } else {
+                // Create FlagsContext combining core SDK context with feature configuration
+                val flagsContext = FlagsContext(
+                    applicationId = applicationId,
+                    clientToken = clientToken,
+                    site = site,
+                    env = env
+                )
+
+                val datastore = (sdkCore as FeatureSdkCore).getFeature(FLAGS_FEATURE_NAME)
+                    ?.dataStore
+                val flagsRepository = if (datastore != null) {
+                    DefaultFlagsRepository(
+                        featureSdkCore = sdkCore,
+                        dataStore = datastore,
+                        instanceName = "default"
                     )
-                    false
                 } else {
-                    registeredClients[sdkCore] = client
-                    true
+                    NoOpFlagsRepository()
                 }
-            }
 
-        /**
-         * Unregisters the [FlagsClient] associated with the given SDK core.
-         *
-         * After calling this method, subsequent calls to [instance] for the same SDK core
-         * will return a [NoOpFlagsClient]. This method is thread-safe and will silently
-         * do nothing if no client was registered for the given SDK core.
-         *
-         * @param sdkCore the [SdkCore] instance to unregister the client for. If not provided,
-         * the default Datadog SDK instance will be used.
-         */
-        internal fun unregister(sdkCore: SdkCore = Datadog.getInstance()) {
-            synchronized(registeredClients) {
-                registeredClients.remove(sdkCore)
-            }
-        }
+                val flagsNetworkManager = DefaultFlagsNetworkManager(
+                    internalLogger = sdkCore.internalLogger,
+                    flagsContext = flagsContext
+                )
 
-        /**
-         * Removes all registered [FlagsClient] instances from all SDK cores.
-         *
-         * After calling this method, all subsequent calls to [instance] will return
-         * [NoOpFlagsClient] instances regardless of the SDK core. This method is thread-safe
-         * and is primarily intended for testing purposes or SDK shutdown scenarios.
-         */
-        internal fun clear() {
-            synchronized(registeredClients) {
-                registeredClients.clear()
+                val precomputeMapper = PrecomputeMapper(sdkCore.internalLogger)
+
+                val evaluationsManager = EvaluationsManager(
+                    executorService = executorService,
+                    internalLogger = sdkCore.internalLogger,
+                    flagsRepository = flagsRepository,
+                    flagsNetworkManager = flagsNetworkManager,
+                    precomputeMapper = precomputeMapper
+                )
+
+                return DatadogFlagsClient(
+                    featureSdkCore = sdkCore,
+                    evaluationsManager = evaluationsManager,
+                    flagsRepository = flagsRepository,
+                    flagsConfiguration = configuration
+                )
             }
         }
 

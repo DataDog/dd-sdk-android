@@ -310,7 +310,7 @@ internal class DatadogFlagsClientTest {
         assertThat(result).isEqualTo(fakeDefaultValue)
         verify(mockInternalLogger).log(
             eq(InternalLogger.Level.ERROR),
-            eq(InternalLogger.Target.MAINTAINER),
+            eq(InternalLogger.Target.USER),
             any(),
             any<JSONException>(),
             eq(false),
@@ -341,7 +341,7 @@ internal class DatadogFlagsClientTest {
         argumentCaptor<() -> String> {
             verify(mockInternalLogger).log(
                 eq(InternalLogger.Level.ERROR),
-                eq(InternalLogger.Target.MAINTAINER),
+                eq(InternalLogger.Target.USER),
                 capture(),
                 any<JSONException>(),
                 eq(false),
@@ -369,7 +369,7 @@ internal class DatadogFlagsClientTest {
         assertThat(result).isEqualTo(fakeDefaultValue)
         verify(mockInternalLogger).log(
             eq(InternalLogger.Level.ERROR),
-            eq(InternalLogger.Target.MAINTAINER),
+            eq(InternalLogger.Target.USER),
             any(),
             any<JSONException>(),
             eq(false),
@@ -426,10 +426,10 @@ internal class DatadogFlagsClientTest {
 
     // endregion
 
-    // region setContext()
+    // region setEvaluationContext()
 
     @Test
-    fun `M call evaluations manager W setContext() { valid targeting key and attributes }`(forge: Forge) {
+    fun `M call evaluations manager W setEvaluationContext() { valid targeting key and attributes }`(forge: Forge) {
         // Given
         val fakeTargetingKey = forge.anAlphabeticalString()
         val fakeAttributes = mapOf(
@@ -441,7 +441,7 @@ internal class DatadogFlagsClientTest {
         val fakeContext = EvaluationContext(fakeTargetingKey, fakeAttributes)
 
         // When
-        testedClient.setContext(fakeContext)
+        testedClient.setEvaluationContext(fakeContext)
 
         // Then
         val contextCaptor = argumentCaptor<EvaluationContext>()
@@ -456,26 +456,26 @@ internal class DatadogFlagsClientTest {
     }
 
     @Test
-    fun `M not call evaluations manager W setContext() { blank targeting key }`() {
+    fun `M not call evaluations manager W setEvaluationContext() { blank targeting key }`() {
         // Given
         val blankTargetingKey = ""
         val fakeAttributes = mapOf("test" to "value")
 
         // When
-        testedClient.setContext(EvaluationContext(blankTargetingKey, fakeAttributes))
+        testedClient.setEvaluationContext(EvaluationContext(blankTargetingKey, fakeAttributes))
 
         // Then
         verify(mockEvaluationsManager, never()).updateEvaluationsForContext(any())
     }
 
     @Test
-    fun `M log error and not crash W setContext() { blank targeting key }`() {
+    fun `M log error and not crash W setEvaluationContext() { blank targeting key }`() {
         // Given
         val blankTargetingKey = ""
         val fakeAttributes = mapOf("test" to "value")
 
         // When
-        testedClient.setContext(EvaluationContext(blankTargetingKey, fakeAttributes))
+        testedClient.setEvaluationContext(EvaluationContext(blankTargetingKey, fakeAttributes))
 
         // Then
         argumentCaptor<() -> String> {
@@ -494,23 +494,21 @@ internal class DatadogFlagsClientTest {
     }
 
     @Test
-    fun `M process context and store flags W setContext() { complete flow with mock repository }`(forge: Forge) {
+    fun `M process context and store flags W setEvaluationContext() { complete flow }`(forge: Forge) {
         // Given
         val fakeTargetingKey = forge.anAlphabeticalString()
         val fakeAttributes = mapOf(
-            "user.id" to forge.anAlphabeticalString(),
             "user.plan" to forge.anElementFrom("free", "premium", "enterprise"),
-            "env" to forge.anElementFrom("dev", "staging", "prod"),
             "feature.enabled" to forge.aBool().toString()
         )
         val fakeContext = EvaluationContext(fakeTargetingKey, fakeAttributes)
 
         // When
-        testedClient.setContext(fakeContext)
+        testedClient.setEvaluationContext(fakeContext)
 
         // Then
         // Verify that the evaluations manager was called to process the context
-        verify(mockEvaluationsManager).updateEvaluationsForContext(any<EvaluationContext>())
+        verify(mockEvaluationsManager).updateEvaluationsForContext(fakeContext)
     }
 
     // endregion

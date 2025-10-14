@@ -7,6 +7,7 @@
 package com.datadog.android.flags.internal
 
 import android.content.Context
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.Feature.Companion.FLAGS_FEATURE_NAME
 import com.datadog.android.api.feature.Feature.Companion.RUM_FEATURE_NAME
@@ -14,6 +15,9 @@ import com.datadog.android.api.feature.FeatureContextUpdateReceiver
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.feature.StorageBackedFeature
 import com.datadog.android.api.storage.FeatureStorageConfiguration
+import com.datadog.android.flags.FlagsConfiguration
+import com.datadog.android.flags.featureflags.FlagsClient
+import com.datadog.android.flags.featureflags.internal.NoOpFlagsClient
 import com.datadog.android.flags.internal.net.ExposuresRequestFactory
 import com.datadog.android.flags.internal.storage.ExposureEventRecordWriter
 import com.datadog.android.flags.internal.storage.NoOpRecordWriter
@@ -26,11 +30,11 @@ import com.datadog.android.log.LogAttributes.RUM_APPLICATION_ID
  */
 internal class FlagsFeature(
     private val sdkCore: FeatureSdkCore,
+    internal val flagsConfiguration: FlagsConfiguration,
     @Volatile internal var applicationId: String? = null,
     internal var processor: EventsProcessor = NoOpEventsProcessor(),
     internal var dataWriter: RecordWriter = NoOpRecordWriter()
-) :
-    StorageBackedFeature,
+) : StorageBackedFeature,
     FeatureContextUpdateReceiver {
 
     /**
@@ -49,10 +53,7 @@ internal class FlagsFeature(
 
     override val name: String = FLAGS_FEATURE_NAME
 
-    override fun onContextUpdate(
-        featureName: String,
-        context: Map<String, Any?>
-    ) {
+    override fun onContextUpdate(featureName: String, context: Map<String, Any?>) {
         if (featureName == RUM_FEATURE_NAME && applicationId == null) {
             applicationId = context[RUM_APPLICATION_ID]?.toString()
         }
@@ -67,11 +68,59 @@ internal class FlagsFeature(
     override fun onStop() {
         sdkCore.removeContextUpdateReceiver(this)
         dataWriter = NoOpRecordWriter()
+        synchronized(registeredClients) {
+            registeredClients.clear()
+        }
     }
 
-    private fun createDataWriter(): RecordWriter {
-        return ExposureEventRecordWriter(sdkCore)
+    private fun createDataWriter(): RecordWriter = ExposureEventRecordWriter(sdkCore)
+
+    //region FlagsClient Management
+
+    /**
+     * Registry of [FlagsClient] instances by name.
+     * This map stores all clients created for this feature instance.
+     */
+    private val registeredClients: MutableMap<String, FlagsClient> = mutableMapOf()
+
+    /**
+     * Gets a registered [FlagsClient] by name.
+     *
+     * @param name The client name to lookup
+     * @return The registered [FlagsClient], or null if not found
+     */
+    internal fun getClient(name: String): FlagsClient? = synchronized(registeredClients) { registeredClients[name] }
+
+    internal fun getOrRegisterNewClient(name: String, newClientFactory: () -> FlagsClient): FlagsClient {
+        synchronized(registeredClients) {
+            // Check for existing client
+            val existingClient = registeredClients[name]
+            if (existingClient != null) {
+                sdkCore.internalLogger.log(
+                    InternalLogger.Level.WARN,
+                    InternalLogger.Target.USER,
+                    {
+                        "Attempted to create a FlagsClient named '$name', but one already exists. " +
+                            "Existing client will be used, and new configuration will be ignored."
+                    }
+                )
+                return existingClient
+            }
+
+            // Create and register client
+            val newClient = newClientFactory()
+            if (newClient !is NoOpFlagsClient) {
+                registeredClients[name] = newClient
+            }
+            return newClient
+        }
     }
+
+    internal fun unregisterClient(name: String) = registeredClients.remove(name)
+
+    internal fun clearClients() = registeredClients.clear()
+
+    //endregion
 
     internal companion object {
         const val MAX_ITEMS_PER_BATCH = 50

@@ -7,6 +7,7 @@
 package com.datadog.android.flags
 
 import fr.xgouchet.elmyr.annotation.BoolForgery
+import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -25,12 +26,11 @@ internal class FlagsConfigurationTest {
 
         // Then
         assertThat(configuration.trackExposures).isTrue()
+        assertThat(configuration.customExposureEndpoint).isNull()
     }
 
     @Test
-    fun `M set exposure logging W Builder`(
-        @BoolForgery fakeTrackExposuresState: Boolean
-    ) {
+    fun `M set track exposures W Builder`(@BoolForgery fakeTrackExposuresState: Boolean) {
         // Given
         val builder = FlagsConfiguration.Builder()
 
@@ -40,13 +40,31 @@ internal class FlagsConfigurationTest {
 
         // Then
         assertThat(configuration.trackExposures).isEqualTo(fakeTrackExposuresState)
+        assertThat(configuration.customExposureEndpoint).isNull()
     }
 
     @Test
-    fun `M create multiple configurations W Builder { reusable builder }`() {
+    fun `M set custom exposure endpoint W Builder`(@StringForgery fakeCustomExposureEndpoint: String) {
+        // Given
+        val builder = FlagsConfiguration.Builder()
+
+        // When
+        builder.useCustomExposureEndpoint(fakeCustomExposureEndpoint)
+        val configuration = builder.build()
+
+        // Then
+        assertThat(configuration.trackExposures).isTrue()
+        assertThat(configuration.customExposureEndpoint).isEqualTo(fakeCustomExposureEndpoint)
+    }
+
+    @Test
+    fun `M create multiple configurations W Builder { reusable builder }`(
+        @StringForgery(regex = "https://[a-z]+\\.com(/[a-z]+)+") fakeCustomExposureEndpoint: String
+    ) {
         // Given
         val builder = FlagsConfiguration.Builder()
             .trackExposures(true)
+            .useCustomExposureEndpoint(fakeCustomExposureEndpoint)
 
         // When
         val configuration1 = builder.build()

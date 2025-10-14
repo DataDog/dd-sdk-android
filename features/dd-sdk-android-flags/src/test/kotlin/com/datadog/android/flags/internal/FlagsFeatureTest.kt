@@ -9,7 +9,9 @@ package com.datadog.android.flags.internal
 import android.content.Context
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.Feature
+import com.datadog.android.api.feature.Feature.Companion.FLAGS_FEATURE_NAME
 import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.flags.FlagsConfiguration
 import com.datadog.android.flags.internal.storage.ExposureEventRecordWriter
 import com.datadog.android.flags.internal.storage.NoOpRecordWriter
 import fr.xgouchet.elmyr.Forge
@@ -56,7 +58,8 @@ internal class FlagsFeatureTest {
         whenever(mockSdkCore.createSingleThreadExecutorService(any())) doReturn mockExecutorService
 
         testedFeature = FlagsFeature(
-            sdkCore = mockSdkCore
+            sdkCore = mockSdkCore,
+            flagsConfiguration = FlagsConfiguration.Builder().build()
         )
     }
 
@@ -124,6 +127,16 @@ internal class FlagsFeatureTest {
 
         // Then
         assertThat(testedFeature.dataWriter).isInstanceOf(NoOpRecordWriter::class.java)
+    }
+
+    // endregion
+
+    // region General
+
+    @Test
+    fun `M have correct feature name W constructor`() {
+        // Then
+        assertThat(testedFeature.name).isEqualTo(FLAGS_FEATURE_NAME)
     }
 
     // endregion

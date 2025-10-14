@@ -169,7 +169,7 @@ internal class EvaluationsManagerTest {
         )
         verify(mockInternalLogger).log(
             eq(InternalLogger.Level.WARN),
-            eq(listOf(InternalLogger.Target.USER, InternalLogger.Target.MAINTAINER)),
+            eq(InternalLogger.Target.USER),
             any<() -> String>(),
             anyOrNull<Throwable>(),
             any<Boolean>(),

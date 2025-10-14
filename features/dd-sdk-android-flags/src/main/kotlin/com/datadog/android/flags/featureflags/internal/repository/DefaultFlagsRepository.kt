@@ -63,7 +63,7 @@ internal class DefaultFlagsRepository(
         }
         internalLogger.log(
             InternalLogger.Level.WARN,
-            InternalLogger.Target.MAINTAINER,
+            InternalLogger.Target.USER,
             { WARN_CONTEXT_NOT_SET }
         )
         return null

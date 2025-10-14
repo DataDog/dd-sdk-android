@@ -62,10 +62,9 @@ internal class EvaluationsManager(
             val flagsMap = if (response != null) {
                 precomputeMapper.map(response)
             } else {
-                // Log warning to both user and maintainer about network failure
                 internalLogger.log(
                     InternalLogger.Level.WARN,
-                    targets = listOf(InternalLogger.Target.USER, InternalLogger.Target.MAINTAINER),
+                    InternalLogger.Target.USER,
                     { NETWORK_REQUEST_FAILED_MESSAGE }
                 )
                 emptyMap()

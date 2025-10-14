@@ -24,8 +24,11 @@ import java.util.Locale
  * Production implementation of [FlagsClient] that integrates with Datadog's flag evaluation system.
  *
  * This implementation fetches precomputed flag values from the local repository and handles
- * type conversion with appropriate fallback to default values. All methods are thread-safe
- * and designed for high-frequency usage in mobile applications.
+ * type conversion with appropriate fallback to default values.
+ *
+ * Thread safety: All resolve methods are thread-safe read operations with no synchronization
+ * overhead, designed for high-frequency usage. The [setEvaluationContext] method is thread-safe
+ * but triggers asynchronous background operations for fetching updated flag evaluations.
  *
  * @param featureSdkCore the SDK core for logging and internal operations
  * @param evaluationsManager manages flag evaluations and network requests
@@ -53,7 +56,7 @@ internal class DatadogFlagsClient(
      * @param context The evaluation context containing targeting key and attributes.
      * Must contain a valid targeting key; invalid contexts are logged and ignored.
      */
-    override fun setContext(context: EvaluationContext) {
+    override fun setEvaluationContext(context: EvaluationContext) {
         if (context.targetingKey.isBlank()) {
             featureSdkCore.internalLogger.log(
                 InternalLogger.Level.WARN,
@@ -79,9 +82,8 @@ internal class DatadogFlagsClient(
      * @param defaultValue The value to return if the flag cannot be retrieved or parsed.
      * @return The boolean value of the flag, or the default value if unavailable or unparseable.
      */
-    override fun resolveBooleanValue(flagKey: String, defaultValue: Boolean): Boolean {
-        return getValue(flagKey, defaultValue) { it.lowercase(locale = Locale.US).toBooleanStrictOrNull() }
-    }
+    override fun resolveBooleanValue(flagKey: String, defaultValue: Boolean): Boolean =
+        getValue(flagKey, defaultValue) { it.lowercase(locale = Locale.US).toBooleanStrictOrNull() }
 
     /**
      * Resolves a string flag value from the local repository.
@@ -93,9 +95,8 @@ internal class DatadogFlagsClient(
      * @param defaultValue The value to return if the flag cannot be retrieved.
      * @return The string value of the flag, or the default value if unavailable.
      */
-    override fun resolveStringValue(flagKey: String, defaultValue: String): String {
-        return getValue(flagKey, defaultValue) { it }
-    }
+    override fun resolveStringValue(flagKey: String, defaultValue: String): String =
+        getValue(flagKey, defaultValue) { it }
 
     /**
      * Resolves an integer flag value from the local repository.
@@ -108,9 +109,8 @@ internal class DatadogFlagsClient(
      * @param defaultValue The value to return if the flag cannot be retrieved or parsed.
      * @return The integer value of the flag, or the default value if unavailable or unparseable.
      */
-    override fun resolveIntValue(flagKey: String, defaultValue: Int): Int {
-        return getValue(flagKey, defaultValue) { it.toIntOrNull() }
-    }
+    override fun resolveIntValue(flagKey: String, defaultValue: Int): Int =
+        getValue(flagKey, defaultValue) { it.toIntOrNull() }
 
     /**
      * Resolves a double flag value from the local repository.
@@ -123,9 +123,8 @@ internal class DatadogFlagsClient(
      * @param defaultValue The value to return if the flag cannot be retrieved or parsed.
      * @return The double value of the flag, or the default value if unavailable or unparseable.
      */
-    override fun resolveDoubleValue(flagKey: String, defaultValue: Double): Double {
-        return getValue(flagKey, defaultValue) { it.toDoubleOrNull() }
-    }
+    override fun resolveDoubleValue(flagKey: String, defaultValue: Double): Double =
+        getValue(flagKey, defaultValue) { it.toDoubleOrNull() }
 
     /**
      * Resolves a structured flag value from the local repository.
@@ -138,33 +137,22 @@ internal class DatadogFlagsClient(
      * @param defaultValue The value to return if the flag cannot be retrieved or parsed.
      * @return The JSON object value of the flag, or the default value if unavailable or unparseable.
      */
-    override fun resolveStructureValue(flagKey: String, defaultValue: JSONObject): JSONObject {
-        return getValue(flagKey, defaultValue) { stringValue ->
+    override fun resolveStructureValue(flagKey: String, defaultValue: JSONObject): JSONObject =
+        getValue(flagKey, defaultValue) { stringValue ->
             try {
                 JSONObject(stringValue)
             } catch (e: JSONException) {
                 featureSdkCore.internalLogger.log(
                     level = InternalLogger.Level.ERROR,
-                    target = InternalLogger.Target.MAINTAINER,
-                    messageBuilder = { "Failed to parse JSON for key: $flagKey" },
-                    throwable = e
-                )
-                featureSdkCore.internalLogger.log(
-                    level = InternalLogger.Level.WARN,
                     target = InternalLogger.Target.USER,
-                    messageBuilder = { "Failed to parse feature flag" },
+                    messageBuilder = { "Failed to parse JSON for key: $flagKey" },
                     throwable = e
                 )
                 defaultValue
             }
         }
-    }
 
-    private fun <T> getValue(
-        flagKey: String,
-        defaultValue: T,
-        converter: (String) -> T?
-    ): T {
+    private fun <T> getValue(flagKey: String, defaultValue: T, converter: (String) -> T?): T {
         val precomputedFlag = flagsRepository.getPrecomputedFlag(flagKey)
         val convertedValue = precomputedFlag?.variationValue?.let(converter)
 

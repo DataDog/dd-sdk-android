@@ -1,17 +1,22 @@
 object com.datadog.android.flags.Flags
-  fun enable(FlagsConfiguration, com.datadog.android.api.SdkCore = Datadog.getInstance())
+  fun enable(FlagsConfiguration = FlagsConfiguration.default, com.datadog.android.api.SdkCore = Datadog.getInstance())
 data class com.datadog.android.flags.FlagsConfiguration
   class Builder
     fun trackExposures(Boolean): Builder
+    fun useCustomExposureEndpoint(String): Builder
     fun build(): FlagsConfiguration
+  companion object 
 interface com.datadog.android.flags.featureflags.FlagsClient
-  fun setContext(com.datadog.android.flags.featureflags.model.EvaluationContext)
+  fun setEvaluationContext(com.datadog.android.flags.featureflags.model.EvaluationContext)
   fun resolveBooleanValue(String, Boolean): Boolean
   fun resolveStringValue(String, String): String
   fun resolveDoubleValue(String, Double): Double
   fun resolveIntValue(String, Int): Int
   fun resolveStructureValue(String, org.json.JSONObject): org.json.JSONObject
+  class Builder
+    constructor(String = DEFAULT_CLIENT_NAME, com.datadog.android.api.SdkCore = Datadog.getInstance())
+    fun build(): FlagsClient
   companion object 
-    fun get(com.datadog.android.api.SdkCore = Datadog.getInstance()): FlagsClient
+    fun get(String = DEFAULT_CLIENT_NAME, com.datadog.android.api.SdkCore = Datadog.getInstance()): FlagsClient
 data class com.datadog.android.flags.featureflags.model.EvaluationContext
   constructor(String, Map<String, String> = emptyMap())
