@@ -46,7 +46,6 @@ import com.datadog.android.rum.internal.toAction
 import com.datadog.android.rum.internal.toError
 import com.datadog.android.rum.internal.toLongTask
 import com.datadog.android.rum.internal.toView
-import com.datadog.android.rum.internal.toVital
 import com.datadog.android.rum.internal.utils.buildDDTagsString
 import com.datadog.android.rum.internal.utils.hasUserData
 import com.datadog.android.rum.internal.utils.newRumEventWriteOperation
@@ -89,7 +88,8 @@ internal open class RumViewScope(
     private val rumSessionTypeOverride: RumSessionType?,
     private val accessibilitySnapshotManager: AccessibilitySnapshotManager,
     private val batteryInfoProvider: InfoProvider<BatteryInfo>,
-    private val displayInfoProvider: InfoProvider<DisplayInfo>
+    private val displayInfoProvider: InfoProvider<DisplayInfo>,
+    private val rumVitalEventHelper: RumVitalEventHelper
 ) : RumScope {
 
     internal val url = key.url.replace('.', '/')
@@ -306,102 +306,24 @@ internal open class RumViewScope(
         eventAttributes: Map<String, Any?>
     ): VitalEvent {
         val rumContext = getRumContext()
-        val syntheticsAttribute = if (
-            rumContext.syntheticsTestId.isNullOrBlank() ||
-            rumContext.syntheticsResultId.isNullOrBlank()
-        ) {
-            null
-        } else {
-            VitalEvent.Synthetics(
-                testId = rumContext.syntheticsTestId,
-                resultId = rumContext.syntheticsResultId
-            )
-        }
+
         val hasReplay = featuresContextResolver.resolveViewHasReplay(
             datadogContext,
             rumContext.viewId.orEmpty()
         )
 
-        val sessionType = when {
-            rumSessionTypeOverride != null -> rumSessionTypeOverride.toVital()
-            syntheticsAttribute == null -> VitalEvent.VitalEventSessionType.USER
-            else -> VitalEvent.VitalEventSessionType.SYNTHETICS
-        }
-        val batteryInfo = batteryInfoProvider.getState()
-        val displayInfo = displayInfoProvider.getState()
-        val user = datadogContext.userInfo
-
-        return VitalEvent(
-            date = event.eventTime.timestamp + serverTimeOffsetInMs,
-            context = VitalEvent.Context(
-                additionalProperties = getCustomAttributes().toMutableMap().also {
-                    it.putAll(eventAttributes)
-                }
-            ),
-            dd = VitalEvent.Dd(
-                session = VitalEvent.DdSession(
-                    sessionPrecondition = rumContext.sessionStartReason.toVitalSessionPrecondition()
-                ),
-                configuration = VitalEvent.Configuration(sessionSampleRate = sampleRate)
-            ),
-            application = VitalEvent.Application(
-                id = rumContext.applicationId,
-                currentLocale = datadogContext.deviceInfo.localeInfo.currentLocale
-            ),
-            synthetics = syntheticsAttribute,
-            session = VitalEvent.VitalEventSession(
-                id = rumContext.sessionId,
-                type = sessionType,
-                hasReplay = hasReplay
-            ),
+        return rumVitalEventHelper.newVitalEvent(
+            timestampMs = event.eventTime.timestamp + serverTimeOffsetInMs,
+            datadogContext = datadogContext,
+            eventAttributes = eventAttributes,
+            customAttributes = getCustomAttributes(),
             view = VitalEvent.VitalEventView(
                 id = rumContext.viewId.orEmpty(),
                 name = rumContext.viewName,
                 url = rumContext.viewUrl.orEmpty()
             ),
-            source = VitalEvent.VitalEventSource.tryFromSource(
-                source = datadogContext.source,
-                internalLogger = sdkCore.internalLogger
-            ),
-            account = datadogContext.accountInfo?.let {
-                VitalEvent.Account(
-                    id = it.id,
-                    name = it.name,
-                    additionalProperties = it.extraInfo.toMutableMap()
-                )
-            },
-            usr = if (user.hasUserData()) {
-                VitalEvent.Usr(
-                    id = user.id,
-                    name = user.name,
-                    email = user.email,
-                    anonymousId = user.anonymousId,
-                    additionalProperties = user.additionalProperties.toMutableMap()
-                )
-            } else {
-                null
-            },
-            device = VitalEvent.Device(
-                type = datadogContext.deviceInfo.deviceType.toVitalSchemaType(),
-                name = datadogContext.deviceInfo.deviceName,
-                model = datadogContext.deviceInfo.deviceModel,
-                brand = datadogContext.deviceInfo.deviceBrand,
-                architecture = datadogContext.deviceInfo.architecture,
-                locales = datadogContext.deviceInfo.localeInfo.locales,
-                timeZone = datadogContext.deviceInfo.localeInfo.timeZone,
-                batteryLevel = batteryInfo.batteryLevel,
-                powerSavingMode = batteryInfo.lowPowerMode,
-                brightnessLevel = displayInfo.screenBrightness
-            ),
-            os = VitalEvent.Os(
-                name = datadogContext.deviceInfo.osName,
-                version = datadogContext.deviceInfo.osVersion,
-                versionMajor = datadogContext.deviceInfo.osMajorVersion
-            ),
-            connectivity = datadogContext.networkInfo.toVitalConnectivity(),
-            version = datadogContext.version,
-            service = datadogContext.service,
-            ddtags = buildDDTagsString(datadogContext),
+            hasReplay = hasReplay,
+            rumContext = rumContext,
             vital = VitalEvent.Vital.FeatureOperationProperties(
                 id = UUID.randomUUID().toString(),
                 name = name,
@@ -461,7 +383,8 @@ internal open class RumViewScope(
             rumSessionTypeOverride = rumSessionTypeOverride,
             accessibilitySnapshotManager = accessibilitySnapshotManager,
             batteryInfoProvider = batteryInfoProvider,
-            displayInfoProvider = displayInfoProvider
+            displayInfoProvider = displayInfoProvider,
+            rumVitalEventHelper = rumVitalEventHelper
         )
     }
 
@@ -1748,7 +1671,8 @@ internal open class RumViewScope(
             rumSessionTypeOverride: RumSessionType?,
             accessibilitySnapshotManager: AccessibilitySnapshotManager,
             batteryInfoProvider: InfoProvider<BatteryInfo>,
-            displayInfoProvider: InfoProvider<DisplayInfo>
+            displayInfoProvider: InfoProvider<DisplayInfo>,
+            rumVitalEventHelper: RumVitalEventHelper
         ): RumViewScope {
             val networkSettledMetricResolver = NetworkSettledMetricResolver(
                 networkSettledResourceIdentifier,
@@ -1784,7 +1708,8 @@ internal open class RumViewScope(
                 rumSessionTypeOverride = rumSessionTypeOverride,
                 accessibilitySnapshotManager = accessibilitySnapshotManager,
                 batteryInfoProvider = batteryInfoProvider,
-                displayInfoProvider = displayInfoProvider
+                displayInfoProvider = displayInfoProvider,
+                rumVitalEventHelper = rumVitalEventHelper
             )
         }
 

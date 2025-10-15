@@ -18,6 +18,7 @@ import com.datadog.android.rum.DdRumContentProvider
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.RumSessionType
+import com.datadog.android.rum.internal.FeaturesContextResolver
 import com.datadog.android.rum.internal.domain.InfoProvider
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
@@ -52,7 +53,9 @@ internal class RumApplicationScope(
     private val accessibilitySnapshotManager: AccessibilitySnapshotManager,
     private val batteryInfoProvider: InfoProvider<BatteryInfo>,
     private val displayInfoProvider: InfoProvider<DisplayInfo>,
-    private val rumAppStartupTelemetryReporter: RumAppStartupTelemetryReporter
+    private val rumAppStartupTelemetryReporter: RumAppStartupTelemetryReporter,
+    private val rumVitalEventHelper: RumVitalEventHelper,
+    private val featuresContextResolver: FeaturesContextResolver
 ) : RumScope, RumViewChangedListener {
 
     override val parentScope: RumScope? = null
@@ -81,7 +84,9 @@ internal class RumApplicationScope(
             accessibilitySnapshotManager = accessibilitySnapshotManager,
             batteryInfoProvider = batteryInfoProvider,
             displayInfoProvider = displayInfoProvider,
-            rumAppStartupTelemetryReporter = rumAppStartupTelemetryReporter
+            rumAppStartupTelemetryReporter = rumAppStartupTelemetryReporter,
+            rumVitalEventHelper = rumVitalEventHelper,
+            featuresContextResolver = featuresContextResolver
         )
     )
 
@@ -202,7 +207,9 @@ internal class RumApplicationScope(
             accessibilitySnapshotManager = accessibilitySnapshotManager,
             batteryInfoProvider = batteryInfoProvider,
             displayInfoProvider = displayInfoProvider,
-            rumAppStartupTelemetryReporter = rumAppStartupTelemetryReporter
+            rumAppStartupTelemetryReporter = rumAppStartupTelemetryReporter,
+            rumVitalEventHelper = rumVitalEventHelper,
+            featuresContextResolver = featuresContextResolver
         )
         childScopes.add(newSession)
         if (event !is RumRawEvent.StartView) {

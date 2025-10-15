@@ -555,17 +555,17 @@ internal class RumEventSerializerTest {
         }
     }
 
-    @RepeatedTest(8)
+    @RepeatedTest(16)
     fun `M serialize RUM event W serialize() with VitalEvent`(
         @Forgery event: VitalEvent
     ) {
         val serialized = testedSerializer.serialize(event)
         val jsonObject = JsonParser.parseString(serialized).asJsonObject
 
-        assertThat(jsonObject)
-            .hasField("type", "vital")
-            .hasField("date", event.date)
-            .hasField("vital") {
+        assertThat(jsonObject).apply {
+            hasField("type", "vital")
+            hasField("date", event.date)
+            hasField("vital") {
                 when (val vital = event.vital) {
                     is VitalEvent.Vital.FeatureOperationProperties -> {
                         hasField("type", vital.type)
@@ -575,29 +575,44 @@ internal class RumEventSerializerTest {
                         vital.stepType?.let { hasField("step_type", it.toJson()) }
                         vital.failureReason?.let { hasField("failure_reason", it.toJson()) }
                     }
-                    is VitalEvent.Vital.DurationProperties,
-                    is VitalEvent.Vital.AppLaunchProperties -> TODO("SDK doesn't support this vital type yet")
+
+                    is VitalEvent.Vital.AppLaunchProperties -> {
+                        hasField("type", vital.type)
+                        hasField("id", vital.id)
+                        vital.name?.let { hasField("name", it) }
+                        vital.description?.let { hasField("description", it) }
+                        hasField("app_launch_metric", vital.appLaunchMetric.toJson())
+                        hasField("duration", vital.duration)
+                        vital.startupType?.let { hasField("startup_type", it.toJson()) }
+                        vital.isPrewarmed?.let { hasField("is_prewarmed", it) }
+                        vital.hasSavedInstanceStateBundle?.let { hasField("has_saved_instance_state_bundle", it) }
+                    }
+
+                    is VitalEvent.Vital.DurationProperties -> TODO("SDK doesn't support this vital type yet")
                 }
             }
-            .hasField("application") {
+            hasField("application") {
                 hasField("id", event.application.id)
             }
-            .hasField("session") {
+            hasField("session") {
                 hasField("id", event.session.id)
                 hasField("type", event.session.type.name.lowercase(Locale.US))
                 event.session.hasReplay?.let { hasField("has_replay", it) }
             }
-            .hasField("view") {
-                val view = checkNotNull(event.view)
-                hasField("id", view.id)
-                hasField("url", view.url)
-                view.referrer?.let { hasField("referrer", it) }
-                view.name?.let { hasField("name", it) }
+            event.view?.let {
+                hasField("view") {
+                    val view = checkNotNull(event.view)
+                    hasField("id", view.id)
+                    hasField("url", view.url)
+                    view.referrer?.let { hasField("referrer", it) }
+                    view.name?.let { hasField("name", it) }
+                }
             }
-            .hasField("_dd") {
+            hasField("_dd") {
                 event.dd.browserSdkVersion?.let { hasField("browser_sdk_version", it) }
             }
-            .hasNullableField("service", event.service)
+            hasNullableField("service", event.service)
+        }
 
         event.device?.let { device ->
             assertThat(jsonObject).hasField("device") {

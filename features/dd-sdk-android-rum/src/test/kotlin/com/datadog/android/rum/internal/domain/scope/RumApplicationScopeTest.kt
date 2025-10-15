@@ -20,6 +20,7 @@ import com.datadog.android.rum.DdRumContentProvider
 import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.RumSessionType
+import com.datadog.android.rum.internal.FeaturesContextResolver
 import com.datadog.android.rum.internal.domain.InfoProvider
 import com.datadog.android.rum.internal.domain.accessibility.AccessibilitySnapshotManager
 import com.datadog.android.rum.internal.domain.battery.BatteryInfo
@@ -183,7 +184,15 @@ internal class RumApplicationScopeTest {
             accessibilitySnapshotManager = mockAccessibilitySnapshotManager,
             batteryInfoProvider = mockBatteryInfoProvider,
             displayInfoProvider = mockDisplayInfoProvider,
-            rumAppStartupTelemetryReporter = mockRumAppStartupTelemetryReporter
+            rumAppStartupTelemetryReporter = mockRumAppStartupTelemetryReporter,
+            rumVitalEventHelper = RumVitalEventHelper(
+                rumSessionTypeOverride = fakeRumSessionType,
+                batteryInfoProvider = mockBatteryInfoProvider,
+                displayInfoProvider = mockDisplayInfoProvider,
+                sampleRate = fakeSampleRate,
+                internalLogger = mockInternalLogger
+            ),
+            featuresContextResolver = FeaturesContextResolver()
         )
     }
 

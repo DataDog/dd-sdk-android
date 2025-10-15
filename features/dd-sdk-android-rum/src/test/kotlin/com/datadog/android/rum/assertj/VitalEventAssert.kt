@@ -88,6 +88,14 @@ internal class VitalEventAssert(actual: VitalEvent) : AbstractObjectAssert<Vital
             .isEqualTo(hasReplay)
     }
 
+    fun hasNullView() = apply {
+        assertThat(actual.view)
+            .overridingErrorMessage(
+                "Expected event data to have view equal to null"
+            )
+            .isNull()
+    }
+
     fun hasViewId(expectedId: String) = apply {
         assertThat(actual.view?.id)
             .overridingErrorMessage(
