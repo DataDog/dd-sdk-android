@@ -13,11 +13,16 @@ import com.datadog.android.api.feature.EventWriteScope
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.storage.DataWriter
+import com.datadog.android.api.storage.EventBatchWriter
+import com.datadog.android.api.storage.EventType
 import com.datadog.android.api.storage.NoOpDataWriter
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.RumSessionType
+import com.datadog.android.rum.assertj.VitalAppLaunchPropertiesAssert
+import com.datadog.android.rum.assertj.VitalEventAssert
+import com.datadog.android.rum.internal.FeaturesContextResolver
 import com.datadog.android.rum.internal.domain.InfoProvider
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.accessibility.AccessibilitySnapshotManager
@@ -29,10 +34,15 @@ import com.datadog.android.rum.internal.startup.RumAppStartupTelemetryReporter
 import com.datadog.android.rum.internal.startup.RumStartupScenario
 import com.datadog.android.rum.internal.startup.RumTTIDInfo
 import com.datadog.android.rum.internal.startup.testRumStartupScenarios
+import com.datadog.android.rum.internal.toVital
+import com.datadog.android.rum.internal.utils.buildDDTagsString
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.rum.metric.interactiontonextview.LastInteractionIdentifier
 import com.datadog.android.rum.metric.networksettled.InitialResourceIdentifier
+import com.datadog.android.rum.model.ViewEvent
+import com.datadog.android.rum.model.VitalEvent
 import com.datadog.android.rum.utils.forge.Configurator
+import com.datadog.tools.unit.forge.exhaustiveAttributes
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.FloatForgery
@@ -54,6 +64,7 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.inOrder
@@ -163,11 +174,27 @@ internal class RumSessionScopeTest {
 
     private var fakeRumSessionType: RumSessionType? = null
 
+    @Mock
+    lateinit var mockEventBatchWriter: EventBatchWriter
+
+    lateinit var fakeParentAttributes: Map<String, Any?>
+
+    @Forgery
+    lateinit var fakeBatteryInfo: BatteryInfo
+
+    @Forgery
+    lateinit var fakeDisplayInfo: DisplayInfo
+
+    @BoolForgery
+    var fakeHasReplay: Boolean = false
+
+    private var fakeVitalSource: VitalEvent.VitalEventSource? = null
+
     @BeforeEach
     fun `set up`(forge: Forge) {
         fakeInitialViewEvent = forge.startViewEvent()
 
-        whenever(mockParentScope.getRumContext()) doReturn fakeParentContext
+        whenever(mockParentScope.getRumContext()).doAnswer { fakeParentContext }
         whenever(mockChildScope.handleEvent(any(), any(), any(), any())) doReturn mockChildScope
         whenever(mockSdkCore.getFeature(Feature.SESSION_REPLAY_FEATURE_NAME)) doReturn
             mockSessionReplayFeatureScope
@@ -175,6 +202,38 @@ internal class RumSessionScopeTest {
         whenever(mockSdkCore.internalLogger) doReturn mock()
 
         fakeRumSessionType = forge.aNullable { aValueFrom(RumSessionType::class.java) }
+
+        whenever(mockEventWriteScope.invoke(any())) doAnswer {
+            val callback = it.getArgument<(EventBatchWriter) -> Unit>(0)
+            callback.invoke(mockEventBatchWriter)
+        }
+        whenever(mockWriter.write(eq(mockEventBatchWriter), any(), eq(EventType.DEFAULT))) doReturn true
+
+        whenever(mockBatteryInfoProvider.getState()) doReturn fakeBatteryInfo
+        whenever(mockDisplayInfoProvider.getState()) doReturn fakeDisplayInfo
+
+        fakeParentAttributes = forge.exhaustiveAttributes()
+        whenever(mockParentScope.getCustomAttributes()) doReturn fakeParentAttributes
+
+        val isValidSource = forge.aBool()
+
+        val fakeSource = if (isValidSource) {
+            forge.anElementFrom(
+                ViewEvent.ViewEventSource.values().map { it.toJson().asString }
+            )
+        } else {
+            forge.anAlphabeticalString()
+        }
+
+        fakeDatadogContext = fakeDatadogContext.copy(
+            source = fakeSource
+        )
+
+        fakeVitalSource = if (isValidSource) {
+            VitalEvent.VitalEventSource.fromJson(fakeSource)
+        } else {
+            null
+        }
 
         initializeTestedScope()
     }
@@ -1520,6 +1579,99 @@ internal class RumSessionScopeTest {
         }
     }
 
+    @ParameterizedTest
+    @MethodSource("testScenarios")
+    fun `M write Vital event with TTID W handleEvent { AppLaunchTTIDEvent }`(
+        scenario: RumStartupScenario,
+        forge: Forge
+    ) {
+        // Given
+        fakeParentContext = fakeParentContext.copy(
+            syntheticsTestId = null,
+            syntheticsResultId = null
+        )
+
+        val mockView = mock<RumViewScope>()
+        val fakeViewId = forge.aString()
+        whenever(mockView.viewId) doReturn fakeViewId
+        whenever(mockChildScope.activeView) doReturn mockView
+
+        fakeDatadogContext = fakeDatadogContext.copy(
+            featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
+                put(Feature.SESSION_REPLAY_FEATURE_NAME, mapOf(fakeViewId to mapOf("has_replay" to fakeHasReplay)))
+            }
+        )
+
+        val info = RumTTIDInfo(
+            scenario = scenario,
+            durationNs = forge.aLong(min = 0, max = 10000)
+        )
+
+        val event = RumRawEvent.AppStartTTIDEvent(
+            info = info
+        )
+
+        // When
+
+        val result = testedScope.handleEvent(
+            event = event,
+            datadogContext = fakeDatadogContext,
+            writeScope = mockEventWriteScope,
+            writer = mockWriter
+        )
+
+        // Then
+        val context = checkNotNull(result).getRumContext()
+
+        argumentCaptor<VitalEvent> {
+            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
+            VitalEventAssert.assertThat(lastValue).apply {
+                hasDate(scenario.initialTime.timestamp + fakeTimeInfo.serverTimeOffsetMs)
+                hasApplicationId(context.applicationId)
+                containsExactlyContextAttributes(fakeParentAttributes)
+                hasStartReason(context.sessionStartReason)
+                hasSampleRate(100f)
+                hasNoSyntheticsTest()
+                hasSessionId(context.sessionId)
+                hasSessionType(fakeRumSessionType?.toVital() ?: VitalEvent.VitalEventSessionType.USER)
+                hasSessionReplay(fakeHasReplay)
+                hasNullView()
+                hasSource(fakeVitalSource)
+                hasAccountInfo(fakeDatadogContext.accountInfo)
+                hasUserInfo(fakeDatadogContext.userInfo)
+                hasDeviceInfo(
+                    fakeDatadogContext.deviceInfo.deviceName,
+                    fakeDatadogContext.deviceInfo.deviceModel,
+                    fakeDatadogContext.deviceInfo.deviceBrand,
+                    fakeDatadogContext.deviceInfo.deviceType.toVitalSchemaType(),
+                    fakeDatadogContext.deviceInfo.architecture
+                )
+                hasOsInfo(
+                    fakeDatadogContext.deviceInfo.osName,
+                    fakeDatadogContext.deviceInfo.osVersion,
+                    fakeDatadogContext.deviceInfo.osMajorVersion
+                )
+                hasConnectivityInfo(fakeDatadogContext.networkInfo)
+                hasVersion(fakeDatadogContext.version)
+                hasServiceName(fakeDatadogContext.service)
+                hasDDTags(buildDDTagsString(fakeDatadogContext))
+            }
+
+            val vital = lastValue.vital
+            check(vital is VitalEvent.Vital.AppLaunchProperties)
+
+            VitalAppLaunchPropertiesAssert.assertThat(vital).apply {
+                hasName(null)
+                hasDescription(null)
+                hasAppLaunchMetric(VitalEvent.AppLaunchMetric.TTID)
+                hasDuration(info.durationNs)
+                hasStartupType(scenario.toVitalStartupType())
+                hasPrewarmed(null)
+                hasSavedInstanceStateBundle(scenario.hasSavedInstanceStateBundle)
+            }
+        }
+    }
+
     // endregion
 
     // region Internal
@@ -1552,7 +1704,15 @@ internal class RumSessionScopeTest {
             accessibilitySnapshotManager = mockAccessibilitySnapshotManager,
             batteryInfoProvider = mockBatteryInfoProvider,
             displayInfoProvider = mockDisplayInfoProvider,
-            rumAppStartupTelemetryReporter = mockRumAppStartupTelemetryReporter
+            rumAppStartupTelemetryReporter = mockRumAppStartupTelemetryReporter,
+            rumVitalEventHelper = RumVitalEventHelper(
+                rumSessionTypeOverride = fakeRumSessionType,
+                batteryInfoProvider = mockBatteryInfoProvider,
+                displayInfoProvider = mockDisplayInfoProvider,
+                sampleRate = sampleRate,
+                internalLogger = mock()
+            ),
+            featuresContextResolver = FeaturesContextResolver()
         )
 
         if (withMockChildScope) {

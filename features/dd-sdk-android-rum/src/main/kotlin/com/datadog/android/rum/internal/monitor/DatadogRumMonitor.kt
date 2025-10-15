@@ -40,6 +40,7 @@ import com.datadog.android.rum.RumSessionType
 import com.datadog.android.rum._RumInternalProxy
 import com.datadog.android.rum.featureoperations.FailureReason
 import com.datadog.android.rum.internal.CombinedRumSessionListener
+import com.datadog.android.rum.internal.FeaturesContextResolver
 import com.datadog.android.rum.internal.RumErrorSourceType
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.debug.RumDebugListener
@@ -55,6 +56,7 @@ import com.datadog.android.rum.internal.domain.scope.RumApplicationScope
 import com.datadog.android.rum.internal.domain.scope.RumRawEvent
 import com.datadog.android.rum.internal.domain.scope.RumScopeKey
 import com.datadog.android.rum.internal.domain.scope.RumSessionScope
+import com.datadog.android.rum.internal.domain.scope.RumVitalEventHelper
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
 import com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener
 import com.datadog.android.rum.internal.startup.RumAppStartupTelemetryReporter
@@ -96,7 +98,9 @@ internal class DatadogRumMonitor(
     accessibilitySnapshotManager: AccessibilitySnapshotManager,
     batteryInfoProvider: InfoProvider<BatteryInfo>,
     displayInfoProvider: InfoProvider<DisplayInfo>,
-    rumAppStartupTelemetryReporter: RumAppStartupTelemetryReporter
+    rumAppStartupTelemetryReporter: RumAppStartupTelemetryReporter,
+    rumVitalEventHelper: RumVitalEventHelper,
+    private val featuresContextResolver: FeaturesContextResolver
 ) : RumMonitor, AdvancedRumMonitor {
 
     internal var rootScope = RumApplicationScope(
@@ -118,7 +122,9 @@ internal class DatadogRumMonitor(
         accessibilitySnapshotManager = accessibilitySnapshotManager,
         batteryInfoProvider = batteryInfoProvider,
         displayInfoProvider = displayInfoProvider,
-        rumAppStartupTelemetryReporter = rumAppStartupTelemetryReporter
+        rumAppStartupTelemetryReporter = rumAppStartupTelemetryReporter,
+        rumVitalEventHelper = rumVitalEventHelper,
+        featuresContextResolver = featuresContextResolver
     )
 
     internal val keepAliveRunnable = Runnable {
