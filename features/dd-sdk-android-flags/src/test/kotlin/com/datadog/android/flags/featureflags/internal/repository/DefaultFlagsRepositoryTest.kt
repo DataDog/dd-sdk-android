@@ -9,12 +9,16 @@ package com.datadog.android.flags.featureflags.internal.repository
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.storage.datastore.DataStoreHandler
+import com.datadog.android.api.storage.datastore.DataStoreReadCallback
+import com.datadog.android.flags.featureflags.internal.model.FlagsStateEntry
+import com.datadog.android.flags.featureflags.internal.model.PrecomputedFlag
 import com.datadog.android.flags.featureflags.model.EvaluationContext
 import com.datadog.android.flags.utils.forge.ForgeConfigurator
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
+import org.json.JSONObject
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -22,9 +26,12 @@ import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.any
+import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
+import java.util.concurrent.CountDownLatch
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -48,6 +55,19 @@ internal class DefaultFlagsRepositoryTest {
     @BeforeEach
     fun `set up`() {
         whenever(mockFeatureSdkCore.internalLogger) doReturn mockInternalLogger
+        whenever(
+            mockDataStore.value<FlagsStateEntry>(
+                key = any(),
+                version = any(),
+                callback = any(),
+                deserializer = any()
+            )
+        ) doAnswer {
+            val callback = it.getArgument<DataStoreReadCallback<FlagsStateEntry>>(2)
+            callback.onFailure()
+            null
+        }
+
         testedRepository = DefaultFlagsRepository(
             featureSdkCore = mockFeatureSdkCore,
             dataStore = mockDataStore,
@@ -69,5 +89,99 @@ internal class DefaultFlagsRepositoryTest {
 
         // Then
         assertThat(result).isEqualTo(context)
+    }
+
+    @Test
+    fun `M wait for async persistence callback W getPrecomputedFlag() { persistence fails within timeout }`(
+        forge: Forge
+    ) {
+        // Given
+        val flagKey = forge.anAlphabeticalString()
+        val callbackBarrier = CountDownLatch(1)
+        var capturedCallback: DataStoreReadCallback<FlagsStateEntry>? = null
+        doAnswer {
+            capturedCallback = it.getArgument(2)
+            null
+        }.whenever(mockDataStore).value<FlagsStateEntry>(
+            key = any(),
+            version = any(),
+            callback = any(),
+            deserializer = any()
+        )
+        val testedRepository = DefaultFlagsRepository(
+            featureSdkCore = mockFeatureSdkCore,
+            dataStore = mockDataStore,
+            instanceName = "async"
+        )
+        val asyncThread = Thread {
+            callbackBarrier.await()
+            capturedCallback?.onFailure()
+        }
+
+        // When
+        asyncThread.start()
+        callbackBarrier.countDown()
+        val result = testedRepository.getPrecomputedFlag(flagKey)
+        asyncThread.join()
+
+        // Then
+        assertThat(result).isNull()
+    }
+
+    @Test
+    fun `M return null W getPrecomputedFlag() { persistence never loads }`(forge: Forge) {
+        // Given
+        val flagKey = forge.anAlphabeticalString()
+        doAnswer {
+            null
+        }.whenever(mockDataStore).value<FlagsStateEntry>(
+            key = any(),
+            version = any(),
+            callback = any(),
+            deserializer = any()
+        )
+        val testedRepository = DefaultFlagsRepository(
+            featureSdkCore = mockFeatureSdkCore,
+            dataStore = mockDataStore,
+            instanceName = "timeout",
+            persistenceLoadTimeoutMs = 1L
+        )
+
+        // When
+        val result = testedRepository.getPrecomputedFlag(flagKey)
+
+        // Then
+        assertThat(result).isNull()
+    }
+
+    @Test
+    fun `M return immediately without blocking W getPrecomputedFlag() { setFlagsAndContext already called }`(
+        forge: Forge
+    ) {
+        // Given
+        val flagKey = forge.anAlphabeticalString()
+        val flagValue = forge.anAlphabeticalString()
+        val context = EvaluationContext(
+            targetingKey = forge.anAlphabeticalString(),
+            attributes = mapOf("env" to "test")
+        )
+        val flags = mapOf(
+            flagKey to PrecomputedFlag(
+                variationType = "string",
+                variationValue = flagValue,
+                doLog = false,
+                allocationKey = forge.anAlphabeticalString(),
+                variationKey = forge.anAlphabeticalString(),
+                extraLogging = JSONObject(),
+                reason = "DEFAULT"
+            )
+        )
+        testedRepository.setFlagsAndContext(context, flags)
+
+        // When
+        val result = testedRepository.getPrecomputedFlag(flagKey)
+
+        // Then
+        assertThat(result?.variationValue).isEqualTo(flagValue)
     }
 }
