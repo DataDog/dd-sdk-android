@@ -111,14 +111,32 @@ internal class CoreFeature(
 ) {
 
     /**
-     * Lazy-initialized shared OkHttpClient instance.
+     * Lazy-initialized shared OkHttpClient instance with FIPS 140-2 compliant configuration.
      * This base client is used as the foundation for all HTTP clients in the SDK.
      * When creating new clients via newBuilder(), the new clients will share the
      * dispatcher (thread pool) and connection pool with this base client, reducing
      * resource consumption across the SDK.
+     *
+     * Configuration includes:
+     * - FIPS 140-2 compliant TLS 1.2/1.3 with restricted cipher suites for GovCloud support
+     * - Network timeouts (45 seconds)
+     * - HTTP/2 and HTTP/1.1 protocol support
+     * - Rotating DNS resolver for reliability
      */
+    @Suppress("SpreadOperator", "UnsafeThirdPartyFunctionCall")
     private val lazySharedOkHttpClient: OkHttpClient by lazy {
-        OkHttpClient.Builder().build()
+        val connectionSpec = ConnectionSpec.Builder(ConnectionSpec.RESTRICTED_TLS)
+            .tlsVersions(TlsVersion.TLS_1_2, TlsVersion.TLS_1_3)
+            .cipherSuites(*RESTRICTED_CIPHER_SUITES)
+            .build()
+
+        OkHttpClient.Builder()
+            .callTimeout(NETWORK_TIMEOUT_MS, TimeUnit.MILLISECONDS)
+            .writeTimeout(NETWORK_TIMEOUT_MS, TimeUnit.MILLISECONDS)
+            .protocols(listOf(Protocol.HTTP_2, Protocol.HTTP_1_1))
+            .connectionSpecs(listOf(connectionSpec))
+            .dns(RotatingDnsResolver()) // NPE cannot happen here
+            .build()
     }
 
     internal class OkHttpCallFactory(factory: () -> OkHttpClient) : Call.Factory {
@@ -583,24 +601,18 @@ internal class CoreFeature(
         networkInfoProvider.register(appContext)
     }
 
-    @Suppress("SpreadOperator")
     private fun setupOkHttpClient(configuration: Configuration.Core) {
         callFactory = OkHttpCallFactory {
-            val connectionSpec = when {
-                configuration.needsClearTextHttp -> ConnectionSpec.CLEARTEXT
-                else -> ConnectionSpec.Builder(ConnectionSpec.RESTRICTED_TLS)
-                    .tlsVersions(TlsVersion.TLS_1_2, TlsVersion.TLS_1_3)
-                    .cipherSuites(*RESTRICTED_CIPHER_SUITES)
-                    .build()
+            // Use shared base client to inherit FIPS-compliant configuration,
+            // shared thread pool and connection pool
+            val builder = lazySharedOkHttpClient.newBuilder()
+
+            // Override connection specs for cleartext HTTP if needed
+            if (configuration.needsClearTextHttp) {
+                builder.connectionSpecs(listOf(ConnectionSpec.CLEARTEXT))
             }
 
-            // Use shared base client to share thread pool and connection pool
-            val builder = lazySharedOkHttpClient.newBuilder()
-            builder.callTimeout(NETWORK_TIMEOUT_MS, TimeUnit.MILLISECONDS)
-                .writeTimeout(NETWORK_TIMEOUT_MS, TimeUnit.MILLISECONDS)
-                .protocols(listOf(Protocol.HTTP_2, Protocol.HTTP_1_1))
-                .connectionSpecs(listOf(connectionSpec))
-
+            // Add debug or production interceptors
             if (BuildConfig.DEBUG) {
                 @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
                 builder.addNetworkInterceptor(CurlInterceptor())
@@ -609,13 +621,11 @@ internal class CoreFeature(
                 builder.addInterceptor(GzipRequestInterceptor(internalLogger))
             }
 
+            // Configure proxy if provided
             if (configuration.proxy != null) {
                 builder.proxy(configuration.proxy)
                 builder.proxyAuthenticator(configuration.proxyAuth)
             }
-
-            @Suppress("UnsafeThirdPartyFunctionCall") // NPE cannot happen here
-            builder.dns(RotatingDnsResolver())
 
             builder.build()
         }
