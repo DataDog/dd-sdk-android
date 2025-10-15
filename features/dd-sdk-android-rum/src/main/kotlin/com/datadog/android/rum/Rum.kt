@@ -16,8 +16,10 @@ import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.sampling.RateBasedSampler
+import com.datadog.android.rum.internal.FeaturesContextResolver
 import com.datadog.android.rum.internal.RumAnonymousIdentifierManager
 import com.datadog.android.rum.internal.RumFeature
+import com.datadog.android.rum.internal.domain.scope.RumVitalEventHelper
 import com.datadog.android.rum.internal.metric.SessionEndedMetricDispatcher
 import com.datadog.android.rum.internal.monitor.DatadogRumMonitor
 import com.datadog.android.rum.internal.startup.RumAppStartupTelemetryReporter
@@ -145,7 +147,15 @@ object Rum {
             accessibilitySnapshotManager = rumFeature.accessibilitySnapshotManager,
             batteryInfoProvider = rumFeature.batteryInfoProvider,
             displayInfoProvider = rumFeature.displayInfoProvider,
-            rumAppStartupTelemetryReporter = RumAppStartupTelemetryReporter.create(sdkCore)
+            rumAppStartupTelemetryReporter = RumAppStartupTelemetryReporter.create(sdkCore),
+            rumVitalEventHelper = RumVitalEventHelper(
+                rumSessionTypeOverride = rumFeature.configuration.rumSessionTypeOverride,
+                batteryInfoProvider = rumFeature.batteryInfoProvider,
+                displayInfoProvider = rumFeature.displayInfoProvider,
+                sampleRate = rumFeature.sampleRate,
+                internalLogger = sdkCore.internalLogger
+            ),
+            featuresContextResolver = FeaturesContextResolver()
         )
     }
 

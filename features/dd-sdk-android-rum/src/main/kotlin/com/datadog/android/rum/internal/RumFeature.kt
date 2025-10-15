@@ -697,7 +697,7 @@ internal class RumFeature(
                         override fun onFirstFrameDrawn(timestampNs: Long) {
                             val info = RumTTIDInfo(
                                 scenario = scenario,
-                                durationNs = timestampNs - scenario.initialTimeNs
+                                durationNs = timestampNs - scenario.initialTime.nanoTime
                             )
                             (GlobalRumMonitor.get(sdkCore) as? AdvancedRumMonitor)
                                 ?.sendTTIDEvent(info)
