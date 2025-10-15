@@ -31,6 +31,7 @@ import com.datadog.android.rum.RumResourceMethod
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.RumSessionType
 import com.datadog.android.rum.featureoperations.FailureReason
+import com.datadog.android.rum.internal.FeaturesContextResolver
 import com.datadog.android.rum.internal.RumErrorSourceType
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.debug.RumDebugListener
@@ -46,6 +47,7 @@ import com.datadog.android.rum.internal.domain.scope.RumScopeKey
 import com.datadog.android.rum.internal.domain.scope.RumSessionScope
 import com.datadog.android.rum.internal.domain.scope.RumViewManagerScope
 import com.datadog.android.rum.internal.domain.scope.RumViewScope
+import com.datadog.android.rum.internal.domain.scope.RumVitalEventHelper
 import com.datadog.android.rum.internal.domain.state.ViewUIPerformanceReport
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
 import com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener
@@ -269,7 +271,9 @@ internal class DatadogRumMonitorTest {
             accessibilitySnapshotManager = mockAccessibilitySnapshotManager,
             batteryInfoProvider = mockBatteryInfoProvider,
             displayInfoProvider = mockDisplayInfoProvider,
-            rumAppStartupTelemetryReporter = mockRumAppStartupTelemetryReporter
+            rumAppStartupTelemetryReporter = mockRumAppStartupTelemetryReporter,
+            rumVitalEventHelper = createRumVitalEventHelper(),
+            featuresContextResolver = FeaturesContextResolver()
         )
         testedMonitor.rootScope = mockApplicationScope
     }
@@ -300,7 +304,9 @@ internal class DatadogRumMonitorTest {
             accessibilitySnapshotManager = mockAccessibilitySnapshotManager,
             batteryInfoProvider = mockBatteryInfoProvider,
             displayInfoProvider = mockDisplayInfoProvider,
-            rumAppStartupTelemetryReporter = mockRumAppStartupTelemetryReporter
+            rumAppStartupTelemetryReporter = mockRumAppStartupTelemetryReporter,
+            rumVitalEventHelper = createRumVitalEventHelper(),
+            featuresContextResolver = FeaturesContextResolver()
         )
 
         // When
@@ -373,7 +379,9 @@ internal class DatadogRumMonitorTest {
             accessibilitySnapshotManager = mockAccessibilitySnapshotManager,
             batteryInfoProvider = mockBatteryInfoProvider,
             displayInfoProvider = mockDisplayInfoProvider,
-            rumAppStartupTelemetryReporter = mockRumAppStartupTelemetryReporter
+            rumAppStartupTelemetryReporter = mockRumAppStartupTelemetryReporter,
+            rumVitalEventHelper = createRumVitalEventHelper(),
+            featuresContextResolver = FeaturesContextResolver()
         )
         testedMonitor.start()
         val mockCallback = mock<(String?) -> Unit>()
@@ -415,7 +423,9 @@ internal class DatadogRumMonitorTest {
             accessibilitySnapshotManager = mockAccessibilitySnapshotManager,
             batteryInfoProvider = mockBatteryInfoProvider,
             displayInfoProvider = mockDisplayInfoProvider,
-            rumAppStartupTelemetryReporter = mockRumAppStartupTelemetryReporter
+            rumAppStartupTelemetryReporter = mockRumAppStartupTelemetryReporter,
+            rumVitalEventHelper = createRumVitalEventHelper(),
+            featuresContextResolver = FeaturesContextResolver()
         )
         testedMonitor.start()
         val mockCallback = mock<(String?) -> Unit>()
@@ -2032,7 +2042,9 @@ internal class DatadogRumMonitorTest {
             accessibilitySnapshotManager = mockAccessibilitySnapshotManager,
             batteryInfoProvider = mockBatteryInfoProvider,
             displayInfoProvider = mockDisplayInfoProvider,
-            rumAppStartupTelemetryReporter = mockRumAppStartupTelemetryReporter
+            rumAppStartupTelemetryReporter = mockRumAppStartupTelemetryReporter,
+            rumVitalEventHelper = createRumVitalEventHelper(),
+            featuresContextResolver = FeaturesContextResolver()
         )
 
         // When
@@ -2071,7 +2083,9 @@ internal class DatadogRumMonitorTest {
             accessibilitySnapshotManager = mockAccessibilitySnapshotManager,
             batteryInfoProvider = mockBatteryInfoProvider,
             displayInfoProvider = mockDisplayInfoProvider,
-            rumAppStartupTelemetryReporter = mockRumAppStartupTelemetryReporter
+            rumAppStartupTelemetryReporter = mockRumAppStartupTelemetryReporter,
+            rumVitalEventHelper = createRumVitalEventHelper(),
+            featuresContextResolver = FeaturesContextResolver()
         )
 
         // When
@@ -2111,7 +2125,9 @@ internal class DatadogRumMonitorTest {
             batteryInfoProvider = mockBatteryInfoProvider,
             displayInfoProvider = mockDisplayInfoProvider,
             rumSessionTypeOverride = null,
-            rumAppStartupTelemetryReporter = mockRumAppStartupTelemetryReporter
+            rumAppStartupTelemetryReporter = mockRumAppStartupTelemetryReporter,
+            rumVitalEventHelper = createRumVitalEventHelper(),
+            featuresContextResolver = FeaturesContextResolver()
         )
         whenever(mockExecutorService.isShutdown).thenReturn(true)
 
@@ -2283,7 +2299,9 @@ internal class DatadogRumMonitorTest {
             accessibilitySnapshotManager = mockAccessibilitySnapshotManager,
             batteryInfoProvider = mockBatteryInfoProvider,
             displayInfoProvider = mockDisplayInfoProvider,
-            rumAppStartupTelemetryReporter = mockRumAppStartupTelemetryReporter
+            rumAppStartupTelemetryReporter = mockRumAppStartupTelemetryReporter,
+            rumVitalEventHelper = createRumVitalEventHelper(),
+            featuresContextResolver = FeaturesContextResolver()
         )
         testedMonitor.startView(key, name, attributes)
         // When
@@ -3047,4 +3065,12 @@ internal class DatadogRumMonitorTest {
         const val PROCESSING_DELAY = 100L
         const val DEFAULT_API_USAGE_SAMPLING_RATE = 15f
     }
+
+    private fun createRumVitalEventHelper(): RumVitalEventHelper = RumVitalEventHelper(
+        rumSessionTypeOverride = fakeRumSessionType,
+        batteryInfoProvider = mockBatteryInfoProvider,
+        displayInfoProvider = mockDisplayInfoProvider,
+        sampleRate = fakeSampleRate,
+        internalLogger = mockInternalLogger
+    )
 }

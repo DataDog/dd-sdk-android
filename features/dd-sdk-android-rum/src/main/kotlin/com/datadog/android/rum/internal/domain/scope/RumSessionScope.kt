@@ -16,6 +16,7 @@ import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.RumSessionType
+import com.datadog.android.rum.internal.FeaturesContextResolver
 import com.datadog.android.rum.internal.domain.InfoProvider
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
@@ -25,10 +26,12 @@ import com.datadog.android.rum.internal.domain.display.DisplayInfo
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
 import com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener
 import com.datadog.android.rum.internal.startup.RumAppStartupTelemetryReporter
+import com.datadog.android.rum.internal.utils.newRumEventWriteOperation
 import com.datadog.android.rum.internal.utils.percent
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.rum.metric.interactiontonextview.LastInteractionIdentifier
 import com.datadog.android.rum.metric.networksettled.InitialResourceIdentifier
+import com.datadog.android.rum.model.VitalEvent
 import java.security.SecureRandom
 import java.util.UUID
 import java.util.concurrent.TimeUnit
@@ -58,7 +61,9 @@ internal class RumSessionScope(
     private val sessionInactivityNanos: Long = DEFAULT_SESSION_INACTIVITY_NS,
     private val sessionMaxDurationNanos: Long = DEFAULT_SESSION_MAX_DURATION_NS,
     rumSessionTypeOverride: RumSessionType?,
-    private val rumAppStartupTelemetryReporter: RumAppStartupTelemetryReporter
+    private val rumAppStartupTelemetryReporter: RumAppStartupTelemetryReporter,
+    private val rumVitalEventHelper: RumVitalEventHelper,
+    private val featuresContextResolver: FeaturesContextResolver
 ) : RumScope {
 
     internal var sessionId = RumContext.NULL_UUID
@@ -95,7 +100,8 @@ internal class RumSessionScope(
         rumSessionTypeOverride = rumSessionTypeOverride,
         accessibilitySnapshotManager = accessibilitySnapshotManager,
         batteryInfoProvider = batteryInfoProvider,
-        displayInfoProvider = displayInfoProvider
+        displayInfoProvider = displayInfoProvider,
+        rumVitalEventHelper = rumVitalEventHelper
     )
 
     internal val activeView: RumViewScope?
@@ -156,11 +162,12 @@ internal class RumSessionScope(
         when (event) {
             is RumRawEvent.AppStartTTIDEvent -> {
                 if (sessionState == State.TRACKED) {
-                    rumAppStartupTelemetryReporter.reportTTID(
-                        info = event.info,
-                        indexInSession = appStartIndex
+                    handleTTIDEvent(
+                        event = event,
+                        datadogContext = datadogContext,
+                        writeScope = writeScope,
+                        writer = actualWriter
                     )
-                    appStartIndex++
                 }
             }
             is RumRawEvent.SdkInit -> {}
@@ -277,6 +284,58 @@ internal class RumSessionScope(
                 SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY to RUM_SESSION_RENEWED_BUS_MESSAGE,
                 RUM_KEEP_SESSION_BUS_MESSAGE_KEY to keepSession,
                 RUM_SESSION_ID_BUS_MESSAGE_KEY to sessionId
+            )
+        )
+    }
+
+    private fun handleTTIDEvent(
+        event: RumRawEvent.AppStartTTIDEvent,
+        datadogContext: DatadogContext,
+        writeScope: EventWriteScope,
+        writer: DataWriter<Any>
+    ) {
+        sdkCore.newRumEventWriteOperation(datadogContext, writeScope, writer) {
+            createTTIDVitalEvent(
+                event = event,
+                datadogContext = datadogContext
+            )
+        }.submit()
+
+        rumAppStartupTelemetryReporter.reportTTID(
+            info = event.info,
+            indexInSession = appStartIndex
+        )
+
+        appStartIndex++
+    }
+
+    private fun createTTIDVitalEvent(
+        event: RumRawEvent.AppStartTTIDEvent,
+        datadogContext: DatadogContext
+    ): VitalEvent {
+        val rumContext = getRumContext()
+
+        val hasReplay = childScope?.activeView?.viewId?.let {
+            featuresContextResolver.resolveViewHasReplay(datadogContext, it)
+        }
+
+        return rumVitalEventHelper.newVitalEvent(
+            timestampMs = event.info.scenario.initialTime.timestamp + sdkCore.time.serverTimeOffsetMs,
+            datadogContext = datadogContext,
+            eventAttributes = emptyMap(),
+            customAttributes = getCustomAttributes(),
+            view = null,
+            hasReplay = hasReplay,
+            rumContext = rumContext,
+            vital = VitalEvent.Vital.AppLaunchProperties(
+                id = UUID.randomUUID().toString(),
+                name = null,
+                description = null,
+                appLaunchMetric = VitalEvent.AppLaunchMetric.TTID,
+                duration = event.info.durationNs,
+                startupType = event.info.scenario.toVitalStartupType(),
+                isPrewarmed = null,
+                hasSavedInstanceStateBundle = event.info.scenario.hasSavedInstanceStateBundle
             )
         )
     }

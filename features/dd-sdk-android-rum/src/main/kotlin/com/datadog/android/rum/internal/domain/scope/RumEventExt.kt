@@ -17,12 +17,14 @@ import com.datadog.android.rum.RumResourceMethod
 import com.datadog.android.rum.featureoperations.FailureReason
 import com.datadog.android.rum.internal.RumErrorSourceType
 import com.datadog.android.rum.internal.domain.event.ResourceTiming
+import com.datadog.android.rum.internal.startup.RumStartupScenario
 import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.model.ErrorEvent
 import com.datadog.android.rum.model.LongTaskEvent
 import com.datadog.android.rum.model.ResourceEvent
 import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.rum.model.VitalEvent
+import com.datadog.android.rum.model.VitalEvent.StartupType
 import java.util.Locale
 
 // region Resource.Method conversion
@@ -669,4 +671,13 @@ internal fun FailureReason.toSchemaFailureReason(): VitalEvent.FailureReason {
         FailureReason.OTHER -> VitalEvent.FailureReason.OTHER
     }
 }
+
+internal fun RumStartupScenario.toVitalStartupType(): StartupType {
+    return when (this) {
+        is RumStartupScenario.Cold -> StartupType.COLD_START
+        is RumStartupScenario.WarmAfterActivityDestroyed,
+        is RumStartupScenario.WarmFirstActivity -> StartupType.WARM_START
+    }
+}
+
 // endregion

@@ -19,6 +19,8 @@ import java.util.UUID
 
 class VitalEventForgeryFactory : ForgeryFactory<VitalEvent> {
     override fun getForgery(forge: Forge): VitalEvent {
+        val typeIndex = forge.anInt(min = 0, max = 2)
+
         return VitalEvent(
             date = forge.aTimestamp(),
             application = VitalEvent.Application(forge.getForgery<UUID>().toString()),
@@ -58,19 +60,33 @@ class VitalEventForgeryFactory : ForgeryFactory<VitalEvent> {
                 browserSdkVersion = forge.aNullable { aStringMatching("\\d+\\.\\d+\\.\\d+") }
             ),
             ddtags = forge.aNullable { ddTagsString() },
-            view = VitalEvent.VitalEventView(
-                id = forge.getForgery<UUID>().toString(),
-                referrer = forge.aNullable { getForgery<URL>().toString() },
-                url = forge.aStringMatching("https://[a-z]+.[a-z]{3}/[a-z0-9_/]+"),
-                name = forge.aNullable { anAlphabeticalString() }
-            ),
-            vital = VitalEvent.Vital.FeatureOperationProperties(
-                id = forge.aString(),
-                operationKey = forge.aNullable { aString() },
-                name = forge.anAlphabeticalString(),
-                stepType = forge.aValueFrom(StepType::class.java),
-                failureReason = forge.aNullable { aValueFrom(FailureReason::class.java) }
-            )
+            view = forge.aNullable {
+                VitalEvent.VitalEventView(
+                    id = forge.getForgery<UUID>().toString(),
+                    referrer = forge.aNullable { getForgery<URL>().toString() },
+                    url = forge.aStringMatching("https://[a-z]+.[a-z]{3}/[a-z0-9_/]+"),
+                    name = forge.aNullable { anAlphabeticalString() }
+                )
+            },
+            vital = when (typeIndex) {
+                0 -> VitalEvent.Vital.FeatureOperationProperties(
+                    id = forge.aString(),
+                    operationKey = forge.aNullable { aString() },
+                    name = forge.anAlphabeticalString(),
+                    stepType = forge.aValueFrom(StepType::class.java),
+                    failureReason = forge.aNullable { aValueFrom(FailureReason::class.java) }
+                )
+                else -> VitalEvent.Vital.AppLaunchProperties(
+                    id = forge.aString(),
+                    name = forge.aNullable { forge.aString() },
+                    description = forge.aNullable { forge.aString() },
+                    appLaunchMetric = forge.aValueFrom(VitalEvent.AppLaunchMetric::class.java),
+                    duration = forge.aLong(min = 0),
+                    startupType = forge.aValueFrom(VitalEvent.StartupType::class.java),
+                    isPrewarmed = forge.aNullable { aBool() },
+                    hasSavedInstanceStateBundle = forge.aNullable { aBool() }
+                )
+            }
         )
     }
 }
