@@ -24,10 +24,8 @@ import com.datadog.android.core.internal.system.BuildSdkVersionProvider
 import com.datadog.android.event.EventMapper
 import com.datadog.android.event.MapperSerializer
 import com.datadog.android.internal.flags.RumFlagEvaluationMessage
-import com.datadog.android.internal.flags.RumFlagExposureMessage
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.rum.GlobalRumMonitor
-import com.datadog.android.rum.RumActionType
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.assertj.RumFeatureAssert
 import com.datadog.android.rum.configuration.VitalsUpdateFrequency
@@ -1442,49 +1440,6 @@ internal class RumFeatureTest {
             name = fakeFlagKey,
             value = fakeValue
         )
-        verifySlowFramesListenerLogMessage()
-    }
-
-    @Test
-    fun `M call addAction W onReceive() { RumFlagExposureMessage }`(forge: Forge) {
-        // Given
-        testedFeature.onInitialize(appContext.mockInstance)
-        val fakeTimestamp = forge.aLong(min = 0)
-        val fakeFlagKey = forge.anAlphabeticalString()
-        val fakeAllocationKey = forge.anAlphabeticalString()
-        val fakeExposureKey = forge.anAlphabeticalString()
-        val fakeSubjectKey = forge.anAlphabeticalString()
-        val fakeVariantKey = forge.anAlphabeticalString()
-        val fakeSubjectAttributes = forge.aMap { forge.anAlphabeticalString() to forge.anAsciiString() as Any }
-        val fakeEvent = RumFlagExposureMessage(
-            timestamp = fakeTimestamp,
-            flagKey = fakeFlagKey,
-            allocationKey = fakeAllocationKey,
-            exposureKey = fakeExposureKey,
-            subjectKey = fakeSubjectKey,
-            variantKey = fakeVariantKey,
-            subjectAttributes = fakeSubjectAttributes
-        )
-
-        // When
-        testedFeature.onReceive(fakeEvent)
-
-        // Then
-        argumentCaptor<Map<String, Any>> {
-            verify(mockRumMonitor).addAction(
-                type = eq(RumActionType.CUSTOM),
-                name = eq("__dd_exposure"),
-                attributes = capture()
-            )
-            assertThat(lastValue).containsEntry("timestamp", fakeTimestamp)
-            assertThat(lastValue).containsEntry("flag_key", fakeFlagKey)
-            assertThat(lastValue).containsEntry("allocation_key", fakeAllocationKey)
-            assertThat(lastValue).containsEntry("exposure_key", fakeExposureKey)
-            assertThat(lastValue).containsEntry("subject_key", fakeSubjectKey)
-            assertThat(lastValue).containsEntry("variant_key", fakeVariantKey)
-            assertThat(lastValue).containsEntry("subject_attributes", fakeSubjectAttributes)
-        }
-        verifySlowFramesListenerLogMessage()
     }
 
     // endregion

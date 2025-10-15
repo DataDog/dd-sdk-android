@@ -35,22 +35,22 @@ import java.util.Locale
  * @param evaluationsManager manages flag evaluations and network requests
  * @param flagsRepository local storage for precomputed flag values
  * @param flagsConfiguration configuration for the flags feature
- * @param rumExposureLogger responsible for sending flag evaluations and exposures to RUM.
+ * @param rumEvaluationLogger responsible for sending flag evaluations to RUM.
  */
 internal class DatadogFlagsClient(
     private val featureSdkCore: FeatureSdkCore,
     private val evaluationsManager: EvaluationsManager,
     private val flagsRepository: FlagsRepository,
     private val flagsConfiguration: FlagsConfiguration,
-    rumExposureLogger: RumExposureLogger? = null
+    rumEvaluationLogger: RumEvaluationLogger? = null
 ) : FlagsClient {
 
-    private val rumExposureLogger = rumExposureLogger ?: run {
+    private val rumEvaluationLogger = rumEvaluationLogger ?: run {
         val rumFeatureScope = featureSdkCore.getFeature(RUM_FEATURE_NAME)
         if (rumFeatureScope != null) {
-            DefaultRumExposureLogger(rumFeatureScope)
+            DefaultRumEvaluationLogger(rumFeatureScope)
         } else {
-            NoOpRumExposureLogger()
+            NoOpRumEvaluationLogger()
         }
     }
 
@@ -186,15 +186,13 @@ internal class DatadogFlagsClient(
             if (flagsConfiguration.trackExposures) {
                 writeExposureEvent(flagKey, precomputedFlag, evaluationContext)
             }
+        }
 
-            if (flagsConfiguration.rumIntegrationEnabled) {
-                logExposure(
-                    key = flagKey,
-                    value = convertedValue,
-                    assignment = precomputedFlag,
-                    evaluationContext = evaluationContext
-                )
-            }
+        if (flagsConfiguration.rumIntegrationEnabled) {
+            logEvaluation(
+                key = flagKey,
+                value = convertedValue
+            )
         }
 
         return convertedValue
@@ -210,23 +208,19 @@ internal class DatadogFlagsClient(
             )
     }
 
-    private fun logExposure(
+    private fun logEvaluation(
         key: String,
-        value: Any,
-        assignment: PrecomputedFlag,
-        evaluationContext: EvaluationContext
+        value: Any
     ) {
-        rumExposureLogger.logExposure(
+        rumEvaluationLogger.logEvaluation(
             flagKey = key,
-            value = value,
-            assignment = assignment,
-            evaluationContext = evaluationContext
+            value = value
         )
     }
 
     private companion object {
         private const val ERROR_NO_EVALUATION_CONTEXT =
-            "No evaluation context found, evaluations and exposures cannot be logged. " +
+            "No evaluation context found, exposures cannot be logged. " +
                 "Please call client.setContext with a valid context."
         private const val ERROR_PARSING_JSON = "Failed to parse JSON for key: %s"
     }

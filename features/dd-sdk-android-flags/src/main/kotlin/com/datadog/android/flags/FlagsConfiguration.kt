@@ -63,7 +63,7 @@ data class FlagsConfiguration internal constructor(
         /**
          * Sets whether exposure logging via RUM integration is enabled.
          * This is enabled by default.
-         * @param enabled whether flag evaluation events are logged as RUM actions for correlation with user sessions.
+         * @param enabled whether flag evaluation events are logged with RUM.
          */
         fun rumIntegrationEnabled(enabled: Boolean): Builder {
             rumIntegrationEnabled = enabled

@@ -74,29 +74,6 @@ public final class com/datadog/android/internal/flags/RumFlagEvaluationMessage {
 	public fun toString ()Ljava/lang/String;
 }
 
-public final class com/datadog/android/internal/flags/RumFlagExposureMessage {
-	public fun <init> (JLjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;)V
-	public final fun component1 ()J
-	public final fun component2 ()Ljava/lang/String;
-	public final fun component3 ()Ljava/lang/String;
-	public final fun component4 ()Ljava/lang/String;
-	public final fun component5 ()Ljava/lang/String;
-	public final fun component6 ()Ljava/lang/String;
-	public final fun component7 ()Ljava/util/Map;
-	public final fun copy (JLjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;)Lcom/datadog/android/internal/flags/RumFlagExposureMessage;
-	public static synthetic fun copy$default (Lcom/datadog/android/internal/flags/RumFlagExposureMessage;JLjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;ILjava/lang/Object;)Lcom/datadog/android/internal/flags/RumFlagExposureMessage;
-	public fun equals (Ljava/lang/Object;)Z
-	public final fun getAllocationKey ()Ljava/lang/String;
-	public final fun getExposureKey ()Ljava/lang/String;
-	public final fun getFlagKey ()Ljava/lang/String;
-	public final fun getSubjectAttributes ()Ljava/util/Map;
-	public final fun getSubjectKey ()Ljava/lang/String;
-	public final fun getTimestamp ()J
-	public final fun getVariantKey ()Ljava/lang/String;
-	public fun hashCode ()I
-	public fun toString ()Ljava/lang/String;
-}
-
 public abstract interface class com/datadog/android/internal/profiler/BenchmarkCounter {
 	public abstract fun add (JLjava/util/Map;)V
 }
