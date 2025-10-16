@@ -10,11 +10,16 @@ import com.datadog.android.Datadog
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.SdkCore
 import com.datadog.android.api.feature.Feature.Companion.FLAGS_FEATURE_NAME
+import com.datadog.android.api.feature.Feature.Companion.RUM_FEATURE_NAME
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.flags.FlagsConfiguration
+import com.datadog.android.flags.featureflags.FlagsClient.Companion.get
 import com.datadog.android.flags.featureflags.internal.DatadogFlagsClient
+import com.datadog.android.flags.featureflags.internal.DefaultRumEvaluationLogger
 import com.datadog.android.flags.featureflags.internal.NoOpFlagsClient
+import com.datadog.android.flags.featureflags.internal.NoOpRumEvaluationLogger
+import com.datadog.android.flags.featureflags.internal.RumEvaluationLogger
 import com.datadog.android.flags.featureflags.internal.evaluation.EvaluationsManager
 import com.datadog.android.flags.featureflags.internal.model.FlagsContext
 import com.datadog.android.flags.featureflags.internal.repository.DefaultFlagsRepository
@@ -181,7 +186,11 @@ interface FlagsClient {
             }
 
             return flagsFeature.getOrRegisterNewClient(name) {
-                createInternal(flagsFeature.flagsConfiguration, sdkCore, flagsFeature)
+                createInternal(
+                    configuration = flagsFeature.flagsConfiguration,
+                    featureSdkCore = sdkCore,
+                    flagsFeature = flagsFeature
+                )
             }
         }
     }
@@ -264,15 +273,15 @@ interface FlagsClient {
         @Suppress("LongMethod")
         internal fun createInternal(
             configuration: FlagsConfiguration,
-            sdkCore: FeatureSdkCore,
+            featureSdkCore: FeatureSdkCore,
             flagsFeature: FlagsFeature
         ): FlagsClient {
-            val executorService = sdkCore.createSingleThreadExecutorService(
+            val executorService = featureSdkCore.createSingleThreadExecutorService(
                 executorContext = FLAGS_CLIENT_EXECUTOR_NAME
             )
 
-            val datadogContext = (sdkCore as? InternalSdkCore)?.getDatadogContext()
-            val internalLogger = sdkCore.internalLogger
+            val datadogContext = (featureSdkCore as? InternalSdkCore)?.getDatadogContext()
+            val internalLogger = featureSdkCore.internalLogger
 
             // Get required context parameters
             val clientToken = datadogContext?.clientToken
@@ -308,11 +317,11 @@ interface FlagsClient {
                     env = env
                 )
 
-                val datastore = (sdkCore as FeatureSdkCore).getFeature(FLAGS_FEATURE_NAME)
+                val datastore = (featureSdkCore as FeatureSdkCore).getFeature(FLAGS_FEATURE_NAME)
                     ?.dataStore
                 val flagsRepository = if (datastore != null) {
                     DefaultFlagsRepository(
-                        featureSdkCore = sdkCore,
+                        featureSdkCore = featureSdkCore,
                         dataStore = datastore,
                         instanceName = "default"
                     )
@@ -320,33 +329,43 @@ interface FlagsClient {
                     NoOpFlagsRepository()
                 }
 
-                val callFactory = sdkCore.createOkHttpCallFactory()
+                val callFactory = featureSdkCore.createOkHttpCallFactory()
                 val assignmentsDownloader = PrecomputedAssignmentsDownloader(
-                    internalLogger = sdkCore.internalLogger,
+                    internalLogger = featureSdkCore.internalLogger,
                     callFactory = callFactory,
                     flagsContext = flagsContext,
                     requestFactory = flagsFeature.precomputedRequestFactory
                 )
 
-                val precomputeMapper = PrecomputeMapper(sdkCore.internalLogger)
+                val precomputeMapper = PrecomputeMapper(featureSdkCore.internalLogger)
 
                 val evaluationsManager = EvaluationsManager(
                     executorService = executorService,
-                    internalLogger = sdkCore.internalLogger,
+                    internalLogger = featureSdkCore.internalLogger,
                     flagsRepository = flagsRepository,
                     assignmentsReader = assignmentsDownloader,
                     precomputeMapper = precomputeMapper
                 )
 
+                val rumEvaluationLogger = createRumEvaluationLogger(featureSdkCore)
+
                 return DatadogFlagsClient(
-                    featureSdkCore = sdkCore,
+                    featureSdkCore = featureSdkCore,
                     evaluationsManager = evaluationsManager,
                     flagsRepository = flagsRepository,
-                    flagsConfiguration = configuration
+                    flagsConfiguration = configuration,
+                    rumEvaluationLogger = rumEvaluationLogger,
+                    processor = flagsFeature.processor
                 )
             }
         }
 
-        // endregion
+        private fun createRumEvaluationLogger(featureSdkCore: FeatureSdkCore): RumEvaluationLogger {
+            val rumFeatureScope = featureSdkCore.getFeature(RUM_FEATURE_NAME)
+
+            return rumFeatureScope?.let {
+                DefaultRumEvaluationLogger(it)
+            } ?: NoOpRumEvaluationLogger()
+        }
     }
 }

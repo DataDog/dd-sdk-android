@@ -5,6 +5,7 @@ data class com.datadog.android.flags.FlagsConfiguration
     fun trackExposures(Boolean): Builder
     fun useCustomExposureEndpoint(String): Builder
     fun useCustomFlagEndpoint(String): Builder
+    fun rumIntegrationEnabled(Boolean): Builder
     fun build(): FlagsConfiguration
   companion object 
 interface com.datadog.android.flags.featureflags.FlagsClient
