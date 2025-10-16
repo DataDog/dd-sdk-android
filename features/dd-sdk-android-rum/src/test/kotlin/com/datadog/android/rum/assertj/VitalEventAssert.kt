@@ -80,6 +80,14 @@ internal class VitalEventAssert(actual: VitalEvent) : AbstractObjectAssert<Vital
             ).isEqualTo(expected)
     }
 
+    fun hasNoSessionReplay() = apply {
+        assertThat(actual.session.hasReplay)
+            .overridingErrorMessage(
+                "Expected event data to have null hasReplay but it was ${actual.session.hasReplay}"
+            )
+            .isNull()
+    }
+
     fun hasSessionReplay(hasReplay: Boolean) = apply {
         assertThat(actual.session.hasReplay)
             .overridingErrorMessage(
