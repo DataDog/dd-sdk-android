@@ -214,8 +214,7 @@ internal class RumApplicationScopeAttributePropagationTest {
                 displayInfoProvider = mockDisplayInfoProvider,
                 sampleRate = fakeSampleRate,
                 internalLogger = mockInternalLogger
-            ),
-            featuresContextResolver = FeaturesContextResolver()
+            )
         )
     }
 
