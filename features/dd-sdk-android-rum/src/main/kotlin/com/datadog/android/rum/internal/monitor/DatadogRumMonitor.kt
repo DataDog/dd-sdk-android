@@ -40,7 +40,6 @@ import com.datadog.android.rum.RumSessionType
 import com.datadog.android.rum._RumInternalProxy
 import com.datadog.android.rum.featureoperations.FailureReason
 import com.datadog.android.rum.internal.CombinedRumSessionListener
-import com.datadog.android.rum.internal.FeaturesContextResolver
 import com.datadog.android.rum.internal.RumErrorSourceType
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.debug.RumDebugListener
@@ -99,8 +98,7 @@ internal class DatadogRumMonitor(
     batteryInfoProvider: InfoProvider<BatteryInfo>,
     displayInfoProvider: InfoProvider<DisplayInfo>,
     rumAppStartupTelemetryReporter: RumAppStartupTelemetryReporter,
-    rumVitalEventHelper: RumVitalEventHelper,
-    private val featuresContextResolver: FeaturesContextResolver
+    rumVitalEventHelper: RumVitalEventHelper
 ) : RumMonitor, AdvancedRumMonitor {
 
     internal var rootScope = RumApplicationScope(
@@ -123,8 +121,7 @@ internal class DatadogRumMonitor(
         batteryInfoProvider = batteryInfoProvider,
         displayInfoProvider = displayInfoProvider,
         rumAppStartupTelemetryReporter = rumAppStartupTelemetryReporter,
-        rumVitalEventHelper = rumVitalEventHelper,
-        featuresContextResolver = featuresContextResolver
+        rumVitalEventHelper = rumVitalEventHelper
     )
 
     internal val keepAliveRunnable = Runnable {

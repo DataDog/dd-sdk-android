@@ -31,7 +31,6 @@ import com.datadog.android.rum.RumResourceMethod
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.RumSessionType
 import com.datadog.android.rum.featureoperations.FailureReason
-import com.datadog.android.rum.internal.FeaturesContextResolver
 import com.datadog.android.rum.internal.RumErrorSourceType
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.debug.RumDebugListener
@@ -272,8 +271,7 @@ internal class DatadogRumMonitorTest {
             batteryInfoProvider = mockBatteryInfoProvider,
             displayInfoProvider = mockDisplayInfoProvider,
             rumAppStartupTelemetryReporter = mockRumAppStartupTelemetryReporter,
-            rumVitalEventHelper = createRumVitalEventHelper(),
-            featuresContextResolver = FeaturesContextResolver()
+            rumVitalEventHelper = createRumVitalEventHelper()
         )
         testedMonitor.rootScope = mockApplicationScope
     }
@@ -305,8 +303,7 @@ internal class DatadogRumMonitorTest {
             batteryInfoProvider = mockBatteryInfoProvider,
             displayInfoProvider = mockDisplayInfoProvider,
             rumAppStartupTelemetryReporter = mockRumAppStartupTelemetryReporter,
-            rumVitalEventHelper = createRumVitalEventHelper(),
-            featuresContextResolver = FeaturesContextResolver()
+            rumVitalEventHelper = createRumVitalEventHelper()
         )
 
         // When
@@ -380,8 +377,7 @@ internal class DatadogRumMonitorTest {
             batteryInfoProvider = mockBatteryInfoProvider,
             displayInfoProvider = mockDisplayInfoProvider,
             rumAppStartupTelemetryReporter = mockRumAppStartupTelemetryReporter,
-            rumVitalEventHelper = createRumVitalEventHelper(),
-            featuresContextResolver = FeaturesContextResolver()
+            rumVitalEventHelper = createRumVitalEventHelper()
         )
         testedMonitor.start()
         val mockCallback = mock<(String?) -> Unit>()
@@ -424,8 +420,7 @@ internal class DatadogRumMonitorTest {
             batteryInfoProvider = mockBatteryInfoProvider,
             displayInfoProvider = mockDisplayInfoProvider,
             rumAppStartupTelemetryReporter = mockRumAppStartupTelemetryReporter,
-            rumVitalEventHelper = createRumVitalEventHelper(),
-            featuresContextResolver = FeaturesContextResolver()
+            rumVitalEventHelper = createRumVitalEventHelper()
         )
         testedMonitor.start()
         val mockCallback = mock<(String?) -> Unit>()
@@ -2043,8 +2038,7 @@ internal class DatadogRumMonitorTest {
             batteryInfoProvider = mockBatteryInfoProvider,
             displayInfoProvider = mockDisplayInfoProvider,
             rumAppStartupTelemetryReporter = mockRumAppStartupTelemetryReporter,
-            rumVitalEventHelper = createRumVitalEventHelper(),
-            featuresContextResolver = FeaturesContextResolver()
+            rumVitalEventHelper = createRumVitalEventHelper()
         )
 
         // When
@@ -2084,8 +2078,7 @@ internal class DatadogRumMonitorTest {
             batteryInfoProvider = mockBatteryInfoProvider,
             displayInfoProvider = mockDisplayInfoProvider,
             rumAppStartupTelemetryReporter = mockRumAppStartupTelemetryReporter,
-            rumVitalEventHelper = createRumVitalEventHelper(),
-            featuresContextResolver = FeaturesContextResolver()
+            rumVitalEventHelper = createRumVitalEventHelper()
         )
 
         // When
@@ -2126,8 +2119,7 @@ internal class DatadogRumMonitorTest {
             displayInfoProvider = mockDisplayInfoProvider,
             rumSessionTypeOverride = null,
             rumAppStartupTelemetryReporter = mockRumAppStartupTelemetryReporter,
-            rumVitalEventHelper = createRumVitalEventHelper(),
-            featuresContextResolver = FeaturesContextResolver()
+            rumVitalEventHelper = createRumVitalEventHelper()
         )
         whenever(mockExecutorService.isShutdown).thenReturn(true)
 
@@ -2300,8 +2292,7 @@ internal class DatadogRumMonitorTest {
             batteryInfoProvider = mockBatteryInfoProvider,
             displayInfoProvider = mockDisplayInfoProvider,
             rumAppStartupTelemetryReporter = mockRumAppStartupTelemetryReporter,
-            rumVitalEventHelper = createRumVitalEventHelper(),
-            featuresContextResolver = FeaturesContextResolver()
+            rumVitalEventHelper = createRumVitalEventHelper()
         )
         testedMonitor.startView(key, name, attributes)
         // When

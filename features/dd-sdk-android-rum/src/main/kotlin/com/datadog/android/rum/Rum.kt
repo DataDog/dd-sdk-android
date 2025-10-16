@@ -16,7 +16,6 @@ import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.sampling.RateBasedSampler
-import com.datadog.android.rum.internal.FeaturesContextResolver
 import com.datadog.android.rum.internal.RumAnonymousIdentifierManager
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.domain.scope.RumVitalEventHelper
@@ -154,8 +153,7 @@ object Rum {
                 displayInfoProvider = rumFeature.displayInfoProvider,
                 sampleRate = rumFeature.sampleRate,
                 internalLogger = sdkCore.internalLogger
-            ),
-            featuresContextResolver = FeaturesContextResolver()
+            )
         )
     }
 

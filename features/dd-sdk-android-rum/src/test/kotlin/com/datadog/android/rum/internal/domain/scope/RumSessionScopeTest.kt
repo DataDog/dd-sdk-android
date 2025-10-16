@@ -20,9 +20,8 @@ import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.RumSessionType
-import com.datadog.android.rum.assertj.VitalAppLaunchPropertiesAssert
+import com.datadog.android.rum.assertj.VitalAppLaunchPropertiesAssert.Companion.assertThat
 import com.datadog.android.rum.assertj.VitalEventAssert
-import com.datadog.android.rum.internal.FeaturesContextResolver
 import com.datadog.android.rum.internal.domain.InfoProvider
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.accessibility.AccessibilitySnapshotManager
@@ -184,9 +183,6 @@ internal class RumSessionScopeTest {
 
     @Forgery
     lateinit var fakeDisplayInfo: DisplayInfo
-
-    @BoolForgery
-    var fakeHasReplay: Boolean = false
 
     private var fakeVitalSource: VitalEvent.VitalEventSource? = null
 
@@ -1577,17 +1573,6 @@ internal class RumSessionScopeTest {
             syntheticsResultId = null
         )
 
-        val mockView = mock<RumViewScope>()
-        val fakeViewId = forge.aString()
-        whenever(mockView.viewId) doReturn fakeViewId
-        whenever(mockChildScope.activeView) doReturn mockView
-
-        fakeDatadogContext = fakeDatadogContext.copy(
-            featuresContext = fakeDatadogContext.featuresContext.toMutableMap().apply {
-                put(Feature.SESSION_REPLAY_FEATURE_NAME, mapOf(fakeViewId to mapOf("has_replay" to fakeHasReplay)))
-            }
-        )
-
         val info = RumTTIDInfo(
             scenario = scenario,
             durationNs = forge.aLong(min = 0, max = 10000)
@@ -1598,7 +1583,6 @@ internal class RumSessionScopeTest {
         )
 
         // When
-
         val result = testedScope.handleEvent(
             event = event,
             datadogContext = fakeDatadogContext,
@@ -1620,7 +1604,7 @@ internal class RumSessionScopeTest {
                 hasNoSyntheticsTest()
                 hasSessionId(context.sessionId)
                 hasSessionType(fakeRumSessionType?.toVital() ?: VitalEvent.VitalEventSessionType.USER)
-                hasSessionReplay(fakeHasReplay)
+                hasNoSessionReplay()
                 hasNullView()
                 hasSource(fakeVitalSource)
                 hasAccountInfo(fakeDatadogContext.accountInfo)
@@ -1646,7 +1630,7 @@ internal class RumSessionScopeTest {
             val vital = lastValue.vital
             check(vital is VitalEvent.Vital.AppLaunchProperties)
 
-            VitalAppLaunchPropertiesAssert.assertThat(vital).apply {
+            assertThat(vital).apply {
                 hasName(null)
                 hasDescription(null)
                 hasAppLaunchMetric(VitalEvent.AppLaunchMetric.TTID)
@@ -1697,8 +1681,7 @@ internal class RumSessionScopeTest {
                 displayInfoProvider = mockDisplayInfoProvider,
                 sampleRate = sampleRate,
                 internalLogger = mock()
-            ),
-            featuresContextResolver = FeaturesContextResolver()
+            )
         )
 
         if (withMockChildScope) {

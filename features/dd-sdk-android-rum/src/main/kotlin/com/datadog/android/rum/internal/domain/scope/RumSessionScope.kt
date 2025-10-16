@@ -16,7 +16,6 @@ import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.RumSessionType
-import com.datadog.android.rum.internal.FeaturesContextResolver
 import com.datadog.android.rum.internal.domain.InfoProvider
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
@@ -62,8 +61,7 @@ internal class RumSessionScope(
     private val sessionMaxDurationNanos: Long = DEFAULT_SESSION_MAX_DURATION_NS,
     rumSessionTypeOverride: RumSessionType?,
     private val rumAppStartupTelemetryReporter: RumAppStartupTelemetryReporter,
-    private val rumVitalEventHelper: RumVitalEventHelper,
-    private val featuresContextResolver: FeaturesContextResolver
+    private val rumVitalEventHelper: RumVitalEventHelper
 ) : RumScope {
 
     internal var sessionId = RumContext.NULL_UUID
@@ -315,17 +313,13 @@ internal class RumSessionScope(
     ): VitalEvent {
         val rumContext = getRumContext()
 
-        val hasReplay = childScope?.activeView?.viewId?.let {
-            featuresContextResolver.resolveViewHasReplay(datadogContext, it)
-        }
-
         return rumVitalEventHelper.newVitalEvent(
             timestampMs = event.info.scenario.initialTime.timestamp + sdkCore.time.serverTimeOffsetMs,
             datadogContext = datadogContext,
             eventAttributes = emptyMap(),
             customAttributes = getCustomAttributes(),
             view = null,
-            hasReplay = hasReplay,
+            hasReplay = null,
             rumContext = rumContext,
             vital = VitalEvent.Vital.AppLaunchProperties(
                 id = UUID.randomUUID().toString(),
