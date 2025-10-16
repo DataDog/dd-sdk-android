@@ -30,6 +30,8 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
+import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.capture
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
@@ -177,14 +179,17 @@ internal class PrecomputedAssignmentsDownloaderTest {
 
         // Then
         assertThat(result).isNull()
+        val messageCaptor = argumentCaptor<() -> String>()
         verify(mockInternalLogger).log(
             eq(InternalLogger.Level.ERROR),
             eq(InternalLogger.Target.MAINTAINER),
-            any(),
+            messageCaptor.capture(),
             isA<UnknownHostException>(),
             eq(false),
             eq(null)
         )
+        assertThat(messageCaptor.firstValue.invoke())
+            .isEqualTo("Unexpected error while downloading flags")
     }
 
     @Test
@@ -208,14 +213,17 @@ internal class PrecomputedAssignmentsDownloaderTest {
 
         // Then
         assertThat(result).isNull()
+        val messageCaptor = argumentCaptor<() -> String>()
         verify(mockInternalLogger).log(
             eq(InternalLogger.Level.ERROR),
             eq(InternalLogger.Target.MAINTAINER),
-            any(),
+            messageCaptor.capture(),
             isA<IOException>(),
             eq(false),
             eq(null)
         )
+        assertThat(messageCaptor.firstValue.invoke())
+            .isEqualTo("Unexpected error while downloading flags")
     }
 
     @Test
@@ -239,14 +247,17 @@ internal class PrecomputedAssignmentsDownloaderTest {
 
         // Then
         assertThat(result).isNull()
+        val messageCaptor = argumentCaptor<() -> String>()
         verify(mockInternalLogger).log(
             eq(InternalLogger.Level.ERROR),
             eq(InternalLogger.Target.MAINTAINER),
-            any(),
+            messageCaptor.capture(),
             isA<SecurityException>(),
             eq(false),
             eq(null)
         )
+        assertThat(messageCaptor.firstValue.invoke())
+            .isEqualTo("Unexpected error while downloading flags")
     }
 
     @Test
@@ -270,14 +281,17 @@ internal class PrecomputedAssignmentsDownloaderTest {
 
         // Then
         assertThat(result).isNull()
+        val messageCaptor = argumentCaptor<() -> String>()
         verify(mockInternalLogger).log(
             eq(InternalLogger.Level.ERROR),
             eq(InternalLogger.Target.MAINTAINER),
-            any(),
+            messageCaptor.capture(),
             isA<RuntimeException>(),
             eq(false),
             eq(null)
         )
+        assertThat(messageCaptor.firstValue.invoke())
+            .isEqualTo("Unexpected error while downloading flags")
     }
 
     // endregion
@@ -304,14 +318,17 @@ internal class PrecomputedAssignmentsDownloaderTest {
 
         // Then
         assertThat(result).isNull()
+        val messageCaptor = argumentCaptor<() -> String>()
         verify(mockInternalLogger).log(
             eq(InternalLogger.Level.ERROR),
             eq(InternalLogger.Target.MAINTAINER),
-            any(),
+            messageCaptor.capture(),
             eq(null),
             eq(false),
             eq(null)
         )
+        assertThat(messageCaptor.firstValue.invoke())
+            .isEqualTo("Failed to download flags: 404")
     }
 
     @Test
