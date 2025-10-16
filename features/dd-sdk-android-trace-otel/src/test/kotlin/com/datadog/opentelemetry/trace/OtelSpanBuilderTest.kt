@@ -93,9 +93,13 @@ internal class OtelSpanBuilderTest {
     fun `M add attribute W setAttribute with reserved attribute key`() {
         // When
         testedBuilder.setAttribute(
-            AttributeKey.stringKey(OtelConventions.OPERATION_NAME_SPECIFIC_ATTRIBUTE), "op_name")
+            AttributeKey.stringKey(OtelConventions.OPERATION_NAME_SPECIFIC_ATTRIBUTE),
+            "op_name"
+        )
         testedBuilder.setAttribute(
-            AttributeKey.stringKey(OtelConventions.ANALYTICS_EVENT_SPECIFIC_ATTRIBUTES), "false")
+            AttributeKey.stringKey(OtelConventions.ANALYTICS_EVENT_SPECIFIC_ATTRIBUTES),
+            "false"
+        )
 
         // Then
         verifyNoInteractions(mockDelegateBuilder)
