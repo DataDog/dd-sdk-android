@@ -4,12 +4,12 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.flags.featureflags.internal.repository.net
+package com.datadog.android.flags.internal.net
 
 import com.datadog.android.flags.featureflags.model.EvaluationContext
 import com.datadog.tools.annotation.NoOpImplementation
 
 @NoOpImplementation
-internal interface FlagsNetworkManager {
-    fun downloadPrecomputedFlags(context: EvaluationContext): String?
+internal interface PrecomputedAssignmentsReader {
+    fun readPrecomputedFlags(context: EvaluationContext): String?
 }

@@ -19,6 +19,7 @@ import com.datadog.android.flags.FlagsConfiguration
 import com.datadog.android.flags.featureflags.FlagsClient
 import com.datadog.android.flags.featureflags.internal.NoOpFlagsClient
 import com.datadog.android.flags.internal.net.ExposuresRequestFactory
+import com.datadog.android.flags.internal.net.PrecomputedAssignmentsRequestFactory
 import com.datadog.android.flags.internal.storage.ExposureEventRecordWriter
 import com.datadog.android.flags.internal.storage.NoOpRecordWriter
 import com.datadog.android.flags.internal.storage.RecordWriter
@@ -37,6 +38,8 @@ internal class FlagsFeature(
 ) : StorageBackedFeature,
     FeatureContextUpdateReceiver {
 
+    // region Domain Objects
+
     /**
      * This is the same as the default configuration except
      * that we limit to 50 items per batch, the same as the JS library does.
@@ -52,8 +55,16 @@ internal class FlagsFeature(
             customExposureEndpoint = flagsConfiguration.customExposureEndpoint
         )
 
+    internal val precomputedRequestFactory =
+        PrecomputedAssignmentsRequestFactory(
+            internalLogger = sdkCore.internalLogger
+        )
+
+    // endregion
+
     override val name: String = FLAGS_FEATURE_NAME
 
+    // region Context Listener
     override fun onContextUpdate(featureName: String, context: Map<String, Any?>) {
         if (featureName == RUM_FEATURE_NAME && applicationId == null) {
             applicationId = context[RUM_APPLICATION_ID]?.toString()
@@ -74,9 +85,11 @@ internal class FlagsFeature(
         }
     }
 
+    // endregion
+
     private fun createDataWriter(): RecordWriter = ExposureEventRecordWriter(sdkCore)
 
-    //region FlagsClient Management
+    // region FlagsClient Management
 
     /**
      * Registry of [FlagsClient] instances by name.
@@ -121,7 +134,7 @@ internal class FlagsFeature(
 
     internal fun clearClients() = registeredClients.clear()
 
-    //endregion
+    // endregion
 
     internal companion object {
         const val MAX_ITEMS_PER_BATCH = 50

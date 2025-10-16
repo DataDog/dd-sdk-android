@@ -11,7 +11,8 @@ package com.datadog.android.flags
  */
 data class FlagsConfiguration internal constructor(
     internal val trackExposures: Boolean = true,
-    internal val customExposureEndpoint: String? = null
+    internal val customExposureEndpoint: String? = null,
+    internal val customFlagEndpoint: String? = null
 ) {
     /**
      * A Builder class for a [FlagsConfiguration].
@@ -19,6 +20,7 @@ data class FlagsConfiguration internal constructor(
     class Builder {
         private var trackExposures: Boolean = true
         private var customExposureEndpoint: String? = null
+        private var customFlagEndpoint: String? = null
 
         /**
          * Sets whether exposures should be logged to the dedicated exposures intake endpoint. This is enabled by default.
@@ -44,12 +46,25 @@ data class FlagsConfiguration internal constructor(
         }
 
         /**
+         * Sets a custom endpoint URL for fetching precomputed flag assignments.
+         * If not called, flag assignments will be fetched from Datadog's default endpoint.
+         *
+         * @param endpoint The full endpoint URL, e.g., https://dd-flags-proxy.example.com/flags.
+         *                 If null, the default endpoint will be used.
+         */
+        fun useCustomFlagEndpoint(endpoint: String): Builder {
+            customFlagEndpoint = endpoint
+            return this
+        }
+
+        /**
          * Builds a [FlagsConfiguration] based on the current state of this Builder.
          * @return a new [FlagsConfiguration] instance.
          */
         fun build(): FlagsConfiguration = FlagsConfiguration(
             trackExposures = trackExposures,
-            customExposureEndpoint = customExposureEndpoint
+            customExposureEndpoint = customExposureEndpoint,
+            customFlagEndpoint = customFlagEndpoint
         )
     }
 
@@ -63,6 +78,7 @@ data class FlagsConfiguration internal constructor(
          * This configuration has:
          * - Exposure tracking enabled
          * - No custom endpoint URL (uses standard Datadog intake)
+         * - No custom flag endpoint URL (uses standard Datadog edge assignment endpoint)
          */
         internal val default = FlagsConfiguration()
     }

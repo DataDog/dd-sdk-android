@@ -114,17 +114,20 @@ internal class FlagsTest {
             verify(mockSdkCore).registerFeature(capture())
             assertThat(lastValue.flagsConfiguration.trackExposures).isTrue()
             assertThat(lastValue.flagsConfiguration.customExposureEndpoint).isNull()
+            assertThat(lastValue.flagsConfiguration.customFlagEndpoint).isNull()
             assertThat(lastValue.flagsConfiguration).isEqualTo(FlagsConfiguration.default)
         }
     }
 
     @Test
     fun `M pass configuration to FlagsFeature W enable() { with custom config }`(
-        @StringForgery(regex = "https://[a-z]+\\.com(/[a-z]+)+") fakeCustomEndpoint: String
+        @StringForgery(regex = "https://[a-z]+\\.com(/[a-z]+)+") fakeCustomEndpoint: String,
+        @StringForgery(regex = "https://[a-z]+\\.com(/[a-z]+)+") fakeCustomFlagEndpoint: String
     ) {
         // Given
         val fakeConfiguration = FlagsConfiguration.Builder()
             .useCustomExposureEndpoint(fakeCustomEndpoint)
+            .useCustomFlagEndpoint(fakeCustomFlagEndpoint)
             .build()
 
         // When
@@ -135,6 +138,7 @@ internal class FlagsTest {
             verify(mockSdkCore).registerFeature(capture())
             assertThat(lastValue.name).isEqualTo(FLAGS_FEATURE_NAME)
             assertThat(lastValue.flagsConfiguration.customExposureEndpoint).isEqualTo(fakeCustomEndpoint)
+            assertThat(lastValue.flagsConfiguration.customFlagEndpoint).isEqualTo(fakeCustomFlagEndpoint)
         }
     }
 

@@ -108,6 +108,16 @@ internal class FlagsFeatureTest {
     }
 
     @Test
+    fun `M initialize precomputedRequestFactory W constructor`() {
+        // When
+
+        // Then
+        assertThat(
+            testedFeature.precomputedRequestFactory
+        ).isNotNull()
+    }
+
+    @Test
     fun `M remove context update receiver W onStop`() {
         // When
         testedFeature.onStop()

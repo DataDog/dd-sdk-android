@@ -27,44 +27,40 @@ internal class FlagsConfigurationTest {
         // Then
         assertThat(configuration.trackExposures).isTrue()
         assertThat(configuration.customExposureEndpoint).isNull()
+        assertThat(configuration.customFlagEndpoint).isNull()
     }
 
     @Test
-    fun `M set track exposures W Builder`(@BoolForgery fakeTrackExposuresState: Boolean) {
+    fun `M set custom values W Builder`(
+        @BoolForgery fakeTrackExposuresState: Boolean,
+        @StringForgery fakeCustomExposureEndpoint: String,
+        @StringForgery fakeCustomFlagEndpoint: String
+    ) {
         // Given
         val builder = FlagsConfiguration.Builder()
 
         // When
         builder.trackExposures(fakeTrackExposuresState)
+            .useCustomExposureEndpoint(fakeCustomExposureEndpoint)
+            .useCustomFlagEndpoint(fakeCustomFlagEndpoint)
         val configuration = builder.build()
 
         // Then
         assertThat(configuration.trackExposures).isEqualTo(fakeTrackExposuresState)
-        assertThat(configuration.customExposureEndpoint).isNull()
-    }
-
-    @Test
-    fun `M set custom exposure endpoint W Builder`(@StringForgery fakeCustomExposureEndpoint: String) {
-        // Given
-        val builder = FlagsConfiguration.Builder()
-
-        // When
-        builder.useCustomExposureEndpoint(fakeCustomExposureEndpoint)
-        val configuration = builder.build()
-
-        // Then
-        assertThat(configuration.trackExposures).isTrue()
         assertThat(configuration.customExposureEndpoint).isEqualTo(fakeCustomExposureEndpoint)
+        assertThat(configuration.customFlagEndpoint).isEqualTo(fakeCustomFlagEndpoint)
     }
 
     @Test
     fun `M create multiple configurations W Builder { reusable builder }`(
-        @StringForgery(regex = "https://[a-z]+\\.com(/[a-z]+)+") fakeCustomExposureEndpoint: String
+        @StringForgery(regex = "https://[a-z]+\\.com(/[a-z]+)+") fakeCustomExposureEndpoint: String,
+        @StringForgery(regex = "https://[a-z]+\\.com(/[a-z]+)+") fakeCustomFlagEndpoint: String
     ) {
         // Given
         val builder = FlagsConfiguration.Builder()
             .trackExposures(true)
             .useCustomExposureEndpoint(fakeCustomExposureEndpoint)
+            .useCustomFlagEndpoint(fakeCustomFlagEndpoint)
 
         // When
         val configuration1 = builder.build()
@@ -76,20 +72,35 @@ internal class FlagsConfigurationTest {
     }
 
     @Test
-    fun `M modify builder after build W Builder { builder state preserved }`() {
+    fun `M modify builder after build W Builder { }`(
+        @StringForgery(regex = "https://[a-z]+\\.com(/[a-z]+)+") fakeCustomExposureEndpoint: String,
+        @StringForgery(regex = "https://[a-z]+\\.com(/[a-z]+)+") fakeCustomFlagEndpoint: String
+    ) {
         // Given
         val builder = FlagsConfiguration.Builder()
-            .trackExposures(true)
+            .trackExposures(false)
 
         val firstConfiguration = builder.build()
 
         // When
-        builder.trackExposures(false)
+        builder.trackExposures(true).useCustomExposureEndpoint(fakeCustomExposureEndpoint)
         val secondConfiguration = builder.build()
 
+        builder.useCustomFlagEndpoint(fakeCustomFlagEndpoint)
+        val thirdConfiguration = builder.build()
+
         // Then
-        assertThat(firstConfiguration.trackExposures).isTrue()
-        assertThat(secondConfiguration.trackExposures).isFalse()
+        assertThat(firstConfiguration.trackExposures).isFalse()
+        assertThat(firstConfiguration.customExposureEndpoint).isNull()
+        assertThat(firstConfiguration.customFlagEndpoint).isNull()
+
+        assertThat(secondConfiguration.trackExposures).isTrue()
+        assertThat(secondConfiguration.customExposureEndpoint).isEqualTo(fakeCustomExposureEndpoint)
+        assertThat(secondConfiguration.customFlagEndpoint).isNull()
+
+        assertThat(thirdConfiguration.trackExposures).isTrue()
+        assertThat(thirdConfiguration.customExposureEndpoint).isEqualTo(fakeCustomExposureEndpoint)
+        assertThat(thirdConfiguration.customFlagEndpoint).isEqualTo(fakeCustomFlagEndpoint)
     }
 
     // endregion

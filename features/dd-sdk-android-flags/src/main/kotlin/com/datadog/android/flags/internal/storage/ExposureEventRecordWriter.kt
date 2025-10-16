@@ -12,9 +12,7 @@ import com.datadog.android.api.storage.EventType
 import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.flags.internal.model.ExposureEvent
 
-internal class ExposureEventRecordWriter(
-    private val sdkCore: FeatureSdkCore
-) : RecordWriter {
+internal class ExposureEventRecordWriter(private val sdkCore: FeatureSdkCore) : RecordWriter {
     override fun write(record: ExposureEvent) {
         sdkCore.getFeature(Feature.FLAGS_FEATURE_NAME)
             ?.withWriteContext { _, writeScope ->

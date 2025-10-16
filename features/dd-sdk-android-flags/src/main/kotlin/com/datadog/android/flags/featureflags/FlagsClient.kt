@@ -19,10 +19,10 @@ import com.datadog.android.flags.featureflags.internal.evaluation.EvaluationsMan
 import com.datadog.android.flags.featureflags.internal.model.FlagsContext
 import com.datadog.android.flags.featureflags.internal.repository.DefaultFlagsRepository
 import com.datadog.android.flags.featureflags.internal.repository.NoOpFlagsRepository
-import com.datadog.android.flags.featureflags.internal.repository.net.DefaultFlagsNetworkManager
 import com.datadog.android.flags.featureflags.internal.repository.net.PrecomputeMapper
 import com.datadog.android.flags.featureflags.model.EvaluationContext
 import com.datadog.android.flags.internal.FlagsFeature
+import com.datadog.android.flags.internal.net.PrecomputedAssignmentsDownloader
 import org.json.JSONObject
 
 /**
@@ -320,9 +320,12 @@ interface FlagsClient {
                     NoOpFlagsRepository()
                 }
 
-                val flagsNetworkManager = DefaultFlagsNetworkManager(
+                val callFactory = sdkCore.createOkHttpCallFactory()
+                val assignmentsDownloader = PrecomputedAssignmentsDownloader(
                     internalLogger = sdkCore.internalLogger,
-                    flagsContext = flagsContext
+                    callFactory = callFactory,
+                    flagsContext = flagsContext,
+                    requestFactory = flagsFeature.precomputedRequestFactory
                 )
 
                 val precomputeMapper = PrecomputeMapper(sdkCore.internalLogger)
@@ -331,7 +334,7 @@ interface FlagsClient {
                     executorService = executorService,
                     internalLogger = sdkCore.internalLogger,
                     flagsRepository = flagsRepository,
-                    flagsNetworkManager = flagsNetworkManager,
+                    assignmentsReader = assignmentsDownloader,
                     precomputeMapper = precomputeMapper
                 )
 
