@@ -18,6 +18,13 @@ import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollect
 import com.datadog.android.rum.internal.instrumentation.insights.InsightsUpdatesListener
 import java.util.concurrent.TimeUnit
 
+/**
+ * Default implementation of [InsightsCollector].
+ *
+ * @param maxSize Maximum number of events stored in memory. If the number of events exceeds this value,
+ *   the oldest events will be dropped.
+ * @param updateIntervalMs Time interval in milliseconds at which the listeners will be notified of data updates.
+ */
 @InternalApi
 @ExperimentalRumApi
 class DefaultInsightsCollector(

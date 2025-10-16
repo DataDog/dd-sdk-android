@@ -335,6 +335,12 @@ data class RumConfiguration internal constructor(
             return this
         }
 
+        /**
+         * Enables/Disables collection of RUM Insights used in the RUM Debug Widget.
+         *
+         * @param enabled `true` to collect insights, `false` otherwise.
+         * @return the [Builder] instance.
+         */
         @ExperimentalRumApi
         fun setInsightsCollectionEnabled(
             enabled: Boolean

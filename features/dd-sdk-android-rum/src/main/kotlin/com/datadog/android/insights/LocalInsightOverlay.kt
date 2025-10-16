@@ -29,6 +29,14 @@ import com.datadog.android.rum.R
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.instrumentation.insights.InsightsUpdatesListener
 
+/**
+ * A local overlay displaying performance metrics collected by the [com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector]
+ * implementation registered in the SDK.
+ * This overlay is only displayed when the app is running in debug mode and when an instance of
+ * [com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector] is registered.
+ * It can be attached to any [Activity] by calling [attach].
+ *
+ */
 @ExperimentalRumApi
 class LocalInsightOverlay : InsightsUpdatesListener {
 
@@ -51,6 +59,16 @@ class LocalInsightOverlay : InsightsUpdatesListener {
 
     private var isPaused: Boolean = false
 
+    /**
+     * Attaches the overlay to the given [activity].
+     * It will add a floating button to show/hide the overlay and will display various performance
+     * metrics collected by the [com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector]
+     * implementation registered in the SDK.
+     * If no [com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector] is registered,
+     * this method does nothing.
+     *
+     * @param activity The activity on which to attach the overlay.
+     */
     @SuppressLint("SetTextI18n")
     @Suppress("LongMethod")
     fun attach(activity: Activity) {
@@ -118,6 +136,9 @@ class LocalInsightOverlay : InsightsUpdatesListener {
         insightsCollector?.addUpdateListener(this)
     }
 
+    /**
+     * Detaches the overlay from the current [Activity].
+     */
     fun detach() {
         insightsCollector?.removeUpdateListener(this)
     }
