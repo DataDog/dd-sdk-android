@@ -61,9 +61,10 @@ data class FlagsConfiguration internal constructor(
         }
 
         /**
-         * Sets whether exposure logging via RUM integration is enabled.
-         * This is enabled by default.
-         * @param enabled whether flag evaluation events are logged with RUM.
+         * Sets whether RUM evaluation logging is enabled.
+         * This adds the result of evaluating a feature flag to the view.
+         * Enabled by default.
+         * @param enabled whether flag evaluations are added to views in RUM.
          */
         fun rumIntegrationEnabled(enabled: Boolean): Builder {
             rumIntegrationEnabled = enabled

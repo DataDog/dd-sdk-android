@@ -7,8 +7,6 @@
 package com.datadog.android.flags.featureflags.internal
 
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.api.feature.Feature.Companion.FLAGS_FEATURE_NAME
-import com.datadog.android.api.feature.Feature.Companion.RUM_FEATURE_NAME
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.flags.FlagsConfiguration
 import com.datadog.android.flags.featureflags.FlagsClient
@@ -16,7 +14,7 @@ import com.datadog.android.flags.featureflags.internal.evaluation.EvaluationsMan
 import com.datadog.android.flags.featureflags.internal.model.PrecomputedFlag
 import com.datadog.android.flags.featureflags.internal.repository.FlagsRepository
 import com.datadog.android.flags.featureflags.model.EvaluationContext
-import com.datadog.android.flags.internal.FlagsFeature
+import com.datadog.android.flags.internal.EventsProcessor
 import org.json.JSONException
 import org.json.JSONObject
 import java.util.Locale
@@ -36,23 +34,16 @@ import java.util.Locale
  * @param flagsRepository local storage for precomputed flag values
  * @param flagsConfiguration configuration for the flags feature
  * @param rumEvaluationLogger responsible for sending flag evaluations to RUM.
+ * @param processor responsible for writing exposure batches to be sent to flags backend.
  */
 internal class DatadogFlagsClient(
     private val featureSdkCore: FeatureSdkCore,
     private val evaluationsManager: EvaluationsManager,
     private val flagsRepository: FlagsRepository,
     private val flagsConfiguration: FlagsConfiguration,
-    rumEvaluationLogger: RumEvaluationLogger? = null
+    private val rumEvaluationLogger: RumEvaluationLogger,
+    private val processor: EventsProcessor
 ) : FlagsClient {
-
-    private val rumEvaluationLogger = rumEvaluationLogger ?: run {
-        val rumFeatureScope = featureSdkCore.getFeature(RUM_FEATURE_NAME)
-        if (rumFeatureScope != null) {
-            DefaultRumEvaluationLogger(rumFeatureScope)
-        } else {
-            NoOpRumEvaluationLogger()
-        }
-    }
 
     /**
      * Sets the evaluation context and triggers a background fetch of precomputed flags.
@@ -199,13 +190,11 @@ internal class DatadogFlagsClient(
     }
 
     private fun writeExposureEvent(name: String, data: PrecomputedFlag, context: EvaluationContext) {
-        featureSdkCore
-            .getFeature(FLAGS_FEATURE_NAME)
-            ?.unwrap<FlagsFeature>()?.processor?.processEvent(
-                flagName = name,
-                context = context,
-                data = data
-            )
+        processor.processEvent(
+            flagName = name,
+            context = context,
+            data = data
+        )
     }
 
     private fun logEvaluation(
@@ -220,7 +209,7 @@ internal class DatadogFlagsClient(
 
     private companion object {
         private const val ERROR_NO_EVALUATION_CONTEXT =
-            "No evaluation context found, exposures cannot be logged. " +
+            "No evaluation context found, exposures cannot be sent to the flags backend. " +
                 "Please call client.setContext with a valid context."
         private const val ERROR_PARSING_JSON = "Failed to parse JSON for key: %s"
     }
