@@ -30,10 +30,10 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
-import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
+import org.mockito.kotlin.isA
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
@@ -132,10 +132,7 @@ internal class PrecomputedAssignmentsDownloaderTest {
         testedDownloader.readPrecomputedFlags(fakeEvaluationContext)
 
         // Then
-        argumentCaptor<EvaluationContext> {
-            verify(mockRequestFactory).create(capture(), eq(fakeFlagsContext))
-            assertThat(lastValue).isEqualTo(fakeEvaluationContext)
-        }
+        verify(mockRequestFactory).create(fakeEvaluationContext, fakeFlagsContext)
     }
 
     // endregion
@@ -180,17 +177,14 @@ internal class PrecomputedAssignmentsDownloaderTest {
 
         // Then
         assertThat(result).isNull()
-        argumentCaptor<Throwable> {
-            verify(mockInternalLogger).log(
-                eq(InternalLogger.Level.ERROR),
-                eq(InternalLogger.Target.MAINTAINER),
-                any(),
-                capture(),
-                eq(false),
-                eq(null)
-            )
-            assertThat(lastValue).isInstanceOf(UnknownHostException::class.java)
-        }
+        verify(mockInternalLogger).log(
+            eq(InternalLogger.Level.ERROR),
+            eq(InternalLogger.Target.MAINTAINER),
+            any(),
+            isA<UnknownHostException>(),
+            eq(false),
+            eq(null)
+        )
     }
 
     @Test
@@ -214,17 +208,14 @@ internal class PrecomputedAssignmentsDownloaderTest {
 
         // Then
         assertThat(result).isNull()
-        argumentCaptor<Throwable> {
-            verify(mockInternalLogger).log(
-                eq(InternalLogger.Level.ERROR),
-                eq(InternalLogger.Target.MAINTAINER),
-                any(),
-                capture(),
-                eq(false),
-                eq(null)
-            )
-            assertThat(lastValue).isInstanceOf(IOException::class.java)
-        }
+        verify(mockInternalLogger).log(
+            eq(InternalLogger.Level.ERROR),
+            eq(InternalLogger.Target.MAINTAINER),
+            any(),
+            isA<IOException>(),
+            eq(false),
+            eq(null)
+        )
     }
 
     @Test
@@ -248,17 +239,14 @@ internal class PrecomputedAssignmentsDownloaderTest {
 
         // Then
         assertThat(result).isNull()
-        argumentCaptor<Throwable> {
-            verify(mockInternalLogger).log(
-                eq(InternalLogger.Level.ERROR),
-                eq(InternalLogger.Target.MAINTAINER),
-                any(),
-                capture(),
-                eq(false),
-                eq(null)
-            )
-            assertThat(lastValue).isInstanceOf(SecurityException::class.java)
-        }
+        verify(mockInternalLogger).log(
+            eq(InternalLogger.Level.ERROR),
+            eq(InternalLogger.Target.MAINTAINER),
+            any(),
+            isA<SecurityException>(),
+            eq(false),
+            eq(null)
+        )
     }
 
     @Test
@@ -282,17 +270,14 @@ internal class PrecomputedAssignmentsDownloaderTest {
 
         // Then
         assertThat(result).isNull()
-        argumentCaptor<Throwable> {
-            verify(mockInternalLogger).log(
-                eq(InternalLogger.Level.ERROR),
-                eq(InternalLogger.Target.MAINTAINER),
-                any(),
-                capture(),
-                eq(false),
-                eq(null)
-            )
-            assertThat(lastValue).isInstanceOf(RuntimeException::class.java)
-        }
+        verify(mockInternalLogger).log(
+            eq(InternalLogger.Level.ERROR),
+            eq(InternalLogger.Target.MAINTAINER),
+            any(),
+            isA<RuntimeException>(),
+            eq(false),
+            eq(null)
+        )
     }
 
     // endregion

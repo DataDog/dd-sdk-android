@@ -63,6 +63,7 @@ import okhttp3.Authenticator
 import okhttp3.CipherSuite
 import okhttp3.ConnectionSpec
 import okhttp3.Protocol
+import okhttp3.Request
 import okhttp3.TlsVersion
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
@@ -1533,7 +1534,7 @@ internal class CoreFeatureTest {
         assertThat(callFactory).isNotNull()
 
         // Verify the factory can create calls
-        val request = okhttp3.Request.Builder().url("https://example.com").build()
+        val request = Request.Builder().url("https://example.com").build()
         val call = callFactory.newCall(request)
         assertThat(call).isNotNull()
         assertThat(call.request()).isEqualTo(request)
@@ -1561,13 +1562,13 @@ internal class CoreFeatureTest {
         assertThat(callFactory).isNotNull()
 
         // Verify the factory can create calls
-        val request = okhttp3.Request.Builder().url("https://example.com").build()
+        val request = Request.Builder().url("https://example.com").build()
         val call = callFactory.newCall(request)
         assertThat(call).isNotNull()
         assertThat(call.request()).isEqualTo(request)
 
         // Verify custom timeout was applied
-        assertThat(call.timeout().timeoutNanos()).isGreaterThan(0)
+        assertThat(call.timeout().timeoutNanos()).isEqualTo(TimeUnit.MILLISECONDS.toNanos(customTimeout))
     }
 
     @Test

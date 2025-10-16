@@ -8,7 +8,6 @@ package com.datadog.android.flags.internal
 
 import android.content.Context
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.Feature.Companion.FLAGS_FEATURE_NAME
 import com.datadog.android.api.feature.FeatureSdkCore
@@ -48,9 +47,6 @@ internal class FlagsFeatureTest {
     @Mock
     lateinit var mockContext: Context
 
-    @Mock
-    lateinit var mockDatadogContext: DatadogContext
-
     @StringForgery
     lateinit var fakeApplicationId: String
 
@@ -60,7 +56,6 @@ internal class FlagsFeatureTest {
     fun `set up`() {
         whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
         whenever(mockSdkCore.createSingleThreadExecutorService(any())) doReturn mockExecutorService
-//        whenever(mockSdkCore.getDatadogContext()) doReturn mockDatadogContext
 
         testedFeature = FlagsFeature(
             sdkCore = mockSdkCore,

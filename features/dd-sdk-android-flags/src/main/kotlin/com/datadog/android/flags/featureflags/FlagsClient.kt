@@ -320,7 +320,7 @@ interface FlagsClient {
                     NoOpFlagsRepository()
                 }
 
-                val callFactory = sdkCore.createOkHttpCallFactory {}
+                val callFactory = sdkCore.createOkHttpCallFactory()
                 val assignmentsDownloader = PrecomputedAssignmentsDownloader(
                     internalLogger = sdkCore.internalLogger,
                     callFactory = callFactory,

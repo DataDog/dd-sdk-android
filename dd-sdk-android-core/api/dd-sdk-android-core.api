@@ -427,6 +427,7 @@ public abstract interface class com/datadog/android/api/feature/FeatureSdkCore :
 }
 
 public final class com/datadog/android/api/feature/FeatureSdkCore$DefaultImpls {
+	public static synthetic fun createOkHttpCallFactory$default (Lcom/datadog/android/api/feature/FeatureSdkCore;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lokhttp3/Call$Factory;
 	public static synthetic fun getFeatureContext$default (Lcom/datadog/android/api/feature/FeatureSdkCore;Ljava/lang/String;ZILjava/lang/Object;)Ljava/util/Map;
 	public static synthetic fun updateFeatureContext$default (Lcom/datadog/android/api/feature/FeatureSdkCore;Ljava/lang/String;ZLkotlin/jvm/functions/Function1;ILjava/lang/Object;)V
 }

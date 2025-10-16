@@ -137,7 +137,7 @@ interface FeatureSdkCore : SdkCore {
      * @param block Configuration block to customize the [OkHttpClient.Builder]
      * @return A [Call.Factory] instance configured with shared resources
      */
-    fun createOkHttpCallFactory(block: OkHttpClient.Builder.() -> Unit): Call.Factory
+    fun createOkHttpCallFactory(block: OkHttpClient.Builder.() -> Unit = {}): Call.Factory
 
     /**
      * Allows the given feature to set the anonymous ID for the SDK.

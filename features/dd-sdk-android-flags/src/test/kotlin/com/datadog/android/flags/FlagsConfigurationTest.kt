@@ -40,9 +40,9 @@ internal class FlagsConfigurationTest {
         val builder = FlagsConfiguration.Builder()
 
         // When
-        builder.trackExposures(
-            fakeTrackExposuresState
-        ).useCustomExposureEndpoint(fakeCustomExposureEndpoint).useCustomFlagEndpoint(fakeCustomFlagEndpoint)
+        builder.trackExposures(fakeTrackExposuresState)
+            .useCustomExposureEndpoint(fakeCustomExposureEndpoint)
+            .useCustomFlagEndpoint(fakeCustomFlagEndpoint)
         val configuration = builder.build()
 
         // Then

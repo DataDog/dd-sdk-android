@@ -158,8 +158,7 @@ internal class PrecomputedAssignmentsRequestFactoryTest {
         val request = testedFactory.create(context, flagsContext)
 
         // Then
-        assertThat(request).isNotNull
-        val bodyString = extractRequestBodyAsString(request!!)
+        val bodyString = extractRequestBodyAsString(checkNotNull(request))
         val bodyJson = JSONObject(bodyString)
 
         // Validate top-level structure
@@ -211,8 +210,7 @@ internal class PrecomputedAssignmentsRequestFactoryTest {
         val request = testedFactory.create(context, flagsContext)
 
         // Then
-        assertThat(request).isNotNull
-        val bodyString = extractRequestBodyAsString(request!!)
+        val bodyString = extractRequestBodyAsString(checkNotNull(request))
         val bodyJson = JSONObject(bodyString)
 
         val data = bodyJson.getJSONObject("data")
@@ -252,8 +250,7 @@ internal class PrecomputedAssignmentsRequestFactoryTest {
         val request = testedFactory.create(context, flagsContext)
 
         // Then
-        assertThat(request).isNotNull
-        val bodyString = extractRequestBodyAsString(request!!)
+        val bodyString = extractRequestBodyAsString(checkNotNull(request))
         val bodyJson = JSONObject(bodyString)
 
         val targetingAttributes = bodyJson
