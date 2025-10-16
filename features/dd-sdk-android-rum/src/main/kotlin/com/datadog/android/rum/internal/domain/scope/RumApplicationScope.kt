@@ -84,7 +84,7 @@ internal class RumApplicationScope(
             batteryInfoProvider = batteryInfoProvider,
             displayInfoProvider = displayInfoProvider,
             rumAppStartupTelemetryReporter = rumAppStartupTelemetryReporter,
-            insightsCollector=insightsCollector
+            insightsCollector = insightsCollector
         )
     )
 
@@ -206,7 +206,7 @@ internal class RumApplicationScope(
             batteryInfoProvider = batteryInfoProvider,
             displayInfoProvider = displayInfoProvider,
             rumAppStartupTelemetryReporter = rumAppStartupTelemetryReporter,
-            insightsCollector=insightsCollector
+            insightsCollector = insightsCollector
         )
         childScopes.add(newSession)
         if (event !is RumRawEvent.StartView) {

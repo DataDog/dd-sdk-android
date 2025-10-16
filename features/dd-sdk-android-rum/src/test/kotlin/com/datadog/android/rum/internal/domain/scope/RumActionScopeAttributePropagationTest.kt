@@ -23,6 +23,7 @@ import com.datadog.android.rum.assertj.ActionEventAssert.Companion.assertThat
 import com.datadog.android.rum.internal.FeaturesContextResolver
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
+import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.rum.model.ActionEvent
 import com.datadog.android.rum.utils.config.GlobalRumMonitorTestConfiguration
@@ -141,6 +142,9 @@ internal class RumActionScopeAttributePropagationTest {
 
     private var fakeRumSessionType: RumSessionType? = null
 
+    @Mock
+    private lateinit var mockInsightsCollector: InsightsCollector
+
     @BeforeEach
     fun `set up`(forge: Forge) {
         fakeEventTime = Time()
@@ -179,7 +183,8 @@ internal class RumActionScopeAttributePropagationTest {
             featuresContextResolver = mockFeaturesContextResolver,
             trackFrustrations = true,
             sampleRate = fakeSampleRate,
-            rumSessionTypeOverride = fakeRumSessionType
+            rumSessionTypeOverride = fakeRumSessionType,
+            insightsCollector = mockInsightsCollector
         )
     }
 

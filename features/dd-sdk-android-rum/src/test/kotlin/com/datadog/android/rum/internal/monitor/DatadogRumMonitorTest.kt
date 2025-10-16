@@ -47,6 +47,7 @@ import com.datadog.android.rum.internal.domain.scope.RumSessionScope
 import com.datadog.android.rum.internal.domain.scope.RumViewManagerScope
 import com.datadog.android.rum.internal.domain.scope.RumViewScope
 import com.datadog.android.rum.internal.domain.state.ViewUIPerformanceReport
+import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
 import com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener
 import com.datadog.android.rum.internal.monitor.DatadogRumMonitor.Companion.FO_ERROR_INVALID_NAME
@@ -141,6 +142,9 @@ internal class DatadogRumMonitorTest {
 
     @Mock
     lateinit var mockRumAppStartupTelemetryReporter: RumAppStartupTelemetryReporter
+
+    @Mock
+    private lateinit var mockInsightsCollector: InsightsCollector
 
     @Mock
     lateinit var mockResolver: FirstPartyHostHeaderTypeResolver
@@ -269,7 +273,8 @@ internal class DatadogRumMonitorTest {
             accessibilitySnapshotManager = mockAccessibilitySnapshotManager,
             batteryInfoProvider = mockBatteryInfoProvider,
             displayInfoProvider = mockDisplayInfoProvider,
-            rumAppStartupTelemetryReporter = mockRumAppStartupTelemetryReporter
+            rumAppStartupTelemetryReporter = mockRumAppStartupTelemetryReporter,
+            insightsCollector = mockInsightsCollector
         )
         testedMonitor.rootScope = mockApplicationScope
     }
@@ -300,7 +305,8 @@ internal class DatadogRumMonitorTest {
             accessibilitySnapshotManager = mockAccessibilitySnapshotManager,
             batteryInfoProvider = mockBatteryInfoProvider,
             displayInfoProvider = mockDisplayInfoProvider,
-            rumAppStartupTelemetryReporter = mockRumAppStartupTelemetryReporter
+            rumAppStartupTelemetryReporter = mockRumAppStartupTelemetryReporter,
+            insightsCollector = mockInsightsCollector
         )
 
         // When
@@ -373,7 +379,8 @@ internal class DatadogRumMonitorTest {
             accessibilitySnapshotManager = mockAccessibilitySnapshotManager,
             batteryInfoProvider = mockBatteryInfoProvider,
             displayInfoProvider = mockDisplayInfoProvider,
-            rumAppStartupTelemetryReporter = mockRumAppStartupTelemetryReporter
+            rumAppStartupTelemetryReporter = mockRumAppStartupTelemetryReporter,
+            insightsCollector = mockInsightsCollector
         )
         testedMonitor.start()
         val mockCallback = mock<(String?) -> Unit>()
@@ -415,7 +422,8 @@ internal class DatadogRumMonitorTest {
             accessibilitySnapshotManager = mockAccessibilitySnapshotManager,
             batteryInfoProvider = mockBatteryInfoProvider,
             displayInfoProvider = mockDisplayInfoProvider,
-            rumAppStartupTelemetryReporter = mockRumAppStartupTelemetryReporter
+            rumAppStartupTelemetryReporter = mockRumAppStartupTelemetryReporter,
+            insightsCollector = mockInsightsCollector
         )
         testedMonitor.start()
         val mockCallback = mock<(String?) -> Unit>()
@@ -2032,7 +2040,8 @@ internal class DatadogRumMonitorTest {
             accessibilitySnapshotManager = mockAccessibilitySnapshotManager,
             batteryInfoProvider = mockBatteryInfoProvider,
             displayInfoProvider = mockDisplayInfoProvider,
-            rumAppStartupTelemetryReporter = mockRumAppStartupTelemetryReporter
+            rumAppStartupTelemetryReporter = mockRumAppStartupTelemetryReporter,
+            insightsCollector = mockInsightsCollector
         )
 
         // When
@@ -2071,7 +2080,8 @@ internal class DatadogRumMonitorTest {
             accessibilitySnapshotManager = mockAccessibilitySnapshotManager,
             batteryInfoProvider = mockBatteryInfoProvider,
             displayInfoProvider = mockDisplayInfoProvider,
-            rumAppStartupTelemetryReporter = mockRumAppStartupTelemetryReporter
+            rumAppStartupTelemetryReporter = mockRumAppStartupTelemetryReporter,
+            insightsCollector = mockInsightsCollector
         )
 
         // When
@@ -2111,7 +2121,8 @@ internal class DatadogRumMonitorTest {
             batteryInfoProvider = mockBatteryInfoProvider,
             displayInfoProvider = mockDisplayInfoProvider,
             rumSessionTypeOverride = null,
-            rumAppStartupTelemetryReporter = mockRumAppStartupTelemetryReporter
+            rumAppStartupTelemetryReporter = mockRumAppStartupTelemetryReporter,
+            insightsCollector = mockInsightsCollector
         )
         whenever(mockExecutorService.isShutdown).thenReturn(true)
 
@@ -2283,7 +2294,8 @@ internal class DatadogRumMonitorTest {
             accessibilitySnapshotManager = mockAccessibilitySnapshotManager,
             batteryInfoProvider = mockBatteryInfoProvider,
             displayInfoProvider = mockDisplayInfoProvider,
-            rumAppStartupTelemetryReporter = mockRumAppStartupTelemetryReporter
+            rumAppStartupTelemetryReporter = mockRumAppStartupTelemetryReporter,
+            insightsCollector = mockInsightsCollector
         )
         testedMonitor.startView(key, name, attributes)
         // When

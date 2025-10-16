@@ -23,6 +23,7 @@ import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.accessibility.AccessibilitySnapshotManager
 import com.datadog.android.rum.internal.domain.battery.BatteryInfo
 import com.datadog.android.rum.internal.domain.display.DisplayInfo
+import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
 import com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener
 import com.datadog.android.rum.internal.startup.RumAppStartupTelemetryReporter
@@ -113,6 +114,9 @@ internal class RumSessionScopeTest {
 
     @Mock
     lateinit var mockRumAppStartupTelemetryReporter: RumAppStartupTelemetryReporter
+
+    @Mock
+    private lateinit var mockInsightsCollector: InsightsCollector
 
     @Mock
     lateinit var mockSessionListener: RumSessionListener
@@ -1538,7 +1542,8 @@ internal class RumSessionScopeTest {
             accessibilitySnapshotManager = mockAccessibilitySnapshotManager,
             batteryInfoProvider = mockBatteryInfoProvider,
             displayInfoProvider = mockDisplayInfoProvider,
-            rumAppStartupTelemetryReporter = mockRumAppStartupTelemetryReporter
+            rumAppStartupTelemetryReporter = mockRumAppStartupTelemetryReporter,
+            insightsCollector = mockInsightsCollector
         )
 
         if (withMockChildScope) {

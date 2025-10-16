@@ -650,7 +650,7 @@ internal open class RumViewScope(
             sampleRate = sampleRate,
             networkSettledMetricResolver = networkSettledMetricResolver,
             rumSessionTypeOverride = rumSessionTypeOverride,
-            insightsCollector=insightsCollector
+            insightsCollector = insightsCollector
         )
         pendingResourceCount++
     }
@@ -671,7 +671,7 @@ internal open class RumViewScope(
         val errorCustomAttributes = getCustomAttributes().toMutableMap()
         errorCustomAttributes.putAll(event.attributes)
         val isFatal = errorCustomAttributes.remove(RumAttributes.INTERNAL_ERROR_IS_CRASH) as? Boolean == true ||
-                event.isFatal
+            event.isFatal
         val errorFingerprint = errorCustomAttributes.remove(RumAttributes.ERROR_FINGERPRINT) as? String
         // if a cross-platform crash was already reported, do not send its native version
         if (crashCount > 0 && isFatal) return

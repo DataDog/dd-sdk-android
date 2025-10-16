@@ -18,11 +18,14 @@ import kotlin.math.min
 import kotlin.math.pow
 import kotlin.math.roundToInt
 
+internal const val NANOS_PER_MILLI: Long = 1_000_000L
+internal const val BYTES_PER_MB: Long = 1024 * 1024
+
 internal val Long.ms: Long
-    get() = this / 1_000_000L
+    get() = this / NANOS_PER_MILLI
 
 internal val Double.Mb: Double
-    get() = this / (1024.0 * 1024.0)
+    get() = this / BYTES_PER_MB
 
 internal fun Double?.round(digits: Int): Double {
     if (this == null || isNaN()) return Double.NaN

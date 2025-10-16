@@ -34,7 +34,9 @@ import com.datadog.android.core.internal.utils.scheduleSafe
 import com.datadog.android.event.EventMapper
 import com.datadog.android.event.MapperSerializer
 import com.datadog.android.event.NoOpEventMapper
+import com.datadog.android.insights.DefaultInsightsCollector
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
+import com.datadog.android.rum.ExperimentalRumApi
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumSessionListener
@@ -116,7 +118,6 @@ import com.datadog.android.rum.tracking.TrackingStrategy
 import com.datadog.android.rum.tracking.ViewAttributesProvider
 import com.datadog.android.rum.tracking.ViewTrackingStrategy
 import com.datadog.android.telemetry.model.TelemetryConfigurationEvent
-import com.datadog.android.insights.DefaultInsightsCollector
 import java.util.Locale
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.ScheduledExecutorService
@@ -181,6 +182,7 @@ internal class RumFeature(
 
     override val name: String = Feature.RUM_FEATURE_NAME
 
+    @OptIn(ExperimentalRumApi::class)
     @Suppress("LongMethod")
     override fun onInitialize(appContext: Context) {
         this.appContext = appContext
@@ -294,7 +296,7 @@ internal class RumFeature(
                     slowFramesConfiguration,
                     sdkCore.internalLogger
                 ),
-                insightsCollector=insightsCollector
+                insightsCollector = insightsCollector
             )
         } else {
             sdkCore.internalLogger.log(

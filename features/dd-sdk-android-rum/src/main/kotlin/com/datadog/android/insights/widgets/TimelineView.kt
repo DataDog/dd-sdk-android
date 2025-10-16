@@ -26,16 +26,16 @@ internal class TimelineView @JvmOverloads constructor(
 ) : View(context, attrs, defaultStyle) {
 
     private var data: List<TimelineEvent> = emptyList()
-    private var maxSize: Int = 100
+    private var maxSize: Int = DEFAULT_MAX_SIZE
 
     private var logoText: String = ACTIVE
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.FILL }
     private val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.FILL_AND_STROKE
         color = color(R.color.widget_text)
-        letterSpacing = 0.2f
-        textSize = px(8)
-        strokeWidth = 0.9f
+        letterSpacing = LETTER_SPACING
+        textSize = px(BASE_TEXT_SIZE_DP)
+        strokeWidth = TEXT_STROKE_WIDTH
     }
 
     private val longTaskPaint: Paint
@@ -65,7 +65,7 @@ internal class TimelineView @JvmOverloads constructor(
     init {
         outlineProvider = object : ViewOutlineProvider() {
             override fun getOutline(view: View, outline: Outline) {
-                outline.setRoundRect(0, 0, view.width, view.height, px(12))
+                outline.setRoundRect(0, 0, view.width, view.height, px(CORNER_RADIUS_DP))
             }
         }
         clipToOutline = true
@@ -73,7 +73,7 @@ internal class TimelineView @JvmOverloads constructor(
     }
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
-        val minW = 100 + paddingLeft + paddingRight
+        val minW = MIN_WIDTH_DP + paddingLeft + paddingRight
 
         val w = resolveSize(minW, widthMeasureSpec)
         val h = getDefaultSize(suggestedMinimumHeight, heightMeasureSpec)
@@ -94,7 +94,7 @@ internal class TimelineView @JvmOverloads constructor(
             }
             canvas.drawRect(xOffset, 0f, xOffset + barSize, height.toFloat(), paint)
             if (item.durationNs.ms > 0 || (item !is TimelineEvent.Tick && item !is TimelineEvent.Action)) {
-                canvas.withRotation(90f, xOffset, 0f) {
+                canvas.withRotation(degrees = 90f, pivotX = xOffset, pivotY = 0f) {
                     val text = item.durationNs.ms.toString()
                     val textWidth = durationPaint.measureText(text)
                     drawText(text, xOffset + height.toFloat() - textWidth, 0f, durationPaint)
@@ -119,11 +119,19 @@ internal class TimelineView @JvmOverloads constructor(
     fun update(data: List<TimelineEvent>, maxSize: Int) {
         this.data = data
         this.maxSize = maxSize
-        this.textPaint.textSize = 1.4f * barSize
+        this.textPaint.textSize = TEXT_SCALE * barSize
         invalidate()
     }
 
-    companion object {
+    private companion object {
+
+        private const val DEFAULT_MAX_SIZE = 100
+        private const val LETTER_SPACING = 0.2f
+        private const val BASE_TEXT_SIZE_DP = 8
+        private const val TEXT_STROKE_WIDTH = 0.9f
+        private const val CORNER_RADIUS_DP = 12
+        private const val MIN_WIDTH_DP = 100
+        private const val TEXT_SCALE = 1.4f
 
         private const val ACTIVE = "\uD83D\uDFE2 Events"
         private const val PAUSED = "\uD83D\uDD34 Events"

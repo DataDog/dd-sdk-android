@@ -5,7 +5,6 @@
  */
 package com.datadog.android.insights
 
-import android.os.Build
 import android.os.Debug
 import android.os.Handler
 import android.os.Looper
@@ -23,7 +22,7 @@ import java.util.concurrent.TimeUnit
 @ExperimentalRumApi
 class DefaultInsightsCollector(
     maxSize: Int = 50,
-    updateIntervalMs: Long = 100L,
+    updateIntervalMs: Long = 100L
 ) : InsightsCollector {
 
     private val handler = Handler(Looper.getMainLooper())
@@ -124,12 +123,10 @@ class DefaultInsightsCollector(
     }
 
     private fun updateCommonInfo() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            gcCallsPerSecond = Debug.getRuntimeStat(GC_COUNT)
-                .toDoubleOrNull()
-                .perSecond()
-                .round(PRECISION)
-        }
+        gcCallsPerSecond = Debug.getRuntimeStat(GC_COUNT)
+            .toDoubleOrNull()
+            .perSecond()
+            .round(PRECISION)
         nativeHeapMb = Debug.getNativeHeapAllocatedSize().toDouble().Mb.round(0)
         threadsCount = Thread.activeCount()
     }

@@ -16,7 +16,6 @@ import androidx.core.view.isVisible
 import com.datadog.android.Datadog
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.core.InternalSdkCore
-import com.datadog.android.insights.extensions.animateDragTo
 import com.datadog.android.insights.extensions.animateVisibility
 import com.datadog.android.insights.extensions.appendColored
 import com.datadog.android.insights.extensions.color
@@ -53,6 +52,7 @@ class LocalInsightOverlay : InsightsUpdatesListener {
     private var isPaused: Boolean = false
 
     @SuppressLint("SetTextI18n")
+    @Suppress("LongMethod")
     fun attach(activity: Activity) {
         if (insightsCollector == null) return
         val storage = InsightStateStorage(activity)
@@ -69,18 +69,17 @@ class LocalInsightOverlay : InsightsUpdatesListener {
                 fab?.animateVisibility(true)
             }
             setOnTouchListener(DragTouchListener(onUp = { storage.widgetPosition = x to y }))
-//            restoreCoordinates(storage.widgetPosition)
             restoreVisibility(storage.widgetDisplayed)
         }
 
         viewName = overlayView.findViewById(R.id.view_name)
-        timelineView = overlayView.findViewById<TimelineView?>(R.id.timeline).apply {
+        timelineView = overlayView.findViewById<TimelineView?>(R.id.timeline)?.apply {
             setOnClickListener {
                 isPaused = !isPaused
                 timelineView?.setPaused(isPaused)
             }
         }
-        timelineLegend = overlayView.findViewById<TextView?>(R.id.timeline_legend).apply {
+        timelineLegend = overlayView.findViewById<TextView?>(R.id.timeline_legend)?.apply {
             text = SpannableStringBuilder()
                 .append(SEP)
                 .appendColored(ACTION, color(R.color.timeline_action)).append(SEP)
@@ -95,7 +94,6 @@ class LocalInsightOverlay : InsightsUpdatesListener {
                 widgetView?.animateVisibility(true)
             }
             setOnTouchListener(DragTouchListener(onUp = { storage.fabPosition = x to y }))
-//            restoreCoordinates(storage.fabPosition)
             restoreVisibility(!storage.widgetDisplayed)
         }
         cpuValue = overlayView.setupChartView(R.id.vital_cpu, "CPU (tics/s)")
@@ -120,14 +118,8 @@ class LocalInsightOverlay : InsightsUpdatesListener {
         insightsCollector?.addUpdateListener(this)
     }
 
-    fun detach(activity: Activity) {
+    fun detach() {
         insightsCollector?.removeUpdateListener(this)
-    }
-
-    private fun View.restoreCoordinates(coordinates: Pair<Float, Float>) {
-        if (InsightStateStorage.isValidPosition(coordinates)) {
-            animateDragTo(coordinates.first, coordinates.second)
-        }
     }
 
     private fun View.restoreVisibility(shouldBeVisible: Boolean) {

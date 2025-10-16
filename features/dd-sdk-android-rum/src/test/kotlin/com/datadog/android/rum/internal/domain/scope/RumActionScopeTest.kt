@@ -22,6 +22,7 @@ import com.datadog.android.rum.assertj.ActionEventAssert.Companion.assertThat
 import com.datadog.android.rum.internal.FeaturesContextResolver
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.Time
+import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector
 import com.datadog.android.rum.internal.monitor.AdvancedRumMonitor
 import com.datadog.android.rum.internal.monitor.StorageEvent
 import com.datadog.android.rum.internal.toAction
@@ -129,6 +130,9 @@ internal class RumActionScopeTest {
 
     private var fakeRumSessionType: RumSessionType? = null
 
+    @Mock
+    lateinit var mockInsightsCollector: InsightsCollector
+
     @BeforeEach
     fun `set up`(forge: Forge) {
         fakeSourceActionEvent = forge.aNullable { aValueFrom(ActionEvent.ActionEventSource::class.java) }
@@ -187,7 +191,8 @@ internal class RumActionScopeTest {
             featuresContextResolver = mockFeaturesContextResolver,
             trackFrustrations = true,
             sampleRate = fakeSampleRate,
-            rumSessionTypeOverride = fakeRumSessionType
+            rumSessionTypeOverride = fakeRumSessionType,
+            insightsCollector = mockInsightsCollector
         )
     }
 
@@ -1661,7 +1666,8 @@ internal class RumActionScopeTest {
             featuresContextResolver = mockFeaturesContextResolver,
             trackFrustrations = fakeTrackFrustrations,
             sampleRate = fakeSampleRate,
-            rumSessionTypeOverride = fakeRumSessionType
+            rumSessionTypeOverride = fakeRumSessionType,
+            insightsCollector = mockInsightsCollector
         )
         fakeParentContext = fakeParentContext.copy(
             syntheticsTestId = fakeTestId,
@@ -1748,7 +1754,8 @@ internal class RumActionScopeTest {
             featuresContextResolver = mockFeaturesContextResolver,
             trackFrustrations = fakeTrackFrustrations,
             sampleRate = fakeSampleRate,
-            rumSessionTypeOverride = fakeRumSessionType
+            rumSessionTypeOverride = fakeRumSessionType,
+            insightsCollector = mockInsightsCollector
         )
 
         // When
@@ -2751,7 +2758,8 @@ internal class RumActionScopeTest {
             maxDurationMs = TEST_MAX_DURATION_MS,
             trackFrustrations = false,
             sampleRate = fakeSampleRate,
-            rumSessionTypeOverride = fakeRumSessionType
+            rumSessionTypeOverride = fakeRumSessionType,
+            insightsCollector = mockInsightsCollector
         )
 
         // When

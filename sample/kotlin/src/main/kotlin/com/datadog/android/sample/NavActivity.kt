@@ -81,7 +81,7 @@ class NavActivity : AppCompatActivity(), TrackingConsentChangeListener {
 
     override fun onDestroy() {
         super.onDestroy()
-        localInsights.detach(this)
+        localInsights.detach()
         Timber.d("onDestroy")
     }
 

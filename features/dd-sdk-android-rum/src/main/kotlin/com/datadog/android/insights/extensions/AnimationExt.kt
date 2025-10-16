@@ -29,11 +29,6 @@ internal fun View.animateVisibility(newVisibilityState: Boolean) {
         .start()
 }
 
-internal fun View.animateRotateBy(value: Float) = newOnlyAnimation()
-    .rotationBy(value)
-    .setDuration(ANIMATION_DURATION)
-    .start()
-
 internal fun View.animateDragTo(x: Float, y: Float) = newOnlyAnimation()
     .x(
         x.clip(
