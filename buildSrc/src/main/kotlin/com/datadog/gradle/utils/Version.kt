@@ -42,6 +42,10 @@ data class Version(
         object Snapshot : Type() {
             override val suffix: String = "-SNAPSHOT"
         }
+
+        data class Profiling(val number: Int) : Type() {
+            override val suffix: String = "-profiling-rc$number"
+        }
     }
 
     // endregion
