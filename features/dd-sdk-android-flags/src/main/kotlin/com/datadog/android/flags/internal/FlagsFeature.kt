@@ -48,7 +48,8 @@ internal class FlagsFeature(
 
     override val requestFactory =
         ExposuresRequestFactory(
-            internalLogger = sdkCore.internalLogger
+            internalLogger = sdkCore.internalLogger,
+            customExposureEndpoint = flagsConfiguration.customExposureEndpoint
         )
 
     override val name: String = FLAGS_FEATURE_NAME

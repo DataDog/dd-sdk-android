@@ -40,7 +40,8 @@ internal class ExposuresRequestFactoryTest {
     @BeforeEach
     fun `set up`() {
         testedFactory = ExposuresRequestFactory(
-            internalLogger = mockInternalLogger
+            internalLogger = mockInternalLogger,
+            customExposureEndpoint = null
         )
     }
 
@@ -120,5 +121,45 @@ internal class ExposuresRequestFactoryTest {
         // Then
         val expectedBody = "event1\nevent2\nevent3".toByteArray()
         assertThat(request.body).isEqualTo(expectedBody)
+    }
+
+    @Test
+    fun `M use custom endpoint W create() { custom endpoint provided }`(
+        @Forgery batchData: List<RawBatchEvent>,
+        @Forgery executionContext: RequestExecutionContext,
+        @StringForgery(regex = "https://[a-z]+\\.com(/[a-z]+)+") customEndpoint: String,
+        @StringForgery batchMetadata: String,
+        forge: Forge
+    ) {
+        // Given
+        val factoryWithCustomEndpoint = ExposuresRequestFactory(
+            internalLogger = mockInternalLogger,
+            customExposureEndpoint = customEndpoint
+        )
+        val metadata = forge.aNullable { batchMetadata.toByteArray() }
+
+        // When
+        val request = factoryWithCustomEndpoint.create(fakeDatadogContext, executionContext, batchData, metadata)
+
+        // Then
+        requireNotNull(request)
+        assertThat(request.url).isEqualTo(customEndpoint)
+        assertThat(request.contentType).isEqualTo(RequestFactory.CONTENT_TYPE_TEXT_UTF8)
+        assertThat(request.headers.minus(RequestFactory.HEADER_REQUEST_ID)).isEqualTo(
+            mapOf(
+                RequestFactory.HEADER_API_KEY to fakeDatadogContext.clientToken,
+                RequestFactory.HEADER_EVP_ORIGIN to fakeDatadogContext.source,
+                RequestFactory.HEADER_EVP_ORIGIN_VERSION to fakeDatadogContext.sdkVersion
+            )
+        )
+        assertThat(request.headers[RequestFactory.HEADER_REQUEST_ID]).isNotEmpty()
+        assertThat(request.id).isEqualTo(request.headers[RequestFactory.HEADER_REQUEST_ID])
+        assertThat(request.description).isEqualTo("Exposure Request")
+        assertThat(request.body).isEqualTo(
+            batchData.map { it.data }.join(
+                separator = "\n".toByteArray(Charsets.UTF_8),
+                internalLogger = mockInternalLogger
+            )
+        )
     }
 }
