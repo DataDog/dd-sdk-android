@@ -51,7 +51,8 @@ internal class FlagsFeature(
 
     override val requestFactory =
         ExposuresRequestFactory(
-            internalLogger = sdkCore.internalLogger
+            internalLogger = sdkCore.internalLogger,
+            customExposureEndpoint = flagsConfiguration.customExposureEndpoint
         )
 
     internal val precomputedRequestFactory =

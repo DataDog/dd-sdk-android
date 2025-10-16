@@ -15,7 +15,10 @@ import com.datadog.android.api.storage.RawBatchEvent
 import com.datadog.android.core.internal.utils.join
 import java.util.UUID
 
-internal class ExposuresRequestFactory(private val internalLogger: InternalLogger) : RequestFactory {
+internal class ExposuresRequestFactory(
+    private val internalLogger: InternalLogger,
+    private val customExposureEndpoint: String?
+) : RequestFactory {
 
     override fun create(
         context: DatadogContext,
@@ -24,12 +27,12 @@ internal class ExposuresRequestFactory(private val internalLogger: InternalLogge
         batchMetadata: ByteArray?
     ): Request {
         val requestId = UUID.randomUUID().toString()
-        val baseUrl = (context.site.intakeEndpoint + "/api/v2/exposures")
+        val url = customExposureEndpoint ?: (context.site.intakeEndpoint + "/api/v2/exposures")
 
         return Request(
             id = requestId,
             description = "Exposure Request",
-            url = baseUrl,
+            url = url,
             headers = buildHeaders(
                 requestId,
                 context.clientToken, // replace when testing
