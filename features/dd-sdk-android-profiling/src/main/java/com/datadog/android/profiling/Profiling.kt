@@ -6,18 +6,26 @@
 
 package com.datadog.android.profiling
 
+import android.content.Context
 import android.os.Build
 import androidx.annotation.RequiresApi
 import com.datadog.android.Datadog
 import com.datadog.android.api.SdkCore
 import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.internal.time.DefaultTimeProvider
+import com.datadog.android.profiling.internal.NoOpProfiler
+import com.datadog.android.profiling.internal.Profiler
 import com.datadog.android.profiling.internal.ProfilingFeature
-import com.datadog.android.profiling.internal.perfetto.PerfettoProfilerProvider
+import com.datadog.android.profiling.internal.perfetto.PerfettoProfiler
+import com.datadog.android.profiling.internal.removeProfilingFlag
+import java.util.concurrent.Executors
 
 /**
  * An entry point to Datadog Profiling feature.
  */
 object Profiling {
+
+    private var profiler: Profiler = NoOpProfiler()
 
     /**
      * Enables the Perfetto based profiler to start recording callstack samples during application
@@ -38,8 +46,19 @@ object Profiling {
         val profilingFeature = ProfilingFeature(
             sdkCore = featureSdkCore,
             configuration = configuration,
-            profilerProvider = PerfettoProfilerProvider()
+            profiler = profiler
         )
         featureSdkCore.registerFeature(profilingFeature)
+    }
+
+    @RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
+    internal fun start(context: Context) {
+        profiler = PerfettoProfiler(
+            timeProvider = DefaultTimeProvider(),
+            profilingExecutor = Executors.newSingleThreadExecutor()
+        ).apply {
+            this.start(context)
+        }
+        removeProfilingFlag(context)
     }
 }

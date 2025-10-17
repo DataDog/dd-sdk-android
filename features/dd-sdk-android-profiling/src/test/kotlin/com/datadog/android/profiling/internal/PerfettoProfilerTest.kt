@@ -69,10 +69,8 @@ class PerfettoProfilerTest {
     fun `set up`() {
         whenever(mockContext.getSystemService(ProfilingManager::class.java)).doReturn(mockService)
         testedProfiler = PerfettoProfiler(
-            internalLogger = mockInternalLogger,
             timeProvider = stubTimeProvider,
-            profilingExecutor = mockExecutorService,
-            onProfilingSuccess = mockOnPerfettoResult
+            profilingExecutor = mockExecutorService
         )
     }
 

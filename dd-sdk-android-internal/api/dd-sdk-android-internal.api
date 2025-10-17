@@ -54,6 +54,22 @@ public final class com/datadog/android/internal/collections/EvictingQueue : java
 	public fun toArray ([Ljava/lang/Object;)[Ljava/lang/Object;
 }
 
+public final class com/datadog/android/internal/data/SharedPreferencesStorage : com/datadog/android/internal/data/PreferencesStorage {
+	public static final field Companion Lcom/datadog/android/internal/data/SharedPreferencesStorage$Companion;
+	public fun <init> (Landroid/content/Context;)V
+	public fun clear ()V
+	public fun getBoolean (Ljava/lang/String;Z)Z
+	public fun getInt (Ljava/lang/String;I)I
+	public fun getString (Ljava/lang/String;)Ljava/lang/String;
+	public fun putBoolean (Ljava/lang/String;Z)V
+	public fun putInt (Ljava/lang/String;I)V
+	public fun putString (Ljava/lang/String;Ljava/lang/String;)V
+	public fun remove (Ljava/lang/String;)V
+}
+
+public final class com/datadog/android/internal/data/SharedPreferencesStorage$Companion {
+}
+
 public final class com/datadog/android/internal/network/GraphQLHeaders : java/lang/Enum {
 	public static final field DD_GRAPHQL_NAME_HEADER Lcom/datadog/android/internal/network/GraphQLHeaders;
 	public static final field DD_GRAPHQL_PAYLOAD_HEADER Lcom/datadog/android/internal/network/GraphQLHeaders;

@@ -22,6 +22,17 @@ class com.datadog.android.internal.collections.EvictingQueue<T> : java.util.Queu
   override fun add(T): Boolean
   override fun offer(T): Boolean
   override fun addAll(Collection<T>): Boolean
+class com.datadog.android.internal.data.SharedPreferencesStorage : PreferencesStorage
+  constructor(android.content.Context)
+  override fun putInt(String, Int)
+  override fun getInt(String, Int): Int
+  override fun getString(String): String?
+  override fun putString(String, String)
+  override fun putBoolean(String, Boolean)
+  override fun getBoolean(String, Boolean): Boolean
+  override fun remove(String)
+  override fun clear()
+  companion object 
 enum com.datadog.android.internal.network.GraphQLHeaders
   constructor(String)
   - DD_GRAPHQL_NAME_HEADER
