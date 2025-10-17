@@ -15,10 +15,10 @@ import com.datadog.android.flags.featureflags.internal.evaluation.EvaluationsMan
 import com.datadog.android.flags.featureflags.internal.model.PrecomputedFlag
 import com.datadog.android.flags.featureflags.internal.repository.FlagsRepository
 import com.datadog.android.flags.featureflags.model.EvaluationContext
+import com.datadog.android.flags.internal.EventsProcessor
 import com.datadog.android.flags.internal.FlagsFeature
 import com.datadog.android.flags.model.ErrorCode
 import com.datadog.android.flags.model.ResolutionDetails
-import com.datadog.android.flags.internal.EventsProcessor
 import org.json.JSONException
 import org.json.JSONObject
 import java.util.Locale
@@ -158,10 +158,7 @@ internal class DatadogFlagsClient(
         )
     }
 
-    private fun logEvaluation(
-        key: String,
-        value: Any
-    ) {
+    private fun logEvaluation(key: String, value: Any) {
         rumEvaluationLogger.logEvaluation(
             flagKey = key,
             value = value
@@ -315,7 +312,6 @@ internal class DatadogFlagsClient(
      */
     private fun <T> resolveTyped(flagKey: String, resolution: InternalResolution<T>): T = when (resolution) {
         is InternalResolution.Success -> {
-
             if (resolution.context == null) {
                 /**
                  * this might happen if a previous session saved precomputed flags and a new session did not provide a valid context
@@ -337,7 +333,6 @@ internal class DatadogFlagsClient(
                     value = resolution.value as Any
                 )
             }
-
 
             if (flagsConfiguration.trackExposures) {
                 writeExposureEvent(flagKey, resolution.flag, resolution.context)

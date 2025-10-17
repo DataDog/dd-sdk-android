@@ -155,9 +155,7 @@ internal class DatadogFlagsClientTest {
     }
 
     @Test
-    fun `M send RUM evaluation message W resolveBooleanValue() { rumIntegrationEnabled true }`(
-        forge: Forge
-    ) {
+    fun `M send RUM evaluation message W resolveBooleanValue() { rumIntegrationEnabled true }`(forge: Forge) {
         // Given
         val fakeFlagKey = forge.anAlphabeticalString()
         val fakeFlagValue = forge.aBool()
@@ -848,7 +846,8 @@ internal class DatadogFlagsClientTest {
         whenever(mockFlagsRepository.getPrecomputedFlag(fakeFlagKey)) doReturn fakeFlag
         whenever(mockFlagsRepository.getEvaluationContext()) doReturn fakeEvaluationContext
         whenever(mockFeatureSdkCore.getFeature(any())) doReturn null
-        whenever(mockFlagsRepository.getPrecomputedFlagWithContext(fakeFlagKey)) doReturn (fakeFlag to fakeEvaluationContext)
+        whenever(mockFlagsRepository.getPrecomputedFlagWithContext(fakeFlagKey)) doReturn
+            (fakeFlag to fakeEvaluationContext)
 
         testedClient = DatadogFlagsClient(
             featureSdkCore = mockFeatureSdkCore,
