@@ -7,10 +7,16 @@
 package com.datadog.android.profiling.internal
 
 import android.content.Context
+import com.datadog.android.api.InternalLogger
+import com.datadog.android.profiling.internal.perfetto.PerfettoResult
 import com.datadog.tools.annotation.NoOpImplementation
 
 @NoOpImplementation
 internal interface Profiler {
+
+    var internalLogger: InternalLogger?
+
+    var onProfilingSuccess: ((PerfettoResult) -> Unit)?
 
     fun start(appContext: Context)
 

@@ -25,17 +25,13 @@ import java.util.function.Consumer
 /**
  * Profiler based on Android's [requestProfiling] API to record callstack samples during application launch.
  *
- * @param internalLogger the logger instance to use for logging.
  * @param timeProvider The time provider to use to get the current time.
  * @param profilingExecutor the executor service to run the profiling task on.
- * @param onProfilingSuccess a callback to be invoked when profiling completes successfully.
  */
 @RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
 internal class PerfettoProfiler(
-    private val internalLogger: InternalLogger,
     private val timeProvider: TimeProvider,
-    private val profilingExecutor: ExecutorService = Executors.newSingleThreadExecutor(),
-    private val onProfilingSuccess: (PerfettoResult) -> Unit
+    private val profilingExecutor: ExecutorService = Executors.newSingleThreadExecutor()
 ) : Profiler {
 
     private val requestBuilder: StackSamplingRequestBuilder
@@ -47,6 +43,10 @@ internal class PerfettoProfiler(
     private var profilingStarted: AtomicBoolean = AtomicBoolean(false)
 
     private var profilingStartTime = 0L
+
+    override var internalLogger: InternalLogger? = null
+
+    override var onProfilingSuccess: ((PerfettoResult) -> Unit)? = null
 
     init {
         requestBuilder = StackSamplingRequestBuilder()
@@ -61,7 +61,7 @@ internal class PerfettoProfiler(
             val duration = endTime - profilingStartTime
             if (result.errorCode == ProfilingResult.ERROR_NONE) {
                 result.resultFilePath?.let {
-                    onProfilingSuccess(
+                    onProfilingSuccess?.invoke(
                         PerfettoResult(
                             start = profilingStartTime,
                             end = endTime,
@@ -88,7 +88,7 @@ internal class PerfettoProfiler(
     }
 
     private fun sendProfilingStartTelemetry() {
-        internalLogger.log(
+        internalLogger?.log(
             level = InternalLogger.Level.INFO,
             target = InternalLogger.Target.TELEMETRY,
             messageBuilder = { TELEMETRY_MSG_PROFILING_STARTED },
@@ -103,7 +103,7 @@ internal class PerfettoProfiler(
     }
 
     private fun sendProfilingEndTelemetry(result: ProfilingResult, duration: Long) {
-        internalLogger.log(
+        internalLogger?.log(
             level = InternalLogger.Level.INFO,
             target = InternalLogger.Target.TELEMETRY,
             messageBuilder = { TELEMETRY_MSG_PROFILING_FINISHED },
