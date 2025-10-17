@@ -15,7 +15,7 @@ class com.datadog.android.insights.DefaultInsightsCollector : com.datadog.androi
   companion object 
 class com.datadog.android.insights.LocalInsightOverlay : com.datadog.android.rum.internal.instrumentation.insights.InsightsUpdatesListener
   fun attach(android.app.Activity)
-  fun detach(android.app.Activity)
+  fun detach()
   override fun onDataUpdated()
   companion object 
 fun <T: java.io.Closeable, R> T.useMonitored(com.datadog.android.api.SdkCore = Datadog.getInstance(), (T) -> R): R
