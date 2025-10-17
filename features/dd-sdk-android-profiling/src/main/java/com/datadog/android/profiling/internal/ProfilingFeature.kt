@@ -16,7 +16,6 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.feature.StorageBackedFeature
 import com.datadog.android.api.net.RequestFactory
 import com.datadog.android.api.storage.FeatureStorageConfiguration
-import com.datadog.android.internal.time.DefaultTimeProvider
 import com.datadog.android.profiling.ProfilingConfiguration
 import com.datadog.android.rum.TTIDEvent
 import java.util.Locale
@@ -25,10 +24,8 @@ import java.util.Locale
 internal class ProfilingFeature(
     private val sdkCore: FeatureSdkCore,
     configuration: ProfilingConfiguration,
-    private val profilerProvider: ProfilerProvider
+    private val profiler: Profiler
 ) : StorageBackedFeature, FeatureEventReceiver {
-
-    private var profiler: Profiler = NoOpProfiler()
 
     private var dataWriter: ProfilingWriter = NoOpProfilingWriter()
 
@@ -44,20 +41,14 @@ internal class ProfilingFeature(
         get() = Feature.Companion.PROFILING_FEATURE_NAME
 
     override fun onInitialize(appContext: Context) {
-        profiler = profilerProvider.provide(
-            internalLogger = sdkCore.internalLogger,
-            timeProvider = DefaultTimeProvider(),
-            profilingExecutor = sdkCore.createSingleThreadExecutorService(
-                PROFILING_EXECUTOR_SERVICE_NAME
-            ),
-            onProfilingSuccess = { result ->
+        profiler.apply {
+            this.internalLogger = sdkCore.internalLogger
+            this.onProfilingSuccess = { result ->
                 dataWriter.write(profilingResult = result)
             }
-        ).also {
-            // Currently we start profiling right away, in the future we might want to
-            // start it in earlier stage.
-            it.start(appContext)
         }
+        // Set the profiling flag in SharedPreferences to profile for the next app launch
+        ProfilingStorage.setProfilingFlag(appContext)
         sdkCore.setEventReceiver(name, this)
         dataWriter = createDataWriter(sdkCore)
     }
@@ -89,8 +80,6 @@ internal class ProfilingFeature(
     }
 
     companion object {
-        internal const val RUM_TTID_BUS_MESSAGE_KEY = "rum_ttid"
-        private const val PROFILING_EXECUTOR_SERVICE_NAME = "profiling"
         private const val UNSUPPORTED_EVENT_TYPE =
             "Profiling feature receive an event of unsupported type=%s."
     }

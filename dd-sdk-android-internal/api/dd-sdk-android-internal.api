@@ -54,6 +54,35 @@ public final class com/datadog/android/internal/collections/EvictingQueue : java
 	public fun toArray ([Ljava/lang/Object;)[Ljava/lang/Object;
 }
 
+public abstract interface class com/datadog/android/internal/data/PreferencesStorage {
+	public abstract fun clear ()V
+	public abstract fun getBoolean (Ljava/lang/String;Z)Z
+	public abstract fun getInt (Ljava/lang/String;I)I
+	public abstract fun getString (Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;
+	public abstract fun putBoolean (Ljava/lang/String;Z)V
+	public abstract fun putInt (Ljava/lang/String;I)V
+	public abstract fun putString (Ljava/lang/String;Ljava/lang/String;)V
+	public abstract fun remove (Ljava/lang/String;)V
+}
+
+public final class com/datadog/android/internal/data/PreferencesStorage$DefaultImpls {
+	public static synthetic fun getBoolean$default (Lcom/datadog/android/internal/data/PreferencesStorage;Ljava/lang/String;ZILjava/lang/Object;)Z
+	public static synthetic fun getInt$default (Lcom/datadog/android/internal/data/PreferencesStorage;Ljava/lang/String;IILjava/lang/Object;)I
+	public static synthetic fun getString$default (Lcom/datadog/android/internal/data/PreferencesStorage;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Ljava/lang/String;
+}
+
+public final class com/datadog/android/internal/data/SharedPreferencesStorage : com/datadog/android/internal/data/PreferencesStorage {
+	public fun <init> (Landroid/content/Context;)V
+	public fun clear ()V
+	public fun getBoolean (Ljava/lang/String;Z)Z
+	public fun getInt (Ljava/lang/String;I)I
+	public fun getString (Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;
+	public fun putBoolean (Ljava/lang/String;Z)V
+	public fun putInt (Ljava/lang/String;I)V
+	public fun putString (Ljava/lang/String;Ljava/lang/String;)V
+	public fun remove (Ljava/lang/String;)V
+}
+
 public final class com/datadog/android/internal/network/GraphQLHeaders : java/lang/Enum {
 	public static final field DD_GRAPHQL_NAME_HEADER Lcom/datadog/android/internal/network/GraphQLHeaders;
 	public static final field DD_GRAPHQL_PAYLOAD_HEADER Lcom/datadog/android/internal/network/GraphQLHeaders;
