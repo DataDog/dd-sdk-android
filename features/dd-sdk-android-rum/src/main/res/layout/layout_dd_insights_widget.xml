@@ -126,7 +126,7 @@
         row˚
         offsetk
     -->
-    <com.datadog.android.insights.widgets.TimelineView
+    <com.datadog.android.insights.internal.widgets.TimelineView
         android:id="@+id/timeline"
         android:layout_width="match_parent"
         android:layout_height="40dp"
