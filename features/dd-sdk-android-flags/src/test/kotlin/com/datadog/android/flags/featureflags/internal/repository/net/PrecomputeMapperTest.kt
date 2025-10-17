@@ -174,7 +174,7 @@ internal class PrecomputeMapperTest {
         val json = buildValidJson(
             mapOf(
                 fakeFlagName to buildFlagJson(
-                    variationType = VariationType.DOUBLE.value,
+                    variationType = VariationType.NUMBER.value,
                     variationValue = fakeDoubleValue
                 )
             )
@@ -187,7 +187,7 @@ internal class PrecomputeMapperTest {
         assertThat(result).hasSize(1)
         val flag = result[fakeFlagName]
         checkNotNull(flag)
-        assertThat(flag.variationType).isEqualTo(VariationType.DOUBLE.value)
+        assertThat(flag.variationType).isEqualTo(VariationType.NUMBER.value)
         assertThat(flag.variationValue).isEqualTo(fakeDoubleValue.toString())
         verifyNoInteractions(mockInternalLogger)
     }
@@ -202,7 +202,7 @@ internal class PrecomputeMapperTest {
         val json = buildValidJson(
             mapOf(
                 fakeFlagName to buildFlagJson(
-                    variationType = VariationType.JSON.value,
+                    variationType = VariationType.OBJECT.value,
                     variationValue = jsonValue
                 )
             )
@@ -215,7 +215,7 @@ internal class PrecomputeMapperTest {
         assertThat(result).hasSize(1)
         val flag = result[fakeFlagName]
         checkNotNull(flag)
-        assertThat(flag.variationType).isEqualTo(VariationType.JSON.value)
+        assertThat(flag.variationType).isEqualTo(VariationType.OBJECT.value)
         assertThat(flag.variationValue).isEqualTo(jsonValue.toString())
         verifyNoInteractions(mockInternalLogger)
     }

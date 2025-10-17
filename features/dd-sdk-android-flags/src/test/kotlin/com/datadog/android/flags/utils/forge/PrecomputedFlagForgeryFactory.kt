@@ -22,16 +22,18 @@ internal class PrecomputedFlagForgeryFactory : ForgeryFactory<PrecomputedFlag> {
             VariationType.BOOLEAN -> VariationType.BOOLEAN.value
             VariationType.STRING -> VariationType.STRING.value
             VariationType.INTEGER -> VariationType.INTEGER.value
-            VariationType.DOUBLE -> VariationType.DOUBLE.value
-            VariationType.JSON -> VariationType.JSON.value
+            VariationType.NUMBER -> VariationType.NUMBER.value
+            VariationType.FLOAT -> VariationType.FLOAT.value
+            VariationType.OBJECT -> VariationType.OBJECT.value
         }
 
         val variationValue = when (variationTypeEnum) {
             VariationType.BOOLEAN -> forge.aBool().toString()
             VariationType.STRING -> forge.anAlphabeticalString()
             VariationType.INTEGER -> forge.anInt().toString()
-            VariationType.DOUBLE -> forge.aDouble().toString()
-            VariationType.JSON -> JSONObject().put(
+            VariationType.NUMBER -> forge.aDouble().toString()
+            VariationType.FLOAT -> forge.aFloat().toString()
+            VariationType.OBJECT -> JSONObject().put(
                 "key",
                 forge.anAlphabeticalString()
             ).toString()

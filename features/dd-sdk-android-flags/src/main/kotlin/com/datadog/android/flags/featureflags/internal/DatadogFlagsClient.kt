@@ -7,6 +7,7 @@
 package com.datadog.android.flags.featureflags.internal
 
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.api.feature.Feature.Companion.FLAGS_FEATURE_NAME
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.flags.FlagsConfiguration
 import com.datadog.android.flags.featureflags.FlagsClient
@@ -48,6 +49,8 @@ internal class DatadogFlagsClient(
     private val processor: EventsProcessor
 ) : FlagsClient {
 
+    // region FlagsClient
+
     /**
      * Sets the evaluation context and triggers a background fetch of precomputed flags.
      *
@@ -76,140 +79,76 @@ internal class DatadogFlagsClient(
     }
 
     /**
-     * Resolves a boolean flag value from the local repository.
+     * Resolves a boolean flag value.
      *
-     * This method performs boolean parsing of the stored flag value.
-     * Only "true" and "false" (case-insensitive) string values will be converted;
-     * all other values result in the default being returned.
-     *
-     * This method is thread-safe and performs no network operations.
+     * If the flag cannot be found, is not a boolean, or an error occurs, the default value is returned.
      *
      * @param flagKey The name of the flag to query. Cannot be null.
-     * @param defaultValue The value to return if the flag cannot be retrieved or parsed.
-     * @return The boolean value of the flag, or the default value if unavailable or unparseable.
+     * @param defaultValue The value to return if the flag cannot be found or resolved for any reason. Cannot be null.
+     * @return The boolean value of the flag, or the default value if the flag cannot be resolved for any reason.
      */
     override fun resolveBooleanValue(flagKey: String, defaultValue: Boolean): Boolean =
-        getValue(flagKey, defaultValue) { it.lowercase(locale = Locale.US).toBooleanStrictOrNull() }
+        resolveTyped(flagKey, resolveInternal(flagKey, defaultValue, getConverterForType(flagKey, defaultValue)))
 
     /**
-     * Resolves a string flag value from the local repository.
+     * Resolves a string flag value.
      *
-     * This method returns the stored string value as-is without any type conversion.
-     * This method is thread-safe and performs no network operations.
+     * If the flag cannot be found, is not a string, or an error occurs, the default value is returned.
      *
      * @param flagKey The name of the flag to query. Cannot be null.
-     * @param defaultValue The value to return if the flag cannot be retrieved.
-     * @return The string value of the flag, or the default value if unavailable.
+     * @param defaultValue The value to return if the flag cannot be found resolved for any reason. Cannot be null.
+     * @return The string value of the flag, or the default value if the flag cannot be resolved for any reason.
      */
     override fun resolveStringValue(flagKey: String, defaultValue: String): String =
-        getValue(flagKey, defaultValue) { it }
+        resolveTyped(flagKey, resolveInternal(flagKey, defaultValue, getConverterForType(flagKey, defaultValue)))
 
     /**
-     * Resolves an integer flag value from the local repository.
+     * Resolves an integer flag value.
      *
-     * This method attempts to parse the stored string value as an integer.
-     * If parsing fails, the default value is returned. This method is thread-safe
-     * and performs no network operations.
+     * If the flag cannot be found, is not an integer, or an error occurs, the default value is returned.
      *
      * @param flagKey The name of the flag to query. Cannot be null.
-     * @param defaultValue The value to return if the flag cannot be retrieved or parsed.
-     * @return The integer value of the flag, or the default value if unavailable or unparseable.
+     * @param defaultValue The value to return if the flag cannot be found or resolved for any reason. Cannot be null.
+     * @return The integer value of the flag, or the default value if the flag cannot be resolved for any reason.
      */
     override fun resolveIntValue(flagKey: String, defaultValue: Int): Int =
-        getValue(flagKey, defaultValue) { it.toIntOrNull() }
+        resolveTyped(flagKey, resolveInternal(flagKey, defaultValue, getConverterForType(flagKey, defaultValue)))
 
     /**
-     * Resolves a long integer flag value from the local repository.
+     * Resolves a long integer flag value.
      *
-     * This method attempts to parse the stored string value as a long integer.
-     * Useful for values that may exceed Int.MAX_VALUE such as timestamps,
-     * large identifiers, or counters.
-     *
-     * If parsing fails, the default value is returned. This method is thread-safe
-     * and performs no network operations.
+     * If the flag cannot be found, is not a long integer, or an error occurs, the default value is returned.
      *
      * @param flagKey The name of the flag to query. Cannot be null.
-     * @param defaultValue The value to return if the flag cannot be retrieved or parsed.
-     * @return The long value of the flag, or the default value if unavailable or unparseable.
+     * @param defaultValue The value to return if the flag cannot be found or resolved for any reason. Cannot be null.
+     * @return The long value of the flag, or the default value if the flag cannot be resolved for any reason.
      */
     override fun resolveLongValue(flagKey: String, defaultValue: Long): Long =
-        getValue(flagKey, defaultValue) { it.toLongOrNull() }
+        resolveTyped(flagKey, resolveInternal(flagKey, defaultValue, getConverterForType(flagKey, defaultValue)))
 
     /**
-     * Resolves a double flag value from the local repository.
+     * Resolves a double flag value.
      *
-     * This method attempts to parse the stored string value as a double.
-     * If parsing fails, the default value is returned. This method is thread-safe
-     * and performs no network operations.
+     * If the flag cannot be found, is not a double, or an error occurs, the default value is returned.
      *
      * @param flagKey The name of the flag to query. Cannot be null.
-     * @param defaultValue The value to return if the flag cannot be retrieved or parsed.
-     * @return The double value of the flag, or the default value if unavailable or unparseable.
+     * @param defaultValue The value to return if the flag cannot be found or resolved for any reason. Cannot be null.
+     * @return The double value of the flag, or the default value if the flag cannot be resolved for any reason.
      */
     override fun resolveDoubleValue(flagKey: String, defaultValue: Double): Double =
-        getValue(flagKey, defaultValue) { it.toDoubleOrNull() }
+        resolveTyped(flagKey, resolveInternal(flagKey, defaultValue, getConverterForType(flagKey, defaultValue)))
 
     /**
-     * Resolves a structured flag value from the local repository.
+     * Resolves a structured flag value.
      *
-     * This method attempts to parse the stored string value as a JSON object.
-     * If parsing fails, an error is logged and the default value is returned.
-     * This method is thread-safe and performs no network operations.
+     * If the flag cannot be found or an error occurs, the default value is returned.
      *
      * @param flagKey The name of the flag to query. Cannot be null.
-     * @param defaultValue The value to return if the flag cannot be retrieved or parsed.
-     * @return The JSON object value of the flag, or the default value if unavailable or unparseable.
+     * @param defaultValue The value to return if the flag cannot be found or resolved for any reason. Cannot be null.
+     * @return The JSON object value of the flag, or the default value if the flag cannot be resolved for any reason.
      */
     override fun resolveStructureValue(flagKey: String, defaultValue: JSONObject): JSONObject =
-        getValue(flagKey, defaultValue) {
-            try {
-                JSONObject(it)
-            } catch (e: JSONException) {
-                featureSdkCore.internalLogger.log(
-                    level = InternalLogger.Level.ERROR,
-                    target = InternalLogger.Target.USER,
-                    messageBuilder = { ERROR_PARSING_JSON.format(Locale.US, flagKey) },
-                    throwable = e
-                )
-                defaultValue
-            }
-        }
-
-    private fun <T> getValue(flagKey: String, defaultValue: T, converter: (String) -> T?): T {
-        val flagAndContext = flagsRepository.getPrecomputedFlagWithContext(flagKey)
-        if (flagAndContext != null) {
-            val (precomputedFlag, context) = flagAndContext
-            val convertedValue = precomputedFlag.variationValue.let(converter)
-
-            if (convertedValue == null) {
-                return defaultValue
-            }
-
-        val evaluationContext = flagsRepository.getEvaluationContext()
-        if (evaluationContext == null) {
-            /**
-             * this might happen if a previous session saved precomputed flags and a new session did not provide a valid context
-             */
-            featureSdkCore.internalLogger.log(
-                target = InternalLogger.Target.MAINTAINER,
-                level = InternalLogger.Level.ERROR,
-                messageBuilder = { ERROR_NO_EVALUATION_CONTEXT }
-            )
-        } else if (flagsConfiguration.trackExposures) {
-            writeExposureEvent(flagKey, precomputedFlag, evaluationContext)
-        }
-
-            if (flagsConfiguration.rumIntegrationEnabled) {
-                logEvaluation(
-                    key = flagKey,
-                    value = convertedValue
-                )
-            }
-            return convertedValue
-        }
-
-        return defaultValue
-    }
+        resolveTyped(flagKey, resolveInternal(flagKey, defaultValue, getConverterForType(flagKey, defaultValue)))
 
     private fun writeExposureEvent(name: String, data: PrecomputedFlag, context: EvaluationContext) {
         processor.processEvent(
@@ -253,72 +192,227 @@ internal class DatadogFlagsClient(
      * @return [ResolutionDetails] with either the parsed value and metadata, or an error.
      */
     override fun <T> resolve(flagKey: String, defaultValue: T): ResolutionDetails<T> {
-        val flagAndContext = flagsRepository.getPrecomputedFlagWithContext(flagKey)
+        val converter = getConverterForType(flagKey, defaultValue)
+        val resolution = resolveInternal(flagKey, defaultValue, converter)
 
+        return when (resolution) {
+            is InternalResolution.Success -> {
+                if (flagsConfiguration.trackExposures) {
+                    writeExposureEvent(flagKey, resolution.flag, resolution.context)
+                }
+                createSuccessResolution(resolution.flag, resolution.value)
+            }
+            is InternalResolution.Error -> {
+                createErrorResolution(
+                    flagKey = flagKey,
+                    defaultValue = resolution.defaultValue,
+                    errorCode = resolution.errorCode,
+                    errorMessage = resolution.errorMessage
+                )
+            }
+        }
+    }
+
+    // endregion
+
+    // region InternalResolution
+
+    private sealed class InternalResolution<T> {
+        data class Success<T>(val value: T, val flag: PrecomputedFlag, val context: EvaluationContext) :
+            InternalResolution<T>()
+
+        data class Error<T>(val defaultValue: T, val errorCode: ErrorCode, val errorMessage: String) :
+            InternalResolution<T>()
+    }
+
+    /**
+     * Core resolution method that unifies all flag resolution logic.
+     *
+     * This pure function (no side effects) is the single source of truth for:
+     * - Fetching flags from the repository
+     * - Validating type compatibility via [isTypeCompatible]
+     * - Parsing flag values using the provided converter
+     *
+     * @param T The type of the flag value to resolve
+     * @param flagKey The flag key to resolve
+     * @param defaultValue The default value (also determines expected type)
+     * @param converter The function to convert the string value to type T
+     * @return [InternalResolution.Success] with parsed value and metadata if resolution succeeded,
+     *         [InternalResolution.Error] with default value and error details otherwise
+     */
+    @Suppress("ReturnCount") // Early returns improve readability by avoiding nested conditionals
+    private fun <T> resolveInternal(
+        flagKey: String,
+        defaultValue: T,
+        converter: (String) -> T?
+    ): InternalResolution<T> {
+        val flagAndContext = flagsRepository.getPrecomputedFlagWithContext(flagKey)
         if (flagAndContext == null) {
-            return createErrorResolution(
-                flagKey = flagKey,
+            return InternalResolution.Error(
                 defaultValue = defaultValue,
                 errorCode = ErrorCode.FLAG_NOT_FOUND,
                 errorMessage = "Flag not found"
             )
         }
 
-        val (precomputedFlag, context) = flagAndContext
-        val rawValue = precomputedFlag.variationValue
+        val (flag, context) = flagAndContext
 
-        // Parse based on target type (inferred from defaultValue)
-        @Suppress("UNCHECKED_CAST")
-        val parsedValue: T? = when (defaultValue) {
-            is Boolean -> rawValue.toBooleanStrictOrNull() as? T
-            is String -> rawValue as? T
-            is Int -> rawValue.toIntOrNull() as? T
-            is Long -> rawValue.toLongOrNull() as? T
-            is Double -> rawValue.toDoubleOrNull() as? T
-            is JSONObject -> {
-                try {
-                    JSONObject(rawValue) as? T
-                } catch (e: JSONException) {
-                    featureSdkCore.internalLogger.log(
-                        level = InternalLogger.Level.ERROR,
-                        target = InternalLogger.Target.USER,
-                        messageBuilder = { "Failed to parse JSON for key: $flagKey" },
-                        throwable = e
-                    )
-                    // Return null to trigger PARSE_ERROR below
-                    null
-                }
-            }
-            else -> null
-        }
-
-        return if (parsedValue != null) {
-            // Track exposure event for successfully resolved flags
-            if (flagsConfiguration.trackExposures) {
-                writeExposureEvent(flagKey, precomputedFlag, context)
-            }
-            createSuccessResolution(precomputedFlag, parsedValue)
-        } else {
-            // Determine appropriate error code
-            val errorCode = if (defaultValue is JSONObject) {
-                ErrorCode.PARSE_ERROR
-            } else {
-                ErrorCode.TYPE_MISMATCH
-            }
-
-            val errorMessage = if (defaultValue is JSONObject) {
-                "Flag value cannot be parsed as JSON"
-            } else {
-                "Flag value '$rawValue' cannot be parsed to the requested type"
-            }
-
-            createErrorResolution(
-                flagKey = flagKey,
+        if (!isTypeCompatible(flag.variationType, defaultValue)) {
+            return InternalResolution.Error(
                 defaultValue = defaultValue,
-                errorCode = errorCode,
-                errorMessage = errorMessage
+                errorCode = ErrorCode.TYPE_MISMATCH,
+                errorMessage = "Flag has type '${flag.variationType}' but ${getTypeName(defaultValue)} was requested"
             )
         }
+
+        val parsedValue = try {
+            converter(flag.variationValue)
+        } catch (
+            @Suppress("TooGenericExceptionCaught")
+            e: Exception
+        ) {
+            // The underlying type conversion operations (toIntOrNull, toDoubleOrNull, JSONObject, etc.)
+            // can throw various exception types. We catch Exception to defensively handle all failures.
+            return InternalResolution.Error(
+                defaultValue = defaultValue,
+                errorCode = ErrorCode.PARSE_ERROR,
+                errorMessage = "Failed to parse value: ${e.message}"
+            )
+        }
+
+        if (parsedValue == null) {
+            return InternalResolution.Error(
+                defaultValue = defaultValue,
+                errorCode = ErrorCode.PARSE_ERROR,
+                errorMessage = "Failed to parse value '${flag.variationValue}' as ${getTypeName(defaultValue)}"
+            )
+        }
+
+        return InternalResolution.Success(
+            value = parsedValue,
+            flag = flag,
+            context = context
+        )
+    }
+
+    // endregion
+
+    // region Type Checking
+
+    /**
+     * Typed resolution layer that handles side effects for convenience methods.
+     *
+     * This helper method acts as a middle layer to the public API, handling:
+     * - Exposure event tracking on successful resolution (via [writeExposureEvent])
+     * - Type mismatch warning logs for developer feedback (via [InternalLogger])
+     * - Returning the typed value on success or the default value on error
+     *
+     * @param T The type of the flag value
+     * @param flagKey The flag key being resolved
+     * @param resolution The [InternalResolution] result from [resolveInternal]
+     * @return The resolved value from [InternalResolution.Success.value] on success,
+     *         or [InternalResolution.Error.defaultValue] on error
+     */
+    private fun <T> resolveTyped(flagKey: String, resolution: InternalResolution<T>): T = when (resolution) {
+        is InternalResolution.Success -> {
+
+            if (resolution.context == null) {
+                /**
+                 * this might happen if a previous session saved precomputed flags and a new session did not provide a valid context
+                 */
+                featureSdkCore.internalLogger.log(
+                    target = InternalLogger.Target.MAINTAINER,
+                    level = InternalLogger.Level.ERROR,
+                    messageBuilder = { ERROR_NO_EVALUATION_CONTEXT }
+                )
+            } else {
+                if (flagsConfiguration.trackExposures) {
+                    writeExposureEvent(flagKey, resolution.flag, resolution.context)
+                }
+            }
+
+            if (flagsConfiguration.rumIntegrationEnabled) {
+                logEvaluation(
+                    key = flagKey,
+                    value = resolution.value as Any
+                )
+            }
+
+
+            if (flagsConfiguration.trackExposures) {
+                writeExposureEvent(flagKey, resolution.flag, resolution.context)
+            }
+            resolution.value
+        }
+        is InternalResolution.Error -> {
+            // Only log type mismatches as warnings to help developers identify configuration issues.
+            // Other errors (FLAG_NOT_FOUND, PARSE_ERROR) are expected in normal operation.
+            if (resolution.errorCode == ErrorCode.TYPE_MISMATCH) {
+                featureSdkCore.internalLogger.log(
+                    InternalLogger.Level.WARN,
+                    InternalLogger.Target.USER,
+                    { "Flag '$flagKey': ${resolution.errorMessage}" }
+                )
+            }
+            resolution.defaultValue
+        }
+    }
+
+    /**
+     * Gets the appropriate converter function for the given type.
+     * Handles special cases like JSONObject parsing with error logging.
+     */
+    @Suppress("UNCHECKED_CAST")
+    private fun <T> getConverterForType(flagKey: String, defaultValue: T): (String) -> T? = when (defaultValue) {
+        is Boolean -> { s: String -> s.lowercase(Locale.US).toBooleanStrictOrNull() as? T }
+        is String -> { s: String -> s as? T }
+        is Int -> { s: String -> s.toIntOrNull() as? T }
+        is Long -> { s: String -> s.toLongOrNull() as? T }
+        is Double -> { s: String -> s.toDoubleOrNull() as? T }
+        is JSONObject -> { s: String -> parseJsonObject(flagKey, s) as? T }
+        else -> { _ -> null }
+    }
+
+    private fun <T> isTypeCompatible(variationType: String, defaultValue: T): Boolean = when (defaultValue) {
+        is Boolean -> variationType == "boolean"
+        is String -> variationType == "string"
+        is Int -> variationType == "integer"
+        is Long -> variationType == "integer"
+        is Double -> variationType == "number" || variationType == "float"
+        is JSONObject -> variationType == "object"
+        else -> false
+    }
+
+    private fun <T> getTypeName(defaultValue: T): String = when (defaultValue) {
+        is Boolean -> "Boolean"
+        is String -> "String"
+        is Int -> "Int"
+        is Long -> "Long"
+        is Double -> "Double"
+        is JSONObject -> "JSONObject"
+        else -> defaultValue!!::class.simpleName ?: "Unknown"
+    }
+
+    // endregion
+
+    /**
+     * Parses a JSON object from a string value, logging errors if parsing fails.
+     * This shared method eliminates duplicate JSON parsing logic.
+     *
+     * @param flagKey The flag key, used for logging purposes.
+     * @param value The string value to parse as JSON.
+     * @return The parsed JSONObject, or null if parsing failed.
+     */
+    private fun parseJsonObject(flagKey: String, value: String): JSONObject? = try {
+        JSONObject(value)
+    } catch (e: JSONException) {
+        featureSdkCore.internalLogger.log(
+            level = InternalLogger.Level.ERROR,
+            target = InternalLogger.Target.USER,
+            messageBuilder = { "Failed to parse JSON for key: $flagKey" },
+            throwable = e
+        )
+        null
     }
 
     private fun writeExposureEvent(flagKey: String, data: PrecomputedFlag, context: EvaluationContext?) {

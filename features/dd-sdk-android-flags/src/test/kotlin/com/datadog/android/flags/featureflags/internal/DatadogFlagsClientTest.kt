@@ -367,7 +367,7 @@ internal class DatadogFlagsClientTest {
         val fakeFlagValue = forge.aDouble()
         val fakeDefaultValue = forge.aDouble()
         val fakeFlag = forge.getForgery<PrecomputedFlag>().copy(
-            variationType = VariationType.DOUBLE.value,
+            variationType = VariationType.NUMBER.value,
             variationValue = fakeFlagValue.toString()
         )
         val fakeContext = EvaluationContext(
@@ -413,7 +413,7 @@ internal class DatadogFlagsClientTest {
             put("key2", forge.anInt())
         }
         val fakeFlag = forge.getForgery<PrecomputedFlag>().copy(
-            variationType = VariationType.JSON.value,
+            variationType = VariationType.OBJECT.value,
             variationValue = fakeFlagValue.toString()
         )
         val fakeContext = EvaluationContext(
@@ -439,7 +439,7 @@ internal class DatadogFlagsClientTest {
             put(fakeJsonKey, forge.anAlphabeticalString())
         }
         val fakeFlag = forge.getForgery<PrecomputedFlag>().copy(
-            variationType = VariationType.JSON.value,
+            variationType = VariationType.OBJECT.value,
             variationValue = "invalid json {"
         )
         val fakeContext = EvaluationContext(
@@ -471,7 +471,7 @@ internal class DatadogFlagsClientTest {
             put(fakeJsonKey, forge.anAlphabeticalString())
         }
         val fakeFlag = forge.getForgery<PrecomputedFlag>().copy(
-            variationType = VariationType.JSON.value,
+            variationType = VariationType.OBJECT.value,
             variationValue = "{\"unclosed\": \"quote"
         )
         val fakeContext = EvaluationContext(
@@ -506,7 +506,7 @@ internal class DatadogFlagsClientTest {
         val fakeFlagKey = forge.anAlphabeticalString()
         val fakeDefaultValue = JSONObject()
         val fakeFlag = forge.getForgery<PrecomputedFlag>().copy(
-            variationType = VariationType.JSON.value,
+            variationType = VariationType.OBJECT.value,
             variationValue = "not json at all!"
         )
         val fakeContext = EvaluationContext(
@@ -557,6 +557,7 @@ internal class DatadogFlagsClientTest {
         val fakeFlagKey = forge.anAlphabeticalString()
         val fakeFlagValue = forge.anAlphabeticalString()
         val fakeFlag = forge.getForgery<PrecomputedFlag>().copy(
+            variationType = VariationType.STRING.value,
             variationValue = fakeFlagValue
         )
         val fakeContext = EvaluationContext(
@@ -582,6 +583,160 @@ internal class DatadogFlagsClientTest {
         assertThat(result).isEqualTo(fakeFlagValue)
 
         verify(customRepository).getPrecomputedFlagWithContext(fakeFlagKey)
+    }
+
+    // endregion
+
+    // region resolve() - Generic Resolution with ResolutionDetails
+
+    @Test
+    fun `M return ResolutionDetails with value and metadata W resolve() { successful resolution }`(forge: Forge) {
+        // Given
+        val fakeFlagKey = forge.anAlphabeticalString()
+        val fakeDefaultValue = forge.aBool()
+        val fakeFlagValue = !fakeDefaultValue
+        val fakeVariationKey = forge.anAlphabeticalString()
+        val fakeReason = forge.anElementFrom("TARGETING_MATCH", "RULE_MATCH", "DEFAULT")
+        val fakeExtraLogging = JSONObject().apply {
+            put("version", forge.anAlphabeticalString())
+            put("environment", forge.anElementFrom("prod", "staging", "dev"))
+        }
+        val fakeFlag = forge.getForgery<PrecomputedFlag>().copy(
+            variationType = VariationType.BOOLEAN.value,
+            variationValue = fakeFlagValue.toString(),
+            variationKey = fakeVariationKey,
+            reason = fakeReason,
+            extraLogging = fakeExtraLogging
+        )
+        val fakeContext = EvaluationContext(
+            targetingKey = forge.anAlphabeticalString(),
+            attributes = emptyMap()
+        )
+        whenever(mockFlagsRepository.getPrecomputedFlagWithContext(fakeFlagKey)) doReturn (fakeFlag to fakeContext)
+
+        // When
+        val result = testedClient.resolve(fakeFlagKey, fakeDefaultValue)
+
+        // Then
+        assertThat(result.value).isEqualTo(fakeFlagValue)
+        assertThat(result.variant).isEqualTo(fakeVariationKey)
+        assertThat(result.reason).isEqualTo(fakeReason)
+        assertThat(result.errorCode).isNull()
+        assertThat(result.errorMessage).isNull()
+        assertThat(result.flagMetadata).isNotNull
+        assertThat(result.flagMetadata).containsKeys("version", "environment")
+    }
+
+    @Test
+    fun `M return ResolutionDetails with error W resolve() { type mismatch }`(forge: Forge) {
+        // Given
+        val fakeFlagKey = forge.anAlphabeticalString()
+        val fakeDefaultValue = forge.aBool()
+        val fakeFlag = forge.getForgery<PrecomputedFlag>().copy(
+            variationType = VariationType.STRING.value,
+            variationValue = "some-string"
+        )
+        val fakeContext = EvaluationContext(
+            targetingKey = forge.anAlphabeticalString(),
+            attributes = emptyMap()
+        )
+        whenever(mockFlagsRepository.getPrecomputedFlagWithContext(fakeFlagKey)) doReturn (fakeFlag to fakeContext)
+
+        // When
+        val result = testedClient.resolve(fakeFlagKey, fakeDefaultValue)
+
+        // Then
+        assertThat(result.value).isEqualTo(fakeDefaultValue)
+        assertThat(result.variant).isNull()
+        assertThat(result.reason).isEqualTo("ERROR")
+        assertThat(result.errorCode).isEqualTo(com.datadog.android.flags.model.ErrorCode.TYPE_MISMATCH)
+        assertThat(result.errorMessage).contains("Flag '$fakeFlagKey'")
+        assertThat(result.errorMessage).contains("has type 'string' but Boolean was requested")
+        assertThat(result.flagMetadata).isNull()
+
+        // Verify no exposure tracked for type mismatch
+        verify(mockFeatureSdkCore, never()).getFeature(any())
+    }
+
+    @Test
+    fun `M return ResolutionDetails with error W resolve() { flag not found }`(forge: Forge) {
+        // Given
+        val fakeFlagKey = forge.anAlphabeticalString()
+        val fakeDefaultValue = forge.anInt()
+        whenever(mockFlagsRepository.getPrecomputedFlagWithContext(fakeFlagKey)) doReturn null
+
+        // When
+        val result = testedClient.resolve(fakeFlagKey, fakeDefaultValue)
+
+        // Then
+        assertThat(result.value).isEqualTo(fakeDefaultValue)
+        assertThat(result.variant).isNull()
+        assertThat(result.reason).isEqualTo("ERROR")
+        assertThat(result.errorCode).isEqualTo(com.datadog.android.flags.model.ErrorCode.FLAG_NOT_FOUND)
+        assertThat(result.errorMessage).contains("Flag '$fakeFlagKey'")
+        assertThat(result.errorMessage).contains("Flag not found")
+        assertThat(result.flagMetadata).isNull()
+
+        // Verify no exposure tracked when flag not found
+        verify(mockFeatureSdkCore, never()).getFeature(any())
+    }
+
+    @Test
+    fun `M return ResolutionDetails with parse error W resolve() { invalid JSON object }`(forge: Forge) {
+        // Given
+        val fakeFlagKey = forge.anAlphabeticalString()
+        val fakeDefaultValue = JSONObject().apply {
+            put("default", "value")
+        }
+        val fakeFlag = forge.getForgery<PrecomputedFlag>().copy(
+            variationType = VariationType.OBJECT.value,
+            variationValue = "not valid json{"
+        )
+        val fakeContext = EvaluationContext(
+            targetingKey = forge.anAlphabeticalString(),
+            attributes = emptyMap()
+        )
+        whenever(mockFlagsRepository.getPrecomputedFlagWithContext(fakeFlagKey)) doReturn (fakeFlag to fakeContext)
+
+        // When
+        val result = testedClient.resolve(fakeFlagKey, fakeDefaultValue)
+
+        // Then
+        assertThat(result.value.toString()).isEqualTo(fakeDefaultValue.toString())
+        assertThat(result.variant).isNull()
+        assertThat(result.reason).isEqualTo("ERROR")
+        assertThat(result.errorCode).isEqualTo(com.datadog.android.flags.model.ErrorCode.PARSE_ERROR)
+        assertThat(result.errorMessage).contains("Flag '$fakeFlagKey'")
+        assertThat(result.errorMessage).contains("Failed to parse value")
+        assertThat(result.flagMetadata).isNull()
+
+        // Verify no exposure tracked for parse error
+        verify(mockFeatureSdkCore, never()).getFeature(any())
+    }
+
+    @Test
+    fun `M track exposure W resolve() { successful resolution and trackExposures enabled }`(forge: Forge) {
+        // Given
+        val fakeFlagKey = forge.anAlphabeticalString()
+        val fakeDefaultValue = forge.anAlphabeticalString()
+        val fakeFlagValue = forge.anAlphabeticalString()
+        val fakeFlag = forge.getForgery<PrecomputedFlag>().copy(
+            variationType = VariationType.STRING.value,
+            variationValue = fakeFlagValue
+        )
+        val fakeContext = EvaluationContext(
+            targetingKey = forge.anAlphabeticalString(),
+            attributes = emptyMap()
+        )
+        whenever(mockFlagsRepository.getPrecomputedFlagWithContext(fakeFlagKey)) doReturn (fakeFlag to fakeContext)
+
+        // When
+        val result = testedClient.resolve(fakeFlagKey, fakeDefaultValue)
+
+        // Then
+        assertThat(result.value).isEqualTo(fakeFlagValue)
+        // Verify exposure tracked for successful resolution
+        verify(mockFeatureSdkCore).getFeature(any())
     }
 
     // endregion
@@ -816,6 +971,500 @@ internal class DatadogFlagsClientTest {
         // Then
         assertThat(result).isEqualTo(fakeFlagValue)
         verifyNoInteractions(mockRumEvaluationLogger)
+    }
+
+    // endregion
+
+    // region Type Mismatch Tests
+
+    @Test
+    fun `M return default value and not track exposure W resolveBooleanValue() { type mismatch - string flag }`(
+        forge: Forge
+    ) {
+        // Given
+        val fakeFlagKey = forge.anAlphabeticalString()
+        val fakeDefaultValue = forge.aBool()
+        val fakeFlag = forge.getForgery<PrecomputedFlag>().copy(
+            variationType = VariationType.STRING.value,
+            variationValue = "some-string"
+        )
+        val fakeContext = EvaluationContext(
+            targetingKey = forge.anAlphabeticalString(),
+            attributes = emptyMap()
+        )
+        whenever(mockFlagsRepository.getPrecomputedFlagWithContext(fakeFlagKey)) doReturn (fakeFlag to fakeContext)
+
+        // When
+        val result = testedClient.resolveBooleanValue(fakeFlagKey, fakeDefaultValue)
+
+        // Then
+        assertThat(result).isEqualTo(fakeDefaultValue)
+        // Verify no exposure tracked for type mismatch
+        verify(mockFeatureSdkCore, never()).getFeature(any())
+
+        // Verify warning was logged
+        argumentCaptor<() -> String> {
+            verify(mockInternalLogger).log(
+                eq(InternalLogger.Level.WARN),
+                eq(InternalLogger.Target.USER),
+                capture(),
+                eq(null),
+                eq(false),
+                eq(null)
+            )
+            val message = lastValue.invoke()
+            assertThat(message).contains("Flag '$fakeFlagKey'")
+            assertThat(message).contains("has type 'string' but Boolean was requested")
+        }
+    }
+
+    @Test
+    fun `M return default value and not track exposure W resolveIntValue() { type mismatch - boolean flag }`(
+        forge: Forge
+    ) {
+        // Given
+        val fakeFlagKey = forge.anAlphabeticalString()
+        val fakeDefaultValue = forge.anInt()
+        val fakeFlag = forge.getForgery<PrecomputedFlag>().copy(
+            variationType = VariationType.BOOLEAN.value,
+            variationValue = "true"
+        )
+        val fakeContext = EvaluationContext(
+            targetingKey = forge.anAlphabeticalString(),
+            attributes = emptyMap()
+        )
+        whenever(mockFlagsRepository.getPrecomputedFlagWithContext(fakeFlagKey)) doReturn (fakeFlag to fakeContext)
+
+        // When
+        val result = testedClient.resolveIntValue(fakeFlagKey, fakeDefaultValue)
+
+        // Then
+        assertThat(result).isEqualTo(fakeDefaultValue)
+        // Verify no exposure tracked for type mismatch
+        verify(mockFeatureSdkCore, never()).getFeature(any())
+
+        // Verify warning was logged
+        argumentCaptor<() -> String> {
+            verify(mockInternalLogger).log(
+                eq(InternalLogger.Level.WARN),
+                eq(InternalLogger.Target.USER),
+                capture(),
+                eq(null),
+                eq(false),
+                eq(null)
+            )
+            val message = lastValue.invoke()
+            assertThat(message).contains("Flag '$fakeFlagKey'")
+            assertThat(message).contains("has type 'boolean' but Int was requested")
+        }
+    }
+
+    @Test
+    fun `M return default value and not track exposure W resolveDoubleValue() { type mismatch - integer flag }`(
+        forge: Forge
+    ) {
+        // Given
+        val fakeFlagKey = forge.anAlphabeticalString()
+        val fakeDefaultValue = forge.aDouble()
+        val fakeFlag = forge.getForgery<PrecomputedFlag>().copy(
+            variationType = VariationType.INTEGER.value,
+            variationValue = "42"
+        )
+        val fakeContext = EvaluationContext(
+            targetingKey = forge.anAlphabeticalString(),
+            attributes = emptyMap()
+        )
+        whenever(mockFlagsRepository.getPrecomputedFlagWithContext(fakeFlagKey)) doReturn (fakeFlag to fakeContext)
+
+        // When
+        val result = testedClient.resolveDoubleValue(fakeFlagKey, fakeDefaultValue)
+
+        // Then
+        assertThat(result).isEqualTo(fakeDefaultValue)
+        // Verify no exposure tracked for type mismatch
+        verify(mockFeatureSdkCore, never()).getFeature(any())
+
+        // Verify warning was logged
+        argumentCaptor<() -> String> {
+            verify(mockInternalLogger).log(
+                eq(InternalLogger.Level.WARN),
+                eq(InternalLogger.Target.USER),
+                capture(),
+                eq(null),
+                eq(false),
+                eq(null)
+            )
+            val message = lastValue.invoke()
+            assertThat(message).contains("Flag '$fakeFlagKey'")
+            assertThat(message).contains("has type 'integer' but Double was requested")
+        }
+    }
+
+    @Test
+    fun `M return default value and not track exposure W resolveStructureValue() { type mismatch - string flag }`(
+        forge: Forge
+    ) {
+        // Given
+        val fakeFlagKey = forge.anAlphabeticalString()
+        val fakeDefaultValue = JSONObject().apply {
+            put("default", "value")
+        }
+        val fakeFlag = forge.getForgery<PrecomputedFlag>().copy(
+            variationType = VariationType.STRING.value,
+            variationValue = "just a string"
+        )
+        val fakeContext = EvaluationContext(
+            targetingKey = forge.anAlphabeticalString(),
+            attributes = emptyMap()
+        )
+        whenever(mockFlagsRepository.getPrecomputedFlagWithContext(fakeFlagKey)) doReturn (fakeFlag to fakeContext)
+
+        // When
+        val result = testedClient.resolveStructureValue(fakeFlagKey, fakeDefaultValue)
+
+        // Then
+        assertThat(result.toString()).isEqualTo(fakeDefaultValue.toString())
+        // Verify no exposure tracked for type mismatch
+        verify(mockFeatureSdkCore, never()).getFeature(any())
+
+        // Verify warning was logged
+        argumentCaptor<() -> String> {
+            verify(mockInternalLogger).log(
+                eq(InternalLogger.Level.WARN),
+                eq(InternalLogger.Target.USER),
+                capture(),
+                eq(null),
+                eq(false),
+                eq(null)
+            )
+            val message = lastValue.invoke()
+            assertThat(message).contains("Flag '$fakeFlagKey'")
+            assertThat(message).contains("has type 'string' but JSONObject was requested")
+        }
+    }
+
+    @Test
+    fun `M return default value and not track exposure W resolveStringValue() { type mismatch - number flag }`(
+        forge: Forge
+    ) {
+        // Given
+        val fakeFlagKey = forge.anAlphabeticalString()
+        val fakeDefaultValue = forge.anAlphabeticalString()
+        val fakeFlag = forge.getForgery<PrecomputedFlag>().copy(
+            variationType = VariationType.NUMBER.value,
+            variationValue = "42.5"
+        )
+        val fakeContext = EvaluationContext(
+            targetingKey = forge.anAlphabeticalString(),
+            attributes = emptyMap()
+        )
+        whenever(mockFlagsRepository.getPrecomputedFlagWithContext(fakeFlagKey)) doReturn (fakeFlag to fakeContext)
+
+        // When
+        val result = testedClient.resolveStringValue(fakeFlagKey, fakeDefaultValue)
+
+        // Then
+        assertThat(result).isEqualTo(fakeDefaultValue)
+        // Verify no exposure tracked for type mismatch
+        verify(mockFeatureSdkCore, never()).getFeature(any())
+
+        // Verify warning was logged
+        argumentCaptor<() -> String> {
+            verify(mockInternalLogger).log(
+                eq(InternalLogger.Level.WARN),
+                eq(InternalLogger.Target.USER),
+                capture(),
+                eq(null),
+                eq(false),
+                eq(null)
+            )
+            val message = lastValue.invoke()
+            assertThat(message).contains("Flag '$fakeFlagKey'")
+            assertThat(message).contains("has type 'number' but String was requested")
+        }
+    }
+
+    @Test
+    fun `M accept both number and float W resolveDoubleValue() { compatible types }`(forge: Forge) {
+        // Given
+        val fakeFlagKey1 = forge.anAlphabeticalString()
+        val fakeFlagKey2 = forge.anAlphabeticalString()
+        val fakeFlagValue = forge.aDouble()
+        val fakeDefaultValue = forge.aDouble()
+
+        val numberFlag = forge.getForgery<PrecomputedFlag>().copy(
+            variationType = VariationType.NUMBER.value,
+            variationValue = fakeFlagValue.toString()
+        )
+        val floatFlag = forge.getForgery<PrecomputedFlag>().copy(
+            variationType = VariationType.FLOAT.value,
+            variationValue = fakeFlagValue.toString()
+        )
+        val fakeContext = EvaluationContext(
+            targetingKey = forge.anAlphabeticalString(),
+            attributes = emptyMap()
+        )
+
+        whenever(mockFlagsRepository.getPrecomputedFlagWithContext(fakeFlagKey1)) doReturn (numberFlag to fakeContext)
+        whenever(mockFlagsRepository.getPrecomputedFlagWithContext(fakeFlagKey2)) doReturn (floatFlag to fakeContext)
+
+        // When
+        val result1 = testedClient.resolveDoubleValue(fakeFlagKey1, fakeDefaultValue)
+        val result2 = testedClient.resolveDoubleValue(fakeFlagKey2, fakeDefaultValue)
+
+        // Then
+        assertThat(result1).isEqualTo(fakeFlagValue)
+        assertThat(result2).isEqualTo(fakeFlagValue)
+    }
+
+    @Test
+    fun `M accept integer for both int and long W resolveIntValue and resolveLongValue() { compatible types }`(
+        forge: Forge
+    ) {
+        // Given
+        val fakeFlagKey = forge.anAlphabeticalString()
+        val fakeFlagValue = forge.anInt(min = 0, max = 1000)
+        val fakeDefaultInt = forge.anInt()
+        val fakeDefaultLong = forge.aLong()
+
+        val integerFlag = forge.getForgery<PrecomputedFlag>().copy(
+            variationType = VariationType.INTEGER.value,
+            variationValue = fakeFlagValue.toString()
+        )
+        val fakeContext = EvaluationContext(
+            targetingKey = forge.anAlphabeticalString(),
+            attributes = emptyMap()
+        )
+
+        whenever(mockFlagsRepository.getPrecomputedFlagWithContext(fakeFlagKey)) doReturn (integerFlag to fakeContext)
+
+        // When
+        val resultInt = testedClient.resolveIntValue(fakeFlagKey, fakeDefaultInt)
+        val resultLong = testedClient.resolveLongValue(fakeFlagKey, fakeDefaultLong)
+
+        // Then
+        assertThat(resultInt).isEqualTo(fakeFlagValue)
+        assertThat(resultLong).isEqualTo(fakeFlagValue.toLong())
+    }
+
+    // endregion
+
+    // region resolveLongValue() - Comprehensive Tests
+
+    @Test
+    fun `M return flag value W resolveLongValue() { flag exists with string long value }`(forge: Forge) {
+        // Given
+        val fakeFlagKey = forge.anAlphabeticalString()
+        val fakeFlagValue = forge.aLong()
+        val fakeDefaultValue = forge.aLong()
+        val fakeFlag = forge.getForgery<PrecomputedFlag>().copy(
+            variationType = VariationType.INTEGER.value,
+            variationValue = fakeFlagValue.toString()
+        )
+        val fakeContext = EvaluationContext(
+            targetingKey = forge.anAlphabeticalString(),
+            attributes = emptyMap()
+        )
+        whenever(mockFlagsRepository.getPrecomputedFlagWithContext(fakeFlagKey)) doReturn (fakeFlag to fakeContext)
+
+        // When
+        val result = testedClient.resolveLongValue(fakeFlagKey, fakeDefaultValue)
+
+        // Then
+        assertThat(result).isEqualTo(fakeFlagValue)
+    }
+
+    @Test
+    fun `M return flag value W resolveLongValue() { value exceeds Int MAX_VALUE }`(forge: Forge) {
+        // Given
+        val fakeFlagKey = forge.anAlphabeticalString()
+        val fakeFlagValue = Int.MAX_VALUE.toLong() + forge.aLong(min = 1L, max = 1000000L)
+        val fakeDefaultValue = forge.aLong()
+        val fakeFlag = forge.getForgery<PrecomputedFlag>().copy(
+            variationType = VariationType.INTEGER.value,
+            variationValue = fakeFlagValue.toString()
+        )
+        val fakeContext = EvaluationContext(
+            targetingKey = forge.anAlphabeticalString(),
+            attributes = emptyMap()
+        )
+        whenever(mockFlagsRepository.getPrecomputedFlagWithContext(fakeFlagKey)) doReturn (fakeFlag to fakeContext)
+
+        // When
+        val result = testedClient.resolveLongValue(fakeFlagKey, fakeDefaultValue)
+
+        // Then
+        assertThat(result).isEqualTo(fakeFlagValue)
+        assertThat(result).isGreaterThan(Int.MAX_VALUE.toLong())
+    }
+
+    @Test
+    fun `M return flag value W resolveLongValue() { value is Long MAX_VALUE }`(forge: Forge) {
+        // Given
+        val fakeFlagKey = forge.anAlphabeticalString()
+        val fakeFlagValue = Long.MAX_VALUE
+        val fakeDefaultValue = forge.aLong()
+        val fakeFlag = forge.getForgery<PrecomputedFlag>().copy(
+            variationType = VariationType.INTEGER.value,
+            variationValue = fakeFlagValue.toString()
+        )
+        val fakeContext = EvaluationContext(
+            targetingKey = forge.anAlphabeticalString(),
+            attributes = emptyMap()
+        )
+        whenever(mockFlagsRepository.getPrecomputedFlagWithContext(fakeFlagKey)) doReturn (fakeFlag to fakeContext)
+
+        // When
+        val result = testedClient.resolveLongValue(fakeFlagKey, fakeDefaultValue)
+
+        // Then
+        assertThat(result).isEqualTo(Long.MAX_VALUE)
+    }
+
+    @Test
+    fun `M return flag value W resolveLongValue() { value is Long MIN_VALUE }`(forge: Forge) {
+        // Given
+        val fakeFlagKey = forge.anAlphabeticalString()
+        val fakeFlagValue = Long.MIN_VALUE
+        val fakeDefaultValue = forge.aLong()
+        val fakeFlag = forge.getForgery<PrecomputedFlag>().copy(
+            variationType = VariationType.INTEGER.value,
+            variationValue = fakeFlagValue.toString()
+        )
+        val fakeContext = EvaluationContext(
+            targetingKey = forge.anAlphabeticalString(),
+            attributes = emptyMap()
+        )
+        whenever(mockFlagsRepository.getPrecomputedFlagWithContext(fakeFlagKey)) doReturn (fakeFlag to fakeContext)
+
+        // When
+        val result = testedClient.resolveLongValue(fakeFlagKey, fakeDefaultValue)
+
+        // Then
+        assertThat(result).isEqualTo(Long.MIN_VALUE)
+    }
+
+    @Test
+    fun `M return flag value W resolveLongValue() { negative long value }`(forge: Forge) {
+        // Given
+        val fakeFlagKey = forge.anAlphabeticalString()
+        val fakeFlagValue = -forge.aLong(min = 1L, max = Long.MAX_VALUE)
+        val fakeDefaultValue = forge.aLong()
+        val fakeFlag = forge.getForgery<PrecomputedFlag>().copy(
+            variationType = VariationType.INTEGER.value,
+            variationValue = fakeFlagValue.toString()
+        )
+        val fakeContext = EvaluationContext(
+            targetingKey = forge.anAlphabeticalString(),
+            attributes = emptyMap()
+        )
+        whenever(mockFlagsRepository.getPrecomputedFlagWithContext(fakeFlagKey)) doReturn (fakeFlag to fakeContext)
+
+        // When
+        val result = testedClient.resolveLongValue(fakeFlagKey, fakeDefaultValue)
+
+        // Then
+        assertThat(result).isEqualTo(fakeFlagValue)
+        assertThat(result).isNegative()
+    }
+
+    @Test
+    fun `M return default value W resolveLongValue() { flag exists with invalid long string }`(forge: Forge) {
+        // Given
+        val fakeFlagKey = forge.anAlphabeticalString()
+        val fakeDefaultValue = forge.aLong()
+        val fakeFlag = forge.getForgery<PrecomputedFlag>().copy(
+            variationType = VariationType.INTEGER.value,
+            variationValue = "not-a-long"
+        )
+        val fakeContext = EvaluationContext(
+            targetingKey = forge.anAlphabeticalString(),
+            attributes = emptyMap()
+        )
+        whenever(mockFlagsRepository.getPrecomputedFlagWithContext(fakeFlagKey)) doReturn (fakeFlag to fakeContext)
+
+        // When
+        val result = testedClient.resolveLongValue(fakeFlagKey, fakeDefaultValue)
+
+        // Then
+        assertThat(result).isEqualTo(fakeDefaultValue)
+    }
+
+    @Test
+    fun `M return default value W resolveLongValue() { flag does not exist }`(forge: Forge) {
+        // Given
+        val fakeFlagKey = forge.anAlphabeticalString()
+        val fakeDefaultValue = forge.aLong()
+        whenever(mockFlagsRepository.getPrecomputedFlagWithContext(fakeFlagKey)) doReturn null
+
+        // When
+        val result = testedClient.resolveLongValue(fakeFlagKey, fakeDefaultValue)
+
+        // Then
+        assertThat(result).isEqualTo(fakeDefaultValue)
+    }
+
+    @Test
+    fun `M return default value W resolveIntValue() { value exceeds Int MAX_VALUE }`(forge: Forge) {
+        // Given
+        val fakeFlagKey = forge.anAlphabeticalString()
+        val fakeDefaultValue = forge.anInt()
+        // Value that's too large for Int
+        val oversizedValue = Int.MAX_VALUE.toLong() + 1L
+        val fakeFlag = forge.getForgery<PrecomputedFlag>().copy(
+            variationType = VariationType.INTEGER.value,
+            variationValue = oversizedValue.toString()
+        )
+        val fakeContext = EvaluationContext(
+            targetingKey = forge.anAlphabeticalString(),
+            attributes = emptyMap()
+        )
+        whenever(mockFlagsRepository.getPrecomputedFlagWithContext(fakeFlagKey)) doReturn (fakeFlag to fakeContext)
+
+        // When
+        val result = testedClient.resolveIntValue(fakeFlagKey, fakeDefaultValue)
+
+        // Then
+        // toIntOrNull() returns null for values outside Int range, so default is returned
+        assertThat(result).isEqualTo(fakeDefaultValue)
+    }
+
+    @Test
+    fun `M return default value and log W resolveLongValue() { type mismatch - string flag }`(forge: Forge) {
+        // Given
+        val fakeFlagKey = forge.anAlphabeticalString()
+        val fakeDefaultValue = forge.aLong()
+        val fakeFlag = forge.getForgery<PrecomputedFlag>().copy(
+            variationType = VariationType.STRING.value,
+            variationValue = "not-a-number"
+        )
+        val fakeContext = EvaluationContext(
+            targetingKey = forge.anAlphabeticalString(),
+            attributes = emptyMap()
+        )
+        whenever(mockFlagsRepository.getPrecomputedFlagWithContext(fakeFlagKey)) doReturn (fakeFlag to fakeContext)
+
+        // When
+        val result = testedClient.resolveLongValue(fakeFlagKey, fakeDefaultValue)
+
+        // Then
+        assertThat(result).isEqualTo(fakeDefaultValue)
+        verify(mockFeatureSdkCore, never()).getFeature(any())
+
+        // Verify warning was logged
+        argumentCaptor<() -> String> {
+            verify(mockInternalLogger).log(
+                eq(InternalLogger.Level.WARN),
+                eq(InternalLogger.Target.USER),
+                capture(),
+                eq(null),
+                eq(false),
+                eq(null)
+            )
+            val message = lastValue.invoke()
+            assertThat(message).contains("Flag '$fakeFlagKey'")
+            assertThat(message).contains("has type 'string' but Long was requested")
+        }
     }
 
     // endregion

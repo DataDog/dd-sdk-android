@@ -30,8 +30,9 @@ internal enum class VariationType(val value: String) {
     BOOLEAN("boolean"),
     STRING("string"),
     INTEGER("integer"),
-    DOUBLE("double"),
-    JSON("json")
+    NUMBER("number"),
+    FLOAT("float"),
+    OBJECT("object")
 }
 
 internal enum class FlagReason(val value: String) {
