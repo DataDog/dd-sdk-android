@@ -16,14 +16,15 @@ import androidx.core.view.isVisible
 import com.datadog.android.Datadog
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.core.InternalSdkCore
-import com.datadog.android.insights.extensions.animateVisibility
-import com.datadog.android.insights.extensions.appendColored
-import com.datadog.android.insights.extensions.color
-import com.datadog.android.insights.extensions.multiLet
-import com.datadog.android.insights.extensions.setupChartView
-import com.datadog.android.insights.widgets.ChartView
-import com.datadog.android.insights.widgets.DragTouchListener
-import com.datadog.android.insights.widgets.TimelineView
+import com.datadog.android.insights.internal.InsightStateStorage
+import com.datadog.android.insights.internal.extensions.animateVisibility
+import com.datadog.android.insights.internal.extensions.appendColored
+import com.datadog.android.insights.internal.extensions.color
+import com.datadog.android.insights.internal.extensions.multiLet
+import com.datadog.android.insights.internal.extensions.setupChartView
+import com.datadog.android.insights.internal.widgets.ChartView
+import com.datadog.android.insights.internal.widgets.DragTouchListener
+import com.datadog.android.insights.internal.widgets.TimelineView
 import com.datadog.android.rum.ExperimentalRumApi
 import com.datadog.android.rum.R
 import com.datadog.android.rum.internal.RumFeature
@@ -75,6 +76,7 @@ class LocalInsightOverlay : InsightsUpdatesListener {
         if (insightsCollector == null) return
         val storage = InsightStateStorage(activity)
 
+        @Suppress("UnsafeThirdPartyFunctionCall")
         val overlayView = LayoutInflater.from(activity).inflate(
             R.layout.layout_dd_insights_overlay,
             activity.window.decorView as ViewGroup,

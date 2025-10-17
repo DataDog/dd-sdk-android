@@ -3,7 +3,7 @@
  * This product includes software developed at Datadog (https://www.datadoghq.com/).
  * Copyright 2016-Present Datadog, Inc.
  */
-package com.datadog.android.insights.extensions
+package com.datadog.android.insights.internal.extensions
 
 import android.text.SpannableStringBuilder
 import android.text.Spanned
@@ -12,7 +12,7 @@ import android.view.View
 import androidx.annotation.ColorRes
 import androidx.annotation.IdRes
 import androidx.core.content.ContextCompat
-import com.datadog.android.insights.widgets.ChartView
+import com.datadog.android.insights.internal.widgets.ChartView
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.pow
@@ -43,6 +43,7 @@ internal fun <F, S> multiLet(first: F?, second: S?, block: (F, S) -> Unit) {
 
 internal fun SpannableStringBuilder.appendColored(text: String, color: Int): SpannableStringBuilder = apply {
     val offset = length
+    @Suppress("UnsafeThirdPartyFunctionCall")
     append(text).setSpan(ForegroundColorSpan(color), offset, offset + text.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
 }
 

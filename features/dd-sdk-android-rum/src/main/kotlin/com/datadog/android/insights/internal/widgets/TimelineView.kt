@@ -3,7 +3,7 @@
  * This product includes software developed at Datadog (https://www.datadoghq.com/).
  * Copyright 2016-Present Datadog, Inc.
  */
-package com.datadog.android.insights.widgets
+package com.datadog.android.insights.internal.widgets
 
 import android.content.Context
 import android.graphics.Canvas
@@ -13,10 +13,10 @@ import android.util.AttributeSet
 import android.view.View
 import android.view.ViewOutlineProvider
 import androidx.core.graphics.withRotation
-import com.datadog.android.insights.domain.TimelineEvent
-import com.datadog.android.insights.extensions.color
-import com.datadog.android.insights.extensions.ms
-import com.datadog.android.insights.extensions.px
+import com.datadog.android.insights.internal.domain.TimelineEvent
+import com.datadog.android.insights.internal.extensions.color
+import com.datadog.android.insights.internal.extensions.ms
+import com.datadog.android.insights.internal.extensions.px
 import com.datadog.android.rum.R
 
 internal class TimelineView @JvmOverloads constructor(
@@ -96,11 +96,14 @@ internal class TimelineView @JvmOverloads constructor(
             if (item.durationNs.ms > 0 || (item !is TimelineEvent.Tick && item !is TimelineEvent.Action)) {
                 canvas.withRotation(degrees = 90f, pivotX = xOffset, pivotY = 0f) {
                     val text = item.durationNs.ms.toString()
+
+                    @Suppress("UnsafeThirdPartyFunctionCall")
                     val textWidth = durationPaint.measureText(text)
                     drawText(text, xOffset + height.toFloat() - textWidth, 0f, durationPaint)
                 }
             }
 
+            @Suppress("UnsafeThirdPartyFunctionCall")
             canvas.drawText(
                 logoText,
                 width / 2 - headerPaint.measureText(logoText) / 2,

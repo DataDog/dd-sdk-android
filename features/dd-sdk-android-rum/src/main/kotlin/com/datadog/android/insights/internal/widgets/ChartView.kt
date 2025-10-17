@@ -3,7 +3,7 @@
  * This product includes software developed at Datadog (https://www.datadoghq.com/).
  * Copyright 2016-Present Datadog, Inc.
  */
-package com.datadog.android.insights.widgets
+package com.datadog.android.insights.internal.widgets
 
 import android.content.Context
 import android.graphics.Canvas
@@ -11,9 +11,9 @@ import android.graphics.Paint
 import android.graphics.Typeface
 import android.util.AttributeSet
 import android.view.View
-import com.datadog.android.insights.extensions.color
-import com.datadog.android.insights.extensions.px
-import com.datadog.android.insights.extensions.round
+import com.datadog.android.insights.internal.extensions.color
+import com.datadog.android.insights.internal.extensions.px
+import com.datadog.android.insights.internal.extensions.round
 import com.datadog.android.internal.collections.EvictingQueue
 import com.datadog.android.rum.R
 import java.util.Collections.max
@@ -73,6 +73,7 @@ internal class ChartView @JvmOverloads constructor(
         data.add(newData)
 
         val windowSize = AVERAGE_WINDOW_SIZE
+        @Suppress("UnsafeThirdPartyFunctionCall")
         if (data.size > windowSize) {
             dataAveraged = data.toList().windowed(size = windowSize, step = 1) { window ->
                 window.average()
@@ -98,6 +99,7 @@ internal class ChartView @JvmOverloads constructor(
         drawText(data, canvas)
     }
 
+    @Suppress("UnsafeThirdPartyFunctionCall")
     private fun drawText(
         data: List<Double>,
         canvas: Canvas

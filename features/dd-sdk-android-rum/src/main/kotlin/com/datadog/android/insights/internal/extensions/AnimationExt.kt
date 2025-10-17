@@ -3,7 +3,7 @@
  * This product includes software developed at Datadog (https://www.datadoghq.com/).
  * Copyright 2016-Present Datadog, Inc.
  */
-package com.datadog.android.insights.extensions
+package com.datadog.android.insights.internal.extensions
 
 import android.view.View
 import androidx.core.view.isVisible
@@ -20,6 +20,7 @@ internal fun View.animateVisibility(newVisibilityState: Boolean) {
     alpha = if (!isVisible) 0f else 1f
     isVisible = true
 
+    @Suppress("UnsafeThirdPartyFunctionCall") // ANIMATION_DURATION is always >= 0
     newOnlyAnimation()
         .scaleX(1f - scaleX)
         .scaleY(1f - scaleY)
@@ -29,6 +30,7 @@ internal fun View.animateVisibility(newVisibilityState: Boolean) {
         .start()
 }
 
+@Suppress("UnsafeThirdPartyFunctionCall")
 internal fun View.animateDragTo(x: Float, y: Float) = newOnlyAnimation()
     .x(
         x.clip(

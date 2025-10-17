@@ -3,7 +3,8 @@
  * This product includes software developed at Datadog (https://www.datadoghq.com/).
  * Copyright 2016-Present Datadog, Inc.
  */
-package com.datadog.android.insights
+
+package com.datadog.android.insights.internal
 
 import android.content.Context
 import android.content.SharedPreferences
@@ -15,6 +16,7 @@ internal class InsightStateStorage private constructor(
 
     constructor(context: Context) : this(context.getSharedPreferences(INSIGHT_PREFERENCES, Context.MODE_PRIVATE))
 
+    @Suppress("UnsafeThirdPartyFunctionCall")
     var widgetPosition: Pair<Float, Float>
         get() = Pair(
             sharedPreferences.getFloat(WIDGET_X, INVALID),
@@ -27,6 +29,7 @@ internal class InsightStateStorage private constructor(
             }
         }
 
+    @Suppress("UnsafeThirdPartyFunctionCall")
     var fabPosition: Pair<Float, Float>
         get() = Pair(
             sharedPreferences.getFloat(FAB_X, INVALID),
@@ -40,6 +43,7 @@ internal class InsightStateStorage private constructor(
         }
 
     var widgetDisplayed: Boolean
+        @Suppress("UnsafeThirdPartyFunctionCall")
         get() = sharedPreferences.getBoolean(WIDGET_DISPLAYED, false)
         set(value) {
             sharedPreferences.edit {
@@ -55,9 +59,5 @@ internal class InsightStateStorage private constructor(
         private const val FAB_X = "DD.FAB_X"
         private const val FAB_Y = "DD.FAB_Y"
         private const val WIDGET_DISPLAYED = "DD.WIDGET_DISPLAYED"
-
-        fun isValidPosition(coordinates: Pair<Float, Float>): Boolean {
-            return coordinates.first > INVALID && coordinates.second > INVALID
-        }
     }
 }

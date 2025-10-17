@@ -102,6 +102,7 @@ interface InsightsCollector {
 /**
  * Listener for data updates from the [InsightsCollector].
  */
+@InternalApi
 interface InsightsUpdatesListener {
 
     /**

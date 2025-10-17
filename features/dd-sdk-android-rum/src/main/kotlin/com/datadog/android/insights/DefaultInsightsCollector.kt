@@ -8,9 +8,9 @@ package com.datadog.android.insights
 import android.os.Debug
 import android.os.Handler
 import android.os.Looper
-import com.datadog.android.insights.domain.TimelineEvent
-import com.datadog.android.insights.extensions.Mb
-import com.datadog.android.insights.extensions.round
+import com.datadog.android.insights.internal.domain.TimelineEvent
+import com.datadog.android.insights.internal.extensions.Mb
+import com.datadog.android.insights.internal.extensions.round
 import com.datadog.android.internal.collections.EvictingQueue
 import com.datadog.android.lint.InternalApi
 import com.datadog.android.rum.ExperimentalRumApi
