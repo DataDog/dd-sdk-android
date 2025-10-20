@@ -97,7 +97,7 @@ internal class TimelineView @JvmOverloads constructor(
                 canvas.withRotation(degrees = 90f, pivotX = xOffset, pivotY = 0f) {
                     val text = item.durationNs.ms.toString()
 
-                    @Suppress("UnsafeThirdPartyFunctionCall")
+                    @Suppress("UnsafeThirdPartyFunctionCall") // measureText() is called on a non-null string
                     val textWidth = durationPaint.measureText(text)
                     drawText(text, xOffset + height.toFloat() - textWidth, 0f, durationPaint)
                 }
