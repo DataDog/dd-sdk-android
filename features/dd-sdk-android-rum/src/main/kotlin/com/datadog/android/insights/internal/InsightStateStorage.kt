@@ -16,7 +16,7 @@ internal class InsightStateStorage private constructor(
 
     constructor(context: Context) : this(context.getSharedPreferences(INSIGHT_PREFERENCES, Context.MODE_PRIVATE))
 
-    @Suppress("UnsafeThirdPartyFunctionCall")
+    @Suppress("UnsafeThirdPartyFunctionCall") // safe because there is a putFloat call for each getFloat
     var widgetPosition: Pair<Float, Float>
         get() = Pair(
             sharedPreferences.getFloat(WIDGET_X, INVALID),
@@ -29,7 +29,7 @@ internal class InsightStateStorage private constructor(
             }
         }
 
-    @Suppress("UnsafeThirdPartyFunctionCall")
+    @Suppress("UnsafeThirdPartyFunctionCall") // safe because there are putFloat calls for each getFloat
     var fabPosition: Pair<Float, Float>
         get() = Pair(
             sharedPreferences.getFloat(FAB_X, INVALID),
@@ -43,7 +43,7 @@ internal class InsightStateStorage private constructor(
         }
 
     var widgetDisplayed: Boolean
-        @Suppress("UnsafeThirdPartyFunctionCall")
+        @Suppress("UnsafeThirdPartyFunctionCall") // safe because there is a putBoolean call for each getBoolean
         get() = sharedPreferences.getBoolean(WIDGET_DISPLAYED, false)
         set(value) {
             sharedPreferences.edit {

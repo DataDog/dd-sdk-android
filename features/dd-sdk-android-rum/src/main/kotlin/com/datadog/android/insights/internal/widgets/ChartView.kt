@@ -73,7 +73,7 @@ internal class ChartView @JvmOverloads constructor(
         data.add(newData)
 
         val windowSize = AVERAGE_WINDOW_SIZE
-        @Suppress("UnsafeThirdPartyFunctionCall") // min()/max() functions called on non-empty lists
+        @Suppress("UnsafeThirdPartyFunctionCall") // min()/max() functions are called on non-empty lists
         if (data.size > windowSize) {
             dataAveraged = data.toList().windowed(size = windowSize, step = 1) { window ->
                 window.average()

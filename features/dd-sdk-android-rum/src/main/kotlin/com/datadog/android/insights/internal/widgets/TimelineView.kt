@@ -103,7 +103,7 @@ internal class TimelineView @JvmOverloads constructor(
                 }
             }
 
-            @Suppress("UnsafeThirdPartyFunctionCall")
+            @Suppress("UnsafeThirdPartyFunctionCall") // measureText() is called on a non-null string
             canvas.drawText(
                 logoText,
                 width / 2 - headerPaint.measureText(logoText) / 2,
