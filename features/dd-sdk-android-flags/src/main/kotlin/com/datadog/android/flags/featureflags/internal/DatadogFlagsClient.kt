@@ -311,19 +311,8 @@ internal class DatadogFlagsClient(
      */
     private fun <T> resolveTyped(flagKey: String, resolution: InternalResolution<T>): T = when (resolution) {
         is InternalResolution.Success -> {
-            if (resolution.context == null) {
-                /**
-                 * this might happen if a previous session saved precomputed flags and a new session did not provide a valid context
-                 */
-                featureSdkCore.internalLogger.log(
-                    target = InternalLogger.Target.MAINTAINER,
-                    level = InternalLogger.Level.ERROR,
-                    messageBuilder = { ERROR_NO_EVALUATION_CONTEXT }
-                )
-            } else {
-                if (flagsConfiguration.trackExposures) {
-                    writeExposureEvent(flagKey, resolution.flag, resolution.context)
-                }
+            if (flagsConfiguration.trackExposures) {
+                writeExposureEvent(flagKey, resolution.flag, resolution.context)
             }
 
             if (flagsConfiguration.rumIntegrationEnabled) {
@@ -404,12 +393,6 @@ internal class DatadogFlagsClient(
             throwable = e
         )
         null
-    }
-
-    private companion object {
-        private const val ERROR_NO_EVALUATION_CONTEXT =
-            "No evaluation context found, exposures cannot be sent to the flags backend. " +
-                "Please call client.setContext with a valid context."
     }
 
 // region Helper Methods
