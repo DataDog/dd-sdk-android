@@ -22,6 +22,7 @@ import com.datadog.android.rum.internal.domain.scope.RumVitalEventHelper
 import com.datadog.android.rum.internal.metric.SessionEndedMetricDispatcher
 import com.datadog.android.rum.internal.monitor.DatadogRumMonitor
 import com.datadog.android.rum.internal.startup.RumAppStartupTelemetryReporter
+import com.datadog.android.rum.internal.startup.RumSessionScopeStartupManager
 import com.datadog.android.telemetry.internal.TelemetryEventHandler
 
 /**
@@ -116,6 +117,16 @@ object Rum {
             sessionSamplingRate = rumFeature.configuration.sampleRate
         )
 
+        val rumVitalEventHelper = RumVitalEventHelper(
+            rumSessionTypeOverride = rumFeature.configuration.rumSessionTypeOverride,
+            batteryInfoProvider = rumFeature.batteryInfoProvider,
+            displayInfoProvider = rumFeature.displayInfoProvider,
+            sampleRate = rumFeature.sampleRate,
+            internalLogger = sdkCore.internalLogger
+        )
+
+        val rumAppStartupTelemetryReporter = RumAppStartupTelemetryReporter.create(sdkCore = sdkCore)
+
         return DatadogRumMonitor(
             applicationId = rumFeature.applicationId,
             sdkCore = sdkCore,
@@ -146,14 +157,20 @@ object Rum {
             accessibilitySnapshotManager = rumFeature.accessibilitySnapshotManager,
             batteryInfoProvider = rumFeature.batteryInfoProvider,
             displayInfoProvider = rumFeature.displayInfoProvider,
-            rumAppStartupTelemetryReporter = RumAppStartupTelemetryReporter.create(sdkCore),
             rumVitalEventHelper = RumVitalEventHelper(
                 rumSessionTypeOverride = rumFeature.configuration.rumSessionTypeOverride,
                 batteryInfoProvider = rumFeature.batteryInfoProvider,
                 displayInfoProvider = rumFeature.displayInfoProvider,
                 sampleRate = rumFeature.sampleRate,
                 internalLogger = sdkCore.internalLogger
-            )
+            ),
+            rumSessionScopeStartupManagerFactory = {
+                RumSessionScopeStartupManager.create(
+                    rumVitalEventHelper = rumVitalEventHelper,
+                    sdkCore = sdkCore,
+                    rumAppStartupTelemetryReporter = rumAppStartupTelemetryReporter
+                )
+            }
         )
     }
 

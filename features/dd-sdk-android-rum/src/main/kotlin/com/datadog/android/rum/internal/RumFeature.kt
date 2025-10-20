@@ -682,6 +682,9 @@ internal class RumFeature(
 
                 override fun onAppStartupDetected(scenario: RumStartupScenario) {
                     val activity = scenario.activity.get() ?: return
+                    val rumMonitor = (GlobalRumMonitor.get(sdkCore) as? AdvancedRumMonitor) ?: return
+
+                    rumMonitor.sendAppStartEvent(scenario)
 
                     val callback = object : RumFirstDrawTimeReporter.Callback {
                         override fun onFirstFrameDrawn(timestampNs: Long) {
@@ -689,8 +692,7 @@ internal class RumFeature(
                                 scenario = scenario,
                                 durationNs = timestampNs - scenario.initialTime.nanoTime
                             )
-                            (GlobalRumMonitor.get(sdkCore) as? AdvancedRumMonitor)
-                                ?.sendTTIDEvent(info)
+                            rumMonitor.sendTTIDEvent(info)
                         }
                     }
 

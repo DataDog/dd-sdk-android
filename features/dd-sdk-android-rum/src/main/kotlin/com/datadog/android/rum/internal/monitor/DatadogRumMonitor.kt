@@ -58,7 +58,8 @@ import com.datadog.android.rum.internal.domain.scope.RumSessionScope
 import com.datadog.android.rum.internal.domain.scope.RumVitalEventHelper
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
 import com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener
-import com.datadog.android.rum.internal.startup.RumAppStartupTelemetryReporter
+import com.datadog.android.rum.internal.startup.RumSessionScopeStartupManager
+import com.datadog.android.rum.internal.startup.RumStartupScenario
 import com.datadog.android.rum.internal.startup.RumTTIDInfo
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.rum.metric.interactiontonextview.LastInteractionIdentifier
@@ -97,8 +98,8 @@ internal class DatadogRumMonitor(
     accessibilitySnapshotManager: AccessibilitySnapshotManager,
     batteryInfoProvider: InfoProvider<BatteryInfo>,
     displayInfoProvider: InfoProvider<DisplayInfo>,
-    rumAppStartupTelemetryReporter: RumAppStartupTelemetryReporter,
-    rumVitalEventHelper: RumVitalEventHelper
+    rumVitalEventHelper: RumVitalEventHelper,
+    private val rumSessionScopeStartupManagerFactory: () -> RumSessionScopeStartupManager
 ) : RumMonitor, AdvancedRumMonitor {
 
     internal var rootScope = RumApplicationScope(
@@ -120,8 +121,8 @@ internal class DatadogRumMonitor(
         accessibilitySnapshotManager = accessibilitySnapshotManager,
         batteryInfoProvider = batteryInfoProvider,
         displayInfoProvider = displayInfoProvider,
-        rumAppStartupTelemetryReporter = rumAppStartupTelemetryReporter,
-        rumVitalEventHelper = rumVitalEventHelper
+        rumVitalEventHelper = rumVitalEventHelper,
+        rumSessionScopeStartupManagerFactory = rumSessionScopeStartupManagerFactory
     )
 
     internal val keepAliveRunnable = Runnable {
@@ -664,6 +665,14 @@ internal class DatadogRumMonitor(
         )
     }
 
+    override fun sendAppStartEvent(scenario: RumStartupScenario) {
+        handleEvent(
+            RumRawEvent.AppStartEvent(
+                scenario = scenario
+            )
+        )
+    }
+
     // endregion
 
     // region Feature Operations
@@ -728,6 +737,13 @@ internal class DatadogRumMonitor(
                 " with the following failure reason: $failureReason."
         }
         sdkCore.internalLogger.reportFeatureOperationApiUsage(ActionType.FAIL)
+    }
+
+    @ExperimentalRumApi
+    override fun reportAppFullyDisplayed() {
+        handleEvent(
+            RumRawEvent.AppStartTTFDEvent()
+        )
     }
 
     private fun featureOperationArgumentsValid(name: String, operationKey: String?) = when {
