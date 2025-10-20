@@ -35,7 +35,6 @@ import org.json.JSONObject
  * @param flagsConfiguration configuration for the flags feature
  * @param rumEvaluationLogger responsible for sending flag evaluations to RUM.
  * @param processor responsible for writing exposure batches to be sent to flags backend.
- * @param valueConverter handles type conversion for flag values.
  */
 internal class DatadogFlagsClient(
     private val featureSdkCore: FeatureSdkCore,
@@ -43,8 +42,7 @@ internal class DatadogFlagsClient(
     private val flagsRepository: FlagsRepository,
     private val flagsConfiguration: FlagsConfiguration,
     private val rumEvaluationLogger: RumEvaluationLogger,
-    private val processor: EventsProcessor,
-    private val valueConverter: FlagValueConverter
+    private val processor: EventsProcessor
 ) : FlagsClient {
 
     // region FlagsClient
@@ -86,7 +84,7 @@ internal class DatadogFlagsClient(
      * @return The boolean value of the flag, or the default value if the flag cannot be resolved for any reason.
      */
     override fun resolveBooleanValue(flagKey: String, defaultValue: Boolean): Boolean =
-        resolveTyped(resolveInternal(flagKey, defaultValue))
+        resolveValue(flagKey, defaultValue)
 
     /**
      * Resolves a string flag value.
@@ -98,7 +96,7 @@ internal class DatadogFlagsClient(
      * @return The string value of the flag, or the default value if the flag cannot be resolved for any reason.
      */
     override fun resolveStringValue(flagKey: String, defaultValue: String): String =
-        resolveTyped(resolveInternal(flagKey, defaultValue))
+        resolveValue(flagKey, defaultValue)
 
     /**
      * Resolves an integer flag value.
@@ -110,19 +108,7 @@ internal class DatadogFlagsClient(
      * @return The integer value of the flag, or the default value if the flag cannot be resolved for any reason.
      */
     override fun resolveIntValue(flagKey: String, defaultValue: Int): Int =
-        resolveTyped(resolveInternal(flagKey, defaultValue))
-
-    /**
-     * Resolves a long integer flag value.
-     *
-     * If the flag cannot be found, is not a long integer, or an error occurs, the default value is returned.
-     *
-     * @param flagKey The name of the flag to query. Cannot be null.
-     * @param defaultValue The value to return if the flag cannot be found or resolved for any reason. Cannot be null.
-     * @return The long value of the flag, or the default value if the flag cannot be resolved for any reason.
-     */
-    override fun resolveLongValue(flagKey: String, defaultValue: Long): Long =
-        resolveTyped(resolveInternal(flagKey, defaultValue))
+        resolveValue(flagKey, defaultValue)
 
     /**
      * Resolves a double flag value.
@@ -134,7 +120,7 @@ internal class DatadogFlagsClient(
      * @return The double value of the flag, or the default value if the flag cannot be resolved for any reason.
      */
     override fun resolveDoubleValue(flagKey: String, defaultValue: Double): Double =
-        resolveTyped(resolveInternal(flagKey, defaultValue))
+        resolveValue(flagKey, defaultValue)
 
     /**
      * Resolves a structured flag value.
@@ -146,7 +132,21 @@ internal class DatadogFlagsClient(
      * @return The JSON object value of the flag, or the default value if the flag cannot be resolved for any reason.
      */
     override fun resolveStructureValue(flagKey: String, defaultValue: JSONObject): JSONObject =
-        resolveTyped(resolveInternal(flagKey, defaultValue))
+        resolveValue(flagKey, defaultValue)
+
+    /**
+     * Resolves a flag value by chaining internal resolution and tracking.
+     *
+     * This helper method simplifies the convenience methods by encapsulating the common pattern
+     * of resolving a flag internally and then processing it through the tracking layer.
+     *
+     * @param T The type of the flag value
+     * @param flagKey The name of the flag to query
+     * @param defaultValue The default value to return if resolution fails
+     * @return The resolved value or the default value
+     */
+    private fun <T> resolveValue(flagKey: String, defaultValue: T): T =
+        resolveTracked(resolveInternal(flagKey, defaultValue))
 
     private fun writeExposureEvent(name: String, data: PrecomputedFlag, context: EvaluationContext) {
         processor.processEvent(
@@ -177,11 +177,10 @@ internal class DatadogFlagsClient(
      * - Boolean: Strict parsing (only "true"/"false")
      * - String: No conversion needed
      * - Int: Parse to integer
-     * - Long: Parse to long integer
      * - Double: Parse to double
      * - JSONObject: Parse JSON with error logging
      *
-     * @param T The type of the flag value (Boolean, String, Int, Long, Double, or JSONObject).
+     * @param T The type of the flag value (Boolean, String, Int, Double, or JSONObject).
      * @param flagKey The name of the flag to query.
      * @param defaultValue The value to return if the flag cannot be retrieved or parsed.
      * @return [ResolutionDetails] with either the parsed value and metadata, or an error.
@@ -191,7 +190,7 @@ internal class DatadogFlagsClient(
 
         return when (resolution) {
             is InternalResolution.Success -> {
-                if (flagsConfiguration.trackExposures) {
+                if (flagsConfiguration.trackExposures && resolution.flag.doLog) {
                     writeExposureEvent(flagKey, resolution.flag, resolution.context)
                 }
                 createSuccessResolution(resolution.flag, resolution.value)
@@ -232,7 +231,7 @@ internal class DatadogFlagsClient(
     /**
      * Core resolution method that unifies all flag resolution logic.
      *
-     * This pure function (no side effects) is the single source of truth for:
+     * This side-effect free function is the single source of truth for:
      * - Fetching flags from the repository
      * - Validating type compatibility via [FlagValueConverter]
      * - Parsing flag values using the [FlagValueConverter]
@@ -260,7 +259,7 @@ internal class DatadogFlagsClient(
 
         val (flag, context) = flagAndContext
 
-        val parsedValue = valueConverter.convert(
+        val parsedValue = FlagValueConverter.convert(
             variationValue = flag.variationValue,
             variationType = flag.variationType,
             defaultValue = defaultValue
@@ -272,26 +271,16 @@ internal class DatadogFlagsClient(
             val errorMessage: String
 
             // Check if the error was due to type mismatch or parse error
-            if (!valueConverter.isTypeCompatible(flag.variationType, defaultValue)) {
+            if (!FlagValueConverter.isTypeCompatible(flag.variationType, defaultValue)) {
                 errorCode = ErrorCode.TYPE_MISMATCH
                 errorMessage =
-                    "Flag has type '${flag.variationType}' but ${valueConverter.getTypeName(
+                    "Flag has type '${flag.variationType}' but ${FlagValueConverter.getTypeName(
                         defaultValue
                     )} was requested"
             } else {
                 errorCode = ErrorCode.PARSE_ERROR
                 errorMessage =
-                    "Failed to parse value '${flag.variationValue}' as ${valueConverter.getTypeName(defaultValue)}"
-
-                // Log parse errors for JSONObject types (which may fail due to malformed JSON)
-                if (defaultValue is JSONObject) {
-                    featureSdkCore.internalLogger.log(
-                        level = InternalLogger.Level.ERROR,
-                        target = InternalLogger.Target.USER,
-                        messageBuilder = { "Failed to parse JSON for key: $flagKey" },
-                        throwable = null
-                    )
-                }
+                    "Failed to parse value '${flag.variationValue}' as ${FlagValueConverter.getTypeName(defaultValue)}"
             }
 
             return InternalResolution.Error(
@@ -327,13 +316,13 @@ internal class DatadogFlagsClient(
      * @return The resolved value from [InternalResolution.Success.value] on success,
      *         or [InternalResolution.Error.defaultValue] on error
      */
-    private fun <T> resolveTyped(resolution: InternalResolution<T>): T = when (resolution) {
+    private fun <T> resolveTracked(resolution: InternalResolution<T>): T = when (resolution) {
         is InternalResolution.Success -> {
-            if (flagsConfiguration.trackExposures) {
+            if (flagsConfiguration.trackExposures && resolution.flag.doLog) {
                 writeExposureEvent(resolution.flagKey, resolution.flag, resolution.context)
             }
 
-            if (flagsConfiguration.rumIntegrationEnabled) {
+            if (flagsConfiguration.rumIntegrationEnabled && resolution.flag.doLog) {
                 logEvaluation(
                     key = resolution.flagKey,
                     value = resolution.value as Any

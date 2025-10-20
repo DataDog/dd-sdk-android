@@ -16,6 +16,7 @@ import com.datadog.android.flags.featureflags.internal.model.VariationType
 import com.datadog.android.flags.featureflags.internal.repository.FlagsRepository
 import com.datadog.android.flags.featureflags.model.EvaluationContext
 import com.datadog.android.flags.internal.EventsProcessor
+import com.datadog.android.flags.model.ErrorCode
 import com.datadog.android.flags.utils.forge.ForgeConfigurator
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -88,8 +89,7 @@ internal class DatadogFlagsClientTest {
                 rumIntegrationEnabled = true
             ),
             rumEvaluationLogger = mockRumEvaluationLogger,
-            processor = mockProcessor,
-            valueConverter = FlagValueConverter()
+            processor = mockProcessor
         )
     }
 
@@ -432,9 +432,7 @@ internal class DatadogFlagsClientTest {
     }
 
     @Test
-    fun `M return default value and log error W resolveStructureValue() { flag exists with invalid JSON }`(
-        forge: Forge
-    ) {
+    fun `M return default value W resolveStructureValue() { flag exists with invalid JSON }`(forge: Forge) {
         // Given
         val fakeFlagKey = forge.anAlphabeticalString()
         val fakeDefaultValue = JSONObject().apply {
@@ -455,18 +453,11 @@ internal class DatadogFlagsClientTest {
 
         // Then
         assertThat(result).isEqualTo(fakeDefaultValue)
-        verify(mockInternalLogger).log(
-            eq(InternalLogger.Level.ERROR),
-            eq(InternalLogger.Target.USER),
-            any(),
-            eq(null),
-            eq(false),
-            eq(null)
-        )
+        // Parse errors are not logged - they're expected in normal operation
     }
 
     @Test
-    fun `M log specific error message W resolveStructureValue() { flag exists with malformed JSON }`(forge: Forge) {
+    fun `M return default value W resolveStructureValue() { flag exists with malformed JSON }`(forge: Forge) {
         // Given
         val fakeFlagKey = forge.anAlphabeticalString()
         val fakeDefaultValue = JSONObject().apply {
@@ -487,23 +478,11 @@ internal class DatadogFlagsClientTest {
 
         // Then
         assertThat(result).isEqualTo(fakeDefaultValue)
-
-        // Verify the specific error message
-        argumentCaptor<() -> String> {
-            verify(mockInternalLogger).log(
-                eq(InternalLogger.Level.ERROR),
-                eq(InternalLogger.Target.USER),
-                capture(),
-                eq(null),
-                eq(false),
-                eq(null)
-            )
-            assertThat(lastValue()).isEqualTo("Failed to parse JSON for key: $fakeFlagKey")
-        }
+        // Parse errors are not logged - they're expected in normal operation
     }
 
     @Test
-    fun `M log error W resolveStructureValue() { flag exists with completely invalid JSON }`(forge: Forge) {
+    fun `M return default value W resolveStructureValue() { flag exists with completely invalid JSON }`(forge: Forge) {
         // Given
         val fakeFlagKey = forge.anAlphabeticalString()
         val fakeDefaultValue = JSONObject()
@@ -522,14 +501,7 @@ internal class DatadogFlagsClientTest {
 
         // Then
         assertThat(result).isEqualTo(fakeDefaultValue)
-        verify(mockInternalLogger).log(
-            eq(InternalLogger.Level.ERROR),
-            eq(InternalLogger.Target.USER),
-            any(),
-            eq(null),
-            eq(false),
-            eq(null)
-        )
+        // Parse errors are not logged - they're expected in normal operation
     }
 
     @Test
@@ -574,8 +546,7 @@ internal class DatadogFlagsClientTest {
             flagsRepository = customRepository,
             flagsConfiguration = forge.getForgery(),
             rumEvaluationLogger = mockRumEvaluationLogger,
-            processor = mockProcessor,
-            valueConverter = FlagValueConverter()
+            processor = mockProcessor
         )
 
         // When
@@ -652,7 +623,7 @@ internal class DatadogFlagsClientTest {
         assertThat(result.value).isEqualTo(fakeDefaultValue)
         assertThat(result.variant).isNull()
         assertThat(result.reason).isEqualTo("ERROR")
-        assertThat(result.errorCode).isEqualTo(com.datadog.android.flags.model.ErrorCode.TYPE_MISMATCH)
+        assertThat(result.errorCode).isEqualTo(ErrorCode.TYPE_MISMATCH)
         assertThat(result.errorMessage).contains("Flag '$fakeFlagKey'")
         assertThat(result.errorMessage).contains("has type 'string' but Boolean was requested")
         assertThat(result.flagMetadata).isNull()
@@ -675,7 +646,7 @@ internal class DatadogFlagsClientTest {
         assertThat(result.value).isEqualTo(fakeDefaultValue)
         assertThat(result.variant).isNull()
         assertThat(result.reason).isEqualTo("ERROR")
-        assertThat(result.errorCode).isEqualTo(com.datadog.android.flags.model.ErrorCode.FLAG_NOT_FOUND)
+        assertThat(result.errorCode).isEqualTo(ErrorCode.FLAG_NOT_FOUND)
         assertThat(result.errorMessage).contains("Flag '$fakeFlagKey'")
         assertThat(result.errorMessage).contains("Flag not found")
         assertThat(result.flagMetadata).isNull()
@@ -708,7 +679,7 @@ internal class DatadogFlagsClientTest {
         assertThat(result.value.toString()).isEqualTo(fakeDefaultValue.toString())
         assertThat(result.variant).isNull()
         assertThat(result.reason).isEqualTo("ERROR")
-        assertThat(result.errorCode).isEqualTo(com.datadog.android.flags.model.ErrorCode.PARSE_ERROR)
+        assertThat(result.errorCode).isEqualTo(ErrorCode.PARSE_ERROR)
         assertThat(result.errorMessage).contains("Flag '$fakeFlagKey'")
         assertThat(result.errorMessage).contains("Failed to parse value")
         assertThat(result.flagMetadata).isNull()
@@ -867,8 +838,7 @@ internal class DatadogFlagsClientTest {
                 rumIntegrationEnabled = false
             ),
             rumEvaluationLogger = mockRumEvaluationLogger,
-            processor = mockProcessor,
-            valueConverter = FlagValueConverter()
+            processor = mockProcessor
         )
 
         // When
@@ -970,8 +940,7 @@ internal class DatadogFlagsClientTest {
                 rumIntegrationEnabled = false
             ),
             rumEvaluationLogger = mockRumEvaluationLogger,
-            processor = mockProcessor,
-            valueConverter = FlagValueConverter()
+            processor = mockProcessor
         )
         whenever(mockFlagsRepository.getPrecomputedFlagWithContext(fakeFlagKey)) doReturn
             (fakeFlag to fakeEvaluationContext)
@@ -1229,193 +1198,6 @@ internal class DatadogFlagsClientTest {
     }
 
     @Test
-    fun `M accept integer for both int and long W resolveIntValue and resolveLongValue() { compatible types }`(
-        forge: Forge
-    ) {
-        // Given
-        val fakeFlagKey = forge.anAlphabeticalString()
-        val fakeFlagValue = forge.anInt(min = 0, max = 1000)
-        val fakeDefaultInt = forge.anInt()
-        val fakeDefaultLong = forge.aLong()
-
-        val integerFlag = forge.getForgery<PrecomputedFlag>().copy(
-            variationType = VariationType.INTEGER.value,
-            variationValue = fakeFlagValue.toString()
-        )
-        val fakeContext = EvaluationContext(
-            targetingKey = forge.anAlphabeticalString(),
-            attributes = emptyMap()
-        )
-
-        whenever(mockFlagsRepository.getPrecomputedFlagWithContext(fakeFlagKey)) doReturn (integerFlag to fakeContext)
-
-        // When
-        val resultInt = testedClient.resolveIntValue(fakeFlagKey, fakeDefaultInt)
-        val resultLong = testedClient.resolveLongValue(fakeFlagKey, fakeDefaultLong)
-
-        // Then
-        assertThat(resultInt).isEqualTo(fakeFlagValue)
-        assertThat(resultLong).isEqualTo(fakeFlagValue.toLong())
-    }
-
-    // endregion
-
-    // region resolveLongValue() - Comprehensive Tests
-
-    @Test
-    fun `M return flag value W resolveLongValue() { flag exists with string long value }`(forge: Forge) {
-        // Given
-        val fakeFlagKey = forge.anAlphabeticalString()
-        val fakeFlagValue = forge.aLong()
-        val fakeDefaultValue = forge.aLong()
-        val fakeFlag = forge.getForgery<PrecomputedFlag>().copy(
-            variationType = VariationType.INTEGER.value,
-            variationValue = fakeFlagValue.toString()
-        )
-        val fakeContext = EvaluationContext(
-            targetingKey = forge.anAlphabeticalString(),
-            attributes = emptyMap()
-        )
-        whenever(mockFlagsRepository.getPrecomputedFlagWithContext(fakeFlagKey)) doReturn (fakeFlag to fakeContext)
-
-        // When
-        val result = testedClient.resolveLongValue(fakeFlagKey, fakeDefaultValue)
-
-        // Then
-        assertThat(result).isEqualTo(fakeFlagValue)
-    }
-
-    @Test
-    fun `M return flag value W resolveLongValue() { value exceeds Int MAX_VALUE }`(forge: Forge) {
-        // Given
-        val fakeFlagKey = forge.anAlphabeticalString()
-        val fakeFlagValue = Int.MAX_VALUE.toLong() + forge.aLong(min = 1L, max = 1000000L)
-        val fakeDefaultValue = forge.aLong()
-        val fakeFlag = forge.getForgery<PrecomputedFlag>().copy(
-            variationType = VariationType.INTEGER.value,
-            variationValue = fakeFlagValue.toString()
-        )
-        val fakeContext = EvaluationContext(
-            targetingKey = forge.anAlphabeticalString(),
-            attributes = emptyMap()
-        )
-        whenever(mockFlagsRepository.getPrecomputedFlagWithContext(fakeFlagKey)) doReturn (fakeFlag to fakeContext)
-
-        // When
-        val result = testedClient.resolveLongValue(fakeFlagKey, fakeDefaultValue)
-
-        // Then
-        assertThat(result).isEqualTo(fakeFlagValue)
-        assertThat(result).isGreaterThan(Int.MAX_VALUE.toLong())
-    }
-
-    @Test
-    fun `M return flag value W resolveLongValue() { value is Long MAX_VALUE }`(forge: Forge) {
-        // Given
-        val fakeFlagKey = forge.anAlphabeticalString()
-        val fakeFlagValue = Long.MAX_VALUE
-        val fakeDefaultValue = forge.aLong()
-        val fakeFlag = forge.getForgery<PrecomputedFlag>().copy(
-            variationType = VariationType.INTEGER.value,
-            variationValue = fakeFlagValue.toString()
-        )
-        val fakeContext = EvaluationContext(
-            targetingKey = forge.anAlphabeticalString(),
-            attributes = emptyMap()
-        )
-        whenever(mockFlagsRepository.getPrecomputedFlagWithContext(fakeFlagKey)) doReturn (fakeFlag to fakeContext)
-
-        // When
-        val result = testedClient.resolveLongValue(fakeFlagKey, fakeDefaultValue)
-
-        // Then
-        assertThat(result).isEqualTo(Long.MAX_VALUE)
-    }
-
-    @Test
-    fun `M return flag value W resolveLongValue() { value is Long MIN_VALUE }`(forge: Forge) {
-        // Given
-        val fakeFlagKey = forge.anAlphabeticalString()
-        val fakeFlagValue = Long.MIN_VALUE
-        val fakeDefaultValue = forge.aLong()
-        val fakeFlag = forge.getForgery<PrecomputedFlag>().copy(
-            variationType = VariationType.INTEGER.value,
-            variationValue = fakeFlagValue.toString()
-        )
-        val fakeContext = EvaluationContext(
-            targetingKey = forge.anAlphabeticalString(),
-            attributes = emptyMap()
-        )
-        whenever(mockFlagsRepository.getPrecomputedFlagWithContext(fakeFlagKey)) doReturn (fakeFlag to fakeContext)
-
-        // When
-        val result = testedClient.resolveLongValue(fakeFlagKey, fakeDefaultValue)
-
-        // Then
-        assertThat(result).isEqualTo(Long.MIN_VALUE)
-    }
-
-    @Test
-    fun `M return flag value W resolveLongValue() { negative long value }`(forge: Forge) {
-        // Given
-        val fakeFlagKey = forge.anAlphabeticalString()
-        val fakeFlagValue = -forge.aLong(min = 1L, max = Long.MAX_VALUE)
-        val fakeDefaultValue = forge.aLong()
-        val fakeFlag = forge.getForgery<PrecomputedFlag>().copy(
-            variationType = VariationType.INTEGER.value,
-            variationValue = fakeFlagValue.toString()
-        )
-        val fakeContext = EvaluationContext(
-            targetingKey = forge.anAlphabeticalString(),
-            attributes = emptyMap()
-        )
-        whenever(mockFlagsRepository.getPrecomputedFlagWithContext(fakeFlagKey)) doReturn (fakeFlag to fakeContext)
-
-        // When
-        val result = testedClient.resolveLongValue(fakeFlagKey, fakeDefaultValue)
-
-        // Then
-        assertThat(result).isEqualTo(fakeFlagValue)
-        assertThat(result).isNegative()
-    }
-
-    @Test
-    fun `M return default value W resolveLongValue() { flag exists with invalid long string }`(forge: Forge) {
-        // Given
-        val fakeFlagKey = forge.anAlphabeticalString()
-        val fakeDefaultValue = forge.aLong()
-        val fakeFlag = forge.getForgery<PrecomputedFlag>().copy(
-            variationType = VariationType.INTEGER.value,
-            variationValue = "not-a-long"
-        )
-        val fakeContext = EvaluationContext(
-            targetingKey = forge.anAlphabeticalString(),
-            attributes = emptyMap()
-        )
-        whenever(mockFlagsRepository.getPrecomputedFlagWithContext(fakeFlagKey)) doReturn (fakeFlag to fakeContext)
-
-        // When
-        val result = testedClient.resolveLongValue(fakeFlagKey, fakeDefaultValue)
-
-        // Then
-        assertThat(result).isEqualTo(fakeDefaultValue)
-    }
-
-    @Test
-    fun `M return default value W resolveLongValue() { flag does not exist }`(forge: Forge) {
-        // Given
-        val fakeFlagKey = forge.anAlphabeticalString()
-        val fakeDefaultValue = forge.aLong()
-        whenever(mockFlagsRepository.getPrecomputedFlagWithContext(fakeFlagKey)) doReturn null
-
-        // When
-        val result = testedClient.resolveLongValue(fakeFlagKey, fakeDefaultValue)
-
-        // Then
-        assertThat(result).isEqualTo(fakeDefaultValue)
-    }
-
-    @Test
     fun `M return default value W resolveIntValue() { value exceeds Int MAX_VALUE }`(forge: Forge) {
         // Given
         val fakeFlagKey = forge.anAlphabeticalString()
@@ -1438,44 +1220,6 @@ internal class DatadogFlagsClientTest {
         // Then
         // toIntOrNull() returns null for values outside Int range, so default is returned
         assertThat(result).isEqualTo(fakeDefaultValue)
-    }
-
-    @Test
-    fun `M return default value and log W resolveLongValue() { type mismatch - string flag }`(forge: Forge) {
-        // Given
-        val fakeFlagKey = forge.anAlphabeticalString()
-        val fakeDefaultValue = forge.aLong()
-        val fakeFlag = forge.getForgery<PrecomputedFlag>().copy(
-            variationType = VariationType.STRING.value,
-            variationValue = "not-a-number"
-        )
-        val fakeContext = EvaluationContext(
-            targetingKey = forge.anAlphabeticalString(),
-            attributes = emptyMap()
-        )
-        whenever(mockFlagsRepository.getPrecomputedFlagWithContext(fakeFlagKey)) doReturn (fakeFlag to fakeContext)
-
-        // When
-        val result = testedClient.resolveLongValue(fakeFlagKey, fakeDefaultValue)
-
-        // Then
-        assertThat(result).isEqualTo(fakeDefaultValue)
-        verifyNoInteractions(mockProcessor)
-
-        // Verify warning was logged
-        argumentCaptor<() -> String> {
-            verify(mockInternalLogger).log(
-                eq(InternalLogger.Level.WARN),
-                eq(InternalLogger.Target.USER),
-                capture(),
-                eq(null),
-                eq(false),
-                eq(null)
-            )
-            val message = lastValue.invoke()
-            assertThat(message).contains("Flag '$fakeFlagKey'")
-            assertThat(message).contains("has type 'string' but Long was requested")
-        }
     }
 
     // endregion

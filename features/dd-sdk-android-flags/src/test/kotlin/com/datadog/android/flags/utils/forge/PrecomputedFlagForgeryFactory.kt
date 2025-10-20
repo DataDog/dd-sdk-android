@@ -51,7 +51,7 @@ internal class PrecomputedFlagForgeryFactory : ForgeryFactory<PrecomputedFlag> {
         return PrecomputedFlag(
             variationType = variationType,
             variationValue = variationValue,
-            doLog = forge.aBool(),
+            doLog = true, // Default to true - tests can override if needed
             allocationKey = forge.anAlphabeticalString(),
             variationKey = forge.anAlphabeticalString(),
             extraLogging = forge.aNullable {

@@ -17,7 +17,6 @@ import com.datadog.android.flags.FlagsConfiguration
 import com.datadog.android.flags.featureflags.FlagsClient.Companion.get
 import com.datadog.android.flags.featureflags.internal.DatadogFlagsClient
 import com.datadog.android.flags.featureflags.internal.DefaultRumEvaluationLogger
-import com.datadog.android.flags.featureflags.internal.FlagValueConverter
 import com.datadog.android.flags.featureflags.internal.NoOpFlagsClient
 import com.datadog.android.flags.featureflags.internal.NoOpRumEvaluationLogger
 import com.datadog.android.flags.featureflags.internal.RumEvaluationLogger
@@ -108,18 +107,6 @@ interface FlagsClient {
     fun resolveIntValue(flagKey: String, defaultValue: Int): Int
 
     /**
-     * Resolves a long integer flag value.
-     *
-     * Useful for values that may exceed Int.MAX_VALUE such as timestamps,
-     * large identifiers, or counters.
-     *
-     * @param flagKey The unique identifier of the flag to resolve.
-     * @param defaultValue The value to return if the flag cannot be retrieved or parsed.
-     * @return The long value of the flag, or the default value if unavailable.
-     */
-    fun resolveLongValue(flagKey: String, defaultValue: Long): Long
-
-    /**
      * Resolves a structured flag value as a JSON object.
      *
      * @param flagKey The unique identifier of the flag to resolve.
@@ -155,7 +142,7 @@ interface FlagsClient {
      * }
      * ```
      *
-     * @param T The type of the flag value (Boolean, String, Int, Long, Double, or JSONObject).
+     * @param T The type of the flag value (Boolean, String, Int, Double, or JSONObject).
      * @param flagKey The unique identifier of the flag to resolve.
      * @param defaultValue The value to return if the flag cannot be retrieved or parsed.
      * @return [ResolutionDetails] containing the value, variant, reason, error info, and metadata.
@@ -396,7 +383,6 @@ interface FlagsClient {
                 )
 
                 val rumEvaluationLogger = createRumEvaluationLogger(featureSdkCore)
-                val valueConverter = FlagValueConverter()
 
                 return DatadogFlagsClient(
                     featureSdkCore = featureSdkCore,
@@ -404,8 +390,7 @@ interface FlagsClient {
                     flagsRepository = flagsRepository,
                     flagsConfiguration = configuration,
                     rumEvaluationLogger = rumEvaluationLogger,
-                    processor = flagsFeature.processor,
-                    valueConverter = valueConverter
+                    processor = flagsFeature.processor
                 )
             }
         }

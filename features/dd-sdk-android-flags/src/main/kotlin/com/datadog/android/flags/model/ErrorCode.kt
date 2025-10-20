@@ -8,9 +8,6 @@ package com.datadog.android.flags.model
 
 /**
  * Error codes for flag resolution failures, aligned with the OpenFeature specification.
- *
- * These codes provide standardized error categorization for flag evaluation failures,
- * enabling consistent error handling across different flag providers.
  */
 enum class ErrorCode {
     /**

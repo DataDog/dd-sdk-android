@@ -12,20 +12,15 @@ import java.util.Locale
 /**
  * Handles type conversion for feature flag values.
  *
- * This class is a pure function with no side effects. It encapsulates all type conversion logic:
+ * This object provides stateless type conversion utilities. It encapsulates all type conversion logic:
  * - Type compatibility checking
  * - String to typed value conversion
- * - JSON object parsing (may throw JSONException)
- *
- * Note: This class does not perform logging. The caller is responsible for handling
- * exceptions and logging errors as appropriate.
+ * - JSON object parsing
  */
-internal class FlagValueConverter {
+internal object FlagValueConverter {
 
     /**
      * Converts a flag's string value to the expected type.
-     *
-     * This is a pure function with no side effects. It does not perform logging.
      *
      * @param T The expected type of the flag value
      * @param variationValue The raw string value from the flag
@@ -66,7 +61,6 @@ internal class FlagValueConverter {
         is Boolean -> variationType == "boolean"
         is String -> variationType == "string"
         is Int -> variationType == "integer"
-        is Long -> variationType == "integer"
         is Double -> variationType == "number" || variationType == "float"
         is JSONObject -> variationType == "object"
         else -> false
@@ -85,9 +79,8 @@ internal class FlagValueConverter {
         is Boolean -> { s: String -> s.lowercase(Locale.US).toBooleanStrictOrNull() as? T }
         is String -> { s: String -> s as? T }
         is Int -> { s: String -> s.toIntOrNull() as? T }
-        is Long -> { s: String -> s.toLongOrNull() as? T }
         is Double -> { s: String -> s.toDoubleOrNull() as? T }
-        is JSONObject -> { s: String -> parseJsonObject(s) as? T }
+        is JSONObject -> { s: String -> JSONObject(s) as? T }
         else -> { _ -> null }
     }
 
@@ -102,21 +95,8 @@ internal class FlagValueConverter {
         is Boolean -> "Boolean"
         is String -> "String"
         is Int -> "Int"
-        is Long -> "Long"
         is Double -> "Double"
         is JSONObject -> "JSONObject"
         else -> defaultValue!!::class.simpleName ?: "Unknown"
-    }
-
-    /**
-     * Parses a JSON object from a string value.
-     *
-     * @param flagKey The flag key (for context, currently unused).
-     * @param value The string value to parse as JSON.
-     * @return The parsed JSONObject.
-     * @throws org.json.JSONException if parsing fails.
-     */
-    private fun parseJsonObject(value: String): JSONObject {
-        return JSONObject(value)
     }
 }

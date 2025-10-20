@@ -14,7 +14,6 @@ interface com.datadog.android.flags.featureflags.FlagsClient
   fun resolveStringValue(String, String): String
   fun resolveDoubleValue(String, Double): Double
   fun resolveIntValue(String, Int): Int
-  fun resolveLongValue(String, Long): Long
   fun resolveStructureValue(String, org.json.JSONObject): org.json.JSONObject
   fun <T> resolve(String, T): com.datadog.android.flags.model.ResolutionDetails<T>
   class Builder
