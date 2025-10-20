@@ -168,8 +168,8 @@ internal class DatadogFlagsClientTest {
             targetingKey = forge.anAlphabeticalString(),
             attributes = emptyMap()
         )
-        whenever(mockFlagsRepository.getPrecomputedFlag(fakeFlagKey)) doReturn fakeFlag
-        whenever(mockFlagsRepository.getEvaluationContext()) doReturn fakeEvaluationContext
+        whenever(mockFlagsRepository.getPrecomputedFlagWithContext(fakeFlagKey)) doReturn
+            (fakeFlag to fakeEvaluationContext)
 
         // When
         val result = testedClient.resolveBooleanValue(fakeFlagKey, fakeDefaultValue)
@@ -236,8 +236,12 @@ internal class DatadogFlagsClientTest {
             variationType = VariationType.BOOLEAN.value,
             variationValue = fakeFlagValue.toString()
         )
-        whenever(mockFlagsRepository.getPrecomputedFlag(fakeFlagKey)) doReturn fakeFlag
-        whenever(mockFlagsRepository.getEvaluationContext()) doReturn null
+        val fakeEvaluationContext = EvaluationContext(
+            targetingKey = forge.anAlphabeticalString(),
+            attributes = emptyMap()
+        )
+        whenever(mockFlagsRepository.getPrecomputedFlagWithContext(fakeFlagKey)) doReturn
+            (fakeFlag to fakeEvaluationContext)
 
         // When
         val result = testedClient.resolveBooleanValue(fakeFlagKey, fakeDefaultValue)
@@ -653,7 +657,7 @@ internal class DatadogFlagsClientTest {
         assertThat(result.flagMetadata).isNull()
 
         // Verify no exposure tracked for type mismatch
-        verify(mockFeatureSdkCore, never()).getFeature(any())
+        verifyNoInteractions(mockProcessor)
     }
 
     @Test
@@ -676,7 +680,7 @@ internal class DatadogFlagsClientTest {
         assertThat(result.flagMetadata).isNull()
 
         // Verify no exposure tracked when flag not found
-        verify(mockFeatureSdkCore, never()).getFeature(any())
+        verifyNoInteractions(mockProcessor)
     }
 
     @Test
@@ -709,7 +713,7 @@ internal class DatadogFlagsClientTest {
         assertThat(result.flagMetadata).isNull()
 
         // Verify no exposure tracked for parse error
-        verify(mockFeatureSdkCore, never()).getFeature(any())
+        verifyNoInteractions(mockProcessor)
     }
 
     @Test
@@ -734,7 +738,11 @@ internal class DatadogFlagsClientTest {
         // Then
         assertThat(result.value).isEqualTo(fakeFlagValue)
         // Verify exposure tracked for successful resolution
-        verify(mockFeatureSdkCore).getFeature(any())
+        verify(mockProcessor).processEvent(
+            flagName = eq(fakeFlagKey),
+            context = eq(fakeContext),
+            data = eq(fakeFlag)
+        )
     }
 
     // endregion
@@ -884,8 +892,8 @@ internal class DatadogFlagsClientTest {
             attributes = emptyMap()
         )
 
-        whenever(mockFlagsRepository.getPrecomputedFlag(fakeFlagKey)) doReturn fakeFlag
-        whenever(mockFlagsRepository.getEvaluationContext()) doReturn fakeEvaluationContext
+        whenever(mockFlagsRepository.getPrecomputedFlagWithContext(fakeFlagKey)) doReturn
+            (fakeFlag to fakeEvaluationContext)
 
         // When
         val result = testedClient.resolveBooleanValue(fakeFlagKey, fakeDefaultValue)
@@ -919,8 +927,8 @@ internal class DatadogFlagsClientTest {
             attributes = emptyMap()
         )
 
-        whenever(mockFlagsRepository.getPrecomputedFlag(fakeFlagKey)) doReturn fakeFlag
-        whenever(mockFlagsRepository.getEvaluationContext()) doReturn fakeEvaluationContext
+        whenever(mockFlagsRepository.getPrecomputedFlagWithContext(fakeFlagKey)) doReturn
+            (fakeFlag to fakeEvaluationContext)
 
         // When
         val result = testedClient.resolveBooleanValue(fakeFlagKey, fakeDefaultValue)
@@ -962,7 +970,8 @@ internal class DatadogFlagsClientTest {
             rumEvaluationLogger = mockRumEvaluationLogger,
             processor = mockProcessor
         )
-        whenever(mockFlagsRepository.getPrecomputedFlagWithContext(fakeFlagKey)) doReturn (fakeFlag to fakeContext)
+        whenever(mockFlagsRepository.getPrecomputedFlagWithContext(fakeFlagKey)) doReturn
+            (fakeFlag to fakeEvaluationContext)
 
         // When
         val result = testedClient.resolveBooleanValue(fakeFlagKey, fakeDefaultValue)
@@ -999,7 +1008,7 @@ internal class DatadogFlagsClientTest {
         // Then
         assertThat(result).isEqualTo(fakeDefaultValue)
         // Verify no exposure tracked for type mismatch
-        verify(mockFeatureSdkCore, never()).getFeature(any())
+        verifyNoInteractions(mockProcessor)
 
         // Verify warning was logged
         argumentCaptor<() -> String> {
@@ -1040,7 +1049,7 @@ internal class DatadogFlagsClientTest {
         // Then
         assertThat(result).isEqualTo(fakeDefaultValue)
         // Verify no exposure tracked for type mismatch
-        verify(mockFeatureSdkCore, never()).getFeature(any())
+        verifyNoInteractions(mockProcessor)
 
         // Verify warning was logged
         argumentCaptor<() -> String> {
@@ -1081,7 +1090,7 @@ internal class DatadogFlagsClientTest {
         // Then
         assertThat(result).isEqualTo(fakeDefaultValue)
         // Verify no exposure tracked for type mismatch
-        verify(mockFeatureSdkCore, never()).getFeature(any())
+        verifyNoInteractions(mockProcessor)
 
         // Verify warning was logged
         argumentCaptor<() -> String> {
@@ -1124,7 +1133,7 @@ internal class DatadogFlagsClientTest {
         // Then
         assertThat(result.toString()).isEqualTo(fakeDefaultValue.toString())
         // Verify no exposure tracked for type mismatch
-        verify(mockFeatureSdkCore, never()).getFeature(any())
+        verifyNoInteractions(mockProcessor)
 
         // Verify warning was logged
         argumentCaptor<() -> String> {
@@ -1165,7 +1174,7 @@ internal class DatadogFlagsClientTest {
         // Then
         assertThat(result).isEqualTo(fakeDefaultValue)
         // Verify no exposure tracked for type mismatch
-        verify(mockFeatureSdkCore, never()).getFeature(any())
+        verifyNoInteractions(mockProcessor)
 
         // Verify warning was logged
         argumentCaptor<() -> String> {
@@ -1448,7 +1457,7 @@ internal class DatadogFlagsClientTest {
 
         // Then
         assertThat(result).isEqualTo(fakeDefaultValue)
-        verify(mockFeatureSdkCore, never()).getFeature(any())
+        verifyNoInteractions(mockProcessor)
 
         // Verify warning was logged
         argumentCaptor<() -> String> {

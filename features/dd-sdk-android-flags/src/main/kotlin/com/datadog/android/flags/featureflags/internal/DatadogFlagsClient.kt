@@ -7,7 +7,6 @@
 package com.datadog.android.flags.featureflags.internal
 
 import com.datadog.android.api.InternalLogger
-import com.datadog.android.api.feature.Feature.Companion.FLAGS_FEATURE_NAME
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.flags.FlagsConfiguration
 import com.datadog.android.flags.featureflags.FlagsClient
@@ -16,7 +15,6 @@ import com.datadog.android.flags.featureflags.internal.model.PrecomputedFlag
 import com.datadog.android.flags.featureflags.internal.repository.FlagsRepository
 import com.datadog.android.flags.featureflags.model.EvaluationContext
 import com.datadog.android.flags.internal.EventsProcessor
-import com.datadog.android.flags.internal.FlagsFeature
 import com.datadog.android.flags.model.ErrorCode
 import com.datadog.android.flags.model.ResolutionDetails
 import org.json.JSONException
@@ -40,6 +38,7 @@ import java.util.Locale
  * @param rumEvaluationLogger responsible for sending flag evaluations to RUM.
  * @param processor responsible for writing exposure batches to be sent to flags backend.
  */
+@Suppress("TooManyFunctions")
 internal class DatadogFlagsClient(
     private val featureSdkCore: FeatureSdkCore,
     private val evaluationsManager: EvaluationsManager,
@@ -334,9 +333,6 @@ internal class DatadogFlagsClient(
                 )
             }
 
-            if (flagsConfiguration.trackExposures) {
-                writeExposureEvent(flagKey, resolution.flag, resolution.context)
-            }
             resolution.value
         }
         is InternalResolution.Error -> {
@@ -410,23 +406,10 @@ internal class DatadogFlagsClient(
         null
     }
 
-    private fun writeExposureEvent(flagKey: String, data: PrecomputedFlag, context: EvaluationContext?) {
-        if (context != null) {
-            featureSdkCore
-                .getFeature(FLAGS_FEATURE_NAME)
-                ?.unwrap<FlagsFeature>()?.processor?.processEvent(
-                    flagName = flagKey,
-                    context = context,
-                    data = data
-                )
-        }
-    }
-
     private companion object {
         private const val ERROR_NO_EVALUATION_CONTEXT =
             "No evaluation context found, exposures cannot be sent to the flags backend. " +
                 "Please call client.setContext with a valid context."
-        private const val ERROR_PARSING_JSON = "Failed to parse JSON for key: %s"
     }
 
 // region Helper Methods
