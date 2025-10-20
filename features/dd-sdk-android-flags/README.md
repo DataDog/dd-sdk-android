@@ -1,6 +1,269 @@
 # Datadog Feature Flags SDK for Android
 
-See the dedicated [Getting started with Feature Flags][1] to learn how to monitor and send feature flags in your Android or Android TV application to Datadog.
+The Datadog Feature Flags SDK for Android allows you to evaluate feature flags and experiments in your Android application and automatically send flag evaluation data to Datadog for monitoring and analysis.
 
+## Installation
 
-[1]: https://docs.datadoghq.com/getting_started/feature_flags/
+Add the Datadog Feature Flags SDK to your application's `build.gradle` file:
+
+```groovy
+dependencies {
+    implementation "com.datadoghq:dd-sdk-android-flags:<VERSION>"
+    
+    // Optional: Required only if you want RUM integration
+    implementation "com.datadoghq:dd-sdk-android-rum:<VERSION>"
+}
+```
+
+## Prerequisites
+
+Before enabling the Feature Flags feature, you must first initialize the Datadog SDK. See the [Datadog Android SDK setup documentation][1] for details.
+
+```kotlin
+// Initialize the core Datadog SDK first
+val coreConfiguration = Configuration.Builder(
+    clientToken = "<YOUR_CLIENT_TOKEN>",
+    env = "<YOUR_ENVIRONMENT>",
+    variant = "<YOUR_APP_VARIANT>"
+)
+    .build()
+
+Datadog.initialize(this, coreConfiguration, trackingConsent)
+```
+
+### Optional: Enable RUM for Integration
+
+If you want flag evaluations to be automatically sent to RUM and attached to views, enable RUM before initializing the Flags feature:
+
+```kotlin
+val rumConfig = RumConfiguration.Builder(applicationId = "<YOUR_RUM_APPLICATION_ID>")
+    .build()
+    
+Rum.enable(rumConfig)
+```
+
+If RUM is not enabled, the Flags SDK will work normally but flag evaluations will not appear in RUM views.
+
+## Setup
+
+### Enable the Feature Flags Feature
+
+After initializing the Datadog SDK, enable the Feature Flags feature:
+
+```kotlin
+val flagsConfig = FlagsConfiguration.Builder().build()
+Flags.enable(flagsConfig)
+```
+
+### Configuration Options
+
+The `FlagsConfiguration.Builder` supports the following options:
+
+#### RUM Integration
+
+By default, flag evaluations are automatically sent to RUM (Real User Monitoring) and attached to the current view, if RUM is enabled. You can disable this integration:
+
+```kotlin
+val flagsConfig = FlagsConfiguration.Builder()
+    .rumIntegrationEnabled(false)
+    .build()
+```
+
+**Note:** This setting only has an effect if you have enabled RUM (see `Prerequisites` section). If RUM is not enabled, flag evaluations will not be sent to RUM regardless of this setting.
+
+#### Exposure Tracking
+
+By default, flag evaluations are tracked and sent to Datadog's exposure intake endpoint. You can disable this:
+
+```kotlin
+val flagsConfig = FlagsConfiguration.Builder()
+    .trackExposures(false)
+    .build()
+```
+
+#### Custom Endpoints
+
+For testing or proxy purposes, you can configure custom endpoints:
+
+```kotlin
+val flagsConfig = FlagsConfiguration.Builder()
+    .useCustomFlagEndpoint("https://your-proxy.example.com/flags")
+    .useCustomExposureEndpoint("https://your-proxy.example.com/exposure")
+    .build()
+```
+
+## Usage
+
+### Create a Flags Client
+
+After enabling the Feature Flags feature, create a `FlagsClient` to evaluate flags:
+
+```kotlin
+// Create a default client
+val client = FlagsClient.Builder().build()
+
+// Or create a named client for specific use cases
+val analyticsClient = FlagsClient.Builder("analytics").build()
+```
+
+### Set Evaluation Context
+
+Before evaluating flags, set the evaluation context with a targeting key and optional attributes:
+
+```kotlin
+val context = EvaluationContext(
+    targetingKey = "user-123",
+    attributes = mapOf(
+        "email" to "user@example.com",
+        "plan" to "premium",
+        "age" to "25"
+    )
+)
+
+client.setEvaluationContext(context)
+```
+
+**Important Notes:**
+- The `targetingKey` must be consistent for the same user/entity to ensure consistent flag evaluation across requests
+- The `targetingKey` cannot be blank or whitespace-only
+- All attribute values must be strings - convert numbers, booleans, and other types to strings before passing them
+- Common targeting keys include user ID, device ID, or session ID
+
+### Evaluate Feature Flags
+
+The `FlagsClient` provides two ways to resolve flag values:
+
+1. **Convenience methods** (`resolveBooleanValue`, `resolveStringValue`, etc.) - Simple methods that return just the value
+2. **Detailed resolution method** (`resolve`) - Returns comprehensive resolution details including error information and metadata
+
+#### Convenience Methods
+
+Use these methods when you only need the flag value:
+
+**Boolean Flags**
+```kotlin
+val isNewFeatureEnabled = client.resolveBooleanValue("new-feature-enabled", false)
+```
+
+**String Flags**
+```kotlin
+val theme = client.resolveStringValue("app-theme", "light")
+```
+
+**Numeric Flags**
+```kotlin
+// Integer values
+val maxRetries = client.resolveIntValue("max-retry-count", 3)
+
+// Double values
+val discountPercentage = client.resolveDoubleValue("discount-rate", 0.0)
+```
+
+**Structured Flags**
+```kotlin
+val defaultConfig = JSONObject("""{"timeout": 30, "retries": 3}""")
+val config = client.resolveStructureValue("api-config", defaultConfig)
+
+val timeout = config.getInt("timeout")
+val retries = config.getInt("retries")
+```
+
+#### Detailed Resolution Method
+
+Use the `resolve()` method when you need additional information about flag resolution, such as:
+- The variant identifier (e.g., "control", "treatment")
+- The reason for the resolved value (e.g., `TARGETING_MATCH`, `DEFAULT`, `ERROR`)
+- Error codes and messages for debugging
+- Flag metadata for analytics
+
+```kotlin
+val result = client.resolve("feature-enabled", false)
+
+// Access the resolved value
+val featureEnabled = result.value
+
+// Check for errors
+if (result.errorCode != null) {
+    println("Flag resolution failed: ${result.errorMessage}")
+} else {
+    println("Flag resolved successfully")
+    
+    // Access variant information
+    result.variant?.let { variant ->
+        println("Variant: $variant")
+    }
+    
+    // Access resolution reason
+    result.reason?.let { reason ->
+        println("Reason: $reason")
+    }
+    
+    // Access flag metadata
+    result.flagMetadata?.forEach { (key, value) ->
+        println("Metadata: $key = $value")
+    }
+}
+```
+
+**ResolutionDetails Properties:**
+- `value: T` - The resolved flag value (always present, either from evaluation or default)
+- `variant: String?` - Optional identifier for the resolved variant
+- `reason: String?` - Optional explanation of why this value was resolved
+- `errorCode: ErrorCode?` - Optional error code (null indicates success)
+- `errorMessage: String?` - Optional human-readable error message
+- `flagMetadata: Map<String, Any>?` - Optional metadata associated with the flag
+
+**Error Codes:**
+- `FLAG_NOT_FOUND` - The flag could not be found
+- `PARSE_ERROR` - Error parsing the flag value
+- `TYPE_MISMATCH` - The flag type doesn't match the expected type
+- `TARGETING_KEY_MISSING` - No targeting key was provided
+- `INVALID_CONTEXT` - The evaluation context is invalid
+- `PROVIDER_NOT_READY` - The provider is not yet ready
+- `PROVIDER_FATAL` - The provider encountered a fatal error
+- `GENERAL` - A general error occurred
+
+### Retrieving Existing Clients
+
+You can retrieve a previously created client by name:
+
+```kotlin
+// Retrieve the default client
+val client = FlagsClient.get()
+
+// Retrieve a named client
+val analyticsClient = FlagsClient.get("analytics")
+```
+
+**Note:** If you call `get()` before calling `build()` for that client name, a no-op client will be returned that always returns default values and logs an error.
+
+## Integration with RUM
+
+When RUM is enabled in your application and RUM integration is enabled in the Flags configuration (default), flag evaluations are automatically:
+- Attached to the current RUM view
+- Visible in the Datadog RUM dashboard
+- Associated with user sessions for analysis
+
+This allows you to correlate feature flag usage with application performance, errors, and user behavior.
+
+**Prerequisites for RUM Integration:**
+1. Add the `dd-sdk-android-rum` dependency to your project
+2. Enable RUM before initializing the Flags feature (see `Prerequisites` section)
+3. Ensure `rumIntegrationEnabled` is set to `true` in your `FlagsConfiguration` (this is the default)
+
+If RUM is not enabled, the Flags SDK will continue to work normally, but flag evaluations will not appear in RUM views.
+
+## Best Practices
+
+1. **Consistent Targeting Keys**: Use consistent targeting keys (e.g., user ID) to ensure users see consistent feature flag values across sessions
+2. **Provide Meaningful Defaults**: Always provide sensible default values that maintain core functionality if flag evaluation fails
+3. **Set Context Early**: Set the evaluation context as early as possible in your application lifecycle, typically after user authentication
+4. **Named Clients**: Use named clients if necessary to organize flags by domain (e.g., "analytics", "ui", "experiments")
+5. **Attribute Types**: Remember to convert all attribute values to strings before passing them to `EvaluationContext`
+
+## See Also
+
+For more information on Feature Flags in Datadog, see the [official Feature Flags documentation][2].
+
+[1]: https://docs.datadoghq.com/real_user_monitoring/android/
+[2]: https://docs.datadoghq.com/getting_started/feature_flags/
