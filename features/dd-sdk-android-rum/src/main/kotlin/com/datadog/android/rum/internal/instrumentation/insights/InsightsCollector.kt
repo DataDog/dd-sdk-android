@@ -40,7 +40,7 @@ interface InsightsCollector {
     fun removeUpdateListener(listener: InsightsUpdatesListener)
 
     /**
-     * Sets a new active view and resets the current view data.
+     * Notifies the collector that a new view has been created.
      *
      * @param viewId the unique identifier of the new view.
      * @param name the name of the new view.

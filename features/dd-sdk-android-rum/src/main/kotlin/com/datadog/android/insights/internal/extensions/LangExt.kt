@@ -42,8 +42,12 @@ internal fun <F, S> multiLet(first: F?, second: S?, block: (F, S) -> Unit) {
 }
 
 internal fun SpannableStringBuilder.appendColored(text: String, color: Int): SpannableStringBuilder = apply {
+    if (text.isEmpty()) return@apply
+
     val offset = length
+
     @Suppress("UnsafeThirdPartyFunctionCall")
+    // Safe because: character span (not paragraph), non-empty text, valid bounds
     append(text).setSpan(ForegroundColorSpan(color), offset, offset + text.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
 }
 

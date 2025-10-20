@@ -8,7 +8,6 @@ package com.datadog.android.insights
 import android.annotation.SuppressLint
 import android.app.Activity
 import android.text.SpannableStringBuilder
-import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
@@ -16,6 +15,7 @@ import androidx.core.view.isVisible
 import com.datadog.android.Datadog
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.core.InternalSdkCore
+import com.datadog.android.insights.internal.DefaultInsightsCollector
 import com.datadog.android.insights.internal.InsightStateStorage
 import com.datadog.android.insights.internal.extensions.animateVisibility
 import com.datadog.android.insights.internal.extensions.appendColored
@@ -36,7 +36,6 @@ import com.datadog.android.rum.internal.instrumentation.insights.InsightsUpdates
  * This overlay is only displayed when the app is running in debug mode and when an instance of
  * [com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector] is registered.
  * It can be attached to any [Activity] by calling [attach].
- *
  */
 @ExperimentalRumApi
 class LocalInsightOverlay : InsightsUpdatesListener {
@@ -76,8 +75,7 @@ class LocalInsightOverlay : InsightsUpdatesListener {
         if (insightsCollector == null) return
         val storage = InsightStateStorage(activity)
 
-        @Suppress("UnsafeThirdPartyFunctionCall")
-        val overlayView = LayoutInflater.from(activity).inflate(
+        val overlayView = activity.layoutInflater.inflate(
             R.layout.layout_dd_insights_overlay,
             activity.window.decorView as ViewGroup,
             true

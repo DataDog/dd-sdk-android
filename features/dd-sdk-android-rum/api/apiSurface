@@ -1,18 +1,3 @@
-class com.datadog.android.insights.DefaultInsightsCollector : com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector
-  constructor(Int = 50, Long = 100L)
-  override var maxSize: Int
-  override var updateIntervalMs: Long
-  override fun onAction()
-  override fun onNewView(String, String)
-  override fun onSlowFrame(Long, Long)
-  override fun onLongTask(Long, Long)
-  override fun onNetworkRequest(Long, Long)
-  override fun addUpdateListener(com.datadog.android.rum.internal.instrumentation.insights.InsightsUpdatesListener)
-  override fun removeUpdateListener(com.datadog.android.rum.internal.instrumentation.insights.InsightsUpdatesListener)
-  override fun onMemoryVital(Double?)
-  override fun onCpuVital(Double?)
-  override fun onSlowFrameRate(Double?)
-  companion object 
 class com.datadog.android.insights.LocalInsightOverlay : com.datadog.android.rum.internal.instrumentation.insights.InsightsUpdatesListener
   fun attach(android.app.Activity)
   fun detach()

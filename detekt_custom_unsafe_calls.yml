@@ -31,7 +31,6 @@ datadog:
       - "android.util.Base64.encodeToString(kotlin.ByteArray?, kotlin.Int):java.lang.AssertionError"
       - "android.view.Choreographer.getInstance():java.lang.IllegalStateException"
       - "android.view.Choreographer.postFrameCallback():java.lang.IllegalArgumentException"
-      - "android.view.LayoutInflater.from(android.content.Context?):java.lang.AssertionError"
       - "android.view.MotionEvent.obtain(android.view.MotionEvent):java.lang.IllegalArgumentException"
       - "android.view.View.getLocationInWindow(kotlin.IntArray):java.lang.IllegalArgumentException"
       - "android.view.ViewPropertyAnimator.setDuration(kotlin.Long):java.lang.IllegalArgumentException"

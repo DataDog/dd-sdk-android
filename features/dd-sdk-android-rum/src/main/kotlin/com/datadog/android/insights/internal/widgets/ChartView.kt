@@ -73,7 +73,7 @@ internal class ChartView @JvmOverloads constructor(
         data.add(newData)
 
         val windowSize = AVERAGE_WINDOW_SIZE
-        @Suppress("UnsafeThirdPartyFunctionCall")
+        @Suppress("UnsafeThirdPartyFunctionCall") // min()/max() functions called on non-empty lists
         if (data.size > windowSize) {
             dataAveraged = data.toList().windowed(size = windowSize, step = 1) { window ->
                 window.average()
@@ -99,7 +99,7 @@ internal class ChartView @JvmOverloads constructor(
         drawText(data, canvas)
     }
 
-    @Suppress("UnsafeThirdPartyFunctionCall")
+    @Suppress("UnsafeThirdPartyFunctionCall") // measureText() is called on non-null strings
     private fun drawText(
         data: List<Double>,
         canvas: Canvas

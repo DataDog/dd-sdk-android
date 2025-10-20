@@ -20,7 +20,7 @@ internal fun View.animateVisibility(newVisibilityState: Boolean) {
     alpha = if (!isVisible) 0f else 1f
     isVisible = true
 
-    @Suppress("UnsafeThirdPartyFunctionCall") // ANIMATION_DURATION is always >= 0
+    @Suppress("UnsafeThirdPartyFunctionCall") // setDuration() is called with a constant >= 0
     newOnlyAnimation()
         .scaleX(1f - scaleX)
         .scaleY(1f - scaleY)
@@ -30,7 +30,7 @@ internal fun View.animateVisibility(newVisibilityState: Boolean) {
         .start()
 }
 
-@Suppress("UnsafeThirdPartyFunctionCall")
+@Suppress("UnsafeThirdPartyFunctionCall") // setDuration() is called with a constant >= 0
 internal fun View.animateDragTo(x: Float, y: Float) = newOnlyAnimation()
     .x(
         x.clip(

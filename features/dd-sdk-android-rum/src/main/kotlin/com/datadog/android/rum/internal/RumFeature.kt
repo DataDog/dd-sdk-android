@@ -34,9 +34,8 @@ import com.datadog.android.core.internal.utils.scheduleSafe
 import com.datadog.android.event.EventMapper
 import com.datadog.android.event.MapperSerializer
 import com.datadog.android.event.NoOpEventMapper
-import com.datadog.android.insights.DefaultInsightsCollector
+import com.datadog.android.insights.internal.DefaultInsightsCollector
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
-import com.datadog.android.rum.ExperimentalRumApi
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumSessionListener
@@ -182,7 +181,6 @@ internal class RumFeature(
 
     override val name: String = Feature.RUM_FEATURE_NAME
 
-    @OptIn(ExperimentalRumApi::class)
     @Suppress("LongMethod")
     override fun onInitialize(appContext: Context) {
         this.appContext = appContext
@@ -198,6 +196,7 @@ internal class RumFeature(
         initialResourceIdentifier = configuration.initialResourceIdentifier
         lastInteractionIdentifier = configuration.lastInteractionIdentifier
         insightsCollector = if (configuration.insightsCollectionEnabled) {
+            @Suppress("OPT_IN_USAGE")
             DefaultInsightsCollector()
         } else {
             NoOpInsightsCollector()

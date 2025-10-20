@@ -131,7 +131,7 @@ internal class RumActionScopeTest {
     private var fakeRumSessionType: RumSessionType? = null
 
     @Mock
-    lateinit var mockInsightsCollector: InsightsCollector
+    private lateinit var mockInsightsCollector: InsightsCollector
 
     @BeforeEach
     fun `set up`(forge: Forge) {
