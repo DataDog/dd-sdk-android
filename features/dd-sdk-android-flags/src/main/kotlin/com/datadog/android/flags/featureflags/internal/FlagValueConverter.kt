@@ -6,6 +6,7 @@
 
 package com.datadog.android.flags.featureflags.internal
 
+import com.datadog.android.flags.featureflags.internal.model.VariationType
 import org.json.JSONObject
 import java.util.Locale
 
@@ -58,11 +59,11 @@ internal object FlagValueConverter {
      * @return true if types are compatible, false otherwise
      */
     fun <T> isTypeCompatible(variationType: String, defaultValue: T): Boolean = when (defaultValue) {
-        is Boolean -> variationType == "boolean"
-        is String -> variationType == "string"
-        is Int -> variationType == "integer"
-        is Double -> variationType == "number" || variationType == "float"
-        is JSONObject -> variationType == "object"
+        is Boolean -> variationType == VariationType.BOOLEAN.value
+        is String -> variationType == VariationType.STRING.value
+        is Int -> variationType == VariationType.INTEGER.value
+        is Double -> variationType == VariationType.NUMBER.value || variationType == VariationType.FLOAT.value
+        is JSONObject -> variationType == VariationType.OBJECT.value
         else -> false
     }
 

@@ -242,7 +242,7 @@ internal class DatadogFlagsClient(
      * @return [InternalResolution.Success] with parsed value and metadata if resolution succeeded,
      *         [InternalResolution.Error] with default value and error details otherwise
      */
-    @Suppress("ReturnCount") // Early returns improve readability by avoiding nested conditionals
+    @Suppress("ReturnCount") // Early returns for improved readability
     private fun <T> resolveInternal(
         flagKey: String,
         defaultValue: T
