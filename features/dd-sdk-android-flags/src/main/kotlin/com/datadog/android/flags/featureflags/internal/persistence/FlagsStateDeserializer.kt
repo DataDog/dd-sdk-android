@@ -44,6 +44,15 @@ internal class FlagsStateDeserializer(private val internalLogger: InternalLogger
             { "Failed to deserialize FlagsStateEntry from JSON" },
             e
         )
+
+        internalLogger.log(
+            level = InternalLogger.Level.ERROR,
+            target = InternalLogger.Target.TELEMETRY,
+            messageBuilder = { "Failed to parse persisted flag state" },
+            throwable = e,
+            onlyOnce = true
+        )
+
         null
     }
 

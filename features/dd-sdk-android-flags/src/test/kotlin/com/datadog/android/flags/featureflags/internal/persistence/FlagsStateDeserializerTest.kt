@@ -17,6 +17,10 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.eq
+import org.mockito.kotlin.isA
+import org.mockito.kotlin.verify
 import org.mockito.quality.Strictness
 
 @ExtendWith(MockitoExtension::class, ForgeExtension::class)
@@ -128,7 +132,7 @@ internal class FlagsStateDeserializerTest {
     }
 
     @Test
-    fun `M return null W deserialize() { invalid JSON }`() {
+    fun `M return null and log errors W deserialize() { invalid JSON }`() {
         // Given
         val invalidJson = "{ invalid json"
 
@@ -137,26 +141,117 @@ internal class FlagsStateDeserializerTest {
 
         // Then
         assertThat(result).isNull()
+
+        val maintainerMessageCaptor = argumentCaptor<() -> String>()
+        verify(mockInternalLogger).log(
+            eq(InternalLogger.Level.ERROR),
+            eq(InternalLogger.Target.MAINTAINER),
+            maintainerMessageCaptor.capture(),
+            isA<org.json.JSONException>(),
+            eq(false),
+            eq(null)
+        )
+        assertThat(maintainerMessageCaptor.firstValue.invoke())
+            .isEqualTo("Failed to deserialize FlagsStateEntry from JSON")
+
+        val telemetryMessageCaptor = argumentCaptor<() -> String>()
+        verify(mockInternalLogger).log(
+            eq(InternalLogger.Level.ERROR),
+            eq(InternalLogger.Target.TELEMETRY),
+            telemetryMessageCaptor.capture(),
+            isA<org.json.JSONException>(),
+            eq(true),
+            eq(null)
+        )
+        assertThat(telemetryMessageCaptor.firstValue.invoke())
+            .isEqualTo("Failed to parse persisted flag state")
     }
 
     @Test
-    fun `M return null W deserialize() { missing required fields }`() {
+    fun `M deserialize with empty attributes W deserialize() { missing attributes field }`(forge: Forge) {
         // Given
-        val incompleteJson = JSONObject().apply {
+        val targetingKey = forge.anAlphabeticalString()
+        val timestamp = System.currentTimeMillis()
+
+        val json = JSONObject().apply {
             put(
                 "evaluationContext",
                 JSONObject().apply {
-                    put("targetingKey", "key")
+                    put("targetingKey", targetingKey)
                 }
             )
-            // Missing flags field
+            put("flags", JSONObject())
+            put("lastUpdateTimestamp", timestamp)
         }.toString()
 
         // When
-        val result = testedDeserializer.deserialize(incompleteJson)
+        val result = testedDeserializer.deserialize(json)
 
         // Then
-        assertThat(result).isNull()
+        checkNotNull(result)
+        assertThat(result.evaluationContext.targetingKey).isEqualTo(targetingKey)
+        assertThat(result.evaluationContext.attributes).isEmpty()
+        assertThat(result.flags).isEmpty()
+        assertThat(result.lastUpdateTimestamp).isEqualTo(timestamp)
+    }
+
+    @Test
+    fun `M skip invalid flag and process others W deserialize() { one invalid flag }`(forge: Forge) {
+        // Given
+        val targetingKey = forge.anAlphabeticalString()
+        val timestamp = System.currentTimeMillis()
+
+        val json = JSONObject().apply {
+            put(
+                "evaluationContext",
+                JSONObject().apply {
+                    put("targetingKey", targetingKey)
+                    put("attributes", JSONObject())
+                }
+            )
+            put(
+                "flags",
+                JSONObject().apply {
+                    put(
+                        "validFlag",
+                        JSONObject().apply {
+                            put("variationType", "string")
+                            put("variationValue", "value")
+                            put("doLog", false)
+                            put("allocationKey", "alloc1")
+                            put("variationKey", "var1")
+                            put("extraLogging", JSONObject())
+                            put("reason", "DEFAULT")
+                        }
+                    )
+                    put(
+                        "invalidFlag",
+                        JSONObject().apply {
+                            put("variationType", "string")
+                        }
+                    )
+                }
+            )
+            put("lastUpdateTimestamp", timestamp)
+        }.toString()
+
+        // When
+        val result = testedDeserializer.deserialize(json)
+
+        // Then
+        checkNotNull(result)
+        assertThat(result.flags).hasSize(1)
+        assertThat(result.flags).containsKey("validFlag")
+        assertThat(result.flags).doesNotContainKey("invalidFlag")
+
+        verify(mockInternalLogger).log(
+            eq(InternalLogger.Level.ERROR),
+            eq(InternalLogger.Target.MAINTAINER),
+            isA<() -> String>(),
+            isA<org.json.JSONException>(),
+            eq(false),
+            eq(null)
+        )
     }
 
     @Test

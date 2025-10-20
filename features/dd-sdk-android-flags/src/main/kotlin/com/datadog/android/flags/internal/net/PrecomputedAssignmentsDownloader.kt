@@ -37,22 +37,6 @@ internal class PrecomputedAssignmentsDownloader(
     private fun executeDownloadRequest(request: Request): String? = try {
         val response = callFactory.newCall(request).execute()
         handleResponse(response)
-    } catch (e: IllegalStateException) {
-        internalLogger.log(
-            InternalLogger.Level.ERROR,
-            InternalLogger.Target.MAINTAINER,
-            { "Invalid state while downloading flags" },
-            e
-        )
-        null
-    } catch (e: IllegalArgumentException) {
-        internalLogger.log(
-            InternalLogger.Level.ERROR,
-            InternalLogger.Target.MAINTAINER,
-            { "Invalid argument while downloading flags" },
-            e
-        )
-        null
     } catch (e: Throwable) {
         internalLogger.log(
             InternalLogger.Level.ERROR,
@@ -70,6 +54,13 @@ internal class PrecomputedAssignmentsDownloader(
             InternalLogger.Level.ERROR,
             InternalLogger.Target.MAINTAINER,
             { "Failed to download flags: ${response.code}" }
+        )
+
+        internalLogger.log(
+            level = InternalLogger.Level.ERROR,
+            target = InternalLogger.Target.TELEMETRY,
+            messageBuilder = { "Flag assignment server returned error (${response.code})" },
+            onlyOnce = true
         )
 
         null

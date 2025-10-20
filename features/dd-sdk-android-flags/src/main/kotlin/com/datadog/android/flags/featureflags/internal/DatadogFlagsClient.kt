@@ -173,10 +173,8 @@ internal class DatadogFlagsClient(
                 level = InternalLogger.Level.ERROR,
                 messageBuilder = { ERROR_NO_EVALUATION_CONTEXT }
             )
-        } else {
-            if (flagsConfiguration.trackExposures) {
-                writeExposureEvent(flagKey, precomputedFlag, evaluationContext)
-            }
+        } else if (flagsConfiguration.trackExposures) {
+            writeExposureEvent(flagKey, precomputedFlag, evaluationContext)
         }
 
         if (flagsConfiguration.rumIntegrationEnabled) {

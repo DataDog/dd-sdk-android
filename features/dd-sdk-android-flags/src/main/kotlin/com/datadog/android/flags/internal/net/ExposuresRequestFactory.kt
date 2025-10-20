@@ -35,7 +35,7 @@ internal class ExposuresRequestFactory(
             url = url,
             headers = buildHeaders(
                 requestId,
-                context.clientToken, // replace when testing
+                context.clientToken,
                 context.source,
                 context.sdkVersion
             ),
