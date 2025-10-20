@@ -17,6 +17,7 @@ import com.datadog.android.flags.FlagsConfiguration
 import com.datadog.android.flags.featureflags.FlagsClient.Companion.get
 import com.datadog.android.flags.featureflags.internal.DatadogFlagsClient
 import com.datadog.android.flags.featureflags.internal.DefaultRumEvaluationLogger
+import com.datadog.android.flags.featureflags.internal.FlagValueConverter
 import com.datadog.android.flags.featureflags.internal.NoOpFlagsClient
 import com.datadog.android.flags.featureflags.internal.NoOpRumEvaluationLogger
 import com.datadog.android.flags.featureflags.internal.RumEvaluationLogger
@@ -395,6 +396,7 @@ interface FlagsClient {
                 )
 
                 val rumEvaluationLogger = createRumEvaluationLogger(featureSdkCore)
+                val valueConverter = FlagValueConverter()
 
                 return DatadogFlagsClient(
                     featureSdkCore = featureSdkCore,
@@ -402,7 +404,8 @@ interface FlagsClient {
                     flagsRepository = flagsRepository,
                     flagsConfiguration = configuration,
                     rumEvaluationLogger = rumEvaluationLogger,
-                    processor = flagsFeature.processor
+                    processor = flagsFeature.processor,
+                    valueConverter = valueConverter
                 )
             }
         }

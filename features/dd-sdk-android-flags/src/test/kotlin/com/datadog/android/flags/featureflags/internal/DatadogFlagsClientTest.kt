@@ -22,7 +22,6 @@ import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeConfiguration
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import org.assertj.core.api.Assertions.assertThat
-import org.json.JSONException
 import org.json.JSONObject
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -89,7 +88,8 @@ internal class DatadogFlagsClientTest {
                 rumIntegrationEnabled = true
             ),
             rumEvaluationLogger = mockRumEvaluationLogger,
-            processor = mockProcessor
+            processor = mockProcessor,
+            valueConverter = FlagValueConverter()
         )
     }
 
@@ -459,7 +459,7 @@ internal class DatadogFlagsClientTest {
             eq(InternalLogger.Level.ERROR),
             eq(InternalLogger.Target.USER),
             any(),
-            any<JSONException>(),
+            eq(null),
             eq(false),
             eq(null)
         )
@@ -494,7 +494,7 @@ internal class DatadogFlagsClientTest {
                 eq(InternalLogger.Level.ERROR),
                 eq(InternalLogger.Target.USER),
                 capture(),
-                any<JSONException>(),
+                eq(null),
                 eq(false),
                 eq(null)
             )
@@ -526,7 +526,7 @@ internal class DatadogFlagsClientTest {
             eq(InternalLogger.Level.ERROR),
             eq(InternalLogger.Target.USER),
             any(),
-            any<JSONException>(),
+            eq(null),
             eq(false),
             eq(null)
         )
@@ -574,7 +574,8 @@ internal class DatadogFlagsClientTest {
             flagsRepository = customRepository,
             flagsConfiguration = forge.getForgery(),
             rumEvaluationLogger = mockRumEvaluationLogger,
-            processor = mockProcessor
+            processor = mockProcessor,
+            valueConverter = FlagValueConverter()
         )
 
         // When
@@ -866,7 +867,8 @@ internal class DatadogFlagsClientTest {
                 rumIntegrationEnabled = false
             ),
             rumEvaluationLogger = mockRumEvaluationLogger,
-            processor = mockProcessor
+            processor = mockProcessor,
+            valueConverter = FlagValueConverter()
         )
 
         // When
@@ -968,7 +970,8 @@ internal class DatadogFlagsClientTest {
                 rumIntegrationEnabled = false
             ),
             rumEvaluationLogger = mockRumEvaluationLogger,
-            processor = mockProcessor
+            processor = mockProcessor,
+            valueConverter = FlagValueConverter()
         )
         whenever(mockFlagsRepository.getPrecomputedFlagWithContext(fakeFlagKey)) doReturn
             (fakeFlag to fakeEvaluationContext)
