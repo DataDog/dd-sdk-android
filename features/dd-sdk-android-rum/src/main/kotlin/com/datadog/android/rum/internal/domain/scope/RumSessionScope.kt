@@ -24,13 +24,11 @@ import com.datadog.android.rum.internal.domain.battery.BatteryInfo
 import com.datadog.android.rum.internal.domain.display.DisplayInfo
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
 import com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener
-import com.datadog.android.rum.internal.startup.RumAppStartupTelemetryReporter
-import com.datadog.android.rum.internal.utils.newRumEventWriteOperation
+import com.datadog.android.rum.internal.startup.RumSessionScopeStartupManager
 import com.datadog.android.rum.internal.utils.percent
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.rum.metric.interactiontonextview.LastInteractionIdentifier
 import com.datadog.android.rum.metric.networksettled.InitialResourceIdentifier
-import com.datadog.android.rum.model.VitalEvent
 import java.security.SecureRandom
 import java.util.UUID
 import java.util.concurrent.TimeUnit
@@ -60,8 +58,8 @@ internal class RumSessionScope(
     private val sessionInactivityNanos: Long = DEFAULT_SESSION_INACTIVITY_NS,
     private val sessionMaxDurationNanos: Long = DEFAULT_SESSION_MAX_DURATION_NS,
     rumSessionTypeOverride: RumSessionType?,
-    private val rumAppStartupTelemetryReporter: RumAppStartupTelemetryReporter,
-    private val rumVitalEventHelper: RumVitalEventHelper
+    private val rumVitalEventHelper: RumVitalEventHelper,
+    private val rumSessionScopeStartupManagerFactory: () -> RumSessionScopeStartupManager
 ) : RumScope {
 
     internal var sessionId = RumContext.NULL_UUID
@@ -76,7 +74,7 @@ internal class RumSessionScope(
 
     private val noOpWriter = NoOpDataWriter<Any>()
 
-    private var appStartIndex: Int = 0
+    private var rumSessionScopeStartupManager: RumSessionScopeStartupManager? = null
 
     @Suppress("LongParameterList")
     internal var childScope: RumViewManagerScope? = RumViewManagerScope(
@@ -160,11 +158,30 @@ internal class RumSessionScope(
         when (event) {
             is RumRawEvent.AppStartTTIDEvent -> {
                 if (sessionState == State.TRACKED) {
-                    handleTTIDEvent(
+                    rumSessionScopeStartupManager?.onTTIDEvent(
                         event = event,
                         datadogContext = datadogContext,
                         writeScope = writeScope,
-                        writer = actualWriter
+                        writer = actualWriter,
+                        rumContext = getRumContext(),
+                        customAttributes = getCustomAttributes()
+                    )
+                }
+            }
+            is RumRawEvent.AppStartEvent -> {
+                if (sessionState == State.TRACKED) {
+                    rumSessionScopeStartupManager?.onAppStartEvent(event = event)
+                }
+            }
+            is RumRawEvent.AppStartTTFDEvent -> {
+                if (sessionState == State.TRACKED) {
+                    rumSessionScopeStartupManager?.onTTFDEvent(
+                        event = event,
+                        datadogContext = datadogContext,
+                        writeScope = writeScope,
+                        writer = actualWriter,
+                        rumContext = getRumContext(),
+                        customAttributes = getCustomAttributes()
                     )
                 }
             }
@@ -223,14 +240,13 @@ internal class RumSessionScope(
         val isBackgroundEvent = event.javaClass in RumViewManagerScope.validBackgroundEventTypes
         val isSdkInitInForeground = event is RumRawEvent.SdkInit && event.isAppInForeground
         val isSdkInitInBackground = event is RumRawEvent.SdkInit && !event.isAppInForeground
-        val isAppStartEvent = event is RumRawEvent.AppStartTTIDEvent
 
         // When the session is expired, time-out or stopSession API is called, session ended metric should be sent
         if (isExpired || isTimedOut || isActive.not()) {
             sessionEndedMetricDispatcher.endMetric(sessionId, sdkCore.time.serverTimeOffsetMs)
         }
 
-        if (isInteraction || isSdkInitInForeground || isAppStartEvent) {
+        if (isInteraction || isSdkInitInForeground) {
             if (isNewSession || isExpired || isTimedOut) {
                 val reason = if (isNewSession) {
                     StartReason.USER_APP_LAUNCH
@@ -262,7 +278,7 @@ internal class RumSessionScope(
         sessionState = if (keepSession) State.TRACKED else State.NOT_TRACKED
         sessionId = UUID.randomUUID().toString()
         sessionStartNs.set(time.nanoTime)
-        appStartIndex = 0
+        rumSessionScopeStartupManager = rumSessionScopeStartupManagerFactory()
         childScope?.renewViewScopes(time)
         if (keepSession) {
             sessionEndedMetricDispatcher.startMetric(
@@ -282,54 +298,6 @@ internal class RumSessionScope(
                 SESSION_REPLAY_BUS_MESSAGE_TYPE_KEY to RUM_SESSION_RENEWED_BUS_MESSAGE,
                 RUM_KEEP_SESSION_BUS_MESSAGE_KEY to keepSession,
                 RUM_SESSION_ID_BUS_MESSAGE_KEY to sessionId
-            )
-        )
-    }
-
-    private fun handleTTIDEvent(
-        event: RumRawEvent.AppStartTTIDEvent,
-        datadogContext: DatadogContext,
-        writeScope: EventWriteScope,
-        writer: DataWriter<Any>
-    ) {
-        sdkCore.newRumEventWriteOperation(datadogContext, writeScope, writer) {
-            createTTIDVitalEvent(
-                event = event,
-                datadogContext = datadogContext
-            )
-        }.submit()
-
-        rumAppStartupTelemetryReporter.reportTTID(
-            info = event.info,
-            indexInSession = appStartIndex
-        )
-
-        appStartIndex++
-    }
-
-    private fun createTTIDVitalEvent(
-        event: RumRawEvent.AppStartTTIDEvent,
-        datadogContext: DatadogContext
-    ): VitalEvent {
-        val rumContext = getRumContext()
-
-        return rumVitalEventHelper.newVitalEvent(
-            timestampMs = event.info.scenario.initialTime.timestamp + sdkCore.time.serverTimeOffsetMs,
-            datadogContext = datadogContext,
-            eventAttributes = emptyMap(),
-            customAttributes = getCustomAttributes(),
-            view = null,
-            hasReplay = null,
-            rumContext = rumContext,
-            vital = VitalEvent.Vital.AppLaunchProperties(
-                id = UUID.randomUUID().toString(),
-                name = null,
-                description = null,
-                appLaunchMetric = VitalEvent.AppLaunchMetric.TTID,
-                duration = event.info.durationNs,
-                startupType = event.info.scenario.toVitalStartupType(),
-                isPrewarmed = null,
-                hasSavedInstanceStateBundle = event.info.scenario.hasSavedInstanceStateBundle
             )
         )
     }

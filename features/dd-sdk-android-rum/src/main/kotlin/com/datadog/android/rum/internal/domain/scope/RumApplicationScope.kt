@@ -26,7 +26,7 @@ import com.datadog.android.rum.internal.domain.battery.BatteryInfo
 import com.datadog.android.rum.internal.domain.display.DisplayInfo
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
 import com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener
-import com.datadog.android.rum.internal.startup.RumAppStartupTelemetryReporter
+import com.datadog.android.rum.internal.startup.RumSessionScopeStartupManager
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.rum.metric.interactiontonextview.LastInteractionIdentifier
 import com.datadog.android.rum.metric.networksettled.InitialResourceIdentifier
@@ -52,8 +52,8 @@ internal class RumApplicationScope(
     private val accessibilitySnapshotManager: AccessibilitySnapshotManager,
     private val batteryInfoProvider: InfoProvider<BatteryInfo>,
     private val displayInfoProvider: InfoProvider<DisplayInfo>,
-    private val rumAppStartupTelemetryReporter: RumAppStartupTelemetryReporter,
-    private val rumVitalEventHelper: RumVitalEventHelper
+    private val rumVitalEventHelper: RumVitalEventHelper,
+    private val rumSessionScopeStartupManagerFactory: () -> RumSessionScopeStartupManager
 ) : RumScope, RumViewChangedListener {
 
     override val parentScope: RumScope? = null
@@ -82,8 +82,8 @@ internal class RumApplicationScope(
             accessibilitySnapshotManager = accessibilitySnapshotManager,
             batteryInfoProvider = batteryInfoProvider,
             displayInfoProvider = displayInfoProvider,
-            rumAppStartupTelemetryReporter = rumAppStartupTelemetryReporter,
-            rumVitalEventHelper = rumVitalEventHelper
+            rumVitalEventHelper = rumVitalEventHelper,
+            rumSessionScopeStartupManagerFactory = rumSessionScopeStartupManagerFactory
         )
     )
 
@@ -204,8 +204,8 @@ internal class RumApplicationScope(
             accessibilitySnapshotManager = accessibilitySnapshotManager,
             batteryInfoProvider = batteryInfoProvider,
             displayInfoProvider = displayInfoProvider,
-            rumAppStartupTelemetryReporter = rumAppStartupTelemetryReporter,
-            rumVitalEventHelper = rumVitalEventHelper
+            rumVitalEventHelper = rumVitalEventHelper,
+            rumSessionScopeStartupManagerFactory = rumSessionScopeStartupManagerFactory
         )
         childScopes.add(newSession)
         if (event !is RumRawEvent.StartView) {

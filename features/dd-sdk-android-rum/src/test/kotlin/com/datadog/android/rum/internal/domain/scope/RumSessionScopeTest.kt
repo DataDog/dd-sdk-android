@@ -20,8 +20,6 @@ import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.core.internal.net.FirstPartyHostHeaderTypeResolver
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.RumSessionType
-import com.datadog.android.rum.assertj.VitalAppLaunchPropertiesAssert.Companion.assertThat
-import com.datadog.android.rum.assertj.VitalEventAssert
 import com.datadog.android.rum.internal.domain.InfoProvider
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.accessibility.AccessibilitySnapshotManager
@@ -30,11 +28,10 @@ import com.datadog.android.rum.internal.domain.display.DisplayInfo
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
 import com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener
 import com.datadog.android.rum.internal.startup.RumAppStartupTelemetryReporter
+import com.datadog.android.rum.internal.startup.RumSessionScopeStartupManager
 import com.datadog.android.rum.internal.startup.RumStartupScenario
 import com.datadog.android.rum.internal.startup.RumTTIDInfo
 import com.datadog.android.rum.internal.startup.testRumStartupScenarios
-import com.datadog.android.rum.internal.toVital
-import com.datadog.android.rum.internal.utils.buildDDTagsString
 import com.datadog.android.rum.internal.vitals.VitalMonitor
 import com.datadog.android.rum.metric.interactiontonextview.LastInteractionIdentifier
 import com.datadog.android.rum.metric.networksettled.InitialResourceIdentifier
@@ -55,7 +52,6 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.Extensions
 import org.junit.jupiter.params.ParameterizedTest
-import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
 import org.mockito.Mock
 import org.mockito.Mockito
@@ -66,7 +62,6 @@ import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
-import org.mockito.kotlin.inOrder
 import org.mockito.kotlin.isA
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
@@ -79,7 +74,6 @@ import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.lang.ref.WeakReference
 import java.util.concurrent.TimeUnit
-import java.util.stream.Stream
 
 @Extensions(
     ExtendWith(MockitoExtension::class),
@@ -185,6 +179,9 @@ internal class RumSessionScopeTest {
     lateinit var fakeDisplayInfo: DisplayInfo
 
     private var fakeVitalSource: VitalEvent.VitalEventSource? = null
+
+    @Mock
+    private lateinit var mockRumSessionScopeStartupManager: RumSessionScopeStartupManager
 
     @BeforeEach
     fun `set up`(forge: Forge) {
@@ -1479,22 +1476,23 @@ internal class RumSessionScopeTest {
 
     @ParameterizedTest
     @MethodSource("testScenarios")
-    fun `M call reportTTID and create new session W handleEvent { AppLaunchTTIDEvent }`(
-        scenario: RumStartupScenario,
-        forge: Forge
+    fun `M call onAppStartEvent W handleEvent { AppStartEvent }`(
+        scenario: RumStartupScenario
     ) {
         // Given
-        val info = RumTTIDInfo(
-            scenario = scenario,
-            durationNs = forge.aLong(min = 0, max = 10000)
+        val event = RumRawEvent.AppStartEvent(
+            scenario = scenario
         )
 
-        val event = RumRawEvent.AppStartTTIDEvent(
-            info = info
+        testedScope.handleEvent(
+            event = fakeInitialViewEvent,
+            datadogContext = fakeDatadogContext,
+            writeScope = mockEventWriteScope,
+            writer = mockWriter
         )
 
         // When
-        val result = testedScope.handleEvent(
+        testedScope.handleEvent(
             event = event,
             datadogContext = fakeDatadogContext,
             writeScope = mockEventWriteScope,
@@ -1502,84 +1500,30 @@ internal class RumSessionScopeTest {
         )
 
         // Then
-        val context = checkNotNull(result).getRumContext()
+        verify(mockRumSessionScopeStartupManager).onAppStartEvent(event = eq(event))
 
-        assertThat(result).isSameAs(testedScope)
-        assertThat(context.sessionId).isNotEqualTo(RumContext.NULL_UUID)
-        assertThat(context.sessionState).isEqualTo(RumSessionScope.State.TRACKED)
-        assertThat(context.sessionStartReason).isEqualTo(RumSessionScope.StartReason.USER_APP_LAUNCH)
-
-        verify(mockRumAppStartupTelemetryReporter).reportTTID(eq(info), eq(0))
-        verifyNoMoreInteractions(mockRumAppStartupTelemetryReporter)
-    }
-
-    @ParameterizedTest
-    @MethodSource("testScenariosPairs")
-    fun `M call reportTTID twice { AppLaunchTTIDEvent }`(
-        scenario1: RumStartupScenario,
-        scenario2: RumStartupScenario,
-        forge: Forge
-    ) {
-        // Given
-        val info1 = RumTTIDInfo(
-            scenario = scenario1,
-            durationNs = forge.aLong(min = 0, max = 10000)
-        )
-
-        val info2 = RumTTIDInfo(
-            scenario = scenario2,
-            durationNs = forge.aLong(min = 0, max = 10000)
-        )
-
-        val event1 = RumRawEvent.AppStartTTIDEvent(
-            info = info1
-        )
-
-        val event2 = RumRawEvent.AppStartTTIDEvent(
-            info = info2
-        )
-
-        // When
-        testedScope.handleEvent(
-            event = event1,
-            datadogContext = fakeDatadogContext,
-            writeScope = mockEventWriteScope,
-            writer = mockWriter
-        )
-        testedScope.handleEvent(
-            event = event2,
-            datadogContext = fakeDatadogContext,
-            writeScope = mockEventWriteScope,
-            writer = mockWriter
-        )
-
-        // Then
-        inOrder(mockRumAppStartupTelemetryReporter) {
-            verify(mockRumAppStartupTelemetryReporter).reportTTID(eq(info1), eq(0))
-            verify(mockRumAppStartupTelemetryReporter).reportTTID(eq(info2), eq(1))
-            verifyNoMoreInteractions()
-        }
+        verifyNoMoreInteractions(mockRumSessionScopeStartupManager)
     }
 
     @ParameterizedTest
     @MethodSource("testScenarios")
-    fun `M write Vital event with TTID W handleEvent { AppLaunchTTIDEvent }`(
+    fun `M call onTTIDEvent W handleEvent { AppLaunchTTIDEvent }`(
         scenario: RumStartupScenario,
         forge: Forge
     ) {
         // Given
-        fakeParentContext = fakeParentContext.copy(
-            syntheticsTestId = null,
-            syntheticsResultId = null
-        )
-
         val info = RumTTIDInfo(
             scenario = scenario,
             durationNs = forge.aLong(min = 0, max = 10000)
         )
 
-        val event = RumRawEvent.AppStartTTIDEvent(
-            info = info
+        val event = RumRawEvent.AppStartTTIDEvent(info = info)
+
+        testedScope.handleEvent(
+            event = fakeInitialViewEvent,
+            datadogContext = fakeDatadogContext,
+            writeScope = mockEventWriteScope,
+            writer = mockWriter
         )
 
         // When
@@ -1590,56 +1534,54 @@ internal class RumSessionScopeTest {
             writer = mockWriter
         )
 
+        val rumContext = checkNotNull(result).getRumContext()
+
         // Then
-        val context = checkNotNull(result).getRumContext()
+        verify(mockRumSessionScopeStartupManager).onTTIDEvent(
+            event = eq(event),
+            datadogContext = eq(fakeDatadogContext),
+            writeScope = eq(mockEventWriteScope),
+            writer = eq(mockWriter),
+            rumContext = eq(rumContext),
+            customAttributes = eq(fakeParentAttributes)
+        )
 
-        argumentCaptor<VitalEvent> {
-            verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
-            VitalEventAssert.assertThat(lastValue).apply {
-                hasDate(scenario.initialTime.timestamp + fakeTimeInfo.serverTimeOffsetMs)
-                hasApplicationId(context.applicationId)
-                containsExactlyContextAttributes(fakeParentAttributes)
-                hasStartReason(context.sessionStartReason)
-                hasSampleRate(100f)
-                hasNoSyntheticsTest()
-                hasSessionId(context.sessionId)
-                hasSessionType(fakeRumSessionType?.toVital() ?: VitalEvent.VitalEventSessionType.USER)
-                hasNoSessionReplay()
-                hasNullView()
-                hasSource(fakeVitalSource)
-                hasAccountInfo(fakeDatadogContext.accountInfo)
-                hasUserInfo(fakeDatadogContext.userInfo)
-                hasDeviceInfo(
-                    fakeDatadogContext.deviceInfo.deviceName,
-                    fakeDatadogContext.deviceInfo.deviceModel,
-                    fakeDatadogContext.deviceInfo.deviceBrand,
-                    fakeDatadogContext.deviceInfo.deviceType.toVitalSchemaType(),
-                    fakeDatadogContext.deviceInfo.architecture
-                )
-                hasOsInfo(
-                    fakeDatadogContext.deviceInfo.osName,
-                    fakeDatadogContext.deviceInfo.osVersion,
-                    fakeDatadogContext.deviceInfo.osMajorVersion
-                )
-                hasConnectivityInfo(fakeDatadogContext.networkInfo)
-                hasVersion(fakeDatadogContext.version)
-                hasServiceName(fakeDatadogContext.service)
-                hasDDTags(buildDDTagsString(fakeDatadogContext))
-            }
+        verifyNoMoreInteractions(mockRumSessionScopeStartupManager)
+    }
 
-            val vital = lastValue.vital
-            check(vital is VitalEvent.Vital.AppLaunchProperties)
+    @Test
+    fun `M call onTTFDEvent W handleEvent { AppLaunchTTFDEvent }`() {
+        // Given
+        val event = RumRawEvent.AppStartTTFDEvent()
 
-            assertThat(vital).apply {
-                hasName(null)
-                hasDescription(null)
-                hasAppLaunchMetric(VitalEvent.AppLaunchMetric.TTID)
-                hasDuration(info.durationNs)
-                hasStartupType(scenario.toVitalStartupType())
-                hasPrewarmed(null)
-                hasSavedInstanceStateBundle(scenario.hasSavedInstanceStateBundle)
-            }
-        }
+        testedScope.handleEvent(
+            event = fakeInitialViewEvent,
+            datadogContext = fakeDatadogContext,
+            writeScope = mockEventWriteScope,
+            writer = mockWriter
+        )
+
+        // When
+        val result = testedScope.handleEvent(
+            event = event,
+            datadogContext = fakeDatadogContext,
+            writeScope = mockEventWriteScope,
+            writer = mockWriter
+        )
+
+        val rumContext = checkNotNull(result).getRumContext()
+
+        // Then
+        verify(mockRumSessionScopeStartupManager).onTTFDEvent(
+            event = eq(event),
+            datadogContext = eq(fakeDatadogContext),
+            writeScope = eq(mockEventWriteScope),
+            writer = eq(mockWriter),
+            rumContext = eq(rumContext),
+            customAttributes = eq(fakeParentAttributes)
+        )
+
+        verifyNoMoreInteractions(mockRumSessionScopeStartupManager)
     }
 
     // endregion
@@ -1674,14 +1616,14 @@ internal class RumSessionScopeTest {
             accessibilitySnapshotManager = mockAccessibilitySnapshotManager,
             batteryInfoProvider = mockBatteryInfoProvider,
             displayInfoProvider = mockDisplayInfoProvider,
-            rumAppStartupTelemetryReporter = mockRumAppStartupTelemetryReporter,
             rumVitalEventHelper = RumVitalEventHelper(
                 rumSessionTypeOverride = fakeRumSessionType,
                 batteryInfoProvider = mockBatteryInfoProvider,
                 displayInfoProvider = mockDisplayInfoProvider,
                 sampleRate = sampleRate,
                 internalLogger = mock()
-            )
+            ),
+            rumSessionScopeStartupManagerFactory = { mockRumSessionScopeStartupManager }
         )
 
         if (withMockChildScope) {
@@ -1709,25 +1651,6 @@ internal class RumSessionScopeTest {
             val weakActivity = WeakReference(Mockito.mock<Activity>())
 
             return forge.testRumStartupScenarios(weakActivity)
-        }
-
-        @JvmStatic
-        fun testScenariosPairs(): Stream<Arguments> {
-            val forge = Forge().apply {
-                Configurator().configure(this)
-            }
-
-            val weakActivity = WeakReference(Mockito.mock<Activity>())
-
-            val scenarios = forge.testRumStartupScenarios(weakActivity)
-
-            return scenarios
-                .flatMap { scenario1 ->
-                    scenarios.map { scenario2 ->
-                        Arguments.of(scenario1, scenario2)
-                    }
-                }
-                .stream()
         }
     }
 }
