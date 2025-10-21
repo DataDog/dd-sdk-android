@@ -24,13 +24,14 @@ interface com.datadog.android.flags.featureflags.FlagsClient
 data class com.datadog.android.flags.featureflags.model.EvaluationContext
   constructor(String, Map<String, String> = emptyMap())
 enum com.datadog.android.flags.model.ErrorCode
-  - PROVIDER_NOT_READY
   - FLAG_NOT_FOUND
   - PARSE_ERROR
   - TYPE_MISMATCH
-  - TARGETING_KEY_MISSING
-  - INVALID_CONTEXT
-  - PROVIDER_FATAL
-  - GENERAL
 data class com.datadog.android.flags.model.ResolutionDetails<T: Any>
-  constructor(T, String? = null, String? = null, ErrorCode? = null, String? = null, Map<String, Any>? = null)
+  constructor(T, String? = null, ResolutionReason? = null, ErrorCode? = null, String? = null, Map<String, Any>? = null)
+enum com.datadog.android.flags.model.ResolutionReason
+  - DEFAULT
+  - TARGETING_MATCH
+  - RULE_MATCH
+  - PREREQUISITE_FAILED
+  - ERROR
