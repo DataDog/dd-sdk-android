@@ -16,12 +16,6 @@ enum com.datadog.android.internal.attributes.ViewScopeInstrumentationType : Loca
   - ACTIVITY
   - FRAGMENT
   override val key: LocalAttribute.Key
-class com.datadog.android.internal.collections.EvictingQueue<T> : java.util.Queue<T>
-  constructor(Int = Int.MAX_VALUE)
-  override val size: Int
-  override fun add(T): Boolean
-  override fun offer(T): Boolean
-  override fun addAll(Collection<T>): Boolean
 enum com.datadog.android.internal.network.GraphQLHeaders
   constructor(String)
   - DD_GRAPHQL_NAME_HEADER

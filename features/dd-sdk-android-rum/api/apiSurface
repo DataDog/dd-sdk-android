@@ -1,8 +1,3 @@
-class com.datadog.android.insights.LocalInsightOverlay : com.datadog.android.rum.internal.instrumentation.insights.InsightsUpdatesListener
-  fun attach(android.app.Activity)
-  fun detach()
-  override fun onDataUpdated()
-  companion object 
 fun <T: java.io.Closeable, R> T.useMonitored(com.datadog.android.api.SdkCore = Datadog.getInstance(), (T) -> R): R
 annotation com.datadog.android.rum.ExperimentalRumApi
 object com.datadog.android.rum.GlobalRumMonitor
@@ -88,7 +83,7 @@ data class com.datadog.android.rum.RumConfiguration
     fun setInitialResourceIdentifier(com.datadog.android.rum.metric.networksettled.InitialResourceIdentifier): Builder
     fun setLastInteractionIdentifier(com.datadog.android.rum.metric.interactiontonextview.LastInteractionIdentifier?): Builder
     fun setSlowFramesConfiguration(com.datadog.android.rum.configuration.SlowFramesConfiguration?): Builder
-    fun setInsightsCollectionEnabled(Boolean): Builder
+    fun setInsightsCollector(com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector?): Builder
     fun trackAnonymousUser(Boolean): Builder
     fun build(): RumConfiguration
 enum com.datadog.android.rum.RumErrorSource
@@ -211,6 +206,8 @@ interface com.datadog.android.rum.internal.instrumentation.insights.InsightsColl
   fun onSlowFrameRate(Double?)
 interface com.datadog.android.rum.internal.instrumentation.insights.InsightsUpdatesListener
   fun onDataUpdated()
+object com.datadog.android.rum.internal.instrumentation.insights.InsightsCollectorProvider
+  val insightsCollector: InsightsCollector?
 interface com.datadog.android.rum.internal.monitor.AdvancedNetworkRumMonitor : com.datadog.android.rum.RumMonitor
   fun waitForResourceTiming(Any)
   fun addResourceTiming(Any, com.datadog.android.rum.internal.domain.event.ResourceTiming)

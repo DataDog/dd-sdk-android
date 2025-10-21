@@ -34,7 +34,6 @@ import com.datadog.android.core.internal.utils.scheduleSafe
 import com.datadog.android.event.EventMapper
 import com.datadog.android.event.MapperSerializer
 import com.datadog.android.event.NoOpEventMapper
-import com.datadog.android.insights.internal.DefaultInsightsCollector
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumErrorSource
@@ -195,12 +194,7 @@ internal class RumFeature(
 
         initialResourceIdentifier = configuration.initialResourceIdentifier
         lastInteractionIdentifier = configuration.lastInteractionIdentifier
-        insightsCollector = if (configuration.insightsCollectionEnabled) {
-            @Suppress("OPT_IN_USAGE")
-            DefaultInsightsCollector()
-        } else {
-            NoOpInsightsCollector()
-        }
+        insightsCollector = configuration.insightsCollector ?: NoOpInsightsCollector()
 
         dataWriter = createDataWriter(
             configuration,
@@ -746,7 +740,7 @@ internal class RumFeature(
         val trackAnonymousUser: Boolean,
         val rumSessionTypeOverride: RumSessionType?,
         val collectAccessibility: Boolean,
-        val insightsCollectionEnabled: Boolean
+        val insightsCollector: InsightsCollector?
     )
 
     internal companion object {
@@ -799,7 +793,7 @@ internal class RumFeature(
             slowFramesConfiguration = null,
             rumSessionTypeOverride = null,
             collectAccessibility = false,
-            insightsCollectionEnabled = false
+            insightsCollector = NoOpInsightsCollector()
         )
 
         internal const val EVENT_MESSAGE_PROPERTY = "message"

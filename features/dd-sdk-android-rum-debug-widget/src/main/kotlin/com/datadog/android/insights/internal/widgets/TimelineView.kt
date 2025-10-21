@@ -17,7 +17,7 @@ import com.datadog.android.insights.internal.domain.TimelineEvent
 import com.datadog.android.insights.internal.extensions.color
 import com.datadog.android.insights.internal.extensions.ms
 import com.datadog.android.insights.internal.extensions.px
-import com.datadog.android.rum.R
+import com.datadog.android.rumdebugwidget.R
 
 internal class TimelineView @JvmOverloads constructor(
     context: Context,

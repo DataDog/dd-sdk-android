@@ -5,7 +5,11 @@
  */
 package com.datadog.android.rum.internal.instrumentation.insights
 
+import com.datadog.android.Datadog
+import com.datadog.android.api.feature.Feature
+import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.lint.InternalApi
+import com.datadog.android.rum.internal.RumFeature
 import com.datadog.tools.annotation.NoOpImplementation
 
 /**
@@ -109,4 +113,18 @@ interface InsightsUpdatesListener {
      * Called when the data has been updated.
      */
     fun onDataUpdated()
+}
+
+/**
+ * Provides the [InsightsCollector] instance inside the SDK, making it accessible to other modules.
+ */
+@InternalApi
+object InsightsCollectorProvider {
+    /**
+     * The nullable singleton [InsightsCollector] instance.
+     */
+    val insightsCollector: InsightsCollector? = (Datadog.getInstance() as? InternalSdkCore)
+        ?.getFeature(Feature.RUM_FEATURE_NAME)
+        ?.unwrap<RumFeature>()
+        ?.insightsCollector
 }
