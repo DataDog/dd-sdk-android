@@ -84,12 +84,12 @@ internal class NoOpFlagsClient(
 
     /**
      * Returns resolution details with the provided default value without any flag evaluation.
-     * @param T The type of the flag value.
+     * @param T The type of the flag value. Must be non-null.
      * @param flagKey Ignored flag key.
      * @param defaultValue The value to return if the flag cannot be retrieved or parsed.
      * @return [ResolutionDetails] containing the value, variant, reason, error info, and metadata.
      */
-    override fun <T> resolve(flagKey: String, defaultValue: T): ResolutionDetails<T> {
+    override fun <T : Any> resolve(flagKey: String, defaultValue: T): ResolutionDetails<T> {
         logCriticalError("resolve for flag '$flagKey'")
         return ResolutionDetails(defaultValue)
     }

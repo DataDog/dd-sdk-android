@@ -142,12 +142,12 @@ interface FlagsClient {
      * }
      * ```
      *
-     * @param T The type of the flag value (Boolean, String, Int, Double, or JSONObject).
+     * @param T The type of the flag value (Boolean, String, Int, Double, or JSONObject). Must be non-null.
      * @param flagKey The unique identifier of the flag to resolve.
-     * @param defaultValue The value to return if the flag cannot be retrieved or parsed.
+     * @param defaultValue The value to return if the flag cannot be retrieved or parsed. Cannot be null.
      * @return [ResolutionDetails] containing the value, variant, reason, error info, and metadata.
      */
-    fun <T> resolve(flagKey: String, defaultValue: T): ResolutionDetails<T>
+    fun <T : Any> resolve(flagKey: String, defaultValue: T): ResolutionDetails<T>
 
     /**
      * Builder for creating [FlagsClient] instances with custom configuration.

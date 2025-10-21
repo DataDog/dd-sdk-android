@@ -12,7 +12,7 @@ package com.datadog.android.flags.model
  * This structure contains the resolved flag value along with metadata about how the value
  * was determined. It provides rich diagnostic information for debugging and analytics.
  *
- * @param T The type of the resolved flag value (Boolean, String, Int, Double, JSONObject).
+ * @param T The type of the resolved flag value (Boolean, String, Int, Double, JSONObject). Must be non-null.
  * @property value The resolved flag value. This is always present, either from flag evaluation or the default value.
  * @property variant Optional string identifier for the resolved variant (e.g., "control", "treatment").
  * @property reason Optional string explaining why this value was resolved (e.g., "TARGETING_MATCH", "DEFAULT", "ERROR").
@@ -20,7 +20,7 @@ package com.datadog.android.flags.model
  * @property errorMessage Optional human-readable error message providing additional context about failures.
  * @property flagMetadata Optional map of arbitrary metadata associated with the flag (string keys, primitive values).
  */
-data class ResolutionDetails<T>(
+data class ResolutionDetails<T : Any>(
     val value: T,
     val variant: String? = null,
     val reason: String? = null,

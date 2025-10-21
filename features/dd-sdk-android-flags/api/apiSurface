@@ -15,7 +15,7 @@ interface com.datadog.android.flags.featureflags.FlagsClient
   fun resolveDoubleValue(String, Double): Double
   fun resolveIntValue(String, Int): Int
   fun resolveStructureValue(String, org.json.JSONObject): org.json.JSONObject
-  fun <T> resolve(String, T): com.datadog.android.flags.model.ResolutionDetails<T>
+  fun <T: Any> resolve(String, T): com.datadog.android.flags.model.ResolutionDetails<T>
   class Builder
     constructor(String = DEFAULT_CLIENT_NAME, com.datadog.android.api.SdkCore = Datadog.getInstance())
     fun build(): FlagsClient
@@ -32,5 +32,5 @@ enum com.datadog.android.flags.model.ErrorCode
   - INVALID_CONTEXT
   - PROVIDER_FATAL
   - GENERAL
-data class com.datadog.android.flags.model.ResolutionDetails<T>
+data class com.datadog.android.flags.model.ResolutionDetails<T: Any>
   constructor(T, String? = null, String? = null, ErrorCode? = null, String? = null, Map<String, Any>? = null)
