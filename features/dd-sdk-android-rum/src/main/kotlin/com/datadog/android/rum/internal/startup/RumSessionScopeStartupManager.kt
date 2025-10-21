@@ -6,6 +6,7 @@
 
 package com.datadog.android.rum.internal.startup
 
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.feature.EventWriteScope
 import com.datadog.android.api.storage.DataWriter
@@ -65,11 +66,11 @@ internal class RumSessionScopeStartupManagerImpl(
     private var ttfdSentForSession = false
     private var ttidSentForSession = false
 
-    private var appStartIndex = 0
+    private var appStartCount = 0
 
     override fun onAppStartEvent(event: RumRawEvent.AppStartEvent) {
         lastScenario = event.scenario
-        appStartIndex++
+        appStartCount++
     }
 
     override fun onTTIDEvent(
@@ -82,7 +83,7 @@ internal class RumSessionScopeStartupManagerImpl(
     ) {
         rumAppStartupTelemetryReporter.reportTTID(
             info = event.info,
-            indexInSession = appStartIndex - 1
+            indexInSession = appStartCount - 1
         )
 
         if (ttidSentForSession) {
@@ -128,7 +129,21 @@ internal class RumSessionScopeStartupManagerImpl(
 
         ttfdSentForSession = true
 
-        val scenario = lastScenario ?: return
+        val scenario = lastScenario
+
+        if (scenario == null) {
+            sdkCore.internalLogger.log(
+                level = InternalLogger.Level.ERROR,
+                target = InternalLogger.Target.USER,
+                messageBuilder = {
+                    REPORT_APP_FULLY_DISPLAYED_CALLED_TOO_EARLY_MESSAGE
+                },
+                throwable = null,
+                onlyOnce = false,
+                additionalProperties = null
+            )
+            return
+        }
 
         sdkCore.newRumEventWriteOperation(datadogContext, writeScope, writer) {
             rumVitalEventHelper.newVitalEvent(
@@ -151,5 +166,10 @@ internal class RumSessionScopeStartupManagerImpl(
                 )
             )
         }.submit()
+    }
+
+    companion object {
+        internal val REPORT_APP_FULLY_DISPLAYED_CALLED_TOO_EARLY_MESSAGE =
+            "RumMonitor.reportAppFullyDisplayed was called before the application launch was detected"
     }
 }
