@@ -135,20 +135,6 @@ internal class DatadogFlagsClient(
     /**
      * Resolves a flag value with detailed resolution information.
      *
-     * This is the core resolution method that centralizes all flag resolution logic:
-     * 1. Retrieves the precomputed flag from the repository
-     * 2. Returns FLAG_NOT_FOUND error if the flag doesn't exist
-     * 3. Parses the flag value based on the target type (T)
-     * 4. Returns TYPE_MISMATCH/PARSE_ERROR if parsing fails
-     * 5. Returns success with variant, reason, and metadata if parsing succeeds
-     *
-     * Type-specific parsing:
-     * - Boolean: Strict parsing (only "true"/"false")
-     * - String: No conversion needed
-     * - Int: Parse to integer
-     * - Double: Parse to double
-     * - JSONObject: Parse JSON with error logging
-     *
      * @param T The type of the flag value (Boolean, String, Int, Double, or JSONObject).
      * @param flagKey The name of the flag to query.
      * @param defaultValue The value to return if the flag cannot be retrieved or parsed.
