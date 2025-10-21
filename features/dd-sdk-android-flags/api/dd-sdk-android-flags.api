@@ -71,12 +71,7 @@ public final class com/datadog/android/flags/featureflags/model/EvaluationContex
 
 public final class com/datadog/android/flags/model/ErrorCode : java/lang/Enum {
 	public static final field FLAG_NOT_FOUND Lcom/datadog/android/flags/model/ErrorCode;
-	public static final field GENERAL Lcom/datadog/android/flags/model/ErrorCode;
-	public static final field INVALID_CONTEXT Lcom/datadog/android/flags/model/ErrorCode;
 	public static final field PARSE_ERROR Lcom/datadog/android/flags/model/ErrorCode;
-	public static final field PROVIDER_FATAL Lcom/datadog/android/flags/model/ErrorCode;
-	public static final field PROVIDER_NOT_READY Lcom/datadog/android/flags/model/ErrorCode;
-	public static final field TARGETING_KEY_MISSING Lcom/datadog/android/flags/model/ErrorCode;
 	public static final field TYPE_MISMATCH Lcom/datadog/android/flags/model/ErrorCode;
 	public static fun valueOf (Ljava/lang/String;)Lcom/datadog/android/flags/model/ErrorCode;
 	public static fun values ()[Lcom/datadog/android/flags/model/ErrorCode;

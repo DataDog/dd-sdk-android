@@ -7,14 +7,9 @@
 package com.datadog.android.flags.model
 
 /**
- * Error codes for flag resolution failures, aligned with the OpenFeature specification.
+ * Error codes for flag resolution failures.
  */
 enum class ErrorCode {
-    /**
-     * The value was resolved before the provider was initialized.
-     */
-    PROVIDER_NOT_READY,
-
     /**
      * The flag could not be found.
      */
@@ -28,25 +23,5 @@ enum class ErrorCode {
     /**
      * The type of the flag value does not match the expected type.
      */
-    TYPE_MISMATCH,
-
-    /**
-     * The provider requires a targeting key and one was not provided in the evaluation context.
-     */
-    TARGETING_KEY_MISSING,
-
-    /**
-     * The evaluation context does not meet provider requirements.
-     */
-    INVALID_CONTEXT,
-
-    /**
-     * The provider has entered an irrecoverable error state.
-     */
-    PROVIDER_FATAL,
-
-    /**
-     * The error was for a reason not enumerated above.
-     */
-    GENERAL
+    TYPE_MISMATCH
 }
