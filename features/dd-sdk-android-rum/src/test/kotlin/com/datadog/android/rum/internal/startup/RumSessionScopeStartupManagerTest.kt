@@ -18,6 +18,7 @@ import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.rum.RumSessionType
 import com.datadog.android.rum.assertj.VitalAppLaunchPropertiesAssert.Companion.assertThat
 import com.datadog.android.rum.assertj.VitalEventAssert
+import com.datadog.android.rum.assertj.VitalEventAssert.Companion.assertThat
 import com.datadog.android.rum.internal.domain.InfoProvider
 import com.datadog.android.rum.internal.domain.RumContext
 import com.datadog.android.rum.internal.domain.battery.BatteryInfo
@@ -47,7 +48,6 @@ import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
 import org.mockito.Mock
-import org.mockito.Mockito
 import org.mockito.Mockito.mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
@@ -195,6 +195,7 @@ internal class RumSessionScopeStartupManagerTest {
         scenario: RumStartupScenario,
         forge: Forge
     ) {
+        // Given
         val info = RumTTIDInfo(
             scenario = scenario,
             durationNs = forge.aLong(min = 0, max = 10000)
@@ -204,6 +205,7 @@ internal class RumSessionScopeStartupManagerTest {
             info = info
         )
 
+        // When
         manager.onAppStartEvent(mock())
 
         manager.onTTIDEvent(
@@ -215,11 +217,12 @@ internal class RumSessionScopeStartupManagerTest {
             customAttributes = fakeParentAttributes
         )
 
-        verify(mockRumAppStartupTelemetryReporter).reportTTID(eq(info), eq(0))
+        // Then
+        verify(mockRumAppStartupTelemetryReporter).reportTTID(info, 0)
 
         argumentCaptor<VitalEvent> {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
-            VitalEventAssert.assertThat(lastValue).apply {
+            assertThat(lastValue).apply {
                 hasDate(scenario.initialTime.timestamp + fakeTimeInfo.serverTimeOffsetMs)
                 hasApplicationId(fakeParentContext.applicationId)
                 containsExactlyContextAttributes(fakeParentAttributes)
@@ -275,6 +278,7 @@ internal class RumSessionScopeStartupManagerTest {
         scenario2: RumStartupScenario,
         forge: Forge
     ) {
+        // Given
         val info1 = RumTTIDInfo(
             scenario = scenario1,
             durationNs = forge.aLong(min = 0, max = 10000)
@@ -293,6 +297,7 @@ internal class RumSessionScopeStartupManagerTest {
             info = info2
         )
 
+        // When
         manager.onAppStartEvent(mock())
 
         manager.onTTIDEvent(
@@ -315,6 +320,7 @@ internal class RumSessionScopeStartupManagerTest {
             customAttributes = fakeParentAttributes
         )
 
+        // Then
         inOrder(mockWriter, mockRumAppStartupTelemetryReporter) {
             verify(mockRumAppStartupTelemetryReporter).reportTTID(eq(info1), eq(0))
             verify(mockWriter).write(eq(mockEventBatchWriter), any(), eq(EventType.DEFAULT))
@@ -328,9 +334,11 @@ internal class RumSessionScopeStartupManagerTest {
     fun `M write TTFD Vital event W onTTFDEvent`(
         scenario: RumStartupScenario
     ) {
-        manager.onAppStartEvent(RumRawEvent.AppStartEvent(scenario = scenario))
-
+        // Given
         val ttfdEvent = RumRawEvent.AppStartTTFDEvent()
+
+        // When
+        manager.onAppStartEvent(RumRawEvent.AppStartEvent(scenario = scenario))
 
         manager.onTTFDEvent(
             event = ttfdEvent,
@@ -341,6 +349,7 @@ internal class RumSessionScopeStartupManagerTest {
             customAttributes = fakeParentAttributes
         )
 
+        // Then
         argumentCaptor<VitalEvent> {
             verify(mockWriter).write(eq(mockEventBatchWriter), capture(), eq(EventType.DEFAULT))
             VitalEventAssert.assertThat(lastValue).apply {
@@ -399,10 +408,17 @@ internal class RumSessionScopeStartupManagerTest {
         scenario1: RumStartupScenario,
         scenario2: RumStartupScenario
     ) {
-        manager.onAppStartEvent(RumRawEvent.AppStartEvent(scenario = scenario1))
+        // Given
+        val appStartEvent1 = RumRawEvent.AppStartEvent(scenario = scenario1)
+        val appStartEvent2 = RumRawEvent.AppStartEvent(scenario = scenario2)
+        val ttfdEvent1 = RumRawEvent.AppStartTTFDEvent()
+        val ttfdEvent2 = RumRawEvent.AppStartTTFDEvent()
+
+        // When
+        manager.onAppStartEvent(appStartEvent1)
 
         manager.onTTFDEvent(
-            event = RumRawEvent.AppStartTTFDEvent(),
+            event = ttfdEvent1,
             datadogContext = fakeDatadogContext,
             writeScope = mockEventWriteScope,
             writer = mockWriter,
@@ -410,10 +426,10 @@ internal class RumSessionScopeStartupManagerTest {
             customAttributes = fakeParentAttributes
         )
 
-        manager.onAppStartEvent(RumRawEvent.AppStartEvent(scenario = scenario2))
+        manager.onAppStartEvent(appStartEvent2)
 
         manager.onTTFDEvent(
-            event = RumRawEvent.AppStartTTFDEvent(),
+            event = ttfdEvent2,
             datadogContext = fakeDatadogContext,
             writeScope = mockEventWriteScope,
             writer = mockWriter,
@@ -421,6 +437,7 @@ internal class RumSessionScopeStartupManagerTest {
             customAttributes = fakeParentAttributes
         )
 
+        // Then
         verify(mockWriter).write(eq(mockEventBatchWriter), any(), eq(EventType.DEFAULT))
         verifyNoMoreInteractions(mockWriter)
     }
@@ -467,7 +484,7 @@ internal class RumSessionScopeStartupManagerTest {
                 Configurator().configure(this)
             }
 
-            val weakActivity = WeakReference(Mockito.mock<Activity>())
+            val weakActivity = WeakReference(mock<Activity>())
 
             val scenarios = forge.testRumStartupScenarios(weakActivity)
 
