@@ -157,13 +157,7 @@ object Rum {
             accessibilitySnapshotManager = rumFeature.accessibilitySnapshotManager,
             batteryInfoProvider = rumFeature.batteryInfoProvider,
             displayInfoProvider = rumFeature.displayInfoProvider,
-            rumVitalEventHelper = RumVitalEventHelper(
-                rumSessionTypeOverride = rumFeature.configuration.rumSessionTypeOverride,
-                batteryInfoProvider = rumFeature.batteryInfoProvider,
-                displayInfoProvider = rumFeature.displayInfoProvider,
-                sampleRate = rumFeature.sampleRate,
-                internalLogger = sdkCore.internalLogger
-            ),
+            rumVitalEventHelper = rumVitalEventHelper,
             rumSessionScopeStartupManagerFactory = {
                 RumSessionScopeStartupManager.create(
                     rumVitalEventHelper = rumVitalEventHelper,

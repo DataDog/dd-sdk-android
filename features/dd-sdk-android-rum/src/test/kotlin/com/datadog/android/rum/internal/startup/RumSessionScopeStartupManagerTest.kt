@@ -7,6 +7,7 @@
 package com.datadog.android.rum.internal.startup
 
 import android.app.Activity
+import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
 import com.datadog.android.api.context.TimeInfo
 import com.datadog.android.api.feature.EventWriteScope
@@ -30,6 +31,7 @@ import com.datadog.android.rum.internal.utils.buildDDTagsString
 import com.datadog.android.rum.model.ViewEvent
 import com.datadog.android.rum.model.VitalEvent
 import com.datadog.android.rum.utils.forge.Configurator
+import com.datadog.android.rum.utils.verifyLog
 import com.datadog.tools.unit.extensions.TestConfigurationExtension
 import com.datadog.tools.unit.forge.exhaustiveAttributes
 import fr.xgouchet.elmyr.Forge
@@ -103,6 +105,9 @@ internal class RumSessionScopeStartupManagerTest {
     @Mock
     lateinit var mockDisplayInfoProvider: InfoProvider<DisplayInfo>
 
+    @Mock
+    lateinit var mockInternalLogger: InternalLogger
+
     @Forgery
     lateinit var fakeBatteryInfo: BatteryInfo
 
@@ -134,11 +139,11 @@ internal class RumSessionScopeStartupManagerTest {
             batteryInfoProvider = mockBatteryInfoProvider,
             displayInfoProvider = mockDisplayInfoProvider,
             sampleRate = fakeSampleRate,
-            internalLogger = mock()
+            internalLogger = mockInternalLogger
         )
 
         whenever(mockSdkCore.time) doReturn (fakeTimeInfo)
-        whenever(mockSdkCore.internalLogger) doReturn mock()
+        whenever(mockSdkCore.internalLogger) doReturn mockInternalLogger
 
         val isValidSource = forge.aBool()
 
@@ -418,6 +423,30 @@ internal class RumSessionScopeStartupManagerTest {
 
         verify(mockWriter).write(eq(mockEventBatchWriter), any(), eq(EventType.DEFAULT))
         verifyNoMoreInteractions(mockWriter)
+    }
+
+    @ParameterizedTest
+    @MethodSource("testScenarios")
+    fun `M log W onTTFDEvent { if called before onAppStartEvent}`() {
+        manager.onTTFDEvent(
+            event = RumRawEvent.AppStartTTFDEvent(),
+            datadogContext = fakeDatadogContext,
+            writeScope = mockEventWriteScope,
+            writer = mockWriter,
+            rumContext = fakeParentContext,
+            customAttributes = fakeParentAttributes
+        )
+        verifyNoInteractions(mockWriter)
+
+        mockInternalLogger.verifyLog(
+            level = InternalLogger.Level.ERROR,
+            target = InternalLogger.Target.USER,
+            message = RumSessionScopeStartupManagerImpl.REPORT_APP_FULLY_DISPLAYED_CALLED_TOO_EARLY_MESSAGE,
+            throwable = null,
+            onlyOnce = false,
+            additionalProperties = null
+        )
+        verifyNoMoreInteractions(mockInternalLogger)
     }
 
     companion object {
