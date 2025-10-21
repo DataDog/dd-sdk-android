@@ -44,7 +44,7 @@ data class Version(
         }
 
         data class Profiling(val number: Int) : Type() {
-            override val suffix: String = "-profiling-rc$number"
+            override val suffix: String = "-profiling-rc$number-SNAPSHOT"
         }
     }
 
