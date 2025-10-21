@@ -39,7 +39,7 @@ internal class PrecomputedFlagForgeryFactory : ForgeryFactory<PrecomputedFlag> {
             ).toString()
         }
 
-        val reasonEnum = forge.anElementFrom(*ResolutionReason.values())
+        val reasonEnum = forge.aValueFrom(ResolutionReason::class.java)
         val reason = reasonEnum.name
 
         return PrecomputedFlag(

@@ -259,7 +259,7 @@ internal class DatadogFlagsClient(
 
         val (flag, context) = flagAndContext
 
-        val conversionResult = FlagValueConverter.convert<T>(
+        val conversionResult = FlagValueConverter.convert(
             variationValue = flag.variationValue,
             variationType = flag.variationType,
             targetType = defaultValue::class
