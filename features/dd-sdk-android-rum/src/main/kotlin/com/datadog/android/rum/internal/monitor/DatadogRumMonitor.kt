@@ -445,6 +445,13 @@ internal class DatadogRumMonitor(
         )
     }
 
+    @ExperimentalRumApi
+    override fun reportAppFullyDisplayed() {
+        handleEvent(
+            RumRawEvent.AppStartTTFDEvent()
+        )
+    }
+
     // endregion
 
     // region RumMonitor/Attributes
@@ -737,13 +744,6 @@ internal class DatadogRumMonitor(
                 " with the following failure reason: $failureReason."
         }
         sdkCore.internalLogger.reportFeatureOperationApiUsage(ActionType.FAIL)
-    }
-
-    @ExperimentalRumApi
-    override fun reportAppFullyDisplayed() {
-        handleEvent(
-            RumRawEvent.AppStartTTFDEvent()
-        )
     }
 
     private fun featureOperationArgumentsValid(name: String, operationKey: String?) = when {
