@@ -159,9 +159,7 @@ internal class DatadogFlagsClient(
 
         return when (resolution) {
             is InternalResolution.Success -> {
-                if (flagsConfiguration.trackExposures && resolution.flag.doLog) {
-                    writeExposureEvent(flagKey, resolution.flag, resolution.context)
-                }
+                trackResolution(resolution)
                 createSuccessResolution(resolution.flag, resolution.value)
             }
             is InternalResolution.Error -> {
@@ -331,17 +329,7 @@ internal class DatadogFlagsClient(
      */
     private fun <T : Any> resolveTracked(resolution: InternalResolution<T>): T = when (resolution) {
         is InternalResolution.Success -> {
-            if (flagsConfiguration.trackExposures && resolution.flag.doLog) {
-                writeExposureEvent(resolution.flagKey, resolution.flag, resolution.context)
-            }
-
-            if (flagsConfiguration.rumIntegrationEnabled && resolution.flag.doLog) {
-                logEvaluation(
-                    key = resolution.flagKey,
-                    value = resolution.value
-                )
-            }
-
+            trackResolution(resolution)
             resolution.value
         }
         is InternalResolution.Error -> {
@@ -360,7 +348,7 @@ internal class DatadogFlagsClient(
 
     // endregion
 
-// region Helper Methods
+    // region Helper Methods
 
     /**
      * Creates a successful resolution details from a precomputed flag.
@@ -466,5 +454,16 @@ internal class DatadogFlagsClient(
         return if (metadata.isNotEmpty()) metadata.toMap() else emptyMap()
     }
 
-// endregion
+    private fun <T : Any> trackResolution(resolution: InternalResolution.Success<T>) {
+        if (resolution.flag.doLog) {
+            if (flagsConfiguration.trackExposures) {
+                writeExposureEvent(resolution.flagKey, resolution.flag, resolution.context)
+            }
+            if (flagsConfiguration.rumIntegrationEnabled) {
+                logEvaluation(resolution.flagKey, resolution.value)
+            }
+        }
+    }
+
+    // endregion
 }
