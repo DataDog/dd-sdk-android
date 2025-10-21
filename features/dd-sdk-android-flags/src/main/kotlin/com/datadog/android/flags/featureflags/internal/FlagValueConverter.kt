@@ -9,6 +9,14 @@ package com.datadog.android.flags.featureflags.internal
 import com.datadog.android.flags.featureflags.internal.model.VariationType
 import org.json.JSONObject
 import java.util.Locale
+import kotlin.reflect.KClass
+
+/**
+ * Exception thrown when a flag's type doesn't match the requested type.
+ *
+ * @param message Description of the type mismatch
+ */
+internal class TypeMismatchException(message: String) : Exception(message)
 
 /**
  * Handles type conversion for feature flag values.
@@ -26,44 +34,44 @@ internal object FlagValueConverter {
      * @param T The expected type of the flag value
      * @param variationValue The raw string value from the flag
      * @param variationType The type specified in the flag metadata
-     * @param defaultValue The default value (used to infer the target type)
-     * @return The converted value, or null if types are incompatible or conversion fails
+     * @param targetType The target type class to convert to
+     * @return Result containing the converted value on success,
+     *         or a Failure with TypeMismatchException if types are incompatible,
+     *         or a Failure with the parse exception if conversion failed
      */
-    @Suppress("UNCHECKED_CAST")
-    fun <T> convert(variationValue: String, variationType: String, defaultValue: T): T? {
+    fun <T : Any> convert(variationValue: String, variationType: String, targetType: KClass<*>): Result<T?> {
         // First check if types are compatible
-        if (!isTypeCompatible(variationType, defaultValue)) {
-            return null
+        if (!isTypeCompatible(variationType, targetType)) {
+            val expectedType = getTypeName(targetType)
+            return Result.failure(
+                TypeMismatchException("Flag has type '$variationType' but $expectedType was requested")
+            )
         }
 
         // Get the appropriate converter and apply it
-        val converter = getConverterForType(defaultValue)
-        return try {
-            converter(variationValue)
-        } catch (
-            @Suppress("TooGenericExceptionCaught", "SwallowedException")
-            e: Exception
-        ) {
-            // Catch all conversion exceptions (including JSONException) and return null
-            // The caller is responsible for logging errors as appropriate
-            null
+        val converter = getConverterForType<T>(targetType)
+        return runCatching {
+            val result = converter(variationValue)
+            // If converter returned null, it means parsing failed - throw exception
+            result ?: throw IllegalArgumentException("Failed to parse value '$variationValue'")
         }
     }
 
     /**
      * Checks if the variation type from the flag is compatible with the requested type.
      *
-     * @param T The expected type
      * @param variationType The type specified in the flag metadata (e.g., "boolean", "string", "integer")
-     * @param defaultValue The default value (used to determine the expected type)
+     * @param targetType The target type class to check compatibility for
      * @return true if types are compatible, false otherwise
      */
-    fun <T> isTypeCompatible(variationType: String, defaultValue: T): Boolean = when (defaultValue) {
-        is Boolean -> variationType == VariationType.BOOLEAN.value
-        is String -> variationType == VariationType.STRING.value
-        is Int -> variationType == VariationType.INTEGER.value
-        is Double -> variationType == VariationType.NUMBER.value || variationType == VariationType.FLOAT.value
-        is JSONObject -> variationType == VariationType.OBJECT.value
+    fun isTypeCompatible(variationType: String, targetType: KClass<*>): Boolean = when (targetType) {
+        Boolean::class -> variationType == VariationType.BOOLEAN.value
+        String::class -> variationType == VariationType.STRING.value
+        Int::class -> variationType == VariationType.INTEGER.value || variationType == VariationType.NUMBER.value
+        Double::class ->
+            variationType == VariationType.NUMBER.value || variationType == VariationType.FLOAT.value ||
+                variationType == VariationType.INTEGER.value
+        JSONObject::class -> variationType == VariationType.OBJECT.value
         else -> false
     }
 
@@ -72,32 +80,31 @@ internal object FlagValueConverter {
      * Handles special cases like JSONObject parsing with error logging.
      *
      * @param T The expected type
-     * @param defaultValue The default value (used to determine the target type)
+     * @param targetType The target type class to get converter for
      * @return A function that converts a string to type T, or null if conversion fails
      */
     @Suppress("UNCHECKED_CAST")
-    private fun <T> getConverterForType(defaultValue: T): (String) -> T? = when (defaultValue) {
-        is Boolean -> { s: String -> s.lowercase(Locale.US).toBooleanStrictOrNull() as? T }
-        is String -> { s: String -> s as? T }
-        is Int -> { s: String -> s.toIntOrNull() as? T }
-        is Double -> { s: String -> s.toDoubleOrNull() as? T }
-        is JSONObject -> { s: String -> JSONObject(s) as? T }
+    private fun <T : Any> getConverterForType(targetType: KClass<*>): (String) -> T? = when (targetType) {
+        Boolean::class -> { s: String -> s.lowercase(Locale.US).toBooleanStrictOrNull() as? T }
+        String::class -> { s: String -> s as T }
+        Int::class -> { s: String -> s.toIntOrNull() as? T }
+        Double::class -> { s: String -> s.toDoubleOrNull() as? T }
+        JSONObject::class -> { s: String -> JSONObject(s) as? T }
         else -> { _ -> null }
     }
 
     /**
      * Gets a human-readable name for the given type.
      *
-     * @param T The type to get the name for
-     * @param defaultValue The default value (used to determine the type)
+     * @param targetType The target type class to get the name for
      * @return The type name as a string (e.g., "Boolean", "String", "Int")
      */
-    fun <T> getTypeName(defaultValue: T): String = when (defaultValue) {
-        is Boolean -> "Boolean"
-        is String -> "String"
-        is Int -> "Int"
-        is Double -> "Double"
-        is JSONObject -> "JSONObject"
-        else -> defaultValue!!::class.simpleName ?: "Unknown"
+    fun getTypeName(targetType: KClass<*>): String = when (targetType) {
+        Boolean::class -> "Boolean"
+        String::class -> "String"
+        Int::class -> "Int"
+        Double::class -> "Double"
+        JSONObject::class -> "JSONObject"
+        else -> targetType.simpleName ?: "Unknown"
     }
 }

@@ -1040,47 +1040,6 @@ internal class DatadogFlagsClientTest {
     }
 
     @Test
-    fun `M return default value and not track exposure W resolveDoubleValue() { type mismatch - integer flag }`(
-        forge: Forge
-    ) {
-        // Given
-        val fakeFlagKey = forge.anAlphabeticalString()
-        val fakeDefaultValue = forge.aDouble()
-        val fakeFlag = forge.getForgery<PrecomputedFlag>().copy(
-            variationType = VariationType.INTEGER.value,
-            variationValue = "42"
-        )
-        val fakeContext = EvaluationContext(
-            targetingKey = forge.anAlphabeticalString(),
-            attributes = emptyMap()
-        )
-        whenever(mockFlagsRepository.getPrecomputedFlagWithContext(fakeFlagKey)) doReturn (fakeFlag to fakeContext)
-
-        // When
-        val result = testedClient.resolveDoubleValue(fakeFlagKey, fakeDefaultValue)
-
-        // Then
-        assertThat(result).isEqualTo(fakeDefaultValue)
-        // Verify no exposure tracked for type mismatch
-        verifyNoInteractions(mockProcessor)
-
-        // Verify warning was logged
-        argumentCaptor<() -> String> {
-            verify(mockInternalLogger).log(
-                eq(InternalLogger.Level.WARN),
-                eq(InternalLogger.Target.USER),
-                capture(),
-                eq(null),
-                eq(false),
-                eq(null)
-            )
-            val message = lastValue.invoke()
-            assertThat(message).contains("Flag '$fakeFlagKey'")
-            assertThat(message).contains("has type 'integer' but Double was requested")
-        }
-    }
-
-    @Test
     fun `M return default value and not track exposure W resolveStructureValue() { type mismatch - string flag }`(
         forge: Forge
     ) {
@@ -1165,11 +1124,13 @@ internal class DatadogFlagsClientTest {
     }
 
     @Test
-    fun `M accept both number and float W resolveDoubleValue() { compatible types }`(forge: Forge) {
+    fun `M accept number, float and int W resolveDoubleValue() { compatible types }`(forge: Forge) {
         // Given
         val fakeFlagKey1 = forge.anAlphabeticalString()
         val fakeFlagKey2 = forge.anAlphabeticalString()
+        val fakeFlagKey3 = forge.anAlphabeticalString()
         val fakeFlagValue = forge.aDouble()
+        val fakeFlagIntValue = forge.anInt()
         val fakeDefaultValue = forge.aDouble()
 
         val numberFlag = forge.getForgery<PrecomputedFlag>().copy(
@@ -1180,6 +1141,10 @@ internal class DatadogFlagsClientTest {
             variationType = VariationType.FLOAT.value,
             variationValue = fakeFlagValue.toString()
         )
+        val intFlag = forge.getForgery<PrecomputedFlag>().copy(
+            variationType = VariationType.INTEGER.value,
+            variationValue = fakeFlagIntValue.toString()
+        )
         val fakeContext = EvaluationContext(
             targetingKey = forge.anAlphabeticalString(),
             attributes = emptyMap()
@@ -1187,14 +1152,17 @@ internal class DatadogFlagsClientTest {
 
         whenever(mockFlagsRepository.getPrecomputedFlagWithContext(fakeFlagKey1)) doReturn (numberFlag to fakeContext)
         whenever(mockFlagsRepository.getPrecomputedFlagWithContext(fakeFlagKey2)) doReturn (floatFlag to fakeContext)
+        whenever(mockFlagsRepository.getPrecomputedFlagWithContext(fakeFlagKey3)) doReturn (intFlag to fakeContext)
 
         // When
         val result1 = testedClient.resolveDoubleValue(fakeFlagKey1, fakeDefaultValue)
         val result2 = testedClient.resolveDoubleValue(fakeFlagKey2, fakeDefaultValue)
+        val result3 = testedClient.resolveDoubleValue(fakeFlagKey3, fakeDefaultValue)
 
         // Then
         assertThat(result1).isEqualTo(fakeFlagValue)
         assertThat(result2).isEqualTo(fakeFlagValue)
+        assertThat(result3).isEqualTo(fakeFlagIntValue.toDouble())
     }
 
     @Test

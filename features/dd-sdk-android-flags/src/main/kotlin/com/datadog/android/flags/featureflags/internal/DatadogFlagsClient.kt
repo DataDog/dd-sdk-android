@@ -154,7 +154,7 @@ internal class DatadogFlagsClient(
      * @return [ResolutionDetails] with either the parsed value and metadata, or an error.
      */
     override fun <T : Any> resolve(flagKey: String, defaultValue: T): ResolutionDetails<T> {
-        val resolution = fetchAndParseFlag(flagKey, defaultValue)
+        val resolution = readAndParseAssignment(flagKey, defaultValue)
 
         return when (resolution) {
             is InternalResolution.Success -> {
@@ -190,7 +190,7 @@ internal class DatadogFlagsClient(
      * @return The resolved value or the default value
      */
     private fun <T : Any> resolveValue(flagKey: String, defaultValue: T): T =
-        resolveTracked(fetchAndParseFlag(flagKey, defaultValue))
+        resolveTracked(readAndParseAssignment(flagKey, defaultValue))
 
     private fun writeExposureEvent(name: String, data: PrecomputedFlag, context: EvaluationContext) {
         processor.processEvent(
@@ -244,7 +244,7 @@ internal class DatadogFlagsClient(
      *         [InternalResolution.Error] with default value and error details otherwise
      */
     @Suppress("ReturnCount") // Early returns for improved readability
-    private fun <T : Any> fetchAndParseFlag(
+    private fun <T : Any> readAndParseAssignment(
         flagKey: String,
         defaultValue: T
     ): InternalResolution<T> {
@@ -266,48 +266,48 @@ internal class DatadogFlagsClient(
             targetType = defaultValue::class
         )
 
-        val parsedValue = conversionResult.getOrNull()
+        // Check if conversion was successful
+        return conversionResult.fold(
+            onSuccess = { parsedValue ->
+                InternalResolution.Success(
+                    flagKey = flagKey,
+                    value = parsedValue!!, // Safe: converter only returns null on failure now
+                    flag = flag,
+                    context = context
+                )
+            },
+            onFailure = { exception ->
+                // Determine error type and logging based on exception type
+                val errorCode: ErrorCode
+                val errorMessage: String
 
-        if (parsedValue == null) {
-            // Determine the error type based on type compatibility
-            val errorCode: ErrorCode
-            val errorMessage: String
+                when (exception) {
+                    is TypeMismatchException -> {
+                        // Type mismatch: surface to user for configuration fix
+                        errorCode = ErrorCode.TYPE_MISMATCH
+                        errorMessage = exception.message ?: "Type mismatch"
+                    }
+                    else -> {
+                        // Parse error: log for maintainers to debug data quality
+                        errorCode = ErrorCode.PARSE_ERROR
+                        val typeName = FlagValueConverter.getTypeName(defaultValue::class)
+                        errorMessage = "Failed to parse value '${flag.variationValue}' as $typeName"
 
-            // Check if the error was due to type mismatch or parse error
-            if (!FlagValueConverter.isTypeCompatible(flag.variationType, defaultValue::class)) {
-                errorCode = ErrorCode.TYPE_MISMATCH
-                errorMessage =
-                    "Flag has type '${flag.variationType}' but ${FlagValueConverter.getTypeName(
-                        defaultValue::class
-                    )} was requested"
-            } else {
-                errorCode = ErrorCode.PARSE_ERROR
-                val typeName = FlagValueConverter.getTypeName(defaultValue::class)
-                errorMessage = "Failed to parse value '${flag.variationValue}' as $typeName"
-
-                // Log parse exceptions with MAINTAINER target for debugging data quality issues
-                conversionResult.exceptionOrNull()?.let { exception ->
-                    featureSdkCore.internalLogger.log(
-                        InternalLogger.Level.WARN,
-                        InternalLogger.Target.MAINTAINER,
-                        { "Flag '$flagKey': $errorMessage - ${exception.message}" }
-                    )
+                        featureSdkCore.internalLogger.log(
+                            InternalLogger.Level.WARN,
+                            InternalLogger.Target.MAINTAINER,
+                            { "Flag '$flagKey': $errorMessage - ${exception.message}" }
+                        )
+                    }
                 }
+
+                InternalResolution.Error(
+                    flagKey = flagKey,
+                    defaultValue = defaultValue,
+                    errorCode = errorCode,
+                    errorMessage = errorMessage
+                )
             }
-
-            return InternalResolution.Error(
-                flagKey = flagKey,
-                defaultValue = defaultValue,
-                errorCode = errorCode,
-                errorMessage = errorMessage
-            )
-        }
-
-        return InternalResolution.Success(
-            flagKey = flagKey,
-            value = parsedValue,
-            flag = flag,
-            context = context
         )
     }
 
@@ -324,7 +324,7 @@ internal class DatadogFlagsClient(
      * - Returning the typed value on success or the default value on error
      *
      * @param T The type of the flag value
-     * @param resolution The [InternalResolution] result from [fetchAndParseFlag]
+     * @param resolution The [InternalResolution] result from [readAndParseAssignment]
      * @return The resolved value from [InternalResolution.Success.value] on success,
      *         or [InternalResolution.Error.defaultValue] on error
      */
@@ -337,7 +337,7 @@ internal class DatadogFlagsClient(
             if (flagsConfiguration.rumIntegrationEnabled && resolution.flag.doLog) {
                 logEvaluation(
                     key = resolution.flagKey,
-                    value = resolution.value as Any
+                    value = resolution.value
                 )
             }
 
