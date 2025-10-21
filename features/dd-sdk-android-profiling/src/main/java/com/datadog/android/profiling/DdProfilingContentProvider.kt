@@ -6,11 +6,14 @@
 
 package com.datadog.android.profiling
 
+import android.app.ActivityManager
 import android.content.ContentProvider
 import android.content.ContentValues
+import android.content.Context
 import android.database.Cursor
 import android.net.Uri
 import android.os.Build
+import android.os.Process
 import com.datadog.android.profiling.internal.isProfilingEnabled
 
 /**
@@ -21,11 +24,20 @@ class DdProfilingContentProvider : ContentProvider() {
 
     override fun onCreate(): Boolean {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
-            context?.takeIf { isProfilingEnabled(it) }?.let {
+            context?.takeIf { isProfilingEnabled(it) && isProcessForeground() }?.let {
                 Profiling.start(it)
             }
         }
         return true
+    }
+
+    private fun isProcessForeground(): Boolean {
+        val manager = context?.getSystemService(Context.ACTIVITY_SERVICE) as? ActivityManager
+        val currentProcessId = Process.myPid()
+        val currentProcess = manager?.runningAppProcesses?.firstOrNull {
+            it.pid == currentProcessId
+        }
+        return currentProcess?.importance == DEFAULT_IMPORTANCE
     }
 
     override fun query(
@@ -57,5 +69,10 @@ class DdProfilingContentProvider : ContentProvider() {
         selectionArgs: Array<out String>?
     ): Int {
         return 0
+    }
+
+    companion object {
+        internal const val DEFAULT_IMPORTANCE: Int =
+            ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND
     }
 }
