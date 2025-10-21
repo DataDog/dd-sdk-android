@@ -71,7 +71,7 @@ internal class ConfigurationRumForgeryFactory :
             slowFramesConfiguration = forge.getForgery(),
             rumSessionTypeOverride = forge.aNullable { aValueFrom(RumSessionType::class.java) },
             collectAccessibility = forge.aBool(),
-            insightsCollectionEnabled = forge.aBool()
+            insightsCollector = mock()
         )
     }
 }
