@@ -350,17 +350,6 @@ internal class DatadogFlagsClient(
 
     // region Helper Methods
 
-    /**
-     * Creates a successful resolution details from a precomputed flag.
-     *
-     * This helper method maps the PrecomputedFlag data to a ResolutionDetails structure,
-     * extracting the variant, reason, and metadata fields according to the OpenFeature spec.
-     *
-     * @param T The type of the flag value.
-     * @param precomputedFlag The precomputed flag data from the repository.
-     * @param value The typed value after successful parsing.
-     * @return [ResolutionDetails] with the resolved value and associated metadata.
-     */
     private fun <T : Any> createSuccessResolution(precomputedFlag: PrecomputedFlag, value: T): ResolutionDetails<T> =
         ResolutionDetails(
             value = value,
@@ -371,19 +360,6 @@ internal class DatadogFlagsClient(
             flagMetadata = extractMetadata(precomputedFlag.extraLogging)
         )
 
-    /**
-     * Creates an error resolution details with the default value.
-     *
-     * This helper method creates a ResolutionDetails structure for error scenarios,
-     * populating the error code, error message, and reason according to OpenFeature spec.
-     *
-     * @param T The type of the flag value.
-     * @param flagKey The flag key that was attempted to be resolved.
-     * @param defaultValue The default value to return.
-     * @param errorCode The error code indicating the type of failure.
-     * @param errorMessage A human-readable description of the error.
-     * @return [ResolutionDetails] with the default value and error information.
-     */
     private fun <T : Any> createErrorResolution(
         flagKey: String,
         defaultValue: T,
@@ -398,15 +374,6 @@ internal class DatadogFlagsClient(
         flagMetadata = null
     )
 
-    /**
-     * Parses a reason string into a FlagReason enum.
-     *
-     * This helper method converts the reason string from PrecomputedFlag into a FlagReason enum.
-     * If the reason string doesn't match any known reason or is blank, returns null.
-     *
-     * @param reasonString The reason string from the flag metadata.
-     * @return The corresponding FlagReason enum value, or null if the string is blank or unknown.
-     */
     private fun parseReason(reasonString: String): ResolutionReason? {
         if (reasonString.isBlank()) {
             return null
@@ -417,7 +384,7 @@ internal class DatadogFlagsClient(
         } catch (e: IllegalArgumentException) {
             featureSdkCore.internalLogger.log(
                 InternalLogger.Level.WARN,
-                InternalLogger.Target.MAINTAINER,
+                InternalLogger.Target.TELEMETRY,
                 { "Unknown resolution reason: $reasonString - ${e.message}" }
             )
             // Unknown reason string - return null
@@ -425,17 +392,6 @@ internal class DatadogFlagsClient(
         }
     }
 
-    /**
-     * Extracts metadata from a JSONObject into an immutable Map.
-     *
-     * This helper method converts the extraLogging JSONObject from PrecomputedFlag
-     * into a Map<String, Any> suitable for the ResolutionDetails metadata field.
-     * Only string, number, and boolean values are included; other types are omitted.
-     * The returned map is immutable to prevent external modifications.
-     *
-     * @param extraLogging The JSONObject containing additional flag metadata.
-     * @return An immutable map of metadata. Returns an empty map if no valid metadata is present.
-     */
     private fun extractMetadata(extraLogging: JSONObject): Map<String, Any> {
         if (extraLogging.length() == 0) {
             return emptyMap()
@@ -451,7 +407,7 @@ internal class DatadogFlagsClient(
             }
         }
 
-        return if (metadata.isNotEmpty()) metadata.toMap() else emptyMap()
+        return metadata
     }
 
     private fun <T : Any> trackResolution(resolution: InternalResolution.Success<T>) {

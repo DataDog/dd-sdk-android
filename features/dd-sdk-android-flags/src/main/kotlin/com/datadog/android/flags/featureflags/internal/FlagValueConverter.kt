@@ -39,8 +39,8 @@ internal object FlagValueConverter {
      *         or a Failure with TypeMismatchException if types are incompatible,
      *         or a Failure with the parse exception if conversion failed
      */
-    fun <T : Any> convert(variationValue: String, variationType: String, targetType: KClass<*>): Result<T?> {
-        // First check if types are compatible
+    @Suppress("UNCHECKED_CAST")
+    fun <T : Any> convert(variationValue: String, variationType: String, targetType: KClass<out T>): Result<T?> {
         if (!isTypeCompatible(variationType, targetType)) {
             val expectedType = getTypeName(targetType)
             return Result.failure(
@@ -48,11 +48,16 @@ internal object FlagValueConverter {
             )
         }
 
-        // Get the appropriate converter and apply it
-        val converter = getConverterForType<T>(targetType)
         return runCatching {
-            val result = converter(variationValue)
-            // If converter returned null, it means parsing failed - throw exception
+            val result: T? = when (targetType) {
+                Boolean::class -> variationValue.lowercase(Locale.US).toBooleanStrictOrNull() as? T
+                String::class -> variationValue as T
+                Int::class -> variationValue.toIntOrNull() as? T
+                Double::class -> variationValue.toDoubleOrNull() as? T
+                JSONObject::class -> JSONObject(variationValue) as? T
+                else -> null
+            }
+
             result ?: throw IllegalArgumentException("Failed to parse value '$variationValue'")
         }
     }
@@ -75,30 +80,6 @@ internal object FlagValueConverter {
         else -> false
     }
 
-    /**
-     * Gets the appropriate converter function for the given type.
-     * Handles special cases like JSONObject parsing with error logging.
-     *
-     * @param T The expected type
-     * @param targetType The target type class to get converter for
-     * @return A function that converts a string to type T, or null if conversion fails
-     */
-    @Suppress("UNCHECKED_CAST")
-    private fun <T : Any> getConverterForType(targetType: KClass<*>): (String) -> T? = when (targetType) {
-        Boolean::class -> { s: String -> s.lowercase(Locale.US).toBooleanStrictOrNull() as? T }
-        String::class -> { s: String -> s as T }
-        Int::class -> { s: String -> s.toIntOrNull() as? T }
-        Double::class -> { s: String -> s.toDoubleOrNull() as? T }
-        JSONObject::class -> { s: String -> JSONObject(s) as? T }
-        else -> { _ -> null }
-    }
-
-    /**
-     * Gets a human-readable name for the given type.
-     *
-     * @param targetType The target type class to get the name for
-     * @return The type name as a string (e.g., "Boolean", "String", "Int")
-     */
     fun getTypeName(targetType: KClass<*>): String = when (targetType) {
         Boolean::class -> "Boolean"
         String::class -> "String"
