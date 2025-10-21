@@ -251,29 +251,25 @@ internal class DatadogFlagsClient(
             targetType = defaultValue::class
         )
 
-        // Check if conversion was successful
         return conversionResult.fold(
             onSuccess = { parsedValue ->
                 InternalResolution.Success(
                     flagKey = flagKey,
-                    value = parsedValue!!, // Safe: converter only returns null on failure now
+                    value = parsedValue,
                     flag = flag,
                     context = context
                 )
             },
             onFailure = { exception ->
-                // Determine error type and logging based on exception type
                 val errorCode: ErrorCode
                 val errorMessage: String
 
                 when (exception) {
                     is TypeMismatchException -> {
-                        // Type mismatch: surface to user for configuration fix
                         errorCode = ErrorCode.TYPE_MISMATCH
                         errorMessage = exception.message ?: "Type mismatch"
                     }
                     else -> {
-                        // Parse error: log for maintainers to debug data quality
                         errorCode = ErrorCode.PARSE_ERROR
                         val typeName = FlagValueConverter.getTypeName(defaultValue::class)
                         errorMessage = "Failed to parse value '${flag.variationValue}' as $typeName"
@@ -386,10 +382,8 @@ internal class DatadogFlagsClient(
         val metadata = mutableMapOf<String, Any>()
         extraLogging.keys().forEach { key ->
             val value = extraLogging.opt(key)
-            // Only include primitive types as per OpenFeature spec
             when (value) {
                 is String, is Number, is Boolean -> metadata[key] = value
-                // Skip other types (JSONObject, JSONArray, null)
             }
         }
 
