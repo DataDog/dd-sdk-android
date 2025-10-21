@@ -6,9 +6,9 @@
 
 package com.datadog.android.flags.utils.forge
 
-import com.datadog.android.flags.featureflags.internal.model.FlagReason
 import com.datadog.android.flags.featureflags.internal.model.PrecomputedFlag
 import com.datadog.android.flags.featureflags.internal.model.VariationType
+import com.datadog.android.flags.model.ResolutionReason
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.ForgeryFactory
 import org.json.JSONObject
@@ -39,14 +39,8 @@ internal class PrecomputedFlagForgeryFactory : ForgeryFactory<PrecomputedFlag> {
             ).toString()
         }
 
-        val reasonEnum = forge.anElementFrom(*FlagReason.values())
-        val reason = when (reasonEnum) {
-            FlagReason.DEFAULT -> FlagReason.DEFAULT.value
-            FlagReason.TARGETING_MATCH -> FlagReason.TARGETING_MATCH.value
-            FlagReason.RULE_MATCH -> FlagReason.RULE_MATCH.value
-            FlagReason.PREREQUISITE_FAILED -> FlagReason.PREREQUISITE_FAILED.value
-            FlagReason.ERROR -> FlagReason.ERROR.value
-        }
+        val reasonEnum = forge.anElementFrom(*ResolutionReason.values())
+        val reason = reasonEnum.name
 
         return PrecomputedFlag(
             variationType = variationType,

@@ -17,6 +17,7 @@ import com.datadog.android.flags.featureflags.internal.repository.FlagsRepositor
 import com.datadog.android.flags.featureflags.model.EvaluationContext
 import com.datadog.android.flags.internal.EventsProcessor
 import com.datadog.android.flags.model.ErrorCode
+import com.datadog.android.flags.model.ResolutionReason
 import com.datadog.android.flags.utils.forge.ForgeConfigurator
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -594,7 +595,7 @@ internal class DatadogFlagsClientTest {
         // Then
         assertThat(result.value).isEqualTo(fakeFlagValue)
         assertThat(result.variant).isEqualTo(fakeVariationKey)
-        assertThat(result.reason).isEqualTo(fakeReason)
+        assertThat(result.reason).isEqualTo(ResolutionReason.valueOf(fakeReason))
         assertThat(result.errorCode).isNull()
         assertThat(result.errorMessage).isNull()
         assertThat(result.flagMetadata).isNotNull
@@ -622,7 +623,7 @@ internal class DatadogFlagsClientTest {
         // Then
         assertThat(result.value).isEqualTo(fakeDefaultValue)
         assertThat(result.variant).isNull()
-        assertThat(result.reason).isEqualTo("ERROR")
+        assertThat(result.reason).isEqualTo(ResolutionReason.ERROR)
         assertThat(result.errorCode).isEqualTo(ErrorCode.TYPE_MISMATCH)
         assertThat(result.errorMessage).contains("Flag '$fakeFlagKey'")
         assertThat(result.errorMessage).contains("has type 'string' but Boolean was requested")
@@ -645,7 +646,7 @@ internal class DatadogFlagsClientTest {
         // Then
         assertThat(result.value).isEqualTo(fakeDefaultValue)
         assertThat(result.variant).isNull()
-        assertThat(result.reason).isEqualTo("ERROR")
+        assertThat(result.reason).isEqualTo(ResolutionReason.ERROR)
         assertThat(result.errorCode).isEqualTo(ErrorCode.FLAG_NOT_FOUND)
         assertThat(result.errorMessage).contains("Flag '$fakeFlagKey'")
         assertThat(result.errorMessage).contains("Flag not found")
@@ -678,7 +679,7 @@ internal class DatadogFlagsClientTest {
         // Then
         assertThat(result.value.toString()).isEqualTo(fakeDefaultValue.toString())
         assertThat(result.variant).isNull()
-        assertThat(result.reason).isEqualTo("ERROR")
+        assertThat(result.reason).isEqualTo(ResolutionReason.ERROR)
         assertThat(result.errorCode).isEqualTo(ErrorCode.PARSE_ERROR)
         assertThat(result.errorMessage).contains("Flag '$fakeFlagKey'")
         assertThat(result.errorMessage).contains("Failed to parse value")

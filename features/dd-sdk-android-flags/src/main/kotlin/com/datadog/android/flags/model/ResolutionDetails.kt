@@ -15,7 +15,7 @@ package com.datadog.android.flags.model
  * @param T The type of the resolved flag value (Boolean, String, Int, Double, JSONObject). Must be non-null.
  * @property value The resolved flag value. This is always present, either from flag evaluation or the default value.
  * @property variant Optional string identifier for the resolved variant (e.g., "control", "treatment").
- * @property reason Optional string explaining why this value was resolved (e.g., "TARGETING_MATCH", "DEFAULT", "ERROR").
+ * @property reason Optional reason code explaining why this value was resolved.
  * @property errorCode Optional error code if the resolution failed. Null indicates successful resolution.
  * @property errorMessage Optional human-readable error message providing additional context about failures.
  * @property flagMetadata Optional map of arbitrary metadata associated with the flag (string keys, primitive values).
@@ -23,7 +23,7 @@ package com.datadog.android.flags.model
 data class ResolutionDetails<T : Any>(
     val value: T,
     val variant: String? = null,
-    val reason: String? = null,
+    val reason: ResolutionReason? = null,
     val errorCode: ErrorCode? = null,
     val errorMessage: String? = null,
     val flagMetadata: Map<String, Any>? = null

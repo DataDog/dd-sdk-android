@@ -17,6 +17,7 @@ import com.datadog.android.flags.featureflags.model.EvaluationContext
 import com.datadog.android.flags.internal.EventsProcessor
 import com.datadog.android.flags.model.ErrorCode
 import com.datadog.android.flags.model.ResolutionDetails
+import com.datadog.android.flags.model.ResolutionReason
 import org.json.JSONObject
 
 /**
@@ -376,7 +377,7 @@ internal class DatadogFlagsClient(
         ResolutionDetails(
             value = value,
             variant = precomputedFlag.variationKey.takeIf { it.isNotBlank() },
-            reason = precomputedFlag.reason.takeIf { it.isNotBlank() },
+            reason = parseReason(precomputedFlag.reason),
             errorCode = null,
             errorMessage = null,
             flagMetadata = extractMetadata(precomputedFlag.extraLogging)
@@ -403,11 +404,33 @@ internal class DatadogFlagsClient(
     ): ResolutionDetails<T> = ResolutionDetails(
         value = defaultValue,
         variant = null,
-        reason = "ERROR",
+        reason = ResolutionReason.ERROR,
         errorCode = errorCode,
         errorMessage = "Flag '$flagKey': $errorMessage",
         flagMetadata = null
     )
+
+    /**
+     * Parses a reason string into a FlagReason enum.
+     *
+     * This helper method converts the reason string from PrecomputedFlag into a FlagReason enum.
+     * If the reason string doesn't match any known reason or is blank, returns null.
+     *
+     * @param reasonString The reason string from the flag metadata.
+     * @return The corresponding FlagReason enum value, or null if the string is blank or unknown.
+     */
+    private fun parseReason(reasonString: String): ResolutionReason? {
+        if (reasonString.isBlank()) {
+            return null
+        }
+
+        return try {
+            ResolutionReason.valueOf(reasonString)
+        } catch (e: IllegalArgumentException) {
+            // Unknown reason string - return null
+            null
+        }
+    }
 
     /**
      * Extracts metadata from a JSONObject into an immutable Map.
