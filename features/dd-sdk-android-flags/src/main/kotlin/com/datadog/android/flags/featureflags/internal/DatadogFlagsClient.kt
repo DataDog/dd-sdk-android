@@ -430,7 +430,7 @@ internal class DatadogFlagsClient(
             featureSdkCore.internalLogger.log(
                 InternalLogger.Level.WARN,
                 InternalLogger.Target.MAINTAINER,
-                { "Unknown resolution reason: $reasonString" }
+                { "Unknown resolution reason: $reasonString - ${e.message}" }
             )
             // Unknown reason string - return null
             null
