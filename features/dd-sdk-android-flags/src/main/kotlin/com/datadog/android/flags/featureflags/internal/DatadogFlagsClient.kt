@@ -427,6 +427,11 @@ internal class DatadogFlagsClient(
         return try {
             ResolutionReason.valueOf(reasonString)
         } catch (e: IllegalArgumentException) {
+            featureSdkCore.internalLogger.log(
+                InternalLogger.Level.WARN,
+                InternalLogger.Target.MAINTAINER,
+                { "Unknown resolution reason: $reasonString" }
+            )
             // Unknown reason string - return null
             null
         }
