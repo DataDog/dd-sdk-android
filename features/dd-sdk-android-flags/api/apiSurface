@@ -35,3 +35,27 @@ enum com.datadog.android.flags.model.ResolutionReason
   - RULE_MATCH
   - PREREQUISITE_FAILED
   - ERROR
+data class com.datadog.android.flags.model.ExposureEvent
+  constructor(kotlin.Long, Identifier, Identifier, Identifier, Subject)
+  fun toJson(): com.google.gson.JsonElement
+  companion object 
+    fun fromJson(kotlin.String): ExposureEvent
+    fun fromJsonObject(com.google.gson.JsonObject): ExposureEvent
+  data class Identifier
+    constructor(kotlin.String)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Identifier
+      fun fromJsonObject(com.google.gson.JsonObject): Identifier
+  data class Subject
+    constructor(kotlin.String, Attributes)
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Subject
+      fun fromJsonObject(com.google.gson.JsonObject): Subject
+  data class Attributes
+    constructor(kotlin.collections.MutableMap<kotlin.String, kotlin.String> = mutableMapOf())
+    fun toJson(): com.google.gson.JsonElement
+    companion object 
+      fun fromJson(kotlin.String): Attributes
+      fun fromJsonObject(com.google.gson.JsonObject): Attributes

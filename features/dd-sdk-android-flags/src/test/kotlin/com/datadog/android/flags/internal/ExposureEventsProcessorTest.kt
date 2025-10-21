@@ -8,8 +8,8 @@ package com.datadog.android.flags.internal
 
 import com.datadog.android.flags.featureflags.internal.model.PrecomputedFlag
 import com.datadog.android.flags.featureflags.model.EvaluationContext
-import com.datadog.android.flags.internal.model.ExposureEvent
 import com.datadog.android.flags.internal.storage.RecordWriter
+import com.datadog.android.flags.model.ExposureEvent
 import com.datadog.android.flags.utils.forge.ForgeConfigurator
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.StringForgery
@@ -86,9 +86,9 @@ internal class ExposureEventsProcessorTest {
         assertThat(capturedEvent.allocation.key).isEqualTo(fakeAllocationKey)
         assertThat(capturedEvent.variant.key).isEqualTo(fakeVariationKey)
         assertThat(capturedEvent.subject.id).isEqualTo(fakeTargetingKey)
-        assertThat(capturedEvent.subject.attributes).containsKeys("user_id", "plan", "age")
-        assertThat(capturedEvent.subject.attributes).hasSize(3)
-        assertThat(capturedEvent.timeStamp).isGreaterThan(0)
+        assertThat(capturedEvent.subject.attributes.additionalProperties).containsKeys("user_id", "plan", "age")
+        assertThat(capturedEvent.subject.attributes.additionalProperties).hasSize(3)
+        assertThat(capturedEvent.timestamp).isGreaterThan(0)
     }
 
     @Test
@@ -138,7 +138,7 @@ internal class ExposureEventsProcessorTest {
 
         val capturedEvent = eventCaptor.firstValue
         assertThat(capturedEvent.subject.id).isEqualTo(fakeTargetingKey)
-        assertThat(capturedEvent.subject.attributes).isEmpty()
+        assertThat(capturedEvent.subject.attributes.additionalProperties).isEmpty()
     }
 
     @Test
@@ -162,10 +162,10 @@ internal class ExposureEventsProcessorTest {
         verify(mockRecordWriter).write(eventCaptor.capture())
 
         val capturedEvent = eventCaptor.firstValue
-        capturedEvent.subject.attributes.values.forEach { value ->
+        capturedEvent.subject.attributes.additionalProperties.values.forEach { value ->
             assertThat(value).isInstanceOf(String::class.java)
         }
-        assertThat(capturedEvent.subject.attributes).hasSize(4)
+        assertThat(capturedEvent.subject.attributes.additionalProperties).hasSize(4)
     }
 
     @Test
@@ -241,7 +241,7 @@ internal class ExposureEventsProcessorTest {
 
         val capturedEvents = eventCaptor.allValues
         capturedEvents.forEach { event ->
-            assertThat(event.timeStamp).isBetween(beforeTime, afterTime)
+            assertThat(event.timestamp).isBetween(beforeTime, afterTime)
         }
     }
 
