@@ -169,7 +169,7 @@ internal class RumSessionScopeStartupManagerImpl(
     }
 
     companion object {
-        internal val REPORT_APP_FULLY_DISPLAYED_CALLED_TOO_EARLY_MESSAGE =
+        internal const val REPORT_APP_FULLY_DISPLAYED_CALLED_TOO_EARLY_MESSAGE =
             "RumMonitor.reportAppFullyDisplayed was called before the application launch was detected"
     }
 }

@@ -1507,7 +1507,7 @@ internal class RumSessionScopeTest {
 
     @ParameterizedTest
     @MethodSource("testScenarios")
-    fun `M call onTTIDEvent W handleEvent { AppLaunchTTIDEvent }`(
+    fun `M call onTTIDEvent W handleEvent { AppStartTTIDEvent }`(
         scenario: RumStartupScenario,
         forge: Forge
     ) {
@@ -1538,19 +1538,19 @@ internal class RumSessionScopeTest {
 
         // Then
         verify(mockRumSessionScopeStartupManager).onTTIDEvent(
-            event = eq(event),
-            datadogContext = eq(fakeDatadogContext),
-            writeScope = eq(mockEventWriteScope),
-            writer = eq(mockWriter),
-            rumContext = eq(rumContext),
-            customAttributes = eq(fakeParentAttributes)
+            event = event,
+            datadogContext = fakeDatadogContext,
+            writeScope = mockEventWriteScope,
+            writer = mockWriter,
+            rumContext = rumContext,
+            customAttributes = fakeParentAttributes
         )
 
         verifyNoMoreInteractions(mockRumSessionScopeStartupManager)
     }
 
     @Test
-    fun `M call onTTFDEvent W handleEvent { AppLaunchTTFDEvent }`() {
+    fun `M call onTTFDEvent W handleEvent { AppStartTTFDEvent }`() {
         // Given
         val event = RumRawEvent.AppStartTTFDEvent()
 
@@ -1573,12 +1573,12 @@ internal class RumSessionScopeTest {
 
         // Then
         verify(mockRumSessionScopeStartupManager).onTTFDEvent(
-            event = eq(event),
-            datadogContext = eq(fakeDatadogContext),
-            writeScope = eq(mockEventWriteScope),
-            writer = eq(mockWriter),
-            rumContext = eq(rumContext),
-            customAttributes = eq(fakeParentAttributes)
+            event = event,
+            datadogContext = fakeDatadogContext,
+            writeScope = mockEventWriteScope,
+            writer = mockWriter,
+            rumContext = rumContext,
+            customAttributes = fakeParentAttributes
         )
 
         verifyNoMoreInteractions(mockRumSessionScopeStartupManager)
