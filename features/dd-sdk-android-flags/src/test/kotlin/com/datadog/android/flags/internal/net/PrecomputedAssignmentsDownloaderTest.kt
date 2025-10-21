@@ -327,6 +327,18 @@ internal class PrecomputedAssignmentsDownloaderTest {
         )
         assertThat(messageCaptor.firstValue.invoke())
             .isEqualTo("Failed to download flags: 404")
+
+        val telemetryMessageCaptor = argumentCaptor<() -> String>()
+        verify(mockInternalLogger).log(
+            eq(InternalLogger.Level.ERROR),
+            eq(InternalLogger.Target.TELEMETRY),
+            telemetryMessageCaptor.capture(),
+            eq(null),
+            eq(true),
+            eq(null)
+        )
+        assertThat(telemetryMessageCaptor.firstValue.invoke())
+            .isEqualTo("Flag assignment server returned error (404)")
     }
 
     @Test

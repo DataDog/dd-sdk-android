@@ -59,6 +59,14 @@ internal class PrecomputeMapper(private val internalLogger: InternalLogger) {
             throwable = e
         )
 
+        internalLogger.log(
+            level = InternalLogger.Level.WARN,
+            target = InternalLogger.Target.TELEMETRY,
+            messageBuilder = { ERROR_FAILED_TO_PARSE_RESPONSE },
+            throwable = e,
+            onlyOnce = true
+        )
+
         emptyMap()
     }
 

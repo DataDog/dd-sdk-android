@@ -40,7 +40,7 @@ internal class PrecomputedAssignmentsRequestFactory(private val internalLogger: 
     fun create(context: EvaluationContext, flagsContext: FlagsContext): Request? {
         val url = flagsContext.flagEndpoint ?: return null
 
-        val headers = buildHeaders(flagsContext)
+        val headers = buildHeaders(flagsContext) ?: return null
 
         val body = buildRequestBody(context, flagsContext) ?: return null
 
@@ -51,7 +51,7 @@ internal class PrecomputedAssignmentsRequestFactory(private val internalLogger: 
             .build()
     }
 
-    private fun buildHeaders(flagsContext: FlagsContext): Headers {
+    private fun buildHeaders(flagsContext: FlagsContext): Headers? {
         val headersBuilder = Headers.Builder()
 
         try {
@@ -69,6 +69,7 @@ internal class PrecomputedAssignmentsRequestFactory(private val internalLogger: 
                 { "Failed to build HTTP headers: invalid header values" },
                 e
             )
+            return null
         }
 
         return headersBuilder.build()
