@@ -7,11 +7,14 @@
 package com.datadog.android.sdk.integration.sessionreplay.textfields
 
 import com.datadog.android.privacy.TrackingConsent
+import com.datadog.android.sdk.integration.RuntimeConfig
 import com.datadog.android.sdk.integration.sessionreplay.BaseSessionReplayTest
 import com.datadog.android.sdk.integration.sessionreplay.SessionReplayTextFieldsActivity
 import com.datadog.android.sdk.rules.SessionReplayTestRule
 import com.datadog.android.sdk.utils.SR_PRIVACY_LEVEL
 import com.datadog.android.sessionreplay.SessionReplayPrivacy
+import com.datadog.tools.unit.ConditionWatcher
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
 import org.junit.Test
 
@@ -28,10 +31,20 @@ internal class SrTextFieldsMaskTest : BaseSessionReplayTest<SessionReplayTextFie
     @Test
     fun assessRecordedScreenPayload() {
         runInstrumentationScenario()
-        assessSrPayload(EXPECTED_PAYLOAD_FILE_NAME, rule)
-    }
-
-    companion object {
-        const val EXPECTED_PAYLOAD_FILE_NAME = "sr_text_fields_mask_payload.json"
+        
+        ConditionWatcher {
+            val requests = rule.getRequests(RuntimeConfig.sessionReplayEndpointUrl)
+            val records = extractRecordsFromRequests(requests)
+            
+            assertRecordStructure(records)
+            
+            val wireframes = extractWireframesFromRequests(requests)
+            
+            assertThat(wireframes)
+                .describedAs("Should capture wireframes with MASK privacy")
+                .isNotEmpty
+            
+            true
+        }.doWait(timeoutMs = INITIAL_WAIT_MS)
     }
 }

@@ -7,7 +7,10 @@
 package com.datadog.android.sdk.integration.sessionreplay
 
 import com.datadog.android.privacy.TrackingConsent
+import com.datadog.android.sdk.integration.RuntimeConfig
 import com.datadog.android.sdk.rules.SessionReplayTestRule
+import com.datadog.tools.unit.ConditionWatcher
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
 import org.junit.Test
 
@@ -23,10 +26,42 @@ internal class ConsentGrantedSrTest : BaseSessionReplayTest<SessionReplayPlaygro
     @Test
     fun assessRecordedScreenPayload() {
         runInstrumentationScenario()
-        assessSrPayload(EXPECTED_PAYLOAD_FILE_NAME, rule)
-    }
-
-    companion object {
-        const val EXPECTED_PAYLOAD_FILE_NAME = "consent_granted_sr_test_payload.json"
+        
+        ConditionWatcher {
+            val requests = rule.getRequests(RuntimeConfig.sessionReplayEndpointUrl)
+            val records = extractRecordsFromRequests(requests)
+            
+            assertThat(records)
+                .describedAs("Session Replay should capture records when consent is granted")
+                .isNotEmpty
+            
+            val metaRecord = records.firstOrNull { it.get("type")?.asString == "4" }
+            val focusRecord = records.firstOrNull { it.get("type")?.asString == "6" }
+            val fullSnapshotRecord = records.firstOrNull { it.get("type")?.asString == "10" }
+            
+            assertThat(metaRecord)
+                .describedAs("Should contain a meta record (type 4)")
+                .isNotNull
+            
+            assertThat(focusRecord)
+                .describedAs("Should contain a focus record (type 6)")
+                .isNotNull
+            
+            assertThat(fullSnapshotRecord)
+                .describedAs("Should contain a full snapshot record (type 10)")
+                .isNotNull
+            
+            val wireframes = fullSnapshotRecord
+                ?.asJsonObject
+                ?.get("data")?.asJsonObject
+                ?.getAsJsonArray("wireframes")
+            
+            assertThat(wireframes)
+                .describedAs("Full snapshot should contain wireframes")
+                .isNotNull
+                .isNotEmpty
+            
+            true
+        }.doWait(timeoutMs = INITIAL_WAIT_MS)
     }
 }

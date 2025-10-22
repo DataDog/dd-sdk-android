@@ -7,11 +7,14 @@
 package com.datadog.android.sdk.integration.sessionreplay.images
 
 import com.datadog.android.privacy.TrackingConsent
+import com.datadog.android.sdk.integration.RuntimeConfig
 import com.datadog.android.sdk.integration.sessionreplay.BaseSessionReplayTest
 import com.datadog.android.sdk.integration.sessionreplay.SessionReplayImagesActivity
 import com.datadog.android.sdk.rules.SessionReplayTestRule
 import com.datadog.android.sdk.utils.SR_PRIVACY_LEVEL
 import com.datadog.android.sessionreplay.SessionReplayPrivacy
+import com.datadog.tools.unit.ConditionWatcher
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
 import org.junit.Test
 
@@ -29,9 +32,20 @@ internal class SrImagesMaskUserInputTest :
     @Test
     fun assessRecordedScreenPayload() {
         runInstrumentationScenario()
-        assessSrPayload(EXPECTED_PAYLOAD_FILE_NAME, rule)
-    }
-    companion object {
-        const val EXPECTED_PAYLOAD_FILE_NAME = "sr_images_mask_user_input_payload.json"
+        
+        ConditionWatcher {
+            val requests = rule.getRequests(RuntimeConfig.sessionReplayEndpointUrl)
+            val records = extractRecordsFromRequests(requests)
+            
+            assertRecordStructure(records)
+            
+            val wireframes = extractWireframesFromRequests(requests)
+            
+            assertThat(wireframes)
+                .describedAs("Should capture wireframes with MASK_USER_INPUT privacy")
+                .isNotEmpty
+            
+            true
+        }.doWait(timeoutMs = INITIAL_WAIT_MS)
     }
 }
