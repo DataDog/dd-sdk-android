@@ -6,6 +6,7 @@
 
 package com.datadog.android.rum.internal.domain.scope
 
+import android.util.Log
 import androidx.annotation.WorkerThread
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.context.DatadogContext
@@ -1702,11 +1703,11 @@ internal open class RumViewScope(
     }
 
     private fun logSynthetics(key: String, value: String) {
-        sdkCore.internalLogger.log(
-            level = InternalLogger.Level.INFO,
-            target = InternalLogger.Target.USER,
-            messageBuilder = { "$key=$value" }
-        )
+        /**
+         * We use [android.util.Log] here instead of [InternalLogger] because we want to log regardless of the
+         * verbosity level set using [com.datadog.android.Datadog.setVerbosity].
+         */
+        Log.i("DatadogSynthetics", "$key=$value")
     }
 
     // endregion
