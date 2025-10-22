@@ -281,6 +281,9 @@ internal class CoreFeature(
                 )
             }
 
+            kronosClock = null
+            timeProvider = DefaultTimeProvider()
+
             initialized.set(false)
             ndkCrashHandler = NoOpNdkCrashHandler()
             trackingConsentProvider = NoOpConsentProvider()

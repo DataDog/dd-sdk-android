@@ -37,6 +37,7 @@ import com.datadog.android.core.internal.user.NoOpMutableUserInfoProvider
 import com.datadog.android.core.persistence.PersistenceStrategy
 import com.datadog.android.core.thread.FlushableExecutorService
 import com.datadog.android.internal.time.DefaultTimeProvider
+import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.ndk.internal.DatadogNdkCrashHandler
 import com.datadog.android.ndk.internal.NoOpNdkCrashHandler
 import com.datadog.android.privacy.TrackingConsent
@@ -1358,6 +1359,26 @@ internal class CoreFeatureTest {
 
         // Then
         verify(mockConsentProvider).unregisterAllCallbacks()
+    }
+
+    @Test
+    fun `M clear timeProvider W stop()`() {
+        // Given
+        testedFeature.initialize(
+            appContext.mockInstance,
+            fakeSdkInstanceId,
+            fakeConfig,
+            fakeConsent
+        )
+        val mockTimeProvider: TimeProvider = mock()
+        testedFeature.timeProvider = mockTimeProvider
+
+        // When
+        testedFeature.stop()
+
+        // Then
+        assertThat(testedFeature.timeProvider).isNotEqualTo(mockTimeProvider)
+        assertThat(testedFeature.timeProvider).isInstanceOf(DefaultTimeProvider::class.java)
     }
 
     @Test
