@@ -167,6 +167,7 @@ class com.datadog.android.rum._RumInternalProxy
   fun setInternalViewAttribute(String, Any?)
   fun setSyntheticsAttribute(String?, String?)
   fun enableJankStatsTracking(android.app.Activity)
+  fun setSyntheticsAttributeFromIntent(android.content.Intent)
   companion object 
     fun setTelemetryConfigurationEventMapper(com.datadog.android.rum.RumConfiguration.Builder, com.datadog.android.event.EventMapper<com.datadog.android.telemetry.model.TelemetryConfigurationEvent>): com.datadog.android.rum.RumConfiguration.Builder
     fun setAdditionalConfiguration(com.datadog.android.rum.RumConfiguration.Builder, Map<String, Any>): com.datadog.android.rum.RumConfiguration.Builder

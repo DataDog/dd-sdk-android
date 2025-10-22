@@ -6,12 +6,14 @@
 
 package com.datadog.benchmark.sample
 
+import android.content.Intent
 import com.datadog.android.api.SdkCore
 import com.datadog.android.compose.enableComposeActionTracking
 import com.datadog.android.log.Logs
 import com.datadog.android.log.LogsConfiguration
 import com.datadog.android.rum.Rum
 import com.datadog.android.rum.RumConfiguration
+import com.datadog.android.rum.RumMonitor
 import com.datadog.android.rum.tracking.NavigationViewTrackingStrategy
 import com.datadog.android.rum.tracking.ViewTrackingStrategy
 import com.datadog.android.sessionreplay.SessionReplay
@@ -39,11 +41,12 @@ import javax.inject.Singleton
 @Singleton
 @Suppress("TooManyFunctions")
 internal class DatadogFeaturesInitializer @Inject constructor(
-    private val sdkCore: Lazy<SdkCore>
+    private val sdkCore: Lazy<SdkCore>,
+    private val rumMonitor: Lazy<RumMonitor>
 ) {
     private var isInitialized = false
 
-    fun initialize(config: BenchmarkConfig) {
+    fun initialize(config: BenchmarkConfig, intent: Intent) {
         if (config.run == SyntheticsRun.Baseline) {
             return
         }
@@ -54,7 +57,7 @@ internal class DatadogFeaturesInitializer @Inject constructor(
         isInitialized = true
 
         if (needToEnableRum(config)) {
-            enableRum(config)
+            enableRum(config = config, intent = intent)
         }
 
         if (needToEnableLogs(config)) {
@@ -149,9 +152,16 @@ internal class DatadogFeaturesInitializer @Inject constructor(
         }
     }
 
-    private fun enableRum(config: BenchmarkConfig) {
+    private fun enableRum(config: BenchmarkConfig, intent: Intent) {
         val rumConfig = createRumConfiguration(config)
         Rum.enable(rumConfig, sdkCore = sdkCore.get())
+
+        /**
+         * We set synthetic test attributes now instead of waiting for them to be automatically
+         * extracted by the sdk because the Activity for the test scenario will not have
+         * the necessary attributes in the intent.
+         */
+        rumMonitor.get()._getInternal()?.setSyntheticsAttributeFromIntent(intent)
     }
 
     private fun isSessionReplayScenario(config: BenchmarkConfig) = when (config.scenario) {
