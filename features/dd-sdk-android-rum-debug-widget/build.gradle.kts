@@ -66,14 +66,8 @@ android {
 dependencies {
     implementation(project(":features:dd-sdk-android-rum"))
     implementation(libs.kotlin)
-    implementation(libs.gson)
-    implementation(libs.okHttp)
 
     // Android Instrumentation
-    implementation(libs.androidXCore)
-    implementation(libs.androidXMetrics)
-    implementation(libs.bundles.androidXNavigation)
-    implementation(libs.androidXRecyclerView)
     implementation(libs.androidXFragment)
 
     // Generate NoOp implementations
@@ -90,49 +84,10 @@ dependencies {
 
     testImplementation(libs.bundles.jUnit5)
     testImplementation(libs.bundles.testTools)
-    testImplementation(libs.okHttp)
-    testImplementation(libs.okHttpMock)
-    testImplementation(project(":features:dd-sdk-android-trace"))
-    testImplementation(testFixtures(project(":dd-sdk-android-core")))
-    testImplementation(testFixtures(project(":dd-sdk-android-internal")))
-    testImplementation(testFixtures(project(":features:dd-sdk-android-trace")))
     unmock(libs.robolectric)
-
-    // Test Fixtures
-    testFixturesImplementation(testFixtures(project(":dd-sdk-android-core")))
-    testFixturesImplementation(testFixtures(project(":dd-sdk-android-internal")))
-    testFixturesImplementation(project(":tools:unit")) {
-        attributes {
-            attribute(
-                com.android.build.api.attributes.ProductFlavorAttr.of("platform"),
-                objects.named("jvm")
-            )
-        }
-    }
-    testFixturesImplementation(libs.kotlin)
-    testFixturesImplementation(libs.bundles.jUnit5)
-    testFixturesImplementation(libs.okHttp)
-    testFixturesImplementation(libs.bundles.testTools)
 }
 
 unMock {
-    keep("android.os.BaseBundle")
-    keep("android.os.Bundle")
-    keep("android.os.Parcel")
-    keepStartingWith("com.android.internal.util.")
-    keepStartingWith("android.util.")
-    keep("android.content.ComponentName")
-    keep("android.content.ContentProvider")
-    keep("android.content.IContentProvider")
-    keep("android.content.ContentProviderNative")
-    keep("android.net.Uri")
-    keep("android.os.Handler")
-    keep("android.os.IMessenger")
-    keep("android.os.Looper")
-    keep("android.os.Message")
-    keep("android.os.MessageQueue")
-    keep("android.os.SystemProperties")
-    keep("android.view.DisplayEventReceiver")
     keepStartingWith("org.json")
 }
 
