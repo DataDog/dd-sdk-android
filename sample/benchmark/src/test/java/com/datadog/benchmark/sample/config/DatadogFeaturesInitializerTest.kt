@@ -9,6 +9,8 @@ package com.datadog.benchmark.sample.config
 import com.datadog.android.api.SdkCore
 import com.datadog.android.log.Logs
 import com.datadog.android.rum.Rum
+import com.datadog.android.rum.RumMonitor
+import com.datadog.android.rum._RumInternalProxy
 import com.datadog.android.sessionreplay.SessionReplay
 import com.datadog.benchmark.sample.DatadogFeaturesInitializer
 import fr.xgouchet.elmyr.junit5.ForgeExtension
@@ -18,11 +20,10 @@ import org.junit.jupiter.api.extension.Extensions
 import org.mockito.Mock
 import org.mockito.MockedStatic
 import org.mockito.Mockito
+import org.mockito.Mockito.mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
-import org.mockito.kotlin.verify
-import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.quality.Strictness
 
 @Extensions(
@@ -102,9 +103,17 @@ class DatadogFeaturesInitializerTest {
             Mockito.mockStatic(Rum::class.java).use { rumStatic ->
                 Mockito.mockStatic(Logs::class.java).use { logsStatic ->
                     // When
+                    val mockMonitor = mock<RumMonitor>()
+                    class StubRumMonitor : RumMonitor by mockMonitor {
+                        override fun _getInternal(): _RumInternalProxy? {
+                            return null
+                        }
+                    }
+
                     DatadogFeaturesInitializer(
-                        sdkCore = { mockSdkCore }
-                    ).initialize(config)
+                        sdkCore = { mockSdkCore },
+                        rumMonitor = { StubRumMonitor() }
+                    ).initialize(config, mock())
 
                     // Then
                     thenBlock(MockedStatics(sessionReplayStatic, rumStatic, logsStatic))
