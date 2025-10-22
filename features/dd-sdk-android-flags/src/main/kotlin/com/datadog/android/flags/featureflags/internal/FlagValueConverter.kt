@@ -40,7 +40,7 @@ internal object FlagValueConverter {
      *         or a Failure with the parse exception if conversion failed
      */
     @Suppress("UNCHECKED_CAST")
-    fun <T : Any> convert(variationValue: String, variationType: String, targetType: KClass<out T>): Result<T> {
+    fun <T : Any> convert(variationValue: String, variationType: String, targetType: KClass<T>): Result<T> {
         if (!isTypeCompatible(variationType, targetType)) {
             val expectedType = getTypeName(targetType)
             return Result.failure(
@@ -49,6 +49,7 @@ internal object FlagValueConverter {
         }
 
         return runCatching {
+            @Suppress("UNCHECKED_CAST")
             val result: T? = when (targetType) {
                 Boolean::class -> variationValue.lowercase(Locale.US).toBooleanStrictOrNull() as? T
                 String::class -> variationValue as T
