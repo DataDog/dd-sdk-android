@@ -16,16 +16,7 @@ import org.json.JSONObject
 internal class PrecomputedFlagForgeryFactory : ForgeryFactory<PrecomputedFlag> {
     override fun getForgery(forge: Forge): PrecomputedFlag {
         val variationTypeEnum = forge.anElementFrom(*VariationType.values())
-
-        // Use the same pattern as DatadogFlagsProviderTest
-        val variationType = when (variationTypeEnum) {
-            VariationType.BOOLEAN -> VariationType.BOOLEAN.value
-            VariationType.STRING -> VariationType.STRING.value
-            VariationType.INTEGER -> VariationType.INTEGER.value
-            VariationType.NUMBER -> VariationType.NUMBER.value
-            VariationType.FLOAT -> VariationType.FLOAT.value
-            VariationType.OBJECT -> VariationType.OBJECT.value
-        }
+        val variationType = variationTypeEnum.value
 
         val variationValue = when (variationTypeEnum) {
             VariationType.BOOLEAN -> forge.aBool().toString()
@@ -45,7 +36,7 @@ internal class PrecomputedFlagForgeryFactory : ForgeryFactory<PrecomputedFlag> {
         return PrecomputedFlag(
             variationType = variationType,
             variationValue = variationValue,
-            doLog = true, // Default to true - tests can override if needed
+            doLog = forge.aBool(),
             allocationKey = forge.anAlphabeticalString(),
             variationKey = forge.anAlphabeticalString(),
             extraLogging = forge.aNullable {

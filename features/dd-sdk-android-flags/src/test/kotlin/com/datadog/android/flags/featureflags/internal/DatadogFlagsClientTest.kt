@@ -163,7 +163,8 @@ internal class DatadogFlagsClientTest {
         val fakeDefaultValue = !fakeFlagValue
         val fakeFlag = forge.getForgery<PrecomputedFlag>().copy(
             variationType = VariationType.BOOLEAN.value,
-            variationValue = fakeFlagValue.toString()
+            variationValue = fakeFlagValue.toString(),
+            doLog = true
         )
         val fakeEvaluationContext = EvaluationContext(
             targetingKey = forge.anAlphabeticalString(),
@@ -235,7 +236,8 @@ internal class DatadogFlagsClientTest {
         val fakeDefaultValue = !fakeFlagValue
         val fakeFlag = forge.getForgery<PrecomputedFlag>().copy(
             variationType = VariationType.BOOLEAN.value,
-            variationValue = fakeFlagValue.toString()
+            variationValue = fakeFlagValue.toString(),
+            doLog = true
         )
         val fakeEvaluationContext = EvaluationContext(
             targetingKey = forge.anAlphabeticalString(),
@@ -697,7 +699,8 @@ internal class DatadogFlagsClientTest {
         val fakeFlagValue = forge.anAlphabeticalString()
         val fakeFlag = forge.getForgery<PrecomputedFlag>().copy(
             variationType = VariationType.STRING.value,
-            variationValue = fakeFlagValue
+            variationValue = fakeFlagValue,
+            doLog = true
         )
         val fakeContext = EvaluationContext(
             targetingKey = forge.anAlphabeticalString(),
@@ -858,7 +861,8 @@ internal class DatadogFlagsClientTest {
         val fakeDefaultValue = !fakeFlagValue
         val fakeFlag = forge.getForgery<PrecomputedFlag>().copy(
             variationType = VariationType.BOOLEAN.value,
-            variationValue = fakeFlagValue.toString()
+            variationValue = fakeFlagValue.toString(),
+            doLog = true
         )
         val fakeEvaluationContext = EvaluationContext(
             targetingKey = forge.anAlphabeticalString(),
@@ -893,7 +897,8 @@ internal class DatadogFlagsClientTest {
         val fakeDefaultValue = !fakeFlagValue
         val fakeFlag = forge.getForgery<PrecomputedFlag>().copy(
             variationType = VariationType.BOOLEAN.value,
-            variationValue = fakeFlagValue.toString()
+            variationValue = fakeFlagValue.toString(),
+            doLog = true
         )
         val fakeEvaluationContext = EvaluationContext(
             targetingKey = forge.anAlphabeticalString(),
