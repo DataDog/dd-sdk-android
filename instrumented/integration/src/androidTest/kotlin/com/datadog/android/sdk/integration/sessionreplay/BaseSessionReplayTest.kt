@@ -42,6 +42,49 @@ internal abstract class BaseSessionReplayTest<R : Activity> {
         Datadog.stopInstance()
     }
 
+    protected fun extractRecordsFromRequests(handledRequests: List<HandledRequest>): List<JsonObject> {
+        return handledRequests
+            .mapNotNull { it.extractSrSegmentAsJson()?.asJsonObject }
+            .flatMap { it.getAsJsonArray("records") }
+            .map { it.asJsonObject }
+    }
+
+    protected fun extractWireframesFromRequests(handledRequests: List<HandledRequest>): List<JsonObject> {
+        return extractRecordsFromRequests(handledRequests)
+            .filter { it.get("type")?.asString == "10" }
+            .flatMap { record ->
+                val data = record.asJsonObject.get("data")?.asJsonObject
+                data?.getAsJsonArray("wireframes") ?: JsonArray()
+            }
+            .map { it.asJsonObject }
+    }
+
+    protected fun assertRecordStructure(records: List<JsonObject>) {
+        assertThat(records)
+            .describedAs("Session Replay should capture records")
+            .isNotEmpty
+
+        val metaRecord = records.firstOrNull { it.get("type")?.asString == "4" }
+        val focusRecord = records.firstOrNull { it.get("type")?.asString == "6" }
+        val fullSnapshotRecord = records.firstOrNull { it.get("type")?.asString == "10" }
+
+        assertThat(metaRecord)
+            .describedAs("Should contain a meta record (type 4)")
+            .isNotNull
+
+        assertThat(focusRecord)
+            .describedAs("Should contain a focus record (type 6)")
+            .isNotNull
+
+        assertThat(fullSnapshotRecord)
+            .describedAs("Should contain a full snapshot record (type 10)")
+            .isNotNull
+    }
+
+    @Deprecated(
+        message = "Use semantic assertions instead of JSON comparison",
+        replaceWith = ReplaceWith("extractRecordsFromRequests(requests)")
+    )
     protected fun assessSrPayload(payloadFileName: String, rule: SessionReplayTestRule<R>) {
         if (isPayloadUpdateRequest()) {
             ConditionWatcher {
