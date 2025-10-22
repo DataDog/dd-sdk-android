@@ -15,6 +15,7 @@ interface com.datadog.android.flags.featureflags.FlagsClient
   fun resolveDoubleValue(String, Double): Double
   fun resolveIntValue(String, Int): Int
   fun resolveStructureValue(String, org.json.JSONObject): org.json.JSONObject
+  fun <T: Any> resolve(String, T): com.datadog.android.flags.model.ResolutionDetails<T>
   class Builder
     constructor(String = DEFAULT_CLIENT_NAME, com.datadog.android.api.SdkCore = Datadog.getInstance())
     fun build(): FlagsClient
@@ -22,3 +23,15 @@ interface com.datadog.android.flags.featureflags.FlagsClient
     fun get(String = DEFAULT_CLIENT_NAME, com.datadog.android.api.SdkCore = Datadog.getInstance()): FlagsClient
 data class com.datadog.android.flags.featureflags.model.EvaluationContext
   constructor(String, Map<String, String> = emptyMap())
+enum com.datadog.android.flags.model.ErrorCode
+  - FLAG_NOT_FOUND
+  - PARSE_ERROR
+  - TYPE_MISMATCH
+data class com.datadog.android.flags.model.ResolutionDetails<T: Any>
+  constructor(T, String? = null, ResolutionReason? = null, ErrorCode? = null, String? = null, Map<String, Any>? = null)
+enum com.datadog.android.flags.model.ResolutionReason
+  - DEFAULT
+  - TARGETING_MATCH
+  - RULE_MATCH
+  - PREREQUISITE_FAILED
+  - ERROR

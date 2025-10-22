@@ -12,19 +12,11 @@ import com.datadog.tools.annotation.NoOpImplementation
 
 @NoOpImplementation
 internal interface RumEvaluationLogger {
-    fun logEvaluation(
-        flagKey: String,
-        value: Any
-    )
+    fun logEvaluation(flagKey: String, value: Any)
 }
 
-internal class DefaultRumEvaluationLogger(
-    private val featureScope: FeatureScope
-) : RumEvaluationLogger {
-    override fun logEvaluation(
-        flagKey: String,
-        value: Any
-    ) {
+internal class DefaultRumEvaluationLogger(private val featureScope: FeatureScope) : RumEvaluationLogger {
+    override fun logEvaluation(flagKey: String, value: Any) {
         featureScope.sendEvent(
             RumFlagEvaluationMessage(
                 flagKey = flagKey,

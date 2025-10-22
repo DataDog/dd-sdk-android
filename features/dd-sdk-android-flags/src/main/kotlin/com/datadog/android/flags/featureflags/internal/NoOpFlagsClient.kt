@@ -9,6 +9,7 @@ package com.datadog.android.flags.featureflags.internal
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.flags.featureflags.FlagsClient
 import com.datadog.android.flags.featureflags.model.EvaluationContext
+import com.datadog.android.flags.model.ResolutionDetails
 import org.json.JSONObject
 
 /**
@@ -79,6 +80,18 @@ internal class NoOpFlagsClient(
     override fun resolveIntValue(flagKey: String, defaultValue: Int): Int {
         logCriticalError("resolveIntValue for flag '$flagKey'")
         return defaultValue
+    }
+
+    /**
+     * Returns resolution details with the provided default value without any flag evaluation.
+     * @param T The type of the flag value. Must be non-null.
+     * @param flagKey Ignored flag key.
+     * @param defaultValue The value to return if the flag cannot be retrieved or parsed.
+     * @return [ResolutionDetails] containing the value, variant, reason, error info, and metadata.
+     */
+    override fun <T : Any> resolve(flagKey: String, defaultValue: T): ResolutionDetails<T> {
+        logCriticalError("resolve for flag '$flagKey'")
+        return ResolutionDetails(defaultValue)
     }
 
     /**

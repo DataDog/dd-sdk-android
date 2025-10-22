@@ -28,6 +28,7 @@ import com.datadog.android.flags.featureflags.internal.repository.net.Precompute
 import com.datadog.android.flags.featureflags.model.EvaluationContext
 import com.datadog.android.flags.internal.FlagsFeature
 import com.datadog.android.flags.internal.net.PrecomputedAssignmentsDownloader
+import com.datadog.android.flags.model.ResolutionDetails
 import org.json.JSONObject
 
 /**
@@ -113,6 +114,40 @@ interface FlagsClient {
      * @return The JSON object value of the flag, or the default value if unavailable.
      */
     fun resolveStructureValue(flagKey: String, defaultValue: JSONObject): JSONObject
+
+    /**
+     * Resolves a flag value with detailed resolution information.
+     *
+     * This is the core resolution method that provides comprehensive details about the flag
+     * resolution process, including the resolved value, variant identifier, resolution reason,
+     * error information, and any associated metadata.
+     *
+     * ## Usage Examples
+     *
+     * ```kotlin
+     * // Boolean flag
+     * val boolResult = client.resolve("feature-enabled", false)
+     * if (boolResult.errorCode == null) {
+     *     println("Feature is ${boolResult.value}, variant: ${boolResult.variant}")
+     * }
+     *
+     * // String flag
+     * val stringResult = client.resolve("api-endpoint", "https://default.com")
+     * println("Using endpoint: ${stringResult.value}")
+     *
+     * // With metadata
+     * val result = client.resolve("experiment", "control")
+     * result.flagMetadata?.let { metadata ->
+     *     println("Experiment metadata: $metadata")
+     * }
+     * ```
+     *
+     * @param T The type of the flag value (Boolean, String, Int, Double, or JSONObject). Must be non-null.
+     * @param flagKey The unique identifier of the flag to resolve.
+     * @param defaultValue The value to return if the flag cannot be retrieved or parsed. Cannot be null.
+     * @return [ResolutionDetails] containing the value, variant, reason, error info, and metadata.
+     */
+    fun <T : Any> resolve(flagKey: String, defaultValue: T): ResolutionDetails<T>
 
     /**
      * Builder for creating [FlagsClient] instances with custom configuration.
