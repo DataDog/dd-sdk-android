@@ -11,10 +11,12 @@ import android.os.Build
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.sessionreplay.ImagePrivacy
 import com.datadog.android.sessionreplay.SessionReplayPrivacy
+import com.datadog.android.sessionreplay.TouchPrivacy
 
 internal const val TRACKING_CONSENT_KEY = "tracking_consent"
 internal const val SR_PRIVACY_LEVEL = "sr_privacy_level"
 internal const val SR_IMAGE_PRIVACY = "sr_image_privacy"
+internal const val SR_TOUCH_PRIVACY = "sr_touch_privacy"
 internal const val SR_SAMPLE_RATE = "sr_sample_rate"
 private const val SAMPLE_IN_ALL_SESSIONS = 100f
 
@@ -46,6 +48,15 @@ internal fun Intent.getImagePrivacy(): ImagePrivacy? {
     } else {
         @Suppress("DEPRECATION")
         extras?.getSerializable(SR_IMAGE_PRIVACY) as? ImagePrivacy
+    }
+}
+
+internal fun Intent.getTouchPrivacy(): TouchPrivacy? {
+    return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        extras?.getSerializable(SR_TOUCH_PRIVACY, TouchPrivacy::class.java)
+    } else {
+        @Suppress("DEPRECATION")
+        extras?.getSerializable(SR_TOUCH_PRIVACY) as? TouchPrivacy
     }
 }
 
