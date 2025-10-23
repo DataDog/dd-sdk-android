@@ -3,7 +3,7 @@
  * This product includes software developed at Datadog (https://www.datadoghq.com/).
  * Copyright 2016-Present Datadog, Inc.
  */
-package com.datadog.android.insights.widgets
+package com.datadog.android.insights.internal.widgets
 
 import android.content.Context
 import android.graphics.Canvas
@@ -11,9 +11,9 @@ import android.graphics.Paint
 import android.graphics.Typeface
 import android.util.AttributeSet
 import android.view.View
-import com.datadog.android.insights.extensions.color
-import com.datadog.android.insights.extensions.px
-import com.datadog.android.insights.extensions.round
+import com.datadog.android.insights.internal.extensions.color
+import com.datadog.android.insights.internal.extensions.px
+import com.datadog.android.insights.internal.extensions.round
 import com.datadog.android.internal.collections.EvictingQueue
 import com.datadog.android.rum.R
 import java.util.Collections.max
@@ -28,19 +28,19 @@ internal class ChartView @JvmOverloads constructor(
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.FILL_AND_STROKE
         color = color(R.color.vital_chart)
-        strokeWidth = 4f
+        strokeWidth = CHART_STROKE_WIDTH_PX
     }
 
     private val labelPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.FILL_AND_STROKE
         color = color(R.color.widget_text)
-        textSize = px(11)
+        textSize = px(LABEL_TEXT_SIZE_DP)
     }
 
     private val valuePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.FILL_AND_STROKE
         color = color(R.color.widget_text)
-        textSize = px(12)
+        textSize = px(VALUE_TEXT_SIZE_DP)
         typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
     }
 
@@ -60,11 +60,9 @@ internal class ChartView @JvmOverloads constructor(
             invalidate()
         }
 
-    private var value: String = ""
-
-    private var data = EvictingQueue<Double>(400)
+    private var data = EvictingQueue<Double>(MAX_DATA_POINTS)
     private var dataAveraged = listOf<Double>()
-    private val textMargin = px(6)
+    private val textMargin = px(TEXT_MARGIN_DP)
     private var yMin = Double.MAX_VALUE
     private var yMax = Double.MIN_VALUE
     private val yRange: Double
@@ -74,7 +72,8 @@ internal class ChartView @JvmOverloads constructor(
         if (newData.isNaN()) return
         data.add(newData)
 
-        val windowSize = 4
+        val windowSize = AVERAGE_WINDOW_SIZE
+        @Suppress("UnsafeThirdPartyFunctionCall") // min()/max() functions are called on non-empty lists
         if (data.size > windowSize) {
             dataAveraged = data.toList().windowed(size = windowSize, step = 1) { window ->
                 window.average()
@@ -100,6 +99,7 @@ internal class ChartView @JvmOverloads constructor(
         drawText(data, canvas)
     }
 
+    @Suppress("UnsafeThirdPartyFunctionCall") // measureText() is called on non-null strings
     private fun drawText(
         data: List<Double>,
         canvas: Canvas
@@ -138,5 +138,15 @@ internal class ChartView @JvmOverloads constructor(
                 canvas.drawLine(x0.toFloat(), y0.toFloat(), x1.toFloat(), y1.toFloat(), paint)
             }
         }
+    }
+
+    private companion object {
+
+        private const val CHART_STROKE_WIDTH_PX = 4f
+        private const val LABEL_TEXT_SIZE_DP = 11
+        private const val VALUE_TEXT_SIZE_DP = 12
+        private const val MAX_DATA_POINTS = 400
+        private const val TEXT_MARGIN_DP = 6
+        private const val AVERAGE_WINDOW_SIZE = 4
     }
 }

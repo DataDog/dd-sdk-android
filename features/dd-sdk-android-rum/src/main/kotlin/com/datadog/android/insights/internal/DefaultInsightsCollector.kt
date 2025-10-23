@@ -3,15 +3,15 @@
  * This product includes software developed at Datadog (https://www.datadoghq.com/).
  * Copyright 2016-Present Datadog, Inc.
  */
-package com.datadog.android.insights
 
-import android.os.Build
+package com.datadog.android.insights.internal
+
 import android.os.Debug
 import android.os.Handler
 import android.os.Looper
-import com.datadog.android.insights.domain.TimelineEvent
-import com.datadog.android.insights.extensions.Mb
-import com.datadog.android.insights.extensions.round
+import com.datadog.android.insights.internal.domain.TimelineEvent
+import com.datadog.android.insights.internal.extensions.Mb
+import com.datadog.android.insights.internal.extensions.round
 import com.datadog.android.internal.collections.EvictingQueue
 import com.datadog.android.lint.InternalApi
 import com.datadog.android.rum.ExperimentalRumApi
@@ -21,9 +21,9 @@ import java.util.concurrent.TimeUnit
 
 @InternalApi
 @ExperimentalRumApi
-class DefaultInsightsCollector(
+internal class DefaultInsightsCollector(
     maxSize: Int = 50,
-    updateIntervalMs: Long = 100L,
+    updateIntervalMs: Long = 100L
 ) : InsightsCollector {
 
     private val handler = Handler(Looper.getMainLooper())
@@ -124,12 +124,10 @@ class DefaultInsightsCollector(
     }
 
     private fun updateCommonInfo() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            gcCallsPerSecond = Debug.getRuntimeStat(GC_COUNT)
-                .toDoubleOrNull()
-                .perSecond()
-                .round(PRECISION)
-        }
+        gcCallsPerSecond = Debug.getRuntimeStat(GC_COUNT)
+            .toDoubleOrNull()
+            .perSecond()
+            .round(PRECISION)
         nativeHeapMb = Debug.getNativeHeapAllocatedSize().toDouble().Mb.round(0)
         threadsCount = Thread.activeCount()
     }

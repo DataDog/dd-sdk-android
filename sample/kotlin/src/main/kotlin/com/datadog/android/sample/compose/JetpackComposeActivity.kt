@@ -22,14 +22,16 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.rememberNavController
 import com.datadog.android.compose.NavigationViewTrackingEffect
-import com.datadog.android.rum.tracking.AcceptAllNavDestinations
 import com.datadog.android.insights.LocalInsightOverlay
+import com.datadog.android.rum.ExperimentalRumApi
+import com.datadog.android.rum.tracking.AcceptAllNavDestinations
 
 /**
  * An activity to showcase Jetpack Compose instrumentation.
  */
 class JetpackComposeActivity : AppCompatActivity() {
 
+    @OptIn(ExperimentalRumApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {

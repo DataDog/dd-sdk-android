@@ -288,7 +288,7 @@ internal class RumViewManagerScope(
             accessibilitySnapshotManager = accessibilitySnapshotManager,
             batteryInfoProvider = batteryInfoProvider,
             displayInfoProvider = displayInfoProvider,
-            insightsCollector=insightsCollector
+            insightsCollector = insightsCollector
         )
         applicationDisplayed = true
         childrenScopes.add(viewScope)

@@ -34,6 +34,7 @@ import com.datadog.android.core.internal.utils.scheduleSafe
 import com.datadog.android.event.EventMapper
 import com.datadog.android.event.MapperSerializer
 import com.datadog.android.event.NoOpEventMapper
+import com.datadog.android.insights.internal.DefaultInsightsCollector
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.rum.RumErrorSource
@@ -116,7 +117,6 @@ import com.datadog.android.rum.tracking.TrackingStrategy
 import com.datadog.android.rum.tracking.ViewAttributesProvider
 import com.datadog.android.rum.tracking.ViewTrackingStrategy
 import com.datadog.android.telemetry.model.TelemetryConfigurationEvent
-import com.datadog.android.insights.DefaultInsightsCollector
 import java.util.Locale
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.ScheduledExecutorService
@@ -196,6 +196,7 @@ internal class RumFeature(
         initialResourceIdentifier = configuration.initialResourceIdentifier
         lastInteractionIdentifier = configuration.lastInteractionIdentifier
         insightsCollector = if (configuration.insightsCollectionEnabled) {
+            @Suppress("OPT_IN_USAGE")
             DefaultInsightsCollector()
         } else {
             NoOpInsightsCollector()
@@ -294,7 +295,7 @@ internal class RumFeature(
                     slowFramesConfiguration,
                     sdkCore.internalLogger
                 ),
-                insightsCollector=insightsCollector
+                insightsCollector = insightsCollector
             )
         } else {
             sdkCore.internalLogger.log(

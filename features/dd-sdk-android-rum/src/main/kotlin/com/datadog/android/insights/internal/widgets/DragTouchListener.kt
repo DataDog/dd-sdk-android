@@ -3,11 +3,11 @@
  * This product includes software developed at Datadog (https://www.datadoghq.com/).
  * Copyright 2016-Present Datadog, Inc.
  */
-package com.datadog.android.insights.widgets
+package com.datadog.android.insights.internal.widgets
 
 import android.view.MotionEvent
 import android.view.View
-import com.datadog.android.insights.extensions.animateDragTo
+import com.datadog.android.insights.internal.extensions.animateDragTo
 import kotlin.math.abs
 
 internal class DragTouchListener(

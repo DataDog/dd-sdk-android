@@ -8,7 +8,6 @@ package com.datadog.android.insights
 import android.annotation.SuppressLint
 import android.app.Activity
 import android.text.SpannableStringBuilder
-import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
@@ -16,20 +15,28 @@ import androidx.core.view.isVisible
 import com.datadog.android.Datadog
 import com.datadog.android.api.feature.Feature
 import com.datadog.android.core.InternalSdkCore
-import com.datadog.android.insights.extensions.animateDragTo
-import com.datadog.android.insights.extensions.animateVisibility
-import com.datadog.android.insights.extensions.appendColored
-import com.datadog.android.insights.extensions.color
-import com.datadog.android.insights.extensions.multiLet
-import com.datadog.android.insights.extensions.setupChartView
-import com.datadog.android.insights.widgets.ChartView
-import com.datadog.android.insights.widgets.DragTouchListener
-import com.datadog.android.insights.widgets.TimelineView
+import com.datadog.android.insights.internal.DefaultInsightsCollector
+import com.datadog.android.insights.internal.InsightStateStorage
+import com.datadog.android.insights.internal.extensions.animateVisibility
+import com.datadog.android.insights.internal.extensions.appendColored
+import com.datadog.android.insights.internal.extensions.color
+import com.datadog.android.insights.internal.extensions.multiLet
+import com.datadog.android.insights.internal.extensions.setupChartView
+import com.datadog.android.insights.internal.widgets.ChartView
+import com.datadog.android.insights.internal.widgets.DragTouchListener
+import com.datadog.android.insights.internal.widgets.TimelineView
 import com.datadog.android.rum.ExperimentalRumApi
 import com.datadog.android.rum.R
 import com.datadog.android.rum.internal.RumFeature
 import com.datadog.android.rum.internal.instrumentation.insights.InsightsUpdatesListener
 
+/**
+ * A local overlay displaying performance metrics collected by the [com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector]
+ * implementation registered in the SDK.
+ * This overlay is only displayed when the app is running in debug mode and when an instance of
+ * [com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector] is registered.
+ * It can be attached to any [Activity] by calling [attach].
+ */
 @ExperimentalRumApi
 class LocalInsightOverlay : InsightsUpdatesListener {
 
@@ -52,12 +59,23 @@ class LocalInsightOverlay : InsightsUpdatesListener {
 
     private var isPaused: Boolean = false
 
+    /**
+     * Attaches the overlay to the given [activity].
+     * It will add a floating button to show/hide the overlay and will display various performance
+     * metrics collected by the [com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector]
+     * implementation registered in the SDK.
+     * If no [com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector] is registered,
+     * this method does nothing.
+     *
+     * @param activity The activity on which to attach the overlay.
+     */
     @SuppressLint("SetTextI18n")
+    @Suppress("LongMethod")
     fun attach(activity: Activity) {
         if (insightsCollector == null) return
         val storage = InsightStateStorage(activity)
 
-        val overlayView = LayoutInflater.from(activity).inflate(
+        val overlayView = activity.layoutInflater.inflate(
             R.layout.layout_dd_insights_overlay,
             activity.window.decorView as ViewGroup,
             true
@@ -69,18 +87,17 @@ class LocalInsightOverlay : InsightsUpdatesListener {
                 fab?.animateVisibility(true)
             }
             setOnTouchListener(DragTouchListener(onUp = { storage.widgetPosition = x to y }))
-//            restoreCoordinates(storage.widgetPosition)
             restoreVisibility(storage.widgetDisplayed)
         }
 
         viewName = overlayView.findViewById(R.id.view_name)
-        timelineView = overlayView.findViewById<TimelineView?>(R.id.timeline).apply {
+        timelineView = overlayView.findViewById<TimelineView?>(R.id.timeline)?.apply {
             setOnClickListener {
                 isPaused = !isPaused
                 timelineView?.setPaused(isPaused)
             }
         }
-        timelineLegend = overlayView.findViewById<TextView?>(R.id.timeline_legend).apply {
+        timelineLegend = overlayView.findViewById<TextView?>(R.id.timeline_legend)?.apply {
             text = SpannableStringBuilder()
                 .append(SEP)
                 .appendColored(ACTION, color(R.color.timeline_action)).append(SEP)
@@ -95,7 +112,6 @@ class LocalInsightOverlay : InsightsUpdatesListener {
                 widgetView?.animateVisibility(true)
             }
             setOnTouchListener(DragTouchListener(onUp = { storage.fabPosition = x to y }))
-//            restoreCoordinates(storage.fabPosition)
             restoreVisibility(!storage.widgetDisplayed)
         }
         cpuValue = overlayView.setupChartView(R.id.vital_cpu, "CPU (tics/s)")
@@ -120,14 +136,11 @@ class LocalInsightOverlay : InsightsUpdatesListener {
         insightsCollector?.addUpdateListener(this)
     }
 
-    fun detach(activity: Activity) {
+    /**
+     * Detaches the overlay from the current [Activity].
+     */
+    fun detach() {
         insightsCollector?.removeUpdateListener(this)
-    }
-
-    private fun View.restoreCoordinates(coordinates: Pair<Float, Float>) {
-        if (InsightStateStorage.isValidPosition(coordinates)) {
-            animateDragTo(coordinates.first, coordinates.second)
-        }
     }
 
     private fun View.restoreVisibility(shouldBeVisible: Boolean) {

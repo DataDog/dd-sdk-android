@@ -3,7 +3,7 @@
  * This product includes software developed at Datadog (https://www.datadoghq.com/).
  * Copyright 2016-Present Datadog, Inc.
  */
-package com.datadog.android.insights.extensions
+package com.datadog.android.insights.internal.extensions
 
 import android.text.SpannableStringBuilder
 import android.text.Spanned
@@ -12,17 +12,20 @@ import android.view.View
 import androidx.annotation.ColorRes
 import androidx.annotation.IdRes
 import androidx.core.content.ContextCompat
-import com.datadog.android.insights.widgets.ChartView
+import com.datadog.android.insights.internal.widgets.ChartView
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.pow
 import kotlin.math.roundToInt
 
+internal const val NANOS_PER_MILLI: Long = 1_000_000L
+internal const val BYTES_PER_MB: Long = 1024 * 1024
+
 internal val Long.ms: Long
-    get() = this / 1_000_000L
+    get() = this / NANOS_PER_MILLI
 
 internal val Double.Mb: Double
-    get() = this / (1024.0 * 1024.0)
+    get() = this / BYTES_PER_MB
 
 internal fun Double?.round(digits: Int): Double {
     if (this == null || isNaN()) return Double.NaN
@@ -39,7 +42,12 @@ internal fun <F, S> multiLet(first: F?, second: S?, block: (F, S) -> Unit) {
 }
 
 internal fun SpannableStringBuilder.appendColored(text: String, color: Int): SpannableStringBuilder = apply {
+    if (text.isEmpty()) return@apply
+
     val offset = length
+
+    @Suppress("UnsafeThirdPartyFunctionCall")
+    // Safe because: character span (not paragraph), non-empty text, valid bounds
     append(text).setSpan(ForegroundColorSpan(color), offset, offset + text.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
 }
 

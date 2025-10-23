@@ -5,10 +5,8 @@
  */
 package com.datadog.android.rum.configuration
 
-import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector
-
 /**
- * The [SlowFramesListener] provides various statistics to assist in identifying UI performance issues:
+ * The [com.datadog.android.rum.internal.metric.slowframes.SlowFramesListener] provides various statistics to assist in identifying UI performance issues:
  *
  * - slowFrames: A list of records containing the timestamp and duration of frames where users experience
  *   jank frames within the given view.
@@ -46,7 +44,7 @@ data class SlowFramesConfiguration(
     internal val maxSlowFrameThresholdNs: Long = DEFAULT_FROZEN_FRAME_THRESHOLD_NS,
     internal val continuousSlowFrameThresholdNs: Long = DEFAULT_CONTINUOUS_SLOW_FRAME_THRESHOLD_NS,
     internal val freezeDurationThresholdNs: Long = DEFAULT_FREEZE_DURATION_NS,
-    internal val minViewLifetimeThresholdNs: Long = DEFAULT_VIEW_LIFETIME_THRESHOLD_NS,
+    internal val minViewLifetimeThresholdNs: Long = DEFAULT_VIEW_LIFETIME_THRESHOLD_NS
 ) {
 
     companion object {

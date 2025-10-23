@@ -44,6 +44,7 @@ import com.datadog.android.rum.internal.domain.battery.BatteryInfo
 import com.datadog.android.rum.internal.domain.display.DisplayInfo
 import com.datadog.android.rum.internal.domain.state.SlowFrameRecord
 import com.datadog.android.rum.internal.domain.state.ViewUIPerformanceReport
+import com.datadog.android.rum.internal.instrumentation.insights.InsightsCollector
 import com.datadog.android.rum.internal.metric.NoValueReason
 import com.datadog.android.rum.internal.metric.SessionMetricDispatcher
 import com.datadog.android.rum.internal.metric.ViewEndedMetricDispatcher
@@ -167,6 +168,9 @@ internal class RumViewScopeTest {
 
     @Mock
     lateinit var mockDisplayInfoProvider: InfoProvider<DisplayInfo>
+
+    @Mock
+    private lateinit var mockInsightsCollector: InsightsCollector
 
     @Mock
     lateinit var mockMemoryVitalMonitor: VitalMonitor
@@ -9157,7 +9161,8 @@ internal class RumViewScopeTest {
         rumSessionTypeOverride = fakeRumSessionType,
         accessibilitySnapshotManager = mockAccessibilitySnapshotManager,
         batteryInfoProvider = mockBatteryInfoProvider,
-        displayInfoProvider = mockDisplayInfoProvider
+        displayInfoProvider = mockDisplayInfoProvider,
+        insightsCollector = mockInsightsCollector
     )
 
     data class RumRawEventData(val event: RumRawEvent, val viewKey: RumScopeKey)
