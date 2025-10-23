@@ -31,19 +31,40 @@ internal class SrTextFieldsMaskUserInputTest : BaseSessionReplayTest<SessionRepl
     @Test
     fun assessRecordedScreenPayload() {
         runInstrumentationScenario()
-        
+
         ConditionWatcher {
             val requests = rule.getRequests(RuntimeConfig.sessionReplayEndpointUrl)
             val records = extractRecordsFromRequests(requests)
-            
+
             assertRecordStructure(records)
-            
+
             val wireframes = extractWireframesFromRequests(requests)
-            
-            assertThat(wireframes)
-                .describedAs("Should capture wireframes with MASK_USER_INPUT privacy")
-                .isNotEmpty
-            
+
+            val textWireframes = wireframes.filter { wireframe ->
+                wireframe.get("type")?.asString == "text"
+            }
+
+            assertThat(textWireframes)
+                .describedAs("Should capture text wireframes with MASK_USER_INPUT privacy")
+                .hasSizeGreaterThanOrEqualTo(3)
+
+            val staticTextWireframes = textWireframes.filter { wireframe ->
+                val text = wireframe.get("text")?.asString
+                text == "Default Text View" || text == "MaterialTextView" || text == "AppCompat"
+            }
+
+            assertThat(staticTextWireframes)
+                .describedAs("Static text should be visible (not obfuscated) with MASK_USER_INPUT")
+                .hasSizeGreaterThanOrEqualTo(1)
+
+            val maskedInputWireframes = textWireframes.filter { wireframe ->
+                wireframe.get("text")?.asString == "***"
+            }
+
+            assertThat(maskedInputWireframes)
+                .describedAs("User input text should be masked with '***' with MASK_USER_INPUT")
+                .hasSizeGreaterThanOrEqualTo(2)
+
             true
         }.doWait(timeoutMs = INITIAL_WAIT_MS)
     }

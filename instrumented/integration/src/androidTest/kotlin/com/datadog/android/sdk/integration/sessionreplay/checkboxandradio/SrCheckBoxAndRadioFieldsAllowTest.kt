@@ -35,19 +35,24 @@ internal class SrCheckBoxAndRadioFieldsAllowTest :
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.N)
     fun assessRecordedScreenPayload() {
         runInstrumentationScenario()
-        
+
         ConditionWatcher {
             val requests = rule.getRequests(RuntimeConfig.sessionReplayEndpointUrl)
             val records = extractRecordsFromRequests(requests)
-            
+
             assertRecordStructure(records)
-            
+
             val wireframes = extractWireframesFromRequests(requests)
-            
-            assertThat(wireframes)
-                .describedAs("Should capture wireframes with ALLOW privacy")
-                .isNotEmpty
-            
+
+            val checkableWireframes = wireframes.filter { wireframe ->
+                val type = wireframe.get("type")?.asString
+                type == "image" || type == "placeholder"
+            }
+
+            assertThat(checkableWireframes)
+                .describedAs("Should capture checkbox/radio wireframes as images or placeholders with ALLOW privacy")
+                .hasSizeGreaterThanOrEqualTo(2)
+
             true
         }.doWait(timeoutMs = INITIAL_WAIT_MS)
     }
@@ -56,19 +61,26 @@ internal class SrCheckBoxAndRadioFieldsAllowTest :
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.M, maxSdkVersion = Build.VERSION_CODES.M)
     fun assessRecordedScreenPayload23() {
         runInstrumentationScenario()
-        
+
         ConditionWatcher {
             val requests = rule.getRequests(RuntimeConfig.sessionReplayEndpointUrl)
             val records = extractRecordsFromRequests(requests)
-            
+
             assertRecordStructure(records)
-            
+
             val wireframes = extractWireframesFromRequests(requests)
-            
-            assertThat(wireframes)
-                .describedAs("Should capture wireframes with ALLOW privacy on API 23")
-                .isNotEmpty
-            
+
+            val checkableWireframes = wireframes.filter { wireframe ->
+                val type = wireframe.get("type")?.asString
+                type == "image" || type == "placeholder"
+            }
+
+            assertThat(checkableWireframes)
+                .describedAs(
+                    "Should capture checkbox/radio wireframes as images or placeholders with ALLOW privacy on API 23"
+                )
+                .hasSizeGreaterThanOrEqualTo(2)
+
             true
         }.doWait(timeoutMs = INITIAL_WAIT_MS)
     }

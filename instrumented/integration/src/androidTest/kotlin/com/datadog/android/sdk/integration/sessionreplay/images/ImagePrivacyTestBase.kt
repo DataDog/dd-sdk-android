@@ -52,18 +52,18 @@ internal abstract class ImagePrivacyTestBase<R : Activity> {
         ConditionWatcher {
             val requests = rule.getRequests(RuntimeConfig.sessionReplayEndpointUrl)
             val wireframes = extractImageWireframesFromRequests(requests)
-            
+
             assertThat(wireframes)
                 .describedAs("Expected at least $minimumImageCount image wireframes")
                 .hasSizeGreaterThanOrEqualTo(minimumImageCount)
-            
+
             wireframes.forEach { wireframe ->
                 val type = wireframe.get("type")?.asString
                 assertThat(type)
                     .describedAs("All image wireframes should be of type '$expectedImageWireframeType'")
                     .isEqualTo(expectedImageWireframeType)
             }
-            
+
             true
         }.doWait(timeoutMs = INITIAL_WAIT_MS)
     }
@@ -76,22 +76,22 @@ internal abstract class ImagePrivacyTestBase<R : Activity> {
         ConditionWatcher {
             val requests = rule.getRequests(RuntimeConfig.sessionReplayEndpointUrl)
             val wireframes = extractImageWireframesFromRequests(requests)
-            
-            val placeholderWireframes = wireframes.filter { 
+
+            val placeholderWireframes = wireframes.filter {
                 it.get("type")?.asString == "placeholder"
             }
-            val imageWireframes = wireframes.filter { 
+            val imageWireframes = wireframes.filter {
                 it.get("type")?.asString == "image"
             }
-            
+
             assertThat(placeholderWireframes)
                 .describedAs("Expected $expectedPlaceholderCount placeholder wireframes for large images")
                 .hasSize(expectedPlaceholderCount)
-            
+
             assertThat(imageWireframes)
                 .describedAs("Expected $expectedImageCount image wireframes for small images")
                 .hasSize(expectedImageCount)
-            
+
             true
         }.doWait(timeoutMs = INITIAL_WAIT_MS)
     }
@@ -171,4 +171,3 @@ internal abstract class ImagePrivacyTestBase<R : Activity> {
             Regex("content-length: (\\d+)")
     }
 }
-

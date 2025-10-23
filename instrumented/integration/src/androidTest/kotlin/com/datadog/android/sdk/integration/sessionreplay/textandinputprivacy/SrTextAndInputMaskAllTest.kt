@@ -37,4 +37,3 @@ internal class SrTextAndInputMaskAllTest :
         assertInputTextMaskedWithFixedMask(rule)
     }
 }
-

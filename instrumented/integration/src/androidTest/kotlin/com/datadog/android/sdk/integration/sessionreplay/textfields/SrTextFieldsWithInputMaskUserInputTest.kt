@@ -32,19 +32,31 @@ internal class SrTextFieldsWithInputMaskUserInputTest :
     @Test
     fun assessRecordedScreenPayload() {
         runInstrumentationScenario()
-        
+
         ConditionWatcher {
             val requests = rule.getRequests(RuntimeConfig.sessionReplayEndpointUrl)
             val records = extractRecordsFromRequests(requests)
-            
+
             assertRecordStructure(records)
-            
+
             val wireframes = extractWireframesFromRequests(requests)
-            
-            assertThat(wireframes)
-                .describedAs("Should capture wireframes with MASK_USER_INPUT privacy")
-                .isNotEmpty
-            
+
+            val textWireframes = wireframes.filter { wireframe ->
+                wireframe.get("type")?.asString == "text"
+            }
+
+            assertThat(textWireframes)
+                .describedAs("Should capture text wireframes with MASK_USER_INPUT privacy (inputs masked)")
+                .hasSizeGreaterThanOrEqualTo(1)
+
+            val maskedInputWireframes = textWireframes.filter { wireframe ->
+                wireframe.get("text")?.asString == "***"
+            }
+
+            assertThat(maskedInputWireframes)
+                .describedAs("Input fields should be masked with '***' with MASK_USER_INPUT")
+                .hasSizeGreaterThanOrEqualTo(1)
+
             true
         }.doWait(timeoutMs = INITIAL_WAIT_MS)
     }

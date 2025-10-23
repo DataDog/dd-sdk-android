@@ -31,19 +31,31 @@ internal class SrSensitiveFieldsMaskTest : BaseSessionReplayTest<SessionReplaySe
     @Test
     fun assessRecordedScreenPayload() {
         runInstrumentationScenario()
-        
+
         ConditionWatcher {
             val requests = rule.getRequests(RuntimeConfig.sessionReplayEndpointUrl)
             val records = extractRecordsFromRequests(requests)
-            
+
             assertRecordStructure(records)
-            
+
             val wireframes = extractWireframesFromRequests(requests)
-            
-            assertThat(wireframes)
-                .describedAs("Should capture wireframes with MASK privacy")
-                .isNotEmpty
-            
+
+            val textWireframes = wireframes.filter { wireframe ->
+                wireframe.get("type")?.asString == "text"
+            }
+
+            assertThat(textWireframes)
+                .describedAs("Should capture text wireframes with MASK privacy (all text obfuscated/masked)")
+                .hasSizeGreaterThanOrEqualTo(5)
+
+            val maskedWireframes = textWireframes.filter { wireframe ->
+                wireframe.get("text")?.asString == "***"
+            }
+
+            assertThat(maskedWireframes)
+                .describedAs("All input fields should be masked with '***' with MASK privacy")
+                .hasSizeGreaterThanOrEqualTo(5)
+
             true
         }.doWait(timeoutMs = INITIAL_WAIT_MS)
     }

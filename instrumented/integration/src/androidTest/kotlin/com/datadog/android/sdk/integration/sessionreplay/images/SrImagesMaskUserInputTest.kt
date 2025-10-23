@@ -9,7 +9,7 @@ package com.datadog.android.sdk.integration.sessionreplay.images
 import com.datadog.android.privacy.TrackingConsent
 import com.datadog.android.sdk.integration.RuntimeConfig
 import com.datadog.android.sdk.integration.sessionreplay.BaseSessionReplayTest
-import com.datadog.android.sdk.integration.sessionreplay.SessionReplayImagesActivity
+import com.datadog.android.sdk.integration.sessionreplay.SessionReplayImagesMixedSizesActivity
 import com.datadog.android.sdk.rules.SessionReplayTestRule
 import com.datadog.android.sdk.utils.SR_PRIVACY_LEVEL
 import com.datadog.android.sessionreplay.SessionReplayPrivacy
@@ -19,11 +19,11 @@ import org.junit.Rule
 import org.junit.Test
 
 internal class SrImagesMaskUserInputTest :
-    BaseSessionReplayTest<SessionReplayImagesActivity>() {
+    BaseSessionReplayTest<SessionReplayImagesMixedSizesActivity>() {
 
     @get:Rule
     val rule = SessionReplayTestRule(
-        SessionReplayImagesActivity::class.java,
+        SessionReplayImagesMixedSizesActivity::class.java,
         trackingConsent = TrackingConsent.GRANTED,
         keepRequests = true,
         intentExtras = mapOf(SR_PRIVACY_LEVEL to SessionReplayPrivacy.MASK_USER_INPUT)
@@ -32,19 +32,37 @@ internal class SrImagesMaskUserInputTest :
     @Test
     fun assessRecordedScreenPayload() {
         runInstrumentationScenario()
-        
+
         ConditionWatcher {
             val requests = rule.getRequests(RuntimeConfig.sessionReplayEndpointUrl)
             val records = extractRecordsFromRequests(requests)
-            
+
             assertRecordStructure(records)
-            
+
             val wireframes = extractWireframesFromRequests(requests)
-            
-            assertThat(wireframes)
-                .describedAs("Should capture wireframes with MASK_USER_INPUT privacy")
-                .isNotEmpty
-            
+
+            val imageWireframes = wireframes.filter { wireframe ->
+                wireframe.get("type")?.asString == "image"
+            }
+
+            val placeholderWireframes = wireframes.filter { wireframe ->
+                wireframe.get("type")?.asString == "placeholder"
+            }
+
+            assertThat(imageWireframes)
+                .describedAs(
+                    "Should capture small images (<100dp) as image wireframes with " +
+                        "MASK_USER_INPUT privacy (MASK_LARGE_ONLY)"
+                )
+                .hasSizeGreaterThanOrEqualTo(1)
+
+            assertThat(placeholderWireframes)
+                .describedAs(
+                    "Should capture large images (>=100dp) as placeholder " +
+                        "wireframes with MASK_USER_INPUT privacy (MASK_LARGE_ONLY)"
+                )
+                .hasSizeGreaterThanOrEqualTo(1)
+
             true
         }.doWait(timeoutMs = INITIAL_WAIT_MS)
     }

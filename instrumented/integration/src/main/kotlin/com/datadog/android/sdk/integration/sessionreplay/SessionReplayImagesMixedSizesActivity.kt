@@ -22,21 +22,26 @@ internal class SessionReplayImagesMixedSizesActivity : BaseSessionReplayActivity
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.sr_images_mixed_sizes_layout)
-        
-        // Create bitmaps with specific DP sizes to test ImagePrivacy
+
         val density = resources.displayMetrics.density
         val smallImageView = findViewById<ImageView>(R.id.smallImageView)
         val largeImageView = findViewById<ImageView>(R.id.largeImageView)
-        
-        // Small image: 80dp -> will be < 100dp threshold
-        val smallBitmap = createColorBitmap((80 * density).toInt(), (80 * density).toInt(), 0xFF6200EE.toInt())
+
+        val smallBitmap = createColorBitmap(
+            (SMALL_IMAGE_SIZE_DP * density).toInt(),
+            (SMALL_IMAGE_SIZE_DP * density).toInt(),
+            SMALL_IMAGE_COLOR
+        )
         smallImageView.setImageBitmap(smallBitmap)
-        
-        // Large image: 150dp -> will be >= 100dp threshold  
-        val largeBitmap = createColorBitmap((150 * density).toInt(), (150 * density).toInt(), 0xFF03DAC5.toInt())
+
+        val largeBitmap = createColorBitmap(
+            (LARGE_IMAGE_SIZE_DP * density).toInt(),
+            (LARGE_IMAGE_SIZE_DP * density).toInt(),
+            LARGE_IMAGE_COLOR
+        )
         largeImageView.setImageBitmap(largeBitmap)
     }
-    
+
     private fun createColorBitmap(widthPx: Int, heightPx: Int, color: Int): Bitmap {
         val bitmap = Bitmap.createBitmap(widthPx, heightPx, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bitmap)
@@ -49,7 +54,10 @@ internal class SessionReplayImagesMixedSizesActivity : BaseSessionReplayActivity
     }
 
     @Suppress("DEPRECATION")
-    override fun sessionReplayConfiguration(privacy: SessionReplayPrivacy, sampleRate: Float): SessionReplayConfiguration {
+    override fun sessionReplayConfiguration(
+        privacy: SessionReplayPrivacy,
+        sampleRate: Float
+    ): SessionReplayConfiguration {
         val imagePrivacy = intent.getImagePrivacy()
         return if (imagePrivacy != null) {
             RuntimeConfig.sessionReplayConfigBuilder(sampleRate)
@@ -60,5 +68,11 @@ internal class SessionReplayImagesMixedSizesActivity : BaseSessionReplayActivity
             super.sessionReplayConfiguration(privacy, sampleRate)
         }
     }
-}
 
+    companion object {
+        private const val SMALL_IMAGE_SIZE_DP = 80
+        private const val LARGE_IMAGE_SIZE_DP = 150
+        private const val SMALL_IMAGE_COLOR = 0xFF6200EE.toInt()
+        private const val LARGE_IMAGE_COLOR = 0xFF03DAC5.toInt()
+    }
+}

@@ -32,19 +32,33 @@ internal class SrCheckBoxAndRadioFieldsMaskTest :
     @Test
     fun assessRecordedScreenPayload() {
         runInstrumentationScenario()
-        
+
         ConditionWatcher {
             val requests = rule.getRequests(RuntimeConfig.sessionReplayEndpointUrl)
             val records = extractRecordsFromRequests(requests)
-            
+
             assertRecordStructure(records)
-            
+
             val wireframes = extractWireframesFromRequests(requests)
-            
-            assertThat(wireframes)
-                .describedAs("Should capture wireframes with MASK privacy")
-                .isNotEmpty
-            
+
+            val shapeWireframes = wireframes.filter { wireframe ->
+                wireframe.get("type")?.asString == "shape"
+            }
+
+            assertThat(shapeWireframes)
+                .describedAs("Should capture checkbox/radio as masked shape wireframes with MASK privacy")
+                .hasSizeGreaterThanOrEqualTo(2)
+
+            val textWireframes = wireframes.filter { wireframe ->
+                wireframe.get("type")?.asString == "text"
+            }
+
+            assertThat(textWireframes)
+                .describedAs(
+                    "Should capture checkbox/radio labels as obfuscated text with MASK privacy (text content masked)"
+                )
+                .hasSizeGreaterThanOrEqualTo(3)
+
             true
         }.doWait(timeoutMs = INITIAL_WAIT_MS)
     }

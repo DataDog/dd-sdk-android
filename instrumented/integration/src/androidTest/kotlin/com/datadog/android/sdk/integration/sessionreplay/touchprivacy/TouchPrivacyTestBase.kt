@@ -18,7 +18,6 @@ import com.datadog.android.sdk.rules.HandledRequest
 import com.datadog.android.sdk.rules.SessionReplayTestRule
 import com.datadog.android.sdk.utils.waitFor
 import com.datadog.tools.unit.ConditionWatcher
-import com.google.gson.JsonArray
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
@@ -41,10 +40,10 @@ internal abstract class TouchPrivacyTestBase<R : Activity> {
     protected fun runTouchScenario() {
         val instrumentation = InstrumentationRegistry.getInstrumentation()
         instrumentation.waitForIdleSync()
-        
+
         Espresso.onView(ViewMatchers.withId(com.datadog.android.sdk.integration.R.id.button1))
             .perform(ViewActions.click())
-        
+
         Espresso.onView(ViewMatchers.isRoot()).perform(waitFor(UI_THREAD_DELAY_IN_MS))
         instrumentation.waitForIdleSync()
     }
@@ -53,27 +52,27 @@ internal abstract class TouchPrivacyTestBase<R : Activity> {
         ConditionWatcher {
             val requests = rule.getRequests(RuntimeConfig.sessionReplayEndpointUrl)
             val touchRecords = extractTouchRecordsFromRequests(requests)
-            
+
             assertThat(touchRecords)
                 .describedAs("Should capture touch interaction records with SHOW privacy")
                 .isNotEmpty
-            
+
             touchRecords.forEach { record ->
                 val data = record.get("data")?.asJsonObject
                 assertThat(data).isNotNull
-                
+
                 val pointerType = data?.get("pointerType")?.asString
                 val x = data?.get("x")?.asLong
                 val y = data?.get("y")?.asLong
-                
+
                 assertThat(pointerType)
                     .describedAs("Pointer type should be TOUCH")
                     .isEqualToIgnoringCase("touch")
-                
+
                 assertThat(x).isNotNull.isGreaterThanOrEqualTo(0)
                 assertThat(y).isNotNull.isGreaterThanOrEqualTo(0)
             }
-            
+
             true
         }.doWait(timeoutMs = INITIAL_WAIT_MS)
     }
@@ -82,11 +81,11 @@ internal abstract class TouchPrivacyTestBase<R : Activity> {
         ConditionWatcher {
             val requests = rule.getRequests(RuntimeConfig.sessionReplayEndpointUrl)
             val touchRecords = extractTouchRecordsFromRequests(requests)
-            
+
             assertThat(touchRecords)
                 .describedAs("Should NOT capture touch records with HIDE privacy")
                 .isEmpty()
-            
+
             true
         }.doWait(timeoutMs = INITIAL_WAIT_MS)
     }
@@ -162,4 +161,3 @@ internal abstract class TouchPrivacyTestBase<R : Activity> {
             Regex("content-length: (\\d+)")
     }
 }
-

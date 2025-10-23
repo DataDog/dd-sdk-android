@@ -35,4 +35,3 @@ internal class SrTouchHideTest : TouchPrivacyTestBase<SessionReplayTouchActivity
         assertNoTouchRecords(rule)
     }
 }
-

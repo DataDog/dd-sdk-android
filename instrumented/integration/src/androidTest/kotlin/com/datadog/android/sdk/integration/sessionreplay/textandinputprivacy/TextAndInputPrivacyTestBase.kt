@@ -211,4 +211,3 @@ internal abstract class TextAndInputPrivacyTestBase<R : Activity> {
             Regex("content-length: (\\d+)")
     }
 }
-

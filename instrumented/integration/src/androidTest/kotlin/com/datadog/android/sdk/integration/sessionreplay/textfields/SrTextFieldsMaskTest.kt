@@ -31,19 +31,33 @@ internal class SrTextFieldsMaskTest : BaseSessionReplayTest<SessionReplayTextFie
     @Test
     fun assessRecordedScreenPayload() {
         runInstrumentationScenario()
-        
+
         ConditionWatcher {
             val requests = rule.getRequests(RuntimeConfig.sessionReplayEndpointUrl)
             val records = extractRecordsFromRequests(requests)
-            
+
             assertRecordStructure(records)
-            
+
             val wireframes = extractWireframesFromRequests(requests)
-            
-            assertThat(wireframes)
-                .describedAs("Should capture wireframes with MASK privacy")
-                .isNotEmpty
-            
+
+            val textWireframes = wireframes.filter { wireframe ->
+                wireframe.get("type")?.asString == "text"
+            }
+
+            assertThat(textWireframes)
+                .describedAs("Should capture text wireframes with MASK privacy (text will be obfuscated)")
+                .hasSizeGreaterThanOrEqualTo(5)
+
+            val originalTexts = listOf("Default Text View", "MaterialTextView", "AppCompat")
+            val obfuscatedTextWireframes = textWireframes.filter { wireframe ->
+                val text = wireframe.get("text")?.asString
+                text != null && !originalTexts.contains(text) && text.isNotBlank()
+            }
+
+            assertThat(obfuscatedTextWireframes)
+                .describedAs("Text should be obfuscated (not original text) with MASK privacy")
+                .hasSizeGreaterThanOrEqualTo(1)
+
             true
         }.doWait(timeoutMs = INITIAL_WAIT_MS)
     }

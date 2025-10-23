@@ -31,19 +31,37 @@ internal class SrSensitiveFieldsAllowTest : BaseSessionReplayTest<SessionReplayS
     @Test
     fun assessRecordedScreenPayload() {
         runInstrumentationScenario()
-        
+
         ConditionWatcher {
             val requests = rule.getRequests(RuntimeConfig.sessionReplayEndpointUrl)
             val records = extractRecordsFromRequests(requests)
-            
+
             assertRecordStructure(records)
-            
+
             val wireframes = extractWireframesFromRequests(requests)
-            
-            assertThat(wireframes)
-                .describedAs("Should capture wireframes with ALLOW privacy")
-                .isNotEmpty
-            
+
+            val textWireframes = wireframes.filter { wireframe ->
+                wireframe.get("type")?.asString == "text"
+            }
+
+            assertThat(textWireframes)
+                .describedAs(
+                    "Should capture text wireframes with ALLOW " +
+                        "privacy (sensitive inputs masked with ***)"
+                )
+                .hasSizeGreaterThanOrEqualTo(5)
+
+            val maskedSensitiveWireframes = textWireframes.filter { wireframe ->
+                wireframe.get("text")?.asString == "***"
+            }
+
+            assertThat(maskedSensitiveWireframes)
+                .describedAs(
+                    "Sensitive input fields (password, email, postal) should " +
+                        "be masked with '***' even with ALLOW privacy"
+                )
+                .hasSizeGreaterThanOrEqualTo(5)
+
             true
         }.doWait(timeoutMs = INITIAL_WAIT_MS)
     }
