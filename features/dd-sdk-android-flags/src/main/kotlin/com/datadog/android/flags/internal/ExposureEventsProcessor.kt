@@ -9,10 +9,8 @@ package com.datadog.android.flags.internal
 import androidx.collection.LruCache
 import com.datadog.android.flags.featureflags.internal.model.PrecomputedFlag
 import com.datadog.android.flags.featureflags.model.EvaluationContext
-import com.datadog.android.flags.internal.model.ExposureEvent
-import com.datadog.android.flags.internal.model.Identifier
-import com.datadog.android.flags.internal.model.Subject
 import com.datadog.android.flags.internal.storage.RecordWriter
+import com.datadog.android.flags.model.ExposureEvent
 
 internal class ExposureEventsProcessor(private val writer: RecordWriter) : EventsProcessor {
 
@@ -69,13 +67,15 @@ internal class ExposureEventsProcessor(private val writer: RecordWriter) : Event
     private fun buildExposureEvent(flagName: String, context: EvaluationContext, data: PrecomputedFlag): ExposureEvent {
         val now = System.currentTimeMillis()
         return ExposureEvent(
-            timeStamp = now,
-            allocation = Identifier(data.allocationKey),
-            flag = Identifier(flagName),
-            variant = Identifier(data.variationKey),
-            subject = Subject(
+            timestamp = now,
+            allocation = ExposureEvent.Identifier(data.allocationKey),
+            flag = ExposureEvent.Identifier(flagName),
+            variant = ExposureEvent.Identifier(data.variationKey),
+            subject = ExposureEvent.Subject(
                 id = context.targetingKey,
-                attributes = context.attributes.mapValues { it.value }
+                attributes = ExposureEvent.Attributes(
+                    additionalProperties = context.attributes.toMutableMap()
+                )
             )
         )
     }

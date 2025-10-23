@@ -14,9 +14,7 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.storage.EventBatchWriter
 import com.datadog.android.api.storage.EventType
 import com.datadog.android.api.storage.RawBatchEvent
-import com.datadog.android.flags.internal.model.ExposureEvent
-import com.datadog.android.flags.internal.model.Identifier
-import com.datadog.android.flags.internal.model.Subject
+import com.datadog.android.flags.model.ExposureEvent
 import com.datadog.android.flags.utils.forge.ForgeConfigurator
 import fr.xgouchet.elmyr.Forge
 import fr.xgouchet.elmyr.annotation.LongForgery
@@ -86,13 +84,16 @@ internal class ExposureEventRecordWriterTest {
         // Given
         val fakeAttributes = mapOf(fakeAttributeKey to fakeAttributeValue)
         val fakeEvent = ExposureEvent(
-            timeStamp = fakeTimestamp,
-            allocation = Identifier(fakeAllocationKey),
-            flag = Identifier(fakeFlagKey),
-            variant = Identifier(fakeVariantKey),
-            subject = Subject(fakeSubjectId, fakeAttributes)
+            timestamp = fakeTimestamp,
+            allocation = ExposureEvent.Identifier(fakeAllocationKey),
+            flag = ExposureEvent.Identifier(fakeFlagKey),
+            variant = ExposureEvent.Identifier(fakeVariantKey),
+            subject = ExposureEvent.Subject(
+                fakeSubjectId,
+                ExposureEvent.Attributes(fakeAttributes.toMutableMap())
+            )
         )
-        val expectedJson = fakeEvent.toJson()
+        val expectedJson = fakeEvent.toJson().toString()
         val expectedBytes = expectedJson.toByteArray(Charsets.UTF_8)
 
         whenever(mockSdkCore.getFeature(Feature.FLAGS_FEATURE_NAME)).thenReturn(mockFeature)
@@ -130,11 +131,14 @@ internal class ExposureEventRecordWriterTest {
         // Given
         val fakeAttributes = mapOf(fakeAttributeKey to fakeAttributeValue)
         val fakeEvent = ExposureEvent(
-            timeStamp = fakeTimestamp,
-            allocation = Identifier(fakeAllocationKey),
-            flag = Identifier(fakeFlagKey),
-            variant = Identifier(fakeVariantKey),
-            subject = Subject(fakeSubjectId, fakeAttributes)
+            timestamp = fakeTimestamp,
+            allocation = ExposureEvent.Identifier(fakeAllocationKey),
+            flag = ExposureEvent.Identifier(fakeFlagKey),
+            variant = ExposureEvent.Identifier(fakeVariantKey),
+            subject = ExposureEvent.Subject(
+                fakeSubjectId,
+                ExposureEvent.Attributes(fakeAttributes.toMutableMap())
+            )
         )
 
         whenever(mockSdkCore.getFeature(Feature.FLAGS_FEATURE_NAME)).thenReturn(null)
@@ -157,11 +161,14 @@ internal class ExposureEventRecordWriterTest {
             "targeting_key" to forge.anAlphabeticalString()
         )
         val fakeEvent = ExposureEvent(
-            timeStamp = fakeTimestamp,
-            allocation = Identifier(fakeAllocationKey),
-            flag = Identifier(fakeFlagKey),
-            variant = Identifier(fakeVariantKey),
-            subject = Subject(fakeSubjectId, complexAttributes)
+            timestamp = fakeTimestamp,
+            allocation = ExposureEvent.Identifier(fakeAllocationKey),
+            flag = ExposureEvent.Identifier(fakeFlagKey),
+            variant = ExposureEvent.Identifier(fakeVariantKey),
+            subject = ExposureEvent.Subject(
+                fakeSubjectId,
+                ExposureEvent.Attributes(complexAttributes.toMutableMap())
+            )
         )
 
         whenever(mockSdkCore.getFeature(Feature.FLAGS_FEATURE_NAME)).thenReturn(mockFeature)
@@ -209,11 +216,14 @@ internal class ExposureEventRecordWriterTest {
     fun `M handle empty attributes W write() { subject with no attributes }`() {
         // Given
         val fakeEvent = ExposureEvent(
-            timeStamp = fakeTimestamp,
-            allocation = Identifier(fakeAllocationKey),
-            flag = Identifier(fakeFlagKey),
-            variant = Identifier(fakeVariantKey),
-            subject = Subject(fakeSubjectId, emptyMap())
+            timestamp = fakeTimestamp,
+            allocation = ExposureEvent.Identifier(fakeAllocationKey),
+            flag = ExposureEvent.Identifier(fakeFlagKey),
+            variant = ExposureEvent.Identifier(fakeVariantKey),
+            subject = ExposureEvent.Subject(
+                fakeSubjectId,
+                ExposureEvent.Attributes(mutableMapOf())
+            )
         )
 
         whenever(mockSdkCore.getFeature(Feature.FLAGS_FEATURE_NAME)).thenReturn(mockFeature)
@@ -256,11 +266,14 @@ internal class ExposureEventRecordWriterTest {
         // Given
         val fakeAttributes = mapOf(fakeAttributeKey to fakeAttributeValue)
         val fakeEvent = ExposureEvent(
-            timeStamp = fakeTimestamp,
-            allocation = Identifier(fakeAllocationKey),
-            flag = Identifier(fakeFlagKey),
-            variant = Identifier(fakeVariantKey),
-            subject = Subject(fakeSubjectId, fakeAttributes)
+            timestamp = fakeTimestamp,
+            allocation = ExposureEvent.Identifier(fakeAllocationKey),
+            flag = ExposureEvent.Identifier(fakeFlagKey),
+            variant = ExposureEvent.Identifier(fakeVariantKey),
+            subject = ExposureEvent.Subject(
+                fakeSubjectId,
+                ExposureEvent.Attributes(fakeAttributes.toMutableMap())
+            )
         )
 
         whenever(mockSdkCore.getFeature(Feature.FLAGS_FEATURE_NAME)).thenReturn(mockFeature)

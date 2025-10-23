@@ -10,14 +10,14 @@ import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.storage.EventType
 import com.datadog.android.api.storage.RawBatchEvent
-import com.datadog.android.flags.internal.model.ExposureEvent
+import com.datadog.android.flags.model.ExposureEvent
 
 internal class ExposureEventRecordWriter(private val sdkCore: FeatureSdkCore) : RecordWriter {
     override fun write(record: ExposureEvent) {
         sdkCore.getFeature(Feature.FLAGS_FEATURE_NAME)
             ?.withWriteContext { _, writeScope ->
                 writeScope {
-                    val serializedRecord = record.toJson().toByteArray(Charsets.UTF_8)
+                    val serializedRecord = record.toJson().toString().toByteArray(Charsets.UTF_8)
                     val rawBatchEvent = RawBatchEvent(data = serializedRecord)
                     synchronized(this@ExposureEventRecordWriter) {
                         it.write(
