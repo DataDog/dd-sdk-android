@@ -14,7 +14,6 @@ import com.datadog.android.Datadog
 import com.datadog.android.rum.GlobalRumMonitor
 import com.datadog.android.sdk.rules.HandledRequest
 import com.datadog.android.sdk.utils.waitFor
-import com.datadog.tools.unit.ConditionWatcher
 import com.google.gson.JsonArray
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject

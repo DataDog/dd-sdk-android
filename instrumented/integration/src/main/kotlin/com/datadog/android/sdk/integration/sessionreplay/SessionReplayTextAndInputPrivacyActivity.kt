@@ -21,7 +21,10 @@ internal class SessionReplayTextAndInputPrivacyActivity : BaseSessionReplayActiv
     }
 
     @Suppress("DEPRECATION")
-    override fun sessionReplayConfiguration(privacy: SessionReplayPrivacy, sampleRate: Float): SessionReplayConfiguration {
+    override fun sessionReplayConfiguration(
+        privacy: SessionReplayPrivacy,
+        sampleRate: Float
+    ): SessionReplayConfiguration {
         val textAndInputPrivacy = intent.getTextAndInputPrivacy()
         return if (textAndInputPrivacy != null) {
             RuntimeConfig.sessionReplayConfigBuilder(sampleRate)
@@ -33,4 +36,3 @@ internal class SessionReplayTextAndInputPrivacyActivity : BaseSessionReplayActiv
         }
     }
 }
-

@@ -38,4 +38,3 @@ internal class SrTextAndInputMaskSensitiveTest :
         assertSensitiveInputMasked(rule)
     }
 }
-

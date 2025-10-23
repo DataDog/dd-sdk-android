@@ -32,19 +32,23 @@ internal class SrImageButtonsMaskTest :
     @Test
     fun assessRecordedScreenPayload() {
         runInstrumentationScenario()
-        
+
         ConditionWatcher {
             val requests = rule.getRequests(RuntimeConfig.sessionReplayEndpointUrl)
             val records = extractRecordsFromRequests(requests)
-            
+
             assertRecordStructure(records)
-            
+
             val wireframes = extractWireframesFromRequests(requests)
-            
-            assertThat(wireframes)
-                .describedAs("Should capture wireframes with MASK privacy")
-                .isNotEmpty
-            
+
+            val placeholderWireframes = wireframes.filter { wireframe ->
+                wireframe.get("type")?.asString == "placeholder"
+            }
+
+            assertThat(placeholderWireframes)
+                .describedAs("Should capture image buttons as placeholder wireframes with MASK privacy")
+                .hasSizeGreaterThanOrEqualTo(2)
+
             true
         }.doWait(timeoutMs = INITIAL_WAIT_MS)
     }

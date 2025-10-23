@@ -35,4 +35,3 @@ internal class SrTouchShowTest : TouchPrivacyTestBase<SessionReplayTouchActivity
         assertTouchRecordsExist(rule)
     }
 }
-

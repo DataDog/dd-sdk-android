@@ -21,7 +21,10 @@ internal class SessionReplayTouchActivity : BaseSessionReplayActivity() {
     }
 
     @Suppress("DEPRECATION")
-    override fun sessionReplayConfiguration(privacy: SessionReplayPrivacy, sampleRate: Float): SessionReplayConfiguration {
+    override fun sessionReplayConfiguration(
+        privacy: SessionReplayPrivacy,
+        sampleRate: Float
+    ): SessionReplayConfiguration {
         val touchPrivacy = intent.getTouchPrivacy()
         return if (touchPrivacy != null) {
             RuntimeConfig.sessionReplayConfigBuilder(sampleRate)
@@ -33,4 +36,3 @@ internal class SessionReplayTouchActivity : BaseSessionReplayActivity() {
         }
     }
 }
-
