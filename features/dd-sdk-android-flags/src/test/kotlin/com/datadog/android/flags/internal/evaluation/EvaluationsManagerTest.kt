@@ -7,12 +7,12 @@
 package com.datadog.android.flags.internal.evaluation
 
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.flags.internal.evaluation.EvaluationsManager
 import com.datadog.android.flags.internal.model.PrecomputedFlag
+import com.datadog.android.flags.internal.net.PrecomputedAssignmentsReader
 import com.datadog.android.flags.internal.repository.FlagsRepository
 import com.datadog.android.flags.internal.repository.net.PrecomputeMapper
-import com.datadog.android.flags.internal.evaluation.EvaluationsManager
 import com.datadog.android.flags.model.EvaluationContext
-import com.datadog.android.flags.internal.net.PrecomputedAssignmentsReader
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeExtension
 import okhttp3.mockwebserver.MockWebServer

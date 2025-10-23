@@ -11,9 +11,9 @@ import com.datadog.android.api.feature.Feature
 import com.datadog.android.api.feature.Feature.Companion.FLAGS_FEATURE_NAME
 import com.datadog.android.api.feature.FeatureScope
 import com.datadog.android.api.feature.FeatureSdkCore
+import com.datadog.android.flags.internal.FlagsFeature
 import com.datadog.android.flags.internal.NoOpFlagsClient
 import com.datadog.android.flags.model.EvaluationContext
-import com.datadog.android.flags.internal.FlagsFeature
 import fr.xgouchet.elmyr.annotation.BoolForgery
 import fr.xgouchet.elmyr.annotation.StringForgery
 import fr.xgouchet.elmyr.junit5.ForgeExtension

@@ -15,8 +15,8 @@ import com.datadog.android.api.feature.FeatureContextUpdateReceiver
 import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.api.feature.StorageBackedFeature
 import com.datadog.android.api.storage.FeatureStorageConfiguration
-import com.datadog.android.flags.FlagsConfiguration
 import com.datadog.android.flags.FlagsClient
+import com.datadog.android.flags.FlagsConfiguration
 import com.datadog.android.flags.internal.net.ExposuresRequestFactory
 import com.datadog.android.flags.internal.net.PrecomputedAssignmentsRequestFactory
 import com.datadog.android.flags.internal.storage.ExposureEventRecordWriter

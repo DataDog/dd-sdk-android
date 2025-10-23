@@ -8,10 +8,10 @@ package com.datadog.android.flags.internal.evaluation
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.core.internal.utils.executeSafe
+import com.datadog.android.flags.internal.net.PrecomputedAssignmentsReader
 import com.datadog.android.flags.internal.repository.FlagsRepository
 import com.datadog.android.flags.internal.repository.net.PrecomputeMapper
 import com.datadog.android.flags.model.EvaluationContext
-import com.datadog.android.flags.internal.net.PrecomputedAssignmentsReader
 import java.util.concurrent.ExecutorService
 
 /**

@@ -14,17 +14,17 @@ import com.datadog.android.api.feature.FeatureSdkCore
 import com.datadog.android.core.InternalSdkCore
 import com.datadog.android.flags.internal.DatadogFlagsClient
 import com.datadog.android.flags.internal.DefaultRumEvaluationLogger
+import com.datadog.android.flags.internal.FlagsFeature
 import com.datadog.android.flags.internal.NoOpFlagsClient
 import com.datadog.android.flags.internal.NoOpRumEvaluationLogger
 import com.datadog.android.flags.internal.RumEvaluationLogger
 import com.datadog.android.flags.internal.evaluation.EvaluationsManager
 import com.datadog.android.flags.internal.model.FlagsContext
+import com.datadog.android.flags.internal.net.PrecomputedAssignmentsDownloader
 import com.datadog.android.flags.internal.repository.DefaultFlagsRepository
 import com.datadog.android.flags.internal.repository.NoOpFlagsRepository
 import com.datadog.android.flags.internal.repository.net.PrecomputeMapper
 import com.datadog.android.flags.model.EvaluationContext
-import com.datadog.android.flags.internal.FlagsFeature
-import com.datadog.android.flags.internal.net.PrecomputedAssignmentsDownloader
 import com.datadog.android.flags.model.ResolutionDetails
 import org.json.JSONObject
 

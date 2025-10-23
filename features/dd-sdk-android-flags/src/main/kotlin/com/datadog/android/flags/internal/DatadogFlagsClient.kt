@@ -8,13 +8,13 @@ package com.datadog.android.flags.internal
 
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.FeatureSdkCore
-import com.datadog.android.flags.FlagsConfiguration
 import com.datadog.android.flags.FlagsClient
+import com.datadog.android.flags.FlagsConfiguration
 import com.datadog.android.flags.internal.evaluation.EvaluationsManager
 import com.datadog.android.flags.internal.model.PrecomputedFlag
 import com.datadog.android.flags.internal.repository.FlagsRepository
-import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.model.ErrorCode
+import com.datadog.android.flags.model.EvaluationContext
 import com.datadog.android.flags.model.ResolutionDetails
 import com.datadog.android.flags.model.ResolutionReason
 import org.json.JSONObject
