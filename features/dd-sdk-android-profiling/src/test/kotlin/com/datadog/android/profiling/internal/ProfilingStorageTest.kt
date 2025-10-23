@@ -8,7 +8,8 @@ package com.datadog.android.profiling.internal
 
 import android.content.Context
 import android.content.SharedPreferences
-import org.assertj.core.api.Assertions
+import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -18,7 +19,6 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
-import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
@@ -46,7 +46,10 @@ internal class ProfilingStorageTest {
         whenever(mockPrefs.edit()) doReturn mockEditor
         whenever(mockEditor.remove(any())) doReturn mockEditor
         whenever(mockEditor.putBoolean(any(), any())) doReturn mockEditor
+    }
 
+    @AfterEach
+    fun `clean up`() {
         // Reset the singleton
         val storageField = ProfilingStorage::class.java.getDeclaredField("sharedPreferencesStorage")
         storageField.isAccessible = true
@@ -72,7 +75,7 @@ internal class ProfilingStorageTest {
         val isEnabled = ProfilingStorage.isProfilingEnabled(mockContext)
 
         // Then
-        Assertions.assertThat(isEnabled).isTrue()
+        assertThat(isEnabled).isTrue()
     }
 
     @Test
@@ -84,7 +87,7 @@ internal class ProfilingStorageTest {
         val isEnabled = ProfilingStorage.isProfilingEnabled(mockContext)
 
         // Then
-        Assertions.assertThat(isEnabled).isFalse()
+        assertThat(isEnabled).isFalse()
     }
 
     @Test
@@ -112,7 +115,7 @@ internal class ProfilingStorageTest {
         latch.await(5, TimeUnit.SECONDS)
 
         // Then
-        verify(mockContext, times(1)).getSharedPreferences(
+        verify(mockContext).getSharedPreferences(
             DATADOG_PREFERENCES_FILE_NAME,
             Context.MODE_PRIVATE
         )
