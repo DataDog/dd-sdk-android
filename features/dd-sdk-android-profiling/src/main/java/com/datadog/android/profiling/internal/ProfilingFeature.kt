@@ -8,6 +8,7 @@ package com.datadog.android.profiling.internal
 
 import android.content.Context
 import android.os.Build
+import android.os.ProfilingResult
 import androidx.annotation.RequiresApi
 import com.datadog.android.api.InternalLogger
 import com.datadog.android.api.feature.Feature
@@ -17,6 +18,8 @@ import com.datadog.android.api.feature.StorageBackedFeature
 import com.datadog.android.api.net.RequestFactory
 import com.datadog.android.api.storage.FeatureStorageConfiguration
 import com.datadog.android.profiling.ProfilingConfiguration
+import com.datadog.android.profiling.internal.perfetto.PerfettoResult
+import com.datadog.android.rum.ProfilingRumEvent
 import com.datadog.android.rum.TTIDEvent
 import java.util.Locale
 
@@ -45,6 +48,7 @@ internal class ProfilingFeature(
             this.internalLogger = sdkCore.internalLogger
             this.onProfilingSuccess = { result ->
                 dataWriter.write(profilingResult = result)
+                sendProfilingEventToRum(result)
             }
         }
         // Set the profiling flag in SharedPreferences to profile for the next app launch
@@ -73,6 +77,17 @@ internal class ProfilingFeature(
             InternalLogger.Target.USER,
             { "Profiling stopped with TTID=${event.value}" }
         )
+    }
+
+    private fun sendProfilingEventToRum(perfettoResult: PerfettoResult) {
+        val profilingRumEvent = ProfilingRumEvent(
+            perfettoResult.errorCode == ProfilingResult.ERROR_NONE,
+            errorCode = perfettoResult.errorCode,
+            errorMessage = perfettoResult.errorMessage,
+            duration = perfettoResult.end - perfettoResult.start,
+            fileSize = perfettoResult.fileSize
+        )
+        sdkCore.getFeature(Feature.RUM_FEATURE_NAME)?.sendEvent(profilingRumEvent)
     }
 
     private fun createDataWriter(sdkCore: FeatureSdkCore): ProfilingDataWriter {

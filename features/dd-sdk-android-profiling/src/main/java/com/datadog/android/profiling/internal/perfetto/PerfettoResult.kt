@@ -14,7 +14,10 @@ package com.datadog.android.profiling.internal.perfetto
  * @param resultFilePath the path to the file containing the profiling result.
  */
 internal data class PerfettoResult(
+    val errorCode: Int,
+    val errorMessage: String?,
     val start: Long,
     val end: Long,
-    val resultFilePath: String
+    val resultFilePath: String,
+    val fileSize: Long
 )

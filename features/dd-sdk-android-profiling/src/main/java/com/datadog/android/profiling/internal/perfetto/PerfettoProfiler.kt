@@ -67,7 +67,10 @@ internal class PerfettoProfiler(
                         PerfettoResult(
                             start = profilingStartTime,
                             end = endTime,
-                            resultFilePath = it
+                            resultFilePath = it,
+                            errorCode = result.errorCode,
+                            errorMessage = result.errorMessage,
+                            fileSize = getFileSize(result.resultFilePath)
                         )
                     )
                 }
