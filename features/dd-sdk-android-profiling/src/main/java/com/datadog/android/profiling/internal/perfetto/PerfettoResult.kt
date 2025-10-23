@@ -9,12 +9,18 @@ package com.datadog.android.profiling.internal.perfetto
 /**
  * Result of a profiling request made through [androidx.core.os.requestProfiling].
  *
+ * @param errorCode the error code of the profiling.
+ * @param errorMessage the error message of the profiling.
  * @param start the start time of the profiling in milliseconds since epoch.
  * @param end the end time of the profiling in milliseconds since epoch.
  * @param resultFilePath the path to the file containing the profiling result.
+ * @param fileSize the size of the profiling result file in bytes.
  */
 internal data class PerfettoResult(
+    val errorCode: Int,
+    val errorMessage: String?,
     val start: Long,
     val end: Long,
-    val resultFilePath: String
+    val resultFilePath: String,
+    val fileSize: Long
 )

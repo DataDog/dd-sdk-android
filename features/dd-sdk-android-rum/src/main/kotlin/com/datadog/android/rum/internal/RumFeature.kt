@@ -37,6 +37,7 @@ import com.datadog.android.event.NoOpEventMapper
 import com.datadog.android.internal.flags.RumFlagEvaluationMessage
 import com.datadog.android.internal.telemetry.InternalTelemetryEvent
 import com.datadog.android.rum.GlobalRumMonitor
+import com.datadog.android.rum.ProfilingRumEvent
 import com.datadog.android.rum.RumErrorSource
 import com.datadog.android.rum.RumSessionListener
 import com.datadog.android.rum.RumSessionType
@@ -395,6 +396,7 @@ internal class RumFeature(
             is JvmCrash.Rum -> addJvmCrash(event)
             is InternalTelemetryEvent -> handleTelemetryEvent(event)
             is RumFlagEvaluationMessage -> handleFlagEvaluationEvent(event)
+            is ProfilingRumEvent -> handleProfilingEvent(event)
             else -> {
                 sdkCore.internalLogger.log(
                     InternalLogger.Level.WARN,
@@ -713,6 +715,19 @@ internal class RumFeature(
                     )
                 }
             }
+        )
+    }
+
+    private fun handleProfilingEvent(event: ProfilingRumEvent) {
+        GlobalRumMonitor.get(sdkCore).addAttribute(
+            key = "profiling",
+            value = mapOf(
+                "success" to event.success,
+                "error_code" to event.errorCode,
+                "error_message" to event.errorMessage,
+                "duration" to event.duration,
+                "size_bytes" to event.fileSize
+            )
         )
     }
 
