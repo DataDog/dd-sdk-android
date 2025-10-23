@@ -130,7 +130,11 @@ fun File.listFilesSafe(internalLogger: InternalLogger, filter: FilenameFilter): 
     }
 }
 
-internal fun File.lengthSafe(internalLogger: InternalLogger): Long {
+/**
+ *  Non-throwing version of [File.length]. If exception happens, 0 is returned.
+ */
+@InternalApi
+fun File.lengthSafe(internalLogger: InternalLogger): Long {
     return safeCall(default = 0L, internalLogger) {
         @Suppress("UnsafeThirdPartyFunctionCall")
         length()

@@ -188,7 +188,8 @@ class PerfettoProfilerTest {
                 "error_code" to ProfilingResult.ERROR_FAILED_PROFILING_IN_PROGRESS,
                 "tag" to "ApplicationLaunch",
                 "error_message" to fakeErrorMessage,
-                "duration" to fakeDuration
+                "duration" to fakeDuration,
+                "size_bytes" to 0L
             )
         )
         verify(mockInternalLogger)

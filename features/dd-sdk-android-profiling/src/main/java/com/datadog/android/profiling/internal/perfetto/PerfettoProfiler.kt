@@ -14,8 +14,10 @@ import androidx.annotation.RequiresApi
 import androidx.core.os.StackSamplingRequestBuilder
 import androidx.core.os.requestProfiling
 import com.datadog.android.api.InternalLogger
+import com.datadog.android.core.internal.persistence.file.lengthSafe
 import com.datadog.android.internal.time.TimeProvider
 import com.datadog.android.profiling.internal.Profiler
+import java.io.File
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
@@ -114,10 +116,20 @@ internal class PerfettoProfiler(
                     TELEMETRY_KEY_ERROR_CODE to result.errorCode,
                     TELEMETRY_KEY_TAG to PROFILING_TAG_APPLICATION_LAUNCH,
                     TELEMETRY_KEY_ERROR_MESSAGE to result.errorMessage,
-                    TELEMETRY_KEY_DURATION to duration
+                    TELEMETRY_KEY_DURATION to duration,
+                    TELEMETRY_KEY_FILE_SIZE to getFileSize(result.resultFilePath)
                 )
             )
         )
+    }
+
+    private fun getFileSize(filePath: String?): Long {
+        return internalLogger?.let { logger ->
+            filePath?.let {
+                val file = File(filePath)
+                file.lengthSafe(logger)
+            }
+        } ?: 0
     }
 
     companion object {
@@ -138,5 +150,6 @@ internal class PerfettoProfiler(
         private const val TELEMETRY_KEY_TAG = "tag"
         private const val TELEMETRY_KEY_ERROR_MESSAGE = "error_message"
         private const val TELEMETRY_KEY_DURATION = "duration"
+        private const val TELEMETRY_KEY_FILE_SIZE = "size_bytes"
     }
 }
