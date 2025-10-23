@@ -4,12 +4,12 @@
  * Copyright 2016-Present Datadog, Inc.
  */
 
-package com.datadog.android.flags.internal.net
+package com.datadog.android.flags.internal.model
 
 import com.datadog.android.flags.model.EvaluationContext
-import com.datadog.tools.annotation.NoOpImplementation
 
-@NoOpImplementation
-internal interface PrecomputedAssignmentsReader {
-    fun readPrecomputedFlags(context: EvaluationContext): String?
-}
+internal data class FlagsStateEntry(
+    val evaluationContext: EvaluationContext,
+    val flags: Map<String, PrecomputedFlag>,
+    val lastUpdateTimestamp: Long = System.currentTimeMillis()
+)
