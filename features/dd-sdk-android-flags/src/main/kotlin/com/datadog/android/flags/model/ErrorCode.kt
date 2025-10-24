@@ -8,15 +8,10 @@ package com.datadog.android.flags.model
 
 /**
  * Error codes for flag resolution failures.
- *
- * Aligned with OpenFeature error codes: https://openfeature.dev/specification/types/#error-code
  */
 enum class ErrorCode {
     /**
      * The provider is not ready to resolve flags.
-     *
-     * This error is returned when attempting to evaluate flags before the provider
-     * has been properly initialized or when using a fallback client.
      */
     PROVIDER_NOT_READY,
 

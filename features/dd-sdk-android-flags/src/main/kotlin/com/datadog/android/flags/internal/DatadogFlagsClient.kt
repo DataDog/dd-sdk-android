@@ -213,14 +213,6 @@ internal class DatadogFlagsClient(
         ) : InternalResolution<T>()
     }
 
-    /**
-     * Checks if the provider is ready by verifying an evaluation context exists.
-     *
-     * @param T The type of the flag value
-     * @param flagKey The flag key being resolved
-     * @param defaultValue The default value to return in the error
-     * @return [InternalResolution.Error] if provider not ready, null otherwise
-     */
     private fun <T : Any> checkProviderReady(
         flagKey: String,
         defaultValue: T
